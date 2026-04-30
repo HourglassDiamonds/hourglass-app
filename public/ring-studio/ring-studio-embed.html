@@ -1,0 +1,1177 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hourglass Diamonds — Ring Studio</title>
+  <style>
+
+.studio-nav {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    padding: 12px 16px;
+
+    background: rgba(251, 248, 242, 0.85);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+  }
+
+  .studio-home {
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #5c534c;
+    text-decoration: none;
+  }
+
+  .studio-back {
+    background: none;
+    border: none;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    color: #1f1a17;
+    cursor: pointer;
+  }
+
+    :root {
+      --bg: #fbf8f2;
+      --bg-soft: #f6f2eb;
+      --panel: rgba(255, 255, 255, 0.62);
+      --panel-strong: rgba(255, 255, 255, 0.78);
+      --stage: #f4eee6;
+      --stage-deep: #efe7dc;
+      --line: #e7dfd3;
+      --line-soft: rgba(32, 27, 24, 0.06);
+      --text: #1f1a17;
+      --text-strong: #201b18;
+      --muted: #5c534c;
+      --muted-2: #7a6f65;
+      --muted-3: #8a8177;
+      --active: #2b2723;
+      --shadow-soft: 0 14px 38px rgba(48, 36, 28, 0.035);
+      --radius-pill: 999px;
+      --ease: cubic-bezier(.22,.61,.36,1);
+      --dur: 420ms;
+      --sparkle-x: 58%;
+      --sparkle-y: 36%;
+      --sparkle-scale: 1;
+      --ring-filter: saturate(1) brightness(1) contrast(1);
+      --grain-opacity: 0.024;
+    }
+
+    * { box-sizing: border-box; }
+    html {
+  scroll-behavior: smooth;
+  margin: 0;
+  min-height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+body {
+  margin: 0;
+  min-height: 100%;
+  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: var(--text);
+  background:
+    radial-gradient(circle at top, rgba(255,255,255,0.78), rgba(255,255,255,0) 28%),
+    linear-gradient(180deg, #fbf8f2 0%, var(--bg-soft) 100%);
+  letter-spacing: -0.01em;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+    img, video {
+      display: block;
+      max-width: 100%;
+    }
+
+    button {
+      font: inherit;
+    }
+
+    .page {
+      min-height: 100dvh;
+    }
+
+    .section {
+      border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    }
+
+    .section:last-child {
+      border-bottom: 0;
+    }
+
+    .studio-section {
+      padding: 16px 0 18px;
+    }
+
+    .studio-shell {
+  display: grid;
+  grid-template-columns: minmax(236px, 258px) minmax(0, 1fr);
+  gap: 16px;
+  align-items: stretch;
+  width: 100%;
+}
+
+    .studio-panel,
+.viewer-card {
+  border: 1px solid transparent;
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: none;
+}
+
+    .studio-panel {
+      border-radius: 28px;
+      padding: 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      min-height: 100%;
+    }
+
+    .viewer-card {
+  min-height: 0;
+  width: 100%;
+  padding: 0;
+  border-radius: 0;
+  overflow: visible;
+  display: grid;
+  gap: 10px;
+}
+
+    .panel-title-block {
+      display: grid;
+      gap: 12px;
+    }
+
+    .eyebrow {
+      margin: 0;
+      font-size: 11px;
+      line-height: 1;
+      letter-spacing: 0.26em;
+      text-transform: uppercase;
+      color: var(--muted-2);
+    }
+
+    .panel-title {
+      margin: 0;
+      max-width: 15ch;
+      font-size: clamp(1.5rem, 2.7vw, 1.84rem);
+      line-height: 1.06;
+      font-weight: 300;
+      letter-spacing: -0.01em;
+      text-wrap: balance;
+      color: var(--text-strong);
+    }
+
+    .body-copy,
+    .ring-note {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.7;
+    }
+
+    .body-copy {
+      max-width: 34ch;
+    }
+
+    .ring-meta {
+      display: grid;
+      gap: 8px;
+      padding-top: 2px;
+    }
+
+    .ring-kicker {
+      margin: 0;
+      font-size: 10px;
+      line-height: 1;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: var(--muted-3);
+    }
+
+    .ring-name {
+      margin: 0;
+      font-size: 1.26rem;
+      line-height: 1.11;
+      font-weight: 300;
+      letter-spacing: -0.01em;
+      text-wrap: balance;
+      color: var(--text-strong);
+    }
+
+    .helper-grid {
+      display: grid;
+      gap: 14px;
+      margin-top: 2px;
+    }
+
+    .control-group {
+      display: grid;
+      gap: 10px;
+    }
+
+    .control-label {
+      font-size: 10px;
+      line-height: 1;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--muted-3);
+    }
+
+    .stage-wrap {
+  padding: 0;
+  background: transparent;
+  border-radius: 0;
+}
+
+    .stage {
+  position: relative;
+  min-height: 360px;
+  border-radius: 24px;
+  overflow: hidden;
+  border: 1px solid rgba(32, 27, 24, 0.04);
+  background:
+    radial-gradient(circle at 28% 18%, rgba(255,255,255,0.94), transparent 28%),
+    radial-gradient(circle at 76% 32%, rgba(255,255,255,0.18), transparent 22%),
+    radial-gradient(circle at 56% 74%, rgba(255,255,255,0.10), transparent 24%),
+    linear-gradient(145deg, var(--stage) 0%, var(--stage-deep) 52%, #f7f2eb 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.5),
+    0 14px 34px rgba(49,38,29,0.05);
+}
+
+    .stage::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(135deg, rgba(255,255,255,var(--grain-opacity)) 25%, transparent 25%),
+        linear-gradient(225deg, rgba(255,255,255,var(--grain-opacity)) 25%, transparent 25%),
+        linear-gradient(45deg, rgba(0,0,0,0.012) 25%, transparent 25%),
+        linear-gradient(315deg, rgba(0,0,0,0.012) 25%, transparent 25%);
+      background-size: 4px 4px;
+      background-position: 0 0, 0 2px, 2px -2px, -2px 0;
+      opacity: 0.16;
+      mix-blend-mode: soft-light;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .stage-inner {
+      position: relative;
+      min-height: inherit;
+      display: grid;
+      place-items: center;
+      padding: 20px 20px 56px;
+      z-index: 1;
+    }
+
+    .ground-shadow {
+      position: absolute;
+      left: 50%;
+      bottom: 72px;
+      width: min(36vw, 360px);
+      height: 46px;
+      border-radius: 999px;
+      background: radial-gradient(circle at center, rgba(0,0,0,0.14), rgba(0,0,0,0.075) 38%, rgba(0,0,0,0) 74%);
+      transform: translateX(-50%) scale(1);
+      filter: blur(20px);
+      opacity: 0.35;
+      z-index: 1;
+      pointer-events: none;
+      transition: opacity var(--dur) var(--ease), transform var(--dur) var(--ease);
+    }
+
+    .ground-sheen {
+      position: absolute;
+      left: 50%;
+      bottom: 84px;
+      width: min(22vw, 230px);
+      height: 22px;
+      border-radius: 999px;
+      background: radial-gradient(circle at center, rgba(255,255,255,0.5), rgba(255,255,255,0) 74%);
+      transform: translateX(-50%);
+      filter: blur(18px);
+      opacity: 0.72;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    .media-stack {
+      position: relative;
+      width: min(100%, 820px);
+      height: min(46vw, 390px);
+      max-height: 390px;
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    .media {
+      position: absolute;
+      inset: 0;
+      margin: auto;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      filter: var(--ring-filter) drop-shadow(0 28px 54px rgba(39,30,22,0.14));
+      transform: translate3d(0, 0, 0) scale(1.02);
+      transition:
+        opacity var(--dur) var(--ease),
+        transform 320ms var(--ease),
+        filter var(--dur) var(--ease);
+      opacity: 0;
+    }
+
+    .media.visible { opacity: 1; }
+    .media.hidden { opacity: 0; }
+
+    .stage:hover .media.visible {
+  transform: translate3d(0, -1px, 0) scale(1.018);
+}
+
+    .stage:hover .ground-shadow {
+      transform: translateX(-50%) scale(1.015);
+      opacity: 0.39;
+    }
+
+    .float {
+      animation: ringFloat 6.2s ease-in-out infinite;
+    }
+
+    .sparkle {
+      position: absolute;
+      left: var(--sparkle-x);
+      top: var(--sparkle-y);
+      width: calc(24px * var(--sparkle-scale));
+      height: calc(24px * var(--sparkle-scale));
+      transform: translate(-50%, -50%);
+      z-index: 4;
+      pointer-events: none;
+      opacity: 0.72;
+      filter: drop-shadow(0 0 10px rgba(255,255,255,0.55));
+    }
+
+    .sparkle::before,
+    .sparkle::after {
+      content: "";
+      position: absolute;
+      inset: 50% auto auto 50%;
+      background: linear-gradient(180deg, rgba(255,255,255,0), rgba(255,255,255,0.96), rgba(255,255,255,0));
+      transform: translate(-50%, -50%);
+      border-radius: 999px;
+      opacity: 0.84;
+    }
+
+    .sparkle::before {
+      width: 1.5px;
+      height: 100%;
+    }
+
+    .sparkle::after {
+      width: 100%;
+      height: 1.5px;
+    }
+
+    .sparkle i,
+    .sparkle b {
+      position: absolute;
+      inset: 50% auto auto 50%;
+      display: block;
+      width: 1px;
+      height: 76%;
+      background: linear-gradient(180deg, rgba(255,255,255,0), rgba(255,255,255,0.7), rgba(255,255,255,0));
+      transform-origin: center;
+      opacity: 0.55;
+    }
+
+    .sparkle i { transform: translate(-50%, -50%) rotate(45deg); }
+    .sparkle b { transform: translate(-50%, -50%) rotate(-45deg); }
+
+    .sparkle-pass {
+      animation: sparklePass 4.8s ease-in-out infinite;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 32px;
+      padding: 7px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.68);
+      border: 1px solid rgba(32, 27, 24, 0.06);
+      color: var(--muted);
+      font-size: 11px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      box-shadow: 0 8px 20px rgba(21,16,12,0.03);
+    }
+
+    .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #d3c3ad;
+      box-shadow: 0 0 0 4px rgba(211,195,173,0.18);
+    }
+
+    .stage-caption {
+      position: absolute;
+      left: 22px;
+      right: 22px;
+      bottom: 18px;
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      flex-wrap: wrap;
+      z-index: 5;
+    }
+
+    .viewer-controls {
+      display: grid;
+      gap: 10px;
+      padding: 0;
+      border: 0;
+      background: transparent;
+    }
+
+    .viewer-control-rail {
+      display: grid;
+      gap: 12px;
+      align-items: start;
+    }
+
+    .viewer-control-group {
+      display: grid;
+      gap: 7px;
+      min-width: 0;
+    }
+
+    .viewer-control-group[hidden] {
+      display: none;
+    }
+
+    .viewer-control-label {
+      font-size: 10px;
+      line-height: 1;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--muted-3);
+      padding-left: 2px;
+    }
+
+    .segmented {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .pill {
+      appearance: none;
+      border: 1px solid #ddd2c5;
+      background: rgba(255,255,255,0.76);
+      color: #625950;
+      border-radius: var(--radius-pill);
+      min-height: 36px;
+      padding: 0 14px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      line-height: 1;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      white-space: nowrap;
+      cursor: pointer;
+      transition:
+        background 220ms var(--ease),
+        color 220ms var(--ease),
+        border-color 220ms var(--ease),
+        box-shadow 220ms var(--ease),
+        transform 180ms var(--ease);
+      box-shadow: 0 1px 0 rgba(255,255,255,0.7) inset;
+    }
+
+    .pill:hover {
+      background: rgba(255,255,255,0.94);
+      color: var(--text);
+      border-color: #d4c8bb;
+    }
+
+    .pill:active {
+      transform: translateY(1px);
+    }
+
+    .pill.active {
+      border-color: var(--active);
+      background: var(--active);
+      color: #fff;
+      box-shadow: 0 8px 18px rgba(21,16,12,0.10);
+    }
+
+    .seg-pill {
+      min-height: 33px;
+      padding: 0 13px;
+      font-size: 10.5px;
+      letter-spacing: 0.12em;
+      background: rgba(255,255,255,0.82);
+    }
+
+    .viewer-status {
+      min-height: 16px;
+      font-size: 11px;
+      line-height: 1.35;
+      color: #8a6d53;
+      padding-left: 2px;
+    }
+
+    .design-controls {
+  display: grid;
+  gap: 10px;
+  padding: 8px 0 0;
+}
+
+    .ring-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  max-height: none;
+  overflow-y: visible;
+  overflow-x: hidden;
+  padding-right: 0;
+  align-content: start;
+  scrollbar-width: none;
+}
+
+    .ring-grid::-webkit-scrollbar {
+  display: none;
+}
+
+    .ring-grid::-webkit-scrollbar-thumb {
+      background: rgba(120, 108, 95, 0.22);
+      border-radius: 999px;
+    }
+
+    .ring-grid::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .ring-pill {
+  min-height: 34px;
+  width: 100%;
+  justify-content: flex-start;
+  padding: 0 10px;
+  border-radius: 12px;
+  text-transform: none;
+  letter-spacing: -0.01em;
+  font-size: 10.5px;
+  line-height: 1.1;
+  white-space: normal;
+  text-align: left;
+  color: #5d554e;
+  background: rgba(255,255,255,0.56);
+  border-color: rgba(211, 199, 184, 0.84);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.7),
+    0 3px 8px rgba(42, 33, 25, 0.015);
+}
+
+    .ring-pill:hover {
+      background: rgba(255,255,255,0.85);
+      color: var(--text-strong);
+      border-color: #d4c7b9;
+    }
+
+    .ring-pill.active {
+      background: #241f1b;
+      border-color: #241f1b;
+      color: #fff;
+      box-shadow: 0 12px 24px rgba(26, 20, 15, 0.12);
+    }
+
+    @keyframes ringFloat {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1.018); }
+  50% { transform: translate3d(0, -2px, 0) scale(1.018); }
+}
+
+    @keyframes sparklePass {
+      0%, 100% { opacity: 0.2; transform: translate(-50%, -50%) scale(0.9); }
+      15% { opacity: 0.36; }
+      28% { opacity: 0.84; transform: translate(-50%, -50%) scale(1.08); }
+      45% { opacity: 0.3; }
+      72% { opacity: 0.68; }
+    }
+
+    @media (max-width: 980px) {
+      .stage {
+        min-height: 460px;
+      }
+
+      .media-stack {
+        height: min(56vw, 400px);
+      }
+
+      .ring-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        max-height: 138px;
+      }
+    }
+
+    @media (max-width: 760px) {
+      .studio-shell {
+        grid-template-columns: 1fr;
+      }
+
+      .studio-section {
+        padding: 24px 0 28px;
+      }
+
+      .studio-panel {
+        padding: 22px;
+        border-radius: 26px;
+      }
+
+      .viewer-card {
+        border-radius: 28px;
+      }
+
+      .stage-wrap {
+        padding: 10px 10px 6px;
+      }
+
+      .stage {
+        min-height: 420px;
+        border-radius: 22px;
+      }
+
+      .stage-inner {
+        padding: 24px 18px 72px;
+      }
+
+      .media-stack {
+        height: min(88vw, 380px);
+      }
+
+      .ring-grid {
+        grid-template-columns: 1fr;
+        max-height: 220px;
+      }
+    }
+  </style>
+</head>
+<body>
+  
+  <div class="studio-nav">
+    <a href="/" class="studio-home">Hourglass Diamonds</a>
+    <button class="studio-back" onclick="window.history.back()">← Back</button>
+  </div>
+
+  <main class="page">
+    <section class="section">
+      <div class="studio-section">
+        <div class="studio-shell">
+          <aside class="studio-panel">
+            <div class="panel-title-block">
+              <p class="eyebrow">The Ring Studio</p>
+              <h2 class="panel-title">Explore each design in motion, metal, and profile.</h2>
+              <p class="body-copy">A clear, refined way to compare proportion and setting details.</p>
+            </div>
+
+            <section class="ring-meta" aria-live="polite">
+              <p class="ring-kicker" id="ringSubtitle">Signature Direction</p>
+              <h3 class="ring-name" id="ringTitle">Oval Bezel Pavé</h3>
+              <p class="ring-note" id="ringNote">A refined oval bezel pavé with soft structure and clean balance.</p>
+            </section>
+
+            <div class="helper-grid">
+              <div class="viewer-controls">
+                <div class="viewer-control-rail">
+                  <div class="viewer-control-group viewer-mode-group">
+                    <div class="viewer-control-label">Viewer</div>
+                    <div class="segmented" id="modeControls" aria-label="Viewer mode"></div>
+                  </div>
+
+                  <div class="viewer-control-group viewer-metal-group">
+                    <div class="viewer-control-label">Metal</div>
+                    <div class="segmented" id="metalControls" aria-label="Metal selection"></div>
+                  </div>
+
+                  <div class="viewer-control-group viewer-angle-group" id="angleGroup" hidden>
+                    <div class="viewer-control-label">Still Angle</div>
+                    <div class="segmented" id="angleControls" aria-label="Angle selection"></div>
+                  </div>
+                </div>
+
+                <div class="viewer-status" id="statusMessage"></div>
+              </div>
+            </div>
+          </aside>
+
+          <section class="viewer-card" aria-label="Ring viewer">
+            <div class="stage-wrap">
+              <div class="stage" id="stage">
+                <div class="ground-shadow"></div>
+                <div class="ground-sheen"></div>
+
+                <div class="stage-inner">
+                  <div class="media-stack">
+                    <video id="videoA" class="media float hidden" muted loop playsinline preload="metadata"></video>
+                    <video id="videoB" class="media float hidden" muted loop playsinline preload="metadata"></video>
+                    <img id="imageA" class="media float hidden" alt="Ring still view" />
+                    <img id="imageB" class="media float hidden" alt="Ring still view" />
+                  </div>
+                </div>
+
+                <div class="sparkle sparkle-pass"><i></i><b></b></div>
+
+                <div class="stage-caption">
+                  <div class="badge"><span class="dot"></span><span id="captionLeft">Motion</span></div>
+                  <div class="badge"><span id="captionRight">Rose Gold</span></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="design-controls">
+              <div class="control-group">
+                <div class="control-label">Ring Design</div>
+                <div class="ring-grid" id="ringControls" aria-label="Ring design selection"></div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const angleOptions = [
+      { key: "front", label: "Profile" },
+      { key: "perspective", label: "Angled" },
+      { key: "profile", label: "Side" },
+      { key: "detail", label: "Top" }
+    ];
+
+    const metalOptions = [
+      { key: "rose-gold", label: "Rose Gold" },
+      { key: "white-metal", label: "White Metal" },
+      { key: "yellow-gold", label: "Yellow Gold" }
+    ];
+
+    const modeOptions = [
+      { key: "motion", label: "Motion" },
+      { key: "stills", label: "Still Views" }
+    ];
+
+    const ringData = {
+      assetRoot: "/ring-studio/ring-assets",
+      rings: [
+        {
+          id: "e2w-oval-bezel-pave",
+          title: "Oval Bezel Pavé",
+          subtitle: "Signature Direction",
+          shortNote: "A refined oval bezel pavé with soft structure and clean balance.",
+          defaultMetal: "rose-gold",
+          defaultAngle: "perspective"
+        },
+        {
+          id: "emerald-bezel-solitaire",
+          title: "Emerald Bezel Solitaire",
+          subtitle: "Signature Direction",
+          shortNote: "A clean emerald bezel solitaire with crisp architectural lines.",
+          defaultMetal: "rose-gold",
+          defaultAngle: "perspective"
+        },
+        {
+          id: "emerald-emerald-band",
+          title: "Emerald Cut Band",
+          subtitle: "Signature Direction",
+          shortNote: "An emerald-cut band with structured symmetry and a refined profile.",
+          defaultMetal: "rose-gold",
+          defaultAngle: "perspective"
+        },
+        {
+          id: "oval-baguette",
+          title: "Oval with Baguettes",
+          subtitle: "Signature Direction",
+          shortNote: "An oval center framed by baguette accents for a balanced, tailored look.",
+          defaultMetal: "rose-gold",
+          defaultAngle: "perspective"
+        },
+        {
+          id: "oval-bezel-halo-pave",
+          title: "Oval Bezel Halo Pavé",
+          subtitle: "Signature Direction",
+          shortNote: "An oval bezel halo pavé with added brilliance and soft structure.",
+          defaultMetal: "rose-gold",
+          defaultAngle: "perspective"
+        },
+        {
+          id: "oval-hidden-halo-baguette",
+          title: "Oval Hidden Halo Baguette",
+          subtitle: "Signature Direction",
+          shortNote: "An oval hidden halo with baguette detailing and refined lift.",
+          defaultMetal: "rose-gold",
+          defaultAngle: "perspective"
+        },
+        {
+          id: "oval-hidden-halo-twist",
+          title: "Oval Hidden Halo Twist",
+          subtitle: "Signature Direction",
+          shortNote: "An oval hidden halo design with a soft twist through the shank.",
+          defaultMetal: "rose-gold",
+          defaultAngle: "perspective"
+        },
+        {
+          id: "oval-three-stone-half-moon",
+          title: "Oval Three Stone Half-Moon",
+          subtitle: "Signature Direction",
+          shortNote: "An oval three-stone with half-moon sides and sculptural balance.",
+          defaultMetal: "rose-gold",
+          defaultAngle: "perspective"
+        },
+        {
+          id: "oval-three-stone-pave",
+          title: "Oval Three Stone Pavé",
+          subtitle: "Signature Direction",
+          shortNote: "An oval three-stone pavé design with added light and presence.",
+          defaultMetal: "rose-gold",
+          defaultAngle: "perspective"
+        },
+        {
+          id: "round-halo-cathedral",
+          title: "Round Halo Cathedral",
+          subtitle: "Signature Direction",
+          shortNote: "A round halo cathedral setting with graceful lift and classic presence.",
+          defaultMetal: "rose-gold",
+          defaultAngle: "perspective"
+        },
+        {
+          id: "round-hidden-accent-solitaire",
+          title: "Round Hidden Accent Solitaire",
+          subtitle: "Signature Direction",
+          shortNote: "A round solitaire with subtle hidden accents and restrained detail.",
+          defaultMetal: "rose-gold",
+          defaultAngle: "perspective"
+        },
+        {
+          id: "round-hidden-halo-pave",
+          title: "Round Hidden Halo Pavé",
+          subtitle: "Signature Direction",
+          shortNote: "A round hidden halo pavé setting with added brilliance beneath the center.",
+          defaultMetal: "rose-gold",
+          defaultAngle: "perspective"
+        },
+        {
+          id: "round-hidden-halo-three-row-pave",
+          title: "Round Hidden Halo Three-Row Pavé",
+          subtitle: "Signature Direction",
+          shortNote: "A round hidden halo design with a richer three-row pavé band.",
+          defaultMetal: "rose-gold",
+          defaultAngle: "perspective"
+        },
+        {
+          id: "round-marquise-band",
+          title: "Round and Oval",
+          subtitle: "Signature Direction",
+          shortNote: "A round center paired with oval band detailing for a distinctive silhouette.",
+          defaultMetal: "rose-gold",
+          defaultAngle: "perspective"
+        },
+        {
+          id: "round-solitaire",
+          title: "Round Solitaire",
+          subtitle: "Signature Direction",
+          shortNote: "A classic round solitaire with balanced proportion and a refined profile.",
+          defaultMetal: "rose-gold",
+          defaultAngle: "perspective"
+        }
+      ]
+    };
+
+    const state = {
+      ringId: ringData.rings[0].id,
+      mode: "motion",
+      metal: ringData.rings[0].defaultMetal,
+      angle: ringData.rings[0].defaultAngle,
+      activeImageSlot: "A",
+      activeVideoSlot: "A"
+    };
+
+    const els = {
+      imageA: document.getElementById("imageA"),
+      imageB: document.getElementById("imageB"),
+      videoA: document.getElementById("videoA"),
+      videoB: document.getElementById("videoB"),
+      ringTitle: document.getElementById("ringTitle"),
+      ringSubtitle: document.getElementById("ringSubtitle"),
+      ringNote: document.getElementById("ringNote"),
+      statusMessage: document.getElementById("statusMessage"),
+      angleGroup: document.getElementById("angleGroup"),
+      ringControls: document.getElementById("ringControls"),
+      modeControls: document.getElementById("modeControls"),
+      metalControls: document.getElementById("metalControls"),
+      angleControls: document.getElementById("angleControls"),
+      captionLeft: document.getElementById("captionLeft"),
+      captionRight: document.getElementById("captionRight")
+    };
+
+    function getRing() {
+      return ringData.rings.find(ring => ring.id === state.ringId) || ringData.rings[0];
+    }
+
+    function getMetalLabel(key) {
+      return metalOptions.find(item => item.key === key)?.label || key;
+    }
+
+    function getAngleLabel(key) {
+      return angleOptions.find(item => item.key === key)?.label || key;
+    }
+
+    function buildStillFilename(angleKey) {
+      const map = {
+        front: "fv.png",
+        perspective: "pv.png",
+        profile: "rv.png",
+        detail: "tv.png"
+      };
+      return map[angleKey] || "pv.png";
+    }
+
+    function buildStillPath(ringId, metal, angleKey) {
+      return `${ringData.assetRoot}/${ringId}/${metal}/${buildStillFilename(angleKey)}`;
+    }
+
+    function buildVideoPath(ringId, metal) {
+      return `${ringData.assetRoot}/${ringId}/${metal}/motion.mp4`;
+    }
+
+    function setStatus(message = "") {
+      els.statusMessage.textContent = message;
+    }
+
+    function clearImage(el) {
+      el.removeAttribute("src");
+      el.classList.remove("visible");
+      el.classList.add("hidden");
+      el.onload = null;
+      el.onerror = null;
+    }
+
+    function clearVideo(el) {
+      el.pause();
+      el.removeAttribute("src");
+      el.load();
+      el.classList.remove("visible");
+      el.classList.add("hidden");
+      el.onloadeddata = null;
+      el.onerror = null;
+    }
+
+    function hideAllImages() {
+      clearImage(els.imageA);
+      clearImage(els.imageB);
+    }
+
+    function stopAllVideos() {
+      clearVideo(els.videoA);
+      clearVideo(els.videoB);
+    }
+
+    function createPills(container, options, getValue, setValue, className = "pill") {
+      if (!container) return;
+
+      container.innerHTML = "";
+
+      options.forEach(option => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = className;
+        button.textContent = option.label;
+
+        const isActive = getValue() === option.key;
+        if (isActive) button.classList.add("active");
+        button.setAttribute("aria-pressed", isActive ? "true" : "false");
+
+        button.addEventListener("click", () => {
+          if (getValue() === option.key) return;
+          setValue(option.key);
+          render();
+        });
+
+        container.appendChild(button);
+      });
+    }
+
+    function crossfadeImage(src, altText) {
+      const nextSlot = state.activeImageSlot === "A" ? "B" : "A";
+      const nextEl = els["image" + nextSlot];
+      const currentEl = els["image" + state.activeImageSlot];
+
+      nextEl.onload = () => {
+        setStatus("");
+        nextEl.classList.remove("hidden");
+        nextEl.classList.add("visible");
+        currentEl.classList.remove("visible");
+        currentEl.classList.add("hidden");
+        state.activeImageSlot = nextSlot;
+      };
+
+      nextEl.onerror = () => {
+        setStatus(`Missing image: ${src}`);
+        console.error("Missing image:", src);
+      };
+
+      nextEl.alt = altText;
+      nextEl.src = src;
+    }
+
+    function crossfadeVideo(src) {
+      const nextSlot = state.activeVideoSlot === "A" ? "B" : "A";
+      const nextEl = els["video" + nextSlot];
+      const currentEl = els["video" + state.activeVideoSlot];
+
+      console.log("crossfadeVideo src:", src);
+      console.log("nextSlot:", nextSlot, "currentSlot:", state.activeVideoSlot);
+
+      nextEl.onloadeddata = () => {
+        console.log("video loaded:", src);
+
+        setStatus("");
+        nextEl.classList.remove("hidden");
+        nextEl.classList.add("visible");
+        nextEl.play().catch((err) => console.error("play error:", err));
+
+        currentEl.pause();
+        currentEl.classList.remove("visible");
+        currentEl.classList.add("hidden");
+
+        state.activeVideoSlot = nextSlot;
+      };
+
+      nextEl.onerror = () => {
+        setStatus(`Missing video: ${src}`);
+        console.error("Missing video:", src);
+      };
+
+      nextEl.src = src;
+      nextEl.load();
+    }
+
+    function updateSparkle() {
+      const sparkleMap = {
+        front: { x: "51%", y: "34%", scale: 0.84 },
+        perspective: { x: "60%", y: "32%", scale: 1 },
+        profile: { x: "58%", y: "42%", scale: 0.9 },
+        detail: { x: "53%", y: "28%", scale: 0.82 },
+        motion: { x: "60%", y: "32%", scale: 1 }
+      };
+
+      const sparkleKey = state.mode === "motion" ? "motion" : state.angle;
+      const pos = sparkleMap[sparkleKey] || sparkleMap.perspective;
+
+      document.documentElement.style.setProperty("--sparkle-x", pos.x);
+      document.documentElement.style.setProperty("--sparkle-y", pos.y);
+      document.documentElement.style.setProperty("--sparkle-scale", String(pos.scale || 1));
+    }
+
+    function updateCopy() {
+      const ring = getRing();
+      const angleLabel = getAngleLabel(state.angle);
+      const metalLabel = getMetalLabel(state.metal);
+
+      els.ringTitle.textContent = ring.title;
+      els.ringSubtitle.textContent = ring.subtitle;
+      els.ringNote.textContent = ring.shortNote;
+      els.captionLeft.textContent = state.mode === "motion" ? "Motion" : angleLabel;
+      els.captionRight.textContent = metalLabel;
+      els.angleGroup.hidden = state.mode !== "stills";
+    }
+
+    function showMedia() {
+      const ring = getRing();
+      const videoSrc = buildVideoPath(ring.id, state.metal);
+      const stillSrc = buildStillPath(ring.id, state.metal, state.angle);
+      const altText = `${ring.title}, ${getMetalLabel(state.metal)}, ${getAngleLabel(state.angle)} view`;
+
+      setStatus("");
+
+      if (state.mode === "motion") {
+        hideAllImages();
+        crossfadeVideo(videoSrc);
+      } else {
+        stopAllVideos();
+        crossfadeImage(stillSrc, altText);
+      }
+    }
+
+    function renderControls() {
+      createPills(
+        els.ringControls,
+        ringData.rings.map(ring => ({ key: ring.id, label: ring.title })),
+        () => state.ringId,
+        value => {
+          const nextRing = ringData.rings.find(ring => ring.id === value);
+          state.ringId = value;
+          state.metal = nextRing?.defaultMetal || "rose-gold";
+          state.angle = nextRing?.defaultAngle || "perspective";
+        },
+        "pill ring-pill"
+      );
+
+      createPills(
+        els.modeControls,
+        modeOptions,
+        () => state.mode,
+        value => {
+          state.mode = value;
+        },
+        "pill seg-pill"
+      );
+
+      createPills(
+        els.metalControls,
+        metalOptions,
+        () => state.metal,
+        value => {
+          state.metal = value;
+        },
+        "pill seg-pill"
+      );
+
+      createPills(
+        els.angleControls,
+        angleOptions,
+        () => state.angle,
+        value => {
+          state.angle = value;
+        },
+        "pill seg-pill"
+      );
+    }
+
+    function render() {
+      renderControls();
+      updateSparkle();
+      updateCopy();
+      showMedia();
+    }
+
+    render();
+  </script>
+</body>
+</html>
