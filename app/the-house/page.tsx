@@ -108,16 +108,27 @@ export default function TheHousePage() {
       </video>
 
       <div className="absolute bottom-5 right-5 flex gap-2">
-        <button
-          onClick={handleReplay}
-          className="rounded-full border border-white/30 bg-white/70 px-4 py-2 text-[10px] uppercase tracking-[0.22em] text-[#3a332c] backdrop-blur-md transition hover:bg-white"
-        >
-          Replay
-        </button>
-      </div>
-    </div>
-  </div>
-</section>
+  <button
+    onClick={() => {
+      if (!videoRef.current) return;
+      videoRef.current.currentTime = 0;
+      videoRef.current.play();
+    }}
+    className="rounded-full border border-white/30 bg-white/70 px-4 py-2 text-[10px] uppercase tracking-[0.22em] text-[#3a332c] backdrop-blur-md transition hover:bg-white"
+  >
+    Replay
+  </button>
+
+  <button
+    onClick={() => {
+      if (!videoRef.current) return;
+      videoRef.current.muted = !videoRef.current.muted;
+    }}
+    className="rounded-full border border-white/30 bg-white/70 px-4 py-2 text-[10px] uppercase tracking-[0.22em] text-[#3a332c] backdrop-blur-md transition hover:bg-white"
+  >
+    Sound
+  </button>
+</div>
 
         {/* APPROACH */}
         <section className="border-b border-[#e4dbcf] py-[92px] md:py-[108px]">
