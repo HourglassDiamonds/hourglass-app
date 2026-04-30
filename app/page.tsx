@@ -103,6 +103,13 @@ function HeroPreviewPanel() {
               light performance, and comparison easier to understand.
             </p>
 
+            <p className="mt-4 max-w-[30ch] text-[0.98rem] leading-[1.9] text-[#6f6b66]">
+  A more detailed breakdown can be found in the{" "}
+  <a href="/diamond-guide" className="underline underline-offset-4 hover:no-underline">
+    Diamond Guide
+  </a>.
+</p>
+
             <div className="mt-7 inline-flex items-center gap-3 rounded-full border border-white/55 bg-white/60 px-4 py-2 text-[11px] uppercase tracking-[0.28em] text-[#726a61] backdrop-blur-sm transition group-hover:bg-white/78">
               Modern Diamond Tech Suite · Coming Soon
               <span className="text-[#a39685]" aria-hidden="true">
