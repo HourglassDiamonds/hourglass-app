@@ -10,13 +10,18 @@ export default function TheHousePage() {
 
   const handleToggleSound = () => {
     if (!videoRef.current) return;
+
     const video = videoRef.current;
     video.muted = !video.muted;
     setIsSoundOn(!video.muted);
+
+    if (!video.paused) return;
+    video.play();
   };
 
   const handleReplay = () => {
     if (!videoRef.current) return;
+
     const video = videoRef.current;
     video.currentTime = 0;
     video.play();
@@ -43,7 +48,7 @@ export default function TheHousePage() {
         <Header currentPage="the-house" />
 
         {/* THE HOUSE INTRO */}
-        <section className="border-b border-[#e4dbcf] pt-[64px] pb-[96px] md:pt-[80px] md:pb-[112px]">
+        <section className="border-b border-[#e4dbcf] pb-[96px] pt-[64px] md:pb-[112px] md:pt-[80px]">
           <div className="mx-auto max-w-[820px] text-center">
             <div className="text-[10px] uppercase tracking-[0.34em] text-[#8a8177]">
               The House
@@ -59,76 +64,73 @@ export default function TheHousePage() {
             <div className="mx-auto mt-6 max-w-[44rem] text-[1rem] leading-[1.9] text-[#615a53]">
               <p>
                 That perspective was shaped inside the traditional system: sourcing
-                diamonds, evaluating gemstones, and seeing how decisions are
-                made at the highest levels of the trade. As a Graduate
-                Gemologist, Justin served as Lead GG for North America at one
-                of the world’s leading firms, and later as Global Head of Sales
-                for another, developing a clear sense of what truly matters and
-                what doesn’t.
+                diamonds, evaluating gemstones, and seeing how decisions are made
+                at the highest levels of the trade. As a Graduate Gemologist,
+                Justin served as Lead GG for North America at one of the world’s
+                leading firms, and later as Global Head of Sales for another,
+                developing a clear sense of what truly matters and what doesn’t.
               </p>
 
               <p className="mt-5">
                 Hourglass was built around that clarity, with trusted sourcing
-                relationships and manufacturing across multiple continents
-                chosen for their specific strengths, so each step is handled
-                where it can be done best and the final piece feels considered
-                from start to finish.
+                relationships and manufacturing across multiple continents chosen
+                for their specific strengths, so each step is handled where it can
+                be done best and the final piece feels considered from start to
+                finish.
               </p>
             </div>
           </div>
         </section>
 
         {/* VIDEO */}
-<section className="border-b border-[#e4dbcf] pt-[88px] pb-[104px] md:pt-[104px] md:pb-[120px]">
-  <div className="mx-auto max-w-[1040px]">
-    <div className="mx-auto max-w-[720px] text-center">
-      <div className="text-[10px] uppercase tracking-[0.34em] text-[#8a8177]">
-        A Closer Look
-      </div>
+        <section className="border-b border-[#e4dbcf] pb-[104px] pt-[88px] md:pb-[120px] md:pt-[104px]">
+          <div className="mx-auto max-w-[1040px]">
+            <div className="mx-auto max-w-[720px] text-center">
+              <div className="text-[10px] uppercase tracking-[0.34em] text-[#8a8177]">
+                A Closer Look
+              </div>
 
-      <p className="mt-4 text-[1rem] leading-[1.8] text-[#615a53]">
-        Our story becomes clearer when you see it.
-      </p>
-    </div>
+              <p className="mt-4 text-[1rem] leading-[1.8] text-[#615a53]">
+                Our story becomes clearer when you see it.
+              </p>
+            </div>
 
-    <div className="relative mx-auto mt-10 aspect-[16/9] overflow-hidden rounded-[30px] border border-[#ebe3d8] shadow-[0_14px_34px_rgba(49,38,29,0.05)]">
-      <video
-        ref={videoRef}
-        autoPlay
-        muted
-        loop
-        playsInline
-        preload="metadata"
-        className="absolute inset-0 h-full w-full object-cover"
-      >
-        <source
-          src="https://res.cloudinary.com/dorddtbvq/video/upload/q_auto/f_auto/v1777515354/The-House-Hero-Video_gpvbue.mp4"
-          type="video/mp4"
-        />
-      </video>
+            <div className="relative mx-auto mt-10 aspect-[16/9] overflow-hidden rounded-[30px] border border-[#ebe3d8] shadow-[0_14px_34px_rgba(49,38,29,0.05)]">
+              <video
+                ref={videoRef}
+                autoPlay
+                muted
+                loop
+                playsInline
+                preload="metadata"
+                className="absolute inset-0 h-full w-full object-cover"
+              >
+                <source
+                  src="https://res.cloudinary.com/dorddtbvq/video/upload/q_auto/f_auto/v1777515354/The-House-Hero-Video_gpvbue.mp4"
+                  type="video/mp4"
+                />
+              </video>
 
-      <div className="absolute bottom-5 right-5 flex gap-2">
-  <button
-    onClick={() => {
-      if (!videoRef.current) return;
-      videoRef.current.currentTime = 0;
-      videoRef.current.play();
-    }}
-    className="rounded-full border border-white/30 bg-white/70 px-4 py-2 text-[10px] uppercase tracking-[0.22em] text-[#3a332c] backdrop-blur-md transition hover:bg-white"
-  >
-    Replay
-  </button>
+              <div className="absolute bottom-5 right-5 flex gap-2">
+                <button
+                  type="button"
+                  onClick={handleReplay}
+                  className="rounded-full border border-white/30 bg-white/70 px-4 py-2 text-[10px] uppercase tracking-[0.22em] text-[#3a332c] backdrop-blur-md transition hover:bg-white"
+                >
+                  Replay
+                </button>
 
-  <button
-    onClick={() => {
-      if (!videoRef.current) return;
-      videoRef.current.muted = !videoRef.current.muted;
-    }}
-    className="rounded-full border border-white/30 bg-white/70 px-4 py-2 text-[10px] uppercase tracking-[0.22em] text-[#3a332c] backdrop-blur-md transition hover:bg-white"
-  >
-    Sound
-  </button>
-</div>
+                <button
+                  type="button"
+                  onClick={handleToggleSound}
+                  className="rounded-full border border-white/30 bg-white/70 px-4 py-2 text-[10px] uppercase tracking-[0.22em] text-[#3a332c] backdrop-blur-md transition hover:bg-white"
+                >
+                  {isSoundOn ? "Mute" : "Sound"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
 
         {/* APPROACH */}
         <section className="border-b border-[#e4dbcf] py-[92px] md:py-[108px]">
@@ -147,11 +149,10 @@ export default function TheHousePage() {
             <div className="mx-auto mt-6 max-w-[42rem] text-[1rem] leading-[1.9] text-[#615a53]">
               <p>
                 A beautiful piece is rarely the result of one good choice. It
-                comes from a series of careful ones: what is worth showing,
-                what is worth refining, where a stone should be sourced, and
-                where a design should be brought to life. Not every workshop
-                excels at the same things, and not every diamond deserves the
-                same path.
+                comes from a series of careful ones: what is worth showing, what
+                is worth refining, where a stone should be sourced, and where a
+                design should be brought to life. Not every workshop excels at the
+                same things, and not every diamond deserves the same path.
               </p>
 
               <p className="mt-5">
