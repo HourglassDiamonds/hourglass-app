@@ -79,52 +79,45 @@ export default function TheHousePage() {
         </section>
 
         {/* VIDEO */}
-        <section className="border-b border-[#e4dbcf] pt-[88px] pb-[104px] md:pt-[104px] md:pb-[120px]">
-          <div className="mx-auto max-w-[1040px]">
-            <div className="mx-auto max-w-[720px] text-center">
-              <div className="text-[10px] uppercase tracking-[0.34em] text-[#8a8177]">
-                A Closer Look
-              </div>
+<section className="border-b border-[#e4dbcf] pt-[88px] pb-[104px] md:pt-[104px] md:pb-[120px]">
+  <div className="mx-auto max-w-[1040px]">
+    <div className="mx-auto max-w-[720px] text-center">
+      <div className="text-[10px] uppercase tracking-[0.34em] text-[#8a8177]">
+        A Closer Look
+      </div>
 
-              <p className="mt-4 text-[1rem] leading-[1.8] text-[#615a53]">
-                Our story becomes clearer when you see it.
-              </p>
-            </div>
+      <p className="mt-4 text-[1rem] leading-[1.8] text-[#615a53]">
+        Our story becomes clearer when you see it.
+      </p>
+    </div>
 
-            <div className="relative mx-auto mt-10 aspect-[16/9] overflow-hidden rounded-[30px] border border-[#ebe3d8] shadow-[0_14px_34px_rgba(49,38,29,0.05)]">
-            <video
-  ref={videoRef}
-  autoPlay
-  muted
-  loop
-  playsInline
-  preload="auto"
-  className="absolute inset-0 h-full w-full object-cover"
->
-  <source
-    src="/the-house/01-hero/the-house-hero-video.mp4"
-    type="video/mp4"
-  />
-</video>
+    <div className="relative mx-auto mt-10 aspect-[16/9] overflow-hidden rounded-[30px] border border-[#ebe3d8] shadow-[0_14px_34px_rgba(49,38,29,0.05)]">
+      <video
+        ref={videoRef}
+        autoPlay
+        muted
+        loop
+        playsInline
+        preload="metadata"
+        className="absolute inset-0 h-full w-full object-cover"
+      >
+        <source
+          src="https://res.cloudinary.com/dorddtbvq/video/upload/q_auto/f_auto/v1777515354/The-House-Hero-Video_gpvbue.mp4"
+          type="video/mp4"
+        />
+      </video>
 
-              <div className="absolute bottom-5 right-5 flex gap-2">
-                <button
-                  onClick={handleReplay}
-                  className="rounded-full border border-white/30 bg-white/70 px-4 py-2 text-[10px] uppercase tracking-[0.24em] text-[#6d645a] backdrop-blur-sm transition hover:bg-white"
-                >
-                  Replay
-                </button>
-
-                <button
-                  onClick={handleToggleSound}
-                  className="rounded-full border border-white/30 bg-white/70 px-4 py-2 text-[10px] uppercase tracking-[0.24em] text-[#6d645a] backdrop-blur-sm transition hover:bg-white"
-                >
-                  {isSoundOn ? "Sound Off" : "Sound On"}
-                </button>
-              </div>
-            </div>
-          </div>
-        </section>
+      <div className="absolute bottom-5 right-5 flex gap-2">
+        <button
+          onClick={handleReplay}
+          className="rounded-full border border-white/30 bg-white/70 px-4 py-2 text-[10px] uppercase tracking-[0.22em] text-[#3a332c] backdrop-blur-md transition hover:bg-white"
+        >
+          Replay
+        </button>
+      </div>
+    </div>
+  </div>
+</section>
 
         {/* APPROACH */}
         <section className="border-b border-[#e4dbcf] py-[92px] md:py-[108px]">
