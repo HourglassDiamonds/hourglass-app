@@ -900,6 +900,14 @@ function SuiteStyles() {
         position:relative; display:flex; flex-direction:column; align-items:center; justify-content:center;
         overflow:visible; padding:14px 0 22px; min-height:0;
       }
+      .dts-stage-canvas{
+        position:relative;
+        display:flex;
+        justify-content:center;
+        width:100%;
+        min-width:0;
+        flex:0 0 auto;
+      }
       .dts-viewer{
         position:relative; width:min(578px,93.5%); aspect-ratio:7/9; max-height:96%;
         container-type:size;
@@ -1073,6 +1081,171 @@ function SuiteStyles() {
         color:var(--ink);
         font-weight:500;
         opacity:0.9;
+      }
+      @media (max-width: 768px) {
+        .dts-shell{
+          overflow-x:hidden;
+          overflow-y:auto;
+          -webkit-overflow-scrolling:touch;
+        }
+        .dts-app{
+          display:flex;
+          flex-direction:column;
+          min-height:100%;
+          height:auto;
+        }
+        .dts-topbar{
+          display:grid;
+          grid-template-columns:1fr auto;
+          grid-template-rows:auto auto;
+          column-gap:14px;
+          row-gap:10px;
+          padding:12px 20px 14px;
+          align-items:center;
+          min-height:0;
+        }
+        .dts-topbar-brand{
+          grid-column:1;
+          grid-row:1;
+          padding-right:0;
+        }
+        .dts-topbar-actions{
+          grid-column:2;
+          grid-row:1;
+          justify-self:end;
+          align-self:start;
+        }
+        .dts-topnav{
+          grid-column:1 / -1;
+          grid-row:2;
+          margin-left:0;
+          padding:2px 0 6px;
+          justify-content:flex-start;
+          gap:clamp(16px,4.5vw,28px);
+          width:100%;
+          min-width:0;
+        }
+        .dts-main{
+          display:flex;
+          flex-direction:column;
+          grid-template-columns:unset;
+          min-width:0;
+          flex:1 1 auto;
+          overflow:visible;
+        }
+        .dts-left{
+          width:100%;
+          max-width:100%;
+          min-width:0;
+          flex:0 0 auto;
+          padding:20px 20px 4px;
+          gap:22px;
+          overflow-x:hidden;
+          overflow-y:visible;
+        }
+        .dts-stage{
+          width:100%;
+          max-width:100%;
+          min-width:0;
+          flex:0 0 auto;
+          margin-top:28px;
+          padding:4px 20px 36px;
+          align-items:center;
+          overflow-x:hidden;
+        }
+        .dts-stage-canvas{
+          display:flex;
+          flex-direction:column;
+          align-items:center;
+          width:100%;
+          min-width:0;
+        }
+        .dts-sentence{
+          font-size:clamp(16.5px,4.4vw,18.5px);
+          line-height:1.24;
+          letter-spacing:0.006em;
+          margin:0 auto 16px;
+          padding:0 2px;
+          max-width:min(22rem,100%);
+        }
+        .dts-viewer{
+          width:100%;
+          max-width:min(100%,400px);
+          min-width:0;
+          margin:0 auto;
+          max-height:min(50vh,360px);
+          aspect-ratio:7 / 9.45;
+        }
+        .dts-layer-finger img{
+          object-position:50% 40%;
+        }
+        .dts-shape-strip{
+          position:relative;
+          left:auto;
+          bottom:auto;
+          transform:none;
+          margin-top:28px;
+          width:100%;
+          max-width:100%;
+          min-width:0;
+          justify-content:flex-start;
+          flex-wrap:nowrap;
+          overflow-x:auto;
+          overflow-y:hidden;
+          -webkit-overflow-scrolling:touch;
+          gap:8px;
+          padding:10px 12px 12px;
+          scrollbar-width:none;
+          -ms-overflow-style:none;
+        }
+        .dts-shape-strip::-webkit-scrollbar{ display:none; }
+        .dts-shape-chip{
+          flex:0 0 auto;
+          min-width:52px;
+          min-height:48px;
+          padding:8px 8px 7px;
+          touch-action:manipulation;
+        }
+        .dts-shell[data-theme="light"] .dts-card,
+        .dts-shell[data-theme="light"] .dts-card--coverage{
+          box-shadow:0 1px 2px rgba(49,38,29,0.04), 0 5px 14px rgba(49,38,29,0.045);
+        }
+        .dts-shell[data-theme="dark"] .dts-card,
+        .dts-shell[data-theme="dark"] .dts-card--coverage{
+          box-shadow:0 1px 2px rgba(0,0,0,0.35), 0 6px 18px rgba(0,0,0,0.28);
+        }
+        .dts-card, .dts-card--coverage{
+          padding:16px 17px 17px;
+        }
+        .dts-card--coverage{
+          border-color:oklch(from var(--card-edge) l c h / 0.85);
+        }
+        .dts-width-readout{
+          padding:12px 0 10px;
+        }
+        .dts-stepper button{
+          width:40px;
+          height:40px;
+          font-size:15px;
+        }
+        .dts-stepper .dts-step-val{
+          font-size:26px;
+        }
+        .dts-skin-pill{
+          min-height:40px;
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          padding:9px 8px;
+        }
+        .dts-zone-handle{
+          width:12px;
+          height:12px;
+        }
+        .dts-cov-helper{
+          padding:0 4px;
+          margin-top:12px;
+        }
       }
       @media (prefers-reduced-motion: reduce){
         .dts-shape-chip,
@@ -1665,25 +1838,27 @@ export default function DiamondStudioPage() {
               <span>{ringSize.toFixed(0)}</span> finger.
             </p>
 
-            <div className="dts-viewer">
-              <div className="dts-layer-finger" aria-hidden>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={FINGER_IMAGES[skinTone]} alt="" />
-              </div>
+            <div className="dts-stage-canvas">
+              <div className="dts-viewer">
+                <div className="dts-layer-finger" aria-hidden>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={FINGER_IMAGES[skinTone]} alt="" />
+                </div>
 
-              <div
-                className={`dts-layer-diamond ${diamondSwapping ? "is-swapping" : ""}`}
-                style={{
-                  width: `${layerWidthCqw}cqw`,
-                  height: `${layerHeightCqw}cqw`,
-                  top: `${RING_CLUSTER_TOP_PCT}%`,
-                  transform: "translate(calc(-50% + 4px), calc(-50% - 4px))",
-                }}
-              >
-                <DiamondStageFace
-                  shapeId={diamondVisualShape}
-                  orientation={stoneOrientation}
-                />
+                <div
+                  className={`dts-layer-diamond ${diamondSwapping ? "is-swapping" : ""}`}
+                  style={{
+                    width: `${layerWidthCqw}cqw`,
+                    height: `${layerHeightCqw}cqw`,
+                    top: `${RING_CLUSTER_TOP_PCT}%`,
+                    transform: "translate(calc(-50% + 4px), calc(-50% - 4px))",
+                  }}
+                >
+                  <DiamondStageFace
+                    shapeId={diamondVisualShape}
+                    orientation={stoneOrientation}
+                  />
+                </div>
               </div>
 
               <div className="dts-shape-strip" role="tablist" aria-label="Shape">
