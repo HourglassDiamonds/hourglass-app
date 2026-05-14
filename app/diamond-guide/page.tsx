@@ -262,6 +262,7 @@ export default function DiamondGuidePage() {
               simpler, more informed, and easier to move forward with.
             </p>
 
+
             <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
               <Link
                 href="#popular-guides"

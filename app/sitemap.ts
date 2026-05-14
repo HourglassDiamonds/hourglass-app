@@ -8,5 +8,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: 'https://hourglassdiamonds.com/custom-design' },
     { url: 'https://hourglassdiamonds.com/diamond-guide' },
     { url: 'https://hourglassdiamonds.com/concierge' },
+    { url: 'https://hourglassdiamonds.com/diamond-studio' },
   ]
 }

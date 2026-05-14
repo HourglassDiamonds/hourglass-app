@@ -35,6 +35,15 @@ export default function EngagementRingsPage() {
               A private, guided process for creating a ring that feels
               considered, balanced, and unmistakably yours. These are just a few visuals to get the wheels turning.
             </p>
+
+            <p className="mx-auto mt-4 max-w-[35rem] text-[0.98rem] leading-[1.9] text-[#6f6b66]">
+  For those still refining direction, the{" "}
+  <a href="/diamond-guide" className="underline underline-offset-4 hover:no-underline">
+    Diamond Guide
+  </a>{" "}
+  offers a clear foundation before comparing specific designs.
+</p>
+
           </div>
         </section>
       </div>

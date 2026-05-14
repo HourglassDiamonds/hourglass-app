@@ -8,6 +8,7 @@ const NAV_ITEMS = [
   { href: "/engagement-rings", label: "Engagement Rings" },
   { href: "/custom-design", label: "Custom Design" },
   { href: "/diamond-guide", label: "Diamond Guide" },
+  { href: "/diamond-studio", label: "Diamond Studio" },
   { href: "/concierge", label: "Concierge" },
 ];
 

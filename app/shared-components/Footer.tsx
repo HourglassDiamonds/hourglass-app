@@ -17,6 +17,7 @@ export default function Footer() {
             <Link href="/engagement-rings" className="hover:text-[#1f1d1a]">Engagement Rings</Link>
             <Link href="/custom-design" className="hover:text-[#1f1d1a]">Custom Design</Link>
             <Link href="/diamond-guide" className="hover:text-[#1f1d1a]">Diamond Guide</Link>
+            <Link href="/diamond-studio" className="hover:text-[#1f1d1a]">Diamond Studio</Link>
             <Link href="/concierge" className="hover:text-[#1f1d1a]">Concierge</Link>
           </nav>
 

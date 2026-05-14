@@ -63,10 +63,16 @@ export default function CustomDesignPage() {
             <p className="mx-auto mt-7 max-w-[37rem] text-[1rem] leading-[1.82] text-[#5f5851] md:text-[1.04rem]">
               A piece like this comes together through a series of considered
               decisions, each one refining the next until the final piece feels
-              balanced, natural, and entirely your own.
+              balanced, natural, and entirely your own. If you are still exploring direction, the{" "}
+  <a href="/diamond-guide" className="underline underline-offset-4 hover:no-underline">
+    Diamond Guide
+  </a>{" "}
+  can help clarify what matters before the design process begins.
             </p>
           </div>
         </section>
+
+      
 
         <section className="border-b border-[#e4dbcf] py-[88px] md:py-[96px]">
           <div className="mx-auto max-w-[860px] text-center">

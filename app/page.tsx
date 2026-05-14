@@ -2,21 +2,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import HomeStudioPortal from "./home-studio-portal";
 import Header from "./shared-components/Header";
-
-function TextureOverlay() {
-  return (
-    <div
-      aria-hidden="true"
-      className="pointer-events-none absolute inset-0 opacity-[0.07] mix-blend-multiply"
-      style={{
-        backgroundImage:
-          "radial-gradient(circle at 20% 20%, rgba(0,0,0,0.16) 0.6px, transparent 0.8px), radial-gradient(circle at 80% 70%, rgba(0,0,0,0.14) 0.6px, transparent 0.8px)",
-        backgroundSize: "26px 26px, 34px 34px",
-      }}
-    />
-  );
-}
 
 function HeroRingStage() {
   return (
@@ -32,106 +19,6 @@ function HeroRingStage() {
         priority
         className="relative z-10 h-auto max-h-[390px] w-auto object-contain md:max-h-[470px]"
       />
-    </div>
-  );
-}
-
-function CursorGlow() {
-  return (
-    <div
-      className="pointer-events-none absolute inset-0 z-10 opacity-0 transition duration-300 group-hover:opacity-100"
-      style={{
-        background:
-          "radial-gradient(560px circle at var(--x, 50%) var(--y, 50%), rgba(255,255,255,0.55), transparent 55%)",
-      }}
-    />
-  );
-}
-
-function HeroPreviewPanel() {
-  return (
-    <div className="w-full">
-      <button
-        type="button"
-        onMouseMove={(e) => {
-          const rect = e.currentTarget.getBoundingClientRect();
-          const x = e.clientX - rect.left;
-          const y = e.clientY - rect.top;
-          e.currentTarget.style.setProperty("--x", `${x}px`);
-          e.currentTarget.style.setProperty("--y", `${y}px`);
-        }}
-        className="group relative block w-full overflow-hidden rounded-[36px] border border-[#e4dbcf] bg-[#f3efe9] shadow-[0_20px_60px_rgba(0,0,0,0.04)]"
-        aria-label="Explore the Diamond Guide"
-      >
-        <TextureOverlay />
-
-        <div
-          className="pointer-events-none absolute inset-0"
-          style={{
-            background: `
-              radial-gradient(circle at 74% 36%, rgba(255,255,255,0.72) 0%, rgba(255,255,255,0.18) 14%, transparent 34%),
-              radial-gradient(circle at 84% 48%, rgba(255,255,255,0.16), transparent 18%),
-              linear-gradient(135deg, #eee7dd 0%, #f8f3ec 55%, #fcfaf7 100%)
-            `,
-          }}
-        />
-
-        <div
-          className="pointer-events-none absolute inset-0"
-          style={{
-            background: `
-              radial-gradient(circle at 74% 36%, rgba(255,255,255,0.12) 0%, transparent 16%),
-              radial-gradient(circle at 62% 50%, rgba(255,255,255,0.05) 0%, transparent 22%)
-            `,
-          }}
-        />
-
-        <CursorGlow />
-
-        <div className="relative grid min-h-[400px] grid-cols-1 items-center px-8 py-8 md:min-h-[460px] md:grid-cols-[1.05fr_0.95fr] md:px-12 md:py-10">
-          <div className="mx-auto max-w-[360px] text-center md:mx-0 md:max-w-[340px] md:text-left">
-            <div className="text-[11px] uppercase tracking-[0.34em] text-[#8d8275]">
-              The Modern Diamond Tech Suite
-            </div>
-
-            <h3 className="mt-4 max-w-[14ch] text-[1.95rem] font-normal leading-[1.08] tracking-[-0.04em] text-[#27231f] md:text-[2.35rem]">
-              Modern tools for choosing with clarity.
-            </h3>
-
-            <p className="mt-5 max-w-[30ch] text-[0.98rem] leading-[1.9] text-[#5d564f]">
-              A coming suite of visual tools designed to make diamond size,
-              light performance, and comparison easier to understand.
-            </p>
-
-            <p className="mt-4 max-w-[30ch] text-[0.98rem] leading-[1.9] text-[#6f6b66]">
-  A more detailed breakdown can be found in the{" "}
-  <a href="/diamond-guide" className="underline underline-offset-4 hover:no-underline">
-    Diamond Guide
-  </a>.
-</p>
-
-            <div className="mt-7 inline-flex items-center gap-3 rounded-full border border-white/55 bg-white/60 px-4 py-2 text-[11px] uppercase tracking-[0.28em] text-[#726a61] backdrop-blur-sm transition group-hover:bg-white/78">
-              Modern Diamond Tech Suite · Coming Soon
-              <span className="text-[#a39685]" aria-hidden="true">
-                →
-              </span>
-            </div>
-          </div>
-
-          <div className="mt-10 flex h-full flex-col items-center justify-center text-center md:mt-0 md:pl-6">
-            <div className="text-[22px] uppercase tracking-[0.34em] text-[#c2b7aa] md:text-[30px]">
-              Coming Soon
-            </div>
-            <div className="mt-8 h-px w-24 bg-[#d2c7ba]" />
-            <div className="mt-8 flex flex-wrap justify-center gap-3 text-[10px] uppercase tracking-[0.28em] text-[#7c7368]">
-              <span>Size</span>
-              <span>Light</span>
-              <span>Cut</span>
-              <span>Comparison</span>
-            </div>
-          </div>
-        </div>
-      </button>
     </div>
   );
 }
@@ -426,7 +313,7 @@ export default function Home() {
         </section>
 
         <section className="border-b border-[#e4dbcf] py-[92px] md:py-[108px]">
-          <HeroPreviewPanel />
+          <HomeStudioPortal />
         </section>
 
         <CredibilityStrip />

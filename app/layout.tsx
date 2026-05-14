@@ -17,6 +17,14 @@ export const metadata: Metadata = {
   title: "Hourglass Diamonds",
   description:
     "A more thoughtful way to design engagement rings and fine jewelry. Private guidance, refined sourcing, and a calm, personal process.",
+  icons: {
+    icon: [
+      { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+      { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+    ],
+    shortcut: "/favicon-32x32.png",
+    apple: "/favicon-32x32.png",
+  },
 };
 
 export default function RootLayout({
@@ -31,15 +39,8 @@ export default function RootLayout({
     >
       <body className="min-h-full bg-[#f7f3ee] text-[#1f1d1a]">
         <div className="flex min-h-screen flex-col">
-          
-          {/* Page Content */}
-          <main className="flex-1">
-            {children}
-          </main>
-
-          {/* Global Footer */}
+          <main className="flex-1">{children}</main>
           <Footer />
-
         </div>
       </body>
     </html>
