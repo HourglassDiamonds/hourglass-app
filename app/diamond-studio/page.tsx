@@ -289,7 +289,7 @@ const RING_CLUSTER_TOP_PCT = 63.5;
 /** Main preview stone translateY extra (px): desktop shank optical seat (~8px above prior). */
 const DIAMOND_Y_NUDGE_DESKTOP_PX = 4;
 /** Mobile preview stone translateY extra (px); negative moves up on band. */
-const MOBILE_DIAMOND_Y_NUDGE_PX = -14;
+const MOBILE_DIAMOND_Y_NUDGE_PX = -4;
 /** Mobile-only on-stage scale; does not affect mm readout or coverage. */
 const MOBILE_STONE_RENDER_SCALE = 1.07;
 
@@ -1319,10 +1319,18 @@ function SuiteStyles() {
           transform:none !important;
           width:100%;
         }
+        .dts-layer-finger img{
+          object-position:50% 38%;
+          filter:
+            saturate(0.96)
+            contrast(1.02)
+            brightness(1.01)
+            drop-shadow(2px 7px 20px oklch(0.42 0.010 62 / 0.10));
+        }
         .dts-diamond-face{
           filter:
             saturate(0.96)
-            contrast(1.03)
+            contrast(1.04)
             brightness(1.01)
             drop-shadow(0 2px 4px rgba(0,0,0,0.14))
             drop-shadow(0 1px 1px rgba(0,0,0,0.06));
@@ -1334,9 +1342,6 @@ function SuiteStyles() {
           margin:0 auto;
           max-height:min(48vh,352px);
           aspect-ratio:7 / 9.15;
-        }
-        .dts-layer-finger img{
-          object-position:50% 38%;
         }
         .dts-shape-strip{
           position:relative !important;
@@ -1607,6 +1612,7 @@ function DiamondStageFace({
         src={faceSrc}
         alt=""
         className={`dts-diamond-face${orientation === "ew" ? " dts-diamond-face--ew" : ""}`}
+        onLoad={pickSrcAfterLoad}
         onError={() => {
           if (useHiRes) {
             setUseHiRes(false);
