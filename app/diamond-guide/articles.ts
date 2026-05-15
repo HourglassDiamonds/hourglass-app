@@ -1,6 +1,22 @@
 export type ArticleBlock =
   | { type: "paragraph"; text: string }
-  | { type: "heading"; text: string };
+  | { type: "heading"; text: string }
+  | {
+      type: "carat-mm-reference";
+      rows: { carat: string; mm: string }[];
+      note?: string;
+    }
+  | {
+      type: "shape-spread-table";
+      rows: { shape: string; spread: string }[];
+      note?: string;
+    }
+  | {
+      type: "finger-coverage-scale";
+      zones: { label: string; description: string }[];
+      note?: string;
+    }
+  | { type: "studio-callout"; heading: string; text: string };
 
 export type Article = {
   slug: string;
@@ -1374,18 +1390,29 @@ export const articles: Article[] = [
     body: [
       { type: "paragraph", text: "One of the most helpful tools when comparing diamonds is a size chart that shows the relationship between carat weight and millimeter measurements." },
       { type: "paragraph", text: "While carat weight measures how much a diamond weighs, the visible size of the diamond is determined by its physical dimensions. These dimensions are typically expressed in millimeters and represent the width of the stone when viewed from above." },
-      { type: "paragraph", text: "Understanding how carat weight relates to millimeter size makes it much easier to visualize how different diamonds will appear once they are set in a ring — especially when you [explore diamond size visually](/diamond-studio)." },
+      { type: "paragraph", text: "Understanding how carat weight relates to millimeter size makes it much easier to visualize how different diamonds will appear once they are set in a ring." },
 
       { type: "heading", text: "Average Diamond Sizes by Carat Weight" },
       { type: "paragraph", text: "For round brilliant diamonds with balanced proportions, the following measurements represent typical average diameters." },
-      { type: "paragraph", text: "0.50 carat — approximately 5.1 mm" },
-      { type: "paragraph", text: "0.75 carat — approximately 5.8 mm" },
-      { type: "paragraph", text: "1.00 carat — approximately 6.4 to 6.5 mm" },
-      { type: "paragraph", text: "1.50 carat — approximately 7.3 to 7.4 mm" },
-      { type: "paragraph", text: "2.00 carat — approximately 8.1 to 8.2 mm" },
-      { type: "paragraph", text: "3.00 carat — approximately 9.2 to 9.3 mm" },
-      { type: "paragraph", text: "4.00 carat — approximately 10.2 mm" },
-      { type: "paragraph", text: "These measurements represent average proportions for well-cut diamonds. Individual stones may vary slightly depending on their cut." },
+      {
+        type: "carat-mm-reference",
+        rows: [
+          { carat: "0.50 ct", mm: "5.1 mm" },
+          { carat: "1.00 ct", mm: "6.5 mm" },
+          { carat: "1.50 ct", mm: "7.4 mm" },
+          { carat: "2.00 ct", mm: "8.1 mm" },
+          { carat: "2.50 ct", mm: "8.8 mm" },
+          { carat: "3.00 ct", mm: "9.3 mm" },
+          { carat: "4.00 ct", mm: "10.2 mm" },
+          { carat: "5.00 ct", mm: "11.0 mm" },
+        ],
+        note: "Measurements are approximate because cut proportions can change face-up spread.",
+      },
+      {
+        type: "studio-callout",
+        heading: "See it on the hand",
+        text: "Use the [Diamond Studio](/diamond-studio) to compare how different carat weights face up across finger sizes.",
+      },
 
       { type: "heading", text: "Why Millimeter Measurements Matter" },
       { type: "paragraph", text: "Millimeter measurements describe the actual dimensions of the diamond rather than its weight." },
@@ -1396,11 +1423,51 @@ export const articles: Article[] = [
       { type: "paragraph", text: "The measurements above apply primarily to round brilliant diamonds." },
       { type: "paragraph", text: "Other shapes distribute their weight differently, which can influence their visible size. Elongated shapes such as oval, marquise, and pear diamonds often appear slightly larger because they extend across the finger." },
       { type: "paragraph", text: "Square shapes such as cushion or princess cuts may appear slightly smaller because more weight is concentrated toward the center of the stone." },
+      {
+        type: "shape-spread-table",
+        rows: [
+          { shape: "Round", spread: "Balanced spread with even proportions across the finger." },
+          { shape: "Oval", spread: "Often appears larger north–south, with an elegant lengthening effect." },
+          { shape: "Emerald", spread: "Larger outline with a quieter, step-cut brilliance." },
+          { shape: "Cushion", spread: "Can face up smaller depending on depth and facet pattern." },
+          { shape: "Marquise", spread: "Strongest length impression, with weight carried toward the points." },
+        ],
+        note: "These are general tendencies. Individual cut proportions can shift how a stone actually faces up.",
+      },
 
       { type: "heading", text: "Why Cut Proportions Matter" },
       { type: "paragraph", text: "Cut proportions influence both the brightness and the visible spread of a diamond." },
       { type: "paragraph", text: "A well-proportioned diamond distributes its weight efficiently and reflects light effectively, which often makes the stone appear larger and more lively." },
       { type: "paragraph", text: "Diamonds with poor proportions may hide weight in the lower portion of the stone, reducing both their brightness and their visible size." },
+
+      { type: "heading", text: "Finger Coverage and Presence" },
+      { type: "paragraph", text: "Carat weight alone does not determine how a diamond reads on the hand. Finger size and face-up diameter work together to shape what we describe as presence — the scale of the stone relative to the wearer." },
+      {
+        type: "finger-coverage-scale",
+        zones: [
+          {
+            label: "Quiet Presence",
+            description:
+              "Quiet on the hand, with a refined and discreet scale that feels intentional rather than timid.",
+          },
+          {
+            label: "Noticeable Presence",
+            description:
+              "Clearly present while still feeling wearable — the diamond is easy to see without dominating the hand.",
+          },
+          {
+            label: "Statement Presence",
+            description:
+              "A confident look with strong visual impact; the center stone becomes a natural focal point.",
+          },
+          {
+            label: "Dramatic Presence",
+            description:
+              "A bold, high-impact scale that commands attention and defines the overall silhouette of the ring.",
+          },
+        ],
+        note: "The same carat weight can land in different presence ranges depending on finger size, shape, and how the stone is cut.",
+      },
 
       { type: "heading", text: "Final Thoughts" },
       { type: "paragraph", text: "A diamond size chart provides a helpful reference when comparing different carat weights and understanding how large a diamond may appear." },

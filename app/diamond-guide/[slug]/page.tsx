@@ -1,40 +1,14 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import type { ReactNode } from "react";
 import Header from "../../shared-components/Header";
+import {
+  CaratMmReference,
+  FingerCoverageScale,
+  ShapeSpreadTable,
+  StudioCallout,
+} from "../article-blocks";
 import { articles } from "../articles";
-
-const INLINE_LINK_RE = /\[([^\]]+)\]\(([^)]+)\)/g;
-
-function renderParagraphText(text: string): ReactNode {
-  const parts: ReactNode[] = [];
-  let lastIndex = 0;
-  let match: RegExpExecArray | null;
-  let key = 0;
-
-  INLINE_LINK_RE.lastIndex = 0;
-  while ((match = INLINE_LINK_RE.exec(text)) !== null) {
-    if (match.index > lastIndex) {
-      parts.push(text.slice(lastIndex, match.index));
-    }
-    parts.push(
-      <Link
-        key={key++}
-        href={match[2]!}
-        className="text-[#6a635c] underline underline-offset-4 transition hover:text-[#1f1d1a]"
-      >
-        {match[1]}
-      </Link>,
-    );
-    lastIndex = match.index + match[0].length;
-  }
-
-  if (lastIndex < text.length) {
-    parts.push(text.slice(lastIndex));
-  }
-
-  return parts.length > 0 ? parts : text;
-}
+import { renderInlineContent } from "../inline-content";
 
 type ArticlePageProps = {
   params: Promise<{
@@ -72,10 +46,12 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
 
           <div className="mt-14 text-[1rem] leading-[1.9] text-[#4f4942] md:text-[1.04rem]">
             {article.body.map((block, index) => {
+              const key = `${block.type}-${index}`;
+
               if (block.type === "heading") {
                 return (
                   <h2
-                    key={`${block.text}-${index}`}
+                    key={key}
                     className="mt-14 text-[1.45rem] font-light leading-[1.2] tracking-[-0.02em] text-[#1f1d1a] md:text-[1.7rem]"
                   >
                     {block.text}
@@ -83,9 +59,25 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
                 );
               }
 
+              if (block.type === "carat-mm-reference") {
+                return <CaratMmReference key={key} {...block} />;
+              }
+
+              if (block.type === "shape-spread-table") {
+                return <ShapeSpreadTable key={key} {...block} />;
+              }
+
+              if (block.type === "finger-coverage-scale") {
+                return <FingerCoverageScale key={key} {...block} />;
+              }
+
+              if (block.type === "studio-callout") {
+                return <StudioCallout key={key} {...block} />;
+              }
+
               return (
-                <p key={`${block.text}-${index}`} className="mt-6 first:mt-0">
-                  {renderParagraphText(block.text)}
+                <p key={key} className="mt-6 first:mt-0">
+                  {renderInlineContent(block.text)}
                 </p>
               );
             })}
