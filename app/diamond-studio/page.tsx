@@ -286,10 +286,12 @@ function renderVisualCompensation(shapeId: ShapeId): number {
 /** Diamond stack vertical anchor (% of viewer height) */
 const RING_CLUSTER_TOP_PCT = 63.5;
 
-/** Main preview stone translateY extra (px): desktop shank seat. */
-const DIAMOND_Y_NUDGE_DESKTOP_PX = 12;
-/** Additional translateY (px) on viewports <=768px only (target band ~14–20px). */
-const mobileDiamondYOffset = 18;
+/** Main preview stone translateY extra (px): desktop shank optical seat (~8px above prior). */
+const DIAMOND_Y_NUDGE_DESKTOP_PX = 4;
+/** Mobile preview stone translateY extra (px); separate from desktop. */
+const MOBILE_DIAMOND_Y_NUDGE_PX = 0;
+/** Mobile-only on-stage scale; does not affect mm readout or coverage. */
+const MOBILE_STONE_RENDER_SCALE = 1.07;
 
 function subscribeMaxWidth768(callback: () => void) {
   if (typeof window === "undefined") return () => {};
@@ -1189,6 +1191,9 @@ function SuiteStyles() {
         font-weight:500;
         opacity:0.9;
       }
+      .dts-mobile-debug-953{
+        display:none;
+      }
       @media (max-width: 768px) {
         .dts-shell{
           overflow-x:hidden;
@@ -1317,29 +1322,32 @@ function SuiteStyles() {
           transform:none !important;
           width:100%;
         }
-        .dts-mobile-debug-725{
+        .dts-mobile-debug-953{
+          display:block;
           margin:0 auto 12px;
-          padding:10px 14px;
+          padding:14px 16px;
+          width:100%;
           max-width:100%;
           box-sizing:border-box;
           text-align:center;
-          font:800 15px/1.2 system-ui,sans-serif;
-          letter-spacing:0.06em;
-          color:#fff;
-          background:#b00020;
-          border:2px solid #ff0;
-          border-radius:8px;
+          font:800 clamp(20px,6vw,28px)/1.15 system-ui,sans-serif;
+          letter-spacing:0.04em;
+          color:#ff0;
+          background:#f00;
+          border-radius:4px;
+          position:relative;
+          z-index:9999;
         }
         .dts-viewer{
           width:100%;
           max-width:260px;
           min-width:0;
           margin:0 auto;
-          max-height:min(50vh,360px);
-          aspect-ratio:7 / 9.45;
+          max-height:min(48vh,352px);
+          aspect-ratio:7 / 9.15;
         }
         .dts-layer-finger img{
-          object-position:50% 40%;
+          object-position:50% 38%;
         }
         .dts-shape-strip{
           position:relative !important;
@@ -1425,6 +1433,14 @@ function SuiteStyles() {
         .dts-cov-helper{
           padding:0 4px;
           margin-top:12px;
+        }
+        /* TEMP mobile diamond debug — remove after confirming element + scale */
+        .dts-layer-diamond{
+          outline:3px solid blue !important;
+          transform:translate(-50%, calc(-50% - 40px)) !important;
+        }
+        .dts-diamond-face{
+          outline:3px solid red !important;
         }
       }
       @media (prefers-reduced-motion: reduce){
@@ -1559,15 +1575,43 @@ function DiamondStageFace({
 }) {
   const targetSrc = SHAPE_SUITE_CONFIG[shapeId].image;
   const [faceSrc, setFaceSrc] = useState(targetSrc);
+  const faceRef = useRef<HTMLImageElement>(null);
 
   useEffect(() => {
     setFaceSrc(targetSrc);
   }, [targetSrc]);
 
+  useEffect(() => {
+    const logMobileFace = () => {
+      if (typeof window === "undefined") return;
+      if (!window.matchMedia("(max-width: 768px)").matches) return;
+      const img = faceRef.current;
+      if (!img) return;
+      console.log("[dts mobile diamond face]", {
+        naturalWidth: img.naturalWidth,
+        naturalHeight: img.naturalHeight,
+        clientWidth: img.clientWidth,
+        clientHeight: img.clientHeight,
+        currentSrc: img.currentSrc,
+      });
+    };
+    logMobileFace();
+    const img = faceRef.current;
+    if (!img) return;
+    if (img.complete) logMobileFace();
+    else img.addEventListener("load", logMobileFace);
+    window.addEventListener("resize", logMobileFace);
+    return () => {
+      window.removeEventListener("resize", logMobileFace);
+      img.removeEventListener("load", logMobileFace);
+    };
+  }, [faceSrc, orientation]);
+
   return (
     <div className="dts-diamond-stack">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
+        ref={faceRef}
         src={faceSrc}
         alt=""
         className={`dts-diamond-face${orientation === "ew" ? " dts-diamond-face--ew" : ""}`}
@@ -1645,10 +1689,11 @@ export default function DiamondStudioPage() {
     serverSnapshotMaxWidth768,
   );
   const diamondOverlayYExtraPx = isMobileViewport
-    ? mobileDiamondYOffset
+    ? MOBILE_DIAMOND_Y_NUDGE_PX
     : DIAMOND_Y_NUDGE_DESKTOP_PX;
 
   const swapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const diamondLayerRef = useRef<HTMLDivElement>(null);
   const shapeRef = useRef(shape);
   shapeRef.current = shape;
 
@@ -1695,8 +1740,37 @@ export default function DiamondStudioPage() {
   const stoneMmToStage =
     (STONE_VIEWER_WIDTH_FACTOR * renderVisualCompensation(diamondVisualShape)) /
     fingerMm;
-  const layerWidthCqw = rw * stoneMmToStage * 100;
-  const layerHeightCqw = rh * stoneMmToStage * 100;
+  const mobileStoneRenderScale = isMobileViewport ? MOBILE_STONE_RENDER_SCALE : 1;
+  const layerWidthCqw = rw * stoneMmToStage * 100 * mobileStoneRenderScale;
+  const layerHeightCqw = rh * stoneMmToStage * 100 * mobileStoneRenderScale;
+
+  useEffect(() => {
+    const logMobileLayer = () => {
+      if (typeof window === "undefined") return;
+      if (!window.matchMedia("(max-width: 768px)").matches) return;
+      const layer = diamondLayerRef.current;
+      if (!layer) return;
+      const r = layer.getBoundingClientRect();
+      console.log("[dts mobile diamond layer]", {
+        width: r.width,
+        height: r.height,
+        top: r.top,
+        left: r.left,
+        transform: layer.style.transform,
+        yNudgePx: diamondOverlayYExtraPx,
+        isMobileViewport,
+      });
+    };
+    logMobileLayer();
+    window.addEventListener("resize", logMobileLayer);
+    return () => window.removeEventListener("resize", logMobileLayer);
+  }, [
+    diamondOverlayYExtraPx,
+    isMobileViewport,
+    layerWidthCqw,
+    layerHeightCqw,
+    diamondVisualShape,
+  ]);
 
   const zoneShort: Record<ZoneKey, string> = {
     understated: "Quiet",
@@ -2044,6 +2118,9 @@ export default function DiamondStudioPage() {
               </div>
 
               <div className="dts-stage-canvas">
+                <p className="dts-mobile-debug-953" aria-hidden>
+                  MOBILE DEBUG ACTIVE 953
+                </p>
                 {/*
                   Preview stack (same on mobile and desktop):
                   1) dts-layer-finger — one PNG per skin (/diamond-tech-suite/finger/...). The photograph includes
@@ -2059,6 +2136,7 @@ export default function DiamondStudioPage() {
 
                   {/* Main hand preview: this div positions the large stone; DiamondStageFace renders img.dts-diamond-face (not shape-strip thumbs). */}
                   <div
+                    ref={diamondLayerRef}
                     className={`dts-layer-diamond ${diamondSwapping ? "is-swapping" : ""}`}
                     data-dts-stage-diamond-overlay=""
                     style={{
