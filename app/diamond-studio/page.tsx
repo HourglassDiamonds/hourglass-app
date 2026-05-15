@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import React, {
   useCallback,
   useEffect,
@@ -23,7 +24,6 @@ type ShapeId =
   | "radiant"
   | "asscher";
 
-type ThemeId = "light" | "dark";
 type SkinToneId = "light" | "medium" | "dark";
 type StoneOrientation = "ns" | "ew";
 
@@ -755,23 +755,19 @@ function SuiteStyles() {
         display:flex; align-items:center; align-self:center; justify-content:flex-end;
         gap:10px;
       }
-      .dts-theme-toggle{
-        display:flex; align-items:center; gap:7px; background:var(--hairline-soft);
+      .dts-home-link{
+        display:flex; align-items:center; background:var(--hairline-soft);
         border:none; cursor:pointer; padding:5px 9px; border-radius:999px;
         font-size:10px; font-weight:500; letter-spacing:0.16em; color:var(--ink-soft);
+        text-decoration:none;
         transition:background var(--dt-dur-mid) var(--dt-ease), color var(--dt-dur-mid) var(--dt-ease),
           box-shadow var(--dt-dur-mid) var(--dt-ease);
       }
-      .dts-theme-toggle:hover{
+      .dts-home-link:hover{
         color:var(--ink);
         background:oklch(from var(--hairline-soft) l c h / 0.92);
         box-shadow:0 1px 0 oklch(from var(--hairline) l c h / 0.35);
       }
-      .dts-theme-toggle svg{
-        width:14px; height:14px; stroke:var(--ink-soft); fill:none; stroke-width:1.4;
-        transition:stroke var(--dt-dur-mid) var(--dt-ease);
-      }
-      .dts-theme-toggle:hover svg{ stroke:var(--ink); }
       .dts-main{
         display:grid;
         grid-template-columns:256px minmax(0, 1fr);
@@ -1446,7 +1442,7 @@ function SuiteStyles() {
         .dts-topnav-soon,
         .dts-skin-pill,
         .dts-stepper button,
-        .dts-theme-toggle,
+        .dts-home-link,
         .dts-slider .dts-handle,
         .dts-control-rail{
           transition-duration:0.01ms;
@@ -1678,7 +1674,6 @@ const STUDIO_HEADER_NAV: { label: string; active: boolean }[] = [
 ];
 
 export default function DiamondStudioPage() {
-  const [theme, setTheme] = useState<ThemeId>("light");
   const [skinTone, setSkinTone] = useState<SkinToneId>("light");
   const [ringSize, setRingSize] = useState(6.0);
   const [carat, setCarat] = useState(2.5);
@@ -1800,25 +1795,8 @@ export default function DiamondStudioPage() {
   const fsHandleLeft = ((ringSize - 4) / 6) * 100;
   const ctHandleLeft = ((carat - CARAT_MIN) / (CARAT_MAX - CARAT_MIN)) * 100;
 
-  const themeIcon =
-    theme === "light" ? (
-      <path d="M 12 9.5 A 4.5 4.5 0 1 1 6.5 4 A 3.6 3.6 0 0 0 12 9.5 Z" />
-    ) : (
-      <>
-        <circle cx="8" cy="8" r="3" />
-        <line x1="8" y1="1" x2="8" y2="3" strokeLinecap="round" />
-        <line x1="8" y1="13" x2="8" y2="15" strokeLinecap="round" />
-        <line x1="1" y1="8" x2="3" y2="8" strokeLinecap="round" />
-        <line x1="13" y1="8" x2="15" y2="8" strokeLinecap="round" />
-        <line x1="3.2" y1="3.2" x2="4.6" y2="4.6" strokeLinecap="round" />
-        <line x1="11.4" y1="11.4" x2="12.8" y2="12.8" strokeLinecap="round" />
-        <line x1="3.2" y1="12.8" x2="4.6" y2="11.4" strokeLinecap="round" />
-        <line x1="11.4" y1="4.6" x2="12.8" y2="3.2" strokeLinecap="round" />
-      </>
-    );
-
   return (
-    <div className="dts-shell h-full w-full overflow-hidden" data-theme={theme}>
+    <div className="dts-shell h-full w-full overflow-hidden" data-theme="light">
       <SuiteStyles />
       <div className="dts-app">
         <header className="dts-topbar">
@@ -1839,17 +1817,9 @@ export default function DiamondStudioPage() {
             ))}
           </nav>
           <div className="dts-topbar-actions">
-            <button
-              type="button"
-              className="dts-theme-toggle"
-              onClick={() => setTheme((t) => (t === "light" ? "dark" : "light"))}
-              aria-label="Toggle theme"
-            >
-              <svg viewBox="0 0 16 16" aria-hidden>
-                {themeIcon}
-              </svg>
-              <span>{theme === "light" ? "LIGHT ON" : "LIGHT OFF"}</span>
-            </button>
+            <Link href="/" className="dts-home-link" aria-label="Home">
+              HOME
+            </Link>
           </div>
         </header>
 
