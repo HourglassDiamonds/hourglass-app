@@ -33,12 +33,12 @@ function navLinkClass(isActive: boolean, featured?: boolean): string {
 
 function BrandMark() {
   return (
-    <span className="relative block h-[72px] w-[72px] shrink-0 md:h-[78px] md:w-[78px]">
+    <span className="relative block h-[48px] w-[48px] shrink-0 sm:h-[52px] sm:w-[52px] md:h-[78px] md:w-[78px]">
       <Image
         src="/hourglass-logo-gold.png"
         alt=""
         fill
-        sizes="(max-width: 768px) 72px, 78px"
+        sizes="(max-width: 639px) 52px, 78px"
         className="object-contain opacity-80"
       />
     </span>
@@ -58,17 +58,17 @@ export default function Header({ currentPage = "" }: HeaderProps) {
   }, [mobileMenuOpen]);
 
   return (
-    <header className="sticky top-0 z-50 w-full max-w-[100vw] overflow-x-hidden border-b border-[#e4dbcf]/55 bg-[#efe8de]/88 backdrop-blur-[10px] supports-[backdrop-filter]:bg-[#efe8de]/78">
-      <div className="mx-auto box-border flex w-full min-w-0 max-w-[1200px] items-end justify-between gap-4 px-0 pb-5 pt-6 md:gap-8 md:pb-6 md:pt-7">
+    <header className="sticky top-0 z-50 w-full max-w-[100vw] overflow-x-clip overflow-y-visible border-b border-[#e4dbcf]/55 bg-[#efe8de]/88 backdrop-blur-[10px] supports-[backdrop-filter]:bg-[#efe8de]/78">
+      <div className="relative mx-auto box-border flex w-full min-w-0 max-w-[1200px] flex-wrap items-center justify-between gap-x-4 gap-y-0 px-0 py-3.5 md:flex-nowrap md:items-end md:gap-8 md:py-0 md:pb-6 md:pt-7">
         <Link
           href="/"
-          className="flex shrink-0 items-end transition-opacity duration-300 hover:opacity-90"
+          className="flex shrink-0 items-center transition-opacity duration-300 hover:opacity-90 md:items-end"
           aria-label="Hourglass Diamonds home"
         >
           <BrandMark />
         </Link>
 
-        <div className="relative shrink-0 pb-1 md:hidden md:pb-1.5">
+        <div className="relative z-[55] shrink-0 md:hidden">
           <button
             type="button"
             aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
@@ -78,42 +78,6 @@ export default function Header({ currentPage = "" }: HeaderProps) {
           >
             Menu
           </button>
-
-          {mobileMenuOpen ? (
-            <div
-              role="menu"
-              aria-label="Mobile navigation"
-              className="absolute right-0 top-[calc(100%+12px)] z-50 w-[min(86vw,320px)] max-w-[calc(100vw-3rem)] overflow-hidden rounded-[18px] border border-[#e4dbcf] bg-[#f6f2eb]/95 shadow-[0_26px_60px_rgba(48,36,28,0.12)] ring-1 ring-[#e6ddd1]/60 backdrop-blur-[12px]"
-            >
-              <div className="px-4 py-3">
-                <p className="text-[10px] uppercase tracking-[0.28em] text-[#8a8177]">
-                  Navigation
-                </p>
-              </div>
-
-              <div className="border-t border-[#e4dbcf]/80">
-                {NAV_ITEMS.map((item) => {
-                  const key = item.href.replace("/", "");
-                  const isActive = currentPage === key;
-
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      role="menuitem"
-                      onClick={() => setMobileMenuOpen(false)}
-                      className={`block px-4 py-3.5 text-[13px] tracking-[0.02em] transition-colors duration-300 ${navLinkClass(
-                        isActive,
-                        isFeaturedNav(item.href),
-                      )}`}
-                    >
-                      {item.label}
-                    </Link>
-                  );
-                })}
-              </div>
-            </div>
-          ) : null}
         </div>
 
         <nav
@@ -138,6 +102,42 @@ export default function Header({ currentPage = "" }: HeaderProps) {
             );
           })}
         </nav>
+
+        {mobileMenuOpen ? (
+          <div
+            role="menu"
+            aria-label="Mobile navigation"
+            className="z-[80] mt-4 w-full min-w-0 basis-full overflow-hidden rounded-[18px] border border-[#e4dbcf] bg-[#f6f2eb]/95 shadow-[0_26px_60px_rgba(48,36,28,0.12)] ring-1 ring-[#e6ddd1]/60 backdrop-blur-[12px] md:hidden"
+          >
+            <div className="px-4 py-3.5">
+              <p className="text-[10px] uppercase tracking-[0.28em] text-[#8a8177]">
+                Navigation
+              </p>
+            </div>
+
+            <div className="border-t border-[#e4dbcf]/80">
+              {NAV_ITEMS.map((item) => {
+                const key = item.href.replace("/", "");
+                const isActive = currentPage === key;
+
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    role="menuitem"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={`block px-4 py-3.5 text-[13px] tracking-[0.02em] transition-colors duration-300 ${navLinkClass(
+                      isActive,
+                      isFeaturedNav(item.href),
+                    )}`}
+                  >
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        ) : null}
       </div>
     </header>
   );
