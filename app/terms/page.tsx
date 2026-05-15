@@ -2,10 +2,12 @@ import Header from "../shared-components/Header";
 
 export default function TermsPage() {
   return (
-    <>
-      <Header />
+    <main className="min-h-screen bg-[#efe8de] text-[#1c1b1a]">
+      <div className="mx-auto max-w-[1200px] px-6 md:px-10">
+        <Header />
+      </div>
 
-      <section className="mx-auto max-w-[760px] px-6 py-20 md:px-8 md:py-28">
+      <section className="mx-auto max-w-[760px] px-6 py-20 md:px-10 md:py-28">
         
         <div className="mb-10 text-[11px] uppercase tracking-[0.28em] text-[#8a8178]">
           Terms
@@ -42,6 +44,6 @@ export default function TermsPage() {
 
         </div>
       </section>
-    </>
+    </main>
   );
 }

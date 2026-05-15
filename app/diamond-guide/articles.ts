@@ -8,7 +8,18 @@ export type ArticleBlock =
     }
   | {
       type: "shape-spread-table";
+      eyebrow?: string;
       rows: { shape: string; spread: string }[];
+      note?: string;
+    }
+  | {
+      type: "perceived-size-ranking";
+      tiers: { tier: string; shapes: string }[];
+      note?: string;
+    }
+  | {
+      type: "reference-factor-list";
+      factors: string[];
       note?: string;
     }
   | {
@@ -1628,6 +1639,109 @@ export const articles: Article[] = [
       { title: "Diamond Contrast Patterns Explained", href: "/diamond-guide/diamond-contrast-patterns-explained" },
       { title: "Diamond Light Return Explained", href: "/diamond-guide/diamond-light-return-explained" }
     ]
+  },
+
+  {
+    slug: "what-diamond-shape-looks-the-largest",
+    title: "What Diamond Shape Looks the Largest",
+    category: "Diamond Shapes",
+    body: [
+      { type: "paragraph", text: "When comparing diamonds of the same carat weight, many people assume the difference between shapes is subtle. In practice, the outline of a stone can change how large it appears on the hand — sometimes noticeably." },
+      { type: "paragraph", text: "Some shapes spread their weight across a longer or broader face-up surface. Others concentrate weight toward the center or carry more depth beneath the table. These differences influence visual size even when the carat weight is identical." },
+      { type: "paragraph", text: "Understanding how shape affects face-up appearance helps buyers compare options with more clarity, especially when balancing size, brilliance, and personal style." },
+
+      { type: "heading", text: "How Shapes Compare at the Same Carat" },
+      { type: "paragraph", text: "At equal carat weight, each shape distributes its millimeters differently. The reference below describes typical face-up character — not a guarantee for any individual stone." },
+      {
+        type: "shape-spread-table",
+        eyebrow: "Same Carat · Shape Spread",
+        rows: [
+          { shape: "Round", spread: "Balanced face-up spread with even proportions across the finger." },
+          { shape: "Oval", spread: "Longer north–south appearance that can feel more expansive on the hand." },
+          { shape: "Emerald", spread: "Broad outline with a quieter, step-cut brilliance." },
+          { shape: "Cushion", spread: "Can face up smaller depending on depth and facet pattern." },
+          { shape: "Marquise", spread: "Strongest length impression, with weight carried toward the points." },
+          { shape: "Pear", spread: "Elongated silhouette with a directional presence along the finger." },
+        ],
+        note: "These are general tendencies. Cut quality and proportions can shift how any shape actually faces up.",
+      },
+
+      { type: "heading", text: "General Perceived Size Tendencies" },
+      { type: "paragraph", text: "Among well-cut stones of the same carat, elongated shapes often create a larger visual impression because they cover more of the finger. Squarer or deeper cuts may read more compact from above. The groupings below reflect common patterns — not rules that apply to every diamond." },
+      {
+        type: "perceived-size-ranking",
+        tiers: [
+          {
+            tier: "Largest visual impression",
+            shapes: "Marquise, Oval, Pear",
+          },
+          {
+            tier: "Balanced",
+            shapes: "Round, Emerald, Radiant",
+          },
+          {
+            tier: "Often smaller face-up",
+            shapes: "Cushion, Asscher, Princess — depending on cut",
+          },
+        ],
+        note: "Ranking reflects typical face-up spread, not overall beauty or value. A well-cut cushion can still feel beautifully proportioned on the hand.",
+      },
+      {
+        type: "studio-callout",
+        heading: "Compare shape and size on the hand",
+        text: "Use the [Diamond Studio](/diamond-studio) to compare how different shapes and carat weights face up across finger sizes.",
+      },
+
+      { type: "heading", text: "What “Largest” Means on the Hand" },
+      { type: "paragraph", text: "The shape that looks largest in a chart may not feel largest once worn. Finger coverage depends on several factors working together." },
+      {
+        type: "reference-factor-list",
+        factors: [
+          "Face-up millimeter dimensions — the actual length and width viewed from above",
+          "Finger size — the same stone occupies more or less of the hand",
+          "Length-to-width ratio — especially in oval, marquise, and pear silhouettes",
+          "Cut depth — weight hidden below the girdle reduces visible spread",
+          "Setting style — halo, bezel, or band width can amplify or quieten the center stone",
+        ],
+      },
+      {
+        type: "finger-coverage-scale",
+        zones: [
+          {
+            label: "Quiet Presence",
+            description:
+              "Quiet on the hand, with a refined and discreet scale that feels intentional rather than timid.",
+          },
+          {
+            label: "Noticeable Presence",
+            description:
+              "Clearly present while still feeling wearable — the diamond is easy to see without dominating the hand.",
+          },
+          {
+            label: "Statement Presence",
+            description:
+              "A confident look with strong visual impact; the center stone becomes a natural focal point.",
+          },
+          {
+            label: "Dramatic Presence",
+            description:
+              "A bold, high-impact scale that commands attention and defines the overall silhouette of the ring.",
+          },
+        ],
+        note: "Presence describes how a stone reads relative to the wearer — not carat weight alone.",
+      },
+
+      { type: "heading", text: "Final Thoughts" },
+      { type: "paragraph", text: "No single diamond shape is universally the “largest.” Elongated cuts often create more finger coverage, while round and step-cut shapes offer different kinds of balance and character." },
+      { type: "paragraph", text: "The most satisfying choice usually comes from comparing face-up dimensions, cut quality, and how the stone feels on the hand — not from chasing a shape name alone." },
+    ],
+    related: [
+      { title: "Do Elongated Diamonds Look Bigger", href: "/diamond-guide/do-elongated-diamonds-look-bigger" },
+      { title: "Diamond Size Chart", href: "/diamond-guide/diamond-size-chart" },
+      { title: "Oval vs Round Diamond", href: "/diamond-guide/oval-vs-round-diamond" },
+      { title: "How to Make a Diamond Look Bigger", href: "/diamond-guide/how-to-make-a-diamond-look-bigger" },
+      { title: "Diamond Size on Hand", href: "/diamond-guide/diamond-size-on-hand" },
+    ],
   },
 
   {

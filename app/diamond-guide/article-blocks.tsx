@@ -8,7 +8,7 @@ const CIRCLE_MAX_PX = { base: 46, md: 62 } as const;
 const FIGURE_SPACE = "my-11 md:my-[3.25rem]";
 
 const FIGURE_HEADER =
-  "mb-5 border-b border-[#e4dbcf]/40 pb-4 md:mb-6 md:pb-[1.125rem]";
+  "mb-6 border-b border-[#e4dbcf]/35 pb-[1.125rem] md:mb-7 md:pb-5";
 
 const SHELL_RADIUS = "rounded-[24px]";
 
@@ -26,12 +26,12 @@ const tableShellClass = `overflow-hidden ${SHELL_RADIUS} border border-[#e0d8cc]
 
 const tableInset = "px-6 md:px-8";
 
-const thClass = `${tableInset} py-[1.125rem] text-left text-[9px] font-normal uppercase tracking-[0.36em] text-[#a39a8e]`;
+const thClass = `${tableInset} py-5 text-left text-[9px] font-normal uppercase tracking-[0.36em] text-[#a39a8e]`;
 
-const rowDivider = "border-b border-[#ebe4da]/45 last:border-b-0";
+const rowDivider = "border-b border-[#ebe4da]/35 last:border-b-0";
 
 const serifLabelClass =
-  "font-serif text-[1.1rem] font-normal leading-snug tracking-[-0.02em] text-[#1f1d1a] md:text-[1.14rem]";
+  "font-serif text-[1.13rem] font-normal leading-snug tracking-[-0.025em] text-[#1c1b1a] md:text-[1.17rem]";
 
 function parseMm(mmLabel: string): number {
   const n = parseFloat(mmLabel.replace(/[^\d.]/g, ""));
@@ -158,12 +158,12 @@ function ReferenceTable({
   return (
     <>
       <dl
-        className={`${tableShellClass} divide-y divide-[#ebe4da]/45 md:hidden`}
+        className={`${tableShellClass} divide-y divide-[#ebe4da]/35 md:hidden`}
       >
         {rows.map((row) => (
-          <div key={row[labelKey]} className={`${tableInset} py-6`}>
+          <div key={row[labelKey]} className={`${tableInset} py-[1.35rem]`}>
             <dt className={labelCell}>{row[labelKey]}</dt>
-            <dd className={`mt-3 ${bodyCopyClass}`}>{row[valueKey]}</dd>
+            <dd className={`mt-3.5 ${bodyCopyClass}`}>{row[valueKey]}</dd>
           </div>
         ))}
       </dl>
@@ -171,7 +171,7 @@ function ReferenceTable({
       <div className={`${tableShellClass} hidden md:block`}>
         <table className="w-full border-collapse text-left">
           <thead>
-            <tr className="border-b border-[#ebe4da]/50">
+            <tr className="border-b border-[#ebe4da]/40">
               <th scope="col" className={thClass}>
                 {columns[0]}
               </th>
@@ -183,10 +183,10 @@ function ReferenceTable({
           <tbody>
             {rows.map((row) => (
               <tr key={row[labelKey]} className={rowDivider}>
-                <td className={`${tableInset} py-[1.125rem] ${labelCell}`}>
+                <td className={`${tableInset} py-5 ${labelCell}`}>
                   {row[labelKey]}
                 </td>
-                <td className={`${tableInset} py-[1.125rem] ${bodyCopyClass}`}>
+                <td className={`${tableInset} py-5 ${bodyCopyClass}`}>
                   {row[valueKey]}
                 </td>
               </tr>
@@ -224,14 +224,73 @@ export function CaratMmReference({
   );
 }
 
+export function PerceivedSizeRanking({
+  tiers,
+  note,
+}: Extract<ArticleBlock, { type: "perceived-size-ranking" }>) {
+  return (
+    <figure className={FIGURE_SPACE}>
+      <header className={FIGURE_HEADER}>
+        <FigureEyebrow>Perceived Size · General Tendencies</FigureEyebrow>
+      </header>
+
+      <ol
+        className={`${tableShellClass} divide-y divide-[#ebe4da]/35 bg-gradient-to-b from-[#fcfaf6] to-[#f7f3ec]`}
+      >
+        {tiers.map((tier) => (
+          <li
+            key={tier.tier}
+            className={`grid gap-3 ${tableInset} py-[1.35rem] md:grid-cols-[minmax(12rem,14rem)_1fr] md:gap-11 md:py-6`}
+          >
+            <p className={serifLabelClass}>{tier.tier}</p>
+            <p className={`${bodyCopyClass} md:pt-0.5`}>{tier.shapes}</p>
+          </li>
+        ))}
+      </ol>
+
+      {note ? <ReferenceNote>{note}</ReferenceNote> : null}
+    </figure>
+  );
+}
+
+export function ReferenceFactorList({
+  factors,
+  note,
+}: Extract<ArticleBlock, { type: "reference-factor-list" }>) {
+  return (
+    <figure className="my-8 md:my-9">
+      <ul
+        className={`${tableShellClass} divide-y divide-[#ebe4da]/35`}
+      >
+        {factors.map((factor) => (
+          <li
+            key={factor}
+            className={`flex gap-4 ${tableInset} py-[1.2rem] md:py-5`}
+          >
+            <span
+              className="mt-[0.55rem] h-1 w-1 shrink-0 rounded-full bg-[#c4bab0]"
+              aria-hidden
+            />
+            <p className={`${bodyCopyClass} min-w-0 flex-1`}>{factor}</p>
+          </li>
+        ))}
+      </ul>
+      {note ? <ReferenceNote>{note}</ReferenceNote> : null}
+    </figure>
+  );
+}
+
 export function ShapeSpreadTable({
+  eyebrow,
   rows,
   note,
 }: Extract<ArticleBlock, { type: "shape-spread-table" }>) {
   return (
     <figure className={FIGURE_SPACE}>
       <header className={FIGURE_HEADER}>
-        <FigureEyebrow>Same Carat · Different Face-Up Character</FigureEyebrow>
+        <FigureEyebrow>
+          {eyebrow ?? "Same Carat · Different Face-Up Character"}
+        </FigureEyebrow>
       </header>
 
       <ReferenceTable
@@ -258,12 +317,12 @@ export function FingerCoverageScale({
       </header>
 
       <ol
-        className={`${tableShellClass} divide-y divide-[#ebe4da]/45 bg-gradient-to-b from-[#fcfaf6] to-[#f7f3ec]`}
+        className={`${tableShellClass} divide-y divide-[#ebe4da]/35 bg-gradient-to-b from-[#fcfaf6] to-[#f7f3ec]`}
       >
         {zones.map((zone) => (
           <li
             key={zone.label}
-            className={`grid gap-3 ${tableInset} py-6 md:grid-cols-[minmax(12.5rem,14.5rem)_1fr] md:gap-10 md:py-[1.375rem]`}
+            className={`grid gap-3 ${tableInset} py-[1.35rem] md:grid-cols-[minmax(12.5rem,14.75rem)_1fr] md:gap-11 md:py-6`}
           >
             <p className={serifLabelClass}>{zone.label}</p>
             <p className={`${bodyCopyClass} md:pt-0.5`}>{zone.description}</p>
