@@ -1196,12 +1196,15 @@ function SuiteStyles() {
           overflow-x:hidden;
           overflow-y:auto;
           -webkit-overflow-scrolling:touch;
+          scroll-padding-bottom:calc(env(safe-area-inset-bottom, 0px) + 120px);
         }
         .dts-app{
           display:flex;
           flex-direction:column;
           min-height:100%;
           height:auto;
+          box-sizing:border-box;
+          padding-bottom:calc(env(safe-area-inset-bottom, 0px) + 120px);
         }
         .dts-topbar{
           display:grid;
