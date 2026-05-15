@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Footer from "./shared-components/Footer";
+import GoogleAnalytics from "./shared-components/GoogleAnalytics";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -38,6 +39,7 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full bg-[#f7f3ee] text-[#1f1d1a]">
+        <GoogleAnalytics />
         <div className="flex min-h-screen flex-col">
           <main className="flex-1">{children}</main>
           <Footer />

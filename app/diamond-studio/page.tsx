@@ -8,6 +8,10 @@ import React, {
   useState,
   useSyncExternalStore,
 } from "react";
+import {
+  trackDiamondStudioEvent,
+  type DiamondStudioEventProperties,
+} from "./analytics";
 
 /* -------------------------------------------------------------------------- */
 /* Types & tables                                                             */
@@ -1631,6 +1635,7 @@ function attachHorizontalTrack(
   track: HTMLDivElement,
   draggingRef: React.MutableRefObject<boolean>,
   applyPct: (pct: number) => void,
+  onDragEnd?: () => void,
 ) {
   const readPct = (clientX: number) => {
     const r = track.getBoundingClientRect();
@@ -1649,6 +1654,9 @@ function attachHorizontalTrack(
     applyPct(readPct(cx));
   };
   const up = () => {
+    if (draggingRef.current) {
+      onDragEnd?.();
+    }
     draggingRef.current = false;
   };
   track.addEventListener("mousedown", down);
@@ -1697,18 +1705,6 @@ export default function DiamondStudioPage() {
   const shapeRef = useRef(shape);
   shapeRef.current = shape;
 
-  const selectShape = useCallback((s: ShapeId) => {
-    if (s === shape) return;
-    if (swapTimer.current) clearTimeout(swapTimer.current);
-    setShape(s);
-    setDiamondSwapping(true);
-    swapTimer.current = setTimeout(() => {
-      setDiamondVisualShape(s);
-      setDiamondSwapping(false);
-      swapTimer.current = null;
-    }, 200);
-  }, [shape]);
-
   useEffect(
     () => () => {
       if (swapTimer.current) clearTimeout(swapTimer.current);
@@ -1734,6 +1730,105 @@ export default function DiamondStudioPage() {
   const zone = classifyPresence(shape, carat, ringSize, stoneOrientation);
   const zoneMeta = COVERAGE_ZONES[zone];
 
+  const deviceType = isMobileViewport ? "mobile" : "desktop";
+
+  const analyticsProps = useCallback((): DiamondStudioEventProperties => {
+    const coveragePercent = Math.round(
+      coveragePct(shape, carat, ringSize, stoneOrientation) * 10,
+    ) / 10;
+    const coverageZone = classifyPresence(
+      shape,
+      carat,
+      ringSize,
+      stoneOrientation,
+    );
+    return {
+      shape,
+      carat,
+      fingerSize: ringSize,
+      skinTone,
+      orientation: stoneOrientation,
+      coveragePercent,
+      coverageZone,
+      deviceType,
+    };
+  }, [
+    shape,
+    carat,
+    ringSize,
+    skinTone,
+    stoneOrientation,
+    deviceType,
+  ]);
+
+  const trackEvent = useCallback(
+    (eventName: Parameters<typeof trackDiamondStudioEvent>[0]) => {
+      trackDiamondStudioEvent(eventName, analyticsProps());
+    },
+    [analyticsProps],
+  );
+
+  const trackEventRef = useRef(trackEvent);
+  trackEventRef.current = trackEvent;
+
+  useEffect(() => {
+    trackDiamondStudioEvent("diamond_studio_view", analyticsProps());
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once per mount
+  }, []);
+
+  const prevZoneRef = useRef(zone);
+  useEffect(() => {
+    if (prevZoneRef.current === zone) return;
+    prevZoneRef.current = zone;
+    const timer = window.setTimeout(() => {
+      trackEventRef.current("coverage_zone_changed");
+    }, 400);
+    return () => window.clearTimeout(timer);
+  }, [zone]);
+
+  const selectShape = useCallback(
+    (s: ShapeId) => {
+      if (s === shape) return;
+      if (swapTimer.current) clearTimeout(swapTimer.current);
+      setShape(s);
+      setDiamondSwapping(true);
+      swapTimer.current = setTimeout(() => {
+        setDiamondVisualShape(s);
+        setDiamondSwapping(false);
+        swapTimer.current = null;
+      }, 200);
+      trackDiamondStudioEvent("shape_selected", {
+        ...analyticsProps(),
+        shape: s,
+      });
+    },
+    [shape, analyticsProps],
+  );
+
+  const selectSkinTone = useCallback(
+    (t: SkinToneId) => {
+      if (t === skinTone) return;
+      setSkinTone(t);
+      trackDiamondStudioEvent("skin_tone_selected", {
+        ...analyticsProps(),
+        skinTone: t,
+      });
+    },
+    [skinTone, analyticsProps],
+  );
+
+  const selectOrientation = useCallback(
+    (o: StoneOrientation) => {
+      if (o === stoneOrientation) return;
+      setStoneOrientation(o);
+      trackDiamondStudioEvent("orientation_changed", {
+        ...analyticsProps(),
+        orientation: o,
+      });
+    },
+    [stoneOrientation, analyticsProps],
+  );
+
   const rw = renderStoneWidthMm(diamondVisualShape, carat, stoneOrientation);
   const rh = renderStoneHeightMm(diamondVisualShape, carat, stoneOrientation);
   /** N/S vs E/W: swapped rw/rh on the layer box; E/W also rotates the face img 90deg (see dts-diamond-face--ew). */
@@ -1752,21 +1847,55 @@ export default function DiamondStudioPage() {
     dramatic: "Dramatic",
   };
 
-  const setRingSizeClamped = useCallback((v: number) => {
-    const stepped = Math.round(v * 2) / 2;
-    const next = Math.max(4, Math.min(10, stepped));
-    setRingSize((prev) => (prev === next ? prev : next));
-  }, []);
+  const commitFingerSizeAnalytics = useCallback(
+    (nextSize: number) => {
+      trackDiamondStudioEvent("finger_size_changed", {
+        ...analyticsProps(),
+        fingerSize: nextSize,
+      });
+    },
+    [analyticsProps],
+  );
 
-  const setCaratClamped = useCallback((v: number) => {
-    const step = v < 2 ? 0.05 : 0.1;
-    const snapped = Math.round(v / step) * step;
-    const next = Math.max(
-      CARAT_MIN,
-      Math.min(CARAT_MAX, Math.round(snapped * 100) / 100),
-    );
-    setCarat((prev) => (Math.abs(prev - next) < 0.001 ? prev : next));
-  }, []);
+  const commitCaratAnalytics = useCallback(
+    (nextCarat: number) => {
+      trackDiamondStudioEvent("carat_changed", {
+        ...analyticsProps(),
+        carat: nextCarat,
+      });
+    },
+    [analyticsProps],
+  );
+
+  const applyRingSize = useCallback(
+    (v: number, trackCommit: boolean) => {
+      const stepped = Math.round(v * 2) / 2;
+      const next = Math.max(4, Math.min(10, stepped));
+      setRingSize((prev) => {
+        if (prev === next) return prev;
+        if (trackCommit) commitFingerSizeAnalytics(next);
+        return next;
+      });
+    },
+    [commitFingerSizeAnalytics],
+  );
+
+  const applyCarat = useCallback(
+    (v: number, trackCommit: boolean) => {
+      const step = v < 2 ? 0.05 : 0.1;
+      const snapped = Math.round(v / step) * step;
+      const next = Math.max(
+        CARAT_MIN,
+        Math.min(CARAT_MAX, Math.round(snapped * 100) / 100),
+      );
+      setCarat((prev) => {
+        if (Math.abs(prev - next) < 0.001) return prev;
+        if (trackCommit) commitCaratAnalytics(next);
+        return next;
+      });
+    },
+    [commitCaratAnalytics],
+  );
 
   const fsTrackRef = useRef<HTMLDivElement>(null);
   const ctTrackRef = useRef<HTMLDivElement>(null);
@@ -1776,21 +1905,32 @@ export default function DiamondStudioPage() {
   const fsPctToSize = (p: number) => 4 + p * 6;
   const ctPctToCarat = (p: number) => CARAT_MIN + p * (CARAT_MAX - CARAT_MIN);
 
+  const ringSizeRef = useRef(ringSize);
+  ringSizeRef.current = ringSize;
+  const caratRef = useRef(carat);
+  caratRef.current = carat;
+
   useEffect(() => {
     const el = fsTrackRef.current;
     if (!el) return;
-    return attachHorizontalTrack(el, fsDrag, (p) =>
-      setRingSizeClamped(fsPctToSize(p)),
+    return attachHorizontalTrack(
+      el,
+      fsDrag,
+      (p) => applyRingSize(fsPctToSize(p), false),
+      () => commitFingerSizeAnalytics(ringSizeRef.current),
     );
-  }, [setRingSizeClamped]);
+  }, [applyRingSize, commitFingerSizeAnalytics]);
 
   useEffect(() => {
     const el = ctTrackRef.current;
     if (!el) return;
-    return attachHorizontalTrack(el, ctDrag, (p) =>
-      setCaratClamped(ctPctToCarat(p)),
+    return attachHorizontalTrack(
+      el,
+      ctDrag,
+      (p) => applyCarat(ctPctToCarat(p), false),
+      () => commitCaratAnalytics(caratRef.current),
     );
-  }, [setCaratClamped]);
+  }, [applyCarat, commitCaratAnalytics]);
 
   const fsHandleLeft = ((ringSize - 4) / 6) * 100;
   const ctHandleLeft = ((carat - CARAT_MIN) / (CARAT_MAX - CARAT_MIN)) * 100;
@@ -1817,7 +1957,12 @@ export default function DiamondStudioPage() {
             ))}
           </nav>
           <div className="dts-topbar-actions">
-            <Link href="/" className="dts-home-link" aria-label="Home">
+            <Link
+              href="/"
+              className="dts-home-link"
+              aria-label="Home"
+              onClick={() => trackEvent("home_clicked")}
+            >
               HOME
             </Link>
           </div>
@@ -1837,7 +1982,7 @@ export default function DiamondStudioPage() {
                   type="button"
                   aria-label="Smaller"
                   disabled={ringSize <= 4}
-                  onClick={() => setRingSizeClamped(ringSize - 0.5)}
+                  onClick={() => applyRingSize(ringSize - 0.5, true)}
                 >
                   ‹
                 </button>
@@ -1846,7 +1991,7 @@ export default function DiamondStudioPage() {
                   type="button"
                   aria-label="Larger"
                   disabled={ringSize >= 10}
-                  onClick={() => setRingSizeClamped(ringSize + 0.5)}
+                  onClick={() => applyRingSize(ringSize + 0.5, true)}
                 >
                   ›
                 </button>
@@ -1866,10 +2011,10 @@ export default function DiamondStudioPage() {
                         Math.abs(n - ringSize) < 0.5 ? "is-current" : undefined
                       }
                       data-v={n}
-                      onClick={() => setRingSizeClamped(n)}
+                      onClick={() => applyRingSize(n, true)}
                       onKeyDown={(e) => {
                         if (e.key === "Enter" || e.key === " ")
-                          setRingSizeClamped(n);
+                          applyRingSize(n, true);
                       }}
                       role="presentation"
                     >
@@ -1894,7 +2039,7 @@ export default function DiamondStudioPage() {
                     key={t}
                     type="button"
                     className={`dts-skin-pill ${skinTone === t ? "is-selected" : ""}`}
-                    onClick={() => setSkinTone(t)}
+                    onClick={() => selectSkinTone(t)}
                   >
                     {t === "light" ? "Light" : t === "medium" ? "Medium" : "Dark"}
                   </button>
@@ -1914,14 +2059,14 @@ export default function DiamondStudioPage() {
                 <button
                   type="button"
                   className={`dts-skin-pill ${stoneOrientation === "ns" ? "is-selected" : ""}`}
-                  onClick={() => setStoneOrientation("ns")}
+                  onClick={() => selectOrientation("ns")}
                 >
                   N/S
                 </button>
                 <button
                   type="button"
                   className={`dts-skin-pill ${stoneOrientation === "ew" ? "is-selected" : ""}`}
-                  onClick={() => setStoneOrientation("ew")}
+                  onClick={() => selectOrientation("ew")}
                 >
                   E/W
                 </button>
@@ -1940,7 +2085,7 @@ export default function DiamondStudioPage() {
                   type="button"
                   aria-label="Smaller"
                   disabled={carat <= CARAT_MIN + 0.001}
-                  onClick={() => setCaratClamped(carat - 0.1)}
+                  onClick={() => applyCarat(carat - 0.1, true)}
                 >
                   ‹
                 </button>
@@ -1949,7 +2094,7 @@ export default function DiamondStudioPage() {
                   type="button"
                   aria-label="Larger"
                   disabled={carat >= CARAT_MAX - 0.001}
-                  onClick={() => setCaratClamped(carat + 0.1)}
+                  onClick={() => applyCarat(carat + 0.1, true)}
                 >
                   ›
                 </button>
@@ -1972,10 +2117,10 @@ export default function DiamondStudioPage() {
                           Math.abs(n - carat) < 0.25 ? "is-current" : undefined
                         }
                         style={{ left: `${tickLeftPct}%` }}
-                        onClick={() => setCaratClamped(n)}
+                        onClick={() => applyCarat(n, true)}
                         onKeyDown={(e) => {
                           if (e.key === "Enter" || e.key === " ")
-                            setCaratClamped(n);
+                            applyCarat(n, true);
                         }}
                         role="presentation"
                       >
