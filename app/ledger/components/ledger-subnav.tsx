@@ -1,0 +1,42 @@
+import Link from "next/link";
+import { LEDGER_INDEXES, type LedgerIndexId } from "../ledger-data";
+
+type LedgerSubnavProps = {
+  activeId?: LedgerIndexId;
+  className?: string;
+};
+
+export default function LedgerSubnav({
+  activeId,
+  className = "",
+}: LedgerSubnavProps) {
+  return (
+    <nav
+      aria-label="Ledger indexes"
+      className={`border-b border-[#e4dbcf]/80 pb-4 ${className}`}
+    >
+      <ul className="flex flex-wrap items-center gap-x-1 gap-y-2 font-sans text-[10px] uppercase tracking-[0.14em] text-[#8a8176] md:gap-x-2 md:tracking-[0.16em]">
+        {LEDGER_INDEXES.map((index, i) => (
+          <li key={index.id} className="flex items-center">
+            {i > 0 ? (
+              <span className="mx-1.5 text-[#d4cdc4] md:mx-2" aria-hidden>
+                ·
+              </span>
+            ) : null}
+            <Link
+              href={`/ledger/${index.slug}`}
+              className={
+                activeId === index.id
+                  ? "text-[#4a4540]"
+                  : "hover:text-[#1f1d1a]"
+              }
+              aria-current={activeId === index.id ? "page" : undefined}
+            >
+              {index.subnavLabel}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  );
+}

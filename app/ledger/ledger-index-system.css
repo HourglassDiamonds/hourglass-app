@@ -1,0 +1,345 @@
+/* =========================================================
+   Hourglass Ledger — shared index page system
+   Import on all Ledger index pages (+ ledger-shell).
+   ========================================================= */
+
+.ledger-index-page,
+.ledger-gpi,
+.ledger-pmi,
+.ledger-im,
+.ledger-acai,
+.ledger-isi {
+  --ledger-max: 1120px;
+  --ledger-card: #fffdf9;
+  --ledger-soft: #fbf8f1;
+  --ledger-ink: #171717;
+  --ledger-body: #2c2a27;
+  --ledger-muted: #6f6a63;
+  --ledger-label: #5f5a54;
+  --ledger-rule: rgba(32, 28, 24, 0.1);
+  --ledger-rule-soft: rgba(32, 28, 24, 0.08);
+  --ledger-radius-lg: 22px;
+  --ledger-radius-md: 14px;
+  --ledger-radius-sm: 12px;
+  --ledger-shadow:
+    0 20px 46px rgba(28, 24, 20, 0.052),
+    0 5px 14px rgba(28, 24, 20, 0.028);
+  --ledger-shadow-soft: 0 8px 22px rgba(28, 24, 20, 0.035);
+  --ledger-section-gap: 40px;
+  --ledger-hero-gap: 28px;
+  --ledger-page-pad-bottom: 44px;
+  --ledger-card-pad: 16px;
+  --ledger-hero-pad: 30px 28px 28px;
+  --ledger-editorial-width: 880px;
+  --ledger-delta-border: rgba(140, 75, 63, 0.22);
+  --ledger-delta-bg: rgba(140, 75, 63, 0.055);
+  --ledger-delta-text: #6f4038;
+}
+
+/* Page shell */
+.ledger-index-page.ledger-gpi,
+.ledger-index-page.ledger-pmi,
+.ledger-index-page.ledger-im,
+.ledger-index-page.ledger-acai,
+.ledger-index-page.ledger-isi,
+.ledger-gpi,
+.ledger-pmi,
+.ledger-im,
+.ledger-acai,
+.ledger-isi {
+  max-width: var(--ledger-max);
+  margin: 0 auto;
+  padding: 0 0 var(--ledger-page-pad-bottom);
+  color: var(--ledger-ink);
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+.ledger-index-page *,
+.ledger-gpi *,
+.ledger-pmi *,
+.ledger-im *,
+.ledger-acai *,
+.ledger-isi * {
+  box-sizing: border-box;
+}
+
+/* Breadcrumb */
+.ledger-index-breadcrumb {
+  margin: 0 0 26px;
+  max-width: 100%;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.34em;
+  text-transform: uppercase;
+  color: #8a8177;
+}
+
+.ledger-index-breadcrumb a {
+  color: inherit;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.ledger-index-breadcrumb a:hover {
+  color: #5c554d;
+}
+
+.ledger-index-breadcrumb-sep {
+  margin: 0 0.5rem;
+  color: #c4bab0;
+}
+
+/* Kicker / eyebrow */
+.ledger-index-kicker {
+  display: block;
+  margin: 0 0 10px;
+  max-width: 100%;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  line-height: 1.45;
+  text-transform: uppercase;
+  color: var(--ledger-label);
+}
+
+/* Title */
+.ledger-index-title {
+  margin: 0;
+  font-size: clamp(2.5rem, 5vw, 4.35rem);
+  font-weight: 700;
+  line-height: 1.02;
+  letter-spacing: -0.045em;
+}
+
+/* Intro */
+.ledger-index-intro {
+  margin: 20px 0 0;
+  max-width: var(--ledger-editorial-width);
+  font-size: 1.05rem;
+  line-height: 1.72;
+  color: var(--ledger-body);
+}
+
+/* Updated line */
+.ledger-index-updated {
+  margin: 16px 0 0;
+  max-width: var(--ledger-editorial-width);
+  font-size: 0.95rem;
+  font-style: italic;
+  line-height: 1.6;
+  color: var(--ledger-muted);
+}
+
+.ledger-index-intro + .ledger-index-updated {
+  margin-top: 12px;
+}
+
+/* Main hero card */
+.ledger-index-hero-card {
+  margin-top: var(--ledger-hero-gap);
+  padding: var(--ledger-hero-pad);
+  background: var(--ledger-card);
+  border: 1px solid var(--ledger-rule);
+  border-radius: var(--ledger-radius-lg);
+  box-shadow: var(--ledger-shadow);
+}
+
+/* Denser pages — extra calm before hero (ACAI, ISI) */
+.ledger-acai,
+.ledger-isi {
+  --ledger-hero-gap: 32px;
+}
+
+.ledger-acai .ledger-index-updated,
+.ledger-isi .ledger-index-updated {
+  margin-bottom: 2px;
+}
+
+/* Inner module cards */
+.ledger-index-inner-card {
+  background: var(--ledger-soft);
+  border: 1px solid var(--ledger-rule);
+  border-radius: var(--ledger-radius-md);
+}
+
+/* Section rhythm (ISM benchmark) */
+.ledger-index-section {
+  margin-top: var(--ledger-section-gap);
+}
+
+.ledger-index-section-title {
+  margin: 0 0 14px;
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.18;
+  letter-spacing: -0.02em;
+}
+
+.ledger-index-section-sub {
+  margin: 0 0 14px;
+  max-width: 850px;
+  font-size: 0.95rem;
+  line-height: 1.66;
+  color: var(--ledger-muted);
+}
+
+/* Shared inner card module (watch boxes, grid cells) */
+.ledger-index-module-card {
+  background: var(--ledger-soft);
+  border: 1px solid var(--ledger-rule);
+  border-radius: var(--ledger-radius-md);
+  padding: var(--ledger-card-pad);
+}
+
+/* Uppercase labels */
+.ledger-index-label {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.13em;
+  line-height: 1.45;
+  text-transform: uppercase;
+  color: var(--ledger-label);
+}
+
+/* Weekly delta pill */
+.ledger-index-delta {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 12px;
+  border: 1px solid var(--ledger-delta-border);
+  border-radius: 999px;
+  background: var(--ledger-delta-bg);
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--ledger-delta-text);
+  white-space: nowrap;
+}
+
+/* Shared editorial tables */
+.ledger-index-table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  background: var(--ledger-card);
+  border: 1px solid var(--ledger-rule);
+  border-radius: var(--ledger-radius-md);
+  box-shadow: var(--ledger-shadow-soft);
+}
+
+.ledger-index-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 0.9rem;
+}
+
+.ledger-index-table th,
+.ledger-index-table td {
+  padding: 19px 17px;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--ledger-rule-soft);
+}
+
+.ledger-index-table th {
+  background: #f9f4ea;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  line-height: 1.45;
+  text-transform: uppercase;
+  color: var(--ledger-label);
+  white-space: nowrap;
+}
+
+.ledger-index-table td {
+  color: #3a3835;
+  line-height: 1.62;
+}
+
+.ledger-index-table tr:last-child td {
+  border-bottom: none;
+}
+
+/* Page footer note (in-content) */
+.ledger-index-page-note {
+  margin-top: 26px;
+  padding-top: 16px;
+  border-top: 1px solid var(--ledger-rule);
+  font-size: 0.92rem;
+  line-height: 1.66;
+  color: var(--ledger-muted);
+}
+
+/* Transition: content → Back to Ledger → newsletter */
+.ledger-page-footer {
+  margin-top: 4px;
+  padding-top: 16px;
+  padding-bottom: 10px;
+}
+
+.ledger-subscribe {
+  margin-top: 0;
+  padding-top: 20px;
+}
+
+.ledger-subscribe-tight {
+  padding-bottom: 1rem;
+}
+
+@media (min-width: 768px) {
+  .ledger-subscribe {
+    padding-top: 24px;
+  }
+
+  .ledger-subscribe-tight {
+    padding-bottom: 1.25rem;
+  }
+
+  .ledger-page-footer {
+    padding-top: 18px;
+    padding-bottom: 12px;
+  }
+}
+
+@media (max-width: 800px) {
+  .ledger-index-page.ledger-gpi,
+  .ledger-index-page.ledger-pmi,
+  .ledger-index-page.ledger-im,
+  .ledger-index-page.ledger-acai,
+  .ledger-index-page.ledger-isi,
+  .ledger-gpi,
+  .ledger-pmi,
+  .ledger-im,
+  .ledger-acai,
+  .ledger-isi {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .ledger-index-breadcrumb {
+    margin-bottom: 24px;
+  }
+
+  .ledger-index-hero-card {
+    padding: 24px 20px 22px;
+  }
+}
+
+/* Hero card padding parity (page-specific shells) */
+.ledger-im .im-card.ledger-index-hero-card,
+.ledger-isi .isi-card.ledger-index-hero-card,
+.ledger-acai .acai-card.ledger-index-hero-card,
+.ledger-pmi .pmi-card.ledger-index-hero-card {
+  padding: var(--ledger-hero-pad);
+}
+
+@media (max-width: 800px) {
+  .ledger-im .im-card.ledger-index-hero-card,
+  .ledger-isi .isi-card.ledger-index-hero-card,
+  .ledger-acai .acai-card.ledger-index-hero-card,
+  .ledger-pmi .pmi-card.ledger-index-hero-card {
+    padding: 24px 20px 22px;
+  }
+}

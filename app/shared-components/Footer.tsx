@@ -23,6 +23,25 @@ export default function Footer() {
 
         </div>
 
+        {/* The Ledger — quiet editorial module */}
+        <div className="mt-10 border-t border-[#ebe5dc] pt-10">
+          <div className="max-w-[28rem]">
+            <p className="text-[10px] uppercase tracking-[0.32em] text-[#8a8176]">
+              The Ledger
+            </p>
+            <p className="mt-3 text-[12px] leading-[1.75] text-[#7a7268]">
+              Weekly intelligence on markets, infrastructure, AI, energy, and
+              global systems.
+            </p>
+            <Link
+              href="/ledger"
+              className="mt-4 inline-block text-[11px] uppercase tracking-[0.26em] text-[#625b54] transition-colors hover:text-[#1f1d1a]"
+            >
+              Explore the Ledger
+            </Link>
+          </div>
+        </div>
+
         {/* Bottom row */}
         <div className="mt-8 flex flex-col gap-4 border-t border-[#e8e2d9] pt-6 md:flex-row md:items-center md:justify-between">
 
