@@ -3,6 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import Header from "../shared-components/Header";
+import WhisperedPraiseLink from "../shared-components/WhisperedPraiseLink";
 
 export default function CustomDesignPage() {
   const processSteps = [
@@ -89,6 +90,8 @@ export default function CustomDesignPage() {
 
             <p className="mx-auto mt-6 max-w-[34rem] text-[0.98rem] leading-[1.85] text-[#5f5851] md:text-[1.02rem]">
               Clear enough to feel easy. Personal enough to feel like your own.
+              Many clients describe the process as{" "}
+              <WhisperedPraiseLink>calm and collaborative</WhisperedPraiseLink>.
             </p>
           </div>
 

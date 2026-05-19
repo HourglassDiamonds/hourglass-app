@@ -1122,6 +1122,18 @@ function SuiteStyles() {
         line-height:1.35;
       }
       .dts-sentence .dts-article{ font-style:italic; color:var(--ink-soft); }
+      .dts-stage-trust{
+        margin:0 12px 12px; padding:0 8px; text-align:center;
+        font-size:11px; line-height:1.65; letter-spacing:0.05em;
+        color:var(--ink-soft); font-weight:400;
+      }
+      .dts-stage-trust-link{
+        color:var(--ink-soft);
+        border-bottom:1px solid oklch(from var(--hairline) l c h / 0.85);
+        text-decoration:none;
+        transition:color 0.45s ease, border-color 0.45s ease;
+      }
+      .dts-stage-trust-link:hover{ color:var(--ink); border-color:var(--ink-soft); }
       .dts-shape-strip{
         position:absolute; bottom:16px; left:50%; transform:translateX(-50%);
         display:flex; align-items:stretch; gap:7px; padding:7px 11px;
@@ -1321,6 +1333,11 @@ function SuiteStyles() {
           inset:auto !important;
           transform:none !important;
           width:100%;
+        }
+        .dts-stage-trust{
+          margin:0 auto 14px;
+          max-width:min(20rem,100%);
+          font-size:10px;
         }
         .dts-layer-finger img{
           object-position:50% 38%;
@@ -2206,6 +2223,12 @@ export default function DiamondStudioPage() {
                   <span>{SHAPE_LABELS[shape].toLowerCase()}</span>,{" "}
                   <span>{carat.toFixed(2)}</span> carats, on a size{" "}
                   <span>{ringSize.toFixed(0)}</span> finger.
+                </p>
+                <p className="dts-stage-trust">
+                  Thoughtful guidance matters as much as the tools themselves.{" "}
+                  <Link href="/whispered-praise" className="dts-stage-trust-link">
+                    Whispered Praise
+                  </Link>
                 </p>
               </div>
 

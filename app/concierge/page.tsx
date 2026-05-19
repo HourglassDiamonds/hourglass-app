@@ -2,6 +2,7 @@
 
 import React, { useMemo, useRef, useState } from "react";
 import Header from "../shared-components/Header";
+import WhisperedPraiseLink from "../shared-components/WhisperedPraiseLink";
 
 const MAX_IMAGES = 4;
 const MAX_IMAGE_SIZE_MB = 4;
@@ -220,6 +221,15 @@ export default function ConciergePage() {
 
               <p className="mt-6 text-[0.95rem] leading-[1.9] text-[#7a7268]">
                 A few details to get started.
+              </p>
+
+              <p className="mt-7">
+                <WhisperedPraiseLink
+                  variant="arrow"
+                  className="text-[11px] tracking-[0.1em]"
+                >
+                  A few reflections from people we&rsquo;ve worked with &rarr;
+                </WhisperedPraiseLink>
               </p>
             </div>
           </div>

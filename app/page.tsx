@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import HomeStudioPortal from "./home-studio-portal";
 import Header from "./shared-components/Header";
+import WhisperedPraiseLink from "./shared-components/WhisperedPraiseLink";
 
 function HeroRingStage() {
   return (
@@ -32,6 +33,12 @@ function CredibilityStrip() {
         <div className="opacity-80">Personal Guidance</div>
         <div className="opacity-80">Ongoing Care</div>
       </div>
+      <p className="mt-5 text-center text-[10px] leading-[1.85] tracking-[0.14em] text-[#8a8176]">
+        Trusted quietly by clients across the country.{" "}
+        <WhisperedPraiseLink variant="arrow" className="text-[10px] tracking-[0.14em]">
+          Whispered Praise
+        </WhisperedPraiseLink>
+      </p>
     </section>
   );
 }

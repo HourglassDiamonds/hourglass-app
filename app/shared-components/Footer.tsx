@@ -24,7 +24,7 @@ export default function Footer() {
         </div>
 
         {/* The Ledger — quiet editorial module */}
-        <div className="mt-10 border-t border-[#ebe5dc] pt-10">
+        <div className="mt-10 grid gap-10 border-t border-[#ebe5dc] pt-10 md:grid-cols-2 md:gap-12">
           <div className="max-w-[28rem]">
             <p className="text-[10px] uppercase tracking-[0.32em] text-[#8a8176]">
               The Ledger
@@ -38,6 +38,20 @@ export default function Footer() {
               className="mt-4 inline-block text-[11px] uppercase tracking-[0.26em] text-[#625b54] transition-colors hover:text-[#1f1d1a]"
             >
               Explore the Ledger
+            </Link>
+          </div>
+          <div className="max-w-[28rem]">
+            <p className="text-[10px] uppercase tracking-[0.32em] text-[#8a8176]">
+              Whispered Praise
+            </p>
+            <p className="mt-3 text-[12px] leading-[1.75] text-[#7a7268]">
+              Quiet reflections from clients who trusted the process.
+            </p>
+            <Link
+              href="/whispered-praise"
+              className="mt-4 inline-block text-[11px] uppercase tracking-[0.26em] text-[#625b54] transition-colors hover:text-[#1f1d1a]"
+            >
+              Read Whispered Praise
             </Link>
           </div>
         </div>

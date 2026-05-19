@@ -4,6 +4,7 @@ import React from "react";
 import Link from "next/link";
 import Header from "../shared-components/Header";
 import SectionHeading from "../shared-components/SectionHeading";
+import WhisperedPraiseLink from "../shared-components/WhisperedPraiseLink";
 
 export default function EngagementRingsPage() {
   const process = [
@@ -118,6 +119,23 @@ export default function EngagementRingsPage() {
               </div>
             ))}
           </div>
+
+          <blockquote className="mx-auto mt-16 max-w-[30rem] border-t border-[#e4dbcf]/60 pt-12 text-center md:mt-20 md:max-w-[32rem] md:pt-14">
+            <p
+              className="font-serif text-[1.2rem] font-normal leading-[1.42] tracking-[-0.02em] text-[#252220] md:text-[1.32rem] md:leading-[1.38]"
+              style={{ textWrap: "balance" }}
+            >
+              &ldquo;It always felt like I was working with a partner.&rdquo;
+            </p>
+            <footer className="mt-6">
+              <WhisperedPraiseLink
+                variant="arrow"
+                className="text-[10.5px] tracking-[0.12em]"
+              >
+                Whispered Praise &rarr;
+              </WhisperedPraiseLink>
+            </footer>
+          </blockquote>
         </section>
 
         <section className="py-[86px] text-center md:py-[96px]">
