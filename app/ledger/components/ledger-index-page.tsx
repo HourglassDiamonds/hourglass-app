@@ -42,7 +42,7 @@ function GpiWatchingSection({ index }: { index: LedgerIndexDefinition }) {
   if (blocks.length === 0) return null;
 
   return (
-    <div className="gpi-watching mx-auto max-w-[920px]">
+    <div className="gpi-watching">
       <h2 className="gpi-watching-title">
         {index.watchingSectionTitle ?? "What We're Watching"}
       </h2>

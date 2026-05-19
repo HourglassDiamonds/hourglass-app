@@ -160,6 +160,7 @@
   background: var(--ledger-soft);
   border: 1px solid var(--ledger-rule);
   border-radius: var(--ledger-radius-md);
+  padding: var(--ledger-card-pad);
 }
 
 /* Section rhythm (ISM benchmark) */

@@ -2,7 +2,8 @@ import Link from "next/link";
 import type { BenchmarkTier, LedgerIndexDefinition } from "../ledger-data";
 
 const LABEL = "font-sans text-[10px] uppercase tracking-[0.16em] text-[#6f6a63]";
-const GPI_LABEL = "gpi-label font-sans text-[10px] uppercase tracking-[0.13em] text-[#5f5a54]";
+const GPI_LABEL =
+  "gpi-label ledger-index-label font-sans text-[11px] uppercase tracking-[0.13em]";
 const SCALE_LABEL =
   "font-sans text-[10px] uppercase tracking-[0.08em] text-[#6f6a63]";
 
@@ -15,7 +16,10 @@ const METER_CARD_COMPACT = `${METER_CARD} px-7 py-8 sm:px-8 sm:py-9`;
 const INNER_PILL =
   "rounded-[14px] border border-black/[0.08] bg-[#f7f2e8] p-[13px]";
 
+const GPI_INNER_CARD = "ledger-index-inner-card";
+
 const CONTENT_WIDTH = "mx-auto w-full max-w-[920px]";
+const GPI_CONTENT_WIDTH = "w-full";
 
 type LedgerIndexMeterProps = {
   index: LedgerIndexDefinition;
@@ -110,8 +114,10 @@ function MainReadingRow({
   const isGpi = index.id === "global-pressure" && !compact;
   const labelCls = isGpi ? GPI_LABEL : LABEL;
   const degreeClass = compact
-    ? "font-serif text-[clamp(3.2rem,8vw,4.65rem)] font-bold leading-[0.9] tracking-[-0.06em] text-[#2a2826]"
-    : "font-serif text-[clamp(3.6rem,8.5vw,5.35rem)] font-bold leading-[0.9] tracking-[-0.06em] text-[#2a2826]";
+    ? "font-serif text-[clamp(3.2rem,8vw,4.65rem)] font-bold leading-[0.88] tracking-[-0.07em] text-[#2a2826]"
+    : isGpi
+      ? "gpi-main-degree font-serif text-[clamp(4rem,10vw,6.2rem)] font-bold leading-[0.88] tracking-[-0.07em] text-[#2a2826]"
+      : "font-serif text-[clamp(3.6rem,8.5vw,5.35rem)] font-bold leading-[0.9] tracking-[-0.06em] text-[#2a2826]";
 
   const rowClass = compact
     ? "flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between sm:gap-6"
@@ -130,10 +136,16 @@ function MainReadingRow({
         <p className={`mt-2 ${labelCls}`}>{index.readingLabel}</p>
       </div>
       <div className={deltaWrapClass}>
-        <span className="inline-flex items-center whitespace-nowrap rounded-full border border-[rgba(140,75,63,0.22)] bg-[rgba(140,75,63,0.055)] px-[10px] py-2 font-sans text-[10px] uppercase tracking-[0.16em] text-[#6f4038]">
+        <span
+          className={
+            isGpi
+              ? "ledger-index-delta"
+              : "inline-flex items-center whitespace-nowrap rounded-full border border-[rgba(140,75,63,0.22)] bg-[rgba(140,75,63,0.055)] px-[10px] py-2 font-sans text-[10px] uppercase tracking-[0.13em] text-[#6f4038]"
+          }
+        >
           ↑ +{index.weeklyDelta} Weekly Read
         </span>
-        <p className={`mt-[7px] ${labelCls}`}>{index.status}</p>
+        <p className={`gpi-delta-note mt-[9px] ${labelCls}`}>{index.status}</p>
       </div>
     </div>
   );
@@ -150,6 +162,7 @@ function MeterCard({
   const isGpi = index.id === "global-pressure" && variant === "full";
   const benchmarks = index.benchmarks ?? [];
   const labelCls = isGpi ? GPI_LABEL : LABEL;
+  const innerCls = isGpi ? GPI_INNER_CARD : INNER_PILL;
   const cardClass = compact
     ? METER_CARD_COMPACT
     : isGpi
@@ -159,12 +172,12 @@ function MeterCard({
   const summaryBlock = (
     <>
       <p
-        className={`leading-[1.78] text-[#3d3a36] ${
+        className={`${
           compact
-            ? "mt-6 text-[0.98rem] md:mt-7 md:text-[1.02rem]"
+            ? "mt-6 text-[0.98rem] leading-[1.78] text-[#3d3a36] md:mt-7 md:text-[1.02rem]"
             : isGpi
-              ? "mt-0 text-[1.05rem]"
-              : "mt-7 text-[1.05rem] md:mt-8"
+              ? "gpi-summary-lead mt-0 text-[1.02rem] leading-[1.72] text-[#272727]"
+              : "mt-7 text-[1.05rem] leading-[1.78] text-[#3d3a36] md:mt-8"
         }`}
       >
         {compact ? (
@@ -182,12 +195,12 @@ function MeterCard({
         )}
       </p>
       <p
-        className={`leading-[1.78] text-[#6f6a63] ${
+        className={`${
           compact
-            ? "mt-6 border-t border-black/[0.08] pt-5 text-[0.95rem] md:mt-7 md:pt-5 md:text-[1.02rem]"
+            ? "mt-6 border-t border-black/[0.08] pt-5 text-[0.95rem] leading-[1.78] text-[#6f6a63] md:mt-7 md:pt-5 md:text-[1.02rem]"
             : isGpi
-              ? "mt-5 pt-0 text-[0.96rem]"
-              : "mt-7 border-t border-black/[0.08] pt-5 text-[1.05rem] md:mt-8 md:pt-6"
+              ? "gpi-weekly-signal mt-[22px] border-t border-[rgba(32,28,24,0.08)] pt-[22px] text-[0.96rem] leading-[1.72] text-[#6f6a63]"
+              : "mt-7 border-t border-black/[0.08] pt-5 text-[1.05rem] leading-[1.78] text-[#6f6a63] md:mt-8 md:pt-6"
         }`}
       >
         <strong className="font-semibold text-[#4a4540]">
@@ -200,12 +213,14 @@ function MeterCard({
 
   const methodPillsBlock = (
     <div
-      className={`grid grid-cols-1 gap-3 ${
-        compact ? "mt-6 sm:grid-cols-3 md:mt-8" : isGpi ? "mt-6 md:mt-7" : "mt-6 md:mt-8"
+      className={`grid grid-cols-1 ${
+        isGpi ? "gpi-method-grid mt-[22px] gap-3" : "gap-3"
+      } ${
+        compact ? "mt-6 sm:grid-cols-3 md:mt-8" : isGpi ? "" : "mt-6 md:mt-8"
       } ${!compact && !isGpi ? "min-[801px]:grid-cols-3" : !compact ? "min-[801px]:grid-cols-3" : ""}`}
     >
       {index.methodPills.map((pill) => (
-        <div key={pill.label} className={INNER_PILL}>
+        <div key={pill.label} className={innerCls}>
           <span className={labelCls}>{pill.label}</span>
           <p className="mt-[5px] text-[0.92rem] leading-[1.5] text-[#292724]">
             {pill.value}
@@ -235,12 +250,12 @@ function MeterCard({
           }`}
         >
           {index.recentReadings.map((item) => (
-            <div key={item.week} className={INNER_PILL}>
-              <p className={`${labelCls} !text-[10px]`}>{item.week}</p>
-              <p className="my-1.5 font-serif text-[1.4rem] font-bold leading-none tracking-[-0.04em] text-[#2a2826]">
+            <div key={item.week} className={innerCls}>
+              <p className={`${labelCls} gpi-inner-label`}>{item.week}</p>
+              <p className="gpi-inner-score font-serif font-bold leading-none tracking-[-0.04em] text-[#2a2826]">
                 <DegreeNumber value={item.degrees} />
               </p>
-              <p className={`${labelCls} !text-[10px]`}>{item.state}</p>
+              <p className={`${labelCls} gpi-inner-label`}>{item.state}</p>
             </div>
           ))}
         </div>
@@ -256,15 +271,15 @@ function MeterCard({
           {benchmarks.map((bench) => (
             <div
               key={bench.name}
-              className={`${INNER_PILL} ${benchTierClass(bench.tier)}`}
+              className={`${innerCls} ${benchTierClass(bench.tier)}`}
             >
-              <p className="font-serif text-[0.95rem] font-bold leading-[1.25] text-[#171717]">
+              <p className="gpi-benchmark-name font-serif font-bold leading-[1.28] text-[#171717]">
                 {bench.name}
               </p>
-              <p className="my-2 font-serif text-[1.4rem] font-bold leading-none tracking-[-0.04em] text-[#2a2826]">
+              <p className="gpi-inner-score font-serif font-bold leading-none tracking-[-0.04em] text-[#2a2826]">
                 <DegreeNumber value={bench.score} />
               </p>
-              <p className={`${labelCls} !text-[10px]`}>{bench.note}</p>
+              <p className={`${labelCls} gpi-inner-label`}>{bench.note}</p>
             </div>
           ))}
         </div>
@@ -340,7 +355,7 @@ function MeterCard({
         }`}
       >
         {index.methodPills.map((pill) => (
-          <div key={pill.label} className={INNER_PILL}>
+          <div key={pill.label} className={innerCls}>
             <span className={LABEL}>{pill.label}</span>
             <p className="mt-[5px] text-[0.92rem] leading-[1.5] text-[#292724]">
               {pill.value}
@@ -362,7 +377,7 @@ function MeterCard({
           }`}
         >
           {index.recentReadings.map((item) => (
-            <div key={item.week} className={INNER_PILL}>
+            <div key={item.week} className={innerCls}>
               <p className={`${LABEL} !text-[10px]`}>{item.week}</p>
               <p className="my-1.5 font-serif text-[1.4rem] font-bold leading-none tracking-[-0.04em] text-[#2a2826]">
                 <DegreeNumber value={item.degrees} />
@@ -377,7 +392,7 @@ function MeterCard({
           <span className={`block ${LABEL}`}>Historical Benchmark Readings</span>
           <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
             {benchmarks.map((bench) => (
-              <div key={bench.name} className={INNER_PILL}>
+              <div key={bench.name} className={innerCls}>
                 <p className="font-serif text-[0.95rem] font-bold leading-[1.25] text-[#171717]">
                   {bench.name}
                 </p>
@@ -404,34 +419,48 @@ export default function LedgerIndexMeter({
   const headingId = `ledger-index-${index.id}-title`;
   const kickerClass = isGpi ? GPI_LABEL : LABEL;
 
+  const shellWidth = isGpi && isFull ? GPI_CONTENT_WIDTH : CONTENT_WIDTH;
+
   return (
     <section
-      className={`${CONTENT_WIDTH} text-[#171717] ${className}`}
+      className={`${shellWidth} text-[#171717] ${className}`}
       aria-labelledby={headingId}
     >
       {isFull ? (
-        <>
-          <span className={kickerClass}>{index.kicker}</span>
-          <h1
-            id={headingId}
-            className="mt-2 font-serif text-[clamp(2.6rem,5vw,4.4rem)] font-normal leading-[1.02] tracking-[-0.045em]"
-          >
-            {index.displayTitle}
-          </h1>
-          <p
-            className={`max-w-[880px] font-serif text-[1.05rem] leading-[1.78] text-[#2c2a27] ${
-              isGpi ? "gpi-meter-intro mt-[18px]" : "mt-6 max-w-[680px]"
-            }`}
-          >
-            {index.intro}
-          </p>
-          <p className="mt-4 text-[0.95rem] italic text-[#6f6a63]">
-            {index.updatedLabel}
-          </p>
-          <div className={isGpi ? "gpi-meter-hero-gap" : "mt-10 md:mt-14"}>
-            <MeterCard index={index} variant="full" />
-          </div>
-        </>
+        isGpi ? (
+          <>
+            <span className="ledger-index-kicker">{index.kicker}</span>
+            <h1 id={headingId} className="ledger-index-title">
+              {index.displayTitle}
+            </h1>
+            <p className="ledger-index-intro">{index.intro}</p>
+            <p className="ledger-index-updated">
+              <em>{index.updatedLabel}</em>
+            </p>
+            <div className="gpi-meter-hero-wrap">
+              <MeterCard index={index} variant="full" />
+            </div>
+          </>
+        ) : (
+          <>
+            <span className={kickerClass}>{index.kicker}</span>
+            <h1
+              id={headingId}
+              className="mt-2 font-serif text-[clamp(2.6rem,5vw,4.4rem)] font-normal leading-[1.02] tracking-[-0.045em]"
+            >
+              {index.displayTitle}
+            </h1>
+            <p className="mt-6 max-w-[680px] font-serif text-[1.05rem] leading-[1.78] text-[#2c2a27]">
+              {index.intro}
+            </p>
+            <p className="mt-4 text-[0.95rem] italic text-[#6f6a63]">
+              {index.updatedLabel}
+            </p>
+            <div className="mt-10 md:mt-14">
+              <MeterCard index={index} variant="full" />
+            </div>
+          </>
+        )
       ) : (
         <>
           <p className={LABEL}>Current reading</p>
