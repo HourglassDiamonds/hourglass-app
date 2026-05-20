@@ -8,9 +8,13 @@ export type DiamondStudioEventName =
   | "skin_tone_selected"
   | "orientation_changed"
   | "coverage_zone_changed"
+  | "consultation_cta_clicked"
+  | "studio_session_engaged"
   | "home_clicked";
 
 export type DiamondStudioDeviceType = "mobile" | "desktop";
+
+export type DiamondStudioEngagementTrigger = "time" | "interactions";
 
 export type DiamondStudioEventProperties = {
   shape: string;
@@ -21,6 +25,10 @@ export type DiamondStudioEventProperties = {
   coveragePercent: number;
   coverageZone: string;
   deviceType: DiamondStudioDeviceType;
+  /** consultation_cta_clicked */
+  source?: string;
+  /** studio_session_engaged */
+  engagementTrigger?: DiamondStudioEngagementTrigger;
 };
 
 export function trackDiamondStudioEvent(

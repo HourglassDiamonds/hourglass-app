@@ -1788,10 +1788,68 @@ export default function DiamondStudioPage() {
   const trackEventRef = useRef(trackEvent);
   trackEventRef.current = trackEvent;
 
+  const sessionEngagedFiredRef = useRef(false);
+  const meaningfulInteractionCountRef = useRef(0);
+
+  const tryFireSessionEngaged = useCallback(
+    (engagementTrigger: "time" | "interactions") => {
+      if (sessionEngagedFiredRef.current) return;
+      sessionEngagedFiredRef.current = true;
+      trackDiamondStudioEvent("studio_session_engaged", {
+        ...analyticsProps(),
+        engagementTrigger,
+      });
+    },
+    [analyticsProps],
+  );
+
+  const recordMeaningfulInteraction = useCallback(() => {
+    if (sessionEngagedFiredRef.current) return;
+    meaningfulInteractionCountRef.current += 1;
+    if (meaningfulInteractionCountRef.current >= 5) {
+      tryFireSessionEngaged("interactions");
+    }
+  }, [tryFireSessionEngaged]);
+
+  const trackConsultationCtaClicked = useCallback(() => {
+    trackDiamondStudioEvent("consultation_cta_clicked", {
+      ...analyticsProps(),
+      source: "diamond_studio",
+    });
+  }, [analyticsProps]);
+
   useEffect(() => {
     trackDiamondStudioEvent("diamond_studio_view", analyticsProps());
     // eslint-disable-next-line react-hooks/exhaustive-deps -- once per mount
   }, []);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      tryFireSessionEngaged("time");
+    }, 45_000);
+    return () => window.clearTimeout(timer);
+  }, [tryFireSessionEngaged]);
+
+  useEffect(() => {
+    const root = document.querySelector("[data-diamond-studio-route]");
+    if (!root) return;
+
+    const onClick = (event: Event) => {
+      const anchor = (event.target as Element | null)?.closest("a[href]");
+      if (!(anchor instanceof HTMLAnchorElement)) return;
+      const href = anchor.getAttribute("href") ?? "";
+      if (
+        href === "/concierge" ||
+        href.startsWith("/concierge?") ||
+        href.startsWith("/concierge#")
+      ) {
+        trackConsultationCtaClicked();
+      }
+    };
+
+    root.addEventListener("click", onClick);
+    return () => root.removeEventListener("click", onClick);
+  }, [trackConsultationCtaClicked]);
 
   const prevZoneRef = useRef(zone);
   useEffect(() => {
@@ -1818,8 +1876,9 @@ export default function DiamondStudioPage() {
         ...analyticsProps(),
         shape: s,
       });
+      recordMeaningfulInteraction();
     },
-    [shape, analyticsProps],
+    [shape, analyticsProps, recordMeaningfulInteraction],
   );
 
   const selectSkinTone = useCallback(
@@ -1830,8 +1889,9 @@ export default function DiamondStudioPage() {
         ...analyticsProps(),
         skinTone: t,
       });
+      recordMeaningfulInteraction();
     },
-    [skinTone, analyticsProps],
+    [skinTone, analyticsProps, recordMeaningfulInteraction],
   );
 
   const selectOrientation = useCallback(
@@ -1842,8 +1902,9 @@ export default function DiamondStudioPage() {
         ...analyticsProps(),
         orientation: o,
       });
+      recordMeaningfulInteraction();
     },
-    [stoneOrientation, analyticsProps],
+    [stoneOrientation, analyticsProps, recordMeaningfulInteraction],
   );
 
   const rw = renderStoneWidthMm(diamondVisualShape, carat, stoneOrientation);
@@ -1870,8 +1931,9 @@ export default function DiamondStudioPage() {
         ...analyticsProps(),
         fingerSize: nextSize,
       });
+      recordMeaningfulInteraction();
     },
-    [analyticsProps],
+    [analyticsProps, recordMeaningfulInteraction],
   );
 
   const commitCaratAnalytics = useCallback(
@@ -1880,8 +1942,9 @@ export default function DiamondStudioPage() {
         ...analyticsProps(),
         carat: nextCarat,
       });
+      recordMeaningfulInteraction();
     },
-    [analyticsProps],
+    [analyticsProps, recordMeaningfulInteraction],
   );
 
   const applyRingSize = useCallback(
