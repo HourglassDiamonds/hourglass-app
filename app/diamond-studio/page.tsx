@@ -1867,7 +1867,7 @@ export default function DiamondStudioPage() {
   }, [tryFireSessionEngaged]);
 
   const trackConsultationCtaClicked = useCallback(
-    (placement = "inline_editorial_cta") => {
+    (placement = "editorial_inline") => {
       trackDiamondStudioEvent("consultation_cta_clicked", {
         ...analyticsProps(),
         source: "diamond_studio",
@@ -1903,7 +1903,7 @@ export default function DiamondStudioPage() {
         href.startsWith("/concierge#")
       ) {
         const placement =
-          anchor.dataset.dtsCtaPlacement ?? "inline_editorial_cta";
+          anchor.dataset.dtsCtaPlacement ?? "editorial_inline";
         trackConsultationCtaClicked(placement);
       }
     };
@@ -2353,7 +2353,7 @@ export default function DiamondStudioPage() {
                   <Link
                     href="/concierge"
                     className="dts-stage-trust-link"
-                    data-dts-cta-placement="inline_editorial_cta"
+                    data-dts-cta-placement="editorial_inline"
                   >
                     Begin the Conversation →
                   </Link>
