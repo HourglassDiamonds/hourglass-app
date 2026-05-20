@@ -7,13 +7,18 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "generate:favicons": "node scripts/generate-favicons.mjs"
+    "generate:favicons": "node scripts/generate-favicons.mjs",
+    "intelligence:google-oauth": "node scripts/google-oauth-setup.mjs"
   },
   "dependencies": {
+    "@google-analytics/data": "^6.0.0",
+    "@supabase/supabase-js": "^2.106.1",
     "@vercel/blob": "^2.3.3",
+    "google-auth-library": "^10.6.2",
     "next": "16.2.2",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "resend": "^6.12.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
