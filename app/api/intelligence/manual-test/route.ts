@@ -3,6 +3,7 @@ import { verifyCronQuerySecret } from "@/lib/intelligence/cron-auth";
 import { runWeeklyIntelligenceJob } from "@/lib/intelligence/weekly-report";
 
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 export const maxDuration = 120;
 
 // TODO: Remove this route after production GA4 → Supabase → dashboard verification is complete.

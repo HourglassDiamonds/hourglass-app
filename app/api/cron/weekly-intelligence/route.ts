@@ -3,6 +3,7 @@ import { verifyCronRequest } from "@/lib/intelligence/cron-auth";
 import { runWeeklyIntelligenceJob } from "@/lib/intelligence/weekly-report";
 
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 export const maxDuration = 120;
 
 /** Vercel Cron — Monday weekly intelligence (secured). */

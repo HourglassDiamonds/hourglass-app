@@ -3,6 +3,18 @@
  * Called from instrumentation.ts on Node startup — never import from client components.
  */
 
+import {
+  getCronSecret,
+  getGa4PropertyId,
+  getGoogleClientId,
+  getGoogleClientSecret,
+  getGoogleRefreshToken,
+  getIntelligenceEmailFrom,
+  getIntelligenceEmailTo,
+  getResendApiKey,
+  getSupabaseServiceRoleKey,
+  getSupabaseUrl,
+} from "./env";
 import { isGa4OAuthConfigured } from "./google-oauth";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
 
@@ -37,13 +49,12 @@ function isServerRuntime(): boolean {
 }
 
 function missingGa4OAuthVars(): string[] {
-  const names = [
-    "GA4_PROPERTY_ID",
-    "GOOGLE_CLIENT_ID",
-    "GOOGLE_CLIENT_SECRET",
-    "GOOGLE_REFRESH_TOKEN",
-  ] as const;
-  return names.filter((name) => !optional(name));
+  const missing: string[] = [];
+  if (!getGa4PropertyId()) missing.push("GA4_PROPERTY_ID");
+  if (!getGoogleClientId()) missing.push("GOOGLE_CLIENT_ID");
+  if (!getGoogleClientSecret()) missing.push("GOOGLE_CLIENT_SECRET");
+  if (!getGoogleRefreshToken()) missing.push("GOOGLE_REFRESH_TOKEN");
+  return missing;
 }
 
 function missingIntelligenceVars(): string[] {
@@ -52,18 +63,14 @@ function missingIntelligenceVars(): string[] {
     missing.push(...missingGa4OAuthVars());
   }
   if (!isSupabaseConfigured()) {
-    missing.push("SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY");
+    if (!getSupabaseUrl()) missing.push("SUPABASE_URL");
+    if (!getSupabaseServiceRoleKey()) missing.push("SUPABASE_SERVICE_ROLE_KEY");
   }
-  if (!optional("RESEND_API_KEY")) missing.push("RESEND_API_KEY");
-  if (!optional("INTELLIGENCE_EMAIL_FROM")) missing.push("INTELLIGENCE_EMAIL_FROM");
-  if (!optional("INTELLIGENCE_EMAIL_TO")) missing.push("INTELLIGENCE_EMAIL_TO");
-  if (!optional("CRON_SECRET")) missing.push("CRON_SECRET");
+  if (!getResendApiKey()) missing.push("RESEND_API_KEY");
+  if (!getIntelligenceEmailFrom()) missing.push("INTELLIGENCE_EMAIL_FROM");
+  if (!getIntelligenceEmailTo()) missing.push("INTELLIGENCE_EMAIL_TO");
+  if (!getCronSecret()) missing.push("CRON_SECRET");
   return missing;
-}
-
-function optional(name: string): string | undefined {
-  const v = process.env[name]?.trim();
-  return v || undefined;
 }
 
 /** Warn once if intelligence cron/dashboard persistence env is incomplete. */

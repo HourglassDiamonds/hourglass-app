@@ -1,4 +1,11 @@
 import { OAuth2Client } from "google-auth-library";
+import {
+  getGa4PropertyId,
+  getGoogleClientId,
+  getGoogleClientSecret,
+  getGoogleOAuthRedirectUri,
+  getGoogleRefreshToken,
+} from "./env";
 
 export type Ga4OAuthErrorCode =
   | "MISSING_ENV"
@@ -33,23 +40,18 @@ const ANALYTICS_READONLY_SCOPE =
 let authClient: OAuth2Client | null = null;
 let oauthConnectedLogged = false;
 
-function optional(name: string): string | undefined {
-  const v = process.env[name]?.trim();
-  return v || undefined;
-}
-
 export function getGa4OAuthEnv(): Ga4OAuthEnv | null {
-  const clientId = optional("GOOGLE_CLIENT_ID");
-  const clientSecret = optional("GOOGLE_CLIENT_SECRET");
-  const refreshToken = optional("GOOGLE_REFRESH_TOKEN");
-  const propertyId = optional("GA4_PROPERTY_ID");
+  const clientId = getGoogleClientId();
+  const clientSecret = getGoogleClientSecret();
+  const refreshToken = getGoogleRefreshToken();
+  const propertyId = getGa4PropertyId();
 
   if (!clientId || !clientSecret || !refreshToken || !propertyId) {
     return null;
   }
 
   const redirectUri =
-    optional("GOOGLE_OAUTH_REDIRECT_URI") ??
+    getGoogleOAuthRedirectUri() ??
     "http://localhost:3000/api/intelligence/google-oauth-callback";
 
   return {
@@ -76,14 +78,14 @@ function getOAuthClientCredentials(): Pick<
   Ga4OAuthEnv,
   "clientId" | "clientSecret" | "redirectUri"
 > | null {
-  const clientId = optional("GOOGLE_CLIENT_ID");
-  const clientSecret = optional("GOOGLE_CLIENT_SECRET");
+  const clientId = getGoogleClientId();
+  const clientSecret = getGoogleClientSecret();
   if (!clientId || !clientSecret) return null;
   return {
     clientId,
     clientSecret,
     redirectUri:
-      optional("GOOGLE_OAUTH_REDIRECT_URI") ??
+      getGoogleOAuthRedirectUri() ??
       "http://localhost:3000/api/intelligence/google-oauth-callback",
   };
 }
