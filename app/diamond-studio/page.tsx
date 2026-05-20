@@ -1889,29 +1889,6 @@ export default function DiamondStudioPage() {
     return () => window.clearTimeout(timer);
   }, [tryFireSessionEngaged]);
 
-  useEffect(() => {
-    const root = document.querySelector("[data-diamond-studio-route]");
-    if (!root) return;
-
-    const onClick = (event: Event) => {
-      const anchor = (event.target as Element | null)?.closest("a[href]");
-      if (!(anchor instanceof HTMLAnchorElement)) return;
-      const href = anchor.getAttribute("href") ?? "";
-      if (
-        href === "/concierge" ||
-        href.startsWith("/concierge?") ||
-        href.startsWith("/concierge#")
-      ) {
-        const placement =
-          anchor.dataset.dtsCtaPlacement ?? "editorial_inline";
-        trackConsultationCtaClicked(placement);
-      }
-    };
-
-    root.addEventListener("click", onClick);
-    return () => root.removeEventListener("click", onClick);
-  }, [trackConsultationCtaClicked]);
-
   const prevZoneRef = useRef(zone);
   useEffect(() => {
     if (prevZoneRef.current === zone) return;
@@ -2353,7 +2330,7 @@ export default function DiamondStudioPage() {
                   <Link
                     href="/concierge"
                     className="dts-stage-trust-link"
-                    data-dts-cta-placement="editorial_inline"
+                    onClick={() => trackConsultationCtaClicked("editorial_inline")}
                   >
                     Begin the Conversation →
                   </Link>
