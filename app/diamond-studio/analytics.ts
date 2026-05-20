@@ -27,6 +27,7 @@ export type DiamondStudioEventProperties = {
   deviceType: DiamondStudioDeviceType;
   /** consultation_cta_clicked */
   source?: string;
+  placement?: string;
   /** studio_session_engaged */
   engagementTrigger?: DiamondStudioEngagementTrigger;
 };

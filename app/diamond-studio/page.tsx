@@ -611,14 +611,14 @@ function SuiteStyles() {
         html.diamond-studio-viewport-lock,
         html.diamond-studio-viewport-lock body{
           overflow:hidden !important;
-          height:100vh !important;
-          max-height:100vh !important;
+          height:100dvh !important;
+          max-height:100dvh !important;
         }
         html.diamond-studio-viewport-lock body > div,
         html.diamond-studio-viewport-lock body main{
           min-height:0 !important;
-          height:100vh !important;
-          max-height:100vh !important;
+          height:100dvh !important;
+          max-height:100dvh !important;
           overflow:hidden !important;
         }
       }
@@ -653,13 +653,13 @@ function SuiteStyles() {
         display:grid; grid-template-rows:minmax(60px,auto) 1fr; }
       @media (min-width: 769px) {
         .dts-shell{
-          height:100vh;
-          max-height:100vh;
+          height:100dvh;
+          max-height:100dvh;
           overflow:hidden;
         }
         .dts-app{
-          height:100vh;
-          max-height:100vh;
+          height:100dvh;
+          max-height:100dvh;
           overflow:hidden;
           grid-template-rows:var(--dts-topbar-h, 60px) minmax(0, 1fr);
         }
@@ -826,13 +826,32 @@ function SuiteStyles() {
           display:flex;
           flex-direction:column;
           overflow:hidden;
+          justify-content:flex-start;
         }
         .dts-stage-stack .dts-stage-preview{
+          order:1;
           flex:1 1 auto;
           min-height:0;
           min-width:0;
-          padding:14px 0 92px;
+          padding:12px 0 8px;
           justify-content:center;
+          overflow:hidden;
+        }
+        .dts-stage-stack .dts-shape-strip{
+          order:2;
+          position:relative;
+          left:auto;
+          right:auto;
+          bottom:auto;
+          inset:auto;
+          transform:none;
+          flex:0 0 auto;
+          align-self:center;
+          margin-top:clamp(10px, 1.6vh, 20px);
+          margin-bottom:clamp(14px, 2.4vh, 28px);
+        }
+        .dts-stage-stack .dts-stage-canvas{
+          margin-bottom:clamp(4px, 0.8vh, 12px);
         }
       }
       .dts-stage-stack{
@@ -1134,6 +1153,10 @@ function SuiteStyles() {
         transition:color 0.45s ease, border-color 0.45s ease;
       }
       .dts-stage-trust-link:hover{ color:var(--ink); border-color:var(--ink-soft); }
+      .dts-stage-trust .dts-stage-trust-link{
+        letter-spacing:0.06em;
+        white-space:nowrap;
+      }
       .dts-shape-strip{
         position:absolute; bottom:16px; left:50%; transform:translateX(-50%);
         display:flex; align-items:stretch; gap:7px; padding:7px 11px;
@@ -1447,6 +1470,38 @@ function SuiteStyles() {
         .dts-cov-helper{
           padding:0 4px;
           margin-top:12px;
+        }
+      }
+      @media (min-width: 769px) and (max-height: 860px) {
+        .dts-stage-stack .dts-stage-preview{
+          padding-top:8px;
+          padding-bottom:4px;
+        }
+        .dts-sentence{
+          margin-bottom:10px;
+          font-size:clamp(17px, 2.4vh, 20px);
+        }
+        .dts-stage-trust{
+          margin-bottom:8px;
+          font-size:10px;
+          line-height:1.55;
+        }
+        .dts-viewer{
+          width:min(520px, 90%);
+          max-height:min(52vh, 460px);
+        }
+        .dts-stage-stack .dts-shape-strip{
+          margin-bottom:clamp(12px, 1.8vh, 22px);
+        }
+      }
+      @media (min-width: 769px) and (max-height: 720px) {
+        .dts-viewer{
+          width:min(480px, 86%);
+          max-height:min(46vh, 400px);
+        }
+        .dts-sentence{
+          font-size:clamp(16px, 2.2vh, 18px);
+          margin-bottom:8px;
         }
       }
       @media (prefers-reduced-motion: reduce){
@@ -1811,12 +1866,16 @@ export default function DiamondStudioPage() {
     }
   }, [tryFireSessionEngaged]);
 
-  const trackConsultationCtaClicked = useCallback(() => {
-    trackDiamondStudioEvent("consultation_cta_clicked", {
-      ...analyticsProps(),
-      source: "diamond_studio",
-    });
-  }, [analyticsProps]);
+  const trackConsultationCtaClicked = useCallback(
+    (placement = "inline_editorial_cta") => {
+      trackDiamondStudioEvent("consultation_cta_clicked", {
+        ...analyticsProps(),
+        source: "diamond_studio",
+        placement,
+      });
+    },
+    [analyticsProps],
+  );
 
   useEffect(() => {
     trackDiamondStudioEvent("diamond_studio_view", analyticsProps());
@@ -1843,7 +1902,9 @@ export default function DiamondStudioPage() {
         href.startsWith("/concierge?") ||
         href.startsWith("/concierge#")
       ) {
-        trackConsultationCtaClicked();
+        const placement =
+          anchor.dataset.dtsCtaPlacement ?? "inline_editorial_cta";
+        trackConsultationCtaClicked(placement);
       }
     };
 
@@ -2289,8 +2350,12 @@ export default function DiamondStudioPage() {
                 </p>
                 <p className="dts-stage-trust">
                   Thoughtful guidance matters as much as the tools themselves.{" "}
-                  <Link href="/whispered-praise" className="dts-stage-trust-link">
-                    Whispered Praise
+                  <Link
+                    href="/concierge"
+                    className="dts-stage-trust-link"
+                    data-dts-cta-placement="inline_editorial_cta"
+                  >
+                    Begin the Conversation →
                   </Link>
                 </p>
               </div>
