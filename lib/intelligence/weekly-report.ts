@@ -1,6 +1,12 @@
 import { fetchGa4WeeklyBundle, isGa4Configured } from "@/lib/integrations/ga4";
 import { sendWeeklyIntelligenceEmail } from "@/lib/email/send-weekly-intelligence-email";
 import {
+  getGa4PropertyId,
+  getGoogleClientId,
+  getGoogleClientSecret,
+  getGoogleRefreshToken,
+  getSupabaseServiceRoleKey,
+  getSupabaseUrl,
   getWeeklyPipelineEnv,
   isLocalDevelopment,
   isProductionRuntime,
@@ -22,17 +28,12 @@ import { isSupabaseConfigured } from "@/lib/supabase/client";
 
 function missingPipelineMessage(): string {
   const missing: string[] = [];
-  if (!isGa4Configured()) {
-    missing.push(
-      "GA4_PROPERTY_ID",
-      "GOOGLE_CLIENT_ID",
-      "GOOGLE_CLIENT_SECRET",
-      "GOOGLE_REFRESH_TOKEN",
-    );
-  }
-  if (!isSupabaseConfigured()) {
-    missing.push("SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY");
-  }
+  if (!getGa4PropertyId()) missing.push("GA4_PROPERTY_ID");
+  if (!getGoogleClientId()) missing.push("GOOGLE_CLIENT_ID");
+  if (!getGoogleClientSecret()) missing.push("GOOGLE_CLIENT_SECRET");
+  if (!getGoogleRefreshToken()) missing.push("GOOGLE_REFRESH_TOKEN");
+  if (!getSupabaseUrl()) missing.push("SUPABASE_URL");
+  if (!getSupabaseServiceRoleKey()) missing.push("SUPABASE_SERVICE_ROLE_KEY");
   return missing.length
     ? `Missing: ${missing.join(", ")}`
     : "GA4 and Supabase are required";
