@@ -3,6 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import Header from "../shared-components/Header";
+import { trackConsultationCtaClicked } from "@/lib/consultation-cta";
 import SectionHeading from "../shared-components/SectionHeading";
 import WhisperedPraiseLink from "../shared-components/WhisperedPraiseLink";
 
@@ -147,6 +148,7 @@ export default function EngagementRingsPage() {
           <Link
             href="/concierge"
             className="inline-flex items-center justify-center rounded-full bg-[#2b2723] px-7 py-3 text-sm tracking-[0.08em] text-white shadow-[0_1px_2px_rgba(0,0,0,0.08)] transition-all duration-300 hover:opacity-95 hover:shadow-[0_2px_6px_rgba(0,0,0,0.12)] focus:outline-none focus:ring-2 focus:ring-[#cbbda9] focus:ring-offset-2 focus:ring-offset-[#f6f2eb]"
+            onClick={() => trackConsultationCtaClicked("engagement_rings:footer")}
           >
             Begin the Conversation
           </Link>

@@ -3,3 +3,4 @@ node_modules
 .env.local
 *.log
 public/the-house/**/*.mp4
+.next.bak*/

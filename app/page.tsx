@@ -5,6 +5,7 @@ import Link from "next/link";
 import HomeStudioPortal from "./home-studio-portal";
 import Header from "./shared-components/Header";
 import WhisperedPraiseLink from "./shared-components/WhisperedPraiseLink";
+import { trackConsultationCtaClicked } from "@/lib/consultation-cta";
 
 function HeroRingStage() {
   return (
@@ -267,6 +268,7 @@ function TestimonialSection() {
           <Link
             href="/concierge"
             className="inline-flex items-center justify-center rounded-full bg-[#2b2723] px-7 py-3 text-[11px] uppercase tracking-[0.28em] text-white transition-all duration-500 ease-out hover:-translate-y-[1px] hover:opacity-90"
+            onClick={() => trackConsultationCtaClicked("home:testimonial")}
           >
             Begin the Conversation
           </Link>
@@ -307,6 +309,7 @@ export default function Home() {
                 <Link
                   href="/concierge"
                   className="rounded-full border border-[#d9cdbd] bg-white/80 px-6 py-3 text-[11px] uppercase tracking-[0.28em] text-[#2b2723] transition-all duration-500 ease-out hover:-translate-y-[1px] hover:bg-white"
+                  onClick={() => trackConsultationCtaClicked("home:hero")}
                 >
                   Begin the Conversation
                 </Link>

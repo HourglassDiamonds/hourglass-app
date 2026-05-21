@@ -3,6 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import Header from "../../../shared-components/Header";
+import { trackConsultationCtaClicked } from "@/lib/consultation-cta";
 
 const articleGroups = [
   {
@@ -127,6 +128,7 @@ export default function DiamondSizeAllPage() {
               <Link
                 href="/concierge"
                 className="rounded-full bg-[#2b2621] px-6 py-3 text-[11px] uppercase tracking-[0.32em] text-white"
+                onClick={() => trackConsultationCtaClicked("diamond_guide:diamond_size_all")}
               >
                 Begin the Conversation
               </Link>

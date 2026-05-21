@@ -12,6 +12,7 @@ import {
   trackDiamondStudioEvent,
   type DiamondStudioEventProperties,
 } from "./analytics";
+import { trackConsultationCtaClicked } from "@/lib/consultation-cta";
 
 /* -------------------------------------------------------------------------- */
 /* Types & tables                                                             */
@@ -1866,17 +1867,6 @@ export default function DiamondStudioPage() {
     }
   }, [tryFireSessionEngaged]);
 
-  const trackConsultationCtaClicked = useCallback(
-    (placement = "editorial_inline") => {
-      trackDiamondStudioEvent("consultation_cta_clicked", {
-        ...analyticsProps(),
-        source: "diamond_studio",
-        placement,
-      });
-    },
-    [analyticsProps],
-  );
-
   useEffect(() => {
     trackDiamondStudioEvent("diamond_studio_view", analyticsProps());
     // eslint-disable-next-line react-hooks/exhaustive-deps -- once per mount
@@ -2330,7 +2320,9 @@ export default function DiamondStudioPage() {
                   <Link
                     href="/concierge"
                     className="dts-stage-trust-link"
-                    onClick={() => trackConsultationCtaClicked("editorial_inline")}
+                    onClick={() =>
+                      trackConsultationCtaClicked("diamond_studio:editorial_inline")
+                    }
                   >
                     Begin the Conversation →
                   </Link>

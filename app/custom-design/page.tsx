@@ -3,6 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import Header from "../shared-components/Header";
+import { trackConsultationCtaClicked } from "@/lib/consultation-cta";
 import WhisperedPraiseLink from "../shared-components/WhisperedPraiseLink";
 
 export default function CustomDesignPage() {
@@ -175,6 +176,7 @@ export default function CustomDesignPage() {
             <Link
               href="/concierge"
               className="inline-flex items-center justify-center rounded-full bg-[#2b2723] px-7 py-3 text-sm tracking-wide text-white transition-all duration-500 ease-out hover:-translate-y-[1px] hover:opacity-90"
+              onClick={() => trackConsultationCtaClicked("custom_design:footer")}
             >
               Begin the Conversation
             </Link>

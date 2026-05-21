@@ -3,6 +3,7 @@
 import React, { useRef, useState } from "react";
 import Link from "next/link";
 import Header from "../shared-components/Header";
+import { trackConsultationCtaClicked } from "@/lib/consultation-cta";
 
 export default function TheHousePage() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -201,6 +202,7 @@ export default function TheHousePage() {
               <Link
                 href="/concierge"
                 className="inline-flex rounded-full border border-[#d9cdbd] bg-white/80 px-6 py-3 text-[11px] uppercase tracking-[0.28em] text-[#6f665d] transition hover:bg-white"
+                onClick={() => trackConsultationCtaClicked("the_house:footer")}
               >
                 Start a Private Consultation
               </Link>

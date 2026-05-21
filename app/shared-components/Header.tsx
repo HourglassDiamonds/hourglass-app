@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import React from "react";
+import { trackConsultationCtaClicked } from "@/lib/consultation-cta";
 
 const NAV_ITEMS = [
   { href: "/the-house", label: "The House" },
@@ -96,6 +97,11 @@ export default function Header({ currentPage = "" }: HeaderProps) {
                   isActive,
                   isFeaturedNav(item.href),
                 )}`}
+                onClick={
+                  item.href === "/concierge"
+                    ? () => trackConsultationCtaClicked("header:nav_desktop")
+                    : undefined
+                }
               >
                 {item.label}
               </Link>
@@ -125,7 +131,12 @@ export default function Header({ currentPage = "" }: HeaderProps) {
                     key={item.href}
                     href={item.href}
                     role="menuitem"
-                    onClick={() => setMobileMenuOpen(false)}
+                    onClick={() => {
+                      if (item.href === "/concierge") {
+                        trackConsultationCtaClicked("header:nav_mobile");
+                      }
+                      setMobileMenuOpen(false);
+                    }}
                     className={`block px-4 py-3.5 text-[13px] tracking-[0.02em] transition-colors duration-300 ${navLinkClass(
                       isActive,
                       isFeaturedNav(item.href),

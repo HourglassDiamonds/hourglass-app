@@ -3,6 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import Header from "../../shared-components/Header";
+import { trackConsultationCtaClicked } from "@/lib/consultation-cta";
 
 const beginHereGuides = [
   {
@@ -316,6 +317,7 @@ export default function DiamondSizePage() {
               <Link
                 href="/concierge"
                 className="rounded-full border border-[#2b2621] bg-[#2b2621] px-6 py-3 text-[11px] uppercase tracking-[0.32em] text-white transition duration-300 hover:opacity-90"
+                onClick={() => trackConsultationCtaClicked("diamond_guide:diamond_size")}
               >
                 Begin the Conversation
               </Link>

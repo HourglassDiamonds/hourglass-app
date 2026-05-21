@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
+import ConsultationCtaLink from "../shared-components/ConsultationCtaLink";
 import Header from "../shared-components/Header";
 
 export const metadata: Metadata = {
@@ -540,12 +541,12 @@ export default function WhisperedPraisePage() {
               a process that feels personal from the first conversation.
             </p>
             <div className="mt-16 flex flex-col items-center justify-center gap-7 sm:flex-row sm:gap-10">
-              <Link
-                href="/concierge"
+              <ConsultationCtaLink
+                location="whispered_praise:footer"
                 className="inline-flex rounded-full border border-[#cfc3b4] bg-[#f7f2eb]/30 px-9 py-3.5 text-[10.5px] uppercase tracking-[0.3em] text-[#5f574f] transition-[color,background-color,border-color,box-shadow,transform] duration-700 ease-out hover:-translate-y-px hover:border-[#b8a896] hover:bg-white/70 hover:text-[#3d3832] hover:shadow-[0_10px_32px_rgba(48,36,28,0.08)] focus:outline-none focus:ring-2 focus:ring-[#cbbda9]/70 focus:ring-offset-2 focus:ring-offset-[#efe8de]"
               >
                 Begin the Conversation
-              </Link>
+              </ConsultationCtaLink>
               <Link
                 href="/diamond-studio"
                 className="rounded-sm px-2 text-[10.5px] uppercase tracking-[0.28em] text-[#756d64] transition-[color,opacity] duration-700 ease-out hover:text-[#1f1d1a] focus:outline-none focus:ring-2 focus:ring-[#cbbda9]/70 focus:ring-offset-2 focus:ring-offset-[#efe8de]"
