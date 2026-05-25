@@ -125,12 +125,12 @@ const TESTIMONIALS: Record<string, Testimonial> = {
       "It's beautifully crafted, totally unique, and gets constant compliments.",
     attribution: "NP · IL",
   },
-  "You are missing out if not and it would be a waste of time and money to go through someone else.":
+  "If you're not dealing with Justin, it's a waste of time and money going somewhere else.":
     {
       src: "/whispered-praise/whispered-beach.webp",
       alt: "Couple walking the beach in soft sunlight",
       quote:
-        "You are missing out if not and it would be a waste of time and money to go through someone else.",
+        "If you're not dealing with Justin, it's a waste of time and money going somewhere else.",
       supporting: "He over delivered...both with the product and experience.",
       attribution: "DJ · CA",
       overlayTone: "bright",
@@ -506,7 +506,7 @@ export default function WhisperedPraisePage() {
                 "This has been one of the best buying experiences I have ever had.",
                 "He exceeded my expectations.",
                 "We couldn't imagine trusting anyone else with something this special.",
-                "You are missing out if not and it would be a waste of time and money to go through someone else.",
+                "If you're not dealing with Justin, it's a waste of time and money going somewhere else.",
                 "The best in the business!",
                 "Justin and Hourglass Diamonds turned my rambling ideas and mood board into a reality.",
               ]}
