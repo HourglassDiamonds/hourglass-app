@@ -98,37 +98,37 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     displayTitle: "Global Pressure Index",
     subnavLabel: "Global Pressure",
     hubDescription:
-      "A composite degree reading across energy, infrastructure, financial conditions, and geopolitical channels.",
+      "A composite degree reading across energy, infrastructure, financial conditions, and coordination channels — structurally elevated, observational in tone.",
     kicker: "The Ledger Intelligence System",
     intro:
-      "A weekly reading of global pressure across geopolitics, energy, commodities, financial conditions, infrastructure, supply chains, food systems, and public stability. The purpose is not to predict a crisis. It is to show when multiple systems are heating up at the same time.",
+      "A weekly reading of global pressure across geopolitics, energy, commodities, financial conditions, infrastructure, supply chains, and coordination channels. The purpose is not to predict collapse. It is to observe when stress is structurally elevated, when flexibility compresses, and when multiple systems respond more slowly beneath still-resilient markets.",
     updatedLabel: LEDGER_UPDATED,
-    reading: 93,
+    reading: 90,
     readingLabel: "Pressure Reading",
-    status: "Critical Threshold",
-    weeklyDelta: 2,
+    status: "Persistent Elevated Pressure",
+    weeklyDelta: 1,
     scaleLabels: ["Cold", "Stable", "Elevated", "Hot", "Critical"],
     scaleGradient: SCALE_GRADIENT_PRESSURE,
     summary:
-      "Energy markets, Gulf shipping disruption, inflation sensitivity, rate expectations, grid strain, and supply-chain rerouting are now moving together rather than separately. This is not yet a full disorder reading, but the buffer between stress and shock has narrowed again.",
+      "Pressure is uneven but broadening: energy sensitivity, Gulf-route and shipping fragility, sticky inflation, long-duration bond stress, and grid-adjacent infrastructure strain are transmitting together. Market resilience and AI capital expenditure continue to offset part of the slowdown drag, leaving conditions elevated and coordination-strained — but not at disorder level.",
     summaryLead: "The system remains in a",
-    summaryEmphasis: "critical threshold environment",
+    summaryEmphasis: "persistent elevated pressure environment",
     summaryCompact:
-      "Pressure remains in a critical threshold environment across energy, shipping, grid strain, and financial sensitivity — with multiple systems heating up together.",
+      "Pressure holds in a persistent elevated band — broad coordination strain, resilient markets, with energy and infrastructure as key transmission channels and AI investment offsetting some slowdown pressure.",
     weeklyNote:
-      "The reading moved higher because energy disruption risk stayed elevated, tanker markets remained strained, and oil-linked inflation pressure became more visible in global economic data. Beneath that, the slower infrastructure story continues to matter: electricity demand, data-center load, transformer constraints, and grid bottlenecks are reducing system flexibility heading into summer.",
+      "Energy volatility stayed in focus, long-duration bonds showed continued brittleness, and infrastructure-adjacent load persisted without acute breakdown. AI and compute capex continued to support growth and risk appetite in selective lanes, while sticky inflation kept policy and shipping-security uncertainty visible. The signal is breadth of pressure and compressed flexibility — not imminent dislocation.",
     weeklyNoteCompact:
-      "Energy disruption risk, tanker strain, and grid-adjacent load continue to move in the same direction.",
+      "Energy volatility, bond brittleness, infrastructure strain, AI investment support, and persistent inflation sensitivity remain in view.",
     methodPills: [
       { label: "Reading Type", value: "Weighted editorial index" },
-      { label: "Primary Drivers", value: "Energy, shipping, grid strain" },
-      { label: "Current Direction", value: "Critical and rising" },
+      { label: "Primary Drivers", value: "Energy, bonds, infrastructure, AI capex" },
+      { label: "Current Direction", value: "Elevated, unevenly distributed" },
     ],
     recentReadings: [
-      { week: "This Week", degrees: 93, state: "Critical" },
-      { week: "Last Week", degrees: 91, state: "Critical" },
-      { week: "2 Weeks Ago", degrees: 88, state: "High Heat" },
-      { week: "3 Weeks Ago", degrees: 85, state: "High Heat" },
+      { week: "This Week", degrees: 90, state: "Elevated" },
+      { week: "Last Week", degrees: 89, state: "Elevated" },
+      { week: "2 Weeks Ago", degrees: 87, state: "Elevated" },
+      { week: "3 Weeks Ago", degrees: 86, state: "Elevated" },
     ],
     benchmarks: [
       { name: "Stable Expansion", score: 50, note: "Low pressure", tier: "quiet" },
@@ -141,15 +141,15 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     editorialBlocks: [
       {
         title: "Energy & shipping corridors",
-        body: "Oil-route risk, tanker markets, and Gulf shipping pressure remain the most immediate accelerants.",
+        body: "Energy volatility and Gulf-route fragility remain primary transmission channels. Shipping and security uncertainty add coordination strain without implying imminent breakdown.",
       },
       {
         title: "Grid & infrastructure strain",
-        body: "Data-center load, transformer constraints, and summer electricity demand continue reducing system flexibility.",
+        body: "Electricity demand, data-center load, transformer constraints, and grid bottlenecks act as slow-moving amplifiers — compressing flexibility while systems continue to operate.",
       },
       {
-        title: "Financial conditions",
-        body: "Higher energy prices and sticky inflation can narrow the room for rate cuts and increase market sensitivity.",
+        title: "Financial conditions & markets",
+        body: "Long-duration bond stress and inflation sensitivity keep policy room narrow. AI capital expenditure and selective market resilience continue to offset some pressure beneath slower system responsiveness.",
       },
     ],
   },
@@ -162,35 +162,35 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     displayTitle: "Information Signal Map",
     subnavLabel: "Information Map",
     hubDescription:
-      "A narrative layer reading on how information velocity, rhetoric, and institutional messaging shape perception and decision-making.",
+      "A narrative layer reading on signal convergence, framing comparison, and how institutional, market, and infrastructure channels interpret the same pressures.",
     kicker: "The Ledger Intelligence System",
     intro:
-      "A weekly map of how information moves through markets, media, policy, and institutions — not to chase headlines, but to understand when narrative density begins to outrun clarity. The goal is orientation: where signal is thinning and where noise is thickening.",
+      "A weekly map of how narratives move through markets, media, policy, and institutions — not to chase hidden truths, but to track when different information layers begin describing the same systems story. The goal is orientation: where framing converges, where it diverges, and what remains underweighted.",
     updatedLabel: LEDGER_UPDATED,
-    reading: 74,
-    readingLabel: "Signal Density",
-    status: "Elevated Narrative Load",
-    weeklyDelta: 3,
+    reading: 79,
+    readingLabel: "Signal Clarity",
+    status: "Converging Narratives",
+    weeklyDelta: 2,
     scaleLabels: ["Quiet", "Clear", "Mixed", "Noisy", "Saturated"],
     scaleGradient: SCALE_GRADIENT_SIGNAL,
     summary:
-      "Information velocity remains elevated without reaching full saturation. Policy rhetoric, market commentary, and geopolitical framing are overlapping more frequently, which makes discrete events harder to interpret in isolation. The environment favors reaction before reflection — but has not yet crossed into disorder.",
+      "Narratives are converging more clearly around energy, AI infrastructure, grid strain, and inflation persistence — increasingly linked in coverage, with disagreement focused on tempo rather than whether pressure exists. Interpretation is improving without implying certainty.",
     summaryCompact:
-      "Narrative density is elevated across policy, markets, and media — increasing the cost of clear interpretation without full information overload.",
+      "Signal clarity is rising as institutional, market, infrastructure, and mainstream frames overlap on energy, AI physical capacity, and grid constraints beneath resilient markets.",
     weeklyNote:
-      "The map moved higher as institutional messaging around energy, rates, and security converged in the same news cycle. Social and financial channels amplified the overlap, even where underlying fundamentals changed more slowly.",
+      "AI is discussed more often as physical infrastructure; energy sits closer to AI scaling narratives; infrastructure constraints appear more frequently beside financial and media commentary on resilience. Physical bottlenecks are acknowledged more openly — without conspiratorial or hidden-truth framing.",
     weeklyNoteCompact:
-      "Policy, market, and media channels overlapped more than usual this week — thickening the narrative layer.",
+      "Frames converging on energy, AI infrastructure, and grid strain — physical bottlenecks gaining visibility beneath market resilience.",
     methodPills: [
       { label: "Reading Type", value: "Editorial signal map" },
-      { label: "Primary Channels", value: "Policy, markets, media" },
-      { label: "Current Direction", value: "Elevated and widening" },
+      { label: "Primary Channels", value: "Institutional, market, infrastructure, mainstream" },
+      { label: "Current Direction", value: "Converging, nuanced" },
     ],
     recentReadings: [
-      { week: "This Week", degrees: 74, state: "Elevated" },
-      { week: "Last Week", degrees: 71, state: "Elevated" },
-      { week: "2 Weeks Ago", degrees: 68, state: "Mixed" },
-      { week: "3 Weeks Ago", degrees: 66, state: "Mixed" },
+      { week: "This Week", degrees: 79, state: "Clear" },
+      { week: "Last Week", degrees: 77, state: "Mixed" },
+      { week: "2 Weeks Ago", degrees: 75, state: "Mixed" },
+      { week: "3 Weeks Ago", degrees: 73, state: "Mixed" },
     ],
     benchmarks: [
       { name: "Quiet Cycle", score: 42, note: "Low density" },
@@ -201,16 +201,16 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     ],
     editorialBlocks: [
       {
-        title: "Institutional messaging",
-        body: "Central banks, energy ministries, and defense-adjacent statements are arriving in closer sequence. The tone is measured, but the volume is rising.",
+        title: "Institutional framing",
+        body: "Resilience, inflation management, energy security, and infrastructure investment language continue to align across policy and official channels.",
       },
       {
-        title: "Market narrative",
-        body: "Equity and commodity commentary is leaning on the same macro themes — rates, energy, and AI capex — which compresses independent analysis into a narrower band.",
+        title: "Market framing",
+        body: "Bond yields, oil sensitivity, AI capex, and earnings resilience dominate financial narrative — with growing references to volatility transmission.",
       },
       {
-        title: "Media velocity",
-        body: "Headline cadence around shipping, inflation, and technology regulation remains above the seasonal norm, without a single dominant crisis narrative.",
+        title: "Infrastructure framing",
+        body: "Grid strain, transmission delays, transformer shortages, and data-center load growth appear more often beside mainstream inflation and AI boom coverage.",
       },
     ],
   },
@@ -223,35 +223,35 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     displayTitle: "AI Capability Acceleration Index",
     subnavLabel: "AI Acceleration",
     hubDescription:
-      "An analytical read on how quickly AI capability, compute capacity, and infrastructure are scaling — without hype or fear framing.",
+      "An analytical read on AI as industrial buildout — capability, deployment friction, and physical infrastructure constraints, without hype or fear framing.",
     kicker: "The Ledger Intelligence System",
     intro:
-      "A weekly index of how artificial intelligence capability is accelerating in the real world: semiconductors, data centers, model performance, enterprise adoption, and the physical infrastructure required to sustain growth. The frame is observational — not promotional.",
+      "A weekly index of how AI capability, deployment, and physical infrastructure move together: models, agents, enterprise integration, power, grid access, and organizational adaptation. The frame is operational and observational — not promotional.",
     updatedLabel: LEDGER_UPDATED,
-    reading: 81,
+    reading: 77,
     readingLabel: "Acceleration Reading",
-    status: "Sustained Acceleration",
-    weeklyDelta: 4,
+    status: "Deployment-Bound Buildout",
+    weeklyDelta: -1,
     scaleLabels: ["Early", "Building", "Rising", "Fast", "Surge"],
     scaleGradient: SCALE_GRADIENT_AI,
     summary:
-      "Capability expansion continues at a steady, infrastructure-bound pace. Model performance improvements remain visible, but the binding constraints are increasingly physical: power, cooling, chips, and interconnection timelines. Acceleration is real — yet still governed by capital cycles and grid reality.",
+      "Massive infrastructure investment and uneven enterprise adoption continue, with energy, cooling, transformers, and integration timelines increasingly co-equal with frontier model progress. Capability advances; deployment friction and physical constraints set pace.",
     summaryCompact:
-      "AI capability continues to accelerate, with infrastructure and power emerging as the primary constraints on pace.",
+      "Deployment-bound buildout — capability and infrastructure investment advance together under power, grid, and integration limits.",
     weeklyNote:
-      "The index rose as hyperscaler capex guidance, chip lead times, and regional grid interconnection queues all pointed in the same direction. Software capability is not the limiting factor this quarter — physical capacity is.",
+      "Infrastructure demand and enterprise friction tempered the headline score even as coding and selective agent workflows advanced. Power, cooling, and grid access are routine deployment limits alongside model releases.",
     weeklyNoteCompact:
-      "Capex, chip supply, and grid queues continue to define the pace of expansion.",
+      "Physical infrastructure and integration friction now share equal weight with frontier capability in the weekly read.",
     methodPills: [
       { label: "Reading Type", value: "Capability + infrastructure index" },
-      { label: "Primary Drivers", value: "Compute, power, semiconductors" },
-      { label: "Current Direction", value: "Accelerating steadily" },
+      { label: "Primary Drivers", value: "Deployment, power, integration" },
+      { label: "Current Direction", value: "Advancing, constraint-bound" },
     ],
     recentReadings: [
-      { week: "This Week", degrees: 81, state: "Accelerating" },
-      { week: "Last Week", degrees: 77, state: "Accelerating" },
-      { week: "2 Weeks Ago", degrees: 74, state: "Rising" },
-      { week: "3 Weeks Ago", degrees: 71, state: "Rising" },
+      { week: "This Week", degrees: 77, state: "Accelerating" },
+      { week: "Last Week", degrees: 78, state: "Accelerating" },
+      { week: "2 Weeks Ago", degrees: 80, state: "Fast" },
+      { week: "3 Weeks Ago", degrees: 82, state: "Fast" },
     ],
     benchmarks: [
       { name: "Pre-Transformer", score: 38, note: "2017 era" },
@@ -262,16 +262,16 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     ],
     editorialBlocks: [
       {
-        title: "Compute & semiconductors",
-        body: "Advanced packaging and high-bandwidth memory remain allocation-sensitive. Lead times are stable but extended.",
+        title: "Infrastructure demand",
+        body: "Data-center expansion, power contracts, cooling, and transformer lead times are central pressures — co-equal with software capability in deployment planning.",
       },
       {
-        title: "Data-center buildout",
-        body: "New capacity announcements continue across North America and selective international corridors, with power economics driving site selection.",
+        title: "Enterprise deployment",
+        body: "Cautious acceleration in workflow augmentation and internal tooling; integration, review, and organizational adaptation lag broader capex narratives.",
       },
       {
-        title: "Grid & energy coupling",
-        body: "Interconnection delays and transformer bottlenecks are now routine discussion points in infrastructure planning — not edge cases.",
+        title: "Operational friction",
+        body: "Agent reliability, verification layers, and governance gaps temper headline capability scores — especially outside coding and narrow workflows.",
       },
     ],
   },
@@ -347,35 +347,35 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     displayTitle: "Infrastructure Strain Index",
     subnavLabel: "Infrastructure",
     hubDescription:
-      "A weekly reading of physical constraints beneath digital, economic, and industrial acceleration — power, grid, data centers, transformers, chips, labor, and water.",
+      "A weekly reading of physical constraints in a capacity expansion race — power, grid, data centers, transformers, chips, labor, and water.",
     kicker: "The Ledger Intelligence System",
     intro:
-      "A weekly reading of the physical constraints beneath digital, economic, and industrial acceleration: power, transmission, transformers, data centers, water, skilled labor, semiconductors, and logistics.",
+      "A weekly reading of physical constraints beneath digital and industrial acceleration: AI data-center load, power demand, transformers, interconnection, cooling, transmission, labor, and permitting — where systems function but flexibility narrows.",
     updatedLabel: LEDGER_UPDATED,
-    reading: 82,
+    reading: 80,
     readingLabel: "Infrastructure Strain",
     status: "Elevated Strain",
-    weeklyDelta: 4,
+    weeklyDelta: 1,
     scaleLabels: ["Low", "Rising", "Elevated", "High", "Critical"],
     scaleGradient: SCALE_GRADIENT_INFRASTRUCTURE,
     summary:
-      "The physical layer of the system is under elevated strain. AI data-center expansion, grid interconnection delays, transformer shortages, cooling demand, semiconductor bottlenecks, and skilled labor constraints are reinforcing one another.",
+      "Strain remains elevated but orderly — a capacity expansion race with uneven buildout timing. AI data-center growth, grid bottlenecks, transformer lead times, and cooling constraints persist beneath rapid capital deployment. The system functions; spare capacity and flexibility are narrowing.",
     summaryCompact:
-      "Physical infrastructure strain is elevated — data centers, grid interconnection, and transformer supply are the strongest pressure points.",
+      "Elevated physical strain — data-center power demand, grid bottlenecks, and transformer supply define the pace of expansion.",
     weeklyNote:
-      "Data-center power demand, transformer lead times, grid labor shortages, and cooling requirements are now appearing together in infrastructure reporting.",
+      "Data-center power demand, regional grid bottlenecks, utility timelines, transformer manufacturing, cooling infrastructure, and electrical labor availability remain the active watch set — capital ahead of many physical upgrade paths.",
     weeklyNoteCompact:
-      "Data-center load, transformer lead times, and grid labor constraints are reinforcing physical bottlenecks.",
+      "Persistent bottlenecks beneath rapid capex — power, grid, transformers, and cooling setting practical pace.",
     methodPills: [
       { label: "Reading Type", value: "Physical infrastructure index" },
-      { label: "Primary Focus", value: "Grid, data centers, supply" },
-      { label: "Current Direction", value: "Elevated strain" },
+      { label: "Primary Focus", value: "Power, grid, data centers" },
+      { label: "Current Direction", value: "Elevated, expansion-bound" },
     ],
     recentReadings: [
-      { week: "This Week", degrees: 82, state: "Elevated" },
-      { week: "Last Week", degrees: 78, state: "Elevated" },
-      { week: "2 Weeks Ago", degrees: 75, state: "Rising" },
-      { week: "3 Weeks Ago", degrees: 72, state: "Rising" },
+      { week: "This Week", degrees: 80, state: "Elevated" },
+      { week: "Last Week", degrees: 79, state: "Elevated" },
+      { week: "2 Weeks Ago", degrees: 81, state: "Elevated" },
+      { week: "3 Weeks Ago", degrees: 82, state: "Elevated" },
     ],
     benchmarks: [
       { name: "Stable Buildout", score: 45, note: "Low constraint", tier: "quiet" },
@@ -386,20 +386,20 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     ],
     editorialBlocks: [
       {
-        title: "Power interconnection",
-        body: "Large-load connection timelines, utility approval delays, substation availability, and queue congestion.",
+        title: "Data-center power demand",
+        body: "Hyperscale load growth and power access as a strategic constraint — cooling and utility coordination shaping siting.",
       },
       {
-        title: "Transformer lead times",
-        body: "Whether transformer manufacturing capacity improves quickly enough to support grid, industrial, and data-center expansion.",
+        title: "Grid & transmission",
+        body: "Interconnection queues, transmission delays, and regional bottlenecks where load clusters outpace upgrade timelines.",
       },
       {
-        title: "Data-center concentration",
-        body: "Regional clustering of hyperscale demand in areas where water, power, and transmission capacity are already tight.",
+        title: "Transformer & labor",
+        body: "Manufacturing lead times and electrical trade availability — competing demand from utilities and hyperscalers.",
       },
       {
-        title: "Skilled labor availability",
-        body: "Electricians, linemen, engineers, and industrial construction crews remain essential to translating capital plans into real capacity.",
+        title: "Cooling & water",
+        body: "Rising relevance in site selection and community discussion — uneven by region, increasingly material to expansion plans.",
       },
     ],
     watchingSectionTitle: "What We're Watching",

@@ -7,7 +7,7 @@ import SubscribeSection from "../components/subscribe-section";
 export const metadata: Metadata = {
   title: "AI Capability Acceleration Index",
   description:
-    "Hourglass Ledger AI Capability Acceleration Index — weekly reading of frontier AI capability, agents, deployment, and infrastructure demand.",
+    "Hourglass Ledger AI Capability Acceleration Index — deployment-bound AI buildout across capability, enterprise friction, and physical infrastructure constraints.",
 };
 
 export default function AICapabilityAccelerationIndexPage() {

@@ -7,7 +7,7 @@ import SubscribeSection from "../components/subscribe-section";
 export const metadata: Metadata = {
   title: "Infrastructure Strain Index",
   description:
-    "Hourglass Ledger Infrastructure Strain Index — weekly reading of physical constraints beneath digital, economic, and industrial acceleration.",
+    "Hourglass Ledger Infrastructure Strain Index — elevated physical strain in a capacity expansion race: power, grid, data centers, transformers, cooling, and labor.",
 };
 
 export default function InfrastructureStrainIndexPage() {

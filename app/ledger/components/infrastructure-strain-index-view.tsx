@@ -1,6 +1,7 @@
 import {
   ISI_BENCHMARKS,
   ISI_CALCULATION_ROWS,
+  ISI_CALCULATION_TOTAL,
   ISI_CATEGORIES,
   ISI_FOOTER_NOTE,
   ISI_INTRO,
@@ -186,11 +187,8 @@ export default function InfrastructureStrainIndexView() {
                 </td>
                 <td className="isi-nowrap">100%</td>
                 <td className="isi-nowrap">Weight</td>
-                <td className="isi-nowrap">84.2 → 82</td>
-                <td>
-                  Elevated infrastructure strain, with the strongest pressure in data
-                  centers, grid interconnection, and transformer supply.
-                </td>
+                <td className="isi-nowrap">{ISI_CALCULATION_TOTAL.contribution}</td>
+                <td>{ISI_CALCULATION_TOTAL.reason}</td>
               </tr>
             </tbody>
           </table>

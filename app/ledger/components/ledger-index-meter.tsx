@@ -286,9 +286,11 @@ function MeterCard({
         {isGpi ? (
           <div className="gpi-continuation">
             <p>
-              The reading remains in a critical threshold band — coordinated
-              pressure across energy, grid, and financial channels, with the
-              watchlist below tracking where the index may move next.
+              The reading sits in a persistent elevated pressure band —
+              structurally high but below disorder-level benchmarks, with
+              market resilience partly offsetting slower responsiveness across
+              energy, infrastructure, and financial channels. The watchlist
+              below tracks where coordination strain may broaden next.
             </p>
           </div>
         ) : null}

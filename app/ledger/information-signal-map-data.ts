@@ -6,107 +6,107 @@
 export const ISM_UPDATED_LABEL = "Updated weekly — May 19, 2026";
 
 export const ISM_READING = {
-  score: 77,
+  score: 79,
   label: "Signal Clarity",
-  weeklyChange: 3,
+  weeklyChange: 2,
 } as const;
 
 export const ISM_SUMMARY =
-  "Reliable sources are converging more clearly around the same core signal: energy disruption, inflation pressure, financial sensitivity, and physical infrastructure strain are now linked. The disagreement is no longer about whether pressure exists. It is about whether this is a temporary volatility cycle or the early phase of a longer capacity adjustment.";
+  "Across institutional, market, infrastructure, and mainstream channels, narratives are converging more clearly on a shared systems story: energy availability, AI infrastructure expansion, electricity demand, grid and transmission limits, and inflation persistence are increasingly discussed as linked — not as isolated headlines. The remaining disagreement is mostly framing and tempo: whether constraints are cyclical volatility or a longer capacity adjustment beneath still-resilient financial markets.";
 
 export const ISM_SIGNAL_GRID = [
   {
     title: "Consensus",
-    body: "Energy routing, inflation pressure, data-center demand, grid strain, and rate sensitivity are increasingly being discussed as connected pressures.",
+    body: "Energy, AI capex, grid strain, cooling and transmission constraints, shipping-route sensitivity, and sticky inflation are appearing together more often — as a physical-capacity narrative, not only as market noise.",
   },
   {
     title: "Divergence",
-    body: "Markets still frame the pressure as tradable volatility, while infrastructure reporting points to slower physical bottlenecks beneath the price moves.",
+    body: "Financial coverage still emphasizes yields, earnings resilience, and volatility transmission; infrastructure reporting emphasizes bottlenecks, labor, and permitting friction. Same pressure, different time horizons.",
   },
   {
-    title: "Blind Spot",
-    body: "Power labor shortages, transformer constraints, cooling demand, and consumer cost pass-through remain underweighted in mainstream framing.",
+    title: "Underweighted",
+    body: "Industrial bottlenecks beneath headline market resilience, transformer lead times, and cooling load growth still receive less sustained attention in mainstream framing than in specialist infrastructure coverage.",
   },
 ] as const;
 
 export const ISM_SOURCE_STACK = [
   {
     title: "Institutional",
-    body: "Focuses on stability, inflation management, energy resilience, grid planning, and controlled risk language.",
+    body: "Emphasizes resilience, inflation management, energy security, and infrastructure investment — measured language, coordination over alarm.",
   },
   {
     title: "Market",
-    body: "Focuses on oil, bond yields, gold, rate expectations, volatility, and whether energy prices delay policy relief.",
-  },
-  {
-    title: "Mainstream",
-    body: "Focuses on individual events, price spikes, political reaction, consumer cost pressure, and short-term market movement.",
+    body: "Emphasizes bond yields, oil sensitivity, AI capex, earnings resilience, and how volatility transmits across rates, commodities, and equities.",
   },
   {
     title: "Infrastructure",
-    body: "Focuses on power demand, data-center load, grid labor, transmission delays, cooling constraints, and capacity limits.",
+    body: "Emphasizes grid strain, transmission delays, transformer shortages, data-center load growth, and labor or permitting friction on build timelines.",
+  },
+  {
+    title: "Mainstream",
+    body: "Emphasizes inflation, the AI boom, geopolitics, and cost-of-living pressure — event-led coverage with growing references to power and capacity limits.",
   },
 ] as const;
 
 export const ISM_NARRATIVE_MAP = [
   {
     title: "Domestic Framing",
-    body: "Emphasizes inflation, energy costs, and interest-rate pressure. Underweights global supply-route fragility and grid capacity limits.",
+    body: "Emphasizes inflation, utility costs, and household pressure. Tends to underweight shipping-route sensitivity and industrial bottlenecks beneath aggregate market strength.",
   },
   {
     title: "Political Framing",
-    body: "Emphasizes blame, diplomacy, conflict headlines, and consumer pain. Underweights slow-moving system constraints.",
+    body: "Emphasizes geopolitics, energy security rhetoric, and policy response. Tends to underweight slow-moving grid, transmission, and permitting constraints.",
   },
   {
     title: "Market Framing",
-    body: "Emphasizes pricing signals in oil, gold, yields, and equities. Underweights construction timelines, workforce shortages, and physical load growth.",
+    body: "Emphasizes bond yields, oil moves, AI capex, and earnings resilience. Tends to underweight cooling limits, transformer shortages, and physical load growth timelines.",
   },
   {
     title: "Infrastructure Framing",
-    body: "Emphasizes electricity demand, data centers, transmission, labor shortages, and utility planning. Underweights near-term public attention.",
+    body: "Emphasizes electricity demand, data-center expansion, grid capacity, and transmission backlogs. Tends to underweight near-term narrative compression in mainstream media cycles.",
   },
 ] as const;
 
 export const ISM_NARRATIVE_SHIFT =
-  "Coverage is shifting from isolated inflation and energy headlines toward a more connected capacity story. Oil, bond yields, rate expectations, AI data-center load, grid labor shortages, and utility planning are increasingly appearing in the same frame. The market is still treating much of this as price volatility, but the deeper signal is physical: power, labor, cooling, transmission, and supply chains are becoming the limiting layer.";
+  "Coverage is converging on a physical interpretation of AI: less often framed as software alone, more often as data centers, power, cooling, and grid-adjacent capacity. Energy is moving toward the center of AI scaling discussions, and infrastructure constraints are appearing more frequently alongside financial and media commentary on market resilience. The shift is observational — more shared vocabulary across layers, not a claim of hidden coordination or concealed truth.";
 
 export const ISM_WHAT_TO_WATCH = [
   {
-    title: "Energy Routing",
-    body: "Disruption language around shipping corridors, port access, Gulf risk, oil flows, LNG availability, and tanker strain.",
+    title: "AI as Infrastructure",
+    body: "Whether AI narratives continue shifting from capability headlines toward electricity demand, siting, cooling, and transmission in the same news cycle.",
   },
   {
-    title: "Rate Expectations",
-    body: "Whether higher oil and fuel prices keep inflation sticky enough to delay central-bank easing or lift bond-yield pressure.",
+    title: "Energy–AI Linkage",
+    body: "How often energy availability and fuel or power pricing appear in the same frame as compute expansion and data-center load growth.",
   },
   {
-    title: "Grid Labor",
-    body: "Shortages in electricians, line workers, engineers, and construction labor needed for data centers, transmission, and utility upgrades.",
+    title: "Physical Bottlenecks",
+    body: "Transformer lead times, grid interconnection queues, permitting friction, and industrial capacity limits acknowledged beneath resilient market language.",
   },
   {
-    title: "Consumer Pass-Through",
-    body: "Whether energy, freight, power, and infrastructure costs start showing up more clearly in food, goods, rent, and utility bills.",
+    title: "Framing Compression",
+    body: "Whether institutional resilience messaging, market volatility commentary, and infrastructure strain reporting move closer in tone and emphasis — or diverge again.",
   },
 ] as const;
 
 export const ISM_WHAT_WOULD_CHANGE = [
   {
-    title: "Energy Stabilization",
-    body: "Reduced volatility, calmer route language, softer crude pricing, and normalized supply expectations.",
+    title: "Narrative Decoupling",
+    body: "Energy, AI infrastructure, and grid strain discussed again as separate storylines with less cross-channel linkage.",
   },
   {
-    title: "Rate Relief",
-    body: "Clear evidence that inflation pressure is cooling enough to restore confidence in rate cuts.",
+    title: "Clarity Without Convergence",
+    body: "Lower headline density and cleaner single-theme reads across policy, markets, and media — without implying conditions have eased materially.",
   },
   {
-    title: "Infrastructure Catch-up",
-    body: "Visible acceleration in grid expansion, generation capacity, transmission, labor pipelines, or load-management planning.",
+    title: "Infrastructure Visibility",
+    body: "Sustained mainstream attention to transmission, cooling, and labor constraints — not only episodic spikes tied to single events.",
   },
   {
-    title: "Tone Shift",
-    body: "Less urgent language across institutional, market, infrastructure, and international sources at the same time.",
+    title: "Tone Moderation",
+    body: "More measured cadence across institutional, market, infrastructure, and mainstream sources at the same time, with fewer overlapping macro frames.",
   },
 ] as const;
 
 export const ISM_FOOTER_NOTE =
-  "Signals beneath the noise. Clarity without speculation.";
+  "Narrative analysis and framing comparison — observational, without speculation or certainty claims.";

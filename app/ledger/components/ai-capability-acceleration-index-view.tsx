@@ -4,6 +4,7 @@ import { LEDGER_INDEX_PAGE_CLASS } from "./ledger-index-page-chrome";
 import {
   ACAI_ABOVE_85,
   ACAI_CALCULATION_ROWS,
+  ACAI_CALCULATION_TOTAL,
   ACAI_CAPABILITY_BANDS,
   ACAI_CAPABILITY_BENCHMARKS,
   ACAI_CAPABILITY_READINGS,
@@ -15,7 +16,9 @@ import {
   ACAI_READING,
   ACAI_RECENT_READINGS,
   ACAI_SCALE_LABELS,
+  ACAI_SECTION_SUBTITLES,
   ACAI_SOURCES,
+  ACAI_SUMMARY,
   ACAI_UPDATED_LABEL,
   ACAI_WEEKLY_SIGNAL,
   ACAI_WHAT_MOVED,
@@ -91,16 +94,7 @@ export default function AICapabilityAccelerationIndexView() {
             </div>
           </div>
 
-          <p className="acai-summary">
-            AI capability remains in an{" "}
-            <strong>accelerating environment</strong>, now close to the upper end
-            of the pre-disruptive band. The strongest signals are coming from
-            agentic software, coding systems, enterprise workflow integration,
-            and the physical infrastructure race underneath them. The market is
-            not yet in a broad autonomous replacement phase, but capability,
-            deployment, and compute demand are reinforcing each other more
-            clearly.
-          </p>
+          <p className="acai-summary">{ACAI_SUMMARY}</p>
 
           <p className="acai-note">
             <strong>This week&apos;s signal:</strong> {weeklySignalBody}
@@ -170,10 +164,7 @@ export default function AICapabilityAccelerationIndexView() {
         <h3 className="acai-section-title ledger-index-section-title">
           What Moved the Index
         </h3>
-        <p className="acai-section-subtitle">
-          Capability, deployment, and infrastructure pressure reinforced the
-          reading this week.
-        </p>
+        <p className="acai-section-subtitle">{ACAI_SECTION_SUBTITLES.whatMoved}</p>
         <div className="acai-grid-3">
           {ACAI_WHAT_MOVED.map((card) => (
             <div key={card.title} className="acai-driver-card">
@@ -186,10 +177,7 @@ export default function AICapabilityAccelerationIndexView() {
 
       <div className="acai-section ledger-index-section">
         <h3 className="acai-section-title">Major Milestones to Watch</h3>
-        <p className="acai-section-subtitle">
-          These are the developments that would justify a material change in the
-          acceleration reading.
-        </p>
+        <p className="acai-section-subtitle">{ACAI_SECTION_SUBTITLES.milestones}</p>
         <div className="acai-grid-3">
           {ACAI_MILESTONES.map((card) => (
             <div key={card.title} className="acai-trigger-card">
@@ -204,7 +192,7 @@ export default function AICapabilityAccelerationIndexView() {
       <div className="acai-section ledger-index-section">
         <h3 className="acai-section-title">Current Frontier Watchlist</h3>
         <p className="acai-section-subtitle">
-          Major labs and system layers worth tracking each week.
+          {ACAI_SECTION_SUBTITLES.frontierWatchlist}
         </p>
         <div className="acai-grid-2">
           {ACAI_FRONTIER_WATCHLIST.map((card) => (
@@ -236,10 +224,7 @@ export default function AICapabilityAccelerationIndexView() {
 
       <div className="acai-section ledger-index-section">
         <h3 className="acai-section-title">How the Index Is Calculated</h3>
-        <p className="acai-section-subtitle">
-          A weighted editorial model constrained by releases, deployment,
-          infrastructure demand, and signs of reliable autonomy.
-        </p>
+        <p className="acai-section-subtitle">{ACAI_SECTION_SUBTITLES.calculated}</p>
         <div className="acai-table-wrap">
           <table className="acai-table">
             <thead>
@@ -272,13 +257,10 @@ export default function AICapabilityAccelerationIndexView() {
                   <strong>Weight</strong>
                 </td>
                 <td className="acai-nowrap">
-                  <strong>82.2 → 82</strong>
+                  <strong>{ACAI_CALCULATION_TOTAL.contribution}</strong>
                 </td>
                 <td>
-                  <strong>
-                    Accelerating capability environment, approaching the
-                    disruptive threshold but not yet through it.
-                  </strong>
+                  <strong>{ACAI_CALCULATION_TOTAL.reason}</strong>
                 </td>
               </tr>
             </tbody>
@@ -289,8 +271,7 @@ export default function AICapabilityAccelerationIndexView() {
       <div className="acai-section ledger-index-section">
         <h3 className="acai-section-title">Capability Bands</h3>
         <p className="acai-section-subtitle">
-          Bands keep the reading from drifting into hype — reserved for reliable
-          capability, real deployment, and measurable effects.
+          {ACAI_SECTION_SUBTITLES.capabilityBands}
         </p>
         <div className="acai-table-wrap">
           <table className="acai-table">
@@ -320,12 +301,7 @@ export default function AICapabilityAccelerationIndexView() {
 
       <div className="acai-section ledger-index-section">
         <h3 className="acai-section-title">Sources &amp; Method Note</h3>
-        <p className="acai-section-subtitle">
-          The reading is based on public model releases, company documentation,
-          product updates, deployment signals, infrastructure reporting, and
-          observed capability thresholds. It is an interpretive framework, not a
-          forecast.
-        </p>
+        <p className="acai-section-subtitle">{ACAI_SECTION_SUBTITLES.sources}</p>
         <div className="acai-sources">
           {ACAI_SOURCES.map((source) => (
             <div key={source.name} className="acai-source">

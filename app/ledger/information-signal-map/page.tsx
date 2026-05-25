@@ -7,7 +7,7 @@ import SubscribeSection from "../components/subscribe-section";
 export const metadata: Metadata = {
   title: "Information Signal Map",
   description:
-    "Hourglass Ledger Information Signal Map — signal clarity across institutional, market, mainstream, and infrastructure information layers.",
+    "Hourglass Ledger Information Signal Map — narrative convergence and framing comparison across institutional, market, infrastructure, and mainstream information layers.",
 };
 
 export default function InformationSignalMapPage() {

@@ -6,65 +6,65 @@
 export const ISI_UPDATED_LABEL = "Updated weekly — May 19, 2026";
 
 export const ISI_READING = {
-  score: 82,
+  score: 80,
   label: "Infrastructure Strain",
   status: "Elevated Strain",
-  weeklyChange: 4,
+  weeklyChange: 1,
 } as const;
 
 export const ISI_INTRO =
-  "A weekly reading of the physical constraints beneath digital, economic, and industrial acceleration: power, transmission, transformers, data centers, water, skilled labor, semiconductors, and logistics. The purpose is not to predict failure. It is to show when the systems supporting modern growth are losing flexibility.";
+  "A weekly reading of the physical constraints beneath digital, economic, and industrial acceleration: power, transmission, transformers, data centers, water, skilled labor, semiconductors, and logistics. The purpose is not to predict failure. It is to track a capacity expansion race — where capital deploys quickly, buildout timing stays uneven, and flexibility narrows beneath functioning systems.";
 
 export const ISI_SUMMARY =
-  "The physical layer of the system is under elevated strain. AI data-center expansion, grid interconnection delays, transformer shortages, cooling demand, semiconductor bottlenecks, and skilled labor constraints are reinforcing one another. The system is still functioning, but the margin for fast expansion is narrowing.";
+  "Infrastructure strain remains elevated but orderly: a capacity expansion race, not a collapse scenario. AI data-center growth, power demand, transformer shortages, interconnection delays, cooling constraints, transmission lag, skilled labor gaps, and permitting friction are persistent bottlenecks beneath rapid capex. The system is still functioning, but flexibility and spare capacity are narrowing.";
 
 export const ISI_WEEKLY_SIGNAL =
-  "The reading moved higher because data-center power demand, transformer lead times, grid labor shortages, and cooling requirements are now appearing together in infrastructure reporting. The limiting factor is no longer just capital or software capability. It is physical capacity.";
+  "Data-center power demand, regional grid bottlenecks, utility response timelines, transformer manufacturing, cooling infrastructure, and electrical labor availability continue to define the read. Capital is moving faster than many physical upgrade paths — producing slower responsiveness without systemic failure.";
 
 export const ISI_CATEGORIES = [
   {
     name: "Grid & Transmission",
-    score: 86,
+    score: 81,
     state: "High",
-    body: "Transmission queues, substation upgrades, transformer availability, and summer electricity demand remain the core strain points.",
+    body: "Transmission buildout lag, interconnection queues, and utility upgrade timelines remain core strain points — limiting how quickly new load can be served.",
   },
   {
     name: "Data-Center Load",
-    score: 91,
-    state: "Critical",
-    body: "Hyperscaler expansion, power contracts, cooling load, and regional utility pressure continue to accelerate.",
+    score: 85,
+    state: "High",
+    body: "Hyperscale demand is accelerating; power access is increasingly strategic, with cooling requirements and regional utility pressure shaping siting and timelines.",
   },
   {
     name: "Transformer Supply",
-    score: 88,
+    score: 82,
     state: "High",
-    body: "Long lead times and limited manufacturing capacity continue to slow grid expansion and large-load interconnection.",
+    body: "Manufacturing lead times remain constrained — utilities and hyperscalers competing for large-unit capacity, slowing substation and interconnection work.",
   },
   {
     name: "Semiconductor Capacity",
-    score: 80,
+    score: 77,
     state: "Elevated",
-    body: "Advanced packaging, HBM, fabrication concentration, and chip demand remain tight but not fully constrained.",
+    body: "Advanced packaging and HBM remain tight; AI infrastructure demand is still the dominant allocator, with supply functioning but not slack.",
   },
   {
     name: "Skilled Labor",
-    score: 78,
+    score: 75,
     state: "Elevated",
-    body: "Electricians, line workers, utility engineers, and industrial construction labor remain a quiet but important bottleneck.",
+    body: "Electrical, utility, HVAC, and industrial construction labor shortages remain meaningful — translating capital plans into energized capacity takes longer.",
   },
   {
     name: "Water & Cooling",
-    score: 74,
+    score: 73,
     state: "Rising",
-    body: "Cooling demand, drought overlap, and regional water constraints are becoming more relevant to data-center and industrial siting.",
+    body: "Cooling load and regional water pressure are increasingly central in site-selection and community discussions — uneven by geography, not yet universal.",
   },
 ] as const;
 
 export const ISI_RECENT_READINGS = [
-  { week: "This Week", score: 82 },
-  { week: "Last Week", score: 78 },
-  { week: "2 Weeks Ago", score: 75 },
-  { week: "3 Weeks Ago", score: 72 },
+  { week: "This Week", score: 80 },
+  { week: "Last Week", score: 79 },
+  { week: "2 Weeks Ago", score: 81 },
+  { week: "3 Weeks Ago", score: 82 },
 ] as const;
 
 export const ISI_BENCHMARKS = [
@@ -77,39 +77,47 @@ export const ISI_BENCHMARKS = [
 
 export const ISI_WHAT_WATCHING = [
   {
-    title: "Power interconnection",
-    body: "Large-load connection timelines, utility approval delays, substation availability, and queue congestion.",
+    title: "Data-center power demand",
+    body: "Hyperscale load growth, power contracts, and large-load interconnection requests — where access is becoming a strategic constraint, not only a cost input.",
   },
   {
-    title: "Transformer lead times",
-    body: "Whether transformer manufacturing capacity improves quickly enough to support grid, industrial, and data-center expansion.",
+    title: "Regional grid bottlenecks",
+    body: "Transmission limits, substation availability, and queue congestion in clusters where AI and industrial load concentrate.",
   },
   {
-    title: "Data-center concentration",
-    body: "Regional clustering of hyperscale demand in areas where water, power, and transmission capacity are already tight.",
+    title: "Utility response timelines",
+    body: "How quickly utilities can process upgrades, approvals, and interconnection relative to announced data-center and industrial timelines.",
   },
   {
-    title: "Skilled labor availability",
-    body: "Electricians, linemen, engineers, and industrial construction crews remain essential to translating capital plans into real capacity.",
+    title: "Transformer manufacturing",
+    body: "Lead times, order books, and competition between utilities and hyperscalers for large transformer capacity.",
+  },
+  {
+    title: "Cooling infrastructure",
+    body: "Liquid and air-cooling requirements, facility design choices, and operational load as power density rises.",
+  },
+  {
+    title: "Electrical labor availability",
+    body: "Electricians, lineworkers, utility engineers, and industrial crews — the practical limit on how fast plans become energized capacity.",
   },
 ] as const;
 
 export const ISI_WHAT_WOULD_EASE = [
   {
-    title: "Faster grid expansion",
-    body: "Clear acceleration in transmission, generation, substations, interconnection processing, and utility planning.",
+    title: "Faster transmission & interconnection",
+    body: "Measurable progress on queues, substation upgrades, and regional transmission without implying strain has disappeared.",
   },
   {
-    title: "Transformer relief",
-    body: "Shorter lead times, expanded domestic manufacturing, and improved availability of large electrical equipment.",
+    title: "Transformer lead-time relief",
+    body: "Expanded manufacturing throughput and shorter delivery windows for large electrical equipment serving grid and data-center load.",
   },
   {
-    title: "Better load management",
-    body: "More flexible data-center siting, demand response, onsite generation, and efficiency improvements.",
+    title: "Aligned load growth",
+    body: "Data-center siting, onsite generation, demand response, and efficiency gains better matched to available power and cooling capacity.",
   },
   {
-    title: "Water-aware siting",
-    body: "Stronger alignment between cooling demand, local water availability, drought exposure, and community pressure.",
+    title: "Labor pipeline expansion",
+    body: "Stronger electrical and utility trade throughput — training, retention, and project staffing that shorten buildout calendars.",
   },
 ] as const;
 
@@ -117,75 +125,81 @@ export const ISI_CALCULATION_ROWS = [
   {
     category: "Grid & Transmission",
     weight: "24%",
-    score: "86",
-    contribution: "20.6",
+    score: "81",
+    contribution: "19.4",
     reason:
-      "Grid queues, transmission bottlenecks, substation upgrades, and summer load remain major constraints.",
+      "Transmission delays, interconnection queues, and utility upgrade lag continue to slow large-load connection.",
   },
   {
     category: "Data-Center Load",
     weight: "22%",
-    score: "91",
-    contribution: "20.0",
+    score: "85",
+    contribution: "18.7",
     reason:
-      "AI and cloud expansion are increasing power demand, cooling requirements, and regional utility pressure.",
+      "Accelerating hyperscale demand; power access and cooling requirements increasingly strategic in siting and timelines.",
   },
   {
     category: "Transformer Supply",
     weight: "16%",
-    score: "88",
-    contribution: "14.1",
+    score: "82",
+    contribution: "13.1",
     reason:
-      "Long lead times and limited manufacturing capacity remain one of the most important physical bottlenecks.",
+      "Manufacturing lead times still constrained — utilities and hyperscalers competing for large-unit capacity.",
   },
   {
     category: "Semiconductor Capacity",
     weight: "14%",
-    score: "80",
-    contribution: "11.2",
+    score: "77",
+    contribution: "10.8",
     reason:
-      "Advanced chips, HBM, packaging, and fabrication concentration remain tight but still functioning.",
+      "Advanced packaging and HBM remain tight; AI infrastructure demand still dominant in allocation.",
   },
   {
     category: "Skilled Labor",
     weight: "12%",
-    score: "78",
-    contribution: "9.4",
+    score: "75",
+    contribution: "9.0",
     reason:
-      "Labor availability is constraining the speed of grid, utility, and industrial buildout.",
+      "Electrical, utility, HVAC, and industrial construction labor shortages remain a meaningful buildout limit.",
   },
   {
     category: "Water & Cooling",
     weight: "12%",
-    score: "74",
-    contribution: "8.9",
+    score: "73",
+    contribution: "8.8",
     reason:
-      "Cooling demand and regional water stress are becoming more important but remain uneven by location.",
+      "Cooling and regional water pressure increasingly factor in site selection — uneven but rising in importance.",
   },
 ] as const;
+
+export const ISI_CALCULATION_TOTAL = {
+  contribution: "79.8 → 80",
+  reason:
+    "Elevated strain within a capacity expansion race — persistent bottlenecks beneath rapid capital deployment, with the system functioning but less flexible.",
+} as const;
 
 export const ISI_SOURCES = [
   {
     name: "Utility & Grid Reporting",
-    body: "Used for transmission queues, interconnection delays, power demand, transformer availability, and summer load planning.",
+    body: "Transmission queues, interconnection delays, power demand, transformer availability, permitting, and regional upgrade timelines.",
   },
   {
     name: "Data-Center Reporting",
-    body: "Used for hyperscaler expansion, power contracts, cooling demand, site selection, and regional infrastructure pressure.",
+    body: "Hyperscale expansion, power contracts, cooling design, site selection, and utility coordination for large load.",
   },
   {
     name: "Semiconductor Supply Reporting",
-    body: "Used for advanced packaging, HBM, fabrication concentration, chip demand, and supply-chain constraints.",
+    body: "Advanced packaging, HBM, fabrication concentration, and AI-driven allocation across chip supply chains.",
   },
   {
     name: "Construction & Labor Reporting",
-    body: "Used for skilled labor shortages, industrial construction capacity, electrical trade demand, and project timelines.",
+    body: "Electrical and industrial labor availability, project duration, trade demand, and construction capacity.",
   },
   {
     name: "Water & Resource Reporting",
-    body: "Used for drought overlap, cooling demand, regional water pressure, and industrial siting constraints.",
+    body: "Cooling demand, drought overlap, regional water pressure, and siting friction in water-stressed areas.",
   },
 ] as const;
 
 export const ISI_FOOTER_NOTE =
-  "The Infrastructure Strain Index is a weekly editorial framework. It compresses physical-system constraints into a directional reading so readers can understand whether growth is supported by available capacity, slowed by bottlenecks, or approaching structural constraint.";
+  "The Infrastructure Strain Index is a weekly editorial framework. It compresses physical-system constraints into a directional reading — whether growth is supported by available capacity, slowed by bottlenecks, or operating with narrowing flexibility beneath still-functioning systems.";
