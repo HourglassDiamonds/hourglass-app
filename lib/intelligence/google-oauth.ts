@@ -37,6 +37,15 @@ export type Ga4OAuthEnv = {
 const ANALYTICS_READONLY_SCOPE =
   "https://www.googleapis.com/auth/analytics.readonly";
 
+export const GSC_READONLY_SCOPE =
+  "https://www.googleapis.com/auth/webmasters.readonly";
+
+/** Intelligence OAuth scopes — GA4 + Search Console weekly ingest. */
+export const INTELLIGENCE_OAUTH_SCOPES = [
+  ANALYTICS_READONLY_SCOPE,
+  GSC_READONLY_SCOPE,
+] as const;
+
 let authClient: OAuth2Client | null = null;
 let oauthConnectedLogged = false;
 
@@ -108,7 +117,8 @@ export function buildGoogleAuthUrl(): string {
   return client.generateAuthUrl({
     access_type: "offline",
     prompt: "consent",
-    scope: [ANALYTICS_READONLY_SCOPE],
+    scope: [...INTELLIGENCE_OAUTH_SCOPES],
+    includeGrantedScopes: true,
   });
 }
 
@@ -215,6 +225,32 @@ export function ga4PropertyResourceName(): string {
     throw new Ga4OAuthError("GA4_PROPERTY_ID is required", "MISSING_ENV");
   }
   return `properties/${env.propertyId}`;
+}
+
+/** Access token for Google APIs (GA4, GSC) using the shared refresh token. */
+export async function getGoogleAccessToken(): Promise<string | null> {
+  const clientId = getGoogleClientId();
+  const clientSecret = getGoogleClientSecret();
+  const refreshToken = getGoogleRefreshToken();
+  if (!clientId || !clientSecret || !refreshToken) return null;
+
+  const redirectUri =
+    getGoogleOAuthRedirectUri() ??
+    "http://localhost:3000/api/intelligence/google-oauth-callback";
+
+  const client = new OAuth2Client(clientId, clientSecret, redirectUri);
+  client.setCredentials({ refresh_token: refreshToken });
+
+  try {
+    const tokenResponse = await client.getAccessToken();
+    const token =
+      typeof tokenResponse === "string"
+        ? tokenResponse
+        : tokenResponse?.token;
+    return token ?? null;
+  } catch {
+    return null;
+  }
 }
 
 export function mapGa4ApiError(err: unknown): Ga4OAuthError {

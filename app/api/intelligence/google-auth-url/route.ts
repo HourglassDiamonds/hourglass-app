@@ -10,7 +10,7 @@ export async function GET() {
     return NextResponse.json({
       ok: true,
       authUrl: url,
-      hint: "Open authUrl in a browser, sign in with your GA4 user, then copy GOOGLE_REFRESH_TOKEN from the callback page into .env.local",
+      hint: "Open authUrl in a browser, sign in with your Google account (GA4 + Search Console access), then copy GOOGLE_REFRESH_TOKEN from the callback page into .env.local and Vercel Production.",
     });
   } catch (err) {
     const message =

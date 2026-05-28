@@ -8,12 +8,15 @@ import {
 } from "./compare";
 import type { ExecutiveDashboardData, MetricStatus } from "./dashboard-data";
 import {
+  displayFromSnapshot,
   ga4PendingMetric,
   gmbNotConnected,
   PLACEHOLDER_DASHBOARD_DATA,
   STATIC_GOOGLE_REVIEWS,
   SUBSCRIBERS_NOT_CONNECTED,
+  type ExecutiveDashboardPayload,
 } from "./dashboard-data";
+import { buildDashboardSnapshot } from "./dashboard-snapshot";
 import type { WeeklyReportRecord } from "./types";
 
 function metric(
@@ -21,17 +24,22 @@ function metric(
   trendLine: string,
   status?: MetricStatus,
   sourceLabel = "GA4",
-): ExecutiveDashboardData["businessPulse"]["weeklyTraffic"] {
+): ExecutiveDashboardData["consultationFunnel"]["weeklyTraffic"] {
   return { value, trendLine, status, sourceLabel };
 }
 
-export function mapReportToDashboard(
+/**
+ * Legacy mapper — enriches snapshot display with GA4-derived status labels
+ * where the generic snapshot mapper uses simpler formatting.
+ */
+function enrichLiveDisplay(
+  display: ExecutiveDashboardData,
   report: WeeklyReportRecord,
 ): ExecutiveDashboardData {
   const ga4 = report.raw_payload;
   const cur = ga4?.current;
   const prev = ga4?.previous;
-  if (!cur || !prev) return PLACEHOLDER_DASHBOARD_DATA;
+  if (!cur || !prev) return display;
 
   const sessionsDelta = deltaPercentage(
     cur.traffic.sessions,
@@ -71,24 +79,37 @@ export function mapReportToDashboard(
       : 0;
   const ctaRateDelta = deltaPercentage(ctaRate, prevCtaRate);
 
-  const topPages = cur.landingPages.slice(0, 3);
-  const growing = topPages.map((p, i) => {
-    const prevPage = prev.landingPages.find((x) => x.value === p.value);
-    const d = prevPage
-      ? deltaPercentage(p.sessions, prevPage.sessions)
-      : null;
-    const status = semanticStatus(d);
-    return {
-      title: p.value,
-      note: `GA4 · ${formatDeltaLine(d)}${i === 0 && status === "Accelerating" ? ` · ${status}` : ""}`,
-    };
-  });
+  const funnel = {
+    sectionNote: report.traffic_summary.split(".")[0] + ".",
+    weeklyTraffic: metric(
+      formatInteger(cur.traffic.sessions),
+      formatDeltaLine(sessionsDelta),
+      semanticStatus(sessionsDelta) as MetricStatus,
+    ),
+    subscribers: SUBSCRIBERS_NOT_CONNECTED,
+    conciergeInquiries: metric(
+      formatInteger(cur.consultationCtaClicks),
+      `Consultation CTA clicks · ${formatDeltaLine(ctaDelta)}`,
+      semanticStatus(ctaDelta) as MetricStatus,
+    ),
+    consultationConversion: metric(
+      `${Math.round(ctaRate * 10) / 10}%`,
+      `CTA / studio views · ${formatDeltaLine(ctaRateDelta)}`,
+      semanticStatus(ctaRateDelta) as MetricStatus,
+    ),
+    returningVisitors: metric(
+      formatPercent(cur.traffic.engagementRate),
+      `Engaged session rate · ${formatDeltaLine(engagementDelta)}`,
+      semanticStatus(engagementDelta) as MetricStatus,
+    ),
+  };
 
   const insightSentence =
     report.executive_summary.split(".")[0]?.trim() ||
     PLACEHOLDER_DASHBOARD_DATA.weeklySignal.insight;
 
   return {
+    ...display,
     weeklySignal: {
       status: semanticStatus(studioDelta) as MetricStatus,
       insight: insightSentence.endsWith(".") ? insightSentence : `${insightSentence}.`,
@@ -96,30 +117,8 @@ export function mapReportToDashboard(
         report.recommendations[0] ??
         PLACEHOLDER_DASHBOARD_DATA.weeklySignal.note,
     },
-    businessPulse: {
-      sectionNote: report.traffic_summary.split(".")[0] + ".",
-      weeklyTraffic: metric(
-        formatInteger(cur.traffic.sessions),
-        formatDeltaLine(sessionsDelta),
-        semanticStatus(sessionsDelta) as MetricStatus,
-      ),
-      subscribers: SUBSCRIBERS_NOT_CONNECTED,
-      conciergeInquiries: metric(
-        formatInteger(cur.consultationCtaClicks),
-        `Consultation CTA clicks · ${formatDeltaLine(ctaDelta)}`,
-        semanticStatus(ctaDelta) as MetricStatus,
-      ),
-      consultationConversion: metric(
-        `${Math.round(ctaRate * 10) / 10}%`,
-        `CTA / studio views · ${formatDeltaLine(ctaRateDelta)}`,
-        semanticStatus(ctaRateDelta) as MetricStatus,
-      ),
-      returningVisitors: metric(
-        formatPercent(cur.traffic.engagementRate),
-        `Engaged session rate · ${formatDeltaLine(engagementDelta)}`,
-        semanticStatus(engagementDelta) as MetricStatus,
-      ),
-    },
+    consultationFunnel: funnel,
+    businessPulse: funnel,
     diamondStudio: {
       sectionNote: report.diamond_studio_summary.split(".")[0] + ".",
       mostSelectedShape: metric(
@@ -149,39 +148,51 @@ export function mapReportToDashboard(
         `Orientation events ${formatInteger(cur.studioEvents.orientation_changed ?? 0)}`,
         "Emerging",
       ),
-    },
-    content: {
-      sectionNote: report.landing_page_summary.split("\n")[0]
-        ? "Landing paths below reflect GA4 session entry for the week."
-        : PLACEHOLDER_DASHBOARD_DATA.content.sectionNote,
-      topArticles: topPages.map((p) => ({
-        title: p.value.replace(/^\//, "").replace(/-/g, " ") || p.value,
-        note: `GA4 · ${formatInteger(p.sessions)} sessions`,
-      })),
-      fastestGrowingPages:
-        growing.length > 0
-          ? growing
-          : PLACEHOLDER_DASHBOARD_DATA.content.fastestGrowingPages,
-      pagesToUpgrade:
-        report.problems.length > 0
-          ? report.problems.slice(0, 3).map((p) => ({
-              title: "Review item",
-              note: `Intelligence · ${p}`,
-            }))
-          : PLACEHOLDER_DASHBOARD_DATA.content.pagesToUpgrade,
+      studioVisits: metric(
+        formatInteger(cur.studioViews),
+        formatDeltaLine(studioDelta),
+        semanticStatus(studioDelta) as MetricStatus,
+      ),
+      returnUsage: display.diamondStudio.returnUsage,
+      sessionDepth: display.diamondStudio.sessionDepth,
+      highIntentSessions: display.diamondStudio.highIntentSessions,
+      repeatUsers7d: display.diamondStudio.repeatUsers7d,
+      ctaPathing: display.diamondStudio.ctaPathing,
     },
     localAuthority: {
-      sectionNote:
-        "Google rating at 5.0 / 5 stars (verified). Direction, calls, and profile metrics await Google Business Profile API.",
+      ...display.localAuthority,
       googleReviews: STATIC_GOOGLE_REVIEWS,
       directionRequests: gmbNotConnected("Direction requests"),
       calls: gmbNotConnected("Calls"),
-      gmbEngagement: gmbNotConnected("Profile engagement"),
-    },
-    ledger: {
-      ...PLACEHOLDER_DASHBOARD_DATA.ledger,
-      sectionNote:
-        "Macro tone from weekly intelligence narrative — Ledger index feeds not yet wired.",
     },
   };
+}
+
+export function buildExecutiveDashboardPayload(
+  report: WeeklyReportRecord | null,
+  weekLabel?: string,
+): ExecutiveDashboardPayload {
+  const ga4 = report?.raw_payload ?? null;
+  const gsc = report?.raw_payload?.gsc ?? null;
+  const snapshot =
+    report?.raw_payload?.dashboardSnapshot ??
+    buildDashboardSnapshot(report, ga4, gsc);
+  const baseDisplay = displayFromSnapshot(snapshot, report);
+  const display = report
+    ? enrichLiveDisplay(baseDisplay, report)
+    : PLACEHOLDER_DASHBOARD_DATA;
+
+  return {
+    snapshot,
+    display,
+    isLive: Boolean(report && ga4?.current),
+    weekLabel,
+  };
+}
+
+/** @deprecated Prefer buildExecutiveDashboardPayload */
+export function mapReportToDashboard(
+  report: WeeklyReportRecord,
+): ExecutiveDashboardData {
+  return buildExecutiveDashboardPayload(report).display;
 }

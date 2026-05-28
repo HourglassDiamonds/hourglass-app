@@ -1,0 +1,277 @@
+import {
+  GCAL353466126_MARKETING_TRAP,
+  GCAL353466126_OCR_MULTILINE,
+  GCAL353466126_REPORT_NUMBER,
+  GCAL353466126_SCREENSHOT_OCR,
+} from "./fixtures/gcal353466126";
+import {
+  GCAL360796191_REPORT_NUMBER,
+  GCAL360796191_TEXT_LAYER,
+  GCAL360796191_TEXT_LAYER_INLINE,
+} from "./fixtures/gcal360796191";
+import {
+  GIA2527039693_FACSIMILE_PDF_TEXT,
+  GIA2527039693_OCR_MULTILINE,
+  GIA2527039693_PDF_TEXT_LAYER,
+} from "./fixtures/gia2527039693";
+import {
+  LG773657228_HEADER_BLOCK,
+  LG773657228_OCR_DUPLICATE_TABLE_PCT,
+  LG773657228_OCR_GIRDLE_LEAK,
+  LG773657228_OCR_INLINE_NO_STAR_PCT,
+  LG773657228_OCR_MULTILINE,
+  LG773657228_OCR_TRUNCATED_FACETED,
+  LG773657228_PDF_TEXT_ORDER,
+  LG773657228_WITH_HEADER,
+} from "./fixtures/lg773657228";
+import type { CalibrationLab, ReportSource, TextExtractionMethod } from "./types";
+
+export type CalibrationSeedScenario = {
+  id: string;
+  lab: CalibrationLab;
+  reportNumber: string;
+  reportSource: ReportSource;
+  textMethod: TextExtractionMethod;
+  stoneType: "natural" | "lab-grown" | "unknown";
+  text: string;
+  sourceFilename?: string;
+};
+
+/** Controlled fixture-derived scenarios for seeding (~24 entries). */
+export function buildCalibrationSeedScenarios(): CalibrationSeedScenario[] {
+  return [
+    {
+      id: "gcal-8x-pdf-LG353466126",
+      lab: "GCAL",
+      reportNumber: GCAL353466126_REPORT_NUMBER,
+      reportSource: "pdf-upload",
+      textMethod: "pdf-text",
+      stoneType: "lab-grown",
+      text: GCAL353466126_MARKETING_TRAP,
+      sourceFilename: "LG353466126.pdf",
+    },
+    {
+      id: "gcal-8x-ocr-LG353466126",
+      lab: "GCAL",
+      reportNumber: `${GCAL353466126_REPORT_NUMBER}-OCR`,
+      reportSource: "pdf-upload",
+      textMethod: "ocr",
+      stoneType: "lab-grown",
+      text: GCAL353466126_OCR_MULTILINE,
+    },
+    {
+      id: "gcal-screenshot-LG353466126",
+      lab: "GCAL",
+      reportNumber: GCAL353466126_REPORT_NUMBER,
+      reportSource: "screenshot-upload",
+      textMethod: "ocr",
+      stoneType: "lab-grown",
+      text: GCAL353466126_SCREENSHOT_OCR,
+      sourceFilename: "LG353466126-screenshot.png",
+    },
+    {
+      id: "gcal-sarine-pdf-LG360796191",
+      lab: "GCAL",
+      reportNumber: GCAL360796191_REPORT_NUMBER,
+      reportSource: "pdf-upload",
+      textMethod: "pdf-text",
+      stoneType: "lab-grown",
+      text: GCAL360796191_TEXT_LAYER,
+      sourceFilename: "LG360796191.pdf",
+    },
+    {
+      id: "gcal-sarine-inline-LG360796191",
+      lab: "GCAL",
+      reportNumber: `${GCAL360796191_REPORT_NUMBER}-INLINE`,
+      reportSource: "pdf-upload",
+      textMethod: "pdf-text",
+      stoneType: "lab-grown",
+      text: GCAL360796191_TEXT_LAYER_INLINE,
+    },
+    {
+      id: "gia-pdf-2527039693",
+      lab: "GIA",
+      reportNumber: "2527039693",
+      reportSource: "pdf-upload",
+      textMethod: "pdf-text",
+      stoneType: "natural",
+      text: GIA2527039693_PDF_TEXT_LAYER,
+      sourceFilename: "2527039693.pdf",
+    },
+    {
+      id: "gia-ocr-2527039693",
+      lab: "GIA",
+      reportNumber: "2527039693-OCR",
+      reportSource: "pdf-upload",
+      textMethod: "ocr",
+      stoneType: "natural",
+      text: GIA2527039693_OCR_MULTILINE,
+    },
+    {
+      id: "gia-facsimile-2527039693",
+      lab: "GIA",
+      reportNumber: "2527039693-FACSIMILE",
+      reportSource: "pdf-upload",
+      textMethod: "pdf-text",
+      stoneType: "natural",
+      text: GIA2527039693_FACSIMILE_PDF_TEXT,
+    },
+    {
+      id: "igi-pdf-LG773657228",
+      lab: "IGI",
+      reportNumber: "LG773657228",
+      reportSource: "pdf-upload",
+      textMethod: "pdf-text",
+      stoneType: "lab-grown",
+      text: LG773657228_PDF_TEXT_ORDER,
+      sourceFilename: "LG773657228.pdf",
+    },
+    {
+      id: "igi-header-LG773657228",
+      lab: "IGI",
+      reportNumber: "LG773657228-HEADER",
+      reportSource: "pdf-upload",
+      textMethod: "pdf-text",
+      stoneType: "lab-grown",
+      text: LG773657228_WITH_HEADER,
+    },
+    {
+      id: "igi-ocr-multiline-LG773657228",
+      lab: "IGI",
+      reportNumber: "LG773657228-ML",
+      reportSource: "screenshot-upload",
+      textMethod: "ocr",
+      stoneType: "lab-grown",
+      text: LG773657228_OCR_MULTILINE,
+    },
+    {
+      id: "igi-ocr-inline-LG773657228",
+      lab: "IGI",
+      reportNumber: "LG773657228-INLINE",
+      reportSource: "screenshot-upload",
+      textMethod: "ocr",
+      stoneType: "lab-grown",
+      text: LG773657228_OCR_INLINE_NO_STAR_PCT,
+    },
+    {
+      id: "igi-ocr-girdle-leak",
+      lab: "IGI",
+      reportNumber: "LG773657228-GIRDLE",
+      reportSource: "screenshot-upload",
+      textMethod: "ocr",
+      stoneType: "lab-grown",
+      text: LG773657228_OCR_GIRDLE_LEAK,
+    },
+    {
+      id: "igi-ocr-dup-table",
+      lab: "IGI",
+      reportNumber: "LG773657228-DUP59",
+      reportSource: "screenshot-upload",
+      textMethod: "ocr",
+      stoneType: "lab-grown",
+      text: LG773657228_OCR_DUPLICATE_TABLE_PCT,
+    },
+    {
+      id: "igi-ocr-truncated-faceted",
+      lab: "IGI",
+      reportNumber: "LG773657228-FACETE",
+      reportSource: "screenshot-upload",
+      textMethod: "ocr",
+      stoneType: "lab-grown",
+      text: LG773657228_OCR_TRUNCATED_FACETED,
+    },
+    {
+      id: "igi-header-only",
+      lab: "IGI",
+      reportNumber: "LG773657228-HONLY",
+      reportSource: "manual",
+      textMethod: "manual",
+      stoneType: "lab-grown",
+      text: LG773657228_HEADER_BLOCK,
+    },
+    {
+      id: "gcal-8x-seed-02",
+      lab: "GCAL",
+      reportNumber: "SEED-GCAL-8X-002",
+      reportSource: "pdf-upload",
+      textMethod: "pdf-text",
+      stoneType: "lab-grown",
+      text: GCAL353466126_MARKETING_TRAP.replace(
+        GCAL353466126_REPORT_NUMBER,
+        "SEED-GCAL-8X-002",
+      ),
+    },
+    {
+      id: "gcal-8x-seed-03",
+      lab: "GCAL",
+      reportNumber: "SEED-GCAL-8X-003",
+      reportSource: "pdf-upload",
+      textMethod: "pdf-text",
+      stoneType: "lab-grown",
+      text: GCAL353466126_MARKETING_TRAP.replace(
+        GCAL353466126_REPORT_NUMBER,
+        "SEED-GCAL-8X-003",
+      ),
+    },
+    {
+      id: "gia-seed-02",
+      lab: "GIA",
+      reportNumber: "SEED-GIA-002",
+      reportSource: "pdf-upload",
+      textMethod: "pdf-text",
+      stoneType: "natural",
+      text: GIA2527039693_PDF_TEXT_LAYER.replace(/2527039693/g, "SEED-GIA-002"),
+    },
+    {
+      id: "gia-seed-03",
+      lab: "GIA",
+      reportNumber: "SEED-GIA-003",
+      reportSource: "pdf-upload",
+      textMethod: "pdf-text",
+      stoneType: "natural",
+      text: GIA2527039693_PDF_TEXT_LAYER.replace(/2527039693/g, "SEED-GIA-003"),
+    },
+    {
+      id: "igi-seed-02",
+      lab: "IGI",
+      reportNumber: "SEED-IGI-002",
+      reportSource: "pdf-upload",
+      textMethod: "pdf-text",
+      stoneType: "lab-grown",
+      text: LG773657228_WITH_HEADER.replace(/LG773657228/g, "SEED-IGI-002"),
+    },
+    {
+      id: "igi-seed-03",
+      lab: "IGI",
+      reportNumber: "SEED-IGI-003",
+      reportSource: "pdf-upload",
+      textMethod: "pdf-text",
+      stoneType: "lab-grown",
+      text: LG773657228_PDF_TEXT_ORDER.replace(/LG773657228/g, "SEED-IGI-003"),
+    },
+    {
+      id: "gcal-screenshot-seed-02",
+      lab: "GCAL",
+      reportNumber: "SEED-GCAL-SCREEN-002",
+      reportSource: "screenshot-upload",
+      textMethod: "ocr",
+      stoneType: "lab-grown",
+      text: GCAL353466126_SCREENSHOT_OCR.replace(
+        /LG353466126/g,
+        "SEED-GCAL-SCREEN-002",
+      ),
+    },
+    {
+      id: "gcal-sarine-seed-02",
+      lab: "GCAL",
+      reportNumber: "SEED-GCAL-SARINE-002",
+      reportSource: "pdf-upload",
+      textMethod: "pdf-text",
+      stoneType: "lab-grown",
+      text: GCAL360796191_TEXT_LAYER.replace(
+        GCAL360796191_REPORT_NUMBER,
+        "SEED-GCAL-SARINE-002",
+      ),
+    },
+  ];
+}

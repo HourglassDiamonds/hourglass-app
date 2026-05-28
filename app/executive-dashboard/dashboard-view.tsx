@@ -235,8 +235,8 @@ export function ExecutiveDashboardView({ data: d, isLive, weekLabel }: Props) {
     : "Internal · Placeholder data";
 
   const footer = isLive
-    ? "Hourglass Intelligence Engine · Live cards are labeled GA4. Subscribers, GMB metrics, carat/coverage clusters, and Ledger indices show as not connected or pending until wired."
-    : "Scaffold only — no weekly report loaded. Run the GA4 weekly job for live metrics. See docs/intelligence-engine-setup.md.";
+    ? "Hourglass Intelligence Engine · GA4 metrics are live from the latest weekly snapshot. GSC, GMB, path funnels, and Ledger indices show as Pending until wired into the ingestion layer."
+    : "Scaffold only — no weekly report loaded. Run the GA4 weekly job for live metrics. See docs/executive-dashboard-system.md.";
 
   return (
     <div className="min-h-screen bg-[#efe8de] text-[#1c1b1a]">
@@ -265,34 +265,157 @@ export function ExecutiveDashboardView({ data: d, isLive, weekLabel }: Props) {
 
         <div className="mt-24 space-y-24 md:mt-28 md:space-y-28 lg:mt-32 lg:space-y-32">
           <SectionPanel
-            eyebrow="Overview"
-            title="Business Pulse"
-            note={d.businessPulse.sectionNote}
+            eyebrow="Search"
+            title="Search + Authority Momentum"
+            note={d.searchAuthority.sectionNote}
+          >
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4 lg:gap-6">
+              <MetricCard
+                {...metricCardProps(
+                  "Total Impressions",
+                  d.searchAuthority.totalImpressions,
+                )}
+              />
+              <MetricCard
+                {...metricCardProps(
+                  "Impressions Trend",
+                  d.searchAuthority.impressionsTrend,
+                )}
+              />
+              <MetricCard
+                {...metricCardProps("Total Clicks", d.searchAuthority.totalClicks)}
+              />
+              <MetricCard
+                {...metricCardProps("Clicks Trend", d.searchAuthority.clicksTrend)}
+              />
+              <MetricCard
+                {...metricCardProps(
+                  "Average Position",
+                  d.searchAuthority.averagePosition,
+                )}
+              />
+              <MetricCard
+                {...metricCardProps(
+                  "Position Movement",
+                  d.searchAuthority.positionMovement,
+                )}
+              />
+              <MetricCard
+                {...metricCardProps("CTR Trend", d.searchAuthority.ctrTrend)}
+              />
+              <MetricCard
+                {...metricCardProps("Indexed Pages", d.searchAuthority.indexedPages)}
+              />
+            </div>
+            <div className="mt-8 grid gap-6 lg:grid-cols-2 lg:gap-7">
+              <ListPanel title="Top Gaining Queries">
+                {d.searchAuthority.topGainingQueries.map((row, i) => (
+                  <ListRow
+                    key={`gain-${row.title}-${i}`}
+                    primary={row.title}
+                    secondary={row.note}
+                  />
+                ))}
+              </ListPanel>
+              <ListPanel title="Top Losing Queries">
+                {d.searchAuthority.topLosingQueries.map((row, i) => (
+                  <ListRow
+                    key={`lose-${row.title}-${i}`}
+                    primary={row.title}
+                    secondary={row.note}
+                  />
+                ))}
+              </ListPanel>
+              <ListPanel title="Top Pages by Impressions">
+                {d.searchAuthority.topPagesByImpressions.map((row, i) => (
+                  <ListRow
+                    key={`imp-${row.title}-${i}`}
+                    primary={row.title}
+                    secondary={row.note}
+                  />
+                ))}
+              </ListPanel>
+              <ListPanel title="Fastest Climbing Pages">
+                {d.searchAuthority.fastestClimbingPages.map((row, i) => (
+                  <ListRow
+                    key={`climb-${row.title}-${i}`}
+                    primary={row.title}
+                    secondary={row.note}
+                  />
+                ))}
+              </ListPanel>
+            </div>
+          </SectionPanel>
+
+          <SectionPanel
+            eyebrow="Brand"
+            title="Brand Demand"
+            note={d.brandDemand.sectionNote}
+          >
+            <p className={`mb-8 max-w-[42rem] text-[11px] leading-[1.7] ${MUTED_TREND}`}>
+              Tracked patterns: {d.brandDemand.trackedQueriesNote}
+            </p>
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
+              <MetricCard
+                {...metricCardProps(
+                  "Branded Impressions",
+                  d.brandDemand.brandedImpressions,
+                )}
+              />
+              <MetricCard
+                {...metricCardProps("Branded Clicks", d.brandDemand.brandedClicks)}
+              />
+              <MetricCard
+                {...metricCardProps("Branded CTR", d.brandDemand.brandedCtr)}
+              />
+              <MetricCard
+                {...metricCardProps(
+                  "Brand Search Growth",
+                  d.brandDemand.brandSearchGrowth,
+                )}
+              />
+              <MetricCard
+                {...metricCardProps(
+                  "Non-Brand vs Brand",
+                  d.brandDemand.nonBrandVsBrand,
+                )}
+              />
+            </div>
+          </SectionPanel>
+
+          <SectionPanel
+            eyebrow="Conversion"
+            title="Consultation Funnel"
+            note={d.consultationFunnel.sectionNote}
           >
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
               <MetricCard
-                {...metricCardProps("Weekly Traffic", d.businessPulse.weeklyTraffic, "airy")}
+                {...metricCardProps(
+                  "Weekly Traffic",
+                  d.consultationFunnel.weeklyTraffic,
+                  "airy",
+                )}
               />
               <MetricCard
-                {...metricCardProps("Subscribers", d.businessPulse.subscribers)}
+                {...metricCardProps("Subscribers", d.consultationFunnel.subscribers)}
               />
               <MetricCard
                 {...metricCardProps(
                   "Concierge Inquiries",
-                  d.businessPulse.conciergeInquiries,
+                  d.consultationFunnel.conciergeInquiries,
                   "tight",
                 )}
               />
               <MetricCard
                 {...metricCardProps(
                   "Consultation Conversion",
-                  d.businessPulse.consultationConversion,
+                  d.consultationFunnel.consultationConversion,
                 )}
               />
               <MetricCard
                 {...metricCardProps(
                   "Returning Visitors",
-                  d.businessPulse.returningVisitors,
+                  d.consultationFunnel.returningVisitors,
                   "airy",
                 )}
               />
@@ -304,7 +427,10 @@ export function ExecutiveDashboardView({ data: d, isLive, weekLabel }: Props) {
             title="Diamond Studio Intelligence"
             note={d.diamondStudio.sectionNote}
           >
-            <div className="grid gap-5 sm:grid-cols-2 lg:gap-6">
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
+              <MetricCard
+                {...metricCardProps("Studio Visits", d.diamondStudio.studioVisits)}
+              />
               <MetricCard
                 {...metricCardProps(
                   "Most Selected Shape",
@@ -327,7 +453,7 @@ export function ExecutiveDashboardView({ data: d, isLive, weekLabel }: Props) {
               />
               <MetricCard
                 {...metricCardProps(
-                  "Most Common Coverage Zone",
+                  "Coverage Zone",
                   d.diamondStudio.mostCommonCoverageZone,
                 )}
               />
@@ -344,6 +470,24 @@ export function ExecutiveDashboardView({ data: d, isLive, weekLabel }: Props) {
                   "airy",
                 )}
               />
+              <MetricCard
+                {...metricCardProps("Return Usage", d.diamondStudio.returnUsage)}
+              />
+              <MetricCard
+                {...metricCardProps("Session Depth", d.diamondStudio.sessionDepth)}
+              />
+              <MetricCard
+                {...metricCardProps(
+                  "High-Intent Sessions",
+                  d.diamondStudio.highIntentSessions,
+                )}
+              />
+              <MetricCard
+                {...metricCardProps("Repeat Users (7d)", d.diamondStudio.repeatUsers7d)}
+              />
+              <MetricCard
+                {...metricCardProps("CTA Pathing", d.diamondStudio.ctaPathing)}
+              />
             </div>
           </SectionPanel>
 
@@ -354,27 +498,27 @@ export function ExecutiveDashboardView({ data: d, isLive, weekLabel }: Props) {
           >
             <div className="grid gap-6 lg:grid-cols-3 lg:gap-7">
               <ListPanel title="Top Articles">
-                {d.content.topArticles.map((row) => (
+                {d.content.topArticles.map((row, i) => (
                   <ListRow
-                    key={row.title}
+                    key={`top-${row.title}-${i}`}
                     primary={row.title}
                     secondary={row.note}
                   />
                 ))}
               </ListPanel>
               <ListPanel title="Fastest Growing Pages">
-                {d.content.fastestGrowingPages.map((row) => (
+                {d.content.fastestGrowingPages.map((row, i) => (
                   <ListRow
-                    key={row.title}
+                    key={`grow-${row.title}-${i}`}
                     primary={row.title}
                     secondary={row.note}
                   />
                 ))}
               </ListPanel>
               <ListPanel title="Pages To Upgrade">
-                {d.content.pagesToUpgrade.map((row) => (
+                {d.content.pagesToUpgrade.map((row, i) => (
                   <ListRow
-                    key={row.title}
+                    key={`up-${row.title}-${i}`}
                     primary={row.title}
                     secondary={row.note}
                   />
@@ -388,9 +532,18 @@ export function ExecutiveDashboardView({ data: d, isLive, weekLabel }: Props) {
             title="Local Authority"
             note={d.localAuthority.sectionNote}
           >
-            <div className="grid gap-5 sm:grid-cols-2 lg:gap-6">
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
               <MetricCard
                 {...metricCardProps("Google Reviews", d.localAuthority.googleReviews)}
+              />
+              <MetricCard
+                {...metricCardProps("Profile Views", d.localAuthority.profileViews)}
+              />
+              <MetricCard
+                {...metricCardProps(
+                  "Website Clicks (GBP)",
+                  d.localAuthority.websiteClicksFromGbp,
+                )}
               />
               <MetricCard
                 {...metricCardProps(
@@ -404,12 +557,95 @@ export function ExecutiveDashboardView({ data: d, isLive, weekLabel }: Props) {
               />
               <MetricCard
                 {...metricCardProps(
-                  "GMB Engagement",
-                  d.localAuthority.gmbEngagement,
+                  "Review Velocity",
+                  d.localAuthority.reviewVelocity,
                 )}
+              />
+              <MetricCard
+                {...metricCardProps(
+                  "Unanswered Items",
+                  d.localAuthority.unansweredItems,
+                )}
+              />
+              <MetricCard
+                {...metricCardProps("Post Cadence", d.localAuthority.postCadence)}
+              />
+              <MetricCard
+                {...metricCardProps("Map Pack Trend", d.localAuthority.mapPackTrend)}
               />
             </div>
           </SectionPanel>
+
+          <SectionPanel
+            eyebrow="Paths"
+            title="Assisted Conversion Paths"
+            note={d.assistedPaths.sectionNote}
+          >
+            <div className="mb-8 max-w-md">
+              <MetricCard
+                {...metricCardProps(
+                  "Studio-Assisted Conversion",
+                  d.assistedPaths.studioAssistedConversion,
+                )}
+              />
+            </div>
+            <div className="grid gap-6 lg:grid-cols-2 lg:gap-7">
+              <ListPanel title="Before Concierge Visit">
+                {d.assistedPaths.pathsBeforeConcierge.map((row, i) => (
+                  <ListRow
+                    key={`pc-${row.title}-${i}`}
+                    primary={row.title}
+                    secondary={row.note}
+                  />
+                ))}
+              </ListPanel>
+              <ListPanel title="Before Consultation CTA">
+                {d.assistedPaths.pathsBeforeCtaClick.map((row, i) => (
+                  <ListRow
+                    key={`cta-${row.title}-${i}`}
+                    primary={row.title}
+                    secondary={row.note}
+                  />
+                ))}
+              </ListPanel>
+              <ListPanel title="Paths to Form Submit">
+                {d.assistedPaths.pathsToFormSubmit.map((row, i) => (
+                  <ListRow
+                    key={`form-${row.title}-${i}`}
+                    primary={row.title}
+                    secondary={row.note}
+                  />
+                ))}
+              </ListPanel>
+              <ListPanel title="Assisting Pages & Tools">
+                {d.assistedPaths.assistingPages.map((row, i) => (
+                  <ListRow
+                    key={`assist-${row.title}-${i}`}
+                    primary={row.title}
+                    secondary={row.note}
+                  />
+                ))}
+              </ListPanel>
+            </div>
+          </SectionPanel>
+
+          {d.recommendations.items.length > 0 ? (
+            <SectionPanel
+              eyebrow="Actions"
+              title="Recommendation Engine"
+              note={d.recommendations.sectionNote}
+            >
+              <div className="grid gap-5 md:grid-cols-2 lg:gap-6">
+                {d.recommendations.items.map((item) => (
+                  <InsightBlock
+                    key={item.title}
+                    label={`${item.priority} · ${item.actionType ?? "ops"}`}
+                    body={`${item.title} — ${item.rationale}${item.confidence ? ` (${item.confidence} confidence)` : ""}`}
+                  />
+                ))}
+              </div>
+            </SectionPanel>
+          ) : null}
 
           <SectionPanel
             eyebrow="Macro"

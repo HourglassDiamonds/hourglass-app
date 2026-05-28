@@ -67,3 +67,5 @@ alter table content_opportunities enable row level security;
 -- SECURITY: If SUPABASE_SERVICE_ROLE_KEY was ever exposed, rotate it immediately
 -- (Supabase Dashboard → Project Settings → API → Reset service_role key).
 -- Update SUPABASE_SERVICE_ROLE_KEY in Vercel and .env.local only — never commit keys.
+
+-- Light Performance calibration records: see lib/supabase/calibration-schema.sql

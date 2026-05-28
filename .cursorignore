@@ -1,0 +1,10 @@
+﻿.next
+diagnostics
+data/light-performance-calibration/debug
+data/light-performance-calibration/uploads
+node_modules
+.vercel
+trace
+*.log
+*.tmp
+*.cache

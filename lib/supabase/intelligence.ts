@@ -1,6 +1,6 @@
 import type {
   ContentOpportunityInput,
-  Ga4WeeklyBundle,
+  IntelligenceRawPayload,
   MetricSnapshotInput,
   RecommendationInput,
   WeeklyReportRecord,
@@ -13,7 +13,7 @@ type SaveWeeklyReportInput = {
   weekStart: string;
   weekEnd: string;
   sections: WeeklyReportSections;
-  rawPayload: Ga4WeeklyBundle;
+  rawPayload: IntelligenceRawPayload;
   snapshots: MetricSnapshotInput[];
   recommendations: RecommendationInput[];
   contentOpportunities: ContentOpportunityInput[];

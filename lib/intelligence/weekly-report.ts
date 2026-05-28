@@ -1,4 +1,6 @@
 import { fetchGa4WeeklyBundle, isGa4Configured } from "@/lib/integrations/ga4";
+import { fetchGscWeeklyBundle } from "@/lib/integrations/gsc";
+import { buildDashboardSnapshot } from "./dashboard-snapshot";
 import { sendWeeklyIntelligenceEmail } from "@/lib/email/send-weekly-intelligence-email";
 import {
   getGa4PropertyId,
@@ -17,7 +19,7 @@ import {
   buildContentOpportunities,
   buildRecommendationsAndSignals,
 } from "./recommendations";
-import type { WeeklyIntelligenceJobResult } from "./types";
+import type { IntelligenceRawPayload, WeeklyIntelligenceJobResult, WeeklyReportRecord } from "./types";
 import {
   getComparisonWeekRange,
   getReportWeekRange,
@@ -128,18 +130,49 @@ export async function runWeeklyIntelligenceJob(): Promise<WeeklyIntelligenceJobR
     const ga4 = await fetchGa4WeeklyBundle(currentWeek, previousWeek);
     console.log("[hourglass:intelligence] Analytics report generated");
 
+    const gsc = await fetchGscWeeklyBundle(currentWeek, previousWeek);
+    if (gsc.status === "unavailable" && gsc.unavailableReason) {
+      console.warn(
+        `[hourglass:intelligence] GSC unavailable: ${gsc.unavailableReason}`,
+      );
+    }
+
     const built = buildRecommendationsAndSignals(ga4);
     const contentOpportunities = buildContentOpportunities(
       ga4,
       built.opportunities,
     );
 
+    const reportStub: WeeklyReportRecord = {
+      id: "",
+      report_date: reportDate,
+      week_start: currentWeek.start,
+      week_end: currentWeek.end,
+      executive_summary: built.sections.executive_summary,
+      traffic_summary: built.sections.traffic_summary,
+      diamond_studio_summary: built.sections.diamond_studio_summary,
+      landing_page_summary: built.sections.landing_page_summary,
+      opportunities: built.sections.opportunities,
+      problems: built.sections.problems,
+      recommendations: built.sections.recommendations,
+      raw_payload: ga4,
+      created_at: new Date().toISOString(),
+    };
+
+    const dashboardSnapshot = buildDashboardSnapshot(reportStub, ga4, gsc);
+
+    const rawPayload: IntelligenceRawPayload = {
+      ...ga4,
+      gsc,
+      dashboardSnapshot,
+    };
+
     const reportId = await saveWeeklyReport({
       reportDate,
       weekStart: currentWeek.start,
       weekEnd: currentWeek.end,
       sections: built.sections,
-      rawPayload: ga4,
+      rawPayload,
       snapshots: built.snapshots,
       recommendations: built.recommendations,
       contentOpportunities,

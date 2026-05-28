@@ -1,0 +1,117 @@
+{
+  "restored": true,
+  "pdfPath": "C:\\Users\\justi\\OneDrive\\Desktop\\hourglass-app\\data\\light-performance-calibration\\uploads\\1779646972608-G1360796191.pdf",
+  "beforeSafety": {
+    "calibrationEligible": true,
+    "reviewFlags": [],
+    "completenessPercent": 100,
+    "manualOverrideCount": 0,
+    "lowConfidenceFieldCount": 0,
+    "missingRequired": [],
+    "reasons": []
+  },
+  "afterSafety": {
+    "calibrationEligible": true,
+    "reviewFlags": [],
+    "completenessPercent": 100,
+    "manualOverrideCount": 0,
+    "lowConfidenceFieldCount": 0,
+    "missingRequired": [],
+    "reasons": []
+  },
+  "inclusion": {
+    "includedInCalibrationStatistics": true,
+    "operationalRecord": true,
+    "denialReasons": [],
+    "safety": {
+      "calibrationEligible": true,
+      "reviewFlags": [],
+      "completenessPercent": 100,
+      "manualOverrideCount": 0,
+      "lowConfidenceFieldCount": 0,
+      "missingRequired": [],
+      "reasons": []
+    }
+  },
+  "fields": {
+    "shape": "Round Brilliant",
+    "carat": "1.00",
+    "measurements": "6.43 - 6.46 x 3.94 mm",
+    "tablePercent": "57",
+    "depthPercent": "61.2",
+    "crownAngle": "34",
+    "pavilionAngle": "40.8",
+    "lowerHalfPercent": "77",
+    "starLengthPercent": "50",
+    "girdle": "Medium to Sl. Thick, Faceted",
+    "culet": "None",
+    "polish": "Excellent",
+    "symmetry": "Excellent",
+    "fluorescence": "None",
+    "cutGrade": "Excellent"
+  },
+  "beforeSnap": {
+    "totalRecords": 80,
+    "syntheticRecords": 36,
+    "nonSyntheticRecords": 44,
+    "activeCorpusRecords": 8,
+    "quarantinedRecords": 36,
+    "calibrationSafeAll": 14,
+    "calibrationSafeNonSynthetic": 14,
+    "calibrationSafeActiveCorpus": 7,
+    "calibrationSafePercent": 18,
+    "calibrationSafeNonSyntheticPercent": 32,
+    "calibrationSafeActiveCorpusPercent": 88,
+    "statisticsIncludedActive": 7,
+    "statisticsIncludedActivePercent": 88,
+    "excludedFromStats": 37
+  },
+  "afterSnap": {
+    "totalRecords": 80,
+    "syntheticRecords": 36,
+    "nonSyntheticRecords": 44,
+    "activeCorpusRecords": 8,
+    "quarantinedRecords": 36,
+    "calibrationSafeAll": 14,
+    "calibrationSafeNonSynthetic": 14,
+    "calibrationSafeActiveCorpus": 7,
+    "calibrationSafePercent": 18,
+    "calibrationSafeNonSyntheticPercent": 32,
+    "calibrationSafeActiveCorpusPercent": 88,
+    "statisticsIncludedActive": 7,
+    "statisticsIncludedActivePercent": 88,
+    "excludedFromStats": 37
+  },
+  "bandSpread": [
+    {
+      "bandId": "exceptional",
+      "label": "Exceptional / Rare",
+      "count": 5
+    },
+    {
+      "bandId": "superb",
+      "label": "Superb",
+      "count": 3
+    },
+    {
+      "bandId": "strong",
+      "label": "Strong",
+      "count": 0
+    },
+    {
+      "bandId": "balanced",
+      "label": "Balanced",
+      "count": 0
+    },
+    {
+      "bandId": "mixed",
+      "label": "Mixed",
+      "count": 0
+    },
+    {
+      "bandId": "compromise",
+      "label": "Significant Compromise",
+      "count": 0
+    }
+  ]
+}

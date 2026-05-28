@@ -42,6 +42,12 @@ export type Ga4WeeklyBundle = {
   fetchedAt: string;
 };
 
+/** Weekly ingestion payload stored in Supabase `weekly_reports.raw_payload`. */
+export type IntelligenceRawPayload = Ga4WeeklyBundle & {
+  gsc?: import("@/lib/integrations/gsc").GscWeeklyBundle;
+  dashboardSnapshot?: import("./dashboard-snapshot").DashboardIntelligenceSnapshot;
+};
+
 export type MetricSnapshotInput = {
   source: string;
   metric_name: string;
@@ -58,6 +64,14 @@ export type RecommendationInput = {
   recommendation: string;
   priority: "high" | "medium" | "low";
   source_signal: string;
+};
+
+/** Future scored recommendations (dashboard + weekly email). */
+export type ScoredRecommendationInput = RecommendationInput & {
+  roi_score?: number | null;
+  confidence_score?: number | null;
+  urgency?: "critical" | "high" | "medium" | "low";
+  action_type?: string;
 };
 
 export type ContentOpportunityInput = {
@@ -90,7 +104,7 @@ export type WeeklyReportRecord = {
   opportunities: string[];
   problems: string[];
   recommendations: string[];
-  raw_payload: Ga4WeeklyBundle & {
+  raw_payload: IntelligenceRawPayload & {
     dashboardHints?: Record<string, unknown>;
   };
   created_at: string;

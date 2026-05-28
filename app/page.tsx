@@ -63,7 +63,8 @@ function FeaturedRingSection() {
     {
       title: "Emerald Ring",
       meta: "A large emerald diamond framed by graduated emerald-cut diamonds along the shank, composed with quiet structure and presence.",
-      finalLabel: "Coming Soon",
+      finalLabel: "Completed Piece",
+      href: "https://gembox.app/s/Y2DyzAZKFL",
       image: "/rings/emerald-ring.png",
     },
   ];
@@ -107,25 +108,38 @@ function FeaturedRingSection() {
     href?: string;
     featured?: boolean;
   }) {
+    const imageFrame = (
+      <div className="overflow-hidden rounded-[20px] border border-[#e4dbcf] bg-[#f3ede4] shadow-[0_6px_18px_rgba(0,0,0,0.03)] transition-all duration-500 ease-out group-hover:-translate-y-[1px] group-hover:border-[#d2c6b4] group-hover:bg-[#fbf7f2]">
+        <div
+          className={`relative flex items-center justify-center bg-[#f3ede4] ${
+            featured ? "aspect-[1.62/1]" : "aspect-[1.72/1]"
+          }`}
+        >
+          <Image
+            src={image}
+            alt={`${title} ring`}
+            fill
+            sizes="(max-width: 768px) 100vw, 33vw"
+            className="object-contain p-2 scale-110 -translate-y-1"
+          />
+        </div>
+      </div>
+    );
+
     return (
       <div className={`group ${featured ? "md:-translate-y-2" : ""}`}>
-        <button type="button" className="block w-full text-left">
-          <div className="overflow-hidden rounded-[20px] border border-[#e4dbcf] bg-[#f3ede4] shadow-[0_6px_18px_rgba(0,0,0,0.03)] transition-all duration-500 ease-out group-hover:-translate-y-[1px] group-hover:border-[#d2c6b4] group-hover:bg-[#fbf7f2]">
-            <div
-              className={`relative flex items-center justify-center bg-[#f3ede4] ${
-                featured ? "aspect-[1.62/1]" : "aspect-[1.72/1]"
-              }`}
-            >
-              <Image
-                src={image}
-                alt={`${title} ring`}
-                fill
-                sizes="(max-width: 768px) 100vw, 33vw"
-                className="object-contain p-2 scale-110 -translate-y-1"
-              />
-            </div>
-          </div>
-        </button>
+        {href ? (
+          <a
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block w-full text-left"
+          >
+            {imageFrame}
+          </a>
+        ) : (
+          <div className="block w-full text-left">{imageFrame}</div>
+        )}
 
         <div className="pt-5 text-center">
           <div className="mx-auto max-w-[24ch] text-[1.02rem] tracking-[-0.02em] text-[#1f1d1a]">
@@ -140,7 +154,7 @@ function FeaturedRingSection() {
             <a
               href={href}
               target="_blank"
-              rel="noreferrer"
+              rel="noopener noreferrer"
               className="mt-3 inline-block text-[8.5px] uppercase tracking-[0.32em] text-[#7a7167] transition-colors duration-300 hover:text-[#2b2723]"
             >
               {finalLabel} →

@@ -1,0 +1,278 @@
+{
+  "execute": false,
+  "before": {
+    "totalRecords": 82,
+    "syntheticRecords": 36,
+    "nonSyntheticRecords": 46,
+    "activeCorpusRecords": 7,
+    "quarantinedRecords": 39,
+    "calibrationSafeAll": 14,
+    "calibrationSafeNonSynthetic": 14,
+    "calibrationSafeActiveCorpus": 7,
+    "calibrationSafePercent": 17,
+    "calibrationSafeNonSyntheticPercent": 30,
+    "calibrationSafeActiveCorpusPercent": 100,
+    "statisticsIncludedActive": 7,
+    "statisticsIncludedActivePercent": 100,
+    "excludedFromStats": 39
+  },
+  "after": {
+    "totalRecords": 82,
+    "syntheticRecords": 36,
+    "nonSyntheticRecords": 46,
+    "activeCorpusRecords": 7,
+    "quarantinedRecords": 39,
+    "calibrationSafeAll": 14,
+    "calibrationSafeNonSynthetic": 14,
+    "calibrationSafeActiveCorpus": 7,
+    "calibrationSafePercent": 17,
+    "calibrationSafeNonSyntheticPercent": 30,
+    "calibrationSafeActiveCorpusPercent": 100,
+    "statisticsIncludedActive": 7,
+    "statisticsIncludedActivePercent": 100,
+    "excludedFromStats": 39
+  },
+  "triageBefore": {
+    "generatedAt": "2026-05-27T11:35:48.823Z",
+    "activeUnsafeCount": 0,
+    "realUploadUnsafeCount": 0,
+    "highRecoveryCount": 0,
+    "byBucket": {
+      "missing_pavilion": 0,
+      "missing_crown": 0,
+      "missing_lower_half": 0,
+      "missing_girdle": 0,
+      "ocr_only": 0,
+      "manual_override": 0,
+      "low_confidence": 0,
+      "other_blocker": 0
+    },
+    "byRecoveryClassification": {
+      "HIGH_RECOVERY_PROBABILITY": 0,
+      "LIMITED_VALUE_RECOVERY": 0,
+      "MANUAL_REVIEW_ONLY": 0,
+      "PERMANENT_EXCLUDE": 0
+    },
+    "rows": []
+  },
+  "triageAfter": {
+    "generatedAt": "2026-05-27T11:35:48.927Z",
+    "activeUnsafeCount": 0,
+    "realUploadUnsafeCount": 0,
+    "highRecoveryCount": 0,
+    "byBucket": {
+      "missing_pavilion": 0,
+      "missing_crown": 0,
+      "missing_lower_half": 0,
+      "missing_girdle": 0,
+      "ocr_only": 0,
+      "manual_override": 0,
+      "low_confidence": 0,
+      "other_blocker": 0
+    },
+    "byRecoveryClassification": {
+      "HIGH_RECOVERY_PROBABILITY": 0,
+      "LIMITED_VALUE_RECOVERY": 0,
+      "MANUAL_REVIEW_ONLY": 0,
+      "PERMANENT_EXCLUDE": 0
+    },
+    "rows": []
+  },
+  "recoveryAttempts": [],
+  "stress": {
+    "generatedAt": "2026-05-27T11:35:48.851Z",
+    "activeCorpusCount": 7,
+    "calibrationSafeActive": 7,
+    "statisticsIncludedActive": 7,
+    "scoredActiveCount": 7,
+    "histogram": [
+      {
+        "label": "<5.0",
+        "min": 0,
+        "max": 4.99,
+        "count": 0
+      },
+      {
+        "label": "5.0–5.49",
+        "min": 5,
+        "max": 5.49,
+        "count": 0
+      },
+      {
+        "label": "5.5–5.99",
+        "min": 5.5,
+        "max": 5.99,
+        "count": 0
+      },
+      {
+        "label": "6.0–6.49",
+        "min": 6,
+        "max": 6.49,
+        "count": 0
+      },
+      {
+        "label": "6.5–6.99",
+        "min": 6.5,
+        "max": 6.99,
+        "count": 0
+      },
+      {
+        "label": "7.0–7.49",
+        "min": 7,
+        "max": 7.49,
+        "count": 0
+      },
+      {
+        "label": "7.5–7.99",
+        "min": 7.5,
+        "max": 7.99,
+        "count": 0
+      },
+      {
+        "label": "8.0–8.49",
+        "min": 8,
+        "max": 8.49,
+        "count": 0
+      },
+      {
+        "label": "8.5–8.99",
+        "min": 8.5,
+        "max": 8.99,
+        "count": 2
+      },
+      {
+        "label": "9.0–9.29",
+        "min": 9,
+        "max": 9.29,
+        "count": 1
+      },
+      {
+        "label": "9.3–9.99",
+        "min": 9.3,
+        "max": 9.99,
+        "count": 4
+      },
+      {
+        "label": "10.0",
+        "min": 10,
+        "max": 10,
+        "count": 0
+      }
+    ],
+    "bandSpread": [
+      {
+        "bandId": "exceptional",
+        "label": "Exceptional / Rare",
+        "count": 4
+      },
+      {
+        "bandId": "superb",
+        "label": "Superb",
+        "count": 3
+      },
+      {
+        "bandId": "strong",
+        "label": "Strong",
+        "count": 0
+      },
+      {
+        "bandId": "balanced",
+        "label": "Balanced",
+        "count": 0
+      },
+      {
+        "bandId": "mixed",
+        "label": "Mixed",
+        "count": 0
+      },
+      {
+        "bandId": "compromise",
+        "label": "Significant Compromise",
+        "count": 0
+      }
+    ],
+    "averageByLab": [
+      {
+        "lab": "GCAL",
+        "count": 4,
+        "average": 9.83
+      },
+      {
+        "lab": "GIA",
+        "count": 2,
+        "average": 8.7
+      },
+      {
+        "lab": "IGI",
+        "count": 1,
+        "average": 9.1
+      }
+    ],
+    "averageByParserFamily": [
+      {
+        "parserFamily": "gcal-8x",
+        "count": 3,
+        "average": 9.8,
+        "syntheticCount": 0
+      },
+      {
+        "parserFamily": "gcal-sarine-4cs",
+        "count": 1,
+        "average": 9.9,
+        "syntheticCount": 0
+      },
+      {
+        "parserFamily": "gia-modern",
+        "count": 2,
+        "average": 8.7,
+        "syntheticCount": 0
+      },
+      {
+        "parserFamily": "igi-standard",
+        "count": 1,
+        "average": 9.1,
+        "syntheticCount": 0
+      }
+    ],
+    "ocrOnlyVsTextLayer": {
+      "ocrOnly": {
+        "count": 3,
+        "average": 9.43
+      },
+      "textLayer": {
+        "count": 4,
+        "average": 9.38
+      },
+      "mixed": {
+        "count": 0,
+        "average": null
+      }
+    },
+    "confidenceDistribution": {
+      "high": 51,
+      "medium": 52,
+      "missing": 2
+    },
+    "datasetHealthNotes": [
+      "dataset likely top-heavy",
+      "commercial-average coverage insufficient",
+      "distribution incomplete — balanced/mixed/compromise under 15%",
+      "no synthetic calibration records — add mixed-quality fixtures",
+      "excessive clustering in exceptional band (>40%)"
+    ],
+    "sanityFlags": [],
+    "clusteringFlags": [],
+    "parserSkewFlags": [
+      "parser skew: gcal-8x average 9.8 (n=3)"
+    ],
+    "observationalOnly": true
+  },
+  "readiness": {
+    "verdicts": {
+      "bulkMigration": "NOT_READY",
+      "publicLpBeta": "READY",
+      "calibrationDistributionScaling": "READY",
+      "controlledProductionSeeding": "PARTIAL_READY"
+    }
+  }
+}

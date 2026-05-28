@@ -1,234 +1,191 @@
 # Executive Dashboard — Hourglass Diamonds
 
-Internal architecture document for a calm, executive-level view of business momentum, consumer behavior, content performance, and local authority.
+Founder operating system for market gravity: search authority, brand demand, consultation funnel, Diamond Studio behavior, local signals, and prioritized actions.
+
+**Live route:** `/executive-dashboard` (internal, `noindex`)
 
 ---
 
 ## 1. Purpose
 
-The executive dashboard system exists to give leadership a **single, readable pulse** on how Hourglass Diamonds is performing—without opening six tools or drowning in charts.
+Answer whether Hourglass is **gaining market gravity** — not only what happened on-site.
 
-It should answer, at a glance:
-
-- Is **momentum** building or softening this week?
-- How are **consumers behaving** in Diamond Studio and on site?
-- Is **content** earning attention and moving search visibility?
-- Are **local authority signals** (GMB, reviews, calls) strengthening in Charlotte?
-
-The dashboard is a **decision surface**, not a data warehouse. Every metric shown should tie to an action, a watch item, or a narrative in the weekly executive summary.
-
-This document is **architecture and process only**. It does not implement a live dashboard in the app.
-
-**Related internal docs:**
-
-- `docs/diamond-studio-weekly-insight-system.md`
-- `docs/gmb-review-flywheel-system.md`
-- `docs/content-flywheel-system.md`
+| Question | Section |
+|----------|---------|
+| Is momentum building? | Executive Summary (Weekly Signal) |
+| Is search visibility compounding? | Search + Authority Momentum |
+| Is brand recall growing? | Brand Demand |
+| Are consultations accelerating? | Consultation Funnel |
+| How are buyers exploring diamonds? | Diamond Studio Intelligence |
+| What content earns entry? | Content Performance |
+| Is Charlotte authority strengthening? | Local Authority / GMB |
+| What should we do next? | Recommendation Engine |
+| What macro tone fits outreach? | Ledger / Market Tone |
 
 ---
 
-## 2. Core Dashboard Philosophy
+## 2. Architecture (required)
 
-Design and reporting principles for any future dashboard build (Looker, Notion, email digest, etc.).
+**Do not** call GA4, GSC, or GMB from the dashboard page at render time.
 
-| Principle | Meaning |
-|-----------|---------|
-| **Clean** | Generous whitespace, limited color, serif/sans hierarchy aligned with brand calm |
-| **Minimal** | One screen or one page per weekly review—no 40-tab workbook |
-| **Signal over noise** | Show deltas and trends; hide raw event counts unless they explain a shift |
-| **Weekly trend awareness** | Default compare: vs prior week (and vs same week prior year when seasonality matters) |
-| **Actionable insight only** | Every section ends with “so what” or recommended next step |
-| **No vanity metric clutter** | No pageviews for their own sake; no social likes without context |
-
-**Anti-patterns:** Dashboards that mirror GA4 default reports verbatim, duplicate the same KPI in five widgets, or require daily maintenance to stay truthful.
-
----
-
-## 3. Primary Data Sources
-
-| Source | Primary use in dashboard |
-|--------|---------------------------|
-| **GA4** | Traffic, engagement, paths, device split, key events site-wide |
-| **Diamond Studio analytics** | Shape, carat, coverage, orientation, skin tone, session engagement, consultation CTA |
-| **Google Search Console** | Queries, impressions, clicks, CTR, page performance, indexing |
-| **Google Business Profile** | Reviews, calls, directions, profile views, posts, photos |
-| **Concierge inquiries** | Volume, project type, shape/direction themes (form + API pipeline) |
-| **HubSpot** | Contact growth, lifecycle stage, consultation outcomes (when CRM hygiene is solid) |
-| **Ledger sentiment signals** | Macro tone for the week—pressure, information, materials, AI (editorial indices) |
-| **Email subscriber growth** | Ledger signups (`/ledger`, API route)—list size and weekly net adds |
-
-**Integration note:** Sources refresh on different cadences (real-time to 48h lag). Label “as of” dates on each block in the weekly summary.
-
----
-
-## 4. Diamond Studio Metrics
-
-Pull from GA4 custom events and dimensions (see `diamond-studio-weekly-insight-system.md`).
-
-| Metric | Executive question |
-|--------|---------------------|
-| **Most interacted shapes** | What are people exploring before they inquire? |
-| **Carat clustering** | Where is size appetite landing (e.g. 1.5–2.5 vs 3+)? |
-| **Orientation trends** | Is E/W gaining share on elongated shapes? |
-| **Coverage zone behavior** | Quiet vs balanced vs statement—confidence or boldness? |
-| **Engagement depth** | `studio_session_engaged` rate; split by `engagementTrigger` (time vs interactions) |
-| **Consultation click-through rate** | `consultation_cta_clicked` / `diamond_studio_view` (when CTA present) |
-| **Mobile vs desktop interaction behavior** | Device-specific shape and zone patterns |
-
-**Display tip:** Small multiples or one ranked table per week—avoid nine separate pie charts.
-
----
-
-## 5. SEO Metrics
-
-Primarily Google Search Console + GA4 landing page reports.
-
-| Metric | Executive question |
-|--------|---------------------|
-| **Top landing pages** | What entry points earn organic attention? |
-| **Organic traffic trend** | Week-over-week sessions from organic (GA4) |
-| **Impression growth** | Are we visible more often, even if CTR lags? |
-| **Keyword movement** | Winners/losers for Charlotte + education terms |
-| **Top-performing articles** | Diamond Guide URLs by clicks and engagement |
-| **Internal linking opportunities** | High-impression pages with weak CTR or orphan guides |
-
-**Tie to content flywheel:** SEO block should feed “reference asset” and refresh priorities (see `content-flywheel-system.md`).
-
----
-
-## 6. GMB Metrics
-
-Google Business Profile insights + review monitoring (see `gmb-review-flywheel-system.md`).
-
-| Metric | Executive question |
-|--------|---------------------|
-| **Review velocity** | New reviews per week; trend vs 4-week average |
-| **Average rating** | Current rating; any new low-star risk |
-| **Calls** | Click-to-call volume |
-| **Direction requests** | Map/direction intent |
-| **Local ranking movement** | Tracked local pack terms (manual or rank tracker) |
-| **Photo uploads** | Fresh profile content |
-| **Engagement trend** | Profile views, website clicks from GMB |
-
----
-
-## 7. Concierge / Conversion Metrics
-
-Concierge form submissions, HubSpot, and GA4 path analysis.
-
-| Metric | Executive question |
-|--------|---------------------|
-| **Inquiry count** | Weekly concierge submissions |
-| **Inquiry sources** | Referrer / landing page / campaign (UTM when used) |
-| **Consultation conversion trend** | Inquiries → booked conversations (HubSpot) |
-| **Top converting content/pages** | Last-touch or assisted paths before `/concierge` |
-| **Repeat themes / questions** | Project type, shape, timeline, budget language from forms |
-
-**Privacy:** Aggregate themes only on the dashboard—no PII in shared executive views.
-
----
-
-## 8. Ledger / Macro Layer
-
-Editorial indices from `/ledger`—**context layer**, not operational KPIs.
-
-| Signal | How leadership uses it |
-|--------|-------------------------|
-| **Consumer confidence environment** | Pressure / materials indices → caution vs confidence in outward messaging |
-| **Quiet luxury preference** | Tone for social, GMB, and homepage—understated vs loud |
-| **Uncertainty tone guidance** | Avoid urgency hooks when macro week is noisy |
-| **Macro temperature interpretation** | One-word week label: calm / elevated / mixed (human judgment + index summaries) |
-| **Emotional tone calibration** | Match email, reels, and consultation prep to the week’s mood |
-
-This block should be **short**—a paragraph plus index links, not a full Ledger reprint.
-
----
-
-## 9. Weekly Executive Summary Structure
-
-Reusable template for the human-readable layer above any future dashboard.
-
-```markdown
-# Hourglass Executive Summary
-**Week of:** YYYY-MM-DD to YYYY-MM-DD  
-**Prepared by:**  
-**Data as of:**
-
----
-
-## What changed this week
-(3–5 bullets: only material deltas.)
-
----
-
-## Consumer behavior shifts
-(Diamond Studio + site engagement: shapes, carat, zones, device, consultation clicks.)
-
----
-
-## Commercial interpretation
-(What this means for demand, taste, and readiness to buy—not revenue forecasting unless data supports it.)
-
----
-
-## SEO opportunities
-(Queries, pages, striking distance, refresh candidates.)
-
----
-
-## Content recommendations
-(1–3 prioritized outputs: guide, social, email—linked to content flywheel.)
-
----
-
-## GMB recommendations
-(Reviews, post, photos, replies—linked to GMB flywheel.)
-
----
-
-## Watch items
-(Metrics or behaviors to recheck next week.)
-
----
-
-## Risks
-(Declining visibility, review gaps, form errors, data pipeline issues, reputation.)
-
----
-
-## Momentum indicators
-(Simple green/amber/red or ↑/↓/→ for: Studio engagement, organic, GMB, inquiries, subscribers.)
+```
+GA4 / GSC / GMB / Concierge / Ledger
+        ↓
+Intelligence ingestion (weekly job + manual test)
+        ↓
+Normalized snapshot → Supabase weekly_reports.raw_payload
+        ↓
+buildExecutiveDashboardPayload()
+        ↓
+ExecutiveDashboardView (display layer only)
 ```
 
----
+| Layer | File | Role |
+|-------|------|------|
+| Snapshot types | `lib/intelligence/dashboard-snapshot.ts` | `DashboardIntelligenceSnapshot` — canonical weekly object |
+| Display types | `lib/intelligence/dashboard-data.ts` | `ExecutiveDashboardData`, `ExecutiveDashboardPayload` |
+| Mapping | `lib/intelligence/map-report-to-dashboard.ts` | Snapshot → UI fields + GA4 enrichments |
+| UI | `app/executive-dashboard/dashboard-view.tsx` | Same shell; section order per strategy below |
+| Ingestion | `lib/intelligence/weekly-report.ts`, `lib/integrations/ga4.ts` | GA4 today; GSC/GMB next |
 
-## 10. Future Dashboard Build
-
-Implementation ideas—**not in production today**.
-
-| Approach | Description |
-|----------|-------------|
-| **Looker Studio** | Connect GA4, GSC, GMB (where connectors allow); one executive page with weekly date control |
-| **Notion dashboard** | Manual or semi-automated weekly paste from summaries; good for narrative + links |
-| **Automated summaries** | Scheduled job or agent: pull KPIs → markdown block for Notion/email |
-| **Weekly email digest** | Monday internal email: executive summary template auto-filled where possible |
-| **AI insight layer** | Draft “commercial interpretation” and “watch items” from raw metrics—human approves |
-
-**Build order (suggested):**  
-1) Standardize weekly summary template (Section 9) in Notion.  
-2) Add Looker for GA4 + GSC core charts.  
-3) Automate Studio + concierge snippets.  
-4) Optional AI narrative with strict human review.
+Optional persistence: write `dashboardSnapshot` into `raw_payload` on each weekly run so history and agents read one object.
 
 ---
 
-## 11. Rules
+## 3. Dashboard section order
 
-- **Documentation only.** Do not treat edits here as a request to change UI, routes, APIs, HubSpot configuration, analytics code, or styling.
-- **One source of truth per metric** — document which tool owns each number to avoid conflicting definitions week to week.
-- **Honest gaps** — if a metric is manual (rank tracking) or not yet wired, label it; do not imply live automation.
-- **Executive time** — target &lt;15 minutes to read the weekly summary; dashboard UI should support that, not fight it.
-- Update this doc when a data source or KPI definition changes materially.
+1. **Executive Summary** — Weekly Signal panel  
+2. **Search + Authority Momentum** — GSC (pending)  
+3. **Brand Demand** — branded queries (GSC pending)  
+4. **Consultation Funnel** — GA4 live (sessions, `consultation_cta_clicked`, engagement)  
+5. **Diamond Studio Intelligence** — GA4 partial + pending depth metrics  
+6. **Content Performance** — GA4 landing pages partial  
+7. **Local Authority / GMB** — static 5.0 rating; GBP API pending  
+8. **Assisted Conversion Paths** — GA4 paths pending  
+9. **Recommendation Engine** — rule-based from weekly report (partial)  
+10. **Ledger / Market Tone** — narrative placeholder  
+
+---
+
+## 4. Metric groups (data model)
+
+### 4.1 Search + Authority Momentum (`searchAuthority`)
+
+Source: **Google Search Console** — `IntegrationStatus: pending`
+
+- Total impressions, impressions WoW  
+- Total clicks, clicks WoW  
+- Average position, position movement  
+- CTR trend  
+- Indexed pages, newly indexed pages  
+- Lists: top gaining/losing queries, top pages by impressions, fastest climbing, losing momentum  
+
+### 4.2 Brand Demand (`brandDemand`)
+
+Source: **GSC** with query filters — pending  
+
+Tracked patterns (`BRAND_QUERY_PATTERNS` in `dashboard-snapshot.ts`):
+
+- hourglass diamonds  
+- hourglass diamonds charlotte  
+- hourglass engagement rings  
+- hourglass diamond studio  
+- hourglass custom rings  
+
+Metrics: branded impressions, clicks, CTR, brand WoW growth, non-brand vs brand split.
+
+### 4.3 Consultation Funnel (`consultationFunnel`)
+
+Source: **GA4** — live when weekly report exists  
+
+- Weekly sessions  
+- `consultation_cta_clicked` (Concierge Inquiries card)  
+- CTA / studio view rate  
+- Engaged session rate  
+- Subscribers — HubSpot/Ledger not connected  
+
+### 4.4 Diamond Studio Intelligence (`diamondStudio`)
+
+Source: **GA4** — partial  
+
+| Metric | Status |
+|--------|--------|
+| Studio visits (`diamond_studio_view`) | Live |
+| Top shapes | Live |
+| Orientation events | Live |
+| Mobile share | Live |
+| Carat cluster, coverage zone, finger size | Pending (events exist; aggregation TBD) |
+| Return usage %, session depth, high-intent, repeat 7d | Pending |
+| CTA pathing, drop-off | Pending |
+
+### 4.5 Content Performance (`content`)
+
+Source: **GA4** landing pages — partial (sessions, not GSC impressions)  
+
+### 4.6 Local Authority / GMB (`localAuthority`)
+
+Source: **GMB API** — pending except static 5.0 review average  
+
+Profile views, website clicks, calls, directions, review velocity, unanswered items, post cadence, map pack trend.
+
+### 4.7 Assisted Conversion Paths (`assistedPaths`)
+
+Source: **GA4** path / funnel — pending  
+
+Examples: Landing → Studio → Article → Concierge → Submit  
+
+### 4.8 Recommendation Engine (`recommendations`)
+
+Types: `PrioritizedRecommendation` in `dashboard-snapshot.ts`  
+
+Future fields: `roiScore`, `confidenceScore`, `urgency`, `actionType`, `sourceMetric`  
+
+Current: rule-based strings from `lib/intelligence/recommendations.ts` mapped to cards when a weekly report exists.
+
+---
+
+## 5. Source status labels (UI)
+
+Every metric shows a `sourceLabel`:
+
+- **GA4** — live from latest snapshot  
+- **Pending · GSC** / **Pending · GMB** — integration not wired; value `—`  
+- **Static** — verified 5.0 Google rating  
+- **Not connected** — subscribers / CRM  
+
+Never show fabricated numbers as live.
+
+---
+
+## 6. Weekly executive summary
+
+Unchanged template in Section 9 of prior doc — narrative still generated by `buildRecommendationsAndSignals` and stored in `weekly_reports`.
+
+---
+
+## 7. Implementation roadmap
+
+| Step | Work | Owner |
+|------|------|-------|
+| **Done** | Canonical `consultation_cta_clicked` sitewide | GA4 |
+| **Done** | `DashboardIntelligenceSnapshot` + display payload | Code |
+| **Done** | Dashboard sections + pending placeholders | UI |
+| **Done** | `lib/integrations/gsc.ts` + weekly ingest into `raw_payload` | Backend |
+| **Next** | Set `GSC_SITE_URL` + re-OAuth with `webmasters.readonly` in production | Ops |
+| **Next** | Persist `dashboardSnapshot` in `raw_payload` on cron | Backend |
+| **Next** | GMB Business Profile API | Backend |
+| **Next** | GA4 path exploration for assisted conversions | Backend |
+| **Later** | Scored recommendations (ROI, confidence) | Intelligence |
+| **Later** | Ledger index → `ledger` section live | Editorial |
+
+---
+
+## 8. Rules
+
+- Do not redesign the public site from this doc.  
+- Do not change cron schedule or env from dashboard work.  
+- One source of truth per metric — document in `dashboard-snapshot.ts`.  
+- Target &lt;15 minutes to read the weekly dashboard.  
 
 ---
 

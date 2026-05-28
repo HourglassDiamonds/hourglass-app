@@ -4,18 +4,23 @@ V1 backend for weekly GA4 intelligence, Supabase snapshots, Monday email briefs,
 
 ---
 
-## 1. Executive dashboard audit (preserved UI)
+## 1. Executive dashboard (founder OS — preserved UI shell)
 
 | Item | Location |
 |------|----------|
 | Page route | `/executive-dashboard` → `app/executive-dashboard/page.tsx` |
-| Visual components | `app/executive-dashboard/dashboard-view.tsx` (unchanged layout/cards) |
-| Static fallback | `lib/intelligence/dashboard-data.ts` → `PLACEHOLDER_DASHBOARD_DATA` |
-| Live mapping | `lib/intelligence/map-report-to-dashboard.ts` ← latest `weekly_reports` row |
+| Visual components | `app/executive-dashboard/dashboard-view.tsx` (same cards; expanded sections) |
+| Snapshot model | `lib/intelligence/dashboard-snapshot.ts` → `DashboardIntelligenceSnapshot` |
+| Display + payload | `lib/intelligence/dashboard-data.ts` → `ExecutiveDashboardPayload` |
+| Mapping | `lib/intelligence/map-report-to-dashboard.ts` → `buildExecutiveDashboardPayload()` |
+
+**Architecture:** Ingestion → normalized weekly snapshot → display layer (no live GA4/GSC calls on page render).
+
+**Plan:** `docs/executive-dashboard-system.md`
 
 **Card structures (unchanged):** `WeeklySignalPanel`, `MetricCard`, `SectionPanel`, `ListPanel`, `InsightBlock`.
 
-**Data shape:** `ExecutiveDashboardData` mirrors the original `PLACEHOLDER` object (weekly signal, business pulse metrics, diamond studio grid, content lists, local authority, ledger blocks).
+**Sections (strategic order):** Executive Summary → Search + Authority → Brand Demand → Consultation Funnel → Diamond Studio → Content → Local Authority → Assisted Paths → Recommendations → Ledger.
 
 ---
 
@@ -100,6 +105,32 @@ Service-account access is **not** used. Authenticate with the Google user that a
 
 **Existing public GA:** `NEXT_PUBLIC_GA_ID` remains client-side only; intelligence uses the Data API via OAuth separately.
 
+### Google Search Console (optional — weekly ingest)
+
+Uses the **same** `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, and `GOOGLE_REFRESH_TOKEN` as GA4. The refresh token must include Search Console scope:
+
+`https://www.googleapis.com/auth/webmasters.readonly`
+
+If GA4 OAuth was set up before GSC, re-run OAuth and replace `GOOGLE_REFRESH_TOKEN` with a token that includes **both** scopes:
+
+1. `node scripts/verify-gsc-access.mjs` — if `sites.list` returns 403, re-consent is required.
+2. `node scripts/google-oauth-setup.mjs` — open the printed URL (`analytics.readonly` + `webmasters.readonly`).
+3. Copy the new refresh token into `.env.local` and Vercel Production (`GOOGLE_REFRESH_TOKEN` only — do not change client id/secret).
+4. `node scripts/verify-gsc-access.mjs` again — should pass.
+5. Redeploy, then run manual-test and `node scripts/check-latest-report-gsc.mjs`.
+
+**Google Cloud Console:** APIs & Services → Library → enable **Google Search Console API** (same project as GA4).
+
+| Variable | Purpose |
+|----------|---------|
+| `GSC_SITE_URL` | Exact property URL from Search Console (e.g. `https://hourglassdiamonds.com/` or `sc-domain:hourglassdiamonds.com`) |
+
+**Google Cloud:** Enable **Google Search Console API** on the same project.
+
+**Weekly job:** `fetchGscWeeklyBundle()` runs after GA4; failures log a warning and do **not** fail the report. Results are stored in `raw_payload.gsc` and `raw_payload.dashboardSnapshot` (Search + Authority, Brand Demand sections).
+
+**Dashboard:** Reads stored snapshot only — no live GSC calls on `/executive-dashboard`.
+
 ---
 
 ## 4. Weekly flow
@@ -107,9 +138,10 @@ Service-account access is **not** used. Authenticate with the Google user that a
 1. **Cron** (Vercel): `GET /api/cron/weekly-intelligence` — Mondays 13:00 UTC (`vercel.json`).
 2. **Manual:** `POST /api/intelligence/weekly-report` with auth header.
 3. Job pulls GA4 for last complete Mon–Sun week vs prior week.
-4. Builds summaries, opportunities, problems, recommendations.
-5. Saves to Supabase.
-6. Sends Resend email.
+4. Optionally pulls GSC (same weeks) when `GSC_SITE_URL` and OAuth scope are configured.
+5. Builds summaries, opportunities, problems, recommendations, and `dashboardSnapshot`.
+6. Saves to Supabase (`raw_payload` includes GA4, GSC, snapshot).
+7. Sends Resend email.
 
 ---
 
