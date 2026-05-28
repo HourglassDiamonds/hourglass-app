@@ -182,7 +182,13 @@ export function ReportUploadDock({
       />
 
       {statusNote && !errorMessage ? (
-        <p className="mt-3 text-xs leading-relaxed text-[#6f665d]">{statusNote}</p>
+        <div className="mt-3 flex gap-2.5 rounded-md border border-[#e4dbcf]/70 bg-[#faf8f4]/80 px-3 py-2.5">
+          <span
+            className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-[#c4a86a]"
+            aria-hidden
+          />
+          <p className="text-xs leading-relaxed text-[#6f665d]">{statusNote}</p>
+        </div>
       ) : null}
       {errorMessage ? (
         <p className="mt-3 text-xs leading-relaxed text-[#6b5048]">{errorMessage}</p>

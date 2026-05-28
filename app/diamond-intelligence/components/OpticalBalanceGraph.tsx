@@ -3,11 +3,12 @@
 import type { ProfileAxis } from "@/lib/diamond-intelligence/client-balance-profile";
 import { referenceEnvelopeRadius } from "@/lib/diamond-intelligence/client-balance-profile";
 
-const CX = 100;
-const CY = 100;
-const MAX_R = 78;
+const CX = 110;
+const CY = 104;
+const MAX_R = 72;
 const REF_R = referenceEnvelopeRadius(MAX_R);
-const UNCERTAIN_R = MAX_R * 0.38;
+const UNCERTAIN_R = MAX_R * 0.4;
+const LABEL_R = MAX_R + 13;
 
 function axisAngle(index: number, total: number): number {
   return -Math.PI / 2 + (index * 2 * Math.PI) / total;
@@ -24,7 +25,7 @@ function polygonPoints(radii: number[]): string {
   return radii
     .map((r, i) => {
       const pt = polar(r, axisAngle(i, radii.length));
-      return `${pt.x},${pt.y}`;
+      return `${pt.x.toFixed(1)},${pt.y.toFixed(1)}`;
     })
     .join(" ");
 }
@@ -53,26 +54,26 @@ export default function OpticalBalanceGraph({
   const profile = polygonPoints(radii);
 
   return (
-    <div className="relative mx-auto w-full max-w-[min(420px,92vw)]">
+    <div className="relative mx-auto w-full max-w-[min(440px,94vw)]">
       <svg
-        viewBox="0 0 200 200"
+        viewBox="0 0 220 210"
         className="h-auto w-full"
-        style={{ maxHeight: "min(300px, 48vw)" }}
+        style={{ maxHeight: "min(320px, 50vw)" }}
         aria-label="Performance profile chart"
         role="img"
       >
-        <rect width="200" height="200" fill="transparent" />
-
+        {/* concentric reference rings */}
         {gridLevels.map((level) => (
           <polygon
             key={level}
             points={polygonPoints(axes.map(() => MAX_R * level))}
             fill="none"
-            stroke="rgba(232,224,212,0.11)"
-            strokeWidth="0.45"
+            stroke="rgba(232,224,212,0.10)"
+            strokeWidth={level === 1 ? 0.5 : 0.4}
           />
         ))}
 
+        {/* axis spokes */}
         {axes.map((_, i) => {
           const end = polar(MAX_R, axisAngle(i, n));
           return (
@@ -82,34 +83,53 @@ export default function OpticalBalanceGraph({
               y1={CY}
               x2={end.x}
               y2={end.y}
-              stroke="rgba(232,224,212,0.14)"
-              strokeWidth="0.4"
+              stroke="rgba(232,224,212,0.12)"
+              strokeWidth="0.35"
             />
           );
         })}
 
+        {/* ideal reference envelope */}
         <polygon
           points={envelope}
-          fill="rgba(196,176,138,0.04)"
-          stroke="rgba(212,192,154,0.38)"
+          fill="rgba(196,176,138,0.035)"
+          stroke="rgba(212,192,154,0.42)"
           strokeWidth="0.7"
-          strokeDasharray="3 4"
+          strokeDasharray="2.5 3.5"
         />
 
+        {/* measured profile */}
         <polygon
           points={profile}
-          fill={empty ? "none" : "rgba(212,192,154,0.1)"}
-          stroke={empty ? "rgba(232,224,212,0.2)" : "rgba(236,228,214,0.92)"}
-          strokeWidth="1.35"
+          fill={empty ? "none" : "rgba(214,194,156,0.12)"}
+          stroke={empty ? "rgba(232,224,212,0.18)" : "rgba(238,230,216,0.95)"}
+          strokeWidth="1.4"
           strokeLinejoin="round"
           strokeDasharray={uncertainFlags.some(Boolean) ? "4 3" : undefined}
         />
 
+        {/* profile vertices */}
+        {!empty
+          ? radii.map((r, i) => {
+              if (uncertainFlags[i]) return null;
+              const pt = polar(r, axisAngle(i, n));
+              return (
+                <circle
+                  key={`v-${i}`}
+                  cx={pt.x}
+                  cy={pt.y}
+                  r="1.4"
+                  fill="rgba(238,230,216,0.95)"
+                />
+              );
+            })
+          : null}
+
+        {/* axis labels */}
         {axes.map((axis, i) => {
-          const labelR = MAX_R + 11;
-          const pt = polar(labelR, axisAngle(i, n));
+          const pt = polar(LABEL_R, axisAngle(i, n));
           const anchor =
-            pt.x < CX - 8 ? "end" : pt.x > CX + 8 ? "start" : "middle";
+            pt.x < CX - 6 ? "end" : pt.x > CX + 6 ? "start" : "middle";
           return (
             <text
               key={axis.key}
@@ -117,39 +137,45 @@ export default function OpticalBalanceGraph({
               y={pt.y}
               textAnchor={anchor}
               dominantBaseline="middle"
-              className="fill-[#b5aea4]"
-              style={{ fontSize: "8.5px", letterSpacing: "0.1em" }}
+              className="fill-[#cbc4ba]"
+              style={{
+                fontSize: "8px",
+                letterSpacing: "0.14em",
+                fontWeight: 500,
+              }}
             >
               {axis.label.toUpperCase()}
             </text>
           );
         })}
 
+        {/* central focus marker */}
         <circle
           cx={CX}
           cy={CY}
-          r={empty ? 3 : 4.5}
-          fill={empty ? "rgba(232,224,212,0.12)" : "rgba(212,192,154,0.35)"}
-          stroke={empty ? "rgba(232,224,212,0.2)" : "rgba(236,228,214,0.55)"}
+          r={empty ? 2.5 : 4}
+          fill={empty ? "rgba(232,224,212,0.1)" : "rgba(214,194,156,0.32)"}
+          stroke={empty ? "rgba(232,224,212,0.22)" : "rgba(238,230,216,0.6)"}
           strokeWidth="0.6"
         />
 
         <text
           x={CX}
-          y={CY - 5}
+          y={empty ? CY + 1 : CY - 5}
           textAnchor="middle"
-          className="fill-[#ece6dc] font-serif"
-          style={{ fontSize: "14px" }}
+          dominantBaseline="middle"
+          className={empty ? "fill-[#8f8980]" : "fill-[#efe9df] font-serif"}
+          style={{ fontSize: empty ? "7.5px" : "15px", letterSpacing: empty ? "0.12em" : undefined }}
         >
-          {empty ? "—" : centerLabel}
+          {empty ? "AWAITING REPORT" : centerLabel}
         </text>
         {!empty ? (
           <text
             x={CX}
             y={CY + 13}
             textAnchor="middle"
-            className="fill-[#8f8980]"
-            style={{ fontSize: "7px", letterSpacing: "0.1em" }}
+            className="fill-[#938d84]"
+            style={{ fontSize: "6.5px", letterSpacing: "0.16em" }}
           >
             OVERALL READ
           </text>

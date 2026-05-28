@@ -5,7 +5,6 @@ import { toJsonSafe } from "@/lib/calibration-library/gcal-api-error";
 import { inferReportSourceFromUpload } from "@/lib/calibration-library/infer-report-source";
 import {
   CalibrationTimeoutError,
-  logCalibrationRuntimeCheck,
   timeoutErrorMessage,
   validateCalibrationUpload,
   withTimeout,
@@ -14,10 +13,7 @@ import {
   CLIENT_INTERPRET_ROUTE_TIMEOUT_MS,
   CLIENT_UPLOAD_PIPELINE_TIMEOUT_MS,
 } from "@/lib/calibration-library/runtime-limits";
-import {
-  labFamilyLabel,
-  logUploadPipelineTiming,
-} from "@/lib/calibration-library/upload-pipeline-timing";
+import { labFamilyLabel } from "@/lib/calibration-library/upload-pipeline-timing";
 import { toClientSafeInterpretationPayload } from "@/lib/diamond-intelligence/client-api";
 import {
   getCachedClientInterpretation,
@@ -28,9 +24,10 @@ import {
   CLIENT_UPLOAD_INTERPRET_ERROR,
 } from "@/lib/diamond-intelligence/client-interpret-messages";
 import {
-  clientExtractionSufficient,
-  clientExtractionUseful,
-} from "@/lib/diamond-intelligence/client-extraction-sufficient";
+  classifyFinalized,
+  snapshotFieldSummary,
+  type ClientInterpretationTier,
+} from "@/lib/diamond-intelligence/client-interpretation-pipeline";
 import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
@@ -40,39 +37,50 @@ function json(body: Record<string, unknown>, status = 200) {
   return NextResponse.json(toJsonSafe(body), { status });
 }
 
-function logClientInterpretOutcome(input: {
-  started: number;
-  outcome: "cache-hit" | "final" | "partial" | "timeout" | "failure";
+type LogStage = "received" | "extracted" | "classified" | "responded";
+
+function logClientInterpret(input: {
+  stage: LogStage;
   lab?: string;
   parser?: string;
-  partial?: boolean;
-  totalMs?: number;
+  fields?: string;
+  useful?: boolean;
+  response?: "full" | "partial" | "failure";
+  routeMs: number;
   detail?: string;
 }): void {
   if (process.env.NODE_ENV !== "development") return;
-  console.log("[diamond-intelligence-interpret]", {
-    mode: "client",
-    outcome: input.outcome,
-    labFamily: input.lab ? labFamilyLabel(input.lab, input.parser) : undefined,
-    parser: input.parser,
-    partial: input.partial ?? false,
-    routeMs: input.totalMs ?? Date.now() - input.started,
+  console.log("[client-interpret]", {
+    stage: input.stage,
+    lab: input.lab ? labFamilyLabel(input.lab, input.parser) : undefined,
+    fields: input.fields,
+    useful: input.useful,
+    response: input.response,
+    routeMs: input.routeMs,
     detail: input.detail,
   });
 }
 
+const TIER_TO_RESPONSE: Record<
+  ClientInterpretationTier,
+  "full" | "partial" | "failure"
+> = {
+  full: "full",
+  partial: "partial",
+  failure: "failure",
+};
+
 export async function POST(request: Request) {
   const started = Date.now();
-  logUploadPipelineTiming({
-    phase: "file-read",
-    durationMs: 0,
-    detail: "request-start",
-  });
+  const ms = () => Date.now() - started;
 
   if (!verifyCalibrationAccess(request)) {
     return json({ ok: false, error: "Unauthorized" }, 401);
   }
 
+  // ── STATE 1: FILE RECEIVED ──────────────────────────────────────────────
+  let bytes: Buffer;
+  let mime: string;
   try {
     const form = await request.formData();
     const file = form.get("file");
@@ -80,47 +88,46 @@ export async function POST(request: Request) {
     if (!(file instanceof File) || file.size === 0) {
       return json({ ok: false, error: "A report file is required." }, 400);
     }
-
     if (!isAcceptedReportMime(file.type)) {
       return json(
-        {
-          ok: false,
-          error: "Please upload a PDF or image of your lab report.",
-        },
+        { ok: false, error: "Please upload a PDF or image of your lab report." },
         400,
       );
     }
 
-    const readStarted = Date.now();
-    const bytes = Buffer.from(await file.arrayBuffer());
-    logUploadPipelineTiming({
-      phase: "file-read",
-      durationMs: Date.now() - readStarted,
-    });
+    bytes = Buffer.from(await file.arrayBuffer());
+    mime = file.type;
 
-    const uploadCheck = await validateCalibrationUpload(bytes, file.type);
+    const uploadCheck = await validateCalibrationUpload(bytes, mime);
     if (!uploadCheck.ok) {
       return json({ ok: false, error: uploadCheck.error }, 400);
     }
+  } catch {
+    return json({ ok: false, error: CLIENT_UPLOAD_INTERPRET_ERROR }, 400);
+  }
 
-    const cached = getCachedClientInterpretation(bytes);
-    if (cached) {
-      logClientInterpretOutcome({
-        started,
-        outcome: "cache-hit",
-        lab: cached.metadata.lab,
-        totalMs: Date.now() - started,
-      });
-      return json({ ok: true, interpretation: cached });
-    }
+  logClientInterpret({ stage: "received", routeMs: ms() });
 
-    const reportSource = inferReportSourceFromUpload(file.type, false);
+  const cached = getCachedClientInterpretation(bytes);
+  if (cached) {
+    logClientInterpret({
+      stage: "responded",
+      lab: cached.metadata.lab,
+      response: "full",
+      useful: true,
+      routeMs: ms(),
+      detail: "cache-hit",
+    });
+    return json({ ok: true, interpretation: cached, partial: false });
+  }
 
+  // ── STATE 2: FAST EXTRACTION (region-only, no full-page OCR) ─────────────
+  try {
     const finalized = await withTimeout(
       runCalibrationUploadExtraction({
         bytes,
-        mime: file.type,
-        reportSource,
+        mime,
+        reportSource: inferReportSourceFromUpload(mime, false),
         mode: "client",
         initialPipelineNotices: [],
         pipelineTimeoutMs: CLIENT_UPLOAD_PIPELINE_TIMEOUT_MS,
@@ -129,127 +136,79 @@ export async function POST(request: Request) {
       "diamond-intelligence-interpret",
     );
 
-    const routeMs = Date.now() - started;
-    const useful = clientExtractionUseful({
-      fields: finalized.fields,
-      confidence: finalized.confidence,
+    logClientInterpret({
+      stage: "extracted",
+      lab: finalized.metadata.lab,
+      parser: finalized.parserType,
+      routeMs: ms(),
+      detail: finalized.timedOut ? "timed-out-with-snapshot" : "complete",
     });
 
-    if (finalized.timedOut && !useful) {
-      logClientInterpretOutcome({
-        started,
-        outcome: "timeout",
-        lab: finalized.metadata.lab,
-        parser: finalized.parserType,
-        totalMs: routeMs,
-        detail: finalized.pipelineError,
-      });
-      return json({ ok: false, error: CLIENT_UPLOAD_INTERPRET_ERROR }, 504);
-    }
+    // ── STATE 3 + 4: SNAPSHOT + USEFULNESS GATE (single source of truth) ──
+    const decision = classifyFinalized(finalized);
+    const fieldSummary = snapshotFieldSummary(decision.snapshot);
 
-    if (finalized.pipelineError && !useful) {
-      logClientInterpretOutcome({
-        started,
-        outcome: "failure",
-        lab: finalized.metadata.lab,
-        parser: finalized.parserType,
-        totalMs: routeMs,
-        detail: finalized.pipelineError,
-      });
-      return json({ ok: false, error: CLIENT_UPLOAD_INTERPRET_ERROR }, 504);
-    }
-
-    const payloadStarted = Date.now();
-    const partial =
-      Boolean(finalized.clientPartial) ||
-      (useful &&
-        !clientExtractionSufficient({
-          fields: finalized.fields,
-          confidence: finalized.confidence,
-        }));
-    const statusNote = partial ? CLIENT_PARTIAL_INTERPRETATION_NOTE : undefined;
-
-    const interpretation = toClientSafeInterpretationPayload(finalized, undefined, {
-      clientStatusNote: statusNote,
-      partial: Boolean(statusNote),
+    logClientInterpret({
+      stage: "classified",
+      lab: finalized.metadata.lab,
+      parser: finalized.parserType,
+      fields: fieldSummary,
+      useful: decision.useful,
+      response: TIER_TO_RESPONSE[decision.tier],
+      routeMs: ms(),
     });
 
-    logUploadPipelineTiming({
-      phase: "client-payload",
-      durationMs: Date.now() - payloadStarted,
-      labFamily: finalized.metadata.lab,
-      parserPath: finalized.parserType,
-      detail: statusNote ? "partial" : "final",
-    });
-
-    if (!interpretation.capability.canRunClientInterpretation) {
-      logClientInterpretOutcome({
-        started,
-        outcome: "failure",
+    // ── STATE 5: RESPONSE ─────────────────────────────────────────────────
+    if (decision.tier === "failure") {
+      logClientInterpret({
+        stage: "responded",
         lab: finalized.metadata.lab,
         parser: finalized.parserType,
-        totalMs: routeMs,
-        detail: "insufficient-fields",
+        fields: fieldSummary,
+        useful: false,
+        response: "failure",
+        routeMs: ms(),
       });
       return json({ ok: false, error: CLIENT_UPLOAD_INTERPRET_ERROR }, 422);
     }
 
-    if (!statusNote) {
+    const partial = decision.tier === "partial";
+    const statusNote = partial ? CLIENT_PARTIAL_INTERPRETATION_NOTE : undefined;
+
+    const interpretation = toClientSafeInterpretationPayload(
+      finalized,
+      undefined,
+      { clientStatusNote: statusNote, partial },
+    );
+
+    if (decision.tier === "full") {
       setCachedClientInterpretation(bytes, interpretation);
     }
 
-    logClientInterpretOutcome({
-      started,
-      outcome: statusNote ? "partial" : "final",
+    logClientInterpret({
+      stage: "responded",
       lab: finalized.metadata.lab,
       parser: finalized.parserType,
-      partial: Boolean(statusNote),
-      totalMs: routeMs,
+      fields: fieldSummary,
+      useful: true,
+      response: TIER_TO_RESPONSE[decision.tier],
+      routeMs: ms(),
     });
 
-    logCalibrationRuntimeCheck({
-      operation: "diamond-intelligence-interpret",
-      durationMs: routeMs,
-      parserPath: finalized.parserType,
-      ocrDurationMs: finalized.timings.imageOcrMs || undefined,
-    });
-
-    return json({
-      ok: true,
-      interpretation,
-      partial: Boolean(statusNote),
-    });
+    return json({ ok: true, interpretation, partial });
   } catch (err) {
-    const routeMs = Date.now() - started;
+    // Route-level backstop — pipeline normally returns a snapshot before this.
     const timedOut = err instanceof CalibrationTimeoutError;
-    logCalibrationRuntimeCheck({
-      operation: "diamond-intelligence-interpret",
-      durationMs: routeMs,
-      timedOut,
-      error: timeoutErrorMessage(err),
+    logClientInterpret({
+      stage: "responded",
+      response: "failure",
+      useful: false,
+      routeMs: ms(),
+      detail: timedOut ? "route-timeout-backstop" : timeoutErrorMessage(err),
     });
-
-    logClientInterpretOutcome({
-      started,
-      outcome: "timeout",
-      totalMs: routeMs,
-      detail: timeoutErrorMessage(err),
-    });
-
     return json(
-      {
-        ok: false,
-        error: timedOut
-          ? CLIENT_UPLOAD_INTERPRET_ERROR
-          : CLIENT_UPLOAD_INTERPRET_ERROR,
-      },
+      { ok: false, error: CLIENT_UPLOAD_INTERPRET_ERROR },
       timedOut ? 504 : 500,
     );
-  } finally {
-    logUploadPipelineTiming({
-      phase: "client-payload",
-      durationMs: Date.now() - started,
-      detail: "request-end",
-    });
   }
 }

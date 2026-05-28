@@ -369,7 +369,7 @@ export default function LightPerformanceDashboard({
         <main className="min-w-0 space-y-3.5">
           <section className="overflow-hidden rounded-lg border border-[#e4dbcf]/50 bg-gradient-to-br from-white/65 via-[#fdfbf7]/80 to-[#f5f0e8]/55 shadow-[0_8px_32px_rgba(48,36,28,0.035)]">
             <div className="grid lg:grid-cols-[minmax(0,45%)_minmax(0,55%)]">
-              <div className="px-5 py-5 md:px-7 md:py-6 lg:py-7">
+              <div className="flex flex-col px-5 py-5 md:px-7 md:py-6 lg:py-8">
                 {hasReport && interpretationSummary ? (
                   <>
                     <p className="text-[11px] tracking-[0.18em] text-[#a8926a]">
@@ -395,34 +395,42 @@ export default function LightPerformanceDashboard({
                     </Link>
                   </>
                 ) : (
-                  <>
+                  <div className="flex h-full flex-col justify-center py-2">
                     <p className="text-[11px] tracking-[0.18em] text-[#a8926a]">
                       Optical interpretation
                     </p>
-                    <p className="mt-3 max-w-md font-serif text-lg font-medium leading-[1.48] text-[#6f665d]">
-                      Upload a report to receive a calm, lab-neutral
-                      interpretation of how this diamond is likely to read in
-                      person.
+                    <p className="mt-3 max-w-md font-serif text-[1.15rem] font-medium leading-[1.5] tracking-[-0.01em] text-[#3a352f] md:text-[1.22rem]">
+                      A calm, lab-neutral read of how a diamond is likely to
+                      perform in person.
                     </p>
-                  </>
+                    <p className="mt-3.5 max-w-sm text-[12.5px] leading-[1.7] text-[#8a8177]">
+                      Upload a GIA, IGI, or GCAL report and the balance profile
+                      builds alongside a plain-language interpretation — no lab
+                      jargon, no scan gimmicks.
+                    </p>
+                    <div className="mt-5 flex items-center gap-2.5 text-[10px] tracking-[0.16em] text-[#b0a698]">
+                      <span className="h-px w-7 bg-[#d8cebf]" />
+                      <span>AWAITING REPORT</span>
+                    </div>
+                  </div>
                 )}
               </div>
 
-              <div className="border-t border-[#ebe4da]/35 bg-[#2a2826]/95 px-4 py-4 md:px-6 md:py-5 lg:border-l lg:border-t-0 lg:border-[#ebe4da]/20">
-                <p className="text-[11px] tracking-[0.16em] text-[#c9c2b8]">
-                  Performance profile
+              <div className="flex flex-col border-t border-[#ebe4da]/35 bg-[#2a2826]/95 px-5 py-5 md:px-7 md:py-6 lg:border-l lg:border-t-0 lg:border-[#ebe4da]/20">
+                <p className="text-[10.5px] tracking-[0.2em] text-[#cbc4ba]">
+                  PERFORMANCE PROFILE
                 </p>
-                <p className="mt-1.5 max-w-sm text-[11px] leading-[1.55] text-[#9a948c]">
+                <p className="mt-2 max-w-xs text-[11px] leading-[1.6] text-[#948e85]">
                   Reported proportions translated into a visual balance profile.
                 </p>
-                <div className="mt-2 flex justify-center lg:mt-3">
+                <div className="mt-3 flex flex-1 items-center justify-center">
                   <OpticalBalanceGraph
                     axes={profileAxes}
                     centerLabel={centerProfileLabel}
                     empty={!hasReport}
                   />
                 </div>
-                <p className="mt-2 text-center text-[10px] leading-[1.55] text-[#7f7970] lg:text-left">
+                <p className="mt-3 border-t border-[#ffffff]/[0.06] pt-3 text-[9.5px] leading-[1.6] tracking-[0.02em] text-[#7c766d]">
                   Profile based on reported proportions and finish details. Not a
                   laboratory scan.
                 </p>

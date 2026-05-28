@@ -1,6 +1,9 @@
 /**
- * Dev benchmark: calibration vs client extraction on anchor PDFs.
+ * Dev benchmark: CLIENT interpretation state machine on anchor PDFs.
  * Usage: npx tsx scripts/benchmark-client-extract.ts
+ *
+ * Reports per anchor: route timing, tier (full|partial|failure), and the
+ * deterministic snapshot summary — mirrors /api/diamond-intelligence/interpret.
  */
 import { readFileSync } from "fs";
 import {
@@ -8,53 +11,77 @@ import {
   resolveAnchorPdfPath,
 } from "@/lib/calibration-library/anchor-pdf-paths";
 import { runCalibrationUploadExtraction } from "@/lib/calibration-library/extract-upload-pipeline";
-import { clientExtractionSufficient } from "@/lib/diamond-intelligence/client-extraction-sufficient";
+import { withTimeout } from "@/lib/calibration-library/runtime-guard";
+import {
+  CLIENT_INTERPRET_ROUTE_TIMEOUT_MS,
+  CLIENT_UPLOAD_PIPELINE_TIMEOUT_MS,
+} from "@/lib/calibration-library/runtime-limits";
+import {
+  classifyFinalized,
+  snapshotFieldSummary,
+} from "@/lib/diamond-intelligence/client-interpretation-pipeline";
 
-async function bench(
-  label: string,
-  path: string,
-  mode: "calibration" | "client",
-): Promise<void> {
+const TARGETS = ["LG773657228", "LG353466126", "LG360796191", "2527039693"];
+
+async function runOne(reportNumber: string): Promise<void> {
+  const spec = ANCHOR_PDF_SPECS.find((s) => s.reportNumber === reportNumber);
+  if (!spec) {
+    console.log(`SKIP ${reportNumber}: no spec`);
+    return;
+  }
+  const path = resolveAnchorPdfPath(spec);
+  if (!path) {
+    console.log(`SKIP ${reportNumber}: PDF not found`);
+    return;
+  }
+
   const bytes = readFileSync(path);
-  const started = Date.now();
-  const out = await runCalibrationUploadExtraction({
-    bytes,
-    mime: "application/pdf",
-    mode,
-    reportSource: "pdf-upload",
-  });
-  const elapsed = Date.now() - started;
-  const sufficient = clientExtractionSufficient({
-    fields: out.fields,
-    confidence: out.confidence,
-  });
-  console.log(`\n=== ${label} (${mode}) ===`);
-  console.log({
-    parser: out.parserType,
-    lab: out.metadata.lab,
-    totalMs: elapsed,
-    pipelineTimings: out.timings,
-    clientSufficient: sufficient,
-    timedOut: out.timedOut,
-    pipelineError: out.pipelineError,
-  });
+  const t0 = Date.now();
+  let tier = "failure";
+  let summary = "";
+  let timedOut = false;
+  let parser = "";
+  try {
+    const finalized = await withTimeout(
+      runCalibrationUploadExtraction({
+        bytes,
+        mime: "application/pdf",
+        mode: "client",
+        reportSource: "pdf-upload",
+        pipelineTimeoutMs: CLIENT_UPLOAD_PIPELINE_TIMEOUT_MS,
+      }),
+      CLIENT_INTERPRET_ROUTE_TIMEOUT_MS,
+      "benchmark-route",
+    );
+    const decision = classifyFinalized(finalized);
+    tier = decision.tier;
+    summary = snapshotFieldSummary(decision.snapshot);
+    timedOut = Boolean(finalized.timedOut);
+    parser = finalized.parserType;
+  } catch (err) {
+    tier = "route-timeout";
+    summary = err instanceof Error ? err.message : String(err);
+  }
+
+  const routeMs = Date.now() - t0;
+  const httpStatus =
+    tier === "full" || tier === "partial"
+      ? 200
+      : tier === "failure"
+        ? 422
+        : 504;
+
+  console.log(
+    `RESULT ${reportNumber} parser=${parser} tier=${tier} http=${httpStatus} routeMs=${routeMs} timedOut=${timedOut} fields=${summary}`,
+  );
 }
 
 async function main() {
-  const targets = ANCHOR_PDF_SPECS.filter((s) =>
-    ["LG353466126", "LG360796191", "LG773657228", "2527039693"].includes(
-      s.reportNumber,
-    ),
+  console.log(
+    `budgets: route=${CLIENT_INTERPRET_ROUTE_TIMEOUT_MS}ms pipeline=${CLIENT_UPLOAD_PIPELINE_TIMEOUT_MS}ms`,
   );
-
-  for (const spec of targets) {
-    const path = resolveAnchorPdfPath(spec);
-    if (!path) {
-      console.warn(`Skip ${spec.reportNumber}: PDF not found`);
-      continue;
-    }
-    await bench(spec.reportNumber, path, "calibration");
-    await bench(spec.reportNumber, path, "client");
+  for (const rn of TARGETS) {
+    await runOne(rn);
   }
 }
 

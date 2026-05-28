@@ -38,10 +38,7 @@ import {
   labFamilyLabel,
   logUploadPipelineTiming,
 } from "./upload-pipeline-timing";
-import {
-  clientExtractionSufficient,
-  clientExtractionUseful,
-} from "@/lib/diamond-intelligence/client-extraction-sufficient";
+import { clientExtractionSufficient } from "@/lib/diamond-intelligence/client-extraction-sufficient";
 import {
   CalibrationTimeoutError,
   logCalibrationRuntimeCheck,
@@ -132,30 +129,14 @@ async function runImageOcrAugmentation(input: {
     ? CLIENT_IMAGE_REGION_OCR_TIMEOUT_MS
     : IMAGE_REGION_OCR_TIMEOUT_MS;
 
+  // Client mode short-circuits ONLY when proportion-capable (full read achievable).
+  // Usefulness/partial classification is owned exclusively by the interpret route.
   const clientSatisfied = () =>
     clientMode &&
     clientExtractionSufficient({
       fields: parsed.fields,
       confidence: parsed.confidence,
     });
-
-  const clientUseful = () =>
-    clientMode &&
-    clientExtractionUseful({
-      fields: parsed.fields,
-      confidence: parsed.confidence,
-    });
-
-  if (clientUseful()) {
-    logUploadPipelineTiming({
-      phase: "ocr-region-crops",
-      durationMs: 0,
-      labFamily,
-      parserPath: parsed.parserType,
-      detail: "skipped-client-already-useful",
-    });
-    return { imageOcrMs: 0, ocrCompleted: false };
-  }
 
   const sarineColumnListSignature = hasSarineColumnListSignature(combined);
   const runSarine =
@@ -271,17 +252,16 @@ async function runImageOcrAugmentation(input: {
     }
   }
 
-  if (clientSatisfied() || clientUseful()) {
-    return { imageOcrMs: Date.now() - started, ocrCompleted };
-  }
-
   if (clientMode) {
+    // Client budget: never run GIA/IGI full diagram OCR. Return whatever we have.
     logUploadPipelineTiming({
       phase: "ocr-region-crops",
       durationMs: Date.now() - started,
       labFamily,
       parserPath: parsed.parserType,
-      detail: "skipped-gia-igi-client-budget",
+      detail: clientSatisfied()
+        ? "client-sufficient"
+        : "skipped-gia-igi-client-budget",
     });
     return { imageOcrMs: Date.now() - started, ocrCompleted };
   }
@@ -553,17 +533,18 @@ export async function runCalibrationUploadExtraction(
 
         if (
           clientMode &&
-          clientExtractionUseful({
+          clientExtractionSufficient({
             fields: parsed.fields,
             confidence: parsed.confidence,
           })
         ) {
+          // Text layer alone already supports a full read — skip OCR entirely.
           logUploadPipelineTiming({
             phase: "ocr-region-crops",
             durationMs: 0,
             labFamily: timings.labFamily,
             parserPath: parsed.parserType,
-            detail: "skipped-client-text-parse-useful",
+            detail: "skipped-client-text-parse-sufficient",
           });
         } else if (uploadPdfBytes) {
           try {
@@ -663,14 +644,9 @@ export async function runCalibrationUploadExtraction(
       error: timeoutErrorMessage(err),
     });
 
-    if (
-      clientMode &&
-      snapshot.parsed &&
-      clientExtractionUseful({
-        fields: snapshot.parsed.fields,
-        confidence: snapshot.parsed.confidence,
-      })
-    ) {
+    // On timeout in client mode, return whatever snapshot we built so the
+    // route can classify it deterministically (full / partial / failure).
+    if (clientMode && snapshot.parsed) {
       const finalized = finalizeCalibrationExtractionResult({
         parsed: snapshot.parsed,
         combinedText: snapshot.combined,
@@ -681,7 +657,7 @@ export async function runCalibrationUploadExtraction(
         durationMs: 0,
         labFamily: timings.labFamily,
         parserPath: finalized.parserType,
-        detail: "partial-after-timeout",
+        detail: "snapshot-after-timeout",
       });
       return assembleOutput(finalized, {
         ocrAttempted: snapshot.ocrAttempted,
