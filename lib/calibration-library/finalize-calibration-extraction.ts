@@ -11,6 +11,7 @@ import {
 } from "./extraction-provenance";
 import { finalizeExtractionFields } from "./fields";
 import { enrichGiaFacsimileExtractionPolicy } from "./gia-facsimile-calibration-policy";
+import { buildReviewGuidanceWarnings } from "./review-guidance";
 import { normalizeCalibrationFields } from "./field-normalization";
 import type {
   CalibrationReportFields,
@@ -159,7 +160,7 @@ export function finalizeCalibrationExtractionResult(
   const guarded = applyCorpusSaveGuardrails(provisional);
   const calibrationSafety = assessCalibrationSafety(guarded);
 
-  return {
+  const finalized: FinalizedCalibrationExtraction = {
     ...result,
     fields,
     fieldsNormalized,
@@ -171,6 +172,10 @@ export function finalizeCalibrationExtractionResult(
     excludedFromCalibrationStats: guarded.excludedFromCalibrationStats ?? true,
     corpusReviewFlags: guarded.corpusReviewFlags,
   };
+
+  finalized.warnings = buildReviewGuidanceWarnings(finalized);
+
+  return finalized;
 }
 
 /** Parity helper: canonical field map for the 15 core review fields. */

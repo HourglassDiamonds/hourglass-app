@@ -1,4 +1,3 @@
-import { FIELD_LABELS } from "./fields";
 import type {
   CalibrationReportFields,
   FieldConfidence,
@@ -10,21 +9,12 @@ import { REPORT_FIELD_KEYS } from "./types";
 export function applyMissingFieldMarkers(
   fields: CalibrationReportFields,
   confidence: Record<ReportFieldKey, FieldConfidence>,
-): string[] {
-  const missingLabels: string[] = [];
-
+): void {
   for (const key of REPORT_FIELD_KEYS) {
     if (!fields[key].trim()) {
       confidence[key] = "missing";
-      missingLabels.push(FIELD_LABELS[key]);
     }
   }
-
-  if (missingLabels.length === 0) return [];
-
-  return [
-    `Not detected from report text — fill on review: ${missingLabels.join(", ")}.`,
-  ];
 }
 
 export function applyMissingMetadataWarnings(metadata: {

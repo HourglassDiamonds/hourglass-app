@@ -14,8 +14,13 @@ import ReportUploadZone, {
 import {
   buildManualOverrideReview,
   MANUAL_PROPORTION_WARNING,
-  provenanceLabel,
 } from "@/lib/calibration-library/manual-override-safety";
+import {
+  fieldInputPlaceholder,
+  provenanceDetailLabel,
+  textMethodReviewLabel,
+} from "@/lib/calibration-library/review-guidance";
+import type { CalibrationSafetyAssessment } from "@/lib/calibration-library/calibration-safety";
 import {
   CALIBRATION_LABS,
   REPORT_FIELD_KEYS,
@@ -29,6 +34,7 @@ import {
   type ReportSource,
   type RoundBrilliantScoreResult,
   type StoneType,
+  type TextExtractionMethod,
 } from "@/lib/calibration-library/types";
 
 const SURFACE = "rounded-sm border border-[#e4dbcf]/62 bg-white/40";
@@ -113,7 +119,9 @@ export default function IngestClient() {
   const [pipelineNotices, setPipelineNotices] = useState<string[]>([]);
   const [extractionStatus, setExtractionStatus] =
     useState<ExtractionStatus>("idle");
-  const [textMethod, setTextMethod] = useState<string | null>(null);
+  const [textMethod, setTextMethod] = useState<TextExtractionMethod | null>(
+    null,
+  );
   const [fields, setFields] = useState<CalibrationReportFields>(() =>
     emptyReportFields(),
   );
@@ -132,6 +140,13 @@ export default function IngestClient() {
     useState<CalibrationExtractionSnapshot | null>(null);
   const [fieldProvenance, setFieldProvenance] =
     useState<ExtractionResult["fieldProvenance"]>(undefined);
+  const [calibrationEligible, setCalibrationEligible] = useState<
+    boolean | null
+  >(null);
+  const [excludedFromCalibrationStats, setExcludedFromCalibrationStats] =
+    useState<boolean | null>(null);
+  const [calibrationSafety, setCalibrationSafety] =
+    useState<CalibrationSafetyAssessment | null>(null);
   const [saving, setSaving] = useState(false);
   const [savedId, setSavedId] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -192,6 +207,9 @@ export default function IngestClient() {
       storedFilename?: string;
       pipelineNotices?: string[];
       textMethod?: string;
+      calibrationEligible?: boolean;
+      excludedFromCalibrationStats?: boolean;
+      calibrationSafety?: CalibrationSafetyAssessment;
     },
     source: ReportSource,
   ) {
@@ -221,6 +239,9 @@ export default function IngestClient() {
     });
     setFieldProvenance(data.fieldProvenance);
     setWarnings(data.warnings);
+    setCalibrationEligible(data.calibrationEligible ?? null);
+    setExcludedFromCalibrationStats(data.excludedFromCalibrationStats ?? null);
+    setCalibrationSafety(data.calibrationSafety ?? null);
     if (data.storedFilename) setStoredFilename(data.storedFilename);
     if (data.pipelineNotices?.length) setPipelineNotices(data.pipelineNotices);
     if (data.textMethod) setTextMethod(data.textMethod);
@@ -287,6 +308,9 @@ export default function IngestClient() {
         pipelineNotices?: string[];
         textMethod?: string;
         ocrAttempted?: boolean;
+        calibrationEligible?: boolean;
+        excludedFromCalibrationStats?: boolean;
+        calibrationSafety?: CalibrationSafetyAssessment;
       };
 
       if (!res.ok) {
@@ -394,7 +418,34 @@ export default function IngestClient() {
     setExtractError(null);
     setExtractionSnapshot(null);
     setFieldProvenance(undefined);
+    setCalibrationEligible(null);
+    setExcludedFromCalibrationStats(null);
+    setCalibrationSafety(null);
   }
+
+  const reviewGuidanceNotices = useMemo(() => {
+    const status = warnings.filter(
+      (w) =>
+        w.startsWith("Text source:") || w.startsWith("Calibration status:"),
+    );
+    const guidance = warnings.filter(
+      (w) =>
+        !status.includes(w) &&
+        !w.startsWith("GIA facsimile:") &&
+        !w.startsWith("GCAL Sarine (4Cs): parser") &&
+        !w.startsWith("Sarine router") &&
+        !w.startsWith("Proportion diagram not captured") &&
+        !w.startsWith("Report number missing") &&
+        !w.startsWith("No report text") &&
+        !w.startsWith("No specialized report") &&
+        !w.startsWith("IGI: if the report") &&
+        !w.includes("parser confidence is low"),
+    );
+    const parserNotices = warnings.filter(
+      (w) => !status.includes(w) && !guidance.includes(w),
+    );
+    return { status, guidance, parserNotices };
+  }, [warnings]);
 
   const proportionDims = score?.dimensions.filter((d) => d.group === "proportion");
   const finishDims = score?.dimensions.filter((d) => d.group === "reported-finish");
@@ -492,16 +543,53 @@ export default function IngestClient() {
                 Confirm metadata and reported values. Saved data is exactly what you
                 approve — no official lab grade claims beyond the report.
               </p>
-              {textMethod ? (
-                <p className="mt-2 text-xs uppercase tracking-[0.26em] text-[#948a80]">
-                  Text source: {textMethod.replace("-", " ")}
-                </p>
+              {reviewGuidanceNotices.status.length > 0 ? (
+                <div className="mt-4 space-y-2 rounded-sm border border-[#e4dbcf]/70 bg-[#f7f3ee]/60 px-3 py-3">
+                  {reviewGuidanceNotices.status.map((w) => (
+                    <p key={w} className="text-sm leading-relaxed text-[#5f5851]">
+                      {w}
+                    </p>
+                  ))}
+                  {textMethod ? (
+                    <p className="text-[10px] uppercase tracking-[0.24em] text-[#948a80]">
+                      Pipeline method: {textMethodReviewLabel(textMethod)}
+                    </p>
+                  ) : null}
+                  {calibrationEligible !== null ? (
+                    <p className="text-[10px] leading-relaxed tracking-[0.08em] text-[#847a70]">
+                      {calibrationEligible
+                        ? "Structural gate: passes calibration eligibility checks on extracted fields."
+                        : "Structural gate: does not pass calibration eligibility yet (missing or low-confidence core fields)."}
+                      {excludedFromCalibrationStats
+                        ? " Excluded from calibration statistics until resolved."
+                        : null}
+                    </p>
+                  ) : null}
+                </div>
               ) : null}
-              {warnings.map((w) => (
-                <p key={w} className="mt-3 text-sm text-[#8a4a3a]">
+              {reviewGuidanceNotices.guidance.map((w) => (
+                <p key={w} className="mt-3 text-sm leading-relaxed text-[#5f5851]">
                   {w}
                 </p>
               ))}
+              {reviewGuidanceNotices.parserNotices.map((w) => (
+                <p key={w} className="mt-3 text-sm text-[#6b5048]">
+                  {w}
+                </p>
+              ))}
+              {calibrationSafety?.reasons &&
+              calibrationSafety.reasons.length > 0 ? (
+                <details className="mt-3">
+                  <summary className="cursor-pointer text-[10px] uppercase tracking-[0.26em] text-[#948a80]">
+                    Safety detail
+                  </summary>
+                  <ul className="mt-2 list-inside list-disc text-xs leading-relaxed text-[#847a70]">
+                    {calibrationSafety.reasons.map((r) => (
+                      <li key={r}>{r}</li>
+                    ))}
+                  </ul>
+                </details>
+              ) : null}
               {manualReview.hardWarnings.map((w) => (
                 <p
                   key={w}
@@ -602,10 +690,21 @@ export default function IngestClient() {
                       {FIELD_LABELS[key]}
                       <span className="flex items-center gap-1">
                         <span className="text-[9px] normal-case tracking-normal text-[#948a80]">
-                          {provenanceLabel(
-                            manualReview.valueProvenance[key] ??
-                              fieldProvenance?.[key]?.valueSource,
-                          )}
+                          {(() => {
+                            const manualSrc =
+                              manualReview.valueProvenance[key];
+                            if (
+                              manualSrc === "manual-user" ||
+                              manualSrc === "manual-admin"
+                            ) {
+                              return manualSrc === "manual-user"
+                                ? "manual (user)"
+                                : "manual (admin)";
+                            }
+                            return provenanceDetailLabel(
+                              fieldProvenance?.[key],
+                            );
+                          })()}
                         </span>
                         {confidenceBadge(confidence[key])}
                       </span>
@@ -613,13 +712,10 @@ export default function IngestClient() {
                     <input
                       className={fieldInputClass(confidence[key])}
                       value={fields[key]}
-                      placeholder={
-                        confidence[key] === "missing"
-                          ? "Not detected — enter from report"
-                          : confidence[key] === "low"
-                            ? "Low confidence (OCR) — verify on report"
-                            : undefined
-                      }
+                      placeholder={fieldInputPlaceholder(
+                        confidence[key],
+                        fieldProvenance?.[key],
+                      )}
                       onChange={(e) => updateField(key, e.target.value)}
                     />
                   </label>

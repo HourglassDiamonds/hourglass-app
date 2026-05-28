@@ -23,5 +23,8 @@ export function lowConfidenceWarning(
   parserType: string,
 ): string | undefined {
   if (parserConfidence !== "low") return undefined;
-  return `${parserType}: low extraction confidence — verify all fields manually before calibration.`;
+  if (parserType === "gcal-sarine-4cs") {
+    return "GCAL Sarine (4Cs): parser confidence is low — proportion panel may need manual review.";
+  }
+  return `${parserType}: parser confidence is low — verify fields against the report.`;
 }

@@ -265,7 +265,7 @@ export function extractFieldsFromReportText(
   };
 
   warnings.push(...applyMissingMetadataWarnings(metadata));
-  warnings.push(...applyMissingFieldMarkers(fields, confidence));
+  applyMissingFieldMarkers(fields, confidence);
 
   if (rawText.length === 0) {
     warnings.unshift(
@@ -281,12 +281,6 @@ export function extractFieldsFromReportText(
   if (rawText.length > 0 && detectedCount < 6) {
     warnings.push(
       "Few fields were detected — review every value against the report before saving.",
-    );
-  }
-
-  if (hints?.textMethod === "ocr" && detectedCount > 0) {
-    warnings.push(
-      "Some values were read via OCR — confirm each field against the report before saving.",
     );
   }
 

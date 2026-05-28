@@ -133,7 +133,7 @@ export function enrichGiaFacsimileExtractionPolicy(
   };
 
   const warning =
-    "GIA facsimile: girdle thickness phrase not readable from OCR — review recommended.";
+    "GIA facsimile: girdle thickness not recovered from OCR — enter from the report if shown; other fields may still be usable for review.";
   if (!result.warnings.includes(warning)) {
     result.warnings.push(warning);
   }
