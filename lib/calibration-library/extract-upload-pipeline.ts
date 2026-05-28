@@ -32,6 +32,16 @@ import {
   shouldRunIgiDiagramImageOcr,
 } from "./parsers/igi/igi-diagram-image-ocr";
 import { inferReportSourceFromUpload } from "./infer-report-source";
+import type { ExtractionPipelineMode } from "./extraction-mode";
+import { isClientExtractionMode } from "./extraction-mode";
+import {
+  labFamilyLabel,
+  logUploadPipelineTiming,
+} from "./upload-pipeline-timing";
+import {
+  clientExtractionSufficient,
+  clientExtractionUseful,
+} from "@/lib/diamond-intelligence/client-extraction-sufficient";
 import {
   CalibrationTimeoutError,
   logCalibrationRuntimeCheck,
@@ -39,6 +49,9 @@ import {
   withTimeout,
 } from "./runtime-guard";
 import {
+  CLIENT_DOCUMENT_EXTRACT_TIMEOUT_MS,
+  CLIENT_IMAGE_REGION_OCR_TIMEOUT_MS,
+  CLIENT_UPLOAD_PIPELINE_TIMEOUT_MS,
   DOCUMENT_EXTRACT_TIMEOUT_MS,
   EXTRACT_FILE_PIPELINE_TIMEOUT_MS,
   IMAGE_REGION_OCR_TIMEOUT_MS,
@@ -53,9 +66,13 @@ import type {
 
 export type UploadExtractionTimings = {
   documentExtractMs: number;
+  pdfFullPageOcrMs: number;
   textParseMs: number;
   imageOcrMs: number;
+  finalizerMs: number;
+  clientPayloadMs: number;
   totalMs: number;
+  labFamily?: string;
 };
 
 export type UploadExtractionOutput = FinalizedCalibrationExtraction & {
@@ -69,6 +86,8 @@ export type UploadExtractionOutput = FinalizedCalibrationExtraction & {
   parserPathUsed?: string;
   timedOut?: boolean;
   pipelineError?: string;
+  /** Client route returned fields gathered before timeout. */
+  clientPartial?: boolean;
 };
 
 export type RunUploadExtractionInput = {
@@ -79,6 +98,8 @@ export type RunUploadExtractionInput = {
   reportNumber?: string;
   reportSource?: ReportSource;
   pipelineTimeoutMs?: number;
+  /** `client` = diamond-intelligence interpret; default preserves calibration/admin behavior. */
+  mode?: ExtractionPipelineMode;
   /** When set (e.g. extract-file route), skip a second document-extract pass. */
   preExtractedDocument?: DocumentTextExtraction;
   /** Notices collected before pipeline (upload save, document-extract, etc.). */
@@ -92,6 +113,7 @@ async function runImageOcrAugmentation(input: {
   effectiveMethod: TextExtractionMethod;
   reportNumberHint: string;
   gcalImageOnlyPdf?: boolean;
+  clientMode?: boolean;
 }): Promise<{ imageOcrMs: number; ocrCompleted: boolean }> {
   const {
     uploadPdfBytes,
@@ -103,6 +125,37 @@ async function runImageOcrAugmentation(input: {
   } = input;
   const started = Date.now();
   let ocrCompleted = false;
+  const clientMode = input.clientMode ?? false;
+  const labFamily = labFamilyLabel(parsed.metadata.lab, parsed.parserType);
+
+  const regionOcrTimeoutMs = clientMode
+    ? CLIENT_IMAGE_REGION_OCR_TIMEOUT_MS
+    : IMAGE_REGION_OCR_TIMEOUT_MS;
+
+  const clientSatisfied = () =>
+    clientMode &&
+    clientExtractionSufficient({
+      fields: parsed.fields,
+      confidence: parsed.confidence,
+    });
+
+  const clientUseful = () =>
+    clientMode &&
+    clientExtractionUseful({
+      fields: parsed.fields,
+      confidence: parsed.confidence,
+    });
+
+  if (clientUseful()) {
+    logUploadPipelineTiming({
+      phase: "ocr-region-crops",
+      durationMs: 0,
+      labFamily,
+      parserPath: parsed.parserType,
+      detail: "skipped-client-already-useful",
+    });
+    return { imageOcrMs: 0, ocrCompleted: false };
+  }
 
   const sarineColumnListSignature = hasSarineColumnListSignature(combined);
   const runSarine =
@@ -157,7 +210,7 @@ async function runImageOcrAugmentation(input: {
             parserPathUsed: parsed.parserType,
           },
         ),
-        IMAGE_REGION_OCR_TIMEOUT_MS,
+        regionOcrTimeoutMs,
         "sarine-image-ocr",
       );
       if (Object.keys(gcalInternal).length > 0) {
@@ -165,6 +218,15 @@ async function runImageOcrAugmentation(input: {
       }
       ocrCompleted = true;
       probeSarineFinishFromTextLayer(combined);
+      logUploadPipelineTiming({
+        phase: "ocr-region-crops",
+        durationMs: Date.now() - started,
+        labFamily: "GCAL-Sarine",
+        parserPath: parsed.parserType,
+      });
+      if (clientSatisfied()) {
+        return { imageOcrMs: Date.now() - started, ocrCompleted };
+      }
     }
   } else if (
     shouldRunGcalImageRegionOcr(parsed.fields, {
@@ -187,15 +249,41 @@ async function runImageOcrAugmentation(input: {
         {
           reportNumber: reportNumberHint || undefined,
           combinedText: combined,
+          lazySecondPage: clientMode,
+          clientOnlyFirstPage: clientMode,
         },
       ),
-      IMAGE_REGION_OCR_TIMEOUT_MS,
+      regionOcrTimeoutMs,
       "gcal-8x-image-ocr",
     );
     if (Object.keys(gcalInternal).length > 0) {
       parsed.gcalInternal = gcalInternal;
     }
     ocrCompleted = true;
+    logUploadPipelineTiming({
+      phase: "ocr-region-crops",
+      durationMs: Date.now() - started,
+      labFamily: "GCAL-8X",
+      parserPath: parsed.parserType,
+    });
+    if (clientSatisfied()) {
+      return { imageOcrMs: Date.now() - started, ocrCompleted };
+    }
+  }
+
+  if (clientSatisfied() || clientUseful()) {
+    return { imageOcrMs: Date.now() - started, ocrCompleted };
+  }
+
+  if (clientMode) {
+    logUploadPipelineTiming({
+      phase: "ocr-region-crops",
+      durationMs: Date.now() - started,
+      labFamily,
+      parserPath: parsed.parserType,
+      detail: "skipped-gia-igi-client-budget",
+    });
+    return { imageOcrMs: Date.now() - started, ocrCompleted };
   }
 
   const giaGate = shouldRunGiaFacsimileDiagramImageOcr(parsed.fields, combined, {
@@ -277,13 +365,70 @@ export async function runCalibrationUploadExtraction(
   const pipelineNotices: string[] = [];
   const timings: UploadExtractionTimings = {
     documentExtractMs: 0,
+    pdfFullPageOcrMs: 0,
     textParseMs: 0,
     imageOcrMs: 0,
+    finalizerMs: 0,
+    clientPayloadMs: 0,
     totalMs: 0,
   };
 
+  const clientMode = isClientExtractionMode(input.mode);
   const timeoutMs =
-    input.pipelineTimeoutMs ?? EXTRACT_FILE_PIPELINE_TIMEOUT_MS;
+    input.pipelineTimeoutMs ??
+    (clientMode
+      ? CLIENT_UPLOAD_PIPELINE_TIMEOUT_MS
+      : EXTRACT_FILE_PIPELINE_TIMEOUT_MS);
+  const docExtractTimeoutMs = clientMode
+    ? CLIENT_DOCUMENT_EXTRACT_TIMEOUT_MS
+    : DOCUMENT_EXTRACT_TIMEOUT_MS;
+
+  const snapshot: {
+    parsed: ExtractionResult | null;
+    combined: string;
+    ocrAttempted: boolean;
+    ocrAvailable: boolean;
+    pdfTextLayerLength: number;
+    gcalImageOnlyPdf: boolean;
+  } = {
+    parsed: null,
+    combined: "",
+    ocrAttempted: false,
+    ocrAvailable: false,
+    pdfTextLayerLength: 0,
+    gcalImageOnlyPdf: false,
+  };
+
+  const assembleOutput = (
+    finalized: FinalizedCalibrationExtraction,
+    extra: {
+      ocrAttempted: boolean;
+      ocrAvailable: boolean;
+      combined: string;
+      clientPartial?: boolean;
+      timedOut?: boolean;
+      pipelineError?: string;
+    },
+  ): UploadExtractionOutput => {
+    timings.totalMs = Date.now() - pipelineStarted;
+    return {
+      ...finalized,
+      pipelineNotices,
+      ocrAttempted: extra.ocrAttempted,
+      ocrAvailable: extra.ocrAvailable,
+      pdfTextLayerLength: snapshot.pdfTextLayerLength,
+      gcalImageOnlyPdf: snapshot.gcalImageOnlyPdf,
+      extractedCharCount: extra.combined.length,
+      timings,
+      parserPathUsed: finalized.parserType,
+      calibrationEligible: finalized.calibrationEligible,
+      excludedFromCalibrationStats: finalized.excludedFromCalibrationStats,
+      corpusReviewFlags: finalized.corpusReviewFlags,
+      clientPartial: extra.clientPartial,
+      timedOut: extra.timedOut,
+      pipelineError: extra.pipelineError,
+    };
+  };
 
   try {
     return await withTimeout(
@@ -292,11 +437,11 @@ export async function runCalibrationUploadExtraction(
           pipelineNotices.push(...input.initialPipelineNotices);
         }
 
+        let ocrAvailable = false;
         const pastedText = input.pastedText?.trim() ?? "";
         let docText = "";
         let textMethod: TextExtractionMethod = pastedText ? "manual" : "none";
         let ocrAttempted = false;
-        let ocrAvailable = false;
         let uploadPdfBytes: Buffer | undefined;
         let gcalImageOnlyPdf = false;
         let pdfTextLayerLength = 0;
@@ -320,6 +465,7 @@ export async function runCalibrationUploadExtraction(
             ocrAvailable = doc.ocrAvailable;
             pdfTextLayerLength = doc.pdfTextLayerLength;
             gcalImageOnlyPdf = doc.gcalImageOnlyPdf;
+            snapshot.ocrAvailable = doc.ocrAvailable;
             if (!input.initialPipelineNotices?.length) {
               pipelineNotices.push(...doc.notices);
             }
@@ -329,11 +475,19 @@ export async function runCalibrationUploadExtraction(
               ms: Date.now() - t0,
             });
             const doc = await withTimeout(
-              extractTextFromDocument(input.bytes, input.mime),
-              DOCUMENT_EXTRACT_TIMEOUT_MS,
+              extractTextFromDocument(input.bytes, input.mime, {
+                mode: input.mode,
+              }),
+              docExtractTimeoutMs,
               "document-extract",
             );
             timings.documentExtractMs = Date.now() - docStarted;
+            if (
+              clientMode &&
+              doc.notices.some((n) => n.includes("full-page OCR skipped"))
+            ) {
+              timings.pdfFullPageOcrMs = 0;
+            }
             console.log("[upload-pipeline] document-extract:end", {
               ms: Date.now() - t0,
               method: doc.method,
@@ -345,6 +499,7 @@ export async function runCalibrationUploadExtraction(
             ocrAvailable = doc.ocrAvailable;
             pdfTextLayerLength = doc.pdfTextLayerLength;
             gcalImageOnlyPdf = doc.gcalImageOnlyPdf;
+            snapshot.ocrAvailable = doc.ocrAvailable;
             pipelineNotices.push(...doc.notices);
           }
         }
@@ -373,6 +528,13 @@ export async function runCalibrationUploadExtraction(
           usedImageOCR: ocrAttempted && Boolean(docText),
         });
         timings.textParseMs = Date.now() - parseStarted;
+        timings.labFamily = labFamilyLabel(parsed.metadata.lab, parsed.parserType);
+        logUploadPipelineTiming({
+          phase: "text-parse",
+          durationMs: timings.textParseMs,
+          labFamily: timings.labFamily,
+          parserPath: parsed.parserType,
+        });
         console.log("[upload-pipeline] text-parse:end", {
           ms: Date.now() - t0,
           parser: parsed.parserType,
@@ -383,7 +545,27 @@ export async function runCalibrationUploadExtraction(
           parsed.metadata.reportNumber.trim() ||
           "";
 
-        if (uploadPdfBytes) {
+        snapshot.parsed = parsed;
+        snapshot.combined = combined;
+        snapshot.ocrAttempted = ocrAttempted;
+        snapshot.pdfTextLayerLength = pdfTextLayerLength;
+        snapshot.gcalImageOnlyPdf = gcalImageOnlyPdf;
+
+        if (
+          clientMode &&
+          clientExtractionUseful({
+            fields: parsed.fields,
+            confidence: parsed.confidence,
+          })
+        ) {
+          logUploadPipelineTiming({
+            phase: "ocr-region-crops",
+            durationMs: 0,
+            labFamily: timings.labFamily,
+            parserPath: parsed.parserType,
+            detail: "skipped-client-text-parse-useful",
+          });
+        } else if (uploadPdfBytes) {
           try {
             console.log("[upload-pipeline] image-ocr:start", { ms: Date.now() - t0 });
             const ocr = await runImageOcrAugmentation({
@@ -393,6 +575,7 @@ export async function runCalibrationUploadExtraction(
               effectiveMethod,
               reportNumberHint,
               gcalImageOnlyPdf,
+              clientMode,
             });
             timings.imageOcrMs = ocr.imageOcrMs;
             if (ocr.ocrCompleted) ocrAttempted = true;
@@ -406,19 +589,22 @@ export async function runCalibrationUploadExtraction(
               `Image region OCR failed: ${errorMessageFromUnknown(ocrErr)}`,
             );
           }
+          snapshot.ocrAttempted = ocrAttempted;
         }
 
         parsed.textMethod = effectiveMethod;
         parsed.rawTextSnippet = combined.slice(0, 1200);
 
         console.log("[upload-pipeline] finalizer:start", { ms: Date.now() - t0 });
+        const finalizerStarted = Date.now();
         const finalized = finalizeCalibrationExtractionResult({
           parsed,
           combinedText: combined,
           usedImageOCR:
             (ocrAttempted && Boolean(docText)) || timings.imageOcrMs > 0,
           auditSpec:
-            reportNumberHint || parsed.metadata.reportNumber
+            !clientMode &&
+            (reportNumberHint || parsed.metadata.reportNumber)
               ? {
                   reportNumber:
                     reportNumberHint || parsed.metadata.reportNumber,
@@ -426,6 +612,13 @@ export async function runCalibrationUploadExtraction(
                   scenarioId: "upload",
                 }
               : undefined,
+        });
+        timings.finalizerMs = Date.now() - finalizerStarted;
+        logUploadPipelineTiming({
+          phase: "parser-finalizer",
+          durationMs: timings.finalizerMs,
+          labFamily: timings.labFamily,
+          parserPath: finalized.parserType,
         });
         console.log("[upload-pipeline] finalizer:end", {
           ms: Date.now() - t0,
@@ -470,6 +663,36 @@ export async function runCalibrationUploadExtraction(
       error: timeoutErrorMessage(err),
     });
 
+    if (
+      clientMode &&
+      snapshot.parsed &&
+      clientExtractionUseful({
+        fields: snapshot.parsed.fields,
+        confidence: snapshot.parsed.confidence,
+      })
+    ) {
+      const finalized = finalizeCalibrationExtractionResult({
+        parsed: snapshot.parsed,
+        combinedText: snapshot.combined,
+        usedImageOCR: snapshot.ocrAttempted || timings.imageOcrMs > 0,
+      });
+      logUploadPipelineTiming({
+        phase: "parser-finalizer",
+        durationMs: 0,
+        labFamily: timings.labFamily,
+        parserPath: finalized.parserType,
+        detail: "partial-after-timeout",
+      });
+      return assembleOutput(finalized, {
+        ocrAttempted: snapshot.ocrAttempted,
+        ocrAvailable: snapshot.ocrAvailable,
+        combined: snapshot.combined,
+        clientPartial: true,
+        timedOut: true,
+        pipelineError: timeoutErrorMessage(err),
+      });
+    }
+
     const empty = extractFieldsFromReportText("", {
       lab: input.lab,
       reportNumber: input.reportNumber,
@@ -481,7 +704,7 @@ export async function runCalibrationUploadExtraction(
       combinedText: "",
       usedImageOCR: false,
       auditSpec:
-        input.reportNumber && input.lab
+        !clientMode && input.reportNumber && input.lab
           ? {
               reportNumber: input.reportNumber,
               lab: input.lab as never,
@@ -490,22 +713,12 @@ export async function runCalibrationUploadExtraction(
           : undefined,
     });
 
-    return {
-      ...finalized,
-      pipelineNotices: [
-        ...pipelineNotices,
-        timedOut
-          ? `Pipeline timed out: ${timeoutErrorMessage(err)}`
-          : errorMessageFromUnknown(err),
-      ],
+    return assembleOutput(finalized, {
       ocrAttempted: false,
       ocrAvailable: false,
-      pdfTextLayerLength: 0,
-      gcalImageOnlyPdf: false,
-      extractedCharCount: 0,
-      timings,
+      combined: "",
       timedOut,
       pipelineError: timeoutErrorMessage(err),
-    };
+    });
   }
 }

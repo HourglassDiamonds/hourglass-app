@@ -27,6 +27,11 @@ export {
 } from "./client-interpretation-record";
 export { CLIENT_FIELD_HINTS, CLIENT_FIELD_LABELS } from "./client-field-labels";
 export {
+  CLIENT_UPLOAD_INTERPRET_ERROR,
+  postReportForInterpretation,
+  type InterpretApiPayload,
+} from "./client-upload";
+export {
   CLIENT_DISPLAY_FIELD_KEYS,
   reassessClientCapability,
   toClientSafeInterpretationPayload,

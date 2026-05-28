@@ -5,7 +5,7 @@ import { referenceEnvelopeRadius } from "@/lib/diamond-intelligence/client-balan
 
 const CX = 100;
 const CY = 100;
-const MAX_R = 68;
+const MAX_R = 78;
 const REF_R = referenceEnvelopeRadius(MAX_R);
 const UNCERTAIN_R = MAX_R * 0.38;
 
@@ -20,10 +20,7 @@ function polar(r: number, angle: number): { x: number; y: number } {
   };
 }
 
-function polygonPoints(
-  radii: number[],
-  uncertain: boolean[],
-): string {
+function polygonPoints(radii: number[]): string {
   return radii
     .map((r, i) => {
       const pt = polar(r, axisAngle(i, radii.length));
@@ -44,7 +41,7 @@ export default function OpticalBalanceGraph({
   empty = false,
 }: Props) {
   const n = axes.length || 6;
-  const gridLevels = [0.25, 0.5, 0.75, 1];
+  const gridLevels = [0.5, 1];
 
   const radii = axes.map((a) => {
     if (a.uncertain || a.value === null) return UNCERTAIN_R;
@@ -52,18 +49,15 @@ export default function OpticalBalanceGraph({
   });
   const uncertainFlags = axes.map((a) => a.uncertain || a.value === null);
 
-  const envelope = polygonPoints(
-    axes.map(() => REF_R),
-    axes.map(() => false),
-  );
-  const profile = polygonPoints(radii, uncertainFlags);
+  const envelope = polygonPoints(axes.map(() => REF_R));
+  const profile = polygonPoints(radii);
 
   return (
-    <div className="relative w-full max-w-[min(340px,88vw)] mx-auto">
+    <div className="relative mx-auto w-full max-w-[min(420px,92vw)]">
       <svg
         viewBox="0 0 200 200"
         className="h-auto w-full"
-        style={{ maxHeight: "min(240px, 42vw)" }}
+        style={{ maxHeight: "min(300px, 48vw)" }}
         aria-label="Performance profile chart"
         role="img"
       >
@@ -72,13 +66,10 @@ export default function OpticalBalanceGraph({
         {gridLevels.map((level) => (
           <polygon
             key={level}
-            points={polygonPoints(
-              axes.map(() => MAX_R * level),
-              axes.map(() => false),
-            )}
+            points={polygonPoints(axes.map(() => MAX_R * level))}
             fill="none"
-            stroke="rgba(232,224,212,0.07)"
-            strokeWidth="0.4"
+            stroke="rgba(232,224,212,0.11)"
+            strokeWidth="0.45"
           />
         ))}
 
@@ -91,33 +82,31 @@ export default function OpticalBalanceGraph({
               y1={CY}
               x2={end.x}
               y2={end.y}
-              stroke="rgba(232,224,212,0.1)"
-              strokeWidth="0.35"
+              stroke="rgba(232,224,212,0.14)"
+              strokeWidth="0.4"
             />
           );
         })}
 
         <polygon
           points={envelope}
-          fill="none"
-          stroke="rgba(196,176,138,0.22)"
-          strokeWidth="0.6"
-          strokeDasharray="2 3"
+          fill="rgba(196,176,138,0.04)"
+          stroke="rgba(212,192,154,0.38)"
+          strokeWidth="0.7"
+          strokeDasharray="3 4"
         />
 
         <polygon
           points={profile}
-          fill={empty ? "none" : "rgba(196,176,138,0.06)"}
-          stroke={empty ? "rgba(232,224,212,0.15)" : "rgba(232,224,212,0.75)"}
-          strokeWidth="1.1"
+          fill={empty ? "none" : "rgba(212,192,154,0.1)"}
+          stroke={empty ? "rgba(232,224,212,0.2)" : "rgba(236,228,214,0.92)"}
+          strokeWidth="1.35"
           strokeLinejoin="round"
-          strokeDasharray={
-            uncertainFlags.some(Boolean) ? "4 3" : undefined
-          }
+          strokeDasharray={uncertainFlags.some(Boolean) ? "4 3" : undefined}
         />
 
         {axes.map((axis, i) => {
-          const labelR = MAX_R + 14;
+          const labelR = MAX_R + 11;
           const pt = polar(labelR, axisAngle(i, n));
           const anchor =
             pt.x < CX - 8 ? "end" : pt.x > CX + 8 ? "start" : "middle";
@@ -128,30 +117,39 @@ export default function OpticalBalanceGraph({
               y={pt.y}
               textAnchor={anchor}
               dominantBaseline="middle"
-              className="fill-[#9a948c]"
-              style={{ fontSize: "7px", letterSpacing: "0.12em" }}
+              className="fill-[#b5aea4]"
+              style={{ fontSize: "8.5px", letterSpacing: "0.1em" }}
             >
               {axis.label.toUpperCase()}
             </text>
           );
         })}
 
+        <circle
+          cx={CX}
+          cy={CY}
+          r={empty ? 3 : 4.5}
+          fill={empty ? "rgba(232,224,212,0.12)" : "rgba(212,192,154,0.35)"}
+          stroke={empty ? "rgba(232,224,212,0.2)" : "rgba(236,228,214,0.55)"}
+          strokeWidth="0.6"
+        />
+
         <text
           x={CX}
-          y={CY - 4}
+          y={CY - 5}
           textAnchor="middle"
-          className="fill-[#e8e2d8] font-serif"
-          style={{ fontSize: "13px" }}
+          className="fill-[#ece6dc] font-serif"
+          style={{ fontSize: "14px" }}
         >
           {empty ? "—" : centerLabel}
         </text>
         {!empty ? (
           <text
             x={CX}
-            y={CY + 12}
+            y={CY + 13}
             textAnchor="middle"
-            className="fill-[#6f6a62]"
-            style={{ fontSize: "6.5px", letterSpacing: "0.08em" }}
+            className="fill-[#8f8980]"
+            style={{ fontSize: "7px", letterSpacing: "0.1em" }}
           >
             OVERALL READ
           </text>

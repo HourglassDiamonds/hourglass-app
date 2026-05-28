@@ -4,11 +4,11 @@ const CARD_BASE = "rounded-lg border bg-white/55";
 
 const TONE_STYLES = {
   primary:
-    "border-[#d4c4a8]/55 shadow-[0_14px_44px_rgba(168,146,106,0.1)] ring-1 ring-[#e8dcc8]/50 bg-[#fdfbf7]/90",
+    "border-[#d4c4a8]/50 shadow-[0_10px_32px_rgba(168,146,106,0.07)] ring-1 ring-[#e8dcc8]/40 bg-[#fdfbf7]/90",
   default:
-    "border-[#e4dbcf]/60 shadow-[0_6px_24px_rgba(48,36,28,0.03)]",
+    "border-[#e4dbcf]/55 shadow-[0_4px_18px_rgba(48,36,28,0.02)]",
   subdued:
-    "border-[#ebe4da]/55 bg-white/35 shadow-none ring-0",
+    "border-[#ebe4da]/45 bg-white/28 shadow-none ring-0",
 } as const;
 
 export function DashboardCard({
@@ -29,7 +29,9 @@ export function DashboardCard({
       className={`${CARD_BASE} ${TONE_STYLES[tone]} p-5 md:p-6 ${className}`}
     >
       <h3
-        className={`text-[10px] uppercase tracking-[0.32em] text-[#948a80] ${titleClassName}`}
+        className={`text-[10px] uppercase tracking-[0.28em] ${
+          tone === "subdued" ? "text-[#b8afa6]" : "text-[#948a80]"
+        } ${titleClassName}`}
       >
         {title}
       </h3>

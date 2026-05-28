@@ -249,7 +249,12 @@ async function cropPageRegionPng(
 
 export async function ocrGcal8xPdfRegions(
   pdfBytes: Buffer,
-  opts?: { reportNumber?: string },
+  opts?: {
+    reportNumber?: string;
+    lazySecondPage?: boolean;
+    /** Client budget: never OCR page 2. */
+    clientOnlyFirstPage?: boolean;
+  },
 ): Promise<GcalImageRegionOcrTexts> {
   const empty: GcalImageRegionOcrTexts = {
     proportionRegionText: "",
@@ -271,8 +276,10 @@ export async function ocrGcal8xPdfRegions(
     return (proportionOk ? 1 : 0) + (finishOk ? 1 : 0);
   };
 
+  const renderScale = opts?.clientOnlyFirstPage ? 3 : GCAL_PAGE_OCR_SCALE;
+
   const ocrPage = async (page: number) => {
-    const rendered = await renderPdfPagePngAtScale(pdfBytes, page, GCAL_PAGE_OCR_SCALE);
+    const rendered = await renderPdfPagePngAtScale(pdfBytes, page, renderScale);
     if (!rendered) return null;
 
     const proportionPng = await cropPageRegionPng(
@@ -312,9 +319,12 @@ export async function ocrGcal8xPdfRegions(
     };
   };
 
-  // Try page 1 first (most common), then fall back to page 2 if crops look like marketing / scale legends.
   const page1 = await ocrPage(1);
-  const page2 = await ocrPage(2);
+  const page2 = opts?.clientOnlyFirstPage
+    ? null
+    : opts?.lazySecondPage && page1 && page1.score >= 2
+      ? null
+      : await ocrPage(2);
 
   const best =
     page1 && page2 ? (page2.score > page1.score ? page2 : page1) : page1 ?? page2;
@@ -371,7 +381,12 @@ export async function applyGcal8xImageRegionOcrFallback(
   fields: CalibrationReportFields,
   internal: GcalInternalFields,
   set: FieldSetter,
-  opts?: { reportNumber?: string; combinedText?: string },
+  opts?: {
+    reportNumber?: string;
+    combinedText?: string;
+    lazySecondPage?: boolean;
+    clientOnlyFirstPage?: boolean;
+  },
 ): Promise<{
   proportionRegionLength: number;
   finishRegionLength: number;
@@ -380,6 +395,8 @@ export async function applyGcal8xImageRegionOcrFallback(
   const before = { ...fields };
   const regions = await ocrGcal8xPdfRegions(pdfBytes, {
     reportNumber: opts?.reportNumber,
+    lazySecondPage: opts?.lazySecondPage,
+    clientOnlyFirstPage: opts?.clientOnlyFirstPage,
   });
 
   if (regions.proportionRegionText) {

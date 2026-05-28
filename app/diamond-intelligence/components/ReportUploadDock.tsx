@@ -4,12 +4,17 @@ import { useCallback, useRef, useState } from "react";
 import { ACCEPTED_REPORT_EXTENSIONS } from "@/lib/calibration-library/accepted-files";
 import type { ClientSafeMetadata } from "@/lib/diamond-intelligence";
 
-export type ClientUploadPhase = "idle" | "reading" | "building";
+export type ClientUploadPhase =
+  | "idle"
+  | "reading"
+  | "checking"
+  | "building";
 
 type ReportUploadDockProps = {
   phase: ClientUploadPhase;
   disabled?: boolean;
   errorMessage?: string | null;
+  statusNote?: string | null;
   onFile: (file: File) => void;
   metadata?: ClientSafeMetadata | null;
   fileName?: string | null;
@@ -22,6 +27,7 @@ export function ReportUploadDock({
   phase,
   disabled,
   errorMessage,
+  statusNote,
   onFile,
   metadata,
   fileName,
@@ -42,9 +48,11 @@ export function ReportUploadDock({
   const statusLine =
     phase === "reading"
       ? "Reading the report…"
-      : phase === "building"
-        ? "Building your interpretation…"
-        : null;
+      : phase === "checking"
+        ? "Checking proportion details…"
+        : phase === "building"
+          ? "Building your interpretation…"
+          : null;
 
   return (
     <div>
@@ -173,6 +181,9 @@ export function ReportUploadDock({
         }}
       />
 
+      {statusNote && !errorMessage ? (
+        <p className="mt-3 text-xs leading-relaxed text-[#6f665d]">{statusNote}</p>
+      ) : null}
       {errorMessage ? (
         <p className="mt-3 text-xs leading-relaxed text-[#6b5048]">{errorMessage}</p>
       ) : null}

@@ -39,11 +39,15 @@ export type ClientSafeInterpretationPayload = {
   extractedFields: CalibrationReportFields;
   interpretationFields: CalibrationReportFields;
   capability: ClientSafeReportCapability;
+  /** Calm client copy when read is preliminary or timed out mid-OCR. */
+  clientStatusNote?: string;
+  partial?: boolean;
 };
 
 export function toClientSafeInterpretationPayload(
   finalized: FinalizedCalibrationExtraction,
   interpretationFields?: CalibrationReportFields,
+  opts?: { clientStatusNote?: string; partial?: boolean },
 ): ClientSafeInterpretationPayload {
   const interpretation = interpretationFields ?? finalized.fields;
   const capability = assessReportCapability({
@@ -67,6 +71,8 @@ export function toClientSafeInterpretationPayload(
     extractedFields: { ...finalized.fields },
     interpretationFields: { ...interpretation },
     capability: clientCapability,
+    clientStatusNote: opts?.clientStatusNote,
+    partial: opts?.partial,
   };
 }
 

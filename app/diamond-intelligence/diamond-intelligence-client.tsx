@@ -3,6 +3,8 @@
 import { useCallback, useState } from "react";
 import type { CalibrationReportFields } from "@/lib/calibration-library/types";
 import {
+  CLIENT_UPLOAD_INTERPRET_ERROR,
+  postReportForInterpretation,
   reassessClientCapability,
   type ClientInterpretationSnapshot,
   type ClientSafeInterpretationPayload,
@@ -24,47 +26,36 @@ export default function DiamondIntelligenceClient() {
     useState<ClientSafeInterpretationPayload["capability"] | null>(null);
   const [metadata, setMetadata] =
     useState<ClientSafeInterpretationPayload["metadata"] | null>(null);
+  const [uploadStatusNote, setUploadStatusNote] = useState<string | null>(
+    null,
+  );
 
   const processFile = useCallback(async (file: File) => {
     setFileName(file.name);
     setUploadError(null);
+    setUploadStatusNote(null);
     setUploadPhase("reading");
 
-    const fd = new FormData();
-    fd.append("file", file);
+    const checkingTimer = window.setTimeout(() => {
+      setUploadPhase((p) => (p === "reading" ? "checking" : p));
+    }, 2800);
 
     try {
-      const res = await fetch("/api/diamond-intelligence/interpret", {
-        method: "POST",
-        body: fd,
-      });
-
+      const { interpretation, partial } = await postReportForInterpretation(file);
       setUploadPhase("building");
-      const data = (await res.json()) as {
-        ok?: boolean;
-        error?: string;
-        interpretation?: ClientSafeInterpretationPayload;
-      };
 
-      if (!res.ok || !data.ok || !data.interpretation) {
-        throw new Error(
-          data.error ??
-            "We couldn't read enough from this file to build a useful interpretation. You can try another report image or PDF, or send it to Justin for review.",
-        );
-      }
-
-      const payload = data.interpretation;
-      setMetadata(payload.metadata);
-      setExtractedFields(payload.extractedFields);
-      setInterpretationFields(payload.interpretationFields);
-      setCapability(payload.capability);
-    } catch (e) {
-      setUploadError(
-        e instanceof Error
-          ? e.message
-          : "We couldn't read enough from this file to build a useful interpretation. You can try another report image or PDF, or send it to Justin for review.",
+      setMetadata(interpretation.metadata);
+      setExtractedFields(interpretation.extractedFields);
+      setInterpretationFields(interpretation.interpretationFields);
+      setCapability(interpretation.capability);
+      setUploadStatusNote(
+        partial ? interpretation.clientStatusNote ?? null : null,
       );
+    } catch {
+      setUploadError(CLIENT_UPLOAD_INTERPRET_ERROR);
+      setUploadStatusNote(null);
     } finally {
+      window.clearTimeout(checkingTimer);
       setUploadPhase("idle");
     }
   }, []);
@@ -82,6 +73,7 @@ export default function DiamondIntelligenceClient() {
         fileName={fileName}
         uploadPhase={uploadPhase}
         uploadError={uploadError}
+        uploadStatusNote={uploadStatusNote}
         onFile={(f) => void processFile(f)}
         metadata={metadata}
         extractedFields={extractedFields}

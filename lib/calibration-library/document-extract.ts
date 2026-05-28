@@ -2,7 +2,16 @@ import { ACCEPTED_REPORT_MIMES } from "./accepted-files";
 
 import { extractPdfTextLayer } from "./extract-pdf-server";
 
-import { looksLikeGcal8xReportText } from "./parsers/gcal/gcal-layout-detector";
+import {
+  looksLikeGcal8xReportText,
+  looksLikeGcalSarine4csReportText,
+} from "./parsers/gcal/gcal-layout-detector";
+import type { ExtractionPipelineMode } from "./extraction-mode";
+import { isClientExtractionMode } from "./extraction-mode";
+import {
+  labFamilyLabel,
+  logUploadPipelineTiming,
+} from "./upload-pipeline-timing";
 
 import { needsGiaProportionOcrSupplement } from "./gia-proportions";
 import { ocrGiaFacsimileFullPages } from "./parsers/gia/gia-facsimile-image-ocr";
@@ -127,12 +136,25 @@ function finishDocumentExtraction(
 
 
 
+export type DocumentExtractOptions = {
+  mode?: ExtractionPipelineMode;
+};
+
+function likelyGcalPdfForRegionFirst(
+  pdfText: string,
+  pdfTextLayerLength: number,
+): boolean {
+  if (pdfTextLayerLength === 0) return true;
+  return (
+    looksLikeGcal8xReportText(pdfText) ||
+    looksLikeGcalSarine4csReportText(pdfText)
+  );
+}
+
 export async function extractTextFromDocument(
-
   bytes: Buffer,
-
   mimeType: string,
-
+  options?: DocumentExtractOptions,
 ): Promise<DocumentTextExtraction> {
 
   const notices: string[] = [];
@@ -206,8 +228,16 @@ export async function extractTextFromDocument(
 
 
   if (isPdfMime(mimeType)) {
-
+    const pdfOpenStarted = Date.now();
     const pdf = await extractPdfTextLayer(bytes);
+    logUploadPipelineTiming({
+      phase: "pdf-text-layer",
+      durationMs: Date.now() - pdfOpenStarted,
+      labFamily: likelyGcalPdfForRegionFirst(pdf.text, pdf.text.length)
+        ? "GCAL"
+        : undefined,
+      detail: `chars=${pdf.text.length} sufficient=${pdf.sufficient}`,
+    });
 
     const pdfTextLayerLength = pdf.text.length;
 
@@ -215,7 +245,11 @@ export async function extractTextFromDocument(
 
     if (pdf.sufficient) {
 
-      if (needsGiaProportionOcrSupplement(pdf.text) && ocrAvailable) {
+      if (
+        !isClientExtractionMode(options?.mode) &&
+        needsGiaProportionOcrSupplement(pdf.text) &&
+        ocrAvailable
+      ) {
 
         const ocr = await ocrGiaFacsimileFullPages(bytes);
 
@@ -290,10 +324,46 @@ export async function extractTextFromDocument(
 
 
 
+    if (isClientExtractionMode(options?.mode)) {
+      logUploadPipelineTiming({
+        phase: "pdf-full-page-ocr",
+        durationMs: 0,
+        labFamily: likelyGcalPdfForRegionFirst(pdf.text, pdfTextLayerLength)
+          ? "GCAL"
+          : undefined,
+        detail: "skipped-client-region-first",
+      });
+      notices.push(
+        "Client extract: targeted region OCR only — full-page OCR skipped.",
+      );
+      return finishDocumentExtraction({
+        text: pdf.text,
+        method: pdf.text ? "pdf-text" : "none",
+        ocrAttempted: false,
+        ocrAvailable: true,
+        notices,
+        pdfTextLayerLength,
+        gcalImageOnlyPdf:
+          pdfTextLayerLength === 0 ||
+          likelyGcalPdfForRegionFirst(pdf.text, pdfTextLayerLength),
+      });
+    }
+
     const giaOcrFirst = needsGiaProportionOcrSupplement(pdf.text);
+    const fullOcrStarted = Date.now();
     const ocr = giaOcrFirst
       ? await ocrGiaFacsimileFullPages(bytes)
       : await ocrPdfBuffer(bytes);
+    logUploadPipelineTiming({
+      phase: "pdf-full-page-ocr",
+      durationMs: Date.now() - fullOcrStarted,
+      labFamily: giaOcrFirst
+        ? labFamilyLabel("GIA")
+        : likelyGcalPdfForRegionFirst(pdf.text, pdfTextLayerLength)
+          ? "GCAL"
+          : undefined,
+      detail: giaOcrFirst ? "gia-facsimile-pages" : "pdf-buffer-pages",
+    });
 
     const combined = (
       giaOcrFirst ? [ocr.text, pdf.text] : [pdf.text, ocr.text]

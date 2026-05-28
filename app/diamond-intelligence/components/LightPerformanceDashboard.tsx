@@ -104,6 +104,7 @@ export type LightPerformanceDashboardProps = {
   fileName: string | null;
   uploadPhase: ClientUploadPhase;
   uploadError: string | null;
+  uploadStatusNote?: string | null;
   onFile: (file: File) => void;
   metadata: ClientSafeMetadata | null;
   extractedFields: CalibrationReportFields | null;
@@ -116,6 +117,7 @@ export default function LightPerformanceDashboard({
   fileName,
   uploadPhase,
   uploadError,
+  uploadStatusNote,
   onFile,
   metadata,
   extractedFields,
@@ -230,6 +232,7 @@ export default function LightPerformanceDashboard({
               phase={uploadPhase}
               disabled={busy}
               errorMessage={uploadError}
+              statusNote={uploadStatusNote}
               onFile={onFile}
               metadata={hasReport ? metadata : null}
               fileName={fileName}
@@ -363,25 +366,25 @@ export default function LightPerformanceDashboard({
           </div>
         </aside>
 
-        <main className="min-w-0 space-y-4">
-          <section className="overflow-hidden rounded-lg border border-[#e4dbcf]/55 bg-white/50 shadow-[0_10px_36px_rgba(48,36,28,0.04)]">
-            <div className="grid lg:grid-cols-[1fr_minmax(0,300px)] xl:grid-cols-[1fr_minmax(0,320px)]">
-              <div className="border-b border-[#ebe4da]/50 px-5 py-6 md:px-7 md:py-7 lg:border-b-0 lg:border-r lg:min-h-[220px]">
+        <main className="min-w-0 space-y-3.5">
+          <section className="overflow-hidden rounded-lg border border-[#e4dbcf]/50 bg-gradient-to-br from-white/65 via-[#fdfbf7]/80 to-[#f5f0e8]/55 shadow-[0_8px_32px_rgba(48,36,28,0.035)]">
+            <div className="grid lg:grid-cols-[minmax(0,45%)_minmax(0,55%)]">
+              <div className="px-5 py-5 md:px-7 md:py-6 lg:py-7">
                 {hasReport && interpretationSummary ? (
                   <>
-                    <p className="text-[11px] tracking-[0.16em] text-[#a8926a]">
+                    <p className="text-[11px] tracking-[0.18em] text-[#a8926a]">
                       Optical interpretation
                     </p>
-                    <p className="mt-4 max-w-2xl font-serif text-xl leading-[1.5] text-[#1f1d1a] md:text-[1.3rem] md:leading-[1.55]">
+                    <p className="mt-3 max-w-md font-serif text-[1.2rem] font-medium leading-[1.48] tracking-[-0.01em] text-[#1f1d1a] md:text-[1.28rem] md:leading-[1.52]">
                       {interpretationSummary}
                     </p>
-                    <p className="mt-5 max-w-xl text-[12px] leading-[1.7] text-[#948a80]">
+                    <p className="mt-4 max-w-sm text-[12px] leading-[1.65] text-[#948a80]">
                       Interpretation only — not a laboratory grade. Justin can
                       review the diamond with you before you decide.
                     </p>
                     <Link
                       href="/concierge"
-                      className="mt-4 inline-flex text-[11px] tracking-[0.12em] text-[#6b5048] underline underline-offset-4"
+                      className="mt-3.5 inline-flex text-[11px] tracking-[0.12em] text-[#6b5048] underline underline-offset-4"
                       onClick={() =>
                         trackConsultationCtaClicked(
                           "diamond_intelligence:interpretation_summary",
@@ -393,10 +396,10 @@ export default function LightPerformanceDashboard({
                   </>
                 ) : (
                   <>
-                    <p className="text-[11px] tracking-[0.16em] text-[#a8926a]">
+                    <p className="text-[11px] tracking-[0.18em] text-[#a8926a]">
                       Optical interpretation
                     </p>
-                    <p className="mt-4 font-serif text-lg leading-[1.5] text-[#6f665d]">
+                    <p className="mt-3 max-w-md font-serif text-lg font-medium leading-[1.48] text-[#6f665d]">
                       Upload a report to receive a calm, lab-neutral
                       interpretation of how this diamond is likely to read in
                       person.
@@ -405,21 +408,23 @@ export default function LightPerformanceDashboard({
                 )}
               </div>
 
-              <div className="bg-[#1c1b19] px-4 py-5 md:px-5 md:py-6">
-                <p className="text-[11px] tracking-[0.16em] text-[#9a948c]">
+              <div className="border-t border-[#ebe4da]/35 bg-[#2a2826]/95 px-4 py-4 md:px-6 md:py-5 lg:border-l lg:border-t-0 lg:border-[#ebe4da]/20">
+                <p className="text-[11px] tracking-[0.16em] text-[#c9c2b8]">
                   Performance profile
                 </p>
-                <div className="mt-3">
+                <p className="mt-1.5 max-w-sm text-[11px] leading-[1.55] text-[#9a948c]">
+                  Reported proportions translated into a visual balance profile.
+                </p>
+                <div className="mt-2 flex justify-center lg:mt-3">
                   <OpticalBalanceGraph
                     axes={profileAxes}
                     centerLabel={centerProfileLabel}
                     empty={!hasReport}
                   />
                 </div>
-                <p className="mt-3 text-[10px] leading-[1.55] text-[#6f6a62]">
-                  Profile based on reported proportions and finish details.
-                  Dashed areas indicate detail not fully available on the
-                  report.
+                <p className="mt-2 text-center text-[10px] leading-[1.55] text-[#7f7970] lg:text-left">
+                  Profile based on reported proportions and finish details. Not a
+                  laboratory scan.
                 </p>
               </div>
             </div>
@@ -438,14 +443,14 @@ export default function LightPerformanceDashboard({
           ) : null}
 
           <section
-            className={`rounded-lg border border-[#ebe4da]/60 bg-white/30 px-4 py-5 md:px-6 ${
+            className={`rounded-lg border border-[#ebe4da]/45 bg-white/22 px-4 py-4 md:px-5 md:py-5 ${
               !hasReport ? "opacity-50" : ""
             }`}
           >
-            <p className="mb-4 text-[11px] tracking-[0.14em] text-[#b8afa6]">
+            <p className="mb-3.5 text-[10px] tracking-[0.16em] text-[#c4bbb2]">
               Supporting details
             </p>
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <div className="grid gap-3.5 md:grid-cols-2 xl:grid-cols-3">
               <DashboardCard title="Proportions" tone="subdued" className="!shadow-none">
                 <MetricRow
                   editorial

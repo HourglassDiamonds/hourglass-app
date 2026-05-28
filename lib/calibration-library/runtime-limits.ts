@@ -68,6 +68,27 @@ export const EXTRACT_FILE_PIPELINE_TIMEOUT_MS = envInt(
   55_000,
 );
 
+/** Diamond Intelligence `/interpret` — hard client-facing budget. */
+export const CLIENT_INTERPRET_ROUTE_TIMEOUT_MS = envInt(
+  "CLIENT_INTERPRET_ROUTE_TIMEOUT_MS",
+  14_000,
+);
+
+export const CLIENT_UPLOAD_PIPELINE_TIMEOUT_MS = envInt(
+  "CLIENT_UPLOAD_PIPELINE_TIMEOUT_MS",
+  13_000,
+);
+
+export const CLIENT_DOCUMENT_EXTRACT_TIMEOUT_MS = envInt(
+  "CLIENT_DOCUMENT_EXTRACT_TIMEOUT_MS",
+  2_500,
+);
+
+export const CLIENT_IMAGE_REGION_OCR_TIMEOUT_MS = envInt(
+  "CLIENT_IMAGE_REGION_OCR_TIMEOUT_MS",
+  8_000,
+);
+
 export function capRenderScaleForPixels(
   pageWidthPt: number,
   pageHeightPt: number,
