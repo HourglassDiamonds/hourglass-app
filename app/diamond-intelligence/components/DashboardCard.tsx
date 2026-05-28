@@ -1,20 +1,36 @@
 import type { ReactNode } from "react";
 
-const CARD =
-  "rounded-lg border border-[#e4dbcf]/70 bg-white/55 shadow-[0_8px_28px_rgba(48,36,28,0.04)]";
+const CARD_BASE = "rounded-lg border bg-white/55";
+
+const TONE_STYLES = {
+  primary:
+    "border-[#d4c4a8]/55 shadow-[0_14px_44px_rgba(168,146,106,0.1)] ring-1 ring-[#e8dcc8]/50 bg-[#fdfbf7]/90",
+  default:
+    "border-[#e4dbcf]/60 shadow-[0_6px_24px_rgba(48,36,28,0.03)]",
+  subdued:
+    "border-[#ebe4da]/55 bg-white/35 shadow-none ring-0",
+} as const;
 
 export function DashboardCard({
   title,
   children,
   className = "",
+  tone = "default",
+  titleClassName = "",
 }: {
   title: string;
   children: ReactNode;
   className?: string;
+  tone?: keyof typeof TONE_STYLES;
+  titleClassName?: string;
 }) {
   return (
-    <section className={`${CARD} p-5 md:p-6 ${className}`}>
-      <h3 className="text-[10px] uppercase tracking-[0.32em] text-[#948a80]">
+    <section
+      className={`${CARD_BASE} ${TONE_STYLES[tone]} p-5 md:p-6 ${className}`}
+    >
+      <h3
+        className={`text-[10px] uppercase tracking-[0.32em] text-[#948a80] ${titleClassName}`}
+      >
         {title}
       </h3>
       <div className="mt-4">{children}</div>
@@ -25,10 +41,23 @@ export function DashboardCard({
 export function MetricRow({
   label,
   value,
+  editorial,
 }: {
   label: string;
   value: string;
+  editorial?: boolean;
 }) {
+  if (editorial) {
+    return (
+      <div className="flex justify-between gap-6 border-b border-[#ebe4da]/50 py-3 last:border-0">
+        <span className="text-[13px] leading-relaxed text-[#6f665d]">{label}</span>
+        <span className="shrink-0 text-right text-[13px] leading-relaxed font-medium text-[#1f1d1a]">
+          {value}
+        </span>
+      </div>
+    );
+  }
+
   return (
     <div className="flex justify-between gap-4 border-b border-[#ebe4da]/80 py-2.5 text-sm last:border-0">
       <span className="text-[#6f665d]">{label}</span>

@@ -6,15 +6,17 @@ import type { CalibrationReportFields } from "@/lib/calibration-library/types";
 import {
   CLIENT_FIELD_LABELS,
   ESTIMATED_COMPARISON_BAND_CAPTION,
+  buildBalanceProfileAxes,
   buildFaceUpPresenceCopy,
-  buildOpticalCharacterCopy,
   buildOpticalInterpretationSummary,
   buildPerformanceReadCopy,
+  centerQualitativeLabel,
   presentOverallReadLabel,
   presentTraitReadLabel,
   interpretationLevelLabel,
   presentClientInterpretationScore,
   opticalBalanceDisplayValue,
+  spreadProfileValue,
   type ClientInterpretationSnapshot,
   type ClientLightTrait,
   type ClientSafeMetadata,
@@ -23,9 +25,12 @@ import {
 import { trackConsultationCtaClicked } from "@/lib/consultation-cta";
 import DiamondIntelligenceSynopsis from "./DiamondIntelligenceSynopsis";
 import GuidedReportCompletion from "./GuidedReportCompletion";
-import OpticalHeroStage from "./OpticalHeroStage";
+import OpticalBalanceGraph from "./OpticalBalanceGraph";
 import { ReportUploadDock, type ClientUploadPhase } from "./ReportUploadDock";
 import { DashboardCard, MetricRow, dashValue } from "./DashboardCard";
+
+const TRAIT_UNCERTAIN_HELPER =
+  "This area depends on diagram-level detail best verified in person — not a sign of poor performance.";
 
 function formatCarat(carat: string): string {
   const v = carat.trim();
@@ -51,25 +56,46 @@ function stoneTypeLabel(stoneType: string): string | null {
 function TraitBar({
   trait,
   overallScore,
+  needsExpertDiagramReview,
 }: {
   trait: ClientLightTrait;
   overallScore: number | null;
+  needsExpertDiagramReview: boolean;
 }) {
-  const readLabel = presentTraitReadLabel(trait, overallScore);
+  const readLabel = presentTraitReadLabel(trait, overallScore, {
+    needsExpertDiagramReview,
+  });
+  const uncertain =
+    readLabel === "Diagram detail required" ||
+    readLabel === "Needs deeper optical review" ||
+    readLabel === "Best confirmed in person";
+
   return (
-    <div className="space-y-1">
-      <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5 text-xs">
-        <span className="text-[#5f5851]">{trait.label}</span>
-        <span className="shrink-0 text-right text-[#8a8177]">{readLabel}</span>
+    <div className="space-y-1.5">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
+        <span className="text-[13px] text-[#5f5851]">{trait.label}</span>
+        <span
+          className={`shrink-0 text-right text-[12px] leading-snug ${
+            uncertain ? "text-[#948a80]" : "text-[#6f665d]"
+          }`}
+        >
+          {readLabel}
+        </span>
       </div>
-      <div className="h-1 overflow-hidden rounded-full bg-[#ebe4da]">
-        <div
-          className="h-full rounded-full bg-gradient-to-r from-[#c4b08a] to-[#a8926a] transition-all duration-500"
-          style={{
-            width: `${Math.max(trait.fillPercent, trait.level === "Needs review" ? 8 : 12)}%`,
-          }}
-        />
-      </div>
+      {uncertain ? (
+        <p className="text-[11px] leading-[1.5] text-[#948a80]">
+          {TRAIT_UNCERTAIN_HELPER}
+        </p>
+      ) : (
+        <div className="h-px overflow-hidden rounded-full bg-[#ebe4da]/90">
+          <div
+            className="h-full rounded-full bg-[#c4b08a]/80 transition-all duration-500"
+            style={{
+              width: `${Math.max(trait.fillPercent, 12)}%`,
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 }
@@ -166,35 +192,40 @@ export default function LightPerformanceDashboard({
     });
   }, [capability, clientScore, overallRead.label]);
 
-  const opticalCharacterCopy = useMemo(() => {
-    if (!capability) {
-      return "Upload a report to see how brightness, fire, and contrast read together on the hand.";
-    }
-    return buildOpticalCharacterCopy({
-      interpretationLevel: capability.interpretationLevel,
-      overallLabel: overallRead.label,
-      needsExpertDiagramReview: capability.needsExpertDiagramReview,
+  const profileAxes = useMemo(() => {
+    const spread = spreadProfileValue({
+      avgDiameterMm: diameterNum,
+      carat: fields?.carat ?? "",
     });
-  }, [capability, overallRead.label]);
+    return buildBalanceProfileAxes({
+      clientScore,
+      overallScore,
+      spread,
+    });
+  }, [clientScore, overallScore, diameterNum, fields?.carat]);
+
+  const centerProfileLabel = hasReport
+    ? centerQualitativeLabel(overallRead.label)
+    : "—";
 
   const busy = uploadPhase !== "idle";
 
   return (
-    <div className="mx-auto max-w-[1560px] px-4 pb-10 pt-5 md:px-6">
-      <div className="mb-5">
-        <p className="text-[10px] uppercase tracking-[0.34em] text-[#8a8177]">
+    <div className="mx-auto max-w-[1560px] px-4 pb-9 pt-5 md:px-6">
+      <header className="mb-4">
+        <p className="text-[11px] tracking-[0.2em] text-[#8a8177]">
           Light Performance
         </p>
-        <h1 className="mt-1.5 font-serif text-2xl font-normal tracking-[-0.02em] text-[#1f1d1a] md:text-[1.65rem]">
+        <h1 className="mt-1 font-serif text-2xl font-normal tracking-[-0.02em] text-[#1f1d1a] md:text-[1.65rem]">
           Diamond Intelligence
         </h1>
-      </div>
+      </header>
 
       <DiamondIntelligenceSynopsis />
 
-      <div className="mt-5 grid gap-6 lg:grid-cols-[minmax(0,300px)_1fr] xl:grid-cols-[minmax(0,320px)_1fr]">
-        <aside className="flex flex-col gap-3.5 lg:max-w-[330px]">
-          <DashboardCard title="Report">
+      <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,292px)_1fr] xl:grid-cols-[minmax(0,308px)_1fr]">
+        <aside className="flex flex-col gap-3.5 lg:max-w-[320px]">
+          <DashboardCard title="Report" tone="default" className="!p-4 md:!p-5">
             <ReportUploadDock
               phase={uploadPhase}
               disabled={busy}
@@ -205,7 +236,87 @@ export default function LightPerformanceDashboard({
             />
           </DashboardCard>
 
-          <DashboardCard title="Report details">
+          <DashboardCard
+            title="Performance read"
+            tone="primary"
+            className="md:p-6"
+          >
+            {hasReport && clientScore && capability && performanceCopy ? (
+              <>
+                {clientScore.eligible && clientScore.overall !== null ? (
+                  <>
+                    <div className="flex flex-wrap items-baseline gap-2">
+                      <p className="font-serif text-[2rem] tracking-tight text-[#1f1d1a] md:text-[2.1rem]">
+                        {clientScore.overall}
+                        <span className="ml-1.5 text-lg text-[#948a80]">
+                          / 100
+                        </span>
+                      </p>
+                      {overallRead.showRarePill && overallRead.pillText ? (
+                        <span className="rounded-full border border-[#e4dbcf] bg-[#faf8f4] px-2.5 py-0.5 text-[9px] tracking-[0.14em] text-[#6b5048]">
+                          {overallRead.pillText}
+                        </span>
+                      ) : null}
+                    </div>
+                    <p className="mt-2 text-base font-medium text-[#6b5048]">
+                      {overallRead.label}
+                    </p>
+                    <p className="mt-2.5 text-sm leading-[1.6] text-[#5f5851]">
+                      {performanceCopy.scoreHeadline}
+                    </p>
+                    <p className="mt-1 text-[11px] tracking-[0.12em] text-[#a8926a]">
+                      Estimated read
+                    </p>
+                    {overallRead.showRarePill ? (
+                      <p className="mt-1 text-[11px] text-[#948a80]">
+                        {ESTIMATED_COMPARISON_BAND_CAPTION}
+                      </p>
+                    ) : null}
+                  </>
+                ) : (
+                  <>
+                    <p className="font-serif text-xl text-[#1f1d1a]">
+                      {levelLabel}
+                    </p>
+                    <p className="mt-2 text-sm leading-[1.6] text-[#5f5851]">
+                      {performanceCopy.scoreHeadline}
+                    </p>
+                  </>
+                )}
+                <div className="mt-4 h-1 overflow-hidden rounded-full bg-[#ebe4da]/80">
+                  <div
+                    className="h-full rounded-full bg-[#c4b08a] transition-all duration-500"
+                    style={{ width: `${balanceValue}%` }}
+                  />
+                </div>
+                <div className="mt-5 space-y-2.5 border-t border-[#ebe4da]/60 pt-4">
+                  <p className="text-[11px] tracking-[0.14em] text-[#948a80]">
+                    What this means
+                  </p>
+                  <p className="text-[13px] leading-[1.7] text-[#5f5851]">
+                    {performanceCopy.whatThisMeans}
+                  </p>
+                  <p className="text-[12px] leading-[1.65] text-[#6f665d]">
+                    {performanceCopy.visualNote}
+                  </p>
+                  {performanceCopy.conservativeNote ? (
+                    <p className="rounded-md border border-[#ebe4da]/70 bg-[#faf8f4]/70 px-3 py-2.5 text-[12px] leading-[1.65] text-[#6f665d]">
+                      {performanceCopy.conservativeNote}
+                    </p>
+                  ) : null}
+                  <p className="text-[12px] leading-[1.65] text-[#847a70]">
+                    {performanceCopy.confidenceNote}
+                  </p>
+                </div>
+              </>
+            ) : (
+              <p className="text-sm leading-relaxed text-[#948a80]">
+                Upload a report to see your performance read.
+              </p>
+            )}
+          </DashboardCard>
+
+          <DashboardCard title="Report details" tone="subdued" className="!p-4 md:!p-5">
             {hasReport && metadata && fields ? (
               <>
                 <MetricRow label="Laboratory" value={metadata.lab} />
@@ -230,105 +341,89 @@ export default function LightPerformanceDashboard({
                 ) : null}
               </>
             ) : (
-              <p className="text-xs leading-relaxed text-[#948a80]">
+              <p className="text-sm leading-relaxed text-[#948a80]">
                 Report details appear after upload.
               </p>
             )}
           </DashboardCard>
 
-          <DashboardCard
-            title="Performance read"
-            className="ring-1 ring-[#e8dcc8]/70 shadow-[0_12px_36px_rgba(168,146,106,0.1)]"
-          >
-            {hasReport && clientScore && capability && performanceCopy ? (
-              <>
-                {clientScore.eligible && clientScore.overall !== null ? (
-                  <>
-                    <div className="flex flex-wrap items-baseline gap-2">
-                      <p className="font-serif text-[2rem] tracking-tight text-[#1f1d1a]">
-                        {clientScore.overall}
-                        <span className="ml-1 text-base text-[#948a80]">
-                          / 100
-                        </span>
-                      </p>
-                      {overallRead.showRarePill && overallRead.pillText ? (
-                        <span className="rounded-full border border-[#e4dbcf] bg-[#faf8f4] px-2.5 py-0.5 text-[9px] uppercase tracking-[0.18em] text-[#6b5048]">
-                          {overallRead.pillText}
-                        </span>
-                      ) : null}
-                    </div>
-                    <p className="mt-1.5 text-sm font-medium text-[#6b5048]">
-                      {overallRead.label}
-                    </p>
-                    <p className="mt-0.5 text-[10px] uppercase tracking-[0.22em] text-[#a8926a]">
-                      Estimated read
-                    </p>
-                    {overallRead.showRarePill ? (
-                      <p className="mt-1 text-[9px] text-[#948a80]">
-                        {ESTIMATED_COMPARISON_BAND_CAPTION}
-                      </p>
-                    ) : null}
-                  </>
-                ) : (
-                  <p className="font-serif text-lg text-[#1f1d1a]">
-                    {levelLabel}
-                  </p>
-                )}
-                <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-[#ebe4da]">
-                  <div
-                    className="h-full rounded-full bg-gradient-to-r from-[#c4b08a] to-[#a8926a] transition-all duration-500"
-                    style={{ width: `${balanceValue}%` }}
-                  />
-                </div>
-                <div className="mt-4 space-y-2 border-t border-[#ebe4da]/80 pt-3">
-                  <p className="text-[10px] uppercase tracking-[0.24em] text-[#948a80]">
-                    What this means
-                  </p>
-                  <p className="text-xs leading-relaxed text-[#5f5851]">
-                    {performanceCopy.whatThisMeans}
-                  </p>
-                  <p className="text-[11px] leading-snug text-[#6f665d]">
-                    {performanceCopy.visualNote}
-                  </p>
-                  <p className="text-[11px] leading-snug text-[#847a70]">
-                    {performanceCopy.confidenceNote}
-                  </p>
-                </div>
-              </>
-            ) : (
-              <p className="text-xs leading-relaxed text-[#948a80]">
-                Upload a report to see your performance read.
-              </p>
-            )}
-          </DashboardCard>
-
-          <DashboardCard
-            title="Optical character"
-            className="ring-1 ring-[#ebe4da]/60"
-          >
-            <p className="text-sm leading-relaxed text-[#5f5851]">
-              {opticalCharacterCopy}
-            </p>
-          </DashboardCard>
-
-          <DashboardCard title="Expert review">
-            <p className="text-xs leading-relaxed text-[#5f5851]">
+          <div className="rounded-lg border border-[#ebe4da]/80 bg-white/35 px-4 py-4 md:px-5">
+            <p className="text-[13px] leading-[1.65] text-[#6f665d]">
               Justin can review the report, proportions, and tradeoffs with you.
             </p>
             <Link
               href="/concierge"
-              className="mt-3 inline-flex w-full items-center justify-center rounded-full bg-[#2b2723] px-4 py-2.5 text-[10px] uppercase tracking-[0.24em] text-white transition-opacity hover:opacity-90"
+              className="mt-3 inline-flex w-full items-center justify-center rounded-full bg-[#2b2723] px-4 py-2.5 text-[11px] tracking-[0.14em] text-white transition-opacity hover:opacity-90"
               onClick={() =>
                 trackConsultationCtaClicked("diamond_intelligence:dashboard_rail")
               }
             >
               Have Justin review this diamond
             </Link>
-          </DashboardCard>
+          </div>
         </aside>
 
-        <main className="min-w-0 space-y-3">
-          <OpticalHeroStage empty={!hasReport} />
+        <main className="min-w-0 space-y-4">
+          <section className="overflow-hidden rounded-lg border border-[#e4dbcf]/55 bg-white/50 shadow-[0_10px_36px_rgba(48,36,28,0.04)]">
+            <div className="grid lg:grid-cols-[1fr_minmax(0,300px)] xl:grid-cols-[1fr_minmax(0,320px)]">
+              <div className="border-b border-[#ebe4da]/50 px-5 py-6 md:px-7 md:py-7 lg:border-b-0 lg:border-r lg:min-h-[220px]">
+                {hasReport && interpretationSummary ? (
+                  <>
+                    <p className="text-[11px] tracking-[0.16em] text-[#a8926a]">
+                      Optical interpretation
+                    </p>
+                    <p className="mt-4 max-w-2xl font-serif text-xl leading-[1.5] text-[#1f1d1a] md:text-[1.3rem] md:leading-[1.55]">
+                      {interpretationSummary}
+                    </p>
+                    <p className="mt-5 max-w-xl text-[12px] leading-[1.7] text-[#948a80]">
+                      Interpretation only — not a laboratory grade. Justin can
+                      review the diamond with you before you decide.
+                    </p>
+                    <Link
+                      href="/concierge"
+                      className="mt-4 inline-flex text-[11px] tracking-[0.12em] text-[#6b5048] underline underline-offset-4"
+                      onClick={() =>
+                        trackConsultationCtaClicked(
+                          "diamond_intelligence:interpretation_summary",
+                        )
+                      }
+                    >
+                      Have Justin review this diamond
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-[11px] tracking-[0.16em] text-[#a8926a]">
+                      Optical interpretation
+                    </p>
+                    <p className="mt-4 font-serif text-lg leading-[1.5] text-[#6f665d]">
+                      Upload a report to receive a calm, lab-neutral
+                      interpretation of how this diamond is likely to read in
+                      person.
+                    </p>
+                  </>
+                )}
+              </div>
+
+              <div className="bg-[#1c1b19] px-4 py-5 md:px-5 md:py-6">
+                <p className="text-[11px] tracking-[0.16em] text-[#9a948c]">
+                  Performance profile
+                </p>
+                <div className="mt-3">
+                  <OpticalBalanceGraph
+                    axes={profileAxes}
+                    centerLabel={centerProfileLabel}
+                    empty={!hasReport}
+                  />
+                </div>
+                <p className="mt-3 text-[10px] leading-[1.55] text-[#6f6a62]">
+                  Profile based on reported proportions and finish details.
+                  Dashed areas indicate detail not fully available on the
+                  report.
+                </p>
+              </div>
+            </div>
+          </section>
 
           {hasReport &&
           capability &&
@@ -342,218 +437,141 @@ export default function LightPerformanceDashboard({
             />
           ) : null}
 
-          {hasReport && capability && interpretationSummary ? (
-            <section className="rounded-lg border border-[#d4c4a8]/50 bg-white/70 p-5 shadow-[0_12px_40px_rgba(48,36,28,0.06)] ring-1 ring-[#e8dcc8]/60 md:p-6">
-              <p className="text-[10px] uppercase tracking-[0.32em] text-[#a8926a]">
-                Optical interpretation
-              </p>
-              <p className="mt-3 font-serif text-lg leading-snug text-[#1f1d1a] md:text-xl">
-                {interpretationSummary}
-              </p>
-              <p className="mt-3 text-[11px] leading-snug text-[#948a80]">
-                Interpretation only — not a laboratory grade. Justin can review
-                the report with you before you decide.
-              </p>
-              <Link
-                href="/concierge"
-                className="mt-4 inline-flex text-[10px] uppercase tracking-[0.24em] text-[#6b5048] underline underline-offset-4"
-                onClick={() =>
-                  trackConsultationCtaClicked(
-                    "diamond_intelligence:interpretation_summary",
-                  )
-                }
-              >
-                Have Justin review this diamond
-              </Link>
-            </section>
-          ) : null}
-
-          <p
-            className={`text-[10px] uppercase tracking-[0.28em] text-[#b8afa6] ${
+          <section
+            className={`rounded-lg border border-[#ebe4da]/60 bg-white/30 px-4 py-5 md:px-6 ${
               !hasReport ? "opacity-50" : ""
             }`}
           >
-            Supporting details from your report
-          </p>
+            <p className="mb-4 text-[11px] tracking-[0.14em] text-[#b8afa6]">
+              Supporting details
+            </p>
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              <DashboardCard title="Proportions" tone="subdued" className="!shadow-none">
+                <MetricRow
+                  editorial
+                  label={CLIENT_FIELD_LABELS.tablePercent}
+                  value={
+                    fields?.tablePercent?.trim()
+                      ? `${fields.tablePercent}%`
+                      : "—"
+                  }
+                />
+                <MetricRow
+                  editorial
+                  label={CLIENT_FIELD_LABELS.depthPercent}
+                  value={
+                    fields?.depthPercent?.trim()
+                      ? `${fields.depthPercent}%`
+                      : "—"
+                  }
+                />
+                <MetricRow
+                  editorial
+                  label={CLIENT_FIELD_LABELS.crownAngle}
+                  value={
+                    fields?.crownAngle?.trim()
+                      ? `${fields.crownAngle}°`
+                      : "—"
+                  }
+                />
+                <MetricRow
+                  editorial
+                  label={CLIENT_FIELD_LABELS.pavilionAngle}
+                  value={
+                    fields?.pavilionAngle?.trim()
+                      ? `${fields.pavilionAngle}°`
+                      : "—"
+                  }
+                />
+                <MetricRow
+                  editorial
+                  label={CLIENT_FIELD_LABELS.girdle}
+                  value={dashValue(fields?.girdle)}
+                />
+                <MetricRow
+                  editorial
+                  label={CLIENT_FIELD_LABELS.culet}
+                  value={dashValue(fields?.culet)}
+                />
+              </DashboardCard>
 
-          <div
-            className={`grid gap-3 md:grid-cols-2 xl:grid-cols-3 ${
-              !hasReport ? "opacity-50" : ""
-            }`}
-          >
-            <DashboardCard title="Proportions" className="bg-white/45">
-              <MetricRow
-                label={CLIENT_FIELD_LABELS.tablePercent}
-                value={
-                  fields?.tablePercent?.trim()
-                    ? `${fields.tablePercent}%`
-                    : "—"
-                }
-              />
-              <MetricRow
-                label={CLIENT_FIELD_LABELS.depthPercent}
-                value={
-                  fields?.depthPercent?.trim()
-                    ? `${fields.depthPercent}%`
-                    : "—"
-                }
-              />
-              <MetricRow
-                label={CLIENT_FIELD_LABELS.crownAngle}
-                value={
-                  fields?.crownAngle?.trim()
-                    ? `${fields.crownAngle}°`
-                    : "—"
-                }
-              />
-              <MetricRow
-                label={CLIENT_FIELD_LABELS.pavilionAngle}
-                value={
-                  fields?.pavilionAngle?.trim()
-                    ? `${fields.pavilionAngle}°`
-                    : "—"
-                }
-              />
-              <MetricRow
-                label={CLIENT_FIELD_LABELS.lowerHalfPercent}
-                value={
-                  fields?.lowerHalfPercent?.trim()
-                    ? `${fields.lowerHalfPercent}%`
-                    : "—"
-                }
-              />
-              <MetricRow
-                label={CLIENT_FIELD_LABELS.starLengthPercent}
-                value={
-                  fields?.starLengthPercent?.trim()
-                    ? `${fields.starLengthPercent}%`
-                    : "—"
-                }
-              />
-              <MetricRow
-                label={CLIENT_FIELD_LABELS.girdle}
-                value={dashValue(fields?.girdle)}
-              />
-              <MetricRow
-                label={CLIENT_FIELD_LABELS.culet}
-                value={dashValue(fields?.culet)}
-              />
-            </DashboardCard>
-
-            <DashboardCard title="Finish" className="bg-white/45">
-              <MetricRow
-                label={CLIENT_FIELD_LABELS.polish}
-                value={dashValue(fields?.polish)}
-              />
-              <MetricRow
-                label={CLIENT_FIELD_LABELS.symmetry}
-                value={dashValue(fields?.symmetry)}
-              />
-              <MetricRow
-                label={CLIENT_FIELD_LABELS.fluorescence}
-                value={dashValue(fields?.fluorescence)}
-              />
-              <MetricRow
-                label={CLIENT_FIELD_LABELS.cutGrade}
-                value={dashValue(fields?.cutGrade)}
-              />
-              <p className="mt-3 text-[10px] leading-snug text-[#948a80]">
-                Finish lines from your report — not a standalone lab grade here.
-              </p>
-            </DashboardCard>
-
-            <DashboardCard title="Face-up presence" className="bg-white/45">
-              {faceUpCopy ? (
-                <p className="mb-3 text-sm leading-relaxed text-[#5f5851]">
-                  {faceUpCopy.summary}
+              <DashboardCard title="Finish" tone="subdued" className="!shadow-none">
+                <MetricRow
+                  editorial
+                  label={CLIENT_FIELD_LABELS.polish}
+                  value={dashValue(fields?.polish)}
+                />
+                <MetricRow
+                  editorial
+                  label={CLIENT_FIELD_LABELS.symmetry}
+                  value={dashValue(fields?.symmetry)}
+                />
+                <MetricRow
+                  editorial
+                  label={CLIENT_FIELD_LABELS.fluorescence}
+                  value={dashValue(fields?.fluorescence)}
+                />
+                <MetricRow
+                  editorial
+                  label={CLIENT_FIELD_LABELS.cutGrade}
+                  value={dashValue(fields?.cutGrade)}
+                />
+                <p className="mt-3 text-[11px] leading-[1.5] text-[#948a80]">
+                  Finish lines from your report — not a standalone lab grade.
                 </p>
-              ) : null}
-              {diameter ? (
-                <MetricRow label="Avg. diameter" value={`${diameter} mm`} />
-              ) : null}
-              <MetricRow
-                label="Measurements"
-                value={dashValue(fields?.measurements)}
-              />
-              <MetricRow label="Carat" value={formatCarat(fields?.carat ?? "")} />
-              <p className="mt-3 text-[10px] leading-snug text-[#948a80]">
-                {faceUpCopy?.footnote ??
-                  "Face-up presence depends on measurements and carat weight together."}
-              </p>
-            </DashboardCard>
+              </DashboardCard>
 
-            <DashboardCard title="Light performance" className="bg-white/45">
-              {clientScore ? (
-                <div className="space-y-3">
-                  {clientScore.lightTraits.map((trait) => (
-                    <TraitBar
-                      key={trait.label}
-                      trait={trait}
-                      overallScore={overallScore}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <p className="text-xs text-[#948a80]">—</p>
-              )}
-              <p className="mt-3 text-[10px] leading-snug text-[#948a80]">
-                Trait reads are qualitative, based on reported proportions — not
-                separate lab grades.
-              </p>
-            </DashboardCard>
+              <DashboardCard title="Face-up presence" tone="subdued" className="!shadow-none">
+                {faceUpCopy ? (
+                  <p className="mb-3 text-sm leading-[1.65] text-[#5f5851]">
+                    {faceUpCopy.summary}
+                  </p>
+                ) : null}
+                {diameter ? (
+                  <MetricRow editorial label="Avg. diameter" value={`${diameter} mm`} />
+                ) : null}
+                <MetricRow
+                  editorial
+                  label="Measurements"
+                  value={dashValue(fields?.measurements)}
+                />
+                <MetricRow
+                  editorial
+                  label="Carat"
+                  value={formatCarat(fields?.carat ?? "")}
+                />
+              </DashboardCard>
 
-            <DashboardCard title="Optical balance" className="bg-white/45">
-              <div className="flex flex-col items-center gap-3 sm:flex-row sm:items-start">
-                <div className="flex flex-col items-center gap-2">
-                  <div
-                    className="relative flex h-24 w-24 shrink-0 items-center justify-center rounded-full border border-[#e4dbcf]"
-                    style={{
-                      background: hasReport
-                        ? `conic-gradient(#c4b08a ${balanceValue * 3.6}deg, #ebe4da 0deg)`
-                        : "#ebe4da",
-                    }}
-                  >
-                    <div className="flex h-16 w-16 flex-col items-center justify-center rounded-full bg-white/95">
-                      <span className="font-serif text-xl text-[#1f1d1a]">
-                        {hasReport ? balanceValue : "—"}
-                      </span>
-                      {hasReport ? (
-                        <span className="text-[8px] text-[#948a80]">/ 100</span>
-                      ) : null}
-                    </div>
+              <DashboardCard
+                title="Light performance"
+                tone="subdued"
+                className="!shadow-none md:col-span-2 xl:col-span-1"
+              >
+                {clientScore ? (
+                  <div className="space-y-4">
+                    {clientScore.lightTraits.map((trait) => (
+                      <TraitBar
+                        key={trait.label}
+                        trait={trait}
+                        overallScore={overallScore}
+                        needsExpertDiagramReview={
+                          capability?.needsExpertDiagramReview ?? false
+                        }
+                      />
+                    ))}
                   </div>
-                  {hasReport ? (
-                    <>
-                      {overallRead.showRarePill && overallRead.pillText ? (
-                        <span className="rounded-full border border-[#e4dbcf] bg-[#faf8f4] px-2.5 py-0.5 text-[9px] uppercase tracking-[0.16em] text-[#6b5048]">
-                          {overallRead.pillText}
-                        </span>
-                      ) : (
-                        <span className="text-[10px] uppercase tracking-[0.16em] text-[#6b5048]">
-                          {overallRead.label}
-                        </span>
-                      )}
-                      {overallRead.showRarePill ? (
-                        <p className="text-center text-[9px] text-[#948a80]">
-                          {ESTIMATED_COMPARISON_BAND_CAPTION}
-                        </p>
-                      ) : null}
-                    </>
-                  ) : null}
-                </div>
-                <ul className="space-y-1.5 text-[11px] text-[#5f5851]">
-                  <li>Estimated read from reported proportions</li>
-                  <li>{levelLabel ?? "Awaiting report"}</li>
-                  <li className="text-[#948a80]">
-                    Interpretation only — not a laboratory grade
-                  </li>
-                </ul>
-              </div>
-            </DashboardCard>
+                ) : (
+                  <p className="text-sm text-[#948a80]">—</p>
+                )}
+                <p className="mt-4 text-[11px] leading-[1.55] text-[#948a80]">
+                  Trait reads are qualitative, based on reported proportions —
+                  not separate lab grades.
+                </p>
+              </DashboardCard>
+            </div>
+          </section>
 
-          </div>
-
-          <footer className="mt-1 border-t border-[#e4dbcf]/50 pt-3 text-[10px] leading-relaxed text-[#948a80]">
+          <footer className="border-t border-[#e4dbcf]/40 pt-2.5 text-[10px] leading-relaxed text-[#948a80]">
             Interpretation uses reported proportions and finish from your upload.
             Not laboratory grades.
           </footer>

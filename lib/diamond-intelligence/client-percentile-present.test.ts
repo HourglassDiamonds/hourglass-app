@@ -73,4 +73,18 @@ describe("presentTraitReadLabel coherence", () => {
     assert.equal(label, "Strong");
     assert.doesNotMatch(label, /Top/i);
   });
+
+  it("uses calm diagram language instead of Needs review for scintillation", () => {
+    const label = presentTraitReadLabel(
+      {
+        label: "Scintillation",
+        level: "Needs review",
+        fillPercent: 0,
+      },
+      91,
+      { needsExpertDiagramReview: true },
+    );
+    assert.equal(label, "Diagram detail required");
+    assert.doesNotMatch(label, /weak|failed|poor/i);
+  });
 });

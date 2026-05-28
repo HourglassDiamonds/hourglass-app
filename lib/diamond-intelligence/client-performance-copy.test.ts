@@ -21,9 +21,29 @@ describe("buildPerformanceReadCopy", () => {
       interpretationLevel: "deep",
       needsExpertDiagramReview: false,
     });
+    assert.match(copy.scoreHeadline, /strong overall proportion/i);
     assert.match(copy.whatThisMeans, /strong overall light-performance/i);
     assert.match(copy.whatThisMeans, /balanced brightness/i);
     assert.doesNotMatch(copy.whatThisMeans, /parser|OCR|calibration|corpus/i);
+  });
+
+  it("includes conservative note when diagram detail is incomplete", () => {
+    const copy = buildPerformanceReadCopy({
+      overallScore: 91,
+      overallLabel: "Strong",
+      clientScore: {
+        eligible: true,
+        overall: 91,
+        bandLabel: "Strong",
+        summaryLine: "",
+        lightTraits: [],
+      },
+      interpretationLevel: "proportion",
+      needsExpertDiagramReview: true,
+    });
+    assert.ok(copy.conservativeNote);
+    assert.match(copy.conservativeNote!, /diagram-level detail/i);
+    assert.match(copy.conservativeNote!, /conservative until verified/i);
   });
 
   it("uses calm language for mixed reads", () => {

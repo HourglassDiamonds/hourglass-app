@@ -48,6 +48,9 @@ export {
   type OverallReadLabel,
   type OverallReadPresentation,
   type RareTopPill,
+  type TraitCalmLabel,
+  type TraitDisplayLabel,
+  type TraitLabelContext,
   type TraitReadLabel,
 } from "./client-percentile-present";
 export {
@@ -58,6 +61,14 @@ export {
   type FaceUpPresenceCopy,
   type PerformanceReadCopy,
 } from "./client-performance-copy";
+export {
+  buildBalanceProfileAxes,
+  centerQualitativeLabel,
+  referenceEnvelopeRadius,
+  spreadProfileValue,
+  type ProfileAxis,
+  type ProfileAxisKey,
+} from "./client-balance-profile";
 export type {
   ClientFieldAttribution,
   ClientInterpretationLevel,

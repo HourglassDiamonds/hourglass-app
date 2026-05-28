@@ -21,6 +21,20 @@ export type TraitReadLabel =
   | "Mixed"
   | "Needs review";
 
+/** Calm client-facing labels when a trait cannot be inferred without guessing. */
+export type TraitCalmLabel =
+  | "Diagram detail required"
+  | "Needs deeper optical review"
+  | "Best confirmed in person";
+
+export type TraitDisplayLabel = TraitReadLabel | TraitCalmLabel;
+
+const DIAGRAM_SENSITIVE_TRAITS = new Set(["Scintillation", "Leakage control"]);
+
+export type TraitLabelContext = {
+  needsExpertDiagramReview?: boolean;
+};
+
 export type RareTopPill = "Top 0.5%" | "Top 1%" | "Top 5%";
 
 export type OverallReadPresentation = {
@@ -91,12 +105,29 @@ function rawTraitLabelFromScore(score: number): TraitReadLabel {
  * Trait read with coherence vs overall score — suppresses rare Top % labels
  * when they would read stronger than the overall interpretation.
  */
+function calmLabelForUncertainTrait(
+  trait: ClientLightTrait,
+  context?: TraitLabelContext,
+): TraitCalmLabel {
+  if (
+    context?.needsExpertDiagramReview &&
+    DIAGRAM_SENSITIVE_TRAITS.has(trait.label)
+  ) {
+    return "Diagram detail required";
+  }
+  if (DIAGRAM_SENSITIVE_TRAITS.has(trait.label)) {
+    return "Needs deeper optical review";
+  }
+  return "Best confirmed in person";
+}
+
 export function presentTraitReadLabel(
   trait: ClientLightTrait,
   overallScore: number | null | undefined,
-): TraitReadLabel {
+  context?: TraitLabelContext,
+): TraitDisplayLabel {
   if (trait.level === "Needs review" || trait.fillPercent <= 0) {
-    return "Needs review";
+    return calmLabelForUncertainTrait(trait, context);
   }
 
   const traitScore = trait.fillPercent;
@@ -128,6 +159,7 @@ export function presentTraitReadLabel(
 export function formatTraitReadDisplay(
   trait: ClientLightTrait,
   overallScore: number | null | undefined,
+  context?: TraitLabelContext,
 ): string {
-  return presentTraitReadLabel(trait, overallScore);
+  return presentTraitReadLabel(trait, overallScore, context);
 }

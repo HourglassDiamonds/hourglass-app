@@ -4,9 +4,13 @@ import type { ClientSafeReportCapability } from "./client-api";
 import type { ClientInterpretationLevel } from "./types";
 
 export type PerformanceReadCopy = {
+  /** One-line plain-English read directly under the score. */
+  scoreHeadline: string;
   whatThisMeans: string;
   visualNote: string;
   confidenceNote: string;
+  /** Why the score stays conservative when diagram detail is incomplete. */
+  conservativeNote: string | null;
 };
 
 export type FaceUpPresenceCopy = {
@@ -33,6 +37,10 @@ function scoreBucket(
   return "review";
 }
 
+function conservativeDiagramNote(): string {
+  return "Some optical characteristics require diagram-level detail that is not fully visible on this report. Rather than guessing, the interpretation stays conservative until verified.";
+}
+
 /** Plain-English Performance Read — display only; does not change scoring. */
 export function buildPerformanceReadCopy(input: {
   overallScore: number | null;
@@ -43,8 +51,16 @@ export function buildPerformanceReadCopy(input: {
 }): PerformanceReadCopy {
   const bucket = scoreBucket(input.overallScore, input.overallLabel);
 
+  const conservativeNote = input.needsExpertDiagramReview
+    ? conservativeDiagramNote()
+    : null;
+
   if (!input.clientScore?.eligible || input.overallScore === null) {
     return {
+      scoreHeadline:
+        input.interpretationLevel === "proportion"
+          ? "A proportion-based read — the overall score will sharpen as the report fills in."
+          : "An early orientation from your report — not a final verdict on the diamond.",
       whatThisMeans:
         input.interpretationLevel === "proportion"
           ? "We can read the main proportions from your report, but the overall light-performance score needs a few more fields before it feels complete."
@@ -52,58 +68,74 @@ export function buildPerformanceReadCopy(input: {
       visualNote:
         "In person, you may still see pleasing sparkle; this score reflects what the report text and diagram support today.",
       confidenceNote: input.needsExpertDiagramReview
-        ? "Deeper diagram details are worth verifying with Justin before you rely on a full optical story."
+        ? "Additional diagram detail is worth verifying with Justin before you rely on a full optical story."
         : "Adding a few proportion values from your report can sharpen this read — or Justin can walk through it with you.",
+      conservativeNote,
     };
   }
 
   switch (bucket) {
     case "exceptional":
       return {
+        scoreHeadline:
+          "An outstanding proportion read with confident overall light return.",
         whatThisMeans:
           "This is an outstanding overall light-performance read. In practical terms, the proportions suggest lively brightness, strong fire, and healthy contrast — the kind of balance many buyers hope for in a round brilliant.",
         visualNote:
           "Visually, you would typically expect confident sparkle, crisp flashes of color, and a face-up presence that feels lively rather than flat.",
         confidenceNote: input.needsExpertDiagramReview
-          ? "The overall read is strong; Justin can still verify finer diagram details if you want extra certainty before you decide."
+          ? "The overall read is strong; Justin can still verify additional diagram detail if you want extra certainty before you decide."
           : "This is a confident interpretation from your report — still not a laboratory grade, but a strong signal for everyday decision-making.",
+        conservativeNote,
       };
     case "strong":
       return {
+        scoreHeadline:
+          "A strong overall proportion read with no major visual red flags.",
         whatThisMeans:
           "This is a strong overall light-performance read. In practical terms, the proportions suggest balanced brightness, lively fire, and no major proportion red flags.",
         visualNote:
           "You would usually notice pleasing brilliance and movement in the diamond — a balanced, engaging look rather than a dull or overly shallow read.",
         confidenceNote: input.needsExpertDiagramReview
-          ? "The big picture looks strong; deeper diagram details are best confirmed with Justin if you want every optical nuance verified."
+          ? "The big picture looks strong; additional diagram detail is best confirmed with Justin if you want every optical nuance verified."
           : "You can feel reasonably confident in this read for comparing options — and Justin can always sanity-check tradeoffs with you.",
+        conservativeNote,
       };
     case "balanced":
       return {
+        scoreHeadline:
+          "A balanced read — steady brightness and fire without a single dramatic standout on paper.",
         whatThisMeans:
           "This is a balanced overall light-performance read — neither flashy nor problematic on paper. The proportions suggest steady brightness and fire with a few areas worth understanding, not alarm bells.",
         visualNote:
           "In person, the diamond may still look beautiful; this read highlights where the report supports a middle-ground optical story.",
         confidenceNote:
           "Worth a conversation with Justin if you are deciding between similar stones — he can translate what the numbers mean for how it will look to your eye.",
+        conservativeNote,
       };
     case "mixed":
       return {
+        scoreHeadline:
+          "A mixed read — some proportion choices work well; others are worth understanding before you decide.",
         whatThisMeans:
           "This is a mixed overall light-performance read. Some proportion choices work well; others suggest tradeoffs in brightness, fire, or contrast that are worth understanding before you commit.",
         visualNote:
           "You might notice perfectly acceptable beauty in person, but the report suggests the cut is not maximizing every optical trait equally.",
         confidenceNote:
           "This is worth reviewing with Justin — not a rejection, just a signal to compare how the tradeoffs matter to you.",
+        conservativeNote,
       };
     default:
       return {
+        scoreHeadline:
+          "A preliminary read — helpful orientation until the report supports more detail.",
         whatThisMeans:
           "This read is incomplete or uneven on the report we received — not necessarily a bad diamond, but not enough for a confident overall light-performance story yet.",
         visualNote:
           "Do not read a low number here as a final judgment; missing or unclear report fields often drive this result.",
         confidenceNote:
           "Justin can review the report with you and explain what is worth verifying before you decide.",
+        conservativeNote,
       };
   }
 }
@@ -185,7 +217,7 @@ export function buildOpticalInterpretationSummary(input: {
   const tone = traitTone(input.clientScore);
 
   const expertClose = input.needsExpertDiagramReview
-    ? " Deeper optical details on the report diagram would be best verified in an expert review."
+    ? " Additional diagram-level optical detail would be best verified in an expert review rather than assumed here."
     : "";
 
   if (bucket === "exceptional" || bucket === "strong") {
