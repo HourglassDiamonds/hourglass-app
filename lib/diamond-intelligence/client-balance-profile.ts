@@ -1,4 +1,5 @@
 import type { ClientInterpretationScore, ClientLightTrait } from "./client-score-present";
+import type { ClientInterpretationConfidenceLevel } from "./client-interpretation-confidence";
 import type { OverallReadLabel } from "./client-percentile-present";
 
 export type ProfileAxisKey =
@@ -80,7 +81,7 @@ export function buildBalanceProfileAxes(input: {
     { key: "fire", label: "Fire", ...fire },
     { key: "contrast", label: "Contrast", ...contrast },
     { key: "spread", label: "Spread", ...input.spread },
-    { key: "leakage", label: "Leakage control", ...leakage },
+    { key: "leakage", label: "Leakage", ...leakage },
     {
       key: "balance",
       label: "Balance",
@@ -99,4 +100,19 @@ export function referenceEnvelopeRadius(maxRadius: number): number {
 export function centerQualitativeLabel(label: OverallReadLabel): string {
   if (label.startsWith("Top")) return "Exceptional";
   return label;
+}
+
+/**
+ * Central graph label gated by display confidence.
+ *  - high:   the qualitative read (Exceptional / Strong / Balanced …)
+ *  - medium: "Preliminary" — restrained, no rare claims
+ *  - low:    "Needs detail" — visually reads as incomplete, not poor
+ */
+export function confidenceCenterLabel(
+  level: ClientInterpretationConfidenceLevel,
+  cappedLabel: OverallReadLabel,
+): string {
+  if (level === "high") return centerQualitativeLabel(cappedLabel);
+  if (level === "medium") return "Preliminary";
+  return "Needs detail";
 }

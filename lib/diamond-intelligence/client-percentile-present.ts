@@ -1,4 +1,5 @@
 import type { ClientLightTrait } from "./client-score-present";
+import type { ClientInterpretationConfidence } from "./client-interpretation-confidence";
 
 export const ESTIMATED_COMPARISON_BAND_CAPTION =
   "Estimated comparison band";
@@ -33,6 +34,8 @@ const DIAGRAM_SENSITIVE_TRAITS = new Set(["Scintillation", "Leakage control"]);
 
 export type TraitLabelContext = {
   needsExpertDiagramReview?: boolean;
+  /** When true, never show Rare/Exceptional/Elite trait labels (display confidence < high). */
+  suppressRareLabels?: boolean;
 };
 
 export type RareTopPill = "Top 0.5%" | "Top 1%" | "Top 5%";
@@ -130,6 +133,11 @@ export function presentTraitReadLabel(
     return calmLabelForUncertainTrait(trait, context);
   }
 
+  // Display confidence below "high" never claims rare/top-percent traits.
+  if (context?.suppressRareLabels) {
+    return qualitativeTraitFromScore(trait.fillPercent);
+  }
+
   const traitScore = trait.fillPercent;
   const overall = finiteScore(overallScore);
 
@@ -162,4 +170,48 @@ export function formatTraitReadDisplay(
   context?: TraitLabelContext,
 ): string {
   return presentTraitReadLabel(trait, overallScore, context);
+}
+
+export type ConfidenceAdjustedRead = {
+  /** Capped score safe to display (never above the confidence cap). */
+  displayScore: number | null;
+  /** Label + pill derived from the capped score and confidence. */
+  presentation: OverallReadPresentation;
+  /** True when the cap lowered the score below its raw value. */
+  capped: boolean;
+};
+
+/**
+ * Cap the client-facing overall read by display confidence.
+ *
+ * The canonical/raw score is untouched — this only governs what the UI shows.
+ * Rare/Top% pills only appear when confidence explicitly allows them.
+ */
+export function presentConfidenceAdjustedRead(
+  rawScore: number | null | undefined,
+  confidence: Pick<
+    ClientInterpretationConfidence,
+    "scoreDisplayCap" | "canShowRareLanguage"
+  >,
+): ConfidenceAdjustedRead {
+  const s = finiteScore(rawScore);
+  if (s === null) {
+    return {
+      displayScore: null,
+      presentation: presentOverallReadLabel(null),
+      capped: false,
+    };
+  }
+
+  const displayScore = Math.min(s, confidence.scoreDisplayCap);
+  const base = presentOverallReadLabel(displayScore);
+  const presentation: OverallReadPresentation = confidence.canShowRareLanguage
+    ? base
+    : { label: base.label, showRarePill: false, pillText: null };
+
+  return {
+    displayScore,
+    presentation,
+    capped: displayScore < s,
+  };
 }

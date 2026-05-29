@@ -48,8 +48,10 @@ export {
 export {
   ESTIMATED_COMPARISON_BAND_CAPTION,
   formatTraitReadDisplay,
+  presentConfidenceAdjustedRead,
   presentOverallReadLabel,
   presentTraitReadLabel,
+  type ConfidenceAdjustedRead,
   type OverallReadLabel,
   type OverallReadPresentation,
   type RareTopPill,
@@ -58,6 +60,23 @@ export {
   type TraitLabelContext,
   type TraitReadLabel,
 } from "./client-percentile-present";
+export {
+  buildClientInterpretationConfidence,
+  type ClientInterpretationConfidence,
+  type ClientInterpretationConfidenceLevel,
+} from "./client-interpretation-confidence";
+export {
+  buildClientReadState,
+  type ClientReadState,
+  type ClientReadStateKind,
+} from "./client-read-state";
+export {
+  buildDiamondInterpretationContext,
+  type DiamondCopyTone,
+  type DiamondGraphMode,
+  type DiamondInterpretationContext,
+  type DiamondTraitMode,
+} from "./client-interpretation-context";
 export {
   buildFaceUpPresenceCopy,
   buildOpticalCharacterCopy,
@@ -69,6 +88,7 @@ export {
 export {
   buildBalanceProfileAxes,
   centerQualitativeLabel,
+  confidenceCenterLabel,
   referenceEnvelopeRadius,
   spreadProfileValue,
   type ProfileAxis,

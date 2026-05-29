@@ -7,11 +7,10 @@ import {
   CLIENT_FIELD_LABELS,
   ESTIMATED_COMPARISON_BAND_CAPTION,
   buildBalanceProfileAxes,
+  buildDiamondInterpretationContext,
   buildFaceUpPresenceCopy,
   buildOpticalInterpretationSummary,
   buildPerformanceReadCopy,
-  centerQualitativeLabel,
-  presentOverallReadLabel,
   presentTraitReadLabel,
   interpretationLevelLabel,
   presentClientInterpretationScore,
@@ -21,6 +20,7 @@ import {
   type ClientLightTrait,
   type ClientSafeMetadata,
   type ClientSafeReportCapability,
+  type OverallReadLabel,
 } from "@/lib/diamond-intelligence";
 import { trackConsultationCtaClicked } from "@/lib/consultation-cta";
 import DiamondIntelligenceSynopsis from "./DiamondIntelligenceSynopsis";
@@ -30,7 +30,7 @@ import { ReportUploadDock, type ClientUploadPhase } from "./ReportUploadDock";
 import { DashboardCard, MetricRow, dashValue } from "./DashboardCard";
 
 const TRAIT_UNCERTAIN_HELPER =
-  "This area depends on diagram-level detail best verified in person — not a sign of poor performance.";
+  "This means the report does not provide enough detail for a confident read here — not that the diamond performs poorly.";
 
 function formatCarat(carat: string): string {
   const v = carat.trim();
@@ -57,13 +57,16 @@ function TraitBar({
   trait,
   overallScore,
   needsExpertDiagramReview,
+  suppressRareLabels,
 }: {
   trait: ClientLightTrait;
   overallScore: number | null;
   needsExpertDiagramReview: boolean;
+  suppressRareLabels: boolean;
 }) {
   const readLabel = presentTraitReadLabel(trait, overallScore, {
     needsExpertDiagramReview,
+    suppressRareLabels,
   });
   const uncertain =
     readLabel === "Diagram detail required" ||
@@ -149,17 +152,20 @@ export default function LightPerformanceDashboard({
       ? opticalBalanceDisplayValue(clientScore, capability.interpretationLevel)
       : 0;
 
-  const overallScore =
+  const rawOverallScore =
     clientScore?.eligible && clientScore.overall !== null
       ? clientScore.overall
       : hasReport
         ? balanceValue
         : null;
 
-  const overallRead = useMemo(
-    () => presentOverallReadLabel(overallScore),
-    [overallScore],
+  // ── Single source of truth: every display decision comes from here. ──
+  const interpretationContext = useMemo(
+    () => buildDiamondInterpretationContext({ fields, rawScore: rawOverallScore }),
+    [fields, rawOverallScore],
   );
+
+  const overallScore = interpretationContext.displayScore;
 
   const diameter =
     fields?.measurements ? parseAverageDiameterMm(fields.measurements) : null;
@@ -170,12 +176,19 @@ export default function LightPerformanceDashboard({
     if (!capability) return null;
     return buildPerformanceReadCopy({
       overallScore,
-      overallLabel: overallRead.label,
+      overallLabel: interpretationContext.displayLabel as OverallReadLabel,
       clientScore,
       interpretationLevel: capability.interpretationLevel,
       needsExpertDiagramReview: capability.needsExpertDiagramReview,
+      copyTone: interpretationContext.copyTone,
     });
-  }, [capability, overallScore, overallRead.label, clientScore]);
+  }, [
+    capability,
+    overallScore,
+    interpretationContext.displayLabel,
+    interpretationContext.copyTone,
+    clientScore,
+  ]);
 
   const faceUpCopy = useMemo(() => {
     if (!fields) return null;
@@ -191,10 +204,16 @@ export default function LightPerformanceDashboard({
     return buildOpticalInterpretationSummary({
       capability,
       clientScore,
-      overallLabel: overallRead.label,
+      overallLabel: interpretationContext.displayLabel as OverallReadLabel,
       needsExpertDiagramReview: capability.needsExpertDiagramReview,
+      copyTone: interpretationContext.copyTone,
     });
-  }, [capability, clientScore, overallRead.label]);
+  }, [
+    capability,
+    clientScore,
+    interpretationContext.displayLabel,
+    interpretationContext.copyTone,
+  ]);
 
   const profileAxes = useMemo(() => {
     const spread = spreadProfileValue({
@@ -208,8 +227,11 @@ export default function LightPerformanceDashboard({
     });
   }, [clientScore, overallScore, diameterNum, fields?.carat]);
 
+  // Graph center label for full mode; preliminary/limited override inside graph.
   const centerProfileLabel = hasReport
-    ? centerQualitativeLabel(overallRead.label)
+    ? interpretationContext.displayLabel.startsWith("Top")
+      ? "Exceptional"
+      : interpretationContext.displayLabel
     : "—";
 
   const busy =
@@ -252,31 +274,52 @@ export default function LightPerformanceDashboard({
           >
             {hasReport && clientScore && capability && performanceCopy ? (
               <>
-                {clientScore.eligible && clientScore.overall !== null ? (
+                {!interpretationContext.canShowScore ? (
+                  <>
+                    <p className="font-serif text-xl text-[#1f1d1a]">
+                      {interpretationContext.displayLabel}
+                    </p>
+                    <p className="mt-2 text-sm leading-[1.6] text-[#5f5851]">
+                      {interpretationContext.primaryExplanation}
+                    </p>
+                    <p className="mt-1 text-[11px] tracking-[0.12em] text-[#a8926a]">
+                      Starting point
+                    </p>
+                  </>
+                ) : clientScore.eligible &&
+                  clientScore.overall !== null &&
+                  overallScore !== null ? (
                   <>
                     <div className="flex flex-wrap items-baseline gap-2">
                       <p className="font-serif text-[2rem] tracking-tight text-[#1f1d1a] md:text-[2.1rem]">
-                        {clientScore.overall}
+                        {overallScore}
                         <span className="ml-1.5 text-lg text-[#948a80]">
                           / 100
                         </span>
                       </p>
-                      {overallRead.showRarePill && overallRead.pillText ? (
+                      {interpretationContext.displayBand ? (
                         <span className="rounded-full border border-[#e4dbcf] bg-[#faf8f4] px-2.5 py-0.5 text-[9px] tracking-[0.14em] text-[#6b5048]">
-                          {overallRead.pillText}
+                          {interpretationContext.displayBand}
                         </span>
                       ) : null}
                     </div>
                     <p className="mt-2 text-base font-medium text-[#6b5048]">
-                      {overallRead.label}
+                      {interpretationContext.displayLabel}
                     </p>
                     <p className="mt-2.5 text-sm leading-[1.6] text-[#5f5851]">
                       {performanceCopy.scoreHeadline}
                     </p>
                     <p className="mt-1 text-[11px] tracking-[0.12em] text-[#a8926a]">
-                      Estimated read
+                      {interpretationContext.readState === "full"
+                        ? "Estimated read"
+                        : "Confidence-adjusted read"}
                     </p>
-                    {overallRead.showRarePill ? (
+                    {interpretationContext.readState !== "full" ? (
+                      <p className="mt-1 text-[11px] leading-[1.55] text-[#948a80]">
+                        Based on the information visible in the report.
+                      </p>
+                    ) : null}
+                    {interpretationContext.displayBand ? (
                       <p className="mt-1 text-[11px] text-[#948a80]">
                         {ESTIMATED_COMPARISON_BAND_CAPTION}
                       </p>
@@ -292,12 +335,14 @@ export default function LightPerformanceDashboard({
                     </p>
                   </>
                 )}
-                <div className="mt-4 h-1 overflow-hidden rounded-full bg-[#ebe4da]/80">
-                  <div
-                    className="h-full rounded-full bg-[#c4b08a] transition-all duration-500"
-                    style={{ width: `${balanceValue}%` }}
-                  />
-                </div>
+                {interpretationContext.canShowScore ? (
+                  <div className="mt-4 h-1 overflow-hidden rounded-full bg-[#ebe4da]/80">
+                    <div
+                      className="h-full rounded-full bg-[#c4b08a] transition-all duration-500"
+                      style={{ width: `${overallScore ?? balanceValue}%` }}
+                    />
+                  </div>
+                ) : null}
                 <div className="mt-5 space-y-2.5 border-t border-[#ebe4da]/60 pt-4">
                   <p className="text-[11px] tracking-[0.14em] text-[#948a80]">
                     What this means
@@ -427,13 +472,25 @@ export default function LightPerformanceDashboard({
                   PERFORMANCE PROFILE
                 </p>
                 <p className="mt-2 max-w-xs text-[11px] leading-[1.6] text-[#948e85]">
-                  Reported proportions translated into a visual balance profile.
+                  {hasReport && !interpretationContext.canShowGraph
+                    ? "Not enough proportion detail yet for a calculated profile."
+                    : "Reported proportions translated into a visual balance profile."}
                 </p>
                 <div className="mt-3 flex flex-1 items-center justify-center">
                   <OpticalBalanceGraph
                     axes={profileAxes}
                     centerLabel={centerProfileLabel}
-                    empty={!hasReport}
+                    empty={!hasReport || !interpretationContext.canShowGraph}
+                    emptyLabel={hasReport ? "STARTING POINT" : "AWAITING REPORT"}
+                    emptySubLabel={
+                      hasReport && !interpretationContext.canShowGraph
+                        ? "AWAITING DETAIL"
+                        : undefined
+                    }
+                    graphMode={interpretationContext.graphMode}
+                    strengthMultiplier={
+                      interpretationContext.graphStrengthMultiplier
+                    }
                   />
                 </div>
                 <p className="mt-3 border-t border-[#ffffff]/[0.06] pt-3 text-[9.5px] leading-[1.6] tracking-[0.02em] text-[#7c766d]">
@@ -566,7 +623,8 @@ export default function LightPerformanceDashboard({
                 tone="subdued"
                 className="!shadow-none md:col-span-2 xl:col-span-1"
               >
-                {clientScore ? (
+                {clientScore &&
+                interpretationContext.traitMode !== "review" ? (
                   <div className="space-y-4">
                     {clientScore.lightTraits.map((trait) => (
                       <TraitBar
@@ -576,11 +634,19 @@ export default function LightPerformanceDashboard({
                         needsExpertDiagramReview={
                           capability?.needsExpertDiagramReview ?? false
                         }
+                        suppressRareLabels={
+                          !interpretationContext.canShowRareLanguage
+                        }
                       />
                     ))}
                   </div>
                 ) : (
-                  <p className="text-sm text-[#948a80]">—</p>
+                  <p className="text-[13px] leading-[1.65] text-[#948a80]">
+                    Trait-level reads need more proportion detail than this
+                    report provides. This is a limit of the report, not a sign
+                    the diamond performs poorly — Justin can verify these in
+                    person.
+                  </p>
                 )}
                 <p className="mt-4 text-[11px] leading-[1.55] text-[#948a80]">
                   Trait reads are qualitative, based on reported proportions —

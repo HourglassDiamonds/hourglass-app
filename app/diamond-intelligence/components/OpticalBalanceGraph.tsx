@@ -30,25 +30,70 @@ function polygonPoints(radii: number[]): string {
     .join(" ");
 }
 
+type GraphMode = "full" | "preliminary" | "limited";
+
 type Props = {
   axes: ProfileAxis[];
   centerLabel: string;
   empty?: boolean;
+  /** Center label shown in placeholder (empty/orientation) mode. */
+  emptyLabel?: string;
+  /** Caption shown under the placeholder center label. */
+  emptySubLabel?: string;
+  /** Display mode from the interpretation context — controls strength + labels. */
+  graphMode?: GraphMode;
+  /** 0–1 multiplier that pulls the profile toward center for lower confidence. */
+  strengthMultiplier?: number;
 };
 
 export default function OpticalBalanceGraph({
   axes,
   centerLabel,
   empty = false,
+  emptyLabel = "AWAITING REPORT",
+  emptySubLabel,
+  graphMode = "full",
+  strengthMultiplier = 1,
 }: Props) {
   const n = axes.length || 6;
   const gridLevels = [0.5, 1];
 
+  const restrained = !empty && graphMode !== "full";
+  const mult = empty ? 1 : Math.max(0, Math.min(1, strengthMultiplier));
+
   const radii = axes.map((a) => {
-    if (a.uncertain || a.value === null) return UNCERTAIN_R;
-    return (a.value / 100) * MAX_R;
+    if (a.uncertain || a.value === null) return UNCERTAIN_R * mult;
+    return (a.value / 100) * MAX_R * mult;
   });
   const uncertainFlags = axes.map((a) => a.uncertain || a.value === null);
+  const dashedProfile = restrained || uncertainFlags.some(Boolean);
+  const profileFill = empty
+    ? "none"
+    : graphMode === "limited"
+      ? "rgba(214,194,156,0.06)"
+      : graphMode === "preliminary"
+        ? "rgba(214,194,156,0.09)"
+        : "rgba(214,194,156,0.12)";
+  const profileStroke = empty
+    ? "rgba(232,224,212,0.18)"
+    : graphMode === "limited"
+      ? "rgba(232,224,212,0.5)"
+      : graphMode === "preliminary"
+        ? "rgba(238,230,216,0.72)"
+        : "rgba(238,230,216,0.95)";
+  const centerText = empty
+    ? emptyLabel
+    : graphMode === "preliminary"
+      ? "Preliminary"
+      : graphMode === "limited"
+        ? "Review"
+        : centerLabel;
+  const subLabel =
+    graphMode === "preliminary"
+      ? "MODERATE CONFIDENCE"
+      : graphMode === "limited"
+        ? "LIMITED DATA"
+        : "HIGH CONFIDENCE";
 
   const envelope = polygonPoints(axes.map(() => REF_R));
   const profile = polygonPoints(radii);
@@ -101,15 +146,15 @@ export default function OpticalBalanceGraph({
         {/* measured profile */}
         <polygon
           points={profile}
-          fill={empty ? "none" : "rgba(214,194,156,0.12)"}
-          stroke={empty ? "rgba(232,224,212,0.18)" : "rgba(238,230,216,0.95)"}
-          strokeWidth="1.4"
+          fill={profileFill}
+          stroke={profileStroke}
+          strokeWidth={restrained ? 1.1 : 1.4}
           strokeLinejoin="round"
-          strokeDasharray={uncertainFlags.some(Boolean) ? "4 3" : undefined}
+          strokeDasharray={dashedProfile ? "4 3" : undefined}
         />
 
         {/* profile vertices */}
-        {!empty
+        {!empty && graphMode === "full"
           ? radii.map((r, i) => {
               if (uncertainFlags[i]) return null;
               const pt = polar(r, axisAngle(i, n));
@@ -164,20 +209,39 @@ export default function OpticalBalanceGraph({
           y={empty ? CY + 1 : CY - 5}
           textAnchor="middle"
           dominantBaseline="middle"
-          className={empty ? "fill-[#8f8980]" : "fill-[#efe9df] font-serif"}
-          style={{ fontSize: empty ? "7.5px" : "15px", letterSpacing: empty ? "0.12em" : undefined }}
+          className={
+            empty
+              ? "fill-[#8f8980]"
+              : restrained
+                ? "fill-[#d9d2c7] font-serif"
+                : "fill-[#efe9df] font-serif"
+          }
+          style={{
+            fontSize: empty ? "7.5px" : restrained ? "11px" : "15px",
+            letterSpacing: empty || restrained ? "0.06em" : undefined,
+          }}
         >
-          {empty ? "AWAITING REPORT" : centerLabel}
+          {centerText}
         </text>
         {!empty ? (
           <text
             x={CX}
-            y={CY + 13}
+            y={restrained ? CY + 12 : CY + 13}
             textAnchor="middle"
             className="fill-[#938d84]"
             style={{ fontSize: "6.5px", letterSpacing: "0.16em" }}
           >
-            OVERALL READ
+            {subLabel}
+          </text>
+        ) : emptySubLabel ? (
+          <text
+            x={CX}
+            y={CY + 12}
+            textAnchor="middle"
+            className="fill-[#7c766d]"
+            style={{ fontSize: "6px", letterSpacing: "0.16em" }}
+          >
+            {emptySubLabel}
           </text>
         ) : null}
       </svg>

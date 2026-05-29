@@ -1,4 +1,5 @@
 import type { ClientInterpretationScore } from "./client-score-present";
+import type { DiamondCopyTone } from "./client-interpretation-context";
 import type { OverallReadLabel } from "./client-percentile-present";
 import type { ClientSafeReportCapability } from "./client-api";
 import type { ClientInterpretationLevel } from "./types";
@@ -41,6 +42,41 @@ function conservativeDiagramNote(): string {
   return "Some optical characteristics require diagram-level detail that is not fully visible on this report. Rather than guessing, the interpretation stays conservative until verified.";
 }
 
+/**
+ * Humble Performance Read copy for careful/orientation display tone.
+ * Avoids confident/exceptional language; leans on "based on the information
+ * visible in the report" framing without sounding penalizing.
+ */
+function confidenceAdjustedReadCopy(
+  level: "medium" | "low",
+  conservativeNote: string | null,
+): PerformanceReadCopy {
+  if (level === "medium") {
+    return {
+      scoreHeadline:
+        "Based on the information visible in the report, this appears to be a balanced overall read.",
+      whatThisMeans:
+        "We can read the main details on your report, and this diamond appears to present a balanced light return. Additional diagram-level detail would improve confidence in the deeper optical read.",
+      visualNote:
+        "In person you may well notice lively sparkle; this read reflects what the report supports today.",
+      confidenceNote:
+        "Adding the remaining proportion details — or an expert review with Justin — would sharpen this read.",
+      conservativeNote,
+    };
+  }
+  return {
+    scoreHeadline:
+      "A preliminary read — a useful starting point from the information visible in the report.",
+    whatThisMeans:
+      "This report gives a useful starting point, but not enough for a full light-performance read. Rather than guessing, the interpretation stays conservative until key proportion details are verified.",
+    visualNote:
+      "This is orientation, not a verdict — the diamond may still look beautiful in person.",
+    confidenceNote:
+      "Justin can verify the missing proportion details in an expert review before you decide.",
+    conservativeNote,
+  };
+}
+
 /** Plain-English Performance Read — display only; does not change scoring. */
 export function buildPerformanceReadCopy(input: {
   overallScore: number | null;
@@ -48,12 +84,21 @@ export function buildPerformanceReadCopy(input: {
   clientScore: ClientInterpretationScore | null;
   interpretationLevel: ClientInterpretationLevel;
   needsExpertDiagramReview: boolean;
+  copyTone?: DiamondCopyTone;
 }): PerformanceReadCopy {
   const bucket = scoreBucket(input.overallScore, input.overallLabel);
 
   const conservativeNote = input.needsExpertDiagramReview
     ? conservativeDiagramNote()
     : null;
+
+  // Tone gate: never sound more certain than the data supports.
+  if (input.copyTone === "careful") {
+    return confidenceAdjustedReadCopy("medium", conservativeNote);
+  }
+  if (input.copyTone === "orientation") {
+    return confidenceAdjustedReadCopy("low", conservativeNote);
+  }
 
   if (!input.clientScore?.eligible || input.overallScore === null) {
     return {
@@ -209,7 +254,16 @@ export function buildOpticalInterpretationSummary(input: {
   clientScore: ClientInterpretationScore | null;
   overallLabel: OverallReadLabel;
   needsExpertDiagramReview: boolean;
+  copyTone?: DiamondCopyTone;
 }): string {
+  // Tone gate first — humble framing when data is incomplete.
+  if (input.copyTone === "orientation") {
+    return "This report gives a useful starting point, but not enough for a full light-performance read. Justin can help verify the missing proportion details before you decide.";
+  }
+  if (input.copyTone === "careful") {
+    return "Based on the information visible in the report, this diamond appears to have a balanced overall presentation. Additional diagram-level detail would improve confidence in the deeper optical read.";
+  }
+
   const bucket = scoreBucket(
     input.clientScore?.overall ?? null,
     input.overallLabel,

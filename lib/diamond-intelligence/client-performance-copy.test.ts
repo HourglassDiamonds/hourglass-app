@@ -46,6 +46,48 @@ describe("buildPerformanceReadCopy", () => {
     assert.match(copy.conservativeNote!, /conservative until verified/i);
   });
 
+  it("stays humble for low confidence — no confident/exceptional language", () => {
+    const copy = buildPerformanceReadCopy({
+      overallScore: 97,
+      overallLabel: "Top 1%",
+      clientScore: {
+        eligible: true,
+        overall: 97,
+        bandLabel: "Strong",
+        summaryLine: "",
+        lightTraits: [],
+      },
+      interpretationLevel: "basic",
+      needsExpertDiagramReview: true,
+      copyTone: "orientation",
+    });
+    assert.match(copy.scoreHeadline, /preliminary/i);
+    assert.match(copy.whatThisMeans, /starting point/i);
+    assert.doesNotMatch(
+      `${copy.scoreHeadline} ${copy.whatThisMeans} ${copy.visualNote}`,
+      /exceptional|outstanding|confident read/i,
+    );
+  });
+
+  it("softens to 'based on the information visible' for medium confidence", () => {
+    const copy = buildPerformanceReadCopy({
+      overallScore: 97,
+      overallLabel: "Top 1%",
+      clientScore: {
+        eligible: true,
+        overall: 97,
+        bandLabel: "Strong",
+        summaryLine: "",
+        lightTraits: [],
+      },
+      interpretationLevel: "proportion",
+      needsExpertDiagramReview: false,
+      copyTone: "careful",
+    });
+    assert.match(copy.scoreHeadline, /information visible in the report/i);
+    assert.doesNotMatch(copy.whatThisMeans, /exceptional|outstanding/i);
+  });
+
   it("uses calm language for mixed reads", () => {
     const copy = buildPerformanceReadCopy({
       overallScore: 78,
@@ -112,5 +154,36 @@ describe("buildOpticalInterpretationSummary", () => {
     assert.match(text, /balanced overall presentation/i);
     assert.match(text, /expert review/i);
     assert.doesNotMatch(text, /parser|provenance|low confidence/i);
+  });
+
+  it("uses humble hero copy for low confidence", () => {
+    const text = buildOpticalInterpretationSummary({
+      capability: {
+        interpretationLevel: "basic",
+        clientSummaryTitle: "",
+        clientSummaryBody: "",
+        missingForNextLevel: [],
+        guidedCompletionFields: [],
+        suggestedNextStep: "justin_review",
+        canRunClientInterpretation: true,
+        needsGuidedCompletion: false,
+        needsExpertDiagramReview: true,
+        manualValuesAllowedForInterpretationOnly: true,
+        confidentlyReadKeys: [],
+        supportsLevel: "basic",
+      },
+      clientScore: {
+        eligible: true,
+        overall: 97,
+        bandLabel: "Strong",
+        summaryLine: "",
+        lightTraits: [],
+      },
+      overallLabel: "Top 1%",
+      needsExpertDiagramReview: true,
+      copyTone: "orientation",
+    });
+    assert.match(text, /useful starting point/i);
+    assert.doesNotMatch(text, /exceptional|outstanding|this diamond shows/i);
   });
 });

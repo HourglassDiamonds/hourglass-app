@@ -20,8 +20,16 @@ import {
   classifyFinalized,
   snapshotFieldSummary,
 } from "@/lib/diamond-intelligence/client-interpretation-pipeline";
+import { buildDiamondInterpretationContext } from "@/lib/diamond-intelligence/client-interpretation-context";
+import { presentClientInterpretationScore } from "@/lib/diamond-intelligence/client-score-present";
 
-const TARGETS = ["LG773657228", "LG353466126", "LG360796191", "2527039693"];
+const TARGETS = [
+  "LG773657228",
+  "LG803682542",
+  "LG353466126",
+  "LG360796191",
+  "2527039693",
+];
 
 async function runOne(reportNumber: string): Promise<void> {
   const spec = ANCHOR_PDF_SPECS.find((s) => s.reportNumber === reportNumber);
@@ -41,6 +49,9 @@ async function runOne(reportNumber: string): Promise<void> {
   let summary = "";
   let timedOut = false;
   let parser = "";
+  let confidence = "";
+  let cap: number | null = 0;
+  let readState = "";
   try {
     const finalized = await withTimeout(
       runCalibrationUploadExtraction({
@@ -58,6 +69,14 @@ async function runOne(reportNumber: string): Promise<void> {
     summary = snapshotFieldSummary(decision.snapshot);
     timedOut = Boolean(finalized.timedOut);
     parser = finalized.parserType;
+    const score = presentClientInterpretationScore(finalized.fields, "deep");
+    const ctx = buildDiamondInterpretationContext({
+      fields: finalized.fields,
+      rawScore: score.eligible ? score.overall : null,
+    });
+    confidence = ctx.confidenceLevel;
+    cap = ctx.displayScore;
+    readState = `${ctx.readState}/${ctx.displayLabel}`;
   } catch (err) {
     tier = "route-timeout";
     summary = err instanceof Error ? err.message : String(err);
@@ -72,7 +91,7 @@ async function runOne(reportNumber: string): Promise<void> {
         : 504;
 
   console.log(
-    `RESULT ${reportNumber} parser=${parser} tier=${tier} http=${httpStatus} routeMs=${routeMs} timedOut=${timedOut} fields=${summary}`,
+    `RESULT ${reportNumber} parser=${parser} tier=${tier} http=${httpStatus} readState=${readState} confidence=${confidence} cap=${cap} routeMs=${routeMs} timedOut=${timedOut} fields=${summary}`,
   );
 }
 
