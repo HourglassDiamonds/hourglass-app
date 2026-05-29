@@ -106,6 +106,7 @@ export type LightPerformanceDashboardProps = {
   uploadError: string | null;
   uploadStatusNote?: string | null;
   onFile: (file: File) => void;
+  onClearError?: () => void;
   metadata: ClientSafeMetadata | null;
   extractedFields: CalibrationReportFields | null;
   interpretationFields: CalibrationReportFields | null;
@@ -119,6 +120,7 @@ export default function LightPerformanceDashboard({
   uploadError,
   uploadStatusNote,
   onFile,
+  onClearError,
   metadata,
   extractedFields,
   interpretationFields,
@@ -210,7 +212,10 @@ export default function LightPerformanceDashboard({
     ? centerQualitativeLabel(overallRead.label)
     : "—";
 
-  const busy = uploadPhase !== "idle";
+  const busy =
+    uploadPhase === "reading" ||
+    uploadPhase === "checking" ||
+    uploadPhase === "building";
 
   return (
     <div className="mx-auto max-w-[1560px] px-4 pb-9 pt-5 md:px-6">
@@ -234,6 +239,7 @@ export default function LightPerformanceDashboard({
               errorMessage={uploadError}
               statusNote={uploadStatusNote}
               onFile={onFile}
+              onClearError={onClearError}
               metadata={hasReport ? metadata : null}
               fileName={fileName}
             />

@@ -8,7 +8,8 @@ export type ClientUploadPhase =
   | "idle"
   | "reading"
   | "checking"
-  | "building";
+  | "building"
+  | "error";
 
 type ReportUploadDockProps = {
   phase: ClientUploadPhase;
@@ -16,6 +17,8 @@ type ReportUploadDockProps = {
   errorMessage?: string | null;
   statusNote?: string | null;
   onFile: (file: File) => void;
+  /** Clears any prior upload error the moment new activity begins. */
+  onClearError?: () => void;
   metadata?: ClientSafeMetadata | null;
   fileName?: string | null;
 };
@@ -29,13 +32,17 @@ export function ReportUploadDock({
   errorMessage,
   statusNote,
   onFile,
+  onClearError,
   metadata,
   fileName,
 }: ReportUploadDockProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
-  const busy = phase !== "idle";
+  const busy =
+    phase === "reading" || phase === "checking" || phase === "building";
   const hasReport = Boolean(metadata);
+  // Only the current attempt's failure shows error copy — never a stale one.
+  const showError = phase === "error" && Boolean(errorMessage);
 
   const pick = useCallback(
     (f: File | null | undefined) => {
@@ -74,7 +81,10 @@ export function ReportUploadDock({
         onDragEnter={(e) => {
           e.preventDefault();
           e.stopPropagation();
-          if (!disabled) setDragOver(true);
+          if (!disabled) {
+            setDragOver(true);
+            onClearError?.();
+          }
         }}
         onDragOver={(e) => {
           e.preventDefault();
@@ -181,7 +191,7 @@ export function ReportUploadDock({
         }}
       />
 
-      {statusNote && !errorMessage ? (
+      {statusNote && !showError ? (
         <div className="mt-3 flex gap-2.5 rounded-md border border-[#e4dbcf]/70 bg-[#faf8f4]/80 px-3 py-2.5">
           <span
             className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-[#c4a86a]"
@@ -190,7 +200,7 @@ export function ReportUploadDock({
           <p className="text-xs leading-relaxed text-[#6f665d]">{statusNote}</p>
         </div>
       ) : null}
-      {errorMessage ? (
+      {showError ? (
         <p className="mt-3 text-xs leading-relaxed text-[#6b5048]">{errorMessage}</p>
       ) : null}
     </div>

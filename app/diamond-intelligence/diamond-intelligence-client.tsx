@@ -30,6 +30,11 @@ export default function DiamondIntelligenceClient() {
     null,
   );
 
+  const clearUploadError = useCallback(() => {
+    setUploadError((prev) => (prev ? null : prev));
+    setUploadPhase((p) => (p === "error" ? "idle" : p));
+  }, []);
+
   const processFile = useCallback(async (file: File) => {
     setFileName(file.name);
     setUploadError(null);
@@ -48,15 +53,19 @@ export default function DiamondIntelligenceClient() {
       setExtractedFields(interpretation.extractedFields);
       setInterpretationFields(interpretation.interpretationFields);
       setCapability(interpretation.capability);
+      // HTTP 200 full OR partial are both successes — never an error.
       setUploadStatusNote(
         partial ? interpretation.clientStatusNote ?? null : null,
       );
+      setUploadError(null);
+      setUploadPhase("idle");
     } catch {
-      setUploadError(CLIENT_UPLOAD_INTERPRET_ERROR);
+      // Only a failed current attempt surfaces calm error copy.
       setUploadStatusNote(null);
+      setUploadError(CLIENT_UPLOAD_INTERPRET_ERROR);
+      setUploadPhase("error");
     } finally {
       window.clearTimeout(checkingTimer);
-      setUploadPhase("idle");
     }
   }, []);
 
@@ -75,6 +84,7 @@ export default function DiamondIntelligenceClient() {
         uploadError={uploadError}
         uploadStatusNote={uploadStatusNote}
         onFile={(f) => void processFile(f)}
+        onClearError={clearUploadError}
         metadata={metadata}
         extractedFields={extractedFields}
         interpretationFields={interpretationFields}
