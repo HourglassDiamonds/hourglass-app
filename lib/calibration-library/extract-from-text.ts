@@ -215,8 +215,12 @@ export function extractFieldsFromReportText(
         if (!value.trim()) return;
         fields[key] = value.trim();
         if (hints?.textMethod === "ocr") {
+          // OCR-sourced values are capped one band down. Always write a
+          // confidence — previously low/manual levels left the slot unwritten,
+          // so a parsed value could keep a stale/"missing" marker (GIA bug).
           if (level === "high") confidence[key] = "medium";
           else if (level === "medium") confidence[key] = "low";
+          else confidence[key] = level;
         } else {
           confidence[key] = level;
         }

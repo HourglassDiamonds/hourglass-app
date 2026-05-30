@@ -110,12 +110,13 @@ describe("buildPerformanceReadCopy", () => {
 describe("buildFaceUpPresenceCopy", () => {
   it("does not fabricate percentile claims", () => {
     const copy = buildFaceUpPresenceCopy({
-      measurements: "8.10 - 8.14 x 5.00 mm",
-      carat: "2.00",
-      avgDiameterMm: 8.12,
+      measurements: "9.08 - 9.12 x 5.00 mm",
+      carat: "1.00",
+      avgDiameterMm: 9.1,
     });
     assert.doesNotMatch(copy.summary, /Top %|percentile|corpus/i);
-    assert.match(copy.footnote, /measurements and carat/i);
+    assert.equal(copy.tierLabel, "Expansive Presence");
+    assert.match(copy.footnote, /measurements and weight/i);
   });
 });
 

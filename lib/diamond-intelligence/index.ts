@@ -46,6 +46,12 @@ export {
   type ClientLightTrait,
 } from "./client-score-present";
 export {
+  CONSUMER_TRAIT_UNCERTAIN_HELPER,
+  getConsumerLightPerformanceDisplay,
+  getConsumerLightPerformanceLabel,
+  type ConsumerLightPerformanceDisplay,
+} from "./client-light-performance-labels";
+export {
   ESTIMATED_COMPARISON_BAND_CAPTION,
   formatTraitReadDisplay,
   presentConfidenceAdjustedRead,
@@ -85,6 +91,17 @@ export {
   type FaceUpPresenceCopy,
   type PerformanceReadCopy,
 } from "./client-performance-copy";
+export {
+  editorialFaceUpSummary,
+  editorialLightPerformancePersonality,
+  editorialTierFromInternalLabel,
+  editorialTierFromOverallLabel,
+  presentEditorialLightPerformance,
+  resolveEditorialFaceUpTier,
+  type EditorialFaceUpTier,
+  type EditorialLightPerformancePresentation,
+  type EditorialLightPerformanceTier,
+} from "./client-editorial-language";
 export {
   buildBalanceProfileAxes,
   centerQualitativeLabel,

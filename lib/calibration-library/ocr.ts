@@ -162,7 +162,11 @@ export async function renderPdfPagePngAtScale(
         const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
         const data = new Uint8Array(pdfBytes);
         const doc = await withTimeout(
-          pdfjs.getDocument({ data, useSystemFonts: true }).promise,
+          pdfjs.getDocument({
+            data,
+            useSystemFonts: true,
+            disableFontFace: true,
+          }).promise,
           PDF_GET_DOCUMENT_TIMEOUT_MS,
           "pdf-render-open",
         );
@@ -235,6 +239,7 @@ export async function ocrPdfBuffer(pdfBytes: Buffer): Promise<OcrResult> {
       pdfjs.getDocument({
         data: new Uint8Array(pdfBytes),
         useSystemFonts: true,
+        disableFontFace: true,
       }).promise,
       PDF_GET_DOCUMENT_TIMEOUT_MS,
       "pdf-ocr-open",

@@ -105,19 +105,19 @@ export function buildDiamondInterpretationContext(input: {
       ? "This diamond reads as a balanced, lively performer across its full proportion set."
       : copyTone === "careful"
         ? "Based on the information visible in the report, this diamond appears balanced — a few proportion details would sharpen the deeper optical read."
-        : "This report gives a useful starting point, but not enough for a full light-performance read.";
+        : "This report gives a useful starting point. A fuller light-performance picture becomes available as more proportion detail is confirmed.";
 
   const confidenceExplanation =
     readState.confidence === "high"
       ? "High confidence — the core proportions and finish needed for a light read are all present."
       : readState.confidence === "medium"
-        ? `Moderate confidence${missingList ? ` — still missing ${missingList}` : ""}.`
-        : `Limited data${missingList ? ` — key details not visible: ${missingList}` : ""}.`;
+        ? `Early read${missingList ? ` — confirming ${missingList} would help sharpen the picture` : ""}.`
+        : `Early read${missingList ? ` — ${missingList} would help complete the picture` : ""}.`;
 
   const nextStep =
     readState.confidence === "high"
       ? "Compare it with confidence, or have Justin verify any final nuance."
-      : "Justin can verify the missing proportion details before you decide.";
+      : "Justin can help confirm the next details and translate what they may mean for how the diamond will look.";
 
   return {
     confidenceLevel: readState.confidence,

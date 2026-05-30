@@ -378,7 +378,23 @@ function scoreGiaProportionBlockCandidate(block: string): {
 function fallbackGiaDiagramBlockFromKnownValues(
   rawText: string,
 ): { start: number; block: string } {
-  const seeds = ["36.5", "40.8", "50", "56", "63.1", "75", "5O", "S6", "7S", "3.5"];
+  const seeds = [
+    "36.5",
+    "40.8",
+    "40.6",
+    "36.0",
+    "58.4",
+    "64",
+    "80",
+    "50",
+    "56",
+    "63.1",
+    "75",
+    "5O",
+    "S6",
+    "7S",
+    "3.5",
+  ];
   let bestStart = 0;
   let bestHits = 0;
 
@@ -653,8 +669,15 @@ function setGiaField(
   level: FieldConfidence,
 ): void {
   if (!value.trim()) return;
-  fields[key] = value.trim();
+  // GIA-specific ordering fix: invoke the consumer's setter BEFORE writing
+  // fields[key] directly. The upload image-OCR augmentation's setter only
+  // fills EMPTY slots and is what assigns confidence. Writing fields[key]
+  // first made that setter observe the slot as already-populated, so it
+  // skipped the confidence write — leaving values like pavilionAngle="40.8"
+  // with a "missing" confidence marker. The trailing direct write preserves
+  // text-path overwrite/force semantics (that setter has no empty guard).
   set(key, value.trim(), level);
+  fields[key] = value.trim();
 }
 
 function setInternal(
@@ -1154,17 +1177,48 @@ function inNumericRange(value: string, min: number, max: number): boolean {
 }
 
 /** Total depth only — never pavilion depth (lookbehind cannot span "Pavilion Depth"). */
+function isGiaContactDepthFalsePositive(
+  text: string,
+  matchIndex: number,
+  value: string,
+): boolean {
+  const window = text.slice(Math.max(0, matchIndex - 100), matchIndex + 100);
+  if (
+    /\b(?:\+1|call\s+us|phone|800\.421|760\s*603|603\s*4500|g\.i\.a\.?\s*headquarters)\b/i.test(
+      window,
+    )
+  ) {
+    return true;
+  }
+  if (value === "60" && !/\btotal\s+depth\b/i.test(window)) {
+    if (/\b603\b|\b760\b|\b4500\b/.test(window)) return true;
+  }
+  return false;
+}
+
 function matchGiaTotalDepthValue(text: string): string | null {
-  const patterns = [
-    /(?:^|\n)\s*total\s+depth\s*[:\s]*(\d{1,3}(?:\.\d+)?)\s*%?/im,
-    /(?:^|\n)\s*depth\s*\n\s*(\d{1,3}(?:\.\d+)?)\s*%?/im,
-    /(?:^|\n)(?![^\n]*\bpavilion\b)[^\n]*\bdepth\b[^0-9]{0,20}(\d{1,3}(?:\.\d+)?)\s*%?/im,
+  const patterns: Array<{ re: RegExp; name: string }> = [
+    {
+      name: "total-depth-labeled",
+      re: /(?:^|\n)\s*total\s+depth\s*[:\s]*(\d{1,3}(?:\.\d+)?)\s*%?/im,
+    },
+    {
+      name: "depth-newline-value",
+      re: /(?:^|\n)\s*depth\s*\n\s*(\d{1,3}(?:\.\d+)?)\s*%?/im,
+    },
+    {
+      name: "depth-inline",
+      re: /(?:^|\n)(?![^\n]*\bpavilion\b)[^\n]*\bdepth\b[^0-9]{0,20}(\d{1,3}(?:\.\d+)?)\s*%?/im,
+    },
   ];
-  for (const re of patterns) {
-    const m = text.match(re);
-    const v = m?.[1] ? parseNum(m[1]) : null;
-    if (v && isOcrRoleDepth(v)) return v;
-    if (v && inNumericRange(v, 55, 70)) return v;
+  for (const { re } of patterns) {
+    const m = re.exec(text);
+    if (!m?.[1]) continue;
+    const v = parseNum(m[1]);
+    if (!v) continue;
+    if (isGiaContactDepthFalsePositive(text, m.index, v)) continue;
+    if (isOcrRoleDepth(v)) return v;
+    if (inNumericRange(v, 55, 70)) return v;
   }
   return null;
 }
@@ -1173,13 +1227,13 @@ function isOcrRoleStar(v: string): boolean {
   return inNumericRange(v, 45, 60);
 }
 function isOcrRoleTable(v: string): boolean {
-  return inNumericRange(v, 53, 64);
+  return inNumericRange(v, 53, 68);
 }
 function isOcrRoleDepth(v: string): boolean {
   return inNumericRange(v, 58, 64.5);
 }
 function isOcrRoleCrownAngle(v: string): boolean {
-  return inNumericRange(v, 30, 38);
+  return inNumericRange(v, 30, 39);
 }
 function isOcrRolePavilionAngle(v: string): boolean {
   return inNumericRange(v, 39, 42);
@@ -2064,7 +2118,10 @@ function extractGiaScatteredProportionRoles(
 
   if (!fields.starLengthPercent.trim()) {
     const star = takePct(isOcrRoleStar);
-    if (star) setGiaFieldIfEmpty(fields, set, "starLengthPercent", star, "medium");
+    const starLabelPresent = /\bstar\b/i.test(block);
+    if (star && (starLabelPresent || !/^5[5-8]$/.test(star))) {
+      setGiaFieldIfEmpty(fields, set, "starLengthPercent", star, "medium");
+    }
   }
   if (!fields.tablePercent.trim()) {
     const table = takePct(isOcrRoleTable);
@@ -2302,6 +2359,32 @@ export function extractGiaOcrProportionDiagram(
     debug.matches.source = "relaxed-stack";
   }
 
+  const tableFromLabel = readGiaLabelValue(text, /\btable\b/i, isPlausibleTable);
+  if (tableFromLabel) {
+    setGiaFieldIfEmpty(fields, set, "tablePercent", tableFromLabel, "medium");
+    debug.matches.tableLabel = tableFromLabel;
+  }
+
+  const crownFromLabel = readGiaLabelValue(
+    text,
+    /\bcrown\s+angle\b/i,
+    isPlausibleCrownAngle,
+  );
+  if (crownFromLabel) {
+    setGiaFieldIfEmpty(fields, set, "crownAngle", crownFromLabel, "medium");
+    debug.matches.crownAngleLabel = crownFromLabel;
+  }
+
+  const lowerFromLabel = readGiaLabelValue(
+    text,
+    /\blower\s+half\b/i,
+    isPlausibleLowerHalf,
+  );
+  if (lowerFromLabel) {
+    setGiaFieldIfEmpty(fields, set, "lowerHalfPercent", lowerFromLabel, "medium");
+    debug.matches.lowerHalfLabel = lowerFromLabel;
+  }
+
   const usedPercents = new Set<string>();
 
   const starTable = findConsecutivePercentPair(
@@ -2310,9 +2393,20 @@ export function extractGiaOcrProportionDiagram(
     isPlausibleTable,
   );
   if (starTable) {
-    setGiaFieldIfEmpty(fields, set, "starLengthPercent", starTable.a, "medium");
+    const aNum = parseFloat(starTable.a);
+    const bNum = parseFloat(starTable.b);
+    const tableOnlyNoiseStar =
+      Number.isFinite(aNum) &&
+      Number.isFinite(bNum) &&
+      aNum >= 50 &&
+      aNum <= 58 &&
+      bNum >= 59 &&
+      bNum <= 68;
+    if (!tableOnlyNoiseStar && !/^5[89]\.\d$/.test(starTable.a)) {
+      setGiaFieldIfEmpty(fields, set, "starLengthPercent", starTable.a, "medium");
+      usedPercents.add(starTable.a);
+    }
     setGiaFieldIfEmpty(fields, set, "tablePercent", starTable.b, "medium");
-    usedPercents.add(starTable.a);
     usedPercents.add(starTable.b);
     debug.matches.starTable = `${starTable.a}/${starTable.b}`;
   }
@@ -2387,14 +2481,30 @@ export function extractGiaOcrProportionDiagram(
     const n = parseFloat(v);
     return Number.isFinite(n) && n >= 55 && n <= 70;
   };
+  const depthFromLabel =
+    readGiaLabelValue(text, /\btotal\s+depth\b/i, depthValidator) ??
+    readGiaLabelValue(text, /\bdepth\b/i, isOcrRoleDepth);
   const depth =
+    depthFromLabel ??
     matchGiaTotalDepthValue(text) ??
     (() => {
-      const bare = text.match(/(?<![\d.])(6[0-3](?:\.\d+)?)(?!\s*%)/);
-      const v = bare?.[1] ? parseNum(bare[1]) : null;
-      return v && depthValidator(v) ? v : null;
+      const nearMeasurements = text.match(
+        /measurements[\s\S]{0,120}?(\d{2}\.\d)\s*%\)?/i,
+      )?.[1];
+      const v = nearMeasurements ? parseNum(nearMeasurements) : null;
+      if (v && depthValidator(v)) return v;
+      const bare = text.match(/(?<![\d.])(5[89]\.\d|6[0-2]\.\d)\s*%\)?/);
+      const idx = bare?.index ?? -1;
+      const bareVal = bare?.[1] ? parseNum(bare[1]) : null;
+      if (!bareVal || !depthValidator(bareVal)) return null;
+      if (idx >= 0 && isGiaContactDepthFalsePositive(text, idx, bareVal)) return null;
+      return bareVal;
     })();
-  if (depth && depthValidator(depth)) {
+  if (
+    depth &&
+    depthValidator(depth) &&
+    depth !== fields.tablePercent.trim()
+  ) {
     setGiaFieldIfEmpty(fields, set, "depthPercent", depth, "medium");
     debug.matches.depth = depth;
   }
@@ -2419,6 +2529,14 @@ export function extractGiaOcrProportionDiagram(
   }
 
   supplementGiaOcrPavilionAndGirdle(searchTexts, fields, set, internal, debug);
+
+  if (
+    fields.starLengthPercent.trim() &&
+    fields.depthPercent.trim() &&
+    fields.starLengthPercent.trim() === fields.depthPercent.trim()
+  ) {
+    fields.starLengthPercent = "";
+  }
 
   logGiaOcrDiagramDebug(debug);
 }
@@ -2483,9 +2601,10 @@ function preferGiaFacsimileProportionBlock(
     return sliceGiaBlockWindow(rawText, Math.max(0, girdleAnchor - 160), 900);
   }
 
-  const stackAnchor = rawText.search(
-    /(?:50|56)\s*%[\s\S]{0,360}?40\.8/i,
-  );
+  const stackAnchor =
+    rawText.search(/(?:50|56)\s*%[\s\S]{0,360}?40\.8/i) >= 0
+      ? rawText.search(/(?:50|56)\s*%[\s\S]{0,360}?40\.8/i)
+      : rawText.search(/(?:55|64)\s*%[\s\S]{0,320}?\d{2}\.\d\s*°/i);
   if (stackAnchor >= 0 && fallbackHits >= selectedHits) {
     return sliceGiaBlockWindow(rawText, Math.max(0, stackAnchor - 80), 1200);
   }

@@ -250,8 +250,14 @@ export async function extractTextFromDocument(
         needsGiaProportionOcrSupplement(pdf.text) &&
         ocrAvailable
       ) {
-
+        const fullOcrStarted = Date.now();
         const ocr = await ocrGiaFacsimileFullPages(bytes);
+        logUploadPipelineTiming({
+          phase: "pdf-full-page-ocr",
+          durationMs: Date.now() - fullOcrStarted,
+          labFamily: labFamilyLabel("GIA"),
+          detail: "gia-facsimile-pages",
+        });
 
         // Diagram values live in page OCR — put OCR before PDF shell so proportion block selection wins.
         const combined = [ocr.text, pdf.text].filter(Boolean).join("\n\n").trim();

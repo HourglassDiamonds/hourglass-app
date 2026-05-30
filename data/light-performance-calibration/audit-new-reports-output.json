@@ -1,0 +1,4577 @@
+[
+  {
+    "reportId": "LG636401995",
+    "labHint": "IGI",
+    "detection": {
+      "parserType": "igi-standard",
+      "lab": "IGI",
+      "pdfTextLayerLength": 2283,
+      "textMethod": "pdf-text",
+      "textLength": 2283,
+      "textSnippet": "Medium To\nSlightly Thick\n(Faceted)\n13.5%\n59%\n33.2°\n41.7°\n44.5%\nPointed\n61.7%\nPROPORTIONS\nCLARITY CHARACTERISTICS\nKEY TO SYMBOLS\nRed symbols indicate internal characteristics.\nGreen symbols indicate external characteristics.\nADDITIONAL GRADING INFORMATION\nPolish   EXCELLENT\nSymmetry   EXCELLENT\nFluorescence   NONE\nInscription(s)   Ä LG636401995\nComments: This Laboratory Grown Diamond was\ncreated by Chemical Vapor Deposition (CVD) growth\nprocess.\nIndications of post-growth treatment.\nJune 4, 2024\nIGI Report Number   LG636401995\nDescription   LABORATORY GROWN DIAMOND\nShape and Cutting Style   ROUND BRILLIANT\nMeasurements   8.07 - 8.12 X 4.99 MM\nGRADING RESULTS\nCarat Weight   2.01 CARATS\nColor Grade   FANCY INTENSE BLUE\nClarity Grade   VS 1\nCut Grade   EXCELLENT\nADDITIONAL GRADING INFORMATION\nPolish   EXCELLENT\nSymmetry   EXCELLENT\nFluorescence   NONE\nInscription(s)   Ä LG636401995\nComments: This Laboratory Grown Diamond was\ncreated by Chemical Vapor Deposition (CVD) growth\nprocess.\nIndications of post-growth treatment.\nMedium To\nSlightly\nThick\n(Faceted)\n13.5%\n59%\n33.2°\n41.7° 44.5%\nPointed\n61.7%\n© IGI 2020, International Gemological Institute   FD - 10 20\nwww.igi.org\nDIAMOND REPORT\nLAB"
+    },
+    "textParseOnly": {
+      "fields": {
+        "shape": "Round Brilliant",
+        "carat": "2.01",
+        "measurements": "8.07 - 8.12 X 4.99 mm",
+        "tablePercent": "59",
+        "depthPercent": "61.7",
+        "crownAngle": "33.2",
+        "pavilionAngle": "41.7",
+        "lowerHalfPercent": "",
+        "starLengthPercent": "",
+        "girdle": "Medium to Slightly Thick (Faceted)",
+        "culet": "Pointed",
+        "polish": "Excellent",
+        "symmetry": "Excellent",
+        "fluorescence": "None",
+        "cutGrade": "Excellent"
+      },
+      "confidence": {
+        "shape": "medium",
+        "carat": "medium",
+        "measurements": "high",
+        "tablePercent": "high",
+        "depthPercent": "high",
+        "crownAngle": "high",
+        "pavilionAngle": "high",
+        "lowerHalfPercent": "missing",
+        "starLengthPercent": "missing",
+        "girdle": "medium",
+        "culet": "high",
+        "polish": "medium",
+        "symmetry": "medium",
+        "fluorescence": "medium",
+        "cutGrade": "medium"
+      },
+      "warnings": [
+        "Text source: PDF text layer (selectable text).",
+        "Calibration status: structurally eligible for calibration statistics after save (confirm each value on the report first).",
+        "Some values were read via OCR — confirm each field against the report before saving.",
+        "Not detected from report text — review manually: Lower girdle / lower half %, Star length %.",
+        "IGI: lower-half and star length are not on every report — leave blank when not printed."
+      ],
+      "parserType": "igi-standard"
+    },
+    "calibration": {
+      "parserPathUsed": "igi-standard",
+      "textMethod": "pdf-text",
+      "ocrAttempted": true,
+      "warnings": [
+        "Text source: PDF text layer (selectable text).",
+        "Calibration status: structurally eligible for calibration statistics after save (confirm each value on the report first).",
+        "Some values were read via OCR — confirm each field against the report before saving.",
+        "Not detected from report text — review manually: Lower girdle / lower half %, Star length %.",
+        "IGI: lower-half and star length are not on every report — leave blank when not printed."
+      ],
+      "fields": {
+        "shape": "Round Brilliant",
+        "carat": "2.01",
+        "measurements": "8.07 - 8.12 X 4.99 mm",
+        "tablePercent": "59",
+        "depthPercent": "61.7",
+        "crownAngle": "33.2",
+        "pavilionAngle": "41.7",
+        "lowerHalfPercent": "",
+        "starLengthPercent": "",
+        "girdle": "Medium to Slightly Thick (Faceted)",
+        "culet": "Pointed",
+        "polish": "Excellent",
+        "symmetry": "Excellent",
+        "fluorescence": "None",
+        "cutGrade": "Excellent"
+      },
+      "confidence": {
+        "shape": "medium",
+        "carat": "medium",
+        "measurements": "high",
+        "tablePercent": "high",
+        "depthPercent": "high",
+        "crownAngle": "high",
+        "pavilionAngle": "high",
+        "lowerHalfPercent": "missing",
+        "starLengthPercent": "missing",
+        "girdle": "medium",
+        "culet": "high",
+        "polish": "medium",
+        "symmetry": "medium",
+        "fluorescence": "medium",
+        "cutGrade": "medium"
+      },
+      "timings": {
+        "documentExtractMs": 33,
+        "pdfFullPageOcrMs": 0,
+        "textParseMs": 2,
+        "imageOcrMs": 404,
+        "finalizerMs": 0,
+        "clientPayloadMs": 0,
+        "totalMs": 441,
+        "labFamily": "IGI"
+      },
+      "diagnostics": {
+        "reportNumber": "LG636401995",
+        "lab": "IGI",
+        "reportFamily": "igi-standard",
+        "fallbackStage": "text-layer",
+        "textMethod": "pdf-text",
+        "usedImageOCR": true,
+        "pdfTextLayerLength": 2283,
+        "gcalImageOnlyPdf": false,
+        "rawTextLength": 2283,
+        "rawTextSnippet": "Medium To\nSlightly Thick\n(Faceted)\n13.5%\n59%\n33.2°\n41.7°\n44.5%\nPointed\n61.7%\nPROPORTIONS\nCLARITY CHARACTERISTICS\nKEY TO SYMBOLS\nRed symbols indicate internal characteristics.\nGreen symbols indicate external characteristics.\nADDITIONAL GRADING INFORMATION\nPolish   EXCELLENT\nSymmetry   EXCELLENT\nFluorescence   NONE\nInscription(s)   Ä LG636401995\nComments: This Laboratory Grown Diamond was\ncreated by Chemical Vapor Deposition (CVD) growth\nprocess.\nIndications of post-growth treatment.\nJune 4, 2024\nIGI Report Number   LG636401995\nDescription   LABORATORY GROWN DIAMOND\nShape and Cutting Style   ROU",
+        "warnings": [
+          "Text source: PDF text layer (selectable text).",
+          "Calibration status: structurally eligible for calibration statistics after save (confirm each value on the report first).",
+          "Some values were read via OCR — confirm each field against the report before saving.",
+          "Not detected from report text — review manually: Lower girdle / lower half %, Star length %.",
+          "IGI: lower-half and star length are not on every report — leave blank when not printed."
+        ],
+        "fields": [
+          {
+            "field": "shape",
+            "label": "Shape",
+            "target": false,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram",
+              "textMethod": "pdf-text",
+              "extractionClass": "DIRECT_DIAGRAM",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "Round Brilliant",
+            "repairedValue": null,
+            "confidence": "medium",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…DIAMOND Shape and Cutting Style ROUND BRILLIANT Measurements 8.07 - 8.12 X 4.99…",
+            "rejectionReason": null
+          },
+          {
+            "field": "carat",
+            "label": "Carat",
+            "target": false,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram",
+              "textMethod": "pdf-text",
+              "extractionClass": "DIRECT_DIAGRAM",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "2.01",
+            "repairedValue": null,
+            "confidence": "medium",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…MM GRADING RESULTS Carat Weight 2.01 CARATS Color Grade FANCY INTENS…",
+            "rejectionReason": null
+          },
+          {
+            "field": "measurements",
+            "label": "Measurements",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "pdf-text",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "8.07 - 8.12 X 4.99 mm",
+            "repairedValue": "8.07 - 8.12 x 4.99 mm",
+            "confidence": "high",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…le ROUND BRILLIANT Measurements 8.07 - 8.12 X 4.99 MM GRADING RESULT…",
+            "rejectionReason": null
+          },
+          {
+            "field": "tablePercent",
+            "label": "Table %",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram-ocr",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "diagram"
+            },
+            "parsedValue": "59",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…Slightly Thick (Faceted) 13.5% 59% 33.2° 41.7° 44.5% Pointed 61.7…",
+            "rejectionReason": null
+          },
+          {
+            "field": "depthPercent",
+            "label": "Depth %",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram-ocr",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "diagram"
+            },
+            "parsedValue": "61.7",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…% 59% 33.2° 41.7° 44.5% Pointed 61.7% PROPORTIONS CLARITY CHARACTERI…",
+            "rejectionReason": null
+          },
+          {
+            "field": "crownAngle",
+            "label": "Crown angle",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram-ocr",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "diagram"
+            },
+            "parsedValue": "33.2",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…ghtly Thick (Faceted) 13.5% 59% 33.2° 41.7° 44.5% Pointed 61.7% PROP…",
+            "rejectionReason": null
+          },
+          {
+            "field": "pavilionAngle",
+            "label": "Pavilion angle",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram-ocr",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "diagram"
+            },
+            "parsedValue": "41.7",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…Thick (Faceted) 13.5% 59% 33.2° 41.7° 44.5% Pointed 61.7% PROPORTION…",
+            "rejectionReason": null
+          },
+          {
+            "field": "lowerHalfPercent",
+            "label": "Lower half %",
+            "target": true,
+            "decision": "missing",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "pdf-text",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": "proportion diagram not in PDF text layer — OCR or manual required"
+          },
+          {
+            "field": "starLengthPercent",
+            "label": "Star length %",
+            "target": true,
+            "decision": "missing",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "pdf-text",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": "proportion diagram not in PDF text layer — OCR or manual required"
+          },
+          {
+            "field": "girdle",
+            "label": "Girdle",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram",
+              "textMethod": "pdf-text",
+              "extractionClass": "DIRECT_DIAGRAM",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "Medium to Slightly Thick (Faceted)",
+            "repairedValue": null,
+            "confidence": "medium",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "Medium To Slightly Thick (Faceted) 13.5% 59% 33.2° 41.7° 44.5% Poi…",
+            "rejectionReason": null
+          },
+          {
+            "field": "culet",
+            "label": "Culet",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "pdf-text",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "Pointed",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…ed) 13.5% 59% 33.2° 41.7° 44.5% Pointed 61.7% PROPORTIONS CLARITY CHARA…",
+            "rejectionReason": null
+          },
+          {
+            "field": "polish",
+            "label": "Polish",
+            "target": false,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram",
+              "textMethod": "pdf-text",
+              "extractionClass": "DIRECT_DIAGRAM",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "Excellent",
+            "repairedValue": null,
+            "confidence": "medium",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…ONAL GRADING INFORMATION Polish EXCELLENT Symmetry EXCELLENT Fluorescence…",
+            "rejectionReason": null
+          },
+          {
+            "field": "symmetry",
+            "label": "Symmetry",
+            "target": false,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram",
+              "textMethod": "pdf-text",
+              "extractionClass": "DIRECT_DIAGRAM",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "Excellent",
+            "repairedValue": null,
+            "confidence": "medium",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…ONAL GRADING INFORMATION Polish EXCELLENT Symmetry EXCELLENT Fluorescence…",
+            "rejectionReason": null
+          },
+          {
+            "field": "fluorescence",
+            "label": "Fluorescence",
+            "target": false,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram",
+              "textMethod": "pdf-text",
+              "extractionClass": "DIRECT_DIAGRAM",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "None",
+            "repairedValue": null,
+            "confidence": "medium",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…Symmetry EXCELLENT Fluorescence NONE Inscription(s) Ä LG636401995 Co…",
+            "rejectionReason": null
+          },
+          {
+            "field": "cutGrade",
+            "label": "Cut grade",
+            "target": false,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram",
+              "textMethod": "pdf-text",
+              "extractionClass": "DIRECT_DIAGRAM",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "Excellent",
+            "repairedValue": null,
+            "confidence": "medium",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…ONAL GRADING INFORMATION Polish EXCELLENT Symmetry EXCELLENT Fluorescence…",
+            "rejectionReason": null
+          }
+        ],
+        "targetFields": [
+          {
+            "field": "measurements",
+            "label": "Measurements",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "pdf-text",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "8.07 - 8.12 X 4.99 mm",
+            "repairedValue": "8.07 - 8.12 x 4.99 mm",
+            "confidence": "high",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…le ROUND BRILLIANT Measurements 8.07 - 8.12 X 4.99 MM GRADING RESULT…",
+            "rejectionReason": null
+          },
+          {
+            "field": "tablePercent",
+            "label": "Table %",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram-ocr",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "diagram"
+            },
+            "parsedValue": "59",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…Slightly Thick (Faceted) 13.5% 59% 33.2° 41.7° 44.5% Pointed 61.7…",
+            "rejectionReason": null
+          },
+          {
+            "field": "depthPercent",
+            "label": "Depth %",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram-ocr",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "diagram"
+            },
+            "parsedValue": "61.7",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…% 59% 33.2° 41.7° 44.5% Pointed 61.7% PROPORTIONS CLARITY CHARACTERI…",
+            "rejectionReason": null
+          },
+          {
+            "field": "crownAngle",
+            "label": "Crown angle",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram-ocr",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "diagram"
+            },
+            "parsedValue": "33.2",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…ghtly Thick (Faceted) 13.5% 59% 33.2° 41.7° 44.5% Pointed 61.7% PROP…",
+            "rejectionReason": null
+          },
+          {
+            "field": "pavilionAngle",
+            "label": "Pavilion angle",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram-ocr",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "diagram"
+            },
+            "parsedValue": "41.7",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…Thick (Faceted) 13.5% 59% 33.2° 41.7° 44.5% Pointed 61.7% PROPORTION…",
+            "rejectionReason": null
+          },
+          {
+            "field": "lowerHalfPercent",
+            "label": "Lower half %",
+            "target": true,
+            "decision": "missing",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "pdf-text",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": "proportion diagram not in PDF text layer — OCR or manual required"
+          },
+          {
+            "field": "starLengthPercent",
+            "label": "Star length %",
+            "target": true,
+            "decision": "missing",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "pdf-text",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": "proportion diagram not in PDF text layer — OCR or manual required"
+          },
+          {
+            "field": "girdle",
+            "label": "Girdle",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram",
+              "textMethod": "pdf-text",
+              "extractionClass": "DIRECT_DIAGRAM",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "Medium to Slightly Thick (Faceted)",
+            "repairedValue": null,
+            "confidence": "medium",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "Medium To Slightly Thick (Faceted) 13.5% 59% 33.2° 41.7° 44.5% Poi…",
+            "rejectionReason": null
+          },
+          {
+            "field": "culet",
+            "label": "Culet",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "pdf-text",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "Pointed",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…ed) 13.5% 59% 33.2° 41.7° 44.5% Pointed 61.7% PROPORTIONS CLARITY CHARA…",
+            "rejectionReason": null
+          }
+        ],
+        "summary": {
+          "accepted": 13,
+          "rejected": 0,
+          "missing": 2,
+          "targetAccepted": 7,
+          "targetTotal": 9
+        }
+      }
+    },
+    "client": {
+      "parserPathUsed": "igi-standard",
+      "textMethod": "pdf-text",
+      "ocrAttempted": false,
+      "warnings": [
+        "Text source: PDF text layer (selectable text).",
+        "Calibration status: structurally eligible for calibration statistics after save (confirm each value on the report first).",
+        "Some values were read via OCR — confirm each field against the report before saving.",
+        "Not detected from report text — review manually: Lower girdle / lower half %, Star length %.",
+        "IGI: lower-half and star length are not on every report — leave blank when not printed."
+      ],
+      "fields": {
+        "shape": "Round Brilliant",
+        "carat": "2.01",
+        "measurements": "8.07 - 8.12 X 4.99 mm",
+        "tablePercent": "59",
+        "depthPercent": "61.7",
+        "crownAngle": "33.2",
+        "pavilionAngle": "41.7",
+        "lowerHalfPercent": "",
+        "starLengthPercent": "",
+        "girdle": "Medium to Slightly Thick (Faceted)",
+        "culet": "Pointed",
+        "polish": "Excellent",
+        "symmetry": "Excellent",
+        "fluorescence": "None",
+        "cutGrade": "Excellent"
+      },
+      "confidence": {
+        "shape": "medium",
+        "carat": "medium",
+        "measurements": "high",
+        "tablePercent": "high",
+        "depthPercent": "high",
+        "crownAngle": "high",
+        "pavilionAngle": "high",
+        "lowerHalfPercent": "missing",
+        "starLengthPercent": "missing",
+        "girdle": "medium",
+        "culet": "high",
+        "polish": "medium",
+        "symmetry": "medium",
+        "fluorescence": "medium",
+        "cutGrade": "medium"
+      },
+      "timings": {
+        "documentExtractMs": 34,
+        "pdfFullPageOcrMs": 0,
+        "textParseMs": 2,
+        "imageOcrMs": 0,
+        "finalizerMs": 1,
+        "clientPayloadMs": 0,
+        "totalMs": 38,
+        "labFamily": "IGI"
+      },
+      "diagnostics": {
+        "reportNumber": "LG636401995",
+        "lab": "IGI",
+        "reportFamily": "igi-standard",
+        "fallbackStage": "text-layer",
+        "textMethod": "pdf-text",
+        "usedImageOCR": false,
+        "pdfTextLayerLength": 2283,
+        "gcalImageOnlyPdf": false,
+        "rawTextLength": 2283,
+        "rawTextSnippet": "Medium To\nSlightly Thick\n(Faceted)\n13.5%\n59%\n33.2°\n41.7°\n44.5%\nPointed\n61.7%\nPROPORTIONS\nCLARITY CHARACTERISTICS\nKEY TO SYMBOLS\nRed symbols indicate internal characteristics.\nGreen symbols indicate external characteristics.\nADDITIONAL GRADING INFORMATION\nPolish   EXCELLENT\nSymmetry   EXCELLENT\nFluorescence   NONE\nInscription(s)   Ä LG636401995\nComments: This Laboratory Grown Diamond was\ncreated by Chemical Vapor Deposition (CVD) growth\nprocess.\nIndications of post-growth treatment.\nJune 4, 2024\nIGI Report Number   LG636401995\nDescription   LABORATORY GROWN DIAMOND\nShape and Cutting Style   ROU",
+        "warnings": [
+          "Text source: PDF text layer (selectable text).",
+          "Calibration status: structurally eligible for calibration statistics after save (confirm each value on the report first).",
+          "Some values were read via OCR — confirm each field against the report before saving.",
+          "Not detected from report text — review manually: Lower girdle / lower half %, Star length %.",
+          "IGI: lower-half and star length are not on every report — leave blank when not printed."
+        ],
+        "fields": [
+          {
+            "field": "shape",
+            "label": "Shape",
+            "target": false,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram",
+              "textMethod": "pdf-text",
+              "extractionClass": "DIRECT_DIAGRAM",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "Round Brilliant",
+            "repairedValue": null,
+            "confidence": "medium",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…DIAMOND Shape and Cutting Style ROUND BRILLIANT Measurements 8.07 - 8.12 X 4.99…",
+            "rejectionReason": null
+          },
+          {
+            "field": "carat",
+            "label": "Carat",
+            "target": false,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram",
+              "textMethod": "pdf-text",
+              "extractionClass": "DIRECT_DIAGRAM",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "2.01",
+            "repairedValue": null,
+            "confidence": "medium",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…MM GRADING RESULTS Carat Weight 2.01 CARATS Color Grade FANCY INTENS…",
+            "rejectionReason": null
+          },
+          {
+            "field": "measurements",
+            "label": "Measurements",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "pdf-text",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "8.07 - 8.12 X 4.99 mm",
+            "repairedValue": "8.07 - 8.12 x 4.99 mm",
+            "confidence": "high",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…le ROUND BRILLIANT Measurements 8.07 - 8.12 X 4.99 MM GRADING RESULT…",
+            "rejectionReason": null
+          },
+          {
+            "field": "tablePercent",
+            "label": "Table %",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "pdf-text",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "59",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…Slightly Thick (Faceted) 13.5% 59% 33.2° 41.7° 44.5% Pointed 61.7…",
+            "rejectionReason": null
+          },
+          {
+            "field": "depthPercent",
+            "label": "Depth %",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "pdf-text",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "61.7",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…% 59% 33.2° 41.7° 44.5% Pointed 61.7% PROPORTIONS CLARITY CHARACTERI…",
+            "rejectionReason": null
+          },
+          {
+            "field": "crownAngle",
+            "label": "Crown angle",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "pdf-text",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "33.2",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…ghtly Thick (Faceted) 13.5% 59% 33.2° 41.7° 44.5% Pointed 61.7% PROP…",
+            "rejectionReason": null
+          },
+          {
+            "field": "pavilionAngle",
+            "label": "Pavilion angle",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "pdf-text",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "41.7",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…Thick (Faceted) 13.5% 59% 33.2° 41.7° 44.5% Pointed 61.7% PROPORTION…",
+            "rejectionReason": null
+          },
+          {
+            "field": "lowerHalfPercent",
+            "label": "Lower half %",
+            "target": true,
+            "decision": "missing",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "pdf-text",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": "proportion diagram not in PDF text layer — OCR or manual required"
+          },
+          {
+            "field": "starLengthPercent",
+            "label": "Star length %",
+            "target": true,
+            "decision": "missing",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "pdf-text",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": "proportion diagram not in PDF text layer — OCR or manual required"
+          },
+          {
+            "field": "girdle",
+            "label": "Girdle",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram",
+              "textMethod": "pdf-text",
+              "extractionClass": "DIRECT_DIAGRAM",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "Medium to Slightly Thick (Faceted)",
+            "repairedValue": null,
+            "confidence": "medium",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "Medium To Slightly Thick (Faceted) 13.5% 59% 33.2° 41.7° 44.5% Poi…",
+            "rejectionReason": null
+          },
+          {
+            "field": "culet",
+            "label": "Culet",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "pdf-text",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "Pointed",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…ed) 13.5% 59% 33.2° 41.7° 44.5% Pointed 61.7% PROPORTIONS CLARITY CHARA…",
+            "rejectionReason": null
+          },
+          {
+            "field": "polish",
+            "label": "Polish",
+            "target": false,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram",
+              "textMethod": "pdf-text",
+              "extractionClass": "DIRECT_DIAGRAM",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "Excellent",
+            "repairedValue": null,
+            "confidence": "medium",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…ONAL GRADING INFORMATION Polish EXCELLENT Symmetry EXCELLENT Fluorescence…",
+            "rejectionReason": null
+          },
+          {
+            "field": "symmetry",
+            "label": "Symmetry",
+            "target": false,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram",
+              "textMethod": "pdf-text",
+              "extractionClass": "DIRECT_DIAGRAM",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "Excellent",
+            "repairedValue": null,
+            "confidence": "medium",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…ONAL GRADING INFORMATION Polish EXCELLENT Symmetry EXCELLENT Fluorescence…",
+            "rejectionReason": null
+          },
+          {
+            "field": "fluorescence",
+            "label": "Fluorescence",
+            "target": false,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram",
+              "textMethod": "pdf-text",
+              "extractionClass": "DIRECT_DIAGRAM",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "None",
+            "repairedValue": null,
+            "confidence": "medium",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…Symmetry EXCELLENT Fluorescence NONE Inscription(s) Ä LG636401995 Co…",
+            "rejectionReason": null
+          },
+          {
+            "field": "cutGrade",
+            "label": "Cut grade",
+            "target": false,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram",
+              "textMethod": "pdf-text",
+              "extractionClass": "DIRECT_DIAGRAM",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "Excellent",
+            "repairedValue": null,
+            "confidence": "medium",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…ONAL GRADING INFORMATION Polish EXCELLENT Symmetry EXCELLENT Fluorescence…",
+            "rejectionReason": null
+          }
+        ],
+        "targetFields": [
+          {
+            "field": "measurements",
+            "label": "Measurements",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "pdf-text",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "8.07 - 8.12 X 4.99 mm",
+            "repairedValue": "8.07 - 8.12 x 4.99 mm",
+            "confidence": "high",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…le ROUND BRILLIANT Measurements 8.07 - 8.12 X 4.99 MM GRADING RESULT…",
+            "rejectionReason": null
+          },
+          {
+            "field": "tablePercent",
+            "label": "Table %",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "pdf-text",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "59",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…Slightly Thick (Faceted) 13.5% 59% 33.2° 41.7° 44.5% Pointed 61.7…",
+            "rejectionReason": null
+          },
+          {
+            "field": "depthPercent",
+            "label": "Depth %",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "pdf-text",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "61.7",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…% 59% 33.2° 41.7° 44.5% Pointed 61.7% PROPORTIONS CLARITY CHARACTERI…",
+            "rejectionReason": null
+          },
+          {
+            "field": "crownAngle",
+            "label": "Crown angle",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "pdf-text",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "33.2",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…ghtly Thick (Faceted) 13.5% 59% 33.2° 41.7° 44.5% Pointed 61.7% PROP…",
+            "rejectionReason": null
+          },
+          {
+            "field": "pavilionAngle",
+            "label": "Pavilion angle",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "pdf-text",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "41.7",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…Thick (Faceted) 13.5% 59% 33.2° 41.7° 44.5% Pointed 61.7% PROPORTION…",
+            "rejectionReason": null
+          },
+          {
+            "field": "lowerHalfPercent",
+            "label": "Lower half %",
+            "target": true,
+            "decision": "missing",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "pdf-text",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": "proportion diagram not in PDF text layer — OCR or manual required"
+          },
+          {
+            "field": "starLengthPercent",
+            "label": "Star length %",
+            "target": true,
+            "decision": "missing",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "pdf-text",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": "proportion diagram not in PDF text layer — OCR or manual required"
+          },
+          {
+            "field": "girdle",
+            "label": "Girdle",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram",
+              "textMethod": "pdf-text",
+              "extractionClass": "DIRECT_DIAGRAM",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "Medium to Slightly Thick (Faceted)",
+            "repairedValue": null,
+            "confidence": "medium",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "Medium To Slightly Thick (Faceted) 13.5% 59% 33.2° 41.7° 44.5% Poi…",
+            "rejectionReason": null
+          },
+          {
+            "field": "culet",
+            "label": "Culet",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "pdf-text",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "Pointed",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…ed) 13.5% 59% 33.2° 41.7° 44.5% Pointed 61.7% PROPORTIONS CLARITY CHARA…",
+            "rejectionReason": null
+          }
+        ],
+        "summary": {
+          "accepted": 13,
+          "rejected": 0,
+          "missing": 2,
+          "targetAccepted": 7,
+          "targetTotal": 9
+        }
+      }
+    }
+  },
+  {
+    "reportId": "GIA2496027047",
+    "labHint": "GIA",
+    "detection": {
+      "parserType": "gia-modern",
+      "lab": "GIA",
+      "pdfTextLayerLength": 2074,
+      "textMethod": "pdf-text",
+      "textLength": 2074,
+      "textSnippet": "*This GIA Laboratory-Grown Diamond Report describes color and\nclarity specifications on the same scale as the GIA Diamond Grading\nReport for natural diamonds. The specifications do not correlate to\nnature’s continuum of rarity. To learn more about laboratory-grown\ndiamonds, including how GIA differentiates them from natural\ndiamonds, scan the QR code or visit discover.gia.edu/GIALGDR.\nThis report is not a guarantee or valuation. For additional information and\nimpor tant limitations and disclaimers, please see GIA .edu/terms or call\n+1 800 421 7250 or +1 760 603 4500. ©2022 Gemological Institute of America, Inc.\nLGDR\nVerif y this report at reportcheck.GIA.edu\nLABORATORY-GROWN DIAMOND REPORT - DOSSIER\nApril 10, 2024\nGIA Report Number ....................................................... 2496027047\nIdentification ........................................................ Laboratory-Grown\nShape and Cutting Style ........................................... Round Brilliant\nMeasurements ................................................8.23 - 8.27 x 5.02 mm\nLABORATORY-GROWN DIAMOND SPECIFICATIONS*\nCarat Weight ....................................................................... 2.11 cara"
+    },
+    "textParseOnly": {
+      "fields": {
+        "shape": "Round Brilliant",
+        "carat": "2.11",
+        "measurements": "8.23 - 8.27 x 5.02 mm",
+        "tablePercent": "",
+        "depthPercent": "60",
+        "crownAngle": "",
+        "pavilionAngle": "",
+        "lowerHalfPercent": "",
+        "starLengthPercent": "",
+        "girdle": "",
+        "culet": "",
+        "polish": "Excellent",
+        "symmetry": "Excellent",
+        "fluorescence": "None",
+        "cutGrade": "Excellent"
+      },
+      "confidence": {
+        "shape": "high",
+        "carat": "high",
+        "measurements": "high",
+        "tablePercent": "missing",
+        "depthPercent": "medium",
+        "crownAngle": "missing",
+        "pavilionAngle": "missing",
+        "lowerHalfPercent": "missing",
+        "starLengthPercent": "missing",
+        "girdle": "missing",
+        "culet": "missing",
+        "polish": "high",
+        "symmetry": "high",
+        "fluorescence": "high",
+        "cutGrade": "high"
+      },
+      "warnings": [
+        "Text source: PDF text layer (selectable text).",
+        "Calibration status: review-only — verify fields on the report; not calibration-statistics eligible until core proportions are complete and trusted.",
+        "Some values were read via OCR — confirm each field against the report before saving.",
+        "Not detected from report text — review manually: Table %, Crown angle (°), Pavilion angle (°), Lower girdle / lower half %, Star length %, Girdle (as on report), Culet (as on report)."
+      ],
+      "parserType": "gia-modern"
+    },
+    "calibration": {
+      "parserPathUsed": "gia-modern",
+      "textMethod": "pdf-text",
+      "ocrAttempted": true,
+      "warnings": [
+        "Text source: PDF text layer (selectable text).",
+        "Calibration status: review-only — verify fields on the report; not calibration-statistics eligible until core proportions are complete and trusted.",
+        "Some values were read via OCR — confirm each field against the report before saving.",
+        "Not detected from report text — review manually: Table %, Crown angle (°), Pavilion angle (°), Lower girdle / lower half %, Star length %, Girdle (as on report), Culet (as on report)."
+      ],
+      "fields": {
+        "shape": "Round Brilliant",
+        "carat": "2.11",
+        "measurements": "8.23 - 8.27 x 5.02 mm",
+        "tablePercent": "",
+        "depthPercent": "60",
+        "crownAngle": "",
+        "pavilionAngle": "",
+        "lowerHalfPercent": "",
+        "starLengthPercent": "",
+        "girdle": "",
+        "culet": "",
+        "polish": "Excellent",
+        "symmetry": "Excellent",
+        "fluorescence": "None",
+        "cutGrade": "Excellent"
+      },
+      "confidence": {
+        "shape": "high",
+        "carat": "high",
+        "measurements": "high",
+        "tablePercent": "missing",
+        "depthPercent": "medium",
+        "crownAngle": "missing",
+        "pavilionAngle": "missing",
+        "lowerHalfPercent": "missing",
+        "starLengthPercent": "missing",
+        "girdle": "missing",
+        "culet": "missing",
+        "polish": "high",
+        "symmetry": "high",
+        "fluorescence": "high",
+        "cutGrade": "high"
+      },
+      "timings": {
+        "documentExtractMs": 317,
+        "pdfFullPageOcrMs": 0,
+        "textParseMs": 15,
+        "imageOcrMs": 309,
+        "finalizerMs": 1,
+        "clientPayloadMs": 0,
+        "totalMs": 645,
+        "labFamily": "GIA"
+      },
+      "diagnostics": {
+        "reportNumber": "GIA2496027047",
+        "lab": "GIA",
+        "reportFamily": "gia-modern",
+        "fallbackStage": "text-layer",
+        "textMethod": "pdf-text",
+        "usedImageOCR": true,
+        "pdfTextLayerLength": 2074,
+        "gcalImageOnlyPdf": false,
+        "rawTextLength": 2074,
+        "rawTextSnippet": "*This GIA Laboratory-Grown Diamond Report describes color and\nclarity specifications on the same scale as the GIA Diamond Grading\nReport for natural diamonds. The specifications do not correlate to\nnature’s continuum of rarity. To learn more about laboratory-grown\ndiamonds, including how GIA differentiates them from natural\ndiamonds, scan the QR code or visit discover.gia.edu/GIALGDR.\nThis report is not a guarantee or valuation. For additional information and\nimpor tant limitations and disclaimers, please see GIA .edu/terms or call\n+1 800 421 7250 or +1 760 603 4500. ©2022 Gemological Institut",
+        "warnings": [
+          "Text source: PDF text layer (selectable text).",
+          "Calibration status: review-only — verify fields on the report; not calibration-statistics eligible until core proportions are complete and trusted.",
+          "Some values were read via OCR — confirm each field against the report before saving.",
+          "Not detected from report text — review manually: Table %, Crown angle (°), Pavilion angle (°), Lower girdle / lower half %, Star length %, Girdle (as on report), Culet (as on report)."
+        ],
+        "fields": [
+          {
+            "field": "shape",
+            "label": "Shape",
+            "target": false,
+            "decision": "accepted",
+            "source": {
+              "method": "pdf-text",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "Round Brilliant",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…............................... Round Brilliant Measurements ..................…",
+            "rejectionReason": null
+          },
+          {
+            "field": "carat",
+            "label": "Carat",
+            "target": false,
+            "decision": "accepted",
+            "source": {
+              "method": "pdf-text",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "2.11",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…............................... 2.11 carat Color ...................…",
+            "rejectionReason": null
+          },
+          {
+            "field": "measurements",
+            "label": "Measurements",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "pdf-text",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "8.23 - 8.27 x 5.02 mm",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…................................8.23 - 8.27 x 5.02 mm LABORATORY-GRO…",
+            "rejectionReason": null
+          },
+          {
+            "field": "tablePercent",
+            "label": "Table %",
+            "target": true,
+            "decision": "missing",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "pdf-text",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": "proportion diagram not in PDF text layer — OCR or manual required"
+          },
+          {
+            "field": "depthPercent",
+            "label": "Depth %",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram-ocr",
+              "textMethod": "pdf-text",
+              "extractionClass": "DIRECT_DIAGRAM",
+              "valueSource": "diagram"
+            },
+            "parsedValue": "60",
+            "repairedValue": null,
+            "confidence": "medium",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…or call +1 800 421 7250 or +1 760 603 4500. ©2022 Gemological Ins…",
+            "rejectionReason": null
+          },
+          {
+            "field": "crownAngle",
+            "label": "Crown angle",
+            "target": true,
+            "decision": "missing",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "pdf-text",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": "proportion diagram not in PDF text layer — OCR or manual required"
+          },
+          {
+            "field": "pavilionAngle",
+            "label": "Pavilion angle",
+            "target": true,
+            "decision": "missing",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "pdf-text",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": "proportion diagram not in PDF text layer — OCR or manual required"
+          },
+          {
+            "field": "lowerHalfPercent",
+            "label": "Lower half %",
+            "target": true,
+            "decision": "missing",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "pdf-text",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": "proportion diagram not in PDF text layer — OCR or manual required"
+          },
+          {
+            "field": "starLengthPercent",
+            "label": "Star length %",
+            "target": true,
+            "decision": "missing",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "pdf-text",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": "proportion diagram not in PDF text layer — OCR or manual required"
+          },
+          {
+            "field": "girdle",
+            "label": "Girdle",
+            "target": true,
+            "decision": "missing",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "pdf-text",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": "finish line not recovered from text/OCR region"
+          },
+          {
+            "field": "culet",
+            "label": "Culet",
+            "target": true,
+            "decision": "missing",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "pdf-text",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": "finish line not recovered from text/OCR region"
+          },
+          {
+            "field": "polish",
+            "label": "Polish",
+            "target": false,
+            "decision": "accepted",
+            "source": {
+              "method": "pdf-text",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "Excellent",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…............................... Excellent ADDITIONAL INFORMATION Polish .…",
+            "rejectionReason": null
+          },
+          {
+            "field": "symmetry",
+            "label": "Symmetry",
+            "target": false,
+            "decision": "accepted",
+            "source": {
+              "method": "pdf-text",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "Excellent",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…............................... Excellent ADDITIONAL INFORMATION Polish .…",
+            "rejectionReason": null
+          },
+          {
+            "field": "fluorescence",
+            "label": "Fluorescence",
+            "target": false,
+            "decision": "accepted",
+            "source": {
+              "method": "pdf-text",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "None",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…............................... None Clarity Characteristics .......…",
+            "rejectionReason": null
+          },
+          {
+            "field": "cutGrade",
+            "label": "Cut grade",
+            "target": false,
+            "decision": "accepted",
+            "source": {
+              "method": "pdf-text",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "Excellent",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…............................... Excellent ADDITIONAL INFORMATION Polish .…",
+            "rejectionReason": null
+          }
+        ],
+        "targetFields": [
+          {
+            "field": "measurements",
+            "label": "Measurements",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "pdf-text",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "8.23 - 8.27 x 5.02 mm",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…................................8.23 - 8.27 x 5.02 mm LABORATORY-GRO…",
+            "rejectionReason": null
+          },
+          {
+            "field": "tablePercent",
+            "label": "Table %",
+            "target": true,
+            "decision": "missing",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "pdf-text",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": "proportion diagram not in PDF text layer — OCR or manual required"
+          },
+          {
+            "field": "depthPercent",
+            "label": "Depth %",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram-ocr",
+              "textMethod": "pdf-text",
+              "extractionClass": "DIRECT_DIAGRAM",
+              "valueSource": "diagram"
+            },
+            "parsedValue": "60",
+            "repairedValue": null,
+            "confidence": "medium",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…or call +1 800 421 7250 or +1 760 603 4500. ©2022 Gemological Ins…",
+            "rejectionReason": null
+          },
+          {
+            "field": "crownAngle",
+            "label": "Crown angle",
+            "target": true,
+            "decision": "missing",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "pdf-text",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": "proportion diagram not in PDF text layer — OCR or manual required"
+          },
+          {
+            "field": "pavilionAngle",
+            "label": "Pavilion angle",
+            "target": true,
+            "decision": "missing",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "pdf-text",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": "proportion diagram not in PDF text layer — OCR or manual required"
+          },
+          {
+            "field": "lowerHalfPercent",
+            "label": "Lower half %",
+            "target": true,
+            "decision": "missing",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "pdf-text",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": "proportion diagram not in PDF text layer — OCR or manual required"
+          },
+          {
+            "field": "starLengthPercent",
+            "label": "Star length %",
+            "target": true,
+            "decision": "missing",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "pdf-text",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": "proportion diagram not in PDF text layer — OCR or manual required"
+          },
+          {
+            "field": "girdle",
+            "label": "Girdle",
+            "target": true,
+            "decision": "missing",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "pdf-text",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": "finish line not recovered from text/OCR region"
+          },
+          {
+            "field": "culet",
+            "label": "Culet",
+            "target": true,
+            "decision": "missing",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "pdf-text",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": "finish line not recovered from text/OCR region"
+          }
+        ],
+        "summary": {
+          "accepted": 8,
+          "rejected": 0,
+          "missing": 7,
+          "targetAccepted": 2,
+          "targetTotal": 9
+        }
+      }
+    },
+    "client": {
+      "parserPathUsed": "gia-modern",
+      "textMethod": "pdf-text",
+      "ocrAttempted": false,
+      "warnings": [
+        "Text source: PDF text layer (selectable text).",
+        "Calibration status: review-only — verify fields on the report; not calibration-statistics eligible until core proportions are complete and trusted.",
+        "Some values were read via OCR — confirm each field against the report before saving.",
+        "Not detected from report text — review manually: Table %, Crown angle (°), Pavilion angle (°), Lower girdle / lower half %, Star length %, Girdle (as on report), Culet (as on report)."
+      ],
+      "fields": {
+        "shape": "Round Brilliant",
+        "carat": "2.11",
+        "measurements": "8.23 - 8.27 x 5.02 mm",
+        "tablePercent": "",
+        "depthPercent": "60",
+        "crownAngle": "",
+        "pavilionAngle": "",
+        "lowerHalfPercent": "",
+        "starLengthPercent": "",
+        "girdle": "",
+        "culet": "",
+        "polish": "Excellent",
+        "symmetry": "Excellent",
+        "fluorescence": "None",
+        "cutGrade": "Excellent"
+      },
+      "confidence": {
+        "shape": "high",
+        "carat": "high",
+        "measurements": "high",
+        "tablePercent": "missing",
+        "depthPercent": "medium",
+        "crownAngle": "missing",
+        "pavilionAngle": "missing",
+        "lowerHalfPercent": "missing",
+        "starLengthPercent": "missing",
+        "girdle": "missing",
+        "culet": "missing",
+        "polish": "high",
+        "symmetry": "high",
+        "fluorescence": "high",
+        "cutGrade": "high"
+      },
+      "timings": {
+        "documentExtractMs": 27,
+        "pdfFullPageOcrMs": 0,
+        "textParseMs": 15,
+        "imageOcrMs": 0,
+        "finalizerMs": 2,
+        "clientPayloadMs": 0,
+        "totalMs": 44,
+        "labFamily": "GIA"
+      },
+      "diagnostics": {
+        "reportNumber": "GIA2496027047",
+        "lab": "GIA",
+        "reportFamily": "gia-modern",
+        "fallbackStage": "text-layer",
+        "textMethod": "pdf-text",
+        "usedImageOCR": false,
+        "pdfTextLayerLength": 2074,
+        "gcalImageOnlyPdf": false,
+        "rawTextLength": 2074,
+        "rawTextSnippet": "*This GIA Laboratory-Grown Diamond Report describes color and\nclarity specifications on the same scale as the GIA Diamond Grading\nReport for natural diamonds. The specifications do not correlate to\nnature’s continuum of rarity. To learn more about laboratory-grown\ndiamonds, including how GIA differentiates them from natural\ndiamonds, scan the QR code or visit discover.gia.edu/GIALGDR.\nThis report is not a guarantee or valuation. For additional information and\nimpor tant limitations and disclaimers, please see GIA .edu/terms or call\n+1 800 421 7250 or +1 760 603 4500. ©2022 Gemological Institut",
+        "warnings": [
+          "Text source: PDF text layer (selectable text).",
+          "Calibration status: review-only — verify fields on the report; not calibration-statistics eligible until core proportions are complete and trusted.",
+          "Some values were read via OCR — confirm each field against the report before saving.",
+          "Not detected from report text — review manually: Table %, Crown angle (°), Pavilion angle (°), Lower girdle / lower half %, Star length %, Girdle (as on report), Culet (as on report)."
+        ],
+        "fields": [
+          {
+            "field": "shape",
+            "label": "Shape",
+            "target": false,
+            "decision": "accepted",
+            "source": {
+              "method": "pdf-text",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "Round Brilliant",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…............................... Round Brilliant Measurements ..................…",
+            "rejectionReason": null
+          },
+          {
+            "field": "carat",
+            "label": "Carat",
+            "target": false,
+            "decision": "accepted",
+            "source": {
+              "method": "pdf-text",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "2.11",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…............................... 2.11 carat Color ...................…",
+            "rejectionReason": null
+          },
+          {
+            "field": "measurements",
+            "label": "Measurements",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "pdf-text",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "8.23 - 8.27 x 5.02 mm",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…................................8.23 - 8.27 x 5.02 mm LABORATORY-GRO…",
+            "rejectionReason": null
+          },
+          {
+            "field": "tablePercent",
+            "label": "Table %",
+            "target": true,
+            "decision": "missing",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "pdf-text",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": "proportion diagram not in PDF text layer — OCR or manual required"
+          },
+          {
+            "field": "depthPercent",
+            "label": "Depth %",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram",
+              "textMethod": "pdf-text",
+              "extractionClass": "DIRECT_DIAGRAM",
+              "valueSource": "diagram"
+            },
+            "parsedValue": "60",
+            "repairedValue": null,
+            "confidence": "medium",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…or call +1 800 421 7250 or +1 760 603 4500. ©2022 Gemological Ins…",
+            "rejectionReason": null
+          },
+          {
+            "field": "crownAngle",
+            "label": "Crown angle",
+            "target": true,
+            "decision": "missing",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "pdf-text",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": "proportion diagram not in PDF text layer — OCR or manual required"
+          },
+          {
+            "field": "pavilionAngle",
+            "label": "Pavilion angle",
+            "target": true,
+            "decision": "missing",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "pdf-text",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": "proportion diagram not in PDF text layer — OCR or manual required"
+          },
+          {
+            "field": "lowerHalfPercent",
+            "label": "Lower half %",
+            "target": true,
+            "decision": "missing",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "pdf-text",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": "proportion diagram not in PDF text layer — OCR or manual required"
+          },
+          {
+            "field": "starLengthPercent",
+            "label": "Star length %",
+            "target": true,
+            "decision": "missing",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "pdf-text",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": "proportion diagram not in PDF text layer — OCR or manual required"
+          },
+          {
+            "field": "girdle",
+            "label": "Girdle",
+            "target": true,
+            "decision": "missing",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "pdf-text",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": "finish line not recovered from text/OCR region"
+          },
+          {
+            "field": "culet",
+            "label": "Culet",
+            "target": true,
+            "decision": "missing",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "pdf-text",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": "finish line not recovered from text/OCR region"
+          },
+          {
+            "field": "polish",
+            "label": "Polish",
+            "target": false,
+            "decision": "accepted",
+            "source": {
+              "method": "pdf-text",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "Excellent",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…............................... Excellent ADDITIONAL INFORMATION Polish .…",
+            "rejectionReason": null
+          },
+          {
+            "field": "symmetry",
+            "label": "Symmetry",
+            "target": false,
+            "decision": "accepted",
+            "source": {
+              "method": "pdf-text",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "Excellent",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…............................... Excellent ADDITIONAL INFORMATION Polish .…",
+            "rejectionReason": null
+          },
+          {
+            "field": "fluorescence",
+            "label": "Fluorescence",
+            "target": false,
+            "decision": "accepted",
+            "source": {
+              "method": "pdf-text",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "None",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…............................... None Clarity Characteristics .......…",
+            "rejectionReason": null
+          },
+          {
+            "field": "cutGrade",
+            "label": "Cut grade",
+            "target": false,
+            "decision": "accepted",
+            "source": {
+              "method": "pdf-text",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "Excellent",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…............................... Excellent ADDITIONAL INFORMATION Polish .…",
+            "rejectionReason": null
+          }
+        ],
+        "targetFields": [
+          {
+            "field": "measurements",
+            "label": "Measurements",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "pdf-text",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "8.23 - 8.27 x 5.02 mm",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…................................8.23 - 8.27 x 5.02 mm LABORATORY-GRO…",
+            "rejectionReason": null
+          },
+          {
+            "field": "tablePercent",
+            "label": "Table %",
+            "target": true,
+            "decision": "missing",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "pdf-text",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": "proportion diagram not in PDF text layer — OCR or manual required"
+          },
+          {
+            "field": "depthPercent",
+            "label": "Depth %",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram",
+              "textMethod": "pdf-text",
+              "extractionClass": "DIRECT_DIAGRAM",
+              "valueSource": "diagram"
+            },
+            "parsedValue": "60",
+            "repairedValue": null,
+            "confidence": "medium",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…or call +1 800 421 7250 or +1 760 603 4500. ©2022 Gemological Ins…",
+            "rejectionReason": null
+          },
+          {
+            "field": "crownAngle",
+            "label": "Crown angle",
+            "target": true,
+            "decision": "missing",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "pdf-text",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": "proportion diagram not in PDF text layer — OCR or manual required"
+          },
+          {
+            "field": "pavilionAngle",
+            "label": "Pavilion angle",
+            "target": true,
+            "decision": "missing",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "pdf-text",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": "proportion diagram not in PDF text layer — OCR or manual required"
+          },
+          {
+            "field": "lowerHalfPercent",
+            "label": "Lower half %",
+            "target": true,
+            "decision": "missing",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "pdf-text",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": "proportion diagram not in PDF text layer — OCR or manual required"
+          },
+          {
+            "field": "starLengthPercent",
+            "label": "Star length %",
+            "target": true,
+            "decision": "missing",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "pdf-text",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": "proportion diagram not in PDF text layer — OCR or manual required"
+          },
+          {
+            "field": "girdle",
+            "label": "Girdle",
+            "target": true,
+            "decision": "missing",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "pdf-text",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": "finish line not recovered from text/OCR region"
+          },
+          {
+            "field": "culet",
+            "label": "Culet",
+            "target": true,
+            "decision": "missing",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "pdf-text",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": "finish line not recovered from text/OCR region"
+          }
+        ],
+        "summary": {
+          "accepted": 8,
+          "rejected": 0,
+          "missing": 7,
+          "targetAccepted": 2,
+          "targetTotal": 9
+        }
+      }
+    }
+  },
+  {
+    "reportId": "GIA6233708773",
+    "labHint": "GIA",
+    "detection": {
+      "parserType": "gia-modern",
+      "lab": "GIA",
+      "pdfTextLayerLength": 4848,
+      "textMethod": "ocr",
+      "textLength": 7315,
+      "textSnippet": "\\AALLLTT\nPi ® FACSIMILE\n: Fn] = GIA REPORT This is a digital representation of the original GIA Report. This representation might not\n25, 1S be accepted in lieu of the original GIA Report in certain circumstances. The original GIA\nAP 6 2 3 3 7 08 7 7 3 Report includes certain security features which are not reproducible on this facsimile.\nHe\nVerify this report at GIA.edu\nGIA NATURAL DIAMOND GRADING REPORT PROPORTIONS GRADING SCALES\nGIA Report NUMDBET w.cvcvvcevscivessivesiiseiennns. 6233708773 COLOR CLARITY cut\na | SCALE SCALE SCALE\nShape and Cutting Style ........c.c.cccceeeueneeee. Round Brilliant 55% 64%\n36.0° a D\nMeasurements .......ccccecvevecciiiincene.. 8.54 - 8.62 x 5.01 mm ory 13.0% g : FLAWLESS\n| di 58.4%) g F EXCELLENT\nmedium | °\ni 25 408 I ay\nGRADING RESULTS g f\n: Sl S| ows,\nCarat Weight coven. 2.25 carat 80% Z ] EE VERY\nColor Grade ....coveenmresecerneesseeesseissseisneennnenes. 0 to P Range none K CR A 600D\nClaeityZGrages\\\\ ra Za Ze NW ZW 7 ZA WZ NS ZA Profile to actual proportions = : - Vs\n: <8 y\nCut Grade ccc. 000d N ge\n3 0 “8 vs, 600D\ni = p\nADDITIONAL GRADING INFORMATION CLARITY CHARACTERISTICS = [1 5 Sl,\n: R =\nI ef ee me tee A 1 iT S g gl\nT 8 2 FAIR\nSYMMELTY ceric"
+    },
+    "textParseOnly": {
+      "fields": {
+        "shape": "Round Brilliant",
+        "carat": "2.25",
+        "measurements": "8.54 - 8.62 x 5.01 mm",
+        "tablePercent": "",
+        "depthPercent": "",
+        "crownAngle": "",
+        "pavilionAngle": "",
+        "lowerHalfPercent": "",
+        "starLengthPercent": "",
+        "girdle": "",
+        "culet": "",
+        "polish": "Good",
+        "symmetry": "Very Good",
+        "fluorescence": "Faint",
+        "cutGrade": "Good"
+      },
+      "confidence": {
+        "shape": "medium",
+        "carat": "medium",
+        "measurements": "medium",
+        "tablePercent": "missing",
+        "depthPercent": "missing",
+        "crownAngle": "missing",
+        "pavilionAngle": "missing",
+        "lowerHalfPercent": "missing",
+        "starLengthPercent": "missing",
+        "girdle": "missing",
+        "culet": "missing",
+        "polish": "medium",
+        "symmetry": "medium",
+        "fluorescence": "medium",
+        "cutGrade": "medium"
+      },
+      "warnings": [
+        "Text source: OCR (scanned pages or diagram regions).",
+        "Calibration status: review-only — verify fields on the report; not calibration-statistics eligible until core proportions are complete and trusted.",
+        "Some values were read via OCR — confirm each field against the report before saving.",
+        "Not detected from report text — review manually: Table %, Depth %, Crown angle (°), Pavilion angle (°), Lower girdle / lower half %, Star length %, Girdle (as on report), Culet (as on report).",
+        "Proportion diagram not captured by OCR. Manual entry required for this report."
+      ],
+      "parserType": "gia-modern"
+    },
+    "calibration": {
+      "parserPathUsed": "gia-modern",
+      "textMethod": "ocr",
+      "ocrAttempted": true,
+      "warnings": [
+        "Text source: OCR (scanned pages or diagram regions).",
+        "Calibration status: review-only — verify fields on the report; not calibration-statistics eligible until core proportions are complete and trusted.",
+        "Some values were read via OCR — confirm each field against the report before saving.",
+        "Not detected from report text — review manually: Table %, Crown angle (°), Pavilion angle (°), Lower girdle / lower half %, Star length %, Girdle (as on report).",
+        "Low confidence — verify on report: Culet (as on report) (not verified in PDF text layer).",
+        "Proportion diagram not captured by OCR. Manual entry required for this report."
+      ],
+      "fields": {
+        "shape": "Round Brilliant",
+        "carat": "2.25",
+        "measurements": "8.54 - 8.62 x 5.01 mm",
+        "tablePercent": "",
+        "depthPercent": "60",
+        "crownAngle": "",
+        "pavilionAngle": "",
+        "lowerHalfPercent": "",
+        "starLengthPercent": "",
+        "girdle": "",
+        "culet": "None",
+        "polish": "Good",
+        "symmetry": "Very Good",
+        "fluorescence": "Faint",
+        "cutGrade": "Good"
+      },
+      "confidence": {
+        "shape": "medium",
+        "carat": "medium",
+        "measurements": "medium",
+        "tablePercent": "missing",
+        "depthPercent": "medium",
+        "crownAngle": "missing",
+        "pavilionAngle": "missing",
+        "lowerHalfPercent": "missing",
+        "starLengthPercent": "missing",
+        "girdle": "missing",
+        "culet": "low",
+        "polish": "medium",
+        "symmetry": "medium",
+        "fluorescence": "medium",
+        "cutGrade": "medium"
+      },
+      "timings": {
+        "documentExtractMs": 6127,
+        "pdfFullPageOcrMs": 0,
+        "textParseMs": 27,
+        "imageOcrMs": 23233,
+        "finalizerMs": 3,
+        "clientPayloadMs": 0,
+        "totalMs": 29390,
+        "labFamily": "GIA"
+      },
+      "diagnostics": {
+        "reportNumber": "GIA6233708773",
+        "lab": "GIA",
+        "reportFamily": "gia-modern",
+        "fallbackStage": "image-region-ocr",
+        "textMethod": "ocr",
+        "usedImageOCR": true,
+        "pdfTextLayerLength": 4848,
+        "gcalImageOnlyPdf": false,
+        "rawTextLength": 7315,
+        "rawTextSnippet": "\\AALLLTT\nPi ® FACSIMILE\n: Fn] = GIA REPORT This is a digital representation of the original GIA Report. This representation might not\n25, 1S be accepted in lieu of the original GIA Report in certain circumstances. The original GIA\nAP 6 2 3 3 7 08 7 7 3 Report includes certain security features which are not reproducible on this facsimile.\nHe\nVerify this report at GIA.edu\nGIA NATURAL DIAMOND GRADING REPORT PROPORTIONS GRADING SCALES\nGIA Report NUMDBET w.cvcvvcevscivessivesiiseiennns. 6233708773 COLOR CLARITY cut\na | SCALE SCALE SCALE\nShape and Cutting Style ........c.c.cccceeeueneeee. Round Bri",
+        "warnings": [
+          "Text source: OCR (scanned pages or diagram regions).",
+          "Calibration status: review-only — verify fields on the report; not calibration-statistics eligible until core proportions are complete and trusted.",
+          "Some values were read via OCR — confirm each field against the report before saving.",
+          "Not detected from report text — review manually: Table %, Crown angle (°), Pavilion angle (°), Lower girdle / lower half %, Star length %, Girdle (as on report).",
+          "Low confidence — verify on report: Culet (as on report) (not verified in PDF text layer).",
+          "Proportion diagram not captured by OCR. Manual entry required for this report."
+        ],
+        "fields": [
+          {
+            "field": "shape",
+            "label": "Shape",
+            "target": false,
+            "decision": "accepted",
+            "source": {
+              "method": "ocr",
+              "textMethod": "ocr",
+              "extractionClass": "OCR_VERIFIED",
+              "valueSource": "ocr"
+            },
+            "parsedValue": "Round Brilliant",
+            "repairedValue": null,
+            "confidence": "medium",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…yle ........c.c.cccceeeueneeee. Round Brilliant 55% 64% 36.0° a D Measurements…",
+            "rejectionReason": null
+          },
+          {
+            "field": "carat",
+            "label": "Carat",
+            "target": false,
+            "decision": "accepted",
+            "source": {
+              "method": "ocr",
+              "textMethod": "ocr",
+              "extractionClass": "OCR_VERIFIED",
+              "valueSource": "ocr"
+            },
+            "parsedValue": "2.25",
+            "repairedValue": null,
+            "confidence": "medium",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…Sl S| ows, Carat Weight coven. 2.25 carat 80% Z ] EE VERY Color Gra…",
+            "rejectionReason": null
+          },
+          {
+            "field": "measurements",
+            "label": "Measurements",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "ocr",
+              "textMethod": "ocr",
+              "extractionClass": "OCR_VERIFIED",
+              "valueSource": "ocr"
+            },
+            "parsedValue": "8.54 - 8.62 x 5.01 mm",
+            "repairedValue": null,
+            "confidence": "medium",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "….......ccccecvevecciiiincene.. 8.54 - 8.62 x 5.01 mm ory 13.0% g :…",
+            "rejectionReason": null
+          },
+          {
+            "field": "tablePercent",
+            "label": "Table %",
+            "target": true,
+            "decision": "missing",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "ocr",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": "proportion value not recovered from text/OCR"
+          },
+          {
+            "field": "depthPercent",
+            "label": "Depth %",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram-ocr",
+              "textMethod": "ocr",
+              "extractionClass": "OCR_VERIFIED",
+              "valueSource": "diagram"
+            },
+            "parsedValue": "60",
+            "repairedValue": null,
+            "confidence": "medium",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…nenes. 0 to P Range none K CR A 600D ClaeityZGrages\\\\ ra Za Ze NW…",
+            "rejectionReason": null
+          },
+          {
+            "field": "crownAngle",
+            "label": "Crown angle",
+            "target": true,
+            "decision": "missing",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "ocr",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": "proportion value not recovered from text/OCR"
+          },
+          {
+            "field": "pavilionAngle",
+            "label": "Pavilion angle",
+            "target": true,
+            "decision": "missing",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "ocr",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": "proportion value not recovered from text/OCR"
+          },
+          {
+            "field": "lowerHalfPercent",
+            "label": "Lower half %",
+            "target": true,
+            "decision": "missing",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "ocr",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": "proportion value not recovered from text/OCR"
+          },
+          {
+            "field": "starLengthPercent",
+            "label": "Star length %",
+            "target": true,
+            "decision": "missing",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "ocr",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": "proportion value not recovered from text/OCR"
+          },
+          {
+            "field": "girdle",
+            "label": "Girdle",
+            "target": true,
+            "decision": "rejected",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "ocr",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": false,
+            "rawEvidence": "…POOR Comments: Feathers in the girdle are not shown. y JA ; KEY TO SY…",
+            "rejectionReason": "finish line not recovered from text/OCR region"
+          },
+          {
+            "field": "culet",
+            "label": "Culet",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "ocr",
+              "textMethod": "ocr",
+              "extractionClass": "OCR_LOW_CONFIDENCE",
+              "valueSource": "ocr"
+            },
+            "parsedValue": "None",
+            "repairedValue": null,
+            "confidence": "low",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…issseisneennnenes. 0 to P Range none K CR A 600D ClaeityZGrages\\\\ ra…",
+            "rejectionReason": null
+          },
+          {
+            "field": "polish",
+            "label": "Polish",
+            "target": false,
+            "decision": "accepted",
+            "source": {
+              "method": "ocr",
+              "textMethod": "ocr",
+              "extractionClass": "OCR_VERIFIED",
+              "valueSource": "ocr"
+            },
+            "parsedValue": "Good",
+            "repairedValue": null,
+            "confidence": "medium",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…T 8 2 FAIR SYMMELTY ceric. VEY Good 1 i | FLUOTESCENCE woteecictcee…",
+            "rejectionReason": null
+          },
+          {
+            "field": "symmetry",
+            "label": "Symmetry",
+            "target": false,
+            "decision": "accepted",
+            "source": {
+              "method": "ocr",
+              "textMethod": "ocr",
+              "extractionClass": "OCR_VERIFIED",
+              "valueSource": "ocr"
+            },
+            "parsedValue": "Very Good",
+            "repairedValue": null,
+            "confidence": "medium",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…............................... Very Good Fluorescence ..................…",
+            "rejectionReason": null
+          },
+          {
+            "field": "fluorescence",
+            "label": "Fluorescence",
+            "target": false,
+            "decision": "accepted",
+            "source": {
+              "method": "ocr",
+              "textMethod": "ocr",
+              "extractionClass": "OCR_VERIFIED",
+              "valueSource": "ocr"
+            },
+            "parsedValue": "Faint",
+            "repairedValue": null,
+            "confidence": "medium",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…siecee ese sae este seese sees FAINT - v ! Inscription(s): GIA 62337…",
+            "rejectionReason": null
+          },
+          {
+            "field": "cutGrade",
+            "label": "Cut grade",
+            "target": false,
+            "decision": "accepted",
+            "source": {
+              "method": "ocr",
+              "textMethod": "ocr",
+              "extractionClass": "OCR_VERIFIED",
+              "valueSource": "ocr"
+            },
+            "parsedValue": "Good",
+            "repairedValue": null,
+            "confidence": "medium",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…T 8 2 FAIR SYMMELTY ceric. VEY Good 1 i | FLUOTESCENCE woteecictcee…",
+            "rejectionReason": null
+          }
+        ],
+        "targetFields": [
+          {
+            "field": "measurements",
+            "label": "Measurements",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "ocr",
+              "textMethod": "ocr",
+              "extractionClass": "OCR_VERIFIED",
+              "valueSource": "ocr"
+            },
+            "parsedValue": "8.54 - 8.62 x 5.01 mm",
+            "repairedValue": null,
+            "confidence": "medium",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "….......ccccecvevecciiiincene.. 8.54 - 8.62 x 5.01 mm ory 13.0% g :…",
+            "rejectionReason": null
+          },
+          {
+            "field": "tablePercent",
+            "label": "Table %",
+            "target": true,
+            "decision": "missing",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "ocr",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": "proportion value not recovered from text/OCR"
+          },
+          {
+            "field": "depthPercent",
+            "label": "Depth %",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram-ocr",
+              "textMethod": "ocr",
+              "extractionClass": "OCR_VERIFIED",
+              "valueSource": "diagram"
+            },
+            "parsedValue": "60",
+            "repairedValue": null,
+            "confidence": "medium",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…nenes. 0 to P Range none K CR A 600D ClaeityZGrages\\\\ ra Za Ze NW…",
+            "rejectionReason": null
+          },
+          {
+            "field": "crownAngle",
+            "label": "Crown angle",
+            "target": true,
+            "decision": "missing",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "ocr",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": "proportion value not recovered from text/OCR"
+          },
+          {
+            "field": "pavilionAngle",
+            "label": "Pavilion angle",
+            "target": true,
+            "decision": "missing",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "ocr",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": "proportion value not recovered from text/OCR"
+          },
+          {
+            "field": "lowerHalfPercent",
+            "label": "Lower half %",
+            "target": true,
+            "decision": "missing",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "ocr",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": "proportion value not recovered from text/OCR"
+          },
+          {
+            "field": "starLengthPercent",
+            "label": "Star length %",
+            "target": true,
+            "decision": "missing",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "ocr",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": "proportion value not recovered from text/OCR"
+          },
+          {
+            "field": "girdle",
+            "label": "Girdle",
+            "target": true,
+            "decision": "rejected",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "ocr",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": false,
+            "rawEvidence": "…POOR Comments: Feathers in the girdle are not shown. y JA ; KEY TO SY…",
+            "rejectionReason": "finish line not recovered from text/OCR region"
+          },
+          {
+            "field": "culet",
+            "label": "Culet",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "ocr",
+              "textMethod": "ocr",
+              "extractionClass": "OCR_LOW_CONFIDENCE",
+              "valueSource": "ocr"
+            },
+            "parsedValue": "None",
+            "repairedValue": null,
+            "confidence": "low",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…issseisneennnenes. 0 to P Range none K CR A 600D ClaeityZGrages\\\\ ra…",
+            "rejectionReason": null
+          }
+        ],
+        "summary": {
+          "accepted": 9,
+          "rejected": 1,
+          "missing": 5,
+          "targetAccepted": 3,
+          "targetTotal": 9
+        }
+      }
+    },
+    "client": {
+      "parserPathUsed": "gia-modern",
+      "textMethod": "pdf-text",
+      "ocrAttempted": false,
+      "warnings": [
+        "Text source: PDF text layer (selectable text).",
+        "Calibration status: review-only — verify fields on the report; not calibration-statistics eligible until core proportions are complete and trusted.",
+        "Values from the PDF text layer — spot-check proportion diagram numbers if the layout is image-heavy.",
+        "Not detected from report text — review manually: Table %, Depth %, Crown angle (°), Pavilion angle (°), Lower girdle / lower half %, Star length %, Girdle (as on report), Culet (as on report)."
+      ],
+      "fields": {
+        "shape": "Round Brilliant",
+        "carat": "2.25",
+        "measurements": "8.54 - 8.62 x 5.01 mm",
+        "tablePercent": "",
+        "depthPercent": "",
+        "crownAngle": "",
+        "pavilionAngle": "",
+        "lowerHalfPercent": "",
+        "starLengthPercent": "",
+        "girdle": "",
+        "culet": "",
+        "polish": "Good",
+        "symmetry": "Very Good",
+        "fluorescence": "Faint",
+        "cutGrade": "Good"
+      },
+      "confidence": {
+        "shape": "high",
+        "carat": "high",
+        "measurements": "high",
+        "tablePercent": "missing",
+        "depthPercent": "missing",
+        "crownAngle": "missing",
+        "pavilionAngle": "missing",
+        "lowerHalfPercent": "missing",
+        "starLengthPercent": "missing",
+        "girdle": "missing",
+        "culet": "missing",
+        "polish": "high",
+        "symmetry": "high",
+        "fluorescence": "high",
+        "cutGrade": "high"
+      },
+      "timings": {
+        "documentExtractMs": 56,
+        "pdfFullPageOcrMs": 0,
+        "textParseMs": 19,
+        "imageOcrMs": 0,
+        "finalizerMs": 2,
+        "clientPayloadMs": 0,
+        "totalMs": 78,
+        "labFamily": "GIA"
+      },
+      "diagnostics": {
+        "reportNumber": "GIA6233708773",
+        "lab": "GIA",
+        "reportFamily": "gia-modern",
+        "fallbackStage": "text-layer",
+        "textMethod": "pdf-text",
+        "usedImageOCR": false,
+        "pdfTextLayerLength": 4848,
+        "gcalImageOnlyPdf": false,
+        "rawTextLength": 4848,
+        "rawTextSnippet": "T HE SEC URI T Y F E AT URE S IN T HIS DOC UME N T, INC LUDING T HE HOL OGR A M,\nS E C U R I T Y   S C R E E N   A N D   M I C R O P R I N T   L I N E S ,   I N   A D D I T I O N   T O  \nT H O S E\nN O T   L I S T E D ,   E X C E E D   D O C U M E N T   S E C U R I T Y   I N D U S T R Y   G U I D E L I N E S .\nGEMOLOGIC AL INSTITUTE OF AMERIC A GEMOLOGIC AL INSTITUTE OF AMERIC A GEMOLOGIC AL INSTITUTE OF AMERIC A GEMOLOGIC AL INSTITUTE OF AMERIC A GEMOLOGIC AL INSTITUTE OF AMERIC A GEMOLOGIC AL INSTITUTE OF AMERIC A GEMOLOGIC AL INSTITUTE OF AMERIC A GEMOLOGIC AL INSTITUTE OF AMERIC A GEMOLOGIC",
+        "warnings": [
+          "Text source: PDF text layer (selectable text).",
+          "Calibration status: review-only — verify fields on the report; not calibration-statistics eligible until core proportions are complete and trusted.",
+          "Values from the PDF text layer — spot-check proportion diagram numbers if the layout is image-heavy.",
+          "Not detected from report text — review manually: Table %, Depth %, Crown angle (°), Pavilion angle (°), Lower girdle / lower half %, Star length %, Girdle (as on report), Culet (as on report)."
+        ],
+        "fields": [
+          {
+            "field": "shape",
+            "label": "Shape",
+            "target": false,
+            "decision": "accepted",
+            "source": {
+              "method": "pdf-text",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "Round Brilliant",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…le ............................ Round Brilliant Measurements ..................…",
+            "rejectionReason": null
+          },
+          {
+            "field": "carat",
+            "label": "Carat",
+            "target": false,
+            "decision": "accepted",
+            "source": {
+              "method": "pdf-text",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "2.25",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…............................... 2.25 carat Color Grade .............…",
+            "rejectionReason": null
+          },
+          {
+            "field": "measurements",
+            "label": "Measurements",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "pdf-text",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "8.54 - 8.62 x 5.01 mm",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…............................... 8.54 - 8.62 x 5.01 mm Carat Weight .…",
+            "rejectionReason": null
+          },
+          {
+            "field": "tablePercent",
+            "label": "Table %",
+            "target": true,
+            "decision": "missing",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "pdf-text",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": "proportion diagram not in PDF text layer — OCR or manual required"
+          },
+          {
+            "field": "depthPercent",
+            "label": "Depth %",
+            "target": true,
+            "decision": "missing",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "pdf-text",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": "proportion diagram not in PDF text layer — OCR or manual required"
+          },
+          {
+            "field": "crownAngle",
+            "label": "Crown angle",
+            "target": true,
+            "decision": "missing",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "pdf-text",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": "proportion diagram not in PDF text layer — OCR or manual required"
+          },
+          {
+            "field": "pavilionAngle",
+            "label": "Pavilion angle",
+            "target": true,
+            "decision": "missing",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "pdf-text",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": "proportion diagram not in PDF text layer — OCR or manual required"
+          },
+          {
+            "field": "lowerHalfPercent",
+            "label": "Lower half %",
+            "target": true,
+            "decision": "missing",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "pdf-text",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": "proportion diagram not in PDF text layer — OCR or manual required"
+          },
+          {
+            "field": "starLengthPercent",
+            "label": "Star length %",
+            "target": true,
+            "decision": "missing",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "pdf-text",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": "proportion diagram not in PDF text layer — OCR or manual required"
+          },
+          {
+            "field": "girdle",
+            "label": "Girdle",
+            "target": true,
+            "decision": "rejected",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "pdf-text",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": false,
+            "rawEvidence": "…08773 Comments: Feathers in the girdle are not shown. 6233708773 KEY T…",
+            "rejectionReason": "finish line not recovered from text/OCR region"
+          },
+          {
+            "field": "culet",
+            "label": "Culet",
+            "target": true,
+            "decision": "missing",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "pdf-text",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": "finish line not recovered from text/OCR region"
+          },
+          {
+            "field": "polish",
+            "label": "Polish",
+            "target": false,
+            "decision": "accepted",
+            "source": {
+              "method": "pdf-text",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "Good",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…............................... Good Polish ........................…",
+            "rejectionReason": null
+          },
+          {
+            "field": "symmetry",
+            "label": "Symmetry",
+            "target": false,
+            "decision": "accepted",
+            "source": {
+              "method": "pdf-text",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "Very Good",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…............................... Very Good Fluorescence ..................…",
+            "rejectionReason": null
+          },
+          {
+            "field": "fluorescence",
+            "label": "Fluorescence",
+            "target": false,
+            "decision": "accepted",
+            "source": {
+              "method": "pdf-text",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "Faint",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…............................... Faint Inscription(s): GIA 6233708773…",
+            "rejectionReason": null
+          },
+          {
+            "field": "cutGrade",
+            "label": "Cut grade",
+            "target": false,
+            "decision": "accepted",
+            "source": {
+              "method": "pdf-text",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "Good",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…............................... Good Polish ........................…",
+            "rejectionReason": null
+          }
+        ],
+        "targetFields": [
+          {
+            "field": "measurements",
+            "label": "Measurements",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "pdf-text",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "8.54 - 8.62 x 5.01 mm",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…............................... 8.54 - 8.62 x 5.01 mm Carat Weight .…",
+            "rejectionReason": null
+          },
+          {
+            "field": "tablePercent",
+            "label": "Table %",
+            "target": true,
+            "decision": "missing",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "pdf-text",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": "proportion diagram not in PDF text layer — OCR or manual required"
+          },
+          {
+            "field": "depthPercent",
+            "label": "Depth %",
+            "target": true,
+            "decision": "missing",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "pdf-text",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": "proportion diagram not in PDF text layer — OCR or manual required"
+          },
+          {
+            "field": "crownAngle",
+            "label": "Crown angle",
+            "target": true,
+            "decision": "missing",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "pdf-text",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": "proportion diagram not in PDF text layer — OCR or manual required"
+          },
+          {
+            "field": "pavilionAngle",
+            "label": "Pavilion angle",
+            "target": true,
+            "decision": "missing",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "pdf-text",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": "proportion diagram not in PDF text layer — OCR or manual required"
+          },
+          {
+            "field": "lowerHalfPercent",
+            "label": "Lower half %",
+            "target": true,
+            "decision": "missing",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "pdf-text",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": "proportion diagram not in PDF text layer — OCR or manual required"
+          },
+          {
+            "field": "starLengthPercent",
+            "label": "Star length %",
+            "target": true,
+            "decision": "missing",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "pdf-text",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": "proportion diagram not in PDF text layer — OCR or manual required"
+          },
+          {
+            "field": "girdle",
+            "label": "Girdle",
+            "target": true,
+            "decision": "rejected",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "pdf-text",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": false,
+            "rawEvidence": "…08773 Comments: Feathers in the girdle are not shown. 6233708773 KEY T…",
+            "rejectionReason": "finish line not recovered from text/OCR region"
+          },
+          {
+            "field": "culet",
+            "label": "Culet",
+            "target": true,
+            "decision": "missing",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "pdf-text",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": "finish line not recovered from text/OCR region"
+          }
+        ],
+        "summary": {
+          "accepted": 7,
+          "rejected": 1,
+          "missing": 7,
+          "targetAccepted": 1,
+          "targetTotal": 9
+        }
+      }
+    }
+  },
+  {
+    "reportId": "LG360796192",
+    "labHint": "GCAL",
+    "detection": {
+      "parserType": "gcal-sarine-4cs",
+      "lab": "GCAL",
+      "pdfTextLayerLength": 8335,
+      "textMethod": "pdf-text",
+      "textLength": 8335,
+      "textSnippet": "GCALUSA.com  \nT +1 212-869-8985\n© GCAL USA LLC. All rights reserved.\nHeadquarters\n580 fifth Ave, Flr. 27\nNew York, NY 10036\nLaboratories\nNew York, USA\nSurat, INDIA\nGCAL BY SARINE\nGCAL has examined this lab grown diamond and certifies that the\nspecifications noted in this document are accurate within recognized\ngemological tolerances. GCAL is an independent third-party and\nstands behind our grading with a 4Cs Consumer Guarantee. The\nguarantee, grading scales and all images unique to this lab grown\ndiamond are available at GCALUSA.com\nCertificate No\nIdentification\nShape and Cutting Style\nMeasurements\nFluorescence\nGirdle\nCulet\nInscription\nGrowth Method\nGCAL LG360796192\nLab Grown Diamond\nRound Brilliant\n6.48 - 6.52 x 3.94 mm\nGCAL  \nLG360796192\nNone\nThin, Faceted\nNone\nLAB GROWN DIAMOND\nMarch 30, 2026\nGCAL LG360796192\nOptical scanning technology measures each facet and angle to\nproduce an accurate, to-scale diagram of this lab grown diamond.\nis the ultimate achievement in precision diamond\ncutting. Only extraordinarily brilliant and beautiful\ndiamonds achieve   EXCELLENT   grades in all   EIGHT\naspects of CUT quality assessment.\nCloud  \nUpper Girdle, Bezel\nNeedle   Upper Girdle\nClarity C"
+    },
+    "textParseOnly": {
+      "fields": {
+        "shape": "Round Brilliant",
+        "carat": "1.01",
+        "measurements": "6.48 - 6.52 x 3.94 mm",
+        "tablePercent": "",
+        "depthPercent": "",
+        "crownAngle": "",
+        "pavilionAngle": "",
+        "lowerHalfPercent": "",
+        "starLengthPercent": "",
+        "girdle": "Thin, Faceted",
+        "culet": "None",
+        "polish": "",
+        "symmetry": "",
+        "fluorescence": "None",
+        "cutGrade": ""
+      },
+      "confidence": {
+        "shape": "high",
+        "carat": "high",
+        "measurements": "high",
+        "tablePercent": "missing",
+        "depthPercent": "missing",
+        "crownAngle": "missing",
+        "pavilionAngle": "missing",
+        "lowerHalfPercent": "missing",
+        "starLengthPercent": "missing",
+        "girdle": "high",
+        "culet": "high",
+        "polish": "missing",
+        "symmetry": "missing",
+        "fluorescence": "high",
+        "cutGrade": "missing"
+      },
+      "warnings": [
+        "Text source: PDF text layer (selectable text).",
+        "Calibration status: review-only — verify fields on the report; not calibration-statistics eligible until core proportions are complete and trusted.",
+        "Values from the PDF text layer — spot-check proportion diagram numbers if the layout is image-heavy.",
+        "Not detected from report text — review manually: Table %, Depth %, Crown angle (°), Pavilion angle (°), Lower girdle / lower half %, Star length %, Polish (as on report), Symmetry (as on report), Cut grade (as on report).",
+        "GCAL Sarine: proportion fields are often diagram-only — compare the Sarine proportion panel before saving.",
+        "GCAL Sarine (4Cs): incomplete proportion read — confirm table, depth, and angles against the diagram.",
+        "GCAL Sarine (4Cs): parser confidence is low — proportion panel may need manual review."
+      ],
+      "parserType": "gcal-sarine-4cs"
+    },
+    "calibration": {
+      "parserPathUsed": "gcal-sarine-4cs",
+      "textMethod": "pdf-text",
+      "ocrAttempted": true,
+      "warnings": [
+        "Text source: PDF text layer (selectable text).",
+        "Calibration status: review-only — verify fields on the report; not calibration-statistics eligible until core proportions are complete and trusted.",
+        "Values from the PDF text layer — spot-check proportion diagram numbers if the layout is image-heavy.",
+        "Not detected from report text — review manually: Depth %, Crown angle (°), Lower girdle / lower half %.",
+        "GCAL Sarine: proportion fields are often diagram-only — compare the Sarine proportion panel before saving.",
+        "GCAL Sarine (4Cs): incomplete proportion read — confirm table, depth, and angles against the diagram.",
+        "GCAL Sarine (4Cs): parser confidence is low — proportion panel may need manual review."
+      ],
+      "fields": {
+        "shape": "Round Brilliant",
+        "carat": "1.01",
+        "measurements": "6.48 - 6.52 x 3.94 mm",
+        "tablePercent": "57",
+        "depthPercent": "",
+        "crownAngle": "",
+        "pavilionAngle": "40.8",
+        "lowerHalfPercent": "",
+        "starLengthPercent": "50",
+        "girdle": "Thin, Faceted",
+        "culet": "None",
+        "polish": "Excellent",
+        "symmetry": "Excellent",
+        "fluorescence": "None",
+        "cutGrade": "Excellent"
+      },
+      "confidence": {
+        "shape": "high",
+        "carat": "high",
+        "measurements": "high",
+        "tablePercent": "high",
+        "depthPercent": "missing",
+        "crownAngle": "missing",
+        "pavilionAngle": "high",
+        "lowerHalfPercent": "missing",
+        "starLengthPercent": "high",
+        "girdle": "high",
+        "culet": "high",
+        "polish": "high",
+        "symmetry": "high",
+        "fluorescence": "high",
+        "cutGrade": "high"
+      },
+      "timings": {
+        "documentExtractMs": 102,
+        "pdfFullPageOcrMs": 0,
+        "textParseMs": 3,
+        "imageOcrMs": 2909,
+        "finalizerMs": 1,
+        "clientPayloadMs": 0,
+        "totalMs": 3015,
+        "labFamily": "GCAL-Sarine"
+      },
+      "diagnostics": {
+        "reportNumber": "LG360796192",
+        "lab": "GCAL",
+        "reportFamily": "gcal-sarine-4cs",
+        "fallbackStage": "manual-review",
+        "textMethod": "pdf-text",
+        "usedImageOCR": true,
+        "pdfTextLayerLength": 8335,
+        "gcalImageOnlyPdf": false,
+        "rawTextLength": 8335,
+        "rawTextSnippet": "GCALUSA.com  \nT +1 212-869-8985\n© GCAL USA LLC. All rights reserved.\nHeadquarters\n580 fifth Ave, Flr. 27\nNew York, NY 10036\nLaboratories\nNew York, USA\nSurat, INDIA\nGCAL BY SARINE\nGCAL has examined this lab grown diamond and certifies that the\nspecifications noted in this document are accurate within recognized\ngemological tolerances. GCAL is an independent third-party and\nstands behind our grading with a 4Cs Consumer Guarantee. The\nguarantee, grading scales and all images unique to this lab grown\ndiamond are available at GCALUSA.com\nCertificate No\nIdentification\nShape and Cutting Style\nMeasure",
+        "warnings": [
+          "Text source: PDF text layer (selectable text).",
+          "Calibration status: review-only — verify fields on the report; not calibration-statistics eligible until core proportions are complete and trusted.",
+          "Values from the PDF text layer — spot-check proportion diagram numbers if the layout is image-heavy.",
+          "Not detected from report text — review manually: Depth %, Crown angle (°), Lower girdle / lower half %.",
+          "GCAL Sarine: proportion fields are often diagram-only — compare the Sarine proportion panel before saving.",
+          "GCAL Sarine (4Cs): incomplete proportion read — confirm table, depth, and angles against the diagram.",
+          "GCAL Sarine (4Cs): parser confidence is low — proportion panel may need manual review."
+        ],
+        "fields": [
+          {
+            "field": "shape",
+            "label": "Shape",
+            "target": false,
+            "decision": "accepted",
+            "source": {
+              "method": "pdf-text",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "Round Brilliant",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…L LG360796192 Lab Grown Diamond Round Brilliant 6.48 - 6.52 x 3.94 mm GCAL LG36…",
+            "rejectionReason": null
+          },
+          {
+            "field": "carat",
+            "label": "Carat",
+            "target": false,
+            "decision": "accepted",
+            "source": {
+              "method": "pdf-text",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "1.01",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…c/360796192 GCAL LG360796192 RB 1.01 D VS1 4Cs GRADING Color D Carat…",
+            "rejectionReason": null
+          },
+          {
+            "field": "measurements",
+            "label": "Measurements",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "pdf-text",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "6.48 - 6.52 x 3.94 mm",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…b Grown Diamond Round Brilliant 6.48 - 6.52 x 3.94 mm GCAL LG3607961…",
+            "rejectionReason": null
+          },
+          {
+            "field": "tablePercent",
+            "label": "Table %",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram-ocr",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "diagram"
+            },
+            "parsedValue": "57",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": false,
+            "rawEvidence": "…acet Pavilion Angle Crown Angle Table Facet Star Facet Bezel Facet CA…",
+            "rejectionReason": null
+          },
+          {
+            "field": "depthPercent",
+            "label": "Depth %",
+            "target": true,
+            "decision": "rejected",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "pdf-text",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": false,
+            "rawEvidence": "…t Cushion BRILLIANT CUT DIAGRAM Depth Girdle Culet Pavilion Main Face…",
+            "rejectionReason": "proportion diagram not in PDF text layer — OCR or manual required"
+          },
+          {
+            "field": "crownAngle",
+            "label": "Crown angle",
+            "target": true,
+            "decision": "rejected",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "pdf-text",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": false,
+            "rawEvidence": "…per Girdle Facet Pavilion Angle Crown Angle Table Facet Star Facet Bezel Fa…",
+            "rejectionReason": "proportion diagram not in PDF text layer — OCR or manual required"
+          },
+          {
+            "field": "pavilionAngle",
+            "label": "Pavilion angle",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram-ocr",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "diagram"
+            },
+            "parsedValue": "40.8",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": false,
+            "rawEvidence": "…Girdle Facet Upper Girdle Facet Pavilion Angle Crown Angle Table Facet Star Fa…",
+            "rejectionReason": null
+          },
+          {
+            "field": "lowerHalfPercent",
+            "label": "Lower half %",
+            "target": true,
+            "decision": "rejected",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "pdf-text",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": false,
+            "rawEvidence": "…irdle Culet Pavilion Main Facet Lower Girdle Facet Upper Girdle Facet Pavili…",
+            "rejectionReason": "proportion diagram not in PDF text layer — OCR or manual required"
+          },
+          {
+            "field": "starLengthPercent",
+            "label": "Star length %",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram-ocr",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "diagram"
+            },
+            "parsedValue": "50",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…T SIZES Carat Weight Diameter 2.50 8.60mm 2.00 8.00mm 1.50 7.30mm…",
+            "rejectionReason": null
+          },
+          {
+            "field": "girdle",
+            "label": "Girdle",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "pdf-text",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "Thin, Faceted",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…x 3.94 mm GCAL LG360796192 None Thin, Faceted None LAB GROWN DIAMOND March 30…",
+            "rejectionReason": null
+          },
+          {
+            "field": "culet",
+            "label": "Culet",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "pdf-text",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "None",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…6.52 x 3.94 mm GCAL LG360796192 None Thin, Faceted None LAB GROWN DI…",
+            "rejectionReason": null
+          },
+          {
+            "field": "polish",
+            "label": "Polish",
+            "target": false,
+            "decision": "accepted",
+            "source": {
+              "method": "pdf-text",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "Excellent",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…and beautiful diamonds achieve EXCELLENT grades in all EIGHT aspects of…",
+            "rejectionReason": null
+          },
+          {
+            "field": "symmetry",
+            "label": "Symmetry",
+            "target": false,
+            "decision": "accepted",
+            "source": {
+              "method": "pdf-text",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "Excellent",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…and beautiful diamonds achieve EXCELLENT grades in all EIGHT aspects of…",
+            "rejectionReason": null
+          },
+          {
+            "field": "fluorescence",
+            "label": "Fluorescence",
+            "target": false,
+            "decision": "accepted",
+            "source": {
+              "method": "pdf-text",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "None",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…6.52 x 3.94 mm GCAL LG360796192 None Thin, Faceted None LAB GROWN DI…",
+            "rejectionReason": null
+          },
+          {
+            "field": "cutGrade",
+            "label": "Cut grade",
+            "target": false,
+            "decision": "accepted",
+            "source": {
+              "method": "pdf-text",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "Excellent",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…and beautiful diamonds achieve EXCELLENT grades in all EIGHT aspects of…",
+            "rejectionReason": null
+          }
+        ],
+        "targetFields": [
+          {
+            "field": "measurements",
+            "label": "Measurements",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "pdf-text",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "6.48 - 6.52 x 3.94 mm",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…b Grown Diamond Round Brilliant 6.48 - 6.52 x 3.94 mm GCAL LG3607961…",
+            "rejectionReason": null
+          },
+          {
+            "field": "tablePercent",
+            "label": "Table %",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram-ocr",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "diagram"
+            },
+            "parsedValue": "57",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": false,
+            "rawEvidence": "…acet Pavilion Angle Crown Angle Table Facet Star Facet Bezel Facet CA…",
+            "rejectionReason": null
+          },
+          {
+            "field": "depthPercent",
+            "label": "Depth %",
+            "target": true,
+            "decision": "rejected",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "pdf-text",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": false,
+            "rawEvidence": "…t Cushion BRILLIANT CUT DIAGRAM Depth Girdle Culet Pavilion Main Face…",
+            "rejectionReason": "proportion diagram not in PDF text layer — OCR or manual required"
+          },
+          {
+            "field": "crownAngle",
+            "label": "Crown angle",
+            "target": true,
+            "decision": "rejected",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "pdf-text",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": false,
+            "rawEvidence": "…per Girdle Facet Pavilion Angle Crown Angle Table Facet Star Facet Bezel Fa…",
+            "rejectionReason": "proportion diagram not in PDF text layer — OCR or manual required"
+          },
+          {
+            "field": "pavilionAngle",
+            "label": "Pavilion angle",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram-ocr",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "diagram"
+            },
+            "parsedValue": "40.8",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": false,
+            "rawEvidence": "…Girdle Facet Upper Girdle Facet Pavilion Angle Crown Angle Table Facet Star Fa…",
+            "rejectionReason": null
+          },
+          {
+            "field": "lowerHalfPercent",
+            "label": "Lower half %",
+            "target": true,
+            "decision": "rejected",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "pdf-text",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": false,
+            "rawEvidence": "…irdle Culet Pavilion Main Facet Lower Girdle Facet Upper Girdle Facet Pavili…",
+            "rejectionReason": "proportion diagram not in PDF text layer — OCR or manual required"
+          },
+          {
+            "field": "starLengthPercent",
+            "label": "Star length %",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram-ocr",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "diagram"
+            },
+            "parsedValue": "50",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…T SIZES Carat Weight Diameter 2.50 8.60mm 2.00 8.00mm 1.50 7.30mm…",
+            "rejectionReason": null
+          },
+          {
+            "field": "girdle",
+            "label": "Girdle",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "pdf-text",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "Thin, Faceted",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…x 3.94 mm GCAL LG360796192 None Thin, Faceted None LAB GROWN DIAMOND March 30…",
+            "rejectionReason": null
+          },
+          {
+            "field": "culet",
+            "label": "Culet",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "pdf-text",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "None",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…6.52 x 3.94 mm GCAL LG360796192 None Thin, Faceted None LAB GROWN DI…",
+            "rejectionReason": null
+          }
+        ],
+        "candidateMeta": {
+          "percents": [],
+          "degrees": [],
+          "mmValues": []
+        },
+        "summary": {
+          "accepted": 12,
+          "rejected": 3,
+          "missing": 0,
+          "targetAccepted": 6,
+          "targetTotal": 9
+        }
+      }
+    },
+    "client": {
+      "parserPathUsed": "gcal-sarine-4cs",
+      "textMethod": "pdf-text",
+      "ocrAttempted": true,
+      "warnings": [
+        "Text source: PDF text layer (selectable text).",
+        "Calibration status: review-only — verify fields on the report; not calibration-statistics eligible until core proportions are complete and trusted.",
+        "Values from the PDF text layer — spot-check proportion diagram numbers if the layout is image-heavy.",
+        "Not detected from report text — review manually: Depth %, Crown angle (°), Lower girdle / lower half %.",
+        "GCAL Sarine: proportion fields are often diagram-only — compare the Sarine proportion panel before saving.",
+        "GCAL Sarine (4Cs): incomplete proportion read — confirm table, depth, and angles against the diagram.",
+        "GCAL Sarine (4Cs): parser confidence is low — proportion panel may need manual review."
+      ],
+      "fields": {
+        "shape": "Round Brilliant",
+        "carat": "1.01",
+        "measurements": "6.48 - 6.52 x 3.94 mm",
+        "tablePercent": "57",
+        "depthPercent": "",
+        "crownAngle": "",
+        "pavilionAngle": "40.8",
+        "lowerHalfPercent": "",
+        "starLengthPercent": "50",
+        "girdle": "Thin, Faceted",
+        "culet": "None",
+        "polish": "Excellent",
+        "symmetry": "Excellent",
+        "fluorescence": "None",
+        "cutGrade": "Excellent"
+      },
+      "confidence": {
+        "shape": "high",
+        "carat": "high",
+        "measurements": "high",
+        "tablePercent": "high",
+        "depthPercent": "missing",
+        "crownAngle": "missing",
+        "pavilionAngle": "high",
+        "lowerHalfPercent": "missing",
+        "starLengthPercent": "high",
+        "girdle": "high",
+        "culet": "high",
+        "polish": "high",
+        "symmetry": "high",
+        "fluorescence": "high",
+        "cutGrade": "high"
+      },
+      "timings": {
+        "documentExtractMs": 152,
+        "pdfFullPageOcrMs": 0,
+        "textParseMs": 5,
+        "imageOcrMs": 2818,
+        "finalizerMs": 0,
+        "clientPayloadMs": 0,
+        "totalMs": 2976,
+        "labFamily": "GCAL-Sarine"
+      },
+      "diagnostics": {
+        "reportNumber": "LG360796192",
+        "lab": "GCAL",
+        "reportFamily": "gcal-sarine-4cs",
+        "fallbackStage": "manual-review",
+        "textMethod": "pdf-text",
+        "usedImageOCR": true,
+        "pdfTextLayerLength": 8335,
+        "gcalImageOnlyPdf": false,
+        "rawTextLength": 8335,
+        "rawTextSnippet": "GCALUSA.com  \nT +1 212-869-8985\n© GCAL USA LLC. All rights reserved.\nHeadquarters\n580 fifth Ave, Flr. 27\nNew York, NY 10036\nLaboratories\nNew York, USA\nSurat, INDIA\nGCAL BY SARINE\nGCAL has examined this lab grown diamond and certifies that the\nspecifications noted in this document are accurate within recognized\ngemological tolerances. GCAL is an independent third-party and\nstands behind our grading with a 4Cs Consumer Guarantee. The\nguarantee, grading scales and all images unique to this lab grown\ndiamond are available at GCALUSA.com\nCertificate No\nIdentification\nShape and Cutting Style\nMeasure",
+        "warnings": [
+          "Text source: PDF text layer (selectable text).",
+          "Calibration status: review-only — verify fields on the report; not calibration-statistics eligible until core proportions are complete and trusted.",
+          "Values from the PDF text layer — spot-check proportion diagram numbers if the layout is image-heavy.",
+          "Not detected from report text — review manually: Depth %, Crown angle (°), Lower girdle / lower half %.",
+          "GCAL Sarine: proportion fields are often diagram-only — compare the Sarine proportion panel before saving.",
+          "GCAL Sarine (4Cs): incomplete proportion read — confirm table, depth, and angles against the diagram.",
+          "GCAL Sarine (4Cs): parser confidence is low — proportion panel may need manual review."
+        ],
+        "fields": [
+          {
+            "field": "shape",
+            "label": "Shape",
+            "target": false,
+            "decision": "accepted",
+            "source": {
+              "method": "pdf-text",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "Round Brilliant",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…L LG360796192 Lab Grown Diamond Round Brilliant 6.48 - 6.52 x 3.94 mm GCAL LG36…",
+            "rejectionReason": null
+          },
+          {
+            "field": "carat",
+            "label": "Carat",
+            "target": false,
+            "decision": "accepted",
+            "source": {
+              "method": "pdf-text",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "1.01",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…c/360796192 GCAL LG360796192 RB 1.01 D VS1 4Cs GRADING Color D Carat…",
+            "rejectionReason": null
+          },
+          {
+            "field": "measurements",
+            "label": "Measurements",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "pdf-text",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "6.48 - 6.52 x 3.94 mm",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…b Grown Diamond Round Brilliant 6.48 - 6.52 x 3.94 mm GCAL LG3607961…",
+            "rejectionReason": null
+          },
+          {
+            "field": "tablePercent",
+            "label": "Table %",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram-ocr",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "diagram"
+            },
+            "parsedValue": "57",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": false,
+            "rawEvidence": "…acet Pavilion Angle Crown Angle Table Facet Star Facet Bezel Facet CA…",
+            "rejectionReason": null
+          },
+          {
+            "field": "depthPercent",
+            "label": "Depth %",
+            "target": true,
+            "decision": "rejected",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "pdf-text",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": false,
+            "rawEvidence": "…t Cushion BRILLIANT CUT DIAGRAM Depth Girdle Culet Pavilion Main Face…",
+            "rejectionReason": "proportion diagram not in PDF text layer — OCR or manual required"
+          },
+          {
+            "field": "crownAngle",
+            "label": "Crown angle",
+            "target": true,
+            "decision": "rejected",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "pdf-text",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": false,
+            "rawEvidence": "…per Girdle Facet Pavilion Angle Crown Angle Table Facet Star Facet Bezel Fa…",
+            "rejectionReason": "proportion diagram not in PDF text layer — OCR or manual required"
+          },
+          {
+            "field": "pavilionAngle",
+            "label": "Pavilion angle",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram-ocr",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "diagram"
+            },
+            "parsedValue": "40.8",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": false,
+            "rawEvidence": "…Girdle Facet Upper Girdle Facet Pavilion Angle Crown Angle Table Facet Star Fa…",
+            "rejectionReason": null
+          },
+          {
+            "field": "lowerHalfPercent",
+            "label": "Lower half %",
+            "target": true,
+            "decision": "rejected",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "pdf-text",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": false,
+            "rawEvidence": "…irdle Culet Pavilion Main Facet Lower Girdle Facet Upper Girdle Facet Pavili…",
+            "rejectionReason": "proportion diagram not in PDF text layer — OCR or manual required"
+          },
+          {
+            "field": "starLengthPercent",
+            "label": "Star length %",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram-ocr",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "diagram"
+            },
+            "parsedValue": "50",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…T SIZES Carat Weight Diameter 2.50 8.60mm 2.00 8.00mm 1.50 7.30mm…",
+            "rejectionReason": null
+          },
+          {
+            "field": "girdle",
+            "label": "Girdle",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "pdf-text",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "Thin, Faceted",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…x 3.94 mm GCAL LG360796192 None Thin, Faceted None LAB GROWN DIAMOND March 30…",
+            "rejectionReason": null
+          },
+          {
+            "field": "culet",
+            "label": "Culet",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "pdf-text",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "None",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…6.52 x 3.94 mm GCAL LG360796192 None Thin, Faceted None LAB GROWN DI…",
+            "rejectionReason": null
+          },
+          {
+            "field": "polish",
+            "label": "Polish",
+            "target": false,
+            "decision": "accepted",
+            "source": {
+              "method": "pdf-text",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "Excellent",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…and beautiful diamonds achieve EXCELLENT grades in all EIGHT aspects of…",
+            "rejectionReason": null
+          },
+          {
+            "field": "symmetry",
+            "label": "Symmetry",
+            "target": false,
+            "decision": "accepted",
+            "source": {
+              "method": "pdf-text",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "Excellent",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…and beautiful diamonds achieve EXCELLENT grades in all EIGHT aspects of…",
+            "rejectionReason": null
+          },
+          {
+            "field": "fluorescence",
+            "label": "Fluorescence",
+            "target": false,
+            "decision": "accepted",
+            "source": {
+              "method": "pdf-text",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "None",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…6.52 x 3.94 mm GCAL LG360796192 None Thin, Faceted None LAB GROWN DI…",
+            "rejectionReason": null
+          },
+          {
+            "field": "cutGrade",
+            "label": "Cut grade",
+            "target": false,
+            "decision": "accepted",
+            "source": {
+              "method": "pdf-text",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "Excellent",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…and beautiful diamonds achieve EXCELLENT grades in all EIGHT aspects of…",
+            "rejectionReason": null
+          }
+        ],
+        "targetFields": [
+          {
+            "field": "measurements",
+            "label": "Measurements",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "pdf-text",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "6.48 - 6.52 x 3.94 mm",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…b Grown Diamond Round Brilliant 6.48 - 6.52 x 3.94 mm GCAL LG3607961…",
+            "rejectionReason": null
+          },
+          {
+            "field": "tablePercent",
+            "label": "Table %",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram-ocr",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "diagram"
+            },
+            "parsedValue": "57",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": false,
+            "rawEvidence": "…acet Pavilion Angle Crown Angle Table Facet Star Facet Bezel Facet CA…",
+            "rejectionReason": null
+          },
+          {
+            "field": "depthPercent",
+            "label": "Depth %",
+            "target": true,
+            "decision": "rejected",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "pdf-text",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": false,
+            "rawEvidence": "…t Cushion BRILLIANT CUT DIAGRAM Depth Girdle Culet Pavilion Main Face…",
+            "rejectionReason": "proportion diagram not in PDF text layer — OCR or manual required"
+          },
+          {
+            "field": "crownAngle",
+            "label": "Crown angle",
+            "target": true,
+            "decision": "rejected",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "pdf-text",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": false,
+            "rawEvidence": "…per Girdle Facet Pavilion Angle Crown Angle Table Facet Star Facet Bezel Fa…",
+            "rejectionReason": "proportion diagram not in PDF text layer — OCR or manual required"
+          },
+          {
+            "field": "pavilionAngle",
+            "label": "Pavilion angle",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram-ocr",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "diagram"
+            },
+            "parsedValue": "40.8",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": false,
+            "rawEvidence": "…Girdle Facet Upper Girdle Facet Pavilion Angle Crown Angle Table Facet Star Fa…",
+            "rejectionReason": null
+          },
+          {
+            "field": "lowerHalfPercent",
+            "label": "Lower half %",
+            "target": true,
+            "decision": "rejected",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "pdf-text",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": false,
+            "rawEvidence": "…irdle Culet Pavilion Main Facet Lower Girdle Facet Upper Girdle Facet Pavili…",
+            "rejectionReason": "proportion diagram not in PDF text layer — OCR or manual required"
+          },
+          {
+            "field": "starLengthPercent",
+            "label": "Star length %",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram-ocr",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "diagram"
+            },
+            "parsedValue": "50",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…T SIZES Carat Weight Diameter 2.50 8.60mm 2.00 8.00mm 1.50 7.30mm…",
+            "rejectionReason": null
+          },
+          {
+            "field": "girdle",
+            "label": "Girdle",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "pdf-text",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "Thin, Faceted",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…x 3.94 mm GCAL LG360796192 None Thin, Faceted None LAB GROWN DIAMOND March 30…",
+            "rejectionReason": null
+          },
+          {
+            "field": "culet",
+            "label": "Culet",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "pdf-text",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "None",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…6.52 x 3.94 mm GCAL LG360796192 None Thin, Faceted None LAB GROWN DI…",
+            "rejectionReason": null
+          }
+        ],
+        "candidateMeta": {
+          "percents": [],
+          "degrees": [],
+          "mmValues": []
+        },
+        "summary": {
+          "accepted": 12,
+          "rejected": 3,
+          "missing": 0,
+          "targetAccepted": 6,
+          "targetTotal": 9
+        }
+      }
+    }
+  }
+]

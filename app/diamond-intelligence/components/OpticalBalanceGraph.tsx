@@ -84,9 +84,9 @@ export default function OpticalBalanceGraph({
   const centerText = empty
     ? emptyLabel
     : graphMode === "preliminary"
-      ? "Preliminary"
+      ? "Open"
       : graphMode === "limited"
-        ? "Review"
+        ? "Open"
         : centerLabel;
   const subLabel =
     graphMode === "preliminary"

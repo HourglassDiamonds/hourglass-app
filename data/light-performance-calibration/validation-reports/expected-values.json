@@ -1,0 +1,94 @@
+{
+  "LG636401995": {
+    "shape": "Round Brilliant",
+    "carat": "2.01",
+    "measurements": "8.07 - 8.12 x 4.99 mm",
+    "tablePercent": 59,
+    "depthPercent": 61.7,
+    "crownAngle": 33.2,
+    "pavilionAngle": 41.7,
+    "girdle": "Medium to Slightly Thick (Faceted)",
+    "culet": "Pointed",
+    "polish": "Excellent",
+    "symmetry": "Excellent",
+    "fluorescence": "None",
+    "cutGrade": "Excellent",
+    "_internal": {
+      "crownHeightPercent": 13.5,
+      "pavilionDepthPercent": 44.5
+    }
+  },
+  "2496027047": {
+    "shape": "Round Brilliant",
+    "carat": "2.11",
+    "measurements": "8.23 - 8.27 x 5.02 mm",
+    "tablePercent": 59,
+    "depthPercent": 60.8,
+    "crownAngle": 34.5,
+    "pavilionAngle": 40.8,
+    "lowerHalfPercent": 75,
+    "starLengthPercent": 45,
+    "girdle": "Medium to Slightly Thick (Faceted)",
+    "culet": "None",
+    "polish": "Excellent",
+    "symmetry": "Excellent",
+    "fluorescence": "None",
+    "cutGrade": "Excellent",
+    "_internal": {
+      "crownHeightPercent": 14.0,
+      "pavilionDepthPercent": 43.0,
+      "girdlePercent": 4.0
+    }
+  },
+  "6233708773": {
+    "shape": "Round Brilliant",
+    "carat": "2.25",
+    "measurements": "8.54 - 8.62 x 5.01 mm",
+    "tablePercent": 64,
+    "depthPercent": 58.4,
+    "crownAngle": 36.0,
+    "pavilionAngle": 40.6,
+    "lowerHalfPercent": 80,
+    "girdle": "Very Thin to Medium",
+    "culet": "None",
+    "polish": "Good",
+    "symmetry": "Very Good",
+    "fluorescence": "Faint",
+    "cutGrade": "Good",
+    "_internal": {
+      "crownHeightPercent": 13.0,
+      "pavilionDepthPercent": 42.5,
+      "girdlePercent": 2.5
+    }
+  },
+  "LG360796192": {
+    "shape": "Round Brilliant",
+    "carat": "1.01",
+    "measurements": "6.48 - 6.52 x 3.94 mm",
+    "tablePercent": 57,
+    "depthPercent": 60.6,
+    "crownAngle": 34.5,
+    "pavilionAngle": 40.8,
+    "lowerHalfPercent": 77,
+    "starLengthPercent": 50,
+    "girdle": "Thin, Faceted",
+    "culet": "None",
+    "polish": "Excellent",
+    "symmetry": "Excellent",
+    "fluorescence": "None",
+    "_internal": {
+      "crownHeightPercent": 14.5,
+      "pavilionDepthPercent": 43.0,
+      "girdlePercent": 3.2
+    },
+    "_gcalOptical": {
+      "proportions": "Excellent",
+      "opticalBrilliance": "Excellent",
+      "fire": "Excellent",
+      "scintillation": "Excellent",
+      "opticalSymmetry": "Excellent",
+      "heartsAndArrows": "Excellent",
+      "cut": "8X"
+    }
+  }
+}

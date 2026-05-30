@@ -3,6 +3,10 @@ import type { DiamondCopyTone } from "./client-interpretation-context";
 import type { OverallReadLabel } from "./client-percentile-present";
 import type { ClientSafeReportCapability } from "./client-api";
 import type { ClientInterpretationLevel } from "./types";
+import {
+  editorialFaceUpSummary,
+  resolveEditorialFaceUpTier,
+} from "./client-editorial-language";
 
 export type PerformanceReadCopy = {
   /** One-line plain-English read directly under the score. */
@@ -15,6 +19,7 @@ export type PerformanceReadCopy = {
 };
 
 export type FaceUpPresenceCopy = {
+  tierLabel: string | null;
   summary: string;
   footnote: string;
 };
@@ -68,11 +73,11 @@ function confidenceAdjustedReadCopy(
     scoreHeadline:
       "A preliminary read — a useful starting point from the information visible in the report.",
     whatThisMeans:
-      "This report gives a useful starting point, but not enough for a full light-performance read. Rather than guessing, the interpretation stays conservative until key proportion details are verified.",
+      "This report gives a useful starting point. A fuller light-performance picture becomes available as more proportion detail is confirmed.",
     visualNote:
-      "This is orientation, not a verdict — the diamond may still look beautiful in person.",
+      "This is an early read, not a verdict — the diamond may still look beautiful in person.",
     confidenceNote:
-      "Justin can verify the missing proportion details in an expert review before you decide.",
+      "Justin can help confirm the next details and translate what they may mean for how the diamond will look.",
     conservativeNote,
   };
 }
@@ -175,11 +180,11 @@ export function buildPerformanceReadCopy(input: {
         scoreHeadline:
           "A preliminary read — helpful orientation until the report supports more detail.",
         whatThisMeans:
-          "This read is incomplete or uneven on the report we received — not necessarily a bad diamond, but not enough for a confident overall light-performance story yet.",
+          "This read reflects what is visible so far — useful context today, with a fuller picture available as additional detail is confirmed.",
         visualNote:
-          "Do not read a low number here as a final judgment; missing or unclear report fields often drive this result.",
+          "A lower number here usually reflects an early read — not a final view of the diamond's beauty.",
         confidenceNote:
-          "Justin can review the report with you and explain what is worth verifying before you decide.",
+          "Justin can help confirm the next details and translate what they may mean for how the diamond will look.",
         conservativeNote,
       };
   }
@@ -193,8 +198,9 @@ export function buildFaceUpPresenceCopy(input: {
   const caratNum = parseFloat(input.carat.replace(/[^\d.]/g, ""));
   const diameter = input.avgDiameterMm;
 
+  let tierLabel: string | null = null;
   let summary =
-    "Visual size depends on measurements and carat weight together — how efficiently the stone faces up for its weight.";
+    "How large a diamond looks on the hand depends on its measurements and weight together — we'll describe that once both are clear from your report.";
 
   if (
     diameter !== null &&
@@ -204,25 +210,19 @@ export function buildFaceUpPresenceCopy(input: {
   ) {
     const expectedApprox = 6.4 + Math.cbrt(caratNum) * 2.2;
     const ratio = diameter / expectedApprox;
-    if (ratio >= 1.03) {
-      summary =
-        "Faces up slightly broad for its carat weight — the spread can make the diamond look a touch larger on the hand.";
-    } else if (ratio <= 0.97) {
-      summary =
-        "Carries its weight efficiently — a slightly tighter spread can look rich and concentrated face-up.";
-    } else {
-      summary =
-        "Visual size appears balanced for the weight — neither unusually spread nor unusually compact on paper.";
-    }
+    const tier = resolveEditorialFaceUpTier(ratio);
+    tierLabel = tier;
+    summary = editorialFaceUpSummary(tier);
   } else if (input.measurements.trim()) {
     summary =
-      "Visual size appears balanced for the weight based on the measurements on your report.";
+      "From the measurements on your report, this diamond's face-up size looks close to what most people expect for its weight.";
   }
 
   return {
+    tierLabel,
     summary,
     footnote:
-      "Face-up presence depends on measurements and carat weight together — not a separate laboratory grade.",
+      "Face-up size is an interpretation from measurements and weight — not a separate laboratory grade.",
   };
 }
 
@@ -258,7 +258,7 @@ export function buildOpticalInterpretationSummary(input: {
 }): string {
   // Tone gate first — humble framing when data is incomplete.
   if (input.copyTone === "orientation") {
-    return "This report gives a useful starting point, but not enough for a full light-performance read. Justin can help verify the missing proportion details before you decide.";
+    return "This report gives a useful starting point. A fuller light-performance picture becomes available as more proportion detail is confirmed. Justin can help confirm the next details and translate what they may mean for how the diamond will look.";
   }
   if (input.copyTone === "careful") {
     return "Based on the information visible in the report, this diamond appears to have a balanced overall presentation. Additional diagram-level detail would improve confidence in the deeper optical read.";
@@ -287,7 +287,7 @@ export function buildOpticalInterpretationSummary(input: {
   }
 
   if (input.capability.interpretationLevel === "basic") {
-    return `This report gives a useful starting picture, but not enough proportion detail for a full light-performance story yet. Justin can help you see what matters visually and what is still worth confirming on the report.${expertClose}`;
+    return `This report gives a useful starting point. A fuller light-performance picture becomes available as more proportion detail is confirmed. Justin can help you see what matters visually as additional details are confirmed.${expertClose}`;
   }
 
   return `This read is preliminary from what the report shows today — helpful orientation, not a final word on the diamond. Justin can walk through what you are likely to notice in person and what is still worth verifying.${expertClose}`;

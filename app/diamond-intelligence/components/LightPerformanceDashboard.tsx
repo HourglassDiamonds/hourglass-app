@@ -5,12 +5,14 @@ import Link from "next/link";
 import type { CalibrationReportFields } from "@/lib/calibration-library/types";
 import {
   CLIENT_FIELD_LABELS,
-  ESTIMATED_COMPARISON_BAND_CAPTION,
   buildBalanceProfileAxes,
   buildDiamondInterpretationContext,
   buildFaceUpPresenceCopy,
   buildOpticalInterpretationSummary,
   buildPerformanceReadCopy,
+  CONSUMER_TRAIT_UNCERTAIN_HELPER,
+  getConsumerLightPerformanceDisplay,
+  presentEditorialLightPerformance,
   presentTraitReadLabel,
   interpretationLevelLabel,
   presentClientInterpretationScore,
@@ -28,9 +30,6 @@ import GuidedReportCompletion from "./GuidedReportCompletion";
 import OpticalBalanceGraph from "./OpticalBalanceGraph";
 import { ReportUploadDock, type ClientUploadPhase } from "./ReportUploadDock";
 import { DashboardCard, MetricRow, dashValue } from "./DashboardCard";
-
-const TRAIT_UNCERTAIN_HELPER =
-  "This means the report does not provide enough detail for a confident read here — not that the diamond performs poorly.";
 
 function formatCarat(carat: string): string {
   const v = carat.trim();
@@ -64,14 +63,14 @@ function TraitBar({
   needsExpertDiagramReview: boolean;
   suppressRareLabels: boolean;
 }) {
-  const readLabel = presentTraitReadLabel(trait, overallScore, {
+  const internalLabel = presentTraitReadLabel(trait, overallScore, {
     needsExpertDiagramReview,
     suppressRareLabels,
   });
-  const uncertain =
-    readLabel === "Diagram detail required" ||
-    readLabel === "Needs deeper optical review" ||
-    readLabel === "Best confirmed in person";
+  const { label: readLabel, uncertain } = getConsumerLightPerformanceDisplay(
+    trait,
+    internalLabel,
+  );
 
   return (
     <div className="space-y-1.5">
@@ -87,7 +86,7 @@ function TraitBar({
       </div>
       {uncertain ? (
         <p className="text-[11px] leading-[1.5] text-[#948a80]">
-          {TRAIT_UNCERTAIN_HELPER}
+          {CONSUMER_TRAIT_UNCERTAIN_HELPER}
         </p>
       ) : (
         <div className="h-px overflow-hidden rounded-full bg-[#ebe4da]/90">
@@ -227,11 +226,19 @@ export default function LightPerformanceDashboard({
     });
   }, [clientScore, overallScore, diameterNum, fields?.carat]);
 
-  // Graph center label for full mode; preliminary/limited override inside graph.
+  const editorialPresentation = useMemo(
+    () =>
+      presentEditorialLightPerformance({
+        internalLabel: interpretationContext.displayLabel,
+        displayBand: interpretationContext.displayBand,
+        canShowScore: interpretationContext.canShowScore,
+        canShowRareLanguage: interpretationContext.canShowRareLanguage,
+      }),
+    [interpretationContext],
+  );
+
   const centerProfileLabel = hasReport
-    ? interpretationContext.displayLabel.startsWith("Top")
-      ? "Exceptional"
-      : interpretationContext.displayLabel
+    ? editorialPresentation.graphCenterLabel
     : "—";
 
   const busy =
@@ -277,7 +284,10 @@ export default function LightPerformanceDashboard({
                 {!interpretationContext.canShowScore ? (
                   <>
                     <p className="font-serif text-xl text-[#1f1d1a]">
-                      {interpretationContext.displayLabel}
+                      {editorialPresentation.tierLabel}
+                    </p>
+                    <p className="mt-2 text-sm leading-[1.6] text-[#5f5851]">
+                      {editorialPresentation.personalityDescriptor}
                     </p>
                     <p className="mt-2 text-sm leading-[1.6] text-[#5f5851]">
                       {interpretationContext.primaryExplanation}
@@ -297,14 +307,17 @@ export default function LightPerformanceDashboard({
                           / 100
                         </span>
                       </p>
-                      {interpretationContext.displayBand ? (
+                      {editorialPresentation.editorialPill ? (
                         <span className="rounded-full border border-[#e4dbcf] bg-[#faf8f4] px-2.5 py-0.5 text-[9px] tracking-[0.14em] text-[#6b5048]">
-                          {interpretationContext.displayBand}
+                          {editorialPresentation.editorialPill}
                         </span>
                       ) : null}
                     </div>
                     <p className="mt-2 text-base font-medium text-[#6b5048]">
-                      {interpretationContext.displayLabel}
+                      {editorialPresentation.tierLabel}
+                    </p>
+                    <p className="mt-1.5 text-sm leading-[1.6] text-[#5f5851]">
+                      {editorialPresentation.personalityDescriptor}
                     </p>
                     <p className="mt-2.5 text-sm leading-[1.6] text-[#5f5851]">
                       {performanceCopy.scoreHeadline}
@@ -317,11 +330,6 @@ export default function LightPerformanceDashboard({
                     {interpretationContext.readState !== "full" ? (
                       <p className="mt-1 text-[11px] leading-[1.55] text-[#948a80]">
                         Based on the information visible in the report.
-                      </p>
-                    ) : null}
-                    {interpretationContext.displayBand ? (
-                      <p className="mt-1 text-[11px] text-[#948a80]">
-                        {ESTIMATED_COMPARISON_BAND_CAPTION}
                       </p>
                     ) : null}
                   </>
@@ -599,9 +607,16 @@ export default function LightPerformanceDashboard({
 
               <DashboardCard title="Face-up presence" tone="subdued" className="!shadow-none">
                 {faceUpCopy ? (
-                  <p className="mb-3 text-sm leading-[1.65] text-[#5f5851]">
-                    {faceUpCopy.summary}
-                  </p>
+                  <>
+                    {faceUpCopy.tierLabel ? (
+                      <p className="mb-1 text-[11px] tracking-[0.14em] text-[#6b5048]">
+                        {faceUpCopy.tierLabel}
+                      </p>
+                    ) : null}
+                    <p className="mb-3 text-sm leading-[1.65] text-[#5f5851]">
+                      {faceUpCopy.summary}
+                    </p>
+                  </>
                 ) : null}
                 {diameter ? (
                   <MetricRow editorial label="Avg. diameter" value={`${diameter} mm`} />
@@ -642,10 +657,9 @@ export default function LightPerformanceDashboard({
                   </div>
                 ) : (
                   <p className="text-[13px] leading-[1.65] text-[#948a80]">
-                    Trait-level reads need more proportion detail than this
-                    report provides. This is a limit of the report, not a sign
-                    the diamond performs poorly — Justin can verify these in
-                    person.
+                    Individual light traits become clearer as more proportion
+                    detail is confirmed. This is an early read, not a verdict on
+                    beauty — Justin can help fill in the rest.
                   </p>
                 )}
                 <p className="mt-4 text-[11px] leading-[1.55] text-[#948a80]">

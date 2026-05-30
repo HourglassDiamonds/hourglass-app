@@ -19,6 +19,7 @@ import {
   needsGiaProportionOcrSupplement,
   probeGiaLiveFieldCandidates,
 } from "../../gia-proportions";
+import { applyGiaProportionDiagramExtraction } from "./gia-diagram-extraction";
 import type { OcrResult } from "../shared/ocr-utils";
 import { isOcrRuntimeAvailable, ocrImageBuffer, renderPdfPagePngAtScale } from "../shared/ocr-utils";
 
@@ -151,14 +152,21 @@ export function shouldRunGiaFacsimileDiagramImageOcr(
     return { run: false, reason: "not-gia-lab-or-parser" };
   }
   if (!looksLikeGiaReportText(combinedText)) {
-    return { run: false, reason: "text-does-not-look-like-gia-report" };
+    const lgdrHint =
+      /laboratory[-\s]*grown/i.test(combinedText) && /dossier/i.test(combinedText);
+    if (!lgdrHint) {
+      return { run: false, reason: "text-does-not-look-like-gia-report" };
+    }
   }
 
   const missingPavilion = !fields.pavilionAngle.trim();
   const missingGirdle = !fields.girdle.trim();
-  if (!missingPavilion && !missingGirdle) {
-    return { run: false, reason: "pavilion-and-girdle-already-populated" };
-  }
+  const missingCore = giaProportionDiagramFieldsMissing(fields);
+
+  const lgdrDossier =
+    /laboratory[-\s]*grown\s+diamond\s+report[\s\S]{0,160}dossier/i.test(
+      combinedText,
+    ) || /\bLGDR\b/i.test(combinedText);
 
   const facsimileTable =
     needsGiaProportionOcrSupplement(combinedText) ||
@@ -168,22 +176,32 @@ export function shouldRunGiaFacsimileDiagramImageOcr(
     /\bgia\s+report\s+number\b/i.test(combinedText) &&
     /\bcarat\s+weight\b/i.test(combinedText) &&
     /\bcut\s+grade\b/i.test(combinedText) &&
-    giaProportionDiagramFieldsMissing(fields);
+    missingCore;
 
-  if (facsimileTable) {
+  if (lgdrDossier && missingCore) {
+    return { run: true, reason: "gia-lgdr-dossier-missing-diagram-fields" };
+  }
+
+  if (facsimileTable && missingCore) {
     return {
       run: true,
       reason: missingPavilion
-        ? "gia-facsimile-missing-pavilion-angle"
-        : "gia-facsimile-missing-girdle",
+        ? "gia-facsimile-missing-core-proportions"
+        : missingGirdle
+          ? "gia-facsimile-missing-girdle-or-core"
+          : "gia-facsimile-missing-diagram-fields",
     };
   }
 
   if (gradingTableWithoutDiagram && (missingPavilion || missingGirdle)) {
     return {
       run: true,
-      reason: "gia-grading-table-partial-diagram-missing-pavilion-or-girdle",
+      reason: "gia-grading-table-partial-diagram-missing-core",
     };
+  }
+
+  if (!missingPavilion && !missingGirdle) {
+    return { run: false, reason: "pavilion-and-girdle-already-populated" };
   }
 
   return { run: false, reason: "gate-closed-not-facsimile-or-partial-diagram" };
@@ -591,13 +609,6 @@ export async function applyGiaFacsimileDiagramImageOcr(
   const before = { ...fields };
   const internal = giaInternal ?? {};
 
-  const inlineBlock = combinedText.match(
-    /(?:50|56)\s*%[\s\S]{0,320}?(?:75|50)\s*%/i,
-  )?.[0];
-  if (inlineBlock) {
-    extractGiaOcrProportionDiagram(inlineBlock, fields, set, internal);
-    applyGiaOcrFieldHydrationFallback(inlineBlock, fields, set);
-  }
   extractGiaOcrProportionDiagram(combinedText, fields, set, internal);
   applyGiaOcrFieldHydrationFallback(combinedText, fields, set);
 
@@ -615,6 +626,47 @@ export async function applyGiaFacsimileDiagramImageOcr(
     applyGiaOcrFieldHydrationFallback(fallbackBlock, fields, set);
   }
 
+  await applyGiaProportionDiagramExtraction(
+    pdfBytes,
+    combinedText,
+    fields,
+    internal,
+    set,
+    { reportNumber: opts?.reportNumber },
+  );
+
+  if (!giaProportionDiagramFieldsMissing(fields)) {
+    const earlyDiagram: GiaDiagramOcrCheckPayload = {
+      reportNumber: opts?.reportNumber,
+      triggered: true,
+      reason: `${gate.reason} (diagram-band-ocr)`,
+      cropCoordinates: GIA_FACSIMILE_OCR_CROPS,
+      ocrRawPreview: "",
+      repairedOcrPreview: "",
+      candidatesFound: {},
+      assignmentsMade: Object.fromEntries(
+        (["pavilionAngle", "girdle", "tablePercent", "depthPercent", "crownAngle"] as const)
+          .filter((k) => before[k] !== fields[k] && fields[k].trim())
+          .map((k) => [k, fields[k].trim()]),
+      ),
+      rejectedCandidates: [],
+      durationMs: Date.now() - started,
+      timedOut: false,
+    };
+    logGiaDiagramOcrCheck(earlyDiagram);
+    return earlyDiagram;
+  }
+
+  const beforeTextScatter = { ...fields };
+
+  const inlineBlock = combinedText.match(
+    /(?:50|56|64)\s*%[\s\S]{0,320}?(?:75|80|50)\s*%/i,
+  )?.[0];
+  if (inlineBlock) {
+    extractGiaOcrProportionDiagram(inlineBlock, fields, set, internal);
+    applyGiaOcrFieldHydrationFallback(inlineBlock, fields, set);
+  }
+
   if (!fields.girdle.trim()) {
     const frag = extractGiaGirdleFromFacsimileGradingResultsFragment(combinedText);
     if (frag) set("girdle", frag, "medium");
@@ -630,10 +682,10 @@ export async function applyGiaFacsimileDiagramImageOcr(
       repairedOcrPreview: inlineBlock?.slice(0, REGION_PREVIEW_CHARS) ?? "",
       candidatesFound: {},
       assignmentsMade: {
-        ...(before.pavilionAngle !== fields.pavilionAngle
+        ...(beforeTextScatter.pavilionAngle !== fields.pavilionAngle
           ? { pavilionAngle: fields.pavilionAngle }
           : {}),
-        ...(before.girdle !== fields.girdle ? { girdle: fields.girdle } : {}),
+        ...(beforeTextScatter.girdle !== fields.girdle ? { girdle: fields.girdle } : {}),
       },
       rejectedCandidates: [],
       durationMs: Date.now() - started,

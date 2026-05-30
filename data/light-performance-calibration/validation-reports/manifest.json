@@ -1,0 +1,29 @@
+{
+  "description": "Dev-only validation anchors — not production corpus entries.",
+  "reports": [
+    {
+      "id": "LG636401995",
+      "filename": "IGI-LG636401995.pdf",
+      "lab": "IGI",
+      "notes": "Healthy IGI control — proportions in PDF text layer."
+    },
+    {
+      "id": "2496027047",
+      "filename": "GIA-2496027047.pdf",
+      "lab": "GIA",
+      "notes": "GIA LGDR dossier — diagram values image-only."
+    },
+    {
+      "id": "6233708773",
+      "filename": "GIA-6233708773.pdf",
+      "lab": "GIA",
+      "notes": "Natural GIA facsimile — Good cut stress test."
+    },
+    {
+      "id": "LG360796192",
+      "filename": "GCAL-LG360796192.pdf",
+      "lab": "GCAL",
+      "notes": "GCAL Sarine / 8X — proportion diagram OCR route."
+    }
+  ]
+}

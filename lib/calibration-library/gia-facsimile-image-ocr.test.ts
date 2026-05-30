@@ -29,7 +29,25 @@ describe("GIA facsimile diagram OCR gate", () => {
     assert.equal(gate.run, false);
   });
 
-  it("does not trigger when pavilion and girdle populated", () => {
+  it("does not trigger when all core diagram fields populated", () => {
+    const fields = emptyReportFields();
+    fields.tablePercent = "56";
+    fields.depthPercent = "63.1";
+    fields.crownAngle = "36.5";
+    fields.pavilionAngle = "40.8";
+    fields.lowerHalfPercent = "75";
+    fields.starLengthPercent = "50";
+    fields.girdle = "Medium - Slightly Thick (Faceted) 3.5%";
+    fields.culet = "None";
+    const gate = shouldRunGiaFacsimileDiagramImageOcr(
+      fields,
+      GIA2527039693_FACSIMILE_PDF_TEXT,
+      { parserType: "gia-modern", lab: "GIA" },
+    );
+    assert.equal(gate.run, false);
+  });
+
+  it("triggers when pavilion and girdle populated but other diagram fields missing", () => {
     const fields = emptyReportFields();
     fields.pavilionAngle = "40.8";
     fields.girdle = "Medium - Slightly Thick (Faceted) 3.5%";
@@ -38,6 +56,6 @@ describe("GIA facsimile diagram OCR gate", () => {
       GIA2527039693_FACSIMILE_PDF_TEXT,
       { parserType: "gia-modern", lab: "GIA" },
     );
-    assert.equal(gate.run, false);
+    assert.equal(gate.run, true);
   });
 });

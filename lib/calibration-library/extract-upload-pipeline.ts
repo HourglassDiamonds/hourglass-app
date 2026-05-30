@@ -25,8 +25,15 @@ import {
 import { looksLikeGcal8xReportText } from "./parsers/gcal/gcal-layout-detector";
 import {
   applyGiaFacsimileDiagramImageOcr,
+  ocrGiaFacsimileFullPages,
   shouldRunGiaFacsimileDiagramImageOcr,
 } from "./parsers/gia/gia-facsimile-image-ocr";
+import {
+  applyGiaOcrFieldHydrationFallback,
+  extractGiaOcrProportionDiagram,
+  giaProportionDiagramFieldsMissing,
+  needsGiaProportionOcrSupplement,
+} from "./gia-proportions";
 import {
   applyIgiDiagramImageOcr,
   shouldRunIgiDiagramImageOcr,
@@ -39,6 +46,10 @@ import {
   logUploadPipelineTiming,
 } from "./upload-pipeline-timing";
 import { clientExtractionSufficient } from "@/lib/diamond-intelligence/client-extraction-sufficient";
+import {
+  buildExtractionDiagnosticReport,
+  type ExtractionDiagnosticReport,
+} from "@/lib/diamond-intelligence/extraction-diagnostics";
 import {
   CalibrationTimeoutError,
   logCalibrationRuntimeCheck,
@@ -53,6 +64,10 @@ import {
   EXTRACT_FILE_PIPELINE_TIMEOUT_MS,
   IMAGE_REGION_OCR_TIMEOUT_MS,
 } from "./runtime-limits";
+import {
+  auditProductionPdfRender,
+  type PdfRenderAuditRecord,
+} from "./pdf-render-audit";
 import type {
   ExtractionResult,
   FieldConfidence,
@@ -85,6 +100,10 @@ export type UploadExtractionOutput = FinalizedCalibrationExtraction & {
   pipelineError?: string;
   /** Client route returned fields gathered before timeout. */
   clientPartial?: boolean;
+  /** Developer-only field-by-field extraction diagnostics (when requested). */
+  diagnostics?: ExtractionDiagnosticReport;
+  /** Production PDF render audit — infrastructure only, no scoring impact. */
+  renderAudit?: PdfRenderAuditRecord;
 };
 
 export type RunUploadExtractionInput = {
@@ -101,6 +120,16 @@ export type RunUploadExtractionInput = {
   preExtractedDocument?: DocumentTextExtraction;
   /** Notices collected before pipeline (upload save, document-extract, etc.). */
   initialPipelineNotices?: string[];
+  /**
+   * Developer-only: when true, attach a field-by-field `diagnostics` report to
+   * the output. Default off — does not change parser/scoring/public behavior.
+   */
+  collectDiagnostics?: boolean;
+  /**
+   * Attach production PDF render audit (renderer, timing, dimensions, OCR readiness).
+   * Default: on in calibration mode, off in client mode.
+   */
+  collectRenderAudit?: boolean;
 };
 
 async function runImageOcrAugmentation(input: {
@@ -253,7 +282,52 @@ async function runImageOcrAugmentation(input: {
   }
 
   if (clientMode) {
-    // Client budget: never run GIA/IGI full diagram OCR. Return whatever we have.
+    const isGia =
+      parsed.metadata.lab === "GIA" ||
+      Boolean(parsed.parserType?.startsWith("gia"));
+    if (
+      isGia &&
+      giaProportionDiagramFieldsMissing(parsed.fields) &&
+      uploadPdfBytes
+    ) {
+      const giaInternal = parsed.giaInternal ?? {};
+      let giaCombined = combined;
+      if (needsGiaProportionOcrSupplement(combined)) {
+        try {
+          const fullOcr = await withTimeout(
+            ocrGiaFacsimileFullPages(uploadPdfBytes),
+            Math.max(regionOcrTimeoutMs, 12_000),
+            "client-gia-full-page-ocr",
+          );
+          if (fullOcr.ok && fullOcr.text.trim()) {
+            giaCombined = [fullOcr.text, combined].filter(Boolean).join("\n\n");
+          }
+        } catch {
+          // Budget exhausted — still attempt scatter parse on PDF text layer.
+        }
+      }
+      extractGiaOcrProportionDiagram(giaCombined, parsed.fields, setField, giaInternal);
+      applyGiaOcrFieldHydrationFallback(giaCombined, parsed.fields, setField);
+      // Client budget: full-page OCR + text scatter only — skip band OCR.
+      if (Object.keys(giaInternal).length > 0) {
+        parsed.giaInternal = giaInternal;
+      }
+      ocrCompleted = true;
+      logUploadPipelineTiming({
+        phase: "ocr-region-crops",
+        durationMs: Date.now() - started,
+        labFamily,
+        parserPath: parsed.parserType,
+        detail: clientSatisfied()
+          ? "client-gia-diagram-complete"
+          : "client-gia-diagram-partial",
+      });
+      if (clientSatisfied()) {
+        return { imageOcrMs: Date.now() - started, ocrCompleted };
+      }
+    }
+
+    // Client budget: skip GIA facsimile multi-crop / IGI diagram OCR after targeted diagram pass.
     logUploadPipelineTiming({
       phase: "ocr-region-crops",
       durationMs: Date.now() - started,
@@ -379,6 +453,25 @@ export async function runCalibrationUploadExtraction(
     gcalImageOnlyPdf: false,
   };
 
+  // Developer-only diagnostics. Off by default → no public behavior change.
+  const buildDiagnostics = (
+    finalized: FinalizedCalibrationExtraction,
+    combined: string,
+    usedImageOCR: boolean,
+  ): ExtractionDiagnosticReport | undefined => {
+    if (!input.collectDiagnostics) return undefined;
+    return buildExtractionDiagnosticReport({
+      extraction: finalized,
+      rawText: combined,
+      normalizedFields: finalized.fieldsNormalized,
+      usedImageOCR,
+      reportNumber: input.reportNumber,
+      lab: input.lab,
+      pdfTextLayerLength: snapshot.pdfTextLayerLength,
+      gcalImageOnlyPdf: snapshot.gcalImageOnlyPdf,
+    });
+  };
+
   const assembleOutput = (
     finalized: FinalizedCalibrationExtraction,
     extra: {
@@ -388,6 +481,7 @@ export async function runCalibrationUploadExtraction(
       clientPartial?: boolean;
       timedOut?: boolean;
       pipelineError?: string;
+      renderAudit?: PdfRenderAuditRecord;
     },
   ): UploadExtractionOutput => {
     timings.totalMs = Date.now() - pipelineStarted;
@@ -407,6 +501,8 @@ export async function runCalibrationUploadExtraction(
       clientPartial: extra.clientPartial,
       timedOut: extra.timedOut,
       pipelineError: extra.pipelineError,
+      diagnostics: buildDiagnostics(finalized, extra.combined, extra.ocrAttempted),
+      renderAudit: extra.renderAudit,
     };
   };
 
@@ -425,6 +521,8 @@ export async function runCalibrationUploadExtraction(
         let uploadPdfBytes: Buffer | undefined;
         let gcalImageOnlyPdf = false;
         let pdfTextLayerLength = 0;
+        let renderAudit: PdfRenderAuditRecord | undefined;
+        const shouldCollectRenderAudit = input.collectRenderAudit ?? !clientMode;
 
         if (input.bytes && input.bytes.length > 0 && input.mime) {
           if (isPdfMime(input.mime)) {
@@ -481,6 +579,19 @@ export async function runCalibrationUploadExtraction(
             gcalImageOnlyPdf = doc.gcalImageOnlyPdf;
             snapshot.ocrAvailable = doc.ocrAvailable;
             pipelineNotices.push(...doc.notices);
+          }
+        }
+
+        if (uploadPdfBytes && shouldCollectRenderAudit) {
+          try {
+            renderAudit = await auditProductionPdfRender(uploadPdfBytes, {
+              scale: 2,
+              probeOcr: Boolean(input.collectDiagnostics),
+            });
+          } catch (auditErr) {
+            pipelineNotices.push(
+              `PDF render audit failed: ${errorMessageFromUnknown(auditErr)}`,
+            );
           }
         }
 
@@ -629,6 +740,12 @@ export async function runCalibrationUploadExtraction(
           calibrationEligible: finalized.calibrationEligible,
           excludedFromCalibrationStats: finalized.excludedFromCalibrationStats,
           corpusReviewFlags: finalized.corpusReviewFlags,
+          diagnostics: buildDiagnostics(
+            finalized,
+            combined,
+            (ocrAttempted && Boolean(docText)) || timings.imageOcrMs > 0,
+          ),
+          renderAudit,
         };
       })(),
       timeoutMs,
