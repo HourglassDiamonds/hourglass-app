@@ -5,15 +5,18 @@ import {
 } from "./client-interpretation-confidence";
 import { buildClientReadState } from "./client-read-state";
 import { presentConfidenceAdjustedRead } from "./client-percentile-present";
+import {
+  assessExtractionCompleteness,
+  toExtractionCompletenessSummary,
+  type ExtractionCompletenessSummary,
+  type ExtractionState,
+} from "./extraction-completeness";
 
 /**
  * THE single source of truth for client-facing interpretation display.
  *
  * Every public surface (score card, graph, traits, hero/expert copy) reads its
  * decisions from this one context so the UI can never independently overclaim.
- * It composes the display-confidence primitive + read-state + score capping.
- *
- * Display-only: never mutates the canonical score, parsers, OCR, or calibration.
  */
 
 export type DiamondGraphMode = "full" | "preliminary" | "limited";
@@ -23,6 +26,7 @@ export type DiamondCopyTone = "confident" | "careful" | "orientation";
 export type DiamondInterpretationContext = {
   confidenceLevel: "high" | "medium" | "low";
   readState: "full" | "partial" | "orientation";
+  extractionState: ExtractionState;
   missingCriticalFields: string[];
   displayScore: number | null;
   displayLabel: string;
@@ -37,6 +41,11 @@ export type DiamondInterpretationContext = {
   primaryExplanation: string;
   confidenceExplanation: string;
   nextStep: string;
+  scoreEligible: boolean;
+  graphEligible: boolean;
+  traitEligible: boolean;
+  guidedCompletionEligible: boolean;
+  extractionCompleteness: ExtractionCompletenessSummary;
 };
 
 function joinMissing(missing: string[]): string {
@@ -46,6 +55,41 @@ function joinMissing(missing: string[]): string {
   return `${missing.slice(0, -1).join(", ")}, and ${missing[missing.length - 1]}`;
 }
 
+function graphModeFromCompleteness(
+  extractionState: ExtractionState,
+  readState: "full" | "partial" | "orientation",
+  confidence: "high" | "medium" | "low",
+): DiamondGraphMode {
+  if (readState === "full" && extractionState === "FULL_EXTRACTION") {
+    return "full";
+  }
+  if (
+    extractionState === "PARTIAL_EXTRACTION" ||
+    (extractionState === "FULL_EXTRACTION" && readState === "partial")
+  ) {
+    return confidence === "medium" ? "preliminary" : "limited";
+  }
+  return "limited";
+}
+
+function traitModeFromCompleteness(
+  extractionState: ExtractionState,
+  readState: "full" | "partial" | "orientation",
+  canShowTraitBreakdown: boolean,
+): DiamondTraitMode {
+  if (
+    extractionState === "REPORT_ONLY" ||
+    extractionState === "EXTRACTION_ERROR" ||
+    readState === "orientation"
+  ) {
+    return "review";
+  }
+  if (readState === "full" && extractionState === "FULL_EXTRACTION") {
+    return "normal";
+  }
+  return canShowTraitBreakdown ? "cautious" : "review";
+}
+
 export function buildDiamondInterpretationContext(input: {
   fields: Partial<CalibrationReportFields> | null | undefined;
   rawScore: number | null;
@@ -53,21 +97,20 @@ export function buildDiamondInterpretationContext(input: {
 }): DiamondInterpretationContext {
   const confidence =
     input.confidence ?? buildClientInterpretationConfidence(input.fields);
+  const completeness = assessExtractionCompleteness({ fields: input.fields });
   const readState = buildClientReadState(input.fields, confidence);
 
-  const graphMode: DiamondGraphMode =
-    readState.state === "full"
-      ? "full"
-      : readState.confidence === "medium"
-        ? "preliminary"
-        : "limited";
+  const graphMode = graphModeFromCompleteness(
+    completeness.extractionState,
+    readState.state,
+    readState.confidence,
+  );
 
-  const traitMode: DiamondTraitMode =
-    readState.state === "full"
-      ? "normal"
-      : readState.canShowTraitBreakdown
-        ? "cautious"
-        : "review";
+  const traitMode = traitModeFromCompleteness(
+    completeness.extractionState,
+    readState.state,
+    readState.canShowTraitBreakdown,
+  );
 
   const copyTone: DiamondCopyTone =
     readState.state === "full"
@@ -76,12 +119,11 @@ export function buildDiamondInterpretationContext(input: {
         ? "careful"
         : "orientation";
 
-  // ── Display score / label / band (capped; never above the read-state cap) ──
   let displayScore: number | null;
   let displayLabel: string;
   let displayBand: string | null;
 
-  if (!readState.canShowScore) {
+  if (!readState.canShowScore || !completeness.scoreEligible) {
     displayScore = null;
     displayLabel = "Report read";
     displayBand = null;
@@ -97,7 +139,6 @@ export function buildDiamondInterpretationContext(input: {
       : null;
   }
 
-  // ── Plain-language answers: good? · how sure? · what's missing? · next? ──
   const missingList = joinMissing(readState.missingCriticalFields);
 
   const primaryExplanation =
@@ -112,7 +153,8 @@ export function buildDiamondInterpretationContext(input: {
       ? "High confidence — the core proportions and finish needed for a light read are all present."
       : readState.confidence === "medium"
         ? `Early read${missingList ? ` — confirming ${missingList} would help sharpen the picture` : ""}.`
-        : `Early read${missingList ? ` — ${missingList} would help complete the picture` : ""}.`;
+        : completeness.reason ||
+          `Early read${missingList ? ` — ${missingList} would help complete the picture` : ""}.`;
 
   const nextStep =
     readState.confidence === "high"
@@ -122,6 +164,7 @@ export function buildDiamondInterpretationContext(input: {
   return {
     confidenceLevel: readState.confidence,
     readState: readState.state,
+    extractionState: completeness.extractionState,
     missingCriticalFields: readState.missingCriticalFields,
     displayScore,
     displayLabel,
@@ -136,5 +179,10 @@ export function buildDiamondInterpretationContext(input: {
     primaryExplanation,
     confidenceExplanation,
     nextStep,
+    scoreEligible: completeness.scoreEligible,
+    graphEligible: completeness.graphEligible,
+    traitEligible: completeness.traitEligible,
+    guidedCompletionEligible: completeness.guidedCompletionEligible,
+    extractionCompleteness: toExtractionCompletenessSummary(completeness),
   };
 }

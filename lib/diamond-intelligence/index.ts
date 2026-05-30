@@ -84,6 +84,15 @@ export {
   type DiamondTraitMode,
 } from "./client-interpretation-context";
 export {
+  assessExtractionCompleteness,
+  SCORE_ELIGIBLE_CORE_KEYS,
+  DEEP_OPTICAL_KEYS,
+  toExtractionCompletenessSummary,
+  type ExtractionCompleteness,
+  type ExtractionCompletenessSummary,
+  type ExtractionState,
+} from "./extraction-completeness";
+export {
   buildFaceUpPresenceCopy,
   buildOpticalCharacterCopy,
   buildOpticalInterpretationSummary,

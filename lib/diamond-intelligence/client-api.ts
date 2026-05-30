@@ -1,4 +1,5 @@
 import type { FinalizedCalibrationExtraction } from "@/lib/calibration-library/finalize-calibration-extraction";
+import type { PdfRenderAuditRecord } from "@/lib/calibration-library/pdf-render-audit";
 import type {
   CalibrationReportFields,
   CalibrationReportMetadata,
@@ -8,6 +9,11 @@ import {
   assessReportCapability,
   type ReportCapability,
 } from "./report-capability";
+import {
+  assessExtractionCompleteness,
+  toExtractionCompletenessSummary,
+  type ExtractionCompletenessSummary,
+} from "./extraction-completeness";
 
 /** Fields shown in the client “What we could read” card. */
 export const CLIENT_DISPLAY_FIELD_KEYS: ReportFieldKey[] = [
@@ -42,12 +48,22 @@ export type ClientSafeInterpretationPayload = {
   /** Calm client copy when read is preliminary or timed out mid-OCR. */
   clientStatusNote?: string;
   partial?: boolean;
+  /** Development only — extraction state / eligibility diagnostics. */
+  extractionCompleteness?: ExtractionCompletenessSummary;
 };
 
 export function toClientSafeInterpretationPayload(
-  finalized: FinalizedCalibrationExtraction,
+  finalized: FinalizedCalibrationExtraction & {
+    timedOut?: boolean;
+    pipelineError?: string;
+    renderAudit?: PdfRenderAuditRecord;
+  },
   interpretationFields?: CalibrationReportFields,
-  opts?: { clientStatusNote?: string; partial?: boolean },
+  opts?: {
+    clientStatusNote?: string;
+    partial?: boolean;
+    includeDevDiagnostics?: boolean;
+  },
 ): ClientSafeInterpretationPayload {
   const interpretation = interpretationFields ?? finalized.fields;
   const capability = assessReportCapability({
@@ -62,7 +78,7 @@ export function toClientSafeInterpretationPayload(
     ...clientCapability
   } = capability;
 
-  return {
+  const payload: ClientSafeInterpretationPayload = {
     metadata: {
       lab: finalized.metadata.lab,
       reportNumber: finalized.metadata.reportNumber,
@@ -74,6 +90,19 @@ export function toClientSafeInterpretationPayload(
     clientStatusNote: opts?.clientStatusNote,
     partial: opts?.partial,
   };
+
+  if (opts?.includeDevDiagnostics) {
+    payload.extractionCompleteness = toExtractionCompletenessSummary(
+      assessExtractionCompleteness({
+        fields: interpretation,
+        pipelineError: finalized.pipelineError,
+        timedOut: finalized.timedOut,
+        renderAudit: finalized.renderAudit,
+      }),
+    );
+  }
+
+  return payload;
 }
 
 export function reassessClientCapability(

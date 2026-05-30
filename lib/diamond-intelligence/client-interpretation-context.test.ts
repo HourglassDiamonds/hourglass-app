@@ -71,16 +71,17 @@ describe("buildDiamondInterpretationContext", () => {
     assert.equal(ctx.copyTone, "confident");
   });
 
-  it("missing crown → not full, no rare/top, capped score", () => {
+  it("missing crown → not full, no score until core complete", () => {
     const ctx = buildDiamondInterpretationContext({
       fields: MISSING_CROWN,
       rawScore: 97,
     });
     assert.notEqual(ctx.readState, "full");
+    assert.equal(ctx.canShowScore, false);
+    assert.equal(ctx.displayScore, null);
     assert.equal(ctx.canShowRareLanguage, false);
     assert.equal(ctx.displayBand, null);
-    assert.ok(ctx.displayScore !== null && ctx.displayScore <= 92);
-    assert.doesNotMatch(ctx.displayLabel, /Top/);
+    assert.doesNotMatch(ctx.displayLabel, /Top|Balanced/);
   });
 
   it("missing pavilion → not full, no rare/top, capped score", () => {
@@ -94,29 +95,29 @@ describe("buildDiamondInterpretationContext", () => {
     assert.doesNotMatch(ctx.displayLabel, /Top|Exceptional|Rare|Elite/);
   });
 
-  it("GIA-style partial (meas + finish, no proportions) → no confident score", () => {
+  it("GIA-style partial (meas + finish, no proportions) → no score or Balanced", () => {
     const ctx = buildDiamondInterpretationContext({
       fields: GIA_MEAS_FINISH,
       rawScore: 90,
     });
-    assert.ok(ctx.readState === "partial" || ctx.readState === "orientation");
-    assert.equal(ctx.canShowRareLanguage, false);
+    assert.equal(ctx.canShowScore, false);
+    assert.equal(ctx.scoreEligible, false);
+    assert.equal(ctx.displayScore, null);
+    assert.equal(ctx.displayLabel, "Report read");
     assert.notEqual(ctx.graphMode, "full");
-    if (ctx.displayScore !== null) {
-      assert.ok(ctx.displayScore <= 85);
-    }
   });
 
-  it("GCAL partial raw 97 (missing crown/pavilion) → capped, no Exceptional/Top/Rare", () => {
+  it("GCAL partial raw 97 (missing crown/pavilion) → no numeric score", () => {
     const ctx = buildDiamondInterpretationContext({
       fields: GCAL_PARTIAL,
       rawScore: 97,
     });
     assert.equal(ctx.readState, "partial");
+    assert.equal(ctx.canShowScore, false);
+    assert.equal(ctx.displayScore, null);
     assert.equal(ctx.canShowRareLanguage, false);
     assert.equal(ctx.displayBand, null);
-    assert.ok(ctx.displayScore === null || ctx.displayScore <= 92);
-    assert.doesNotMatch(ctx.displayLabel, /Top|Exceptional|Rare|Elite/);
+    assert.doesNotMatch(ctx.displayLabel, /Top|Exceptional|Rare|Elite|Balanced/);
   });
 
   it("orientation read → no numeric score, no full graph, orientation tone", () => {
@@ -146,14 +147,13 @@ describe("buildDiamondInterpretationContext", () => {
     }
   });
 
-  it("display never exceeds the cap for partial/low even with raw 100", () => {
+  it("finish-only payload with raw 100 → no display score", () => {
     const ctx = buildDiamondInterpretationContext({
       fields: GIA_MEAS_FINISH,
       rawScore: 100,
     });
-    if (ctx.displayScore !== null) {
-      assert.ok(ctx.displayScore <= 85);
-    }
+    assert.equal(ctx.displayScore, null);
+    assert.equal(ctx.canShowScore, false);
     assert.equal(ctx.canShowRareLanguage, false);
   });
 });

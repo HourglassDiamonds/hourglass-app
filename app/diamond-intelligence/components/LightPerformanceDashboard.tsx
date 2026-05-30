@@ -16,7 +16,6 @@ import {
   presentTraitReadLabel,
   interpretationLevelLabel,
   presentClientInterpretationScore,
-  opticalBalanceDisplayValue,
   spreadProfileValue,
   type ClientInterpretationSnapshot,
   type ClientLightTrait,
@@ -146,17 +145,10 @@ export default function LightPerformanceDashboard({
     );
   }, [fields, capability]);
 
-  const balanceValue =
-    clientScore && capability
-      ? opticalBalanceDisplayValue(clientScore, capability.interpretationLevel)
-      : 0;
-
   const rawOverallScore =
     clientScore?.eligible && clientScore.overall !== null
       ? clientScore.overall
-      : hasReport
-        ? balanceValue
-        : null;
+      : null;
 
   // ── Single source of truth: every display decision comes from here. ──
   const interpretationContext = useMemo(
@@ -343,11 +335,11 @@ export default function LightPerformanceDashboard({
                     </p>
                   </>
                 )}
-                {interpretationContext.canShowScore ? (
+                {interpretationContext.canShowScore && overallScore !== null ? (
                   <div className="mt-4 h-1 overflow-hidden rounded-full bg-[#ebe4da]/80">
                     <div
                       className="h-full rounded-full bg-[#c4b08a] transition-all duration-500"
-                      style={{ width: `${overallScore ?? balanceValue}%` }}
+                      style={{ width: `${overallScore}%` }}
                     />
                   </div>
                 ) : null}

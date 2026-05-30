@@ -75,33 +75,35 @@ describe("buildClientReadState", () => {
     assert.equal(r.summaryTone, "confident");
   });
 
-  it("missing crown/pavilion → cannot be full, no rare/top language", () => {
+  it("missing crown/pavilion → cannot be full, no score", () => {
     const r = buildClientReadState(IGI_MISSING_CROWN_PAVILION);
     assert.notEqual(r.state, "full");
+    assert.equal(r.canShowScore, false);
+    assert.equal(r.scoreEligible, false);
     assert.equal(r.canShowRareLanguage, false);
-    assert.ok(r.displayScoreCap !== null && r.displayScoreCap <= 92);
+    assert.equal(r.displayScoreCap, null);
     assert.ok(r.missingCriticalFields.includes("crown angle"));
     assert.ok(r.missingCriticalFields.includes("pavilion angle"));
   });
 
-  it("GCAL partial (table/depth only) → partial, capped, restrained graph", () => {
+  it("GCAL partial (table/depth only) → partial, no score until core complete", () => {
     const r = buildClientReadState(GCAL_PARTIAL);
     assert.equal(r.state, "partial");
-    assert.equal(r.canShowScore, true);
+    assert.equal(r.canShowScore, false);
+    assert.equal(r.scoreEligible, false);
     assert.equal(r.canShowGraph, true);
     assert.equal(r.canShowRareLanguage, false);
-    assert.ok(r.displayScoreCap !== null && r.displayScoreCap <= 92);
-    assert.ok(r.graphStrengthMultiplier < 1);
+    assert.equal(r.displayScoreCap, null);
     assert.equal(r.summaryTone, "careful");
   });
 
-  it("GIA measurements + finish, no proportions → partial, no confident score", () => {
+  it("GIA measurements + finish, no proportions → no score", () => {
     const r = buildClientReadState(GIA_MEAS_FINISH);
-    assert.ok(r.state === "partial" || r.state === "orientation");
+    assert.equal(r.canShowScore, false);
+    assert.equal(r.scoreEligible, false);
     assert.equal(r.canShowRareLanguage, false);
-    if (r.displayScoreCap !== null) {
-      assert.ok(r.displayScoreCap <= 85);
-    }
+    assert.equal(r.displayScoreCap, null);
+    assert.ok(r.state === "partial" || r.state === "orientation");
   });
 
   it("identity only → orientation: no score, no graph polygon, no traits", () => {

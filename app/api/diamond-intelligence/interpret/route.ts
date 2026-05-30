@@ -178,7 +178,11 @@ export async function POST(request: Request) {
     const interpretation = toClientSafeInterpretationPayload(
       finalized,
       undefined,
-      { clientStatusNote: statusNote, partial },
+      {
+        clientStatusNote: statusNote,
+        partial,
+        includeDevDiagnostics: process.env.NODE_ENV === "development",
+      },
     );
 
     if (decision.tier === "full") {
@@ -193,6 +197,9 @@ export async function POST(request: Request) {
       useful: true,
       response: TIER_TO_RESPONSE[decision.tier],
       routeMs: ms(),
+      detail: interpretation.extractionCompleteness
+        ? `eligibility=${interpretation.extractionCompleteness.extractionState} score=${interpretation.extractionCompleteness.scoreEligible}`
+        : undefined,
     });
 
     return json({ ok: true, interpretation, partial });
