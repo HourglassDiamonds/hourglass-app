@@ -154,7 +154,7 @@ const LIVE_PDFS: Array<{
   expectScoreEligible: boolean | "depends";
 }> = [
   { file: "IGI-LG636401995.pdf", label: "IGI", expectScoreEligible: true },
-  { file: "GIA-2496027047.pdf", label: "GIA-LGDR", expectScoreEligible: false },
+  { file: "GIA-2496027047.pdf", label: "GIA-LGDR", expectScoreEligible: true },
   { file: "GCAL-LG360796192.pdf", label: "GCAL", expectScoreEligible: false },
   {
     file: "GIA-6233708773.pdf",

@@ -19,6 +19,10 @@ import {
   PDF_GET_DOCUMENT_TIMEOUT_MS,
   PDF_RENDER_TIMEOUT_MS,
 } from "./runtime-limits";
+import {
+  isPdfRenderRetryableError,
+  renderPdfPagePngWithFactory,
+} from "./pdf-render-factory";
 
 export type OcrResult = {
   text: string;
@@ -137,13 +141,61 @@ export async function ocrImageBuffer(buffer: Buffer): Promise<OcrResult> {
   }
 }
 
+export type PdfRenderBackend = "production" | "factory-fallback";
+
 export type RenderedPdfPage = {
   png: Buffer;
   width: number;
   height: number;
+  backend: PdfRenderBackend;
 };
 
-/** Render a PDF page to PNG at the given scale (capped for memory safety). */
+async function renderPdfPagePngProduction(
+  pdfBytes: Buffer,
+  pageNumber: number,
+  scale: number,
+): Promise<{ png: Buffer; width: number; height: number } | { error: string }> {
+  const { createCanvas } = await import("@napi-rs/canvas");
+  const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
+  const data = new Uint8Array(pdfBytes);
+  const doc = await withTimeout(
+    pdfjs.getDocument({
+      data,
+      useSystemFonts: true,
+      disableFontFace: true,
+    }).promise,
+    PDF_GET_DOCUMENT_TIMEOUT_MS,
+    "pdf-render-open",
+  );
+  const page = await doc.getPage(pageNumber);
+  const baseViewport = page.getViewport({ scale: 1 });
+  const effectiveScale = capRenderScaleForPixels(
+    baseViewport.width,
+    baseViewport.height,
+    scale,
+  );
+  const viewport = page.getViewport({ scale: effectiveScale });
+  const width = Math.ceil(viewport.width);
+  const height = Math.ceil(viewport.height);
+  const canvas = createCanvas(width, height);
+  const ctx = canvas.getContext("2d");
+  try {
+    await page.render({
+      canvasContext: ctx as unknown as CanvasRenderingContext2D,
+      viewport,
+    }).promise;
+    return {
+      png: canvas.toBuffer("image/png"),
+      width,
+      height,
+    };
+  } finally {
+    canvas.width = 0;
+    canvas.height = 0;
+  }
+}
+
+/** Render a PDF page to PNG — production first, factory fallback on font/canvas failures. */
 export async function renderPdfPagePngAtScale(
   pdfBytes: Buffer,
   pageNumber: number,
@@ -155,61 +207,55 @@ export async function renderPdfPagePngAtScale(
     renderScale: scale,
   };
 
+  let productionError: string | null = null;
+
   try {
-    return await withTimeout(
-      (async () => {
-        const { createCanvas } = await import("@napi-rs/canvas");
-        const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
-        const data = new Uint8Array(pdfBytes);
-        const doc = await withTimeout(
-          pdfjs.getDocument({
-            data,
-            useSystemFonts: true,
-            disableFontFace: true,
-          }).promise,
-          PDF_GET_DOCUMENT_TIMEOUT_MS,
-          "pdf-render-open",
-        );
-        const page = await doc.getPage(pageNumber);
-        const baseViewport = page.getViewport({ scale: 1 });
-        const effectiveScale = capRenderScaleForPixels(
-          baseViewport.width,
-          baseViewport.height,
-          scale,
-        );
-        const viewport = page.getViewport({ scale: effectiveScale });
-        const width = Math.ceil(viewport.width);
-        const height = Math.ceil(viewport.height);
-        const canvas = createCanvas(width, height);
-        const ctx = canvas.getContext("2d");
-        try {
-          await page.render({
-            canvasContext: ctx as unknown as CanvasRenderingContext2D,
-            viewport,
-          }).promise;
-          return {
-            png: canvas.toBuffer("image/png"),
-            width,
-            height,
-          };
-        } finally {
-          canvas.width = 0;
-          canvas.height = 0;
-        }
-      })(),
+    const production = await withTimeout(
+      renderPdfPagePngProduction(pdfBytes, pageNumber, scale),
       PDF_RENDER_TIMEOUT_MS,
       "pdf-render-page",
     );
+    logCalibrationRuntimeCheck({
+      ...checkBase,
+      renderDurationMs: Date.now() - renderStarted,
+      durationMs: Date.now() - renderStarted,
+      parserPath: "production",
+    });
+    return { ...production, backend: "production" };
   } catch (err) {
+    productionError = err instanceof Error ? err.message : String(err);
     logCalibrationRuntimeCheck({
       ...checkBase,
       renderDurationMs: Date.now() - renderStarted,
       durationMs: Date.now() - renderStarted,
       timedOut: err instanceof CalibrationTimeoutError,
-      error: err instanceof Error ? err.message : String(err),
+      error: productionError,
     });
+  }
+
+  if (!productionError || !isPdfRenderRetryableError(productionError)) {
     return null;
   }
+
+  const fallbackStarted = Date.now();
+  const factory = await renderPdfPagePngWithFactory(
+    pdfBytes,
+    pageNumber,
+    scale,
+    "pdf-render-factory-fallback",
+  );
+  if (factory) {
+    logCalibrationRuntimeCheck({
+      operation: "pdf-render-factory-fallback",
+      renderScale: scale,
+      renderDurationMs: Date.now() - fallbackStarted,
+      durationMs: Date.now() - fallbackStarted,
+      parserPath: "factory-fallback",
+    });
+    return { ...factory, backend: "factory-fallback" };
+  }
+
+  return null;
 }
 
 async function renderPdfPagePng(

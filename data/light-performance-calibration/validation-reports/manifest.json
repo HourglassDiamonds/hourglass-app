@@ -11,13 +11,43 @@
       "id": "2496027047",
       "filename": "GIA-2496027047.pdf",
       "lab": "GIA",
+      "style": "GIA_LGDR_DOSSIER",
       "notes": "GIA LGDR dossier — diagram values image-only."
     },
     {
       "id": "6233708773",
       "filename": "GIA-6233708773.pdf",
       "lab": "GIA",
+      "style": "GIA_NATURAL_FACSIMILE",
       "notes": "Natural GIA facsimile — Good cut stress test."
+    },
+    {
+      "id": "6532930018",
+      "filename": "GIA-6532930018.pdf",
+      "lab": "GIA",
+      "style": "GIA_NATURAL_FACSIMILE",
+      "notes": "Natural facsimile — full proportion diagram."
+    },
+    {
+      "id": "6495746732",
+      "filename": "GIA-6495746732.pdf",
+      "lab": "GIA",
+      "style": "GIA_NATURAL_COLORED_SIMPLIFIED",
+      "notes": "Natural colored — simplified proportions, no crown/pavilion angles."
+    },
+    {
+      "id": "1493739085",
+      "filename": "GIA-1493739085.pdf",
+      "lab": "GIA",
+      "style": "GIA_LGDR_DOSSIER",
+      "notes": "LGDR dossier validation anchor."
+    },
+    {
+      "id": "6502274288",
+      "filename": "GIA-6502274288.pdf",
+      "lab": "GIA",
+      "style": "GIA_LGDR_DOSSIER",
+      "notes": "LGDR dossier validation anchor."
     },
     {
       "id": "LG360796192",

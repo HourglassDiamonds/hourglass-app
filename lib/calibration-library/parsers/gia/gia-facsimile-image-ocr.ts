@@ -1,5 +1,9 @@
 import { mkdir, writeFile } from "fs/promises";
 import { join } from "path";
+import {
+  isForensicCollectionEnabled,
+  pushForensicSnapshot,
+} from "../../extraction-forensic-collector";
 import type {
   CalibrationReportFields,
   FieldConfidence,
@@ -456,6 +460,13 @@ export type GiaDiagramOcrCheckPayload = {
 
 export function logGiaDiagramOcrCheck(payload: GiaDiagramOcrCheckPayload): void {
   console.log("[GIA DIAGRAM OCR CHECK]", payload);
+  if (isForensicCollectionEnabled()) {
+    pushForensicSnapshot(
+      "gia-facsimile",
+      "diagram-ocr",
+      payload as unknown as Record<string, unknown>,
+    );
+  }
 }
 
 export function logGiaOcrVisualCheck(

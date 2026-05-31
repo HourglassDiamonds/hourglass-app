@@ -398,6 +398,13 @@ export function collectGcal8xProportionNumericCandidates(
     if (!Number.isNaN(n) && n >= 20 && n <= 50) degrees.push(n);
   }
 
+  for (const m of w.matchAll(/\b(3[3-6]\.\d)\b/g)) {
+    const n = parseFloat(m[1]!);
+    if (!Number.isNaN(n) && n >= 33 && n <= 36.5 && !degrees.includes(n)) {
+      degrees.push(n);
+    }
+  }
+
   for (const m of w.matchAll(/(?<![\d.])(0\.\d{1,2})\s*mm\b/gi)) {
     const n = parseFloat(m[1]!);
     if (!Number.isNaN(n)) mmValues.push(n);

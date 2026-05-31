@@ -29,6 +29,10 @@ import {
   shouldRunGiaFacsimileDiagramImageOcr,
 } from "./parsers/gia/gia-facsimile-image-ocr";
 import {
+  applyGiaClientPavilionDiagramOcr,
+  applyGiaProportionDiagramExtraction,
+} from "./parsers/gia/gia-diagram-extraction";
+import {
   applyGiaOcrFieldHydrationFallback,
   extractGiaOcrProportionDiagram,
   giaProportionDiagramFieldsMissing,
@@ -68,6 +72,11 @@ import {
   auditProductionPdfRender,
   type PdfRenderAuditRecord,
 } from "./pdf-render-audit";
+import {
+  drainForensicSnapshots,
+  setForensicCollectionEnabled,
+  type ForensicSnapshot,
+} from "./extraction-forensic-collector";
 import type {
   ExtractionResult,
   FieldConfidence,
@@ -104,6 +113,8 @@ export type UploadExtractionOutput = FinalizedCalibrationExtraction & {
   diagnostics?: ExtractionDiagnosticReport;
   /** Production PDF render audit — infrastructure only, no scoring impact. */
   renderAudit?: PdfRenderAuditRecord;
+  /** Developer-only OCR/assignment traces (when collectForensics). */
+  forensicSnapshots?: ForensicSnapshot[];
 };
 
 export type RunUploadExtractionInput = {
@@ -130,6 +141,10 @@ export type RunUploadExtractionInput = {
    * Default: on in calibration mode, off in client mode.
    */
   collectRenderAudit?: boolean;
+  /**
+   * Developer-only: capture OCR/assignment forensic snapshots from parser paths.
+   */
+  collectForensics?: boolean;
 };
 
 async function runImageOcrAugmentation(input: {
@@ -292,7 +307,34 @@ async function runImageOcrAugmentation(input: {
     ) {
       const giaInternal = parsed.giaInternal ?? {};
       let giaCombined = combined;
-      if (needsGiaProportionOcrSupplement(combined)) {
+      const lgdrDossier =
+        /laboratory[-\s]*grown\s+diamond\s+report[\s\S]{0,160}dossier/i.test(
+          combined,
+        ) || /\bLGDR\b/i.test(combined);
+      const clientDiagramFirst =
+        lgdrDossier && giaProportionDiagramFieldsMissing(parsed.fields);
+      if (clientDiagramFirst && uploadPdfBytes) {
+        try {
+          await withTimeout(
+            applyGiaProportionDiagramExtraction(
+              uploadPdfBytes,
+              giaCombined,
+              parsed.fields,
+              giaInternal,
+              setField,
+              { reportNumber: reportNumberHint || undefined },
+            ),
+            Math.max(regionOcrTimeoutMs - (Date.now() - started), 5_000),
+            "client-gia-diagram-band-ocr",
+          );
+        } catch {
+          // Continue with scatter / facsimile fallback.
+        }
+      }
+      if (
+        needsGiaProportionOcrSupplement(combined) &&
+        !clientDiagramFirst
+      ) {
         try {
           const fullOcr = await withTimeout(
             ocrGiaFacsimileFullPages(uploadPdfBytes),
@@ -308,7 +350,58 @@ async function runImageOcrAugmentation(input: {
       }
       extractGiaOcrProportionDiagram(giaCombined, parsed.fields, setField, giaInternal);
       applyGiaOcrFieldHydrationFallback(giaCombined, parsed.fields, setField);
-      // Client budget: full-page OCR + text scatter only — skip band OCR.
+      const giaDiagramGate = shouldRunGiaFacsimileDiagramImageOcr(
+        parsed.fields,
+        giaCombined,
+        {
+          parserType: parsed.parserType,
+          lab: parsed.metadata.lab,
+        },
+      );
+      if (
+        giaDiagramGate.run &&
+        giaProportionDiagramFieldsMissing(parsed.fields)
+      ) {
+        const elapsedMs = Date.now() - started;
+        const remainingBudgetMs = Math.max(regionOcrTimeoutMs - elapsedMs, 4_000);
+        try {
+          if (!parsed.fields.pavilionAngle.trim()) {
+            await withTimeout(
+              applyGiaClientPavilionDiagramOcr(
+                uploadPdfBytes,
+                parsed.fields,
+                setField,
+              ),
+              remainingBudgetMs,
+              "client-gia-pavilion-band-ocr",
+            );
+          }
+          if (giaProportionDiagramFieldsMissing(parsed.fields)) {
+            const afterPavilionMs = Date.now() - started;
+            const facsimileBudgetMs = Math.max(
+              regionOcrTimeoutMs - afterPavilionMs,
+              3_000,
+            );
+            await withTimeout(
+              applyGiaFacsimileDiagramImageOcr(
+                uploadPdfBytes,
+                giaCombined,
+                parsed.fields,
+                giaInternal,
+                setField,
+                {
+                  reportNumber: reportNumberHint || undefined,
+                  parserPathUsed: parsed.parserType,
+                },
+              ),
+              facsimileBudgetMs,
+              "client-gia-facsimile-diagram-ocr",
+            );
+          }
+        } catch {
+          // Client OCR budget exhausted — keep scatter-only partial fields.
+        }
+      }
       if (Object.keys(giaInternal).length > 0) {
         parsed.giaInternal = giaInternal;
       }
@@ -459,7 +552,7 @@ export async function runCalibrationUploadExtraction(
     combined: string,
     usedImageOCR: boolean,
   ): ExtractionDiagnosticReport | undefined => {
-    if (!input.collectDiagnostics) return undefined;
+    if (!input.collectDiagnostics && !input.collectForensics) return undefined;
     return buildExtractionDiagnosticReport({
       extraction: finalized,
       rawText: combined,
@@ -507,6 +600,7 @@ export async function runCalibrationUploadExtraction(
   };
 
   try {
+    setForensicCollectionEnabled(Boolean(input.collectForensics));
     return await withTimeout(
       (async () => {
         if (input.initialPipelineNotices?.length) {
@@ -746,6 +840,9 @@ export async function runCalibrationUploadExtraction(
             (ocrAttempted && Boolean(docText)) || timings.imageOcrMs > 0,
           ),
           renderAudit,
+          forensicSnapshots: input.collectForensics
+            ? drainForensicSnapshots()
+            : undefined,
         };
       })(),
       timeoutMs,
@@ -813,5 +910,7 @@ export async function runCalibrationUploadExtraction(
       timedOut,
       pipelineError: timeoutErrorMessage(err),
     });
+  } finally {
+    setForensicCollectionEnabled(false);
   }
 }

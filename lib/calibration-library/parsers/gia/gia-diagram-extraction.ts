@@ -11,6 +11,36 @@ import {
   renderPdfPagePngAtScale,
   type RenderedPdfPage,
 } from "../shared/ocr-utils";
+import {
+  detectGiaReportStyle,
+  detectGiaDiagramLayout,
+  type GiaReportStyle,
+  type GiaDiagramLayout,
+  type GiaDiagramBandDef,
+  type CropRegion,
+  GIA_PROPORTION_DIAGRAM_REGION,
+  GIA_LGDR_DOSSIER_DIAGRAM_REGION,
+  GIA_COLORED_SIMPLIFIED_DIAGRAM_REGION,
+  GIA_LGDR_DOSSIER_VALUE_BANDS,
+  GIA_DIAGRAM_VALUE_BANDS,
+  GIA_NATURAL_COLORED_SIMPLIFIED_BANDS,
+  styleFromLayout,
+} from "./gia-report-style";
+import {
+  exportGiaDiagramDebugArtifacts,
+  giaDiagramDebugEnabled,
+} from "./gia-diagram-debug";
+
+export type { GiaDiagramLayout, GiaReportStyle, CropRegion };
+export {
+  detectGiaDiagramLayout,
+  detectGiaReportStyle,
+  GIA_PROPORTION_DIAGRAM_REGION,
+  GIA_LGDR_DOSSIER_DIAGRAM_REGION,
+  GIA_LGDR_DOSSIER_VALUE_BANDS,
+  GIA_DIAGRAM_VALUE_BANDS,
+  GIA_NATURAL_COLORED_SIMPLIFIED_BANDS,
+};
 
 /**
  * GIA proportion-diagram extraction — region → crop → targeted OCR → labeled parse.
@@ -34,129 +64,7 @@ export const GIA_DIAGRAM_TARGET_FIELDS = [
   "culet",
 ] as const satisfies readonly ReportFieldKey[];
 
-export type CropRegion = {
-  left: number;
-  top: number;
-  width: number;
-  height: number;
-};
-
-/** A positional value band inside the diagram, with the fields it should hold. */
-type DiagramBand = {
-  id: string;
-  crop: CropRegion;
-  /** Fields whose labels/values are expected to fall inside this band. */
-  expects: ReportFieldKey[];
-  preprocess: "raw" | "contrast" | "threshold";
-  scale: number;
-};
-
-/** Whole right-side proportion diagram (used for the locate/validate pass). */
-export const GIA_PROPORTION_DIAGRAM_REGION: CropRegion = {
-  left: 0.5,
-  top: 0.2,
-  width: 0.48,
-  height: 0.44,
-};
-
-/**
- * Positional bands top→bottom across the GIA profile diagram:
- *   table (top) · crown angle/height + star length · girdle · pavilion
- *   angle/depth + lower half · total depth + culet (bottom).
- */
-/**
- * Bands calibrated against the live GIA facsimile (report 2527039693): the
- * profile diagram's numerics cluster in the upper ~0.19–0.39 of the page, with
- * the crown values (table %, crown angle, crown height) above the girdle and
- * the pavilion values (pavilion angle, pavilion depth, total depth, culet)
- * just below. Bands intentionally overlap; cross-band double-assignment is
- * prevented by the reserved value sets in parseDiagramFields().
- */
-export type GiaDiagramLayout = "facsimile" | "lgdr-dossier";
-
-/** LGDR dossier: proportion diagram sits lower on page 1 than facsimile layout. */
-export const GIA_LGDR_DOSSIER_DIAGRAM_REGION: CropRegion = {
-  left: 0.48,
-  top: 0.52,
-  width: 0.5,
-  height: 0.38,
-};
-
-export const GIA_LGDR_DOSSIER_VALUE_BANDS: DiagramBand[] = [
-  {
-    id: "table",
-    crop: { left: 0.5, top: 0.52, width: 0.48, height: 0.06 },
-    expects: ["tablePercent"],
-    preprocess: "threshold",
-    scale: 6,
-  },
-  {
-    id: "crown",
-    crop: { left: 0.5, top: 0.54, width: 0.48, height: 0.09 },
-    expects: ["crownAngle", "starLengthPercent"],
-    preprocess: "threshold",
-    scale: 6,
-  },
-  {
-    id: "girdle",
-    crop: { left: 0.5, top: 0.62, width: 0.48, height: 0.06 },
-    expects: ["girdle"],
-    preprocess: "contrast",
-    scale: 6,
-  },
-  {
-    id: "pavilion",
-    crop: { left: 0.5, top: 0.61, width: 0.48, height: 0.11 },
-    expects: ["pavilionAngle", "lowerHalfPercent"],
-    preprocess: "threshold",
-    scale: 6,
-  },
-  {
-    id: "culet-depth",
-    crop: { left: 0.5, top: 0.66, width: 0.48, height: 0.14 },
-    expects: ["depthPercent", "culet"],
-    preprocess: "contrast",
-    scale: 6,
-  },
-];
-
-export const GIA_DIAGRAM_VALUE_BANDS: DiagramBand[] = [
-  {
-    id: "table",
-    crop: { left: 0.5, top: 0.19, width: 0.48, height: 0.06 },
-    expects: ["tablePercent"],
-    preprocess: "threshold",
-    scale: 6,
-  },
-  {
-    id: "crown",
-    crop: { left: 0.5, top: 0.2, width: 0.48, height: 0.08 },
-    expects: ["crownAngle", "starLengthPercent"],
-    preprocess: "threshold",
-    scale: 6,
-  },
-  {
-    id: "girdle",
-    crop: { left: 0.5, top: 0.28, width: 0.48, height: 0.05 },
-    expects: ["girdle"],
-    preprocess: "contrast",
-    scale: 6,
-  },
-  {
-    id: "pavilion",
-    crop: { left: 0.5, top: 0.27, width: 0.48, height: 0.1 },
-    expects: ["pavilionAngle", "lowerHalfPercent"],
-    preprocess: "threshold",
-    scale: 6,
-  },
-  {
-    id: "culet-depth",
-    crop: { left: 0.5, top: 0.27, width: 0.48, height: 0.12 },
-    expects: ["depthPercent", "culet"],
-    preprocess: "contrast",
-    scale: 6,
-  },
-];
+type DiagramBand = GiaDiagramBandDef;
 
 export type GiaDiagramFieldResult = {
   field: ReportFieldKey;
@@ -183,9 +91,11 @@ export type GiaDiagramExtractionReport = {
   ocrAvailable: boolean;
   diagramLocated: boolean;
   locateReason: string;
+  reportStyle?: GiaReportStyle;
   region: CropRegion;
   bands: GiaDiagramBandOcr[];
   fields: GiaDiagramFieldResult[];
+  internal?: Partial<GiaInternalFields>;
 };
 
 // ─────────────────────────────── image helpers ───────────────────────────────
@@ -245,6 +155,7 @@ async function cropRegionPng(
 /** OCR degree-glyph cleanup: a trailing °/'/H/= after a 2-digit(.d) number. */
 function normalizeDegreeText(text: string): string {
   return text
+    .replace(/(\d{1,2}):(\d)/g, "$1.$2")
     .replace(/(\d{2}(?:\.\d)?)\s*[°ºoO*]/g, "$1°")
     .replace(/(\d{2})\s*\.\s*(\d)/g, "$1.$2");
 }
@@ -352,7 +263,11 @@ function assignPercent(
   used: Set<number>,
 ): GiaDiagramFieldResult {
   const range = RANGES[field];
-  const all = collectPercents(band.text);
+  let all = collectPercents(band.text);
+  if (field === "starLengthPercent") {
+    const starish = all.filter((n) => n >= 44 && n <= 55);
+    if (starish.length > 0) all = starish;
+  }
   const candidates = all.filter(
     (n) => n >= range.min && n <= range.max && !used.has(n),
   );
@@ -512,53 +427,144 @@ function mk(
   };
 }
 
-function parseDiagramFields(bands: GiaDiagramBandOcr[]): GiaDiagramFieldResult[] {
+function assignDegreeFromBands(
+  field: "crownAngle" | "pavilionAngle",
+  bands: GiaDiagramBandOcr[],
+  used: Set<number>,
+): GiaDiagramFieldResult {
+  for (const band of bands) {
+    const result = assignDegree(field, band, used);
+    if (result.parsedValue) return result;
+  }
+  return mk(
+    field,
+    null,
+    null,
+    "none",
+    `no ${field} in candidate bands`,
+  );
+}
+
+function parseColoredSimplifiedDiagramFields(
+  bands: GiaDiagramBandOcr[],
+): GiaDiagramFieldResult[] {
+  const byId = new Map(bands.map((b) => [b.id, b]));
+  const headerBand =
+    byId.get("proportions-header") ?? byId.get("header") ?? null;
+  const stackBand =
+    byId.get("proportions-stack") ?? byId.get("table") ?? null;
+  const girdleBand = byId.get("girdle") ?? null;
+  const culetBand = byId.get("culet") ?? byId.get("culet-depth") ?? null;
+  const usedPct = new Set<number>();
+
+  const angleNote =
+    "GIA_NATURAL_COLORED_SIMPLIFIED: crown/pavilion not on report diagram";
+  const results: GiaDiagramFieldResult[] = [
+    mk("crownAngle", null, null, "none", angleNote),
+    mk("pavilionAngle", null, null, "none", angleNote),
+    headerBand
+      ? assignPercent("tablePercent", headerBand, usedPct)
+      : mk("tablePercent", null, null, "none", "table band not rendered"),
+    stackBand
+      ? assignDepthPercent(stackBand, usedPct)
+      : mk("depthPercent", null, null, "none", "depth band not rendered"),
+    mk("lowerHalfPercent", null, null, "none", angleNote),
+    mk("starLengthPercent", null, null, "none", angleNote),
+    girdleBand
+      ? assignGirdle(girdleBand)
+      : mk("girdle", null, null, "none", "girdle band not rendered"),
+    culetBand
+      ? assignCulet(culetBand)
+      : mk("culet", null, null, "none", "culet band not rendered"),
+  ];
+
+  return GIA_DIAGRAM_TARGET_FIELDS.map(
+    (f) => results.find((r) => r.field === f)!,
+  );
+}
+
+function parseDiagramFields(
+  bands: GiaDiagramBandOcr[],
+  style: GiaReportStyle,
+): GiaDiagramFieldResult[] {
+  if (style === "GIA_NATURAL_COLORED_SIMPLIFIED") {
+    return parseColoredSimplifiedDiagramFields(bands);
+  }
+
   const byId = new Map(bands.map((b) => [b.id, b]));
   const usedDeg = new Set<number>();
   const usedPct = new Set<number>();
-  const results: GiaDiagramFieldResult[] = [];
 
-  const tableBand = byId.get("table");
+  const headerBand = byId.get("header");
+  const tableBand = byId.get("table") ?? byId.get("stack");
   const crownBand = byId.get("crown");
   const girdleBand = byId.get("girdle");
   const pavBand = byId.get("pavilion");
-  const culetBand = byId.get("culet-depth");
+  const culetBand = byId.get("culet-depth") ?? byId.get("culet");
 
-  // Angles first so their numbers are reserved before percent passes.
+  const stackBands = [headerBand, tableBand, crownBand].filter(
+    Boolean,
+  ) as GiaDiagramBandOcr[];
+
+  const results: GiaDiagramFieldResult[] = [];
+
   results.push(
-    crownBand
-      ? assignDegree("crownAngle", crownBand, usedDeg)
-      : mk("crownAngle", null, null, "none", "crown band not rendered"),
+    assignDegreeFromBands("crownAngle", stackBands, usedDeg),
   );
   results.push(
-    pavBand
-      ? assignDegree("pavilionAngle", pavBand, usedDeg)
-      : mk("pavilionAngle", null, null, "none", "pavilion band not rendered"),
+    assignDegreeFromBands(
+      "pavilionAngle",
+      [pavBand, crownBand, tableBand, headerBand].filter(
+        Boolean,
+      ) as GiaDiagramBandOcr[],
+      usedDeg,
+    ),
   );
-  // Table % reliably renders alongside the crown values (apex of the profile);
-  // the dedicated top band often clips it. Reserve it before the facet
-  // percents (star/lower) so it can't be mis-claimed by them.
-  const tableSource = crownBand ?? tableBand;
+
+  const tableSource = headerBand ?? tableBand ?? crownBand;
   results.push(
     tableSource
       ? assignPercent("tablePercent", tableSource, usedPct)
       : mk("tablePercent", null, null, "none", "table band not rendered"),
   );
+
+  let depthResult = culetBand
+    ? assignDepthPercent(culetBand, usedPct)
+    : mk("depthPercent", null, null, "none", "depth band not rendered");
+  if (!depthResult.parsedValue) {
+    for (const band of [tableBand, crownBand, headerBand]) {
+      if (!band) continue;
+      const tryDepth = assignDepthPercent(band, usedPct);
+      if (tryDepth.parsedValue) {
+        depthResult = tryDepth;
+        break;
+      }
+    }
+  }
+  results.push(depthResult);
+
+  const starSource = headerBand ?? crownBand;
   results.push(
-    culetBand
-      ? assignDepthPercent(culetBand, usedPct)
-      : mk("depthPercent", null, null, "none", "depth band not rendered"),
+    starSource
+      ? assignPercent("starLengthPercent", starSource, usedPct)
+      : mk("starLengthPercent", null, null, "none", "star band not rendered"),
   );
-  results.push(
-    crownBand
-      ? assignPercent("starLengthPercent", crownBand, usedPct)
-      : mk("starLengthPercent", null, null, "none", "crown band not rendered"),
-  );
-  results.push(
-    pavBand
-      ? assignPercent("lowerHalfPercent", pavBand, usedPct)
-      : mk("lowerHalfPercent", null, null, "none", "pavilion band not rendered"),
-  );
+
+  let lowerResult = pavBand
+    ? assignPercent("lowerHalfPercent", pavBand, usedPct)
+    : mk("lowerHalfPercent", null, null, "none", "pavilion band not rendered");
+  if (!lowerResult.parsedValue) {
+    for (const band of [tableBand, crownBand]) {
+      if (!band) continue;
+      const tryLower = assignPercent("lowerHalfPercent", band, usedPct);
+      if (tryLower.parsedValue) {
+        lowerResult = tryLower;
+        break;
+      }
+    }
+  }
+  results.push(lowerResult);
+
   results.push(
     girdleBand
       ? assignGirdle(girdleBand)
@@ -570,20 +576,111 @@ function parseDiagramFields(bands: GiaDiagramBandOcr[]): GiaDiagramFieldResult[]
       : mk("culet", null, null, "none", "culet band not rendered"),
   );
 
-  // Stable order matching GIA_DIAGRAM_TARGET_FIELDS.
   return GIA_DIAGRAM_TARGET_FIELDS.map(
     (f) => results.find((r) => r.field === f)!,
   );
 }
 
+const INTERNAL_RANGES = {
+  crownHeightPercent: { min: 8, max: 20 },
+  pavilionDepthPercent: { min: 38, max: 47 },
+  girdleThicknessPercent: { min: 1, max: 8 },
+} as const;
+
+function usedPublicPercents(fields: GiaDiagramFieldResult[]): Set<number> {
+  const used = new Set<number>();
+  for (const row of fields) {
+    if (!row.parsedValue) continue;
+    const n = parseFloat(row.parsedValue.replace(/%/g, ""));
+    if (Number.isFinite(n)) used.add(n);
+  }
+  return used;
+}
+
+function pickInternalPercent(
+  bands: GiaDiagramBandOcr[],
+  range: { min: number; max: number },
+  used: Set<number>,
+): { value: string; bandId: string } | null {
+  for (const band of bands) {
+    for (const n of collectPercents(band.text)) {
+      if (n >= range.min && n <= range.max && !used.has(n)) {
+        used.add(n);
+        return { value: fmtPct(n), bandId: band.id };
+      }
+    }
+  }
+  return null;
+}
+
+function parseInternalDiagramFields(
+  bands: GiaDiagramBandOcr[],
+  publicFields: GiaDiagramFieldResult[],
+  style: GiaReportStyle,
+): Partial<GiaInternalFields> {
+  if (style === "GIA_NATURAL_COLORED_SIMPLIFIED") {
+    return {};
+  }
+
+  const used = usedPublicPercents(publicFields);
+  const headerAndStack = bands.filter((b) =>
+    ["header", "table", "stack", "crown"].includes(b.id),
+  );
+  const girdleBand = bands.find((b) => b.id === "girdle");
+
+  const internal: Partial<GiaInternalFields> = {};
+
+  const crownHeight = pickInternalPercent(
+    headerAndStack,
+    INTERNAL_RANGES.crownHeightPercent,
+    used,
+  );
+  if (crownHeight) internal.crownHeightPercent = crownHeight.value;
+
+  const pavilionDepth = pickInternalPercent(
+    headerAndStack,
+    INTERNAL_RANGES.pavilionDepthPercent,
+    used,
+  );
+  if (pavilionDepth) internal.pavilionDepthPercent = pavilionDepth.value;
+
+  if (girdleBand) {
+    const girdlePct = pickInternalPercent(
+      [girdleBand],
+      INTERNAL_RANGES.girdleThicknessPercent,
+      used,
+    );
+    if (girdlePct) internal.girdleThicknessPercent = girdlePct.value;
+  }
+
+  return internal;
+}
+
 /** Diagram is "located" when its OCR shows the expected numeric signature. */
-function validateDiagramSignature(bandTexts: string[]): {
+function validateDiagramSignature(
+  bandTexts: string[],
+  style: GiaReportStyle,
+): {
   located: boolean;
   reason: string;
 } {
   const joined = bandTexts.join("\n");
   const degrees = collectDegrees(joined).length;
   const percents = collectPercents(joined).length;
+
+  if (style === "GIA_NATURAL_COLORED_SIMPLIFIED") {
+    if (percents >= 1) {
+      return {
+        located: true,
+        reason: `colored simplified signature ok (${percents} percent(s))`,
+      };
+    }
+    return {
+      located: false,
+      reason: `colored simplified weak signature (${percents} percent(s))`,
+    };
+  }
+
   if (degrees >= 1 && percents >= 2) {
     return {
       located: true,
@@ -596,28 +693,26 @@ function validateDiagramSignature(bandTexts: string[]): {
   };
 }
 
-export function detectGiaDiagramLayout(combinedText: string): GiaDiagramLayout {
-  if (
-    /laboratory[-\s]*grown\s+diamond\s+report[\s\S]{0,160}dossier/i.test(
-      combinedText,
-    ) ||
-    /\bLGDR\b/i.test(combinedText)
-  ) {
-    return "lgdr-dossier";
-  }
-  return "facsimile";
-}
-
 function layoutBands(layout: GiaDiagramLayout): DiagramBand[] {
-  return layout === "lgdr-dossier"
-    ? GIA_LGDR_DOSSIER_VALUE_BANDS
-    : GIA_DIAGRAM_VALUE_BANDS;
+  switch (layout) {
+    case "lgdr-dossier":
+      return GIA_LGDR_DOSSIER_VALUE_BANDS;
+    case "colored-simplified":
+      return GIA_NATURAL_COLORED_SIMPLIFIED_BANDS;
+    default:
+      return GIA_DIAGRAM_VALUE_BANDS;
+  }
 }
 
 function layoutRegion(layout: GiaDiagramLayout): CropRegion {
-  return layout === "lgdr-dossier"
-    ? GIA_LGDR_DOSSIER_DIAGRAM_REGION
-    : GIA_PROPORTION_DIAGRAM_REGION;
+  switch (layout) {
+    case "lgdr-dossier":
+      return GIA_LGDR_DOSSIER_DIAGRAM_REGION;
+    case "colored-simplified":
+      return GIA_COLORED_SIMPLIFIED_DIAGRAM_REGION;
+    default:
+      return GIA_PROPORTION_DIAGRAM_REGION;
+  }
 }
 
 function countAssignedFields(report: GiaDiagramExtractionReport): number {
@@ -641,7 +736,9 @@ async function extractGiaProportionDiagramForLayout(
   pdfBytes: Buffer,
   layout: GiaDiagramLayout,
   page: number,
+  opts?: { reportNumber?: string },
 ): Promise<GiaDiagramExtractionReport> {
+  const reportStyle = styleFromLayout(layout);
   const region = layoutRegion(layout);
   const valueBands = layoutBands(layout);
   const empty = (
@@ -651,6 +748,7 @@ async function extractGiaProportionDiagramForLayout(
     ocrAvailable,
     diagramLocated: false,
     locateReason: reason,
+    reportStyle,
     region,
     bands: [],
     fields: GIA_DIAGRAM_TARGET_FIELDS.map((f) =>
@@ -667,11 +765,15 @@ async function extractGiaProportionDiagramForLayout(
   if (!rendered) return empty(true, `could not render PDF page ${page}`);
 
   const bands: GiaDiagramBandOcr[] = [];
+  const bandCropPngs: Array<{ id: string; raw: Buffer; preprocessed?: Buffer }> =
+    [];
   for (const band of valueBands) {
     const cropped = await cropRegionPng(rendered, band.crop);
     if (!cropped) continue;
     const prepped = await preprocessCropPng(cropped.png, band.preprocess);
-    const ocr = await ocrImageBuffer(prepped);
+    const rawOcr = await ocrImageBuffer(cropped.png);
+    const preppedOcr = await ocrImageBuffer(prepped);
+    const text = [rawOcr.text, preppedOcr.text].filter(Boolean).join("\n").trim();
     bands.push({
       id: band.id,
       crop: band.crop,
@@ -679,31 +781,61 @@ async function extractGiaProportionDiagramForLayout(
       scale: band.scale,
       width: cropped.width,
       height: cropped.height,
-      text: ocr.text.trim(),
+      text,
     });
+    bandCropPngs.push({ id: band.id, raw: cropped.png, preprocessed: prepped });
   }
 
-  const signature = validateDiagramSignature(bands.map((b) => b.text));
-  const fields = parseDiagramFields(bands);
+  const signature = validateDiagramSignature(
+    bands.map((b) => b.text),
+    reportStyle,
+  );
+  const fields = parseDiagramFields(bands, reportStyle);
+  const internal = parseInternalDiagramFields(bands, fields, reportStyle);
 
-  return {
+  const report: GiaDiagramExtractionReport = {
     ocrAvailable: true,
     diagramLocated: signature.located,
     locateReason: `${layout}: ${signature.reason}`,
+    reportStyle,
     region,
     bands,
     fields,
+    internal,
   };
+
+  if (giaDiagramDebugEnabled(opts?.reportNumber)) {
+    const diagramRegionPng = await cropRegionPng(rendered, region);
+    exportGiaDiagramDebugArtifacts({
+      reportNumber: opts?.reportNumber ?? "unknown",
+      reportStyle,
+      pagePng: rendered.png,
+      diagramRegionPng: diagramRegionPng?.png ?? null,
+      report,
+      bandCropPngs,
+    });
+  }
+
+  return report;
 }
 
 // ─────────────────────────────── entry point ───────────────────────────────
 
 export async function extractGiaProportionDiagram(
   pdfBytes: Buffer,
-  opts?: { page?: number; layout?: GiaDiagramLayout; tryLayouts?: boolean },
+  opts?: {
+    page?: number;
+    layout?: GiaDiagramLayout;
+    tryLayouts?: boolean;
+    combinedText?: string;
+    reportNumber?: string;
+  },
 ): Promise<GiaDiagramExtractionReport> {
   const page = opts?.page ?? 1;
   const region = GIA_PROPORTION_DIAGRAM_REGION;
+  const styleDetection = opts?.combinedText
+    ? detectGiaReportStyle(opts.combinedText)
+    : null;
   const empty = (
     ocrAvailable: boolean,
     reason: string,
@@ -711,6 +843,7 @@ export async function extractGiaProportionDiagram(
     ocrAvailable,
     diagramLocated: false,
     locateReason: reason,
+    reportStyle: styleDetection?.style,
     region,
     bands: [],
     fields: GIA_DIAGRAM_TARGET_FIELDS.map((f) =>
@@ -722,11 +855,18 @@ export async function extractGiaProportionDiagram(
     return empty(false, "OCR runtime not available");
   }
 
+  const primaryLayout = opts?.layout ?? styleDetection?.layout ?? "facsimile";
   const layouts: GiaDiagramLayout[] = opts?.layout
     ? [opts.layout]
     : opts?.tryLayouts === false
-      ? ["facsimile"]
-      : ["facsimile", "lgdr-dossier"];
+      ? [primaryLayout]
+      : primaryLayout === "colored-simplified"
+        ? ["colored-simplified"]
+        : primaryLayout === "lgdr-dossier"
+          ? ["lgdr-dossier", "facsimile"]
+          : styleDetection?.style === "GIA_UNKNOWN"
+            ? ["facsimile", "lgdr-dossier", "colored-simplified"]
+            : ["facsimile", "lgdr-dossier"];
 
   let best: GiaDiagramExtractionReport | null = null;
   for (const layout of layouts) {
@@ -734,6 +874,7 @@ export async function extractGiaProportionDiagram(
       pdfBytes,
       layout,
       page,
+      { reportNumber: opts?.reportNumber },
     );
     best = best ? pickBetterDiagramReport(best, result) : result;
     if (result.diagramLocated && countAssignedFields(result) >= 6) break;
@@ -779,9 +920,11 @@ function normalizeDiagramFieldValue(
 
 export type GiaDiagramApplyReport = {
   layout: GiaDiagramLayout;
+  reportStyle: GiaReportStyle;
   diagramLocated: boolean;
   locateReason: string;
   applied: Partial<Record<ReportFieldKey, string>>;
+  internalApplied?: Partial<GiaInternalFields>;
   skipped: Array<{ field: ReportFieldKey; reason: string }>;
 };
 
@@ -807,19 +950,22 @@ export async function applyGiaProportionDiagramExtraction(
   pdfBytes: Buffer,
   combinedText: string,
   fields: CalibrationReportFields,
-  _giaInternal: GiaInternalFields | undefined,
+  giaInternal: GiaInternalFields | undefined,
   set: FieldSetter,
   opts?: { reportNumber?: string; layout?: GiaDiagramLayout },
 ): Promise<GiaDiagramApplyReport> {
+  const styleDetection = detectGiaReportStyle(combinedText);
   const gate = shouldRunGiaProportionDiagramExtraction(fields, combinedText, {
     lab: "GIA",
   });
   const skipped: GiaDiagramApplyReport["skipped"] = [];
   const applied: GiaDiagramApplyReport["applied"] = {};
+  const internalApplied: Partial<GiaInternalFields> = {};
 
   if (!gate.run) {
     return {
-      layout: detectGiaDiagramLayout(combinedText),
+      layout: styleDetection.layout,
+      reportStyle: styleDetection.style,
       diagramLocated: false,
       locateReason: gate.reason,
       applied,
@@ -830,16 +976,30 @@ export async function applyGiaProportionDiagramExtraction(
     };
   }
 
-  const hintedLayout = opts?.layout ?? detectGiaDiagramLayout(combinedText);
+  // Scatter OCR often duplicates table % as depth when the diagram is image-only.
+  if (
+    fields.depthPercent.trim() &&
+    fields.tablePercent.trim() &&
+    fields.depthPercent.trim() === fields.tablePercent.trim()
+  ) {
+    fields.depthPercent = "";
+  }
+
+  const hintedLayout = opts?.layout ?? styleDetection.layout;
   const diagram = await extractGiaProportionDiagram(pdfBytes, {
     layout: hintedLayout,
-    tryLayouts: !opts?.layout,
+    tryLayouts: !opts?.layout && styleDetection.style === "GIA_UNKNOWN",
+    combinedText,
+    reportNumber: opts?.reportNumber,
   });
   const layout = diagram.locateReason.startsWith("lgdr-dossier")
     ? "lgdr-dossier"
-    : diagram.locateReason.startsWith("facsimile")
-      ? "facsimile"
-      : hintedLayout;
+    : diagram.locateReason.startsWith("colored-simplified")
+      ? "colored-simplified"
+      : diagram.locateReason.startsWith("facsimile")
+        ? "facsimile"
+        : hintedLayout;
+  const reportStyle = diagram.reportStyle ?? styleDetection.style;
 
   for (const row of diagram.fields) {
     if (!row.parsedValue?.trim()) {
@@ -869,13 +1029,75 @@ export async function applyGiaProportionDiagramExtraction(
     }
   }
 
+  if (diagram.internal && giaInternal) {
+    for (const key of [
+      "crownHeightPercent",
+      "pavilionDepthPercent",
+      "girdleThicknessPercent",
+    ] as const) {
+      const v = diagram.internal[key];
+      if (!v?.trim() || giaInternal[key]?.trim()) continue;
+      giaInternal[key] = v.trim();
+      internalApplied[key] = v.trim();
+    }
+  }
+
   return {
     layout,
+    reportStyle,
     diagramLocated: diagram.diagramLocated,
     locateReason: diagram.locateReason,
     applied,
+    internalApplied:
+      Object.keys(internalApplied).length > 0 ? internalApplied : undefined,
     skipped,
   };
+}
+
+const PAVILION_CLIENT_BAND_IDS = ["pavilion", "crown", "table", "header"] as const;
+
+/**
+ * Client fast path: when table/depth/crown are already recovered from the text
+ * layer, run a single render + pavilion-band OCR only (~3s).
+ */
+export async function applyGiaClientPavilionDiagramOcr(
+  pdfBytes: Buffer,
+  fields: CalibrationReportFields,
+  set: FieldSetter,
+): Promise<{ applied: boolean; value?: string; bandId?: string }> {
+  if (fields.pavilionAngle.trim()) return { applied: false };
+  if (!(await isOcrRuntimeAvailable())) return { applied: false };
+
+  const rendered = await renderPdfPagePngAtScale(pdfBytes, 1, 5);
+  if (!rendered) return { applied: false };
+
+  const usedDeg = new Set<number>();
+  for (const bandId of ["pavilion", "crown"] as const) {
+    const bandDef = GIA_DIAGRAM_VALUE_BANDS.find((b) => b.id === bandId);
+    if (!bandDef) continue;
+    const cropped = await cropRegionPng(rendered, bandDef.crop);
+    if (!cropped) continue;
+    const prepped = await preprocessCropPng(cropped.png, bandDef.preprocess);
+    const rawOcr = await ocrImageBuffer(cropped.png);
+    const preppedOcr = await ocrImageBuffer(prepped);
+    const text = [rawOcr.text, preppedOcr.text].filter(Boolean).join("\n").trim();
+    const band: GiaDiagramBandOcr = {
+      id: bandDef.id,
+      crop: bandDef.crop,
+      preprocess: bandDef.preprocess,
+      scale: bandDef.scale,
+      width: cropped.width,
+      height: cropped.height,
+      text,
+    };
+    const result = assignDegree("pavilionAngle", band, usedDeg);
+    if (!result.parsedValue) continue;
+    const value = normalizeDiagramFieldValue("pavilionAngle", result.parsedValue);
+    if (!value) continue;
+    set("pavilionAngle", value, "medium");
+    return { applied: true, value, bandId: band.id };
+  }
+  return { applied: false };
 }
 
 // ────────────────────────── compare vs current route ──────────────────────────

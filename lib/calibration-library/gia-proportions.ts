@@ -105,6 +105,7 @@ export function fixGiaOcrDegreeNumerals(text: string): string {
   return text
     .replace(/4\s*[Oo]\s*\.\s*8/gi, "40.8")
     .replace(/(\d)\s*,\s*(\d)/g, "$1.$2")
+    .replace(/(\d{1,2}):(\d)/g, "$1.$2")
     .replace(/(\d{1,2})\s+(\d)\s*H\b/gi, "$1.$2 H")
     .replace(/(\d)[Oo](?=\.\d)/g, "$10")
     .replace(/(\d)[Oo](?=\s*H\b)/gi, "$10")
@@ -2536,6 +2537,14 @@ export function extractGiaOcrProportionDiagram(
     fields.starLengthPercent.trim() === fields.depthPercent.trim()
   ) {
     fields.starLengthPercent = "";
+  }
+
+  if (
+    fields.depthPercent.trim() &&
+    fields.tablePercent.trim() &&
+    fields.depthPercent.trim() === fields.tablePercent.trim()
+  ) {
+    fields.depthPercent = "";
   }
 
   logGiaOcrDiagramDebug(debug);

@@ -16,7 +16,7 @@ import { tmpdir } from "os";
 import { join } from "path";
 import { capRenderScaleForPixels } from "./runtime-limits";
 import { extractPdfTextLayer } from "./extract-pdf-server";
-import { ocrImageBuffer } from "./ocr";
+import { ocrImageBuffer, renderPdfPagePngAtScale } from "./ocr";
 
 // ─── Public types ───────────────────────────────────────────────────────────
 
@@ -479,20 +479,25 @@ export async function auditProductionPdfRender(
 
   try {
     record.pageCount = await getPageCount(pdfBytes);
-    const result = await renderPdfJsBareNapi(pdfBytes, page, scale, {
-      useSystemFonts: true,
-      disableFontFace: true,
-    });
+    const renderStarted = Date.now();
+    const rendered = await renderPdfPagePngAtScale(pdfBytes, page, scale);
+    record.renderTimingMs = Date.now() - renderStarted;
+    if (!rendered) {
+      record.failureReason =
+        "production and factory-fallback render both failed";
+      record.ocrReadiness = "failed";
+      return record;
+    }
     record.renderSuccess = true;
-    record.imageDimensions = { width: result.width, height: result.height };
-    record.pngBytes = result.png.length;
+    record.imageDimensions = { width: rendered.width, height: rendered.height };
+    record.pngBytes = rendered.png.length;
 
-    const readiness = estimateOcrReadiness(result.png);
+    const readiness = estimateOcrReadiness(rendered.png);
     record.ocrReadiness = readiness;
 
     if (probeOcr && readiness === "ready") {
       const ocrStarted = Date.now();
-      const ocr = await ocrImageBuffer(result.png);
+      const ocr = await ocrImageBuffer(rendered.png);
       record.ocrProbeMs = Date.now() - ocrStarted;
       record.ocrProbeChars = ocr.text.length;
       if (ocr.text.length < 20) record.ocrReadiness = "blank";
@@ -509,8 +514,6 @@ export async function auditProductionPdfRender(
   record.renderTimingMs = Date.now() - started;
   return record;
 }
-
-// ─── Harness comparison ───────────────────────────────────────────────────────
 
 async function runBackendAttempt(
   backend: PdfRenderBackendId,

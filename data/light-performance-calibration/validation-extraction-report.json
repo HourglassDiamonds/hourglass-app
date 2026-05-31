@@ -1,0 +1,3610 @@
+{
+  "generatedAt": "2026-05-30T18:43:39.605Z",
+  "summary": {
+    "passed": 3,
+    "total": 4
+  },
+  "reports": [
+    {
+      "reportId": "2496027047",
+      "lab": "GIA",
+      "mode": "calibration",
+      "parserType": "gia-modern",
+      "pass": true,
+      "harnessPass": true,
+      "corePass": true,
+      "deepPass": true,
+      "reportStyle": "GIA_LGDR_DOSSIER",
+      "missingFields": [
+        "girdle"
+      ],
+      "mismatchFields": [],
+      "optionalMissingFields": [
+        "girdle"
+      ],
+      "fieldComparisons": [
+        {
+          "field": "tablePercent",
+          "expected": "59",
+          "actual": "59",
+          "match": true,
+          "status": "ok"
+        },
+        {
+          "field": "depthPercent",
+          "expected": "60.8",
+          "actual": "60.8",
+          "match": true,
+          "status": "ok"
+        },
+        {
+          "field": "crownAngle",
+          "expected": "34.5",
+          "actual": "34.5",
+          "match": true,
+          "status": "ok"
+        },
+        {
+          "field": "pavilionAngle",
+          "expected": "40.8",
+          "actual": "40.8",
+          "match": true,
+          "status": "ok"
+        },
+        {
+          "field": "lowerHalfPercent",
+          "expected": "75",
+          "actual": "75",
+          "match": true,
+          "status": "ok"
+        },
+        {
+          "field": "starLengthPercent",
+          "expected": "45",
+          "actual": "45",
+          "match": true,
+          "status": "ok"
+        },
+        {
+          "field": "girdle",
+          "expected": "Medium to Slightly Thick (Faceted)",
+          "actual": null,
+          "match": false,
+          "status": "missing"
+        },
+        {
+          "field": "culet",
+          "expected": "None",
+          "actual": "None",
+          "match": true,
+          "status": "ok"
+        },
+        {
+          "field": "measurements",
+          "expected": "8.23 - 8.27 x 5.02 mm",
+          "actual": "8.23 - 8.27 x 5.02 mm",
+          "match": true,
+          "status": "ok"
+        },
+        {
+          "field": "polish",
+          "expected": "Excellent",
+          "actual": "Excellent",
+          "match": true,
+          "status": "ok"
+        },
+        {
+          "field": "symmetry",
+          "expected": "Excellent",
+          "actual": "Excellent",
+          "match": true,
+          "status": "ok"
+        },
+        {
+          "field": "fluorescence",
+          "expected": "None",
+          "actual": "None",
+          "match": true,
+          "status": "ok"
+        },
+        {
+          "field": "cutGrade",
+          "expected": "Excellent",
+          "actual": "Excellent",
+          "match": true,
+          "status": "ok"
+        }
+      ],
+      "lifecycle": {
+        "renderAudit": {
+          "rendererUsed": "production-napi-root",
+          "pageCount": 1,
+          "renderSuccess": true,
+          "renderTimingMs": 6181,
+          "imageDimensions": {
+            "width": 2448,
+            "height": 3168
+          },
+          "pngBytes": 759516,
+          "ocrReadiness": "ready",
+          "ocrProbeChars": 1729,
+          "ocrProbeMs": 4492,
+          "failureReason": null,
+          "failureStack": null
+        },
+        "documentExtractMs": 4940,
+        "imageOcrMs": 31693,
+        "totalMs": 39652,
+        "timedOut": false,
+        "pipelineError": null,
+        "textMethod": "ocr",
+        "pdfTextLayerLength": 2074,
+        "usedImageOCR": true,
+        "fallbackStage": "image-region-ocr"
+      },
+      "assignments": [
+        {
+          "field": "tablePercent",
+          "finalValue": "59",
+          "source": "diagram-ocr",
+          "decision": "accepted",
+          "rejectionReason": null,
+          "rawEvidence": "…PROPORTIONS April 10, 2024 45% 59% GIA RPO NUMDET cocoons 2696027…"
+        },
+        {
+          "field": "depthPercent",
+          "finalValue": "60.8",
+          "source": "diagram-ocr",
+          "decision": "accepted",
+          "rejectionReason": null,
+          "rawEvidence": null
+        },
+        {
+          "field": "crownAngle",
+          "finalValue": "34.5",
+          "source": "diagram-ocr",
+          "decision": "accepted",
+          "rejectionReason": null,
+          "rawEvidence": null
+        },
+        {
+          "field": "pavilionAngle",
+          "finalValue": "40.8",
+          "source": "diagram-ocr",
+          "decision": "accepted",
+          "rejectionReason": null,
+          "rawEvidence": null
+        },
+        {
+          "field": "lowerHalfPercent",
+          "finalValue": "75",
+          "source": "diagram-ocr",
+          "decision": "accepted",
+          "rejectionReason": null,
+          "rawEvidence": "…= 8.27 x 5.02 easurements X mm 75% none LABORATORY-GROWN DIAMOND…"
+        },
+        {
+          "field": "starLengthPercent",
+          "finalValue": "45",
+          "source": "diagram-ocr",
+          "decision": "accepted",
+          "rejectionReason": null,
+          "rawEvidence": "…SIER PROPORTIONS April 10, 2024 45% 59% GIA RPO NUMDET cocoons 269…"
+        },
+        {
+          "field": "girdle",
+          "finalValue": null,
+          "source": "unavailable",
+          "decision": "missing",
+          "rejectionReason": "finish line not recovered from text/OCR region",
+          "rawEvidence": null
+        },
+        {
+          "field": "culet",
+          "finalValue": "None",
+          "source": "ocr",
+          "decision": "accepted",
+          "rejectionReason": null,
+          "rawEvidence": "….27 x 5.02 easurements X mm 75% none LABORATORY-GROWN DIAMOND SPECIF…"
+        },
+        {
+          "field": "measurements",
+          "finalValue": "8.23 - 8.27 x 5.02 mm",
+          "source": "ocr",
+          "decision": "accepted",
+          "rejectionReason": null,
+          "rawEvidence": "…d Brilliant (faceted) . (] M ES 8.23 = 8.27 x 5.02 easurements X mm…"
+        },
+        {
+          "field": "polish",
+          "finalValue": "Excellent",
+          "source": "ocr",
+          "decision": "accepted",
+          "rejectionReason": null,
+          "rawEvidence": "…esesensssesesanenes. VV S2 Clb. EXCELLENT ADDITIONAL INFORMATION POLISH c…"
+        },
+        {
+          "field": "symmetry",
+          "finalValue": "Excellent",
+          "source": "ocr",
+          "decision": "accepted",
+          "rejectionReason": null,
+          "rawEvidence": "…esesensssesesanenes. VV S2 Clb. EXCELLENT ADDITIONAL INFORMATION POLISH c…"
+        },
+        {
+          "field": "fluorescence",
+          "finalValue": "None",
+          "source": "ocr",
+          "decision": "accepted",
+          "rejectionReason": null,
+          "rawEvidence": "….27 x 5.02 easurements X mm 75% none LABORATORY-GROWN DIAMOND SPECIF…"
+        },
+        {
+          "field": "cutGrade",
+          "finalValue": "Excellent",
+          "source": "ocr",
+          "decision": "accepted",
+          "rejectionReason": null,
+          "rawEvidence": "…esesensssesesanenes. VV S2 Clb. EXCELLENT ADDITIONAL INFORMATION POLISH c…"
+        }
+      ],
+      "snapshots": [
+        {
+          "source": "gia-facsimile",
+          "phase": "diagram-ocr",
+          "at": "2026-05-30T18:42:08.963Z",
+          "payload": {
+            "reportNumber": "2496027047",
+            "triggered": true,
+            "reason": "gia-lgdr-dossier-missing-diagram-fields",
+            "cropCoordinates": [
+              {
+                "left": 0.52,
+                "top": 0.28,
+                "width": 0.44,
+                "height": 0.22
+              },
+              {
+                "left": 0.06,
+                "top": 0.36,
+                "width": 0.58,
+                "height": 0.12
+              },
+              {
+                "left": 0.04,
+                "top": 0.38,
+                "width": 0.48,
+                "height": 0.38
+              }
+            ],
+            "ocrRawPreview": "Frotiie to actual proportions\nComments:\nThis is a man-made diamond.\n\nADDITIONAL INFORMATION\nPOLIS cece seers EXCELLENT\nComments:\nSYMMELTY iii: EXCELLENT oo\nThis is a man-ma\nFlUOTESCENCE iii steerer ne serene essennenenss NONE\n\nADDITIONAL INFORMATION\n[do] UF) o TO OOOO TUTUSURTUUNUONRTRURRRR = of 1 | [=a]\nComments:\nSYMIMEEIY eerste nessa renerenenenenenenenes EXCELLENT Co\nThis is a man-ma\n[ROL] = o",
+            "repairedOcrPreview": "YX\nS GIA R\n20, $8\n\nLABORATORY-GROWN DIAMOND REPORT - DOSSIER PROPORTIONS\n\nApril 10, 2024 45% 59%\n\nGIA RPO NUMDET cocoons 2696027047 medium 14.0% 34:5\n\nIdENtIfiCAtION...ureeeeriereereseeseseessssesessesssnssenseennsn. LabOFatory-Grown Slightly oe 10.8°\n\nShape and Cutting Style......cccceeeeeeeeeeeseererecerene.n.. Round Brilliant (faceted)\n\n. (]\nM ES 8.23 = 8.27 x 5.02\neasurements X mm 75%\nnone\n\nLA",
+            "candidatesFound": {},
+            "assignmentsMade": {},
+            "rejectedCandidates": [],
+            "cropOcrPreviews": [
+              "Frotiie to actual proportions\nComments:\nThis is a man-made diamond.",
+              "Frotiie to actual proportions\nComments:\nThis is a man-made diamond.",
+              "Frotiie to actual proportions\nComments:\nThis is a man-made diamond.",
+              "Frotiie to actual proportions\nComments:\nThis is a man-made diamond.",
+              "ADDITIONAL INFORMATION\nPOLIS cece seers EXCELLENT\nComments:\nSYMMELTY iii: EXCELLENT oo\nThis is a man-ma\nFlUOTESCENCE iii steerer ne serene essennenenss NONE",
+              "ADDITIONAL INFORMATION\n[do] UF) o TO OOOO TUTUSURTUUNUONRTRURRRR = of 1 | [=a]\nComments:\nSYMIMEEIY eerste nessa renerenenenenenenenes EXCELLENT Co\nThis is a man-ma\n[ROL] = o1 =] oT",
+              "ADDITIONAL INFORMATION\nPOLIS cece seers EXCELLENT\nComments:\nSYMMELTY iii: EXCELLENT oo\nThis is a man-ma\nFlUOTESCENCE iii steerer ne serene essennenenss NONE",
+              "ADDITIONAL INFORMATION\nPOLISH cies. EXCELLENT\nComments:\nSYMMELTY uit EXCELLENT Co\nThis is a man-ma\nFlUOTrESCENCE cities cesses reese sess ener see sie sne ene NONE",
+              "ADDITIONAL INFORMATION\nPOLISH ceteris: EXCELLENT\nSYMMELTY iii: EXCELLENT\nFlUOMESCENCE cei sereeeeeiesererenessnnsnenenene. NONE\nClarity Characteristics....cccouveerernsnseserereses",
+              "ADDITIONAL INFORMATION\nPOLISH cee: EXCELLENT\nSYMMELTY ities: EXCELLENT\nFlUOrESCENCE cities rete nenenenennen. NONE\nClarity CharacteristiCS...ccuunererreereisesesnnennen. Growth Rem",
+              "Inscription(s): GlAs 2476027047, LABURATURY-GROWN",
+              "Inscription(s): GlAs 2476027047, LABURATURY-GRUWN",
+              "Inscription(s): GlAs 2476027047, LABURATURY-GROWN",
+              "Inscription(s): GIAs 2476027047, LABUORATURY-GROWN"
+            ],
+            "visualPasses": [
+              {
+                "id": "stack-p1-raw",
+                "page": 1,
+                "scale": 5,
+                "preprocess": "raw",
+                "cropCoords": {
+                  "left": 0.52,
+                  "top": 0.28,
+                  "width": 0.44,
+                  "height": 0.22
+                },
+                "cropDimensions": {
+                  "width": 1077,
+                  "height": 696
+                },
+                "ocrTextPreview": "Frotiie to actual proportions\nComments:\nThis is a man-made diamond.",
+                "pavilionCandidate": null,
+                "girdleCandidate": null
+              },
+              {
+                "id": "stack-p1",
+                "page": 1,
+                "scale": 5,
+                "preprocess": "raw",
+                "cropCoords": {
+                  "left": 0.52,
+                  "top": 0.28,
+                  "width": 0.44,
+                  "height": 0.22
+                },
+                "cropDimensions": {
+                  "width": 1077,
+                  "height": 696
+                },
+                "ocrTextPreview": "Frotiie to actual proportions\nComments:\nThis is a man-made diamond.",
+                "pavilionCandidate": null,
+                "girdleCandidate": null
+              },
+              {
+                "id": "stack-contrast-p1-raw",
+                "page": 1,
+                "scale": 5,
+                "preprocess": "raw",
+                "cropCoords": {
+                  "left": 0.52,
+                  "top": 0.28,
+                  "width": 0.44,
+                  "height": 0.22
+                },
+                "cropDimensions": {
+                  "width": 1077,
+                  "height": 696
+                },
+                "ocrTextPreview": "Frotiie to actual proportions\nComments:\nThis is a man-made diamond.",
+                "pavilionCandidate": null,
+                "girdleCandidate": null
+              },
+              {
+                "id": "stack-contrast-p1",
+                "page": 1,
+                "scale": 5,
+                "preprocess": "contrast",
+                "cropCoords": {
+                  "left": 0.52,
+                  "top": 0.28,
+                  "width": 0.44,
+                  "height": 0.22
+                },
+                "cropDimensions": {
+                  "width": 1077,
+                  "height": 696
+                },
+                "ocrTextPreview": "Frotiie to actual proportions\nComments:\nThis is a man-made diamond.",
+                "pavilionCandidate": null,
+                "girdleCandidate": null
+              },
+              {
+                "id": "girdle-band-p1-raw",
+                "page": 1,
+                "scale": 6,
+                "preprocess": "raw",
+                "cropCoords": {
+                  "left": 0.06,
+                  "top": 0.36,
+                  "width": 0.58,
+                  "height": 0.12
+                },
+                "cropDimensions": {
+                  "width": 1419,
+                  "height": 380
+                },
+                "ocrTextPreview": "ADDITIONAL INFORMATION\nPOLIS cece seers EXCELLENT\nComments:\nSYMMELTY iii: EXCELLENT oo\nThis is a man-ma\nFlUOTESCENCE iii steerer ne serene essennenenss NONE",
+                "pavilionCandidate": null,
+                "girdleCandidate": null
+              },
+              {
+                "id": "girdle-band-p1",
+                "page": 1,
+                "scale": 6,
+                "preprocess": "threshold",
+                "cropCoords": {
+                  "left": 0.06,
+                  "top": 0.36,
+                  "width": 0.58,
+                  "height": 0.12
+                },
+                "cropDimensions": {
+                  "width": 1419,
+                  "height": 380
+                },
+                "ocrTextPreview": "ADDITIONAL INFORMATION\n[do] UF) o TO OOOO TUTUSURTUUNUONRTRURRRR = of 1 | [=a]\nComments:\nSYMIMEEIY eerste nessa renerenenenenenenenes EXCELLENT Co\nThis is a man-ma\n[ROL] = o1 =] oT TOPOS | [o]1=3",
+                "pavilionCandidate": null,
+                "girdleCandidate": null
+              },
+              {
+                "id": "girdle-band-contrast-p1-raw",
+                "page": 1,
+                "scale": 6,
+                "preprocess": "raw",
+                "cropCoords": {
+                  "left": 0.06,
+                  "top": 0.36,
+                  "width": 0.58,
+                  "height": 0.12
+                },
+                "cropDimensions": {
+                  "width": 1419,
+                  "height": 380
+                },
+                "ocrTextPreview": "ADDITIONAL INFORMATION\nPOLIS cece seers EXCELLENT\nComments:\nSYMMELTY iii: EXCELLENT oo\nThis is a man-ma\nFlUOTESCENCE iii steerer ne serene essennenenss NONE",
+                "pavilionCandidate": null,
+                "girdleCandidate": null
+              },
+              {
+                "id": "girdle-band-contrast-p1",
+                "page": 1,
+                "scale": 6,
+                "preprocess": "contrast",
+                "cropCoords": {
+                  "left": 0.06,
+                  "top": 0.36,
+                  "width": 0.58,
+                  "height": 0.12
+                },
+                "cropDimensions": {
+                  "width": 1419,
+                  "height": 380
+                },
+                "ocrTextPreview": "ADDITIONAL INFORMATION\nPOLISH cies. EXCELLENT\nComments:\nSYMMELTY uit EXCELLENT Co\nThis is a man-ma\nFlUOTrESCENCE cities cesses reese sess ener see sie sne ene NONE",
+                "pavilionCandidate": null,
+                "girdleCandidate": null
+              },
+              {
+                "id": "grading-results-p1-raw",
+                "page": 1,
+                "scale": 5,
+                "preprocess": "raw",
+                "cropCoords": {
+                  "left": 0.04,
+                  "top": 0.38,
+                  "width": 0.48,
+                  "height": 0.38
+                },
+                "cropDimensions": {
+                  "width": 1175,
+                  "height": 1203
+                },
+                "ocrTextPreview": "ADDITIONAL INFORMATION\nPOLISH ceteris: EXCELLENT\nSYMMELTY iii: EXCELLENT\nFlUOMESCENCE cei sereeeeeiesererenessnnsnenenene. NONE\nClarity Characteristics....cccouveerernsnseserereseseneenee. Growth Remnant\nInscription(s): GIAt 2496027047, LABORATORY-GROWN",
+                "pavilionCandidate": null,
+                "girdleCandidate": null
+              },
+              {
+                "id": "grading-results-p1",
+                "page": 1,
+                "scale": 5,
+                "preprocess": "contrast",
+                "cropCoords": {
+                  "left": 0.04,
+                  "top": 0.38,
+                  "width": 0.48,
+                  "height": 0.38
+                },
+                "cropDimensions": {
+                  "width": 1175,
+                  "height": 1203
+                },
+                "ocrTextPreview": "ADDITIONAL INFORMATION\nPOLISH cee: EXCELLENT\nSYMMELTY ities: EXCELLENT\nFlUOrESCENCE cities rete nenenenennen. NONE\nClarity CharacteristiCS...ccuunererreereisesesnnennen. Growth Remnant\nInscription(s): GIAs 2496027047, LABORATORY-GROWN",
+                "pavilionCandidate": null,
+                "girdleCandidate": null
+              },
+              {
+                "id": "left-grading-p1-raw",
+                "page": 1,
+                "scale": 6,
+                "preprocess": "raw",
+                "cropCoords": {
+                  "left": 0.02,
+                  "top": 0.5,
+                  "width": 0.46,
+                  "height": 0.22
+                },
+                "cropDimensions": {
+                  "width": 1126,
+                  "height": 696
+                },
+                "ocrTextPreview": "Inscription(s): GlAs 2476027047, LABURATURY-GROWN",
+                "pavilionCandidate": null,
+                "girdleCandidate": null
+              },
+              {
+                "id": "left-grading-p1",
+                "page": 1,
+                "scale": 6,
+                "preprocess": "threshold",
+                "cropCoords": {
+                  "left": 0.02,
+                  "top": 0.5,
+                  "width": 0.46,
+                  "height": 0.22
+                },
+                "cropDimensions": {
+                  "width": 1126,
+                  "height": 696
+                },
+                "ocrTextPreview": "Inscription(s): GlAs 2476027047, LABURATURY-GRUWN",
+                "pavilionCandidate": null,
+                "girdleCandidate": null
+              },
+              {
+                "id": "left-grading-contrast-p1-raw",
+                "page": 1,
+                "scale": 6,
+                "preprocess": "raw",
+                "cropCoords": {
+                  "left": 0.02,
+                  "top": 0.5,
+                  "width": 0.46,
+                  "height": 0.22
+                },
+                "cropDimensions": {
+                  "width": 1126,
+                  "height": 696
+                },
+                "ocrTextPreview": "Inscription(s): GlAs 2476027047, LABURATURY-GROWN",
+                "pavilionCandidate": null,
+                "girdleCandidate": null
+              },
+              {
+                "id": "left-grading-contrast-p1",
+                "page": 1,
+                "scale": 6,
+                "preprocess": "contrast",
+                "cropCoords": {
+                  "left": 0.02,
+                  "top": 0.5,
+                  "width": 0.46,
+                  "height": 0.22
+                },
+                "cropDimensions": {
+                  "width": 1126,
+                  "height": 696
+                },
+                "ocrTextPreview": "Inscription(s): GIAs 2476027047, LABUORATURY-GROWN",
+                "pavilionCandidate": null,
+                "girdleCandidate": null
+              }
+            ],
+            "durationMs": 31691,
+            "timedOut": false
+          }
+        }
+      ],
+      "diagnostics": {
+        "reportNumber": "2496027047",
+        "lab": "GIA",
+        "reportFamily": "gia-modern",
+        "fallbackStage": "image-region-ocr",
+        "textMethod": "ocr",
+        "usedImageOCR": true,
+        "pdfTextLayerLength": 2074,
+        "gcalImageOnlyPdf": false,
+        "rawTextLength": 3805,
+        "rawTextSnippet": "YX\nS GIA R\n20, $8\n\nLABORATORY-GROWN DIAMOND REPORT - DOSSIER PROPORTIONS\n\nApril 10, 2024 45% 59%\n\nGIA RPO NUMDET cocoons 2696027047 medium 14.0% 34:5\n\nIdENtIfiCAtION...ureeeeriereereseeseseessssesessesssnssenseennsn. LabOFatory-Grown Slightly oe 10.8°\n\nShape and Cutting Style......cccceeeeeeeeeeeseererecerene.n.. Round Brilliant (faceted)\n\n. (]\nM ES 8.23 = 8.27 x 5.02\neasurements X mm 75%\nnone\n\nLABORATORY-GROWN DIAMOND SPECIFICATIONS* Profile to actual proportions\n\nCarat Weight... 2.11 carat\n\nCOlOT iirc serensnnees F\n\nClarity eee eee sessesessesesensssesesanenes. VV S2\n\nClb. EXCELLENT\nADDITION",
+        "warnings": [
+          "Text source: OCR (scanned pages or diagram regions).",
+          "Calibration status: structurally eligible for calibration statistics after save (confirm each value on the report first).",
+          "Some values were read via OCR — confirm each field against the report before saving.",
+          "Not detected from report text — review manually: Girdle (as on report).",
+          "Low confidence — verify on report: Table % (value from OCR); Lower girdle / lower half % (value from OCR); Star length % (value from OCR); Culet (as on report) (value from OCR).",
+          "Calibration status: review-only — verify fields on the report; not calibration-statistics eligible until core proportions are complete and trusted.",
+          "Low confidence — verify on report: Table % (value from OCR); Depth % (value from OCR); Lower girdle / lower half % (value from OCR); Star length % (value from OCR); Culet (as on report) (value from OCR).",
+          "Proportion diagram not captured by OCR. Manual entry required for this report.",
+          "GIA facsimile: girdle thickness not recovered from OCR — enter from the report if shown; other fields may still be usable for review."
+        ],
+        "fields": [
+          {
+            "field": "shape",
+            "label": "Shape",
+            "target": false,
+            "decision": "accepted",
+            "source": {
+              "method": "ocr",
+              "textMethod": "ocr",
+              "extractionClass": "OCR_VERIFIED",
+              "valueSource": "ocr"
+            },
+            "parsedValue": "Round Brilliant",
+            "repairedValue": null,
+            "confidence": "medium",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…ccceeeeeeeeeeeseererecerene.n.. Round Brilliant (faceted) . (] M ES 8.23 = 8.27…",
+            "rejectionReason": null
+          },
+          {
+            "field": "carat",
+            "label": "Carat",
+            "target": false,
+            "decision": "accepted",
+            "source": {
+              "method": "ocr",
+              "textMethod": "ocr",
+              "extractionClass": "OCR_VERIFIED",
+              "valueSource": "ocr"
+            },
+            "parsedValue": "...",
+            "repairedValue": null,
+            "confidence": "medium",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…medium 14.0% 34:5 IdENtIfiCAtION...ureeeeriereereseeseseessssesesse…",
+            "rejectionReason": null
+          },
+          {
+            "field": "measurements",
+            "label": "Measurements",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "ocr",
+              "textMethod": "ocr",
+              "extractionClass": "OCR_VERIFIED",
+              "valueSource": "ocr"
+            },
+            "parsedValue": "8.23 - 8.27 x 5.02 mm",
+            "repairedValue": null,
+            "confidence": "medium",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…d Brilliant (faceted) . (] M ES 8.23 = 8.27 x 5.02 easurements X mm…",
+            "rejectionReason": null
+          },
+          {
+            "field": "tablePercent",
+            "label": "Table %",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram-ocr",
+              "textMethod": "ocr",
+              "extractionClass": "OCR_LOW_CONFIDENCE",
+              "valueSource": "diagram"
+            },
+            "parsedValue": "59",
+            "repairedValue": null,
+            "confidence": "low",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…PROPORTIONS April 10, 2024 45% 59% GIA RPO NUMDET cocoons 2696027…",
+            "rejectionReason": null
+          },
+          {
+            "field": "depthPercent",
+            "label": "Depth %",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram-ocr",
+              "textMethod": "ocr",
+              "extractionClass": "OCR_VERIFIED",
+              "valueSource": "diagram"
+            },
+            "parsedValue": "60.8",
+            "repairedValue": null,
+            "confidence": "medium",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": null
+          },
+          {
+            "field": "crownAngle",
+            "label": "Crown angle",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram-ocr",
+              "textMethod": "ocr",
+              "extractionClass": "OCR_VERIFIED",
+              "valueSource": "diagram"
+            },
+            "parsedValue": "34.5",
+            "repairedValue": null,
+            "confidence": "medium",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": null
+          },
+          {
+            "field": "pavilionAngle",
+            "label": "Pavilion angle",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram-ocr",
+              "textMethod": "ocr",
+              "extractionClass": "OCR_VERIFIED",
+              "valueSource": "diagram"
+            },
+            "parsedValue": "40.8",
+            "repairedValue": null,
+            "confidence": "medium",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": null
+          },
+          {
+            "field": "lowerHalfPercent",
+            "label": "Lower half %",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram-ocr",
+              "textMethod": "ocr",
+              "extractionClass": "OCR_LOW_CONFIDENCE",
+              "valueSource": "diagram"
+            },
+            "parsedValue": "75",
+            "repairedValue": null,
+            "confidence": "low",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…= 8.27 x 5.02 easurements X mm 75% none LABORATORY-GROWN DIAMOND…",
+            "rejectionReason": null
+          },
+          {
+            "field": "starLengthPercent",
+            "label": "Star length %",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram-ocr",
+              "textMethod": "ocr",
+              "extractionClass": "OCR_LOW_CONFIDENCE",
+              "valueSource": "diagram"
+            },
+            "parsedValue": "45",
+            "repairedValue": null,
+            "confidence": "low",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…SIER PROPORTIONS April 10, 2024 45% 59% GIA RPO NUMDET cocoons 269…",
+            "rejectionReason": null
+          },
+          {
+            "field": "girdle",
+            "label": "Girdle",
+            "target": true,
+            "decision": "missing",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "ocr",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": "finish line not recovered from text/OCR region"
+          },
+          {
+            "field": "culet",
+            "label": "Culet",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "ocr",
+              "textMethod": "ocr",
+              "extractionClass": "OCR_LOW_CONFIDENCE",
+              "valueSource": "ocr"
+            },
+            "parsedValue": "None",
+            "repairedValue": null,
+            "confidence": "low",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": true,
+            "rawEvidence": "….27 x 5.02 easurements X mm 75% none LABORATORY-GROWN DIAMOND SPECIF…",
+            "rejectionReason": null
+          },
+          {
+            "field": "polish",
+            "label": "Polish",
+            "target": false,
+            "decision": "accepted",
+            "source": {
+              "method": "ocr",
+              "textMethod": "ocr",
+              "extractionClass": "OCR_VERIFIED",
+              "valueSource": "ocr"
+            },
+            "parsedValue": "Excellent",
+            "repairedValue": null,
+            "confidence": "medium",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…esesensssesesanenes. VV S2 Clb. EXCELLENT ADDITIONAL INFORMATION POLISH c…",
+            "rejectionReason": null
+          },
+          {
+            "field": "symmetry",
+            "label": "Symmetry",
+            "target": false,
+            "decision": "accepted",
+            "source": {
+              "method": "ocr",
+              "textMethod": "ocr",
+              "extractionClass": "OCR_VERIFIED",
+              "valueSource": "ocr"
+            },
+            "parsedValue": "Excellent",
+            "repairedValue": null,
+            "confidence": "medium",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…esesensssesesanenes. VV S2 Clb. EXCELLENT ADDITIONAL INFORMATION POLISH c…",
+            "rejectionReason": null
+          },
+          {
+            "field": "fluorescence",
+            "label": "Fluorescence",
+            "target": false,
+            "decision": "accepted",
+            "source": {
+              "method": "ocr",
+              "textMethod": "ocr",
+              "extractionClass": "OCR_VERIFIED",
+              "valueSource": "ocr"
+            },
+            "parsedValue": "None",
+            "repairedValue": null,
+            "confidence": "medium",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "….27 x 5.02 easurements X mm 75% none LABORATORY-GROWN DIAMOND SPECIF…",
+            "rejectionReason": null
+          },
+          {
+            "field": "cutGrade",
+            "label": "Cut grade",
+            "target": false,
+            "decision": "accepted",
+            "source": {
+              "method": "ocr",
+              "textMethod": "ocr",
+              "extractionClass": "OCR_VERIFIED",
+              "valueSource": "ocr"
+            },
+            "parsedValue": "Excellent",
+            "repairedValue": null,
+            "confidence": "medium",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…esesensssesesanenes. VV S2 Clb. EXCELLENT ADDITIONAL INFORMATION POLISH c…",
+            "rejectionReason": null
+          }
+        ],
+        "targetFields": [
+          {
+            "field": "measurements",
+            "label": "Measurements",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "ocr",
+              "textMethod": "ocr",
+              "extractionClass": "OCR_VERIFIED",
+              "valueSource": "ocr"
+            },
+            "parsedValue": "8.23 - 8.27 x 5.02 mm",
+            "repairedValue": null,
+            "confidence": "medium",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…d Brilliant (faceted) . (] M ES 8.23 = 8.27 x 5.02 easurements X mm…",
+            "rejectionReason": null
+          },
+          {
+            "field": "tablePercent",
+            "label": "Table %",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram-ocr",
+              "textMethod": "ocr",
+              "extractionClass": "OCR_LOW_CONFIDENCE",
+              "valueSource": "diagram"
+            },
+            "parsedValue": "59",
+            "repairedValue": null,
+            "confidence": "low",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…PROPORTIONS April 10, 2024 45% 59% GIA RPO NUMDET cocoons 2696027…",
+            "rejectionReason": null
+          },
+          {
+            "field": "depthPercent",
+            "label": "Depth %",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram-ocr",
+              "textMethod": "ocr",
+              "extractionClass": "OCR_VERIFIED",
+              "valueSource": "diagram"
+            },
+            "parsedValue": "60.8",
+            "repairedValue": null,
+            "confidence": "medium",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": null
+          },
+          {
+            "field": "crownAngle",
+            "label": "Crown angle",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram-ocr",
+              "textMethod": "ocr",
+              "extractionClass": "OCR_VERIFIED",
+              "valueSource": "diagram"
+            },
+            "parsedValue": "34.5",
+            "repairedValue": null,
+            "confidence": "medium",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": null
+          },
+          {
+            "field": "pavilionAngle",
+            "label": "Pavilion angle",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram-ocr",
+              "textMethod": "ocr",
+              "extractionClass": "OCR_VERIFIED",
+              "valueSource": "diagram"
+            },
+            "parsedValue": "40.8",
+            "repairedValue": null,
+            "confidence": "medium",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": null
+          },
+          {
+            "field": "lowerHalfPercent",
+            "label": "Lower half %",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram-ocr",
+              "textMethod": "ocr",
+              "extractionClass": "OCR_LOW_CONFIDENCE",
+              "valueSource": "diagram"
+            },
+            "parsedValue": "75",
+            "repairedValue": null,
+            "confidence": "low",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…= 8.27 x 5.02 easurements X mm 75% none LABORATORY-GROWN DIAMOND…",
+            "rejectionReason": null
+          },
+          {
+            "field": "starLengthPercent",
+            "label": "Star length %",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram-ocr",
+              "textMethod": "ocr",
+              "extractionClass": "OCR_LOW_CONFIDENCE",
+              "valueSource": "diagram"
+            },
+            "parsedValue": "45",
+            "repairedValue": null,
+            "confidence": "low",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…SIER PROPORTIONS April 10, 2024 45% 59% GIA RPO NUMDET cocoons 269…",
+            "rejectionReason": null
+          },
+          {
+            "field": "girdle",
+            "label": "Girdle",
+            "target": true,
+            "decision": "missing",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "ocr",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": "finish line not recovered from text/OCR region"
+          },
+          {
+            "field": "culet",
+            "label": "Culet",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "ocr",
+              "textMethod": "ocr",
+              "extractionClass": "OCR_LOW_CONFIDENCE",
+              "valueSource": "ocr"
+            },
+            "parsedValue": "None",
+            "repairedValue": null,
+            "confidence": "low",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": true,
+            "rawEvidence": "….27 x 5.02 easurements X mm 75% none LABORATORY-GROWN DIAMOND SPECIF…",
+            "rejectionReason": null
+          }
+        ],
+        "summary": {
+          "accepted": 14,
+          "rejected": 0,
+          "missing": 1,
+          "targetAccepted": 8,
+          "targetTotal": 9
+        }
+      },
+      "ocrTraces": [
+        {
+          "source": "gia-facsimile/diagram-ocr",
+          "ocrRawPreview": "Frotiie to actual proportions\nComments:\nThis is a man-made diamond.\n\nADDITIONAL INFORMATION\nPOLIS cece seers EXCELLENT\nComments:\nSYMMELTY iii: EXCELLENT oo\nThis is a man-ma\nFlUOTESCENCE iii steerer ne serene essennenenss NONE\n\nADDITIONAL INFORMATION\n[do] UF) o TO OOOO TUTUSURTUUNUONRTRURRRR = of 1 | [=a]\nComments:\nSYMIMEEIY eerste nessa renerenenenenenenenes EXCELLENT Co\nThis is a man-ma\n[ROL] = o",
+          "repairedPreview": "YX\nS GIA R\n20, $8\n\nLABORATORY-GROWN DIAMOND REPORT - DOSSIER PROPORTIONS\n\nApril 10, 2024 45% 59%\n\nGIA RPO NUMDET cocoons 2696027047 medium 14.0% 34:5\n\nIdENtIfiCAtION...ureeeeriereereseeseseessssesessesssnssenseennsn. LabOFatory-Grown Slightly oe 10.8°\n\nShape and Cutting Style......cccceeeeeeeeeeeseererecerene.n.. Round Brilliant (faceted)\n\n. (]\nM ES 8.23 = 8.27 x 5.02\neasurements X mm 75%\nnone\n\nLA",
+          "candidates": {},
+          "assigned": {},
+          "rejected": []
+        }
+      ]
+    },
+    {
+      "reportId": "2496027047",
+      "lab": "GIA",
+      "mode": "client",
+      "parserType": "gia-modern",
+      "pass": false,
+      "harnessPass": false,
+      "corePass": true,
+      "deepPass": false,
+      "reportStyle": "GIA_LGDR_DOSSIER",
+      "missingFields": [
+        "girdle",
+        "culet"
+      ],
+      "mismatchFields": [],
+      "optionalMissingFields": [
+        "girdle"
+      ],
+      "fieldComparisons": [
+        {
+          "field": "tablePercent",
+          "expected": "59",
+          "actual": "59",
+          "match": true,
+          "status": "ok"
+        },
+        {
+          "field": "depthPercent",
+          "expected": "60.8",
+          "actual": "60.8",
+          "match": true,
+          "status": "ok"
+        },
+        {
+          "field": "crownAngle",
+          "expected": "34.5",
+          "actual": "34.5",
+          "match": true,
+          "status": "ok"
+        },
+        {
+          "field": "pavilionAngle",
+          "expected": "40.8",
+          "actual": "40.8",
+          "match": true,
+          "status": "ok"
+        },
+        {
+          "field": "lowerHalfPercent",
+          "expected": "75",
+          "actual": "75",
+          "match": true,
+          "status": "ok"
+        },
+        {
+          "field": "starLengthPercent",
+          "expected": "45",
+          "actual": "45",
+          "match": true,
+          "status": "ok"
+        },
+        {
+          "field": "girdle",
+          "expected": "Medium to Slightly Thick (Faceted)",
+          "actual": null,
+          "match": false,
+          "status": "missing"
+        },
+        {
+          "field": "culet",
+          "expected": "None",
+          "actual": null,
+          "match": false,
+          "status": "missing"
+        },
+        {
+          "field": "measurements",
+          "expected": "8.23 - 8.27 x 5.02 mm",
+          "actual": "8.23 - 8.27 x 5.02 mm",
+          "match": true,
+          "status": "ok"
+        },
+        {
+          "field": "polish",
+          "expected": "Excellent",
+          "actual": "Excellent",
+          "match": true,
+          "status": "ok"
+        },
+        {
+          "field": "symmetry",
+          "expected": "Excellent",
+          "actual": "Excellent",
+          "match": true,
+          "status": "ok"
+        },
+        {
+          "field": "fluorescence",
+          "expected": "None",
+          "actual": "None",
+          "match": true,
+          "status": "ok"
+        },
+        {
+          "field": "cutGrade",
+          "expected": "Excellent",
+          "actual": "Excellent",
+          "match": true,
+          "status": "ok"
+        }
+      ],
+      "lifecycle": {
+        "renderAudit": {
+          "rendererUsed": "production-napi-root",
+          "pageCount": 1,
+          "renderSuccess": true,
+          "renderTimingMs": 5116,
+          "imageDimensions": {
+            "width": 2448,
+            "height": 3168
+          },
+          "pngBytes": 759516,
+          "ocrReadiness": "ready",
+          "ocrProbeChars": 1729,
+          "ocrProbeMs": 4062,
+          "failureReason": null,
+          "failureStack": null
+        },
+        "documentExtractMs": 20,
+        "imageOcrMs": 12030,
+        "totalMs": 12087,
+        "timedOut": false,
+        "pipelineError": null,
+        "textMethod": "pdf-text",
+        "pdfTextLayerLength": 2074,
+        "usedImageOCR": true,
+        "fallbackStage": "text-layer"
+      },
+      "assignments": [
+        {
+          "field": "tablePercent",
+          "finalValue": "59",
+          "source": "diagram-ocr",
+          "decision": "accepted",
+          "rejectionReason": null,
+          "rawEvidence": null
+        },
+        {
+          "field": "depthPercent",
+          "finalValue": "60.8",
+          "source": "diagram-ocr",
+          "decision": "accepted",
+          "rejectionReason": null,
+          "rawEvidence": null
+        },
+        {
+          "field": "crownAngle",
+          "finalValue": "34.5",
+          "source": "diagram-ocr",
+          "decision": "accepted",
+          "rejectionReason": null,
+          "rawEvidence": null
+        },
+        {
+          "field": "pavilionAngle",
+          "finalValue": "40.8",
+          "source": "diagram-ocr",
+          "decision": "accepted",
+          "rejectionReason": null,
+          "rawEvidence": null
+        },
+        {
+          "field": "lowerHalfPercent",
+          "finalValue": "75",
+          "source": "diagram-ocr",
+          "decision": "accepted",
+          "rejectionReason": null,
+          "rawEvidence": null
+        },
+        {
+          "field": "starLengthPercent",
+          "finalValue": "45",
+          "source": "diagram-ocr",
+          "decision": "accepted",
+          "rejectionReason": null,
+          "rawEvidence": "…l +1 800 421 7250 or +1 760 603 4500. ©2022 Gemological Institute…"
+        },
+        {
+          "field": "girdle",
+          "finalValue": null,
+          "source": "unavailable",
+          "decision": "missing",
+          "rejectionReason": "finish line not recovered from text/OCR region",
+          "rawEvidence": null
+        },
+        {
+          "field": "culet",
+          "finalValue": null,
+          "source": "unavailable",
+          "decision": "missing",
+          "rejectionReason": "finish line not recovered from text/OCR region",
+          "rawEvidence": null
+        },
+        {
+          "field": "measurements",
+          "finalValue": "8.23 - 8.27 x 5.02 mm",
+          "source": "pdf-text",
+          "decision": "accepted",
+          "rejectionReason": null,
+          "rawEvidence": "…................................8.23 - 8.27 x 5.02 mm LABORATORY-GRO…"
+        },
+        {
+          "field": "polish",
+          "finalValue": "Excellent",
+          "source": "pdf-text",
+          "decision": "accepted",
+          "rejectionReason": null,
+          "rawEvidence": "…............................... Excellent ADDITIONAL INFORMATION Polish .…"
+        },
+        {
+          "field": "symmetry",
+          "finalValue": "Excellent",
+          "source": "pdf-text",
+          "decision": "accepted",
+          "rejectionReason": null,
+          "rawEvidence": "…............................... Excellent ADDITIONAL INFORMATION Polish .…"
+        },
+        {
+          "field": "fluorescence",
+          "finalValue": "None",
+          "source": "pdf-text",
+          "decision": "accepted",
+          "rejectionReason": null,
+          "rawEvidence": "…............................... None Clarity Characteristics .......…"
+        },
+        {
+          "field": "cutGrade",
+          "finalValue": "Excellent",
+          "source": "pdf-text",
+          "decision": "accepted",
+          "rejectionReason": null,
+          "rawEvidence": "…............................... Excellent ADDITIONAL INFORMATION Polish .…"
+        }
+      ],
+      "snapshots": [],
+      "diagnostics": {
+        "reportNumber": "2496027047",
+        "lab": "GIA",
+        "reportFamily": "gia-modern",
+        "fallbackStage": "text-layer",
+        "textMethod": "pdf-text",
+        "usedImageOCR": true,
+        "pdfTextLayerLength": 2074,
+        "gcalImageOnlyPdf": false,
+        "rawTextLength": 2074,
+        "rawTextSnippet": "*This GIA Laboratory-Grown Diamond Report describes color and\nclarity specifications on the same scale as the GIA Diamond Grading\nReport for natural diamonds. The specifications do not correlate to\nnature’s continuum of rarity. To learn more about laboratory-grown\ndiamonds, including how GIA differentiates them from natural\ndiamonds, scan the QR code or visit discover.gia.edu/GIALGDR.\nThis report is not a guarantee or valuation. For additional information and\nimpor tant limitations and disclaimers, please see GIA .edu/terms or call\n+1 800 421 7250 or +1 760 603 4500. ©2022 Gemological Institut",
+        "warnings": [
+          "Text source: PDF text layer (selectable text).",
+          "Calibration status: structurally eligible for calibration statistics after save (confirm each value on the report first).",
+          "Values from the PDF text layer — spot-check proportion diagram numbers if the layout is image-heavy.",
+          "Not detected from report text — review manually: Girdle (as on report), Culet (as on report).",
+          "Calibration status: review-only — verify fields on the report; not calibration-statistics eligible until core proportions are complete and trusted."
+        ],
+        "fields": [
+          {
+            "field": "shape",
+            "label": "Shape",
+            "target": false,
+            "decision": "accepted",
+            "source": {
+              "method": "pdf-text",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "Round Brilliant",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…............................... Round Brilliant Measurements ..................…",
+            "rejectionReason": null
+          },
+          {
+            "field": "carat",
+            "label": "Carat",
+            "target": false,
+            "decision": "accepted",
+            "source": {
+              "method": "pdf-text",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "2.11",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…............................... 2.11 carat Color ...................…",
+            "rejectionReason": null
+          },
+          {
+            "field": "measurements",
+            "label": "Measurements",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "pdf-text",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "8.23 - 8.27 x 5.02 mm",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…................................8.23 - 8.27 x 5.02 mm LABORATORY-GRO…",
+            "rejectionReason": null
+          },
+          {
+            "field": "tablePercent",
+            "label": "Table %",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram-ocr",
+              "textMethod": "pdf-text",
+              "extractionClass": "DIRECT_DIAGRAM",
+              "valueSource": "diagram"
+            },
+            "parsedValue": "59",
+            "repairedValue": null,
+            "confidence": "medium",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": null
+          },
+          {
+            "field": "depthPercent",
+            "label": "Depth %",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram-ocr",
+              "textMethod": "pdf-text",
+              "extractionClass": "DIRECT_DIAGRAM",
+              "valueSource": "diagram"
+            },
+            "parsedValue": "60.8",
+            "repairedValue": null,
+            "confidence": "medium",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": null
+          },
+          {
+            "field": "crownAngle",
+            "label": "Crown angle",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram-ocr",
+              "textMethod": "pdf-text",
+              "extractionClass": "DIRECT_DIAGRAM",
+              "valueSource": "diagram"
+            },
+            "parsedValue": "34.5",
+            "repairedValue": null,
+            "confidence": "medium",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": null
+          },
+          {
+            "field": "pavilionAngle",
+            "label": "Pavilion angle",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram-ocr",
+              "textMethod": "pdf-text",
+              "extractionClass": "DIRECT_DIAGRAM",
+              "valueSource": "diagram"
+            },
+            "parsedValue": "40.8",
+            "repairedValue": null,
+            "confidence": "medium",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": null
+          },
+          {
+            "field": "lowerHalfPercent",
+            "label": "Lower half %",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram-ocr",
+              "textMethod": "pdf-text",
+              "extractionClass": "DIRECT_DIAGRAM",
+              "valueSource": "diagram"
+            },
+            "parsedValue": "75",
+            "repairedValue": null,
+            "confidence": "medium",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": null
+          },
+          {
+            "field": "starLengthPercent",
+            "label": "Star length %",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram-ocr",
+              "textMethod": "pdf-text",
+              "extractionClass": "DIRECT_DIAGRAM",
+              "valueSource": "diagram"
+            },
+            "parsedValue": "45",
+            "repairedValue": null,
+            "confidence": "medium",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…l +1 800 421 7250 or +1 760 603 4500. ©2022 Gemological Institute…",
+            "rejectionReason": null
+          },
+          {
+            "field": "girdle",
+            "label": "Girdle",
+            "target": true,
+            "decision": "missing",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "pdf-text",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": "finish line not recovered from text/OCR region"
+          },
+          {
+            "field": "culet",
+            "label": "Culet",
+            "target": true,
+            "decision": "missing",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "pdf-text",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": "finish line not recovered from text/OCR region"
+          },
+          {
+            "field": "polish",
+            "label": "Polish",
+            "target": false,
+            "decision": "accepted",
+            "source": {
+              "method": "pdf-text",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "Excellent",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…............................... Excellent ADDITIONAL INFORMATION Polish .…",
+            "rejectionReason": null
+          },
+          {
+            "field": "symmetry",
+            "label": "Symmetry",
+            "target": false,
+            "decision": "accepted",
+            "source": {
+              "method": "pdf-text",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "Excellent",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…............................... Excellent ADDITIONAL INFORMATION Polish .…",
+            "rejectionReason": null
+          },
+          {
+            "field": "fluorescence",
+            "label": "Fluorescence",
+            "target": false,
+            "decision": "accepted",
+            "source": {
+              "method": "pdf-text",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "None",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…............................... None Clarity Characteristics .......…",
+            "rejectionReason": null
+          },
+          {
+            "field": "cutGrade",
+            "label": "Cut grade",
+            "target": false,
+            "decision": "accepted",
+            "source": {
+              "method": "pdf-text",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "Excellent",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…............................... Excellent ADDITIONAL INFORMATION Polish .…",
+            "rejectionReason": null
+          }
+        ],
+        "targetFields": [
+          {
+            "field": "measurements",
+            "label": "Measurements",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "pdf-text",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "8.23 - 8.27 x 5.02 mm",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…................................8.23 - 8.27 x 5.02 mm LABORATORY-GRO…",
+            "rejectionReason": null
+          },
+          {
+            "field": "tablePercent",
+            "label": "Table %",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram-ocr",
+              "textMethod": "pdf-text",
+              "extractionClass": "DIRECT_DIAGRAM",
+              "valueSource": "diagram"
+            },
+            "parsedValue": "59",
+            "repairedValue": null,
+            "confidence": "medium",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": null
+          },
+          {
+            "field": "depthPercent",
+            "label": "Depth %",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram-ocr",
+              "textMethod": "pdf-text",
+              "extractionClass": "DIRECT_DIAGRAM",
+              "valueSource": "diagram"
+            },
+            "parsedValue": "60.8",
+            "repairedValue": null,
+            "confidence": "medium",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": null
+          },
+          {
+            "field": "crownAngle",
+            "label": "Crown angle",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram-ocr",
+              "textMethod": "pdf-text",
+              "extractionClass": "DIRECT_DIAGRAM",
+              "valueSource": "diagram"
+            },
+            "parsedValue": "34.5",
+            "repairedValue": null,
+            "confidence": "medium",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": null
+          },
+          {
+            "field": "pavilionAngle",
+            "label": "Pavilion angle",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram-ocr",
+              "textMethod": "pdf-text",
+              "extractionClass": "DIRECT_DIAGRAM",
+              "valueSource": "diagram"
+            },
+            "parsedValue": "40.8",
+            "repairedValue": null,
+            "confidence": "medium",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": null
+          },
+          {
+            "field": "lowerHalfPercent",
+            "label": "Lower half %",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram-ocr",
+              "textMethod": "pdf-text",
+              "extractionClass": "DIRECT_DIAGRAM",
+              "valueSource": "diagram"
+            },
+            "parsedValue": "75",
+            "repairedValue": null,
+            "confidence": "medium",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": null
+          },
+          {
+            "field": "starLengthPercent",
+            "label": "Star length %",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram-ocr",
+              "textMethod": "pdf-text",
+              "extractionClass": "DIRECT_DIAGRAM",
+              "valueSource": "diagram"
+            },
+            "parsedValue": "45",
+            "repairedValue": null,
+            "confidence": "medium",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…l +1 800 421 7250 or +1 760 603 4500. ©2022 Gemological Institute…",
+            "rejectionReason": null
+          },
+          {
+            "field": "girdle",
+            "label": "Girdle",
+            "target": true,
+            "decision": "missing",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "pdf-text",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": "finish line not recovered from text/OCR region"
+          },
+          {
+            "field": "culet",
+            "label": "Culet",
+            "target": true,
+            "decision": "missing",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "pdf-text",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": "finish line not recovered from text/OCR region"
+          }
+        ],
+        "summary": {
+          "accepted": 13,
+          "rejected": 0,
+          "missing": 2,
+          "targetAccepted": 7,
+          "targetTotal": 9
+        }
+      },
+      "ocrTraces": []
+    },
+    {
+      "reportId": "6233708773",
+      "lab": "GIA",
+      "mode": "calibration",
+      "parserType": "gia-modern",
+      "pass": true,
+      "harnessPass": true,
+      "corePass": true,
+      "deepPass": true,
+      "reportStyle": "GIA_NATURAL_FACSIMILE",
+      "missingFields": [
+        "girdle"
+      ],
+      "mismatchFields": [],
+      "optionalMissingFields": [
+        "girdle"
+      ],
+      "fieldComparisons": [
+        {
+          "field": "tablePercent",
+          "expected": "64",
+          "actual": "64",
+          "match": true,
+          "status": "ok"
+        },
+        {
+          "field": "depthPercent",
+          "expected": "58.4",
+          "actual": "58.4",
+          "match": true,
+          "status": "ok"
+        },
+        {
+          "field": "crownAngle",
+          "expected": "36",
+          "actual": "36",
+          "match": true,
+          "status": "ok"
+        },
+        {
+          "field": "pavilionAngle",
+          "expected": "40.6",
+          "actual": "40.6",
+          "match": true,
+          "status": "ok"
+        },
+        {
+          "field": "lowerHalfPercent",
+          "expected": "80",
+          "actual": "80",
+          "match": true,
+          "status": "ok"
+        },
+        {
+          "field": "starLengthPercent",
+          "expected": null,
+          "actual": null,
+          "match": true,
+          "status": "ok"
+        },
+        {
+          "field": "girdle",
+          "expected": "Very Thin to Medium",
+          "actual": null,
+          "match": false,
+          "status": "missing"
+        },
+        {
+          "field": "culet",
+          "expected": "None",
+          "actual": "None",
+          "match": true,
+          "status": "ok"
+        },
+        {
+          "field": "measurements",
+          "expected": "8.54 - 8.62 x 5.01 mm",
+          "actual": "8.54 - 8.62 x 5.01 mm",
+          "match": true,
+          "status": "ok"
+        },
+        {
+          "field": "polish",
+          "expected": "Good",
+          "actual": "Good",
+          "match": true,
+          "status": "ok"
+        },
+        {
+          "field": "symmetry",
+          "expected": "Very Good",
+          "actual": "Very Good",
+          "match": true,
+          "status": "ok"
+        },
+        {
+          "field": "fluorescence",
+          "expected": "Faint",
+          "actual": "Faint",
+          "match": true,
+          "status": "ok"
+        },
+        {
+          "field": "cutGrade",
+          "expected": "Good",
+          "actual": "Good",
+          "match": true,
+          "status": "ok"
+        }
+      ],
+      "lifecycle": {
+        "renderAudit": {
+          "rendererUsed": "production-napi-root",
+          "pageCount": 1,
+          "renderSuccess": true,
+          "renderTimingMs": 5842,
+          "imageDimensions": {
+            "width": 3168,
+            "height": 2448
+          },
+          "pngBytes": 2631157,
+          "ocrReadiness": "ready",
+          "ocrProbeChars": 2465,
+          "ocrProbeMs": 4673,
+          "failureReason": null,
+          "failureStack": null
+        },
+        "documentExtractMs": 5412,
+        "imageOcrMs": 39976,
+        "totalMs": 48758,
+        "timedOut": false,
+        "pipelineError": null,
+        "textMethod": "ocr",
+        "pdfTextLayerLength": 4848,
+        "usedImageOCR": true,
+        "fallbackStage": "image-region-ocr"
+      },
+      "assignments": [
+        {
+          "field": "tablePercent",
+          "finalValue": "64",
+          "source": "diagram-ocr",
+          "decision": "accepted",
+          "rejectionReason": null,
+          "rawEvidence": "…eeeueneeee. Round Brilliant 55% 64% 36.0° a D Measurements .......…"
+        },
+        {
+          "field": "depthPercent",
+          "finalValue": "58.4",
+          "source": "diagram-ocr",
+          "decision": "accepted",
+          "rejectionReason": null,
+          "rawEvidence": "…mm ory 13.0% g : FLAWLESS | di 58.4%) g F EXCELLENT medium | ° i 25…"
+        },
+        {
+          "field": "crownAngle",
+          "finalValue": "36",
+          "source": "diagram-ocr",
+          "decision": "accepted",
+          "rejectionReason": null,
+          "rawEvidence": "…eneeee. Round Brilliant 55% 64% 36.0° a D Measurements .......cccc…"
+        },
+        {
+          "field": "pavilionAngle",
+          "finalValue": "40.6",
+          "source": "diagram-ocr",
+          "decision": "accepted",
+          "rejectionReason": null,
+          "rawEvidence": null
+        },
+        {
+          "field": "lowerHalfPercent",
+          "finalValue": "80",
+          "source": "diagram-ocr",
+          "decision": "accepted",
+          "rejectionReason": null,
+          "rawEvidence": "…Carat Weight coven. 2.25 carat 80% Z ] EE VERY Color Grade ....co…"
+        },
+        {
+          "field": "starLengthPercent",
+          "finalValue": null,
+          "source": "manual",
+          "decision": "missing",
+          "rejectionReason": "proportion value not recovered from text/OCR",
+          "rawEvidence": null
+        },
+        {
+          "field": "girdle",
+          "finalValue": null,
+          "source": "unavailable",
+          "decision": "rejected",
+          "rejectionReason": "finish line not recovered from text/OCR region",
+          "rawEvidence": "…POOR Comments: Feathers in the girdle are not shown. y JA ; KEY TO SY…"
+        },
+        {
+          "field": "culet",
+          "finalValue": "None",
+          "source": "ocr",
+          "decision": "accepted",
+          "rejectionReason": null,
+          "rawEvidence": "…issseisneennnenes. 0 to P Range none K CR A 600D ClaeityZGrages\\\\ ra…"
+        },
+        {
+          "field": "measurements",
+          "finalValue": "8.54 - 8.62 x 5.01 mm",
+          "source": "ocr",
+          "decision": "accepted",
+          "rejectionReason": null,
+          "rawEvidence": "….......ccccecvevecciiiincene.. 8.54 - 8.62 x 5.01 mm ory 13.0% g :…"
+        },
+        {
+          "field": "polish",
+          "finalValue": "Good",
+          "source": "ocr",
+          "decision": "accepted",
+          "rejectionReason": null,
+          "rawEvidence": "…T 8 2 FAIR SYMMELTY ceric. VEY Good 1 i | FLUOTESCENCE woteecictcee…"
+        },
+        {
+          "field": "symmetry",
+          "finalValue": "Very Good",
+          "source": "ocr",
+          "decision": "accepted",
+          "rejectionReason": null,
+          "rawEvidence": "…............................... Very Good Fluorescence ..................…"
+        },
+        {
+          "field": "fluorescence",
+          "finalValue": "Faint",
+          "source": "ocr",
+          "decision": "accepted",
+          "rejectionReason": null,
+          "rawEvidence": "…siecee ese sae este seese sees FAINT - v ! Inscription(s): GIA 62337…"
+        },
+        {
+          "field": "cutGrade",
+          "finalValue": "Good",
+          "source": "ocr",
+          "decision": "accepted",
+          "rejectionReason": null,
+          "rawEvidence": "…T 8 2 FAIR SYMMELTY ceric. VEY Good 1 i | FLUOTESCENCE woteecictcee…"
+        }
+      ],
+      "snapshots": [
+        {
+          "source": "gia-facsimile",
+          "phase": "diagram-ocr",
+          "at": "2026-05-30T18:43:20.779Z",
+          "payload": {
+            "reportNumber": "6233708773",
+            "triggered": true,
+            "reason": "gia-facsimile-missing-core-proportions",
+            "cropCoordinates": [
+              {
+                "left": 0.52,
+                "top": 0.28,
+                "width": 0.44,
+                "height": 0.22
+              },
+              {
+                "left": 0.06,
+                "top": 0.36,
+                "width": 0.58,
+                "height": 0.12
+              },
+              {
+                "left": 0.04,
+                "top": 0.38,
+                "width": 0.48,
+                "height": 0.38
+              }
+            ],
+            "ocrRawPreview": "0, “40.0 INTERNALLY\n42.5% = 6 FLAWLESS\ng H 2\n£ [ =|\n: J iz VERY\nnone K §° Vvs, 600D\n: ES L\n| proportions m = is,\nN EE\n= 0 “Eg vs, 6000\n: P\nR =\nS 5 SI, I.\n\n0, “40.0 ILRNALLT\n42.5% = 6 FLAWLESS\nSl .\n= =|\ns J EE VERY\nnone K §\" VVs, 65000\ng L\n| proportions m - is,\nN EE\n5 0 = vs, 500D\n= P\nR =\nS 15 NR I.\n\nZGragdea Vr raz ea NW za NW ae NWN Z WIS 274 Profile to actual proportions\nEs 2 ems A i emt pe eee ",
+            "repairedOcrPreview": "\\AALLLTT\nPi ® FACSIMILE\n: Fn] = GIA REPORT This is a digital representation of the original GIA Report. This representation might not\n25, 1S be accepted in lieu of the original GIA Report in certain circumstances. The original GIA\nAP 6 2 3 3 7 08 7 7 3 Report includes certain security features which are not reproducible on this facsimile.\nHe\nVerify this report at GIA.edu\nGIA NATURAL DIAMOND GRADIN",
+            "candidatesFound": {
+              "diagramPercents": "42.5, 42.5"
+            },
+            "assignmentsMade": {},
+            "rejectedCandidates": [],
+            "cropOcrPreviews": [
+              "0, “40.0 INTERNALLY\n42.5% = 6 FLAWLESS\ng H 2\n£ [ =|\n: J iz VERY\nnone K §° Vvs, 600D\n: ES L\n| proportions m = is,\nN EE\n= 0 “Eg vs, 6000\n: P\nR =\nS 5 SI, I.",
+              "0, “40.0 INTERNALLY\n42.5% = 6 FLAWLESS\ng H 2\n£ [ =|\n: J iz VERY\nnone K §° Vvs, 600D\n: ES L\n| proportions m = is,\nN EE\n= 0 “Eg vs, 6000\n: P\nR =\nS 5 SI, I.",
+              "0, “40.0 INTERNALLY\n42.5% = 6 FLAWLESS\ng H 2\n£ [ =|\n: J iz VERY\nnone K §° Vvs, 600D\n: ES L\n| proportions m = is,\nN EE\n= 0 “Eg vs, 6000\n: P\nR =\nS 5 SI, I.",
+              "0, “40.0 ILRNALLT\n42.5% = 6 FLAWLESS\nSl .\n= =|\ns J EE VERY\nnone K §\" VVs, 65000\ng L\n| proportions m - is,\nN EE\n5 0 = vs, 500D\n= P\nR =\nS 15 NR I.",
+              "ZGragdea Vr raz ea NW za NW ae NWN Z WIS 274 Profile to actual proportions\nEs 2 ems A i emt pe eee A re os i ea ZN 1B 0 6d\nNAL GRADING INFORMATION CLARITY CHARACTERISTICS",
+              "J Grade weer eserseeeresersssesenssssssssssesennnss VVS 2 Profile to actual proportions\n2-1 [ORTOP To Tos |\nNAL GRADING INFORMATION CLARITY CHARACTERISTICS",
+              "ZGragdea Vr raz ea NW za NW ae NWN Z WIS 274 Profile to actual proportions\nEs 2 ems A i emt pe eee A re os i ea ZN 1B 0 6d\nNAL GRADING INFORMATION CLARITY CHARACTERISTICS",
+              "VC] = Te [= TTT TAY 4/4 Profile to actual proportions\n0-1 [TRUSTS To Yoo |\nNAL GRADING INFORMATION CLARITY CHARACTERISTICS",
+              "LdlILY UlTdUC vinnie, VV OL FTullic VU duluc\nUL Grade coerce eects sees eeeseseeenenes. 000d\nITIONAL GRADING INFORMATION CLARITY CHARACTERISTICS\nol ASS I fT fe a re Ae E11: Te)\nYMM",
+              "ally Ul dU vn VV OL FTullic VU auluc\nUE Grade coccinea. 000d\nITIONAL GRADING INFORMATION CLARITY CHARACTERISTICS\nOLISH cece. 000d\nYMMELTY oie. VEFY GOO\n[UOTESCENCE woven esesesieie",
+              "SYMMELTY coir. VEry Good\n\nFLUOFESCENCE .iiuicriniissrerenisini rests se senesesesenenennens FAINT\n\nInscription(s): GIA 6233708773\n\nComments: Feathers in the girdle are not shown.\nK",
+              "SYMMELTY corer. VEIy Good\n\nFLUOMESCENCE ererererererererereresinrnene nesses rene sesesesesesesennnenn. EINE\n\nInscription(s): GIA 6233708773\n\nComments: Feathers in the girdle are n",
+              "SYMMELTY coir. VEry Good\n\nFLUOFESCENCE .iiuicriniissrerenisini rests se senesesesenenennens FAINT\n\nInscription(s): GIA 6233708773\n\nComments: Feathers in the girdle are not shown.\nK",
+              "SYMMELTY ceric. VEry Good\nFLUOM@SCENCE evieeeerrieicieieieisiriresrrrereeeeeeenenenenes. FINE\nInscription(s): GIA 6233708773\nComments: Feathers in the girdle are not shown.\nKEY TO "
+            ],
+            "visualPasses": [
+              {
+                "id": "stack-p1-raw",
+                "page": 1,
+                "scale": 5,
+                "preprocess": "raw",
+                "cropCoords": {
+                  "left": 0.52,
+                  "top": 0.28,
+                  "width": 0.44,
+                  "height": 0.22
+                },
+                "cropDimensions": {
+                  "width": 1393,
+                  "height": 538
+                },
+                "ocrTextPreview": "0, “40.0 INTERNALLY\n42.5% = 6 FLAWLESS\ng H 2\n£ [ =|\n: J iz VERY\nnone K §° Vvs, 600D\n: ES L\n| proportions m = is,\nN EE\n= 0 “Eg vs, 6000\n: P\nR =\nS 5 SI, I.",
+                "pavilionCandidate": null,
+                "girdleCandidate": null
+              },
+              {
+                "id": "stack-p1",
+                "page": 1,
+                "scale": 5,
+                "preprocess": "raw",
+                "cropCoords": {
+                  "left": 0.52,
+                  "top": 0.28,
+                  "width": 0.44,
+                  "height": 0.22
+                },
+                "cropDimensions": {
+                  "width": 1393,
+                  "height": 538
+                },
+                "ocrTextPreview": "0, “40.0 INTERNALLY\n42.5% = 6 FLAWLESS\ng H 2\n£ [ =|\n: J iz VERY\nnone K §° Vvs, 600D\n: ES L\n| proportions m = is,\nN EE\n= 0 “Eg vs, 6000\n: P\nR =\nS 5 SI, I.",
+                "pavilionCandidate": null,
+                "girdleCandidate": null
+              },
+              {
+                "id": "stack-contrast-p1-raw",
+                "page": 1,
+                "scale": 5,
+                "preprocess": "raw",
+                "cropCoords": {
+                  "left": 0.52,
+                  "top": 0.28,
+                  "width": 0.44,
+                  "height": 0.22
+                },
+                "cropDimensions": {
+                  "width": 1393,
+                  "height": 538
+                },
+                "ocrTextPreview": "0, “40.0 INTERNALLY\n42.5% = 6 FLAWLESS\ng H 2\n£ [ =|\n: J iz VERY\nnone K §° Vvs, 600D\n: ES L\n| proportions m = is,\nN EE\n= 0 “Eg vs, 6000\n: P\nR =\nS 5 SI, I.",
+                "pavilionCandidate": null,
+                "girdleCandidate": null
+              },
+              {
+                "id": "stack-contrast-p1",
+                "page": 1,
+                "scale": 5,
+                "preprocess": "contrast",
+                "cropCoords": {
+                  "left": 0.52,
+                  "top": 0.28,
+                  "width": 0.44,
+                  "height": 0.22
+                },
+                "cropDimensions": {
+                  "width": 1393,
+                  "height": 538
+                },
+                "ocrTextPreview": "0, “40.0 ILRNALLT\n42.5% = 6 FLAWLESS\nSl .\n= =|\ns J EE VERY\nnone K §\" VVs, 65000\ng L\n| proportions m - is,\nN EE\n5 0 = vs, 500D\n= P\nR =\nS 15 NR I.",
+                "pavilionCandidate": null,
+                "girdleCandidate": null
+              },
+              {
+                "id": "girdle-band-p1-raw",
+                "page": 1,
+                "scale": 6,
+                "preprocess": "raw",
+                "cropCoords": {
+                  "left": 0.06,
+                  "top": 0.36,
+                  "width": 0.58,
+                  "height": 0.12
+                },
+                "cropDimensions": {
+                  "width": 1837,
+                  "height": 293
+                },
+                "ocrTextPreview": "ZGragdea Vr raz ea NW za NW ae NWN Z WIS 274 Profile to actual proportions\nEs 2 ems A i emt pe eee A re os i ea ZN 1B 0 6d\nNAL GRADING INFORMATION CLARITY CHARACTERISTICS",
+                "pavilionCandidate": null,
+                "girdleCandidate": null
+              },
+              {
+                "id": "girdle-band-p1",
+                "page": 1,
+                "scale": 6,
+                "preprocess": "threshold",
+                "cropCoords": {
+                  "left": 0.06,
+                  "top": 0.36,
+                  "width": 0.58,
+                  "height": 0.12
+                },
+                "cropDimensions": {
+                  "width": 1837,
+                  "height": 293
+                },
+                "ocrTextPreview": "J Grade weer eserseeeresersssesenssssssssssesennnss VVS 2 Profile to actual proportions\n2-1 [ORTOP To Tos |\nNAL GRADING INFORMATION CLARITY CHARACTERISTICS",
+                "pavilionCandidate": null,
+                "girdleCandidate": null
+              },
+              {
+                "id": "girdle-band-contrast-p1-raw",
+                "page": 1,
+                "scale": 6,
+                "preprocess": "raw",
+                "cropCoords": {
+                  "left": 0.06,
+                  "top": 0.36,
+                  "width": 0.58,
+                  "height": 0.12
+                },
+                "cropDimensions": {
+                  "width": 1837,
+                  "height": 293
+                },
+                "ocrTextPreview": "ZGragdea Vr raz ea NW za NW ae NWN Z WIS 274 Profile to actual proportions\nEs 2 ems A i emt pe eee A re os i ea ZN 1B 0 6d\nNAL GRADING INFORMATION CLARITY CHARACTERISTICS",
+                "pavilionCandidate": null,
+                "girdleCandidate": null
+              },
+              {
+                "id": "girdle-band-contrast-p1",
+                "page": 1,
+                "scale": 6,
+                "preprocess": "contrast",
+                "cropCoords": {
+                  "left": 0.06,
+                  "top": 0.36,
+                  "width": 0.58,
+                  "height": 0.12
+                },
+                "cropDimensions": {
+                  "width": 1837,
+                  "height": 293
+                },
+                "ocrTextPreview": "VC] = Te [= TTT TAY 4/4 Profile to actual proportions\n0-1 [TRUSTS To Yoo |\nNAL GRADING INFORMATION CLARITY CHARACTERISTICS",
+                "pavilionCandidate": null,
+                "girdleCandidate": null
+              },
+              {
+                "id": "grading-results-p1-raw",
+                "page": 1,
+                "scale": 5,
+                "preprocess": "raw",
+                "cropCoords": {
+                  "left": 0.04,
+                  "top": 0.38,
+                  "width": 0.48,
+                  "height": 0.38
+                },
+                "cropDimensions": {
+                  "width": 1520,
+                  "height": 930
+                },
+                "ocrTextPreview": "LdlILY UlTdUC vinnie, VV OL FTullic VU duluc\nUL Grade coerce eects sees eeeseseeenenes. 000d\nITIONAL GRADING INFORMATION CLARITY CHARACTERISTICS\nol ASS I fT fe a re Ae E11: Te)\nYMMELTY oiiiicieieiererereieseseseseseseseeeeseeeeess. VEFY GOO\n[UOFESCENCE uuiuiacuraenieserereenistsiseseststsisisesesesssesesesesnnsns FINE\nscription(s): GIA 6233708773\nomments: Feathers in the girdle are not shown.\n\nKEY",
+                "pavilionCandidate": null,
+                "girdleCandidate": null
+              },
+              {
+                "id": "grading-results-p1",
+                "page": 1,
+                "scale": 5,
+                "preprocess": "contrast",
+                "cropCoords": {
+                  "left": 0.04,
+                  "top": 0.38,
+                  "width": 0.48,
+                  "height": 0.38
+                },
+                "cropDimensions": {
+                  "width": 1520,
+                  "height": 930
+                },
+                "ocrTextPreview": "ally Ul dU vn VV OL FTullic VU auluc\nUE Grade coccinea. 000d\nITIONAL GRADING INFORMATION CLARITY CHARACTERISTICS\nOLISH cece. 000d\nYMMELTY oie. VEFY GOO\n[UOTESCENCE woven esesesieieesesesssesesssneenenenes. FINE\nscription(s): GIA 6233708773\nomments: Feathers in the girdle are not shown.\n\nKEY TO SYMBOLS*\n\n“Feather\n\n- Pinpoint\n~~ Indantad Matiiral",
+                "pavilionCandidate": null,
+                "girdleCandidate": null
+              },
+              {
+                "id": "left-grading-p1-raw",
+                "page": 1,
+                "scale": 6,
+                "preprocess": "raw",
+                "cropCoords": {
+                  "left": 0.02,
+                  "top": 0.5,
+                  "width": 0.46,
+                  "height": 0.22
+                },
+                "cropDimensions": {
+                  "width": 1457,
+                  "height": 538
+                },
+                "ocrTextPreview": "SYMMELTY coir. VEry Good\n\nFLUOFESCENCE .iiuicriniissrerenisini rests se senesesesenenennens FAINT\n\nInscription(s): GIA 6233708773\n\nComments: Feathers in the girdle are not shown.\nKEY TO SYMBOLS*\n“\\_Feather",
+                "pavilionCandidate": null,
+                "girdleCandidate": null
+              },
+              {
+                "id": "left-grading-p1",
+                "page": 1,
+                "scale": 6,
+                "preprocess": "threshold",
+                "cropCoords": {
+                  "left": 0.02,
+                  "top": 0.5,
+                  "width": 0.46,
+                  "height": 0.22
+                },
+                "cropDimensions": {
+                  "width": 1457,
+                  "height": 538
+                },
+                "ocrTextPreview": "SYMMELTY corer. VEIy Good\n\nFLUOMESCENCE ererererererererereresinrnene nesses rene sesesesesesesennnenn. EINE\n\nInscription(s): GIA 6233708773\n\nComments: Feathers in the girdle are not shown.\nKEY TO SYMBOLS*\n“Feather",
+                "pavilionCandidate": null,
+                "girdleCandidate": null
+              },
+              {
+                "id": "left-grading-contrast-p1-raw",
+                "page": 1,
+                "scale": 6,
+                "preprocess": "raw",
+                "cropCoords": {
+                  "left": 0.02,
+                  "top": 0.5,
+                  "width": 0.46,
+                  "height": 0.22
+                },
+                "cropDimensions": {
+                  "width": 1457,
+                  "height": 538
+                },
+                "ocrTextPreview": "SYMMELTY coir. VEry Good\n\nFLUOFESCENCE .iiuicriniissrerenisini rests se senesesesenenennens FAINT\n\nInscription(s): GIA 6233708773\n\nComments: Feathers in the girdle are not shown.\nKEY TO SYMBOLS*\n“\\_Feather",
+                "pavilionCandidate": null,
+                "girdleCandidate": null
+              },
+              {
+                "id": "left-grading-contrast-p1",
+                "page": 1,
+                "scale": 6,
+                "preprocess": "contrast",
+                "cropCoords": {
+                  "left": 0.02,
+                  "top": 0.5,
+                  "width": 0.46,
+                  "height": 0.22
+                },
+                "cropDimensions": {
+                  "width": 1457,
+                  "height": 538
+                },
+                "ocrTextPreview": "SYMMELTY ceric. VEry Good\nFLUOM@SCENCE evieeeerrieicieieieisiriresrrrereeeeeeenenenenes. FINE\nInscription(s): GIA 6233708773\nComments: Feathers in the girdle are not shown.\nKEY TO SYMBOLS*\nFeather",
+                "pavilionCandidate": null,
+                "girdleCandidate": null
+              }
+            ],
+            "durationMs": 39974,
+            "timedOut": false
+          }
+        }
+      ],
+      "diagnostics": {
+        "reportNumber": "6233708773",
+        "lab": "GIA",
+        "reportFamily": "gia-modern",
+        "fallbackStage": "image-region-ocr",
+        "textMethod": "ocr",
+        "usedImageOCR": true,
+        "pdfTextLayerLength": 4848,
+        "gcalImageOnlyPdf": false,
+        "rawTextLength": 7315,
+        "rawTextSnippet": "\\AALLLTT\nPi ® FACSIMILE\n: Fn] = GIA REPORT This is a digital representation of the original GIA Report. This representation might not\n25, 1S be accepted in lieu of the original GIA Report in certain circumstances. The original GIA\nAP 6 2 3 3 7 08 7 7 3 Report includes certain security features which are not reproducible on this facsimile.\nHe\nVerify this report at GIA.edu\nGIA NATURAL DIAMOND GRADING REPORT PROPORTIONS GRADING SCALES\nGIA Report NUMDBET w.cvcvvcevscivessivesiiseiennns. 6233708773 COLOR CLARITY cut\na | SCALE SCALE SCALE\nShape and Cutting Style ........c.c.cccceeeueneeee. Round Bri",
+        "warnings": [
+          "Text source: OCR (scanned pages or diagram regions).",
+          "Calibration status: structurally eligible for calibration statistics after save (confirm each value on the report first).",
+          "Some values were read via OCR — confirm each field against the report before saving.",
+          "Not detected from report text — review manually: Star length %, Girdle (as on report).",
+          "Low confidence — verify on report: Lower girdle / lower half % (not verified in PDF text layer); Culet (as on report) (not verified in PDF text layer).",
+          "Calibration status: review-only — verify fields on the report; not calibration-statistics eligible until core proportions are complete and trusted.",
+          "Proportion diagram not captured by OCR. Manual entry required for this report."
+        ],
+        "fields": [
+          {
+            "field": "shape",
+            "label": "Shape",
+            "target": false,
+            "decision": "accepted",
+            "source": {
+              "method": "ocr",
+              "textMethod": "ocr",
+              "extractionClass": "OCR_VERIFIED",
+              "valueSource": "ocr"
+            },
+            "parsedValue": "Round Brilliant",
+            "repairedValue": null,
+            "confidence": "medium",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…yle ........c.c.cccceeeueneeee. Round Brilliant 55% 64% 36.0° a D Measurements…",
+            "rejectionReason": null
+          },
+          {
+            "field": "carat",
+            "label": "Carat",
+            "target": false,
+            "decision": "accepted",
+            "source": {
+              "method": "ocr",
+              "textMethod": "ocr",
+              "extractionClass": "OCR_VERIFIED",
+              "valueSource": "ocr"
+            },
+            "parsedValue": "2.25",
+            "repairedValue": null,
+            "confidence": "medium",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…Sl S| ows, Carat Weight coven. 2.25 carat 80% Z ] EE VERY Color Gra…",
+            "rejectionReason": null
+          },
+          {
+            "field": "measurements",
+            "label": "Measurements",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "ocr",
+              "textMethod": "ocr",
+              "extractionClass": "OCR_VERIFIED",
+              "valueSource": "ocr"
+            },
+            "parsedValue": "8.54 - 8.62 x 5.01 mm",
+            "repairedValue": null,
+            "confidence": "medium",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "….......ccccecvevecciiiincene.. 8.54 - 8.62 x 5.01 mm ory 13.0% g :…",
+            "rejectionReason": null
+          },
+          {
+            "field": "tablePercent",
+            "label": "Table %",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram-ocr",
+              "textMethod": "ocr",
+              "extractionClass": "OCR_VERIFIED",
+              "valueSource": "diagram"
+            },
+            "parsedValue": "64",
+            "repairedValue": null,
+            "confidence": "medium",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…eeeueneeee. Round Brilliant 55% 64% 36.0° a D Measurements .......…",
+            "rejectionReason": null
+          },
+          {
+            "field": "depthPercent",
+            "label": "Depth %",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram-ocr",
+              "textMethod": "ocr",
+              "extractionClass": "OCR_VERIFIED",
+              "valueSource": "diagram"
+            },
+            "parsedValue": "58.4",
+            "repairedValue": null,
+            "confidence": "medium",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…mm ory 13.0% g : FLAWLESS | di 58.4%) g F EXCELLENT medium | ° i 25…",
+            "rejectionReason": null
+          },
+          {
+            "field": "crownAngle",
+            "label": "Crown angle",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram-ocr",
+              "textMethod": "ocr",
+              "extractionClass": "OCR_VERIFIED",
+              "valueSource": "diagram"
+            },
+            "parsedValue": "36",
+            "repairedValue": null,
+            "confidence": "medium",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…eneeee. Round Brilliant 55% 64% 36.0° a D Measurements .......cccc…",
+            "rejectionReason": null
+          },
+          {
+            "field": "pavilionAngle",
+            "label": "Pavilion angle",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram-ocr",
+              "textMethod": "ocr",
+              "extractionClass": "OCR_VERIFIED",
+              "valueSource": "diagram"
+            },
+            "parsedValue": "40.6",
+            "repairedValue": null,
+            "confidence": "medium",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": null
+          },
+          {
+            "field": "lowerHalfPercent",
+            "label": "Lower half %",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram-ocr",
+              "textMethod": "ocr",
+              "extractionClass": "OCR_LOW_CONFIDENCE",
+              "valueSource": "diagram"
+            },
+            "parsedValue": "80",
+            "repairedValue": null,
+            "confidence": "low",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…Carat Weight coven. 2.25 carat 80% Z ] EE VERY Color Grade ....co…",
+            "rejectionReason": null
+          },
+          {
+            "field": "starLengthPercent",
+            "label": "Star length %",
+            "target": true,
+            "decision": "missing",
+            "source": {
+              "method": "manual",
+              "textMethod": "ocr",
+              "extractionClass": "MANUAL_REQUIRED",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "low",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": "proportion value not recovered from text/OCR"
+          },
+          {
+            "field": "girdle",
+            "label": "Girdle",
+            "target": true,
+            "decision": "rejected",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "ocr",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": false,
+            "rawEvidence": "…POOR Comments: Feathers in the girdle are not shown. y JA ; KEY TO SY…",
+            "rejectionReason": "finish line not recovered from text/OCR region"
+          },
+          {
+            "field": "culet",
+            "label": "Culet",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "ocr",
+              "textMethod": "ocr",
+              "extractionClass": "OCR_LOW_CONFIDENCE",
+              "valueSource": "ocr"
+            },
+            "parsedValue": "None",
+            "repairedValue": null,
+            "confidence": "low",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…issseisneennnenes. 0 to P Range none K CR A 600D ClaeityZGrages\\\\ ra…",
+            "rejectionReason": null
+          },
+          {
+            "field": "polish",
+            "label": "Polish",
+            "target": false,
+            "decision": "accepted",
+            "source": {
+              "method": "ocr",
+              "textMethod": "ocr",
+              "extractionClass": "OCR_VERIFIED",
+              "valueSource": "ocr"
+            },
+            "parsedValue": "Good",
+            "repairedValue": null,
+            "confidence": "medium",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…T 8 2 FAIR SYMMELTY ceric. VEY Good 1 i | FLUOTESCENCE woteecictcee…",
+            "rejectionReason": null
+          },
+          {
+            "field": "symmetry",
+            "label": "Symmetry",
+            "target": false,
+            "decision": "accepted",
+            "source": {
+              "method": "ocr",
+              "textMethod": "ocr",
+              "extractionClass": "OCR_VERIFIED",
+              "valueSource": "ocr"
+            },
+            "parsedValue": "Very Good",
+            "repairedValue": null,
+            "confidence": "medium",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…............................... Very Good Fluorescence ..................…",
+            "rejectionReason": null
+          },
+          {
+            "field": "fluorescence",
+            "label": "Fluorescence",
+            "target": false,
+            "decision": "accepted",
+            "source": {
+              "method": "ocr",
+              "textMethod": "ocr",
+              "extractionClass": "OCR_VERIFIED",
+              "valueSource": "ocr"
+            },
+            "parsedValue": "Faint",
+            "repairedValue": null,
+            "confidence": "medium",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…siecee ese sae este seese sees FAINT - v ! Inscription(s): GIA 62337…",
+            "rejectionReason": null
+          },
+          {
+            "field": "cutGrade",
+            "label": "Cut grade",
+            "target": false,
+            "decision": "accepted",
+            "source": {
+              "method": "ocr",
+              "textMethod": "ocr",
+              "extractionClass": "OCR_VERIFIED",
+              "valueSource": "ocr"
+            },
+            "parsedValue": "Good",
+            "repairedValue": null,
+            "confidence": "medium",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…T 8 2 FAIR SYMMELTY ceric. VEY Good 1 i | FLUOTESCENCE woteecictcee…",
+            "rejectionReason": null
+          }
+        ],
+        "targetFields": [
+          {
+            "field": "measurements",
+            "label": "Measurements",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "ocr",
+              "textMethod": "ocr",
+              "extractionClass": "OCR_VERIFIED",
+              "valueSource": "ocr"
+            },
+            "parsedValue": "8.54 - 8.62 x 5.01 mm",
+            "repairedValue": null,
+            "confidence": "medium",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "….......ccccecvevecciiiincene.. 8.54 - 8.62 x 5.01 mm ory 13.0% g :…",
+            "rejectionReason": null
+          },
+          {
+            "field": "tablePercent",
+            "label": "Table %",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram-ocr",
+              "textMethod": "ocr",
+              "extractionClass": "OCR_VERIFIED",
+              "valueSource": "diagram"
+            },
+            "parsedValue": "64",
+            "repairedValue": null,
+            "confidence": "medium",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…eeeueneeee. Round Brilliant 55% 64% 36.0° a D Measurements .......…",
+            "rejectionReason": null
+          },
+          {
+            "field": "depthPercent",
+            "label": "Depth %",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram-ocr",
+              "textMethod": "ocr",
+              "extractionClass": "OCR_VERIFIED",
+              "valueSource": "diagram"
+            },
+            "parsedValue": "58.4",
+            "repairedValue": null,
+            "confidence": "medium",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…mm ory 13.0% g : FLAWLESS | di 58.4%) g F EXCELLENT medium | ° i 25…",
+            "rejectionReason": null
+          },
+          {
+            "field": "crownAngle",
+            "label": "Crown angle",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram-ocr",
+              "textMethod": "ocr",
+              "extractionClass": "OCR_VERIFIED",
+              "valueSource": "diagram"
+            },
+            "parsedValue": "36",
+            "repairedValue": null,
+            "confidence": "medium",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…eneeee. Round Brilliant 55% 64% 36.0° a D Measurements .......cccc…",
+            "rejectionReason": null
+          },
+          {
+            "field": "pavilionAngle",
+            "label": "Pavilion angle",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram-ocr",
+              "textMethod": "ocr",
+              "extractionClass": "OCR_VERIFIED",
+              "valueSource": "diagram"
+            },
+            "parsedValue": "40.6",
+            "repairedValue": null,
+            "confidence": "medium",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": null
+          },
+          {
+            "field": "lowerHalfPercent",
+            "label": "Lower half %",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram-ocr",
+              "textMethod": "ocr",
+              "extractionClass": "OCR_LOW_CONFIDENCE",
+              "valueSource": "diagram"
+            },
+            "parsedValue": "80",
+            "repairedValue": null,
+            "confidence": "low",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…Carat Weight coven. 2.25 carat 80% Z ] EE VERY Color Grade ....co…",
+            "rejectionReason": null
+          },
+          {
+            "field": "starLengthPercent",
+            "label": "Star length %",
+            "target": true,
+            "decision": "missing",
+            "source": {
+              "method": "manual",
+              "textMethod": "ocr",
+              "extractionClass": "MANUAL_REQUIRED",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "low",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": "proportion value not recovered from text/OCR"
+          },
+          {
+            "field": "girdle",
+            "label": "Girdle",
+            "target": true,
+            "decision": "rejected",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "ocr",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": false,
+            "rawEvidence": "…POOR Comments: Feathers in the girdle are not shown. y JA ; KEY TO SY…",
+            "rejectionReason": "finish line not recovered from text/OCR region"
+          },
+          {
+            "field": "culet",
+            "label": "Culet",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "ocr",
+              "textMethod": "ocr",
+              "extractionClass": "OCR_LOW_CONFIDENCE",
+              "valueSource": "ocr"
+            },
+            "parsedValue": "None",
+            "repairedValue": null,
+            "confidence": "low",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…issseisneennnenes. 0 to P Range none K CR A 600D ClaeityZGrages\\\\ ra…",
+            "rejectionReason": null
+          }
+        ],
+        "summary": {
+          "accepted": 13,
+          "rejected": 1,
+          "missing": 1,
+          "targetAccepted": 7,
+          "targetTotal": 9
+        }
+      },
+      "ocrTraces": [
+        {
+          "source": "gia-facsimile/diagram-ocr",
+          "ocrRawPreview": "0, “40.0 INTERNALLY\n42.5% = 6 FLAWLESS\ng H 2\n£ [ =|\n: J iz VERY\nnone K §° Vvs, 600D\n: ES L\n| proportions m = is,\nN EE\n= 0 “Eg vs, 6000\n: P\nR =\nS 5 SI, I.\n\n0, “40.0 ILRNALLT\n42.5% = 6 FLAWLESS\nSl .\n= =|\ns J EE VERY\nnone K §\" VVs, 65000\ng L\n| proportions m - is,\nN EE\n5 0 = vs, 500D\n= P\nR =\nS 15 NR I.\n\nZGragdea Vr raz ea NW za NW ae NWN Z WIS 274 Profile to actual proportions\nEs 2 ems A i emt pe eee ",
+          "repairedPreview": "\\AALLLTT\nPi ® FACSIMILE\n: Fn] = GIA REPORT This is a digital representation of the original GIA Report. This representation might not\n25, 1S be accepted in lieu of the original GIA Report in certain circumstances. The original GIA\nAP 6 2 3 3 7 08 7 7 3 Report includes certain security features which are not reproducible on this facsimile.\nHe\nVerify this report at GIA.edu\nGIA NATURAL DIAMOND GRADIN",
+          "candidates": {
+            "diagramPercents": "42.5, 42.5"
+          },
+          "assigned": {},
+          "rejected": []
+        }
+      ]
+    },
+    {
+      "reportId": "6233708773",
+      "lab": "GIA",
+      "mode": "client",
+      "parserType": "gia-modern",
+      "pass": true,
+      "harnessPass": true,
+      "corePass": true,
+      "deepPass": true,
+      "reportStyle": "GIA_NATURAL_FACSIMILE",
+      "missingFields": [
+        "girdle"
+      ],
+      "mismatchFields": [],
+      "optionalMissingFields": [
+        "girdle"
+      ],
+      "fieldComparisons": [
+        {
+          "field": "tablePercent",
+          "expected": "64",
+          "actual": "64",
+          "match": true,
+          "status": "ok"
+        },
+        {
+          "field": "depthPercent",
+          "expected": "58.4",
+          "actual": "58.4",
+          "match": true,
+          "status": "ok"
+        },
+        {
+          "field": "crownAngle",
+          "expected": "36",
+          "actual": "36",
+          "match": true,
+          "status": "ok"
+        },
+        {
+          "field": "pavilionAngle",
+          "expected": "40.6",
+          "actual": "40.6",
+          "match": true,
+          "status": "ok"
+        },
+        {
+          "field": "lowerHalfPercent",
+          "expected": "80",
+          "actual": "80",
+          "match": true,
+          "status": "ok"
+        },
+        {
+          "field": "starLengthPercent",
+          "expected": null,
+          "actual": null,
+          "match": true,
+          "status": "ok"
+        },
+        {
+          "field": "girdle",
+          "expected": "Very Thin to Medium",
+          "actual": null,
+          "match": false,
+          "status": "missing"
+        },
+        {
+          "field": "culet",
+          "expected": "None",
+          "actual": "None",
+          "match": true,
+          "status": "ok"
+        },
+        {
+          "field": "measurements",
+          "expected": "8.54 - 8.62 x 5.01 mm",
+          "actual": "8.54 - 8.62 x 5.01 mm",
+          "match": true,
+          "status": "ok"
+        },
+        {
+          "field": "polish",
+          "expected": "Good",
+          "actual": "Good",
+          "match": true,
+          "status": "ok"
+        },
+        {
+          "field": "symmetry",
+          "expected": "Very Good",
+          "actual": "Very Good",
+          "match": true,
+          "status": "ok"
+        },
+        {
+          "field": "fluorescence",
+          "expected": "Faint",
+          "actual": "Faint",
+          "match": true,
+          "status": "ok"
+        },
+        {
+          "field": "cutGrade",
+          "expected": "Good",
+          "actual": "Good",
+          "match": true,
+          "status": "ok"
+        }
+      ],
+      "lifecycle": {
+        "renderAudit": {
+          "rendererUsed": "production-napi-root",
+          "pageCount": 1,
+          "renderSuccess": true,
+          "renderTimingMs": 7144,
+          "imageDimensions": {
+            "width": 3168,
+            "height": 2448
+          },
+          "pngBytes": 2631157,
+          "ocrReadiness": "ready",
+          "ocrProbeChars": 2465,
+          "ocrProbeMs": 6019,
+          "failureReason": null,
+          "failureStack": null
+        },
+        "documentExtractMs": 97,
+        "imageOcrMs": 11519,
+        "totalMs": 11661,
+        "timedOut": false,
+        "pipelineError": null,
+        "textMethod": "pdf-text",
+        "pdfTextLayerLength": 4848,
+        "usedImageOCR": true,
+        "fallbackStage": "text-layer"
+      },
+      "assignments": [
+        {
+          "field": "tablePercent",
+          "finalValue": "64",
+          "source": "diagram-ocr",
+          "decision": "accepted",
+          "rejectionReason": null,
+          "rawEvidence": null
+        },
+        {
+          "field": "depthPercent",
+          "finalValue": "58.4",
+          "source": "diagram-ocr",
+          "decision": "accepted",
+          "rejectionReason": null,
+          "rawEvidence": null
+        },
+        {
+          "field": "crownAngle",
+          "finalValue": "36",
+          "source": "diagram-ocr",
+          "decision": "accepted",
+          "rejectionReason": null,
+          "rawEvidence": null
+        },
+        {
+          "field": "pavilionAngle",
+          "finalValue": "40.6",
+          "source": "diagram-ocr",
+          "decision": "accepted",
+          "rejectionReason": null,
+          "rawEvidence": null
+        },
+        {
+          "field": "lowerHalfPercent",
+          "finalValue": "80",
+          "source": "diagram-ocr",
+          "decision": "accepted",
+          "rejectionReason": null,
+          "rawEvidence": null
+        },
+        {
+          "field": "starLengthPercent",
+          "finalValue": null,
+          "source": "unavailable",
+          "decision": "missing",
+          "rejectionReason": "proportion diagram not in PDF text layer — OCR or manual required",
+          "rawEvidence": null
+        },
+        {
+          "field": "girdle",
+          "finalValue": null,
+          "source": "unavailable",
+          "decision": "rejected",
+          "rejectionReason": "finish line not recovered from text/OCR region",
+          "rawEvidence": "…08773 Comments: Feathers in the girdle are not shown. 6233708773 KEY T…"
+        },
+        {
+          "field": "culet",
+          "finalValue": "None",
+          "source": "diagram",
+          "decision": "accepted",
+          "rejectionReason": null,
+          "rawEvidence": null
+        },
+        {
+          "field": "measurements",
+          "finalValue": "8.54 - 8.62 x 5.01 mm",
+          "source": "pdf-text",
+          "decision": "accepted",
+          "rejectionReason": null,
+          "rawEvidence": "…............................... 8.54 - 8.62 x 5.01 mm Carat Weight .…"
+        },
+        {
+          "field": "polish",
+          "finalValue": "Good",
+          "source": "pdf-text",
+          "decision": "accepted",
+          "rejectionReason": null,
+          "rawEvidence": "…............................... Good Polish ........................…"
+        },
+        {
+          "field": "symmetry",
+          "finalValue": "Very Good",
+          "source": "pdf-text",
+          "decision": "accepted",
+          "rejectionReason": null,
+          "rawEvidence": "…............................... Very Good Fluorescence ..................…"
+        },
+        {
+          "field": "fluorescence",
+          "finalValue": "Faint",
+          "source": "pdf-text",
+          "decision": "accepted",
+          "rejectionReason": null,
+          "rawEvidence": "…............................... Faint Inscription(s): GIA 6233708773…"
+        },
+        {
+          "field": "cutGrade",
+          "finalValue": "Good",
+          "source": "pdf-text",
+          "decision": "accepted",
+          "rejectionReason": null,
+          "rawEvidence": "…............................... Good Polish ........................…"
+        }
+      ],
+      "snapshots": [],
+      "diagnostics": {
+        "reportNumber": "6233708773",
+        "lab": "GIA",
+        "reportFamily": "gia-modern",
+        "fallbackStage": "text-layer",
+        "textMethod": "pdf-text",
+        "usedImageOCR": true,
+        "pdfTextLayerLength": 4848,
+        "gcalImageOnlyPdf": false,
+        "rawTextLength": 4848,
+        "rawTextSnippet": "T HE SEC URI T Y F E AT URE S IN T HIS DOC UME N T, INC LUDING T HE HOL OGR A M,\nS E C U R I T Y   S C R E E N   A N D   M I C R O P R I N T   L I N E S ,   I N   A D D I T I O N   T O  \nT H O S E\nN O T   L I S T E D ,   E X C E E D   D O C U M E N T   S E C U R I T Y   I N D U S T R Y   G U I D E L I N E S .\nGEMOLOGIC AL INSTITUTE OF AMERIC A GEMOLOGIC AL INSTITUTE OF AMERIC A GEMOLOGIC AL INSTITUTE OF AMERIC A GEMOLOGIC AL INSTITUTE OF AMERIC A GEMOLOGIC AL INSTITUTE OF AMERIC A GEMOLOGIC AL INSTITUTE OF AMERIC A GEMOLOGIC AL INSTITUTE OF AMERIC A GEMOLOGIC AL INSTITUTE OF AMERIC A GEMOLOGIC",
+        "warnings": [
+          "Text source: PDF text layer (selectable text).",
+          "Calibration status: structurally eligible for calibration statistics after save (confirm each value on the report first).",
+          "Values from the PDF text layer — spot-check proportion diagram numbers if the layout is image-heavy.",
+          "Not detected from report text — review manually: Star length %, Girdle (as on report).",
+          "Calibration status: review-only — verify fields on the report; not calibration-statistics eligible until core proportions are complete and trusted."
+        ],
+        "fields": [
+          {
+            "field": "shape",
+            "label": "Shape",
+            "target": false,
+            "decision": "accepted",
+            "source": {
+              "method": "pdf-text",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "Round Brilliant",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…le ............................ Round Brilliant Measurements ..................…",
+            "rejectionReason": null
+          },
+          {
+            "field": "carat",
+            "label": "Carat",
+            "target": false,
+            "decision": "accepted",
+            "source": {
+              "method": "pdf-text",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "2.25",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…............................... 2.25 carat Color Grade .............…",
+            "rejectionReason": null
+          },
+          {
+            "field": "measurements",
+            "label": "Measurements",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "pdf-text",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "8.54 - 8.62 x 5.01 mm",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…............................... 8.54 - 8.62 x 5.01 mm Carat Weight .…",
+            "rejectionReason": null
+          },
+          {
+            "field": "tablePercent",
+            "label": "Table %",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram-ocr",
+              "textMethod": "pdf-text",
+              "extractionClass": "DIRECT_DIAGRAM",
+              "valueSource": "diagram"
+            },
+            "parsedValue": "64",
+            "repairedValue": null,
+            "confidence": "medium",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": null
+          },
+          {
+            "field": "depthPercent",
+            "label": "Depth %",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram-ocr",
+              "textMethod": "pdf-text",
+              "extractionClass": "DIRECT_DIAGRAM",
+              "valueSource": "diagram"
+            },
+            "parsedValue": "58.4",
+            "repairedValue": null,
+            "confidence": "medium",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": null
+          },
+          {
+            "field": "crownAngle",
+            "label": "Crown angle",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram-ocr",
+              "textMethod": "pdf-text",
+              "extractionClass": "DIRECT_DIAGRAM",
+              "valueSource": "diagram"
+            },
+            "parsedValue": "36",
+            "repairedValue": null,
+            "confidence": "medium",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": null
+          },
+          {
+            "field": "pavilionAngle",
+            "label": "Pavilion angle",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram-ocr",
+              "textMethod": "pdf-text",
+              "extractionClass": "DIRECT_DIAGRAM",
+              "valueSource": "diagram"
+            },
+            "parsedValue": "40.6",
+            "repairedValue": null,
+            "confidence": "medium",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": null
+          },
+          {
+            "field": "lowerHalfPercent",
+            "label": "Lower half %",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram-ocr",
+              "textMethod": "pdf-text",
+              "extractionClass": "DIRECT_DIAGRAM",
+              "valueSource": "diagram"
+            },
+            "parsedValue": "80",
+            "repairedValue": null,
+            "confidence": "medium",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": null
+          },
+          {
+            "field": "starLengthPercent",
+            "label": "Star length %",
+            "target": true,
+            "decision": "missing",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "pdf-text",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": "proportion diagram not in PDF text layer — OCR or manual required"
+          },
+          {
+            "field": "girdle",
+            "label": "Girdle",
+            "target": true,
+            "decision": "rejected",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "pdf-text",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": false,
+            "rawEvidence": "…08773 Comments: Feathers in the girdle are not shown. 6233708773 KEY T…",
+            "rejectionReason": "finish line not recovered from text/OCR region"
+          },
+          {
+            "field": "culet",
+            "label": "Culet",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram",
+              "textMethod": "pdf-text",
+              "extractionClass": "DIRECT_DIAGRAM",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "None",
+            "repairedValue": null,
+            "confidence": "medium",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": null
+          },
+          {
+            "field": "polish",
+            "label": "Polish",
+            "target": false,
+            "decision": "accepted",
+            "source": {
+              "method": "pdf-text",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "Good",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…............................... Good Polish ........................…",
+            "rejectionReason": null
+          },
+          {
+            "field": "symmetry",
+            "label": "Symmetry",
+            "target": false,
+            "decision": "accepted",
+            "source": {
+              "method": "pdf-text",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "Very Good",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…............................... Very Good Fluorescence ..................…",
+            "rejectionReason": null
+          },
+          {
+            "field": "fluorescence",
+            "label": "Fluorescence",
+            "target": false,
+            "decision": "accepted",
+            "source": {
+              "method": "pdf-text",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "Faint",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…............................... Faint Inscription(s): GIA 6233708773…",
+            "rejectionReason": null
+          },
+          {
+            "field": "cutGrade",
+            "label": "Cut grade",
+            "target": false,
+            "decision": "accepted",
+            "source": {
+              "method": "pdf-text",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "Good",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…............................... Good Polish ........................…",
+            "rejectionReason": null
+          }
+        ],
+        "targetFields": [
+          {
+            "field": "measurements",
+            "label": "Measurements",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "pdf-text",
+              "textMethod": "pdf-text",
+              "extractionClass": "EXACT_TEXT",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "8.54 - 8.62 x 5.01 mm",
+            "repairedValue": null,
+            "confidence": "high",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": true,
+            "rawEvidence": "…............................... 8.54 - 8.62 x 5.01 mm Carat Weight .…",
+            "rejectionReason": null
+          },
+          {
+            "field": "tablePercent",
+            "label": "Table %",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram-ocr",
+              "textMethod": "pdf-text",
+              "extractionClass": "DIRECT_DIAGRAM",
+              "valueSource": "diagram"
+            },
+            "parsedValue": "64",
+            "repairedValue": null,
+            "confidence": "medium",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": null
+          },
+          {
+            "field": "depthPercent",
+            "label": "Depth %",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram-ocr",
+              "textMethod": "pdf-text",
+              "extractionClass": "DIRECT_DIAGRAM",
+              "valueSource": "diagram"
+            },
+            "parsedValue": "58.4",
+            "repairedValue": null,
+            "confidence": "medium",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": null
+          },
+          {
+            "field": "crownAngle",
+            "label": "Crown angle",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram-ocr",
+              "textMethod": "pdf-text",
+              "extractionClass": "DIRECT_DIAGRAM",
+              "valueSource": "diagram"
+            },
+            "parsedValue": "36",
+            "repairedValue": null,
+            "confidence": "medium",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": null
+          },
+          {
+            "field": "pavilionAngle",
+            "label": "Pavilion angle",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram-ocr",
+              "textMethod": "pdf-text",
+              "extractionClass": "DIRECT_DIAGRAM",
+              "valueSource": "diagram"
+            },
+            "parsedValue": "40.6",
+            "repairedValue": null,
+            "confidence": "medium",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": null
+          },
+          {
+            "field": "lowerHalfPercent",
+            "label": "Lower half %",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram-ocr",
+              "textMethod": "pdf-text",
+              "extractionClass": "DIRECT_DIAGRAM",
+              "valueSource": "diagram"
+            },
+            "parsedValue": "80",
+            "repairedValue": null,
+            "confidence": "medium",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": null
+          },
+          {
+            "field": "starLengthPercent",
+            "label": "Star length %",
+            "target": true,
+            "decision": "missing",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "pdf-text",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": "proportion diagram not in PDF text layer — OCR or manual required"
+          },
+          {
+            "field": "girdle",
+            "label": "Girdle",
+            "target": true,
+            "decision": "rejected",
+            "source": {
+              "method": "unavailable",
+              "textMethod": "pdf-text",
+              "extractionClass": "UNAVAILABLE",
+              "valueSource": "extracted"
+            },
+            "parsedValue": null,
+            "repairedValue": null,
+            "confidence": "missing",
+            "labelPresentInRawText": true,
+            "valuePresentInRawText": false,
+            "rawEvidence": "…08773 Comments: Feathers in the girdle are not shown. 6233708773 KEY T…",
+            "rejectionReason": "finish line not recovered from text/OCR region"
+          },
+          {
+            "field": "culet",
+            "label": "Culet",
+            "target": true,
+            "decision": "accepted",
+            "source": {
+              "method": "diagram",
+              "textMethod": "pdf-text",
+              "extractionClass": "DIRECT_DIAGRAM",
+              "valueSource": "extracted"
+            },
+            "parsedValue": "None",
+            "repairedValue": null,
+            "confidence": "medium",
+            "labelPresentInRawText": false,
+            "valuePresentInRawText": false,
+            "rawEvidence": null,
+            "rejectionReason": null
+          }
+        ],
+        "summary": {
+          "accepted": 13,
+          "rejected": 1,
+          "missing": 1,
+          "targetAccepted": 7,
+          "targetTotal": 9
+        }
+      },
+      "ocrTraces": []
+    }
+  ]
+}

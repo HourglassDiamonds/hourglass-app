@@ -50,6 +50,7 @@ export type IgiInternalFields = {
 export type GiaInternalFields = {
   crownHeightPercent?: string;
   pavilionDepthPercent?: string;
+  girdleThicknessPercent?: string;
 };
 
 /** Parsed from GCAL 8X diagram; not shown on review UI (reserved for future use). */

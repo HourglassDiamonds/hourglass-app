@@ -34,6 +34,10 @@
     "symmetry": "Excellent",
     "fluorescence": "None",
     "cutGrade": "Excellent",
+    "_meta": {
+      "style": "GIA_LGDR_DOSSIER",
+      "optionalFields": ["girdle"]
+    },
     "_internal": {
       "crownHeightPercent": 14.0,
       "pavilionDepthPercent": 43.0,
@@ -55,10 +59,90 @@
     "symmetry": "Very Good",
     "fluorescence": "Faint",
     "cutGrade": "Good",
+    "_meta": {
+      "style": "GIA_NATURAL_FACSIMILE",
+      "optionalFields": ["girdle"]
+    },
     "_internal": {
       "crownHeightPercent": 13.0,
       "pavilionDepthPercent": 42.5,
       "girdlePercent": 2.5
+    }
+  },
+  "6532930018": {
+    "tablePercent": 58,
+    "depthPercent": 60.0,
+    "crownAngle": 34.0,
+    "pavilionAngle": 40.8,
+    "lowerHalfPercent": 80,
+    "starLengthPercent": 50,
+    "girdle": "Medium to Slightly Thick (Faceted)",
+    "culet": "None",
+    "_meta": {
+      "style": "GIA_NATURAL_FACSIMILE",
+      "optionalFields": ["girdle"]
+    },
+    "_internal": {
+      "crownHeightPercent": 14.0,
+      "pavilionDepthPercent": 43.0,
+      "girdlePercent": 3.0
+    }
+  },
+  "6495746732": {
+    "tablePercent": 56,
+    "depthPercent": 64.4,
+    "girdle": "Medium to Thick (Faceted)",
+    "culet": "None",
+    "_meta": {
+      "style": "GIA_NATURAL_COLORED_SIMPLIFIED",
+      "expectedPartial": true,
+      "expectedMissingCore": ["crownAngle", "pavilionAngle"],
+      "optionalFields": [
+        "crownAngle",
+        "pavilionAngle",
+        "lowerHalfPercent",
+        "starLengthPercent",
+        "girdle"
+      ],
+      "scoreEligibleExpected": false
+    }
+  },
+  "1493739085": {
+    "tablePercent": 57,
+    "depthPercent": 61.7,
+    "crownAngle": 34.5,
+    "pavilionAngle": 40.8,
+    "lowerHalfPercent": 75,
+    "starLengthPercent": 50,
+    "girdle": "Medium to Slightly Thick (Faceted)",
+    "culet": "None",
+    "_meta": {
+      "style": "GIA_LGDR_DOSSIER",
+      "optionalFields": ["girdle"]
+    },
+    "_internal": {
+      "crownHeightPercent": 14.5,
+      "pavilionDepthPercent": 43.0,
+      "girdlePercent": 4.0
+    }
+  },
+  "6502274288": {
+    "tablePercent": 59,
+    "depthPercent": 61.0,
+    "crownAngle": 34.5,
+    "pavilionAngle": 41.0,
+    "lowerHalfPercent": 75,
+    "starLengthPercent": 50,
+    "girdle": "Medium (Faceted)",
+    "culet": "None",
+    "_meta": {
+      "style": "GIA_LGDR_DOSSIER",
+      "optionalFields": ["girdle"]
+    },
+    "_internal": {
+      "crownHeightPercent": 14.5,
+      "pavilionDepthPercent": 43.5,
+      "girdlePercent": 3.5
     }
   },
   "LG360796192": {

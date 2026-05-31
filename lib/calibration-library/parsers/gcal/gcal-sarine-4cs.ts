@@ -5,6 +5,10 @@ import type {
   ReportFieldKey,
 } from "../../types";
 import {
+  isForensicCollectionEnabled,
+  pushForensicSnapshot,
+} from "../../extraction-forensic-collector";
+import {
   collectGcal8xProportionNumericCandidates,
   prepareGcal8xProportionDiagramText,
   type GcalProportionNumericCandidates,
@@ -771,6 +775,13 @@ export type GcalSarineCheckPayload = {
 
 export function logGcalSarineCheck(payload: GcalSarineCheckPayload): void {
   console.log("[GCAL SARINE CHECK]", payload);
+  if (isForensicCollectionEnabled()) {
+    pushForensicSnapshot(
+      "gcal-sarine-4cs",
+      "image-ocr",
+      payload as unknown as Record<string, unknown>,
+    );
+  }
 }
 
 export function snapshotGcalSarineRecoveredFields(
