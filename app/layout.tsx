@@ -7,6 +7,7 @@ import {
 } from "@/lib/seo/site-metadata";
 import "./globals.css";
 import Footer from "./shared-components/Footer";
+import GlobalJsonLd from "./shared-components/GlobalJsonLd";
 import GoogleAnalytics from "./shared-components/GoogleAnalytics";
 
 const geistSans = Geist({
@@ -61,6 +62,7 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full bg-[#f7f3ee] text-[#1f1d1a]">
+        <GlobalJsonLd />
         <GoogleAnalytics />
         <div className="flex min-h-screen flex-col">
           <main className="flex-1">{children}</main>

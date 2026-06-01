@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { pageMetadata } from "@/lib/seo/site-metadata";
+import MarketingPageJsonLd from "@/app/shared-components/MarketingPageJsonLd";
 import ConciergePageClient from "./concierge-page-client";
 
 export const metadata: Metadata = pageMetadata({
@@ -11,5 +12,10 @@ export const metadata: Metadata = pageMetadata({
 });
 
 export default function ConciergePage() {
-  return <ConciergePageClient />;
+  return (
+    <>
+      <MarketingPageJsonLd name="Concierge" path="/concierge" />
+      <ConciergePageClient />
+    </>
+  );
 }

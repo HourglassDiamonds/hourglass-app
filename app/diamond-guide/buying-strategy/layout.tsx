@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import CategoryGuideJsonLd from "../components/CategoryGuideJsonLd";
 import { categoryHubMetadata } from "@/lib/seo/diamond-guide-metadata";
 
 export const metadata: Metadata = categoryHubMetadata("buying-strategy");
@@ -8,5 +9,10 @@ export default function BuyingStrategyLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return children;
+  return (
+    <>
+      <CategoryGuideJsonLd segment="buying-strategy" variant="hub" />
+      {children}
+    </>
+  );
 }

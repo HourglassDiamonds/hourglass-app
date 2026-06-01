@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import CategoryGuideJsonLd from "../../components/CategoryGuideJsonLd";
 import { categoryIndexMetadata } from "@/lib/seo/diamond-guide-metadata";
 
 export const metadata: Metadata = categoryIndexMetadata("diamond-size");
@@ -8,5 +9,10 @@ export default function DiamondSizeAllLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return children;
+  return (
+    <>
+      <CategoryGuideJsonLd segment="diamond-size" variant="index" />
+      {children}
+    </>
+  );
 }

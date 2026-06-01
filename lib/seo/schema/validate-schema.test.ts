@@ -1,0 +1,61 @@
+import { describe, expect, it } from "vitest";
+import { articles } from "@/app/diamond-guide/articles";
+import { buildArticlePageJsonLd } from "./articles";
+import { buildGlobalSiteJsonLd, globalEntityGraph } from "./entities";
+import { serializeJsonLd } from "./json-ld";
+
+function graphTypes(data: unknown): string[] {
+  if (
+    typeof data !== "object" ||
+    data === null ||
+    !("@graph" in data) ||
+    !Array.isArray((data as { "@graph": unknown[] })["@graph"])
+  ) {
+    const type = (data as { "@type"?: string | string[] })["@type"];
+    return type ? [Array.isArray(type) ? type.join(",") : type] : [];
+  }
+
+  return (data as { "@graph": { "@type"?: string | string[] }[] })["@graph"].flatMap(
+    (node) => {
+      const type = node["@type"];
+      if (!type) return [];
+      return Array.isArray(type) ? type : [type];
+    },
+  );
+}
+
+describe("structured data builders", () => {
+  it("emits global entity graph with required types", () => {
+    const data = buildGlobalSiteJsonLd();
+    const types = graphTypes(data);
+
+    expect(types).toContain("Organization");
+    expect(types).toContain("Person");
+    expect(types).toContain("WebSite");
+    expect(types).toContain("LocalBusiness");
+    expect(types).toContain("JewelryStore");
+    expect(globalEntityGraph()).toHaveLength(4);
+  });
+
+  it("serializes article graphs for every diamond guide article", () => {
+    expect(articles.length).toBeGreaterThan(0);
+
+    for (const article of articles) {
+      const payload = buildArticlePageJsonLd(article);
+      const types = graphTypes(payload);
+      expect(types).toContain("Article");
+      expect(types).toContain("BreadcrumbList");
+      expect(serializeJsonLd(payload)).not.toContain("<");
+    }
+  });
+
+  it("omits publication dates when article data has none", () => {
+    const sample = buildArticlePageJsonLd(articles[0]!);
+    const graph = (sample as { "@graph": Record<string, unknown>[] })["@graph"];
+    const articleNode = graph.find((node) => node["@type"] === "Article");
+
+    expect(articleNode).toBeDefined();
+    expect(articleNode).not.toHaveProperty("datePublished");
+    expect(articleNode).not.toHaveProperty("dateModified");
+  });
+});

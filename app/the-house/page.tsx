@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { pageMetadata } from "@/lib/seo/site-metadata";
+import MarketingPageJsonLd from "@/app/shared-components/MarketingPageJsonLd";
 import TheHousePageClient from "./the-house-page-client";
 
 export const metadata: Metadata = pageMetadata({
@@ -10,5 +11,10 @@ export const metadata: Metadata = pageMetadata({
 });
 
 export default function TheHousePage() {
-  return <TheHousePageClient />;
+  return (
+    <>
+      <MarketingPageJsonLd name="The House" path="/the-house" />
+      <TheHousePageClient />
+    </>
+  );
 }

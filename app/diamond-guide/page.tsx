@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { pageMetadata } from "@/lib/seo/site-metadata";
+import JsonLd from "@/app/shared-components/JsonLd";
+import { diamondGuideHubBreadcrumb } from "@/lib/seo/schema/breadcrumbs";
 import DiamondGuidePageClient from "./diamond-guide-page-client";
 
 export const metadata: Metadata = pageMetadata({
@@ -10,5 +12,10 @@ export const metadata: Metadata = pageMetadata({
 });
 
 export default function DiamondGuidePage() {
-  return <DiamondGuidePageClient />;
+  return (
+    <>
+      <JsonLd data={diamondGuideHubBreadcrumb()} />
+      <DiamondGuidePageClient />
+    </>
+  );
 }

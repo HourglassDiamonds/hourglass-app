@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import JsonLd from "@/app/shared-components/JsonLd";
 import { articlePageMetadata } from "@/lib/seo/diamond-guide-metadata";
+import { buildArticlePageJsonLd } from "@/lib/seo/schema/articles";
 import ConsultationCtaLink from "../../shared-components/ConsultationCtaLink";
 import Header from "../../shared-components/Header";
 import {
@@ -118,6 +120,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
 
   return (
     <div className="min-h-screen bg-[#efe8de] text-[#1c1b1a]">
+      <JsonLd data={buildArticlePageJsonLd(article)} />
       <div className="mx-auto max-w-[1200px] px-6 md:px-10">
         <Header currentPage="diamond-guide" />
 

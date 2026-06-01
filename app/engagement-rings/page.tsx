@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { pageMetadata } from "@/lib/seo/site-metadata";
+import MarketingPageJsonLd from "@/app/shared-components/MarketingPageJsonLd";
 import EngagementRingsPageClient from "./engagement-rings-page-client";
 
 export const metadata: Metadata = pageMetadata({
@@ -10,5 +11,13 @@ export const metadata: Metadata = pageMetadata({
 });
 
 export default function EngagementRingsPage() {
-  return <EngagementRingsPageClient />;
+  return (
+    <>
+      <MarketingPageJsonLd
+        name="Engagement Rings"
+        path="/engagement-rings"
+      />
+      <EngagementRingsPageClient />
+    </>
+  );
 }

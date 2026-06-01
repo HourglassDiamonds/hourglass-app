@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { pageMetadata } from "@/lib/seo/site-metadata";
+import MarketingPageJsonLd from "@/app/shared-components/MarketingPageJsonLd";
 import CustomDesignPageClient from "./custom-design-page-client";
 
 export const metadata: Metadata = pageMetadata({
@@ -10,5 +11,10 @@ export const metadata: Metadata = pageMetadata({
 });
 
 export default function CustomDesignPage() {
-  return <CustomDesignPageClient />;
+  return (
+    <>
+      <MarketingPageJsonLd name="Custom Design" path="/custom-design" />
+      <CustomDesignPageClient />
+    </>
+  );
 }

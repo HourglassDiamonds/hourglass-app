@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { DEFAULT_OPEN_GRAPH } from "@/lib/seo/site-metadata";
+import DiamondStudioJsonLd from "./components/DiamondStudioJsonLd";
 import { DiamondStudioViewportLock } from "./viewport-lock";
 
 export const viewport: Viewport = {
@@ -59,6 +60,7 @@ export default function DiamondStudioLayout({
 }) {
   return (
     <>
+      <DiamondStudioJsonLd />
       <style dangerouslySetInnerHTML={{ __html: DIAMOND_STUDIO_VIEWPORT_CSS }} />
       <div
         data-diamond-studio-route
