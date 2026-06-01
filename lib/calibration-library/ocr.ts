@@ -221,6 +221,9 @@ export async function renderPdfPagePngAtScale(
       durationMs: Date.now() - renderStarted,
       parserPath: "production",
     });
+    if ("error" in production) {
+      throw new Error(production.error);
+    }
     return { ...production, backend: "production" };
   } catch (err) {
     productionError = err instanceof Error ? err.message : String(err);

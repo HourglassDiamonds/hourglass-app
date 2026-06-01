@@ -1,5 +1,10 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import {
+  DEFAULT_OPEN_GRAPH,
+  DEFAULT_SITE_DESCRIPTION,
+  SITE_URL,
+} from "@/lib/seo/site-metadata";
 import "./globals.css";
 import Footer from "./shared-components/Footer";
 import GoogleAnalytics from "./shared-components/GoogleAnalytics";
@@ -15,9 +20,18 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Hourglass Diamonds",
-  description:
-    "A more thoughtful way to design engagement rings and fine jewelry. Private guidance, refined sourcing, and a calm, personal process.",
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: "Hourglass Diamonds",
+    template: "%s | Hourglass Diamonds",
+  },
+  description: DEFAULT_SITE_DESCRIPTION,
+  openGraph: {
+    ...DEFAULT_OPEN_GRAPH,
+    title: "Hourglass Diamonds",
+    description: DEFAULT_SITE_DESCRIPTION,
+    url: SITE_URL,
+  },
   icons: {
     icon: [
       { url: "/favicon.ico", sizes: "any" },

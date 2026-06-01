@@ -168,8 +168,12 @@ async function cropPageRegionPng(
     Math.min(pageHeight - sy, Math.floor(crop.height * pageHeight)),
   );
   const pixelRect = { sx, sy, width: w, height: h };
+  const loadImage = canvasPkg.loadImage;
+  if (!loadImage) {
+    return { png: null, pixelRect };
+  }
   try {
-    const img = await canvasPkg.loadImage(pagePng);
+    const img = await loadImage(pagePng);
     const canvas = canvasPkg.createCanvas(w, h);
     const ctx = canvas.getContext("2d");
     ctx.drawImage(
@@ -194,8 +198,12 @@ async function preprocessGcalCropPng(
   png: Buffer,
   canvasPkg: PdfJsNodeCanvas,
 ): Promise<Buffer> {
+  const loadImage = canvasPkg.loadImage;
+  if (!loadImage) {
+    return png;
+  }
   try {
-    const img = await canvasPkg.loadImage(png);
+    const img = await loadImage(png);
     const canvas = canvasPkg.createCanvas(img.width, img.height);
     const ctx = canvas.getContext("2d");
     ctx.drawImage(

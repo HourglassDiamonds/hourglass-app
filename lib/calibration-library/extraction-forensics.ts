@@ -155,7 +155,11 @@ export function compareFieldsToExpected(
   return compareKeys.map((field) => {
     const expRaw = expected[field];
     const expectedStr =
-      expRaw === undefined || expRaw === null ? null : normalizeExpected(expRaw);
+      expRaw === undefined || expRaw === null
+        ? null
+        : typeof expRaw === "string" || typeof expRaw === "number"
+          ? normalizeExpected(expRaw)
+          : null;
     const actual = fields[field]?.trim() || null;
     if (!expectedStr) {
       return {

@@ -1,14 +1,26 @@
 import type { Metadata, Viewport } from "next";
+import { DEFAULT_OPEN_GRAPH } from "@/lib/seo/site-metadata";
 import { DiamondStudioViewportLock } from "./viewport-lock";
 
 export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
+const DIAMOND_STUDIO_DESCRIPTION =
+  "Explore diamond size, finger coverage, shape, and proportion in a visual, calm environment.";
+
 export const metadata: Metadata = {
-  title: "Diamond Studio | Hourglass Diamonds",
-  description:
-    "Explore diamond size, finger coverage, shape, and proportion in a visual, calm environment.",
+  title: "Diamond Studio",
+  description: DIAMOND_STUDIO_DESCRIPTION,
+  alternates: {
+    canonical: "/diamond-studio",
+  },
+  openGraph: {
+    ...DEFAULT_OPEN_GRAPH,
+    title: "Diamond Studio | Hourglass Diamonds",
+    description: DIAMOND_STUDIO_DESCRIPTION,
+    url: "/diamond-studio",
+  },
 };
 
 /** Desktop: block document scroll before client hydration (Footer + min-h-screen). */

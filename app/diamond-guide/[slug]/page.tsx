@@ -1,5 +1,7 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { articlePageMetadata } from "@/lib/seo/diamond-guide-metadata";
 import ConsultationCtaLink from "../../shared-components/ConsultationCtaLink";
 import Header from "../../shared-components/Header";
 import {
@@ -32,6 +34,17 @@ const COHESION_SLUG = "what-diamond-shape-looks-the-largest";
 
 function isVisualBlock(block: ArticleBlock): boolean {
   return VISUAL_BLOCK_TYPES.has(block.type);
+}
+
+export async function generateMetadata({
+  params,
+}: ArticlePageProps): Promise<Metadata> {
+  const { slug } = await params;
+  const article = articles.find((item) => item.slug === slug);
+  if (!article) {
+    return {};
+  }
+  return articlePageMetadata(article);
 }
 
 export default async function ArticlePage({ params }: ArticlePageProps) {

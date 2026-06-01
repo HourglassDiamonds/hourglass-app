@@ -1,18 +1,25 @@
 import type { Metadata } from "next";
+import { DEFAULT_OPEN_GRAPH } from "@/lib/seo/site-metadata";
 import Image from "next/image";
 import Link from "next/link";
 import ConsultationCtaLink from "../shared-components/ConsultationCtaLink";
 import Header from "../shared-components/Header";
 
+const WHISPERED_PRAISE_DESCRIPTION =
+  "Quiet reflections from clients who trusted Hourglass Diamonds with proposals, redesigns, heirlooms, and custom pieces.";
+
 export const metadata: Metadata = {
   title: "Whispered Praise",
-  description:
-    "Quiet reflections from clients who trusted Hourglass Diamonds with proposals, redesigns, heirlooms, and custom pieces.",
+  description: WHISPERED_PRAISE_DESCRIPTION,
+  alternates: {
+    canonical: "/whispered-praise",
+  },
   openGraph: {
+    ...DEFAULT_OPEN_GRAPH,
     title: "Whispered Praise | Hourglass Diamonds",
     description:
       "A private editorial collection of client praise — calm, warm, and considered.",
-    type: "website",
+    url: "/whispered-praise",
   },
 };
 
