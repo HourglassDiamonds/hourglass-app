@@ -33,6 +33,7 @@ import {
   applyGiaClientCrownDiagramOcr,
   applyGiaProportionDiagramExtraction,
 } from "./parsers/gia/gia-diagram-extraction";
+import { detectGiaReportStyle } from "./parsers/gia/gia-report-style";
 import {
   applyGiaOcrFieldHydrationFallback,
   extractGiaOcrProportionDiagram,
@@ -308,12 +309,18 @@ async function runImageOcrAugmentation(input: {
     ) {
       const giaInternal = parsed.giaInternal ?? {};
       let giaCombined = combined;
+      const giaStyleDetection = detectGiaReportStyle(combined);
       const lgdrDossier =
+        giaStyleDetection.layout === "lgdr-dossier" ||
         /laboratory[-\s]*grown\s+diamond\s+report[\s\S]{0,160}dossier/i.test(
           combined,
-        ) || /\bLGDR\b/i.test(combined);
+        ) ||
+        /\bLGDR\b/i.test(combined);
+      const coloredSimplified =
+        giaStyleDetection.style === "GIA_NATURAL_COLORED_SIMPLIFIED";
       const clientDiagramFirst =
-        lgdrDossier && giaProportionDiagramFieldsMissing(parsed.fields);
+        (lgdrDossier || coloredSimplified) &&
+        giaProportionDiagramFieldsMissing(parsed.fields);
       if (clientDiagramFirst && uploadPdfBytes) {
         try {
           await withTimeout(

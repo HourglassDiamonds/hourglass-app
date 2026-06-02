@@ -816,7 +816,12 @@ async function extractGiaProportionDiagramForLayout(
     return empty(false, "OCR runtime not available");
   }
 
-  const maxScale = Math.max(...valueBands.map((b) => b.scale));
+  const diagramValueBands =
+    layout === "colored-simplified"
+      ? valueBands.filter((b) => b.id.startsWith("proportions-"))
+      : valueBands;
+
+  const maxScale = Math.max(...diagramValueBands.map((b) => b.scale));
   const rendered =
     layout === "lgdr-dossier"
       ? await renderPdfPagePngLgdrDossier(pdfBytes, page, maxScale)
@@ -826,12 +831,15 @@ async function extractGiaProportionDiagramForLayout(
   const bands: GiaDiagramBandOcr[] = [];
   const bandCropPngs: Array<{ id: string; raw: Buffer; preprocessed?: Buffer }> =
     [];
-  for (const band of valueBands) {
+  for (const band of diagramValueBands) {
     const cropped = await cropRegionPng(rendered, band.crop);
     if (!cropped) continue;
     const prepped = await preprocessCropPng(cropped.png, band.preprocess);
     const rawOcr = await ocrImageBuffer(cropped.png);
-    const preppedOcr = await ocrImageBuffer(prepped);
+    const preppedOcr =
+      layout === "colored-simplified"
+        ? rawOcr
+        : await ocrImageBuffer(prepped);
     const text = [rawOcr.text, preppedOcr.text].filter(Boolean).join("\n").trim();
     bands.push({
       id: band.id,

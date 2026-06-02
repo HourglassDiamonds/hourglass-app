@@ -52,10 +52,10 @@ export const GIA_LGDR_DOSSIER_DIAGRAM_REGION: CropRegion = {
 };
 
 export const GIA_COLORED_SIMPLIFIED_DIAGRAM_REGION: CropRegion = {
-  left: 0.42,
-  top: 0.1,
-  width: 0.55,
-  height: 0.32,
+  left: 0.05,
+  top: 0.4,
+  width: 0.45,
+  height: 0.18,
 };
 
 const HEADER_BAND: GiaDiagramBandDef = {
@@ -174,28 +174,28 @@ export const GIA_NATURAL_FACSIMILE_DIAGRAM_BANDS: GiaDiagramBandDef[] = [
 export const GIA_NATURAL_COLORED_SIMPLIFIED_BANDS: GiaDiagramBandDef[] = [
   {
     id: "proportions-header",
-    crop: { left: 0.42, top: 0.12, width: 0.55, height: 0.08 },
+    crop: { left: 0.05, top: 0.43, width: 0.38, height: 0.05 },
     expects: ["tablePercent"],
     preprocess: "threshold",
-    scale: 6,
+    scale: 5,
   },
   {
     id: "proportions-stack",
-    crop: { left: 0.42, top: 0.18, width: 0.55, height: 0.1 },
+    crop: { left: 0.05, top: 0.47, width: 0.38, height: 0.07 },
     expects: ["depthPercent"],
     preprocess: "threshold",
-    scale: 6,
+    scale: 5,
   },
   {
     id: "girdle",
-    crop: { left: 0.42, top: 0.26, width: 0.55, height: 0.06 },
+    crop: { left: 0.05, top: 0.5, width: 0.38, height: 0.05 },
     expects: ["girdle"],
     preprocess: "contrast",
     scale: 6,
   },
   {
     id: "culet",
-    crop: { left: 0.42, top: 0.28, width: 0.55, height: 0.08 },
+    crop: { left: 0.05, top: 0.52, width: 0.38, height: 0.06 },
     expects: ["culet"],
     preprocess: "contrast",
     scale: 6,
@@ -283,6 +283,24 @@ export function detectGiaReportStyle(combinedText: string): GiaReportStyleDetect
     if (/additional\s+information/i.test(t)) {
       signals.push("additional information section");
     }
+    return {
+      style: "GIA_NATURAL_COLORED_SIMPLIFIED",
+      layout: "colored-simplified",
+      signals,
+    };
+  }
+
+  // Client PDF text often drops the colored header but still exposes fancy-color
+  // grading fields and a proportions block (angles absent by design).
+  if (
+    /\bfancy\b/i.test(t) &&
+    /color\s+origin/i.test(t) &&
+    /proportions:/i.test(t) &&
+    !/\bLGDR\b/i.test(t) &&
+    !/laboratory[-\s]*grown/i.test(t)
+  ) {
+    signals.push("fancy color grading fields");
+    signals.push("proportions block");
     return {
       style: "GIA_NATURAL_COLORED_SIMPLIFIED",
       layout: "colored-simplified",
