@@ -5,6 +5,7 @@ import type {
   ReportFieldKey,
 } from "../../types";
 import {
+  applyGiaOcrFieldHydrationFallback,
   extractGiaOcrProportionDiagram,
   formatGiaGirdlePhrase,
   giaProportionDiagramFieldsMissing,
@@ -13,6 +14,7 @@ import {
   isOcrRuntimeAvailable,
   ocrImageBuffer,
   renderPdfPagePngAtScale,
+  renderPdfPagePngLgdrDossier,
   type RenderedPdfPage,
 } from "../shared/ocr-utils";
 import {
@@ -161,6 +163,7 @@ function normalizeDegreeText(text: string): string {
   return text
     .replace(/(\d{1,2}):(\d)/g, "$1.$2")
     .replace(/(\d{2})\s*-\s*(\d)\b/g, "$1.$2")
+    .replace(/\b345\b/g, "34.5")
     .replace(/(\d{2}(?:\.\d)?)\s*[°ºoO*]/g, "$1°")
     .replace(/(\d{2})\s*\.\s*(\d)/g, "$1.$2");
 }
@@ -502,14 +505,20 @@ function parseDiagramFields(
 
   const headerBand = byId.get("header");
   const tableBand = byId.get("table") ?? byId.get("stack");
+  const crownAngleBand = byId.get("crown-angle");
+  const regionBand = byId.get("lgdr-diagram-region");
   const crownBand = byId.get("crown");
   const girdleBand = byId.get("girdle");
   const pavBand = byId.get("pavilion");
   const culetBand = byId.get("culet-depth") ?? byId.get("culet");
 
-  const stackBands = [headerBand, tableBand, crownBand].filter(
-    Boolean,
-  ) as GiaDiagramBandOcr[];
+  const stackBands = [
+    headerBand,
+    crownAngleBand,
+    regionBand,
+    tableBand,
+    crownBand,
+  ].filter(Boolean) as GiaDiagramBandOcr[];
 
   const results: GiaDiagramFieldResult[] = [];
 
@@ -766,7 +775,10 @@ async function extractGiaProportionDiagramForLayout(
   }
 
   const maxScale = Math.max(...valueBands.map((b) => b.scale));
-  const rendered = await renderPdfPagePngAtScale(pdfBytes, page, maxScale);
+  const rendered =
+    layout === "lgdr-dossier"
+      ? await renderPdfPagePngLgdrDossier(pdfBytes, page, maxScale)
+      : await renderPdfPagePngAtScale(pdfBytes, page, maxScale);
   if (!rendered) return empty(true, `could not render PDF page ${page}`);
 
   const bands: GiaDiagramBandOcr[] = [];
@@ -789,6 +801,30 @@ async function extractGiaProportionDiagramForLayout(
       text,
     });
     bandCropPngs.push({ id: band.id, raw: cropped.png, preprocessed: prepped });
+  }
+
+  if (layout === "lgdr-dossier") {
+    const regionCrop = await cropRegionPng(rendered, region);
+    if (regionCrop) {
+      const prepped = await preprocessCropPng(regionCrop.png, "threshold");
+      const rawOcr = await ocrImageBuffer(regionCrop.png);
+      const preppedOcr = await ocrImageBuffer(prepped);
+      const text = [rawOcr.text, preppedOcr.text].filter(Boolean).join("\n").trim();
+      bands.push({
+        id: "lgdr-diagram-region",
+        crop: region,
+        preprocess: "threshold",
+        scale: maxScale,
+        width: regionCrop.width,
+        height: regionCrop.height,
+        text,
+      });
+      bandCropPngs.push({
+        id: "lgdr-diagram-region",
+        raw: regionCrop.png,
+        preprocessed: prepped,
+      });
+    }
   }
 
   const signature = validateDiagramSignature(
@@ -1044,6 +1080,27 @@ export async function applyGiaProportionDiagramExtraction(
       if (!v?.trim() || giaInternal[key]?.trim()) continue;
       giaInternal[key] = v.trim();
       internalApplied[key] = v.trim();
+    }
+  }
+
+  // LGDR dossier: band degree glyphs are often missing — reuse text-layer scatter
+  // on merged band OCR when diagram assignDegree did not recover crown.
+  if (
+    reportStyle === "GIA_LGDR_DOSSIER" &&
+    !fields.crownAngle.trim() &&
+    diagram.bands.length > 0
+  ) {
+    const bandText = diagram.bands
+      .map((b) => b.text)
+      .filter((t) => t.trim())
+      .join("\n\n");
+    if (bandText.trim()) {
+      const before = fields.crownAngle.trim();
+      extractGiaOcrProportionDiagram(bandText, fields, set, giaInternal);
+      applyGiaOcrFieldHydrationFallback(bandText, fields, set);
+      if (fields.crownAngle.trim() && fields.crownAngle.trim() !== before) {
+        applied.crownAngle = fields.crownAngle.trim();
+      }
     }
   }
 

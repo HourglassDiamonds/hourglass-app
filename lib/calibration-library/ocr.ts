@@ -150,10 +150,16 @@ export type RenderedPdfPage = {
   backend: PdfRenderBackend;
 };
 
+type PdfRenderDocOpts = {
+  useSystemFonts?: boolean;
+  disableFontFace?: boolean;
+};
+
 async function renderPdfPagePngProduction(
   pdfBytes: Buffer,
   pageNumber: number,
   scale: number,
+  docOpts?: PdfRenderDocOpts,
 ): Promise<{ png: Buffer; width: number; height: number } | { error: string }> {
   const { createCanvas } = await import("@napi-rs/canvas");
   const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
@@ -161,8 +167,8 @@ async function renderPdfPagePngProduction(
   const doc = await withTimeout(
     pdfjs.getDocument({
       data,
-      useSystemFonts: true,
-      disableFontFace: true,
+      useSystemFonts: docOpts?.useSystemFonts ?? true,
+      disableFontFace: docOpts?.disableFontFace ?? true,
     }).promise,
     PDF_GET_DOCUMENT_TIMEOUT_MS,
     "pdf-render-open",
@@ -192,6 +198,61 @@ async function renderPdfPagePngProduction(
   } finally {
     canvas.width = 0;
     canvas.height = 0;
+  }
+}
+
+/**
+ * GIA LGDR dossier render — harness-validated font options for embedded/type3 glyphs.
+ * Isolated from default production + facsimile paths (see pdf-render-harness).
+ */
+export async function renderPdfPagePngLgdrDossier(
+  pdfBytes: Buffer,
+  pageNumber: number,
+  scale: number,
+): Promise<RenderedPdfPage | null> {
+  const renderStarted = Date.now();
+  const logOp = "pdf-render-lgdr-dossier";
+  try {
+    const rendered = await withTimeout(
+      renderPdfPagePngProduction(pdfBytes, pageNumber, scale, {
+        useSystemFonts: true,
+        disableFontFace: false,
+      }),
+      PDF_RENDER_TIMEOUT_MS,
+      `${logOp}-page`,
+    );
+    if ("error" in rendered) {
+      throw new Error(rendered.error);
+    }
+    logCalibrationRuntimeCheck({
+      operation: logOp,
+      renderScale: scale,
+      renderDurationMs: Date.now() - renderStarted,
+      durationMs: Date.now() - renderStarted,
+      parserPath: "lgdr-dossier",
+    });
+    return { ...rendered, backend: "production" };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    logCalibrationRuntimeCheck({
+      operation: logOp,
+      renderScale: scale,
+      renderDurationMs: Date.now() - renderStarted,
+      durationMs: Date.now() - renderStarted,
+      timedOut: err instanceof CalibrationTimeoutError,
+      error: message,
+    });
+    if (!isPdfRenderRetryableError(message)) {
+      return null;
+    }
+    const factory = await renderPdfPagePngWithFactory(
+      pdfBytes,
+      pageNumber,
+      scale,
+      "pdf-render-lgdr-factory-fallback",
+    );
+    if (!factory) return null;
+    return { ...factory, backend: "factory-fallback" };
   }
 }
 

@@ -183,7 +183,10 @@ export function shouldRunGiaFacsimileDiagramImageOcr(
     missingCore;
 
   if (lgdrDossier && missingCore) {
-    return { run: true, reason: "gia-lgdr-dossier-missing-diagram-fields" };
+    return {
+      run: false,
+      reason: "lgdr-dossier-uses-diagram-band-ocr-not-facsimile-crops",
+    };
   }
 
   if (facsimileTable && missingCore) {

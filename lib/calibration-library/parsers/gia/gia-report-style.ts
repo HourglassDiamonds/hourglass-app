@@ -66,9 +66,27 @@ const HEADER_BAND: GiaDiagramBandDef = {
   scale: 6,
 };
 
+/** LGDR dossier header — taller crop to include crown-angle row (forensics). */
+const LGDR_HEADER_BAND: GiaDiagramBandDef = {
+  id: "header",
+  crop: { left: 0.48, top: 0.105, width: 0.52, height: 0.095 },
+  expects: ["tablePercent", "starLengthPercent", "crownAngle"],
+  preprocess: "threshold",
+  scale: 6,
+};
+
+/** LGDR crown-angle row between table % and crown-height % (diagram stack). */
+const LGDR_CROWN_ANGLE_BAND: GiaDiagramBandDef = {
+  id: "crown-angle",
+  crop: { left: 0.5, top: 0.168, width: 0.48, height: 0.045 },
+  expects: ["crownAngle"],
+  preprocess: "threshold",
+  scale: 6,
+};
+
 /** LGDR / dossier — upper-right profile stack (forensics-calibrated). */
 export const GIA_LGDR_DOSSIER_DIAGRAM_BANDS: GiaDiagramBandDef[] = [
-  HEADER_BAND,
+  LGDR_HEADER_BAND,
   {
     id: "stack",
     crop: { left: 0.5, top: 0.19, width: 0.48, height: 0.09 },
@@ -81,10 +99,11 @@ export const GIA_LGDR_DOSSIER_DIAGRAM_BANDS: GiaDiagramBandDef[] = [
     preprocess: "threshold",
     scale: 6,
   },
+  LGDR_CROWN_ANGLE_BAND,
   {
     id: "crown",
     crop: { left: 0.5, top: 0.2, width: 0.48, height: 0.08 },
-    expects: ["pavilionAngle", "lowerHalfPercent"],
+    expects: ["crownAngle", "pavilionAngle"],
     preprocess: "threshold",
     scale: 6,
   },
