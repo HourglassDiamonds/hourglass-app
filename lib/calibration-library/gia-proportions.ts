@@ -2281,6 +2281,33 @@ function findPercentThenDegreePair(
   return null;
 }
 
+/**
+ * Facsimile diagram OCR often misreads crown height `14.0%` as `43.0%`.
+ * When a plausible crown angle (e.g. 34.0) appears nearby, recover the pair.
+ */
+function findFacsimileMisreadCrownHeightAnglePair(
+  text: string,
+): { pct: string; deg: string } | null {
+  const norm = fixGiaOcrDegreeNumerals(text);
+  const re =
+    /(?<![\d.])(4[23](?:\.\d)?)\s*%[\s\S]{0,90}?(?<![\d.])(3[0-9](?:\.\d)?)\b(?!\s*%)/gi;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(norm)) !== null) {
+    const pct = parseNum(m[1]!);
+    const deg = parseNum(m[2]!);
+    if (!pct || !deg) continue;
+    if (!isOcrRoleCrownAngle(String(deg))) continue;
+    const pctN = parseFloat(pct);
+    if (!Number.isFinite(pctN) || pctN < 42 || pctN > 44) continue;
+    const correctedHeight = "14.0";
+    if (!isPlausibleCrownHeight(correctedHeight)) continue;
+    const window = norm.slice(m.index, m.index + 120);
+    if (/\bpavilion\b/i.test(window)) continue;
+    return { pct: correctedHeight, deg: String(deg) };
+  }
+  return null;
+}
+
 function findPercentThenBareAnglePair(
   text: string,
   validatePct: (v: string) => boolean,
@@ -2510,7 +2537,8 @@ export function extractGiaOcrProportionDiagram(
       isPlausibleCrownHeight,
       // Use tighter role bounds when we don't have an explicit degree marker.
       isOcrRoleCrownAngle,
-    );
+    ) ??
+    findFacsimileMisreadCrownHeightAnglePair(text);
   if (crownPairLoose) {
     setInternalIfEmpty(internal, "crownHeightPercent", crownPairLoose.pct);
     setGiaFieldIfEmpty(fields, set, "crownAngle", crownPairLoose.deg, "medium");

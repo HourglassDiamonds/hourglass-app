@@ -4,7 +4,11 @@ import type {
   GiaInternalFields,
   ReportFieldKey,
 } from "../../types";
-import { formatGiaGirdlePhrase, giaProportionDiagramFieldsMissing } from "../../gia-proportions";
+import {
+  extractGiaOcrProportionDiagram,
+  formatGiaGirdlePhrase,
+  giaProportionDiagramFieldsMissing,
+} from "../../gia-proportions";
 import {
   isOcrRuntimeAvailable,
   ocrImageBuffer,
@@ -1105,24 +1109,28 @@ export async function applyGiaClientPavilionDiagramOcr(
  * Client fast path: run a single render + crown-band OCR only (~3s).
  * Used when pavilion/table/depth are already present but crown is missing.
  */
-export async function applyGiaClientCrownDiagramOcr(
-  pdfBytes: Buffer,
-  fields: CalibrationReportFields,
-  set: FieldSetter,
-): Promise<{ applied: boolean; value?: string; bandId?: string }> {
-  if (fields.crownAngle.trim()) return { applied: false };
-  if (!(await isOcrRuntimeAvailable())) return { applied: false };
-
-  const bandDef = GIA_DIAGRAM_VALUE_BANDS.find((b) => b.id === "crown");
-  if (!bandDef) return { applied: false };
-  const rendered = await renderPdfPagePngAtScale(pdfBytes, 1, bandDef.scale);
-  if (!rendered) return { applied: false };
+async function ocrGiaClientCrownBandText(
+  rendered: RenderedPdfPage,
+  bandDef: GiaDiagramBandDef,
+): Promise<string> {
   const cropped = await cropRegionPng(rendered, bandDef.crop);
-  if (!cropped) return { applied: false };
+  if (!cropped) return "";
   const prepped = await preprocessCropPng(cropped.png, bandDef.preprocess);
   const rawOcr = await ocrImageBuffer(cropped.png);
   const preppedOcr = await ocrImageBuffer(prepped);
-  const text = [rawOcr.text, preppedOcr.text].filter(Boolean).join("\n").trim();
+  return [rawOcr.text, preppedOcr.text].filter(Boolean).join("\n").trim();
+}
+
+function tryAssignCrownFromBandOcr(
+  fields: CalibrationReportFields,
+  set: FieldSetter,
+  bandDef: GiaDiagramBandDef,
+  text: string,
+  cropped: { width: number; height: number },
+): { applied: boolean; value?: string; bandId?: string } {
+  if (!text.trim() || fields.crownAngle.trim()) {
+    return { applied: false };
+  }
   const band: GiaDiagramBandOcr = {
     id: bandDef.id,
     crop: bandDef.crop,
@@ -1132,14 +1140,55 @@ export async function applyGiaClientCrownDiagramOcr(
     height: cropped.height,
     text,
   };
-
   const usedDeg = new Set<number>();
+  const pavilion = parseFloat(fields.pavilionAngle.trim());
+  if (Number.isFinite(pavilion)) usedDeg.add(pavilion);
+
   const result = assignDegree("crownAngle", band, usedDeg);
-  if (!result.parsedValue) return { applied: false };
-  const value = normalizeDiagramFieldValue("crownAngle", result.parsedValue);
-  if (!value) return { applied: false };
-  set("crownAngle", value, "medium");
-  return { applied: true, value, bandId: band.id };
+  if (result.parsedValue) {
+    const value = normalizeDiagramFieldValue("crownAngle", result.parsedValue);
+    if (value) {
+      set("crownAngle", value, "medium");
+      return { applied: true, value, bandId: band.id };
+    }
+  }
+
+  const before = fields.crownAngle.trim();
+  extractGiaOcrProportionDiagram(text, fields, set, {});
+  const after = fields.crownAngle.trim();
+  if (after && after !== before) {
+    return { applied: true, value: after, bandId: band.id };
+  }
+  return { applied: false };
+}
+
+export async function applyGiaClientCrownDiagramOcr(
+  pdfBytes: Buffer,
+  fields: CalibrationReportFields,
+  set: FieldSetter,
+): Promise<{ applied: boolean; value?: string; bandId?: string }> {
+  if (fields.crownAngle.trim()) return { applied: false };
+  if (!(await isOcrRuntimeAvailable())) return { applied: false };
+
+  const rendered = await renderPdfPagePngAtScale(pdfBytes, 1, 6);
+  if (!rendered) return { applied: false };
+
+  for (const bandId of ["crown", "header"] as const) {
+    const bandDef = GIA_DIAGRAM_VALUE_BANDS.find((b) => b.id === bandId);
+    if (!bandDef) continue;
+    const cropped = await cropRegionPng(rendered, bandDef.crop);
+    if (!cropped) continue;
+    const text = await ocrGiaClientCrownBandText(rendered, bandDef);
+    const assigned = tryAssignCrownFromBandOcr(
+      fields,
+      set,
+      bandDef,
+      text,
+      cropped,
+    );
+    if (assigned.applied) return assigned;
+  }
+  return { applied: false };
 }
 
 // ────────────────────────── compare vs current route ──────────────────────────

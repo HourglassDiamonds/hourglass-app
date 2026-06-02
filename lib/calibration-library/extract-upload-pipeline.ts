@@ -367,53 +367,86 @@ async function runImageOcrAugmentation(input: {
         const remainingBudgetMs = Math.max(regionOcrTimeoutMs - elapsedMs, 4_000);
         try {
           // Client facsimile order + budget:
-          // 1) Run facsimile multi-crop recovery, but reserve time for targeted band fallbacks.
-          // 2) Attempt cheap crown band OCR (if crown missing).
-          // 3) Attempt cheap pavilion band OCR (if pavilion missing).
+          // 1) Crown band first (~3s) — facsimile multi-crop can consume the full 18s
+          //    region budget and previously left no time for crown recovery (6532930018).
+          // 2) Facsimile multi-crop with remaining budget (reserve 3.5s for pavilion band).
+          // 3) Pavilion band if still missing.
+          if (!parsed.fields.crownAngle.trim()) {
+            try {
+              await withTimeout(
+                applyGiaClientCrownDiagramOcr(
+                  uploadPdfBytes,
+                  parsed.fields,
+                  setField,
+                ),
+                3_500,
+                "client-gia-crown-band-ocr",
+              );
+            } catch {
+              // Crown band budget exhausted.
+            }
+          }
+
+          const afterCrownMs = Date.now() - started;
           const facsimileBudgetMs = Math.max(
             4_000,
-            Math.min(remainingBudgetMs, remainingBudgetMs - 4_000),
-          );
-          await withTimeout(
-            applyGiaFacsimileDiagramImageOcr(
-              uploadPdfBytes,
-              giaCombined,
-              parsed.fields,
-              giaInternal,
-              setField,
-              {
-                reportNumber: reportNumberHint || undefined,
-                parserPathUsed: parsed.parserType,
-              },
+            Math.min(
+              regionOcrTimeoutMs - afterCrownMs,
+              regionOcrTimeoutMs - afterCrownMs - 3_500,
             ),
-            facsimileBudgetMs,
-            "client-gia-facsimile-diagram-ocr",
           );
+          try {
+            await withTimeout(
+              applyGiaFacsimileDiagramImageOcr(
+                uploadPdfBytes,
+                giaCombined,
+                parsed.fields,
+                giaInternal,
+                setField,
+                {
+                  reportNumber: reportNumberHint || undefined,
+                  parserPathUsed: parsed.parserType,
+                },
+              ),
+              facsimileBudgetMs,
+              "client-gia-facsimile-diagram-ocr",
+            );
+          } catch {
+            // Facsimile budget exhausted — still attempt targeted band fallbacks.
+          }
 
           let remainingMs = regionOcrTimeoutMs - (Date.now() - started);
           if (!parsed.fields.crownAngle.trim() && remainingMs >= 2_000) {
-            await withTimeout(
-              applyGiaClientCrownDiagramOcr(
-                uploadPdfBytes,
-                parsed.fields,
-                setField,
-              ),
-              Math.min(remainingMs, 3_500),
-              "client-gia-crown-band-ocr",
-            );
+            try {
+              await withTimeout(
+                applyGiaClientCrownDiagramOcr(
+                  uploadPdfBytes,
+                  parsed.fields,
+                  setField,
+                ),
+                Math.min(remainingMs, 3_500),
+                "client-gia-crown-band-ocr-late",
+              );
+            } catch {
+              // Crown band budget exhausted.
+            }
             remainingMs = regionOcrTimeoutMs - (Date.now() - started);
           }
 
           if (!parsed.fields.pavilionAngle.trim() && remainingMs >= 2_000) {
-            await withTimeout(
-              applyGiaClientPavilionDiagramOcr(
-                uploadPdfBytes,
-                parsed.fields,
-                setField,
-              ),
-              Math.min(remainingMs, 3_500),
-              "client-gia-pavilion-band-ocr",
-            );
+            try {
+              await withTimeout(
+                applyGiaClientPavilionDiagramOcr(
+                  uploadPdfBytes,
+                  parsed.fields,
+                  setField,
+                ),
+                Math.min(remainingMs, 3_500),
+                "client-gia-pavilion-band-ocr",
+              );
+            } catch {
+              // Pavilion band budget exhausted.
+            }
           }
         } catch {
           // Client OCR budget exhausted — keep scatter-only partial fields.

@@ -683,7 +683,13 @@ export async function applyGiaFacsimileDiagramImageOcr(
     if (frag) set("girdle", frag, "medium");
   }
 
-  if (fields.pavilionAngle.trim() && fields.girdle.trim()) {
+  // Do not skip diagram-region OCR when core crown is still missing — text-layer
+  // scatter may recover pavilion/girdle before crown angle (6532930018 live path).
+  if (
+    fields.pavilionAngle.trim() &&
+    fields.girdle.trim() &&
+    fields.crownAngle.trim()
+  ) {
     const early: GiaDiagramOcrCheckPayload = {
       reportNumber: opts?.reportNumber,
       triggered: true,
