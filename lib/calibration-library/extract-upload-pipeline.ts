@@ -30,6 +30,7 @@ import {
 } from "./parsers/gia/gia-facsimile-image-ocr";
 import {
   applyGiaClientPavilionDiagramOcr,
+  applyGiaClientCrownDiagramOcr,
   applyGiaProportionDiagramExtraction,
 } from "./parsers/gia/gia-diagram-extraction";
 import {
@@ -366,8 +367,13 @@ async function runImageOcrAugmentation(input: {
         const remainingBudgetMs = Math.max(regionOcrTimeoutMs - elapsedMs, 4_000);
         try {
           // Client facsimile order + budget:
-          // 1) Allocate essentially all remaining client OCR budget to the full facsimile recovery.
-          // 2) Only attempt pavilion-band fallback if pavilion is still missing AND time remains.
+          // 1) Run facsimile multi-crop recovery, but reserve time for targeted band fallbacks.
+          // 2) Attempt cheap crown band OCR (if crown missing).
+          // 3) Attempt cheap pavilion band OCR (if pavilion missing).
+          const facsimileBudgetMs = Math.max(
+            4_000,
+            Math.min(remainingBudgetMs, remainingBudgetMs - 4_000),
+          );
           await withTimeout(
             applyGiaFacsimileDiagramImageOcr(
               uploadPdfBytes,
@@ -380,19 +386,32 @@ async function runImageOcrAugmentation(input: {
                 parserPathUsed: parsed.parserType,
               },
             ),
-            remainingBudgetMs,
+            facsimileBudgetMs,
             "client-gia-facsimile-diagram-ocr",
           );
 
-          const remainingAfterFacsimileMs = regionOcrTimeoutMs - (Date.now() - started);
-          if (!parsed.fields.pavilionAngle.trim() && remainingAfterFacsimileMs >= 2_000) {
+          let remainingMs = regionOcrTimeoutMs - (Date.now() - started);
+          if (!parsed.fields.crownAngle.trim() && remainingMs >= 2_000) {
+            await withTimeout(
+              applyGiaClientCrownDiagramOcr(
+                uploadPdfBytes,
+                parsed.fields,
+                setField,
+              ),
+              Math.min(remainingMs, 3_500),
+              "client-gia-crown-band-ocr",
+            );
+            remainingMs = regionOcrTimeoutMs - (Date.now() - started);
+          }
+
+          if (!parsed.fields.pavilionAngle.trim() && remainingMs >= 2_000) {
             await withTimeout(
               applyGiaClientPavilionDiagramOcr(
                 uploadPdfBytes,
                 parsed.fields,
                 setField,
               ),
-              Math.min(remainingAfterFacsimileMs, 3_500),
+              Math.min(remainingMs, 3_500),
               "client-gia-pavilion-band-ocr",
             );
           }

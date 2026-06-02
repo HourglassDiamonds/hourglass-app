@@ -40,10 +40,13 @@ let pdfJsCanvasPolyfillsInstalled = false;
 export function getPdfJsNodeCanvasModule(): PdfJsNodeCanvas {
   if (pdfJsCanvasModule) return pdfJsCanvasModule;
   const nodeRequire = createRequire(import.meta.url);
-  const requireFromPdfjs = createRequire(
-    nodeRequire.resolve("pdfjs-dist/legacy/build/pdf.mjs"),
-  );
-  pdfJsCanvasModule = requireFromPdfjs("@napi-rs/canvas") as PdfJsNodeCanvas;
+  // NOTE: Do not resolve relative to pdfjs-dist here.
+  // In Next app-route bundling, `nodeRequire.resolve("pdfjs-dist/...")` can be rewritten
+  // to a non-filesystem identifier (e.g. `[project]/... [app-route]`), which breaks
+  // Node's `createRequire` ("filename must be a file URL or absolute path").
+  //
+  // We only need the Node canvas implementation. Load it directly in Node runtime.
+  pdfJsCanvasModule = nodeRequire("@napi-rs/canvas") as PdfJsNodeCanvas;
   return pdfJsCanvasModule;
 }
 

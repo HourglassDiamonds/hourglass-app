@@ -19,7 +19,9 @@ export const MAX_PDF_OCR_PAGES = envInt("CALIBRATION_MAX_PDF_OCR_PAGES", 2);
 
 export const MAX_IMAGE_DIMENSION_PX = envInt("CALIBRATION_MAX_IMAGE_DIMENSION", 4096);
 export const MAX_RENDER_PIXELS = envInt("CALIBRATION_MAX_RENDER_PIXELS", 16_000_000);
-export const MAX_RENDER_SCALE = envInt("CALIBRATION_MAX_RENDER_SCALE", 4);
+// OCR accuracy (especially GIA facsimile diagram numerals) materially degrades below scale ~5.
+// Keep a safe default cap that still respects MAX_RENDER_PIXELS and MAX_IMAGE_DIMENSION_PX.
+export const MAX_RENDER_SCALE = envInt("CALIBRATION_MAX_RENDER_SCALE", 6);
 
 export const PDF_GET_DOCUMENT_TIMEOUT_MS = envInt(
   "CALIBRATION_PDF_OPEN_TIMEOUT_MS",
@@ -71,12 +73,12 @@ export const EXTRACT_FILE_PIPELINE_TIMEOUT_MS = envInt(
 /** Diamond Intelligence `/interpret` — hard client-facing budget. */
 export const CLIENT_INTERPRET_ROUTE_TIMEOUT_MS = envInt(
   "CLIENT_INTERPRET_ROUTE_TIMEOUT_MS",
-  14_000,
+  28_000,
 );
 
 export const CLIENT_UPLOAD_PIPELINE_TIMEOUT_MS = envInt(
   "CLIENT_UPLOAD_PIPELINE_TIMEOUT_MS",
-  13_000,
+  26_000,
 );
 
 export const CLIENT_DOCUMENT_EXTRACT_TIMEOUT_MS = envInt(
@@ -86,7 +88,7 @@ export const CLIENT_DOCUMENT_EXTRACT_TIMEOUT_MS = envInt(
 
 export const CLIENT_IMAGE_REGION_OCR_TIMEOUT_MS = envInt(
   "CLIENT_IMAGE_REGION_OCR_TIMEOUT_MS",
-  8_000,
+  18_000,
 );
 
 export function capRenderScaleForPixels(

@@ -156,6 +156,7 @@ async function cropRegionPng(
 function normalizeDegreeText(text: string): string {
   return text
     .replace(/(\d{1,2}):(\d)/g, "$1.$2")
+    .replace(/(\d{2})\s*-\s*(\d)\b/g, "$1.$2")
     .replace(/(\d{2}(?:\.\d)?)\s*[°ºoO*]/g, "$1°")
     .replace(/(\d{2})\s*\.\s*(\d)/g, "$1.$2");
 }
@@ -1098,6 +1099,47 @@ export async function applyGiaClientPavilionDiagramOcr(
     return { applied: true, value, bandId: band.id };
   }
   return { applied: false };
+}
+
+/**
+ * Client fast path: run a single render + crown-band OCR only (~3s).
+ * Used when pavilion/table/depth are already present but crown is missing.
+ */
+export async function applyGiaClientCrownDiagramOcr(
+  pdfBytes: Buffer,
+  fields: CalibrationReportFields,
+  set: FieldSetter,
+): Promise<{ applied: boolean; value?: string; bandId?: string }> {
+  if (fields.crownAngle.trim()) return { applied: false };
+  if (!(await isOcrRuntimeAvailable())) return { applied: false };
+
+  const bandDef = GIA_DIAGRAM_VALUE_BANDS.find((b) => b.id === "crown");
+  if (!bandDef) return { applied: false };
+  const rendered = await renderPdfPagePngAtScale(pdfBytes, 1, bandDef.scale);
+  if (!rendered) return { applied: false };
+  const cropped = await cropRegionPng(rendered, bandDef.crop);
+  if (!cropped) return { applied: false };
+  const prepped = await preprocessCropPng(cropped.png, bandDef.preprocess);
+  const rawOcr = await ocrImageBuffer(cropped.png);
+  const preppedOcr = await ocrImageBuffer(prepped);
+  const text = [rawOcr.text, preppedOcr.text].filter(Boolean).join("\n").trim();
+  const band: GiaDiagramBandOcr = {
+    id: bandDef.id,
+    crop: bandDef.crop,
+    preprocess: bandDef.preprocess,
+    scale: bandDef.scale,
+    width: cropped.width,
+    height: cropped.height,
+    text,
+  };
+
+  const usedDeg = new Set<number>();
+  const result = assignDegree("crownAngle", band, usedDeg);
+  if (!result.parsedValue) return { applied: false };
+  const value = normalizeDiagramFieldValue("crownAngle", result.parsedValue);
+  if (!value) return { applied: false };
+  set("crownAngle", value, "medium");
+  return { applied: true, value, bandId: band.id };
 }
 
 // ────────────────────────── compare vs current route ──────────────────────────
