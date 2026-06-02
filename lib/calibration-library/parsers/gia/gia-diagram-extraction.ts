@@ -300,6 +300,46 @@ function assignPercent(
   );
 }
 
+/**
+ * LGDR header band lists star length before table (e.g. "50% 57%").
+ * Prefer the table tight range so star-length % is not bound as tablePercent.
+ */
+function assignLgdrTablePercent(
+  band: GiaDiagramBandOcr,
+  used: Set<number>,
+): GiaDiagramFieldResult {
+  const range = RANGES.tablePercent;
+  const candidates = collectPercents(band.text).filter(
+    (n) => n >= range.min && n <= range.max && !used.has(n),
+  );
+  if (candidates.length === 0) {
+    return mk(
+      "tablePercent",
+      band,
+      null,
+      "none",
+      "no percent in expected range/band",
+    );
+  }
+  const tight = candidates.filter(
+    (n) => n >= range.tight[0] && n <= range.tight[1],
+  );
+  const chosen = (tight[0] ?? candidates[0])!;
+  used.add(chosen);
+  const ambiguous = candidates.length > 1;
+  return mk(
+    "tablePercent",
+    band,
+    `${fmtPct(chosen)}%`,
+    rangeConfidence(chosen, range, ambiguous),
+    tight.length > 0 && candidates.some((n) => n !== chosen)
+      ? `LGDR: table tight ${chosen}% (star-length precedes in header OCR)`
+      : ambiguous
+        ? `chose ${chosen}% from ${candidates.length} percent candidates`
+        : `single percent candidate ${chosen}%`,
+  );
+}
+
 /** GIA total-depth window for the percent-glyph-lost fallback (narrow). */
 const DEPTH_FALLBACK_MIN = 55;
 const DEPTH_FALLBACK_MAX = 67;
@@ -538,7 +578,9 @@ function parseDiagramFields(
   const tableSource = headerBand ?? tableBand ?? crownBand;
   results.push(
     tableSource
-      ? assignPercent("tablePercent", tableSource, usedPct)
+      ? style === "GIA_LGDR_DOSSIER" && tableSource === headerBand
+        ? assignLgdrTablePercent(tableSource, usedPct)
+        : assignPercent("tablePercent", tableSource, usedPct)
       : mk("tablePercent", null, null, "none", "table band not rendered"),
   );
 
