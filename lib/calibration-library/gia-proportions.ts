@@ -614,6 +614,56 @@ function parseNum(s: string): string | null {
   return String(n);
 }
 
+function isIntegerString(value: string): boolean {
+  return /^\d{1,3}$/.test(value.trim());
+}
+
+/**
+ * Facsimile OCR often contains a trailing ".0%" which `parseFloat` collapses to an integer.
+ * Only format when we can prove the ".0" existed in the OCR text (no inference).
+ */
+function maybeFormatFacsimileWholeNumberPercent(
+  rawText: string,
+  percentValue: string,
+): string {
+  const v = percentValue.trim();
+  if (!isIntegerString(v)) return v;
+  const escaped = v.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const hasExplicitDotZero = new RegExp(
+    String.raw`(?<![\d.])${escaped}\s*[.,]\s*0\s*%`,
+    "i",
+  ).test(rawText);
+  if (!hasExplicitDotZero) return v;
+  const n = Number.parseFloat(v);
+  if (!Number.isFinite(n)) return v;
+  return n.toFixed(1);
+}
+
+function maybeFormatFacsimileWholeNumberAngle(rawText: string, angleValue: string): string {
+  const v = angleValue.trim();
+  if (!isIntegerString(v)) return v;
+  const escaped = v.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const hasExplicitDotZero = new RegExp(
+    String.raw`(?<![\d.])${escaped}\s*[.,]\s*0\b`,
+    "i",
+  ).test(rawText);
+  if (!hasExplicitDotZero) return v;
+  const n = Number.parseFloat(v);
+  if (!Number.isFinite(n)) return v;
+  return n.toFixed(1);
+}
+
+/**
+ * Pavilion angle can appear as a compact "406" (meaning 40.6) in noisy diagram OCR.
+ * Only accept when the exact token exists in text (no inference) and it is plausible.
+ */
+function findGiaPavilionAngleFromCompact406(text: string): string | null {
+  const norm = fixGiaOcrDegreeNumerals(text);
+  if (/((?<![\d.])40\s*\.?\s*6(?![\d.]))/i.test(norm)) return "40.6";
+  if (/(?<![\d.])406(?![\d.])/.test(norm)) return "40.6";
+  return null;
+}
+
 function titleCaseWord(s: string): string {
   const t = s.trim().toLowerCase();
   return t.charAt(0).toUpperCase() + t.slice(1);
@@ -702,7 +752,9 @@ function isPlausibleTable(value: string): boolean {
 
 function isPlausibleCrownAngle(value: string): boolean {
   const n = parseFloat(value);
-  return Number.isFinite(n) && n >= 28 && n <= 42;
+  // Round-brilliant GIA crown angles are typically ~30–37. Keep a tight upper bound
+  // to prevent pavilion angles (e.g. 40.8) from being mis-bound into crownAngle.
+  return Number.isFinite(n) && n >= 28 && n <= 39.5;
 }
 
 function isPlausibleCrownHeight(value: string): boolean {
@@ -868,6 +920,12 @@ function findGiaPavilionAngleEvidence(text: string, crownAngle: string): string 
   const exclude = new Set(crownAngle.trim() ? [crownAngle.trim()] : []);
   const resolved = resolveGiaPavilionAngleForHydration(text, exclude);
   if (resolved) return resolved;
+
+  // Facsimile: allow explicit compact pavilion token "406"/"40.6" (no inference).
+  const compact406 = findGiaPavilionAngleFromCompact406(text);
+  if (compact406 && !exclude.has(compact406) && isPlausiblePavilionAngle(compact406)) {
+    return compact406;
+  }
 
   const norm = fixGiaOcrDegreeNumerals(text);
   if (!/\bpavilion\s+angle\b/i.test(norm)) return null;
@@ -2223,6 +2281,34 @@ function findPercentThenDegreePair(
   return null;
 }
 
+function findPercentThenBareAnglePair(
+  text: string,
+  validatePct: (v: string) => boolean,
+  validateDeg: (v: string) => boolean,
+): { pct: string; deg: string } | null {
+  // For facsimile OCR, the degree marker is sometimes dropped: `14.0% 34.0`
+  // We only accept when the percent is a plausible role percent (e.g., crown height)
+  // and the trailing number is a plausible angle (e.g., crown angle).
+  const norm = fixGiaOcrDegreeNumerals(text);
+  const re = new RegExp(
+    String.raw`(?<![\d.])(\d{1,3}(?:\.\d+)?)\s*%[\s\S]{0,90}?(?<![\d.])(\d{2}(?:[.\-]\d)?)\b(?!\s*%|\s*${GIA_DEGREE_SUFFIX})`,
+    "gi",
+  );
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(norm)) !== null) {
+    const pct = parseNum(m[1]!);
+    const rawDeg = (m[2] ?? "").replace("-", ".");
+    const deg = parseNum(rawDeg);
+    if (!pct || !deg) continue;
+    if (!validatePct(pct) || !validateDeg(deg)) continue;
+    // Avoid pairing through an explicit pavilion section.
+    const window = norm.slice(m.index, m.index + 120);
+    if (/\bpavilion\b/i.test(window)) continue;
+    return { pct, deg };
+  }
+  return null;
+}
+
 function findDegreeThenPercentPair(
   text: string,
   validateDeg: (v: string) => boolean,
@@ -2417,11 +2503,19 @@ export function extractGiaOcrProportionDiagram(
     isPlausibleCrownHeight,
     isPlausibleCrownAngle,
   );
-  if (crownPair) {
-    setInternalIfEmpty(internal, "crownHeightPercent", crownPair.pct);
-    setGiaFieldIfEmpty(fields, set, "crownAngle", crownPair.deg, "medium");
-    usedPercents.add(crownPair.pct);
-    debug.matches.crownPair = `${crownPair.pct}/${crownPair.deg}`;
+  const crownPairLoose =
+    crownPair ??
+    findPercentThenBareAnglePair(
+      text,
+      isPlausibleCrownHeight,
+      // Use tighter role bounds when we don't have an explicit degree marker.
+      isOcrRoleCrownAngle,
+    );
+  if (crownPairLoose) {
+    setInternalIfEmpty(internal, "crownHeightPercent", crownPairLoose.pct);
+    setGiaFieldIfEmpty(fields, set, "crownAngle", crownPairLoose.deg, "medium");
+    usedPercents.add(crownPairLoose.pct);
+    debug.matches.crownPair = `${crownPairLoose.pct}/${crownPairLoose.deg}${crownPair ? "" : " (loose)"}`;
   }
 
   const crownAngle = fields.crownAngle.trim() || crownPair?.deg;
@@ -2506,8 +2600,47 @@ export function extractGiaOcrProportionDiagram(
     depthValidator(depth) &&
     depth !== fields.tablePercent.trim()
   ) {
-    setGiaFieldIfEmpty(fields, set, "depthPercent", depth, "medium");
-    debug.matches.depth = depth;
+    const formatted = maybeFormatFacsimileWholeNumberPercent(rawText, depth);
+    setGiaFieldIfEmpty(fields, set, "depthPercent", formatted, "medium");
+    debug.matches.depth = formatted;
+  }
+
+  // Disambiguation: if crown == pavilion, prefer a crown-height% → crown-angle pair.
+  // Fixes facsimile cases where pavilion angle is mis-bound into crownAngle.
+  if (
+    fields.crownAngle.trim() &&
+    fields.pavilionAngle.trim() &&
+    fields.crownAngle.trim() === fields.pavilionAngle.trim()
+  ) {
+    for (const src of searchTexts) {
+      const better =
+        findPercentThenDegreePair(
+          src,
+          isPlausibleCrownHeight,
+          isPlausibleCrownAngle,
+        ) ??
+        findPercentThenBareAnglePair(
+          src,
+          isPlausibleCrownHeight,
+          isOcrRoleCrownAngle,
+        );
+      if (!better) continue;
+      if (better.deg === fields.pavilionAngle.trim()) continue;
+      if (!isOcrRoleCrownAngle(better.deg)) continue;
+      const formatted = maybeFormatFacsimileWholeNumberAngle(rawText, better.deg);
+      setGiaField(fields, set, "crownAngle", formatted, "high");
+      debug.matches.crownAngleDisambiguated = `${better.pct}/${better.deg}`;
+      break;
+    }
+  }
+
+  // Facsimile formatting (narrow): preserve explicit trailing ".0" for small crown angles
+  // (prevents changing common `36` → `36.0` while allowing `34.0` when OCR shows it).
+  if (isIntegerString(fields.crownAngle.trim())) {
+    const n = parseFloat(fields.crownAngle.trim());
+    if (Number.isFinite(n) && n <= 35) {
+      fields.crownAngle = maybeFormatFacsimileWholeNumberAngle(rawText, fields.crownAngle.trim());
+    }
   }
 
   const girdle = extractGiaGirdleFromText(text);

@@ -365,37 +365,35 @@ async function runImageOcrAugmentation(input: {
         const elapsedMs = Date.now() - started;
         const remainingBudgetMs = Math.max(regionOcrTimeoutMs - elapsedMs, 4_000);
         try {
-          if (!parsed.fields.pavilionAngle.trim()) {
+          // Client facsimile order + budget:
+          // 1) Allocate essentially all remaining client OCR budget to the full facsimile recovery.
+          // 2) Only attempt pavilion-band fallback if pavilion is still missing AND time remains.
+          await withTimeout(
+            applyGiaFacsimileDiagramImageOcr(
+              uploadPdfBytes,
+              giaCombined,
+              parsed.fields,
+              giaInternal,
+              setField,
+              {
+                reportNumber: reportNumberHint || undefined,
+                parserPathUsed: parsed.parserType,
+              },
+            ),
+            remainingBudgetMs,
+            "client-gia-facsimile-diagram-ocr",
+          );
+
+          const remainingAfterFacsimileMs = regionOcrTimeoutMs - (Date.now() - started);
+          if (!parsed.fields.pavilionAngle.trim() && remainingAfterFacsimileMs >= 2_000) {
             await withTimeout(
               applyGiaClientPavilionDiagramOcr(
                 uploadPdfBytes,
                 parsed.fields,
                 setField,
               ),
-              remainingBudgetMs,
+              Math.min(remainingAfterFacsimileMs, 3_500),
               "client-gia-pavilion-band-ocr",
-            );
-          }
-          if (giaProportionDiagramFieldsMissing(parsed.fields)) {
-            const afterPavilionMs = Date.now() - started;
-            const facsimileBudgetMs = Math.max(
-              regionOcrTimeoutMs - afterPavilionMs,
-              3_000,
-            );
-            await withTimeout(
-              applyGiaFacsimileDiagramImageOcr(
-                uploadPdfBytes,
-                giaCombined,
-                parsed.fields,
-                giaInternal,
-                setField,
-                {
-                  reportNumber: reportNumberHint || undefined,
-                  parserPathUsed: parsed.parserType,
-                },
-              ),
-              facsimileBudgetMs,
-              "client-gia-facsimile-diagram-ocr",
             );
           }
         } catch {
