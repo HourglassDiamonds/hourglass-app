@@ -287,10 +287,11 @@ function MeterCard({
           <div className="gpi-continuation">
             <p>
               The reading sits in a persistent elevated pressure band —
-              structurally high but below disorder-level benchmarks, with
-              market resilience partly offsetting slower responsiveness across
-              energy, infrastructure, and financial channels. The watchlist
-              below tracks where coordination strain may broaden next.
+              structurally high but below disorder-level benchmarks. Market
+              resilience continues, but growing physical constraints in power,
+              transmission, cooling, and deployment capacity increasingly define
+              how quickly expansion proceeds. The watchlist below tracks where
+              coordination strain may broaden next.
             </p>
           </div>
         ) : null}

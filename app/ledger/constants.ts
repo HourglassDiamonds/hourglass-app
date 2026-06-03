@@ -19,17 +19,17 @@ export const QUIET_METRICS = [
   {
     label: "Energy Pressure",
     value: "Elevated",
-    note: "Fuel, power, and grid-adjacent stress remain above seasonal norms.",
+    note: "Fuel, power, and grid-adjacent conditions remain above seasonal norms — with deployment capacity increasingly defining pace.",
   },
   {
     label: "AI Compute Load",
     value: "Rising",
-    note: "Data-center expansion continues to pull on electricity and cooling capacity.",
+    note: "Data-center expansion continues to pull on electricity, cooling, and transmission capacity.",
   },
   {
-    label: "Financial Sensitivity",
-    value: "Tight",
-    note: "Rates, liquidity, and risk appetite remain finely balanced.",
+    label: "Physical Constraints",
+    value: "Narrowing",
+    note: "Transformers, labor, permitting, and utility timelines increasingly limit how quickly expansion converts to capacity.",
   },
 ] as const;
 

@@ -1,18 +1,18 @@
 export const WEEKLY_SYNOPSIS = {
   eyebrow: "Weekly Synopsis",
-  headline: "Pressure continues building beneath the surface.",
+  headline: "From volatility toward capacity.",
   blocks: [
     {
       title: "What changed",
-      body: "Energy disruption risk, shipping friction, and AI infrastructure demand continued pushing the system higher this week. None of the moves individually represent a crisis event, but together they continue reducing flexibility across multiple sectors at once.",
+      body: "Narrative convergence increased around a shared physical story: AI infrastructure, power demand, grid limitations, transmission, cooling, and industrial capacity are increasingly discussed together. Pressure remains elevated, but the dominant signal shifted from volatility alone toward deployment and connection limits beneath still-resilient markets.",
     },
     {
       title: "What's driving pressure",
-      body: "The strongest contributors remain energy markets, transformer/grid constraints, data-center expansion, and financial sensitivity tied to rates and liquidity expectations.",
+      body: "The limiting layer is increasingly physical — the ability to deploy, connect, power, cool, manufacture, permit, and coordinate systems fast enough to match expansion. Energy, shipping, inflation sensitivity, and bond markets remain active, but infrastructure capacity is setting more of the practical pace.",
     },
     {
       title: "What to watch next",
-      body: "Watch energy pricing, shipping corridors, summer grid demand, transformer bottlenecks, and AI infrastructure expansion. The key signal is whether pressure begins spreading faster than systems can absorb it.",
+      body: "Watch transformer lead times, utility responsiveness, transmission expansion, data-center power access, electrical labor availability, and enterprise AI integration timelines. The key signal is whether physical buildout keeps pace with capital deployment — not whether markets break.",
     },
   ],
 } as const;

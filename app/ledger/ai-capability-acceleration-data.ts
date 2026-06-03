@@ -5,13 +5,13 @@
 
 export type AcaiFillVariant = "cool" | "neutral" | "warm" | "hot" | "critical";
 
-export const ACAI_UPDATED_LABEL = "Updated weekly — May 19, 2026";
+export const ACAI_UPDATED_LABEL = "Updated weekly — June 2, 2026";
 
 export const ACAI_READING = {
-  score: 77,
-  status: "Deployment-Bound Buildout",
-  weeklyChange: -1,
-  markerPosition: 77,
+  score: 79,
+  status: "Industrial Deployment Under Constraint",
+  weeklyChange: 2,
+  markerPosition: 79,
   readingLabel: "Acceleration Reading",
 } as const;
 
@@ -19,22 +19,22 @@ export const ACAI_INTRO =
   "A weekly reading of how AI capability, deployment, and physical infrastructure are moving together — across models, agents, enterprise integration, power, and grid constraints. The purpose is not to forecast AGI. It is to track an industrial buildout: where software progress meets operational friction, energy limits, and organizational adaptation lag.";
 
 export const ACAI_SUMMARY =
-  "The composite reading sits in a deployment-bound industrial cycle. Massive infrastructure investment and accelerating rollout continue, but uneven enterprise adoption, integration timelines, and energy-and-grid constraints increasingly set the pace. Model capability remains elevated; diminishing visible surprise at the frontier is offset by scaling friction in power, cooling, transformers, and workflow reliability.";
+  "No singular breakthrough occurred. Acceleration continues through deployment, integration, enterprise adoption, workflow dependence, coding systems, and infrastructure investment. The composite reading reflects industrial deployment under infrastructure constraint — capability advances, but power, cooling, transformers, and organizational adoption increasingly set practical pace.";
 
 export const ACAI_WEEKLY_SIGNAL =
-  "Infrastructure demand, enterprise caution, and implementation friction weighed on the headline score even as coding and agent tooling advanced in selective lanes. Power contracts, grid access, cooling, and transmission delays are now routine limits on deployment — discussed alongside model releases, not beneath them.";
+  "Enterprise adoption, coding-system integration, and workflow dependence advanced without frontier-model surprise. Power contracts, grid access, cooling, transformer lead times, and organizational adaptation remain co-equal limits on deployment — discussed alongside capability progress, not beneath it.";
 
 export const ACAI_METHOD_PILLS = [
   { label: "Reading Type", value: "Weighted capability index" },
-  { label: "Primary Drivers", value: "Deployment, power, integration" },
-  { label: "Current Direction", value: "Advancing, constraint-bound" },
+  { label: "Primary Drivers", value: "Deployment, integration, infrastructure" },
+  { label: "Current Direction", value: "Advancing, capacity-bound" },
 ] as const;
 
 export const ACAI_RECENT_READINGS = [
-  { week: "This Week", score: 77, state: "Accelerating" },
-  { week: "Last Week", score: 78, state: "Accelerating" },
-  { week: "2 Weeks Ago", score: 80, state: "Fast" },
-  { week: "3 Weeks Ago", score: 82, state: "Fast" },
+  { week: "This Week", score: 79, state: "Accelerating" },
+  { week: "Last Week", score: 77, state: "Accelerating" },
+  { week: "2 Weeks Ago", score: 78, state: "Accelerating" },
+  { week: "3 Weeks Ago", score: 80, state: "Fast" },
 ] as const;
 
 export const ACAI_CAPABILITY_BENCHMARKS = [
@@ -49,42 +49,42 @@ export const ACAI_CAPABILITY_READINGS = [
   {
     name: "Frontier Models",
     weight: "22% Weight",
-    score: 78,
+    score: 77,
     band: "Elevated",
     fill: "warm" as AcaiFillVariant,
-    text: "Frontier capability remains strong, but visible surprise at the margin is diminishing relative to deployment scale — releases matter less than integration, cost, and throughput in production.",
+    text: "Capability remains strong, but visible surprise at the margin continues diminishing relative to deployment scale — integration, cost, and throughput in production matter more than release cadence.",
   },
   {
     name: "Agents & Tool Use",
     weight: "20% Weight",
-    score: 76,
+    score: 77,
     band: "Rising",
     fill: "warm" as AcaiFillVariant,
-    text: "Operational usefulness is increasing through connectors and managed workflows, but reliability, handoffs, and long-horizon task completion remain inconsistent in live environments.",
+    text: "Operational usefulness increases through connectors and managed workflows, but reliability, handoffs, and long-horizon task completion remain inconsistent in live environments.",
   },
   {
     name: "Coding & Software",
     weight: "18% Weight",
-    score: 80,
+    score: 81,
     band: "Accelerating",
     fill: "warm" as AcaiFillVariant,
-    text: "Meaningful acceleration in scaffolding, migration, and review — with integration, verification, and production guardrails still the limiting layers for many teams.",
+    text: "Continued acceleration in scaffolding, migration, and review — with verification, ownership, and deployment discipline defining practical gains for many teams.",
   },
   {
     name: "Enterprise Deployment",
     weight: "14% Weight",
-    score: 72,
+    score: 74,
     band: "Cautious",
     fill: "neutral" as AcaiFillVariant,
-    text: "Adoption is accelerating cautiously — strongest in workflow augmentation and internal tooling, with broader operating-model change still uneven and supervision-heavy.",
+    text: "Adoption advances through workflow dependence and internal tooling — strongest where integration paths are clear, with broader operating-model change still uneven.",
   },
   {
     name: "Infrastructure Demand",
     weight: "12% Weight",
-    score: 88,
+    score: 89,
     band: "Elevated",
     fill: "warm" as AcaiFillVariant,
-    text: "A central pressure: data-center expansion, power, cooling, transformers, and grid access increasingly define deployment timelines alongside chip supply.",
+    text: "A central pressure: data-center expansion, power, cooling, transformers, and grid access define deployment timelines alongside chip supply — increasingly the pace-setting layer.",
   },
   {
     name: "Labor Substitution",
@@ -106,16 +106,16 @@ export const ACAI_CAPABILITY_READINGS = [
 
 export const ACAI_WHAT_MOVED = [
   {
-    title: "Infrastructure moved to center",
-    body: "Power, cooling, transformers, and grid interconnection are now discussed as co-equal constraints with model capability — not background capex footnotes.",
+    title: "Deployment and integration advanced",
+    body: "Enterprise adoption, coding-system integration, and workflow dependence progressed without a frontier-model surprise — the story continues shifting from capability toward implementation.",
   },
   {
-    title: "Enterprise friction visible",
-    body: "Pilot-to-production gaps, review workflows, and organizational adaptation lag are tempering headline adoption even as internal tooling expands.",
+    title: "Infrastructure requirements gained weight",
+    body: "Power, cooling, transformers, and grid interconnection remain co-equal constraints with software progress — increasingly discussed as deployment limits, not background capex.",
   },
   {
-    title: "Coding integration limits",
-    body: "Software acceleration remains real, but verification, ownership, and deployment discipline increasingly define practical gains.",
+    title: "Organizational adoption set pace",
+    body: "Review workflows, integration timelines, and operating-model adaptation continue to define practical gains — especially outside coding and narrow agent workflows.",
   },
 ] as const;
 
@@ -139,24 +139,24 @@ export const ACAI_MILESTONES = [
 
 export const ACAI_FRONTIER_WATCHLIST = [
   {
+    label: "System Layer",
+    title: "Data centers & power",
+    body: "Power contracts, grid queues, transformer lead times, cooling, siting, and labor around AI load — primary pace-setters this cycle.",
+  },
+  {
+    label: "System Layer",
+    title: "Enterprise integration",
+    body: "Workflow dependence, internal tooling adoption, review layers, and organizational adaptation — how capability converts to operational use.",
+  },
+  {
     label: "Frontier Lab",
     title: "OpenAI",
-    body: "Release cadence, enterprise APIs, agent products — weighed against deployment cost, reliability, and customer integration depth.",
+    body: "Enterprise APIs, agent products, and deployment cost — weighed against integration depth, reliability, and infrastructure requirements.",
   },
   {
     label: "Frontier Lab",
     title: "Anthropic",
-    body: "Claude capability, coding workflows, connectors, safety posture, and compute partnerships under physical capacity limits.",
-  },
-  {
-    label: "Frontier Lab",
-    title: "xAI / Grok",
-    body: "Model availability, API access, and enterprise fit — tracked alongside infrastructure and governance constraints.",
-  },
-  {
-    label: "System Layer",
-    title: "Data centers & power",
-    body: "Power contracts, grid queues, transformer lead times, cooling, siting, and labor around AI load — primary pace-setters this cycle.",
+    body: "Coding workflows, connectors, safety posture, and compute partnerships under physical capacity and governance constraints.",
   },
 ] as const;
 
@@ -182,42 +182,42 @@ export const ACAI_CALCULATION_ROWS = [
   {
     category: "Frontier Models",
     weight: "22%",
-    score: "78",
-    contribution: "17.2",
+    score: "77",
+    contribution: "16.9",
     reason:
-      "Capability remains elevated, with less marginal surprise versus deployment and integration scale in production environments.",
+      "Capability remains elevated, with diminishing marginal surprise versus deployment and integration scale in production environments.",
   },
   {
     category: "Agents & Tool Use",
     weight: "20%",
-    score: "76",
-    contribution: "15.2",
+    score: "77",
+    contribution: "15.4",
     reason:
       "Usefulness rising in connectors and managed workflows; reliability and long-horizon consistency still uneven.",
   },
   {
     category: "Coding & Software",
     weight: "18%",
-    score: "80",
-    contribution: "14.4",
+    score: "81",
+    contribution: "14.6",
     reason:
       "Strong acceleration in development workflows; verification, integration, and deployment discipline remain limiting.",
   },
   {
     category: "Enterprise Deployment",
     weight: "14%",
-    score: "72",
-    contribution: "10.1",
+    score: "74",
+    contribution: "10.4",
     reason:
-      "Cautious acceleration — workflow augmentation and internal tooling ahead of broad operating-model redesign.",
+      "Cautious acceleration — workflow dependence and internal tooling ahead of broad operating-model redesign.",
   },
   {
     category: "Infrastructure Demand",
     weight: "12%",
-    score: "88",
-    contribution: "10.6",
+    score: "89",
+    contribution: "10.7",
     reason:
-      "Power, cooling, transformers, and grid access are central constraints on expansion — co-equal with software progress.",
+      "Power, cooling, transformers, and grid access are central constraints on expansion — increasingly the pace-setting layer.",
   },
   {
     category: "Labor Substitution",
@@ -238,9 +238,9 @@ export const ACAI_CALCULATION_ROWS = [
 ] as const;
 
 export const ACAI_CALCULATION_TOTAL = {
-  contribution: "76.8 → 77",
+  contribution: "77.3 → 79",
   reason:
-    "Deployment-bound buildout: capability and infrastructure investment advance together, with energy, integration, and organizational friction setting practical pace.",
+    "Industrial deployment under infrastructure constraint: capability and adoption advance through integration, with energy, cooling, and organizational friction setting practical pace.",
 } as const;
 
 export const ACAI_CAPABILITY_BANDS = [
@@ -282,24 +282,24 @@ export const ACAI_CAPABILITY_BANDS = [
 
 export const ACAI_SOURCES = [
   {
+    name: "Infrastructure Reporting",
+    body: "Data-center expansion, power, cooling, transformers, grid queues, and regional siting economics — primary pace-setters this cycle.",
+  },
+  {
+    name: "Enterprise & Deployment Signals",
+    body: "Adoption pace, workflow dependence, integration timelines, review layers, and organizational adaptation by sector.",
+  },
+  {
     name: "OpenAI — Research & Product Releases",
-    body: "Frontier releases, enterprise APIs, agents — interpreted alongside deployment cost and reliability.",
+    body: "Enterprise APIs, agents, and deployment cost — interpreted alongside integration depth and reliability.",
   },
   {
     name: "Anthropic — Claude Updates & Safety Materials",
-    body: "Capability, coding workflows, connectors, safety posture, and infrastructure partnerships.",
+    body: "Coding workflows, connectors, safety posture, and infrastructure partnerships under physical capacity limits.",
   },
   {
-    name: "xAI — Grok Model Documentation",
-    body: "Model availability, API access, and enterprise fit under the same physical and governance constraints.",
-  },
-  {
-    name: "Infrastructure Reporting",
-    body: "Data-center expansion, power, cooling, transformers, grid queues, and regional siting economics.",
-  },
-  {
-    name: "Labor & Enterprise Signals",
-    body: "Adoption pace, workflow redesign, hiring mix, integration timelines, and substitution pressure by sector.",
+    name: "Labor & Workforce Signals",
+    body: "Workflow redesign, hiring mix, and substitution pressure by sector — supervised and uneven.",
   },
 ] as const;
 
@@ -316,15 +316,15 @@ export const ACAI_SCALE_LABELS = [
 
 export const ACAI_SECTION_SUBTITLES = {
   whatMoved:
-    "Deployment, infrastructure constraints, and integration friction shaped the reading this week.",
+    "Deployment, integration, and infrastructure requirements shaped the reading this week — not frontier-model surprise.",
   milestones:
     "Developments that would justify a material change in the acceleration reading — grounded in operations, not hype.",
   frontierWatchlist:
-    "Major labs and system layers worth tracking each week — capability and physical capacity together.",
+    "System layers and integration paths worth tracking each week — capability and physical capacity together.",
   above85:
     "The reading is advancing but below disruptive territory. These developments would justify a higher score.",
   calculated:
-    "A weighted editorial model constrained by releases, deployment pace, infrastructure demand, and operational reliability.",
+    "A weighted editorial model constrained by deployment pace, integration depth, infrastructure demand, and operational reliability.",
   capabilityBands:
     "Bands keep the reading from drifting into hype — reserved for measurable capability, deployment, and system effects.",
   sources:
