@@ -35,6 +35,7 @@ export type FactoryRenderedPdfPage = {
 };
 
 let pdfJsCanvasModule: PdfJsNodeCanvas | null = null;
+let pdfJsResolvedCanvasModule: PdfJsNodeCanvas | null = null;
 let pdfJsCanvasPolyfillsInstalled = false;
 
 export function getPdfJsNodeCanvasModule(): PdfJsNodeCanvas {
@@ -48,6 +49,17 @@ export function getPdfJsNodeCanvasModule(): PdfJsNodeCanvas {
   // We only need the Node canvas implementation. Load it directly in Node runtime.
   pdfJsCanvasModule = nodeRequire("@napi-rs/canvas") as PdfJsNodeCanvas;
   return pdfJsCanvasModule;
+}
+
+/** pdfjs-dist's bundled @napi-rs/canvas — required for GCAL hybrid page-1 render (see render harness). */
+export function getPdfJsResolvedCanvasModule(): PdfJsNodeCanvas {
+  if (pdfJsResolvedCanvasModule) return pdfJsResolvedCanvasModule;
+  const nodeRequire = createRequire(import.meta.url);
+  const requireFromPdfjs = createRequire(
+    nodeRequire.resolve("pdfjs-dist/legacy/build/pdf.mjs"),
+  );
+  pdfJsResolvedCanvasModule = requireFromPdfjs("@napi-rs/canvas") as PdfJsNodeCanvas;
+  return pdfJsResolvedCanvasModule;
 }
 
 export function installPdfJsCanvasPolyfills(canvasPkg: PdfJsNodeCanvas): void {
@@ -99,7 +111,7 @@ export async function renderPdfPagePngWithFactory(
   logOperation = "pdf-render-factory",
 ): Promise<FactoryRenderedPdfPage | null> {
   const renderStarted = Date.now();
-  const canvasPkg = getPdfJsNodeCanvasModule();
+  const canvasPkg = getPdfJsResolvedCanvasModule();
 
   try {
     return await withTimeout(

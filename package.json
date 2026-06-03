@@ -30,6 +30,8 @@
     "rehydrate:calibration-corpus": "npx tsx scripts/rehydrate-calibration-corpus.ts",
     "seed:calibration": "npx tsx scripts/seed-calibration-database.ts",
     "validate:calibration-db": "npx tsx scripts/validate-calibration-database.ts",
+    "validate:diamond-intelligence": "npx tsx scripts/validate-diamond-intelligence.ts",
+    "validate:diamond-intelligence:gia": "npx tsx scripts/validate-diamond-intelligence.ts --gia",
     "validate:extraction-reports": "npx tsx scripts/validate-extraction-reports.ts",
     "validate:extraction-reports:detail": "npx tsx scripts/validate-extraction-reports.ts --detail"
   },

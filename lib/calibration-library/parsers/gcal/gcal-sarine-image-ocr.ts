@@ -15,11 +15,11 @@ import {
   IMAGE_PREPROCESS_TIMEOUT_MS,
 } from "../../runtime-limits";
 import {
-  getPdfJsNodeCanvasModule,
+  getPdfJsResolvedCanvasModule,
   renderPdfPagePngWithFactory,
   type PdfJsNodeCanvas,
 } from "../../pdf-render-factory";
-import { isOcrRuntimeAvailable, ocrImageBuffer } from "../shared/ocr-utils";
+import { isOcrRuntimeAvailable, ocrImageBuffer, renderPdfPagePngGcalSarine } from "../shared/ocr-utils";
 import {
   applyGcal8xFinishGrades,
   extractGcal8xFinishGrades,
@@ -27,6 +27,7 @@ import {
 import {
   diagnoseGcalSarineProportionExtraction,
   extractGcalSarine4csFields,
+  extractGcalSarineProportionIslands,
   logGcalSarineCheck,
   probeSarineFinishFromTextLayer,
   snapshotGcalSarineRecoveredFields,
@@ -36,10 +37,22 @@ const GCAL_SARINE_PAGE_SCALE = 4;
 const GCAL_SARINE_CROP_DEBUG_DIR = "data/light-performance-calibration/debug/gcal";
 const GCAL_SARINE_CROP_DEBUG_REPORT = "LG360796191";
 
+/** 8X proportion block — page-2 back matter / fallback when Sarine corner crop is empty. */
+export const GCAL_HYBRID_8X_PROPORTION_CROP = {
+  left: 0.5,
+  top: 0.53,
+  width: 0.48,
+  height: 0.43,
+} as const;
+
 export function shouldExportGcalSarineCropDebug(reportNumber?: string): boolean {
   if (process.env.CALIBRATION_EXTRACT_DEBUG === "1") return true;
   const rn = reportNumber?.trim() ?? "";
-  return rn.includes(GCAL_SARINE_CROP_DEBUG_REPORT) || rn.includes("360796191");
+  return (
+    rn.includes(GCAL_SARINE_CROP_DEBUG_REPORT) ||
+    rn.includes("360796191") ||
+    rn.includes("360796192")
+  );
 }
 
 function sarineCropDebugBasename(reportNumber?: string): string {
@@ -103,6 +116,14 @@ export const SARINE_PROPORTION_DIAGRAM_CROP = {
   height: 0.28,
 } as const;
 
+/** Angle labels + upper diagram (LG360796192); merged when bottom-corner crop omits crown °. */
+export const SARINE_CROWN_ANGLE_BAND_CROP = {
+  left: 0.68,
+  top: 0.6,
+  width: 0.3,
+  height: 0.38,
+} as const;
+
 /** 8X grade table on far-right panel (hybrid Sarine cert — not gcal-image-ocr center crop). */
 export const SARINE_FINISH_GRADES_CROP = {
   left: 0.74,
@@ -118,6 +139,7 @@ export type GcalSarineProportionOcrStepDiagnostics = {
   pageRendered: boolean;
   pageWidth?: number;
   pageHeight?: number;
+  pageNumber?: number;
   pageRenderError?: string;
   renderScaleUsed?: number;
   cropSucceeded: boolean;
@@ -149,6 +171,62 @@ type PercentCrop = {
   width: number;
   height: number;
 };
+
+async function readPdfPageCount(pdfBytes: Buffer): Promise<number> {
+  try {
+    const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
+    const doc = await pdfjs.getDocument({ data: new Uint8Array(pdfBytes) }).promise;
+    return doc.numPages;
+  } catch {
+    return 1;
+  }
+}
+
+async function renderGcalSarineDiagramPage(
+  pdfBytes: Buffer,
+  pageNumber: number,
+  scale: number,
+): Promise<{ png: Buffer; width: number; height: number } | null> {
+  const factory = await renderPdfPagePngWithFactory(
+    pdfBytes,
+    pageNumber,
+    scale,
+    "gcal-sarine-factory",
+  );
+  if (factory) return factory;
+  if (pageNumber >= 2) {
+    const legacy = await renderPdfPagePngGcalSarine(pdfBytes, pageNumber, scale);
+    if (legacy) return legacy;
+  }
+  return null;
+}
+
+function proportionCropForPage(pageNumber: number | undefined): typeof SARINE_PROPORTION_DIAGRAM_CROP {
+  return pageNumber === 1 ? SARINE_PROPORTION_DIAGRAM_CROP : GCAL_HYBRID_8X_PROPORTION_CROP;
+}
+
+async function ocrProportionCrop(
+  rendered: { png: Buffer; width: number; height: number },
+  crop: { left: number; top: number; width: number; height: number },
+  canvasPkg: PdfJsNodeCanvas,
+): Promise<string> {
+  const cropResult = await cropPageRegionPng(
+    rendered.png,
+    rendered.width,
+    rendered.height,
+    crop,
+    canvasPkg,
+  );
+  if (!cropResult.png) return "";
+  const prepped: Buffer = await withTimeout(
+    preprocessGcalCropPng(cropResult.png, canvasPkg),
+    IMAGE_PREPROCESS_TIMEOUT_MS,
+    "sarine-crop-preprocess",
+  ).catch(() => cropResult.png);
+  const rawOcr = await ocrImageBuffer(cropResult.png);
+  const preppedOcr = await ocrImageBuffer(prepped);
+  return [rawOcr.text, preppedOcr.text].filter(Boolean).join("\n").trim();
+}
 
 async function cropPageRegionPng(
   pagePng: Buffer,
@@ -260,7 +338,7 @@ export async function ocrGcalSarineProportionRegionWithDiagnostics(
   finishText: string;
   diagnostics: GcalSarineProportionOcrStepDiagnostics;
 }> {
-  const canvasPkg = getPdfJsNodeCanvasModule();
+  const canvasPkg = getPdfJsResolvedCanvasModule();
   const nodeRequire = createRequire(import.meta.url);
   const canvasModulePath = createRequire(
     nodeRequire.resolve("pdfjs-dist/legacy/build/pdf.mjs"),
@@ -284,21 +362,25 @@ export async function ocrGcalSarineProportionRegionWithDiagnostics(
   let rendered: { png: Buffer; width: number; height: number } | null = null;
   let pageRenderError: string | undefined;
   let renderScaleUsed: number | undefined;
+  let pageNumberUsed: number | undefined;
 
-  for (const scale of [GCAL_SARINE_PAGE_SCALE, 5, 3, 2]) {
-    const attempt = await renderPdfPagePngWithFactory(
-      pdfBytes,
-      1,
-      scale,
-      "sarine-pdf-render",
-    );
-    if (!attempt) {
-      pageRenderError = "sarine-pdf-render-failed";
-      continue;
+  const pageCount = await readPdfPageCount(pdfBytes);
+  /** Hybrid 2-page certs: proportion diagram on page 1; page 2 is 8X back matter. */
+  const pageCandidates =
+    pageCount >= 2 ? [1, 2] : [1];
+
+  outer: for (const pageNumber of pageCandidates) {
+    for (const scale of [GCAL_SARINE_PAGE_SCALE, 5, 3, 2]) {
+      const attempt = await renderGcalSarineDiagramPage(pdfBytes, pageNumber, scale);
+      if (!attempt) {
+        pageRenderError = "gcal-sarine-pdf-render-failed";
+        continue;
+      }
+      rendered = attempt;
+      renderScaleUsed = scale;
+      pageNumberUsed = pageNumber;
+      break outer;
     }
-    rendered = attempt;
-    renderScaleUsed = scale;
-    break;
   }
 
   if (!rendered) {
@@ -312,16 +394,56 @@ export async function ocrGcalSarineProportionRegionWithDiagnostics(
   diagnostics.pageRendered = true;
   diagnostics.pageWidth = rendered.width;
   diagnostics.pageHeight = rendered.height;
+  diagnostics.pageNumber = pageNumberUsed;
   diagnostics.renderScaleUsed = renderScaleUsed;
 
-  const cropResult = await cropPageRegionPng(
+  const primaryCrop = proportionCropForPage(pageNumberUsed);
+  diagnostics.cropRegion = primaryCrop;
+
+  let text = await ocrProportionCrop(rendered, primaryCrop, canvasPkg);
+  let cropResult = await cropPageRegionPng(
     rendered.png,
     rendered.width,
     rendered.height,
-    SARINE_PROPORTION_DIAGRAM_CROP,
+    primaryCrop,
     canvasPkg,
   );
   diagnostics.cropPixelRect = cropResult.pixelRect;
+
+  if (pageNumberUsed === 1 && !extractGcalSarineProportionIslands(text).tablePercent) {
+    const fallbackText = await ocrProportionCrop(
+      rendered,
+      GCAL_HYBRID_8X_PROPORTION_CROP,
+      canvasPkg,
+    );
+    if (extractGcalSarineProportionIslands(fallbackText).tablePercent) {
+      text = fallbackText;
+      diagnostics.cropRegion = GCAL_HYBRID_8X_PROPORTION_CROP;
+      cropResult = await cropPageRegionPng(
+        rendered.png,
+        rendered.width,
+        rendered.height,
+        GCAL_HYBRID_8X_PROPORTION_CROP,
+        canvasPkg,
+      );
+      diagnostics.cropPixelRect = cropResult.pixelRect;
+    }
+  }
+
+  if (
+    pageNumberUsed === 1 &&
+    !extractGcalSarineProportionIslands(text).crownAngle?.trim()
+  ) {
+    const crownBandText = await ocrProportionCrop(
+      rendered,
+      SARINE_CROWN_ANGLE_BAND_CROP,
+      canvasPkg,
+    );
+    if (crownBandText.trim()) {
+      text = [text, crownBandText].filter(Boolean).join("\n").trim();
+    }
+  }
+
   if (!cropResult.png) {
     return { text: "", finishText: "", diagnostics };
   }
@@ -345,7 +467,6 @@ export async function ocrGcalSarineProportionRegionWithDiagnostics(
     };
     if (finishCrop.png) {
       finishCropPng = finishCrop.png;
-      // Finish rows use colored grade buttons — raw crop OCR reads EX labels better than binarized.
       const finishOcr = await ocrImageBuffer(finishCropPng);
       diagnostics.finishOcrOk = finishOcr.ok;
       finishText = (finishOcr.text ?? "").trim();
@@ -384,11 +505,7 @@ export async function ocrGcalSarineProportionRegionWithDiagnostics(
     diagnostics.debugImagesExported = debugWrite.ok;
   }
 
-  const rawOcr = await ocrImageBuffer(cropPng);
-  const preppedOcr = await ocrImageBuffer(prepped);
-  diagnostics.ocrOk = rawOcr.ok || preppedOcr.ok;
-  diagnostics.ocrError = preppedOcr.error ?? rawOcr.error;
-  const text = [rawOcr.text, preppedOcr.text].filter(Boolean).join("\n").trim();
+  diagnostics.ocrOk = text.length > 0;
   diagnostics.ocrRawLength = text.length;
 
   return { text, finishText, diagnostics };

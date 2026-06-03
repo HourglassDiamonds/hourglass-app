@@ -256,6 +256,61 @@ export async function renderPdfPagePngLgdrDossier(
   }
 }
 
+/**
+ * GCAL Sarine / 8X hybrid — diagram panel is on page 2; embedded fonts need
+ * disableFontFace: false (same class of fix as LGDR dossier render).
+ */
+export async function renderPdfPagePngGcalSarine(
+  pdfBytes: Buffer,
+  pageNumber: number,
+  scale: number,
+): Promise<RenderedPdfPage | null> {
+  const renderStarted = Date.now();
+  const logOp = "pdf-render-gcal-sarine";
+  try {
+    const rendered = await withTimeout(
+      renderPdfPagePngProduction(pdfBytes, pageNumber, scale, {
+        useSystemFonts: true,
+        disableFontFace: false,
+      }),
+      PDF_RENDER_TIMEOUT_MS,
+      `${logOp}-page`,
+    );
+    if ("error" in rendered) {
+      throw new Error(rendered.error);
+    }
+    logCalibrationRuntimeCheck({
+      operation: logOp,
+      renderScale: scale,
+      renderDurationMs: Date.now() - renderStarted,
+      durationMs: Date.now() - renderStarted,
+      parserPath: "gcal-sarine",
+    });
+    return { ...rendered, backend: "production" };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    logCalibrationRuntimeCheck({
+      operation: logOp,
+      renderScale: scale,
+      renderDurationMs: Date.now() - renderStarted,
+      durationMs: Date.now() - renderStarted,
+      timedOut: err instanceof CalibrationTimeoutError,
+      error: message,
+    });
+    if (!isPdfRenderRetryableError(message)) {
+      return null;
+    }
+    const factory = await renderPdfPagePngWithFactory(
+      pdfBytes,
+      pageNumber,
+      scale,
+      "pdf-render-gcal-sarine-factory-fallback",
+    );
+    if (!factory) return null;
+    return { ...factory, backend: "factory-fallback" };
+  }
+}
+
 /** Render a PDF page to PNG — production first, factory fallback on font/canvas failures. */
 export async function renderPdfPagePngAtScale(
   pdfBytes: Buffer,

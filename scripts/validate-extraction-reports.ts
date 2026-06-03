@@ -1,5 +1,7 @@
 /**
- * Validation extraction harness — one command, useful output.
+ * Forensic extraction harness — calibration vs client detail.
+ *
+ * Canonical regression gate: npm run validate:diamond-intelligence
  *
  * Usage:
  *   npm run validate:extraction-reports
