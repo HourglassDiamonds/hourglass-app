@@ -132,6 +132,10 @@ export const SARINE_FINISH_GRADES_CROP = {
   height: 0.48,
 } as const;
 
+type GcalProportionCropRegion =
+  | typeof SARINE_PROPORTION_DIAGRAM_CROP
+  | typeof GCAL_HYBRID_8X_PROPORTION_CROP;
+
 export type GcalSarineProportionOcrStepDiagnostics = {
   ocrPathExecuted: boolean;
   ocrRuntimeAvailable: boolean;
@@ -143,7 +147,7 @@ export type GcalSarineProportionOcrStepDiagnostics = {
   pageRenderError?: string;
   renderScaleUsed?: number;
   cropSucceeded: boolean;
-  cropRegion: typeof SARINE_PROPORTION_DIAGRAM_CROP;
+  cropRegion: GcalProportionCropRegion;
   cropPixelRect?: { sx: number; sy: number; width: number; height: number };
   cropDimensions?: { width: number; height: number };
   preprocessedDimensions?: { width: number; height: number };
@@ -201,7 +205,7 @@ async function renderGcalSarineDiagramPage(
   return null;
 }
 
-function proportionCropForPage(pageNumber: number | undefined): typeof SARINE_PROPORTION_DIAGRAM_CROP {
+function proportionCropForPage(pageNumber: number | undefined): GcalProportionCropRegion {
   return pageNumber === 1 ? SARINE_PROPORTION_DIAGRAM_CROP : GCAL_HYBRID_8X_PROPORTION_CROP;
 }
 
@@ -218,11 +222,12 @@ async function ocrProportionCrop(
     canvasPkg,
   );
   if (!cropResult.png) return "";
-  const prepped: Buffer = await withTimeout(
-    preprocessGcalCropPng(cropResult.png, canvasPkg),
-    IMAGE_PREPROCESS_TIMEOUT_MS,
-    "sarine-crop-preprocess",
-  ).catch(() => cropResult.png);
+  const prepped =
+    (await withTimeout(
+      preprocessGcalCropPng(cropResult.png, canvasPkg),
+      IMAGE_PREPROCESS_TIMEOUT_MS,
+      "sarine-crop-preprocess",
+    ).catch(() => cropResult.png)) ?? cropResult.png;
   const rawOcr = await ocrImageBuffer(cropResult.png);
   const preppedOcr = await ocrImageBuffer(prepped);
   return [rawOcr.text, preppedOcr.text].filter(Boolean).join("\n").trim();
