@@ -17,6 +17,8 @@ import {
   CLIENT_UPLOAD_PIPELINE_TIMEOUT_MS,
 } from "./runtime-limits";
 import { assessExtractionCompleteness } from "@/lib/diamond-intelligence/extraction-completeness";
+import type { UploadExtractionOutput } from "./extract-upload-pipeline";
+import { normalizeCalibrationLab } from "./lab-parsers";
 import type { CalibrationReportFields } from "./types";
 
 export const VALIDATION_REPORTS_DIR = join(
@@ -217,17 +219,30 @@ async function extractClientLivePost(
         fields: emptyFields,
         fieldsNormalized: emptyFields,
         parserType: "generic",
-        timings: { documentExtractMs: 0, imageOcrMs: 0, totalMs: routeMs },
+        timings: {
+          documentExtractMs: 0,
+          pdfFullPageOcrMs: 0,
+          imageOcrMs: 0,
+          textParseMs: 0,
+          finalizerMs: 0,
+          clientPayloadMs: 0,
+          totalMs: routeMs,
+        },
         timedOut: res.status === 504,
         pipelineError: body.error ?? `HTTP ${res.status}`,
         ocrAttempted: false,
         pdfTextLayerLength: 0,
         textMethod: "none",
-        metadata: { lab: entry.lab, reportNumber: entry.id },
+        metadata: {
+          lab: normalizeCalibrationLab(entry.lab),
+          reportNumber: entry.id,
+          reportSource: "pdf-upload",
+          stoneType: "unknown",
+        },
         confidence: "low",
         calibrationEligible: false,
         excludedFromCalibrationStats: true,
-      },
+      } as unknown as UploadExtractionOutput,
       expected,
       snapshots: [],
     });
@@ -243,16 +258,29 @@ async function extractClientLivePost(
       fields,
       fieldsNormalized: fields,
       parserType: "generic",
-      timings: { documentExtractMs: 0, imageOcrMs: 0, totalMs: routeMs },
+      timings: {
+        documentExtractMs: 0,
+        pdfFullPageOcrMs: 0,
+        imageOcrMs: 0,
+        textParseMs: 0,
+        finalizerMs: 0,
+        clientPayloadMs: 0,
+        totalMs: routeMs,
+      },
       timedOut: res.status === 504,
       ocrAttempted: false,
       pdfTextLayerLength: 0,
       textMethod: "none",
-      metadata: { lab: entry.lab, reportNumber: entry.id },
+      metadata: {
+        lab: normalizeCalibrationLab(entry.lab),
+        reportNumber: entry.id,
+        reportSource: "pdf-upload",
+        stoneType: "unknown",
+      },
       confidence: "medium",
       calibrationEligible: false,
       excludedFromCalibrationStats: true,
-    },
+    } as unknown as UploadExtractionOutput,
     expected,
     snapshots: [],
   });
