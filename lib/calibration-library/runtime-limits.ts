@@ -81,9 +81,10 @@ export const CLIENT_UPLOAD_PIPELINE_TIMEOUT_MS = envInt(
   26_000,
 );
 
+/** Client doc-extract: OCR runtime probe + PDF text layer. Cold GCAL ~4.7s measured; 8s leaves headroom within 26s pipeline. */
 export const CLIENT_DOCUMENT_EXTRACT_TIMEOUT_MS = envInt(
   "CLIENT_DOCUMENT_EXTRACT_TIMEOUT_MS",
-  2_500,
+  8_000,
 );
 
 export const CLIENT_IMAGE_REGION_OCR_TIMEOUT_MS = envInt(

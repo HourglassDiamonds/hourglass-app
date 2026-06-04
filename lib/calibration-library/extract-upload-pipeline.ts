@@ -940,6 +940,20 @@ export async function runCalibrationUploadExtraction(
       });
     }
 
+    if (
+      clientMode &&
+      timedOut &&
+      !snapshot.parsed &&
+      process.env.NODE_ENV === "development"
+    ) {
+      const errMsg = timeoutErrorMessage(err);
+      console.log("[upload-pipeline] client-timeout-before-parser", {
+        documentExtractMs: timings.documentExtractMs,
+        pipelineError: errMsg,
+        preParser: errMsg.includes("document-extract"),
+      });
+    }
+
     const empty = extractFieldsFromReportText("", {
       lab: input.lab,
       reportNumber: input.reportNumber,
