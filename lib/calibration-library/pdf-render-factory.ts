@@ -3,6 +3,7 @@
  * Used by GCAL Sarine and as production fallback for font-binding failures (LGDR dossier).
  */
 import { createRequire } from "module";
+import { join } from "path";
 import {
   CalibrationTimeoutError,
   logCalibrationRuntimeCheck,
@@ -38,29 +39,56 @@ let pdfJsCanvasModule: PdfJsNodeCanvas | null = null;
 let pdfJsResolvedCanvasModule: PdfJsNodeCanvas | null = null;
 let pdfJsCanvasPolyfillsInstalled = false;
 
+/**
+ * Anchor Node require to project package.json — not the bundled app-route chunk.
+ * Next/Turbopack rewrites `import.meta.url` paths so pdfjs nested canvas resolve fails.
+ */
+export function createProjectRequire(): NodeRequire {
+  return createRequire(join(process.cwd(), "package.json"));
+}
+
 export function getPdfJsNodeCanvasModule(): PdfJsNodeCanvas {
   if (pdfJsCanvasModule) return pdfJsCanvasModule;
-  const nodeRequire = createRequire(import.meta.url);
-  // NOTE: Do not resolve relative to pdfjs-dist here.
-  // In Next app-route bundling, `nodeRequire.resolve("pdfjs-dist/...")` can be rewritten
-  // to a non-filesystem identifier (e.g. `[project]/... [app-route]`), which breaks
-  // Node's `createRequire` ("filename must be a file URL or absolute path").
-  //
-  // We only need the Node canvas implementation. Load it directly in Node runtime.
-  pdfJsCanvasModule = nodeRequire("@napi-rs/canvas") as PdfJsNodeCanvas;
+  pdfJsCanvasModule = createProjectRequire()("@napi-rs/canvas") as PdfJsNodeCanvas;
   return pdfJsCanvasModule;
 }
 
-/** pdfjs-dist's bundled @napi-rs/canvas — required for GCAL hybrid page-1 render (see render harness). */
+/**
+ * pdfjs-dist's nested @napi-rs/canvas — preferred for GCAL hybrid page-1 render.
+ * Falls back to root @napi-rs/canvas when pdfjs resolve fails.
+ */
 export function getPdfJsResolvedCanvasModule(): PdfJsNodeCanvas {
   if (pdfJsResolvedCanvasModule) return pdfJsResolvedCanvasModule;
-  const nodeRequire = createRequire(import.meta.url);
-  const requireFromPdfjs = createRequire(
-    nodeRequire.resolve("pdfjs-dist/legacy/build/pdf.mjs"),
-  );
-  pdfJsResolvedCanvasModule = requireFromPdfjs("@napi-rs/canvas") as PdfJsNodeCanvas;
+  try {
+    const nodeRequire = createProjectRequire();
+    const requireFromPdfjs = createRequire(
+      nodeRequire.resolve("pdfjs-dist/legacy/build/pdf.mjs"),
+    );
+    pdfJsResolvedCanvasModule = requireFromPdfjs(
+      "@napi-rs/canvas",
+    ) as PdfJsNodeCanvas;
+  } catch {
+    pdfJsResolvedCanvasModule = getPdfJsNodeCanvasModule();
+  }
   return pdfJsResolvedCanvasModule;
 }
+
+/** Dev-safe path label for Sarine OCR diagnostics (never throws). */
+export function resolvePdfJsCanvasModulePathForDiagnostics(): string {
+  try {
+    const nodeRequire = createProjectRequire();
+    return createRequire(
+      nodeRequire.resolve("pdfjs-dist/legacy/build/pdf.mjs"),
+    ).resolve("@napi-rs/canvas");
+  } catch {
+    return "@napi-rs/canvas (root fallback)";
+  }
+}
+
+export type FactoryPdfRenderOptions = {
+  disableFontFace?: boolean;
+  useSystemFonts?: boolean;
+};
 
 export function installPdfJsCanvasPolyfills(canvasPkg: PdfJsNodeCanvas): void {
   if (pdfJsCanvasPolyfillsInstalled) return;
@@ -109,9 +137,12 @@ export async function renderPdfPagePngWithFactory(
   pageNumber: number,
   scale: number,
   logOperation = "pdf-render-factory",
+  renderOpts?: FactoryPdfRenderOptions,
 ): Promise<FactoryRenderedPdfPage | null> {
   const renderStarted = Date.now();
   const canvasPkg = getPdfJsResolvedCanvasModule();
+  const disableFontFace = renderOpts?.disableFontFace ?? true;
+  const useSystemFonts = renderOpts?.useSystemFonts ?? false;
 
   try {
     return await withTimeout(
@@ -121,8 +152,8 @@ export async function renderPdfPagePngWithFactory(
         const doc = await withTimeout(
           pdfjs.getDocument({
             data: new Uint8Array(pdfBytes),
-            disableFontFace: true,
-            useSystemFonts: false,
+            disableFontFace,
+            useSystemFonts,
           }).promise,
           PDF_GET_DOCUMENT_TIMEOUT_MS,
           `${logOperation}-open`,

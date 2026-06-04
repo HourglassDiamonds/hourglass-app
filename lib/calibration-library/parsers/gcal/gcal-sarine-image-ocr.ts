@@ -1,5 +1,4 @@
 import { mkdir, writeFile } from "fs/promises";
-import { createRequire } from "module";
 import { join } from "path";
 import { emptyReportFields } from "../../fields";
 import type {
@@ -17,6 +16,7 @@ import {
 import {
   getPdfJsResolvedCanvasModule,
   renderPdfPagePngWithFactory,
+  resolvePdfJsCanvasModulePathForDiagnostics,
   type PdfJsNodeCanvas,
 } from "../../pdf-render-factory";
 import { isOcrRuntimeAvailable, ocrImageBuffer, renderPdfPagePngGcalSarine } from "../shared/ocr-utils";
@@ -196,12 +196,13 @@ async function renderGcalSarineDiagramPage(
     pageNumber,
     scale,
     "gcal-sarine-factory",
+    pageNumber === 1
+      ? { disableFontFace: false, useSystemFonts: true }
+      : undefined,
   );
   if (factory) return factory;
-  if (pageNumber >= 2) {
-    const legacy = await renderPdfPagePngGcalSarine(pdfBytes, pageNumber, scale);
-    if (legacy) return legacy;
-  }
+  const legacy = await renderPdfPagePngGcalSarine(pdfBytes, pageNumber, scale);
+  if (legacy) return legacy;
   return null;
 }
 
@@ -344,10 +345,7 @@ export async function ocrGcalSarineProportionRegionWithDiagnostics(
   diagnostics: GcalSarineProportionOcrStepDiagnostics;
 }> {
   const canvasPkg = getPdfJsResolvedCanvasModule();
-  const nodeRequire = createRequire(import.meta.url);
-  const canvasModulePath = createRequire(
-    nodeRequire.resolve("pdfjs-dist/legacy/build/pdf.mjs"),
-  ).resolve("@napi-rs/canvas");
+  const canvasModulePath = resolvePdfJsCanvasModulePathForDiagnostics();
 
   const diagnostics: GcalSarineProportionOcrStepDiagnostics = {
     ocrPathExecuted: true,

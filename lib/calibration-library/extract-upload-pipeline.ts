@@ -223,6 +223,19 @@ async function runImageOcrAugmentation(input: {
   if (runSarine) {
     const proportionGatePassed = needsGcalSarineProportionImageOcr(parsed.fields);
     const finishGatePassed = needsGcalSarineFinishImageOcr(parsed.fields);
+    if (
+      process.env.NODE_ENV === "development" &&
+      !proportionGatePassed &&
+      !finishGatePassed
+    ) {
+      console.log("[upload-pipeline] sarine-ocr:skipped-gates", {
+        parser: parsed.parserType,
+        tablePercent: parsed.fields.tablePercent.trim() || "(empty)",
+        depthPercent: parsed.fields.depthPercent.trim() || "(empty)",
+        crownAngle: parsed.fields.crownAngle.trim() || "(empty)",
+        pavilionAngle: parsed.fields.pavilionAngle.trim() || "(empty)",
+      });
+    }
     if (proportionGatePassed || finishGatePassed) {
       const gcalInternal = parsed.gcalInternal ?? {};
       await withTimeout(
@@ -828,9 +841,15 @@ export async function runCalibrationUploadExtraction(
               ocrCompleted: ocr.ocrCompleted,
             });
           } catch (ocrErr) {
-            pipelineNotices.push(
-              `Image region OCR failed: ${errorMessageFromUnknown(ocrErr)}`,
-            );
+            const ocrErrMsg = errorMessageFromUnknown(ocrErr);
+            if (process.env.NODE_ENV === "development") {
+              console.log("[upload-pipeline] image-ocr:error", {
+                ms: Date.now() - t0,
+                parser: parsed.parserType,
+                message: ocrErrMsg,
+              });
+            }
+            pipelineNotices.push(`Image region OCR failed: ${ocrErrMsg}`);
           }
           snapshot.ocrAttempted = ocrAttempted;
         }
