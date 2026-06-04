@@ -29,6 +29,8 @@ export default function DiamondIntelligenceClient() {
   const [uploadStatusNote, setUploadStatusNote] = useState<string | null>(
     null,
   );
+  const [gradeHints, setGradeHints] =
+    useState<ClientSafeInterpretationPayload["gradeHints"]>(undefined);
 
   const clearUploadError = useCallback(() => {
     setUploadError((prev) => (prev ? null : prev));
@@ -53,6 +55,7 @@ export default function DiamondIntelligenceClient() {
       setExtractedFields(interpretation.extractedFields);
       setInterpretationFields(interpretation.interpretationFields);
       setCapability(interpretation.capability);
+      setGradeHints(interpretation.gradeHints);
       // HTTP 200 full OR partial are both successes — never an error.
       setUploadStatusNote(
         partial ? interpretation.clientStatusNote ?? null : null,
@@ -89,6 +92,7 @@ export default function DiamondIntelligenceClient() {
         extractedFields={extractedFields}
         interpretationFields={interpretationFields}
         capability={capability}
+        gradeHints={gradeHints}
         onInterpretationUpdate={handleInterpretationUpdate}
       />
     </div>

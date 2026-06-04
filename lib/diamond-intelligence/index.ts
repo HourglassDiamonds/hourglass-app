@@ -40,6 +40,24 @@ export {
   type ClientSafeReportCapability,
 } from "./client-api";
 export {
+  buildClientDiamondDecisionProfile,
+} from "./client-decision-profile";
+export {
+  buildDiamondDecisionProfile,
+  classifyProportionArchetype,
+  type DiamondDecisionProfile,
+  type DecisionDimension,
+  type OverallRecommendationBand,
+  type OpticalPerformanceBand,
+  type RiskProfileBand,
+  type VisualPresenceBand,
+} from "./diamond-decision-profile";
+export {
+  parseReportGradeHints,
+  claritySeverity,
+  type ReportGradeHints,
+} from "./report-grade-hints";
+export {
   opticalBalanceDisplayValue,
   presentClientInterpretationScore,
   type ClientInterpretationScore,

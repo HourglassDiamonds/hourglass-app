@@ -14,6 +14,10 @@ import {
   toExtractionCompletenessSummary,
   type ExtractionCompletenessSummary,
 } from "./extraction-completeness";
+import { buildClientDiamondDecisionProfile } from "./client-decision-profile";
+import type { DiamondDecisionProfile } from "./diamond-decision-profile";
+import { parseReportGradeHints, type ReportGradeHints } from "./report-grade-hints";
+import { presentClientInterpretationScore } from "./client-score-present";
 
 /** Fields shown in the client “What we could read” card. */
 export const CLIENT_DISPLAY_FIELD_KEYS: ReportFieldKey[] = [
@@ -50,6 +54,10 @@ export type ClientSafeInterpretationPayload = {
   partial?: boolean;
   /** Development only — extraction state / eligibility diagnostics. */
   extractionCompleteness?: ExtractionCompletenessSummary;
+  /** Multi-dimensional consumer decision read (interpretation layer). */
+  decisionProfile?: DiamondDecisionProfile;
+  /** Parsed clarity/color hints for client-side recomputation after guided completion. */
+  gradeHints?: ReportGradeHints;
 };
 
 export function toClientSafeInterpretationPayload(
@@ -101,6 +109,27 @@ export function toClientSafeInterpretationPayload(
       }),
     );
   }
+
+  const reportTextHint = finalized.rawTextSnippet?.trim();
+  if (reportTextHint) {
+    payload.gradeHints = parseReportGradeHints(reportTextHint);
+  }
+
+  const rawScore = presentClientInterpretationScore(
+    interpretation,
+    capability.interpretationLevel,
+  );
+  const rawOverall =
+    rawScore.eligible && rawScore.overall !== null ? rawScore.overall : null;
+
+  payload.decisionProfile = buildClientDiamondDecisionProfile({
+    fields: interpretation,
+    metadata: payload.metadata,
+    capability: clientCapability,
+    rawScore: rawOverall,
+    reportTextHint,
+    gradeHints: payload.gradeHints,
+  });
 
   return payload;
 }

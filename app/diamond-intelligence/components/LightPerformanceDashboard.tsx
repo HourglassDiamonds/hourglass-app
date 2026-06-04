@@ -15,8 +15,10 @@ import {
   presentEditorialLightPerformance,
   presentTraitReadLabel,
   interpretationLevelLabel,
+  buildClientDiamondDecisionProfile,
   presentClientInterpretationScore,
   spreadProfileValue,
+  type ReportGradeHints,
   type ClientInterpretationSnapshot,
   type ClientLightTrait,
   type ClientSafeMetadata,
@@ -25,6 +27,7 @@ import {
 } from "@/lib/diamond-intelligence";
 import { trackConsultationCtaClicked } from "@/lib/consultation-cta";
 import DiamondIntelligenceSynopsis from "./DiamondIntelligenceSynopsis";
+import DiamondDecisionProfileSection from "./DiamondDecisionProfileSection";
 import GuidedReportCompletion from "./GuidedReportCompletion";
 import OpticalBalanceGraph from "./OpticalBalanceGraph";
 import { ReportUploadDock, type ClientUploadPhase } from "./ReportUploadDock";
@@ -112,6 +115,7 @@ export type LightPerformanceDashboardProps = {
   extractedFields: CalibrationReportFields | null;
   interpretationFields: CalibrationReportFields | null;
   capability: ClientSafeReportCapability | null;
+  gradeHints?: ReportGradeHints;
   onInterpretationUpdate: (snapshot: ClientInterpretationSnapshot) => void;
 };
 
@@ -126,6 +130,7 @@ export default function LightPerformanceDashboard({
   extractedFields,
   interpretationFields,
   capability,
+  gradeHints,
   onInterpretationUpdate,
 }: LightPerformanceDashboardProps) {
   const hasReport = Boolean(
@@ -228,6 +233,17 @@ export default function LightPerformanceDashboard({
       }),
     [interpretationContext],
   );
+
+  const decisionProfile = useMemo(() => {
+    if (!fields || !capability || !metadata) return null;
+    return buildClientDiamondDecisionProfile({
+      fields,
+      metadata,
+      capability,
+      rawScore: rawOverallScore,
+      gradeHints: gradeHints ?? undefined,
+    });
+  }, [fields, capability, metadata, rawOverallScore, gradeHints]);
 
   const centerProfileLabel = hasReport
     ? editorialPresentation.graphCenterLabel
@@ -369,6 +385,8 @@ export default function LightPerformanceDashboard({
               </p>
             )}
           </DashboardCard>
+
+          <DiamondDecisionProfileSection profile={decisionProfile} />
 
           <DashboardCard title="Report details" tone="subdued" className="!p-4 md:!p-5">
             {hasReport && metadata && fields ? (
