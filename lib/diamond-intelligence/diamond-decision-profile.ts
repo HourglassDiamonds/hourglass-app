@@ -11,6 +11,11 @@ import {
   parseReportGradeHints,
   type ReportGradeHints,
 } from "./report-grade-hints";
+import {
+  applyRecommendationCeilings,
+  deriveBaseRecommendation,
+  mergeRiskBand,
+} from "./decision-profile-recommendation";
 import type { ClientSafeReportCapability } from "./client-api";
 
 export type OpticalPerformanceBand =
@@ -214,23 +219,24 @@ function computeRiskPoints(input: {
   points += claritySeverity(input.hints.clarity);
   points += fluorescenceConcern(input.fields.fluorescence);
   if (input.hints.fancyColor || input.hints.coloredDiamondReport) {
-    points += 3;
+    points += 4;
   }
-  if (input.ctx.extractionState === "REPORT_ONLY") points += 5;
-  else if (input.ctx.extractionState === "PARTIAL_EXTRACTION") points += 3;
-  else if (!input.ctx.scoreEligible) points += 2;
-  if (input.capability.needsExpertDiagramReview) points += 1;
+  if (input.ctx.extractionState === "REPORT_ONLY") points += 6;
+  else if (input.ctx.extractionState === "PARTIAL_EXTRACTION") points += 4;
+  else if (!input.ctx.scoreEligible) points += 3;
+  if (input.capability.needsExpertDiagramReview) points += 2;
   const finish = [input.fields.polish, input.fields.symmetry, input.fields.cutGrade]
     .join(" ")
     .toLowerCase();
-  if (finish.includes("good") || finish.includes("fair")) points += 1;
+  if (finish.includes("fair")) points += 3;
+  else if (finish.includes("good")) points += 2;
   return points;
 }
 
 function riskBand(points: number): RiskProfileBand {
-  if (points >= 7) return "High";
-  if (points >= 5) return "Elevated";
-  if (points >= 3) return "Moderate";
+  if (points >= 8) return "High";
+  if (points >= 6) return "Elevated";
+  if (points >= 4) return "Moderate";
   return "Low";
 }
 
@@ -247,6 +253,9 @@ function riskExplanation(
     return "Several buyer-relevant concerns stack together — clarity, fluorescence, or incomplete report data deserve close review before you rely on this read.";
   }
   if (band === "Elevated") {
+    if (clarity && /^I[12]$/.test(clarity)) {
+      return `Clarity grade ${clarity} keeps buyer risk elevated — proportions alone should not drive a confident recommendation.`;
+    }
     if (ctx.extractionState !== "FULL_EXTRACTION") {
       return "Missing or partial proportion detail raises uncertainty — verify the diagram before treating the optical read as complete.";
     }
@@ -256,6 +265,9 @@ function riskExplanation(
     return "One or more factors — clarity, fluorescence, or finish — warrant a closer look even if proportions look acceptable on paper.";
   }
   if (band === "Moderate") {
+    if (clarity === "SI2" || clarity === "SI1") {
+      return "Clarity sits in a range where eye-clean appearance and in-person viewing matter as much as the proportion read.";
+    }
     if (hints.fancyColor) {
       return "Fancy-color reports follow different buying rules than white round brilliants — treat optical reads as context, not a full colored-stone verdict.";
     }
@@ -269,46 +281,17 @@ function riskExplanation(
 
 function overallRecommendationBand(input: {
   optical: OpticalPerformanceBand;
+  visual: VisualPresenceBand;
   risk: RiskProfileBand;
   ctx: DiamondInterpretationContext;
   hints: ReportGradeHints;
 }): OverallRecommendationBand {
-  if (
-    input.ctx.extractionState === "REPORT_ONLY" ||
-    input.ctx.readState === "orientation"
-  ) {
-    return "Needs More Information";
-  }
-  if (!input.ctx.scoreEligible && input.ctx.readState === "partial") {
-    return "Needs More Information";
-  }
-
-  const clarity = input.hints.clarity;
-  if (clarity === "I3" || clarity === "I2") {
-    return "Not Recommended";
-  }
-  if (input.risk === "High") {
-    return clarity === "I1" ? "Compare Carefully" : "Not Recommended";
-  }
-  if (clarity === "I1" || input.risk === "Elevated") {
-    return "Compare Carefully";
-  }
-  if (input.hints.fancyColor && input.risk !== "Low") {
-    return "Worth Reviewing";
-  }
-  if (
-    (input.optical === "Strong" || input.optical === "Solid") &&
-    input.risk === "Low"
-  ) {
-    return "Strong Candidate";
-  }
-  if (input.optical === "Moderate" || input.optical === "Mixed") {
-    return input.risk === "Low" ? "Worth Reviewing" : "Compare Carefully";
-  }
-  if (input.optical === "Preliminary" || input.optical === "Unavailable") {
-    return "Worth Reviewing";
-  }
-  return "Compare Carefully";
+  const base = deriveBaseRecommendation(input);
+  return applyRecommendationCeilings(base, {
+    risk: input.risk,
+    ctx: input.ctx,
+    hints: input.hints,
+  });
 }
 
 function recommendationExplanation(
@@ -327,6 +310,9 @@ function recommendationExplanation(
       }
       return "Promising in some dimensions but not a clean overall yes — Justin can help weigh proportions against clarity and how you want it to look.";
     case "Compare Carefully":
+      if (hints.clarity === "I2") {
+        return "Solid proportions on paper, but clarity I2 is the deciding factor — compare carefully and prioritize eye-clean appearance over the optical read.";
+      }
       if (hints.clarity === "I1") {
         return "Proportions may be workable, but clarity grade I1 keeps this in compare-carefully territory — eye-clean appearance matters more than the optical number alone.";
       }
@@ -382,9 +368,10 @@ export function buildDiamondDecisionProfile(input: {
     capability: input.capability,
     ctx: input.context,
   });
-  const risk = riskBand(riskPoints);
+  const risk = mergeRiskBand(riskBand(riskPoints), hints, input.context);
   const recommendation = overallRecommendationBand({
     optical: opticalBand,
+    visual: visual.band,
     risk,
     ctx: input.context,
     hints,
