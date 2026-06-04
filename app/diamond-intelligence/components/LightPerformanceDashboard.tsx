@@ -10,17 +10,13 @@ import {
   buildFaceUpPresenceCopy,
   buildOpticalInterpretationSummary,
   buildPerformanceReadCopy,
-  CONSUMER_TRAIT_UNCERTAIN_HELPER,
-  getConsumerLightPerformanceDisplay,
   presentEditorialLightPerformance,
-  presentTraitReadLabel,
   interpretationLevelLabel,
   buildClientDiamondDecisionProfile,
   presentClientInterpretationScore,
   spreadProfileValue,
   type ReportGradeHints,
   type ClientInterpretationSnapshot,
-  type ClientLightTrait,
   type ClientSafeMetadata,
   type ClientSafeReportCapability,
   type OverallReadLabel,
@@ -28,6 +24,14 @@ import {
 import { trackConsultationCtaClicked } from "@/lib/consultation-cta";
 import DiamondIntelligenceSynopsis from "./DiamondIntelligenceSynopsis";
 import DiamondDecisionProfileSection from "./DiamondDecisionProfileSection";
+import VisualPersonalitySection from "./VisualPersonalitySection";
+import ReportStartingPointPanel from "./ReportStartingPointPanel";
+import LookingDeeperPanel from "./LookingDeeperPanel";
+import ClarityReviewFlag from "./ClarityReviewFlag";
+import ComparingDiamondsPanel from "./ComparingDiamondsPanel";
+import { buildVisualPersonality } from "@/lib/diamond-intelligence/visual-personality";
+import { buildClarityReviewGuidance } from "@/lib/diamond-intelligence/clarity-review-guidance";
+import { presentLowConfidenceGraphLabel } from "@/lib/diamond-intelligence/interpretation-display";
 import GuidedReportCompletion from "./GuidedReportCompletion";
 import OpticalBalanceGraph from "./OpticalBalanceGraph";
 import { ReportUploadDock, type ClientUploadPhase } from "./ReportUploadDock";
@@ -52,56 +56,6 @@ function stoneTypeLabel(stoneType: string): string | null {
   if (stoneType === "natural") return "Natural";
   if (stoneType === "lab-grown") return "Lab-grown";
   return null;
-}
-
-function TraitBar({
-  trait,
-  overallScore,
-  needsExpertDiagramReview,
-  suppressRareLabels,
-}: {
-  trait: ClientLightTrait;
-  overallScore: number | null;
-  needsExpertDiagramReview: boolean;
-  suppressRareLabels: boolean;
-}) {
-  const internalLabel = presentTraitReadLabel(trait, overallScore, {
-    needsExpertDiagramReview,
-    suppressRareLabels,
-  });
-  const { label: readLabel, uncertain } = getConsumerLightPerformanceDisplay(
-    trait,
-    internalLabel,
-  );
-
-  return (
-    <div className="space-y-1.5">
-      <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
-        <span className="text-[13px] text-[#5f5851]">{trait.label}</span>
-        <span
-          className={`shrink-0 text-right text-[12px] leading-snug ${
-            uncertain ? "text-[#948a80]" : "text-[#6f665d]"
-          }`}
-        >
-          {readLabel}
-        </span>
-      </div>
-      {uncertain ? (
-        <p className="text-[11px] leading-[1.5] text-[#948a80]">
-          {CONSUMER_TRAIT_UNCERTAIN_HELPER}
-        </p>
-      ) : (
-        <div className="h-px overflow-hidden rounded-full bg-[#ebe4da]/90">
-          <div
-            className="h-full rounded-full bg-[#c4b08a]/80 transition-all duration-500"
-            style={{
-              width: `${Math.max(trait.fillPercent, 12)}%`,
-            }}
-          />
-        </div>
-      )}
-    </div>
-  );
 }
 
 export type LightPerformanceDashboardProps = {
@@ -245,8 +199,34 @@ export default function LightPerformanceDashboard({
     });
   }, [fields, capability, metadata, rawOverallScore, gradeHints]);
 
+  const visualPersonality = useMemo(() => {
+    if (!fields || !decisionProfile) return null;
+    return buildVisualPersonality({
+      proportionArchetype: decisionProfile.archetype,
+      opticalBand: decisionProfile.opticalPerformance.band as import("@/lib/diamond-intelligence/diamond-decision-profile").OpticalPerformanceBand,
+      fields,
+    });
+  }, [fields, decisionProfile]);
+
+  const clarityReviewGuidance = useMemo(
+    () =>
+      decisionProfile
+        ? buildClarityReviewGuidance(decisionProfile.gradeHints)
+        : null,
+    [decisionProfile],
+  );
+
+  const lowInterpretationConfidence =
+    decisionProfile?.confidence.band === "Low";
+  const showPerformanceScore =
+    interpretationContext.canShowScore &&
+    !lowInterpretationConfidence &&
+    overallScore !== null;
+
   const centerProfileLabel = hasReport
-    ? editorialPresentation.graphCenterLabel
+    ? lowInterpretationConfidence && decisionProfile
+      ? presentLowConfidenceGraphLabel(decisionProfile)
+      : editorialPresentation.graphCenterLabel
     : "—";
 
   const busy =
@@ -266,6 +246,8 @@ export default function LightPerformanceDashboard({
       </header>
 
       <DiamondIntelligenceSynopsis />
+
+      <ReportStartingPointPanel visible={hasReport} />
 
       <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,292px)_1fr] xl:grid-cols-[minmax(0,308px)_1fr]">
         <aside className="flex flex-col gap-3.5 lg:max-w-[320px]">
@@ -289,10 +271,15 @@ export default function LightPerformanceDashboard({
           >
             {hasReport && clientScore && capability && performanceCopy ? (
               <>
-                {!interpretationContext.canShowScore ? (
+                {!showPerformanceScore ? (
                   <>
                     <p className="font-serif text-xl text-[#1f1d1a]">
-                      {editorialPresentation.tierLabel}
+                      {lowInterpretationConfidence
+                        ? decisionProfile?.opticalPerformance.band ===
+                          "Unavailable"
+                          ? "Limited Information Available"
+                          : "Preliminary Assessment"
+                        : editorialPresentation.tierLabel}
                     </p>
                     <p className="mt-2 text-sm leading-[1.6] text-[#5f5851]">
                       {editorialPresentation.personalityDescriptor}
@@ -306,7 +293,7 @@ export default function LightPerformanceDashboard({
                   </>
                 ) : clientScore.eligible &&
                   clientScore.overall !== null &&
-                  overallScore !== null ? (
+                  showPerformanceScore ? (
                   <>
                     <div className="flex flex-wrap items-baseline gap-2">
                       <p className="font-serif text-[2rem] tracking-tight text-[#1f1d1a] md:text-[2.1rem]">
@@ -351,7 +338,7 @@ export default function LightPerformanceDashboard({
                     </p>
                   </>
                 )}
-                {interpretationContext.canShowScore && overallScore !== null ? (
+                {showPerformanceScore ? (
                   <div className="mt-4 h-1 overflow-hidden rounded-full bg-[#ebe4da]/80">
                     <div
                       className="h-full rounded-full bg-[#c4b08a] transition-all duration-500"
@@ -388,6 +375,10 @@ export default function LightPerformanceDashboard({
 
           <DiamondDecisionProfileSection profile={decisionProfile} />
 
+          <LookingDeeperPanel visible={hasReport} />
+
+          <ClarityReviewFlag guidance={clarityReviewGuidance} />
+
           <DashboardCard title="Report details" tone="subdued" className="!p-4 md:!p-5">
             {hasReport && metadata && fields ? (
               <>
@@ -419,20 +410,7 @@ export default function LightPerformanceDashboard({
             )}
           </DashboardCard>
 
-          <div className="rounded-lg border border-[#ebe4da]/80 bg-white/35 px-4 py-4 md:px-5">
-            <p className="text-[13px] leading-[1.65] text-[#6f665d]">
-              Justin can review the report, proportions, and tradeoffs with you.
-            </p>
-            <Link
-              href="/concierge"
-              className="mt-3 inline-flex w-full items-center justify-center rounded-full bg-[#2b2723] px-4 py-2.5 text-[11px] tracking-[0.14em] text-white transition-opacity hover:opacity-90"
-              onClick={() =>
-                trackConsultationCtaClicked("diamond_intelligence:dashboard_rail")
-              }
-            >
-              Have Justin review this diamond
-            </Link>
-          </div>
+          <ComparingDiamondsPanel visible={hasReport} />
         </aside>
 
         <main className="min-w-0 space-y-3.5">
@@ -643,40 +621,7 @@ export default function LightPerformanceDashboard({
                 />
               </DashboardCard>
 
-              <DashboardCard
-                title="Light performance"
-                tone="subdued"
-                className="!shadow-none md:col-span-2 xl:col-span-1"
-              >
-                {clientScore &&
-                interpretationContext.traitMode !== "review" ? (
-                  <div className="space-y-4">
-                    {clientScore.lightTraits.map((trait) => (
-                      <TraitBar
-                        key={trait.label}
-                        trait={trait}
-                        overallScore={overallScore}
-                        needsExpertDiagramReview={
-                          capability?.needsExpertDiagramReview ?? false
-                        }
-                        suppressRareLabels={
-                          !interpretationContext.canShowRareLanguage
-                        }
-                      />
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-[13px] leading-[1.65] text-[#948a80]">
-                    Individual light traits become clearer as more proportion
-                    detail is confirmed. This is an early read, not a verdict on
-                    beauty — Justin can help fill in the rest.
-                  </p>
-                )}
-                <p className="mt-4 text-[11px] leading-[1.55] text-[#948a80]">
-                  Trait reads are qualitative, based on reported proportions —
-                  not separate lab grades.
-                </p>
-              </DashboardCard>
+              <VisualPersonalitySection personality={visualPersonality} />
             </div>
           </section>
 

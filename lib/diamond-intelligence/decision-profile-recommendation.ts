@@ -1,4 +1,5 @@
 import type { DiamondInterpretationContext } from "./client-interpretation-context";
+import type { DecisionConfidenceBand } from "./decision-profile-confidence";
 import type { ReportGradeHints } from "./report-grade-hints";
 import {
   clarityRecommendationCeiling,
@@ -12,6 +13,7 @@ type OverallRecommendationBand =
   | "Worth Reviewing"
   | "Compare Carefully"
   | "Not Recommended"
+  | "Worth Reviewing After Additional Information"
   | "Needs More Information";
 type OpticalPerformanceBand =
   | "Strong"
@@ -28,9 +30,10 @@ type VisualPresenceBand =
   | "Preliminary";
 
 const RECOMMENDATION_RANK: Record<OverallRecommendationBand, number> = {
-  "Strong Candidate": 5,
-  "Worth Reviewing": 4,
-  "Compare Carefully": 3,
+  "Strong Candidate": 6,
+  "Worth Reviewing": 5,
+  "Compare Carefully": 4,
+  "Worth Reviewing After Additional Information": 3,
   "Not Recommended": 2,
   "Needs More Information": 1,
 };
@@ -59,26 +62,15 @@ function applyCeiling(
   return worseRecommendation(band, capped);
 }
 
+/** Buyer-risk band only — clarity, color, fluorescence, finish. No extraction penalties. */
 export function mergeRiskBand(
   computed: RiskProfileBand,
   hints: ReportGradeHints,
-  ctx: DiamondInterpretationContext,
 ): RiskProfileBand {
   let band = computed;
   const clarityFloor = clarityRiskFloor(hints.clarity);
   if (clarityFloor && RISK_RANK[band] < RISK_RANK[clarityFloor]) {
     band = clarityFloor;
-  }
-
-  if (
-    ctx.extractionState === "REPORT_ONLY" ||
-    ctx.extractionState === "EXTRACTION_ERROR"
-  ) {
-    if (RISK_RANK[band] < RISK_RANK.Elevated) band = "Elevated";
-  } else if (ctx.extractionState === "PARTIAL_EXTRACTION") {
-    if (RISK_RANK[band] < RISK_RANK.Elevated) band = "Elevated";
-  } else if (!ctx.scoreEligible || ctx.readState === "partial") {
-    if (RISK_RANK[band] < RISK_RANK.Moderate) band = "Moderate";
   }
 
   if (hints.fancyColor || hints.coloredDiamondReport) {
@@ -94,15 +86,22 @@ export function deriveBaseRecommendation(input: {
   risk: RiskProfileBand;
   ctx: DiamondInterpretationContext;
   hints: ReportGradeHints;
+  confidenceBand: DecisionConfidenceBand;
 }): OverallRecommendationBand {
   if (
+    input.confidenceBand === "Low" ||
     input.ctx.extractionState === "REPORT_ONLY" ||
     input.ctx.readState === "orientation"
   ) {
-    return "Needs More Information";
+    return "Worth Reviewing After Additional Information";
   }
-  if (!input.ctx.scoreEligible && input.ctx.readState === "partial") {
-    return "Needs More Information";
+  if (
+    input.confidenceBand === "Moderate" &&
+    (input.optical === "Preliminary" ||
+      input.optical === "Unavailable" ||
+      !input.ctx.scoreEligible)
+  ) {
+    return "Worth Reviewing After Additional Information";
   }
 
   const clarity = input.hints.clarity;
@@ -115,8 +114,7 @@ export function deriveBaseRecommendation(input: {
   }
 
   if (input.risk === "Elevated") {
-    if (clarity === "I2") return "Compare Carefully";
-    if (clarity === "I1") return "Compare Carefully";
+    if (clarity === "I2" || clarity === "I1") return "Compare Carefully";
     return "Compare Carefully";
   }
 
@@ -126,24 +124,24 @@ export function deriveBaseRecommendation(input: {
 
   if (input.risk === "Moderate") {
     if (input.optical === "Strong" || input.optical === "Solid") {
+      if (clarity === "SI2") return "Worth Reviewing";
+      if (clarity === "SI1") return "Worth Reviewing";
       if (
-        clarity === "SI2" ||
-        clarity === "SI1" ||
         !clarity ||
         clarity.startsWith("VS") ||
         clarity.startsWith("VVS") ||
         clarity === "FL" ||
         clarity === "IF"
       ) {
-        return clarity === "SI1" ? "Worth Reviewing" : "Strong Candidate";
+        return "Strong Candidate";
       }
       return "Worth Reviewing";
     }
     return "Worth Reviewing";
   }
 
-  // Low risk — buying confidence can exceed optical alone
   if (input.optical === "Strong" || input.optical === "Solid") {
+    if (clarity === "SI2") return "Worth Reviewing";
     return "Strong Candidate";
   }
   if (input.optical === "Moderate" || input.optical === "Mixed") {
@@ -153,7 +151,7 @@ export function deriveBaseRecommendation(input: {
     return input.risk === "Low" ? "Strong Candidate" : "Worth Reviewing";
   }
   if (input.optical === "Preliminary" || input.optical === "Unavailable") {
-    return "Worth Reviewing";
+    return "Worth Reviewing After Additional Information";
   }
   return "Compare Carefully";
 }
@@ -164,6 +162,7 @@ export function applyRecommendationCeilings(
     risk: RiskProfileBand;
     ctx: DiamondInterpretationContext;
     hints: ReportGradeHints;
+    confidenceBand: DecisionConfidenceBand;
   },
 ): OverallRecommendationBand {
   let band = base;
@@ -177,15 +176,6 @@ export function applyRecommendationCeilings(
 
   if (input.risk === "High") {
     band = worseRecommendation(band, "Compare Carefully");
-  }
-
-  if (
-    input.ctx.extractionState === "REPORT_ONLY" ||
-    input.ctx.extractionState === "PARTIAL_EXTRACTION" ||
-    input.ctx.extractionState === "EXTRACTION_ERROR" ||
-    input.ctx.readState === "partial"
-  ) {
-    band = worseRecommendation(band, "Worth Reviewing");
   }
 
   if (input.hints.fancyColor || input.hints.coloredDiamondReport) {

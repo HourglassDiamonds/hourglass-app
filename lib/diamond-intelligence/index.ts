@@ -52,6 +52,22 @@ export {
   type RiskProfileBand,
   type VisualPresenceBand,
 } from "./diamond-decision-profile";
+export { buildDecisionConfidence, type DecisionConfidenceBand } from "./decision-profile-confidence";
+export {
+  buildVisualPersonality,
+  consumerTitleForArchetype,
+  type VisualPersonality,
+  type VisualPersonalityArchetype,
+} from "./visual-personality";
+export {
+  buildClarityReviewGuidance,
+  type ClarityReviewGuidance,
+} from "./clarity-review-guidance";
+export {
+  derivePrimaryLimitingFactor,
+  type PrimaryLimitingFactor,
+  type PrimaryLimitingFactorKey,
+} from "./primary-limiting-factor";
 export {
   parseReportGradeHints,
   claritySeverity,

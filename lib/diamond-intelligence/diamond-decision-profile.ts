@@ -16,6 +16,8 @@ import {
   deriveBaseRecommendation,
   mergeRiskBand,
 } from "./decision-profile-recommendation";
+import { buildDecisionConfidence } from "./decision-profile-confidence";
+import { derivePrimaryLimitingFactor } from "./primary-limiting-factor";
 import type { ClientSafeReportCapability } from "./client-api";
 
 export type OpticalPerformanceBand =
@@ -40,6 +42,7 @@ export type OverallRecommendationBand =
   | "Worth Reviewing"
   | "Compare Carefully"
   | "Not Recommended"
+  | "Worth Reviewing After Additional Information"
   | "Needs More Information";
 
 export type ProportionArchetype =
@@ -61,8 +64,13 @@ export type DecisionDimension = {
 export type DiamondDecisionProfile = {
   opticalPerformance: DecisionDimension;
   visualPresence: DecisionDimension;
+  confidence: DecisionDimension;
   riskProfile: DecisionDimension;
   overallRecommendation: DecisionDimension;
+  primaryLimitingFactor: {
+    display: string;
+    key: import("./primary-limiting-factor").PrimaryLimitingFactorKey;
+  };
   archetype: ProportionArchetype;
   gradeHints: ReportGradeHints;
 };
@@ -221,10 +229,7 @@ function computeRiskPoints(input: {
   if (input.hints.fancyColor || input.hints.coloredDiamondReport) {
     points += 4;
   }
-  if (input.ctx.extractionState === "REPORT_ONLY") points += 6;
-  else if (input.ctx.extractionState === "PARTIAL_EXTRACTION") points += 4;
-  else if (!input.ctx.scoreEligible) points += 3;
-  if (input.capability.needsExpertDiagramReview) points += 2;
+  if (input.capability.needsExpertDiagramReview) points += 1;
   const finish = [input.fields.polish, input.fields.symmetry, input.fields.cutGrade]
     .join(" ")
     .toLowerCase();
@@ -250,14 +255,11 @@ function riskExplanation(
     return `Clarity grade ${clarity} introduces meaningful inclusions risk — optical proportions alone do not offset that for a confident recommendation.`;
   }
   if (band === "High") {
-    return "Several buyer-relevant concerns stack together — clarity, fluorescence, or incomplete report data deserve close review before you rely on this read.";
+    return "Several buyer-relevant concerns stack together — clarity, fluorescence, or finish deserve close review before you rely on this read.";
   }
   if (band === "Elevated") {
     if (clarity && /^I[12]$/.test(clarity)) {
       return `Clarity grade ${clarity} keeps buyer risk elevated — proportions alone should not drive a confident recommendation.`;
-    }
-    if (ctx.extractionState !== "FULL_EXTRACTION") {
-      return "Missing or partial proportion detail raises uncertainty — verify the diagram before treating the optical read as complete.";
     }
     if (hints.fancyColor) {
       return "Fancy-color reports follow different buying rules than white round brilliants — treat optical reads as context, not a full colored-stone verdict.";
@@ -285,12 +287,14 @@ function overallRecommendationBand(input: {
   risk: RiskProfileBand;
   ctx: DiamondInterpretationContext;
   hints: ReportGradeHints;
+  confidenceBand: import("./decision-profile-confidence").DecisionConfidenceBand;
 }): OverallRecommendationBand {
   const base = deriveBaseRecommendation(input);
   return applyRecommendationCeilings(base, {
     risk: input.risk,
     ctx: input.ctx,
     hints: input.hints,
+    confidenceBand: input.confidenceBand,
   });
 }
 
@@ -300,16 +304,21 @@ function recommendationExplanation(
   risk: RiskProfileBand,
   archetype: ProportionArchetype,
   hints: ReportGradeHints,
+  limitingDisplay: string,
 ): string {
   switch (band) {
     case "Strong Candidate":
       return "Strong optical architecture on paper, manageable risk flags, and complete report data — a practical strong candidate worth comparing in person.";
-    case "Worth Reviewing":
-      if (optical === "Preliminary" || optical === "Unavailable") {
-        return "Worth a careful review once proportion detail is confirmed — not a final yes/no from today's read alone.";
-      }
-      return "Promising in some dimensions but not a clean overall yes — Justin can help weigh proportions against clarity and how you want it to look.";
     case "Compare Carefully":
+      if (limitingDisplay === "Clarity") {
+        return `Primary limitation: ${limitingDisplay}. Proportions may be workable, but clarity is the deciding factor — compare carefully and prioritize eye-clean appearance.`;
+      }
+      if (limitingDisplay === "Color") {
+        return `Primary limitation: ${limitingDisplay}. Architecture may be strong, but body color is the tradeoff worth weighing against other options.`;
+      }
+      if (limitingDisplay === "Strong Fluorescence") {
+        return `Primary limitation: ${limitingDisplay}. Review the stone in lighting similar to where you will wear it before you commit.`;
+      }
       if (hints.clarity === "I2") {
         return "Solid proportions on paper, but clarity I2 is the deciding factor — compare carefully and prioritize eye-clean appearance over the optical read.";
       }
@@ -320,11 +329,24 @@ function recommendationExplanation(
         return "Spread and presence may impress, but proportion tradeoffs and supporting grades deserve a side-by-side look before you commit.";
       }
       return "Mixed signals on paper — strong in one dimension should not automatically mean a strong overall buy without closer review.";
+    case "Worth Reviewing":
+      if (limitingDisplay === "Clarity" && hints.clarity === "SI2") {
+        return `Primary limitation: ${limitingDisplay}. Strong architecture on paper, but SI2 clarity is the tradeoff — worth reviewing for eye-clean appearance before you treat it as a strong buy.`;
+      }
+      if (limitingDisplay === "Color") {
+        return `Primary limitation: ${limitingDisplay}. Worth a side-by-side look against higher-color options at similar architecture.`;
+      }
+      if (optical === "Preliminary" || optical === "Unavailable") {
+        return "Worth a careful review once proportion detail is confirmed — not a final yes/no from today's read alone.";
+      }
+      return "Promising in some dimensions but not a clean overall yes — Justin can help weigh proportions against clarity and how you want it to look.";
     case "Not Recommended":
       if (hints.clarity && /^I[23]$/.test(hints.clarity)) {
         return `Clarity ${hints.clarity} is the dominant concern — even decent proportions do not make this a confident overall recommendation without a very specific price and appearance trade you accept.`;
       }
       return "Risk factors outweigh the optical read for a confident recommendation — treat as a compare-or-pass unless price and in-person viewing change the story.";
+    case "Worth Reviewing After Additional Information":
+      return "The architectural read is preliminary — worth revisiting once proportion detail is confirmed, not a pass/fail verdict today.";
     case "Needs More Information":
       return "More report detail is needed before a fair overall recommendation — upload a clearer diagram or review with an expert.";
   }
@@ -368,13 +390,27 @@ export function buildDiamondDecisionProfile(input: {
     capability: input.capability,
     ctx: input.context,
   });
-  const risk = mergeRiskBand(riskBand(riskPoints), hints, input.context);
+  const risk = mergeRiskBand(riskBand(riskPoints), hints);
+  const confidence = buildDecisionConfidence({
+    context: input.context,
+    capability: input.capability,
+  });
   const recommendation = overallRecommendationBand({
     optical: opticalBand,
     visual: visual.band,
     risk,
     ctx: input.context,
     hints,
+    confidenceBand: confidence.band,
+  });
+  const primaryLimitingFactor = derivePrimaryLimitingFactor({
+    hints,
+    fields: input.fields,
+    context: input.context,
+    confidenceBand: confidence.band,
+    risk,
+    recommendation,
+    archetype,
   });
 
   return {
@@ -392,6 +428,11 @@ export function buildDiamondDecisionProfile(input: {
       score: visual.score,
       explanation: visualExplanation(visual.band, archetype),
     },
+    confidence: {
+      label: confidence.label,
+      band: confidence.band,
+      explanation: confidence.explanation,
+    },
     riskProfile: {
       label: "Risk Profile",
       band: risk,
@@ -406,7 +447,9 @@ export function buildDiamondDecisionProfile(input: {
         risk,
         archetype,
         hints,
+        primaryLimitingFactor.display,
       ),
     },
+    primaryLimitingFactor,
   };
 }

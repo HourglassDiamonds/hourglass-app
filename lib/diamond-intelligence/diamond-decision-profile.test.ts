@@ -94,16 +94,76 @@ describe("buildDiamondDecisionProfile", () => {
     const p = profileFor(STRONG_FIELDS, 92, { clarity: "VS1" });
     assert.match(p.opticalPerformance.band, /Strong|Solid/);
     assert.equal(p.riskProfile.band, "Low");
+    assert.equal(p.primaryLimitingFactor.display, "No Significant Concerns Identified");
     assert.equal(p.overallRecommendation.band, "Strong Candidate");
   });
 
-  it("Case B: decent optics but I2 → not recommended", () => {
-    const p = profileFor(STRONG_FIELDS, 78, { clarity: "I2" });
+  it("Case B: decent optics but I2 → high risk, never strong candidate", () => {
+    const p = profileFor(STRONG_FIELDS, 82, { clarity: "I2" });
     assert.ok(
       ["Strong", "Solid", "Moderate", "Mixed"].includes(p.opticalPerformance.band),
     );
     assert.equal(p.riskProfile.band, "High");
+    assert.equal(p.confidence.band, "High");
+    assert.equal(p.primaryLimitingFactor.display, "Clarity");
+    assert.notEqual(p.overallRecommendation.band, "Strong Candidate");
+    assert.ok(
+      ["Compare Carefully", "Not Recommended"].includes(
+        p.overallRecommendation.band,
+      ),
+    );
+  });
+
+  it("IGI 700528875: solid optics but I2 clarity dominates recommendation", () => {
+    const igiI2 = fields({
+      shape: "Round Brilliant",
+      carat: "1.00",
+      measurements: "6.40 - 6.42 x 4.08",
+      tablePercent: "55",
+      depthPercent: "63.7",
+      crownAngle: "36.1",
+      pavilionAngle: "40.0",
+      polish: "Very Good",
+      symmetry: "Very Good",
+      cutGrade: "Very Good",
+      fluorescence: "None",
+    });
+    const clientScore = presentClientInterpretationScore(igiI2, "deep");
+    const raw =
+      clientScore.eligible && clientScore.overall !== null
+        ? clientScore.overall
+        : 82;
+    const p = profileFor(igiI2, raw, { clarity: "I2", color: "G" });
+    assert.equal(p.riskProfile.band, "High");
+    assert.notEqual(p.overallRecommendation.band, "Strong Candidate");
+    assert.notEqual(p.riskProfile.band, "Low");
+    assert.ok(
+      ["Compare Carefully", "Not Recommended"].includes(
+        p.overallRecommendation.band,
+      ),
+    );
+  });
+
+  it("I3 is always Not Recommended", () => {
+    const p = profileFor(STRONG_FIELDS, 95, { clarity: "I3" });
+    assert.equal(p.riskProfile.band, "High");
     assert.equal(p.overallRecommendation.band, "Not Recommended");
+  });
+
+  it("I1 cannot exceed Worth Reviewing", () => {
+    const p = profileFor(STRONG_FIELDS, 92, { clarity: "I1" });
+    assert.notEqual(p.overallRecommendation.band, "Strong Candidate");
+    assert.ok(
+      ["Worth Reviewing", "Compare Carefully", "Not Recommended"].includes(
+        p.overallRecommendation.band,
+      ),
+    );
+  });
+
+  it("SI2 with strong optics is worth reviewing with clarity limitation", () => {
+    const p = profileFor(STRONG_FIELDS, 92, { clarity: "SI2" });
+    assert.equal(p.overallRecommendation.band, "Worth Reviewing");
+    assert.equal(p.primaryLimitingFactor.display, "Clarity");
   });
 
   it("Case C: spread-oriented good cut → compare carefully or worth reviewing", () => {
@@ -138,7 +198,12 @@ describe("buildDiamondDecisionProfile", () => {
       canShowScore: false,
     });
     assert.equal(p.opticalPerformance.band, "Unavailable");
-    assert.equal(p.overallRecommendation.band, "Needs More Information");
+    assert.equal(p.confidence.band, "Low");
+    assert.equal(p.primaryLimitingFactor.display, "Incomplete Report Data");
+    assert.equal(
+      p.overallRecommendation.band,
+      "Worth Reviewing After Additional Information",
+    );
   });
 
   it("Case E: fancy color caveat elevates risk framing", () => {
