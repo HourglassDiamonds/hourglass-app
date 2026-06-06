@@ -98,7 +98,7 @@ describe("buildDiamondDecisionProfile", () => {
     assert.equal(p.overallRecommendation.band, "Strong Candidate");
   });
 
-  it("Case B: decent optics but I2 → high risk, never strong candidate", () => {
+  it("Case B: decent optics but I2 → high risk, not recommended", () => {
     const p = profileFor(STRONG_FIELDS, 82, { clarity: "I2" });
     assert.ok(
       ["Strong", "Solid", "Moderate", "Mixed"].includes(p.opticalPerformance.band),
@@ -106,11 +106,10 @@ describe("buildDiamondDecisionProfile", () => {
     assert.equal(p.riskProfile.band, "High");
     assert.equal(p.confidence.band, "High");
     assert.equal(p.primaryLimitingFactor.display, "Clarity");
-    assert.notEqual(p.overallRecommendation.band, "Strong Candidate");
-    assert.ok(
-      ["Compare Carefully", "Not Recommended"].includes(
-        p.overallRecommendation.band,
-      ),
+    assert.equal(p.overallRecommendation.band, "Not Recommended");
+    assert.match(
+      p.overallRecommendation.explanation,
+      /Hourglass recommended clarity standards/i,
     );
   });
 
@@ -135,12 +134,11 @@ describe("buildDiamondDecisionProfile", () => {
         : 82;
     const p = profileFor(igiI2, raw, { clarity: "I2", color: "G" });
     assert.equal(p.riskProfile.band, "High");
-    assert.notEqual(p.overallRecommendation.band, "Strong Candidate");
+    assert.equal(p.overallRecommendation.band, "Not Recommended");
     assert.notEqual(p.riskProfile.band, "Low");
-    assert.ok(
-      ["Compare Carefully", "Not Recommended"].includes(
-        p.overallRecommendation.band,
-      ),
+    assert.match(
+      p.overallRecommendation.explanation,
+      /Hourglass recommended clarity standards/i,
     );
   });
 
@@ -150,13 +148,12 @@ describe("buildDiamondDecisionProfile", () => {
     assert.equal(p.overallRecommendation.band, "Not Recommended");
   });
 
-  it("I1 cannot exceed Worth Reviewing", () => {
+  it("I1 is Not Recommended under Hourglass clarity standards", () => {
     const p = profileFor(STRONG_FIELDS, 92, { clarity: "I1" });
-    assert.notEqual(p.overallRecommendation.band, "Strong Candidate");
-    assert.ok(
-      ["Worth Reviewing", "Compare Carefully", "Not Recommended"].includes(
-        p.overallRecommendation.band,
-      ),
+    assert.equal(p.overallRecommendation.band, "Not Recommended");
+    assert.match(
+      p.overallRecommendation.explanation,
+      /Hourglass recommended clarity standards/i,
     );
   });
 

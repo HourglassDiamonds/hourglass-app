@@ -203,10 +203,10 @@ console.log(
     "Conf".padEnd(8) +
     "Risk".padEnd(10) +
     "Rec".padEnd(36) +
-    "Limitation".padEnd(28) +
-    "Personality",
+    "Identity".padEnd(34) +
+    "Visual",
 );
-console.log("-".repeat(120));
+console.log("-".repeat(130));
 
 for (const c of CASES) {
   const { profile, personality } = runCase(c);
@@ -222,7 +222,7 @@ for (const c of CASES) {
       profile.confidence.band.padEnd(8) +
       profile.riskProfile.band.padEnd(10) +
       profile.overallRecommendation.band.padEnd(36) +
-      profile.primaryLimitingFactor.display.padEnd(28) +
+      profile.purchasePersonality.label.padEnd(34) +
       personality.displayTitle,
   );
 }

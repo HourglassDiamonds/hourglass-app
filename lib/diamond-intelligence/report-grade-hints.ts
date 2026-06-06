@@ -135,7 +135,7 @@ export function clarityRecommendationCeiling(
   const c = normalizeClarityGrade(clarity ?? "");
   if (!c) return null;
   if (c === "I3") return "Not Recommended";
-  if (c === "I2") return "Compare Carefully";
-  if (c === "I1") return "Worth Reviewing";
+  if (c === "I2") return "Not Recommended";
+  if (c === "I1") return "Not Recommended";
   return null;
 }

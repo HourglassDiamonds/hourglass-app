@@ -2,6 +2,7 @@
 
 import type { DiamondDecisionProfile } from "@/lib/diamond-intelligence/diamond-decision-profile";
 import { presentOpticalPerformanceDisplay } from "@/lib/diamond-intelligence/interpretation-display";
+import DiamondPurchasePersonalitySection from "./DiamondPurchasePersonalitySection";
 import { DashboardCard } from "./DashboardCard";
 
 function DimensionRow({
@@ -86,6 +87,8 @@ export default function DiamondDecisionProfileSection({
           {profile.overallRecommendation.explanation}
         </p>
       </div>
+
+      <DiamondPurchasePersonalitySection personality={profile.purchasePersonality} />
     </DashboardCard>
   );
 }

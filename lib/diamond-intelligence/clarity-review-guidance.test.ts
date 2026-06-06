@@ -10,10 +10,12 @@ describe("buildClarityReviewGuidance", () => {
     assert.match(g?.body ?? "", /eye-clean/i);
   });
 
-  it("I2 gets strong expert review copy", () => {
+  it("I2 gets Hourglass clarity standards advisory", () => {
     const g = buildClarityReviewGuidance({ clarity: "I2" });
     assert.equal(g?.tone, "strong");
-    assert.match(g?.body ?? "", /strongly recommended/i);
+    assert.equal(g?.title, "Outside Hourglass Clarity Standards");
+    assert.match(g?.body ?? "", /Hourglass clarity standards/i);
+    assert.match(g?.body ?? "", /not a dispute of the laboratory grade/i);
   });
 
   it("VS1 returns null", () => {

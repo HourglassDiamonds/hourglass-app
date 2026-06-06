@@ -18,6 +18,14 @@ import {
 } from "./decision-profile-recommendation";
 import { buildDecisionConfidence } from "./decision-profile-confidence";
 import { derivePrimaryLimitingFactor } from "./primary-limiting-factor";
+import {
+  hourglassClarityStandardsNote,
+  isBelowHourglassClarityStandard,
+} from "./hourglass-clarity-standards";
+import {
+  buildDiamondPurchasePersonality,
+  type DiamondPurchasePersonality,
+} from "./diamond-purchase-personality";
 import type { ClientSafeReportCapability } from "./client-api";
 
 export type OpticalPerformanceBand =
@@ -73,6 +81,7 @@ export type DiamondDecisionProfile = {
   };
   archetype: ProportionArchetype;
   gradeHints: ReportGradeHints;
+  purchasePersonality: DiamondPurchasePersonality;
 };
 
 function num(s: string): number | null {
@@ -341,6 +350,10 @@ function recommendationExplanation(
       }
       return "Promising in some dimensions but not a clean overall yes — Justin can help weigh proportions against clarity and how you want it to look.";
     case "Not Recommended":
+      if (isBelowHourglassClarityStandard(hints.clarity)) {
+        const standards = hourglassClarityStandardsNote(hints.clarity);
+        return `Clarity ${hints.clarity} falls outside Hourglass recommended clarity standards for client guidance — even workable proportions do not change that advisory. ${standards ?? ""}`;
+      }
       if (hints.clarity && /^I[23]$/.test(hints.clarity)) {
         return `Clarity ${hints.clarity} is the dominant concern — even decent proportions do not make this a confident overall recommendation without a very specific price and appearance trade you accept.`;
       }
@@ -413,6 +426,18 @@ export function buildDiamondDecisionProfile(input: {
     archetype,
   });
 
+  const purchasePersonality = buildDiamondPurchasePersonality({
+    recommendation,
+    risk,
+    confidenceBand: confidence.band,
+    opticalBand,
+    visualBand: visual.band,
+    primaryLimitingFactor,
+    archetype,
+    hints,
+    fields: input.fields,
+  });
+
   return {
     archetype,
     gradeHints: hints,
@@ -451,5 +476,6 @@ export function buildDiamondDecisionProfile(input: {
       ),
     },
     primaryLimitingFactor,
+    purchasePersonality,
   };
 }

@@ -50,11 +50,9 @@ describe("clarityRiskFloor", () => {
 });
 
 describe("clarityRecommendationCeiling", () => {
-  it("caps I2 at Compare Carefully", () => {
-    assert.equal(clarityRecommendationCeiling("I2"), "Compare Carefully");
-  });
-
-  it("I3 is Not Recommended only", () => {
+  it("caps I1, I2, and I3 at Not Recommended", () => {
     assert.equal(clarityRecommendationCeiling("I3"), "Not Recommended");
+    assert.equal(clarityRecommendationCeiling("I2"), "Not Recommended");
+    assert.equal(clarityRecommendationCeiling("I1"), "Not Recommended");
   });
 });

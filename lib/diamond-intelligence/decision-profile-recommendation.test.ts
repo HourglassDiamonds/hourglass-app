@@ -35,15 +35,16 @@ describe("mergeRiskBand", () => {
 });
 
 describe("applyRecommendationCeilings", () => {
-  it("I2 cannot remain Strong Candidate", () => {
-    const band = applyRecommendationCeilings("Strong Candidate", {
-      risk: "High",
-      ctx: fullCtx(),
-      hints: { clarity: "I2" },
-      confidenceBand: "High",
-    });
-    assert.notEqual(band, "Strong Candidate");
-    assert.equal(band, "Compare Carefully");
+  it("I1, I2, and I3 cannot remain Strong Candidate", () => {
+    for (const clarity of ["I1", "I2", "I3"] as const) {
+      const band = applyRecommendationCeilings("Strong Candidate", {
+        risk: clarity === "I1" ? "Elevated" : "High",
+        ctx: fullCtx(),
+        hints: { clarity },
+        confidenceBand: "High",
+      });
+      assert.equal(band, "Not Recommended", clarity);
+    }
   });
 });
 

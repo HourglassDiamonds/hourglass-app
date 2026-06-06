@@ -105,16 +105,15 @@ export function deriveBaseRecommendation(input: {
   }
 
   const clarity = input.hints.clarity;
-  if (clarity === "I3") return "Not Recommended";
+  if (clarity === "I3" || clarity === "I2" || clarity === "I1") {
+    return "Not Recommended";
+  }
 
   if (input.risk === "High") {
-    if (clarity === "I2") return "Compare Carefully";
-    if (clarity === "I1") return "Compare Carefully";
     return "Not Recommended";
   }
 
   if (input.risk === "Elevated") {
-    if (clarity === "I2" || clarity === "I1") return "Compare Carefully";
     return "Compare Carefully";
   }
 
@@ -170,20 +169,12 @@ export function applyRecommendationCeilings(
   const clarityCeiling = clarityRecommendationCeiling(input.hints.clarity);
   band = applyCeiling(band, clarityCeiling);
 
-  if (input.hints.clarity === "I3") {
-    return "Not Recommended";
-  }
-
   if (input.risk === "High") {
     band = worseRecommendation(band, "Compare Carefully");
   }
 
   if (input.hints.fancyColor || input.hints.coloredDiamondReport) {
     band = worseRecommendation(band, "Worth Reviewing");
-  }
-
-  if (input.risk === "High" && input.hints.clarity === "I2") {
-    band = worseRecommendation(band, "Compare Carefully");
   }
 
   return band;
