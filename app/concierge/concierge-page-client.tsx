@@ -1,6 +1,8 @@
 "use client";
 
-import React, { useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { diamondIntelligencePrefillFromSearchParams } from "@/lib/concierge/diamond-intelligence-context";
 import Header from "../shared-components/Header";
 import WhisperedPraiseLink from "../shared-components/WhisperedPraiseLink";
 
@@ -11,6 +13,10 @@ const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 type SubmitState = "idle" | "submitting" | "success" | "error";
 
 export default function ConciergePageClient() {
+  const searchParams = useSearchParams();
+  const [inspirationNotes, setInspirationNotes] = useState("");
+  const notesPrefilled = useRef(false);
+
   const [projectType, setProjectType] = useState("Engagement Ring");
   const [shape, setShape] = useState("Oval");
   const [direction, setDirection] = useState("Quiet Elegance");
@@ -26,6 +32,14 @@ export default function ConciergePageClient() {
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const formRef = useRef<HTMLFormElement | null>(null);
+
+  useEffect(() => {
+    if (notesPrefilled.current) return;
+    const prefill = diamondIntelligencePrefillFromSearchParams(searchParams);
+    if (!prefill) return;
+    setInspirationNotes((current) => (current.trim() ? current : prefill));
+    notesPrefilled.current = true;
+  }, [searchParams]);
 
   const activePill =
     "rounded-full border border-[#2b2723] bg-[#2b2723] px-3.5 py-1.5 text-[9.5px] uppercase tracking-[0.18em] text-white shadow-[0_10px_20px_rgba(43,39,35,0.10)]";
@@ -150,6 +164,7 @@ export default function ConciergePageClient() {
       );
       setFiles([]);
       formRef.current?.reset();
+      setInspirationNotes("");
 
       setProjectType("Engagement Ring");
       setShape("Oval");
@@ -395,6 +410,8 @@ export default function ConciergePageClient() {
                     <textarea
                       name="inspirationNotes"
                       rows={6}
+                      value={inspirationNotes}
+                      onChange={(event) => setInspirationNotes(event.target.value)}
                       placeholder="Anything you'd like us to know. References, ideas, timing, or even a rough direction."
                       className="mt-4 w-full resize-none rounded-[18px] border border-[#ddd4c9] bg-white/78 px-4 py-4 text-sm leading-7 text-[#3c3834] outline-none placeholder:text-[#8a8177]"
                     />

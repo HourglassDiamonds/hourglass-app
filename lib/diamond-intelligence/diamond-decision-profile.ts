@@ -169,7 +169,7 @@ function opticalExplanation(
       }
       return "Proportions are in a mainstream balanced zone — capable in person, with a few proportion choices worth understanding rather than alarming.";
     default:
-      return "The proportion mix is workable but not textbook — compare how brightness, fire, and contrast feel relative to other options you like.";
+      return "The report suggests strong visual potential, while in-person comparison can confirm whether its brightness, fire, and contrast match your preferences.";
   }
 }
 
@@ -317,7 +317,7 @@ function recommendationExplanation(
 ): string {
   switch (band) {
     case "Strong Candidate":
-      return "Strong optical architecture on paper, manageable risk flags, and complete report data — a practical strong candidate worth comparing in person.";
+      return "Based on the report information available, the optical architecture appears strong on paper with manageable risk flags — worth further consideration and in-person review before any decision.";
     case "Compare Carefully":
       if (limitingDisplay === "Clarity") {
         return `Primary limitation: ${limitingDisplay}. Proportions may be workable, but clarity is the deciding factor — compare carefully and prioritize eye-clean appearance.`;
@@ -348,7 +348,7 @@ function recommendationExplanation(
       if (optical === "Preliminary" || optical === "Unavailable") {
         return "Worth a careful review once proportion detail is confirmed — not a final yes/no from today's read alone.";
       }
-      return "Promising in some dimensions but not a clean overall yes — Justin can help weigh proportions against clarity and how you want it to look.";
+      return "Promising in some dimensions on paper, but not a clean overall yes — further review may help weigh proportions against clarity and how you want it to look.";
     case "Not Recommended":
       if (isBelowHourglassClarityStandard(hints.clarity)) {
         const standards = hourglassClarityStandardsNote(hints.clarity);

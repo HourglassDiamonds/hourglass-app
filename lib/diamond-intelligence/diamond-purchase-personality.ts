@@ -49,7 +49,7 @@ export type DiamondPurchasePersonality = {
 /** Deterministic subtitle for each identity label — presentation only. */
 export const IDENTITY_TRANSLATIONS: Record<DiamondIdentityLabel, string> = {
   "Performance-Led Choice":
-    "Strong reason to pursue if sparkle and light performance are priorities.",
+    "Often attractive for buyers who prioritize sparkle and light performance.",
   "Balanced Everyday Choice":
     "Well-rounded with no major concerns identified from the report.",
   "Value-Oriented Candidate":
@@ -423,7 +423,7 @@ function buildCopy(
       }
       return {
         summary:
-          "This diamond’s strongest argument is its likely light return — not necessarily rarity on paper.",
+          "This diamond’s strongest argument is its likely light performance.",
         why,
         bestFor: "Someone who prioritizes sparkle and overall visual life in everyday lighting.",
         watchOutFor:

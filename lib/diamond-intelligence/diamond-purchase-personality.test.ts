@@ -119,7 +119,7 @@ describe("buildDiamondPurchasePersonality", () => {
     assert.equal(p.purchasePersonality.label, "Performance-Led Choice");
     assert.equal(
       p.purchasePersonality.translation,
-      "Strong reason to pursue if sparkle and light performance are priorities.",
+      "Often attractive for buyers who prioritize sparkle and light performance.",
     );
   });
 

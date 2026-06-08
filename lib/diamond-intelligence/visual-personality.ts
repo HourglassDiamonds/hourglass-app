@@ -28,7 +28,7 @@ const CONSUMER_TITLES: Record<VisualPersonalityArchetype, string> = {
   "Compact Architecture": "Appears Slightly Smaller Than Expected",
   "Bright & Structured": "Bright with Crisp Sparkle",
   "Broad Flash Style": "Broad, Open Sparkle",
-  "Lively Character": "Lively but Less Conventional",
+  "Lively Character": "Distinctive Sparkle Character",
   "Architecture Unclear": "More Information Needed",
 };
 
@@ -145,7 +145,7 @@ export function buildVisualPersonality(input: {
         archetype,
         displayTitle: CONSUMER_TITLES[archetype],
         explanation:
-          "You may notice a lively, distinctive look rather than textbook evenness — worth comparing to stones you already like.",
+          "You may notice a lively, distinctive sparkle style. It may not read as perfectly textbook on paper, but the report still suggests a strong visual performer.",
       };
     }
   }

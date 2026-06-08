@@ -2,13 +2,14 @@
 
 import type { ProfileAxis } from "@/lib/diamond-intelligence/client-balance-profile";
 import { referenceEnvelopeRadius } from "@/lib/diamond-intelligence/client-balance-profile";
+import { GRAPH_REPORT_CONFIDENCE_LABELS } from "./consumer-display-labels";
 
-const CX = 110;
-const CY = 104;
-const MAX_R = 72;
+const CX = 120;
+const CY = 112;
+const MAX_R = 68;
 const REF_R = referenceEnvelopeRadius(MAX_R);
 const UNCERTAIN_R = MAX_R * 0.4;
-const LABEL_R = MAX_R + 13;
+const LABEL_R = MAX_R + 20;
 
 function axisAngle(index: number, total: number): number {
   return -Math.PI / 2 + (index * 2 * Math.PI) / total;
@@ -36,14 +37,12 @@ type Props = {
   axes: ProfileAxis[];
   centerLabel: string;
   empty?: boolean;
-  /** Center label shown in placeholder (empty/orientation) mode. */
   emptyLabel?: string;
-  /** Caption shown under the placeholder center label. */
   emptySubLabel?: string;
-  /** Display mode from the interpretation context — controls strength + labels. */
   graphMode?: GraphMode;
-  /** 0–1 multiplier that pulls the profile toward center for lower confidence. */
   strengthMultiplier?: number;
+  refinedGold?: boolean;
+  surface?: "dark" | "light";
 };
 
 export default function OpticalBalanceGraph({
@@ -54,6 +53,8 @@ export default function OpticalBalanceGraph({
   emptySubLabel,
   graphMode = "full",
   strengthMultiplier = 1,
+  refinedGold = false,
+  surface = "dark",
 }: Props) {
   const n = axes.length || 6;
   const gridLevels = [0.5, 1];
@@ -70,17 +71,29 @@ export default function OpticalBalanceGraph({
   const profileFill = empty
     ? "none"
     : graphMode === "limited"
-      ? "rgba(214,194,156,0.06)"
+      ? refinedGold
+        ? "rgba(196,176,138,0.07)"
+        : "rgba(214,194,156,0.06)"
       : graphMode === "preliminary"
-        ? "rgba(214,194,156,0.09)"
-        : "rgba(214,194,156,0.12)";
+        ? refinedGold
+          ? "rgba(196,176,138,0.10)"
+          : "rgba(214,194,156,0.09)"
+        : refinedGold
+          ? "rgba(196,176,138,0.14)"
+          : "rgba(214,194,156,0.12)";
   const profileStroke = empty
     ? "rgba(232,224,212,0.18)"
     : graphMode === "limited"
-      ? "rgba(232,224,212,0.5)"
+      ? refinedGold
+        ? "rgba(212,192,154,0.55)"
+        : "rgba(232,224,212,0.5)"
       : graphMode === "preliminary"
-        ? "rgba(238,230,216,0.72)"
-        : "rgba(238,230,216,0.95)";
+        ? refinedGold
+          ? "rgba(220,200,168,0.78)"
+          : "rgba(238,230,216,0.72)"
+        : refinedGold
+          ? "rgba(232,214,184,0.92)"
+          : "rgba(238,230,216,0.95)";
   const centerText = empty
     ? emptyLabel
     : graphMode === "preliminary"
@@ -88,37 +101,74 @@ export default function OpticalBalanceGraph({
       : graphMode === "limited"
         ? "Open"
         : centerLabel;
-  const subLabel =
-    graphMode === "preliminary"
-      ? "MODERATE CONFIDENCE"
+  const subLabel = empty
+    ? emptySubLabel
+    : graphMode === "preliminary"
+      ? GRAPH_REPORT_CONFIDENCE_LABELS.preliminary
       : graphMode === "limited"
-        ? "LIMITED DATA"
-        : "HIGH CONFIDENCE";
+        ? GRAPH_REPORT_CONFIDENCE_LABELS.limited
+        : GRAPH_REPORT_CONFIDENCE_LABELS.full;
 
   const envelope = polygonPoints(axes.map(() => REF_R));
   const profile = polygonPoints(radii);
 
+  const gridStroke =
+    surface === "light" ? "rgba(180,170,158,0.22)" : "rgba(232,224,212,0.10)";
+  const spokeStroke =
+    surface === "light" ? "rgba(180,170,158,0.28)" : "rgba(232,224,212,0.12)";
+  const labelFill =
+    surface === "light"
+      ? refinedGold
+        ? "#8a8177"
+        : "#948a80"
+      : refinedGold
+        ? "#d4c4a8"
+        : "#cbc4ba";
+  const centerFill = empty
+    ? surface === "light"
+      ? "#948a80"
+      : "#8f8980"
+    : restrained
+      ? surface === "light"
+        ? "#5f5851"
+        : "#d9d2c7"
+      : surface === "light"
+        ? "#1f1d1a"
+        : "#efe9df";
+  const subLabelFill = surface === "light" ? "#948a80" : "#938d84";
+  const emptySubFill = surface === "light" ? "#948a80" : "#7c766d";
+  const markerFill = empty
+    ? surface === "light"
+      ? "rgba(180,170,158,0.15)"
+      : "rgba(232,224,212,0.1)"
+    : "rgba(214,194,156,0.32)";
+  const markerStroke = empty
+    ? surface === "light"
+      ? "rgba(180,170,158,0.35)"
+      : "rgba(232,224,212,0.22)"
+    : "rgba(238,230,216,0.6)";
+  const vertexFill =
+    surface === "light" ? "rgba(107,80,72,0.85)" : "rgba(238,230,216,0.95)";
+
   return (
-    <div className="relative mx-auto w-full max-w-[min(440px,94vw)]">
+    <div className="relative mx-auto w-full max-w-[min(300px,100%)] px-1 py-2">
       <svg
-        viewBox="0 0 220 210"
-        className="h-auto w-full"
-        style={{ maxHeight: "min(320px, 50vw)" }}
+        viewBox="0 0 240 236"
+        className="h-auto w-full overflow-visible"
+        style={{ maxHeight: "min(300px, 52vw)" }}
         aria-label="Performance profile chart"
         role="img"
       >
-        {/* concentric reference rings */}
         {gridLevels.map((level) => (
           <polygon
             key={level}
             points={polygonPoints(axes.map(() => MAX_R * level))}
             fill="none"
-            stroke="rgba(232,224,212,0.10)"
+            stroke={gridStroke}
             strokeWidth={level === 1 ? 0.5 : 0.4}
           />
         ))}
 
-        {/* axis spokes */}
         {axes.map((_, i) => {
           const end = polar(MAX_R, axisAngle(i, n));
           return (
@@ -128,22 +178,20 @@ export default function OpticalBalanceGraph({
               y1={CY}
               x2={end.x}
               y2={end.y}
-              stroke="rgba(232,224,212,0.12)"
+              stroke={spokeStroke}
               strokeWidth="0.35"
             />
           );
         })}
 
-        {/* ideal reference envelope */}
         <polygon
           points={envelope}
-          fill="rgba(196,176,138,0.035)"
-          stroke="rgba(212,192,154,0.42)"
+          fill={refinedGold ? "rgba(196,176,138,0.045)" : "rgba(196,176,138,0.035)"}
+          stroke={refinedGold ? "rgba(212,192,154,0.48)" : "rgba(212,194,156,0.42)"}
           strokeWidth="0.7"
           strokeDasharray="2.5 3.5"
         />
 
-        {/* measured profile */}
         <polygon
           points={profile}
           fill={profileFill}
@@ -153,7 +201,6 @@ export default function OpticalBalanceGraph({
           strokeDasharray={dashedProfile ? "4 3" : undefined}
         />
 
-        {/* profile vertices */}
         {!empty && graphMode === "full"
           ? radii.map((r, i) => {
               if (uncertainFlags[i]) return null;
@@ -164,13 +211,12 @@ export default function OpticalBalanceGraph({
                   cx={pt.x}
                   cy={pt.y}
                   r="1.4"
-                  fill="rgba(238,230,216,0.95)"
+                  fill={vertexFill}
                 />
               );
             })
           : null}
 
-        {/* axis labels */}
         {axes.map((axis, i) => {
           const pt = polar(LABEL_R, axisAngle(i, n));
           const anchor =
@@ -182,9 +228,9 @@ export default function OpticalBalanceGraph({
               y={pt.y}
               textAnchor={anchor}
               dominantBaseline="middle"
-              className="fill-[#cbc4ba]"
+              fill={labelFill}
               style={{
-                fontSize: "8px",
+                fontSize: refinedGold ? "6.5px" : "7px",
                 letterSpacing: "0.14em",
                 fontWeight: 500,
               }}
@@ -194,13 +240,12 @@ export default function OpticalBalanceGraph({
           );
         })}
 
-        {/* central focus marker */}
         <circle
           cx={CX}
           cy={CY}
           r={empty ? 2.5 : 4}
-          fill={empty ? "rgba(232,224,212,0.1)" : "rgba(214,194,156,0.32)"}
-          stroke={empty ? "rgba(232,224,212,0.22)" : "rgba(238,230,216,0.6)"}
+          fill={markerFill}
+          stroke={markerStroke}
           strokeWidth="0.6"
         />
 
@@ -209,39 +254,30 @@ export default function OpticalBalanceGraph({
           y={empty ? CY + 1 : CY - 5}
           textAnchor="middle"
           dominantBaseline="middle"
+          fill={centerFill}
           className={
-            empty
-              ? "fill-[#8f8980]"
+            !empty && !restrained && surface === "dark"
+              ? "font-serif"
               : restrained
-                ? "fill-[#d9d2c7] font-serif"
-                : "fill-[#efe9df] font-serif"
+                ? "font-serif"
+                : undefined
           }
           style={{
-            fontSize: empty ? "7.5px" : restrained ? "11px" : "15px",
+            fontSize: empty ? "7px" : restrained ? "10px" : "14px",
             letterSpacing: empty || restrained ? "0.06em" : undefined,
           }}
         >
           {centerText}
         </text>
-        {!empty ? (
+        {subLabel ? (
           <text
             x={CX}
-            y={restrained ? CY + 12 : CY + 13}
+            y={empty ? CY + 12 : restrained ? CY + 12 : CY + 13}
             textAnchor="middle"
-            className="fill-[#938d84]"
-            style={{ fontSize: "6.5px", letterSpacing: "0.16em" }}
+            fill={empty ? emptySubFill : subLabelFill}
+            style={{ fontSize: "5.5px", letterSpacing: "0.12em" }}
           >
             {subLabel}
-          </text>
-        ) : emptySubLabel ? (
-          <text
-            x={CX}
-            y={CY + 12}
-            textAnchor="middle"
-            className="fill-[#7c766d]"
-            style={{ fontSize: "6px", letterSpacing: "0.16em" }}
-          >
-            {emptySubLabel}
           </text>
         ) : null}
       </svg>

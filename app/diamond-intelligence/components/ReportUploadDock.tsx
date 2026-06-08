@@ -169,8 +169,8 @@ export function ReportUploadDock({
         {!busy ? (
           <p className="pointer-events-none mt-1.5 text-[10px] leading-snug text-[#948a80]">
             {hasReport
-              ? "Or click to browse · PDF or image from GIA, IGI, GCAL"
-              : "PDF or image from GIA, IGI, GCAL"}
+              ? "Or click to browse · PDF or image from GIA, IGI, or GCAL"
+              : "PDF or image from GIA, IGI, or GCAL"}
           </p>
         ) : (
           <p className="pointer-events-none mt-1.5 text-[10px] text-[#a8926a]">

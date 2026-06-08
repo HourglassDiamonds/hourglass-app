@@ -10,7 +10,7 @@ export default function LookingDeeperPanel({
   if (!visible) return null;
 
   return (
-    <DashboardCard title="Looking Deeper" tone="subdued" className="!p-4 md:!p-5">
+    <DashboardCard title="Looking Deeper" tone="subdued">
       <p className="text-sm leading-[1.7] text-[#5f5851]">
         For diamonds being seriously considered, additional review can provide
         greater confidence. Depending on the stone, this may include direct

@@ -21,9 +21,9 @@ const LIGHT_PERFORMANCE_PERSONALITY: Record<
   string
 > = {
   Distinctive:
-    "An unusual, confident optical personality — likely to feel lively and memorable in everyday light.",
+    "An unusual optical personality on paper — may feel lively and memorable in everyday light.",
   Strong:
-    "A clear, harmonious read — brightness and fire should feel balanced and engaging.",
+    "A clear, harmonious read — brightness and fire may feel balanced and engaging in person.",
   Balanced:
     "A steady middle-ground optical story — neither flashy nor flat on paper.",
   Nuanced:

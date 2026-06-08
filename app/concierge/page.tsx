@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { pageMetadata } from "@/lib/seo/site-metadata";
 import MarketingPageJsonLd from "@/app/shared-components/MarketingPageJsonLd";
 import ConciergePageClient from "./concierge-page-client";
@@ -15,7 +16,9 @@ export default function ConciergePage() {
   return (
     <>
       <MarketingPageJsonLd name="Concierge" path="/concierge" />
-      <ConciergePageClient />
+      <Suspense fallback={null}>
+        <ConciergePageClient />
+      </Suspense>
     </>
   );
 }

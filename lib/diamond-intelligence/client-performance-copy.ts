@@ -275,15 +275,15 @@ export function buildOpticalInterpretationSummary(input: {
     : "";
 
   if (bucket === "exceptional" || bucket === "strong") {
-    return `This diamond shows a balanced overall presentation with ${tone.fire} fire and ${tone.contrast} contrast. Its proportions support a confident read for brightness and sparkle in everyday viewing.${expertClose}`;
+    return `Based on the report information available, this diamond appears to show a balanced overall presentation with ${tone.fire} fire and ${tone.contrast} contrast. Its proportions suggest a favorable read for brightness and sparkle in everyday viewing.${expertClose}`;
   }
 
   if (bucket === "balanced") {
-    return `This diamond shows a steady, balanced presentation — ${tone.brightness} brightness, ${tone.fire} fire, and ${tone.contrast} contrast working together without a single dramatic standout. That can still be very appealing in person; the report simply reads as middle-of-the-road on paper.${expertClose}`;
+    return `This diamond appears to show a steady, balanced presentation — ${tone.brightness} brightness, ${tone.fire} fire, and ${tone.contrast} contrast working together without a single dramatic standout. That can still be very appealing in person; the report simply reads as middle-of-the-road on paper.${expertClose}`;
   }
 
   if (bucket === "mixed") {
-    return `This diamond shows a mixed optical picture — some traits read ${tone.brightness} while others are ${tone.scintillation} or ${tone.contrast}. That often means real-world beauty with tradeoffs worth understanding before you choose.${expertClose}`;
+    return `This diamond appears to show a mixed optical picture on paper — some traits read ${tone.brightness} while others are ${tone.scintillation} or ${tone.contrast}. That often means real-world beauty with tradeoffs worth understanding before you choose.${expertClose}`;
   }
 
   if (input.capability.interpretationLevel === "basic") {

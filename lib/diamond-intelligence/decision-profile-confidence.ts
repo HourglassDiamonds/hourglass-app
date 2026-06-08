@@ -52,7 +52,7 @@ export function buildDecisionConfidence(input: {
       label: "Confidence",
       band: "High",
       explanation:
-        "Core proportions and finish detail are visible on the report — this interpretation reflects a complete architectural read.",
+        "Core proportions and finish detail are visible on the report — this interpretation reflects a complete report-based architectural read.",
     };
   }
 

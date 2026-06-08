@@ -9,8 +9,8 @@ export {
   CLIENT_UPLOAD_INTERPRET_ERROR,
 } from "./client-interpret-messages";
 
-/** Browser-side guard — slightly above server route budget. */
-const CLIENT_FETCH_TIMEOUT_MS = 16_000;
+/** Browser-side guard — slightly above server route budget (28s). */
+const CLIENT_FETCH_TIMEOUT_MS = 30_000;
 
 export type InterpretApiPayload = {
   ok?: boolean;

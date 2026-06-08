@@ -11,19 +11,16 @@ export default function VisualPersonalitySection({
   if (!personality) return null;
 
   return (
-    <DashboardCard
-      title="What You'll Likely Notice"
-      tone="subdued"
-      className="!shadow-none md:col-span-2 xl:col-span-1"
-    >
-      <p className="mb-1 text-[11px] tracking-[0.14em] text-[#6b5048]">
+    <DashboardCard title="What You'll Likely Notice" tone="default">
+      <h4 className="font-serif text-[1.35rem] leading-[1.15] tracking-[-0.02em] text-[#1f1d1a] md:text-[1.5rem]">
         {personality.displayTitle}
-      </p>
-      <p className="text-sm leading-[1.65] text-[#5f5851]">
+      </h4>
+      <p className="mt-4 max-w-2xl text-[1rem] leading-[1.78] text-[#5f5851]">
         {personality.explanation}
       </p>
-      <p className="mt-3 text-[11px] leading-[1.55] text-[#948a80]">
-        What you may notice on the hand — from report proportions, not verified optical imaging.
+      <p className="mt-4 text-[11px] leading-[1.6] tracking-[0.02em] text-[#948a80]">
+        What you may notice on the hand — from report proportions, not verified
+        optical imaging.
       </p>
     </DashboardCard>
   );
