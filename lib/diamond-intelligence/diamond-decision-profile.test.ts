@@ -109,7 +109,7 @@ describe("buildDiamondDecisionProfile", () => {
     assert.equal(p.overallRecommendation.band, "Not Recommended");
     assert.match(
       p.overallRecommendation.explanation,
-      /Hourglass recommended clarity standards/i,
+      /outside the quality range/i,
     );
   });
 
@@ -138,7 +138,7 @@ describe("buildDiamondDecisionProfile", () => {
     assert.notEqual(p.riskProfile.band, "Low");
     assert.match(
       p.overallRecommendation.explanation,
-      /Hourglass recommended clarity standards/i,
+      /outside the quality range/i,
     );
   });
 
@@ -153,7 +153,7 @@ describe("buildDiamondDecisionProfile", () => {
     assert.equal(p.overallRecommendation.band, "Not Recommended");
     assert.match(
       p.overallRecommendation.explanation,
-      /Hourglass recommended clarity standards/i,
+      /outside the quality range/i,
     );
   });
 

@@ -17,6 +17,7 @@ import {
   hourglassClarityStandardsNote,
   isBelowHourglassClarityStandard,
 } from "./hourglass-clarity-standards";
+import { HOURGLASS_EXCLUDED_CLARITY_CONSUMER_MESSAGE } from "./hourglass-clarity-policy";
 
 export type DiamondPurchasePersonalityTone =
   | "positive"
@@ -65,7 +66,7 @@ export const IDENTITY_TRANSLATIONS: Record<DiamondIdentityLabel, string> = {
   "Architecture-Limited Candidate":
     "Worth understanding the proportion tradeoff before moving forward.",
   "Outside Hourglass Standards":
-    "Falls outside the standards typically recommended by Hourglass.",
+    "Below Hourglass minimum clarity standards — not recommended for client sourcing.",
 };
 
 export function translationForIdentityLabel(
@@ -283,17 +284,17 @@ function buildCopy(
     case "Outside Hourglass Standards":
       if (isBelowHourglassClarityStandard(input.hints.clarity)) {
         const standards = hourglassClarityStandardsNote(input.hints.clarity);
+        why.push(HOURGLASS_EXCLUDED_CLARITY_CONSUMER_MESSAGE);
         why.push(
-          `Clarity ${input.hints.clarity} falls outside Hourglass recommended clarity standards for client guidance.`,
+          `Clarity ${input.hints.clarity} is outside Hourglass sourcing standards.`,
         );
         if (standards) why.push(standards);
         return {
-          summary:
-            "This is best understood as outside Hourglass typical client clarity standards — the lab grade stands; our recommendation reflects how we guide buyers.",
+          summary: HOURGLASS_EXCLUDED_CLARITY_CONSUMER_MESSAGE,
           why,
           bestFor: undefined,
           watchOutFor:
-            "Not a candidate Hourglass would typically recommend for client sourcing without a very specific, expert-reviewed reason.",
+            "Not a candidate Hourglass would recommend or source for a client.",
         };
       }
       if (input.hints.clarity && /^I[23]$/.test(input.hints.clarity)) {

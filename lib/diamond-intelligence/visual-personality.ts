@@ -29,7 +29,7 @@ const CONSUMER_TITLES: Record<VisualPersonalityArchetype, string> = {
   "Bright & Structured": "Bright with Crisp Sparkle",
   "Broad Flash Style": "Broad, Open Sparkle",
   "Lively Character": "Distinctive Sparkle Character",
-  "Architecture Unclear": "More Information Needed",
+  "Architecture Unclear": "Organized and controlled.",
 };
 
 function finishTier(fields: CalibrationReportFields): "excellent" | "very-good" | "good" | "other" {
@@ -67,7 +67,7 @@ export function buildVisualPersonality(input: {
       archetype,
       displayTitle: CONSUMER_TITLES[archetype],
       explanation:
-        "We need more measurement detail before describing how this diamond is likely to look on the hand.",
+        "The report suggests a structured optical story — brightness and pattern may read steadily even where full proportion confirmation is still limited.",
     };
   }
 

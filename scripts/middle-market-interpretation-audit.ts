@@ -178,7 +178,14 @@ function runCase(c: Case) {
   const { internalCalibrationEligible: _i, ...clientCap } = cap;
   const cs = presentClientInterpretationScore(fields, cap.interpretationLevel);
   const raw = cs.eligible && cs.overall != null ? cs.overall : null;
-  const ctx = { ...buildDiamondInterpretationContext({ fields, rawScore: raw }), ...c.ext };
+  const ctx = {
+    ...buildDiamondInterpretationContext({
+      fields,
+      rawScore: raw,
+      clarity: c.hints.clarity,
+    }),
+    ...c.ext,
+  };
   const profile = buildDiamondDecisionProfile({
     fields,
     metadata: { lab: "IGI", reportNumber: c.id, stoneType: "natural" },

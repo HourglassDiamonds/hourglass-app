@@ -43,6 +43,7 @@ type Props = {
   strengthMultiplier?: number;
   refinedGold?: boolean;
   surface?: "dark" | "light";
+  compact?: boolean;
 };
 
 export default function OpticalBalanceGraph({
@@ -55,6 +56,7 @@ export default function OpticalBalanceGraph({
   strengthMultiplier = 1,
   refinedGold = false,
   surface = "dark",
+  compact = false,
 }: Props) {
   const n = axes.length || 6;
   const gridLevels = [0.5, 1];
@@ -97,10 +99,12 @@ export default function OpticalBalanceGraph({
   const centerText = empty
     ? emptyLabel
     : graphMode === "preliminary"
-      ? "Open"
+      ? "Needs Review"
       : graphMode === "limited"
-        ? "Open"
-        : centerLabel;
+        ? "Needs Review"
+        : centerLabel === "Open"
+          ? "Needs Review"
+          : centerLabel;
   const subLabel = empty
     ? emptySubLabel
     : graphMode === "preliminary"
@@ -151,11 +155,15 @@ export default function OpticalBalanceGraph({
     surface === "light" ? "rgba(107,80,72,0.85)" : "rgba(238,230,216,0.95)";
 
   return (
-    <div className="relative mx-auto w-full max-w-[min(300px,100%)] px-1 py-2">
+    <div
+      className={`relative mx-auto w-full px-1 py-2 ${compact ? "max-w-[220px]" : "max-w-[min(300px,100%)]"}`}
+    >
       <svg
         viewBox="0 0 240 236"
         className="h-auto w-full overflow-visible"
-        style={{ maxHeight: "min(300px, 52vw)" }}
+        style={{
+          maxHeight: compact ? "min(220px, 44vw)" : "min(300px, 52vw)",
+        }}
         aria-label="Performance profile chart"
         role="img"
       >

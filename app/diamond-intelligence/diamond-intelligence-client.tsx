@@ -9,6 +9,7 @@ import {
   type ClientInterpretationSnapshot,
   type ClientSafeInterpretationPayload,
 } from "@/lib/diamond-intelligence";
+import { DI_V3_PAGE } from "./components/di-v3-styles";
 import LightPerformanceDashboard from "./components/LightPerformanceDashboard";
 import LightPerformanceStudioNav from "./components/LightPerformanceStudioNav";
 import type { ClientUploadPhase } from "./components/ReportUploadDock";
@@ -62,7 +63,7 @@ export default function DiamondIntelligenceClient() {
       );
       setUploadError(null);
       setUploadPhase("idle");
-    } catch {
+    } catch (err) {
       // Only a failed current attempt surfaces calm error copy.
       setUploadStatusNote(null);
       setUploadError(CLIENT_UPLOAD_INTERPRET_ERROR);
@@ -78,7 +79,7 @@ export default function DiamondIntelligenceClient() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f7f3ee] text-[#1c1b1a]">
+    <div className={DI_V3_PAGE}>
       <LightPerformanceStudioNav />
 
       <LightPerformanceDashboard

@@ -144,7 +144,7 @@ function likelyGcalPdfForRegionFirst(
   pdfText: string,
   pdfTextLayerLength: number,
 ): boolean {
-  if (pdfTextLayerLength === 0) return true;
+  if (pdfTextLayerLength === 0) return false;
   return (
     looksLikeGcal8xReportText(pdfText) ||
     looksLikeGcalSarine4csReportText(pdfText)

@@ -88,6 +88,18 @@ describe("client-editorial-language", () => {
     assert.doesNotMatch(combined, /Top %|Top 0|percentile|Exceptional|Rare|Elite/i);
   });
 
+  it("shows Needs Review instead of Open on consumer tier labels", () => {
+    const pres = presentEditorialLightPerformance({
+      internalLabel: "Report read",
+      displayBand: null,
+      canShowScore: false,
+      canShowRareLanguage: false,
+    });
+    assert.equal(pres.tier, "Open");
+    assert.equal(pres.tierLabel, "Needs Review");
+    assert.equal(pres.graphCenterLabel, "Needs Review");
+  });
+
   it("resolves five face-up tiers from spread ratio", () => {
     assert.equal(resolveEditorialFaceUpTier(1.06), "Expansive Presence");
     assert.equal(resolveEditorialFaceUpTier(1.04), "Generous Presence");

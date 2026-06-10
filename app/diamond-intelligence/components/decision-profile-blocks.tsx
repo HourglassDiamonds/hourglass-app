@@ -29,32 +29,40 @@ export function ProfileDimensionRow({
   band,
   score,
   explanation,
+  subdued = false,
 }: {
   label: string;
   band: string;
   score?: number | null;
   explanation: string;
+  subdued?: boolean;
 }) {
+  const labelClass = subdued
+    ? "text-[9px] uppercase tracking-[0.2em] text-[#b0a698]"
+    : "text-[10px] uppercase tracking-[0.22em] text-[#948a80]";
+  const bandClass = subdued
+    ? "text-[0.88rem] font-medium tracking-[-0.01em] text-[#6f665d]"
+    : "text-right text-[0.94rem] font-medium tracking-[-0.01em] text-[#1f1d1a]";
+  const bodyClass = subdued
+    ? "mt-2 text-[12px] leading-[1.65] text-[#948a80]"
+    : "mt-2 text-[13px] leading-[1.7] text-[#5f5851]";
+
   return (
-    <div className="border-t border-[#ebe4da]/45 pt-4 first:border-t-0 first:pt-0">
+    <div className="border-t border-[#ebe4da]/30 pt-4 first:border-t-0 first:pt-0">
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
-        <p className="text-[10px] uppercase tracking-[0.22em] text-[#948a80]">
-          {label}
-        </p>
-        <p className="text-right text-[0.94rem] font-medium tracking-[-0.01em] text-[#1f1d1a]">
+        <p className={labelClass}>{label}</p>
+        <p className={bandClass}>
           {band}
           {score !== null &&
           score !== undefined &&
           label === "Optical Performance" ? (
-            <span className="ml-1.5 text-[12px] font-normal text-[#948a80]">
+            <span className="ml-1.5 text-[11px] font-normal text-[#b0a698]">
               ({Math.round(score)})
             </span>
           ) : null}
         </p>
       </div>
-      <p className="mt-2 text-[13px] leading-[1.7] text-[#5f5851]">
-        {explanation}
-      </p>
+      <p className={bodyClass}>{explanation}</p>
     </div>
   );
 }

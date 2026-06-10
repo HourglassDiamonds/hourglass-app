@@ -11,6 +11,7 @@ import {
   type ExtractionCompletenessSummary,
   type ExtractionState,
 } from "./extraction-completeness";
+import { resolveHourglassClarityPolicy } from "./hourglass-clarity-policy";
 
 /**
  * THE single source of truth for client-facing interpretation display.
@@ -94,9 +95,12 @@ export function buildDiamondInterpretationContext(input: {
   fields: Partial<CalibrationReportFields> | null | undefined;
   rawScore: number | null;
   confidence?: ClientInterpretationConfidence;
+  /** Parsed clarity grade — gates favorable percentile language without changing raw score. */
+  clarity?: string;
 }): DiamondInterpretationContext {
   const confidence =
     input.confidence ?? buildClientInterpretationConfidence(input.fields);
+  const clarityPolicy = resolveHourglassClarityPolicy(input.clarity);
   const completeness = assessExtractionCompleteness({ fields: input.fields });
   const readState = buildClientReadState(input.fields, confidence);
 
@@ -139,10 +143,19 @@ export function buildDiamondInterpretationContext(input: {
       : null;
   }
 
+  let canShowRareLanguage = readState.canShowRareLanguage;
+  if (clarityPolicy.suppressFavorablePercentile) {
+    canShowRareLanguage = false;
+    displayBand = null;
+    displayLabel = clarityPolicy.heroVerdictLabel ?? "Outside Hourglass Standards";
+  }
+
   const missingList = joinMissing(readState.missingCriticalFields);
 
-  const primaryExplanation =
-    copyTone === "confident"
+  const primaryExplanation = clarityPolicy.isExcluded
+    ? (clarityPolicy.consumerExplanation ??
+      "This diamond falls outside Hourglass clarity standards for client guidance.")
+    : copyTone === "confident"
       ? "This diamond reads as a balanced, lively performer across its full proportion set."
       : copyTone === "careful"
         ? "Based on the information visible in the report, this diamond appears balanced — a few proportion details would sharpen the deeper optical read."
@@ -169,7 +182,7 @@ export function buildDiamondInterpretationContext(input: {
     displayScore,
     displayLabel,
     displayBand,
-    canShowRareLanguage: readState.canShowRareLanguage,
+    canShowRareLanguage,
     canShowScore: readState.canShowScore,
     canShowGraph: readState.canShowGraph,
     graphMode,

@@ -29,7 +29,7 @@ const LIGHT_PERFORMANCE_PERSONALITY: Record<
   Nuanced:
     "Mixed optical signals — some traits read clearly while others trade off with lighting or angle.",
   Open:
-    "This is an early read from what your report shows today — useful context now, with more detail available as additional information is confirmed.",
+    "A report-driven read with proportion signals still being confirmed — useful context now, with room to refine once additional detail is available.",
 };
 
 const FACE_UP_TIER_SUMMARIES: Record<EditorialFaceUpTier, string> = {
@@ -106,12 +106,14 @@ export function presentEditorialLightPerformance(input: {
           : null
         : tier;
 
+  const consumerTierLabel = tier === "Open" ? "Needs Review" : tier;
+
   return {
     tier,
-    tierLabel: tier,
+    tierLabel: consumerTierLabel,
     personalityDescriptor,
     editorialPill,
-    graphCenterLabel: tier,
+    graphCenterLabel: consumerTierLabel,
   };
 }
 

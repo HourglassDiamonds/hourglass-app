@@ -16,8 +16,8 @@ export function hashUploadBytes(bytes: Buffer): string {
 function cacheKey(bytes: Buffer, reportNumber?: string, lab?: string): string {
   const rn = reportNumber?.trim();
   const lb = lab?.trim();
-  if (rn && lb) return `report:${lb}:${rn}`;
-  return `sha256:${hashUploadBytes(bytes)}`;
+  if (rn && lb) return `v3:report:${lb}:${rn}`;
+  return `v3:sha256:${hashUploadBytes(bytes)}`;
 }
 
 export function getCachedClientInterpretation(

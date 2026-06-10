@@ -37,6 +37,7 @@ export {
   toClientSafeInterpretationPayload,
   type ClientSafeInterpretationPayload,
   type ClientSafeMetadata,
+  type ClientReportFormat,
   type ClientSafeReportCapability,
 } from "./client-api";
 export {
@@ -68,6 +69,15 @@ export {
   hourglassClarityStandardsNote,
   isBelowHourglassClarityStandard,
 } from "./hourglass-clarity-standards";
+export {
+  HOURGLASS_EXCLUDED_CLARITY_CONSUMER_MESSAGE,
+  HOURGLASS_EXCLUDED_CLARITY_HEADLINE,
+  HOURGLASS_EXCLUDED_SPECTRUM_STATUS,
+  SI2_INSPECTION_REQUIRED_MESSAGE,
+  SI2_PRESENTATION_TIER_CEILING,
+  resolveHourglassClarityPolicy,
+  type HourglassClarityDisplayPolicy,
+} from "./hourglass-clarity-policy";
 export {
   buildDiamondPurchasePersonality,
   IDENTITY_TRANSLATIONS,

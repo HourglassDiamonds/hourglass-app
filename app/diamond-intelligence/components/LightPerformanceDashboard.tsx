@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { CalibrationReportFields } from "@/lib/calibration-library/types";
 import {
   buildBalanceProfileAxes,
@@ -17,25 +17,29 @@ import {
   type ClientSafeReportCapability,
   type OverallReadLabel,
 } from "@/lib/diamond-intelligence";
-import DiamondIntelligenceSynopsis from "./DiamondIntelligenceSynopsis";
-import DiamondIntelligenceHero from "./DiamondIntelligenceHero";
-import ReportMeasurementsSection from "./ReportMeasurementsSection";
-import DiamondTechnicalProfileSection from "./DiamondTechnicalProfileSection";
-import { CONSUMER_COPY } from "./consumer-display-labels";
-import AdvisoryHighlightsSection from "./AdvisoryHighlightsSection";
-import GoBeyondTheReportSection from "./GoBeyondTheReportSection";
-import PerformanceReadSidebar from "./PerformanceReadSidebar";
-import VisualPersonalitySection from "./VisualPersonalitySection";
-import ReportStartingPointPanel from "./ReportStartingPointPanel";
-import LookingDeeperPanel from "./LookingDeeperPanel";
-import ComparingDiamondsPanel from "./ComparingDiamondsPanel";
 import { buildVisualPersonality } from "@/lib/diamond-intelligence/visual-personality";
 import { buildClarityReviewGuidance } from "@/lib/diamond-intelligence/clarity-review-guidance";
-import { presentLowConfidenceGraphLabel } from "@/lib/diamond-intelligence/interpretation-display";
 import { buildAdvisoryHighlights } from "./build-advisory-highlights";
 import GuidedReportCompletion from "./GuidedReportCompletion";
 import { ReportUploadDock, type ClientUploadPhase } from "./ReportUploadDock";
-import { DashboardCard, MetricRow, dashValue } from "./DashboardCard";
+import DiV3Hero from "./DiV3Hero";
+import DiV3PartialGradeReview from "./DiV3PartialGradeReview";
+import DiV3ResultSections from "./DiV3ResultSections";
+import { CONSUMER_COPY } from "./consumer-display-labels";
+import { DI_EDITORIAL_CARD, DI_EYEBROW_STUDIO, DI_SERIF_HEADLINE } from "./di-studio-styles";
+import { DI_V3_SHELL } from "./di-v3-styles";
+import { resolveHourglassClarityPolicy } from "@/lib/diamond-intelligence/hourglass-clarity-policy";
+import {
+  buildV3PercentilePresentation,
+  buildV3TraitLine,
+  isGcal8xReport,
+  needsPartialGradeReview,
+  resolveGcal8xVisualTier,
+  resolveV3HeroVerdictLabel,
+  resolveV3PublicTier,
+  resolveV3RenderPhase,
+} from "./v3-presentation";
+import { parseReportGradeHints } from "@/lib/diamond-intelligence/report-grade-hints";
 
 function formatCarat(carat: string): string {
   const v = carat.trim();
@@ -50,12 +54,6 @@ function parseAverageDiameterMm(measurements: string): string | null {
   const b = parseFloat(m[2]!);
   if (!Number.isFinite(a) || !Number.isFinite(b)) return null;
   return ((a + b) / 2).toFixed(2);
-}
-
-function stoneTypeLabel(stoneType: string): string | null {
-  if (stoneType === "natural") return "Natural";
-  if (stoneType === "lab-grown") return "Lab-grown";
-  return null;
 }
 
 export type LightPerformanceDashboardProps = {
@@ -84,9 +82,32 @@ export default function LightPerformanceDashboard({
   extractedFields,
   interpretationFields,
   capability,
-  gradeHints,
+  gradeHints: gradeHintsProp,
   onInterpretationUpdate,
 }: LightPerformanceDashboardProps) {
+  const [localGradeHints, setLocalGradeHints] = useState<
+    ReportGradeHints | undefined
+  >();
+
+  const gradeHints = useMemo(() => {
+    const fromServer = gradeHintsProp ?? {};
+    const fromText =
+      !fromServer.color || !fromServer.clarity
+        ? metadata?.reportTextHint
+          ? parseReportGradeHints(metadata.reportTextHint)
+          : {}
+        : {};
+    return { ...fromText, ...fromServer, ...localGradeHints };
+  }, [gradeHintsProp, localGradeHints, metadata?.reportTextHint]);
+
+  const reportIdentity = metadata
+    ? `${metadata.lab}:${metadata.reportNumber}`
+    : null;
+
+  useEffect(() => {
+    setLocalGradeHints(undefined);
+  }, [reportIdentity]);
+
   const hasReport = Boolean(
     metadata && extractedFields && interpretationFields && capability,
   );
@@ -106,10 +127,14 @@ export default function LightPerformanceDashboard({
       ? clientScore.overall
       : null;
 
-  // ── Single source of truth: every display decision comes from here. ──
   const interpretationContext = useMemo(
-    () => buildDiamondInterpretationContext({ fields, rawScore: rawOverallScore }),
-    [fields, rawOverallScore],
+    () =>
+      buildDiamondInterpretationContext({
+        fields,
+        rawScore: rawOverallScore,
+        clarity: gradeHints?.clarity,
+      }),
+    [fields, rawOverallScore, gradeHints?.clarity],
   );
 
   const overallScore = interpretationContext.displayScore;
@@ -182,7 +207,8 @@ export default function LightPerformanceDashboard({
     if (!fields || !decisionProfile) return null;
     return buildVisualPersonality({
       proportionArchetype: decisionProfile.archetype,
-      opticalBand: decisionProfile.opticalPerformance.band as import("@/lib/diamond-intelligence/diamond-decision-profile").OpticalPerformanceBand,
+      opticalBand: decisionProfile.opticalPerformance
+        .band as import("@/lib/diamond-intelligence/diamond-decision-profile").OpticalPerformanceBand,
       fields,
     });
   }, [fields, decisionProfile]);
@@ -217,25 +243,81 @@ export default function LightPerformanceDashboard({
     fields?.fluorescence,
   ]);
 
+  const isGcal8x = isGcal8xReport(metadata, fields);
+  const clarityPolicy = resolveHourglassClarityPolicy(
+    gradeHints?.clarity ?? decisionProfile?.gradeHints.clarity,
+  );
+  const effectiveGcal8x = isGcal8x && !clarityPolicy.isExcluded;
+  const effectiveGcal8xPremium =
+    effectiveGcal8x && !clarityPolicy.suppressPremiumTierLabels;
+  const partialGradeReview = needsPartialGradeReview({
+    gradeHints,
+    canShowScore: interpretationContext.canShowScore,
+  });
+
+  const canRenderFullResult = Boolean(
+    decisionProfile && interpretationSummary && metadata && fields,
+  );
+
+  const v3RenderPhase = resolveV3RenderPhase({
+    hasReport,
+    partialGradeReview,
+    canRenderFullResult,
+  });
+
+  const publicTier = resolveV3PublicTier({
+    editorialTier: editorialPresentation.tier,
+    displayScore: interpretationContext.displayScore,
+    canShowScore: interpretationContext.canShowScore,
+    clarity: gradeHints?.clarity ?? decisionProfile?.gradeHints.clarity,
+  });
+
+  const gcal8xTier = resolveGcal8xVisualTier(
+    interpretationContext.displayScore,
+    gradeHints?.clarity ?? decisionProfile?.gradeHints.clarity,
+  );
+
   const lowInterpretationConfidence =
     decisionProfile?.confidence.band === "Low";
-  const showPerformanceScore =
-    interpretationContext.canShowScore &&
-    !lowInterpretationConfidence &&
-    overallScore !== null;
 
-  const heroVerdictLabel =
-    lowInterpretationConfidence && decisionProfile
-      ? decisionProfile.opticalPerformance.band === "Unavailable"
-        ? "Limited Information Available"
-        : "Preliminary Assessment"
-      : editorialPresentation.tierLabel;
+  const heroVerdictLabel = resolveV3HeroVerdictLabel({
+    clarity: gradeHints?.clarity ?? decisionProfile?.gradeHints.clarity,
+    lowInterpretationConfidence: Boolean(
+      lowInterpretationConfidence && decisionProfile,
+    ),
+    opticalUnavailable:
+      decisionProfile?.opticalPerformance.band === "Unavailable",
+    isGcal8x: effectiveGcal8xPremium,
+    gcal8xTier,
+    publicTier,
+  });
 
-  const centerProfileLabel = hasReport
-    ? lowInterpretationConfidence && decisionProfile
-      ? presentLowConfidenceGraphLabel(decisionProfile)
-      : editorialPresentation.graphCenterLabel
-    : "—";
+  const traitLine = buildV3TraitLine(
+    clientScore?.lightTraits ?? [],
+    effectiveGcal8xPremium,
+    gradeHints?.clarity ?? decisionProfile?.gradeHints.clarity,
+  );
+
+  const percentile =
+    !effectiveGcal8xPremium &&
+    !partialGradeReview &&
+    !clarityPolicy.suppressFavorablePercentile &&
+    interpretationContext.canShowScore
+      ? buildV3PercentilePresentation(
+          interpretationContext.displayScore,
+          gradeHints?.clarity ?? decisionProfile?.gradeHints.clarity,
+        )
+      : null;
+
+  const reportContext =
+    metadata && fields
+      ? {
+          lab: metadata.lab,
+          reportNumber: metadata.reportNumber,
+          carat: fields.carat,
+          shape: fields.shape,
+        }
+      : {};
 
   const busy =
     uploadPhase === "reading" ||
@@ -243,182 +325,141 @@ export default function LightPerformanceDashboard({
     uploadPhase === "building";
 
   return (
-    <div className="mx-auto max-w-[1560px] px-4 pb-9 pt-5 md:px-6">
-      <header className="mb-4">
-        <p className="text-[11px] tracking-[0.2em] text-[#8a8177]">
-          Light Performance
-        </p>
-        <h1 className="mt-1 font-serif text-2xl font-normal tracking-[-0.02em] text-[#1f1d1a] md:text-[1.65rem]">
-          Diamond Intelligence
-        </h1>
-      </header>
+    <section className={DI_V3_SHELL}>
+      <div className={`${DI_EDITORIAL_CARD} mb-8 p-6 md:p-8`}>
+        <p className={DI_EYEBROW_STUDIO}>Report Upload</p>
+        <div className="mt-4">
+          <ReportUploadDock
+            phase={uploadPhase}
+            disabled={busy}
+            errorMessage={uploadError}
+            statusNote={uploadStatusNote}
+            onFile={onFile}
+            onClearError={onClearError}
+            metadata={hasReport ? metadata : null}
+            fileName={fileName}
+          />
+        </div>
+      </div>
 
-      <DiamondIntelligenceSynopsis />
+      {busy && !hasReport ? (
+        <section className="relative py-4 md:py-6" aria-live="polite">
+          <p className={DI_EYEBROW_STUDIO}>Diamond Intelligence</p>
+          <p
+            className={`${DI_SERIF_HEADLINE} mt-5 max-w-4xl text-4xl leading-[1.05] md:text-5xl xl:text-6xl`}
+            style={{ textWrap: "balance" }}
+          >
+            {CONSUMER_COPY.processingStateHeadline}
+          </p>
+          <p className="mt-8 max-w-xl text-lg leading-8 text-[#75675e]">
+            {CONSUMER_COPY.processingStateSupportingCopy}
+          </p>
+        </section>
+      ) : null}
 
-      <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,292px)_1fr] xl:grid-cols-[minmax(0,308px)_1fr]">
-        <aside className="flex flex-col gap-3.5 lg:max-w-[320px]">
-          <DashboardCard title="Report" tone="subdued">
-            <ReportUploadDock
-              phase={uploadPhase}
-              disabled={busy}
-              errorMessage={uploadError}
-              statusNote={uploadStatusNote}
-              onFile={onFile}
-              onClearError={onClearError}
-              metadata={hasReport ? metadata : null}
-              fileName={fileName}
-            />
-          </DashboardCard>
+      {!hasReport && !busy && uploadPhase !== "error" ? (
+        <section className="relative py-4 md:py-6">
+          <p className={DI_EYEBROW_STUDIO}>Diamond Intelligence</p>
+          <p
+            className={`${DI_SERIF_HEADLINE} mt-5 max-w-4xl text-4xl leading-[1.05] md:text-5xl xl:text-6xl`}
+            style={{ textWrap: "balance" }}
+          >
+            {CONSUMER_COPY.emptyStateIntro}
+          </p>
+          <p className="mt-8 max-w-xl text-lg leading-8 text-[#75675e]">
+            {CONSUMER_COPY.emptyStateSupportingCopy}
+          </p>
+        </section>
+      ) : null}
 
-          <PerformanceReadSidebar
-            hasReport={Boolean(hasReport && clientScore && capability)}
-            showPerformanceScore={showPerformanceScore}
-            overallScore={overallScore}
-            tierLabel={heroVerdictLabel}
+      {!hasReport && uploadPhase === "error" && uploadError ? (
+        <section className="relative py-4 md:py-6" role="alert">
+          <p className={DI_EYEBROW_STUDIO}>Upload issue</p>
+          <p className="mt-5 max-w-xl text-lg leading-8 text-[#75675e]">
+            {uploadError}
+          </p>
+        </section>
+      ) : null}
+
+      {v3RenderPhase === "partial" ? (
+        <DiV3PartialGradeReview
+          gradeHints={gradeHints}
+          onComplete={(hints) => setLocalGradeHints(hints)}
+        />
+      ) : null}
+
+      {hasReport &&
+      v3RenderPhase === "full" &&
+      !(decisionProfile && interpretationSummary && metadata && fields) ? (
+        <section className="mx-auto max-w-[960px] py-6" role="status">
+          <p className={DI_EYEBROW_STUDIO}>Interpretation</p>
+          <p className="mt-4 max-w-xl text-lg leading-8 text-[#75675e]">
+            {CONSUMER_COPY.interpretationUnavailableCopy}
+          </p>
+        </section>
+      ) : null}
+
+      {v3RenderPhase === "full" &&
+      decisionProfile &&
+      interpretationSummary &&
+      metadata &&
+      fields ? (
+        <div key={reportIdentity ?? "v3-result"}>
+          <DiV3Hero
+            mode={effectiveGcal8xPremium ? "gcal8x" : "standard"}
+            verdictLabel={heroVerdictLabel}
+            traitLine={traitLine}
+            percentile={percentile}
+            gcal8xTier={gcal8xTier ?? undefined}
+            clarityStandardsNote={null}
+            reportContext={reportContext}
           />
 
-          <DashboardCard title="Report details" tone="subdued">
-            {hasReport && metadata && fields ? (
-              <>
-                <MetricRow label="Laboratory" value={metadata.lab} />
-                <MetricRow
-                  label="Report number"
-                  value={dashValue(metadata.reportNumber)}
-                />
-                <MetricRow label="Shape" value={dashValue(fields.shape)} />
-                <MetricRow
-                  label="Carat weight"
-                  value={formatCarat(fields.carat)}
-                />
-                <MetricRow
-                  label="Measurements"
-                  value={dashValue(fields.measurements)}
-                />
-                {stoneTypeLabel(metadata.stoneType) ? (
-                  <MetricRow
-                    label="Stone"
-                    value={stoneTypeLabel(metadata.stoneType)!}
-                  />
-                ) : null}
-              </>
-            ) : (
-              <p className="text-sm leading-relaxed text-[#948a80]">
-                Report details appear after upload.
-              </p>
-            )}
-          </DashboardCard>
+          <DiV3ResultSections
+            showPercentile={
+              !effectiveGcal8xPremium &&
+              !clarityPolicy.suppressFavorablePercentile &&
+              interpretationContext.canShowScore
+            }
+            isGcal8x={effectiveGcal8xPremium}
+            clarityPolicy={clarityPolicy}
+            publicTier={publicTier}
+            gcal8xTier={gcal8xTier}
+            heroVerdictLabel={heroVerdictLabel}
+            interpretationSummary={interpretationSummary}
+            visualPersonality={visualPersonality}
+            strengths={advisoryHighlights.strengths}
+            worthKnowing={advisoryHighlights.worthKnowing}
+            limitations={CONSUMER_COPY.reportCannotConfirmItems}
+            decisionProfile={decisionProfile}
+            interpretationContext={interpretationContext}
+            fields={fields}
+            diameter={diameter}
+            formatCarat={formatCarat}
+            reportContext={reportContext}
+          />
 
-          <ComparingDiamondsPanel visible={hasReport} />
-
-          <LookingDeeperPanel visible={hasReport} />
-
-          <ReportStartingPointPanel visible={hasReport} />
-        </aside>
-
-        <main className="min-w-0 space-y-3.5">
-          {hasReport && decisionProfile && interpretationSummary ? (
-            <DiamondIntelligenceHero
-              verdictLabel={heroVerdictLabel}
-              personalityDescriptor={editorialPresentation.personalityDescriptor}
-              decisionProfile={decisionProfile}
-              interpretationSummary={interpretationSummary}
-            />
-          ) : (
-            <section className="overflow-hidden rounded-2xl border border-[#e4dbcf]/45 bg-[#faf8f5]/90 px-6 py-10 shadow-[0_6px_28px_rgba(48,36,28,0.04)] md:px-10 md:py-12">
-              <p className="text-[11px] tracking-[0.18em] text-[#a8926a]">
-                Our Verdict
-              </p>
-              <p className="mt-3 max-w-md font-serif text-[1.35rem] font-medium leading-[1.45] tracking-[-0.01em] text-[#3a352f] md:text-[1.45rem]">
-                {CONSUMER_COPY.emptyStateIntro}
-              </p>
-              <p className="mt-3.5 max-w-sm text-[12.5px] leading-[1.7] text-[#8a8177]">
-                Upload a GIA, IGI, or GCAL report and the advisory read builds
-                alongside supporting evidence — no lab jargon, no scan gimmicks.
-              </p>
-              <div className="mt-5 flex items-center gap-2.5 text-[10px] tracking-[0.16em] text-[#b0a698]">
-                <span className="h-px w-7 bg-[#d8cebf]" />
-                <span>AWAITING REPORT</span>
-              </div>
-            </section>
-          )}
-
-          {hasReport ? (
-            <VisualPersonalitySection personality={visualPersonality} />
-          ) : null}
-
-          {hasReport ? (
-            <AdvisoryHighlightsSection
-              strengths={advisoryHighlights.strengths}
-              worthKnowing={advisoryHighlights.worthKnowing}
-              radar={{
-                axes: profileAxes,
-                centerLabel: centerProfileLabel,
-                canShowGraph: interpretationContext.canShowGraph,
-                hasReport,
-                graphMode: interpretationContext.graphMode,
-                strengthMultiplier: interpretationContext.graphStrengthMultiplier,
-              }}
-            />
-          ) : null}
-
-          {hasReport ? (
-            <GoBeyondTheReportSection
-              visible={hasReport}
-              reportContext={
-                metadata && fields
-                  ? {
-                      lab: metadata.lab,
-                      reportNumber: metadata.reportNumber,
-                      carat: fields.carat,
-                      shape: fields.shape,
-                    }
-                  : undefined
-              }
-            />
-          ) : null}
-
-          {hasReport &&
-          capability &&
+          {capability &&
           extractedFields &&
           (capability.needsGuidedCompletion ||
             capability.needsExpertDiagramReview) ? (
-            <GuidedReportCompletion
-              extractedFields={extractedFields}
-              capability={capability}
-              onInterpretationUpdate={onInterpretationUpdate}
-            />
+            <div className="mx-auto mt-8 max-w-[960px]">
+              <GuidedReportCompletion
+                extractedFields={extractedFields}
+                capability={capability}
+                onInterpretationUpdate={onInterpretationUpdate}
+              />
+            </div>
           ) : null}
+        </div>
+      ) : null}
 
-          {hasReport ? (
-            <DiamondTechnicalProfileSection profile={decisionProfile} />
-          ) : null}
-
-          {hasReport ? (
-            <ReportMeasurementsSection
-              fields={fields}
-              faceUpCopy={faceUpCopy}
-              diameter={diameter}
-              formatCarat={formatCarat}
-            />
-          ) : null}
-
-          {!hasReport ? (
-            <section className="rounded-lg border border-[#ebe4da]/45 bg-white/22 px-4 py-4 opacity-50 md:px-5 md:py-5">
-              <p className="mb-3.5 text-[10px] tracking-[0.16em] text-[#c4bbb2]">
-                {CONSUMER_COPY.technicalDecisionProfileTitle}
-              </p>
-              <p className="text-sm text-[#948a80]">
-                Technical profile and report measurements appear after upload.
-              </p>
-            </section>
-          ) : null}
-
-          <footer className="border-t border-[#e4dbcf]/40 pt-2.5 text-[10px] leading-relaxed text-[#948a80]">
-            Interpretation uses reported proportions and finish from your upload.
-            Not laboratory grades.
-          </footer>
-        </main>
-      </div>
-    </div>
+      {hasReport ? (
+        <footer className="mx-auto mt-10 max-w-[960px] border-t border-[rgba(58,48,38,0.18)] py-6 text-[10px] leading-relaxed text-[#9b8b78]">
+          Interpretation uses reported proportions and finish from your upload.
+          Not laboratory grades.
+        </footer>
+      ) : null}
+    </section>
   );
 }

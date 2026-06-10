@@ -23,13 +23,15 @@ export function buildClientDiamondDecisionProfile(input: {
     input.fields,
     input.capability.interpretationLevel,
   );
-  const context = buildDiamondInterpretationContext({
-    fields: input.fields,
-    rawScore: input.rawScore,
-  });
   const hints =
     input.gradeHints ??
     (input.reportTextHint ? parseReportGradeHints(input.reportTextHint) : {});
+
+  const context = buildDiamondInterpretationContext({
+    fields: input.fields,
+    rawScore: input.rawScore,
+    clarity: hints.clarity,
+  });
 
   return buildDiamondDecisionProfile({
     fields: input.fields,

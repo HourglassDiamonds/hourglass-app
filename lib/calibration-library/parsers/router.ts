@@ -52,14 +52,17 @@ export function detectReportFamily(
 
   if (
     hints?.gcalImageOnlyPdf &&
-    (lab === "GCAL" || labResolved === "OTHER") &&
-    !looksGcalSarine
+    !looksGcalSarine &&
+    !looksGia &&
+    (looksGcal8x || lab === "GCAL")
   ) {
     return {
       lab: "GCAL",
       parserType: "gcal-8x",
-      confidence: "high",
-      reason: "GCAL image-only PDF (no text layer) — 8X diagram OCR path",
+      confidence: looksGcal8x ? "high" : "medium",
+      reason: looksGcal8x
+        ? "GCAL image-only PDF — 8X diagram OCR path"
+        : "GCAL lab with image-only PDF — 8X diagram OCR path",
     };
   }
 

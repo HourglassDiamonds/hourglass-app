@@ -27,12 +27,29 @@ export const CONSUMER_COPY = {
     "Based on report information — not a final buy recommendation.",
   reportSuggestsLabel: "What the Report Suggests",
   performanceAtAGlanceLabel: "Performance at a Glance",
-  technicalDecisionProfileTitle: "Technical Decision Profile",
-  reportMeasurementsTitle: "Report Measurements",
+  supportingEvidenceLabel: "Supporting Evidence",
+  performanceEvidenceLabel: "Performance Evidence",
+  technicalDecisionProfileTitle: "Technical Appendix",
+  reportMeasurementsTitle: "Measurements Used in This Interpretation",
   reportMeasurementsSubcopy:
     "Extracted values from the uploaded report, shown for transparency.",
+  reportCannotConfirmItems: [
+    "Eye-clean appearance under everyday viewing distances",
+    "Video performance and movement sparkle",
+    "Optical imaging such as ASET or IdealScope",
+    "Transparency and in-person color nuance",
+  ] as const,
   emptyStateIntro:
     "An easy-to-understand, lab-neutral read of how a diamond is likely to perform in person.",
+  emptyStateSupportingCopy:
+    "Upload a GIA, IGI, or GCAL report and our proprietary assessment engine translates the technical data into a clear, easy-to-understand performance read — explained in plain English, not gemology jargon.",
+  processingStateHeadline: "Building your interpretation…",
+  processingStateSupportingCopy:
+    "We are reading proportion details from your report. This usually takes a few moments.",
+  interpretationUnavailableCopy:
+    "We could not assemble a full interpretation from this upload. Try the report again, or upload a clearer PDF or image.",
+  assessmentScopeCopy:
+    "Assessment scope: This interpretation evaluates the diamond itself — including proportions, cut quality, visual performance, clarity considerations, and overall desirability. It does not evaluate price. A diamond may be beautifully cut and still be overpriced, or poorly suited despite an attractive price.",
   estimatedReadLabel: "Estimated read from reported proportions",
 } as const;
 

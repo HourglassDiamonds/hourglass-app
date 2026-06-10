@@ -18,9 +18,9 @@ import {
 } from "@/lib/diamond-intelligence";
 
 const SURFACE =
-  "rounded-lg border border-[#d4c4a8]/45 bg-[#faf7f2]/90 shadow-[0_4px_16px_rgba(168,146,106,0.06)] ring-1 ring-[#e8dcc8]/50";
+  "rounded-[22px] border border-[rgba(181,150,98,0.24)] bg-[rgba(251,247,239,0.58)] px-4 py-3.5 shadow-[0_14px_42px_rgba(30,26,22,0.035)] md:px-5 md:py-4";
 const INPUT =
-  "mt-1 w-full rounded-sm border border-[#e4dbcf]/80 bg-white/80 px-2.5 py-1.5 text-sm text-[#1f1d1a] outline-none focus:border-[#b8a99a]";
+  "mt-1 w-full rounded-sm border border-[rgba(58,48,38,0.32)] bg-[rgba(255,255,255,0.42)] px-2.5 py-1.5 text-sm text-[#1e1a16] outline-none focus:border-[#b59662]";
 
 export type GuidedReportCompletionProps = {
   extractedFields: CalibrationReportFields;

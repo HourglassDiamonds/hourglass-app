@@ -27,6 +27,8 @@ export type DiImageSlot =
   | "notice-unclear"
   | "performance-watermark";
 
+/** Future slots: optical-imaging, aset, idealscope — wire when assets ship. */
+
 export type DiEditorialImageSpec = {
   src: string;
   fallbackSrc: string;

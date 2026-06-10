@@ -12,6 +12,7 @@ import {
   applyGiaOcrFieldHydrationFallback,
   logGiaFieldsBeforeFinalize,
   logGiaProportionSlicesForDebug,
+  looksLikeGiaReportText,
   probeGiaLiveFieldCandidates,
 } from "./gia-proportions";
 import {
@@ -69,6 +70,17 @@ export type ExtractHints = {
   /** PDF has no text layer — GCAL 8X may need image-region OCR upstream. */
   gcalImageOnlyPdf?: boolean;
 };
+
+function resolveMetadataLab(rawText: string, routedLab: CalibrationLab): CalibrationLab {
+  if (looksLikeGiaReportText(rawText)) return "GIA";
+  if (
+    looksLikeGcal8xReportText(rawText) ||
+    looksLikeGcalSarine4csReportText(rawText)
+  ) {
+    return "GCAL";
+  }
+  return routedLab;
+}
 
 export function extractFieldsFromReportText(
   rawText: string,
@@ -258,7 +270,7 @@ export function extractFieldsFromReportText(
       : detectedReportNo || hintReportNo;
 
   const metadata: CalibrationReportMetadata = {
-    lab: family.lab,
+    lab: resolveMetadataLab(rawText, family.lab),
     reportNumber,
     reportUrl: hints?.reportUrl?.trim() || labMeta.reportUrl,
     reportSource: hints?.reportSource ?? "manual",

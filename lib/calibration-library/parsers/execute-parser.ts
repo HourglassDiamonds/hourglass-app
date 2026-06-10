@@ -71,7 +71,10 @@ export function executeParserForText(
   hints?: ExecuteParserHints,
 ): ParserParseResult {
   const text = normalizeDocumentText(rawText);
-  const family = detectReportFamily(text, { lab: hints?.lab });
+  const family = detectReportFamily(text, {
+    lab: hints?.lab,
+    gcalImageOnlyPdf: hints?.gcalImageOnlyPdf,
+  });
 
   const fields = emptyReportFields();
   const confidence = Object.fromEntries(

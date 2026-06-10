@@ -34,6 +34,7 @@ import {
   applyGiaProportionDiagramExtraction,
 } from "./parsers/gia/gia-diagram-extraction";
 import { detectGiaReportStyle } from "./parsers/gia/gia-report-style";
+import { looksLikeGiaReportText } from "./gia-proportions";
 import {
   applyGiaOcrFieldHydrationFallback,
   extractGiaOcrProportionDiagram,
@@ -149,6 +150,33 @@ export type RunUploadExtractionInput = {
   collectForensics?: boolean;
 };
 
+function pickGradeHintText(current: string, candidate: string): string {
+  const next = candidate.trim();
+  if (!next) return current;
+  if (next.length > current.length) return next.slice(0, 16000);
+  return current;
+}
+
+function syncParsedGradeHintText(
+  parsed: ExtractionResult,
+  gradeHintText: string,
+): void {
+  parsed.reportGradeHintText = gradeHintText.slice(0, 16000);
+}
+
+/** Display-only — detect when 4Cs text is likely absent from the PDF text layer. */
+function gradeHintTextLikelyIncomplete(text: string): boolean {
+  const hasClarity =
+    /\bclarity\s+grade\b[\s\S]{0,48}\b(?:FL|IF|VVS\s*1|VVS\s*2|VS\s*1|VS\s*2|SI\s*1|SI\s*2|I\s*1|I\s*2|I\s*3)\b/i.test(
+      text,
+    );
+  const hasColor =
+    /\bcolou?r\s+grade\b[\s\S]{0,48}(?:[D-Z](?:\s+to\s+[A-Z](?:\s+range)?)?|fancy)/i.test(
+      text,
+    );
+  return !hasClarity || !hasColor;
+}
+
 async function runImageOcrAugmentation(input: {
   uploadPdfBytes: Buffer;
   combined: string;
@@ -157,7 +185,8 @@ async function runImageOcrAugmentation(input: {
   reportNumberHint: string;
   gcalImageOnlyPdf?: boolean;
   clientMode?: boolean;
-}): Promise<{ imageOcrMs: number; ocrCompleted: boolean }> {
+  onGradeHintTextUpdate?: (text: string) => void;
+}): Promise<{ imageOcrMs: number; ocrCompleted: boolean; gradeHintText: string }> {
   const {
     uploadPdfBytes,
     combined,
@@ -168,7 +197,21 @@ async function runImageOcrAugmentation(input: {
   } = input;
   const started = Date.now();
   let ocrCompleted = false;
+  let gradeHintText = combined.slice(0, 16000);
+  const publishGradeHintText = (candidate: string) => {
+    gradeHintText = pickGradeHintText(gradeHintText, candidate);
+    syncParsedGradeHintText(parsed, gradeHintText);
+    input.onGradeHintTextUpdate?.(gradeHintText);
+  };
+  publishGradeHintText(gradeHintText);
   const clientMode = input.clientMode ?? false;
+  if (
+    looksLikeGiaReportText(combined) &&
+    parsed.metadata.lab !== "GIA" &&
+    !parsed.parserType?.startsWith("gcal")
+  ) {
+    parsed.metadata.lab = "GIA";
+  }
   const labFamily = labFamilyLabel(parsed.metadata.lab, parsed.parserType);
 
   const regionOcrTimeoutMs = clientMode
@@ -265,7 +308,11 @@ async function runImageOcrAugmentation(input: {
         parserPath: parsed.parserType,
       });
       if (clientSatisfied()) {
-        return { imageOcrMs: Date.now() - started, ocrCompleted };
+        return {
+          imageOcrMs: Date.now() - started,
+          ocrCompleted,
+          gradeHintText,
+        };
       }
     }
   } else if (
@@ -274,6 +321,7 @@ async function runImageOcrAugmentation(input: {
       lab: parsed.metadata.lab,
       gcalImageOnlyPdf,
       labHint: parsed.metadata.lab,
+      combinedText: combined,
     }) ||
     (parsed.parserType === "gcal-sarine-4cs" &&
       !sarineColumnListSignature &&
@@ -307,14 +355,19 @@ async function runImageOcrAugmentation(input: {
       parserPath: parsed.parserType,
     });
     if (clientSatisfied()) {
-      return { imageOcrMs: Date.now() - started, ocrCompleted };
+      return {
+        imageOcrMs: Date.now() - started,
+        ocrCompleted,
+        gradeHintText,
+      };
     }
   }
 
   if (clientMode) {
     const isGia =
       parsed.metadata.lab === "GIA" ||
-      Boolean(parsed.parserType?.startsWith("gia"));
+      Boolean(parsed.parserType?.startsWith("gia")) ||
+      looksLikeGiaReportText(combined);
     if (
       isGia &&
       giaProportionDiagramFieldsMissing(parsed.fields) &&
@@ -322,6 +375,7 @@ async function runImageOcrAugmentation(input: {
     ) {
       const giaInternal = parsed.giaInternal ?? {};
       let giaCombined = combined;
+      publishGradeHintText(giaCombined);
       const giaStyleDetection = detectGiaReportStyle(combined);
       const lgdrDossier =
         giaStyleDetection.layout === "lgdr-dossier" ||
@@ -364,6 +418,7 @@ async function runImageOcrAugmentation(input: {
           );
           if (fullOcr.ok && fullOcr.text.trim()) {
             giaCombined = [fullOcr.text, combined].filter(Boolean).join("\n\n");
+            publishGradeHintText(giaCombined);
           }
         } catch {
           // Budget exhausted — still attempt scatter parse on PDF text layer.
@@ -416,7 +471,7 @@ async function runImageOcrAugmentation(input: {
             ),
           );
           try {
-            await withTimeout(
+            const facsimileOcr = await withTimeout(
               applyGiaFacsimileDiagramImageOcr(
                 uploadPdfBytes,
                 giaCombined,
@@ -431,6 +486,9 @@ async function runImageOcrAugmentation(input: {
               facsimileBudgetMs,
               "client-gia-facsimile-diagram-ocr",
             );
+            if (facsimileOcr.gradeHintSupplement) {
+              publishGradeHintText(facsimileOcr.gradeHintSupplement);
+            }
           } catch {
             // Facsimile budget exhausted — still attempt targeted band fallbacks.
           }
@@ -486,7 +544,11 @@ async function runImageOcrAugmentation(input: {
           : "client-gia-diagram-partial",
       });
       if (clientSatisfied()) {
-        return { imageOcrMs: Date.now() - started, ocrCompleted };
+        return {
+          imageOcrMs: Date.now() - started,
+          ocrCompleted,
+          gradeHintText,
+        };
       }
     }
 
@@ -500,7 +562,11 @@ async function runImageOcrAugmentation(input: {
         ? "client-sufficient"
         : "skipped-gia-igi-client-budget",
     });
-    return { imageOcrMs: Date.now() - started, ocrCompleted };
+    return {
+      imageOcrMs: Date.now() - started,
+      ocrCompleted,
+      gradeHintText,
+    };
   }
 
   const giaGate = shouldRunGiaFacsimileDiagramImageOcr(parsed.fields, combined, {
@@ -509,7 +575,7 @@ async function runImageOcrAugmentation(input: {
   });
   if (giaGate.run) {
     const giaInternal = parsed.giaInternal ?? {};
-    await withTimeout(
+    const facsimileOcr = await withTimeout(
       applyGiaFacsimileDiagramImageOcr(
         uploadPdfBytes,
         combined,
@@ -524,6 +590,9 @@ async function runImageOcrAugmentation(input: {
       IMAGE_REGION_OCR_TIMEOUT_MS,
       "gia-facsimile-diagram-ocr",
     );
+    if (facsimileOcr.gradeHintSupplement) {
+      publishGradeHintText(facsimileOcr.gradeHintSupplement);
+    }
     if (Object.keys(giaInternal).length > 0) {
       parsed.giaInternal = giaInternal;
     }
@@ -570,7 +639,11 @@ async function runImageOcrAugmentation(input: {
     ocrCompleted = true;
   }
 
-  return { imageOcrMs: Date.now() - started, ocrCompleted };
+  return {
+    imageOcrMs: Date.now() - started,
+    ocrCompleted,
+    gradeHintText,
+  };
 }
 
 /** Same extraction path as `/api/calibration-library/extract-file` (bounded). */
@@ -603,6 +676,7 @@ export async function runCalibrationUploadExtraction(
   const snapshot: {
     parsed: ExtractionResult | null;
     combined: string;
+    gradeHintText: string;
     ocrAttempted: boolean;
     ocrAvailable: boolean;
     pdfTextLayerLength: number;
@@ -610,6 +684,7 @@ export async function runCalibrationUploadExtraction(
   } = {
     parsed: null,
     combined: "",
+    gradeHintText: "",
     ocrAttempted: false,
     ocrAvailable: false,
     pdfTextLayerLength: 0,
@@ -802,9 +877,23 @@ export async function runCalibrationUploadExtraction(
 
         snapshot.parsed = parsed;
         snapshot.combined = combined;
+        snapshot.gradeHintText = combined.slice(0, 16000);
+        parsed.rawTextSnippet = combined.slice(0, 1200);
+        syncParsedGradeHintText(parsed, snapshot.gradeHintText);
         snapshot.ocrAttempted = ocrAttempted;
         snapshot.pdfTextLayerLength = pdfTextLayerLength;
         snapshot.gcalImageOnlyPdf = gcalImageOnlyPdf;
+
+        let gradeHintText = snapshot.gradeHintText;
+        let ocrSkippedForSufficientText = false;
+
+        const publishSnapshotGradeHintText = (text: string) => {
+          gradeHintText = pickGradeHintText(gradeHintText, text);
+          snapshot.gradeHintText = gradeHintText;
+          if (snapshot.parsed) {
+            syncParsedGradeHintText(snapshot.parsed, gradeHintText);
+          }
+        };
 
         if (
           clientMode &&
@@ -814,6 +903,7 @@ export async function runCalibrationUploadExtraction(
           })
         ) {
           // Text layer alone already supports a full read — skip OCR entirely.
+          ocrSkippedForSufficientText = true;
           logUploadPipelineTiming({
             phase: "ocr-region-crops",
             durationMs: 0,
@@ -832,13 +922,16 @@ export async function runCalibrationUploadExtraction(
               reportNumberHint,
               gcalImageOnlyPdf,
               clientMode,
+              onGradeHintTextUpdate: publishSnapshotGradeHintText,
             });
             timings.imageOcrMs = ocr.imageOcrMs;
             if (ocr.ocrCompleted) ocrAttempted = true;
+            publishSnapshotGradeHintText(ocr.gradeHintText);
             console.log("[upload-pipeline] image-ocr:end", {
               ms: Date.now() - t0,
               imageOcrMs: timings.imageOcrMs,
               ocrCompleted: ocr.ocrCompleted,
+              gradeHintTextLen: gradeHintText.length,
             });
           } catch (ocrErr) {
             const ocrErrMsg = errorMessageFromUnknown(ocrErr);
@@ -854,8 +947,35 @@ export async function runCalibrationUploadExtraction(
           snapshot.ocrAttempted = ocrAttempted;
         }
 
+        if (
+          clientMode &&
+          ocrSkippedForSufficientText &&
+          uploadPdfBytes &&
+          gradeHintTextLikelyIncomplete(gradeHintText) &&
+          (parsed.metadata.lab === "GIA" ||
+            Boolean(parsed.parserType?.startsWith("gia")))
+        ) {
+          try {
+            const fullOcr = await withTimeout(
+              ocrGiaFacsimileFullPages(uploadPdfBytes),
+              12_000,
+              "client-gia-grade-hint-ocr",
+            );
+            if (fullOcr.ok && fullOcr.text.trim()) {
+              publishSnapshotGradeHintText(
+                [fullOcr.text, combined].filter(Boolean).join("\n\n"),
+              );
+            }
+          } catch {
+            // Grade-hint OCR is best-effort — proportions already sufficient.
+          }
+        }
+
         parsed.textMethod = effectiveMethod;
         parsed.rawTextSnippet = combined.slice(0, 1200);
+        syncParsedGradeHintText(parsed, gradeHintText);
+        snapshot.parsed = parsed;
+        snapshot.gradeHintText = gradeHintText;
 
         console.log("[upload-pipeline] finalizer:start", { ms: Date.now() - t0 });
         const finalizerStarted = Date.now();
@@ -937,8 +1057,16 @@ export async function runCalibrationUploadExtraction(
     // On timeout in client mode, return whatever snapshot we built so the
     // route can classify it deterministically (full / partial / failure).
     if (clientMode && snapshot.parsed) {
+      const parsedForFinalize: ExtractionResult = {
+        ...snapshot.parsed,
+        rawTextSnippet:
+          snapshot.parsed.rawTextSnippet || snapshot.combined.slice(0, 1200),
+        reportGradeHintText: (
+          snapshot.gradeHintText || snapshot.combined
+        ).slice(0, 16000),
+      };
       const finalized = finalizeCalibrationExtractionResult({
-        parsed: snapshot.parsed,
+        parsed: parsedForFinalize,
         combinedText: snapshot.combined,
         usedImageOCR: snapshot.ocrAttempted || timings.imageOcrMs > 0,
       });

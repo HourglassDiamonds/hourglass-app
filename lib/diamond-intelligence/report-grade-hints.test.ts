@@ -5,7 +5,10 @@ import {
   clarityRiskFloor,
   claritySeverity,
   parseReportGradeHints,
+  traceColorExtraction,
+  traceClarityExtraction,
 } from "./report-grade-hints";
+import { GIA2527039693_FACSIMILE_PDF_TEXT } from "@/lib/calibration-library/fixtures/gia2527039693";
 
 describe("parseReportGradeHints", () => {
   it("parses clarity from GIA-style report text", () => {
@@ -24,11 +27,65 @@ describe("parseReportGradeHints", () => {
     assert.equal(hints.color, "G");
   });
 
+  it("parses GIA color range on following line", () => {
+    const hints = parseReportGradeHints(
+      "GIA Report\nColor Grade\nO to P Range\nClarity Grade\nSI2\n",
+    );
+    assert.equal(hints.clarity, "SI2");
+    assert.match(hints.color ?? "", /O to P Range/i);
+  });
+
   it("flags fancy color context", () => {
     const hints = parseReportGradeHints(
       "Natural Colored Diamond\nFancy Vivid Yellow",
     );
     assert.equal(hints.fancyColor, true);
+    assert.equal(hints.color, undefined);
+  });
+
+  it("rejects Y from Very Good cut-grade OCR noise", () => {
+    const trace = traceColorExtraction(
+      "GRADING RESULTS\nUL Grade cece. VEry Good\nInscription(s): GIA 6482285473",
+    );
+    assert.equal(trace.selected, undefined);
+    assert.ok(
+      trace.rejected.some((r) => r.reason.includes("cut/finish noise")) ||
+        !trace.candidates.some((c) => c.value === "Y"),
+    );
+  });
+
+  it("parses GIA facsimile dot-leader single color grade", () => {
+    const hints = parseReportGradeHints(
+      "Color Grade   ..........................................................................   D\nClarity Grade   ................................................................... VVS2",
+    );
+    assert.equal(hints.color, "D");
+    assert.equal(hints.clarity, "VVS2");
+  });
+
+  it("parses GIA facsimile dot-leader clarity with spaced token (I 1)", () => {
+    const hints = parseReportGradeHints(
+      "Clarity Grade   ........................................ I 1\nColor Grade F",
+    );
+    assert.equal(hints.clarity, "I1");
+  });
+
+  it("does not pick clarity from grading scale listing alone", () => {
+    const hints = parseReportGradeHints(
+      "CLARITY GRADING SCALE\nFL IF VVS1 VVS2 VS1 VS2 SI1 SI2 I1 I2 I3",
+    );
+    assert.equal(hints.clarity, undefined);
+    const trace = traceClarityExtraction(
+      "CLARITY GRADING SCALE\nFL IF VVS1 VVS2 VS1 VS2 SI1 SI2 I1 I2 I3",
+    );
+    assert.equal(trace.selected, undefined);
+  });
+
+  it("prefers explicit Clarity Grade field over grading scale text", () => {
+    const hints = parseReportGradeHints(
+      `${GIA2527039693_FACSIMILE_PDF_TEXT}\nCLARITY GRADING SCALE\nFL IF VVS1 VVS2 VS1 VS2 SI1 SI2 I1 I2 I3`,
+    );
+    assert.equal(hints.clarity, "VVS2");
+    assert.equal(hints.color, "D");
   });
 });
 

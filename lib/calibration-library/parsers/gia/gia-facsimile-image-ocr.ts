@@ -452,6 +452,8 @@ export type GiaDiagramOcrCheckPayload = {
   cropCoordinates: readonly PercentCrop[];
   ocrRawPreview: string;
   repairedOcrPreview: string;
+  /** Display-only — merged PDF + OCR text for client grade-hint parsing. */
+  gradeHintSupplement?: string;
   candidatesFound: Record<string, string>;
   assignmentsMade: Record<string, string>;
   rejectedCandidates: Array<{ candidate: string; reason: string }>;
@@ -801,6 +803,7 @@ export async function applyGiaFacsimileDiagramImageOcr(
     cropCoordinates: GIA_FACSIMILE_OCR_CROPS,
     ocrRawPreview,
     repairedOcrPreview: mergedContext.slice(0, REGION_PREVIEW_CHARS),
+    gradeHintSupplement: mergedContext.slice(0, 16000),
     candidatesFound,
     assignmentsMade,
     rejectedCandidates,

@@ -5,6 +5,7 @@ import type {
   GcalInternalFields,
   ReportFieldKey,
 } from "../../types";
+import { looksLikeGiaReportText } from "../../gia-proportions";
 import {
   applyGcal8xFinishGrades,
   extractGcal8xFinishGrades,
@@ -69,9 +70,11 @@ export function shouldRunGcalImageRegionOcr(
     lab?: CalibrationLab;
     gcalImageOnlyPdf?: boolean;
     labHint?: string;
+    combinedText?: string;
   },
 ): boolean {
   if (opts.parserType === "gcal-sarine-4cs") return false;
+  if (looksLikeGiaReportText(opts.combinedText ?? "")) return false;
   const isGcal =
     opts.parserType === "gcal-8x" ||
     opts.lab === "GCAL" ||

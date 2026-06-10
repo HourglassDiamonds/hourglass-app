@@ -22,6 +22,7 @@ import {
   hourglassClarityStandardsNote,
   isBelowHourglassClarityStandard,
 } from "./hourglass-clarity-standards";
+import { HOURGLASS_EXCLUDED_CLARITY_CONSUMER_MESSAGE } from "./hourglass-clarity-policy";
 import {
   buildDiamondPurchasePersonality,
   type DiamondPurchasePersonality,
@@ -352,7 +353,7 @@ function recommendationExplanation(
     case "Not Recommended":
       if (isBelowHourglassClarityStandard(hints.clarity)) {
         const standards = hourglassClarityStandardsNote(hints.clarity);
-        return `Clarity ${hints.clarity} falls outside Hourglass recommended clarity standards for client guidance — even workable proportions do not change that advisory. ${standards ?? ""}`;
+        return `${HOURGLASS_EXCLUDED_CLARITY_CONSUMER_MESSAGE} ${standards ?? ""}`.trim();
       }
       if (hints.clarity && /^I[23]$/.test(hints.clarity)) {
         return `Clarity ${hints.clarity} is the dominant concern — even decent proportions do not make this a confident overall recommendation without a very specific price and appearance trade you accept.`;

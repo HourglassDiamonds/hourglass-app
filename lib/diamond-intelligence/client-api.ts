@@ -16,8 +16,9 @@ import {
 } from "./extraction-completeness";
 import { buildClientDiamondDecisionProfile } from "./client-decision-profile";
 import type { DiamondDecisionProfile } from "./diamond-decision-profile";
-import { parseReportGradeHints, type ReportGradeHints } from "./report-grade-hints";
+import { parseReportGradeHints, buildReportGradeHintSource, type ReportGradeHints } from "./report-grade-hints";
 import { presentClientInterpretationScore } from "./client-score-present";
+import { resolveClientReportFormat } from "./gcal-8x-display";
 
 /** Fields shown in the client “What we could read” card. */
 export const CLIENT_DISPLAY_FIELD_KEYS: ReportFieldKey[] = [
@@ -38,10 +39,19 @@ export type ClientSafeReportCapability = Omit<
   "internalCalibrationEligible"
 >;
 
+/** Display-only report family — mirrors server parser classification; not used in scoring. */
+export type ClientReportFormat = "gcal-8x" | "gcal-sarine-4cs";
+
 export type ClientSafeMetadata = Pick<
   CalibrationReportMetadata,
   "lab" | "reportNumber" | "stoneType"
->;
+> & {
+  reportFormat?: ClientReportFormat;
+  /** Display-only extraction family label (mirrors server parserType). */
+  parserFamily?: string;
+  /** Truncated report text for display framework detection only. */
+  reportTextHint?: string;
+};
 
 /** API + UI payload — no parser, provenance, or calibration admin fields. */
 export type ClientSafeInterpretationPayload = {
@@ -86,11 +96,43 @@ export function toClientSafeInterpretationPayload(
     ...clientCapability
   } = capability;
 
+  const parserType = finalized.parserType;
+  const parserFamily = parserType;
+
+  const reportTextHint = finalized.rawTextSnippet?.trim() || undefined;
+
+  const gradeHintSource = buildReportGradeHintSource({
+    reportGradeHintText: finalized.reportGradeHintText,
+    rawTextSnippet: reportTextHint,
+    warnings: finalized.warnings,
+  });
+
+  const reportTextHintForDisplay =
+    gradeHintSource ||
+    [reportTextHint, ...finalized.warnings].filter(Boolean).join("\n").slice(0, 16000);
+
+  const reportFormat = resolveClientReportFormat({
+    lab: finalized.metadata.lab,
+    reportFormat:
+      parserType === "gcal-8x"
+        ? "gcal-8x"
+        : parserType === "gcal-sarine-4cs"
+          ? "gcal-sarine-4cs"
+          : undefined,
+    parserFamily,
+    reportTextHint: reportTextHintForDisplay,
+    warnings: finalized.warnings,
+    fields: interpretation,
+  });
+
   const payload: ClientSafeInterpretationPayload = {
     metadata: {
       lab: finalized.metadata.lab,
       reportNumber: finalized.metadata.reportNumber,
       stoneType: finalized.metadata.stoneType,
+      reportFormat,
+      parserFamily,
+      reportTextHint: reportTextHintForDisplay || undefined,
     },
     extractedFields: { ...finalized.fields },
     interpretationFields: { ...interpretation },
@@ -110,9 +152,8 @@ export function toClientSafeInterpretationPayload(
     );
   }
 
-  const reportTextHint = finalized.rawTextSnippet?.trim();
-  if (reportTextHint) {
-    payload.gradeHints = parseReportGradeHints(reportTextHint);
+  if (gradeHintSource) {
+    payload.gradeHints = parseReportGradeHints(gradeHintSource);
   }
 
   const rawScore = presentClientInterpretationScore(
@@ -127,7 +168,7 @@ export function toClientSafeInterpretationPayload(
     metadata: payload.metadata,
     capability: clientCapability,
     rawScore: rawOverall,
-    reportTextHint,
+    reportTextHint: gradeHintSource || reportTextHint,
     gradeHints: payload.gradeHints,
   });
 

@@ -147,7 +147,7 @@ describe("buildDiamondPurchasePersonality", () => {
     const p = profileFor(igiI2, 80, { clarity: "I2", color: "G" });
     assert.equal(p.purchasePersonality.label, "Outside Hourglass Standards");
     assert.equal(p.overallRecommendation.band, "Not Recommended");
-    assert.match(p.purchasePersonality.summary, /Hourglass typical client clarity standards/i);
+    assert.match(p.purchasePersonality.summary, /outside the quality range/i);
     assert.notEqual(p.purchasePersonality.label, "Performance-Led Choice");
   });
 
@@ -239,8 +239,14 @@ describe("buildDiamondPurchasePersonality", () => {
     assert.equal(i2.overallRecommendation.band, "Not Recommended");
     assert.equal(i1.purchasePersonality.label, "Outside Hourglass Standards");
     assert.equal(i2.purchasePersonality.label, "Outside Hourglass Standards");
-    assert.match(i1.purchasePersonality.why.join(" "), /I1/i);
-    assert.match(i2.purchasePersonality.why.join(" "), /I2/i);
+    assert.match(
+      i1.purchasePersonality.summary,
+      /outside the quality range/i,
+    );
+    assert.match(
+      i2.purchasePersonality.summary,
+      /outside the quality range/i,
+    );
   });
 
   it("partial extraction copy frames missing information, not the diamond", () => {

@@ -105,6 +105,8 @@ export type ExtractionResult = {
   /** Internal extraction diagnostics — not shown in public UI. */
   extractionMeta?: import("./parsers/types").ExtractionMeta;
   rawTextSnippet: string;
+  /** Display-only — extended document text for 4Cs grade-hint parsing (client interpret). */
+  reportGradeHintText?: string;
   warnings: string[];
   textMethod?: TextExtractionMethod;
   /** Per-field extraction provenance (metadata only). */

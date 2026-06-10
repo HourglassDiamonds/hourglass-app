@@ -29,14 +29,9 @@ type ShapeId =
   | "radiant"
   | "asscher";
 
-type SkinToneId = "light" | "medium" | "dark";
 type StoneOrientation = "ns" | "ew";
 
-const FINGER_IMAGES: Record<SkinToneId, string> = {
-  light: "/diamond-tech-suite/finger/finger-light.png",
-  medium: "/diamond-tech-suite/finger/finger-medium.png",
-  dark: "/diamond-tech-suite/finger/finger-dark.png",
-};
+const FINGER_IMAGE = "/diamond-tech-suite/finger/finger-light.png";
 
 /** Round brilliant face-up diameter (mm) — industry-style anchors, linear interpolation */
 const ROUND_BRILLIANT_MM_BY_CARAT: Record<number, number> = {
@@ -48,6 +43,11 @@ const ROUND_BRILLIANT_MM_BY_CARAT: Record<number, number> = {
   3.0: 9.3,
   4.0: 10.2,
   5.0: 11.0,
+  6.0: 11.7,
+  7.0: 12.3,
+  8.0: 12.9,
+  9.0: 13.4,
+  10.0: 14.0,
 };
 
 function getRoundDiamondMm(carat: number): number {
@@ -58,7 +58,11 @@ function getRoundDiamondMm(carat: number): number {
   const loK = keys[0]!;
   const hiK = keys[keys.length - 1]!;
   if (carat <= loK) return table[loK]!;
-  if (carat >= hiK) return table[hiK]!;
+  if (carat >= hiK) {
+    const prevK = keys[keys.length - 2]!;
+    const slope = (table[hiK]! - table[prevK]!) / (hiK - prevK);
+    return table[hiK]! + slope * (carat - hiK);
+  }
   for (let i = 0; i < keys.length - 1; i++) {
     const lo = keys[i]!;
     const hi = keys[i + 1]!;
@@ -86,6 +90,12 @@ const RING_SIZE_TO_MM: Record<number, number> = {
   9.0: 18.95,
   9.5: 19.35,
   10.0: 19.76,
+  10.5: 20.17,
+  11.0: 20.57,
+  11.5: 20.98,
+  12.0: 21.39,
+  12.5: 21.79,
+  13.0: 22.2,
 };
 
 const SHAPE_ANCHORS: Record<
@@ -210,7 +220,7 @@ const COVERAGE_ZONES = {
     min: 0,
     max: 40,
     label: "Understated Presence",
-    helper: "Quiet on the hand, with a refined and discreet scale.",
+    helper: "Subtle on the hand, with a refined everyday presence.",
   },
   balanced: {
     min: 40,
@@ -234,7 +244,7 @@ const COVERAGE_ZONES = {
     min: 75,
     max: 100,
     label: "Dramatic Presence",
-    helper: "A bold, high-impact scale that becomes the center of attention.",
+    helper: "A bold, high-presence look designed to be noticed.",
   },
 } as const;
 
@@ -261,7 +271,7 @@ const SHAPE_PRESENCE_MOD: Partial<Record<ShapeId, number>> = {
 };
 
 const CARAT_MIN = 0.5;
-const CARAT_MAX = 5.0;
+const CARAT_MAX = 10.0;
 
 /** Width on viewer = (mm / finger mm) * factor; +3% vs original 0.46 for truer visual coverage */
 const STONE_VIEWER_WIDTH_FACTOR = 0.46 * 1.03;
@@ -348,7 +358,15 @@ function interpAnchors(
   const loK = keys[0]!;
   const hiK = keys[keys.length - 1]!;
   if (carat <= loK) return anchors[loK]!;
-  if (carat >= hiK) return anchors[hiK]!;
+  if (carat >= hiK) {
+    const prevK = keys[keys.length - 2]!;
+    const [wL, lL] = anchors[prevK]!;
+    const [wH, lH] = anchors[hiK]!;
+    const extra = carat - hiK;
+    const slopeW = (wH - wL) / (hiK - prevK);
+    const slopeL = (lH - lL) / (hiK - prevK);
+    return [wH + slopeW * extra, lH + slopeL * extra];
+  }
   for (let i = 0; i < keys.length - 1; i++) {
     const lo = keys[i]!;
     const hi = keys[i + 1]!;
@@ -553,8 +571,26 @@ function classifyPresence(
   return classifyZone(getPresenceScore(shape, carat, ringSize, orientation));
 }
 
-function articleFor(shape: ShapeId): "A" | "An" {
-  return /^[aeiou]/i.test(SHAPE_LABELS[shape]) ? "An" : "A";
+/** Hero headline carat — at most one decimal, no trailing zeros. */
+function formatCaratForHeadline(carat: number): string {
+  const oneDecimal = Math.round(carat * 10) / 10;
+  return Number.isInteger(oneDecimal)
+    ? String(oneDecimal)
+    : oneDecimal.toFixed(1);
+}
+
+/** Hero headline ring size — half sizes preserved; whole sizes drop “.0”. */
+function formatRingSizeForHeadline(ringSize: number): string {
+  const stepped = Math.round(ringSize * 2) / 2;
+  return Number.isInteger(stepped) ? String(stepped) : stepped.toFixed(1);
+}
+
+function articleForCarat(carat: number): "A" | "An" {
+  const n = Math.round(carat * 10) / 10;
+  if (n === 8 || n === 11 || n === 18) return "An";
+  if (n > 7 && n < 9) return "An";
+  if (n > 10 && n < 12) return "An";
+  return "A";
 }
 
 /* -------------------------------------------------------------------------- */
@@ -581,8 +617,8 @@ function SuiteStyles() {
         --hairline-soft: oklch(0.92 0.006 72);
         --pill-active: oklch(0.94 0.024 75);
         --pill-edge: oklch(0.82 0.040 70);
-        --shadow-1: 0 1px 2px oklch(0.55 0.012 65 / 0.05), 0 8px 22px oklch(0.45 0.012 65 / 0.05);
-        --shadow-2: 0 1px 1px oklch(0.55 0.012 65 / 0.04), 0 12px 40px oklch(0.45 0.012 65 / 0.09);
+        --shadow-1: 0 1px 2px oklch(0.55 0.012 65 / 0.04), 0 4px 14px oklch(0.45 0.012 65 / 0.04);
+        --shadow-2: 0 1px 1px oklch(0.55 0.012 65 / 0.03), 0 8px 28px oklch(0.45 0.012 65 / 0.06);
         --sb-thumb: oklch(0.62 0.006 72 / 0.09);
         --sb-thumb-hover: oklch(0.48 0.008 68 / 0.22);
       }
@@ -651,7 +687,7 @@ function SuiteStyles() {
         transition: background 600ms ease;
       }
       .dts-app{ position:relative; z-index:1; width:100%; height:100%;
-        display:grid; grid-template-rows:minmax(60px,auto) 1fr; }
+        display:grid; grid-template-rows:auto minmax(0, 1fr); }
       @media (min-width: 769px) {
         .dts-shell{
           height:100dvh;
@@ -662,7 +698,7 @@ function SuiteStyles() {
           height:100dvh;
           max-height:100dvh;
           overflow:hidden;
-          grid-template-rows:var(--dts-topbar-h, 60px) minmax(0, 1fr);
+          grid-template-rows:auto minmax(0, 1fr);
         }
         .dts-main{
           min-height:0;
@@ -677,9 +713,9 @@ function SuiteStyles() {
         row-gap:0;
         padding:0 28px;
         min-height:60px;
+        flex-shrink:0;
         border-bottom:1px solid oklch(from var(--hairline-soft) l c h / 0.76);
-        box-shadow:0 1px 0 oklch(from var(--hairline) l c h / 0.06),
-          0 14px 28px oklch(from var(--bg-deep) l c h / 0.04);
+        box-shadow:0 1px 0 oklch(from var(--hairline) l c h / 0.05);
       }
       .dts-topbar-brand{
         display:flex; align-items:center; align-self:center;
@@ -802,7 +838,7 @@ function SuiteStyles() {
           padding:16px 18px 16px 22px;
           display:flex;
           flex-direction:column;
-          gap:16px;
+          gap:18px;
           scrollbar-width:none;
           -ms-overflow-style:none;
         }
@@ -834,22 +870,24 @@ function SuiteStyles() {
           flex:1 1 auto;
           min-height:0;
           min-width:0;
-          padding:12px 0 8px;
-          justify-content:center;
+          padding:clamp(16px, 2.2vh, 28px) 0 8px;
+          justify-content:flex-start;
           overflow:hidden;
         }
-        .dts-stage-stack .dts-shape-strip{
+        .dts-stage-stack .dts-shape-strip-wrap{
           order:2;
+          flex:0 0 auto;
+          align-self:center;
+          margin-top:clamp(10px, 1.6vh, 20px);
+          margin-bottom:clamp(14px, 2.4vh, 28px);
+        }
+        .dts-stage-stack .dts-shape-strip{
           position:relative;
           left:auto;
           right:auto;
           bottom:auto;
           inset:auto;
           transform:none;
-          flex:0 0 auto;
-          align-self:center;
-          margin-top:clamp(10px, 1.6vh, 20px);
-          margin-bottom:clamp(14px, 2.4vh, 28px);
         }
         .dts-stage-stack .dts-stage-canvas{
           margin-bottom:clamp(4px, 0.8vh, 12px);
@@ -876,7 +914,8 @@ function SuiteStyles() {
       }
       .dts-card{
         background:var(--card); border:1px solid var(--card-edge); border-radius:12px;
-        padding:14px 15px 15px; box-shadow:var(--shadow-1);
+        padding:13px 14px 14px; box-shadow:var(--shadow-1);
+        transition:border-color var(--dt-dur-mid) var(--dt-ease), box-shadow var(--dt-dur-mid) var(--dt-ease);
       }
       .dts-card--coverage{
         padding:16px 16px 18px;
@@ -886,7 +925,7 @@ function SuiteStyles() {
       .dts-card-head{
         display:flex; align-items:center; justify-content:space-between;
         font-size:9.35px; font-weight:500; letter-spacing:0.168em; text-transform:uppercase;
-        color:var(--ink-soft); margin:1px 0 12px;
+        color:var(--ink-soft); margin:0 0 10px;
       }
       .dts-info{
         width:13px; height:13px; border-radius:50%; border:1px solid oklch(from var(--ink-mute) l c h / 0.75);
@@ -901,7 +940,7 @@ function SuiteStyles() {
       }
       .dts-stepper{
         display:flex; align-items:center; justify-content:center; gap:14px;
-        margin:4px 0 10px;
+        margin:2px 0 8px;
       }
       .dts-stepper button{
         width:24px; height:24px; border-radius:50%; border:1px solid var(--hairline);
@@ -922,23 +961,37 @@ function SuiteStyles() {
         color:var(--ink); font-variant-numeric:tabular-nums lining-nums;
         min-width:56px; text-align:center;
       }
-      .dts-slider{ position:relative; margin:8px 4px 4px; }
+      .dts-slider{ position:relative; margin:6px 4px 2px; }
       .dts-slider .dts-track{
-        position:relative; height:1px; background:var(--hairline); margin:12px 8px 10px;
+        position:relative; height:1px; background:var(--hairline); margin:11px 8px 9px;
+      }
+      .dts-slider .dts-track::before{
+        content:"";
+        position:absolute; left:0; top:0; height:1px;
+        background:linear-gradient(90deg, var(--gold-soft), var(--gold-warm));
+        opacity:0.55;
+        width:var(--dts-fill, 0%);
+        pointer-events:none;
+        transition:width var(--dt-dur-mid) var(--dt-ease);
       }
       .dts-slider .dts-handle{
-        position:absolute; top:50%; width:12px; height:12px; border-radius:50%;
-        background:var(--card); border:1px solid var(--ink-soft);
+        position:absolute; top:50%; width:10px; height:10px; border-radius:50%;
+        background:var(--card); border:1px solid oklch(from var(--ink-soft) l c h / 0.72);
         transform:translate(-50%,-50%); cursor:grab;
-        box-shadow:0 1px 3px oklch(0 0 0 / 0.10);
+        box-shadow:0 1px 2px oklch(0 0 0 / 0.06);
         transition:border-color var(--dt-dur-mid) var(--dt-ease), box-shadow var(--dt-dur-mid) var(--dt-ease),
-          background-color var(--dt-dur-mid) var(--dt-ease);
+          background-color var(--dt-dur-mid) var(--dt-ease), transform var(--dt-dur-mid) var(--dt-ease);
       }
       .dts-slider .dts-handle:hover{
-        box-shadow:0 2px 6px oklch(0 0 0 / 0.08);
-        border-color:oklch(from var(--ink-soft) l c h / 0.95);
+        box-shadow:0 1px 4px oklch(0 0 0 / 0.07);
+        border-color:oklch(from var(--gold-warm) l c h / 0.55);
+        transform:translate(-50%,-50%) scale(1.06);
       }
-      .dts-slider .dts-handle:active{ cursor:grabbing; border-color:var(--gold-warm); }
+      .dts-slider .dts-handle:active{
+        cursor:grabbing;
+        border-color:var(--gold-warm);
+        background:var(--pill-active);
+      }
       .dts-ticks{
         display:flex; justify-content:space-between; margin:8px 0 2px; padding:0 2px;
         font-size:10px; color:var(--ink-mute); font-variant-numeric:tabular-nums;
@@ -1136,10 +1189,14 @@ function SuiteStyles() {
       }
       .dts-layer-diamond.is-swapping{ opacity:0; }
       .dts-sentence{
-        position:relative; margin:6px 12px 14px; text-align:center;
+        position:relative; margin:4px 12px 12px; text-align:center;
         font-family:var(--serif); font-weight:300; font-size:21px; color:var(--ink);
         letter-spacing:0.01em; pointer-events:none; z-index:30; flex:0 0 auto;
         line-height:1.35;
+      }
+      .dts-mobile-hero{
+        flex:0 0 auto;
+        width:100%;
       }
       .dts-sentence .dts-article{ font-style:italic; color:var(--ink-soft); }
       .dts-stage-trust{
@@ -1158,17 +1215,24 @@ function SuiteStyles() {
         letter-spacing:0.06em;
         white-space:nowrap;
       }
+      .dts-shape-strip-wrap{
+        position:relative;
+        width:100%;
+        flex:0 0 auto;
+        display:flex;
+        justify-content:center;
+      }
       .dts-shape-strip{
-        position:absolute; bottom:16px; left:50%; transform:translateX(-50%);
+        position:relative;
         display:flex; align-items:stretch; gap:7px; padding:7px 11px;
         background:oklch(from var(--card) l c h / 0.74);
         border:1px solid oklch(from var(--card-edge) l c h / 0.42);
         border-radius:16px;
         backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px);
-        box-shadow:0 8px 28px oklch(from var(--hairline) l c h / 0.08),
-          0 0 0 1px oklch(from var(--hairline-soft) l c h / 0.26) inset;
+        box-shadow:0 4px 16px oklch(from var(--hairline) l c h / 0.06),
+          0 0 0 1px oklch(from var(--hairline-soft) l c h / 0.22) inset;
         z-index:20; white-space:nowrap;
-        opacity:0.86;
+        opacity:0.88;
       }
       .dts-shape-chip{
         display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
@@ -1232,7 +1296,7 @@ function SuiteStyles() {
           overflow-x:hidden;
           overflow-y:auto;
           -webkit-overflow-scrolling:touch;
-          scroll-padding-bottom:calc(env(safe-area-inset-bottom, 0px) + 120px);
+          scroll-padding-bottom:calc(env(safe-area-inset-bottom, 0px) + 96px);
         }
         .dts-app{
           display:flex;
@@ -1240,7 +1304,7 @@ function SuiteStyles() {
           min-height:100%;
           height:auto;
           box-sizing:border-box;
-          padding-bottom:calc(env(safe-area-inset-bottom, 0px) + 120px);
+          padding-bottom:calc(env(safe-area-inset-bottom, 0px) + 96px);
         }
         .dts-topbar{
           display:grid;
@@ -1277,7 +1341,7 @@ function SuiteStyles() {
           display:flex !important;
           flex-direction:column !important;
           width:100% !important;
-          gap:32px;
+          gap:16px;
           grid-template-columns:unset;
           grid-template-rows:unset;
           min-width:0;
@@ -1287,57 +1351,45 @@ function SuiteStyles() {
         .dts-control-rail{
           display:contents;
         }
-        .dts-main .dts-card[aria-label="Finger size"],
-        .dts-main .dts-card[aria-label="Skin tone"],
-        .dts-main .dts-card[aria-label="Stone orientation"]{
-          order:1;
+        .dts-main .dts-card{
           width:100%;
           max-width:none;
-          padding-left:20px;
-          padding-right:20px;
+          padding:11px 16px 12px;
+          margin-left:20px;
+          margin-right:20px;
+          width:calc(100% - 40px);
           box-sizing:border-box;
         }
-        .dts-main .dts-card[aria-label="Finger size"]{
-          padding-top:20px;
-        }
-        .dts-main .dts-card[aria-label="Finger coverage"]{
-          padding-bottom:36px;
+        .dts-main .dts-card--ring-size{ order:5; }
+        .dts-main .dts-card--carat{ order:6; }
+        .dts-main .dts-card--orientation{ order:7; }
+        .dts-main .dts-card--coverage{
+          order:11;
+          padding-bottom:28px;
         }
         .dts-stage-stack{
-          width:100%;
-          max-width:none;
-          position:relative;
-          transform:none;
-          flex:0 0 auto;
-          min-width:0;
-          padding:0 20px 0;
-          display:flex;
-          flex-direction:column;
-          align-items:stretch;
-          gap:0;
-          order:2;
-        }
-        .dts-main .dts-card[aria-label="Carat weight"],
-        .dts-main .dts-card[aria-label="Finger coverage"]{
-          order:3;
-          width:100%;
-          max-width:none;
-          padding-left:20px;
-          padding-right:20px;
-          box-sizing:border-box;
+          display:contents;
         }
         .dts-stage-preview{
+          display:contents;
+        }
+        .dts-mobile-hero{
+          order:2;
+          width:calc(100% - 40px);
+          margin:4px 20px 0;
+          box-sizing:border-box;
+        }
+        .dts-mobile-visual{
+          order:4;
           width:100%;
-          max-width:none;
-          position:relative;
-          transform:none;
-          flex:0 0 auto;
-          margin-top:0;
-          padding:4px 0 8px;
-          align-items:center;
-          overflow-x:hidden;
-          display:flex;
-          flex-direction:column;
+          padding:0 20px;
+          box-sizing:border-box;
+        }
+        .dts-shape-strip-wrap{
+          order:10;
+          width:calc(100% - 40px);
+          margin-left:20px;
+          margin-right:20px;
         }
         .dts-stage-canvas{
           display:flex;
@@ -1348,9 +1400,9 @@ function SuiteStyles() {
         }
         .dts-sentence{
           font-size:clamp(16.5px,4.4vw,18.5px);
-          line-height:1.24;
+          line-height:1.28;
           letter-spacing:0.006em;
-          margin:0 auto 16px;
+          margin:0 auto 10px;
           padding:0 2px;
           max-width:min(22rem,100%);
           position:relative !important;
@@ -1359,7 +1411,7 @@ function SuiteStyles() {
           width:100%;
         }
         .dts-stage-trust{
-          margin:0 auto 14px;
+          margin:0 auto 12px;
           max-width:min(20rem,100%);
           font-size:10px;
         }
@@ -1387,6 +1439,11 @@ function SuiteStyles() {
           max-height:min(48vh,352px);
           aspect-ratio:7 / 9.15;
         }
+        .dts-shape-strip-wrap{
+          margin:4px 0 8px;
+          -webkit-mask-image:linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
+          mask-image:linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
+        }
         .dts-shape-strip{
           position:relative !important;
           left:auto !important;
@@ -1394,8 +1451,7 @@ function SuiteStyles() {
           bottom:auto !important;
           inset:auto !important;
           transform:none !important;
-          margin-top:24px;
-          margin-bottom:24px;
+          margin:0;
           width:100%;
           max-width:none !important;
           min-width:0;
@@ -1404,11 +1460,12 @@ function SuiteStyles() {
           overflow-x:auto;
           overflow-y:hidden;
           -webkit-overflow-scrolling:touch;
-          gap:8px;
-          padding:10px 12px 12px;
+          gap:6px;
+          padding:8px 10px 9px;
           scrollbar-width:none;
           -ms-overflow-style:none;
           align-self:stretch;
+          opacity:0.92;
         }
         .dts-shape-strip::-webkit-scrollbar{ display:none; }
         .diamond-studio-main,
@@ -1430,39 +1487,43 @@ function SuiteStyles() {
         }
         .dts-shape-chip{
           flex:0 0 auto;
-          min-width:52px;
-          min-height:48px;
-          padding:8px 8px 7px;
+          min-width:46px;
+          min-height:42px;
+          padding:6px 7px 5px;
           touch-action:manipulation;
         }
         .dts-shell[data-theme="light"] .dts-card,
         .dts-shell[data-theme="light"] .dts-card--coverage{
-          box-shadow:0 1px 2px rgba(49,38,29,0.04), 0 5px 14px rgba(49,38,29,0.045);
+          box-shadow:0 1px 2px rgba(49,38,29,0.035), 0 3px 10px rgba(49,38,29,0.04);
         }
         .dts-shell[data-theme="dark"] .dts-card,
         .dts-shell[data-theme="dark"] .dts-card--coverage{
-          box-shadow:0 1px 2px rgba(0,0,0,0.35), 0 6px 18px rgba(0,0,0,0.28);
-        }
-        .dts-card, .dts-card--coverage{
-          padding:16px 17px 17px;
+          box-shadow:0 1px 2px rgba(0,0,0,0.30), 0 4px 14px rgba(0,0,0,0.22);
         }
         .dts-card--coverage{
           border-color:oklch(from var(--card-edge) l c h / 0.85);
         }
         .dts-stepper button{
-          width:40px;
-          height:40px;
-          font-size:15px;
+          width:36px;
+          height:36px;
+          font-size:14px;
         }
         .dts-stepper .dts-step-val{
-          font-size:26px;
+          font-size:24px;
+          min-width:52px;
+        }
+        .dts-card-head{
+          margin-bottom:8px;
+        }
+        .dts-stepper{
+          margin:0 0 6px;
         }
         .dts-skin-pill{
-          min-height:40px;
+          min-height:36px;
           display:flex;
           align-items:center;
           justify-content:center;
-          padding:9px 8px;
+          padding:7px 6px;
         }
         .dts-zone-handle{
           width:12px;
@@ -1473,9 +1534,38 @@ function SuiteStyles() {
           margin-top:12px;
         }
       }
+      @media (min-width: 769px) and (max-width: 1023px) {
+        .diamond-studio-main.dts-main{
+          grid-template-columns:minmax(0, 1fr) !important;
+          grid-template-rows:auto minmax(0, 1fr) !important;
+        }
+        .dts-control-rail{
+          grid-column:1;
+          grid-row:2;
+          display:grid !important;
+          grid-template-columns:repeat(2, minmax(0, 1fr));
+          gap:12px;
+          padding:12px 20px 18px;
+          max-height:42vh;
+          overflow-y:auto;
+          align-content:start;
+        }
+        .dts-control-rail > .dts-card--coverage{
+          grid-column:1 / -1;
+        }
+        .dts-stage-stack{
+          grid-column:1;
+          grid-row:1;
+          min-height:0;
+        }
+        .dts-viewer{
+          width:min(480px, 88%);
+          max-height:min(44vh, 400px);
+        }
+      }
       @media (min-width: 769px) and (max-height: 860px) {
         .dts-stage-stack .dts-stage-preview{
-          padding-top:8px;
+          padding-top:clamp(14px, 2vh, 22px);
           padding-bottom:4px;
         }
         .dts-sentence{
@@ -1491,7 +1581,7 @@ function SuiteStyles() {
           width:min(520px, 90%);
           max-height:min(52vh, 460px);
         }
-        .dts-stage-stack .dts-shape-strip{
+        .dts-stage-stack .dts-shape-strip-wrap{
           margin-bottom:clamp(12px, 1.8vh, 22px);
         }
       }
@@ -1755,7 +1845,6 @@ const STUDIO_HEADER_NAV: { label: string; active: boolean }[] = [
 ];
 
 export default function DiamondStudioPage() {
-  const [skinTone, setSkinTone] = useState<SkinToneId>("light");
   const [ringSize, setRingSize] = useState(6.0);
   const [carat, setCarat] = useState(2.5);
   const [shape, setShape] = useState<ShapeId>("round");
@@ -1764,7 +1853,6 @@ export default function DiamondStudioPage() {
   const [diamondSwapping, setDiamondSwapping] = useState(false);
   const [stoneOrientation, setStoneOrientation] =
     useState<StoneOrientation>("ns");
-
   const isMobileViewport = useSyncExternalStore(
     subscribeMaxWidth768,
     snapshotMaxWidth768,
@@ -1819,7 +1907,7 @@ export default function DiamondStudioPage() {
       shape,
       carat,
       fingerSize: ringSize,
-      skinTone,
+      skinTone: "light",
       orientation: stoneOrientation,
       coveragePercent,
       coverageZone,
@@ -1829,7 +1917,6 @@ export default function DiamondStudioPage() {
     shape,
     carat,
     ringSize,
-    skinTone,
     stoneOrientation,
     deviceType,
   ]);
@@ -1909,19 +1996,6 @@ export default function DiamondStudioPage() {
     [shape, analyticsProps, recordMeaningfulInteraction],
   );
 
-  const selectSkinTone = useCallback(
-    (t: SkinToneId) => {
-      if (t === skinTone) return;
-      setSkinTone(t);
-      trackDiamondStudioEvent("skin_tone_selected", {
-        ...analyticsProps(),
-        skinTone: t,
-      });
-      recordMeaningfulInteraction();
-    },
-    [skinTone, analyticsProps, recordMeaningfulInteraction],
-  );
-
   const selectOrientation = useCallback(
     (o: StoneOrientation) => {
       if (o === stoneOrientation) return;
@@ -1978,7 +2052,7 @@ export default function DiamondStudioPage() {
   const applyRingSize = useCallback(
     (v: number, trackCommit: boolean) => {
       const stepped = Math.round(v * 2) / 2;
-      const next = Math.max(4, Math.min(10, stepped));
+      const next = Math.max(4, Math.min(13, stepped));
       setRingSize((prev) => {
         if (prev === next) return prev;
         if (trackCommit) commitFingerSizeAnalytics(next);
@@ -2010,7 +2084,7 @@ export default function DiamondStudioPage() {
   const fsDrag = useRef(false);
   const ctDrag = useRef(false);
 
-  const fsPctToSize = (p: number) => 4 + p * 6;
+  const fsPctToSize = (p: number) => 4 + p * 9;
   const ctPctToCarat = (p: number) => CARAT_MIN + p * (CARAT_MAX - CARAT_MIN);
 
   const ringSizeRef = useRef(ringSize);
@@ -2040,9 +2114,8 @@ export default function DiamondStudioPage() {
     );
   }, [applyCarat, commitCaratAnalytics]);
 
-  const fsHandleLeft = ((ringSize - 4) / 6) * 100;
+  const fsHandleLeft = ((ringSize - 4) / 9) * 100;
   const ctHandleLeft = ((carat - CARAT_MIN) / (CARAT_MAX - CARAT_MIN)) * 100;
-
   return (
     <div className="dts-shell h-full w-full overflow-hidden" data-theme="light">
       <SuiteStyles />
@@ -2078,10 +2151,13 @@ export default function DiamondStudioPage() {
 
         <div className="dts-main diamond-studio-main diamond-studio-grid studio-layout">
           <aside className="dts-control-rail" aria-label="Diamond Studio controls">
-            <section className="dts-card" aria-label="Finger size">
+            <section
+              className="dts-card dts-card--ring-size"
+              aria-label="Ring size"
+            >
               <div className="dts-card-head">
-                <span>Finger Size</span>
-                <span className="dts-info" title="US ring size, 4 to 10">
+                <span>Ring Size</span>
+                <span className="dts-info" title="US ring size, 4 to 13">
                   i
                 </span>
               </div>
@@ -2098,21 +2174,25 @@ export default function DiamondStudioPage() {
                 <button
                   type="button"
                   aria-label="Larger"
-                  disabled={ringSize >= 10}
+                  disabled={ringSize >= 13}
                   onClick={() => applyRingSize(ringSize + 0.5, true)}
                 >
                   ›
                 </button>
               </div>
               <div className="dts-slider">
-                <div className="dts-track" ref={fsTrackRef}>
+                <div
+                  className="dts-track"
+                  ref={fsTrackRef}
+                  style={{ "--dts-fill": `${fsHandleLeft}%` } as React.CSSProperties}
+                >
                   <div
                     className="dts-handle"
                     style={{ left: `${fsHandleLeft}%` }}
                   />
                 </div>
                 <div className="dts-ticks">
-                  {[4, 5, 6, 7, 8, 9, 10].map((n) => (
+                  {[4, 6, 8, 10, 12, 13].map((n) => (
                     <span
                       key={n}
                       className={
@@ -2137,25 +2217,76 @@ export default function DiamondStudioPage() {
               </p>
             </section>
 
-            <section className="dts-card" aria-label="Skin tone">
+            <section className="dts-card dts-card--carat" aria-label="Diamond weight">
               <div className="dts-card-head">
-                <span>Skin Tone</span>
+                <span>Diamond Weight</span>
+                <span className="dts-info" title="Stone weight in carats">
+                  i
+                </span>
               </div>
-              <div className="dts-skin-row" role="group" aria-label="Skin tone">
-                {(["light", "medium", "dark"] as const).map((t) => (
-                  <button
-                    key={t}
-                    type="button"
-                    className={`dts-skin-pill ${skinTone === t ? "is-selected" : ""}`}
-                    onClick={() => selectSkinTone(t)}
-                  >
-                    {t === "light" ? "Light" : t === "medium" ? "Medium" : "Dark"}
-                  </button>
-                ))}
+              <div className="dts-stepper">
+                <button
+                  type="button"
+                  aria-label="Smaller"
+                  disabled={carat <= CARAT_MIN + 0.001}
+                  onClick={() => applyCarat(carat - 0.1, true)}
+                >
+                  ‹
+                </button>
+                <span className="dts-step-val">{carat.toFixed(2)}</span>
+                <button
+                  type="button"
+                  aria-label="Larger"
+                  disabled={carat >= CARAT_MAX - 0.001}
+                  onClick={() => applyCarat(carat + 0.1, true)}
+                >
+                  ›
+                </button>
               </div>
+              <div className="dts-slider">
+                <div
+                  className="dts-track"
+                  ref={ctTrackRef}
+                  style={{ "--dts-fill": `${ctHandleLeft}%` } as React.CSSProperties}
+                >
+                  <div
+                    className="dts-handle"
+                    style={{ left: `${ctHandleLeft}%` }}
+                  />
+                </div>
+                <div className="dts-ticks dts-ticks-carat">
+                  {[0.5, 1, 2, 4, 6, 8, 10].map((n) => {
+                    const tickLeftPct =
+                      ((n - CARAT_MIN) / (CARAT_MAX - CARAT_MIN)) * 100;
+                    return (
+                      <span
+                        key={n}
+                        className={
+                          Math.abs(n - carat) < 0.25 ? "is-current" : undefined
+                        }
+                        style={{ left: `${tickLeftPct}%` }}
+                        onClick={() => applyCarat(n, true)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ")
+                            applyCarat(n, true);
+                        }}
+                        role="presentation"
+                      >
+                        {n === 0.5 ? "0.5" : n}
+                      </span>
+                    );
+                  })}
+                </div>
+              </div>
+              <p className="dts-card-note">
+                Face-up width: <strong>{diamondReadoutMm.toFixed(1)} mm</strong>
+              </p>
             </section>
 
-            <section className="dts-card" aria-label="Stone orientation">
+            <section
+              className="dts-card dts-card--orientation"
+              aria-label="Stone orientation"
+            >
               <div className="dts-card-head">
                 <span>Stone Orientation</span>
               </div>
@@ -2181,72 +2312,12 @@ export default function DiamondStudioPage() {
               </div>
             </section>
 
-            <section className="dts-card" aria-label="Carat weight">
+            <section
+              className="dts-card dts-card--coverage"
+              aria-label="Finger presence"
+            >
               <div className="dts-card-head">
-                <span>Carat Weight</span>
-                <span className="dts-info" title="Stone weight in carats">
-                  i
-                </span>
-              </div>
-              <div className="dts-stepper">
-                <button
-                  type="button"
-                  aria-label="Smaller"
-                  disabled={carat <= CARAT_MIN + 0.001}
-                  onClick={() => applyCarat(carat - 0.1, true)}
-                >
-                  ‹
-                </button>
-                <span className="dts-step-val">{carat.toFixed(2)}</span>
-                <button
-                  type="button"
-                  aria-label="Larger"
-                  disabled={carat >= CARAT_MAX - 0.001}
-                  onClick={() => applyCarat(carat + 0.1, true)}
-                >
-                  ›
-                </button>
-              </div>
-              <div className="dts-slider">
-                <div className="dts-track" ref={ctTrackRef}>
-                  <div
-                    className="dts-handle"
-                    style={{ left: `${ctHandleLeft}%` }}
-                  />
-                </div>
-                <div className="dts-ticks dts-ticks-carat">
-                  {[0.5, 1, 2, 3, 4, 5].map((n) => {
-                    const tickLeftPct =
-                      ((n - CARAT_MIN) / (CARAT_MAX - CARAT_MIN)) * 100;
-                    return (
-                      <span
-                        key={n}
-                        className={
-                          Math.abs(n - carat) < 0.25 ? "is-current" : undefined
-                        }
-                        style={{ left: `${tickLeftPct}%` }}
-                        onClick={() => applyCarat(n, true)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" || e.key === " ")
-                            applyCarat(n, true);
-                        }}
-                        role="presentation"
-                      >
-                        {n === 0.5 ? "0.5" : n}
-                      </span>
-                    );
-                  })}
-                </div>
-              </div>
-              <p className="dts-card-note">
-                Diamond width: <strong>{diamondReadoutMm.toFixed(1)} mm</strong>{" "}
-                face-up diameter
-              </p>
-            </section>
-
-            <section className="dts-card dts-card--coverage" aria-label="Finger coverage">
-              <div className="dts-card-head">
-                <span>Finger Coverage</span>
+                <span>Finger Presence</span>
                 <span
                   className="dts-info"
                   title="Stone width as a percentage of finger inside diameter"
@@ -2284,36 +2355,15 @@ export default function DiamondStudioPage() {
 
           <div className="dts-stage-stack">
             <div
-              className="dts-shape-strip shape-selector"
-              role="tablist"
-              aria-label="Shape"
-            >
-              {SHAPES.map((s) => (
-                <button
-                  key={s}
-                  type="button"
-                  className={`dts-shape-chip ${s === shape ? "is-selected" : ""}`}
-                  data-shape={s}
-                  onClick={() => selectShape(s)}
-                >
-                  <div className="dts-thumb">
-                    <ShapeStripThumb imageUrl={SHAPE_SUITE_CONFIG[s].image} />
-                  </div>
-                  <div className="dts-name">{SHAPE_SUITE_CONFIG[s].label}</div>
-                </button>
-              ))}
-            </div>
-
-            <div
               className="dts-stage-preview"
               aria-label="Diamond on hand"
             >
-              <div className="studio-preview finger-preview">
+              <div className="dts-mobile-hero studio-preview finger-preview">
                 <p className="dts-sentence">
-                  <span className="dts-article">{articleFor(shape)}</span>{" "}
-                  <span>{SHAPE_LABELS[shape].toLowerCase()}</span>,{" "}
-                  <span>{carat.toFixed(2)}</span> carats, on a size{" "}
-                  <span>{ringSize.toFixed(0)}</span> finger.
+                  <span className="dts-article">{articleForCarat(carat)}</span>{" "}
+                  {formatCaratForHeadline(carat)} carat{" "}
+                  {SHAPE_LABELS[shape].toLowerCase()}, shown on a size{" "}
+                  {formatRingSizeForHeadline(ringSize)} finger.
                 </p>
                 <p className="dts-stage-trust">
                   Thoughtful guidance matters as much as the tools themselves.{" "}
@@ -2329,21 +2379,13 @@ export default function DiamondStudioPage() {
                 </p>
               </div>
 
-              <div className="dts-stage-canvas">
-                {/*
-                  Preview stack (same on mobile and desktop):
-                  1) dts-layer-finger — one PNG per skin (/diamond-tech-suite/finger/...). The photograph includes
-                     skin + ring metal/band as baked-in pixels (no separate band layer in repo).
-                  2) dts-layer-diamond — absolutely positioned box + DiamondStageFace (img.dts-diamond-face) is the
-                     only independently movable stone; shape-strip thumbnails are unrelated.
-                */}
+              <div className="dts-stage-canvas dts-mobile-visual">
                 <div className="dts-viewer">
                   <div className="dts-layer-finger" aria-hidden>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={FINGER_IMAGES[skinTone]} alt="" />
+                    <img src={FINGER_IMAGE} alt="" />
                   </div>
 
-                  {/* Main hand preview: this div positions the large stone; DiamondStageFace renders img.dts-diamond-face (not shape-strip thumbs). */}
                   <div
                     className={`dts-layer-diamond ${diamondSwapping ? "is-swapping" : ""}`}
                     data-dts-stage-diamond-overlay=""
@@ -2361,6 +2403,29 @@ export default function DiamondStudioPage() {
                     />
                   </div>
                 </div>
+              </div>
+            </div>
+
+            <div className="dts-shape-strip-wrap">
+              <div
+                className="dts-shape-strip shape-selector"
+                role="tablist"
+                aria-label="Shape"
+              >
+                {SHAPES.map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    className={`dts-shape-chip ${s === shape ? "is-selected" : ""}`}
+                    data-shape={s}
+                    onClick={() => selectShape(s)}
+                  >
+                    <div className="dts-thumb">
+                      <ShapeStripThumb imageUrl={SHAPE_SUITE_CONFIG[s].image} />
+                    </div>
+                    <div className="dts-name">{SHAPE_SUITE_CONFIG[s].label}</div>
+                  </button>
+                ))}
               </div>
             </div>
           </div>
