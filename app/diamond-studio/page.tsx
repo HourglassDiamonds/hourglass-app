@@ -1447,9 +1447,14 @@ function SuiteStyles() {
         }
         .dts-mobile-hero{
           order:2;
-          width:calc(100% - 40px);
-          margin:2px 20px 0;
+          width:100% !important;
+          max-width:none !important;
+          margin:2px 0 0;
+          padding:0 20px;
           box-sizing:border-box;
+          display:flex;
+          flex-direction:column;
+          align-items:center;
         }
         .dts-mobile-visual{
           order:4;
@@ -1477,7 +1482,7 @@ function SuiteStyles() {
           letter-spacing:0.006em;
           margin:0 auto 8px;
           padding:0 2px;
-          max-width:min(19.25rem,100%);
+          max-width:260px;
           position:relative !important;
           inset:auto !important;
           transform:none !important;
@@ -1485,7 +1490,8 @@ function SuiteStyles() {
         }
         .dts-stage-trust{
           margin:0 auto 9px;
-          max-width:min(20rem,100%);
+          max-width:260px;
+          width:100%;
           font-size:10px;
         }
         .dts-layer-finger img{
