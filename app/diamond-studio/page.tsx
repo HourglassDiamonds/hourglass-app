@@ -1342,8 +1342,10 @@ function SuiteStyles() {
           min-width:0;
           max-width:100%;
         }
-        .dts-layer-diamond{
-          margin-top:-6px;
+        .dts-layer-diamond .dts-diamond-stack{
+          --laptop-w:clamp(0, (100vw - 1200px) / 240, 1);
+          transform:translateY(calc(var(--laptop-w) * -10px)) scale(calc(1 - var(--laptop-w) * 0.015));
+          transform-origin:50% 86%;
         }
       }
       @media (min-width: 1441px) {
