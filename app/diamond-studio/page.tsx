@@ -1342,6 +1342,9 @@ function SuiteStyles() {
           min-width:0;
           max-width:100%;
         }
+        .dts-layer-diamond{
+          margin-top:-6px;
+        }
       }
       @media (min-width: 1441px) {
         .dts-stage-stack{
