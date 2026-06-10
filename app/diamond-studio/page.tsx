@@ -270,8 +270,21 @@ const SHAPE_PRESENCE_MOD: Partial<Record<ShapeId, number>> = {
   asscher: -2,
 };
 
-const CARAT_MIN = 0.5;
+const CARAT_MIN = 1.0;
 const CARAT_MAX = 10.0;
+const CARAT_STEP = 0.25;
+
+function snapCarat(value: number): number {
+  const snapped = Math.round(value / CARAT_STEP) * CARAT_STEP;
+  return Math.max(
+    CARAT_MIN,
+    Math.min(CARAT_MAX, Math.round(snapped * 100) / 100),
+  );
+}
+
+function caratSliderPct(value: number): number {
+  return ((value - CARAT_MIN) / (CARAT_MAX - CARAT_MIN)) * 100;
+}
 
 /** Width on viewer = (mm / finger mm) * factor; +3% vs original 0.46 for truer visual coverage */
 const STONE_VIEWER_WIDTH_FACTOR = 0.46 * 1.03;
@@ -962,6 +975,14 @@ function SuiteStyles() {
         min-width:56px; text-align:center;
       }
       .dts-slider{ position:relative; margin:6px 4px 2px; }
+      .dts-slider--carat{
+        padding:0 8px;
+        box-sizing:border-box;
+      }
+      .dts-slider--carat .dts-track{
+        margin-left:0;
+        margin-right:0;
+      }
       .dts-slider .dts-track{
         position:relative; height:1px; background:var(--hairline); margin:11px 8px 9px;
       }
@@ -998,27 +1019,22 @@ function SuiteStyles() {
       }
       .dts-ticks span{ width:16px; text-align:center; transition:color var(--dt-dur-mid) var(--dt-ease); cursor:pointer; }
       .dts-ticks span.is-current{ color:var(--ink); font-weight:500; }
-      .dts-ticks-carat{
-        position:relative; display:block; margin:8px 5px 2px; height:17px;
-        font-size:9.5px; color:var(--ink-mute); font-variant-numeric:tabular-nums;
+      .dts-carat-endpoints{
+        display:flex; justify-content:space-between; align-items:center;
+        margin:10px 0 0;
+        font-size:8.5px; letter-spacing:0.06em;
+        color:oklch(from var(--ink-mute) l c h / 0.72);
+        font-variant-numeric:tabular-nums;
       }
-      .dts-ticks-carat span{
-        position:absolute; top:0; left:0;
-        transform:translateX(-50%);
-        width:auto; min-width:16px; text-align:center;
-        transition:color var(--dt-dur-mid) var(--dt-ease);
-        cursor:pointer;
+      .dts-carat-step-hint{
+        margin:6px 0 0;
+        padding:0 2px;
+        font-size:8.5px;
+        line-height:1.45;
+        letter-spacing:0.04em;
+        color:oklch(from var(--ink-mute) l c h / 0.62);
+        text-align:center;
       }
-      .dts-ticks-carat span.dts-tick-at-min{
-        transform:translateX(0);
-      }
-      .dts-ticks-carat span.dts-tick-after-min{
-        transform:translateX(calc(-50% + 0.5em));
-      }
-      .dts-ticks-carat span.dts-tick-at-max{
-        transform:translateX(-100%);
-      }
-      .dts-ticks-carat span.is-current{ color:var(--ink); font-weight:500; }
       .dts-card .dts-card-note{
         margin:8px 0 0;
         padding:0 2px;
@@ -1299,6 +1315,54 @@ function SuiteStyles() {
         color:var(--ink);
         font-weight:500;
         opacity:0.9;
+      }
+      @media (min-width: 1200px) and (max-width: 1440px) {
+        .dts-topbar{
+          padding:0 clamp(16px, 2vw, 24px);
+          column-gap:clamp(10px, 1.4vw, 14px);
+        }
+        .dts-topnav{
+          gap:clamp(18px, 2.8vw, 44px);
+          margin-left:0;
+        }
+        .diamond-studio-main.dts-main{
+          grid-template-columns:minmax(220px, 260px) minmax(0, 1fr) !important;
+          width:100% !important;
+          max-width:100% !important;
+          min-width:0 !important;
+          box-sizing:border-box !important;
+        }
+        .dts-control-rail{
+          min-width:220px;
+          max-width:260px;
+          padding:16px clamp(12px, 1.4vw, 16px) 16px clamp(16px, 2vw, 24px);
+        }
+        .dts-stage-stack{
+          padding:0 clamp(8px, 1.2vw, 16px);
+          box-sizing:border-box;
+          min-width:0;
+          max-width:100%;
+        }
+      }
+      @media (min-width: 1441px) {
+        .dts-stage-stack{
+          justify-content:center;
+          gap:clamp(8px, 1.2vh, 14px);
+        }
+        .dts-stage-stack .dts-stage-preview{
+          flex:0 1 auto;
+          justify-content:center;
+          padding:clamp(12px, 1.6vh, 22px) 0 0;
+        }
+        .dts-stage-stack .dts-shape-strip-wrap{
+          flex:0 0 auto;
+          align-self:center;
+          margin-top:0;
+          margin-bottom:clamp(12px, 2vh, 24px);
+        }
+        .dts-stage-stack .dts-stage-canvas{
+          margin-bottom:clamp(2px, 0.5vh, 8px);
+        }
       }
       @media (max-width: 768px) {
         .dts-shell{
@@ -2073,12 +2137,7 @@ export default function DiamondStudioPage() {
 
   const applyCarat = useCallback(
     (v: number, trackCommit: boolean) => {
-      const step = v < 2 ? 0.05 : 0.1;
-      const snapped = Math.round(v / step) * step;
-      const next = Math.max(
-        CARAT_MIN,
-        Math.min(CARAT_MAX, Math.round(snapped * 100) / 100),
-      );
+      const next = snapCarat(v);
       setCarat((prev) => {
         if (Math.abs(prev - next) < 0.001) return prev;
         if (trackCommit) commitCaratAnalytics(next);
@@ -2124,7 +2183,7 @@ export default function DiamondStudioPage() {
   }, [applyCarat, commitCaratAnalytics]);
 
   const fsHandleLeft = ((ringSize - 4) / 9) * 100;
-  const ctHandleLeft = ((carat - CARAT_MIN) / (CARAT_MAX - CARAT_MIN)) * 100;
+  const ctHandleLeft = caratSliderPct(carat);
   return (
     <div className="dts-shell h-full w-full overflow-hidden" data-theme="light">
       <SuiteStyles />
@@ -2238,7 +2297,7 @@ export default function DiamondStudioPage() {
                   type="button"
                   aria-label="Smaller"
                   disabled={carat <= CARAT_MIN + 0.001}
-                  onClick={() => applyCarat(carat - 0.1, true)}
+                  onClick={() => applyCarat(carat - CARAT_STEP, true)}
                 >
                   ‹
                 </button>
@@ -2247,12 +2306,12 @@ export default function DiamondStudioPage() {
                   type="button"
                   aria-label="Larger"
                   disabled={carat >= CARAT_MAX - 0.001}
-                  onClick={() => applyCarat(carat + 0.1, true)}
+                  onClick={() => applyCarat(carat + CARAT_STEP, true)}
                 >
                   ›
                 </button>
               </div>
-              <div className="dts-slider">
+              <div className="dts-slider dts-slider--carat">
                 <div
                   className="dts-track"
                   ref={ctTrackRef}
@@ -2263,35 +2322,12 @@ export default function DiamondStudioPage() {
                     style={{ left: `${ctHandleLeft}%` }}
                   />
                 </div>
-                <div className="dts-ticks dts-ticks-carat">
-                  {[0.5, 1, 2, 4, 6, 8, 10].map((n) => {
-                    const tickLeftPct =
-                      ((n - CARAT_MIN) / (CARAT_MAX - CARAT_MIN)) * 100;
-                    return (
-                      <span
-                        key={n}
-                        className={[
-                          Math.abs(n - carat) < 0.25 ? "is-current" : "",
-                          n === 0.5 ? "dts-tick-at-min" : "",
-                          n === 1 ? "dts-tick-after-min" : "",
-                          n === 10 ? "dts-tick-at-max" : "",
-                        ]
-                          .filter(Boolean)
-                          .join(" ")}
-                        style={{ left: `${tickLeftPct}%` }}
-                        onClick={() => applyCarat(n, true)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" || e.key === " ")
-                            applyCarat(n, true);
-                        }}
-                        role="presentation"
-                      >
-                        {n === 0.5 ? "0.5" : n}
-                      </span>
-                    );
-                  })}
+                <div className="dts-carat-endpoints" aria-hidden>
+                  <span>1 ct</span>
+                  <span>10 ct</span>
                 </div>
               </div>
+              <p className="dts-carat-step-hint">Adjusts in 0.25 ct increments</p>
               <p className="dts-card-note">
                 Face-up width: <strong>{diamondReadoutMm.toFixed(1)} mm</strong>
               </p>
@@ -2374,9 +2410,8 @@ export default function DiamondStudioPage() {
             >
               <div className="dts-mobile-hero studio-preview finger-preview">
                 <p className="dts-sentence">
-                  <span className="dts-article">{articleForCarat(carat)}</span>{" "}
-                  {formatCaratForHeadline(carat)} carat{" "}
-                  {SHAPE_LABELS[shape].toLowerCase()}, shown on a size{" "}
+                  A {formatCaratForHeadline(carat)}-carat{" "}
+                  {SHAPE_LABELS[shape].toLowerCase()} diamond, shown on a size{" "}
                   {formatRingSizeForHeadline(ringSize)} finger.
                 </p>
                 <p className="dts-stage-trust">
