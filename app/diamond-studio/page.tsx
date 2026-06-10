@@ -1342,10 +1342,10 @@ function SuiteStyles() {
           min-width:0;
           max-width:100%;
         }
-        .dts-layer-diamond .dts-diamond-stack{
-          --laptop-w:clamp(0, (100vw - 1200px) / 240, 1);
-          transform:translateY(calc(var(--laptop-w) * -10px)) scale(calc(1 - var(--laptop-w) * 0.015));
-          transform-origin:50% 86%;
+        /* When max-height squeezes the viewer below 7/9, cover-crop shifts the
+           shank centerline down; track object-position to the same 63.5% anchor. */
+        .dts-layer-finger img{
+          object-position:50% calc(42% + clamp(0%, (1 - (7 * 100cqh) / (9 * 100cqw)) * 127%, 21%));
         }
       }
       @media (min-width: 1441px) {
