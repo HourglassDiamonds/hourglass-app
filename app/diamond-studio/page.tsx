@@ -1598,9 +1598,59 @@ function SuiteStyles() {
           justify-content:center;
           padding:7px 6px;
         }
+        .dts-slider{
+          touch-action:pan-x;
+          -webkit-tap-highlight-color:transparent;
+        }
+        .dts-slider .dts-track{
+          height:40px;
+          min-height:40px;
+          margin:-10px 8px -9px;
+          background:transparent;
+          touch-action:pan-x;
+          -webkit-user-select:none;
+          user-select:none;
+          background-image:linear-gradient(var(--hairline),var(--hairline));
+          background-size:100% 1px;
+          background-position:center;
+          background-repeat:no-repeat;
+        }
+        .dts-slider .dts-track::before{
+          top:50%;
+          height:1px;
+          transform:translateY(-50%);
+        }
+        .dts-slider .dts-handle{
+          width:12px;
+          height:12px;
+          touch-action:none;
+        }
+        .dts-slider .dts-handle:hover{
+          transform:translate(-50%,-50%) scale(1.04);
+        }
+        .dts-zone-bar{
+          touch-action:pan-x;
+          -webkit-tap-highlight-color:transparent;
+        }
+        .dts-zones{
+          height:40px;
+          min-height:40px;
+          margin:-17.5px 0 calc(11px - 17.5px);
+          background:transparent;
+          background-image:linear-gradient(var(--hairline-soft),var(--hairline-soft));
+          background-size:100% 5px;
+          background-position:center;
+          background-repeat:no-repeat;
+        }
+        .dts-zone-active{
+          top:calc(50% - 2.5px);
+          bottom:auto;
+          height:5px;
+        }
         .dts-zone-handle{
           width:12px;
           height:12px;
+          touch-action:none;
         }
         .dts-cov-helper{
           padding:0 4px;
