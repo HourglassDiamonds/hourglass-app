@@ -999,15 +999,24 @@ function SuiteStyles() {
       .dts-ticks span{ width:16px; text-align:center; transition:color var(--dt-dur-mid) var(--dt-ease); cursor:pointer; }
       .dts-ticks span.is-current{ color:var(--ink); font-weight:500; }
       .dts-ticks-carat{
-        position:relative; display:block; margin:8px 8px 2px; height:16px;
-        font-size:10px; color:var(--ink-mute); font-variant-numeric:tabular-nums;
+        position:relative; display:block; margin:8px 5px 2px; height:17px;
+        font-size:9.5px; color:var(--ink-mute); font-variant-numeric:tabular-nums;
       }
       .dts-ticks-carat span{
         position:absolute; top:0; left:0;
         transform:translateX(-50%);
-        width:auto; min-width:18px; text-align:center;
+        width:auto; min-width:16px; text-align:center;
         transition:color var(--dt-dur-mid) var(--dt-ease);
         cursor:pointer;
+      }
+      .dts-ticks-carat span.dts-tick-at-min{
+        transform:translateX(0);
+      }
+      .dts-ticks-carat span.dts-tick-after-min{
+        transform:translateX(calc(-50% + 0.5em));
+      }
+      .dts-ticks-carat span.dts-tick-at-max{
+        transform:translateX(-100%);
       }
       .dts-ticks-carat span.is-current{ color:var(--ink); font-weight:500; }
       .dts-card .dts-card-note{
@@ -2261,9 +2270,14 @@ export default function DiamondStudioPage() {
                     return (
                       <span
                         key={n}
-                        className={
-                          Math.abs(n - carat) < 0.25 ? "is-current" : undefined
-                        }
+                        className={[
+                          Math.abs(n - carat) < 0.25 ? "is-current" : "",
+                          n === 0.5 ? "dts-tick-at-min" : "",
+                          n === 1 ? "dts-tick-after-min" : "",
+                          n === 10 ? "dts-tick-at-max" : "",
+                        ]
+                          .filter(Boolean)
+                          .join(" ")}
                         style={{ left: `${tickLeftPct}%` }}
                         onClick={() => applyCarat(n, true)}
                         onKeyDown={(e) => {
