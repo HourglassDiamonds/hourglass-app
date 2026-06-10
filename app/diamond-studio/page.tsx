@@ -1220,6 +1220,9 @@ function SuiteStyles() {
         width:100%;
       }
       .dts-sentence .dts-article{ font-style:italic; color:var(--ink-soft); }
+      @media (min-width: 769px) {
+        .dts-sentence-br{ display:none; }
+      }
       .dts-stage-trust{
         margin:0 12px 12px; padding:0 8px; text-align:center;
         font-size:11px; line-height:1.65; letter-spacing:0.05em;
@@ -1380,8 +1383,8 @@ function SuiteStyles() {
           grid-template-columns:1fr auto;
           grid-template-rows:auto auto;
           column-gap:14px;
-          row-gap:10px;
-          padding:12px 20px 14px;
+          row-gap:8px;
+          padding:12px 20px 10px;
           align-items:center;
           min-height:0;
         }
@@ -1400,7 +1403,7 @@ function SuiteStyles() {
           grid-column:1 / -1;
           grid-row:2;
           margin-left:0;
-          padding:2px 0 6px;
+          padding:2px 0 3px;
           justify-content:flex-start;
           gap:clamp(16px,4.5vw,28px);
           width:100%;
@@ -1410,7 +1413,7 @@ function SuiteStyles() {
           display:flex !important;
           flex-direction:column !important;
           width:100% !important;
-          gap:16px;
+          gap:11px;
           grid-template-columns:unset;
           grid-template-rows:unset;
           min-width:0;
@@ -1445,12 +1448,13 @@ function SuiteStyles() {
         .dts-mobile-hero{
           order:2;
           width:calc(100% - 40px);
-          margin:4px 20px 0;
+          margin:2px 20px 0;
           box-sizing:border-box;
         }
         .dts-mobile-visual{
           order:4;
           width:100%;
+          margin-top:-5px;
           padding:0 20px;
           box-sizing:border-box;
         }
@@ -1471,16 +1475,16 @@ function SuiteStyles() {
           font-size:clamp(16.5px,4.4vw,18.5px);
           line-height:1.28;
           letter-spacing:0.006em;
-          margin:0 auto 10px;
+          margin:0 auto 8px;
           padding:0 2px;
-          max-width:min(22rem,100%);
+          max-width:min(19.25rem,100%);
           position:relative !important;
           inset:auto !important;
           transform:none !important;
           width:100%;
         }
         .dts-stage-trust{
-          margin:0 auto 12px;
+          margin:0 auto 9px;
           max-width:min(20rem,100%);
           font-size:10px;
         }
@@ -2392,8 +2396,10 @@ export default function DiamondStudioPage() {
               <div className="dts-mobile-hero studio-preview finger-preview">
                 <p className="dts-sentence">
                   A {formatCaratForHeadline(carat)}-carat{" "}
-                  {SHAPE_LABELS[shape].toLowerCase()} diamond, shown on a size{" "}
-                  {formatRingSizeForHeadline(ringSize)} finger.
+                  {SHAPE_LABELS[shape].toLowerCase()} diamond,
+                  <br className="dts-sentence-br" aria-hidden="true" />
+                  {" "}
+                  shown on a size {formatRingSizeForHeadline(ringSize)} finger.
                 </p>
                 <p className="dts-stage-trust">
                   Thoughtful guidance matters as much as the tools themselves.{" "}
