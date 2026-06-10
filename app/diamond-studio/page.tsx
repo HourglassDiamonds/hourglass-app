@@ -975,11 +975,13 @@ function SuiteStyles() {
         min-width:56px; text-align:center;
       }
       .dts-slider{ position:relative; margin:6px 4px 2px; }
-      .dts-slider--carat{
+      .dts-slider--carat,
+      .dts-slider--ring{
         padding:0 8px;
         box-sizing:border-box;
       }
-      .dts-slider--carat .dts-track{
+      .dts-slider--carat .dts-track,
+      .dts-slider--ring .dts-track{
         margin-left:0;
         margin-right:0;
       }
@@ -1013,13 +1015,7 @@ function SuiteStyles() {
         border-color:var(--gold-warm);
         background:var(--pill-active);
       }
-      .dts-ticks{
-        display:flex; justify-content:space-between; margin:8px 0 2px; padding:0 2px;
-        font-size:10px; color:var(--ink-mute); font-variant-numeric:tabular-nums;
-      }
-      .dts-ticks span{ width:16px; text-align:center; transition:color var(--dt-dur-mid) var(--dt-ease); cursor:pointer; }
-      .dts-ticks span.is-current{ color:var(--ink); font-weight:500; }
-      .dts-carat-endpoints{
+      .dts-slider-endpoints{
         display:flex; justify-content:space-between; align-items:center;
         margin:10px 0 0;
         font-size:8.5px; letter-spacing:0.06em;
@@ -2248,7 +2244,7 @@ export default function DiamondStudioPage() {
                   ›
                 </button>
               </div>
-              <div className="dts-slider">
+              <div className="dts-slider dts-slider--ring">
                 <div
                   className="dts-track"
                   ref={fsTrackRef}
@@ -2259,24 +2255,9 @@ export default function DiamondStudioPage() {
                     style={{ left: `${fsHandleLeft}%` }}
                   />
                 </div>
-                <div className="dts-ticks">
-                  {[4, 6, 8, 10, 12, 13].map((n) => (
-                    <span
-                      key={n}
-                      className={
-                        Math.abs(n - ringSize) < 0.5 ? "is-current" : undefined
-                      }
-                      data-v={n}
-                      onClick={() => applyRingSize(n, true)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" || e.key === " ")
-                          applyRingSize(n, true);
-                      }}
-                      role="presentation"
-                    >
-                      {n}
-                    </span>
-                  ))}
+                <div className="dts-slider-endpoints" aria-hidden>
+                  <span>Size 4</span>
+                  <span>Size 13</span>
                 </div>
               </div>
               <p className="dts-card-note">
@@ -2322,7 +2303,7 @@ export default function DiamondStudioPage() {
                     style={{ left: `${ctHandleLeft}%` }}
                   />
                 </div>
-                <div className="dts-carat-endpoints" aria-hidden>
+                <div className="dts-slider-endpoints" aria-hidden>
                   <span>1 ct</span>
                   <span>10 ct</span>
                 </div>
