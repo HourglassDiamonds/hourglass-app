@@ -1342,10 +1342,17 @@ function SuiteStyles() {
           min-width:0;
           max-width:100%;
         }
-        /* When max-height squeezes the viewer below 7/9, cover-crop shifts the
-           shank centerline down; track object-position to the same 63.5% anchor. */
-        .dts-layer-finger img{
-          object-position:50% calc(42% + clamp(0%, (1 - (7 * 100cqh) / (9 * 100cqw)) * 127%, 21%));
+        /* Severe height squeeze: width-limited cover crop — track finger image. */
+        @container (aspect-ratio > 7 / 8.5) {
+          .dts-layer-finger img{
+            object-position:50% calc(42% + clamp(0%, (1 - (7 * 100cqh) / (9 * 100cqw)) * 67%, 26%));
+          }
+        }
+        /* Near-natural aspect: object-position is inert — track diamond anchor. */
+        @container (aspect-ratio <= 7 / 8.5) {
+          .dts-layer-diamond{
+            top:66% !important;
+          }
         }
       }
       @media (min-width: 1441px) {
