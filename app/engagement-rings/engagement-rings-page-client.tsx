@@ -3,6 +3,8 @@
 import React from "react";
 import Link from "next/link";
 import Header from "../shared-components/Header";
+import CTAGlimmer from "../shared-components/motion/CTAGlimmer";
+import RevealOnScroll from "../shared-components/motion/RevealOnScroll";
 import { trackConsultationCtaClicked } from "@/lib/consultation-cta";
 import SectionHeading from "../shared-components/SectionHeading";
 import WhisperedPraiseLink from "../shared-components/WhisperedPraiseLink";
@@ -50,7 +52,7 @@ export default function EngagementRingsPageClient() {
         </section>
       </div>
 
-      <section className="border-b border-[#e4dbcf] py-[78px] md:py-[92px]">
+      <RevealOnScroll as="section" className="border-b border-[#e4dbcf] py-[78px] md:py-[92px]">
         <div className="px-3 md:px-4 xl:px-6">
           <div className="overflow-hidden rounded-[32px] bg-[linear-gradient(145deg,rgba(255,255,255,0.38),rgba(246,240,232,0.58))] shadow-[0_22px_70px_rgba(48,36,28,0.045)] ring-1 ring-[#e6ddd1]/70">
             <div className="md:hidden">
@@ -80,10 +82,10 @@ export default function EngagementRingsPageClient() {
             />
           </div>
         </div>
-      </section>
+      </RevealOnScroll>
 
       <div className="mx-auto max-w-[1200px] px-6 md:px-10">
-        <section className="border-b border-[#e4dbcf] py-[92px] md:py-[104px]">
+        <RevealOnScroll as="section" className="border-b border-[#e4dbcf] py-[92px] md:py-[104px]">
           <div className="mx-auto max-w-[820px] text-center">
             <div className="text-[11px] uppercase tracking-[0.34em] text-[#8a8177]">
               Custom Design Process
@@ -137,22 +139,24 @@ export default function EngagementRingsPageClient() {
               </WhisperedPraiseLink>
             </footer>
           </blockquote>
-        </section>
+        </RevealOnScroll>
 
-        <section className="py-[86px] text-center md:py-[96px]">
+        <RevealOnScroll as="section" className="py-[86px] text-center md:py-[96px]">
           <SectionHeading
             title="A calmer way to begin."
             description="Start with a private conversation. We’ll understand the direction, then shape the right next step together."
           />
 
-          <Link
-            href="/concierge"
-            className="inline-flex items-center justify-center rounded-full bg-[#2b2723] px-7 py-3 text-sm tracking-[0.08em] text-white shadow-[0_1px_2px_rgba(0,0,0,0.08)] transition-all duration-300 hover:opacity-95 hover:shadow-[0_2px_6px_rgba(0,0,0,0.12)] focus:outline-none focus:ring-2 focus:ring-[#cbbda9] focus:ring-offset-2 focus:ring-offset-[#f6f2eb]"
-            onClick={() => trackConsultationCtaClicked("engagement_rings:footer")}
-          >
-            Begin the Conversation
-          </Link>
-        </section>
+          <CTAGlimmer>
+            <Link
+              href="/concierge"
+              className="inline-flex items-center justify-center rounded-full bg-[#2b2723] px-7 py-3 text-sm tracking-[0.08em] text-white shadow-[0_1px_2px_rgba(0,0,0,0.08)] transition-all duration-300 hover:opacity-95 hover:shadow-[0_2px_6px_rgba(0,0,0,0.12)] focus:outline-none focus:ring-2 focus:ring-[#cbbda9] focus:ring-offset-2 focus:ring-offset-[#f6f2eb]"
+              onClick={() => trackConsultationCtaClicked("engagement_rings:footer")}
+            >
+              Begin the Conversation
+            </Link>
+          </CTAGlimmer>
+        </RevealOnScroll>
       </div>
     </div>
   );

@@ -3,6 +3,8 @@
 import React from "react";
 import Link from "next/link";
 import Header from "../shared-components/Header";
+import CTAGlimmer from "../shared-components/motion/CTAGlimmer";
+import RevealOnScroll from "../shared-components/motion/RevealOnScroll";
 import { trackConsultationCtaClicked } from "@/lib/consultation-cta";
 
 const categories = [
@@ -136,7 +138,7 @@ export default function DiamondGuidePageClient() {
           </div>
         </section>
 
-        <section className="border-b border-[#e4dbcf] py-[106px] md:py-[124px]">
+        <RevealOnScroll as="section" className="border-b border-[#e4dbcf] py-[106px] md:py-[124px]">
           <div className="mx-auto max-w-[900px]">
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {categories.map((cat) => (
@@ -156,9 +158,10 @@ export default function DiamondGuidePageClient() {
               ))}
             </div>
           </div>
-        </section>
+        </RevealOnScroll>
 
-        <section
+        <RevealOnScroll
+          as="section"
           id="popular-guides"
           className="border-b border-[#e4dbcf] py-[104px] md:py-[124px]"
         >
@@ -188,9 +191,9 @@ export default function DiamondGuidePageClient() {
               ))}
             </div>
           </div>
-        </section>
+        </RevealOnScroll>
 
-        <section className="border-b border-[#e4dbcf] py-[108px] md:py-[128px]">
+        <RevealOnScroll as="section" className="border-b border-[#e4dbcf] py-[108px] md:py-[128px]">
           <div className="mx-auto max-w-[760px] text-center">
             <div className="text-[11px] uppercase tracking-[0.34em] text-[#9a9084]">
               Browse the Guide
@@ -241,9 +244,9 @@ export default function DiamondGuidePageClient() {
               </div>
             ))}
           </div>
-        </section>
+        </RevealOnScroll>
 
-        <section className="py-[108px] md:py-[128px]">
+        <RevealOnScroll as="section" className="py-[108px] md:py-[128px]">
           <div className="mx-auto max-w-[760px] text-center">
             <div className="text-[11px] uppercase tracking-[0.34em] text-[#9a9084]">
               A More Considered Way to Research
@@ -272,16 +275,18 @@ export default function DiamondGuidePageClient() {
                 Browse Popular Guides
               </Link>
 
-              <Link
-                href="/concierge"
-                className="rounded-full border border-[#2b2621] bg-[#2b2621] px-6 py-3 text-[11px] uppercase tracking-[0.32em] text-white transition duration-300 hover:opacity-90"
-                onClick={() => trackConsultationCtaClicked("diamond_guide:index")}
-              >
-                Begin the Conversation
-              </Link>
+              <CTAGlimmer>
+                <Link
+                  href="/concierge"
+                  className="rounded-full border border-[#2b2621] bg-[#2b2621] px-6 py-3 text-[11px] uppercase tracking-[0.32em] text-white transition duration-300 hover:opacity-90"
+                  onClick={() => trackConsultationCtaClicked("diamond_guide:index")}
+                >
+                  Begin the Conversation
+                </Link>
+              </CTAGlimmer>
             </div>
           </div>
-        </section>
+        </RevealOnScroll>
       </div>
     </div>
   );

@@ -3,6 +3,8 @@
 import React from "react";
 import Link from "next/link";
 import Header from "../../shared-components/Header";
+import CTAGlimmer from "../../shared-components/motion/CTAGlimmer";
+import RevealOnScroll from "../../shared-components/motion/RevealOnScroll";
 
 const beginHereGuides = [
   {
@@ -166,7 +168,7 @@ export default function CertificationPage() {
           </div>
         </section>
 
-        <section className="border-b border-[#e4dbcf] py-[96px] md:py-[110px]">
+        <RevealOnScroll as="section" className="border-b border-[#e4dbcf] py-[96px] md:py-[110px]">
           <div className="mx-auto max-w-[760px] text-center">
             <div className="text-[11px] uppercase tracking-[0.34em] text-[#9a9084]">
               Begin here
@@ -193,9 +195,9 @@ export default function CertificationPage() {
               </Link>
             ))}
           </div>
-        </section>
+        </RevealOnScroll>
 
-        <section className="border-b border-[#e4dbcf] py-[96px] md:py-[110px]">
+        <RevealOnScroll as="section" className="border-b border-[#e4dbcf] py-[96px] md:py-[110px]">
           <div className="mx-auto max-w-[760px] text-center">
             <div className="text-[11px] uppercase tracking-[0.34em] text-[#9a9084]">
               Most read
@@ -214,9 +216,9 @@ export default function CertificationPage() {
               </Link>
             ))}
           </div>
-        </section>
+        </RevealOnScroll>
 
-        <section className="py-[96px] md:py-[110px]">
+        <RevealOnScroll as="section" className="py-[96px] md:py-[110px]">
           <div className="mx-auto max-w-[860px] space-y-8">
             {articleGroups.map((group) => (
               <div key={group.title} className="rounded-[30px] bg-white/[0.16] p-8">
@@ -233,7 +235,7 @@ export default function CertificationPage() {
               </div>
             ))}
           </div>
-        </section>
+        </RevealOnScroll>
       </div>
     </div>
   );

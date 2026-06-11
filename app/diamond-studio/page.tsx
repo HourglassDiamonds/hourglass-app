@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import CTAGlimmer from "../shared-components/motion/CTAGlimmer";
 import React, {
   useCallback,
   useEffect,
@@ -2471,15 +2472,17 @@ export default function DiamondStudioPage() {
                 </p>
                 <p className="dts-stage-trust">
                   Thoughtful guidance matters as much as the tools themselves.{" "}
-                  <Link
-                    href="/concierge"
-                    className="dts-stage-trust-link"
-                    onClick={() =>
-                      trackConsultationCtaClicked("diamond_studio:editorial_inline")
-                    }
-                  >
-                    Begin the Conversation →
-                  </Link>
+                  <CTAGlimmer variant="text">
+                    <Link
+                      href="/concierge"
+                      className="dts-stage-trust-link"
+                      onClick={() =>
+                        trackConsultationCtaClicked("diamond_studio:editorial_inline")
+                      }
+                    >
+                      Begin the Conversation →
+                    </Link>
+                  </CTAGlimmer>
                 </p>
               </div>
 

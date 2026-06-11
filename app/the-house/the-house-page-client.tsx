@@ -3,6 +3,8 @@
 import React, { useRef, useState } from "react";
 import Link from "next/link";
 import Header from "../shared-components/Header";
+import CTAGlimmer from "../shared-components/motion/CTAGlimmer";
+import RevealOnScroll from "../shared-components/motion/RevealOnScroll";
 import { trackConsultationCtaClicked } from "@/lib/consultation-cta";
 
 export default function TheHousePageClient() {
@@ -84,7 +86,7 @@ export default function TheHousePageClient() {
         </section>
 
         {/* VIDEO */}
-        <section className="border-b border-[#e4dbcf] pb-[104px] pt-[88px] md:pb-[120px] md:pt-[104px]">
+        <RevealOnScroll as="section" className="border-b border-[#e4dbcf] pb-[104px] pt-[88px] md:pb-[120px] md:pt-[104px]">
           <div className="mx-auto max-w-[1040px]">
             <div className="mx-auto max-w-[720px] text-center">
               <div className="text-[10px] uppercase tracking-[0.34em] text-[#8a8177]">
@@ -131,10 +133,10 @@ export default function TheHousePageClient() {
               </div>
             </div>
           </div>
-        </section>
+        </RevealOnScroll>
 
         {/* APPROACH */}
-        <section className="border-b border-[#e4dbcf] py-[92px] md:py-[108px]">
+        <RevealOnScroll as="section" className="border-b border-[#e4dbcf] py-[92px] md:py-[108px]">
           <div className="mx-auto max-w-[760px] text-center">
             <div className="text-[10px] uppercase tracking-[0.34em] text-[#8a8177]">
               Our Approach
@@ -180,10 +182,10 @@ export default function TheHousePageClient() {
               </div>
             ))}
           </div>
-        </section>
+        </RevealOnScroll>
 
         {/* CTA */}
-        <section className="py-[108px] md:py-[122px]">
+        <RevealOnScroll as="section" className="py-[108px] md:py-[122px]">
           <div className="mx-auto max-w-[720px] text-center">
             <h2
               className="mx-auto max-w-[24ch] text-[1.72rem] font-light leading-[1.14] tracking-[-0.02em] text-[#1f1d1a] md:text-[2.24rem]"
@@ -199,16 +201,18 @@ export default function TheHousePageClient() {
             </p>
 
             <div className="mt-10">
-              <Link
-                href="/concierge"
-                className="inline-flex rounded-full border border-[#d9cdbd] bg-white/80 px-6 py-3 text-[11px] uppercase tracking-[0.28em] text-[#6f665d] transition hover:bg-white"
-                onClick={() => trackConsultationCtaClicked("the_house:footer")}
-              >
-                Start a Private Consultation
-              </Link>
+              <CTAGlimmer>
+                <Link
+                  href="/concierge"
+                  className="inline-flex rounded-full border border-[#d9cdbd] bg-white/80 px-6 py-3 text-[11px] uppercase tracking-[0.28em] text-[#6f665d] transition hover:bg-white"
+                  onClick={() => trackConsultationCtaClicked("the_house:footer")}
+                >
+                  Start a Private Consultation
+                </Link>
+              </CTAGlimmer>
             </div>
           </div>
-        </section>
+        </RevealOnScroll>
       </div>
     </div>
   );

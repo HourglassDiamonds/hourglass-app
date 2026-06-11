@@ -4,6 +4,8 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { diamondIntelligencePrefillFromSearchParams } from "@/lib/concierge/diamond-intelligence-context";
 import Header from "../shared-components/Header";
+import CTAGlimmer from "../shared-components/motion/CTAGlimmer";
+import RevealOnScroll from "../shared-components/motion/RevealOnScroll";
 import WhisperedPraiseLink from "../shared-components/WhisperedPraiseLink";
 
 const MAX_IMAGES = 4;
@@ -255,7 +257,7 @@ export default function ConciergePageClient() {
             className="mx-auto mt-14 max-w-[980px] rounded-[34px] border border-[#e4dbcf] bg-white/34 p-5 shadow-[0_18px_46px_rgba(45,35,26,0.03)] md:p-7"
           >
             <div className="grid gap-5">
-              <div className="rounded-[28px] border border-[#e4dbcf] bg-white/56 p-6 md:p-7">
+              <RevealOnScroll className="rounded-[28px] border border-[#e4dbcf] bg-white/56 p-6 md:p-7">
                 <div className="text-[10px] uppercase tracking-[0.32em] text-[#8a8177]">
                   The Foundation
                 </div>
@@ -300,9 +302,9 @@ export default function ConciergePageClient() {
                     />
                   </div>
                 </div>
-              </div>
+              </RevealOnScroll>
 
-              <div className="rounded-[28px] border border-[#e4dbcf] bg-white/56 p-6 md:p-7">
+              <RevealOnScroll className="rounded-[28px] border border-[#e4dbcf] bg-white/56 p-6 md:p-7" delay={80}>
                 <div className="text-[10px] uppercase tracking-[0.32em] text-[#8a8177]">
                   Design Direction
                 </div>
@@ -359,9 +361,9 @@ export default function ConciergePageClient() {
                     </p>
                   </div>
                 </div>
-              </div>
+              </RevealOnScroll>
 
-              <div className="rounded-[28px] border border-[#e4dbcf] bg-white/56 p-6 md:p-7">
+              <RevealOnScroll className="rounded-[28px] border border-[#e4dbcf] bg-white/56 p-6 md:p-7" delay={160}>
                 <div className="text-[10px] uppercase tracking-[0.32em] text-[#8a8177]">
                   A Few Final Details
                 </div>
@@ -553,15 +555,17 @@ export default function ConciergePageClient() {
                     simply a starting point.
                   </p>
 
-                  <button
-                    type="submit"
-                    disabled={submitState === "submitting"}
-                    className="mt-7 inline-flex items-center justify-center rounded-full bg-[#2b2723] px-7 py-3 text-sm tracking-wide text-white shadow-[0_14px_28px_rgba(43,39,35,0.12)] transition hover:translate-y-[-1px] disabled:cursor-not-allowed disabled:opacity-70"
-                  >
-                    {submitState === "submitting"
-                      ? "Sending..."
-                      : "Begin the Conversation"}
-                  </button>
+                  <CTAGlimmer>
+                    <button
+                      type="submit"
+                      disabled={submitState === "submitting"}
+                      className="mt-7 inline-flex items-center justify-center rounded-full bg-[#2b2723] px-7 py-3 text-sm tracking-wide text-white shadow-[0_14px_28px_rgba(43,39,35,0.12)] transition hover:translate-y-[-1px] disabled:cursor-not-allowed disabled:opacity-70"
+                    >
+                      {submitState === "submitting"
+                        ? "Sending..."
+                        : "Begin the Conversation"}
+                    </button>
+                  </CTAGlimmer>
 
                   {formMessage && (
                     <p
@@ -575,12 +579,12 @@ export default function ConciergePageClient() {
                     </p>
                   )}
                 </div>
-              </div>
+              </RevealOnScroll>
             </div>
           </form>
         </section>
 
-        <section className="border-t border-[#e4dbcf] py-[88px] md:py-[102px]">
+        <RevealOnScroll as="section" className="border-t border-[#e4dbcf] py-[88px] md:py-[102px]">
           <div className="mx-auto max-w-3xl text-center">
             <div className="mb-4 text-[11px] uppercase tracking-[0.34em] text-[#8a8177]">
               A Personal Conversation
@@ -592,7 +596,7 @@ export default function ConciergePageClient() {
               No pressure. No expectations. Just a clear place to begin.
             </p>
           </div>
-        </section>
+        </RevealOnScroll>
       </div>
     </div>
   );

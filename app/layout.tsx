@@ -7,6 +7,7 @@ import {
 } from "@/lib/seo/site-metadata";
 import "./globals.css";
 import Footer from "./shared-components/Footer";
+import FacetScintillationRail from "./shared-components/motion/FacetScintillationRail";
 import GlobalJsonLd from "./shared-components/GlobalJsonLd";
 import GoogleAnalytics from "./shared-components/GoogleAnalytics";
 
@@ -62,6 +63,7 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full bg-[#f7f3ee] text-[#1f1d1a]">
+        <FacetScintillationRail />
         <GlobalJsonLd />
         <GoogleAnalytics />
         <div className="flex min-h-screen flex-col">

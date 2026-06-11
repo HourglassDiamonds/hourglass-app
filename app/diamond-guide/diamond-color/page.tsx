@@ -3,6 +3,8 @@
 import React from "react";
 import Link from "next/link";
 import Header from "../../shared-components/Header";
+import CTAGlimmer from "../../shared-components/motion/CTAGlimmer";
+import RevealOnScroll from "../../shared-components/motion/RevealOnScroll";
 import { trackConsultationCtaClicked } from "@/lib/consultation-cta";
 
 const beginHereGuides = [
@@ -164,7 +166,7 @@ export default function DiamondColorPage() {
           </div>
         </section>
 
-        <section className="border-b border-[#e4dbcf] py-[96px] md:py-[110px]">
+        <RevealOnScroll as="section" className="border-b border-[#e4dbcf] py-[96px] md:py-[110px]">
           <div className="mx-auto max-w-[760px] text-center">
             <div className="text-[11px] uppercase tracking-[0.34em] text-[#9a9084]">
               Begin here
@@ -191,9 +193,9 @@ export default function DiamondColorPage() {
               </Link>
             ))}
           </div>
-        </section>
+        </RevealOnScroll>
 
-        <section className="border-b border-[#e4dbcf] py-[96px] md:py-[110px]">
+        <RevealOnScroll as="section" className="border-b border-[#e4dbcf] py-[96px] md:py-[110px]">
           <div className="mx-auto max-w-[760px] text-center">
             <div className="text-[11px] uppercase tracking-[0.34em] text-[#9a9084]">
               Most read
@@ -220,9 +222,9 @@ export default function DiamondColorPage() {
               </Link>
             ))}
           </div>
-        </section>
+        </RevealOnScroll>
 
-        <section className="border-b border-[#e4dbcf] py-[96px] md:py-[110px]">
+        <RevealOnScroll as="section" className="border-b border-[#e4dbcf] py-[96px] md:py-[110px]">
           <div className="mx-auto max-w-[760px] text-center">
             <div className="text-[11px] uppercase tracking-[0.34em] text-[#9a9084]">
               Continue exploring
@@ -270,9 +272,9 @@ export default function DiamondColorPage() {
               </div>
             ))}
           </div>
-        </section>
+        </RevealOnScroll>
 
-        <section className="border-b border-[#e4dbcf] py-[104px] md:py-[122px]">
+        <RevealOnScroll as="section" className="border-b border-[#e4dbcf] py-[104px] md:py-[122px]">
           <div className="mx-auto max-w-[760px] text-center">
             <div className="text-[11px] uppercase tracking-[0.34em] text-[#9a9084]">
               Related topics
@@ -299,9 +301,9 @@ export default function DiamondColorPage() {
               </Link>
             ))}
           </div>
-        </section>
+        </RevealOnScroll>
 
-        <section className="py-[108px] md:py-[128px]">
+        <RevealOnScroll as="section" className="py-[108px] md:py-[128px]">
           <div className="mx-auto max-w-[720px] text-center">
             <div className="text-[11px] uppercase tracking-[0.34em] text-[#9a9084]">
               When the research becomes specific
@@ -325,16 +327,22 @@ export default function DiamondColorPage() {
                 Browse Popular Guides
               </Link>
 
-              <Link
+              <CTAGlimmer>
+
+
+                <Link
                 href="/concierge"
                 className="rounded-full border border-[#2b2621] bg-[#2b2621] px-6 py-3 text-[11px] uppercase tracking-[0.32em] text-white transition duration-300 hover:opacity-90"
                 onClick={() => trackConsultationCtaClicked("diamond_guide:diamond_color")}
               >
                 Begin the Conversation
               </Link>
+
+
+              </CTAGlimmer>
             </div>
           </div>
-        </section>
+        </RevealOnScroll>
       </div>
     </div>
   );

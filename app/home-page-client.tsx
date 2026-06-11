@@ -4,6 +4,8 @@ import Image from "next/image";
 import Link from "next/link";
 import HomeStudioPortal from "./home-studio-portal";
 import Header from "./shared-components/Header";
+import CTAGlimmer from "./shared-components/motion/CTAGlimmer";
+import RevealOnScroll from "./shared-components/motion/RevealOnScroll";
 import WhisperedPraiseLink from "./shared-components/WhisperedPraiseLink";
 import { trackConsultationCtaClicked } from "@/lib/consultation-cta";
 
@@ -27,7 +29,7 @@ function HeroRingStage() {
 
 function CredibilityStrip() {
   return (
-    <section className="border-b border-[#e4dbcf] py-[28px] md:py-[32px]">
+    <RevealOnScroll as="section" className="border-b border-[#e4dbcf] py-[28px] md:py-[32px]">
       <div className="grid gap-2 text-center text-[10px] uppercase tracking-[0.34em] text-[#756d64] md:grid-cols-4">
         <div className="opacity-80">GIA Guidance</div>
         <div className="opacity-80">Ethical Sourcing</div>
@@ -40,7 +42,7 @@ function CredibilityStrip() {
           Whispered Praise
         </WhisperedPraiseLink>
       </p>
-    </section>
+    </RevealOnScroll>
   );
 }
 
@@ -170,7 +172,7 @@ function FeaturedRingSection() {
   }
 
   return (
-    <section className="border-b border-[#e4dbcf] py-[96px] md:py-[112px]">
+    <RevealOnScroll as="section" className="border-b border-[#e4dbcf] py-[96px] md:py-[112px]">
       <div className="mx-auto max-w-[760px] text-center">
         <div className="text-[11px] uppercase tracking-[0.34em] text-[#8a8177]">
           House Designs
@@ -213,13 +215,13 @@ function FeaturedRingSection() {
           ))}
         </div>
       </div>
-    </section>
+    </RevealOnScroll>
   );
 }
 
 function ClosingValueSection() {
   return (
-    <section className="border-b border-[#e8dfd4] py-[96px] md:py-[112px]">
+    <RevealOnScroll as="section" className="border-b border-[#e8dfd4] py-[96px] md:py-[112px]">
       <div className="mx-auto max-w-3xl text-center">
         <h2 className="text-[2rem] leading-[1.12] tracking-[-0.045em] text-[#1f1d1a] md:text-[2.65rem]">
           A more thoughtful way to choose something that matters.
@@ -260,13 +262,13 @@ function ClosingValueSection() {
           </p>
         </div>
       </div>
-    </section>
+    </RevealOnScroll>
   );
 }
 
 function TestimonialSection() {
   return (
-    <section className="py-[96px] md:py-[112px]">
+    <RevealOnScroll as="section" className="py-[96px] md:py-[112px]">
       <div className="rounded-[36px] bg-[#e9e1d6] px-8 py-[78px] md:px-14">
         <div className="mx-auto max-w-3xl text-center">
           <p className="text-[1.55rem] leading-[1.4] tracking-[-0.03em] text-[#1f1d1a] md:text-[1.9rem]">
@@ -288,7 +290,7 @@ function TestimonialSection() {
           </Link>
         </div>
       </div>
-    </section>
+    </RevealOnScroll>
   );
 }
 
@@ -320,13 +322,15 @@ export default function HomePageClient() {
               </p>
 
               <div className="mt-8 flex items-center gap-4">
-                <Link
-                  href="/concierge"
-                  className="rounded-full border border-[#d9cdbd] bg-white/80 px-6 py-3 text-[11px] uppercase tracking-[0.28em] text-[#2b2723] transition-all duration-500 ease-out hover:-translate-y-[1px] hover:bg-white"
-                  onClick={() => trackConsultationCtaClicked("home:hero")}
-                >
-                  Begin the Conversation
-                </Link>
+                <CTAGlimmer>
+                  <Link
+                    href="/concierge"
+                    className="rounded-full border border-[#d9cdbd] bg-white/80 px-6 py-3 text-[11px] uppercase tracking-[0.28em] text-[#2b2723] transition-all duration-500 ease-out hover:-translate-y-[1px] hover:bg-white"
+                    onClick={() => trackConsultationCtaClicked("home:hero")}
+                  >
+                    Begin the Conversation
+                  </Link>
+                </CTAGlimmer>
               </div>
             </div>
 
@@ -336,9 +340,9 @@ export default function HomePageClient() {
           </div>
         </section>
 
-        <section className="border-b border-[#e4dbcf] py-[92px] md:py-[108px]">
+        <RevealOnScroll as="section" className="border-b border-[#e4dbcf] py-[92px] md:py-[108px]">
           <HomeStudioPortal />
-        </section>
+        </RevealOnScroll>
 
         <CredibilityStrip />
         <FeaturedRingSection />

@@ -3,6 +3,8 @@
 import React from "react";
 import Link from "next/link";
 import Header from "../../../shared-components/Header";
+import CTAGlimmer from "../../../shared-components/motion/CTAGlimmer";
+import RevealOnScroll from "../../../shared-components/motion/RevealOnScroll";
 import { trackConsultationCtaClicked } from "@/lib/consultation-cta";
 
 const articleGroups = [
@@ -85,7 +87,7 @@ export default function DiamondSizeAllPage() {
         </section>
 
         {/* ARTICLE GROUPS */}
-        <section className="py-[80px] md:py-[100px]">
+        <RevealOnScroll as="section" className="py-[80px] md:py-[100px]">
           <div className="space-y-[60px]">
             {articleGroups.map((group) => (
               <div key={group.title}>
@@ -110,10 +112,10 @@ export default function DiamondSizeAllPage() {
               </div>
             ))}
           </div>
-        </section>
+        </RevealOnScroll>
 
         {/* CTA */}
-        <section className="pb-[110px] pt-[40px]">
+        <RevealOnScroll as="section" className="pb-[110px] pt-[40px]">
           <div className="mx-auto max-w-[700px] text-center">
             <h2 className="text-[2rem] md:text-[2.6rem] leading-[1.1] tracking-[-0.045em]">
               If you want clarity, we can help.
@@ -125,16 +127,20 @@ export default function DiamondSizeAllPage() {
             </p>
 
             <div className="mt-8">
-              <Link
+              <CTAGlimmer>
+
+                <Link
                 href="/concierge"
                 className="rounded-full bg-[#2b2621] px-6 py-3 text-[11px] uppercase tracking-[0.32em] text-white"
                 onClick={() => trackConsultationCtaClicked("diamond_guide:diamond_size_all")}
               >
                 Begin the Conversation
               </Link>
+
+              </CTAGlimmer>
             </div>
           </div>
-        </section>
+        </RevealOnScroll>
       </div>
     </div>
   );

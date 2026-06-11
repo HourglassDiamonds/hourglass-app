@@ -3,6 +3,8 @@
 import React from "react";
 import Link from "next/link";
 import Header from "../shared-components/Header";
+import CTAGlimmer from "../shared-components/motion/CTAGlimmer";
+import RevealOnScroll from "../shared-components/motion/RevealOnScroll";
 import { trackConsultationCtaClicked } from "@/lib/consultation-cta";
 import WhisperedPraiseLink from "../shared-components/WhisperedPraiseLink";
 
@@ -76,7 +78,7 @@ export default function CustomDesignPageClient() {
 
       
 
-        <section className="border-b border-[#e4dbcf] py-[88px] md:py-[96px]">
+        <RevealOnScroll as="section" className="border-b border-[#e4dbcf] py-[88px] md:py-[96px]">
           <div className="mx-auto max-w-[860px] text-center">
             <div className="text-[10px] uppercase tracking-[0.34em] text-[#8a8177]">
               The Design Process
@@ -111,9 +113,9 @@ export default function CustomDesignPageClient() {
               </div>
             ))}
           </div>
-        </section>
+        </RevealOnScroll>
 
-        <section className="border-b border-[#e4dbcf] py-[88px] md:py-[96px]">
+        <RevealOnScroll as="section" className="border-b border-[#e4dbcf] py-[88px] md:py-[96px]">
           <div className="mx-auto max-w-[780px] text-center">
             <div className="text-[10px] uppercase tracking-[0.34em] text-[#8a8177]">
               Craft, Timing &amp; Service
@@ -147,9 +149,9 @@ export default function CustomDesignPageClient() {
               </div>
             ))}
           </div>
-        </section>
+        </RevealOnScroll>
 
-        <section className="bg-[#e9e1d6] pb-[104px] pt-[76px] md:pb-[112px] md:pt-[82px]">
+        <RevealOnScroll as="section" className="bg-[#e9e1d6] pb-[104px] pt-[76px] md:pb-[112px] md:pt-[82px]">
           <div className="mx-auto max-w-[720px] text-center">
             <div className="text-[10px] uppercase tracking-[0.32em] text-[#7d746a]">
               Private Design Guidance
@@ -173,15 +175,17 @@ export default function CustomDesignPageClient() {
           </div>
 
           <div className="mt-12 text-center">
-            <Link
-              href="/concierge"
-              className="inline-flex items-center justify-center rounded-full bg-[#2b2723] px-7 py-3 text-sm tracking-wide text-white transition-all duration-500 ease-out hover:-translate-y-[1px] hover:opacity-90"
-              onClick={() => trackConsultationCtaClicked("custom_design:footer")}
-            >
-              Begin the Conversation
-            </Link>
+            <CTAGlimmer>
+              <Link
+                href="/concierge"
+                className="inline-flex items-center justify-center rounded-full bg-[#2b2723] px-7 py-3 text-sm tracking-wide text-white transition-all duration-500 ease-out hover:-translate-y-[1px] hover:opacity-90"
+                onClick={() => trackConsultationCtaClicked("custom_design:footer")}
+              >
+                Begin the Conversation
+              </Link>
+            </CTAGlimmer>
           </div>
-        </section>
+        </RevealOnScroll>
       </div>
     </div>
   );
