@@ -22,7 +22,12 @@ import { buildVisualPersonality } from "@/lib/diamond-intelligence/visual-person
 import { buildClarityReviewGuidance } from "@/lib/diamond-intelligence/clarity-review-guidance";
 import { buildAdvisoryHighlights } from "./build-advisory-highlights";
 import GuidedReportCompletion from "./GuidedReportCompletion";
-import { ReportUploadDock, type ClientUploadPhase } from "./ReportUploadDock";
+import {
+  DiamondIntelligenceIngestDock,
+  type IngestMode,
+} from "./DiamondIntelligenceIngestDock";
+import type { ClientUploadPhase } from "./ReportUploadDock";
+import type { ListingExtraction } from "@/lib/diamond-intelligence/url-ingestion/types";
 import DiV3Hero from "./DiV3Hero";
 import DiV3PartialGradeReview from "./DiV3PartialGradeReview";
 import DiV3ResultSections from "./DiV3ResultSections";
@@ -62,12 +67,17 @@ function parseAverageDiameterMm(measurements: string): string | null {
 }
 
 export type LightPerformanceDashboardProps = {
+  ingestMode: IngestMode;
+  onIngestModeChange: (mode: IngestMode) => void;
   fileName: string | null;
   uploadPhase: ClientUploadPhase;
   uploadError: string | null;
   uploadStatusNote?: string | null;
   onFile: (file: File) => void;
+  onUrl: (url: string) => void;
   onClearError?: () => void;
+  partialListing?: ListingExtraction | null;
+  partialListingMessage?: string | null;
   metadata: ClientSafeMetadata | null;
   extractedFields: CalibrationReportFields | null;
   interpretationFields: CalibrationReportFields | null;
@@ -77,12 +87,17 @@ export type LightPerformanceDashboardProps = {
 };
 
 export default function LightPerformanceDashboard({
+  ingestMode,
+  onIngestModeChange,
   fileName,
   uploadPhase,
   uploadError,
   uploadStatusNote,
   onFile,
+  onUrl,
   onClearError,
+  partialListing,
+  partialListingMessage,
   metadata,
   extractedFields,
   interpretationFields,
@@ -350,17 +365,22 @@ export default function LightPerformanceDashboard({
   return (
     <section className={DI_V3_SHELL}>
       <div className={`${DI_EDITORIAL_CARD} mb-8 p-6 md:p-8`}>
-        <p className={DI_EYEBROW_STUDIO}>Report Upload</p>
+        <p className={DI_EYEBROW_STUDIO}>Diamond Intelligence</p>
         <div className="mt-4">
-          <ReportUploadDock
+          <DiamondIntelligenceIngestDock
+            mode={ingestMode}
+            onModeChange={onIngestModeChange}
             phase={uploadPhase}
             disabled={busy}
             errorMessage={uploadError}
             statusNote={uploadStatusNote}
             onFile={onFile}
+            onUrl={onUrl}
             onClearError={onClearError}
             metadata={hasReport ? metadata : null}
             fileName={fileName}
+            partialListing={partialListing}
+            partialListingMessage={partialListingMessage}
           />
         </div>
       </div>
@@ -380,7 +400,22 @@ export default function LightPerformanceDashboard({
         </section>
       ) : null}
 
-      {!hasReport && !busy && uploadPhase !== "error" ? (
+      {partialListing && !hasReport && !busy ? (
+        <section className="relative py-4 md:py-6">
+          <p className={DI_EYEBROW_STUDIO}>Listing Review</p>
+          <p
+            className={`${DI_SERIF_HEADLINE} mt-5 max-w-4xl text-4xl leading-[1.05] md:text-5xl xl:text-6xl`}
+            style={{ textWrap: "balance" }}
+          >
+            {CONSUMER_COPY.partialListingHeadline}
+          </p>
+          <p className="mt-8 max-w-xl text-lg leading-8 text-[#75675e]">
+            {partialListingMessage ?? CONSUMER_COPY.partialListingBody}
+          </p>
+        </section>
+      ) : null}
+
+      {!hasReport && !partialListing && !busy && uploadPhase !== "error" ? (
         <section className="relative py-4 md:py-6">
           <p className={DI_EYEBROW_STUDIO}>Diamond Intelligence</p>
           <p

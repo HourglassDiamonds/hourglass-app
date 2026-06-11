@@ -40,14 +40,27 @@ export const CONSUMER_COPY = {
     "Transparency and in-person color nuance",
   ] as const,
   emptyStateIntro:
-    "An easy-to-understand, lab-neutral read of how a diamond is likely to perform in person.",
+    "Paste a diamond listing URL for a professional read of the diamond.",
   emptyStateSupportingCopy:
-    "Upload a PDF report from GIA, IGI, or GCAL 8X. Diamond Intelligence evaluates the diamond itself, not the asking price.",
+    "We'll look for the grading report and build a professional read from the details available. For the most complete review, use listings that include a GIA, IGI, or GCAL report.",
+  urlIngestHeadline: "Paste a diamond listing URL",
+  urlIngestSubcopy:
+    "We'll look for the grading report and build a professional read from the details available.",
+  urlIngestHelperLines: [
+    "For the most complete review, use listings that include a GIA, IGI, or GCAL report.",
+    "Includes a professional assessment of the diamond and whether the asking price appears appropriate relative to the current market.",
+  ] as const,
+  justinReviewCta: "Have Justin Review This Diamond",
+  uploadTabLabel: "Upload Report",
+  urlTabLabel: "Paste Listing URL",
   uploadHelperLines: [
     "Round brilliant reports only.",
     "Upload a PDF report from GIA, IGI, or GCAL 8X.",
     "Diamond Intelligence evaluates the diamond itself, not the asking price.",
   ] as const,
+  partialListingHeadline: "Listing Found — Report Needed for Full Review",
+  partialListingBody:
+    "We extracted what we could from this listing. Upload the grading report for a complete Diamond Intelligence interpretation.",
   processingStateHeadline: "Building your interpretation…",
   processingStateSupportingCopy:
     "We are reading proportion details from your report. This usually takes a few moments.",
