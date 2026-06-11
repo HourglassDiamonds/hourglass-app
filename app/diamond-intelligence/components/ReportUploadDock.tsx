@@ -105,11 +105,11 @@ export function ReportUploadDock({
           pick(e.dataTransfer.files?.[0]);
         }}
         onClick={() => !disabled && inputRef.current?.click()}
-        className={`rounded-md border border-dashed px-3 py-3.5 text-left transition ${
+        className={`rounded-xl border border-dashed px-4 py-4 text-left transition ${
           dragOver
-            ? "border-[#a8926a] bg-[#faf8f4] ring-1 ring-[#e8dcc8]/80"
-            : "border-[#e4dbcf] bg-[#faf8f4]/80"
-        } ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer hover:border-[#cbbda9]"}`}
+            ? "border-[rgba(181,150,98,0.42)] bg-[rgba(251,247,239,0.72)] ring-1 ring-[rgba(181,150,98,0.18)]"
+            : "border-[rgba(181,150,98,0.28)] bg-[rgba(251,247,239,0.55)]"
+        } ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer hover:border-[rgba(181,150,98,0.42)]"}`}
       >
         {hasReport && metadata ? (
           <div
@@ -179,8 +179,8 @@ export function ReportUploadDock({
             ))}
           </div>
         ) : !busy ? (
-          <p className="pointer-events-none mt-1.5 text-[10px] leading-snug text-[#948a80]">
-            Or click to browse · PDF or image from GIA, IGI, or GCAL
+          <p className="pointer-events-none mt-2 text-[10px] leading-snug text-[#948a80]">
+            Or click to browse · GIA, IGI, or GCAL 8X PDF
           </p>
         ) : (
           <p className="pointer-events-none mt-1.5 text-[10px] text-[#a8926a]">
@@ -202,7 +202,7 @@ export function ReportUploadDock({
       />
 
       {statusNote && !showError ? (
-        <div className="mt-3 flex gap-2.5 rounded-md border border-[#e4dbcf]/70 bg-[#faf8f4]/80 px-3 py-2.5">
+        <div className="mt-4 flex gap-2.5 rounded-xl border border-[rgba(181,150,98,0.18)] bg-[rgba(251,247,239,0.55)] px-4 py-3">
           <span
             className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-[#c4a86a]"
             aria-hidden

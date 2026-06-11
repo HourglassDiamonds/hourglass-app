@@ -1,7 +1,7 @@
 /** Diamond Intelligence V2.5 — shared studio editorial primitives (presentation only). */
 
 export const DI_EDITORIAL_CARD =
-  "rounded-2xl border border-[#e4d8c8] bg-[#fffaf3]/85 shadow-[0_12px_40px_rgba(70,50,30,0.06)]";
+  "rounded-[28px] border border-[rgba(181,150,98,0.22)] bg-[rgba(251,247,239,0.72)] shadow-[0_18px_56px_rgba(30,26,22,0.045)]";
 
 export const DI_EYEBROW_STUDIO =
   "text-[10px] font-semibold uppercase tracking-[0.28em] text-[#8b735b]";

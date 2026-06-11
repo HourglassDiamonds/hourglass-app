@@ -69,28 +69,28 @@ export default function DiV3Hero({
         ) : (
           <>
             <p className="mb-2 text-[11px] uppercase tracking-[0.18em] text-[#9b8b78]">
-              Purchase Recommendation
+              Advisory Read
             </p>
             <h1
-              className={`${verdictSizeClass} mb-5 font-serif font-normal uppercase leading-[0.9] tracking-[0.035em] text-[#1e1a16]`}
+              className={`${verdictSizeClass} mb-4 font-serif font-normal uppercase leading-[0.92] tracking-[0.03em] text-[#1e1a16]`}
             >
               {hero.purchaseHeadline}
             </h1>
 
             {hero.purchaseSubline ? (
-              <p className="mb-4 font-serif text-[clamp(22px,3vw,30px)] leading-tight text-[#1e1a16]">
+              <p className="mx-auto mb-5 max-w-[540px] font-serif text-[clamp(18px,2.4vw,24px)] leading-[1.35] text-[#514536]">
                 {hero.purchaseSubline}
               </p>
             ) : null}
 
             {hero.opticalPerformanceLine ? (
-              <p className="text-[clamp(17px,2.2vw,20px)] leading-[1.45] text-[#514536]">
+              <p className="text-[clamp(16px,2vw,19px)] leading-[1.5] text-[#6f665b]">
                 {hero.opticalPerformanceLine}
               </p>
             ) : null}
 
             {hero.opticalDetailLine ? (
-              <p className="mx-auto mt-3 max-w-[520px] text-[15px] leading-[1.55] text-[#6f665b]">
+              <p className="mx-auto mt-3 max-w-[520px] text-[15px] leading-[1.6] text-[#6f665b]">
                 {hero.opticalDetailLine}
               </p>
             ) : null}
@@ -122,13 +122,17 @@ export default function DiV3Hero({
           {traitLine}
         </p>
 
-        <div className="mx-auto mb-8 mt-10 h-px w-full max-w-full bg-[linear-gradient(90deg,transparent,rgba(58,48,38,0.32),transparent)] md:mb-[34px]" />
+        <div className="mx-auto mb-8 mt-10 h-px w-full max-w-full bg-[linear-gradient(90deg,transparent,rgba(58,48,38,0.24),transparent)] md:mb-[34px]" />
 
         <div className="mx-auto max-w-[470px] leading-[1.7] text-[#6f665b]">
           <h2 className="font-serif text-[26px] font-normal text-[#1e1a16] md:text-[29px]">
-            Considering this diamond?
+            Have Justin Review This Diamond
           </h2>
-          <p className="mt-2.5">I&apos;d be happy to share my thoughts.</p>
+          <p className="mt-3 text-sm leading-relaxed">
+            Justin personally reviews a limited number of diamonds each week.
+            Share the report or listing and he can help determine whether it is
+            worth pursuing.
+          </p>
           <p className="mt-4 text-sm tracking-[0.04em] text-[#1e1a16]">
             Justin Smith, GG
           </p>

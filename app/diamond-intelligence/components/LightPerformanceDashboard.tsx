@@ -36,6 +36,7 @@ import { CONSUMER_COPY } from "./consumer-display-labels";
 import { DI_EDITORIAL_CARD, DI_EYEBROW_STUDIO, DI_SERIF_HEADLINE } from "./di-studio-styles";
 import { DI_V3_SHELL } from "./di-v3-styles";
 import { resolveHourglassClarityPolicy } from "@/lib/diamond-intelligence/hourglass-clarity-policy";
+import type { DecisionConfidenceBand } from "@/lib/diamond-intelligence/decision-profile-confidence";
 import {
   resolvePurchaseRecommendationLabel,
 } from "@/lib/diamond-intelligence/purchase-recommendation-presentation";
@@ -339,6 +340,8 @@ export default function LightPerformanceDashboard({
       decisionProfile?.opticalPerformance.band === "Unavailable",
     isGcal8x: effectiveGcal8xPremium,
     gcal8xTier,
+    confidenceBand: decisionProfile?.confidence
+      .band as DecisionConfidenceBand | undefined,
   });
 
   const traitLine = buildV3TraitLine(
@@ -401,7 +404,7 @@ export default function LightPerformanceDashboard({
       ) : null}
 
       {partialListing && !hasReport && !busy ? (
-        <section className="relative py-4 md:py-6">
+        <section className="relative py-6 md:py-8">
           <p className={DI_EYEBROW_STUDIO}>Listing Review</p>
           <p
             className={`${DI_SERIF_HEADLINE} mt-5 max-w-4xl text-4xl leading-[1.05] md:text-5xl xl:text-6xl`}
@@ -410,23 +413,14 @@ export default function LightPerformanceDashboard({
             {CONSUMER_COPY.partialListingHeadline}
           </p>
           <p className="mt-8 max-w-xl text-lg leading-8 text-[#75675e]">
-            {partialListingMessage ?? CONSUMER_COPY.partialListingBody}
+            {CONSUMER_COPY.partialListingBody}
           </p>
         </section>
       ) : null}
 
       {!hasReport && !partialListing && !busy && uploadPhase !== "error" ? (
-        <section className="relative py-4 md:py-6">
-          <p className={DI_EYEBROW_STUDIO}>Diamond Intelligence</p>
-          <p
-            className={`${DI_SERIF_HEADLINE} mt-5 max-w-4xl text-4xl leading-[1.05] md:text-5xl xl:text-6xl`}
-            style={{ textWrap: "balance" }}
-          >
-            {CONSUMER_COPY.emptyStateIntro}
-          </p>
-          <p className="mt-8 max-w-xl text-lg leading-8 text-[#75675e]">
-            {CONSUMER_COPY.emptyStateSupportingCopy}
-          </p>
+        <section className="relative py-6 md:py-8" aria-hidden>
+          <div className="mx-auto h-px max-w-md bg-[linear-gradient(90deg,transparent,rgba(181,150,98,0.35),transparent)]" />
         </section>
       ) : null}
 
@@ -505,9 +499,22 @@ export default function LightPerformanceDashboard({
       ) : null}
 
       {hasReport ? (
-        <footer className="mx-auto mt-10 max-w-[960px] border-t border-[rgba(58,48,38,0.18)] py-6 text-[10px] leading-relaxed text-[#9b8b78]">
-          Interpretation uses reported proportions and finish from your upload.
-          Not laboratory grades.
+        <footer className="mx-auto mt-12 max-w-[960px] border-t border-[rgba(181,150,98,0.16)] py-7 text-[10px] leading-relaxed text-[#9b8b78]">
+          <p>{CONSUMER_COPY.betaDisclosure}</p>
+          <p className="mt-2">
+            {CONSUMER_COPY.betaDisclosureOutreach}{" "}
+            <a
+              href="mailto:Justin@HourglassDiamonds.com"
+              className="text-[#8b735b] underline decoration-[rgba(181,150,98,0.4)] underline-offset-[3px] transition-colors hover:text-[#5f5851]"
+            >
+              {CONSUMER_COPY.betaDisclosureEmail}
+            </a>
+            .
+          </p>
+          <p className="mt-2">
+            Interpretation uses reported proportions and finish from your upload.
+            Not laboratory grades.
+          </p>
         </footer>
       ) : null}
     </section>

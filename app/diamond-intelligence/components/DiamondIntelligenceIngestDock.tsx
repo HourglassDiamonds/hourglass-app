@@ -63,14 +63,21 @@ export function DiamondIntelligenceIngestDock({
 
   return (
     <div>
-      <div className="mb-4 flex gap-2 border-b border-[#e4dbcf]/80">
+      <p className="mb-1 max-w-[52ch] font-serif text-[1.05rem] leading-snug text-[#1f1d1a] md:text-[1.12rem]">
+        {CONSUMER_COPY.emptyStateIntro}
+      </p>
+      <p className="mb-5 max-w-[52ch] text-xs leading-relaxed text-[#75675e]">
+        {CONSUMER_COPY.betaDisclosureShort}
+      </p>
+
+      <div className="mb-5 flex gap-1 rounded-xl border border-[rgba(181,150,98,0.18)] bg-[rgba(255,255,255,0.28)] p-1">
         <button
           type="button"
           onClick={() => onModeChange("url")}
-          className={`border-b-2 px-1 pb-2 text-[10px] uppercase tracking-[0.24em] transition ${
+          className={`flex-1 rounded-lg px-3 py-2.5 text-[10px] uppercase tracking-[0.22em] transition ${
             mode === "url"
-              ? "border-[#a8926a] text-[#1f1d1a]"
-              : "border-transparent text-[#948a80] hover:text-[#5f5851]"
+              ? "bg-[#fbf7ef] text-[#1f1d1a] shadow-[0_1px_3px_rgba(30,26,22,0.06)] ring-1 ring-[rgba(181,150,98,0.28)]"
+              : "text-[#948a80] hover:text-[#5f5851]"
           }`}
         >
           {CONSUMER_COPY.urlTabLabel}
@@ -78,10 +85,10 @@ export function DiamondIntelligenceIngestDock({
         <button
           type="button"
           onClick={() => onModeChange("upload")}
-          className={`border-b-2 px-1 pb-2 text-[10px] uppercase tracking-[0.24em] transition ${
+          className={`flex-1 rounded-lg px-3 py-2.5 text-[10px] uppercase tracking-[0.22em] transition ${
             mode === "upload"
-              ? "border-[#a8926a] text-[#1f1d1a]"
-              : "border-transparent text-[#948a80] hover:text-[#5f5851]"
+              ? "bg-[#fbf7ef] text-[#1f1d1a] shadow-[0_1px_3px_rgba(30,26,22,0.06)] ring-1 ring-[rgba(181,150,98,0.28)]"
+              : "text-[#948a80] hover:text-[#5f5851]"
           }`}
         >
           {CONSUMER_COPY.uploadTabLabel}
@@ -90,10 +97,10 @@ export function DiamondIntelligenceIngestDock({
 
       {mode === "url" ? (
         <div
-          className={`rounded-md border border-dashed px-3 py-3.5 text-left transition ${
+          className={`rounded-xl border border-dashed px-4 py-4 text-left transition ${
             busy
-              ? "border-[#e4dbcf] bg-[#faf8f4]/80 opacity-70"
-              : "border-[#e4dbcf] bg-[#faf8f4]/80 hover:border-[#cbbda9]"
+              ? "border-[rgba(181,150,98,0.22)] bg-[rgba(251,247,239,0.55)] opacity-70"
+              : "border-[rgba(181,150,98,0.28)] bg-[rgba(251,247,239,0.55)] hover:border-[rgba(181,150,98,0.42)]"
           }`}
         >
           <p className="text-[10px] uppercase tracking-[0.28em] text-[#948a80]">
@@ -107,7 +114,7 @@ export function DiamondIntelligenceIngestDock({
             <input
               type="url"
               inputMode="url"
-              placeholder="https://www.jamesallen.com/..."
+              placeholder={CONSUMER_COPY.urlInputPlaceholder}
               value={urlInput}
               disabled={disabled || busy}
               onChange={(e) => {
@@ -168,11 +175,11 @@ export function DiamondIntelligenceIngestDock({
       )}
 
       {partialListing ? (
-        <div className="mt-4 rounded-md border border-[#e4dbcf]/80 bg-[#faf8f4]/90 px-4 py-4">
-          <p className="text-[10px] uppercase tracking-[0.24em] text-[#948a80]">
-            Listing details
+        <div className="mt-5 rounded-xl border border-[rgba(181,150,98,0.22)] bg-[rgba(251,247,239,0.72)] px-5 py-5">
+          <p className="text-[10px] uppercase tracking-[0.24em] text-[#a8926a]">
+            {CONSUMER_COPY.partialListingHeadline}
           </p>
-          <p className="mt-2 font-serif text-lg text-[#1f1d1a]">
+          <p className="mt-3 font-serif text-lg leading-snug text-[#1f1d1a]">
             {[
               partialListing.shape,
               partialListing.carat ? `${partialListing.carat} ct` : null,
@@ -184,17 +191,20 @@ export function DiamondIntelligenceIngestDock({
               .join(" · ") || "Details extracted from listing"}
           </p>
           {partialListing.price ? (
-            <p className="mt-1 text-sm text-[#6f665d]">
+            <p className="mt-1.5 text-sm text-[#6f665d]">
               Listed at {partialListing.currency ?? "USD"}{" "}
               {partialListing.price.toLocaleString()}
             </p>
           ) : null}
-          <p className="mt-3 text-xs leading-relaxed text-[#6f665d]">
-            {partialListingMessage ?? CONSUMER_COPY.partialListingBody}
+          <p className="mt-4 text-sm leading-relaxed text-[#6f665d]">
+            {CONSUMER_COPY.partialListingBody}
+          </p>
+          <p className="mt-3 text-xs leading-relaxed text-[#948a80]">
+            {CONSUMER_COPY.justinReviewCtaSupporting}
           </p>
           <Link
             href={conciergeHref}
-            className="mt-4 inline-flex items-center justify-center rounded-full border border-[#cbbda9] bg-white px-5 py-2.5 text-[10px] uppercase tracking-[0.22em] text-[#2b2723] transition hover:bg-[#faf8f4]"
+            className="mt-5 inline-flex items-center justify-center rounded-full border border-[rgba(58,48,38,0.18)] bg-white/80 px-5 py-2.5 text-[10px] uppercase tracking-[0.22em] text-[#2b2723] transition hover:bg-[#faf8f4]"
           >
             {CONSUMER_COPY.justinReviewCta}
           </Link>
@@ -208,7 +218,7 @@ export function DiamondIntelligenceIngestDock({
       ) : null}
 
       {mode === "url" && statusNote && phase !== "error" ? (
-        <div className="mt-3 flex gap-2.5 rounded-md border border-[#e4dbcf]/70 bg-[#faf8f4]/80 px-3 py-2.5">
+        <div className="mt-4 flex gap-2.5 rounded-xl border border-[rgba(181,150,98,0.18)] bg-[rgba(251,247,239,0.55)] px-4 py-3">
           <span
             className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-[#c4a86a]"
             aria-hidden
@@ -216,6 +226,20 @@ export function DiamondIntelligenceIngestDock({
           <p className="text-xs leading-relaxed text-[#6f665d]">{statusNote}</p>
         </div>
       ) : null}
+
+      <div className="mt-5 border-t border-[rgba(181,150,98,0.16)] pt-4 text-[10px] leading-relaxed text-[#9b8b78]">
+        <p>{CONSUMER_COPY.betaDisclosure}</p>
+        <p className="mt-2">
+          {CONSUMER_COPY.betaDisclosureOutreach}{" "}
+          <a
+            href="mailto:Justin@HourglassDiamonds.com"
+            className="text-[#8b735b] underline decoration-[rgba(181,150,98,0.4)] underline-offset-[3px] transition-colors hover:text-[#5f5851]"
+          >
+            {CONSUMER_COPY.betaDisclosureEmail}
+          </a>
+          .
+        </p>
+      </div>
     </div>
   );
 }

@@ -229,7 +229,7 @@ describe("GIA natural partial review gate", () => {
         false,
         "I1",
       ),
-      "Clarity Concern · Visibility Risk · Not Recommended",
+      "Outside Hourglass Standards · Not Recommended",
     );
   });
 });

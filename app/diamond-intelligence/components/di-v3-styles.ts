@@ -17,7 +17,7 @@ export const DI_V3_BRAND =
 export const DI_V3_PRODUCT =
   "mt-3.5 text-[12px] uppercase tracking-[0.15em] text-[#6f665b] md:text-[13px] md:tracking-[0.18em]";
 
-export const DI_V3_SECTIONS = "mx-auto mt-9 grid w-full max-w-[960px] gap-3 md:mt-[58px] md:gap-4";
+export const DI_V3_SECTIONS = "mx-auto mt-10 grid w-full max-w-[960px] gap-4 md:mt-[64px] md:gap-5";
 
 export const DI_V3_CHAPTER =
   "group relative overflow-hidden rounded-[22px] border border-[rgba(181,150,98,0.24)] shadow-[0_14px_42px_rgba(30,26,22,0.035)] [background:linear-gradient(180deg,rgba(255,255,255,.42),rgba(255,255,255,.16)),rgba(251,247,239,.58)] before:pointer-events-none before:absolute before:left-[22px] before:right-[22px] before:top-0 before:h-px before:bg-[linear-gradient(90deg,transparent,rgba(181,150,98,.52),transparent)] before:opacity-70";
