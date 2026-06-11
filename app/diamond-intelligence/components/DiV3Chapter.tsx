@@ -3,7 +3,11 @@
 import type { ReactNode } from "react";
 import {
   DI_V3_CHAPTER,
+  DI_V3_CHAPTER_ADVISOR,
   DI_V3_CHAPTER_BODY,
+  DI_V3_CHAPTER_BODY_ADVISOR,
+  DI_V3_CHAPTER_BODY_FEATURE,
+  DI_V3_CHAPTER_DEMOTED,
   DI_V3_CHAPTER_FEATURE,
 } from "./di-v3-styles";
 
@@ -12,6 +16,8 @@ export type DiV3ChapterProps = {
   title: string;
   note: string;
   feature?: boolean;
+  advisor?: boolean;
+  demoted?: boolean;
   chapterId: string;
   children: ReactNode;
 };
@@ -21,12 +27,20 @@ export default function DiV3Chapter({
   title,
   note,
   feature = false,
+  advisor = false,
+  demoted = false,
   chapterId,
   children,
 }: DiV3ChapterProps) {
+  const bodyClass = advisor
+    ? DI_V3_CHAPTER_BODY_ADVISOR
+    : feature
+      ? DI_V3_CHAPTER_BODY_FEATURE
+      : DI_V3_CHAPTER_BODY;
+
   return (
     <details
-      className={`${DI_V3_CHAPTER} ${feature ? DI_V3_CHAPTER_FEATURE : ""}`}
+      className={`${DI_V3_CHAPTER} ${feature ? DI_V3_CHAPTER_FEATURE : ""} ${advisor ? DI_V3_CHAPTER_ADVISOR : ""} ${demoted ? DI_V3_CHAPTER_DEMOTED : ""}`}
       data-v3-chapter={chapterId}
     >
       <summary className="grid cursor-pointer list-none grid-cols-[auto_1fr_auto] items-center gap-3 px-[18px] py-[22px] text-[#1e1a16] transition-colors hover:bg-[rgba(255,255,255,0.18)] md:gap-[18px] md:px-[30px] md:py-7 [&::-webkit-details-marker]:hidden">
@@ -54,7 +68,7 @@ export default function DiV3Chapter({
           —
         </span>
       </summary>
-      <div className={DI_V3_CHAPTER_BODY}>{children}</div>
+      <div className={bodyClass}>{children}</div>
     </details>
   );
 }

@@ -149,7 +149,7 @@ export default function DiV3PartialGradeReview({
 
       <div className="mx-auto mt-10 max-w-[520px] rounded-[18px] border border-[rgba(58,48,38,0.14)] bg-[rgba(255,255,255,0.28)] p-5 text-left">
         <p className="text-[11px] uppercase tracking-[0.14em] text-[#9b8b78]">
-          Technical Appendix
+          Report Details
         </p>
         <dl className="mt-4 grid gap-3 text-[14px]">
           {technicalItems.map((item) => (

@@ -29,15 +29,15 @@ export const CONSUMER_COPY = {
   performanceAtAGlanceLabel: "Performance at a Glance",
   supportingEvidenceLabel: "Supporting Evidence",
   performanceEvidenceLabel: "Performance Evidence",
-  technicalDecisionProfileTitle: "Technical Appendix",
+  technicalDecisionProfileTitle: "Report Details",
   reportMeasurementsTitle: "Measurements Used in This Interpretation",
   reportMeasurementsSubcopy:
     "Extracted values from the uploaded report, shown for transparency.",
   reportCannotConfirmItems: [
-    "Eye-clean appearance under everyday viewing distances",
-    "Video performance and movement sparkle",
-    "Optical imaging such as ASET or IdealScope",
-    "Transparency and in-person color nuance",
+    "Eye-clean appearance from normal viewing distance",
+    "Overall visual personality and preference",
+    "Transparency and brightness in motion",
+    "Nuances that may only appear during in-person viewing",
   ] as const,
   emptyStateIntro:
     "Receive an independent read of a diamond's quality, light performance, and overall purchase value before making a decision.",
@@ -51,8 +51,10 @@ export const CONSUMER_COPY = {
     "Supports many listings from Blue Nile, Rare Carat, Adiamor, Ritani, Brilliant Earth, James Allen, and other major retailers.",
   ] as const,
   justinReviewCta: "Have Justin Review This Diamond",
+  justinReviewCtaExclusivity:
+    "Justin personally reviews a limited number of diamonds each week.",
   justinReviewCtaSupporting:
-    "Justin personally reviews a limited number of diamonds each week. Share the report or listing and he can help determine whether it is worth pursuing.",
+    "Share the report or listing and he can help determine whether it is worth pursuing.",
   uploadTabLabel: "Upload Report",
   urlTabLabel: "Paste Listing URL",
   uploadHelperLines: [

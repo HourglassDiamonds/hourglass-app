@@ -9,7 +9,19 @@ export const DI_V3_HERO_CARD =
   "relative mx-auto w-full max-w-[860px] overflow-hidden rounded-[28px] border border-[rgba(58,48,38,0.32)] bg-[#fbf7ef] shadow-[0_28px_80px_rgba(30,26,22,0.08)] [background:linear-gradient(180deg,rgba(255,255,255,.48),rgba(255,255,255,.12)),#fbf7ef)] before:pointer-events-none before:absolute before:left-7 before:right-7 before:top-[26px] before:h-px before:bg-[linear-gradient(90deg,transparent,rgba(181,150,98,.5),transparent)] after:pointer-events-none after:absolute after:bottom-[26px] after:left-7 after:right-7 after:h-px after:bg-[linear-gradient(90deg,transparent,rgba(181,150,98,.5),transparent)]";
 
 export const DI_V3_HERO_INNER =
-  "px-[22px] py-[46px] text-center md:px-[42px] md:pt-[58px] md:pb-11";
+  "relative z-[1] px-[22px] py-[58px] text-center md:px-[42px] md:py-[72px]";
+
+export const DI_V3_HERO_KICKER_BRAND =
+  "font-serif text-[10px] font-medium uppercase tracking-[0.24em] text-[#9b8b78] md:text-[11px] md:tracking-[0.28em]";
+
+export const DI_V3_HERO_KICKER_PRODUCT =
+  "mt-2 text-[10px] uppercase tracking-[0.16em] text-[#b0a698] md:text-[11px] md:tracking-[0.18em]";
+
+export const DI_V3_HERO_WATERMARK =
+  "pointer-events-none absolute inset-0 z-0 flex items-center justify-center overflow-hidden";
+
+export const DI_V3_HERO_WATERMARK_IMG =
+  "h-[clamp(200px,38vw,300px)] w-[clamp(200px,38vw,300px)] object-contain opacity-[0.03] mix-blend-multiply select-none";
 
 export const DI_V3_BRAND =
   "font-serif text-[12px] font-medium uppercase tracking-[0.18em] text-[#1e1a16] md:text-[13px] md:tracking-[0.22em]";
@@ -25,8 +37,26 @@ export const DI_V3_CHAPTER =
 export const DI_V3_CHAPTER_FEATURE =
   "border-[rgba(181,150,98,0.34)] [background:radial-gradient(circle_at_top_left,rgba(181,150,98,.10),transparent_28rem),linear-gradient(180deg,rgba(255,255,255,.50),rgba(255,255,255,.18)),rgba(251,247,239,.7)]";
 
+export const DI_V3_CHAPTER_ADVISOR =
+  "border-[rgba(181,150,98,0.30)] [background:radial-gradient(circle_at_top_left,rgba(181,150,98,.08),transparent_24rem),linear-gradient(180deg,rgba(255,252,246,.72),rgba(255,249,240,.28)),rgba(252,247,238,.78)]";
+
+export const DI_V3_CHAPTER_BODY_ADVISOR =
+  "relative border-t border-[rgba(181,150,98,0.16)] bg-[rgba(255,252,246,0.42)] px-5 py-9 text-[16px] leading-[1.82] text-[#5f5851] before:absolute before:left-5 before:top-0 before:h-px before:w-16 before:bg-[rgba(181,150,98,0.55)] md:px-[34px] md:py-11 md:before:left-[34px] after:pointer-events-none after:absolute after:bottom-7 after:left-5 after:top-7 after:w-px after:bg-[linear-gradient(180deg,rgba(181,150,98,0.38),rgba(181,150,98,0.08))] md:after:bottom-9 md:after:left-[34px] md:after:top-9";
+
+export const DI_V3_CHAPTER_DEMOTED =
+  "border-[rgba(58,48,38,0.14)] opacity-[0.94] shadow-[0_8px_24px_rgba(30,26,22,0.02)] [background:linear-gradient(180deg,rgba(255,255,255,.28),rgba(255,255,255,.10)),rgba(251,247,239,.42)]";
+
 export const DI_V3_CHAPTER_BODY =
   "relative border-t border-[rgba(181,150,98,0.18)] bg-[rgba(255,255,255,0.16)] px-5 py-7 text-[15px] leading-[1.74] text-[#6f665b] before:absolute before:left-5 before:top-0 before:h-px before:w-16 before:bg-[rgba(181,150,98,0.72)] md:px-[30px] md:py-8 md:before:left-[30px]";
+
+export const DI_V3_CHAPTER_BODY_FEATURE =
+  "relative border-t border-[rgba(181,150,98,0.18)] bg-[rgba(255,255,255,0.16)] px-5 py-9 text-[16px] leading-[1.82] text-[#6f665b] before:absolute before:left-5 before:top-0 before:h-px before:w-16 before:bg-[rgba(181,150,98,0.72)] md:px-[34px] md:py-11 md:before:left-[34px]";
+
+export const DI_V3_HERO_TRAIT =
+  "mx-auto max-w-[620px] font-serif text-[clamp(21px,3vw,30px)] font-normal leading-[1.25] tracking-[0.02em] text-[#514536]";
+
+export const DI_V3_HERO_PROOF =
+  "mx-auto mt-10 max-w-[480px] border-t border-[rgba(58,48,38,0.12)] pt-7 text-[13px] leading-[1.65] text-[#9b8b78] md:mt-12 md:pt-8";
 
 export const DI_V3_TEXT_CTA =
   "inline-flex items-center gap-2 border-b border-[rgba(181,150,98,0.7)] pb-1 text-sm tracking-[0.04em] text-[#1e1a16] transition-opacity hover:opacity-80";

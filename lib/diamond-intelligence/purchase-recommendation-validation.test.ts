@@ -166,7 +166,7 @@ describe("validation A — 6237893522 O-P SI2 strong proportions", () => {
 
   it("optical read is secondary and broad percentile is suppressed", () => {
     assert.ok(result.hero.opticalPerformanceLine);
-    assert.match(result.hero.opticalPerformanceLine ?? "", /Optical Performance:/i);
+    assert.match(result.hero.opticalPerformanceLine ?? "", /Performance read:/i);
     assertNotBroadPercentile(result.percentile);
     if (result.percentile) {
       assert.doesNotMatch(

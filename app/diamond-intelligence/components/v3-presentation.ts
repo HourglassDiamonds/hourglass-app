@@ -258,17 +258,17 @@ function buildV3HeroPurchaseSubline(
 ): string | null {
   switch (label) {
     case "Recommended":
-      return "The report read is encouraging — worth pursuing if it aligns with your priorities after in-person review.";
+      return "An encouraging read on paper — worth pursuing if it holds up in person.";
     case "Strong Candidate":
-      return "A credible candidate on paper — confirm visual performance and fit before committing.";
+      return "A credible candidate on paper — confirm how it looks and feels before committing.";
     case "Justin Inspection Required":
-      return "Justin’s review is the appropriate next step — advisory, not an automatic pass or fail.";
+      return "Justin's review is the right next step — advisory, not an automatic pass or fail.";
     case "Outside Hourglass Standards":
       return "Not Recommended";
     case "Not Recommended":
-      return "Outside what Hourglass would normally put forward — firm pass on this report read.";
+      return "Outside what Hourglass would normally put forward — a firm pass on this read.";
     case "Worth Reviewing After Additional Information":
-      return "Useful starting context — confirm what remains before treating this as a final read.";
+      return "A useful starting point — confirm what remains before treating this as final.";
     default:
       return null;
   }
@@ -307,7 +307,7 @@ export function buildV3HeroPresentation(input: {
       purchaseSubline: "Not Recommended",
       opticalPerformanceLine: null,
       opticalDetailLine:
-        "This clarity grade falls outside Hourglass standards — a firm pass regardless of proportion read.",
+        "This clarity grade falls outside Hourglass standards — a firm pass, regardless of how the proportions read.",
       percentile: null,
     };
   }
@@ -348,7 +348,7 @@ export function buildV3HeroPresentation(input: {
 
   const opticalTierLabel = displayTierLabel(input.uncappedOpticalTier);
   const opticalPerformanceLine = input.canShowScore
-    ? `Optical Performance: ${opticalTierLabel}`
+    ? `Performance read: ${opticalTierLabel}`
     : null;
 
   const opticalDetailLine = buildPurchaseConstrainedOpticalDetail({
@@ -428,7 +428,7 @@ export function buildV3TraitLine(
   }
 
   if (isGcal8x) {
-    return "Bright · Precise · Strong Optical Support";
+    return "Bright · Precise · Performance-Verified";
   }
 
   const words: string[] = [];
@@ -448,7 +448,7 @@ export function buildV3TraitLine(
     }
   }
 
-  if (words.length === 0) return "Balanced · Steady · Report-Based Read";
+  if (words.length === 0) return "Balanced · Steady · Exceptionally Balanced";
   return words.slice(0, 3).join(" · ");
 }
 

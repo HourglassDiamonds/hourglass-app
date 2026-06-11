@@ -144,28 +144,28 @@ export default function DiV3ResultSections({
     fields,
   });
 
-  const humanReviewTitle = isGcal8x
-    ? "What Still Benefits From Human Review"
-    : "What Still Warrants In-Person Review";
+  const humanReviewTitle = "Worth Confirming In Person";
 
   const humanReviewNote = isGcal8x
     ? "What expert review still adds after optical verification."
-    : "What no grading report can confirm on its own.";
+    : "Calm, practical checks before you commit — not warnings.";
 
   const humanReviewParagraphs = isGcal8x
     ? [
         "GCAL 8X gives us substantially more evidence than a standard grading report alone.",
-        "Human review still matters because optical verification does not fully answer every buying question.",
+        "A brief in-person or advanced-imagery review still helps confirm the details that matter most to you.",
       ]
-    : ["A grading report tells us a lot. It does not tell us everything."];
+    : [
+        "A grading report tells us a lot. These are the details worth confirming before you decide.",
+      ];
 
   const humanReviewItems = isGcal8x
     ? [
-        "Visual personality and pattern preference",
-        "Transparency and crystal visibility",
-        "Comparative value against other elite candidates",
-        "Setting compatibility and buyer priorities",
-        "Any nuance not captured by the report alone",
+        "Visual personality and how the pattern reads to you",
+        "Transparency and crystal visibility under everyday light",
+        "How it compares against other elite candidates you are considering",
+        "Setting compatibility and what matters most in your search",
+        "Subtle details the report alone cannot fully capture",
       ]
     : [...limitations];
 
@@ -278,22 +278,22 @@ export default function DiV3ResultSections({
 
         <DiV3Chapter
           number="02"
-          title="What Still Warrants In-Person Review"
+          title="Worth Confirming In Person"
           note={
             incompleteCopy.kind === "proportion"
               ? "Grades are confirmed — these limits apply to any report-based read."
-              : "What no grading report can confirm on its own."
+              : "Practical next steps before the read can be completed."
           }
           chapterId="human-review"
         >
           <DiV3BodyParagraphs
             paragraphs={[
-              "A grading report tells us a lot. It does not tell us everything.",
+              "A grading report tells us a lot. These are the details worth confirming before you decide.",
             ]}
           />
-          <ul className="mt-4 grid list-none gap-3 p-0">
+          <ul className="mt-5 grid list-none gap-[14px] p-0">
             {limitations.map((item) => (
-              <li key={item} className="relative max-w-[68ch] pl-6 text-[#6f665b]">
+              <li key={item} className="relative max-w-[62ch] pl-5 text-[15px] leading-[1.72] text-[#6f665b]">
                 <span className="absolute left-0 text-[#b59662]">•</span>
                 {item}
               </li>
@@ -303,13 +303,14 @@ export default function DiV3ResultSections({
 
         <DiV3Chapter
           number="03"
-          title="Technical Appendix"
+          title="Report Details"
           note={
             incompleteCopy.kind === "proportion"
               ? "Grades are present — proportion confirmation is still pending."
-              : "Simplified read while grading detail is still pending."
+              : "Technical context while grading detail is still pending."
           }
           chapterId="technical-appendix"
+          demoted
         >
           <DiV3DataGrid items={incompleteTechnicalItems} />
           <p className="mt-5 max-w-[68ch] text-[14px] leading-[1.72] text-[#75675e]">
@@ -324,49 +325,69 @@ export default function DiV3ResultSections({
     <section className={DI_V3_SECTIONS} aria-label="Diamond Intelligence chapters">
       <DiV3Chapter
         number="01"
-        title="Report Summary"
-        note="The clean read before the technical depth."
-        chapterId="report-summary"
-      >
-        <DiV3BodyParagraphs paragraphs={reportSummaryParagraphs} />
-        <p className="mt-8 max-w-[68ch] border-t border-[rgba(58,48,38,0.14)] pt-6 text-[14px] leading-[1.72] text-[#75675e]">
-          {CONSUMER_COPY.assessmentScopeCopy}
-        </p>
-      </DiV3Chapter>
-
-      <DiV3Chapter
-        number="02"
         title="What You'll Likely Notice"
-        note="The visual impression translated into normal language."
+        note="The visual impression, in plain language."
         feature
         chapterId="what-youll-likely-notice"
       >
-        <p className="mb-5 max-w-none font-serif text-[clamp(32px,4vw,54px)] leading-none text-[#1e1a16]">
+        <p className="mb-7 max-w-none font-serif text-[clamp(34px,4.8vw,58px)] leading-[1.04] tracking-[-0.02em] text-[#1e1a16]">
           {notice.lead}
         </p>
         <DiV3BodyParagraphs paragraphs={notice.body} />
         {notice.quote ? (
-          <p className="mt-6 font-serif text-[25px] leading-tight text-[#1e1a16]">
+          <p className="mt-8 max-w-[52ch] border-l border-[rgba(181,150,98,0.45)] pl-5 text-[15px] leading-[1.78] text-[#514536] md:text-[16px] md:leading-[1.82]">
             {notice.quote}
           </p>
         ) : null}
       </DiV3Chapter>
 
       <DiV3Chapter
+        number="02"
+        title="Justin's Perspective"
+        note={isGcal8x ? "The human read after the 8X read." : "A personal note after the report read."}
+        feature
+        advisor
+        chapterId="justins-perspective"
+      >
+        <div className="grid max-w-[62ch] gap-5 text-[16px] leading-[1.82] text-[#5f5851] md:text-[17px] md:leading-[1.86]">
+          {justinParagraphs.map((p) => (
+            <p key={p.slice(0, 48)}>{p}</p>
+          ))}
+        </div>
+        <p className="mt-6 text-[13px] tracking-[0.04em] text-[#8a8177]">
+          Justin Smith, GG
+        </p>
+        <Link
+          href={conciergeHref}
+          className={`${DI_V3_TEXT_CTA} mt-5 text-[13px] text-[#8a8177]`}
+          onClick={() =>
+            trackConsultationCtaClicked(
+              "diamond_intelligence:justins_perspective",
+            )
+          }
+        >
+          {CONSUMER_COPY.justinReviewCta} →
+        </Link>
+      </DiV3Chapter>
+
+      <DiV3Chapter
         number="03"
-        title="Why This Diamond Earned This Read"
+        title="Why This Earned This Read"
         note={
           isGcal8x
             ? "The performance-class reasons behind the verdict."
             : "The proportion and performance reasons behind the verdict."
         }
-        chapterId="why-this-diamond-earned-this-read"
+        chapterId="why-this-earned-this-read"
       >
-        <DiV3StrengthColumns
-          strengths={earnedStrengths}
-          limitations={earnedLimitations}
-          limitationTitle={isGcal8x ? "Still Worth Confirming" : "Preventing A Higher Read"}
-        />
+        <DiV3BodyParagraphs paragraphs={reportSummaryParagraphs} />
+        <div className="mt-8 border-t border-[rgba(58,48,38,0.10)] pt-8">
+          <DiV3StrengthColumns
+            strengths={earnedStrengths}
+            limitations={earnedLimitations}
+            limitationTitle="Potential Areas to Keep in Mind"
+          />
+        </div>
       </DiV3Chapter>
 
       <DiV3Chapter
@@ -374,14 +395,14 @@ export default function DiV3ResultSections({
         title={
           clarityPolicy.isExcluded
             ? "Recommendation Status"
-            : "Optical Performance Spectrum"
+            : "Recommendation Spectrum"
         }
         note={
           clarityPolicy.isExcluded
             ? "Hourglass clarity minimum — not a performance comparison."
             : isGcal8x
               ? "The elite 8X ladder, separate from report-only diamonds."
-              : "Reported proportions and optical indicators only."
+              : "An editorial classification from reported proportions and optical indicators."
         }
         chapterId="where-it-sits-on-the-spectrum"
       >
@@ -391,7 +412,7 @@ export default function DiV3ResultSections({
           <DiV3Gcal8xSpectrum activeTier={gcal8xTier} />
         ) : (
           <>
-            <p className="mb-7 max-w-[68ch] text-[14.5px] leading-[1.62] text-[#6f665b]">
+            <p className="mb-6 max-w-[62ch] text-[14px] leading-[1.65] text-[#8a8177]">
               This spectrum reflects reported proportions and optical indicators
               only. It does not override color, clarity, fluorescence, value, or
               Hourglass standards.
@@ -408,62 +429,46 @@ export default function DiV3ResultSections({
         chapterId="human-review"
       >
         <DiV3BodyParagraphs paragraphs={humanReviewParagraphs} />
-        <ul className="mt-4 grid list-none gap-3 p-0">
+        <ul className="mt-5 grid list-none gap-[14px] p-0">
           {humanReviewItems.map((item) => (
-            <li key={item} className="relative max-w-[68ch] pl-6 text-[#6f665b]">
+            <li key={item} className="relative max-w-[62ch] pl-5 text-[15px] leading-[1.72] text-[#6f665b]">
               <span className="absolute left-0 text-[#b59662]">•</span>
               {item}
             </li>
           ))}
         </ul>
         {!isGcal8x ? (
-          <p className="mt-[18px] max-w-[68ch]">
+          <p className="mt-6 max-w-[62ch] text-[14px] leading-[1.68] text-[#8a8177]">
             These factors are best evaluated through advanced imagery or direct
-            inspection.
+            inspection — a normal part of choosing well.
           </p>
         ) : null}
       </DiV3Chapter>
 
-      <DiV3Chapter
-        number="06"
-        title="Justin's Perspective"
-        note={isGcal8x ? "The human read after the 8X read." : "The human read after the report read."}
-        feature
-        chapterId="justins-perspective"
-      >
-        <DiV3BodyParagraphs paragraphs={justinParagraphs} />
-        <Link
-          href={conciergeHref}
-          className={`${DI_V3_TEXT_CTA} mt-6`}
-          onClick={() =>
-            trackConsultationCtaClicked(
-              "diamond_intelligence:justins_perspective",
-            )
-          }
-        >
-          {CONSUMER_COPY.justinReviewCta} →
-        </Link>
-      </DiV3Chapter>
-
-      <DiAdvisoryCta />
+      <DiAdvisoryCta conciergeHref={conciergeHref} />
 
       <div className="grid gap-3 md:grid-cols-2 md:gap-4">
         <DiV3Chapter
-          number="07"
-          title="Technical Appendix"
-          note="For clients and gemologists who want the deeper read."
+          number="06"
+          title="Report Details"
+          note="Technical context for clients and gemologists."
           chapterId="technical-appendix"
+          demoted
         >
           <DiV3DataGrid items={technicalItems} />
+          <p className="mt-6 max-w-[62ch] text-[13px] leading-[1.68] text-[#8a8177]">
+            {CONSUMER_COPY.assessmentScopeCopy}
+          </p>
         </DiV3Chapter>
 
         <DiV3Chapter
-          number="08"
+          number="07"
           title="Report Measurements"
-          note="The extracted report data used in the assessment."
+          note="Extracted values from the uploaded report."
           chapterId="report-measurements"
+          demoted
         >
-          <p className="mb-5 max-w-[68ch] text-sm">
+          <p className="mb-5 max-w-[62ch] text-[13px] leading-[1.65] text-[#8a8177]">
             {CONSUMER_COPY.reportMeasurementsSubcopy}
           </p>
           <DiV3DataGrid items={measurementItems} />

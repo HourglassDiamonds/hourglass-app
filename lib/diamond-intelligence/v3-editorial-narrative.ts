@@ -3,7 +3,7 @@ import type { DiamondDecisionProfile } from "./diamond-decision-profile";
 import type { HourglassClarityDisplayPolicy } from "./hourglass-clarity-policy";
 import { SI2_INSPECTION_REQUIRED_MESSAGE } from "./hourglass-clarity-policy";
 import type { PrimaryLimitingFactorKey } from "./primary-limiting-factor";
-import type { VisualPersonality } from "./visual-personality";
+import type { VisualPersonality, VisualPersonalityArchetype } from "./visual-personality";
 import type { ReportGradeHints } from "./report-grade-hints";
 import {
   formatColorForSummary,
@@ -204,6 +204,56 @@ export type V3NoticePresentation = {
   quote: string | null;
 };
 
+const NOTICE_OBSERVATIONS: Record<VisualPersonalityArchetype, string> = {
+  "Balanced Performer":
+    "The overall impression should feel steady and comfortable — sparkle that reads clearly without leaning dramatic.",
+  "Fire Forward":
+    "Colorful flashes may arrive quickly as the diamond moves, before spread or size become the main story.",
+  "Spread Forward":
+    "Face-up size may register first — a slightly wider look on the hand before depth or fire take center stage.",
+  "Compact Architecture":
+    "The stone may read a touch smaller face-up than expected, with more of the weight showing in profile.",
+  "Bright & Structured":
+    "The overall impression should feel lively and crisp, with brightness arriving before broader flashes of fire.",
+  "Broad Flash Style":
+    "Brightness may spread openly across the table — compare beside tighter stones if you prefer more contrast.",
+  "Lively Character":
+    "Sparkle may feel distinctive rather than textbook — lively movement without a single dominant trait.",
+  "Architecture Unclear":
+    "The impression may feel organized and controlled even where full proportion detail is still limited.",
+};
+
+function normalizeNoticeText(value: string): string {
+  return value.replace(/[.“”"]/g, "").trim().toLowerCase();
+}
+
+function buildNoticeObservation(input: {
+  clarityPolicy: HourglassClarityDisplayPolicy;
+  isGcal8x: boolean;
+  visualPersonality: VisualPersonality | null;
+  lead: string;
+}): string | null {
+  if (input.clarityPolicy.isExcluded) {
+    return "In person, inclusion size and position can determine whether the stone reads crisp or muted under everyday viewing.";
+  }
+
+  if (input.isGcal8x) {
+    return "The overall impression should feel controlled and precise — brightness and contrast arriving evenly rather than in scattered flashes.";
+  }
+
+  if (input.visualPersonality) {
+    const observation = NOTICE_OBSERVATIONS[input.visualPersonality.archetype];
+    if (
+      observation &&
+      normalizeNoticeText(observation) !== normalizeNoticeText(input.lead)
+    ) {
+      return observation;
+    }
+  }
+
+  return null;
+}
+
 export function buildV3NoticePresentation(input: {
   clarityPolicy: HourglassClarityDisplayPolicy;
   isGcal8x: boolean;
@@ -220,24 +270,36 @@ export function buildV3NoticePresentation(input: {
   } = input;
 
   if (clarityPolicy.isExcluded) {
+    const lead = "Visible clarity character.";
     return {
-      lead: "Visible clarity character.",
+      lead,
       body: [
         "You may notice inclusions when looking closely — their size, position, and transparency can affect how crisp or muted the diamond appears in person.",
         "Face-up sparkle may still be present, but clarity grade often drives whether the stone reads clean or busy under everyday viewing.",
       ],
-      quote: "“clarity-forward, with inclusions that may read in direct view.”",
+      quote: buildNoticeObservation({
+        clarityPolicy,
+        isGcal8x,
+        visualPersonality,
+        lead,
+      }),
     };
   }
 
   if (isGcal8x) {
+    const lead = "Optically refined.";
     return {
-      lead: "Optically refined.",
+      lead,
       body: [
         "This diamond should present with a controlled balance of brightness, contrast, and fire rather than relying on a single standout trait.",
         "The 8X support suggests a more complete performance picture than proportion data alone can provide.",
       ],
-      quote: "“bright, precise, and confidently balanced.”",
+      quote: buildNoticeObservation({
+        clarityPolicy,
+        isGcal8x,
+        visualPersonality,
+        lead,
+      }),
     };
   }
 
@@ -253,7 +315,12 @@ export function buildV3NoticePresentation(input: {
     return {
       lead,
       body: pickIncompleteArchitectureBody(),
-      quote: `“${lead.replace(/\.$/, "").toLowerCase()}.”`,
+      quote: buildNoticeObservation({
+        clarityPolicy,
+        isGcal8x,
+        visualPersonality,
+        lead,
+      }),
     };
   }
 
@@ -271,7 +338,12 @@ export function buildV3NoticePresentation(input: {
   return {
     lead,
     body,
-    quote: `“${lead.replace(/\.$/, "").toLowerCase()}.”`,
+    quote: buildNoticeObservation({
+      clarityPolicy,
+      isGcal8x,
+      visualPersonality,
+      lead,
+    }),
   };
 }
 

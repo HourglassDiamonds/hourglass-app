@@ -10,11 +10,11 @@ function CleanList({
   items: string[];
   variant: "checks" | "dots";
 }) {
-  const mark = variant === "checks" ? "✓" : "•";
+  const mark = variant === "checks" ? "—" : "•";
   return (
-    <ul className="grid list-none gap-3 p-0">
+    <ul className="grid list-none gap-[14px] p-0">
       {items.map((item) => (
-        <li key={item} className="relative pl-6 text-[#6f665b]">
+        <li key={item} className="relative max-w-[62ch] pl-5 text-[15px] leading-[1.72] text-[#6f665b]">
           <span className="absolute left-0 text-[#b59662]">{mark}</span>
           {item}
         </li>
@@ -50,32 +50,7 @@ export function DiV3StandardSpectrum({
 
   return (
     <>
-      <div className="mb-7 grid max-w-[560px] gap-4">
-        {ladder.map((tier) => {
-          const active = tier === activeTier;
-          const label = displayV3PublicTierLabel(tier);
-          return (
-            <div
-              key={tier}
-              className={`grid grid-cols-[98px_1fr_28px] items-center gap-3.5 text-sm md:grid-cols-[120px_1fr_34px] ${
-                active
-                  ? "font-serif text-[25px] text-[#1e1a16]"
-                  : "text-[#6f665b]"
-              }`}
-            >
-              <span>{label}</span>
-              <span className="h-px bg-[linear-gradient(90deg,rgba(181,150,98,.55),rgba(58,48,38,.08))]" />
-              <span className="flex justify-end">
-                {active ? (
-                  <span className="h-[13px] w-[13px] rounded-full bg-[#b59662] shadow-[0_0_0_8px_rgba(181,150,98,0.12)]" />
-                ) : null}
-              </span>
-            </div>
-          );
-        })}
-      </div>
-
-      <div className="mb-6 grid gap-0">
+      <div className="grid gap-0">
         {ladder.map((tier) => {
           const meta = V3_TIER_DESCRIPTIONS[tier];
           const active = tier === activeTier;
@@ -83,34 +58,44 @@ export function DiV3StandardSpectrum({
           return (
             <div
               key={tier}
-              className={`grid gap-2.5 border-b border-[rgba(58,48,38,0.18)] py-[18px] md:grid-cols-[132px_1fr] md:gap-[22px] ${
+              className={`border-b border-[rgba(58,48,38,0.12)] py-5 md:py-6 ${
                 active
-                  ? "-mx-5 border border-[rgba(181,150,98,0.35)] bg-[rgba(181,150,98,0.08)] px-5 py-5 md:-mx-5"
-                  : ""
+                  ? "border-l-[3px] border-l-[rgba(181,150,98,0.72)] pl-5 md:pl-6"
+                  : "pl-5 opacity-[0.68] md:pl-6"
               }`}
             >
-              <div>
-                <div className="font-serif text-[26px] leading-none text-[#1e1a16]">
+              <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                <div
+                  className={`font-serif leading-none text-[#1e1a16] ${
+                    active
+                      ? "text-[clamp(28px,4vw,36px)]"
+                      : "text-[22px]"
+                  }`}
+                >
                   {label}
                 </div>
-                <div className="mt-2 text-[11px] uppercase tracking-[0.13em] text-[#b59662]">
+                <div className="text-[10px] uppercase tracking-[0.14em] text-[#b59662]">
                   {meta.range}
                 </div>
               </div>
-              <p className="text-[14.5px] leading-[1.62] text-[#6f665b]">
-                {meta.description}
-              </p>
+              {active ? (
+                <p className="mt-3 max-w-[62ch] text-[15px] leading-[1.72] text-[#6f665b]">
+                  {meta.description}
+                </p>
+              ) : (
+                <p className="mt-2 max-w-[62ch] text-[13px] leading-[1.6] text-[#8a8177]">
+                  {meta.description}
+                </p>
+              )}
             </div>
           );
         })}
       </div>
 
-      <p className="max-w-[68ch]">
-        This assessment places the diamond inside the {displayV3PublicTierLabel(activeTier)} range. From a
-        client perspective, that means this is worth serious consideration when
-        the price and visual inspection support the paper. From a gemological
-        perspective, it means the report supports a favorable read, but does not
-        replace optical confirmation.
+      <p className="mt-7 max-w-[62ch] text-[14px] leading-[1.68] text-[#8a8177]">
+        This assessment places the diamond in the{" "}
+        {displayV3PublicTierLabel(activeTier)} range — a report-based
+        classification, not a substitute for in-person confirmation.
       </p>
     </>
   );
@@ -136,26 +121,34 @@ export function DiV3Gcal8xSpectrum({
 
   return (
     <>
-      <div className="mb-7 rounded-none border border-[rgba(181,150,98,0.32)] bg-[radial-gradient(circle_at_top_left,rgba(181,150,98,0.14),transparent_24rem),rgba(255,255,255,0.18)] p-6">
+      <div className="mb-6 rounded-none border border-[rgba(181,150,98,0.22)] bg-[rgba(255,255,255,0.14)] p-5 md:p-6">
         <p className="mb-5 text-[11px] uppercase tracking-[0.15em] text-[#9b8b78]">
           GCAL 8X Performance Class
         </p>
-        <div className="grid gap-3.5 md:grid-cols-2">
+        <div className="grid gap-4 md:grid-cols-2">
           {tiers.map((tier) => {
             const active = tier.name === activeTier;
             return (
               <div
                 key={tier.name}
-                className={`min-h-[138px] rounded-[18px] border p-[22px] ${
+                className={`min-h-[132px] rounded-[16px] border p-5 md:p-[22px] ${
                   active
-                    ? "border-[rgba(181,150,98,0.58)] bg-[radial-gradient(circle_at_top_right,rgba(181,150,98,0.16),transparent_14rem),rgba(181,150,98,0.10)] shadow-[inset_0_0_0_1px_rgba(181,150,98,0.10)]"
-                    : "border-[rgba(58,48,38,0.18)] bg-[rgba(255,255,255,0.22)]"
+                    ? "border-[rgba(181,150,98,0.58)] bg-[radial-gradient(circle_at_top_right,rgba(181,150,98,0.14),transparent_14rem),rgba(181,150,98,0.08)]"
+                    : "border-[rgba(58,48,38,0.12)] bg-[rgba(255,255,255,0.18)] opacity-[0.68]"
                 }`}
               >
-                <div className="font-serif text-[36px] leading-none text-[#1e1a16]">
+                <div
+                  className={`font-serif leading-none text-[#1e1a16] ${
+                    active ? "text-[36px]" : "text-[28px]"
+                  }`}
+                >
                   {tier.name}
                 </div>
-                <p className="mt-3 text-sm leading-[1.58] text-[#6f665b]">
+                <p
+                  className={`mt-3 leading-[1.58] text-[#6f665b] ${
+                    active ? "text-[15px]" : "text-[13px]"
+                  }`}
+                >
                   {tier.copy}
                 </p>
               </div>
@@ -164,20 +157,14 @@ export function DiV3Gcal8xSpectrum({
         </div>
       </div>
 
-      <div className="grid max-w-[68ch] gap-[18px]">
+      <div className="grid max-w-[62ch] gap-4 text-[14px] leading-[1.68] text-[#8a8177]">
         <p>
-          GCAL 8X diamonds are not being measured against the same starting pool
-          as standard report-only diamonds.
+          GCAL 8X diamonds are measured against an already elite pool — not
+          ordinary report-only stones.
         </p>
         <p>
           Rare does not mean no review is needed. It means the diamond begins
-          from an elite performance-verified category and reads strongly within
-          that category.
-        </p>
-        <p>
-          The Diamond Intelligence read here determines whether the individual
-          diamond is best presented as Rare or Exceptional within that elite
-          class.
+          from a verified performance class and reads strongly within it.
         </p>
       </div>
     </>
@@ -194,19 +181,21 @@ export function DiV3StrengthColumns({
   limitationTitle: string;
 }) {
   return (
-    <div className="grid gap-8 md:grid-cols-2 md:gap-[34px]">
+    <div className="grid gap-10 md:grid-cols-2 md:gap-8">
       <div>
-        <h3 className="mb-3.5 text-[11px] uppercase tracking-[0.14em] text-[#9b8b78]">
-          Strengths
+        <h3 className="mb-4 text-[11px] uppercase tracking-[0.14em] text-[#9b8b78]">
+          What Supports This Read
         </h3>
         <CleanList items={strengths} variant="checks" />
       </div>
-      <div>
-        <h3 className="mb-3.5 text-[11px] uppercase tracking-[0.14em] text-[#9b8b78]">
-          {limitationTitle}
-        </h3>
-        <CleanList items={limitations} variant="dots" />
-      </div>
+      {limitations.length > 0 ? (
+        <div>
+          <h3 className="mb-4 text-[11px] uppercase tracking-[0.14em] text-[#b0a698]">
+            {limitationTitle}
+          </h3>
+          <CleanList items={limitations} variant="dots" />
+        </div>
+      ) : null}
     </div>
   );
 }
