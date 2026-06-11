@@ -103,7 +103,7 @@ describe("Hourglass clarity standards — consumer outputs", () => {
 
     assert.equal(profile.overallRecommendation.band, "Not Recommended");
     assert.equal(profile.purchasePersonality.label, "Outside Hourglass Standards");
-    assert.equal(buildV3PercentilePresentation(90, "I1"), null);
+    assert.equal(buildV3PercentilePresentation(90, { clarity: "I1" }), null);
     assert.equal(
       resolveV3HeroVerdictLabel({
         clarity: "I1",
@@ -131,7 +131,7 @@ describe("Hourglass clarity standards — consumer outputs", () => {
 
     assert.equal(profile.overallRecommendation.band, "Not Recommended");
     assert.equal(profile.purchasePersonality.label, "Outside Hourglass Standards");
-    assert.equal(buildV3PercentilePresentation(71, "I2"), null);
+    assert.equal(buildV3PercentilePresentation(71, { clarity: "I2" }), null);
     assert.equal(resolveV3PublicTier({
       editorialTier: "Distinctive",
       displayScore: 71,
@@ -149,7 +149,7 @@ describe("Hourglass clarity standards — consumer outputs", () => {
   it("3. I3 any optics → Not Recommended, suppressed percentile", () => {
     const profile = profileFor({ clarity: "I3" });
     assert.equal(profile.overallRecommendation.band, "Not Recommended");
-    assert.equal(buildV3PercentilePresentation(55, "I3"), null);
+    assert.equal(buildV3PercentilePresentation(55, { clarity: "I3" }), null);
     assert.equal(resolveHourglassClarityPolicy("I3").harshPercentileTopPercent, 5);
   });
 
@@ -162,7 +162,10 @@ describe("Hourglass clarity standards — consumer outputs", () => {
         profile.overallRecommendation.band,
       ),
     );
-    assert.equal(buildV3PercentilePresentation(92, "SI2")?.topLine, "Top 8%");
+    assert.equal(
+      buildV3PercentilePresentation(92, { clarity: "SI2" })?.topLine,
+      "Top 8%",
+    );
     assert.equal(
       resolveV3PublicTier({
         editorialTier: "Distinctive",
@@ -194,7 +197,13 @@ describe("Hourglass clarity standards — consumer outputs", () => {
       "Outside Hourglass Standards",
     );
     assert.ok(profile.opticalPerformance.score != null && profile.opticalPerformance.score >= 70);
-    assert.ok(buildV3PercentilePresentation(profile.opticalPerformance.score, "VS1"));
+    assert.ok(
+      buildV3PercentilePresentation(profile.opticalPerformance.score, {
+        clarity: "VS1",
+        color: "G",
+        purchaseLabel: "Strong Candidate",
+      }),
+    );
   });
 
   it("IGI 674522816 regression — I2 Good cut deep stone", () => {
@@ -222,7 +231,7 @@ describe("Hourglass clarity standards — consumer outputs", () => {
 
     assert.equal(profile.overallRecommendation.band, "Not Recommended");
     assert.equal(profile.purchasePersonality.label, "Outside Hourglass Standards");
-    assert.equal(buildV3PercentilePresentation(71, "I2"), null);
+    assert.equal(buildV3PercentilePresentation(71, { clarity: "I2" }), null);
     assert.equal(
       resolveV3HeroVerdictLabel({
         clarity: "I2",

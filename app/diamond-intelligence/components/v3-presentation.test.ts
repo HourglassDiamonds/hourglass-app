@@ -240,7 +240,30 @@ describe("isGcal8xReport", () => {
 
 describe("clarity standards in V3 presentation", () => {
   it("suppresses percentile for I2 regardless of optical score", () => {
-    assert.equal(buildV3PercentilePresentation(71, "I2"), null);
+    assert.equal(buildV3PercentilePresentation(71, { clarity: "I2" }), null);
+  });
+
+  it("scopes percentile optically for SI2 warm color", () => {
+    const p = buildV3PercentilePresentation(96, {
+      clarity: "SI2",
+      color: "O to P Range",
+      purchaseLabel: "Justin Inspection Required",
+    });
+    assert.ok(p);
+    assert.equal(p?.scope, "optical");
+    assert.match(p?.topSubline ?? "", /optical proportions/i);
+    assert.equal(p?.betterThanPercent, undefined);
+  });
+
+  it("allows broad percentile for clean strong candidate", () => {
+    const p = buildV3PercentilePresentation(96, {
+      clarity: "VVS1",
+      color: "F",
+      purchaseLabel: "Strong Candidate",
+    });
+    assert.ok(p);
+    assert.equal(p?.scope, "broad");
+    assert.equal(p?.betterThanPercent, 96);
   });
 
   it("caps SI2 below Distinctive even with elite score", () => {

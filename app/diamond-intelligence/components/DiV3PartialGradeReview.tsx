@@ -7,9 +7,11 @@ import {
   DI_V3_PARTIAL_CARD,
   DI_V3_PRODUCT,
 } from "./di-v3-styles";
+import { V3_INCOMPLETE_ASSESSMENT } from "./consumer-display-labels";
 import {
   hasUsableDisplayColor,
   isListedPartialColor,
+  listMissingGradeFields,
   PARTIAL_CLARITY_GRADES,
   PARTIAL_COLOR_RANGE_GRADES,
   PARTIAL_COLOR_SINGLE_GRADES,
@@ -34,6 +36,8 @@ export default function DiV3PartialGradeReview({
     hasUsableDisplayColor(extractedColor) &&
     !isListedPartialColor(extractedColor);
 
+  const missingFields = listMissingGradeFields(gradeHints);
+
   function handleSubmit() {
     if (!color.trim() || !clarity.trim()) return;
     onComplete({ ...gradeHints, color: color.trim(), clarity: clarity.trim() });
@@ -49,31 +53,38 @@ export default function DiV3PartialGradeReview({
       </div>
 
       <p className="text-[11px] uppercase tracking-[0.18em] text-[#9b8b78]">
-        Concierge Review
+        {V3_INCOMPLETE_ASSESSMENT.eyebrow}
       </p>
 
       <h1 className="mt-4 font-serif text-[clamp(34px,5.5vw,52px)] font-normal uppercase leading-[0.98] tracking-[0.035em] text-[#1e1a16]">
-        Missing Information Needed
+        {V3_INCOMPLETE_ASSESSMENT.headline}
       </h1>
 
       <p className="mx-auto mt-6 max-w-[520px] text-[17px] leading-[1.72] text-[#6f665b]">
-        We were able to read most of the report, but a few grading details could
-        not be verified automatically.
+        {V3_INCOMPLETE_ASSESSMENT.subhead}
       </p>
 
       <div className="mx-auto mt-10 max-w-[520px] text-left">
-        <p className="mb-4 text-[11px] uppercase tracking-[0.14em] text-[#9b8b78]">
-          To complete your assessment
+        <h2 className="font-serif text-[clamp(22px,3.2vw,28px)] font-normal text-[#1e1a16]">
+          {V3_INCOMPLETE_ASSESSMENT.sectionHeadline}
+        </h2>
+        <p className="mt-4 text-[15px] leading-[1.65] text-[#6f665b]">
+          {V3_INCOMPLETE_ASSESSMENT.sectionBody}
+        </p>
+
+        <p className="mb-4 mt-8 text-[11px] uppercase tracking-[0.14em] text-[#9b8b78]">
+          {V3_INCOMPLETE_ASSESSMENT.nextStep}
         </p>
         <ul className="mb-8 grid list-none gap-2.5 p-0 text-[15px] text-[#514536]">
-          <li className="relative pl-5">
-            <span className="absolute left-0 text-[#b59662]">•</span>
-            Color Grade
-          </li>
-          <li className="relative pl-5">
-            <span className="absolute left-0 text-[#b59662]">•</span>
-            Clarity Grade
-          </li>
+          {(missingFields.length > 0
+            ? missingFields
+            : ["Color Grade", "Clarity Grade"]
+          ).map((field) => (
+            <li key={field} className="relative pl-5">
+              <span className="absolute left-0 text-[#b59662]">•</span>
+              {field}
+            </li>
+          ))}
         </ul>
 
         <div className="grid gap-5 sm:grid-cols-2">
@@ -131,6 +142,47 @@ export default function DiV3PartialGradeReview({
             </label>
           </div>
         </div>
+      </div>
+
+      <div className="mx-auto mt-10 max-w-[520px] rounded-[18px] border border-[rgba(58,48,38,0.14)] bg-[rgba(255,255,255,0.28)] p-5 text-left">
+        <p className="text-[11px] uppercase tracking-[0.14em] text-[#9b8b78]">
+          Technical Appendix
+        </p>
+        <dl className="mt-4 grid gap-3 text-[14px]">
+          <div>
+            <dt className="text-[#9b8b78]">Recommendation Status</dt>
+            <dd className="mt-0.5 text-[#1e1a16]">
+              {V3_INCOMPLETE_ASSESSMENT.recommendationStatus}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-[#9b8b78]">Missing Data</dt>
+            <dd className="mt-0.5 text-[#1e1a16]">
+              {(missingFields.length > 0
+                ? missingFields
+                : ["Color Grade", "Clarity Grade"]
+              ).join(", ")}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-[#9b8b78]">Optical Read</dt>
+            <dd className="mt-0.5 text-[#1e1a16]">
+              {V3_INCOMPLETE_ASSESSMENT.opticalRead}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-[#9b8b78]">Confidence Level</dt>
+            <dd className="mt-0.5 text-[#1e1a16]">
+              {V3_INCOMPLETE_ASSESSMENT.confidenceLevel}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-[#9b8b78]">Next Step</dt>
+            <dd className="mt-0.5 text-[#1e1a16]">
+              {V3_INCOMPLETE_ASSESSMENT.nextStep}
+            </dd>
+          </div>
+        </dl>
       </div>
 
       <button

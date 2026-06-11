@@ -42,12 +42,15 @@ export const CONSUMER_COPY = {
   emptyStateIntro:
     "An easy-to-understand, lab-neutral read of how a diamond is likely to perform in person.",
   emptyStateSupportingCopy:
-    "Upload a GIA, IGI, or GCAL report and our proprietary assessment engine translates the technical data into a clear, easy-to-understand performance read — explained in plain English, not gemology jargon.",
+    "Upload a PDF report from GIA, IGI, or GCAL 8X. Diamond Intelligence evaluates the diamond itself, not the asking price.",
+  uploadHelperLines: [
+    "Round brilliant reports only.",
+    "Upload a PDF report from GIA, IGI, or GCAL 8X.",
+    "Diamond Intelligence evaluates the diamond itself, not the asking price.",
+  ] as const,
   processingStateHeadline: "Building your interpretation…",
   processingStateSupportingCopy:
     "We are reading proportion details from your report. This usually takes a few moments.",
-  interpretationUnavailableCopy:
-    "We could not assemble a full interpretation from this upload. Try the report again, or upload a clearer PDF or image.",
   assessmentScopeCopy:
     "Assessment scope: This interpretation evaluates the diamond itself — including proportions, cut quality, visual performance, clarity considerations, and overall desirability. It does not evaluate price. A diamond may be beautifully cut and still be overpriced, or poorly suited despite an attractive price.",
   estimatedReadLabel: "Estimated read from reported proportions",
@@ -113,6 +116,26 @@ export function axisPerformanceSummary(axis: ProfileAxis): string | null {
   }
   return `${axis.label}: ${axisLevel(axis.value)}`;
 }
+
+export const V3_INCOMPLETE_ASSESSMENT = {
+  eyebrow: "Concierge Review",
+  headline: "Assessment Requires Additional Information",
+  subhead:
+    "We were able to verify portions of the report, but a complete recommendation requires a few missing grading details.",
+  sectionHeadline: "A Complete Recommendation Isn't Possible Yet",
+  sectionBody:
+    "Missing grading details may materially affect the final recommendation. Once color and clarity are confirmed, the assessment can move from a partial read to a complete purchase recommendation.",
+  recommendationStatus: "Additional Information Required",
+  opticalRead: "Preliminary",
+  confidenceLevel: "Incomplete Report",
+  nextStep: "Verify Missing Grades",
+} as const;
+
+export const V3_UNABLE_TO_VERIFY = {
+  eyebrow: "Concierge Review",
+  headline: "Unable to Verify Report",
+  body: "We couldn't confidently read enough information from this document to generate a reliable assessment.",
+} as const;
 
 export const GRAPH_REPORT_CONFIDENCE_LABELS = {
   full: "STRONG REPORT READ",

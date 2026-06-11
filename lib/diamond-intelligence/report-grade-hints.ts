@@ -2,6 +2,7 @@
  * Interpretation-layer grade hints from report text — not part of core field extraction.
  */
 
+
 export type ReportGradeHints = {
   color?: string;
   clarity?: string;
@@ -782,5 +783,13 @@ export function clarityRecommendationCeiling(
   if (c === "I3") return "Not Recommended";
   if (c === "I2") return "Not Recommended";
   if (c === "I1") return "Not Recommended";
+  if (c === "SI2") return "Worth Reviewing";
+  return null;
+}
+
+/** Color is preference context — no automatic internal recommendation ceiling. */
+export function colorRecommendationCeiling(
+  _color?: string,
+): RecommendationCeiling | null {
   return null;
 }

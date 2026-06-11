@@ -8,10 +8,15 @@ import {
   looksLikeGcal8xDisplayText,
 } from "@/lib/diamond-intelligence/gcal-8x-display";
 import {
+  isPurchaseRecommendationEligibleForBroadPercentile,
+  type PurchaseRecommendationLabel,
+  buildPurchaseConstrainedOpticalDetail,
+} from "@/lib/diamond-intelligence/purchase-recommendation-presentation";
+import { V3_INCOMPLETE_ASSESSMENT } from "./consumer-display-labels";
+import {
   resolveHourglassClarityPolicy,
   SI2_PRESENTATION_TIER_CEILING,
 } from "@/lib/diamond-intelligence/hourglass-clarity-policy";
-
 export type V3PublicTier =
   | "Rare"
   | "Exceptional"
@@ -22,10 +27,21 @@ export type V3PublicTier =
 
 export type V3Gcal8xTier = "Rare" | "Exceptional";
 
+export type V3PercentileScope = "broad" | "optical";
+
 export type V3PercentilePresentation = {
   topLine: string;
   topSubline: string;
-  betterThanPercent: number;
+  betterThanPercent?: number;
+  scope: V3PercentileScope;
+};
+
+export type V3HeroPresentation = {
+  purchaseHeadline: string;
+  purchaseSubline: string | null;
+  opticalPerformanceLine: string | null;
+  opticalDetailLine: string | null;
+  percentile: V3PercentilePresentation | null;
 };
 
 const STANDARD_TIER_LADDER: V3PublicTier[] = [
@@ -101,7 +117,7 @@ export function isGcal8xPresentation(reportFormat?: ClientReportFormat): boolean
 }
 
 /** Map editorial / score read to V3 public tier — display only. */
-function scoreToV3PublicTier(
+export function scoreToV3PublicTier(
   displayScore: number | null,
   editorialTier: EditorialLightPerformanceTier,
   canShowScore: boolean,
@@ -188,8 +204,13 @@ export function resolveGcal8xVisualTier(
 
 export function buildV3PercentilePresentation(
   displayScore: number | null,
-  clarity?: string,
+  input?: {
+    clarity?: string;
+    color?: string;
+    purchaseLabel?: PurchaseRecommendationLabel;
+  },
 ): V3PercentilePresentation | null {
+  const clarity = input?.clarity;
   const policy = resolveHourglassClarityPolicy(clarity);
   if (policy.suppressFavorablePercentile) return null;
 
@@ -198,10 +219,126 @@ export function buildV3PercentilePresentation(
   const topPercent = Math.min(99, Math.max(1, Math.round(100 - displayScore)));
   const betterThan = Math.min(99, Math.max(1, Math.round(displayScore)));
 
+  const broadEligible =
+    input?.purchaseLabel &&
+    isPurchaseRecommendationEligibleForBroadPercentile({
+      purchaseLabel: input.purchaseLabel,
+      clarityPolicy: policy,
+      color: input?.color,
+    });
+
+  if (broadEligible) {
+    return {
+      topLine: `Top ${topPercent}%`,
+      topSubline: "of diamonds we typically evaluate",
+      betterThanPercent: betterThan,
+      scope: "broad",
+    };
+  }
+
   return {
     topLine: `Top ${topPercent}%`,
-    topSubline: "of diamonds we typically evaluate",
-    betterThanPercent: betterThan,
+    topSubline: "for reported optical proportions",
+    scope: "optical",
+  };
+}
+
+function displayTierLabel(tier: V3PublicTier): string {
+  return tier === "Open" ? "Needs Review" : tier;
+}
+
+export function resolveUncappedOpticalTier(input: {
+  editorialTier: EditorialLightPerformanceTier;
+  displayScore: number | null;
+  canShowScore: boolean;
+}): V3PublicTier {
+  return scoreToV3PublicTier(
+    input.displayScore,
+    input.editorialTier,
+    input.canShowScore,
+  );
+}
+
+export function buildV3HeroPresentation(input: {
+  purchaseRecommendation: PurchaseRecommendationLabel;
+  publicTier: V3PublicTier;
+  uncappedOpticalTier: V3PublicTier;
+  displayScore: number | null;
+  clarityPolicy: ReturnType<typeof resolveHourglassClarityPolicy>;
+  color?: string;
+  clarity?: string;
+  canShowScore: boolean;
+  lowInterpretationConfidence: boolean;
+  opticalUnavailable: boolean;
+  isGcal8x: boolean;
+  gcal8xTier: V3Gcal8xTier | null;
+}): V3HeroPresentation {
+  if (input.clarityPolicy.isExcluded) {
+    return {
+      purchaseHeadline: "Outside Hourglass Standards",
+      purchaseSubline: "Not Recommended",
+      opticalPerformanceLine: null,
+      opticalDetailLine: null,
+      percentile: null,
+    };
+  }
+
+  const gradeConstrainedPurchase =
+    input.clarityPolicy.isExcluded ||
+    input.clarityPolicy.isSi2 ||
+    input.purchaseRecommendation === "Justin Inspection Required" ||
+    input.purchaseRecommendation === "Outside Hourglass Standards" ||
+    input.purchaseRecommendation === "Not Recommended";
+
+  if (input.lowInterpretationConfidence && !gradeConstrainedPurchase) {
+    return {
+      purchaseHeadline: V3_INCOMPLETE_ASSESSMENT.headline,
+      purchaseSubline: V3_INCOMPLETE_ASSESSMENT.subhead,
+      opticalPerformanceLine: null,
+      opticalDetailLine: null,
+      percentile: null,
+    };
+  }
+
+  if (input.isGcal8x && input.gcal8xTier) {
+    return {
+      purchaseHeadline: input.gcal8xTier,
+      purchaseSubline: null,
+      opticalPerformanceLine: null,
+      opticalDetailLine: null,
+      percentile: null,
+    };
+  }
+
+  const opticalTierLabel = displayTierLabel(input.uncappedOpticalTier);
+  const opticalPerformanceLine = input.canShowScore
+    ? `Optical Performance: ${opticalTierLabel}`
+    : null;
+
+  const opticalDetailLine = buildPurchaseConstrainedOpticalDetail({
+    purchaseLabel: input.purchaseRecommendation,
+    clarityPolicy: input.clarityPolicy,
+    color: input.color,
+    clarity: input.clarity,
+    displayScore: input.displayScore,
+    uncappedOpticalTierLabel: opticalTierLabel,
+  });
+
+  const percentile = input.canShowScore
+    ? buildV3PercentilePresentation(input.displayScore, {
+        clarity: input.clarity,
+        color: input.color,
+        purchaseLabel: input.purchaseRecommendation,
+      })
+    : null;
+
+  return {
+    purchaseHeadline: input.purchaseRecommendation,
+    purchaseSubline: null,
+    opticalPerformanceLine,
+    opticalDetailLine,
+    percentile:
+      percentile?.scope === "broad" ? percentile : null,
   };
 }
 
@@ -219,7 +356,7 @@ export function resolveV3HeroVerdictLabel(input: {
   if (input.lowInterpretationConfidence) {
     return input.opticalUnavailable
       ? "Limited Information Available"
-      : "Preliminary Assessment";
+      : V3_INCOMPLETE_ASSESSMENT.headline;
   }
 
   if (input.isGcal8x && input.gcal8xTier) return input.gcal8xTier;
@@ -500,4 +637,19 @@ export function resolveV3RenderPhase(input: {
  */
 export function needsPartialGradeReview(input: PartialGradeReviewInput): boolean {
   return tracePartialGradeReviewGate(input).needsPartial;
+}
+
+/** Missing grade labels for incomplete-assessment technical appendix. */
+export function listMissingGradeFields(gradeHints?: {
+  color?: string;
+  clarity?: string;
+} | null): string[] {
+  const missing: string[] = [];
+  if (!hasUsableDisplayColor(gradeHints?.color)) {
+    missing.push("Color Grade");
+  }
+  if (!hasUsableDisplayClarity(gradeHints?.clarity)) {
+    missing.push("Clarity Grade");
+  }
+  return missing;
 }

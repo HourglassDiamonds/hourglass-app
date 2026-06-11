@@ -11,6 +11,7 @@ import {
   buildClientDiamondDecisionProfile,
   presentClientInterpretationScore,
   spreadProfileValue,
+  type OverallRecommendationBand,
   type ReportGradeHints,
   type ClientInterpretationSnapshot,
   type ClientSafeMetadata,
@@ -25,17 +26,21 @@ import { ReportUploadDock, type ClientUploadPhase } from "./ReportUploadDock";
 import DiV3Hero from "./DiV3Hero";
 import DiV3PartialGradeReview from "./DiV3PartialGradeReview";
 import DiV3ResultSections from "./DiV3ResultSections";
+import DiV3UnableToVerify from "./DiV3UnableToVerify";
 import { CONSUMER_COPY } from "./consumer-display-labels";
 import { DI_EDITORIAL_CARD, DI_EYEBROW_STUDIO, DI_SERIF_HEADLINE } from "./di-studio-styles";
 import { DI_V3_SHELL } from "./di-v3-styles";
 import { resolveHourglassClarityPolicy } from "@/lib/diamond-intelligence/hourglass-clarity-policy";
 import {
-  buildV3PercentilePresentation,
+  resolvePurchaseRecommendationLabel,
+} from "@/lib/diamond-intelligence/purchase-recommendation-presentation";
+import {
+  buildV3HeroPresentation,
   buildV3TraitLine,
   isGcal8xReport,
   needsPartialGradeReview,
   resolveGcal8xVisualTier,
-  resolveV3HeroVerdictLabel,
+  resolveUncappedOpticalTier,
   resolveV3PublicTier,
   resolveV3RenderPhase,
 } from "./v3-presentation";
@@ -280,8 +285,38 @@ export default function LightPerformanceDashboard({
   const lowInterpretationConfidence =
     decisionProfile?.confidence.band === "Low";
 
-  const heroVerdictLabel = resolveV3HeroVerdictLabel({
-    clarity: gradeHints?.clarity ?? decisionProfile?.gradeHints.clarity,
+  const clarityForPresentation =
+    gradeHints?.clarity ?? decisionProfile?.gradeHints.clarity;
+  const colorForPresentation =
+    gradeHints?.color ?? decisionProfile?.gradeHints.color;
+
+  const uncappedOpticalTier = resolveUncappedOpticalTier({
+    editorialTier: editorialPresentation.tier,
+    displayScore: interpretationContext.displayScore,
+    canShowScore: interpretationContext.canShowScore,
+  });
+
+  const purchaseRecommendation = decisionProfile
+    ? resolvePurchaseRecommendationLabel({
+        internalBand: decisionProfile.overallRecommendation
+          .band as OverallRecommendationBand,
+        clarityPolicy,
+        color: colorForPresentation,
+        clarity: clarityForPresentation,
+        uncappedOpticalTierLabel:
+          uncappedOpticalTier === "Open" ? "Needs Review" : uncappedOpticalTier,
+      })
+    : "Worth Reviewing After Additional Information";
+
+  const heroPresentation = buildV3HeroPresentation({
+    purchaseRecommendation,
+    publicTier,
+    uncappedOpticalTier,
+    displayScore: interpretationContext.displayScore,
+    clarityPolicy,
+    color: colorForPresentation,
+    clarity: clarityForPresentation,
+    canShowScore: interpretationContext.canShowScore,
     lowInterpretationConfidence: Boolean(
       lowInterpretationConfidence && decisionProfile,
     ),
@@ -289,7 +324,6 @@ export default function LightPerformanceDashboard({
       decisionProfile?.opticalPerformance.band === "Unavailable",
     isGcal8x: effectiveGcal8xPremium,
     gcal8xTier,
-    publicTier,
   });
 
   const traitLine = buildV3TraitLine(
@@ -297,17 +331,6 @@ export default function LightPerformanceDashboard({
     effectiveGcal8xPremium,
     gradeHints?.clarity ?? decisionProfile?.gradeHints.clarity,
   );
-
-  const percentile =
-    !effectiveGcal8xPremium &&
-    !partialGradeReview &&
-    !clarityPolicy.suppressFavorablePercentile &&
-    interpretationContext.canShowScore
-      ? buildV3PercentilePresentation(
-          interpretationContext.displayScore,
-          gradeHints?.clarity ?? decisionProfile?.gradeHints.clarity,
-        )
-      : null;
 
   const reportContext =
     metadata && fields
@@ -373,12 +396,7 @@ export default function LightPerformanceDashboard({
       ) : null}
 
       {!hasReport && uploadPhase === "error" && uploadError ? (
-        <section className="relative py-4 md:py-6" role="alert">
-          <p className={DI_EYEBROW_STUDIO}>Upload issue</p>
-          <p className="mt-5 max-w-xl text-lg leading-8 text-[#75675e]">
-            {uploadError}
-          </p>
-        </section>
+        <DiV3UnableToVerify onFile={onFile} />
       ) : null}
 
       {v3RenderPhase === "partial" ? (
@@ -391,12 +409,7 @@ export default function LightPerformanceDashboard({
       {hasReport &&
       v3RenderPhase === "full" &&
       !(decisionProfile && interpretationSummary && metadata && fields) ? (
-        <section className="mx-auto max-w-[960px] py-6" role="status">
-          <p className={DI_EYEBROW_STUDIO}>Interpretation</p>
-          <p className="mt-4 max-w-xl text-lg leading-8 text-[#75675e]">
-            {CONSUMER_COPY.interpretationUnavailableCopy}
-          </p>
-        </section>
+        <DiV3UnableToVerify onFile={onFile} reportContext={reportContext} />
       ) : null}
 
       {v3RenderPhase === "full" &&
@@ -407,11 +420,9 @@ export default function LightPerformanceDashboard({
         <div key={reportIdentity ?? "v3-result"}>
           <DiV3Hero
             mode={effectiveGcal8xPremium ? "gcal8x" : "standard"}
-            verdictLabel={heroVerdictLabel}
+            hero={heroPresentation}
             traitLine={traitLine}
-            percentile={percentile}
             gcal8xTier={gcal8xTier ?? undefined}
-            clarityStandardsNote={null}
             reportContext={reportContext}
           />
 
@@ -424,8 +435,9 @@ export default function LightPerformanceDashboard({
             isGcal8x={effectiveGcal8xPremium}
             clarityPolicy={clarityPolicy}
             publicTier={publicTier}
+            uncappedOpticalTier={uncappedOpticalTier}
             gcal8xTier={gcal8xTier}
-            heroVerdictLabel={heroVerdictLabel}
+            purchaseRecommendation={purchaseRecommendation}
             interpretationSummary={interpretationSummary}
             visualPersonality={visualPersonality}
             strengths={advisoryHighlights.strengths}
@@ -437,6 +449,9 @@ export default function LightPerformanceDashboard({
             diameter={diameter}
             formatCarat={formatCarat}
             reportContext={reportContext}
+            assessmentIncomplete={Boolean(
+              lowInterpretationConfidence && decisionProfile,
+            )}
           />
 
           {capability &&

@@ -6,7 +6,7 @@ import {
   type DiamondIntelligenceConciergeContext,
 } from "@/lib/concierge/diamond-intelligence-context";
 import { trackConsultationCtaClicked } from "@/lib/consultation-cta";
-import type { V3Gcal8xTier, V3PercentilePresentation } from "./v3-presentation";
+import type { V3Gcal8xTier, V3HeroPresentation } from "./v3-presentation";
 import {
   DI_V3_BRAND,
   DI_V3_HERO_CARD,
@@ -17,21 +17,17 @@ import {
 
 export type DiV3HeroProps = {
   mode: "standard" | "gcal8x";
-  verdictLabel: string;
+  hero: V3HeroPresentation;
   traitLine: string;
-  percentile?: V3PercentilePresentation | null;
   gcal8xTier?: V3Gcal8xTier;
-  clarityStandardsNote?: string | null;
   reportContext?: DiamondIntelligenceConciergeContext;
 };
 
 export default function DiV3Hero({
   mode,
-  verdictLabel,
+  hero,
   traitLine,
-  percentile,
   gcal8xTier,
-  clarityStandardsNote,
   reportContext,
 }: DiV3HeroProps) {
   const conciergeHref = buildConciergeHrefFromDiamondIntelligence(
@@ -63,7 +59,7 @@ export default function DiV3Hero({
             <h1
               className={`${verdictSizeClass} mt-5 font-serif font-normal uppercase leading-[0.9] tracking-[0.035em] text-[#1e1a16]`}
             >
-              {gcal8xTier ?? verdictLabel}
+              {gcal8xTier ?? hero.purchaseHeadline}
             </h1>
             <p className="mx-auto mt-7 max-w-[540px] text-[clamp(17px,2.2vw,22px)] leading-[1.45] text-[#6f665b]">
               Already within one of the most selective performance-verified
@@ -73,35 +69,51 @@ export default function DiV3Hero({
         ) : (
           <>
             <p className="mb-2 text-[11px] uppercase tracking-[0.18em] text-[#9b8b78]">
-              The Read
+              Purchase Recommendation
             </p>
             <h1
-              className={`${verdictSizeClass} mb-7 font-serif font-normal uppercase leading-[0.9] tracking-[0.035em] text-[#1e1a16]`}
+              className={`${verdictSizeClass} mb-5 font-serif font-normal uppercase leading-[0.9] tracking-[0.035em] text-[#1e1a16]`}
             >
-              {verdictLabel}
+              {hero.purchaseHeadline}
             </h1>
 
-            {percentile ? (
+            {hero.purchaseSubline ? (
+              <p className="mb-4 font-serif text-[clamp(22px,3vw,30px)] leading-tight text-[#1e1a16]">
+                {hero.purchaseSubline}
+              </p>
+            ) : null}
+
+            {hero.opticalPerformanceLine ? (
+              <p className="text-[clamp(17px,2.2vw,20px)] leading-[1.45] text-[#514536]">
+                {hero.opticalPerformanceLine}
+              </p>
+            ) : null}
+
+            {hero.opticalDetailLine ? (
+              <p className="mx-auto mt-3 max-w-[520px] text-[15px] leading-[1.55] text-[#6f665b]">
+                {hero.opticalDetailLine}
+              </p>
+            ) : null}
+
+            {hero.percentile?.scope === "broad" ? (
               <>
-                <p className="font-serif text-[clamp(34px,4.5vw,48px)] leading-none text-[#1e1a16]">
-                  {percentile.topLine}
+                <p className="mt-7 font-serif text-[clamp(34px,4.5vw,48px)] leading-none text-[#1e1a16]">
+                  {hero.percentile.topLine}
                 </p>
                 <p className="mt-2 text-[15px] text-[#6f665b]">
-                  {percentile.topSubline}
+                  {hero.percentile.topSubline}
                 </p>
-                <p className="mx-auto mt-7 max-w-[460px] text-[clamp(17px,2.2vw,22px)] leading-[1.45] text-[#6f665b]">
-                  Better than approximately
-                  <br />
-                  <strong className="font-serif text-[1.32em] font-normal text-[#1e1a16]">
-                    {percentile.betterThanPercent}%
-                  </strong>{" "}
-                  of diamonds reviewed.
-                </p>
+                {hero.percentile.betterThanPercent != null ? (
+                  <p className="mx-auto mt-7 max-w-[460px] text-[clamp(17px,2.2vw,22px)] leading-[1.45] text-[#6f665b]">
+                    Better than approximately
+                    <br />
+                    <strong className="font-serif text-[1.32em] font-normal text-[#1e1a16]">
+                      {hero.percentile.betterThanPercent}%
+                    </strong>{" "}
+                    of diamonds reviewed.
+                  </p>
+                ) : null}
               </>
-            ) : clarityStandardsNote ? (
-              <p className="mx-auto mt-7 max-w-[520px] text-[clamp(17px,2.2vw,22px)] leading-[1.55] text-[#6f665b]">
-                {clarityStandardsNote}
-              </p>
             ) : null}
           </>
         )}

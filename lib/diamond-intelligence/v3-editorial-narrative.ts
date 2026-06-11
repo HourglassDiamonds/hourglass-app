@@ -5,6 +5,11 @@ import { SI2_INSPECTION_REQUIRED_MESSAGE } from "./hourglass-clarity-policy";
 import type { PrimaryLimitingFactorKey } from "./primary-limiting-factor";
 import type { VisualPersonality } from "./visual-personality";
 import type { ReportGradeHints } from "./report-grade-hints";
+import {
+  formatColorForSummary,
+  warmColorPreferenceContextCopy,
+} from "./color-grade-policy";
+import type { PurchaseRecommendationLabel } from "./purchase-recommendation-presentation";
 
 /** Consumer-facing tier label — internal `Open` stays unchanged in logic. */
 export function displayV3PublicTierLabel(tier: string): string {
@@ -17,6 +22,8 @@ const FORBIDDEN_NOTICE_TITLES = new Set([
   "preliminary assessment",
   "outside hourglass standards",
   "limited information available",
+  "justin inspection required",
+  "worth reviewing after additional information",
 ]);
 
 function formatGradeScope(
@@ -36,18 +43,17 @@ function formatGradeScope(
   return `This assessment evaluated the report's ${parts.join(", ")}, alongside proportion measurements where present.`;
 }
 
-function isPreliminaryHero(heroVerdictLabel: string): boolean {
-  return (
-    heroVerdictLabel === "Preliminary Assessment" ||
-    heroVerdictLabel === "Limited Information Available"
-  );
+function isPreliminaryPurchase(
+  purchaseRecommendation: PurchaseRecommendationLabel,
+): boolean {
+  return purchaseRecommendation === "Worth Reviewing After Additional Information";
 }
 
 function pickIncompleteArchitectureTitle(input: {
-  heroVerdictLabel: string;
+  purchaseRecommendation: PurchaseRecommendationLabel;
   opticalBand: string;
 }): string {
-  if (isPreliminaryHero(input.heroVerdictLabel)) {
+  if (isPreliminaryPurchase(input.purchaseRecommendation)) {
     return "Refined with some unanswered questions.";
   }
   if (input.opticalBand === "Preliminary" || input.opticalBand === "Unavailable") {
@@ -63,12 +69,66 @@ function pickIncompleteArchitectureBody(): string[] {
   ];
 }
 
+function buildGradeConstrainedSummary(input: {
+  clarityPolicy: HourglassClarityDisplayPolicy;
+  gradeHints?: ReportGradeHints | null;
+  uncappedOpticalTier: string;
+  purchaseRecommendation: PurchaseRecommendationLabel;
+}): string | null {
+  const color = formatColorForSummary(input.gradeHints?.color);
+  const clarity = input.gradeHints?.clarity?.trim();
+  const premiumOptics =
+    input.uncappedOpticalTier === "Rare" ||
+    input.uncappedOpticalTier === "Exceptional" ||
+    input.uncappedOpticalTier === "Distinctive" ||
+    input.uncappedOpticalTier === "Strong";
+
+  if (input.clarityPolicy.isExcluded && clarity) {
+    return `The report includes an ${clarity} clarity grade, which falls outside Hourglass standards. Even if some proportions are workable, the diamond is not recommended.`;
+  }
+
+  if (
+    input.clarityPolicy.isSi2 &&
+    color &&
+    clarity &&
+    premiumOptics
+  ) {
+    const warmNote = warmColorPreferenceContextCopy(input.gradeHints?.color);
+    const warmClause = warmNote
+      ? ` ${warmNote}`
+      : color
+        ? ` The ${color} color profile is a preference signal — not an automatic rejection.`
+        : "";
+    return `This report shows strong optical proportions, but ${clarity} clarity requires human review before a complete purchase recommendation can be made.${warmClause}`;
+  }
+
+  if (
+    input.purchaseRecommendation === "Strong Candidate" ||
+    input.purchaseRecommendation === "Recommended"
+  ) {
+    if (premiumOptics) {
+      return "The report supports a strong candidate profile, with favorable proportions and no major grade-based concerns.";
+    }
+  }
+
+  if (input.purchaseRecommendation === "Justin Inspection Required") {
+    const colorPart = color ? `the ${color} color profile` : "the reported color";
+    const clarityPart = clarity ? `${clarity} clarity` : "the reported clarity";
+    if (premiumOptics) {
+      return `This report shows strong optical proportions, but ${colorPart} and ${clarityPart} require human review before a purchase recommendation can be made.`;
+    }
+  }
+
+  return null;
+}
+
 export function buildV3ReportSummaryParagraphs(input: {
   clarityPolicy: HourglassClarityDisplayPolicy;
   isGcal8x: boolean;
   fields: CalibrationReportFields;
   gradeHints?: ReportGradeHints | null;
-  heroVerdictLabel: string;
+  purchaseRecommendation: PurchaseRecommendationLabel;
+  uncappedOpticalTier: string;
   interpretationSummary: string;
 }): string[] {
   const {
@@ -76,15 +136,24 @@ export function buildV3ReportSummaryParagraphs(input: {
     isGcal8x,
     fields,
     gradeHints,
-    heroVerdictLabel,
+    purchaseRecommendation,
+    uncappedOpticalTier,
     interpretationSummary,
   } = input;
 
   if (clarityPolicy.isExcluded) {
-    return [
-      "This assessment reviewed the color, clarity, and proportion information present on the uploaded report.",
-      "Clarity characteristics were weighed alongside cut proportions and overall report context — not price or sourcing availability.",
-    ];
+    const constrained = buildGradeConstrainedSummary({
+      clarityPolicy,
+      gradeHints,
+      uncappedOpticalTier,
+      purchaseRecommendation,
+    });
+    return constrained
+      ? [constrained]
+      : [
+          "This assessment reviewed the color, clarity, and proportion information present on the uploaded report.",
+          "Clarity characteristics were weighed alongside cut proportions and overall report context — not price or sourcing availability.",
+        ];
   }
 
   if (isGcal8x) {
@@ -95,7 +164,20 @@ export function buildV3ReportSummaryParagraphs(input: {
     ];
   }
 
-  if (clarityPolicy.isSi2 || isPreliminaryHero(heroVerdictLabel)) {
+  const constrained = buildGradeConstrainedSummary({
+    clarityPolicy,
+    gradeHints,
+    uncappedOpticalTier,
+    purchaseRecommendation,
+  });
+  if (constrained) {
+    return [constrained];
+  }
+
+  if (
+    clarityPolicy.isSi2 ||
+    isPreliminaryPurchase(purchaseRecommendation)
+  ) {
     const scope = formatGradeScope(fields, gradeHints);
     return [
       scope ??
@@ -126,14 +208,14 @@ export function buildV3NoticePresentation(input: {
   clarityPolicy: HourglassClarityDisplayPolicy;
   isGcal8x: boolean;
   visualPersonality: VisualPersonality | null;
-  heroVerdictLabel: string;
+  purchaseRecommendation: PurchaseRecommendationLabel;
   opticalBand: string;
 }): V3NoticePresentation {
   const {
     clarityPolicy,
     isGcal8x,
     visualPersonality,
-    heroVerdictLabel,
+    purchaseRecommendation,
     opticalBand,
   } = input;
 
@@ -164,7 +246,10 @@ export function buildV3NoticePresentation(input: {
     opticalBand === "Preliminary" ||
     opticalBand === "Unavailable"
   ) {
-    const lead = pickIncompleteArchitectureTitle({ heroVerdictLabel, opticalBand });
+    const lead = pickIncompleteArchitectureTitle({
+      purchaseRecommendation,
+      opticalBand,
+    });
     return {
       lead,
       body: pickIncompleteArchitectureBody(),

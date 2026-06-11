@@ -14,8 +14,15 @@ import {
   buildV3ReportSummaryParagraphs,
   displayV3PublicTierLabel,
 } from "./v3-editorial-narrative";
-import { resolveV3HeroVerdictLabel } from "@/app/diamond-intelligence/components/v3-presentation";
+import {
+  buildV3HeroPresentation,
+  resolveUncappedOpticalTier,
+  resolveV3PublicTier,
+} from "@/app/diamond-intelligence/components/v3-presentation";
+import { buildClientDiamondDecisionProfile } from "./client-decision-profile";
+import { buildDiamondInterpretationContext } from "./client-interpretation-context";
 import { presentEditorialLightPerformance } from "./client-editorial-language";
+import { resolvePurchaseRecommendationLabel } from "./purchase-recommendation-presentation";
 
 function emptyFields(): CalibrationReportFields {
   return Object.fromEntries(
@@ -103,13 +110,49 @@ describe("6237893522 SI2 editorial deduplication", () => {
     },
     metadata: { lab: "GIA", reportNumber: "6237893522" },
   });
-  const heroVerdict = resolveV3HeroVerdictLabel({
+  const ctx = buildDiamondInterpretationContext({
+    fields,
+    rawScore: profile.opticalPerformance.score ?? null,
     clarity: "SI2",
+  });
+  const editorial = presentEditorialLightPerformance({
+    internalLabel: ctx.displayLabel,
+    displayBand: ctx.displayBand,
+    canShowScore: ctx.canShowScore,
+    canShowRareLanguage: ctx.canShowRareLanguage,
+  });
+  const publicTier = resolveV3PublicTier({
+    editorialTier: editorial.tier,
+    displayScore: ctx.displayScore,
+    canShowScore: ctx.canShowScore,
+    clarity: "SI2",
+  });
+  const uncappedOpticalTier = resolveUncappedOpticalTier({
+    editorialTier: editorial.tier,
+    displayScore: ctx.displayScore,
+    canShowScore: ctx.canShowScore,
+  });
+  const purchase = resolvePurchaseRecommendationLabel({
+    internalBand: profile.overallRecommendation.band,
+    clarityPolicy,
+    color: "O to P Range",
+    clarity: "SI2",
+    uncappedOpticalTierLabel:
+      uncappedOpticalTier === "Open" ? "Needs Review" : uncappedOpticalTier,
+  });
+  const hero = buildV3HeroPresentation({
+    purchaseRecommendation: purchase,
+    publicTier,
+    uncappedOpticalTier,
+    displayScore: ctx.displayScore,
+    clarityPolicy,
+    color: "O to P Range",
+    clarity: "SI2",
+    canShowScore: ctx.canShowScore,
     lowInterpretationConfidence: true,
     opticalUnavailable: false,
     isGcal8x: false,
     gcal8xTier: null,
-    publicTier: "Strong",
   });
   const visualPersonality = buildVisualPersonality({
     proportionArchetype: profile.archetype,
@@ -117,8 +160,9 @@ describe("6237893522 SI2 editorial deduplication", () => {
     fields: fields,
   });
 
-  it("hero is Preliminary Assessment", () => {
-    assert.equal(heroVerdict, "Preliminary Assessment");
+  it("hero reflects purchase recommendation not optical Exceptional", () => {
+    assert.equal(hero.purchaseHeadline, "Justin Inspection Required");
+    assert.notEqual(hero.purchaseHeadline, "Exceptional");
   });
 
   it("SI2 inspection copy appears once in Justin section only", () => {
@@ -127,14 +171,15 @@ describe("6237893522 SI2 editorial deduplication", () => {
       isGcal8x: false,
       fields: fields,
       gradeHints: profile.gradeHints,
-      heroVerdictLabel: heroVerdict,
+      purchaseRecommendation: purchase,
+      uncappedOpticalTier,
       interpretationSummary: "Sample optical summary.",
     });
     const notice = buildV3NoticePresentation({
       clarityPolicy,
       isGcal8x: false,
       visualPersonality,
-      heroVerdictLabel: heroVerdict,
+      purchaseRecommendation: purchase,
       opticalBand: profile.opticalPerformance.band,
     });
     const justin = buildJustinPerspectiveParagraphs({
@@ -159,7 +204,7 @@ describe("6237893522 SI2 editorial deduplication", () => {
       clarityPolicy,
       isGcal8x: false,
       visualPersonality,
-      heroVerdictLabel: heroVerdict,
+      purchaseRecommendation: purchase,
       opticalBand: profile.opticalPerformance.band,
     });
     const block = `${notice.lead} ${notice.body.join(" ")}`;
@@ -176,17 +221,16 @@ describe("6482285473 I1 editorial deduplication", () => {
     color: "F",
     metadata: { lab: "GIA", reportNumber: "6482285473" },
   });
-  const heroVerdict = resolveV3HeroVerdictLabel({
+  const purchase = resolvePurchaseRecommendationLabel({
+    internalBand: profile.overallRecommendation.band,
+    clarityPolicy,
+    color: "F",
     clarity: "I1",
-    lowInterpretationConfidence: false,
-    opticalUnavailable: false,
-    isGcal8x: false,
-    gcal8xTier: null,
-    publicTier: "Open",
+    uncappedOpticalTierLabel: "Strong",
   });
 
   it("hero is Outside Hourglass Standards", () => {
-    assert.equal(heroVerdict, "Outside Hourglass Standards");
+    assert.equal(purchase, "Outside Hourglass Standards");
   });
 
   it("sections focus on visual consequences without repeated exclusion copy", () => {
@@ -194,7 +238,7 @@ describe("6482285473 I1 editorial deduplication", () => {
       clarityPolicy,
       isGcal8x: false,
       visualPersonality: null,
-      heroVerdictLabel: heroVerdict,
+      purchaseRecommendation: purchase,
       opticalBand: profile.opticalPerformance.band,
     });
     const justin = buildJustinPerspectiveParagraphs({
@@ -210,7 +254,8 @@ describe("6482285473 I1 editorial deduplication", () => {
         isGcal8x: false,
         fields: fields,
         gradeHints: profile.gradeHints,
-        heroVerdictLabel: heroVerdict,
+        purchaseRecommendation: purchase,
+        uncappedOpticalTier: "Strong",
         interpretationSummary: "Optical summary.",
       }),
       notice.lead,
@@ -219,8 +264,15 @@ describe("6482285473 I1 editorial deduplication", () => {
     ]);
 
     assert.doesNotMatch(notice.lead, /not recommended/i);
-    assert.doesNotMatch(body, /outside hourglass standards/i);
-    assert.doesNotMatch(body, new RegExp(HOURGLASS_EXCLUDED_CLARITY_CONSUMER_MESSAGE.slice(0, 40), "i"));
+    assert.doesNotMatch(
+      `${notice.lead} ${notice.body.join(" ")}`,
+      /outside hourglass standards/i,
+    );
+    assert.doesNotMatch(
+      `${notice.lead} ${notice.body.join(" ")} ${justin.join(" ")}`,
+      new RegExp(HOURGLASS_EXCLUDED_CLARITY_CONSUMER_MESSAGE.slice(0, 40), "i"),
+    );
+    assert.match(body, /falls outside Hourglass standards/i);
   });
 });
 
@@ -263,7 +315,8 @@ describe("6545889783 Fair Cut narrative", () => {
       isGcal8x: false,
       fields: fields,
       gradeHints: profile.gradeHints,
-      heroVerdictLabel: "Balanced",
+      purchaseRecommendation: "Strong Candidate",
+      uncappedOpticalTier: "Balanced",
       interpretationSummary: "A balanced optical read from reported proportions.",
     });
     const text = combinedCopy(summary);
@@ -291,7 +344,8 @@ describe("360796243 GCAL 8X narrative preserved", () => {
       isGcal8x: true,
       fields: fields,
       gradeHints: profile.gradeHints,
-      heroVerdictLabel: "Rare",
+      purchaseRecommendation: "Strong Candidate",
+      uncappedOpticalTier: "Rare",
       interpretationSummary: "Strong optical read.",
     });
     assert.match(combinedCopy(summary), /GCAL 8X designation/);

@@ -70,6 +70,27 @@ export {
   isBelowHourglassClarityStandard,
 } from "./hourglass-clarity-standards";
 export {
+  colorPreferenceImpact,
+  colorPreferenceImpactLabel,
+  colorPreferenceProfileLabel,
+  formatColorForSummary,
+  isLowColorGrade,
+  isWarmMarketColor,
+  suppressesBroadPercentileForColor,
+  warmColorPreferenceContextCopy,
+  WARM_COLOR_PREFERENCE_CONTEXT_COPY,
+  worstColorLetterIndex,
+  type ColorPreferenceImpact,
+} from "./color-grade-policy";
+export {
+  buildPurchaseConstrainedOpticalDetail,
+  isPurchaseRecommendationEligibleForBroadPercentile,
+  presentPurchaseRecommendationLabel,
+  purchaseRecommendationBlocksPremiumHeroHeadline,
+  resolvePurchaseRecommendationLabel,
+  type PurchaseRecommendationLabel,
+} from "./purchase-recommendation-presentation";
+export {
   HOURGLASS_EXCLUDED_CLARITY_CONSUMER_MESSAGE,
   HOURGLASS_EXCLUDED_CLARITY_HEADLINE,
   HOURGLASS_EXCLUDED_SPECTRUM_STATUS,

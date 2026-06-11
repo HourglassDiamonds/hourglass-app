@@ -3,6 +3,7 @@
 import { useCallback, useRef, useState } from "react";
 import { ACCEPTED_REPORT_EXTENSIONS } from "@/lib/calibration-library/accepted-files";
 import type { ClientSafeMetadata } from "@/lib/diamond-intelligence";
+import { CONSUMER_COPY } from "./consumer-display-labels";
 
 export type ClientUploadPhase =
   | "idle"
@@ -166,11 +167,20 @@ export function ReportUploadDock({
               : "Drop a lab report here")}
         </p>
 
-        {!busy ? (
+        {!busy && !hasReport ? (
+          <div className="pointer-events-none mt-2 space-y-1">
+            {CONSUMER_COPY.uploadHelperLines.map((line) => (
+              <p
+                key={line}
+                className="text-[10px] leading-snug text-[#948a80]"
+              >
+                {line}
+              </p>
+            ))}
+          </div>
+        ) : !busy ? (
           <p className="pointer-events-none mt-1.5 text-[10px] leading-snug text-[#948a80]">
-            {hasReport
-              ? "Or click to browse · PDF or image from GIA, IGI, or GCAL"
-              : "PDF or image from GIA, IGI, or GCAL"}
+            Or click to browse · PDF or image from GIA, IGI, or GCAL
           </p>
         ) : (
           <p className="pointer-events-none mt-1.5 text-[10px] text-[#a8926a]">
