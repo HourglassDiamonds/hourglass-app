@@ -13,6 +13,8 @@ import {
   PARTIAL_COLOR_SINGLE_GRADES,
   resolveGcal8xVisualTier,
   resolveV3HeroVerdictLabel,
+  resolveV3IncompleteAssessmentCopy,
+  resolveV3IncompleteMissingDataValue,
   resolveV3PublicTier,
   resolveV3RenderPhase,
 } from "./v3-presentation";
@@ -303,6 +305,29 @@ describe("clarity standards in V3 presentation", () => {
         publicTier: "Strong",
       }),
       "Outside Hourglass Standards",
+    );
+  });
+});
+
+describe("resolveV3IncompleteAssessmentCopy", () => {
+  it("uses proportion copy when usable color and clarity are present", () => {
+    const copy = resolveV3IncompleteAssessmentCopy({
+      color: "O to P Range",
+      clarity: "SI2",
+    });
+    assert.equal(copy.headline, "Additional Report Detail Needed");
+    assert.equal(copy.nextStep, "Verify Missing Proportions");
+    assert.doesNotMatch(copy.sectionBody, /Once color and clarity are confirmed/i);
+  });
+
+  it("uses grade copy when color or clarity is missing", () => {
+    const copy = resolveV3IncompleteAssessmentCopy({ color: "G" });
+    assert.equal(copy.headline, "Assessment Requires Additional Information");
+    assert.equal(copy.nextStep, "Verify Missing Grades");
+    assert.match(copy.sectionBody, /Once color and clarity are confirmed/i);
+    assert.equal(
+      resolveV3IncompleteMissingDataValue({ color: "G" }),
+      "Clarity Grade",
     );
   });
 });

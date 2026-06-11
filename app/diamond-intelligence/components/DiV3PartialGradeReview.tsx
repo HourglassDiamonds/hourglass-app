@@ -7,7 +7,7 @@ import {
   DI_V3_PARTIAL_CARD,
   DI_V3_PRODUCT,
 } from "./di-v3-styles";
-import { V3_INCOMPLETE_ASSESSMENT } from "./consumer-display-labels";
+import { V3_INCOMPLETE_GRADE_ASSESSMENT } from "./consumer-display-labels";
 import {
   hasUsableDisplayColor,
   isListedPartialColor,
@@ -53,27 +53,27 @@ export default function DiV3PartialGradeReview({
       </div>
 
       <p className="text-[11px] uppercase tracking-[0.18em] text-[#9b8b78]">
-        {V3_INCOMPLETE_ASSESSMENT.eyebrow}
+        {V3_INCOMPLETE_GRADE_ASSESSMENT.eyebrow}
       </p>
 
       <h1 className="mt-4 font-serif text-[clamp(34px,5.5vw,52px)] font-normal uppercase leading-[0.98] tracking-[0.035em] text-[#1e1a16]">
-        {V3_INCOMPLETE_ASSESSMENT.headline}
+        {V3_INCOMPLETE_GRADE_ASSESSMENT.headline}
       </h1>
 
       <p className="mx-auto mt-6 max-w-[520px] text-[17px] leading-[1.72] text-[#6f665b]">
-        {V3_INCOMPLETE_ASSESSMENT.subhead}
+        {V3_INCOMPLETE_GRADE_ASSESSMENT.subhead}
       </p>
 
       <div className="mx-auto mt-10 max-w-[520px] text-left">
         <h2 className="font-serif text-[clamp(22px,3.2vw,28px)] font-normal text-[#1e1a16]">
-          {V3_INCOMPLETE_ASSESSMENT.sectionHeadline}
+          {V3_INCOMPLETE_GRADE_ASSESSMENT.sectionHeadline}
         </h2>
         <p className="mt-4 text-[15px] leading-[1.65] text-[#6f665b]">
-          {V3_INCOMPLETE_ASSESSMENT.sectionBody}
+          {V3_INCOMPLETE_GRADE_ASSESSMENT.sectionBody}
         </p>
 
         <p className="mb-4 mt-8 text-[11px] uppercase tracking-[0.14em] text-[#9b8b78]">
-          {V3_INCOMPLETE_ASSESSMENT.nextStep}
+          {V3_INCOMPLETE_GRADE_ASSESSMENT.nextStep}
         </p>
         <ul className="mb-8 grid list-none gap-2.5 p-0 text-[15px] text-[#514536]">
           {(missingFields.length > 0
@@ -152,7 +152,7 @@ export default function DiV3PartialGradeReview({
           <div>
             <dt className="text-[#9b8b78]">Recommendation Status</dt>
             <dd className="mt-0.5 text-[#1e1a16]">
-              {V3_INCOMPLETE_ASSESSMENT.recommendationStatus}
+              {V3_INCOMPLETE_GRADE_ASSESSMENT.recommendationStatus}
             </dd>
           </div>
           <div>
@@ -167,19 +167,19 @@ export default function DiV3PartialGradeReview({
           <div>
             <dt className="text-[#9b8b78]">Optical Read</dt>
             <dd className="mt-0.5 text-[#1e1a16]">
-              {V3_INCOMPLETE_ASSESSMENT.opticalRead}
+              {V3_INCOMPLETE_GRADE_ASSESSMENT.opticalRead}
             </dd>
           </div>
           <div>
             <dt className="text-[#9b8b78]">Confidence Level</dt>
             <dd className="mt-0.5 text-[#1e1a16]">
-              {V3_INCOMPLETE_ASSESSMENT.confidenceLevel}
+              {V3_INCOMPLETE_GRADE_ASSESSMENT.confidenceLevel}
             </dd>
           </div>
           <div>
             <dt className="text-[#9b8b78]">Next Step</dt>
             <dd className="mt-0.5 text-[#1e1a16]">
-              {V3_INCOMPLETE_ASSESSMENT.nextStep}
+              {V3_INCOMPLETE_GRADE_ASSESSMENT.nextStep}
             </dd>
           </div>
         </dl>

@@ -12,7 +12,11 @@ import {
   type PurchaseRecommendationLabel,
   buildPurchaseConstrainedOpticalDetail,
 } from "@/lib/diamond-intelligence/purchase-recommendation-presentation";
-import { V3_INCOMPLETE_ASSESSMENT } from "./consumer-display-labels";
+import {
+  type V3IncompleteAssessmentCopy,
+  V3_INCOMPLETE_GRADE_ASSESSMENT,
+  V3_INCOMPLETE_PROPORTION_ASSESSMENT,
+} from "./consumer-display-labels";
 import {
   resolveHourglassClarityPolicy,
   SI2_PRESENTATION_TIER_CEILING,
@@ -291,9 +295,13 @@ export function buildV3HeroPresentation(input: {
     input.purchaseRecommendation === "Not Recommended";
 
   if (input.lowInterpretationConfidence && !gradeConstrainedPurchase) {
+    const incomplete = resolveV3IncompleteAssessmentCopy({
+      color: input.color,
+      clarity: input.clarity,
+    });
     return {
-      purchaseHeadline: V3_INCOMPLETE_ASSESSMENT.headline,
-      purchaseSubline: V3_INCOMPLETE_ASSESSMENT.subhead,
+      purchaseHeadline: incomplete.headline,
+      purchaseSubline: incomplete.subhead,
       opticalPerformanceLine: null,
       opticalDetailLine: null,
       percentile: null,
@@ -343,6 +351,7 @@ export function buildV3HeroPresentation(input: {
 }
 
 export function resolveV3HeroVerdictLabel(input: {
+  color?: string;
   clarity?: string;
   lowInterpretationConfidence: boolean;
   opticalUnavailable: boolean;
@@ -356,7 +365,10 @@ export function resolveV3HeroVerdictLabel(input: {
   if (input.lowInterpretationConfidence) {
     return input.opticalUnavailable
       ? "Limited Information Available"
-      : V3_INCOMPLETE_ASSESSMENT.headline;
+      : resolveV3IncompleteAssessmentCopy({
+          color: input.color,
+          clarity: input.clarity,
+        }).headline;
   }
 
   if (input.isGcal8x && input.gcal8xTier) return input.gcal8xTier;
@@ -652,4 +664,34 @@ export function listMissingGradeFields(gradeHints?: {
     missing.push("Clarity Grade");
   }
   return missing;
+}
+
+/** Missing-data row value for incomplete-assessment technical appendix. */
+export function resolveV3IncompleteMissingDataValue(gradeHints?: {
+  color?: string;
+  clarity?: string;
+} | null): string {
+  const missingGrades = listMissingGradeFields(gradeHints);
+  if (missingGrades.length === 0) {
+    return V3_INCOMPLETE_PROPORTION_ASSESSMENT.missingDataValue;
+  }
+  return missingGrades.join(", ");
+}
+
+/**
+ * Display-only incomplete-assessment copy — grade-specific when 4Cs are missing,
+ * proportion-specific when usable color and clarity are already present.
+ */
+export function resolveV3IncompleteAssessmentCopy(gradeHints?: {
+  color?: string;
+  clarity?: string;
+} | null): V3IncompleteAssessmentCopy {
+  if (listMissingGradeFields(gradeHints).length > 0) {
+    const missing = listMissingGradeFields(gradeHints);
+    return {
+      ...V3_INCOMPLETE_GRADE_ASSESSMENT,
+      missingDataValue: missing.join(", "),
+    };
+  }
+  return V3_INCOMPLETE_PROPORTION_ASSESSMENT;
 }

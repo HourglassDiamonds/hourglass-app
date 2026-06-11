@@ -23,7 +23,6 @@ import {
   consumerConfidenceBandLabel,
   consumerProfileDimensionLabel,
   CONSUMER_COPY,
-  V3_INCOMPLETE_ASSESSMENT,
 } from "./consumer-display-labels";
 import { dashValue } from "./DashboardCard";
 import DiV3Chapter from "./DiV3Chapter";
@@ -39,7 +38,11 @@ import { DI_V3_SECTIONS, DI_V3_TEXT_CTA } from "./di-v3-styles";
 import type { HourglassClarityDisplayPolicy } from "@/lib/diamond-intelligence/hourglass-clarity-policy";
 import type { PurchaseRecommendationLabel } from "@/lib/diamond-intelligence/purchase-recommendation-presentation";
 import type { V3Gcal8xTier, V3PublicTier } from "./v3-presentation";
-import { buildV3PercentilePresentation } from "./v3-presentation";
+import {
+  buildV3PercentilePresentation,
+  resolveV3IncompleteAssessmentCopy,
+  resolveV3IncompleteMissingDataValue,
+} from "./v3-presentation";
 
 export type DiV3ResultSectionsProps = {
   showPercentile: boolean;
@@ -167,39 +170,30 @@ export default function DiV3ResultSections({
   const displayTier = displayV3PublicTierLabel(uncappedOpticalTier);
   const cappedDisplayTier = displayV3PublicTierLabel(publicTier);
 
+  const incompleteCopy = resolveV3IncompleteAssessmentCopy(
+    decisionProfile.gradeHints,
+  );
+
   const incompleteTechnicalItems: { label: string; value: string }[] = [
     {
       label: "Recommendation Status",
-      value: V3_INCOMPLETE_ASSESSMENT.recommendationStatus,
+      value: incompleteCopy.recommendationStatus,
     },
     {
       label: "Missing Data",
-      value:
-        !decisionProfile.gradeHints.color?.trim() &&
-        !decisionProfile.gradeHints.clarity?.trim()
-          ? "Color Grade, Clarity Grade"
-          : [
-              !decisionProfile.gradeHints.color?.trim()
-                ? "Color Grade"
-                : null,
-              !decisionProfile.gradeHints.clarity?.trim()
-                ? "Clarity Grade"
-                : null,
-            ]
-              .filter(Boolean)
-              .join(", ") || "Additional report verification",
+      value: resolveV3IncompleteMissingDataValue(decisionProfile.gradeHints),
     },
     {
       label: "Optical Read",
-      value: V3_INCOMPLETE_ASSESSMENT.opticalRead,
+      value: incompleteCopy.opticalRead,
     },
     {
       label: "Confidence Level",
-      value: V3_INCOMPLETE_ASSESSMENT.confidenceLevel,
+      value: incompleteCopy.confidenceLevel,
     },
     {
       label: "Next Step",
-      value: V3_INCOMPLETE_ASSESSMENT.nextStep,
+      value: incompleteCopy.nextStep,
     },
   ];
 
@@ -285,14 +279,14 @@ export default function DiV3ResultSections({
       <section className={DI_V3_SECTIONS} aria-label="Diamond Intelligence chapters">
         <DiV3Chapter
           number="01"
-          title={V3_INCOMPLETE_ASSESSMENT.sectionHeadline}
+          title={incompleteCopy.sectionHeadline}
           note="Partial report read — recommendation not yet complete."
           chapterId="incomplete-assessment"
         >
           <DiV3BodyParagraphs
             paragraphs={[
-              V3_INCOMPLETE_ASSESSMENT.subhead,
-              V3_INCOMPLETE_ASSESSMENT.sectionBody,
+              incompleteCopy.subhead,
+              incompleteCopy.sectionBody,
             ]}
           />
         </DiV3Chapter>

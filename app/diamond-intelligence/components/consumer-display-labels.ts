@@ -130,7 +130,21 @@ export function axisPerformanceSummary(axis: ProfileAxis): string | null {
   return `${axis.label}: ${axisLevel(axis.value)}`;
 }
 
-export const V3_INCOMPLETE_ASSESSMENT = {
+export type V3IncompleteAssessmentCopy = {
+  eyebrow: string;
+  headline: string;
+  subhead: string;
+  sectionHeadline: string;
+  sectionBody: string;
+  recommendationStatus: string;
+  missingDataValue: string;
+  opticalRead: string;
+  confidenceLevel: string;
+  nextStep: string;
+};
+
+/** Shown when color or clarity is truly missing from the report read. */
+export const V3_INCOMPLETE_GRADE_ASSESSMENT: V3IncompleteAssessmentCopy = {
   eyebrow: "Concierge Review",
   headline: "Assessment Requires Additional Information",
   subhead:
@@ -139,10 +153,30 @@ export const V3_INCOMPLETE_ASSESSMENT = {
   sectionBody:
     "Missing grading details may materially affect the final recommendation. Once color and clarity are confirmed, the assessment can move from a partial read to a complete purchase recommendation.",
   recommendationStatus: "Additional Information Required",
+  missingDataValue: "Color Grade, Clarity Grade",
   opticalRead: "Preliminary",
   confidenceLevel: "Incomplete Report",
   nextStep: "Verify Missing Grades",
-} as const;
+};
+
+/** Shown when 4Cs are present but proportion/diagram detail is incomplete. */
+export const V3_INCOMPLETE_PROPORTION_ASSESSMENT: V3IncompleteAssessmentCopy = {
+  eyebrow: "Concierge Review",
+  headline: "Additional Report Detail Needed",
+  subhead:
+    "We were able to verify the grading information, but a complete recommendation requires a few additional proportion details from the report diagram.",
+  sectionHeadline: "A Complete Recommendation Isn't Possible Yet",
+  sectionBody:
+    "Additional proportion details from the report diagram may materially affect the final recommendation. Once those fields are confirmed, the assessment can move from a partial read to a complete purchase recommendation.",
+  recommendationStatus: "Additional Report Detail Needed",
+  missingDataValue: "Additional proportion details",
+  opticalRead: "Preliminary",
+  confidenceLevel: "Incomplete Report",
+  nextStep: "Verify Missing Proportions",
+};
+
+/** @deprecated Use resolveV3IncompleteAssessmentCopy — grade-missing copy only. */
+export const V3_INCOMPLETE_ASSESSMENT = V3_INCOMPLETE_GRADE_ASSESSMENT;
 
 export const V3_UNABLE_TO_VERIFY = {
   eyebrow: "Concierge Review",
