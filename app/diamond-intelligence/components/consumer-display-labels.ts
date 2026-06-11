@@ -40,7 +40,7 @@ export const CONSUMER_COPY = {
     "Transparency and in-person color nuance",
   ] as const,
   emptyStateIntro:
-    "Receive an independent read of a diamond's quality, light performance, and value before making a decision.",
+    "Receive an independent read of a diamond's quality, light performance, and overall purchase value before making a decision.",
   emptyStateSupportingCopy:
     "Some retailer pages allow full report review automatically; others may require you to upload the report yourself.",
   urlIngestHeadline: "Paste a diamond listing URL",
