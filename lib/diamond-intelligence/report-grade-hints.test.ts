@@ -87,6 +87,50 @@ describe("parseReportGradeHints", () => {
     assert.equal(hints.clarity, "VVS2");
     assert.equal(hints.color, "D");
   });
+
+  it("parses GIA LGDR dossier Color/Clarity labels without Grade suffix", () => {
+    const lgdrText = `LGDR
+LABORATORY-GROWN DIAMOND REPORT - DOSSIER
+LABORATORY-GROWN DIAMOND SPECIFICATIONS*
+Carat Weight ....................................... 2.11 carat
+Color ..................................................................................................... F
+Clarity ........................................................................................... VVS1
+Cut .......................................................................................... Excellent`;
+
+    const hints = parseReportGradeHints(lgdrText);
+    assert.equal(hints.color, "F");
+    assert.equal(hints.clarity, "VVS1");
+
+    const colorTrace = traceColorExtraction(lgdrText);
+    assert.equal(colorTrace.selected, "F");
+    assert.ok(
+      colorTrace.candidates.some((c) => c.source === "lgdr-color-dot-leader-single"),
+    );
+
+    const clarityTrace = traceClarityExtraction(lgdrText);
+    assert.equal(clarityTrace.selected, "VVS1");
+    assert.ok(
+      clarityTrace.candidates.some(
+        (c) => c.source === "lgdr-clarity-dot-leader",
+      ),
+    );
+  });
+
+  it("does not parse LGDR-style dot leaders outside dossier context", () => {
+    const hints = parseReportGradeHints(
+      "Marketing copy about color ................................ F\nClarity .............................. VVS1",
+    );
+    assert.equal(hints.color, undefined);
+    assert.equal(hints.clarity, undefined);
+  });
+
+  it("still parses natural GIA facsimile Color Grade / Clarity Grade dot leaders", () => {
+    const hints = parseReportGradeHints(
+      "GIA NATURAL DIAMOND GRADING REPORT\nColor Grade   ........................................   F\nClarity Grade   ................................................................... VVS1",
+    );
+    assert.equal(hints.color, "F");
+    assert.equal(hints.clarity, "VVS1");
+  });
 });
 
 describe("claritySeverity", () => {

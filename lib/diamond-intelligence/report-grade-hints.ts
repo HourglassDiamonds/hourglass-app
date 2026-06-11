@@ -86,6 +86,17 @@ const COLOR_IN_GRADING_PANEL =
 const COLOR_OCR_LABEL_NEXT_LINE =
   /\b(?:colou?r|colour|ut|ul)\s*gr[a-z]{2,6}\b[^\n]{0,24}\n\s*([D-Z])\s*(?:\n|$)/gi;
 
+/** GIA LGDR dossier — "Color" / "Clarity" without "Grade" suffix (gated by dossier context). */
+const LGDR_COLOR_DOT_LEADER_SINGLE = new RegExp(
+  String.raw`\b(?:colou?r|colour)\s+${GIA_DOT_LEADER}\s*([D-Z])\b`,
+  "gi",
+);
+
+const LGDR_CLARITY_DOT_LEADER = new RegExp(
+  String.raw`\b(?:clarity|clarit[yq])\s+${GIA_DOT_LEADER}\s*${CLARITY_GRADE_TOKEN}\b`,
+  "gi",
+);
+
 const CUT_FINISH_NOISE =
   /\b(?:very|good|excellent|poor|fair|medium|faint|slight|strong|blue|yellow|white|none|symmetry|polish|fluorescence|cut|grading|results|profile|proportions)\b/i;
 
@@ -133,6 +144,7 @@ const CLARITY_CONFIDENCE_RANK: Record<ClarityExtractConfidence, number> = {
 
 const CLARITY_SOURCE_RANK: Record<string, number> = {
   "clarity-dot-leader": 6,
+  "lgdr-clarity-dot-leader": 6,
   "explicit-clarity-grade-inline": 5,
   "explicit-clarity-grade-next-line": 5,
   "clarity-grading-panel": 4,
@@ -152,6 +164,7 @@ const CONFIDENCE_RANK: Record<ColorExtractConfidence, number> = {
 const COLOR_SOURCE_RANK: Record<string, number> = {
   "color-dot-leader-range": 6,
   "color-dot-leader-dash-range": 6,
+  "lgdr-color-dot-leader-single": 6,
   "explicit-color-grade-next-line": 5,
   "color-dot-leader-single": 5,
   "explicit-color-grade-inline": 4,
@@ -169,6 +182,17 @@ function shouldUseNoisyGradeParse(text: string): boolean {
     /\b(?:clarity|colou?r)\s*(?:grade|grades|gr[a-z]{0,3})\b/i.test(text) ||
     /\b0\]\s*1{1,2}\s*\]?\b/i.test(text) ||
     /\bS\s*I\s*[12]\b/i.test(text)
+  );
+}
+
+/** LGDR dossier reports use shortened Color/Clarity labels (no "Grade" suffix). */
+function isLgdrDossierGradeContext(text: string): boolean {
+  return (
+    /\bLGDR\b/i.test(text) ||
+    /laboratory[-\s]*grown\s+diamond\s+report[\s\S]{0,160}dossier/i.test(
+      text,
+    ) ||
+    /\blaboratory[-\s]*grown\s+diamond\s+specifications\b/i.test(text)
   );
 }
 
@@ -252,6 +276,19 @@ function collectColorCandidates(text: string): ColorExtractionTrace {
       confidence: "high",
       rawMatch: m[0],
     });
+  }
+
+  if (isLgdrDossierGradeContext(text)) {
+    for (const m of text.matchAll(LGDR_COLOR_DOT_LEADER_SINGLE)) {
+      if (!m[1]) continue;
+      pushColorCandidate(candidates, rejected, {
+        value: normalizeColor(m[1]),
+        priority: 1,
+        source: "lgdr-color-dot-leader-single",
+        confidence: "high",
+        rawMatch: m[0],
+      });
+    }
   }
 
   for (const m of text.matchAll(COLOR_GRADE_INLINE)) {
@@ -510,6 +547,20 @@ function collectClarityCandidates(text: string): ClarityExtractionTrace {
       rawMatch: m[0],
       matchIndex: m.index,
     });
+  }
+
+  if (isLgdrDossierGradeContext(text)) {
+    for (const m of text.matchAll(LGDR_CLARITY_DOT_LEADER)) {
+      if (!m[1]) continue;
+      pushClarityCandidate(candidates, rejected, text, {
+        value: m[1],
+        priority: 1,
+        source: "lgdr-clarity-dot-leader",
+        confidence: "high",
+        rawMatch: m[0],
+        matchIndex: m.index,
+      });
+    }
   }
 
   for (const m of text.matchAll(CLARITY_GRADE_INLINE)) {
