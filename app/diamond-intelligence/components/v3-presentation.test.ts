@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   buildV3PercentilePresentation,
+  buildV3IncompleteTechnicalItems,
   capV3PublicTier,
   hasUsableDisplayClarity,
   hasUsableDisplayColor,
@@ -315,20 +316,59 @@ describe("resolveV3IncompleteAssessmentCopy", () => {
       color: "O to P Range",
       clarity: "SI2",
     });
-    assert.equal(copy.headline, "Additional Report Detail Needed");
-    assert.equal(copy.nextStep, "Verify Missing Proportions");
-    assert.doesNotMatch(copy.sectionBody, /Once color and clarity are confirmed/i);
+    assert.equal(copy.kind, "proportion");
+    assert.equal(copy.headline, "Proportion Detail Needed");
+    assert.equal(copy.nextStep, "Confirm Missing Proportions");
+    assert.equal(copy.missingDataLabel, "Outstanding Detail");
+    assert.equal(copy.gradesConfirmed, "O to P Range color · SI2 clarity");
+    assert.match(copy.subhead, /O to P Range color and SI2 clarity are confirmed/i);
+    assert.doesNotMatch(copy.subhead, /color and clarity are needed/i);
+    assert.match(copy.sectionBody, /proportion gap/i);
+    assert.match(copy.technicalAppendixNote, /not 4Cs/i);
   });
 
   it("uses grade copy when color or clarity is missing", () => {
     const copy = resolveV3IncompleteAssessmentCopy({ color: "G" });
-    assert.equal(copy.headline, "Assessment Requires Additional Information");
-    assert.equal(copy.nextStep, "Verify Missing Grades");
-    assert.match(copy.sectionBody, /Once color and clarity are confirmed/i);
+    assert.equal(copy.kind, "grade");
+    assert.equal(copy.headline, "Clarity Grade Still Needed");
+    assert.equal(copy.nextStep, "Confirm Clarity Grade");
+    assert.equal(copy.missingDataLabel, "Missing Grades");
+    assert.equal(copy.gradesConfirmed, null);
+    assert.match(copy.subhead, /clarity grade/i);
+    assert.doesNotMatch(copy.subhead, /color grade/i);
     assert.equal(
       resolveV3IncompleteMissingDataValue({ color: "G" }),
       "Clarity Grade",
     );
+  });
+
+  it("names both missing grades without implying parsed grades are absent", () => {
+    const copy = resolveV3IncompleteAssessmentCopy({});
+    assert.equal(copy.kind, "grade");
+    assert.match(copy.subhead, /color grade and clarity grade/i);
+    assert.equal(copy.missingDataValue, "Color Grade, Clarity Grade");
+  });
+
+  it("maps low confidence to proportion-specific confidence labels", () => {
+    const copy = resolveV3IncompleteAssessmentCopy(
+      { color: "G", clarity: "VS1" },
+      { confidenceBand: "Low" },
+    );
+    assert.equal(copy.kind, "proportion");
+    assert.equal(copy.confidenceLevel, "Limited Proportion Data");
+    assert.equal(copy.opticalRead, "Preliminary");
+    assert.equal(copy.recommendationStatus, "Partial Read — Proportion Detail Limited");
+  });
+
+  it("buildV3IncompleteTechnicalItems includes grades confirmed for proportion gaps", () => {
+    const copy = resolveV3IncompleteAssessmentCopy({
+      color: "G",
+      clarity: "VS1",
+    });
+    const items = buildV3IncompleteTechnicalItems(copy);
+    assert.equal(items[1]?.label, "Grades Confirmed");
+    assert.equal(items[1]?.value, "G color · VS1 clarity");
+    assert.equal(items[2]?.label, "Outstanding Detail");
   });
 });
 

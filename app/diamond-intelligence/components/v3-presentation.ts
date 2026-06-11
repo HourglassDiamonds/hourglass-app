@@ -21,6 +21,7 @@ import {
   resolveHourglassClarityPolicy,
   SI2_PRESENTATION_TIER_CEILING,
 } from "@/lib/diamond-intelligence/hourglass-clarity-policy";
+import type { DecisionConfidenceBand } from "@/lib/diamond-intelligence/decision-profile-confidence";
 export type V3PublicTier =
   | "Rare"
   | "Exceptional"
@@ -251,6 +252,28 @@ function displayTierLabel(tier: V3PublicTier): string {
   return tier === "Open" ? "Needs Review" : tier;
 }
 
+/** Display-only editorial subline beneath the purchase headline — outcomes unchanged. */
+function buildV3HeroPurchaseSubline(
+  label: PurchaseRecommendationLabel,
+): string | null {
+  switch (label) {
+    case "Recommended":
+      return "The report read is encouraging — worth pursuing if it aligns with your priorities after in-person review.";
+    case "Strong Candidate":
+      return "A credible candidate on paper — confirm visual performance and fit before committing.";
+    case "Justin Inspection Required":
+      return "Justin’s review is the appropriate next step — advisory, not an automatic pass or fail.";
+    case "Outside Hourglass Standards":
+      return "Not Recommended";
+    case "Not Recommended":
+      return "Outside what Hourglass would normally put forward — firm pass on this report read.";
+    case "Worth Reviewing After Additional Information":
+      return "Useful starting context — confirm what remains before treating this as a final read.";
+    default:
+      return null;
+  }
+}
+
 export function resolveUncappedOpticalTier(input: {
   editorialTier: EditorialLightPerformanceTier;
   displayScore: number | null;
@@ -276,13 +299,15 @@ export function buildV3HeroPresentation(input: {
   opticalUnavailable: boolean;
   isGcal8x: boolean;
   gcal8xTier: V3Gcal8xTier | null;
+  confidenceBand?: DecisionConfidenceBand;
 }): V3HeroPresentation {
   if (input.clarityPolicy.isExcluded) {
     return {
       purchaseHeadline: "Outside Hourglass Standards",
       purchaseSubline: "Not Recommended",
       opticalPerformanceLine: null,
-      opticalDetailLine: null,
+      opticalDetailLine:
+        "This clarity grade falls outside Hourglass standards — a firm pass regardless of proportion read.",
       percentile: null,
     };
   }
@@ -295,10 +320,13 @@ export function buildV3HeroPresentation(input: {
     input.purchaseRecommendation === "Not Recommended";
 
   if (input.lowInterpretationConfidence && !gradeConstrainedPurchase) {
-    const incomplete = resolveV3IncompleteAssessmentCopy({
-      color: input.color,
-      clarity: input.clarity,
-    });
+    const incomplete = resolveV3IncompleteAssessmentCopy(
+      {
+        color: input.color,
+        clarity: input.clarity,
+      },
+      { confidenceBand: input.confidenceBand },
+    );
     return {
       purchaseHeadline: incomplete.headline,
       purchaseSubline: incomplete.subhead,
@@ -342,7 +370,7 @@ export function buildV3HeroPresentation(input: {
 
   return {
     purchaseHeadline: input.purchaseRecommendation,
-    purchaseSubline: null,
+    purchaseSubline: buildV3HeroPurchaseSubline(input.purchaseRecommendation),
     opticalPerformanceLine,
     opticalDetailLine,
     percentile:
@@ -358,6 +386,7 @@ export function resolveV3HeroVerdictLabel(input: {
   isGcal8x: boolean;
   gcal8xTier: V3Gcal8xTier | null;
   publicTier: V3PublicTier;
+  confidenceBand?: DecisionConfidenceBand;
 }): string {
   const policy = resolveHourglassClarityPolicy(input.clarity);
   if (policy.heroVerdictLabel) return policy.heroVerdictLabel;
@@ -365,10 +394,13 @@ export function resolveV3HeroVerdictLabel(input: {
   if (input.lowInterpretationConfidence) {
     return input.opticalUnavailable
       ? "Limited Information Available"
-      : resolveV3IncompleteAssessmentCopy({
-          color: input.color,
-          clarity: input.clarity,
-        }).headline;
+      : resolveV3IncompleteAssessmentCopy(
+          {
+            color: input.color,
+            clarity: input.clarity,
+          },
+          { confidenceBand: input.confidenceBand },
+        ).headline;
   }
 
   if (input.isGcal8x && input.gcal8xTier) return input.gcal8xTier;
@@ -392,7 +424,7 @@ export function buildV3TraitLine(
   clarity?: string,
 ): string {
   if (resolveHourglassClarityPolicy(clarity).isExcluded) {
-    return "Clarity Concern · Visibility Risk · Not Recommended";
+    return "Outside Hourglass Standards · Not Recommended";
   }
 
   if (isGcal8x) {
@@ -671,27 +703,194 @@ export function resolveV3IncompleteMissingDataValue(gradeHints?: {
   color?: string;
   clarity?: string;
 } | null): string {
-  const missingGrades = listMissingGradeFields(gradeHints);
-  if (missingGrades.length === 0) {
-    return V3_INCOMPLETE_PROPORTION_ASSESSMENT.missingDataValue;
+  return resolveV3IncompleteAssessmentCopy(gradeHints).missingDataValue;
+}
+
+export type ResolveV3IncompleteAssessmentOptions = {
+  confidenceBand?: DecisionConfidenceBand;
+};
+
+function gradeFieldPhrase(label: string): string {
+  return label.replace(/ Grade$/, " grade").toLowerCase();
+}
+
+function formatGradesConfirmed(gradeHints?: {
+  color?: string;
+  clarity?: string;
+} | null): string | null {
+  const color = gradeHints?.color?.trim();
+  const clarity = gradeHints?.clarity?.trim();
+  if (!hasUsableDisplayColor(color) || !hasUsableDisplayClarity(clarity)) {
+    return null;
   }
-  return missingGrades.join(", ");
+  return `${color} color · ${clarity} clarity`;
+}
+
+function buildGradeIncompleteCopy(missing: string[]): V3IncompleteAssessmentCopy {
+  if (missing.length === 1) {
+    const field = missing[0]!;
+    return {
+      ...V3_INCOMPLETE_GRADE_ASSESSMENT,
+      headline: `${field} Still Needed`,
+      subhead: `We verified other report details, but ${gradeFieldPhrase(field)} is still needed before a complete purchase read can be offered.`,
+      sectionBody: `The missing ${gradeFieldPhrase(field)} can materially affect the recommendation. Confirm it on the report to move from a partial read to a complete assessment.`,
+      chapterNote: `${field} needed before the read can be completed.`,
+      missingDataValue: field,
+      nextStep: `Confirm ${field}`,
+      technicalAppendixNote: `This partial read is waiting on ${gradeFieldPhrase(field)}. Proportions are not the limiting factor here.`,
+    };
+  }
+
+  const joined = missing.map(gradeFieldPhrase).join(" and ");
+  return {
+    ...V3_INCOMPLETE_GRADE_ASSESSMENT,
+    subhead: `We verified portions of the report, but ${joined} are still needed before a complete purchase read can be offered.`,
+    sectionBody: `Missing ${joined} can materially affect the recommendation. Confirm them on the report to move from a partial read to a complete assessment.`,
+    chapterNote: "Grading details needed before the read can be completed.",
+    missingDataValue: missing.join(", "),
+    technicalAppendixNote:
+      "This partial read reflects missing or unverified color and clarity grades — not incomplete proportion detail.",
+  };
+}
+
+function buildProportionIncompleteCopy(gradeHints?: {
+  color?: string;
+  clarity?: string;
+} | null): V3IncompleteAssessmentCopy {
+  const gradesConfirmed = formatGradesConfirmed(gradeHints);
+  const color = gradeHints?.color?.trim();
+  const clarity = gradeHints?.clarity?.trim();
+
+  const subhead = gradesConfirmed
+    ? `${color} color and ${clarity} clarity are confirmed on the report. A few proportion measurements from the diagram are still needed for a complete read.`
+    : V3_INCOMPLETE_PROPORTION_ASSESSMENT.subhead;
+
+  return {
+    ...V3_INCOMPLETE_PROPORTION_ASSESSMENT,
+    subhead,
+    gradesConfirmed,
+    sectionBody:
+      "Diagram proportions can materially affect brightness, balance, and the final recommendation. This is a proportion gap — not a missing color or clarity grade.",
+    technicalAppendixNote: gradesConfirmed
+      ? `${gradesConfirmed} are confirmed. The outstanding detail is proportion or diagram measurement — not 4Cs.`
+      : V3_INCOMPLETE_PROPORTION_ASSESSMENT.technicalAppendixNote,
+  };
+}
+
+function applyIncompleteConfidenceCopy(
+  copy: V3IncompleteAssessmentCopy,
+  options?: ResolveV3IncompleteAssessmentOptions,
+): V3IncompleteAssessmentCopy {
+  const band = options?.confidenceBand;
+  if (copy.kind === "grade") {
+    if (band === "Low") {
+      return {
+        ...copy,
+        recommendationStatus: "Pending Grades — Limited Data",
+        opticalRead: "Preliminary",
+        confidenceLevel: "Limited Grading Data",
+        technicalAppendixNote: `${copy.technicalAppendixNote} Report confidence is limited until grading detail is confirmed.`,
+      };
+    }
+    if (band === "Moderate") {
+      return {
+        ...copy,
+        recommendationStatus: "Pending Grades — Moderate Confidence",
+        opticalRead: "Preliminary",
+        confidenceLevel: "Moderate Report Confidence",
+      };
+    }
+    return copy;
+  }
+
+  if (band === "Low") {
+    return {
+      ...copy,
+      recommendationStatus: "Partial Read — Proportion Detail Limited",
+      opticalRead: "Preliminary",
+      confidenceLevel: "Limited Proportion Data",
+      technicalAppendixNote: `${copy.technicalAppendixNote} Limited report data affects how far the proportion read can go on its own.`,
+    };
+  }
+  if (band === "Moderate") {
+    return {
+      ...copy,
+      recommendationStatus: "Partial Read — Proportion Detail Pending",
+      opticalRead: "Partial",
+      confidenceLevel: "Moderate Report Confidence",
+    };
+  }
+  return {
+    ...copy,
+    recommendationStatus: "Partial Read — Proportion Detail Pending",
+    opticalRead: "Partial",
+    confidenceLevel: "Partial Proportion Read",
+  };
+}
+
+export function resolveV3IncompleteAssessmentKind(
+  gradeHints?: { color?: string; clarity?: string } | null,
+): V3IncompleteAssessmentCopy["kind"] {
+  return listMissingGradeFields(gradeHints).length > 0 ? "grade" : "proportion";
 }
 
 /**
  * Display-only incomplete-assessment copy — grade-specific when 4Cs are missing,
  * proportion-specific when usable color and clarity are already present.
  */
-export function resolveV3IncompleteAssessmentCopy(gradeHints?: {
-  color?: string;
-  clarity?: string;
-} | null): V3IncompleteAssessmentCopy {
-  if (listMissingGradeFields(gradeHints).length > 0) {
-    const missing = listMissingGradeFields(gradeHints);
-    return {
-      ...V3_INCOMPLETE_GRADE_ASSESSMENT,
-      missingDataValue: missing.join(", "),
-    };
+export function resolveV3IncompleteAssessmentCopy(
+  gradeHints?: { color?: string; clarity?: string } | null,
+  options?: ResolveV3IncompleteAssessmentOptions,
+): V3IncompleteAssessmentCopy {
+  const missing = listMissingGradeFields(gradeHints);
+  if (missing.length > 0) {
+    return applyIncompleteConfidenceCopy(
+      buildGradeIncompleteCopy(missing),
+      options,
+    );
   }
-  return V3_INCOMPLETE_PROPORTION_ASSESSMENT;
+  return applyIncompleteConfidenceCopy(
+    buildProportionIncompleteCopy(gradeHints),
+    options,
+  );
+}
+
+/** Display-only technical appendix rows for incomplete assessment surfaces. */
+export function buildV3IncompleteTechnicalItems(
+  copy: V3IncompleteAssessmentCopy,
+): { label: string; value: string }[] {
+  const items: { label: string; value: string }[] = [
+    {
+      label: "Recommendation Status",
+      value: copy.recommendationStatus,
+    },
+  ];
+
+  if (copy.gradesConfirmed) {
+    items.push({
+      label: "Grades Confirmed",
+      value: copy.gradesConfirmed,
+    });
+  }
+
+  items.push(
+    {
+      label: copy.missingDataLabel,
+      value: copy.missingDataValue,
+    },
+    {
+      label: "Optical Read",
+      value: copy.opticalRead,
+    },
+    {
+      label: "Confidence Level",
+      value: copy.confidenceLevel,
+    },
+    {
+      label: "Next Step",
+      value: copy.nextStep,
+    },
+  );
+
+  return items;
 }

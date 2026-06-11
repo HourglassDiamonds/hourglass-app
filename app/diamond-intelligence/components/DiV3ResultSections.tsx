@@ -35,14 +35,16 @@ import {
   DiV3StrengthColumns,
 } from "./DiV3SpectrumSection";
 import { DI_V3_SECTIONS, DI_V3_TEXT_CTA } from "./di-v3-styles";
+import type { DecisionConfidenceBand } from "@/lib/diamond-intelligence/decision-profile-confidence";
 import type { HourglassClarityDisplayPolicy } from "@/lib/diamond-intelligence/hourglass-clarity-policy";
 import type { PurchaseRecommendationLabel } from "@/lib/diamond-intelligence/purchase-recommendation-presentation";
 import type { V3Gcal8xTier, V3PublicTier } from "./v3-presentation";
 import {
   buildV3PercentilePresentation,
+  buildV3IncompleteTechnicalItems,
   resolveV3IncompleteAssessmentCopy,
-  resolveV3IncompleteMissingDataValue,
 } from "./v3-presentation";
+import DiAdvisoryCta from "./DiAdvisoryCta";
 
 export type DiV3ResultSectionsProps = {
   showPercentile: boolean;
@@ -144,11 +146,11 @@ export default function DiV3ResultSections({
 
   const humanReviewTitle = isGcal8x
     ? "What Still Benefits From Human Review"
-    : "What Still Requires Human Review";
+    : "What Still Warrants In-Person Review";
 
   const humanReviewNote = isGcal8x
     ? "What expert review still adds after optical verification."
-    : "What a report cannot fully confirm on its own.";
+    : "What no grading report can confirm on its own.";
 
   const humanReviewParagraphs = isGcal8x
     ? [
@@ -172,30 +174,13 @@ export default function DiV3ResultSections({
 
   const incompleteCopy = resolveV3IncompleteAssessmentCopy(
     decisionProfile.gradeHints,
+    {
+      confidenceBand: decisionProfile.confidence
+        .band as DecisionConfidenceBand,
+    },
   );
 
-  const incompleteTechnicalItems: { label: string; value: string }[] = [
-    {
-      label: "Recommendation Status",
-      value: incompleteCopy.recommendationStatus,
-    },
-    {
-      label: "Missing Data",
-      value: resolveV3IncompleteMissingDataValue(decisionProfile.gradeHints),
-    },
-    {
-      label: "Optical Read",
-      value: incompleteCopy.opticalRead,
-    },
-    {
-      label: "Confidence Level",
-      value: incompleteCopy.confidenceLevel,
-    },
-    {
-      label: "Next Step",
-      value: incompleteCopy.nextStep,
-    },
-  ];
+  const incompleteTechnicalItems = buildV3IncompleteTechnicalItems(incompleteCopy);
 
   const technicalItems: { label: string; value: string }[] = assessmentIncomplete
     ? incompleteTechnicalItems
@@ -280,7 +265,7 @@ export default function DiV3ResultSections({
         <DiV3Chapter
           number="01"
           title={incompleteCopy.sectionHeadline}
-          note="Partial report read — recommendation not yet complete."
+          note={incompleteCopy.chapterNote}
           chapterId="incomplete-assessment"
         >
           <DiV3BodyParagraphs
@@ -293,8 +278,12 @@ export default function DiV3ResultSections({
 
         <DiV3Chapter
           number="02"
-          title="What Still Requires Human Review"
-          note="What a report cannot fully confirm on its own."
+          title="What Still Warrants In-Person Review"
+          note={
+            incompleteCopy.kind === "proportion"
+              ? "Grades are confirmed — these limits apply to any report-based read."
+              : "What no grading report can confirm on its own."
+          }
           chapterId="human-review"
         >
           <DiV3BodyParagraphs
@@ -315,10 +304,17 @@ export default function DiV3ResultSections({
         <DiV3Chapter
           number="03"
           title="Technical Appendix"
-          note="Simplified read while the assessment is incomplete."
+          note={
+            incompleteCopy.kind === "proportion"
+              ? "Grades are present — proportion confirmation is still pending."
+              : "Simplified read while grading detail is still pending."
+          }
           chapterId="technical-appendix"
         >
           <DiV3DataGrid items={incompleteTechnicalItems} />
+          <p className="mt-5 max-w-[68ch] text-[14px] leading-[1.72] text-[#75675e]">
+            {incompleteCopy.technicalAppendixNote}
+          </p>
         </DiV3Chapter>
       </section>
     );
@@ -445,9 +441,11 @@ export default function DiV3ResultSections({
             )
           }
         >
-          Request Justin&apos;s Review →
+          {CONSUMER_COPY.justinReviewCta} →
         </Link>
       </DiV3Chapter>
+
+      <DiAdvisoryCta />
 
       <div className="grid gap-3 md:grid-cols-2 md:gap-4">
         <DiV3Chapter
