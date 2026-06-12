@@ -392,7 +392,10 @@ describe("validation E — missing color/clarity", () => {
 
 describe("validation F — total read failure copy", () => {
   it("uses shared unable-to-verify headline constant", () => {
-    assert.equal(V3_UNABLE_TO_VERIFY.headline, "Unable to Verify Report");
+    assert.equal(
+      V3_UNABLE_TO_VERIFY.headline,
+      "We Couldn't Read This Report",
+    );
   });
 });
 

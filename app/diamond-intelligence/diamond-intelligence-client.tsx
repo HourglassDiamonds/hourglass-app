@@ -51,6 +51,14 @@ export default function DiamondIntelligenceClient() {
     setUploadPhase((p) => (p === "error" ? "idle" : p));
   }, []);
 
+  const clearInterpretationState = useCallback(() => {
+    setMetadata(null);
+    setExtractedFields(null);
+    setInterpretationFields(null);
+    setCapability(null);
+    setGradeHints(undefined);
+  }, []);
+
   const applyInterpretation = useCallback(
     (interpretation: ClientSafeInterpretationPayload, partial: boolean) => {
       setPartialListing(null);
@@ -70,6 +78,7 @@ export default function DiamondIntelligenceClient() {
   );
 
   const processFile = useCallback(async (file: File) => {
+    clearInterpretationState();
     setFileName(file.name);
     setUploadError(null);
     setUploadStatusNote(null);
@@ -86,25 +95,22 @@ export default function DiamondIntelligenceClient() {
       setUploadPhase("building");
       applyInterpretation(interpretation, partial);
     } catch {
+      clearInterpretationState();
       setUploadStatusNote(null);
       setUploadError(CLIENT_UPLOAD_INTERPRET_ERROR);
       setUploadPhase("error");
     } finally {
       window.clearTimeout(checkingTimer);
     }
-  }, [applyInterpretation]);
+  }, [applyInterpretation, clearInterpretationState]);
 
   const processUrl = useCallback(async (url: string) => {
+    clearInterpretationState();
     setFileName(null);
     setUploadError(null);
     setUploadStatusNote(null);
     setPartialListing(null);
     setPartialListingMessage(null);
-    setMetadata(null);
-    setExtractedFields(null);
-    setInterpretationFields(null);
-    setCapability(null);
-    setGradeHints(undefined);
     setUploadPhase("reading");
 
     const checkingTimer = window.setTimeout(() => {
@@ -124,6 +130,7 @@ export default function DiamondIntelligenceClient() {
       setFileName(result.listing.canonicalUrl);
       applyInterpretation(result.interpretation, result.partial);
     } catch (err) {
+      clearInterpretationState();
       setUploadStatusNote(null);
       if (err instanceof UrlIngestClientError) {
         setUploadError(err.message);
@@ -134,7 +141,7 @@ export default function DiamondIntelligenceClient() {
     } finally {
       window.clearTimeout(checkingTimer);
     }
-  }, [applyInterpretation]);
+  }, [applyInterpretation, clearInterpretationState]);
 
   function handleInterpretationUpdate(snapshot: ClientInterpretationSnapshot) {
     setInterpretationFields(snapshot.interpretationFields);

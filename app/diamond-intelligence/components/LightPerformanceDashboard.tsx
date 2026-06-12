@@ -32,6 +32,7 @@ import DiV3Hero from "./DiV3Hero";
 import DiV3PartialGradeReview from "./DiV3PartialGradeReview";
 import DiV3ResultSections from "./DiV3ResultSections";
 import DiV3UnableToVerify from "./DiV3UnableToVerify";
+import { resolveDiamondIntelligenceResultState } from "./diamond-intelligence-result-state";
 import { CONSUMER_COPY } from "./consumer-display-labels";
 import { DI_EDITORIAL_CARD, DI_EYEBROW_STUDIO, DI_SERIF_HEADLINE } from "./di-studio-styles";
 import { DI_V3_SHELL } from "./di-v3-styles";
@@ -364,10 +365,16 @@ export default function LightPerformanceDashboard({
         }
       : {};
 
-  const busy =
-    uploadPhase === "reading" ||
-    uploadPhase === "checking" ||
-    uploadPhase === "building";
+  const resultState = resolveDiamondIntelligenceResultState({
+    uploadPhase,
+    uploadError: uploadError ?? null,
+    hasReport,
+    partialListing: Boolean(partialListing),
+    v3RenderPhase,
+    canRenderFullResult,
+  });
+
+  const busy = resultState === "PROCESSING";
 
   return (
     <section className={DI_V3_SHELL}>
@@ -392,7 +399,7 @@ export default function LightPerformanceDashboard({
         </div>
       </div>
 
-      {busy && !hasReport ? (
+      {resultState === "PROCESSING" ? (
         <section className="relative py-4 md:py-6" aria-live="polite">
           <p className={DI_EYEBROW_STUDIO}>Diamond Intelligence</p>
           <p
@@ -407,7 +414,7 @@ export default function LightPerformanceDashboard({
         </section>
       ) : null}
 
-      {partialListing && !hasReport && !busy ? (
+      {partialListing && resultState === "NO_RESULT" ? (
         <section className="relative py-6 md:py-8">
           <p className={DI_EYEBROW_STUDIO}>Listing Review</p>
           <p
@@ -422,35 +429,37 @@ export default function LightPerformanceDashboard({
         </section>
       ) : null}
 
-      {!hasReport && !partialListing && !busy && uploadPhase !== "error" ? (
+      {resultState === "NO_RESULT" && !partialListing ? (
         <section className="relative py-6 md:py-8" aria-hidden>
           <div className="mx-auto h-px max-w-md bg-[linear-gradient(90deg,transparent,rgba(181,150,98,0.35),transparent)]" />
         </section>
       ) : null}
 
-      {!hasReport && uploadPhase === "error" && uploadError ? (
-        <DiV3UnableToVerify onFile={onFile} />
+      {resultState === "ERROR" ? (
+        <DiV3UnableToVerify
+          onFile={onFile}
+          reportContext={hasReport ? reportContext : undefined}
+        />
       ) : null}
 
-      {v3RenderPhase === "partial" ? (
+      {resultState === "PARTIAL" ? (
         <DiV3PartialGradeReview
           gradeHints={gradeHints}
           onComplete={(hints) => setLocalGradeHints(hints)}
         />
       ) : null}
 
-      {hasReport &&
-      v3RenderPhase === "full" &&
-      !(decisionProfile && interpretationSummary && metadata && fields) ? (
-        <DiV3UnableToVerify onFile={onFile} reportContext={reportContext} />
-      ) : null}
-
-      {v3RenderPhase === "full" &&
+      {resultState === "SUCCESS" &&
       decisionProfile &&
       interpretationSummary &&
       metadata &&
       fields ? (
         <div key={reportIdentity ?? "v3-result"}>
+          {metadata.reportNumber ? (
+            <p className="mx-auto mb-6 max-w-[960px] text-center text-[11px] uppercase tracking-[0.14em] text-[#9b8b78]">
+              Current Report · {metadata.lab} {metadata.reportNumber}
+            </p>
+          ) : null}
           <DiV3Hero
             mode={effectiveGcal8xPremium ? "gcal8x" : "standard"}
             hero={heroPresentation}
@@ -502,7 +511,11 @@ export default function LightPerformanceDashboard({
         </div>
       ) : null}
 
-      {hasReport ? (
+      {resultState === "SUCCESS" &&
+      decisionProfile &&
+      interpretationSummary &&
+      metadata &&
+      fields ? (
         <footer className="mx-auto mt-12 max-w-[960px] border-t border-[rgba(181,150,98,0.16)] py-7 text-[10px] leading-relaxed text-[#9b8b78]">
           <p>{CONSUMER_COPY.betaDisclosure}</p>
           <p className="mt-2">

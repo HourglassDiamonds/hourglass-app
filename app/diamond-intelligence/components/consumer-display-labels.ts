@@ -210,9 +210,15 @@ export const V3_INCOMPLETE_PROPORTION_ASSESSMENT: V3IncompleteAssessmentCopy = {
 export const V3_INCOMPLETE_ASSESSMENT = V3_INCOMPLETE_GRADE_ASSESSMENT;
 
 export const V3_UNABLE_TO_VERIFY = {
-  eyebrow: "Concierge Review",
-  headline: "Unable to Verify Report",
-  body: "We couldn't confidently read enough information from this document to generate a reliable assessment.",
+  eyebrow: "Diamond Intelligence",
+  headline: "We Couldn't Read This Report",
+  body: "We weren't able to extract enough information from this file to provide a useful interpretation.",
+  reasons: [
+    "Unsupported report format",
+    "Low image quality",
+    "Incomplete screenshot",
+    "Missing report pages",
+  ] as const,
 } as const;
 
 export const GRAPH_REPORT_CONFIDENCE_LABELS = {

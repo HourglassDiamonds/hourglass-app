@@ -12,13 +12,16 @@ const componentPath = join(
 
 describe("DiV3UnableToVerify failure state", () => {
   it("exports shared unable-to-verify headline constant", () => {
-    assert.equal(V3_UNABLE_TO_VERIFY.headline, "Unable to Verify Report");
+    assert.equal(
+      V3_UNABLE_TO_VERIFY.headline,
+      "We Couldn't Read This Report",
+    );
   });
 
   it("renders the shared headline in the failure component", () => {
     const source = readFileSync(componentPath, "utf8");
     assert.match(source, /V3_UNABLE_TO_VERIFY\.headline/);
     assert.match(source, /Upload Another Report/);
-    assert.match(source, /Request Justin/);
+    assert.match(source, /justinReviewCta/);
   });
 });

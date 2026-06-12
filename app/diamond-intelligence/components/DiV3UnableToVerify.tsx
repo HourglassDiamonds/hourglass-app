@@ -9,12 +9,15 @@ import {
 } from "@/lib/concierge/diamond-intelligence-context";
 import { trackConsultationCtaClicked } from "@/lib/consultation-cta";
 import {
+  CONSUMER_COPY,
+  V3_UNABLE_TO_VERIFY,
+} from "./consumer-display-labels";
+import {
   DI_V3_BRAND,
   DI_V3_PARTIAL_CARD,
   DI_V3_PRODUCT,
   DI_V3_TEXT_CTA,
 } from "./di-v3-styles";
-import { V3_UNABLE_TO_VERIFY } from "./consumer-display-labels";
 
 export default function DiV3UnableToVerify({
   onFile,
@@ -47,19 +50,16 @@ export default function DiV3UnableToVerify({
         {V3_UNABLE_TO_VERIFY.body}
       </p>
 
-      <ul className="mx-auto mt-8 max-w-[520px] grid list-none gap-3 p-0 text-left text-[15px] text-[#514536]">
-        <li className="relative pl-6">
-          <span className="absolute left-0 text-[#b59662]">•</span>
-          Upload a clearer PDF version of the report
-        </li>
-        <li className="relative pl-6">
-          <span className="absolute left-0 text-[#b59662]">•</span>
-          Use a GIA, IGI, or GCAL 8X round brilliant report
-        </li>
-        <li className="relative pl-6">
-          <span className="absolute left-0 text-[#b59662]">•</span>
-          Or request a manual review
-        </li>
+      <p className="mx-auto mt-8 max-w-[520px] text-[11px] uppercase tracking-[0.14em] text-[#9b8b78]">
+        Potential reasons
+      </p>
+      <ul className="mx-auto mt-4 max-w-[520px] grid list-none gap-3 p-0 text-left text-[15px] text-[#514536]">
+        {V3_UNABLE_TO_VERIFY.reasons.map((item) => (
+          <li key={item} className="relative pl-6">
+            <span className="absolute left-0 text-[#b59662]">•</span>
+            {item}
+          </li>
+        ))}
       </ul>
 
       <div className="mx-auto mt-10 flex max-w-[520px] flex-col items-center gap-4 sm:flex-row sm:justify-center">
@@ -79,7 +79,7 @@ export default function DiV3UnableToVerify({
             )
           }
         >
-          Request Justin&apos;s Review →
+          {CONSUMER_COPY.justinReviewCta} →
         </Link>
       </div>
 
