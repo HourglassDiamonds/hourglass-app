@@ -20,13 +20,30 @@ export function normalizeCalibrationLab(raw: string): CalibrationLab {
   return "OTHER";
 }
 
+/** GCAL BY SARINE branding — wins over IGI/GIA heuristics on shared LG report IDs. */
+export function hasExplicitGcalSarineReportHeader(text: string): boolean {
+  const t = text.slice(0, 12000);
+  if (!/\bGCAL\b/i.test(t)) return false;
+  return (
+    /\bGCAL\s+BY\s+SARINE\b/i.test(t) ||
+    /\bGCAL\s+by\s+Sarine\b/i.test(t) ||
+    (/\bBY\s+SARINE\b/i.test(t) && /\bGCAL\b/i.test(t)) ||
+    /\bgcalusa\.com\/c\//i.test(t)
+  );
+}
+
 /** Explicit IGI branding in PDF/OCR text — wins over GIA proportion-stack heuristics. */
 export function hasExplicitIgiReportHeader(text: string): boolean {
   const t = text.slice(0, 8000);
-  return (
-    /\bIGI\b/i.test(t) ||
-    /international gemological institute/i.test(t)
-  );
+  if (hasExplicitGcalSarineReportHeader(t)) return false;
+  if (/international gemological institute/i.test(t)) return true;
+  if (/\bBY\s+SARINE\b/i.test(t) && /\bGCAL\b/i.test(t)) return false;
+  if (/\bIGI\b/i.test(t)) {
+    // Sarine logo OCR often yields "_ GI —" — not International Gemological Institute.
+    if (/[_—–-]\s*G\s+I\s*[_—–-\s]/i.test(t.slice(0, 500))) return false;
+    return true;
+  }
+  return false;
 }
 
 export function isIgiExtractionContext(input: {
@@ -44,10 +61,9 @@ export function isIgiExtractionContext(input: {
 /** IGI lab-grown reports often OCR without the IGI header but retain LG report IDs. */
 export function looksLikeIgiReportText(text: string): boolean {
   const t = text.slice(0, 8000);
-  if (/\bIGI\b/i.test(t) || /international gemological institute/i.test(t)) {
-    return true;
-  }
-  if (/\bLG\d{6,14}\b/i.test(t)) return true;
+  if (hasExplicitGcalSarineReportHeader(t)) return false;
+  if (hasExplicitIgiReportHeader(t)) return true;
+  if (/\bLG\d{6,14}\b/i.test(t) && !/\bGCAL\b/i.test(t)) return true;
   if (looksLikeIgiProportionStack(t)) return true;
   return false;
 }

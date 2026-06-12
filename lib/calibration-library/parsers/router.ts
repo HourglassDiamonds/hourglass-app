@@ -1,5 +1,6 @@
 import {
   detectLabFromText,
+  hasExplicitGcalSarineReportHeader,
   hasExplicitIgiReportHeader,
   looksLikeIgiReportText,
   normalizeCalibrationLab,
@@ -34,7 +35,9 @@ export function detectReportFamily(
   hints?: DetectReportFamilyHints,
 ): ReportFamilyMatch {
   const labResolved = resolveLab(text, hints?.lab);
-  const looksGcalSarine = looksLikeGcalSarine4csReportText(text);
+  const looksGcalSarine =
+    looksLikeGcalSarine4csReportText(text) ||
+    hasExplicitGcalSarineReportHeader(text);
   const looksGcal8x = looksLikeGcal8xReportText(text);
   const sarineColumnList = hasSarineColumnListSignature(text);
   const looksGia = looksLikeGiaReportText(text);
@@ -110,7 +113,10 @@ export function detectReportFamily(
   if (
     (lab === "IGI" || looksIgi) &&
     lab !== "GIA" &&
-    !looksGia
+    lab !== "GCAL" &&
+    !looksGia &&
+    !looksGcalSarine &&
+    !looksGcal8x
   ) {
     return {
       lab: lab === "OTHER" ? "IGI" : lab,

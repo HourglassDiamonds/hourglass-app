@@ -46,6 +46,7 @@ import {
   buildV3TraitLine,
   isGcal8xReport,
   needsPartialGradeReview,
+  shouldUseV3IncompleteChapterLayout,
   resolveGcal8xVisualTier,
   resolveUncappedOpticalTier,
   resolveV3PublicTier,
@@ -491,9 +492,14 @@ export default function LightPerformanceDashboard({
             diameter={diameter}
             formatCarat={formatCarat}
             reportContext={reportContext}
-            assessmentIncomplete={Boolean(
-              lowInterpretationConfidence && decisionProfile,
-            )}
+            assessmentIncomplete={shouldUseV3IncompleteChapterLayout({
+              lowInterpretationConfidence: Boolean(
+                lowInterpretationConfidence && decisionProfile,
+              ),
+              hasDecisionProfile: Boolean(decisionProfile),
+              clarityExcluded: clarityPolicy.isExcluded,
+              purchaseRecommendation,
+            })}
           />
 
           {capability &&

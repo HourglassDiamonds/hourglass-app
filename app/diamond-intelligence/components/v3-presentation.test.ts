@@ -10,6 +10,7 @@ import {
   isListedPartialColor,
   looksLikeGcal8xDisplayText,
   needsPartialGradeReview,
+  shouldUseV3IncompleteChapterLayout,
   partialColorSelectOptions,
   PARTIAL_COLOR_SINGLE_GRADES,
   resolveGcal8xVisualTier,
@@ -59,6 +60,32 @@ describe("needsPartialGradeReview", () => {
         canShowScore: false,
       }),
       false,
+    );
+  });
+});
+
+describe("shouldUseV3IncompleteChapterLayout", () => {
+  it("suppresses incomplete chapter stack for excluded clarity reads", () => {
+    assert.equal(
+      shouldUseV3IncompleteChapterLayout({
+        lowInterpretationConfidence: true,
+        hasDecisionProfile: true,
+        clarityExcluded: true,
+        purchaseRecommendation: "Not Recommended",
+      }),
+      false,
+    );
+  });
+
+  it("allows incomplete chapter stack for low-confidence proportion gaps", () => {
+    assert.equal(
+      shouldUseV3IncompleteChapterLayout({
+        lowInterpretationConfidence: true,
+        hasDecisionProfile: true,
+        clarityExcluded: false,
+        purchaseRecommendation: "Worth Reviewing",
+      }),
+      true,
     );
   });
 });

@@ -732,6 +732,28 @@ export function needsPartialGradeReview(input: PartialGradeReviewInput): boolean
   return tracePartialGradeReviewGate(input).needsPartial;
 }
 
+/**
+ * V3 incomplete chapter layout — separate from partial grade review.
+ * Grade-disqualified reads (I1/I2/I3) always use the full editorial chapter stack.
+ */
+export function shouldUseV3IncompleteChapterLayout(input: {
+  lowInterpretationConfidence: boolean;
+  hasDecisionProfile: boolean;
+  clarityExcluded: boolean;
+  purchaseRecommendation?: PurchaseRecommendationLabel;
+}): boolean {
+  if (!input.lowInterpretationConfidence || !input.hasDecisionProfile) return false;
+  if (input.clarityExcluded) return false;
+  if (
+    input.purchaseRecommendation === "Not Recommended" ||
+    input.purchaseRecommendation === "Outside Hourglass Standards" ||
+    input.purchaseRecommendation === "Justin Inspection Required"
+  ) {
+    return false;
+  }
+  return true;
+}
+
 /** Missing grade labels for incomplete-assessment technical appendix. */
 export function listMissingGradeFields(gradeHints?: {
   color?: string;

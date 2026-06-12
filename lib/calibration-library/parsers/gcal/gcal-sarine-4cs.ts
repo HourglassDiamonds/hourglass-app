@@ -360,6 +360,13 @@ export function extractGcalSarine4csGradingFields(
   );
   if (cut?.[1]) out.cutGrade = titleCasePhrase(cut[1]);
 
+  if (!out.cutGrade) {
+    const cutInline = norm.match(
+      /\bCut\s+(Ideal|Excellent|Very\s+Good|Good|Fair|Poor)\b/i,
+    );
+    if (cutInline?.[1]) out.cutGrade = titleCasePhrase(cutInline[1]);
+  }
+
   return out;
 }
 

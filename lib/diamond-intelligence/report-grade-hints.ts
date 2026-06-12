@@ -110,6 +110,15 @@ const GCAL_COLOR_CLARITY_INLINE = new RegExp(
   "gi",
 );
 
+/** GCAL Sarine JPG OCR — "4Cs Color F" on the grading panel. */
+const GCAL_SARINE_4CS_COLOR = /\b4C'?s?\s+Color\s+([D-Z])\b/gi;
+
+/** GCAL Sarine JPG OCR — "GRADI NG Clarity Vs1" after proportion block. */
+const GCAL_SARINE_4CS_CLARITY = new RegExp(
+  String.raw`\b(?:GRAD\s*I?\s*NG\s+)?Clarity\s+${CLARITY_GRADE_TOKEN}\b`,
+  "gi",
+);
+
 /** GCAL header line — e.g. GCAL LG360166024 RB 1.03 F VVS1 */
 const GCAL_HEADER_4CS = new RegExp(
   String.raw`\bGCAL\s+LG?\d{6,12}\s+RB\s+[\d.]+\s+([D-Z])\s+${CLARITY_GRADE_TOKEN}\b`,
@@ -221,6 +230,19 @@ function isLgdrDossierGradeContext(text: string): boolean {
   );
 }
 
+/** GCAL 8X / Sarine reports use short Color / Clarity labels (no "Grade" suffix). */
+function isGcalGradeContext(text: string): boolean {
+  const t = text.slice(0, 14000);
+  if (isGcal8xGradeContext(t)) return true;
+  return (
+    /\bGCAL\s+BY\s+SARINE\b/i.test(t) ||
+    /\bGCAL\s+by\s+Sarine\b/i.test(t) ||
+    (/\bBY\s+SARINE\b/i.test(t) && /\bGCAL\b/i.test(t)) ||
+    /\bgcalusa\.com\/c\//i.test(t) ||
+    /\b4C'?s?\s+Color\s+[D-Z]\b/i.test(t)
+  );
+}
+
 /** GCAL 8X reports use short Color / Clarity labels (no "Grade" suffix). */
 function isGcal8xGradeContext(text: string): boolean {
   const t = text.slice(0, 14000);
@@ -329,7 +351,18 @@ function collectColorCandidates(text: string): ColorExtractionTrace {
     }
   }
 
-  if (isGcal8xGradeContext(text)) {
+  if (isGcalGradeContext(text)) {
+    for (const m of text.matchAll(GCAL_SARINE_4CS_COLOR)) {
+      if (!m[1]) continue;
+      pushColorCandidate(candidates, rejected, {
+        value: normalizeColor(m[1]),
+        priority: 1,
+        source: "gcal-sarine-4cs-color",
+        confidence: "high",
+        rawMatch: m[0],
+      });
+    }
+
     for (const m of text.matchAll(GCAL_COLOR_CLARITY_INLINE)) {
       if (!m[1]) continue;
       pushColorCandidate(candidates, rejected, {
@@ -636,7 +669,19 @@ function collectClarityCandidates(text: string): ClarityExtractionTrace {
     }
   }
 
-  if (isGcal8xGradeContext(text)) {
+  if (isGcalGradeContext(text)) {
+    for (const m of text.matchAll(GCAL_SARINE_4CS_CLARITY)) {
+      if (!m[1]) continue;
+      pushClarityCandidate(candidates, rejected, text, {
+        value: m[1],
+        priority: 1,
+        source: "gcal-sarine-4cs-clarity",
+        confidence: "high",
+        rawMatch: m[0],
+        matchIndex: m.index,
+      });
+    }
+
     for (const m of text.matchAll(GCAL_COLOR_CLARITY_INLINE)) {
       if (!m[1]) continue;
       pushClarityCandidate(candidates, rejected, text, {
