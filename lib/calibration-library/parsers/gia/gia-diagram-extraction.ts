@@ -15,6 +15,7 @@ import {
   ocrImageBuffer,
   renderPdfPagePngAtScale,
   renderPdfPagePngLgdrDossier,
+  renderUploadImageAsPage,
   type RenderedPdfPage,
 } from "../shared/ocr-utils";
 import {
@@ -788,10 +789,9 @@ function pickBetterDiagramReport(
   return a;
 }
 
-async function extractGiaProportionDiagramForLayout(
-  pdfBytes: Buffer,
+async function extractGiaProportionDiagramForRenderedPage(
+  rendered: RenderedPdfPage,
   layout: GiaDiagramLayout,
-  page: number,
   opts?: { reportNumber?: string },
 ): Promise<GiaDiagramExtractionReport> {
   const reportStyle = styleFromLayout(layout);
@@ -812,21 +812,12 @@ async function extractGiaProportionDiagramForLayout(
     ),
   });
 
-  if (!(await isOcrRuntimeAvailable())) {
-    return empty(false, "OCR runtime not available");
-  }
-
   const diagramValueBands =
     layout === "colored-simplified"
       ? valueBands.filter((b) => b.id.startsWith("proportions-"))
       : valueBands;
 
   const maxScale = Math.max(...diagramValueBands.map((b) => b.scale));
-  const rendered =
-    layout === "lgdr-dossier"
-      ? await renderPdfPagePngLgdrDossier(pdfBytes, page, maxScale)
-      : await renderPdfPagePngAtScale(pdfBytes, page, maxScale);
-  if (!rendered) return empty(true, `could not render PDF page ${page}`);
 
   const bands: GiaDiagramBandOcr[] = [];
   const bandCropPngs: Array<{ id: string; raw: Buffer; preprocessed?: Buffer }> =
@@ -910,6 +901,48 @@ async function extractGiaProportionDiagramForLayout(
   return report;
 }
 
+async function extractGiaProportionDiagramForLayout(
+  pdfBytes: Buffer,
+  layout: GiaDiagramLayout,
+  page: number,
+  opts?: { reportNumber?: string },
+): Promise<GiaDiagramExtractionReport> {
+  const reportStyle = styleFromLayout(layout);
+  const region = layoutRegion(layout);
+  const empty = (
+    ocrAvailable: boolean,
+    reason: string,
+  ): GiaDiagramExtractionReport => ({
+    ocrAvailable,
+    diagramLocated: false,
+    locateReason: reason,
+    reportStyle,
+    region,
+    bands: [],
+    fields: GIA_DIAGRAM_TARGET_FIELDS.map((f) =>
+      mk(f, null, null, "none", reason),
+    ),
+  });
+
+  if (!(await isOcrRuntimeAvailable())) {
+    return empty(false, "OCR runtime not available");
+  }
+
+  const diagramValueBands =
+    layout === "colored-simplified"
+      ? layoutBands(layout).filter((b) => b.id.startsWith("proportions-"))
+      : layoutBands(layout);
+
+  const maxScale = Math.max(...diagramValueBands.map((b) => b.scale));
+  const rendered =
+    layout === "lgdr-dossier"
+      ? await renderPdfPagePngLgdrDossier(pdfBytes, page, maxScale)
+      : await renderPdfPagePngAtScale(pdfBytes, page, maxScale);
+  if (!rendered) return empty(true, `could not render PDF page ${page}`);
+
+  return extractGiaProportionDiagramForRenderedPage(rendered, layout, opts);
+}
+
 // ─────────────────────────────── entry point ───────────────────────────────
 
 export async function extractGiaProportionDiagram(
@@ -971,6 +1004,68 @@ export async function extractGiaProportionDiagram(
     if (result.diagramLocated && countAssignedFields(result) >= 6) break;
   }
   return best ?? empty(true, "no layout produced a diagram report");
+}
+
+/** Screenshot/JPG upload — band OCR on the uploaded image instead of a PDF render. */
+export async function extractGiaProportionDiagramFromImage(
+  imageBytes: Buffer,
+  opts?: {
+    layout?: GiaDiagramLayout;
+    tryLayouts?: boolean;
+    combinedText?: string;
+    reportNumber?: string;
+  },
+): Promise<GiaDiagramExtractionReport> {
+  const styleDetection = opts?.combinedText
+    ? detectGiaReportStyle(opts.combinedText)
+    : null;
+  const region = GIA_PROPORTION_DIAGRAM_REGION;
+  const empty = (
+    ocrAvailable: boolean,
+    reason: string,
+  ): GiaDiagramExtractionReport => ({
+    ocrAvailable,
+    diagramLocated: false,
+    locateReason: reason,
+    reportStyle: styleDetection?.style,
+    region,
+    bands: [],
+    fields: GIA_DIAGRAM_TARGET_FIELDS.map((f) =>
+      mk(f, null, null, "none", reason),
+    ),
+  });
+
+  if (!(await isOcrRuntimeAvailable())) {
+    return empty(false, "OCR runtime not available");
+  }
+
+  const rendered = await renderUploadImageAsPage(imageBytes);
+  if (!rendered) return empty(true, "could not load uploaded image");
+
+  const primaryLayout = opts?.layout ?? styleDetection?.layout ?? "facsimile";
+  const layouts: GiaDiagramLayout[] = opts?.layout
+    ? [opts.layout]
+    : opts?.tryLayouts === false
+      ? [primaryLayout]
+      : primaryLayout === "colored-simplified"
+        ? ["colored-simplified"]
+        : primaryLayout === "lgdr-dossier"
+          ? ["lgdr-dossier", "facsimile"]
+          : styleDetection?.style === "GIA_UNKNOWN"
+            ? ["facsimile", "lgdr-dossier", "colored-simplified"]
+            : ["facsimile", "lgdr-dossier"];
+
+  let best: GiaDiagramExtractionReport | null = null;
+  for (const layout of layouts) {
+    const result = await extractGiaProportionDiagramForRenderedPage(
+      rendered,
+      layout,
+      { reportNumber: opts?.reportNumber },
+    );
+    best = best ? pickBetterDiagramReport(best, result) : result;
+    if (result.diagramLocated && countAssignedFields(result) >= 6) break;
+  }
+  return best ?? empty(true, "no layout produced a diagram report from image");
 }
 
 type FieldSetter = (
@@ -1038,12 +1133,17 @@ export function shouldRunGiaProportionDiagramExtraction(
 
 /** Production: fill empty GIA diagram fields from targeted band OCR. */
 export async function applyGiaProportionDiagramExtraction(
-  pdfBytes: Buffer,
+  documentBytes: Buffer,
   combinedText: string,
   fields: CalibrationReportFields,
   giaInternal: GiaInternalFields | undefined,
   set: FieldSetter,
-  opts?: { reportNumber?: string; layout?: GiaDiagramLayout },
+  opts?: {
+    reportNumber?: string;
+    layout?: GiaDiagramLayout;
+    /** When true, documentBytes is a screenshot/JPG rather than PDF. */
+    imageUpload?: boolean;
+  },
 ): Promise<GiaDiagramApplyReport> {
   const styleDetection = detectGiaReportStyle(combinedText);
   const gate = shouldRunGiaProportionDiagramExtraction(fields, combinedText, {
@@ -1077,12 +1177,19 @@ export async function applyGiaProportionDiagramExtraction(
   }
 
   const hintedLayout = opts?.layout ?? styleDetection.layout;
-  const diagram = await extractGiaProportionDiagram(pdfBytes, {
-    layout: hintedLayout,
-    tryLayouts: !opts?.layout && styleDetection.style === "GIA_UNKNOWN",
-    combinedText,
-    reportNumber: opts?.reportNumber,
-  });
+  const diagram = opts?.imageUpload
+    ? await extractGiaProportionDiagramFromImage(documentBytes, {
+        layout: hintedLayout,
+        tryLayouts: !opts?.layout && styleDetection.style === "GIA_UNKNOWN",
+        combinedText,
+        reportNumber: opts?.reportNumber,
+      })
+    : await extractGiaProportionDiagram(documentBytes, {
+        layout: hintedLayout,
+        tryLayouts: !opts?.layout && styleDetection.style === "GIA_UNKNOWN",
+        combinedText,
+        reportNumber: opts?.reportNumber,
+      });
   const layout = diagram.locateReason.startsWith("lgdr-dossier")
     ? "lgdr-dossier"
     : diagram.locateReason.startsWith("colored-simplified")

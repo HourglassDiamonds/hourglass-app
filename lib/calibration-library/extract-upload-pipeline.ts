@@ -1,5 +1,6 @@
 import {
   extractTextFromDocument,
+  isImageMime,
   isPdfMime,
   type DocumentTextExtraction,
 } from "./document-extract";
@@ -166,19 +167,31 @@ function syncParsedGradeHintText(
 
 /** Display-only — detect when 4Cs text is likely absent from the PDF text layer. */
 function gradeHintTextLikelyIncomplete(text: string): boolean {
-  const hasClarity =
+  const hasClarityGrade =
     /\bclarity\s+grade\b[\s\S]{0,48}\b(?:FL|IF|VVS\s*1|VVS\s*2|VS\s*1|VS\s*2|SI\s*1|SI\s*2|I\s*1|I\s*2|I\s*3)\b/i.test(
       text,
     );
-  const hasColor =
+  const hasClarityShort =
+    /\bclarity\b[\s\S]{0,32}\b(?:FL|IF|VVS\s*1|VVS\s*2|VS\s*1|VS\s*2|SI\s*1|SI\s*2|I\s*1|I\s*2|I\s*3|VVS1|VVS2|VS1|VS2|SI1|SI2|I1|I2|I3)\b/i.test(
+      text,
+    );
+  const hasColorGrade =
     /\bcolou?r\s+grade\b[\s\S]{0,48}(?:[D-Z](?:\s+to\s+[A-Z](?:\s+range)?)?|fancy)/i.test(
       text,
     );
+  const hasColorShort =
+    /\bcolou?r\b[\s\S]{0,24}\b[D-Z]\b/i.test(text) ||
+    /\bGCAL\s+LG?\d{6,12}\s+RB\s+[\d.]+\s+[D-Z]\s+(?:FL|IF|VVS|VS|SI|I)/i.test(
+      text,
+    );
+  const hasClarity = hasClarityGrade || hasClarityShort;
+  const hasColor = hasColorGrade || hasColorShort;
   return !hasClarity || !hasColor;
 }
 
 async function runImageOcrAugmentation(input: {
-  uploadPdfBytes: Buffer;
+  documentBytes: Buffer;
+  imageUpload?: boolean;
   combined: string;
   parsed: ExtractionResult;
   effectiveMethod: TextExtractionMethod;
@@ -188,7 +201,8 @@ async function runImageOcrAugmentation(input: {
   onGradeHintTextUpdate?: (text: string) => void;
 }): Promise<{ imageOcrMs: number; ocrCompleted: boolean; gradeHintText: string }> {
   const {
-    uploadPdfBytes,
+    documentBytes,
+    imageUpload = false,
     combined,
     parsed,
     effectiveMethod,
@@ -263,7 +277,7 @@ async function runImageOcrAugmentation(input: {
     parsed.confidence[key] = capConfidence(key, level);
   };
 
-  if (runSarine) {
+  if (runSarine && !imageUpload) {
     const proportionGatePassed = needsGcalSarineProportionImageOcr(parsed.fields);
     const finishGatePassed = needsGcalSarineFinishImageOcr(parsed.fields);
     if (
@@ -283,7 +297,7 @@ async function runImageOcrAugmentation(input: {
       const gcalInternal = parsed.gcalInternal ?? {};
       await withTimeout(
         applyGcalSarineProportionImageOcr(
-          uploadPdfBytes,
+          documentBytes,
           combined,
           parsed.fields,
           gcalInternal,
@@ -316,21 +330,22 @@ async function runImageOcrAugmentation(input: {
       }
     }
   } else if (
-    shouldRunGcalImageRegionOcr(parsed.fields, {
+    !imageUpload &&
+    (shouldRunGcalImageRegionOcr(parsed.fields, {
       parserType: parsed.parserType,
       lab: parsed.metadata.lab,
       gcalImageOnlyPdf,
       labHint: parsed.metadata.lab,
       combinedText: combined,
     }) ||
-    (parsed.parserType === "gcal-sarine-4cs" &&
-      !sarineColumnListSignature &&
-      looksLikeGcal8xReportText(combined))
+      (parsed.parserType === "gcal-sarine-4cs" &&
+        !sarineColumnListSignature &&
+        looksLikeGcal8xReportText(combined)))
   ) {
     const gcalInternal = parsed.gcalInternal ?? {};
     await withTimeout(
       applyGcal8xImageRegionOcrFallback(
-        uploadPdfBytes,
+        documentBytes,
         parsed.fields,
         gcalInternal,
         setField,
@@ -370,8 +385,7 @@ async function runImageOcrAugmentation(input: {
       looksLikeGiaReportText(combined);
     if (
       isGia &&
-      giaProportionDiagramFieldsMissing(parsed.fields) &&
-      uploadPdfBytes
+      giaProportionDiagramFieldsMissing(parsed.fields)
     ) {
       const giaInternal = parsed.giaInternal ?? {};
       let giaCombined = combined;
@@ -388,16 +402,19 @@ async function runImageOcrAugmentation(input: {
       const clientDiagramFirst =
         (lgdrDossier || coloredSimplified) &&
         giaProportionDiagramFieldsMissing(parsed.fields);
-      if (clientDiagramFirst && uploadPdfBytes) {
+      if (clientDiagramFirst) {
         try {
           await withTimeout(
             applyGiaProportionDiagramExtraction(
-              uploadPdfBytes,
+              documentBytes,
               giaCombined,
               parsed.fields,
               giaInternal,
               setField,
-              { reportNumber: reportNumberHint || undefined },
+              {
+                reportNumber: reportNumberHint || undefined,
+                imageUpload,
+              },
             ),
             Math.max(regionOcrTimeoutMs - (Date.now() - started), 5_000),
             "client-gia-diagram-band-ocr",
@@ -407,12 +424,13 @@ async function runImageOcrAugmentation(input: {
         }
       }
       if (
+        !imageUpload &&
         needsGiaProportionOcrSupplement(combined) &&
         !clientDiagramFirst
       ) {
         try {
           const fullOcr = await withTimeout(
-            ocrGiaFacsimileFullPages(uploadPdfBytes),
+            ocrGiaFacsimileFullPages(documentBytes),
             Math.max(regionOcrTimeoutMs, 12_000),
             "client-gia-full-page-ocr",
           );
@@ -426,6 +444,31 @@ async function runImageOcrAugmentation(input: {
       }
       extractGiaOcrProportionDiagram(giaCombined, parsed.fields, setField, giaInternal);
       applyGiaOcrFieldHydrationFallback(giaCombined, parsed.fields, setField);
+      if (
+        imageUpload &&
+        giaProportionDiagramFieldsMissing(parsed.fields) &&
+        !clientDiagramFirst
+      ) {
+        try {
+          await withTimeout(
+            applyGiaProportionDiagramExtraction(
+              documentBytes,
+              giaCombined,
+              parsed.fields,
+              giaInternal,
+              setField,
+              {
+                reportNumber: reportNumberHint || undefined,
+                imageUpload: true,
+              },
+            ),
+            Math.max(regionOcrTimeoutMs - (Date.now() - started), 4_000),
+            "client-gia-image-diagram-band-ocr",
+          );
+        } catch {
+          // Best-effort band OCR on uploaded image.
+        }
+      }
       const giaDiagramGate = shouldRunGiaFacsimileDiagramImageOcr(
         parsed.fields,
         giaCombined,
@@ -436,6 +479,7 @@ async function runImageOcrAugmentation(input: {
       );
       if (
         giaDiagramGate.run &&
+        !imageUpload &&
         giaProportionDiagramFieldsMissing(parsed.fields)
       ) {
         const elapsedMs = Date.now() - started;
@@ -450,7 +494,7 @@ async function runImageOcrAugmentation(input: {
             try {
               await withTimeout(
                 applyGiaClientCrownDiagramOcr(
-                  uploadPdfBytes,
+                  documentBytes,
                   parsed.fields,
                   setField,
                 ),
@@ -473,7 +517,7 @@ async function runImageOcrAugmentation(input: {
           try {
             const facsimileOcr = await withTimeout(
               applyGiaFacsimileDiagramImageOcr(
-                uploadPdfBytes,
+                documentBytes,
                 giaCombined,
                 parsed.fields,
                 giaInternal,
@@ -498,7 +542,7 @@ async function runImageOcrAugmentation(input: {
             try {
               await withTimeout(
                 applyGiaClientCrownDiagramOcr(
-                  uploadPdfBytes,
+                  documentBytes,
                   parsed.fields,
                   setField,
                 ),
@@ -515,7 +559,7 @@ async function runImageOcrAugmentation(input: {
             try {
               await withTimeout(
                 applyGiaClientPavilionDiagramOcr(
-                  uploadPdfBytes,
+                  documentBytes,
                   parsed.fields,
                   setField,
                 ),
@@ -573,11 +617,11 @@ async function runImageOcrAugmentation(input: {
     parserType: parsed.parserType,
     lab: parsed.metadata.lab,
   });
-  if (giaGate.run) {
+  if (giaGate.run && !imageUpload) {
     const giaInternal = parsed.giaInternal ?? {};
     const facsimileOcr = await withTimeout(
       applyGiaFacsimileDiagramImageOcr(
-        uploadPdfBytes,
+        documentBytes,
         combined,
         parsed.fields,
         giaInternal,
@@ -603,11 +647,11 @@ async function runImageOcrAugmentation(input: {
     parserType: parsed.parserType,
     lab: parsed.metadata.lab,
   });
-  if (igiGate.run) {
+  if (igiGate.run && !imageUpload) {
     const igiInternal = parsed.igiInternal ?? {};
     await withTimeout(
       applyIgiDiagramImageOcr(
-        uploadPdfBytes,
+        documentBytes,
         combined,
         parsed.fields,
         igiInternal,
@@ -911,11 +955,18 @@ export async function runCalibrationUploadExtraction(
             parserPath: parsed.parserType,
             detail: "skipped-client-text-parse-sufficient",
           });
-        } else if (uploadPdfBytes) {
+        } else if (
+          (uploadPdfBytes ||
+            (clientMode && input.bytes && isImageMime(input.mime ?? ""))) &&
+          input.bytes
+        ) {
+          const documentBytes = input.bytes;
+          const imageUpload = !uploadPdfBytes;
           try {
             console.log("[upload-pipeline] image-ocr:start", { ms: Date.now() - t0 });
             const ocr = await runImageOcrAugmentation({
-              uploadPdfBytes,
+              documentBytes,
+              imageUpload,
               combined,
               parsed,
               effectiveMethod,

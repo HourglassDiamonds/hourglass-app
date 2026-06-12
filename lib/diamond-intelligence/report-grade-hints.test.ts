@@ -9,6 +9,10 @@ import {
   traceClarityExtraction,
 } from "./report-grade-hints";
 import { GIA2527039693_FACSIMILE_PDF_TEXT } from "@/lib/calibration-library/fixtures/gia2527039693";
+import {
+  GCAL360166024_IMAGE_OCR,
+  GCAL360166024_INLINE_OCR,
+} from "@/lib/calibration-library/fixtures/gcal360166024";
 
 describe("parseReportGradeHints", () => {
   it("parses clarity from GIA-style report text", () => {
@@ -130,6 +134,42 @@ Cut ............................................................................
     );
     assert.equal(hints.color, "F");
     assert.equal(hints.clarity, "VVS1");
+  });
+
+  it("parses GCAL 8X image-style Color/Clarity labels (LG360166024)", () => {
+    for (const text of [GCAL360166024_IMAGE_OCR, GCAL360166024_INLINE_OCR]) {
+      const hints = parseReportGradeHints(text);
+      assert.equal(hints.color, "F", text.slice(0, 40));
+      assert.equal(hints.clarity, "VVS1", text.slice(0, 40));
+    }
+
+    const colorTrace = traceColorExtraction(GCAL360166024_IMAGE_OCR);
+    assert.equal(colorTrace.selected, "F");
+    assert.ok(
+      colorTrace.candidates.some(
+        (c) =>
+          c.source === "gcal-color-label-next-line" ||
+          c.source === "gcal-header-4cs-color",
+      ),
+    );
+
+    const clarityTrace = traceClarityExtraction(GCAL360166024_IMAGE_OCR);
+    assert.equal(clarityTrace.selected, "VVS1");
+    assert.ok(
+      clarityTrace.candidates.some(
+        (c) =>
+          c.source === "gcal-clarity-label-next-line" ||
+          c.source === "gcal-header-4cs-clarity",
+      ),
+    );
+  });
+
+  it("does not parse GCAL-style labels outside GCAL context", () => {
+    const hints = parseReportGradeHints(
+      "Generic brochure\nColor\nF\nClarity\nVVS1\n",
+    );
+    assert.equal(hints.color, undefined);
+    assert.equal(hints.clarity, undefined);
   });
 });
 

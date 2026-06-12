@@ -436,3 +436,24 @@ export async function ocrPdfBuffer(pdfBytes: Buffer): Promise<OcrResult> {
     });
   }
 }
+
+/** Normalize uploaded screenshot/JPG into a page PNG for region-crop diagram OCR. */
+export async function renderUploadImageAsPage(
+  imageBytes: Buffer,
+): Promise<RenderedPdfPage | null> {
+  try {
+    const { createCanvas, loadImage } = await import("@napi-rs/canvas");
+    const img = await loadImage(imageBytes);
+    const canvas = createCanvas(img.width, img.height);
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(img, 0, 0);
+    return {
+      png: canvas.toBuffer("image/png"),
+      width: img.width,
+      height: img.height,
+      backend: "production",
+    };
+  } catch {
+    return null;
+  }
+}

@@ -97,6 +97,25 @@ const LGDR_CLARITY_DOT_LEADER = new RegExp(
   "gi",
 );
 
+/** GCAL 8X — short Color / Clarity labels without "Grade" suffix (gated by GCAL context). */
+const GCAL_COLOR_LABEL_NEXT_LINE = /\b(?:colou?r|colour)\s*\n\s*([D-Z])\s*(?:\n|$)/gi;
+
+const GCAL_CLARITY_LABEL_NEXT_LINE = new RegExp(
+  String.raw`\b(?:clarity|clarit[yq])\s*\n\s*${CLARITY_GRADE_TOKEN}\s*(?:\n|$)`,
+  "gi",
+);
+
+const GCAL_COLOR_CLARITY_INLINE = new RegExp(
+  String.raw`\b(?:colou?r|colour)\s+([D-Z])\s+(?:clarity|clarit[yq])\s+${CLARITY_GRADE_TOKEN}\b`,
+  "gi",
+);
+
+/** GCAL header line — e.g. GCAL LG360166024 RB 1.03 F VVS1 */
+const GCAL_HEADER_4CS = new RegExp(
+  String.raw`\bGCAL\s+LG?\d{6,12}\s+RB\s+[\d.]+\s+([D-Z])\s+${CLARITY_GRADE_TOKEN}\b`,
+  "gi",
+);
+
 const CUT_FINISH_NOISE =
   /\b(?:very|good|excellent|poor|fair|medium|faint|slight|strong|blue|yellow|white|none|symmetry|polish|fluorescence|cut|grading|results|profile|proportions)\b/i;
 
@@ -145,6 +164,9 @@ const CLARITY_CONFIDENCE_RANK: Record<ClarityExtractConfidence, number> = {
 const CLARITY_SOURCE_RANK: Record<string, number> = {
   "clarity-dot-leader": 6,
   "lgdr-clarity-dot-leader": 6,
+  "gcal-clarity-label-next-line": 5,
+  "gcal-color-clarity-inline": 5,
+  "gcal-header-4cs-clarity": 5,
   "explicit-clarity-grade-inline": 5,
   "explicit-clarity-grade-next-line": 5,
   "clarity-grading-panel": 4,
@@ -165,6 +187,9 @@ const COLOR_SOURCE_RANK: Record<string, number> = {
   "color-dot-leader-range": 6,
   "color-dot-leader-dash-range": 6,
   "lgdr-color-dot-leader-single": 6,
+  "gcal-color-label-next-line": 5,
+  "gcal-color-clarity-inline": 5,
+  "gcal-header-4cs-color": 5,
   "explicit-color-grade-next-line": 5,
   "color-dot-leader-single": 5,
   "explicit-color-grade-inline": 4,
@@ -193,6 +218,19 @@ function isLgdrDossierGradeContext(text: string): boolean {
       text,
     ) ||
     /\blaboratory[-\s]*grown\s+diamond\s+specifications\b/i.test(text)
+  );
+}
+
+/** GCAL 8X reports use short Color / Clarity labels (no "Grade" suffix). */
+function isGcal8xGradeContext(text: string): boolean {
+  const t = text.slice(0, 14000);
+  return (
+    /\bGCAL\s*8\s*X\b/i.test(t) ||
+    (/\bGCAL\b/i.test(t) &&
+      /\b(?:gem\s+certification\s*&\s*assurance|ultimate\s+diamond)\b/i.test(
+        t,
+      )) ||
+    (/\bGCAL\s+LG?\d{6,12}\b/i.test(t) && /\b(?:carat\s+weight|round\s+brilliant)\b/i.test(t))
   );
 }
 
@@ -285,6 +323,41 @@ function collectColorCandidates(text: string): ColorExtractionTrace {
         value: normalizeColor(m[1]),
         priority: 1,
         source: "lgdr-color-dot-leader-single",
+        confidence: "high",
+        rawMatch: m[0],
+      });
+    }
+  }
+
+  if (isGcal8xGradeContext(text)) {
+    for (const m of text.matchAll(GCAL_COLOR_CLARITY_INLINE)) {
+      if (!m[1]) continue;
+      pushColorCandidate(candidates, rejected, {
+        value: normalizeColor(m[1]),
+        priority: 1,
+        source: "gcal-color-clarity-inline",
+        confidence: "high",
+        rawMatch: m[0],
+      });
+    }
+
+    for (const m of text.matchAll(GCAL_HEADER_4CS)) {
+      if (!m[1]) continue;
+      pushColorCandidate(candidates, rejected, {
+        value: normalizeColor(m[1]),
+        priority: 1,
+        source: "gcal-header-4cs-color",
+        confidence: "high",
+        rawMatch: m[0],
+      });
+    }
+
+    for (const m of text.matchAll(GCAL_COLOR_LABEL_NEXT_LINE)) {
+      if (!m[1]) continue;
+      pushColorCandidate(candidates, rejected, {
+        value: normalizeColor(m[1]),
+        priority: 1,
+        source: "gcal-color-label-next-line",
         confidence: "high",
         rawMatch: m[0],
       });
@@ -556,6 +629,44 @@ function collectClarityCandidates(text: string): ClarityExtractionTrace {
         value: m[1],
         priority: 1,
         source: "lgdr-clarity-dot-leader",
+        confidence: "high",
+        rawMatch: m[0],
+        matchIndex: m.index,
+      });
+    }
+  }
+
+  if (isGcal8xGradeContext(text)) {
+    for (const m of text.matchAll(GCAL_COLOR_CLARITY_INLINE)) {
+      if (!m[1]) continue;
+      pushClarityCandidate(candidates, rejected, text, {
+        value: m[1],
+        priority: 1,
+        source: "gcal-color-clarity-inline",
+        confidence: "high",
+        rawMatch: m[0],
+        matchIndex: m.index,
+      });
+    }
+
+    for (const m of text.matchAll(GCAL_HEADER_4CS)) {
+      if (!m[2]) continue;
+      pushClarityCandidate(candidates, rejected, text, {
+        value: m[2],
+        priority: 1,
+        source: "gcal-header-4cs-clarity",
+        confidence: "high",
+        rawMatch: m[0],
+        matchIndex: m.index,
+      });
+    }
+
+    for (const m of text.matchAll(GCAL_CLARITY_LABEL_NEXT_LINE)) {
+      if (!m[1]) continue;
+      pushClarityCandidate(candidates, rejected, text, {
+        value: m[1],
+        priority: 1,
+        source: "gcal-clarity-label-next-line",
         confidence: "high",
         rawMatch: m[0],
         matchIndex: m.index,

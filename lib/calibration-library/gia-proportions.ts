@@ -242,6 +242,7 @@ export function auditGiaOcrDiagramCapture(rawText: string): GiaOcrDiagramCapture
 }
 
 export function giaOcrDiagramNumbersCaptured(rawText: string): boolean {
+  if (giaProportionValuesPresent(rawText)) return true;
   return auditGiaOcrDiagramCapture(rawText).sufficientForDiagramParse;
 }
 
@@ -586,7 +587,7 @@ function setInternalIfEmpty(
 export function needsGiaProportionOcrSupplement(text: string): boolean {
   if (!looksLikeGiaReportText(text)) return false;
   if (giaProportionValuesPresent(text)) return false;
-  return /\b(?:gia\s+report\s+number|carat\s+weight|grading\s+results)\b/i.test(
+  return /\b(?:gia\s+report\s+number|carat\s+weight|grading\s+results|laboratory[-\s]*grown\s+diamond\s+report)\b/i.test(
     text,
   );
 }
