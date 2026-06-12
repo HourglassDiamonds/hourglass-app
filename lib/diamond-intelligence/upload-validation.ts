@@ -2,24 +2,16 @@ import {
   MAX_IMAGE_UPLOAD_BYTES,
   MAX_UPLOAD_BYTES,
 } from "@/lib/calibration-library/runtime-limits";
+import {
+  DI_ACCEPTED_EXTENSIONS,
+  DI_ACCEPTED_MIMES,
+} from "@/lib/diamond-intelligence/upload-accept";
 
-/** Consumer Diamond Intelligence upload policy (stricter than calibration library). */
-export const DI_ACCEPTED_MIMES = new Set([
-  "application/pdf",
-  "image/jpeg",
-  "image/jpg",
-  "image/png",
-]);
-
-export const DI_ACCEPTED_EXTENSIONS = new Set([
-  ".pdf",
-  ".jpg",
-  ".jpeg",
-  ".png",
-]);
-
-export const DI_CLIENT_ACCEPT =
-  "application/pdf,.pdf,image/jpeg,image/jpg,image/png,.jpg,.jpeg,.png";
+export {
+  DI_ACCEPTED_EXTENSIONS,
+  DI_ACCEPTED_MIMES,
+  DI_CLIENT_ACCEPT,
+} from "@/lib/diamond-intelligence/upload-accept";
 
 const BLOCKED_EXTENSIONS = new Set([
   ".svg",

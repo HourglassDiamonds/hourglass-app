@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRef } from "react";
-import { DI_CLIENT_ACCEPT } from "@/lib/diamond-intelligence/upload-validation";
+import { DI_CLIENT_ACCEPT } from "@/lib/diamond-intelligence/upload-accept";
 import {
   buildConciergeHrefFromDiamondIntelligence,
   type DiamondIntelligenceConciergeContext,

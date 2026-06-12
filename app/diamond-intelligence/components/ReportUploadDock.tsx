@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
-import { DI_CLIENT_ACCEPT } from "@/lib/diamond-intelligence/upload-validation";
+import { DI_CLIENT_ACCEPT } from "@/lib/diamond-intelligence/upload-accept";
 import type { ClientSafeMetadata } from "@/lib/diamond-intelligence";
 import { CONSUMER_COPY } from "./consumer-display-labels";
 
