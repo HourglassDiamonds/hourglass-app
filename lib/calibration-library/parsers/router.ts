@@ -1,5 +1,6 @@
 import {
   detectLabFromText,
+  hasExplicitIgiReportHeader,
   looksLikeIgiReportText,
   normalizeCalibrationLab,
 } from "../lab-parsers";
@@ -94,6 +95,15 @@ export function detectReportFamily(
       confidence: "medium",
       reason:
         "GCAL BY SARINE markers without column-list signature — inline grading fallback",
+    };
+  }
+
+  if ((lab === "IGI" || looksIgi) && hasExplicitIgiReportHeader(text)) {
+    return {
+      lab: lab === "OTHER" ? "IGI" : lab,
+      parserType: "igi-standard",
+      confidence: "high",
+      reason: "IGI report header (explicit — overrides GIA proportion-stack heuristic)",
     };
   }
 

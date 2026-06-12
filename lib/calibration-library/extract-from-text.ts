@@ -26,6 +26,7 @@ import {
 import {
   applyLabFieldOverrides,
   extractLabMetadataFromText,
+  isIgiExtractionContext,
   normalizeCalibrationLab,
 } from "./lab-parsers";
 import {
@@ -71,7 +72,20 @@ export type ExtractHints = {
   gcalImageOnlyPdf?: boolean;
 };
 
-function resolveMetadataLab(rawText: string, routedLab: CalibrationLab): CalibrationLab {
+function resolveMetadataLab(
+  rawText: string,
+  routedLab: CalibrationLab,
+  parserType?: string,
+): CalibrationLab {
+  if (
+    isIgiExtractionContext({
+      lab: routedLab,
+      parserType,
+      combinedText: rawText,
+    })
+  ) {
+    return routedLab === "OTHER" ? "IGI" : routedLab;
+  }
   if (looksLikeGiaReportText(rawText)) return "GIA";
   if (
     looksLikeGcal8xReportText(rawText) ||
@@ -270,7 +284,7 @@ export function extractFieldsFromReportText(
       : detectedReportNo || hintReportNo;
 
   const metadata: CalibrationReportMetadata = {
-    lab: resolveMetadataLab(rawText, family.lab),
+    lab: resolveMetadataLab(rawText, family.lab, parsed.parserType),
     reportNumber,
     reportUrl: hints?.reportUrl?.trim() || labMeta.reportUrl,
     reportSource: hints?.reportSource ?? "manual",

@@ -2,6 +2,7 @@ import {
   shouldLogExtractPipeline,
   shouldLogForensicHydration,
 } from "./extract-debug";
+import { hasExplicitIgiReportHeader } from "./lab-parsers";
 import type {
   CalibrationReportFields,
   FieldConfidence,
@@ -585,6 +586,7 @@ function setInternalIfEmpty(
 
 /** Facsimile grading table present but diagram proportions are image-only — OCR can supply values. */
 export function needsGiaProportionOcrSupplement(text: string): boolean {
+  if (hasExplicitIgiReportHeader(text)) return false;
   if (!looksLikeGiaReportText(text)) return false;
   if (giaProportionValuesPresent(text)) return false;
   return /\b(?:gia\s+report\s+number|carat\s+weight|grading\s+results|laboratory[-\s]*grown\s+diamond\s+report)\b/i.test(

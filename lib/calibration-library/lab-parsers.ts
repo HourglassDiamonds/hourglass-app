@@ -20,6 +20,27 @@ export function normalizeCalibrationLab(raw: string): CalibrationLab {
   return "OTHER";
 }
 
+/** Explicit IGI branding in PDF/OCR text — wins over GIA proportion-stack heuristics. */
+export function hasExplicitIgiReportHeader(text: string): boolean {
+  const t = text.slice(0, 8000);
+  return (
+    /\bIGI\b/i.test(t) ||
+    /international gemological institute/i.test(t)
+  );
+}
+
+export function isIgiExtractionContext(input: {
+  lab?: string;
+  parserType?: string;
+  combinedText: string;
+}): boolean {
+  return (
+    input.lab === "IGI" ||
+    input.parserType === "igi-standard" ||
+    hasExplicitIgiReportHeader(input.combinedText)
+  );
+}
+
 /** IGI lab-grown reports often OCR without the IGI header but retain LG report IDs. */
 export function looksLikeIgiReportText(text: string): boolean {
   const t = text.slice(0, 8000);

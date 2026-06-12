@@ -514,7 +514,7 @@ function extractIgiGirdleAndCulet(
 }
 
 const IGI_FINISH_GRADE_TOKEN =
-  "(excellent|ex|ideal|very\\s+good|vg|good|fair|poor|none|nil|faint|medium|strong|negligible)";
+  "(excellent|ex|ideal|very\\s+good|vg|good|fair|poor|none|nil|faint|very\\s+faint|very\\s+slight|slight|medium|strong|negligible)";
 
 function mapIgiFinishGrade(raw: string): string | null {
   const t = raw.trim().toLowerCase().replace(/\s+/g, " ");
@@ -530,6 +530,9 @@ function mapIgiFinishGrade(raw: string): string | null {
     none: "None",
     nil: "None",
     faint: "Faint",
+    "very faint": "Very Faint",
+    slight: "Slight",
+    "very slight": "Very Slight",
     medium: "Medium",
     strong: "Strong",
     negligible: "Negligible",

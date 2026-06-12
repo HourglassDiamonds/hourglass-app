@@ -47,6 +47,7 @@ import {
   shouldRunIgiDiagramImageOcr,
 } from "./parsers/igi/igi-diagram-image-ocr";
 import { inferReportSourceFromUpload } from "./infer-report-source";
+import { isIgiExtractionContext } from "./lab-parsers";
 import type { ExtractionPipelineMode } from "./extraction-mode";
 import { isClientExtractionMode } from "./extraction-mode";
 import {
@@ -219,10 +220,16 @@ async function runImageOcrAugmentation(input: {
   };
   publishGradeHintText(gradeHintText);
   const clientMode = input.clientMode ?? false;
+  const isIgi = isIgiExtractionContext({
+    lab: parsed.metadata.lab,
+    parserType: parsed.parserType,
+    combinedText: combined,
+  });
   if (
     looksLikeGiaReportText(combined) &&
     parsed.metadata.lab !== "GIA" &&
-    !parsed.parserType?.startsWith("gcal")
+    !parsed.parserType?.startsWith("gcal") &&
+    !isIgi
   ) {
     parsed.metadata.lab = "GIA";
   }
@@ -378,7 +385,7 @@ async function runImageOcrAugmentation(input: {
     }
   }
 
-  if (clientMode) {
+  if (clientMode && !isIgi) {
     const isGia =
       parsed.metadata.lab === "GIA" ||
       Boolean(parsed.parserType?.startsWith("gia")) ||
@@ -617,7 +624,7 @@ async function runImageOcrAugmentation(input: {
     parserType: parsed.parserType,
     lab: parsed.metadata.lab,
   });
-  if (giaGate.run && !imageUpload) {
+  if (giaGate.run && !imageUpload && !isIgi) {
     const giaInternal = parsed.giaInternal ?? {};
     const facsimileOcr = await withTimeout(
       applyGiaFacsimileDiagramImageOcr(

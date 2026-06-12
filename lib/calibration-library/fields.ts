@@ -76,6 +76,8 @@ function canonicalFluorescenceStrength(strength: string): string {
 function extractFluorescenceFromNoisyText(raw: string): string {
   const norm = raw.replace(/\s+/g, " ").replace(/[|]/g, "I").trim();
   const patterns: Array<{ re: RegExp; value: string }> = [
+    { re: /\bvery\s+slight\b/i, value: "Very Slight" },
+    { re: /\bslight\b/i, value: "Slight" },
     { re: /\bvery\s+strong\s+blue\b/i, value: "Very Strong Blue" },
     { re: /\bmedium\s+blue\b/i, value: "Medium Blue" },
     { re: /\bstrong\s+blue\b/i, value: "Strong Blue" },
@@ -106,6 +108,8 @@ function normalizeFluorescenceValue(raw: string): string {
   if (
     lower === "none" ||
     lower === "faint" ||
+    lower === "slight" ||
+    lower === "very slight" ||
     lower === "medium" ||
     lower === "strong" ||
     lower === "very strong"
@@ -115,7 +119,7 @@ function normalizeFluorescenceValue(raw: string): string {
 
   for (const color of FLUORESCENCE_COLOR_QUALIFIERS) {
     const colored = normalized.match(
-      new RegExp(`^(none|faint|medium|strong|very strong)\\s+${color}\\b`, "i"),
+      new RegExp(`^(none|faint|slight|very slight|medium|strong|very strong)\\s+${color}\\b`, "i"),
     );
     if (colored) {
       return `${canonicalFluorescenceStrength(colored[1]!)} ${color.charAt(0).toUpperCase()}${color.slice(1)}`;
