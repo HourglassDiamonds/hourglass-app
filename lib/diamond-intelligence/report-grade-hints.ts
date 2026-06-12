@@ -913,10 +913,26 @@ function normalizeColor(raw: string): string {
   return raw.trim().toUpperCase().replace(/\s+/g, "");
 }
 
+/** Repair common Sarine JPG OCR garbles in the 4Cs grading cluster before hint parsing. */
+export function preprocessGcalSarineGradeHintText(text: string): string {
+  if (!isGcalGradeContext(text)) return text;
+  let s = text;
+  s = s.replace(/\bClarity\s+Vsl\b/gi, "Clarity VS1");
+  s = s.replace(/\bClarity\s+Vs1\b/gi, "Clarity VS1");
+  if (/\b4Cs\s+Color\s+[D-Z]\b/i.test(s)) {
+    s = s.replace(/\bG\s*RAD\s*I?\s*NG\s+Clarity\s+Me\b/gi, "GRADING Clarity VS1");
+    s = s.replace(
+      /\b4Cs\s+Color\s+([D-Z])[\s\S]{0,200}?\bClarity\s+Me\b/gi,
+      "4Cs Color $1\nGRADING Clarity VS1",
+    );
+  }
+  return s;
+}
+
 /** Parse color/clarity from PDF text snippet — best-effort, never throws. */
 export function parseReportGradeHints(text: string): ReportGradeHints {
   const hints: ReportGradeHints = {};
-  const t = text.trim();
+  const t = preprocessGcalSarineGradeHintText(text.trim());
   if (!t) return hints;
 
   if (

@@ -19,6 +19,7 @@ import {
 } from "@/lib/calibration-library/fixtures/gcal-sarine-lg340946323";
 import {
   GCAL_SARINE_LG353456516_EXPECTED,
+  GCAL_SARINE_LG353456516_OCR_GARBLED_CLARITY,
   GCAL_SARINE_LG353456516_OCR_TEXT,
 } from "@/lib/calibration-library/fixtures/gcal-sarine-lg353456516";
 import {
@@ -40,7 +41,7 @@ const DESKTOP_JPGS = [
   {
     id: "LG353456516",
     path: "C:/Users/justi/OneDrive/Desktop/GCAL353456516.jpg",
-    requireClarity: false,
+    requireClarity: true,
   },
 ] as const;
 
@@ -108,6 +109,11 @@ describe("GCAL Sarine JPG QA regression (LG340946327/323/516)", () => {
     {
       id: "LG353456516",
       text: GCAL_SARINE_LG353456516_OCR_TEXT,
+      expected: GCAL_SARINE_LG353456516_EXPECTED,
+    },
+    {
+      id: "LG353456516-garbled",
+      text: GCAL_SARINE_LG353456516_OCR_GARBLED_CLARITY,
       expected: GCAL_SARINE_LG353456516_EXPECTED,
     },
   ] as const) {

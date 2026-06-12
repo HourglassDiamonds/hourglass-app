@@ -19,7 +19,7 @@ import {
   resolvePdfJsCanvasModulePathForDiagnostics,
   type PdfJsNodeCanvas,
 } from "../../pdf-render-factory";
-import { isOcrRuntimeAvailable, ocrImageBuffer, renderPdfPagePngGcalSarine } from "../shared/ocr-utils";
+import { isOcrRuntimeAvailable, ocrImageBuffer, renderPdfPagePngGcalSarine, renderUploadImageAsPage } from "../shared/ocr-utils";
 import {
   applyGcal8xFinishGrades,
   extractGcal8xFinishGrades,
@@ -131,6 +131,180 @@ export const SARINE_FINISH_GRADES_CROP = {
   width: 0.26,
   height: 0.48,
 } as const;
+
+/**
+ * 4Cs color/clarity block — upper-left panel (Sarine JPG + hybrid PDF page 1).
+ * LG353456516 anchor: Carat Weight, 4Cs Color, Clarity, Cut above shape row.
+ */
+export const SARINE_4CS_GRADING_PANEL_CROP = {
+  left: 0.03,
+  top: 0.14,
+  width: 0.52,
+  height: 0.36,
+} as const;
+
+/** Wider fallback when mobile screenshots crop the left margin. */
+export const SARINE_4CS_GRADING_PANEL_WIDE_CROP = {
+  left: 0,
+  top: 0.1,
+  width: 0.62,
+  height: 0.42,
+} as const;
+
+/** Identification column mid-page — 4Cs block on tall Sarine JPG screenshots. */
+export const SARINE_4CS_GRADING_PANEL_LOWER_CROP = {
+  left: 0,
+  top: 0.38,
+  width: 0.65,
+  height: 0.3,
+} as const;
+
+export type GcalSarine4CsPanelOcrDiagnostics = {
+  ocrRuntimeAvailable: boolean;
+  pageRendered: boolean;
+  pageWidth?: number;
+  pageHeight?: number;
+  cropSucceeded: boolean;
+  ocrOk: boolean;
+  ocrRawLength: number;
+  ocrRawPreview: string;
+  cropsAttempted: number;
+};
+
+export function mergeSarine4CsGradeHintText(
+  baseText: string,
+  panelText: string,
+): string {
+  const panel = panelText.trim();
+  const base = baseText.trim();
+  if (!panel) return base.slice(0, 16000);
+  if (!base) return panel.slice(0, 16000);
+  // Prefer isolated grading panel — prepend so grade-hint parsers see clean 4Cs tokens first.
+  return `${panel}\n\n${base}`.slice(0, 16000);
+}
+
+export function shouldRunGcalSarine4CsGradingPanelOcr(input: {
+  parserType?: string;
+  combinedText: string;
+  gradeHintText: string;
+  imageUpload?: boolean;
+}): boolean {
+  if (input.parserType !== "gcal-sarine-4cs") return false;
+  if (input.imageUpload) return true;
+  const hint = input.gradeHintText || input.combinedText;
+  const has4CsColor = /\b4C'?s?\s+Color\s+[D-Z]\b/i.test(hint);
+  const hasValidClarity =
+    /\b(?:GRAD\s*I?\s*NG\s+)?Clarity\s+(?:FL|IF|VVS\s*1|VVS\s*2|VS\s*1|VS\s*2|SI\s*1|SI\s*2|I\s*1|I\s*2|I\s*3|VVS1|VVS2|VS1|VS2|SI1|SI2|I1|I2|I3)\b/i.test(
+      hint,
+    );
+  if (has4CsColor && !hasValidClarity) return true;
+  return (
+    /\bclarity\b[\s\S]{0,24}\bMe\b/i.test(hint) ||
+    /\bG\s*RAD\s*N\s*G\s+Clarity\s+[A-Za-z]{1,3}\b/i.test(hint)
+  );
+}
+
+async function resolveSarinePagePng(
+  documentBytes: Buffer,
+  imageUpload: boolean,
+): Promise<{ png: Buffer; width: number; height: number } | null> {
+  if (imageUpload) {
+    const rendered = await renderUploadImageAsPage(documentBytes);
+    if (!rendered) return null;
+    return {
+      png: rendered.png,
+      width: rendered.width,
+      height: rendered.height,
+    };
+  }
+  const rendered = await renderGcalSarineDiagramPage(
+    documentBytes,
+    1,
+    GCAL_SARINE_PAGE_SCALE,
+  );
+  return rendered;
+}
+
+/** Isolated 4Cs grading panel OCR — prefer over full-page when clarity is garbled. */
+export async function ocrGcalSarine4CsGradingPanel(
+  documentBytes: Buffer,
+  opts?: { imageUpload?: boolean; reportNumber?: string },
+): Promise<{ text: string; diagnostics: GcalSarine4CsPanelOcrDiagnostics }> {
+  const diagnostics: GcalSarine4CsPanelOcrDiagnostics = {
+    ocrRuntimeAvailable: await isOcrRuntimeAvailable(),
+    pageRendered: false,
+    cropSucceeded: false,
+    ocrOk: false,
+    ocrRawLength: 0,
+    ocrRawPreview: "",
+    cropsAttempted: 0,
+  };
+
+  if (!diagnostics.ocrRuntimeAvailable) {
+    return { text: "", diagnostics };
+  }
+
+  const canvasPkg = await getPdfJsResolvedCanvasModule();
+  if (!canvasPkg?.loadImage) {
+    return { text: "", diagnostics };
+  }
+
+  const rendered = await resolveSarinePagePng(
+    documentBytes,
+    Boolean(opts?.imageUpload),
+  );
+  if (!rendered) {
+    return { text: "", diagnostics };
+  }
+
+  diagnostics.pageRendered = true;
+  diagnostics.pageWidth = rendered.width;
+  diagnostics.pageHeight = rendered.height;
+
+  const crops = [
+    SARINE_4CS_GRADING_PANEL_CROP,
+    SARINE_4CS_GRADING_PANEL_WIDE_CROP,
+    SARINE_4CS_GRADING_PANEL_LOWER_CROP,
+  ];
+  const ocrChunks: string[] = [];
+
+  for (const crop of crops) {
+    diagnostics.cropsAttempted += 1;
+    const cropResult = await cropPageRegionPng(
+      rendered.png,
+      rendered.width,
+      rendered.height,
+      crop,
+      canvasPkg,
+    );
+    if (!cropResult.png) continue;
+    diagnostics.cropSucceeded = true;
+
+    const prepped =
+      (await withTimeout(
+        preprocessGcalCropPng(cropResult.png, canvasPkg),
+        IMAGE_PREPROCESS_TIMEOUT_MS,
+        "sarine-4cs-panel-preprocess",
+      ).catch(() => cropResult.png)) ?? cropResult.png;
+
+    const rawOcr = await ocrImageBuffer(cropResult.png);
+    const preppedOcr = await ocrImageBuffer(prepped);
+    const chunk = [rawOcr.text, preppedOcr.text].filter(Boolean).join("\n").trim();
+    if (chunk) ocrChunks.push(chunk);
+  }
+
+  const text = ocrChunks.join("\n").trim();
+  diagnostics.ocrOk = text.length > 0;
+  diagnostics.ocrRawLength = text.length;
+  diagnostics.ocrRawPreview = text.slice(0, 240);
+
+  if (shouldExportGcalSarineCropDebug(opts?.reportNumber) && rendered.png) {
+    const basename = `${sarineCropDebugBasename(opts?.reportNumber)}-4cs-panel`;
+    await exportGcalSarineCropDebugPngs(basename, rendered.png, null, null);
+  }
+
+  return { text, diagnostics };
+}
 
 type GcalProportionCropRegion =
   | typeof SARINE_PROPORTION_DIAGRAM_CROP

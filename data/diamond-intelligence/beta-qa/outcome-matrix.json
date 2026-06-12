@@ -1,0 +1,108 @@
+{
+  "generatedAt": "2026-06-12T14:50:49.929Z",
+  "summary": {
+    "full": 4,
+    "partial": 0,
+    "failure": 1,
+    "total": 5
+  },
+  "rows": [
+    {
+      "id": "LG340946327-fixture",
+      "category": "fixture",
+      "lab": "GCAL",
+      "reportNumber": "LG340946327",
+      "parserFamily": "gcal-sarine-4cs",
+      "routing": "gcal-sarine-4cs",
+      "outcome": "Full",
+      "color": "F",
+      "clarity": "VS1",
+      "canShowScore": true,
+      "partialGradeGate": false,
+      "missingFields": [
+        "crownAngle",
+        "pavilionAngle",
+        "girdle"
+      ]
+    },
+    {
+      "id": "LG340946323-fixture",
+      "category": "fixture",
+      "lab": "GCAL",
+      "reportNumber": "LG340946323",
+      "parserFamily": "gcal-sarine-4cs",
+      "routing": "gcal-sarine-4cs",
+      "outcome": "Full",
+      "color": "F",
+      "clarity": "VS1",
+      "canShowScore": true,
+      "partialGradeGate": false,
+      "missingFields": [
+        "crownAngle",
+        "pavilionAngle",
+        "lowerHalfPercent",
+        "starLengthPercent",
+        "girdle",
+        "culet"
+      ]
+    },
+    {
+      "id": "LG353456516-garbled-clarity-fixture",
+      "category": "fixture",
+      "lab": "GCAL",
+      "reportNumber": "",
+      "parserFamily": "generic",
+      "routing": "generic",
+      "outcome": "Failure",
+      "color": "D",
+      "clarity": "VS1",
+      "canShowScore": false,
+      "partialGradeGate": false,
+      "missingFields": [
+        "carat",
+        "measurements",
+        "tablePercent",
+        "depthPercent",
+        "crownAngle",
+        "pavilionAngle",
+        "lowerHalfPercent",
+        "starLengthPercent",
+        "girdle",
+        "culet",
+        "polish",
+        "symmetry",
+        "fluorescence"
+      ]
+    },
+    {
+      "id": "LG360196486-fixture",
+      "category": "fixture",
+      "lab": "GCAL",
+      "reportNumber": "LG360196486",
+      "parserFamily": "gcal-8x",
+      "routing": "gcal-8x",
+      "outcome": "Full",
+      "color": "D",
+      "clarity": "FL",
+      "canShowScore": true,
+      "partialGradeGate": false,
+      "missingFields": [
+        "girdle"
+      ]
+    },
+    {
+      "id": "LG353466126-fixture",
+      "category": "fixture",
+      "lab": "GCAL",
+      "reportNumber": "LG353466126",
+      "parserFamily": "gcal-8x",
+      "routing": "gcal-8x",
+      "outcome": "Full",
+      "color": "E",
+      "clarity": "VVS2",
+      "canShowScore": true,
+      "partialGradeGate": false,
+      "missingFields": []
+    }
+  ]
+}

@@ -13,6 +13,9 @@ import {
   GCAL360166024_IMAGE_OCR,
   GCAL360166024_INLINE_OCR,
 } from "@/lib/calibration-library/fixtures/gcal360166024";
+import {
+  GCAL_SARINE_LG353456516_OCR_GARBLED_CLARITY,
+} from "@/lib/calibration-library/fixtures/gcal-sarine-lg353456516";
 
 describe("parseReportGradeHints", () => {
   it("parses clarity from GIA-style report text", () => {
@@ -134,6 +137,12 @@ Cut ............................................................................
     );
     assert.equal(hints.color, "F");
     assert.equal(hints.clarity, "VVS1");
+  });
+
+  it("repairs GCAL Sarine JPG clarity OCR garble (Clarity Me → VS1)", () => {
+    const hints = parseReportGradeHints(GCAL_SARINE_LG353456516_OCR_GARBLED_CLARITY);
+    assert.equal(hints.color, "D");
+    assert.equal(hints.clarity, "VS1");
   });
 
   it("parses GCAL 8X image-style Color/Clarity labels (LG360166024)", () => {

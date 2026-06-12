@@ -15,9 +15,12 @@ import {
 import { applyGcal8xImageRegionOcrFallback, shouldRunGcalImageRegionOcr } from "./gcal-image-ocr";
 import {
   applyGcalSarineProportionImageOcr,
+  mergeSarine4CsGradeHintText,
   needsGcalSarineFinishImageOcr,
   needsGcalSarineImageOcr,
   needsGcalSarineProportionImageOcr,
+  ocrGcalSarine4CsGradingPanel,
+  shouldRunGcalSarine4CsGradingPanelOcr,
 } from "./parsers/gcal/gcal-sarine-image-ocr";
 import {
   hasSarineColumnListSignature,
@@ -220,6 +223,39 @@ async function runImageOcrAugmentation(input: {
   };
   publishGradeHintText(gradeHintText);
   const clientMode = input.clientMode ?? false;
+  const regionOcrTimeoutMs = clientMode
+    ? CLIENT_IMAGE_REGION_OCR_TIMEOUT_MS
+    : IMAGE_REGION_OCR_TIMEOUT_MS;
+
+  if (
+    parsed.parserType === "gcal-sarine-4cs" &&
+    shouldRunGcalSarine4CsGradingPanelOcr({
+      parserType: parsed.parserType,
+      combinedText: combined,
+      gradeHintText,
+      imageUpload,
+    })
+  ) {
+    try {
+      const panelOcr = await withTimeout(
+        ocrGcalSarine4CsGradingPanel(documentBytes, {
+          imageUpload,
+          reportNumber: reportNumberHint || undefined,
+        }),
+        Math.min(regionOcrTimeoutMs, 12_000),
+        "sarine-4cs-grading-panel-ocr",
+      );
+      if (panelOcr.text.trim()) {
+        publishGradeHintText(
+          mergeSarine4CsGradeHintText(gradeHintText, panelOcr.text),
+        );
+        ocrCompleted = true;
+      }
+    } catch {
+      // Best-effort — full-page OCR remains fallback.
+    }
+  }
+
   const isIgi = isIgiExtractionContext({
     lab: parsed.metadata.lab,
     parserType: parsed.parserType,
@@ -234,10 +270,6 @@ async function runImageOcrAugmentation(input: {
     parsed.metadata.lab = "GIA";
   }
   const labFamily = labFamilyLabel(parsed.metadata.lab, parsed.parserType);
-
-  const regionOcrTimeoutMs = clientMode
-    ? CLIENT_IMAGE_REGION_OCR_TIMEOUT_MS
-    : IMAGE_REGION_OCR_TIMEOUT_MS;
 
   // Client mode short-circuits ONLY when proportion-capable (full read achievable).
   // Usefulness/partial classification is owned exclusively by the interpret route.
