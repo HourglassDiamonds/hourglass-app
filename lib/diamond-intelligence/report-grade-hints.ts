@@ -125,6 +125,12 @@ const GCAL_HEADER_4CS = new RegExp(
   "gi",
 );
 
+/** GCAL 8X region OCR — RB header with collapsed color/clarity (RB 3.28 DFL). */
+const GCAL_RB_COLOR_CLARITY = new RegExp(
+  String.raw`\bRB\s+[\d.]+\s+([D-Z])\s*${CLARITY_GRADE_TOKEN}\b`,
+  "gi",
+);
+
 const CUT_FINISH_NOISE =
   /\b(?:very|good|excellent|poor|fair|medium|faint|slight|strong|blue|yellow|white|none|symmetry|polish|fluorescence|cut|grading|results|profile|proportions)\b/i;
 
@@ -176,6 +182,7 @@ const CLARITY_SOURCE_RANK: Record<string, number> = {
   "gcal-clarity-label-next-line": 5,
   "gcal-color-clarity-inline": 5,
   "gcal-header-4cs-clarity": 5,
+  "gcal-rb-color-clarity": 5,
   "explicit-clarity-grade-inline": 5,
   "explicit-clarity-grade-next-line": 5,
   "clarity-grading-panel": 4,
@@ -199,6 +206,7 @@ const COLOR_SOURCE_RANK: Record<string, number> = {
   "gcal-color-label-next-line": 5,
   "gcal-color-clarity-inline": 5,
   "gcal-header-4cs-color": 5,
+  "gcal-rb-color-clarity": 5,
   "explicit-color-grade-next-line": 5,
   "color-dot-leader-single": 5,
   "explicit-color-grade-inline": 4,
@@ -252,7 +260,8 @@ function isGcal8xGradeContext(text: string): boolean {
       /\b(?:gem\s+certification\s*&\s*assurance|ultimate\s+diamond)\b/i.test(
         t,
       )) ||
-    (/\bGCAL\s+LG?\d{6,12}\b/i.test(t) && /\b(?:carat\s+weight|round\s+brilliant)\b/i.test(t))
+    (/\bGCAL\s+LG?\d{6,12}\b/i.test(t) && /\b(?:carat\s+weight|round\s+brilliant)\b/i.test(t)) ||
+    (/\bGCAL\b/i.test(t) && /\bRB\s+[\d.]+\s+[D-Z]/i.test(t))
   );
 }
 
@@ -380,6 +389,17 @@ function collectColorCandidates(text: string): ColorExtractionTrace {
         value: normalizeColor(m[1]),
         priority: 1,
         source: "gcal-header-4cs-color",
+        confidence: "high",
+        rawMatch: m[0],
+      });
+    }
+
+    for (const m of text.matchAll(GCAL_RB_COLOR_CLARITY)) {
+      if (!m[1]) continue;
+      pushColorCandidate(candidates, rejected, {
+        value: normalizeColor(m[1]),
+        priority: 1,
+        source: "gcal-rb-color-clarity",
         confidence: "high",
         rawMatch: m[0],
       });
@@ -700,6 +720,18 @@ function collectClarityCandidates(text: string): ClarityExtractionTrace {
         value: m[2],
         priority: 1,
         source: "gcal-header-4cs-clarity",
+        confidence: "high",
+        rawMatch: m[0],
+        matchIndex: m.index,
+      });
+    }
+
+    for (const m of text.matchAll(GCAL_RB_COLOR_CLARITY)) {
+      if (!m[2]) continue;
+      pushClarityCandidate(candidates, rejected, text, {
+        value: m[2],
+        priority: 1,
+        source: "gcal-rb-color-clarity",
         confidence: "high",
         rawMatch: m[0],
         matchIndex: m.index,

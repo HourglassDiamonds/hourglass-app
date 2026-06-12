@@ -282,8 +282,11 @@ async function runImageOcrAugmentation(input: {
 
   const sarineColumnListSignature = hasSarineColumnListSignature(combined);
   const runSarine =
-    sarineColumnListSignature &&
-    (parsed.parserType === "gcal-sarine-4cs" ||
+    (sarineColumnListSignature &&
+      (parsed.parserType === "gcal-sarine-4cs" ||
+        needsGcalSarineImageOcr(parsed.fields))) ||
+    (imageUpload &&
+      parsed.parserType === "gcal-sarine-4cs" &&
       needsGcalSarineImageOcr(parsed.fields));
 
   const diagramOcrCoreKeys: ReportFieldKey[] = [
@@ -316,7 +319,7 @@ async function runImageOcrAugmentation(input: {
     parsed.confidence[key] = capConfidence(key, level);
   };
 
-  if (runSarine && !imageUpload) {
+  if (runSarine) {
     const proportionGatePassed = needsGcalSarineProportionImageOcr(parsed.fields);
     const finishGatePassed = needsGcalSarineFinishImageOcr(parsed.fields);
     if (
@@ -344,6 +347,7 @@ async function runImageOcrAugmentation(input: {
           {
             reportNumber: reportNumberHint || undefined,
             parserPathUsed: parsed.parserType,
+            imageUpload,
           },
         ),
         regionOcrTimeoutMs,
@@ -369,20 +373,19 @@ async function runImageOcrAugmentation(input: {
       }
     }
   } else if (
-    !imageUpload &&
-    (shouldRunGcalImageRegionOcr(parsed.fields, {
+    shouldRunGcalImageRegionOcr(parsed.fields, {
       parserType: parsed.parserType,
       lab: parsed.metadata.lab,
       gcalImageOnlyPdf,
       labHint: parsed.metadata.lab,
       combinedText: combined,
     }) ||
-      (parsed.parserType === "gcal-sarine-4cs" &&
-        !sarineColumnListSignature &&
-        looksLikeGcal8xReportText(combined)))
+    (parsed.parserType === "gcal-sarine-4cs" &&
+      !sarineColumnListSignature &&
+      looksLikeGcal8xReportText(combined))
   ) {
     const gcalInternal = parsed.gcalInternal ?? {};
-    await withTimeout(
+    const gcal8xRegionOcr = await withTimeout(
       applyGcal8xImageRegionOcrFallback(
         documentBytes,
         parsed.fields,
@@ -393,11 +396,23 @@ async function runImageOcrAugmentation(input: {
           combinedText: combined,
           lazySecondPage: clientMode,
           clientOnlyFirstPage: clientMode,
+          imageUpload,
         },
       ),
       regionOcrTimeoutMs,
       "gcal-8x-image-ocr",
     );
+    const regionHintText = [
+      gcal8xRegionOcr.finishRegionText,
+      gcal8xRegionOcr.proportionRegionText,
+    ]
+      .filter(Boolean)
+      .join("\n\n");
+    if (regionHintText.trim()) {
+      publishGradeHintText(
+        [regionHintText, gradeHintText].filter(Boolean).join("\n\n"),
+      );
+    }
     if (Object.keys(gcalInternal).length > 0) {
       parsed.gcalInternal = gcalInternal;
     }

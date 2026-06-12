@@ -23,7 +23,11 @@ import {
 } from "./gcal-8x";
 import { mkdir, writeFile } from "fs/promises";
 import { join } from "path";
-import { isOcrRuntimeAvailable, ocrImageBuffer, renderPdfPagePngAtScale } from "../shared/ocr-utils";
+import { isOcrRuntimeAvailable, ocrImageBuffer, renderPdfPagePngAtScale, renderUploadImageAsPage } from "../shared/ocr-utils";
+import {
+  SARINE_4CS_GRADING_PANEL_CROP,
+  SARINE_4CS_GRADING_PANEL_WIDE_CROP,
+} from "./gcal-sarine-image-ocr";
 
 const GCAL_PAGE_OCR_SCALE = 4;
 const REGION_PREVIEW_CHARS = 300;
@@ -250,6 +254,15 @@ async function cropPageRegionPng(
   }
 }
 
+/** Repair collapsed GCAL 8X grading header tokens from region OCR (e.g. RB 3.28 DFL). */
+function repairGcal8xGradingPanelOcrText(text: string): string {
+  return text.replace(
+    /\bRB\s+(\d+\.\d+)\s+([D-Z])(FL|IF|VVS1|VVS2|VS1|VS2|SI1|SI2|I1|I2|I3)\b/gi,
+    (_m, carat: string, color: string, clarity: string) =>
+      `RB ${carat} ${color} ${clarity}`,
+  );
+}
+
 export async function ocrGcal8xPdfRegions(
   pdfBytes: Buffer,
   opts?: {
@@ -257,6 +270,8 @@ export async function ocrGcal8xPdfRegions(
     lazySecondPage?: boolean;
     /** Client budget: never OCR page 2. */
     clientOnlyFirstPage?: boolean;
+    imageUpload?: boolean;
+    combinedText?: string;
   },
 ): Promise<GcalImageRegionOcrTexts> {
   const empty: GcalImageRegionOcrTexts = {
@@ -281,7 +296,101 @@ export async function ocrGcal8xPdfRegions(
 
   const renderScale = opts?.clientOnlyFirstPage ? 3 : GCAL_PAGE_OCR_SCALE;
 
+  const needsGradingPanelOcr = (text: string) =>
+    !/\bcolou?r\s+[D-Z]\b/i.test(text) ||
+    !/\bclarity\s+(?:FL|IF|VVS\s*1|VVS\s*2|VS\s*1|VS\s*2|SI\s*1|SI\s*2|I\s*1|I\s*2|I\s*3|VVS1|VVS2|VS1|VS2|SI1|SI2|I1|I2|I3)\b/i.test(
+      text,
+    );
+
+  const ocrImageUploadPage = async () => {
+    const imagePage = await renderUploadImageAsPage(pdfBytes);
+    if (!imagePage) return null;
+    const rendered = {
+      png: imagePage.png,
+      width: imagePage.width,
+      height: imagePage.height,
+    };
+    const runGradingPanel = needsGradingPanelOcr(opts?.combinedText ?? "");
+    const [proportionPng, finishPng, gradingPng] = await Promise.all([
+      cropPageRegionPng(
+        rendered.png,
+        rendered.width,
+        rendered.height,
+        PROPORTION_DIAGRAM_CROP,
+      ),
+      cropPageRegionPng(
+        rendered.png,
+        rendered.width,
+        rendered.height,
+        FINISH_GRADES_CROP,
+      ),
+      runGradingPanel
+        ? cropPageRegionPng(
+            rendered.png,
+            rendered.width,
+            rendered.height,
+            SARINE_4CS_GRADING_PANEL_CROP,
+          )
+        : Promise.resolve(null),
+    ]);
+    const ocrJobs: Promise<{ text: string; ok: boolean }>[] = [
+      proportionPng
+        ? ocrGcalCropBuffer(proportionPng)
+        : Promise.resolve({ text: "", ok: false }),
+      finishPng
+        ? ocrGcalCropBuffer(finishPng)
+        : Promise.resolve({ text: "", ok: false }),
+    ];
+    if (gradingPng) {
+      ocrJobs.push(ocrGcalCropBuffer(gradingPng));
+    }
+    const ocrResults = await Promise.all(ocrJobs);
+    const proportionOcr = ocrResults[0]!;
+    const finishOcr = ocrResults[1]!;
+    let gradingPanelText = gradingPng ? (ocrResults[2]?.text.trim() ?? "") : "";
+    if (
+      runGradingPanel &&
+      gradingPanelText &&
+      needsGradingPanelOcr(gradingPanelText)
+    ) {
+      const wideGradingPng = await cropPageRegionPng(
+        rendered.png,
+        rendered.width,
+        rendered.height,
+        SARINE_4CS_GRADING_PANEL_WIDE_CROP,
+      );
+      if (wideGradingPng) {
+        const wideGradingOcr = await ocrGcalCropBuffer(wideGradingPng);
+        if (wideGradingOcr.text.trim()) {
+          gradingPanelText = [gradingPanelText, wideGradingOcr.text.trim()]
+            .filter(Boolean)
+            .join("\n");
+        }
+      }
+    }
+    const proportionRegionText = proportionOcr.text.trim();
+    const finishRegionText = repairGcal8xGradingPanelOcrText(
+      [gradingPanelText, finishOcr.text.trim()].filter(Boolean).join("\n\n"),
+    );
+    return {
+      rendered,
+      proportionPng,
+      finishPng,
+      proportionRegionText,
+      finishRegionText,
+      ok:
+        (proportionOcr.ok && proportionRegionText.length > 0) ||
+        (finishOcr.ok && finishOcr.text.trim().length > 0) ||
+        gradingPanelText.length > 0,
+      score: scoreRegionTexts(proportionRegionText, finishOcr.text.trim()),
+      page: 1,
+    };
+  };
+
   const ocrPage = async (page: number) => {
+    if (opts?.imageUpload) {
+      return ocrImageUploadPage();
+    }
     const rendered = await renderPdfPagePngAtScale(pdfBytes, page, renderScale);
     if (!rendered) return null;
 
@@ -323,11 +432,12 @@ export async function ocrGcal8xPdfRegions(
   };
 
   const page1 = await ocrPage(1);
-  const page2 = opts?.clientOnlyFirstPage
-    ? null
-    : opts?.lazySecondPage && page1 && page1.score >= 2
+  const page2 =
+    opts?.imageUpload || opts?.clientOnlyFirstPage
       ? null
-      : await ocrPage(2);
+      : opts?.lazySecondPage && page1 && page1.score >= 2
+        ? null
+        : await ocrPage(2);
 
   const best =
     page1 && page2 ? (page2.score > page1.score ? page2 : page1) : page1 ?? page2;
@@ -389,17 +499,22 @@ export async function applyGcal8xImageRegionOcrFallback(
     combinedText?: string;
     lazySecondPage?: boolean;
     clientOnlyFirstPage?: boolean;
+    imageUpload?: boolean;
   },
 ): Promise<{
   proportionRegionLength: number;
   finishRegionLength: number;
   recoveredFields: Record<string, string>;
+  proportionRegionText: string;
+  finishRegionText: string;
 }> {
   const before = { ...fields };
   const regions = await ocrGcal8xPdfRegions(pdfBytes, {
     reportNumber: opts?.reportNumber,
     lazySecondPage: opts?.lazySecondPage,
     clientOnlyFirstPage: opts?.clientOnlyFirstPage,
+    imageUpload: opts?.imageUpload,
+    combinedText: opts?.combinedText,
   });
 
   if (regions.proportionRegionText) {
@@ -494,6 +609,8 @@ export async function applyGcal8xImageRegionOcrFallback(
     proportionRegionLength: regions.proportionRegionText.length,
     finishRegionLength: regions.finishRegionText.length,
     recoveredFields,
+    proportionRegionText: regions.proportionRegionText,
+    finishRegionText: regions.finishRegionText,
   };
 }
 

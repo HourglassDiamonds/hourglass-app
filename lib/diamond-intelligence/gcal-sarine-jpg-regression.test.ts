@@ -1,9 +1,11 @@
+// Live JPG OCR can exceed the default 8s doc-extract budget on cold worker startup.
+process.env.CLIENT_DOCUMENT_EXTRACT_TIMEOUT_MS ??= "15000";
+
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import { describe, it } from "node:test";
 import { detectReportFamily } from "@/lib/calibration-library/parsers/router";
 import { extractFieldsFromReportText } from "@/lib/calibration-library/extract-from-text";
-import { runCalibrationUploadExtraction } from "@/lib/calibration-library/extract-upload-pipeline";
 import {
   hasExplicitGcalSarineReportHeader,
   hasExplicitIgiReportHeader,
@@ -23,11 +25,23 @@ import {
   GCAL_SARINE_LG353456516_OCR_TEXT,
 } from "@/lib/calibration-library/fixtures/gcal-sarine-lg353456516";
 import {
+  GCAL360796191_DIAGRAM_OCR,
+} from "@/lib/calibration-library/fixtures/gcal360796191";
+import { extractGcalSarineProportionIslands } from "@/lib/calibration-library/gcal-sarine-4cs";
+import { shouldRunGcalSarine4CsGradingPanelOcr } from "@/lib/calibration-library/parsers/gcal/gcal-sarine-image-ocr";
+import {
   needsPartialGradeReview,
 } from "@/app/diamond-intelligence/components/v3-presentation";
 import { parseReportGradeHints } from "@/lib/diamond-intelligence/report-grade-hints";
 
 const DESKTOP_JPGS = [
+  {
+    id: "LG341066155",
+    path: "C:/Users/justi/OneDrive/Desktop/GCAL341066155.jpg",
+    requireClarity: true,
+    requireProportions: true,
+    requirePavilionAngle: false,
+  },
   {
     id: "LG340946327",
     path: "C:/Users/justi/OneDrive/Desktop/GCAL340946327.jpg",
@@ -46,6 +60,41 @@ const DESKTOP_JPGS = [
 ] as const;
 
 describe("GCAL Sarine JPG QA regression (LG340946327/323/516)", () => {
+  it("skips redundant grading panel OCR when uploaded image already has 4Cs", () => {
+    assert.equal(
+      shouldRunGcalSarine4CsGradingPanelOcr({
+        parserType: "gcal-sarine-4cs",
+        imageUpload: true,
+        combinedText: "Color G\nClarity VS1",
+        gradeHintText: "Color G\nClarity VS1",
+      }),
+      false,
+    );
+    assert.equal(
+      shouldRunGcalSarine4CsGradingPanelOcr({
+        parserType: "gcal-sarine-4cs",
+        imageUpload: true,
+        combinedText: "marketing only",
+        gradeHintText: "",
+      }),
+      true,
+    );
+  });
+
+  it("diagram OCR fixture assigns crown and pavilion from collapsed degree tokens", () => {
+    const islands = extractGcalSarineProportionIslands(GCAL360796191_DIAGRAM_OCR);
+    assert.equal(islands.crownAngle, "34");
+    assert.equal(islands.pavilionAngle, "40.8");
+  });
+
+  it("repairs bare 340/410 diagram tokens without degree symbols", () => {
+    const islands = extractGcalSarineProportionIslands(
+      "Table 59% Depth 60.8% Crown 340 Pavilion 410",
+    );
+    assert.equal(islands.crownAngle, "34");
+    assert.equal(islands.pavilionAngle, "41");
+  });
+
   it("LG340946327 OCR fixture is not misclassified as IGI", () => {
     assert.equal(
       hasExplicitIgiReportHeader(GCAL_SARINE_LG340946327_OCR_TEXT),
@@ -133,6 +182,9 @@ describe("GCAL Sarine JPG QA regression (LG340946327/323/516)", () => {
     if (!existsSync(spec.path)) continue;
 
     it(`${spec.id} live JPG upload routes GCAL Sarine and skips partial grade review`, async () => {
+      const { runCalibrationUploadExtraction } = await import(
+        "@/lib/calibration-library/extract-upload-pipeline"
+      );
       const bytes = readFileSync(spec.path);
       const result = await runCalibrationUploadExtraction({
         bytes,
@@ -159,6 +211,17 @@ describe("GCAL Sarine JPG QA regression (LG340946327/323/516)", () => {
           false,
           `${spec.id} partial grade gate`,
         );
+      }
+
+      if (spec.requireProportions) {
+        assert.ok(result.fields.tablePercent.trim(), `${spec.id} table`);
+        assert.ok(result.fields.depthPercent.trim(), `${spec.id} depth`);
+        if ("requirePavilionAngle" in spec && spec.requirePavilionAngle) {
+          assert.ok(result.fields.pavilionAngle.trim(), `${spec.id} pavilion`);
+        }
+        if ("requireCrownAngle" in spec && spec.requireCrownAngle) {
+          assert.ok(result.fields.crownAngle.trim(), `${spec.id} crown`);
+        }
       }
     });
   }

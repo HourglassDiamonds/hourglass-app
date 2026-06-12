@@ -1,10 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { emptyReportFields } from "./fields";
-import {
-  needsGcalImageRegionOcrFallback,
-  shouldRunGcalImageRegionOcr,
-} from "./gcal-image-ocr";
+import { needsGcalImageRegionOcrFallback, shouldRunGcalImageRegionOcr } from "./gcal-image-ocr";
 
 describe("GCAL image-region OCR fallback gate", () => {
   it("triggers for gcal-8x when proportion fields are missing", () => {
@@ -66,6 +63,19 @@ describe("GCAL image-region OCR fallback gate", () => {
     assert.equal(
       needsGcalImageRegionOcrFallback(fields, { lab: "GIA" }),
       false,
+    );
+  });
+
+  it("runs for gcal-8x image uploads when proportion fields are missing", () => {
+    const fields = emptyReportFields();
+    fields.shape = "Round Brilliant";
+    assert.equal(
+      shouldRunGcalImageRegionOcr(fields, {
+        parserType: "gcal-8x",
+        lab: "GCAL",
+        combinedText: "GCAL 8X LG360196394",
+      }),
+      true,
     );
   });
 });

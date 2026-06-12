@@ -22,6 +22,9 @@ import {
 export function prepareGcalSarineProportionDiagramText(text: string): string {
   let s = text.replace(/\b7\s*ST\b/gi, "77%");
   s = s.replace(/\b(\d{2})\.(\d)\d*\s*(?=[^\d.%])/g, "$1.$2°");
+  s = s.replace(/\b340\b(?!\d)/g, "34.0°");
+  s = s.replace(/\b410\b(?!\d)/g, "41.0°");
+  s = s.replace(/\b(?:crn|crown(?:\s*angle)?)\b[\s\S]{0,20}?(34(?:\.0)?)\b/gi, "crown $1°");
   return prepareGcal8xProportionDiagramText(s);
 }
 
