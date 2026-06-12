@@ -5,6 +5,7 @@ import {
   warmColorPreferenceContextCopy,
   worstColorLetterIndex,
 } from "./color-grade-policy";
+import { fluorescenceConcern } from "./report-grade-hints";
 
 export type PurchaseRecommendationLabel =
   | "Recommended"
@@ -56,6 +57,55 @@ function mapInternalToPurchase(
   }
 }
 
+const PLACEHOLDER_FINISH_GRADE =
+  /^(?:unknown|not\s*available|unverified|select|n\/a|na|none|null|undefined|—|-+|\.+)$/i;
+
+function isFinishGradeBelowExcellent(raw?: string | null): boolean {
+  const value = raw?.trim();
+  if (!value || PLACEHOLDER_FINISH_GRADE.test(value)) return false;
+
+  const normalized = value.toLowerCase().replace(/\s+/g, " ").trim();
+
+  if (
+    normalized === "excellent" ||
+    normalized === "ex" ||
+    normalized === "exc" ||
+    normalized.startsWith("excellent")
+  ) {
+    return false;
+  }
+
+  if (
+    normalized.includes("very good") ||
+    normalized === "vg" ||
+    normalized === "good" ||
+    normalized === "g" ||
+    normalized === "fair" ||
+    normalized === "f" ||
+    normalized === "poor" ||
+    normalized === "p"
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
+/** Display-only ceiling — strong in-person review caveats cap below Recommended. */
+export function hasInPersonReviewRecommendationCeiling(input: {
+  clarityPolicy: HourglassClarityDisplayPolicy;
+  fluorescence?: string;
+  cutGrade?: string;
+  polish?: string;
+  symmetry?: string;
+}): boolean {
+  if (input.clarityPolicy.isSi2) return true;
+  if (fluorescenceConcern(input.fluorescence ?? "") >= 3) return true;
+  return [input.cutGrade, input.polish, input.symmetry].some(
+    isFinishGradeBelowExcellent,
+  );
+}
+
 function canElevateToRecommended(input: {
   internalBand: OverallRecommendationBand;
   clarity?: string;
@@ -87,6 +137,10 @@ export function resolvePurchaseRecommendationLabel(input: {
   color?: string;
   clarity?: string;
   uncappedOpticalTierLabel: string;
+  fluorescence?: string;
+  cutGrade?: string;
+  polish?: string;
+  symmetry?: string;
 }): PurchaseRecommendationLabel {
   if (input.clarityPolicy.isExcluded) {
     return "Outside Hourglass Standards";
@@ -107,6 +161,10 @@ export function resolvePurchaseRecommendationLabel(input: {
     })
   ) {
     label = "Recommended";
+  }
+
+  if (hasInPersonReviewRecommendationCeiling(input)) {
+    label = capPurchase(label, "Worth Reviewing After Additional Information");
   }
 
   return label;

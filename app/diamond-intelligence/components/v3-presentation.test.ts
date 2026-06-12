@@ -18,6 +18,7 @@ import {
   resolveV3IncompleteMissingDataValue,
   resolveV3PublicTier,
   resolveV3RenderPhase,
+  shouldShowHourglassPerspective,
 } from "./v3-presentation";
 
 describe("needsPartialGradeReview", () => {
@@ -381,6 +382,65 @@ describe("resolveV3RenderPhase stranded report", () => {
         canRenderFullResult: false,
       }),
       "full",
+    );
+  });
+});
+
+describe("shouldShowHourglassPerspective", () => {
+  it("does not render for triple Excellent", () => {
+    assert.equal(
+      shouldShowHourglassPerspective({
+        cutGrade: "Excellent",
+        polish: "Excellent",
+        symmetry: "Excellent",
+      }),
+      false,
+    );
+    assert.equal(
+      shouldShowHourglassPerspective({
+        cutGrade: "EX",
+        polish: "EX",
+        symmetry: "Excellent",
+      }),
+      false,
+    );
+  });
+
+  it("renders when any present finish grade is below Excellent", () => {
+    assert.equal(
+      shouldShowHourglassPerspective({
+        cutGrade: "Excellent",
+        polish: "Very Good",
+        symmetry: "Excellent",
+      }),
+      true,
+    );
+    assert.equal(
+      shouldShowHourglassPerspective({
+        cutGrade: "VG",
+        polish: "Excellent",
+        symmetry: "Excellent",
+      }),
+      true,
+    );
+    assert.equal(
+      shouldShowHourglassPerspective({
+        cutGrade: "Excellent",
+        polish: "Excellent",
+        symmetry: "Fair",
+      }),
+      true,
+    );
+  });
+
+  it("does not render when grades are missing", () => {
+    assert.equal(
+      shouldShowHourglassPerspective({
+        cutGrade: "",
+        polish: undefined,
+        symmetry: "Excellent",
+      }),
+      false,
     );
   });
 });

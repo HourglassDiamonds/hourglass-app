@@ -42,7 +42,9 @@ import type { V3Gcal8xTier, V3PublicTier } from "./v3-presentation";
 import {
   buildV3PercentilePresentation,
   buildV3IncompleteTechnicalItems,
+  HOURGLASS_PERSPECTIVE_COPY,
   resolveV3IncompleteAssessmentCopy,
+  shouldShowHourglassPerspective,
 } from "./v3-presentation";
 import DiAdvisoryCta from "./DiAdvisoryCta";
 
@@ -321,6 +323,11 @@ export default function DiV3ResultSections({
     );
   }
 
+  const showHourglassPerspective = shouldShowHourglassPerspective(fields);
+  const chapterOffset = showHourglassPerspective ? 1 : 0;
+  const chapterNum = (base: number) =>
+    String(base + chapterOffset).padStart(2, "0");
+
   return (
     <section className={DI_V3_SECTIONS} aria-label="Diamond Intelligence chapters">
       <DiV3Chapter
@@ -370,8 +377,20 @@ export default function DiV3ResultSections({
         </Link>
       </DiV3Chapter>
 
+      {showHourglassPerspective ? (
+        <DiV3Chapter
+          number="03"
+          title="The Hourglass Perspective"
+          note="How we think about finish on round brilliants."
+          feature
+          chapterId="hourglass-perspective"
+        >
+          <DiV3BodyParagraphs paragraphs={[...HOURGLASS_PERSPECTIVE_COPY]} />
+        </DiV3Chapter>
+      ) : null}
+
       <DiV3Chapter
-        number="03"
+        number={chapterNum(3)}
         title="Why This Earned This Read"
         note={
           isGcal8x
@@ -391,7 +410,7 @@ export default function DiV3ResultSections({
       </DiV3Chapter>
 
       <DiV3Chapter
-        number="04"
+        number={chapterNum(4)}
         title={
           clarityPolicy.isExcluded
             ? "Recommendation Status"
@@ -423,7 +442,7 @@ export default function DiV3ResultSections({
       </DiV3Chapter>
 
       <DiV3Chapter
-        number="05"
+        number={chapterNum(5)}
         title={humanReviewTitle}
         note={humanReviewNote}
         chapterId="human-review"
@@ -449,7 +468,7 @@ export default function DiV3ResultSections({
 
       <div className="grid gap-3 md:grid-cols-2 md:gap-4">
         <DiV3Chapter
-          number="06"
+          number={chapterNum(6)}
           title="Report Details"
           note="Technical context for clients and gemologists."
           chapterId="technical-appendix"
@@ -462,7 +481,7 @@ export default function DiV3ResultSections({
         </DiV3Chapter>
 
         <DiV3Chapter
-          number="07"
+          number={chapterNum(7)}
           title="Report Measurements"
           note="Extracted values from the uploaded report."
           chapterId="report-measurements"

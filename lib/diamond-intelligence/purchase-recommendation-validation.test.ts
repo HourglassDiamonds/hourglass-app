@@ -8,6 +8,7 @@ import {
   needsPartialGradeReview,
   resolveUncappedOpticalTier,
   resolveV3PublicTier,
+  shouldShowHourglassPerspective,
 } from "@/app/diamond-intelligence/components/v3-presentation";
 import { buildClientDiamondDecisionProfile } from "./client-decision-profile";
 import { buildDiamondInterpretationContext } from "./client-interpretation-context";
@@ -15,6 +16,7 @@ import { presentEditorialLightPerformance } from "./client-editorial-language";
 import { presentClientInterpretationScore } from "./client-score-present";
 import { resolveHourglassClarityPolicy } from "./hourglass-clarity-policy";
 import {
+  hasInPersonReviewRecommendationCeiling,
   resolvePurchaseRecommendationLabel,
   type PurchaseRecommendationLabel,
 } from "./purchase-recommendation-presentation";
@@ -98,6 +100,10 @@ function assessProfile(input: {
     clarity: input.clarity,
     uncappedOpticalTierLabel:
       uncappedOpticalTier === "Open" ? "Needs Review" : uncappedOpticalTier,
+    fluorescence: fields.fluorescence,
+    cutGrade: fields.cutGrade,
+    polish: fields.polish,
+    symmetry: fields.symmetry,
   });
   const hero = buildV3HeroPresentation({
     purchaseRecommendation: purchase,
@@ -227,21 +233,125 @@ describe("validation C — 6535401257 F VVS1 VS Blue fluorescence", () => {
     color: "F",
     fields: {
       cutGrade: "Excellent",
+      polish: "Excellent",
+      symmetry: "Excellent",
       fluorescence: "Very Strong Blue",
       crownAngle: "36.5",
       pavilionAngle: "41.0",
     },
   });
 
-  it("allows Strong Candidate without overstatement", () => {
-    const allowed: PurchaseRecommendationLabel[] = [
-      "Strong Candidate",
-      "Recommended",
+  it("caps hero at Worth Reviewing for very strong fluorescence on triple excellent", () => {
+    assert.equal(result.purchase, "Worth Reviewing After Additional Information");
+    assert.equal(
+      result.hero.purchaseHeadline,
       "Worth Reviewing After Additional Information",
-    ];
-    assert.ok(allowed.includes(result.purchase));
+    );
+    assert.notEqual(result.hero.purchaseHeadline, "Recommended");
     assert.notEqual(result.hero.purchaseHeadline, "Exceptional");
     assert.notEqual(result.hero.purchaseHeadline, "Rare");
+    assert.equal(
+      shouldShowHourglassPerspective({
+        cutGrade: "Excellent",
+        polish: "Excellent",
+        symmetry: "Excellent",
+      }),
+      false,
+    );
+  });
+});
+
+describe("recommendation label in-person review ceiling", () => {
+  it("triple excellent without strong caveat can remain recommended", () => {
+    const result = assessProfile({
+      reportNumber: "2231749659",
+      clarity: "VVS1",
+      color: "F",
+      fields: {
+        carat: "7.33",
+        cutGrade: "Excellent",
+        polish: "Excellent",
+        symmetry: "Excellent",
+        fluorescence: "None",
+        crownAngle: "36",
+        pavilionAngle: "40.8",
+      },
+    });
+    assert.ok(
+      result.purchase === "Recommended" ||
+        result.purchase === "Strong Candidate",
+    );
+    assert.equal(
+      shouldShowHourglassPerspective({
+        cutGrade: "Excellent",
+        polish: "Excellent",
+        symmetry: "Excellent",
+      }),
+      false,
+    );
+  });
+
+  it("excellent / very good / excellent shows hourglass perspective and caps purchase label", () => {
+    const finishFields = {
+      cutGrade: "Excellent",
+      polish: "Very Good",
+      symmetry: "Excellent",
+      fluorescence: "None",
+    };
+    assert.equal(shouldShowHourglassPerspective(finishFields), true);
+    const result = assessProfile({
+      reportNumber: "vg-polish",
+      clarity: "VS1",
+      color: "G",
+      fields: finishFields,
+    });
+    assert.equal(result.purchase, "Worth Reviewing After Additional Information");
+    assert.notEqual(result.purchase, "Recommended");
+  });
+
+  it("missing finish grades alone do not trigger hourglass perspective", () => {
+    assert.equal(
+      shouldShowHourglassPerspective({
+        cutGrade: "",
+        polish: undefined,
+        symmetry: "Excellent",
+      }),
+      false,
+    );
+  });
+
+  it("strong fluorescence triggers recommendation ceiling helper", () => {
+    const policy = resolveHourglassClarityPolicy("VVS1");
+    assert.equal(
+      hasInPersonReviewRecommendationCeiling({
+        clarityPolicy: policy,
+        fluorescence: "Strong Blue",
+        cutGrade: "Excellent",
+        polish: "Excellent",
+        symmetry: "Excellent",
+      }),
+      true,
+    );
+    assert.equal(
+      hasInPersonReviewRecommendationCeiling({
+        clarityPolicy: policy,
+        fluorescence: "Extremely Strong Blue",
+        cutGrade: "Excellent",
+        polish: "Excellent",
+        symmetry: "Excellent",
+      }),
+      true,
+    );
+    assert.equal(
+      hasInPersonReviewRecommendationCeiling({
+        clarityPolicy: policy,
+        fluorescence: "Faint",
+        cutGrade: "Excellent",
+        polish: "Excellent",
+        symmetry: "Excellent",
+      }),
+      false,
+    );
   });
 });
 

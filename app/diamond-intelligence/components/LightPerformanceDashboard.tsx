@@ -321,6 +321,10 @@ export default function LightPerformanceDashboard({
         clarity: clarityForPresentation,
         uncappedOpticalTierLabel:
           uncappedOpticalTier === "Open" ? "Needs Review" : uncappedOpticalTier,
+        fluorescence: fields?.fluorescence,
+        cutGrade: fields?.cutGrade,
+        polish: fields?.polish,
+        symmetry: fields?.symmetry,
       })
     : "Worth Reviewing After Additional Information";
 

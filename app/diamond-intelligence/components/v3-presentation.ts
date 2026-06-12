@@ -452,6 +452,55 @@ export function buildV3TraitLine(
   return words.slice(0, 3).join(" · ");
 }
 
+type FinishGradeClass = "missing" | "excellent" | "below";
+
+function classifyFinishGrade(raw: string | undefined | null): FinishGradeClass {
+  const value = raw?.trim();
+  if (!value || PLACEHOLDER_GRADE.test(value)) return "missing";
+
+  const normalized = value.toLowerCase().replace(/\s+/g, " ").trim();
+
+  if (
+    normalized === "excellent" ||
+    normalized === "ex" ||
+    normalized === "exc" ||
+    normalized.startsWith("excellent")
+  ) {
+    return "excellent";
+  }
+
+  if (
+    normalized.includes("very good") ||
+    normalized === "vg" ||
+    normalized === "good" ||
+    normalized === "g" ||
+    normalized === "fair" ||
+    normalized === "f" ||
+    normalized === "poor" ||
+    normalized === "p"
+  ) {
+    return "below";
+  }
+
+  return "missing";
+}
+
+/** True when cut, polish, or symmetry is present on the report and below Excellent. */
+export function shouldShowHourglassPerspective(
+  fields: Pick<CalibrationReportFields, "cutGrade" | "polish" | "symmetry">,
+): boolean {
+  for (const raw of [fields.cutGrade, fields.polish, fields.symmetry]) {
+    if (classifyFinishGrade(raw) === "below") return true;
+  }
+  return false;
+}
+
+export const HOURGLASS_PERSPECTIVE_COPY = [
+  "The industry often considers a broad range of cut grades acceptable. Our standards are intentionally narrower.",
+  "For round diamonds, we generally begin with Excellent cut, polish, and symmetry because craftsmanship has the greatest influence on how a diamond handles light. The goal is simple: maximize brightness, fire, and sparkle whenever possible.",
+  "This does not mean a Very Good diamond cannot be attractive. It simply reflects the standards we use when sourcing diamonds for our own clients and the level of performance we aim to deliver whenever possible.",
+] as const;
+
 const PLACEHOLDER_GRADE =
   /^(?:unknown|not\s*available|unverified|select|n\/a|na|none|null|undefined|—|-+|\.+)$/i;
 
