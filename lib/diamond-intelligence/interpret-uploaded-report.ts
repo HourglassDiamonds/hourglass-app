@@ -10,7 +10,7 @@ import {
   CLIENT_INTERPRET_ROUTE_TIMEOUT_MS,
   CLIENT_UPLOAD_PIPELINE_TIMEOUT_MS,
 } from "@/lib/calibration-library/runtime-limits";
-import { isAcceptedReportMime } from "@/lib/calibration-library/document-extract";
+import { isDiamondIntelligenceAcceptedMime } from "@/lib/diamond-intelligence/upload-validation";
 import { toClientSafeInterpretationPayload } from "@/lib/diamond-intelligence/client-api";
 import {
   getCachedClientInterpretation,
@@ -59,7 +59,7 @@ export async function interpretUploadedReport(
 ): Promise<InterpretUploadedReportResult> {
   const { bytes, mime, sourceFilename } = input;
 
-  if (!isAcceptedReportMime(mime)) {
+  if (!isDiamondIntelligenceAcceptedMime(mime)) {
     return {
       ok: false,
       error: "Please upload a PDF or image of your lab report.",

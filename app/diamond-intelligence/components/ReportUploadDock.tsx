@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
-import { ACCEPTED_REPORT_EXTENSIONS } from "@/lib/calibration-library/accepted-files";
+import { DI_CLIENT_ACCEPT } from "@/lib/diamond-intelligence/upload-validation";
 import type { ClientSafeMetadata } from "@/lib/diamond-intelligence";
 import { CONSUMER_COPY } from "./consumer-display-labels";
 
@@ -192,7 +192,7 @@ export function ReportUploadDock({
       <input
         ref={inputRef}
         type="file"
-        accept={ACCEPTED_REPORT_EXTENSIONS}
+        accept={DI_CLIENT_ACCEPT}
         className="sr-only"
         disabled={disabled}
         onChange={(e) => {

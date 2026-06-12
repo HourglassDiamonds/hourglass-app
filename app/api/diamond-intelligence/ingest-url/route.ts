@@ -1,4 +1,9 @@
-import { verifyCalibrationAccess } from "@/lib/calibration-library/auth";
+import { verifyDiamondIntelligenceAccess } from "@/lib/diamond-intelligence/api-access";
+import {
+  checkDiamondIntelligenceRateLimit,
+  DI_RATE_LIMIT_ERROR,
+  getDiamondIntelligenceClientIp,
+} from "@/lib/diamond-intelligence/rate-limit";
 import { toJsonSafe } from "@/lib/calibration-library/gcal-api-error";
 import {
   archiveDiamondIntelligenceSubmission,
@@ -15,8 +20,8 @@ import { NextResponse } from "next/server";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-function json(body: Record<string, unknown>, status = 200) {
-  return NextResponse.json(toJsonSafe(body), { status });
+function json(body: Record<string, unknown>, status = 200, headers?: HeadersInit) {
+  return NextResponse.json(toJsonSafe(body), { status, headers });
 }
 
 function respond(
@@ -31,8 +36,18 @@ function respond(
 }
 
 export async function POST(request: Request) {
-  if (!verifyCalibrationAccess(request)) {
+  if (!verifyDiamondIntelligenceAccess(request)) {
     return json({ ok: false, error: "Unauthorized" }, 401);
+  }
+
+  const clientIp = getDiamondIntelligenceClientIp(request);
+  const rateLimit = checkDiamondIntelligenceRateLimit(clientIp);
+  if (!rateLimit.allowed) {
+    return json(
+      { ok: false, error: DI_RATE_LIMIT_ERROR, code: "rate_limited" },
+      429,
+      { "Retry-After": String(rateLimit.retryAfterSeconds) },
+    );
   }
 
   let url: string;

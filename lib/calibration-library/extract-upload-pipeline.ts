@@ -1002,7 +1002,9 @@ export async function runCalibrationUploadExtraction(
           const documentBytes = input.bytes;
           const imageUpload = !uploadPdfBytes;
           try {
-            console.log("[upload-pipeline] image-ocr:start", { ms: Date.now() - t0 });
+            if (process.env.NODE_ENV === "development") {
+              console.log("[upload-pipeline] image-ocr:start", { ms: Date.now() - t0 });
+            }
             const ocr = await runImageOcrAugmentation({
               documentBytes,
               imageUpload,
@@ -1017,12 +1019,14 @@ export async function runCalibrationUploadExtraction(
             timings.imageOcrMs = ocr.imageOcrMs;
             if (ocr.ocrCompleted) ocrAttempted = true;
             publishSnapshotGradeHintText(ocr.gradeHintText);
-            console.log("[upload-pipeline] image-ocr:end", {
-              ms: Date.now() - t0,
-              imageOcrMs: timings.imageOcrMs,
-              ocrCompleted: ocr.ocrCompleted,
-              gradeHintTextLen: gradeHintText.length,
-            });
+            if (process.env.NODE_ENV === "development") {
+              console.log("[upload-pipeline] image-ocr:end", {
+                ms: Date.now() - t0,
+                imageOcrMs: timings.imageOcrMs,
+                ocrCompleted: ocr.ocrCompleted,
+                gradeHintTextLen: gradeHintText.length,
+              });
+            }
           } catch (ocrErr) {
             const ocrErrMsg = errorMessageFromUnknown(ocrErr);
             if (process.env.NODE_ENV === "development") {

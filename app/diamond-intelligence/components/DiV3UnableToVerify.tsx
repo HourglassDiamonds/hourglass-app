@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRef } from "react";
-import { ACCEPTED_REPORT_EXTENSIONS } from "@/lib/calibration-library/accepted-files";
+import { DI_CLIENT_ACCEPT } from "@/lib/diamond-intelligence/upload-validation";
 import {
   buildConciergeHrefFromDiamondIntelligence,
   type DiamondIntelligenceConciergeContext,
@@ -86,7 +86,7 @@ export default function DiV3UnableToVerify({
       <input
         ref={inputRef}
         type="file"
-        accept={ACCEPTED_REPORT_EXTENSIONS}
+        accept={DI_CLIENT_ACCEPT}
         className="sr-only"
         onChange={(e) => {
           const file = e.target.files?.[0];

@@ -94,10 +94,14 @@ export default function DiamondIntelligenceClient() {
       const { interpretation, partial } = await postReportForInterpretation(file);
       setUploadPhase("building");
       applyInterpretation(interpretation, partial);
-    } catch {
+    } catch (err) {
       clearInterpretationState();
       setUploadStatusNote(null);
-      setUploadError(CLIENT_UPLOAD_INTERPRET_ERROR);
+      setUploadError(
+        err instanceof Error && err.message.trim()
+          ? err.message
+          : CLIENT_UPLOAD_INTERPRET_ERROR,
+      );
       setUploadPhase("error");
     } finally {
       window.clearTimeout(checkingTimer);

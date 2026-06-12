@@ -1,11 +1,13 @@
 import type { ClientSafeInterpretationPayload } from "./client-api";
 import {
   CLIENT_PARTIAL_INTERPRETATION_NOTE,
+  CLIENT_RATE_LIMIT_ERROR,
   CLIENT_UPLOAD_INTERPRET_ERROR,
 } from "./client-interpret-messages";
 
 export {
   CLIENT_PARTIAL_INTERPRETATION_NOTE,
+  CLIENT_RATE_LIMIT_ERROR,
   CLIENT_UPLOAD_INTERPRET_ERROR,
 } from "./client-interpret-messages";
 
@@ -67,8 +69,16 @@ export async function postReportForInterpretation(
     throw new Error(CLIENT_UPLOAD_INTERPRET_ERROR);
   }
 
+  if (res.status === 429) {
+    throw new Error(data.error ?? CLIENT_RATE_LIMIT_ERROR);
+  }
+
   if (!res.ok || !data.ok || !data.interpretation) {
-    throw new Error(CLIENT_UPLOAD_INTERPRET_ERROR);
+    throw new Error(
+      typeof data.error === "string" && data.error.trim()
+        ? data.error
+        : CLIENT_UPLOAD_INTERPRET_ERROR,
+    );
   }
 
   const interpretation = data.interpretation;

@@ -1,5 +1,5 @@
 import type { ClientSafeInterpretationPayload } from "./client-api";
-import { CLIENT_UPLOAD_INTERPRET_ERROR } from "./client-interpret-messages";
+import { CLIENT_RATE_LIMIT_ERROR, CLIENT_UPLOAD_INTERPRET_ERROR } from "./client-interpret-messages";
 import type { ListingExtraction } from "./url-ingestion/types";
 
 const CLIENT_FETCH_TIMEOUT_MS = 45_000;
@@ -85,6 +85,13 @@ export async function postUrlForIngestion(
     data = JSON.parse(text) as UrlIngestApiPayload;
   } catch {
     throw new UrlIngestClientError(CLIENT_UPLOAD_INTERPRET_ERROR, "listing_inaccessible");
+  }
+
+  if (res.status === 429) {
+    throw new UrlIngestClientError(
+      data.error ?? CLIENT_RATE_LIMIT_ERROR,
+      "listing_inaccessible",
+    );
   }
 
   if (!res.ok || !data.ok) {
