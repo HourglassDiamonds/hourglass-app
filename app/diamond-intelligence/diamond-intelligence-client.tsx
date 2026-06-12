@@ -31,6 +31,11 @@ export default function DiamondIntelligenceClient() {
   const [partialListingMessage, setPartialListingMessage] = useState<
     string | null
   >(null);
+  const [activeListing, setActiveListing] = useState<ListingExtraction | null>(
+    null,
+  );
+  const [sourceUrl, setSourceUrl] = useState<string | null>(null);
+  const [uploadFileName, setUploadFileName] = useState<string | null>(null);
 
   const [extractedFields, setExtractedFields] =
     useState<CalibrationReportFields | null>(null);
@@ -80,6 +85,9 @@ export default function DiamondIntelligenceClient() {
   const processFile = useCallback(async (file: File) => {
     clearInterpretationState();
     setFileName(file.name);
+    setUploadFileName(file.name);
+    setSourceUrl(null);
+    setActiveListing(null);
     setUploadError(null);
     setUploadStatusNote(null);
     setPartialListing(null);
@@ -111,10 +119,13 @@ export default function DiamondIntelligenceClient() {
   const processUrl = useCallback(async (url: string) => {
     clearInterpretationState();
     setFileName(null);
+    setUploadFileName(null);
+    setSourceUrl(url.trim());
     setUploadError(null);
     setUploadStatusNote(null);
     setPartialListing(null);
     setPartialListingMessage(null);
+    setActiveListing(null);
     setUploadPhase("reading");
 
     const checkingTimer = window.setTimeout(() => {
@@ -125,6 +136,7 @@ export default function DiamondIntelligenceClient() {
       const result = await postUrlForIngestion(url);
       if (result.kind === "partial_listing") {
         setPartialListing(result.listing);
+        setActiveListing(result.listing);
         setPartialListingMessage(result.message);
         setUploadPhase("idle");
         return;
@@ -132,6 +144,7 @@ export default function DiamondIntelligenceClient() {
 
       setUploadPhase("building");
       setFileName(result.listing.canonicalUrl);
+      setActiveListing(result.listing);
       applyInterpretation(result.interpretation, result.partial);
     } catch (err) {
       clearInterpretationState();
@@ -173,6 +186,9 @@ export default function DiamondIntelligenceClient() {
         gradeHints={gradeHints}
         partialListing={partialListing}
         partialListingMessage={partialListingMessage}
+        activeListing={activeListing}
+        sourceUrl={sourceUrl}
+        uploadFileName={uploadFileName}
         onInterpretationUpdate={handleInterpretationUpdate}
       />
     </div>

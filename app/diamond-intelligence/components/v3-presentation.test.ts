@@ -351,7 +351,7 @@ describe("resolveV3IncompleteAssessmentCopy", () => {
     assert.equal(copy.gradesConfirmed, "O to P Range color · SI2 clarity");
     assert.match(copy.subhead, /O to P Range color and SI2 clarity are confirmed/i);
     assert.doesNotMatch(copy.subhead, /color and clarity are needed/i);
-    assert.match(copy.sectionBody, /proportion gap/i);
+    assert.match(copy.sectionBody, /human reviewer/i);
     assert.match(copy.technicalAppendixNote, /not 4Cs/i);
   });
 

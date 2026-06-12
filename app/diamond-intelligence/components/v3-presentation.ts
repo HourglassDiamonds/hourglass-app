@@ -14,6 +14,7 @@ import {
 } from "@/lib/diamond-intelligence/purchase-recommendation-presentation";
 import {
   type V3IncompleteAssessmentCopy,
+  CONSUMER_COPY,
   V3_INCOMPLETE_GRADE_ASSESSMENT,
   V3_INCOMPLETE_PROPORTION_ASSESSMENT,
 } from "./consumer-display-labels";
@@ -798,13 +799,17 @@ function formatGradesConfirmed(gradeHints?: {
 }
 
 function buildGradeIncompleteCopy(missing: string[]): V3IncompleteAssessmentCopy {
+  const missingGradeNote = CONSUMER_COPY.trustLayerMissingGradeLimit;
+  const softwareLimitNote = CONSUMER_COPY.trustLayerSoftwareReadLimit;
+  const manualReviewNote = CONSUMER_COPY.trustLayerManualReviewOffer;
+
   if (missing.length === 1) {
     const field = missing[0]!;
     return {
       ...V3_INCOMPLETE_GRADE_ASSESSMENT,
       headline: `${field} Still Needed`,
-      subhead: `We verified other report details, but ${gradeFieldPhrase(field)} is still needed before a complete purchase read can be offered.`,
-      sectionBody: `The missing ${gradeFieldPhrase(field)} can materially affect the recommendation. Confirm it on the report to move from a partial read to a complete assessment.`,
+      subhead: `We verified other report details, but ${gradeFieldPhrase(field)} could not be confidently verified from the uploaded file. ${missingGradeNote}`,
+      sectionBody: `The missing ${gradeFieldPhrase(field)} can materially affect the recommendation. ${softwareLimitNote} ${manualReviewNote}`,
       chapterNote: `${field} needed before the read can be completed.`,
       missingDataValue: field,
       nextStep: `Confirm ${field}`,
@@ -815,8 +820,8 @@ function buildGradeIncompleteCopy(missing: string[]): V3IncompleteAssessmentCopy
   const joined = missing.map(gradeFieldPhrase).join(" and ");
   return {
     ...V3_INCOMPLETE_GRADE_ASSESSMENT,
-    subhead: `We verified portions of the report, but ${joined} are still needed before a complete purchase read can be offered.`,
-    sectionBody: `Missing ${joined} can materially affect the recommendation. Confirm them on the report to move from a partial read to a complete assessment.`,
+    subhead: `We verified portions of the report, but ${joined} could not be confidently verified from the uploaded file. ${missingGradeNote}`,
+    sectionBody: `Missing ${joined} can materially affect the recommendation. ${softwareLimitNote} ${manualReviewNote}`,
     chapterNote: "Grading details needed before the read can be completed.",
     missingDataValue: missing.join(", "),
     technicalAppendixNote:
@@ -831,17 +836,19 @@ function buildProportionIncompleteCopy(gradeHints?: {
   const gradesConfirmed = formatGradesConfirmed(gradeHints);
   const color = gradeHints?.color?.trim();
   const clarity = gradeHints?.clarity?.trim();
+  const proportionNote = CONSUMER_COPY.trustLayerProportionDetailLimit;
+  const softwareLimitNote = CONSUMER_COPY.trustLayerSoftwareReadLimit;
+  const manualReviewNote = CONSUMER_COPY.trustLayerManualReviewOffer;
 
   const subhead = gradesConfirmed
-    ? `${color} color and ${clarity} clarity are confirmed on the report. A few proportion measurements from the diagram are still needed for a complete read.`
+    ? `${color} color and ${clarity} clarity are confirmed on the report. Some proportion measurements could not be confidently verified from the uploaded file. ${proportionNote}`
     : V3_INCOMPLETE_PROPORTION_ASSESSMENT.subhead;
 
   return {
     ...V3_INCOMPLETE_PROPORTION_ASSESSMENT,
     subhead,
     gradesConfirmed,
-    sectionBody:
-      "Diagram proportions can materially affect brightness, balance, and the final recommendation. This is a proportion gap — not a missing color or clarity grade.",
+    sectionBody: `Diagram proportions can materially affect brightness, balance, and the final recommendation. ${proportionNote} ${softwareLimitNote} ${manualReviewNote}`,
     technicalAppendixNote: gradesConfirmed
       ? `${gradesConfirmed} are confirmed. The outstanding detail is proportion or diagram measurement — not 4Cs.`
       : V3_INCOMPLETE_PROPORTION_ASSESSMENT.technicalAppendixNote,

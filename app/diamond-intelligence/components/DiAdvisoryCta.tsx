@@ -35,6 +35,18 @@ export default function DiAdvisoryCta({
           {CONSUMER_COPY.justinReviewCta}
         </Link>
       </div>
+
+      <div className="mt-6 rounded-[18px] border border-[rgba(181,150,98,0.16)] bg-[rgba(255,255,255,0.42)] px-7 py-8 md:px-9 md:py-9">
+        <p className="text-[11px] uppercase tracking-[0.16em] text-[#9b8b78]">
+          {CONSUMER_COPY.beyondTheReportTitle}
+        </p>
+        <p className="mt-4 max-w-2xl font-serif text-[clamp(20px,2.6vw,24px)] leading-[1.35] text-[#1e1a16]">
+          {CONSUMER_COPY.beyondTheReportIntro}
+        </p>
+        <p className="mt-4 max-w-2xl text-[15px] leading-[1.78] text-[#6f665b]">
+          {CONSUMER_COPY.beyondTheReportBody}
+        </p>
+      </div>
     </section>
   );
 }

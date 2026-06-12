@@ -53,6 +53,10 @@ import {
   resolveV3RenderPhase,
 } from "./v3-presentation";
 import { parseReportGradeHints } from "@/lib/diamond-intelligence/report-grade-hints";
+import {
+  buildConciergeContextFromReport,
+  type DiamondIntelligenceConciergeContext,
+} from "@/lib/concierge/diamond-intelligence-context";
 
 function formatCarat(carat: string): string {
   const v = carat.trim();
@@ -81,6 +85,9 @@ export type LightPerformanceDashboardProps = {
   onClearError?: () => void;
   partialListing?: ListingExtraction | null;
   partialListingMessage?: string | null;
+  activeListing?: ListingExtraction | null;
+  sourceUrl?: string | null;
+  uploadFileName?: string | null;
   metadata: ClientSafeMetadata | null;
   extractedFields: CalibrationReportFields | null;
   interpretationFields: CalibrationReportFields | null;
@@ -101,6 +108,9 @@ export default function LightPerformanceDashboard({
   onClearError,
   partialListing,
   partialListingMessage,
+  activeListing,
+  sourceUrl,
+  uploadFileName,
   metadata,
   extractedFields,
   interpretationFields,
@@ -330,6 +340,38 @@ export default function LightPerformanceDashboard({
       })
     : "Worth Reviewing After Additional Information";
 
+  const conciergeVerdict =
+    decisionProfile && fields
+      ? purchaseRecommendation
+      : partialListing
+        ? "Listing found — report needed for full review"
+        : null;
+
+  const reportContext: DiamondIntelligenceConciergeContext = useMemo(
+    () =>
+      buildConciergeContextFromReport({
+        metadata,
+        fields: fields ?? undefined,
+        gradeHints,
+        ingestMode,
+        sourceUrl: sourceUrl ?? (ingestMode === "url" ? fileName : null),
+        activeListing: activeListing ?? partialListing ?? null,
+        uploadFileName,
+        verdict: conciergeVerdict,
+      }),
+    [
+      metadata,
+      fields,
+      gradeHints,
+      ingestMode,
+      sourceUrl,
+      fileName,
+      activeListing,
+      partialListing,
+      uploadFileName,
+      conciergeVerdict,
+    ],
+  );
   const heroPresentation = buildV3HeroPresentation({
     purchaseRecommendation,
     publicTier,
@@ -355,16 +397,6 @@ export default function LightPerformanceDashboard({
     effectiveGcal8xPremium,
     gradeHints?.clarity ?? decisionProfile?.gradeHints.clarity,
   );
-
-  const reportContext =
-    metadata && fields
-      ? {
-          lab: metadata.lab,
-          reportNumber: metadata.reportNumber,
-          carat: fields.carat,
-          shape: fields.shape,
-        }
-      : {};
 
   const resultState = resolveDiamondIntelligenceResultState({
     uploadPhase,
@@ -439,7 +471,7 @@ export default function LightPerformanceDashboard({
       {resultState === "ERROR" ? (
         <DiV3UnableToVerify
           onFile={onFile}
-          reportContext={hasReport ? reportContext : undefined}
+          reportContext={reportContext}
         />
       ) : null}
 

@@ -73,6 +73,19 @@ export const CONSUMER_COPY = {
   partialListingHeadline: "Listing Found — Report Needed for Full Review",
   partialListingBody:
     "We found the listing details, but this retailer does not expose the grading report in a format we can reliably read. Upload the GIA, IGI, or GCAL 8X report from this listing to complete the review.",
+  trustLayerSoftwareReadLimit:
+    "Some reports are difficult for software to interpret due to image quality, report formatting, or how the report was provided. This does not necessarily indicate a problem with the diamond itself.",
+  trustLayerProportionDetailLimit:
+    "Some measurements may be visible to a human reviewer but could not be confidently verified from the uploaded file.",
+  trustLayerMissingGradeLimit:
+    "The report may contain this information, but it could not be confidently verified from the uploaded file.",
+  trustLayerManualReviewOffer:
+    "Justin can review the report personally if you would like a second read.",
+  beyondTheReportTitle: "Beyond the Report",
+  beyondTheReportIntro:
+    "Laboratory reports are useful starting points, but they do not fully show how a diamond appears in person.",
+  beyondTheReportBody:
+    "They rarely capture eye-cleanliness from normal viewing distance, milkiness or haze, color tinge or undertone, overall visual personality, real-world presence, and other details that may need human review before purchase.",
   processingStateHeadline: "Building your interpretation…",
   processingStateSupportingCopy:
     "We are reading proportion details from your report. This usually takes a few moments.",
@@ -168,10 +181,10 @@ export const V3_INCOMPLETE_GRADE_ASSESSMENT: V3IncompleteAssessmentCopy = {
   eyebrow: "Concierge Review",
   headline: "A Few Grading Details Still Needed",
   subhead:
-    "We verified portions of the report, but a few grading details are still needed before a complete purchase read can be offered.",
+    "We verified portions of the report, but a few grading details could not be confidently verified from the uploaded file.",
   sectionHeadline: "The Read Is Not Complete Yet",
   sectionBody:
-    "Missing grading details can materially affect the recommendation. Confirm them on the report to move from a partial read to a complete assessment.",
+    "Missing grading details can materially affect the recommendation. The report may contain this information, but it could not be confidently verified from the uploaded file. Some reports are difficult for software to interpret due to image quality, report formatting, or how the report was provided. This does not necessarily indicate a problem with the diamond itself. Justin can review the report personally if you would like a second read.",
   chapterNote: "Grading detail needed before the read can be completed.",
   recommendationStatus: "Pending Grading Detail",
   missingDataLabel: "Missing Grades",
@@ -190,10 +203,10 @@ export const V3_INCOMPLETE_PROPORTION_ASSESSMENT: V3IncompleteAssessmentCopy = {
   eyebrow: "Concierge Review",
   headline: "Proportion Detail Needed",
   subhead:
-    "Color and clarity are already on the report, but a few proportion measurements from the diagram are still needed for a complete read.",
+    "Color and clarity are already on the report, but some proportion measurements could not be confidently verified from the uploaded file.",
   sectionHeadline: "The Read Is Not Complete Yet",
   sectionBody:
-    "Diagram proportions can materially affect brightness, balance, and the final recommendation. Confirm those measurements on the report to complete the assessment.",
+    "Diagram proportions can materially affect brightness, balance, and the final recommendation. Some measurements may be visible to a human reviewer but could not be confidently verified from the uploaded file. Some reports are difficult for software to interpret due to image quality, report formatting, or how the report was provided. This does not necessarily indicate a problem with the diamond itself. Justin can review the report personally if you would like a second read.",
   chapterNote:
     "Proportion detail needed — color and clarity are already established on the report.",
   recommendationStatus: "Pending Proportion Detail",
@@ -213,7 +226,9 @@ export const V3_INCOMPLETE_ASSESSMENT = V3_INCOMPLETE_GRADE_ASSESSMENT;
 export const V3_UNABLE_TO_VERIFY = {
   eyebrow: "Diamond Intelligence",
   headline: "We Couldn't Read This Report",
-  body: "We weren't able to extract enough information from this file to provide a useful interpretation.",
+  body: "We weren't able to extract enough information from this file to provide a useful interpretation. The diamond may still be valid — the report or image may simply be difficult for software to read.",
+  reassurance:
+    "Some reports are difficult for software to interpret due to image quality, report formatting, or how the report was provided. This does not necessarily indicate a problem with the diamond itself. Justin can review the report personally if you would like a second read.",
   reasons: [
     "Unsupported report format",
     "Low image quality",

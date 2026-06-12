@@ -50,6 +50,10 @@ export default function DiV3UnableToVerify({
         {V3_UNABLE_TO_VERIFY.body}
       </p>
 
+      <p className="mx-auto mt-5 max-w-[520px] text-[15px] leading-[1.72] text-[#75675e]">
+        {V3_UNABLE_TO_VERIFY.reassurance}
+      </p>
+
       <p className="mx-auto mt-8 max-w-[520px] text-[11px] uppercase tracking-[0.14em] text-[#9b8b78]">
         Potential reasons
       </p>

@@ -6,7 +6,10 @@ import type { ListingExtraction } from "@/lib/diamond-intelligence/url-ingestion
 import { ReportUploadDock, type ClientUploadPhase } from "./ReportUploadDock";
 import { CONSUMER_COPY } from "./consumer-display-labels";
 import Link from "next/link";
-import { buildConciergeHrefFromDiamondIntelligence } from "@/lib/concierge/diamond-intelligence-context";
+import {
+  buildConciergeContextFromListing,
+  buildConciergeHrefFromDiamondIntelligence,
+} from "@/lib/concierge/diamond-intelligence-context";
 
 export type IngestMode = "url" | "upload";
 
@@ -53,12 +56,11 @@ export function DiamondIntelligenceIngestDock({
   }, [urlInput, disabled, onClearError, onUrl]);
 
   const conciergeHref = partialListing
-    ? buildConciergeHrefFromDiamondIntelligence({
-        lab: partialListing.lab ?? undefined,
-        reportNumber: partialListing.reportNumber ?? undefined,
-        carat: partialListing.carat?.toString(),
-        shape: partialListing.shape ?? undefined,
-      })
+    ? buildConciergeHrefFromDiamondIntelligence(
+        buildConciergeContextFromListing(partialListing, {
+          verdict: "Listing found — report needed for full review",
+        }),
+      )
     : "/concierge";
 
   return (
