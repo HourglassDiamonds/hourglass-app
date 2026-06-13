@@ -21,6 +21,8 @@ import {
   CLIENT_UPLOAD_INTERPRET_ERROR,
 } from "@/lib/diamond-intelligence/client-interpret-messages";
 import { classifyFinalized } from "@/lib/diamond-intelligence/client-interpretation-pipeline";
+import { shouldPresentScoredCoreRead } from "@/lib/diamond-intelligence/client-presentation-gates";
+import { parseReportGradeHints, buildReportGradeHintSource } from "@/lib/diamond-intelligence/report-grade-hints";
 import type { ClientSafeInterpretationPayload } from "@/lib/diamond-intelligence/client-api";
 import type { ClientInterpretationDecision } from "@/lib/diamond-intelligence/client-interpretation-pipeline";
 import type { UploadExtractionOutput } from "@/lib/calibration-library/extract-upload-pipeline";
@@ -136,7 +138,21 @@ export async function interpretUploadedReport(
     }
 
     const partial = decision.tier === "partial";
-    const statusNote = partial ? CLIENT_PARTIAL_INTERPRETATION_NOTE : undefined;
+    const gradeHints = parseReportGradeHints(
+      buildReportGradeHintSource({
+        reportGradeHintText: finalized.reportGradeHintText,
+        rawTextSnippet: finalized.rawTextSnippet?.trim(),
+        warnings: finalized.warnings,
+      }) ?? "",
+    );
+    const suppressPartialConsumerNote = shouldPresentScoredCoreRead({
+      fields: finalized.fields,
+      gradeHints,
+    });
+    const statusNote =
+      partial && !suppressPartialConsumerNote
+        ? CLIENT_PARTIAL_INTERPRETATION_NOTE
+        : undefined;
 
     const interpretation = toClientSafeInterpretationPayload(
       finalized,

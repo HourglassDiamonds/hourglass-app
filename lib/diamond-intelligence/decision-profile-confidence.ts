@@ -32,11 +32,7 @@ export function buildDecisionConfidence(input: {
     };
   }
 
-  if (
-    ctx.extractionState === "PARTIAL_EXTRACTION" ||
-    ctx.readState === "partial" ||
-    !ctx.scoreEligible
-  ) {
+  if (!ctx.scoreEligible) {
     return {
       label: "Confidence",
       band: "Low",
@@ -47,12 +43,17 @@ export function buildDecisionConfidence(input: {
     };
   }
 
-  if (ctx.confidenceLevel === "high" && ctx.extractionState === "FULL_EXTRACTION") {
+  const secondaryDiagramFieldsPending =
+    input.capability.needsExpertDiagramReview ||
+    input.capability.needsGuidedCompletion;
+
+  if (ctx.confidenceLevel === "high") {
     return {
       label: "Confidence",
       band: "High",
-      explanation:
-        "Core proportions and finish detail are visible on the report — this interpretation reflects a complete report-based architectural read.",
+      explanation: secondaryDiagramFieldsPending
+        ? "Core proportions are visible on the report — optional girdle or culet detail would sharpen the deeper architectural read."
+        : "Core proportions and finish detail are visible on the report — this interpretation reflects a complete report-based architectural read.",
     };
   }
 
@@ -69,8 +70,8 @@ export function buildDecisionConfidence(input: {
 
   return {
     label: "Confidence",
-    band: "Low",
+    band: "Moderate",
     explanation:
-      "Limited proportion detail on the report — treat this as an early read until more fields are confirmed.",
+      "Core scoring proportions are present — treat missing girdle or culet as optional refinement, not a blocker to this read.",
   };
 }

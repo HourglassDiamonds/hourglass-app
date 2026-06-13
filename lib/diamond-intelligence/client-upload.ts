@@ -4,6 +4,7 @@ import {
   CLIENT_RATE_LIMIT_ERROR,
   CLIENT_UPLOAD_INTERPRET_ERROR,
 } from "./client-interpret-messages";
+import { shouldPresentScoredCoreRead } from "./client-presentation-gates";
 
 export {
   CLIENT_PARTIAL_INTERPRETATION_NOTE,
@@ -89,8 +90,14 @@ export async function postReportForInterpretation(
   );
 
   if (partial && !interpretation.clientStatusNote) {
-    interpretation.clientStatusNote = CLIENT_PARTIAL_INTERPRETATION_NOTE;
-    interpretation.partial = true;
+    const suppressPartialConsumerNote = shouldPresentScoredCoreRead({
+      fields: interpretation.extractedFields,
+      gradeHints: interpretation.gradeHints,
+    });
+    if (!suppressPartialConsumerNote) {
+      interpretation.clientStatusNote = CLIENT_PARTIAL_INTERPRETATION_NOTE;
+      interpretation.partial = true;
+    }
   }
 
   return { interpretation, partial };

@@ -31,4 +31,48 @@ describe("buildDecisionConfidence", () => {
     const c = buildDecisionConfidence({ context: ctx, capability: clientCap });
     assert.equal(c.band, "High");
   });
+
+  it("score-eligible core read stays High when girdle is missing", () => {
+    const f = fields({
+      shape: "Round Brilliant",
+      carat: "2.03",
+      measurements: "8.06 - 8.09 x 5.03 mm",
+      tablePercent: "57",
+      depthPercent: "62.3",
+      crownAngle: "36",
+      pavilionAngle: "40.8",
+      polish: "Excellent",
+      symmetry: "Excellent",
+      fluorescence: "Faint",
+      culet: "None",
+    });
+    const ctx = buildDiamondInterpretationContext({ fields: f, rawScore: 88 });
+    const cap = assessReportCapability({ fields: f });
+    const { internalCalibrationEligible: _i, ...clientCap } = cap;
+    const c = buildDecisionConfidence({ context: ctx, capability: clientCap });
+    assert.equal(ctx.scoreEligible, true);
+    assert.equal(clientCap.supportsLevel, "basic");
+    assert.notEqual(c.band, "Low");
+    assert.equal(c.band, "High");
+  });
+
+  it("missing pavilion keeps Low confidence", () => {
+    const f = fields({
+      shape: "Round Brilliant",
+      carat: "5.20",
+      measurements: "11.11 - 11.14 x 6.77 mm",
+      tablePercent: "59",
+      depthPercent: "60.8",
+      pavilionAngle: "41",
+      polish: "Excellent",
+      symmetry: "Excellent",
+      fluorescence: "None",
+    });
+    const ctx = buildDiamondInterpretationContext({ fields: f, rawScore: 80 });
+    const cap = assessReportCapability({ fields: f });
+    const { internalCalibrationEligible: _i, ...clientCap } = cap;
+    const c = buildDecisionConfidence({ context: ctx, capability: clientCap });
+    assert.equal(ctx.scoreEligible, false);
+    assert.equal(c.band, "Low");
+  });
 });

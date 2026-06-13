@@ -37,6 +37,7 @@ import { CONSUMER_COPY } from "./consumer-display-labels";
 import { DI_EDITORIAL_CARD, DI_EYEBROW_STUDIO, DI_SERIF_HEADLINE } from "./di-studio-styles";
 import { DI_V3_SHELL } from "./di-v3-styles";
 import { resolveHourglassClarityPolicy } from "@/lib/diamond-intelligence/hourglass-clarity-policy";
+import { shouldPresentScoredCoreRead } from "@/lib/diamond-intelligence/client-presentation-gates";
 import type { DecisionConfidenceBand } from "@/lib/diamond-intelligence/decision-profile-confidence";
 import {
   resolvePurchaseRecommendationLabel,
@@ -310,7 +311,12 @@ export default function LightPerformanceDashboard({
     gradeHints?.clarity ?? decisionProfile?.gradeHints.clarity,
   );
 
+  const scoredCorePresentation = shouldPresentScoredCoreRead({
+    fields,
+    gradeHints,
+  });
   const lowInterpretationConfidence =
+    !scoredCorePresentation &&
     decisionProfile?.confidence.band === "Low";
 
   const clarityForPresentation =
