@@ -9,6 +9,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const corePages: MetadataRoute.Sitemap = [
     { url: `${SITE_URL}/`, priority: 1, lastModified },
     { url: `${SITE_URL}/the-house`, priority: 0.9, lastModified },
+    { url: `${SITE_URL}/our-approach`, priority: 0.9, lastModified },
     { url: `${SITE_URL}/engagement-rings`, priority: 0.9, lastModified },
     { url: `${SITE_URL}/custom-design`, priority: 0.9, lastModified },
     { url: `${SITE_URL}/concierge`, priority: 0.9, lastModified },

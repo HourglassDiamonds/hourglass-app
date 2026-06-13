@@ -15,6 +15,7 @@ export default function Footer() {
 
           <nav className="flex flex-wrap gap-4 text-[12px] text-[#625b54]">
             <Link href="/the-house" className="hover:text-[#1f1d1a]">The House</Link>
+            <Link href="/our-approach" className="hover:text-[#1f1d1a]">Our Approach</Link>
             <Link href="/engagement-rings" className="hover:text-[#1f1d1a]">Engagement Rings</Link>
             <Link href="/custom-design" className="hover:text-[#1f1d1a]">Custom Design</Link>
             <Link href="/diamond-guide" className="hover:text-[#1f1d1a]">Diamond Guide</Link>

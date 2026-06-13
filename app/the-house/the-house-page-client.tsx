@@ -163,6 +163,13 @@ export default function TheHousePageClient() {
                 complicated, but to keep them clear and considered, so the final
                 piece reflects real quality rather than unnecessary noise.
               </p>
+
+              <Link
+                href="/our-approach"
+                className="mt-8 inline-block text-[11px] uppercase tracking-[0.26em] text-[#625b54] transition-colors hover:text-[#1f1d1a]"
+              >
+                Read Our Approach
+              </Link>
             </div>
           </div>
 
