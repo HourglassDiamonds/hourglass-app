@@ -58,6 +58,14 @@ import {
   logUploadPipelineTiming,
 } from "./upload-pipeline-timing";
 import { clientExtractionSufficient } from "@/lib/diamond-intelligence/client-extraction-sufficient";
+import { needsGiaDiagramProportionOcrWait } from "./gia-diagram-proportion-wait";
+import {
+  isGiaQaTraceEnabled,
+  traceFieldsFromRecord,
+  traceRawOcrPreview,
+} from "@/lib/diamond-intelligence/gia-qa-pipeline-trace";
+import { assessExtractionCompleteness } from "@/lib/diamond-intelligence/extraction-completeness";
+import { assessReportCapability } from "@/lib/diamond-intelligence/report-capability";
 import {
   buildExtractionDiagnosticReport,
   type ExtractionDiagnosticReport,
@@ -70,6 +78,8 @@ import {
 } from "./runtime-guard";
 import {
   CLIENT_DOCUMENT_EXTRACT_TIMEOUT_MS,
+  CLIENT_GIA_DIAGRAM_PIPELINE_TIMEOUT_MS,
+  CLIENT_GIA_DIAGRAM_REGION_OCR_TIMEOUT_MS,
   CLIENT_IMAGE_REGION_OCR_TIMEOUT_MS,
   CLIENT_UPLOAD_PIPELINE_TIMEOUT_MS,
   DOCUMENT_EXTRACT_TIMEOUT_MS,
@@ -117,6 +127,8 @@ export type UploadExtractionOutput = FinalizedCalibrationExtraction & {
   pipelineError?: string;
   /** Client route returned fields gathered before timeout. */
   clientPartial?: boolean;
+  /** GIA diagram OCR budget exhausted — proportions not recovered; do not imply absent. */
+  diagramOcrTimedOut?: boolean;
   /** Developer-only field-by-field extraction diagnostics (when requested). */
   diagnostics?: ExtractionDiagnosticReport;
   /** Production PDF render audit — infrastructure only, no scoring impact. */
@@ -133,6 +145,8 @@ export type RunUploadExtractionInput = {
   reportNumber?: string;
   reportSource?: ReportSource;
   pipelineTimeoutMs?: number;
+  /** Override region OCR budget (client GIA diagram wait). */
+  regionOcrTimeoutMs?: number;
   /** `client` = diamond-intelligence interpret; default preserves calibration/admin behavior. */
   mode?: ExtractionPipelineMode;
   /** When set (e.g. extract-file route), skip a second document-extract pass. */
@@ -202,6 +216,7 @@ async function runImageOcrAugmentation(input: {
   reportNumberHint: string;
   gcalImageOnlyPdf?: boolean;
   clientMode?: boolean;
+  regionOcrTimeoutMs?: number;
   onGradeHintTextUpdate?: (text: string) => void;
 }): Promise<{ imageOcrMs: number; ocrCompleted: boolean; gradeHintText: string }> {
   const {
@@ -223,9 +238,11 @@ async function runImageOcrAugmentation(input: {
   };
   publishGradeHintText(gradeHintText);
   const clientMode = input.clientMode ?? false;
-  const regionOcrTimeoutMs = clientMode
-    ? CLIENT_IMAGE_REGION_OCR_TIMEOUT_MS
-    : IMAGE_REGION_OCR_TIMEOUT_MS;
+  const regionOcrTimeoutMs =
+    input.regionOcrTimeoutMs ??
+    (clientMode
+      ? CLIENT_IMAGE_REGION_OCR_TIMEOUT_MS
+      : IMAGE_REGION_OCR_TIMEOUT_MS);
 
   if (
     parsed.parserType === "gcal-sarine-4cs" &&
@@ -779,6 +796,7 @@ export async function runCalibrationUploadExtraction(
     ocrAvailable: boolean;
     pdfTextLayerLength: number;
     gcalImageOnlyPdf: boolean;
+    giaDiagramProportionWait?: boolean;
   } = {
     parsed: null,
     combined: "",
@@ -816,8 +834,10 @@ export async function runCalibrationUploadExtraction(
       combined: string;
       clientPartial?: boolean;
       timedOut?: boolean;
+      diagramOcrTimedOut?: boolean;
       pipelineError?: string;
       renderAudit?: PdfRenderAuditRecord;
+      forensicSnapshots?: ForensicSnapshot[];
     },
   ): UploadExtractionOutput => {
     timings.totalMs = Date.now() - pipelineStarted;
@@ -836,16 +856,18 @@ export async function runCalibrationUploadExtraction(
       corpusReviewFlags: finalized.corpusReviewFlags,
       clientPartial: extra.clientPartial,
       timedOut: extra.timedOut,
+      diagramOcrTimedOut: extra.diagramOcrTimedOut,
       pipelineError: extra.pipelineError,
       diagnostics: buildDiagnostics(finalized, extra.combined, extra.ocrAttempted),
       renderAudit: extra.renderAudit,
+      forensicSnapshots: extra.forensicSnapshots,
     };
   };
 
   try {
     setForensicCollectionEnabled(Boolean(input.collectForensics));
-    return await withTimeout(
-      (async () => {
+
+    const executeUploadPipeline = async (): Promise<UploadExtractionOutput> => {
         if (input.initialPipelineNotices?.length) {
           pipelineNotices.push(...input.initialPipelineNotices);
         }
@@ -973,6 +995,22 @@ export async function runCalibrationUploadExtraction(
           parsed.metadata.reportNumber.trim() ||
           "";
 
+        if (isGiaQaTraceEnabled(reportNumberHint)) {
+          traceRawOcrPreview(reportNumberHint, combined, {
+            textMethod: effectiveMethod,
+            parserType: parsed.parserType,
+          });
+          traceFieldsFromRecord("textParse", reportNumberHint, parsed.fields, {
+            parserType: parsed.parserType,
+            clientExtractionSufficient: clientExtractionSufficient({
+              fields: parsed.fields,
+              confidence: parsed.confidence,
+            }),
+            supportsLevel: assessReportCapability({ fields: parsed.fields })
+              .supportsLevel,
+          });
+        }
+
         snapshot.parsed = parsed;
         snapshot.combined = combined;
         snapshot.gradeHintText = combined.slice(0, 16000);
@@ -983,7 +1021,6 @@ export async function runCalibrationUploadExtraction(
         snapshot.gcalImageOnlyPdf = gcalImageOnlyPdf;
 
         let gradeHintText = snapshot.gradeHintText;
-        let ocrSkippedForSufficientText = false;
 
         const publishSnapshotGradeHintText = (text: string) => {
           gradeHintText = pickGradeHintText(gradeHintText, text);
@@ -992,6 +1029,28 @@ export async function runCalibrationUploadExtraction(
             syncParsedGradeHintText(snapshot.parsed, gradeHintText);
           }
         };
+
+        let giaDiagramProportionWait = false;
+        let clientRegionOcrTimeoutMs =
+          input.regionOcrTimeoutMs ?? CLIENT_IMAGE_REGION_OCR_TIMEOUT_MS;
+        if (clientMode && uploadPdfBytes) {
+          giaDiagramProportionWait = needsGiaDiagramProportionOcrWait({
+            fields: parsed.fields,
+            combinedText: combined,
+            parserType: parsed.parserType,
+            lab: parsed.metadata.lab,
+            gradeHintText,
+          });
+          snapshot.giaDiagramProportionWait = giaDiagramProportionWait;
+          if (giaDiagramProportionWait) {
+            clientRegionOcrTimeoutMs =
+              input.regionOcrTimeoutMs ??
+              CLIENT_GIA_DIAGRAM_REGION_OCR_TIMEOUT_MS;
+          }
+        }
+
+        const runOcrFinalizeAndReturn = async (): Promise<UploadExtractionOutput> => {
+        let ocrSkippedForSufficientText = false;
 
         if (
           clientMode &&
@@ -1029,6 +1088,7 @@ export async function runCalibrationUploadExtraction(
               reportNumberHint,
               gcalImageOnlyPdf,
               clientMode,
+              regionOcrTimeoutMs: clientRegionOcrTimeoutMs,
               onGradeHintTextUpdate: publishSnapshotGradeHintText,
             });
             timings.imageOcrMs = ocr.imageOcrMs;
@@ -1086,6 +1146,19 @@ export async function runCalibrationUploadExtraction(
         snapshot.parsed = parsed;
         snapshot.gradeHintText = gradeHintText;
 
+        if (isGiaQaTraceEnabled(reportNumberHint)) {
+          traceFieldsFromRecord("afterRegionOcr", reportNumberHint, parsed.fields, {
+            ocrSkippedForSufficientText,
+            imageOcrMs: timings.imageOcrMs,
+            clientExtractionSufficient: clientExtractionSufficient({
+              fields: parsed.fields,
+              confidence: parsed.confidence,
+            }),
+            supportsLevel: assessReportCapability({ fields: parsed.fields })
+              .supportsLevel,
+          });
+        }
+
         console.log("[upload-pipeline] finalizer:start", { ms: Date.now() - t0 });
         const finalizerStarted = Date.now();
         const finalized = finalizeCalibrationExtractionResult({
@@ -1126,30 +1199,42 @@ export async function runCalibrationUploadExtraction(
           ocrDurationMs: timings.imageOcrMs || undefined,
         });
 
-        return {
-          ...finalized,
-          pipelineNotices,
+        return assembleOutput(finalized, {
           ocrAttempted,
           ocrAvailable,
-          pdfTextLayerLength,
-          gcalImageOnlyPdf,
-          extractedCharCount: combined.length,
-          timings,
-          parserPathUsed: finalized.parserType,
-          calibrationEligible: finalized.calibrationEligible,
-          excludedFromCalibrationStats: finalized.excludedFromCalibrationStats,
-          corpusReviewFlags: finalized.corpusReviewFlags,
-          diagnostics: buildDiagnostics(
-            finalized,
-            combined,
-            (ocrAttempted && Boolean(docText)) || timings.imageOcrMs > 0,
-          ),
+          combined,
           renderAudit,
           forensicSnapshots: input.collectForensics
             ? drainForensicSnapshots()
             : undefined,
+        });
         };
-      })(),
+
+        if (clientMode) {
+          const totalBudget = giaDiagramProportionWait
+            ? (input.pipelineTimeoutMs ??
+              CLIENT_GIA_DIAGRAM_PIPELINE_TIMEOUT_MS)
+            : (input.pipelineTimeoutMs ?? CLIENT_UPLOAD_PIPELINE_TIMEOUT_MS);
+          const ocrPhaseBudget = Math.max(
+            totalBudget - (Date.now() - pipelineStarted),
+            8_000,
+          );
+          return await withTimeout(
+            runOcrFinalizeAndReturn(),
+            ocrPhaseBudget,
+            "upload-extraction-pipeline",
+          );
+        }
+
+        return await runOcrFinalizeAndReturn();
+      };
+
+    if (clientMode) {
+      return await executeUploadPipeline();
+    }
+
+    return await withTimeout(
+      executeUploadPipeline(),
       timeoutMs,
       "upload-extraction-pipeline",
     );
@@ -1179,19 +1264,26 @@ export async function runCalibrationUploadExtraction(
         combinedText: snapshot.combined,
         usedImageOCR: snapshot.ocrAttempted || timings.imageOcrMs > 0,
       });
+      const diagramWaitTimedOut =
+        Boolean(snapshot.giaDiagramProportionWait) &&
+        !assessExtractionCompleteness({ fields: finalized.fields })
+          .scoreEligible;
       logUploadPipelineTiming({
         phase: "parser-finalizer",
         durationMs: 0,
         labFamily: timings.labFamily,
         parserPath: finalized.parserType,
-        detail: "snapshot-after-timeout",
+        detail: diagramWaitTimedOut
+          ? "diagram-ocr-timeout"
+          : "snapshot-after-timeout",
       });
       return assembleOutput(finalized, {
         ocrAttempted: snapshot.ocrAttempted,
         ocrAvailable: snapshot.ocrAvailable,
         combined: snapshot.combined,
-        clientPartial: true,
+        clientPartial: !diagramWaitTimedOut,
         timedOut: true,
+        diagramOcrTimedOut: diagramWaitTimedOut,
         pipelineError: timeoutErrorMessage(err),
       });
     }

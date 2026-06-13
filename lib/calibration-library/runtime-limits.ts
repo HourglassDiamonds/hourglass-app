@@ -92,6 +92,22 @@ export const CLIENT_IMAGE_REGION_OCR_TIMEOUT_MS = envInt(
   18_000,
 );
 
+/** GIA facsimile / LGDR — diagram proportions need region OCR after empty textParse. */
+export const CLIENT_GIA_DIAGRAM_PIPELINE_TIMEOUT_MS = envInt(
+  "CLIENT_GIA_DIAGRAM_PIPELINE_TIMEOUT_MS",
+  52_000,
+);
+
+export const CLIENT_GIA_DIAGRAM_REGION_OCR_TIMEOUT_MS = envInt(
+  "CLIENT_GIA_DIAGRAM_REGION_OCR_TIMEOUT_MS",
+  44_000,
+);
+
+export const CLIENT_GIA_DIAGRAM_INTERPRET_ROUTE_TIMEOUT_MS = envInt(
+  "CLIENT_GIA_DIAGRAM_INTERPRET_ROUTE_TIMEOUT_MS",
+  54_000,
+);
+
 export function capRenderScaleForPixels(
   pageWidthPt: number,
   pageHeightPt: number,

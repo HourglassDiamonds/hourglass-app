@@ -1,4 +1,5 @@
 import { runCalibrationUploadExtraction } from "@/lib/calibration-library/extract-upload-pipeline";
+import { isPdfMime } from "@/lib/calibration-library/document-extract";
 import { inferReportSourceFromUpload } from "@/lib/calibration-library/infer-report-source";
 import {
   CalibrationTimeoutError,
@@ -7,6 +8,9 @@ import {
   withTimeout,
 } from "@/lib/calibration-library/runtime-guard";
 import {
+  CLIENT_GIA_DIAGRAM_INTERPRET_ROUTE_TIMEOUT_MS,
+  CLIENT_GIA_DIAGRAM_PIPELINE_TIMEOUT_MS,
+  CLIENT_GIA_DIAGRAM_REGION_OCR_TIMEOUT_MS,
   CLIENT_INTERPRET_ROUTE_TIMEOUT_MS,
   CLIENT_UPLOAD_PIPELINE_TIMEOUT_MS,
 } from "@/lib/calibration-library/runtime-limits";
@@ -17,11 +21,14 @@ import {
   setCachedClientInterpretation,
 } from "@/lib/diamond-intelligence/client-interpret-cache";
 import {
+  CLIENT_GIA_DIAGRAM_OCR_TIMEOUT_ERROR,
   CLIENT_PARTIAL_INTERPRETATION_NOTE,
   CLIENT_UPLOAD_INTERPRET_ERROR,
 } from "@/lib/diamond-intelligence/client-interpret-messages";
 import { classifyFinalized } from "@/lib/diamond-intelligence/client-interpretation-pipeline";
 import { shouldPresentScoredCoreRead } from "@/lib/diamond-intelligence/client-presentation-gates";
+import { assessExtractionCompleteness } from "@/lib/diamond-intelligence/extraction-completeness";
+import { traceClientPayloadStages } from "@/lib/diamond-intelligence/gia-qa-pipeline-trace";
 import { parseReportGradeHints, buildReportGradeHintSource } from "@/lib/diamond-intelligence/report-grade-hints";
 import type { ClientSafeInterpretationPayload } from "@/lib/diamond-intelligence/client-api";
 import type { ClientInterpretationDecision } from "@/lib/diamond-intelligence/client-interpretation-pipeline";
@@ -110,6 +117,11 @@ export async function interpretUploadedReport(
   }
 
   try {
+    const clientPdf = isPdfMime(mime);
+    const routeTimeoutMs = clientPdf
+      ? CLIENT_GIA_DIAGRAM_INTERPRET_ROUTE_TIMEOUT_MS
+      : CLIENT_INTERPRET_ROUTE_TIMEOUT_MS;
+
     const finalized = await withTimeout(
       runCalibrationUploadExtraction({
         bytes,
@@ -117,13 +129,30 @@ export async function interpretUploadedReport(
         reportSource: inferReportSourceFromUpload(mime, false),
         mode: "client",
         initialPipelineNotices: [],
-        pipelineTimeoutMs: CLIENT_UPLOAD_PIPELINE_TIMEOUT_MS,
+        pipelineTimeoutMs: clientPdf
+          ? CLIENT_GIA_DIAGRAM_PIPELINE_TIMEOUT_MS
+          : CLIENT_UPLOAD_PIPELINE_TIMEOUT_MS,
+        regionOcrTimeoutMs: clientPdf
+          ? CLIENT_GIA_DIAGRAM_REGION_OCR_TIMEOUT_MS
+          : undefined,
       }),
-      CLIENT_INTERPRET_ROUTE_TIMEOUT_MS,
+      routeTimeoutMs,
       "diamond-intelligence-interpret",
     );
 
     const decision = classifyFinalized(finalized);
+
+    if (finalized.diagramOcrTimedOut) {
+      return {
+        ok: false,
+        error: CLIENT_GIA_DIAGRAM_OCR_TIMEOUT_ERROR,
+        httpStatus: 504,
+        timedOut: true,
+        finalized,
+        decision,
+        pipelineError: finalized.pipelineError,
+      };
+    }
 
     if (decision.tier === "failure") {
       return {
@@ -164,7 +193,12 @@ export async function interpretUploadedReport(
       },
     );
 
-    if (decision.tier === "full") {
+    traceClientPayloadStages(finalized, { partial });
+
+    const scoreEligible = assessExtractionCompleteness({
+      fields: finalized.fields,
+    }).scoreEligible;
+    if (decision.tier === "full" || scoreEligible) {
       setCachedClientInterpretation(bytes, interpretation);
     }
 
