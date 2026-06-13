@@ -154,13 +154,7 @@ export function DiamondIntelligenceIngestDock({
           </div>
 
           {busy ? (
-            <p className="mt-2 text-xs text-[#a8926a]">
-              {phase === "reading"
-                ? "Fetching listing details…"
-                : phase === "checking"
-                  ? "Looking for grading report…"
-                  : "Building your interpretation…"}
-            </p>
+            <p className="mt-2 text-xs text-[#75675e]">Review in progress</p>
           ) : null}
         </div>
       ) : (

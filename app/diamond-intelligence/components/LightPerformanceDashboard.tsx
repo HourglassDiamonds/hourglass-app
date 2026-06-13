@@ -33,6 +33,7 @@ import DiV3PartialGradeReview from "./DiV3PartialGradeReview";
 import DiV3ResultSections from "./DiV3ResultSections";
 import DiV3UnableToVerify from "./DiV3UnableToVerify";
 import { resolveDiamondIntelligenceResultState } from "./diamond-intelligence-result-state";
+import AnalysisProgressNarrative from "./AnalysisProgressNarrative";
 import { CONSUMER_COPY } from "./consumer-display-labels";
 import { DI_EDITORIAL_CARD, DI_EYEBROW_STUDIO, DI_SERIF_HEADLINE } from "./di-studio-styles";
 import { DI_V3_SHELL } from "./di-v3-styles";
@@ -454,18 +455,7 @@ export default function LightPerformanceDashboard({
       </div>
 
       {resultState === "PROCESSING" ? (
-        <section className="relative py-4 md:py-6" aria-live="polite">
-          <p className={DI_EYEBROW_STUDIO}>Diamond Intelligence</p>
-          <p
-            className={`${DI_SERIF_HEADLINE} mt-5 max-w-4xl text-4xl leading-[1.05] md:text-5xl xl:text-6xl`}
-            style={{ textWrap: "balance" }}
-          >
-            {CONSUMER_COPY.processingStateHeadline}
-          </p>
-          <p className="mt-8 max-w-xl text-lg leading-8 text-[#75675e]">
-            {CONSUMER_COPY.processingStateSupportingCopy}
-          </p>
-        </section>
+        <AnalysisProgressNarrative active />
       ) : null}
 
       {partialListing && resultState === "NO_RESULT" ? (

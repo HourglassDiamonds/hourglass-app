@@ -86,9 +86,6 @@ export const CONSUMER_COPY = {
     "Laboratory reports are useful starting points, but they do not fully show how a diamond appears in person.",
   beyondTheReportBody:
     "They rarely capture eye-cleanliness from normal viewing distance, milkiness or haze, color tinge or undertone, overall visual personality, real-world presence, and other details that may need human review before purchase.",
-  processingStateHeadline: "Building your interpretation…",
-  processingStateSupportingCopy:
-    "We are reading proportion details from your report. This usually takes a few moments.",
   assessmentScopeCopy:
     "Assessment scope: This interpretation evaluates the diamond itself — including proportions, cut quality, visual performance, clarity considerations, and overall desirability. It does not evaluate price. A diamond may be beautifully cut and still be overpriced, or poorly suited despite an attractive price.",
   estimatedReadLabel: "Estimated read from reported proportions",

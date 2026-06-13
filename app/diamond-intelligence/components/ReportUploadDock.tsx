@@ -53,14 +53,7 @@ export function ReportUploadDock({
     [disabled, onFile],
   );
 
-  const statusLine =
-    phase === "reading"
-      ? "Reading the report…"
-      : phase === "checking"
-        ? "Checking proportion details…"
-        : phase === "building"
-          ? "Building your interpretation…"
-          : null;
+  const statusLine = busy ? "Review in progress" : null;
 
   return (
     <div>
@@ -182,11 +175,7 @@ export function ReportUploadDock({
           <p className="pointer-events-none mt-2 text-[10px] leading-snug text-[#948a80]">
             Or click to browse · GIA, IGI, or GCAL 8X PDF
           </p>
-        ) : (
-          <p className="pointer-events-none mt-1.5 text-[10px] text-[#a8926a]">
-            Please wait
-          </p>
-        )}
+        ) : null}
       </div>
 
       <input
