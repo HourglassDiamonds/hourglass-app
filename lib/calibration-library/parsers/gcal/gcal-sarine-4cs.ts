@@ -24,7 +24,20 @@ export function prepareGcalSarineProportionDiagramText(text: string): string {
   s = s.replace(/\b(\d{2})\.(\d)\d*\s*(?=[^\d.%])/g, "$1.$2°");
   s = s.replace(/\b340\b(?!\d)/g, "34.0°");
   s = s.replace(/\b410\b(?!\d)/g, "41.0°");
-  s = s.replace(/\b(?:crn|crown(?:\s*angle)?)\b[\s\S]{0,20}?(34(?:\.0)?)\b/gi, "crown $1°");
+  s = s.replace(/\b(3[3-6]),\s*(\d)\b/g, "$1.$2°");
+  s = s.replace(/\b(3[3-6])\s+(\d)\b(?!\s*mm|\s*%)/g, "$1.$2°");
+  if (/\b41(?:\.0)?\s*°/.test(s) || /\b410\b/.test(s)) {
+    s = s.replace(/\b3[\s\n]+4(?:[\s\n]+0)?(?:\s*°|\s*H)?/g, "34.0°");
+    s = s.replace(/(?:^|[\s\n])0[\s\n]+3(?=[\s\n°]|$)/g, "34.0°");
+  }
+  s = s.replace(
+    /\b(?:crn|crown(?:\s*angle)?)\b[\s\S]{0,24}?(3[3-6](?:\.\d)?)\b/gi,
+    "crown $1°",
+  );
+  s = s.replace(
+    /\b(3[3-6](?:\.\d)?)\b[\s\S]{0,12}?\b(?:crn|crown(?:\s*angle)?)\b/gi,
+    "crown $1°",
+  );
   return prepareGcal8xProportionDiagramText(s);
 }
 
@@ -444,6 +457,23 @@ function expandSarineDiagramPercents(pcts: number[]): number[] {
   return out;
 }
 
+/** Sarine JPG diagram angles may omit ° — collect bare 33–36 / 40–42 decimals safely. */
+function collectGcalSarineDiagramDegreeCandidates(
+  diagramText: string,
+): number[] {
+  const { degrees } = collectGcal8xProportionNumericCandidates(diagramText);
+  const out = [...degrees];
+  for (const m of diagramText.matchAll(/\b(3[3-6]\.\d)\b(?!\s*mm)/g)) {
+    const n = parseFloat(m[1]!);
+    if (!Number.isNaN(n) && !out.includes(n)) out.push(n);
+  }
+  for (const m of diagramText.matchAll(/\b(4[0-2]\.\d)\b(?!\s*mm)/g)) {
+    const n = parseFloat(m[1]!);
+    if (!Number.isNaN(n) && !out.includes(n)) out.push(n);
+  }
+  return out;
+}
+
 /** Sarine diagram OCR — LG360796191 canonical targets. */
 export function extractGcalSarineProportionIslands(
   proportionOcrText: string,
@@ -453,7 +483,7 @@ export function extractGcalSarineProportionIslands(
 
   const collected = collectGcal8xProportionNumericCandidates(w);
   const pcts = expandSarineDiagramPercents(collected.percents);
-  const degs = collected.degrees;
+  const degs = collectGcalSarineDiagramDegreeCandidates(w);
   const mmVals = collected.mmValues;
 
   const usedPct = new Set<number>();

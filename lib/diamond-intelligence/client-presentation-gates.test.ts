@@ -2,7 +2,10 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { REPORT_FIELD_KEYS } from "@/lib/calibration-library/types";
 import type { ReportFieldKey } from "@/lib/calibration-library/types";
-import { shouldPresentScoredCoreRead } from "./client-presentation-gates";
+import {
+  resolveClientGuidedCompletionFields,
+  shouldPresentScoredCoreRead,
+} from "./client-presentation-gates";
 
 function fields(overrides: Partial<Record<ReportFieldKey, string>>) {
   const base = Object.fromEntries(REPORT_FIELD_KEYS.map((k) => [k, ""]));
@@ -51,6 +54,43 @@ describe("shouldPresentScoredCoreRead", () => {
         gradeHints: { color: "", clarity: "VVS1" },
       }),
       false,
+    );
+  });
+});
+
+describe("resolveClientGuidedCompletionFields", () => {
+  it("limits guided completion to girdle/culet when scored core is present", () => {
+    assert.deepEqual(
+      resolveClientGuidedCompletionFields({
+        fields: fields({
+          tablePercent: "57",
+          depthPercent: "62.3",
+          crownAngle: "36",
+          pavilionAngle: "40.8",
+        }),
+        gradeHints: { color: "G", clarity: "VVS1" },
+        guidedCompletionFields: [
+          "pavilionAngle",
+          "girdle",
+          "culet",
+        ] as ReportFieldKey[],
+      }),
+      ["girdle", "culet"],
+    );
+  });
+
+  it("passes through core guided fields when scored core is incomplete", () => {
+    assert.deepEqual(
+      resolveClientGuidedCompletionFields({
+        fields: fields({
+          tablePercent: "59",
+          depthPercent: "60.8",
+          pavilionAngle: "41",
+        }),
+        gradeHints: { color: "G", clarity: "VS1" },
+        guidedCompletionFields: ["crownAngle", "girdle"] as ReportFieldKey[],
+      }),
+      ["crownAngle", "girdle"],
     );
   });
 });

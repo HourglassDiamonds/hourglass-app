@@ -40,7 +40,8 @@ const DESKTOP_JPGS = [
     path: "C:/Users/justi/OneDrive/Desktop/GCAL341066155.jpg",
     requireClarity: true,
     requireProportions: true,
-    requirePavilionAngle: false,
+    requireCrownAngle: true,
+    requirePavilionAngle: true,
   },
   {
     id: "LG340946327",
@@ -85,6 +86,12 @@ describe("GCAL Sarine JPG QA regression (LG340946327/323/516)", () => {
     const islands = extractGcalSarineProportionIslands(GCAL360796191_DIAGRAM_OCR);
     assert.equal(islands.crownAngle, "34");
     assert.equal(islands.pavilionAngle, "40.8");
+  });
+
+  it("repairs stacked 0/3 crown digits when pavilion 41.0 is present", () => {
+    const islands = extractGcalSarineProportionIslands("41.0°\n0\n3\n");
+    assert.equal(islands.crownAngle, "34");
+    assert.equal(islands.pavilionAngle, "41");
   });
 
   it("repairs bare 340/410 diagram tokens without degree symbols", () => {

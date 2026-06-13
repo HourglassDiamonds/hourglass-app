@@ -25,6 +25,8 @@ const INPUT =
 export type GuidedReportCompletionProps = {
   extractedFields: CalibrationReportFields;
   capability?: ClientSafeReportCapability;
+  /** When set, overrides capability.guidedCompletionFields (e.g. scored-core filter). */
+  guidedCompletionFields?: ReportFieldKey[];
   onInterpretationUpdate?: (
     snapshot: ReturnType<typeof buildClientInterpretationSnapshot>,
   ) => void;
@@ -34,13 +36,15 @@ export type GuidedReportCompletionProps = {
 export default function GuidedReportCompletion({
   extractedFields,
   capability: capabilityProp,
+  guidedCompletionFields: guidedCompletionFieldsProp,
   onInterpretationUpdate,
   conciergeHref = "/concierge",
 }: GuidedReportCompletionProps) {
   const capability =
     capabilityProp ?? assessReportCapability({ fields: extractedFields });
 
-  const fieldsToAsk = capability.guidedCompletionFields;
+  const fieldsToAsk =
+    guidedCompletionFieldsProp ?? capability.guidedCompletionFields;
   const showExpertDiagramNote = capability.needsExpertDiagramReview;
 
   const [draft, setDraft] = useState<Partial<CalibrationReportFields>>({});

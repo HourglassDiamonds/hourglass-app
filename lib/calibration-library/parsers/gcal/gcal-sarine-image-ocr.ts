@@ -140,6 +140,22 @@ export const SARINE_DIAGRAM_ILLUSTRATION_CROP = {
   height: 0.62,
 } as const;
 
+/** Crown angle callout — upper-left shoulder on center diagram (LG341066155 JPG). */
+export const SARINE_DIAGRAM_CROWN_CALLOUT_CROP = {
+  left: 0.32,
+  top: 0.22,
+  width: 0.08,
+  height: 0.06,
+} as const;
+
+/** Center proportion diagram — crown + pavilion labels on uploaded JPG layout. */
+export const SARINE_IMAGE_CENTER_DIAGRAM_CROP = {
+  left: 0.2,
+  top: 0.23,
+  width: 0.38,
+  height: 0.42,
+} as const;
+
 /** Lower diagram band — angle callouts on uploaded Sarine JPG screenshots. */
 export const SARINE_IMAGE_DIAGRAM_LOWER_CROP = {
   left: 0.08,
@@ -417,7 +433,7 @@ async function ocrProportionCrop(
   rendered: { png: Buffer; width: number; height: number },
   crop: { left: number; top: number; width: number; height: number },
   canvasPkg: PdfJsNodeCanvas,
-  opts?: { singlePass?: boolean },
+  opts?: { singlePass?: boolean; scaleUp?: number },
 ): Promise<string> {
   const cropResult = await cropPageRegionPng(
     rendered.png,
@@ -427,17 +443,38 @@ async function ocrProportionCrop(
     canvasPkg,
   );
   if (!cropResult.png) return "";
+  const scaleUp = Math.max(1, opts?.scaleUp ?? 1);
+  let cropPng = cropResult.png;
+  if (scaleUp > 1 && canvasPkg.loadImage) {
+    const img = await canvasPkg.loadImage(cropResult.png);
+    const cw = Math.max(1, Math.floor(cropResult.pixelRect.width * scaleUp));
+    const ch = Math.max(1, Math.floor(cropResult.pixelRect.height * scaleUp));
+    const canvas = canvasPkg.createCanvas(cw, ch);
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(
+      img as unknown as Parameters<CanvasRenderingContext2D["drawImage"]>[0],
+      0,
+      0,
+      cropResult.pixelRect.width,
+      cropResult.pixelRect.height,
+      0,
+      0,
+      cw,
+      ch,
+    );
+    cropPng = canvas.toBuffer("image/png");
+  }
   const prepped =
     (await withTimeout(
-      preprocessGcalCropPng(cropResult.png, canvasPkg),
+      preprocessGcalCropPng(cropPng, canvasPkg),
       IMAGE_PREPROCESS_TIMEOUT_MS,
       "sarine-crop-preprocess",
-    ).catch(() => cropResult.png)) ?? cropResult.png;
+    ).catch(() => cropPng)) ?? cropPng;
   if (opts?.singlePass) {
     const ocr = await ocrImageBuffer(prepped);
     return ocr.text.trim();
   }
-  const rawOcr = await ocrImageBuffer(cropResult.png);
+  const rawOcr = await ocrImageBuffer(cropPng);
   const preppedOcr = await ocrImageBuffer(prepped);
   return [rawOcr.text, preppedOcr.text].filter(Boolean).join("\n").trim();
 }
@@ -689,11 +726,26 @@ export async function ocrGcalSarineProportionRegionWithDiagnostics(
   if (opts?.imageUpload) {
     let islands = extractGcalSarineProportionIslands(text);
     if (!islands.crownAngle?.trim() || !islands.pavilionAngle?.trim()) {
-      for (const crop of [
-        GCAL_HYBRID_8X_PROPORTION_CROP,
-        SARINE_PROPORTION_DIAGRAM_CROP,
-      ]) {
-        const angleText = await ocrProportionCrop(rendered, crop, canvasPkg);
+      const angleFallbackCrops: Array<{
+        crop: {
+          left: number;
+          top: number;
+          width: number;
+          height: number;
+        };
+        scaleUp?: number;
+      }> = [
+        { crop: SARINE_DIAGRAM_CROWN_CALLOUT_CROP, scaleUp: 4 },
+        { crop: SARINE_IMAGE_CENTER_DIAGRAM_CROP },
+        { crop: SARINE_DIAGRAM_ILLUSTRATION_CROP },
+        { crop: SARINE_IMAGE_DIAGRAM_LOWER_CROP },
+        { crop: GCAL_HYBRID_8X_PROPORTION_CROP },
+        { crop: SARINE_PROPORTION_DIAGRAM_CROP },
+      ];
+      for (const { crop, scaleUp } of angleFallbackCrops) {
+        const angleText = await ocrProportionCrop(rendered, crop, canvasPkg, {
+          scaleUp,
+        });
         if (!angleText.trim()) continue;
         text = [text, angleText].filter(Boolean).join("\n").trim();
         islands = extractGcalSarineProportionIslands(text);

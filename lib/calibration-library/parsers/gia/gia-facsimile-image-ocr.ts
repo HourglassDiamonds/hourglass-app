@@ -505,9 +505,11 @@ function assignGiaFacsimileCropFields(
     normalizeGiaProportionBlockText(ocrText),
   ];
 
+  const sourcePavilionCandidates: string[] = [];
   for (const src of searchTexts) {
     const probe = probeGiaLiveFieldCandidates(src, crownAngle);
     if (probe.pavilionCandidate) {
+      sourcePavilionCandidates.push(probe.pavilionCandidate);
       candidatesFound.pavilionAngle = probe.pavilionCandidate;
     }
     if (probe.girdleCandidate) {
@@ -530,26 +532,38 @@ function assignGiaFacsimileCropFields(
     }
   }
 
-  const mergedProbe = probeGiaLiveFieldCandidates(
-    [combinedText, ocrText].join("\n\n"),
-    crownAngle,
-  );
-  if (!fields.pavilionAngle.trim() && mergedProbe.pavilionCandidate) {
-    const pav = mergedProbe.pavilionCandidate;
+  const tryAssignPavilionCandidate = (pav: string): boolean => {
+    if (fields.pavilionAngle.trim()) return true;
     if (pav === crownAngle) {
       rejectedCandidates.push({
         candidate: pav,
         reason: "pavilion-equals-crown-angle",
       });
-    } else if (pav === "43") {
+      return false;
+    }
+    if (pav === "43") {
       rejectedCandidates.push({
         candidate: pav,
         reason: "pavilion-depth-not-angle",
       });
-    } else {
-      set("pavilionAngle", pav, "medium");
-      candidatesFound.pavilionAngle = pav;
+      return false;
     }
+    set("pavilionAngle", pav, "medium");
+    fields.pavilionAngle = pav.trim();
+    candidatesFound.pavilionAngle = pav;
+    return Boolean(fields.pavilionAngle.trim());
+  };
+
+  const mergedProbe = probeGiaLiveFieldCandidates(
+    [combinedText, ocrText].join("\n\n"),
+    crownAngle,
+  );
+  const pavilionTryOrder = [
+    mergedProbe.pavilionCandidate,
+    ...sourcePavilionCandidates,
+  ].filter((v): v is string => Boolean(v?.trim()));
+  for (const pav of [...new Set(pavilionTryOrder)]) {
+    if (tryAssignPavilionCandidate(pav)) break;
   }
 
   if (!fields.girdle.trim() && mergedProbe.girdleCandidate) {
