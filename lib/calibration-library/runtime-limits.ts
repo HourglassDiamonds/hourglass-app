@@ -108,6 +108,16 @@ export const CLIENT_GIA_DIAGRAM_INTERPRET_ROUTE_TIMEOUT_MS = envInt(
   54_000,
 );
 
+/**
+ * Browser fetch for `/api/diamond-intelligence/interpret`.
+ * Must exceed CLIENT_GIA_DIAGRAM_INTERPRET_ROUTE_TIMEOUT_MS (54s) so AbortController
+ * does not fire before the server returns a GIA facsimile success payload (~42s).
+ */
+export const CLIENT_INTERPRET_FETCH_TIMEOUT_MS = envInt(
+  "CLIENT_INTERPRET_FETCH_TIMEOUT_MS",
+  65_000,
+);
+
 export function capRenderScaleForPixels(
   pageWidthPt: number,
   pageHeightPt: number,

@@ -1,4 +1,5 @@
 import type { ClientSafeInterpretationPayload } from "./client-api";
+import { CLIENT_INTERPRET_FETCH_TIMEOUT_MS } from "@/lib/calibration-library/runtime-limits";
 import {
   CLIENT_PARTIAL_INTERPRETATION_NOTE,
   CLIENT_RATE_LIMIT_ERROR,
@@ -12,8 +13,7 @@ export {
   CLIENT_UPLOAD_INTERPRET_ERROR,
 } from "./client-interpret-messages";
 
-/** Browser-side guard — slightly above server route budget (28s). */
-const CLIENT_FETCH_TIMEOUT_MS = 30_000;
+export { CLIENT_INTERPRET_FETCH_TIMEOUT_MS } from "@/lib/calibration-library/runtime-limits";
 
 export type InterpretApiPayload = {
   ok?: boolean;
@@ -36,7 +36,7 @@ export async function postReportForInterpretation(
   const controller = new AbortController();
   const timeoutId = window.setTimeout(
     () => controller.abort(),
-    CLIENT_FETCH_TIMEOUT_MS,
+    CLIENT_INTERPRET_FETCH_TIMEOUT_MS,
   );
 
   let res: Response;
