@@ -163,10 +163,12 @@ export default function TheHousePageClient() {
                 complicated, but to keep them clear and considered, so the final
                 piece reflects real quality rather than unnecessary noise.
               </p>
+            </div>
 
+            <div className="mt-10 flex justify-center">
               <Link
                 href="/our-approach"
-                className="mt-8 inline-block text-[11px] uppercase tracking-[0.26em] text-[#625b54] transition-colors hover:text-[#1f1d1a]"
+                className="inline-block border border-[#d6c3a5]/75 bg-[#f8f3eb] px-12 py-5 text-[11px] uppercase tracking-[0.26em] text-[#625b54] transition-[color,border-color,transform] duration-500 ease-out hover:-translate-y-px hover:border-[#c4b5a3] hover:text-[#1f1d1a] md:px-20 md:py-6"
               >
                 Read Our Approach
               </Link>
