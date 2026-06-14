@@ -171,6 +171,12 @@ export default function TheHousePageClient() {
                 className="inline-block border border-[#d6c3a5]/75 bg-[#f8f3eb] px-12 py-5 text-[11px] uppercase tracking-[0.26em] text-[#625b54] transition-[color,border-color,transform] duration-500 ease-out hover:-translate-y-px hover:border-[#c4b5a3] hover:text-[#1f1d1a] md:px-20 md:py-6"
               >
                 Read Our Approach
+                <span
+                  aria-hidden
+                  className="ml-2 inline-block text-[10px] normal-case tracking-normal opacity-60"
+                >
+                  →
+                </span>
               </Link>
             </div>
           </div>
