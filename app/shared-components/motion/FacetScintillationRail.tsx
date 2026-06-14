@@ -23,17 +23,19 @@ const PEAK_OPACITY = 0.65;
 const MID_OPACITY = 0.14;
 const FRINGE_OPACITY = 0.1;
 
-const GLINT_HEIGHT_PX = 25;
+const SPARKLE_SCALE = 1.25;
+
+const GLINT_HEIGHT_PX = 25 * SPARKLE_SCALE;
 const GLINT_HALF_PX = GLINT_HEIGHT_PX / 2;
 
-/** Vertical emphasis — narrow horizontally, tall vertically (+25%). */
-const SPILL_OUTER_RX = 6.25;
-const SPILL_OUTER_RY = 60;
-const SPILL_INNER_RX = 3.125;
-const SPILL_INNER_RY = 30;
+/** Vertical emphasis — narrow horizontally, tall vertically. */
+const SPILL_OUTER_RX = 6.25 * SPARKLE_SCALE;
+const SPILL_OUTER_RY = 60 * SPARKLE_SCALE;
+const SPILL_INNER_RX = 3.125 * SPARKLE_SCALE;
+const SPILL_INNER_RY = 30 * SPARKLE_SCALE;
 
 /** Tiny offset specular — a sliver of edge catch, not a cross-arm. */
-const EDGE_CATCH_LEN = 4.375;
+const EDGE_CATCH_LEN = 4.375 * SPARKLE_SCALE;
 const EDGE_CATCH_OPACITY = 0.28;
 
 const GLINT_FADE_IN_MS = 100;
@@ -53,7 +55,7 @@ function yOffset(y: number) {
  * longer below than above (sunlight sliding downward).
  */
 function buildGlintStops(glintCenterY: number) {
-  const peakY = glintCenterY - 1.875;
+  const peakY = glintCenterY - 1.875 * SPARKLE_SCALE;
   const top = glintCenterY - GLINT_HALF_PX * 0.4;
   const bottom = glintCenterY + GLINT_HALF_PX * 0.72;
 
@@ -66,7 +68,7 @@ function buildGlintStops(glintCenterY: number) {
         stopOpacity={FRINGE_OPACITY}
       />
       <stop
-        offset={yOffset(peakY - 2.5)}
+        offset={yOffset(peakY - 2.5 * SPARKLE_SCALE)}
         stopColor={STUDIO_CREAM}
         stopOpacity={MID_OPACITY}
       />
@@ -76,7 +78,7 @@ function buildGlintStops(glintCenterY: number) {
         stopOpacity={PEAK_OPACITY}
       />
       <stop
-        offset={yOffset(peakY + 5)}
+        offset={yOffset(peakY + 5 * SPARKLE_SCALE)}
         stopColor={STUDIO_CREAM}
         stopOpacity={MID_OPACITY * 0.85}
       />
@@ -152,10 +154,10 @@ export default function FacetScintillationRail() {
   };
 
   /* Slight organic offset — centers never perfectly aligned. */
-  const outerCx = LINE_X + 0.875;
-  const outerCy = glintCenterY + 3.125;
-  const innerCx = LINE_X - 0.625;
-  const innerCy = glintCenterY - 3.75;
+  const outerCx = LINE_X + 0.875 * SPARKLE_SCALE;
+  const outerCy = glintCenterY + 3.125 * SPARKLE_SCALE;
+  const innerCx = LINE_X - 0.625 * SPARKLE_SCALE;
+  const innerCy = glintCenterY - 3.75 * SPARKLE_SCALE;
 
   return (
     <div
@@ -233,7 +235,7 @@ export default function FacetScintillationRail() {
           x2={LINE_X}
           y2={RAIL_HEIGHT}
           stroke="url(#hg-rail-glint)"
-          strokeWidth="3.75"
+          strokeWidth={3.75 * SPARKLE_SCALE}
           opacity={glintOpacity * 0.5}
           style={glintStyle}
         />
@@ -244,7 +246,7 @@ export default function FacetScintillationRail() {
           x2={LINE_X}
           y2={RAIL_HEIGHT}
           stroke="url(#hg-rail-glint)"
-          strokeWidth="1"
+          strokeWidth={1 * SPARKLE_SCALE}
           opacity={glintOpacity}
           style={glintStyle}
         />
@@ -254,12 +256,12 @@ export default function FacetScintillationRail() {
          * Reads as light on a facet edge, not a horizontal star arm.
          */}
         <line
-          x1={LINE_X + 0.5}
-          y1={glintCenterY - 1.25}
-          x2={LINE_X + 0.5 + EDGE_CATCH_LEN}
-          y2={glintCenterY + 1}
+          x1={LINE_X + 0.5 * SPARKLE_SCALE}
+          y1={glintCenterY - 1.25 * SPARKLE_SCALE}
+          x2={LINE_X + 0.5 * SPARKLE_SCALE + EDGE_CATCH_LEN}
+          y2={glintCenterY + 1 * SPARKLE_SCALE}
           stroke={STUDIO_WHITE}
-          strokeWidth="0.75"
+          strokeWidth={0.75 * SPARKLE_SCALE}
           strokeLinecap="round"
           opacity={glintOpacity * EDGE_CATCH_OPACITY}
           style={glintStyle}
