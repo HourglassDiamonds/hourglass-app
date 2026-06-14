@@ -273,31 +273,14 @@
   color: var(--ledger-muted);
 }
 
-/* Transition: content → Back to Ledger → newsletter */
+/* Transition: content → Back to Ledger footer */
 .ledger-page-footer {
   margin-top: 4px;
   padding-top: 16px;
   padding-bottom: 10px;
 }
 
-.ledger-subscribe {
-  margin-top: 0;
-  padding-top: 20px;
-}
-
-.ledger-subscribe-tight {
-  padding-bottom: 1rem;
-}
-
 @media (min-width: 768px) {
-  .ledger-subscribe {
-    padding-top: 24px;
-  }
-
-  .ledger-subscribe-tight {
-    padding-bottom: 1.25rem;
-  }
-
   .ledger-page-footer {
     padding-top: 18px;
     padding-bottom: 12px;
