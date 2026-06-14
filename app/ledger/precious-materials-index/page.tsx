@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import PreciousMaterialsIndexView from "../components/precious-materials-index-view";
 import LedgerPageFooter from "../components/ledger-page-footer";
 import LedgerShell from "../components/ledger-shell";
-import SubscribeSection from "../components/subscribe-section";
 
 export const metadata: Metadata = {
   title: "Precious Materials Index",
@@ -15,7 +14,6 @@ export default function PreciousMaterialsIndexPage() {
     <LedgerShell activeIndexId="precious-materials">
       <PreciousMaterialsIndexView />
       <LedgerPageFooter />
-      <SubscribeSection className="ledger-subscribe-tight pb-16 md:pb-20" />
     </LedgerShell>
   );
 }

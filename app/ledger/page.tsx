@@ -4,7 +4,6 @@ import GlobalPressureMeter from "./components/global-pressure-meter";
 import LedgerIndexesSection from "./components/ledger-indexes-section";
 import LedgerShell from "./components/ledger-shell";
 import WeeklySynopsis from "./components/weekly-synopsis";
-import SubscribeSection from "./components/subscribe-section";
 import { QUIET_METRICS, TRACK_TOPICS } from "./constants";
 
 export const metadata: Metadata = {
@@ -51,19 +50,13 @@ export default function LedgerPage() {
             commodities, and global systems — designed to clarify pressure
             without amplifying noise.
           </p>
-          <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-4">
+          <div className="mt-10 flex justify-center">
             <Link
               href="/ledger/global-pressure-index"
               className="inline-block rounded-sm border border-[#3a3632] bg-[#2f2b27] px-7 py-3.5 text-[10px] uppercase tracking-[0.28em] text-[#faf7f2] transition-colors hover:bg-[#1f1d1a]"
             >
               Read the Latest Brief
             </Link>
-            <a
-              href="#ledger-subscribe"
-              className="inline-block rounded-sm border border-[#d8cfc3] bg-transparent px-7 py-3.5 text-[10px] uppercase tracking-[0.28em] text-[#4a4540] transition-colors hover:border-[#b8a690] hover:text-[#1f1d1a]"
-            >
-              Subscribe to Updates
-            </a>
           </div>
         </div>
       </section>
@@ -124,8 +117,6 @@ export default function LedgerPage() {
           ))}
         </div>
       </section>
-
-      <SubscribeSection id="ledger-subscribe" className="ledger-subscribe-tight pb-16 md:pb-20" />
     </LedgerShell>
   );
 }

@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import InformationSignalMapView from "../components/information-signal-map-view";
 import LedgerPageFooter from "../components/ledger-page-footer";
 import LedgerShell from "../components/ledger-shell";
-import SubscribeSection from "../components/subscribe-section";
 
 export const metadata: Metadata = {
   title: "Information Signal Map",
@@ -15,7 +14,6 @@ export default function InformationSignalMapPage() {
     <LedgerShell activeIndexId="information-signal">
       <InformationSignalMapView />
       <LedgerPageFooter />
-      <SubscribeSection className="ledger-subscribe-tight pb-16 md:pb-20" />
     </LedgerShell>
   );
 }

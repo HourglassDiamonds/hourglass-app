@@ -1,6 +1,6 @@
 export const WEEKLY_SYNOPSIS = {
   eyebrow: "Weekly Synopsis",
-  headline: "From volatility toward capacity.",
+  headline: "From Volatility to Capacity",
   blocks: [
     {
       title: "What changed",
