@@ -54,52 +54,6 @@ export function setTesseractWorkerCreateOptions(
   ocrRuntimeAvailable = false;
   ocrRuntimeProbeError = undefined;
   ocrRuntimeProbeLog = [];
-  void releaseSharedOcrWorker();
-}
-
-type OcrWorker = {
-  recognize: (b: Buffer) => Promise<{ data: { text?: string } }>;
-  terminate: () => Promise<unknown>;
-};
-
-let sharedOcrWorker: OcrWorker | null = null;
-let sharedOcrWorkerPromise: Promise<OcrWorker> | null = null;
-
-/** One Tesseract worker per warm lambda — avoids 45s+ createWorker per diagram crop. */
-async function acquireSharedOcrWorker(): Promise<OcrWorker> {
-  if (sharedOcrWorker) return sharedOcrWorker;
-  if (!sharedOcrWorkerPromise) {
-    sharedOcrWorkerPromise = (async () => {
-      const { createWorker } = await import("tesseract.js");
-      const worker = await withTimeout(
-        createWorker("eng", 1, {
-          ...tesseractWorkerOptions(),
-          logger: probeLogger,
-          errorHandler: (err: unknown) => {
-            ocrRuntimeProbeError =
-              typeof err === "string" ? err : err instanceof Error ? err.message : String(err);
-          },
-        }),
-        OCR_WORKER_CREATE_TIMEOUT_MS,
-        "ocr-shared-create-worker",
-      );
-      sharedOcrWorker = worker;
-      return worker;
-    })().catch((err) => {
-      sharedOcrWorkerPromise = null;
-      throw err;
-    });
-  }
-  return sharedOcrWorkerPromise;
-}
-
-export async function releaseSharedOcrWorker(): Promise<void> {
-  const worker = sharedOcrWorker;
-  sharedOcrWorker = null;
-  sharedOcrWorkerPromise = null;
-  if (worker) {
-    await terminateWorkerSafe(worker, "ocr-shared-release");
-  }
 }
 
 export type OcrRuntimeProbeSnapshot = {
@@ -233,6 +187,10 @@ export async function isOcrRuntimeAvailable(): Promise<boolean> {
 
 export async function ocrImageBuffer(buffer: Buffer): Promise<OcrResult> {
   const started = Date.now();
+  let worker: {
+    recognize: (b: Buffer) => Promise<{ data: { text?: string } }>;
+    terminate: () => Promise<unknown>;
+  } | null = null;
   let workerCleanupSuccess = false;
 
   if (!(await isOcrRuntimeAvailable())) {
@@ -252,13 +210,17 @@ export async function ocrImageBuffer(buffer: Buffer): Promise<OcrResult> {
   }
 
   try {
-    const worker = await acquireSharedOcrWorker();
+    const { createWorker } = await import("tesseract.js");
+    worker = await withTimeout(
+      createWorker("eng", 1, tesseractWorkerOptions()),
+      OCR_WORKER_CREATE_TIMEOUT_MS,
+      "ocr-image-create-worker",
+    );
     const { data } = await withTimeout(
       worker.recognize(buffer),
       OCR_SINGLE_IMAGE_TIMEOUT_MS,
       "ocr-image-recognize",
     );
-    workerCleanupSuccess = true;
     return { text: (data.text ?? "").trim(), ok: true };
   } catch (err) {
     return {
@@ -267,6 +229,9 @@ export async function ocrImageBuffer(buffer: Buffer): Promise<OcrResult> {
       error: err instanceof Error ? err.message : "OCR failed",
     };
   } finally {
+    if (worker) {
+      workerCleanupSuccess = await terminateWorkerSafe(worker, "ocr-image");
+    }
     logCalibrationRuntimeCheck({
       operation: "ocr-image",
       ocrDurationMs: Date.now() - started,
