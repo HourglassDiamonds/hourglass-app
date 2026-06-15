@@ -15,6 +15,7 @@ const interpretRouteTracingIncludes = [
   "./node_modules/tesseract.js/dist/**/*",
   "./node_modules/tesseract.js/src/worker-script/**/*",
   "./node_modules/tesseract.js-core/**/*",
+  "./node_modules/wasm-feature-detect/**/*",
   "./lib/calibration-library/tessdata/**/*",
 ];
 
