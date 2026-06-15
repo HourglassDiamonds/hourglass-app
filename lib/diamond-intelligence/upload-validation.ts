@@ -155,15 +155,6 @@ export function validateDiamondIntelligenceUpload(input: {
     };
   }
 
-  const normalizedMime = declaredMime.toLowerCase().split(";")[0]!.trim();
-  if (!normalizedMime || !isDiamondIntelligenceAcceptedMime(normalizedMime)) {
-    return {
-      ok: false,
-      code: "unsupported_mime",
-      error: "Please upload a PDF or image of your lab report.",
-    };
-  }
-
   if (bytes.length > MAX_UPLOAD_BYTES) {
     return {
       ok: false,
@@ -181,15 +172,28 @@ export function validateDiamondIntelligenceUpload(input: {
     };
   }
 
-  if (!kindMatchesDeclaredMime(detectedKind, normalizedMime)) {
+  const canonicalMime = mimeForDetectedKind(detectedKind)!;
+  const normalizedDeclared = declaredMime.toLowerCase().split(";")[0]!.trim();
+  const effectiveMime =
+    !normalizedDeclared || normalizedDeclared === "application/octet-stream"
+      ? canonicalMime
+      : normalizedDeclared;
+
+  if (!isDiamondIntelligenceAcceptedMime(effectiveMime)) {
+    return {
+      ok: false,
+      code: "unsupported_mime",
+      error: "Please upload a PDF or image of your lab report.",
+    };
+  }
+
+  if (!kindMatchesDeclaredMime(detectedKind, effectiveMime)) {
     return {
       ok: false,
       code: "mime_content_mismatch",
       error: "Please upload a PDF or image of your lab report.",
     };
   }
-
-  const canonicalMime = mimeForDetectedKind(detectedKind)!;
   if (
     detectedKind !== "pdf" &&
     bytes.length > MAX_IMAGE_UPLOAD_BYTES

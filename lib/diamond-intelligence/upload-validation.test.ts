@@ -73,6 +73,21 @@ describe("validateDiamondIntelligenceUpload", () => {
     assert.equal(result.ok, false);
   });
 
+  it("accepts PDF bytes when the browser sends an empty or octet-stream MIME", () => {
+    for (const declaredMime of ["", "application/octet-stream"]) {
+      const result = validateDiamondIntelligenceUpload({
+        bytes: PDF_HEADER,
+        declaredMime,
+        sourceFilename: "7496507350.pdf",
+      });
+      assert.equal(result.ok, true, declaredMime || "(empty)");
+      if (result.ok) {
+        assert.equal(result.mime, "application/pdf");
+        assert.equal(result.detectedKind, "pdf");
+      }
+    }
+  });
+
   it("rejects MIME/content mismatches", () => {
     const result = validateDiamondIntelligenceUpload({
       bytes: PDF_HEADER,

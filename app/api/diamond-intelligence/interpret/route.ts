@@ -18,7 +18,8 @@ import { validateDiamondIntelligenceUpload } from "@/lib/diamond-intelligence/up
 import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
-export const maxDuration = 60;
+/** GIA LGDR diagram OCR can use ~54s; leave headroom beyond cold-start overhead. */
+export const maxDuration = 90;
 
 function json(body: Record<string, unknown>, status = 200, headers?: HeadersInit) {
   return NextResponse.json(toJsonSafe(body), { status, headers });
