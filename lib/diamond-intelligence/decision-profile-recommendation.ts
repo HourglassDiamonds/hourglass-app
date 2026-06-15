@@ -88,6 +88,11 @@ export function deriveBaseRecommendation(input: {
   hints: ReportGradeHints;
   confidenceBand: DecisionConfidenceBand;
 }): OverallRecommendationBand {
+  const clarity = input.hints.clarity;
+  if (clarity === "I3" || clarity === "I2" || clarity === "I1") {
+    return "Not Recommended";
+  }
+
   if (
     input.confidenceBand === "Low" ||
     input.ctx.extractionState === "REPORT_ONLY" ||
@@ -102,11 +107,6 @@ export function deriveBaseRecommendation(input: {
       !input.ctx.scoreEligible)
   ) {
     return "Worth Reviewing After Additional Information";
-  }
-
-  const clarity = input.hints.clarity;
-  if (clarity === "I3" || clarity === "I2" || clarity === "I1") {
-    return "Not Recommended";
   }
 
   if (input.risk === "High") {

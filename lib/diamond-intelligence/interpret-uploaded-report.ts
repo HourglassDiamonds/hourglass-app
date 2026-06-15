@@ -27,7 +27,6 @@ import {
 } from "@/lib/diamond-intelligence/client-interpret-messages";
 import { classifyFinalized } from "@/lib/diamond-intelligence/client-interpretation-pipeline";
 import { shouldPresentScoredCoreRead } from "@/lib/diamond-intelligence/client-presentation-gates";
-import { assessExtractionCompleteness } from "@/lib/diamond-intelligence/extraction-completeness";
 import { traceClientPayloadStages } from "@/lib/diamond-intelligence/gia-qa-pipeline-trace";
 import { parseReportGradeHints, buildReportGradeHintSource } from "@/lib/diamond-intelligence/report-grade-hints";
 import type { ClientSafeInterpretationPayload } from "@/lib/diamond-intelligence/client-api";
@@ -195,10 +194,7 @@ export async function interpretUploadedReport(
 
     traceClientPayloadStages(finalized, { partial });
 
-    const scoreEligible = assessExtractionCompleteness({
-      fields: finalized.fields,
-    }).scoreEligible;
-    if (decision.tier === "full" || scoreEligible) {
+    if (decision.tier === "full" || suppressPartialConsumerNote) {
       setCachedClientInterpretation(bytes, interpretation);
     }
 

@@ -626,7 +626,10 @@ export function hasUsableDisplayClarity(value?: string | null): boolean {
 
 export type PartialGradeReviewInput = {
   gradeHints?: { color?: string; clarity?: string } | null;
-  /** When a full proportion read is already score-eligible, do not block on 4Cs UI. */
+  /**
+   * When core scoring proportions and usable color/clarity are both present
+   * (shouldPresentScoredCoreRead), do not block on the 4Cs partial UI.
+   */
   canShowScore?: boolean;
 };
 
@@ -654,18 +657,6 @@ export function tracePartialGradeReviewGate(
     return {
       needsPartial: false,
       reason: "color and clarity are present and usable",
-      color,
-      clarity,
-      hasUsableColor,
-      hasUsableClarity,
-      canShowScore,
-    };
-  }
-
-  if (canShowScore) {
-    return {
-      needsPartial: false,
-      reason: "canShowScore is true — partial gate bypassed",
       color,
       clarity,
       hasUsableColor,

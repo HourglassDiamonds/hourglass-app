@@ -288,10 +288,7 @@ export default function LightPerformanceDashboard({
   const effectiveGcal8x = isGcal8x && !clarityPolicy.isExcluded;
   const effectiveGcal8xPremium =
     effectiveGcal8x && !clarityPolicy.suppressPremiumTierLabels;
-  const partialGradeReview = needsPartialGradeReview({
-    gradeHints,
-    canShowScore: interpretationContext.canShowScore,
-  });
+  const partialGradeReview = needsPartialGradeReview({ gradeHints });
 
   const canRenderFullResult = Boolean(
     decisionProfile && interpretationSummary && metadata && fields,

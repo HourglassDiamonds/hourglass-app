@@ -11,8 +11,9 @@ import { describe, it } from "node:test";
 import { runCalibrationUploadExtraction } from "@/lib/calibration-library/extract-upload-pipeline";
 import { withTimeout } from "@/lib/calibration-library/runtime-guard";
 import {
-  CLIENT_INTERPRET_ROUTE_TIMEOUT_MS,
-  CLIENT_UPLOAD_PIPELINE_TIMEOUT_MS,
+  CLIENT_GIA_DIAGRAM_INTERPRET_ROUTE_TIMEOUT_MS,
+  CLIENT_GIA_DIAGRAM_PIPELINE_TIMEOUT_MS,
+  CLIENT_GIA_DIAGRAM_REGION_OCR_TIMEOUT_MS,
 } from "@/lib/calibration-library/runtime-limits";
 import { buildDiamondInterpretationContext } from "./client-interpretation-context";
 import { presentClientInterpretationScore } from "./client-score-present";
@@ -175,9 +176,10 @@ describe("validation report eligibility (live client extract)", () => {
           bytes,
           mime: "application/pdf",
           mode: "client",
-          pipelineTimeoutMs: CLIENT_UPLOAD_PIPELINE_TIMEOUT_MS,
+          pipelineTimeoutMs: CLIENT_GIA_DIAGRAM_PIPELINE_TIMEOUT_MS,
+          regionOcrTimeoutMs: CLIENT_GIA_DIAGRAM_REGION_OCR_TIMEOUT_MS,
         }),
-        CLIENT_INTERPRET_ROUTE_TIMEOUT_MS,
+        CLIENT_GIA_DIAGRAM_INTERPRET_ROUTE_TIMEOUT_MS,
         "validation-eligibility",
       );
 

@@ -23,10 +23,20 @@ import {
 } from "./v3-presentation";
 
 describe("needsPartialGradeReview", () => {
-  it("does not trigger when score is already eligible", () => {
+  it("triggers when proportions are score-eligible but color and clarity are missing", () => {
     assert.equal(
       needsPartialGradeReview({
         gradeHints: {},
+        canShowScore: true,
+      }),
+      true,
+    );
+  });
+
+  it("does not trigger when scored-core read is ready (grades + proportions)", () => {
+    assert.equal(
+      needsPartialGradeReview({
+        gradeHints: { color: "F", clarity: "VS1" },
         canShowScore: true,
       }),
       false,

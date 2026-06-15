@@ -5,6 +5,7 @@
 import { existsSync, readFileSync, writeFileSync } from "fs";
 import { basename, join } from "path";
 import { runCalibrationUploadExtraction } from "./extract-upload-pipeline";
+import { isPdfMime } from "./document-extract";
 import {
   buildExtractionForensicReport,
   type ExpectedFieldSpec,
@@ -13,6 +14,9 @@ import {
 } from "./extraction-forensics";
 import { withTimeout } from "./runtime-guard";
 import {
+  CLIENT_GIA_DIAGRAM_INTERPRET_ROUTE_TIMEOUT_MS,
+  CLIENT_GIA_DIAGRAM_PIPELINE_TIMEOUT_MS,
+  CLIENT_GIA_DIAGRAM_REGION_OCR_TIMEOUT_MS,
   CLIENT_INTERPRET_ROUTE_TIMEOUT_MS,
   CLIENT_UPLOAD_PIPELINE_TIMEOUT_MS,
 } from "./runtime-limits";
@@ -147,6 +151,13 @@ async function extractClientInProcess(
   const pdfPath = join(VALIDATION_REPORTS_DIR, entry.filename);
   const bytes = readFileSync(pdfPath);
   const started = Date.now();
+  const clientPdf = isPdfMime("application/pdf");
+  const routeTimeoutMs = clientPdf
+    ? CLIENT_GIA_DIAGRAM_INTERPRET_ROUTE_TIMEOUT_MS
+    : CLIENT_INTERPRET_ROUTE_TIMEOUT_MS;
+  const pipelineTimeoutMs = clientPdf
+    ? CLIENT_GIA_DIAGRAM_PIPELINE_TIMEOUT_MS
+    : CLIENT_UPLOAD_PIPELINE_TIMEOUT_MS;
 
   const result = await withTimeout(
     runCalibrationUploadExtraction({
@@ -157,9 +168,12 @@ async function extractClientInProcess(
       reportSource: "pdf-upload",
       mode: "client",
       collectDiagnostics: true,
-      pipelineTimeoutMs: CLIENT_UPLOAD_PIPELINE_TIMEOUT_MS,
+      pipelineTimeoutMs,
+      regionOcrTimeoutMs: clientPdf
+        ? CLIENT_GIA_DIAGRAM_REGION_OCR_TIMEOUT_MS
+        : undefined,
     }),
-    CLIENT_INTERPRET_ROUTE_TIMEOUT_MS,
+    routeTimeoutMs,
     "validation-gate",
   );
 

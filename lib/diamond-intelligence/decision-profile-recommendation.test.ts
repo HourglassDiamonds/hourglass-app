@@ -72,4 +72,16 @@ describe("deriveBaseRecommendation", () => {
     });
     assert.equal(band, "Worth Reviewing");
   });
+
+  it("I1 returns Not Recommended even when confidence is Low", () => {
+    const band = deriveBaseRecommendation({
+      optical: "Strong",
+      visual: "Balanced presence",
+      risk: "Elevated",
+      ctx: fullCtx(95),
+      hints: { clarity: "I1" },
+      confidenceBand: "Low",
+    });
+    assert.equal(band, "Not Recommended");
+  });
 });
