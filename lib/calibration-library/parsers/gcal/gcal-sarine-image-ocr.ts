@@ -877,6 +877,7 @@ export async function applyGcalSarineProportionImageOcr(
   recoveredFields: Record<string, string>;
   diagramOcrFailure?: string;
   coreProportionsRecovered: boolean;
+  stepDiagnostics: GcalSarineProportionOcrStepDiagnostics;
 }> {
   const before = { ...fields };
   const fieldsBeforeImageOcr = snapshotGcalSarineRecoveredFields(
@@ -925,9 +926,11 @@ export async function applyGcalSarineProportionImageOcr(
     internal,
   );
 
-  const failureMode = !ocrSteps.pageRendered
-    ? "E-page-render-failed-pdfjs-canvas"
-    : !ocrSteps.cropSucceeded
+  const failureMode = !ocrSteps.ocrRuntimeAvailable
+    ? "F-ocr-runtime-unavailable"
+    : !ocrSteps.pageRendered
+      ? "E-page-render-failed-pdfjs-canvas"
+      : !ocrSteps.cropSucceeded
       ? "A-crop-failed"
       : ocrSteps.ocrRawLength === 0
         ? ocrSteps.ocrOk
@@ -998,5 +1001,6 @@ export async function applyGcalSarineProportionImageOcr(
     recoveredFields,
     diagramOcrFailure: failureMode,
     coreProportionsRecovered,
+    stepDiagnostics: ocrSteps,
   };
 }

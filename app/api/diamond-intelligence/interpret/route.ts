@@ -19,6 +19,10 @@ import {
   buildInterpretFailureDiagnostics,
   isInterpretDiagnosticsEnabled,
 } from "@/lib/diamond-intelligence/interpret-failure-diagnostics";
+import {
+  buildGcalSarineInterpretDiagnostics,
+  logGcalSarineInterpretDiagnostics,
+} from "@/lib/diamond-intelligence/gcal-sarine-pipeline-diagnostics";
 import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
@@ -186,8 +190,21 @@ export async function POST(request: Request) {
     );
   }
 
+  const gcalSarineDiagnostics =
+    isInterpretDiagnosticsEnabled()
+      ? buildGcalSarineInterpretDiagnostics(result)
+      : null;
+  if (gcalSarineDiagnostics) {
+    logGcalSarineInterpretDiagnostics(gcalSarineDiagnostics);
+  }
+
   return respond(
-    { ok: true, interpretation: result.interpretation, partial: result.partial },
+    {
+      ok: true,
+      interpretation: result.interpretation,
+      partial: result.partial,
+      ...(gcalSarineDiagnostics ? { diagnostics: gcalSarineDiagnostics } : {}),
+    },
     200,
     {
       httpStatus: 200,

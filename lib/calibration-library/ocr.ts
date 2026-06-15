@@ -24,6 +24,7 @@ import {
   isPdfRenderRetryableError,
   renderPdfPagePngWithFactory,
 } from "./pdf-render-factory";
+import { tesseractWorkerCreateOptions } from "./tesseract-runtime-paths";
 
 export type OcrResult = {
   text: string;
@@ -37,6 +38,28 @@ export function isOcrDisabledByEnv(): boolean {
 
 let ocrRuntimeChecked = false;
 let ocrRuntimeAvailable = false;
+let ocrRuntimeProbeError: string | undefined;
+let ocrRuntimeProbeDurationMs = 0;
+
+export type OcrRuntimeProbeSnapshot = {
+  checked: boolean;
+  available: boolean;
+  durationMs: number;
+  error?: string;
+};
+
+export function getOcrRuntimeProbeSnapshot(): OcrRuntimeProbeSnapshot {
+  return {
+    checked: ocrRuntimeChecked,
+    available: ocrRuntimeAvailable,
+    durationMs: ocrRuntimeProbeDurationMs,
+    error: ocrRuntimeProbeError,
+  };
+}
+
+function tesseractWorkerOptions(): Record<string, unknown> {
+  return tesseractWorkerCreateOptions();
+}
 
 async function terminateWorkerSafe(
   worker: { terminate: () => Promise<unknown> },
@@ -67,24 +90,38 @@ export async function isOcrRuntimeAvailable(): Promise<boolean> {
   try {
     const { createWorker } = await import("tesseract.js");
     worker = await withTimeout(
-      createWorker("eng", 1, { logger: () => {} }),
+      createWorker("eng", 1, tesseractWorkerOptions()),
       OCR_WORKER_CREATE_TIMEOUT_MS,
       "ocr-runtime-probe-create",
     );
     workerCleanupSuccess = await terminateWorkerSafe(worker, "ocr-runtime-probe");
     ocrRuntimeAvailable = workerCleanupSuccess;
-  } catch {
+    if (!ocrRuntimeAvailable) {
+      ocrRuntimeProbeError = "worker-terminate-failed";
+    }
+  } catch (err) {
     ocrRuntimeAvailable = false;
+    ocrRuntimeProbeError =
+      err instanceof Error ? err.message : String(err);
   } finally {
     if (worker && !workerCleanupSuccess) {
       workerCleanupSuccess = await terminateWorkerSafe(worker, "ocr-runtime-probe-finally");
     }
+    ocrRuntimeProbeDurationMs = Date.now() - started;
     logCalibrationRuntimeCheck({
       operation: "ocr-runtime-probe",
-      durationMs: Date.now() - started,
-      ocrDurationMs: Date.now() - started,
+      durationMs: ocrRuntimeProbeDurationMs,
+      ocrDurationMs: ocrRuntimeProbeDurationMs,
       workerCleanupSuccess,
+      error: ocrRuntimeProbeError,
     });
+    if (!ocrRuntimeAvailable) {
+      console.log("[tesseract-runtime-probe]", {
+        available: false,
+        durationMs: ocrRuntimeProbeDurationMs,
+        error: ocrRuntimeProbeError,
+      });
+    }
   }
   return ocrRuntimeAvailable;
 }
@@ -113,7 +150,7 @@ export async function ocrImageBuffer(buffer: Buffer): Promise<OcrResult> {
   try {
     const { createWorker } = await import("tesseract.js");
     worker = await withTimeout(
-      createWorker("eng", 1, { logger: () => {} }),
+      createWorker("eng", 1, tesseractWorkerOptions()),
       OCR_WORKER_CREATE_TIMEOUT_MS,
       "ocr-image-create-worker",
     );

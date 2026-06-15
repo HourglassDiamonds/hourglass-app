@@ -13,7 +13,9 @@ const interpretRouteTracingIncludes = [
   "./node_modules/pdfjs-dist/node_modules/@napi-rs/canvas/**/*",
   "./node_modules/pdfjs-dist/node_modules/@napi-rs/canvas-*/**/*",
   "./node_modules/tesseract.js/dist/**/*",
+  "./node_modules/tesseract.js/src/worker-script/**/*",
   "./node_modules/tesseract.js-core/**/*",
+  "./node_modules/@tesseract.js-data/eng/**/*",
 ];
 
 const nextConfig: NextConfig = {

@@ -60,6 +60,7 @@ import {
 import { clientExtractionSufficient } from "@/lib/diamond-intelligence/client-extraction-sufficient";
 import { needsGiaDiagramProportionOcrWait } from "./gia-diagram-proportion-wait";
 import { needsGcalSarineDiagramProportionOcrWait } from "./gcal-sarine-diagram-proportion-wait";
+import type { GcalSarineProportionOcrStepDiagnostics } from "./parsers/gcal/gcal-sarine-image-ocr";
 import {
   isGiaQaTraceEnabled,
   traceFieldsFromRecord,
@@ -134,6 +135,10 @@ export type UploadExtractionOutput = FinalizedCalibrationExtraction & {
   diagnostics?: ExtractionDiagnosticReport;
   /** Production PDF render audit — infrastructure only, no scoring impact. */
   renderAudit?: PdfRenderAuditRecord;
+  /** GCAL Sarine diagram OCR step trace — gated for DI_INTERPRET_DIAGNOSTICS. */
+  gcalSarineOcrDiagnostics?: GcalSarineProportionOcrStepDiagnostics;
+  gcalSarineDiagramProportionWait?: boolean;
+  gcalSarineDiagramOcrFailure?: string;
   /** Developer-only OCR/assignment traces (when collectForensics). */
   forensicSnapshots?: ForensicSnapshot[];
 };
@@ -225,6 +230,7 @@ async function runImageOcrAugmentation(input: {
   gradeHintText: string;
   diagramOcrNotices?: string[];
   gcalSarineDiagramOcrFailure?: string;
+  gcalSarineOcrDiagnostics?: GcalSarineProportionOcrStepDiagnostics;
 }> {
   const {
     documentBytes,
@@ -239,6 +245,7 @@ async function runImageOcrAugmentation(input: {
   let ocrCompleted = false;
   const diagramOcrNotices: string[] = [];
   let gcalSarineDiagramOcrFailure: string | undefined;
+  let gcalSarineOcrDiagnostics: GcalSarineProportionOcrStepDiagnostics | undefined;
   let gradeHintText = combined.slice(0, 16000);
   const publishGradeHintText = (candidate: string) => {
     gradeHintText = pickGradeHintText(gradeHintText, candidate);
@@ -352,6 +359,7 @@ async function runImageOcrAugmentation(input: {
     diagramOcrNotices:
       diagramOcrNotices.length > 0 ? diagramOcrNotices : undefined,
     gcalSarineDiagramOcrFailure,
+    gcalSarineOcrDiagnostics,
   });
 
   if (runSarine) {
@@ -396,6 +404,7 @@ async function runImageOcrAugmentation(input: {
         if (sarineOcr.diagramOcrFailure) {
           gcalSarineDiagramOcrFailure = sarineOcr.diagramOcrFailure;
         }
+        gcalSarineOcrDiagnostics = sarineOcr.stepDiagnostics;
         if (!sarineOcr.coreProportionsRecovered) {
           const detail = sarineOcr.diagramOcrFailure
             ? ` (${sarineOcr.diagramOcrFailure})`
@@ -818,6 +827,7 @@ export async function runCalibrationUploadExtraction(
     giaDiagramProportionWait?: boolean;
     gcalSarineDiagramProportionWait?: boolean;
     gcalSarineDiagramOcrFailure?: string;
+    gcalSarineOcrDiagnostics?: GcalSarineProportionOcrStepDiagnostics;
   } = {
     parsed: null,
     combined: "",
@@ -859,6 +869,9 @@ export async function runCalibrationUploadExtraction(
       pipelineError?: string;
       renderAudit?: PdfRenderAuditRecord;
       forensicSnapshots?: ForensicSnapshot[];
+      gcalSarineDiagramProportionWait?: boolean;
+      gcalSarineOcrDiagnostics?: GcalSarineProportionOcrStepDiagnostics;
+      gcalSarineDiagramOcrFailure?: string;
     },
   ): UploadExtractionOutput => {
     timings.totalMs = Date.now() - pipelineStarted;
@@ -882,6 +895,9 @@ export async function runCalibrationUploadExtraction(
       diagnostics: buildDiagnostics(finalized, extra.combined, extra.ocrAttempted),
       renderAudit: extra.renderAudit,
       forensicSnapshots: extra.forensicSnapshots,
+      gcalSarineDiagramProportionWait: extra.gcalSarineDiagramProportionWait,
+      gcalSarineOcrDiagnostics: extra.gcalSarineOcrDiagnostics,
+      gcalSarineDiagramOcrFailure: extra.gcalSarineDiagramOcrFailure,
     };
   };
 
@@ -1134,6 +1150,9 @@ export async function runCalibrationUploadExtraction(
               snapshot.gcalSarineDiagramOcrFailure =
                 ocr.gcalSarineDiagramOcrFailure;
             }
+            if (ocr.gcalSarineOcrDiagnostics) {
+              snapshot.gcalSarineOcrDiagnostics = ocr.gcalSarineOcrDiagnostics;
+            }
             if (process.env.NODE_ENV === "development") {
               console.log("[upload-pipeline] image-ocr:end", {
                 ms: Date.now() - t0,
@@ -1247,6 +1266,10 @@ export async function runCalibrationUploadExtraction(
           forensicSnapshots: input.collectForensics
             ? drainForensicSnapshots()
             : undefined,
+          gcalSarineDiagramProportionWait:
+            snapshot.gcalSarineDiagramProportionWait,
+          gcalSarineOcrDiagnostics: snapshot.gcalSarineOcrDiagnostics,
+          gcalSarineDiagramOcrFailure: snapshot.gcalSarineDiagramOcrFailure,
         });
         };
 
@@ -1328,6 +1351,10 @@ export async function runCalibrationUploadExtraction(
         timedOut: true,
         diagramOcrTimedOut: diagramWaitTimedOut,
         pipelineError: timeoutErrorMessage(err),
+        gcalSarineDiagramProportionWait:
+          snapshot.gcalSarineDiagramProportionWait,
+        gcalSarineOcrDiagnostics: snapshot.gcalSarineOcrDiagnostics,
+        gcalSarineDiagramOcrFailure: snapshot.gcalSarineDiagramOcrFailure,
       });
     }
 
