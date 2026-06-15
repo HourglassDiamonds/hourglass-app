@@ -2,6 +2,14 @@ import { dirname, join } from "path";
 import { tmpdir } from "os";
 import { createProjectRequire } from "./pdf-render-factory";
 
+/** Vendored eng traineddata — interpret route trace only (not an npm dep). */
+export const VENDORED_ENG_TESSDATA_DIR = join(
+  process.cwd(),
+  "lib",
+  "calibration-library",
+  "tessdata",
+);
+
 export type TesseractRuntimePaths = {
   langPath: string;
   cachePath: string;
@@ -14,12 +22,9 @@ export function resolveTesseractRuntimePaths(): TesseractRuntimePaths {
   const projectRequire = createProjectRequire();
   const tesseractRoot = dirname(projectRequire.resolve("tesseract.js/package.json"));
   const coreRoot = dirname(projectRequire.resolve("tesseract.js-core/package.json"));
-  const engData = projectRequire("@tesseract.js-data/eng") as {
-    langPath: string;
-  };
 
   return {
-    langPath: engData.langPath,
+    langPath: VENDORED_ENG_TESSDATA_DIR,
     cachePath: join(tmpdir(), "hourglass-tesseract-cache"),
     workerPath: join(tesseractRoot, "src", "worker-script", "node", "index.js"),
     corePath: join(coreRoot, "tesseract-core-lstm.wasm.js"),
@@ -44,13 +49,15 @@ export function tesseractWorkerCreateOptions(): Record<string, unknown> {
 export function describeTesseractRuntimePaths(): Record<string, string> {
   try {
     const paths = resolveTesseractRuntimePaths();
-    const projectRequire = createProjectRequire();
     return {
       workerPath: paths.workerPath.replace(process.cwd(), "."),
       corePath: paths.corePath.replace(process.cwd(), "."),
       langPath: paths.langPath.replace(process.cwd(), "."),
       cachePath: paths.cachePath,
-      engDataResolved: projectRequire.resolve("@tesseract.js-data/eng/package.json"),
+      vendoredEng: join(VENDORED_ENG_TESSDATA_DIR, "eng.traineddata.gz").replace(
+        process.cwd(),
+        ".",
+      ),
     };
   } catch (err) {
     return {

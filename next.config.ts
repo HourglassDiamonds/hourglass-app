@@ -15,7 +15,7 @@ const interpretRouteTracingIncludes = [
   "./node_modules/tesseract.js/dist/**/*",
   "./node_modules/tesseract.js/src/worker-script/**/*",
   "./node_modules/tesseract.js-core/**/*",
-  "./node_modules/@tesseract.js-data/eng/**/*",
+  "./lib/calibration-library/tessdata/**/*",
 ];
 
 const nextConfig: NextConfig = {
@@ -26,9 +26,9 @@ const nextConfig: NextConfig = {
   },
   outputFileTracingExcludes: {
     "/api/calibration-library/extract-file": [
+      "./lib/calibration-library/tessdata/**",
       "./node_modules/@tesseract.js-data/**",
       "./node_modules/tesseract.js/src/worker-script/**",
-      "./node_modules/tesseract.js-core/**",
     ],
   },
   async redirects() {

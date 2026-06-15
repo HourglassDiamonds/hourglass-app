@@ -45,7 +45,6 @@
     "@google-analytics/data": "^6.0.0",
     "@napi-rs/canvas": "^1.0.0",
     "@supabase/supabase-js": "^2.106.1",
-    "@tesseract.js-data/eng": "^1.0.0",
     "@vercel/blob": "^2.3.3",
     "canvas": "^3.2.3",
     "google-auth-library": "^10.6.2",
