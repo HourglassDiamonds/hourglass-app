@@ -24,4 +24,14 @@ describe("DiV3UnableToVerify failure state", () => {
     assert.match(source, /Upload Another Report/);
     assert.match(source, /justinReviewCta/);
   });
+
+  it("dashboard suppresses duplicate inline upload error when failure card shows", () => {
+    const dashboardPath = join(
+      dirname(fileURLToPath(import.meta.url)),
+      "LightPerformanceDashboard.tsx",
+    );
+    const source = readFileSync(dashboardPath, "utf8");
+    assert.match(source, /shouldShowUploadInlineError/);
+    assert.match(source, /uploadInlineError \? uploadError : null/);
+  });
 });

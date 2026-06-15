@@ -32,7 +32,10 @@ import DiV3Hero from "./DiV3Hero";
 import DiV3PartialGradeReview from "./DiV3PartialGradeReview";
 import DiV3ResultSections from "./DiV3ResultSections";
 import DiV3UnableToVerify from "./DiV3UnableToVerify";
-import { resolveDiamondIntelligenceResultState } from "./diamond-intelligence-result-state";
+import {
+  resolveDiamondIntelligenceResultState,
+  shouldShowUploadInlineError,
+} from "./diamond-intelligence-result-state";
 import AnalysisProgressNarrative from "./AnalysisProgressNarrative";
 import { CONSUMER_COPY } from "./consumer-display-labels";
 import { DI_EDITORIAL_CARD, DI_EYEBROW_STUDIO, DI_SERIF_HEADLINE } from "./di-studio-styles";
@@ -427,6 +430,10 @@ export default function LightPerformanceDashboard({
   });
 
   const busy = resultState === "PROCESSING";
+  const uploadInlineError = shouldShowUploadInlineError({
+    resultState,
+    errorMessage: uploadError,
+  });
 
   return (
     <section className={DI_V3_SHELL}>
@@ -438,7 +445,7 @@ export default function LightPerformanceDashboard({
             onModeChange={onIngestModeChange}
             phase={uploadPhase}
             disabled={busy}
-            errorMessage={uploadError}
+            errorMessage={uploadInlineError ? uploadError : null}
             statusNote={uploadStatusNote}
             onFile={onFile}
             onUrl={onUrl}

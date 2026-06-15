@@ -50,3 +50,11 @@ export function resolveDiamondIntelligenceResultState(input: {
 
   return "NO_RESULT";
 }
+
+/** Suppress upload-dock inline error when the editorial V3 failure card is showing. */
+export function shouldShowUploadInlineError(input: {
+  resultState: DiamondIntelligenceResultState;
+  errorMessage?: string | null;
+}): boolean {
+  return Boolean(input.errorMessage?.trim()) && input.resultState !== "ERROR";
+}

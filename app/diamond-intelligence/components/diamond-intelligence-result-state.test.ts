@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { resolveDiamondIntelligenceResultState } from "./diamond-intelligence-result-state";
+import {
+  resolveDiamondIntelligenceResultState,
+  shouldShowUploadInlineError,
+} from "./diamond-intelligence-result-state";
 
 describe("resolveDiamondIntelligenceResultState", () => {
   it("returns PROCESSING while upload phases are active", () => {
@@ -72,6 +75,24 @@ describe("resolveDiamondIntelligenceResultState", () => {
         canRenderFullResult: false,
       }),
       "ERROR",
+    );
+  });
+
+  it("suppresses upload inline error when V3 failure card is active", () => {
+    assert.equal(
+      shouldShowUploadInlineError({
+        resultState: "ERROR",
+        errorMessage:
+          "We couldn't read enough from this file to build a useful interpretation.",
+      }),
+      false,
+    );
+    assert.equal(
+      shouldShowUploadInlineError({
+        resultState: "NO_RESULT",
+        errorMessage: "Upload failed",
+      }),
+      true,
     );
   });
 
