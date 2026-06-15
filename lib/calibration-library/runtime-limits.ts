@@ -95,27 +95,27 @@ export const CLIENT_IMAGE_REGION_OCR_TIMEOUT_MS = envInt(
 /** GIA facsimile / LGDR — diagram proportions need region OCR after empty textParse. */
 export const CLIENT_GIA_DIAGRAM_PIPELINE_TIMEOUT_MS = envInt(
   "CLIENT_GIA_DIAGRAM_PIPELINE_TIMEOUT_MS",
-  52_000,
+  78_000,
 );
 
 export const CLIENT_GIA_DIAGRAM_REGION_OCR_TIMEOUT_MS = envInt(
   "CLIENT_GIA_DIAGRAM_REGION_OCR_TIMEOUT_MS",
-  44_000,
+  70_000,
 );
 
 export const CLIENT_GIA_DIAGRAM_INTERPRET_ROUTE_TIMEOUT_MS = envInt(
   "CLIENT_GIA_DIAGRAM_INTERPRET_ROUTE_TIMEOUT_MS",
-  54_000,
+  82_000,
 );
 
 /**
  * Browser fetch for `/api/diamond-intelligence/interpret`.
- * Must exceed CLIENT_GIA_DIAGRAM_INTERPRET_ROUTE_TIMEOUT_MS (54s) so AbortController
+ * Must exceed CLIENT_GIA_DIAGRAM_INTERPRET_ROUTE_TIMEOUT_MS (82s) so AbortController
  * does not fire before the server returns a GIA facsimile success payload (~42s).
  */
 export const CLIENT_INTERPRET_FETCH_TIMEOUT_MS = envInt(
   "CLIENT_INTERPRET_FETCH_TIMEOUT_MS",
-  65_000,
+  90_000,
 );
 
 export function capRenderScaleForPixels(
