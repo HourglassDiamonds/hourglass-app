@@ -39,6 +39,7 @@ let ocrRuntimeChecked = false;
 let ocrRuntimeAvailable = false;
 let ocrRuntimeProbeError: string | undefined;
 let ocrRuntimeProbeDurationMs = 0;
+let ocrRuntimeProbeLog: string[] = [];
 
 /** Override createWorker options (e.g. bundled lang data on DI interpret route). */
 let workerCreateOptions: Record<string, unknown> = { logger: () => {} };
@@ -50,6 +51,7 @@ export function setTesseractWorkerCreateOptions(
   ocrRuntimeChecked = false;
   ocrRuntimeAvailable = false;
   ocrRuntimeProbeError = undefined;
+  ocrRuntimeProbeLog = [];
 }
 
 export type OcrRuntimeProbeSnapshot = {
@@ -57,6 +59,7 @@ export type OcrRuntimeProbeSnapshot = {
   available: boolean;
   durationMs: number;
   error?: string;
+  log?: string[];
 };
 
 export function getOcrRuntimeProbeSnapshot(): OcrRuntimeProbeSnapshot {
@@ -65,11 +68,22 @@ export function getOcrRuntimeProbeSnapshot(): OcrRuntimeProbeSnapshot {
     available: ocrRuntimeAvailable,
     durationMs: ocrRuntimeProbeDurationMs,
     error: ocrRuntimeProbeError,
+    log: ocrRuntimeProbeLog.length > 0 ? [...ocrRuntimeProbeLog] : undefined,
   };
 }
 
 function tesseractWorkerOptions(): Record<string, unknown> {
   return workerCreateOptions;
+}
+
+function probeLogger(entry: { status?: string; progress?: number }) {
+  const status = entry.status ?? "unknown";
+  const progress =
+    typeof entry.progress === "number"
+      ? ` ${Math.round(entry.progress * 100)}%`
+      : "";
+  ocrRuntimeProbeLog.push(`${status}${progress}`);
+  if (ocrRuntimeProbeLog.length > 24) ocrRuntimeProbeLog.shift();
 }
 
 async function terminateWorkerSafe(
@@ -98,10 +112,19 @@ export async function isOcrRuntimeAvailable(): Promise<boolean> {
   let workerCleanupSuccess = false;
 
   ocrRuntimeChecked = true;
+  ocrRuntimeProbeLog = [];
   try {
     const { createWorker } = await import("tesseract.js");
+    const baseOpts = tesseractWorkerOptions();
     worker = await withTimeout(
-      createWorker("eng", 1, tesseractWorkerOptions()),
+      createWorker("eng", 1, {
+        ...baseOpts,
+        logger: probeLogger,
+        errorHandler: (err: unknown) => {
+          ocrRuntimeProbeError =
+            typeof err === "string" ? err : err instanceof Error ? err.message : String(err);
+        },
+      }),
       OCR_WORKER_CREATE_TIMEOUT_MS,
       "ocr-runtime-probe-create",
     );

@@ -20,12 +20,12 @@ describe("resolveTesseractRuntimePaths", () => {
     assert.match(paths.cachePath, /hourglass-tesseract-cache$/);
   });
 
-  it("tesseractWorkerCreateOptions includes bundled runtime paths", () => {
+  it("tesseractWorkerCreateOptions includes bundled lang path only", () => {
     const opts = tesseractWorkerCreateOptions();
     assert.equal(typeof opts.langPath, "string");
     assert.equal(typeof opts.cachePath, "string");
-    assert.equal(typeof opts.workerPath, "string");
-    assert.equal(typeof opts.corePath, "string");
+    assert.equal("workerPath" in opts, false);
+    assert.equal("corePath" in opts, false);
   });
 
   it("describeTesseractRuntimePaths does not throw", () => {

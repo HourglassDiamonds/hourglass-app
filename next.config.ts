@@ -20,7 +20,7 @@ const interpretRouteTracingIncludes = [
 ];
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ["tesseract.js", "@napi-rs/canvas", "pdfjs-dist"],
+  serverExternalPackages: ["@napi-rs/canvas", "pdfjs-dist"],
   outputFileTracingIncludes: {
     "/api/diamond-intelligence/interpret": interpretRouteTracingIncludes,
     "/api/calibration-library/extract-file": pdfjsWorkerIncludes,
