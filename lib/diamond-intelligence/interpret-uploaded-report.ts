@@ -32,6 +32,7 @@ import { parseReportGradeHints, buildReportGradeHintSource } from "@/lib/diamond
 import type { ClientSafeInterpretationPayload } from "@/lib/diamond-intelligence/client-api";
 import type { ClientInterpretationDecision } from "@/lib/diamond-intelligence/client-interpretation-pipeline";
 import type { UploadExtractionOutput } from "@/lib/calibration-library/extract-upload-pipeline";
+import { activateClientBundledTesseractRuntime } from "@/lib/diamond-intelligence/client-tesseract-runtime";
 
 export type InterpretUploadedReportInput = {
   bytes: Buffer;
@@ -65,9 +66,7 @@ export type InterpretUploadedReportResult =
 export async function interpretUploadedReport(
   input: InterpretUploadedReportInput,
 ): Promise<InterpretUploadedReportResult> {
-  // EXPERIMENT branch: pre-f51fa49 OCR path — default tesseract.js worker options only.
-  // Last known-good production OCR (2026-06-15T13:38 UTC) predates activateClientBundledTesseractRuntime().
-  // activateClientBundledTesseractRuntime();
+  activateClientBundledTesseractRuntime();
 
   const { bytes, mime, sourceFilename } = input;
 
