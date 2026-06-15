@@ -1980,10 +1980,15 @@ function attachHorizontalTrack(
   };
 }
 
-const STUDIO_HEADER_NAV: { label: string; active: boolean }[] = [
+const STUDIO_HEADER_NAV: {
+  label: string;
+  active: boolean;
+  href?: string;
+  soon?: boolean;
+}[] = [
   { label: "Diamond Size Studio", active: true },
-  { label: "Shape Comparison", active: false },
-  { label: "Light Performance", active: false },
+  { label: "Shape Comparison", active: false, soon: true },
+  { label: "Light Performance", active: false, href: "/diamond-intelligence" },
 ];
 
 export default function DiamondStudioPage() {
@@ -2267,8 +2272,14 @@ export default function DiamondStudioPage() {
                 key={item.label}
                 className={`dts-topnav-item ${item.active ? "is-active" : "is-idle"}`}
               >
-                <span className="dts-topnav-label">{item.label}</span>
-                {!item.active ? (
+                {item.active || !item.href ? (
+                  <span className="dts-topnav-label">{item.label}</span>
+                ) : (
+                  <Link href={item.href} className="dts-topnav-label">
+                    {item.label}
+                  </Link>
+                )}
+                {!item.active && item.soon ? (
                   <span className="dts-topnav-soon">Coming soon</span>
                 ) : null}
               </div>

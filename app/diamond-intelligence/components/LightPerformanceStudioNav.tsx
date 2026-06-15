@@ -2,30 +2,38 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 type NavItem = {
   label: string;
   href: string;
-  active: boolean;
   soon?: boolean;
 };
 
 const NAV: NavItem[] = [
-  { label: "Diamond Size Studio", href: "/diamond-studio", active: false },
-  {
-    label: "Shape Comparison",
-    href: "/diamond-studio",
-    active: false,
-    soon: true,
-  },
-  {
-    label: "Light Performance",
-    href: "/diamond-intelligence",
-    active: true,
-  },
+  { label: "Diamond Size Studio", href: "/diamond-studio" },
+  { label: "Shape Comparison", href: "/diamond-studio", soon: true },
+  { label: "Light Performance", href: "/diamond-intelligence" },
 ];
 
+function isNavActive(pathname: string, item: NavItem): boolean {
+  if (item.label === "Diamond Size Studio") {
+    return (
+      pathname === "/diamond-studio" || pathname.startsWith("/diamond-studio/")
+    );
+  }
+  if (item.label === "Light Performance") {
+    return (
+      pathname === "/diamond-intelligence" ||
+      pathname.startsWith("/diamond-intelligence/")
+    );
+  }
+  return false;
+}
+
 export default function LightPerformanceStudioNav() {
+  const pathname = usePathname();
+
   return (
     <header className="border-b border-[#e4dbcf]/80 bg-[#f7f3ee]/95 backdrop-blur-sm">
       <div className="mx-auto flex max-w-[1560px] flex-wrap items-center justify-between gap-4 px-4 py-4 md:px-6">
@@ -50,32 +58,35 @@ export default function LightPerformanceStudioNav() {
           className="flex flex-1 flex-wrap items-center justify-center gap-6 md:gap-10"
           aria-label="Diamond Studio tools"
         >
-          {NAV.map((item) => (
-            <div key={item.label} className="text-center">
-              {item.active ? (
-                <span className="block text-[10px] uppercase tracking-[0.26em] text-[#1f1d1a]">
-                  {item.label}
-                </span>
-              ) : (
-                <Link
-                  href={item.href}
-                  className="block text-[10px] uppercase tracking-[0.26em] text-[#948a80] transition hover:text-[#5f5851]"
-                >
-                  {item.label}
-                </Link>
-              )}
-              {item.active ? (
-                <span
-                  className="mx-auto mt-2 block h-px w-full max-w-[120px] bg-[#b8a99a]"
-                  aria-hidden
-                />
-              ) : item.soon ? (
-                <span className="mt-1 block text-[8px] uppercase tracking-[0.2em] text-[#b5a99a]">
-                  Coming soon
-                </span>
-              ) : null}
-            </div>
-          ))}
+          {NAV.map((item) => {
+            const active = isNavActive(pathname, item);
+            return (
+              <div key={item.label} className="text-center">
+                {active ? (
+                  <span className="block text-[10px] uppercase tracking-[0.26em] text-[#1f1d1a]">
+                    {item.label}
+                  </span>
+                ) : (
+                  <Link
+                    href={item.href}
+                    className="block text-[10px] uppercase tracking-[0.26em] text-[#948a80] transition hover:text-[#5f5851]"
+                  >
+                    {item.label}
+                  </Link>
+                )}
+                {active ? (
+                  <span
+                    className="mx-auto mt-2 block h-px w-full max-w-[120px] bg-[#b8a99a]"
+                    aria-hidden
+                  />
+                ) : item.soon ? (
+                  <span className="mt-1 block text-[8px] uppercase tracking-[0.2em] text-[#b5a99a]">
+                    Coming soon
+                  </span>
+                ) : null}
+              </div>
+            );
+          })}
         </nav>
 
         <Link
