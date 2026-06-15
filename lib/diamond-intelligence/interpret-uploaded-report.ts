@@ -32,6 +32,7 @@ import { parseReportGradeHints, buildReportGradeHintSource } from "@/lib/diamond
 import type { ClientSafeInterpretationPayload } from "@/lib/diamond-intelligence/client-api";
 import type { ClientInterpretationDecision } from "@/lib/diamond-intelligence/client-interpretation-pipeline";
 import type { UploadExtractionOutput } from "@/lib/calibration-library/extract-upload-pipeline";
+import { activateClientBundledTesseractRuntime } from "@/lib/diamond-intelligence/client-tesseract-runtime";
 
 export type InterpretUploadedReportInput = {
   bytes: Buffer;
@@ -65,6 +66,8 @@ export type InterpretUploadedReportResult =
 export async function interpretUploadedReport(
   input: InterpretUploadedReportInput,
 ): Promise<InterpretUploadedReportResult> {
+  activateClientBundledTesseractRuntime();
+
   const { bytes, mime, sourceFilename } = input;
 
   if (!isDiamondIntelligenceAcceptedMime(mime)) {

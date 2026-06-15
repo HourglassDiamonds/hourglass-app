@@ -24,7 +24,6 @@ import {
   isPdfRenderRetryableError,
   renderPdfPagePngWithFactory,
 } from "./pdf-render-factory";
-import { tesseractWorkerCreateOptions } from "./tesseract-runtime-paths";
 
 export type OcrResult = {
   text: string;
@@ -40,6 +39,18 @@ let ocrRuntimeChecked = false;
 let ocrRuntimeAvailable = false;
 let ocrRuntimeProbeError: string | undefined;
 let ocrRuntimeProbeDurationMs = 0;
+
+/** Override createWorker options (e.g. bundled lang data on DI interpret route). */
+let workerCreateOptions: Record<string, unknown> = { logger: () => {} };
+
+export function setTesseractWorkerCreateOptions(
+  opts: Record<string, unknown> | null,
+): void {
+  workerCreateOptions = opts ?? { logger: () => {} };
+  ocrRuntimeChecked = false;
+  ocrRuntimeAvailable = false;
+  ocrRuntimeProbeError = undefined;
+}
 
 export type OcrRuntimeProbeSnapshot = {
   checked: boolean;
@@ -58,7 +69,7 @@ export function getOcrRuntimeProbeSnapshot(): OcrRuntimeProbeSnapshot {
 }
 
 function tesseractWorkerOptions(): Record<string, unknown> {
-  return tesseractWorkerCreateOptions();
+  return workerCreateOptions;
 }
 
 async function terminateWorkerSafe(
