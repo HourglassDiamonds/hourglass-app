@@ -19,6 +19,7 @@ import {
   PDF_GET_DOCUMENT_TIMEOUT_MS,
   PDF_RENDER_TIMEOUT_MS,
 } from "./runtime-limits";
+import { loadServerPdfjs } from "./server-pdfjs";
 import {
   isPdfRenderRetryableError,
   renderPdfPagePngWithFactory,
@@ -162,7 +163,7 @@ async function renderPdfPagePngProduction(
   docOpts?: PdfRenderDocOpts,
 ): Promise<{ png: Buffer; width: number; height: number } | { error: string }> {
   const { createCanvas } = await import("@napi-rs/canvas");
-  const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
+  const pdfjs = await loadServerPdfjs();
   const data = new Uint8Array(pdfBytes);
   const doc = await withTimeout(
     pdfjs.getDocument({
@@ -399,7 +400,7 @@ export async function ocrPdfBuffer(pdfBytes: Buffer): Promise<OcrResult> {
   const parts: string[] = [];
   let pageCount = 0;
   try {
-    const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
+    const pdfjs = await loadServerPdfjs();
     const doc = await withTimeout(
       pdfjs.getDocument({
         data: new Uint8Array(pdfBytes),

@@ -1,3 +1,4 @@
+import { loadServerPdfjs } from "../../server-pdfjs";
 import { mkdir, writeFile } from "fs/promises";
 import { join } from "path";
 import { emptyReportFields } from "../../fields";
@@ -397,7 +398,7 @@ type PercentCrop = {
 
 async function readPdfPageCount(pdfBytes: Buffer): Promise<number> {
   try {
-    const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
+    const pdfjs = await loadServerPdfjs();
     const doc = await pdfjs.getDocument({ data: new Uint8Array(pdfBytes) }).promise;
     return doc.numPages;
   } catch {

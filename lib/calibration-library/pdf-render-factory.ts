@@ -2,6 +2,7 @@
  * pdfjs + pdfjs-resolved @napi-rs/canvas + canvasFactory render path.
  * Used by GCAL Sarine and as production fallback for font-binding failures (LGDR dossier).
  */
+import { loadServerPdfjs } from "./server-pdfjs";
 import { createRequire } from "module";
 import { join } from "path";
 import {
@@ -148,7 +149,7 @@ export async function renderPdfPagePngWithFactory(
     return await withTimeout(
       (async () => {
         installPdfJsCanvasPolyfills(canvasPkg);
-        const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
+        const pdfjs = await loadServerPdfjs();
         const doc = await withTimeout(
           pdfjs.getDocument({
             data: new Uint8Array(pdfBytes),

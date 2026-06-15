@@ -7,6 +7,7 @@ import {
   withTimeout,
 } from "./runtime-guard";
 import { MIN_USABLE_PDF_TEXT_CHARS } from "./pdf-ingest";
+import { loadServerPdfjs } from "./server-pdfjs";
 import {
   MAX_PDF_PAGES_TEXT_LAYER,
   PDF_GET_DOCUMENT_TIMEOUT_MS,
@@ -57,7 +58,7 @@ export async function extractPdfTextLayer(bytes: Buffer): Promise<{
   try {
     const result = await withTimeout(
       (async () => {
-        const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
+        const pdfjs = await loadServerPdfjs();
         const data = new Uint8Array(bytes);
         const doc = await withTimeout(
           pdfjs.getDocument({ data, useSystemFonts: true }).promise,

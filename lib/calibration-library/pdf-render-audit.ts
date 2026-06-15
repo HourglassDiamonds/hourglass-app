@@ -10,6 +10,7 @@
  * Does NOT modify extraction parsers, scoring, UI, or interpretation.
  */
 import { createRequire } from "module";
+import { loadServerPdfjs } from "./server-pdfjs";
 import { execSync } from "child_process";
 import { mkdtempSync, readFileSync, writeFileSync, readdirSync, rmSync } from "fs";
 import { tmpdir } from "os";
@@ -229,7 +230,7 @@ type DocOpts = { useSystemFonts?: boolean; disableFontFace?: boolean };
 
 async function openPdfDoc(pdfBytes: Buffer, opts: DocOpts) {
   const openStarted = Date.now();
-  const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
+  const pdfjs = await loadServerPdfjs();
   const doc = await pdfjs.getDocument({
     data: new Uint8Array(pdfBytes),
     useSystemFonts: opts.useSystemFonts ?? false,
@@ -446,7 +447,7 @@ async function renderMutoolDraw(
 }
 
 async function getPageCount(pdfBytes: Buffer): Promise<number> {
-  const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
+  const pdfjs = await loadServerPdfjs();
   const doc = await pdfjs.getDocument({ data: new Uint8Array(pdfBytes) }).promise;
   return doc.numPages;
 }

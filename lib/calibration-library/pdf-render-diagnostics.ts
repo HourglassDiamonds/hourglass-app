@@ -3,6 +3,7 @@
  * Compares multiple pdfjs + canvas backends without touching extraction parsers.
  */
 import { createRequire } from "module";
+import { loadServerPdfjs } from "./server-pdfjs";
 import { mkdir, writeFile } from "fs/promises";
 import { join } from "path";
 import { capRenderScaleForPixels } from "./runtime-limits";
@@ -102,7 +103,7 @@ async function openPdf(
   opts: GetDocumentOpts,
 ): Promise<{ doc: { numPages: number; getPage: (n: number) => Promise<unknown> }; openMs: number }> {
   const openStarted = Date.now();
-  const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
+  const pdfjs = await loadServerPdfjs();
   const doc = await pdfjs.getDocument({
     data: new Uint8Array(pdfBytes),
     useSystemFonts: opts.useSystemFonts ?? false,

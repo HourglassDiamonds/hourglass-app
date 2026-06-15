@@ -1,4 +1,5 @@
 import { toJsonSafe } from "./gcal-api-error";
+import { loadServerPdfjs } from "./server-pdfjs";
 import {
   MAX_IMAGE_DIMENSION_PX,
   MAX_IMAGE_UPLOAD_BYTES,
@@ -141,7 +142,7 @@ export async function getPdfPageCountBounded(
   const ms = timeoutMs || PDF_GET_DOCUMENT_TIMEOUT_MS;
   return withTimeout(
     (async () => {
-      const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
+      const pdfjs = await loadServerPdfjs();
       const doc = await pdfjs.getDocument({
         data: new Uint8Array(pdfBytes),
         useSystemFonts: true,
