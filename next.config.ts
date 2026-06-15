@@ -5,7 +5,7 @@ const pdfjsWorkerIncludes = [
   "./node_modules/pdfjs-dist/legacy/build/pdf.worker.min.mjs",
 ];
 
-/** GCAL Sarine diagram OCR — pdfjs page render + Tesseract region OCR on Vercel. */
+/** GCAL Sarine diagram OCR — interpret route only (tessdata is ~10MB+). */
 const interpretRouteTracingIncludes = [
   ...pdfjsWorkerIncludes,
   "./node_modules/@napi-rs/canvas/**/*",
@@ -18,11 +18,22 @@ const interpretRouteTracingIncludes = [
   "./node_modules/@tesseract.js-data/eng/**/*",
 ];
 
+/** Calibration extract — canvas + OCR wasm; no bundled lang data (keeps bundle under Vercel 300MB). */
+const calibrationExtractTracingIncludes = [
+  ...pdfjsWorkerIncludes,
+  "./node_modules/@napi-rs/canvas/**/*",
+  "./node_modules/@napi-rs/canvas-*/**/*",
+  "./node_modules/pdfjs-dist/node_modules/@napi-rs/canvas/**/*",
+  "./node_modules/pdfjs-dist/node_modules/@napi-rs/canvas-*/**/*",
+  "./node_modules/tesseract.js/dist/**/*",
+  "./node_modules/tesseract.js-core/**/*",
+];
+
 const nextConfig: NextConfig = {
   serverExternalPackages: ["tesseract.js", "@napi-rs/canvas", "pdfjs-dist"],
   outputFileTracingIncludes: {
     "/api/diamond-intelligence/interpret": interpretRouteTracingIncludes,
-    "/api/calibration-library/extract-file": interpretRouteTracingIncludes,
+    "/api/calibration-library/extract-file": calibrationExtractTracingIncludes,
   },
   async redirects() {
     return [
