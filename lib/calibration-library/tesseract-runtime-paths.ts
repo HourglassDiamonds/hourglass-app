@@ -39,6 +39,8 @@ export function tesseractWorkerCreateOptions(): Record<string, unknown> {
       logger: () => {},
       langPath: paths.langPath,
       cachePath: paths.cachePath,
+      workerPath: paths.workerPath,
+      corePath: paths.corePath,
     };
   } catch {
     return { logger: () => {} };
