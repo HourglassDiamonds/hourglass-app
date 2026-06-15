@@ -39,6 +39,8 @@ export function tesseractWorkerCreateOptions(): Record<string, unknown> {
       logger: () => {},
       langPath: paths.langPath,
       cachePath: paths.cachePath,
+      gzip: false,
+      cacheMethod: "readOnly",
     };
   } catch {
     return { logger: () => {} };

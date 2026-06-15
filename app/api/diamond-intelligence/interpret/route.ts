@@ -26,8 +26,8 @@ import {
 import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
-/** GIA LGDR diagram OCR can use ~54s; leave headroom beyond cold-start overhead. */
-export const maxDuration = 90;
+/** GIA LGDR + GCAL Sarine cold Tesseract WASM on Vercel can exceed 90s. */
+export const maxDuration = 120;
 
 function json(body: Record<string, unknown>, status = 200, headers?: HeadersInit) {
   return NextResponse.json(toJsonSafe(body), { status, headers });

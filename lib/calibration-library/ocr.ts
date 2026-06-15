@@ -72,7 +72,14 @@ async function acquireSharedOcrWorker(): Promise<OcrWorker> {
     sharedOcrWorkerPromise = (async () => {
       const { createWorker } = await import("tesseract.js");
       const worker = await withTimeout(
-        createWorker("eng", 1, tesseractWorkerOptions()),
+        createWorker("eng", 1, {
+          ...tesseractWorkerOptions(),
+          logger: probeLogger,
+          errorHandler: (err: unknown) => {
+            ocrRuntimeProbeError =
+              typeof err === "string" ? err : err instanceof Error ? err.message : String(err);
+          },
+        }),
         OCR_WORKER_CREATE_TIMEOUT_MS,
         "ocr-shared-create-worker",
       );
