@@ -169,30 +169,17 @@ export async function isOcrRuntimeAvailable(): Promise<boolean> {
   if (isOcrDisabledByEnv()) return false;
   if (ocrRuntimeChecked) return ocrRuntimeAvailable;
 
+  if (isBundledTesseractLangReady()) {
+    ocrRuntimeChecked = true;
+    ocrRuntimeAvailable = true;
+    ocrRuntimeProbeLog = ["bundled-lang-skip-probe"];
+    ocrRuntimeProbeDurationMs = 0;
+    return true;
+  }
+
   const started = Date.now();
   ocrRuntimeChecked = true;
   ocrRuntimeProbeLog = [];
-
-  if (isBundledTesseractLangReady()) {
-    try {
-      await withTimeout(
-        acquireSharedOcrWorker(),
-        OCR_WORKER_CREATE_TIMEOUT_MS,
-        "ocr-runtime-bundled-warm",
-      );
-      ocrRuntimeAvailable = true;
-      ocrRuntimeProbeLog = ["bundled-lang-warm-worker"];
-      ocrRuntimeProbeDurationMs = Date.now() - started;
-      return true;
-    } catch (err) {
-      ocrRuntimeAvailable = false;
-      ocrRuntimeProbeError =
-        err instanceof Error ? err.message : String(err);
-      ocrRuntimeProbeDurationMs = Date.now() - started;
-      await releaseSharedOcrWorker();
-      return false;
-    }
-  }
 
   let worker: { terminate: () => Promise<unknown> } | null = null;
   let workerCleanupSuccess = false;
