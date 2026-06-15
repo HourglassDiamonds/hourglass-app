@@ -4,10 +4,5 @@
       "path": "/api/cron/weekly-intelligence",
       "schedule": "0 13 * * 1"
     }
-  ],
-  "functions": {
-    "app/api/diamond-intelligence/interpret/route.ts": {
-      "memory": 3008
-    }
-  }
+  ]
 }
