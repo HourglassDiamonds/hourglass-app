@@ -23,6 +23,11 @@ import {
 } from "./runtime-limits";
 import { loadServerPdfjs } from "./server-pdfjs";
 import {
+  isRemoteOcrConfigured,
+  remoteOcrImageBuffer,
+  remoteOcrRuntimeAvailable,
+} from "./ocr-transport";
+import {
   isPdfRenderRetryableError,
   renderPdfPagePngWithFactory,
 } from "./pdf-render-factory";
@@ -123,6 +128,33 @@ export async function isOcrRuntimeAvailable(): Promise<boolean> {
   if (isOcrDisabledByEnv()) return false;
   if (ocrRuntimeChecked) return ocrRuntimeAvailable;
 
+  if (isRemoteOcrConfigured()) {
+    const started = Date.now();
+    ocrRuntimeChecked = true;
+    ocrRuntimeProbeLog = [];
+    try {
+      ocrRuntimeAvailable = await remoteOcrRuntimeAvailable();
+      if (ocrRuntimeAvailable) {
+        ocrRuntimeProbeLog.push("remote-ocr-health-ok");
+      } else {
+        ocrRuntimeProbeError = "remote-ocr-unavailable";
+      }
+    } catch (err) {
+      ocrRuntimeAvailable = false;
+      ocrRuntimeProbeError =
+        err instanceof Error ? err.message : String(err);
+    } finally {
+      ocrRuntimeProbeDurationMs = Date.now() - started;
+      logCalibrationRuntimeCheck({
+        operation: "ocr-runtime-probe-remote",
+        durationMs: ocrRuntimeProbeDurationMs,
+        ocrDurationMs: ocrRuntimeProbeDurationMs,
+        error: ocrRuntimeProbeError,
+      });
+    }
+    return ocrRuntimeAvailable;
+  }
+
   if (isBundledTesseractLangReady()) {
     ocrRuntimeChecked = true;
     ocrRuntimeAvailable = true;
@@ -207,6 +239,10 @@ export async function ocrImageBuffer(buffer: Buffer): Promise<OcrResult> {
       ok: false,
       error: `OCR image exceeds ${Math.floor(MAX_IMAGE_UPLOAD_BYTES / 1024 / 1024)}MB limit`,
     };
+  }
+
+  if (isRemoteOcrConfigured()) {
+    return remoteOcrImageBuffer(buffer);
   }
 
   try {
