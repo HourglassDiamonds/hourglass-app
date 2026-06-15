@@ -13,6 +13,7 @@ import {
 } from "./gcal-sarine-4cs";
 import {
   GCAL360796191_DIAGRAM_OCR,
+  GCAL360796191_DIAGRAM_OCR_LIVE_GARBLED,
   GCAL360796191_FINISH_OCR,
   GCAL360796191_EXPECTED,
   GCAL360796191_REPORT_NUMBER,
@@ -136,6 +137,18 @@ describe("GCAL Sarine 4Cs LG360796191", () => {
     assert.equal(islands.pavilionDepthPercent, e.pavilionDepthPercent);
     assert.equal(islands.girdleThicknessPercent, e.girdleThicknessPercent);
     assert.equal(islands.culetSizeMm, e.culetSizeMm);
+  });
+
+  it("repairs live garbled lower-half OCR (1 7 7) to 77%", () => {
+    const islands = extractGcalSarineProportionIslands(
+      GCAL360796191_DIAGRAM_OCR_LIVE_GARBLED,
+    );
+    const e = GCAL360796191_EXPECTED;
+    assert.equal(islands.tablePercent, e.tablePercent);
+    assert.equal(islands.depthPercent, e.depthPercent);
+    assert.equal(islands.crownAngle, e.crownAngle);
+    assert.equal(islands.pavilionAngle, e.pavilionAngle);
+    assert.equal(islands.lowerHalfPercent, e.lowerHalfPercent);
   });
 
   it("parses full Sarine report text + diagram OCR", () => {

@@ -18,9 +18,21 @@ import {
   extractGcal8xFinishGrades,
 } from "./gcal-finish";
 
+/**
+ * Live Sarine diagram OCR — lower-half 77% often garbles as spaced digits (e.g. "1 7 7").
+ * LG360796191 live crop: `36% ISo~ YY 1 7 7 27 7`.
+ */
+export function repairGcalSarineLowerHalfGarbledDigits(text: string): string {
+  let s = text;
+  s = s.replace(/\b1\s+7\s+7\b/g, "77%");
+  s = s.replace(/(?<![\d%])\b7\s+7(?:\s+7)?\b(?![\d.%])/g, "77%");
+  return s;
+}
+
 /** Sarine live diagram OCR — angles often lack °; lower-half may garble as 7ST. */
 export function prepareGcalSarineProportionDiagramText(text: string): string {
   let s = text.replace(/\b7\s*ST\b/gi, "77%");
+  s = repairGcalSarineLowerHalfGarbledDigits(s);
   s = s.replace(/\b(\d{2})\.(\d)\d*\s*(?=[^\d.%])/g, "$1.$2°");
   s = s.replace(/\b340\b(?!\d)/g, "34.0°");
   s = s.replace(/\b410\b(?!\d)/g, "41.0°");

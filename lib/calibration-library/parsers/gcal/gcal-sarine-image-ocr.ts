@@ -872,7 +872,12 @@ export async function applyGcalSarineProportionImageOcr(
   internal: GcalInternalFields,
   set: FieldSetter,
   opts?: { reportNumber?: string; parserPathUsed?: string; imageUpload?: boolean },
-): Promise<{ proportionRegionText: string; recoveredFields: Record<string, string> }> {
+): Promise<{
+  proportionRegionText: string;
+  recoveredFields: Record<string, string>;
+  diagramOcrFailure?: string;
+  coreProportionsRecovered: boolean;
+}> {
   const before = { ...fields };
   const fieldsBeforeImageOcr = snapshotGcalSarineRecoveredFields(
     emptyReportFields(),
@@ -934,6 +939,8 @@ export async function applyGcalSarineProportionImageOcr(
             ? "D-assignment-failed"
             : undefined;
 
+  const coreProportionsRecovered = !needsGcalSarineProportionImageOcr(fields);
+
   logGcalSarineCheck({
     parserType: "gcal-sarine-4cs",
     phase: "image-ocr",
@@ -986,5 +993,10 @@ export async function applyGcalSarineProportionImageOcr(
     recoveredFields,
   });
 
-  return { proportionRegionText, recoveredFields };
+  return {
+    proportionRegionText,
+    recoveredFields,
+    diagramOcrFailure: failureMode,
+    coreProportionsRecovered,
+  };
 }

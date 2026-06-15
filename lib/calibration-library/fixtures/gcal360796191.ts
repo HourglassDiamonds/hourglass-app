@@ -67,6 +67,17 @@ export const GCAL360796191_DIAGRAM_OCR = `
 57% 612% 340° 408° 430% 36% 145% 77% 50% 0.4mm
 `;
 
+/** Live PDF diagram crop OCR — lower-half garbled as spaced digits (LG360796191). */
+export const GCAL360796191_DIAGRAM_OCR_LIVE_GARBLED = `
+6.44mm
+340° 3.65mm 57% 50%
+0.23mm LRTI 145%
+36% ISo~ YY 1 7 7 27 7
+3.94mm A 1 277mm
+61.2% A) WY, 43.0%
+40.8°
+`;
+
 /** Finish panel OCR from Sarine right-column crop (LG360796191). */
 export const GCAL360796191_FINISH_OCR = `
 1. Polish P VG G EX Excellent

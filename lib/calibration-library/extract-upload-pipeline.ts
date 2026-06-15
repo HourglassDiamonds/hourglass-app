@@ -59,6 +59,7 @@ import {
 } from "./upload-pipeline-timing";
 import { clientExtractionSufficient } from "@/lib/diamond-intelligence/client-extraction-sufficient";
 import { needsGiaDiagramProportionOcrWait } from "./gia-diagram-proportion-wait";
+import { needsGcalSarineDiagramProportionOcrWait } from "./gcal-sarine-diagram-proportion-wait";
 import {
   isGiaQaTraceEnabled,
   traceFieldsFromRecord,
@@ -218,7 +219,13 @@ async function runImageOcrAugmentation(input: {
   clientMode?: boolean;
   regionOcrTimeoutMs?: number;
   onGradeHintTextUpdate?: (text: string) => void;
-}): Promise<{ imageOcrMs: number; ocrCompleted: boolean; gradeHintText: string }> {
+}): Promise<{
+  imageOcrMs: number;
+  ocrCompleted: boolean;
+  gradeHintText: string;
+  diagramOcrNotices?: string[];
+  gcalSarineDiagramOcrFailure?: string;
+}> {
   const {
     documentBytes,
     imageUpload = false,
@@ -230,6 +237,8 @@ async function runImageOcrAugmentation(input: {
   } = input;
   const started = Date.now();
   let ocrCompleted = false;
+  const diagramOcrNotices: string[] = [];
+  let gcalSarineDiagramOcrFailure: string | undefined;
   let gradeHintText = combined.slice(0, 16000);
   const publishGradeHintText = (candidate: string) => {
     gradeHintText = pickGradeHintText(gradeHintText, candidate);
@@ -336,6 +345,15 @@ async function runImageOcrAugmentation(input: {
     parsed.confidence[key] = capConfidence(key, level);
   };
 
+  const ocrResult = () => ({
+    imageOcrMs: Date.now() - started,
+    ocrCompleted,
+    gradeHintText,
+    diagramOcrNotices:
+      diagramOcrNotices.length > 0 ? diagramOcrNotices : undefined,
+    gcalSarineDiagramOcrFailure,
+  });
+
   if (runSarine) {
     const proportionGatePassed = needsGcalSarineProportionImageOcr(parsed.fields);
     const finishGatePassed = needsGcalSarineFinishImageOcr(parsed.fields);
@@ -354,26 +372,47 @@ async function runImageOcrAugmentation(input: {
     }
     if (proportionGatePassed || finishGatePassed) {
       const gcalInternal = parsed.gcalInternal ?? {};
-      await withTimeout(
-        applyGcalSarineProportionImageOcr(
-          documentBytes,
-          combined,
-          parsed.fields,
-          gcalInternal,
-          setField,
-          {
-            reportNumber: reportNumberHint || undefined,
-            parserPathUsed: parsed.parserType,
-            imageUpload,
-          },
-        ),
-        regionOcrTimeoutMs,
-        "sarine-image-ocr",
-      );
-      if (Object.keys(gcalInternal).length > 0) {
-        parsed.gcalInternal = gcalInternal;
+      try {
+        const sarineOcr = await withTimeout(
+          applyGcalSarineProportionImageOcr(
+            documentBytes,
+            combined,
+            parsed.fields,
+            gcalInternal,
+            setField,
+            {
+              reportNumber: reportNumberHint || undefined,
+              parserPathUsed: parsed.parserType,
+              imageUpload,
+            },
+          ),
+          regionOcrTimeoutMs,
+          "sarine-image-ocr",
+        );
+        if (Object.keys(gcalInternal).length > 0) {
+          parsed.gcalInternal = gcalInternal;
+        }
+        ocrCompleted = true;
+        if (sarineOcr.diagramOcrFailure) {
+          gcalSarineDiagramOcrFailure = sarineOcr.diagramOcrFailure;
+        }
+        if (!sarineOcr.coreProportionsRecovered) {
+          const detail = sarineOcr.diagramOcrFailure
+            ? ` (${sarineOcr.diagramOcrFailure})`
+            : "";
+          diagramOcrNotices.push(
+            `GCAL Sarine diagram OCR: core proportions (table, depth, crown angle, pavilion angle) were not recovered from the diagram image${detail}.`,
+          );
+        }
+      } catch (ocrErr) {
+        const ocrErrMsg = errorMessageFromUnknown(ocrErr);
+        gcalSarineDiagramOcrFailure = ocrErrMsg.toLowerCase().includes("timeout")
+          ? "diagram-ocr-timeout"
+          : "diagram-ocr-error";
+        diagramOcrNotices.push(
+          `GCAL Sarine diagram OCR failed: ${ocrErrMsg} — proportion fields require diagram image read.`,
+        );
       }
-      ocrCompleted = true;
       probeSarineFinishFromTextLayer(combined);
       logUploadPipelineTiming({
         phase: "ocr-region-crops",
@@ -382,11 +421,7 @@ async function runImageOcrAugmentation(input: {
         parserPath: parsed.parserType,
       });
       if (clientSatisfied()) {
-        return {
-          imageOcrMs: Date.now() - started,
-          ocrCompleted,
-          gradeHintText,
-        };
+        return ocrResult();
       }
     }
   } else if (
@@ -441,11 +476,7 @@ async function runImageOcrAugmentation(input: {
       parserPath: parsed.parserType,
     });
     if (clientSatisfied()) {
-      return {
-        imageOcrMs: Date.now() - started,
-        ocrCompleted,
-        gradeHintText,
-      };
+      return ocrResult();
     }
   }
 
@@ -659,11 +690,7 @@ async function runImageOcrAugmentation(input: {
           : "client-gia-diagram-partial",
       });
       if (clientSatisfied()) {
-        return {
-          imageOcrMs: Date.now() - started,
-          ocrCompleted,
-          gradeHintText,
-        };
+        return ocrResult();
       }
     }
 
@@ -677,11 +704,7 @@ async function runImageOcrAugmentation(input: {
         ? "client-sufficient"
         : "skipped-gia-igi-client-budget",
     });
-    return {
-      imageOcrMs: Date.now() - started,
-      ocrCompleted,
-      gradeHintText,
-    };
+    return ocrResult();
   }
 
   const giaGate = shouldRunGiaFacsimileDiagramImageOcr(parsed.fields, combined, {
@@ -754,11 +777,7 @@ async function runImageOcrAugmentation(input: {
     ocrCompleted = true;
   }
 
-  return {
-    imageOcrMs: Date.now() - started,
-    ocrCompleted,
-    gradeHintText,
-  };
+  return ocrResult();
 }
 
 /** Same extraction path as `/api/calibration-library/extract-file` (bounded). */
@@ -797,6 +816,8 @@ export async function runCalibrationUploadExtraction(
     pdfTextLayerLength: number;
     gcalImageOnlyPdf: boolean;
     giaDiagramProportionWait?: boolean;
+    gcalSarineDiagramProportionWait?: boolean;
+    gcalSarineDiagramOcrFailure?: string;
   } = {
     parsed: null,
     combined: "",
@@ -1031,6 +1052,7 @@ export async function runCalibrationUploadExtraction(
         };
 
         let giaDiagramProportionWait = false;
+        let gcalSarineDiagramProportionWait = false;
         let clientRegionOcrTimeoutMs =
           input.regionOcrTimeoutMs ?? CLIENT_IMAGE_REGION_OCR_TIMEOUT_MS;
         if (clientMode && uploadPdfBytes) {
@@ -1041,8 +1063,18 @@ export async function runCalibrationUploadExtraction(
             lab: parsed.metadata.lab,
             gradeHintText,
           });
+          gcalSarineDiagramProportionWait =
+            needsGcalSarineDiagramProportionOcrWait({
+              fields: parsed.fields,
+              combinedText: combined,
+              parserType: parsed.parserType,
+              lab: parsed.metadata.lab,
+              gradeHintText,
+            });
           snapshot.giaDiagramProportionWait = giaDiagramProportionWait;
-          if (giaDiagramProportionWait) {
+          snapshot.gcalSarineDiagramProportionWait =
+            gcalSarineDiagramProportionWait;
+          if (giaDiagramProportionWait || gcalSarineDiagramProportionWait) {
             clientRegionOcrTimeoutMs =
               input.regionOcrTimeoutMs ??
               CLIENT_GIA_DIAGRAM_REGION_OCR_TIMEOUT_MS;
@@ -1094,6 +1126,14 @@ export async function runCalibrationUploadExtraction(
             timings.imageOcrMs = ocr.imageOcrMs;
             if (ocr.ocrCompleted) ocrAttempted = true;
             publishSnapshotGradeHintText(ocr.gradeHintText);
+            if (ocr.diagramOcrNotices?.length) {
+              pipelineNotices.push(...ocr.diagramOcrNotices);
+              parsed.warnings.push(...ocr.diagramOcrNotices);
+            }
+            if (ocr.gcalSarineDiagramOcrFailure) {
+              snapshot.gcalSarineDiagramOcrFailure =
+                ocr.gcalSarineDiagramOcrFailure;
+            }
             if (process.env.NODE_ENV === "development") {
               console.log("[upload-pipeline] image-ocr:end", {
                 ms: Date.now() - t0,
@@ -1211,7 +1251,9 @@ export async function runCalibrationUploadExtraction(
         };
 
         if (clientMode) {
-          const totalBudget = giaDiagramProportionWait
+          const diagramProportionWait =
+            giaDiagramProportionWait || gcalSarineDiagramProportionWait;
+          const totalBudget = diagramProportionWait
             ? (input.pipelineTimeoutMs ??
               CLIENT_GIA_DIAGRAM_PIPELINE_TIMEOUT_MS)
             : (input.pipelineTimeoutMs ?? CLIENT_UPLOAD_PIPELINE_TIMEOUT_MS);
@@ -1265,7 +1307,8 @@ export async function runCalibrationUploadExtraction(
         usedImageOCR: snapshot.ocrAttempted || timings.imageOcrMs > 0,
       });
       const diagramWaitTimedOut =
-        Boolean(snapshot.giaDiagramProportionWait) &&
+        (Boolean(snapshot.giaDiagramProportionWait) ||
+          Boolean(snapshot.gcalSarineDiagramProportionWait)) &&
         !assessExtractionCompleteness({ fields: finalized.fields })
           .scoreEligible;
       logUploadPipelineTiming({
