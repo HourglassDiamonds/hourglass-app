@@ -15,6 +15,10 @@ import {
 } from "@/lib/diamond-intelligence/submission-archive";
 import { buildUrlArchiveMetadata } from "@/lib/diamond-intelligence/url-ingestion/archive-mapping";
 import { validateDiamondIntelligenceUpload } from "@/lib/diamond-intelligence/upload-validation";
+import {
+  buildInterpretFailureDiagnostics,
+  isInterpretDiagnosticsEnabled,
+} from "@/lib/diamond-intelligence/interpret-failure-diagnostics";
 import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
@@ -133,8 +137,17 @@ export async function POST(request: Request) {
       result.httpStatus === 400 &&
       (result.error.includes("limit") || result.error.includes("Could not read PDF"));
 
+    const diagnostics =
+      isInterpretDiagnosticsEnabled() && result.httpStatus === 422
+        ? buildInterpretFailureDiagnostics(result)
+        : undefined;
+
     return respond(
-      { ok: false, error: result.error },
+      {
+        ok: false,
+        error: result.error,
+        ...(diagnostics ? { diagnostics } : {}),
+      },
       result.httpStatus,
       {
         httpStatus: result.httpStatus,

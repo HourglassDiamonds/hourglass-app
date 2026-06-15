@@ -159,28 +159,17 @@ export async function extractTextFromDocument(
 
   const notices: string[] = [];
 
-  const ocrAvailable = await isOcrRuntimeAvailable();
-
-
-
   if (isImageMime(mimeType)) {
+    const ocrAvailable = await isOcrRuntimeAvailable();
 
     if (!ocrAvailable) {
-
       return finishDocumentExtraction({
-
         text: "",
-
         method: "none",
-
         ocrAttempted: false,
-
         ocrAvailable: false,
-
         notices: [OCR_UNAVAILABLE_COPY],
-
       });
-
     }
 
     const ocr = await ocrImageBuffer(bytes);
@@ -229,7 +218,15 @@ export async function extractTextFromDocument(
 
   if (isPdfMime(mimeType)) {
     const pdfOpenStarted = Date.now();
-    const pdf = await extractPdfTextLayer(bytes);
+    const clientMode = isClientExtractionMode(options?.mode);
+    // Client uploads defer OCR to region-crop paths — skip the Tesseract cold-start probe here
+    // so document-extract is not blocked on serverless (Vercel) before text-parse runs.
+    const [ocrAvailable, pdf] = clientMode
+      ? [true, await extractPdfTextLayer(bytes)]
+      : await Promise.all([
+          isOcrRuntimeAvailable(),
+          extractPdfTextLayer(bytes),
+        ]);
     logUploadPipelineTiming({
       phase: "pdf-text-layer",
       durationMs: Date.now() - pdfOpenStarted,
@@ -453,17 +450,11 @@ export async function extractTextFromDocument(
   notices.push("Unsupported file type.");
 
   return finishDocumentExtraction({
-
     text: "",
-
     method: "none",
-
     ocrAttempted: false,
-
-    ocrAvailable,
-
+    ocrAvailable: await isOcrRuntimeAvailable(),
     notices,
-
   });
 
 }
