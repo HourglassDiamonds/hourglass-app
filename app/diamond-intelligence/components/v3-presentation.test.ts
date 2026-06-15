@@ -333,6 +333,11 @@ describe("clarity standards in V3 presentation", () => {
     assert.equal(resolveGcal8xVisualTier(99, "VS1"), "Rare");
   });
 
+  it("returns null GCAL 8X tier when display score is unavailable", () => {
+    assert.equal(resolveGcal8xVisualTier(null, "VVS1"), null);
+    assert.equal(resolveGcal8xVisualTier(Number.NaN, "D"), null);
+  });
+
   it("forces Outside Hourglass Standards hero for I2", () => {
     assert.equal(
       resolveV3HeroVerdictLabel({

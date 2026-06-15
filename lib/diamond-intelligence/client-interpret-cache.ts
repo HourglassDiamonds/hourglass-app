@@ -43,7 +43,10 @@ export function setCachedClientInterpretation(
     payload.metadata.reportNumber,
     payload.metadata.lab,
   );
-  cache.set(key, { payload, cachedAt: Date.now() });
+  const entry = { payload, cachedAt: Date.now() };
+  cache.set(key, entry);
+  // Byte-hash alias — interpret route looks up by upload bytes before metadata exists.
+  cache.set(cacheKey(bytes), entry);
 
   if (cache.size <= MAX_ENTRIES) return;
   let oldestKey: string | null = null;

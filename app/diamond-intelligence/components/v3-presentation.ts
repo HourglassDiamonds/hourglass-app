@@ -204,7 +204,8 @@ export function resolveGcal8xVisualTier(
   if (resolveHourglassClarityPolicy(clarity).suppressPremiumTierLabels) {
     return null;
   }
-  if (displayScore !== null && displayScore >= 94) return "Rare";
+  if (displayScore === null || !Number.isFinite(displayScore)) return null;
+  if (displayScore >= 94) return "Rare";
   return "Exceptional";
 }
 

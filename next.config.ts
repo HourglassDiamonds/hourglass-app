@@ -5,11 +5,22 @@ const pdfjsWorkerIncludes = [
   "./node_modules/pdfjs-dist/legacy/build/pdf.worker.min.mjs",
 ];
 
+/** GCAL Sarine diagram OCR — pdfjs page render + Tesseract region OCR on Vercel. */
+const interpretRouteTracingIncludes = [
+  ...pdfjsWorkerIncludes,
+  "./node_modules/@napi-rs/canvas/**/*",
+  "./node_modules/@napi-rs/canvas-*/**/*",
+  "./node_modules/pdfjs-dist/node_modules/@napi-rs/canvas/**/*",
+  "./node_modules/pdfjs-dist/node_modules/@napi-rs/canvas-*/**/*",
+  "./node_modules/tesseract.js/dist/**/*",
+  "./node_modules/tesseract.js-core/**/*",
+];
+
 const nextConfig: NextConfig = {
   serverExternalPackages: ["tesseract.js", "@napi-rs/canvas", "pdfjs-dist"],
   outputFileTracingIncludes: {
-    "/api/diamond-intelligence/interpret": pdfjsWorkerIncludes,
-    "/api/calibration-library/extract-file": pdfjsWorkerIncludes,
+    "/api/diamond-intelligence/interpret": interpretRouteTracingIncludes,
+    "/api/calibration-library/extract-file": interpretRouteTracingIncludes,
   },
   async redirects() {
     return [
