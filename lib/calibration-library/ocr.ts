@@ -9,6 +9,8 @@ import {
   withTimeout,
   type CalibrationRuntimeCheckPayload,
 } from "./runtime-guard";
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 import {
   capRenderScaleForPixels,
   MAX_IMAGE_UPLOAD_BYTES,
@@ -76,6 +78,20 @@ function tesseractWorkerOptions(): Record<string, unknown> {
   return workerCreateOptions;
 }
 
+/** Vendored eng tessdata present — skip cold probe; OCR createWorker is the real gate. */
+export function isBundledTesseractLangReady(): boolean {
+  const opts = workerCreateOptions;
+  const langPath = opts.langPath;
+  if (typeof langPath === "string") {
+    if (existsSync(join(langPath, "eng.traineddata.gz"))) return true;
+  }
+  const cachePath = opts.cachePath;
+  if (typeof cachePath === "string") {
+    if (existsSync(join(cachePath, "eng.traineddata"))) return true;
+  }
+  return false;
+}
+
 function probeLogger(entry: { status?: string; progress?: number }) {
   const status = entry.status ?? "unknown";
   const progress =
@@ -106,6 +122,14 @@ async function terminateWorkerSafe(
 export async function isOcrRuntimeAvailable(): Promise<boolean> {
   if (isOcrDisabledByEnv()) return false;
   if (ocrRuntimeChecked) return ocrRuntimeAvailable;
+
+  if (isBundledTesseractLangReady()) {
+    ocrRuntimeChecked = true;
+    ocrRuntimeAvailable = true;
+    ocrRuntimeProbeLog = ["bundled-lang-skip-probe"];
+    ocrRuntimeProbeDurationMs = 0;
+    return true;
+  }
 
   const started = Date.now();
   let worker: { terminate: () => Promise<unknown> } | null = null;
