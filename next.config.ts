@@ -24,6 +24,13 @@ const nextConfig: NextConfig = {
     "/api/diamond-intelligence/interpret": interpretRouteTracingIncludes,
     "/api/calibration-library/extract-file": pdfjsWorkerIncludes,
   },
+  outputFileTracingExcludes: {
+    "/api/calibration-library/extract-file": [
+      "./node_modules/@tesseract.js-data/**",
+      "./node_modules/tesseract.js/src/worker-script/**",
+      "./node_modules/tesseract.js-core/**",
+    ],
+  },
   async redirects() {
     return [
       {
