@@ -64,6 +64,24 @@ describe("validateDiamondIntelligenceUpload", () => {
     }
   });
 
+  it("rejects bmp screenshots with format-specific copy", () => {
+    const bmp = Buffer.alloc(54);
+    bmp.write("BM", 0, "ascii");
+    const result = validateDiamondIntelligenceUpload({
+      bytes: bmp,
+      declaredMime: "image/bmp",
+      sourceFilename: "screenshot.bmp",
+    });
+    assert.equal(result.ok, false);
+    if (!result.ok) {
+      assert.equal(result.code, "blocked_extension");
+      assert.match(
+        result.error,
+        /isn't supported yet/i,
+      );
+    }
+  });
+
   it("rejects webp even when MIME is spoofed", () => {
     const result = validateDiamondIntelligenceUpload({
       bytes: PDF_HEADER,

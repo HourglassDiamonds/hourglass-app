@@ -6,6 +6,7 @@ import {
   DI_ACCEPTED_EXTENSIONS,
   DI_ACCEPTED_MIMES,
 } from "@/lib/diamond-intelligence/upload-accept";
+import { DI_UNSUPPORTED_FILE_TYPE_MESSAGE } from "@/lib/diamond-intelligence/upload-format-policy";
 
 export {
   DI_ACCEPTED_EXTENSIONS,
@@ -143,7 +144,7 @@ export function validateDiamondIntelligenceUpload(input: {
     return {
       ok: false,
       code: "blocked_extension",
-      error: "Please upload a PDF or image of your lab report.",
+      error: DI_UNSUPPORTED_FILE_TYPE_MESSAGE,
     };
   }
 
@@ -151,7 +152,7 @@ export function validateDiamondIntelligenceUpload(input: {
     return {
       ok: false,
       code: "unsupported_extension",
-      error: "Please upload a PDF or image of your lab report.",
+      error: DI_UNSUPPORTED_FILE_TYPE_MESSAGE,
     };
   }
 
@@ -168,7 +169,7 @@ export function validateDiamondIntelligenceUpload(input: {
     return {
       ok: false,
       code: "unknown_binary",
-      error: "Please upload a PDF or image of your lab report.",
+      error: DI_UNSUPPORTED_FILE_TYPE_MESSAGE,
     };
   }
 
@@ -183,7 +184,7 @@ export function validateDiamondIntelligenceUpload(input: {
     return {
       ok: false,
       code: "unsupported_mime",
-      error: "Please upload a PDF or image of your lab report.",
+      error: DI_UNSUPPORTED_FILE_TYPE_MESSAGE,
     };
   }
 
@@ -191,7 +192,7 @@ export function validateDiamondIntelligenceUpload(input: {
     return {
       ok: false,
       code: "mime_content_mismatch",
-      error: "Please upload a PDF or image of your lab report.",
+      error: DI_UNSUPPORTED_FILE_TYPE_MESSAGE,
     };
   }
   if (

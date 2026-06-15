@@ -98,7 +98,11 @@ export async function POST(request: Request) {
         uploadValidation.code === "mime_content_mismatch";
 
       return respond(
-        { ok: false, error: uploadValidation.error },
+        {
+          ok: false,
+          error: uploadValidation.error,
+          code: uploadValidation.code,
+        },
         400,
         {
           httpStatus: 400,

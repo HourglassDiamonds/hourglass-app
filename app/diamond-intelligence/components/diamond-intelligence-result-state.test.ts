@@ -27,12 +27,40 @@ describe("resolveDiamondIntelligenceResultState", () => {
       resolveDiamondIntelligenceResultState({
         uploadPhase: "error",
         uploadError: "Upload failed",
+        uploadErrorKind: "interpret_failure",
         hasReport: false,
         partialListing: false,
         v3RenderPhase: "empty",
         canRenderFullResult: false,
       }),
       "ERROR",
+    );
+  });
+
+  it("returns NO_RESULT for unsupported file type so the dock shows format copy", () => {
+    assert.equal(
+      resolveDiamondIntelligenceResultState({
+        uploadPhase: "error",
+        uploadError:
+          "This file type isn't supported yet. Please upload a PDF, JPG, or PNG image of the report.",
+        uploadErrorKind: "unsupported_format",
+        hasReport: false,
+        partialListing: false,
+        v3RenderPhase: "empty",
+        canRenderFullResult: false,
+      }),
+      "NO_RESULT",
+    );
+  });
+
+  it("shows inline upload error for unsupported file type", () => {
+    assert.equal(
+      shouldShowUploadInlineError({
+        resultState: "NO_RESULT",
+        errorMessage:
+          "This file type isn't supported yet. Please upload a PDF, JPG, or PNG image of the report.",
+      }),
+      true,
     );
   });
 

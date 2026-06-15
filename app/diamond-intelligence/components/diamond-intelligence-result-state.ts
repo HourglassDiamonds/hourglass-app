@@ -1,5 +1,6 @@
 import type { ClientUploadPhase } from "./ReportUploadDock";
 import type { V3RenderPhase } from "./v3-presentation";
+import type { DiamondIntelligenceUploadErrorKind } from "@/lib/diamond-intelligence/upload-format-policy";
 
 export type DiamondIntelligenceResultState =
   | "NO_RESULT"
@@ -11,6 +12,7 @@ export type DiamondIntelligenceResultState =
 export function resolveDiamondIntelligenceResultState(input: {
   uploadPhase: ClientUploadPhase;
   uploadError: string | null;
+  uploadErrorKind?: DiamondIntelligenceUploadErrorKind | null;
   hasReport: boolean;
   partialListing: boolean;
   v3RenderPhase: V3RenderPhase;
@@ -25,6 +27,9 @@ export function resolveDiamondIntelligenceResultState(input: {
   }
 
   if (input.uploadPhase === "error" && input.uploadError) {
+    if (input.uploadErrorKind === "unsupported_format") {
+      return "NO_RESULT";
+    }
     return "ERROR";
   }
 

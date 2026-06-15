@@ -28,7 +28,9 @@ export {
 export { CLIENT_FIELD_HINTS, CLIENT_FIELD_LABELS } from "./client-field-labels";
 export {
   CLIENT_UPLOAD_INTERPRET_ERROR,
+  isDiamondIntelligenceUploadError,
   postReportForInterpretation,
+  resolveInterpretUploadFailure,
   type InterpretApiPayload,
 } from "./client-upload";
 export {

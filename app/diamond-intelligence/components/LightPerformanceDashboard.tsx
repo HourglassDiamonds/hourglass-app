@@ -26,6 +26,7 @@ import {
   DiamondIntelligenceIngestDock,
   type IngestMode,
 } from "./DiamondIntelligenceIngestDock";
+import type { DiamondIntelligenceUploadErrorKind } from "@/lib/diamond-intelligence/upload-format-policy";
 import type { ClientUploadPhase } from "./ReportUploadDock";
 import type { ListingExtraction } from "@/lib/diamond-intelligence/url-ingestion/types";
 import DiV3Hero from "./DiV3Hero";
@@ -87,6 +88,7 @@ export type LightPerformanceDashboardProps = {
   fileName: string | null;
   uploadPhase: ClientUploadPhase;
   uploadError: string | null;
+  uploadErrorKind?: DiamondIntelligenceUploadErrorKind | null;
   uploadStatusNote?: string | null;
   onFile: (file: File) => void;
   onUrl: (url: string) => void;
@@ -110,6 +112,7 @@ export default function LightPerformanceDashboard({
   fileName,
   uploadPhase,
   uploadError,
+  uploadErrorKind,
   uploadStatusNote,
   onFile,
   onUrl,
@@ -423,6 +426,7 @@ export default function LightPerformanceDashboard({
   const resultState = resolveDiamondIntelligenceResultState({
     uploadPhase,
     uploadError: uploadError ?? null,
+    uploadErrorKind: uploadErrorKind ?? null,
     hasReport,
     partialListing: Boolean(partialListing),
     v3RenderPhase,

@@ -4,11 +4,13 @@ import { useCallback, useState } from "react";
 import type { CalibrationReportFields } from "@/lib/calibration-library/types";
 import {
   CLIENT_UPLOAD_INTERPRET_ERROR,
+  isDiamondIntelligenceUploadError,
   postReportForInterpretation,
   reassessClientCapability,
   type ClientInterpretationSnapshot,
   type ClientSafeInterpretationPayload,
 } from "@/lib/diamond-intelligence";
+import type { DiamondIntelligenceUploadErrorKind } from "@/lib/diamond-intelligence/upload-format-policy";
 import {
   postUrlForIngestion,
   UrlIngestClientError,
@@ -24,6 +26,8 @@ export default function DiamondIntelligenceClient() {
   const [ingestMode, setIngestMode] = useState<IngestMode>("url");
   const [uploadPhase, setUploadPhase] = useState<ClientUploadPhase>("idle");
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploadErrorKind, setUploadErrorKind] =
+    useState<DiamondIntelligenceUploadErrorKind | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
   const [partialListing, setPartialListing] = useState<ListingExtraction | null>(
     null,
@@ -53,6 +57,7 @@ export default function DiamondIntelligenceClient() {
 
   const clearUploadError = useCallback(() => {
     setUploadError((prev) => (prev ? null : prev));
+    setUploadErrorKind((prev) => (prev ? null : prev));
     setUploadPhase((p) => (p === "error" ? "idle" : p));
   }, []);
 
@@ -77,6 +82,7 @@ export default function DiamondIntelligenceClient() {
         partial ? interpretation.clientStatusNote ?? null : null,
       );
       setUploadError(null);
+      setUploadErrorKind(null);
       setUploadPhase("idle");
     },
     [],
@@ -89,6 +95,7 @@ export default function DiamondIntelligenceClient() {
     setSourceUrl(null);
     setActiveListing(null);
     setUploadError(null);
+    setUploadErrorKind(null);
     setUploadStatusNote(null);
     setPartialListing(null);
     setPartialListingMessage(null);
@@ -105,11 +112,17 @@ export default function DiamondIntelligenceClient() {
     } catch (err) {
       clearInterpretationState();
       setUploadStatusNote(null);
-      setUploadError(
-        err instanceof Error && err.message.trim()
-          ? err.message
-          : CLIENT_UPLOAD_INTERPRET_ERROR,
-      );
+      if (isDiamondIntelligenceUploadError(err)) {
+        setUploadError(err.message);
+        setUploadErrorKind(err.kind);
+      } else {
+        setUploadError(
+          err instanceof Error && err.message.trim()
+            ? err.message
+            : CLIENT_UPLOAD_INTERPRET_ERROR,
+        );
+        setUploadErrorKind("interpret_failure");
+      }
       setUploadPhase("error");
     } finally {
       window.clearTimeout(checkingTimer);
@@ -122,6 +135,7 @@ export default function DiamondIntelligenceClient() {
     setUploadFileName(null);
     setSourceUrl(url.trim());
     setUploadError(null);
+    setUploadErrorKind(null);
     setUploadStatusNote(null);
     setPartialListing(null);
     setPartialListingMessage(null);
@@ -154,6 +168,7 @@ export default function DiamondIntelligenceClient() {
       } else {
         setUploadError(CLIENT_UPLOAD_INTERPRET_ERROR);
       }
+      setUploadErrorKind("interpret_failure");
       setUploadPhase("error");
     } finally {
       window.clearTimeout(checkingTimer);
@@ -175,6 +190,7 @@ export default function DiamondIntelligenceClient() {
         fileName={fileName}
         uploadPhase={uploadPhase}
         uploadError={uploadError}
+        uploadErrorKind={uploadErrorKind}
         uploadStatusNote={uploadStatusNote}
         onFile={(f) => void processFile(f)}
         onUrl={(url) => void processUrl(url)}

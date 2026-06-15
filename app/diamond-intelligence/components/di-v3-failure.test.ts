@@ -33,5 +33,21 @@ describe("DiV3UnableToVerify failure state", () => {
     const source = readFileSync(dashboardPath, "utf8");
     assert.match(source, /shouldShowUploadInlineError/);
     assert.match(source, /uploadInlineError \? uploadError : null/);
+    assert.match(source, /uploadErrorKind/);
+    assert.match(source, /resultState === "ERROR"/);
+    assert.doesNotMatch(
+      source,
+      /uploadErrorKind === "unsupported_format"[\s\S]*DiV3UnableToVerify/,
+    );
+  });
+
+  it("does not render editorial failure card for unsupported file type", () => {
+    const dashboardPath = join(
+      dirname(fileURLToPath(import.meta.url)),
+      "LightPerformanceDashboard.tsx",
+    );
+    const source = readFileSync(dashboardPath, "utf8");
+    assert.match(source, /\{resultState === "ERROR" \?/);
+    assert.match(source, /uploadErrorKind/);
   });
 });
