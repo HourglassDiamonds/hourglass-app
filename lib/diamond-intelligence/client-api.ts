@@ -152,8 +152,9 @@ export function toClientSafeInterpretationPayload(
     );
   }
 
-  if (gradeHintSource) {
-    payload.gradeHints = parseReportGradeHints(gradeHintSource);
+  const hintTextForParse = (reportTextHintForDisplay || gradeHintSource).trim();
+  if (hintTextForParse) {
+    payload.gradeHints = parseReportGradeHints(hintTextForParse);
   }
 
   const rawScore = presentClientInterpretationScore(
@@ -168,7 +169,7 @@ export function toClientSafeInterpretationPayload(
     metadata: payload.metadata,
     capability: clientCapability,
     rawScore: rawOverall,
-    reportTextHint: gradeHintSource || reportTextHint,
+    reportTextHint: hintTextForParse || gradeHintSource || reportTextHint,
     gradeHints: payload.gradeHints,
   });
 

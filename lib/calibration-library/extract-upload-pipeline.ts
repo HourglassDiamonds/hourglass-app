@@ -912,8 +912,17 @@ export async function runCalibrationUploadExtraction(
     },
   ): UploadExtractionOutput => {
     timings.totalMs = Date.now() - pipelineStarted;
+    const combinedHintText = extra.combined.trim();
+    const reportGradeHintText =
+      finalized.reportGradeHintText?.trim() ||
+      combinedHintText.slice(0, 16000);
+    const rawTextSnippet =
+      finalized.rawTextSnippet?.trim() ||
+      combinedHintText.slice(0, 1200);
     return {
       ...finalized,
+      reportGradeHintText,
+      rawTextSnippet,
       pipelineNotices,
       ocrAttempted: extra.ocrAttempted,
       ocrAvailable: extra.ocrAvailable,

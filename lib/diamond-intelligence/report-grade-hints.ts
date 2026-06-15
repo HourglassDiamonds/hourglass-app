@@ -923,12 +923,22 @@ export function buildReportGradeHintSource(input: {
   rawTextSnippet?: string;
   warnings?: string[];
 }): string {
-  const extended = input.reportGradeHintText?.trim();
-  if (extended) return extended.slice(0, 16000);
+  const parts = [
+    input.reportGradeHintText?.trim(),
+    input.rawTextSnippet?.trim(),
+    ...(input.warnings ?? []).filter(Boolean),
+  ].filter(Boolean) as string[];
 
-  const snippet = input.rawTextSnippet?.trim();
-  const fromWarnings = (input.warnings ?? []).filter(Boolean).join("\n");
-  return [snippet, fromWarnings].filter(Boolean).join("\n").slice(0, 16000);
+  if (parts.length === 0) return "";
+
+  // Prefer the longest single fragment — image partial paths may leave a stale
+  // short reportGradeHintText while the snippet still holds recoverable OCR.
+  const longest = parts.reduce((best, part) =>
+    part.length > best.length ? part : best,
+  );
+  const merged = [...new Set(parts)].join("\n\n");
+  const pick = merged.length > longest.length ? merged : longest;
+  return pick.slice(0, 16000);
 }
 
 export function normalizeClarityGrade(raw: string): string {
