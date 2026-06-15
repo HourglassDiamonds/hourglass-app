@@ -4,6 +4,7 @@ import { emptyReportFields } from "./fields";
 import { GIA2527039693_FACSIMILE_PDF_TEXT } from "./fixtures/gia2527039693";
 import {
   shouldRunGiaFacsimileDiagramImageOcr,
+  shouldRunGiaGradingPanelImageOcr,
 } from "./parsers/gia/gia-facsimile-image-ocr";
 
 describe("GIA facsimile diagram OCR gate", () => {
@@ -56,6 +57,18 @@ describe("GIA facsimile diagram OCR gate", () => {
       GIA2527039693_FACSIMILE_PDF_TEXT,
       { parserType: "gia-modern", lab: "GIA" },
     );
+    assert.equal(gate.run, true);
+  });
+});
+
+describe("GIA image grading panel OCR gate", () => {
+  it("runs for LGDR image upload when grades are missing", () => {
+    const gate = shouldRunGiaGradingPanelImageOcr({
+      combinedText:
+        "LABORATORY-GROWN DIAMOND REPORT\nLABORATORY-GROWN DIAMOND SPECIFICATIONS*\nCarat Weight 2.42",
+      gradeHintText: "LABORATORY-GROWN DIAMOND SPECIFICATIONS*\nCarat Weight 2.42",
+      opts: { lab: "GIA", parserType: "gia-modern" },
+    });
     assert.equal(gate.run, true);
   });
 });

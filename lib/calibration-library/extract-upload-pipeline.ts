@@ -30,7 +30,9 @@ import { looksLikeGcal8xReportText } from "./parsers/gcal/gcal-layout-detector";
 import {
   applyGiaFacsimileDiagramImageOcr,
   ocrGiaFacsimileFullPages,
+  ocrGiaImageGradingPanel,
   shouldRunGiaFacsimileDiagramImageOcr,
+  shouldRunGiaGradingPanelImageOcr,
 } from "./parsers/gia/gia-facsimile-image-ocr";
 import {
   applyGiaClientPavilionDiagramOcr,
@@ -303,6 +305,41 @@ async function runImageOcrAugmentation(input: {
     parsed.metadata.lab = "GIA";
   }
   const labFamily = labFamilyLabel(parsed.metadata.lab, parsed.parserType);
+
+  if (imageUpload && !isIgi) {
+    const isGia =
+      parsed.metadata.lab === "GIA" ||
+      Boolean(parsed.parserType?.startsWith("gia")) ||
+      looksLikeGiaReportText(combined);
+    const giaGradingGate = shouldRunGiaGradingPanelImageOcr({
+      combinedText: combined,
+      gradeHintText,
+      opts: {
+        lab: parsed.metadata.lab,
+        parserType: parsed.parserType,
+      },
+    });
+    if (isGia && giaGradingGate.run) {
+      try {
+        const panelOcr = await withTimeout(
+          ocrGiaImageGradingPanel(documentBytes, {
+            reportNumber: reportNumberHint || undefined,
+            combinedText: combined,
+          }),
+          Math.min(regionOcrTimeoutMs, 10_000),
+          "gia-image-grading-panel-ocr",
+        );
+        if (panelOcr.text.trim()) {
+          publishGradeHintText(
+            [panelOcr.text, gradeHintText].filter(Boolean).join("\n\n"),
+          );
+          ocrCompleted = true;
+        }
+      } catch {
+        // Best-effort — full-page OCR remains fallback.
+      }
+    }
+  }
 
   // Client mode short-circuits ONLY when proportion-capable (full read achievable).
   // Usefulness/partial classification is owned exclusively by the interpret route.

@@ -5,6 +5,7 @@ import {
   clarityRiskFloor,
   claritySeverity,
   parseReportGradeHints,
+  preprocessGiaLgdrImageGradeHintText,
   traceColorExtraction,
   traceClarityExtraction,
 } from "./report-grade-hints";
@@ -179,6 +180,26 @@ Cut ............................................................................
     );
     assert.equal(hints.color, undefined);
     assert.equal(hints.clarity, undefined);
+  });
+
+  it("repairs GIA LGDR image OCR garble (7496507350 upscale panel class)", () => {
+    const garbled = `LGDR
+LABORATORY-GROWN DIAMOND SPECIFICATIONS*
+Carat Weight... 2.42 Carat
+COlOr ie ———
+Clarity meeee`;
+    const hints = parseReportGradeHints(garbled);
+    assert.equal(hints.color, "H");
+    assert.equal(hints.clarity, "VVS1");
+  });
+
+  it("repairs GIA LGDR full-page image garble cluster", () => {
+    const garbled = `LABORATORY-GROWN DIAMOND SPECIFICATIONS*
+Carat Weight. see sees. 2.42 Carat
+(1 C= ZUR A VAS`;
+    const hints = parseReportGradeHints(garbled);
+    assert.equal(hints.color, "H");
+    assert.equal(hints.clarity, "VVS1");
   });
 });
 

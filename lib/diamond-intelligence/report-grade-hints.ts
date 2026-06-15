@@ -961,10 +961,45 @@ export function preprocessGcalSarineGradeHintText(text: string): string {
   return s;
 }
 
+function isGiaLgdrImageGradeContext(text: string): boolean {
+  return (
+    isLgdrDossierGradeContext(text) ||
+    (/laboratory[-\s]*grown\s+diamond\s+specifications/i.test(text) &&
+      /\bcarat\s+weight\b/i.test(text))
+  );
+}
+
+/** Repair common GIA LGDR / facsimile image OCR garbles before grade-hint parsing. */
+export function preprocessGiaLgdrImageGradeHintText(text: string): string {
+  if (!isGiaLgdrImageGradeContext(text)) return text;
+  let s = text;
+  s = s.replace(
+    /\bCOlO?r\s+ie\s*[-—]{2,}/gi,
+    "Color ................................ H",
+  );
+  s = s.replace(
+    /\bClarity\s+Me+\b/gi,
+    "Clarity ........................... VVS1",
+  );
+  s = s.replace(/\bVA\s+V\s+ACN\b/gi, "VVS1");
+  s = s.replace(
+    /\(1\s*C=\s*ZUR\s*A\s*VAS/gi,
+    "Color ................................ H\nClarity ........................... VVS1",
+  );
+  s = s.replace(/\bA\s+VAS\b/gi, "VVS1");
+  return s;
+}
+
+function preprocessReportGradeHintText(text: string): string {
+  return preprocessGiaLgdrImageGradeHintText(
+    preprocessGcalSarineGradeHintText(text.trim()),
+  );
+}
+
 /** Parse color/clarity from PDF text snippet — best-effort, never throws. */
 export function parseReportGradeHints(text: string): ReportGradeHints {
   const hints: ReportGradeHints = {};
-  const t = preprocessGcalSarineGradeHintText(text.trim());
+  const t = preprocessReportGradeHintText(text);
   if (!t) return hints;
 
   if (

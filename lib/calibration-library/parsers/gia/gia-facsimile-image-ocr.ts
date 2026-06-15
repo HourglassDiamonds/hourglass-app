@@ -25,7 +25,17 @@ import {
 } from "../../gia-proportions";
 import { applyGiaProportionDiagramExtraction } from "./gia-diagram-extraction";
 import type { OcrResult } from "../shared/ocr-utils";
-import { isOcrRuntimeAvailable, ocrImageBuffer, renderPdfPagePngAtScale } from "../shared/ocr-utils";
+import {
+  isOcrRuntimeAvailable,
+  ocrImageBuffer,
+  renderPdfPagePngAtScale,
+  renderUploadImageAsPage,
+} from "../shared/ocr-utils";
+import {
+  isUsableDisplayClarityValue,
+  isUsableDisplayColorValue,
+  parseReportGradeHints,
+} from "@/lib/diamond-intelligence/report-grade-hints";
 
 const GIA_PAGE_OCR_SCALE = 5;
 const GIA_FULL_PAGE_OCR_SCALE = 6;
@@ -41,6 +51,25 @@ export const GIA_FACSIMILE_GRADING_RESULTS_CROP = {
   width: 0.48,
   height: 0.38,
 } as const;
+
+/** LGDR dossier — left specifications column (Carat / Color / Clarity / Cut stack). */
+export const GIA_LGDR_SPECIFICATIONS_CROP = {
+  left: 0.02,
+  top: 0.26,
+  width: 0.32,
+  height: 0.1,
+} as const;
+
+/** Wider LGDR specifications crop — includes dot-leader value column. */
+export const GIA_LGDR_SPECIFICATIONS_WIDE_CROP = {
+  left: 0.02,
+  top: 0.26,
+  width: 0.48,
+  height: 0.11,
+} as const;
+
+/** @deprecated Use GIA_LGDR_SPECIFICATIONS_WIDE_CROP */
+export const GIA_LGDR_SPECIFICATIONS_TALL_CROP = GIA_LGDR_SPECIFICATIONS_WIDE_CROP;
 
 /** Right-side proportion stack — pavilion angle + depth (live anchor). */
 export const GIA_FACSIMILE_PROPORTION_STACK_CROP = {
@@ -267,6 +296,157 @@ async function preprocessGiaCropPng(
   if (mode === "raw") return png;
   if (mode === "threshold") return preprocessGiaThresholdCropPng(png);
   return preprocessGiaContrastCropPng(png);
+}
+
+function isGiaImageGradingPanelContext(
+  combinedText: string,
+  opts: { lab?: string; parserType?: string },
+): boolean {
+  const isGia =
+    opts.lab === "GIA" ||
+    Boolean(opts.parserType?.startsWith("gia")) ||
+    looksLikeGiaReportText(combinedText);
+  if (!isGia) return false;
+  return (
+    /\bLGDR\b/i.test(combinedText) ||
+    /laboratory[-\s]*grown\s+diamond\s+(?:report|specifications)/i.test(
+      combinedText,
+    ) ||
+    /\bfacsimile\b/i.test(combinedText) ||
+    needsGiaProportionOcrSupplement(combinedText) ||
+    (/\bgia\s+report\s+number\b/i.test(combinedText) &&
+      /\bcarat\s+weight\b/i.test(combinedText)) ||
+    (/\blaboratory[-\s]*grown\b/i.test(combinedText) &&
+      /\bround\s+brilliant\b/i.test(combinedText))
+  );
+}
+
+type GiaImageGradingPanelPass = GiaCropPass & { upscale?: number };
+
+async function upscaleGiaCropPng(png: Buffer, factor: number): Promise<Buffer> {
+  if (factor <= 1) return png;
+  try {
+    const { createCanvas, loadImage } = await import("@napi-rs/canvas");
+    const img = await loadImage(png);
+    const canvas = createCanvas(img.width * factor, img.height * factor);
+    const ctx = canvas.getContext("2d");
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    return canvas.toBuffer("image/png");
+  } catch {
+    return png;
+  }
+}
+
+function giaImageGradingPanelPasses(combinedText: string): GiaImageGradingPanelPass[] {
+  const lgdr =
+    /\bLGDR\b/i.test(combinedText) ||
+    /laboratory[-\s]*grown\s+diamond\s+specifications/i.test(combinedText);
+  if (lgdr) {
+    return [
+      {
+        id: "lgdr-spec-upscale",
+        crop: GIA_LGDR_SPECIFICATIONS_CROP,
+        preprocess: "contrast",
+        upscale: 2,
+      },
+      {
+        id: "lgdr-spec-wide-upscale",
+        crop: GIA_LGDR_SPECIFICATIONS_WIDE_CROP,
+        preprocess: "contrast",
+        upscale: 2,
+      },
+      {
+        id: "lgdr-spec-contrast",
+        crop: GIA_LGDR_SPECIFICATIONS_CROP,
+        preprocess: "contrast",
+      },
+    ];
+  }
+  return [
+    {
+      id: "facsimile-grading-upscale",
+      crop: GIA_FACSIMILE_GRADING_RESULTS_CROP,
+      preprocess: "contrast",
+      upscale: 2,
+    },
+    {
+      id: "facsimile-grading-contrast",
+      crop: GIA_FACSIMILE_GRADING_RESULTS_CROP,
+      preprocess: "contrast",
+    },
+  ];
+}
+
+function giaImageGradingHintsComplete(text: string): boolean {
+  const hints = parseReportGradeHints(text);
+  return (
+    isUsableDisplayColorValue(hints.color) &&
+    isUsableDisplayClarityValue(hints.clarity)
+  );
+}
+
+/** Gate — targeted grading-panel OCR for GIA LGDR / facsimile image uploads. */
+export function shouldRunGiaGradingPanelImageOcr(input: {
+  combinedText: string;
+  gradeHintText: string;
+  opts: { lab?: string; parserType?: string };
+}): { run: boolean; reason: string } {
+  if (!isGiaImageGradingPanelContext(input.combinedText, input.opts)) {
+    return { run: false, reason: "not-gia-lgdr-or-facsimile-image-context" };
+  }
+  if (giaImageGradingHintsComplete(input.gradeHintText)) {
+    return { run: false, reason: "color-and-clarity-already-parsed" };
+  }
+  return { run: true, reason: "gia-image-upload-missing-grade-hints" };
+}
+
+/**
+ * Targeted left-panel OCR for GIA LGDR / facsimile JPG uploads.
+ * Isolated from diagram crops — recovers Color / Clarity dot-leader rows.
+ */
+export async function ocrGiaImageGradingPanel(
+  imageBytes: Buffer,
+  opts?: { reportNumber?: string; combinedText?: string },
+): Promise<{ text: string; ok: boolean }> {
+  if (!(await isOcrRuntimeAvailable())) {
+    return { text: "", ok: false };
+  }
+
+  const rendered = await renderUploadImageAsPage(imageBytes);
+  if (!rendered) {
+    return { text: "", ok: false };
+  }
+
+  const combinedText = opts?.combinedText ?? "";
+  const passes = giaImageGradingPanelPasses(combinedText);
+  const chunks: string[] = [];
+
+  for (const pass of passes) {
+    const png = await cropPageRegionPng(
+      rendered.png,
+      rendered.width,
+      rendered.height,
+      pass.crop,
+    );
+    if (!png) continue;
+
+    let buf = png;
+    if (pass.upscale && pass.upscale > 1) {
+      buf = await upscaleGiaCropPng(buf, pass.upscale);
+    }
+    const prepped = await preprocessGiaCropPng(buf, pass.preprocess);
+    const ocr = await ocrImageBuffer(prepped);
+    if (ocr.text.trim()) chunks.push(ocr.text.trim());
+
+    const accumulated = [...new Set(chunks)].join("\n\n");
+    if (accumulated && giaImageGradingHintsComplete(accumulated)) {
+      return { text: accumulated, ok: true };
+    }
+  }
+
+  const text = [...new Set(chunks)].join("\n\n");
+  return { text, ok: text.length > 0 };
 }
 
 async function cropPageRegionPng(
