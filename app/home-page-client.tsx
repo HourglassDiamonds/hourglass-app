@@ -11,9 +11,9 @@ import { trackConsultationCtaClicked } from "@/lib/consultation-cta";
 
 function HeroRingStage() {
   return (
-    <div className="relative flex min-h-[400px] w-full items-center justify-center overflow-hidden rounded-[36px] bg-[radial-gradient(circle_at_28%_24%,rgba(255,255,255,0.94),transparent_28%),linear-gradient(145deg,#f4eee6_0%,#efe7dc_52%,#f7f2eb_100%)] shadow-[0_18px_44px_rgba(49,38,29,0.06)] md:min-h-[460px]">
-      <div className="pointer-events-none absolute inset-0 rounded-[36px] border border-[#e8dfd4]/60" />
-      <div className="pointer-events-none absolute inset-0 rounded-[36px] bg-[radial-gradient(circle_at_76%_32%,rgba(255,255,255,0.34),transparent_24%),radial-gradient(circle_at_62%_74%,rgba(255,255,255,0.16),transparent_28%)]" />
+    <div className="relative flex min-h-[400px] w-full items-center justify-center overflow-hidden rounded-[36px] bg-[radial-gradient(circle_at_28%_24%,rgba(255,252,248,0.88),transparent_30%),linear-gradient(148deg,#faf6f1_0%,#f3ede4_54%,#faf6f1_100%)] shadow-[0_18px_44px_rgba(49,38,29,0.07)] md:min-h-[460px]">
+      <div className="pointer-events-none absolute inset-0 rounded-[36px] border border-[#ece4da]/55" />
+      <div className="pointer-events-none absolute inset-0 rounded-[36px] bg-[radial-gradient(circle_at_76%_32%,rgba(255,252,248,0.2),transparent_26%),radial-gradient(circle_at_62%_74%,rgba(255,252,248,0.1),transparent_30%)]" />
 
       <Image
         src="/homepage/hero/homepage-hero-ring.png"
@@ -21,7 +21,7 @@ function HeroRingStage() {
         width={900}
         height={900}
         priority
-        className="relative z-10 h-auto max-h-[390px] w-auto object-contain md:max-h-[470px]"
+        className="relative z-10 h-auto max-h-[390px] w-auto -translate-y-[1.5%] object-contain [filter:brightness(0.99)_contrast(1.015)_saturate(0.99)] md:max-h-[470px]"
       />
     </div>
   );
