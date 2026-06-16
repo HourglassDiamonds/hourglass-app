@@ -65,7 +65,7 @@ export default function CTAGlimmer({
     ? cloneElement(children as ReactElement<{ className?: string }>, {
         className: [
           (children.props as { className?: string }).className,
-          "relative z-[1]",
+          variant === "text" ? "relative z-[1]" : "relative z-[1] overflow-hidden rounded-full",
         ]
           .filter(Boolean)
           .join(" "),

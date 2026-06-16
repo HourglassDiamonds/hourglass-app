@@ -218,13 +218,15 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
                 : "If this would help with your own diamond or ring, a private conversation is available."}
             </p>
 
-            <ConsultationCtaLink
-              glimmer
-              location={`diamond_guide_article:${slug}:footer`}
-              className="mt-6 inline-flex items-center justify-center rounded-full border border-[#4a4540]/55 bg-transparent px-6 py-2.5 text-[10px] uppercase tracking-[0.3em] text-[#3d3834] transition-all duration-500 ease-out hover:border-[#2b2723] hover:bg-[#2b2723] hover:text-[#faf7f3] md:mt-7"
-            >
-              Begin the Conversation
-            </ConsultationCtaLink>
+            <div className="mt-6 flex justify-center md:mt-7">
+              <ConsultationCtaLink
+                glimmer
+                location={`diamond_guide_article:${slug}:footer`}
+                className="inline-flex items-center justify-center rounded-full border border-[#4a4540]/55 bg-transparent px-6 py-2.5 text-[10px] uppercase tracking-[0.3em] text-[#3d3834] transition-all duration-500 ease-out hover:border-[#2b2723] hover:bg-[#2b2723] hover:text-[#faf7f3]"
+              >
+                Begin the Conversation
+              </ConsultationCtaLink>
+            </div>
           </section>
 
           {isCohesionArticle ? (
