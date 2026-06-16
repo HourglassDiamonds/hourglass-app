@@ -186,20 +186,33 @@ export const articles: Article[] = [
   title: "Are Lab Diamonds a Good Choice",
   category: "Buying Guides",
   body: [
-    { type: "heading", text: "What Lab-Grown Diamonds Are" },
-    { type: "paragraph", text: "Lab-grown diamonds are created using advanced technology that replicates the conditions under which natural diamonds form. These diamonds have the same chemical composition and crystal structure as natural diamonds, which means they share many of the same physical characteristics." },
+    { type: "paragraph", text: "The question sounds straightforward. Are lab diamonds a good choice? For some buyers, the answer is an enthusiastic yes. For others, no savings will make the ring feel right. Chemistry is not the hard part. The hard part is whether laboratory origin aligns with what you need the stone to represent, and whether you will use the budget wisely once you choose it." },
+    { type: "paragraph", text: "This article is not a repeat of the natural versus lab debate. If you are still sorting origin on principle, [natural versus lab diamonds](/diamond-guide/natural-vs-lab-diamonds) is the better place to start. This is for buyers who are open to lab-grown, or leaning toward it, and want to know whether they are making a choice they will still feel good about years from now." },
 
-    { type: "heading", text: "How Lab Diamonds Compare Visually" },
-    { type: "paragraph", text: "To the eye, lab-grown diamonds can appear very similar to natural diamonds. They reflect light in the same way and display comparable brilliance and sparkle. Because they can be produced in controlled environments, they are often available with higher clarity or color grades at lower prices." },
+    { type: "heading", text: "Who Tends to Be Happiest With Lab Diamonds" },
+    { type: "paragraph", text: "Buyers who prioritize size, cut quality, or the ring design over geological rarity often thrive with lab-grown stones. The price gap at comparable grades can fund a larger carat, a stronger optical performance standard, or a setting they would otherwise defer." },
+    { type: "paragraph", text: "Buyers who view the ring as a keep-forever purchase, not an asset to resell, also tend to feel satisfied. Resale uncertainty matters less when you never planned to trade the stone in." },
+    { type: "paragraph", text: "Buyers who have seen lab diamonds in person and chosen them for how they look, not only for the number on the invoice, are the ones we see least often second-guessing the decision. Origin felt acceptable before purchase. Performance confirmed it after." },
 
-    { type: "heading", text: "How Buyers Evaluate Their Options" },
-    { type: "paragraph", text: "For some buyers, the appeal of lab-grown diamonds comes from the ability to obtain a larger or higher-graded stone within the same budget. Others prefer natural diamonds because of their geological origin and long history in fine jewelry. Both options can produce beautiful engagement rings depending on personal priorities." },
+    { type: "heading", text: "Who May Not Be" },
+    { type: "paragraph", text: "Some buyers want the geological story: rarity formed over millennia, a symbol that predates the proposal. That preference is legitimate. Lab origin will not satisfy it, regardless of how beautiful the stone is." },
+    { type: "paragraph", text: "Family expectations can matter too. A grandmother's heirloom narrative, a cultural assumption about mined diamonds, or simply the fear of explaining the choice at a gathering: these are real pressures, not superficial ones." },
+    { type: "paragraph", text: "Buyers who fixate on future resale value may also find lab diamonds unsettling. Pricing has evolved as production scales. If trade-in value is central to your peace of mind, ask direct questions and research carefully. If the ring is yours to wear, resale may be the wrong lens." },
 
-    { type: "heading", text: "Things to Consider When Deciding" },
-    { type: "paragraph", text: "When evaluating lab-grown diamonds, it can be helpful to consider long-term expectations, personal preferences, and how the diamond fits into the overall design of the ring. Origin is one decision; cut quality and light performance remain the standard regardless — a principle we apply consistently, as outlined in [Our Approach](/our-approach)." },
+    { type: "heading", text: "How to Allocate Budget Well" },
+    { type: "paragraph", text: "The most common mistake is treating lab savings as permission to buy more carat without buying more beauty. A larger lab diamond with mediocre cut still underperforms. The advantage of lab origin is flexibility, not a license to ignore performance." },
+    { type: "paragraph", text: "Strong advisors apply the same optical standard either way. Protect cut first. Hold out for eye cleanliness. Choose color with your metal and shape in mind. Then decide how much of the remaining budget goes to size versus the setting. [Diamond price versus quality](/diamond-guide/diamond-price-vs-quality) explains how those tradeoffs work regardless of origin." },
+    { type: "paragraph", text: "[Our Approach](/our-approach) at Hourglass does not treat lab diamonds as a shortcut around judgment. Origin is disclosed. Performance still governs the recommendation." },
 
-    { type: "heading", text: "Final Thoughts" },
-    { type: "paragraph", text: "Lab-grown diamonds offer an alternative path for buyers exploring engagement rings. Understanding how they compare to natural diamonds helps clarify which option best aligns with personal values and priorities." },
+    { type: "heading", text: "Misconceptions Worth Clearing Up" },
+    { type: "paragraph", text: "Lab diamonds are not simulants. They are not cubic zirconia or moissanite dressed up in marketing language. They test as diamond because they are diamond." },
+    { type: "paragraph", text: "They are not automatically superior optically either. Origin does not replace cut quality, inclusion placement, or side-by-side comparison. A mediocre lab stone is still mediocre." },
+    { type: "paragraph", text: "They do not remove the need for a grading report or informed review. Certificates, inclusion plots, and proportion data still matter. [Diamond Intelligence](/diamond-intelligence) can help interpret a specific lab-grown report before you commit." },
+
+    { type: "heading", text: "Long-Term Satisfaction" },
+    { type: "paragraph", text: "The buyers who stay happy tend to share a few traits. They chose lab origin consciously, not defensively. They prioritized how the diamond looked on the hand over how the specification read online. They held the stone to the same performance standard they would demand from a natural diamond." },
+    { type: "paragraph", text: "Regret usually traces elsewhere: a dull cut, an inclusion they did not evaluate in the setting, urgency that replaced comparison. Those failures are origin-neutral." },
+    { type: "paragraph", text: "If you are still early in the process, [diamond buying tips from jewelers](/diamond-guide/diamond-buying-tips-from-jewelers) covers the habits that protect any purchase, lab or natural. Lab diamonds can be an excellent choice. They are not an automatic one. Choose them with your eyes open, allocate the budget deliberately, and hold the result to the same standard you would expect either way." },
   ],
   related: [
     { title: "Diamond Buying Tips from Jewelers", href: "/diamond-guide/diamond-buying-tips-from-jewelers" },
@@ -541,35 +554,35 @@ export const articles: Article[] = [
   title: "Charlotte Engagement Ring Guide",
   category: "Charlotte Guides",
   body: [
-    { type: "paragraph", text: "Buying an engagement ring is one of the most meaningful purchases many people make. For couples in Charlotte, the process often begins with a simple question: where do you start? Between diamond terminology, ring styles, and budgets, the research phase can feel overwhelming at first." },
-    { type: "paragraph", text: "This guide is designed to simplify the process for Charlotte buyers. Rather than focusing on sales or trends, the goal is to explain how engagement rings actually work — from the diamond itself to the setting that holds it — so you can make a confident decision." },
+    { type: "paragraph", text: "A couple in Charlotte told me they had read dozens of articles and still could not agree where to start. One wanted to fix the carat number first. The other wanted to choose the setting. Neither was wrong. They were solving the decision in the wrong order." },
+    { type: "paragraph", text: "This guide is for Charlotte buyers who want a clear path through the engagement ring process: what to decide first, what to compare in person, and how to build confidence before you commit. It is not a list of stores or neighborhoods. For how to evaluate jewelers and advisors locally, the [Charlotte diamond advisor guide](/diamond-guide/charlotte-diamond-advisor-guide) goes deeper on that layer." },
 
-    { type: "heading", text: "Understanding the Diamond First" },
-    { type: "paragraph", text: "Most engagement rings center around a single diamond. While many people initially focus on size, the true character of a diamond is shaped by several factors working together." },
-    { type: "paragraph", text: "Cut quality is the most important. A well-cut diamond reflects light internally and returns it to the viewer as brightness and sparkle. Even a larger diamond can appear dull if the cut is poor." },
-    { type: "paragraph", text: "After cut, buyers typically consider carat weight, color, and clarity. These are often referred to as the “Four Cs.” Each contributes to how the diamond looks, but they should be evaluated together rather than in isolation." },
-    { type: "paragraph", text: "For example, many engagement rings in Charlotte look beautiful with near-colorless diamonds rather than the highest color grades. When balanced properly, this approach allows buyers to prioritize cut quality and visual impact — a tradeoff we explore in depth in [Our Approach](/our-approach)." },
+    { type: "heading", text: "Start With Priorities, Not Specifications" },
+    { type: "paragraph", text: "Most searches begin with a carat target or a budget ceiling, then work backward through color and clarity until something fits. That is understandable. It is also how couples end up with a specification that looks complete on paper and feels underwhelming on the hand." },
+    { type: "paragraph", text: "Start instead with how you want the ring to feel: classic or modern, understated or bold, platinum or gold, solitaire or halo. Then choose a shape. Then compare a few diamonds that return light well in that shape. Grades matter, but they serve the wearing experience. They should not lead it. [What is diamond cut](/diamond-guide/what-is-diamond-cut) explains why performance comes before alphabet shopping." },
 
-    { type: "heading", text: "Choosing the Right Diamond Shape" },
-    { type: "paragraph", text: "Diamond shape influences both appearance and personality. Some shapes feel timeless, while others feel more contemporary." },
-    { type: "paragraph", text: "Round diamonds remain the most popular choice because they offer the strongest light performance. Oval and elongated shapes have become increasingly common because they create a slightly larger visual presence on the hand." },
-    { type: "paragraph", text: "Shapes like emerald, cushion, and pear each bring their own character. None is objectively better — the choice usually comes down to personal preference and how the ring will be worn every day. For how those preferences tend to play out locally, see [best diamond shapes in Charlotte](/diamond-guide/best-diamond-shapes-charlotte)." },
-    { type: "paragraph", text: "Understanding shape early in the process helps narrow the search and makes comparing diamonds far easier." },
+    { type: "heading", text: "What Charlotte Shopping Actually Looks Like" },
+    { type: "paragraph", text: "Charlotte couples shop every way imaginable: regional malls, SouthPark appointments, Providence Road independents, late-night listing comparisons from Ballantyne or NoDa, online orders with local pickup elsewhere. The paths are all viable. The failure mode is the same: deciding from a screen without comparing stones together, or choosing from a case without understanding what the certificate leaves out." },
+    { type: "paragraph", text: "Local shopping gives you immediacy: weight on the finger, metal color beside skin tone, answers in the moment. Online shopping gives you breadth. The strongest outcomes usually combine research with in-person comparison, and include someone in the process who is not paid to move a specific stone on a specific shelf." },
 
-    { type: "heading", text: "Selecting the Engagement Ring Setting" },
-    { type: "paragraph", text: "Once the diamond is chosen, the setting defines the ring’s overall style." },
-    { type: "paragraph", text: "Solitaire settings remain a classic choice because they allow the diamond to stand on its own. Halo designs surround the center diamond with smaller stones, creating additional sparkle and visual size." },
-    { type: "paragraph", text: "Three-stone rings have a long tradition in engagement jewelry and symbolize a couple’s past, present, and future together." },
-    { type: "paragraph", text: "In Charlotte, many buyers also explore custom settings. This approach allows the ring to reflect personal taste while still maintaining the proportions that make a diamond look its best." },
+    { type: "heading", text: "Shape and Setting Decisions" },
+    { type: "paragraph", text: "Shape is personality. Round remains the standard for light performance. Oval, cushion, and emerald each change how the ring reads on the hand and how forgiving the diamond is on color and clarity. Choose shape early. It narrows everything else." },
+    { type: "paragraph", text: "Setting is part of the diamond decision. Platinum and white gold show color differently than rose or yellow gold. A halo adds sparkle and can forgive slightly warmer tones. A high solitaire shows the center stone plainly. Custom work is common in Charlotte, and it works best when proportions are chosen to make the center diamond look its best, not only to match a trend. [Best diamond shapes in Charlotte](/diamond-guide/best-diamond-shapes-charlotte) covers how local preferences tend to play out." },
 
-    { type: "heading", text: "Balancing Budget and Visual Impact" },
-    { type: "paragraph", text: "A thoughtful engagement ring does not need to follow rigid spending rules. The most successful purchases come from understanding where visual value actually comes from." },
-    { type: "paragraph", text: "For example, improving cut quality often has a greater impact on appearance than increasing carat weight. Similarly, a slightly lower color grade may appear identical once the diamond is set." },
-    { type: "paragraph", text: "Many experienced jewelers help buyers allocate their budget toward the characteristics that matter most visually. This approach tends to produce a ring that looks exceptional without unnecessary expense." },
+    { type: "heading", text: "Where Budget Actually Goes" },
+    { type: "paragraph", text: "Visual impact rarely follows the price tags on grade categories. Cut quality changes how alive a diamond looks. Eye-clean clarity beats flawless on paper. Near-colorless often matches colorless once the stone is set. Carat weight without spread can disappoint." },
+    { type: "paragraph", text: "Allocate budget toward what you will see every day, not toward letters you will never notice without a loupe. [Diamond price versus quality](/diamond-guide/diamond-price-vs-quality) and [diamond color versus clarity](/diamond-guide/diamond-color-vs-clarity) walk through those tradeoffs in detail. [Our Approach](/our-approach) applies the same logic locally: performance and eye judgment first." },
 
-    { type: "heading", text: "Final Thoughts" },
-    { type: "paragraph", text: "Charlotte has become a growing city for engagement ring buyers, and many couples begin their search with online research before visiting a jeweler. Taking time to understand diamonds first makes the entire process easier and far more enjoyable." },
-    { type: "paragraph", text: "With a clear understanding of diamond quality, shape, and ring design, buyers can focus less on marketing claims and more on finding a ring that truly reflects their relationship. If you would like guidance tailored to your priorities, [begin a conversation](/concierge) at your own pace — we are selective about what we recommend, but not about who we help." },
+    { type: "heading", text: "Mistakes We See Often in Charlotte" },
+    { type: "paragraph", text: "Choosing carat before cut. Assuming a higher clarity grade is always cleaner to the eye. Skipping side-by-side comparison because two reports match. Letting a proposal deadline erase the part of the process where you learn what you actually prefer." },
+    { type: "paragraph", text: "Another is shopping in isolation: one jeweler, one website, one recommendation with no counterpoint. Confidence grows when you compare, ask specific questions, and notice whether guidance changes when you hesitate." },
+
+    { type: "heading", text: "How to Evaluate the Guidance You Receive" },
+    { type: "paragraph", text: "Good guidance sounds specific. It names tradeoffs. It will tell you when a lower grade serves you better, when a stone is beautiful but wrong for your setting, or when waiting beats buying what happens to be in stock today." },
+    { type: "paragraph", text: "Ask to see similar diamonds together. Ask how cut was judged beyond the certificate, especially for fancy shapes. Ask what would change if your budget shifted modestly in either direction. Vague reassurance often means the conversation stopped too early." },
+    { type: "paragraph", text: "[Diamond buying tips from jewelers](/diamond-guide/diamond-buying-tips-from-jewelers) and [why work with a Graduate Gemologist](/diamond-guide/why-work-with-a-graduate-gemologist) go deeper on comparison habits and trained judgment. You do not need a gemologist to buy well. You do need a process that privileges what your eye confirms." },
+
+    { type: "paragraph", text: "Charlotte offers plenty of options. The goal is not to visit all of them. It is to leave the process knowing why you chose this ring: how it looks, how it feels, and what you protected in the budget to get there. That is the confidence worth building before you buy." },
   ],
   related: [
     { title: "Charlotte Diamond Advisor Guide", href: "/diamond-guide/charlotte-diamond-advisor-guide" },
@@ -3691,7 +3704,7 @@ export const articles: Article[] = [
 
     { type: "heading", text: "Common Overpayments and Real Guidance" },
     { type: "paragraph", text: "Overpaying for internally flawless when VS or SI would look identical on the hand. Refusing SI without looking because of internet rules. Underinvesting in cut while buying clarity you cannot see. These patterns repeat because clarity feels objective on paper and subjective in person. Both are true. The mistake is letting paper override your eyes." },
-    { type: "paragraph", text: "For how clarity interacts with color in a budget, [diamond color versus clarity](/diamond-guide/diamond-color-vs-clarity) goes deeper on tradeoffs. [Diamond price versus quality](/diamond-guide/diamond-price-vs-quality) explains where clarity premiums often fail to show up. [Our Approach](/our-approach) applies the same standard: eye clean in wear, not perfection under magnification." },
+    { type: "paragraph", text: "For how clarity interacts with color in a budget, [diamond color versus clarity](/diamond-guide/diamond-color-vs-clarity) goes deeper on tradeoffs. [Diamond price versus quality](/diamond-guide/diamond-price-vs-quality) explains where clarity premiums often fail to show up. [Our Approach](/our-approach) applies the same standard: eye clean in wear, not perfection under magnification. [Diamond buying tips from jewelers](/diamond-guide/diamond-buying-tips-from-jewelers) covers the side-by-side habits that make clarity differences visible before you buy." },
 
     { type: "paragraph", text: "Clarity is part of the diamond's history, not a flaw to eliminate at any cost. Hold yourself to what you can see. Compare stones honestly. Choose the one that stays clean in the ring you will actually build, and you will rarely regret the decision." },
   ],
@@ -3729,11 +3742,14 @@ export const articles: Article[] = [
 
     { type: "heading", text: "Where Money Is Well Spent" },
     { type: "paragraph", text: "Protect cut first. Then choose the lowest color grade that looks clean in your metal and shape when you compare stones side by side. For many brilliant-cut engagement rings in white metal, that lands in the near-colorless range rather than the colorless top tier." },
-    { type: "paragraph", text: "Paying for D or E when G or H would look identical in the setting is one of the most common overpayments in the trade. [Diamond price versus quality](/diamond-guide/diamond-price-vs-quality) walks through how those premiums often buy paper prestige, not visible difference." },
+    { type: "paragraph", text: "Paying for D or E when G or H would look identical in the setting is one of the most common overpayments in the trade. [Diamond price versus quality](/diamond-guide/diamond-price-vs-quality) walks through how those premiums often buy paper prestige, not visible difference. [Our Approach](/our-approach) applies the same standard: match color to the finished ring, not to the filter preset." },
 
     { type: "heading", text: "Where Advisors Compromise" },
     { type: "paragraph", text: "Advisors compromise on color before they compromise on cut or eye cleanliness. They match color to metal: slightly warmer grades in yellow or rose gold, slightly stricter standards in platinum with step cuts. They compare face-up, not only from the side." },
-    { type: "paragraph", text: "They also ask what you notice. Some buyers see tint immediately. Others do not until stones are side by side. Neither response is wrong. Color is one of the few grading factors where personal sensitivity should influence budget." },
+    { type: "paragraph", text: "They also ask what you notice. Some buyers see tint immediately. Others do not until stones are side by side. Neither response is wrong. Color is one of the few grading factors where personal sensitivity should influence budget. A [Graduate Gemologist](/diamond-guide/why-work-with-a-graduate-gemologist) can help you find the lowest grade that still looks right to your eye." },
+
+    { type: "heading", text: "How to Evaluate Color in Practice" },
+    { type: "paragraph", text: "Compare two or three stones in the metal you plan to use. View them face-up at arm's length, not only from the side under bright spots. Move them near a window and under warmer indoor light. If you cannot see a difference without a reference stone beside you, you are likely paying for a letter rather than a visible improvement." },
 
     { type: "heading", text: "Regrets and Non-Regrets" },
     { type: "paragraph", text: "Buyers rarely regret choosing a near-colorless diamond that looked white in the ring they built. They more often regret stretching for colorless grades while sacrificing cut or size, or choosing a step cut that shows tint they did not evaluate in person." },
