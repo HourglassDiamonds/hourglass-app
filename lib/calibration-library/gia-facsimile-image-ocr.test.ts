@@ -1,11 +1,19 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { describe, it } from "node:test";
 import { emptyReportFields } from "./fields";
 import { GIA2527039693_FACSIMILE_PDF_TEXT } from "./fixtures/gia2527039693";
 import {
+  deprioritizeNaturalFacsimileGradingScaleScatter,
   shouldRunGiaFacsimileDiagramImageOcr,
   shouldRunGiaGradingPanelImageOcr,
 } from "./parsers/gia/gia-facsimile-image-ocr";
+import { extractFieldsFromReportText } from "./extract-from-text";
+
+const GIA7543453672_OCR = readFileSync(
+  "data/diamond-intelligence/debug/7543453672-fullpage-ocr.txt",
+  "utf8",
+);
 
 describe("GIA facsimile diagram OCR gate", () => {
   it("triggers for facsimile text when pavilion and girdle missing", () => {
@@ -58,6 +66,43 @@ describe("GIA facsimile diagram OCR gate", () => {
       { parserType: "gia-modern", lab: "GIA" },
     );
     assert.equal(gate.run, true);
+  });
+
+  it("7543453672 — opens gate despite grading-scale scatter (50% 60%)", () => {
+    const parsed = extractFieldsFromReportText(GIA7543453672_OCR, {
+      lab: "GIA",
+      reportNumber: "7543453672",
+      textMethod: "ocr",
+    });
+    deprioritizeNaturalFacsimileGradingScaleScatter(
+      parsed.fields,
+      GIA7543453672_OCR,
+    );
+    const gate = shouldRunGiaFacsimileDiagramImageOcr(
+      parsed.fields,
+      GIA7543453672_OCR,
+      { parserType: parsed.parserType, lab: "GIA" },
+    );
+    assert.equal(gate.run, true);
+    assert.match(
+      gate.reason,
+      /natural-facsimile-incomplete-score-core-proportions/,
+    );
+    assert.equal(parsed.fields.tablePercent, "");
+    assert.equal(parsed.fields.starLengthPercent, "");
+    assert.equal(parsed.fields.lowerHalfPercent, "");
+  });
+
+  it("does not trigger for LGDR dossier text", () => {
+    const fields = emptyReportFields();
+    const lgdrText =
+      "GIA LABORATORY-GROWN DIAMOND REPORT\nLGDR\nCarat Weight 2.00\nRound Brilliant";
+    const gate = shouldRunGiaFacsimileDiagramImageOcr(fields, lgdrText, {
+      parserType: "gia-modern",
+      lab: "GIA",
+    });
+    assert.equal(gate.run, false);
+    assert.match(gate.reason, /lgdr-dossier/);
   });
 });
 

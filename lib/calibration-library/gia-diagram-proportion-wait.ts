@@ -6,7 +6,10 @@ import {
   looksLikeGiaReportText,
   needsGiaProportionOcrSupplement,
 } from "./gia-proportions";
-import { shouldRunGiaFacsimileDiagramImageOcr } from "./parsers/gia/gia-facsimile-image-ocr";
+import {
+  isNaturalGiaFacsimileContext,
+  shouldRunGiaFacsimileDiagramImageOcr,
+} from "./parsers/gia/gia-facsimile-image-ocr";
 import { SCORE_ELIGIBLE_CORE_KEYS } from "@/lib/diamond-intelligence/extraction-completeness";
 import { parseReportGradeHints } from "@/lib/diamond-intelligence/report-grade-hints";
 
@@ -24,6 +27,26 @@ function hasUsableTextLayerGrades(
   combinedText: string,
   gradeHintText?: string,
 ): boolean {
+  if (isNaturalGiaFacsimileContext(combinedText) && fields.shape?.trim()) {
+    const hints = parseReportGradeHints(
+      [gradeHintText, combinedText].filter(Boolean).join("\n\n"),
+    );
+    if (hints.color?.trim() || hints.clarity?.trim()) return true;
+    if (
+      fields.cutGrade?.trim() ||
+      fields.polish?.trim() ||
+      fields.symmetry?.trim()
+    ) {
+      return true;
+    }
+    const coreIncomplete = SCORE_ELIGIBLE_CORE_KEYS.some(
+      (k) => !fields[k]?.trim(),
+    );
+    if (coreIncomplete || giaProportionDiagramFieldsMissing(fields as CalibrationReportFields)) {
+      return true;
+    }
+  }
+
   const hasIdentity =
     Boolean(fields.shape?.trim() && fields.carat?.trim()) ||
     /\bgia\s+report\s+number\b/i.test(combinedText);

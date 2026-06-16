@@ -1,7 +1,15 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { needsGiaDiagramProportionOcrWait } from "./gia-diagram-proportion-wait";
 import { GIA2527039693_FACSIMILE_PDF_TEXT } from "./fixtures/gia2527039693";
+import { extractFieldsFromReportText } from "./extract-from-text";
+import { deprioritizeNaturalFacsimileGradingScaleScatter } from "./parsers/gia/gia-facsimile-image-ocr";
+
+const GIA7543453672_OCR = readFileSync(
+  "data/diamond-intelligence/debug/7543453672-fullpage-ocr.txt",
+  "utf8",
+);
 
 describe("needsGiaDiagramProportionOcrWait", () => {
   it("returns true for GIA facsimile text layer with grades but no core proportions", () => {
@@ -54,6 +62,27 @@ describe("needsGiaDiagramProportionOcrWait", () => {
         lab: "GCAL",
       }),
       false,
+    );
+  });
+
+  it("7543453672 — waits for diagram OCR with shape-only identity", () => {
+    const parsed = extractFieldsFromReportText(GIA7543453672_OCR, {
+      lab: "GIA",
+      reportNumber: "7543453672",
+      textMethod: "ocr",
+    });
+    deprioritizeNaturalFacsimileGradingScaleScatter(
+      parsed.fields,
+      GIA7543453672_OCR,
+    );
+    assert.equal(
+      needsGiaDiagramProportionOcrWait({
+        fields: parsed.fields,
+        combinedText: GIA7543453672_OCR,
+        parserType: parsed.parserType,
+        lab: "GIA",
+      }),
+      true,
     );
   });
 });

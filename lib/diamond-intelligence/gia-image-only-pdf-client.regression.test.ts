@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import { describe, it } from "node:test";
 import { extractTextFromDocument } from "@/lib/calibration-library/document-extract";
+import { assessExtractionCompleteness } from "@/lib/diamond-intelligence/extraction-completeness";
 import { interpretUploadedReport } from "@/lib/diamond-intelligence/interpret-uploaded-report";
 import { needsPartialGradeReview } from "@/app/diamond-intelligence/components/v3-presentation";
 
@@ -24,6 +25,7 @@ if (existsSync(PDF_PATH)) {
     });
 
     it("does not hard-fail interpret — at least partial with extracted fields", async () => {
+      process.env.CLIENT_DOCUMENT_EXTRACT_TIMEOUT_MS ??= "90000";
       const bytes = readFileSync(PDF_PATH);
       const result = await interpretUploadedReport({
         bytes,
@@ -49,6 +51,22 @@ if (existsSync(PDF_PATH)) {
       assert.equal(
         needsPartialGradeReview({ gradeHints: result.interpretation.gradeHints }),
         false,
+      );
+
+      const f = result.finalized.fields;
+      assert.notEqual(f.tablePercent, "60", "grading-scale table scatter should be cleared");
+      assert.equal(f.pavilionAngle, "40.6");
+      assert.match(f.culet ?? "", /^none$/i);
+      assert.equal(f.depthPercent, "61.5", "expected depth from diagram band OCR");
+
+      const completeness = assessExtractionCompleteness({ fields: f });
+      assert.ok(
+        completeness.presentCoreFields.includes("pavilionAngle"),
+        "expected pavilion from diagram path",
+      );
+      assert.ok(
+        completeness.presentCoreFields.includes("depthPercent"),
+        "expected depth from diagram band OCR",
       );
     });
   });

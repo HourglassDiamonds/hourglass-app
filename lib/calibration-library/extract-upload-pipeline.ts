@@ -29,6 +29,7 @@ import {
 import { looksLikeGcal8xReportText } from "./parsers/gcal/gcal-layout-detector";
 import {
   applyGiaFacsimileDiagramImageOcr,
+  deprioritizeNaturalFacsimileGradingScaleScatter,
   ocrGiaFacsimileFullPages,
   ocrGiaImageGradingPanel,
   ocrGiaNaturalFacsimileGrading4CsPanel,
@@ -630,6 +631,7 @@ async function runImageOcrAugmentation(input: {
       }
       extractGiaOcrProportionDiagram(giaCombined, parsed.fields, setField, giaInternal);
       applyGiaOcrFieldHydrationFallback(giaCombined, parsed.fields, setField);
+      deprioritizeNaturalFacsimileGradingScaleScatter(parsed.fields, giaCombined);
       if (
         imageUpload &&
         giaProportionDiagramFieldsMissing(parsed.fields) &&
@@ -763,6 +765,7 @@ async function runImageOcrAugmentation(input: {
           // Client OCR budget exhausted — keep scatter-only partial fields.
         }
       }
+      deprioritizeNaturalFacsimileGradingScaleScatter(parsed.fields, giaCombined);
       if (Object.keys(giaInternal).length > 0) {
         parsed.giaInternal = giaInternal;
       }

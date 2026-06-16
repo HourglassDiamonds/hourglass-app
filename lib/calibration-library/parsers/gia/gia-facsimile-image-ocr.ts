@@ -36,6 +36,7 @@ import {
   isUsableDisplayColorValue,
   parseReportGradeHints,
 } from "@/lib/diamond-intelligence/report-grade-hints";
+import { SCORE_ELIGIBLE_CORE_KEYS } from "@/lib/diamond-intelligence/extraction-completeness";
 
 const GIA_PAGE_OCR_SCALE = 5;
 const GIA_FULL_PAGE_OCR_SCALE = 6;
@@ -241,6 +242,21 @@ export function shouldRunGiaFacsimileDiagramImageOcr(
     };
   }
 
+  // Natural GIA facsimile — grading-scale OCR scatter must not suppress diagram OCR.
+  if (isNaturalGiaFacsimileContext(combinedText)) {
+    if (!missingCore && !naturalFacsimileScoreCoreIncomplete(fields)) {
+      return { run: false, reason: "natural-facsimile-proportions-complete" };
+    }
+    if (missingCore || naturalFacsimileScoreCoreIncomplete(fields)) {
+      return {
+        run: true,
+        reason: naturalFacsimileScoreCoreIncomplete(fields)
+          ? "natural-facsimile-incomplete-score-core-proportions"
+          : "natural-facsimile-missing-diagram-fields",
+      };
+    }
+  }
+
   if (facsimileTable && missingCore) {
     return {
       run: true,
@@ -344,6 +360,50 @@ export function isNaturalGiaFacsimileContext(combinedText: string): boolean {
     /\bfacsimile\b/i.test(combinedText) ||
     /\bnatural\s+diamond\s+grading\s+report\b/i.test(combinedText)
   );
+}
+
+function naturalFacsimileScoreCoreIncomplete(
+  fields: CalibrationReportFields,
+): boolean {
+  return SCORE_ELIGIBLE_CORE_KEYS.some((k) => !fields[k]?.trim());
+}
+
+/**
+ * COLOR / CLARITY / CUT grading-scale column noise — not the proportion diagram.
+ * Natural facsimile full-page OCR often reads adjacent scale percents (e.g. 50% 60%).
+ */
+export function naturalFacsimileHasGradingScaleColumnNoise(text: string): boolean {
+  if (!/\b(?:color|clarity|cut)\b/i.test(text)) return false;
+  if (!/\bscale\b/i.test(text)) return false;
+  return /\b(?:50|60)\s*%\s*[\s\S]{0,80}?\b(?:50|60)\s*%/i.test(text);
+}
+
+const NATURAL_FACSIMILE_SCALE_NOISE_PCTS = new Set(["50", "60", "80"]);
+
+/** Clear grading-scale scatter from natural facsimile fields before diagram OCR. */
+export function deprioritizeNaturalFacsimileGradingScaleScatter(
+  fields: CalibrationReportFields,
+  combinedText: string,
+): void {
+  if (!isNaturalGiaFacsimileContext(combinedText)) return;
+  if (!naturalFacsimileHasGradingScaleColumnNoise(combinedText)) return;
+  for (const key of [
+    "tablePercent",
+    "depthPercent",
+    "starLengthPercent",
+    "lowerHalfPercent",
+  ] as const) {
+    if (NATURAL_FACSIMILE_SCALE_NOISE_PCTS.has(fields[key].trim())) {
+      fields[key] = "";
+    }
+  }
+}
+
+function finishNaturalFacsimileDiagramScatterCleanup(
+  fields: CalibrationReportFields,
+  combinedText: string,
+): void {
+  deprioritizeNaturalFacsimileGradingScaleScatter(fields, combinedText);
 }
 
 function isGiaImageGradingPanelContext(
@@ -994,6 +1054,7 @@ export async function applyGiaFacsimileDiagramImageOcr(
 
   extractGiaOcrProportionDiagram(combinedText, fields, set, internal);
   applyGiaOcrFieldHydrationFallback(combinedText, fields, set);
+  deprioritizeNaturalFacsimileGradingScaleScatter(fields, combinedText);
 
   const fallbackBlock = extractGiaFallbackDiagramBlock(combinedText);
   if (fallbackBlock.length >= 40) {
@@ -1007,6 +1068,7 @@ export async function applyGiaFacsimileDiagramImageOcr(
       fallbackBlock,
     );
     applyGiaOcrFieldHydrationFallback(fallbackBlock, fields, set);
+    finishNaturalFacsimileDiagramScatterCleanup(fields, combinedText);
   }
 
   await applyGiaProportionDiagramExtraction(
@@ -1017,6 +1079,44 @@ export async function applyGiaFacsimileDiagramImageOcr(
     set,
     { reportNumber: opts?.reportNumber },
   );
+  finishNaturalFacsimileDiagramScatterCleanup(fields, combinedText);
+
+  if (isNaturalGiaFacsimileContext(combinedText)) {
+    const bandOcrPayload: GiaDiagramOcrCheckPayload = {
+      reportNumber: opts?.reportNumber,
+      triggered: true,
+      reason: `${gate.reason} (natural-facsimile-diagram-band-ocr)`,
+      cropCoordinates: GIA_FACSIMILE_OCR_CROPS,
+      ocrRawPreview: "",
+      repairedOcrPreview: "",
+      candidatesFound: {},
+      assignmentsMade: Object.fromEntries(
+        (
+          [
+            "pavilionAngle",
+            "girdle",
+            "tablePercent",
+            "depthPercent",
+            "crownAngle",
+            "culet",
+            "lowerHalfPercent",
+            "starLengthPercent",
+          ] as const
+        )
+          .filter((k) => before[k] !== fields[k] && fields[k].trim())
+          .map((k) => [k, fields[k].trim()]),
+      ),
+      rejectedCandidates: [],
+      durationMs: Date.now() - started,
+      timedOut: false,
+    };
+    logGiaDiagramOcrCheck(bandOcrPayload);
+    return attachNaturalFacsimileGradeHintSupplement(
+      pdfBytes,
+      combinedText,
+      bandOcrPayload,
+    );
+  }
 
   if (!giaProportionDiagramFieldsMissing(fields)) {
     const earlyDiagram: GiaDiagramOcrCheckPayload = {
@@ -1052,6 +1152,7 @@ export async function applyGiaFacsimileDiagramImageOcr(
   if (inlineBlock) {
     extractGiaOcrProportionDiagram(inlineBlock, fields, set, internal);
     applyGiaOcrFieldHydrationFallback(inlineBlock, fields, set);
+    finishNaturalFacsimileDiagramScatterCleanup(fields, combinedText);
   }
 
   if (!fields.girdle.trim()) {
@@ -1142,6 +1243,7 @@ export async function applyGiaFacsimileDiagramImageOcr(
 
   extractGiaOcrProportionDiagram(mergedContext, fields, set, internal);
   applyGiaOcrFieldHydrationFallback(mergedContext, fields, set);
+  finishNaturalFacsimileDiagramScatterCleanup(fields, combinedText);
 
   if (!fields.girdle.trim()) {
     const frag = extractGiaGirdleFromFacsimileGradingResultsFragment(mergedContext);
@@ -1159,6 +1261,7 @@ export async function applyGiaFacsimileDiagramImageOcr(
   Object.assign(candidatesFound, cropAssign.candidatesFound);
   Object.assign(assignmentsMade, cropAssign.assignmentsMade);
   rejectedCandidates.push(...cropAssign.rejectedCandidates);
+  finishNaturalFacsimileDiagramScatterCleanup(fields, combinedText);
 
   if (ocr.text.match(/\d{1,2}(?:\.\d+)?\s*%/)) {
     const pcts = [...ocr.text.matchAll(/(\d{1,2}(?:\.\d+)?)\s*%/g)].map(
