@@ -202,6 +202,20 @@ function collectPercents(text: string): number[] {
   return out;
 }
 
+/** OCR sometimes splits total depth decimals ("61 5%" → 61.5%). Depth-band only. */
+function collectGarbledDepthPercents(text: string): number[] {
+  const out: number[] = [];
+  for (const m of text.matchAll(/\b(\d{2})\s+(\d)\s*%/g)) {
+    const n = parseFloat(`${m[1]}.${m[2]}`);
+    if (Number.isFinite(n)) out.push(n);
+  }
+  return out;
+}
+
+function normalizeBandText(text: string): string {
+  return text.replace(/\s+/g, " ").trim();
+}
+
 function fmtPct(n: number): string {
   return Number.isInteger(n) ? `${n}` : n.toFixed(1);
 }
@@ -391,6 +405,24 @@ function assignDepthPercent(
     );
   }
 
+  const garbled = collectGarbledDepthPercents(band.text).filter(
+    (n) => n >= range.min && n <= range.max && !used.has(n),
+  );
+  if (garbled.length > 0) {
+    const tight = garbled.find(
+      (n) => n >= range.tight[0] && n <= range.tight[1],
+    );
+    const chosen = tight ?? garbled[0]!;
+    used.add(chosen);
+    return mk(
+      "depthPercent",
+      band,
+      `${fmtPct(chosen)}%`,
+      "low",
+      `LGDR/OCR: split decimal recovered as depthPercent (${chosen}%)`,
+    );
+  }
+
   // Fallback: percent glyph lost. Accept a plausible bare total-depth number.
   const fallback = collectBareNumbers(band.text).filter(
     (n) => n >= DEPTH_FALLBACK_MIN && n <= DEPTH_FALLBACK_MAX && !used.has(n),
@@ -417,9 +449,11 @@ function assignDepthPercent(
 }
 
 function assignGirdle(band: GiaDiagramBandOcr): GiaDiagramFieldResult {
-  const width = band.text.match(GIRDLE_WIDTH)?.[0]?.trim();
-  const faceted = GIRDLE_FACETED.test(band.text);
-  const pct = collectPercents(band.text).find(
+  const text = normalizeBandText(band.text);
+  const width = text.match(GIRDLE_WIDTH)?.[0]?.trim();
+  const faceted =
+    GIRDLE_FACETED.test(text) || /\(fa[oc]s?t[et]d\)|\(acetec\)/i.test(text);
+  const pct = collectPercents(text).find(
     (n) => n >= RANGES.girdleThickness.min && n <= RANGES.girdleThickness.max,
   );
   if (!width && !faceted && pct === undefined) {
@@ -448,8 +482,28 @@ function assignGirdle(band: GiaDiagramBandOcr): GiaDiagramFieldResult {
   );
 }
 
+function assignGirdleFromBands(
+  bands: GiaDiagramBandOcr[],
+): GiaDiagramFieldResult {
+  for (const band of bands) {
+    const result = assignGirdle(band);
+    if (result.parsedValue) return result;
+  }
+  return mk("girdle", null, null, "none", "no girdle in candidate bands");
+}
+
+function assignCuletFromBands(
+  bands: GiaDiagramBandOcr[],
+): GiaDiagramFieldResult {
+  for (const band of bands) {
+    const result = assignCulet(band);
+    if (result.parsedValue) return result;
+  }
+  return mk("culet", null, null, "none", "no culet in candidate bands");
+}
+
 function assignCulet(band: GiaDiagramBandOcr): GiaDiagramFieldResult {
-  const m = band.text.match(CULET_SIZE);
+  const m = normalizeBandText(band.text).match(CULET_SIZE);
   if (!m) return mk("culet", band, null, "none", "no culet size token in band");
   const raw = m[1]!;
   const value = raw
@@ -589,7 +643,11 @@ function parseDiagramFields(
     ? assignDepthPercent(culetBand, usedPct)
     : mk("depthPercent", null, null, "none", "depth band not rendered");
   if (!depthResult.parsedValue) {
-    for (const band of [tableBand, crownBand, headerBand]) {
+    const depthFallbackBands =
+      style === "GIA_LGDR_DOSSIER"
+        ? [regionBand, tableBand, crownBand, headerBand]
+        : [tableBand, crownBand, headerBand];
+    for (const band of depthFallbackBands) {
       if (!band) continue;
       const tryDepth = assignDepthPercent(band, usedPct);
       if (tryDepth.parsedValue) {
@@ -622,20 +680,45 @@ function parseDiagramFields(
   }
   results.push(lowerResult);
 
+  const girdleBands =
+    style === "GIA_LGDR_DOSSIER"
+      ? ([girdleBand, headerBand, regionBand, tableBand, crownBand].filter(
+          Boolean,
+        ) as GiaDiagramBandOcr[])
+      : girdleBand
+        ? [girdleBand]
+        : [];
   results.push(
-    girdleBand
-      ? assignGirdle(girdleBand)
+    girdleBands.length > 0
+      ? assignGirdleFromBands(girdleBands)
       : mk("girdle", null, null, "none", "girdle band not rendered"),
   );
+
+  const culetBands =
+    style === "GIA_LGDR_DOSSIER"
+      ? ([culetBand, tableBand, crownBand, regionBand, headerBand].filter(
+          Boolean,
+        ) as GiaDiagramBandOcr[])
+      : culetBand
+        ? [culetBand]
+        : [];
   results.push(
-    culetBand
-      ? assignCulet(culetBand)
+    culetBands.length > 0
+      ? assignCuletFromBands(culetBands)
       : mk("culet", null, null, "none", "culet band not rendered"),
   );
 
   return GIA_DIAGRAM_TARGET_FIELDS.map(
     (f) => results.find((r) => r.field === f)!,
   );
+}
+
+/** Test seam — parse diagram fields from recorded band OCR without image IO. */
+export function parseGiaDiagramFieldsFromBands(
+  bands: GiaDiagramBandOcr[],
+  style: GiaReportStyle,
+): GiaDiagramFieldResult[] {
+  return parseDiagramFields(bands, style);
 }
 
 const INTERNAL_RANGES = {
