@@ -48,6 +48,11 @@ const categories = [
     description: "How to balance quality, design, and budget.",
     href: "/diamond-guide/buying-strategy",
   },
+  {
+    title: "Proposal Planning",
+    description: "How to prepare, propose, and celebrate with confidence.",
+    href: "/diamond-guide/proposal-planning",
+  },
 ];
 
 const popularGuides = [

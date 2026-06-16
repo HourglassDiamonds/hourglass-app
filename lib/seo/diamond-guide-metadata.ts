@@ -11,7 +11,8 @@ export type DiamondGuideCategorySegment =
   | "diamond-color"
   | "diamond-clarity"
   | "certification"
-  | "buying-strategy";
+  | "buying-strategy"
+  | "proposal-planning";
 
 type CategoryHubConfig = {
   segment: DiamondGuideCategorySegment;
@@ -85,6 +86,14 @@ export const DIAMOND_GUIDE_CATEGORIES: CategoryHubConfig[] = [
       "Smarter tradeoffs when buying a diamond—what to prioritize, what to stop overpaying for, and how to decide with clarity.",
     indexTitle: "All Diamond Buying Strategy Guides",
     indexTopic: "diamond buying strategy",
+  },
+  {
+    segment: "proposal-planning",
+    title: "Proposal Planning Guide",
+    description:
+      "How to prepare, propose, and celebrate with confidence: Charlotte locations, timing, photographers, and the first days after yes.",
+    indexTitle: "All Proposal Planning Guides",
+    indexTopic: "proposal planning",
   },
 ];
 

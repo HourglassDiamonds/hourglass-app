@@ -15,6 +15,7 @@ const categoryTitleByArticleCategory: Record<string, DiamondGuideCategorySegment
     "Diamond Clarity": "diamond-clarity",
     Certification: "certification",
     "Buying Guides": "buying-strategy",
+    "Proposal Planning": "proposal-planning",
   };
 
 export function articleCategorySegment(

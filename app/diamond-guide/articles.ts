@@ -4222,4 +4222,96 @@ export const articles: Article[] = [
   ],
 },
 
+{
+  slug: "best-places-to-propose-in-charlotte",
+  title: "Best Places to Propose in Charlotte",
+  category: "Proposal Planning",
+  body: [
+    { type: "paragraph", text: "This guide is coming soon." },
+  ],
+  related: [
+    { title: "Proposal Planning", href: "/diamond-guide/proposal-planning" },
+    { title: "How to Plan a Proposal in Charlotte", href: "/diamond-guide/how-to-plan-a-proposal-in-charlotte" },
+    { title: "Charlotte Diamond Advisor Guide", href: "/diamond-guide/charlotte-diamond-advisor-guide" },
+  ],
+},
+{
+  slug: "how-to-plan-a-proposal-in-charlotte",
+  title: "How to Plan a Proposal in Charlotte",
+  category: "Proposal Planning",
+  body: [
+    { type: "paragraph", text: "This guide is coming soon." },
+  ],
+  related: [
+    { title: "Proposal Planning", href: "/diamond-guide/proposal-planning" },
+    { title: "Best Places to Propose in Charlotte", href: "/diamond-guide/best-places-to-propose-in-charlotte" },
+    { title: "Charlotte Engagement Ring Guide", href: "/diamond-guide/charlotte-engagement-ring-guide" },
+  ],
+},
+{
+  slug: "best-proposal-photographers-in-charlotte",
+  title: "Best Proposal Photographers in Charlotte",
+  category: "Proposal Planning",
+  body: [
+    { type: "paragraph", text: "This guide is coming soon." },
+  ],
+  related: [
+    { title: "Proposal Planning", href: "/diamond-guide/proposal-planning" },
+    { title: "How to Plan a Proposal in Charlotte", href: "/diamond-guide/how-to-plan-a-proposal-in-charlotte" },
+    { title: "Best Places to Propose in Charlotte", href: "/diamond-guide/best-places-to-propose-in-charlotte" },
+  ],
+},
+{
+  slug: "most-romantic-restaurants-charlotte-engagement-celebration",
+  title: "Most Romantic Restaurants in Charlotte for an Engagement Celebration",
+  category: "Proposal Planning",
+  body: [
+    { type: "paragraph", text: "This guide is coming soon." },
+  ],
+  related: [
+    { title: "Proposal Planning", href: "/diamond-guide/proposal-planning" },
+    { title: "The First 30 Days After You Get Engaged", href: "/diamond-guide/first-30-days-after-you-get-engaged" },
+    { title: "Best Places to Propose in Charlotte", href: "/diamond-guide/best-places-to-propose-in-charlotte" },
+  ],
+},
+{
+  slug: "best-charlotte-rooftop-proposal-locations",
+  title: "Best Charlotte Rooftop Proposal Locations",
+  category: "Proposal Planning",
+  body: [
+    { type: "paragraph", text: "This guide is coming soon." },
+  ],
+  related: [
+    { title: "Proposal Planning", href: "/diamond-guide/proposal-planning" },
+    { title: "Best Places to Propose in Charlotte", href: "/diamond-guide/best-places-to-propose-in-charlotte" },
+    { title: "How to Plan a Proposal in Charlotte", href: "/diamond-guide/how-to-plan-a-proposal-in-charlotte" },
+  ],
+},
+{
+  slug: "how-to-plan-a-proposal-she-will-never-forget",
+  title: "How to Plan a Proposal She'll Never Forget",
+  category: "Proposal Planning",
+  body: [
+    { type: "paragraph", text: "This guide is coming soon." },
+  ],
+  related: [
+    { title: "Proposal Planning", href: "/diamond-guide/proposal-planning" },
+    { title: "How to Plan a Proposal in Charlotte", href: "/diamond-guide/how-to-plan-a-proposal-in-charlotte" },
+    { title: "Best Proposal Photographers in Charlotte", href: "/diamond-guide/best-proposal-photographers-in-charlotte" },
+  ],
+},
+{
+  slug: "first-30-days-after-you-get-engaged",
+  title: "The First 30 Days After You Get Engaged",
+  category: "Proposal Planning",
+  body: [
+    { type: "paragraph", text: "This guide is coming soon." },
+  ],
+  related: [
+    { title: "Proposal Planning", href: "/diamond-guide/proposal-planning" },
+    { title: "Most Romantic Restaurants in Charlotte for an Engagement Celebration", href: "/diamond-guide/most-romantic-restaurants-charlotte-engagement-celebration" },
+    { title: "Charlotte Engagement Ring Guide", href: "/diamond-guide/charlotte-engagement-ring-guide" },
+  ],
+},
+
 ];
