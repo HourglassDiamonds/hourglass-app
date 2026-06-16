@@ -207,6 +207,65 @@ describe("buildDiamondIntelligenceArchiveRecord", () => {
     assert.ok(record.finalOutputJson);
   });
 
+  it("builds usefulness-gate failure record with failure reason and metadata", () => {
+    const record = buildDiamondIntelligenceArchiveRecord({
+      httpStatus: 422,
+      bytes: Buffer.from("pdf-bytes"),
+      mime: "application/pdf",
+      sourceFilename: "7543453672.pdf",
+      finalized: {
+        fields: emptyReportFields(),
+        metadata: {
+          lab: "OTHER",
+          reportNumber: "",
+          reportSource: "pdf-upload",
+          stoneType: "unknown",
+        },
+        parserType: undefined,
+        textMethod: "none",
+        ocrAttempted: false,
+        pdfTextLayerLength: 0,
+        extractedCharCount: 0,
+        warnings: [],
+        missingFields: [],
+        confidence: {} as never,
+      } as never,
+      decision: {
+        tier: "failure",
+        useful: false,
+        sufficient: false,
+        snapshot: {
+          lab: "",
+          reportNumber: "",
+          shape: "",
+          carat: "",
+          measurements: "",
+          table: "",
+          depth: "",
+          crownAngle: "",
+          pavilionAngle: "",
+          polish: "",
+          symmetry: "",
+          fluorescence: "",
+          missingFields: [],
+        },
+      },
+    });
+
+    assert.equal(record.status, "unable_to_verify");
+    assert.equal(record.httpStatus, 422);
+    assert.equal(
+      record.failureReason,
+      "usefulness_gate_rejected_empty_snapshot",
+    );
+    assert.equal(record.reportNumber, "");
+    assert.equal(record.uploadMetadata?.decisionTier, "failure");
+    assert.equal(record.uploadMetadata?.pdfTextLayerLength, 0);
+    assert.equal(record.uploadMetadata?.ocrAttempted, false);
+    assert.equal(record.uploadMetadata?.parserLab, "OTHER");
+    assert.equal(record.finalOutputJson, null);
+  });
+
   it("builds a failure record for unsupported uploads", () => {
     const record = buildDiamondIntelligenceArchiveRecord({
       httpStatus: 400,

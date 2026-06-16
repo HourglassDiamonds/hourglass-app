@@ -24,13 +24,13 @@ function json(body: Record<string, unknown>, status = 200, headers?: HeadersInit
   return NextResponse.json(toJsonSafe(body), { status, headers });
 }
 
-function respond(
+async function respond(
   body: Record<string, unknown>,
   status: number,
   archiveCtx?: DiamondIntelligenceArchiveContext,
 ) {
   if (archiveCtx) {
-    archiveDiamondIntelligenceSubmission(archiveCtx);
+    await archiveDiamondIntelligenceSubmission(archiveCtx);
   }
   return json(body, status);
 }
@@ -55,7 +55,7 @@ export async function POST(request: Request) {
     const body = (await request.json()) as { url?: string };
     url = typeof body.url === "string" ? body.url.trim() : "";
   } catch {
-    return respond(
+    return await respond(
       { ok: false, status: "invalid_url", error: "A listing URL is required." },
       400,
       {
@@ -73,7 +73,7 @@ export async function POST(request: Request) {
   }
 
   if (!url) {
-    return respond(
+    return await respond(
       { ok: false, status: "invalid_url", error: "A listing URL is required." },
       400,
       {
@@ -102,7 +102,7 @@ export async function POST(request: Request) {
           ? 422
           : 502;
 
-    return respond(
+    return await respond(
       {
         ok: false,
         status: result.status,
@@ -126,7 +126,7 @@ export async function POST(request: Request) {
   }
 
   if (result.status === "listing_found_no_report") {
-    return respond(
+    return await respond(
       {
         ok: true,
         status: result.status,
@@ -164,7 +164,7 @@ export async function POST(request: Request) {
     }),
   };
 
-  return respond(
+  return await respond(
     {
       ok: true,
       status: result.status,

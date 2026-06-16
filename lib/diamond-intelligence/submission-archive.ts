@@ -169,7 +169,13 @@ export function buildDiamondIntelligenceArchiveRecord(
     ctx.earlyFailure?.message ??
     ctx.pipelineError ??
     ctx.finalized?.pipelineError ??
-    (status === "partial" ? "partial_extraction" : null);
+    (status === "partial"
+      ? "partial_extraction"
+      : status === "unable_to_verify" &&
+          ctx.decision?.tier === "failure" &&
+          !ctx.decision.useful
+        ? "usefulness_gate_rejected_empty_snapshot"
+        : null);
 
   return {
     status,
@@ -231,6 +237,15 @@ export function buildDiamondIntelligenceArchiveRecord(
       decisionTier: ctx.decision?.tier ?? null,
       useful: ctx.decision?.useful ?? null,
       sufficient: ctx.decision?.sufficient ?? null,
+      ocrAttempted:
+        Boolean(ctx.finalized?.ocrAttempted) ||
+        ctx.finalized?.textMethod === "ocr",
+      parserLab:
+        snapshot?.lab?.trim() ||
+        interpretation?.metadata.lab ||
+        ctx.finalized?.metadata.lab ||
+        null,
+      parserType: ctx.finalized?.parserType ?? null,
       ...(ctx.urlArchive ?? { source_type: "upload" as const }),
     },
     sourceType: ctx.urlArchive?.source_type ?? "upload",
@@ -267,11 +282,13 @@ export async function persistDiamondIntelligenceArchive(
   return insertDiamondIntelligenceSubmission(record);
 }
 
-/** Fire-and-forget archive write — never blocks or throws to the caller. */
-export function archiveDiamondIntelligenceSubmission(
+/** Awaited archive write — logs errors without failing the HTTP response. */
+export async function archiveDiamondIntelligenceSubmission(
   ctx: DiamondIntelligenceArchiveContext,
-): void {
-  void persistDiamondIntelligenceArchive(ctx).catch((err) => {
+): Promise<void> {
+  try {
+    await persistDiamondIntelligenceArchive(ctx);
+  } catch (err) {
     console.error("[di-submission-archive]", err instanceof Error ? err.message : err);
-  });
+  }
 }

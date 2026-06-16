@@ -33,14 +33,14 @@ function json(body: Record<string, unknown>, status = 200, headers?: HeadersInit
   return NextResponse.json(toJsonSafe(body), { status, headers });
 }
 
-function respond(
+async function respond(
   body: Record<string, unknown>,
   status: number,
   archiveCtx?: DiamondIntelligenceArchiveContext,
   headers?: HeadersInit,
 ) {
   if (archiveCtx) {
-    archiveDiamondIntelligenceSubmission(archiveCtx);
+    await archiveDiamondIntelligenceSubmission(archiveCtx);
   }
   return json(body, status, headers);
 }
@@ -70,7 +70,7 @@ export async function POST(request: Request) {
     const file = form.get("file");
 
     if (!(file instanceof File) || file.size === 0) {
-      return respond(
+      return await respond(
         { ok: false, error: "A report file is required." },
         400,
         {
@@ -101,7 +101,7 @@ export async function POST(request: Request) {
         uploadValidation.code === "unknown_binary" ||
         uploadValidation.code === "mime_content_mismatch";
 
-      return respond(
+      return await respond(
         {
           ok: false,
           error: uploadValidation.error,
@@ -124,7 +124,7 @@ export async function POST(request: Request) {
 
     mime = uploadValidation.mime;
   } catch {
-    return respond(
+    return await respond(
       { ok: false, error: CLIENT_UPLOAD_INTERPRET_ERROR },
       400,
       {
@@ -150,7 +150,7 @@ export async function POST(request: Request) {
         ? buildInterpretFailureDiagnostics(result)
         : undefined;
 
-    return respond(
+    return await respond(
       {
         ok: false,
         error: result.error,
@@ -175,7 +175,7 @@ export async function POST(request: Request) {
   }
 
   if (result.cacheHit) {
-    return respond(
+    return await respond(
       { ok: true, interpretation: result.interpretation, partial: false },
       200,
       {
@@ -198,7 +198,7 @@ export async function POST(request: Request) {
     logGcalSarineInterpretDiagnostics(gcalSarineDiagnostics);
   }
 
-  return respond(
+  return await respond(
     {
       ok: true,
       interpretation: result.interpretation,
