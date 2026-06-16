@@ -86,13 +86,16 @@ function resolveMetadataLab(
   ) {
     return routedLab === "OTHER" ? "IGI" : routedLab;
   }
-  if (looksLikeGiaReportText(rawText)) return "GIA";
+  if (parserType === "gcal-8x") {
+    return "GCAL";
+  }
   if (
     looksLikeGcal8xReportText(rawText) ||
     looksLikeGcalSarine4csReportText(rawText)
   ) {
     return "GCAL";
   }
+  if (looksLikeGiaReportText(rawText)) return "GIA";
   return routedLab;
 }
 
