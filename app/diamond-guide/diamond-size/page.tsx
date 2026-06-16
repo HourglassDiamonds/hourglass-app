@@ -144,8 +144,14 @@ export default function DiamondSizePage() {
             <p className="mx-auto mt-7 max-w-[630px] text-[1.01rem] leading-[1.9] text-[#6f675f]">
               Diamond size is often discussed as though carat weight tells the
               whole story. In practice, what you see depends on proportions,
-              shape, finger size, and setting, which is why two diamonds of the
-              same weight can feel quite different once worn.
+              shape, finger size, and setting — which is why{" "}
+              <Link
+                href="/diamond-studio"
+                className="text-[#6a635c] underline underline-offset-4 transition hover:text-[#1f1d1a]"
+              >
+                comparing size on the hand
+              </Link>{" "}
+              often clarifies what charts alone cannot.
             </p>
           </div>
         </section>

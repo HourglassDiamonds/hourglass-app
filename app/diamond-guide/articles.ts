@@ -61,7 +61,7 @@ export const articles: Article[] = [
 
     { type: "heading", text: "Final Thoughts" },
     { type: "paragraph", text: "AGS diamond certification helped advance the way the industry evaluates cut quality and light behavior. By combining proportion measurements with optical analysis, the reports provided additional insight into how diamonds perform visually." },
-    { type: "paragraph", text: "Understanding AGS certification can help buyers appreciate how grading methods continue to evolve as gemology advances." },
+    { type: "paragraph", text: "Understanding AGS certification can help buyers appreciate how grading methods continue to evolve as gemology advances. Laboratories such as GCAL have since extended that performance-oriented approach — see [GCAL 8X diamond certification explained](/diamond-guide/gcal-8x-diamond-certification-explained) for how modern reports address light behavior." },
   ],
   related: [
     { title: "What is a Diamond Certificate", href: "/diamond-guide/what-is-a-diamond-certificate" },
@@ -94,7 +94,7 @@ export const articles: Article[] = [
 
     { type: "heading", text: "Final Thoughts" },
     { type: "paragraph", text: "While all diamond certificates aim to describe a diamond’s characteristics, the grading standards behind those reports can vary between laboratories." },
-    { type: "paragraph", text: "Understanding how these differences work helps buyers read diamond certificates with greater clarity and perspective." },
+    { type: "paragraph", text: "Understanding how these differences work helps buyers read diamond certificates with greater clarity and perspective. When comparing reports from different laboratories, [Diamond Intelligence](/diamond-intelligence) can help you review a specific certificate in practical terms." },
   ],
   related: [
     { title: "What is a Diamond Certificate", href: "/diamond-guide/what-is-a-diamond-certificate" },
@@ -196,7 +196,7 @@ export const articles: Article[] = [
     { type: "paragraph", text: "For some buyers, the appeal of lab-grown diamonds comes from the ability to obtain a larger or higher-graded stone within the same budget. Others prefer natural diamonds because of their geological origin and long history in fine jewelry. Both options can produce beautiful engagement rings depending on personal priorities." },
 
     { type: "heading", text: "Things to Consider When Deciding" },
-    { type: "paragraph", text: "When evaluating lab-grown diamonds, it can be helpful to consider long-term expectations, personal preferences, and how the diamond fits into the overall design of the ring. Each buyer approaches this decision differently, and the best choice often comes down to what feels most meaningful." },
+    { type: "paragraph", text: "When evaluating lab-grown diamonds, it can be helpful to consider long-term expectations, personal preferences, and how the diamond fits into the overall design of the ring. Origin is one decision; cut quality and light performance remain the standard regardless — a principle we apply consistently, as outlined in [Our Approach](/our-approach)." },
 
     { type: "heading", text: "Final Thoughts" },
     { type: "paragraph", text: "Lab-grown diamonds offer an alternative path for buyers exploring engagement rings. Understanding how they compare to natural diamonds helps clarify which option best aligns with personal values and priorities." },
@@ -249,7 +249,7 @@ export const articles: Article[] = [
     { type: "paragraph", text: "A diamond with good clarity will allow the step facets to remain crisp and uninterrupted, which enhances the hall-of-mirrors effect that makes the Asscher cut so distinctive." },
 
     { type: "heading", text: "How Asscher Diamonds Look in Engagement Rings" },
-    { type: "paragraph", text: "Asscher diamonds create a strong visual presence when set in engagement rings." },
+    { type: "paragraph", text: "Asscher diamonds create a strong visual presence when set in engagement rings. Their square outline and deep facets produce a structured look that feels both vintage and refined — [compare how an Asscher faces up on the hand](/diamond-studio) if you are weighing it against a round or emerald outline." },
     { type: "paragraph", text: "Their square outline and deep facets produce a structured look that feels both vintage and refined." },
     { type: "paragraph", text: "In solitaire settings, the diamond’s geometry becomes the clear focal point. The stepped reflections draw attention inward, emphasizing the depth of the stone." },
     { type: "paragraph", text: "Three-stone designs are also common with Asscher diamonds, often featuring tapered side stones that complement the square center." },
@@ -351,7 +351,7 @@ export const articles: Article[] = [
 
     { type: "heading", text: "Final Thoughts" },
     { type: "paragraph", text: "The best diamond clarity for engagement rings is usually one that appears eye clean while still offering strong overall value." },
-    { type: "paragraph", text: "Many diamonds in the VS2 or SI1 clarity range meet this goal, delivering beautiful appearance without requiring the highest clarity grades. By focusing on how a diamond actually looks rather than simply its technical grade, buyers can select a diamond that balances beauty, quality, and practicality." },
+    { type: "paragraph", text: "Many diamonds in the VS2 or SI1 clarity range meet this goal, delivering beautiful appearance without requiring the highest clarity grades. For buyers wondering whether top clarity grades justify their premium, [are flawless diamonds worth it](/diamond-guide/are-flawless-diamonds-worth-it) explores that question in practical terms." },
   ],
   related: [
     { title: "What is Diamond Clarity", href: "/diamond-guide/what-is-diamond-clarity" },
@@ -423,8 +423,8 @@ export const articles: Article[] = [
 
     { type: "heading", text: "How Cut Quality Is Evaluated" },
     { type: "paragraph", text: "Gemological laboratories evaluate cut quality by analyzing the proportions, symmetry, and polish of a diamond. These characteristics influence how efficiently the stone reflects light." },
-    { type: "paragraph", text: "For round diamonds, grading systems typically include categories such as Excellent, Very Good, Good, Fair, and Poor. Diamonds with higher cut grades generally demonstrate stronger light performance." },
-    { type: "paragraph", text: "While grading reports provide helpful guidance, observing the diamond directly can still reveal subtle differences in brightness and sparkle." },
+    { type: "paragraph", text: "For round diamonds, grading systems typically include categories such as Excellent, Very Good, Good, Fair, and Poor. Diamonds with higher cut grades generally demonstrate stronger light performance. Laboratories such as GCAL have pushed further into performance-oriented reporting — see [GCAL 8X diamond certification explained](/diamond-guide/gcal-8x-diamond-certification-explained) for how that approach differs from standard cut grades." },
+    { type: "paragraph", text: "While grading reports provide helpful guidance, observing the diamond directly can still reveal subtle differences in brightness and sparkle. [Diamond Intelligence](/diamond-intelligence) can help you interpret how proportion data on a report may translate to those visual qualities." },
 
     { type: "heading", text: "The Balance of Brilliance, Fire, and Scintillation" },
     { type: "paragraph", text: "Strong light performance requires a balance between several visual effects." },
@@ -528,7 +528,7 @@ export const articles: Article[] = [
   ],
   related: [
     { title: "What is Diamond Clarity", href: "/diamond-guide/what-is-diamond-clarity" },
-    { title: "What Are Diamond Inclusions", href: "/diamond-guide/what-are-diamond-inclusions" },
+    { title: "Can You See Diamond Inclusions", href: "/diamond-guide/can-you-see-diamond-inclusions" },
     { title: "Eye Clean Diamonds Explained", href: "/diamond-guide/eye-clean-diamonds-explained" },
     { title: "VS1 vs VS2 Diamond Clarity", href: "/diamond-guide/vs1-vs-vs2-diamond-clarity" },
     { title: "Diamond Blemishes vs Inclusions", href: "/diamond-guide/diamond-blemishes-vs-inclusions" },
@@ -547,12 +547,12 @@ export const articles: Article[] = [
     { type: "paragraph", text: "Most engagement rings center around a single diamond. While many people initially focus on size, the true character of a diamond is shaped by several factors working together." },
     { type: "paragraph", text: "Cut quality is the most important. A well-cut diamond reflects light internally and returns it to the viewer as brightness and sparkle. Even a larger diamond can appear dull if the cut is poor." },
     { type: "paragraph", text: "After cut, buyers typically consider carat weight, color, and clarity. These are often referred to as the “Four Cs.” Each contributes to how the diamond looks, but they should be evaluated together rather than in isolation." },
-    { type: "paragraph", text: "For example, many engagement rings in Charlotte look beautiful with near-colorless diamonds rather than the highest color grades. When balanced properly, this approach allows buyers to prioritize cut quality and visual impact." },
+    { type: "paragraph", text: "For example, many engagement rings in Charlotte look beautiful with near-colorless diamonds rather than the highest color grades. When balanced properly, this approach allows buyers to prioritize cut quality and visual impact — a tradeoff we explore in depth in [Our Approach](/our-approach)." },
 
     { type: "heading", text: "Choosing the Right Diamond Shape" },
     { type: "paragraph", text: "Diamond shape influences both appearance and personality. Some shapes feel timeless, while others feel more contemporary." },
     { type: "paragraph", text: "Round diamonds remain the most popular choice because they offer the strongest light performance. Oval and elongated shapes have become increasingly common because they create a slightly larger visual presence on the hand." },
-    { type: "paragraph", text: "Shapes like emerald, cushion, and pear each bring their own character. None is objectively better — the choice usually comes down to personal preference and how the ring will be worn every day." },
+    { type: "paragraph", text: "Shapes like emerald, cushion, and pear each bring their own character. None is objectively better — the choice usually comes down to personal preference and how the ring will be worn every day. For how those preferences tend to play out locally, see [best diamond shapes in Charlotte](/diamond-guide/best-diamond-shapes-charlotte)." },
     { type: "paragraph", text: "Understanding shape early in the process helps narrow the search and makes comparing diamonds far easier." },
 
     { type: "heading", text: "Selecting the Engagement Ring Setting" },
@@ -568,12 +568,12 @@ export const articles: Article[] = [
 
     { type: "heading", text: "Final Thoughts" },
     { type: "paragraph", text: "Charlotte has become a growing city for engagement ring buyers, and many couples begin their search with online research before visiting a jeweler. Taking time to understand diamonds first makes the entire process easier and far more enjoyable." },
-    { type: "paragraph", text: "With a clear understanding of diamond quality, shape, and ring design, buyers can focus less on marketing claims and more on finding a ring that truly reflects their relationship." },
+    { type: "paragraph", text: "With a clear understanding of diamond quality, shape, and ring design, buyers can focus less on marketing claims and more on finding a ring that truly reflects their relationship. If you would like guidance tailored to your priorities, [begin a conversation](/concierge) at your own pace — we are selective about what we recommend, but not about who we help." },
   ],
   related: [
     { title: "Custom Engagement Rings Charlotte", href: "/diamond-guide/custom-engagement-rings-in-charlotte" },
     { title: "Buy Diamonds Charlotte", href: "/diamond-guide/buy-diamonds-in-charlotte" },
-    { title: "Best Diamond Shapes Charlotte", href: "/diamond-guide/charlotte-engagement-ring-guide" },
+    { title: "Best Diamond Shapes Charlotte", href: "/diamond-guide/best-diamond-shapes-charlotte" },
     { title: "Diamond Guide", href: "/diamond-guide" },
   ],
 },
@@ -605,7 +605,7 @@ export const articles: Article[] = [
 
     { type: "heading", text: "Shape and Proportions" },
     { type: "paragraph", text: "Cushion diamonds are typically square or slightly rectangular." },
-    { type: "paragraph", text: "Some stones appear nearly square, creating a balanced and symmetrical look. Others stretch slightly longer, which can give the diamond a more elongated presence on the hand." },
+    { type: "paragraph", text: "Some stones appear nearly square, creating a balanced and symmetrical look. Others stretch slightly longer, which can give the diamond a more elongated presence on the hand — something you can preview in [Diamond Studio](/diamond-studio) when comparing cushion proportions at the same carat." },
     { type: "paragraph", text: "Neither version is considered better than the other. Many buyers simply choose the proportions that feel most visually appealing to them." },
     { type: "paragraph", text: "What matters more is how balanced the shape appears. The curves should feel even, and the diamond should not appear overly narrow or overly wide." },
     { type: "paragraph", text: "When the proportions are harmonious, the cushion diamond tends to look soft, elegant, and well balanced." },
@@ -754,7 +754,7 @@ export const articles: Article[] = [
   related: [
     { title: "Charlotte Engagement Ring Guide", href: "/diamond-guide/charlotte-engagement-ring-guide" },
     { title: "Buy Diamonds Charlotte", href: "/diamond-guide/buy-diamonds-in-charlotte" },
-    { title: "Best Diamond Shapes Charlotte", href: "/diamond-guide/charlotte-engagement-ring-guide" },
+    { title: "Best Diamond Shapes Charlotte", href: "/diamond-guide/best-diamond-shapes-charlotte" },
     { title: "Diamond Guide", href: "/diamond-guide/" },
   ],
 },
@@ -834,7 +834,7 @@ export const articles: Article[] = [
   related: [
     { title: "What is Diamond Clarity", href: "/diamond-guide/what-is-diamond-clarity" },
     { title: "Diamond Clarity Chart Explained", href: "/diamond-guide/diamond-clarity-chart-explained" },
-    { title: "What Are Diamond Inclusions", href: "/diamond-guide/what-are-diamond-inclusions" },
+    { title: "Can You See Diamond Inclusions", href: "/diamond-guide/can-you-see-diamond-inclusions" },
     { title: "Can You See Diamond Inclusions", href: "/diamond-guide/can-you-see-diamond-inclusions" },
     { title: "Eye Clean Diamonds Explained", href: "/diamond-guide/eye-clean-diamonds-explained" },
   ],
@@ -849,7 +849,7 @@ export const articles: Article[] = [
     { type: "paragraph", text: "One of the most common recommendations from experienced jewelers is to prioritize cut quality. The way a diamond is proportioned and polished influences how it reflects light. Even a diamond with strong color and clarity grades can appear less lively if the cut is not well executed." },
 
     { type: "heading", text: "View Diamonds Side by Side" },
-    { type: "paragraph", text: "Seeing diamonds next to each other can reveal subtle differences that grading reports alone may not show. Comparing stones with similar characteristics often helps buyers recognize which qualities they naturally prefer. Brightness, sparkle, and overall balance tend to become easier to evaluate when diamonds are viewed together." },
+    { type: "paragraph", text: "Seeing diamonds next to each other can reveal subtle differences that grading reports alone may not show. Comparing stones with similar characteristics often helps buyers recognize which qualities they naturally prefer. Brightness, sparkle, and overall balance tend to become easier to evaluate when diamonds are viewed together — and [Our Approach](/our-approach) explains why paper equivalence is an incomplete measure of what you will actually see." },
 
     { type: "heading", text: "Think About the Ring as a Whole" },
     { type: "paragraph", text: "A diamond does not exist in isolation once it becomes part of a ring. The setting, metal color, and overall design all influence how the diamond appears. Considering how the stone will look once it is set can help buyers make decisions that create a more harmonious final piece." },
@@ -952,7 +952,7 @@ export const articles: Article[] = [
     { title: "What is Diamond Clarity", href: "/diamond-guide/what-is-diamond-clarity" },
     { title: "VS1 vs VS2 Diamond Clarity", href: "/diamond-guide/vs1-vs-vs2-diamond-clarity" },
     { title: "What is SI1 Diamond Clarity", href: "/diamond-guide/what-is-si1-clarity" },
-    { title: "What Are Diamond Inclusions", href: "/diamond-guide/what-are-diamond-inclusions" },
+    { title: "Can You See Diamond Inclusions", href: "/diamond-guide/can-you-see-diamond-inclusions" },
     { title: "Diamond Blemishes vs Inclusions", href: "/diamond-guide/diamond-blemishes-vs-inclusions" },
   ],
 },
@@ -1086,7 +1086,7 @@ export const articles: Article[] = [
     { type: "heading", text: "Why These Two Terms Are Often Confused" },
     { type: "paragraph", text: "Many people use the terms diamond cut and diamond shape interchangeably, but they describe two different characteristics of a diamond." },
     { type: "paragraph", text: "Shape refers to the outline of the stone when viewed from above. This includes familiar forms such as round, oval, cushion, emerald, and pear. Shape is largely a matter of personal style and preference." },
-    { type: "paragraph", text: "Cut, on the other hand, refers to how well the diamond’s facets are arranged to interact with light. It reflects the craftsmanship involved in shaping the diamond and determines how effectively the stone reflects brightness and sparkle." },
+    { type: "paragraph", text: "Cut, on the other hand, refers to how well the diamond’s facets are arranged to interact with light. It reflects the craftsmanship involved in shaping the diamond and determines how effectively the stone reflects brightness and sparkle. For fancy shapes, cut grading works differently than for rounds — a distinction covered in [do fancy shape diamonds have cut grades](/diamond-guide/do-fancy-shape-diamonds-have-cut-grades)." },
     { type: "paragraph", text: "Understanding the difference between these two ideas can make it much easier to evaluate diamonds and compare stones accurately." },
 
     { type: "heading", text: "What Diamond Shape Describes" },
@@ -1293,7 +1293,7 @@ export const articles: Article[] = [
       { type: "paragraph", text: "This is why diamond grading laboratories place such strong emphasis on cut quality when evaluating round brilliant diamonds." },
 
       { type: "heading", text: "Why Light Leakage Matters When Choosing a Diamond" },
-      { type: "paragraph", text: "Light leakage directly affects how bright and lively a diamond appears. A stone with excessive leakage may look dull even if it has excellent color or clarity grades." },
+      { type: "paragraph", text: "Light leakage directly affects how bright and lively a diamond appears. A stone with excessive leakage may look dull even if it has excellent color or clarity grades — a reminder that paper grades and visual performance are not always aligned, as we discuss in [Our Approach](/our-approach)." },
       { type: "paragraph", text: "Because of this, many experts recommend focusing on cut quality before considering other diamond characteristics. A well-cut diamond maximizes light return and minimizes leakage, allowing the stone to display its full visual potential." },
       { type: "paragraph", text: "In practical terms, this means a smaller diamond with strong light performance can often appear more attractive than a larger diamond that loses too much light." },
 
@@ -1376,7 +1376,7 @@ export const articles: Article[] = [
       { type: "paragraph", text: "One of the surprising aspects of diamond pricing is how small differences in grading can create noticeable changes in cost. A diamond that moves from one color grade to the next may appear almost identical to the eye, yet the price can increase significantly because higher grades are less common." },
 
       { type: "heading", text: "Balancing Beauty and Budget" },
-      { type: "paragraph", text: "Many experienced buyers focus on achieving a balance between price and visual quality. Rather than pursuing the highest possible grade in every category, it is often more practical to prioritize the characteristics that have the greatest impact on appearance. Cut quality, for example, frequently plays a larger role in sparkle than minor differences in color or clarity." },
+      { type: "paragraph", text: "Many experienced buyers focus on achieving a balance between price and visual quality. Rather than pursuing the highest possible grade in every category, it is often more practical to prioritize the characteristics that have the greatest impact on appearance. Cut quality, for example, frequently plays a larger role in sparkle than minor differences in color or clarity. The relationship between what you pay and what you actually receive is rarely captured on a grading report — we discuss that balance in [Our Approach](/our-approach)." },
 
       { type: "heading", text: "Finding the Right Combination" },
       { type: "paragraph", text: "The goal when evaluating price versus quality is to identify the combination of characteristics that delivers the most visual beauty within a comfortable budget. When the proportions are well balanced, a diamond can appear exceptional without requiring the highest possible grades in every category." },
@@ -1534,7 +1534,7 @@ export const articles: Article[] = [
     related: [
       { title: "Charlotte Engagement Ring Guide", href: "/diamond-guide/charlotte-engagement-ring-guide" },
       { title: "Buy Diamonds Charlotte", href: "/diamond-guide/buy-diamonds-in-charlotte" },
-      { title: "Best Diamond Shapes Charlotte", href: "/diamond-guide/charlotte-engagement-ring-guide" },
+      { title: "Best Diamond Shapes Charlotte", href: "/diamond-guide/best-diamond-shapes-charlotte" },
       { title: "Diamond Guide", href: "/diamond-guide" }
     ]
   },
@@ -1615,7 +1615,7 @@ export const articles: Article[] = [
       { type: "heading", text: "The Influence of Lighting" },
       { type: "paragraph", text: "Lighting conditions play an important role in how sparkle appears. In environments with multiple light sources, such as a jewelry store or a brightly lit room, diamonds tend to display more noticeable sparkle." },
       { type: "paragraph", text: "Under softer lighting, brilliance may become more apparent while colored flashes appear less dramatic. Sunlight, especially direct sunlight, can create particularly vivid bursts of sparkle." },
-      { type: "paragraph", text: "Because lighting conditions vary throughout the day, diamonds often reveal different visual characteristics depending on where they are viewed." },
+      { type: "paragraph", text: "Because lighting conditions vary throughout the day, diamonds often reveal different visual characteristics depending on where they are viewed — a topic explored further in [how lighting affects diamonds](/diamond-guide/how-lighting-affects-diamonds)." },
 
       { type: "heading", text: "Why Cut Quality Controls Sparkle" },
       { type: "paragraph", text: "Although sparkle is influenced by lighting and movement, cut quality remains the most important factor. A well-cut diamond directs light through the stone in a way that enhances brilliance, fire, and scintillation." },
@@ -1881,7 +1881,7 @@ export const articles: Article[] = [
     { type: "paragraph", text: "This does not mean fancy shapes are less carefully cut. It simply reflects the difficulty of applying a single universal grading system to such varied designs." },
 
     { type: "heading", text: "How Jewelers Evaluate Fancy Shape Cut Quality" },
-    { type: "paragraph", text: "Since fancy shapes do not receive a formal cut grade, evaluating their beauty requires a slightly different approach." },
+    { type: "paragraph", text: "Since fancy shapes do not receive a formal cut grade, evaluating their beauty requires a slightly different approach — one that often begins with [diamond cut versus diamond shape](/diamond-guide/diamond-cut-vs-diamond-shape) to separate outline from craftsmanship." },
     { type: "paragraph", text: "Experts often begin by looking at the diamond’s overall proportions, including length-to-width ratio, depth percentage, and table size. These measurements help indicate whether the diamond’s structure is balanced." },
     { type: "paragraph", text: "The next step is visual evaluation. Jewelers examine how the diamond reflects light, looking for brightness, contrast patterns, and overall liveliness." },
     { type: "paragraph", text: "Certain issues, such as dark areas or uneven light patterns, may suggest that the diamond’s proportions are less effective." },
@@ -2001,7 +2001,7 @@ export const articles: Article[] = [
 
     { type: "heading", text: "How Emerald Diamonds Look on the Hand" },
     { type: "paragraph", text: "Emerald diamonds create a very different visual presence compared to most other diamond shapes." },
-    { type: "paragraph", text: "Their elongated rectangular form often appears graceful and sophisticated on the hand. The shape can also create a subtle lengthening effect on the finger." },
+    { type: "paragraph", text: "Their elongated rectangular form often appears graceful and sophisticated on the hand. The shape can also create a subtle lengthening effect on the finger — [see how emerald proportions face up](/diamond-studio) when you are deciding between square and elongated outlines." },
     { type: "paragraph", text: "Because the facets produce long flashes of light rather than constant sparkle, the overall look tends to feel calm and refined." },
     { type: "paragraph", text: "Many people appreciate this understated brilliance. Instead of overwhelming sparkle, the emerald diamond offers a sense of quiet luxury." },
     { type: "paragraph", text: "This balance of structure and elegance has made emerald diamonds especially popular among those drawn to minimalist and architectural jewelry design." },
@@ -2072,7 +2072,7 @@ export const articles: Article[] = [
     { type: "heading", text: "Why Many Experts Recommend Excellent Cut" },
     { type: "paragraph", text: "Although Very Good cut diamonds can still be beautiful, many jewelers recommend choosing Excellent cut whenever possible." },
     { type: "paragraph", text: "The reason is simple: cut has the strongest influence on a diamond’s appearance. By selecting the highest cut grade available, buyers ensure the diamond is performing at its best." },
-    { type: "paragraph", text: "Even small improvements in light performance can make the diamond appear brighter, more lively, and more visually impressive." },
+    { type: "paragraph", text: "Even small improvements in light performance can make the diamond appear brighter, more lively, and more visually impressive. Within the Excellent range, subtle proportion differences can still affect light return — a nuance we explore in [Our Approach](/our-approach) to diamond selection." },
     { type: "paragraph", text: "For buyers who value maximum sparkle, Excellent cut is often the safest choice." },
 
     { type: "heading", text: "Final Thoughts" },
@@ -2121,7 +2121,7 @@ export const articles: Article[] = [
     { type: "heading", text: "Why Eye Clean Diamonds Matter" },
     { type: "paragraph", text: "For many buyers, the goal is to choose a diamond that looks clean and beautiful without magnification rather than selecting the highest clarity grade possible." },
     { type: "paragraph", text: "An eye clean diamond can offer the same visual appearance as a higher clarity diamond while allowing buyers to allocate their budget toward other characteristics such as cut quality or size." },
-    { type: "paragraph", text: "Because the beauty of a diamond is experienced with the naked eye, eye cleanliness is often a more practical measure of visual quality." },
+    { type: "paragraph", text: "Because the beauty of a diamond is experienced with the naked eye, eye cleanliness is often a more practical measure of visual quality. When inclusion placement is difficult to assess from a report alone, a [private conversation](/concierge) can help clarify whether a stone is truly eye clean for your setting." },
     { type: "paragraph", text: "Understanding this concept helps buyers evaluate diamonds more realistically and focus on how the stone will look when worn." },
 
     { type: "heading", text: "Final Thoughts" },
@@ -2134,7 +2134,7 @@ export const articles: Article[] = [
     { title: "VS1 vs VS2 Diamond Clarity", href: "/diamond-guide/vs1-vs-vs2-diamond-clarity" },
     { title: "What is SI1 Diamond Clarity", href: "/diamond-guide/what-is-si1-clarity" },
     { title: "Can You See Diamond Inclusions", href: "/diamond-guide/can-you-see-diamond-inclusions" },
-    { title: "What Are Diamond Inclusions", href: "/diamond-guide/what-are-diamond-inclusions" }
+    { title: "Are Flawless Diamonds Worth It", href: "/diamond-guide/are-flawless-diamonds-worth-it" }
   ]
 },
 {
@@ -2231,7 +2231,7 @@ export const articles: Article[] = [
 
     { type: "heading", text: "Final Thoughts" },
     { type: "paragraph", text: "GCAL 8X certification offers a more performance-focused perspective on diamond grading. By combining traditional grading methods with detailed light analysis, the report provides additional insight into how a diamond will actually appear." },
-    { type: "paragraph", text: "For buyers who want to understand both the structure and visual performance of a diamond, GCAL certification can provide useful context when comparing options." },
+    { type: "paragraph", text: "For buyers who want to understand both the structure and visual performance of a diamond, GCAL certification can provide useful context when comparing options. You can upload a GCAL report to [Diamond Intelligence](/diamond-intelligence) for a structured review of its performance-oriented grading details." },
     
   ],
   related: [
@@ -2263,7 +2263,7 @@ export const articles: Article[] = [
 
     { type: "heading", text: "Final Thoughts" },
     { type: "paragraph", text: "GIA diamond certification provides a clear and detailed description of a diamond’s measurable characteristics. By documenting the stone’s qualities using established grading standards, the report allows buyers to compare diamonds more confidently." },
-    { type: "paragraph", text: "Understanding how GIA certification works can make the diamond selection process far more transparent and easier to navigate." },
+    { type: "paragraph", text: "Understanding how GIA certification works can make the diamond selection process far more transparent and easier to navigate. If you already have a GIA report in hand, [Diamond Intelligence](/diamond-intelligence) can help translate those measurements into practical performance insight." },
     
   ],
   related: [
@@ -2395,7 +2395,7 @@ export const articles: Article[] = [
     { type: "heading", text: "How Laboratories Grade Diamond Cut" },
     { type: "paragraph", text: "Major gemological laboratories evaluate cut quality by examining proportions, symmetry, and polish. These factors influence how effectively the diamond handles light." },
     { type: "paragraph", text: "For round brilliant diamonds, grading systems often range from Excellent to Poor. Diamonds with higher cut grades generally demonstrate stronger light performance and more balanced visual effects." },
-    { type: "paragraph", text: "Although grading reports provide useful guidance, observing the diamond in person can still reveal important differences in how it interacts with light." },
+    { type: "paragraph", text: "Although grading reports provide useful guidance, observing the diamond in person can still reveal important differences in how it interacts with light. Uploading a report to [Diamond Intelligence](/diamond-intelligence) can offer a structured starting point before you compare stones side by side." },
 
     { type: "heading", text: "Why Cut Should Be a Priority for Buyers" },
     { type: "paragraph", text: "Because cut influences every aspect of a diamond’s appearance, many experts recommend prioritizing it when selecting a stone. A diamond with excellent cut quality can maximize the visual impact of its size and clarity." },
@@ -2583,7 +2583,7 @@ export const articles: Article[] = [
 
     { type: "heading", text: "Final Thoughts" },
     { type: "paragraph", text: "A diamond certificate contains a detailed collection of measurements describing the stone’s characteristics. By learning how to read the report step by step, buyers can better understand what those measurements mean." },
-    { type: "paragraph", text: "With a little familiarity, diamond certificates become a helpful tool for comparing stones and evaluating quality." },
+    { type: "paragraph", text: "With a little familiarity, diamond certificates become a helpful tool for comparing stones and evaluating quality. For a practical way to interpret what those measurements suggest about performance, you can upload your report to [Diamond Intelligence](/diamond-intelligence)." },
     
   ],
   related: [
@@ -2654,7 +2654,7 @@ export const articles: Article[] = [
     { type: "heading", text: "Why Proportions Alone Do Not Tell the Whole Story" },
     { type: "paragraph", text: "While proportion ranges are helpful guidelines, they do not guarantee beauty on their own. A diamond’s appearance also depends on how the facets are aligned and polished." },
     { type: "paragraph", text: "Two diamonds may have similar measurements yet perform differently because of small variations in symmetry or cutting precision." },
-    { type: "paragraph", text: "For this reason, many experts recommend looking at both the cut grade and the proportions together when evaluating a diamond." },
+    { type: "paragraph", text: "For this reason, many experts recommend looking at both the cut grade and the proportions together when evaluating a diamond. If you have a grading report in hand, [Diamond Intelligence](/diamond-intelligence) can help you see how those proportion measurements may influence light performance." },
     { type: "paragraph", text: "Proportions provide useful insight, but they are only one part of the overall picture." },
 
     { type: "heading", text: "Final Thoughts" },
@@ -2691,7 +2691,7 @@ export const articles: Article[] = [
 
     { type: "heading", text: "Final Thoughts" },
     { type: "paragraph", text: "IGI diamond certification provides documented grading information about a diamond’s measurable characteristics. Like other laboratory reports, it offers an independent reference describing the stone’s qualities." },
-    { type: "paragraph", text: "Understanding the differences between certification labs can help buyers interpret diamond reports more clearly during the selection process." },
+    { type: "paragraph", text: "Understanding the differences between certification labs can help buyers interpret diamond reports more clearly during the selection process. If you are reviewing an IGI report, [Diamond Intelligence](/diamond-intelligence) offers a straightforward way to explore how the grading details may translate to real-world appearance." },
     
   ],
   related: [
@@ -2723,7 +2723,7 @@ export const articles: Article[] = [
     { type: "heading", text: "Why Some Experts Prioritize Cut" },
     { type: "paragraph", text: "Many jewelers and gemologists recommend prioritizing cut when selecting a diamond. The reasoning is simple: a diamond that handles light well will generally appear brighter and more beautiful." },
     { type: "paragraph", text: "Strong light performance can also make a diamond feel more visually impressive, sometimes even making it appear slightly larger because of its brightness." },
-    { type: "paragraph", text: "By choosing a well-cut diamond first, buyers often create a stronger visual foundation before considering adjustments in carat weight, color, or clarity." },
+    { type: "paragraph", text: "By choosing a well-cut diamond first, buyers often create a stronger visual foundation before considering adjustments in carat weight, color, or clarity. This is one reason thoughtful selection prioritizes performance over paper grades alone — a philosophy we outline in [Our Approach](/our-approach)." },
 
     { type: "heading", text: "Balancing All Four Cs" },
     { type: "paragraph", text: "Although cut is extremely important, it does not mean the other Cs should be ignored. Each characteristic contributes to the diamond’s overall quality and value." },
@@ -2749,7 +2749,7 @@ export const articles: Article[] = [
   category: "Diamond Color",
   body: [
     { type: "heading", text: "Why Fluorescence Raises Questions" },
-    { type: "paragraph", text: "Diamond fluorescence often sparks debate among buyers because it is one of the more misunderstood characteristics listed on grading reports. Some people worry that fluorescence may negatively affect the appearance of a diamond, while others see it as a harmless natural feature." },
+    { type: "paragraph", text: "Diamond fluorescence often sparks debate among buyers because it is one of the more misunderstood characteristics listed on grading reports. Some people worry that fluorescence may negatively affect the appearance of a diamond, while others see it as a harmless natural feature. Uploading a report to [Diamond Intelligence](/diamond-intelligence) can help clarify how the fluorescence grade relates to the stone you are considering." },
     { type: "paragraph", text: "In reality, fluorescence is neither inherently good nor bad. Its impact depends on how strong the fluorescence is and how it interacts with the diamond’s natural color." },
 
     { type: "heading", text: "When Fluorescence Has Little Effect" },
@@ -2799,7 +2799,7 @@ export const articles: Article[] = [
     { type: "paragraph", text: "One of the most notable qualities of the marquise diamond is how large it can appear on the hand." },
     { type: "paragraph", text: "Because the shape stretches across a longer surface area, more of the diamond is visible when viewed from above. This creates the impression of a larger stone compared to many round or square diamonds of the same carat weight." },
     { type: "paragraph", text: "The elongated outline also spreads the diamond across the finger, increasing its visual coverage." },
-    { type: "paragraph", text: "For engagement ring buyers looking to maximize the appearance of size without increasing carat weight, the marquise shape can be particularly appealing." },
+    { type: "paragraph", text: "For engagement ring buyers looking to maximize the appearance of size without increasing carat weight, the marquise shape can be particularly appealing — [compare marquise spread on the hand](/diamond-studio) to see how much finger coverage a given carat delivers." },
     { type: "paragraph", text: "This visual advantage is one reason the marquise diamond has remained popular over the years." },
 
     { type: "heading", text: "How the Marquise Shape Affects Finger Appearance" },
@@ -2862,7 +2862,7 @@ export const articles: Article[] = [
     { type: "paragraph", text: "Both natural and lab-grown diamonds share the same fundamental crystal structure. This means they can display similar brilliance, hardness, and durability. Without specialized testing equipment, distinguishing between the two can be difficult for most observers." },
 
     { type: "heading", text: "Choosing Between the Two" },
-    { type: "paragraph", text: "The choice between natural and lab-grown diamonds often depends on personal preference. Some buyers appreciate the natural origin and rarity of mined diamonds, while others are drawn to the technological innovation and price advantages of lab-grown stones. Understanding the differences helps buyers make a decision that feels right for them." },
+    { type: "paragraph", text: "The choice between natural and lab-grown diamonds often depends on personal preference. Some buyers appreciate the natural origin and rarity of mined diamonds, while others are drawn to the technological innovation and price advantages of lab-grown stones. Understanding the differences helps buyers make a decision that feels right for them. Whichever path you choose, the same standard applies: optical quality matters more than origin on paper — a distinction we hold consistently, as described in [Our Approach](/our-approach). Both paths also raise practical certification questions, answered in [do lab grown diamonds have certificates](/diamond-guide/do-lab-grown-diamonds-have-certificates)." },
 
     { type: "heading", text: "Final Thoughts" },
     { type: "paragraph", text: "Natural and lab-grown diamonds represent two different paths to achieving the same beautiful result. By understanding how each type forms and how they compare, buyers can make a decision that reflects their priorities and perspective." },
@@ -2956,7 +2956,7 @@ export const articles: Article[] = [
     { type: "paragraph", text: "The elongated shape works naturally in solitaire rings, where the diamond becomes the clear focal point. It also pairs well with slim bands that emphasize the graceful proportions of the stone." },
     { type: "paragraph", text: "Halo settings are another popular choice for oval diamonds. A halo can add presence while maintaining the soft outline of the center stone." },
     { type: "paragraph", text: "Oval diamonds also adapt well to vintage-inspired designs, especially when combined with tapered side stones or subtle detailing in the metalwork." },
-    { type: "paragraph", text: "Because the shape visually lengthens the finger, it tends to complement many different hand shapes and sizes." },
+    { type: "paragraph", text: "Because the shape visually lengthens the finger, it tends to complement many different hand shapes and sizes — and [comparing oval proportions on the hand](/diamond-studio) can help clarify which length-to-width ratio feels most natural." },
 
     { type: "heading", text: "Final Thoughts" },
     { type: "paragraph", text: "Oval diamonds offer a refined combination of brilliance and elegance. Their elongated silhouette provides visual presence while maintaining the lively sparkle associated with brilliant-cut diamonds." },
@@ -3057,7 +3057,7 @@ export const articles: Article[] = [
     { type: "paragraph", text: "For engagement ring buyers looking for a diamond that feels visually substantial without increasing carat weight, the pear shape can offer an appealing advantage." },
 
     { type: "heading", text: "How Pear Diamonds Look on the Hand" },
-    { type: "paragraph", text: "Pear diamonds create a graceful and elongated look when worn on the hand." },
+    { type: "paragraph", text: "Pear diamonds create a graceful and elongated look when worn on the hand. The tapered point draws the eye along the finger, and [Diamond Studio](/diamond-studio) can help you judge how different pear lengths feel before you see stones in person." },
     { type: "paragraph", text: "The shape naturally draws the eye along the finger, which can create a lengthening effect that many people find flattering." },
     { type: "paragraph", text: "In engagement rings, the pear diamond is most often worn with the pointed tip facing outward toward the fingertip. This orientation enhances the elongated visual line of the diamond." },
     { type: "paragraph", text: "However, some designs rotate the diamond in different directions for a more modern interpretation. Side-set pear diamonds or east-west settings can produce a distinctive and contemporary appearance." },
@@ -3121,7 +3121,7 @@ export const articles: Article[] = [
     { type: "paragraph", text: "Princess cut diamonds offer a distinctive visual character that appeals to many engagement ring buyers." },
     { type: "paragraph", text: "The clean square shape feels modern and architectural, yet the brilliant faceting ensures the diamond still sparkles brightly in most lighting conditions." },
     { type: "paragraph", text: "Another reason for their popularity is efficiency in cutting. Princess diamonds often retain more of the original rough diamond material compared to round diamonds. Because of this, they can sometimes offer slightly better value per carat." },
-    { type: "paragraph", text: "Princess cuts also tend to display a bold visual presence on the hand. The square shape creates strong lines that stand out, especially when paired with minimal ring settings." },
+    { type: "paragraph", text: "Princess cuts also tend to display a bold visual presence on the hand. The square shape creates strong lines that stand out, especially when paired with minimal ring settings — and [Diamond Studio](/diamond-studio) helps show how that square outline reads at different carat weights." },
     { type: "paragraph", text: "For buyers looking for a diamond that feels both modern and brilliant, the princess cut often becomes a compelling option." },
 
     { type: "heading", text: "Understanding Princess Cut Sparkle" },
@@ -3203,7 +3203,7 @@ export const articles: Article[] = [
     { type: "heading", text: "Shape and Proportions" },
     { type: "paragraph", text: "Radiant diamonds can appear either square or rectangular depending on their proportions." },
     { type: "paragraph", text: "Square radiant diamonds often resemble princess cuts but with trimmed corners that soften the overall shape." },
-    { type: "paragraph", text: "Rectangular radiant diamonds stretch slightly longer across the finger, which can create a graceful elongated appearance." },
+    { type: "paragraph", text: "Rectangular radiant diamonds stretch slightly longer across the finger, which can create a graceful elongated appearance — you can [compare radiant and cushion face-up size](/diamond-studio) at the same carat when weighing those proportions." },
     { type: "paragraph", text: "Both styles are considered attractive. The choice usually depends on personal preference and how the diamond looks when worn." },
     { type: "paragraph", text: "Regardless of proportions, the shape should feel balanced with evenly trimmed corners and symmetrical sides." },
 
@@ -3273,7 +3273,7 @@ export const articles: Article[] = [
     { type: "paragraph", text: "Round diamonds create a balanced and symmetrical look when worn on the hand." },
     { type: "paragraph", text: "Their circular outline centers the diamond visually, drawing attention to the brilliance of the stone rather than the shape itself." },
     { type: "paragraph", text: "This symmetry also makes round diamonds incredibly adaptable to different ring designs. Whether set in a thin solitaire band or surrounded by smaller diamonds, the shape maintains its elegance." },
-    { type: "paragraph", text: "Round diamonds tend to feel timeless rather than trend-driven. Because of this, they often appeal to buyers looking for an engagement ring that will remain stylish for decades." },
+    { type: "paragraph", text: "Round diamonds tend to feel timeless rather than trend-driven. Because of this, they often appeal to buyers looking for an engagement ring that will remain stylish for decades. If you are weighing how a round stone will read at different carat weights, [Diamond Studio](/diamond-studio) offers a useful preview across finger sizes." },
     { type: "paragraph", text: "For many people, the round diamond represents the most classic interpretation of an engagement ring." },
 
     { type: "heading", text: "Choosing a Beautiful Round Diamond" },
@@ -3304,8 +3304,7 @@ export const articles: Article[] = [
   category: "Diamond Color",
   body: [
     { type: "heading", text: "Why Fluorescence Causes Uncertainty" },
-    { type: "paragraph", text: "Many buyers hesitate when they see fluorescence listed on a diamond grading report. Because this characteristic involves the diamond reacting to ultraviolet light, some people assume it may negatively affect the diamond’s beauty." },
-    { type: "paragraph", text: "In reality, fluorescence is simply a natural property found in many diamonds." },
+    { type: "paragraph", text: "Many buyers hesitate when they see fluorescence listed on a diamond grading report. Because this characteristic involves the diamond reacting to ultraviolet light, some people assume it may negatively affect the diamond’s beauty. In reality, fluorescence is simply a natural property found in many diamonds — and reviewing the full report through [Diamond Intelligence](/diamond-intelligence) often makes its practical significance clearer." },
 
     { type: "heading", text: "When Fluorescence Is Not a Concern" },
     { type: "paragraph", text: "Diamonds with faint or medium fluorescence rarely show any visible difference in everyday lighting conditions. In these cases, the diamond will typically appear the same as a non-fluorescent stone." },
@@ -3464,7 +3463,7 @@ export const articles: Article[] = [
 
     { type: "heading", text: "Why Certification Matters When Buying a Diamond" },
     { type: "paragraph", text: "Certification provides confidence and transparency during the buying process. Because diamonds can appear similar to the eye, having a standardized report allows buyers to understand the subtle differences that affect quality and value." },
-    { type: "paragraph", text: "A certificate also allows meaningful comparison between diamonds. Two stones may look similar in size, but differences in cut quality or clarity may significantly impact how the diamond performs visually. With a laboratory report, those differences become clear and measurable." },
+    { type: "paragraph", text: "A certificate also allows meaningful comparison between diamonds. Two stones may look similar in size, but differences in cut quality or clarity may significantly impact how the diamond performs visually. With a laboratory report, those differences become clear and measurable — though interpreting how they affect real-world appearance often requires more context, a gap [Diamond Intelligence](/diamond-intelligence) was designed to address." },
     { type: "paragraph", text: "For engagement ring buyers especially, certification offers reassurance that the diamond they select matches the qualities being represented." },
 
     { type: "heading", text: "Diamond Certificates vs. Appraisals" },
@@ -3506,7 +3505,7 @@ export const articles: Article[] = [
 
     { type: "heading", text: "Final Thoughts" },
     { type: "paragraph", text: "A diamond report number serves as the connection between the physical diamond and its official grading certificate. By linking the stone to a documented report, the number helps maintain transparency and traceability." },
-    { type: "paragraph", text: "For buyers researching diamonds, understanding report numbers adds another layer of confidence when reviewing certification details." },
+    { type: "paragraph", text: "For buyers researching diamonds, understanding report numbers adds another layer of confidence when reviewing certification details. Once you have a report number, [Diamond Intelligence](/diamond-intelligence) can use it to help interpret the grading data behind the stone." },
     
   ],
   related: [
@@ -3598,7 +3597,7 @@ export const articles: Article[] = [
 
     { type: "heading", text: "Final Thoughts" },
     { type: "paragraph", text: "Diamond clarity describes the small natural characteristics that formed inside a diamond as it grew deep within the earth. These inclusions are part of the stone’s natural history, and in most cases, they are invisible without magnification." },
-    { type: "paragraph", text: "Understanding clarity helps buyers interpret grading reports and evaluate how a diamond will appear in real life. In many cases, diamonds with moderate clarity grades still appear completely clean to the eye." },
+    { type: "paragraph", text: "Understanding clarity helps buyers interpret grading reports and evaluate how a diamond will appear in real life. For engagement ring decisions specifically, [best diamond clarity for engagement rings](/diamond-guide/best-diamond-clarity-for-engagement-rings) offers a practical framework for balancing eye cleanliness with value." },
     { type: "paragraph", text: "With the right balance of clarity, cut, and proportion, a diamond can deliver exceptional beauty without requiring a technically perfect grade." },
     
   ],
@@ -3606,7 +3605,7 @@ export const articles: Article[] = [
     { title: "Diamond Clarity Chart Explained", href: "/diamond-guide/diamond-clarity-chart-explained" },
     { title: "VS1 vs VS2 Diamond Clarity", href: "/diamond-guide/vs1-vs-vs2-diamond-clarity" },
     { title: "What is SI1 Diamond Clarity", href: "/diamond-guide/what-is-si1-clarity" },
-    { title: "What Are Diamond Inclusions", href: "/diamond-guide/what-are-diamond-inclusions" },
+    { title: "Can You See Diamond Inclusions", href: "/diamond-guide/can-you-see-diamond-inclusions" },
     { title: "Eye Clean Diamonds Explained", href: "/diamond-guide/eye-clean-diamonds-explained" }
   ]
 },
@@ -3621,7 +3620,7 @@ export const articles: Article[] = [
 
     { type: "heading", text: "How Diamond Color Is Graded" },
     { type: "paragraph", text: "Diamond color is graded on a standardized scale developed by the Gemological Institute of America (GIA). The scale begins at D, which represents completely colorless diamonds, and continues through the alphabet to Z, where visible yellow or brown tones become more apparent." },
-    { type: "paragraph", text: "Professional graders evaluate diamond color under controlled lighting conditions using a set of master stones for comparison. The diamond is viewed from the side rather than the top, which makes subtle color differences easier to detect. To the untrained eye, many diamonds within several grades of each other can appear nearly identical." },
+    { type: "paragraph", text: "Professional graders evaluate diamond color under controlled lighting conditions using a set of master stones for comparison. The diamond is viewed from the side rather than the top, which makes subtle color differences easier to detect — though what you notice in everyday wear may differ, as explored in [can you see diamond color](/diamond-guide/can-you-see-diamond-color)." },
 
     { type: "heading", text: "What Color Looks Like in Everyday Viewing" },
     { type: "paragraph", text: "In everyday settings, most diamonds do not reveal strong color differences unless they are viewed side by side. Lighting conditions, diamond cut, and the metal of the setting can all influence how color appears once the diamond is placed in a ring." },
@@ -3707,7 +3706,7 @@ export const articles: Article[] = [
 
     { type: "heading", text: "How Common Fluorescence Is in Diamonds" },
     { type: "paragraph", text: "Fluorescence is not rare. In fact, a significant portion of diamonds exhibit some degree of fluorescence when viewed under ultraviolet light. The strength of this effect varies from diamond to diamond." },
-    { type: "paragraph", text: "Many diamonds show no fluorescence at all, while others display faint, medium, strong, or very strong fluorescence when tested in a laboratory. These levels are recorded on a diamond’s grading report so buyers can understand whether the diamond reacts to UV light." },
+    { type: "paragraph", text: "Many diamonds show no fluorescence at all, while others display faint, medium, strong, or very strong fluorescence when tested in a laboratory. These levels are recorded on a diamond’s grading report so buyers can understand whether the diamond reacts to UV light — and [Diamond Intelligence](/diamond-intelligence) can help you interpret what that listing may mean in context." },
 
     { type: "heading", text: "When Fluorescence Is Visible" },
     { type: "paragraph", text: "In most everyday environments, diamond fluorescence is difficult to notice. Ultraviolet light is present in sunlight and certain artificial lighting, but the glow produced by fluorescence is often quite subtle." },
@@ -3719,7 +3718,7 @@ export const articles: Article[] = [
 
     { type: "heading", text: "Final Thoughts" },
     { type: "paragraph", text: "Diamond fluorescence is a natural reaction that causes some diamonds to glow under ultraviolet light. While it is a common feature found in many diamonds, it rarely affects how the diamond appears in everyday wear." },
-    { type: "paragraph", text: "Understanding fluorescence helps buyers interpret what they see on a grading report and evaluate whether this characteristic has any meaningful impact on the diamond they are considering." },
+    { type: "paragraph", text: "Understanding fluorescence helps buyers interpret what they see on a grading report and evaluate whether this characteristic has any meaningful impact on the diamond they are considering. For a deeper look at when fluorescence deserves caution, see [should you avoid diamond fluorescence](/diamond-guide/should-you-avoid-diamond-fluorescence)." },
     
   ],
   related: [
@@ -3865,7 +3864,7 @@ export const articles: Article[] = [
 
     { type: "heading", text: "Final Thoughts" },
     { type: "paragraph", text: "A diamond’s cut quality is the result of careful craftsmanship. Proportions, symmetry, and polish all work together to determine how effectively the stone captures and reflects light." },
-    { type: "paragraph", text: "When these elements are balanced correctly, the diamond appears bright, lively, and full of sparkle. This is why cut is often considered the defining factor in a diamond’s beauty." }
+    { type: "paragraph", text: "When these elements are balanced correctly, the diamond appears bright, lively, and full of sparkle. This is why cut is often considered the defining factor in a diamond’s beauty — and why a cut grade alone is rarely the full picture, as we discuss in [Our Approach](/our-approach)." }
   ],
   related: [
     { title: "What is Diamond Cut", href: "/diamond-guide/what-is-diamond-cut" },
@@ -3997,7 +3996,7 @@ export const articles: Article[] = [
 
     { type: "heading", text: "Final Thoughts" },
     { type: "paragraph", text: "Diamond certification provides clarity and transparency in a market where small differences can have meaningful effects on quality and value." },
-    { type: "paragraph", text: "By documenting the measurable characteristics of a diamond, certification helps buyers make informed decisions and understand the stone they are selecting." },
+    { type: "paragraph", text: "By documenting the measurable characteristics of a diamond, certification helps buyers make informed decisions and understand the stone they are selecting. Understanding what a certificate does not capture is equally important — [Diamond Intelligence](/diamond-intelligence) can help bridge that gap when you are ready to go beyond the grades." },
     
   ],
   related: [
@@ -4049,7 +4048,7 @@ export const articles: Article[] = [
     
   ],
   related: [
-    { title: "Diamond Shapes Guide", href: "/diamond-guide/diamond-shapes-guide" },
+    { title: "Diamond Shapes Guide", href: "/diamond-guide/diamond-shapes" },
     { title: "Round Diamond Guide", href: "/diamond-guide/round-diamond-guide" },
     { title: "Oval Diamond Guide", href: "/diamond-guide/oval-diamond-guide" },
     { title: "Cushion Diamond Guide", href: "/diamond-guide/cushion-diamond-guide" },

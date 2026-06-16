@@ -115,8 +115,8 @@ const articleGroups = [
         href: "/diamond-guide/are-all-diamond-certificates-the-same",
       },
       {
-        title: "Can You Trust Diamond Certificates",
-        href: "/diamond-guide/can-you-trust-diamond-certificates",
+        title: "GCAL 8X Diamond Certification Explained",
+        href: "/diamond-guide/gcal-8x-diamond-certification-explained",
       },
     ],
   },
@@ -162,8 +162,15 @@ export default function CertificationPage() {
             <p className="mx-auto mt-7 max-w-[630px] text-[1.01rem] leading-[1.9] text-[#6f675f]">
               Diamond certification provides a standardized way to evaluate a
               stone, but understanding what those grades mean in real terms is
-              where the value actually comes from. The report is a tool, not the
-              final decision.
+              where the value actually comes from.{" "}
+              <Link
+                href="/diamond-intelligence"
+                className="text-[#6a635c] underline underline-offset-4 transition hover:text-[#1f1d1a]"
+              >
+                Diamond Intelligence
+              </Link>{" "}
+              can help translate a report into practical insight. The report
+              remains a tool, not the final decision.
             </p>
           </div>
         </section>

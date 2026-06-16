@@ -152,8 +152,15 @@ export default function BuyingStrategyPage() {
             <p className="mx-auto mt-7 max-w-[630px] text-[1.01rem] leading-[1.9] text-[#6f675f]">
               Buying well is rarely about maximizing every category at once. It
               is usually about understanding which factors change what you
-              actually see, which ones matter more to you personally, and where
-              the tradeoffs stop feeling worthwhile.
+              actually see — a question of value, not just price, as we discuss
+              in{" "}
+              <Link
+                href="/our-approach"
+                className="text-[#6a635c] underline underline-offset-4 transition hover:text-[#1f1d1a]"
+              >
+                Our Approach
+              </Link>
+              .
             </p>
           </div>
         </section>

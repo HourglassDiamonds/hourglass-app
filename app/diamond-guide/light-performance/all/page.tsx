@@ -13,15 +13,15 @@ const articleGroups = [
     articles: [
       {
         title: "What is Diamond Brilliance",
-        href: "/diamond-guide/light-performance/what-is-diamond-brilliance",
+        href: "/diamond-guide/what-is-diamond-brilliance",
       },
       {
         title: "Diamond Fire Explained",
-        href: "/diamond-guide/light-performance/diamond-fire-explained",
+        href: "/diamond-guide/diamond-fire-explained",
       },
       {
         title: "What is Diamond Scintillation",
-        href: "/diamond-guide/light-performance/what-is-diamond-scintillation",
+        href: "/diamond-guide/what-is-diamond-scintillation",
       },
     ],
   },
@@ -30,15 +30,15 @@ const articleGroups = [
     articles: [
       {
         title: "Diamond Light Return Explained",
-        href: "/diamond-guide/light-performance/diamond-light-return-explained",
+        href: "/diamond-guide/diamond-light-return-explained",
       },
       {
         title: "Diamond Light Leakage Explained",
-        href: "/diamond-guide/light-performance/diamond-light-leakage-explained",
+        href: "/diamond-guide/diamond-light-leakage-explained",
       },
       {
         title: "Diamond Contrast Patterns Explained",
-        href: "/diamond-guide/light-performance/diamond-contrast-patterns-explained",
+        href: "/diamond-guide/diamond-contrast-patterns-explained",
       },
     ],
   },
@@ -47,19 +47,19 @@ const articleGroups = [
     articles: [
       {
         title: "How Diamond Cut Affects Light Performance",
-        href: "/diamond-guide/light-performance/how-diamond-cut-affects-light-performance",
+        href: "/diamond-guide/how-diamond-cut-affects-light-performance",
       },
       {
         title: "Diamond Sparkle Explained",
-        href: "/diamond-guide/light-performance/diamond-sparkle-explained",
+        href: "/diamond-guide/diamond-sparkle-explained",
       },
       {
         title: "How Lighting Affects Diamonds",
-        href: "/diamond-guide/light-performance/how-lighting-affects-diamonds",
+        href: "/diamond-guide/how-lighting-affects-diamonds",
       },
       {
         title: "Best Light Performance in Diamonds",
-        href: "/diamond-guide/light-performance/best-light-performance-in-diamonds",
+        href: "/diamond-guide/best-light-performance-in-a-diamond",
       },
     ],
   },

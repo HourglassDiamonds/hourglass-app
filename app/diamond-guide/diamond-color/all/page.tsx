@@ -13,15 +13,15 @@ const articleGroups = [
     articles: [
       {
         title: "What is Diamond Color",
-        href: "/diamond-guide/diamond-color/what-is-diamond-color",
+        href: "/diamond-guide/what-is-diamond-color",
       },
       {
         title: "Diamond Color Chart Explained",
-        href: "/diamond-guide/diamond-color/diamond-color-chart-explained",
+        href: "/diamond-guide/diamond-color-chart-explained",
       },
       {
         title: "Near Colorless Diamonds Explained",
-        href: "/diamond-guide/diamond-color/near-colorless-diamonds-explained",
+        href: "/diamond-guide/near-colorless-diamonds-explained",
       },
     ],
   },
@@ -30,15 +30,15 @@ const articleGroups = [
     articles: [
       {
         title: "D vs E vs F Diamond Color",
-        href: "/diamond-guide/diamond-color/d-vs-e-vs-f-diamond-color",
+        href: "/diamond-guide/d-vs-e-vs-f-diamond-color",
       },
       {
         title: "G vs H Diamond Color",
-        href: "/diamond-guide/diamond-color/g-vs-h-diamond-color",
+        href: "/diamond-guide/g-vs-h-diamond-color",
       },
       {
         title: "Diamond Color vs Clarity",
-        href: "/diamond-guide/diamond-color/diamond-color-vs-clarity",
+        href: "/diamond-guide/diamond-color-vs-clarity",
       },
     ],
   },
@@ -47,19 +47,19 @@ const articleGroups = [
     articles: [
       {
         title: "Best Diamond Color for Engagement Ring",
-        href: "/diamond-guide/diamond-color/best-diamond-color-for-engagement-ring",
+        href: "/diamond-guide/best-diamond-color-for-engagement-rings",
       },
       {
         title: "Does Diamond Color Matter",
-        href: "/diamond-guide/diamond-color/does-diamond-color-matter",
+        href: "/diamond-guide/does-diamond-color-matter",
       },
       {
         title: "Can You See Diamond Color",
-        href: "/diamond-guide/diamond-color/can-you-see-diamond-color",
+        href: "/diamond-guide/can-you-see-diamond-color",
       },
       {
         title: "Are Colorless Diamonds Worth It",
-        href: "/diamond-guide/diamond-color/are-colorless-diamonds-worth-it",
+        href: "/diamond-guide/are-colorless-diamonds-worth-it",
       },
     ],
   },

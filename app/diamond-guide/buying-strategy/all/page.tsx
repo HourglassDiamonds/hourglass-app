@@ -13,15 +13,15 @@ const articleGroups = [
     articles: [
       {
         title: "Diamond Buying Tips from Jewelers",
-        href: "/diamond-guide/buying-strategy/diamond-buying-tips-from-jewelers",
+        href: "/diamond-guide/diamond-buying-tips-from-jewelers",
       },
       {
         title: "Natural vs Lab Diamonds",
-        href: "/diamond-guide/buying-strategy/natural-vs-lab-diamonds",
+        href: "/diamond-guide/natural-vs-lab-diamonds",
       },
       {
         title: "Are Lab Diamonds a Good Choice",
-        href: "/diamond-guide/buying-strategy/are-lab-diamonds-a-good-choice",
+        href: "/diamond-guide/are-lab-diamonds-a-good-choice",
       },
     ],
   },
@@ -30,11 +30,11 @@ const articleGroups = [
     articles: [
       {
         title: "Diamond Price vs Quality",
-        href: "/diamond-guide/buying-strategy/diamond-price-vs-quality",
+        href: "/diamond-guide/diamond-price-vs-quality",
       },
       {
         title: "When is the Best Time to Buy a Diamond",
-        href: "/diamond-guide/buying-strategy/when-is-the-best-time-to-buy-a-diamond",
+        href: "/diamond-guide/when-is-the-best-time-to-buy-a-diamond",
       },
     ],
   },
@@ -43,15 +43,15 @@ const articleGroups = [
     articles: [
       {
         title: "Diamond Price vs Quality",
-        href: "/diamond-guide/buying-strategy/diamond-price-vs-quality",
+        href: "/diamond-guide/diamond-price-vs-quality",
       },
       {
         title: "Diamond Buying Tips from Jewelers",
-        href: "/diamond-guide/buying-strategy/diamond-buying-tips-from-jewelers",
+        href: "/diamond-guide/diamond-buying-tips-from-jewelers",
       },
       {
         title: "Natural vs Lab Diamonds",
-        href: "/diamond-guide/buying-strategy/natural-vs-lab-diamonds",
+        href: "/diamond-guide/natural-vs-lab-diamonds",
       },
     ],
   },

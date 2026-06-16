@@ -159,8 +159,15 @@ export default function DiamondShapesPage() {
             <p className="mx-auto mt-7 max-w-[630px] text-[1.01rem] leading-[1.9] text-[#6f675f]">
               Shape influences far more than outline alone. It affects the way a
               diamond carries its size, how it handles light, and the overall
-              impression it gives once worn, which is why the right choice tends
-              to feel as personal as it does visual.
+              impression it gives once worn — and{" "}
+              <Link
+                href="/diamond-studio"
+                className="text-[#6a635c] underline underline-offset-4 transition hover:text-[#1f1d1a]"
+              >
+                Diamond Studio
+              </Link>{" "}
+              makes it easier to compare how different shapes face up before you
+              decide.
             </p>
           </div>
         </section>

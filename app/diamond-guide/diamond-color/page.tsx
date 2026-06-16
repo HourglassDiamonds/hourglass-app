@@ -22,7 +22,7 @@ const beginHereGuides = [
   },
   {
     title: "Best Diamond Color for Engagement Ring",
-    href: "/diamond-guide/best-diamond-color-for-engagement-ring",
+    href: "/diamond-guide/best-diamond-color-for-engagement-rings",
     description:
       "A practical way to balance appearance, setting style, and overall value.",
   },
@@ -101,7 +101,7 @@ const articleGroups = [
     articles: [
       {
         title: "Best Diamond Color for Engagement Ring",
-        href: "/diamond-guide/best-diamond-color-for-engagement-ring",
+        href: "/diamond-guide/best-diamond-color-for-engagement-rings",
       },
       {
         title: "Does Diamond Color Matter",

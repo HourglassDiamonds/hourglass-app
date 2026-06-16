@@ -13,15 +13,15 @@ const articleGroups = [
     articles: [
       {
         title: "What is Diamond Clarity",
-        href: "/diamond-guide/diamond-clarity/what-is-diamond-clarity",
+        href: "/diamond-guide/what-is-diamond-clarity",
       },
       {
         title: "Diamond Clarity Chart Explained",
-        href: "/diamond-guide/diamond-clarity/diamond-clarity-chart-explained",
+        href: "/diamond-guide/diamond-clarity-chart-explained",
       },
       {
         title: "What Are Diamond Inclusions",
-        href: "/diamond-guide/diamond-clarity/what-are-diamond-inclusions",
+        href: "/diamond-guide/can-you-see-diamond-inclusions",
       },
     ],
   },
@@ -30,15 +30,15 @@ const articleGroups = [
     articles: [
       {
         title: "Eye Clean Diamonds Explained",
-        href: "/diamond-guide/diamond-clarity/eye-clean-diamonds-explained",
+        href: "/diamond-guide/eye-clean-diamonds-explained",
       },
       {
         title: "Can You See Diamond Inclusions",
-        href: "/diamond-guide/diamond-clarity/can-you-see-diamond-inclusions",
+        href: "/diamond-guide/can-you-see-diamond-inclusions",
       },
       {
         title: "Diamond Blemishes vs Inclusions",
-        href: "/diamond-guide/diamond-clarity/diamond-blemishes-vs-inclusions",
+        href: "/diamond-guide/diamond-blemishes-vs-inclusions",
       },
     ],
   },
@@ -47,19 +47,19 @@ const articleGroups = [
     articles: [
       {
         title: "VS1 vs VS2 Diamond Clarity",
-        href: "/diamond-guide/diamond-clarity/vs1-vs-vs2-diamond-clarity",
+        href: "/diamond-guide/vs1-vs-vs2-diamond-clarity",
       },
       {
         title: "What is SI1 Diamond Clarity",
-        href: "/diamond-guide/diamond-clarity/what-is-si1-diamond-clarity",
+        href: "/diamond-guide/what-is-si1-clarity",
       },
       {
         title: "Best Diamond Clarity for Engagement Rings",
-        href: "/diamond-guide/diamond-clarity/best-diamond-clarity-for-engagement-rings",
+        href: "/diamond-guide/best-diamond-clarity-for-engagement-rings",
       },
       {
         title: "Are Flawless Diamonds Worth It",
-        href: "/diamond-guide/diamond-clarity/are-flawless-diamonds-worth-it",
+        href: "/diamond-guide/are-flawless-diamonds-worth-it",
       },
     ],
   },

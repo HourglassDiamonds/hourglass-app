@@ -113,7 +113,7 @@ const articleGroups = [
       },
       {
         title: "Best Light Performance in Diamonds",
-        href: "/diamond-guide/best-light-performance-in-diamonds",
+        href: "/diamond-guide/best-light-performance-in-a-diamond",
       },
     ],
   },
@@ -159,9 +159,15 @@ export default function LightPerformancePage() {
             <p className="mx-auto mt-7 max-w-[630px] text-[1.01rem] leading-[1.9] text-[#6f675f]">
               Much of what people respond to in a diamond comes back to light.
               Brightness, fire, contrast, and movement all shape the way a stone
-              feels once worn, which is why two diamonds can appear very
-              different even before color or clarity become part of the
-              conversation.
+              feels once worn — which is why two diamonds with identical grades
+              can perform very differently, a distinction we explore in{" "}
+              <Link
+                href="/our-approach"
+                className="text-[#6a635c] underline underline-offset-4 transition hover:text-[#1f1d1a]"
+              >
+                Our Approach
+              </Link>
+              .
             </p>
           </div>
         </section>

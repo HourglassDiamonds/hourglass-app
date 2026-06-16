@@ -13,15 +13,15 @@ const articleGroups = [
     articles: [
       {
         title: "What is Diamond Cut",
-        href: "/diamond-guide/diamond-cut/what-is-diamond-cut",
+        href: "/diamond-guide/what-is-diamond-cut",
       },
       {
         title: "Is Diamond Cut the Most Important",
-        href: "/diamond-guide/diamond-cut/is-diamond-cut-the-most-important",
+        href: "/diamond-guide/is-diamond-cut-the-most-important-c",
       },
       {
         title: "What Makes a Diamond Cut Good or Bad",
-        href: "/diamond-guide/diamond-cut/what-makes-a-diamond-cut-good-or-bad",
+        href: "/diamond-guide/what-makes-a-diamond-cut-good-or-bad",
       },
     ],
   },
@@ -30,15 +30,15 @@ const articleGroups = [
     articles: [
       {
         title: "Excellent vs Very Good Diamond Cut",
-        href: "/diamond-guide/diamond-cut/excellent-vs-very-good-diamond-cut",
+        href: "/diamond-guide/excellent-vs-very-good-diamond-cut",
       },
       {
         title: "Ideal Diamond Cut Proportions",
-        href: "/diamond-guide/diamond-cut/ideal-diamond-cut-proportions",
+        href: "/diamond-guide/ideal-diamond-cut-proportions",
       },
       {
         title: "Do Fancy Shapes Have Cut Grades",
-        href: "/diamond-guide/diamond-cut/do-fancy-shapes-have-cut-grades",
+        href: "/diamond-guide/do-fancy-shape-diamonds-have-cut-grades",
       },
     ],
   },
@@ -47,19 +47,19 @@ const articleGroups = [
     articles: [
       {
         title: "How Diamond Cut Affects Sparkle",
-        href: "/diamond-guide/diamond-cut/how-diamond-cut-affects-sparkle",
+        href: "/diamond-guide/how-diamond-cut-affects-sparkle",
       },
       {
         title: "Does Diamond Cut Affect Size",
-        href: "/diamond-guide/diamond-cut/does-diamond-cut-affect-size",
+        href: "/diamond-guide/does-diamond-cut-affect-size",
       },
       {
         title: "Diamond Cut vs Diamond Shape",
-        href: "/diamond-guide/diamond-cut/diamond-cut-vs-diamond-shape",
+        href: "/diamond-guide/diamond-cut-vs-diamond-shape",
       },
       {
         title: "Diamond Cut vs Polish vs Symmetry",
-        href: "/diamond-guide/diamond-cut/diamond-cut-vs-polish-vs-symmetry",
+        href: "/diamond-guide/diamond-cut-vs-polish-vs-symmetry",
       },
     ],
   },

@@ -69,8 +69,8 @@ const articleGroups = [
         href: "/diamond-guide/diamond-clarity-chart-explained",
       },
       {
-        title: "What Are Diamond Inclusions",
-        href: "/diamond-guide/what-are-diamond-inclusions",
+        title: "Can You See Diamond Inclusions",
+        href: "/diamond-guide/can-you-see-diamond-inclusions",
       },
     ],
   },

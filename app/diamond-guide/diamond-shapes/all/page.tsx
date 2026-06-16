@@ -13,15 +13,15 @@ const articleGroups = [
     articles: [
       {
         title: "Round Diamond Guide",
-        href: "/diamond-guide/diamond-shapes/round-diamond-guide",
+        href: "/diamond-guide/round-diamond-guide",
       },
       {
         title: "Oval Diamond Guide",
-        href: "/diamond-guide/diamond-shapes/oval-diamond-guide",
+        href: "/diamond-guide/oval-diamond-guide",
       },
       {
         title: "Oval vs Round Diamond",
-        href: "/diamond-guide/diamond-shapes/oval-vs-round-diamond",
+        href: "/diamond-guide/oval-vs-round-diamond",
       },
     ],
   },
@@ -30,15 +30,15 @@ const articleGroups = [
     articles: [
       {
         title: "Pear Diamond Guide",
-        href: "/diamond-guide/diamond-shapes/pear-diamond-guide",
+        href: "/diamond-guide/pear-diamond-guide",
       },
       {
         title: "Marquise Diamond Guide",
-        href: "/diamond-guide/diamond-shapes/marquise-diamond-guide",
+        href: "/diamond-guide/marquise-diamond-guide",
       },
       {
         title: "Asscher Diamond Guide",
-        href: "/diamond-guide/diamond-shapes/asscher-diamond-guide",
+        href: "/diamond-guide/asscher-diamond-guide",
       },
     ],
   },
@@ -47,19 +47,19 @@ const articleGroups = [
     articles: [
       {
         title: "Emerald Diamond Guide",
-        href: "/diamond-guide/diamond-shapes/emerald-diamond-guide",
+        href: "/diamond-guide/emerald-diamond-guide",
       },
       {
         title: "Radiant Diamond Guide",
-        href: "/diamond-guide/diamond-shapes/radiant-diamond-guide",
+        href: "/diamond-guide/radiant-diamond-guide",
       },
       {
         title: "Princess Diamond Guide",
-        href: "/diamond-guide/diamond-shapes/princess-diamond-guide",
+        href: "/diamond-guide/princess-diamond-guide",
       },
       {
         title: "Cushion Diamond Guide",
-        href: "/diamond-guide/diamond-shapes/cushion-diamond-guide",
+        href: "/diamond-guide/cushion-diamond-guide",
       },
     ],
   },

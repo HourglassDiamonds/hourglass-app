@@ -13,15 +13,15 @@ const articleGroups = [
     articles: [
       {
         title: "What is a Diamond Certificate",
-        href: "/diamond-guide/certification/what-is-a-diamond-certificate",
+        href: "/diamond-guide/what-is-a-diamond-certificate",
       },
       {
         title: "Why Diamond Certification Matters",
-        href: "/diamond-guide/certification/why-diamond-certification-matters",
+        href: "/diamond-guide/why-diamond-certification-matters",
       },
       {
         title: "What is a Diamond Report Number",
-        href: "/diamond-guide/certification/what-is-a-diamond-report-number",
+        href: "/diamond-guide/what-is-a-diamond-report-number",
       },
     ],
   },
@@ -30,19 +30,19 @@ const articleGroups = [
     articles: [
       {
         title: "GIA Diamond Certification Explained",
-        href: "/diamond-guide/certification/gia-diamond-certification-explained",
+        href: "/diamond-guide/gia-diamond-certification-explained",
       },
       {
         title: "IGI Diamond Certification Explained",
-        href: "/diamond-guide/certification/igi-diamond-certification-explained",
+        href: "/diamond-guide/igi-diamond-certification-explained",
       },
       {
         title: "AGS Diamond Certification Explained",
-        href: "/diamond-guide/certification/ags-diamond-certification-explained",
+        href: "/diamond-guide/ags-diamond-certification-explained",
       },
       {
         title: "HRD Diamond Certification Explained",
-        href: "/diamond-guide/certification/hrd-diamond-certification-explained",
+        href: "/diamond-guide/hrd-diamond-certification-explained",
       },
     ],
   },
@@ -51,15 +51,15 @@ const articleGroups = [
     articles: [
       {
         title: "How to Read a Diamond Certificate",
-        href: "/diamond-guide/certification/how-to-read-a-diamond-certificate",
+        href: "/diamond-guide/how-to-read-a-diamond-certificate",
       },
       {
         title: "Are All Diamond Certificates the Same",
-        href: "/diamond-guide/certification/are-all-diamond-certificates-the-same",
+        href: "/diamond-guide/are-all-diamond-certificates-the-same",
       },
       {
         title: "Do Lab Grown Diamonds Have Certificates",
-        href: "/diamond-guide/certification/do-lab-grown-diamonds-have-certificates",
+        href: "/diamond-guide/do-lab-grown-diamonds-have-certificates",
       },
     ],
   },

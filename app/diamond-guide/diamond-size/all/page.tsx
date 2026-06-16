@@ -13,15 +13,15 @@ const articleGroups = [
     articles: [
       {
         title: "What is a Carat",
-        href: "/diamond-guide/diamond-size/what-is-a-carat",
+        href: "/diamond-guide/what-is-a-carat",
       },
       {
         title: "Diamond Carat vs Size",
-        href: "/diamond-guide/diamond-size/diamond-carat-vs-size",
+        href: "/diamond-guide/diamond-carat-vs-size",
       },
       {
         title: "Diamond Size Chart",
-        href: "/diamond-guide/diamond-size/diamond-size-chart",
+        href: "/diamond-guide/diamond-size-chart",
       },
     ],
   },
@@ -30,15 +30,15 @@ const articleGroups = [
     articles: [
       {
         title: "Diamond Size On Hand",
-        href: "/diamond-guide/diamond-size/diamond-size-on-hand",
+        href: "/diamond-guide/diamond-size-on-hand",
       },
       {
         title: "How Big is a 1 Carat Diamond",
-        href: "/diamond-guide/diamond-size/how-big-is-a-1-carat-diamond",
+        href: "/diamond-guide/how-big-is-a-1-carat-diamond",
       },
       {
         title: "How Big is a 2 Carat Diamond",
-        href: "/diamond-guide/diamond-size/how-big-is-a-2-carat-diamond",
+        href: "/diamond-guide/how-big-is-a-2-carat-diamond",
       },
     ],
   },
@@ -47,15 +47,15 @@ const articleGroups = [
     articles: [
       {
         title: "Best Carat Size for Engagement Ring",
-        href: "/diamond-guide/diamond-size/best-carat-size-for-engagement-ring",
+        href: "/diamond-guide/best-carat-size-for-an-engagement-ring",
       },
       {
         title: "How to Make a Diamond Look Bigger",
-        href: "/diamond-guide/diamond-size/how-to-make-a-diamond-look-bigger",
+        href: "/diamond-guide/how-to-make-a-diamond-look-bigger",
       },
       {
         title: "Do Elongated Diamonds Look Bigger",
-        href: "/diamond-guide/diamond-size/do-elongated-diamonds-look-bigger",
+        href: "/diamond-guide/do-elongated-diamonds-look-bigger",
       },
     ],
   },
