@@ -89,10 +89,14 @@ export const CLIENT_UPLOAD_PIPELINE_TIMEOUT_MS = envInt(
   26_000,
 );
 
-/** Client doc-extract: PDF text layer + cold serverless OCR/pdfjs bootstrap. 15s fits 26s pipeline / 54s GIA route. */
+/**
+ * Client doc-extract: PDF text layer + cold serverless full-page facsimile OCR.
+ * Image-only Natural GIA facsimiles need ~12–20s+ on cold starts; 45s matches
+ * calibration DOCUMENT_EXTRACT_TIMEOUT_MS and stays within the 110s GIA pipeline.
+ */
 export const CLIENT_DOCUMENT_EXTRACT_TIMEOUT_MS = envInt(
   "CLIENT_DOCUMENT_EXTRACT_TIMEOUT_MS",
-  15_000,
+  45_000,
 );
 
 export const CLIENT_IMAGE_REGION_OCR_TIMEOUT_MS = envInt(
@@ -118,12 +122,13 @@ export const CLIENT_GIA_DIAGRAM_INTERPRET_ROUTE_TIMEOUT_MS = envInt(
 
 /**
  * Browser fetch for `/api/diamond-intelligence/interpret`.
- * Must exceed CLIENT_GIA_DIAGRAM_INTERPRET_ROUTE_TIMEOUT_MS (82s) so AbortController
- * does not fire before the server returns a GIA facsimile success payload (~42s).
+ * Must exceed CLIENT_GIA_DIAGRAM_INTERPRET_ROUTE_TIMEOUT_MS (115s) and align with
+ * Vercel maxDuration (120s) so AbortController does not fire before a slow GIA
+ * facsimile success payload (~46–54s production).
  */
 export const CLIENT_INTERPRET_FETCH_TIMEOUT_MS = envInt(
   "CLIENT_INTERPRET_FETCH_TIMEOUT_MS",
-  90_000,
+  120_000,
 );
 
 export function capRenderScaleForPixels(
