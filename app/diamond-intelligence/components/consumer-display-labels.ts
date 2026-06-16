@@ -220,6 +220,19 @@ export const V3_INCOMPLETE_PROPORTION_ASSESSMENT: V3IncompleteAssessmentCopy = {
 /** @deprecated Use resolveV3IncompleteAssessmentCopy — grade-missing copy only. */
 export const V3_INCOMPLETE_ASSESSMENT = V3_INCOMPLETE_GRADE_ASSESSMENT;
 
+export const V3_RATE_LIMITED = {
+  eyebrow: "Diamond Intelligence",
+  headline: "Please Wait a Moment",
+  bodyParagraphs: [
+    "We've temporarily paused new report submissions to keep Diamond Intelligence responsive.",
+    "This is not an issue with your report.",
+    "Please wait a moment and try again.",
+  ] as const,
+  retryAfterLine: (seconds: number) =>
+    `We'll be ready again in approximately ${seconds} seconds.`,
+  tryAgainCta: "Try Again",
+} as const;
+
 export const V3_UNABLE_TO_VERIFY = {
   eyebrow: "Diamond Intelligence",
   headline: "We Couldn't Read This Report",

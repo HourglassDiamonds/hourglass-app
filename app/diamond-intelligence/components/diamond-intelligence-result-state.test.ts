@@ -37,6 +37,21 @@ describe("resolveDiamondIntelligenceResultState", () => {
     );
   });
 
+  it("returns RATE_LIMITED for rate_limited upload failures", () => {
+    assert.equal(
+      resolveDiamondIntelligenceResultState({
+        uploadPhase: "error",
+        uploadError: "Too many reports submitted. Please try again later.",
+        uploadErrorKind: "rate_limited",
+        hasReport: false,
+        partialListing: false,
+        v3RenderPhase: "empty",
+        canRenderFullResult: false,
+      }),
+      "RATE_LIMITED",
+    );
+  });
+
   it("returns NO_RESULT for unsupported file type so the dock shows format copy", () => {
     assert.equal(
       resolveDiamondIntelligenceResultState({
@@ -112,6 +127,13 @@ describe("resolveDiamondIntelligenceResultState", () => {
         resultState: "ERROR",
         errorMessage:
           "We couldn't read enough from this file to build a useful interpretation.",
+      }),
+      false,
+    );
+    assert.equal(
+      shouldShowUploadInlineError({
+        resultState: "RATE_LIMITED",
+        errorMessage: "Too many reports submitted. Please try again later.",
       }),
       false,
     );

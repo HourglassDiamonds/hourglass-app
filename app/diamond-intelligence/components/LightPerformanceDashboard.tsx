@@ -33,6 +33,7 @@ import DiV3Hero from "./DiV3Hero";
 import DiV3PartialGradeReview from "./DiV3PartialGradeReview";
 import DiV3ResultSections from "./DiV3ResultSections";
 import DiV3UnableToVerify from "./DiV3UnableToVerify";
+import DiV3RateLimited from "./DiV3RateLimited";
 import {
   resolveDiamondIntelligenceResultState,
   shouldShowUploadInlineError,
@@ -89,6 +90,7 @@ export type LightPerformanceDashboardProps = {
   uploadPhase: ClientUploadPhase;
   uploadError: string | null;
   uploadErrorKind?: DiamondIntelligenceUploadErrorKind | null;
+  uploadRetryAfterSeconds?: number | null;
   uploadStatusNote?: string | null;
   onFile: (file: File) => void;
   onUrl: (url: string) => void;
@@ -113,6 +115,7 @@ export default function LightPerformanceDashboard({
   uploadPhase,
   uploadError,
   uploadErrorKind,
+  uploadRetryAfterSeconds,
   uploadStatusNote,
   onFile,
   onUrl,
@@ -485,6 +488,14 @@ export default function LightPerformanceDashboard({
         <section className="relative py-6 md:py-8" aria-hidden>
           <div className="mx-auto h-px max-w-md bg-[linear-gradient(90deg,transparent,rgba(181,150,98,0.35),transparent)]" />
         </section>
+      ) : null}
+
+      {resultState === "RATE_LIMITED" ? (
+        <DiV3RateLimited
+          onFile={onFile}
+          reportContext={reportContext}
+          retryAfterSeconds={uploadRetryAfterSeconds}
+        />
       ) : null}
 
       {resultState === "ERROR" ? (

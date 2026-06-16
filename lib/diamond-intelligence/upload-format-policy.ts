@@ -19,4 +19,5 @@ export function isUnsupportedUploadValidationCode(
 
 export type DiamondIntelligenceUploadErrorKind =
   | "unsupported_format"
-  | "interpret_failure";
+  | "interpret_failure"
+  | "rate_limited";

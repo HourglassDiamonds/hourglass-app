@@ -28,6 +28,9 @@ export default function DiamondIntelligenceClient() {
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadErrorKind, setUploadErrorKind] =
     useState<DiamondIntelligenceUploadErrorKind | null>(null);
+  const [uploadRetryAfterSeconds, setUploadRetryAfterSeconds] = useState<
+    number | null
+  >(null);
   const [fileName, setFileName] = useState<string | null>(null);
   const [partialListing, setPartialListing] = useState<ListingExtraction | null>(
     null,
@@ -58,6 +61,7 @@ export default function DiamondIntelligenceClient() {
   const clearUploadError = useCallback(() => {
     setUploadError((prev) => (prev ? null : prev));
     setUploadErrorKind((prev) => (prev ? null : prev));
+    setUploadRetryAfterSeconds((prev) => (prev != null ? null : prev));
     setUploadPhase((p) => (p === "error" ? "idle" : p));
   }, []);
 
@@ -83,6 +87,7 @@ export default function DiamondIntelligenceClient() {
       );
       setUploadError(null);
       setUploadErrorKind(null);
+      setUploadRetryAfterSeconds(null);
       setUploadPhase("idle");
     },
     [],
@@ -96,6 +101,7 @@ export default function DiamondIntelligenceClient() {
     setActiveListing(null);
     setUploadError(null);
     setUploadErrorKind(null);
+    setUploadRetryAfterSeconds(null);
     setUploadStatusNote(null);
     setPartialListing(null);
     setPartialListingMessage(null);
@@ -115,6 +121,9 @@ export default function DiamondIntelligenceClient() {
       if (isDiamondIntelligenceUploadError(err)) {
         setUploadError(err.message);
         setUploadErrorKind(err.kind);
+        setUploadRetryAfterSeconds(
+          err.kind === "rate_limited" ? (err.retryAfterSeconds ?? null) : null,
+        );
       } else {
         setUploadError(
           err instanceof Error && err.message.trim()
@@ -122,6 +131,7 @@ export default function DiamondIntelligenceClient() {
             : CLIENT_UPLOAD_INTERPRET_ERROR,
         );
         setUploadErrorKind("interpret_failure");
+        setUploadRetryAfterSeconds(null);
       }
       setUploadPhase("error");
     } finally {
@@ -136,6 +146,7 @@ export default function DiamondIntelligenceClient() {
     setSourceUrl(url.trim());
     setUploadError(null);
     setUploadErrorKind(null);
+    setUploadRetryAfterSeconds(null);
     setUploadStatusNote(null);
     setPartialListing(null);
     setPartialListingMessage(null);
@@ -169,6 +180,7 @@ export default function DiamondIntelligenceClient() {
         setUploadError(CLIENT_UPLOAD_INTERPRET_ERROR);
       }
       setUploadErrorKind("interpret_failure");
+      setUploadRetryAfterSeconds(null);
       setUploadPhase("error");
     } finally {
       window.clearTimeout(checkingTimer);
@@ -191,6 +203,7 @@ export default function DiamondIntelligenceClient() {
         uploadPhase={uploadPhase}
         uploadError={uploadError}
         uploadErrorKind={uploadErrorKind}
+        uploadRetryAfterSeconds={uploadRetryAfterSeconds}
         uploadStatusNote={uploadStatusNote}
         onFile={(f) => void processFile(f)}
         onUrl={(url) => void processUrl(url)}

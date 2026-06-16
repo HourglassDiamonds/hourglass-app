@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  CLIENT_RATE_LIMIT_ERROR,
   DiamondIntelligenceUploadError,
+  parseRetryAfterHeader,
   resolveInterpretUploadFailure,
 } from "./client-upload";
 import { DI_UNSUPPORTED_FILE_TYPE_MESSAGE } from "./upload-format-policy";
@@ -46,5 +48,12 @@ describe("unsupported upload format policy", () => {
 
     assert.ok(!(err instanceof DiamondIntelligenceUploadError));
     assert.match(err.message, /couldn't read enough/i);
+  });
+
+  it("parses Retry-After header seconds for rate-limit UI", () => {
+    assert.equal(parseRetryAfterHeader("38"), 38);
+    assert.equal(parseRetryAfterHeader(" 12 "), 12);
+    assert.equal(parseRetryAfterHeader(""), undefined);
+    assert.equal(parseRetryAfterHeader("abc"), undefined);
   });
 });

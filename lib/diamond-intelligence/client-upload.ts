@@ -30,6 +30,16 @@ export type InterpretApiPayload = {
   interpretation?: ClientSafeInterpretationPayload;
 };
 
+/** Parse Retry-After response header (seconds) for rate-limit UI. */
+export function parseRetryAfterHeader(
+  value: string | null | undefined,
+): number | undefined {
+  if (!value?.trim()) return undefined;
+  const seconds = Number.parseInt(value.trim(), 10);
+  if (!Number.isFinite(seconds) || seconds < 1) return undefined;
+  return seconds;
+}
+
 export type ClientInterpretUploadResult = {
   interpretation: ClientSafeInterpretationPayload;
   partial: boolean;
@@ -100,6 +110,17 @@ export async function postReportForInterpretation(
   }
 
   if (res.status === 429) {
+    const code = typeof data.code === "string" ? data.code : undefined;
+    if (code === "rate_limited") {
+      throw new DiamondIntelligenceUploadError(
+        typeof data.error === "string" && data.error.trim()
+          ? data.error
+          : CLIENT_RATE_LIMIT_ERROR,
+        "rate_limited",
+        code,
+        parseRetryAfterHeader(res.headers.get("retry-after")),
+      );
+    }
     throw new Error(data.error ?? CLIENT_RATE_LIMIT_ERROR);
   }
 

@@ -7,7 +7,8 @@ export type DiamondIntelligenceResultState =
   | "PROCESSING"
   | "PARTIAL"
   | "SUCCESS"
-  | "ERROR";
+  | "ERROR"
+  | "RATE_LIMITED";
 
 export function resolveDiamondIntelligenceResultState(input: {
   uploadPhase: ClientUploadPhase;
@@ -29,6 +30,9 @@ export function resolveDiamondIntelligenceResultState(input: {
   if (input.uploadPhase === "error" && input.uploadError) {
     if (input.uploadErrorKind === "unsupported_format") {
       return "NO_RESULT";
+    }
+    if (input.uploadErrorKind === "rate_limited") {
+      return "RATE_LIMITED";
     }
     return "ERROR";
   }
@@ -61,5 +65,9 @@ export function shouldShowUploadInlineError(input: {
   resultState: DiamondIntelligenceResultState;
   errorMessage?: string | null;
 }): boolean {
-  return Boolean(input.errorMessage?.trim()) && input.resultState !== "ERROR";
+  return (
+    Boolean(input.errorMessage?.trim()) &&
+    input.resultState !== "ERROR" &&
+    input.resultState !== "RATE_LIMITED"
+  );
 }
