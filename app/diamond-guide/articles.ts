@@ -4227,12 +4227,76 @@ export const articles: Article[] = [
   title: "Best Places to Propose in Charlotte",
   category: "Proposal Planning",
   body: [
-    { type: "paragraph", text: "This guide is coming soon." },
+    { type: "paragraph", text: "The question usually arrives the same way: \"Where should I propose in Charlotte?\" Sometimes it comes with a screenshot. Sometimes with a list of places a friend posted after their own engagement. The instinct is to find the perfect location first, as if the setting will carry the moment." },
+    { type: "paragraph", text: "Location matters. It is not the whole story. The best Charlotte proposal spots are the ones that fit your relationship: how private you need to feel, whether you want skyline drama or quiet familiarity, whether photography matters or whether you would rather have no phones in sight at all. This guide is organized by proposal style, not by rank. The goal is to help you choose well, not to crown a winner." },
+    { type: "paragraph", text: "If you are still working through timing, ring logistics, or whether to involve family, [how to plan a proposal in Charlotte](/diamond-guide/how-to-plan-a-proposal-in-charlotte) covers that layer. This article is about place." },
+
+    { type: "heading", text: "How to Think About Location Before You Choose" },
+    { type: "paragraph", text: "Start with three questions. Does she want an audience or would she prefer the moment to belong to the two of you? Does the setting need to photograph beautifully, or will you both remember it without documentation? Is the proposal meant to feel grand, or is it meant to feel like your life together, just slightly elevated?" },
+    { type: "paragraph", text: "Charlotte rewards all of those approaches. The city has genuine skyline drama, strong parks, waterfront options twenty minutes north, and neighborhoods where a proposal can happen on a familiar corner without feeling small. The mistake is choosing a place because it photographed well for someone else." },
+
+    { type: "heading", text: "Skyline and City Views" },
+    { type: "paragraph", text: "These settings work when you want Charlotte to be visible in the memory: glass towers, open sky, the sense that this is where your story is happening." },
+
+    { type: "heading", text: "Romare Bearden Park" },
+    { type: "paragraph", text: "Romare Bearden is the classic Charlotte skyline proposal for a reason. The lawn opens toward Uptown, the city feels close without crowding the moment, and the park was designed for people to gather and linger. It works best in the late afternoon or early evening when the light softens and the skyline begins to glow. Privacy is moderate: you will not be alone on a beautiful Saturday, but weekday evenings can feel surprisingly calm. Photography is excellent from the main lawn and along the terraced paths. Parking is usually in the surrounding Uptown garages on Mint or Martin Luther King Jr. Boulevard; arrive early if you are coordinating with a photographer. This fits couples who want an unmistakably Charlotte backdrop and do not mind a few strangers nearby at a distance." },
+
+    { type: "heading", text: "The Green" },
+    { type: "paragraph", text: "The Green is quieter in spirit than Romare, more literary and tucked-in, with sculptures and shaded corners that can feel intimate even in Uptown. It suits proposals that should feel clever and personal rather than panoramic. Midday brings office foot traffic; early morning or early evening is better. Privacy varies by corner: the central lawn is busier, while side paths near Tryon Street can feel almost hidden. Photography is charming rather than sweeping. Garage parking nearby is straightforward. This fits couples who want Uptown energy without standing on a wide open lawn." },
+
+    { type: "heading", text: "Uptown Rooftops and Elevated Spaces" },
+    { type: "paragraph", text: "Several Uptown hotels and restaurants offer rooftop access with advance reservation. These settings trade spontaneity for control: you can often secure a semi-private table, manage timing around sunset, and build dinner or drinks into the evening. Privacy depends entirely on the venue and how you book. Photography may be limited by staff policies, so confirm before you assume a photographer can join. Valet or garage parking is standard. Rooftops fit couples who want the skyline, a clear backup plan if weather turns, and a celebration that begins immediately after she says yes. For a deeper look at elevated options, our upcoming guide to [Charlotte rooftop proposal locations](/diamond-guide/best-charlotte-rooftop-proposal-locations) goes further on tradeoffs." },
+
+    { type: "heading", text: "Garden and Nature Settings" },
+    { type: "paragraph", text: "These settings work when you want softness, color, and room to breathe. Charlotte's parks and gardens can feel far from the city even when they are minutes away." },
+
+    { type: "heading", text: "Freedom Park" },
+    { type: "paragraph", text: "Freedom Park is where many Charlotte couples already go on ordinary Sundays: the lake, the walking loop, the tree canopy that filters light in the late afternoon. It feels local rather than staged. Privacy is best on weekday mornings or near quieter stretches along the water, not on the main lawn during peak weekend hours. Photography is natural and green; golden hour along the lake is hard to beat. Street parking fills quickly; the parking lot off East Boulevard is the reliable choice. Freedom Park fits couples who want beauty without formality, especially if you already share memories there." },
+
+    { type: "heading", text: "McGill Rose Garden" },
+    { type: "paragraph", text: "McGill Rose Garden in NoDa is small, seasonal, and unmistakably romantic when the roses are in bloom, typically late spring through summer. The scale is intimate: this is not a crowd scene. Privacy is good if you choose a weekday morning; weekends can bring photographers and visitors in peak bloom. The garden itself is the photograph. Street parking on nearby blocks is usually sufficient. It fits couples who want a gentle, floral setting and are willing to plan around bloom timing." },
+
+    { type: "heading", text: "Daniel Stowe Botanical Garden" },
+    { type: "paragraph", text: "Daniel Stowe sits in Belmont, a short drive from Charlotte, and feels intentionally curated: manicured paths, conservatory rooms, seasonal displays. It requires tickets and planning, which can be an advantage if you want the day structured. Privacy improves on weekday visits and in less trafficked garden sections away from the main entrance. Photography is excellent throughout, especially in the conservatory and along the canal garden. On-site parking is easy. This fits couples who want a destination feeling and do not mind admission, timing, and a slightly longer drive." },
+
+    { type: "heading", text: "Little Sugar Creek Greenway" },
+    { type: "paragraph", text: "The greenway runs through parts of Charlotte many couples already use for runs, dog walks, and weekend coffee strolls. Proposals here work when the relationship has a rhythm tied to a particular stretch: Midtown, Elizabeth, or farther south toward Pineville. Privacy improves on less popular segments and weekday mornings. Photography is casual and documentary rather than cinematic. Access points have small parking areas; plan the exact meeting spot so neither of you walks the wrong direction. This fits active couples who want the moment to feel like life, not a set." },
+
+    { type: "heading", text: "Quiet, Private Moments" },
+    { type: "paragraph", text: "Some proposals should feel sheltered: less performance, more presence. Charlotte can do that well if you leave the most photographed spots." },
+
+    { type: "heading", text: "Lake Norman and Waterfront Parks" },
+    { type: "paragraph", text: "Jetton Park in Cornelius and Ramsey Creek Park in Mooresville offer water views, tree cover, and a pace that feels removed from Uptown. Sunset over the lake gives you natural light without city noise. Privacy is among the best in the metro area if you choose a weekday evening or a less central trail overlook. Photography is strong at the shoreline; wind and open sky matter, so have a hair plan if that will bother her. Driving is required; parking lots are spacious compared to in-city parks. Lake Norman fits couples who want calm, distance from crowds, and a short celebration drive into Davidson or Cornelius afterward." },
+
+    { type: "heading", text: "South End Rail Trail (Off-Peak)" },
+    { type: "paragraph", text: "South End is vibrant, which is both strength and risk. On a Saturday afternoon the trail is social and loud with breweries and foot traffic. At sunrise on a weekday it can feel like a private corridor through the city. Privacy is low during peak hours and moderate at dawn. Photography captures Charlotte's modern side: murals, rail lines, brick. Parking near New Bern or Atherton Mill stations works if you scout the spot first. This fits couples whose story lives in South End and who can tolerate scheduling precision." },
+
+    { type: "heading", text: "Elegant Charlotte Locations" },
+    { type: "paragraph", text: "Elegance here does not mean expensive. It means the setting signals intention: architecture, symmetry, a sense that you prepared." },
+
+    { type: "heading", text: "Symphony Park at SouthPark" },
+    { type: "paragraph", text: "Symphony Park offers open lawn, tree lines, and a cultural campus feel without Uptown congestion. Evening proposals can coincide with soft light and, in season, the energy of nearby performances without requiring tickets to the performance itself. Privacy is moderate on event nights, better on quiet weekdays. Photography is clean and classic. Parking at SouthPark is familiar to most Charlotte couples. This fits couples who want polish without rooftop prices." },
+
+    { type: "heading", text: "Mint Museum Randolph and Nearby Grounds" },
+    { type: "paragraph", text: "The Randolph campus in Eastover carries old Charlotte gravitas: stone, mature trees, a neighborhood that feels settled. Proposals on the grounds or nearby sidewalks work when you want refinement without a restaurant reservation. Check museum hours and event schedules; wedding photography often books these grounds on weekends. Privacy is good on weekday mornings. Photography is architectural and timeless. Street parking in Eastover requires attention to signage. This fits couples who appreciate art, history, and a quieter side of the city." },
+
+    { type: "heading", text: "Meaningful Everyday Places" },
+    { type: "paragraph", text: "The strongest location is sometimes not the most scenic. It is the most true." },
+    { type: "paragraph", text: "Consider the coffee shop where you had your first real conversation. The bench on your evening walk. The porch at a parent's house if family is central to your story. The trail where you decided she was the person you wanted to build with. These proposals rarely trend online. They often land deepest because she recognizes the choice: you proposed in your life together, not in a borrowed scene." },
+    { type: "paragraph", text: "Privacy is often excellent because the place is already yours. Photography may matter less; if you want images, a photographer can stay discreet at a distance. Logistics are simple because you already know where to park, when the spot is quiet, and what weather does to the space." },
+
+    { type: "heading", text: "Choosing a Place That Reflects the Relationship" },
+    { type: "paragraph", text: "Social media will always suggest the same five Charlotte backdrops. They are beautiful. They are also not automatically yours. Ask whether the location supports the moment you actually want to have: calm or celebratory, public or private, photographed or sealed in memory." },
+    { type: "paragraph", text: "Visit the spot at the same time of day you plan to propose. Stand where you will stand. Notice noise, foot traffic, and where she will face when you speak. If you are using a photographer, do a quick scout so nobody is surprised by light or background clutter." },
+    { type: "paragraph", text: "The ring deserves the same thoughtfulness. If you are still finalizing it, the [Charlotte engagement ring guide](/diamond-guide/charlotte-engagement-ring-guide) and [Charlotte diamond advisor guide](/diamond-guide/charlotte-diamond-advisor-guide) cover how to choose with clarity before the date is set. When the location feels right and the ring feels right, the proposal stops being a performance and becomes a decision you are both ready for." },
+    { type: "paragraph", text: "If you want help thinking through the full arc, from stone to setting to the evening after, you can [begin a conversation](/concierge) at whatever pace suits you. The right place is the one where she will hear you clearly, not the one that impresses strangers online." },
   ],
   related: [
-    { title: "Proposal Planning", href: "/diamond-guide/proposal-planning" },
     { title: "How to Plan a Proposal in Charlotte", href: "/diamond-guide/how-to-plan-a-proposal-in-charlotte" },
-    { title: "Charlotte Diamond Advisor Guide", href: "/diamond-guide/charlotte-diamond-advisor-guide" },
+    { title: "Charlotte Engagement Ring Guide", href: "/diamond-guide/charlotte-engagement-ring-guide" },
+    { title: "Best Charlotte Rooftop Proposal Locations", href: "/diamond-guide/best-charlotte-rooftop-proposal-locations" },
+    { title: "Best Proposal Photographers in Charlotte", href: "/diamond-guide/best-proposal-photographers-in-charlotte" },
+    { title: "Proposal Planning", href: "/diamond-guide/proposal-planning" },
   ],
 },
 {
@@ -4240,12 +4304,77 @@ export const articles: Article[] = [
   title: "How to Plan a Proposal in Charlotte",
   category: "Proposal Planning",
   body: [
-    { type: "paragraph", text: "This guide is coming soon." },
+    { type: "paragraph", text: "Most men begin with the ring box. That is logical. It is also backward. The proposal is an experience she will replay in detail: where she was standing, what you said, who was nearby, whether she could breathe. The ring matters enormously, but it enters the story after the moment begins. Plan the experience first. Let the ring serve it." },
+    { type: "paragraph", text: "This guide is for Charlotte couples at the stage where the question is real and the date is approaching. It is not a script. It is the framework we use when clients ask how to reduce anxiety, avoid the mistakes we see repeatedly, and build a proposal that still feels like the two of you when the nerves settle." },
+
+    { type: "heading", text: "Start With the Experience You Want Her to Have" },
+    { type: "paragraph", text: "Before you choose a park or book a photographer, describe the moment in plain language. Do you want her surprised, or do you want her quietly sure? Do you want tears in private or laughter with friends nearby? Do you want Charlotte in the background or a place that belongs only to you?" },
+    { type: "paragraph", text: "Write three sentences: what she should feel, what you should feel, and what should happen in the ten minutes after she says yes. Those sentences will tell you more than any Pinterest board. Everything else, location, timing, ring logistics, is in service of that picture." },
+
+    { type: "heading", text: "Public vs Private Proposals" },
+    { type: "paragraph", text: "Public proposals are not better or worse. They are different emotional contracts. A public moment creates shared joy and sometimes pressure: she may feel watched even when the crowd is friendly. A private moment creates intimacy and sometimes silence you must fill with your own words." },
+    { type: "paragraph", text: "If you are unsure, bias private. You can always walk into a restaurant with friends waiting. You cannot undo a proposal she wished had been quieter. Charlotte offers both extremes: Romare Bearden on a sunny weekend versus a Lake Norman shoreline at dusk, a rooftop table versus the greenway bench you already share." },
+    { type: "paragraph", text: "Ask indirectly, long before the day, how she feels about big moments in front of others. Listen to what she praises in friends' proposals. People reveal their preferences constantly if you are not listening for a quiz answer." },
+
+    { type: "heading", text: "Timing: Season, Day, and Hour" },
+    { type: "paragraph", text: "Charlotte weather is workable most of the year, but heat, pollen, and afternoon thunderstorms shape outdoor plans from May through September. Spring and fall offer the most forgiving outdoor windows. Winter can be stunning and sparse: parks are quieter, light is lower, warmth matters." },
+    { type: "paragraph", text: "Day of week matters as much as season. Freedom Park and Romare Bearden feel different on Tuesday evening than Saturday afternoon. If you need privacy, choose off-peak hours even if it means proposing before dinner instead of after." },
+    { type: "paragraph", text: "Golden hour is real for photography and for mood. Plan backward from sunset if the setting matters visually. Build fifteen minutes of buffer for traffic, parking, and the fact that you will be nervous." },
+
+    { type: "heading", text: "Choosing the Location" },
+    { type: "paragraph", text: "Location should match the relationship, not the algorithm. [Best places to propose in Charlotte](/diamond-guide/best-places-to-propose-in-charlotte) organizes options by style: skyline, gardens, quiet water, elegant neighborhoods, and meaningful everyday spots." },
+    { type: "paragraph", text: "Scout once. Walk the path you will take. Notice where she will stand relative to the sun. Confirm whether you need permission for a photographer or whether a venue requires a reservation you do not yet have." },
+
+    { type: "heading", text: "Coordinating a Photographer" },
+    { type: "paragraph", text: "A photographer can preserve the moment without turning it into a shoot. The difference is planning and restraint. Hire someone experienced with proposals, not only weddings. They should know how to stay invisible until the knee touches ground, then move closer." },
+    { type: "paragraph", text: "Share the route, the timing window, and a signal if possible. Decide in advance whether you want the question itself photographed or only the aftermath. Some couples regret full documentation; none regret having one honest image of her face afterward." },
+    { type: "paragraph", text: "Our guide to [best proposal photographers in Charlotte](/diamond-guide/best-proposal-photographers-in-charlotte) will go deeper on selection. For now, book early for peak season weekends and confirm their backup plan if rain moves you indoors." },
+
+    { type: "heading", text: "Weather and Backup Plans" },
+    { type: "paragraph", text: "Charlotte rain arrives without apology. Have a backup that preserves the emotional intent, not only the geography. If the park fails, where is the covered porch, hotel lobby, or apartment window with a view that still feels chosen?" },
+    { type: "paragraph", text: "Do not announce the backup unless you must. Do not apologize for weather. Most couples remember the adaptability more than the cloud cover. Keep the ring dry and secure regardless: an inner pocket beats a jacket left on a bench during a scout." },
+
+    { type: "heading", text: "Family and Friends: When to Involve Them" },
+    { type: "paragraph", text: "Family involvement works best when it is intentional and bounded. Hidden photographers are one thing; hidden audiences are another. If friends will be nearby after, tell them the exact timing window and give them a role: hold flowers, reserve the table, stay out of sight until you text." },
+    { type: "paragraph", text: "Parents often want to know beforehand. That is reasonable if she would want them to know. It is risky if she would prefer to tell them herself. You know which world you live in. Do not trade her surprise for your relief." },
+
+    { type: "heading", text: "Ring Logistics" },
+    { type: "paragraph", text: "The ring should be insured, sized reasonably, and secure before proposal day. If sizing is not final, a placeholder stone in a temporary setting can work for the question with the finished ring following shortly. What does not work is a box that will not open, a setting that spins on her finger, or a diamond you are unsure about because you rushed the purchase." },
+    { type: "paragraph", text: "If you are still choosing the ring, slow down the proposal date rather than forcing both decisions at once. The [Charlotte engagement ring guide](/diamond-guide/charlotte-engagement-ring-guide) covers priorities. The [Charlotte diamond advisor guide](/diamond-guide/charlotte-diamond-advisor-guide) covers who to trust locally. [Our Approach](/our-approach) explains how we think about performance and judgment before paper grades." },
+    { type: "paragraph", text: "Carry the ring in a consistent place. Practice retrieving it discreetly once or twice. The worst proposals we hear about are not rejected questions. They are fumbled boxes and rings dropped in grass." },
+
+    { type: "heading", text: "What to Do Immediately After" },
+    { type: "paragraph", text: "Have the next hour planned lightly. Not choreographed, but considered: where you will eat, whether you want friends, whether she will want to call her mother immediately or sit in the car in silence." },
+    { type: "paragraph", text: "Many Charlotte couples keep a reservation held under a name, champagne in the hotel room, or a short drive to Lake Norman to watch lights come on. Others want pizza on the couch because the emotional weight is enough. Match the celebration to her temperament, not to what looks correct online." },
+    { type: "paragraph", text: "Our upcoming guide to [romantic restaurants in Charlotte for an engagement celebration](/diamond-guide/most-romantic-restaurants-charlotte-engagement-celebration) and [the first 30 days after you get engaged](/diamond-guide/first-30-days-after-you-get-engaged) continue the arc when you are ready for what comes next." },
+
+    { type: "heading", text: "Common Mistakes" },
+    { type: "paragraph", text: "Over-complicating the setup so the moment feels staged. Making it a public surprise when she prefers privacy. Letting friends post before she has told anyone she chooses. Proposing with a ring you are not confident in because the date was locked. Skipping the scout visit and discovering construction, event tents, or closed gates." },
+    { type: "paragraph", text: "Another mistake is speaking too long before the question. She is waiting for the sentence she recognizes. Keep your words honest and short. The speech can continue after yes." },
+
+    { type: "heading", text: "What People Regret" },
+    { type: "paragraph", text: "Couples rarely regret simplicity. They regret pressure: the flash mob they did not want, the photographer who made them pose instead of breathe, the location chosen for photos instead of meaning. Some regret not having one clear image. That is worth planning for without building the day around Instagram." },
+    { type: "paragraph", text: "Men sometimes regret not asking her closest friend one quiet question beforehand. Not to spoil surprise, but to confirm assumptions about privacy, family, and what she finds romantic versus performative." },
+
+    { type: "heading", text: "What People Never Regret" },
+    { type: "paragraph", text: "Choosing a place that belongs to their story. Telling her why she matters in words that sound like them, not like a movie. Taking a breath before opening the box. Calling her father if that is important in her world. Having a plan for the ring that did not depend on luck." },
+    { type: "paragraph", text: "They never regret treating the proposal as the beginning of a marriage conversation rather than the end of a sales process. The ring opens that conversation. It should not rush it." },
+
+    { type: "heading", text: "Charlotte-Specific Practical Notes" },
+    { type: "paragraph", text: "Traffic between South Charlotte, Uptown, and Lake Norman can compress a tight timeline. Build buffer. Parking garages close or fill on event nights; confirm Uptown games and concerts if you propose near the stadium or Romare during an event." },
+    { type: "paragraph", text: "Heat in summer is real on stone patios and open lawns. Have water, shade, and a indoor backup. Pollen season affects outdoor photos and allergies alike. Winter proposals at gardens may have limited blooms; choose settings that do not depend on flowers being present." },
+
+    { type: "heading", text: "When You Want a Steady Hand" },
+    { type: "paragraph", text: "You do not need a jeweler to propose well. You do need clarity about the ring if the ring is part of the moment. Hourglass is based in Charlotte and works by appointment, without a showroom case or pressure to choose from what happens to be in stock. Many clients talk with us about the ring long before they talk about the park." },
+    { type: "paragraph", text: "If that would help, you can [begin a conversation](/concierge) when you are ready. If you are still building the foundation, read [how to plan a proposal she will never forget](/diamond-guide/how-to-plan-a-proposal-she-will-never-forget) next for the emotional architecture beyond logistics." },
+    { type: "paragraph", text: "The proposal should leave her feeling chosen, not managed. Plan enough that you can be present. Leave room for the unplanned detail she will remember anyway: the laugh, the tear, the way Charlotte looked that evening." },
   ],
   related: [
-    { title: "Proposal Planning", href: "/diamond-guide/proposal-planning" },
     { title: "Best Places to Propose in Charlotte", href: "/diamond-guide/best-places-to-propose-in-charlotte" },
     { title: "Charlotte Engagement Ring Guide", href: "/diamond-guide/charlotte-engagement-ring-guide" },
+    { title: "Charlotte Diamond Advisor Guide", href: "/diamond-guide/charlotte-diamond-advisor-guide" },
+    { title: "Best Proposal Photographers in Charlotte", href: "/diamond-guide/best-proposal-photographers-in-charlotte" },
+    { title: "The First 30 Days After You Get Engaged", href: "/diamond-guide/first-30-days-after-you-get-engaged" },
   ],
 },
 {
