@@ -4579,12 +4579,72 @@ export const articles: Article[] = [
   title: "How to Plan a Proposal She'll Never Forget",
   category: "Proposal Planning",
   body: [
-    { type: "paragraph", text: "This guide is coming soon." },
+    { type: "paragraph", text: "The proposals people remember at fifty are rarely the most expensive ones. They are the ones where the person asking knew something true about the person answering. Not a secret Pinterest board. Not a borrowed script. A choice that made sense the moment it happened." },
+    { type: "paragraph", text: "This guide is about that layer. Not how to rent a rooftop or hide a photographer, though those details matter. This is about building a proposal that feels like your relationship speaking, not like content designed for strangers." },
+
+    { type: "heading", text: "Memorable Is Personal, Not Elaborate" },
+    { type: "paragraph", text: "Elaborate proposals can be beautiful. They can also feel like auditions. When every element exists to impress an audience, the person being asked sometimes becomes a supporting character in her own moment." },
+    { type: "paragraph", text: "Memorable proposals tend to share a simpler pattern: you noticed what she cares about, you built the evening around that, and you spoke in words that sound like you. The ring, the location, the surprise, those are instruments. The melody is attention." },
+    { type: "paragraph", text: "If you are planning in Charlotte, logistics have their place. [How to plan a proposal in Charlotte](/diamond-guide/how-to-plan-a-proposal-in-charlotte) covers timing, weather, and the practical chain. This article sits beside that one and asks a different question: what would make this feel unmistakably yours?" },
+
+    { type: "heading", text: "Pay Attention to What Matters to Her" },
+    { type: "paragraph", text: "Most men already know more than they think. You know whether she hates being the center of attention in a crowded room. You know whether she saves voicemails or deletes them. You know whether she would rather cry in private or laugh with friends nearby." },
+    { type: "paragraph", text: "The work is not detective work. It is refusing to override what you already understand because a video online looked successful. Listen to how she talks about other people's engagements. Notice what she calls romantic versus what she calls exhausting." },
+    { type: "paragraph", text: "If you are genuinely unsure about one variable, ask someone who knows her well and can keep a secret. Not to design the proposal for you, but to confirm a single assumption: public or private, family present or family later, photography yes or photography never." },
+
+    { type: "heading", text: "Meaning Over Spectacle" },
+    { type: "paragraph", text: "Spectacle asks: will this look impressive? Meaning asks: will she feel seen? Those questions lead to different decisions about location, words, and who is in the room." },
+    { type: "paragraph", text: "A skyline proposal at Romare Bearden is spectacular. So is proposing on the porch where she grew up, or at the coffee shop where you realized you were not going anywhere. The second option may never trend. It often lands harder because she recognizes the choice." },
+    { type: "paragraph", text: "[Best places to propose in Charlotte](/diamond-guide/best-places-to-propose-in-charlotte) organizes settings by style, not rank. Use it to find a place that supports your story, not to borrow someone else's." },
+
+    { type: "heading", text: "Location as Character, Not Backdrop" },
+    { type: "paragraph", text: "Location should do something emotional, not only visual. Does it hold shared history? Does it mark a chapter you both wanted? Does it give her room to breathe after the question?" },
+    { type: "paragraph", text: "Rooftops and restaurants can work when the city is part of your story. [Best Charlotte rooftop proposal locations](/diamond-guide/best-charlotte-rooftop-proposal-locations) explains the tradeoffs: privacy, reservations, wind, staff coordination. Choose elevation because it fits your evening, not because it photographs well for people who were not there." },
+    { type: "paragraph", text: "Scout once at the hour you plan to propose. Stand where you will stand. Notice noise and foot traffic. The best location is where she can hear you clearly." },
+
+    { type: "heading", text: "Timing That Serves the Moment" },
+    { type: "paragraph", text: "Timing is not only sunset versus midnight. It is whether she will be rested, whether the week has been heavy, whether proposing on the same day as her sister's surgery is thoughtful or careless." },
+    { type: "paragraph", text: "Build buffer for nerves and traffic. Leave room for a wrong turn without panic. The goal is not a flawless schedule. It is a calm enough container that you can be present when you speak." },
+    { type: "paragraph", text: "If you are coordinating a photographer, timing becomes shared language. [Best proposal photographers in Charlotte](/diamond-guide/best-proposal-photographers-in-charlotte) covers how experienced proposal photographers think about light, hiding, and the ten seconds that matter most." },
+
+    { type: "heading", text: "Family and Friends: Boundaries, Not Casting" },
+    { type: "paragraph", text: "Family can deepen the moment or dilute it. The difference is almost always consent and clarity. Hidden audiences feel different from chosen ones." },
+    { type: "paragraph", text: "If friends will appear after yes, give them a role and a window: hold the table, stay out of sight until you text, resist posting before she has told anyone she wants to tell. Parents often want to know beforehand. That can be right if she would want them to know. It can steal something from her if she imagined telling them herself." },
+    { type: "paragraph", text: "You are not choosing between love for her and love for your families. You are choosing who the first hour belongs to." },
+
+    { type: "heading", text: "Thoughtful Surprises" },
+    { type: "paragraph", text: "A surprise proposal is not the same as a surprise performance. Thoughtful surprises remove friction: the reservation already held, the jacket she will want after sunset, the song that means something queued quietly in the car." },
+    { type: "paragraph", text: "Avoid surprises that trap her emotionally: public proposals when she prefers privacy, elaborate setups that leave her managing other people's reactions before she has processed her own." },
+    { type: "paragraph", text: "The ring itself can be a surprise or a collaboration. Both work. What fails is a diamond you are unsure about because you rushed the purchase to hit a date. If the ring still needs clarity, the [Charlotte engagement ring guide](/diamond-guide/charlotte-engagement-ring-guide) and [Charlotte diamond advisor guide](/diamond-guide/charlotte-diamond-advisor-guide) cover how to choose without pressure. [Our Approach](/our-approach) explains how we think about performance before paper grades." },
+
+    { type: "heading", text: "What People Remember Years Later" },
+    { type: "paragraph", text: "Ask engaged couples what they recall and the answers converge. The look on your face. The sentence you managed to get out. Whether the moment felt safe. Whether you seemed like yourself." },
+    { type: "paragraph", text: "They remember whether the ring fit well enough to wear home. They remember the first meal afterward, even if it was pizza on the couch. [Most romantic restaurants in Charlotte for an engagement celebration](/diamond-guide/most-romantic-restaurants-charlotte-engagement-celebration) helps when you want that dinner to match the tone of the night, quiet or celebratory." },
+    { type: "paragraph", text: "They rarely remember the exact wording of a speech written by a stranger online. They remember honesty." },
+
+    { type: "heading", text: "A Story, Not a Performance" },
+    { type: "paragraph", text: "Performances have audiences and arcs designed for applause. Stories have characters who already know each other. Your proposal should read like the next page, not like the season finale." },
+    { type: "paragraph", text: "That means your words can be short. It means you do not need to kneel if that is not your language. It means the photographer, if you have one, documents rather than directs." },
+    { type: "paragraph", text: "Write three sentences you would say even if no one were recording. Practice them until they sound like speech, not like a monologue. The question itself can be simple. The meaning carries it." },
+
+    { type: "heading", text: "Common Mistakes" },
+    { type: "paragraph", text: "Optimizing for Instagram instead of for her. Inviting too many people into a moment that needed intimacy. Speaking too long while she waits for the sentence she recognizes. Choosing a location because it worked for someone else. Proposing with a ring you are not confident in. Forgetting to plan the hour after yes." },
+    { type: "paragraph", text: "Another mistake is treating the proposal as the finish line. It is the opening of a longer conversation about marriage, money, family, and how you make decisions together. [The first 30 days after you get engaged](/diamond-guide/first-30-days-after-you-get-engaged) covers what often follows once the adrenaline settles." },
+
+    { type: "heading", text: "When You Want a Steady Hand" },
+    { type: "paragraph", text: "You do not need a jeweler to propose well. Many couples navigate the moment entirely on their own and feel proud they did. You may want guidance if the ring decision is still tangled, or if you want someone local who has watched hundreds of Charlotte proposals play out without turning yours into a template." },
+    { type: "paragraph", text: "Hourglass works by appointment, without a showroom case or pressure to choose from what happens to be in stock. You can [begin a conversation](/concierge) when that would help, or when you simply want a calm second opinion before the date is set." },
+
+    { type: "heading", text: "The Proposal as Extension of the Relationship" },
+    { type: "paragraph", text: "The best proposals do not feel like events imported from outside your life. They feel like the natural answer to a question you have both been walking toward." },
+    { type: "paragraph", text: "Plan enough that you can breathe. Leave room for the unplanned detail she will mention at anniversaries: the laugh, the wrong turn that became funny, the way the city looked that evening. If the moment reflects who you are together, she will not forget it because you spent the most. She will remember it because it was true." },
   ],
   related: [
-    { title: "Proposal Planning", href: "/diamond-guide/proposal-planning" },
     { title: "How to Plan a Proposal in Charlotte", href: "/diamond-guide/how-to-plan-a-proposal-in-charlotte" },
+    { title: "Best Places to Propose in Charlotte", href: "/diamond-guide/best-places-to-propose-in-charlotte" },
     { title: "Best Proposal Photographers in Charlotte", href: "/diamond-guide/best-proposal-photographers-in-charlotte" },
+    { title: "The First 30 Days After You Get Engaged", href: "/diamond-guide/first-30-days-after-you-get-engaged" },
+    { title: "Proposal Planning", href: "/diamond-guide/proposal-planning" },
   ],
 },
 {
@@ -4592,12 +4652,68 @@ export const articles: Article[] = [
   title: "The First 30 Days After You Get Engaged",
   category: "Proposal Planning",
   body: [
-    { type: "paragraph", text: "This guide is coming soon." },
+    { type: "paragraph", text: "The first month after a proposal has a particular texture. Joy arrives with a side of noise: texts, questions, opinions, and the quiet pressure to begin planning something large before you have finished being engaged." },
+    { type: "paragraph", text: "This guide is not a wedding checklist. It is the rhythm we watch couples navigate when the ring is new and the future feels both certain and unfamiliar. The goal is clarity without urgency, and enough structure that anxiety does not run the month." },
+
+    { type: "heading", text: "Enjoy the Moment Before You Plan Everything" },
+    { type: "paragraph", text: "You do not need a venue, a date, or a color palette in week one. You need space to let the decision land. Walk together without opening a spreadsheet. Eat the meal you skipped because you were shaking. Let her tell people when she is ready." },
+    { type: "paragraph", text: "Planning will wait. It always does. What does not come back is the early glow when everything still feels slightly unreal. Protect a few evenings where the only agenda is being engaged." },
+    { type: "paragraph", text: "If you proposed in Charlotte and kept a celebration dinner loose, [most romantic restaurants in Charlotte for an engagement celebration](/diamond-guide/most-romantic-restaurants-charlotte-engagement-celebration) can help you choose a room that matches how you want that first meal to feel, intimate or loud with friends." },
+
+    { type: "heading", text: "Sharing the News" },
+    { type: "paragraph", text: "There is no single correct order. Some couples tell parents first. Some tell best friends. Some post nothing for weeks because the moment still feels private." },
+    { type: "paragraph", text: "Agree on a short plan together: who hears in person, who gets a call, who can wait. That prevents the sting of learning important news from Instagram. It also keeps you aligned when relatives ask questions you have not answered yet." },
+    { type: "paragraph", text: "You are allowed to say, \"We are engaged and still enjoying that before we pick a date.\" That sentence buys peace without shutting people out." },
+
+    { type: "heading", text: "Family Conversations" },
+    { type: "paragraph", text: "Families react from love and from habit. Someone will ask about the wedding date before they ask how she feels. Someone will mention cost before they mention congratulations. That is normal, not a verdict on your choices." },
+    { type: "paragraph", text: "Decide early what you will share and what stays between you. Guest list hints, financial contributions, religious traditions, geography: these topics surface fast. You do not need final answers in month one. You do need a united front that sounds like, \"We will figure that out together and let you know.\"" },
+    { type: "paragraph", text: "If family dynamics are complicated, keep the first conversations short and warm. Depth can come later when you have had time to think." },
+
+    { type: "heading", text: "Ring Sizing and Insurance" },
+    { type: "paragraph", text: "If the ring fits well enough to wear, wear it carefully while you confirm sizing with a jeweler. If it spins or catches, get it adjusted before daily life loosens a stone or bends a prong." },
+    { type: "paragraph", text: "Insurance is worth addressing early, especially if the ring represents significant savings. Photograph the ring, keep a copy of the grading report if you have one, and add it to your renter's or homeowner's policy or a dedicated jewelry rider. Loss and theft are rare. They are also easier to absorb when coverage is already in place." },
+    { type: "paragraph", text: "If you are still finalizing the ring or upgrading a placeholder, the [Charlotte engagement ring guide](/diamond-guide/charlotte-engagement-ring-guide) and [Charlotte diamond advisor guide](/diamond-guide/charlotte-diamond-advisor-guide) cover how to choose with clarity rather than momentum." },
+
+    { type: "heading", text: "Early Budget Conversations" },
+    { type: "paragraph", text: "Money conversations are marriage conversations in miniature. The first month is a good time to speak plainly about what you can comfortably spend on a wedding without borrowing stress you will carry for years." },
+    { type: "paragraph", text: "You do not need a line-item budget yet. You do need alignment on priorities: guest count versus venue, experience versus aesthetics, family contributions versus independence. Write down two numbers: what feels responsible and what feels exciting. The truth usually lives between them." },
+    { type: "paragraph", text: "Comparison will arrive uninvited. Neighbors will mention costs that may not match your values. Treat those stories as data, not instructions." },
+
+    { type: "heading", text: "Define Priorities Together" },
+    { type: "paragraph", text: "Before vendors call you back, ask what the day is for. Is it a large celebration with everyone you love? Is it a small ceremony with a long dinner? Is it a trip that replaces a traditional reception?" },
+    { type: "paragraph", text: "Each answer reshapes budget, timeline, and stress. Couples who agree on the purpose of the day make faster decisions later because they have a filter: does this choice serve what we said mattered?" },
+    { type: "paragraph", text: "Write three priorities on one page. Not thirty. Three. Return to that page when the noise gets loud." },
+
+    { type: "heading", text: "Avoid Comparison Pressure" },
+    { type: "paragraph", text: "Engagement season online is curated highlight reels. It is not guidance. Someone else's rooftop proposal in Charlotte does not mean yours should have happened on a rooftop. Someone else's twelve-month planning sprint does not mean you owe the industry a frantic year." },
+    { type: "paragraph", text: "If you proposed recently, you already made one major decision well. Trust that same judgment when Instagram suggests you are behind. You are not behind. You are early." },
+    { type: "paragraph", text: "[How to plan a proposal she will never forget](/diamond-guide/how-to-plan-a-proposal-she-will-never-forget) speaks to the same principle from the other side of the question: meaning over spectacle. The first month of engagement deserves the same standard." },
+
+    { type: "heading", text: "Build a Healthy Planning Process" },
+    { type: "paragraph", text: "Treat planning like a habit, not a binge. One evening a week for wedding decisions protects the relationship from becoming a project management office. Rotate who leads research. Close the laptop when tension rises." },
+    { type: "paragraph", text: "Use tools that fit you, not tools vendors prefer. A shared note, a single folder, a calendar hold called \"wedding talk.\" The system matters less than the agreement that neither of you carries the mental load alone." },
+    { type: "paragraph", text: "If you want a broader Charlotte context for how you got here, [how to plan a proposal in Charlotte](/diamond-guide/how-to-plan-a-proposal-in-charlotte) and [best places to propose in Charlotte](/diamond-guide/best-places-to-propose-in-charlotte) remain useful reference points for the story you are now extending into marriage planning." },
+
+    { type: "heading", text: "What Actually Matters in the First Month" },
+    { type: "paragraph", text: "Ring secure and sized. News shared on your terms. A rough sense of budget and priorities. Time protected for each other. A plan for the next conversation, not the entire wedding." },
+    { type: "paragraph", text: "What can wait: color palettes, florist tastings, registry debates, and the cousin who insists you must book a venue this quarter. What cannot wait: kindness toward each other while you learn how you make decisions under mild pressure." },
+    { type: "paragraph", text: "Marriage begins before the ceremony. The first thirty days are practice in listening, compromising, and celebrating without performing for an audience." },
+
+    { type: "heading", text: "When the Ring Still Needs Attention" },
+    { type: "paragraph", text: "Some couples propose with a placeholder and finalize the ring afterward. Others upgrade once they understand her daily wear preferences. Both paths are normal if you communicate clearly and protect her expectations." },
+    { type: "paragraph", text: "Hourglass works with Charlotte couples who want judgment without a showroom case or inventory pressure. [Our Approach](/our-approach) describes how we think about diamonds as part of a longer relationship, not a single transaction. You can [begin a conversation](/concierge) whenever ring questions resurface during this month." },
+
+    { type: "heading", text: "Closing the First Chapter" },
+    { type: "paragraph", text: "The proposal answered one question. Engagement opens dozens more. You do not need to answer them all at once." },
+    { type: "paragraph", text: "Move through this month with the same calm you wished for on proposal day: prepared enough to breathe, flexible enough to enjoy what you did not script. The wedding will take shape. What you are building now is the habit of building together." },
   ],
   related: [
-    { title: "Proposal Planning", href: "/diamond-guide/proposal-planning" },
+    { title: "How to Plan a Proposal in Charlotte", href: "/diamond-guide/how-to-plan-a-proposal-in-charlotte" },
+    { title: "How to Plan a Proposal She'll Never Forget", href: "/diamond-guide/how-to-plan-a-proposal-she-will-never-forget" },
     { title: "Most Romantic Restaurants in Charlotte for an Engagement Celebration", href: "/diamond-guide/most-romantic-restaurants-charlotte-engagement-celebration" },
     { title: "Charlotte Engagement Ring Guide", href: "/diamond-guide/charlotte-engagement-ring-guide" },
+    { title: "Proposal Planning", href: "/diamond-guide/proposal-planning" },
   ],
 },
 
