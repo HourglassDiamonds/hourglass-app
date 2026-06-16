@@ -33,6 +33,7 @@ import {
   GIA_NATURAL_COLORED_SIMPLIFIED_BANDS,
   styleFromLayout,
 } from "./gia-report-style";
+import { isNaturalFacsimileScaleBleedCrownAngle } from "./gia-natural-facsimile-measurements-row";
 import {
   exportGiaDiagramDebugArtifacts,
   giaDiagramDebugEnabled,
@@ -544,6 +545,23 @@ function parseColoredSimplifiedDiagramFields(
   );
 }
 
+function rejectNaturalFacsimileScaleBleedCrown(
+  result: GiaDiagramFieldResult,
+  style: GiaReportStyle,
+): GiaDiagramFieldResult {
+  if (style !== "GIA_NATURAL_FACSIMILE" || !result.parsedValue) return result;
+  const n = parseFloat(String(result.parsedValue).replace(/[^\d.]/g, ""));
+  if (!Number.isFinite(n) || !isNaturalFacsimileScaleBleedCrownAngle(result.ocrText, n)) {
+    return result;
+  }
+  return {
+    ...result,
+    parsedValue: null,
+    confidence: "none",
+    note: `${result.note}; rejected scale-adjacent crown ${n}`,
+  };
+}
+
 function parseDiagramFields(
   bands: GiaDiagramBandOcr[],
   style: GiaReportStyle,
@@ -576,7 +594,10 @@ function parseDiagramFields(
   const results: GiaDiagramFieldResult[] = [];
 
   results.push(
-    assignDegreeFromBands("crownAngle", stackBands, usedDeg),
+    rejectNaturalFacsimileScaleBleedCrown(
+      assignDegreeFromBands("crownAngle", stackBands, usedDeg),
+      style,
+    ),
   );
   results.push(
     assignDegreeFromBands(

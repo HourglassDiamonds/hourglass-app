@@ -24,6 +24,10 @@ import {
   probeGiaLiveFieldCandidates,
 } from "../../gia-proportions";
 import { applyGiaProportionDiagramExtraction } from "./gia-diagram-extraction";
+import {
+  applyNaturalFacsimileMeasurementsRowFromText,
+  ocrNaturalFacsimileMeasurementsRow,
+} from "./gia-natural-facsimile-measurements-row";
 import type { OcrResult } from "../shared/ocr-utils";
 import {
   isOcrRuntimeAvailable,
@@ -1080,6 +1084,15 @@ export async function applyGiaFacsimileDiagramImageOcr(
     { reportNumber: opts?.reportNumber },
   );
   finishNaturalFacsimileDiagramScatterCleanup(fields, combinedText);
+
+  if (isNaturalGiaFacsimileContext(combinedText)) {
+    let measurementsRowText = combinedText;
+    const rowOcr = await ocrNaturalFacsimileMeasurementsRow(pdfBytes);
+    if (rowOcr.ok && rowOcr.text.trim()) {
+      measurementsRowText = `${combinedText}\n\n${rowOcr.text.trim()}`;
+    }
+    applyNaturalFacsimileMeasurementsRowFromText(measurementsRowText, fields, set);
+  }
 
   if (isNaturalGiaFacsimileContext(combinedText)) {
     const bandOcrPayload: GiaDiagramOcrCheckPayload = {

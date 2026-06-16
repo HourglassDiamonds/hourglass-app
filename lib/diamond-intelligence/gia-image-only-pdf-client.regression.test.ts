@@ -58,6 +58,9 @@ if (existsSync(PDF_PATH)) {
       assert.equal(f.pavilionAngle, "40.6");
       assert.match(f.culet ?? "", /^none$/i);
       assert.equal(f.depthPercent, "61.5", "expected depth from diagram band OCR");
+      assert.equal(f.crownAngle, "36.0", "expected crown from measurements-row supplement");
+      assert.match(f.girdle ?? "", /slightly thick/i, "expected girdle from measurements row");
+      assert.notEqual(f.tablePercent, "60", "must not re-accept grading-scale table noise");
 
       const completeness = assessExtractionCompleteness({ fields: f });
       assert.ok(

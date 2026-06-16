@@ -130,6 +130,14 @@ export const GIA_LGDR_DOSSIER_DIAGRAM_BANDS: GiaDiagramBandDef[] = [
   },
 ];
 
+/** Natural facsimile — left measurements row (mm + girdle + crown-height / crown-angle stack). */
+export const GIA_NATURAL_FACSIMILE_MEASUREMENTS_ROW_CROP: CropRegion = {
+  left: 0.02,
+  top: 0.31,
+  width: 0.58,
+  height: 0.1,
+};
+
 /** Natural diamond facsimile — center/upper diagram with grading scales. */
 export const GIA_NATURAL_FACSIMILE_DIAGRAM_BANDS: GiaDiagramBandDef[] = [
   HEADER_BAND,
