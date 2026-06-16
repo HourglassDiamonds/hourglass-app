@@ -1000,9 +1000,119 @@ export function preprocessGiaLgdrImageGradeHintText(text: string): string {
   return s;
 }
 
+function isGiaNaturalFacsimileImageGradeContext(text: string): boolean {
+  return (
+    /\bfacsimile\b/i.test(text) &&
+    /\bgrading\s+results\b/i.test(text) &&
+    /\bcolor\s+grade\b/i.test(text) &&
+    /\bclarity\s+grade\b/i.test(text)
+  );
+}
+
+function inferNaturalFacsimileClarityFromSegment(
+  segment: string,
+): string | undefined {
+  const s = segment.toLowerCase();
+
+  // OCR often renders the clarity digit as punctuation (e.g. "VVS |").
+  if (/\bvvs/.test(s)) {
+    if (/\bvvs\s*[\|i]/.test(s)) return "VVS1";
+    if (/\bvvs\s*2\b/.test(s)) return "VVS2";
+    if (/\bvvs\s*1\b/.test(s)) return "VVS1";
+  }
+  if (/\bvs/.test(s)) {
+    if (/\bvs\s*[\|i]/.test(s)) return "VS2";
+    if (/\bvs\s*2\b/.test(s)) return "VS2";
+    if (/\bvs\s*1\b/.test(s)) return "VS1";
+  }
+  if (/\bsi/.test(s)) {
+    if (/\bsi\s*[\|i]/.test(s)) return "SI2";
+    if (/\bsi\s*2\b/.test(s)) return "SI2";
+    if (/\bsi\s*1\b/.test(s)) return "SI1";
+  }
+  if (/\bi/.test(s)) {
+    if (/\bi\s*[\|i]/.test(s)) return "I2";
+    if (/\bi\s*2\b/.test(s)) return "I2";
+    if (/\bi\s*1\b/.test(s)) return "I1";
+    if (/\bi\s*3\b/.test(s)) return "I3";
+  }
+
+  return undefined;
+}
+
+function inferNaturalFacsimileColorAndClarity(text: string): {
+  color?: string;
+  clarity?: string;
+} {
+  const lower = text.toLowerCase();
+  const colorGradeRe = /color\s+grade/gi;
+  const clarityGradeRe = /clarity\s+grade/gi;
+
+  const clarityStarts = [...lower.matchAll(clarityGradeRe)].map(
+    (m) => m.index ?? 0,
+  );
+
+  let best: { color?: string; clarity?: string } = {};
+
+  for (const colorMatch of lower.matchAll(colorGradeRe)) {
+    const cStart = colorMatch.index ?? 0;
+    const cEnd = clarityStarts.find((ci) => ci > cStart);
+    if (cEnd === undefined) continue;
+
+    const colorSeg = text.slice(cStart, cEnd);
+    const wordBoundaryLetter = colorSeg.match(/\b([D-Z])\b/)?.[1];
+    const letterCandidates = [
+      ...colorSeg.matchAll(/([D-Z])/gi),
+    ].map((m) => m[1]);
+    const colorLetter =
+      wordBoundaryLetter ?? letterCandidates.at(-1) ?? undefined;
+
+    const nextColor = lower.indexOf("color grade", cEnd + 1);
+    const nextCut = lower.indexOf("cut grade", cEnd + 1);
+    const end = [nextColor, nextCut]
+      .filter((n) => n >= 0)
+      .reduce((a, b) => Math.min(a, b), Infinity);
+
+    const claritySeg = text.slice(cEnd, end === Infinity ? undefined : end);
+    const clarity = inferNaturalFacsimileClarityFromSegment(claritySeg);
+    if (!clarity) continue;
+
+    best = { color: colorLetter, clarity };
+    if (best.color) return best;
+  }
+
+  return best;
+}
+
+/**
+ * Natural GIA facsimile OCR often produces "Color/Clarity Grade" text where:
+ * - dot-leaders aren't clean enough for strict dot-leader regexes
+ * - the clarity digit is misread as punctuation (e.g. "VVS |")
+ *
+ * This synthesizes clean single-line `Color Grade ...` / `Clarity Grade ...`
+ * snippets so `parseReportGradeHints()` can apply existing business rules.
+ */
+function preprocessGiaNaturalFacsimileImageGradeHintText(
+  text: string,
+): string {
+  if (!isGiaNaturalFacsimileImageGradeContext(text)) return text;
+
+  let s = text;
+  s = s.replace(/\bvvs\s*[\|i]/gi, "VVS1");
+  s = s.replace(/\bvs\s*[\|i]/gi, "VS2");
+
+  const { color, clarity } = inferNaturalFacsimileColorAndClarity(s);
+  if (!color || !clarity) return s;
+
+  const synthesized = `\n\nColor Grade ........................................ ${color}\nClarity Grade ........................... ${clarity}\n`;
+  return `${s}${synthesized}`;
+}
+
 function preprocessReportGradeHintText(text: string): string {
-  return preprocessGiaLgdrImageGradeHintText(
-    preprocessGcalSarineGradeHintText(text.trim()),
+  return preprocessGiaNaturalFacsimileImageGradeHintText(
+    preprocessGiaLgdrImageGradeHintText(
+      preprocessGcalSarineGradeHintText(text.trim()),
+    ),
   );
 }
 

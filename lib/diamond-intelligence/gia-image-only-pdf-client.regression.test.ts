@@ -3,6 +3,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { describe, it } from "node:test";
 import { extractTextFromDocument } from "@/lib/calibration-library/document-extract";
 import { interpretUploadedReport } from "@/lib/diamond-intelligence/interpret-uploaded-report";
+import { needsPartialGradeReview } from "@/app/diamond-intelligence/components/v3-presentation";
 
 const PDF_PATH = "data/diamond-intelligence/debug/7543453672-prod.pdf";
 
@@ -42,6 +43,13 @@ if (existsSync(PDF_PATH)) {
           result.finalized.rawTextSnippet.trim().length > 0,
       );
       assert.notEqual(result.finalized.metadata.lab, "OTHER");
+
+      assert.equal(result.interpretation.gradeHints?.color, "E");
+      assert.equal(result.interpretation.gradeHints?.clarity, "VVS1");
+      assert.equal(
+        needsPartialGradeReview({ gradeHints: result.interpretation.gradeHints }),
+        false,
+      );
     });
   });
 }

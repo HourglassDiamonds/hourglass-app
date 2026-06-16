@@ -52,6 +52,17 @@ export const GIA_FACSIMILE_GRADING_RESULTS_CROP = {
   height: 0.38,
 } as const;
 
+/**
+ * Natural GIA facsimile — upper left grading stack (Carat / Color / Clarity / Cut).
+ * Sits above the finish block captured by GIA_FACSIMILE_GRADING_RESULTS_CROP.
+ */
+export const GIA_NATURAL_FACSIMILE_GRADING_4CS_CROP = {
+  left: 0.02,
+  top: 0.26,
+  width: 0.48,
+  height: 0.15,
+} as const;
+
 /** LGDR dossier — left specifications column (Carat / Color / Clarity / Cut stack). */
 export const GIA_LGDR_SPECIFICATIONS_CROP = {
   left: 0.02,
@@ -130,6 +141,18 @@ type GiaCropPass = {
 };
 
 const GIA_FACSIMILE_CROP_PASSES: GiaCropPass[] = [
+  {
+    id: "natural-4cs",
+    crop: GIA_NATURAL_FACSIMILE_GRADING_4CS_CROP,
+    preprocess: "contrast",
+    scale: GIA_FULL_PAGE_OCR_SCALE,
+  },
+  {
+    id: "natural-4cs-threshold",
+    crop: GIA_NATURAL_FACSIMILE_GRADING_4CS_CROP,
+    preprocess: "threshold",
+    scale: GIA_FULL_PAGE_OCR_SCALE,
+  },
   { id: "stack", crop: GIA_FACSIMILE_PROPORTION_STACK_CROP, preprocess: "raw" },
   { id: "stack-contrast", crop: GIA_FACSIMILE_PROPORTION_STACK_CROP, preprocess: "contrast" },
   { id: "girdle-band", crop: GIA_FACSIMILE_GIRDLE_BAND_CROP, preprocess: "threshold", scale: GIA_GIRDLE_BAND_SCALE },
@@ -298,6 +321,31 @@ async function preprocessGiaCropPng(
   return preprocessGiaContrastCropPng(png);
 }
 
+/** True for GIA LGDR / lab-grown dossier contexts (not natural facsimile). */
+export function isGiaLgdrGradingContext(combinedText: string): boolean {
+  return (
+    /\bLGDR\b/i.test(combinedText) ||
+    /laboratory[-\s]*grown\s+diamond\s+(?:report|specifications)/i.test(
+      combinedText,
+    )
+  );
+}
+
+/** Natural GIA facsimile — excludes LGDR and generic lab-grown paths. */
+export function isNaturalGiaFacsimileContext(combinedText: string): boolean {
+  if (isGiaLgdrGradingContext(combinedText)) return false;
+  if (
+    /\blaboratory[-\s]*grown\b/i.test(combinedText) &&
+    !/\bnatural\s+diamond\s+grading\s+report\b/i.test(combinedText)
+  ) {
+    return false;
+  }
+  return (
+    /\bfacsimile\b/i.test(combinedText) ||
+    /\bnatural\s+diamond\s+grading\s+report\b/i.test(combinedText)
+  );
+}
+
 function isGiaImageGradingPanelContext(
   combinedText: string,
   opts: { lab?: string; parserType?: string },
@@ -338,10 +386,32 @@ async function upscaleGiaCropPng(png: Buffer, factor: number): Promise<Buffer> {
   }
 }
 
+function naturalFacsimileGrading4CsPasses(): GiaImageGradingPanelPass[] {
+  return [
+    {
+      id: "natural-4cs-upscale",
+      crop: GIA_NATURAL_FACSIMILE_GRADING_4CS_CROP,
+      preprocess: "contrast",
+      upscale: 2,
+    },
+    {
+      id: "natural-4cs-contrast",
+      crop: GIA_NATURAL_FACSIMILE_GRADING_4CS_CROP,
+      preprocess: "contrast",
+    },
+    {
+      id: "natural-4cs-threshold",
+      crop: GIA_NATURAL_FACSIMILE_GRADING_4CS_CROP,
+      preprocess: "threshold",
+    },
+  ];
+}
+
 function giaImageGradingPanelPasses(combinedText: string): GiaImageGradingPanelPass[] {
-  const lgdr =
-    /\bLGDR\b/i.test(combinedText) ||
-    /laboratory[-\s]*grown\s+diamond\s+specifications/i.test(combinedText);
+  if (isNaturalGiaFacsimileContext(combinedText)) {
+    return naturalFacsimileGrading4CsPasses();
+  }
+  const lgdr = isGiaLgdrGradingContext(combinedText);
   if (lgdr) {
     return [
       {
@@ -378,11 +448,111 @@ function giaImageGradingPanelPasses(combinedText: string): GiaImageGradingPanelP
   ];
 }
 
+async function renderGiaFacsimileDocumentPage(
+  documentBytes: Buffer,
+  opts: { imageUpload?: boolean },
+): Promise<{ png: Buffer; width: number; height: number } | null> {
+  if (opts.imageUpload) {
+    return await renderUploadImageAsPage(documentBytes);
+  }
+  const rendered = await renderPdfPagePngAtScale(
+    documentBytes,
+    1,
+    GIA_FULL_PAGE_OCR_SCALE,
+  );
+  if (!rendered) return null;
+  return rendered;
+}
+
+async function ocrGiaFacsimileGradingPasses(
+  rendered: { png: Buffer; width: number; height: number },
+  passes: GiaImageGradingPanelPass[],
+): Promise<{ text: string; ok: boolean }> {
+  const chunks: string[] = [];
+
+  for (const pass of passes) {
+    const png = await cropPageRegionPng(
+      rendered.png,
+      rendered.width,
+      rendered.height,
+      pass.crop,
+    );
+    if (!png) continue;
+
+    let buf = png;
+    if (pass.upscale && pass.upscale > 1) {
+      buf = await upscaleGiaCropPng(buf, pass.upscale);
+    }
+    const prepped = await preprocessGiaCropPng(buf, pass.preprocess);
+    const ocr = await ocrImageBuffer(prepped);
+    if (ocr.text.trim()) chunks.push(ocr.text.trim());
+
+    const accumulated = [...new Set(chunks)].join("\n\n");
+    if (accumulated && giaImageGradingHintsComplete(accumulated)) {
+      return { text: accumulated, ok: true };
+    }
+  }
+
+  const text = [...new Set(chunks)].join("\n\n");
+  return { text, ok: text.length > 0 };
+}
+
 function giaImageGradingHintsComplete(text: string): boolean {
   const hints = parseReportGradeHints(text);
   return (
     isUsableDisplayColorValue(hints.color) &&
     isUsableDisplayClarityValue(hints.clarity)
+  );
+}
+
+/** Gate — targeted 4Cs crop OCR for natural GIA facsimile PDFs when grades are missing. */
+export function shouldRunGiaNaturalFacsimileGrading4CsOcr(input: {
+  combinedText: string;
+  gradeHintText: string;
+  opts: { lab?: string; parserType?: string };
+}): { run: boolean; reason: string } {
+  const isGia =
+    input.opts.lab === "GIA" ||
+    Boolean(input.opts.parserType?.startsWith("gia")) ||
+    looksLikeGiaReportText(input.combinedText);
+  if (!isGia) {
+    return { run: false, reason: "not-gia-lab-or-parser" };
+  }
+  if (!isNaturalGiaFacsimileContext(input.combinedText)) {
+    return { run: false, reason: "not-natural-gia-facsimile" };
+  }
+  if (giaImageGradingHintsComplete(input.gradeHintText)) {
+    return { run: false, reason: "color-and-clarity-already-parsed" };
+  }
+  return { run: true, reason: "natural-facsimile-missing-grade-hints" };
+}
+
+/**
+ * Targeted upper grading-stack OCR for natural GIA facsimile PDFs and images.
+ * Recovers Color / Clarity rows above the finish block.
+ */
+export async function ocrGiaNaturalFacsimileGrading4CsPanel(
+  documentBytes: Buffer,
+  opts?: {
+    combinedText?: string;
+    imageUpload?: boolean;
+    reportNumber?: string;
+  },
+): Promise<{ text: string; ok: boolean }> {
+  if (!(await isOcrRuntimeAvailable())) {
+    return { text: "", ok: false };
+  }
+
+  const rendered = await renderGiaFacsimileDocumentPage(documentBytes, {
+    imageUpload: opts?.imageUpload,
+  });
+  if (!rendered) {
+    return { text: "", ok: false };
+  }
+
+  return ocrGiaFacsimileGradingPasses(
+    rendered,
+    naturalFacsimileGrading4CsPasses(),
   );
 }
 
@@ -420,33 +590,7 @@ export async function ocrGiaImageGradingPanel(
 
   const combinedText = opts?.combinedText ?? "";
   const passes = giaImageGradingPanelPasses(combinedText);
-  const chunks: string[] = [];
-
-  for (const pass of passes) {
-    const png = await cropPageRegionPng(
-      rendered.png,
-      rendered.width,
-      rendered.height,
-      pass.crop,
-    );
-    if (!png) continue;
-
-    let buf = png;
-    if (pass.upscale && pass.upscale > 1) {
-      buf = await upscaleGiaCropPng(buf, pass.upscale);
-    }
-    const prepped = await preprocessGiaCropPng(buf, pass.preprocess);
-    const ocr = await ocrImageBuffer(prepped);
-    if (ocr.text.trim()) chunks.push(ocr.text.trim());
-
-    const accumulated = [...new Set(chunks)].join("\n\n");
-    if (accumulated && giaImageGradingHintsComplete(accumulated)) {
-      return { text: accumulated, ok: true };
-    }
-  }
-
-  const text = [...new Set(chunks)].join("\n\n");
-  return { text, ok: text.length > 0 };
+  return ocrGiaFacsimileGradingPasses(rendered, passes);
 }
 
 async function cropPageRegionPng(
@@ -661,6 +805,35 @@ export function logGiaOcrVisualCheck(
   console.log("[GIA OCR VISUAL CHECK]", { reportNumber, passes });
 }
 
+async function attachNaturalFacsimileGradeHintSupplement(
+  documentBytes: Buffer,
+  combinedText: string,
+  payload: GiaDiagramOcrCheckPayload,
+): Promise<GiaDiagramOcrCheckPayload> {
+  if (
+    !isNaturalGiaFacsimileContext(combinedText) ||
+    giaImageGradingHintsComplete(combinedText)
+  ) {
+    return payload;
+  }
+
+  const gradeOcr = await ocrGiaNaturalFacsimileGrading4CsPanel(documentBytes, {
+    combinedText,
+    imageUpload: false,
+  });
+  if (!gradeOcr.text.trim()) {
+    return payload;
+  }
+
+  const mergedContext = [combinedText, gradeOcr.text].filter(Boolean).join("\n\n");
+  return {
+    ...payload,
+    gradeHintSupplement: mergedContext.slice(0, 16000),
+    ocrRawPreview: gradeOcr.text.slice(0, REGION_PREVIEW_CHARS),
+    repairedOcrPreview: mergedContext.slice(0, REGION_PREVIEW_CHARS),
+  };
+}
+
 function assignGiaFacsimileCropFields(
   ocrText: string,
   combinedText: string,
@@ -864,7 +1037,11 @@ export async function applyGiaFacsimileDiagramImageOcr(
       timedOut: false,
     };
     logGiaDiagramOcrCheck(earlyDiagram);
-    return earlyDiagram;
+    return attachNaturalFacsimileGradeHintSupplement(
+      pdfBytes,
+      combinedText,
+      earlyDiagram,
+    );
   }
 
   const beforeTextScatter = { ...fields };
@@ -908,7 +1085,7 @@ export async function applyGiaFacsimileDiagramImageOcr(
       timedOut: false,
     };
     logGiaDiagramOcrCheck(early);
-    return early;
+    return attachNaturalFacsimileGradeHintSupplement(pdfBytes, combinedText, early);
   }
 
   const ocr = await ocrGiaFacsimileDiagramRegion(pdfBytes);

@@ -73,3 +73,28 @@ if (existsSync(pngPath)) {
     });
   });
 }
+
+const naturalFacsimileJpgPath =
+  "data/diamond-intelligence/debug/F20F1F75-8839-4184-AAF4-8F58B97B292B.jpg";
+if (existsSync(naturalFacsimileJpgPath)) {
+  describe("Natural GIA facsimile JPG 4Cs (F20F1F75...)", () => {
+    it("recovers H / VS2 without partial grade review", async () => {
+      const bytes = readFileSync(naturalFacsimileJpgPath);
+      const result = await interpretUploadedReport({
+        bytes,
+        mime: "image/jpeg",
+        sourceFilename: "F20F1F75-facsimile.jpg",
+      });
+
+      assert.equal(result.ok, true, result.ok ? "" : result.error);
+      assert.equal(result.interpretation.gradeHints?.color, "H");
+      assert.equal(result.interpretation.gradeHints?.clarity, "VS2");
+      assert.equal(
+        needsPartialGradeReview({
+          gradeHints: result.interpretation.gradeHints,
+        }),
+        false,
+      );
+    });
+  });
+}

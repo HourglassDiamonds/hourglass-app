@@ -31,8 +31,10 @@ import {
   applyGiaFacsimileDiagramImageOcr,
   ocrGiaFacsimileFullPages,
   ocrGiaImageGradingPanel,
+  ocrGiaNaturalFacsimileGrading4CsPanel,
   shouldRunGiaFacsimileDiagramImageOcr,
   shouldRunGiaGradingPanelImageOcr,
+  shouldRunGiaNaturalFacsimileGrading4CsOcr,
 } from "./parsers/gia/gia-facsimile-image-ocr";
 import {
   applyGiaClientPavilionDiagramOcr,
@@ -467,6 +469,33 @@ async function runImageOcrAugmentation(input: {
         parserPath: parsed.parserType,
       });
       if (clientSatisfied()) {
+        try {
+          const naturalGate = shouldRunGiaNaturalFacsimileGrading4CsOcr({
+            combinedText: combined,
+            gradeHintText,
+            opts: {
+              lab: parsed.metadata.lab,
+              parserType: parsed.parserType,
+            },
+          });
+          if (naturalGate.run) {
+            const naturalOcr = await withTimeout(
+              ocrGiaNaturalFacsimileGrading4CsPanel(documentBytes, {
+                combinedText: combined,
+                imageUpload: false,
+                reportNumber: reportNumberHint || undefined,
+              }),
+              Math.min(regionOcrTimeoutMs, 18_000),
+              "gia-natural-4cs-ocr",
+            );
+            if (naturalOcr.text.trim()) {
+              publishGradeHintText([combined, naturalOcr.text].join("\n\n"));
+              ocrCompleted = true;
+            }
+          }
+        } catch {
+          // Best-effort — still return whatever hints we have.
+        }
         return ocrResult();
       }
     }
@@ -750,6 +779,36 @@ async function runImageOcrAugmentation(input: {
         ? "client-sufficient"
         : "skipped-gia-igi-client-budget",
     });
+
+    // Natural GIA facsimile: ensure gradeHints color/clarity are targeted
+    // even when the client budget short-circuits diagram OCR.
+    try {
+      const naturalGate = shouldRunGiaNaturalFacsimileGrading4CsOcr({
+        combinedText: combined,
+        gradeHintText,
+        opts: {
+          lab: parsed.metadata.lab,
+          parserType: parsed.parserType,
+        },
+      });
+      if (naturalGate.run) {
+        const naturalOcr = await withTimeout(
+          ocrGiaNaturalFacsimileGrading4CsPanel(documentBytes, {
+            combinedText: combined,
+            imageUpload: false,
+            reportNumber: reportNumberHint || undefined,
+          }),
+          Math.min(regionOcrTimeoutMs, 18_000),
+          "gia-natural-4cs-ocr",
+        );
+        if (naturalOcr.text.trim()) {
+          publishGradeHintText([combined, naturalOcr.text].join("\n\n"));
+          ocrCompleted = true;
+        }
+      }
+    } catch {
+      // Best-effort — still return whatever hints we have.
+    }
     return ocrResult();
   }
 
@@ -781,6 +840,34 @@ async function runImageOcrAugmentation(input: {
       parsed.giaInternal = giaInternal;
     }
     ocrCompleted = true;
+  }
+
+  // Natural GIA facsimile PDFs can have proportions recovered from full-page OCR
+  // without readable Color/Clarity labels. Ensure we still extract gradeHints.
+  if (!imageUpload && !isIgi) {
+    const naturalGate = shouldRunGiaNaturalFacsimileGrading4CsOcr({
+      combinedText: combined,
+      gradeHintText,
+      opts: {
+        lab: parsed.metadata.lab,
+        parserType: parsed.parserType,
+      },
+    });
+    if (naturalGate.run) {
+      const naturalOcr = await withTimeout(
+        ocrGiaNaturalFacsimileGrading4CsPanel(documentBytes, {
+          combinedText: combined,
+          imageUpload: false,
+          reportNumber: reportNumberHint || undefined,
+        }),
+        Math.min(regionOcrTimeoutMs, 18_000),
+        "gia-natural-4cs-ocr",
+      );
+      if (naturalOcr.text.trim()) {
+        publishGradeHintText([combined, naturalOcr.text].join("\n\n"));
+        ocrCompleted = true;
+      }
+    }
   }
 
   const igiGate = shouldRunIgiDiagramImageOcr(parsed.fields, combined, {
