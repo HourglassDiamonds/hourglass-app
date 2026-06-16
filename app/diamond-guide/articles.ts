@@ -4382,12 +4382,60 @@ export const articles: Article[] = [
   title: "Best Proposal Photographers in Charlotte",
   category: "Proposal Planning",
   body: [
-    { type: "paragraph", text: "This guide is coming soon." },
+    { type: "paragraph", text: "A photographer can preserve the proposal without turning it into a production. The difference is almost always planning, communication, and choosing someone who understands surprise proposals rather than only wedding receptions. Charlotte has no shortage of talented photographers. The hard part is knowing what to look for before you hire." },
+    { type: "paragraph", text: "This guide is not a directory. It is a framework for choosing well, with a few names we have heard mentioned over the years as starting points for your own research." },
+
+    { type: "heading", text: "A note on photographers" },
+    { type: "paragraph", text: "The photographers mentioned in this guide are names we have heard recommended over time by clients, proposal stories, and members of the Charlotte community. They are included as starting points for your own research, not as personal endorsements or formal recommendations." },
+    { type: "paragraph", text: "Photography style, communication, availability, and experience can vary over time. We encourage you to review recent work, speak directly with any photographer you are considering, and choose the person whose approach feels like the best fit for your proposal." },
+
+    { type: "heading", text: "Start With the Feeling You Want in the Images" },
+    { type: "paragraph", text: "Before you compare portfolios, decide what the photographs should do. Do you want documentary coverage that catches the real gasp and tear? Do you want a few posed portraits afterward while the adrenaline settles? Do you want video? Do you want the photographer to help coordinate timing with a florist or venue contact?" },
+    { type: "paragraph", text: "Those answers narrow the field faster than scrolling Instagram. A wedding photographer who excels at reception lighting may not be the best fit for hiding behind a planter at Romare Bearden at golden hour. Surprise proposal work is its own skill." },
+
+    { type: "heading", text: "Documentary vs Posed Coverage" },
+    { type: "paragraph", text: "Documentary proposal photography prioritizes the moment: the approach, the question, the reaction, the first embrace. The photographer stays out of the way until the question is asked, then moves closer. Posed coverage happens after yes: walking shots, skyline backgrounds, details of the ring on her hand." },
+    { type: "paragraph", text: "Most couples want both, but weighted toward documentary. Ask to see full proposal galleries, not only the polished portraits from afterward. The reaction photo is the one you will look at twenty years from now." },
+
+    { type: "heading", text: "Experience With Surprise Proposals" },
+    { type: "paragraph", text: "Surprise proposals fail in small ways: the photographer is visible too early, the timing is off, the ring pocket bulge is obvious in every shot. You want someone who has done this enough to anticipate those details." },
+    { type: "paragraph", text: "Ask how many surprise proposals they photograph in a typical year. Ask how they hide before the moment. Ask whether they have worked your planned location before. [Best places to propose in Charlotte](/diamond-guide/best-places-to-propose-in-charlotte) covers settings; your photographer should know how light behaves in that specific place at that hour." },
+
+    { type: "heading", text: "Timing and Coordination" },
+    { type: "paragraph", text: "Proposal photography lives or dies on timing. You need a shared plan: where you will stand, where they will hide, what signal marks the moment, how long you have before crowds shift or sunset passes." },
+    { type: "paragraph", text: "Build buffer. Charlotte traffic, parking, and venue security checks eat minutes you will not feel until you are rushing. [How to plan a proposal in Charlotte](/diamond-guide/how-to-plan-a-proposal-in-charlotte) walks through the full timeline; your photographer should be part of that conversation early, not added the week before." },
+
+    { type: "heading", text: "Lighting Considerations" },
+    { type: "paragraph", text: "Midday sun on an open rooftop creates harsh shadows. Blue hour after sunset can be romantic but requires a photographer comfortable with low light. Overcast days are forgiving and flattering." },
+    { type: "paragraph", text: "Share your proposed time honestly. A good photographer will tell you if the light works or if shifting thirty minutes changes everything. If you are proposing indoors or under restaurant lighting, ask whether they bring supplemental light or rely on available light only." },
+
+    { type: "heading", text: "Location Familiarity" },
+    { type: "paragraph", text: "Charlotte photographers who know Uptown, Freedom Park, Lake Norman, and common rooftop venues can scout faster and anticipate security rules, crowd patterns, and the best background angles." },
+    { type: "paragraph", text: "If your location is unusual, offer a scout visit or share photos of the exact spot. The photographer should identify where they can stand without being seen and where you should pause for the question." },
+
+    { type: "heading", text: "Communication Before the Day" },
+    { type: "paragraph", text: "You should feel calmer after each conversation, not more confused. Clear photographers explain their process, response times, backup plans if it rains, and how quickly you will receive images." },
+    { type: "paragraph", text: "If you are coordinating with family, a restaurant, or a rooftop reservation, decide whether the photographer communicates directly with those contacts or through you. Fewer handoffs usually means fewer mistakes." },
+
+    { type: "heading", text: "Questions to Ask Before You Hire" },
+    { type: "paragraph", text: "How many surprise proposals have you photographed in the last year? Can I see a full gallery from one, including the moment of the question? What is your hiding strategy at this location? Do you include engagement-style portraits afterward, and for how long? What is your rain backup plan? How quickly will we receive edited images? Are you available for a brief call with me the day before to confirm timing?" },
+    { type: "paragraph", text: "Listen for specificity. Vague reassurance is a warning sign when the stakes are this personal." },
+
+    { type: "heading", text: "Names Worth Exploring as Starting Points" },
+    { type: "paragraph", text: "Over the years, Charlotte clients and proposal stories have mentioned several photographers who specialize in or frequently cover engagements and surprise proposals. Again, these are community references, not Hourglass endorsements." },
+    { type: "paragraph", text: "Savvy Leigh Photography appears often in Charlotte proposal stories, including rooftop and Uptown park moments. DeLong Photography markets dedicated proposal packages and emphasizes discreet coordination. SB Photographs has documented surprise proposals from Uptown to Lake Norman with a cinematic, story-driven style. Aubrey Elizabeth Photography offers full-service proposal planning alongside photography for couples who want decor and logistics handled in one place." },
+    { type: "paragraph", text: "You may also find strong fit with wedding photographers who accept proposal sessions even if proposals are not their homepage focus. The key is recent proposal work, not only wedding albums." },
+
+    { type: "heading", text: "How Photography Fits the Larger Plan" },
+    { type: "paragraph", text: "The photographer is one vendor in a short chain that includes the ring, the location, maybe a dinner reservation, and your own nerves. When the ring still needs final decisions, the [Charlotte engagement ring guide](/diamond-guide/charlotte-engagement-ring-guide) and [Charlotte diamond advisor guide](/diamond-guide/charlotte-diamond-advisor-guide) cover that layer separately from the camera." },
+    { type: "paragraph", text: "Choose someone whose work you trust, whose process feels calm, and who understands that the proposal is a private moment first and content second. If you want help thinking through the full arc, [Our Approach](/our-approach) at Hourglass is built around deliberate planning, and you can [begin a conversation](/concierge) when you are ready." },
   ],
   related: [
-    { title: "Proposal Planning", href: "/diamond-guide/proposal-planning" },
     { title: "How to Plan a Proposal in Charlotte", href: "/diamond-guide/how-to-plan-a-proposal-in-charlotte" },
     { title: "Best Places to Propose in Charlotte", href: "/diamond-guide/best-places-to-propose-in-charlotte" },
+    { title: "Best Charlotte Rooftop Proposal Locations", href: "/diamond-guide/best-charlotte-rooftop-proposal-locations" },
+    { title: "How to Plan a Proposal She'll Never Forget", href: "/diamond-guide/how-to-plan-a-proposal-she-will-never-forget" },
+    { title: "Proposal Planning", href: "/diamond-guide/proposal-planning" },
   ],
 },
 {
@@ -4395,12 +4443,70 @@ export const articles: Article[] = [
   title: "Most Romantic Restaurants in Charlotte for an Engagement Celebration",
   category: "Proposal Planning",
   body: [
-    { type: "paragraph", text: "This guide is coming soon." },
+    { type: "paragraph", text: "The proposal is the question. The dinner afterward is often the first exhale: when it becomes real, when family appears from a side room, when you finally eat something after hours of nerves." },
+    { type: "paragraph", text: "Choosing that restaurant is not about finding the single most romantic room in Charlotte. It is about matching celebration style to the two of you: quiet and intimate, formally elegant, lively with friends, or private enough to process the moment before the group arrives." },
+
+    { type: "heading", text: "A note on restaurants" },
+    { type: "paragraph", text: "The restaurants included here are places that are frequently mentioned by Charlotte locals, clients, and proposal stories we have encountered over the years. They are intended as ideas and starting points rather than personal recommendations." },
+    { type: "paragraph", text: "Menus, service, atmosphere, reservation policies, and ownership can change over time. We always recommend reviewing recent information and choosing the setting that best reflects the experience you hope to create together." },
+
+    { type: "heading", text: "Start With Celebration Style" },
+    { type: "paragraph", text: "Ask what the dinner is doing in the arc of the night. Is it a private toast for two before you call anyone? Is it the reveal moment where family waits inside? Is it a loud, joyful table of friends who already know?" },
+    { type: "paragraph", text: "Each answer points to a different room, noise level, and reservation strategy. The wrong restaurant is rarely bad food. It is the wrong energy for what you need that hour." },
+
+    { type: "heading", text: "Intimate Fine Dining: When You Want the Room to Feel Still" },
+    { type: "paragraph", text: "These settings suit couples who want the first meal engaged to feel unhurried, formal, and private." },
+
+    { type: "heading", text: "McNinch House" },
+    { type: "paragraph", text: "McNinch House is a restored Victorian home in Fourth Ward with multi-course dining in intimate rooms. Atmosphere is quiet, historic, and ceremony-friendly without feeling stiff. Celebration style is intimate fine dining: ideal for just the two of you or a tiny group in a private-feeling space. Reservation considerations include booking well ahead for weekends and mentioning the occasion when you reserve so staff can coordinate pacing and small touches. Post-proposal atmosphere slows down; you will want time between courses to absorb what happened. This fits couples who value privacy and old Charlotte character over trend." },
+
+    { type: "heading", text: "The Fig Tree" },
+    { type: "paragraph", text: "The Fig Tree occupies a bungalow in Elizabeth with candlelit rooms and continental fine dining. Atmosphere is romantic in a residential, tucked-away sense rather than Uptown glass and steel. Celebration style is classic date-night elevated: strong for two people processing a major yes. Reservations fill for prime slots; specify seating preferences if available. Post-proposal, the low lighting and attentive service give you room to breathe. This fits couples who want elegance without nightclub energy nearby." },
+
+    { type: "heading", text: "Elegant Uptown Dining: When the City Should Feel Part of the Story" },
+    { type: "paragraph", text: "Uptown restaurants work when your proposal happened nearby at Romare Bearden, The Green, or a rooftop, and you want the celebration to stay in the skyline chapter." },
+
+    { type: "heading", text: "La Belle Helene" },
+    { type: "paragraph", text: "La Belle Helene brings brasserie elegance to South Tryon with high ceilings, French classics, and a room that reads special-occasion immediately. Atmosphere is polished and bright in a Gatsby-meets-Paris sense. Celebration style works for couples dinner and for surprise family gatherings if you coordinate a larger table in advance. Reservation considerations: book early for prime Friday and Saturday slots, note the celebration when reserving, and confirm private or semi-private options if friends will join. Post-proposal atmosphere matches toasts and champagne energy well. Proposal stories in Charlotte often flow here after Uptown moments. This fits couples who want grandeur without leaving the center city." },
+
+    { type: "heading", text: "Lively Celebration Dinners: When Joy Is Loud" },
+    { type: "paragraph", text: "Some couples want clinking glasses, a table of ten, and laughter that carries. That is valid. Choose rooms that absorb celebration rather than hushing it." },
+
+    { type: "heading", text: "Fin and Fino and South End Favorites" },
+    { type: "paragraph", text: "South End restaurants like Fin and Fino offer energetic dining with strong seafood and shared plates, popular with younger Charlotte couples whose social life lives along the Rail Trail. Atmosphere is buzzy and modern. Celebration style fits friend groups meeting after a proposal, especially when the question happened nearby. Reservations are essential on weekends. Post-proposal, the room supports high spirits without requiring formal attire. This fits couples whose ideal celebration is communal rather than whisper-quiet." },
+
+    { type: "heading", text: "Destination Worth the Drive: Davidson and Beyond" },
+    { type: "paragraph", text: "Some celebrations benefit from leaving Uptown entirely." },
+
+    { type: "heading", text: "Kindred" },
+    { type: "paragraph", text: "Kindred in Davidson is a short drive north and regularly appears in conversations about memorable Charlotte-area meals. Atmosphere is warm, chef-driven, and intimate in a small-town-main-street way. Celebration style suits couples who want the first dinner engaged to feel like a getaway, not a scene. Reservations are competitive; plan ahead. Post-proposal, the pace feels unhurried compared to Uptown turnover. This fits couples who associate Lake Norman and Davidson with their relationship, or who proposed nearby and want dinner to match that calm." },
+
+    { type: "heading", text: "Private Dining and Buyouts" },
+    { type: "paragraph", text: "When family flies in or you want zero strangers nearby, ask restaurants about private dining rooms or partial buyouts. La Belle Helene, Fahrenheit, and several Uptown venues offer private spaces with advance planning." },
+    { type: "paragraph", text: "Private dining adds cost but removes uncertainty: you control who walks in, when champagne arrives, and how long you stay at the table after the question." },
+
+    { type: "heading", text: "Reservation Considerations That Matter" },
+    { type: "paragraph", text: "Book early for Saturday evenings. Mention the celebration discreetly in the reservation notes. Confirm cancellation policy if weather moved your proposal. Ask about corkage or dessert additions if you are bringing something personal. If family will surprise her at the restaurant, coordinate arrival time with the maître d so the moment feels joyful, not chaotic." },
+    { type: "paragraph", text: "[How to plan a proposal in Charlotte](/diamond-guide/how-to-plan-a-proposal-in-charlotte) covers timing the proposal and dinner as one arc rather than two disconnected bookings." },
+
+    { type: "heading", text: "Post-Proposal Atmosphere: What You Will Actually Need" },
+    { type: "paragraph", text: "You may be shaky, hungry, and unable to remember the menu. Choose a restaurant where the service is confident enough to carry the evening without you performing gratitude on autopilot." },
+    { type: "paragraph", text: "Low light helps if you are emotional. Corner tables help if you want privacy before friends arrive. Courses spaced with breathing room help if you want to talk about what just happened instead of rushing through entrees." },
+
+    { type: "heading", text: "Connecting Dinner to the Rest of the Night" },
+    { type: "paragraph", text: "If you proposed at a park or rooftop, choose a restaurant that fits the geography so you are not stuck in Uptown traffic while everyone waits. If you have a photographer, confirm whether they will join briefly for dinner photos or leave you alone after the proposal." },
+    { type: "paragraph", text: "[Best places to propose in Charlotte](/diamond-guide/best-places-to-propose-in-charlotte) and [best Charlotte rooftop proposal locations](/diamond-guide/best-charlotte-rooftop-proposal-locations) help you align location and celebration in one coherent evening." },
+
+    { type: "heading", text: "What Comes After the First Meal" },
+    { type: "paragraph", text: "The restaurant is chapter one of engaged life, not the epilogue. [The first 30 days after you get engaged](/diamond-guide/first-30-days-after-you-get-engaged) covers what often follows once the celebration dinner ends." },
+    { type: "paragraph", text: "If the ring is still part of the story you are building, the [Charlotte engagement ring guide](/diamond-guide/charlotte-engagement-ring-guide) and [Charlotte diamond advisor guide](/diamond-guide/charlotte-diamond-advisor-guide) remain useful even after she has said yes, especially if the setting is being finalized. [Our Approach](/our-approach) at Hourglass reflects the same calm planning we bring to proposals and rings alike. You can [begin a conversation](/concierge) whenever that helps." },
   ],
   related: [
-    { title: "Proposal Planning", href: "/diamond-guide/proposal-planning" },
-    { title: "The First 30 Days After You Get Engaged", href: "/diamond-guide/first-30-days-after-you-get-engaged" },
+    { title: "How to Plan a Proposal in Charlotte", href: "/diamond-guide/how-to-plan-a-proposal-in-charlotte" },
     { title: "Best Places to Propose in Charlotte", href: "/diamond-guide/best-places-to-propose-in-charlotte" },
+    { title: "The First 30 Days After You Get Engaged", href: "/diamond-guide/first-30-days-after-you-get-engaged" },
+    { title: "How to Plan a Proposal She'll Never Forget", href: "/diamond-guide/how-to-plan-a-proposal-she-will-never-forget" },
+    { title: "Proposal Planning", href: "/diamond-guide/proposal-planning" },
   ],
 },
 {
@@ -4408,12 +4514,64 @@ export const articles: Article[] = [
   title: "Best Charlotte Rooftop Proposal Locations",
   category: "Proposal Planning",
   body: [
-    { type: "paragraph", text: "This guide is coming soon." },
+    { type: "paragraph", text: "Rooftop proposals in Charlotte promise something parks cannot: the skyline as witness. They also introduce variables parks avoid: reservations, age restrictions, wind, noise from other guests, and staff who may or may not know you are planning to ask the most important question of your life." },
+    { type: "paragraph", text: "This guide organizes Charlotte rooftop options by experience type, not by rank. The right rooftop is the one that matches how you want the moment to feel: dinner first or drinks after, private corner or shared energy, sunset timing or night lights." },
+    { type: "paragraph", text: "For the full proposal arc beyond rooftops, [how to plan a proposal in Charlotte](/diamond-guide/how-to-plan-a-proposal-in-charlotte) and [best places to propose in Charlotte](/diamond-guide/best-places-to-propose-in-charlotte) cover parks, gardens, and quieter alternatives." },
+
+    { type: "heading", text: "What Rooftops Do Well (and Where They Struggle)" },
+    { type: "paragraph", text: "Rooftops excel at atmosphere: elevation, city light, the sense that the evening is special before you speak. They struggle with privacy. Most Charlotte rooftops are restaurants or bars, which means other guests, service pacing, and policies about photography or kneeling in high-traffic zones." },
+    { type: "paragraph", text: "Go in expecting to coordinate. A rooftop proposal is rarely spontaneous in the romantic-movie sense. It is spontaneous in feeling because you planned the structure carefully." },
+
+    { type: "heading", text: "Dining Rooftops: Skyline With a Full Meal" },
+    { type: "paragraph", text: "These settings suit couples who want the proposal tied to dinner: white tablecloth energy, a reservation anchor, staff who can help with timing if you communicate in advance." },
+
+    { type: "heading", text: "Fahrenheit Charlotte" },
+    { type: "paragraph", text: "Fahrenheit sits on the 21st floor in Uptown with open-air patio dining and wraparound skyline views. Atmosphere is high-energy and visually dramatic, one of the most recognizable rooftop dining rooms in the city. Privacy is moderate: you are at a table among other diners, though corner tables and timing can help. Best time of day is sunset through early evening when the skyline transitions from gold to lit towers. Logistics require a reservation, elevator access to the 21st floor, and planning for wind on the patio. Photography works well for skyline portraits afterward if your photographer confirms restaurant policy. Weather backup is limited to indoor dining rooms rather than the open patio. This fits couples who want the proposal integrated into a celebratory dinner and who are comfortable with a public-adjacent setting." },
+
+    { type: "heading", text: "Social Rooftop Bars: Drinks, Skyline, and Shared Energy" },
+    { type: "paragraph", text: "Bar-forward rooftops trade some privacy for flexibility. You can arrive for drinks, propose at a meaningful moment, and continue celebrating without a formal meal." },
+
+    { type: "heading", text: "Merchant and Trade" },
+    { type: "paragraph", text: "Merchant and Trade occupies the 19th floor of the Kimpton Tryon Park Hotel with indoor bar, outdoor terrace, lawn, and semi-private terrace zones. Atmosphere is social and polished, popular for skyline views without full dinner commitment. Privacy varies by zone: the lawn and terrace can feel exposed on busy nights, while semi-private areas work better if reserved or coordinated ahead. Best time is late afternoon into sunset, especially weekdays when crowds thin. Logistics include 21+ entry, first-come seating unless you arrange otherwise, and hotel elevator access from Church Street. Photography is common here for proposals, but confirm policies and whether a discreet photographer can access the terrace. Weather may push you indoors. This fits couples who want Uptown drama with cocktail-hour pacing and who have coordinated timing with staff or a photographer." },
+
+    { type: "heading", text: "Hotel Terraces and Semi-Private Rooftops" },
+    { type: "paragraph", text: "Some Charlotte hotels offer terrace spaces that feel rooftop-adjacent: elevated views with more control than a public bar. These work when you want skyline presence and are willing to book through guest services or events staff." },
+    { type: "paragraph", text: "Approach hotels directly and ask about terrace access, private corner reservations, or small event holds. Policies change with ownership and season. The advantage is coordination: staff can sometimes help with timing, champagne, or a quieter corner if they know what you are planning. The disadvantage is cost and lead time." },
+    { type: "paragraph", text: "This path fits couples who want help managing details and who prioritize privacy over spontaneity." },
+
+    { type: "heading", text: "South End and Satellite Rooftops" },
+    { type: "paragraph", text: "Beyond Uptown core, Charlotte's rooftop scene includes venues in South End and nearby neighborhoods where the skyline view differs: more angled, more neighborhood texture, sometimes less crowded." },
+    { type: "paragraph", text: "These spaces often attract couples whose story is tied to South End rather than Tryon Street. Evaluate them the same way: privacy at your proposed hour, reservation rules, wind exposure, and whether the view matters enough to trade Uptown centrality." },
+
+    { type: "heading", text: "Choosing by Proposal Style" },
+    { type: "paragraph", text: "If you want dinner as part of the memory, lean dining rooftop. If you want the question during golden hour with drinks after, lean social terrace. If you need staff assistance and a quieter corner, lean hotel coordination. If you want minimal audience, rooftops may not be your best category at all, and a park or Lake Norman shoreline may serve you better." },
+
+    { type: "heading", text: "Time of Day and Light" },
+    { type: "paragraph", text: "Sunset proposals are popular because the skyline glows and photography is forgiving. They are also the busiest window on most rooftops. Sunrise is underrated: fewer guests, softer light, more intimacy if you can sell the early start as part of a day trip." },
+    { type: "paragraph", text: "Night proposals after full dark emphasize city lights but challenge phone cameras and some photographers without low-light skill. Align your time with your photographer before you book the table." },
+
+    { type: "heading", text: "Logistics Worth Confirming in Advance" },
+    { type: "paragraph", text: "Reservation name and arrival time. Whether staff can be notified discreetly. Photography and guest policies. Age restrictions. Weather contingency indoors. Where you will stand and whether kneeling is practical on that surface. Where family or friends wait if you are continuing to dinner afterward." },
+    { type: "paragraph", text: "A brief email to the venue manager the week before prevents the worst surprises. You do not need to over-explain. You need them to expect you." },
+
+    { type: "heading", text: "Weather and Backup Plans" },
+    { type: "paragraph", text: "Charlotte summer storms build quickly. Winter wind on open patios is real. Have an indoor alternative that still feels chosen: a hotel lobby lounge, a reserved dining room, or a nearby restaurant where you hold a backup reservation." },
+    { type: "paragraph", text: "If rain moves you indoors, keep the proposal. The setting changed. The decision did not." },
+
+    { type: "heading", text: "Photography on Rooftops" },
+    { type: "paragraph", text: "Rooftops photograph beautifully and logistically tightly. Confirm whether your photographer can access the terrace, where they can stand before the moment, and whether the venue restricts professional equipment." },
+    { type: "paragraph", text: "[Best proposal photographers in Charlotte](/diamond-guide/best-proposal-photographers-in-charlotte) covers how to choose someone experienced with surprise timing in public-adjacent spaces." },
+
+    { type: "heading", text: "After Yes: Continuing the Evening" },
+    { type: "paragraph", text: "Many rooftop proposals flow into a seated dinner downstairs or nearby. [Most romantic restaurants in Charlotte for an engagement celebration](/diamond-guide/most-romantic-restaurants-charlotte-engagement-celebration) helps you choose what comes after the skyline moment." },
+    { type: "paragraph", text: "The rooftop is not the whole story. It is the opening scene. Plan the next hour lightly so you can stay present once she says yes." },
   ],
   related: [
-    { title: "Proposal Planning", href: "/diamond-guide/proposal-planning" },
     { title: "Best Places to Propose in Charlotte", href: "/diamond-guide/best-places-to-propose-in-charlotte" },
     { title: "How to Plan a Proposal in Charlotte", href: "/diamond-guide/how-to-plan-a-proposal-in-charlotte" },
+    { title: "Best Proposal Photographers in Charlotte", href: "/diamond-guide/best-proposal-photographers-in-charlotte" },
+    { title: "Most Romantic Restaurants in Charlotte for an Engagement Celebration", href: "/diamond-guide/most-romantic-restaurants-charlotte-engagement-celebration" },
+    { title: "Proposal Planning", href: "/diamond-guide/proposal-planning" },
   ],
 },
 {
