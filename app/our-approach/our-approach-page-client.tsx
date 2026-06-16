@@ -51,7 +51,15 @@ function FinalCta() {
       <p className="mx-auto mt-6 max-w-[38rem] text-[1rem] leading-[1.9] text-[#615a53]">
         Whether you&apos;re comparing diamonds online, evaluating a grading
         report, or beginning a custom engagement ring project, our goal remains
-        the same: help you make a confident decision.
+        the same: help you make a confident decision. For foundational reading
+        on expertise and how we work, start with{" "}
+        <Link
+          href="/diamond-guide/buying-strategy"
+          className="text-[#6a635c] underline underline-offset-4 transition hover:text-[#1f1d1a]"
+        >
+          Buying Strategy
+        </Link>
+        .
       </p>
       <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row sm:gap-5">
         <CTAGlimmer>
@@ -126,7 +134,15 @@ export default function OurApproachPageClient() {
               <p className="mt-5">
                 Curation, restraint, and gemological judgment matter. The goal
                 is not to sell every diamond. The goal is to help people make
-                better decisions.
+                better decisions. For a fuller explanation of what that
+                judgment involves, read{" "}
+                <Link
+                  href="/diamond-guide/why-work-with-a-graduate-gemologist"
+                  className="text-[#6a635c] underline underline-offset-4 transition hover:text-[#1f1d1a]"
+                >
+                  Why Work With a Graduate Gemologist?
+                </Link>
+                .
               </p>
             </div>
           </div>

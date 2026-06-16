@@ -487,6 +487,7 @@ export const articles: Article[] = [
     { type: "paragraph", text: "Buying a diamond in Charlotte should feel thoughtful and enjoyable rather than rushed. With a basic understanding of diamond quality and a willingness to compare stones carefully, buyers can focus on what truly matters: finding a diamond that looks beautiful and feels meaningful for years to come." },
   ],
   related: [
+    { title: "Charlotte Diamond Advisor Guide", href: "/diamond-guide/charlotte-diamond-advisor-guide" },
     { title: "Charlotte Engagement Ring Guide", href: "/diamond-guide/charlotte-engagement-ring-guide" },
     { title: "Custom Engagement Rings Charlotte", href: "/diamond-guide/custom-engagement-rings-in-charlotte" },
     { title: "Diamond Size Guide Charlotte", href: "/diamond-guide/diamond-size-guide-for-charlotte-engagement-rings" },
@@ -571,6 +572,7 @@ export const articles: Article[] = [
     { type: "paragraph", text: "With a clear understanding of diamond quality, shape, and ring design, buyers can focus less on marketing claims and more on finding a ring that truly reflects their relationship. If you would like guidance tailored to your priorities, [begin a conversation](/concierge) at your own pace — we are selective about what we recommend, but not about who we help." },
   ],
   related: [
+    { title: "Charlotte Diamond Advisor Guide", href: "/diamond-guide/charlotte-diamond-advisor-guide" },
     { title: "Custom Engagement Rings Charlotte", href: "/diamond-guide/custom-engagement-rings-in-charlotte" },
     { title: "Buy Diamonds Charlotte", href: "/diamond-guide/buy-diamonds-in-charlotte" },
     { title: "Best Diamond Shapes Charlotte", href: "/diamond-guide/best-diamond-shapes-charlotte" },
@@ -752,6 +754,7 @@ export const articles: Article[] = [
     { type: "paragraph", text: "With a clear understanding of diamonds and the design process, the experience of creating a custom engagement ring becomes just as meaningful as the ring itself." },
   ],
   related: [
+    { title: "Charlotte Diamond Advisor Guide", href: "/diamond-guide/charlotte-diamond-advisor-guide" },
     { title: "Charlotte Engagement Ring Guide", href: "/diamond-guide/charlotte-engagement-ring-guide" },
     { title: "Buy Diamonds Charlotte", href: "/diamond-guide/buy-diamonds-in-charlotte" },
     { title: "Best Diamond Shapes Charlotte", href: "/diamond-guide/best-diamond-shapes-charlotte" },
@@ -861,6 +864,8 @@ export const articles: Article[] = [
     { type: "paragraph", text: "Choosing a diamond becomes much easier when buyers understand what truly influences beauty and value. By focusing on cut quality, comparing diamonds carefully, and considering the overall design of the ring, it becomes possible to select a diamond with lasting appeal." },
   ],
   related: [
+    { title: "Why Work With a Graduate Gemologist", href: "/diamond-guide/why-work-with-a-graduate-gemologist" },
+    { title: "Independent Diamond Advisor vs Jewelry Store", href: "/diamond-guide/independent-diamond-advisor-vs-jewelry-store" },
     { title: "Diamond Price vs Quality", href: "/diamond-guide/diamond-price-vs-quality" },
     { title: "Are Lab Diamonds a Good Choice", href: "/diamond-guide/are-lab-diamonds-a-good-choice" },
     { title: "Natural vs Lab Diamonds", href: "/diamond-guide/natural-vs-lab-diamonds" },
@@ -1386,6 +1391,7 @@ export const articles: Article[] = [
       
     ],
     related: [
+      { title: "Independent Diamond Advisor vs Jewelry Store", href: "/diamond-guide/independent-diamond-advisor-vs-jewelry-store" },
       { title: "Diamond Buying Tips from Jewelers", href: "/diamond-guide/diamond-buying-tips-from-jewelers" },
       { title: "Round Diamond Guide", href: "/diamond-guide/round-diamond-guide" },
       { title: "Cushion Diamond Guide", href: "/diamond-guide/cushion-diamond-guide" },
@@ -1532,6 +1538,7 @@ export const articles: Article[] = [
       
     ],
     related: [
+      { title: "Charlotte Diamond Advisor Guide", href: "/diamond-guide/charlotte-diamond-advisor-guide" },
       { title: "Charlotte Engagement Ring Guide", href: "/diamond-guide/charlotte-engagement-ring-guide" },
       { title: "Buy Diamonds Charlotte", href: "/diamond-guide/buy-diamonds-in-charlotte" },
       { title: "Best Diamond Shapes Charlotte", href: "/diamond-guide/best-diamond-shapes-charlotte" },
@@ -4000,6 +4007,7 @@ export const articles: Article[] = [
     
   ],
   related: [
+    { title: "Why Work With a Graduate Gemologist", href: "/diamond-guide/why-work-with-a-graduate-gemologist" },
     { title: "What is a Diamond Certificate", href: "/diamond-guide/what-is-a-diamond-certificate" },
     { title: "How to Read a Diamond Certificate", href: "/diamond-guide/how-to-read-a-diamond-certificate" },
     { title: "Are All Diamond Certificates the Same", href: "/diamond-guide/are-all-diamond-certificates-the-same" },
@@ -4048,12 +4056,152 @@ export const articles: Article[] = [
     
   ],
   related: [
-    { title: "Diamond Shapes Guide", href: "/diamond-guide/diamond-shapes" },
-    { title: "Round Diamond Guide", href: "/diamond-guide/round-diamond-guide" },
+    { title: "Charlotte Diamond Advisor Guide", href: "/diamond-guide/charlotte-diamond-advisor-guide" },
     { title: "Oval Diamond Guide", href: "/diamond-guide/oval-diamond-guide" },
     { title: "Cushion Diamond Guide", href: "/diamond-guide/cushion-diamond-guide" },
     { title: "Charlotte Engagement Ring Guide", href: "/diamond-guide/charlotte-engagement-ring-guide" }
   ]
-}
+},
+
+{
+  slug: "why-work-with-a-graduate-gemologist",
+  title: "Why Work With a Graduate Gemologist?",
+  category: "Buying Guides",
+  body: [
+    { type: "paragraph", text: "Most people shopping for an engagement ring have never sat across from a Graduate Gemologist. That is not a criticism of the process — it is simply how the jewelry industry is structured. Gemological training lives behind the scenes: in laboratories, in manufacturing offices, in the rooms where stones are sorted and priced before they ever reach a showroom floor." },
+    { type: "paragraph", text: "A Graduate Gemologist is someone who has completed the Gemological Institute of America’s diploma program — a rigorous course of study covering diamond grading, colored stone identification, gem identification, and the practical science of how light moves through a crystal. It is not a weekend certificate. It is years of coursework, examinations, and hands-on evaluation under magnification." },
+    { type: "paragraph", text: "The credential matters. But credentials alone do not choose your diamond. Judgment does." },
+
+    { type: "heading", text: "What the Training Actually Teaches" },
+    { type: "paragraph", text: "Gemological education teaches you to read a stone systematically: where inclusions sit, how proportions affect light return, whether a color grade reflects what the eye sees once the diamond is set. It gives you a shared language with laboratories and a framework for comparing stones that would otherwise feel entirely subjective." },
+    { type: "paragraph", text: "What it does not teach — what no classroom fully can — is the accumulated sense that develops after evaluating thousands of diamonds. Which SI1 clarities are genuinely clean to the eye and which are not. Which \"Excellent\" cuts actually perform and which simply meet a numerical threshold. How a particular shape tends to behave at certain carat weights. That knowledge comes from repetition, from seeing stones under different lighting, from watching how buyers respond when two diamonds with identical grades are placed side by side." },
+
+    { type: "heading", text: "Why Grading Reports Are Only a Starting Point" },
+    { type: "paragraph", text: "A diamond certificate is a useful document. It confirms carat weight, records color and clarity grades, and provides measurements that allow comparison between stones. For most buyers, it is the first piece of objective information they encounter, and it deserves to be taken seriously." },
+    { type: "paragraph", text: "It is also incomplete. A grading report describes a diamond at a single moment, under controlled conditions, using standardized criteria. It cannot tell you how the stone will look on your partner’s hand. It cannot account for the subtle differences in cut precision that separate a lively diamond from a merely acceptable one. It cannot warn you that two diamonds graded G VS2 Excellent may perform entirely differently when you view them in person." },
+    { type: "paragraph", text: "This is not a flaw in the grading system. Laboratories do exactly what they are designed to do. The gap appears when buyers assume the report is the full story — when paper equivalence is mistaken for visual equivalence. [Our Approach](/our-approach) at Hourglass begins from a simple premise: the report opens the conversation; it does not end it." },
+
+    { type: "heading", text: "What a Trained Eye Notices" },
+    { type: "paragraph", text: "Place two round diamonds on a white tray. Both are 1.02 carats, both G color, both VS2 clarity, both graded Excellent cut. A buyer reading certificates online might assume they are interchangeable." },
+    { type: "paragraph", text: "In person, the difference is often immediate. One diamond returns light evenly across the crown, with crisp contrast between bright and dark facets. The other looks slightly flat in the center, or shows a faint haze that does not appear on the report. One has an inclusion tucked beneath a prong where it will never be seen; the other has a crystal sitting directly under the table, visible without magnification in certain lights." },
+    { type: "paragraph", text: "These are not exotic edge cases. They are routine. A trained gemologist has seen enough stones to recognize patterns quickly — to know which combinations of grades tend to disappoint, which proportions work better for a given shape, and where a buyer’s budget is best allocated. That is judgment built on training, not training substituted for judgment." },
+
+    { type: "heading", text: "Experience Still Matters in an Age of Online Inventories" },
+    { type: "paragraph", text: "The internet has made more diamonds visible than at any point in history. Entire inventories can be filtered by grade, price, and measurements in seconds. For many buyers, this feels like progress — and in some ways it is. Transparency has improved. Comparison has become easier." },
+    { type: "paragraph", text: "But access is not the same as understanding. An online listing shows a photograph, a price, and a link to a certificate. It cannot replicate the experience of holding two stones and noticing which one your eye keeps returning to. It cannot answer the question of whether a particular inclusion will matter once the diamond is set in platinum versus rose gold. It cannot tell you if the depth percentage on that oval will make it appear smaller than another oval of the same carat weight." },
+    { type: "paragraph", text: "Tools like [Diamond Studio](/diamond-studio) help bridge part of that gap — visualizing size, comparing proportions, understanding how shape affects presence on the hand. Even then, the final evaluation benefits from someone who has spent years looking at diamonds and can articulate what they see in plain language." },
+
+    { type: "heading", text: "How Guidance Should Feel" },
+    { type: "paragraph", text: "Working with a gemologist should not feel like being sold to. It should feel like having a knowledgeable person in your corner — someone who will tell you when a diamond is genuinely beautiful and when it merely looks good on paper. Someone who will say, without hesitation, that a lower grade might serve you better than a higher one, if the visual difference is imperceptible and the savings are meaningful." },
+    { type: "paragraph", text: "At Hourglass, gemological training informs every recommendation, but it does not dictate them. We are selective about what we recommend, not about who we help. The goal is not to impress you with terminology. It is to help you avoid the mistakes that are difficult to undo — overpaying for grades you cannot see, choosing a stone that underperforms its certificate, rushing a decision because an inventory sheet suggested urgency." },
+    { type: "paragraph", text: "If you are early in your search, reading about [how to interpret a certificate](/diamond-guide/how-to-read-a-diamond-certificate) or [why certification matters](/diamond-guide/why-diamond-certification-matters) will give you a solid foundation. When you are ready to go further — to understand what a specific report suggests about performance, not just grades — [Diamond Intelligence](/diamond-intelligence) offers a structured way to begin that conversation." },
+    { type: "paragraph", text: "The credential opens the door. The years behind it are what make the guidance worth trusting." },
+  ],
+  related: [
+    { title: "Independent Diamond Advisor vs Jewelry Store", href: "/diamond-guide/independent-diamond-advisor-vs-jewelry-store" },
+    { title: "Diamond Buying Tips from Jewelers", href: "/diamond-guide/diamond-buying-tips-from-jewelers" },
+    { title: "Why Diamond Certification Matters", href: "/diamond-guide/why-diamond-certification-matters" },
+    { title: "How to Read a Diamond Certificate", href: "/diamond-guide/how-to-read-a-diamond-certificate" },
+    { title: "Charlotte Diamond Advisor Guide", href: "/diamond-guide/charlotte-diamond-advisor-guide" },
+  ],
+},
+
+{
+  slug: "charlotte-diamond-advisor-guide",
+  title: "Charlotte Diamond Advisor Guide",
+  category: "Charlotte Guides",
+  body: [
+    { type: "paragraph", text: "Charlotte has grown into a city where engagement ring shopping can mean almost anything — a Saturday afternoon at a regional mall, a private appointment in SouthPark, hours spent comparing listings on a laptop in NoDa, or a conversation with a jeweler who has been in the trade for decades. The options are genuinely good. The challenge is not finding diamonds. It is finding clarity." },
+    { type: "paragraph", text: "This guide is for buyers in Charlotte who want to approach the process with intention — whether you buy locally, online, or through a combination of both. It is not a list of stores. It is a framework for thinking about who you trust, what questions deserve answers, and how to recognize guidance that serves you rather than a sales target." },
+
+    { type: "heading", text: "What Buying a Diamond in Charlotte Looks Like Now" },
+    { type: "paragraph", text: "The Charlotte market reflects the same shifts happening nationally. Large retailers offer convenience and recognizable brands. Independent jewelers — many concentrated along corridors like Providence Road and in neighborhoods from Ballantyne to Davidson — tend to emphasize custom work and personal relationships. Online platforms promise breadth of inventory and competitive pricing, sometimes with virtual consultations attached." },
+    { type: "paragraph", text: "Each path has merit. Each also has blind spots. A showroom diamond may look extraordinary under jewelry-store lighting and different in afternoon sun. An online stone may arrive with a certificate that accurately describes it and still not be the right choice for your hand, your setting, or your priorities. The best outcomes usually come from combining research with in-person evaluation — and from having someone in the process who is not financially motivated by a specific stone on a specific shelf." },
+
+    { type: "heading", text: "Local Stores and Online Options" },
+    { type: "paragraph", text: "Buying locally in Charlotte offers something difficult to replicate on a screen: the ability to see diamonds together, to feel the weight of a setting, to ask questions and receive immediate answers. Many couples value the ritual of visiting jewelers together, trying on styles, and building a relationship with someone who may also handle sizing, maintenance, and future anniversaries." },
+    { type: "paragraph", text: "Buying online offers scale. The inventory is vast. Prices can be transparent. For buyers who already know exactly what they want — a specific shape, grade range, and budget — online sourcing can work well, especially when paired with independent verification before purchase." },
+    { type: "paragraph", text: "The friction appears in the middle ground: when you are still learning what you prefer, when two stones look similar on paper but different in person, when you need someone to explain why one option is stronger without steering you toward what happens to be in stock. That is where advisory guidance earns its place — not as a replacement for every shopping model, but as a complement when the stakes are high and the terminology is unfamiliar." },
+
+    { type: "heading", text: "Questions Worth Asking Before You Commit" },
+    { type: "paragraph", text: "Wherever you shop, certain questions separate thorough guidance from rehearsed answers. Ask to see diamonds with similar grades side by side, not one at a time. Ask what happens if the diamond does not match your expectations after setting. Ask whether the jeweler or advisor receives incentives for selling particular stones or particular brands." },
+    { type: "paragraph", text: "Ask how cut quality is evaluated beyond the certificate grade. Ask whether you can review the inclusion plot and see those features under magnification. Ask what tradeoffs they would make at your budget if visual impact mattered more than maximizing every grade category." },
+    { type: "paragraph", text: "A good answer sounds specific and calm. A vague answer — \"this one is a great deal\" or \"you really cannot go wrong with this grade\" — often means the conversation stopped too early." },
+
+    { type: "heading", text: "Mistakes Charlotte Buyers Commonly Make" },
+    { type: "paragraph", text: "One of the most frequent is choosing carat weight first and working backward. A 1.5-carat diamond with mediocre proportions can look smaller and duller than a well-cut 1.2-carat stone. Carat is a weight, not a size — and in a city where engagement announcements travel quickly through friend groups and family networks, the appearance on the hand matters more than the number on the report." },
+    { type: "paragraph", text: "Another is assuming that a higher clarity grade is always visible. Many SI1 and even SI2 diamonds are entirely clean to the naked eye, while some VS stones have inclusions positioned where they catch light. Clarity should be evaluated visually, not only alphabetically." },
+    { type: "paragraph", text: "A third is shopping under time pressure — a holiday deadline, a planned proposal date, a sense that prices are about to rise. Deadlines are real, but they should not compress the part of the process where you learn what you actually like. The [Charlotte engagement ring guide](/diamond-guide/charlotte-engagement-ring-guide) covers the fundamentals; this is the layer beneath it, where judgment begins to matter as much as research." },
+
+    { type: "heading", text: "How to Tell Whether Someone Is Helping You or Selling You" },
+    { type: "paragraph", text: "The difference is not always obvious, because skilled salespeople also listen well. The distinction shows up in what happens when you hesitate. A seller steers you back toward inventory. An advisor pauses, asks what is giving you pause, and adjusts the search — even if that means recommending a lower price point or sending you elsewhere." },
+    { type: "paragraph", text: "Notice whether you are shown only what is available today, or whether the conversation includes what would be ideal and how close you can get to it. Notice whether tradeoffs are explained honestly — including the ones that reduce the ticket price. Notice whether you feel educated after the appointment, or simply reassured." },
+    { type: "paragraph", text: "For a deeper look at how business models shape recommendations, [independent advisors and traditional jewelry stores](/diamond-guide/independent-diamond-advisor-vs-jewelry-store) operate under different incentives. Neither is inherently wrong. But understanding the structure helps you interpret the advice you receive." },
+
+    { type: "heading", text: "What a Good Advisor Relationship Feels Like" },
+    { type: "paragraph", text: "It feels unhurried. You leave with more understanding than you arrived with, even if you did not buy anything that day. You are not made to feel that your budget is too small, or that you are being unreasonable for asking to see another option." },
+    { type: "paragraph", text: "It feels honest. If a diamond has a characteristic worth knowing about, you hear it before you ask. If a grade category will not make a visible difference in your setting, someone tells you — because their reputation depends on long-term trust, not a single transaction." },
+    { type: "paragraph", text: "Hourglass is based in Charlotte and works by appointment, by design. The pace is deliberate. There is no showroom floor to browse and no pressure to choose from what is already on hand. [Our Approach](/our-approach) is built around starting with your priorities and searching accordingly — a model that suits some buyers better than others, and that is worth understanding before you begin." },
+    { type: "paragraph", text: "Whether you work with us or not, the principle holds: the right advisor makes the process quieter, not louder. You should feel more certain with each conversation, not more confused. If you would like that kind of conversation at your own pace, you can [begin one here](/concierge). If you are still gathering context, the [diamond buying tips](/diamond-guide/diamond-buying-tips-from-jewelers) from experienced jewelers are a sensible next read." },
+  ],
+  related: [
+    { title: "Charlotte Engagement Ring Guide", href: "/diamond-guide/charlotte-engagement-ring-guide" },
+    { title: "Buy Diamonds in Charlotte", href: "/diamond-guide/buy-diamonds-in-charlotte" },
+    { title: "Why Work With a Graduate Gemologist", href: "/diamond-guide/why-work-with-a-graduate-gemologist" },
+    { title: "Custom Engagement Rings Charlotte", href: "/diamond-guide/custom-engagement-rings-in-charlotte" },
+    { title: "Best Diamond Shapes in Charlotte", href: "/diamond-guide/best-diamond-shapes-charlotte" },
+  ],
+},
+
+{
+  slug: "independent-diamond-advisor-vs-jewelry-store",
+  title: "Independent Diamond Advisor vs Traditional Jewelry Store",
+  category: "Buying Guides",
+  body: [
+    { type: "paragraph", text: "If you are researching how to buy a diamond, you will eventually encounter two broad models: the traditional jewelry store, where inventory is on display and a salesperson guides you through it, and the independent advisor, who typically has no showroom case and searches on your behalf. Both can lead to a beautiful ring. They are not the same experience." },
+    { type: "paragraph", text: "Understanding the difference is not about declaring a winner. It is about recognizing how each model shapes the advice you receive — and choosing the one that fits how you prefer to make a significant decision." },
+
+    { type: "heading", text: "How Traditional Jewelry Stores Work" },
+    { type: "paragraph", text: "A conventional jewelry store invests in inventory, fixtures, staff, and a location designed to attract walk-in traffic. The diamonds in the case represent capital — stones the store has purchased and needs to sell. That is not a secret, and it is not inherently problematic. It is the economic reality of retail." },
+    { type: "paragraph", text: "The jeweler showing you a stone often knows it well. They selected it, or their buyer did. They can speak to its qualities with genuine enthusiasm. Many independent family jewelers in particular bring deep craft knowledge and take pride in matching the right person to the right ring." },
+    { type: "paragraph", text: "The structural tension appears when the best diamond for you is not the one in the case. A store cannot recommend a competitor’s inventory. It cannot always wait for the ideal stone to be sourced if you are ready to buy today. The recommendation universe is, by definition, limited to what the store has committed to own." },
+
+    { type: "heading", text: "What Inventory Does to Advice" },
+    { type: "paragraph", text: "Inventory-driven recommendations are not dishonest. They are bounded. When a buyer asks for a one-carat round, G color, VS clarity, the salesperson searches the case — or a linked database of owned goods — for the closest match. That match may be excellent. It may also be the closest available option rather than the strongest option at that budget." },
+    { type: "paragraph", text: "Buyers sometimes sense this without naming it. They visit two stores and receive two confident recommendations, each subtly favoring what that store happens to stock. One suggests a higher color grade because those are well represented in inventory. Another steers toward a particular shape because the case is deep in ovals this season. The advice sounds authoritative. It is — within the boundaries of what is for sale." },
+
+    { type: "heading", text: "What Independent Advisors Do Differently" },
+    { type: "paragraph", text: "An independent diamond advisor — particularly one with gemological training — typically does not carry inventory. The search begins with your priorities: budget, shape preference, how the ring will be worn, what matters most visually. Only then does the advisor look for stones that fit, drawing from broader trade networks rather than a pre-purchased case." },
+    { type: "paragraph", text: "The incentive structure shifts. An advisor is not rewarded for moving a specific stone that has been on the shelf for ninety days. The reputation is built on whether the diamond you receive is genuinely right — whether you would recommend the experience to a friend. That alignment does not guarantee perfect outcomes, but it changes the starting point of every conversation." },
+    { type: "paragraph", text: "Hourglass follows this model. [Our Approach](/our-approach) is client-first rather than inventory-first: we are selective about what we recommend, but not about who we help. The tradeoff is that you will not walk into a showroom and leave the same afternoon. The process is appointment-based and deliberate — which suits buyers who want depth over speed." },
+
+    { type: "heading", text: "Advantages of the Traditional Store" },
+    { type: "paragraph", text: "Tangibility matters. Seeing a diamond on your hand, in that moment, resolves questions that weeks of research cannot. Traditional stores offer immediacy — you can try multiple settings, compare metals, and walk out with something tangible if timing is critical." },
+    { type: "paragraph", text: "Established jewelers also provide continuity. Sizing, cleaning, repairs, and future purchases often flow through the same relationship. For buyers who value a long-term local connection and enjoy the experience of browsing, a good jewelry store is a natural fit." },
+    { type: "paragraph", text: "Price negotiation, where it exists, can sometimes work in your favor — though the starting price and the underlying stone quality still deserve scrutiny. A discount on the wrong diamond is not a bargain." },
+
+    { type: "heading", text: "Advantages of Independent Guidance" },
+    { type: "paragraph", text: "Objectivity is the clearest benefit. When nothing on the table must be sold, the conversation can start from zero. An advisor can tell you that your budget is better spent on cut quality than on a clarity grade you will never see. They can source three stones from different suppliers and compare them without preference for any particular one." },
+    { type: "paragraph", text: "Breadth is another. The trade networks available to an independent advisor often exceed what any single store can stock. That matters especially for buyers seeking something specific — an elongated oval in a narrow proportion range, a particular make of cushion, a stone that performs above its paper grades." },
+    { type: "paragraph", text: "Education tends to be deeper. Advisors who are not racing toward a close have time to explain why two certificates that look identical describe very different diamonds. [Why work with a Graduate Gemologist](/diamond-guide/why-work-with-a-graduate-gemologist) explores how that training translates into judgment you can actually use." },
+
+    { type: "heading", text: "Which Model Fits You" },
+    { type: "paragraph", text: "If you already know what you want, value the experience of shopping in person, and prefer to support a local retailer with a physical presence, a traditional jewelry store may serve you well — especially if you have a referral to someone trustworthy." },
+    { type: "paragraph", text: "If you want unbiased comparison, are willing to invest time before purchasing, and prefer guidance that begins with your priorities rather than available stock, an independent advisor is worth considering." },
+    { type: "paragraph", text: "Many buyers blend both: research online, visit stores to calibrate preferences, then work with an advisor to source the stone — or the reverse. The models are not mutually exclusive. What matters is whether you understand which one you are in at any given moment, and whether the advice you are receiving fits that model’s incentives." },
+
+    { type: "heading", text: "Objectivity Is Not Neutrality" },
+    { type: "paragraph", text: "An advisor has opinions. A good one will share them clearly — this stone performs better, this inclusion will matter in a halo setting, this budget is better allocated toward cut. That is not neutrality. It is informed conviction without an inventory conflict." },
+    { type: "paragraph", text: "A store salesperson may also have genuine expertise and honest intentions. The question is whether the recommendation would be the same if the stone came from a different supplier at a different price point. If you cannot tell, ask directly. The response will tell you a great deal." },
+    { type: "paragraph", text: "For practical guidance on evaluating what you see — regardless of where you buy — [diamond buying tips from jewelers](/diamond-guide/diamond-buying-tips-from-jewelers) and our piece on [diamond price versus quality](/diamond-guide/diamond-price-vs-quality) offer a useful foundation. When you are ready to go further, [begin a conversation](/concierge) at whatever pace suits you." },
+  ],
+  related: [
+    { title: "Why Work With a Graduate Gemologist", href: "/diamond-guide/why-work-with-a-graduate-gemologist" },
+    { title: "Diamond Buying Tips from Jewelers", href: "/diamond-guide/diamond-buying-tips-from-jewelers" },
+    { title: "Diamond Price vs Quality", href: "/diamond-guide/diamond-price-vs-quality" },
+    { title: "Charlotte Diamond Advisor Guide", href: "/diamond-guide/charlotte-diamond-advisor-guide" },
+    { title: "Our Approach", href: "/our-approach" },
+  ],
+},
 
 ];

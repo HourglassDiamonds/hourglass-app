@@ -9,6 +9,23 @@ import { trackConsultationCtaClicked } from "@/lib/consultation-cta";
 
 const articleGroups = [
   {
+    title: "Authority & Guidance",
+    articles: [
+      {
+        title: "Why Work With a Graduate Gemologist?",
+        href: "/diamond-guide/why-work-with-a-graduate-gemologist",
+      },
+      {
+        title: "Independent Diamond Advisor vs Jewelry Store",
+        href: "/diamond-guide/independent-diamond-advisor-vs-jewelry-store",
+      },
+      {
+        title: "Charlotte Diamond Advisor Guide",
+        href: "/diamond-guide/charlotte-diamond-advisor-guide",
+      },
+    ],
+  },
+  {
     title: "Starting the Process",
     articles: [
       {

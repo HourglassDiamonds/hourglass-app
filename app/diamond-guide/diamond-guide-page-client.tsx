@@ -51,6 +51,7 @@ const categories = [
 ];
 
 const popularGuides = [
+  { title: "Why Work With a Graduate Gemologist?", href: "/diamond-guide/why-work-with-a-graduate-gemologist" },
   { title: "How Big is a 2 Carat Diamond", href: "/diamond-guide/how-big-is-a-2-carat-diamond" },
   { title: "Oval vs Round Diamond", href: "/diamond-guide/oval-vs-round-diamond" },
   { title: "Diamond Size on Hand", href: "/diamond-guide/diamond-size-on-hand" },

@@ -137,7 +137,7 @@ const relatedTopics = [
   },
   {
     title: "Buying Strategy",
-    href: "/diamond-guide",
+    href: "/diamond-guide/buying-strategy",
     description:
       "How certification fits into the broader decision-making process.",
   },
@@ -169,8 +169,15 @@ export default function CertificationPage() {
               >
                 Diamond Intelligence
               </Link>{" "}
-              can help translate a report into practical insight. The report
-              remains a tool, not the final decision.
+              can help translate a report into practical insight. For why
+              trained judgment still matters beyond the grades, read{" "}
+              <Link
+                href="/diamond-guide/why-work-with-a-graduate-gemologist"
+                className="text-[#6a635c] underline underline-offset-4 transition hover:text-[#1f1d1a]"
+              >
+                Why Work With a Graduate Gemologist?
+              </Link>
+              . The report remains a tool, not the final decision.
             </p>
           </div>
         </section>

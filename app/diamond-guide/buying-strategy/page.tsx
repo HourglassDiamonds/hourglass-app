@@ -7,6 +7,27 @@ import CTAGlimmer from "../../shared-components/motion/CTAGlimmer";
 import RevealOnScroll from "../../shared-components/motion/RevealOnScroll";
 import { trackConsultationCtaClicked } from "@/lib/consultation-cta";
 
+const authorityGuides = [
+  {
+    title: "Why Work With a Graduate Gemologist?",
+    href: "/diamond-guide/why-work-with-a-graduate-gemologist",
+    description:
+      "What trained gemologists actually see — and why a grading report is only the beginning of a sound decision.",
+  },
+  {
+    title: "Charlotte Diamond Advisor Guide",
+    href: "/diamond-guide/charlotte-diamond-advisor-guide",
+    description:
+      "How to navigate the Charlotte market with clarity, ask better questions, and recognize guidance that serves you.",
+  },
+  {
+    title: "Independent Diamond Advisor vs Traditional Jewelry Store",
+    href: "/diamond-guide/independent-diamond-advisor-vs-jewelry-store",
+    description:
+      "How each buying model shapes the advice you receive — and which approach may suit the way you prefer to decide.",
+  },
+];
+
 const beginHereGuides = [
   {
     title: "Diamond Buying Tips from Jewelers",
@@ -162,6 +183,63 @@ export default function BuyingStrategyPage() {
               </Link>
               .
             </p>
+          </div>
+        </section>
+
+        <section
+          id="worth-reading-first"
+          className="border-b border-[#e4dbcf] py-[88px] md:py-[104px]"
+        >
+          <div className="mx-auto max-w-[760px] text-center">
+            <div className="text-[11px] uppercase tracking-[0.34em] text-[#9a9084]">
+              Worth reading first
+            </div>
+
+            <h2 className="mt-5 text-[2.15rem] font-normal leading-[1.1] tracking-[-0.042em] text-[#1d1b18] md:text-[2.5rem]">
+              Before you go further.
+            </h2>
+
+            <p className="mx-auto mt-6 max-w-[540px] text-[0.98rem] leading-[1.82] text-[#6f675f]">
+              Three essays on expertise, local guidance, and how the jewelry
+              industry actually works — written to help you decide with more
+              confidence, not to sell you something faster.
+            </p>
+          </div>
+
+          <div className="mx-auto mt-12 max-w-[860px] rounded-[32px] border border-[#e0d8cc]/60 bg-white/[0.34] shadow-[inset_0_1px_0_rgba(255,255,255,0.65)] md:mt-14">
+            <ol className="divide-y divide-[#e7ddd2]/80">
+              {authorityGuides.map((guide, index) => (
+                <li key={guide.href}>
+                  <Link
+                    href={guide.href}
+                    className="group flex gap-6 px-7 py-8 transition duration-300 hover:bg-white/[0.22] md:gap-8 md:px-10 md:py-10"
+                  >
+                    <span
+                      aria-hidden="true"
+                      className="mt-0.5 shrink-0 font-serif text-[1.1rem] leading-none tracking-[-0.02em] text-[#b8aea2] transition duration-300 group-hover:text-[#8f8579] md:text-[1.2rem]"
+                    >
+                      {String(index + 1).padStart(2, "0")}
+                    </span>
+
+                    <span className="min-w-0 flex-1">
+                      <span className="block font-serif text-[1.14rem] leading-[1.28] tracking-[-0.02em] text-[#1d1b18] transition duration-300 group-hover:text-[#141210] md:text-[1.28rem]">
+                        {guide.title}
+                      </span>
+                      <span className="mt-3 block max-w-[46ch] text-[0.94rem] leading-[1.78] text-[#6f675f]">
+                        {guide.description}
+                      </span>
+                    </span>
+
+                    <span
+                      aria-hidden="true"
+                      className="mt-1 shrink-0 self-start text-[1rem] leading-none text-[#b8aea2] transition duration-300 group-hover:translate-x-0.5 group-hover:text-[#6f675f]"
+                    >
+                      →
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ol>
           </div>
         </section>
 

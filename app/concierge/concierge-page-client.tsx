@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { diamondIntelligencePrefillFromSearchParams } from "@/lib/concierge/diamond-intelligence-context";
 import Header from "../shared-components/Header";
@@ -238,6 +239,32 @@ export default function ConciergePageClient() {
 
               <p className="mt-6 text-[0.95rem] leading-[1.9] text-[#7a7268]">
                 A few details to get started.
+              </p>
+
+              <p className="mt-7 text-[0.94rem] leading-[1.88] text-[#7a7268]">
+                Still gathering context?{" "}
+                <Link
+                  href="/diamond-guide/why-work-with-a-graduate-gemologist"
+                  className="text-[#6a635c] underline underline-offset-4 transition hover:text-[#1f1d1a]"
+                >
+                  Why Work With a Graduate Gemologist?
+                </Link>
+                ,{" "}
+                <Link
+                  href="/diamond-guide/independent-diamond-advisor-vs-jewelry-store"
+                  className="text-[#6a635c] underline underline-offset-4 transition hover:text-[#1f1d1a]"
+                >
+                  Independent Advisor vs Jewelry Store
+                </Link>
+                , and — if you are in Charlotte —{" "}
+                <Link
+                  href="/diamond-guide/charlotte-diamond-advisor-guide"
+                  className="text-[#6a635c] underline underline-offset-4 transition hover:text-[#1f1d1a]"
+                >
+                  our local advisor guide
+                </Link>{" "}
+                are worth reading first. None of this is required before you
+                reach out.
               </p>
 
               <p className="mt-7">

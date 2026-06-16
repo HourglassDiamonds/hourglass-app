@@ -125,7 +125,7 @@ export const APPROACH_CHAPTERS: ApproachChapter[] = [
         id: "location",
         question: "Where are you located?",
         paragraphs: [
-          "Hourglass is based in Charlotte, North Carolina. We work by appointment, creating space for unhurried conversation and careful review rather than showroom browsing.",
+          "Hourglass is based in Charlotte, North Carolina. We work by appointment, creating space for unhurried conversation and careful review rather than showroom browsing. For a broader look at how to navigate the local market, see our [Charlotte Diamond Advisor Guide](/diamond-guide/charlotte-diamond-advisor-guide).",
         ],
       },
       {
@@ -133,7 +133,7 @@ export const APPROACH_CHAPTERS: ApproachChapter[] = [
         question: "Do I need to live in North Carolina to work with you?",
         paragraphs: [
           "No. A significant portion of our work happens with clients outside North Carolina — through remote consultation, report review, curated diamond selection, design collaboration, and secure shipping.",
-          "Geography should not be a barrier to thoughtful guidance.",
+          "Geography should not be a barrier to thoughtful guidance. Whether you are local or remote, it helps to understand [how an independent advisor differs from a traditional jewelry store](/diamond-guide/independent-diamond-advisor-vs-jewelry-store) before you begin.",
         ],
       },
       {
@@ -149,7 +149,7 @@ export const APPROACH_CHAPTERS: ApproachChapter[] = [
         question: "Why work with a Graduate Gemologist?",
         paragraphs: [
           "Diamond grading reports summarize measurable data, but interpreting that data — and understanding what it omits — requires trained gemological judgment.",
-          "As a Graduate Gemologist, Justin brings credentials and years of trade experience to every evaluation. That expertise informs which diamonds enter consideration, how they are assessed, and what guidance you receive.",
+          "As a Graduate Gemologist, Justin brings credentials and years of trade experience to every evaluation. That expertise informs which diamonds enter consideration, how they are assessed, and what guidance you receive. For a fuller look at what that training means in practice, read [Why Work With a Graduate Gemologist?](/diamond-guide/why-work-with-a-graduate-gemologist).",
         ],
       },
       {
@@ -224,7 +224,7 @@ export const APPROACH_CHAPTERS: ApproachChapter[] = [
         question:
           "Why do some jewelers recommend diamonds I would reject?",
         paragraphs: [
-          "Recommendation standards vary. Some prioritize moving inventory; others prioritize matching a budget to available stock; still others rely primarily on paper grades without deeper optical assessment.",
+          "Recommendation standards vary. Some prioritize moving inventory; others prioritize matching a budget to available stock; still others rely primarily on paper grades without deeper optical assessment. [How each buying model shapes advice](/diamond-guide/independent-diamond-advisor-vs-jewelry-store) is worth understanding before you evaluate a recommendation.",
           "Hourglass prioritizes light performance, proportion precision, and stones we would personally stand behind — even when that means recommending against a diamond that satisfies a simpler checklist.",
         ],
       },

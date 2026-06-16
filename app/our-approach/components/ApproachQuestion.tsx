@@ -1,5 +1,6 @@
 "use client";
 
+import { renderInlineContent } from "@/app/diamond-guide/inline-content";
 import type { ApproachQuestion as ApproachQuestionType } from "../content";
 
 type ApproachQuestionProps = {
@@ -42,7 +43,7 @@ export default function ApproachQuestion({
         <div className="overflow-hidden">
           <div className="space-y-4 pb-7 pr-1 text-[0.95rem] leading-[1.86] text-[#635d56] md:space-y-5 md:pb-8 md:pr-2 md:text-[1rem] md:leading-[1.88]">
             {item.paragraphs.map((paragraph, index) => (
-              <p key={`${item.id}-p-${index}`}>{paragraph}</p>
+              <p key={`${item.id}-p-${index}`}>{renderInlineContent(paragraph)}</p>
             ))}
           </div>
         </div>

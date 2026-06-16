@@ -79,7 +79,15 @@ export default function TheHousePageClient() {
                 relationships and manufacturing across multiple continents chosen
                 for their specific strengths, so each step is handled where it can
                 be done best and the final piece feels considered from start to
-                finish.
+                finish. For a deeper look at what gemological training means in
+                practice, read{" "}
+                <Link
+                  href="/diamond-guide/why-work-with-a-graduate-gemologist"
+                  className="text-[#6a635c] underline underline-offset-4 transition hover:text-[#1f1d1a]"
+                >
+                  Why Work With a Graduate Gemologist?
+                </Link>
+                .
               </p>
             </div>
           </div>
@@ -161,7 +169,15 @@ export default function TheHousePageClient() {
               <p className="mt-5">
                 That is why the process is selective. Not to make things
                 complicated, but to keep them clear and considered, so the final
-                piece reflects real quality rather than unnecessary noise.
+                piece reflects real quality rather than unnecessary noise. How
+                that differs from a traditional jewelry store is explained in{" "}
+                <Link
+                  href="/diamond-guide/independent-diamond-advisor-vs-jewelry-store"
+                  className="text-[#6a635c] underline underline-offset-4 transition hover:text-[#1f1d1a]"
+                >
+                  Independent Diamond Advisor vs Traditional Jewelry Store
+                </Link>
+                .
               </p>
             </div>
 

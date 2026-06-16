@@ -42,10 +42,18 @@ export default function EngagementRingsPageClient() {
 
             <p className="mx-auto mt-4 max-w-[35rem] text-[0.98rem] leading-[1.9] text-[#6f6b66]">
   For those still refining direction, the{" "}
-  <a href="/diamond-guide" className="underline underline-offset-4 hover:no-underline">
+  <Link href="/diamond-guide" className="underline underline-offset-4 hover:no-underline">
     Diamond Guide
-  </a>{" "}
-  offers a clear foundation before comparing specific designs.
+  </Link>{" "}
+  offers a clear foundation — and{" "}
+  <Link
+    href="/diamond-guide/buying-strategy"
+    className="underline underline-offset-4 hover:no-underline"
+  >
+    Buying Strategy
+  </Link>{" "}
+  is a sensible place to understand expertise and how guidance should work
+  before comparing specific designs.
 </p>
 
           </div>
