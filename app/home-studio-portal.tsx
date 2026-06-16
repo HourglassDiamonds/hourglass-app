@@ -202,6 +202,8 @@ function StudioCtaSparkleStyles() {
   );
 }
 
+const CTA_SPARKLE_MD_MIN = 768;
+
 function StudioCtaEdgeSparkle() {
   const reduced = useReducedMotion();
   const [offsetPct, setOffsetPct] = useState(0);
@@ -215,6 +217,7 @@ function StudioCtaEdgeSparkle() {
   useEffect(() => {
     if (reduced) return;
 
+    const mq = window.matchMedia(`(min-width: ${CTA_SPARKLE_MD_MIN}px)`);
     let raf = 0;
     let last = performance.now();
 
@@ -231,8 +234,6 @@ function StudioCtaEdgeSparkle() {
       motionRef.current.phaseEnd = now + idleDuration;
       setTravelActive(false);
     };
-
-    startActive(performance.now());
 
     const tick = (now: number) => {
       const dt = Math.min(now - last, 48);
@@ -251,8 +252,30 @@ function StudioCtaEdgeSparkle() {
       raf = requestAnimationFrame(tick);
     };
 
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
+    const enableMotion = () => {
+      last = performance.now();
+      startActive(last);
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(tick);
+    };
+
+    const disableMotion = () => {
+      cancelAnimationFrame(raf);
+      raf = 0;
+    };
+
+    const onViewportChange = () => {
+      if (mq.matches) enableMotion();
+      else disableMotion();
+    };
+
+    onViewportChange();
+    mq.addEventListener("change", onViewportChange);
+
+    return () => {
+      disableMotion();
+      mq.removeEventListener("change", onViewportChange);
+    };
   }, [reduced]);
 
   const oppositeOffsetPct = (offsetPct + 50) % 100;
@@ -315,8 +338,10 @@ function StudioCtaEdgeSparkle() {
 function StudioCtaButton() {
   return (
     <div className="relative inline-flex items-center justify-center">
-      <StudioCtaSparkleStyles />
-      <StudioCtaEdgeSparkle />
+      <div className="hidden md:contents">
+        <StudioCtaSparkleStyles />
+        <StudioCtaEdgeSparkle />
+      </div>
       <Link
         href="/diamond-studio"
         className="relative z-[1] inline-flex items-center gap-2 rounded-full border border-[#ece4da]/70 bg-[rgba(255,252,248,0.94)] px-5 py-2.5 text-[10px] uppercase tracking-[0.28em] text-[#5c534a] shadow-[0_2px_10px_rgba(48,36,28,0.04)] backdrop-blur-[6px] transition-colors duration-300 hover:bg-[rgba(255,252,248,0.98)] hover:text-[#2b2723]"
