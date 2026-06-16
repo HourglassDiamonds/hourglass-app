@@ -201,6 +201,26 @@ Carat Weight. see sees. 2.42 Carat
     assert.equal(hints.color, "H");
     assert.equal(hints.clarity, "VVS1");
   });
+
+  it("1232835133 natural facsimile does not infer I2 from Inscriptions OCR noise", () => {
+    const fullPageOcr = `SANT, ® FACSIMILE
+GIA NATURAL DIAMOND GRADING REPORT PROPORTIONS GRADING SCALES
+GRADING RESULTS (faceted)
+Color Grade ...... Sto T Range, Light Brown none K S Vvs, 600D
+Clarity Grade AWA ZN ZN Za ZN 2 Za Ea GB Profile to actual proportions M = Vs,
+ADDITIONAL GRADING INFORMATION CLARITY CHARACTERISTICS = a 5 Sl,
+| | a fs, i
+WANT 0 ZW ANZA NE PAN ZN ZAIN = [S22 A AD ; i
+Inscriptions): GIA ####x% 5133`;
+    const cropOcr = `GRADING RESULTS (faceted)
+Color Grade. ......ccevvevvvveeeeee.. Sto T Range, Light Brown
+Clarity Grade cctv sss essence sine | Profile to :`;
+    const hints = parseReportGradeHints(
+      `${fullPageOcr}\n\n${cropOcr}`,
+    );
+    assert.equal(hints.clarity, "SI1");
+    assert.match(hints.color ?? "", /S to T Range, Light Brown/i);
+  });
 });
 
 describe("claritySeverity", () => {

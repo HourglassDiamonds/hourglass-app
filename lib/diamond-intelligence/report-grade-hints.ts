@@ -56,7 +56,7 @@ const COLOR_GRADE_INLINE =
   /\b(?:colou?r|colour)[ \t]+grade[ \t]+(?![A-Z]\s+to\b)([D-Z](?:[ \t]*[-]?[ \t]*\d+)?)\b/gi;
 
 const COLOR_DOT_LEADER_RANGE = new RegExp(
-  String.raw`\b(?:colou?r|colour)\s+grade\s+${GIA_DOT_LEADER}\s*([A-Z]\s+to\s+[A-Z](?:\s+range)?)`,
+  String.raw`\b(?:colou?r|colour)\s+grade\s+${GIA_DOT_LEADER}\s*([A-Z]\s+to\s+[A-Z](?:\s+range)?(?:,\s*Light Brown)?)`,
   "gi",
 );
 
@@ -303,6 +303,7 @@ function pushColorCandidate(
 }
 
 function colorSpecificityScore(value: string): number {
+  if (/light\s+brown/i.test(value)) return 4;
   if (/\bto\b.*\brange\b/i.test(value)) return 3;
   if (/\bto\b/i.test(value)) return 2;
   if (/^[A-Z]\s*[-–/]\s*[A-Z]/i.test(value)) return 2;
@@ -1009,35 +1010,139 @@ function isGiaNaturalFacsimileImageGradeContext(text: string): boolean {
   );
 }
 
-function inferNaturalFacsimileClarityFromSegment(
-  segment: string,
-): string | undefined {
-  const s = segment.toLowerCase();
+/** Natural facsimile clarity OCR — stop before unrelated report sections. */
+const NATURAL_FACSIMILE_CLARITY_END_MARKERS = [
+  /additional\s+grading\s+information/i,
+  /\binscriptions?\b/i,
+  /\bcomments?\b/i,
+  /clarity\s+characteristics/i,
+] as const;
 
-  // OCR often renders the clarity digit as punctuation (e.g. "VVS |").
+const NATURAL_FACSIMILE_CLARITY_MAX_LEN = 200;
+
+function endIndexForNaturalFacsimileClaritySegment(
+  text: string,
+  clarityStart: number,
+): number {
+  const lower = text.toLowerCase();
+  const searchFrom = clarityStart + 1;
+  let end = text.length;
+
+  for (const marker of NATURAL_FACSIMILE_CLARITY_END_MARKERS) {
+    const rel = lower.slice(searchFrom).search(marker);
+    if (rel >= 0) end = Math.min(end, searchFrom + rel);
+  }
+
+  const nextColor = lower.indexOf("color grade", searchFrom);
+  if (nextColor >= 0) end = Math.min(end, nextColor);
+  const nextCut = lower.indexOf("cut grade", searchFrom);
+  if (nextCut >= 0) end = Math.min(end, nextCut);
+
+  return Math.min(end, clarityStart + NATURAL_FACSIMILE_CLARITY_MAX_LEN);
+}
+
+function naturalFacsimileClarityValueRegion(segment: string): string {
+  const withoutLabel = segment.replace(
+    /^[\s\S]*?\b(?:clarity|clarit[yq])\s+grade\b[.\s]*/i,
+    "",
+  );
+  const firstChunk = withoutLabel.split("\n").slice(0, 2).join(" ");
+  return firstChunk.slice(0, 120);
+}
+
+/** Same-line OCR repair — must not match across newlines (e.g. "; i\\nInscriptions"). */
+function inferNaturalFacsimileClarityFromValueRegion(
+  region: string,
+): string | undefined {
+  const s = region.toLowerCase();
+
+  const siSpaced = region.match(/\bS\s*I\s*([12])\b/i);
+  if (siSpaced?.[1]) return `SI${siSpaced[1]}`;
+
+  const explicitToken = region.match(
+    new RegExp(`\\b${CLARITY_GRADE_TOKEN}\\b`, "i"),
+  );
+  if (explicitToken?.[1]) {
+    return normalizeClarityGrade(explicitToken[1].replace(/\s+/g, ""));
+  }
+
+  // OCR often renders the clarity digit as punctuation (e.g. "VVS |") on one line.
   if (/\bvvs/.test(s)) {
-    if (/\bvvs\s*[\|i]/.test(s)) return "VVS1";
-    if (/\bvvs\s*2\b/.test(s)) return "VVS2";
-    if (/\bvvs\s*1\b/.test(s)) return "VVS1";
+    if (/\bvvs[ \t]*[|i1l](?:\b|[ \t]|$)/.test(s)) return "VVS1";
+    if (/\bvvs[ \t]*2\b/.test(s)) return "VVS2";
+    if (/\bvvs[ \t]*1\b/.test(s)) return "VVS1";
   }
   if (/\bvs/.test(s)) {
-    if (/\bvs\s*[\|i]/.test(s)) return "VS2";
-    if (/\bvs\s*2\b/.test(s)) return "VS2";
-    if (/\bvs\s*1\b/.test(s)) return "VS1";
+    if (/\bvs[ \t]*[|i1l](?:\b|[ \t]|$)/.test(s)) return "VS2";
+    if (/\bvs[ \t]*2\b/.test(s)) return "VS2";
+    if (/\bvs[ \t]*1\b/.test(s)) return "VS1";
   }
   if (/\bsi/.test(s)) {
-    if (/\bsi\s*[\|i]/.test(s)) return "SI2";
-    if (/\bsi\s*2\b/.test(s)) return "SI2";
-    if (/\bsi\s*1\b/.test(s)) return "SI1";
+    if (/\bsine[ \t]*[|i1l](?:\b|[ \t]|$)/.test(s)) return "SI1";
+    if (/\bS[ \t]*l\b/.test(s)) return "SI1";
+    if (/\bsi[ \t]*[|i1l](?:\b|[ \t]|$)/.test(s)) return "SI1";
+    if (/\bsi[ \t]*2\b/.test(s)) return "SI2";
+    if (/\bsi[ \t]*1\b/.test(s)) return "SI1";
   }
   if (/\bi/.test(s)) {
-    if (/\bi\s*[\|i]/.test(s)) return "I2";
-    if (/\bi\s*2\b/.test(s)) return "I2";
-    if (/\bi\s*1\b/.test(s)) return "I1";
-    if (/\bi\s*3\b/.test(s)) return "I3";
+    if (/\bi[ \t]*\|[ \t]*3\b/.test(s)) return "I3";
+    if (/\bi[ \t]*\|[ \t]*2\b/.test(s)) return "I2";
+    if (/\bi[ \t]*\|[ \t]*1\b/.test(s)) return "I1";
+    if (/\bi[ \t]*\|/.test(s)) return "I1";
+    if (/\bi[ \t]+3\b/.test(s)) return "I3";
+    if (/\bi[ \t]+2\b/.test(s)) return "I2";
+    if (/\bi[ \t]+1\b/.test(s)) return "I1";
   }
 
   return undefined;
+}
+
+function inferNaturalFacsimileClarityFromSegment(
+  segment: string,
+): string | undefined {
+  const structured = collectClarityCandidates(segment).selected;
+  if (structured) return structured;
+
+  const panelToken = extractClarityTokenFromPanelBlock(segment);
+  if (panelToken) return normalizeClarityGrade(panelToken.replace(/\s+/g, ""));
+
+  return inferNaturalFacsimileClarityFromValueRegion(
+    naturalFacsimileClarityValueRegion(segment),
+  );
+}
+
+function inferNaturalFacsimileColorFromSegment(
+  colorSeg: string,
+): string | undefined {
+  const stoRange = colorSeg.match(
+    /\bSto\s+([A-Z])\s+Range(?:,\s*Light Brown)?/i,
+  );
+  if (stoRange) {
+    const brown = /light\s+brown/i.test(colorSeg) ? ", Light Brown" : "";
+    return normalizeColorPhrase(
+      `S to ${stoRange[1]!.toUpperCase()} Range${brown}`,
+    );
+  }
+
+  const rangeWithBrown = colorSeg.match(
+    /\b([A-Z])\s+to\s+([A-Z])(?:\s+range)?,\s*Light Brown/i,
+  );
+  if (rangeWithBrown) {
+    return normalizeColorPhrase(
+      `${rangeWithBrown[1]!.toUpperCase()} to ${rangeWithBrown[2]!.toUpperCase()} Range, Light Brown`,
+    );
+  }
+
+  const range = colorSeg.match(/\b([A-Z])\s+to\s+([A-Z])(?:\s+range)?/i);
+  if (range) {
+    return normalizeColorPhrase(`${range[1]} to ${range[2]} Range`);
+  }
+
+  const wordBoundaryLetter = colorSeg.match(/\b([D-Z])\b/)?.[1];
+  const letterCandidates = [...colorSeg.matchAll(/([D-Z])/gi)].map((m) => m[1]);
+  const colorLetter =
+    wordBoundaryLetter ?? letterCandidates.at(-1) ?? undefined;
+  return colorLetter ? normalizeColor(colorLetter) : undefined;
 }
 
 function inferNaturalFacsimileColorAndClarity(text: string): {
@@ -1060,24 +1165,14 @@ function inferNaturalFacsimileColorAndClarity(text: string): {
     if (cEnd === undefined) continue;
 
     const colorSeg = text.slice(cStart, cEnd);
-    const wordBoundaryLetter = colorSeg.match(/\b([D-Z])\b/)?.[1];
-    const letterCandidates = [
-      ...colorSeg.matchAll(/([D-Z])/gi),
-    ].map((m) => m[1]);
-    const colorLetter =
-      wordBoundaryLetter ?? letterCandidates.at(-1) ?? undefined;
+    const color = inferNaturalFacsimileColorFromSegment(colorSeg);
 
-    const nextColor = lower.indexOf("color grade", cEnd + 1);
-    const nextCut = lower.indexOf("cut grade", cEnd + 1);
-    const end = [nextColor, nextCut]
-      .filter((n) => n >= 0)
-      .reduce((a, b) => Math.min(a, b), Infinity);
-
-    const claritySeg = text.slice(cEnd, end === Infinity ? undefined : end);
+    const clarityEnd = endIndexForNaturalFacsimileClaritySegment(text, cEnd);
+    const claritySeg = text.slice(cEnd, clarityEnd);
     const clarity = inferNaturalFacsimileClarityFromSegment(claritySeg);
     if (!clarity) continue;
 
-    best = { color: colorLetter, clarity };
+    best = { color, clarity };
     if (best.color) return best;
   }
 
