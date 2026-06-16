@@ -246,6 +246,12 @@ export function buildDiamondIntelligenceArchiveRecord(
         ctx.finalized?.metadata.lab ||
         null,
       parserType: ctx.finalized?.parserType ?? null,
+      lgdrDiagramRetryAttempted:
+        ctx.finalized?.lgdrDiagramRetry?.lgdrDiagramRetryAttempted ?? false,
+      lgdrDiagramRetryRecoveredFields:
+        ctx.finalized?.lgdrDiagramRetry?.lgdrDiagramRetryRecoveredFields ?? [],
+      lgdrDiagramRetryBandSnippets:
+        ctx.finalized?.lgdrDiagramRetry?.lgdrDiagramRetryBandSnippets ?? null,
       ...(ctx.urlArchive ?? { source_type: "upload" as const }),
     },
     sourceType: ctx.urlArchive?.source_type ?? "upload",

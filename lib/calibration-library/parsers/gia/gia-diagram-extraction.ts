@@ -94,6 +94,8 @@ export type GiaDiagramBandOcr = {
   text: string;
 };
 
+export type { LgdrDiagramRetryDiagnostic } from "./gia-lgdr-diagram-retry";
+
 export type GiaDiagramExtractionReport = {
   ocrAvailable: boolean;
   diagramLocated: boolean;
@@ -103,61 +105,13 @@ export type GiaDiagramExtractionReport = {
   bands: GiaDiagramBandOcr[];
   fields: GiaDiagramFieldResult[];
   internal?: Partial<GiaInternalFields>;
+  lgdrDiagramRetry?: import("./gia-lgdr-diagram-retry").LgdrDiagramRetryDiagnostic;
 };
 
-// ─────────────────────────────── image helpers ───────────────────────────────
-
-async function preprocessCropPng(
-  png: Buffer,
-  mode: DiagramBand["preprocess"],
-): Promise<Buffer> {
-  if (mode === "raw") return png;
-  try {
-    const { createCanvas, loadImage } = await import("@napi-rs/canvas");
-    const img = await loadImage(png);
-    const canvas = createCanvas(img.width, img.height);
-    const ctx = canvas.getContext("2d");
-    ctx.drawImage(img, 0, 0);
-    const src = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    const d = src.data;
-    for (let i = 0; i < d.length; i += 4) {
-      const gray = 0.299 * d[i]! + 0.587 * d[i + 1]! + 0.114 * d[i + 2]!;
-      const v =
-        mode === "threshold"
-          ? gray > 168
-            ? 255
-            : 0
-          : Math.min(255, gray * 1.12 + 8);
-      d[i] = d[i + 1] = d[i + 2] = v;
-    }
-    ctx.putImageData(src, 0, 0);
-    return canvas.toBuffer("image/png");
-  } catch {
-    return png;
-  }
-}
-
-async function cropRegionPng(
-  page: RenderedPdfPage,
-  crop: CropRegion,
-): Promise<{ png: Buffer; width: number; height: number } | null> {
-  try {
-    const { createCanvas, loadImage } = await import("@napi-rs/canvas");
-    const img = await loadImage(page.png);
-    const sx = Math.max(0, Math.floor(crop.left * page.width));
-    const sy = Math.max(0, Math.floor(crop.top * page.height));
-    const w = Math.max(1, Math.min(page.width - sx, Math.floor(crop.width * page.width)));
-    const h = Math.max(1, Math.min(page.height - sy, Math.floor(crop.height * page.height)));
-    const canvas = createCanvas(w, h);
-    const ctx = canvas.getContext("2d");
-    ctx.drawImage(img, sx, sy, w, h, 0, 0, w, h);
-    return { png: canvas.toBuffer("image/png"), width: w, height: h };
-  } catch {
-    return null;
-  }
-}
-
-// ─────────────────────────── deterministic parsing ───────────────────────────
+import {
+  cropRegionPng,
+  preprocessCropPng,
+} from "./gia-diagram-crop";
 
 /** OCR degree-glyph cleanup: a trailing °/'/H/= after a 2-digit(.d) number. */
 function normalizeDegreeText(text: string): string {
@@ -503,7 +457,11 @@ function assignCuletFromBands(
 }
 
 function assignCulet(band: GiaDiagramBandOcr): GiaDiagramFieldResult {
-  const m = normalizeBandText(band.text).match(CULET_SIZE);
+  const text = normalizeBandText(band.text);
+  if (/\bnone\b/i.test(text)) {
+    return mk("culet", band, "None", "medium", "culet none token read from band");
+  }
+  const m = text.match(CULET_SIZE);
   if (!m) return mk("culet", band, null, "none", "no culet size token in band");
   const raw = m[1]!;
   const value = raw
@@ -955,7 +913,27 @@ async function extractGiaProportionDiagramForRenderedPage(
     bands.map((b) => b.text),
     reportStyle,
   );
-  const fields = parseDiagramFields(bands, reportStyle);
+  let fields = parseDiagramFields(bands, reportStyle);
+  let lgdrDiagramRetry: GiaDiagramExtractionReport["lgdrDiagramRetry"];
+
+  if (layout === "lgdr-dossier") {
+    const { attemptLgdrDiagramOcrRetry } = await import("./gia-lgdr-diagram-retry");
+    const retryResult = await attemptLgdrDiagramOcrRetry({
+      rendered,
+      bands,
+      fields,
+      bandCropPngs: bandCropPngs.map((b) => ({ id: b.id, raw: b.raw })),
+    });
+    if (retryResult) {
+      fields = retryResult.fields;
+      for (const updated of retryResult.bands) {
+        const idx = bands.findIndex((b) => b.id === updated.id);
+        if (idx >= 0) bands[idx] = updated;
+      }
+      lgdrDiagramRetry = retryResult.diagnostic;
+    }
+  }
+
   const internal = parseInternalDiagramFields(bands, fields, reportStyle);
 
   const report: GiaDiagramExtractionReport = {
@@ -967,6 +945,7 @@ async function extractGiaProportionDiagramForRenderedPage(
     bands,
     fields,
     internal,
+    lgdrDiagramRetry,
   };
 
   if (giaDiagramDebugEnabled(opts?.reportNumber)) {
@@ -1195,6 +1174,7 @@ export type GiaDiagramApplyReport = {
   applied: Partial<Record<ReportFieldKey, string>>;
   internalApplied?: Partial<GiaInternalFields>;
   skipped: Array<{ field: ReportFieldKey; reason: string }>;
+  lgdrDiagramRetry?: import("./gia-lgdr-diagram-retry").LgdrDiagramRetryDiagnostic;
 };
 
 export function shouldRunGiaProportionDiagramExtraction(
@@ -1353,6 +1333,7 @@ export async function applyGiaProportionDiagramExtraction(
     internalApplied:
       Object.keys(internalApplied).length > 0 ? internalApplied : undefined,
     skipped,
+    lgdrDiagramRetry: diagram.lgdrDiagramRetry,
   };
 }
 

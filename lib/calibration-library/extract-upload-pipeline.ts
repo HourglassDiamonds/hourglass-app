@@ -65,6 +65,7 @@ import { clientExtractionSufficient } from "@/lib/diamond-intelligence/client-ex
 import { needsGiaDiagramProportionOcrWait } from "./gia-diagram-proportion-wait";
 import { needsGcalSarineDiagramProportionOcrWait } from "./gcal-sarine-diagram-proportion-wait";
 import type { GcalSarineProportionOcrStepDiagnostics } from "./parsers/gcal/gcal-sarine-image-ocr";
+import type { LgdrDiagramRetryDiagnostic } from "@/lib/calibration-library/parsers/gia/gia-lgdr-diagram-retry";
 import {
   isGiaQaTraceEnabled,
   traceFieldsFromRecord,
@@ -143,6 +144,8 @@ export type UploadExtractionOutput = FinalizedCalibrationExtraction & {
   gcalSarineOcrDiagnostics?: GcalSarineProportionOcrStepDiagnostics;
   gcalSarineDiagramProportionWait?: boolean;
   gcalSarineDiagramOcrFailure?: string;
+  /** LGDR diagram OCR retry trace — production observability only. */
+  lgdrDiagramRetry?: LgdrDiagramRetryDiagnostic;
   /** Developer-only OCR/assignment traces (when collectForensics). */
   forensicSnapshots?: ForensicSnapshot[];
 };
@@ -235,6 +238,7 @@ async function runImageOcrAugmentation(input: {
   diagramOcrNotices?: string[];
   gcalSarineDiagramOcrFailure?: string;
   gcalSarineOcrDiagnostics?: GcalSarineProportionOcrStepDiagnostics;
+  lgdrDiagramRetry?: LgdrDiagramRetryDiagnostic;
 }> {
   const {
     documentBytes,
@@ -250,6 +254,7 @@ async function runImageOcrAugmentation(input: {
   const diagramOcrNotices: string[] = [];
   let gcalSarineDiagramOcrFailure: string | undefined;
   let gcalSarineOcrDiagnostics: GcalSarineProportionOcrStepDiagnostics | undefined;
+  let lgdrDiagramRetry: LgdrDiagramRetryDiagnostic | undefined;
   let gradeHintText = combined.slice(0, 16000);
   const publishGradeHintText = (candidate: string) => {
     gradeHintText = pickGradeHintText(gradeHintText, candidate);
@@ -399,6 +404,7 @@ async function runImageOcrAugmentation(input: {
       diagramOcrNotices.length > 0 ? diagramOcrNotices : undefined,
     gcalSarineDiagramOcrFailure,
     gcalSarineOcrDiagnostics,
+    lgdrDiagramRetry,
   });
 
   if (runSarine) {
@@ -581,7 +587,7 @@ async function runImageOcrAugmentation(input: {
         giaProportionDiagramFieldsMissing(parsed.fields);
       if (clientDiagramFirst) {
         try {
-          await withTimeout(
+          const diagramApply = await withTimeout(
             applyGiaProportionDiagramExtraction(
               documentBytes,
               giaCombined,
@@ -596,6 +602,9 @@ async function runImageOcrAugmentation(input: {
             Math.max(regionOcrTimeoutMs - (Date.now() - started), 5_000),
             "client-gia-diagram-band-ocr",
           );
+          if (diagramApply.lgdrDiagramRetry) {
+            lgdrDiagramRetry = diagramApply.lgdrDiagramRetry;
+          }
         } catch {
           // Continue with scatter / facsimile fallback.
         }
@@ -627,7 +636,7 @@ async function runImageOcrAugmentation(input: {
         !clientDiagramFirst
       ) {
         try {
-          await withTimeout(
+          const diagramApply = await withTimeout(
             applyGiaProportionDiagramExtraction(
               documentBytes,
               giaCombined,
@@ -642,6 +651,9 @@ async function runImageOcrAugmentation(input: {
             Math.max(regionOcrTimeoutMs - (Date.now() - started), 4_000),
             "client-gia-image-diagram-band-ocr",
           );
+          if (diagramApply.lgdrDiagramRetry) {
+            lgdrDiagramRetry = diagramApply.lgdrDiagramRetry;
+          }
         } catch {
           // Best-effort band OCR on uploaded image.
         }
@@ -952,6 +964,7 @@ export async function runCalibrationUploadExtraction(
     gcalSarineDiagramProportionWait?: boolean;
     gcalSarineDiagramOcrFailure?: string;
     gcalSarineOcrDiagnostics?: GcalSarineProportionOcrStepDiagnostics;
+    lgdrDiagramRetry?: LgdrDiagramRetryDiagnostic;
   } = {
     parsed: null,
     combined: "",
@@ -993,10 +1006,11 @@ export async function runCalibrationUploadExtraction(
       pipelineError?: string;
       renderAudit?: PdfRenderAuditRecord;
       forensicSnapshots?: ForensicSnapshot[];
-      gcalSarineDiagramProportionWait?: boolean;
-      gcalSarineOcrDiagnostics?: GcalSarineProportionOcrStepDiagnostics;
-      gcalSarineDiagramOcrFailure?: string;
-    },
+    gcalSarineDiagramProportionWait?: boolean;
+    gcalSarineOcrDiagnostics?: GcalSarineProportionOcrStepDiagnostics;
+    gcalSarineDiagramOcrFailure?: string;
+    lgdrDiagramRetry?: LgdrDiagramRetryDiagnostic;
+  },
   ): UploadExtractionOutput => {
     timings.totalMs = Date.now() - pipelineStarted;
     const combinedHintText = extra.combined.trim();
@@ -1031,6 +1045,7 @@ export async function runCalibrationUploadExtraction(
       gcalSarineDiagramProportionWait: extra.gcalSarineDiagramProportionWait,
       gcalSarineOcrDiagnostics: extra.gcalSarineOcrDiagnostics,
       gcalSarineDiagramOcrFailure: extra.gcalSarineDiagramOcrFailure,
+      lgdrDiagramRetry: extra.lgdrDiagramRetry,
     };
   };
 
@@ -1286,6 +1301,9 @@ export async function runCalibrationUploadExtraction(
             if (ocr.gcalSarineOcrDiagnostics) {
               snapshot.gcalSarineOcrDiagnostics = ocr.gcalSarineOcrDiagnostics;
             }
+            if (ocr.lgdrDiagramRetry) {
+              snapshot.lgdrDiagramRetry = ocr.lgdrDiagramRetry;
+            }
             if (process.env.NODE_ENV === "development") {
               console.log("[upload-pipeline] image-ocr:end", {
                 ms: Date.now() - t0,
@@ -1403,6 +1421,7 @@ export async function runCalibrationUploadExtraction(
             snapshot.gcalSarineDiagramProportionWait,
           gcalSarineOcrDiagnostics: snapshot.gcalSarineOcrDiagnostics,
           gcalSarineDiagramOcrFailure: snapshot.gcalSarineDiagramOcrFailure,
+          lgdrDiagramRetry: snapshot.lgdrDiagramRetry,
         });
         };
 
@@ -1488,6 +1507,7 @@ export async function runCalibrationUploadExtraction(
           snapshot.gcalSarineDiagramProportionWait,
         gcalSarineOcrDiagnostics: snapshot.gcalSarineOcrDiagnostics,
         gcalSarineDiagramOcrFailure: snapshot.gcalSarineDiagramOcrFailure,
+        lgdrDiagramRetry: snapshot.lgdrDiagramRetry,
       });
     }
 
