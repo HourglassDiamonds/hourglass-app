@@ -81,6 +81,7 @@ export type DiV3ResultSectionsProps = {
   assessmentFancyShape?: boolean;
   fancyShapePresentation?: boolean;
   fancyShapeLabel?: string | null;
+  igiNaturalLabContextActive?: boolean;
 };
 
 export default function DiV3ResultSections({
@@ -111,6 +112,7 @@ export default function DiV3ResultSections({
   assessmentFancyShape = false,
   fancyShapePresentation = false,
   fancyShapeLabel = null,
+  igiNaturalLabContextActive = false,
 }: DiV3ResultSectionsProps) {
   const conciergeHref = buildConciergeHrefFromDiamondIntelligence(reportContext);
   const opticalDisplay = presentOpticalPerformanceDisplay(decisionProfile);
@@ -437,6 +439,24 @@ export default function DiV3ResultSections({
   const chapterNum = (base: number) =>
     String(base + chapterOffset).padStart(2, "0");
 
+  const igiNaturalLabContextCallout = igiNaturalLabContextActive ? (
+    <div className="mb-6 max-w-[62ch] rounded-[18px] border border-[rgba(181,150,98,0.22)] bg-[rgba(255,255,255,0.36)] px-5 py-5 md:px-6 md:py-6">
+      <p className="text-[11px] uppercase tracking-[0.16em] text-[#9b8b78]">
+        {CONSUMER_COPY.igiNaturalLabContextTitle}
+      </p>
+      <div className="mt-3 grid gap-3">
+        {CONSUMER_COPY.igiNaturalLabContextParagraphs.map((paragraph) => (
+          <p
+            key={paragraph.slice(0, 48)}
+            className="text-[14px] leading-[1.72] text-[#6f665b]"
+          >
+            {paragraph}
+          </p>
+        ))}
+      </div>
+    </div>
+  ) : null;
+
   return (
     <section className={DI_V3_SECTIONS} aria-label="Diamond Intelligence chapters">
       <DiV3Chapter
@@ -583,6 +603,7 @@ export default function DiV3ResultSections({
           chapterId="technical-appendix"
           demoted
         >
+          {igiNaturalLabContextCallout}
           <DiV3DataGrid items={technicalItems} />
           <p className="mt-6 max-w-[62ch] text-[13px] leading-[1.68] text-[#8a8177]">
             {CONSUMER_COPY.assessmentScopeCopy}

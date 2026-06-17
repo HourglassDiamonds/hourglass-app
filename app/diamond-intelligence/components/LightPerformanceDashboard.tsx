@@ -22,6 +22,7 @@ import { buildVisualPersonality } from "@/lib/diamond-intelligence/visual-person
 import { buildClarityReviewGuidance } from "@/lib/diamond-intelligence/clarity-review-guidance";
 import { resolveNaturalGiaPresentationFlags } from "@/lib/diamond-intelligence/natural-gia-presentation-policy";
 import { resolveLgdrPresentationFlags } from "@/lib/diamond-intelligence/lgdr-presentation-policy";
+import { resolveIgiNaturalPresentationFlags } from "@/lib/diamond-intelligence/igi-natural-presentation-policy";
 import { buildAdvisoryHighlights } from "./build-advisory-highlights";
 import GuidedReportCompletion from "./GuidedReportCompletion";
 import {
@@ -423,6 +424,15 @@ export default function LightPerformanceDashboard({
     ],
   );
 
+  const igiNaturalPresentation = useMemo(
+    () =>
+      resolveIgiNaturalPresentationFlags({
+        metadata,
+        reportTextHint: metadata?.reportTextHint,
+      }),
+    [metadata],
+  );
+
   const conciergeVerdict =
     decisionProfile && fields
       ? purchaseRecommendation
@@ -638,6 +648,7 @@ export default function LightPerformanceDashboard({
               fancyShapePresentation,
               hasDecisionProfile: Boolean(decisionProfile),
             })}
+            igiNaturalLabContextActive={igiNaturalPresentation.active}
           />
 
           {capability &&

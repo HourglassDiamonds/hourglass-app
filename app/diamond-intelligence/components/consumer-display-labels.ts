@@ -90,6 +90,11 @@ export const CONSUMER_COPY = {
     "They rarely capture eye-cleanliness from normal viewing distance, milkiness or haze, color tinge or undertone, overall visual personality, real-world presence, and other details that may need human review before purchase.",
   assessmentScopeCopy:
     "Assessment scope: This interpretation evaluates the diamond itself — including proportions, cut quality, visual performance, clarity considerations, and overall desirability. It does not evaluate price. A diamond may be beautifully cut and still be overpriced, or poorly suited despite an attractive price.",
+  igiNaturalLabContextTitle: "About This Laboratory",
+  igiNaturalLabContextParagraphs: [
+    "IGI is a widely recognized diamond grading laboratory used throughout the industry. While grading standards can vary somewhat between laboratories, many professionals consider natural-diamond color and clarity grades from IGI to be somewhat more generous than equivalent grades from GIA or GCAL.",
+    "This does not mean an individual grade is incorrect. It is one reason we place significant emphasis on overall appearance, cut quality, and real-world performance rather than relying on any single grading category.",
+  ] as const,
   estimatedReadLabel: "Estimated read from reported proportions",
 } as const;
 
