@@ -196,6 +196,42 @@ export const V3_INCOMPLETE_GRADE_ASSESSMENT: V3IncompleteAssessmentCopy = {
     "This partial read reflects missing or unverified color and/or clarity grades — not a proportion limitation.",
 };
 
+/** Shown when a non-round shape was read successfully but round-brilliant scoring does not apply. */
+export type V3FancyShapeAssessmentCopy = {
+  kind: "fancy-shape";
+  eyebrow: string;
+  headline: string;
+  subhead: string;
+  sectionHeadline: string;
+  sectionBody: string;
+  justinNote: string;
+  chapterNote: string;
+  recommendationStatus: string;
+  reviewScope: string;
+  nextStep: string;
+  technicalAppendixNote: string;
+};
+
+export const V3_FANCY_SHAPE_ASSESSMENT: V3FancyShapeAssessmentCopy = {
+  kind: "fancy-shape",
+  eyebrow: "Concierge Review",
+  headline: "Fancy Shape Detected",
+  subhead:
+    "This report was successfully read, but this version of Diamond Intelligence currently evaluates round brilliant diamonds.",
+  sectionHeadline: "Shape-Specific Review Recommended",
+  sectionBody:
+    "Fancy shapes such as princess, oval, cushion, radiant, emerald, pear, marquise, and asscher diamonds require shape-specific review rather than the round-brilliant proportion model. The grading details below were extracted from your report — they are shown for transparency, not as a round-brilliant performance score.",
+  justinNote:
+    "Fancy shapes are judged differently than round brilliants. I would not rely on a single proportion score for this diamond. If you are considering it, I would review the report, images, video, and face-up appearance manually before making a recommendation.",
+  chapterNote:
+    "Round-brilliant proportion scoring does not apply to this shape.",
+  recommendationStatus: "Manual Shape Review Recommended",
+  reviewScope: "Round brilliant proportion model not applicable",
+  nextStep: "Have Justin Review This Diamond",
+  technicalAppendixNote:
+    "This read reflects a successfully extracted fancy-shape report. No round-brilliant optical score or purchase recommendation is produced for this shape.",
+};
+
 /** Shown when 4Cs are present but proportion/diagram detail is incomplete. */
 export const V3_INCOMPLETE_PROPORTION_ASSESSMENT: V3IncompleteAssessmentCopy = {
   kind: "proportion",

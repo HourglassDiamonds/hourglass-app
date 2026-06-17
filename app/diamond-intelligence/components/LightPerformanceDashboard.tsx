@@ -58,12 +58,18 @@ import {
   buildV3TraitLine,
   isGcal8xReport,
   needsPartialGradeReview,
+  shouldUseV3FancyShapeChapterLayout,
   shouldUseV3IncompleteChapterLayout,
   resolveGcal8xVisualTier,
   resolveUncappedOpticalTier,
   resolveV3PublicTier,
   resolveV3RenderPhase,
 } from "./v3-presentation";
+import {
+  buildFancyShapeTraitLine,
+  resolveFancyCutShape,
+  shouldPresentFancyShapeResult,
+} from "@/lib/diamond-intelligence/fancy-shape-presentation";
 import { parseReportGradeHints } from "@/lib/diamond-intelligence/report-grade-hints";
 import {
   buildConciergeContextFromReport,
@@ -327,7 +333,16 @@ export default function LightPerformanceDashboard({
     fields,
     gradeHints,
   });
+  const fancyShapePresentation = shouldPresentFancyShapeResult({
+    fields,
+    reportTextHint: metadata?.reportTextHint,
+    gradeHints,
+  });
+  const resolvedFancyShape = fancyShapePresentation
+    ? resolveFancyCutShape(fields?.shape, metadata?.reportTextHint)
+    : null;
   const lowInterpretationConfidence =
+    !fancyShapePresentation &&
     !scoredCorePresentation &&
     decisionProfile?.confidence.band === "Low";
 
@@ -449,6 +464,8 @@ export default function LightPerformanceDashboard({
     color: colorForPresentation,
     clarity: clarityForPresentation,
     canShowScore: interpretationContext.canShowScore,
+    fancyShapePresentation,
+    fancyShapeLabel: resolvedFancyShape,
     lowInterpretationConfidence: Boolean(
       lowInterpretationConfidence && decisionProfile,
     ),
@@ -462,11 +479,13 @@ export default function LightPerformanceDashboard({
     lgdrPercentileCaution: lgdrPresentation.percentileCaution,
   });
 
-  const traitLine = buildV3TraitLine(
-    clientScore?.lightTraits ?? [],
-    effectiveGcal8xPremium,
-    gradeHints?.clarity ?? decisionProfile?.gradeHints.clarity,
-  );
+  const traitLine = fancyShapePresentation && resolvedFancyShape
+    ? buildFancyShapeTraitLine(resolvedFancyShape)
+    : buildV3TraitLine(
+        clientScore?.lightTraits ?? [],
+        effectiveGcal8xPremium,
+        gradeHints?.clarity ?? decisionProfile?.gradeHints.clarity,
+      );
 
   const resultState = resolveDiamondIntelligenceResultState({
     uploadPhase,
@@ -575,10 +594,13 @@ export default function LightPerformanceDashboard({
 
           <DiV3ResultSections
             showPercentile={
+              !fancyShapePresentation &&
               !effectiveGcal8xPremium &&
               !clarityPolicy.suppressFavorablePercentile &&
               interpretationContext.canShowScore
             }
+            fancyShapePresentation={fancyShapePresentation}
+            fancyShapeLabel={resolvedFancyShape}
             presentationMetadata={metadata}
             reportTextHint={metadata?.reportTextHint}
             naturalGiaPercentileCaution={naturalGiaPresentation.percentileCaution}
@@ -604,6 +626,7 @@ export default function LightPerformanceDashboard({
             formatCarat={formatCarat}
             reportContext={reportContext}
             assessmentIncomplete={shouldUseV3IncompleteChapterLayout({
+              fancyShapePresentation,
               lowInterpretationConfidence: Boolean(
                 lowInterpretationConfidence && decisionProfile,
               ),
@@ -611,10 +634,15 @@ export default function LightPerformanceDashboard({
               clarityExcluded: clarityPolicy.isExcluded,
               purchaseRecommendation,
             })}
+            assessmentFancyShape={shouldUseV3FancyShapeChapterLayout({
+              fancyShapePresentation,
+              hasDecisionProfile: Boolean(decisionProfile),
+            })}
           />
 
           {capability &&
           extractedFields &&
+          !fancyShapePresentation &&
           (guidedCompletionFields.length > 0 ||
             capability.needsExpertDiagramReview) ? (
             <div className="mx-auto mt-8 max-w-[960px]">

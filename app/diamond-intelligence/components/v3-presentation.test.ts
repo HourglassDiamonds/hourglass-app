@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  buildV3HeroPresentation,
   buildV3PercentilePresentation,
   buildV3IncompleteTechnicalItems,
   capV3PublicTier,
@@ -10,17 +11,20 @@ import {
   isListedPartialColor,
   looksLikeGcal8xDisplayText,
   needsPartialGradeReview,
+  shouldUseV3FancyShapeChapterLayout,
   shouldUseV3IncompleteChapterLayout,
   partialColorSelectOptions,
   PARTIAL_COLOR_SINGLE_GRADES,
   resolveGcal8xVisualTier,
   resolveV3HeroVerdictLabel,
+  resolveV3FancyShapeAssessmentCopy,
   resolveV3IncompleteAssessmentCopy,
   resolveV3IncompleteMissingDataValue,
   resolveV3PublicTier,
   resolveV3RenderPhase,
   shouldShowHourglassPerspective,
 } from "./v3-presentation";
+import { resolveHourglassClarityPolicy } from "@/lib/diamond-intelligence/hourglass-clarity-policy";
 
 describe("needsPartialGradeReview", () => {
   it("triggers when proportions are score-eligible but color and clarity are missing", () => {
@@ -97,6 +101,78 @@ describe("shouldUseV3IncompleteChapterLayout", () => {
       }),
       true,
     );
+  });
+
+  it("suppresses proportion-incomplete layout when fancy shape is active", () => {
+    assert.equal(
+      shouldUseV3IncompleteChapterLayout({
+        fancyShapePresentation: true,
+        lowInterpretationConfidence: true,
+        hasDecisionProfile: true,
+        clarityExcluded: false,
+        purchaseRecommendation: "Worth Reviewing",
+      }),
+      false,
+    );
+  });
+});
+
+describe("shouldUseV3FancyShapeChapterLayout", () => {
+  it("enables fancy chapter stack when fancy shape presentation is active", () => {
+    assert.equal(
+      shouldUseV3FancyShapeChapterLayout({
+        fancyShapePresentation: true,
+        hasDecisionProfile: true,
+      }),
+      true,
+    );
+  });
+});
+
+describe("fancy shape hero presentation", () => {
+  const baseHeroInput = {
+    purchaseRecommendation: "Worth Reviewing After Additional Information" as const,
+    publicTier: "Open" as const,
+    uncappedOpticalTier: "Open" as const,
+    displayScore: null,
+    clarityPolicy: resolveHourglassClarityPolicy("VS1"),
+    color: "E",
+    clarity: "VS1",
+    canShowScore: false,
+    opticalUnavailable: true,
+    isGcal8x: false,
+    gcal8xTier: null,
+  };
+
+  it("shows Fancy Shape Detected for princess anchor instead of proportion incomplete", () => {
+    const hero = buildV3HeroPresentation({
+      ...baseHeroInput,
+      fancyShapePresentation: true,
+      fancyShapeLabel: "Princess Cut",
+      lowInterpretationConfidence: true,
+    });
+    assert.equal(hero.purchaseHeadline, "Fancy Shape Detected");
+    assert.equal(hero.opticalPerformanceLine, null);
+    assert.equal(hero.opticalDetailLine, null);
+    assert.equal(hero.percentile, null);
+    assert.doesNotMatch(hero.purchaseSubline ?? "", /proportion measurements/i);
+  });
+
+  it("keeps Proportion Detail Needed for round brilliant partial reads", () => {
+    const hero = buildV3HeroPresentation({
+      ...baseHeroInput,
+      fancyShapePresentation: false,
+      lowInterpretationConfidence: true,
+    });
+    assert.equal(hero.purchaseHeadline, "Proportion Detail Needed");
+  });
+});
+
+describe("resolveV3FancyShapeAssessmentCopy", () => {
+  it("names the detected shape in subhead", () => {
+    const copy = resolveV3FancyShapeAssessmentCopy("Princess Cut");
+    assert.equal(copy.headline, "Fancy Shape Detected");
+    assert.match(copy.subhead, /Princess Cut diamond/i);
   });
 });
 

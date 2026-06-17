@@ -43,11 +43,14 @@ import type { V3Gcal8xTier, V3PublicTier } from "./v3-presentation";
 import type { LgdrEffectiveFinish } from "@/lib/diamond-intelligence/lgdr-presentation-policy";
 import {
   buildV3PercentilePresentation,
+  buildV3FancyShapeTechnicalItems,
   buildV3IncompleteTechnicalItems,
   HOURGLASS_PERSPECTIVE_COPY,
+  resolveV3FancyShapeAssessmentCopy,
   resolveV3IncompleteAssessmentCopy,
   shouldShowHourglassPerspective,
 } from "./v3-presentation";
+import { buildFancyShapeReportDetailItems } from "@/lib/diamond-intelligence/fancy-shape-presentation";
 import DiAdvisoryCta from "./DiAdvisoryCta";
 
 export type DiV3ResultSectionsProps = {
@@ -75,6 +78,9 @@ export type DiV3ResultSectionsProps = {
   formatCarat: (carat: string) => string;
   reportContext: DiamondIntelligenceConciergeContext;
   assessmentIncomplete?: boolean;
+  assessmentFancyShape?: boolean;
+  fancyShapePresentation?: boolean;
+  fancyShapeLabel?: string | null;
 };
 
 export default function DiV3ResultSections({
@@ -102,6 +108,9 @@ export default function DiV3ResultSections({
   formatCarat,
   reportContext,
   assessmentIncomplete = false,
+  assessmentFancyShape = false,
+  fancyShapePresentation = false,
+  fancyShapeLabel = null,
 }: DiV3ResultSectionsProps) {
   const conciergeHref = buildConciergeHrefFromDiamondIntelligence(reportContext);
   const opticalDisplay = presentOpticalPerformanceDisplay(decisionProfile);
@@ -276,6 +285,87 @@ export default function DiV3ResultSections({
   pushMeasurement(CLIENT_FIELD_LABELS.fluorescence, dashValue(fields.fluorescence));
   if (diameter) pushMeasurement("Avg. diameter", `${diameter} mm`);
   pushMeasurement("Carat", formatCarat(fields.carat ?? ""));
+
+  if (diameter) pushMeasurement("Avg. diameter", `${diameter} mm`);
+  pushMeasurement("Carat", formatCarat(fields.carat ?? ""));
+
+  if (assessmentFancyShape && fancyShapePresentation) {
+    const fancyCopy = resolveV3FancyShapeAssessmentCopy(fancyShapeLabel);
+    const fancyTechnicalItems = buildV3FancyShapeTechnicalItems(fancyCopy);
+    const reportDetailItems = buildFancyShapeReportDetailItems({
+      fields,
+      gradeHints: decisionProfile.gradeHints,
+      displayShape: fancyShapeLabel ?? fields.shape?.trim() ?? "Fancy Shape",
+      formatCarat,
+    });
+
+    return (
+      <section className={DI_V3_SECTIONS} aria-label="Diamond Intelligence chapters">
+        <DiV3Chapter
+          number="01"
+          title={fancyCopy.sectionHeadline}
+          note={fancyCopy.chapterNote}
+          chapterId="fancy-shape-assessment"
+        >
+          <DiV3BodyParagraphs
+            paragraphs={[fancyCopy.subhead, fancyCopy.sectionBody]}
+          />
+        </DiV3Chapter>
+
+        <DiV3Chapter
+          number="02"
+          title="Justin's Perspective"
+          note="A personal note on fancy-shape review."
+          feature
+          advisor
+          chapterId="justins-perspective"
+        >
+          <DiV3BodyParagraphs paragraphs={[fancyCopy.justinNote]} />
+          <p className="mt-6 text-[13px] tracking-[0.04em] text-[#8a8177]">
+            Justin Smith, GG
+          </p>
+          <Link
+            href={conciergeHref}
+            className={`${DI_V3_TEXT_CTA} mt-5 text-[13px] text-[#8a8177]`}
+            onClick={() =>
+              trackConsultationCtaClicked(
+                "diamond_intelligence:justins_perspective",
+              )
+            }
+          >
+            {CONSUMER_COPY.justinReviewCta} →
+          </Link>
+        </DiV3Chapter>
+
+        <DiV3Chapter
+          number="03"
+          title="Report Details"
+          note="Extracted values from the uploaded report."
+          chapterId="fancy-shape-report-details"
+        >
+          <p className="mb-5 max-w-[62ch] text-[13px] leading-[1.65] text-[#8a8177]">
+            {CONSUMER_COPY.reportMeasurementsSubcopy}
+          </p>
+          <DiV3DataGrid items={reportDetailItems} />
+        </DiV3Chapter>
+
+        <DiV3Chapter
+          number="04"
+          title="Technical Context"
+          note="How this read is scoped for fancy shapes."
+          chapterId="fancy-shape-technical-appendix"
+          demoted
+        >
+          <DiV3DataGrid items={fancyTechnicalItems} />
+          <p className="mt-5 max-w-[68ch] text-[14px] leading-[1.72] text-[#75675e]">
+            {fancyCopy.technicalAppendixNote}
+          </p>
+        </DiV3Chapter>
+
+        <DiAdvisoryCta conciergeHref={conciergeHref} />
+      </section>
+    );
+  }
 
   if (assessmentIncomplete) {
     return (

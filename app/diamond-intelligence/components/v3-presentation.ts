@@ -14,7 +14,9 @@ import {
 } from "@/lib/diamond-intelligence/purchase-recommendation-presentation";
 import {
   type V3IncompleteAssessmentCopy,
+  type V3FancyShapeAssessmentCopy,
   CONSUMER_COPY,
+  V3_FANCY_SHAPE_ASSESSMENT,
   V3_INCOMPLETE_GRADE_ASSESSMENT,
   V3_INCOMPLETE_PROPORTION_ASSESSMENT,
 } from "./consumer-display-labels";
@@ -312,6 +314,8 @@ export function buildV3HeroPresentation(input: {
   color?: string;
   clarity?: string;
   canShowScore: boolean;
+  fancyShapePresentation?: boolean;
+  fancyShapeLabel?: string;
   lowInterpretationConfidence: boolean;
   opticalUnavailable: boolean;
   isGcal8x: boolean;
@@ -327,6 +331,17 @@ export function buildV3HeroPresentation(input: {
       opticalPerformanceLine: null,
       opticalDetailLine:
         "This clarity grade falls outside Hourglass standards — a firm pass, regardless of how the proportions read.",
+      percentile: null,
+    };
+  }
+
+  if (input.fancyShapePresentation) {
+    const fancy = resolveV3FancyShapeAssessmentCopy(input.fancyShapeLabel);
+    return {
+      purchaseHeadline: fancy.headline,
+      purchaseSubline: fancy.subhead,
+      opticalPerformanceLine: null,
+      opticalDetailLine: null,
       percentile: null,
     };
   }
@@ -402,6 +417,8 @@ export function buildV3HeroPresentation(input: {
 export function resolveV3HeroVerdictLabel(input: {
   color?: string;
   clarity?: string;
+  fancyShapePresentation?: boolean;
+  fancyShapeLabel?: string;
   lowInterpretationConfidence: boolean;
   opticalUnavailable: boolean;
   isGcal8x: boolean;
@@ -411,6 +428,10 @@ export function resolveV3HeroVerdictLabel(input: {
 }): string {
   const policy = resolveHourglassClarityPolicy(input.clarity);
   if (policy.heroVerdictLabel) return policy.heroVerdictLabel;
+
+  if (input.fancyShapePresentation) {
+    return resolveV3FancyShapeAssessmentCopy(input.fancyShapeLabel).headline;
+  }
 
   if (input.lowInterpretationConfidence) {
     return input.opticalUnavailable
@@ -750,16 +771,25 @@ export function needsPartialGradeReview(input: PartialGradeReviewInput): boolean
   return tracePartialGradeReviewGate(input).needsPartial;
 }
 
+export function shouldUseV3FancyShapeChapterLayout(input: {
+  fancyShapePresentation: boolean;
+  hasDecisionProfile: boolean;
+}): boolean {
+  return input.fancyShapePresentation && input.hasDecisionProfile;
+}
+
 /**
  * V3 incomplete chapter layout — separate from partial grade review.
  * Grade-disqualified reads (I1/I2/I3) always use the full editorial chapter stack.
  */
 export function shouldUseV3IncompleteChapterLayout(input: {
+  fancyShapePresentation?: boolean;
   lowInterpretationConfidence: boolean;
   hasDecisionProfile: boolean;
   clarityExcluded: boolean;
   purchaseRecommendation?: PurchaseRecommendationLabel;
 }): boolean {
+  if (input.fancyShapePresentation) return false;
   if (!input.lowInterpretationConfidence || !input.hasDecisionProfile) return false;
   if (input.clarityExcluded) return false;
   if (
@@ -988,4 +1018,30 @@ export function buildV3IncompleteTechnicalItems(
   );
 
   return items;
+}
+
+export function resolveV3FancyShapeAssessmentCopy(
+  displayShape?: string | null,
+): V3FancyShapeAssessmentCopy {
+  const shape = displayShape?.trim();
+  if (!shape) return V3_FANCY_SHAPE_ASSESSMENT;
+
+  return {
+    ...V3_FANCY_SHAPE_ASSESSMENT,
+    subhead: `${V3_FANCY_SHAPE_ASSESSMENT.subhead} This report identifies a ${shape} diamond.`,
+    sectionBody: `${V3_FANCY_SHAPE_ASSESSMENT.sectionBody}`,
+    technicalAppendixNote: `${V3_FANCY_SHAPE_ASSESSMENT.technicalAppendixNote} Shape on report: ${shape}.`,
+  };
+}
+
+/** Display-only technical appendix rows for fancy-shape assessment surfaces. */
+export function buildV3FancyShapeTechnicalItems(
+  copy: V3FancyShapeAssessmentCopy,
+): { label: string; value: string }[] {
+  return [
+    { label: "Recommendation Status", value: copy.recommendationStatus },
+    { label: "Review Scope", value: copy.reviewScope },
+    { label: "Optical Read", value: "Not applicable — fancy shape" },
+    { label: "Next Step", value: copy.nextStep },
+  ];
 }
