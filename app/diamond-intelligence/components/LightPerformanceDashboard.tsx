@@ -20,6 +20,7 @@ import {
 } from "@/lib/diamond-intelligence";
 import { buildVisualPersonality } from "@/lib/diamond-intelligence/visual-personality";
 import { buildClarityReviewGuidance } from "@/lib/diamond-intelligence/clarity-review-guidance";
+import { resolveNaturalGiaPresentationFlags } from "@/lib/diamond-intelligence/natural-gia-presentation-policy";
 import { buildAdvisoryHighlights } from "./build-advisory-highlights";
 import GuidedReportCompletion from "./GuidedReportCompletion";
 import {
@@ -368,6 +369,26 @@ export default function LightPerformanceDashboard({
       })
     : "Worth Reviewing After Additional Information";
 
+  const naturalGiaPresentation = useMemo(
+    () =>
+      resolveNaturalGiaPresentationFlags({
+        metadata,
+        reportTextHint: metadata?.reportTextHint,
+        fields: fields ?? {},
+        gradeHints: gradeHints ?? decisionProfile?.gradeHints,
+        interpretationContext,
+        purchaseLabel: purchaseRecommendation,
+      }),
+    [
+      metadata,
+      fields,
+      gradeHints,
+      decisionProfile?.gradeHints,
+      interpretationContext,
+      purchaseRecommendation,
+    ],
+  );
+
   const conciergeVerdict =
     decisionProfile && fields
       ? purchaseRecommendation
@@ -418,6 +439,7 @@ export default function LightPerformanceDashboard({
     gcal8xTier,
     confidenceBand: decisionProfile?.confidence
       .band as DecisionConfidenceBand | undefined,
+    naturalGiaPercentileCaution: naturalGiaPresentation.percentileCaution,
   });
 
   const traitLine = buildV3TraitLine(
@@ -537,6 +559,9 @@ export default function LightPerformanceDashboard({
               !clarityPolicy.suppressFavorablePercentile &&
               interpretationContext.canShowScore
             }
+            presentationMetadata={metadata}
+            reportTextHint={metadata?.reportTextHint}
+            naturalGiaPercentileCaution={naturalGiaPresentation.percentileCaution}
             isGcal8x={effectiveGcal8xPremium}
             clarityPolicy={clarityPolicy}
             publicTier={publicTier}

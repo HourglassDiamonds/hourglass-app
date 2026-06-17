@@ -5,6 +5,7 @@ import type { CalibrationReportFields } from "@/lib/calibration-library/types";
 import type { DiamondDecisionProfile } from "@/lib/diamond-intelligence/diamond-decision-profile";
 import type { VisualPersonality } from "@/lib/diamond-intelligence/visual-personality";
 import type { DiamondInterpretationContext } from "@/lib/diamond-intelligence/client-interpretation-context";
+import type { ClientSafeMetadata } from "@/lib/diamond-intelligence/client-api";
 import {
   buildConciergeHrefFromDiamondIntelligence,
   type DiamondIntelligenceConciergeContext,
@@ -50,6 +51,9 @@ import DiAdvisoryCta from "./DiAdvisoryCta";
 
 export type DiV3ResultSectionsProps = {
   showPercentile: boolean;
+  presentationMetadata?: ClientSafeMetadata | null;
+  reportTextHint?: string;
+  naturalGiaPercentileCaution?: boolean;
   isGcal8x: boolean;
   clarityPolicy: HourglassClarityDisplayPolicy;
   publicTier: V3PublicTier;
@@ -72,6 +76,9 @@ export type DiV3ResultSectionsProps = {
 
 export default function DiV3ResultSections({
   showPercentile,
+  presentationMetadata,
+  reportTextHint,
+  naturalGiaPercentileCaution = false,
   isGcal8x,
   clarityPolicy,
   publicTier,
@@ -98,6 +105,7 @@ export default function DiV3ResultSections({
         clarity: decisionProfile.gradeHints.clarity,
         color: decisionProfile.gradeHints.color,
         purchaseLabel: purchaseRecommendation,
+        naturalGiaPercentileCaution,
       })
     : null;
 
@@ -144,6 +152,8 @@ export default function DiV3ResultSections({
     isGcal8x,
     decisionProfile,
     fields,
+    metadata: presentationMetadata,
+    reportTextHint,
   });
 
   const humanReviewTitle = "Worth Confirming In Person";

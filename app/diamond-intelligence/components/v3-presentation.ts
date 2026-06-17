@@ -23,6 +23,7 @@ import {
   SI2_PRESENTATION_TIER_CEILING,
 } from "@/lib/diamond-intelligence/hourglass-clarity-policy";
 import type { DecisionConfidenceBand } from "@/lib/diamond-intelligence/decision-profile-confidence";
+import { buildNaturalGiaSoftPercentilePresentation } from "@/lib/diamond-intelligence/natural-gia-presentation-policy";
 export type V3PublicTier =
   | "Rare"
   | "Exceptional"
@@ -215,6 +216,8 @@ export function buildV3PercentilePresentation(
     clarity?: string;
     color?: string;
     purchaseLabel?: PurchaseRecommendationLabel;
+    /** Natural GIA presentation guardrail — softens aggressive Top X% copy only. */
+    naturalGiaPercentileCaution?: boolean;
   },
 ): V3PercentilePresentation | null {
   const clarity = input?.clarity;
@@ -222,6 +225,10 @@ export function buildV3PercentilePresentation(
   if (policy.suppressFavorablePercentile) return null;
 
   if (displayScore === null || !Number.isFinite(displayScore)) return null;
+
+  if (input?.naturalGiaPercentileCaution) {
+    return buildNaturalGiaSoftPercentilePresentation(displayScore);
+  }
 
   const topPercent = Math.min(99, Math.max(1, Math.round(100 - displayScore)));
   const betterThan = Math.min(99, Math.max(1, Math.round(displayScore)));
@@ -302,6 +309,7 @@ export function buildV3HeroPresentation(input: {
   isGcal8x: boolean;
   gcal8xTier: V3Gcal8xTier | null;
   confidenceBand?: DecisionConfidenceBand;
+  naturalGiaPercentileCaution?: boolean;
 }): V3HeroPresentation {
   if (input.clarityPolicy.isExcluded) {
     return {
@@ -367,6 +375,7 @@ export function buildV3HeroPresentation(input: {
         clarity: input.clarity,
         color: input.color,
         purchaseLabel: input.purchaseRecommendation,
+        naturalGiaPercentileCaution: input.naturalGiaPercentileCaution,
       })
     : null;
 

@@ -10,6 +10,13 @@ import {
   warmColorPreferenceContextCopy,
 } from "./color-grade-policy";
 import type { PurchaseRecommendationLabel } from "./purchase-recommendation-presentation";
+import type { ClientSafeMetadata } from "./client-api";
+import {
+  buildNaturalGiaFluorescenceJustinParagraphs,
+  isNaturalGiaPresentationContext,
+  parseNaturalGiaFluorescencePresentation,
+  resolveNaturalGiaFluorescenceForPresentation,
+} from "./natural-gia-presentation-policy";
 
 /** Consumer-facing tier label — internal `Open` stays unchanged in logic. */
 export function displayV3PublicTierLabel(tier: string): string {
@@ -450,6 +457,11 @@ export function buildJustinPerspectiveParagraphs(input: {
   isGcal8x: boolean;
   decisionProfile: DiamondDecisionProfile;
   fields: CalibrationReportFields;
+  metadata?: Pick<
+    ClientSafeMetadata,
+    "lab" | "stoneType" | "parserFamily" | "reportFormat"
+  > | null;
+  reportTextHint?: string;
 }): string[] {
   const { clarityPolicy, isGcal8x, decisionProfile, fields } = input;
 
@@ -461,23 +473,52 @@ export function buildJustinPerspectiveParagraphs(input: {
     return justinForGcal8x();
   }
 
-  if (input.clarityPolicy.isSi2) {
-    return justinForFactor("clarity", {
-      clarityPolicy: input.clarityPolicy,
-      confidenceBand: decisionProfile.confidence.band,
-      recommendationBand: decisionProfile.overallRecommendation.band,
-      limitingDisplay: decisionProfile.primaryLimitingFactor.display,
-      cutGrade: fields.cutGrade,
-    });
-  }
-
-  return justinForFactor(decisionProfile.primaryLimitingFactor.key, {
-    clarityPolicy,
+  const factorInput = {
+    clarityPolicy: input.clarityPolicy,
     confidenceBand: decisionProfile.confidence.band,
     recommendationBand: decisionProfile.overallRecommendation.band,
     limitingDisplay: decisionProfile.primaryLimitingFactor.display,
     cutGrade: fields.cutGrade,
-  });
+  };
+
+  const base =
+    input.clarityPolicy.isSi2
+      ? justinForFactor("clarity", factorInput)
+      : justinForFactor(decisionProfile.primaryLimitingFactor.key, factorInput);
+
+  if (
+    !isNaturalGiaPresentationContext(input.metadata, input.reportTextHint)
+  ) {
+    return base;
+  }
+
+  const fluoRaw = resolveNaturalGiaFluorescenceForPresentation(
+    fields.fluorescence ?? "",
+    input.reportTextHint,
+  );
+  const fluoParagraphs = buildNaturalGiaFluorescenceJustinParagraphs(
+    parseNaturalGiaFluorescencePresentation(fluoRaw),
+  );
+  if (!fluoParagraphs?.length) {
+    return base;
+  }
+
+  const fluoDetail = parseNaturalGiaFluorescencePresentation(fluoRaw);
+  if (
+    fluoDetail.tier === "green-caution" &&
+    decisionProfile.primaryLimitingFactor.key === "none"
+  ) {
+    return [
+      ...fluoParagraphs,
+      "I'd still want optical imagery and an in-person check before treating this as a final choice.",
+    ];
+  }
+
+  if (decisionProfile.primaryLimitingFactor.key === "fluorescence") {
+    return fluoParagraphs;
+  }
+
+  return [...fluoParagraphs, ...base];
 }
 
 export function buildV3EarnedLimitations(input: {
