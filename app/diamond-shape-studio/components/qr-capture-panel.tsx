@@ -1,0 +1,73 @@
+"use client";
+
+import QRCode from "react-qr-code";
+
+type QrCapturePanelProps = {
+  captureUrl: string;
+  expiresAt: string;
+  waiting: boolean;
+  expired: boolean;
+  error: string | null;
+  onCancel: () => void;
+};
+
+function formatExpiry(iso: string): string {
+  try {
+    return new Intl.DateTimeFormat(undefined, {
+      hour: "numeric",
+      minute: "2-digit",
+    }).format(new Date(iso));
+  } catch {
+    return "";
+  }
+}
+
+export function QrCapturePanel({
+  captureUrl,
+  expiresAt,
+  waiting,
+  expired,
+  error,
+  onCancel,
+}: QrCapturePanelProps) {
+  if (expired) {
+    return (
+      <div className="dss-qr-panel">
+        <p className="dss-qr-message dss-qr-message--warn">
+          This capture session expired. Start a new QR session to try again.
+        </p>
+        <button type="button" className="dss-qr-cancel" onClick={onCancel}>
+          Back to upload options
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="dss-qr-panel">
+      <p className="dss-qr-lead">
+        Scan with your phone to capture a hand photo. It will appear here
+        automatically.
+      </p>
+      <div className="dss-qr-frame" aria-hidden={!captureUrl}>
+        <QRCode
+          value={captureUrl}
+          size={148}
+          bgColor="#faf8f5"
+          fgColor="#2a2824"
+          style={{ height: "auto", maxWidth: "100%", width: "148px" }}
+        />
+      </div>
+      <p className="dss-qr-status">
+        {waiting ? "Waiting for phone capture…" : "Ready to scan"}
+      </p>
+      {expiresAt ? (
+        <p className="dss-qr-meta">Session expires at {formatExpiry(expiresAt)}</p>
+      ) : null}
+      {error ? <p className="dss-qr-message dss-qr-message--warn">{error}</p> : null}
+      <button type="button" className="dss-qr-cancel" onClick={onCancel}>
+        Cancel phone capture
+      </button>
+    </div>
+  );
+}
