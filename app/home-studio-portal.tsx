@@ -1,14 +1,57 @@
 "use client";
 
-import { useEffect, useRef, useState, type MouseEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, type MouseEvent } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useReducedMotion } from "./shared-components/motion/useReducedMotion";
 
 const STUDIO_HERO_IMAGE = "/homepage/diamond-studio-hero.jpg";
 
-const PILL_BASE =
-  "inline-flex max-w-full items-center rounded-full border border-[#ece4da]/80 bg-[rgba(255,252,248,0.74)] px-4 py-2 text-[0.82rem] tracking-[-0.01em] text-[#2b2723] shadow-[0_2px_10px_rgba(48,36,28,0.04)] backdrop-blur-[6px] transition-colors duration-300 max-md:justify-center max-md:whitespace-normal max-md:text-center md:whitespace-nowrap";
+const ARCH_PEDESTAL_IMAGE_CLASS =
+  "object-cover object-[50%_54%] scale-[1.1] origin-[50%_38%]";
+
+const ARCH_PEDESTAL_GRADIENT = `
+              linear-gradient(to right,
+                rgba(250,246,241,0.55) 0%,
+                rgba(250,246,241,0.28) 16%,
+                transparent 42%
+              ),
+              linear-gradient(to bottom,
+                rgba(250,246,241,0.38) 0%,
+                rgba(250,246,241,0.08) 14%,
+                transparent 28%
+              ),
+              linear-gradient(to left,
+                rgba(250,246,241,0.18) 0%,
+                transparent 18%
+              )
+            `;
+
+const STUDIO_TOOLS = [
+  {
+    title: "Diamond Size Studio",
+    description: "Explore size, shape, and presence.",
+    href: "/diamond-studio",
+  },
+  {
+    title: "Diamond Intelligence",
+    description: "Analyze performance and report quality.",
+    href: "/diamond-intelligence",
+  },
+  {
+    title: "Shape Comparison",
+    description: "Compare shapes on your own hand.",
+    status: "Coming Soon",
+    comingSoon: true,
+  },
+] as const;
+
+/** Warm graphite — functional copy only; no pale beige. */
+const STUDIO_GRAPHITE = {
+  strong: "#1f1d1a",
+  body: "#3a3632",
+  soft: "#524d48",
+} as const;
 
 function StudioPortalCursorGlow() {
   return (
@@ -43,38 +86,86 @@ function IconArrow({ className }: { className?: string }) {
   );
 }
 
-function BetaSuffix() {
-  return (
-    <span className="ml-1 font-normal text-[#9a9084] text-[0.78rem]">
-      (Beta)
-    </span>
-  );
-}
-
-function ToolPill({
+function StudioToolEditorialItem({
+  title,
+  description,
+  status,
   href,
-  locked,
-  children,
+  comingSoon,
+  showDivider,
 }: {
+  title: string;
+  description: string;
+  status?: string;
   href?: string;
-  locked?: boolean;
-  children: ReactNode;
+  comingSoon?: boolean;
+  showDivider?: boolean;
 }) {
-  if (locked) {
-    return (
-      <span
-        className={`${PILL_BASE} cursor-default opacity-65`}
-        aria-disabled="true"
+  const titleClass =
+    "text-[10px] font-medium uppercase tracking-[0.24em] text-[#1f1d1a]";
+
+  const descriptionClass =
+    "mt-1 max-w-[22ch] text-[0.72rem] font-normal leading-[1.45] tracking-[0.01em] text-[#3a3632] md:ml-auto md:text-right";
+
+  const activeDescriptionClass = `${descriptionClass} transition-colors duration-500 group-hover:text-[#1f1d1a]`;
+
+  const body = comingSoon ? (
+    <>
+      <div className={`${titleClass} text-left md:text-right`}>{title}</div>
+      {status ? (
+        <p className="mt-0.5 text-[10px] font-normal tracking-[0.08em] text-[#524d48] text-left md:ml-auto md:text-right">
+          {status}
+        </p>
+      ) : null}
+      <p className={descriptionClass}>{description}</p>
+    </>
+  ) : (
+    <>
+      <div
+        className={`inline-flex items-center gap-1.5 text-left md:ml-auto md:justify-end ${titleClass} transition-colors duration-500 group-hover:text-[#0f0e0d]`}
       >
-        {children}
-      </span>
+        <span>{title}</span>
+        <IconArrow className="h-2.5 w-2.5 shrink-0 transition-transform duration-500 group-hover:translate-x-0.5" />
+      </div>
+      <p className={activeDescriptionClass}>{description}</p>
+    </>
+  );
+
+  const itemClass = `block w-full py-2 ${showDivider ? "border-t border-[#dcd2c4]/30 pt-2.5" : ""}`;
+
+  if (href && !comingSoon) {
+    return (
+      <Link href={href} className={`group ${itemClass}`}>
+        {body}
+      </Link>
     );
   }
 
   return (
-    <Link href={href!} className={`${PILL_BASE} hover:bg-[rgba(255,252,248,0.88)]`}>
-      {children}
-    </Link>
+    <div className={itemClass} aria-disabled={comingSoon ? true : undefined}>
+      {body}
+    </div>
+  );
+}
+
+function StudioToolEditorialNav() {
+  return (
+    <nav
+      className="flex w-full min-w-0 max-w-[232px] flex-col text-left md:ml-auto md:items-end md:text-right"
+      aria-label="Diamond Studio tools"
+    >
+      {STUDIO_TOOLS.map((tool, index) => (
+        <StudioToolEditorialItem
+          key={tool.title}
+          title={tool.title}
+          description={tool.description}
+          status={"status" in tool ? tool.status : undefined}
+          href={"href" in tool ? tool.href : undefined}
+          comingSoon={"comingSoon" in tool ? tool.comingSoon : false}
+          showDivider={index > 0}
+        />
+      ))}
+    </nav>
   );
 }
 
@@ -346,8 +437,7 @@ function StudioCtaButton() {
         href="/diamond-studio"
         className="relative z-[1] inline-flex items-center gap-2 rounded-full border border-[#ece4da]/70 bg-[rgba(255,252,248,0.94)] px-5 py-2.5 text-[10px] uppercase tracking-[0.28em] text-[#5c534a] shadow-[0_2px_10px_rgba(48,36,28,0.04)] backdrop-blur-[6px] transition-colors duration-300 hover:bg-[rgba(255,252,248,0.98)] hover:text-[#2b2723]"
       >
-        Enter the Studio
-        <IconArrow className="h-3 w-3 opacity-70" />
+        Enter →
       </Link>
     </div>
   );
@@ -360,7 +450,7 @@ export default function HomeStudioPortal() {
   return (
     <div className="w-full min-w-0" data-hourglass-home="diamond-studio">
       <div
-        className="group relative min-h-[460px] overflow-hidden rounded-[32px] border border-[#dcd2c4]/72 shadow-[0_10px_28px_rgba(49,38,29,0.032)] md:min-h-[440px]"
+        className="group relative min-h-[460px] overflow-hidden rounded-[12px] md:min-h-[440px]"
         onMouseMove={trackPanelLight}
       >
         <Image
@@ -369,70 +459,60 @@ export default function HomeStudioPortal() {
           fill
           priority={false}
           sizes="(max-width: 768px) 100vw, 1200px"
-          className="object-cover object-center"
+          className={ARCH_PEDESTAL_IMAGE_CLASS}
         />
 
-        {/* Lighter center so diamond reads; ivory on flanks for copy/pills */}
+        {/* Subtle flank washes — lower edge stays open for pedestal branding */}
         <div
           className="pointer-events-none absolute inset-0 z-[1]"
           aria-hidden
           style={{
-            background: `
-              linear-gradient(to right,
-                rgba(250,246,241,0.9) 0%,
-                rgba(250,246,241,0.72) 14%,
-                rgba(250,246,241,0.22) 34%,
-                rgba(250,246,241,0.06) 50%,
-                rgba(250,246,241,0.22) 66%,
-                rgba(250,246,241,0.68) 86%,
-                rgba(250,246,241,0.88) 100%
-              ),
-              linear-gradient(to bottom, rgba(255,252,248,0.08), transparent 36%)
-            `,
+            background: ARCH_PEDESTAL_GRADIENT,
           }}
         />
 
         <StudioPortalCursorGlow />
 
-        <div className="relative z-[4] flex min-h-[inherit] flex-col pb-24 md:flex-row md:pb-20">
-          {/* Left — vertically centered, left-aligned */}
-          <div className="flex flex-1 items-center justify-start px-5 py-10 sm:px-8 md:px-12 md:py-12 lg:pl-14 lg:pr-8">
-            <div className="max-w-[320px] text-left">
-              <p className="text-[11px] tracking-[0.34em] text-[#8d8275]">
-                DIAMOND STUDIO
-              </p>
-
-              <h2 className="mt-4 font-serif text-[1.65rem] font-normal leading-[1.12] tracking-[-0.028em] text-[#27231f] md:text-[1.9rem]">
+        <div className="relative z-[4] flex min-h-[inherit] flex-col pb-28 md:flex-row md:items-center md:pb-24">
+          {/* Left — editorial column, anchored left */}
+          <div className="flex flex-[1_1_0%] items-center justify-start px-5 py-10 sm:px-6 md:px-8 md:py-0 lg:pl-10 lg:pr-4">
+            <div className="max-w-[300px] text-left translate-y-4">
+              <h2
+                className="font-serif text-[1.65rem] font-normal leading-[1.12] tracking-[-0.028em] md:text-[1.9rem]"
+                style={{ color: STUDIO_GRAPHITE.strong }}
+              >
                 Understand the diamond before you choose it.
               </h2>
 
-              <p className="mt-3 max-w-[30ch] text-[0.88rem] leading-[1.7] text-[#756d64]">
+              <p
+                className="mt-3 max-w-[30ch] text-[0.88rem] leading-[1.65]"
+                style={{ color: STUDIO_GRAPHITE.body }}
+              >
                 Professional tools for scale, light performance, and report
                 quality.
               </p>
             </div>
           </div>
 
-          {/* Right — vertically centered, right-aligned pill stack */}
-          <div className="flex flex-1 items-center justify-end px-5 pb-6 sm:px-8 md:px-12 md:py-12 lg:pr-14 lg:pl-8">
-            <div className="flex w-full min-w-0 max-w-full flex-col items-end gap-2 max-md:items-center">
-              <ToolPill href="/diamond-studio">Diamond Size Studio</ToolPill>
-              <ToolPill href="/diamond-intelligence">
-                Diamond Intelligence
-                <BetaSuffix />
-              </ToolPill>
-              <ToolPill locked>
-                <span className="text-[#6a635c]">Shape Comparison</span>
-                <span className="mx-1.5 text-[#c4b8a8]" aria-hidden>
-                  /
-                </span>
-                <span className="text-[0.78rem] text-[#9a9084]">Coming Soon</span>
-              </ToolPill>
+          {/* Right — editorial column, anchored right */}
+          <div className="flex flex-[1_1_0%] items-center justify-end px-5 pb-6 sm:px-6 md:px-8 md:py-0 md:pb-0 lg:pl-4 lg:pr-10">
+            <div className="relative translate-y-4 md:-translate-x-8">
+              <div
+                className="pointer-events-none absolute left-1/2 top-1/2 z-0 h-[300px] w-[280px] -translate-x-1/2 -translate-y-1/2"
+                aria-hidden
+                style={{
+                  background:
+                    "radial-gradient(ellipse 58% 62% at 50% 50%, rgba(252,248,243,0.24) 0%, rgba(250,246,241,0.14) 48%, transparent 76%)",
+                }}
+              />
+              <div className="relative z-[1]">
+                <StudioToolEditorialNav />
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="absolute bottom-8 left-1/2 z-[5] w-full max-w-full -translate-x-1/2 px-5 sm:px-8 md:bottom-9 md:w-auto md:px-0">
+        <div className="absolute bottom-10 left-1/2 z-[5] w-full max-w-full -translate-x-1/2 px-5 sm:px-8 md:bottom-12 md:w-auto md:px-0">
           <div className="flex justify-center">
             <StudioCtaButton />
           </div>
