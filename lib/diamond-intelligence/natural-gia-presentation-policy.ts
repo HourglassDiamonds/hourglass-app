@@ -96,7 +96,7 @@ export function isNaturalGiaPresentationContext(
   if (metadata.stoneType === "natural") return true;
 
   // Unknown stone type on a non-LGDR GIA report — treat as natural facsimile/dossier guard.
-  return metadata.stoneType !== "lab-grown";
+  return true;
 }
 
 /** Recover hue when finalizeExtractionFields kept strength only (e.g. Medium Green → Medium). */

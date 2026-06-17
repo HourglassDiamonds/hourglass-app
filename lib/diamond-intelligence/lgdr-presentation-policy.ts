@@ -110,9 +110,9 @@ export function extractFinishGradesFromReportTextHint(
   if (!text) return {};
 
   return {
-    cutGrade: readFinishGradeFromHint(text, "\\bCut\\b"),
-    polish: readFinishGradeFromHint(text, "\\bPolish\\b"),
-    symmetry: readFinishGradeFromHint(text, "\\bSymmetry\\b"),
+    cutGrade: readFinishGradeFromHint(text, "\\bCut\\b") ?? undefined,
+    polish: readFinishGradeFromHint(text, "\\bPolish\\b") ?? undefined,
+    symmetry: readFinishGradeFromHint(text, "\\bSymmetry\\b") ?? undefined,
   };
 }
 

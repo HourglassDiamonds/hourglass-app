@@ -465,7 +465,7 @@ export default function LightPerformanceDashboard({
     clarity: clarityForPresentation,
     canShowScore: interpretationContext.canShowScore,
     fancyShapePresentation,
-    fancyShapeLabel: resolvedFancyShape,
+    fancyShapeLabel: resolvedFancyShape ?? undefined,
     lowInterpretationConfidence: Boolean(
       lowInterpretationConfidence && decisionProfile,
     ),
