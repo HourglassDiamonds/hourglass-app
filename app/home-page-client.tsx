@@ -22,7 +22,7 @@ function HeroRingStage() {
         width={900}
         height={900}
         priority
-        className="relative z-10 h-auto max-h-[523px] w-auto -translate-y-[1.5%] object-contain [filter:brightness(0.99)_contrast(1.015)_saturate(0.99)] md:max-h-[633px]"
+        className="relative z-10 h-auto max-h-[523px] w-auto -translate-y-[1.5%] object-contain [filter:brightness(0.99)_contrast(1.015)_saturate(0.99)] md:max-h-[633px] md:translate-y-[25px]"
       />
     </div>
   );
