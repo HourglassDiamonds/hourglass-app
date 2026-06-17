@@ -5,6 +5,7 @@
 import {
   fixGiaOcrDegreeNumerals,
   formatGiaGirdlePhrase,
+  girdleCompletenessScore,
   normalizeGiaProportionBlockText,
   stripGiaDotLeaderNoise,
 } from "../../gia-proportions";
@@ -144,6 +145,20 @@ export function parseNaturalFacsimileGirdleFromMeasurementsRow(
   }
 
   if (
+    /\bmedium\b/i.test(norm) &&
+    /\bsligh\w*/i.test(norm) &&
+    /\bthick\b/i.test(norm) &&
+    !thicknessPhrase
+  ) {
+    let raw = "Medium to Slightly Thick (Faceted)";
+    const pct = findGirdleThicknessNearFaceted(norm);
+    if (pct) raw += ` ${pct}%`;
+    const formatted = formatGiaGirdlePhrase(raw);
+    if (formatted) return formatted;
+    return "Medium to Slightly Thick (Faceted)";
+  }
+
+  if (
     /\bsligh\w*\b/i.test(norm) &&
     !/\bsligh\w*\s+(?:thick|thin|large)\b/i.test(norm) &&
     !/\bsligh\w*\s+large\b/i.test(norm)
@@ -250,7 +265,7 @@ export function applyNaturalFacsimileMeasurementsRowFromText(
   }
 
   const girdle = parseNaturalFacsimileGirdleFromMeasurementsRow(rowText);
-  if (girdle && !fields.girdle.trim()) {
+  if (girdle && girdleCompletenessScore(girdle) > girdleCompletenessScore(fields.girdle)) {
     set("girdle", girdle, "medium");
     fields.girdle = girdle;
     applied.girdle = girdle;

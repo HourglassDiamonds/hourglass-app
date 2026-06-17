@@ -46,6 +46,12 @@ const GIA_PDF_LAYER_LABELS = [
 const GIRDLE_THICKNESS =
   String.raw`((?:medium|thin|thick|slightly|very)\s*[-–—]?\s*(?:to\s+)?slightly\s+(?:thin|thick))`;
 
+const GIRDLE_RANGE_WIDTH =
+  /\b(very\s+thin\s+to\s+medium|medium\s+to\s+slightly\s+thick|medium\s+to\s+slightly\s+thin|medium\s+to\s+thick|slightly\s+thick\s+to\s+medium|thin\s+to\s+medium)\b/i;
+
+const GIRDLE_SINGLE_WIDTH =
+  /\b(extremely\s+thin|very\s+thin|thin|medium|slightly\s+thick|sl\.?\s*thick|thick|very\s+thick|extremely\s+thick)\b/i;
+
 /** Strip dot-leader filler from a captured value fragment. */
 export function stripGiaDotLeaderNoise(s: string): string {
   return s.replace(/\.{2,}/g, " ").replace(/\s+/g, " ").trim();
@@ -691,15 +697,63 @@ function matchRoundBrilliantShape(text: string): string | null {
   return m?.[1] ? titleCasePhrase(m[1].replace(/\s+cut\b/i, "").trim()) : null;
 }
 
-/** Display form: Medium - Slightly Thick (Faceted) 3.5% */
+/** Display form: Medium to Slightly Thick (Faceted) 3.5% */
 export function formatGiaGirdlePhrase(raw: string): string {
-  const thickness = raw.match(new RegExp(GIRDLE_THICKNESS, "i"))?.[1]?.trim();
+  const norm = stripGiaDotLeaderNoise(raw)
+    .replace(/\bfactted\b/gi, "faceted")
+    .replace(/,/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!norm) return "";
+
+  const faceted = /\(\s*faceted\s*\)|\bfaceted\b/i.test(norm);
+  const pct = norm.match(/(\d{1,2}(?:\.\d+)?)\s*%/)?.[1];
+
+  let thickness =
+    norm.match(GIRDLE_RANGE_WIDTH)?.[1]?.trim() ??
+    norm.match(new RegExp(GIRDLE_THICKNESS, "i"))?.[1]?.trim();
+
+  if (
+    !thickness &&
+    /\bmedium\b/i.test(norm) &&
+    (/\bslightly\s+thick\b/i.test(norm) ||
+      (/\bsligh\w*/i.test(norm) && /\bthick\b/i.test(norm)))
+  ) {
+    thickness = "medium to slightly thick";
+  }
+
+  if (
+    !thickness &&
+    /\bvery\s+thin\b/i.test(norm) &&
+    /\bmedium\b/i.test(norm)
+  ) {
+    thickness = "very thin to medium";
+  }
+
+  if (!thickness && /,\s*faceted\b/i.test(raw)) {
+    thickness = norm.match(GIRDLE_SINGLE_WIDTH)?.[1]?.trim();
+  }
+
+  if (!thickness && faceted) {
+    const single = norm.match(GIRDLE_SINGLE_WIDTH)?.[1]?.trim();
+    if (single) {
+      let body = titleCasePhrase(
+        single.replace(/\bSl\.?\s*Thick\b/i, "slightly thick"),
+      );
+      body = body.replace(/\bSl\.?\s*Thick\b/i, "Slightly Thick");
+      return `${body} (Faceted)`.trim();
+    }
+  }
+
   if (!thickness) return "";
-  const faceted = /\(\s*faceted\s*\)/i.test(raw);
-  const pct = raw.match(/(\d{1,2}(?:\.\d+)?)\s*%/)?.[1];
-  const body = titleCasePhrase(thickness.replace(/\s*-\s*/g, " - "));
+
+  let body = titleCasePhrase(
+    thickness.replace(/\s*[-–—]\s*/g, " to ").replace(/\s+/g, " ").trim(),
+  );
+  body = body.replace(/\bSl\.?\s*Thick\b/i, "Slightly Thick");
+
   const facetedPart = faceted ? " (Faceted)" : "";
-  const pctPart = pct ? ` ${pct}%` : "";
+  const pctPart = pct && !faceted ? ` ${pct}%` : "";
   return `${body}${facetedPart}${pctPart}`.trim();
 }
 
@@ -881,6 +935,8 @@ export function girdleCompletenessScore(value: string): number {
   let score = 0;
   if (/\bmedium\b/i.test(value)) score += 2;
   if (/\bslightly\s+thick\b/i.test(value)) score += 2;
+  if (/\bvery\s+thin\b/i.test(value)) score += 1;
+  if (/\bto\b/i.test(value)) score += 3;
   if (/faceted/i.test(value)) score += 2;
   if (girdleFormattedHasPercent(value)) score += 3;
   return score;
@@ -943,18 +999,28 @@ function findGiaPavilionAngleEvidence(text: string, crownAngle: string): string 
 }
 
 function buildGiaGirdleFromEvidence(text: string): string | null {
+  const windows: string[] = [];
   const anchor = text.search(/\bgirdle\b/i);
-  const window =
-    anchor >= 0 ? text.slice(anchor, anchor + 520) : text.slice(0, 520);
-  if (!/\bmedium\b/i.test(window) || !/\bslightly\s+thick\b/i.test(window)) {
-    return null;
+  windows.push(anchor >= 0 ? text.slice(anchor, anchor + 520) : text.slice(0, 520));
+  const measurementsWindow = text.match(
+    /\bmeasurements\b[\s\S]{0,500}?(?=\bgrading\s+results\b)/i,
+  )?.[0];
+  if (measurementsWindow) windows.push(measurementsWindow);
+
+  for (const window of windows) {
+    const hasSlightlyThick =
+      /\bslightly\s+thick\b/i.test(window) ||
+      (/\bsligh\w*/i.test(window) && /\bthick\b/i.test(window));
+    if (!/\bmedium\b/i.test(window) || !hasSlightlyThick) continue;
+    const faceted = /faceted|factted/i.test(window);
+    const pct = findGirdleThicknessPercentNear(window);
+    let raw = "Medium - Slightly Thick";
+    if (faceted) raw += " (Faceted)";
+    if (pct) raw += ` ${pct}%`;
+    const formatted = formatGiaGirdlePhrase(raw);
+    if (formatted) return formatted;
   }
-  const faceted = /faceted|factted/i.test(window);
-  const pct = findGirdleThicknessPercentNear(window);
-  let raw = "Medium - Slightly Thick";
-  if (faceted) raw += " (Faceted)";
-  if (pct) raw += ` ${pct}%`;
-  return formatGiaGirdlePhrase(raw);
+  return null;
 }
 
 function logGiaPavilionAssignmentPipeline(
@@ -1841,7 +1907,9 @@ function stitchGiaOcrGirdleFromText(text: string): string | null {
   if (formatted) return formatted;
 
   const hasMedium = /\bmedium\b/i.test(body);
-  const hasSlightlyThick = /\bslightly\s+thick\b/i.test(body);
+  const hasSlightlyThick =
+    /\bslightly\s+thick\b/i.test(body) ||
+    (/\bsligh\w*/i.test(body) && /\bthick\b/i.test(body));
   const hasFaceted = /faceted|factted/i.test(body);
   if (!hasMedium || !hasSlightlyThick) return null;
 

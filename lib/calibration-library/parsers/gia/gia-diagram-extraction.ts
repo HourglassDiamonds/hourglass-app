@@ -9,6 +9,7 @@ import {
   extractGiaOcrProportionDiagram,
   formatGiaGirdlePhrase,
   giaProportionDiagramFieldsMissing,
+  girdleCompletenessScore,
 } from "../../gia-proportions";
 import {
   isOcrRuntimeAvailable,
@@ -199,6 +200,8 @@ function rangeConfidence(
   return ambiguous ? "medium" : "high";
 }
 
+const GIRDLE_WIDTH_RANGE =
+  /\b(very\s+thin\s+to\s+medium|medium\s+to\s+slightly\s+thick|medium\s+to\s+slightly\s+thin|medium\s+to\s+thick|slightly\s+thick\s+to\s+medium|thin\s+to\s+medium)\b/i;
 const GIRDLE_WIDTH =
   /(extremely thin|very thin|thin|medium|slightly thick|sl\.?\s*thick|thick|very thick|extremely thick)/i;
 const GIRDLE_FACETED = /faceted/i;
@@ -405,7 +408,29 @@ function assignDepthPercent(
 
 function assignGirdle(band: GiaDiagramBandOcr): GiaDiagramFieldResult {
   const text = normalizeBandText(band.text);
-  const width = text.match(GIRDLE_WIDTH)?.[0]?.trim();
+  let width =
+    text.match(GIRDLE_WIDTH_RANGE)?.[1]?.trim() ??
+    text.match(GIRDLE_WIDTH)?.[0]?.trim();
+  if (
+    width?.toLowerCase() === "medium" &&
+    (/\bslightly\s+thick\b/i.test(text) ||
+      (/\bsligh\w*/i.test(text) && /\bthick\b/i.test(text)))
+  ) {
+    width = "medium to slightly thick";
+  }
+  if (
+    width?.toLowerCase() === "very thin" &&
+    /\bmedium\b/i.test(text) &&
+    !/\bvery\s+thin\s+to\s+medium\b/i.test(text)
+  ) {
+    width = "very thin to medium";
+  }
+  if (
+    width?.toLowerCase() === "medium" &&
+    /\bvery\s+thin\b/i.test(text)
+  ) {
+    width = "very thin to medium";
+  }
   const faceted =
     GIRDLE_FACETED.test(text) || /\(fa[oc]s?t[et]d\)|\(acetec\)/i.test(text);
   const pct = collectPercents(text).find(
@@ -425,13 +450,13 @@ function assignGirdle(band: GiaDiagramBandOcr): GiaDiagramFieldResult {
       `width descriptor illegible (faceted=${faceted}, thickness=${pct ?? "?"}%) — not assigning`,
     );
   }
-  const parts = [width];
-  if (faceted) parts.push("Faceted");
-  const value = parts.join(", ");
+  let raw = width;
+  if (faceted) raw += " (Faceted)";
+  const value = formatGiaGirdlePhrase(raw) || raw.trim();
   return mk(
     "girdle",
     band,
-    pct !== undefined ? `${value} ${fmtPct(pct)}%` : value,
+    value,
     faceted && pct !== undefined ? "high" : "medium",
     "girdle width descriptor read from band",
   );
@@ -440,11 +465,20 @@ function assignGirdle(band: GiaDiagramBandOcr): GiaDiagramFieldResult {
 function assignGirdleFromBands(
   bands: GiaDiagramBandOcr[],
 ): GiaDiagramFieldResult {
+  let best: GiaDiagramFieldResult | null = null;
+  let bestScore = -1;
   for (const band of bands) {
     const result = assignGirdle(band);
-    if (result.parsedValue) return result;
+    if (!result.parsedValue) continue;
+    const score = girdleCompletenessScore(result.parsedValue);
+    if (score > bestScore) {
+      best = result;
+      bestScore = score;
+    }
   }
-  return mk("girdle", null, null, "none", "no girdle in candidate bands");
+  return (
+    best ?? mk("girdle", null, null, "none", "no girdle in candidate bands")
+  );
 }
 
 function assignCuletFromBands(
@@ -1180,7 +1214,11 @@ function normalizeDiagramFieldValue(
       return raw.replace(/[°%]/g, "").trim();
     case "girdle": {
       const formatted = formatGiaGirdlePhrase(raw);
-      return formatted || raw.trim();
+      if (formatted) return formatted;
+      const coerced = formatGiaGirdlePhrase(
+        raw.replace(/,/g, " ").replace(/\bfaceted\b/gi, "(Faceted)"),
+      );
+      return coerced || raw.trim();
     }
     default:
       return raw.trim();
@@ -1326,21 +1364,26 @@ export async function applyGiaProportionDiagramExtraction(
 
   // LGDR dossier: band degree glyphs are often missing — reuse text-layer scatter
   // on merged band OCR when diagram assignDegree did not recover crown.
-  if (
-    reportStyle === "GIA_LGDR_DOSSIER" &&
-    !fields.crownAngle.trim() &&
-    diagram.bands.length > 0
-  ) {
+  if (reportStyle === "GIA_LGDR_DOSSIER" && diagram.bands.length > 0) {
     const bandText = diagram.bands
       .map((b) => b.text)
       .filter((t) => t.trim())
       .join("\n\n");
     if (bandText.trim()) {
-      const before = fields.crownAngle.trim();
-      extractGiaOcrProportionDiagram(bandText, fields, set, giaInternal);
-      applyGiaOcrFieldHydrationFallback(bandText, fields, set);
-      if (fields.crownAngle.trim() && fields.crownAngle.trim() !== before) {
-        applied.crownAngle = fields.crownAngle.trim();
+      if (!fields.crownAngle.trim()) {
+        const before = fields.crownAngle.trim();
+        extractGiaOcrProportionDiagram(bandText, fields, set, giaInternal);
+        applyGiaOcrFieldHydrationFallback(bandText, fields, set);
+        if (fields.crownAngle.trim() && fields.crownAngle.trim() !== before) {
+          applied.crownAngle = fields.crownAngle.trim();
+        }
+      }
+      if (girdleCompletenessScore(fields.girdle) < 7) {
+        const beforeGirdle = fields.girdle.trim();
+        applyGiaOcrFieldHydrationFallback(bandText, fields, set);
+        if (fields.girdle.trim() && fields.girdle.trim() !== beforeGirdle) {
+          applied.girdle = fields.girdle.trim();
+        }
       }
     }
   }
