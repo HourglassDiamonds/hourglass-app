@@ -83,16 +83,18 @@ export const APPROACH_CHAPTERS: ApproachChapter[] = [
         id: "compete-online",
         question: "Can you compete with online diamond prices?",
         paragraphs: [
-          "Some online retailers operate at scale with minimal service, liberal return policies, and optimization for transaction volume. Hourglass operates differently — with gemologist-led evaluation, curated selection, and ongoing guidance through design and delivery.",
-          "We are not always the lowest price on paper. We focus on ensuring the price you pay corresponds to genuine value rather than a grade that looks favorable on a screen but disappoints in person.",
+          "Within the quality range we believe in, we are generally very competitive.",
+          "Many online comparisons are built around finding the cheapest option available, which often means comparing diamonds we would never recommend in the first place. Our process begins by identifying exceptional diamonds, then securing them as competitively as possible.",
+          "Our goal is not simply to find the lowest price. It is to find the strongest value among diamonds we genuinely believe are worth owning.",
         ],
       },
       {
         id: "cheapest-not-value",
         question: "Why aren't the cheapest diamonds always the best value?",
         paragraphs: [
-          "The cheapest diamond in a given grade often carries compromises that grading reports do not capture — slightly off proportions, muted light return, or characteristics that affect visual beauty more than the certificate suggests.",
-          "Value is the relationship between what you pay and what you receive. A modest premium for meaningfully better performance often represents stronger long-term value than marginal savings on paper.",
+          "The cheapest diamond and the best value diamond are often not the same thing.",
+          "Many pricing comparisons focus on finding the lowest-cost option that meets a basic set of filters. In practice, that frequently means comparing diamonds with weaker cut quality, transparency issues, durability concerns, or visual characteristics we would not recommend.",
+          "A diamond's long-term value is determined by how it performs, how it presents, and how confidently it can be recommended — not simply by where it ranks when sorted from lowest to highest price.",
         ],
       },
       {
@@ -156,8 +158,9 @@ export const APPROACH_CHAPTERS: ApproachChapter[] = [
         id: "client-capacity",
         question: "How many clients do you take on at one time?",
         paragraphs: [
-          "We intentionally limit active projects to preserve the quality of attention each client receives. Hourglass is not structured for volume.",
-          "This restraint allows thorough evaluation, responsive communication, and a process that does not feel rushed.",
+          "We take on projects as they come in.",
+          "Whether you're exploring ideas, comparing options, working within a specific budget, or ready to move forward, we're happy to have the conversation.",
+          "If you have a specific timeline in mind, let us know. We personally review and respond to every Concierge submission within 24 hours.",
         ],
       },
       {

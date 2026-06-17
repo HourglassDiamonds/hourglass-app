@@ -230,15 +230,45 @@ export default function ConciergePageClient() {
               </div>
 
               <p className="text-[1rem] leading-[1.95] text-[#6a635c] md:text-[1.04rem]">
-                You might already know exactly
-                what you're looking for, or just have a sense of how it should
-                feel. Either is enough. From there, the conversation takes shape
-                naturally, focusing on what matters and moving at a pace that
-                feels right. We'll keep this easy and stress free.
+                You might already know exactly what you&apos;re looking for, or
+                just have a sense of how it should feel. Either is enough. From
+                there, the conversation takes shape naturally, focusing on what
+                matters and moving at a pace that feels right.
+              </p>
+
+              <p className="mt-6 text-[1rem] leading-[1.95] text-[#6a635c] md:text-[1.04rem]">
+                We are extremely selective about what we recommend, but not
+                about who we help.
+              </p>
+
+              <p className="mt-6 text-[1rem] leading-[1.95] text-[#6a635c] md:text-[1.04rem]">
+                Every client brings a different set of priorities, preferences,
+                timelines, and budgets. Our role is not to decide whether
+                someone is &ldquo;qualified&rdquo; to work with us. Our role is
+                to help you understand your options, avoid costly mistakes, and
+                make the most informed decision possible. Whether you ultimately
+                choose a diamond through Hourglass or not, we&apos;re happy to
+                help you navigate the process with confidence.
               </p>
 
               <p className="mt-6 text-[0.95rem] leading-[1.9] text-[#7a7268]">
-                A few details to get started.
+                If you have a timeframe in mind, let us know.
+              </p>
+
+              <p className="mt-6 text-[0.95rem] leading-[1.9] text-[#7a7268]">
+                We take on projects as they come in, not by judging whether
+                someone is &ldquo;selective enough&rdquo; to work with us.
+                If you&apos;re on a tighter timeline or simply have questions
+                before getting started, fill out the Concierge form — yes, we
+                personally read and reply to every submission within 24 hours —
+                or reach out directly to Justin at{" "}
+                <a
+                  href="mailto:justin@hourglassdiamonds.com"
+                  className="text-[#6a635c] underline underline-offset-4 transition hover:text-[#1f1d1a]"
+                >
+                  justin@hourglassdiamonds.com
+                </a>
+                .
               </p>
 
               <p className="mt-7 text-[0.94rem] leading-[1.88] text-[#7a7268]">
@@ -619,7 +649,7 @@ export default function ConciergePageClient() {
             <h2 className="text-[2rem] font-light leading-[1.14] tracking-[0.015em] text-[#1f1d1a] md:text-[2.35rem]">
               Thoughtful from the start.
             </h2>
-            <p className="mx-auto mt-6 max-w-[32rem] text-[1rem] leading-[1.9] text-[#6a635c] md:text-[1.04rem]">
+            <p className="mx-auto mt-6 max-w-[36rem] text-[1rem] leading-[1.9] text-[#6a635c] md:text-[1.04rem]">
               No pressure. No expectations. Just a clear place to begin.
             </p>
           </div>

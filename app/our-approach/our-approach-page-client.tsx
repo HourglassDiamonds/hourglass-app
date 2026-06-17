@@ -126,23 +126,17 @@ export default function OurApproachPageClient() {
             </h2>
             <div className="mx-auto mt-6 max-w-[42rem] text-[1rem] leading-[1.9] text-[#615a53]">
               <p>
-                The jewelry industry often treats more selection as the
-                solution. Hourglass believes better understanding creates better
-                outcomes. More inventory does not necessarily create better
-                decisions.
+                We are extremely selective about what we recommend, but not
+                about who we help.
               </p>
               <p className="mt-5">
-                Curation, restraint, and gemological judgment matter. The goal
-                is not to sell every diamond. The goal is to help people make
-                better decisions. For a fuller explanation of what that
-                judgment involves, read{" "}
-                <Link
-                  href="/diamond-guide/why-work-with-a-graduate-gemologist"
-                  className="text-[#6a635c] underline underline-offset-4 transition hover:text-[#1f1d1a]"
-                >
-                  Why Work With a Graduate Gemologist?
-                </Link>
-                .
+                Every client brings a different set of priorities, preferences,
+                timelines, and budgets. Our role is not to decide whether
+                someone is &ldquo;qualified&rdquo; to work with us. Our role is
+                to help you understand your options, avoid costly mistakes, and
+                make the most informed decision possible. Whether you ultimately
+                choose a diamond through Hourglass or not, we&apos;re happy to
+                help you navigate the process with confidence.
               </p>
             </div>
           </div>

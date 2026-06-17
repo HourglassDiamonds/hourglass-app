@@ -20,10 +20,13 @@ export default function DiAdvisoryCta({
           {CONSUMER_COPY.justinReviewCta}
         </h2>
         <p className="mt-4 max-w-lg text-[15px] leading-[1.78] text-[#6f665b]">
-          {CONSUMER_COPY.justinReviewCtaSupporting}
+          {CONSUMER_COPY.justinReviewCtaPhilosophy}
         </p>
-        <p className="mt-6 max-w-lg text-[13px] leading-[1.72] text-[#8a8177]">
-          {CONSUMER_COPY.justinReviewCtaExclusivity}
+        <p className="mt-4 max-w-lg text-[15px] leading-[1.78] text-[#6f665b]">
+          {CONSUMER_COPY.justinReviewCtaCompetitive}
+        </p>
+        <p className="mt-4 max-w-lg text-[15px] leading-[1.78] text-[#6f665b]">
+          {CONSUMER_COPY.justinReviewCtaGoal}
         </p>
         <Link
           href={conciergeHref}

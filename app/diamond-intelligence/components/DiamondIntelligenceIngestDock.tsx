@@ -195,9 +195,6 @@ export function DiamondIntelligenceIngestDock({
           <p className="mt-4 text-sm leading-relaxed text-[#6f665d]">
             {CONSUMER_COPY.partialListingBody}
           </p>
-          <p className="mt-3 text-xs leading-relaxed text-[#948a80]">
-            {CONSUMER_COPY.justinReviewCtaSupporting}
-          </p>
           <Link
             href={conciergeHref}
             className="mt-5 inline-flex items-center justify-center rounded-full border border-[rgba(58,48,38,0.18)] bg-white/80 px-5 py-2.5 text-[10px] uppercase tracking-[0.22em] text-[#2b2723] transition hover:bg-[#faf8f4]"

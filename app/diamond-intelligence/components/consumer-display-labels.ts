@@ -51,10 +51,12 @@ export const CONSUMER_COPY = {
     "Supports many listings from Blue Nile, Rare Carat, Adiamor, Ritani, Brilliant Earth, James Allen, and other major retailers.",
   ] as const,
   justinReviewCta: "Have Justin Review This Diamond",
-  justinReviewCtaExclusivity:
-    "Justin personally reviews a limited number of diamonds each week.",
-  justinReviewCtaSupporting:
-    "Share the report or listing and he can help determine whether it is worth pursuing.",
+  justinReviewCtaPhilosophy:
+    "We are extremely selective about what we recommend, but not about who we help.",
+  justinReviewCtaCompetitive:
+    "Within the quality range we believe in, we are generally very competitive. What we will not do is recommend diamonds we would not personally pursue ourselves.",
+  justinReviewCtaGoal:
+    "Our goal is not simply to find the lowest price. It is to identify the strongest value among diamonds genuinely worth considering.",
   uploadTabLabel: "Upload Report",
   urlTabLabel: "Paste Listing URL",
   uploadHelperLines: [
