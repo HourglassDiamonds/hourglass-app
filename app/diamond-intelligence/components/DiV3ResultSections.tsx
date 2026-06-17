@@ -40,6 +40,7 @@ import type { DecisionConfidenceBand } from "@/lib/diamond-intelligence/decision
 import type { HourglassClarityDisplayPolicy } from "@/lib/diamond-intelligence/hourglass-clarity-policy";
 import type { PurchaseRecommendationLabel } from "@/lib/diamond-intelligence/purchase-recommendation-presentation";
 import type { V3Gcal8xTier, V3PublicTier } from "./v3-presentation";
+import type { LgdrEffectiveFinish } from "@/lib/diamond-intelligence/lgdr-presentation-policy";
 import {
   buildV3PercentilePresentation,
   buildV3IncompleteTechnicalItems,
@@ -54,6 +55,8 @@ export type DiV3ResultSectionsProps = {
   presentationMetadata?: ClientSafeMetadata | null;
   reportTextHint?: string;
   naturalGiaPercentileCaution?: boolean;
+  lgdrPercentileCaution?: boolean;
+  lgdrEffectiveFinish?: LgdrEffectiveFinish;
   isGcal8x: boolean;
   clarityPolicy: HourglassClarityDisplayPolicy;
   publicTier: V3PublicTier;
@@ -79,6 +82,8 @@ export default function DiV3ResultSections({
   presentationMetadata,
   reportTextHint,
   naturalGiaPercentileCaution = false,
+  lgdrPercentileCaution = false,
+  lgdrEffectiveFinish,
   isGcal8x,
   clarityPolicy,
   publicTier,
@@ -106,6 +111,7 @@ export default function DiV3ResultSections({
         color: decisionProfile.gradeHints.color,
         purchaseLabel: purchaseRecommendation,
         naturalGiaPercentileCaution,
+        lgdrPercentileCaution,
       })
     : null;
 
@@ -333,7 +339,10 @@ export default function DiV3ResultSections({
     );
   }
 
-  const showHourglassPerspective = shouldShowHourglassPerspective(fields);
+  const showHourglassPerspective = shouldShowHourglassPerspective(
+    fields,
+    lgdrEffectiveFinish,
+  );
   const chapterOffset = showHourglassPerspective ? 1 : 0;
   const chapterNum = (base: number) =>
     String(base + chapterOffset).padStart(2, "0");

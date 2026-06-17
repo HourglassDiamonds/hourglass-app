@@ -17,6 +17,11 @@ import {
   parseNaturalGiaFluorescencePresentation,
   resolveNaturalGiaFluorescenceForPresentation,
 } from "./natural-gia-presentation-policy";
+import {
+  applyLgdrJustinPerspectiveAddenda,
+  isLgdrPresentationContext,
+  resolveLgdrFinishGradesForPresentation,
+} from "./lgdr-presentation-policy";
 
 /** Consumer-facing tier label — internal `Open` stays unchanged in logic. */
 export function displayV3PublicTierLabel(tier: string): string {
@@ -485,6 +490,19 @@ export function buildJustinPerspectiveParagraphs(input: {
     input.clarityPolicy.isSi2
       ? justinForFactor("clarity", factorInput)
       : justinForFactor(decisionProfile.primaryLimitingFactor.key, factorInput);
+
+  if (isLgdrPresentationContext(input.metadata, input.reportTextHint)) {
+    return applyLgdrJustinPerspectiveAddenda({
+      baseParagraphs: base,
+      effectiveFinish: resolveLgdrFinishGradesForPresentation(
+        input.fields,
+        input.reportTextHint,
+      ),
+      reportTextHint: input.reportTextHint,
+      primaryLimitingFactorKey: decisionProfile.primaryLimitingFactor.key,
+      recommendationBand: decisionProfile.overallRecommendation.band,
+    });
+  }
 
   if (
     !isNaturalGiaPresentationContext(input.metadata, input.reportTextHint)

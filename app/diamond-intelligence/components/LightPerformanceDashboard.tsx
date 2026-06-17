@@ -21,6 +21,7 @@ import {
 import { buildVisualPersonality } from "@/lib/diamond-intelligence/visual-personality";
 import { buildClarityReviewGuidance } from "@/lib/diamond-intelligence/clarity-review-guidance";
 import { resolveNaturalGiaPresentationFlags } from "@/lib/diamond-intelligence/natural-gia-presentation-policy";
+import { resolveLgdrPresentationFlags } from "@/lib/diamond-intelligence/lgdr-presentation-policy";
 import { buildAdvisoryHighlights } from "./build-advisory-highlights";
 import GuidedReportCompletion from "./GuidedReportCompletion";
 import {
@@ -353,6 +354,24 @@ export default function LightPerformanceDashboard({
     canShowScore: interpretationContext.canShowScore,
   });
 
+  const lgdrPresentation = useMemo(
+    () =>
+      resolveLgdrPresentationFlags({
+        metadata,
+        reportTextHint: metadata?.reportTextHint,
+        fields: fields ?? {},
+      }),
+    [metadata, fields],
+  );
+
+  const finishForPresentation = lgdrPresentation.active
+    ? lgdrPresentation.effectiveFinish
+    : {
+        cutGrade: fields?.cutGrade,
+        polish: fields?.polish,
+        symmetry: fields?.symmetry,
+      };
+
   const purchaseRecommendation = decisionProfile
     ? resolvePurchaseRecommendationLabel({
         internalBand: decisionProfile.overallRecommendation
@@ -363,9 +382,9 @@ export default function LightPerformanceDashboard({
         uncappedOpticalTierLabel:
           uncappedOpticalTier === "Open" ? "Needs Review" : uncappedOpticalTier,
         fluorescence: fields?.fluorescence,
-        cutGrade: fields?.cutGrade,
-        polish: fields?.polish,
-        symmetry: fields?.symmetry,
+        cutGrade: finishForPresentation.cutGrade,
+        polish: finishForPresentation.polish,
+        symmetry: finishForPresentation.symmetry,
       })
     : "Worth Reviewing After Additional Information";
 
@@ -440,6 +459,7 @@ export default function LightPerformanceDashboard({
     confidenceBand: decisionProfile?.confidence
       .band as DecisionConfidenceBand | undefined,
     naturalGiaPercentileCaution: naturalGiaPresentation.percentileCaution,
+    lgdrPercentileCaution: lgdrPresentation.percentileCaution,
   });
 
   const traitLine = buildV3TraitLine(
@@ -562,6 +582,10 @@ export default function LightPerformanceDashboard({
             presentationMetadata={metadata}
             reportTextHint={metadata?.reportTextHint}
             naturalGiaPercentileCaution={naturalGiaPresentation.percentileCaution}
+            lgdrPercentileCaution={lgdrPresentation.percentileCaution}
+            lgdrEffectiveFinish={
+              lgdrPresentation.active ? lgdrPresentation.effectiveFinish : undefined
+            }
             isGcal8x={effectiveGcal8xPremium}
             clarityPolicy={clarityPolicy}
             publicTier={publicTier}

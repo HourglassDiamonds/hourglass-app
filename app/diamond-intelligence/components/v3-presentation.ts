@@ -24,6 +24,8 @@ import {
 } from "@/lib/diamond-intelligence/hourglass-clarity-policy";
 import type { DecisionConfidenceBand } from "@/lib/diamond-intelligence/decision-profile-confidence";
 import { buildNaturalGiaSoftPercentilePresentation } from "@/lib/diamond-intelligence/natural-gia-presentation-policy";
+import { buildLgdrSoftPercentilePresentation } from "@/lib/diamond-intelligence/lgdr-presentation-policy";
+import type { LgdrEffectiveFinish } from "@/lib/diamond-intelligence/lgdr-presentation-policy";
 export type V3PublicTier =
   | "Rare"
   | "Exceptional"
@@ -218,6 +220,8 @@ export function buildV3PercentilePresentation(
     purchaseLabel?: PurchaseRecommendationLabel;
     /** Natural GIA presentation guardrail — softens aggressive Top X% copy only. */
     naturalGiaPercentileCaution?: boolean;
+    /** LGDR presentation guardrail — softens aggressive Top X% copy only. */
+    lgdrPercentileCaution?: boolean;
   },
 ): V3PercentilePresentation | null {
   const clarity = input?.clarity;
@@ -228,6 +232,10 @@ export function buildV3PercentilePresentation(
 
   if (input?.naturalGiaPercentileCaution) {
     return buildNaturalGiaSoftPercentilePresentation(displayScore);
+  }
+
+  if (input?.lgdrPercentileCaution) {
+    return buildLgdrSoftPercentilePresentation(displayScore);
   }
 
   const topPercent = Math.min(99, Math.max(1, Math.round(100 - displayScore)));
@@ -310,6 +318,7 @@ export function buildV3HeroPresentation(input: {
   gcal8xTier: V3Gcal8xTier | null;
   confidenceBand?: DecisionConfidenceBand;
   naturalGiaPercentileCaution?: boolean;
+  lgdrPercentileCaution?: boolean;
 }): V3HeroPresentation {
   if (input.clarityPolicy.isExcluded) {
     return {
@@ -376,6 +385,7 @@ export function buildV3HeroPresentation(input: {
         color: input.color,
         purchaseLabel: input.purchaseRecommendation,
         naturalGiaPercentileCaution: input.naturalGiaPercentileCaution,
+        lgdrPercentileCaution: input.lgdrPercentileCaution,
       })
     : null;
 
@@ -499,8 +509,14 @@ function classifyFinishGrade(raw: string | undefined | null): FinishGradeClass {
 /** True when cut, polish, or symmetry is present on the report and below Excellent. */
 export function shouldShowHourglassPerspective(
   fields: Pick<CalibrationReportFields, "cutGrade" | "polish" | "symmetry">,
+  effectiveFinish?: LgdrEffectiveFinish,
 ): boolean {
-  for (const raw of [fields.cutGrade, fields.polish, fields.symmetry]) {
+  const merged = {
+    cutGrade: effectiveFinish?.cutGrade ?? fields.cutGrade,
+    polish: effectiveFinish?.polish ?? fields.polish,
+    symmetry: effectiveFinish?.symmetry ?? fields.symmetry,
+  };
+  for (const raw of [merged.cutGrade, merged.polish, merged.symmetry]) {
     if (classifyFinishGrade(raw) === "below") return true;
   }
   return false;
