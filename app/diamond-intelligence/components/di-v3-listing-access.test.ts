@@ -18,7 +18,7 @@ describe("DiV3 listing access fallback", () => {
     );
     assert.match(
       V3_LISTING_INACCESSIBLE.bodyParagraphs.join(" "),
-      /justin@hourglassdiamonds\.com/,
+      /Concierge/,
     );
   });
 

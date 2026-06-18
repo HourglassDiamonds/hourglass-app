@@ -301,8 +301,8 @@ export const V3_LISTING_INACCESSIBLE = {
   eyebrow: "Diamond Intelligence",
   headline: "We Couldn't Access This Listing",
   bodyParagraphs: [
-    "Some retailers restrict automated access to their listing pages or grading reports. This does not mean there is a problem with the diamond.",
-    "Please upload the grading report directly, or email the listing to Justin at justin@hourglassdiamonds.com and we'll review it personally.",
+    "Some retailers restrict direct access to listing and grading report information. This does not indicate a problem with the diamond itself.",
+    "For the most reliable analysis, upload the grading report directly. If you would prefer a personal review, send the listing through Concierge and Justin will be happy to take a look.",
   ] as const,
   uploadCta: "Upload Report",
 } as const;
