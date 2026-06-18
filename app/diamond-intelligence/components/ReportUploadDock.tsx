@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
+import Link from "next/link";
 import { DI_CLIENT_ACCEPT } from "@/lib/diamond-intelligence/upload-accept";
 import type { ClientSafeMetadata } from "@/lib/diamond-intelligence";
 import { CONSUMER_COPY } from "./consumer-display-labels";
@@ -179,21 +180,16 @@ export function ReportUploadDock({
       </div>
 
       {!busy ? (
-        <div className="mt-3 max-w-[52ch]">
-          <p className="font-serif text-[0.92rem] leading-snug text-[#6f665d]">
-            {CONSUMER_COPY.uploadGuidanceReassuranceHeadline}
-          </p>
-          <p className="mt-2 text-[10px] leading-relaxed text-[#948a80]">
-            {CONSUMER_COPY.uploadGuidanceReassuranceBodyPrefix}{" "}
-            <a
-              href={`mailto:${CONSUMER_COPY.uploadGuidanceReassuranceEmail}`}
-              className="text-[#8b735b] underline decoration-[rgba(181,150,98,0.4)] underline-offset-[3px] transition-colors hover:text-[#5f5851]"
-            >
-              {CONSUMER_COPY.uploadGuidanceReassuranceEmail}
-            </a>{" "}
-            {CONSUMER_COPY.uploadGuidanceReassuranceBodySuffix}
-          </p>
-        </div>
+        <p className="mt-3 max-w-[52ch] text-[10px] leading-relaxed text-[#a89888]">
+          {CONSUMER_COPY.uploadGuidanceFallbackPrefix}{" "}
+          <Link
+            href="/concierge"
+            className="text-[#948a80] underline decoration-[rgba(181,150,98,0.32)] underline-offset-[3px] transition-colors hover:text-[#75675e]"
+          >
+            {CONSUMER_COPY.uploadGuidanceConciergeLinkLabel}
+          </Link>{" "}
+          {CONSUMER_COPY.uploadGuidanceFallbackSuffix}
+        </p>
       ) : null}
 
       <input

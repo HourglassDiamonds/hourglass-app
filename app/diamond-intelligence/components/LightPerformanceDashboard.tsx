@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import type { CalibrationReportFields } from "@/lib/calibration-library/types";
 import {
   buildBalanceProfileAxes,
@@ -48,6 +49,7 @@ import AnalysisProgressNarrative from "./AnalysisProgressNarrative";
 import { CONSUMER_COPY } from "./consumer-display-labels";
 import { DI_EDITORIAL_CARD, DI_EYEBROW_STUDIO, DI_SERIF_HEADLINE } from "./di-studio-styles";
 import { DI_V3_SHELL } from "./di-v3-styles";
+import DiLandingMarketing, { TrustPrivacyBand } from "./DiLandingMarketing";
 import { resolveHourglassClarityPolicy } from "@/lib/diamond-intelligence/hourglass-clarity-policy";
 import {
   resolveClientGuidedCompletionFields,
@@ -521,11 +523,30 @@ export default function LightPerformanceDashboard({
     errorMessage: uploadError,
   });
 
+  const showLandingMarketing =
+    resultState === "NO_RESULT" && !partialListing && !hasReport;
+
+  const shellClass = showLandingMarketing
+    ? "mx-auto w-full max-w-[1180px] px-5 pb-14 pt-0 md:px-6 md:pb-16"
+    : DI_V3_SHELL;
+
   return (
-    <section className={DI_V3_SHELL}>
-      <div className={`${DI_EDITORIAL_CARD} mb-8 p-6 md:p-8`}>
-        <p className={DI_EYEBROW_STUDIO}>Diamond Intelligence</p>
-        <div className="mt-4">
+    <>
+      {showLandingMarketing ? <DiLandingMarketing /> : null}
+
+      <section className={shellClass}>
+        <div
+          id="di-upload-form"
+          className={`scroll-mt-24 p-6 md:p-8 ${
+            showLandingMarketing
+              ? "bg-transparent pt-6 md:pt-8"
+              : `${DI_EDITORIAL_CARD} mb-8`
+          }`}
+        >
+        {!showLandingMarketing ? (
+          <p className={DI_EYEBROW_STUDIO}>Diamond Intelligence</p>
+        ) : null}
+        <div className={showLandingMarketing ? undefined : "mt-4"}>
           <DiamondIntelligenceIngestDock
             mode={ingestMode}
             onModeChange={onIngestModeChange}
@@ -543,6 +564,8 @@ export default function LightPerformanceDashboard({
           />
         </div>
       </div>
+
+      {showLandingMarketing ? <TrustPrivacyBand /> : null}
 
       {resultState === "PROCESSING" ? (
         <AnalysisProgressNarrative active />
@@ -578,7 +601,7 @@ export default function LightPerformanceDashboard({
         </section>
       ) : null}
 
-      {resultState === "NO_RESULT" && !partialListing ? (
+      {resultState === "NO_RESULT" && !partialListing && !showLandingMarketing ? (
         <section className="relative py-6 md:py-8" aria-hidden>
           <div className="mx-auto h-px max-w-md bg-[linear-gradient(90deg,transparent,rgba(181,150,98,0.35),transparent)]" />
         </section>
@@ -713,13 +736,13 @@ export default function LightPerformanceDashboard({
         <footer className="mx-auto mt-12 max-w-[960px] border-t border-[rgba(181,150,98,0.16)] py-7 text-[10px] leading-relaxed text-[#9b8b78]">
           <p>{CONSUMER_COPY.betaDisclosure}</p>
           <p className="mt-2">
-            {CONSUMER_COPY.betaDisclosureOutreach}{" "}
-            <a
-              href="mailto:Justin@HourglassDiamonds.com"
+            {CONSUMER_COPY.betaDisclosureOutreachPrefix}{" "}
+            <Link
+              href="/concierge"
               className="text-[#8b735b] underline decoration-[rgba(181,150,98,0.4)] underline-offset-[3px] transition-colors hover:text-[#5f5851]"
             >
-              {CONSUMER_COPY.betaDisclosureEmail}
-            </a>
+              {CONSUMER_COPY.betaDisclosureConciergeLinkLabel}
+            </Link>
             .
           </p>
           <p className="mt-2">
@@ -728,6 +751,7 @@ export default function LightPerformanceDashboard({
           </p>
         </footer>
       ) : null}
-    </section>
+      </section>
+    </>
   );
 }

@@ -39,10 +39,9 @@ export const CONSUMER_COPY = {
     "Transparency and brightness in motion",
     "Nuances that may only appear during in-person viewing",
   ] as const,
-  emptyStateIntro:
-    "Receive an independent read of a diamond's quality, light performance, and overall purchase value before making a decision.",
-  emptyStateSupportingCopy:
-    "Some retailer pages allow full report review automatically; others may require you to upload the report yourself.",
+  ingestSectionHeadline: "Begin Your Analysis",
+  ingestSectionSupportingCopy:
+    "Upload a grading report for the most complete analysis, or paste a supported listing URL.",
   urlIngestHeadline: "Paste a diamond listing URL",
   urlIngestSubcopy:
     "We'll review the available listing information and, when possible, retrieve the grading report automatically. Some retailers provide full report access, while others may require a manual upload.",
@@ -57,7 +56,7 @@ export const CONSUMER_COPY = {
     "Within the quality range we believe in, we are generally very competitive. What we will not do is recommend diamonds we would not personally pursue ourselves.",
   justinReviewCtaGoal:
     "Our goal is not simply to find the lowest price. It is to identify the strongest value among diamonds genuinely worth considering.",
-  uploadTabLabel: "Upload Report",
+  uploadTabLabel: "Upload Grading Report",
   urlTabLabel: "Paste Listing URL",
   uploadHelperLines: [
     "Round brilliant diamonds only.",
@@ -65,20 +64,15 @@ export const CONSUMER_COPY = {
     "The analysis evaluates the diamond itself — not the asking price.",
     "Supported formats: PDF preferred; screenshots and report images accepted.",
   ] as const,
-  uploadGuidanceReassuranceHeadline:
-    "If we can't read your report, don't worry.",
-  uploadGuidanceReassuranceBodyPrefix:
-    "Some screenshots, BMP files, and lower-resolution images can be difficult for automated interpretation. If you receive an error message, simply email the report to",
-  uploadGuidanceReassuranceEmail: "justin@hourglassdiamonds.com",
-  uploadGuidanceReassuranceBodySuffix:
-    "and we'll be happy to review it personally.",
+  uploadGuidanceFallbackPrefix:
+    "Some screenshots, BMP files, and lower-resolution images can be difficult for automated interpretation. If you receive an error message, submit the report through",
+  uploadGuidanceConciergeLinkLabel: "Concierge",
+  uploadGuidanceFallbackSuffix: "for a personal review.",
   betaDisclosure:
     "Diamond Intelligence is currently in beta and supports round brilliant diamonds only. Fancy shapes and additional report formats are still being added.",
-  betaDisclosureOutreach:
-    "Evaluating a fancy shape, antique cut, or an unusual report format? Reach out directly at",
-  betaDisclosureEmail: "Justin@HourglassDiamonds.com",
-  betaDisclosureShort:
-    "Beta supports round brilliant diamonds with GIA, IGI, or GCAL 8X reports.",
+  betaDisclosureOutreachPrefix:
+    "Evaluating a fancy shape, antique cut, or unusual report format? Submit your project through",
+  betaDisclosureConciergeLinkLabel: "Concierge",
   partialListingHeadline: "Listing Found — Report Needed for Full Review",
   partialListingBody:
     "We found the listing details, but this retailer does not expose the grading report in a format we can reliably read. Upload the GIA, IGI, or GCAL 8X report from this listing to complete the review.",

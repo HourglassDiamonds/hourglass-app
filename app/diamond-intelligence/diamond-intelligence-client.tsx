@@ -24,7 +24,7 @@ import type { ClientUploadPhase } from "./components/ReportUploadDock";
 import type { IngestMode } from "./components/DiamondIntelligenceIngestDock";
 
 export default function DiamondIntelligenceClient() {
-  const [ingestMode, setIngestMode] = useState<IngestMode>("url");
+  const [ingestMode, setIngestMode] = useState<IngestMode>("upload");
   const [uploadPhase, setUploadPhase] = useState<ClientUploadPhase>("idle");
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadErrorKind, setUploadErrorKind] =

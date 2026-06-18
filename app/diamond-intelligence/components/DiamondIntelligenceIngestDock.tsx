@@ -5,6 +5,7 @@ import type { ClientSafeMetadata } from "@/lib/diamond-intelligence";
 import type { ListingExtraction } from "@/lib/diamond-intelligence/url-ingestion/types";
 import { ReportUploadDock, type ClientUploadPhase } from "./ReportUploadDock";
 import { CONSUMER_COPY } from "./consumer-display-labels";
+import { DI_EYEBROW_STUDIO } from "./di-studio-styles";
 import Link from "next/link";
 import {
   buildConciergeContextFromListing,
@@ -65,25 +66,14 @@ export function DiamondIntelligenceIngestDock({
 
   return (
     <div>
-      <p className="mb-1 max-w-[52ch] font-serif text-[1.05rem] leading-snug text-[#1f1d1a] md:text-[1.12rem]">
-        {CONSUMER_COPY.emptyStateIntro}
+      <p className={`${DI_EYEBROW_STUDIO} mb-3`}>
+        {CONSUMER_COPY.ingestSectionHeadline}
       </p>
-      <p className="mb-5 max-w-[52ch] text-xs leading-relaxed text-[#75675e]">
-        {CONSUMER_COPY.betaDisclosureShort}
+      <p className="mb-6 max-w-[52ch] text-xs leading-relaxed text-[#75675e]">
+        {CONSUMER_COPY.ingestSectionSupportingCopy}
       </p>
 
       <div className="mb-5 flex gap-1 rounded-xl border border-[rgba(181,150,98,0.18)] bg-[rgba(255,255,255,0.28)] p-1">
-        <button
-          type="button"
-          onClick={() => onModeChange("url")}
-          className={`flex-1 rounded-lg px-3 py-2.5 text-[10px] uppercase tracking-[0.22em] transition ${
-            mode === "url"
-              ? "bg-[#fbf7ef] text-[#1f1d1a] shadow-[0_1px_3px_rgba(30,26,22,0.06)] ring-1 ring-[rgba(181,150,98,0.28)]"
-              : "text-[#948a80] hover:text-[#5f5851]"
-          }`}
-        >
-          {CONSUMER_COPY.urlTabLabel}
-        </button>
         <button
           type="button"
           onClick={() => onModeChange("upload")}
@@ -94,6 +84,17 @@ export function DiamondIntelligenceIngestDock({
           }`}
         >
           {CONSUMER_COPY.uploadTabLabel}
+        </button>
+        <button
+          type="button"
+          onClick={() => onModeChange("url")}
+          className={`flex-1 rounded-lg px-3 py-2.5 text-[10px] uppercase tracking-[0.22em] transition ${
+            mode === "url"
+              ? "bg-[#fbf7ef] text-[#1f1d1a] shadow-[0_1px_3px_rgba(30,26,22,0.06)] ring-1 ring-[rgba(181,150,98,0.28)]"
+              : "text-[#948a80] hover:text-[#5f5851]"
+          }`}
+        >
+          {CONSUMER_COPY.urlTabLabel}
         </button>
       </div>
 
@@ -223,13 +224,13 @@ export function DiamondIntelligenceIngestDock({
       <div className="mt-5 border-t border-[rgba(181,150,98,0.16)] pt-4 text-[10px] leading-relaxed text-[#9b8b78]">
         <p>{CONSUMER_COPY.betaDisclosure}</p>
         <p className="mt-2">
-          {CONSUMER_COPY.betaDisclosureOutreach}{" "}
-          <a
-            href="mailto:Justin@HourglassDiamonds.com"
+          {CONSUMER_COPY.betaDisclosureOutreachPrefix}{" "}
+          <Link
+            href="/concierge"
             className="text-[#8b735b] underline decoration-[rgba(181,150,98,0.4)] underline-offset-[3px] transition-colors hover:text-[#5f5851]"
           >
-            {CONSUMER_COPY.betaDisclosureEmail}
-          </a>
+            {CONSUMER_COPY.betaDisclosureConciergeLinkLabel}
+          </Link>
           .
         </p>
       </div>
