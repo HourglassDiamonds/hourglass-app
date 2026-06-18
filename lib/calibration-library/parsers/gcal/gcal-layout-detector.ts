@@ -44,3 +44,30 @@ export function looksLikeGcalSarine4csReportText(text: string): boolean {
 
   return certMarker && (gradingMarker || /\bgcalusa\.com\/c\//i.test(t));
 }
+
+/**
+ * Strong GCAL 8X cert-band / header evidence for probe deferral.
+ * Ultimate Diamond + EIGHT marketing is shared with GCAL BY SARINE cert-band OCR — probe
+ * ordering must reject Sarine when the text layer is sufficient; do not hard-exclude gcalusa.com/c/.
+ */
+export function hasStrongGcal8xDeferEvidence(text: string): boolean {
+  const t = text.slice(0, 4000).trim();
+  if (!t) return false;
+
+  if (/\bGCAL\s*8\s*X\b/i.test(t)) return true;
+
+  const hasCertLine = looksLikeGcal8xCertificateProbeText(t);
+  const hasUltimateDiamond = /ultimate\s+diamond/i.test(t);
+  const hasEightCutAssessment =
+    /\ball\s+eight\b/i.test(t) ||
+    /\beight\s+aspects[\s\S]{0,48}\bcut\b/i.test(t) ||
+    /\beight\b[\s\S]{0,80}\b(?:excellent|ultimate|cut\s+grade)\b/i.test(t);
+
+  if (hasCertLine && hasUltimateDiamond && hasEightCutAssessment) return true;
+  if (hasCertLine && hasUltimateDiamond) return true;
+  if (hasUltimateDiamond && hasEightCutAssessment && /\bGCAL\b/i.test(t)) {
+    return true;
+  }
+
+  return false;
+}

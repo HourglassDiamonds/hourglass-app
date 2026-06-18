@@ -6,9 +6,24 @@ import { GCAL360796191_TEXT_LAYER } from "@/lib/calibration-library/fixtures/gca
 import { GCAL_SARINE_LG340946327_OCR_TEXT } from "@/lib/calibration-library/fixtures/gcal-sarine-lg340946327";
 import { interpretUploadedReport } from "@/lib/diamond-intelligence/interpret-uploaded-report";
 import { assessClientReportFormatSupport } from "@/lib/diamond-intelligence/unsupported-report-format";
-import { probeClientUnsupportedReportFormat } from "@/lib/diamond-intelligence/unsupported-format-probe";
+import {
+  probeClientUnsupportedReportFormat,
+  resolvePdfUnsupportedFormatProbeFromText,
+} from "@/lib/diamond-intelligence/unsupported-format-probe";
 
 const STANDARD_GCAL_PDF = "data/diamond-intelligence/debug/standard-gcal-LG352146193-probe.pdf";
+
+const GCAL_8X_LIVE_CERT_PROBE_OCR = `diamonds achieve EXCELLENT grades in all EIGHT Ultimate Diamond Cut Grade 7
+aspects of CUT quality assessment.
+GCAL LG353306143 RB 3.24 EVVS2 go EFEE
+Scan QR code to view photos and videos of this ty
+lab grown diamond, and the 8C grading scale, 4» hr
+TAT, Optical Brilliance or go to https://www.gcalusa.com/c/353306143 [a] SmskE:`;
+
+const GCAL_SARINE_LIVE_CERT_PROBE_OCR = `diamonds achieve EXCELLENT grades in all EIGHT Ultimate Diamond Cut Grade /
+aspects of CUT quality assessment.
+GCAL LG360796192 RB 1.01 D VS1 §C LIE 40]
+go to https://www.gcalusa.com/c/360796192`;
 
 const GCAL_8X_PDF_CANDIDATES = [
   "data/light-performance-calibration/anchor-pdfs/GCAL-LG353466126.pdf",
@@ -92,6 +107,40 @@ describe("unsupported-format-probe fast path", () => {
 
   it("defers bare GCAL 8X certificate probe text", () => {
     assert.equal(assessClientReportFormatSupport("GCAL LG353306143").status, "unknown");
+  });
+
+  it("defers image-only GCAL 8X when text layer is insufficient and live cert band has 8X evidence", () => {
+    const certProbeOcr = GCAL_8X_LIVE_CERT_PROBE_OCR;
+
+    const match = resolvePdfUnsupportedFormatProbeFromText({
+      layerText: "",
+      layerSufficient: false,
+      certProbe: { detected: true, probeText: certProbeOcr },
+    });
+    assert.equal(match, null);
+  });
+
+  it("rejects sufficient Sarine text layer even when cert band shares Ultimate Diamond marketing", () => {
+    const match = resolvePdfUnsupportedFormatProbeFromText({
+      layerText: GCAL360796191_TEXT_LAYER,
+      layerSufficient: true,
+      certProbe: {
+        detected: true,
+        probeText: GCAL_SARINE_LIVE_CERT_PROBE_OCR,
+      },
+    });
+    assert.ok(match);
+    assert.equal(match.family, "gcal-sarine-4cs");
+  });
+
+  it("still rejects Sarine PDF text layer when cert band lacks 8X evidence", () => {
+    const match = resolvePdfUnsupportedFormatProbeFromText({
+      layerText: GCAL360796191_TEXT_LAYER,
+      layerSufficient: true,
+      certProbe: { detected: false, probeText: "GCAL LG360796191" },
+    });
+    assert.ok(match);
+    assert.equal(match.family, "gcal-sarine-4cs");
   });
 });
 

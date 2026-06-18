@@ -3,6 +3,7 @@ import { isImageMime, isPdfMime } from "@/lib/calibration-library/document-extra
 import {
   looksLikeGcal8xCertificateProbeText,
   looksLikeGcal8xReportText,
+  hasStrongGcal8xDeferEvidence,
 } from "@/lib/calibration-library/parsers/gcal/gcal-layout-detector";
 import {
   probeGcal8xCertificateRegionFromRenderedPage,
@@ -141,6 +142,23 @@ function hasGcal8xSparseProbeExclusion(text: string): boolean {
 }
 
 /**
+ * Strong Gcal8x defer evidence with probe OCR normalization applied.
+ */
+export function hasStrongGcal8xProbeDeferEvidence(text: string): boolean {
+  return hasStrongGcal8xDeferEvidence(normalizeGcalProbeOcrText(text));
+}
+
+function shouldDeferFromGcal8xProbeText(text: string): boolean {
+  return hasStrongGcal8xProbeDeferEvidence(text);
+}
+
+function gcal8xEvidenceWinsOverSarineUnsupported(
+  ...texts: Array<string | undefined>
+): boolean {
+  return texts.some((text) => hasStrongGcal8xProbeDeferEvidence(text ?? ""));
+}
+
+/**
  * Sparse Sarine-layout screenshot — proportion diagram panel without clean GCAL OCR.
  * Probe-layer only; does not broaden parser Sarine support.
  */
@@ -168,11 +186,7 @@ function sparseGcalSarineScreenshotUnsupported(
 
 /** GCAL 8X image-only HEADER_TINY — must fall through to existing 8X pipeline. */
 function shouldDeferToGcal8xPipeline(text: string): boolean {
-  const t = text.trim();
-  if (!t) return false;
-  if (looksLikeGcal8xReportText(t)) return true;
-  if (looksLikeGcal8xCertificateProbeText(t)) return true;
-  return false;
+  return shouldDeferFromGcal8xProbeText(text);
 }
 
 /** Header OCR with strong standard/Sarine markers — PDF text-layer equivalent for images. */
@@ -207,20 +221,29 @@ export function resolveImageUnsupportedFormatProbe(
   const headerNorm = normalizeGcalProbeOcrText(input.headerText);
   const certNorm = normalizeGcalProbeOcrText(input.certProbe.probeText);
 
-  const earlyHeader = earlyImageHeaderUnsupported(headerNorm);
-  if (earlyHeader) return earlyHeader;
-
-  const combined = [headerNorm, certNorm].filter(Boolean).join("\n\n");
-  const combinedUnsupported = unsupportedMatchFromText(combined);
-  if (combinedUnsupported) return combinedUnsupported;
-
   if (
     input.certProbe.detected ||
-    shouldDeferToGcal8xPipeline(certNorm)
+    shouldDeferToGcal8xPipeline(certNorm) ||
+    shouldDeferToGcal8xPipeline(headerNorm)
   ) {
     return null;
   }
-  if (shouldDeferToGcal8xPipeline(headerNorm)) return null;
+
+  const earlyHeader = earlyImageHeaderUnsupported(headerNorm);
+  if (
+    earlyHeader &&
+    !gcal8xEvidenceWinsOverSarineUnsupported(certNorm, headerNorm)
+  ) {
+    return earlyHeader;
+  }
+
+  const combined = [headerNorm, certNorm].filter(Boolean).join("\n\n");
+  if (gcal8xEvidenceWinsOverSarineUnsupported(combined, certNorm)) {
+    return null;
+  }
+
+  const combinedUnsupported = unsupportedMatchFromText(combined);
+  if (combinedUnsupported) return combinedUnsupported;
 
   const headerFallback = unsupportedMatchFromText(headerNorm);
   if (headerFallback) return headerFallback;
@@ -229,6 +252,61 @@ export function resolveImageUnsupportedFormatProbe(
   if (sparseUnsupported) return sparseUnsupported;
 
   return null;
+}
+
+export type PdfFormatProbeTextInput = {
+  layerText: string;
+  layerSufficient: boolean;
+  certProbe: Gcal8xImageOnlyPdfProbeResult;
+  headerText?: string;
+};
+
+/** PDF unsupported-format decision from OCR/text-layer inputs — mirrors probeClientUnsupportedReportFormat. */
+export function resolvePdfUnsupportedFormatProbeFromText(
+  input: PdfFormatProbeTextInput,
+): UnsupportedReportFormatMatch | null {
+  const certProbeText = normalizeGcalProbeOcrText(input.certProbe.probeText);
+
+  const layerUnsupported = unsupportedMatchFromText(input.layerText);
+  if (input.layerSufficient && layerUnsupported) {
+    return layerUnsupported;
+  }
+
+  if (
+    input.certProbe.detected ||
+    shouldDeferToGcal8xPipeline(certProbeText)
+  ) {
+    return null;
+  }
+
+  if (layerUnsupported) {
+    if (
+      layerUnsupported.family === "gcal-sarine-4cs" &&
+      gcal8xEvidenceWinsOverSarineUnsupported(certProbeText, input.layerText)
+    ) {
+      return null;
+    }
+    return layerUnsupported;
+  }
+
+  const layerSupport = assessClientReportFormatSupport(input.layerText);
+  if (layerSupport.status === "supported") return null;
+
+  if (input.layerSufficient && layerSupport.status === "unknown") {
+    return null;
+  }
+
+  const headerNorm = normalizeGcalProbeOcrText(input.headerText ?? "");
+  if (shouldDeferToGcal8xPipeline(headerNorm)) return null;
+
+  const combined = [input.layerText, certProbeText, headerNorm]
+    .filter(Boolean)
+    .join("\n\n");
+  if (gcal8xEvidenceWinsOverSarineUnsupported(combined, certProbeText)) {
+    return null;
+  }
+
+  return unsupportedMatchFromText(combined);
 }
 
 async function probeImageUnsupportedFormat(
@@ -267,26 +345,38 @@ export async function probeClientUnsupportedReportFormat(
     );
 
     const layerUnsupported = unsupportedMatchFromText(layer.text);
-    if (layerUnsupported) return layerUnsupported;
-
-    const layerSupport = assessClientReportFormatSupport(layer.text);
-    if (layerSupport.status === "supported") return null;
-
-    if (layer.sufficient && layerSupport.status === "unknown") {
-      return null;
+    if (layer.sufficient && layerUnsupported) {
+      return layerUnsupported;
     }
 
     const gcal8xProbe = await probeGcal8xImageOnlyPdf(bytes);
-    if (gcal8xProbe.detected || shouldDeferToGcal8xPipeline(gcal8xProbe.probeText)) {
+    const certProbeText = normalizeGcalProbeOcrText(gcal8xProbe.probeText);
+
+    if (
+      gcal8xProbe.detected ||
+      shouldDeferToGcal8xPipeline(certProbeText)
+    ) {
       return null;
     }
 
-    const headerText = await ocrFormatProbeHeaderFromPdf(bytes);
-    if (shouldDeferToGcal8xPipeline(headerText)) return null;
+    const withoutHeader = resolvePdfUnsupportedFormatProbeFromText({
+      layerText: layer.text,
+      layerSufficient: layer.sufficient,
+      certProbe: gcal8xProbe,
+    });
+    if (withoutHeader !== null) return withoutHeader;
 
-    return unsupportedMatchFromText(
-      [layer.text, gcal8xProbe.probeText, headerText].filter(Boolean).join("\n\n"),
-    );
+    const layerSupport = assessClientReportFormatSupport(layer.text);
+    if (layerSupport.status === "supported") return null;
+    if (layer.sufficient && layerSupport.status === "unknown") return null;
+
+    const headerText = await ocrFormatProbeHeaderFromPdf(bytes);
+    return resolvePdfUnsupportedFormatProbeFromText({
+      layerText: layer.text,
+      layerSufficient: layer.sufficient,
+      certProbe: gcal8xProbe,
+      headerText,
+    });
   }
 
   if (isImageMime(mime)) {
