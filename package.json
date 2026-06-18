@@ -10,6 +10,7 @@
     "generate:favicons": "node scripts/generate-favicons.mjs",
     "generate:diamond-studio-og": "node scripts/generate-diamond-studio-og.mjs",
     "generate:diamond-intelligence-og": "node scripts/generate-diamond-intelligence-og.mjs",
+    "generate:homepage-og": "node scripts/generate-homepage-og.mjs",
     "intelligence:google-oauth": "node scripts/google-oauth-setup.mjs",
     "test:igi": "npx tsx --test lib/calibration-library/lg773657228.regression.test.ts lib/calibration-library/igi-diagram-image-ocr.test.ts lib/diamond-intelligence/igi-natural-pdf-regression.test.ts",
     "test:gia": "npx tsx --test lib/calibration-library/gia2527039693.regression.test.ts lib/calibration-library/gia-facsimile-image-ocr.test.ts lib/calibration-library/gia-facsimile-calibration-eligibility.test.ts lib/calibration-library/parsers/gia/gia-report-style.test.ts",

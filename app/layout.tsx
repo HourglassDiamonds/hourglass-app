@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import {
   DEFAULT_OPEN_GRAPH,
+  DEFAULT_OG_IMAGE,
   DEFAULT_SITE_DESCRIPTION,
   SITE_URL,
 } from "@/lib/seo/site-metadata";
@@ -33,6 +34,12 @@ export const metadata: Metadata = {
     title: "Hourglass Diamonds",
     description: DEFAULT_SITE_DESCRIPTION,
     url: SITE_URL,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Hourglass Diamonds",
+    description: DEFAULT_SITE_DESCRIPTION,
+    images: [`${SITE_URL}${DEFAULT_OG_IMAGE.url}`],
   },
   icons: {
     icon: [
