@@ -60,7 +60,7 @@ export const articles: Article[] = [
     { type: "paragraph", text: "Although the laboratory landscape continues to evolve, AGS reports remain part of the broader conversation around diamond cut evaluation." },
 
     { type: "paragraph", text: "AGS diamond certification helped advance the way the industry evaluates cut quality and light behavior. By combining proportion measurements with optical analysis, the reports provided additional insight into how diamonds perform visually." },
-    { type: "paragraph", text: "Understanding AGS certification can help buyers appreciate how grading methods continue to evolve as gemology advances. Laboratories such as GCAL have since extended that performance-oriented approach. See [GCAL 8X diamond certification explained](/diamond-guide/gcal-8x-diamond-certification-explained) for how modern reports address light behavior." },
+    { type: "paragraph", text: "Understanding AGS certification can help buyers appreciate how grading methods continue to evolve as gemology advances. Laboratories such as GCAL have since extended that performance-oriented approach. See [GCAL 8X diamond certification explained](/diamond-guide/gcal-8x-diamond-certification-explained) for how modern reports address light behavior. If you hold an AGS or similar performance-oriented report, you can [upload a grading report to Diamond Intelligence](/diamond-intelligence) for a structured read of how those measurements may translate in practice." },
   ],
   related: [
     { title: "What is a Diamond Certificate", href: "/diamond-guide/what-is-a-diamond-certificate" },
@@ -487,9 +487,9 @@ export const articles: Article[] = [
     { type: "heading", text: "Working With a Local Jeweler" },
     { type: "paragraph", text: "Charlotte has a growing community of independent jewelers who focus on education and craftsmanship. Many buyers appreciate the opportunity to ask questions and see how diamonds perform in different settings." },
     { type: "paragraph", text: "Local jewelers may also help with custom designs, allowing the ring to reflect personal preferences rather than following a standard template." },
-    { type: "paragraph", text: "The most important factor when choosing where to buy is transparency. A jeweler who explains how diamonds work, rather than simply presenting options, usually creates the best buying experience." },
+    { type: "paragraph", text: "The most important factor when choosing where to buy is transparency. A jeweler who explains how diamonds work, rather than simply presenting options, usually creates the best buying experience. [Our Approach](/our-approach) reflects the same standard: performance and honest guidance before inventory pressure." },
 
-    { type: "paragraph", text: "Buying a diamond in Charlotte should feel thoughtful and enjoyable rather than rushed. With a basic understanding of diamond quality and a willingness to compare stones carefully, buyers can focus on what truly matters: finding a diamond that looks beautiful and feels meaningful for years to come." },
+    { type: "paragraph", text: "Buying a diamond in Charlotte should feel thoughtful and enjoyable rather than rushed. With a basic understanding of diamond quality and a willingness to compare stones carefully, buyers can focus on what truly matters: finding a diamond that looks beautiful and feels meaningful for years to come. When personal guidance would help, you can [begin a private conversation](/concierge) at whatever pace suits you." },
   ],
   related: [
     { title: "Charlotte Diamond Advisor Guide", href: "/diamond-guide/charlotte-diamond-advisor-guide" },
@@ -514,7 +514,7 @@ export const articles: Article[] = [
     { type: "paragraph", text: "Whether an inclusion can be seen without magnification depends on several factors." },
     { type: "paragraph", text: "In diamonds with higher clarity grades, such as VS or VVS, inclusions are usually too small to detect with the naked eye. Even under magnification, they may be difficult to locate." },
     { type: "paragraph", text: "In diamonds with lower clarity grades, particularly SI2 or Included grades, inclusions may sometimes become visible during normal viewing." },
-    { type: "paragraph", text: "The position of the inclusion plays an important role as well. Inclusions directly beneath the table facet may be easier to notice than those located near the edge of the diamond." },
+    { type: "paragraph", text: "The position of the inclusion plays an important role as well. Inclusions directly beneath the table facet may be easier to notice than those located near the edge of the diamond. When inclusion placement is difficult to assess from a report alone, [Diamond Intelligence](/diamond-intelligence) can help clarify whether a stone is likely to read eye clean for your setting." },
 
     { type: "heading", text: "How Diamond Cut Influences Visibility" },
     { type: "paragraph", text: "Cut quality can influence how noticeable inclusions appear." },
@@ -565,7 +565,7 @@ export const articles: Article[] = [
     { type: "paragraph", text: "Allocate budget toward what you will see every day, not toward letters you will never notice without a loupe. [Diamond price versus quality](/diamond-guide/diamond-price-vs-quality) and [diamond color versus clarity](/diamond-guide/diamond-color-vs-clarity) walk through those tradeoffs in detail. [Our Approach](/our-approach) applies the same logic locally: performance and eye judgment first." },
 
     { type: "heading", text: "Mistakes We See Often in Charlotte" },
-    { type: "paragraph", text: "Choosing carat before cut. Assuming a higher clarity grade is always cleaner to the eye. Skipping side-by-side comparison because two reports match. Letting a proposal deadline erase the part of the process where you learn what you actually prefer." },
+    { type: "paragraph", text: "Choosing carat before cut. Assuming a higher clarity grade is always cleaner to the eye. Skipping side-by-side comparison because two reports match. Letting a proposal deadline erase the part of the process where you learn what you actually prefer. When timing is part of the equation, our [proposal planning guides](/diamond-guide/proposal-planning) cover locations, logistics, and the details that keep the moment calm rather than rushed." },
     { type: "paragraph", text: "Another is shopping in isolation: one jeweler, one website, one recommendation with no counterpoint. Confidence grows when you compare, ask specific questions, and notice whether guidance changes when you hesitate." },
 
     { type: "heading", text: "How to Evaluate the Guidance You Receive" },
@@ -573,7 +573,7 @@ export const articles: Article[] = [
     { type: "paragraph", text: "Ask to see similar diamonds together. Ask how cut was judged beyond the certificate, especially for fancy shapes. Ask what would change if your budget shifted modestly in either direction. Vague reassurance often means the conversation stopped too early." },
     { type: "paragraph", text: "[Diamond buying tips from jewelers](/diamond-guide/diamond-buying-tips-from-jewelers) and [why work with a Graduate Gemologist](/diamond-guide/why-work-with-a-graduate-gemologist) go deeper on comparison habits and trained judgment. You do not need a gemologist to buy well. You do need a process that privileges what your eye confirms." },
 
-    { type: "paragraph", text: "Charlotte offers plenty of options. The goal is not to visit all of them. It is to leave the process knowing why you chose this ring: how it looks, how it feels, and what you protected in the budget to get there. That is the confidence worth building before you buy." },
+    { type: "paragraph", text: "Charlotte offers plenty of options. The goal is not to visit all of them. It is to leave the process knowing why you chose this ring: how it looks, how it feels, and what you protected in the budget to get there. That is the confidence worth building before you buy — and if [personal guidance](/concierge) would help clarify the next step, it is available when you are ready." },
   ],
   related: [
     { title: "Charlotte Diamond Advisor Guide", href: "/diamond-guide/charlotte-diamond-advisor-guide" },
@@ -742,13 +742,13 @@ export const articles: Article[] = [
     { type: "paragraph", text: "The custom ring process typically moves through several stages. It often begins with a conversation about style, lifestyle, and preferences." },
     { type: "paragraph", text: "From there, the design is translated into sketches or digital renderings that show how the finished ring will look. These visuals allow buyers to make adjustments before the ring is produced." },
     { type: "paragraph", text: "Once the design is finalized, the ring is carefully crafted and the diamond is set into the finished piece." },
-    { type: "paragraph", text: "This process allows couples to participate in the creation of the ring while still benefiting from the experience of a professional jeweler." },
+    { type: "paragraph", text: "This process allows couples to participate in the creation of the ring while still benefiting from the experience of a professional jeweler. If you are ready to discuss a custom project, you can [submit your project through Concierge](/concierge) and begin when the timing feels right." },
 
     { type: "heading", text: "Why Some Buyers Choose Custom Rings" },
     { type: "paragraph", text: "Custom engagement rings offer several advantages beyond aesthetics." },
     { type: "paragraph", text: "For some buyers, customization ensures that the ring feels unique and personal. For others, it provides greater control over how the budget is allocated between the diamond and the setting." },
     { type: "paragraph", text: "Custom designs also allow the ring to be tailored to the wearer’s lifestyle. Details such as band width, diamond height, and overall structure can all be adjusted to create a ring that feels comfortable for everyday wear." },
-    { type: "paragraph", text: "In many cases, the final result feels more meaningful because it was thoughtfully designed rather than simply selected." },
+    { type: "paragraph", text: "In many cases, the final result feels more meaningful because it was thoughtfully designed rather than simply selected. That philosophy — craft and judgment over off-the-shelf convenience — is what [Our Approach](/our-approach) is built around." },
 
     { type: "paragraph", text: "Custom engagement rings offer a thoughtful way to create something personal and lasting. By starting with a carefully chosen diamond and designing the setting around it, couples in Charlotte can create a ring that reflects both craftsmanship and individual style." },
     { type: "paragraph", text: "With a clear understanding of diamonds and the design process, the experience of creating a custom engagement ring becomes just as meaningful as the ring itself." },
@@ -885,7 +885,7 @@ export const articles: Article[] = [
     { type: "heading", text: "If You Already Have a Report in Hand" },
     { type: "paragraph", text: "Many buyers arrive with a grading report before they have seen the diamond, or with a link to a stone they are considering online. That is a reasonable place to start. The next step is interpretation: what do these measurements suggest about how the diamond will perform, and what do they leave out? [Diamond Intelligence](/diamond-intelligence) was built for that translation. It does not replace judgment. It gives you a clearer starting point before you compare stones in person or ask someone experienced to weigh in." },
 
-    { type: "paragraph", text: "The best jewelers are not trying to impress you with terminology. They are trying to make sure you will still love the diamond on an ordinary Tuesday, long after the excitement of the proposal has settled into everyday life. That is a higher bar than finding a stone that looks impressive under a spotlight for thirty seconds. It is also the one worth holding yourself to." },
+    { type: "paragraph", text: "The best jewelers are not trying to impress you with terminology. They are trying to make sure you will still love the diamond on an ordinary Tuesday, long after the excitement of the proposal has settled into everyday life. That is a higher bar than finding a stone that looks impressive under a spotlight for thirty seconds. It is also the one worth holding yourself to — and when you are ready for that kind of conversation, you can [begin a conversation](/concierge) at your own pace." },
   ],
   related: [
     { title: "Why Work With a Graduate Gemologist", href: "/diamond-guide/why-work-with-a-graduate-gemologist" },
@@ -1428,7 +1428,7 @@ export const articles: Article[] = [
 
       { type: "heading", text: "How to Know You Got It Right" },
       { type: "paragraph", text: "You can explain why you chose this diamond without reciting grades. You know what you traded and what you protected. You are not secretly hoping a higher clarity or color grade will rescue a stone that looked flat when you compared it." },
-      { type: "paragraph", text: "You would still choose it if the certificate were temporarily misplaced. That is the test. Price should buy beauty you can see, not reassurance you cannot." },
+      { type: "paragraph", text: "You would still choose it if the certificate were temporarily misplaced. That is the test. Price should buy beauty you can see, not reassurance you cannot. When you want to [discuss your project with us](/concierge) before committing, that conversation can start whenever you are ready." },
       { type: "paragraph", text: "For the process that surrounds these tradeoffs, [diamond buying tips from jewelers](/diamond-guide/diamond-buying-tips-from-jewelers) and [why work with a Graduate Gemologist](/diamond-guide/why-work-with-a-graduate-gemologist) go deeper on comparison and judgment. The goal is not to spend less for its own sake. It is to spend on what you will actually notice, long after the receipt is filed away." },
     ],
     related: [
@@ -1853,7 +1853,7 @@ export const articles: Article[] = [
     { type: "paragraph", text: "This transparency helps buyers understand the qualities of the diamond they are selecting." },
 
     { type: "paragraph", text: "Laboratory-grown diamonds can receive certification just like natural diamonds. These reports provide detailed measurements describing the stone’s characteristics and confirming its origin." },
-    { type: "paragraph", text: "For buyers exploring both natural and laboratory-grown options, certification offers a clear and consistent reference point." },
+    { type: "paragraph", text: "For buyers exploring both natural and laboratory-grown options, certification offers a clear and consistent reference point. When you have a lab-grown report in hand, [Diamond Intelligence](/diamond-intelligence) can help you review how its grading details may translate to everyday appearance." },
     
   ],
   related: [
@@ -2637,7 +2637,7 @@ export const articles: Article[] = [
     { type: "paragraph", text: "Buyers researching diamonds may encounter HRD certification when reviewing stones sourced through European markets." },
 
     { type: "paragraph", text: "HRD diamond certification offers an independent evaluation of a diamond’s measurable characteristics. By documenting grading details and structural features, the report provides a consistent reference for understanding diamond quality." },
-    { type: "paragraph", text: "For buyers exploring international diamond sources, familiarity with HRD certification can provide useful context when reviewing grading reports." },
+    { type: "paragraph", text: "For buyers exploring international diamond sources, familiarity with HRD certification can provide useful context when reviewing grading reports. [Diamond Intelligence](/diamond-intelligence) offers a straightforward way to review a specific HRD report before you compare stones side by side." },
     
   ],
   related: [
@@ -3556,7 +3556,7 @@ export const articles: Article[] = [
     { type: "heading", text: "The Role of Cut in Diamond Brilliance" },
     { type: "paragraph", text: "Cut quality is the single most important factor affecting brilliance. Even a diamond with excellent color and clarity can look lifeless if it is poorly cut." },
     { type: "paragraph", text: "When a diamond is proportioned correctly, light enters the stone, reflects internally, and returns upward in a balanced and controlled way. This creates the bright, even illumination that defines a brilliant diamond." },
-    { type: "paragraph", text: "Well-cut diamonds distribute light across the entire face of the stone. Poorly cut diamonds often show dark areas, uneven brightness, or patches where light simply disappears." },
+    { type: "paragraph", text: "Well-cut diamonds distribute light across the entire face of the stone. Poorly cut diamonds often show dark areas, uneven brightness, or patches where light simply disappears. This is one reason experienced reviewers protect light performance before paper grades — a principle we outline in [Our Approach](/our-approach). If you have proportion data on a report, [Diamond Intelligence](/diamond-intelligence) can help interpret what those measurements suggest about brilliance before you view the stone in person." },
 
     { type: "heading", text: "Brilliance vs. Sparkle" },
     { type: "paragraph", text: "While brilliance refers to the overall brightness of white light, it is often confused with sparkle. Sparkle actually includes multiple effects working together." },
@@ -3983,7 +3983,7 @@ export const articles: Article[] = [
     { type: "paragraph", text: "The weeks leading up to major holidays often bring increased demand for engagement rings and diamond jewelry. Periods such as the winter holiday season or Valentine’s Day tend to be particularly active. During these times, buyers may find a wider selection on display, though the overall pricing structure of diamonds generally remains consistent." },
 
     { type: "heading", text: "Planning Ahead for Important Moments" },
-    { type: "paragraph", text: "For many buyers, the best time to purchase a diamond is simply when they are ready to begin the process thoughtfully. Allowing time to research, compare options, and view diamonds in person can lead to a more confident decision. Rushing the purchase to meet a specific date can sometimes limit the opportunity to explore different possibilities." },
+    { type: "paragraph", text: "For many buyers, the best time to purchase a diamond is simply when they are ready to begin the process thoughtfully. Allowing time to research, compare options, and view diamonds in person can lead to a more confident decision. Rushing the purchase to meet a specific date can sometimes limit the opportunity to explore different possibilities — a tension [Our Approach](/our-approach) is designed to relieve rather than accelerate." },
 
     { type: "heading", text: "The Value of Taking Your Time" },
     { type: "paragraph", text: "Because diamonds vary widely in their characteristics, finding the right stone often depends more on patience than timing. When buyers take the time to evaluate several options and understand what they prefer, the result is often a diamond that feels more personal and meaningful." },
@@ -4058,7 +4058,7 @@ export const articles: Article[] = [
     { type: "heading", text: "How Shape Affects Appearance" },
     { type: "paragraph", text: "Each diamond shape interacts with light differently. Round diamonds are engineered for maximum brilliance, while step-cut shapes like emerald cuts produce a more subtle, mirror-like effect." },
     { type: "paragraph", text: "The shape also influences how large the diamond appears. Some shapes distribute their weight across a wider surface, while others carry more weight in depth. This can create noticeable differences even when carat weight is the same." },
-    { type: "paragraph", text: "Because of this, comparing shapes side by side is often the best way to understand how they actually look." },
+    { type: "paragraph", text: "Because of this, comparing shapes side by side is often the best way to understand how they actually look. [Diamond Studio](/diamond-studio) lets you preview how different silhouettes face up on the hand before you commit to one in person." },
 
     { type: "heading", text: "Balancing Shape, Size, and Setting" },
     { type: "paragraph", text: "The setting plays an important role in how a diamond shape is perceived. A simple solitaire allows the shape to stand on its own, while halo or multi-stone designs can enhance presence and add visual detail." },
@@ -4070,7 +4070,7 @@ export const articles: Article[] = [
     { type: "paragraph", text: "Seeing different shapes on the hand often makes the decision clearer. What looks appealing in photos may feel different when worn, which is why many buyers take time to compare options before finalizing their choice." },
 
     { type: "paragraph", text: "The best diamond shape in Charlotte is not defined by a single trend, but by how the diamond looks, feels, and fits within the overall design of the ring. From classic round diamonds to modern elongated shapes, each option offers a distinct balance of brilliance, proportion, and character." },
-    { type: "paragraph", text: "By focusing on how the diamond actually appears on the hand, it becomes easier to choose a shape that feels natural and enduring rather than temporary." },
+    { type: "paragraph", text: "By focusing on how the diamond actually appears on the hand, it becomes easier to choose a shape that feels natural and enduring rather than temporary — a priority that aligns with [Our Approach](/our-approach) at Hourglass: what you see in daily wear matters more than trend." },
     
   ],
   related: [
@@ -4564,7 +4564,7 @@ export const articles: Article[] = [
 
     { type: "heading", text: "After Yes: Continuing the Evening" },
     { type: "paragraph", text: "Many rooftop proposals flow into a seated dinner downstairs or nearby. [Most romantic restaurants in Charlotte for an engagement celebration](/diamond-guide/most-romantic-restaurants-charlotte-engagement-celebration) helps you choose what comes after the skyline moment." },
-    { type: "paragraph", text: "The rooftop is not the whole story. It is the opening scene. Plan the next hour lightly so you can stay present once she says yes." },
+    { type: "paragraph", text: "The rooftop is not the whole story. It is the opening scene. Plan the next hour lightly so you can stay present once she says yes. If the ring still needs final decisions before you set a date, you can [receive personal guidance](/concierge) whenever that would help." },
   ],
   related: [
     { title: "Best Places to Propose in Charlotte", href: "/diamond-guide/best-places-to-propose-in-charlotte" },
