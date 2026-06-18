@@ -8,6 +8,7 @@ export type DiamondIntelligenceResultState =
   | "PARTIAL"
   | "SUCCESS"
   | "ERROR"
+  | "LISTING_INACCESSIBLE"
   | "RATE_LIMITED"
   | "UNSUPPORTED_REPORT_FORMAT";
 
@@ -37,6 +38,9 @@ export function resolveDiamondIntelligenceResultState(input: {
     }
     if (input.uploadErrorKind === "rate_limited") {
       return "RATE_LIMITED";
+    }
+    if (input.uploadErrorKind === "listing_inaccessible") {
+      return "LISTING_INACCESSIBLE";
     }
     return "ERROR";
   }
@@ -72,6 +76,7 @@ export function shouldShowUploadInlineError(input: {
   return (
     Boolean(input.errorMessage?.trim()) &&
     input.resultState !== "ERROR" &&
+    input.resultState !== "LISTING_INACCESSIBLE" &&
     input.resultState !== "RATE_LIMITED" &&
     input.resultState !== "UNSUPPORTED_REPORT_FORMAT"
   );

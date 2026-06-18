@@ -11,6 +11,7 @@ import {
   mapSarineColumnListGrading,
   probeSarineFinishFromTextLayer,
 } from "./gcal-sarine-4cs";
+import { extractGcal8xFinishGrades } from "./parsers/gcal/gcal-finish";
 import {
   GCAL360796191_DIAGRAM_OCR,
   GCAL360796191_DIAGRAM_OCR_LIVE_GARBLED,
@@ -165,15 +166,16 @@ describe("GCAL Sarine 4Cs LG360796191", () => {
     );
   });
 
-  it("parses finish grades from Sarine finish-panel OCR text", () => {
-    const text = `${GCAL360796191_TEXT_LAYER}\n${GCAL360796191_DIAGRAM_OCR}\n${GCAL360796191_FINISH_OCR}`;
-    const result = extractFieldsFromReportText(text, {
-      lab: "GCAL",
-      textMethod: "pdf-text",
-      reportNumber: GCAL360796191_REPORT_NUMBER,
-    });
-    assert.equal(result.fields.polish, "Excellent");
-    assert.equal(result.fields.symmetry, "Excellent");
-    assert.equal(result.fields.cutGrade, "Excellent");
+  it("routes to gcal-8x when finish panel includes 8X Proportions marker", () => {
+    const text = `${GCAL360796191_TEXT_LAYER}\n${GCAL360796191_FINISH_OCR}`;
+    const family = detectReportFamily(text, { lab: "GCAL" });
+    assert.equal(family.parserType, "gcal-8x");
+  });
+
+  it("extracts finish grades from 8X finish-panel OCR fixture", () => {
+    const grades = extractGcal8xFinishGrades(GCAL360796191_FINISH_OCR);
+    assert.equal(grades.polish, "Excellent");
+    assert.equal(grades.symmetry, "Excellent");
+    assert.equal(grades.cutGrade, "Excellent");
   });
 });

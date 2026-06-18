@@ -4,8 +4,33 @@ export const URL_FETCH_TIMEOUT_MS = 12_000;
 export const URL_FETCH_MAX_REDIRECTS = 3;
 export const URL_FETCH_MAX_BYTES = 2 * 1024 * 1024;
 
-const USER_AGENT =
+const LEGACY_USER_AGENT =
   "HourglassDiamondIntelligence/1.0 (+https://hourglass.com/diamond-intelligence)";
+
+const BROWSER_LISTING_ACCEPT =
+  "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8";
+
+const BROWSER_USER_AGENT =
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
+
+/** Browser-like headers for retailer listing HTML — one narrow access improvement. */
+export function buildListingPageFetchHeaders(
+  listingUrl: string,
+): Record<string, string> {
+  const headers: Record<string, string> = {
+    Accept: BROWSER_LISTING_ACCEPT,
+    "Accept-Language": "en-US,en;q=0.9",
+    "User-Agent": BROWSER_USER_AGENT,
+  };
+  try {
+    headers.Referer = `${new URL(listingUrl).origin}/`;
+  } catch {
+    // omit referer when URL is invalid — caller should not reach fetch in that case
+  }
+  return headers;
+}
+
+const USER_AGENT = LEGACY_USER_AGENT;
 
 export type FetchListingResult =
   | { ok: true; page: FetchedListingPage }
@@ -67,10 +92,7 @@ export async function fetchListingPage(
         method: "GET",
         redirect: "manual",
         signal: controller.signal,
-        headers: {
-          Accept: "text/html,application/xhtml+xml;q=0.9,*/*;q=0.5",
-          "User-Agent": USER_AGENT,
-        },
+        headers: buildListingPageFetchHeaders(currentUrl),
       });
 
       if (response.status >= 300 && response.status < 400) {

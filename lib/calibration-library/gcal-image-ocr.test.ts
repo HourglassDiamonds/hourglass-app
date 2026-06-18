@@ -6,7 +6,11 @@ import {
   needsGcalImageRegionOcrFallback,
   shouldRunGcalImageRegionOcr,
 } from "./gcal-image-ocr";
-import { looksLikeGcal8xCertificateProbeText, looksLikeGcal8xReportText } from "./parsers/gcal/gcal-layout-detector";
+import {
+  hasStrongGcal8xDeferEvidence,
+  looksLikeGcal8xCertificateProbeText,
+  looksLikeGcal8xReportText,
+} from "./parsers/gcal/gcal-layout-detector";
 import { detectReportFamily } from "./parsers/router";
 
 describe("GCAL image-region OCR fallback gate", () => {
@@ -97,9 +101,11 @@ describe("GCAL 8X image-only PDF certificate probe", () => {
   });
 
   it("requires 8X layout markers for image-only probe gate", () => {
+    assert.equal(hasStrongGcal8xDeferEvidence("GCAL LG360796191"), false);
     assert.equal(
-      looksLikeGcal8xCertificateProbeText("GCAL LG360796191") &&
-        looksLikeGcal8xReportText("GCAL LG360796191"),
+      hasStrongGcal8xDeferEvidence(
+        "GCAL LG360796191\n8X Proportions EX Ideal Excellent",
+      ),
       false,
     );
   });

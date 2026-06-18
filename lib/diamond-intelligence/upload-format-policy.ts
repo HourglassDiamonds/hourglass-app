@@ -21,4 +21,5 @@ export type DiamondIntelligenceUploadErrorKind =
   | "unsupported_format"
   | "unsupported_report_format"
   | "interpret_failure"
+  | "listing_inaccessible"
   | "rate_limited";

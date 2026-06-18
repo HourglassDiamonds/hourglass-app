@@ -11,6 +11,7 @@ import {
   type ClientSafeInterpretationPayload,
 } from "@/lib/diamond-intelligence";
 import type { DiamondIntelligenceUploadErrorKind } from "@/lib/diamond-intelligence/upload-format-policy";
+import { resolveUrlIngestUploadErrorKind } from "@/lib/diamond-intelligence/url-ingestion/listing-access-error";
 import {
   postUrlForIngestion,
   UrlIngestClientError,
@@ -176,10 +177,13 @@ export default function DiamondIntelligenceClient() {
       setUploadStatusNote(null);
       if (err instanceof UrlIngestClientError) {
         setUploadError(err.message);
+        setUploadErrorKind(
+          resolveUrlIngestUploadErrorKind(err.status, err.message),
+        );
       } else {
         setUploadError(CLIENT_UPLOAD_INTERPRET_ERROR);
+        setUploadErrorKind("interpret_failure");
       }
-      setUploadErrorKind("interpret_failure");
       setUploadRetryAfterSeconds(null);
       setUploadPhase("error");
     } finally {

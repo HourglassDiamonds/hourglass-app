@@ -77,16 +77,6 @@ export function detectReportFamily(
     };
   }
 
-  if (looksGcalSarine && sarineColumnList && lab === "GCAL") {
-    return {
-      lab,
-      parserType: "gcal-sarine-4cs",
-      confidence: "high",
-      reason:
-        "GCAL BY SARINE + 4Cs markers + column-list label block signature",
-    };
-  }
-
   if (looksGcal8x || (lab === "GCAL" && /\b8\s*X\b/i.test(text))) {
     return {
       lab,
@@ -95,6 +85,16 @@ export function detectReportFamily(
       reason: looksGcal8x
         ? "GCAL 8X Ultimate Diamond Cut Grade layout"
         : "GCAL lab hint with 8X marker",
+    };
+  }
+
+  if (looksGcalSarine && sarineColumnList && lab === "GCAL") {
+    return {
+      lab,
+      parserType: "gcal-sarine-4cs",
+      confidence: "high",
+      reason:
+        "GCAL BY SARINE + 4Cs markers + column-list label block signature",
     };
   }
 

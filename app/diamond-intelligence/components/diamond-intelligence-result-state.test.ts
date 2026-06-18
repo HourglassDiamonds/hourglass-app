@@ -37,6 +37,21 @@ describe("resolveDiamondIntelligenceResultState", () => {
     );
   });
 
+  it("returns LISTING_INACCESSIBLE for retailer access blocks", () => {
+    assert.equal(
+      resolveDiamondIntelligenceResultState({
+        uploadPhase: "error",
+        uploadError: "Listing returned HTTP 403.",
+        uploadErrorKind: "listing_inaccessible",
+        hasReport: false,
+        partialListing: false,
+        v3RenderPhase: "empty",
+        canRenderFullResult: false,
+      }),
+      "LISTING_INACCESSIBLE",
+    );
+  });
+
   it("returns RATE_LIMITED for rate_limited upload failures", () => {
     assert.equal(
       resolveDiamondIntelligenceResultState({
@@ -161,6 +176,13 @@ describe("resolveDiamondIntelligenceResultState", () => {
       shouldShowUploadInlineError({
         resultState: "RATE_LIMITED",
         errorMessage: "Too many reports submitted. Please try again later.",
+      }),
+      false,
+    );
+    assert.equal(
+      shouldShowUploadInlineError({
+        resultState: "LISTING_INACCESSIBLE",
+        errorMessage: "Listing returned HTTP 403.",
       }),
       false,
     );

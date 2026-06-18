@@ -32,10 +32,12 @@ import {
 import type { DiamondIntelligenceUploadErrorKind } from "@/lib/diamond-intelligence/upload-format-policy";
 import type { ClientUploadPhase } from "./ReportUploadDock";
 import type { ListingExtraction } from "@/lib/diamond-intelligence/url-ingestion/types";
+import { listPartialListingDetails } from "@/lib/diamond-intelligence/url-ingestion/listing-display";
 import DiV3Hero from "./DiV3Hero";
 import DiV3PartialGradeReview from "./DiV3PartialGradeReview";
 import DiV3ResultSections from "./DiV3ResultSections";
 import DiV3UnableToVerify from "./DiV3UnableToVerify";
+import DiV3ListingInaccessible from "./DiV3ListingInaccessible";
 import DiV3UnsupportedReportFormat from "./DiV3UnsupportedReportFormat";
 import DiV3RateLimited from "./DiV3RateLimited";
 import {
@@ -498,6 +500,11 @@ export default function LightPerformanceDashboard({
         gradeHints?.clarity ?? decisionProfile?.gradeHints.clarity,
       );
 
+  const partialListingDetails = useMemo(
+    () => (partialListing ? listPartialListingDetails(partialListing) : []),
+    [partialListing],
+  );
+
   const resultState = resolveDiamondIntelligenceResultState({
     uploadPhase,
     uploadError: uploadError ?? null,
@@ -551,8 +558,23 @@ export default function LightPerformanceDashboard({
             {CONSUMER_COPY.partialListingHeadline}
           </p>
           <p className="mt-8 max-w-xl text-lg leading-8 text-[#75675e]">
-            {CONSUMER_COPY.partialListingBody}
+            {partialListingMessage ?? CONSUMER_COPY.partialListingBody}
           </p>
+          {partialListingDetails.length > 0 ? (
+            <dl className="mt-8 grid max-w-md gap-3 border-t border-[rgba(181,150,98,0.2)] pt-6">
+              {partialListingDetails.map((detail) => (
+                <div
+                  key={detail.label}
+                  className="grid grid-cols-[minmax(0,7rem)_1fr] gap-3 text-sm"
+                >
+                  <dt className="text-[11px] uppercase tracking-[0.14em] text-[#9b8b78]">
+                    {detail.label}
+                  </dt>
+                  <dd className="text-[#1e1a16]">{detail.value}</dd>
+                </div>
+              ))}
+            </dl>
+          ) : null}
         </section>
       ) : null}
 
@@ -572,6 +594,13 @@ export default function LightPerformanceDashboard({
 
       {resultState === "UNSUPPORTED_REPORT_FORMAT" ? (
         <DiV3UnsupportedReportFormat
+          onFile={onFile}
+          reportContext={reportContext}
+        />
+      ) : null}
+
+      {resultState === "LISTING_INACCESSIBLE" ? (
+        <DiV3ListingInaccessible
           onFile={onFile}
           reportContext={reportContext}
         />
