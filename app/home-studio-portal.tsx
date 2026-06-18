@@ -450,7 +450,7 @@ export default function HomeStudioPortal() {
   return (
     <div className="w-full min-w-0" data-hourglass-home="diamond-studio">
       <div
-        className="group relative min-h-[460px] overflow-hidden rounded-[12px] md:min-h-[440px]"
+        className="group relative min-h-[460px] overflow-hidden rounded-[28px] md:min-h-[440px] md:rounded-[32px]"
         onMouseMove={trackPanelLight}
       >
         <Image

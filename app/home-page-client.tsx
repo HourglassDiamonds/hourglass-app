@@ -9,74 +9,25 @@ import RevealOnScroll from "./shared-components/motion/RevealOnScroll";
 import WhisperedPraiseLink from "./shared-components/WhisperedPraiseLink";
 import { trackConsultationCtaClicked } from "@/lib/consultation-cta";
 
-/** Observatory plinth crop — same asset as Diamond Studio portal. */
-const HERO_OBSERVATORY_IMAGE = "/homepage/diamond-studio-hero.jpg";
+const HERO_IMAGE = "/homepage/hero/hgd-hero-3x.png";
 
-const HERO_OBSERVATORY_GRADIENT = `
-  linear-gradient(to right,
-    rgba(239,232,222,0.72) 0%,
-    rgba(239,232,222,0.34) 14%,
-    rgba(239,232,222,0.06) 32%,
-    transparent 48%
-  ),
-  linear-gradient(to bottom,
-    rgba(239,232,222,0.42) 0%,
-    rgba(239,232,222,0.1) 12%,
-    transparent 26%
-  ),
-  linear-gradient(to left,
-    rgba(239,232,222,0.22) 0%,
-    transparent 16%
-  ),
-  linear-gradient(to top,
-    rgba(239,232,222,0.96) 0%,
-    rgba(239,232,222,0.62) 6%,
-    rgba(239,232,222,0.18) 12%,
-    transparent 20%
-  )
-`;
+/** Shared luxury radius for homepage card-like containers. */
+const HOME_CARD_RADIUS = "overflow-hidden rounded-[28px] md:rounded-[32px]";
 
-function HeroRingStage() {
-  return (
-    <div className="relative min-h-[460px] w-[calc(100%+1rem)] md:min-h-[560px] lg:-mr-8 lg:min-h-[620px] lg:w-[calc(100%+2.25rem)]">
-      <div className="relative min-h-[inherit] overflow-hidden [mask-image:linear-gradient(to_left,transparent,black_5%,black_92%,transparent),linear-gradient(to_bottom,transparent,black_5%,black_94%,transparent)] [-webkit-mask-image:linear-gradient(to_left,transparent,black_5%,black_92%,transparent),linear-gradient(to_bottom,transparent,black_5%,black_94%,transparent)]">
-        <Image
-          src={HERO_OBSERVATORY_IMAGE}
-          alt=""
-          fill
-          sizes="(max-width: 768px) 100vw, 680px"
-          priority
-          className="object-cover object-[40%_56%] origin-[40%_62%] scale-[1.22] max-md:object-[44%_54%] max-md:scale-[1.18] md:scale-[1.3]"
-        />
+/** Wide mask fade — dissolves into page bg; ramp confined to copy/image gap. */
+const HERO_DESKTOP_MASK =
+  "linear-gradient(to right, transparent 0%, transparent 4%, rgba(0,0,0,0.06) 16%, rgba(0,0,0,0.20) 24%, rgba(0,0,0,0.44) 32%, rgba(0,0,0,0.68) 38%, rgba(0,0,0,0.86) 44%, rgba(0,0,0,0.94) 48%, black 54%, black 100%)";
 
-        <div
-          className="pointer-events-none absolute inset-0"
-          aria-hidden
-          style={{ background: HERO_OBSERVATORY_GRADIENT }}
-        />
-      </div>
-
-      <div className="pointer-events-none absolute inset-0 z-10 flex items-end justify-center pb-[11%] md:pb-[12%]">
-        <div
-          className="absolute bottom-[8.5%] left-1/2 h-[16px] w-[54%] max-w-[340px] -translate-x-1/2 rounded-[50%] bg-[rgba(38,32,26,0.12)] blur-[16px] md:bottom-[9.5%] md:h-[20px] md:w-[50%]"
-          aria-hidden
-        />
-        <div
-          className="absolute bottom-[8%] left-1/2 h-[7px] w-[36%] max-w-[220px] -translate-x-1/2 rounded-[50%] bg-[rgba(32,28,24,0.16)] blur-[6px] md:bottom-[9%]"
-          aria-hidden
-        />
-        <Image
-          src="/homepage/hero/homepage-hero-bezel-ring.png"
-          alt="Oval bezel pavé engagement ring"
-          width={900}
-          height={900}
-          priority
-          className="relative h-auto max-h-[380px] w-auto object-contain drop-shadow-[0_22px_36px_rgba(42,34,28,0.16)] [filter:brightness(0.95)_contrast(1.02)_saturate(0.88)_sepia(0.09)] md:max-h-[510px]"
-        />
-      </div>
-    </div>
-  );
-}
+const heroDesktopMaskStyle: React.CSSProperties = {
+  WebkitMaskImage: HERO_DESKTOP_MASK,
+  maskImage: HERO_DESKTOP_MASK,
+  WebkitMaskSize: "155% 100%",
+  maskSize: "155% 100%",
+  WebkitMaskRepeat: "no-repeat",
+  maskRepeat: "no-repeat",
+  WebkitMaskPosition: "left center",
+  maskPosition: "left center",
+};
 
 function TrustTransitionStrip() {
   const pillars = [
@@ -85,9 +36,9 @@ function TrustTransitionStrip() {
       description: "Professional expertise that protects your decision.",
     },
     {
-      title: "Global Diamond Sourcing",
+      title: "Global Sourcing",
       description:
-        "Access to the world's best diamonds without the middle layers.",
+        "Access to exceptional diamonds without the middle layers.",
     },
     {
       title: "Personal Guidance",
@@ -98,10 +49,10 @@ function TrustTransitionStrip() {
   return (
     <RevealOnScroll
       as="section"
-      className="border-b border-[#e4dbcf]/60 py-[52px] md:py-[60px]"
+      className="py-[48px] md:py-[56px]"
       data-hourglass-home="trust-strip"
     >
-      <div className="grid gap-12 md:grid-cols-3 md:gap-0">
+      <div className="grid gap-10 md:grid-cols-3 md:items-start md:gap-0">
         {pillars.map((pillar, index) => (
           <div
             key={pillar.title}
@@ -112,7 +63,7 @@ function TrustTransitionStrip() {
             <div className="text-[10px] uppercase tracking-[0.34em] text-[#8a8177]">
               {pillar.title}
             </div>
-            <p className="mx-auto mt-3.5 max-w-[28ch] text-[0.9rem] leading-[1.82] text-[#615a53] md:mx-0">
+            <p className="mx-auto mt-3 max-w-[28ch] text-center text-[0.9rem] leading-[1.82] text-[#615a53]">
               {pillar.description}
             </p>
           </div>
@@ -125,7 +76,7 @@ function TrustTransitionStrip() {
 function FeaturedRingSection() {
   const galleryDesigns = [
     {
-      title: "Antique Oval Three-Stone",
+      title: "Antique Oval",
       meta: "An antique-cut oval framed by step-cut half moons, balancing softness with quiet structure in a two-tone composition.",
       href: "https://gembox.app/s/FxdrPMp29F",
       image: "/rings/antique-oval-3.png",
@@ -174,14 +125,14 @@ function FeaturedRingSection() {
     href: string;
   }) {
     return (
-      <div className="group w-[72vw] shrink-0 sm:w-[46vw] md:w-auto">
+      <div className="group flex w-[72vw] shrink-0 flex-col sm:w-[46vw] md:w-auto">
         <a
           href={href}
           target="_blank"
           rel="noopener noreferrer"
           className="block w-full"
         >
-          <div className="relative aspect-[3/4] overflow-hidden">
+          <div className={`relative aspect-[3/4] ${HOME_CARD_RADIUS}`}>
             <Image
               src={image}
               alt={`${title} ring`}
@@ -191,11 +142,21 @@ function FeaturedRingSection() {
             />
           </div>
         </a>
-        <div className="pt-5 md:pt-6">
-          <div className="text-[0.96rem] tracking-[-0.02em] text-[#1f1d1a]">
+        <div className="flex flex-col pt-5 md:pt-6">
+          <div className="min-h-[1.35rem] text-[0.96rem] tracking-[-0.02em] text-[#1f1d1a]">
             {title}
           </div>
-          <p className="mt-2.5 max-w-[22ch] text-[0.76rem] leading-[1.78] text-[#6a635c]">
+          <p className="mt-2.5 text-[10px] uppercase tracking-[0.32em] text-[#8a8176]">
+            <a
+              href={href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="transition-colors duration-300 hover:text-[#5e5852]"
+            >
+              Explore in Motion
+            </a>
+          </p>
+          <p className="mt-2.5 min-h-[4.35rem] max-w-[22ch] text-[0.76rem] leading-[1.78] text-[#6a635c] md:min-h-[4.75rem]">
             {meta}
           </p>
         </div>
@@ -206,7 +167,7 @@ function FeaturedRingSection() {
   return (
     <RevealOnScroll
       as="section"
-      className="border-b border-[#e4dbcf]/60 py-[120px] md:py-[140px]"
+      className="border-b border-[#e4dbcf]/60 py-[96px] md:py-[112px]"
       data-hourglass-home="house-designs"
     >
       <div className="mb-14 flex flex-col gap-8 md:mb-16 md:flex-row md:items-end md:justify-between">
@@ -222,7 +183,7 @@ function FeaturedRingSection() {
           href="/engagement-rings"
           className="shrink-0 text-[10px] uppercase tracking-[0.32em] text-[#7a7167] transition-colors duration-300 hover:text-[#2b2723]"
         >
-          Explore All Designs →
+          Explore Some Designs →
         </Link>
       </div>
 
@@ -241,19 +202,22 @@ function ClosingValueSection() {
   return (
     <RevealOnScroll
       as="section"
-      className="border-b border-[#e4dbcf]/60 py-[120px] md:py-[140px]"
+      className="border-b border-[#e4dbcf]/60 py-[84px] md:py-[100px]"
       data-hourglass-home="thoughtful-way"
     >
-      <div className="mx-auto max-w-3xl text-center">
-        <div className="text-[11px] uppercase tracking-[0.34em] text-[#8a8177]">
-          Our Approach
-        </div>
+      <div className="mx-auto flex w-full max-w-3xl flex-col items-center text-center">
+        <Link
+          href="/our-approach"
+          className="text-[11px] uppercase tracking-[0.34em] text-[#8a8177] transition-colors duration-300 hover:text-[#5e5852]"
+        >
+          Our Approach →
+        </Link>
 
-        <h2 className="mt-5 text-[2rem] leading-[1.1] tracking-[-0.045em] text-[#1f1d1a] md:text-[2.65rem]">
+        <h2 className="mt-5 w-full text-[2rem] leading-[1.1] tracking-[-0.045em] text-[#1f1d1a] md:text-[2.65rem]">
           A more thoughtful way to choose something that matters.
         </h2>
 
-        <p className="mx-auto mt-7 max-w-[44rem] text-[1rem] leading-[1.92] text-[#5f5851]">
+        <p className="mt-7 max-w-[38rem] text-[1rem] leading-[1.92] text-[#5f5851]">
           Traditional retail often prioritizes inventory and margin. Online
           platforms prioritize scale and speed. Hourglass is built around a
           calmer path: clear guidance, selective sourcing, and a more personal
@@ -261,32 +225,32 @@ function ClosingValueSection() {
         </p>
       </div>
 
-      <div className="mx-auto mt-20 grid max-w-5xl gap-12 text-center md:mt-24 md:grid-cols-3 md:gap-10">
-        <div>
-          <h3 className="text-[1.08rem] tracking-[-0.02em] text-[#1f1d1a]">
+      <div className="mx-auto mt-16 grid w-full max-w-3xl gap-12 text-center md:mt-20 md:grid-cols-3 md:gap-10">
+        <div className="mx-auto flex max-w-[15.5rem] flex-col items-center">
+          <h3 className="w-full text-[1.08rem] tracking-[-0.02em] text-[#1f1d1a]">
             Personal Guidance
           </h3>
-          <p className="mt-3.5 text-[0.92rem] leading-[1.88] text-[#6a635c]">
+          <p className="mt-3.5 w-full text-[0.92rem] leading-[1.88] text-[#6a635c]">
             One-to-one guidance from a trained gemologist, not a sales floor or
             an algorithm.
           </p>
         </div>
 
-        <div>
-          <h3 className="text-[1.08rem] tracking-[-0.02em] text-[#1f1d1a]">
+        <div className="mx-auto flex max-w-[15.5rem] flex-col items-center">
+          <h3 className="w-full text-[1.08rem] tracking-[-0.02em] text-[#1f1d1a]">
             Selective Sourcing
           </h3>
-          <p className="mt-3.5 text-[0.92rem] leading-[1.88] text-[#6a635c]">
+          <p className="mt-3.5 w-full text-[0.92rem] leading-[1.88] text-[#6a635c]">
             Diamonds chosen individually for beauty and presence, not pulled
             from a mass listing.
           </p>
         </div>
 
-        <div>
-          <h3 className="text-[1.08rem] tracking-[-0.02em] text-[#1f1d1a]">
+        <div className="mx-auto flex max-w-[15.5rem] flex-col items-center">
+          <h3 className="w-full text-[1.08rem] tracking-[-0.02em] text-[#1f1d1a]">
             Designed With Intent
           </h3>
-          <p className="mt-3.5 text-[0.92rem] leading-[1.88] text-[#6a635c]">
+          <p className="mt-3.5 w-full text-[0.92rem] leading-[1.88] text-[#6a635c]">
             Each ring shaped around proportion, comfort, and longevity, not
             pre-set templates.
           </p>
@@ -296,64 +260,110 @@ function ClosingValueSection() {
   );
 }
 
-const WHISPERED_PRAISE_ARCH = "/whispered-praise/whispered-staircase.webp";
+const TESTIMONIAL_HERO_IMAGE = "/homepage/hero/testimonial-hero-1.png";
+
+/** Card mask fade — dissolves image into quote area; mirrors homepage hero treatment. */
+const TESTIMONIAL_DESKTOP_MASK =
+  "linear-gradient(to right, transparent 0%, transparent 4%, rgba(0,0,0,0.06) 16%, rgba(0,0,0,0.20) 24%, rgba(0,0,0,0.44) 32%, rgba(0,0,0,0.68) 38%, rgba(0,0,0,0.86) 44%, rgba(0,0,0,0.94) 48%, black 54%, black 100%)";
+
+const testimonialDesktopMaskStyle: React.CSSProperties = {
+  WebkitMaskImage: TESTIMONIAL_DESKTOP_MASK,
+  maskImage: TESTIMONIAL_DESKTOP_MASK,
+  WebkitMaskSize: "155% 100%",
+  maskSize: "155% 100%",
+  WebkitMaskRepeat: "no-repeat",
+  maskRepeat: "no-repeat",
+  WebkitMaskPosition: "left center",
+  maskPosition: "left center",
+};
+
+const TESTIMONIAL_MOBILE_MASK =
+  "linear-gradient(to bottom, transparent 0%, transparent 4%, rgba(0,0,0,0.06) 16%, rgba(0,0,0,0.20) 24%, rgba(0,0,0,0.44) 32%, rgba(0,0,0,0.68) 38%, rgba(0,0,0,0.86) 44%, rgba(0,0,0,0.94) 48%, black 54%, black 100%)";
+
+const testimonialMobileMaskStyle: React.CSSProperties = {
+  WebkitMaskImage: TESTIMONIAL_MOBILE_MASK,
+  maskImage: TESTIMONIAL_MOBILE_MASK,
+  WebkitMaskSize: "100% 155%",
+  maskSize: "100% 155%",
+  WebkitMaskRepeat: "no-repeat",
+  maskRepeat: "no-repeat",
+  WebkitMaskPosition: "center top",
+  maskPosition: "center top",
+};
 
 function TestimonialSection() {
   return (
     <RevealOnScroll
       as="section"
-      className="py-[120px] md:py-[140px]"
+      className="pb-[88px] pt-[96px] md:pb-[96px] md:pt-[104px]"
       data-hourglass-home="whispered-praise"
     >
-      <div className="overflow-hidden rounded-[28px] bg-[#ece4da] md:rounded-[32px]">
-        <div className="grid md:grid-cols-[1.08fr_0.92fr]">
-          <div className="flex flex-col justify-center px-8 py-14 md:px-11 md:py-[72px] lg:px-14">
-            <div className="text-[10px] uppercase tracking-[0.34em] text-[#8a8177]">
-              Whispered Praise
-            </div>
+      <div className={`relative mx-auto max-w-[1040px] bg-[#ece4da] ${HOME_CARD_RADIUS}`}>
+        <div
+          aria-hidden
+          className="absolute inset-0 hidden md:block"
+          style={testimonialDesktopMaskStyle}
+        >
+          <Image
+            src={TESTIMONIAL_HERO_IMAGE}
+            alt=""
+            fill
+            quality={95}
+            sizes="(max-width: 768px) 100vw, 640px"
+            className="object-cover object-[58%_42%]"
+          />
+        </div>
 
-            <p className="mt-8 text-[1.45rem] leading-[1.42] tracking-[-0.03em] text-[#1f1d1a] md:text-[1.72rem] lg:text-[1.85rem]">
-              “If I could leave 100 stars, I would. The entire process felt
-              thoughtful, transparent, and genuinely personal from start to finish.
-              Every detail was considered, and nothing ever felt rushed. It’s rare
-              to find this level of care.”
-            </p>
-
-            <div className="mt-6 text-[10px] uppercase tracking-[0.28em] text-[#7d746a]">
-              Google Review · KH, California
-            </div>
-
-            <div className="mt-12">
-              <Link
-                href="/concierge"
-                className="inline-flex items-center justify-center rounded-full bg-[#2b2723] px-7 py-3 text-[11px] uppercase tracking-[0.28em] text-white transition-all duration-500 ease-out hover:-translate-y-[1px] hover:opacity-90"
-                onClick={() => trackConsultationCtaClicked("home:testimonial")}
-              >
-                Begin the Conversation
-              </Link>
-            </div>
+        <div className="relative z-10 flex flex-col justify-center px-8 py-11 md:w-[56%] md:px-11 md:py-12 lg:px-14">
+          <div className="text-[10px] uppercase tracking-[0.34em] text-[#8a8177]">
+            Whispered Praise
           </div>
 
-          <div className="relative min-h-[240px] md:min-h-[420px]">
-            <Image
-              src={WHISPERED_PRAISE_ARCH}
-              alt=""
-              fill
-              sizes="(max-width: 768px) 100vw, 520px"
-              className="object-cover object-[58%_42%]"
-            />
-            <div
-              className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,rgba(236,228,218,0.98)_0%,rgba(236,228,218,0.72)_18%,rgba(236,228,218,0.18)_48%,transparent_72%)] md:bg-[linear-gradient(to_right,rgba(236,228,218,0.98)_0%,rgba(236,228,218,0.55)_22%,rgba(236,228,218,0.08)_52%,transparent_78%)]"
-              aria-hidden
-            />
+          <p className="mt-8 text-[1.35rem] leading-[1.42] tracking-[-0.03em] text-[#1f1d1a] md:text-[1.6rem] lg:text-[1.72rem]">
+            “If I could leave 100 stars, I would. The entire process felt
+            thoughtful, transparent, and genuinely personal from start to finish.
+            Every detail was considered, and nothing ever felt rushed. It’s rare
+            to find this level of care.”
+          </p>
+
+          <div className="mt-6 text-[10px] uppercase tracking-[0.28em] text-[#7d746a]">
+            Google Review · KH, California
           </div>
+
+          <div className="mt-12">
+            <Link
+              href="/concierge"
+              className="inline-flex items-center justify-center rounded-full bg-[#2b2723] px-7 py-3 text-[11px] uppercase tracking-[0.28em] text-white transition-all duration-500 ease-out hover:-translate-y-[1px] hover:opacity-90"
+              onClick={() => trackConsultationCtaClicked("home:testimonial")}
+            >
+              Begin the Conversation
+            </Link>
+          </div>
+        </div>
+
+        <div
+          aria-hidden
+          className="relative aspect-[1672/941] w-full md:hidden"
+          style={testimonialMobileMaskStyle}
+        >
+          <Image
+            src={TESTIMONIAL_HERO_IMAGE}
+            alt=""
+            fill
+            quality={95}
+            sizes="100vw"
+            className="object-cover object-[58%_42%]"
+          />
         </div>
       </div>
 
-      <p className="mt-10 text-center text-[10px] leading-[1.85] tracking-[0.14em] text-[#8a8176]">
+      <p className="mt-8 text-center text-[10px] leading-[1.85] tracking-[0.14em] text-[#8a8176]">
         Trusted quietly by clients across the country.{" "}
-        <WhisperedPraiseLink variant="arrow" className="text-[10px] tracking-[0.14em]">
-          Whispered Praise
+        <WhisperedPraiseLink
+          variant="arrow"
+          className="text-[10px] font-medium tracking-[0.14em] text-[#6a635c]"
+        >
+          Whispered Praise →
         </WhisperedPraiseLink>
       </p>
     </RevealOnScroll>
@@ -363,14 +373,31 @@ function TestimonialSection() {
 export default function HomePageClient() {
   return (
     <main
-      className="min-h-screen bg-[#efe8de] text-[#1c1b1a]"
+      className="min-h-screen bg-[#efe8de] pb-6 text-[#1c1b1a]"
       data-hourglass-home="atmospheric-house-pass"
     >
-      <div className="mx-auto max-w-[1200px] px-6 md:px-10">
-        <Header currentPage="home" />
+      <div className="mx-auto max-w-[1200px]">
+        <div className="px-6 md:px-10">
+          <Header currentPage="home" />
+        </div>
 
-        <section className="border-b border-[#e4dbcf]/60 pb-[112px] pt-[88px] md:pb-[128px] md:pt-[104px]">
-          <div className="grid items-center gap-14 lg:grid-cols-[0.98fr_1.02fr] lg:gap-16">
+        <section className="relative overflow-hidden border-b border-[#e4dbcf]/60 bg-[#efe8de] pb-[88px] pt-[56px] md:min-h-[500px] md:pb-[96px] md:pt-[48px] lg:min-h-[520px]">
+          <div
+            aria-hidden
+            className="absolute inset-0 hidden md:block"
+            style={heroDesktopMaskStyle}
+          >
+            <Image
+              src={HERO_IMAGE}
+              alt=""
+              fill
+              priority
+              sizes="100vw"
+              className="object-cover object-[72%_38%] origin-[72%_38%] scale-[0.88] lg:object-[74%_36%] lg:origin-[74%_36%] lg:scale-[0.87]"
+            />
+          </div>
+
+          <div className="relative z-10 flex min-h-0 flex-col justify-center px-6 md:min-h-[440px] md:px-10 lg:min-h-[500px]">
             <div className="min-w-0 max-w-[440px]">
               <div className="text-[11px] uppercase tracking-[0.34em] text-[#8d8275]">
                 Hourglass Diamonds
@@ -407,21 +434,30 @@ export default function HomePageClient() {
               </div>
             </div>
 
-            <div className="min-w-0 overflow-visible">
-              <HeroRingStage />
+            <div className={`relative mt-12 aspect-[3/2] w-full min-h-[260px] ${HOME_CARD_RADIUS} md:hidden`}>
+              <Image
+                src={HERO_IMAGE}
+                alt="Oval bezel pavé engagement ring on travertine"
+                fill
+                priority
+                sizes="100vw"
+                className="object-cover object-[64%_42%] origin-[66%_40%] scale-[0.88]"
+              />
             </div>
           </div>
         </section>
 
-        <TrustTransitionStrip />
+        <div className="px-6 md:px-10">
+          <TrustTransitionStrip />
 
-        <RevealOnScroll as="section" className="border-b border-[#e4dbcf] py-[92px] md:py-[108px]">
-          <HomeStudioPortal />
-        </RevealOnScroll>
+          <RevealOnScroll as="section" className="border-b border-[#e4dbcf] py-[80px] md:py-[96px]">
+            <HomeStudioPortal />
+          </RevealOnScroll>
 
-        <ClosingValueSection />
-        <FeaturedRingSection />
-        <TestimonialSection />
+          <ClosingValueSection />
+          <FeaturedRingSection />
+          <TestimonialSection />
+        </div>
       </div>
     </main>
   );
