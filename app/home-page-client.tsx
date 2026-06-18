@@ -49,10 +49,10 @@ function TrustTransitionStrip() {
   return (
     <RevealOnScroll
       as="section"
-      className="py-[48px] md:py-[56px]"
+      className="py-[36px] md:py-[56px]"
       data-hourglass-home="trust-strip"
     >
-      <div className="grid gap-10 md:grid-cols-3 md:items-start md:gap-0">
+      <div className="grid gap-8 md:grid-cols-3 md:items-start md:gap-0">
         {pillars.map((pillar, index) => (
           <div
             key={pillar.title}
@@ -63,7 +63,7 @@ function TrustTransitionStrip() {
             <div className="text-[10px] uppercase tracking-[0.34em] text-[#8a8177]">
               {pillar.title}
             </div>
-            <p className="mx-auto mt-3 max-w-[28ch] text-center text-[0.9rem] leading-[1.82] text-[#615a53]">
+            <p className="mx-auto mt-2.5 max-w-[28ch] text-center text-[0.9rem] leading-[1.78] text-[#615a53] md:mt-3 md:leading-[1.82]">
               {pillar.description}
             </p>
           </div>
@@ -125,7 +125,7 @@ function FeaturedRingSection() {
     href: string;
   }) {
     return (
-      <div className="group flex w-[72vw] shrink-0 flex-col sm:w-[46vw] md:w-auto">
+      <div className="group flex w-[calc(100vw-3.5rem)] shrink-0 snap-start flex-col sm:w-[46vw] md:w-auto">
         <a
           href={href}
           target="_blank"
@@ -167,10 +167,10 @@ function FeaturedRingSection() {
   return (
     <RevealOnScroll
       as="section"
-      className="border-b border-[#e4dbcf]/60 py-[96px] md:py-[112px]"
+      className="border-b border-[#e4dbcf]/60 py-[72px] md:py-[112px]"
       data-hourglass-home="house-designs"
     >
-      <div className="mb-14 flex flex-col gap-8 md:mb-16 md:flex-row md:items-end md:justify-between">
+      <div className="mb-10 flex flex-col gap-8 md:mb-16 md:flex-row md:items-end md:justify-between">
         <div className="max-w-xl">
           <div className="text-[11px] uppercase tracking-[0.34em] text-[#8a8177]">
             House Designs
@@ -187,8 +187,8 @@ function FeaturedRingSection() {
         </Link>
       </div>
 
-      <div className="-mx-6 overflow-x-auto px-6 pb-1 md:mx-0 md:overflow-visible md:px-0">
-        <div className="flex w-max gap-5 md:grid md:w-full md:grid-cols-6 md:gap-4 lg:gap-6">
+      <div className="-mx-6 snap-x snap-mandatory overflow-x-auto scroll-pl-6 scroll-smooth px-6 pb-1 md:mx-0 md:snap-none md:overflow-visible md:scroll-pl-0 md:px-0">
+        <div className="flex w-max gap-4 md:grid md:w-full md:grid-cols-6 md:gap-4 lg:gap-6">
           {galleryDesigns.map((design) => (
             <GalleryDesignCard key={design.title} {...design} />
           ))}
@@ -202,7 +202,7 @@ function ClosingValueSection() {
   return (
     <RevealOnScroll
       as="section"
-      className="border-b border-[#e4dbcf]/60 py-[84px] md:py-[100px]"
+      className="border-b border-[#e4dbcf]/60 py-[64px] md:py-[100px]"
       data-hourglass-home="thoughtful-way"
     >
       <div className="mx-auto flex w-full max-w-3xl flex-col items-center text-center">
@@ -278,24 +278,24 @@ const testimonialDesktopMaskStyle: React.CSSProperties = {
 };
 
 const TESTIMONIAL_MOBILE_MASK =
-  "linear-gradient(to bottom, transparent 0%, transparent 4%, rgba(0,0,0,0.06) 16%, rgba(0,0,0,0.20) 24%, rgba(0,0,0,0.44) 32%, rgba(0,0,0,0.68) 38%, rgba(0,0,0,0.86) 44%, rgba(0,0,0,0.94) 48%, black 54%, black 100%)";
+  "linear-gradient(to bottom, transparent 0%, transparent 30%, rgba(0,0,0,0.10) 40%, rgba(0,0,0,0.32) 48%, rgba(0,0,0,0.58) 54%, rgba(0,0,0,0.78) 60%, rgba(0,0,0,0.92) 64%, black 70%, black 100%)";
 
 const testimonialMobileMaskStyle: React.CSSProperties = {
   WebkitMaskImage: TESTIMONIAL_MOBILE_MASK,
   maskImage: TESTIMONIAL_MOBILE_MASK,
-  WebkitMaskSize: "100% 155%",
-  maskSize: "100% 155%",
+  WebkitMaskSize: "100% 118%",
+  maskSize: "100% 118%",
   WebkitMaskRepeat: "no-repeat",
   maskRepeat: "no-repeat",
-  WebkitMaskPosition: "center top",
-  maskPosition: "center top",
+  WebkitMaskPosition: "center 6%",
+  maskPosition: "center 6%",
 };
 
 function TestimonialSection() {
   return (
     <RevealOnScroll
       as="section"
-      className="pb-[88px] pt-[96px] md:pb-[96px] md:pt-[104px]"
+      className="pb-[72px] pt-[72px] md:pb-[96px] md:pt-[104px]"
       data-hourglass-home="whispered-praise"
     >
       <div className={`relative mx-auto max-w-[1040px] bg-[#ece4da] ${HOME_CARD_RADIUS}`}>
@@ -314,12 +314,12 @@ function TestimonialSection() {
           />
         </div>
 
-        <div className="relative z-10 flex flex-col justify-center px-8 py-11 md:w-[56%] md:px-11 md:py-12 lg:px-14">
+        <div className="relative z-10 flex flex-col justify-center px-8 py-10 md:w-[56%] md:px-11 md:py-12 lg:px-14">
           <div className="text-[10px] uppercase tracking-[0.34em] text-[#8a8177]">
             Whispered Praise
           </div>
 
-          <p className="mt-8 text-[1.35rem] leading-[1.42] tracking-[-0.03em] text-[#1f1d1a] md:text-[1.6rem] lg:text-[1.72rem]">
+          <p className="mt-6 text-[1.35rem] leading-[1.42] tracking-[-0.03em] text-[#1f1d1a] md:mt-8 md:text-[1.6rem] lg:text-[1.72rem]">
             “If I could leave 100 stars, I would. The entire process felt
             thoughtful, transparent, and genuinely personal from start to finish.
             Every detail was considered, and nothing ever felt rushed. It’s rare
@@ -343,7 +343,7 @@ function TestimonialSection() {
 
         <div
           aria-hidden
-          className="relative aspect-[1672/941] w-full md:hidden"
+          className="relative aspect-[3/2] w-full md:hidden"
           style={testimonialMobileMaskStyle}
         >
           <Image
@@ -352,7 +352,7 @@ function TestimonialSection() {
             fill
             quality={95}
             sizes="100vw"
-            className="object-cover object-[58%_42%]"
+            className="object-cover object-[50%_30%]"
           />
         </div>
       </div>
@@ -381,7 +381,7 @@ export default function HomePageClient() {
           <Header currentPage="home" />
         </div>
 
-        <section className="relative overflow-hidden border-b border-[#e4dbcf]/60 bg-[#efe8de] pb-[88px] pt-[56px] md:min-h-[500px] md:pb-[96px] md:pt-[48px] lg:min-h-[520px]">
+        <section className="relative overflow-hidden border-b border-[#e4dbcf]/60 bg-[#efe8de] pb-[72px] pt-[44px] md:min-h-[500px] md:pb-[96px] md:pt-[48px] lg:min-h-[520px]">
           <div
             aria-hidden
             className="absolute inset-0 hidden md:block"
@@ -404,20 +404,20 @@ export default function HomePageClient() {
               </div>
 
               <h1
-                className="mt-4 max-w-[12ch] text-[2.25rem] font-normal leading-[1.05] tracking-[-0.048em] text-[#1f1d1a] md:text-[3.15rem]"
+                className="mt-3 max-w-[12ch] text-[2.25rem] font-normal leading-[1.05] tracking-[-0.048em] text-[#1f1d1a] md:mt-4 md:text-[3.15rem]"
                 style={{ textWrap: "balance" }}
               >
                 Designing a ring should feel different than buying one.
               </h1>
 
-              <p className="mt-5 max-w-[30rem] text-[1rem] leading-[1.9] text-[#5e5852]">
+              <p className="mt-4 max-w-[30rem] text-[1rem] leading-[1.88] text-[#5e5852] md:mt-5 md:leading-[1.9]">
                 Most people never get that experience. Hourglass was built
                 around something more deliberate: guidance over pressure,
                 proportion over inventory, and a process that feels as
                 considered as the piece itself.
               </p>
 
-              <div className="mt-8">
+              <div className="mt-6 md:mt-8">
                 <CTAGlimmer>
                   <Link
                     href="/concierge"
@@ -428,20 +428,20 @@ export default function HomePageClient() {
                   </Link>
                 </CTAGlimmer>
 
-                <p className="mt-5 max-w-[28rem] text-[0.78rem] leading-[1.75] tracking-[0.015em] text-[#8a8176]">
+                <p className="mt-3.5 max-w-[28rem] text-[0.78rem] leading-[1.75] tracking-[0.015em] text-[#8a8176] md:mt-5">
                   Guided by Graduate Gemologist Justin Smith.
                 </p>
               </div>
             </div>
 
-            <div className={`relative mt-12 aspect-[3/2] w-full min-h-[260px] ${HOME_CARD_RADIUS} md:hidden`}>
+            <div className={`relative mt-8 aspect-[3/2] w-full min-h-[260px] ${HOME_CARD_RADIUS} md:hidden`}>
               <Image
                 src={HERO_IMAGE}
                 alt="Oval bezel pavé engagement ring on travertine"
                 fill
                 priority
                 sizes="100vw"
-                className="object-cover object-[64%_42%] origin-[66%_40%] scale-[0.88]"
+                className="object-cover object-[64%_38%] origin-[66%_36%] scale-[0.88]"
               />
             </div>
           </div>
@@ -450,7 +450,7 @@ export default function HomePageClient() {
         <div className="px-6 md:px-10">
           <TrustTransitionStrip />
 
-          <RevealOnScroll as="section" className="border-b border-[#e4dbcf] py-[80px] md:py-[96px]">
+          <RevealOnScroll as="section" className="border-b border-[#e4dbcf] py-[56px] md:py-[96px]">
             <HomeStudioPortal />
           </RevealOnScroll>
 

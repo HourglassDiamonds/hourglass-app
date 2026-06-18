@@ -105,7 +105,7 @@ function StudioToolEditorialItem({
     "text-[10px] font-medium uppercase tracking-[0.24em] text-[#1f1d1a]";
 
   const descriptionClass =
-    "mt-1 max-w-[22ch] text-[0.72rem] font-normal leading-[1.45] tracking-[0.01em] text-[#3a3632] md:ml-auto md:text-right";
+    "mt-1 max-w-[22ch] text-[0.74rem] font-normal leading-[1.52] tracking-[0.01em] text-[#3a3632] md:ml-auto md:text-[0.72rem] md:leading-[1.45] md:text-right";
 
   const activeDescriptionClass = `${descriptionClass} transition-colors duration-500 group-hover:text-[#1f1d1a]`;
 
@@ -435,7 +435,7 @@ function StudioCtaButton() {
       </div>
       <Link
         href="/diamond-studio"
-        className="relative z-[1] inline-flex items-center gap-2 rounded-full border border-[#ece4da]/70 bg-[rgba(255,252,248,0.94)] px-5 py-2.5 text-[10px] uppercase tracking-[0.28em] text-[#5c534a] shadow-[0_2px_10px_rgba(48,36,28,0.04)] backdrop-blur-[6px] transition-colors duration-300 hover:bg-[rgba(255,252,248,0.98)] hover:text-[#2b2723]"
+        className="relative z-[1] inline-flex items-center gap-2 rounded-full border border-[#ece4da]/70 bg-[rgba(255,252,248,0.94)] px-6 py-3 text-[11px] uppercase tracking-[0.26em] text-[#5c534a] shadow-[0_2px_10px_rgba(48,36,28,0.04)] backdrop-blur-[6px] transition-colors duration-300 hover:bg-[rgba(255,252,248,0.98)] hover:text-[#2b2723] md:px-5 md:py-2.5 md:text-[10px] md:tracking-[0.28em]"
       >
         Enter →
       </Link>
@@ -473,19 +473,19 @@ export default function HomeStudioPortal() {
 
         <StudioPortalCursorGlow />
 
-        <div className="relative z-[4] flex min-h-[inherit] flex-col pb-28 md:flex-row md:items-center md:pb-24">
+        <div className="relative z-[4] flex min-h-[inherit] flex-col pb-24 md:flex-row md:items-center md:pb-24">
           {/* Left — editorial column, anchored left */}
-          <div className="flex flex-[1_1_0%] items-center justify-start px-5 py-10 sm:px-6 md:px-8 md:py-0 lg:pl-10 lg:pr-4">
-            <div className="max-w-[300px] text-left translate-y-4">
+          <div className="flex flex-[1_1_0%] items-center justify-start px-5 py-8 sm:px-6 md:px-8 md:py-0 lg:pl-10 lg:pr-4">
+            <div className="max-w-[300px] translate-y-2 text-left md:translate-y-4">
               <h2
-                className="font-serif text-[1.65rem] font-normal leading-[1.12] tracking-[-0.028em] md:text-[1.9rem]"
+                className="font-serif text-[1.75rem] font-normal leading-[1.18] tracking-[-0.028em] md:text-[1.9rem] md:leading-[1.12]"
                 style={{ color: STUDIO_GRAPHITE.strong }}
               >
                 Understand the diamond before you choose it.
               </h2>
 
               <p
-                className="mt-3 max-w-[30ch] text-[0.88rem] leading-[1.65]"
+                className="mt-4 max-w-[30ch] text-[0.92rem] leading-[1.72] md:mt-3 md:text-[0.88rem] md:leading-[1.65]"
                 style={{ color: STUDIO_GRAPHITE.body }}
               >
                 Professional tools for scale, light performance, and report
@@ -495,8 +495,8 @@ export default function HomeStudioPortal() {
           </div>
 
           {/* Right — editorial column, anchored right */}
-          <div className="flex flex-[1_1_0%] items-center justify-end px-5 pb-6 sm:px-6 md:px-8 md:py-0 md:pb-0 lg:pl-4 lg:pr-10">
-            <div className="relative translate-y-4 md:-translate-x-8">
+          <div className="flex flex-[1_1_0%] items-center justify-end px-5 pb-5 sm:px-6 md:px-8 md:py-0 md:pb-0 lg:pl-4 lg:pr-10">
+            <div className="relative translate-y-2 md:-translate-x-8 md:translate-y-4">
               <div
                 className="pointer-events-none absolute left-1/2 top-1/2 z-0 h-[300px] w-[280px] -translate-x-1/2 -translate-y-1/2"
                 aria-hidden
