@@ -889,7 +889,7 @@ async function runImageOcrAugmentation(input: {
     parserType: parsed.parserType,
     lab: parsed.metadata.lab,
   });
-  if (igiGate.run && !imageUpload) {
+  if (igiGate.run) {
     const igiInternal = parsed.igiInternal ?? {};
     await withTimeout(
       applyIgiDiagramImageOcr(
@@ -1222,7 +1222,11 @@ export async function runCalibrationUploadExtraction(
         let gcalSarineDiagramProportionWait = false;
         let clientRegionOcrTimeoutMs =
           input.regionOcrTimeoutMs ?? CLIENT_IMAGE_REGION_OCR_TIMEOUT_MS;
-        if (clientMode && uploadPdfBytes) {
+        const clientImageUpload =
+          Boolean(input.bytes) &&
+          typeof input.mime === "string" &&
+          isImageMime(input.mime);
+        if (clientMode && (uploadPdfBytes || clientImageUpload)) {
           giaDiagramProportionWait = needsGiaDiagramProportionOcrWait({
             fields: parsed.fields,
             combinedText: combined,

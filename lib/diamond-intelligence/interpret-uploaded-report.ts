@@ -126,8 +126,8 @@ export async function interpretUploadedReport(
   }
 
   try {
-    const clientPdf = isPdfMime(mime);
-    const routeTimeoutMs = clientPdf
+    const clientDiagramOcrBudget = isPdfMime(mime) || isImageMime(mime);
+    const routeTimeoutMs = clientDiagramOcrBudget
       ? CLIENT_GIA_DIAGRAM_INTERPRET_ROUTE_TIMEOUT_MS
       : CLIENT_INTERPRET_ROUTE_TIMEOUT_MS;
 
@@ -158,10 +158,10 @@ export async function interpretUploadedReport(
         reportSource: inferReportSourceFromUpload(mime, false),
         mode: "client",
         initialPipelineNotices: [],
-        pipelineTimeoutMs: clientPdf
+        pipelineTimeoutMs: clientDiagramOcrBudget
           ? CLIENT_GIA_DIAGRAM_PIPELINE_TIMEOUT_MS
           : CLIENT_UPLOAD_PIPELINE_TIMEOUT_MS,
-        regionOcrTimeoutMs: clientPdf
+        regionOcrTimeoutMs: clientDiagramOcrBudget
           ? CLIENT_GIA_DIAGRAM_REGION_OCR_TIMEOUT_MS
           : undefined,
       }),
