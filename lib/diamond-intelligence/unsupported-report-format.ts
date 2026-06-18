@@ -7,7 +7,6 @@ import {
   looksLikeGcal8xCertificateProbeText,
   looksLikeGcal8xReportText,
   looksLikeGcalSarine4csReportText,
-  hasStrongGcal8xDeferEvidence,
 } from "@/lib/calibration-library/parsers/gcal/gcal-layout-detector";
 import { looksLikeGiaReportText } from "@/lib/calibration-library/gia-proportions";
 
@@ -119,9 +118,6 @@ function detectRecognizedUnsupportedFamily(
     hasExplicitGcalSarineReportHeader(t) ||
     looksLikeGcalSarine4csReportText(t)
   ) {
-    if (looksLikeGcal8xReportText(t) || hasStrongGcal8xDeferEvidence(t)) {
-      return null;
-    }
     return { family: "gcal-sarine-4cs", label: "GCAL BY SARINE" };
   }
 

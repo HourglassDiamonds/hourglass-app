@@ -31,7 +31,6 @@ import {
 import {
   looksLikeGcal8xCertificateProbeText,
   looksLikeGcal8xReportText,
-  hasStrongGcal8xDeferEvidence,
 } from "./gcal-layout-detector";
 
 const GCAL_PAGE_OCR_SCALE = 4;
@@ -265,7 +264,9 @@ export async function probeGcal8xCertificateRegionFromRenderedPage(rendered: {
   if (!probeText || !ocr.ok) return miss;
 
   return {
-    detected: hasStrongGcal8xDeferEvidence(probeText),
+    detected:
+      looksLikeGcal8xCertificateProbeText(probeText) &&
+      looksLikeGcal8xReportText(probeText),
     probeText,
   };
 }

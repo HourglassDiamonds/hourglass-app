@@ -149,22 +149,7 @@ export function hasStrongGcal8xProbeDeferEvidence(text: string): boolean {
 }
 
 function shouldDeferFromGcal8xProbeText(text: string): boolean {
-  const t = normalizeGcalProbeOcrText(text).trim();
-  if (!t) return false;
-  if (hasStrongGcal8xProbeDeferEvidence(t)) return true;
-  if (looksLikeGcal8xReportText(t)) return true;
-  return false;
-}
-
-function shouldProbeDeferToGcal8x(input: {
-  layerText: string;
-  certProbeText: string;
-  certDetected: boolean;
-}): boolean {
-  if (input.certDetected) return true;
-  if (shouldDeferFromGcal8xProbeText(input.certProbeText)) return true;
-  if (shouldDeferFromGcal8xProbeText(input.layerText)) return true;
-  return false;
+  return hasStrongGcal8xProbeDeferEvidence(text);
 }
 
 function gcal8xEvidenceWinsOverSarineUnsupported(
@@ -239,14 +224,18 @@ export function resolveImageUnsupportedFormatProbe(
   if (
     input.certProbe.detected ||
     shouldDeferToGcal8xPipeline(certNorm) ||
-    shouldDeferToGcal8xPipeline(headerNorm) ||
-    gcal8xEvidenceWinsOverSarineUnsupported(certNorm, headerNorm)
+    shouldDeferToGcal8xPipeline(headerNorm)
   ) {
     return null;
   }
 
   const earlyHeader = earlyImageHeaderUnsupported(headerNorm);
-  if (earlyHeader) return earlyHeader;
+  if (
+    earlyHeader &&
+    !gcal8xEvidenceWinsOverSarineUnsupported(certNorm, headerNorm)
+  ) {
+    return earlyHeader;
+  }
 
   const combined = [headerNorm, certNorm].filter(Boolean).join("\n\n");
   if (gcal8xEvidenceWinsOverSarineUnsupported(combined, certNorm)) {
@@ -278,18 +267,25 @@ export function resolvePdfUnsupportedFormatProbeFromText(
 ): UnsupportedReportFormatMatch | null {
   const certProbeText = normalizeGcalProbeOcrText(input.certProbe.probeText);
 
+  const layerUnsupported = unsupportedMatchFromText(input.layerText);
+  if (input.layerSufficient && layerUnsupported) {
+    return layerUnsupported;
+  }
+
   if (
-    shouldProbeDeferToGcal8x({
-      layerText: input.layerText,
-      certProbeText,
-      certDetected: input.certProbe.detected,
-    })
+    input.certProbe.detected ||
+    shouldDeferToGcal8xPipeline(certProbeText)
   ) {
     return null;
   }
 
-  const layerUnsupported = unsupportedMatchFromText(input.layerText);
   if (layerUnsupported) {
+    if (
+      layerUnsupported.family === "gcal-sarine-4cs" &&
+      gcal8xEvidenceWinsOverSarineUnsupported(certProbeText, input.layerText)
+    ) {
+      return null;
+    }
     return layerUnsupported;
   }
 
@@ -348,21 +344,20 @@ export async function probeClientUnsupportedReportFormat(
       "unsupported-format-text-layer",
     );
 
+    const layerUnsupported = unsupportedMatchFromText(layer.text);
+    if (layer.sufficient && layerUnsupported) {
+      return layerUnsupported;
+    }
+
     const gcal8xProbe = await probeGcal8xImageOnlyPdf(bytes);
     const certProbeText = normalizeGcalProbeOcrText(gcal8xProbe.probeText);
 
     if (
-      shouldProbeDeferToGcal8x({
-        layerText: layer.text,
-        certProbeText,
-        certDetected: gcal8xProbe.detected,
-      })
+      gcal8xProbe.detected ||
+      shouldDeferToGcal8xPipeline(certProbeText)
     ) {
       return null;
     }
-
-    const layerUnsupported = unsupportedMatchFromText(layer.text);
-    if (layerUnsupported) return layerUnsupported;
 
     const withoutHeader = resolvePdfUnsupportedFormatProbeFromText({
       layerText: layer.text,

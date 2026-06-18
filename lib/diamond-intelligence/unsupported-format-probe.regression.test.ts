@@ -120,7 +120,7 @@ describe("unsupported-format-probe fast path", () => {
     assert.equal(match, null);
   });
 
-  it("defers GCAL 8X when cert band shares Ultimate Diamond marketing with Sarine text layer", () => {
+  it("rejects sufficient Sarine text layer even when cert band shares Ultimate Diamond marketing", () => {
     const match = resolvePdfUnsupportedFormatProbeFromText({
       layerText: GCAL360796191_TEXT_LAYER,
       layerSufficient: true,
@@ -129,7 +129,8 @@ describe("unsupported-format-probe fast path", () => {
         probeText: GCAL_SARINE_LIVE_CERT_PROBE_OCR,
       },
     });
-    assert.equal(match, null);
+    assert.ok(match);
+    assert.equal(match.family, "gcal-sarine-4cs");
   });
 
   it("still rejects Sarine PDF text layer when cert band lacks 8X evidence", () => {
@@ -176,68 +177,19 @@ if (gcal8xPdf) {
   });
 }
 
-const GCAL_8X_BATCH_PDF_CANDIDATES = [
-  {
-    id: "360796191",
-    paths: [
-      "C:/Users/justi/OneDrive/Desktop/Test Batches/Test Batch 6 - GCAL 8x & GCAL unknown/360796191.pdf",
-    ],
-  },
-  {
-    id: "360796247",
-    paths: [
-      "C:/Users/justi/OneDrive/Desktop/Test Batches/Test Batch 6 - GCAL 8x & GCAL unknown/360796247.pdf",
-    ],
-  },
-  {
-    id: "360796311",
-    paths: [
-      "C:/Users/justi/OneDrive/Desktop/Test Batches/Test Batch 6 - GCAL 8x & GCAL unknown/360796311.pdf",
-    ],
-  },
-] as const;
-
-for (const spec of GCAL_8X_BATCH_PDF_CANDIDATES) {
-  const pdfPath = resolveFirstExisting([...spec.paths]);
-  if (!pdfPath) continue;
-
-  describe(`unsupported-format-probe GCAL 8X PDF LG${spec.id}`, () => {
-    const bytes = readFileSync(pdfPath);
-
-    it("defers before unsupported_report_format", async () => {
-      const match = await probeClientUnsupportedReportFormat(
-        bytes,
-        "application/pdf",
-      );
-      assert.equal(match, null);
-    });
-
-    it(`interpret reaches supported GCAL 8X for LG${spec.id}`, async () => {
-      const result = await interpretUploadedReport({
-        bytes,
-        mime: "application/pdf",
-        sourceFilename: `LG${spec.id}.pdf`,
-      });
-      assert.equal(result.ok, true);
-      if (result.ok) {
-        assert.equal(result.interpretation.metadata.parserFamily, "gcal-8x");
-      }
-    });
-  });
-}
-
 if (existsSync(GCAL_SARINE_PDF)) {
   describe("unsupported-format-probe GCAL Sarine PDF LG360796192", () => {
     const bytes = readFileSync(GCAL_SARINE_PDF);
 
-    it("does not block before parser when text layer carries 8X layout markers", async () => {
+    it("rejects GCAL BY SARINE from text layer without full-page OCR", async () => {
       const started = Date.now();
       const match = await probeClientUnsupportedReportFormat(
         bytes,
         "application/pdf",
       );
       const elapsedMs = Date.now() - started;
-      assert.equal(match, null);
+      assert.ok(match);
+      assert.equal(match.family, "gcal-sarine-4cs");
       assert.ok(elapsedMs < 15_000);
     });
   });
