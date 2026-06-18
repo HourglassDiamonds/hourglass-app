@@ -8,6 +8,7 @@ import { fetchBinaryResource } from "./fetch-listing-page";
 import { extractListingFromUrl } from "./extract-listing";
 import { validateListingUrl, isPdfOrReportUrl } from "./url-safety";
 import { classifyVendorSupport } from "./vendor-detection";
+import { applyListingGradeHintFallback } from "./listing-grade-hint-fallback";
 import type { ListingExtraction, UrlIngestionStatus } from "./types";
 
 export type UrlIngestionResponse =
@@ -184,11 +185,15 @@ export async function ingestDiamondListingUrl(
   }
 
   const reportFilename = deriveReportFilename(listing, safeReportUrl);
+  const interpretation = applyListingGradeHintFallback(
+    interpreted.interpretation,
+    listing,
+  );
 
   return {
     ok: true,
     status: interpreted.partial ? "report_incomplete" : "full_interpretation",
-    interpretation: interpreted.interpretation,
+    interpretation,
     partial: interpreted.partial,
     listing,
     reportUrl: safeReportUrl,
