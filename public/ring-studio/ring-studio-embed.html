@@ -942,6 +942,25 @@ body {
       return angleOptions.find(item => item.key === key)?.label || key;
     }
 
+    function getAvailableMetals(ring) {
+      if (Array.isArray(ring?.availableMetals) && ring.availableMetals.length > 0) {
+        return ring.availableMetals;
+      }
+      return metalOptions.map(option => option.key);
+    }
+
+    function resolveMetalForRing(ring, preferredMetal) {
+      const available = getAvailableMetals(ring);
+      if (available.includes(preferredMetal)) {
+        return preferredMetal;
+      }
+      const defaultMetal = ring?.defaultMetal || "rose-gold";
+      if (available.includes(defaultMetal)) {
+        return defaultMetal;
+      }
+      return available[0] || "rose-gold";
+    }
+
     function buildStillFilename(angleKey) {
       const map = {
         front: "fv.png",
@@ -1127,7 +1146,7 @@ body {
         value => {
           const nextRing = ringData.rings.find(ring => ring.id === value);
           state.ringId = value;
-          state.metal = nextRing?.defaultMetal || "rose-gold";
+          state.metal = resolveMetalForRing(nextRing, state.metal);
           state.angle = nextRing?.defaultAngle || "perspective";
         },
         "pill ring-pill"
