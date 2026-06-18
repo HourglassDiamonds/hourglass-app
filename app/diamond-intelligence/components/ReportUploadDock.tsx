@@ -178,6 +178,24 @@ export function ReportUploadDock({
         ) : null}
       </div>
 
+      {!busy ? (
+        <div className="mt-3 max-w-[52ch]">
+          <p className="font-serif text-[0.92rem] leading-snug text-[#6f665d]">
+            {CONSUMER_COPY.uploadGuidanceReassuranceHeadline}
+          </p>
+          <p className="mt-2 text-[10px] leading-relaxed text-[#948a80]">
+            {CONSUMER_COPY.uploadGuidanceReassuranceBodyPrefix}{" "}
+            <a
+              href={`mailto:${CONSUMER_COPY.uploadGuidanceReassuranceEmail}`}
+              className="text-[#8b735b] underline decoration-[rgba(181,150,98,0.4)] underline-offset-[3px] transition-colors hover:text-[#5f5851]"
+            >
+              {CONSUMER_COPY.uploadGuidanceReassuranceEmail}
+            </a>{" "}
+            {CONSUMER_COPY.uploadGuidanceReassuranceBodySuffix}
+          </p>
+        </div>
+      ) : null}
+
       <input
         ref={inputRef}
         type="file"

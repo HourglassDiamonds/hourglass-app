@@ -65,6 +65,13 @@ export const CONSUMER_COPY = {
     "The analysis evaluates the diamond itself — not the asking price.",
     "Supported formats: PDF preferred; screenshots and report images accepted.",
   ] as const,
+  uploadGuidanceReassuranceHeadline:
+    "If we can't read your report, don't worry.",
+  uploadGuidanceReassuranceBodyPrefix:
+    "Some screenshots, BMP files, and lower-resolution images can be difficult for automated interpretation. If you receive an error message, simply email the report to",
+  uploadGuidanceReassuranceEmail: "justin@hourglassdiamonds.com",
+  uploadGuidanceReassuranceBodySuffix:
+    "and we'll be happy to review it personally.",
   betaDisclosure:
     "Diamond Intelligence is currently in beta and supports round brilliant diamonds only. Fancy shapes and additional report formats are still being added.",
   betaDisclosureOutreach:
