@@ -23,6 +23,9 @@ export function looksLikeGcal8xReportText(text: string): boolean {
 export function looksLikeGcalSarine4csReportText(text: string): boolean {
   const t = text.slice(0, 20000);
   if (!/\bGCAL\b/i.test(t)) return false;
+  if (looksLikeGcal8xReportText(t) || hasStrongGcal8xDeferEvidence(t)) {
+    return false;
+  }
 
   const sarineMarker =
     /\bGCAL\s+BY\s+SARINE\b/i.test(t) ||
@@ -46,9 +49,8 @@ export function looksLikeGcalSarine4csReportText(text: string): boolean {
 }
 
 /**
- * Strong GCAL 8X cert-band / header evidence for probe deferral.
- * Ultimate Diamond + EIGHT marketing is shared with GCAL BY SARINE cert-band OCR — probe
- * ordering must reject Sarine when the text layer is sufficient; do not hard-exclude gcalusa.com/c/.
+ * Strong GCAL 8X cert-band / header / text-layer evidence for probe deferral.
+ * GCAL BY SARINE accreditation alone is insufficient to reject when 8X layout markers are present.
  */
 export function hasStrongGcal8xDeferEvidence(text: string): boolean {
   const t = text.slice(0, 4000).trim();
