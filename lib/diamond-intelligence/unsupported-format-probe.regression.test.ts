@@ -9,7 +9,17 @@ import { assessClientReportFormatSupport } from "@/lib/diamond-intelligence/unsu
 import {
   probeClientUnsupportedReportFormat,
   resolvePdfUnsupportedFormatProbeFromText,
+  shouldDeferImageOnlyPdfWeakCertStandardGcalReject,
 } from "@/lib/diamond-intelligence/unsupported-format-probe";
+
+const STANDARD_GCAL_DGA_HEADER = `
+Gem Certification & Assurance Lab
+Certificate No. LG353306143
+Diamond Grading Analysis
+Lab Grown Diamond
+Physical Symmetry Excellent
+Optical Brilliance Excellent
+`;
 
 const STANDARD_GCAL_PDF = "data/diamond-intelligence/debug/standard-gcal-LG352146193-probe.pdf";
 
@@ -140,6 +150,40 @@ describe("unsupported-format-probe fast path", () => {
     });
     assert.ok(match);
     assert.equal(match.family, "gcal-sarine-4cs");
+  });
+
+  it("defers image-only PDF when cert-band OCR misses and header reads standard GCAL DGA (LG353306143)", () => {
+    const match = resolvePdfUnsupportedFormatProbeFromText({
+      layerText: "",
+      layerSufficient: false,
+      certProbe: { detected: false, probeText: "" },
+      headerText: STANDARD_GCAL_DGA_HEADER,
+    });
+    assert.equal(match, null);
+  });
+
+  it("defers image-only PDF when cert-band OCR is weak bare LG line and header reads standard GCAL DGA", () => {
+    const match = resolvePdfUnsupportedFormatProbeFromText({
+      layerText: "",
+      layerSufficient: false,
+      certProbe: { detected: false, probeText: "GCAL LG353306143" },
+      headerText: STANDARD_GCAL_DGA_HEADER,
+    });
+    assert.equal(match, null);
+  });
+
+  it("shouldDeferImageOnlyPdfWeakCertStandardGcalReject is false when text layer is sufficient", () => {
+    assert.equal(
+      shouldDeferImageOnlyPdfWeakCertStandardGcalReject({
+        layerSufficient: true,
+        certProbe: { detected: false, probeText: "" },
+        certProbeText: "",
+        match: { family: "gcal-standard", label: "Standard GCAL" },
+        combined: STANDARD_GCAL_DGA_HEADER,
+        headerNorm: STANDARD_GCAL_DGA_HEADER,
+      }),
+      false,
+    );
   });
 });
 

@@ -265,6 +265,54 @@ export function resolveImageUnsupportedFormatProbe(
   return null;
 }
 
+function isWeakCertProbeForImageOnlyPdf(input: {
+  certDetected: boolean;
+  certProbeText: string;
+}): boolean {
+  if (input.certDetected) return false;
+  const certNorm = normalizeGcalProbeOcrText(input.certProbeText).trim();
+  if (!certNorm) return true;
+  if (hasStrongGcal8xProbeDeferEvidence(certNorm)) return false;
+  if (looksLikeGcal8xReportText(certNorm)) return false;
+  return true;
+}
+
+/**
+ * Image-only PDF fast-probe guard — cert-band OCR miss + header DGA markers must not
+ * block valid GCAL 8X before the extraction pipeline runs.
+ */
+export function shouldDeferImageOnlyPdfWeakCertStandardGcalReject(input: {
+  layerSufficient: boolean;
+  certProbe: Gcal8xImageOnlyPdfProbeResult;
+  certProbeText: string;
+  match: UnsupportedReportFormatMatch;
+  combined: string;
+  headerNorm: string;
+}): boolean {
+  if (input.layerSufficient) return false;
+  if (input.match.family !== "gcal-standard") return false;
+  if (
+    !isWeakCertProbeForImageOnlyPdf({
+      certDetected: input.certProbe.detected,
+      certProbeText: input.certProbeText,
+    })
+  ) {
+    return false;
+  }
+
+  const probeText = [input.combined, input.headerNorm]
+    .filter(Boolean)
+    .join("\n");
+  if (looksLikeSparseGcalSarineScreenshotText(probeText)) return false;
+  if (sparseGcalSarineScreenshotUnsupported(probeText)) return false;
+
+  const looksGcal =
+    /\bGCAL\b/i.test(probeText) ||
+    /gem\s+certification\s*&\s*assurance/i.test(probeText) ||
+    /diamond\s+grading\s+analysis/i.test(probeText);
+  return looksGcal;
+}
+
 export type PdfFormatProbeTextInput = {
   layerText: string;
   layerSufficient: boolean;
@@ -310,7 +358,22 @@ export function resolvePdfUnsupportedFormatProbeFromText(
     return null;
   }
 
-  return unsupportedMatchFromText(combined);
+  const combinedReject = unsupportedMatchFromText(combined);
+  if (
+    combinedReject &&
+    shouldDeferImageOnlyPdfWeakCertStandardGcalReject({
+      layerSufficient: input.layerSufficient,
+      certProbe: input.certProbe,
+      certProbeText,
+      match: combinedReject,
+      combined,
+      headerNorm,
+    })
+  ) {
+    return null;
+  }
+
+  return combinedReject;
 }
 
 async function probeImageUnsupportedFormat(
