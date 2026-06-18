@@ -242,4 +242,12 @@ describe("upload path isolation", () => {
     );
     assert.match(src, /applyListingGradeHintFallback/);
   });
+
+  it("ingest-url wires Rare Carat embedded PDF unwrap", async () => {
+    const src = await readFile(
+      "lib/diamond-intelligence/url-ingestion/ingest-url.ts",
+      "utf8",
+    );
+    assert.match(src, /resolveRareCaratReportFetchUrl/);
+  });
 });

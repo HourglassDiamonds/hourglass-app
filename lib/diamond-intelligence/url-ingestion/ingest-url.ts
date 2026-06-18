@@ -9,6 +9,7 @@ import { extractListingFromUrl } from "./extract-listing";
 import { validateListingUrl, isPdfOrReportUrl } from "./url-safety";
 import { classifyVendorSupport } from "./vendor-detection";
 import { applyListingGradeHintFallback } from "./listing-grade-hint-fallback";
+import { resolveRareCaratReportFetchUrl } from "./rare-carat-embedded-pdf";
 import type { ListingExtraction, UrlIngestionStatus } from "./types";
 
 export type UrlIngestionResponse =
@@ -130,7 +131,17 @@ export async function ingestDiamondListingUrl(
     };
   }
 
-  const downloaded = await fetchBinaryResource(safeReportUrl);
+  const { fetchUrl: reportFetchUrl, unwrapped: unwrapAttempted } =
+    resolveRareCaratReportFetchUrl(listing.vendor, safeReportUrl);
+
+  let downloaded = await fetchBinaryResource(reportFetchUrl);
+  let effectiveReportUrl = safeReportUrl;
+  if (unwrapAttempted && downloaded.ok) {
+    effectiveReportUrl = reportFetchUrl;
+  } else if (unwrapAttempted && !downloaded.ok) {
+    downloaded = await fetchBinaryResource(safeReportUrl);
+  }
+
   if (!downloaded.ok) {
     return {
       ok: true,
@@ -149,7 +160,7 @@ export async function ingestDiamondListingUrl(
 
   let mime = downloaded.mime;
   if (!isAcceptedReportMime(mime)) {
-    if (safeReportUrl.toLowerCase().includes(".pdf")) {
+    if (effectiveReportUrl.toLowerCase().includes(".pdf")) {
       mime = "application/pdf";
     } else if (!isAcceptedReportMime(mime)) {
       return {
@@ -165,7 +176,7 @@ export async function ingestDiamondListingUrl(
   const interpreted = await interpretUploadedReport({
     bytes: downloaded.bytes,
     mime,
-    sourceFilename: deriveReportFilename(listing, safeReportUrl),
+    sourceFilename: deriveReportFilename(listing, effectiveReportUrl),
   });
 
   if (!interpreted.ok) {
@@ -184,7 +195,7 @@ export async function ingestDiamondListingUrl(
     };
   }
 
-  const reportFilename = deriveReportFilename(listing, safeReportUrl);
+  const reportFilename = deriveReportFilename(listing, effectiveReportUrl);
   const interpretation = applyListingGradeHintFallback(
     interpreted.interpretation,
     listing,
@@ -196,7 +207,7 @@ export async function ingestDiamondListingUrl(
     interpretation,
     partial: interpreted.partial,
     listing,
-    reportUrl: safeReportUrl,
+    reportUrl: effectiveReportUrl,
     reportBytes: downloaded.bytes,
     reportMime: mime,
     reportFilename,
