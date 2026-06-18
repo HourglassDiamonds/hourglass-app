@@ -63,7 +63,7 @@ export const CONSUMER_COPY = {
     "Round brilliant diamonds only.",
     "Upload a GIA, IGI, or GCAL 8X grading report.",
     "The analysis evaluates the diamond itself — not the asking price.",
-    "Supported formats: PDF preferred; JPG and PNG accepted.",
+    "Supported formats: PDF preferred; screenshots and report images accepted.",
   ] as const,
   betaDisclosure:
     "Diamond Intelligence is currently in beta and supports round brilliant diamonds only. Fancy shapes and additional report formats are still being added.",

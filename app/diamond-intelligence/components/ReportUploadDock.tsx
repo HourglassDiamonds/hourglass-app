@@ -173,7 +173,7 @@ export function ReportUploadDock({
           </div>
         ) : !busy ? (
           <p className="pointer-events-none mt-2 text-[10px] leading-snug text-[#948a80]">
-            Or click to browse · GIA, IGI, or GCAL 8X PDF
+            Or click to browse · PDF, screenshot, or report image
           </p>
         ) : null}
       </div>

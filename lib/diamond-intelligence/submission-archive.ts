@@ -19,6 +19,7 @@ import {
   uploadDiamondIntelligenceSubmissionFile,
 } from "@/lib/supabase/diamond-intelligence-submissions";
 import type { UrlArchiveMetadata } from "@/lib/diamond-intelligence/url-ingestion/archive-mapping";
+import type { UploadIngestMetadata } from "@/lib/diamond-intelligence/upload-normalize";
 
 export type DiamondIntelligenceArchiveContext = {
   httpStatus: number;
@@ -39,6 +40,7 @@ export type DiamondIntelligenceArchiveContext = {
   bytes?: Buffer;
   mime?: string;
   sourceFilename?: string;
+  ingestMetadata?: UploadIngestMetadata;
   finalized?: UploadExtractionOutput;
   decision?: ClientInterpretationDecision;
   interpretation?: ClientSafeInterpretationPayload;
@@ -260,6 +262,7 @@ export function buildDiamondIntelligenceArchiveRecord(
         ctx.finalized?.lgdrDiagramRetry?.lgdrDiagramRetryRecoveredFields ?? [],
       lgdrDiagramRetryBandSnippets:
         ctx.finalized?.lgdrDiagramRetry?.lgdrDiagramRetryBandSnippets ?? null,
+      ...(ctx.ingestMetadata ?? {}),
       ...(ctx.urlArchive ?? { source_type: "upload" as const }),
     },
     sourceType: ctx.urlArchive?.source_type ?? "upload",

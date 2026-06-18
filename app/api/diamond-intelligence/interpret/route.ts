@@ -14,6 +14,10 @@ import {
   type DiamondIntelligenceArchiveContext,
 } from "@/lib/diamond-intelligence/submission-archive";
 import { buildUrlArchiveMetadata } from "@/lib/diamond-intelligence/url-ingestion/archive-mapping";
+import {
+  normalizeDiamondIntelligenceUpload,
+  resolveUploadIngestMetadata,
+} from "@/lib/diamond-intelligence/upload-normalize";
 import { validateDiamondIntelligenceUpload } from "@/lib/diamond-intelligence/upload-validation";
 import {
   buildInterpretFailureDiagnostics,
@@ -65,6 +69,7 @@ export async function POST(request: Request) {
   let bytes: Buffer;
   let mime: string;
   let sourceFilename: string | undefined;
+  let ingestMetadata: ReturnType<typeof resolveUploadIngestMetadata> | undefined;
   try {
     const form = await request.formData();
     const file = form.get("file");
@@ -84,12 +89,50 @@ export async function POST(request: Request) {
       );
     }
 
-    bytes = Buffer.from(await file.arrayBuffer());
+    const rawBytes = Buffer.from(await file.arrayBuffer());
     sourceFilename = file.name;
+
+    const normalized = await normalizeDiamondIntelligenceUpload({
+      bytes: rawBytes,
+      declaredMime: file.type,
+      sourceFilename,
+    });
+
+    if (!normalized.ok) {
+      const isMimeOrExtension =
+        normalized.code === "unsupported_mime" ||
+        normalized.code === "blocked_extension" ||
+        normalized.code === "unsupported_extension" ||
+        normalized.code === "unknown_binary" ||
+        normalized.code === "mime_content_mismatch";
+
+      return await respond(
+        {
+          ok: false,
+          error: normalized.error,
+          code: normalized.code,
+        },
+        400,
+        {
+          httpStatus: 400,
+          bytes: rawBytes,
+          mime: file.type,
+          sourceFilename,
+          earlyFailure: {
+            reason: isMimeOrExtension ? "unsupported_mime" : "upload_validation",
+            message: normalized.error,
+          },
+          urlArchive: uploadArchiveMeta,
+        },
+      );
+    }
+
+    bytes = normalized.bytes;
+    sourceFilename = normalized.sourceFilename;
 
     const uploadValidation = validateDiamondIntelligenceUpload({
       bytes,
-      declaredMime: file.type,
+      declaredMime: normalized.mime,
       sourceFilename,
     });
 
@@ -111,8 +154,9 @@ export async function POST(request: Request) {
         {
           httpStatus: 400,
           bytes,
-          mime: file.type,
+          mime: normalized.mime,
           sourceFilename,
+          ingestMetadata: normalized.ingestMetadata,
           earlyFailure: {
             reason: isMimeOrExtension ? "unsupported_mime" : "upload_validation",
             message: uploadValidation.error,
@@ -123,6 +167,10 @@ export async function POST(request: Request) {
     }
 
     mime = uploadValidation.mime;
+    ingestMetadata = resolveUploadIngestMetadata({
+      mime,
+      preNormalize: normalized.ingestMetadata,
+    });
   } catch {
     return await respond(
       { ok: false, error: CLIENT_UPLOAD_INTERPRET_ERROR },
@@ -165,6 +213,7 @@ export async function POST(request: Request) {
         bytes,
         mime,
         sourceFilename,
+        ingestMetadata,
         finalized: result.finalized,
         decision: result.decision,
         timedOut: result.timedOut,
@@ -194,6 +243,7 @@ export async function POST(request: Request) {
         sourceFilename,
         cacheHit: true,
         interpretation: result.interpretation,
+        ingestMetadata,
         urlArchive: uploadArchiveMeta,
       },
     );
@@ -223,6 +273,7 @@ export async function POST(request: Request) {
       finalized: result.finalized,
       decision: result.decision,
       interpretation: result.interpretation,
+      ingestMetadata,
       urlArchive: uploadArchiveMeta,
     },
   );

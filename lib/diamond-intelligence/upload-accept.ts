@@ -5,6 +5,7 @@ export const DI_ACCEPTED_MIMES = new Set([
   "image/jpeg",
   "image/jpg",
   "image/png",
+  "image/bmp",
 ]);
 
 export const DI_ACCEPTED_EXTENSIONS = new Set([
@@ -12,7 +13,8 @@ export const DI_ACCEPTED_EXTENSIONS = new Set([
   ".jpg",
   ".jpeg",
   ".png",
+  ".bmp",
 ]);
 
 export const DI_CLIENT_ACCEPT =
-  "application/pdf,.pdf,image/jpeg,image/jpg,image/png,.jpg,.jpeg,.png";
+  "application/pdf,.pdf,image/jpeg,image/jpg,image/png,.jpg,.jpeg,.png,image/bmp,.bmp";

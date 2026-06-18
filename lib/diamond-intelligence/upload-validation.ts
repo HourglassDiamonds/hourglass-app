@@ -40,7 +40,6 @@ const BLOCKED_EXTENSIONS = new Set([
   ".webp",
   ".heic",
   ".heif",
-  ".bmp",
   ".tiff",
   ".tif",
 ]);

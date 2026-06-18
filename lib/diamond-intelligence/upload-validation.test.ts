@@ -64,21 +64,15 @@ describe("validateDiamondIntelligenceUpload", () => {
     }
   });
 
-  it("rejects bmp screenshots with format-specific copy", () => {
-    const bmp = Buffer.alloc(54);
-    bmp.write("BM", 0, "ascii");
+  it("rejects mislabeled bmp extension when bytes are not BMP", () => {
     const result = validateDiamondIntelligenceUpload({
-      bytes: bmp,
+      bytes: PDF_HEADER,
       declaredMime: "image/bmp",
       sourceFilename: "screenshot.bmp",
     });
     assert.equal(result.ok, false);
     if (!result.ok) {
-      assert.equal(result.code, "blocked_extension");
-      assert.match(
-        result.error,
-        /isn't supported yet/i,
-      );
+      assert.equal(result.code, "mime_content_mismatch");
     }
   });
 
