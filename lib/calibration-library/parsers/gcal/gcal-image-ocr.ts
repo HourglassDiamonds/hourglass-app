@@ -243,15 +243,13 @@ export type Gcal8xImageOnlyPdfProbeResult = {
   probeText: string;
 };
 
-/** Fast HEADER_TINY OCR — client image-only PDFs before full-page OCR. */
-export async function probeGcal8xImageOnlyPdf(
-  pdfBytes: Buffer,
-): Promise<Gcal8xImageOnlyPdfProbeResult> {
+/** Shared cert-band OCR — PDF image-only probe and upload image format probe. */
+export async function probeGcal8xCertificateRegionFromRenderedPage(rendered: {
+  png: Buffer;
+  width: number;
+  height: number;
+}): Promise<Gcal8xImageOnlyPdfProbeResult> {
   const miss = { detected: false, probeText: "" };
-  if (!(await isOcrRuntimeAvailable())) return miss;
-
-  const rendered = await renderPdfPagePngAtScale(pdfBytes, 1, 3);
-  if (!rendered) return miss;
 
   const probePng = await cropPageRegionPng(
     rendered.png,
@@ -271,6 +269,32 @@ export async function probeGcal8xImageOnlyPdf(
       looksLikeGcal8xReportText(probeText),
     probeText,
   };
+}
+
+/** Fast HEADER_TINY OCR — client image-only PDFs before full-page OCR. */
+export async function probeGcal8xImageOnlyPdf(
+  pdfBytes: Buffer,
+): Promise<Gcal8xImageOnlyPdfProbeResult> {
+  const miss = { detected: false, probeText: "" };
+  if (!(await isOcrRuntimeAvailable())) return miss;
+
+  const rendered = await renderPdfPagePngAtScale(pdfBytes, 1, 3);
+  if (!rendered) return miss;
+
+  return probeGcal8xCertificateRegionFromRenderedPage(rendered);
+}
+
+/** Cert-band OCR for uploaded images — mirrors probeGcal8xImageOnlyPdf crop/OCR. */
+export async function probeGcal8xCertificateRegionFromImage(
+  imageBytes: Buffer,
+): Promise<Gcal8xImageOnlyPdfProbeResult> {
+  const miss = { detected: false, probeText: "" };
+  if (!(await isOcrRuntimeAvailable())) return miss;
+
+  const rendered = await renderUploadImageAsPage(imageBytes);
+  if (!rendered) return miss;
+
+  return probeGcal8xCertificateRegionFromRenderedPage(rendered);
 }
 
 async function cropPageRegionPng(

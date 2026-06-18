@@ -4,7 +4,11 @@ import {
   looksLikeGcal8xCertificateProbeText,
   looksLikeGcal8xReportText,
 } from "@/lib/calibration-library/parsers/gcal/gcal-layout-detector";
-import { probeGcal8xImageOnlyPdf } from "@/lib/calibration-library/parsers/gcal/gcal-image-ocr";
+import {
+  probeGcal8xCertificateRegionFromRenderedPage,
+  probeGcal8xImageOnlyPdf,
+  type Gcal8xImageOnlyPdfProbeResult,
+} from "@/lib/calibration-library/parsers/gcal/gcal-image-ocr";
 import {
   isOcrRuntimeAvailable,
   ocrImageBuffer,
@@ -89,14 +93,11 @@ async function ocrFormatProbeHeaderFromPdf(
   return ocr.ok ? ocr.text.trim() : "";
 }
 
-async function ocrFormatProbeHeaderFromImage(
-  imageBytes: Buffer,
-): Promise<string> {
-  if (!(await isOcrRuntimeAvailable())) return "";
-
-  const rendered = await renderUploadImageAsPage(imageBytes);
-  if (!rendered) return "";
-
+async function ocrFormatProbeHeaderFromRenderedPage(rendered: {
+  png: Buffer;
+  width: number;
+  height: number;
+}): Promise<string> {
   const headerPng = await cropPageRegionPng(
     rendered.png,
     rendered.width,
@@ -120,6 +121,51 @@ function unsupportedMatchFromText(
   return support.status === "unsupported" ? support.match : null;
 }
 
+/** Probe-only OCR repair — common GCAL token misreads in screenshot uploads. */
+export function normalizeGcalProbeOcrText(text: string): string {
+  return text
+    .replace(/\bGOAL\b/gi, "GCAL")
+    .replace(/\bG0AL\b/gi, "GCAL")
+    .replace(/\bGEA\b/gi, "GCAL")
+    .replace(/\bGCAlY\b/gi, "GCAL")
+    .replace(/\bGea\b/g, "GCAL")
+    .replace(/\bby\s+sane\b/gi, "by Sarine")
+    .replace(/\bby\s+sarne\b/gi, "by Sarine");
+}
+
+function hasGcal8xSparseProbeExclusion(text: string): boolean {
+  if (/\b8\s*x\b/i.test(text)) return true;
+  if (/ultimate\s+diamond/i.test(text)) return true;
+  if (/\beight\b[\s\S]{0,48}\bcut\s+grade\b/i.test(text)) return true;
+  return false;
+}
+
+/**
+ * Sparse Sarine-layout screenshot — proportion diagram panel without clean GCAL OCR.
+ * Probe-layer only; does not broaden parser Sarine support.
+ */
+export function looksLikeSparseGcalSarineScreenshotText(text: string): boolean {
+  const t = normalizeGcalProbeOcrText(text).trim();
+  if (!t) return false;
+  if (looksLikeGcal8xReportText(t)) return false;
+  if (hasGcal8xSparseProbeExclusion(t)) return false;
+
+  const hasProportionDiagram = /proportion\s+diagram/i.test(t);
+  const hasLabGrown = /lab\s+grown\s+diamond/i.test(t);
+  const hasPanelMarker =
+    /(?:4c'?s|laser\s+inscription)/i.test(t) ||
+    /\bby\s+sar?in[eé]?\b/i.test(t);
+
+  return hasProportionDiagram && hasLabGrown && hasPanelMarker;
+}
+
+function sparseGcalSarineScreenshotUnsupported(
+  text: string,
+): UnsupportedReportFormatMatch | null {
+  if (!looksLikeSparseGcalSarineScreenshotText(text)) return null;
+  return { family: "gcal-sarine-4cs", label: "GCAL BY SARINE" };
+}
+
 /** GCAL 8X image-only HEADER_TINY — must fall through to existing 8X pipeline. */
 function shouldDeferToGcal8xPipeline(text: string): boolean {
   const t = text.trim();
@@ -127,6 +173,81 @@ function shouldDeferToGcal8xPipeline(text: string): boolean {
   if (looksLikeGcal8xReportText(t)) return true;
   if (looksLikeGcal8xCertificateProbeText(t)) return true;
   return false;
+}
+
+/** Header OCR with strong standard/Sarine markers — PDF text-layer equivalent for images. */
+function earlyImageHeaderUnsupported(
+  headerText: string,
+): UnsupportedReportFormatMatch | null {
+  const support = assessClientReportFormatSupport(headerText);
+  if (support.status !== "unsupported") return null;
+  if (support.match.family === "gcal-sarine-4cs") return support.match;
+  if (
+    support.match.family === "gcal-standard" &&
+    /\bphysical\s+symmetry\b/i.test(headerText) &&
+    /\boptical\s+brilliance\b/i.test(headerText)
+  ) {
+    return support.match;
+  }
+  return null;
+}
+
+export type ImageFormatProbeOcrInput = {
+  headerText: string;
+  certProbe: Gcal8xImageOnlyPdfProbeResult;
+};
+
+/**
+ * Image upload unsupported-format decision — mirrors PDF probe ordering using
+ * header OCR as the text-layer equivalent and cert-band OCR as the 8X probe.
+ */
+export function resolveImageUnsupportedFormatProbe(
+  input: ImageFormatProbeOcrInput,
+): UnsupportedReportFormatMatch | null {
+  const headerNorm = normalizeGcalProbeOcrText(input.headerText);
+  const certNorm = normalizeGcalProbeOcrText(input.certProbe.probeText);
+
+  const earlyHeader = earlyImageHeaderUnsupported(headerNorm);
+  if (earlyHeader) return earlyHeader;
+
+  const combined = [headerNorm, certNorm].filter(Boolean).join("\n\n");
+  const combinedUnsupported = unsupportedMatchFromText(combined);
+  if (combinedUnsupported) return combinedUnsupported;
+
+  if (
+    input.certProbe.detected ||
+    shouldDeferToGcal8xPipeline(certNorm)
+  ) {
+    return null;
+  }
+  if (shouldDeferToGcal8xPipeline(headerNorm)) return null;
+
+  const headerFallback = unsupportedMatchFromText(headerNorm);
+  if (headerFallback) return headerFallback;
+
+  const sparseUnsupported = sparseGcalSarineScreenshotUnsupported(combined);
+  if (sparseUnsupported) return sparseUnsupported;
+
+  return null;
+}
+
+async function probeImageUnsupportedFormat(
+  imageBytes: Buffer,
+): Promise<UnsupportedReportFormatMatch | null> {
+  if (!(await isOcrRuntimeAvailable())) {
+    return unsupportedMatchFromText("");
+  }
+
+  const rendered = await renderUploadImageAsPage(imageBytes);
+  if (!rendered) {
+    return unsupportedMatchFromText("");
+  }
+
+  const headerText = await ocrFormatProbeHeaderFromRenderedPage(rendered);
+  const certProbe =
+    await probeGcal8xCertificateRegionFromRenderedPage(rendered);
+
+  return resolveImageUnsupportedFormatProbe({ headerText, certProbe });
 }
 
 /**
@@ -169,9 +290,7 @@ export async function probeClientUnsupportedReportFormat(
   }
 
   if (isImageMime(mime)) {
-    const headerText = await ocrFormatProbeHeaderFromImage(bytes);
-    if (shouldDeferToGcal8xPipeline(headerText)) return null;
-    return unsupportedMatchFromText(headerText);
+    return probeImageUnsupportedFormat(bytes);
   }
 
   return null;
