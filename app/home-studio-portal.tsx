@@ -27,6 +27,22 @@ const ARCH_PEDESTAL_GRADIENT = `
               )
             `;
 
+const MOBILE_STUDIO_SCRIM = `
+              linear-gradient(to bottom,
+                rgba(250,246,241,0.78) 0%,
+                rgba(250,246,241,0.62) 16%,
+                rgba(250,246,241,0.46) 34%,
+                rgba(250,246,241,0.30) 52%,
+                rgba(250,246,241,0.16) 68%,
+                transparent 84%
+              ),
+              radial-gradient(ellipse 96% 72% at 50% 36%,
+                rgba(252,248,243,0.58) 0%,
+                rgba(250,246,241,0.34) 46%,
+                transparent 76%
+              )
+            `;
+
 const STUDIO_TOOLS = [
   {
     title: "Diamond Size Studio",
@@ -105,15 +121,15 @@ function StudioToolEditorialItem({
     "text-[10px] font-medium uppercase tracking-[0.24em] text-[#1f1d1a]";
 
   const descriptionClass =
-    "mt-1 max-w-[22ch] text-[0.74rem] font-normal leading-[1.52] tracking-[0.01em] text-[#3a3632] md:ml-auto md:text-[0.72rem] md:leading-[1.45] md:text-right";
+    "mt-1 max-w-[22ch] text-[0.74rem] font-normal leading-[1.52] tracking-[0.01em] text-[#3a3632] max-md:mx-auto max-md:text-center md:ml-auto md:text-[0.72rem] md:leading-[1.45] md:text-right";
 
   const activeDescriptionClass = `${descriptionClass} transition-colors duration-500 group-hover:text-[#1f1d1a]`;
 
   const body = comingSoon ? (
     <>
-      <div className={`${titleClass} text-left md:text-right`}>{title}</div>
+      <div className={`${titleClass} text-left max-md:text-center md:text-right`}>{title}</div>
       {status ? (
-        <p className="mt-0.5 text-[10px] font-normal tracking-[0.08em] text-[#524d48] text-left md:ml-auto md:text-right">
+        <p className="mt-0.5 text-[10px] font-normal tracking-[0.08em] text-[#524d48] text-left max-md:text-center md:ml-auto md:text-right">
           {status}
         </p>
       ) : null}
@@ -122,7 +138,7 @@ function StudioToolEditorialItem({
   ) : (
     <>
       <div
-        className={`inline-flex items-center gap-1.5 text-left md:ml-auto md:justify-end ${titleClass} transition-colors duration-500 group-hover:text-[#0f0e0d]`}
+        className={`inline-flex items-center gap-1.5 text-left max-md:justify-center md:ml-auto md:justify-end ${titleClass} transition-colors duration-500 group-hover:text-[#0f0e0d]`}
       >
         <span>{title}</span>
         <IconArrow className="h-2.5 w-2.5 shrink-0 transition-transform duration-500 group-hover:translate-x-0.5" />
@@ -151,7 +167,7 @@ function StudioToolEditorialItem({
 function StudioToolEditorialNav() {
   return (
     <nav
-      className="flex w-full min-w-0 max-w-[232px] flex-col text-left md:ml-auto md:items-end md:text-right"
+      className="flex w-full min-w-0 max-w-[232px] flex-col text-left max-md:mx-auto max-md:items-center max-md:text-center md:ml-auto md:items-end md:text-right"
       aria-label="Diamond Studio tools"
     >
       {STUDIO_TOOLS.map((tool, index) => (
@@ -464,28 +480,36 @@ export default function HomeStudioPortal() {
 
         {/* Subtle flank washes — lower edge stays open for pedestal branding */}
         <div
-          className="pointer-events-none absolute inset-0 z-[1]"
+          className="pointer-events-none absolute inset-0 z-[1] hidden md:block"
           aria-hidden
           style={{
             background: ARCH_PEDESTAL_GRADIENT,
           }}
         />
 
+        <div
+          className="pointer-events-none absolute inset-0 z-[1] md:hidden"
+          aria-hidden
+          style={{
+            background: MOBILE_STUDIO_SCRIM,
+          }}
+        />
+
         <StudioPortalCursorGlow />
 
-        <div className="relative z-[4] flex min-h-[inherit] flex-col pb-24 md:flex-row md:items-center md:pb-24">
+        <div className="relative z-[4] flex min-h-[inherit] flex-col pb-28 md:flex-row md:items-center md:pb-24">
           {/* Left — editorial column, anchored left */}
-          <div className="flex flex-[1_1_0%] items-center justify-start px-5 py-8 sm:px-6 md:px-8 md:py-0 lg:pl-10 lg:pr-4">
-            <div className="max-w-[300px] translate-y-2 text-left md:translate-y-4">
+          <div className="flex flex-[1_1_0%] items-center justify-start px-5 py-8 max-md:justify-center max-md:text-center sm:px-6 md:px-8 md:py-0 lg:pl-10 lg:pr-4">
+            <div className="max-w-[300px] translate-y-2 text-left max-md:mx-auto max-md:translate-y-0 md:translate-y-4">
               <h2
-                className="font-serif text-[1.75rem] font-normal leading-[1.18] tracking-[-0.028em] md:text-[1.9rem] md:leading-[1.12]"
+                className="font-serif text-[1.75rem] font-normal leading-[1.18] tracking-[-0.028em] max-md:mx-auto md:text-[1.9rem] md:leading-[1.12]"
                 style={{ color: STUDIO_GRAPHITE.strong }}
               >
                 Understand the diamond before you choose it.
               </h2>
 
               <p
-                className="mt-4 max-w-[30ch] text-[0.92rem] leading-[1.72] md:mt-3 md:text-[0.88rem] md:leading-[1.65]"
+                className="mt-4 max-w-[30ch] text-[0.92rem] leading-[1.72] max-md:mx-auto md:mt-3 md:text-[0.88rem] md:leading-[1.65]"
                 style={{ color: STUDIO_GRAPHITE.body }}
               >
                 Professional tools for scale, light performance, and report
@@ -495,8 +519,8 @@ export default function HomeStudioPortal() {
           </div>
 
           {/* Right — editorial column, anchored right */}
-          <div className="flex flex-[1_1_0%] items-center justify-end px-5 pb-5 sm:px-6 md:px-8 md:py-0 md:pb-0 lg:pl-4 lg:pr-10">
-            <div className="relative translate-y-2 md:-translate-x-8 md:translate-y-4">
+          <div className="flex flex-[1_1_0%] items-center justify-end px-5 pb-4 max-md:justify-center sm:px-6 md:px-8 md:py-0 md:pb-0 lg:pl-4 lg:pr-10">
+            <div className="relative translate-y-2 max-md:translate-y-0 md:-translate-x-8 md:translate-y-4">
               <div
                 className="pointer-events-none absolute left-1/2 top-1/2 z-0 h-[300px] w-[280px] -translate-x-1/2 -translate-y-1/2"
                 aria-hidden
@@ -512,7 +536,7 @@ export default function HomeStudioPortal() {
           </div>
         </div>
 
-        <div className="absolute bottom-10 left-1/2 z-[5] w-full max-w-full -translate-x-1/2 px-5 sm:px-8 md:bottom-12 md:w-auto md:px-0">
+        <div className="absolute bottom-[8.75rem] left-1/2 z-[5] w-full max-w-full -translate-x-1/2 px-5 sm:px-8 md:bottom-12 md:w-auto md:px-0">
           <div className="flex justify-center">
             <StudioCtaButton />
           </div>

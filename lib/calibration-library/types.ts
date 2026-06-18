@@ -35,7 +35,12 @@ export const REPORT_FIELD_KEYS = [
   "cutGrade",
 ] as const;
 
-export type TextExtractionMethod = "pdf-text" | "ocr" | "manual" | "none";
+export type TextExtractionMethod =
+  | "pdf-text"
+  | "ocr"
+  | "scoped-ocr"
+  | "manual"
+  | "none";
 
 export type ReportFieldKey = (typeof REPORT_FIELD_KEYS)[number];
 
