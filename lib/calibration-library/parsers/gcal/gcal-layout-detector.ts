@@ -2,6 +2,11 @@
  * GCAL report-family detection — router-owned; parsers must not self-route.
  */
 
+/** HEADER_TINY image-only PDF probe — GCAL certificate line without full-page OCR. */
+export function looksLikeGcal8xCertificateProbeText(text: string): boolean {
+  return /\bGCAL\s+LG?\d{6,12}\b/i.test(text.slice(0, 2000));
+}
+
 export function looksLikeGcal8xReportText(text: string): boolean {
   const t = text.slice(0, 14000);
   if (/\bGCAL\s*8\s*X\b/i.test(t)) return true;

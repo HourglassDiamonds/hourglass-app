@@ -6,6 +6,7 @@ import {
   looksLikeGcal8xReportText,
   looksLikeGcalSarine4csReportText,
 } from "./parsers/gcal/gcal-layout-detector";
+import { probeGcal8xImageOnlyPdf } from "./parsers/gcal/gcal-image-ocr";
 import type { ExtractionPipelineMode } from "./extraction-mode";
 import { isClientExtractionMode } from "./extraction-mode";
 import {
@@ -350,6 +351,36 @@ export async function extractTextFromDocument(
         pdfTextLayerLength,
         gcalImageOnlyPdf: true,
       });
+    }
+
+    if (
+      isClientExtractionMode(options?.mode) &&
+      pdfTextLayerLength === 0
+    ) {
+      const probeStarted = Date.now();
+      const probe = await probeGcal8xImageOnlyPdf(bytes);
+      logUploadPipelineTiming({
+        phase: "pdf-full-page-ocr",
+        durationMs: Date.now() - probeStarted,
+        labFamily: "GCAL",
+        detail: probe.detected
+          ? "gcal-8x-image-only-probe-hit"
+          : "gcal-8x-image-only-probe-miss",
+      });
+      if (probe.detected) {
+        notices.push(
+          "GCAL 8X image-only PDF — certificate probe matched; region OCR recovery path.",
+        );
+        return finishDocumentExtraction({
+          text: probe.probeText,
+          method: "scoped-ocr",
+          ocrAttempted: true,
+          ocrAvailable: true,
+          notices,
+          pdfTextLayerLength,
+          gcalImageOnlyPdf: true,
+        });
+      }
     }
 
     const giaOcrFirst =

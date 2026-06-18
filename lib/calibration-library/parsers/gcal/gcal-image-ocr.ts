@@ -28,6 +28,10 @@ import {
   SARINE_4CS_GRADING_PANEL_CROP,
   SARINE_4CS_GRADING_PANEL_WIDE_CROP,
 } from "./gcal-sarine-image-ocr";
+import {
+  looksLikeGcal8xCertificateProbeText,
+  looksLikeGcal8xReportText,
+} from "./gcal-layout-detector";
 
 const GCAL_PAGE_OCR_SCALE = 4;
 const REGION_PREVIEW_CHARS = 300;
@@ -97,6 +101,14 @@ const PROPORTION_DIAGRAM_CROP = {
   top: 0.53,
   width: 0.48,
   height: 0.43,
+} as const;
+
+/** Certificate header band — image-only GCAL 8X PDF probe (LG353306143). */
+export const GCAL_8X_IMAGE_ONLY_PROBE_CROP = {
+  left: 0.45,
+  top: 0.08,
+  width: 0.52,
+  height: 0.12,
 } as const;
 
 /** Top-right 8X grade table — Polish / External Symmetry / Proportions rows. */
@@ -224,6 +236,41 @@ function assessGcalCropOcr(
 async function ocrGcalCropBuffer(png: Buffer): Promise<{ text: string; ok: boolean }> {
   const prepped = await preprocessGcalCropPng(png);
   return ocrImageBuffer(prepped);
+}
+
+export type Gcal8xImageOnlyPdfProbeResult = {
+  detected: boolean;
+  probeText: string;
+};
+
+/** Fast HEADER_TINY OCR — client image-only PDFs before full-page OCR. */
+export async function probeGcal8xImageOnlyPdf(
+  pdfBytes: Buffer,
+): Promise<Gcal8xImageOnlyPdfProbeResult> {
+  const miss = { detected: false, probeText: "" };
+  if (!(await isOcrRuntimeAvailable())) return miss;
+
+  const rendered = await renderPdfPagePngAtScale(pdfBytes, 1, 3);
+  if (!rendered) return miss;
+
+  const probePng = await cropPageRegionPng(
+    rendered.png,
+    rendered.width,
+    rendered.height,
+    GCAL_8X_IMAGE_ONLY_PROBE_CROP,
+  );
+  if (!probePng) return miss;
+
+  const ocr = await ocrGcalCropBuffer(probePng);
+  const probeText = ocr.text.trim();
+  if (!probeText || !ocr.ok) return miss;
+
+  return {
+    detected:
+      looksLikeGcal8xCertificateProbeText(probeText) &&
+      looksLikeGcal8xReportText(probeText),
+    probeText,
+  };
 }
 
 async function cropPageRegionPng(

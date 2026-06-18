@@ -8,6 +8,7 @@ import {
 import { looksLikeGiaReportText } from "../gia-proportions";
 import type { CalibrationLab } from "../types";
 import {
+  looksLikeGcal8xCertificateProbeText,
   looksLikeGcal8xReportText,
   looksLikeGcalSarine4csReportText,
 } from "./gcal/gcal-layout-detector";
@@ -58,15 +59,21 @@ export function detectReportFamily(
     hints?.gcalImageOnlyPdf &&
     !looksGcalSarine &&
     !looksGia &&
-    (looksGcal8x || lab === "GCAL")
+    (looksGcal8x ||
+      looksLikeGcal8xCertificateProbeText(text) ||
+      lab === "GCAL")
   ) {
+    const probeOnly =
+      !looksGcal8x && looksLikeGcal8xCertificateProbeText(text);
     return {
       lab: "GCAL",
       parserType: "gcal-8x",
-      confidence: looksGcal8x ? "high" : "medium",
+      confidence: looksGcal8x ? "high" : probeOnly ? "medium" : "medium",
       reason: looksGcal8x
         ? "GCAL image-only PDF — 8X diagram OCR path"
-        : "GCAL lab with image-only PDF — 8X diagram OCR path",
+        : probeOnly
+          ? "GCAL image-only PDF — certificate probe OCR path"
+          : "GCAL lab with image-only PDF — 8X diagram OCR path",
     };
   }
 
