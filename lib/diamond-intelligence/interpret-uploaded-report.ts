@@ -1,9 +1,5 @@
 import { runCalibrationUploadExtraction } from "@/lib/calibration-library/extract-upload-pipeline";
-import {
-  extractTextFromDocument,
-  isImageMime,
-  isPdfMime,
-} from "@/lib/calibration-library/document-extract";
+import { isImageMime, isPdfMime } from "@/lib/calibration-library/document-extract";
 import { inferReportSourceFromUpload } from "@/lib/calibration-library/infer-report-source";
 import {
   CalibrationTimeoutError,
@@ -12,7 +8,6 @@ import {
   withTimeout,
 } from "@/lib/calibration-library/runtime-guard";
 import {
-  CLIENT_DOCUMENT_EXTRACT_TIMEOUT_MS,
   CLIENT_GIA_DIAGRAM_INTERPRET_ROUTE_TIMEOUT_MS,
   CLIENT_GIA_DIAGRAM_PIPELINE_TIMEOUT_MS,
   CLIENT_GIA_DIAGRAM_REGION_OCR_TIMEOUT_MS,
@@ -41,10 +36,8 @@ import { activateClientBundledTesseractRuntime } from "@/lib/diamond-intelligenc
 import {
   CLIENT_UNSUPPORTED_REPORT_FORMAT_HEADLINE,
 } from "@/lib/diamond-intelligence/unsupported-report-format-copy";
-import {
-  assessClientReportFormatSupport,
-  type UnsupportedReportFormatMatch,
-} from "@/lib/diamond-intelligence/unsupported-report-format";
+import { probeClientUnsupportedReportFormat } from "@/lib/diamond-intelligence/unsupported-format-probe";
+import type { UnsupportedReportFormatMatch } from "@/lib/diamond-intelligence/unsupported-report-format";
 
 export type InterpretUploadedReportInput = {
   bytes: Buffer;
@@ -140,19 +133,17 @@ export async function interpretUploadedReport(
 
     if (isPdfMime(mime) || isImageMime(mime)) {
       try {
-        const docProbe = await withTimeout(
-          extractTextFromDocument(bytes, mime, { mode: "client" }),
-          CLIENT_DOCUMENT_EXTRACT_TIMEOUT_MS,
-          "unsupported-format-probe",
+        const unsupportedFormat = await probeClientUnsupportedReportFormat(
+          bytes,
+          mime,
         );
-        const formatSupport = assessClientReportFormatSupport(docProbe.text);
-        if (formatSupport.status === "unsupported") {
+        if (unsupportedFormat) {
           return {
             ok: false,
             error: CLIENT_UNSUPPORTED_REPORT_FORMAT_HEADLINE,
             httpStatus: 422,
             code: "unsupported_report_format",
-            unsupportedFormat: formatSupport.match,
+            unsupportedFormat,
           };
         }
       } catch {
