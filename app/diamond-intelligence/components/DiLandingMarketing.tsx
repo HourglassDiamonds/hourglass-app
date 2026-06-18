@@ -25,19 +25,19 @@ const heroDesktopMaskStyle: React.CSSProperties = {
   maskPosition: "left center",
 };
 
-/** Mobile — soft dissolve into page bg below copy. */
+/** Mobile — full artwork visibility; soft fade confined to lower edge only. */
 const HERO_MOBILE_MASK =
-  "linear-gradient(to bottom, transparent 0%, transparent 28%, rgba(0,0,0,0.08) 38%, rgba(0,0,0,0.28) 46%, rgba(0,0,0,0.52) 54%, rgba(0,0,0,0.76) 62%, rgba(0,0,0,0.92) 68%, black 74%, black 100%)";
+  "linear-gradient(to bottom, black 0%, black 48%, rgba(0,0,0,0.92) 60%, rgba(0,0,0,0.72) 72%, rgba(0,0,0,0.42) 84%, rgba(0,0,0,0.16) 93%, transparent 100%)";
 
 const heroMobileMaskStyle: React.CSSProperties = {
   WebkitMaskImage: HERO_MOBILE_MASK,
   maskImage: HERO_MOBILE_MASK,
-  WebkitMaskSize: "100% 118%",
-  maskSize: "100% 118%",
+  WebkitMaskSize: "100% 104%",
+  maskSize: "100% 104%",
   WebkitMaskRepeat: "no-repeat",
   maskRepeat: "no-repeat",
-  WebkitMaskPosition: "center 4%",
-  maskPosition: "center 4%",
+  WebkitMaskPosition: "center center",
+  maskPosition: "center center",
 };
 
 const TRUST_ITEMS = [
