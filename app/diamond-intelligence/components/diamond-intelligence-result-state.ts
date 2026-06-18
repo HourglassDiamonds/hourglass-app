@@ -8,7 +8,8 @@ export type DiamondIntelligenceResultState =
   | "PARTIAL"
   | "SUCCESS"
   | "ERROR"
-  | "RATE_LIMITED";
+  | "RATE_LIMITED"
+  | "UNSUPPORTED_REPORT_FORMAT";
 
 export function resolveDiamondIntelligenceResultState(input: {
   uploadPhase: ClientUploadPhase;
@@ -28,6 +29,9 @@ export function resolveDiamondIntelligenceResultState(input: {
   }
 
   if (input.uploadPhase === "error" && input.uploadError) {
+    if (input.uploadErrorKind === "unsupported_report_format") {
+      return "UNSUPPORTED_REPORT_FORMAT";
+    }
     if (input.uploadErrorKind === "unsupported_format") {
       return "NO_RESULT";
     }
@@ -68,6 +72,7 @@ export function shouldShowUploadInlineError(input: {
   return (
     Boolean(input.errorMessage?.trim()) &&
     input.resultState !== "ERROR" &&
-    input.resultState !== "RATE_LIMITED"
+    input.resultState !== "RATE_LIMITED" &&
+    input.resultState !== "UNSUPPORTED_REPORT_FORMAT"
   );
 }

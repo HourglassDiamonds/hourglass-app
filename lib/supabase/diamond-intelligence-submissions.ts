@@ -9,7 +9,8 @@ export type DiamondIntelligenceSubmissionStatus =
   | "unable_to_verify"
   | "parser_failure"
   | "timeout"
-  | "unsupported_report";
+  | "unsupported_report"
+  | "unsupported_report_format";
 
 export type DiamondIntelligenceSubmissionInsert = {
   id?: string;

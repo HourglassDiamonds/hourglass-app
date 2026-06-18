@@ -145,8 +145,10 @@ export async function POST(request: Request) {
       result.httpStatus === 400 &&
       (result.error.includes("limit") || result.error.includes("Could not read PDF"));
 
+    const isUnsupportedReportFormat = result.code === "unsupported_report_format";
+
     const diagnostics =
-      isInterpretDiagnosticsEnabled() && result.httpStatus === 422
+      isInterpretDiagnosticsEnabled() && result.httpStatus === 422 && !isUnsupportedReportFormat
         ? buildInterpretFailureDiagnostics(result)
         : undefined;
 
@@ -154,6 +156,7 @@ export async function POST(request: Request) {
       {
         ok: false,
         error: result.error,
+        ...(result.code ? { code: result.code } : {}),
         ...(diagnostics ? { diagnostics } : {}),
       },
       result.httpStatus,
@@ -168,7 +171,13 @@ export async function POST(request: Request) {
         pipelineError: result.pipelineError,
         earlyFailure: isUploadValidation
           ? { reason: "upload_validation", message: result.error }
-          : undefined,
+          : isUnsupportedReportFormat
+            ? {
+                reason: "unsupported_report_format",
+                message: result.error,
+                unsupportedFormatFamily: result.unsupportedFormat?.family,
+              }
+            : undefined,
         urlArchive: uploadArchiveMeta,
       },
     );

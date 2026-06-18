@@ -52,6 +52,33 @@ describe("resolveDiamondIntelligenceResultState", () => {
     );
   });
 
+  it("returns UNSUPPORTED_REPORT_FORMAT for unsupported report format failures", () => {
+    assert.equal(
+      resolveDiamondIntelligenceResultState({
+        uploadPhase: "error",
+        uploadError:
+          "This report format is not currently supported by Diamond Intelligence.",
+        uploadErrorKind: "unsupported_report_format",
+        hasReport: false,
+        partialListing: false,
+        v3RenderPhase: "empty",
+        canRenderFullResult: false,
+      }),
+      "UNSUPPORTED_REPORT_FORMAT",
+    );
+  });
+
+  it("suppresses upload inline error for unsupported report format card", () => {
+    assert.equal(
+      shouldShowUploadInlineError({
+        resultState: "UNSUPPORTED_REPORT_FORMAT",
+        errorMessage:
+          "This report format is not currently supported by Diamond Intelligence.",
+      }),
+      false,
+    );
+  });
+
   it("returns NO_RESULT for unsupported file type so the dock shows format copy", () => {
     assert.equal(
       resolveDiamondIntelligenceResultState({

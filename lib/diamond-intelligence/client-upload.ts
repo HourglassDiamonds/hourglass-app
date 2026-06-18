@@ -59,6 +59,16 @@ export function resolveInterpretUploadFailure(
     );
   }
 
+  if (status === 422 && code === "unsupported_report_format") {
+    return new DiamondIntelligenceUploadError(
+      typeof data.error === "string" && data.error.trim()
+        ? data.error
+        : "This report format is not currently supported by Diamond Intelligence.",
+      "unsupported_report_format",
+      code,
+    );
+  }
+
   return new Error(
     typeof data.error === "string" && data.error.trim()
       ? data.error

@@ -45,7 +45,8 @@ create table if not exists diamond_intelligence_submissions (
       'unable_to_verify',
       'parser_failure',
       'timeout',
-      'unsupported_report'
+      'unsupported_report',
+      'unsupported_report_format'
     )
   ),
 

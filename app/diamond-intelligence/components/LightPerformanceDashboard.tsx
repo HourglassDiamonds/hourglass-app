@@ -36,6 +36,7 @@ import DiV3Hero from "./DiV3Hero";
 import DiV3PartialGradeReview from "./DiV3PartialGradeReview";
 import DiV3ResultSections from "./DiV3ResultSections";
 import DiV3UnableToVerify from "./DiV3UnableToVerify";
+import DiV3UnsupportedReportFormat from "./DiV3UnsupportedReportFormat";
 import DiV3RateLimited from "./DiV3RateLimited";
 import {
   resolveDiamondIntelligenceResultState,
@@ -566,6 +567,13 @@ export default function LightPerformanceDashboard({
           onFile={onFile}
           reportContext={reportContext}
           retryAfterSeconds={uploadRetryAfterSeconds}
+        />
+      ) : null}
+
+      {resultState === "UNSUPPORTED_REPORT_FORMAT" ? (
+        <DiV3UnsupportedReportFormat
+          onFile={onFile}
+          reportContext={reportContext}
         />
       ) : null}
 

@@ -1,5 +1,9 @@
 import { runCalibrationUploadExtraction } from "@/lib/calibration-library/extract-upload-pipeline";
-import { isPdfMime } from "@/lib/calibration-library/document-extract";
+import {
+  extractTextFromDocument,
+  isImageMime,
+  isPdfMime,
+} from "@/lib/calibration-library/document-extract";
 import { inferReportSourceFromUpload } from "@/lib/calibration-library/infer-report-source";
 import {
   CalibrationTimeoutError,
@@ -8,6 +12,7 @@ import {
   withTimeout,
 } from "@/lib/calibration-library/runtime-guard";
 import {
+  CLIENT_DOCUMENT_EXTRACT_TIMEOUT_MS,
   CLIENT_GIA_DIAGRAM_INTERPRET_ROUTE_TIMEOUT_MS,
   CLIENT_GIA_DIAGRAM_PIPELINE_TIMEOUT_MS,
   CLIENT_GIA_DIAGRAM_REGION_OCR_TIMEOUT_MS,
@@ -33,6 +38,13 @@ import type { ClientSafeInterpretationPayload } from "@/lib/diamond-intelligence
 import type { ClientInterpretationDecision } from "@/lib/diamond-intelligence/client-interpretation-pipeline";
 import type { UploadExtractionOutput } from "@/lib/calibration-library/extract-upload-pipeline";
 import { activateClientBundledTesseractRuntime } from "@/lib/diamond-intelligence/client-tesseract-runtime";
+import {
+  CLIENT_UNSUPPORTED_REPORT_FORMAT_HEADLINE,
+} from "@/lib/diamond-intelligence/unsupported-report-format-copy";
+import {
+  assessClientReportFormatSupport,
+  type UnsupportedReportFormatMatch,
+} from "@/lib/diamond-intelligence/unsupported-report-format";
 
 export type InterpretUploadedReportInput = {
   bytes: Buffer;
@@ -53,10 +65,12 @@ export type InterpretUploadedReportFailure = {
   ok: false;
   error: string;
   httpStatus: number;
+  code?: string;
   timedOut?: boolean;
   pipelineError?: string;
   finalized?: UploadExtractionOutput;
   decision?: ClientInterpretationDecision;
+  unsupportedFormat?: UnsupportedReportFormatMatch;
 };
 
 export type InterpretUploadedReportResult =
@@ -123,6 +137,28 @@ export async function interpretUploadedReport(
     const routeTimeoutMs = clientPdf
       ? CLIENT_GIA_DIAGRAM_INTERPRET_ROUTE_TIMEOUT_MS
       : CLIENT_INTERPRET_ROUTE_TIMEOUT_MS;
+
+    if (isPdfMime(mime) || isImageMime(mime)) {
+      try {
+        const docProbe = await withTimeout(
+          extractTextFromDocument(bytes, mime, { mode: "client" }),
+          CLIENT_DOCUMENT_EXTRACT_TIMEOUT_MS,
+          "unsupported-format-probe",
+        );
+        const formatSupport = assessClientReportFormatSupport(docProbe.text);
+        if (formatSupport.status === "unsupported") {
+          return {
+            ok: false,
+            error: CLIENT_UNSUPPORTED_REPORT_FORMAT_HEADLINE,
+            httpStatus: 422,
+            code: "unsupported_report_format",
+            unsupportedFormat: formatSupport.match,
+          };
+        }
+      } catch {
+        // Probe failure — fall through to full pipeline (existing behavior).
+      }
+    }
 
     const finalized = await withTimeout(
       runCalibrationUploadExtraction({

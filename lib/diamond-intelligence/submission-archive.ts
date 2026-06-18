@@ -30,8 +30,10 @@ export type DiamondIntelligenceArchiveContext = {
       | "form_parse"
       | "invalid_url"
       | "unsupported_vendor"
-      | "listing_inaccessible";
+      | "listing_inaccessible"
+      | "unsupported_report_format";
     message: string;
+    unsupportedFormatFamily?: string;
   };
   cacheHit?: boolean;
   bytes?: Buffer;
@@ -49,6 +51,9 @@ export function resolveArchiveStatus(
   ctx: DiamondIntelligenceArchiveContext,
 ): DiamondIntelligenceSubmissionStatus {
   if (ctx.earlyFailure) {
+    if (ctx.earlyFailure.reason === "unsupported_report_format") {
+      return "unsupported_report_format";
+    }
     if (
       ctx.earlyFailure.reason === "unsupported_mime" ||
       ctx.earlyFailure.reason === "upload_validation"
@@ -161,6 +166,8 @@ export function buildDiamondIntelligenceArchiveRecord(
         ? "parser_failure"
         : status === "unable_to_verify"
           ? "unable_to_verify"
+          : status === "unsupported_report_format"
+            ? "unsupported_report_format"
           : status === "unsupported_report"
             ? "unsupported_report"
             : null);
@@ -197,6 +204,7 @@ export function buildDiamondIntelligenceArchiveRecord(
     fluorescence: snapshot?.fluorescence ?? fieldValue(fields, "fluorescence"),
     measurements: snapshot?.measurements ?? fieldValue(fields, "measurements"),
     parserFamily:
+      ctx.earlyFailure?.unsupportedFormatFamily ??
       interpretation?.metadata.parserFamily ??
       ctx.finalized?.parserType ??
       null,
