@@ -138,7 +138,7 @@ function FeaturedRingSection() {
               alt={`${title} ring`}
               fill
               sizes="(max-width: 768px) 72vw, 16vw"
-              className="object-cover object-[50%_46%] max-md:origin-center max-md:scale-[0.94]"
+              className="object-cover object-[50%_46%]"
             />
           </div>
         </a>
@@ -441,7 +441,7 @@ export default function HomePageClient() {
                 fill
                 priority
                 sizes="100vw"
-                className="object-cover object-[64%_42%] origin-[66%_40%] scale-[0.90]"
+                className="object-cover object-[64%_38%] origin-[66%_36%] scale-[0.88]"
               />
             </div>
           </div>
