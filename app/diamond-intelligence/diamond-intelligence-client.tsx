@@ -22,6 +22,8 @@ import LightPerformanceDashboard from "./components/LightPerformanceDashboard";
 import LightPerformanceStudioNav from "./components/LightPerformanceStudioNav";
 import type { ClientUploadPhase } from "./components/ReportUploadDock";
 import type { IngestMode } from "./components/DiamondIntelligenceIngestDock";
+import type { ReportUploadMimeHint } from "./components/di-v3-upload-hints";
+import { mergeReportUploadMimeHint } from "./components/di-v3-upload-hints";
 
 export default function DiamondIntelligenceClient() {
   const [ingestMode, setIngestMode] = useState<IngestMode>("upload");
@@ -44,6 +46,8 @@ export default function DiamondIntelligenceClient() {
   );
   const [sourceUrl, setSourceUrl] = useState<string | null>(null);
   const [uploadFileName, setUploadFileName] = useState<string | null>(null);
+  const [uploadMimeHint, setUploadMimeHint] =
+    useState<ReportUploadMimeHint | null>(null);
 
   const [extractedFields, setExtractedFields] =
     useState<CalibrationReportFields | null>(null);
@@ -96,8 +100,13 @@ export default function DiamondIntelligenceClient() {
 
   const processFile = useCallback(async (file: File) => {
     clearInterpretationState();
+    const clientMimeHint: ReportUploadMimeHint = {
+      mime: file.type || null,
+      fileName: file.name,
+    };
     setFileName(file.name);
     setUploadFileName(file.name);
+    setUploadMimeHint(clientMimeHint);
     setSourceUrl(null);
     setActiveListing(null);
     setUploadError(null);
@@ -125,6 +134,9 @@ export default function DiamondIntelligenceClient() {
         setUploadRetryAfterSeconds(
           err.kind === "rate_limited" ? (err.retryAfterSeconds ?? null) : null,
         );
+        setUploadMimeHint(
+          mergeReportUploadMimeHint(clientMimeHint, err.uploadMeta),
+        );
       } else {
         setUploadError(
           err instanceof Error && err.message.trim()
@@ -133,6 +145,7 @@ export default function DiamondIntelligenceClient() {
         );
         setUploadErrorKind("interpret_failure");
         setUploadRetryAfterSeconds(null);
+        setUploadMimeHint(clientMimeHint);
       }
       setUploadPhase("error");
     } finally {
@@ -144,6 +157,7 @@ export default function DiamondIntelligenceClient() {
     clearInterpretationState();
     setFileName(null);
     setUploadFileName(null);
+    setUploadMimeHint(null);
     setSourceUrl(url.trim());
     setUploadError(null);
     setUploadErrorKind(null);
@@ -222,6 +236,7 @@ export default function DiamondIntelligenceClient() {
         activeListing={activeListing}
         sourceUrl={sourceUrl}
         uploadFileName={uploadFileName}
+        uploadMimeHint={uploadMimeHint}
         onInterpretationUpdate={handleInterpretationUpdate}
       />
     </div>

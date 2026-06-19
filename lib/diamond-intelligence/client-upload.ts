@@ -8,6 +8,10 @@ import {
 import { shouldPresentScoredCoreRead } from "./client-presentation-gates";
 import { DiamondIntelligenceUploadError } from "./client-upload-error";
 import {
+  buildReportUploadMimeHintFromApi,
+  type ReportUploadMimeHint,
+} from "./upload-mime-hint";
+import {
   DI_UNSUPPORTED_FILE_TYPE_MESSAGE,
   isUnsupportedUploadValidationCode,
 } from "./upload-format-policy";
@@ -22,12 +26,19 @@ export { DiamondIntelligenceUploadError, isDiamondIntelligenceUploadError } from
 
 export { CLIENT_INTERPRET_FETCH_TIMEOUT_MS } from "@/lib/calibration-library/runtime-limits";
 
+export type InterpretUploadMeta = {
+  mime?: string;
+  normalizedMime?: string;
+  originalMime?: string;
+};
+
 export type InterpretApiPayload = {
   ok?: boolean;
   error?: string;
   code?: string;
   partial?: boolean;
   interpretation?: ClientSafeInterpretationPayload;
+  uploadMeta?: InterpretUploadMeta;
 };
 
 /** Parse Retry-After response header (seconds) for rate-limit UI. */
@@ -49,13 +60,18 @@ export type ClientInterpretUploadResult = {
 export function resolveInterpretUploadFailure(
   status: number,
   data: InterpretApiPayload,
+  uploadMeta?: Partial<ReportUploadMimeHint>,
 ): Error {
   const code = typeof data.code === "string" ? data.code : undefined;
+  const apiMeta =
+    uploadMeta ?? buildReportUploadMimeHintFromApi(data.uploadMeta);
   if (status === 400 && isUnsupportedUploadValidationCode(code)) {
     return new DiamondIntelligenceUploadError(
       DI_UNSUPPORTED_FILE_TYPE_MESSAGE,
       "unsupported_format",
       code,
+      undefined,
+      apiMeta,
     );
   }
 
@@ -66,6 +82,20 @@ export function resolveInterpretUploadFailure(
         : "This report format is not currently supported by Diamond Intelligence.",
       "unsupported_report_format",
       code,
+      undefined,
+      apiMeta,
+    );
+  }
+
+  if (status === 422) {
+    return new DiamondIntelligenceUploadError(
+      typeof data.error === "string" && data.error.trim()
+        ? data.error
+        : CLIENT_UPLOAD_INTERPRET_ERROR,
+      "interpret_failure",
+      code,
+      undefined,
+      apiMeta,
     );
   }
 
@@ -135,7 +165,11 @@ export async function postReportForInterpretation(
   }
 
   if (!res.ok || !data.ok || !data.interpretation) {
-    throw resolveInterpretUploadFailure(res.status, data);
+    throw resolveInterpretUploadFailure(
+      res.status,
+      data,
+      buildReportUploadMimeHintFromApi(data.uploadMeta),
+    );
   }
 
   const interpretation = data.interpretation;

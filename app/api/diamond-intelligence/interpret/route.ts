@@ -17,6 +17,7 @@ import { buildUrlArchiveMetadata } from "@/lib/diamond-intelligence/url-ingestio
 import {
   normalizeDiamondIntelligenceUpload,
   resolveUploadIngestMetadata,
+  type UploadIngestMetadata,
 } from "@/lib/diamond-intelligence/upload-normalize";
 import { validateDiamondIntelligenceUpload } from "@/lib/diamond-intelligence/upload-validation";
 import {
@@ -50,6 +51,23 @@ async function respond(
 }
 
 const uploadArchiveMeta = buildUrlArchiveMetadata({ sourceType: "upload" });
+
+function buildUploadMetaResponse(input: {
+  mime?: string;
+  ingestMetadata?: UploadIngestMetadata;
+}) {
+  const { mime, ingestMetadata } = input;
+  if (!mime && !ingestMetadata) return undefined;
+  return {
+    ...(mime ? { mime } : {}),
+    ...(ingestMetadata?.normalizedMime
+      ? { normalizedMime: ingestMetadata.normalizedMime }
+      : {}),
+    ...(ingestMetadata?.originalMime
+      ? { originalMime: ingestMetadata.originalMime }
+      : {}),
+  };
+}
 
 export async function POST(request: Request) {
   if (!verifyDiamondIntelligenceAccess(request)) {
@@ -149,6 +167,10 @@ export async function POST(request: Request) {
           ok: false,
           error: uploadValidation.error,
           code: uploadValidation.code,
+          uploadMeta: buildUploadMetaResponse({
+            mime: normalized.mime,
+            ingestMetadata: normalized.ingestMetadata,
+          }),
         },
         400,
         {
@@ -206,6 +228,7 @@ export async function POST(request: Request) {
         error: result.error,
         ...(result.code ? { code: result.code } : {}),
         ...(diagnostics ? { diagnostics } : {}),
+        uploadMeta: buildUploadMetaResponse({ mime, ingestMetadata }),
       },
       result.httpStatus,
       {

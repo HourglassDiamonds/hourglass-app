@@ -36,6 +36,7 @@ import type { ListingExtraction } from "@/lib/diamond-intelligence/url-ingestion
 import { listPartialListingDetails } from "@/lib/diamond-intelligence/url-ingestion/listing-display";
 import DiV3Hero from "./DiV3Hero";
 import DiV3PartialGradeReview from "./DiV3PartialGradeReview";
+import DiV3FancyColorGuidance from "./DiV3FancyColorGuidance";
 import DiV3ResultSections from "./DiV3ResultSections";
 import DiV3UnableToVerify from "./DiV3UnableToVerify";
 import DiV3ListingInaccessible from "./DiV3ListingInaccessible";
@@ -81,6 +82,10 @@ import {
   buildConciergeContextFromReport,
   type DiamondIntelligenceConciergeContext,
 } from "@/lib/concierge/diamond-intelligence-context";
+import {
+  isLikelyReportImageUpload,
+  type ReportUploadMimeHint,
+} from "./di-v3-upload-hints";
 
 function formatCarat(carat: string): string {
   const v = carat.trim();
@@ -114,6 +119,7 @@ export type LightPerformanceDashboardProps = {
   activeListing?: ListingExtraction | null;
   sourceUrl?: string | null;
   uploadFileName?: string | null;
+  uploadMimeHint?: ReportUploadMimeHint | null;
   metadata: ClientSafeMetadata | null;
   extractedFields: CalibrationReportFields | null;
   interpretationFields: CalibrationReportFields | null;
@@ -139,6 +145,7 @@ export default function LightPerformanceDashboard({
   activeListing,
   sourceUrl,
   uploadFileName,
+  uploadMimeHint,
   metadata,
   extractedFields,
   interpretationFields,
@@ -339,6 +346,17 @@ export default function LightPerformanceDashboard({
     fields,
     gradeHints,
   });
+  const showFancyColorGuidance = Boolean(
+    gradeHints?.fancyColor || gradeHints?.coloredDiamondReport,
+  ) && !scoredCorePresentation;
+  const difficultImageUnableToVerify =
+    uploadErrorKind === "interpret_failure" &&
+    isLikelyReportImageUpload({
+      normalizedMime: uploadMimeHint?.normalizedMime,
+      originalMime: uploadMimeHint?.originalMime,
+      mime: uploadMimeHint?.mime,
+      fileName: uploadMimeHint?.fileName ?? uploadFileName ?? fileName,
+    });
   const fancyShapePresentation = shouldPresentFancyShapeResult({
     fields,
     reportTextHint: metadata?.reportTextHint,
@@ -633,12 +651,14 @@ export default function LightPerformanceDashboard({
         <DiV3UnableToVerify
           onFile={onFile}
           reportContext={reportContext}
+          difficultImageRead={difficultImageUnableToVerify}
         />
       ) : null}
 
       {resultState === "PARTIAL" ? (
         <DiV3PartialGradeReview
           gradeHints={gradeHints}
+          reportContext={reportContext}
           onComplete={(hints) => setLocalGradeHints(hints)}
         />
       ) : null}
@@ -649,6 +669,11 @@ export default function LightPerformanceDashboard({
       metadata &&
       fields ? (
         <div key={reportIdentity ?? "v3-result"}>
+          {showFancyColorGuidance ? (
+            <div className="mb-8">
+              <DiV3FancyColorGuidance reportContext={reportContext} />
+            </div>
+          ) : null}
           {metadata.reportNumber ? (
             <p className="mx-auto mb-6 max-w-[960px] text-center text-[11px] uppercase tracking-[0.14em] text-[#9b8b78]">
               Current Report · {metadata.lab} {metadata.reportNumber}

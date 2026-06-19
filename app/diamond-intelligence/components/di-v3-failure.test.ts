@@ -20,9 +20,11 @@ describe("DiV3UnableToVerify failure state", () => {
 
   it("renders the shared headline in the failure component", () => {
     const source = readFileSync(componentPath, "utf8");
-    assert.match(source, /V3_UNABLE_TO_VERIFY\.headline/);
+    assert.match(source, /copy\.headline/);
+    assert.match(source, /V3_UNABLE_TO_VERIFY_IMAGE/);
     assert.match(source, /Upload Another Report/);
     assert.match(source, /justinReviewCta/);
+    assert.match(source, /difficultImageRead/);
   });
 
   it("dashboard suppresses duplicate inline upload error when failure card shows", () => {

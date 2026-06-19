@@ -11,6 +11,7 @@ import { trackConsultationCtaClicked } from "@/lib/consultation-cta";
 import {
   CONSUMER_COPY,
   V3_UNABLE_TO_VERIFY,
+  V3_UNABLE_TO_VERIFY_IMAGE,
 } from "./consumer-display-labels";
 import {
   DI_V3_BRAND,
@@ -22,14 +23,20 @@ import {
 export default function DiV3UnableToVerify({
   onFile,
   reportContext,
+  difficultImageRead = false,
 }: {
   onFile: (file: File) => void;
   reportContext?: DiamondIntelligenceConciergeContext;
+  difficultImageRead?: boolean;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const conciergeHref = buildConciergeHrefFromDiamondIntelligence(
     reportContext ?? {},
   );
+  const copy = difficultImageRead ? V3_UNABLE_TO_VERIFY_IMAGE : V3_UNABLE_TO_VERIFY;
+  const trackingSource = difficultImageRead
+    ? "diamond_intelligence:unable_to_verify_image"
+    : "diamond_intelligence:unable_to_verify";
 
   return (
     <article className={DI_V3_PARTIAL_CARD}>
@@ -39,32 +46,42 @@ export default function DiV3UnableToVerify({
       </div>
 
       <p className="text-[11px] uppercase tracking-[0.18em] text-[#9b8b78]">
-        {V3_UNABLE_TO_VERIFY.eyebrow}
+        {copy.eyebrow}
       </p>
 
       <h1 className="mt-4 font-serif text-[clamp(34px,5.5vw,52px)] font-normal uppercase leading-[0.98] tracking-[0.035em] text-[#1e1a16]">
-        {V3_UNABLE_TO_VERIFY.headline}
+        {copy.headline}
       </h1>
 
       <p className="mx-auto mt-6 max-w-[520px] text-[17px] leading-[1.72] text-[#6f665b]">
-        {V3_UNABLE_TO_VERIFY.body}
+        {copy.body}
       </p>
 
-      <p className="mx-auto mt-5 max-w-[520px] text-[15px] leading-[1.72] text-[#75675e]">
-        {V3_UNABLE_TO_VERIFY.reassurance}
-      </p>
+      {difficultImageRead ? (
+        <p className="mx-auto mt-5 max-w-[520px] text-[15px] leading-[1.72] text-[#75675e]">
+          {V3_UNABLE_TO_VERIFY_IMAGE.followUp}
+        </p>
+      ) : (
+        <p className="mx-auto mt-5 max-w-[520px] text-[15px] leading-[1.72] text-[#75675e]">
+          {V3_UNABLE_TO_VERIFY.reassurance}
+        </p>
+      )}
 
-      <p className="mx-auto mt-8 max-w-[520px] text-[11px] uppercase tracking-[0.14em] text-[#9b8b78]">
-        Potential reasons
-      </p>
-      <ul className="mx-auto mt-4 max-w-[520px] grid list-none gap-3 p-0 text-left text-[15px] text-[#514536]">
-        {V3_UNABLE_TO_VERIFY.reasons.map((item) => (
-          <li key={item} className="relative pl-6">
-            <span className="absolute left-0 text-[#b59662]">•</span>
-            {item}
-          </li>
-        ))}
-      </ul>
+      {!difficultImageRead ? (
+        <>
+          <p className="mx-auto mt-8 max-w-[520px] text-[11px] uppercase tracking-[0.14em] text-[#9b8b78]">
+            Potential reasons
+          </p>
+          <ul className="mx-auto mt-4 max-w-[520px] grid list-none gap-3 p-0 text-left text-[15px] text-[#514536]">
+            {V3_UNABLE_TO_VERIFY.reasons.map((item) => (
+              <li key={item} className="relative pl-6">
+                <span className="absolute left-0 text-[#b59662]">•</span>
+                {item}
+              </li>
+            ))}
+          </ul>
+        </>
+      ) : null}
 
       <div className="mx-auto mt-10 flex max-w-[520px] flex-col items-center gap-4 sm:flex-row sm:justify-center">
         <button
@@ -77,11 +94,7 @@ export default function DiV3UnableToVerify({
         <Link
           href={conciergeHref}
           className={DI_V3_TEXT_CTA}
-          onClick={() =>
-            trackConsultationCtaClicked(
-              "diamond_intelligence:unable_to_verify",
-            )
-          }
+          onClick={() => trackConsultationCtaClicked(trackingSource)}
         >
           {CONSUMER_COPY.justinReviewCta} →
         </Link>

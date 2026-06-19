@@ -2,11 +2,13 @@
 
 import { useState } from "react";
 import type { ReportGradeHints } from "@/lib/diamond-intelligence/report-grade-hints";
+import type { DiamondIntelligenceConciergeContext } from "@/lib/concierge/diamond-intelligence-context";
 import {
   DI_V3_BRAND,
   DI_V3_PARTIAL_CARD,
   DI_V3_PRODUCT,
 } from "./di-v3-styles";
+import DiV3PartialScreenshotClarity from "./DiV3PartialScreenshotClarity";
 import {
   hasUsableDisplayColor,
   isListedPartialColor,
@@ -24,9 +26,11 @@ const SELECT_CLASS =
 export default function DiV3PartialGradeReview({
   gradeHints,
   onComplete,
+  reportContext,
 }: {
   gradeHints?: ReportGradeHints;
   onComplete: (hints: ReportGradeHints) => void;
+  reportContext?: DiamondIntelligenceConciergeContext;
 }) {
   const [color, setColor] = useState(gradeHints?.color ?? "");
   const [clarity, setClarity] = useState(gradeHints?.clarity ?? "");
@@ -66,6 +70,8 @@ export default function DiV3PartialGradeReview({
       <p className="mx-auto mt-6 max-w-[520px] text-[17px] leading-[1.72] text-[#6f665b]">
         {incompleteCopy.subhead}
       </p>
+
+      <DiV3PartialScreenshotClarity reportContext={reportContext} />
 
       <div className="mx-auto mt-10 max-w-[520px] text-left">
         <h2 className="font-serif text-[clamp(22px,3.2vw,28px)] font-normal text-[#1e1a16]">

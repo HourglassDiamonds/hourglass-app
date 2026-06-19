@@ -65,14 +65,17 @@ describe("unsupported upload format policy", () => {
     assert.equal(err.message, DI_UNSUPPORTED_FILE_TYPE_MESSAGE);
   });
 
-  it("maps API 422 interpret failure to generic interpret error", () => {
+  it("maps API 422 interpret failure to interpret_failure upload error", () => {
     const err = resolveInterpretUploadFailure(422, {
       ok: false,
       error: "We couldn't read enough from this file to build a useful interpretation.",
+      uploadMeta: { normalizedMime: "image/png", mime: "image/png" },
     });
 
-    assert.ok(!(err instanceof DiamondIntelligenceUploadError));
+    assert.ok(err instanceof DiamondIntelligenceUploadError);
+    assert.equal(err.kind, "interpret_failure");
     assert.match(err.message, /couldn't read enough/i);
+    assert.equal(err.uploadMeta?.normalizedMime, "image/png");
   });
 
   it("parses Retry-After header seconds for rate-limit UI", () => {

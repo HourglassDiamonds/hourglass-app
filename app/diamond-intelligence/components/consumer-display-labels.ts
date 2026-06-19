@@ -62,7 +62,7 @@ export const CONSUMER_COPY = {
     "Round brilliant diamonds only.",
     "Upload a GIA, IGI, or GCAL 8X grading report.",
     "The analysis evaluates the diamond itself — not the asking price.",
-    "Supported formats: PDF preferred; screenshots and report images accepted.",
+    "Original grading report PDFs usually provide the cleanest read. Screenshots may work, but some may require manual confirmation.",
   ] as const,
   uploadGuidanceFallbackPrefix:
     "Some screenshots, BMP files, and lower-resolution images can be difficult for automated interpretation. If you receive an error message, submit the report through",
@@ -289,6 +289,34 @@ export const V3_UNABLE_TO_VERIFY = {
     "Incomplete screenshot",
     "Missing report pages",
   ] as const,
+} as const;
+
+/** Softer variant when an image upload did not yield a reliable read. */
+export const V3_UNABLE_TO_VERIFY_IMAGE = {
+  eyebrow: "Diamond Intelligence",
+  headline: V3_UNABLE_TO_VERIFY.headline,
+  body: "We could not read enough of this screenshot to provide a reliable interpretation. This can happen when a report image is cropped, compressed, or difficult to read.",
+  followUp:
+    "For the best result, upload the original report PDF. If you would rather have a personal review, send it through Concierge and Justin can take a look.",
+} as const;
+
+/** Shown on partial grade review before manual confirmation fields. */
+export const V3_PARTIAL_SCREENSHOT_CLARITY = {
+  eyebrow: "Some report images need a closer read",
+  body: "Phone screenshots can sometimes crop, compress, or blur small grading details. We were able to read part of this report, but not enough to confirm every grade automatically.",
+  followUp:
+    "Upload the original grading report PDF for the cleanest read, or confirm the missing details below.",
+  conciergeNote:
+    "If you would prefer a personal review, send the report through Concierge and Justin will be happy to take a look.",
+} as const;
+
+/** Shown when a fancy-color GIA report bypasses standard D–Z grade confirmation. */
+export const V3_FANCY_COLOR_GUIDANCE = {
+  eyebrow: "Fancy color report",
+  headline: "A Different Kind of Color Grade",
+  body: "This appears to be a fancy color diamond report. Fancy color grading works differently than the standard D–Z color scale, so Diamond Intelligence may need a personal review rather than a standard automatic score.",
+  conciergeNote:
+    "Send it through Concierge if you would like Justin to review it personally.",
 } as const;
 
 export const V3_LISTING_INACCESSIBLE = {
