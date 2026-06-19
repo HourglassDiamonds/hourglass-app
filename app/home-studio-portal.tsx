@@ -535,7 +535,7 @@ export default function HomeStudioPortal() {
           </div>
         </div>
 
-        <div className="absolute bottom-[6.25rem] left-1/2 z-[5] w-full max-w-full -translate-x-1/2 px-5 sm:px-8 md:bottom-12 md:w-auto md:px-0">
+        <div className="absolute bottom-[4.75rem] left-1/2 z-[5] w-full max-w-full -translate-x-1/2 px-5 sm:px-8 md:bottom-12 md:w-auto md:px-0">
           <div className="flex justify-center">
             <StudioCtaButton />
           </div>

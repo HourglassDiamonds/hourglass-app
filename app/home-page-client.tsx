@@ -29,6 +29,24 @@ const heroDesktopMaskStyle: React.CSSProperties = {
   maskPosition: "left center",
 };
 
+/** Mobile — left ~28% dissolves into ivory page bg; right ~72% stays fully crisp. */
+const HERO_MOBILE_MASK =
+  "linear-gradient(to right, transparent 0%, transparent 6%, rgba(0,0,0,0.10) 11%, rgba(0,0,0,0.28) 16%, rgba(0,0,0,0.52) 20%, rgba(0,0,0,0.76) 24%, black 28%, black 100%)";
+
+const heroMobileMaskStyle: React.CSSProperties = {
+  WebkitMaskImage: HERO_MOBILE_MASK,
+  maskImage: HERO_MOBILE_MASK,
+  WebkitMaskSize: "100% 100%",
+  maskSize: "100% 100%",
+  WebkitMaskRepeat: "no-repeat",
+  maskRepeat: "no-repeat",
+  WebkitMaskPosition: "left center",
+  maskPosition: "left center",
+};
+
+const HERO_MOBILE_LEFT_BLEND =
+  "linear-gradient(to right, #efe8de 0%, #efe8de 8%, rgba(239,232,222,0.92) 18%, rgba(239,232,222,0.62) 32%, rgba(239,232,222,0.22) 48%, transparent 68%)";
+
 function TrustTransitionStrip() {
   const pillars = [
     {
@@ -277,18 +295,19 @@ const testimonialDesktopMaskStyle: React.CSSProperties = {
   maskPosition: "left center",
 };
 
+/** Mobile — face/subject stays opaque; soft fade only along lower edge into card bg. */
 const TESTIMONIAL_MOBILE_MASK =
-  "linear-gradient(to bottom, transparent 0%, transparent 30%, rgba(0,0,0,0.10) 40%, rgba(0,0,0,0.32) 48%, rgba(0,0,0,0.58) 54%, rgba(0,0,0,0.78) 60%, rgba(0,0,0,0.92) 64%, black 70%, black 100%)";
+  "linear-gradient(to bottom, black 0%, black 84%, rgba(0,0,0,0.82) 90%, rgba(0,0,0,0.48) 95%, rgba(0,0,0,0.14) 98%, transparent 100%)";
 
 const testimonialMobileMaskStyle: React.CSSProperties = {
   WebkitMaskImage: TESTIMONIAL_MOBILE_MASK,
   maskImage: TESTIMONIAL_MOBILE_MASK,
-  WebkitMaskSize: "100% 118%",
-  maskSize: "100% 118%",
+  WebkitMaskSize: "100% 100%",
+  maskSize: "100% 100%",
   WebkitMaskRepeat: "no-repeat",
   maskRepeat: "no-repeat",
-  WebkitMaskPosition: "center 6%",
-  maskPosition: "center 6%",
+  WebkitMaskPosition: "center bottom",
+  maskPosition: "center bottom",
 };
 
 function TestimonialSection() {
@@ -352,7 +371,7 @@ function TestimonialSection() {
             fill
             quality={95}
             sizes="100vw"
-            className="object-cover object-[50%_30%]"
+            className="object-cover object-[72%_14%]"
           />
         </div>
       </div>
@@ -434,14 +453,24 @@ export default function HomePageClient() {
               </div>
             </div>
 
-            <div className={`relative mt-8 aspect-[3/2] w-full min-h-[260px] ${HOME_CARD_RADIUS} md:hidden`}>
-              <Image
-                src={HERO_IMAGE}
-                alt="Oval bezel pavé engagement ring on travertine"
-                fill
-                priority
-                sizes="100vw"
-                className="object-cover object-[64%_42%] origin-[66%_40%] scale-[0.90]"
+            <div className="relative mt-8 aspect-[3/2] w-full min-h-[260px] max-md:overflow-visible max-md:rounded-none md:hidden">
+              <div
+                className="absolute inset-0 max-md:overflow-visible max-md:rounded-none overflow-hidden rounded-[28px]"
+                style={heroMobileMaskStyle}
+              >
+                <Image
+                  src={HERO_IMAGE}
+                  alt="Oval bezel pavé engagement ring on travertine"
+                  fill
+                  priority
+                  sizes="100vw"
+                  className="object-cover object-[64%_42%] origin-[66%_40%] scale-[0.90]"
+                />
+              </div>
+              <div
+                aria-hidden
+                className="pointer-events-none absolute inset-y-0 left-0 z-[1] w-[38%]"
+                style={{ background: HERO_MOBILE_LEFT_BLEND }}
               />
             </div>
           </div>
