@@ -9,6 +9,12 @@ const index = getLedgerIndex("global-pressure");
 export const metadata: Metadata = {
   title: index.seoTitle,
   description: index.seoDescription,
+  alternates: {
+    canonical: `/ledger/${index.slug}`,
+  },
+  openGraph: {
+    url: `/ledger/${index.slug}`,
+  },
 };
 
 export default function GlobalPressureIndexPage() {

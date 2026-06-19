@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-export const SITE_URL = "https://hourglassdiamonds.com";
+export const SITE_URL = "https://www.hourglassdiamonds.com";
 
 export const DEFAULT_SITE_DESCRIPTION =
   "A more thoughtful way to design engagement rings and fine jewelry. Private guidance, refined sourcing, and a calm, personal process.";

@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { articles } from "@/app/diamond-guide/articles";
+import { LEDGER_INDEXES } from "@/app/ledger/ledger-data";
 import { DIAMOND_GUIDE_CATEGORIES } from "@/lib/seo/diamond-guide-metadata";
 import { SITE_URL } from "@/lib/seo/site-metadata";
 
@@ -14,9 +15,19 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${SITE_URL}/custom-design`, priority: 0.9, lastModified },
     { url: `${SITE_URL}/concierge`, priority: 0.9, lastModified },
     { url: `${SITE_URL}/diamond-studio`, priority: 0.9, lastModified },
+    { url: `${SITE_URL}/diamond-intelligence`, priority: 0.9, lastModified },
     { url: `${SITE_URL}/diamond-guide`, priority: 0.85, lastModified },
     { url: `${SITE_URL}/whispered-praise`, priority: 0.85, lastModified },
+    { url: `${SITE_URL}/ledger`, priority: 0.75, lastModified },
   ];
+
+  const ledgerIndexPages: MetadataRoute.Sitemap = LEDGER_INDEXES.map(
+    (index) => ({
+      url: `${SITE_URL}/ledger/${index.slug}`,
+      priority: 0.7,
+      lastModified,
+    }),
+  );
 
   const categoryPages: MetadataRoute.Sitemap = DIAMOND_GUIDE_CATEGORIES.flatMap(
     (category) => [
@@ -39,5 +50,5 @@ export default function sitemap(): MetadataRoute.Sitemap {
     lastModified,
   }));
 
-  return [...corePages, ...categoryPages, ...articlePages];
+  return [...corePages, ...ledgerIndexPages, ...categoryPages, ...articlePages];
 }

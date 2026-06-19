@@ -10,6 +10,12 @@ export const metadata: Metadata = {
   title: "Hourglass Ledger — Calm intelligence for a volatile world",
   description:
     "The Ledger: a weekly signal brief on markets, infrastructure, energy, AI, commodities, and global systems from Hourglass Diamonds.",
+  alternates: {
+    canonical: "/ledger",
+  },
+  openGraph: {
+    url: "/ledger",
+  },
 };
 
 const LEDGER_JSON_LD = {

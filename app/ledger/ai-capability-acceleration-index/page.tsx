@@ -7,6 +7,12 @@ export const metadata: Metadata = {
   title: "AI Capability Acceleration Index",
   description:
     "Hourglass Ledger AI Capability Acceleration Index — deployment-bound AI buildout across capability, enterprise friction, and physical infrastructure constraints.",
+  alternates: {
+    canonical: "/ledger/ai-capability-acceleration-index",
+  },
+  openGraph: {
+    url: "/ledger/ai-capability-acceleration-index",
+  },
 };
 
 export default function AICapabilityAccelerationIndexPage() {

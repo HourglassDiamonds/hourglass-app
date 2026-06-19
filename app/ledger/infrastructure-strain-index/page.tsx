@@ -7,6 +7,12 @@ export const metadata: Metadata = {
   title: "Infrastructure Strain Index",
   description:
     "Hourglass Ledger Infrastructure Strain Index — elevated physical strain in a capacity expansion race: power, grid, data centers, transformers, cooling, and labor.",
+  alternates: {
+    canonical: "/ledger/infrastructure-strain-index",
+  },
+  openGraph: {
+    url: "/ledger/infrastructure-strain-index",
+  },
 };
 
 export default function InfrastructureStrainIndexPage() {
