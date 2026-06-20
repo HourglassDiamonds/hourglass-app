@@ -3,25 +3,25 @@
  * Update values and copy here each week. Page layout is fixed in precious-materials-index-view.
  */
 
-export const PMI_UPDATED_LABEL = "Updated weekly — June 2, 2026";
+export const PMI_UPDATED_LABEL = "Updated weekly — June 20, 2026";
 
 export const PMI_MARKET_PRESSURE = {
-  score: 83,
-  status: "Elevated but Segmented",
-  weeklyChange: -3,
+  score: 85,
+  status: "Strategically Firm",
+  weeklyChange: 2,
 } as const;
 
 export const PMI_INTRO =
   "A weekly index tracking the material conditions behind fine jewelry — gold, platinum, natural diamonds, and the sourcing environment that shapes quality, availability, and long-term value for clients and makers.";
 
 export const PMI_METALS_PRESSURE = [
-  { metal: "Gold Monetary Pressure", score: 86, state: "Elevated" },
+  { metal: "Gold Monetary Pressure", score: 88, state: "Elevated" },
   { metal: "Silver Pressure", score: 78, state: "Elevated" },
   { metal: "Platinum / Palladium", score: 72, state: "Firm" },
 ] as const;
 
 export const PMI_DIAMOND_SPLIT = [
-  { segment: "Premium Natural", score: 76, note: "Resilient in key sizes" },
+  { segment: "Premium Natural", score: 78, note: "Resilient in key sizes" },
   { segment: "Commercial Natural", score: 55, note: "Price-sensitive" },
   { segment: "Lab-Grown", score: 88, note: "Share pressure rising" },
 ] as const;
@@ -32,33 +32,33 @@ export const PMI_JEWELRY_DEMAND = [
 ] as const;
 
 export const PMI_RECENT_READINGS = [
-  { week: "This Week", score: 83 },
-  { week: "Last Week", score: 86 },
-  { week: "2 Weeks Ago", score: 87 },
-  { week: "3 Weeks Ago", score: 86 },
+  { week: "This Week", score: 85 },
+  { week: "Last Week", score: 83 },
+  { week: "2 Weeks Ago", score: 86 },
+  { week: "3 Weeks Ago", score: 87 },
 ] as const;
 
 export const PMI_CROSS_SYSTEM_BRIDGE =
-  "Material markets remain connected to broader industrial and infrastructure conditions — but jewelry sourcing follows its own segmented logic beneath the macro layer.";
+  "Material markets remain connected to broader macro and reserve-asset conditions — but jewelry sourcing follows its own segmented logic beneath the geopolitical layer.";
 
 export const PMI_CROSS_SYSTEM_PRESSURE = [
-  "Gold holds elevated but orderly support — macro uncertainty without dramatic volatility, with dollar sensitivity still shaping wholesale channels.",
-  "Infrastructure and electrification metals demand adds industrial context to platinum and palladium, without elevating jewelry-market alarm.",
+  "Gold holds strategically elevated support — central-bank reserve behavior and macro uncertainty without dramatic volatility.",
+  "Natural diamonds enter a supply-structure reset — premium categories resilient, commercial ranges price-sensitive.",
   "Lab-grown pricing compression continues in commercial and mid-tier ranges, while premium natural holds firmer in selective sizes and cuts.",
-  "Luxury demand bifurcation persists — high jewelry and bridal hold structure; mid-tier channels face more price competition and sourcing discipline.",
+  "High-quality natural stones increasingly behave as scarcity and reserve assets rather than simple luxury cyclicals.",
 ] as const;
 
 export const PMI_WHAT_MOVED = [
-  "The reading eased as nothing this week supported broad market stress — conditions remain elevated but orderly across the composite.",
-  "Premium natural categories showed continued resilience in well-cut, desirable sizes; commercial ranges remained price-sensitive without broad deterioration.",
+  "Gold remained supported by central-bank reserve behavior; precious metals held elevated without dramatic volatility.",
+  "Natural diamonds entered a supply-structure reset — premium categories showed continued resilience in well-cut, desirable sizes.",
   "Lab-grown compression persisted in mid-tier channels, reinforcing luxury demand segmentation rather than uniform market pressure.",
 ] as const;
 
 export const PMI_WHAT_TO_WATCH = [
-  "Gold direction and the interaction between rates, dollar strength, and orderly safe-haven flows.",
-  "Natural diamond availability in VS+ qualities and rough price discipline in premium categories.",
+  "Whether gold continues behaving as a scarcity and reserve asset supported by central-bank demand rather than a simple luxury cyclical.",
+  "Natural diamond availability in VS+ qualities and rough price discipline during the supply-structure reset.",
+  "Whether high-quality natural diamonds continue holding firm as scarcity assets in premium categories.",
   "Lab-grown pricing pressure and its effect on commercial natural positioning — not premium heirloom-grade work.",
-  "Platinum and palladium supply for mounting lead times, with electrification demand as industrial context.",
   "Sourcing discipline in a segmented market — provenance and selective inventory over reactive accumulation.",
 ] as const;
 

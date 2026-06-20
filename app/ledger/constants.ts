@@ -18,18 +18,18 @@ export {
 export const QUIET_METRICS = [
   {
     label: "Energy Pressure",
-    value: "Elevated",
-    note: "Fuel, power, and grid-adjacent conditions remain above seasonal norms — with deployment capacity increasingly defining pace.",
+    value: "Uneven Relief",
+    note: "Hormuz ceasefire cooled acute energy pressure, but shipping normalization remains incomplete and Russia sanctions pressure is returning.",
   },
   {
     label: "AI Compute Load",
-    value: "Rising",
-    note: "Data-center expansion continues to pull on electricity, cooling, and transmission capacity.",
+    value: "Grid-Bound",
+    note: "AI demand continues shifting from software acceleration into power, utility, and data-center siting constraints.",
   },
   {
     label: "Physical Constraints",
-    value: "Narrowing",
-    note: "Transformers, labor, permitting, and utility timelines increasingly limit how quickly expansion converts to capacity.",
+    value: "Multi-Source",
+    note: "World Cup logistics, Hormuz routing friction, and grid interconnection delays test infrastructure simultaneously.",
   },
 ] as const;
 

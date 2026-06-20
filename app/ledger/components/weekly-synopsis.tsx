@@ -1,18 +1,18 @@
 export const WEEKLY_SYNOPSIS = {
   eyebrow: "Weekly Synopsis",
-  headline: "From Volatility to Capacity",
+  headline: "Relief at the surface; strain underneath.",
   blocks: [
     {
       title: "What changed",
-      body: "Narrative convergence increased around a shared physical story: AI infrastructure, power demand, grid limitations, transmission, cooling, and industrial capacity are increasingly discussed together. Pressure remains elevated, but the dominant signal shifted from volatility alone toward deployment and connection limits beneath still-resilient markets.",
+      body: "G7 leaders backed renewed pressure on Russia's war economy while supporting the U.S.-Iran framework around Hormuz. Energy pressure eased, but Hormuz traffic remains uneven and subject to new routing, permit, insurance, and security questions. The World Cup shifted from a sports story into a live test of transportation, security, weather response, and information integrity. AI infrastructure pressure continued to move from abstract compute demand into concrete power, grid, and site-selection constraints. Precious materials remained strategically firm, with gold supported by central-bank reserve behavior and diamonds entering a supply-structure reset.",
     },
     {
       title: "What's driving pressure",
-      body: "The limiting layer is increasingly physical — the ability to deploy, connect, power, cool, manufacture, permit, and coordinate systems fast enough to match expansion. Energy, shipping, inflation sensitivity, and bond markets remain active, but infrastructure capacity is setting more of the practical pace.",
+      body: "Markets and energy routes cooled after ceasefire progress, but the underlying system remains tense. Shipping normalization is uneven, sanctions pressure is shifting back toward Russia, World Cup logistics are testing local infrastructure, and AI demand continues moving from software acceleration into power and grid constraints.",
     },
     {
       title: "What to watch next",
-      body: "Watch transformer lead times, utility responsiveness, transmission expansion, data-center power access, electrical labor availability, and enterprise AI integration timelines. The key signal is whether physical buildout keeps pace with capital deployment — not whether markets break.",
+      body: "Whether Hormuz traffic normalizes or remains controlled, delayed, or selectively routed. Whether renewed Russia energy sanctions tighten oil and gas flows again after the Middle East relief trade. Whether World Cup host-city strain stays localized or becomes a broader infrastructure and safety narrative. Whether AI power demand continues raising utility, grid, and data-center siting pressure. Whether gold and high-quality natural diamonds continue behaving as scarcity and reserve assets rather than simple luxury cyclicals.",
     },
   ],
 } as const;

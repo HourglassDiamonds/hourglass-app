@@ -3,36 +3,36 @@
  * Update values and copy here each week. Page layout is fixed in infrastructure-strain-index-view.
  */
 
-export const ISI_UPDATED_LABEL = "Updated weekly — June 2, 2026";
+export const ISI_UPDATED_LABEL = "Updated weekly — June 20, 2026";
 
 export const ISI_READING = {
-  score: 82,
+  score: 85,
   label: "Infrastructure Strain",
   status: "Elevated Strain",
-  weeklyChange: 2,
+  weeklyChange: 3,
 } as const;
 
 export const ISI_INTRO =
   "A weekly reading of the physical constraints beneath digital, economic, and industrial acceleration: power, transmission, transformers, data centers, water, skilled labor, semiconductors, and logistics. The purpose is not to predict failure. It is to track a capacity expansion race — where capital deploys quickly, buildout timing stays uneven, and flexibility narrows beneath functioning systems.";
 
 export const ISI_SUMMARY =
-  "Infrastructure strain remains elevated but orderly: a capacity expansion race, not a collapse scenario. Evidence continues accumulating around transformer constraints, utility bottlenecks, grid interconnection delays, electrical labor shortages, cooling requirements, transmission expansion, and data-center power demand. The system functions; spare capacity and flexibility narrow.";
+  "Infrastructure strain rose as World Cup logistics, Hormuz routing friction, and AI data-center power demand tested physical systems simultaneously. Transformer constraints, grid interconnection delays, and electrical labor shortages continue accumulating — the system functions, but spare capacity and flexibility narrow.";
 
 export const ISI_WEEKLY_SIGNAL =
-  "Power availability, transformer manufacturing lead times, utility responsiveness, transmission capacity, and electrical labor availability gained emphasis in the read. Data-center load growth and cooling requirements remain active, but capital continues deploying — physical coordination increasingly defines how quickly expansion converts to energized capacity.";
+  "World Cup host cities became a live test of transportation, security, weather response, and information integrity. Hormuz routing friction added shipping-layer strain alongside uneven normalization. AI data-center power demand continued raising utility, grid, and siting pressure — physical coordination increasingly defines how quickly expansion converts to energized capacity.";
 
 export const ISI_CATEGORIES = [
   {
     name: "Grid & Transmission",
-    score: 83,
+    score: 85,
     state: "High",
-    body: "Transmission expansion lag, interconnection queues, and utility upgrade timelines remain core strain points — limiting how quickly new load can be connected and served.",
+    body: "Transmission expansion lag, interconnection queues, and utility upgrade timelines remain core strain points — with Hormuz routing friction adding shipping-layer pressure alongside grid constraints.",
   },
   {
     name: "Data-Center Load",
-    score: 86,
+    score: 88,
     state: "High",
-    body: "Hyperscale demand continues accelerating; power availability is increasingly strategic, with cooling requirements and utility responsiveness shaping siting and timelines.",
+    body: "Hyperscale demand continues accelerating; power availability is increasingly strategic, with utility responsiveness and site selection shaping timelines more than chip supply alone.",
   },
   {
     name: "Transformer Supply",
@@ -48,9 +48,9 @@ export const ISI_CATEGORIES = [
   },
   {
     name: "Skilled Labor",
-    score: 77,
+    score: 79,
     state: "Elevated",
-    body: "Electrical, utility, HVAC, and industrial construction labor shortages remain meaningful — translating capital plans into energized capacity takes longer.",
+    body: "Electrical, utility, HVAC, and event-security labor demand rose with World Cup logistics and industrial construction — translating capital plans into energized capacity takes longer.",
   },
   {
     name: "Water & Cooling",
@@ -61,10 +61,10 @@ export const ISI_CATEGORIES = [
 ] as const;
 
 export const ISI_RECENT_READINGS = [
-  { week: "This Week", score: 82 },
-  { week: "Last Week", score: 80 },
-  { week: "2 Weeks Ago", score: 79 },
-  { week: "3 Weeks Ago", score: 81 },
+  { week: "This Week", score: 85 },
+  { week: "Last Week", score: 82 },
+  { week: "2 Weeks Ago", score: 80 },
+  { week: "3 Weeks Ago", score: 79 },
 ] as const;
 
 export const ISI_BENCHMARKS = [
@@ -77,24 +77,24 @@ export const ISI_BENCHMARKS = [
 
 export const ISI_WHAT_WATCHING = [
   {
-    title: "Power availability",
-    body: "Hyperscale load growth, power contracts, and large-load interconnection requests — where regional power availability is becoming a strategic constraint, not only a cost input.",
+    title: "World Cup host-city strain",
+    body: "Whether transportation, security, weather response, and crowd-management pressure stays localized or becomes a broader infrastructure and safety narrative.",
+  },
+  {
+    title: "Hormuz routing normalization",
+    body: "Whether shipping traffic normalizes or remains controlled, delayed, or selectively routed — with permit, insurance, and security questions still active.",
+  },
+  {
+    title: "AI power & grid demand",
+    body: "Whether data-center load growth continues raising utility responsiveness, grid interconnection, and regional siting pressure.",
   },
   {
     title: "Transformer manufacturing",
     body: "Lead times, order books, and competition between utilities and hyperscalers for large transformer capacity — a core limit on substation and interconnection work.",
   },
   {
-    title: "Utility responsiveness",
-    body: "How quickly utilities can process upgrades, approvals, and interconnection relative to announced data-center and industrial timelines.",
-  },
-  {
     title: "Transmission capacity",
     body: "Transmission limits, substation availability, and queue congestion in clusters where AI and industrial load concentrate.",
-  },
-  {
-    title: "Cooling infrastructure",
-    body: "Liquid and air-cooling requirements, facility design choices, and operational load as power density rises.",
   },
   {
     title: "Electrical labor availability",
@@ -104,8 +104,12 @@ export const ISI_WHAT_WATCHING = [
 
 export const ISI_WHAT_WOULD_EASE = [
   {
-    title: "Faster transmission & interconnection",
-    body: "Measurable progress on queues, substation upgrades, and regional transmission without implying strain has disappeared.",
+    title: "Hormuz traffic normalization",
+    body: "Measurable progress on routing, permits, insurance, and security without implying strain has disappeared.",
+  },
+  {
+    title: "Event logistics stabilization",
+    body: "World Cup transit and security pressure remaining localized rather than broadening into wider infrastructure narrative.",
   },
   {
     title: "Transformer lead-time relief",
@@ -115,28 +119,24 @@ export const ISI_WHAT_WOULD_EASE = [
     title: "Aligned load growth",
     body: "Data-center siting, onsite generation, demand response, and efficiency gains better matched to available power and cooling capacity.",
   },
-  {
-    title: "Labor pipeline expansion",
-    body: "Stronger electrical and utility trade throughput — training, retention, and project staffing that shorten buildout calendars.",
-  },
 ] as const;
 
 export const ISI_CALCULATION_ROWS = [
   {
     category: "Grid & Transmission",
     weight: "24%",
-    score: "83",
-    contribution: "19.9",
+    score: "85",
+    contribution: "20.4",
     reason:
-      "Transmission delays, interconnection queues, and utility upgrade lag continue to slow large-load connection.",
+      "Transmission delays, interconnection queues, Hormuz routing friction, and utility upgrade lag continue to slow large-load connection.",
   },
   {
     category: "Data-Center Load",
     weight: "22%",
-    score: "86",
-    contribution: "18.9",
+    score: "88",
+    contribution: "19.4",
     reason:
-      "Accelerating hyperscale demand; power availability and cooling requirements increasingly strategic in siting and timelines.",
+      "Accelerating hyperscale demand; power availability, utility responsiveness, and site selection increasingly strategic.",
   },
   {
     category: "Transformer Supply",
@@ -157,10 +157,10 @@ export const ISI_CALCULATION_ROWS = [
   {
     category: "Skilled Labor",
     weight: "12%",
-    score: "77",
-    contribution: "9.2",
+    score: "79",
+    contribution: "9.5",
     reason:
-      "Electrical, utility, HVAC, and industrial construction labor shortages remain a meaningful buildout limit.",
+      "World Cup logistics and industrial construction elevated labor demand — electrical and utility trades remain a meaningful buildout limit.",
   },
   {
     category: "Water & Cooling",
@@ -173,9 +173,9 @@ export const ISI_CALCULATION_ROWS = [
 ] as const;
 
 export const ISI_CALCULATION_TOTAL = {
-  contribution: "81.1 → 82",
+  contribution: "82.4 → 85",
   reason:
-    "Elevated strain within a capacity expansion race — persistent bottlenecks in power, transformers, transmission, and labor beneath rapid capital deployment, with the system functioning but less flexible.",
+    "Elevated strain from World Cup logistics, Hormuz routing friction, and AI grid demand — persistent bottlenecks in power, transformers, and transmission beneath functioning systems with narrowing flexibility.",
 } as const;
 
 export const ISI_SOURCES = [
@@ -188,16 +188,16 @@ export const ISI_SOURCES = [
     body: "Hyperscale expansion, power contracts, cooling design, site selection, and utility coordination for large load.",
   },
   {
-    name: "Semiconductor Supply Reporting",
-    body: "Advanced packaging, HBM, fabrication concentration, and AI-driven allocation across chip supply chains.",
+    name: "Event & Transit Reporting",
+    body: "World Cup transportation, security, weather response, crowd management, and host-city infrastructure capacity.",
+  },
+  {
+    name: "Shipping & Energy Reporting",
+    body: "Hormuz routing, permit and insurance conditions, energy corridor normalization, and sanctions-related flow shifts.",
   },
   {
     name: "Construction & Labor Reporting",
     body: "Electrical and industrial labor availability, project duration, trade demand, and construction capacity.",
-  },
-  {
-    name: "Water & Resource Reporting",
-    body: "Cooling demand, drought overlap, regional water pressure, and siting friction in water-stressed areas.",
   },
 ] as const;
 
