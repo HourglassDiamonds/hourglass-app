@@ -945,6 +945,8 @@ function SuiteStyles() {
         width:13px; height:13px; border-radius:50%; border:1px solid oklch(from var(--ink-mute) l c h / 0.75);
         color:var(--ink-mute); font-family:var(--serif); font-style:italic; font-size:9px;
         display:grid; place-items:center; cursor:help; line-height:1;
+        padding:0; margin:0; background:transparent; font:inherit;
+        appearance:none; -webkit-appearance:none;
         opacity:0.92;
         transition:border-color var(--dt-dur-mid) var(--dt-ease), opacity var(--dt-dur-mid) var(--dt-ease), color var(--dt-dur-mid) var(--dt-ease);
       }
@@ -1229,6 +1231,11 @@ function SuiteStyles() {
         font-size:11px; line-height:1.65; letter-spacing:0.05em;
         color:var(--ink-soft); font-weight:400;
       }
+      .dts-page-intro{
+        margin:0 12px 6px; padding:0 8px; text-align:center;
+        font-size:10px; line-height:1.55; letter-spacing:0.04em;
+        color:var(--ink-mute); font-weight:400;
+      }
       .dts-stage-trust-link{
         color:var(--ink-soft);
         border-bottom:1px solid oklch(from var(--hairline) l c h / 0.85);
@@ -1506,6 +1513,13 @@ function SuiteStyles() {
           max-width:260px;
           width:100%;
           font-size:10px;
+        }
+        .dts-page-intro{
+          margin:0 auto 6px;
+          max-width:280px;
+          width:100%;
+          font-size:9.5px;
+          line-height:1.5;
         }
         .dts-layer-finger img{
           object-position:50% 38%;
@@ -2298,16 +2312,25 @@ export default function DiamondStudioPage() {
         </header>
 
         <div className="dts-main diamond-studio-main diamond-studio-grid studio-layout">
-          <aside className="dts-control-rail" aria-label="Diamond Studio controls">
+          <aside
+            className="dts-control-rail"
+            aria-label="Diamond Studio controls"
+            data-nosnippet
+          >
             <section
               className="dts-card dts-card--ring-size"
               aria-label="Ring size"
             >
               <div className="dts-card-head">
                 <span>Ring Size</span>
-                <span className="dts-info" title="US ring size, 4 to 13">
-                  i
-                </span>
+                <button
+                  type="button"
+                  className="dts-info"
+                  aria-label="About ring size"
+                  title="US ring size, 4 to 13"
+                >
+                  <span aria-hidden="true">i</span>
+                </button>
               </div>
               <div className="dts-stepper">
                 <button
@@ -2353,9 +2376,14 @@ export default function DiamondStudioPage() {
             <section className="dts-card dts-card--carat" aria-label="Diamond weight">
               <div className="dts-card-head">
                 <span>Diamond Weight</span>
-                <span className="dts-info" title="Stone weight in carats">
-                  i
-                </span>
+                <button
+                  type="button"
+                  className="dts-info"
+                  aria-label="About diamond weight"
+                  title="Stone weight in carats"
+                >
+                  <span aria-hidden="true">i</span>
+                </button>
               </div>
               <div className="dts-stepper">
                 <button
@@ -2433,12 +2461,14 @@ export default function DiamondStudioPage() {
             >
               <div className="dts-card-head">
                 <span>Finger Presence</span>
-                <span
+                <button
+                  type="button"
                   className="dts-info"
+                  aria-label="About finger presence"
                   title="Stone width as a percentage of finger inside diameter"
                 >
-                  i
-                </span>
+                  <span aria-hidden="true">i</span>
+                </button>
               </div>
               <div>
                 <div className="dts-cov-pct">{cov}%</div>
@@ -2474,6 +2504,11 @@ export default function DiamondStudioPage() {
               aria-label="Diamond on hand"
             >
               <div className="dts-mobile-hero studio-preview finger-preview">
+                <p className="dts-page-intro">
+                  Use Diamond Studio to preview how different diamond shapes and carat
+                  weights appear on the hand, with controls for ring size, orientation,
+                  and finger presence.
+                </p>
                 <p className="dts-sentence">
                   A {formatCaratForHeadline(carat)}-carat{" "}
                   {SHAPE_LABELS[shape].toLowerCase()} diamond,
@@ -2524,7 +2559,7 @@ export default function DiamondStudioPage() {
               </div>
             </div>
 
-            <div className="dts-shape-strip-wrap">
+            <div className="dts-shape-strip-wrap" data-nosnippet>
               <div
                 className="dts-shape-strip shape-selector"
                 role="tablist"

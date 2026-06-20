@@ -8,31 +8,31 @@ export const viewport: Viewport = {
 };
 
 const DIAMOND_STUDIO_DESCRIPTION =
-  "See how a diamond looks on your finger before you buy.";
+  "Preview diamond size on the hand by ring size, carat weight, shape, and orientation with Hourglass Diamonds' Diamond Studio.";
 
 const DIAMOND_STUDIO_OG_IMAGE = {
   url: "https://www.hourglassdiamonds.com/og/diamond-studio-og.jpg",
   width: 1200,
   height: 630,
-  alt: "Hourglass Diamonds Diamond Size Studio",
+  alt: "Hourglass Diamonds Diamond Studio",
 } as const;
 
 export const metadata: Metadata = {
-  title: "Diamond Size Studio",
+  title: "Diamond Studio",
   description: DIAMOND_STUDIO_DESCRIPTION,
   alternates: {
     canonical: "/diamond-studio",
   },
   openGraph: {
     ...DEFAULT_OPEN_GRAPH,
-    title: "Diamond Size Studio",
+    title: "Diamond Studio",
     description: DIAMOND_STUDIO_DESCRIPTION,
     url: "/diamond-studio",
     images: [DIAMOND_STUDIO_OG_IMAGE],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Diamond Size Studio",
+    title: "Diamond Studio",
     description: DIAMOND_STUDIO_DESCRIPTION,
     images: [DIAMOND_STUDIO_OG_IMAGE.url],
   },
