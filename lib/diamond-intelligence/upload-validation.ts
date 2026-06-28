@@ -1,12 +1,11 @@
 import {
-  MAX_IMAGE_UPLOAD_BYTES,
   MAX_UPLOAD_BYTES,
 } from "@/lib/calibration-library/runtime-limits";
 import {
   DI_ACCEPTED_EXTENSIONS,
   DI_ACCEPTED_MIMES,
 } from "@/lib/diamond-intelligence/upload-accept";
-import { DI_UNSUPPORTED_FILE_TYPE_MESSAGE } from "@/lib/diamond-intelligence/upload-format-policy";
+import { DI_PUBLIC_PDF_ONLY_MESSAGE } from "@/lib/diamond-intelligence/upload-format-policy";
 
 export {
   DI_ACCEPTED_EXTENSIONS,
@@ -143,7 +142,7 @@ export function validateDiamondIntelligenceUpload(input: {
     return {
       ok: false,
       code: "blocked_extension",
-      error: DI_UNSUPPORTED_FILE_TYPE_MESSAGE,
+      error: DI_PUBLIC_PDF_ONLY_MESSAGE,
     };
   }
 
@@ -151,7 +150,7 @@ export function validateDiamondIntelligenceUpload(input: {
     return {
       ok: false,
       code: "unsupported_extension",
-      error: DI_UNSUPPORTED_FILE_TYPE_MESSAGE,
+      error: DI_PUBLIC_PDF_ONLY_MESSAGE,
     };
   }
 
@@ -164,11 +163,11 @@ export function validateDiamondIntelligenceUpload(input: {
   }
 
   const detectedKind = detectUploadKindFromBytes(bytes);
-  if (detectedKind === "unknown") {
+  if (detectedKind !== "pdf") {
     return {
       ok: false,
-      code: "unknown_binary",
-      error: DI_UNSUPPORTED_FILE_TYPE_MESSAGE,
+      code: "unsupported_mime",
+      error: DI_PUBLIC_PDF_ONLY_MESSAGE,
     };
   }
 
@@ -183,7 +182,7 @@ export function validateDiamondIntelligenceUpload(input: {
     return {
       ok: false,
       code: "unsupported_mime",
-      error: DI_UNSUPPORTED_FILE_TYPE_MESSAGE,
+      error: DI_PUBLIC_PDF_ONLY_MESSAGE,
     };
   }
 
@@ -191,17 +190,7 @@ export function validateDiamondIntelligenceUpload(input: {
     return {
       ok: false,
       code: "mime_content_mismatch",
-      error: DI_UNSUPPORTED_FILE_TYPE_MESSAGE,
-    };
-  }
-  if (
-    detectedKind !== "pdf" &&
-    bytes.length > MAX_IMAGE_UPLOAD_BYTES
-  ) {
-    return {
-      ok: false,
-      code: "image_too_large",
-      error: `Image exceeds ${Math.floor(MAX_IMAGE_UPLOAD_BYTES / 1024 / 1024)}MB limit.`,
+      error: DI_PUBLIC_PDF_ONLY_MESSAGE,
     };
   }
 

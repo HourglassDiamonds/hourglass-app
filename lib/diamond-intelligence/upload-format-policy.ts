@@ -1,6 +1,8 @@
 /** Consumer copy for pre-extraction upload rejections (unsupported format). */
-export const DI_UNSUPPORTED_FILE_TYPE_MESSAGE =
-  "This file type isn't supported yet. Please upload a PDF, JPG, or PNG image of the report.";
+export const DI_PUBLIC_PDF_ONLY_MESSAGE =
+  "Diamond Intelligence currently accepts original grading report PDFs only.";
+
+export const DI_UNSUPPORTED_FILE_TYPE_MESSAGE = DI_PUBLIC_PDF_ONLY_MESSAGE;
 
 /** Validation codes that mean the file never reached extraction. */
 export const UNSUPPORTED_UPLOAD_VALIDATION_CODES = new Set([

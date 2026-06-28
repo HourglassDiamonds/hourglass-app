@@ -28,12 +28,9 @@ import { buildAdvisoryHighlights } from "./build-advisory-highlights";
 import GuidedReportCompletion from "./GuidedReportCompletion";
 import {
   DiamondIntelligenceIngestDock,
-  type IngestMode,
 } from "./DiamondIntelligenceIngestDock";
 import type { DiamondIntelligenceUploadErrorKind } from "@/lib/diamond-intelligence/upload-format-policy";
 import type { ClientUploadPhase } from "./ReportUploadDock";
-import type { ListingExtraction } from "@/lib/diamond-intelligence/url-ingestion/types";
-import { listPartialListingDetails } from "@/lib/diamond-intelligence/url-ingestion/listing-display";
 import DiV3Hero from "./DiV3Hero";
 import DiV3PartialGradeReview from "./DiV3PartialGradeReview";
 import DiV3FancyColorGuidance from "./DiV3FancyColorGuidance";
@@ -48,7 +45,7 @@ import {
 } from "./diamond-intelligence-result-state";
 import AnalysisProgressNarrative from "./AnalysisProgressNarrative";
 import { CONSUMER_COPY } from "./consumer-display-labels";
-import { DI_EDITORIAL_CARD, DI_EYEBROW_STUDIO, DI_SERIF_HEADLINE } from "./di-studio-styles";
+import { DI_EDITORIAL_CARD, DI_EYEBROW_STUDIO } from "./di-studio-styles";
 import { DI_V3_SHELL } from "./di-v3-styles";
 import DiLandingMarketing, { TrustPrivacyBand } from "./DiLandingMarketing";
 import { resolveHourglassClarityPolicy } from "@/lib/diamond-intelligence/hourglass-clarity-policy";
@@ -103,8 +100,6 @@ function parseAverageDiameterMm(measurements: string): string | null {
 }
 
 export type LightPerformanceDashboardProps = {
-  ingestMode: IngestMode;
-  onIngestModeChange: (mode: IngestMode) => void;
   fileName: string | null;
   uploadPhase: ClientUploadPhase;
   uploadError: string | null;
@@ -112,12 +107,7 @@ export type LightPerformanceDashboardProps = {
   uploadRetryAfterSeconds?: number | null;
   uploadStatusNote?: string | null;
   onFile: (file: File) => void;
-  onUrl: (url: string) => void;
   onClearError?: () => void;
-  partialListing?: ListingExtraction | null;
-  partialListingMessage?: string | null;
-  activeListing?: ListingExtraction | null;
-  sourceUrl?: string | null;
   uploadFileName?: string | null;
   uploadMimeHint?: ReportUploadMimeHint | null;
   metadata: ClientSafeMetadata | null;
@@ -129,8 +119,6 @@ export type LightPerformanceDashboardProps = {
 };
 
 export default function LightPerformanceDashboard({
-  ingestMode,
-  onIngestModeChange,
   fileName,
   uploadPhase,
   uploadError,
@@ -138,12 +126,7 @@ export default function LightPerformanceDashboard({
   uploadRetryAfterSeconds,
   uploadStatusNote,
   onFile,
-  onUrl,
   onClearError,
-  partialListing,
-  partialListingMessage,
-  activeListing,
-  sourceUrl,
   uploadFileName,
   uploadMimeHint,
   metadata,
@@ -457,11 +440,7 @@ export default function LightPerformanceDashboard({
   );
 
   const conciergeVerdict =
-    decisionProfile && fields
-      ? purchaseRecommendation
-      : partialListing
-        ? "Listing found — report needed for full review"
-        : null;
+    decisionProfile && fields ? purchaseRecommendation : null;
 
   const reportContext: DiamondIntelligenceConciergeContext = useMemo(
     () =>
@@ -469,24 +448,11 @@ export default function LightPerformanceDashboard({
         metadata,
         fields: fields ?? undefined,
         gradeHints,
-        ingestMode,
-        sourceUrl: sourceUrl ?? (ingestMode === "url" ? fileName : null),
-        activeListing: activeListing ?? partialListing ?? null,
+        ingestMode: "upload",
         uploadFileName,
         verdict: conciergeVerdict,
       }),
-    [
-      metadata,
-      fields,
-      gradeHints,
-      ingestMode,
-      sourceUrl,
-      fileName,
-      activeListing,
-      partialListing,
-      uploadFileName,
-      conciergeVerdict,
-    ],
+    [metadata, fields, gradeHints, uploadFileName, conciergeVerdict],
   );
   const heroPresentation = buildV3HeroPresentation({
     purchaseRecommendation,
@@ -520,17 +486,12 @@ export default function LightPerformanceDashboard({
         gradeHints?.clarity ?? decisionProfile?.gradeHints.clarity,
       );
 
-  const partialListingDetails = useMemo(
-    () => (partialListing ? listPartialListingDetails(partialListing) : []),
-    [partialListing],
-  );
-
   const resultState = resolveDiamondIntelligenceResultState({
     uploadPhase,
     uploadError: uploadError ?? null,
     uploadErrorKind: uploadErrorKind ?? null,
     hasReport,
-    partialListing: Boolean(partialListing),
+    partialListing: false,
     v3RenderPhase,
     canRenderFullResult,
   });
@@ -541,8 +502,7 @@ export default function LightPerformanceDashboard({
     errorMessage: uploadError,
   });
 
-  const showLandingMarketing =
-    resultState === "NO_RESULT" && !partialListing && !hasReport;
+  const showLandingMarketing = resultState === "NO_RESULT" && !hasReport;
 
   const shellClass = showLandingMarketing
     ? "mx-auto w-full max-w-[1180px] px-5 pb-14 pt-0 md:px-6 md:pb-16"
@@ -566,19 +526,15 @@ export default function LightPerformanceDashboard({
         ) : null}
         <div className={showLandingMarketing ? undefined : "mt-4"}>
           <DiamondIntelligenceIngestDock
-            mode={ingestMode}
-            onModeChange={onIngestModeChange}
             phase={uploadPhase}
             disabled={busy}
             errorMessage={uploadInlineError ? uploadError : null}
+            uploadErrorKind={uploadErrorKind}
             statusNote={uploadStatusNote}
             onFile={onFile}
-            onUrl={onUrl}
             onClearError={onClearError}
             metadata={hasReport ? metadata : null}
             fileName={fileName}
-            partialListing={partialListing}
-            partialListingMessage={partialListingMessage}
           />
         </div>
       </div>
@@ -589,37 +545,7 @@ export default function LightPerformanceDashboard({
         <AnalysisProgressNarrative active />
       ) : null}
 
-      {partialListing && resultState === "NO_RESULT" ? (
-        <section className="relative py-6 md:py-8">
-          <p className={DI_EYEBROW_STUDIO}>Listing Review</p>
-          <p
-            className={`${DI_SERIF_HEADLINE} mt-5 max-w-4xl text-4xl leading-[1.05] md:text-5xl xl:text-6xl`}
-            style={{ textWrap: "balance" }}
-          >
-            {CONSUMER_COPY.partialListingHeadline}
-          </p>
-          <p className="mt-8 max-w-xl text-lg leading-8 text-[#75675e]">
-            {partialListingMessage ?? CONSUMER_COPY.partialListingBody}
-          </p>
-          {partialListingDetails.length > 0 ? (
-            <dl className="mt-8 grid max-w-md gap-3 border-t border-[rgba(181,150,98,0.2)] pt-6">
-              {partialListingDetails.map((detail) => (
-                <div
-                  key={detail.label}
-                  className="grid grid-cols-[minmax(0,7rem)_1fr] gap-3 text-sm"
-                >
-                  <dt className="text-[11px] uppercase tracking-[0.14em] text-[#9b8b78]">
-                    {detail.label}
-                  </dt>
-                  <dd className="text-[#1e1a16]">{detail.value}</dd>
-                </div>
-              ))}
-            </dl>
-          ) : null}
-        </section>
-      ) : null}
-
-      {resultState === "NO_RESULT" && !partialListing && !showLandingMarketing ? (
+      {resultState === "NO_RESULT" && !showLandingMarketing ? (
         <section className="relative py-6 md:py-8" aria-hidden>
           <div className="mx-auto h-px max-w-md bg-[linear-gradient(90deg,transparent,rgba(181,150,98,0.35),transparent)]" />
         </section>

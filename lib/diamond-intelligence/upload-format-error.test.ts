@@ -6,12 +6,12 @@ import {
   resolveInterpretUploadFailure,
 } from "./client-upload";
 import { createMinimalBmpBuffer } from "./test-bmp-fixture";
-import { DI_UNSUPPORTED_FILE_TYPE_MESSAGE } from "./upload-format-policy";
+import { DI_PUBLIC_PDF_ONLY_MESSAGE } from "./upload-format-policy";
 import { normalizeDiamondIntelligenceUpload } from "./upload-normalize";
 import { validateDiamondIntelligenceUpload } from "./upload-validation";
 
 describe("unsupported upload format policy", () => {
-  it("normalizes BMP then passes validation with consumer-safe pipeline input", async () => {
+  it("normalizes BMP but rejects it on public PDF-only validation", async () => {
     const bmp = await createMinimalBmpBuffer(16, 16);
 
     const normalized = await normalizeDiamondIntelligenceUpload({
@@ -29,9 +29,9 @@ describe("unsupported upload format policy", () => {
       sourceFilename: normalized.sourceFilename,
     });
 
-    assert.equal(result.ok, true);
-    if (result.ok) {
-      assert.equal(result.mime, "image/png");
+    assert.equal(result.ok, false);
+    if (!result.ok) {
+      assert.equal(result.code, "unsupported_extension");
     }
   });
 
@@ -48,7 +48,7 @@ describe("unsupported upload format policy", () => {
     assert.equal(normalized.ok, false);
     if (!normalized.ok) {
       assert.equal(normalized.code, "unknown_binary");
-      assert.equal(normalized.error, DI_UNSUPPORTED_FILE_TYPE_MESSAGE);
+      assert.equal(normalized.error, DI_PUBLIC_PDF_ONLY_MESSAGE);
     }
   });
 
@@ -56,13 +56,13 @@ describe("unsupported upload format policy", () => {
     const err = resolveInterpretUploadFailure(400, {
       ok: false,
       code: "blocked_extension",
-      error: DI_UNSUPPORTED_FILE_TYPE_MESSAGE,
+      error: DI_PUBLIC_PDF_ONLY_MESSAGE,
     });
 
     assert.ok(err instanceof DiamondIntelligenceUploadError);
     assert.equal(err.kind, "unsupported_format");
     assert.equal(err.code, "blocked_extension");
-    assert.equal(err.message, DI_UNSUPPORTED_FILE_TYPE_MESSAGE);
+    assert.equal(err.message, DI_PUBLIC_PDF_ONLY_MESSAGE);
   });
 
   it("maps API 422 interpret failure to interpret_failure upload error", () => {

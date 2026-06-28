@@ -67,7 +67,9 @@ export function resolveInterpretUploadFailure(
     uploadMeta ?? buildReportUploadMimeHintFromApi(data.uploadMeta);
   if (status === 400 && isUnsupportedUploadValidationCode(code)) {
     return new DiamondIntelligenceUploadError(
-      DI_UNSUPPORTED_FILE_TYPE_MESSAGE,
+      typeof data.error === "string" && data.error.trim()
+        ? data.error
+        : DI_UNSUPPORTED_FILE_TYPE_MESSAGE,
       "unsupported_format",
       code,
       undefined,

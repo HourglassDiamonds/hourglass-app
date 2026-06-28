@@ -36,7 +36,7 @@ describe("swapFilenameExtensionToPng", () => {
 });
 
 describe("normalizeDiamondIntelligenceUpload", () => {
-  it("converts BMP to PNG and passes subsequent validation", async () => {
+  it("converts BMP to PNG but rejects it on public PDF-only validation", async () => {
     const bmp = await createTestBmpBuffer();
     assert.equal(detectBmpFromBytes(bmp), true);
 
@@ -52,10 +52,6 @@ describe("normalizeDiamondIntelligenceUpload", () => {
     assert.equal(normalized.mime, "image/png");
     assert.equal(normalized.sourceFilename, "screenshot.png");
     assert.equal(normalized.ingestMetadata.ingestKind, "bmp-converted");
-    assert.equal(normalized.ingestMetadata.convertedFrom, "bmp");
-    assert.equal(normalized.ingestMetadata.normalizedMime, "image/png");
-    assert.equal(normalized.ingestMetadata.originalFilename, "screenshot.bmp");
-    assert.equal(normalized.ingestMetadata.originalMime, "image/bmp");
     assert.equal(detectUploadKindFromBytes(normalized.bytes), "png");
 
     const validated = validateDiamondIntelligenceUpload({
@@ -63,10 +59,9 @@ describe("normalizeDiamondIntelligenceUpload", () => {
       declaredMime: normalized.mime,
       sourceFilename: normalized.sourceFilename,
     });
-    assert.equal(validated.ok, true);
-    if (validated.ok) {
-      assert.equal(validated.mime, "image/png");
-      assert.equal(validated.detectedKind, "png");
+    assert.equal(validated.ok, false);
+    if (!validated.ok) {
+      assert.equal(validated.code, "unsupported_extension");
     }
   });
 

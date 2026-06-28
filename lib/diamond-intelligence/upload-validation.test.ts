@@ -25,22 +25,24 @@ describe("validateDiamondIntelligenceUpload", () => {
     }
   });
 
-  it("accepts valid JPEG uploads", () => {
+  it("rejects valid JPEG uploads", () => {
     const result = validateDiamondIntelligenceUpload({
       bytes: JPEG_HEADER,
       declaredMime: "image/jpeg",
       sourceFilename: "report.jpg",
     });
-    assert.equal(result.ok, true);
+    assert.equal(result.ok, false);
+    if (!result.ok) assert.equal(result.code, "unsupported_extension");
   });
 
-  it("accepts valid PNG uploads", () => {
+  it("rejects valid PNG uploads", () => {
     const result = validateDiamondIntelligenceUpload({
       bytes: PNG_HEADER,
       declaredMime: "image/png",
       sourceFilename: "report.png",
     });
-    assert.equal(result.ok, true);
+    assert.equal(result.ok, false);
+    if (!result.ok) assert.equal(result.code, "unsupported_extension");
   });
 
   it("rejects empty files", () => {
@@ -72,7 +74,7 @@ describe("validateDiamondIntelligenceUpload", () => {
     });
     assert.equal(result.ok, false);
     if (!result.ok) {
-      assert.equal(result.code, "mime_content_mismatch");
+      assert.equal(result.code, "unsupported_extension");
     }
   });
 
@@ -100,14 +102,14 @@ describe("validateDiamondIntelligenceUpload", () => {
     }
   });
 
-  it("rejects MIME/content mismatches", () => {
+  it("rejects MIME/content mismatches for non-PDF extensions", () => {
     const result = validateDiamondIntelligenceUpload({
       bytes: PDF_HEADER,
       declaredMime: "image/png",
       sourceFilename: "report.png",
     });
     assert.equal(result.ok, false);
-    if (!result.ok) assert.equal(result.code, "mime_content_mismatch");
+    if (!result.ok) assert.equal(result.code, "unsupported_extension");
   });
 
   it("rejects unknown binary content", () => {
@@ -117,7 +119,7 @@ describe("validateDiamondIntelligenceUpload", () => {
       sourceFilename: "report.pdf",
     });
     assert.equal(result.ok, false);
-    if (!result.ok) assert.equal(result.code, "unknown_binary");
+    if (!result.ok) assert.equal(result.code, "unsupported_mime");
   });
 });
 

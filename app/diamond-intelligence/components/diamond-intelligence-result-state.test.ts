@@ -99,7 +99,7 @@ describe("resolveDiamondIntelligenceResultState", () => {
       resolveDiamondIntelligenceResultState({
         uploadPhase: "error",
         uploadError:
-          "This file type isn't supported yet. Please upload a PDF, JPG, or PNG image of the report.",
+          "Diamond Intelligence currently accepts original grading report PDFs only.",
         uploadErrorKind: "unsupported_format",
         hasReport: false,
         partialListing: false,
@@ -115,7 +115,7 @@ describe("resolveDiamondIntelligenceResultState", () => {
       shouldShowUploadInlineError({
         resultState: "NO_RESULT",
         errorMessage:
-          "This file type isn't supported yet. Please upload a PDF, JPG, or PNG image of the report.",
+          "Diamond Intelligence currently accepts original grading report PDFs only.",
       }),
       true,
     );

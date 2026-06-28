@@ -39,16 +39,23 @@ export const CONSUMER_COPY = {
     "Transparency and brightness in motion",
     "Nuances that may only appear during in-person viewing",
   ] as const,
-  ingestSectionHeadline: "Begin Your Analysis",
+  ingestSectionHeadline: "Upload the original grading report PDF.",
   ingestSectionSupportingCopy:
-    "Upload a grading report for the most complete analysis, or paste a supported listing URL.",
-  urlIngestHeadline: "Paste a diamond listing URL",
-  urlIngestSubcopy:
-    "We'll review the available listing information and, when possible, retrieve the grading report automatically. Some retailers provide full report access, while others may require a manual upload.",
-  urlInputPlaceholder: "https://www.retailer.com/diamond/...",
-  urlIngestHelperLines: [
-    "Supports many listings from Blue Nile, Rare Carat, Adiamor, Ritani, Brilliant Earth, James Allen, and other major retailers.",
-  ] as const,
+    "Diamond Intelligence is most reliable when it reads the lab report itself.",
+  uploadBestPracticeLine:
+    "For best results, use the original PDF from GIA, IGI, or GCAL 8X.",
+  uploadMobileHelperLine:
+    "Mobile works when the PDF is already saved in Files. If you only see ‘Save to Photos,’ use Concierge instead.",
+  uploadDesktopHelperLine:
+    "Desktop is often the easiest way to download the original report PDF.",
+  listingLinkConciergePrefix:
+    "Only have a screenshot, image, or listing link?",
+  listingLinkConciergeCta: "Begin the Conversation",
+  listingLinkConciergeSuffix: "and we'll review it personally.",
+  pdfOnlyRejectionPrimary:
+    "Diamond Intelligence currently accepts original grading report PDFs only.",
+  pdfOnlyRejectionSecondary:
+    "If you only have a screenshot, image, or listing link, we can review it personally through Concierge.",
   justinReviewCta: "Have Justin Review This Diamond",
   justinReviewCtaPhilosophy:
     "We are extremely selective about what we recommend, but not about who we help.",
@@ -56,18 +63,10 @@ export const CONSUMER_COPY = {
     "Within the quality range we believe in, we are generally very competitive. What we will not do is recommend diamonds we would not personally pursue ourselves.",
   justinReviewCtaGoal:
     "Our goal is not simply to find the lowest price. It is to identify the strongest value among diamonds genuinely worth considering.",
-  uploadTabLabel: "Upload Grading Report",
-  urlTabLabel: "Paste Listing URL",
   uploadHelperLines: [
     "Round brilliant diamonds only.",
-    "Upload a GIA, IGI, or GCAL 8X grading report.",
     "The analysis evaluates the diamond itself — not the asking price.",
-    "Original grading report PDFs usually provide the cleanest read. Screenshots may work, but some may require manual confirmation.",
   ] as const,
-  uploadGuidanceFallbackPrefix:
-    "Some screenshots, BMP files, and lower-resolution images can be difficult for automated interpretation. If you receive an error message, submit the report through",
-  uploadGuidanceConciergeLinkLabel: "Concierge",
-  uploadGuidanceFallbackSuffix: "for a personal review.",
   betaDisclosure:
     "Diamond Intelligence is currently in beta and supports round brilliant diamonds only. Fancy shapes and additional report formats are still being added.",
   betaDisclosureOutreachPrefix:

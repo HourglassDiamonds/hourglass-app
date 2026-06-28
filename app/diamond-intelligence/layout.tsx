@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { DEFAULT_OPEN_GRAPH } from "@/lib/seo/site-metadata";
 
 const DIAMOND_INTELLIGENCE_DESCRIPTION =
-  "Evaluate light performance, optical precision, and overall diamond quality with expert-guided analysis.";
+  "Upload an original GIA, IGI, or GCAL 8X grading report PDF and review the diamond through Hourglass standards.";
 
 const DIAMOND_INTELLIGENCE_OG_IMAGE = {
   url: "https://www.hourglassdiamonds.com/og/diamond-intelligence-og.jpg",
