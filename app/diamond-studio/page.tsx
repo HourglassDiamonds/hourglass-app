@@ -349,8 +349,8 @@ const RING_CLUSTER_TOP_PCT = 63.5;
 
 /** Main preview stone translateY extra (px): desktop shank optical seat (~8px above prior). */
 const DIAMOND_Y_NUDGE_DESKTOP_PX = 4;
-/** Mobile preview stone translateY extra (px); negative moves up on band. */
-const MOBILE_DIAMOND_Y_NUDGE_PX = -4;
+/** Mobile preview stone translateY extra (px); positive moves down on band. */
+const MOBILE_DIAMOND_Y_NUDGE_PX = 12;
 /** Mobile-only on-stage scale; does not affect mm readout or coverage. */
 const MOBILE_STONE_RENDER_SCALE = 1.07;
 
@@ -899,6 +899,39 @@ function SuiteStyles() {
           max-height:none;
           position:static;
           margin:0;
+        }
+        .dts-finger-stack{
+          display:flex;
+          flex-direction:column;
+          gap:0;
+          background:var(--card);
+          border:1px solid var(--card-edge);
+          border-radius:12px;
+          box-shadow:var(--shadow-1);
+          flex-shrink:0;
+          overflow:visible;
+          transition:border-color var(--dt-dur-mid) var(--dt-ease), box-shadow var(--dt-dur-mid) var(--dt-ease);
+        }
+        .dts-finger-stack .dts-card--finger,
+        .dts-finger-stack .dts-card--band-width{
+          background:transparent;
+          border:none;
+          border-radius:0;
+          box-shadow:none;
+          margin:0;
+          padding:11px 12px 12px;
+        }
+        .dts-finger-stack .dts-card--finger{
+          padding-bottom:0;
+        }
+        .dts-finger-stack .dts-card--band-width{
+          padding-top:0;
+          padding-bottom:11px;
+        }
+        .dts-finger-stack .dts-card--band-width .dts-band-width-block{
+          margin-top:10px;
+          padding-top:10px;
+          border-top:1px solid oklch(from var(--hairline-soft) l c h / 0.85);
         }
         .dts-stage-stack{
           grid-column:2;
@@ -1554,7 +1587,7 @@ function SuiteStyles() {
           display:flex !important;
           flex-direction:column !important;
           width:100% !important;
-          gap:11px;
+          gap:13px;
           grid-template-columns:unset;
           grid-template-rows:unset;
           min-width:0;
@@ -1565,19 +1598,31 @@ function SuiteStyles() {
           display:contents;
         }
         .dts-main .dts-card{
-          width:100%;
           max-width:none;
-          padding:11px 16px 12px;
+          padding:9px 16px 10px;
           margin-left:20px;
           margin-right:20px;
           width:calc(100% - 40px);
           box-sizing:border-box;
         }
-        .dts-main .dts-card--finger{ order:5; }
+        .dts-finger-stack{
+          display:contents;
+        }
+        .dts-main .dts-card--finger{ order:3; }
         .dts-main .dts-card--carat{ order:6; }
         .dts-main .dts-card--presentation{
+          order:8;
+          padding-bottom:14px;
+        }
+        .dts-main .dts-card--band-width{
           order:7;
-          padding-bottom:20px;
+          margin-top:-6px;
+          padding:7px 16px 8px;
+        }
+        .dts-main .dts-card--band-width .dts-band-width-block{
+          margin-top:0;
+          padding-top:0;
+          border-top:none;
         }
         .dts-stage-stack{
           display:contents;
@@ -1589,7 +1634,7 @@ function SuiteStyles() {
           order:2;
           width:100% !important;
           max-width:none !important;
-          margin:2px 0 0;
+          margin:0;
           padding:0 20px;
           box-sizing:border-box;
           display:flex;
@@ -1599,15 +1644,16 @@ function SuiteStyles() {
         .dts-mobile-visual{
           order:4;
           width:100%;
-          margin-top:-5px;
+          margin-top:0;
           padding:0 20px;
           box-sizing:border-box;
         }
         .dts-shape-strip-wrap{
-          order:10;
+          order:5;
           width:calc(100% - 40px);
-          margin-left:20px;
-          margin-right:20px;
+          margin:2px 20px 6px;
+          -webkit-mask-image:linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
+          mask-image:linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
         }
         .dts-stage-canvas{
           display:flex;
@@ -1620,7 +1666,7 @@ function SuiteStyles() {
           font-size:clamp(16.5px,4.4vw,18.5px);
           line-height:1.28;
           letter-spacing:0.006em;
-          margin:0 auto 8px;
+          margin:0 auto 6px;
           padding:0 2px;
           max-width:260px;
           position:relative !important;
@@ -1629,13 +1675,13 @@ function SuiteStyles() {
           width:100%;
         }
         .dts-stage-trust{
-          margin:0 auto 9px;
+          margin:0 auto 7px;
           max-width:260px;
           width:100%;
           font-size:10px;
         }
         .dts-page-intro{
-          margin:0 auto 6px;
+          margin:0 auto 4px;
           max-width:280px;
           width:100%;
           font-size:9.5px;
@@ -1665,11 +1711,6 @@ function SuiteStyles() {
           max-height:min(48vh,352px);
           aspect-ratio:7 / 9.15;
         }
-        .dts-shape-strip-wrap{
-          margin:4px 0 8px;
-          -webkit-mask-image:linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
-          mask-image:linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
-        }
         .dts-shape-strip{
           position:relative !important;
           left:auto !important;
@@ -1687,7 +1728,7 @@ function SuiteStyles() {
           overflow-y:hidden;
           -webkit-overflow-scrolling:touch;
           gap:6px;
-          padding:8px 10px 9px;
+          padding:6px 10px 7px;
           scrollbar-width:none;
           -ms-overflow-style:none;
           align-self:stretch;
@@ -1714,8 +1755,8 @@ function SuiteStyles() {
         .dts-shape-chip{
           flex:0 0 auto;
           min-width:46px;
-          min-height:42px;
-          padding:6px 7px 5px;
+          min-height:38px;
+          padding:4px 7px 3px;
           touch-action:manipulation;
         }
         .dts-shell[data-theme="light"] .dts-card,
@@ -1730,8 +1771,8 @@ function SuiteStyles() {
           border-color:oklch(from var(--card-edge) l c h / 0.85);
         }
         .dts-stepper button{
-          width:36px;
-          height:36px;
+          width:44px;
+          height:44px;
           font-size:14px;
         }
         .dts-stepper .dts-step-val{
@@ -1739,26 +1780,59 @@ function SuiteStyles() {
           min-width:52px;
         }
         .dts-card-head{
-          margin-bottom:8px;
+          margin-bottom:6px;
+        }
+        .dts-card-subhead{
+          margin-bottom:4px;
         }
         .dts-stepper{
-          margin:0 0 6px;
+          margin:0 0 4px;
+        }
+        .dts-slider{
+          margin:4px 4px 0;
+        }
+        .dts-slider-endpoints{
+          margin:5px 0 0;
+        }
+        .dts-card .dts-card-note{
+          margin-top:4px;
+        }
+        .dts-carat-step-hint{
+          margin-top:4px;
+        }
+        .dts-card-section{
+          margin-top:8px;
+          padding-top:8px;
+        }
+        .dts-tone-swatches{
+          gap:10px;
+          margin:1px 0 2px;
+        }
+        .dts-tone-swatch{
+          gap:5px;
+          padding:2px 4px 1px;
+          min-height:44px;
+          min-width:44px;
+          justify-content:center;
+        }
+        .dts-skin-row{
+          gap:5px;
         }
         .dts-skin-pill{
-          min-height:36px;
+          min-height:44px;
           display:flex;
           align-items:center;
           justify-content:center;
-          padding:7px 6px;
+          padding:5px 6px;
         }
         .dts-slider{
           touch-action:pan-x;
           -webkit-tap-highlight-color:transparent;
         }
         .dts-slider .dts-track{
-          height:40px;
-          min-height:40px;
-          margin:-10px 8px -9px;
+          height:44px;
+          min-height:44px;
+          margin:-8px 8px -7px;
           background:transparent;
           touch-action:pan-x;
           -webkit-user-select:none;
@@ -1786,9 +1860,9 @@ function SuiteStyles() {
           -webkit-tap-highlight-color:transparent;
         }
         .dts-zones{
-          height:40px;
-          min-height:40px;
-          margin:-17.5px 0 calc(11px - 17.5px);
+          height:44px;
+          min-height:44px;
+          margin:-19.5px 0 calc(9px - 19.5px);
           background:transparent;
           background-image:linear-gradient(var(--hairline-soft),var(--hairline-soft));
           background-size:100% 5px;
@@ -1807,8 +1881,23 @@ function SuiteStyles() {
         }
         .dts-cov-helper{
           padding:0 4px;
-          margin-top:6px;
+          margin-top:4px;
           font-size:10px;
+        }
+        .dts-card--presentation .dts-card-section .dts-card-head{
+          margin-bottom:4px;
+        }
+        .dts-card--presentation .dts-cov-pct{
+          margin:0 0 2px;
+        }
+        .dts-card--presentation .dts-zone-bar{
+          margin-top:8px;
+        }
+        .dts-cov-label{
+          margin-top:2px;
+        }
+        .dts-zone-labels{
+          margin-top:5px;
         }
       }
       @media (min-width: 769px) and (max-height: 900px) {
@@ -1818,6 +1907,17 @@ function SuiteStyles() {
         }
         .dts-control-rail .dts-card{
           padding:10px 11px 11px;
+        }
+        .dts-finger-stack .dts-card--finger,
+        .dts-finger-stack .dts-card--band-width{
+          padding:10px 11px 11px;
+        }
+        .dts-finger-stack .dts-card--finger{
+          padding-bottom:0;
+        }
+        .dts-finger-stack .dts-card--band-width{
+          padding-top:0;
+          padding-bottom:10px;
         }
         .dts-card--presentation .dts-cov-pct{
           font-size:26px;
@@ -2506,118 +2606,125 @@ export default function DiamondStudioPage() {
             aria-label="Diamond Studio controls"
             data-nosnippet
           >
-            <section
-              className="dts-card dts-card--finger"
-              aria-label="Finger"
-            >
-              <div className="dts-card-head">
-                <span>Finger</span>
-                <button
-                  type="button"
-                  className="dts-info"
-                  aria-label="About ring size"
-                  title="US ring size, 4 to 13"
-                >
-                  <span aria-hidden="true">i</span>
-                </button>
-              </div>
-              <div className="dts-card-subhead">
-                <span>Ring Size</span>
-              </div>
-              <div className="dts-stepper">
-                <button
-                  type="button"
-                  aria-label="Smaller ring size"
-                  disabled={ringSize <= 4}
-                  onClick={() => applyRingSize(ringSize - 0.5, true)}
-                >
-                  ‹
-                </button>
-                <span className="dts-step-val">{ringSize.toFixed(1)}</span>
-                <button
-                  type="button"
-                  aria-label="Larger ring size"
-                  disabled={ringSize >= 13}
-                  onClick={() => applyRingSize(ringSize + 0.5, true)}
-                >
-                  ›
-                </button>
-              </div>
-              <div className="dts-slider dts-slider--ring">
-                <div
-                  className="dts-track"
-                  ref={fsTrackRef}
-                  style={{ "--dts-fill": `${fsHandleLeft}%` } as React.CSSProperties}
-                >
-                  <div
-                    className="dts-handle"
-                    style={{ left: `${fsHandleLeft}%` }}
-                  />
+            <div className="dts-finger-stack">
+              <section
+                className="dts-card dts-card--finger"
+                aria-label="Finger"
+              >
+                <div className="dts-card-head">
+                  <span>Finger</span>
+                  <button
+                    type="button"
+                    className="dts-info"
+                    aria-label="About ring size"
+                    title="US ring size, 4 to 13"
+                  >
+                    <span aria-hidden="true">i</span>
+                  </button>
                 </div>
-                <div className="dts-slider-endpoints" aria-hidden>
-                  <span>Size 4</span>
-                  <span>Size 13</span>
-                </div>
-              </div>
-              <p className="dts-card-note">
-                Finger width: <strong>{fingerMm.toFixed(1)} mm</strong> inside
-                diameter
-              </p>
-
-              <div className="dts-card-section">
                 <div className="dts-card-subhead">
-                  <span>Skin Tone</span>
+                  <span>Ring Size</span>
                 </div>
-                <div
-                  className="dts-tone-swatches"
-                  role="radiogroup"
-                  aria-label="Skin tone"
-                >
-                  {SKIN_TONE_SWATCHES.map(({ id, label, color }) => (
-                    <button
-                      key={id}
-                      type="button"
-                      role="radio"
-                      aria-checked={skinTone === id}
-                      className={`dts-tone-swatch ${skinTone === id ? "is-selected" : ""}`}
-                      onClick={() => selectSkinTone(id)}
-                    >
-                      <span
-                        className="dts-tone-swatch-circle"
-                        style={{ background: color }}
-                        aria-hidden
-                      />
-                      <span className="dts-tone-swatch-label">{label}</span>
-                    </button>
-                  ))}
+                <div className="dts-stepper">
+                  <button
+                    type="button"
+                    aria-label="Smaller ring size"
+                    disabled={ringSize <= 4}
+                    onClick={() => applyRingSize(ringSize - 0.5, true)}
+                  >
+                    ‹
+                  </button>
+                  <span className="dts-step-val">{ringSize.toFixed(1)}</span>
+                  <button
+                    type="button"
+                    aria-label="Larger ring size"
+                    disabled={ringSize >= 13}
+                    onClick={() => applyRingSize(ringSize + 0.5, true)}
+                  >
+                    ›
+                  </button>
                 </div>
-              </div>
-
-              <div className="dts-card-section">
-                <div className="dts-card-subhead">
-                  <span>Band Width</span>
-                  <span className="dts-card-subhead-val">
-                    {bandWidth}mm band
-                  </span>
-                </div>
-                <div className="dts-slider dts-slider--band">
+                <div className="dts-slider dts-slider--ring">
                   <div
                     className="dts-track"
-                    ref={bwTrackRef}
-                    style={{ "--dts-fill": `${bwHandleLeft}%` } as React.CSSProperties}
+                    ref={fsTrackRef}
+                    style={{ "--dts-fill": `${fsHandleLeft}%` } as React.CSSProperties}
                   >
                     <div
                       className="dts-handle"
-                      style={{ left: `${bwHandleLeft}%` }}
+                      style={{ left: `${fsHandleLeft}%` }}
                     />
                   </div>
                   <div className="dts-slider-endpoints" aria-hidden>
-                    <span>2 mm</span>
-                    <span>5 mm</span>
+                    <span>Size 4</span>
+                    <span>Size 13</span>
                   </div>
                 </div>
-              </div>
-            </section>
+                <p className="dts-card-note">
+                  Finger width: <strong>{fingerMm.toFixed(1)} mm</strong> inside
+                  diameter
+                </p>
+
+                <div className="dts-card-section">
+                  <div className="dts-card-subhead">
+                    <span>Skin Tone</span>
+                  </div>
+                  <div
+                    className="dts-tone-swatches"
+                    role="radiogroup"
+                    aria-label="Skin tone"
+                  >
+                    {SKIN_TONE_SWATCHES.map(({ id, label, color }) => (
+                      <button
+                        key={id}
+                        type="button"
+                        role="radio"
+                        aria-checked={skinTone === id}
+                        className={`dts-tone-swatch ${skinTone === id ? "is-selected" : ""}`}
+                        onClick={() => selectSkinTone(id)}
+                      >
+                        <span
+                          className="dts-tone-swatch-circle"
+                          style={{ background: color }}
+                          aria-hidden
+                        />
+                        <span className="dts-tone-swatch-label">{label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </section>
+
+              <section
+                className="dts-card dts-card--band-width"
+                aria-label="Band width"
+              >
+                <div className="dts-band-width-block">
+                  <div className="dts-card-subhead">
+                    <span>Band Width</span>
+                    <span className="dts-card-subhead-val">
+                      {bandWidth}mm band
+                    </span>
+                  </div>
+                  <div className="dts-slider dts-slider--band">
+                    <div
+                      className="dts-track"
+                      ref={bwTrackRef}
+                      style={{ "--dts-fill": `${bwHandleLeft}%` } as React.CSSProperties}
+                    >
+                      <div
+                        className="dts-handle"
+                        style={{ left: `${bwHandleLeft}%` }}
+                      />
+                    </div>
+                    <div className="dts-slider-endpoints" aria-hidden>
+                      <span>2 mm</span>
+                      <span>5 mm</span>
+                    </div>
+                  </div>
+                </div>
+              </section>
+            </div>
 
             <section className="dts-card dts-card--carat" aria-label="Diamond">
               <div className="dts-card-head">
