@@ -127,6 +127,47 @@ export function diamondStudioApplicationNode(): JsonLdValue {
   };
 }
 
+export function diamondStudioFaqNode(): JsonLdValue {
+  return {
+    "@type": "FAQPage",
+    "@id": `${absoluteUrl("/diamond-studio")}#faq`,
+    mainEntity: [
+      {
+        "@type": "Question",
+        name: "What is the Diamond Size Studio?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "The Diamond Size Studio is an interactive tool that helps you compare how different diamond carat weights, shapes, and ring sizes appear on the finger.",
+        },
+      },
+      {
+        "@type": "Question",
+        name: "Why do diamonds of the same carat weight look different?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "Carat measures weight, not visible size. Shape, proportions, depth, table size, and cut quality can all affect how large a diamond appears from the top.",
+        },
+      },
+      {
+        "@type": "Question",
+        name: "Does finger size change how big a diamond looks?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "Yes. The same diamond can look more substantial on a smaller finger and more restrained on a larger finger because the overall finger coverage changes.",
+        },
+      },
+      {
+        "@type": "Question",
+        name: "Which diamond shapes look largest for their carat weight?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "Elongated shapes such as oval, marquise, pear, radiant, and emerald cuts can often appear larger or longer on the finger than a round diamond of the same carat weight, though beauty and proportion still matter.",
+        },
+      },
+    ],
+  };
+}
+
 export function buildDiamondStudioApplicationJsonLd(): JsonLdValue {
   return {
     "@context": SCHEMA_CONTEXT,

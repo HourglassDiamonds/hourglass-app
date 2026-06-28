@@ -101,7 +101,7 @@ export function articleBreadcrumb(input: {
 export function diamondStudioBreadcrumb(): JsonLdValue {
   return buildBreadcrumbList([
     HOME_CRUMB,
-    { name: "Diamond Studio", path: "/diamond-studio" },
+    { name: "Diamond Size Studio", path: "/diamond-studio" },
   ]);
 }
 

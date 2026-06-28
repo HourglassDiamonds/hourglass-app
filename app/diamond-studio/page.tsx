@@ -14,6 +14,7 @@ import {
   type DiamondStudioEventProperties,
 } from "./analytics";
 import { trackConsultationCtaClicked } from "@/lib/consultation-cta";
+import DiamondStudioEditorial from "./components/DiamondStudioEditorial";
 
 /* -------------------------------------------------------------------------- */
 /* Types & tables                                                             */
@@ -736,19 +737,26 @@ function SuiteStyles() {
         display:grid; grid-template-rows:auto minmax(0, 1fr); }
       @media (min-width: 769px) {
         .dts-shell{
-          height:100dvh;
-          max-height:100dvh;
-          overflow:hidden;
+          min-height:100dvh;
+          height:auto;
+          max-height:none;
+          overflow:visible;
         }
         .dts-app{
           height:100dvh;
           max-height:100dvh;
           overflow:hidden;
+          flex-shrink:0;
           grid-template-rows:auto minmax(0, 1fr);
         }
         .dts-main{
           min-height:0;
           overflow:hidden;
+        }
+        .dts-editorial{
+          position:relative;
+          z-index:1;
+          flex-shrink:0;
         }
       }
       .dts-topbar{
@@ -1390,6 +1398,17 @@ function SuiteStyles() {
         font-size:10px; line-height:1.55; letter-spacing:0.04em;
         color:var(--ink-mute); font-weight:400;
       }
+      .dts-page-title{
+        margin:0 12px 4px; padding:0 8px; text-align:center;
+        font-family:var(--serif); font-weight:400;
+        font-size:clamp(1.05rem, 2.6vw, 1.3rem); line-height:1.25;
+        letter-spacing:0.02em; color:var(--ink);
+      }
+      .dts-page-subhead{
+        margin:0 12px 5px; padding:0 8px; text-align:center;
+        font-size:10.5px; line-height:1.5; letter-spacing:0.03em;
+        color:var(--ink-soft); font-weight:400;
+      }
       .dts-stage-trust-link{
         color:var(--ink-soft);
         border-bottom:1px solid oklch(from var(--hairline) l c h / 0.85);
@@ -1686,6 +1705,18 @@ function SuiteStyles() {
           width:100%;
           font-size:9.5px;
           line-height:1.5;
+        }
+        .dts-page-title{
+          margin:0 auto 3px;
+          max-width:280px;
+          width:100%;
+          font-size:clamp(1.05rem, 4.2vw, 1.2rem);
+        }
+        .dts-page-subhead{
+          margin:0 auto 4px;
+          max-width:280px;
+          width:100%;
+          font-size:10px;
         }
         .dts-layer-finger img{
           object-position:50% 38%;
@@ -2562,7 +2593,7 @@ export default function DiamondStudioPage() {
   const bwHandleLeft =
     (bandWidthToIndex(bandWidth) / (BAND_WIDTH_VALUES.length - 1)) * 100;
   return (
-    <div className="dts-shell h-full w-full overflow-hidden" data-theme="light">
+    <div className="dts-shell h-full min-h-full w-full" data-theme="light">
       <SuiteStyles />
       <div className="dts-app">
         <header className="dts-topbar">
@@ -2860,10 +2891,16 @@ export default function DiamondStudioPage() {
               aria-label="Diamond on hand"
             >
               <div className="dts-mobile-hero studio-preview finger-preview">
+                <h1 className="dts-page-title">Diamond Size Studio</h1>
+                <p className="dts-page-subhead">
+                  Compare diamond size on your finger before you buy.
+                </p>
                 <p className="dts-page-intro">
-                  Use Diamond Studio to preview how different diamond shapes and carat
-                  weights appear on the hand, with controls for ring size, orientation,
-                  and finger presence.
+                  Explore how carat weight, diamond shape, ring size, and finger
+                  presence affect the way a diamond appears on the hand. Use the
+                  studio to compare round, oval, emerald, cushion, pear, marquise,
+                  radiant, princess, and Asscher diamonds before beginning a ring
+                  design.
                 </p>
                 <p className="dts-sentence">
                   A {formatCaratForHeadline(carat)}-carat{" "}
@@ -2942,6 +2979,7 @@ export default function DiamondStudioPage() {
           
         </div>
       </div>
+      <DiamondStudioEditorial />
     </div>
   );
 }

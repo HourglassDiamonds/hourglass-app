@@ -8,7 +8,7 @@ export const viewport: Viewport = {
 };
 
 const DIAMOND_STUDIO_DESCRIPTION =
-  "Preview diamond size on the hand by ring size, carat weight, shape, and orientation with Hourglass Diamonds' Diamond Studio.";
+  "Compare diamond size on your finger before you buy. Explore how carat weight, shape, ring size, and finger coverage change the way a diamond appears on the hand.";
 
 const DIAMOND_STUDIO_OG_IMAGE = {
   url: "https://www.hourglassdiamonds.com/og/diamond-studio-og.jpg",
@@ -18,21 +18,21 @@ const DIAMOND_STUDIO_OG_IMAGE = {
 } as const;
 
 export const metadata: Metadata = {
-  title: "Diamond Studio",
+  title: "Diamond Size Studio | Compare Diamond Size on Your Finger",
   description: DIAMOND_STUDIO_DESCRIPTION,
   alternates: {
     canonical: "/diamond-studio",
   },
   openGraph: {
     ...DEFAULT_OPEN_GRAPH,
-    title: "Diamond Studio",
+    title: "Diamond Size Studio | Compare Diamond Size on Your Finger",
     description: DIAMOND_STUDIO_DESCRIPTION,
     url: "/diamond-studio",
     images: [DIAMOND_STUDIO_OG_IMAGE],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Diamond Studio",
+    title: "Diamond Size Studio | Compare Diamond Size on Your Finger",
     description: DIAMOND_STUDIO_DESCRIPTION,
     images: [DIAMOND_STUDIO_OG_IMAGE.url],
   },
@@ -78,7 +78,7 @@ export default function DiamondStudioLayout({
       <style dangerouslySetInnerHTML={{ __html: DIAMOND_STUDIO_VIEWPORT_CSS }} />
       <div
         data-diamond-studio-route
-        className="diamond-studio-route fixed inset-0 z-[100] h-[100dvh] w-screen max-h-[100dvh] overflow-hidden overscroll-none"
+        className="diamond-studio-route fixed inset-0 z-[100] h-[100dvh] w-screen max-h-[100dvh] overflow-y-auto overscroll-y-contain"
       >
         <DiamondStudioViewportLock />
         {children}

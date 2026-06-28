@@ -18,9 +18,9 @@ export const ORGANIZATION_DESCRIPTION =
 
 export const PERSON_JOB_TITLE = "Graduate Gemologist";
 
-export const DIAMOND_STUDIO_NAME = "Diamond Studio";
+export const DIAMOND_STUDIO_NAME = "Diamond Size Studio";
 export const DIAMOND_STUDIO_DESCRIPTION =
-  "Preview diamond size on the hand by ring size, carat weight, shape, and orientation with Hourglass Diamonds' Diamond Studio.";
+  "An interactive diamond size comparison tool that helps clients visualize how carat weight, diamond shape, ring size, and finger coverage affect the way a diamond appears on the hand.";
 
 /** Charlotte Metro communities served (no fabricated storefronts). */
 export const CHARLOTTE_METRO_AREA_SERVED = [

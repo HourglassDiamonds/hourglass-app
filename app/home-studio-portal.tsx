@@ -46,7 +46,7 @@ const MOBILE_STUDIO_SCRIM = `
 const STUDIO_TOOLS = [
   {
     title: "Diamond Size Studio",
-    description: "Explore size, shape, and presence.",
+    description: "Compare diamond size on your finger before you buy.",
     href: "/diamond-studio",
   },
   {
@@ -56,7 +56,7 @@ const STUDIO_TOOLS = [
   },
   {
     title: "Shape Comparison",
-    description: "Compare shapes on your own hand.",
+    description: "Compare shape, spread, and presence on your own hand.",
     status: "Coming Soon",
     comingSoon: true,
   },
