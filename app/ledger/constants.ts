@@ -18,18 +18,18 @@ export {
 export const QUIET_METRICS = [
   {
     label: "Energy Pressure",
-    value: "Uneven Relief",
-    note: "Hormuz ceasefire cooled acute energy pressure, but shipping normalization remains incomplete and Russia sanctions pressure is returning.",
+    value: "Fragile Relief",
+    note: "Corridor confidence thinned around Hormuz and Gulf routes — routing and insurance friction persist while oil pricing remained comparatively calm.",
   },
   {
     label: "AI Compute Load",
     value: "Grid-Bound",
-    note: "AI demand continues shifting from software acceleration into power, utility, and data-center siting constraints.",
+    note: "Large-load grid integration became policy-visible; power and utility responsiveness set deployment pace alongside gated frontier movement.",
   },
   {
     label: "Physical Constraints",
-    value: "Multi-Source",
-    note: "World Cup logistics, Hormuz routing friction, and grid interconnection delays test infrastructure simultaneously.",
+    value: "Policy-Visible",
+    note: "FERC grid rules, Hormuz routing friction, World Cup logistics, and early-summer heat risk test infrastructure beneath functioning systems.",
   },
 ] as const;
 

@@ -1,18 +1,18 @@
 export const WEEKLY_SYNOPSIS = {
   eyebrow: "Weekly Synopsis",
-  headline: "Relief at the surface; strain underneath.",
+  headline: "Fragile corridors; strain beneath calm markets.",
   blocks: [
     {
       title: "What changed",
-      body: "G7 leaders backed renewed pressure on Russia's war economy while supporting the U.S.-Iran framework around Hormuz. Energy pressure eased, but Hormuz traffic remains uneven and subject to new routing, permit, insurance, and security questions. The World Cup shifted from a sports story into a live test of transportation, security, weather response, and information integrity. AI infrastructure pressure continued to move from abstract compute demand into concrete power, grid, and site-selection constraints. Precious materials remained strategically firm, with gold supported by central-bank reserve behavior and diamonds entering a supply-structure reset.",
+      body: "Hormuz and Gulf-route confidence weakened as shipping, routing, and insurance questions persisted, even while energy markets continued to function and oil pricing remained comparatively calm. The U.S.–Iran framework remained active but visibly strained. AI infrastructure pressure became more policy-visible as large-load grid integration moved further into the regulatory foreground. World Cup-related fraud, scams, and AI-generated content kept information integrity under pressure. Precious materials remained strategically firm, with gold sensitive to rates and premium natural diamond supply still selective.",
     },
     {
       title: "What's driving pressure",
-      body: "Markets and energy routes cooled after ceasefire progress, but the underlying system remains tense. Shipping normalization is uneven, sanctions pressure is shifting back toward Russia, World Cup logistics are testing local infrastructure, and AI demand continues moving from software acceleration into power and grid constraints.",
+      body: "Energy routes are not closed, but confidence is thinner. Financial conditions remain sensitive to the inflation and rate path. Infrastructure strain is increasingly visible through grid interconnection, data-center power demand, shipping friction, and event logistics. The information layer remains noisy as geopolitical, institutional, and AI-generated narratives overlap.",
     },
     {
       title: "What to watch next",
-      body: "Whether Hormuz traffic normalizes or remains controlled, delayed, or selectively routed. Whether renewed Russia energy sanctions tighten oil and gas flows again after the Middle East relief trade. Whether World Cup host-city strain stays localized or becomes a broader infrastructure and safety narrative. Whether AI power demand continues raising utility, grid, and data-center siting pressure. Whether gold and high-quality natural diamonds continue behaving as scarcity and reserve assets rather than simple luxury cyclicals.",
+      body: "Whether Hormuz transit volumes stabilize or continue thinning. Whether oil pricing begins to reflect route-risk more aggressively. Whether FERC and large-load grid rules accelerate data-center cost and siting debates. Whether World Cup scam and deepfake activity remains event-localized or broadens. Whether gold reconnects to reserve demand or remains tethered to real yields. Whether AI capability releases translate into broad deployment or remain constrained by power and governance.",
     },
   ],
 } as const;

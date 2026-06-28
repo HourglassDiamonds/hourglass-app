@@ -5,13 +5,13 @@
 
 export type AcaiFillVariant = "cool" | "neutral" | "warm" | "hot" | "critical";
 
-export const ACAI_UPDATED_LABEL = "Updated weekly — June 20, 2026";
+export const ACAI_UPDATED_LABEL = "Updated weekly — June 28, 2026";
 
 export const ACAI_READING = {
-  score: 82,
+  score: 83,
   status: "Power- and Grid-Bound Acceleration",
-  weeklyChange: 3,
-  markerPosition: 82,
+  weeklyChange: 1,
+  markerPosition: 83,
   readingLabel: "Acceleration Reading",
 } as const;
 
@@ -19,22 +19,22 @@ export const ACAI_INTRO =
   "A weekly reading of how AI capability, deployment, and physical infrastructure are moving together — across models, agents, enterprise integration, power, and grid constraints. The purpose is not to forecast AGI. It is to track an industrial buildout: where software progress meets operational friction, energy limits, and organizational adaptation lag.";
 
 export const ACAI_SUMMARY =
-  "AI acceleration is increasingly limited by power, grid access, and compute infrastructure rather than model interest alone. Capability and deployment continue advancing, but site selection, utility responsiveness, and energized capacity increasingly set practical pace.";
+  "Capability advances under physical limits — frontier movement remains meaningful but gated, while power, grid access, and large-load integration increasingly set practical pace. Deployment friction matters more than headline release cadence.";
 
 export const ACAI_WEEKLY_SIGNAL =
-  "AI infrastructure pressure moved from abstract compute demand into concrete power, grid, and site-selection constraints. Enterprise adoption and coding-system integration advanced without frontier-model surprise. Power contracts, grid access, cooling, and transformer lead times remain co-equal limits on deployment — discussed alongside capability progress, not beneath it.";
+  "Large-load grid integration moved into the regulatory foreground as FERC directed regional operators to revise data-center connection rules. A limited frontier preview added marginal capability signal without broad availability. Enterprise adoption and coding integration advanced; governance and energized capacity remain co-equal limits on deployment.";
 
 export const ACAI_METHOD_PILLS = [
   { label: "Reading Type", value: "Weighted capability index" },
-  { label: "Primary Drivers", value: "Deployment, integration, infrastructure" },
+  { label: "Primary Drivers", value: "Power, grid, deployment" },
   { label: "Current Direction", value: "Advancing, grid-bound" },
 ] as const;
 
 export const ACAI_RECENT_READINGS = [
-  { week: "This Week", score: 82, state: "Accelerating" },
-  { week: "Last Week", score: 79, state: "Accelerating" },
-  { week: "2 Weeks Ago", score: 77, state: "Accelerating" },
-  { week: "3 Weeks Ago", score: 78, state: "Accelerating" },
+  { week: "This Week", score: 83, state: "Accelerating" },
+  { week: "Last Week", score: 82, state: "Accelerating" },
+  { week: "2 Weeks Ago", score: 79, state: "Accelerating" },
+  { week: "3 Weeks Ago", score: 77, state: "Accelerating" },
 ] as const;
 
 export const ACAI_CAPABILITY_BENCHMARKS = [
@@ -49,10 +49,10 @@ export const ACAI_CAPABILITY_READINGS = [
   {
     name: "Frontier Models",
     weight: "22% Weight",
-    score: 77,
+    score: 78,
     band: "Elevated",
     fill: "warm" as AcaiFillVariant,
-    text: "Capability remains strong, but visible surprise at the margin continues diminishing relative to deployment scale — integration, cost, and throughput in production matter more than release cadence.",
+    text: "Limited frontier previews add marginal capability signal — meaningful but gated, with deployment friction and integration depth mattering more than release cadence in production environments.",
   },
   {
     name: "Agents & Tool Use",
@@ -81,10 +81,10 @@ export const ACAI_CAPABILITY_READINGS = [
   {
     name: "Infrastructure Demand",
     weight: "12% Weight",
-    score: 91,
+    score: 92,
     band: "Elevated",
     fill: "warm" as AcaiFillVariant,
-    text: "The pace-setting layer: data-center expansion, power, utility responsiveness, grid access, and site selection define deployment timelines — increasingly limiting acceleration more than model interest alone.",
+    text: "Policy-visible pace-setter: FERC large-load rules, grid interconnection, power contracts, and site selection define deployment timelines — increasingly limiting acceleration more than model interest alone.",
   },
   {
     name: "Labor Substitution",
@@ -106,16 +106,16 @@ export const ACAI_CAPABILITY_READINGS = [
 
 export const ACAI_WHAT_MOVED = [
   {
-    title: "Power and grid constraints gained weight",
-    body: "AI infrastructure pressure moved from abstract compute demand into concrete power, grid, and site-selection constraints — increasingly the pace-setting layer on deployment.",
+    title: "Grid integration became policy-visible",
+    body: "FERC directed regional operators to revise large-load connection rules — power and grid access increasingly define deployment pace in regulatory as well as operational terms.",
   },
   {
-    title: "Deployment and integration advanced",
-    body: "Enterprise adoption, coding-system integration, and workflow dependence progressed without a frontier-model surprise — the story continues shifting from capability toward implementation under physical limits.",
+    title: "Frontier movement remained gated",
+    body: "Limited frontier previews add marginal capability signal without broad availability — deployment friction and governance outweigh headline release cadence in practical planning.",
   },
   {
-    title: "Utility responsiveness set pace",
-    body: "Power contracts, grid interconnection, and regional siting decisions increasingly define how quickly capital converts to energized capacity — not software release cadence alone.",
+    title: "Integration advanced under physical limits",
+    body: "Enterprise adoption and coding-system integration progressed; energized capacity, utility responsiveness, and site selection remain co-equal constraints on expansion.",
   },
 ] as const;
 
@@ -141,7 +141,7 @@ export const ACAI_FRONTIER_WATCHLIST = [
   {
     label: "System Layer",
     title: "Data centers & power",
-    body: "Power contracts, grid queues, transformer lead times, cooling, siting, and labor around AI load — primary pace-setters this cycle.",
+    body: "FERC large-load rules, power contracts, grid queues, transformer lead times, cooling, siting, and labor around AI load — primary pace-setters this cycle.",
   },
   {
     label: "System Layer",
@@ -151,7 +151,7 @@ export const ACAI_FRONTIER_WATCHLIST = [
   {
     label: "Frontier Lab",
     title: "OpenAI",
-    body: "Enterprise APIs, agent products, and deployment cost — weighed against integration depth, reliability, and infrastructure requirements.",
+    body: "Limited frontier previews, enterprise APIs, and deployment cost — weighed against integration depth, reliability, and infrastructure requirements.",
   },
   {
     label: "Frontier Lab",
@@ -182,10 +182,10 @@ export const ACAI_CALCULATION_ROWS = [
   {
     category: "Frontier Models",
     weight: "22%",
-    score: "77",
-    contribution: "16.9",
+    score: "78",
+    contribution: "17.2",
     reason:
-      "Capability remains elevated, with diminishing marginal surprise versus deployment and integration scale in production environments.",
+      "Limited frontier previews add marginal signal — meaningful but gated, with deployment scale mattering more than release cadence.",
   },
   {
     category: "Agents & Tool Use",
@@ -214,10 +214,10 @@ export const ACAI_CALCULATION_ROWS = [
   {
     category: "Infrastructure Demand",
     weight: "12%",
-    score: "91",
-    contribution: "10.9",
+    score: "92",
+    contribution: "11.0",
     reason:
-      "Power, grid access, utility responsiveness, and site selection are central constraints on expansion — increasingly the pace-setting layer over model interest.",
+      "FERC large-load rules made grid integration policy-visible — power, utility responsiveness, and site selection increasingly the pace-setting layer.",
   },
   {
     category: "Labor Substitution",
@@ -238,9 +238,9 @@ export const ACAI_CALCULATION_ROWS = [
 ] as const;
 
 export const ACAI_CALCULATION_TOTAL = {
-  contribution: "79.8 → 82",
+  contribution: "80.4 → 83",
   reason:
-    "Power- and grid-bound acceleration: capability and adoption advance through integration, with utility responsiveness, site selection, and energized capacity setting practical pace.",
+    "Power- and grid-bound acceleration: capability advances under physical limits, with policy-visible grid constraints and gated frontier movement setting practical pace.",
 } as const;
 
 export const ACAI_CAPABILITY_BANDS = [
@@ -283,7 +283,7 @@ export const ACAI_CAPABILITY_BANDS = [
 export const ACAI_SOURCES = [
   {
     name: "Infrastructure Reporting",
-    body: "Data-center expansion, power, cooling, transformers, grid queues, and regional siting economics — primary pace-setters this cycle.",
+    body: "FERC large-load rules, data-center expansion, power, cooling, transformers, grid queues, and regional siting economics — primary pace-setters this cycle.",
   },
   {
     name: "Enterprise & Deployment Signals",
@@ -291,7 +291,7 @@ export const ACAI_SOURCES = [
   },
   {
     name: "OpenAI — Research & Product Releases",
-    body: "Enterprise APIs, agents, and deployment cost — interpreted alongside integration depth and reliability.",
+    body: "Limited frontier previews, enterprise APIs, and deployment cost — interpreted alongside integration depth and reliability.",
   },
   {
     name: "Anthropic — Claude Updates & Safety Materials",
@@ -316,7 +316,7 @@ export const ACAI_SCALE_LABELS = [
 
 export const ACAI_SECTION_SUBTITLES = {
   whatMoved:
-    "Deployment, integration, and infrastructure requirements shaped the reading this week — not frontier-model surprise.",
+    "Policy-visible grid constraints and gated frontier movement shaped the reading this week — deployment friction over headline cadence.",
   milestones:
     "Developments that would justify a material change in the acceleration reading — grounded in operations, not hype.",
   frontierWatchlist:
