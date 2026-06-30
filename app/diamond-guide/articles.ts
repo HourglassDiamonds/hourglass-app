@@ -2193,6 +2193,11 @@ export const articles: Article[] = [
   slug: "fluorescence-in-natural-vs-lab-diamonds",
   title: "Fluorescence in Natural vs Lab Diamonds",
   category: "Diamond Color",
+  heroImage: "/diamond-guide/fluorescence-in-natural-vs-lab-diamonds-hero.png",
+  heroImageAlt:
+    "Two loose diamonds under controlled jeweler lighting, representing fluorescence comparison in natural and lab grown diamonds",
+  visualCategory: "original-photo",
+  visualStatus: "live",
   body: [
     { type: "paragraph", text: "Fluorescence can appear in both natural and laboratory-grown diamonds. It is one of the subtle ways growth history shows up on a grading report, not usually on the hand. For the full fluorescence guide, start with [what is diamond fluorescence](/diamond-guide/what-is-diamond-fluorescence). For the broader origin decision, see [natural vs lab diamonds](/diamond-guide/natural-vs-lab-diamonds)." },
     { type: "heading", text: "How Fluorescence Occurs" },
@@ -4152,6 +4157,11 @@ export const articles: Article[] = [
   slug: "when-fluorescence-improves-a-diamond",
   title: "When Fluorescence Improves a Diamond",
   category: "Diamond Color",
+  heroImage: "/diamond-guide/when-fluorescence-improves-a-diamond-hero.png",
+  heroImageAlt:
+    "Diamond viewed under soft ultraviolet light on a warm jeweler workspace, suggesting when fluorescence can improve appearance",
+  visualCategory: "original-photo",
+  visualStatus: "live",
   body: [
     { type: "paragraph", text: "This article is for buyers who already understand what fluorescence is and want to know whether it helps or hurts a specific purchase. If you need definitions, the GIA scale, and report context first, start with [what is diamond fluorescence](/diamond-guide/what-is-diamond-fluorescence)." },
     { type: "paragraph", text: "Fluorescence is neither a free upgrade nor an automatic warning. It is a report line that sometimes aligns with beauty, sometimes with value, and occasionally with a reason to keep looking. The answer lives in the individual stone." },
