@@ -1382,6 +1382,11 @@ export const articles: Article[] = [
     slug: "diamond-light-return-explained",
     title: "Diamond Light Return Explained",
     category: "Light Performance",
+    heroImage: "/diamond-guide/diamond-light-return-explained-hero.png",
+    heroImageAlt:
+      "Round diamond illuminated by a penlight with refracted light on a warm neutral surface",
+    visualCategory: "original-photo",
+    visualStatus: "live",
     body: [
       { type: "heading", text: "What Light Return Means in a Diamond" },
       { type: "paragraph", text: "Light return describes how efficiently a diamond reflects light back toward the viewer’s eye. When light enters a diamond, it interacts with the stone’s internal facets. If those facets are positioned correctly, the light reflects within the diamond and exits through the top of the stone." },
@@ -2274,6 +2279,11 @@ export const articles: Article[] = [
   slug: "gia-diamond-certification-explained",
   title: "GIA Diamond Certification Explained",
   category: "Certification",
+  heroImage: "/diamond-guide/gia-certificate-explained-hero.png",
+  heroImageAlt:
+    "Diamond grading report with jeweler tools and an engagement ring on a warm luxury workspace",
+  visualCategory: "original-photo",
+  visualStatus: "live",
   body: [
     { type: "heading", text: "The Role of GIA in Diamond Grading" },
     { type: "paragraph", text: "The Gemological Institute of America, commonly known as GIA, is one of the most widely respected organizations in the diamond industry. Founded in 1931, the institute developed the modern grading system used to evaluate diamonds today, including the framework known as the 4Cs." },
@@ -4139,6 +4149,11 @@ export const articles: Article[] = [
   slug: "why-work-with-a-graduate-gemologist",
   title: "Why Work With a Graduate Gemologist?",
   category: "Buying Guides",
+  heroImage: "/diamond-guide/gia-graduate-gemologist-hero.png",
+  heroImageAlt:
+    "Graduate gemologist appraisal notes beside a diamond ring, loupe, tweezers, and jeweler tools",
+  visualCategory: "original-photo",
+  visualStatus: "live",
   body: [
     { type: "paragraph", text: "Most people shopping for an engagement ring have never sat across from a Graduate Gemologist. That is not a criticism of the process. It is simply how the jewelry industry is structured. Gemological training lives behind the scenes: in laboratories, in manufacturing offices, in the rooms where stones are sorted and priced before they ever reach a showroom floor." },
     { type: "paragraph", text: "A Graduate Gemologist has completed the GIA diploma program. The coursework covers diamond grading, how light moves through a stone, and how to read what you see under magnification. It is not a weekend certificate. It is years of study, examinations, and hands-on evaluation." },
@@ -4262,6 +4277,11 @@ export const articles: Article[] = [
   slug: "independent-diamond-advisor-vs-jewelry-store",
   title: "Independent Diamond Advisor vs Traditional Jewelry Store",
   category: "Buying Guides",
+  heroImage: "/diamond-guide/jewelry-store-vs-private-advisor-hero.png",
+  heroImageAlt:
+    "Private diamond advisor workspace with engagement ring, loupe, tweezers, and softly blurred jewelry case",
+  visualCategory: "original-photo",
+  visualStatus: "live",
   body: [
     { type: "paragraph", text: "If you are researching how to buy a diamond, you will eventually encounter two broad models: the traditional jewelry store, where inventory is on display and a salesperson guides you through it, and the independent advisor, who typically has no showroom case and searches on your behalf. Both can lead to a beautiful ring. They are not the same experience." },
     { type: "paragraph", text: "Understanding the difference is not about declaring a winner. It is about recognizing how each model shapes the advice you receive, and choosing the one that fits how you prefer to make a significant decision." },

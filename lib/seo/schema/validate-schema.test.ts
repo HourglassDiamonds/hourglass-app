@@ -91,14 +91,18 @@ describe("structured data builders", () => {
       "cushion-diamond-guide",
       "custom-engagement-rings-in-charlotte",
       "diamond-carat-vs-size",
+      "diamond-light-return-explained",
       "diamond-size-chart",
       "emerald-diamond-guide",
+      "gia-diamond-certification-explained",
+      "independent-diamond-advisor-vs-jewelry-store",
       "marquise-diamond-guide",
       "oval-diamond-guide",
       "pear-diamond-guide",
       "princess-diamond-guide",
       "radiant-diamond-guide",
       "round-diamond-guide",
+      "why-work-with-a-graduate-gemologist",
     ]);
 
     for (const article of articles) {
