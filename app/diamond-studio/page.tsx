@@ -345,13 +345,6 @@ function renderVisualCompensation(shapeId: ShapeId): number {
   return SHAPE_RENDER_VISUAL_COMP[shapeId];
 }
 
-/** Diamond stack vertical anchor (% of viewer height) */
-const RING_CLUSTER_TOP_PCT = 63.5;
-
-/** Main preview stone translateY extra (px): desktop shank optical seat (~8px above prior). */
-const DIAMOND_Y_NUDGE_DESKTOP_PX = 4;
-/** Mobile preview stone translateY extra (px); positive moves down on band. */
-const MOBILE_DIAMOND_Y_NUDGE_PX = 2;
 /** Mobile-only on-stage scale; does not affect mm readout or coverage. */
 const MOBILE_STONE_RENDER_SCALE = 1.07;
 
@@ -1280,6 +1273,7 @@ function SuiteStyles() {
         position:relative; width:min(578px,93.5%); aspect-ratio:7/9; max-height:96%;
         container-type:size;
         overflow:visible;
+        --dts-ring-cluster-top:63.5%;
       }
       .dts-layer-finger{
         position:absolute; inset:0; z-index:1; overflow:hidden;
@@ -1330,10 +1324,26 @@ function SuiteStyles() {
         isolation:isolate;
         box-sizing:border-box;
         overflow:visible;
+        top:var(--dts-ring-cluster-top);
+        transform:translate(calc(-50% + 4px), -50%);
         transition:width var(--dt-dur-slow) var(--dt-ease),
           height var(--dt-dur-slow) var(--dt-ease),
           top var(--dt-dur-slow) var(--dt-ease),
+          transform var(--dt-dur-slow) var(--dt-ease),
           opacity 200ms var(--dt-ease);
+      }
+      @media (min-width: 769px) {
+        /* Shared ring-cluster: finger crop + diamond anchor track viewer aspect (all desktop widths). */
+        @container (aspect-ratio > 7 / 8.5) {
+          .dts-layer-finger img{
+            object-position:50% calc(42% + clamp(0%, (1 - (7 * 100cqh) / (9 * 100cqw)) * 67%, 26%));
+          }
+        }
+        @container (aspect-ratio <= 7 / 8.5) {
+          .dts-layer-diamond{
+            top:66%;
+          }
+        }
       }
       .dts-diamond-stack{
         position:relative; width:100%; height:100%;
@@ -1522,18 +1532,6 @@ function SuiteStyles() {
           box-sizing:border-box;
           min-width:0;
           max-width:100%;
-        }
-        /* Severe height squeeze: width-limited cover crop — track finger image. */
-        @container (aspect-ratio > 7 / 8.5) {
-          .dts-layer-finger img{
-            object-position:50% calc(42% + clamp(0%, (1 - (7 * 100cqh) / (9 * 100cqw)) * 67%, 26%));
-          }
-        }
-        /* Near-natural aspect: object-position is inert — track diamond anchor. */
-        @container (aspect-ratio <= 7 / 8.5) {
-          .dts-layer-diamond{
-            top:66% !important;
-          }
         }
       }
       @media (min-width: 1441px) {
@@ -1733,6 +1731,9 @@ function SuiteStyles() {
             brightness(1.01)
             drop-shadow(0 2px 4px rgba(0,0,0,0.14))
             drop-shadow(0 1px 1px rgba(0,0,0,0.06));
+        }
+        .dts-layer-diamond{
+          transform:translate(calc(-50% + 4px), calc(-50% - 2px));
         }
         .dts-viewer{
           width:100%;
@@ -2293,9 +2294,6 @@ export default function DiamondStudioPage() {
     snapshotMaxWidth768,
     serverSnapshotMaxWidth768,
   );
-  const diamondOverlayYExtraPx = isMobileViewport
-    ? MOBILE_DIAMOND_Y_NUDGE_PX
-    : DIAMOND_Y_NUDGE_DESKTOP_PX;
 
   const swapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const shapeRef = useRef(shape);
@@ -2938,8 +2936,6 @@ export default function DiamondStudioPage() {
                     style={{
                       width: `${layerWidthCqw}cqw`,
                       height: `${layerHeightCqw}cqw`,
-                      top: `${RING_CLUSTER_TOP_PCT}%`,
-                      transform: `translate(calc(-50% + 4px), calc(-50% - 4px + ${diamondOverlayYExtraPx}px))`,
                     }}
                   >
                     <DiamondStageFace
