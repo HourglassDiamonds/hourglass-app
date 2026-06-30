@@ -1274,6 +1274,7 @@ function SuiteStyles() {
         container-type:size;
         overflow:visible;
         --dts-ring-cluster-top:63.5%;
+        --dts-ring-cluster-top-tall:62.1%;
       }
       .dts-layer-finger{
         position:absolute; inset:0; z-index:1; overflow:hidden;
@@ -1341,7 +1342,7 @@ function SuiteStyles() {
         }
         @container (aspect-ratio <= 7 / 8.5) {
           .dts-layer-diamond{
-            top:66%;
+            top:var(--dts-ring-cluster-top-tall);
           }
         }
       }
