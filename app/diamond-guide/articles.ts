@@ -342,9 +342,10 @@ export const articles: Article[] = [
 
     { type: "paragraph", text: "The best carat size for an engagement ring is the one that feels balanced, comfortable, and meaningful to the person wearing it." },
     { type: "paragraph", text: "While average sizes provide helpful reference points, the most beautiful rings tend to be those where the diamond, setting, and proportions all work together harmoniously." },
-    { type: "paragraph", text: "By focusing on overall balance rather than carat weight alone, buyers can choose a diamond that feels both elegant and lasting" },
+    { type: "paragraph", text: "By focusing on overall balance rather than carat weight alone, buyers can choose a diamond that feels both elegant and lasting. For personal guidance on size and presence, [begin with Concierge](/concierge) when you are ready." },
   ],
   related: [
+    { title: "Diamond Size Chart", href: "/diamond-guide/diamond-size-chart" },
     { title: "What is a Carat", href: "/diamond-guide/what-is-a-carat" },
     { title: "Diamond Size Chart", href: "/diamond-guide/diamond-size-chart" },
     { title: "Diamond Size on Hand", href: "/diamond-guide/diamond-size-on-hand" },
@@ -378,10 +379,11 @@ export const articles: Article[] = [
     { type: "paragraph", text: "Also avoid comparing clarity in isolation from size. A one-carat SI1 and a three-carat SI1 are not the same risk profile." },
 
     { type: "heading", text: "A Practical Decision Path" },
-    { type: "paragraph", text: "Set your shape and setting first. Decide your minimum eye-clean standard. Compare stones that meet that standard side by side, prioritizing cut. Use the certificate to explain differences, not to replace viewing." },
-    { type: "paragraph", text: "If inclusion placement is hard to read from a plot alone, a [private conversation](/concierge) can clarify whether a specific stone is right for your ring. The goal is confidence on the hand, not anxiety under magnification." },
+    { type: "paragraph", text: "Set your shape and setting first. Decide your minimum eye-clean standard. Compare stones that meet that standard side by side, prioritizing cut. Use the certificate to explain differences, not to replace viewing. [How to read a diamond certificate](/diamond-guide/how-to-read-a-diamond-certificate) shows where inclusion plots and grades fit on the page." },
+    { type: "paragraph", text: "If inclusion placement is hard to read from a plot alone, [Diamond Intelligence](/diamond-intelligence) or a [private conversation](/concierge) can clarify whether a specific stone is right for your ring. The goal is confidence on the hand, not anxiety under magnification." },
   ],
   related: [
+    { title: "How to Read a Diamond Certificate", href: "/diamond-guide/how-to-read-a-diamond-certificate" },
     { title: "What is Diamond Clarity", href: "/diamond-guide/what-is-diamond-clarity" },
     { title: "VS1 vs VS2 Diamond Clarity", href: "/diamond-guide/vs1-vs-vs2-diamond-clarity" },
     { title: "What is SI1 Diamond Clarity", href: "/diamond-guide/what-is-si1-clarity" },
@@ -416,9 +418,10 @@ export const articles: Article[] = [
 
     { type: "heading", text: "A Practical Way to Choose" },
     { type: "paragraph", text: "Choose your metal and setting style first. View diamonds in that context when possible. Hold your cut standard firm. Select the lowest color grade that still looks clean to your eye in the actual ring." },
-    { type: "paragraph", text: "Color should disappear into the experience of the ring. When you stop thinking about the letter and start noticing the sparkle, you are usually in the right place." },
+    { type: "paragraph", text: "Color should disappear into the experience of the ring. When you stop thinking about the letter and start noticing the sparkle, you are usually in the right place. If fluorescence appears on a report you are considering, [what is diamond fluorescence](/diamond-guide/what-is-diamond-fluorescence) explains how that field relates to color." },
   ],
   related: [
+    { title: "What is Diamond Fluorescence", href: "/diamond-guide/what-is-diamond-fluorescence" },
     { title: "What is Diamond Color", href: "/diamond-guide/what-is-diamond-color" },
     { title: "G vs H Diamond Color", href: "/diamond-guide/g-vs-h-diamond-color" },
     { title: "Near Colorless Diamonds Explained", href: "/diamond-guide/near-colorless-diamonds-explained" },
@@ -500,7 +503,7 @@ export const articles: Article[] = [
     { type: "paragraph", text: "When buying a diamond in Charlotte, certification provides an important layer of transparency." },
     { type: "paragraph", text: "A grading report from a respected laboratory independently verifies the diamond’s characteristics. This allows buyers to compare diamonds objectively rather than relying solely on a jeweler’s description." },
     { type: "paragraph", text: "Certification also ensures the diamond has been evaluated using consistent standards, which helps maintain confidence in the purchase over time." },
-    { type: "paragraph", text: "Many buyers prefer diamonds graded by laboratories known for strict and consistent grading." },
+    { type: "paragraph", text: "Many buyers prefer diamonds graded by laboratories known for strict and consistent grading. When you are ready to read a report field by field, [how to read a diamond certificate](/diamond-guide/how-to-read-a-diamond-certificate) is the flagship guide." },
 
     { type: "heading", text: "Comparing Diamonds in Person" },
     { type: "paragraph", text: "Seeing diamonds in person is one of the most helpful steps in the buying process. Subtle differences in sparkle, proportions, and shape become easier to understand when several diamonds are placed side by side." },
@@ -513,9 +516,10 @@ export const articles: Article[] = [
     { type: "paragraph", text: "Local jewelers may also help with custom designs, allowing the ring to reflect personal preferences rather than following a standard template." },
     { type: "paragraph", text: "The most important factor when choosing where to buy is transparency. A jeweler who explains how diamonds work, rather than simply presenting options, usually creates the best buying experience. [Our Approach](/our-approach) reflects the same standard: performance and honest guidance before inventory pressure." },
 
-    { type: "paragraph", text: "Buying a diamond in Charlotte should feel thoughtful and enjoyable rather than rushed. With a basic understanding of diamond quality and a willingness to compare stones carefully, buyers can focus on what truly matters: finding a diamond that looks beautiful and feels meaningful for years to come. When personal guidance would help, you can [begin a private conversation](/concierge) at whatever pace suits you." },
+    { type: "paragraph", text: "Buying a diamond in Charlotte should feel thoughtful and enjoyable rather than rushed. With a basic understanding of diamond quality and a willingness to compare stones carefully, buyers can focus on what truly matters: finding a diamond that looks beautiful and feels meaningful for years to come. If origin is still part of your decision, [natural vs lab diamonds](/diamond-guide/natural-vs-lab-diamonds) offers a calm comparison. When personal guidance would help, you can [begin a private conversation](/concierge) at whatever pace suits you." },
   ],
   related: [
+    { title: "How to Read a Diamond Certificate", href: "/diamond-guide/how-to-read-a-diamond-certificate" },
     { title: "Charlotte Diamond Advisor Guide", href: "/diamond-guide/charlotte-diamond-advisor-guide" },
     { title: "Charlotte Engagement Ring Guide", href: "/diamond-guide/charlotte-engagement-ring-guide" },
     { title: "Custom Engagement Rings Charlotte", href: "/diamond-guide/custom-engagement-rings-in-charlotte" },
@@ -577,7 +581,7 @@ export const articles: Article[] = [
     { type: "paragraph", text: "Start instead with how you want the ring to feel: classic or modern, understated or bold, platinum or gold, solitaire or halo. Then choose a shape. Then compare a few diamonds that return light well in that shape. Grades matter, but they serve the wearing experience. They should not lead it. [What is diamond cut](/diamond-guide/what-is-diamond-cut) explains why performance comes before alphabet shopping." },
 
     { type: "heading", text: "What Charlotte Shopping Actually Looks Like" },
-    { type: "paragraph", text: "Charlotte couples shop every way imaginable: regional malls, SouthPark appointments, Providence Road independents, late-night listing comparisons from Ballantyne or NoDa, online orders with local pickup elsewhere. The paths are all viable. The failure mode is the same: deciding from a screen without comparing stones together, or choosing from a case without understanding what the certificate leaves out." },
+    { type: "paragraph", text: "Charlotte couples shop every way imaginable: regional malls, SouthPark appointments, Providence Road independents, late-night listing comparisons from Ballantyne or NoDa, online orders with local pickup elsewhere. The paths are all viable. The failure mode is the same: deciding from a screen without comparing stones together, or choosing from a case without understanding what the certificate leaves out. [How to read a diamond certificate](/diamond-guide/how-to-read-a-diamond-certificate) is the flagship guide for that review." },
     { type: "paragraph", text: "Local shopping gives you immediacy: weight on the finger, metal color beside skin tone, answers in the moment. Online shopping gives you breadth. The strongest outcomes usually combine research with in-person comparison, and include someone in the process who is not paid to move a specific stone on a specific shelf." },
 
     { type: "heading", text: "Shape and Setting Decisions" },
@@ -586,7 +590,7 @@ export const articles: Article[] = [
 
     { type: "heading", text: "Where Budget Actually Goes" },
     { type: "paragraph", text: "Visual impact rarely follows the price tags on grade categories. Cut quality changes how alive a diamond looks. Eye-clean clarity beats flawless on paper. Near-colorless often matches colorless once the stone is set. Carat weight without spread can disappoint." },
-    { type: "paragraph", text: "Allocate budget toward what you will see every day, not toward letters you will never notice without a loupe. [Diamond price versus quality](/diamond-guide/diamond-price-vs-quality) and [diamond color versus clarity](/diamond-guide/diamond-color-vs-clarity) walk through those tradeoffs in detail. [Our Approach](/our-approach) applies the same logic locally: performance and eye judgment first." },
+    { type: "paragraph", text: "Allocate budget toward what you will see every day, not toward letters you will never notice without a loupe. That includes the natural versus lab-grown decision when origin matters to you. [Natural vs lab diamonds](/diamond-guide/natural-vs-lab-diamonds) sorts that choice calmly. [Diamond price versus quality](/diamond-guide/diamond-price-vs-quality) and [diamond color versus clarity](/diamond-guide/diamond-color-vs-clarity) walk through grade tradeoffs in detail. [Our Approach](/our-approach) applies the same logic locally: performance and eye judgment first." },
 
     { type: "heading", text: "Mistakes We See Often in Charlotte" },
     { type: "paragraph", text: "Choosing carat before cut. Assuming a higher clarity grade is always cleaner to the eye. Skipping side-by-side comparison because two reports match. Letting a proposal deadline erase the part of the process where you learn what you actually prefer. When timing is part of the equation, our [proposal planning guides](/diamond-guide/proposal-planning) cover locations, logistics, and the details that keep the moment calm rather than rushed." },
@@ -600,6 +604,8 @@ export const articles: Article[] = [
     { type: "paragraph", text: "Charlotte offers plenty of options. The goal is not to visit all of them. It is to leave the process knowing why you chose this ring: how it looks, how it feels, and what you protected in the budget to get there. That is the confidence worth building before you buy — and if [personal guidance](/concierge) would help clarify the next step, it is available when you are ready." },
   ],
   related: [
+    { title: "How to Read a Diamond Certificate", href: "/diamond-guide/how-to-read-a-diamond-certificate" },
+    { title: "Natural vs Lab Diamonds", href: "/diamond-guide/natural-vs-lab-diamonds" },
     { title: "Charlotte Diamond Advisor Guide", href: "/diamond-guide/charlotte-diamond-advisor-guide" },
     { title: "Custom Engagement Rings Charlotte", href: "/diamond-guide/custom-engagement-rings-in-charlotte" },
     { title: "Buy Diamonds Charlotte", href: "/diamond-guide/buy-diamonds-in-charlotte" },
@@ -702,9 +708,10 @@ export const articles: Article[] = [
     { type: "paragraph", text: "Even so, many diamonds in the colorless and near colorless ranges appear bright and neutral when worn in everyday settings." },
 
     { type: "paragraph", text: "In many cases, diamond color is more noticeable during professional grading than in normal viewing conditions. Without comparison stones or specialized lighting, subtle differences between color grades can be difficult to detect." },
-    { type: "paragraph", text: "Understanding this helps buyers focus on the overall beauty of the diamond rather than assuming every color difference will be easily visible." },
+    { type: "paragraph", text: "Understanding this helps buyers focus on the overall beauty of the diamond rather than assuming every color difference will be easily visible. Fluorescence is graded separately on reports; for how it relates to color and value, see [what is diamond fluorescence](/diamond-guide/what-is-diamond-fluorescence)." },
   ],
   related: [
+    { title: "What is Diamond Fluorescence", href: "/diamond-guide/what-is-diamond-fluorescence" },
     { title: "What is Diamond Color", href: "/diamond-guide/what-is-diamond-color" },
     { title: "Near Colorless Diamonds Explained", href: "/diamond-guide/near-colorless-diamonds-explained" },
     { title: "D vs E vs F Diamond Color", href: "/diamond-guide/d-vs-e-vs-f-diamond-color" },
@@ -765,7 +772,7 @@ export const articles: Article[] = [
     { type: "paragraph", text: "Most custom engagement rings begin with the center diamond. Once the diamond is selected, the ring design can be built around its proportions and shape." },
     { type: "paragraph", text: "Choosing the diamond first helps ensure that the setting complements the stone rather than competing with it. For example, elongated diamonds such as oval or pear shapes may pair well with delicate bands that emphasize their length." },
     { type: "paragraph", text: "Round or cushion diamonds may work beautifully in both classic solitaires and more detailed settings." },
-    { type: "paragraph", text: "Beginning with the diamond also allows buyers to prioritize the qualities that matter most visually, such as cut quality and overall sparkle." },
+    { type: "paragraph", text: "Beginning with the diamond also allows buyers to prioritize the qualities that matter most visually, such as cut quality and overall sparkle. A grading report helps compare candidates; [how to read a diamond certificate](/diamond-guide/how-to-read-a-diamond-certificate) walks through what to look for on the page." },
 
     { type: "heading", text: "Designing the Ring Setting" },
     { type: "paragraph", text: "After the diamond is chosen, attention turns to the setting. This is where custom design becomes especially meaningful." },
@@ -819,7 +826,7 @@ export const articles: Article[] = [
     { type: "paragraph", text: "For most buyers, these three grades appear virtually identical when worn. As a result, many people focus more on the diamond’s cut quality or size while remaining within the colorless range." },
 
     { type: "paragraph", text: "D, E, and F diamonds all fall within the colorless category and represent the highest range of diamond color quality. While D color diamonds are technically the most pure, the visual differences between these grades are extremely subtle." },
-    { type: "paragraph", text: "Understanding how these color grades compare helps buyers evaluate whether the rarity of a D color diamond is meaningful to them or whether an E or F diamond offers a similar appearance with a different balance of priorities." },
+    { type: "paragraph", text: "Understanding how these color grades compare helps buyers evaluate whether the rarity of a D color diamond is meaningful to them or whether an E or F diamond offers a similar appearance with a different balance of priorities. Fluorescence, when present, is graded separately; [what is diamond fluorescence](/diamond-guide/what-is-diamond-fluorescence) covers that field on GIA reports." },
   ],
   related: [
     { title: "What is Diamond Color", href: "/diamond-guide/what-is-diamond-color" },
@@ -918,7 +925,7 @@ export const articles: Article[] = [
     { type: "paragraph", text: "It feels quieter as you go, not louder. Each conversation should narrow the field and sharpen your criteria. If you are more confused after three appointments than you were after one, something in the process is working against you." },
 
     { type: "heading", text: "If You Already Have a Report in Hand" },
-    { type: "paragraph", text: "Many buyers arrive with a grading report before they have seen the diamond, or with a link to a stone they are considering online. That is a reasonable place to start. The next step is interpretation: what do these measurements suggest about how the diamond will perform, and what do they leave out? [Diamond Intelligence](/diamond-intelligence) was built for that translation. It does not replace judgment. It gives you a clearer starting point before you compare stones in person or ask someone experienced to weigh in." },
+    { type: "paragraph", text: "Many buyers arrive with a grading report before they have seen the diamond, or with a link to a stone they are considering online. That is a reasonable place to start. [How to read a diamond certificate](/diamond-guide/how-to-read-a-diamond-certificate) walks through the report section by section. The next step is interpretation: what do these measurements suggest about how the diamond will perform, and what do they leave out? [Diamond Intelligence](/diamond-intelligence) was built for that translation. It does not replace judgment. It gives you a clearer starting point before you compare stones in person or ask someone experienced to weigh in." },
 
     { type: "paragraph", text: "The best jewelers are not trying to impress you with terminology. They are trying to make sure you will still love the diamond on an ordinary Tuesday, long after the excitement of the proposal has settled into everyday life. That is a higher bar than finding a stone that looks impressive under a spotlight for thirty seconds. It is also the one worth holding yourself to — and when you are ready for that kind of conversation, you can [begin a conversation](/concierge) at your own pace." },
   ],
@@ -1013,9 +1020,10 @@ export const articles: Article[] = [
     { type: "paragraph", text: "Understanding how the clarity chart works allows buyers to interpret grading reports more confidently and focus on the characteristics that truly affect a diamond’s appearance." },
 
     { type: "paragraph", text: "The diamond clarity chart provides a structured way to evaluate the natural characteristics found within diamonds. By grading inclusions and blemishes under magnification, gemologists can classify diamonds into a consistent and widely recognized scale." },
-    { type: "paragraph", text: "In practice, many diamonds in the middle of the clarity chart appear perfectly clean to the naked eye. Understanding how the clarity scale works helps buyers focus on visual beauty rather than simply chasing the highest possible grade." },
+    { type: "paragraph", text: "In practice, many diamonds in the middle of the clarity chart appear perfectly clean to the naked eye. Understanding how the clarity scale works helps buyers focus on visual beauty rather than simply chasing the highest possible grade. When you are reading a grading report, [how to read a diamond certificate](/diamond-guide/how-to-read-a-diamond-certificate) shows where the clarity grade and inclusion plot appear on the page." },
   ],
   related: [
+    { title: "How to Read a Diamond Certificate", href: "/diamond-guide/how-to-read-a-diamond-certificate" },
     { title: "What is Diamond Clarity", href: "/diamond-guide/what-is-diamond-clarity" },
     { title: "VS1 vs VS2 Diamond Clarity", href: "/diamond-guide/vs1-vs-vs2-diamond-clarity" },
     { title: "What is SI1 Diamond Clarity", href: "/diamond-guide/what-is-si1-clarity" },
@@ -1046,9 +1054,10 @@ export const articles: Article[] = [
     { type: "paragraph", text: "While these diamonds are less commonly chosen for traditional engagement rings, they can still appear attractive depending on the diamond shape and the type of setting used." },
 
     { type: "paragraph", text: "The diamond color chart provides a consistent way to measure how much color is present in a diamond. From completely colorless stones at the top of the scale to those with visible warmth lower down, the chart helps buyers understand where a diamond falls within the grading spectrum." },
-    { type: "paragraph", text: "For many engagement ring buyers, diamonds in the colorless or near colorless ranges offer the best combination of beauty and value. Understanding how the chart works makes it easier to evaluate different diamonds with greater confidence." },
+    { type: "paragraph", text: "For many engagement ring buyers, diamonds in the colorless or near colorless ranges offer the best combination of beauty and value. Understanding how the chart works makes it easier to evaluate different diamonds with greater confidence. Fluorescence is documented separately on grading reports; see [what is diamond fluorescence](/diamond-guide/what-is-diamond-fluorescence) for how that field relates to color." },
   ],
   related: [
+    { title: "What is Diamond Fluorescence", href: "/diamond-guide/what-is-diamond-fluorescence" },
     { title: "What is Diamond Color", href: "/diamond-guide/what-is-diamond-color" },
     { title: "D vs E vs F Diamond Color", href: "/diamond-guide/d-vs-e-vs-f-diamond-color" },
     { title: "G vs H Diamond Color", href: "/diamond-guide/g-vs-h-diamond-color" },
@@ -1470,7 +1479,7 @@ export const articles: Article[] = [
       { type: "paragraph", text: "Start with the wearing experience you want: size presence, sparkle character, simplicity or halo, metal color. Then work backward to grades, not forward from a filter preset." },
       { type: "paragraph", text: "Set a cut standard first. For rounds, that usually means prioritizing stones that perform strongly in person, not only on paper. For fancy shapes, it means evaluating proportions and symmetry visually because grading is less standardized." },
       { type: "paragraph", text: "Find eye clean at the lowest clarity that satisfies your shape and size. Choose color with the setting in mind, not in isolation. Size the carat weight last, using face-up measurements and in-person comparison rather than the number alone." },
-      { type: "paragraph", text: "If you are comparing listings online, treat price per carat as a clue, not a verdict. Two stones at the same price can deliver entirely different value depending on how they were cut and whether the grades describe what you will see. [Diamond Intelligence](/diamond-intelligence) can help interpret a specific report before you commit. Side-by-side viewing still wins when you can manage it." },
+      { type: "paragraph", text: "If you are comparing listings online, treat price per carat as a clue, not a verdict. Two stones at the same price can deliver entirely different value depending on how they were cut and whether the grades describe what you will see. [How to read a diamond certificate](/diamond-guide/how-to-read-a-diamond-certificate) is the starting point for that review. [Diamond Intelligence](/diamond-intelligence) can help interpret a specific report before you commit. Side-by-side viewing still wins when you can manage it." },
 
       { type: "heading", text: "How to Know You Got It Right" },
       { type: "paragraph", text: "You can explain why you chose this diamond without reciting grades. You know what you traded and what you protected. You are not secretly hoping a higher clarity or color grade will rescue a stone that looked flat when you compared it." },
@@ -1478,6 +1487,7 @@ export const articles: Article[] = [
       { type: "paragraph", text: "For the process that surrounds these tradeoffs, [diamond buying tips from jewelers](/diamond-guide/diamond-buying-tips-from-jewelers) and [why work with a Graduate Gemologist](/diamond-guide/why-work-with-a-graduate-gemologist) go deeper on comparison and judgment. The goal is not to spend less for its own sake. It is to spend on what you will actually notice, long after the receipt is filed away." },
     ],
     related: [
+      { title: "Natural vs Lab Diamonds", href: "/diamond-guide/natural-vs-lab-diamonds" },
       { title: "Independent Diamond Advisor vs Jewelry Store", href: "/diamond-guide/independent-diamond-advisor-vs-jewelry-store" },
       { title: "Diamond Buying Tips from Jewelers", href: "/diamond-guide/diamond-buying-tips-from-jewelers" },
       { title: "Round Diamond Guide", href: "/diamond-guide/round-diamond-guide" },
@@ -1588,6 +1598,7 @@ export const articles: Article[] = [
       
     ],
     related: [
+      { title: "Diamond Size Chart", href: "/diamond-guide/diamond-size-chart" },
       { title: "Charlotte Diamond Advisor Guide", href: "/diamond-guide/charlotte-diamond-advisor-guide" },
       { title: "Charlotte Engagement Ring Guide", href: "/diamond-guide/charlotte-engagement-ring-guide" },
       { title: "Buy Diamonds Charlotte", href: "/diamond-guide/buy-diamonds-in-charlotte" },
@@ -1977,10 +1988,11 @@ export const articles: Article[] = [
     { type: "paragraph", text: "Understanding how these elements interact helps buyers determine how much weight color should carry in their decision." },
 
     { type: "paragraph", text: "Diamond color does matter, but its importance often depends on how it interacts with other characteristics of the stone. In many cases, the visual differences between nearby color grades are subtle once the diamond is set in a ring." },
-    { type: "paragraph", text: "By considering color alongside cut, clarity, and personal preference, buyers can select a diamond that feels balanced and visually satisfying." },
+    { type: "paragraph", text: "By considering color alongside cut, clarity, and personal preference, buyers can select a diamond that feels balanced and visually satisfying. Fluorescence is graded separately on reports and can influence perception in some lighting; see [what is diamond fluorescence](/diamond-guide/what-is-diamond-fluorescence) for context." },
     
   ],
   related: [
+    { title: "What is Diamond Fluorescence", href: "/diamond-guide/what-is-diamond-fluorescence" },
     { title: "What is Diamond Color", href: "/diamond-guide/what-is-diamond-color" },
     { title: "Diamond Color Chart Explained", href: "/diamond-guide/diamond-color-chart-explained" },
     { title: "Near Colorless Diamonds Explained", href: "/diamond-guide/near-colorless-diamonds-explained" },
@@ -2129,7 +2141,7 @@ export const articles: Article[] = [
     { type: "paragraph", text: "For buyers who value maximum sparkle, Excellent cut is often the safest choice." },
 
     { type: "paragraph", text: "Excellent and Very Good cut diamonds both represent high-quality stones. The difference between them lies in how closely the diamond’s proportions align with the ideal range for light performance." },
-    { type: "paragraph", text: "While the visual distinction may be subtle in many cases, cut remains one of the most important factors in determining how a diamond will look once it is set and worn." },
+    { type: "paragraph", text: "While the visual distinction may be subtle in many cases, cut remains one of the most important factors in determining how a diamond will look once it is set and worn. Proportion details on the report often explain those differences; [how to read a diamond certificate](/diamond-guide/how-to-read-a-diamond-certificate) and [Diamond Intelligence](/diamond-intelligence) help translate measurements into practical questions." },
     
   ],
   related: [
@@ -2166,9 +2178,10 @@ export const articles: Article[] = [
 
     { type: "heading", text: "When You Need Extra Help" },
     { type: "paragraph", text: "Inclusion plots are useful, but they do not show you how a feature behaves in your halo, solitaire, or bezel. If you are deciding between two stones with similar grades and different plots, side-by-side viewing is the tiebreaker." },
-    { type: "paragraph", text: "When the plot alone is not enough, a [private conversation](/concierge) can clarify whether a specific stone is truly eye clean for your ring. The goal is confidence you can feel, not a grade you can defend under a loupe." },
+    { type: "paragraph", text: "When the plot alone is not enough, [how to read a diamond certificate](/diamond-guide/how-to-read-a-diamond-certificate) shows where clarity grades and inclusion maps appear. [Diamond Intelligence](/diamond-intelligence) or a [private conversation](/concierge) can clarify whether a specific stone is truly eye clean for your ring. The goal is confidence you can feel, not a grade you can defend under a loupe." },
   ],
   related: [
+    { title: "How to Read a Diamond Certificate", href: "/diamond-guide/how-to-read-a-diamond-certificate" },
     { title: "What is Diamond Clarity", href: "/diamond-guide/what-is-diamond-clarity" },
     { title: "VS1 vs VS2 Diamond Clarity", href: "/diamond-guide/vs1-vs-vs2-diamond-clarity" },
     { title: "What is SI1 Diamond Clarity", href: "/diamond-guide/what-is-si1-clarity" },
@@ -2230,7 +2243,7 @@ export const articles: Article[] = [
     { type: "paragraph", text: "Because the difference between the two grades is minor, buyers often evaluate them alongside factors such as cut quality, clarity, and carat weight to determine which diamond best fits their goals." },
 
     { type: "paragraph", text: "G and H diamonds sit at the top of the near colorless range and are known for their clean, bright appearance. While a G color diamond contains slightly less color, the difference between the two grades is often difficult to detect once the diamond is set in a ring." },
-    { type: "paragraph", text: "Understanding how these grades compare helps buyers make more informed decisions about where color fits within their overall diamond priorities." },
+    { type: "paragraph", text: "Understanding how these grades compare helps buyers make more informed decisions about where color fits within their overall diamond priorities. If a report lists fluorescence alongside color, [what is diamond fluorescence](/diamond-guide/what-is-diamond-fluorescence) explains how those fields interact." },
     
   ],
   related: [
@@ -2293,7 +2306,7 @@ export const articles: Article[] = [
     { type: "heading", text: "What a GIA Report Includes" },
     { type: "paragraph", text: "A GIA certificate includes detailed information about a diamond’s physical and visual characteristics. The report records the diamond’s carat weight, color grade, clarity grade, and cut grade when applicable." },
     { type: "paragraph", text: "Beyond the core grading categories, the report also includes measurements such as table percentage, depth percentage, crown angle, pavilion angle, and girdle thickness. These details help explain how the diamond is proportioned and how it may interact with light." },
-    { type: "paragraph", text: "Most GIA reports also include a plotted diagram showing the diamond’s inclusions and identifying characteristics, along with a unique report number that can often be laser inscribed on the diamond’s girdle." },
+    { type: "paragraph", text: "Most GIA reports also include a plotted diagram showing the diamond’s inclusions and identifying characteristics, along with a unique report number that can often be laser inscribed on the diamond’s girdle. Fluorescence, when present, appears as its own line on the report; [what is diamond fluorescence](/diamond-guide/what-is-diamond-fluorescence) explains that field." },
 
     { type: "heading", text: "Why Many Jewelers Prefer GIA Certification" },
     { type: "paragraph", text: "GIA has developed a reputation for consistent grading standards. Within the trade, its reports are often considered a benchmark for evaluating diamond quality." },
@@ -2826,7 +2839,7 @@ export const articles: Article[] = [
     { type: "paragraph", text: "Most buyers eventually choose a balance among all four factors based on personal preference and budget." },
 
     { type: "paragraph", text: "Cut is often considered the most important of the Four Cs because it directly influences how a diamond interacts with light. A well-cut diamond appears brighter, more lively, and more visually appealing." },
-    { type: "paragraph", text: "While color, clarity, and carat weight still play important roles, the craftsmanship of the cut is what ultimately brings a diamond to life." },
+    { type: "paragraph", text: "While color, clarity, and carat weight still play important roles, the craftsmanship of the cut is what ultimately brings a diamond to life. When you are comparing reports, [how to read a diamond certificate](/diamond-guide/how-to-read-a-diamond-certificate) shows where proportion data lives, and [Diamond Intelligence](/diamond-intelligence) can help interpret what those numbers suggest about performance." },
     
   ],
   related: [
@@ -3037,9 +3050,11 @@ export const articles: Article[] = [
     { type: "paragraph", text: "When two reports look alike but prices diverge, when you are unsure how grades translate to beauty in your setting, or when you want a second opinion before a significant purchase. Trained review reads for wear, not for debate." },
   ],
   related: [
-    { title: "Are Lab Diamonds a Good Choice", href: "/diamond-guide/are-lab-diamonds-a-good-choice" },
-    { title: "Do Lab Grown Diamonds Have Certificates", href: "/diamond-guide/do-lab-grown-diamonds-have-certificates" },
     { title: "How to Read a Diamond Certificate", href: "/diamond-guide/how-to-read-a-diamond-certificate" },
+    { title: "Are Lab Diamonds a Good Choice", href: "/diamond-guide/are-lab-diamonds-a-good-choice" },
+    { title: "Fluorescence in Natural vs Lab Diamonds", href: "/diamond-guide/fluorescence-in-natural-vs-lab-diamonds" },
+    { title: "What is Diamond Fluorescence", href: "/diamond-guide/what-is-diamond-fluorescence" },
+    { title: "Do Lab Grown Diamonds Have Certificates", href: "/diamond-guide/do-lab-grown-diamonds-have-certificates" },
     { title: "Diamond Price vs Quality", href: "/diamond-guide/diamond-price-vs-quality" },
     { title: "Why Work With a Graduate Gemologist", href: "/diamond-guide/why-work-with-a-graduate-gemologist" },
   ]
@@ -3066,10 +3081,11 @@ export const articles: Article[] = [
     { type: "paragraph", text: "Even so, in everyday wear many near colorless diamonds continue to appear crisp and bright." },
 
     { type: "paragraph", text: "Near colorless diamonds occupy the middle portion of the diamond color scale and offer a balance between visual appearance and rarity. While they contain extremely subtle hints of color, these differences are often difficult to detect in everyday settings." },
-    { type: "paragraph", text: "For many engagement ring buyers, near colorless diamonds provide an appealing combination of beauty and practical value." },
+    { type: "paragraph", text: "For many engagement ring buyers, near colorless diamonds provide an appealing combination of beauty and practical value. When fluorescence appears on a report, [what is diamond fluorescence](/diamond-guide/what-is-diamond-fluorescence) explains how that field relates to color." },
     
   ],
   related: [
+    { title: "What is Diamond Fluorescence", href: "/diamond-guide/what-is-diamond-fluorescence" },
     { title: "What is Diamond Color", href: "/diamond-guide/what-is-diamond-color" },
     { title: "Diamond Color Chart Explained", href: "/diamond-guide/diamond-color-chart-explained" },
     { title: "G vs H Diamond Color", href: "/diamond-guide/g-vs-h-diamond-color" },
@@ -3591,10 +3607,11 @@ export const articles: Article[] = [
     { type: "paragraph", text: "In many cases, a carefully selected VS2 diamond offers exceptional visual performance while allowing more flexibility for other priorities such as cut quality or carat weight." },
 
     { type: "paragraph", text: "VS1 and VS2 diamonds both fall within the Very Slightly Included range of the clarity scale and are considered high clarity grades. Their inclusions are minor and typically invisible during normal viewing." },
-    { type: "paragraph", text: "For most engagement ring buyers, the visual difference between the two grades is extremely small. Understanding how these grades compare helps buyers choose a diamond that delivers both beauty and value without focusing solely on technical perfection." },
+    { type: "paragraph", text: "For most engagement ring buyers, the visual difference between the two grades is extremely small. Understanding how these grades compare helps buyers choose a diamond that delivers both beauty and value without focusing solely on technical perfection. Compare inclusion plots using [how to read a diamond certificate](/diamond-guide/how-to-read-a-diamond-certificate), or upload a report to [Diamond Intelligence](/diamond-intelligence) when you are deciding between similar VS stones." },
     
   ],
   related: [
+    { title: "How to Read a Diamond Certificate", href: "/diamond-guide/how-to-read-a-diamond-certificate" },
     { title: "What is Diamond Clarity", href: "/diamond-guide/what-is-diamond-clarity" },
     { title: "Diamond Clarity Chart Explained", href: "/diamond-guide/diamond-clarity-chart-explained" },
     { title: "What is SI1 Diamond Clarity", href: "/diamond-guide/what-is-si1-clarity" },
@@ -3662,6 +3679,7 @@ export const articles: Article[] = [
     { type: "paragraph", text: "[How to read a diamond certificate](/diamond-guide/how-to-read-a-diamond-certificate) walks through that sequence step by step. [Why diamond certification matters](/diamond-guide/why-diamond-certification-matters) explains when the report protects you most. When you want help translating a specific report, [Diamond Intelligence](/diamond-intelligence) is built for that gap between paper grades and practical judgment." },
   ],
   related: [
+    { title: "How to Read a Diamond Certificate", href: "/diamond-guide/how-to-read-a-diamond-certificate" },
     { title: "GIA Diamond Certification Explained", href: "/diamond-guide/gia-diamond-certification-explained" },
     { title: "IGI Diamond Certification Explained", href: "/diamond-guide/igi-diamond-certification-explained" },
     { title: "AGS Diamond Certification Explained", href: "/diamond-guide/ags-diamond-certification-explained" },
@@ -3775,7 +3793,7 @@ export const articles: Article[] = [
 
     { type: "heading", text: "What Advisors Look at First" },
     { type: "paragraph", text: "Face-up at arm's length, then from the side, then in the metal color and setting style you have chosen. Then the plot: where features sit, whether they are dark or white, whether they reach the surface. Then cut, because strong light return can make inclusions less noticeable and weak cut can make them more obvious." },
-    { type: "paragraph", text: "If you are working from a report alone, [Diamond Intelligence](/diamond-intelligence) can help translate plot and proportion data into practical questions before you commit. A [Graduate Gemologist](/diamond-guide/why-work-with-a-graduate-gemologist) will tell you when a lower grade is genuinely clean and when a higher grade still fails the eye test." },
+    { type: "paragraph", text: "If you are working from a report alone, [how to read a diamond certificate](/diamond-guide/how-to-read-a-diamond-certificate) shows where clarity grades and inclusion plots live on the page. [Diamond Intelligence](/diamond-intelligence) can help translate plot and proportion data into practical questions before you commit. A [Graduate Gemologist](/diamond-guide/why-work-with-a-graduate-gemologist) will tell you when a lower grade is genuinely clean and when a higher grade still fails the eye test." },
 
     { type: "heading", text: "Shape, Setting, and Size" },
     { type: "paragraph", text: "Brilliant rounds and ovals forgive more than emerald or Asscher step cuts. Larger stones make inclusions easier to locate. Bezels and prongs can hide girdle features that would distract in a tension setting. These variables change the clarity grade you need, not the clarity standard you should hold: eye clean in the finished ring." },
@@ -3816,7 +3834,7 @@ export const articles: Article[] = [
 
     { type: "heading", text: "Shape, Size, and Light" },
     { type: "paragraph", text: "Brilliant cuts scatter light and forgive more tint than emerald or Asscher step cuts, where open tables show body color more directly. Size matters too. Warmth that hides in a half-carat round can surface in a two-carat step cut under the same grade." },
-    { type: "paragraph", text: "Lighting shifts perception daily. Restaurant warmth, office fluorescents, overcast daylight: each reveals something different. Cut quality still leads. A lively near-colorless stone outperforms a dull colorless one in every environment. [What is diamond cut](/diamond-guide/what-is-diamond-cut) explains why light performance comes before alphabet upgrades." },
+    { type: "paragraph", text: "Lighting shifts perception daily. Restaurant warmth, office fluorescents, overcast daylight: each reveals something different. Cut quality still leads. A lively near-colorless stone outperforms a dull colorless one in every environment. [What is diamond cut](/diamond-guide/what-is-diamond-cut) explains why light performance comes before alphabet upgrades. Fluorescence can also influence how color reads in certain light; [what is diamond fluorescence](/diamond-guide/what-is-diamond-fluorescence) is the balanced guide to that report field." },
 
     { type: "heading", text: "Where Money Is Well Spent" },
     { type: "paragraph", text: "Protect cut first. Then choose the lowest color grade that looks clean in your metal and shape when you compare stones side by side. For many brilliant-cut engagement rings in white metal, that lands in the near-colorless range rather than the colorless top tier." },
@@ -3836,6 +3854,7 @@ export const articles: Article[] = [
     { type: "paragraph", text: "Color grading exists so laboratories can describe tint consistently. Your job is simpler: decide what looks right on the hand you are buying for. Compare a few stones, hold them in the metal you plan to use, and trust what you see more than the highest letter on a filter menu." },
   ],
   related: [
+    { title: "What is Diamond Fluorescence", href: "/diamond-guide/what-is-diamond-fluorescence" },
     { title: "Diamond Color Chart Explained", href: "/diamond-guide/diamond-color-chart-explained" },
     { title: "D vs E vs F Diamond Color", href: "/diamond-guide/d-vs-e-vs-f-diamond-color" },
     { title: "G vs H Diamond Color", href: "/diamond-guide/g-vs-h-diamond-color" },
@@ -4076,10 +4095,11 @@ export const articles: Article[] = [
     { type: "paragraph", text: "When chosen carefully, an SI1 diamond can deliver excellent visual performance while maintaining strong overall value." },
 
     { type: "paragraph", text: "SI1 diamond clarity indicates the presence of small inclusions that are visible under magnification but often difficult to detect during normal viewing." },
-    { type: "paragraph", text: "With careful selection, many SI1 diamonds appear clean to the naked eye and offer a strong balance between clarity, beauty, and value. Understanding how SI1 clarity works helps buyers evaluate diamonds more confidently and focus on how the stone truly looks in everyday conditions." },
+    { type: "paragraph", text: "With careful selection, many SI1 diamonds appear clean to the naked eye and offer a strong balance between clarity, beauty, and value. Understanding how SI1 clarity works helps buyers evaluate diamonds more confidently and focus on how the stone truly looks in everyday conditions. Review inclusion plots with [how to read a diamond certificate](/diamond-guide/how-to-read-a-diamond-certificate), or use [Diamond Intelligence](/diamond-intelligence) when you are deciding between similar SI1 candidates." },
     
   ],
   related: [
+    { title: "How to Read a Diamond Certificate", href: "/diamond-guide/how-to-read-a-diamond-certificate" },
     { title: "What is Diamond Clarity", href: "/diamond-guide/what-is-diamond-clarity" },
     { title: "Diamond Clarity Chart Explained", href: "/diamond-guide/diamond-clarity-chart-explained" },
     { title: "VS1 vs VS2 Diamond Clarity", href: "/diamond-guide/vs1-vs-vs2-diamond-clarity" },
@@ -4218,7 +4238,7 @@ export const articles: Article[] = [
     { type: "heading", text: "The Value of Taking Your Time" },
     { type: "paragraph", text: "Because diamonds vary widely in their characteristics, finding the right stone often depends more on patience than timing. When buyers take the time to evaluate several options and understand what they prefer, the result is often a diamond that feels more personal and meaningful." },
 
-    { type: "paragraph", text: "The best time to buy a diamond is rarely determined by the calendar alone. Instead, it is the moment when buyers feel informed, comfortable, and ready to choose a stone that reflects their priorities and intentions." },
+    { type: "paragraph", text: "The best time to buy a diamond is rarely determined by the calendar alone. Instead, it is the moment when buyers feel informed, comfortable, and ready to choose a stone that reflects their priorities and intentions. When you want help narrowing options before you commit, [begin with Concierge](/concierge) at your own pace." },
     
   ],
   related: [
@@ -4474,7 +4494,7 @@ export const articles: Article[] = [
     { type: "heading", text: "Advantages of Independent Guidance" },
     { type: "paragraph", text: "Objectivity is the clearest benefit. When nothing on the table must be sold, the conversation can start from zero. An advisor can tell you that your budget is better spent on cut quality than on a clarity grade you will never see. They can source three stones from different suppliers and compare them without preference for any particular one." },
     { type: "paragraph", text: "Breadth is another. The trade networks available to an independent advisor often exceed what any single store can stock. That matters especially for buyers seeking something specific: an elongated oval in a narrow proportion range, a particular make of cushion, a stone that performs above its paper grades." },
-    { type: "paragraph", text: "Education tends to be deeper. Advisors who are not racing toward a close have time to explain why two certificates that look identical describe very different diamonds. [Why work with a Graduate Gemologist](/diamond-guide/why-work-with-a-graduate-gemologist) explores how that training translates into judgment you can actually use." },
+    { type: "paragraph", text: "Education tends to be deeper. Advisors who are not racing toward a close have time to explain why two certificates that look identical describe very different diamonds. [How to read a diamond certificate](/diamond-guide/how-to-read-a-diamond-certificate) is the flagship guide for that review. [Diamond Intelligence](/diamond-intelligence) can help compare specific reports before you buy. [Why work with a Graduate Gemologist](/diamond-guide/why-work-with-a-graduate-gemologist) explores how that training translates into judgment you can actually use." },
 
     { type: "heading", text: "Which Model Fits You" },
     { type: "paragraph", text: "If you already know what you want, value the experience of shopping in person, and prefer to support a local retailer with a physical presence, a traditional jewelry store may serve you well, especially if you have a referral to someone trustworthy." },
