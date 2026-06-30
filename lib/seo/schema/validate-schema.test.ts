@@ -102,6 +102,7 @@ describe("structured data builders", () => {
       "princess-diamond-guide",
       "radiant-diamond-guide",
       "round-diamond-guide",
+      "what-is-diamond-fluorescence",
       "why-work-with-a-graduate-gemologist",
     ]);
 

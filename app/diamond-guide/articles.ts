@@ -718,6 +718,7 @@ export const articles: Article[] = [
   title: "Can You See Diamond Fluorescence",
   category: "Diamond Color",
   body: [
+    { type: "paragraph", text: "For the complete guide to fluorescence grades, appearance, and value, see [what is diamond fluorescence](/diamond-guide/what-is-diamond-fluorescence). This article focuses on when fluorescence becomes visible to the eye." },
     { type: "heading", text: "How Fluorescence Becomes Visible" },
     { type: "paragraph", text: "Diamond fluorescence is visible only when the diamond is exposed to ultraviolet light. Under these conditions, certain diamonds emit a glow that can appear blue, white, or occasionally another color." },
     { type: "paragraph", text: "Without ultraviolet light, fluorescence is usually not visible to the human eye." },
@@ -1297,6 +1298,7 @@ export const articles: Article[] = [
     title: "Diamond Fluorescence Chart Explained",
     category: "Diamond Color",
     body: [
+      { type: "paragraph", text: "The full fluorescence scale and buyer guide live in [what is diamond fluorescence](/diamond-guide/what-is-diamond-fluorescence), including an Hourglass reference chart. This article explains the five GIA grades in brief." },
       { type: "heading", text: "Understanding Fluorescence Grading" },
       { type: "paragraph", text: "Diamond fluorescence is graded according to the strength of the glow a diamond produces when exposed to ultraviolet light. Laboratories such as the Gemological Institute of America evaluate this characteristic and record it on the diamond’s grading report." },
       { type: "paragraph", text: "Rather than measuring color tint like the diamond color scale, fluorescence grading measures the intensity of the diamond’s reaction to UV light. The result is described using a series of standardized categories." },
@@ -1992,6 +1994,7 @@ export const articles: Article[] = [
   title: "Does Fluorescence Affect Diamond Value",
   category: "Diamond Color",
   body: [
+    { type: "paragraph", text: "Value context for fluorescence belongs in the broader guide: [what is diamond fluorescence](/diamond-guide/what-is-diamond-fluorescence). This article focuses on pricing alone." },
     { type: "heading", text: "Why Fluorescence Influences Pricing" },
     { type: "paragraph", text: "Diamond value is influenced by many characteristics, including cut, color, clarity, and carat weight. Fluorescence is not part of the traditional Four Cs, but it can still affect how diamonds are priced in the market." },
     { type: "paragraph", text: "Because fluorescence has historically been misunderstood, diamonds with stronger fluorescence sometimes trade at slightly lower prices compared to similar diamonds without fluorescence." },
@@ -2178,7 +2181,7 @@ export const articles: Article[] = [
   title: "Fluorescence in Natural vs Lab Diamonds",
   category: "Diamond Color",
   body: [
-    { type: "paragraph", text: "Fluorescence can appear in both natural and laboratory-grown diamonds. It is one of the subtle ways growth history shows up on a grading report, not usually on the hand. For the broader origin decision, start with [natural vs lab diamonds](/diamond-guide/natural-vs-lab-diamonds)." },
+    { type: "paragraph", text: "Fluorescence can appear in both natural and laboratory-grown diamonds. It is one of the subtle ways growth history shows up on a grading report, not usually on the hand. For the full fluorescence guide, start with [what is diamond fluorescence](/diamond-guide/what-is-diamond-fluorescence). For the broader origin decision, see [natural vs lab diamonds](/diamond-guide/natural-vs-lab-diamonds)." },
     { type: "heading", text: "How Fluorescence Occurs" },
     { type: "paragraph", text: "Fluorescence occurs when trace elements within a diamond interact with ultraviolet light. This reaction causes the diamond to emit a visible glow, most often blue." },
     { type: "paragraph", text: "Both natural and laboratory-grown diamonds can display fluorescence because the underlying crystal structure of the diamond is the same in both cases." },
@@ -2191,20 +2194,17 @@ export const articles: Article[] = [
     { type: "paragraph", text: "Laboratory-grown diamonds can also exhibit fluorescence depending on the growth process and trace elements involved during their formation. Some lab diamonds may display fluorescence patterns similar to natural diamonds." },
     { type: "paragraph", text: "Because laboratory growth environments differ from natural geological processes, fluorescence characteristics can vary." },
 
-    { type: "heading", text: "How Grading Reports Record Fluorescence" },
-    { type: "paragraph", text: "Whether a diamond is natural or lab-grown, fluorescence is documented on grading reports issued by gemological laboratories. The report will typically describe the intensity of fluorescence using categories such as none, faint, medium, strong, or very strong." },
-    { type: "paragraph", text: "This information allows buyers to understand whether the diamond reacts to ultraviolet light." },
+    { type: "paragraph", text: "Whether a diamond is natural or lab-grown, fluorescence is documented on grading reports issued by gemological laboratories. The report will typically describe the intensity of fluorescence using categories such as none, faint, medium, strong, or very strong. [How to read a diamond certificate](/diamond-guide/how-to-read-a-diamond-certificate) shows where that line lives on the page." },
 
-    { type: "paragraph", text: "Fluorescence can occur in both natural and lab-grown diamonds because it results from the diamond’s crystal structure interacting with ultraviolet light. The presence or absence of fluorescence depends on the trace elements involved during formation." },
-    { type: "paragraph", text: "Understanding this characteristic helps buyers interpret grading reports for both natural and laboratory-grown diamonds. When fluorescence is part of your origin comparison, the balanced overview lives in [natural vs lab diamonds](/diamond-guide/natural-vs-lab-diamonds)." },
+    { type: "paragraph", text: "Understanding this characteristic helps buyers interpret grading reports for both natural and laboratory-grown diamonds. When you have a specific report in hand, [Diamond Intelligence](/diamond-intelligence) can help you review how its fluorescence grade fits the rest of the stone. For buying guidance, see [when fluorescence improves a diamond](/diamond-guide/when-fluorescence-improves-a-diamond)." },
     
   ],
   related: [
-    { title: "Natural vs Lab Diamonds", href: "/diamond-guide/natural-vs-lab-diamonds" },
     { title: "What is Diamond Fluorescence", href: "/diamond-guide/what-is-diamond-fluorescence" },
-    { title: "Can You See Diamond Fluorescence", href: "/diamond-guide/can-you-see-diamond-fluorescence" },
+    { title: "Natural vs Lab Diamonds", href: "/diamond-guide/natural-vs-lab-diamonds" },
     { title: "When Fluorescence Improves a Diamond", href: "/diamond-guide/when-fluorescence-improves-a-diamond" },
-    { title: "Does Fluorescence Affect Diamond Value", href: "/diamond-guide/does-fluorescence-affect-diamond-value" },
+    { title: "How to Read a Diamond Certificate", href: "/diamond-guide/how-to-read-a-diamond-certificate" },
+    { title: "What is Diamond Color", href: "/diamond-guide/what-is-diamond-color" },
   ]
 },
 
@@ -2842,6 +2842,7 @@ export const articles: Article[] = [
   title: "Is Diamond Fluorescence Good or Bad",
   category: "Diamond Color",
   body: [
+    { type: "paragraph", text: "The balanced overview is in [what is diamond fluorescence](/diamond-guide/what-is-diamond-fluorescence). For a practical helps-versus-hurts framework, see [when fluorescence improves a diamond](/diamond-guide/when-fluorescence-improves-a-diamond)." },
     { type: "heading", text: "Why Fluorescence Raises Questions" },
     { type: "paragraph", text: "Diamond fluorescence often sparks debate among buyers because it is one of the more misunderstood characteristics listed on grading reports. Some people worry that fluorescence may negatively affect the appearance of a diamond, while others see it as a harmless natural feature. Uploading a report to [Diamond Intelligence](/diamond-intelligence) can help clarify how the fluorescence grade relates to the stone you are considering." },
     { type: "paragraph", text: "In reality, fluorescence is neither inherently good nor bad. Its impact depends on how strong the fluorescence is and how it interacts with the diamond’s natural color." },
@@ -3493,6 +3494,7 @@ export const articles: Article[] = [
   title: "Should You Avoid Diamond Fluorescence",
   category: "Diamond Color",
   body: [
+    { type: "paragraph", text: "You do not need to avoid fluorescence by default. Start with [what is diamond fluorescence](/diamond-guide/what-is-diamond-fluorescence), then evaluate each stone individually." },
     { type: "heading", text: "Why Fluorescence Causes Uncertainty" },
     { type: "paragraph", text: "Many buyers hesitate when they see fluorescence listed on a diamond grading report. Because this characteristic involves the diamond reacting to ultraviolet light, some people assume it may negatively affect the diamond’s beauty. In reality, fluorescence is simply a natural property found in many diamonds, and reviewing the full report through [Diamond Intelligence](/diamond-intelligence) often makes its practical significance clearer." },
 
@@ -3525,6 +3527,7 @@ export const articles: Article[] = [
   title: "Strong Blue Fluorescence Diamond",
   category: "Diamond Color",
   body: [
+    { type: "paragraph", text: "Strong blue fluorescence is one grade on the scale explained in [what is diamond fluorescence](/diamond-guide/what-is-diamond-fluorescence). This article focuses on that intensity alone." },
     { type: "heading", text: "What Strong Blue Fluorescence Means" },
     { type: "paragraph", text: "Strong blue fluorescence refers to a diamond that emits a noticeable blue glow when exposed to ultraviolet light. This reaction occurs because certain trace elements within the diamond absorb UV radiation and re-emit it as visible blue light." },
     { type: "paragraph", text: "On a diamond grading report, fluorescence intensity is described using categories such as faint, medium, strong, and very strong. Strong fluorescence sits near the upper end of that scale." },
@@ -3891,33 +3894,96 @@ export const articles: Article[] = [
   slug: "what-is-diamond-fluorescence",
   title: "What Is Diamond Fluorescence",
   category: "Diamond Color",
+  heroImage: "/diamond-guide/what-is-diamond-fluorescence-hero.png",
+  heroImageAlt:
+    "Round diamond glowing under ultraviolet light on a warm luxury jeweler surface with loupe and tweezers",
+  visualCategory: "original-photo",
+  visualStatus: "live",
   body: [
-    { type: "heading", text: "Understanding Diamond Fluorescence" },
-    { type: "paragraph", text: "Diamond fluorescence is a natural characteristic that causes some diamonds to emit a visible glow when exposed to ultraviolet (UV) light. This effect most commonly appears as a soft blue glow, though other colors such as yellow or white can occasionally occur." },
-    { type: "paragraph", text: "Fluorescence happens because trace elements within the diamond react to ultraviolet radiation. These elements absorb the UV light and then release energy in the form of visible light. While this reaction may sound dramatic, in most cases fluorescence is subtle and often goes unnoticed in everyday lighting." },
+    { type: "paragraph", text: "Diamond fluorescence is a glow some diamonds emit under ultraviolet light, most often soft blue. On a grading report it appears as its own line: None, Faint, Medium, Strong, or Very Strong. For most buyers it is invisible in everyday wear. It is not a flaw by default, and it is not the same as diamond color. The practical question is whether this specific stone still looks bright, crisp, and right for your ring." },
+    { type: "paragraph", text: "Many buyers discover fluorescence only after they have already fallen for a diamond online. The summary line looks perfect. Then they notice the fluorescence field and wonder whether they should walk away. That reaction is understandable. It is also often unnecessary. Fluorescence is common, frequently neutral, and sometimes useful. What it is not is a substitute for viewing the stone." },
 
-    { type: "heading", text: "How Common Fluorescence Is in Diamonds" },
-    { type: "paragraph", text: "Fluorescence is not rare. In fact, a significant portion of diamonds exhibit some degree of fluorescence when viewed under ultraviolet light. The strength of this effect varies from diamond to diamond." },
-    { type: "paragraph", text: "Many diamonds show no fluorescence at all, while others display faint, medium, strong, or very strong fluorescence when tested in a laboratory. These levels are recorded on a diamond’s grading report so buyers can understand whether the diamond reacts to UV light, and [Diamond Intelligence](/diamond-intelligence) can help you interpret what that listing may mean in context." },
+    { type: "heading", text: "What Diamond Fluorescence Actually Is" },
+    { type: "paragraph", text: "Fluorescence happens when trace elements inside a diamond absorb ultraviolet radiation and release visible light. Blue is the most common color gemologists record. Yellow, white, and other reactions appear occasionally. The effect is a physical property of that crystal, not a treatment and not a surface coating." },
+    { type: "paragraph", text: "Laboratories grade fluorescence separately from color. A G color diamond can be None or Strong. A J color diamond can be either as well. That independence is why fluorescence deserves its own conversation rather than a quick pass or fail judgment." },
 
-    { type: "heading", text: "When Fluorescence Is Visible" },
-    { type: "paragraph", text: "In most everyday environments, diamond fluorescence is difficult to notice. Ultraviolet light is present in sunlight and certain artificial lighting, but the glow produced by fluorescence is often quite subtle." },
-    { type: "paragraph", text: "The blue glow is typically easiest to observe under specialized UV lamps, which is why fluorescence is most commonly demonstrated in gemological laboratories or jewelry stores." },
+    { type: "heading", text: "How Common Fluorescence Is" },
+    { type: "paragraph", text: "A substantial share of diamonds show some fluorescence under UV testing. Many exhibit none. Others fall anywhere on the scale. The grade on your report simply documents how strong the reaction was in standardized laboratory conditions, not how the diamond will behave at your kitchen table." },
+    { type: "paragraph", text: "If you are reading a listing and unsure what the fluorescence line means for that stone, [Diamond Intelligence](/diamond-intelligence) can help translate report data into practical questions before you view it in person." },
 
-    { type: "heading", text: "How Fluorescence Affects Diamond Appearance" },
-    { type: "paragraph", text: "In many diamonds, fluorescence has little to no visible impact on appearance. The diamond will still appear bright and white under normal lighting conditions." },
-    { type: "paragraph", text: "In some cases, particularly in diamonds with noticeable yellow tint, blue fluorescence can actually make the diamond appear slightly whiter when viewed in sunlight. However, in rare situations very strong fluorescence may create a faint hazy or milky effect." },
+    { type: "heading", text: "The GIA Fluorescence Scale" },
+    { type: "paragraph", text: "Major laboratories including GIA describe fluorescence with five standard grades. None means no observable reaction under UV. Faint means a subtle reaction that is difficult to see even under a UV lamp. Medium is easier to observe in controlled UV lighting. Strong and Very Strong produce a more noticeable glow when UV is present." },
+    { type: "paragraph", text: "The scale measures intensity under ultraviolet light. It does not automatically predict beauty in normal wear. That distinction matters more than the label itself." },
+    {
+      type: "editorial-image",
+      src: "/diamond-guide/what-is-diamond-fluorescence-scale-chart.png",
+      alt: "Hourglass Diamonds fluorescence scale showing diamond appearance in natural light and under ultraviolet light",
+    },
 
-    { type: "paragraph", text: "Diamond fluorescence is a natural reaction that causes some diamonds to glow under ultraviolet light. While it is a common feature found in many diamonds, it rarely affects how the diamond appears in everyday wear." },
-    { type: "paragraph", text: "Understanding fluorescence helps buyers interpret what they see on a grading report and evaluate whether this characteristic has any meaningful impact on the diamond they are considering. For a deeper look at when fluorescence deserves caution, see [should you avoid diamond fluorescence](/diamond-guide/should-you-avoid-diamond-fluorescence)." },
-    
+    { type: "heading", text: "What Each Grade Means in Practice" },
+    { type: "paragraph", text: "None: the diamond showed no meaningful fluorescence reaction when graded. Everyday appearance is unaffected because there is none listed." },
+    { type: "paragraph", text: "Faint: a subtle reaction under UV, often hard to notice even when demonstrated. Most faint stones look the same as non-fluorescent diamonds in normal lighting." },
+    { type: "paragraph", text: "Medium: a clearer reaction under UV. Still often invisible in typical indoor environments. Worth noting on the report, not automatically worth rejecting." },
+    { type: "paragraph", text: "Strong: a pronounced blue reaction under UV. Many strong stones still face up beautifully. This is the grade where side-by-side viewing earns its keep." },
+    { type: "paragraph", text: "Very Strong: the most intense common category. Most stones are still attractive. A minority can show haze in certain light. Individual inspection matters most here." },
+    { type: "paragraph", text: "For how to find the fluorescence field on a report, see [how to read a diamond certificate](/diamond-guide/how-to-read-a-diamond-certificate)." },
+
+    { type: "heading", text: "When Fluorescence Is Usually Harmless" },
+    { type: "paragraph", text: "Faint and medium fluorescence rarely change what you see in restaurants, offices, or evening light. Even in daylight the glow itself is subtle. Buyers who choose these stones are often choosing them for cut, clarity, and price without ever seeing a blue reaction on the hand." },
+    { type: "paragraph", text: "If your priority is a beautiful diamond rather than a report with every line optimized for resale anxiety, faint or medium fluorescence should not disqualify a stone before you have looked at it." },
+
+    { type: "heading", text: "When Fluorescence Deserves a Closer Look" },
+    { type: "paragraph", text: "Strong and very strong fluorescence deserve more attention, especially on high color grades where crisp whiteness is part of the appeal. The concern is not the UV glow. It is whether transparency stays clean in the environments where you will actually wear the ring." },
+    { type: "paragraph", text: "A small percentage of very strong stones can look slightly hazy or milky in certain lighting. Most do not. That is why blanket rules fail. For a practical helps-versus-hurts framework, see [when fluorescence improves a diamond](/diamond-guide/when-fluorescence-improves-a-diamond)." },
+
+    { type: "heading", text: "How Fluorescence Can Affect Color Appearance" },
+    { type: "paragraph", text: "Blue fluorescence can interact with body color because blue and yellow are complementary. In diamonds with slight warmth, outdoor daylight can occasionally make a fluorescent stone look a touch whiter than its color grade alone might suggest. The shift is usually modest, not a magic upgrade from J to D." },
+    { type: "paragraph", text: "Indoor lighting contains less UV, so the effect is often minimal away from windows. [What is diamond color](/diamond-guide/what-is-diamond-color) explains how color is graded and why face-up appearance can differ from the certificate." },
+
+    { type: "heading", text: "How Fluorescence Can Affect Value and Pricing" },
+    { type: "paragraph", text: "Fluorescence is not one of the traditional Four Cs, yet it can influence list prices. Stronger fluorescence sometimes correlates with modest discounts versus similar non-fluorescent stones, partly because the market has historically feared it. Faint and medium levels are often priced neutrally." },
+    { type: "paragraph", text: "For buyers who evaluate stones individually, that discount can be an opportunity when the diamond faces up beautifully. For buyers focused on top color grades and maximum resale optics, it may feel like noise. Neither reaction is wrong. [Diamond price versus quality](/diamond-guide/diamond-price-vs-quality) helps frame tradeoffs once you know what you are optimizing for." },
+
+    { type: "heading", text: "Natural and Lab-Grown Diamonds" },
+    { type: "paragraph", text: "Both natural and laboratory-grown diamonds can show fluorescence. Growth history differs, but the crystal structure is the same material. Reports document fluorescence for either origin using the same intensity scale." },
+    { type: "paragraph", text: "If origin is part of your decision, [fluorescence in natural vs lab diamonds](/diamond-guide/fluorescence-in-natural-vs-lab-diamonds) covers how growth environment can influence fluorescence patterns. For the broader origin question, see [natural vs lab diamonds](/diamond-guide/natural-vs-lab-diamonds)." },
+
+    { type: "heading", text: "Why a Grading Report Alone Is Not Enough" },
+    { type: "paragraph", text: "A report tells you what a laboratory observed under controlled conditions. It does not tell you how lively the diamond looks when it moves, how inclusions behave in your setting, or whether fluorescence changes transparency in your lighting. Two diamonds with identical fluorescence grades can perform differently because cut, clarity, and crystal character differ." },
+    { type: "paragraph", text: "Performance still governs the recommendation. [How diamond cut affects light performance](/diamond-guide/how-diamond-cut-affects-light-performance) and [what is diamond clarity](/diamond-guide/what-is-diamond-clarity) explain why paper grades are only the start. [Our Approach](/our-approach) at Hourglass applies the same optical standard whether fluorescence is None or Strong." },
+
+    { type: "heading", text: "How a Graduate Gemologist Reads Fluorescence" },
+    { type: "paragraph", text: "A Graduate Gemologist does not begin by fearing the fluorescence line. The first questions are about the whole stone: cut quality, eye cleanliness, color in your metal, and whether the crystal looks lively in daylight and indoor light. Fluorescence enters as context, not as a veto." },
+    { type: "paragraph", text: "That discipline protects buyers from passing on beautiful stones and from accepting dull ones because the rest of the report looked impressive. [Why work with a Graduate Gemologist](/diamond-guide/why-work-with-a-graduate-gemologist) and [The House](/the-house) explain who leads that review at Hourglass." },
+
+    { type: "heading", text: "Charlotte, Surrounding Markets, and Clients Nationwide" },
+    { type: "paragraph", text: "Many Charlotte-area buyers review fluorescent diamonds in private appointment rather than under sales-floor pressure. Hourglass works with clients throughout the Charlotte metro, including South Charlotte, Ballantyne, Matthews, Waxhaw, Weddington, Marvin, Pineville, Huntersville, Union County, Lake Norman, Fort Mill, and nearby communities. Comparison matters more than fluorescence prejudice." },
+    { type: "paragraph", text: "We also work with clients around the U.S. by appointment and remote consultation when that pace fits better than a local visit. Whether you are comparing two listings or holding a single stone up to daylight, the standard stays the same: read the report, then trust what your eyes confirm. [Charlotte diamond advisor guide](/diamond-guide/charlotte-diamond-advisor-guide) explains the private model locally. [Begin the conversation](/concierge) when you want a Graduate Gemologist to review a specific fluorescent stone with you." },
+
+    { type: "heading", text: "What is diamond fluorescence?" },
+    { type: "paragraph", text: "A natural glow, usually blue, under ultraviolet light. Graded None through Very Strong on reports. Not the same as color grade. Often invisible in everyday wear." },
+
+    { type: "heading", text: "Is diamond fluorescence good or bad?" },
+    { type: "paragraph", text: "Neither label fits every stone. Faint and medium are usually neutral. Blue fluorescence can soften warmth in some diamonds. Very strong fluorescence deserves individual inspection." },
+
+    { type: "heading", text: "Should I avoid diamonds with fluorescence?" },
+    { type: "paragraph", text: "Not automatically. Reject a stone if it looks hazy or dull where you will wear it, not because the report lists fluorescence alone." },
+
+    { type: "heading", text: "Can fluorescence make a diamond look hazy?" },
+    { type: "paragraph", text: "Rarely, and most often with very strong grades. Most fluorescent diamonds look clear. View in daylight and indoor light before deciding." },
+
+    { type: "heading", text: "Does fluorescence affect diamond value?" },
+    { type: "paragraph", text: "It can influence list price, especially at stronger grades. Faint and medium are often neutral. Beauty and cut still drive the worth of a keep-forever ring." },
+
+    { type: "heading", text: "How should I evaluate fluorescence before buying?" },
+    { type: "paragraph", text: "Read the report line, compare stones side by side, and view in person when you can. Use [Diamond Intelligence](/diamond-intelligence) for report context or [Concierge](/concierge) when you want trained review before you commit." },
   ],
   related: [
-    { title: "Diamond Fluorescence Chart", href: "/diamond-guide/diamond-fluorescence-chart-explained" },
-    { title: "Is Diamond Fluorescence Good or Bad", href: "/diamond-guide/is-diamond-fluorescence-good-or-bad" },
-    { title: "Strong Blue Fluorescence in Diamonds", href: "/diamond-guide/strong-blue-fluorescence-diamond" },
-    { title: "Does Fluorescence Affect Diamond Value", href: "/diamond-guide/does-fluorescence-affect-diamond-value" },
-    { title: "Can You See Diamond Fluorescence", href: "/diamond-guide/can-you-see-diamond-fluorescence" }
+    { title: "When Fluorescence Improves a Diamond", href: "/diamond-guide/when-fluorescence-improves-a-diamond" },
+    { title: "Fluorescence in Natural vs Lab Diamonds", href: "/diamond-guide/fluorescence-in-natural-vs-lab-diamonds" },
+    { title: "How to Read a Diamond Certificate", href: "/diamond-guide/how-to-read-a-diamond-certificate" },
+    { title: "What is Diamond Color", href: "/diamond-guide/what-is-diamond-color" },
+    { title: "Why Work With a Graduate Gemologist", href: "/diamond-guide/why-work-with-a-graduate-gemologist" },
   ]
 },
 {
@@ -4067,32 +4133,36 @@ export const articles: Article[] = [
   title: "When Fluorescence Improves a Diamond",
   category: "Diamond Color",
   body: [
-    { type: "heading", text: "How Fluorescence Interacts With Color" },
-    { type: "paragraph", text: "In certain diamonds, fluorescence can subtly influence how the stone appears in natural lighting. Blue fluorescence in particular can interact with the diamond’s body color, especially when the diamond contains faint yellow tint." },
-    { type: "paragraph", text: "Because blue is the complementary color to yellow, the fluorescence can visually balance the warmth present in the diamond." },
+    { type: "paragraph", text: "This article is for buyers who already understand what fluorescence is and want to know whether it helps or hurts a specific purchase. If you need definitions, the GIA scale, and report context first, start with [what is diamond fluorescence](/diamond-guide/what-is-diamond-fluorescence)." },
+    { type: "paragraph", text: "Fluorescence is neither a free upgrade nor an automatic warning. It is a report line that sometimes aligns with beauty, sometimes with value, and occasionally with a reason to keep looking. The answer lives in the individual stone." },
 
-    { type: "heading", text: "Diamonds That Benefit Most" },
-    { type: "paragraph", text: "Diamonds with color grades in the near colorless or faint range may sometimes appear slightly whiter in sunlight if they exhibit blue fluorescence. The effect is typically subtle but can enhance the diamond’s overall appearance." },
-    { type: "paragraph", text: "This is one reason some buyers intentionally consider diamonds with moderate fluorescence." },
+    { type: "heading", text: "When Fluorescence Can Help" },
+    { type: "paragraph", text: "Blue fluorescence can interact with body color because blue and yellow are complementary. In diamonds with slight warmth, outdoor daylight can make a fluorescent stone look a touch whiter than you might expect from the color grade alone. The shift is subtle, not a full grade jump, but it can matter on the hand." },
+    { type: "paragraph", text: "Near-colorless and faint-tinted stones are the most common beneficiaries. Buyers who compare fluorescent and non-fluorescent options side by side in daylight sometimes prefer the fluorescent stone because it faces up livelier, not because the report read better." },
+    { type: "paragraph", text: "Pricing can help too. Fluorescence has historically carried unfair stigma. A beautiful stone with medium fluorescence may list below a similar non-fluorescent diamond, which can free budget for cut or setting without sacrificing appearance." },
 
-    { type: "heading", text: "The Role of Natural Light" },
-    { type: "paragraph", text: "Fluorescence becomes most noticeable in environments that contain ultraviolet light, such as outdoor daylight. Under these conditions, the blue glow can offset warmer tones within the diamond." },
-    { type: "paragraph", text: "Indoors, however, the effect is usually minimal because most lighting sources contain little ultraviolet radiation." },
+    { type: "heading", text: "When Fluorescence Can Hurt" },
+    { type: "paragraph", text: "Very strong fluorescence deserves the most scrutiny, especially on high color grades where crisp whiteness is part of the appeal. A small percentage of stones can look slightly hazy or milky in certain lighting. Not every Strong or Very Strong diamond does. That is why the grade alone is an incomplete verdict." },
+    { type: "paragraph", text: "High-color buyers pursuing D through F stones sometimes notice fluorescence more because any shift in transparency conflicts with why they chose that color range. If you are paying for top color, view the diamond in daylight and indoor light before you commit." },
+    { type: "paragraph", text: "Cut can amplify or mask the issue. A dull stone with very strong fluorescence is still a dull stone. Fluorescence does not excuse weak light return. [How diamond cut affects light performance](/diamond-guide/how-diamond-cut-affects-light-performance) explains why performance still comes first." },
 
-    { type: "heading", text: "Why Evaluation Matters" },
-    { type: "paragraph", text: "Not every fluorescent diamond behaves the same way. The interaction between fluorescence and body color varies depending on the diamond’s structure and transparency." },
-    { type: "paragraph", text: "Because of this, jewelers often evaluate the diamond in multiple lighting environments before determining whether fluorescence enhances its appearance." },
+    { type: "heading", text: "A Practical Decision Framework" },
+    { type: "paragraph", text: "Start with how the diamond looks, not with whether fluorescence makes you nervous. Compare it with a non-fluorescent stone at similar color and clarity. Move it near a window, then under indoor light. Ask whether it stays bright and crisp in both." },
+    { type: "paragraph", text: "If you are working from listings, read the fluorescence line on the report, then ask what it might mean for this specific combination of color, cut, and price. [Diamond Intelligence](/diamond-intelligence) can help interpret a report before you view the stone. When two finalists differ mainly by fluorescence grade, [begin the conversation](/concierge) and compare them with a Graduate Gemologist." },
+    { type: "paragraph", text: "Reject a stone when your eyes confirm haze, milkiness, or flatness. Do not reject it because a blog told you all fluorescence is bad. [Our Approach](/our-approach) at Hourglass treats fluorescence as one field among many, not as a shortcut around judgment." },
 
-    { type: "paragraph", text: "Fluorescence can sometimes improve the visual balance of a diamond by subtly offsetting warmth in the stone. While this effect is generally modest, it can make certain diamonds appear slightly brighter in natural light." },
-    { type: "paragraph", text: "Understanding this interaction helps buyers view fluorescence as a characteristic that may occasionally work in the diamond’s favor." },
-    
+    { type: "heading", text: "Strong Blue Fluorescence in Context" },
+    { type: "paragraph", text: "Strong blue is the most common intense reaction gemologists record. It sounds dramatic on paper. In person it is often invisible outside UV demonstration. When it does influence appearance, the effect is usually about transparency in daylight, not a constant blue cast on the hand." },
+    { type: "paragraph", text: "If your shortlist includes a strong blue stone at an attractive price, the work is confirmation, not avoidance. View it. If it wins the comparison, the fluorescence line may be the reason you got more beauty for the budget." },
+
+    { type: "paragraph", text: "Fluorescence can improve a diamond when it softens warmth, frees budget, or simply coexists with excellent cut and clarity. It can hurt when it dulls transparency in a stone you expected to look icy white. The report starts the question. Your eyes and your setting finish it." },
   ],
   related: [
     { title: "What is Diamond Fluorescence", href: "/diamond-guide/what-is-diamond-fluorescence" },
-    { title: "Is Diamond Fluorescence Good or Bad", href: "/diamond-guide/is-diamond-fluorescence-good-or-bad" },
-    { title: "Does Fluorescence Affect Diamond Value", href: "/diamond-guide/does-fluorescence-affect-diamond-value" },
-    { title: "Strong Blue Fluorescence in Diamonds", href: "/diamond-guide/strong-blue-fluorescence-diamond" },
-    { title: "Fluorescence in Natural vs Lab Diamonds", href: "/diamond-guide/fluorescence-in-natural-vs-lab-diamonds" }
+    { title: "Fluorescence in Natural vs Lab Diamonds", href: "/diamond-guide/fluorescence-in-natural-vs-lab-diamonds" },
+    { title: "What is Diamond Color", href: "/diamond-guide/what-is-diamond-color" },
+    { title: "Diamond Price vs Quality", href: "/diamond-guide/diamond-price-vs-quality" },
+    { title: "Why Work With a Graduate Gemologist", href: "/diamond-guide/why-work-with-a-graduate-gemologist" },
   ]
 },
 
@@ -4101,6 +4171,7 @@ export const articles: Article[] = [
   title: "When Fluorescence Is Bad",
   category: "Diamond Color",
   body: [
+    { type: "paragraph", text: "Negative cases are one side of the buying picture. The full framework is in [when fluorescence improves a diamond](/diamond-guide/when-fluorescence-improves-a-diamond). Definitions and the GIA scale are in [what is diamond fluorescence](/diamond-guide/what-is-diamond-fluorescence)." },
     { type: "heading", text: "Why Fluorescence Sometimes Raises Concerns" },
     { type: "paragraph", text: "Although fluorescence is usually harmless, some buyers worry that strong fluorescence could negatively affect the appearance of a diamond. This concern comes from the possibility that very strong fluorescence may influence transparency in rare cases." },
     { type: "paragraph", text: "Understanding when this occurs helps buyers evaluate fluorescence more realistically." },

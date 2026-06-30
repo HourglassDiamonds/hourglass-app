@@ -7,6 +7,7 @@ import { buildArticlePageJsonLd } from "@/lib/seo/schema/articles";
 import {
   certificateReaderFaqNode,
   charlotteAdvisorFaqNode,
+  fluorescenceFaqNode,
   labNaturalFaqNode,
 } from "@/lib/seo/schema/entities";
 import { jsonLdGraph, type JsonLdValue } from "@/lib/seo/schema/json-ld";
@@ -46,6 +47,7 @@ const COHESION_SLUG = "what-diamond-shape-looks-the-largest";
 const CHARLOTTE_ADVISOR_SLUG = "charlotte-diamond-advisor-guide";
 const CERTIFICATE_READER_SLUG = "how-to-read-a-diamond-certificate";
 const LAB_NATURAL_SLUG = "natural-vs-lab-diamonds";
+const FLUORESCENCE_SLUG = "what-is-diamond-fluorescence";
 
 function buildPageJsonLd(article: (typeof articles)[number], slug: string) {
   const base = buildArticlePageJsonLd(article);
@@ -56,7 +58,9 @@ function buildPageJsonLd(article: (typeof articles)[number], slug: string) {
         ? certificateReaderFaqNode()
         : slug === LAB_NATURAL_SLUG
           ? labNaturalFaqNode()
-          : null;
+          : slug === FLUORESCENCE_SLUG
+            ? fluorescenceFaqNode()
+            : null;
   if (!faqNode) {
     return base;
   }

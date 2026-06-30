@@ -1,5 +1,6 @@
 import type { JsonLdValue } from "./json-ld";
 import { CERTIFICATE_READER_FAQS } from "@/lib/seo/certificate-reader-educational";
+import { FLUORESCENCE_FAQS } from "@/lib/seo/fluorescence-educational";
 import { LAB_NATURAL_FAQS } from "@/lib/seo/lab-natural-educational";
 import { CHARLOTTE_ADVISOR_FAQS } from "@/lib/seo/charlotte-advisor-educational";
 import { DIAMOND_INTELLIGENCE_FAQS } from "@/lib/seo/diamond-intelligence-educational";
@@ -268,6 +269,21 @@ export function labNaturalFaqNode(): JsonLdValue {
     "@type": "FAQPage",
     "@id": `${absoluteUrl("/diamond-guide/natural-vs-lab-diamonds")}#faq`,
     mainEntity: LAB_NATURAL_FAQS.map((item) => ({
+      "@type": "Question",
+      name: item.question,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: item.answer,
+      },
+    })),
+  };
+}
+
+export function fluorescenceFaqNode(): JsonLdValue {
+  return {
+    "@type": "FAQPage",
+    "@id": `${absoluteUrl("/diamond-guide/what-is-diamond-fluorescence")}#faq`,
+    mainEntity: FLUORESCENCE_FAQS.map((item) => ({
       "@type": "Question",
       name: item.question,
       acceptedAnswer: {
