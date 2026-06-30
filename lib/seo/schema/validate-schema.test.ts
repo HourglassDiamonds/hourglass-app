@@ -87,6 +87,17 @@ describe("structured data builders", () => {
       "how-to-read-a-diamond-certificate",
       "natural-vs-lab-diamonds",
       "oval-vs-round-diamond",
+      "asscher-diamond-guide",
+      "cushion-diamond-guide",
+      "custom-engagement-rings-in-charlotte",
+      "diamond-carat-vs-size",
+      "emerald-diamond-guide",
+      "marquise-diamond-guide",
+      "oval-diamond-guide",
+      "pear-diamond-guide",
+      "princess-diamond-guide",
+      "radiant-diamond-guide",
+      "round-diamond-guide",
     ]);
 
     for (const article of articles) {

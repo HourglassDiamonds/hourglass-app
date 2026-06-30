@@ -243,6 +243,11 @@ export const articles: Article[] = [
   slug: "asscher-diamond-guide",
   title: "Asscher Diamond Guide",
   category: "Diamond Shapes",
+  heroImage: "/diamond-guide/asscher-diamond-guide-hero.png",
+  heroImageAlt:
+    "Asscher cut diamond engagement ring in a modern yellow gold setting on a warm neutral surface",
+  visualCategory: "original-photo",
+  visualStatus: "live",
   body: [
     { type: "heading", text: "What Is an Asscher Cut Diamond" },
     { type: "paragraph", text: "The Asscher cut diamond is known for its distinctive geometry and vintage character. At first glance it appears similar to an emerald cut, but the Asscher shape is square rather than rectangular and features deeply trimmed corners that create an octagonal outline." },
@@ -606,6 +611,11 @@ export const articles: Article[] = [
   slug: "cushion-diamond-guide",
   title: "Cushion Diamond Guide",
   category: "Diamond Shapes",
+  heroImage: "/diamond-guide/cushion-diamond-guide-hero.png",
+  heroImageAlt:
+    "Cushion cut diamond engagement ring on a warm neutral jeweler workspace",
+  visualCategory: "original-photo",
+  visualStatus: "live",
   body: [
     { type: "heading", text: "What Is a Cushion Cut Diamond" },
     { type: "paragraph", text: "The cushion cut diamond is one of the oldest and most romantic diamond shapes still used in engagement rings today. Known for its softly rounded corners and pillow-like outline, the cushion cut blends vintage character with modern brilliance." },
@@ -739,6 +749,11 @@ export const articles: Article[] = [
   slug: "custom-engagement-rings-in-charlotte",
   title: "Custom Engagement Rings in Charlotte",
   category: "Charlotte Guides",
+  heroImage: "/diamond-guide/custom-engagement-rings-in-charlotte-hero.png",
+  heroImageAlt:
+    "Hand drawn engagement ring design sketches on warm ivory paper with a jeweler pencil",
+  visualCategory: "original-photo",
+  visualStatus: "live",
   body: [
     { type: "paragraph", text: "Many engagement rings begin with a simple idea. Sometimes it is a specific diamond shape. Other times it is a style that reflects a couple’s personality or story. Custom engagement rings allow those ideas to take form in a way that feels personal rather than predetermined." },
     { type: "paragraph", text: "In Charlotte, more buyers are exploring custom rings because they offer flexibility in both design and diamond selection. Instead of choosing from a pre-made display case, the ring is built step by step around the diamond and the wearer’s preferences." },
@@ -920,6 +935,11 @@ export const articles: Article[] = [
   slug: "diamond-carat-vs-size",
   title: "Diamond Carat vs Size",
   category: "Diamond Size",
+  heroImage: "/diamond-guide/diamond-carat-vs-size-hero.png",
+  heroImageAlt:
+    "Graduated row of round diamonds showing carat size differences on a warm neutral jeweler surface",
+  visualCategory: "original-photo",
+  visualStatus: "live",
   body: [
     { type: "paragraph", text: "When people begin researching diamonds, one of the most common points of confusion is the difference between carat weight and visible size. The two are closely related, but they are not the same thing." },
     { type: "paragraph", text: "Carat refers to the weight of the diamond, while size refers to the physical dimensions of the stone when viewed from above. Because of this distinction, two diamonds with identical carat weights may appear noticeably different once they are set in a ring." },
@@ -2033,6 +2053,11 @@ export const articles: Article[] = [
   slug: "emerald-diamond-guide",
   title: "Emerald Diamond Guide",
   category: "Diamond Shapes",
+  heroImage: "/diamond-guide/emerald-diamond-guide-hero.png",
+  heroImageAlt:
+    "Emerald cut diamond engagement ring in a yellow gold solitaire setting on a warm neutral surface",
+  visualCategory: "original-photo",
+  visualStatus: "live",
   body: [
     { type: "heading", text: "What Is an Emerald Cut Diamond" },
     { type: "paragraph", text: "The emerald cut diamond is known for its refined geometry and understated elegance. Unlike brilliant-cut diamonds that focus on intense sparkle, the emerald cut emphasizes clarity, symmetry, and long flashes of light." },
@@ -2823,6 +2848,11 @@ export const articles: Article[] = [
   slug: "marquise-diamond-guide",
   title: "Marquise Diamond Guide",
   category: "Diamond Shapes",
+  heroImage: "/diamond-guide/marquise-diamond-guide-hero.png",
+  heroImageAlt:
+    "Marquise diamond engagement ring with classic side stones on a warm neutral jeweler surface",
+  visualCategory: "original-photo",
+  visualStatus: "live",
   body: [
     { type: "heading", text: "What Is a Marquise Diamond" },
     { type: "paragraph", text: "The marquise diamond is one of the most distinctive diamond shapes used in engagement rings. Its elongated form features curved sides that taper to pointed ends, creating a shape that is both elegant and dramatic." },
@@ -2980,6 +3010,11 @@ export const articles: Article[] = [
   slug: "oval-diamond-guide",
   title: "Oval Diamond Guide",
   category: "Diamond Shapes",
+  heroImage: "/diamond-guide/oval-diamond-guide-hero.png",
+  heroImageAlt:
+    "Oval diamond engagement ring in a classic yellow gold solitaire setting on a warm neutral surface",
+  visualCategory: "original-photo",
+  visualStatus: "live",
   body: [
     { type: "heading", text: "What Is an Oval Diamond" },
     { type: "paragraph", text: "The oval diamond is one of the most elegant diamond shapes used in engagement rings today. It combines the brilliance of a round diamond with a softer, elongated outline that feels both classic and modern." },
@@ -3105,6 +3140,11 @@ export const articles: Article[] = [
   slug: "pear-diamond-guide",
   title: "Pear Diamond Guide",
   category: "Diamond Shapes",
+  heroImage: "/diamond-guide/pear-diamond-guide-hero.png",
+  heroImageAlt:
+    "Pear shaped diamond engagement ring with diamond melee on a yellow gold mounting",
+  visualCategory: "original-photo",
+  visualStatus: "live",
   body: [
     { type: "heading", text: "What Is a Pear Diamond" },
     { type: "paragraph", text: "The pear diamond, sometimes called a teardrop diamond, combines the round brilliance of a traditional diamond with the elongated elegance of a pointed shape." },
@@ -3170,6 +3210,11 @@ export const articles: Article[] = [
   slug: "princess-diamond-guide",
   title: "Princess Diamond Guide",
   category: "Diamond Shapes",
+  heroImage: "/diamond-guide/princess-diamond-guide-hero.png",
+  heroImageAlt:
+    "Princess cut diamond engagement ring in a yellow gold solitaire setting on a warm neutral surface",
+  visualCategory: "original-photo",
+  visualStatus: "live",
   body: [
     { type: "heading", text: "What Is a Princess Cut Diamond" },
     { type: "paragraph", text: "The princess cut diamond is one of the most popular modern diamond shapes. Recognized by its square outline and sharp corners, the princess cut offers a contemporary alternative to the traditional round diamond." },
@@ -3237,6 +3282,11 @@ export const articles: Article[] = [
   slug: "radiant-diamond-guide",
   title: "Radiant Diamond Guide",
   category: "Diamond Shapes",
+  heroImage: "/diamond-guide/radiant-diamond-guide-hero.png",
+  heroImageAlt:
+    "Radiant cut diamond engagement ring with brilliant trapezoid side stones on a warm neutral surface",
+  visualCategory: "original-photo",
+  visualStatus: "live",
   body: [
     { type: "heading", text: "What Is a Radiant Cut Diamond" },
     { type: "paragraph", text: "The radiant cut diamond combines the brilliance of a round diamond with the strong outline of a rectangular or square shape. Its distinctive look comes from a unique faceting pattern designed to produce lively sparkle while maintaining clean geometric lines." },
@@ -3306,6 +3356,11 @@ export const articles: Article[] = [
   slug: "round-diamond-guide",
   title: "Round Diamond Guide",
   category: "Diamond Shapes",
+  heroImage: "/diamond-guide/round-diamond-guide-hero.png",
+  heroImageAlt:
+    "Round brilliant diamond engagement ring in a yellow gold solitaire setting on a warm neutral surface",
+  visualCategory: "original-photo",
+  visualStatus: "live",
   body: [
     { type: "heading", text: "What Is a Round Diamond" },
     { type: "paragraph", text: "The round diamond is the most recognized and traditional diamond shape used in engagement rings. Its perfectly circular outline and carefully engineered faceting are designed to maximize brilliance and fire." },
