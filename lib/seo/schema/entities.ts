@@ -1,4 +1,5 @@
 import type { JsonLdValue } from "./json-ld";
+import { CERTIFICATE_READER_FAQS } from "@/lib/seo/certificate-reader-educational";
 import { CHARLOTTE_ADVISOR_FAQS } from "@/lib/seo/charlotte-advisor-educational";
 import { DIAMOND_INTELLIGENCE_FAQS } from "@/lib/seo/diamond-intelligence-educational";
 import { ENGAGEMENT_RINGS_FAQS } from "@/lib/seo/engagement-rings-educational";
@@ -236,6 +237,21 @@ export function charlotteAdvisorFaqNode(): JsonLdValue {
     "@type": "FAQPage",
     "@id": `${absoluteUrl("/diamond-guide/charlotte-diamond-advisor-guide")}#faq`,
     mainEntity: CHARLOTTE_ADVISOR_FAQS.map((item) => ({
+      "@type": "Question",
+      name: item.question,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: item.answer,
+      },
+    })),
+  };
+}
+
+export function certificateReaderFaqNode(): JsonLdValue {
+  return {
+    "@type": "FAQPage",
+    "@id": `${absoluteUrl("/diamond-guide/how-to-read-a-diamond-certificate")}#faq`,
+    mainEntity: CERTIFICATE_READER_FAQS.map((item) => ({
       "@type": "Question",
       name: item.question,
       acceptedAnswer: {

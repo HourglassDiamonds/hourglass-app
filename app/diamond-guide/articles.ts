@@ -64,7 +64,7 @@ export const articles: Article[] = [
   category: "Certification",
   body: [
     { type: "heading", text: "The History of the American Gem Society Laboratory" },
-    { type: "paragraph", text: "The American Gem Society Laboratory, often abbreviated as AGS, has long been recognized for its emphasis on diamond cut quality and light performance. Founded by jewelers committed to improving grading standards, the laboratory developed systems focused on how diamonds interact with light." },
+    { type: "paragraph", text: "If you are learning to read grading reports field by field, start with [how to read a diamond certificate](/diamond-guide/how-to-read-a-diamond-certificate). This guide covers AGS history and cut philosophy for stones that still carry older AGS documentation." },
     { type: "paragraph", text: "AGS reports were designed to evaluate diamonds using a numerical grading scale that ranges from 0 to 10, with 0 representing the highest grade." },
     { type: "paragraph", text: "As of 2023, the American Gem Society Laboratory was integrated into GIA. While AGS reports and grading methodologies are no longer issued independently, many of the laboratory’s approaches to cut grading and light performance have influenced broader industry standards." },
 
@@ -82,11 +82,11 @@ export const articles: Article[] = [
     { type: "paragraph", text: "Understanding AGS certification can help buyers appreciate how grading methods continue to evolve as gemology advances. Laboratories such as GCAL have since extended that performance-oriented approach. See [GCAL 8X diamond certification explained](/diamond-guide/gcal-8x-diamond-certification-explained) for how modern reports address light behavior. If you hold an AGS or similar performance-oriented report, you can [upload a grading report to Diamond Intelligence](/diamond-intelligence) for a structured read of how those measurements may translate in practice." },
   ],
   related: [
+    { title: "How to Read a Diamond Certificate", href: "/diamond-guide/how-to-read-a-diamond-certificate" },
     { title: "What is a Diamond Certificate", href: "/diamond-guide/what-is-a-diamond-certificate" },
     { title: "GIA Diamond Certification Explained", href: "/diamond-guide/gia-diamond-certification-explained" },
     { title: "IGI Diamond Certification Explained", href: "/diamond-guide/igi-diamond-certification-explained" },
     { title: "HRD Diamond Certification Explained", href: "/diamond-guide/hrd-diamond-certification-explained" },
-    { title: "How to Read a Diamond Certificate", href: "/diamond-guide/how-to-read-a-diamond-certificate" },
   ],
 },
 
@@ -95,7 +95,7 @@ export const articles: Article[] = [
   title: "Are All Diamond Certificates the Same",
   category: "Certification",
   body: [
-    { type: "paragraph", text: "Two listings show the same grades. Same carat, color, clarity, and cut on paper. One is priced like a bargain. Before you celebrate, ask which laboratory issued each report. The letters may match while the standards behind them do not." },
+    { type: "paragraph", text: "Two listings show the same grades. Same carat, color, clarity, and cut on paper. One is priced like a bargain. Before you celebrate, ask which laboratory issued each report. The letters may match while the standards behind them do not. For the full read-through of any report, use [how to read a diamond certificate](/diamond-guide/how-to-read-a-diamond-certificate) as your flagship guide." },
     { type: "paragraph", text: "All diamond certificates use similar vocabulary. They are not interchangeable. Laboratories apply their own grading philosophy, consistency norms, and cut standards. That is not a scandal. It is the reason experienced buyers read the lab name before they read the grades." },
 
     { type: "heading", text: "Why the Same Words Can Mean Different Things" },
@@ -116,7 +116,7 @@ export const articles: Article[] = [
     { type: "paragraph", text: "When you have a report number in hand, [Diamond Intelligence](/diamond-intelligence) can help you interpret that certificate in practical terms rather than in abstract grade language alone." },
   ],
   related: [
-    { title: "What is a Diamond Certificate", href: "/diamond-guide/what-is-a-diamond-certificate" },
+    { title: "How to Read a Diamond Certificate", href: "/diamond-guide/how-to-read-a-diamond-certificate" },
     { title: "GIA Diamond Certification Explained", href: "/diamond-guide/gia-diamond-certification-explained" },
     { title: "IGI Diamond Certification Explained", href: "/diamond-guide/igi-diamond-certification-explained" },
     { title: "AGS Diamond Certification Explained", href: "/diamond-guide/ags-diamond-certification-explained" },
@@ -1846,7 +1846,7 @@ export const articles: Article[] = [
   category: "Certification",
   body: [
     { type: "heading", text: "Certification for Laboratory-Grown Diamonds" },
-    { type: "paragraph", text: "Laboratory-grown diamonds are graded using many of the same principles applied to natural diamonds. Like natural stones, they can receive certification from gemological laboratories that evaluate their measurable characteristics." },
+    { type: "paragraph", text: "Laboratory-grown diamonds receive grading reports using many of the same fields as natural stones. For how to read those fields in practice, see [how to read a diamond certificate](/diamond-guide/how-to-read-a-diamond-certificate). For origin and value context, see [natural vs lab diamonds](/diamond-guide/natural-vs-lab-diamonds)." },
     { type: "paragraph", text: "These certificates describe the diamond’s carat weight, color, clarity, and proportions in a standardized report." },
     { type: "paragraph", text: "Although the diamond is created in a laboratory rather than formed in the earth, the grading process focuses on the same visible and structural features." },
 
@@ -1866,6 +1866,7 @@ export const articles: Article[] = [
     
   ],
   related: [
+    { title: "How to Read a Diamond Certificate", href: "/diamond-guide/how-to-read-a-diamond-certificate" },
     { title: "What is a Diamond Certificate", href: "/diamond-guide/what-is-a-diamond-certificate" },
     { title: "IGI Diamond Certification Explained", href: "/diamond-guide/igi-diamond-certification-explained" },
     { title: "GIA Diamond Certification Explained", href: "/diamond-guide/gia-diamond-certification-explained" },
@@ -2246,7 +2247,7 @@ export const articles: Article[] = [
   category: "Certification",
   body: [
     { type: "heading", text: "A Performance-Focused Approach to Diamond Analysis" },
-    { type: "paragraph", text: "GCAL 8X is a gemological laboratory that focuses on measuring how a diamond performs in real-world conditions. Rather than relying only on traditional grading categories, GCAL places additional emphasis on how a diamond handles light." },
+    { type: "paragraph", text: "GCAL 8X reports layer performance language on top of standard grading fields. To read any certificate section by section, start with [how to read a diamond certificate](/diamond-guide/how-to-read-a-diamond-certificate). Return here when you want GCAL-specific context." },
     { type: "paragraph", text: "The laboratory is known for combining standard grading practices with advanced optical testing, offering a more performance-oriented perspective on diamond quality." },
 
     { type: "heading", text: "What a GCAL 8X Diamond Report Includes" },
@@ -2268,7 +2269,7 @@ export const articles: Article[] = [
     
   ],
   related: [
-    { title: "What is a Diamond Certificate", href: "/diamond-guide/what-is-a-diamond-certificate" },
+    { title: "How to Read a Diamond Certificate", href: "/diamond-guide/how-to-read-a-diamond-certificate" },
     { title: "GIA Diamond Certification Explained", href: "/diamond-guide/gia-diamond-certification-explained" },
     { title: "IGI Diamond Certification Explained", href: "/diamond-guide/igi-diamond-certification-explained" },
     { title: "AGS Diamond Certification Explained", href: "/diamond-guide/ags-diamond-certification-explained" },
@@ -2286,7 +2287,7 @@ export const articles: Article[] = [
   visualStatus: "live",
   body: [
     { type: "heading", text: "The Role of GIA in Diamond Grading" },
-    { type: "paragraph", text: "The Gemological Institute of America, commonly known as GIA, is one of the most widely respected organizations in the diamond industry. Founded in 1931, the institute developed the modern grading system used to evaluate diamonds today, including the framework known as the 4Cs." },
+    { type: "paragraph", text: "GIA is the laboratory many buyers encounter first. This guide explains what GIA certification means. For a step-by-step read of any grading report, including GIA, use [how to read a diamond certificate](/diamond-guide/how-to-read-a-diamond-certificate) as the main guide." },
     { type: "paragraph", text: "A GIA diamond certificate provides an independent assessment of a diamond’s measurable qualities. Because the organization operates independently from retailers, its reports are designed to provide consistent and unbiased grading." },
 
     { type: "heading", text: "What a GIA Report Includes" },
@@ -2304,9 +2305,9 @@ export const articles: Article[] = [
     
   ],
   related: [
-    { title: "What is a Diamond Certificate", href: "/diamond-guide/what-is-a-diamond-certificate" },
-    { title: "Why Diamond Certification Matters", href: "/diamond-guide/why-diamond-certification-matters" },
     { title: "How to Read a Diamond Certificate", href: "/diamond-guide/how-to-read-a-diamond-certificate" },
+    { title: "Why Diamond Certification Matters", href: "/diamond-guide/why-diamond-certification-matters" },
+    { title: "Are All Diamond Certificates the Same", href: "/diamond-guide/are-all-diamond-certificates-the-same" },
     { title: "AGS Diamond Certification", href: "/diamond-guide/ags-diamond-certification-explained" },
     { title: "IGI Diamond Certification", href: "/diamond-guide/igi-diamond-certification-explained" }
   ]
@@ -2602,8 +2603,35 @@ export const articles: Article[] = [
   visualCategory: "editorial-graphic",
   visualStatus: "live",
   body: [
+    { type: "paragraph", text: "A diamond certificate tells you what a laboratory measured: weight, color, clarity, proportions, and where inclusions sit on a plot. It does not tell you whether the stone will feel right on the hand. Read the report in that order. Summary first for orientation, then proportions and the plot for performance, then ask what the grades leave out." },
     { type: "paragraph", text: "Most buyers open a grading report and go straight to the summary line: carat, color, clarity, cut. That is natural. Those four numbers feel like the answer. On a website filter menu, they often are. On a diamond you will wear for decades, they are the headline, not the story." },
-    { type: "paragraph", text: "Experienced reviewers read the same page differently. They confirm identity first, then look at proportions, then study the inclusion plot, then ask what the grades leave out. The goal is not to memorize a manual. It is to translate paper into judgment." },
+    { type: "paragraph", text: "Experienced reviewers read the same page differently. They confirm identity first, then look at proportions, then study the inclusion plot, then ask what the grades leave out. The goal is not to memorize a manual. It is to translate paper into judgment. If you want the full field guide in one place, you are in the right article. Lab-specific context lives in our [GIA](/diamond-guide/gia-diamond-certification-explained), [IGI](/diamond-guide/igi-diamond-certification-explained), and [GCAL 8X](/diamond-guide/gcal-8x-diamond-certification-explained) guides when you need them." },
+
+    { type: "heading", text: "What a Certificate Can and Cannot Tell You" },
+    { type: "paragraph", text: "A certificate can confirm that the stone matches a documented identity. It can give you shared language for comparing options from different sellers. It can record proportions that explain light behavior on rounds and many fancy shapes. It can show where inclusions sit, which matters more than how many exist." },
+    { type: "paragraph", text: "A certificate cannot tell you how the diamond will look in afternoon light on a size-six finger. It cannot fully capture cut precision inside an Excellent bucket. It cannot predict whether an inclusion will flash in your halo setting. It cannot replace side-by-side viewing or tell you whether this stone is the best use of your budget." },
+    { type: "paragraph", text: "[Why diamond certification matters](/diamond-guide/why-diamond-certification-matters) explains when that independent reference protects you most. [What is a diamond certificate](/diamond-guide/what-is-a-diamond-certificate) covers how the document differs from an appraisal. Both are shorter primers. This guide is the practical read-through." },
+
+    { type: "heading", text: "How to Read Report Fields Without Getting Lost" },
+    { type: "paragraph", text: "Start with the report number and laboratory name. Match the number to the inscription on the girdle when one is present. If identity does not line up, stop and resolve that before you read grades." },
+    { type: "paragraph", text: "Next, read the 4Cs summary as orientation only. Then move to proportions: table percentage, depth percentage, crown angle, pavilion angle, girdle thickness, and culet size on rounds. These numbers explain much of why two Excellent cuts behave differently. On fancy shapes, length-to-width ratio and depth often matter more than a single cut grade because many laboratories do not assign one." },
+    { type: "paragraph", text: "Study the inclusion plot with your setting in mind. A feather at the girdle may disappear under a prong. A crystal under the table may catch light in a solitaire. Read fluorescence if listed. Note measurements and shape outline when you are comparing face-up size between similar carat weights." },
+    { type: "paragraph", text: "For a dedicated walkthrough of report numbers and verification, see [what is a diamond report number](/diamond-guide/what-is-a-diamond-report-number). For laboratory context when two stones share the same letters, read [are all diamond certificates the same](/diamond-guide/are-all-diamond-certificates-the-same)." },
+
+    { type: "heading", text: "GIA, IGI, and GCAL: What Changes on the Page" },
+    { type: "paragraph", text: "GIA reports are the benchmark many buyers know first. They document the 4Cs, proportions, and a plotted diagram for most natural diamonds. GIA is widely regarded for consistent grading on natural stones. When you hold a GIA report, read proportions and the plot with the same discipline you would apply anywhere else. The laboratory name is not a substitute for performance review." },
+    { type: "paragraph", text: "IGI appears frequently on laboratory-grown diamonds and in international inventories. The report structure looks familiar, but strictness and cut philosophy may differ from GIA. Compare IGI stones to other IGI stones when possible, and view them in person before you assume equivalence with a different laboratory." },
+    { type: "paragraph", text: "GCAL 8X reports add performance-oriented language and optical analysis beyond the standard summary. They can be useful when light behavior is the deciding factor. They still require viewing. Performance metrics describe tendencies, not a promise of beauty in your ring." },
+    { type: "paragraph", text: "Historical AGS and European HRD reports still appear in trade inventories. Treat them as documented measurements from their era. When laboratory standards have shifted, read the proportions and plot rather than assuming today's summary lines mean the same thing across labs." },
+
+    { type: "heading", text: "Why Two Diamonds With Similar Reports Look Different" },
+    { type: "paragraph", text: "Identical summary lines do not mean identical diamonds. Cut precision varies within a grade. Inclusion placement changes what you see face-up. Depth and spread change how large a carat weight looks. Fluorescence can soften or sharpen appearance in daylight for some stones." },
+    { type: "paragraph", text: "This is why experienced buyers insist on comparison. [How diamond cut affects light performance](/diamond-guide/how-diamond-cut-affects-light-performance) explains the mechanics behind proportion differences. [What is diamond clarity](/diamond-guide/what-is-diamond-clarity) covers why two VS2 plots can wear differently. [Ideal diamond cut proportions](/diamond-guide/ideal-diamond-cut-proportions) gives reference ranges when you want numbers beside the narrative." },
+    { type: "paragraph", text: "At Hourglass, we treat matching reports as a starting point for viewing, not a reason to skip it. Paper grades narrow the field. Your eyes and the finished ring finish the decision." },
+
+    { type: "heading", text: "How a Graduate Gemologist Reads the Same Page" },
+    { type: "paragraph", text: "A Graduate Gemologist reads for wear, not for trivia. Identity first. Laboratory credibility for this purchase. Proportions next because they predict light behavior on rounds and inform fancy-shape review. Then the plot with setting geometry in mind. Then the question most listings skip: is this the right tradeoff for this budget?" },
+    { type: "paragraph", text: "That sequence is conservative by design. We would rather pass on a stone with attractive grades than recommend one that fails in the setting you are building. [The House](/the-house) explains who leads that review at Hourglass. [Why work with a Graduate Gemologist](/diamond-guide/why-work-with-a-graduate-gemologist) goes deeper on when trained eyes earn their place in the process." },
 
     { type: "heading", text: "What Most People Look at First" },
     { type: "paragraph", text: "The 4Cs summary is where almost everyone starts. Carat weight, color grade, clarity grade, and cut grade for rounds give you a quick comparison language. Two reports with identical summaries can still describe diamonds that look nothing alike in person." },
@@ -2629,17 +2657,39 @@ export const articles: Article[] = [
     { type: "paragraph", text: "They cannot tell you how the diamond will look on your partner's hand in afternoon light. They cannot fully capture cut precision within a grade bucket. They cannot predict how an inclusion will behave in your chosen setting. They cannot replace side-by-side comparison." },
     { type: "paragraph", text: "They also cannot tell you whether this particular stone is the right use of your budget. That requires tradeoff thinking: where to protect performance, where to accept a lower grade, whether origin matters to you personally. [Our Approach](/our-approach) at Hourglass treats the report as the opening of that conversation, not the end." },
 
+    { type: "heading", text: "When Diamond Intelligence Helps" },
+    { type: "paragraph", text: "When you have a specific report in hand, [Diamond Intelligence](/diamond-intelligence) can help translate measurements into performance context. Upload the certificate or enter the report details. Use it to prepare sharper questions before you view stones in person. It supports judgment. It does not replace your eyes or a gemologist when the purchase is significant." },
+    { type: "paragraph", text: "Diamond Intelligence is especially useful when you are comparing two similar summaries, reviewing a fancy shape without a cut grade, or trying to understand whether proportions sit in a strong range before you travel to see a stone." },
+
+    { type: "heading", text: "When a Private Conversation Makes Sense" },
+    { type: "paragraph", text: "Some decisions stay easier in conversation. If two reports look alike but prices diverge, if you are unsure about inclusion placement in your setting, or if you want a second opinion before a major purchase, a calm review with a gemologist can save regret later." },
+    { type: "paragraph", text: "[Begin the conversation](/concierge) when you are ready for that review. Bring the report, the setting idea, and the questions the summary line did not answer." },
+
     { type: "heading", text: "How to Read Without Feeling Overwhelmed" },
     { type: "paragraph", text: "You do not need to master every field on the first pass. Read the summary, then proportions, then the plot. Ask one practical question after each section: what does this suggest about how the diamond will perform, and what does it leave out?" },
-    { type: "paragraph", text: "If you have a specific report in hand, [Diamond Intelligence](/diamond-intelligence) can help translate measurements into performance context without replacing your own viewing. When you are ready to go deeper on judgment, not just vocabulary, [why work with a Graduate Gemologist](/diamond-guide/why-work-with-a-graduate-gemologist) explains how trained eyes use the same page differently." },
     { type: "paragraph", text: "A certificate should leave you more confident, not more anxious. It should help you compare, ask sharper questions, and recognize when two stones that look equivalent on paper are not equivalent at all. That is the standard worth holding yourself to." },
+
+    { type: "heading", text: "What does a diamond certificate tell you?" },
+    { type: "paragraph", text: "It documents measurable traits a laboratory observed: weight, color, clarity, proportions, fluorescence when listed, and often an inclusion plot. It ties those observations to a specific stone through a report number. It does not guarantee beauty, value, or the right choice for your ring." },
+
+    { type: "heading", text: "Does a GIA report prove a diamond is beautiful?" },
+    { type: "paragraph", text: "No. A GIA report describes grading results using consistent standards. Beauty still depends on cut precision within the grade, inclusion placement, and how the stone performs when viewed. Use the report to compare and verify. Use your eyes to finish." },
+
+    { type: "heading", text: "How do you compare two diamond reports?" },
+    { type: "paragraph", text: "Match laboratory and report numbers to the stones. Compare proportions and plots, not only the summary line. Note fluorescence and measurements. Then view the diamonds side by side. Reports narrow the field. Comparison in person resolves what paper cannot." },
+
+    { type: "heading", text: "When should you use Diamond Intelligence?" },
+    { type: "paragraph", text: "When you have a report in hand and want help translating grades and proportions into practical context before you buy or compare stones. It is a preparation tool, not a substitute for viewing the diamond or speaking with a gemologist on a significant purchase." },
+
+    { type: "heading", text: "When should you ask a Graduate Gemologist?" },
+    { type: "paragraph", text: "When two reports look alike but stones do not, when inclusion placement is unclear for your setting, when fancy-shape proportions are hard to interpret, or when you want independent judgment before you commit. Trained review reads for performance and daily wear, not for memorizing field names." },
   ],
   related: [
-    { title: "What is a Diamond Certificate", href: "/diamond-guide/what-is-a-diamond-certificate" },
     { title: "GIA Diamond Certification Explained", href: "/diamond-guide/gia-diamond-certification-explained" },
-    { title: "IGI Diamond Certification Explained", href: "/diamond-guide/igi-diamond-certification-explained" },
-    { title: "AGS Diamond Certification Explained", href: "/diamond-guide/ags-diamond-certification-explained" },
-    { title: "What is a Diamond Report Number", href: "/diamond-guide/what-is-a-diamond-report-number" }
+    { title: "Are All Diamond Certificates the Same", href: "/diamond-guide/are-all-diamond-certificates-the-same" },
+    { title: "Why Diamond Certification Matters", href: "/diamond-guide/why-diamond-certification-matters" },
+    { title: "What is Diamond Cut", href: "/diamond-guide/what-is-diamond-cut" },
+    { title: "What is Diamond Clarity", href: "/diamond-guide/what-is-diamond-clarity" },
   ]
 },
 {
@@ -2648,7 +2698,7 @@ export const articles: Article[] = [
   category: "Certification",
   body: [
     { type: "heading", text: "The European Diamond Grading Authority" },
-    { type: "paragraph", text: "HRD Antwerp is one of Europe’s most established gemological laboratories. Located in Antwerp, Belgium, the institute operates within one of the world’s historic diamond trading centers." },
+    { type: "paragraph", text: "HRD reports appear often in European trade inventories. For how to read the fields on any laboratory report, start with [how to read a diamond certificate](/diamond-guide/how-to-read-a-diamond-certificate). This article covers HRD-specific context." },
     { type: "paragraph", text: "HRD provides diamond grading reports that document the measurable qualities of diamonds using internationally recognized grading methods." },
 
     { type: "heading", text: "What an HRD Diamond Report Includes" },
@@ -2665,10 +2715,10 @@ export const articles: Article[] = [
     
   ],
   related: [
+    { title: "How to Read a Diamond Certificate", href: "/diamond-guide/how-to-read-a-diamond-certificate" },
     { title: "What is a Diamond Certificate", href: "/diamond-guide/what-is-a-diamond-certificate" },
     { title: "GIA Diamond Certification Explained", href: "/diamond-guide/gia-diamond-certification-explained" },
     { title: "IGI Diamond Certification Explained", href: "/diamond-guide/igi-diamond-certification-explained" },
-    { title: "AGS Diamond Certification Explained", href: "/diamond-guide/ags-diamond-certification-explained" },
     { title: "Are All Diamond Certifications the Same", href: "/diamond-guide/are-all-diamond-certificates-the-same" }
   ]
 },
@@ -2722,7 +2772,7 @@ export const articles: Article[] = [
   category: "Certification",
   body: [
     { type: "heading", text: "Understanding the International Gemological Institute" },
-    { type: "paragraph", text: "The International Gemological Institute, commonly referred to as IGI, is another well-known diamond grading laboratory. Founded in 1975, IGI operates laboratories around the world and evaluates both natural and laboratory-grown diamonds." },
+    { type: "paragraph", text: "IGI reports are common on laboratory-grown diamonds and in global inventories. For how to read report fields regardless of laboratory, use [how to read a diamond certificate](/diamond-guide/how-to-read-a-diamond-certificate). This guide focuses on IGI-specific context." },
     { type: "paragraph", text: "IGI reports provide detailed grading information similar to other gemological laboratories. These reports document the diamond’s characteristics using standardized measurement and observation methods." },
 
     { type: "heading", text: "What an IGI Diamond Report Contains" },
@@ -2740,7 +2790,7 @@ export const articles: Article[] = [
     
   ],
   related: [
-    { title: "What is a Diamond Certificate", href: "/diamond-guide/what-is-a-diamond-certificate" },
+    { title: "How to Read a Diamond Certificate", href: "/diamond-guide/how-to-read-a-diamond-certificate" },
     { title: "GIA Diamond Certification Explained", href: "/diamond-guide/gia-diamond-certification-explained" },
     { title: "AGS Diamond Certification Explained", href: "/diamond-guide/ags-diamond-certification-explained" },
     { title: "HRD Diamond Certification Explained", href: "/diamond-guide/hrd-diamond-certification-explained" },
@@ -3544,7 +3594,7 @@ export const articles: Article[] = [
   title: "What Is a Diamond Certificate",
   category: "Certification",
   body: [
-    { type: "paragraph", text: "The PDF arrives in your inbox before the diamond does. Carat weight, color, clarity, cut. A diagram of tiny red marks. A report number you cannot quite see without zooming. That document is a diamond certificate: an independent laboratory's description of what was measured, not a promise of how the stone will feel on the hand." },
+    { type: "paragraph", text: "The PDF arrives in your inbox before the diamond does. Carat weight, color, clarity, cut. A diagram of tiny red marks. A report number you cannot quite see without zooming. That document is a diamond certificate: an independent laboratory's description of what was measured, not a promise of how the stone will feel on the hand. For the full read-through, use [how to read a diamond certificate](/diamond-guide/how-to-read-a-diamond-certificate)." },
     { type: "paragraph", text: "Knowing what the certificate is, and what it is not, saves most buyers from two opposite mistakes: ignoring the report entirely, or treating it as a complete answer." },
 
     { type: "heading", text: "What the Document Actually Is" },
@@ -3577,7 +3627,7 @@ export const articles: Article[] = [
   category: "Certification",
   body: [
     { type: "heading", text: "The Purpose of a Report Number" },
-    { type: "paragraph", text: "Every diamond certificate includes a unique identification number assigned by the grading laboratory. This number connects the physical diamond to the official grading report issued by the laboratory." },
+    { type: "paragraph", text: "Every diamond certificate includes a unique identification number assigned by the grading laboratory. Report numbers are one section of a larger document. For how to read the full report, start with [how to read a diamond certificate](/diamond-guide/how-to-read-a-diamond-certificate)." },
     { type: "paragraph", text: "The report number acts as a reference that allows the certificate to be verified and tracked. It ensures that the grading information corresponds to a specific stone." },
     { type: "paragraph", text: "This identifier helps maintain consistency between the diamond and its documentation." },
 
@@ -4069,7 +4119,7 @@ export const articles: Article[] = [
   title: "Why Diamond Certification Matters",
   category: "Certification",
   body: [
-    { type: "paragraph", text: "You are comparing two diamonds online. Same carat. Same color and clarity on the listing. One costs noticeably less. Without a certificate, you are trusting adjectives. With one, you can ask sharper questions: Are the proportions similar? Is the clarity plot clean under the table? Does the report number match the stone?" },
+    { type: "paragraph", text: "You are comparing two diamonds online. Same carat. Same color and clarity on the listing. One costs noticeably less. Without a certificate, you are trusting adjectives. With one, you can ask sharper questions. [How to read a diamond certificate](/diamond-guide/how-to-read-a-diamond-certificate) is the flagship guide for that review." },
     { type: "paragraph", text: "That is why certification matters. Not because a report replaces your eyes, but because it gives you an independent reference outside the seller's story. In a market where small differences change both beauty and price, that reference is the difference between informed comparison and hopeful guessing." },
 
     { type: "heading", text: "What Certification Actually Gives You" },
