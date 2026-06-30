@@ -7,6 +7,7 @@ import { buildArticlePageJsonLd } from "@/lib/seo/schema/articles";
 import {
   certificateReaderFaqNode,
   charlotteAdvisorFaqNode,
+  labNaturalFaqNode,
 } from "@/lib/seo/schema/entities";
 import { jsonLdGraph, type JsonLdValue } from "@/lib/seo/schema/json-ld";
 import ConsultationCtaLink from "../../shared-components/ConsultationCtaLink";
@@ -44,18 +45,23 @@ const VISUAL_BLOCK_TYPES = new Set<ArticleBlock["type"]>([
 const COHESION_SLUG = "what-diamond-shape-looks-the-largest";
 const CHARLOTTE_ADVISOR_SLUG = "charlotte-diamond-advisor-guide";
 const CERTIFICATE_READER_SLUG = "how-to-read-a-diamond-certificate";
+const LAB_NATURAL_SLUG = "natural-vs-lab-diamonds";
 
 function buildPageJsonLd(article: (typeof articles)[number], slug: string) {
   const base = buildArticlePageJsonLd(article);
-  if (slug !== CHARLOTTE_ADVISOR_SLUG && slug !== CERTIFICATE_READER_SLUG) {
+  const faqNode =
+    slug === CHARLOTTE_ADVISOR_SLUG
+      ? charlotteAdvisorFaqNode()
+      : slug === CERTIFICATE_READER_SLUG
+        ? certificateReaderFaqNode()
+        : slug === LAB_NATURAL_SLUG
+          ? labNaturalFaqNode()
+          : null;
+  if (!faqNode) {
     return base;
   }
 
   const graph = (base as { "@graph": JsonLdValue[] })["@graph"];
-  const faqNode =
-    slug === CHARLOTTE_ADVISOR_SLUG
-      ? charlotteAdvisorFaqNode()
-      : certificateReaderFaqNode();
   return jsonLdGraph([...graph, faqNode]);
 }
 
