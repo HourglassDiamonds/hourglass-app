@@ -8,6 +8,7 @@ import {
   certificateReaderFaqNode,
   charlotteAdvisorFaqNode,
   clarityFaqNode,
+  cutFaqNode,
   fluorescenceFaqNode,
   labNaturalFaqNode,
 } from "@/lib/seo/schema/entities";
@@ -50,6 +51,7 @@ const CERTIFICATE_READER_SLUG = "how-to-read-a-diamond-certificate";
 const LAB_NATURAL_SLUG = "natural-vs-lab-diamonds";
 const FLUORESCENCE_SLUG = "what-is-diamond-fluorescence";
 const CLARITY_SLUG = "what-is-diamond-clarity";
+const CUT_SLUG = "what-is-diamond-cut";
 
 function buildPageJsonLd(article: (typeof articles)[number], slug: string) {
   const base = buildArticlePageJsonLd(article);
@@ -64,7 +66,9 @@ function buildPageJsonLd(article: (typeof articles)[number], slug: string) {
             ? fluorescenceFaqNode()
             : slug === CLARITY_SLUG
               ? clarityFaqNode()
-              : null;
+              : slug === CUT_SLUG
+                ? cutFaqNode()
+                : null;
   if (!faqNode) {
     return base;
   }

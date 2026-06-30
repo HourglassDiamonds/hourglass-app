@@ -435,6 +435,7 @@ export const articles: Article[] = [
   title: "Best Light Performance in a Diamond",
   category: "Light Performance",
   body: [
+    { type: "paragraph", text: "For the full cut guide, GIA scale, and Hourglass performance standards, start with [what is diamond cut](/diamond-guide/what-is-diamond-cut). This article explains what strong light performance looks like in practice." },
     { type: "heading", text: "Understanding Diamond Light Performance" },
     { type: "paragraph", text: "Light performance describes how effectively a diamond interacts with light. When light enters the stone, it can reflect internally, disperse into colors, and return toward the viewer. The way these processes occur determines how bright and lively the diamond appears." },
     { type: "paragraph", text: "A diamond with strong light performance displays balanced brilliance, colorful flashes of fire, and lively scintillation as it moves. These effects work together to create the sparkle people associate with a beautiful diamond." },
@@ -476,11 +477,11 @@ export const articles: Article[] = [
     { type: "paragraph", text: "When brilliance, fire, and scintillation work together, the diamond appears bright, lively, and full of character. Understanding light performance helps explain why well-cut diamonds stand out so clearly when compared side by side with others." },
   ],
   related: [
-    { title: "What is Diamond Brilliance", href: "/diamond-guide/what-is-diamond-brilliance" },
-    { title: "Diamond Light Return Explained", href: "/diamond-guide/diamond-light-return-explained" },
+    { title: "What is Diamond Cut", href: "/diamond-guide/what-is-diamond-cut" },
     { title: "Diamond Sparkle Explained", href: "/diamond-guide/diamond-sparkle-explained" },
+    { title: "What is Diamond Brilliance", href: "/diamond-guide/what-is-diamond-brilliance" },
     { title: "Diamond Fire Explained", href: "/diamond-guide/diamond-fire-explained" },
-    { title: "How Diamond Cut Affects Light Performance", href: "/diamond-guide/how-diamond-cut-affects-light-performance" },
+    { title: "Diamond Light Return Explained", href: "/diamond-guide/diamond-light-return-explained" },
   ],
 },
 
@@ -1113,6 +1114,7 @@ export const articles: Article[] = [
   title: "Diamond Contrast Patterns Explained",
   category: "Light Performance",
   body: [
+    { type: "paragraph", text: "Contrast patterns help create scintillation. For how cut governs light performance overall, see [what is diamond cut](/diamond-guide/what-is-diamond-cut). This article focuses on light and dark facet patterns." },
     { type: "heading", text: "What Diamond Contrast Means" },
     { type: "paragraph", text: "When looking closely at a well-cut diamond, you may notice a pattern of light and dark areas across the surface of the stone. This pattern is known as contrast." },
     { type: "paragraph", text: "Contrast is created by the way certain facets reflect light toward the viewer while others reflect darker areas from the surrounding environment. These darker reflections are not flaws in the diamond. Instead, they provide the visual balance that allows bright flashes of light to stand out." },
@@ -1152,10 +1154,10 @@ export const articles: Article[] = [
     { type: "paragraph", text: "When a diamond is well cut, the contrast remains balanced and symmetrical, enhancing the dynamic movement of light across the surface. This balance helps create the lively visual effect that makes diamonds so captivating to observe." },
   ],
   related: [
+    { title: "What is Diamond Cut", href: "/diamond-guide/what-is-diamond-cut" },
     { title: "What is Diamond Brilliance", href: "/diamond-guide/what-is-diamond-brilliance" },
     { title: "Diamond Sparkle Explained", href: "/diamond-guide/diamond-sparkle-explained" },
     { title: "What is Diamond Scintillation", href: "/diamond-guide/what-is-diamond-scintillation" },
-    { title: "Diamond Light Leakage Explained", href: "/diamond-guide/diamond-light-leakage-explained" },
     { title: "Diamond Fire Explained", href: "/diamond-guide/diamond-fire-explained" },
   ],
 },
@@ -1165,6 +1167,7 @@ export const articles: Article[] = [
   title: "Diamond Cut vs Diamond Shape",
   category: "Diamond Cut",
   body: [
+    { type: "paragraph", text: "Shape and cut sound similar but measure different things. For the full cut guide, see [what is diamond cut](/diamond-guide/what-is-diamond-cut). This article explains how outline and craftsmanship differ." },
     { type: "heading", text: "Why These Two Terms Are Often Confused" },
     { type: "paragraph", text: "Many people use the terms diamond cut and diamond shape interchangeably, but they describe two different characteristics of a diamond." },
     { type: "paragraph", text: "Shape refers to the outline of the stone when viewed from above. This includes familiar forms such as round, oval, cushion, emerald, and pear. Shape is largely a matter of personal style and preference." },
@@ -1206,6 +1209,7 @@ export const articles: Article[] = [
     title: "Diamond Cut vs Polish vs Symmetry",
     category: "Diamond Cut",
     body: [
+      { type: "paragraph", text: "For the full cut guide and GIA scale context, see [what is diamond cut](/diamond-guide/what-is-diamond-cut). This article explains how cut, polish, and symmetry differ on a grading report." },
       { type: "heading", text: "Why These Terms Appear on Diamond Grading Reports" },
       { type: "paragraph", text: "When reviewing a diamond grading report, buyers often see separate categories for cut, polish, and symmetry. At first glance these terms can seem similar, but they describe different aspects of how the diamond has been crafted." },
       { type: "paragraph", text: "Cut refers to the overall quality of the diamond’s proportions and how effectively the stone handles light. Polish and symmetry are more specific measurements that describe the precision and finish of the cutting process." },
@@ -1250,6 +1254,7 @@ export const articles: Article[] = [
     title: "Diamond Fire Explained",
     category: "Light Performance",
     body: [
+      { type: "paragraph", text: "Fire is the colored flash in a diamond's sparkle. For the full cut and light performance guide, see [what is diamond cut](/diamond-guide/what-is-diamond-cut). This article explains how dispersion creates rainbow flashes." },
       { type: "heading", text: "What Diamond Fire Means" },
       { type: "paragraph", text: "Diamond fire refers to the flashes of rainbow color that appear when light passes through a diamond and separates into its spectral colors. These small bursts of red, blue, green, and yellow light are one of the most captivating aspects of a diamond’s appearance." },
       { type: "paragraph", text: "When white light enters the diamond, it bends and disperses into individual colors. As the diamond moves or the light source shifts, these colors appear as brief flashes across the surface of the stone." },
@@ -1293,11 +1298,11 @@ export const articles: Article[] = [
      
     ],
     related: [
+      { title: "What is Diamond Cut", href: "/diamond-guide/what-is-diamond-cut" },
       { title: "What is Diamond Brilliance", href: "/diamond-guide/what-is-diamond-brilliance" },
       { title: "What is Diamond Scintillation", href: "/diamond-guide/what-is-diamond-scintillation" },
       { title: "Diamond Sparkle Explained", href: "/diamond-guide/diamond-sparkle-explained" },
-      { title: "Diamond Light Return Explained", href: "/diamond-guide/diamond-light-return-explained" },
-      { title: "Diamond Contrast Patterns Explained", href: "/diamond-guide/diamond-contrast-patterns-explained" }
+      { title: "How Lighting Affects Diamonds", href: "/diamond-guide/how-lighting-affects-diamonds" }
     ]
   },
 
@@ -1341,6 +1346,7 @@ export const articles: Article[] = [
     title: "Diamond Light Leakage Explained",
     category: "Light Performance",
     body: [
+      { type: "paragraph", text: "Leakage is the inverse of light return. For the full cut guide, see [what is diamond cut](/diamond-guide/what-is-diamond-cut). For return mechanics in detail, see [diamond light return explained](/diamond-guide/diamond-light-return-explained). This article focuses on when and why light escapes." },
       { type: "heading", text: "What Light Leakage Means" },
       { type: "paragraph", text: "Light leakage occurs when light enters a diamond but escapes through the bottom or sides instead of returning through the top. Because of this, less light reaches the viewer’s eye, and the diamond may appear darker or less vibrant." },
       { type: "paragraph", text: "When people describe a diamond as dull or lifeless, light leakage is often the underlying reason. Even a large or high-clarity diamond can appear underwhelming if too much light escapes before it has the chance to reflect back upward." },
@@ -1380,11 +1386,11 @@ export const articles: Article[] = [
       { type: "paragraph", text: "Proper proportions and precise cutting help minimize light leakage and maximize light return. When these elements are balanced, the diamond reflects light efficiently, producing the brilliance and sparkle that make it so visually captivating." },
     ],
     related: [
-      { title: "What is Diamond Brilliance", href: "/diamond-guide/what-is-diamond-brilliance" },
+      { title: "What is Diamond Cut", href: "/diamond-guide/what-is-diamond-cut" },
       { title: "Diamond Light Return Explained", href: "/diamond-guide/diamond-light-return-explained" },
-      { title: "Diamond Contrast Patterns Explained", href: "/diamond-guide/diamond-contrast-patterns-explained" },
       { title: "Diamond Sparkle Explained", href: "/diamond-guide/diamond-sparkle-explained" },
-      { title: "How Diamond Cut Affects Light Performance", href: "/diamond-guide/how-diamond-cut-affects-light-performance" }
+      { title: "Ideal Diamond Cut Proportions", href: "/diamond-guide/ideal-diamond-cut-proportions" },
+      { title: "What is Diamond Brilliance", href: "/diamond-guide/what-is-diamond-brilliance" }
     ]
   },
 
@@ -1398,6 +1404,7 @@ export const articles: Article[] = [
     visualCategory: "original-photo",
     visualStatus: "live",
     body: [
+      { type: "paragraph", text: "Light return is one piece of the cut story. For the full guide, including the GIA scale and Hourglass standards, see [what is diamond cut](/diamond-guide/what-is-diamond-cut). This article explains how efficiently a diamond reflects light back to your eye." },
       { type: "heading", text: "What Light Return Means in a Diamond" },
       { type: "paragraph", text: "Light return describes how efficiently a diamond reflects light back toward the viewer’s eye. When light enters a diamond, it interacts with the stone’s internal facets. If those facets are positioned correctly, the light reflects within the diamond and exits through the top of the stone." },
       { type: "paragraph", text: "This returned light is what creates the brightness people associate with a beautiful diamond. When light return is strong, the diamond appears lively and luminous. When it is weak, the diamond may appear dull or muted." },
@@ -1438,11 +1445,11 @@ export const articles: Article[] = [
       
     ],
     related: [
+      { title: "What is Diamond Cut", href: "/diamond-guide/what-is-diamond-cut" },
       { title: "What is Diamond Brilliance", href: "/diamond-guide/what-is-diamond-brilliance" },
-      { title: "Diamond Fire Explained", href: "/diamond-guide/diamond-fire-explained" },
-      { title: "Diamond Light Leakage Explained", href: "/diamond-guide/diamond-light-leakage-explained" },
       { title: "Diamond Sparkle Explained", href: "/diamond-guide/diamond-sparkle-explained" },
-      { title: "Best Light Performance in Diamonds", href: "/diamond-guide/best-light-performance-in-a-diamond" }
+      { title: "Ideal Diamond Cut Proportions", href: "/diamond-guide/ideal-diamond-cut-proportions" },
+      { title: "How to Read a Diamond Certificate", href: "/diamond-guide/how-to-read-a-diamond-certificate" }
     ]
   },
 
@@ -1656,6 +1663,7 @@ export const articles: Article[] = [
     title: "Diamond Sparkle Explained",
     category: "Light Performance",
     body: [
+      { type: "paragraph", text: "Sparkle is what most buyers picture when they imagine a beautiful diamond. For how cut governs light performance overall, start with [what is diamond cut](/diamond-guide/what-is-diamond-cut). This article explains sparkle as the combination of brilliance, fire, and scintillation." },
       { type: "heading", text: "What People Mean by Diamond Sparkle" },
       { type: "paragraph", text: "When most people talk about a diamond’s sparkle, they are describing the way light moves across the surface of the stone. Sparkle is the visual effect created when a diamond reflects and disperses light in a dynamic way." },
       { type: "paragraph", text: "This effect is not produced by a single characteristic. Instead, sparkle is the result of several different light behaviors working together. When those elements are balanced correctly, the diamond appears bright, lively, and constantly changing as it moves." },
@@ -1698,10 +1706,10 @@ export const articles: Article[] = [
       
     ],
     related: [
+      { title: "What is Diamond Cut", href: "/diamond-guide/what-is-diamond-cut" },
       { title: "What is Diamond Brilliance", href: "/diamond-guide/what-is-diamond-brilliance" },
       { title: "Diamond Fire Explained", href: "/diamond-guide/diamond-fire-explained" },
       { title: "What is Diamond Scintillation", href: "/diamond-guide/what-is-diamond-scintillation" },
-      { title: "Diamond Contrast Patterns Explained", href: "/diamond-guide/diamond-contrast-patterns-explained" },
       { title: "Diamond Light Return Explained", href: "/diamond-guide/diamond-light-return-explained" }
     ]
   },
@@ -1891,6 +1899,7 @@ export const articles: Article[] = [
   title: "Does Diamond Cut Affect Size",
   category: "Diamond Cut",
   body: [
+    { type: "paragraph", text: "Carat weight and face-up size are not the same. Cut controls spread. For the full cut guide, see [what is diamond cut](/diamond-guide/what-is-diamond-cut). This article explains how proportions change visible size." },
     { type: "heading", text: "Why Some Diamonds Look Larger Than Others" },
     { type: "paragraph", text: "Many buyers assume that carat weight alone determines how large a diamond appears. While carat weight does measure the diamond’s mass, the way a diamond is cut can strongly influence how large it looks when viewed from above." },
     { type: "paragraph", text: "Two diamonds with the same carat weight can appear noticeably different in size depending on their proportions. [see how different carat weights face up](/diamond-studio) when depth and spread change. A well-cut diamond spreads its weight in a way that maximizes the visible surface area, while a poorly cut diamond may hide weight in areas that are less visible." },
@@ -1929,6 +1938,7 @@ export const articles: Article[] = [
   title: "Do Fancy Shape Diamonds Have Cut Grades",
   category: "Diamond Cut",
   body: [
+    { type: "paragraph", text: "Round brilliants receive formal cut grades on most reports. Fancy shapes usually do not. For the full cut guide, see [what is diamond cut](/diamond-guide/what-is-diamond-cut). This article explains why fancy shapes are graded differently." },
     { type: "heading", text: "Why Cut Grades Are Common for Round Diamonds" },
     { type: "paragraph", text: "When shopping for diamonds, many buyers become familiar with the cut grade assigned to round brilliant diamonds. Laboratories such as the Gemological Institute of America evaluate round diamonds using a detailed grading system that considers proportions, symmetry, polish, and light performance." },
     { type: "paragraph", text: "This grading system results in familiar categories such as Excellent, Very Good, Good, Fair, and Poor." },
@@ -2112,6 +2122,7 @@ export const articles: Article[] = [
   title: "Excellent vs Very Good Diamond Cut",
   category: "Diamond Cut",
   body: [
+    { type: "paragraph", text: "For the full cut guide, including the GIA scale, proportions, and Hourglass performance standards, start with [what is diamond cut](/diamond-guide/what-is-diamond-cut). This article compares Excellent and Very Good, the two highest cut grades most buyers consider for round brilliants." },
     { type: "heading", text: "Understanding Diamond Cut Grades" },
     { type: "paragraph", text: "When evaluating a diamond, one of the most important details on the grading report is the cut grade. For round brilliant diamonds, laboratories such as the Gemological Institute of America (GIA) assign a cut grade that describes how effectively the diamond handles light." },
     { type: "paragraph", text: "The highest grades typically seen are Excellent and Very Good. Both represent well-cut diamonds, but there are subtle differences between them that buyers often want to understand." },
@@ -2145,9 +2156,9 @@ export const articles: Article[] = [
   ],
   related: [
     { title: "What is Diamond Cut", href: "/diamond-guide/what-is-diamond-cut" },
-    { title: "How Diamond Cut Affects Sparkle", href: "/diamond-guide/how-diamond-cut-affects-sparkle" },
     { title: "Ideal Diamond Cut Proportions", href: "/diamond-guide/ideal-diamond-cut-proportions" },
-    { title: "What Makes a Diamond Cut Good or Bad", href: "/diamond-guide/what-makes-a-diamond-cut-good-or-bad" },
+    { title: "Diamond Cut vs Polish vs Symmetry", href: "/diamond-guide/diamond-cut-vs-polish-vs-symmetry" },
+    { title: "How to Read a Diamond Certificate", href: "/diamond-guide/how-to-read-a-diamond-certificate" },
     { title: "Is Diamond Cut the Most Important Factor", href: "/diamond-guide/is-diamond-cut-the-most-important-c" }
   ]
 },
@@ -2416,6 +2427,7 @@ export const articles: Article[] = [
   title: "How Diamond Cut Affects Light Performance",
   category: "Light Performance",
   body: [
+    { type: "paragraph", text: "For the complete cut and light performance guide, see [what is diamond cut](/diamond-guide/what-is-diamond-cut). This article explains how proportions and facet alignment influence brightness and sparkle." },
     { type: "heading", text: "Why Cut Matters More Than Most People Realize" },
     { type: "paragraph", text: "When people first begin researching diamonds, they often focus on carat weight, color, or clarity. While those characteristics certainly matter, the cut of a diamond has the greatest influence on how beautiful the stone appears." },
     { type: "paragraph", text: "Cut determines how light enters the diamond, how it travels through the stone, and how much of that light returns to the viewer. When a diamond is well cut, it reflects light efficiently and appears bright, lively, and balanced." },
@@ -2458,11 +2470,11 @@ export const articles: Article[] = [
     
   ],
   related: [
+    { title: "What is Diamond Cut", href: "/diamond-guide/what-is-diamond-cut" },
+    { title: "Diamond Sparkle Explained", href: "/diamond-guide/diamond-sparkle-explained" },
     { title: "What is Diamond Brilliance", href: "/diamond-guide/what-is-diamond-brilliance" },
     { title: "Diamond Light Return Explained", href: "/diamond-guide/diamond-light-return-explained" },
-    { title: "Diamond Light Leakage Explained", href: "/diamond-guide/diamond-light-leakage-explained" },
-    { title: "Diamond Sparkle Explained", href: "/diamond-guide/diamond-sparkle-explained" },
-    { title: "Best Light Performance in Diamonds", href: "/diamond-guide/best-light-performance-in-a-diamond" }
+    { title: "Ideal Diamond Cut Proportions", href: "/diamond-guide/ideal-diamond-cut-proportions" }
   ]
 },
 {
@@ -2470,6 +2482,7 @@ export const articles: Article[] = [
   title: "How Diamond Cut Affects Sparkle",
   category: "Diamond Cut",
   body: [
+    { type: "paragraph", text: "For the complete cut guide, including the GIA scale, proportions, and Hourglass standards, see [what is diamond cut](/diamond-guide/what-is-diamond-cut). This article focuses on how cut influences sparkle specifically." },
     { type: "heading", text: "Why Sparkle Matters in a Diamond" },
     { type: "paragraph", text: "When most people imagine a beautiful diamond, they are usually picturing sparkle. The flashes of white light, small bursts of color, and lively movement inside the stone are what make diamonds feel alive." },
     { type: "paragraph", text: "While many buyers initially focus on carat weight or color, the sparkle of a diamond is primarily determined by how well it is cut. A diamond with excellent proportions can appear vibrant and full of light, while a poorly cut stone may look dull even if it is large or very high in color and clarity." },
@@ -2505,10 +2518,10 @@ export const articles: Article[] = [
   ],
   related: [
     { title: "What is Diamond Cut", href: "/diamond-guide/what-is-diamond-cut" },
+    { title: "Diamond Sparkle Explained", href: "/diamond-guide/diamond-sparkle-explained" },
     { title: "Excellent vs Very Good Diamond Cut", href: "/diamond-guide/excellent-vs-very-good-diamond-cut" },
     { title: "Ideal Diamond Cut Proportions", href: "/diamond-guide/ideal-diamond-cut-proportions" },
-    { title: "What Makes a Diamond Cut Good or Bad", href: "/diamond-guide/what-makes-a-diamond-cut-good-or-bad" },
-    { title: "Does Diamond Cut Affect Size", href: "/diamond-guide/does-diamond-cut-affect-size" }
+    { title: "Diamond Light Return Explained", href: "/diamond-guide/diamond-light-return-explained" }
   ]
 },
 {
@@ -2516,6 +2529,7 @@ export const articles: Article[] = [
   title: "How Lighting Affects Diamonds",
   category: "Light Performance",
   body: [
+    { type: "paragraph", text: "Lighting changes how brilliance, fire, and scintillation read on the hand. For how cut creates those effects, see [what is diamond cut](/diamond-guide/what-is-diamond-cut). This article explains environment, not craftsmanship." },
     { type: "heading", text: "Why Lighting Changes the Way Diamonds Look" },
     { type: "paragraph", text: "Diamonds are highly responsive to light, which means their appearance can change noticeably depending on the environment. A diamond that looks bright and lively in one setting may appear softer or more subtle in another." },
     { type: "paragraph", text: "This variation occurs because diamonds rely on external light sources to reveal their brilliance, fire, and sparkle. Different lighting conditions interact with the diamond’s facets in different ways." },
@@ -2742,6 +2756,7 @@ export const articles: Article[] = [
   title: "Ideal Diamond Cut Proportions",
   category: "Diamond Cut",
   body: [
+    { type: "paragraph", text: "For how cut grades, light return, and Hourglass standards fit together, see [what is diamond cut](/diamond-guide/what-is-diamond-cut). This article focuses on the proportion measurements that influence round brilliant light performance." },
     { type: "heading", text: "Why Proportions Matter in a Diamond" },
     { type: "paragraph", text: "The beauty of a diamond depends heavily on how it interacts with light. While many buyers focus on carat weight or color, the proportions of a diamond often have the greatest influence on its overall appearance." },
     { type: "paragraph", text: "Proportions describe the relationship between the diamond’s different measurements, including its depth, table size, crown angle, and pavilion angle. When these elements are balanced correctly, light reflects within the stone and returns to the viewer’s eye, creating brightness and sparkle." },
@@ -2775,10 +2790,10 @@ export const articles: Article[] = [
   ],
   related: [
     { title: "What is Diamond Cut", href: "/diamond-guide/what-is-diamond-cut" },
-    { title: "How Diamond Cut Affects Sparkle", href: "/diamond-guide/how-diamond-cut-affects-sparkle" },
     { title: "Excellent vs Very Good Diamond Cut", href: "/diamond-guide/excellent-vs-very-good-diamond-cut" },
-    { title: "What Makes a Diamond Cut Good or Bad", href: "/diamond-guide/what-makes-a-diamond-cut-good-or-bad" },
-    { title: "Diamond Cut vs Diamond Shape", href: "/diamond-guide/diamond-cut-vs-diamond-shape" }
+    { title: "Diamond Cut vs Polish vs Symmetry", href: "/diamond-guide/diamond-cut-vs-polish-vs-symmetry" },
+    { title: "How to Read a Diamond Certificate", href: "/diamond-guide/how-to-read-a-diamond-certificate" },
+    { title: "Diamond Light Return Explained", href: "/diamond-guide/diamond-light-return-explained" }
   ]
 },
 {
@@ -2818,6 +2833,7 @@ export const articles: Article[] = [
   title: "Is Diamond Cut the Most Important C",
   category: "Diamond Cut",
   body: [
+    { type: "paragraph", text: "Cut often leads the Four Cs for appearance, but balance still matters. For the full cut guide, see [what is diamond cut](/diamond-guide/what-is-diamond-cut). This article places cut within carat, color, and clarity." },
     { type: "heading", text: "Understanding the Four Cs" },
     { type: "paragraph", text: "Diamonds are commonly evaluated using the Four Cs: cut, color, clarity, and carat weight. These four characteristics provide a standardized way to describe a diamond’s quality and value." },
     { type: "paragraph", text: "Carat weight measures how much the diamond weighs. Color describes how colorless the stone appears. Clarity refers to the presence of natural internal features called inclusions." },
@@ -3724,6 +3740,7 @@ export const articles: Article[] = [
   title: "What is Diamond Brilliance",
   category: "Light Performance",
   body: [
+    { type: "paragraph", text: "Brilliance is the white-light glow most people notice first. For how cut governs brilliance, fire, and scintillation together, see [what is diamond cut](/diamond-guide/what-is-diamond-cut). This article focuses on brilliance as its own effect." },
     { type: "heading", text: "Understanding Brilliance in a Diamond" },
     { type: "paragraph", text: "When people describe a diamond as “sparkly,” they are usually reacting to brilliance. Brilliance refers to the amount of white light a diamond reflects back to the eye. It is the bright, lively return of light that gives a diamond its unmistakable glow." },
     { type: "paragraph", text: "This light begins its journey when it enters the top of the diamond through the table and crown facets. Inside the stone, the light reflects off the internal facets before returning upward toward the viewer. When this process works efficiently, the diamond appears bright and vibrant." },
@@ -3761,11 +3778,11 @@ export const articles: Article[] = [
     
   ],
   related: [
+    { title: "What is Diamond Cut", href: "/diamond-guide/what-is-diamond-cut" },
     { title: "Diamond Fire Explained", href: "/diamond-guide/diamond-fire-explained" },
     { title: "What is Diamond Scintillation", href: "/diamond-guide/what-is-diamond-scintillation" },
-    { title: "Diamond Light Return Explained", href: "/diamond-guide/diamond-light-return-explained" },
     { title: "Diamond Sparkle Explained", href: "/diamond-guide/diamond-sparkle-explained" },
-    { title: "Best Light Performance in Diamonds", href: "/diamond-guide/best-light-performance-in-a-diamond" }
+    { title: "Diamond Light Return Explained", href: "/diamond-guide/diamond-light-return-explained" }
   ]
 },
 {
@@ -3924,45 +3941,93 @@ export const articles: Article[] = [
   title: "What is Diamond Cut",
   category: "Diamond Cut",
   body: [
-    { type: "paragraph", text: "Two round diamonds on a white tray. Same carat. Same color. Same clarity. Both graded Excellent cut. A buyer comparing certificates online would call them interchangeable. In person, one returns light evenly across the crown. The other looks acceptable under the spotlight and slightly tired everywhere else." },
-    { type: "paragraph", text: "That gap is why cut sits at the center of how experienced advisors think about diamonds. Not because the word appears on every blog post. Because disappointment after purchase so often traces back here, even when the color and clarity grades looked impeccable on paper." },
+    { type: "paragraph", text: "Diamond cut describes how precisely a diamond's facets are shaped, aligned, and polished to return light. On a grading report it appears as a cut grade for round brilliants, plus separate polish and symmetry lines. For most engagement rings the practical question is simpler: does the stone look alive on the hand? Light performance in wear usually matters more than treating Excellent as a checkbox." },
+    { type: "paragraph", text: "Two round diamonds on a white tray. Same carat. Same color. Same clarity. Both graded Excellent cut. A buyer comparing certificates online would call them interchangeable. In person, one returns light evenly across the crown. The other looks acceptable under the spotlight and slightly tired everywhere else. That gap is why cut sits at the center of how experienced advisors think about diamonds." },
 
-    { type: "heading", text: "What Cut Actually Means" },
-    { type: "paragraph", text: "Cut is not shape. Shape is the outline: round, oval, emerald, cushion. Cut is how precisely the facets were arranged to move light. A round diamond can be Excellent or Fair while the shape stays the same. The certificate letters may look similar. The wearing experience rarely does." },
-    { type: "paragraph", text: "When light enters a well-cut diamond, it reflects internally and returns through the crown. When proportions are too shallow or too deep, light leaks out the sides or bottom. The stone loses brightness, contrast, and the sense of depth that makes a diamond feel alive rather than merely present." },
+    { type: "heading", text: "What Diamond Cut Actually Measures" },
+    { type: "paragraph", text: "Cut grading evaluates proportions, facet alignment, and surface finish, then summarizes how efficiently a diamond is likely to return light. For rounds, laboratories combine table size, depth, crown and pavilion angles, symmetry, and polish into an overall cut grade. The measurement is about craftsmanship and light behavior, not the diamond's natural origin." },
+    { type: "paragraph", text: "The report tells you how the stone was cut. Your eyes, in the ring you plan to build, tell you whether that cutting succeeded. [How to read a diamond certificate](/diamond-guide/how-to-read-a-diamond-certificate) shows where cut, polish, symmetry, and proportion fields appear on the page." },
 
-    { type: "heading", text: "Why Cut Is So Often Misunderstood" },
-    { type: "paragraph", text: "Retail language blurs shape and cut constantly. Search filters treat Excellent as a checkbox, as if every stone in that bucket performs the same. Fancy shapes often receive no formal cut grade at all, which pushes buyers toward color and clarity because those numbers feel concrete." },
-    { type: "paragraph", text: "The result is predictable. People optimize the summary line first. They stretch budget for a higher color or clarity grade while accepting a cut that underperforms. They assume a larger carat weight will impress, not noticing that poor proportions hide weight where it cannot be seen. [Diamond buying tips from jewelers](/diamond-guide/diamond-buying-tips-from-jewelers) describes how often that pattern ends in quiet regret." },
+    { type: "heading", text: "Why Cut Is the Most Important Quality Factor" },
+    { type: "paragraph", text: "Color and clarity describe what formed inside the crystal. Carat describes weight. Cut determines what you see when light hits the stone. A well-cut diamond can face up whiter and cleaner than its color and clarity grades suggest. A dull diamond with top grades still looks dull." },
+    { type: "paragraph", text: "That is why [Our Approach](/our-approach) at Hourglass prioritizes how the stone handles light before debating alphabet upgrades. Cut is not one factor among four. It is the factor that makes the other three visible. [Is diamond cut the most important C](/diamond-guide/is-diamond-cut-the-most-important-c) frames the same priority within the Four Cs." },
 
-    { type: "heading", text: "Why Light Performance Matters More Than People Realize" },
-    { type: "paragraph", text: "Light performance is the wearing experience. Brightness across the crown. Crisp contrast between light and dark facets as the stone moves. Fire when sunlight hits at the right angle. These qualities are not vanity. They are what your eye reads as beauty before you know any grades." },
-    { type: "paragraph", text: "A diamond with strong performance can face up whiter and cleaner than its color and clarity grades suggest. A dull diamond with top grades still looks dull. That is why [Our Approach](/our-approach) at Hourglass prioritizes how the stone handles light before debating alphabet upgrades. Cut is not one factor among four. It is the factor that makes the other three visible." },
+    { type: "heading", text: "Cut vs Shape" },
+    { type: "paragraph", text: "Shape is the outline viewed from above: round, oval, emerald, cushion. Cut is how well the facets inside that outline move light. A round diamond can be Excellent or Fair while the shape stays the same. Retail language blurs the two constantly, which pushes buyers toward color and clarity because those numbers feel concrete." },
+    { type: "paragraph", text: "[Diamond cut vs diamond shape](/diamond-guide/diamond-cut-vs-diamond-shape) explains the distinction in more detail. Choose shape for style first. Then evaluate cut for performance within that shape." },
 
-    { type: "heading", text: "What Experienced Gemologists Notice" },
-    { type: "paragraph", text: "They notice whether light returns evenly or pools flat in the center. They notice contrast: the balanced pattern of bright and dark reflections that gives sparkle its rhythm. They notice spread, whether the diamond uses its weight in a way that looks generous face-up or hides depth beneath the girdle." },
-    { type: "paragraph", text: "They also notice when a certificate overstates what the eye will see. Two Excellent rounds can differ in table size, crown angle, and lower-girdle length in ways that matter visually but disappear in a summary line. That is routine, not exotic. It is why [why work with a Graduate Gemologist](/diamond-guide/why-work-with-a-graduate-gemologist) is less about credentials and more about pattern recognition built from seeing thousands of stones move." },
+    { type: "heading", text: "The GIA Cut Scale" },
+    { type: "paragraph", text: "For round brilliant diamonds, the Gemological Institute of America assigns cut grades from Excellent at the top through Very Good, Good, Fair, and Poor at the lower end. Each step reflects how closely proportions, symmetry, and polish fall within ranges associated with strong light return." },
+    { type: "paragraph", text: "The scale is a shared language for laboratories, jewelers, and buyers. It does not automatically tell you which diamond will look brightest in your solitaire, halo, or bezel. That is why the grade is a starting point, not a finish line." },
 
-    { type: "heading", text: "How Cut Grades Fit In" },
-    { type: "paragraph", text: "For round diamonds, major laboratories assign cut grades from Excellent through Poor based on proportions, symmetry, and polish. Excellent indicates strong light return within standardized ranges. As grades step down, brightness and balance typically fall with them." },
-    { type: "paragraph", text: "The grade is useful. It is also coarse. Stones at the same grade can still perform differently. Fancy shapes require more visual judgment because grading is less uniform. Proportions, symmetry, and in-person comparison matter more than any single label." },
+    { type: "heading", text: "What Excellent Actually Means" },
+    { type: "paragraph", text: "Excellent on a GIA report means the diamond's proportions, symmetry, and polish fall within ranges the laboratory associates with strong performance. It does not mean every Excellent stone looks identical. Table percentage, crown angle, and lower-girdle length can still vary inside the grade." },
+    { type: "paragraph", text: "For buyers who want maximum sparkle on the hand, Excellent is the right baseline for round brilliants when the budget allows. [Excellent vs very good diamond cut](/diamond-guide/excellent-vs-very-good-diamond-cut) compares the next step down when budget is tight." },
 
-    { type: "heading", text: "What Disappointment Usually Traces Back To" },
-    { type: "paragraph", text: "The buyer followed the checklist. Excellent cut on the report. Strong color. Acceptable clarity. The diamond still feels flat, or smaller than expected, or somehow less special than a lower-graded stone they saw briefly and dismissed. The certificate was not wrong. It was incomplete relative to what they cared about." },
-    { type: "paragraph", text: "Post-purchase regret rarely sounds dramatic. It sounds like: \"It is beautiful, I just wish it sparkled more.\" That sentence usually points to cut, or to proportions within a cut grade, not to missing one clarity step. [Diamond price versus quality](/diamond-guide/diamond-price-vs-quality) explains how budget freed from invisible grades can fund the performance difference you will actually notice." },
+    { type: "heading", text: "Cut vs Polish vs Symmetry" },
+    { type: "paragraph", text: "Cut grade summarizes overall light performance for rounds. Polish describes surface smoothness after cutting. Symmetry describes how precisely facets align with one another. Reports list all three separately. A diamond can show Excellent polish and symmetry while still performing differently from another Excellent stone because proportions differ." },
+    { type: "paragraph", text: "Triple Excellent, sometimes called Triple Ex, means Excellent on cut, polish, and symmetry. That is a useful shorthand for craftsmanship. It still does not replace viewing the stone. [Diamond cut vs polish vs symmetry](/diamond-guide/diamond-cut-vs-polish-vs-symmetry) walks through each field." },
 
-    { type: "heading", text: "Where Diamond Intelligence Fits" },
-    { type: "paragraph", text: "Grading reports record measurements. They do not always tell you what those measurements suggest about performance in plain language. [Diamond Intelligence](/diamond-intelligence) was built for that translation: taking proportion data from a specific report and helping you ask better questions before you buy." },
-    { type: "paragraph", text: "It does not replace viewing the diamond. Nothing does. It gives you a clearer starting point so that when you compare stones in person, you are comparing performance, not just matching grades on a screen." },
+    { type: "heading", text: "Proportions and Why They Matter" },
+    { type: "paragraph", text: "Proportions describe the relationship between table size, depth, crown height, and pavilion angle. They control whether light stays inside the diamond long enough to reflect back through the crown or escapes through the sides and bottom. Shallow cuts can leak light downward. Deep cuts can trap light or hide weight where you cannot see it." },
+    { type: "paragraph", text: "[Ideal diamond cut proportions](/diamond-guide/ideal-diamond-cut-proportions) lists common reference ranges for round brilliants. Proportions explain much of why two diamonds with the same cut grade can behave differently." },
 
-    { type: "paragraph", text: "Cut is the reason two diamonds with identical specifications can feel like different purchases entirely. Understand it early, protect it in your budget, and the rest of the search becomes simpler. Ignore it, and even a generous budget can buy a diamond that looks correct on paper and forgettable on the hand." },
+    { type: "heading", text: "Brilliance, Fire, and Scintillation" },
+    { type: "paragraph", text: "Brilliance is the return of white light. Fire is dispersion into colored flashes. Scintillation is the pattern of light and dark that appears when the diamond moves. Together they produce what most people call sparkle. Cut quality governs how well all three appear." },
+    { type: "paragraph", text: "[Diamond sparkle explained](/diamond-guide/diamond-sparkle-explained) is the umbrella guide. [What is diamond brilliance](/diamond-guide/what-is-diamond-brilliance), [diamond fire explained](/diamond-guide/diamond-fire-explained), and [what is diamond scintillation](/diamond-guide/what-is-diamond-scintillation) go deeper on each effect." },
+
+    { type: "heading", text: "Light Return and Light Leakage" },
+    { type: "paragraph", text: "Light return describes how much entering light reflects back to your eye. Light leakage is the opposite: light that exits through the pavilion or girdle instead of returning face-up. Leakage is why some diamonds look sleepy even when color and clarity grades read well." },
+    { type: "paragraph", text: "[Diamond light return explained](/diamond-guide/diamond-light-return-explained) covers return in detail. Strong return is the foundation for brilliance, fire, and scintillation. Without it, higher grades on paper rarely rescue the wearing experience." },
+
+    { type: "heading", text: "Why Two Excellent Diamonds Can Perform Differently" },
+    { type: "paragraph", text: "The cut grade compresses many measurements into one word. Two Excellent rounds can differ in table size, crown angle, and facet precision in ways that change how evenly light pools across the crown. One may show crisp contrast as it moves. The other may look flat under restaurant light." },
+    { type: "paragraph", text: "That is routine, not exotic. It is why side-by-side comparison matters and why a summary line alone is an incomplete buying strategy. If you are working from a listing, upload the report to [Diamond Intelligence](/diamond-intelligence) to translate proportion data into practical questions before you view the stone." },
+
+    { type: "heading", text: "Fancy Shape Cut Considerations" },
+    { type: "paragraph", text: "Oval, cushion, emerald, pear, and other fancy shapes rarely receive an overall cut grade on GIA reports. Polish and symmetry are graded. Overall light performance is left to visual evaluation. Length-to-width ratio, bow ties, and open tables all change how forgiving a shape is on color and clarity." },
+    { type: "paragraph", text: "[Do fancy shape diamonds have cut grades](/diamond-guide/do-fancy-shape-diamonds-have-cut-grades) explains the gap. Fancy shapes demand more in-person judgment, not less." },
+
+    { type: "heading", text: "Diamond Intelligence and Beyond the Grading Report" },
+    { type: "paragraph", text: "A report records measurements in controlled laboratory conditions. It does not show how lively the diamond looks when it moves, how contrast patterns form in your metal color, or whether the stone looks smaller than its carat weight because of depth. Two diamonds with matching grades can perform differently because proportions and facet precision differ." },
+    { type: "paragraph", text: "[Diamond Intelligence](/diamond-intelligence) helps translate proportion and symmetry data from a specific report into questions you can ask before you commit. Side-by-side viewing still wins when you can arrange it. [Natural vs lab diamonds](/diamond-guide/natural-vs-lab-diamonds) covers origin; cut standards apply to both." },
+
+    { type: "heading", text: "Hourglass Cut Standards" },
+    { type: "paragraph", text: "Hourglass prioritizes visible beauty on the hand over paper perfection. For round brilliants, Excellent cut is our baseline when performance is the goal. We still review proportion data and compare stones side by side because Excellent alone is not a substitute for liveliness." },
+    { type: "paragraph", text: "We do not recommend accepting a dull stone because other grades look strong on the report. Cut should support the ring, not consume budget for sparkle you cannot see, and not become the reason for regret after the proposal. Freed budget from invisible color or clarity upgrades often funds the performance difference you will actually notice." },
+
+    { type: "heading", text: "How a Graduate Gemologist Reads Cut" },
+    { type: "paragraph", text: "A Graduate Gemologist begins face-up at arm's length, then tilts the stone to watch contrast move across the crown. The report comes after the eye test: whether light returns evenly, whether dark areas dominate, whether the spread looks generous for the carat weight." },
+    { type: "paragraph", text: "That order protects buyers from paying for letters and from rejecting lively stones because of internet rules that ignore proportion detail. [Why work with a Graduate Gemologist](/diamond-guide/why-work-with-a-graduate-gemologist) explains who leads that review at Hourglass." },
+
+    { type: "heading", text: "Charlotte, Surrounding Markets, and Clients Nationwide" },
+    { type: "paragraph", text: "Many Charlotte-area buyers compare cut in private appointment rather than under sales-floor spotlights alone. Hourglass works with clients throughout the Charlotte metro, including South Charlotte, Ballantyne, Matthews, Waxhaw, Weddington, Marvin, Pineville, Huntersville, Union County, Lake Norman, Fort Mill, and nearby communities." },
+    { type: "paragraph", text: "We also work with clients around the U.S. by appointment and remote consultation when that pace fits better than a local visit. Whether you are comparing two Excellent rounds or evaluating an oval for bow-tie, the standard stays the same: lively on the hand. [Begin the conversation](/concierge) when you want a Graduate Gemologist to review specific stones with you." },
+
+    { type: "heading", text: "What is diamond cut?" },
+    { type: "paragraph", text: "The craftsmanship behind a diamond's facets: how proportions, symmetry, and polish work together to return light. Not the same as shape. Graded Excellent through Poor for round brilliants on GIA reports." },
+
+    { type: "heading", text: "Is cut the most important of the Four Cs?" },
+    { type: "paragraph", text: "For most buyers, yes. Cut governs brightness and sparkle on the hand. Color and clarity describe purity. Carat describes weight. Protect cut before chasing invisible grade upgrades." },
+
+    { type: "heading", text: "What is the difference between cut and shape?" },
+    { type: "paragraph", text: "Shape is the outline: round, oval, emerald. Cut is how well the facets return light inside that outline. You can change performance without changing shape." },
+
+    { type: "heading", text: "What does Excellent cut mean?" },
+    { type: "paragraph", text: "On GIA round reports, Excellent means proportions, symmetry, and polish fall within ranges linked to strong light return. Individual stones can still differ within the grade." },
+
+    { type: "heading", text: "Does cut affect sparkle?" },
+    { type: "paragraph", text: "Yes, more than any other factor. Sparkle combines brilliance, fire, and scintillation. Cut controls how efficiently light returns. A dull cut cannot be fixed by higher color or clarity." },
+
+    { type: "heading", text: "Why can two Excellent cut diamonds look different?" },
+    { type: "paragraph", text: "The grade summarizes many measurements. Table size, crown angle, and facet precision can vary inside Excellent and change how evenly light returns. Compare stones side by side." },
   ],
   related: [
-    { title: "How Diamond Cut Affects Sparkle", href: "/diamond-guide/how-diamond-cut-affects-sparkle" },
     { title: "Excellent vs Very Good Diamond Cut", href: "/diamond-guide/excellent-vs-very-good-diamond-cut" },
     { title: "Ideal Diamond Cut Proportions", href: "/diamond-guide/ideal-diamond-cut-proportions" },
-    { title: "What Makes a Diamond Cut Good or Bad", href: "/diamond-guide/what-makes-a-diamond-cut-good-or-bad" },
-    { title: "Diamond Cut vs Polish vs Symmetry", href: "/diamond-guide/diamond-cut-vs-polish-vs-symmetry" }
+    { title: "Diamond Cut vs Polish vs Symmetry", href: "/diamond-guide/diamond-cut-vs-polish-vs-symmetry" },
+    { title: "Diamond Sparkle Explained", href: "/diamond-guide/diamond-sparkle-explained" },
+    { title: "How to Read a Diamond Certificate", href: "/diamond-guide/how-to-read-a-diamond-certificate" },
   ]
 },
 {
@@ -4066,6 +4131,7 @@ export const articles: Article[] = [
   title: "What is Diamond Scintillation",
   category: "Light Performance",
   body: [
+    { type: "paragraph", text: "Scintillation is the flashing pattern you see when a diamond moves. For how cut creates brilliance, fire, and scintillation together, see [what is diamond cut](/diamond-guide/what-is-diamond-cut). This article focuses on scintillation alone." },
     { type: "heading", text: "Understanding Diamond Scintillation" },
     { type: "paragraph", text: "Scintillation refers to the flashes of light and dark that appear when a diamond moves. It is the dynamic sparkle that occurs as the stone, the observer, or the light source shifts." },
     { type: "paragraph", text: "Unlike brilliance, which is the steady return of white light, scintillation is about contrast and motion. It is created when different facets of the diamond catch and release light at slightly different moments." },
@@ -4108,11 +4174,11 @@ export const articles: Article[] = [
     
   ],
   related: [
+    { title: "What is Diamond Cut", href: "/diamond-guide/what-is-diamond-cut" },
     { title: "What is Diamond Brilliance", href: "/diamond-guide/what-is-diamond-brilliance" },
     { title: "Diamond Fire Explained", href: "/diamond-guide/diamond-fire-explained" },
     { title: "Diamond Sparkle Explained", href: "/diamond-guide/diamond-sparkle-explained" },
-    { title: "Diamond Contrast Patterns Explained", href: "/diamond-guide/diamond-contrast-patterns-explained" },
-    { title: "Diamond Light Return Explained", href: "/diamond-guide/diamond-light-return-explained" }
+    { title: "Diamond Contrast Patterns Explained", href: "/diamond-guide/diamond-contrast-patterns-explained" }
   ]
 },
 
@@ -4167,6 +4233,7 @@ export const articles: Article[] = [
   title: "What Makes a Diamond Cut Good or Bad",
   category: "Diamond Cut",
   body: [
+    { type: "paragraph", text: "For the full cut guide and GIA scale, see [what is diamond cut](/diamond-guide/what-is-diamond-cut). This article explains what separates good cutting from poor cutting in practice." },
     { type: "heading", text: "Why Cut Quality Matters So Much" },
     { type: "paragraph", text: "Among the Four Cs of diamonds, cut is often considered the most important factor influencing a diamond’s appearance. While color and clarity describe the purity of the stone, cut determines how the diamond actually interacts with light." },
     { type: "paragraph", text: "A well-cut diamond reflects light back toward the viewer, producing brightness and sparkle. A poorly cut diamond allows light to escape through the sides or bottom of the stone, which can make the diamond appear dull." },
