@@ -70,17 +70,35 @@ describe("structured data builders", () => {
   });
 
   it("omits image property when article visual is pending", () => {
-    const pending = articles.find(
-      (article) => article.slug === "charlotte-diamond-advisor-guide",
-    );
-    expect(pending?.visualStatus).toBe("pending");
+    const withoutVisual = articles.find((article) => !article.visualStatus);
+    expect(withoutVisual).toBeDefined();
 
-    const payload = buildArticlePageJsonLd(pending!);
+    const payload = buildArticlePageJsonLd(withoutVisual!);
     const graph = (payload as { "@graph": Record<string, unknown>[] })["@graph"];
     const articleNode = graph.find((node) => node["@type"] === "Article");
 
     expect(articleNode).toBeDefined();
     expect(articleNode).not.toHaveProperty("image");
+  });
+
+  it("emits image property only for live article visuals", () => {
+    const liveSlugs = new Set([
+      "charlotte-diamond-advisor-guide",
+      "how-to-read-a-diamond-certificate",
+      "natural-vs-lab-diamonds",
+    ]);
+
+    for (const article of articles) {
+      const payload = buildArticlePageJsonLd(article);
+      const graph = (payload as { "@graph": Record<string, unknown>[] })["@graph"];
+      const articleNode = graph.find((node) => node["@type"] === "Article");
+
+      if (liveSlugs.has(article.slug)) {
+        expect(articleNode?.image).toBeTruthy();
+      } else {
+        expect(articleNode).not.toHaveProperty("image");
+      }
+    }
   });
 
   it("emits Diamond Intelligence application, FAQ, and breadcrumb graph", () => {

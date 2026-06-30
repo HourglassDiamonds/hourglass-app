@@ -23,7 +23,7 @@ export type ArticleVisualStatus = "pending" | "live";
 
 export const ARTICLE_IMAGERY = {
   /** When false, hero UI and article-specific OG/JSON-LD images stay off even if metadata exists. */
-  enableHeroImagery: false,
+  enableHeroImagery: true,
   /** Base directory under public/ for article hero and OG assets. */
   basePath: "/diamond-guide",
 } as const;
@@ -63,17 +63,21 @@ export function resolveArticleHeroImage(article: Article): {
   };
 }
 
-/** Public path for article-specific OG image, or null when not live. */
+/** Public path for article-specific OG image, or null when not live or unset. */
 export function resolveArticleOgImagePath(article: Article): string | null {
+  if (!isArticleVisualLive(article) || !article.ogImage) {
+    return null;
+  }
+
+  return article.ogImage;
+}
+
+/** Absolute URL for Article JSON-LD `image` — hero when live; OG only if no hero. */
+export function resolveArticleJsonLdImageUrl(article: Article): string | null {
   if (!isArticleVisualLive(article)) {
     return null;
   }
 
-  return article.ogImage ?? article.heroImage ?? null;
-}
-
-/** Absolute URL for Article JSON-LD `image` — only when article visual is live. */
-export function resolveArticleJsonLdImageUrl(article: Article): string | null {
-  const path = resolveArticleOgImagePath(article);
+  const path = article.heroImage ?? article.ogImage ?? null;
   return path ? absoluteUrl(path) : null;
 }
