@@ -3787,6 +3787,11 @@ export const articles: Article[] = [
     { type: "heading", text: "The GIA Clarity Scale" },
     { type: "paragraph", text: "The Gemological Institute of America clarity scale runs from Flawless at the top to Included at the lower end. Each step reflects how easy it is for a trained grader to see characteristics under ten-power magnification, and in some lower grades, whether features may be visible without magnification." },
     { type: "paragraph", text: "The scale is a shared language for laboratories, jewelers, and buyers. It does not automatically tell you which diamond will look clean in your halo, solitaire, or bezel. That is why the grade is a starting point, not a finish line." },
+    {
+      type: "editorial-image",
+      src: "/diamond-guide/what-is-diamond-clarity-scale-chart.png",
+      alt: "The GIA Diamond Clarity Scale, from Flawless (FL) through Included (I3), showing clarity grades used on GIA diamond grading reports",
+    },
 
     { type: "heading", text: "What Each Grade Means in Practice" },
     { type: "paragraph", text: "Flawless (FL): no inclusions or blemishes visible under ten-power magnification. Internally Flawless (IF): no inclusions; only very minor surface blemishes that may be polishable. Both are exceptionally rare and command strong premiums." },
