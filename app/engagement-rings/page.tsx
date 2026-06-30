@@ -1,22 +1,19 @@
 import type { Metadata } from "next";
 import { pageMetadata } from "@/lib/seo/site-metadata";
-import MarketingPageJsonLd from "@/app/shared-components/MarketingPageJsonLd";
+import EngagementRingsJsonLd from "./components/EngagementRingsJsonLd";
 import EngagementRingsPageClient from "./engagement-rings-page-client";
 
 export const metadata: Metadata = pageMetadata({
   title: "Custom Engagement Rings",
   description:
-    "A private, guided path to an engagement ring designed around you—clear diamond guidance, intentional design, and unhurried decisions.",
+    "Private, Graduate Gemologist-led engagement ring design for Charlotte, Waxhaw, and nationwide clients. Custom sourcing, intentional design, and unhurried decisions.",
   path: "/engagement-rings",
 });
 
 export default function EngagementRingsPage() {
   return (
     <>
-      <MarketingPageJsonLd
-        name="Engagement Rings"
-        path="/engagement-rings"
-      />
+      <EngagementRingsJsonLd />
       <EngagementRingsPageClient />
     </>
   );

@@ -1,5 +1,7 @@
 import type { JsonLdValue } from "./json-ld";
+import { CHARLOTTE_ADVISOR_FAQS } from "@/lib/seo/charlotte-advisor-educational";
 import { DIAMOND_INTELLIGENCE_FAQS } from "@/lib/seo/diamond-intelligence-educational";
+import { ENGAGEMENT_RINGS_FAQS } from "@/lib/seo/engagement-rings-educational";
 import {
   absoluteUrl,
   CHARLOTTE_METRO_AREA_SERVED,
@@ -211,6 +213,36 @@ export function buildDiamondIntelligenceApplicationJsonLd(): JsonLdValue {
   return {
     "@context": SCHEMA_CONTEXT,
     "@graph": [diamondIntelligenceApplicationNode()],
+  };
+}
+
+export function engagementRingsFaqNode(): JsonLdValue {
+  return {
+    "@type": "FAQPage",
+    "@id": `${absoluteUrl("/engagement-rings")}#faq`,
+    mainEntity: ENGAGEMENT_RINGS_FAQS.map((item) => ({
+      "@type": "Question",
+      name: item.question,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: item.answer,
+      },
+    })),
+  };
+}
+
+export function charlotteAdvisorFaqNode(): JsonLdValue {
+  return {
+    "@type": "FAQPage",
+    "@id": `${absoluteUrl("/diamond-guide/charlotte-diamond-advisor-guide")}#faq`,
+    mainEntity: CHARLOTTE_ADVISOR_FAQS.map((item) => ({
+      "@type": "Question",
+      name: item.question,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: item.answer,
+      },
+    })),
   };
 }
 

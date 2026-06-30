@@ -5,9 +5,13 @@ import {
   buildGlobalSiteJsonLd,
   diamondIntelligenceApplicationNode,
   diamondIntelligenceFaqNode,
+  engagementRingsFaqNode,
   globalEntityGraph,
 } from "./entities";
-import { diamondIntelligenceBreadcrumb } from "./breadcrumbs";
+import {
+  diamondIntelligenceBreadcrumb,
+  marketingPageBreadcrumb,
+} from "./breadcrumbs";
 import { jsonLdGraph, serializeJsonLd } from "./json-ld";
 
 function graphTypes(data: unknown): string[] {
@@ -77,5 +81,17 @@ describe("structured data builders", () => {
     expect(types).toContain("FAQPage");
     expect(types).toContain("BreadcrumbList");
     expect(serializeJsonLd(payload)).toContain("diamond-intelligence");
+  });
+
+  it("emits engagement rings FAQ and breadcrumb graph", () => {
+    const payload = jsonLdGraph([
+      marketingPageBreadcrumb("Engagement Rings", "/engagement-rings"),
+      engagementRingsFaqNode(),
+    ]);
+    const types = graphTypes(payload);
+
+    expect(types).toContain("FAQPage");
+    expect(types).toContain("BreadcrumbList");
+    expect(serializeJsonLd(payload)).toContain("engagement-rings");
   });
 });

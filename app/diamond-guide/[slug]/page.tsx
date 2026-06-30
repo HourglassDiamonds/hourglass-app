@@ -4,6 +4,8 @@ import { notFound } from "next/navigation";
 import JsonLd from "@/app/shared-components/JsonLd";
 import { articlePageMetadata } from "@/lib/seo/diamond-guide-metadata";
 import { buildArticlePageJsonLd } from "@/lib/seo/schema/articles";
+import { charlotteAdvisorFaqNode } from "@/lib/seo/schema/entities";
+import { jsonLdGraph, type JsonLdValue } from "@/lib/seo/schema/json-ld";
 import ConsultationCtaLink from "../../shared-components/ConsultationCtaLink";
 import Header from "../../shared-components/Header";
 import ArticleAuthorByline from "../components/ArticleAuthorByline";
@@ -34,6 +36,17 @@ const VISUAL_BLOCK_TYPES = new Set<ArticleBlock["type"]>([
 ]);
 
 const COHESION_SLUG = "what-diamond-shape-looks-the-largest";
+const CHARLOTTE_ADVISOR_SLUG = "charlotte-diamond-advisor-guide";
+
+function buildPageJsonLd(article: (typeof articles)[number], slug: string) {
+  const base = buildArticlePageJsonLd(article);
+  if (slug !== CHARLOTTE_ADVISOR_SLUG) {
+    return base;
+  }
+
+  const graph = (base as { "@graph": JsonLdValue[] })["@graph"];
+  return jsonLdGraph([...graph, charlotteAdvisorFaqNode()]);
+}
 
 function isVisualBlock(block: ArticleBlock): boolean {
   return VISUAL_BLOCK_TYPES.has(block.type);
@@ -121,7 +134,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
 
   return (
     <div className="min-h-screen bg-[#efe8de] text-[#1c1b1a]">
-      <JsonLd data={buildArticlePageJsonLd(article)} />
+      <JsonLd data={buildPageJsonLd(article, slug)} />
       <div className="mx-auto max-w-[1200px] px-6 md:px-10">
         <Header currentPage="diamond-guide" />
 
