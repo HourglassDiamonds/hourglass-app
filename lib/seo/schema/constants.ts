@@ -7,6 +7,11 @@ export const PERSON_ID = `${SITE_URL}/#justin-smith`;
 export const WEBSITE_ID = `${SITE_URL}#website`;
 export const JEWELRY_STORE_ID = `${SITE_URL}/#jewelry-store`;
 export const DIAMOND_STUDIO_APP_ID = `${SITE_URL}/diamond-studio#software`;
+export const DIAMOND_INTELLIGENCE_APP_ID = `${SITE_URL}/diamond-intelligence#software`;
+
+export const DIAMOND_INTELLIGENCE_NAME = "Diamond Intelligence";
+export const DIAMOND_INTELLIGENCE_DESCRIPTION =
+  "Upload an original GIA, IGI, or GCAL 8X grading report and receive independent interpretation of light performance, proportions, craftsmanship, and purchase context through Hourglass standards.";
 
 export const ORGANIZATION_NAME = "Hourglass Diamonds";
 export const PERSON_NAME = "Justin Smith";

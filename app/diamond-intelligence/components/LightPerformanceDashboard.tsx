@@ -48,6 +48,7 @@ import { CONSUMER_COPY } from "./consumer-display-labels";
 import { DI_EDITORIAL_CARD, DI_EYEBROW_STUDIO } from "./di-studio-styles";
 import { DI_V3_SHELL } from "./di-v3-styles";
 import DiLandingMarketing, { TrustPrivacyBand } from "./DiLandingMarketing";
+import DiEducationalWrapper from "./DiEducationalWrapper";
 import { resolveHourglassClarityPolicy } from "@/lib/diamond-intelligence/hourglass-clarity-policy";
 import {
   resolveClientGuidedCompletionFields,
@@ -511,6 +512,8 @@ export default function LightPerformanceDashboard({
   return (
     <>
       {showLandingMarketing ? <DiLandingMarketing /> : null}
+
+      {showLandingMarketing ? <DiEducationalWrapper /> : null}
 
       <section className={shellClass}>
         <div

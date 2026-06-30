@@ -6,6 +6,7 @@ import { articlePageMetadata } from "@/lib/seo/diamond-guide-metadata";
 import { buildArticlePageJsonLd } from "@/lib/seo/schema/articles";
 import ConsultationCtaLink from "../../shared-components/ConsultationCtaLink";
 import Header from "../../shared-components/Header";
+import ArticleAuthorByline from "../components/ArticleAuthorByline";
 import {
   CaratMmReference,
   FingerCoverageScale,
@@ -140,6 +141,8 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
             >
               {article.title}
             </h1>
+
+            <ArticleAuthorByline />
           </div>
 
           <div className="mt-14 text-[1rem] leading-[1.9] text-[#4f4942] md:text-[1.04rem]">

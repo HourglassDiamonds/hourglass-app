@@ -1,7 +1,11 @@
 import type { JsonLdValue } from "./json-ld";
+import { DIAMOND_INTELLIGENCE_FAQS } from "@/lib/seo/diamond-intelligence-educational";
 import {
   absoluteUrl,
   CHARLOTTE_METRO_AREA_SERVED,
+  DIAMOND_INTELLIGENCE_APP_ID,
+  DIAMOND_INTELLIGENCE_DESCRIPTION,
+  DIAMOND_INTELLIGENCE_NAME,
   DIAMOND_STUDIO_APP_ID,
   DIAMOND_STUDIO_DESCRIPTION,
   DIAMOND_STUDIO_NAME,
@@ -175,19 +179,38 @@ export function buildDiamondStudioApplicationJsonLd(): JsonLdValue {
   };
 }
 
-/** Reserved for a future Diamond Intelligence launch — not emitted until routed. */
-export function buildDiamondIntelligenceApplicationJsonLd(): JsonLdValue {
+export function diamondIntelligenceApplicationNode(): JsonLdValue {
   return {
-    "@context": SCHEMA_CONTEXT,
     "@type": "SoftwareApplication",
-    "@id": `${absoluteUrl("/diamond-intelligence")}#software`,
-    name: "Diamond Intelligence",
-    description:
-      "Proprietary diamond report interpretation and light-performance guidance from Hourglass Diamonds.",
+    "@id": DIAMOND_INTELLIGENCE_APP_ID,
+    name: DIAMOND_INTELLIGENCE_NAME,
+    description: DIAMOND_INTELLIGENCE_DESCRIPTION,
     url: absoluteUrl("/diamond-intelligence"),
     applicationCategory: "DesignApplication",
     operatingSystem: "Web",
     provider: { "@id": ORGANIZATION_ID },
+  };
+}
+
+export function diamondIntelligenceFaqNode(): JsonLdValue {
+  return {
+    "@type": "FAQPage",
+    "@id": `${absoluteUrl("/diamond-intelligence")}#faq`,
+    mainEntity: DIAMOND_INTELLIGENCE_FAQS.map((item) => ({
+      "@type": "Question",
+      name: item.question,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: item.answer,
+      },
+    })),
+  };
+}
+
+export function buildDiamondIntelligenceApplicationJsonLd(): JsonLdValue {
+  return {
+    "@context": SCHEMA_CONTEXT,
+    "@graph": [diamondIntelligenceApplicationNode()],
   };
 }
 

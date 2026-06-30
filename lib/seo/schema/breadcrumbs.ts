@@ -105,6 +105,13 @@ export function diamondStudioBreadcrumb(): JsonLdValue {
   ]);
 }
 
+export function diamondIntelligenceBreadcrumb(): JsonLdValue {
+  return buildBreadcrumbList([
+    HOME_CRUMB,
+    { name: "Diamond Intelligence", path: "/diamond-intelligence" },
+  ]);
+}
+
 export function marketingPageBreadcrumb(
   name: string,
   path: string,

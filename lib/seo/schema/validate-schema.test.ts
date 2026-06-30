@@ -1,8 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { articles } from "@/app/diamond-guide/articles";
 import { buildArticlePageJsonLd } from "./articles";
-import { buildGlobalSiteJsonLd, globalEntityGraph } from "./entities";
-import { serializeJsonLd } from "./json-ld";
+import {
+  buildGlobalSiteJsonLd,
+  diamondIntelligenceApplicationNode,
+  diamondIntelligenceFaqNode,
+  globalEntityGraph,
+} from "./entities";
+import { diamondIntelligenceBreadcrumb } from "./breadcrumbs";
+import { jsonLdGraph, serializeJsonLd } from "./json-ld";
 
 function graphTypes(data: unknown): string[] {
   if (
@@ -57,5 +63,19 @@ describe("structured data builders", () => {
     expect(articleNode).toBeDefined();
     expect(articleNode).not.toHaveProperty("datePublished");
     expect(articleNode).not.toHaveProperty("dateModified");
+  });
+
+  it("emits Diamond Intelligence application, FAQ, and breadcrumb graph", () => {
+    const payload = jsonLdGraph([
+      diamondIntelligenceApplicationNode(),
+      diamondIntelligenceFaqNode(),
+      diamondIntelligenceBreadcrumb(),
+    ]);
+    const types = graphTypes(payload);
+
+    expect(types).toContain("SoftwareApplication");
+    expect(types).toContain("FAQPage");
+    expect(types).toContain("BreadcrumbList");
+    expect(serializeJsonLd(payload)).toContain("diamond-intelligence");
   });
 });
