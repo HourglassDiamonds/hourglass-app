@@ -1,3 +1,4 @@
+import Image from "next/image";
 import type { ArticleBlock } from "./articles";
 import { renderInlineContent } from "./inline-content";
 
@@ -331,6 +332,28 @@ export function FingerCoverageScale({
       </ol>
 
       {note ? <ReferenceNote>{note}</ReferenceNote> : null}
+    </figure>
+  );
+}
+
+export function ArticleEditorialImage({
+  src,
+  alt,
+}: Extract<ArticleBlock, { type: "editorial-image" }>) {
+  return (
+    <figure className={FIGURE_SPACE}>
+      <div
+        className={`overflow-hidden ${SHELL_RADIUS} border border-[#e0d8cc]/85 bg-[#faf6f0] shadow-[inset_0_1px_0_rgba(255,255,255,0.68)]`}
+      >
+        <Image
+          src={src}
+          alt={alt}
+          width={1024}
+          height={1535}
+          sizes="(max-width: 768px) 100vw, 672px"
+          className="h-auto w-full"
+        />
+      </div>
     </figure>
   );
 }

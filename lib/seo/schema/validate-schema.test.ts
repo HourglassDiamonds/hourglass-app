@@ -91,6 +91,7 @@ describe("structured data builders", () => {
       "cushion-diamond-guide",
       "custom-engagement-rings-in-charlotte",
       "diamond-carat-vs-size",
+      "diamond-size-chart",
       "emerald-diamond-guide",
       "marquise-diamond-guide",
       "oval-diamond-guide",

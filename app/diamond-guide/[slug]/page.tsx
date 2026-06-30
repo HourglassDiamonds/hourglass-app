@@ -11,6 +11,7 @@ import Header from "../../shared-components/Header";
 import ArticleAuthorByline from "../components/ArticleAuthorByline";
 import ArticleHeroImage from "../components/ArticleHeroImage";
 import {
+  ArticleEditorialImage,
   CaratMmReference,
   FingerCoverageScale,
   PerceivedSizeRanking,
@@ -34,6 +35,7 @@ const VISUAL_BLOCK_TYPES = new Set<ArticleBlock["type"]>([
   "reference-factor-list",
   "finger-coverage-scale",
   "studio-callout",
+  "editorial-image",
 ]);
 
 const COHESION_SLUG = "what-diamond-shape-looks-the-largest";
@@ -124,6 +126,10 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
 
     if (block.type === "studio-callout") {
       return <StudioCallout key={key} {...block} />;
+    }
+
+    if (block.type === "editorial-image") {
+      return <ArticleEditorialImage key={key} {...block} />;
     }
 
     return (

@@ -27,7 +27,8 @@ export type ArticleBlock =
       zones: { label: string; description: string }[];
       note?: string;
     }
-  | { type: "studio-callout"; heading: string; text: string };
+  | { type: "studio-callout"; heading: string; text: string }
+  | { type: "editorial-image"; src: string; alt: string };
 
 export type ArticleVisualCategory =
   | "original-photo"
@@ -1483,47 +1484,36 @@ export const articles: Article[] = [
     slug: "diamond-size-chart",
     title: "Diamond Size Chart",
     category: "Diamond Size",
+    heroImage: "/diamond-guide/diamond-size-chart-hero.png",
+    heroImageAlt:
+      "Graduated round diamonds arranged by size on a warm neutral jeweler surface",
+    visualCategory: "original-photo",
+    visualStatus: "live",
     body: [
-      { type: "paragraph", text: "One of the most helpful tools when comparing diamonds is a size chart that shows the relationship between carat weight and millimeter measurements." },
-      { type: "paragraph", text: "While carat weight measures how much a diamond weighs, the visible size of the diamond is determined by its physical dimensions. These dimensions are typically expressed in millimeters and represent the width of the stone when viewed from above." },
-      { type: "paragraph", text: "Understanding how carat weight relates to millimeter size makes it much easier to visualize how different diamonds will appear once they are set in a ring." },
+      { type: "paragraph", text: "A useful size chart connects carat weight to the millimeter measurements that describe face-up spread. Weight tells you how much diamond you are buying. Millimeters tell you how much of the finger the stone will cover." },
+      { type: "paragraph", text: "Those two ideas are related, but they are not the same. Much of a diamond's weight can sit below the girdle, out of view once the stone is set. That is why two diamonds with identical carat weights can look meaningfully different on the hand." },
 
-      { type: "heading", text: "Average Diamond Sizes by Carat Weight" },
-      { type: "paragraph", text: "For round brilliant diamonds with balanced proportions, the following measurements represent typical average diameters." },
-      {
-        type: "carat-mm-reference",
-        rows: [
-          { carat: "0.50 ct", mm: "5.1 mm" },
-          { carat: "1.00 ct", mm: "6.5 mm" },
-          { carat: "1.50 ct", mm: "7.4 mm" },
-          { carat: "2.00 ct", mm: "8.1 mm" },
-          { carat: "2.50 ct", mm: "8.8 mm" },
-          { carat: "3.00 ct", mm: "9.3 mm" },
-          { carat: "4.00 ct", mm: "10.2 mm" },
-          { carat: "5.00 ct", mm: "11.0 mm" },
-        ],
-        note: "Measurements are approximate because cut proportions can change face-up spread.",
-      },
-      {
-        type: "studio-callout",
-        heading: "See it on the hand",
-        text: "Use the [Diamond Studio](/diamond-studio) to compare how different carat weights face up across finger sizes.",
-      },
+      { type: "heading", text: "Carat Weight and Face-Up Size" },
+      { type: "paragraph", text: "Carat is a unit of weight, not diameter. If you need a clear definition of the term, [what is a carat](/diamond-guide/what-is-a-carat) explains how weight is measured and why the number on a report is only part of the story." },
+      { type: "paragraph", text: "For round brilliant diamonds with balanced proportions, common reference points include roughly 6.5 mm at one carat and about 8.1 mm at two carats. Cut quality shifts those numbers. A deeper stone may weigh more while covering less surface area. Our guide to [diamond carat vs size](/diamond-guide/diamond-carat-vs-size) walks through that distinction in more detail." },
 
       { type: "heading", text: "Why Millimeter Measurements Matter" },
-      { type: "paragraph", text: "Millimeter measurements describe the actual dimensions of the diamond rather than its weight." },
-      { type: "paragraph", text: "Because diamonds are three-dimensional objects, much of their weight can be hidden in the lower portion of the stone. A diamond with deeper proportions may weigh the same as another stone while appearing smaller from the top." },
-      { type: "paragraph", text: "This is why jewelers often look at both carat weight and millimeter size when evaluating diamonds." },
+      { type: "paragraph", text: "Millimeter measurements describe the physical dimensions of the diamond as you see it from above. Length and width, not weight, determine how the stone reads in an engagement ring." },
+      { type: "paragraph", text: "This is what experienced jewelers review after carat weight. Two stones can share a certificate summary and still deliver different presence depending on how weight is distributed through the pavilion and how efficiently the cutter preserved face-up spread." },
+      {
+        type: "editorial-image",
+        src: "/diamond-guide/millimeter-measurements-hero.png",
+        alt: "Hourglass Diamonds millimeter to carat conversion chart showing approximate face-up size by diamond shape",
+      },
 
       { type: "heading", text: "How Shape Influences Diamond Size" },
-      { type: "paragraph", text: "The measurements above apply primarily to round brilliant diamonds." },
-      { type: "paragraph", text: "Other shapes distribute their weight differently, which can influence their visible size. Elongated shapes such as oval, marquise, and pear diamonds often appear slightly larger because they extend across the finger." },
-      { type: "paragraph", text: "Square shapes such as cushion or princess cuts may appear slightly smaller because more weight is concentrated toward the center of the stone." },
+      { type: "paragraph", text: "The measurements above apply primarily to round brilliant diamonds. Other shapes distribute weight differently, which changes visible spread even at the same carat weight." },
+      { type: "paragraph", text: "Elongated shapes such as oval, marquise, and pear often cover more length across the finger. Square shapes such as cushion or princess cuts may face up slightly smaller because more weight sits toward the center of the stone." },
       {
         type: "shape-spread-table",
         rows: [
           { shape: "Round", spread: "Balanced spread with even proportions across the finger." },
-          { shape: "Oval", spread: "Often appears larger north–south, with an elegant lengthening effect." },
+          { shape: "Oval", spread: "Often appears larger north to south, with an elegant lengthening effect." },
           { shape: "Emerald", spread: "Larger outline with a quieter, step-cut brilliance." },
           { shape: "Cushion", spread: "Can face up smaller depending on depth and facet pattern." },
           { shape: "Marquise", spread: "Strongest length impression, with weight carried toward the points." },
@@ -1531,44 +1521,20 @@ export const articles: Article[] = [
         note: "These are general tendencies. Individual cut proportions can shift how a stone actually faces up.",
       },
 
+      { type: "heading", text: "See It on the Hand" },
+      { type: "paragraph", text: "Charts orient the conversation. [Diamond Studio](/diamond-studio) lets you compare how different carat weights and shapes face up across finger sizes before you view stones in person." },
+
       { type: "heading", text: "Why Cut Proportions Matter" },
-      { type: "paragraph", text: "Cut proportions influence both the brightness and the visible spread of a diamond." },
-      { type: "paragraph", text: "A well-proportioned diamond distributes its weight efficiently and reflects light effectively, which often makes the stone appear larger and more lively." },
-      { type: "paragraph", text: "Diamonds with poor proportions may hide weight in the lower portion of the stone, reducing both their brightness and their visible size." },
+      { type: "paragraph", text: "Cut proportions influence both brightness and visible spread. A well-proportioned diamond distributes weight efficiently and returns light effectively, which often makes the stone appear larger and more lively." },
+      { type: "paragraph", text: "Diamonds with poor proportions may hide weight in the lower portion of the stone, reducing both sparkle and the face-up size you actually see in the setting." },
 
       { type: "heading", text: "Finger Coverage and Presence" },
-      { type: "paragraph", text: "Carat weight alone does not determine how a diamond reads on the hand. Finger size and face-up diameter work together to shape what we describe as presence: the scale of the stone relative to the wearer." },
-      {
-        type: "finger-coverage-scale",
-        zones: [
-          {
-            label: "Quiet Presence",
-            description:
-              "Quiet on the hand, with a refined and discreet scale that feels intentional rather than timid.",
-          },
-          {
-            label: "Noticeable Presence",
-            description:
-              "Clearly present while still feeling wearable: the diamond is easy to see without dominating the hand.",
-          },
-          {
-            label: "Statement Presence",
-            description:
-              "A confident look with strong visual impact; the center stone becomes a natural focal point.",
-          },
-          {
-            label: "Dramatic Presence",
-            description:
-              "A bold, high-impact scale that commands attention and defines the overall silhouette of the ring.",
-          },
-        ],
-        note: "The same carat weight can land in different presence ranges depending on finger size, shape, and how the stone is cut.",
-      },
+      { type: "paragraph", text: "Carat weight alone does not define how a diamond feels on the hand. Finger size, shape, and cut proportions work together to create what we describe as presence: the scale of the stone relative to the wearer." },
+      { type: "paragraph", text: "A one-carat diamond may read as quietly refined on a larger hand, clearly noticeable on a medium finger, or confidently statement-making on a smaller one. The same weight lands differently depending on context." },
+      { type: "paragraph", text: "If you are narrowing toward a target size, [best carat size for an engagement ring](/diamond-guide/best-carat-size-for-an-engagement-ring) offers a calm framework for balancing presence, wearability, and budget." },
 
-        { type: "paragraph", text: "A diamond size chart provides a helpful reference when comparing different carat weights and understanding how large a diamond may appear." },
-      { type: "paragraph", text: "However, carat weight alone does not determine the overall presence of a diamond. Shape, cut quality, and proportions all influence how the stone ultimately looks once it is worn in a ring." },
-      { type: "paragraph", text: "By considering both carat weight and millimeter measurements together, buyers can develop a much clearer picture of how different diamonds will appear." },
-      
+      { type: "paragraph", text: "A size chart is a starting reference, not a verdict. Shape, cut quality, and millimeter spread all influence the final impression once the diamond is set." },
+      { type: "paragraph", text: "Use the measurements here to orient your search, then compare how candidates actually look on the hand. When numbers and appearance need to be weighed together, a private [Concierge](/concierge) conversation can help clarify what will feel balanced for your ring." },
     ],
     related: [
       { title: "What is a Carat", href: "/diamond-guide/what-is-a-carat" },
