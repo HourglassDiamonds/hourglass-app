@@ -9,6 +9,7 @@ import { jsonLdGraph, type JsonLdValue } from "@/lib/seo/schema/json-ld";
 import ConsultationCtaLink from "../../shared-components/ConsultationCtaLink";
 import Header from "../../shared-components/Header";
 import ArticleAuthorByline from "../components/ArticleAuthorByline";
+import ArticleHeroImage from "../components/ArticleHeroImage";
 import {
   CaratMmReference,
   FingerCoverageScale,
@@ -157,6 +158,8 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
 
             <ArticleAuthorByline />
           </div>
+
+          <ArticleHeroImage article={article} />
 
           <div className="mt-14 text-[1rem] leading-[1.9] text-[#4f4942] md:text-[1.04rem]">
             {article.body.map((block, index) => {

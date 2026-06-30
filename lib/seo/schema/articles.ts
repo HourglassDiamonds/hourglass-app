@@ -1,4 +1,7 @@
 import type { Article } from "@/app/diamond-guide/articles";
+import {
+  resolveArticleJsonLdImageUrl,
+} from "@/lib/diamond-guide/article-imagery";
 import { articleMetaDescription } from "@/lib/seo/article-description";
 import { articleCategorySegment } from "./category-map";
 import { articleBreadcrumb } from "./breadcrumbs";
@@ -32,6 +35,11 @@ function buildArticleNode(article: Article): JsonLdValue {
       name: article.category,
     },
   };
+
+  const imageUrl = resolveArticleJsonLdImageUrl(article);
+  if (imageUrl) {
+    node.image = imageUrl;
+  }
 
   return node;
 }

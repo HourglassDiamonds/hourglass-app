@@ -29,12 +29,30 @@ export type ArticleBlock =
     }
   | { type: "studio-callout"; heading: string; text: string };
 
+export type ArticleVisualCategory =
+  | "original-photo"
+  | "editorial-graphic"
+  | "comparison-visual"
+  | "tool-screenshot"
+  | "video-still";
+
+export type ArticleVisualStatus = "pending" | "live";
+
 export type Article = {
   slug: string;
   title: string;
   category: string;
   body: ArticleBlock[];
   related: { title: string; href: string }[];
+  /** Public path under /public, e.g. /diamond-guide/{slug}-hero.jpg */
+  heroImage?: string;
+  heroImageAlt?: string;
+  heroImageCaption?: string;
+  /** Article-specific OG image (1200×630); used when visualStatus is live */
+  ogImage?: string;
+  visualCategory?: ArticleVisualCategory;
+  /** pending = metadata only; live = render hero + OG + JSON-LD image */
+  visualStatus?: ArticleVisualStatus;
 };
 
 export const articles: Article[] = [
@@ -2577,6 +2595,12 @@ export const articles: Article[] = [
   slug: "how-to-read-a-diamond-certificate",
   title: "How to Read a Diamond Certificate",
   category: "Certification",
+  heroImage: "/diamond-guide/how-to-read-a-diamond-certificate-hero.jpg",
+  heroImageAlt:
+    "Annotated GIA diamond grading report showing proportions and cut grade sections",
+  ogImage: "/diamond-guide/how-to-read-a-diamond-certificate-og.jpg",
+  visualCategory: "editorial-graphic",
+  visualStatus: "pending",
   body: [
     { type: "paragraph", text: "Most buyers open a grading report and go straight to the summary line: carat, color, clarity, cut. That is natural. Those four numbers feel like the answer. On a website filter menu, they often are. On a diamond you will wear for decades, they are the headline, not the story." },
     { type: "paragraph", text: "Experienced reviewers read the same page differently. They confirm identity first, then look at proportions, then study the inclusion plot, then ask what the grades leave out. The goal is not to memorize a manual. It is to translate paper into judgment." },
@@ -2869,6 +2893,12 @@ export const articles: Article[] = [
   slug: "natural-vs-lab-diamonds",
   title: "Natural vs Lab Diamonds",
   category: "Buying Guides",
+  heroImage: "/diamond-guide/natural-vs-lab-diamonds-hero.jpg",
+  heroImageAlt:
+    "Natural and lab-grown diamonds compared under the same light with their grading reports",
+  ogImage: "/diamond-guide/natural-vs-lab-diamonds-og.jpg",
+  visualCategory: "comparison-visual",
+  visualStatus: "pending",
   body: [
     { type: "paragraph", text: "Two diamonds sit on the tray. Same carat. Same color grade. Same clarity. Both return light beautifully. One formed over billions of years beneath the earth. The other grew in a laboratory over several weeks. Without specialized equipment, most people cannot tell which is which. The conversation that follows is rarely about optics. It is about meaning, budget, and what each person needs the stone to represent." },
     { type: "paragraph", text: "That is the real decision hiding inside the natural versus lab question. Chemistry is largely settled. Both are diamond. Both can be graded, certified, and set in an engagement ring that lasts a lifetime. What remains is personal: whether geological rarity matters to you, whether laboratory origin feels innovative or insufficient, and how you want to allocate the budget that origin choice unlocks or constrains." },
@@ -4128,6 +4158,12 @@ export const articles: Article[] = [
   slug: "charlotte-diamond-advisor-guide",
   title: "Charlotte Diamond Advisor Guide",
   category: "Charlotte Guides",
+  heroImage: "/diamond-guide/charlotte-diamond-advisor-guide-hero.jpg",
+  heroImageAlt:
+    "Private diamond consultation in Charlotte with grading report and loose stones on a consultation tray",
+  ogImage: "/diamond-guide/charlotte-diamond-advisor-guide-og.jpg",
+  visualCategory: "original-photo",
+  visualStatus: "pending",
   body: [
     { type: "paragraph", text: "Charlotte has grown into a city where engagement ring shopping can mean almost anything: a Saturday afternoon at a regional mall, a private appointment in SouthPark, hours spent comparing listings on a laptop in NoDa, or a conversation with a jeweler who has been in the trade for decades. The options are genuinely good. The challenge is not finding diamonds. It is finding clarity." },
     { type: "paragraph", text: "This guide is for buyers in Charlotte, South Charlotte, Waxhaw, Weddington, Marvin, Ballantyne, Matthews, Indian Trail, Monroe, and nearby Union County who want to approach the process with intention. It is not a list of stores. It is a framework for thinking about who you trust, what questions deserve answers, and how to recognize guidance that serves you rather than a sales target." },

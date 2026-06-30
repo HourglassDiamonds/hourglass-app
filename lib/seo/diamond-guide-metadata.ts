@@ -1,5 +1,9 @@
 import type { Metadata } from "next";
 import type { Article } from "@/app/diamond-guide/articles";
+import {
+  ARTICLE_OG_IMAGE_SPECS,
+  resolveArticleOgImagePath,
+} from "@/lib/diamond-guide/article-imagery";
 import { articleMetaDescription } from "./article-description";
 import { DEFAULT_OPEN_GRAPH, pageMetadata } from "./site-metadata";
 
@@ -127,6 +131,7 @@ export function articlePageMetadata(article: Article): Metadata {
   const description = articleMetaDescription(article.body);
   const path = `/diamond-guide/${article.slug}`;
   const openGraphTitle = `${article.title} | Hourglass Diamonds`;
+  const ogImagePath = resolveArticleOgImagePath(article);
 
   return {
     title: article.title,
@@ -140,6 +145,16 @@ export function articlePageMetadata(article: Article): Metadata {
       title: openGraphTitle,
       description,
       url: path,
+      images: ogImagePath
+        ? [
+            {
+              url: ogImagePath,
+              width: ARTICLE_OG_IMAGE_SPECS.width,
+              height: ARTICLE_OG_IMAGE_SPECS.height,
+              alt: article.heroImageAlt ?? article.title,
+            },
+          ]
+        : DEFAULT_OPEN_GRAPH.images,
     },
   };
 }

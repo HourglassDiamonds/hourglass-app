@@ -69,6 +69,20 @@ describe("structured data builders", () => {
     expect(articleNode).not.toHaveProperty("dateModified");
   });
 
+  it("omits image property when article visual is pending", () => {
+    const pending = articles.find(
+      (article) => article.slug === "charlotte-diamond-advisor-guide",
+    );
+    expect(pending?.visualStatus).toBe("pending");
+
+    const payload = buildArticlePageJsonLd(pending!);
+    const graph = (payload as { "@graph": Record<string, unknown>[] })["@graph"];
+    const articleNode = graph.find((node) => node["@type"] === "Article");
+
+    expect(articleNode).toBeDefined();
+    expect(articleNode).not.toHaveProperty("image");
+  });
+
   it("emits Diamond Intelligence application, FAQ, and breadcrumb graph", () => {
     const payload = jsonLdGraph([
       diamondIntelligenceApplicationNode(),
