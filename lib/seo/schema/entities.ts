@@ -1,5 +1,6 @@
 import type { JsonLdValue } from "./json-ld";
 import { CERTIFICATE_READER_FAQS } from "@/lib/seo/certificate-reader-educational";
+import { CLARITY_FAQS } from "@/lib/seo/clarity-educational";
 import { FLUORESCENCE_FAQS } from "@/lib/seo/fluorescence-educational";
 import { LAB_NATURAL_FAQS } from "@/lib/seo/lab-natural-educational";
 import { CHARLOTTE_ADVISOR_FAQS } from "@/lib/seo/charlotte-advisor-educational";
@@ -284,6 +285,21 @@ export function fluorescenceFaqNode(): JsonLdValue {
     "@type": "FAQPage",
     "@id": `${absoluteUrl("/diamond-guide/what-is-diamond-fluorescence")}#faq`,
     mainEntity: FLUORESCENCE_FAQS.map((item) => ({
+      "@type": "Question",
+      name: item.question,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: item.answer,
+      },
+    })),
+  };
+}
+
+export function clarityFaqNode(): JsonLdValue {
+  return {
+    "@type": "FAQPage",
+    "@id": `${absoluteUrl("/diamond-guide/what-is-diamond-clarity")}#faq`,
+    mainEntity: CLARITY_FAQS.map((item) => ({
       "@type": "Question",
       name: item.question,
       acceptedAnswer: {

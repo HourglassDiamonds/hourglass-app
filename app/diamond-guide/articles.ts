@@ -162,6 +162,7 @@ export const articles: Article[] = [
   title: "Are Flawless Diamonds Worth It",
   category: "Diamond Clarity",
   body: [
+    { type: "paragraph", text: "For the complete clarity guide, including the GIA scale, eye-clean standards, and Hourglass buying guidance, start with [what is diamond clarity](/diamond-guide/what-is-diamond-clarity). This article focuses on whether flawless diamonds are worth the premium." },
     { type: "heading", text: "What Makes a Diamond Flawless" },
     { type: "paragraph", text: "Flawless diamonds sit at the very top of the diamond clarity scale. To receive this grade, a diamond must show no internal inclusions and no surface blemishes when examined by a trained gemologist under 10× magnification." },
     { type: "paragraph", text: "Because even extremely small internal characteristics disqualify a diamond from this grade, flawless diamonds are exceptionally rare." },
@@ -367,15 +368,15 @@ export const articles: Article[] = [
     { type: "paragraph", text: "[What is diamond clarity](/diamond-guide/what-is-diamond-clarity) explains the scale. [Eye clean diamonds explained](/diamond-guide/eye-clean-diamonds-explained) explains the standard that usually governs engagement ring decisions." },
 
     { type: "heading", text: "Where Most Buyers Land" },
-    { type: "paragraph", text: "Many strong engagement ring diamonds sit in the VS and SI ranges. VS1 and VS2 stones are often eye clean with inclusions that only show under magnification. SI1 can be an excellent value when inclusion placement is favorable. SI2 is possible in some shapes and sizes, but it requires careful viewing." },
-    { type: "paragraph", text: "There is no universal \"best\" grade. There is a best grade for your shape, size, setting, and tolerance for risk. Emerald and Asscher cuts reveal inclusions more readily than rounds. Halos can hide edge inclusions. Open prong settings expose more of the stone." },
+    { type: "paragraph", text: "Many strong engagement ring diamonds sit in the VS and SI ranges. VS1 and VS2 stones are often eye clean with inclusions that only show under magnification. SI1 can be an excellent value when inclusion placement is favorable. SI2 is possible in some shapes and sizes, but it requires careful viewing and individual inspection." },
+    { type: "paragraph", text: "Hourglass does not offer I1 through I3 diamonds. SI2 is considered only when inspection confirms the stone is eye clean in the finished ring. There is no universal \"best\" grade. There is a best grade for your shape, size, setting, and tolerance for risk. Emerald and Asscher cuts reveal inclusions more readily than rounds. Halos can hide edge inclusions. Open prong settings expose more of the stone." },
 
     { type: "heading", text: "Why Cut Often Outranks Clarity" },
     { type: "paragraph", text: "A lively, well-cut diamond draws the eye to sparkle, not to internal features. A higher clarity stone with weak proportions can look dull while a moderate clarity stone with strong light return looks crisp and bright." },
     { type: "paragraph", text: "When budget is tight, protecting cut quality and eye cleanliness usually beats chasing VVS or flawless on paper. [Diamond color vs clarity](/diamond-guide/diamond-color-vs-clarity) walks through how those tradeoffs interact in real budgets." },
 
     { type: "heading", text: "Mistakes to Avoid" },
-    { type: "paragraph", text: "Buying clarity from the report alone is the most common error. Location and color of inclusions matter as much as the grade letter. Assuming flawless is worth the premium for every buyer is another. For many people, [are flawless diamonds worth it](/diamond-guide/are-flawless-diamonds-worth-it) is a useful read before they overpay for invisible perfection." },
+    { type: "paragraph", text: "Buying clarity from the report alone is the most common error. Location and color of inclusions matter as much as the grade letter. Assuming flawless is worth the premium for every buyer is another. Overpaying for clarity that does not improve beauty on the hand is how budgets shrink without visible gain." },
     { type: "paragraph", text: "Also avoid comparing clarity in isolation from size. A one-carat SI1 and a three-carat SI1 are not the same risk profile." },
 
     { type: "heading", text: "A Practical Decision Path" },
@@ -383,12 +384,11 @@ export const articles: Article[] = [
     { type: "paragraph", text: "If inclusion placement is hard to read from a plot alone, [Diamond Intelligence](/diamond-intelligence) or a [private conversation](/concierge) can clarify whether a specific stone is right for your ring. The goal is confidence on the hand, not anxiety under magnification." },
   ],
   related: [
-    { title: "How to Read a Diamond Certificate", href: "/diamond-guide/how-to-read-a-diamond-certificate" },
     { title: "What is Diamond Clarity", href: "/diamond-guide/what-is-diamond-clarity" },
-    { title: "VS1 vs VS2 Diamond Clarity", href: "/diamond-guide/vs1-vs-vs2-diamond-clarity" },
-    { title: "What is SI1 Diamond Clarity", href: "/diamond-guide/what-is-si1-clarity" },
+    { title: "How to Read a Diamond Certificate", href: "/diamond-guide/how-to-read-a-diamond-certificate" },
     { title: "Eye Clean Diamonds Explained", href: "/diamond-guide/eye-clean-diamonds-explained" },
-    { title: "Diamond Clarity Chart Explained", href: "/diamond-guide/diamond-clarity-chart-explained" },
+    { title: "VS1 vs VS2 Diamond Clarity", href: "/diamond-guide/vs1-vs-vs2-diamond-clarity" },
+    { title: "Diamond Color vs Clarity", href: "/diamond-guide/diamond-color-vs-clarity" },
   ],
 },
 
@@ -533,6 +533,7 @@ export const articles: Article[] = [
   title: "Can You See Diamond Inclusions",
   category: "Diamond Clarity",
   body: [
+    { type: "paragraph", text: "For the complete clarity guide, including the GIA scale and practical buying standards, see [what is diamond clarity](/diamond-guide/what-is-diamond-clarity). This article focuses on when inclusions become visible to the eye." },
     { type: "heading", text: "Understanding Diamond Inclusions" },
     { type: "paragraph", text: "Diamond inclusions are small internal characteristics that formed naturally as the diamond crystallized deep within the earth. These features are extremely common and are present in the vast majority of diamonds." },
     { type: "paragraph", text: "Inclusions can appear as tiny crystals, internal lines known as feathers, small pinpoints, or faint cloudy areas. Their size, location, and visibility determine how a diamond is graded on the clarity scale." },
@@ -561,7 +562,6 @@ export const articles: Article[] = [
   ],
   related: [
     { title: "What is Diamond Clarity", href: "/diamond-guide/what-is-diamond-clarity" },
-    { title: "Can You See Diamond Inclusions", href: "/diamond-guide/can-you-see-diamond-inclusions" },
     { title: "Eye Clean Diamonds Explained", href: "/diamond-guide/eye-clean-diamonds-explained" },
     { title: "VS1 vs VS2 Diamond Clarity", href: "/diamond-guide/vs1-vs-vs2-diamond-clarity" },
     { title: "Diamond Blemishes vs Inclusions", href: "/diamond-guide/diamond-blemishes-vs-inclusions" },
@@ -842,6 +842,7 @@ export const articles: Article[] = [
   title: "Diamond Blemishes vs Inclusions",
   category: "Diamond Clarity",
   body: [
+    { type: "paragraph", text: "For how inclusions and blemishes fit into clarity grading overall, see [what is diamond clarity](/diamond-guide/what-is-diamond-clarity). This article explains the difference between internal and surface features." },
     { type: "heading", text: "Understanding the Difference" },
     { type: "paragraph", text: "When gemologists evaluate a diamond’s clarity, they look for two types of characteristics: inclusions and blemishes." },
     { type: "paragraph", text: "Both are natural features that affect clarity grading, but they differ in where they occur. Inclusions are internal characteristics found within the diamond, while blemishes are surface characteristics that appear on the exterior of the stone." },
@@ -876,10 +877,9 @@ export const articles: Article[] = [
   ],
   related: [
     { title: "What is Diamond Clarity", href: "/diamond-guide/what-is-diamond-clarity" },
-    { title: "Diamond Clarity Chart Explained", href: "/diamond-guide/diamond-clarity-chart-explained" },
-    { title: "Can You See Diamond Inclusions", href: "/diamond-guide/can-you-see-diamond-inclusions" },
-    { title: "Can You See Diamond Inclusions", href: "/diamond-guide/can-you-see-diamond-inclusions" },
     { title: "Eye Clean Diamonds Explained", href: "/diamond-guide/eye-clean-diamonds-explained" },
+    { title: "Can You See Diamond Inclusions", href: "/diamond-guide/can-you-see-diamond-inclusions" },
+    { title: "How to Read a Diamond Certificate", href: "/diamond-guide/how-to-read-a-diamond-certificate" },
   ],
 },
 
@@ -992,6 +992,7 @@ export const articles: Article[] = [
   title: "Diamond Clarity Chart Explained",
   category: "Diamond Clarity",
   body: [
+    { type: "paragraph", text: "The full GIA clarity scale and buyer guide live in [what is diamond clarity](/diamond-guide/what-is-diamond-clarity). This article explains the clarity chart grades in brief." },
     { type: "heading", text: "Understanding the Diamond Clarity Scale" },
     { type: "paragraph", text: "The diamond clarity chart is a grading system used to describe the number, size, and visibility of natural characteristics within a diamond. These characteristics include internal features called inclusions and small surface marks known as blemishes." },
     { type: "paragraph", text: "Gemologists use the clarity scale to create a consistent standard for evaluating diamonds. The most widely used system was developed by the Gemological Institute of America (GIA), and it allows diamonds to be categorized according to how noticeable these characteristics are under 10× magnification." },
@@ -1023,12 +1024,10 @@ export const articles: Article[] = [
     { type: "paragraph", text: "In practice, many diamonds in the middle of the clarity chart appear perfectly clean to the naked eye. Understanding how the clarity scale works helps buyers focus on visual beauty rather than simply chasing the highest possible grade. When you are reading a grading report, [how to read a diamond certificate](/diamond-guide/how-to-read-a-diamond-certificate) shows where the clarity grade and inclusion plot appear on the page." },
   ],
   related: [
-    { title: "How to Read a Diamond Certificate", href: "/diamond-guide/how-to-read-a-diamond-certificate" },
     { title: "What is Diamond Clarity", href: "/diamond-guide/what-is-diamond-clarity" },
+    { title: "How to Read a Diamond Certificate", href: "/diamond-guide/how-to-read-a-diamond-certificate" },
     { title: "VS1 vs VS2 Diamond Clarity", href: "/diamond-guide/vs1-vs-vs2-diamond-clarity" },
-    { title: "What is SI1 Diamond Clarity", href: "/diamond-guide/what-is-si1-clarity" },
-    { title: "Can You See Diamond Inclusions", href: "/diamond-guide/can-you-see-diamond-inclusions" },
-    { title: "Diamond Blemishes vs Inclusions", href: "/diamond-guide/diamond-blemishes-vs-inclusions" },
+    { title: "Eye Clean Diamonds Explained", href: "/diamond-guide/eye-clean-diamonds-explained" },
   ],
 },
 
@@ -1072,7 +1071,7 @@ export const articles: Article[] = [
   category: "Diamond Color",
   body: [
     { type: "paragraph", text: "The question arrives in almost the same words every time: \"If I have to give on something, should it be color or clarity?\" Behind it is a reasonable fear. Nobody wants to propose with a diamond that looks yellow under restaurant lighting, and nobody wants to stare at a visible speck for the next forty years. The anxiety is real. The framing is often wrong." },
-    { type: "paragraph", text: "Color and clarity measure different things. Color describes tint. Clarity describes internal or surface features. They interact with cut, with setting, with shape, and with how your eye actually reads a stone at conversational distance. Treating them as a simple either-or usually leads to spending in the wrong place." },
+    { type: "paragraph", text: "Color and clarity measure different things. [What is diamond clarity](/diamond-guide/what-is-diamond-clarity) explains the clarity scale and eye-clean standard. [What is diamond color](/diamond-guide/what-is-diamond-color) explains the color scale. This article focuses on how to trade them in a real budget." },
 
     { type: "heading", text: "What People Notice First" },
     { type: "paragraph", text: "Most wearers notice liveliness before they notice alphabet. A diamond that returns crisp light can look whiter and cleaner than its grades suggest. A dull diamond with strong grades can look slightly warm or somehow unfinished, even when the report looks impressive." },
@@ -1101,11 +1100,11 @@ export const articles: Article[] = [
     { type: "paragraph", text: "Color versus clarity is not a moral test. It is a budget question with a visual answer. Choose what you can see, protect what changes how light moves, and let the rest of the alphabet serve you rather than govern you." },
   ],
   related: [
+    { title: "What is Diamond Clarity", href: "/diamond-guide/what-is-diamond-clarity" },
     { title: "What is Diamond Color", href: "/diamond-guide/what-is-diamond-color" },
-    { title: "Diamond Color Chart Explained", href: "/diamond-guide/diamond-color-chart-explained" },
-    { title: "Does Diamond Color Matter", href: "/diamond-guide/does-diamond-color-matter" },
+    { title: "Best Diamond Clarity for Engagement Rings", href: "/diamond-guide/best-diamond-clarity-for-engagement-rings" },
     { title: "Best Diamond Color for Engagement Rings", href: "/diamond-guide/best-diamond-color-for-engagement-rings" },
-    { title: "Are Colorless Diamonds Worth It", href: "/diamond-guide/are-colorless-diamonds-worth-it" },
+    { title: "Why Work With a Graduate Gemologist", href: "/diamond-guide/why-work-with-a-graduate-gemologist" },
   ],
 },
 
@@ -2158,7 +2157,7 @@ export const articles: Article[] = [
   category: "Diamond Clarity",
   body: [
     { type: "paragraph", text: "You lean in. You squint. You ask whether anyone will ever notice that tiny mark inside the diamond. The salesperson says it is eye clean. The report says SI1. Both can be true. Eye clean is not a formal grade. It is the standard that actually governs how a ring looks in real life." },
-    { type: "paragraph", text: "Most engagement ring buyers do not need microscopic perfection. They need a stone that looks clean at normal viewing distance in everyday light. That is what eye clean means, and why it matters more than the clarity chart alone suggests." },
+    { type: "paragraph", text: "For the full clarity guide, including the GIA scale and Hourglass standards, start with [what is diamond clarity](/diamond-guide/what-is-diamond-clarity). This article explains eye clean as the practical buying standard." },
 
     { type: "heading", text: "What Eye Clean Actually Means" },
     { type: "paragraph", text: "A diamond is eye clean when its inclusions are not visible to the naked eye from the top, at a typical viewing distance, under normal lighting. Gemologists often evaluate from roughly 6 to 12 inches, rotating the stone to check the face-up view you see when the ring is worn." },
@@ -2169,7 +2168,7 @@ export const articles: Article[] = [
     { type: "paragraph", text: "Shape matters too. Step cuts like emerald and Asscher have open facets that reveal inclusions more readily. Brilliant cuts like round and oval can hide small features more effectively. Size matters as well. Inclusions that are invisible in a half-carat stone can become easier to detect as carat weight increases." },
 
     { type: "heading", text: "Where Eye Clean Usually Starts" },
-    { type: "paragraph", text: "VS grades are almost always eye clean. SI1 is often eye clean when inclusion placement is favorable. SI2 can work in some cases, especially with careful setting choices, but it requires more scrutiny." },
+    { type: "paragraph", text: "VS grades are almost always eye clean. SI1 is often eye clean when inclusion placement is favorable. SI2 can work in some cases, especially with careful setting choices, but it requires more scrutiny and individual inspection at Hourglass." },
     { type: "paragraph", text: "There is no shortcut that replaces viewing. The report tells you what exists. Your eyes, in the intended setting, tell you whether it matters. [What is diamond clarity](/diamond-guide/what-is-diamond-clarity) explains the grading scale. [Best diamond clarity for engagement rings](/diamond-guide/best-diamond-clarity-for-engagement-rings) frames how clarity fits a real ring budget." },
 
     { type: "heading", text: "How Eye Clean Saves Budget" },
@@ -2181,12 +2180,10 @@ export const articles: Article[] = [
     { type: "paragraph", text: "When the plot alone is not enough, [how to read a diamond certificate](/diamond-guide/how-to-read-a-diamond-certificate) shows where clarity grades and inclusion maps appear. [Diamond Intelligence](/diamond-intelligence) or a [private conversation](/concierge) can clarify whether a specific stone is truly eye clean for your ring. The goal is confidence you can feel, not a grade you can defend under a loupe." },
   ],
   related: [
-    { title: "How to Read a Diamond Certificate", href: "/diamond-guide/how-to-read-a-diamond-certificate" },
     { title: "What is Diamond Clarity", href: "/diamond-guide/what-is-diamond-clarity" },
+    { title: "Best Diamond Clarity for Engagement Rings", href: "/diamond-guide/best-diamond-clarity-for-engagement-rings" },
+    { title: "How to Read a Diamond Certificate", href: "/diamond-guide/how-to-read-a-diamond-certificate" },
     { title: "VS1 vs VS2 Diamond Clarity", href: "/diamond-guide/vs1-vs-vs2-diamond-clarity" },
-    { title: "What is SI1 Diamond Clarity", href: "/diamond-guide/what-is-si1-clarity" },
-    { title: "Can You See Diamond Inclusions", href: "/diamond-guide/can-you-see-diamond-inclusions" },
-    { title: "Are Flawless Diamonds Worth It", href: "/diamond-guide/are-flawless-diamonds-worth-it" }
   ]
 },
 {
@@ -3582,6 +3579,7 @@ export const articles: Article[] = [
   title: "VS1 vs VS2 Diamond Clarity",
   category: "Diamond Clarity",
   body: [
+    { type: "paragraph", text: "For the full clarity guide and GIA scale, see [what is diamond clarity](/diamond-guide/what-is-diamond-clarity). This article compares VS1 and VS2, two high-clarity grades that are often eye clean in engagement rings." },
     { type: "heading", text: "Understanding the VS Clarity Range" },
     { type: "paragraph", text: "VS diamonds fall within the “Very Slightly Included” category of the diamond clarity scale. These diamonds contain small internal characteristics that are visible under magnification but are typically difficult to detect with the naked eye." },
     { type: "paragraph", text: "The VS category is divided into two grades: VS1 and VS2. Both are considered high clarity grades and are commonly used in fine jewelry, particularly engagement rings." },
@@ -3611,17 +3609,15 @@ export const articles: Article[] = [
     { type: "paragraph", text: "Evaluating the diamond in person or reviewing detailed imagery can help determine whether a particular stone appears eye clean." },
     { type: "paragraph", text: "In many cases, a carefully selected VS2 diamond offers exceptional visual performance while allowing more flexibility for other priorities such as cut quality or carat weight." },
 
-    { type: "paragraph", text: "VS1 and VS2 diamonds both fall within the Very Slightly Included range of the clarity scale and are considered high clarity grades. Their inclusions are minor and typically invisible during normal viewing." },
+    { type: "paragraph", text: "VS1 and VS2 diamonds both fall within the Very Slightly Included range of the clarity scale and are considered high clarity grades. Their inclusions are minor and typically invisible during normal viewing. For the eye-clean standard that governs most ring decisions, see [eye clean diamonds explained](/diamond-guide/eye-clean-diamonds-explained)." },
     { type: "paragraph", text: "For most engagement ring buyers, the visual difference between the two grades is extremely small. Understanding how these grades compare helps buyers choose a diamond that delivers both beauty and value without focusing solely on technical perfection. Compare inclusion plots using [how to read a diamond certificate](/diamond-guide/how-to-read-a-diamond-certificate), or upload a report to [Diamond Intelligence](/diamond-intelligence) when you are deciding between similar VS stones." },
     
   ],
   related: [
-    { title: "How to Read a Diamond Certificate", href: "/diamond-guide/how-to-read-a-diamond-certificate" },
     { title: "What is Diamond Clarity", href: "/diamond-guide/what-is-diamond-clarity" },
-    { title: "Diamond Clarity Chart Explained", href: "/diamond-guide/diamond-clarity-chart-explained" },
-    { title: "What is SI1 Diamond Clarity", href: "/diamond-guide/what-is-si1-clarity" },
     { title: "Eye Clean Diamonds Explained", href: "/diamond-guide/eye-clean-diamonds-explained" },
-    { title: "Can You See Diamond Inclusions", href: "/diamond-guide/can-you-see-diamond-inclusions" }
+    { title: "How to Read a Diamond Certificate", href: "/diamond-guide/how-to-read-a-diamond-certificate" },
+    { title: "Best Diamond Clarity for Engagement Rings", href: "/diamond-guide/best-diamond-clarity-for-engagement-rings" },
   ]
 },
 
@@ -3777,44 +3773,94 @@ export const articles: Article[] = [
   title: "What is Diamond Clarity",
   category: "Diamond Clarity",
   body: [
-    { type: "paragraph", text: "A buyer once refused an SI1 diamond because an article online said to stay above VS. The stone was eye clean in every lighting we tried. The inclusion sat beneath a prong where it would never catch light from the table. The VS2 they chose instead had a crystal dead center under the crown. They saw it within a week of wearing the ring." },
-    { type: "paragraph", text: "That is the clarity question in real life. Not what appears on a plot under magnification. Will you see it? On your hand, in your setting, at the distance you actually live with?" },
+    { type: "paragraph", text: "Diamond clarity describes internal and surface features in a diamond as gemologists see them under ten-power magnification. On a grading report it appears as a letter from Flawless down through Included. For most engagement rings the practical question is simpler: will you see anything on the hand? Eye clean in your setting usually matters more than chasing the top of the scale." },
+    { type: "paragraph", text: "A buyer once refused an SI1 diamond because an article online said to stay above VS. The stone was eye clean in every lighting we tried. The inclusion sat beneath a prong where it would never catch light from the table. The VS2 they chose instead had a crystal dead center under the crown. They saw it within a week of wearing the ring. Clarity is part of the story. It is not the whole story." },
 
-    { type: "heading", text: "What Clarity Grades Actually Measure" },
-    { type: "paragraph", text: "Clarity describes internal and surface features that formed as the diamond grew. Laboratories grade them under ten-power magnification using a standardized scale from Flawless down through Included. The grade reflects number, size, type, and position of those features as a trained grader sees them in controlled conditions." },
-    { type: "paragraph", text: "That is useful information. It is not the same as what you will perceive at the kitchen table. Most inclusions are tiny. Many never affect beauty in wear. The grade tells you what exists. Your eyes tell you what matters." },
+    { type: "heading", text: "What Diamond Clarity Actually Measures" },
+    { type: "paragraph", text: "Clarity grading records inclusions inside the crystal and blemishes on the surface. Laboratories count how many features exist, how large they are, what type they are, and where they sit relative to the face-up view. The result is a standardized grade that helps compare diamonds on paper." },
+    { type: "paragraph", text: "That grade is useful. It is not the same as beauty in wear. Most inclusions are tiny. Many never affect how a diamond looks at arm's length. The report tells you what exists. Your eyes, in the ring you plan to build, tell you what matters." },
 
-    { type: "heading", text: "Eye Clean vs Laboratory Clean" },
-    { type: "paragraph", text: "Laboratory clean means no features visible under magnification at the top of the scale. Eye clean means no distracting features visible face-up at normal viewing distance without a loupe. Engagement rings are worn, not microscoped." },
-    { type: "paragraph", text: "Many VS and SI diamonds are entirely eye clean. Some higher grades still show a speck from the table in certain light. The grade letter is a starting point. Side-by-side viewing in the setting you plan to use is the test that actually governs the decision." },
+    { type: "heading", text: "Inclusions vs Blemishes" },
+    { type: "paragraph", text: "Inclusions formed inside the diamond as it grew deep in the earth. They can appear as pinpoints, feathers, crystals, clouds, or needles trapped in the crystal structure. Blemishes are on the surface: tiny polish lines, nicks, or abrasions that may occur naturally or during cutting." },
+    { type: "paragraph", text: "Gemologists evaluate both under magnification. Internal features usually influence the grade more because they are part of the stone. Minor surface blemishes are often small enough to polish away or hide once the diamond is set. [How to read a diamond certificate](/diamond-guide/how-to-read-a-diamond-certificate) shows where the clarity grade and inclusion plot appear on the page." },
+
+    { type: "heading", text: "The GIA Clarity Scale" },
+    { type: "paragraph", text: "The Gemological Institute of America clarity scale runs from Flawless at the top to Included at the lower end. Each step reflects how easy it is for a trained grader to see characteristics under ten-power magnification, and in some lower grades, whether features may be visible without magnification." },
+    { type: "paragraph", text: "The scale is a shared language for laboratories, jewelers, and buyers. It does not automatically tell you which diamond will look clean in your halo, solitaire, or bezel. That is why the grade is a starting point, not a finish line." },
+
+    { type: "heading", text: "What Each Grade Means in Practice" },
+    { type: "paragraph", text: "Flawless (FL): no inclusions or blemishes visible under ten-power magnification. Internally Flawless (IF): no inclusions; only very minor surface blemishes that may be polishable. Both are exceptionally rare and command strong premiums." },
+    { type: "paragraph", text: "Very Very Slightly Included (VVS1 and VVS2): extremely small inclusions, difficult even for experienced graders to locate. Very Slightly Included (VS1 and VS2): minor inclusions visible under magnification, usually eye clean in well-cut stones under two carats. For a focused VS comparison, see [VS1 vs VS2 diamond clarity](/diamond-guide/vs1-vs-vs2-diamond-clarity)." },
+    { type: "paragraph", text: "Slightly Included (SI1 and SI2): inclusions easier to see under magnification; may or may not be visible face-up. SI1 is often eye clean when placement is favorable. SI2 requires individual inspection. Slightly Included grades can offer strong value when the stone still looks crisp in wear." },
+    { type: "paragraph", text: "Included (I1, I2, and I3): obvious inclusions that may be visible without magnification and can affect transparency or durability. Hourglass does not offer I1 through I3 diamonds. Clarity should support beauty, not undermine it." },
+
+    { type: "heading", text: "What Eye Clean Means" },
+    { type: "paragraph", text: "Eye clean is not a GIA grade. It means inclusions are not visible to the naked eye from the top at normal viewing distance in everyday light. Many VS and SI diamonds qualify. Some higher grades still show a speck from the table in certain lighting." },
+    { type: "paragraph", text: "Engagement rings are worn, not microscoped. [Eye clean diamonds explained](/diamond-guide/eye-clean-diamonds-explained) goes deeper on the standard that usually governs real ring decisions." },
+
+    { type: "heading", text: "Clarity Is Not the Same as Beauty" },
+    { type: "paragraph", text: "A flawless diamond with weak proportions can look flat. An eye-clean SI1 with strong light return can look vivid. Clarity describes internal geography. Beauty describes how light moves, how the stone faces up, and how it feels on the hand." },
+    { type: "paragraph", text: "Overpaying for letters you cannot see is one of the most common clarity mistakes. Refusing to look at SI stones because of internet rules is another. The diamond decides, not the category alone." },
+
+    { type: "heading", text: "When Clarity Matters and When It Does Not" },
+    { type: "paragraph", text: "Clarity matters more in step cuts with open tables, such as emerald and Asscher, where inclusions are easier to read. It matters more as carat weight increases because features scale with the stone. It matters when an inclusion sits under the table where light enters first." },
+    { type: "paragraph", text: "Clarity matters less when inclusions are white, peripheral, or hidden by prongs. It matters less when cut is strong enough to scatter light across the face. It matters less when your standard is eye clean rather than laboratory perfect." },
 
     { type: "heading", text: "Location Matters More Than Count" },
     { type: "paragraph", text: "Two diamonds can share a clarity grade and behave differently. One SI1 has a feather tucked at the girdle where a prong will cover it. Another SI1 has a dark crystal under the table where light enters first. The alphabet matches. The wearing experience does not." },
-    { type: "paragraph", text: "Advisors read the inclusion plot with the ring design in mind. Halo settings add sparkle that can soften minor features. Step-cut emeralds and Asschers have open tables that show inclusions more honestly than brilliant rounds. A plot without context is a map without a destination." },
+    { type: "paragraph", text: "Advisors read the inclusion plot with the ring design in mind. A plot without setting context is a map without a destination." },
 
-    { type: "heading", text: "Why Some SI1 Stones Outperform VS Stones" },
-    { type: "paragraph", text: "Because performance in wear is about visibility, not pedigree. A well-cut SI1 with a white feather at the edge can look cleaner than a mediocre VS with a centered crystal. Buyers who treat VS as a floor without looking often pay for letters they never benefit from." },
-    { type: "paragraph", text: "The reverse happens too. Chasing the lowest clarity grade that might work without viewing several candidates is how people end up with inclusions they cannot unsee. SI is not automatically safe. FL is not automatically necessary. The stone decides, not the category." },
+    { type: "heading", text: "Clarity vs Sparkle and Light Performance" },
+    { type: "paragraph", text: "Sparkle comes primarily from cut: how facets return light, how contrast patterns form, how the stone moves. Tiny inclusions in eye-clean diamonds rarely block that performance. Large or centered inclusions, or included grades that reduce transparency, can make a diamond look sleepy even when the report reads well." },
+    { type: "paragraph", text: "If sparkle is the priority, protect cut first. [How diamond cut affects light performance](/diamond-guide/how-diamond-cut-affects-light-performance) explains why performance governs what you perceive before clarity letters do." },
 
-    { type: "heading", text: "What Advisors Look at First" },
-    { type: "paragraph", text: "Face-up at arm's length, then from the side, then in the metal color and setting style you have chosen. Then the plot: where features sit, whether they are dark or white, whether they reach the surface. Then cut, because strong light return can make inclusions less noticeable and weak cut can make them more obvious." },
-    { type: "paragraph", text: "If you are working from a report alone, [how to read a diamond certificate](/diamond-guide/how-to-read-a-diamond-certificate) shows where clarity grades and inclusion plots live on the page. [Diamond Intelligence](/diamond-intelligence) can help translate plot and proportion data into practical questions before you commit. A [Graduate Gemologist](/diamond-guide/why-work-with-a-graduate-gemologist) will tell you when a lower grade is genuinely clean and when a higher grade still fails the eye test." },
+    { type: "heading", text: "Clarity vs Color and Value" },
+    { type: "paragraph", text: "Budget is finite. Climbing from SI to VVS may cost more than moving one color step, yet produce no visible gain on the hand. Many buyers do better trading a clarity grade they cannot see for cut, carat, or the setting they want." },
+    { type: "paragraph", text: "[Diamond color vs clarity](/diamond-guide/diamond-color-vs-clarity) walks through how those tradeoffs interact. [Best diamond clarity for engagement rings](/diamond-guide/best-diamond-clarity-for-engagement-rings) frames practical ranges for ring buyers." },
 
-    { type: "heading", text: "Shape, Setting, and Size" },
-    { type: "paragraph", text: "Brilliant rounds and ovals forgive more than emerald or Asscher step cuts. Larger stones make inclusions easier to locate. Bezels and prongs can hide girdle features that would distract in a tension setting. These variables change the clarity grade you need, not the clarity standard you should hold: eye clean in the finished ring." },
+    { type: "heading", text: "Natural and Lab-Grown Diamonds" },
+    { type: "paragraph", text: "Both natural and laboratory-grown diamonds can contain inclusions. Growth history differs, but the material is the same crystal. Reports document clarity for either origin using the same scale. Origin does not remove the need to view the individual stone." },
 
-    { type: "heading", text: "Common Overpayments and Real Guidance" },
-    { type: "paragraph", text: "Overpaying for internally flawless when VS or SI would look identical on the hand. Refusing SI without looking because of internet rules. Underinvesting in cut while buying clarity you cannot see. These patterns repeat because clarity feels objective on paper and subjective in person. Both are true. The mistake is letting paper override your eyes." },
-    { type: "paragraph", text: "For how clarity interacts with color in a budget, [diamond color versus clarity](/diamond-guide/diamond-color-vs-clarity) goes deeper on tradeoffs. [Diamond price versus quality](/diamond-guide/diamond-price-vs-quality) explains where clarity premiums often fail to show up. [Our Approach](/our-approach) applies the same standard: eye clean in wear, not perfection under magnification. [Diamond buying tips from jewelers](/diamond-guide/diamond-buying-tips-from-jewelers) covers the side-by-side habits that make clarity differences visible before you buy." },
+    { type: "heading", text: "Why a Grading Report Alone Is Not Enough" },
+    { type: "paragraph", text: "A report summarizes what a laboratory observed in controlled conditions. It does not show how lively the diamond looks when it moves, how inclusions behave in your metal color, or whether a feature flashes under restaurant light. Two diamonds with the same clarity grade can perform differently because placement and cut differ." },
+    { type: "paragraph", text: "If you are working from a listing, [Diamond Intelligence](/diamond-intelligence) can help translate plot and proportion data into practical questions before you commit. Side-by-side viewing still wins when you can arrange it." },
 
-    { type: "paragraph", text: "Clarity is part of the diamond's history, not a flaw to eliminate at any cost. Hold yourself to what you can see. Compare stones honestly. Choose the one that stays clean in the ring you will actually build, and you will rarely regret the decision." },
+    { type: "heading", text: "Hourglass Clarity Standards" },
+    { type: "paragraph", text: "Hourglass does not sell I1, I2, or I3 diamonds. Those grades often show obvious inclusions that distract in wear or affect durability. SI2 may be considered only after individual inspection confirms the stone is eye clean in the intended setting." },
+    { type: "paragraph", text: "Our standard is visible beauty on the hand, not perfection under magnification. Clarity should support the ring, not replace cut, not consume budget for features no one will see, and not become a source of regret after the proposal." },
+
+    { type: "heading", text: "How a Graduate Gemologist Reads Clarity" },
+    { type: "paragraph", text: "A Graduate Gemologist begins with face-up viewing at arm's length, then from the side, then in the setting style you have chosen. The plot comes after the eye test: where features sit, whether they are dark or white, whether they reach the surface." },
+    { type: "paragraph", text: "That order protects buyers from paying for paper and from rejecting beautiful stones because of rules that ignore placement. [Why work with a Graduate Gemologist](/diamond-guide/why-work-with-a-graduate-gemologist) explains who leads that review at Hourglass." },
+
+    { type: "heading", text: "Charlotte, Surrounding Markets, and Clients Nationwide" },
+    { type: "paragraph", text: "Many Charlotte-area buyers review clarity in private appointment rather than under sales-floor pressure. Hourglass works with clients throughout the Charlotte metro, including South Charlotte, Ballantyne, Matthews, Waxhaw, Weddington, Marvin, Pineville, Huntersville, Union County, Lake Norman, Fort Mill, and nearby communities." },
+    { type: "paragraph", text: "We also work with clients around the U.S. by appointment and remote consultation when that pace fits better than a local visit. Whether you are comparing two plots or holding one stone up to a window, the standard stays the same: eye clean in wear. [Begin the conversation](/concierge) when you want a Graduate Gemologist to review a specific stone with you." },
+
+    { type: "heading", text: "What is diamond clarity?" },
+    { type: "paragraph", text: "A standardized measure of internal inclusions and surface blemishes under magnification. Graded Flawless through Included on GIA reports. Not the same as eye clean or sparkle." },
+
+    { type: "heading", text: "What clarity grade is best for an engagement ring?" },
+    { type: "paragraph", text: "No single grade fits every ring. Most strong choices are eye clean in the VS or SI range. Shape, size, setting, and cut change the answer. Compare stones side by side rather than chasing flawless on paper." },
+
+    { type: "heading", text: "What does eye-clean mean?" },
+    { type: "paragraph", text: "No visible inclusions face-up at normal distance in everyday light. Not a formal GIA grade. Many SI stones qualify when placement is favorable." },
+
+    { type: "heading", text: "Are SI1 or SI2 diamonds worth considering?" },
+    { type: "paragraph", text: "Often yes, when each stone is viewed individually. SI1 is frequently eye clean. SI2 requires careful inspection. Hourglass evaluates SI2 case by case." },
+
+    { type: "heading", text: "Are flawless diamonds worth the extra cost?" },
+    { type: "paragraph", text: "For rarity collectors, sometimes. For most ring buyers, well-chosen VS or SI stones look the same in wear. The premium often buys reassurance, not visible difference." },
+
+    { type: "heading", text: "Does clarity affect sparkle?" },
+    { type: "paragraph", text: "Cut affects sparkle more. Eye-clean inclusions rarely block light return. Large centered features or included grades that reduce transparency can dull a stone. Choose liveliness first." },
   ],
   related: [
-    { title: "Diamond Clarity Chart Explained", href: "/diamond-guide/diamond-clarity-chart-explained" },
+    { title: "Eye Clean Diamonds Explained", href: "/diamond-guide/eye-clean-diamonds-explained" },
+    { title: "Best Diamond Clarity for Engagement Rings", href: "/diamond-guide/best-diamond-clarity-for-engagement-rings" },
     { title: "VS1 vs VS2 Diamond Clarity", href: "/diamond-guide/vs1-vs-vs2-diamond-clarity" },
-    { title: "What is SI1 Diamond Clarity", href: "/diamond-guide/what-is-si1-clarity" },
-    { title: "Can You See Diamond Inclusions", href: "/diamond-guide/can-you-see-diamond-inclusions" },
-    { title: "Eye Clean Diamonds Explained", href: "/diamond-guide/eye-clean-diamonds-explained" }
+    { title: "Diamond Color vs Clarity", href: "/diamond-guide/diamond-color-vs-clarity" },
+    { title: "How to Read a Diamond Certificate", href: "/diamond-guide/how-to-read-a-diamond-certificate" },
   ]
 },
 {
@@ -4070,6 +4116,7 @@ export const articles: Article[] = [
   title: "What is SI1 Clarity",
   category: "Diamond Clarity",
   body: [
+    { type: "paragraph", text: "For SI clarity in context on the full GIA scale, see [what is diamond clarity](/diamond-guide/what-is-diamond-clarity). This article focuses on the SI1 grade specifically." },
     { type: "heading", text: "Understanding the SI1 Clarity Grade" },
     { type: "paragraph", text: "SI1 stands for “Slightly Included 1,” a clarity grade used to describe diamonds that contain noticeable inclusions under magnification but often appear clean to the naked eye." },
     { type: "paragraph", text: "Within the diamond clarity scale, SI1 sits just below the VS category. The inclusions present in SI1 diamonds are generally easier for gemologists to locate under 10× magnification, but they are still considered relatively small." },
@@ -4104,12 +4151,10 @@ export const articles: Article[] = [
     
   ],
   related: [
-    { title: "How to Read a Diamond Certificate", href: "/diamond-guide/how-to-read-a-diamond-certificate" },
     { title: "What is Diamond Clarity", href: "/diamond-guide/what-is-diamond-clarity" },
-    { title: "Diamond Clarity Chart Explained", href: "/diamond-guide/diamond-clarity-chart-explained" },
-    { title: "VS1 vs VS2 Diamond Clarity", href: "/diamond-guide/vs1-vs-vs2-diamond-clarity" },
     { title: "Eye Clean Diamonds Explained", href: "/diamond-guide/eye-clean-diamonds-explained" },
-    { title: "Can You See Diamond Inclusions", href: "/diamond-guide/can-you-see-diamond-inclusions" }
+    { title: "How to Read a Diamond Certificate", href: "/diamond-guide/how-to-read-a-diamond-certificate" },
+    { title: "VS1 vs VS2 Diamond Clarity", href: "/diamond-guide/vs1-vs-vs2-diamond-clarity" },
   ]
 },
 {
