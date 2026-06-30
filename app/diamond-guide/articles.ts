@@ -3040,6 +3040,11 @@ export const articles: Article[] = [
   slug: "oval-vs-round-diamond",
   title: "Oval vs Round Diamond",
   category: "Diamond Shapes",
+  heroImage: "/diamond-guide/oval-vs-round-diamond-hero.png",
+  heroImageAlt:
+    "Oval and round diamond ring comparison on a warm neutral consultation surface",
+  visualCategory: "comparison-visual",
+  visualStatus: "live",
   body: [
     { type: "heading", text: "Understanding the Difference Between Oval and Round Diamonds" },
     { type: "paragraph", text: "Two of the most popular diamond shapes today are the round brilliant and the oval diamond. At first glance they can appear similar, especially because both are designed to maximize sparkle. However, they create very different visual impressions when set in a ring." },

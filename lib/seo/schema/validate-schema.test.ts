@@ -86,6 +86,7 @@ describe("structured data builders", () => {
       "charlotte-diamond-advisor-guide",
       "how-to-read-a-diamond-certificate",
       "natural-vs-lab-diamonds",
+      "oval-vs-round-diamond",
     ]);
 
     for (const article of articles) {
