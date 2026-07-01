@@ -1349,6 +1349,11 @@ export const articles: Article[] = [
       { type: "paragraph", text: "Leakage is the inverse of light return. For the full cut guide, see [what is diamond cut](/diamond-guide/what-is-diamond-cut). For return mechanics in detail, see [diamond light return explained](/diamond-guide/diamond-light-return-explained). This article focuses on when and why light escapes." },
       { type: "heading", text: "What Light Leakage Means" },
       { type: "paragraph", text: "Light leakage occurs when light enters a diamond but escapes through the bottom or sides instead of returning through the top. Because of this, less light reaches the viewer’s eye, and the diamond may appear darker or less vibrant." },
+      {
+        type: "editorial-image",
+        src: "/diamond-guide/diamond-light-return-light-leakage-diagram.png",
+        alt: "Diamond light return versus light leakage diagram comparing ideal, shallow, and deep cuts and how each affects sparkle.",
+      },
       { type: "paragraph", text: "When people describe a diamond as dull or lifeless, light leakage is often the underlying reason. Even a large or high-clarity diamond can appear underwhelming if too much light escapes before it has the chance to reflect back upward." },
       { type: "paragraph", text: "Understanding light leakage helps explain why cut quality plays such a critical role in a diamond’s beauty." },
 
@@ -1409,6 +1414,11 @@ export const articles: Article[] = [
       { type: "paragraph", text: "Light return describes how efficiently a diamond reflects light back toward the viewer’s eye. When light enters a diamond, it interacts with the stone’s internal facets. If those facets are positioned correctly, the light reflects within the diamond and exits through the top of the stone." },
       { type: "paragraph", text: "This returned light is what creates the brightness people associate with a beautiful diamond. When light return is strong, the diamond appears lively and luminous. When it is weak, the diamond may appear dull or muted." },
       { type: "paragraph", text: "Light return is one of the most important components of a diamond’s overall light performance." },
+      {
+        type: "editorial-image",
+        src: "/diamond-guide/diamond-light-return-light-leakage-diagram.png",
+        alt: "Diamond light return versus light leakage diagram comparing ideal, shallow, and deep cuts and how each affects sparkle.",
+      },
 
       { type: "heading", text: "How Light Travels Inside a Diamond" },
       { type: "paragraph", text: "When light enters a diamond through the table and crown facets, it slows and bends due to the diamond’s high refractive index. This bending causes the light to reflect off the internal facets before exiting the stone." },
@@ -3959,6 +3969,11 @@ export const articles: Article[] = [
     { type: "heading", text: "The GIA Cut Scale" },
     { type: "paragraph", text: "For round brilliant diamonds, the Gemological Institute of America assigns cut grades from Excellent at the top through Very Good, Good, Fair, and Poor at the lower end. Each step reflects how closely proportions, symmetry, and polish fall within ranges associated with strong light return." },
     { type: "paragraph", text: "The scale is a shared language for laboratories, jewelers, and buyers. It does not automatically tell you which diamond will look brightest in your solitaire, halo, or bezel. That is why the grade is a starting point, not a finish line." },
+    {
+      type: "editorial-image",
+      src: "/diamond-guide/what-is-diamond-cut-scale-chart.png",
+      alt: "The GIA diamond cut scale from Excellent through Poor, showing how cut quality influences brilliance, fire, scintillation, and overall light return.",
+    },
 
     { type: "heading", text: "What Excellent Actually Means" },
     { type: "paragraph", text: "Excellent on a GIA report means the diamond's proportions, symmetry, and polish fall within ranges the laboratory associates with strong performance. It does not mean every Excellent stone looks identical. Table percentage, crown angle, and lower-girdle length can still vary inside the grade." },
@@ -3979,6 +3994,11 @@ export const articles: Article[] = [
     { type: "heading", text: "Light Return and Light Leakage" },
     { type: "paragraph", text: "Light return describes how much entering light reflects back to your eye. Light leakage is the opposite: light that exits through the pavilion or girdle instead of returning face-up. Leakage is why some diamonds look sleepy even when color and clarity grades read well." },
     { type: "paragraph", text: "[Diamond light return explained](/diamond-guide/diamond-light-return-explained) covers return in detail. Strong return is the foundation for brilliance, fire, and scintillation. Without it, higher grades on paper rarely rescue the wearing experience." },
+    {
+      type: "editorial-image",
+      src: "/diamond-guide/diamond-light-return-light-leakage-diagram.png",
+      alt: "Diamond light return versus light leakage diagram comparing ideal, shallow, and deep cuts and how each affects sparkle.",
+    },
 
     { type: "heading", text: "Why Two Excellent Diamonds Can Perform Differently" },
     { type: "paragraph", text: "The cut grade compresses many measurements into one word. Two Excellent rounds can differ in table size, crown angle, and facet precision in ways that change how evenly light pools across the crown. One may show crisp contrast as it moves. The other may look flat under restaurant light." },
