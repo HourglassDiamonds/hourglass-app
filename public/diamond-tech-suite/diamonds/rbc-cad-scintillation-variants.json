@@ -1,0 +1,681 @@
+{
+  "source": "public/diamond-tech-suite/diamonds/rbc-cad-pop.png",
+  "canvas": "2560x2560",
+  "alphaPreserved": true,
+  "brightLuminanceRange": [
+    225,
+    254
+  ],
+  "darkLuminanceRange": [
+    70,
+    205
+  ],
+  "trueCentralLuminanceRange": [
+    85,
+    215
+  ],
+  "trueCentralCentroidRange": [
+    0.05,
+    0.24
+  ],
+  "trueCentralPixelRadius": 0.225,
+  "brightLiftRgb": 15,
+  "outerDarkLuminanceMultiplier": 0.83,
+  "trueCentralDarkLuminanceMultiplier": 0.86,
+  "regionExpandRadiusPx": 10,
+  "centralRegionExpandRadiusPx": 12,
+  "girdleInsetPx": 6,
+  "featherRadiusPx": 1,
+  "brightRegionPool": 58,
+  "darkRegionPool": 32,
+  "trueCentralRegionPool": 13,
+  "nearCentralRegionPool": 8,
+  "patterns": {
+    "a": {
+      "file": "/diamond-tech-suite/diamonds/rbc-cad-scintillation-a.png",
+      "centralMode": "strong",
+      "brightRegions": 6,
+      "trueCentralRegions": 2,
+      "outerDarkRegions": 5,
+      "regionTiers": {
+        "bright": {
+          "small": 0,
+          "medium": 0,
+          "large": 6
+        },
+        "trueCentral": {
+          "small": 0,
+          "medium": 0,
+          "large": 2
+        },
+        "outerDark": {
+          "small": 0,
+          "medium": 0,
+          "large": 5
+        }
+      },
+      "coverage": {
+        "brightPercent": 2.15,
+        "trueCentralPercent": 0.85,
+        "outerDarkPercent": 1.18,
+        "totalPercent": 4.18,
+        "changedPercentCentral60Diameter": 21.23,
+        "changedPercentCentral35Diameter": 14.19
+      },
+      "bright": [
+        {
+          "id": "ur:1684:966:4686",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 4686,
+          "quadrant": "ur",
+          "distNorm": 0.624,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ll:954:1930:4649",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 4649,
+          "quadrant": "ll",
+          "distNorm": 0.846,
+          "centralFraction35": 0
+        },
+        {
+          "id": "lr:1300:1788:4516",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 4516,
+          "quadrant": "lr",
+          "distNorm": 0.584,
+          "centralFraction35": 0
+        },
+        {
+          "id": "lr:1741:1414:3972",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 3972,
+          "quadrant": "lr",
+          "distNorm": 0.567,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ll:836:1359:3621",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 3621,
+          "quadrant": "ll",
+          "distNorm": 0.532,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ll:1138:1837:3059",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 3059,
+          "quadrant": "ll",
+          "distNorm": 0.663,
+          "centralFraction35": 0
+        }
+      ],
+      "trueCentral": [
+        {
+          "id": "ll:1248:1441:4812",
+          "role": "large",
+          "sizeTier": "large",
+          "pixels": 4812,
+          "quadrant": "ll",
+          "distNorm": 0.174,
+          "centralFraction35": 0.478
+        },
+        {
+          "id": "ur:1335:1216:4301",
+          "role": "medium",
+          "sizeTier": "large",
+          "pixels": 4301,
+          "quadrant": "ur",
+          "distNorm": 0.118,
+          "centralFraction35": 0.972
+        }
+      ],
+      "outerDark": [
+        {
+          "id": "lr:2008:1435:2840",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 2840,
+          "quadrant": "lr",
+          "distNorm": 0.883,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ur:2048:1288:2713",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 2713,
+          "quadrant": "ur",
+          "distNorm": 0.916,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ur:1602:948:2377",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 2377,
+          "quadrant": "ur",
+          "distNorm": 0.568,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ul:815:1140:2052",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 2052,
+          "quadrant": "ul",
+          "distNorm": 0.585,
+          "centralFraction35": 0
+        },
+        {
+          "id": "lr:1803:1660:1240",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 1240,
+          "quadrant": "lr",
+          "distNorm": 0.757,
+          "centralFraction35": 0
+        }
+      ]
+    },
+    "b": {
+      "file": "/diamond-tech-suite/diamonds/rbc-cad-scintillation-b.png",
+      "centralMode": "subtle",
+      "brightRegions": 6,
+      "trueCentralRegions": 2,
+      "outerDarkRegions": 5,
+      "regionTiers": {
+        "bright": {
+          "small": 0,
+          "medium": 0,
+          "large": 6
+        },
+        "trueCentral": {
+          "small": 0,
+          "medium": 0,
+          "large": 2
+        },
+        "outerDark": {
+          "small": 0,
+          "medium": 3,
+          "large": 2
+        }
+      },
+      "coverage": {
+        "brightPercent": 1.33,
+        "trueCentralPercent": 0.82,
+        "outerDarkPercent": 0.54,
+        "totalPercent": 2.69,
+        "changedPercentCentral60Diameter": 24.6,
+        "changedPercentCentral35Diameter": 13.01
+      },
+      "bright": [
+        {
+          "id": "ul:1185:617:2778",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 2778,
+          "quadrant": "ul",
+          "distNorm": 0.819,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ur:1677:1061:2547",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 2547,
+          "quadrant": "ur",
+          "distNorm": 0.552,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ur:1308:579:1893",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 1893,
+          "quadrant": "ur",
+          "distNorm": 0.858,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ul:1220:794:1519",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 1519,
+          "quadrant": "ul",
+          "distNorm": 0.604,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ul:786:858:1349",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 1349,
+          "quadrant": "ul",
+          "distNorm": 0.788,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ur:1668:804:1241",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 1241,
+          "quadrant": "ur",
+          "distNorm": 0.749,
+          "centralFraction35": 0
+        }
+      ],
+      "trueCentral": [
+        {
+          "id": "ur:1366:1286:3006",
+          "role": "medium",
+          "sizeTier": "large",
+          "pixels": 3006,
+          "quadrant": "ur",
+          "distNorm": 0.104,
+          "centralFraction35": 0.909
+        },
+        {
+          "id": "lr:1304:1559:3325",
+          "role": "near",
+          "sizeTier": "large",
+          "pixels": 3325,
+          "quadrant": "lr",
+          "distNorm": 0.311,
+          "centralFraction35": 0
+        }
+      ],
+      "outerDark": [
+        {
+          "id": "ll:1107:2025:884",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 884,
+          "quadrant": "ll",
+          "distNorm": 0.889,
+          "centralFraction35": 0
+        },
+        {
+          "id": "lr:1684:1765:718",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 718,
+          "quadrant": "lr",
+          "distNorm": 0.735,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ur:1767:1212:555",
+          "role": "outer",
+          "sizeTier": "medium",
+          "pixels": 555,
+          "quadrant": "ur",
+          "distNorm": 0.59,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ll:702:1825:520",
+          "role": "outer",
+          "sizeTier": "medium",
+          "pixels": 520,
+          "quadrant": "ll",
+          "distNorm": 0.93,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ll:728:1778:505",
+          "role": "outer",
+          "sizeTier": "medium",
+          "pixels": 505,
+          "quadrant": "ll",
+          "distNorm": 0.87,
+          "centralFraction35": 0
+        }
+      ]
+    },
+    "c": {
+      "file": "/diamond-tech-suite/diamonds/rbc-cad-scintillation-c.png",
+      "centralMode": "strong",
+      "brightRegions": 6,
+      "trueCentralRegions": 2,
+      "outerDarkRegions": 5,
+      "regionTiers": {
+        "bright": {
+          "small": 0,
+          "medium": 0,
+          "large": 6
+        },
+        "trueCentral": {
+          "small": 0,
+          "medium": 0,
+          "large": 2
+        },
+        "outerDark": {
+          "small": 0,
+          "medium": 1,
+          "large": 4
+        }
+      },
+      "coverage": {
+        "brightPercent": 1.91,
+        "trueCentralPercent": 0.96,
+        "outerDarkPercent": 1.12,
+        "totalPercent": 3.99,
+        "changedPercentCentral60Diameter": 25.2,
+        "changedPercentCentral35Diameter": 17.51
+      },
+      "bright": [
+        {
+          "id": "ur:1684:966:4686",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 4686,
+          "quadrant": "ur",
+          "distNorm": 0.624,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ll:954:1930:4649",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 4649,
+          "quadrant": "ll",
+          "distNorm": 0.846,
+          "centralFraction35": 0
+        },
+        {
+          "id": "lr:1300:1788:4516",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 4516,
+          "quadrant": "lr",
+          "distNorm": 0.584,
+          "centralFraction35": 0
+        },
+        {
+          "id": "lr:1741:1414:3972",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 3972,
+          "quadrant": "lr",
+          "distNorm": 0.567,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ul:790:926:1020",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 1020,
+          "quadrant": "ul",
+          "distNorm": 0.733,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ur:1771:925:973",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 973,
+          "quadrant": "ur",
+          "distNorm": 0.735,
+          "centralFraction35": 0
+        }
+      ],
+      "trueCentral": [
+        {
+          "id": "lr:1309:1422:4959",
+          "role": "large",
+          "sizeTier": "large",
+          "pixels": 4959,
+          "quadrant": "lr",
+          "distNorm": 0.151,
+          "centralFraction35": 0.601
+        },
+        {
+          "id": "ll:1203:1356:2264",
+          "role": "medium",
+          "sizeTier": "large",
+          "pixels": 2264,
+          "quadrant": "ll",
+          "distNorm": 0.114,
+          "centralFraction35": 0.812
+        }
+      ],
+      "outerDark": [
+        {
+          "id": "lr:2008:1435:2840",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 2840,
+          "quadrant": "lr",
+          "distNorm": 0.883,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ur:2048:1288:2713",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 2713,
+          "quadrant": "ur",
+          "distNorm": 0.916,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ur:1602:948:2377",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 2377,
+          "quadrant": "ur",
+          "distNorm": 0.568,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ll:848:1710:465",
+          "role": "outer",
+          "sizeTier": "medium",
+          "pixels": 465,
+          "quadrant": "ll",
+          "distNorm": 0.71,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ul:815:1140:2052",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 2052,
+          "quadrant": "ul",
+          "distNorm": 0.585,
+          "centralFraction35": 0
+        }
+      ]
+    },
+    "d": {
+      "file": "/diamond-tech-suite/diamonds/rbc-cad-scintillation-d.png",
+      "centralMode": "subtle",
+      "brightRegions": 6,
+      "trueCentralRegions": 2,
+      "outerDarkRegions": 5,
+      "regionTiers": {
+        "bright": {
+          "small": 0,
+          "medium": 0,
+          "large": 6
+        },
+        "trueCentral": {
+          "small": 0,
+          "medium": 0,
+          "large": 2
+        },
+        "outerDark": {
+          "small": 0,
+          "medium": 2,
+          "large": 3
+        }
+      },
+      "coverage": {
+        "brightPercent": 1.48,
+        "trueCentralPercent": 0.74,
+        "outerDarkPercent": 0.61,
+        "totalPercent": 2.83,
+        "changedPercentCentral60Diameter": 20.19,
+        "changedPercentCentral35Diameter": 5.26
+      },
+      "bright": [
+        {
+          "id": "ll:836:1359:3621",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 3621,
+          "quadrant": "ll",
+          "distNorm": 0.532,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ll:1138:1837:3059",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 3059,
+          "quadrant": "ll",
+          "distNorm": 0.663,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ul:1185:617:2778",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 2778,
+          "quadrant": "ul",
+          "distNorm": 0.819,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ur:1677:1061:2547",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 2547,
+          "quadrant": "ur",
+          "distNorm": 0.552,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ul:786:858:1349",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 1349,
+          "quadrant": "ul",
+          "distNorm": 0.788,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ur:1668:804:1241",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 1241,
+          "quadrant": "ur",
+          "distNorm": 0.749,
+          "centralFraction35": 0
+        }
+      ],
+      "trueCentral": [
+        {
+          "id": "lr:1431:1328:4324",
+          "role": "medium",
+          "sizeTier": "large",
+          "pixels": 4324,
+          "quadrant": "lr",
+          "distNorm": 0.184,
+          "centralFraction35": 0.358
+        },
+        {
+          "id": "ll:1029:1317:3109",
+          "role": "near",
+          "sizeTier": "large",
+          "pixels": 3109,
+          "quadrant": "ll",
+          "distNorm": 0.298,
+          "centralFraction35": 0
+        }
+      ],
+      "outerDark": [
+        {
+          "id": "lr:1803:1660:1240",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 1240,
+          "quadrant": "lr",
+          "distNorm": 0.757,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ll:1107:2025:884",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 884,
+          "quadrant": "ll",
+          "distNorm": 0.889,
+          "centralFraction35": 0
+        },
+        {
+          "id": "lr:1684:1765:718",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 718,
+          "quadrant": "lr",
+          "distNorm": 0.735,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ur:1767:1212:555",
+          "role": "outer",
+          "sizeTier": "medium",
+          "pixels": 555,
+          "quadrant": "ur",
+          "distNorm": 0.59,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ll:728:1778:505",
+          "role": "outer",
+          "sizeTier": "medium",
+          "pixels": 505,
+          "quadrant": "ll",
+          "distNorm": 0.87,
+          "centralFraction35": 0
+        }
+      ]
+    }
+  },
+  "consecutiveOverlap": {
+    "a-b": {
+      "brightRegionOverlapPercent": 0,
+      "brightPixelOverlapPercent": 0,
+      "trueCentralRegionOverlapPercent": 0,
+      "trueCentralPixelOverlapPercent": 0,
+      "outerDarkRegionOverlapPercent": 0,
+      "outerDarkPixelOverlapPercent": 0
+    },
+    "b-c": {
+      "brightRegionOverlapPercent": 0,
+      "brightPixelOverlapPercent": 0,
+      "trueCentralRegionOverlapPercent": 0,
+      "trueCentralPixelOverlapPercent": 0,
+      "outerDarkRegionOverlapPercent": 0,
+      "outerDarkPixelOverlapPercent": 0
+    },
+    "c-d": {
+      "brightRegionOverlapPercent": 0,
+      "brightPixelOverlapPercent": 0,
+      "trueCentralRegionOverlapPercent": 0,
+      "trueCentralPixelOverlapPercent": 0,
+      "outerDarkRegionOverlapPercent": 0,
+      "outerDarkPixelOverlapPercent": 0
+    }
+  }
+}
