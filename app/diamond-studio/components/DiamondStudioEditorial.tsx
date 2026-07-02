@@ -1,9 +1,18 @@
-"use client";
-
 import Link from "next/link";
+import DiV3Chapter from "@/app/diamond-intelligence/components/DiV3Chapter";
+import {
+  DI_V3_FAQ_ACCORDION_GROUP,
+  DI_V3_STUDIO_ACCORDION_GROUP,
+} from "@/app/diamond-intelligence/components/di-v3-styles";
 
 const editorialLink =
   "text-[#6b5048] underline underline-offset-4 transition-colors hover:text-[#1f1d1a]";
+
+const bodyCopy =
+  "space-y-4 text-[0.94rem] leading-[1.82] text-[var(--ink-soft)] md:text-[1rem] md:leading-[1.85]";
+
+const introCopy =
+  "text-[0.94rem] leading-[1.82] text-[var(--ink-soft)] md:text-[1rem] md:leading-[1.85]";
 
 const STUDIO_FAQS = [
   {
@@ -34,7 +43,7 @@ export default function DiamondStudioEditorial() {
       className="dts-editorial border-t border-[#e4dbcf]/40 bg-[var(--bg)] px-6 py-14 md:px-10 md:py-20"
       aria-labelledby="dts-editorial-heading"
     >
-      <div className="mx-auto w-full max-w-[42rem]">
+      <div className="mx-auto w-full max-w-[50rem]">
         <h2
           id="dts-editorial-heading"
           className="font-serif text-[1.65rem] font-normal leading-[1.2] tracking-[-0.02em] text-[var(--ink)] md:text-[1.85rem]"
@@ -42,19 +51,35 @@ export default function DiamondStudioEditorial() {
           How diamond size really looks on the hand
         </h2>
 
-        <div className="mt-10 space-y-12 md:mt-12 md:space-y-14">
-          <div>
-            <h3 className="font-serif text-[1.15rem] font-normal leading-[1.3] tracking-[-0.015em] text-[var(--ink)] md:text-[1.25rem]">
-              Diamond size is more than carat weight
-            </h3>
-            <div className="mt-4 space-y-4 text-[0.94rem] leading-[1.82] text-[var(--ink-soft)] md:text-[1rem] md:leading-[1.85]">
+        <div className={`${introCopy} mt-6 max-w-[46rem] space-y-4 md:mt-8`}>
+          <p>
+            Carat weight tells only part of the story. Shape, proportions, finger
+            size, and visual spread all influence how substantial a diamond
+            appears once it is worn.
+          </p>
+          <p>
+            Use the studio above to compare scale, then explore the guidance
+            below for the factors that shape that impression.
+          </p>
+        </div>
+
+        <div className={DI_V3_STUDIO_ACCORDION_GROUP}>
+          <DiV3Chapter
+            number="01"
+            title="Carat Weight Is Not Visual Size"
+            note="Why two diamonds of the same weight can look very different."
+            chapterId="carat-weight-not-visual-size"
+            studio
+            defaultOpen
+          >
+            <div className={bodyCopy}>
               <p>
-                Carat measures weight, not what you see when the diamond is
-                set. Two stones at the same carat can face up quite differently
+                Carat measures weight, not what you see when the diamond is set.
+                Two stones at the same carat can face up quite differently
                 depending on shape, depth, table size, proportions, and cut
                 quality. A well-proportioned diamond spreads its weight where
-                light enters and returns. A deep stone can carry weight below
-                the girdle where it adds little to the view from above.
+                light enters and returns. A deep stone can carry weight below the
+                girdle where it adds little to the view from above.
               </p>
               <p>
                 That distinction matters when you are comparing listings or
@@ -76,13 +101,16 @@ export default function DiamondStudioEditorial() {
                 can help translate proportions into practical context.
               </p>
             </div>
-          </div>
+          </DiV3Chapter>
 
-          <div>
-            <h3 className="font-serif text-[1.15rem] font-normal leading-[1.3] tracking-[-0.015em] text-[var(--ink)] md:text-[1.25rem]">
-              Why finger size changes the way a diamond appears
-            </h3>
-            <div className="mt-4 space-y-4 text-[0.94rem] leading-[1.82] text-[var(--ink-soft)] md:text-[1rem] md:leading-[1.85]">
+          <DiV3Chapter
+            number="02"
+            title="Finger Size Changes the Impression"
+            note="The same diamond can feel subtle or substantial depending on the hand."
+            chapterId="finger-size-changes-impression"
+            studio
+          >
+            <div className={bodyCopy}>
               <p>
                 The same diamond can read differently on a size 4 finger than on
                 a size 8. Finger width, length, and overall proportion all
@@ -106,13 +134,16 @@ export default function DiamondStudioEditorial() {
                 day.
               </p>
             </div>
-          </div>
+          </DiV3Chapter>
 
-          <div>
-            <h3 className="font-serif text-[1.15rem] font-normal leading-[1.3] tracking-[-0.015em] text-[var(--ink)] md:text-[1.25rem]">
-              Why shape affects apparent size
-            </h3>
-            <div className="mt-4 space-y-4 text-[0.94rem] leading-[1.82] text-[var(--ink-soft)] md:text-[1rem] md:leading-[1.85]">
+          <DiV3Chapter
+            number="03"
+            title="Shape Changes Apparent Size"
+            note="Length, width, outline, and orientation all affect visual spread."
+            chapterId="shape-changes-apparent-size"
+            studio
+          >
+            <div className={bodyCopy}>
               <p>
                 Shape changes the outline you see from above. Elongated cuts such
                 as oval, marquise, pear, emerald, and radiant often stretch
@@ -140,13 +171,16 @@ export default function DiamondStudioEditorial() {
                 is a useful companion.
               </p>
             </div>
-          </div>
+          </DiV3Chapter>
 
-          <div>
-            <h3 className="font-serif text-[1.15rem] font-normal leading-[1.3] tracking-[-0.015em] text-[var(--ink)] md:text-[1.25rem]">
-              Finger coverage, spread, and balance
-            </h3>
-            <div className="mt-4 space-y-4 text-[0.94rem] leading-[1.82] text-[var(--ink-soft)] md:text-[1rem] md:leading-[1.85]">
+          <DiV3Chapter
+            number="04"
+            title="Finger Coverage, Spread, and Balance"
+            note="Presence is about proportion, not simply choosing the largest stone."
+            chapterId="finger-coverage-spread-balance"
+            studio
+          >
+            <div className={bodyCopy}>
               <p>
                 Finger coverage describes how much of the hand a diamond
                 occupies when worn: the visible spread relative to finger width,
@@ -177,13 +211,16 @@ export default function DiamondStudioEditorial() {
                 that process.
               </p>
             </div>
-          </div>
+          </DiV3Chapter>
 
-          <div>
-            <h3 className="font-serif text-[1.15rem] font-normal leading-[1.3] tracking-[-0.015em] text-[var(--ink)] md:text-[1.25rem]">
-              Use the studio as a starting point, not a final verdict
-            </h3>
-            <div className="mt-4 space-y-4 text-[0.94rem] leading-[1.82] text-[var(--ink-soft)] md:text-[1rem] md:leading-[1.85]">
+          <DiV3Chapter
+            number="05"
+            title="Use the Studio as a Starting Point"
+            note="A useful preview, not a substitute for seeing a diamond in person."
+            chapterId="use-studio-as-starting-point"
+            studio
+          >
+            <div className={bodyCopy}>
               <p>
                 The Diamond Size Studio helps you understand scale before you
                 choose a stone: how carat, shape, ring size, and orientation
@@ -216,7 +253,7 @@ export default function DiamondStudioEditorial() {
                 at your own pace.
               </p>
             </div>
-          </div>
+          </DiV3Chapter>
         </div>
 
         <section
@@ -229,18 +266,19 @@ export default function DiamondStudioEditorial() {
           >
             Common questions
           </h2>
-          <dl className="mt-8 space-y-8 md:mt-10 md:space-y-9">
-            {STUDIO_FAQS.map(({ question, answer }) => (
-              <div key={question}>
-                <dt className="font-serif text-[1.05rem] font-normal leading-[1.35] tracking-[-0.015em] text-[var(--ink)] md:text-[1.1rem]">
-                  {question}
-                </dt>
-                <dd className="mt-2.5 text-[0.94rem] leading-[1.82] text-[var(--ink-soft)] md:text-[1rem] md:leading-[1.85]">
-                  {answer}
-                </dd>
-              </div>
+          <div className={DI_V3_FAQ_ACCORDION_GROUP}>
+            {STUDIO_FAQS.map(({ question, answer }, index) => (
+              <DiV3Chapter
+                key={question}
+                number={`Q${index + 1}`}
+                title={question}
+                chapterId={`studio-faq-${index + 1}`}
+                compact
+              >
+                <p>{answer}</p>
+              </DiV3Chapter>
             ))}
-          </dl>
+          </div>
         </section>
       </div>
     </section>

@@ -35,6 +35,14 @@ export const DI_V3_SECTIONS = "mx-auto mt-10 grid w-full max-w-[960px] gap-4 md:
 export const DI_V3_LANDING_ACCORDION_GROUP =
   "mt-6 grid w-full gap-3.5 md:mt-8 md:gap-4";
 
+/** Diamond Size Studio chapter group — slightly wider editorial column. */
+export const DI_V3_STUDIO_ACCORDION_GROUP =
+  "mt-10 grid w-full gap-3.5 md:mt-12 md:gap-4";
+
+/** Compact FAQ accordion group beneath main chapters. */
+export const DI_V3_FAQ_ACCORDION_GROUP =
+  "mt-6 grid w-full gap-2.5 md:mt-8 md:gap-3";
+
 export const DI_V3_CHAPTER =
   "group relative overflow-hidden rounded-[22px] border border-[rgba(181,150,98,0.24)] shadow-[0_14px_42px_rgba(30,26,22,0.035)] [background:linear-gradient(180deg,rgba(255,255,255,.42),rgba(255,255,255,.16)),rgba(251,247,239,.58)] before:pointer-events-none before:absolute before:left-[22px] before:right-[22px] before:top-0 before:h-px before:bg-[linear-gradient(90deg,transparent,rgba(181,150,98,.52),transparent)] before:opacity-70";
 
@@ -54,11 +62,25 @@ export const DI_V3_CHAPTER_DEMOTED =
 export const DI_V3_CHAPTER_LANDING =
   "border-[rgba(181,150,98,0.20)] shadow-[0_10px_32px_rgba(30,26,22,0.025)] [background:linear-gradient(180deg,rgba(255,255,255,.36),rgba(255,255,255,.12)),rgba(251,247,239,.52)]";
 
+/** Size Studio editorial variant — landing-soft with a touch more presence. */
+export const DI_V3_CHAPTER_STUDIO =
+  "border-[rgba(181,150,98,0.22)] shadow-[0_12px_36px_rgba(30,26,22,0.028)] [background:linear-gradient(180deg,rgba(255,255,255,.40),rgba(255,255,255,.14)),rgba(251,247,239,.56)]";
+
+/** Compact FAQ variant — lighter card for secondary questions. */
+export const DI_V3_CHAPTER_COMPACT =
+  "rounded-[18px] border-[rgba(58,48,38,0.12)] shadow-[0_6px_20px_rgba(30,26,22,0.018)] [background:linear-gradient(180deg,rgba(255,255,255,.30),rgba(255,255,255,.10)),rgba(251,247,239,.46)] before:opacity-50";
+
 export const DI_V3_CHAPTER_BODY =
   "relative border-t border-[rgba(181,150,98,0.18)] bg-[rgba(255,255,255,0.16)] px-5 py-7 text-[15px] leading-[1.74] text-[#6f665b] before:absolute before:left-5 before:top-0 before:h-px before:w-16 before:bg-[rgba(181,150,98,0.72)] md:px-[30px] md:py-8 md:before:left-[30px]";
 
 export const DI_V3_CHAPTER_BODY_LANDING =
   "relative border-t border-[rgba(181,150,98,0.14)] bg-[rgba(255,255,255,0.10)] px-5 py-6 text-[15px] leading-[1.74] text-[#6f665b] before:absolute before:left-5 before:top-0 before:h-px before:w-16 before:bg-[rgba(181,150,98,0.55)] md:px-[26px] md:py-7 md:before:left-[26px]";
+
+export const DI_V3_CHAPTER_BODY_STUDIO =
+  "relative border-t border-[rgba(181,150,98,0.15)] bg-[rgba(255,255,255,0.12)] px-5 py-6 text-[15px] leading-[1.74] text-[#6f665b] before:absolute before:left-5 before:top-0 before:h-px before:w-16 before:bg-[rgba(181,150,98,0.58)] md:px-[28px] md:py-7 md:before:left-[28px]";
+
+export const DI_V3_CHAPTER_BODY_COMPACT =
+  "relative border-t border-[rgba(181,150,98,0.12)] bg-[rgba(255,255,255,0.08)] px-4 py-4 text-[0.94rem] leading-[1.78] text-[#6f665b] before:absolute before:left-4 before:top-0 before:h-px before:w-12 before:bg-[rgba(181,150,98,0.45)] md:px-5 md:py-5 md:before:left-5";
 
 export const DI_V3_CHAPTER_BODY_FEATURE =
   "relative border-t border-[rgba(181,150,98,0.18)] bg-[rgba(255,255,255,0.16)] px-5 py-9 text-[16px] leading-[1.82] text-[#6f665b] before:absolute before:left-5 before:top-0 before:h-px before:w-16 before:bg-[rgba(181,150,98,0.72)] md:px-[34px] md:py-11 md:before:left-[34px]";

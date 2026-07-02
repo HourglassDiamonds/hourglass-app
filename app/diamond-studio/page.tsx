@@ -1462,7 +1462,7 @@ function SuiteStyles() {
       }
       .dts-layer-diamond.is-swapping{ opacity:0; }
       .dts-sentence{
-        position:relative; margin:4px 12px 12px; text-align:center;
+        position:relative; margin:0 12px 10px; text-align:center;
         font-family:var(--serif); font-weight:300; font-size:21px; color:var(--ink);
         letter-spacing:0.01em; pointer-events:none; z-index:30; flex:0 0 auto;
         line-height:1.35;
@@ -1476,14 +1476,9 @@ function SuiteStyles() {
         .dts-sentence-br{ display:none; }
       }
       .dts-stage-trust{
-        margin:0 12px 12px; padding:0 8px; text-align:center;
+        margin:0 12px 10px; padding:0 8px; text-align:center;
         font-size:11px; line-height:1.65; letter-spacing:0.05em;
         color:var(--ink-soft); font-weight:400;
-      }
-      .dts-page-intro{
-        margin:0 12px 6px; padding:0 8px; text-align:center;
-        font-size:10px; line-height:1.55; letter-spacing:0.04em;
-        color:var(--ink-mute); font-weight:400;
       }
       .dts-page-title{
         margin:0 12px 4px; padding:0 8px; text-align:center;
@@ -1492,7 +1487,7 @@ function SuiteStyles() {
         letter-spacing:0.02em; color:var(--ink);
       }
       .dts-page-subhead{
-        margin:0 12px 5px; padding:0 8px; text-align:center;
+        margin:0 12px 10px; padding:0 8px; text-align:center;
         font-size:10.5px; line-height:1.5; letter-spacing:0.03em;
         color:var(--ink-soft); font-weight:400;
       }
@@ -1769,17 +1764,10 @@ function SuiteStyles() {
           width:100%;
         }
         .dts-stage-trust{
-          margin:0 auto 7px;
+          margin:0 auto 8px;
           max-width:260px;
           width:100%;
           font-size:10px;
-        }
-        .dts-page-intro{
-          margin:0 auto 4px;
-          max-width:280px;
-          width:100%;
-          font-size:9.5px;
-          line-height:1.5;
         }
         .dts-page-title{
           margin:0 auto 3px;
@@ -1788,7 +1776,7 @@ function SuiteStyles() {
           font-size:clamp(1.05rem, 4.2vw, 1.2rem);
         }
         .dts-page-subhead{
-          margin:0 auto 4px;
+          margin:0 auto 8px;
           max-width:280px;
           width:100%;
           font-size:10px;
@@ -3048,14 +3036,7 @@ export default function DiamondStudioPage() {
               <div className="dts-mobile-hero studio-preview finger-preview">
                 <h1 className="dts-page-title">Diamond Size Studio</h1>
                 <p className="dts-page-subhead">
-                  Compare diamond size on your finger before you buy.
-                </p>
-                <p className="dts-page-intro">
-                  Explore how carat weight, diamond shape, ring size, and finger
-                  presence affect the way a diamond appears on the hand. Use the
-                  studio to compare round, oval, emerald, cushion, pear, marquise,
-                  radiant, princess, and Asscher diamonds before beginning a ring
-                  design.
+                  Compare carat, shape, and finger size before choosing a diamond.
                 </p>
                 <p className="dts-sentence">
                   A {formatCaratForHeadline(carat)}-carat{" "}
@@ -3065,7 +3046,6 @@ export default function DiamondStudioPage() {
                   shown on a size {formatRingSizeForHeadline(ringSize)} finger.
                 </p>
                 <p className="dts-stage-trust">
-                  Thoughtful guidance matters as much as the tools themselves.{" "}
                   <CTAGlimmer variant="text">
                     <Link
                       href="/concierge"
