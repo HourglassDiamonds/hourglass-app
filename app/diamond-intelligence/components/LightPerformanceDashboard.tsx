@@ -47,7 +47,10 @@ import AnalysisProgressNarrative from "./AnalysisProgressNarrative";
 import { CONSUMER_COPY } from "./consumer-display-labels";
 import { DI_EDITORIAL_CARD, DI_EYEBROW_STUDIO } from "./di-studio-styles";
 import { DI_V3_SHELL } from "./di-v3-styles";
-import DiLandingMarketing, { TrustPrivacyBand } from "./DiLandingMarketing";
+import DiLandingMarketing, {
+  DiLandingIntro,
+  TrustPrivacyBand,
+} from "./DiLandingMarketing";
 import DiEducationalWrapper from "./DiEducationalWrapper";
 import { resolveHourglassClarityPolicy } from "@/lib/diamond-intelligence/hourglass-clarity-policy";
 import {
@@ -513,14 +516,13 @@ export default function LightPerformanceDashboard({
     <>
       {showLandingMarketing ? <DiLandingMarketing /> : null}
 
-      {showLandingMarketing ? <DiEducationalWrapper /> : null}
-
       <section className={shellClass}>
+        {showLandingMarketing ? <DiLandingIntro /> : null}
         <div
           id="di-upload-form"
           className={`scroll-mt-24 p-6 md:p-8 ${
             showLandingMarketing
-              ? "bg-transparent pt-6 md:pt-8"
+              ? "bg-transparent pt-4 md:pt-6"
               : `${DI_EDITORIAL_CARD} mb-8`
           }`}
         >
@@ -543,6 +545,8 @@ export default function LightPerformanceDashboard({
       </div>
 
       {showLandingMarketing ? <TrustPrivacyBand /> : null}
+
+      {showLandingMarketing ? <DiEducationalWrapper /> : null}
 
       {resultState === "PROCESSING" ? (
         <AnalysisProgressNarrative active />

@@ -3,33 +3,59 @@ import {
   DIAMOND_INTELLIGENCE_CERTIFICATION_LINKS,
   DIAMOND_INTELLIGENCE_FAQS,
 } from "@/lib/seo/diamond-intelligence-educational";
-import { DI_BODY_STUDIO, DI_SERIF_HEADLINE } from "./di-studio-styles";
+import { DI_SERIF_HEADLINE } from "./di-studio-styles";
 
 const editorialLink =
   "text-[#6b5048] underline underline-offset-4 transition-colors hover:text-[#1f1d1a]";
 
+const bodyCopy =
+  "space-y-4 text-[0.94rem] leading-[1.82] text-[#5f5148] md:text-[1rem] md:leading-[1.85]";
+
+const summaryClass =
+  "flex cursor-pointer list-none items-center justify-between gap-4 py-4 text-left transition-colors hover:text-[#1f1d1a] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#b59662]/50 md:py-5 [&::-webkit-details-marker]:hidden";
+
+const summaryTitleClass = `${DI_SERIF_HEADLINE} text-[1.05rem] font-normal leading-[1.35] tracking-[-0.015em] md:text-[1.1rem]`;
+
+const plusIndicatorClass =
+  "mt-0.5 shrink-0 text-[1.1rem] font-light leading-none text-[#948a80] transition-transform duration-200 group-open:rotate-45";
+
+function EditorialAccordion({
+  summary,
+  children,
+}: {
+  summary: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <details className="group border-b border-[#e4dbcf]/50">
+      <summary className={summaryClass}>
+        <span className={summaryTitleClass}>{summary}</span>
+        <span className={plusIndicatorClass} aria-hidden>
+          +
+        </span>
+      </summary>
+      <div className="pb-6 pt-1 md:pb-7">{children}</div>
+    </details>
+  );
+}
+
 export default function DiEducationalWrapper() {
   return (
     <section
-      className="border-b border-[#e4dbcf]/60 bg-[#f7f1e7] px-5 py-12 md:px-10 md:py-16"
+      className="mt-10 border-t border-[#e4dbcf]/60 pt-10 md:mt-12 md:pt-12"
       aria-labelledby="di-educational-heading"
     >
       <div className="mx-auto w-full max-w-[42rem]">
         <h2
           id="di-educational-heading"
-          className={`${DI_SERIF_HEADLINE} text-[1.65rem] font-normal leading-[1.2] tracking-[-0.02em] md:text-[1.85rem]`}
+          className={`${DI_SERIF_HEADLINE} text-[1.35rem] font-normal leading-[1.25] tracking-[-0.02em] md:text-[1.5rem]`}
         >
-          How Diamond Intelligence reads your report
+          Understand the Assessment
         </h2>
 
-        <div className={`${DI_BODY_STUDIO} mt-10 space-y-12 md:mt-12 md:space-y-14`}>
-          <div>
-            <h3
-              className={`${DI_SERIF_HEADLINE} text-[1.15rem] font-normal leading-[1.3] tracking-[-0.015em] md:text-[1.25rem]`}
-            >
-              What Diamond Intelligence does
-            </h3>
-            <div className="mt-4 space-y-4 text-[0.94rem] leading-[1.82] text-[#5f5148] md:text-[1rem] md:leading-[1.85]">
+        <div className="mt-6 border-t border-[#e4dbcf]/40 md:mt-8">
+          <EditorialAccordion summary="How Diamond Intelligence Works">
+            <div className={bodyCopy}>
               <p>
                 Diamond Intelligence is an independent interpretation layer for
                 original diamond grading reports. You upload a PDF from a
@@ -38,6 +64,11 @@ export default function DiEducationalWrapper() {
                 translates them into practical context using Hourglass review
                 standards.
               </p>
+            </div>
+          </EditorialAccordion>
+
+          <EditorialAccordion summary="What Diamond Intelligence does">
+            <div className={bodyCopy}>
               <p>
                 It is not a listing search, a price engine, or a sales funnel.
                 The goal is clearer judgment: understanding what a report
@@ -45,15 +76,10 @@ export default function DiEducationalWrapper() {
                 overall quality before you commit to a stone.
               </p>
             </div>
-          </div>
+          </EditorialAccordion>
 
-          <div>
-            <h3
-              className={`${DI_SERIF_HEADLINE} text-[1.15rem] font-normal leading-[1.3] tracking-[-0.015em] md:text-[1.25rem]`}
-            >
-              Reading GIA, IGI, and GCAL 8X reports
-            </h3>
-            <div className="mt-4 space-y-4 text-[0.94rem] leading-[1.82] text-[#5f5148] md:text-[1rem] md:leading-[1.85]">
+          <EditorialAccordion summary="Reading GIA, IGI, and GCAL 8X reports">
+            <div className={bodyCopy}>
               <p>
                 Grading reports use a shared vocabulary—carat, color, clarity,
                 cut—but the numbers behind those grades are not self-explanatory.
@@ -97,49 +123,46 @@ export default function DiEducationalWrapper() {
                 for a walkthrough of what belongs on the page.
               </p>
             </div>
-          </div>
+          </EditorialAccordion>
 
-          <div>
-            <h3
-              className={`${DI_SERIF_HEADLINE} text-[1.15rem] font-normal leading-[1.3] tracking-[-0.015em] md:text-[1.25rem]`}
-            >
-              A report is a starting point—not the final decision
-            </h3>
-            <div className="mt-4 space-y-4 text-[0.94rem] leading-[1.82] text-[#5f5148] md:text-[1rem] md:leading-[1.85]">
-              <p>
-                Even an excellent certificate cannot fully describe how a
-                diamond moves under different lighting, how inclusions behave at
-                distance, or how the stone will feel in your setting. Paper
-                grades are useful precisely because they narrow the field—but
-                the final choice still depends on seeing the diamond, comparing
-                alternatives, and weighing beauty against budget with calm
-                judgment.
-              </p>
-              <p>
-                Diamond Intelligence is designed for that earlier stage: when you
-                are evaluating a specific report and want a structured second
-                opinion before scheduling a viewing or conversation. Pair it
-                with the{" "}
-                <Link href="/diamond-studio" className={editorialLink}>
-                  Diamond Size Studio
-                </Link>{" "}
-                when size on the hand is part of the question, and with{" "}
-                <Link href="/our-approach" className={editorialLink}>
-                  our approach
-                </Link>{" "}
-                when you want to understand how Hourglass evaluates stones in
-                person.
-              </p>
+          <EditorialAccordion summary="Why the Report Is Only a Starting Point">
+            <div className={bodyCopy}>
+              <h3
+                className={`${DI_SERIF_HEADLINE} text-[1.05rem] font-normal leading-[1.35] tracking-[-0.015em] md:text-[1.1rem]`}
+              >
+                A report is a starting point—not the final decision
+              </h3>
+              <div className="mt-4 space-y-4">
+                <p>
+                  Even an excellent certificate cannot fully describe how a
+                  diamond moves under different lighting, how inclusions behave at
+                  distance, or how the stone will feel in your setting. Paper
+                  grades are useful precisely because they narrow the field—but
+                  the final choice still depends on seeing the diamond, comparing
+                  alternatives, and weighing beauty against budget with calm
+                  judgment.
+                </p>
+                <p>
+                  Diamond Intelligence is designed for that earlier stage: when you
+                  are evaluating a specific report and want a structured second
+                  opinion before scheduling a viewing or conversation. Pair it
+                  with the{" "}
+                  <Link href="/diamond-studio" className={editorialLink}>
+                    Diamond Size Studio
+                  </Link>{" "}
+                  when size on the hand is part of the question, and with{" "}
+                  <Link href="/our-approach" className={editorialLink}>
+                    our approach
+                  </Link>{" "}
+                  when you want to understand how Hourglass evaluates stones in
+                  person.
+                </p>
+              </div>
             </div>
-          </div>
+          </EditorialAccordion>
 
-          <div>
-            <h3
-              className={`${DI_SERIF_HEADLINE} text-[1.15rem] font-normal leading-[1.3] tracking-[-0.015em] md:text-[1.25rem]`}
-            >
-              Graduate Gemologist review and conservative standards
-            </h3>
-            <div className="mt-4 space-y-4 text-[0.94rem] leading-[1.82] text-[#5f5148] md:text-[1rem] md:leading-[1.85]">
+          <EditorialAccordion summary="Graduate Gemologist review and conservative standards">
+            <div className={bodyCopy}>
               <p>
                 Hourglass Diamonds is led by a Graduate Gemologist with deep
                 trade experience. Diamond Intelligence reflects that
@@ -163,37 +186,28 @@ export default function DiEducationalWrapper() {
                 without pressure.
               </p>
             </div>
-          </div>
+          </EditorialAccordion>
+
+          <EditorialAccordion summary="Common Questions">
+            <dl className="space-y-8 md:space-y-9">
+              {DIAMOND_INTELLIGENCE_FAQS.map(({ question, answer }) => (
+                <div key={question}>
+                  <dt
+                    className={`${DI_SERIF_HEADLINE} text-[1.05rem] font-normal leading-[1.35] tracking-[-0.015em] md:text-[1.1rem]`}
+                  >
+                    {question}
+                  </dt>
+                  <dd className="mt-2.5 text-[0.94rem] leading-[1.82] text-[#5f5148] md:text-[1rem] md:leading-[1.85]">
+                    {answer}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </EditorialAccordion>
         </div>
 
         <section
-          className="mt-14 border-t border-[#e4dbcf]/40 pt-12 md:mt-16 md:pt-14"
-          aria-labelledby="di-faq-heading"
-        >
-          <h2
-            id="di-faq-heading"
-            className={`${DI_SERIF_HEADLINE} text-[1.35rem] font-normal leading-[1.25] tracking-[-0.02em] md:text-[1.5rem]`}
-          >
-            Common questions
-          </h2>
-          <dl className="mt-8 space-y-8 md:mt-10 md:space-y-9">
-            {DIAMOND_INTELLIGENCE_FAQS.map(({ question, answer }) => (
-              <div key={question}>
-                <dt
-                  className={`${DI_SERIF_HEADLINE} text-[1.05rem] font-normal leading-[1.35] tracking-[-0.015em] md:text-[1.1rem]`}
-                >
-                  {question}
-                </dt>
-                <dd className="mt-2.5 text-[0.94rem] leading-[1.82] text-[#5f5148] md:text-[1rem] md:leading-[1.85]">
-                  {answer}
-                </dd>
-              </div>
-            ))}
-          </dl>
-        </section>
-
-        <section
-          className="mt-14 border-t border-[#e4dbcf]/40 pt-10 md:mt-16 md:pt-12"
+          className="mt-10 border-t border-[#e4dbcf]/40 pt-8 md:mt-12 md:pt-10"
           aria-labelledby="di-cert-reading-heading"
         >
           <h2

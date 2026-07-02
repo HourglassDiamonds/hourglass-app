@@ -155,6 +155,20 @@ export function TrustPrivacyBand() {
   );
 }
 
+export function DiLandingIntro() {
+  return (
+    <p
+      className={`${DI_SERIF_HEADLINE} mx-auto mb-2 max-w-[36rem] text-center text-[0.94rem] font-normal leading-[1.78] tracking-normal text-[#5f5148] md:text-[1rem] md:leading-[1.82]`}
+      style={{ textWrap: "balance" }}
+    >
+      Diamond Intelligence is an independent interpretation layer for original
+      diamond grading reports. Upload a PDF from a recognized laboratory to
+      receive an assessment of quality, light performance, craftsmanship, and
+      purchase value before making a decision.
+    </p>
+  );
+}
+
 export default function DiLandingMarketing() {
   return <LandingHero />;
 }
