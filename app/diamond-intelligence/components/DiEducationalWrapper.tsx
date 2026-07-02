@@ -2,7 +2,10 @@ import Link from "next/link";
 import {
   DIAMOND_INTELLIGENCE_CERTIFICATION_LINKS,
   DIAMOND_INTELLIGENCE_FAQS,
+  DIAMOND_INTELLIGENCE_LANDING_ACCORDION_NOTES,
 } from "@/lib/seo/diamond-intelligence-educational";
+import DiV3Chapter from "./DiV3Chapter";
+import { DI_V3_LANDING_ACCORDION_GROUP } from "./di-v3-styles";
 import { DI_SERIF_HEADLINE } from "./di-studio-styles";
 
 const editorialLink =
@@ -10,34 +13,6 @@ const editorialLink =
 
 const bodyCopy =
   "space-y-4 text-[0.94rem] leading-[1.82] text-[#5f5148] md:text-[1rem] md:leading-[1.85]";
-
-const summaryClass =
-  "flex cursor-pointer list-none items-center justify-between gap-4 py-4 text-left transition-colors hover:text-[#1f1d1a] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#b59662]/50 md:py-5 [&::-webkit-details-marker]:hidden";
-
-const summaryTitleClass = `${DI_SERIF_HEADLINE} text-[1.05rem] font-normal leading-[1.35] tracking-[-0.015em] md:text-[1.1rem]`;
-
-const plusIndicatorClass =
-  "mt-0.5 shrink-0 text-[1.1rem] font-light leading-none text-[#948a80] transition-transform duration-200 group-open:rotate-45";
-
-function EditorialAccordion({
-  summary,
-  children,
-}: {
-  summary: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <details className="group border-b border-[#e4dbcf]/50">
-      <summary className={summaryClass}>
-        <span className={summaryTitleClass}>{summary}</span>
-        <span className={plusIndicatorClass} aria-hidden>
-          +
-        </span>
-      </summary>
-      <div className="pb-6 pt-1 md:pb-7">{children}</div>
-    </details>
-  );
-}
 
 export default function DiEducationalWrapper() {
   return (
@@ -53,8 +28,14 @@ export default function DiEducationalWrapper() {
           Understand the Assessment
         </h2>
 
-        <div className="mt-6 border-t border-[#e4dbcf]/40 md:mt-8">
-          <EditorialAccordion summary="How Diamond Intelligence Works">
+        <div className={DI_V3_LANDING_ACCORDION_GROUP}>
+          <DiV3Chapter
+            number="01"
+            title="How Diamond Intelligence Works"
+            note={DIAMOND_INTELLIGENCE_LANDING_ACCORDION_NOTES.howItWorks}
+            chapterId="how-diamond-intelligence-works"
+            landing
+          >
             <div className={bodyCopy}>
               <p>
                 Diamond Intelligence is an independent interpretation layer for
@@ -65,9 +46,15 @@ export default function DiEducationalWrapper() {
                 standards.
               </p>
             </div>
-          </EditorialAccordion>
+          </DiV3Chapter>
 
-          <EditorialAccordion summary="What Diamond Intelligence does">
+          <DiV3Chapter
+            number="02"
+            title="What Diamond Intelligence does"
+            note={DIAMOND_INTELLIGENCE_LANDING_ACCORDION_NOTES.whatItDoes}
+            chapterId="what-diamond-intelligence-does"
+            landing
+          >
             <div className={bodyCopy}>
               <p>
                 It is not a listing search, a price engine, or a sales funnel.
@@ -76,9 +63,15 @@ export default function DiEducationalWrapper() {
                 overall quality before you commit to a stone.
               </p>
             </div>
-          </EditorialAccordion>
+          </DiV3Chapter>
 
-          <EditorialAccordion summary="Reading GIA, IGI, and GCAL 8X reports">
+          <DiV3Chapter
+            number="03"
+            title="Reading GIA, IGI, and GCAL 8X reports"
+            note={DIAMOND_INTELLIGENCE_LANDING_ACCORDION_NOTES.readingReports}
+            chapterId="reading-gia-igi-gcal-reports"
+            landing
+          >
             <div className={bodyCopy}>
               <p>
                 Grading reports use a shared vocabulary—carat, color, clarity,
@@ -123,9 +116,15 @@ export default function DiEducationalWrapper() {
                 for a walkthrough of what belongs on the page.
               </p>
             </div>
-          </EditorialAccordion>
+          </DiV3Chapter>
 
-          <EditorialAccordion summary="Why the Report Is Only a Starting Point">
+          <DiV3Chapter
+            number="04"
+            title="Why the Report Is Only a Starting Point"
+            note={DIAMOND_INTELLIGENCE_LANDING_ACCORDION_NOTES.startingPoint}
+            chapterId="why-report-is-starting-point"
+            landing
+          >
             <div className={bodyCopy}>
               <h3
                 className={`${DI_SERIF_HEADLINE} text-[1.05rem] font-normal leading-[1.35] tracking-[-0.015em] md:text-[1.1rem]`}
@@ -159,9 +158,15 @@ export default function DiEducationalWrapper() {
                 </p>
               </div>
             </div>
-          </EditorialAccordion>
+          </DiV3Chapter>
 
-          <EditorialAccordion summary="Graduate Gemologist review and conservative standards">
+          <DiV3Chapter
+            number="05"
+            title="Graduate Gemologist review and conservative standards"
+            note={DIAMOND_INTELLIGENCE_LANDING_ACCORDION_NOTES.gemologistStandards}
+            chapterId="graduate-gemologist-review"
+            landing
+          >
             <div className={bodyCopy}>
               <p>
                 Hourglass Diamonds is led by a Graduate Gemologist with deep
@@ -186,9 +191,15 @@ export default function DiEducationalWrapper() {
                 without pressure.
               </p>
             </div>
-          </EditorialAccordion>
+          </DiV3Chapter>
 
-          <EditorialAccordion summary="Common Questions">
+          <DiV3Chapter
+            number="06"
+            title="Common Questions"
+            note={DIAMOND_INTELLIGENCE_LANDING_ACCORDION_NOTES.commonQuestions}
+            chapterId="common-questions"
+            landing
+          >
             <dl className="space-y-8 md:space-y-9">
               {DIAMOND_INTELLIGENCE_FAQS.map(({ question, answer }) => (
                 <div key={question}>
@@ -203,7 +214,7 @@ export default function DiEducationalWrapper() {
                 </div>
               ))}
             </dl>
-          </EditorialAccordion>
+          </DiV3Chapter>
         </div>
 
         <section

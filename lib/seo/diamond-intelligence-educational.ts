@@ -5,6 +5,17 @@ export type DiamondIntelligenceFaq = {
   answer: string;
 };
 
+/** Collapsed-card supporting lines for the landing-page educational accordions. */
+export const DIAMOND_INTELLIGENCE_LANDING_ACCORDION_NOTES = {
+  howItWorks: "Independent interpretation for original grading reports.",
+  whatItDoes: "Clearer judgment—not a listing search or price engine.",
+  readingReports: "What laboratory measurements mean in practice.",
+  startingPoint: "Paper grades narrow the field; the final choice is still yours.",
+  gemologistStandards:
+    "Performance-oriented, honest about what reports cannot prove.",
+  commonQuestions: "Quick answers before you upload.",
+} as const;
+
 export const DIAMOND_INTELLIGENCE_FAQS: DiamondIntelligenceFaq[] = [
   {
     question: "What is Diamond Intelligence?",
