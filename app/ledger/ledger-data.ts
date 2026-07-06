@@ -71,7 +71,7 @@ export type LedgerIndexDefinition = {
   watchingSectionTitle?: string;
 };
 
-export const LEDGER_UPDATED = "Updated weekly — June 28, 2026";
+export const LEDGER_UPDATED = "Updated weekly — July 6, 2026";
 
 const SCALE_GRADIENT_PRESSURE =
   "linear-gradient(90deg, #617f98 0%, #86a2b4 16%, #aaa99d 32%, #c6b384 50%, #bd8d55 66%, #985844 82%, #5f2d31 100%)";
@@ -106,19 +106,19 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     reading: 91,
     readingLabel: "Pressure Reading",
     status: "Elevated With Fragile Relief",
-    weeklyDelta: 1,
+    weeklyDelta: 0,
     scaleLabels: ["Cold", "Stable", "Elevated", "Hot", "Critical"],
     scaleGradient: SCALE_GRADIENT_PRESSURE,
     summary:
-      "Gulf-route confidence thinned as routing, insurance, and transit friction persisted — open but uneven, not closed. Oil pricing remained comparatively calm and eased from earlier highs; markets stayed functional beneath structurally elevated conditions.",
+      "Hormuz transit is recovering but remains materially below normal — routes open but uneven, not normalized. Oil pricing eased toward pre-conflict levels; corridor governance, routing confidence, insurance, and sovereignty remain unresolved beneath functioning markets.",
     summaryLead: "The system remains in an",
     summaryEmphasis: "elevated environment with fragile corridor relief",
     summaryCompact:
-      "Corridor confidence thinned around Hormuz and Gulf routes while oil pricing stayed comparatively calm. Routing, insurance, and transit friction persist beneath functioning markets, rate-sensitive financial conditions, and ongoing physical constraints in power and grid.",
+      "Partial Hormuz recovery with oil near pre-conflict levels — routing, insurance, and corridor governance remain unresolved beneath rate-sensitive financial conditions and ongoing grid constraints.",
     weeklyNote:
-      "Energy-route confidence weakened after shipping incidents and thinner transit volumes, even as limited traffic continued and oil pricing remained comparatively calm. The U.S.–Iran framework stayed active but visibly strained — routing, permit, insurance, and security questions unresolved. Russia sanctions pressure remains an active channel. Financial conditions grew more rate-sensitive after the Fed's revised inflation outlook. Markets remained functional; pressure stayed elevated rather than disorder-level.",
+      "Hormuz traffic continued a partial recovery after the June ceasefire, but transit volumes remain well below pre-war norms. Oil prices eased toward pre-conflict levels without implying normalized corridor confidence — routing, insurance, sovereignty, and fee disputes stay active. Iran renewed route-control warnings as Doha talks produced cautious progress. The read confirms the prior assessment rather than marking a new pressure regime. Russia sanctions pressure remains an active channel, with the EU moving to freeze the G7 oil price cap. Financial conditions stay rate-sensitive under the Fed's inflation focus. Markets remained functional; pressure stayed elevated.",
     weeklyNoteCompact:
-      "Fragile corridor relief — routing and insurance friction beneath functioning markets and comparatively calm oil pricing.",
+      "Fragile corridor relief confirmed — partial transit recovery and calmer oil beneath unresolved routing, insurance, and governance questions.",
     methodPills: [
       { label: "Reading Type", value: "Weighted editorial index" },
       { label: "Primary Drivers", value: "Corridor confidence, shipping, rates" },
@@ -126,9 +126,9 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     ],
     recentReadings: [
       { week: "This Week", degrees: 91, state: "Elevated" },
-      { week: "Last Week", degrees: 90, state: "Elevated" },
-      { week: "2 Weeks Ago", degrees: 91, state: "Elevated" },
-      { week: "3 Weeks Ago", degrees: 90, state: "Elevated" },
+      { week: "Last Week", degrees: 91, state: "Elevated" },
+      { week: "2 Weeks Ago", degrees: 90, state: "Elevated" },
+      { week: "3 Weeks Ago", degrees: 91, state: "Elevated" },
     ],
     benchmarks: [
       { name: "Stable Expansion", score: 50, note: "Low pressure", tier: "quiet" },
@@ -141,15 +141,15 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     editorialBlocks: [
       {
         title: "Hormuz & shipping corridors",
-        body: "Corridor confidence thinned as transit volumes fell and routing, permit, insurance, and security questions persisted — routes remain open but uneven, not normalized. Oil pricing stayed comparatively calm; the binding constraint is confidence, not outright closure.",
+        body: "Transit volumes are recovering but remain materially below normal — routes are open but uneven, not normalized. Oil pricing eased toward pre-conflict levels; the binding constraint is corridor confidence, governance, and insurance — not outright closure.",
       },
       {
         title: "Russia sanctions & energy flows",
-        body: "G7 pressure on Russia's war economy remains an active transmission channel. Whether sanctions tighten oil and gas flows as corridor relief trades fade is a watch item beneath functioning markets.",
+        body: "The EU is moving to freeze the G7 oil price cap at current levels, keeping sanctions pressure active as corridor conditions partially normalize. Whether enforcement tightens shadow-fleet flows remains a watch item beneath functioning markets.",
       },
       {
         title: "Markets & physical constraints",
-        body: "Rate sensitivity and inflation persistence keep financial conditions narrow. Markets remain functional, but AI power demand and grid constraints increasingly set how quickly expansion converts to capacity.",
+        body: "Rate sensitivity and inflation persistence keep financial conditions narrow. Markets remain functional, but grid emergencies and AI power demand increasingly show how physical constraints set the pace beneath calm headline pricing.",
       },
     ],
   },
@@ -170,17 +170,17 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     reading: 85,
     readingLabel: "Signal Clarity",
     status: "High-Attention, Uneven Clarity",
-    weeklyDelta: 1,
+    weeklyDelta: 0,
     scaleLabels: ["Quiet", "Clear", "Mixed", "Noisy", "Saturated"],
     scaleGradient: SCALE_GRADIENT_SIGNAL,
     summary:
-      "Information integrity strain rose as World Cup scams, deepfakes, and AI-generated content spread at scale. Geopolitical frame conflict on Hormuz and institutional-market communication divergence under Warsh's Fed added noise — high-attention, uneven clarity across channels.",
+      "High-attention, uneven clarity persists — access claims increasingly require qualification as \"released,\" \"available,\" and \"deployed\" describe different realities by geography, approval status, and account tier. World Cup fraud risk, Hormuz frame conflict, and Fed communication divergence continue beneath partial normalization in frontier-model access.",
     summaryCompact:
-      "High-attention, uneven clarity — World Cup fraud and deepfakes alongside geopolitical frame conflict, Fed communication shift, and overlapping infrastructure narratives.",
+      "High-attention, uneven clarity — qualified access claims alongside event fraud risk, geopolitical frame conflict, and institutional-market divergence.",
     weeklyNote:
-      "World Cup coverage amplified fraud, fake streams, and AI-generated content — trust and verification strain in a high-attention environment. Hormuz framing split between corridor-functioning and corridor-risk narratives in the same cycle. Fed communication shifted under new leadership, adding institutional-market divergence. Convergence on physical-capacity themes continues — observational, not hidden-truth framing.",
+      "The information environment refined rather than escalated. Access claims for AI models increasingly require qualification — broad deployment, partner-only previews, and government-coordinated releases describe different realities. Claude Fable 5 restoration is a partial normalization signal; earlier June export controls and pre-update GPT-5.6 announcements are background, not new shocks. World Cup fraud and deepfake risk remain embedded from the prior week. Hormuz framing still splits between corridor-functioning and corridor-risk narratives. Fed communication under Warsh adds institutional-market divergence without justifying a higher clarity score.",
     weeklyNoteCompact:
-      "Information integrity under pressure — World Cup scams and deepfakes, geopolitical frame conflict, and institutional-market divergence.",
+      "Uneven clarity — qualified access claims, embedded event fraud risk, and persistent frame conflict without a score increase.",
     methodPills: [
       { label: "Reading Type", value: "Editorial signal map" },
       { label: "Primary Channels", value: "Institutional, market, event, mainstream" },
@@ -188,9 +188,9 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     ],
     recentReadings: [
       { week: "This Week", degrees: 85, state: "Mixed" },
-      { week: "Last Week", degrees: 84, state: "Mixed" },
-      { week: "2 Weeks Ago", degrees: 81, state: "Clear" },
-      { week: "3 Weeks Ago", degrees: 79, state: "Clear" },
+      { week: "Last Week", degrees: 85, state: "Mixed" },
+      { week: "2 Weeks Ago", degrees: 84, state: "Mixed" },
+      { week: "3 Weeks Ago", degrees: 81, state: "Clear" },
     ],
     benchmarks: [
       { name: "Quiet Cycle", score: 42, note: "Low density" },
@@ -201,16 +201,16 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     ],
     editorialBlocks: [
       {
+        title: "Qualified access claims",
+        body: "\"Released,\" \"available,\" and \"deployed\" increasingly describe different realities — geography, government approval, account tier, and partner access matter. The policy-gated model-release cycle is structural; Fable 5 restoration is partial normalization, not full clarity.",
+      },
+      {
         title: "Event-driven noise",
-        body: "World Cup mid-tournament coverage sustains a high-attention environment — fraud, fake streams, and AI-generated deepfakes spread alongside transportation and security reporting, with trust and verification strain rising.",
+        body: "World Cup knockout-stage coverage sustains a high-attention environment — fraud, fake streams, and AI-generated content remain embedded from the prior assessment, not a newly accelerating shock.",
       },
       {
-        title: "Geopolitical framing",
-        body: "Hormuz corridor-functioning and corridor-risk narratives appear in the same coverage cycle — institutional language emphasizing coordination, with uneven agreement on whether routes are open, safe, or selectively usable.",
-      },
-      {
-        title: "Institutional communication",
-        body: "Fed communication shifted under new leadership — shorter statements, revised inflation outlook, and market repricing add frame divergence alongside ongoing convergence on grid and infrastructure themes.",
+        title: "Geopolitical & institutional framing",
+        body: "Hormuz corridor-functioning and corridor-risk narratives still appear in the same cycle. Fed communication under Warsh adds institutional-market divergence alongside ongoing convergence on grid and infrastructure themes.",
       },
     ],
   },
@@ -228,30 +228,30 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     intro:
       "A weekly index of how AI capability, deployment, and physical infrastructure move together: models, agents, enterprise integration, power, grid access, and organizational adaptation. The frame is operational and observational — not promotional.",
     updatedLabel: LEDGER_UPDATED,
-    reading: 83,
+    reading: 84,
     readingLabel: "Acceleration Reading",
     status: "Power- and Grid-Bound Acceleration",
     weeklyDelta: 1,
     scaleLabels: ["Early", "Building", "Rising", "Fast", "Surge"],
     scaleGradient: SCALE_GRADIENT_AI,
     summary:
-      "Capability advances under physical limits — frontier movement remains meaningful but gated, while power, grid access, and large-load integration increasingly set practical pace. Deployment friction matters more than headline release cadence.",
+      "Capability advanced through broad Claude Sonnet 5 deployment across consumer, enterprise, coding, and API surfaces — while frontier access remains gated and grid constraints turned operational during the PJM heat event. Deployment friction and physical limits still set practical pace.",
     summaryCompact:
-      "Power- and grid-bound acceleration — capability advances under physical limits, with FERC large-load rules reinforcing grid and power as pace-setters.",
+      "Power- and grid-bound acceleration — broad Sonnet 5 deployment beneath gated frontier access and operational grid constraints.",
     weeklyNote:
-      "Large-load grid integration moved into the regulatory foreground as FERC directed regional operators to revise data-center connection rules. A limited frontier preview added marginal capability signal without broad availability. Enterprise adoption and coding integration advanced; governance and energized capacity remain co-equal limits on deployment.",
+      "Claude Sonnet 5 launched June 30 with broad availability across plans, Claude Code, and the API — the week's clearest capability gain, with stronger agentic and tool-use behavior at a widely deployed tier. Partner-only frontier previews and government-coordinated release gates remain separate from broad deployment. PJM heat emergencies made grid and power constraints operational, not theoretical. Enterprise adoption and coding integration advanced; governance, energized capacity, and access qualification remain co-equal limits.",
     weeklyNoteCompact:
-      "Grid-bound acceleration — policy-visible power constraints and gated frontier movement setting pace alongside capability.",
+      "Broad deployment gains beneath gated frontier access and operational grid constraints.",
     methodPills: [
       { label: "Reading Type", value: "Capability + infrastructure index" },
       { label: "Primary Drivers", value: "Power, grid, deployment" },
       { label: "Current Direction", value: "Advancing, grid-bound" },
     ],
     recentReadings: [
-      { week: "This Week", degrees: 83, state: "Accelerating" },
-      { week: "Last Week", degrees: 82, state: "Accelerating" },
-      { week: "2 Weeks Ago", degrees: 79, state: "Accelerating" },
-      { week: "3 Weeks Ago", degrees: 77, state: "Accelerating" },
+      { week: "This Week", degrees: 84, state: "Accelerating" },
+      { week: "Last Week", degrees: 83, state: "Accelerating" },
+      { week: "2 Weeks Ago", degrees: 82, state: "Accelerating" },
+      { week: "3 Weeks Ago", degrees: 79, state: "Accelerating" },
     ],
     benchmarks: [
       { name: "Pre-Transformer", score: 38, note: "2017 era" },
@@ -262,16 +262,16 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     ],
     editorialBlocks: [
       {
-        title: "Power & grid constraints",
-        body: "FERC's large-load order made grid integration policy-visible — data-center connection costs, interconnection timelines, and utility responsiveness increasingly define deployment pace alongside software capability.",
+        title: "Broad deployment gains",
+        body: "Claude Sonnet 5 reached general availability across consumer, enterprise, coding, and API surfaces — meaningful agentic and tool-use capability at a widely deployed tier, distinct from partner-only frontier previews.",
       },
       {
-        title: "Frontier movement",
-        body: "Limited frontier previews add marginal capability signal without broad availability — meaningful but gated, with deployment friction outweighing headline release cadence in practical planning.",
+        title: "Gated frontier access",
+        body: "Frontier models remain behind government-coordinated previews and partner gates — capability signals exist, but \"released\" and \"available\" describe different realities depending on access path and approval status.",
       },
       {
-        title: "Enterprise adoption",
-        body: "Workflow dependence and internal tooling expand cautiously — integration, review layers, and governance increasingly define practical gains over frontier releases.",
+        title: "Operational grid constraints",
+        body: "PJM heat emergencies made power and grid limits operational — backup-generation authority for large loads and systemwide demand response set practical pace alongside software capability.",
       },
     ],
   },
@@ -296,15 +296,15 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     scaleLabels: ["Soft", "Stable", "Firm", "Tight", "Constrained"],
     scaleGradient: SCALE_GRADIENT_MATERIALS,
     summary:
-      "Precious materials remain strategically firm — central-bank reserve behavior and supply discipline support the structural read, while near-term gold shows real-yield sensitivity. Premium natural categories stay selective; commercial ranges remain price-sensitive.",
+      "Precious materials remain strategically firm — central-bank accumulation and reserve diversification support the structural read, while gold shows near-term real-yield sensitivity. De Beers is aligning July sight pricing closer to market conditions; premium natural categories stay selective.",
     summaryLead: "Precious materials remain in a",
     summaryEmphasis: "strategically firm environment",
     summaryCompact:
-      "Strategically firm — structural support from central-bank demand and supply discipline, with gold showing real-yield sensitivity and premium natural selectively resilient.",
+      "Strategically firm — central-bank gold demand and supply discipline, with selective diamond-pipeline softness and embedded lab-grown compression.",
     weeklyNote:
-      "Gold remained structurally supported by central-bank reserve behavior but showed near-term sensitivity to rates and real yields — firm without dramatic volatility. De Beers-led supply discipline continued; premium natural diamonds held selective firmness in key sizes and cuts. Lab-grown compression persisted in mid-tier channels without broad market alarm.",
+      "Central banks continued net gold accumulation in May, with Poland, China, and other reserve managers adding to holdings — structural support beneath near-term real-yield sensitivity. De Beers signaled July sight pricing alignment closer to market conditions amid a leaner sightholder roster, reflecting selective pipeline adjustment rather than broad market stress. Premium natural categories held selective firmness; commercial ranges remain price-sensitive. Lab-grown compression persisted in mid-tier channels as an embedded factor, not a new shock.",
     weeklyNoteCompact:
-      "Strategically firm — real-yield sensitivity on gold, supply discipline, premium natural selectively resilient.",
+      "Strategically firm — central-bank demand, selective De Beers pricing alignment, premium natural selectively resilient.",
     methodPills: [
       { label: "Reading Type", value: "Materials + sourcing index" },
       { label: "Primary Focus", value: "Gold, platinum, diamonds" },
@@ -313,8 +313,8 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     recentReadings: [
       { week: "This Week", degrees: 85, state: "Firm" },
       { week: "Last Week", degrees: 85, state: "Firm" },
-      { week: "2 Weeks Ago", degrees: 83, state: "Firm" },
-      { week: "3 Weeks Ago", degrees: 86, state: "Firm" },
+      { week: "2 Weeks Ago", degrees: 85, state: "Firm" },
+      { week: "3 Weeks Ago", degrees: 83, state: "Firm" },
     ],
     benchmarks: [
       { name: "Quiet Wholesale", score: 45, note: "Buyer’s market" },
@@ -326,15 +326,15 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     editorialBlocks: [
       {
         title: "Gold & central-bank demand",
-        body: "Gold holds structurally elevated support from central-bank reserve behavior — but near-term movement shows real-yield sensitivity beneath the strategic read, without dramatic volatility.",
+        body: "Central-bank net buying continued — reserve diversification and crisis-hedge demand support the structural read, with near-term gold movement still showing real-yield sensitivity beneath it.",
       },
       {
         title: "Natural diamonds",
-        body: "Supply discipline from major producers continues; premium natural categories remain selectively firm in key sizes and cuts. Commercial ranges stay price-sensitive — structural tightening, not broad market stress.",
+        body: "De Beers is aligning July sight rough pricing closer to market conditions while maintaining a leaner sightholder base — selective pipeline adjustment, not broad market loosening. Premium natural categories remain selectively firm in key sizes and cuts.",
       },
       {
         title: "Sourcing posture",
-        body: "Provenance, selective inventory, and patient sourcing remain preferable to reactive buying — particularly for engagement and heirloom-grade work where high-quality natural stones behave as scarcity assets.",
+        body: "Segmentation persists between structural precious-material demand and selective diamond-pipeline softness. Provenance, selective inventory, and patient sourcing remain preferable to reactive buying.",
       },
     ],
   },
@@ -352,30 +352,30 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     intro:
       "A weekly reading of physical constraints beneath digital and industrial acceleration: AI data-center load, power demand, transformers, interconnection, cooling, transmission, labor, and permitting — where systems function but flexibility narrows.",
     updatedLabel: LEDGER_UPDATED,
-    reading: 86,
+    reading: 87,
     readingLabel: "Infrastructure Strain",
     status: "Elevated Strain",
     weeklyDelta: 1,
     scaleLabels: ["Low", "Rising", "Elevated", "High", "Critical"],
     scaleGradient: SCALE_GRADIENT_INFRASTRUCTURE,
     summary:
-      "Strain rose modestly as large-load grid integration became policy-visible through FERC action, while shipping friction, summer heat risk, and sustained World Cup logistics load continue beneath functioning systems — flexibility narrows.",
+      "Strain rose as PJM activated emergency demand-response measures during the heat event — the Department of Energy authorized backup generation at data centers and other large-load facilities while the system moved from forecast risk into operational intervention. No widespread blackout occurred; flexibility narrowed.",
     summaryCompact:
-      "Elevated strain — policy-visible grid constraints, Hormuz routing friction, event logistics, and early-summer heat risk beneath functioning systems.",
+      "Elevated strain — PJM emergency operations during heat, with data-center load and grid demand interacting beneath functioning systems.",
     weeklyNote:
-      "FERC directed regional grid operators to revise large-load integration rules — data-center power demand became more policy-visible. Hormuz routing friction added shipping-layer strain. World Cup host cities sustained operational load across transit and security. Early-summer heat assessments flag elevated reliability watch items — systems function, but spare capacity narrows.",
+      "PJM forecast near-record demand amid a prolonged heat dome and activated systemwide emergency demand response. The Department of Energy authorized PJM to call on backup generation at data centers and other large-load facilities — operational intervention, not theoretical strain. Heat, grid demand, and data-center load interacted in the same event. FERC large-load deadlines continue approaching. World Cup logistics and Hormuz routing friction remain secondary layers. Systems functioned without widespread blackout; spare capacity narrowed.",
     weeklyNoteCompact:
-      "Policy-visible grid strain, shipping friction, and sustained event logistics — flexibility narrowing beneath functioning systems.",
+      "Operational grid strain — PJM emergency measures during heat, with large-load backup-generation authority activated.",
     methodPills: [
       { label: "Reading Type", value: "Physical infrastructure index" },
       { label: "Primary Focus", value: "Grid, power, transit, logistics" },
-      { label: "Current Direction", value: "Elevated, policy-visible" },
+      { label: "Current Direction", value: "Elevated, operational strain" },
     ],
     recentReadings: [
-      { week: "This Week", degrees: 86, state: "Elevated" },
-      { week: "Last Week", degrees: 85, state: "Elevated" },
-      { week: "2 Weeks Ago", degrees: 82, state: "Elevated" },
-      { week: "3 Weeks Ago", degrees: 80, state: "Elevated" },
+      { week: "This Week", degrees: 87, state: "Elevated" },
+      { week: "Last Week", degrees: 86, state: "Elevated" },
+      { week: "2 Weeks Ago", degrees: 85, state: "Elevated" },
+      { week: "3 Weeks Ago", degrees: 82, state: "Elevated" },
     ],
     benchmarks: [
       { name: "Stable Buildout", score: 45, note: "Low constraint", tier: "quiet" },
@@ -386,20 +386,20 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     ],
     editorialBlocks: [
       {
-        title: "Grid & large-load integration",
-        body: "FERC's large-load order made data-center grid integration policy-visible — connection costs, interconnection timelines, and utility responsiveness increasingly shape siting and expansion beneath narrowing flexibility.",
+        title: "PJM heat emergency",
+        body: "PJM activated systemwide emergency demand response as a heat dome pushed demand toward record levels. The Department of Energy authorized backup generation at data centers and other large-load facilities — strain turned operational without widespread blackout.",
       },
       {
-        title: "Shipping & routing friction",
-        body: "Hormuz routing, permit, insurance, and security questions add friction to energy and goods corridors — open but uneven, with corridor confidence thinner than pricing suggests.",
+        title: "Grid & large-load integration",
+        body: "FERC large-load deadlines continue approaching as data-center power demand shapes siting and interconnection — policy-visible constraints now reinforced by live grid stress.",
       },
       {
         title: "Event logistics & transit",
-        body: "World Cup host cities sustain operational load across transportation, security, and crowd management — strain that may stay localized or broaden as the tournament progresses.",
+        body: "World Cup knockout-stage host cities sustain operational load across transportation and security — localized strain that may stay contained as the tournament progresses.",
       },
       {
         title: "Summer heat & reliability",
-        body: "Early-summer assessments flag elevated heat risk on transmission and cooling — reliability watch items entering active season, not yet acute outage conditions.",
+        body: "Early-summer heat moved from forecast watch to active reliability management — cooling and transmission stress are now operational factors, not just seasonal risk.",
       },
     ],
     watchingSectionTitle: "What We're Watching",
@@ -439,17 +439,17 @@ export const QUIET_METRICS = [
   {
     label: "Energy Pressure",
     value: "Fragile Relief",
-    note: "Corridor confidence thinned around Hormuz and Gulf routes — routing and insurance friction persist while oil pricing remained comparatively calm.",
+    note: "Partial Hormuz recovery with oil near pre-conflict levels — routing, insurance, and corridor governance remain unresolved.",
   },
   {
     label: "AI Compute Load",
     value: "Grid-Bound",
-    note: "Large-load grid integration became policy-visible; power and utility responsiveness set deployment pace alongside gated frontier movement.",
+    note: "Broad Sonnet 5 deployment advances capability; PJM heat emergencies made grid and power limits operational, not theoretical.",
   },
   {
     label: "Physical Constraints",
-    value: "Policy-Visible",
-    note: "FERC grid rules, Hormuz routing friction, World Cup logistics, and early-summer heat risk test infrastructure beneath functioning systems.",
+    value: "Operational Strain",
+    note: "PJM emergency demand response and large-load backup-generation authority during heat — flexibility narrowing beneath functioning systems.",
   },
 ] as const;
 

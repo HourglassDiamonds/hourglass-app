@@ -3,7 +3,7 @@
  * Update values and copy here each week. Page layout is fixed in precious-materials-index-view.
  */
 
-export const PMI_UPDATED_LABEL = "Updated weekly — June 28, 2026";
+export const PMI_UPDATED_LABEL = "Updated weekly — July 6, 2026";
 
 export const PMI_MARKET_PRESSURE = {
   score: 85,
@@ -34,29 +34,29 @@ export const PMI_JEWELRY_DEMAND = [
 export const PMI_RECENT_READINGS = [
   { week: "This Week", score: 85 },
   { week: "Last Week", score: 85 },
-  { week: "2 Weeks Ago", score: 83 },
-  { week: "3 Weeks Ago", score: 86 },
+  { week: "2 Weeks Ago", score: 85 },
+  { week: "3 Weeks Ago", score: 83 },
 ] as const;
 
 export const PMI_CROSS_SYSTEM_BRIDGE =
   "Material markets remain connected to broader macro and reserve-asset conditions — but jewelry sourcing follows its own segmented logic beneath the geopolitical layer.";
 
 export const PMI_CROSS_SYSTEM_PRESSURE = [
-  "Gold holds structurally elevated support from central-bank reserve behavior — with near-term real-yield sensitivity beneath the strategic read.",
-  "Major-producer supply discipline continues; premium natural categories selectively firm, commercial ranges price-sensitive.",
-  "Lab-grown pricing compression continues in commercial and mid-tier ranges, while premium natural holds firmer in selective sizes and cuts.",
+  "Central-bank net gold accumulation continued in May — reserve diversification supports the structural read beneath near-term real-yield sensitivity.",
+  "De Beers is aligning July sight rough pricing closer to market conditions while maintaining a leaner sightholder base — selective adjustment, not broad market stress.",
+  "Lab-grown pricing compression continues in commercial and mid-tier ranges as an embedded factor, while premium natural holds firmer in selective sizes and cuts.",
   "High-quality natural stones increasingly behave as scarcity and reserve assets rather than simple luxury cyclicals.",
 ] as const;
 
 export const PMI_WHAT_MOVED = [
-  "Gold showed near-term real-yield sensitivity while central-bank reserve behavior kept the structural read firm — elevated without dramatic volatility.",
-  "De Beers-led supply discipline continued; premium natural categories held selective firmness in well-cut, desirable sizes.",
-  "Lab-grown compression persisted in mid-tier channels, reinforcing luxury demand segmentation rather than uniform market pressure.",
+  "Central banks added a net 41 tonnes in May, with Poland, China, and other reserve managers continuing accumulation — structurally firm beneath real-yield sensitivity.",
+  "De Beers signaled July sight pricing alignment closer to market conditions amid a leaner sightholder roster effective July 1.",
+  "Lab-grown compression persisted in mid-tier channels as an embedded segmentation factor, not a newly accelerating shock.",
 ] as const;
 
 export const PMI_WHAT_TO_WATCH = [
   "Whether gold reconnects to reserve-asset demand or remains tethered to real yields through the summer rate path.",
-  "Natural diamond availability in VS+ qualities and rough price discipline during ongoing supply-structure reset.",
+  "De Beers July sight outcomes and whether rough-price alignment stays selective rather than broad.",
   "Whether high-quality natural diamonds continue holding firm as scarcity assets in premium categories.",
   "Lab-grown pricing pressure and its effect on commercial natural positioning — not premium heirloom-grade work.",
   "Sourcing discipline in a segmented market — provenance and selective inventory over reactive accumulation.",

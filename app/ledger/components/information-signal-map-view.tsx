@@ -30,7 +30,7 @@ function SignalBox({ title, body }: { title: string; body: string }) {
 }
 
 export default function InformationSignalMapView() {
-  const { score, label, weeklyChange } = ISM_READING;
+  const { score, label, status, weeklyChange } = ISM_READING;
 
   return (
     <section className={`ledger-index-page ledger-im ${LEDGER_INDEX_PAGE_CLASS}`}>
@@ -51,7 +51,10 @@ export default function InformationSignalMapView() {
             </div>
             <div className="im-label">{label}</div>
           </div>
-          <div className="im-delta ledger-index-delta">{formatWeeklyDelta(weeklyChange)}</div>
+          <div>
+            <div className="im-delta ledger-index-delta">{formatWeeklyDelta(weeklyChange)}</div>
+            <div className="im-label">{status}</div>
+          </div>
         </div>
 
         <p className="im-summary">{ISM_SUMMARY}</p>

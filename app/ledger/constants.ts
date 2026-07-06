@@ -19,17 +19,17 @@ export const QUIET_METRICS = [
   {
     label: "Energy Pressure",
     value: "Fragile Relief",
-    note: "Corridor confidence thinned around Hormuz and Gulf routes — routing and insurance friction persist while oil pricing remained comparatively calm.",
+    note: "Partial Hormuz recovery with oil near pre-conflict levels — routing, insurance, and corridor governance remain unresolved.",
   },
   {
     label: "AI Compute Load",
     value: "Grid-Bound",
-    note: "Large-load grid integration became policy-visible; power and utility responsiveness set deployment pace alongside gated frontier movement.",
+    note: "Broad Sonnet 5 deployment advances capability; PJM heat emergencies made grid and power limits operational, not theoretical.",
   },
   {
     label: "Physical Constraints",
-    value: "Policy-Visible",
-    note: "FERC grid rules, Hormuz routing friction, World Cup logistics, and early-summer heat risk test infrastructure beneath functioning systems.",
+    value: "Operational Strain",
+    note: "PJM emergency demand response and large-load backup-generation authority during heat — flexibility narrowing beneath functioning systems.",
   },
 ] as const;
 

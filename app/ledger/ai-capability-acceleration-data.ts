@@ -5,13 +5,13 @@
 
 export type AcaiFillVariant = "cool" | "neutral" | "warm" | "hot" | "critical";
 
-export const ACAI_UPDATED_LABEL = "Updated weekly — June 28, 2026";
+export const ACAI_UPDATED_LABEL = "Updated weekly — July 6, 2026";
 
 export const ACAI_READING = {
-  score: 83,
+  score: 84,
   status: "Power- and Grid-Bound Acceleration",
   weeklyChange: 1,
-  markerPosition: 83,
+  markerPosition: 84,
   readingLabel: "Acceleration Reading",
 } as const;
 
@@ -19,22 +19,22 @@ export const ACAI_INTRO =
   "A weekly reading of how AI capability, deployment, and physical infrastructure are moving together — across models, agents, enterprise integration, power, and grid constraints. The purpose is not to forecast AGI. It is to track an industrial buildout: where software progress meets operational friction, energy limits, and organizational adaptation lag.";
 
 export const ACAI_SUMMARY =
-  "Capability advances under physical limits — frontier movement remains meaningful but gated, while power, grid access, and large-load integration increasingly set practical pace. Deployment friction matters more than headline release cadence.";
+  "Capability advanced through broad Claude Sonnet 5 deployment across consumer, enterprise, coding, and API surfaces — while frontier access remains gated and grid constraints turned operational during the PJM heat event. Deployment friction and physical limits still set practical pace.";
 
 export const ACAI_WEEKLY_SIGNAL =
-  "Large-load grid integration moved into the regulatory foreground as FERC directed regional operators to revise data-center connection rules. A limited frontier preview added marginal capability signal without broad availability. Enterprise adoption and coding integration advanced; governance and energized capacity remain co-equal limits on deployment.";
+  "Claude Sonnet 5 launched June 30 with broad availability across plans, Claude Code, and the API — the week's clearest capability gain, with stronger agentic and tool-use behavior at a widely deployed tier. Partner-only frontier previews and government-coordinated release gates remain separate from broad deployment. PJM heat emergencies made grid and power constraints operational. Enterprise adoption and coding integration advanced; governance, energized capacity, and access qualification remain co-equal limits.";
 
 export const ACAI_METHOD_PILLS = [
-  { label: "Reading Type", value: "Weighted capability index" },
+  { label: "Reading Type", value: "Capability + infrastructure index" },
   { label: "Primary Drivers", value: "Power, grid, deployment" },
   { label: "Current Direction", value: "Advancing, grid-bound" },
 ] as const;
 
 export const ACAI_RECENT_READINGS = [
-  { week: "This Week", score: 83, state: "Accelerating" },
-  { week: "Last Week", score: 82, state: "Accelerating" },
-  { week: "2 Weeks Ago", score: 79, state: "Accelerating" },
-  { week: "3 Weeks Ago", score: 77, state: "Accelerating" },
+  { week: "This Week", score: 84, state: "Accelerating" },
+  { week: "Last Week", score: 83, state: "Accelerating" },
+  { week: "2 Weeks Ago", score: 82, state: "Accelerating" },
+  { week: "3 Weeks Ago", score: 79, state: "Accelerating" },
 ] as const;
 
 export const ACAI_CAPABILITY_BENCHMARKS = [
@@ -52,39 +52,39 @@ export const ACAI_CAPABILITY_READINGS = [
     score: 78,
     band: "Elevated",
     fill: "warm" as AcaiFillVariant,
-    text: "Limited frontier previews add marginal capability signal — meaningful but gated, with deployment friction and integration depth mattering more than release cadence in production environments.",
+    text: "Frontier capability remains meaningful but gated — partner-only previews and government-coordinated release paths separate headline movement from broad availability.",
   },
   {
     name: "Agents & Tool Use",
     weight: "20% Weight",
-    score: 77,
+    score: 79,
     band: "Rising",
     fill: "warm" as AcaiFillVariant,
-    text: "Operational usefulness increases through connectors and managed workflows, but reliability, handoffs, and long-horizon task completion remain inconsistent in live environments.",
+    text: "Claude Sonnet 5 broadened agentic and tool-use capability at a widely deployed tier — operational usefulness rising, with reliability and long-horizon consistency still uneven.",
   },
   {
     name: "Coding & Software",
     weight: "18% Weight",
-    score: 81,
+    score: 82,
     band: "Accelerating",
     fill: "warm" as AcaiFillVariant,
-    text: "Continued acceleration in scaffolding, migration, and review — with verification, ownership, and deployment discipline defining practical gains for many teams.",
+    text: "Continued acceleration in scaffolding, migration, and review through broadly available coding surfaces — verification and deployment discipline still define practical gains.",
   },
   {
     name: "Enterprise Deployment",
     weight: "14% Weight",
-    score: 74,
+    score: 75,
     band: "Cautious",
     fill: "neutral" as AcaiFillVariant,
-    text: "Adoption advances through workflow dependence and internal tooling — strongest where integration paths are clear, with broader operating-model change still uneven.",
+    text: "Sonnet 5 default availability across plans advanced workflow dependence — strongest where integration paths are clear, with broader operating-model change still uneven.",
   },
   {
     name: "Infrastructure Demand",
     weight: "12% Weight",
-    score: 92,
+    score: 93,
     band: "Elevated",
     fill: "warm" as AcaiFillVariant,
-    text: "Policy-visible pace-setter: FERC large-load rules, grid interconnection, power contracts, and site selection define deployment timelines — increasingly limiting acceleration more than model interest alone.",
+    text: "PJM heat emergencies made grid and power limits operational — backup-generation authority for large loads and demand response set deployment pace alongside model interest.",
   },
   {
     name: "Labor Substitution",
@@ -97,25 +97,25 @@ export const ACAI_CAPABILITY_READINGS = [
   {
     name: "Governance & Risk",
     weight: "6% Weight",
-    score: 67,
+    score: 68,
     band: "Lagging",
     fill: "neutral" as AcaiFillVariant,
-    text: "Policy, access control, and operational risk frameworks still trail deployment speed — especially where agents touch customer data and core systems.",
+    text: "Government-coordinated release gates and access qualification add policy friction — operational risk frameworks still trail deployment speed in core systems.",
   },
 ] as const;
 
 export const ACAI_WHAT_MOVED = [
   {
-    title: "Grid integration became policy-visible",
-    body: "FERC directed regional operators to revise large-load connection rules — power and grid access increasingly define deployment pace in regulatory as well as operational terms.",
+    title: "Broad Sonnet 5 deployment",
+    body: "Claude Sonnet 5 reached general availability across consumer, enterprise, coding, and API surfaces June 30 — meaningful agentic capability at a widely deployed tier.",
   },
   {
-    title: "Frontier movement remained gated",
-    body: "Limited frontier previews add marginal capability signal without broad availability — deployment friction and governance outweigh headline release cadence in practical planning.",
+    title: "Grid constraints turned operational",
+    body: "PJM heat emergencies made power and grid limits operational — DOE authorized backup generation at large loads while systemwide demand response activated.",
   },
   {
-    title: "Integration advanced under physical limits",
-    body: "Enterprise adoption and coding-system integration progressed; energized capacity, utility responsiveness, and site selection remain co-equal constraints on expansion.",
+    title: "Access remains qualified",
+    body: "Frontier models stay behind partner and government-coordinated gates — broad deployment and gated previews describe different capability realities in the same cycle.",
   },
 ] as const;
 
@@ -141,22 +141,22 @@ export const ACAI_FRONTIER_WATCHLIST = [
   {
     label: "System Layer",
     title: "Data centers & power",
-    body: "FERC large-load rules, power contracts, grid queues, transformer lead times, cooling, siting, and labor around AI load — primary pace-setters this cycle.",
+    body: "PJM emergency operations, FERC large-load rules, power contracts, grid queues, and cooling — operational pace-setters this cycle.",
   },
   {
     label: "System Layer",
     title: "Enterprise integration",
-    body: "Workflow dependence, internal tooling adoption, review layers, and organizational adaptation — how capability converts to operational use.",
+    body: "Sonnet 5 default availability, workflow dependence, review layers, and organizational adaptation — how capability converts to operational use.",
   },
   {
     label: "Frontier Lab",
     title: "OpenAI",
-    body: "Limited frontier previews, enterprise APIs, and deployment cost — weighed against integration depth, reliability, and infrastructure requirements.",
+    body: "Partner-gated frontier previews and enterprise APIs — weighed against integration depth, reliability, and infrastructure requirements.",
   },
   {
     label: "Frontier Lab",
     title: "Anthropic",
-    body: "Coding workflows, connectors, safety posture, and compute partnerships under physical capacity and governance constraints.",
+    body: "Broad Sonnet 5 deployment, coding workflows, connectors, and release-gate dynamics under physical capacity constraints.",
   },
 ] as const;
 
@@ -185,39 +185,39 @@ export const ACAI_CALCULATION_ROWS = [
     score: "78",
     contribution: "17.2",
     reason:
-      "Limited frontier previews add marginal signal — meaningful but gated, with deployment scale mattering more than release cadence.",
+      "Frontier capability meaningful but gated — partner and government-coordinated release paths separate headlines from broad availability.",
   },
   {
     category: "Agents & Tool Use",
     weight: "20%",
-    score: "77",
-    contribution: "15.4",
+    score: "79",
+    contribution: "15.8",
     reason:
-      "Usefulness rising in connectors and managed workflows; reliability and long-horizon consistency still uneven.",
+      "Sonnet 5 broadened agentic capability at wide deployment; reliability and long-horizon consistency still uneven.",
   },
   {
     category: "Coding & Software",
     weight: "18%",
-    score: "81",
-    contribution: "14.6",
+    score: "82",
+    contribution: "14.8",
     reason:
-      "Strong acceleration in development workflows; verification, integration, and deployment discipline remain limiting.",
+      "Strong acceleration through broadly available coding surfaces; verification and deployment discipline remain limiting.",
   },
   {
     category: "Enterprise Deployment",
     weight: "14%",
-    score: "74",
-    contribution: "10.4",
+    score: "75",
+    contribution: "10.5",
     reason:
-      "Cautious acceleration — workflow dependence and internal tooling ahead of broad operating-model redesign.",
+      "Sonnet 5 default availability advanced workflow dependence — operating-model redesign still uneven.",
   },
   {
     category: "Infrastructure Demand",
     weight: "12%",
-    score: "92",
-    contribution: "11.0",
+    score: "93",
+    contribution: "11.2",
     reason:
-      "FERC large-load rules made grid integration policy-visible — power, utility responsiveness, and site selection increasingly the pace-setting layer.",
+      "PJM emergencies made grid constraints operational — backup-generation authority and demand response increasingly pace-setting.",
   },
   {
     category: "Labor Substitution",
@@ -230,17 +230,17 @@ export const ACAI_CALCULATION_ROWS = [
   {
     category: "Governance & Risk",
     weight: "6%",
-    score: "67",
-    contribution: "4.0",
+    score: "68",
+    contribution: "4.1",
     reason:
-      "Policy and operational risk frameworks lag deployment — especially for agent access to core systems and data.",
+      "Release gates and access qualification add policy friction — frameworks lag deployment in core systems.",
   },
 ] as const;
 
 export const ACAI_CALCULATION_TOTAL = {
-  contribution: "80.4 → 83",
+  contribution: "80.9 → 84",
   reason:
-    "Power- and grid-bound acceleration: capability advances under physical limits, with policy-visible grid constraints and gated frontier movement setting practical pace.",
+    "Power- and grid-bound acceleration: broad Sonnet 5 deployment beneath gated frontier access and operational grid constraints.",
 } as const;
 
 export const ACAI_CAPABILITY_BANDS = [
@@ -283,19 +283,19 @@ export const ACAI_CAPABILITY_BANDS = [
 export const ACAI_SOURCES = [
   {
     name: "Infrastructure Reporting",
-    body: "FERC large-load rules, data-center expansion, power, cooling, transformers, grid queues, and regional siting economics — primary pace-setters this cycle.",
+    body: "PJM emergency operations, DOE orders, FERC large-load rules, data-center expansion, power, cooling, and regional siting economics.",
   },
   {
     name: "Enterprise & Deployment Signals",
-    body: "Adoption pace, workflow dependence, integration timelines, review layers, and organizational adaptation by sector.",
+    body: "Sonnet 5 availability, adoption pace, workflow dependence, integration timelines, and organizational adaptation by sector.",
   },
   {
     name: "OpenAI — Research & Product Releases",
-    body: "Limited frontier previews, enterprise APIs, and deployment cost — interpreted alongside integration depth and reliability.",
+    body: "Partner-gated frontier previews, enterprise APIs, and deployment cost — interpreted alongside integration depth and reliability.",
   },
   {
     name: "Anthropic — Claude Updates & Safety Materials",
-    body: "Coding workflows, connectors, safety posture, and infrastructure partnerships under physical capacity limits.",
+    body: "Sonnet 5 broad deployment, coding workflows, connectors, and release-gate dynamics under physical capacity limits.",
   },
   {
     name: "Labor & Workforce Signals",
@@ -316,7 +316,7 @@ export const ACAI_SCALE_LABELS = [
 
 export const ACAI_SECTION_SUBTITLES = {
   whatMoved:
-    "Policy-visible grid constraints and gated frontier movement shaped the reading this week — deployment friction over headline cadence.",
+    "Broad Sonnet 5 deployment and operational grid constraints shaped the reading — gated frontier access and physical limits over headline cadence.",
   milestones:
     "Developments that would justify a material change in the acceleration reading — grounded in operations, not hype.",
   frontierWatchlist:

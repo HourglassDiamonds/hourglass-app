@@ -3,10 +3,10 @@
  * Update values and copy here each week. Page layout is fixed in infrastructure-strain-index-view.
  */
 
-export const ISI_UPDATED_LABEL = "Updated weekly — June 28, 2026";
+export const ISI_UPDATED_LABEL = "Updated weekly — July 6, 2026";
 
 export const ISI_READING = {
-  score: 86,
+  score: 87,
   label: "Infrastructure Strain",
   status: "Elevated Strain",
   weeklyChange: 1,
@@ -16,23 +16,23 @@ export const ISI_INTRO =
   "A weekly reading of the physical constraints beneath digital, economic, and industrial acceleration: power, transmission, transformers, data centers, water, skilled labor, semiconductors, and logistics. The purpose is not to predict failure. It is to track a capacity expansion race — where capital deploys quickly, buildout timing stays uneven, and flexibility narrows beneath functioning systems.";
 
 export const ISI_SUMMARY =
-  "Strain rose modestly as large-load grid integration became policy-visible through FERC action, while shipping friction, summer heat risk, and sustained World Cup logistics load continue beneath functioning systems — flexibility narrows.";
+  "Strain rose as PJM activated emergency demand-response measures during the heat event — the Department of Energy authorized backup generation at data centers and other large-load facilities while the system moved from forecast risk into operational intervention. No widespread blackout occurred; flexibility narrowed.";
 
 export const ISI_WEEKLY_SIGNAL =
-  "FERC directed regional grid operators to revise large-load integration rules — data-center power demand became more policy-visible. Hormuz routing friction added shipping-layer strain. World Cup host cities sustained operational load across transit and security. Early-summer heat assessments flag elevated reliability watch items — systems function, but spare capacity narrows.";
+  "PJM forecast near-record demand amid a prolonged heat dome and activated systemwide emergency demand response. The Department of Energy authorized PJM to call on backup generation at data centers and other large-load facilities. Heat, grid demand, and data-center load interacted in the same event. FERC large-load deadlines continue approaching. Systems functioned without widespread blackout; spare capacity narrowed.";
 
 export const ISI_CATEGORIES = [
   {
     name: "Grid & Transmission",
-    score: 86,
+    score: 87,
     state: "High",
-    body: "FERC large-load order made grid integration policy-visible — interconnection queues, connection costs, and utility upgrade timelines remain core strain points alongside Hormuz routing friction.",
+    body: "PJM emergency demand response and DOE authorization for large-load backup generation made grid strain operational — interconnection queues and upgrade timelines remain core constraints beneath active heat stress.",
   },
   {
     name: "Data-Center Load",
-    score: 89,
+    score: 90,
     state: "High",
-    body: "Hyperscale demand continues accelerating; large-load integration rules and power availability increasingly shape siting and timelines more than chip supply alone.",
+    body: "Hyperscale demand intersected live grid stress as DOE authorized PJM to call on backup generation at data centers and other large loads — siting and power availability increasingly strategic.",
   },
   {
     name: "Transformer Supply",
@@ -56,15 +56,15 @@ export const ISI_CATEGORIES = [
     name: "Water & Cooling",
     score: 75,
     state: "Rising",
-    body: "Early-summer heat assessments and cooling load increasingly factor in site-selection and reliability discussions — uneven by geography, rising in importance.",
+    body: "Active heat stress elevated cooling load in reliability discussions — uneven by geography, with operational relevance rising during the PJM event.",
   },
 ] as const;
 
 export const ISI_RECENT_READINGS = [
-  { week: "This Week", score: 86 },
-  { week: "Last Week", score: 85 },
-  { week: "2 Weeks Ago", score: 82 },
-  { week: "3 Weeks Ago", score: 80 },
+  { week: "This Week", score: 87 },
+  { week: "Last Week", score: 86 },
+  { week: "2 Weeks Ago", score: 85 },
+  { week: "3 Weeks Ago", score: 82 },
 ] as const;
 
 export const ISI_BENCHMARKS = [
@@ -77,20 +77,20 @@ export const ISI_BENCHMARKS = [
 
 export const ISI_WHAT_WATCHING = [
   {
-    title: "FERC large-load integration",
-    body: "Whether regional grid operator responses within the 60-day window accelerate data-center cost, siting, and interconnection debates.",
+    title: "PJM summer reliability",
+    body: "Whether emergency measures recede with moderating heat or foreshadow a tighter reliability season across the Mid-Atlantic.",
   },
   {
-    title: "Hormuz routing friction",
-    body: "Whether shipping traffic stabilizes or continues thinning — with permit, insurance, and security questions still active.",
+    title: "FERC large-load integration",
+    body: "Whether regional grid operator responses by August accelerate data-center cost, siting, and interconnection debates.",
   },
   {
     title: "World Cup operational load",
-    body: "Whether transportation, security, and crowd-management pressure stays localized or broadens as the tournament progresses.",
+    body: "Whether transportation, security, and crowd-management pressure stays localized through the knockout stage.",
   },
   {
-    title: "Summer heat & reliability",
-    body: "Early-summer heat risk on transmission and cooling — reliability watch items entering active season.",
+    title: "Large-load backup generation",
+    body: "How often DOE-authorized backup-generation calls are exercised as heat and data-center load interact.",
   },
   {
     title: "Transformer manufacturing",
@@ -104,8 +104,8 @@ export const ISI_WHAT_WATCHING = [
 
 export const ISI_WHAT_WOULD_EASE = [
   {
-    title: "Hormuz traffic stabilization",
-    body: "Measurable progress on routing, permits, insurance, and security without implying strain has disappeared.",
+    title: "Heat moderation without recurrence",
+    body: "Sustained relief from emergency grid measures without implying spare capacity has returned to comfortable levels.",
   },
   {
     title: "Event logistics stabilization",
@@ -125,18 +125,18 @@ export const ISI_CALCULATION_ROWS = [
   {
     category: "Grid & Transmission",
     weight: "24%",
-    score: "86",
-    contribution: "20.6",
+    score: "87",
+    contribution: "20.9",
     reason:
-      "FERC large-load order made grid integration policy-visible; interconnection queues and utility upgrade lag continue to slow large-load connection.",
+      "PJM emergency demand response and DOE large-load backup-generation authority made grid strain operational during heat.",
   },
   {
     category: "Data-Center Load",
     weight: "22%",
-    score: "89",
-    contribution: "19.6",
+    score: "90",
+    contribution: "19.8",
     reason:
-      "Accelerating hyperscale demand; large-load rules and power availability increasingly strategic for siting and timelines.",
+      "Hyperscale demand intersected live grid stress; backup-generation authority and power availability increasingly strategic.",
   },
   {
     category: "Transformer Supply",
@@ -168,24 +168,24 @@ export const ISI_CALCULATION_ROWS = [
     score: "75",
     contribution: "9.0",
     reason:
-      "Early-summer heat and cooling load increasingly factor in site selection and reliability — uneven but rising in importance.",
+      "Active heat elevated cooling load in reliability discussions — operational relevance rising during the PJM event.",
   },
 ] as const;
 
 export const ISI_CALCULATION_TOTAL = {
-  contribution: "83.2 → 86",
+  contribution: "84.4 → 87",
   reason:
-    "Elevated strain from policy-visible grid constraints, Hormuz routing friction, sustained event logistics, and early-summer heat watch — flexibility narrowing beneath functioning systems.",
+    "Elevated operational strain from PJM emergency measures during heat, large-load backup-generation authority, and sustained event logistics — flexibility narrowing without widespread blackout.",
 } as const;
 
 export const ISI_SOURCES = [
   {
     name: "Utility & Grid Reporting",
-    body: "FERC large-load rules, transmission queues, interconnection delays, power demand, transformer availability, permitting, and regional upgrade timelines.",
+    body: "PJM emergency operations, DOE orders, FERC large-load rules, transmission queues, interconnection delays, and regional upgrade timelines.",
   },
   {
     name: "Data-Center Reporting",
-    body: "Hyperscale expansion, power contracts, cooling design, site selection, and utility coordination for large load.",
+    body: "Hyperscale expansion, power contracts, backup generation, cooling design, site selection, and utility coordination for large load.",
   },
   {
     name: "Event & Transit Reporting",

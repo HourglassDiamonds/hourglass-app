@@ -1,18 +1,18 @@
 export const WEEKLY_SYNOPSIS = {
   eyebrow: "Weekly Synopsis",
-  headline: "Fragile corridors; strain beneath calm markets.",
+  headline: "Corridors remain fragile; grid strain turns operational.",
   blocks: [
     {
       title: "What changed",
-      body: "Hormuz and Gulf-route confidence weakened as shipping, routing, and insurance questions persisted, even while energy markets continued to function and oil pricing remained comparatively calm. The U.S.–Iran framework remained active but visibly strained. AI infrastructure pressure became more policy-visible as large-load grid integration moved further into the regulatory foreground. World Cup-related fraud, scams, and AI-generated content kept information integrity under pressure. Precious materials remained strategically firm, with gold sensitive to rates and premium natural diamond supply still selective.",
+      body: "Hormuz transit continued a partial recovery, but volumes remain materially below normal and corridor governance is unresolved. Oil prices eased toward pre-conflict levels. PJM entered emergency operations during the heat event as the Department of Energy authorized backup generation at data centers and other large-load facilities, while PJM separately activated systemwide emergency demand response. Broad AI deployment advanced through Claude Sonnet 5 across consumer, enterprise, coding, and API surfaces. Precious materials remained strategically firm as central-bank gold accumulation continued.",
     },
     {
       title: "What's driving pressure",
-      body: "Energy routes are not closed, but confidence is thinner. Financial conditions remain sensitive to the inflation and rate path. Infrastructure strain is increasingly visible through grid interconnection, data-center power demand, shipping friction, and event logistics. The information layer remains noisy as geopolitical, institutional, and AI-generated narratives overlap.",
+      body: "Corridor confidence remains thin — routing, insurance, and sovereignty questions persist beneath functioning energy markets. Grid flexibility narrowed as heat, data-center load, and emergency operations interacted in the same event. Financial conditions stay rate-sensitive. AI deployment advances, but access remains gated and physical infrastructure increasingly sets practical pace.",
     },
     {
       title: "What to watch next",
-      body: "Whether Hormuz transit volumes stabilize or continue thinning. Whether oil pricing begins to reflect route-risk more aggressively. Whether FERC and large-load grid rules accelerate data-center cost and siting debates. Whether World Cup scam and deepfake activity remains event-localized or broadens. Whether gold reconnects to reserve demand or remains tethered to real yields. Whether AI capability releases translate into broad deployment or remain constrained by power and governance.",
+      body: "Whether Hormuz transit stabilizes above current levels or stalls under route-control disputes. Whether PJM reliability holds through the rest of summer. Whether frontier-model access broadens beyond partner and government-coordinated previews. Whether De Beers' July sight confirms selective rough-price alignment. Whether current oil normalization persists as backlog barrels clear.",
     },
   ],
 } as const;

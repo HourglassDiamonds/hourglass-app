@@ -3,89 +3,90 @@
  * Update values and copy here each week. Page layout is fixed in information-signal-map-view.
  */
 
-export const ISM_UPDATED_LABEL = "Updated weekly — June 28, 2026";
+export const ISM_UPDATED_LABEL = "Updated weekly — July 6, 2026";
 
 export const ISM_READING = {
   score: 85,
   label: "Signal Clarity",
-  weeklyChange: 1,
+  status: "High-Attention, Uneven Clarity",
+  weeklyChange: 0,
 } as const;
 
 export const ISM_SUMMARY =
-  "Information integrity strain rose as World Cup scams, deepfakes, and AI-generated content spread at scale. Geopolitical frame conflict on Hormuz and institutional-market communication divergence under Warsh's Fed added noise — high-attention, uneven clarity across channels.";
+  "High-attention, uneven clarity persists — access claims increasingly require qualification as \"released,\" \"available,\" and \"deployed\" describe different realities by geography, approval status, and account tier. World Cup fraud risk, Hormuz frame conflict, and Fed communication divergence continue beneath partial normalization in frontier-model access.";
 
 export const ISM_SIGNAL_GRID = [
   {
     title: "Consensus",
-    body: "Physical-capacity themes — grid load, data-center power, corridor friction, and infrastructure strain — continue appearing together across institutional, market, and specialist sources.",
+    body: "Physical-capacity themes — grid emergencies, data-center load, corridor friction, and infrastructure strain — continue appearing together across institutional, market, and specialist sources.",
   },
   {
     title: "Divergence",
-    body: "Hormuz framing splits between corridor-functioning and corridor-risk narratives; Fed communication shifted while markets repriced; event coverage emphasizes scams and deepfakes while financial coverage emphasizes yields.",
+    body: "Hormuz framing splits between partial recovery and corridor-risk narratives; Fed communication under Warsh diverges from market repricing; AI coverage mixes broad deployment with gated frontier access.",
   },
   {
     title: "Underweighted",
-    body: "Trust and verification strain during high-attention events still receives less sustained institutional attention than episodic mainstream spikes — despite growing references to information integrity risk.",
+    body: "The gap between access claims and qualified availability — partner gates, geography, and approval status — receives less sustained attention than headline release announcements.",
   },
 ] as const;
 
 export const ISM_SOURCE_STACK = [
   {
     title: "Institutional",
-    body: "Emphasizes Hormuz framework, Russia sanctions, energy security, and FERC grid action — measured language, coordination over alarm, with uneven agreement on corridor tempo.",
+    body: "Emphasizes Hormuz framework, Russia sanctions, energy security, and grid emergencies — measured language, coordination over alarm, with uneven agreement on corridor tempo.",
   },
   {
     title: "Market",
-    body: "Emphasizes comparatively calm oil pricing, bond yields, hawkish Fed repricing, AI capex, and earnings resilience — with growing linkage between compute expansion and power infrastructure.",
+    body: "Emphasizes oil near pre-conflict levels, bond yields, hawkish Fed repricing, AI capex, and earnings resilience — with growing linkage between compute expansion and power infrastructure.",
   },
   {
     title: "Infrastructure",
-    body: "Emphasizes FERC large-load rules, World Cup transit strain, grid load, transmission delays, data-center power access, and labor or permitting friction on build timelines.",
+    body: "Emphasizes PJM emergency operations, FERC large-load rules, World Cup transit strain, grid load, and data-center power access during active heat stress.",
   },
   {
     title: "Mainstream",
-    body: "Emphasizes World Cup scams, deepfakes, corridor friction, and AI coverage — with increasing references to power, grid, and information integrity in the same cycle.",
+    body: "Emphasizes World Cup scams, AI model releases, corridor friction, and grid heat coverage — with increasing references to qualified access and information integrity in the same cycle.",
   },
 ] as const;
 
 export const ISM_NARRATIVE_MAP = [
   {
     title: "Domestic Framing",
-    body: "Emphasizes event logistics, scam warnings, and household pressure. Tends to underweight Hormuz routing friction, sanctions tempo, and industrial bottlenecks beneath aggregate market strength.",
+    body: "Emphasizes event logistics, scam warnings, and heat-related household pressure. Tends to underweight Hormuz governance disputes, sanctions tempo, and industrial bottlenecks beneath aggregate market strength.",
   },
   {
     title: "Political Framing",
-    body: "Emphasizes Hormuz framework strain, Russia sanctions, FERC grid action, and policy response. Tends to underweight slow-moving information-integrity and verification constraints.",
+    body: "Emphasizes Hormuz framework strain, Russia sanctions, grid emergencies, and policy response. Tends to underweight slow-moving information-integrity and access-qualification constraints.",
   },
   {
     title: "Market Framing",
-    body: "Emphasizes comparatively calm oil pricing, bond yields, hawkish Fed outlook, AI capex, and earnings resilience. Tends to underweight World Cup scam activity and physical load growth timelines.",
+    body: "Emphasizes calm oil pricing, bond yields, hawkish Fed outlook, AI capex, and earnings resilience. Tends to underweight World Cup scam activity, access gates, and physical load growth timelines.",
   },
   {
     title: "Infrastructure Framing",
-    body: "Emphasizes FERC large-load rules, World Cup transit, electricity demand, data-center expansion, grid capacity, and transformer manufacturing. Tends to underweight near-term narrative compression in mainstream media cycles.",
+    body: "Emphasizes PJM emergency measures, FERC large-load rules, electricity demand, data-center expansion, and transformer manufacturing. Tends to underweight near-term narrative compression in mainstream media cycles.",
   },
 ] as const;
 
 export const ISM_NARRATIVE_SHIFT =
-  "Coverage shifted toward high-attention, uneven clarity: World Cup scams and AI-generated deepfakes spread at scale while Hormuz framing split between corridor-functioning and corridor-risk narratives. Fed communication changed under new leadership, adding institutional-market divergence. Physical-capacity themes continue converging across channels — observational, not hidden-truth framing.";
+  "The information environment refined rather than escalated. Access claims for AI models increasingly require qualification — broad deployment, partner-only previews, and government-coordinated releases describe different realities. Claude Fable 5 restoration is a partial normalization signal; earlier June export controls remain background context. World Cup fraud risk stays embedded from the prior week. Hormuz framing still splits between partial recovery and corridor-risk narratives.";
 
 export const ISM_WHAT_TO_WATCH = [
   {
-    title: "World Cup information integrity",
-    body: "Whether fraud, deepfakes, and AI-generated scam activity during high-attention events stays event-localized or broadens into a sustained trust narrative.",
+    title: "Qualified access claims",
+    body: "Whether \"released\" and \"available\" continue to describe different realities as frontier-model release frameworks formalize — geography, approval, and partner access matter.",
   },
   {
     title: "Hormuz frame conflict",
-    body: "How often corridor-functioning and corridor-risk narratives appear in the same coverage cycle — with routing, insurance, and security questions unresolved.",
+    body: "How often partial-recovery and corridor-risk narratives appear in the same coverage cycle — with routing, insurance, and sovereignty questions unresolved.",
   },
   {
     title: "Fed communication divergence",
     body: "Whether institutional communication simplification produces clearer or noisier market signal through the summer rate path.",
   },
   {
-    title: "AI power-and-grid linkage",
-    body: "Whether AI narratives continue shifting from capability headlines toward FERC grid rules, electricity demand, siting, cooling, and deployment timelines.",
+    title: "Grid emergency narrative",
+    body: "Whether PJM heat stress stays a localized operational story or broadens into sustained infrastructure narrative across regions.",
   },
 ] as const;
 
@@ -95,8 +96,8 @@ export const ISM_WHAT_WOULD_CHANGE = [
     body: "Lower headline density and cleaner single-theme reads across policy, markets, and event coverage — without implying conditions have eased materially.",
   },
   {
-    title: "Event strain localization",
-    body: "World Cup scam and logistics pressure remaining contained to host cities and event channels rather than broadening into wider trust narrative.",
+    title: "Access claim alignment",
+    body: "Closer alignment between release announcements and broadly available deployment — with fewer gaps between partner, geographic, and tiered access.",
   },
   {
     title: "Narrative decoupling",
