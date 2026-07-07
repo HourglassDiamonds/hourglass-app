@@ -1,13 +1,9 @@
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { diamondIntelligencePrefillFromSearchParams } from "@/lib/concierge/diamond-intelligence-context";
-import Header from "../shared-components/Header";
 import CTAGlimmer from "../shared-components/motion/CTAGlimmer";
-import RevealOnScroll from "../shared-components/motion/RevealOnScroll";
-import WhisperedPraiseLink from "../shared-components/WhisperedPraiseLink";
 
 const MAX_IMAGES = 4;
 const MAX_IMAGE_SIZE_MB = 4;
@@ -15,7 +11,7 @@ const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 type SubmitState = "idle" | "submitting" | "success" | "error";
 
-export default function ConciergePageClient() {
+export default function ConciergeFormClient() {
   const searchParams = useSearchParams();
   const [inspirationNotes, setInspirationNotes] = useState("");
   const notesPrefilled = useRef(false);
@@ -146,7 +142,7 @@ export default function ConciergePageClient() {
       formData.set("budgetRange", budget);
       formData.set(
         "preferredContactMethod",
-        normalizePreferredContact(preferredContact)
+        normalizePreferredContact(preferredContact),
       );
       formData.set("source", "concierge_page");
 
@@ -163,7 +159,7 @@ export default function ConciergePageClient() {
 
       setSubmitState("success");
       setFormMessage(
-        "Thank you. Your note has been received, and we’ll respond thoughtfully."
+        "Thank you. Your note has been received, and we’ll respond thoughtfully.",
       );
       setFiles([]);
       formRef.current?.reset();
@@ -209,452 +205,295 @@ export default function ConciergePageClient() {
     </div>
   );
 
+  const sectionLabel =
+    "text-[10px] uppercase tracking-[0.32em] text-[#8a8177]";
+  const fieldLabel =
+    "text-[11px] uppercase tracking-[0.28em] text-[#857b70]";
+
   return (
-    <div className="min-h-screen bg-[#efe8de] text-[#1c1b1a]">
-      <div className="mx-auto max-w-[1200px] px-6 md:px-10">
-        <Header currentPage="concierge" />
+    <form
+      ref={formRef}
+      onSubmit={handleSubmit}
+      className="mx-auto mt-8 max-w-[980px] rounded-[28px] border border-[#e4dbcf] bg-white/52 p-6 shadow-[0_18px_46px_rgba(45,35,26,0.03)] md:mt-10 md:p-8"
+    >
+      <div>
+        <div className={sectionLabel}>The Foundation</div>
+        <h2 className="mt-2 text-[1.05rem] tracking-[-0.02em] text-[#1f1d1a]">
+          The essentials that help shape the conversation.
+        </h2>
 
-        <section className="border-b border-[#e4dbcf] pb-[86px] pt-[60px] md:pb-[102px] md:pt-[72px]">
-          <div className="mx-auto max-w-[46rem] text-center">
-            <div className="mb-4 text-[11px] uppercase tracking-[0.34em] text-[#8a8177]">
-              Concierge
-            </div>
-
-            <h1 className="text-[2rem] font-light leading-[1.12] tracking-[0.015em] text-[#1f1d1a] md:text-[2.45rem]">
-              A better place to begin.
-            </h1>
-
-            <div className="mx-auto mt-8 max-w-[42rem]">
-              <div className="mb-4 text-[11px] uppercase tracking-[0.34em] text-[#8a8177]">
-              
-              </div>
-
-              <p className="text-[1rem] leading-[1.95] text-[#6a635c] md:text-[1.04rem]">
-                You might already know exactly what you&apos;re looking for, or
-                just have a sense of how it should feel. Either is enough. From
-                there, the conversation takes shape naturally, focusing on what
-                matters and moving at a pace that feels right.
-              </p>
-
-              <p className="mt-6 text-[1rem] leading-[1.95] text-[#6a635c] md:text-[1.04rem]">
-                We are extremely selective about what we recommend, but not
-                about who we help.
-              </p>
-
-              <p className="mt-6 text-[1rem] leading-[1.95] text-[#6a635c] md:text-[1.04rem]">
-                Every client brings a different set of priorities, preferences,
-                timelines, and budgets. Our role is not to decide whether
-                someone is &ldquo;qualified&rdquo; to work with us. Our role is
-                to help you understand your options, avoid costly mistakes, and
-                make the most informed decision possible. Whether you ultimately
-                choose a diamond through Hourglass or not, we&apos;re happy to
-                help you navigate the process with confidence.
-              </p>
-
-              <p className="mt-6 text-[0.95rem] leading-[1.9] text-[#7a7268]">
-                If you have a timeframe in mind, let us know.
-              </p>
-
-              <p className="mt-6 text-[0.95rem] leading-[1.9] text-[#7a7268]">
-                We take on projects as they come in, not by judging whether
-                someone is &ldquo;selective enough&rdquo; to work with us.
-                If you&apos;re on a tighter timeline or simply have questions
-                before getting started, fill out the Concierge form — yes, we
-                personally read and reply to every submission within 24 hours —
-                or reach out directly to Justin at{" "}
-                <a
-                  href="mailto:justin@hourglassdiamonds.com"
-                  className="text-[#6a635c] underline underline-offset-4 transition hover:text-[#1f1d1a]"
-                >
-                  justin@hourglassdiamonds.com
-                </a>
-                .
-              </p>
-
-              <p className="mt-7 text-[0.94rem] leading-[1.88] text-[#7a7268]">
-                Still gathering context?{" "}
-                <Link
-                  href="/diamond-guide/why-work-with-a-graduate-gemologist"
-                  className="text-[#6a635c] underline underline-offset-4 transition hover:text-[#1f1d1a]"
-                >
-                  Why Work With a Graduate Gemologist?
-                </Link>
-                ,{" "}
-                <Link
-                  href="/diamond-guide/independent-diamond-advisor-vs-jewelry-store"
-                  className="text-[#6a635c] underline underline-offset-4 transition hover:text-[#1f1d1a]"
-                >
-                  Independent Advisor vs Jewelry Store
-                </Link>
-                , and — if you are in Charlotte —{" "}
-                <Link
-                  href="/diamond-guide/charlotte-diamond-advisor-guide"
-                  className="text-[#6a635c] underline underline-offset-4 transition hover:text-[#1f1d1a]"
-                >
-                  our local advisor guide
-                </Link>{" "}
-                are worth reading first. None of this is required before you
-                reach out.
-              </p>
-
-              <p className="mt-7">
-                <WhisperedPraiseLink
-                  variant="arrow"
-                  className="text-[11px] tracking-[0.1em]"
-                >
-                  A few reflections from people we&rsquo;ve worked with &rarr;
-                </WhisperedPraiseLink>
-              </p>
-            </div>
+        <div className="mt-6 space-y-6">
+          <div>
+            <div className={fieldLabel}>Project Type</div>
+            <PillRow
+              options={[
+                "Engagement Ring",
+                "Custom Jewelry",
+                "Wedding Band",
+                "Still Exploring",
+              ]}
+              value={projectType}
+              setValue={setProjectType}
+            />
           </div>
 
-          <form
-            ref={formRef}
-            onSubmit={handleSubmit}
-            className="mx-auto mt-14 max-w-[980px] rounded-[34px] border border-[#e4dbcf] bg-white/34 p-5 shadow-[0_18px_46px_rgba(45,35,26,0.03)] md:p-7"
-          >
-            <div className="grid gap-5">
-              <RevealOnScroll className="rounded-[28px] border border-[#e4dbcf] bg-white/56 p-6 md:p-7">
-                <div className="text-[10px] uppercase tracking-[0.32em] text-[#8a8177]">
-                  The Foundation
-                </div>
-                <h2 className="mt-2.5 text-[1.12rem] tracking-[-0.02em] text-[#1f1d1a]">
-                  The essentials that help shape the conversation.
-                </h2>
+          <div>
+            <div className={fieldLabel}>Shape Interest</div>
+            <PillRow
+              options={[
+                "Round",
+                "Oval",
+                "Radiant",
+                "Cushion",
+                "Emerald",
+                "Pear",
+                "Marquise",
+                "Not Sure Yet",
+              ]}
+              value={shape}
+              setValue={setShape}
+            />
+          </div>
+        </div>
+      </div>
 
-                <div className="mt-7 space-y-7">
-                  <div>
-                    <div className="text-[11px] uppercase tracking-[0.28em] text-[#857b70]">
-                      Project Type
-                    </div>
-                    <PillRow
-                      options={[
-                        "Engagement Ring",
-                        "Custom Jewelry",
-                        "Wedding Band",
-                        "Still Exploring",
-                      ]}
-                      value={projectType}
-                      setValue={setProjectType}
-                    />
-                  </div>
+      <div className="mt-8 border-t border-[#e8dfd4] pt-8">
+        <div className={sectionLabel}>Design Direction</div>
+        <h2 className="mt-2 text-[1.05rem] tracking-[-0.02em] text-[#1f1d1a]">
+          The tone and direction that feel most natural.
+        </h2>
 
-                  <div>
-                    <div className="text-[11px] uppercase tracking-[0.28em] text-[#857b70]">
-                      Shape Interest
-                    </div>
-                    <PillRow
-                      options={[
-                        "Round",
-                        "Oval",
-                        "Radiant",
-                        "Cushion",
-                        "Emerald",
-                        "Pear",
-                        "Marquise",
-                        "Not Sure Yet",
-                      ]}
-                      value={shape}
-                      setValue={setShape}
-                    />
-                  </div>
-                </div>
-              </RevealOnScroll>
+        <div className="mt-6 space-y-6">
+          <div>
+            <div className={fieldLabel}>Design Direction</div>
+            <PillRow
+              options={[
+                "Quiet Elegance",
+                "Modern Minimal",
+                "Classic Timeless",
+                "Bold Presence",
+                "Still Discovering",
+              ]}
+              value={direction}
+              setValue={setDirection}
+            />
+          </div>
 
-              <RevealOnScroll className="rounded-[28px] border border-[#e4dbcf] bg-white/56 p-6 md:p-7" delay={80}>
-                <div className="text-[10px] uppercase tracking-[0.32em] text-[#8a8177]">
-                  Design Direction
-                </div>
-                <h2 className="mt-2.5 text-[1.12rem] tracking-[-0.02em] text-[#1f1d1a]">
-                  The tone and direction that feel most natural.
-                </h2>
+          <div>
+            <div className={fieldLabel}>Ring Presence</div>
+            <PillRow
+              options={[
+                "Understated",
+                "Balanced",
+                "Statement",
+                "Still Exploring",
+              ]}
+              value={presence}
+              setValue={setPresence}
+            />
+          </div>
 
-                <div className="mt-7 space-y-7">
-                  <div>
-                    <div className="text-[11px] uppercase tracking-[0.28em] text-[#857b70]">
-                      Design Direction
-                    </div>
-                    <PillRow
-                      options={[
-                        "Quiet Elegance",
-                        "Modern Minimal",
-                        "Classic Timeless",
-                        "Bold Presence",
-                        "Still Discovering",
-                      ]}
-                      value={direction}
-                      setValue={setDirection}
-                    />
-                  </div>
-
-                  <div>
-                    <div className="text-[11px] uppercase tracking-[0.28em] text-[#857b70]">
-                      Ring Presence
-                    </div>
-                    <PillRow
-                      options={[
-                        "Understated",
-                        "Balanced",
-                        "Statement",
-                        "Still Exploring",
-                      ]}
-                      value={presence}
-                      setValue={setPresence}
-                    />
-                  </div>
-
-                  <div className="rounded-[22px] border border-[#e7ddd1] bg-[linear-gradient(160deg,#f4eee6_0%,#fbf8f3_100%)] p-5">
-                    <div className="text-[10px] uppercase tracking-[0.26em] text-[#8a8177]">
-                      Current Direction
-                    </div>
-                    <div className="mt-3 text-[1.02rem] tracking-[-0.02em] text-[#201d1a]">
-                      {shape} · {direction}
-                    </div>
-                    <p className="mt-3 max-w-[34rem] text-[14px] leading-7 text-[#6a635c]">
-                      {directionNote}
-                    </p>
-                    <p className="mt-4 text-[14px] leading-7 text-[#615a53]">
-                      {briefLine}
-                    </p>
-                  </div>
-                </div>
-              </RevealOnScroll>
-
-              <RevealOnScroll className="rounded-[28px] border border-[#e4dbcf] bg-white/56 p-6 md:p-7" delay={160}>
-                <div className="text-[10px] uppercase tracking-[0.32em] text-[#8a8177]">
-                  A Few Final Details
-                </div>
-                <h2 className="mt-2.5 text-[1.12rem] tracking-[-0.02em] text-[#1f1d1a]">
-                  A few details that help us respond clearly.
-                </h2>
-
-                <div className="mt-7 space-y-7">
-                  <div>
-                    <div className="text-[11px] uppercase tracking-[0.28em] text-[#857b70]">
-                      Timeline
-                    </div>
-                    <PillRow
-                      options={[
-                        "0–2 months",
-                        "3–4 months",
-                        "6+ months",
-                        "Flexible",
-                      ]}
-                      value={timeline}
-                      setValue={setTimeline}
-                    />
-                  </div>
-
-                  <div>
-                    <div className="text-[11px] uppercase tracking-[0.28em] text-[#857b70]">
-                      Budget Range
-                    </div>
-                    <PillRow
-                      options={[
-                        "Under 10k",
-                        "10–20k",
-                        "20–30k",
-                        "30–50k",
-                        "50k+",
-                      ]}
-                      value={budget}
-                      setValue={setBudget}
-                    />
-                  </div>
-
-                  <div>
-                    <div className="text-[11px] uppercase tracking-[0.28em] text-[#857b70]">
-                      Inspiration or Notes
-                    </div>
-                    <textarea
-                      name="inspirationNotes"
-                      rows={6}
-                      value={inspirationNotes}
-                      onChange={(event) => setInspirationNotes(event.target.value)}
-                      placeholder="Anything you'd like us to know. References, ideas, timing, or even a rough direction."
-                      className="mt-4 w-full resize-none rounded-[18px] border border-[#ddd4c9] bg-white/78 px-4 py-4 text-sm leading-7 text-[#3c3834] outline-none placeholder:text-[#8a8177]"
-                    />
-                  </div>
-
-                  <div>
-                    <div className="text-[11px] uppercase tracking-[0.28em] text-[#857b70]">
-                      Reference Images
-                    </div>
-
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/jpeg,image/png,image/webp"
-                      multiple
-                      className="hidden"
-                      onChange={handleFileInputChange}
-                    />
-
-                    <div
-                      onClick={() => fileInputRef.current?.click()}
-                      onDragOver={(event) => {
-                        event.preventDefault();
-                        setIsDragging(true);
-                      }}
-                      onDragLeave={() => setIsDragging(false)}
-                      onDrop={handleDrop}
-                      className={[
-                        "mt-4 cursor-pointer rounded-[22px] border px-5 py-6 transition",
-                        isDragging
-                          ? "border-[#bfa788] bg-[#f4ece2]"
-                          : "border-[#ddd4c9] bg-white/72 hover:border-[#ccbda9]",
-                      ].join(" ")}
-                    >
-                      <p className="text-[13px] uppercase tracking-[0.22em] text-[#857b70]">
-                        Add Inspiration
-                      </p>
-                      <p className="mt-3 text-[14px] leading-7 text-[#6a635c]">
-                        Add any inspiration or reference images (optional).
-                      </p>
-                      <p className="mt-2 text-[13px] leading-6 text-[#8a8177]">
-                        Up to {MAX_IMAGES} images. JPG, PNG, or WEBP. Up to{" "}
-                        {MAX_IMAGE_SIZE_MB} MB each.
-                      </p>
-                    </div>
-
-                    {files.length > 0 && (
-                      <div className="mt-4 space-y-3">
-                        {files.map((file, index) => (
-                          <div
-                            key={`${file.name}-${index}`}
-                            className="flex items-center justify-between rounded-[18px] border border-[#e1d7cb] bg-white/82 px-4 py-3"
-                          >
-                            <div className="min-w-0">
-                              <p className="truncate text-[14px] text-[#3c3834]">
-                                {file.name}
-                              </p>
-                              <p className="text-[12px] text-[#8a8177]">
-                                {(file.size / 1024 / 1024).toFixed(2)} MB
-                              </p>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => removeFile(index)}
-                              className="ml-4 text-[11px] uppercase tracking-[0.18em] text-[#8a8177] transition hover:text-[#2b2723]"
-                            >
-                              Remove
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  <div>
-                    <div className="text-[11px] uppercase tracking-[0.28em] text-[#857b70]">
-                      Contact
-                    </div>
-                    <p className="mt-2 text-[14px] leading-7 text-[#6f665d]">
-                      How you’d prefer we reach out.
-                    </p>
-
-                    <div className="mt-5 grid gap-5 md:grid-cols-2">
-                      <div>
-                        <div className="text-[11px] uppercase tracking-[0.28em] text-[#857b70]">
-                          Name
-                        </div>
-                        <input
-                          name="fullName"
-                          type="text"
-                          placeholder="Your name"
-                          required
-                          className="mt-3 w-full rounded-[18px] border border-[#ddd4c9] bg-white/78 px-4 py-4 text-sm text-[#3c3834] outline-none placeholder:text-[#8a8177]"
-                        />
-                      </div>
-
-                      <div>
-                        <div className="text-[11px] uppercase tracking-[0.28em] text-[#857b70]">
-                          Email
-                        </div>
-                        <input
-                          name="email"
-                          type="email"
-                          placeholder="Your email"
-                          required
-                          className="mt-3 w-full rounded-[18px] border border-[#ddd4c9] bg-white/78 px-4 py-4 text-sm text-[#3c3834] outline-none placeholder:text-[#8a8177]"
-                        />
-                      </div>
-
-                      <div className="md:col-span-2">
-                        <div className="text-[11px] uppercase tracking-[0.28em] text-[#857b70]">
-                          Phone Number
-                        </div>
-                        <input
-                          name="phone"
-                          type="tel"
-                          placeholder="Your phone number"
-                          className="mt-3 w-full rounded-[18px] border border-[#ddd4c9] bg-white/78 px-4 py-4 text-sm text-[#3c3834] outline-none placeholder:text-[#8a8177]"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="text-[11px] uppercase tracking-[0.28em] text-[#857b70]">
-                      Preferred Contact
-                    </div>
-                    <PillRow
-                      options={["Email", "Phone", "Text", "Any Is Fine"]}
-                      value={preferredContact}
-                      setValue={setPreferredContact}
-                    />
-                  </div>
-                </div>
-
-                <div className="mt-10 border-t border-[#e8dfd4] pt-8 text-center">
-                  <p className="mx-auto max-w-[34rem] text-[13px] leading-7 text-[#7b7268]">
-                    You don’t need to have everything figured out. This is
-                    simply a starting point.
-                  </p>
-
-                  <CTAGlimmer>
-                    <button
-                      type="submit"
-                      disabled={submitState === "submitting"}
-                      className="mt-7 inline-flex items-center justify-center rounded-full bg-[#2b2723] px-7 py-3 text-sm tracking-wide text-white shadow-[0_14px_28px_rgba(43,39,35,0.12)] transition hover:translate-y-[-1px] disabled:cursor-not-allowed disabled:opacity-70"
-                    >
-                      {submitState === "submitting"
-                        ? "Sending..."
-                        : "Begin the Conversation"}
-                    </button>
-                  </CTAGlimmer>
-
-                  {formMessage && (
-                    <p
-                      className={`mx-auto mt-5 max-w-[34rem] text-[13px] leading-7 ${
-                        submitState === "error"
-                          ? "text-[#9b5f54]"
-                          : "text-[#6a635c]"
-                      }`}
-                    >
-                      {formMessage}
-                    </p>
-                  )}
-                </div>
-              </RevealOnScroll>
+          <div className="rounded-[20px] border border-[#e7ddd1] bg-[linear-gradient(160deg,#f4eee6_0%,#fbf8f3_100%)] p-5">
+            <div className="text-[10px] uppercase tracking-[0.26em] text-[#8a8177]">
+              Current Direction
             </div>
-          </form>
-        </section>
-
-        <RevealOnScroll as="section" className="border-t border-[#e4dbcf] py-[88px] md:py-[102px]">
-          <div className="mx-auto max-w-3xl text-center">
-            <div className="mb-4 text-[11px] uppercase tracking-[0.34em] text-[#8a8177]">
-              A Personal Conversation
+            <div className="mt-3 text-[1.02rem] tracking-[-0.02em] text-[#201d1a]">
+              {shape} · {direction}
             </div>
-            <h2 className="text-[2rem] font-light leading-[1.14] tracking-[0.015em] text-[#1f1d1a] md:text-[2.35rem]">
-              Thoughtful from the start.
-            </h2>
-            <p className="mx-auto mt-6 max-w-[36rem] text-[1rem] leading-[1.9] text-[#6a635c] md:text-[1.04rem]">
-              No pressure. No expectations. Just a clear place to begin.
+            <p className="mt-3 max-w-[34rem] text-[14px] leading-7 text-[#6a635c]">
+              {directionNote}
+            </p>
+            <p className="mt-4 text-[14px] leading-7 text-[#615a53]">
+              {briefLine}
             </p>
           </div>
-        </RevealOnScroll>
+        </div>
       </div>
-    </div>
+
+      <div className="mt-8 border-t border-[#e8dfd4] pt-8">
+        <div className={sectionLabel}>A Few Final Details</div>
+        <h2 className="mt-2 text-[1.05rem] tracking-[-0.02em] text-[#1f1d1a]">
+          A few details that help us respond clearly.
+        </h2>
+
+        <div className="mt-6 space-y-6">
+          <div>
+            <div className={fieldLabel}>Timeline</div>
+            <PillRow
+              options={["0–2 months", "3–4 months", "6+ months", "Flexible"]}
+              value={timeline}
+              setValue={setTimeline}
+            />
+          </div>
+
+          <div>
+            <div className={fieldLabel}>Budget Range</div>
+            <PillRow
+              options={["Under 10k", "10–20k", "20–30k", "30–50k", "50k+"]}
+              value={budget}
+              setValue={setBudget}
+            />
+          </div>
+
+          <div>
+            <div className={fieldLabel}>Inspiration or Notes</div>
+            <textarea
+              name="inspirationNotes"
+              rows={6}
+              value={inspirationNotes}
+              onChange={(event) => setInspirationNotes(event.target.value)}
+              placeholder="Anything you'd like us to know. References, ideas, timing, or even a rough direction."
+              className="mt-4 w-full resize-none rounded-[18px] border border-[#ddd4c9] bg-white/78 px-4 py-4 text-sm leading-7 text-[#3c3834] outline-none placeholder:text-[#8a8177]"
+            />
+          </div>
+
+          <div>
+            <div className={fieldLabel}>Reference Images</div>
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              multiple
+              className="hidden"
+              onChange={handleFileInputChange}
+            />
+
+            <div
+              onClick={() => fileInputRef.current?.click()}
+              onDragOver={(event) => {
+                event.preventDefault();
+                setIsDragging(true);
+              }}
+              onDragLeave={() => setIsDragging(false)}
+              onDrop={handleDrop}
+              className={[
+                "mt-4 cursor-pointer rounded-[22px] border px-5 py-6 transition",
+                isDragging
+                  ? "border-[#bfa788] bg-[#f4ece2]"
+                  : "border-[#ddd4c9] bg-white/72 hover:border-[#ccbda9]",
+              ].join(" ")}
+            >
+              <p className="text-[13px] uppercase tracking-[0.22em] text-[#857b70]">
+                Add Inspiration
+              </p>
+              <p className="mt-3 text-[14px] leading-7 text-[#6a635c]">
+                Add any inspiration or reference images (optional).
+              </p>
+              <p className="mt-2 text-[13px] leading-6 text-[#8a8177]">
+                Up to {MAX_IMAGES} images. JPG, PNG, or WEBP. Up to{" "}
+                {MAX_IMAGE_SIZE_MB} MB each.
+              </p>
+            </div>
+
+            {files.length > 0 && (
+              <div className="mt-4 space-y-3">
+                {files.map((file, index) => (
+                  <div
+                    key={`${file.name}-${index}`}
+                    className="flex items-center justify-between rounded-[18px] border border-[#e1d7cb] bg-white/82 px-4 py-3"
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate text-[14px] text-[#3c3834]">
+                        {file.name}
+                      </p>
+                      <p className="text-[12px] text-[#8a8177]">
+                        {(file.size / 1024 / 1024).toFixed(2)} MB
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeFile(index)}
+                      className="ml-4 text-[11px] uppercase tracking-[0.18em] text-[#8a8177] transition hover:text-[#2b2723]"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div>
+            <div className={fieldLabel}>Contact</div>
+            <p className="mt-2 text-[14px] leading-7 text-[#6f665d]">
+              How you’d prefer we reach out.
+            </p>
+
+            <div className="mt-5 grid gap-5 md:grid-cols-2">
+              <div>
+                <div className={fieldLabel}>Name</div>
+                <input
+                  name="fullName"
+                  type="text"
+                  placeholder="Your name"
+                  required
+                  className="mt-3 w-full rounded-[18px] border border-[#ddd4c9] bg-white/78 px-4 py-4 text-sm text-[#3c3834] outline-none placeholder:text-[#8a8177]"
+                />
+              </div>
+
+              <div>
+                <div className={fieldLabel}>Email</div>
+                <input
+                  name="email"
+                  type="email"
+                  placeholder="Your email"
+                  required
+                  className="mt-3 w-full rounded-[18px] border border-[#ddd4c9] bg-white/78 px-4 py-4 text-sm text-[#3c3834] outline-none placeholder:text-[#8a8177]"
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <div className={fieldLabel}>Phone Number</div>
+                <input
+                  name="phone"
+                  type="tel"
+                  placeholder="Your phone number"
+                  className="mt-3 w-full rounded-[18px] border border-[#ddd4c9] bg-white/78 px-4 py-4 text-sm text-[#3c3834] outline-none placeholder:text-[#8a8177]"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div className={fieldLabel}>Preferred Contact</div>
+            <PillRow
+              options={["Email", "Phone", "Text", "Any Is Fine"]}
+              value={preferredContact}
+              setValue={setPreferredContact}
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-10 border-t border-[#e8dfd4] pt-8 text-center">
+        <p className="mx-auto max-w-[34rem] text-[13px] leading-7 text-[#7b7268]">
+          You don’t need to have everything figured out. This is simply a
+          starting point.
+        </p>
+
+        <CTAGlimmer>
+          <button
+            type="submit"
+            disabled={submitState === "submitting"}
+            className="mt-7 inline-flex items-center justify-center rounded-full bg-[#2b2723] px-7 py-3 text-sm tracking-wide text-white shadow-[0_14px_28px_rgba(43,39,35,0.12)] transition hover:translate-y-[-1px] disabled:cursor-not-allowed disabled:opacity-70"
+          >
+            {submitState === "submitting"
+              ? "Sending..."
+              : "Begin the Conversation"}
+          </button>
+        </CTAGlimmer>
+
+        {formMessage && (
+          <p
+            className={`mx-auto mt-5 max-w-[34rem] text-[13px] leading-7 ${
+              submitState === "error" ? "text-[#9b5f54]" : "text-[#6a635c]"
+            }`}
+          >
+            {formMessage}
+          </p>
+        )}
+      </div>
+    </form>
   );
 }
