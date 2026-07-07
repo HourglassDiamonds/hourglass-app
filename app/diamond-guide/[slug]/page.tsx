@@ -8,6 +8,7 @@ import {
   certificateReaderFaqNode,
   charlotteAdvisorFaqNode,
   clarityFaqNode,
+  colorFaqNode,
   cutFaqNode,
   fluorescenceFaqNode,
   labNaturalFaqNode,
@@ -51,6 +52,7 @@ const CERTIFICATE_READER_SLUG = "how-to-read-a-diamond-certificate";
 const LAB_NATURAL_SLUG = "natural-vs-lab-diamonds";
 const FLUORESCENCE_SLUG = "what-is-diamond-fluorescence";
 const CLARITY_SLUG = "what-is-diamond-clarity";
+const COLOR_SLUG = "what-is-diamond-color";
 const CUT_SLUG = "what-is-diamond-cut";
 
 function buildPageJsonLd(article: (typeof articles)[number], slug: string) {
@@ -66,9 +68,11 @@ function buildPageJsonLd(article: (typeof articles)[number], slug: string) {
             ? fluorescenceFaqNode()
             : slug === CLARITY_SLUG
               ? clarityFaqNode()
-              : slug === CUT_SLUG
-                ? cutFaqNode()
-                : null;
+              : slug === COLOR_SLUG
+                ? colorFaqNode()
+                : slug === CUT_SLUG
+                  ? cutFaqNode()
+                  : null;
   if (!faqNode) {
     return base;
   }

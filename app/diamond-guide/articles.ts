@@ -129,6 +129,7 @@ export const articles: Article[] = [
   title: "Are Colorless Diamonds Worth It",
   category: "Diamond Color",
   body: [
+    { type: "paragraph", text: "Colorless grades command premium prices. For the full color guide and when top letters earn their place, see [what is diamond color](/diamond-guide/what-is-diamond-color). This article focuses on D, E, and F value questions." },
     { type: "heading", text: "What Colorless Diamonds Represent" },
     { type: "paragraph", text: "Colorless diamonds sit at the very top of the diamond color scale and include grades D, E, and F. These diamonds contain virtually no detectable color when examined under professional grading conditions." },
     { type: "paragraph", text: "Because of their rarity, they are often associated with the highest level of diamond color purity." },
@@ -397,7 +398,7 @@ export const articles: Article[] = [
   title: "Best Diamond Color for Engagement Rings",
   category: "Diamond Color",
   body: [
-    { type: "paragraph", text: "You want the diamond to look white in the ring. Not laboratory white under grading lights. White on the hand, in the restaurant where you plan to propose, in the photos you will keep. Color grade is the tool for that goal, but the grade letter is not the whole answer." },
+    { type: "paragraph", text: "You want the diamond to look white in the ring. Not laboratory white under grading lights. White on the hand, in the restaurant where you plan to propose, in the photos you will keep. For the full GIA scale and advisor standards, see [what is diamond color](/diamond-guide/what-is-diamond-color). This article focuses on practical engagement ring ranges." },
     { type: "paragraph", text: "The best color for an engagement ring is the highest grade that still looks crisp in your setting without stealing budget from cut or size. For many buyers, that lands in the near colorless range rather than at the very top of the scale." },
 
     { type: "heading", text: "How Setting Changes the Color Question" },
@@ -421,12 +422,11 @@ export const articles: Article[] = [
     { type: "paragraph", text: "Color should disappear into the experience of the ring. When you stop thinking about the letter and start noticing the sparkle, you are usually in the right place. If fluorescence appears on a report you are considering, [what is diamond fluorescence](/diamond-guide/what-is-diamond-fluorescence) explains how that field relates to color." },
   ],
   related: [
-    { title: "What is Diamond Fluorescence", href: "/diamond-guide/what-is-diamond-fluorescence" },
     { title: "What is Diamond Color", href: "/diamond-guide/what-is-diamond-color" },
-    { title: "G vs H Diamond Color", href: "/diamond-guide/g-vs-h-diamond-color" },
     { title: "Near Colorless Diamonds Explained", href: "/diamond-guide/near-colorless-diamonds-explained" },
+    { title: "G vs H Diamond Color", href: "/diamond-guide/g-vs-h-diamond-color" },
     { title: "Does Diamond Color Matter", href: "/diamond-guide/does-diamond-color-matter" },
-    { title: "Are Colorless Diamonds Worth It", href: "/diamond-guide/are-colorless-diamonds-worth-it" },
+    { title: "Diamond Color vs Clarity", href: "/diamond-guide/diamond-color-vs-clarity" },
   ],
 },
 
@@ -692,6 +692,7 @@ export const articles: Article[] = [
   title: "Can You See Diamond Color",
   category: "Diamond Color",
   body: [
+    { type: "paragraph", text: "Laboratory grading and everyday viewing are not the same experience. For the full color guide, see [what is diamond color](/diamond-guide/what-is-diamond-color). This article focuses on what the eye can detect without master stones." },
     { type: "heading", text: "How Diamond Color Is Detected" },
     { type: "paragraph", text: "Diamond color is graded by trained professionals using controlled lighting and comparison stones. The diamond is typically viewed from the side to make subtle traces of color easier to identify." },
     { type: "paragraph", text: "Under these conditions, graders can detect differences between individual color grades that may not be obvious in everyday viewing." },
@@ -712,12 +713,11 @@ export const articles: Article[] = [
     { type: "paragraph", text: "Understanding this helps buyers focus on the overall beauty of the diamond rather than assuming every color difference will be easily visible. Fluorescence is graded separately on reports; for how it relates to color and value, see [what is diamond fluorescence](/diamond-guide/what-is-diamond-fluorescence)." },
   ],
   related: [
-    { title: "What is Diamond Fluorescence", href: "/diamond-guide/what-is-diamond-fluorescence" },
     { title: "What is Diamond Color", href: "/diamond-guide/what-is-diamond-color" },
     { title: "Near Colorless Diamonds Explained", href: "/diamond-guide/near-colorless-diamonds-explained" },
-    { title: "D vs E vs F Diamond Color", href: "/diamond-guide/d-vs-e-vs-f-diamond-color" },
     { title: "G vs H Diamond Color", href: "/diamond-guide/g-vs-h-diamond-color" },
     { title: "Does Diamond Color Matter", href: "/diamond-guide/does-diamond-color-matter" },
+    { title: "What is Diamond Fluorescence", href: "/diamond-guide/what-is-diamond-fluorescence" },
   ],
 },
 
@@ -810,6 +810,7 @@ export const articles: Article[] = [
   title: "D vs E vs F Diamond Color",
   category: "Diamond Color",
   body: [
+    { type: "paragraph", text: "D, E, and F diamonds share the colorless range. For how color fits into the full GIA scale and buying decisions, see [what is diamond color](/diamond-guide/what-is-diamond-color). This article compares the three top letters." },
     { type: "heading", text: "The Colorless Diamond Range" },
     { type: "paragraph", text: "Diamonds graded D, E, and F are all classified as colorless on the diamond color scale. This category represents the highest range of color quality for traditional white diamonds. Each of these grades contains extremely little color, often appearing perfectly white in most viewing conditions." },
     { type: "paragraph", text: "Although these diamonds sit next to one another on the grading scale, the differences between them are very subtle. Determining the exact grade typically requires careful comparison with reference stones under professional grading conditions." },
@@ -1037,6 +1038,7 @@ export const articles: Article[] = [
   title: "Diamond Color Chart Explained",
   category: "Diamond Color",
   body: [
+    { type: "paragraph", text: "For the full color guide, GIA scale, and Hourglass buying standards, see [what is diamond color](/diamond-guide/what-is-diamond-color). This article explains the D through Z chart and what each range means on paper." },
     { type: "heading", text: "Understanding the Diamond Color Scale" },
     { type: "paragraph", text: "The diamond color chart is a standardized grading system used to evaluate how much color is present in a diamond. Developed by the Gemological Institute of America (GIA), the scale ranges from D to Z and measures the absence of color in white diamonds." },
     { type: "paragraph", text: "Diamonds at the top of the scale are considered completely colorless, while those further down begin to show faint traces of yellow or brown. The purpose of the chart is to create consistency in diamond grading so that buyers, jewelers, and laboratories can evaluate diamonds using the same reference points." },
@@ -1057,12 +1059,11 @@ export const articles: Article[] = [
     { type: "paragraph", text: "For many engagement ring buyers, diamonds in the colorless or near colorless ranges offer the best combination of beauty and value. Understanding how the chart works makes it easier to evaluate different diamonds with greater confidence. Fluorescence is documented separately on grading reports; see [what is diamond fluorescence](/diamond-guide/what-is-diamond-fluorescence) for how that field relates to color." },
   ],
   related: [
-    { title: "What is Diamond Fluorescence", href: "/diamond-guide/what-is-diamond-fluorescence" },
     { title: "What is Diamond Color", href: "/diamond-guide/what-is-diamond-color" },
+    { title: "Near Colorless Diamonds Explained", href: "/diamond-guide/near-colorless-diamonds-explained" },
     { title: "D vs E vs F Diamond Color", href: "/diamond-guide/d-vs-e-vs-f-diamond-color" },
     { title: "G vs H Diamond Color", href: "/diamond-guide/g-vs-h-diamond-color" },
-    { title: "Near Colorless Diamonds Explained", href: "/diamond-guide/near-colorless-diamonds-explained" },
-    { title: "Diamond Color vs Clarity", href: "/diamond-guide/diamond-color-vs-clarity" },
+    { title: "What is Diamond Fluorescence", href: "/diamond-guide/what-is-diamond-fluorescence" },
   ],
 },
 
@@ -1079,7 +1080,7 @@ export const articles: Article[] = [
     { type: "paragraph", text: "When color becomes visible, it often appears as a faint warmth in the side profile or a slight shift in white metal. When clarity becomes visible, it is usually a dark spot catching light from the table, not a microscopic feather you need a loupe to find. The grades on the report describe both characteristics under controlled conditions. Your daily experience follows different rules." },
 
     { type: "heading", text: "Where Money Is Usually Better Spent" },
-    { type: "paragraph", text: "Before you trade color or clarity, protect cut. A well-cut diamond masks warmth and minimizes the visibility of inclusions more effectively than most buyers expect. Skipping that step to buy a higher color or clarity grade on a mediocre cut is one of the most common budget mistakes in the trade." },
+    { type: "paragraph", text: "Before you trade color or clarity, protect cut. A well-cut diamond masks warmth and minimizes the visibility of inclusions more effectively than most buyers expect. Skipping that step to buy a higher color or clarity grade on a mediocre cut is one of the most common budget mistakes in the trade. [What is diamond cut](/diamond-guide/what-is-diamond-cut) explains why performance comes first." },
     { type: "paragraph", text: "After cut, eye cleanliness usually matters more than climbing the clarity ladder. Many SI1 stones are entirely clean face-up. Some VS stones have crystals positioned where they flash under certain lights. Paying for VVS or internally flawless when you cannot see the difference without magnification is paying for reassurance, not beauty." },
     { type: "paragraph", text: "Color follows a similar pattern. The jump from near-colorless to colorless can be subtle once a diamond is set and returning light well. [Diamond price versus quality](/diamond-guide/diamond-price-vs-quality) walks through how those premiums often fail to show up on the hand." },
 
@@ -1101,11 +1102,11 @@ export const articles: Article[] = [
     { type: "paragraph", text: "Color versus clarity is not a moral test. It is a budget question with a visual answer. Choose what you can see, protect what changes how light moves, and let the rest of the alphabet serve you rather than govern you." },
   ],
   related: [
-    { title: "What is Diamond Clarity", href: "/diamond-guide/what-is-diamond-clarity" },
     { title: "What is Diamond Color", href: "/diamond-guide/what-is-diamond-color" },
-    { title: "Best Diamond Clarity for Engagement Rings", href: "/diamond-guide/best-diamond-clarity-for-engagement-rings" },
+    { title: "What is Diamond Clarity", href: "/diamond-guide/what-is-diamond-clarity" },
+    { title: "What is Diamond Cut", href: "/diamond-guide/what-is-diamond-cut" },
     { title: "Best Diamond Color for Engagement Rings", href: "/diamond-guide/best-diamond-color-for-engagement-rings" },
-    { title: "Why Work With a Graduate Gemologist", href: "/diamond-guide/why-work-with-a-graduate-gemologist" },
+    { title: "Best Diamond Clarity for Engagement Rings", href: "/diamond-guide/best-diamond-clarity-for-engagement-rings" },
   ],
 },
 
@@ -1990,6 +1991,7 @@ export const articles: Article[] = [
   title: "Does Diamond Color Matter",
   category: "Diamond Color",
   body: [
+    { type: "paragraph", text: "Whether color matters depends on what you see on the hand, not only on the report. For the full color guide and GIA scale, see [what is diamond color](/diamond-guide/what-is-diamond-color). This article focuses on when color changes a buying decision." },
     { type: "heading", text: "Understanding the Role of Diamond Color" },
     { type: "paragraph", text: "Diamond color is one of the four primary characteristics used to evaluate diamonds. The grading scale measures how much natural tint is present in the stone, with higher grades indicating less visible color." },
     { type: "paragraph", text: "While color is an important grading factor, its influence on appearance can vary depending on several other elements." },
@@ -2011,12 +2013,11 @@ export const articles: Article[] = [
     
   ],
   related: [
-    { title: "What is Diamond Fluorescence", href: "/diamond-guide/what-is-diamond-fluorescence" },
     { title: "What is Diamond Color", href: "/diamond-guide/what-is-diamond-color" },
-    { title: "Diamond Color Chart Explained", href: "/diamond-guide/diamond-color-chart-explained" },
     { title: "Near Colorless Diamonds Explained", href: "/diamond-guide/near-colorless-diamonds-explained" },
     { title: "Best Diamond Color for Engagement Rings", href: "/diamond-guide/best-diamond-color-for-engagement-rings" },
-    { title: "Diamond Color vs Clarity", href: "/diamond-guide/diamond-color-vs-clarity" }
+    { title: "Diamond Color vs Clarity", href: "/diamond-guide/diamond-color-vs-clarity" },
+    { title: "What is Diamond Fluorescence", href: "/diamond-guide/what-is-diamond-fluorescence" },
   ]
 },
 
@@ -2249,6 +2250,7 @@ export const articles: Article[] = [
   title: "G vs H Diamond Color",
   category: "Diamond Color",
   body: [
+    { type: "paragraph", text: "G and H sit at the top of the near colorless range. For the full color scale and how metal and cut change what you see, see [what is diamond color](/diamond-guide/what-is-diamond-color). This article compares G and H directly." },
     { type: "heading", text: "The Near Colorless Diamond Range" },
     { type: "paragraph", text: "G and H diamonds both fall within the near colorless category of the diamond color scale. These grades represent diamonds that contain extremely faint traces of color, though the difference is typically very difficult to see in everyday viewing." },
     { type: "paragraph", text: "Because they sit just below the colorless range, G and H diamonds often appear bright and white when set in engagement rings. Many buyers consider these grades to offer a strong balance between visual appearance and overall value." },
@@ -3092,6 +3094,7 @@ export const articles: Article[] = [
   title: "Near Colorless Diamonds Explained",
   category: "Diamond Color",
   body: [
+    { type: "paragraph", text: "Near colorless is where many engagement rings land in practice. For the full GIA scale and Hourglass standards, see [what is diamond color](/diamond-guide/what-is-diamond-color). This article explains G through J in wear." },
     { type: "heading", text: "What Near Colorless Means" },
     { type: "paragraph", text: "Near colorless diamonds are diamonds that contain extremely faint traces of color that are difficult to detect without close examination. On the diamond color scale, this category typically includes grades G, H, I, and J." },
     { type: "paragraph", text: "Although these diamonds sit just below the colorless category, many still appear bright and white in most lighting conditions." },
@@ -3113,12 +3116,11 @@ export const articles: Article[] = [
     
   ],
   related: [
-    { title: "What is Diamond Fluorescence", href: "/diamond-guide/what-is-diamond-fluorescence" },
     { title: "What is Diamond Color", href: "/diamond-guide/what-is-diamond-color" },
-    { title: "Diamond Color Chart Explained", href: "/diamond-guide/diamond-color-chart-explained" },
     { title: "G vs H Diamond Color", href: "/diamond-guide/g-vs-h-diamond-color" },
     { title: "Best Diamond Color for Engagement Rings", href: "/diamond-guide/best-diamond-color-for-engagement-rings" },
-    { title: "Can You See Diamond Color", href: "/diamond-guide/can-you-see-diamond-color" }
+    { title: "Can You See Diamond Color", href: "/diamond-guide/can-you-see-diamond-color" },
+    { title: "What is Diamond Fluorescence", href: "/diamond-guide/what-is-diamond-fluorescence" },
   ]
 },
 
@@ -3900,49 +3902,114 @@ export const articles: Article[] = [
   title: "What is Diamond Color",
   category: "Diamond Color",
   body: [
-    { type: "paragraph", text: "Two diamonds side by side under jewelry-store lights. One graded D. One graded H. The buyer squints, switches hands, asks which is colorless. Often they guess wrong. That moment tells you almost everything about diamond color that matters for an engagement ring." },
-    { type: "paragraph", text: "The D through Z scale is real and standardized. Most buyers do not struggle because they cannot memorize it. They struggle because they cannot translate it into what they will see on the hand, in their metal, in ordinary light, for years after the proposal." },
+    { type: "paragraph", text: "Diamond color on a grading report describes how much yellow or brown tint is present in a white diamond, expressed as a letter from D through Z. For most engagement rings the practical question is simpler: will this stone look crisp and bright on the hand in the metal you plan to use? Face-up appearance in wear usually matters more than the side-view grade alone." },
+    { type: "paragraph", text: "A buyer once insisted on D color because the filter menu made it feel safe. The stone was deep and quiet next to a lively G with stronger proportions. Set in platinum, the G looked whiter from above. Color is part of the story. It is not the whole story." },
 
-    { type: "heading", text: "Why Color Is Often Misunderstood" },
-    { type: "paragraph", text: "Laboratories grade color from the side under controlled lighting, comparing the stone to master sets. That method detects subtle tint accurately. It is not how you will view the diamond once it is set and returning light through the crown." },
-    { type: "paragraph", text: "Face-up appearance depends on cut, on how much light the stone returns, on the metal around it, and on the shape of the facets. A well-cut G can look whiter than a poorly cut E. Buyers who shop color grade alone often overpay for letters that never show up where they look." },
+    { type: "heading", text: "What Diamond Color Actually Measures" },
+    { type: "paragraph", text: "Laboratories grade color by comparing a diamond to master stones under controlled lighting, usually viewing from the side where body tint is easiest to detect. The result is a standardized letter that helps compare diamonds on paper. It is not a measure of sparkle, fire, or fancy colored diamonds." },
+    { type: "paragraph", text: "That grade is useful. It is not the same as beauty in wear. Most engagement diamonds fall in the colorless or near colorless ranges, where differences face-up are often subtle. The report tells you where the stone sits on the scale. Your eyes, in the ring you plan to build, tell you what matters." },
 
-    { type: "heading", text: "What You Will See and What You Will Not" },
-    { type: "paragraph", text: "In the colorless and near-colorless ranges most engagement rings use, tint is usually subtle face-up. You may notice warmth in the side profile before you notice it from above. Strong yellow or brown becomes more obvious as you move down the scale, but the jump between adjacent grades is often smaller than price suggests." },
-    { type: "paragraph", text: "What you rarely see without comparison: a single grade difference in isolation, especially once the diamond is set. What you may see: warmth if the stone is large, step-cut, set in white metal, and returning light poorly. Context matters as much as the letter." },
+    { type: "heading", text: "Why Color Usually Means Absence of Color" },
+    { type: "paragraph", text: "In everyday jewelry language, diamond color refers to how little yellow or brown is visible in a white diamond. D is the most colorless. As you move down the alphabet, tint becomes easier for graders to detect. Z marks the end of the normal white-diamond scale before fancy yellow or brown colors receive their own descriptions." },
+    { type: "paragraph", text: "Buyers sometimes assume color describes rainbow flashes. That is sparkle, governed largely by cut. Color describes body tint in the crystal. Keeping that distinction clear prevents overpaying for letters that never show up where you look." },
 
-    { type: "heading", text: "How Metal Changes the Picture" },
-    { type: "paragraph", text: "Platinum and white gold emphasize whiteness. They can make faint warmth slightly more visible in larger or step-cut stones. Yellow and rose gold add warmth around the diamond, which can make near-colorless grades look harmonious and colorless grades feel unnecessary." },
-    { type: "paragraph", text: "This is not a trick. It is optics. A J color round in rose gold often looks intentional and soft. The same stone in a platinum solitaire may read warmer than you expected. Choose color with the finished ring in mind, not with the diamond loose on white paper alone." },
+    { type: "heading", text: "The GIA Diamond Color Scale" },
+    { type: "paragraph", text: "The Gemological Institute of America color scale runs from D at the top through Z at the lower end for round and fancy white diamonds. Each step reflects how readily a trained grader sees tint compared with master stones. The scale is a shared language for laboratories, jewelers, and buyers." },
+    { type: "paragraph", text: "Colorless grades are D, E, and F. Near colorless grades are G, H, I, and J. Faint color begins around K, L, and M. Very light and light grades continue farther down the alphabet. The chart is consistent. How each grade reads on the hand depends on cut, shape, size, and metal." },
 
-    { type: "heading", text: "Shape, Size, and Light" },
-    { type: "paragraph", text: "Brilliant cuts scatter light and forgive more tint than emerald or Asscher step cuts, where open tables show body color more directly. Size matters too. Warmth that hides in a half-carat round can surface in a two-carat step cut under the same grade." },
-    { type: "paragraph", text: "Lighting shifts perception daily. Restaurant warmth, office fluorescents, overcast daylight: each reveals something different. Cut quality still leads. A lively near-colorless stone outperforms a dull colorless one in every environment. [What is diamond cut](/diamond-guide/what-is-diamond-cut) explains why light performance comes before alphabet upgrades. Fluorescence can also influence how color reads in certain light; [what is diamond fluorescence](/diamond-guide/what-is-diamond-fluorescence) is the balanced guide to that report field." },
+    { type: "heading", text: "What Each Range Means in Practice" },
+    { type: "paragraph", text: "Colorless (D through F): extremely little tint under grading conditions. Premium pricing reflects rarity as much as visible difference. Many buyers cannot separate D from F face-up without a reference stone beside them." },
+    { type: "paragraph", text: "Near colorless (G through J): faint tint that may be difficult to see face-up in a well-cut brilliant. G and H are common strong choices for white-metal solitaires. I and J can look excellent in yellow or rose gold or with halo sparkle around the center." },
+    { type: "paragraph", text: "Faint and lower (K through Z): warmth becomes easier to detect, especially in larger step cuts and white metal. Some buyers choose these grades intentionally for a soft tone. Most Hourglass engagement selections stay higher on the scale when brightness is the goal." },
 
-    { type: "heading", text: "Where Money Is Well Spent" },
-    { type: "paragraph", text: "Protect cut first. Then choose the lowest color grade that looks clean in your metal and shape when you compare stones side by side. For many brilliant-cut engagement rings in white metal, that lands in the near-colorless range rather than the colorless top tier." },
-    { type: "paragraph", text: "Paying for D or E when G or H would look identical in the setting is one of the most common overpayments in the trade. [Diamond price versus quality](/diamond-guide/diamond-price-vs-quality) walks through how those premiums often buy paper prestige, not visible difference. [Our Approach](/our-approach) applies the same standard: match color to the finished ring, not to the filter preset." },
+    { type: "heading", text: "What Buyers Actually Notice" },
+    { type: "paragraph", text: "Most wearers notice liveliness before they notice alphabet. A diamond that returns crisp white light can look cleaner than its letter suggests. A dull diamond with a top color grade can look slightly warm or flat in ordinary rooms." },
+    { type: "paragraph", text: "Side profile often shows more tint than the face-up view. Restaurant warmth, office fluorescents, and window daylight each shift perception. Compare stones in the metal you plan to use rather than judging loose diamonds on white paper alone." },
 
-    { type: "heading", text: "Where Advisors Compromise" },
-    { type: "paragraph", text: "Advisors compromise on color before they compromise on cut or eye cleanliness. They match color to metal: slightly warmer grades in yellow or rose gold, slightly stricter standards in platinum with step cuts. They compare face-up, not only from the side." },
-    { type: "paragraph", text: "They also ask what you notice. Some buyers see tint immediately. Others do not until stones are side by side. Neither response is wrong. Color is one of the few grading factors where personal sensitivity should influence budget. A [Graduate Gemologist](/diamond-guide/why-work-with-a-graduate-gemologist) can help you find the lowest grade that still looks right to your eye." },
+    { type: "heading", text: "Face-Up Appearance Versus Laboratory Grading" },
+    { type: "paragraph", text: "Grading views the stone from the side to detect subtle tint. You will live with the face-up view in a ring. Cut quality changes how much white light returns through the crown, which can mask faint color or expose it when performance is weak." },
+    { type: "paragraph", text: "[How to read a diamond certificate](/diamond-guide/how-to-read-a-diamond-certificate) shows where the color grade appears on the report. Treat that line as orientation, then validate what you see in person." },
 
-    { type: "heading", text: "How to Evaluate Color in Practice" },
-    { type: "paragraph", text: "Compare two or three stones in the metal you plan to use. View them face-up at arm's length, not only from the side under bright spots. Move them near a window and under warmer indoor light. If you cannot see a difference without a reference stone beside you, you are likely paying for a letter rather than a visible improvement." },
+    { type: "heading", text: "How Diamond Shape Affects Visible Color" },
+    { type: "paragraph", text: "Brilliant cuts such as round, oval, cushion, and radiant scatter light across many small facets. That dispersion can make near colorless grades look whiter face-up. Step cuts such as emerald and Asscher have broader open tables that show body color more directly." },
+    { type: "paragraph", text: "Elongated brilliants often hide tint along the length while showing a bright center. Shape does not replace the grade. It changes how forgiving the grade feels in wear." },
 
-    { type: "heading", text: "Regrets and Non-Regrets" },
-    { type: "paragraph", text: "Buyers rarely regret choosing a near-colorless diamond that looked white in the ring they built. They more often regret stretching for colorless grades while sacrificing cut or size, or choosing a step cut that shows tint they did not evaluate in person." },
-    { type: "paragraph", text: "For color against clarity in the same budget, [diamond color versus clarity](/diamond-guide/diamond-color-vs-clarity) explains how advisors weigh the trade. [Diamond buying tips from jewelers](/diamond-guide/diamond-buying-tips-from-jewelers) covers comparison habits that make color differences visible before you buy." },
+    { type: "heading", text: "How Carat Size Can Affect Visible Color" },
+    { type: "paragraph", text: "Larger diamonds present more material for the eye to read. Tint that was invisible at three quarters of a carat may become noticeable at two carats in the same grade, especially in step cuts and platinum solitaires. Size increases the stakes of color choices without changing the laboratory letter." },
+    { type: "paragraph", text: "When carat weight rises, compare face-up in your setting rather than assuming the same grade will behave identically to a smaller reference stone you saw earlier." },
 
-    { type: "paragraph", text: "Color grading exists so laboratories can describe tint consistently. Your job is simpler: decide what looks right on the hand you are buying for. Compare a few stones, hold them in the metal you plan to use, and trust what you see more than the highest letter on a filter menu." },
+    { type: "heading", text: "How Setting Metal Influences Perceived Color" },
+    { type: "paragraph", text: "Metal color surrounds the diamond with reflected tone. Cool white metals emphasize neutrality. Warm yellow and rose gold add harmony that can make slightly lower color grades look intentional rather than tinted." },
+    { type: "paragraph", text: "Halo and pavé designs add white sparkle around the center, which can make the center face whiter. Bezel and basket details change how much metal reflects into the stone. Build color into the finished ring picture, not the loose stone alone." },
+
+    { type: "heading", text: "White Gold and Platinum Considerations" },
+    { type: "paragraph", text: "Platinum and white gold emphasize any warmth in larger or step-cut diamonds. Many buyers choosing platinum solitaires aim for G or higher in brilliant cuts, or step up one color grade when carat weight increases." },
+    { type: "paragraph", text: "Rhodium-plated white gold reads similarly cool. If faint warmth bothers you in white metal, compare G and H side by side before you commit to a higher tier." },
+
+    { type: "heading", text: "Yellow Gold and Rose Gold Considerations" },
+    { type: "paragraph", text: "Yellow and rose gold add warmth around the stone. Near colorless grades often look harmonious in these metals because the setting and diamond speak the same visual language. Colorless grades can still be beautiful, but the premium may buy little visible gain." },
+    { type: "paragraph", text: "A J color round in rose gold often reads soft and deliberate. The same stone in a high-set platinum solitaire may read warmer than expected. Metal is part of the color decision." },
+
+    { type: "heading", text: "Color Versus Clarity" },
+    { type: "paragraph", text: "Color describes tint. Clarity describes inclusions and blemishes. Both appear on the report. Budget often forces a trade. [Diamond color versus clarity](/diamond-guide/diamond-color-vs-clarity) walks through how advisors weigh the two without treating either as a moral test." },
+    { type: "paragraph", text: "[What is diamond clarity](/diamond-guide/what-is-diamond-clarity) explains eye-clean standards. Protect cut first, then decide what your eye can see at arm's length." },
+
+    { type: "heading", text: "Color Versus Cut and Light Performance" },
+    { type: "paragraph", text: "Cut governs how much white light returns through the crown. Strong light performance can make a near colorless diamond look whiter face-up. Weak cut can make a higher color grade look sleepy regardless of the letter." },
+    { type: "paragraph", text: "[What is diamond cut](/diamond-guide/what-is-diamond-cut) is the performance guide. Color should follow cut, not compete with it. [Our Approach](/our-approach) at Hourglass applies that order consistently." },
+
+    { type: "heading", text: "Natural Versus Lab-Grown Color Considerations" },
+    { type: "paragraph", text: "Both natural and laboratory-grown diamonds receive D through Z color grades on major reports. Growth method does not change how tint is measured. Origin may matter personally, but the color scale reads the same on paper." },
+    { type: "paragraph", text: "[Natural vs lab diamonds](/diamond-guide/natural-vs-lab-diamonds) covers origin decisions. Compare color face-up within the origin you choose rather than assuming equivalence across unrelated listings." },
+
+    { type: "heading", text: "Why Two Diamonds With the Same Grade May Look Different" },
+    { type: "paragraph", text: "Identical color letters do not mean identical face-up tone. Cut proportions, fluorescence, size, and side-by-side crystal character all shift perception. One H can look crisp. Another H can look muted under the same spotlight." },
+    { type: "paragraph", text: "This is why comparison matters. If you are working from a listing, upload the report to [Diamond Intelligence](/diamond-intelligence) to translate grades and proportions into practical questions before you view the stone." },
+
+    { type: "heading", text: "Fluorescence and Color" },
+    { type: "paragraph", text: "Fluorescence is graded separately. It describes a glow under ultraviolet light, not body color. In rare cases strong fluorescence can influence how crisp a diamond looks in certain daylight, which is why it belongs in the conversation without becoming a pass-fail rule." },
+    { type: "paragraph", text: "[What is diamond fluorescence](/diamond-guide/what-is-diamond-fluorescence) is the balanced guide. Evaluate fluorescence on the individual stone rather than from internet generalizations." },
+
+    { type: "heading", text: "What Reports Cannot Tell You" },
+    { type: "paragraph", text: "A report summarizes color under controlled conditions. It does not show how the diamond will look at your kitchen table, in your partner's skin tone, or beside the metal you chose. It cannot replace side-by-side viewing." },
+    { type: "paragraph", text: "Reports narrow the field. Your eyes finish the decision." },
+
+    { type: "heading", text: "Hourglass Color Standards" },
+    { type: "paragraph", text: "Hourglass prioritizes face-up beauty in the finished ring over alphabet perfection on paper. For most brilliant-cut engagement rings in white metal, near colorless grades with strong cut are a common sweet spot. We encourage comparison in the metal you plan to use before you pay for colorless premiums you cannot see." },
+    { type: "paragraph", text: "Color should support the ring, not consume budget that belongs to cut or to the setting you want. Freed budget from invisible color steps often funds the liveliness you will actually notice." },
+
+    { type: "heading", text: "How a Graduate Gemologist Evaluates Color" },
+    { type: "paragraph", text: "A Graduate Gemologist begins face-up at arm's length, then from the side, then in the metal and style you have chosen. The report comes after the eye test: whether tint distracts, whether liveliness masks warmth, whether the grade fits the setting." },
+    { type: "paragraph", text: "That order protects buyers from paying for letters and from rejecting beautiful stones because of rules that ignore metal and cut. [Why work with a Graduate Gemologist](/diamond-guide/why-work-with-a-graduate-gemologist) explains who leads that review at Hourglass." },
+
+    { type: "heading", text: "Charlotte, Surrounding Markets, and Clients Nationwide" },
+    { type: "paragraph", text: "Many Charlotte-area buyers compare color in private appointment rather than under sales-floor spotlights alone. Hourglass works with clients throughout the Charlotte metro, including South Charlotte, Ballantyne, Matthews, Waxhaw, Weddington, Marvin, Pineville, Huntersville, Union County, Lake Norman, Fort Mill, and nearby communities." },
+    { type: "paragraph", text: "We also work with clients around the U.S. by appointment and remote consultation when that pace fits better than a local visit. Whether you are choosing between G and H or weighing color against clarity, the standard stays the same: what looks right on the hand. [Begin the conversation](/concierge) when you want a Graduate Gemologist to compare specific stones with you." },
+
+    { type: "heading", text: "What is diamond color?" },
+    { type: "paragraph", text: "Diamond color on GIA reports describes how much yellow or brown tint is present in a white diamond, graded D through Z. D is the most colorless. The scale measures absence of color in controlled laboratory conditions, not fancy colored diamonds or the rainbow flashes of sparkle." },
+
+    { type: "heading", text: "What is the best diamond color for an engagement ring?" },
+    { type: "paragraph", text: "There is no single best grade for every ring. Most strong choices look crisp face-up in the near colorless range when cut is strong and the metal suits the stone. Match color to your setting, shape, and what you actually see side by side rather than chasing the top letter on a filter menu." },
+
+    { type: "heading", text: "What does near colorless mean?" },
+    { type: "paragraph", text: "Near colorless includes G, H, I, and J on the GIA scale. These diamonds may contain faint tint detectable from the side under grading lights but often appear bright and white face-up in engagement rings, especially in brilliant cuts with strong light return." },
+
+    { type: "heading", text: "Does diamond color matter?" },
+    { type: "paragraph", text: "Yes, but how much it matters depends on shape, size, metal, cut, and your eye. Color always appears on the report. It does not always appear on the hand. Protect cut first, then choose the lowest color grade that still looks right in the finished ring." },
+
+    { type: "heading", text: "Does color affect how a diamond sparkles?" },
+    { type: "paragraph", text: "Cut affects sparkle more than color for most eye-clean diamonds. Strong light return can make a near colorless stone look whiter face-up. Heavy tint or weak cut can make a higher color grade look dull. Liveliness usually comes from cut, not from climbing the color alphabet." },
+
+    { type: "heading", text: "Are D color diamonds worth the premium?" },
+    { type: "paragraph", text: "For buyers who value top-of-scale rarity, sometimes. For most engagement ring buyers, well-chosen G or H diamonds look similar in wear while freeing budget for cut or size. The premium often buys paper perfection rather than a visible difference once the diamond is set." },
   ],
   related: [
-    { title: "What is Diamond Fluorescence", href: "/diamond-guide/what-is-diamond-fluorescence" },
-    { title: "Diamond Color Chart Explained", href: "/diamond-guide/diamond-color-chart-explained" },
-    { title: "D vs E vs F Diamond Color", href: "/diamond-guide/d-vs-e-vs-f-diamond-color" },
-    { title: "G vs H Diamond Color", href: "/diamond-guide/g-vs-h-diamond-color" },
     { title: "Near Colorless Diamonds Explained", href: "/diamond-guide/near-colorless-diamonds-explained" },
-    { title: "Does Diamond Color Matter", href: "/diamond-guide/does-diamond-color-matter" }
+    { title: "Best Diamond Color for Engagement Rings", href: "/diamond-guide/best-diamond-color-for-engagement-rings" },
+    { title: "Diamond Color vs Clarity", href: "/diamond-guide/diamond-color-vs-clarity" },
+    { title: "What is Diamond Cut", href: "/diamond-guide/what-is-diamond-cut" },
+    { title: "How to Read a Diamond Certificate", href: "/diamond-guide/how-to-read-a-diamond-certificate" },
   ]
 },
 
