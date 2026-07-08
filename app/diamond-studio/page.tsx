@@ -635,26 +635,27 @@ function SuiteStyles() {
   return (
     <style dangerouslySetInnerHTML={{ __html: `
       .dts-shell[data-theme="light"]{
-        --gold: oklch(0.74 0.090 70);
-        --gold-soft: oklch(0.84 0.060 75);
-        --gold-warm: oklch(0.68 0.110 65);
-        --topnav-active: oklch(0.41 0.032 58);
-        --topnav-idle: oklch(0.36 0.012 60);
-        --bg: oklch(0.965 0.008 75);
-        --bg-deep: oklch(0.945 0.010 70);
-        --card: oklch(0.985 0.006 78);
-        --card-edge: oklch(0.93 0.006 72);
-        --ink: oklch(0.28 0.012 60);
-        --ink-soft: oklch(0.46 0.011 62);
-        --ink-mute: oklch(0.62 0.010 65);
-        --hairline: oklch(0.86 0.008 70);
-        --hairline-soft: oklch(0.92 0.006 72);
-        --pill-active: oklch(0.94 0.024 75);
-        --pill-edge: oklch(0.82 0.040 70);
-        --shadow-1: 0 1px 2px oklch(0.55 0.012 65 / 0.04), 0 4px 14px oklch(0.45 0.012 65 / 0.04);
-        --shadow-2: 0 1px 1px oklch(0.55 0.012 65 / 0.03), 0 8px 28px oklch(0.45 0.012 65 / 0.06);
-        --sb-thumb: oklch(0.62 0.006 72 / 0.09);
-        --sb-thumb-hover: oklch(0.48 0.008 68 / 0.22);
+        --gold: var(--hg-gold);
+        --gold-soft: color-mix(in srgb, var(--hg-gold) 42%, #fff);
+        --gold-warm: var(--hg-gold-deep);
+        --topnav-active: var(--hg-ink);
+        --topnav-idle: var(--hg-muted);
+        /* parchment aliases — instrument chrome */
+        --bg: var(--hg-ivory);
+        --bg-deep: color-mix(in srgb, var(--hg-ivory) 88%, var(--hg-line));
+        --card: var(--hg-surface);
+        --card-edge: var(--hg-line);
+        --ink: var(--hg-ink);
+        --ink-soft: var(--hg-muted);
+        --ink-mute: var(--hg-eyebrow);
+        --hairline: var(--hg-line);
+        --hairline-soft: color-mix(in srgb, var(--hg-line) 55%, #fff);
+        --pill-active: color-mix(in srgb, var(--hg-surface) 70%, #fff);
+        --pill-edge: var(--hg-line-strong);
+        --shadow-1: 0 1px 2px rgba(48, 36, 28, 0.03), 0 4px 14px rgba(48, 36, 28, 0.035);
+        --shadow-2: 0 1px 1px rgba(48, 36, 28, 0.025), 0 8px 28px rgba(48, 36, 28, 0.05);
+        --sb-thumb: color-mix(in srgb, var(--hg-muted) 18%, transparent);
+        --sb-thumb-hover: color-mix(in srgb, var(--hg-muted) 32%, transparent);
       }
       .dts-shell[data-theme="dark"]{
         --gold: oklch(0.74 0.090 70);
@@ -678,21 +679,6 @@ function SuiteStyles() {
         --sb-thumb: oklch(0.36 0.006 64 / 0.12);
         --sb-thumb-hover: oklch(0.48 0.008 65 / 0.28);
       }
-      @media (min-width: 769px) {
-        html.diamond-studio-viewport-lock,
-        html.diamond-studio-viewport-lock body{
-          overflow:hidden !important;
-          height:100dvh !important;
-          max-height:100dvh !important;
-        }
-        html.diamond-studio-viewport-lock body > div,
-        html.diamond-studio-viewport-lock body main{
-          min-height:0 !important;
-          height:100dvh !important;
-          max-height:100dvh !important;
-          overflow:hidden !important;
-        }
-      }
       .dts-shell{
         --dt-ease: cubic-bezier(0.28, 0.11, 0.22, 1);
         --dt-dur: 260ms;
@@ -709,34 +695,43 @@ function SuiteStyles() {
         -moz-osx-font-smoothing: grayscale;
         transition: background 600ms ease, color 600ms ease;
       }
-      .dts-shell::before{
+      .dts-app{
+        position:relative;
+        z-index:1;
+        isolation:isolate;
+        width:100%;
+        height:auto;
+        display:flex;
+        flex-direction:column;
+        min-height:0;
+      }
+      .dts-app::before{
         content:"";
-        position:fixed; inset:0;
+        position:absolute;
+        inset:0;
         pointer-events:none;
-        background: radial-gradient(ellipse 60% 55% at 50% 38%,
-          oklch(from var(--bg) calc(l + 0.02) c h) 0%,
-          var(--bg) 60%,
-          var(--bg-deep) 100%);
+        background:
+          radial-gradient(ellipse 60% 55% at 50% 38%,
+            color-mix(in srgb, var(--bg) 92%, #fff) 0%,
+            var(--bg) 60%,
+            var(--bg-deep) 100%);
         z-index:0;
         transition: background 600ms ease;
       }
-      .dts-app{ position:relative; z-index:1; width:100%; height:100%;
-        display:grid; grid-template-rows:auto minmax(0, 1fr); }
       @media (min-width: 769px) {
         .dts-shell{
-          min-height:100dvh;
           height:auto;
           max-height:none;
           overflow:visible;
         }
         .dts-app{
-          height:100dvh;
-          max-height:100dvh;
+          height: var(--dts-workspace-h, calc(100dvh - 7.5rem - 44px));
+          max-height: var(--dts-workspace-h, calc(100dvh - 7.5rem - 44px));
           overflow:hidden;
           flex-shrink:0;
-          grid-template-rows:auto minmax(0, 1fr);
         }
         .dts-main{
+          flex:1 1 auto;
           min-height:0;
           overflow:hidden;
         }
@@ -747,57 +742,45 @@ function SuiteStyles() {
         }
       }
       .dts-topbar{
-        display:grid;
-        grid-template-columns: minmax(108px, auto) 1fr auto;
+        position:relative;
+        z-index:2;
+        display:flex;
         align-items:stretch;
-        column-gap:14px;
-        row-gap:0;
-        padding:0 28px;
-        min-height:60px;
+        justify-content:center;
+        padding:0 16px;
+        min-height:44px;
+        height:var(--dts-subnav-h, 44px);
         flex-shrink:0;
-        border-bottom:1px solid oklch(from var(--hairline-soft) l c h / 0.76);
-        box-shadow:0 1px 0 oklch(from var(--hairline) l c h / 0.05);
-      }
-      .dts-topbar-brand{
-        display:flex; align-items:center; align-self:center;
-        padding-right:2px;
-      }
-      .dts-brand-name{
-        font-size:9px; font-weight:500; letter-spacing:0.125em; color:var(--ink-soft);
-        line-height:1.35;
-        opacity:0.88;
-        transition:opacity var(--dt-dur-mid) var(--dt-ease), color var(--dt-dur-mid) var(--dt-ease);
-      }
-      .dts-topbar-brand:hover .dts-brand-name{
-        opacity:0.94;
-        color:oklch(from var(--ink-soft) calc(l - 0.03) c h);
+        background: color-mix(in srgb, var(--hg-ivory, #efe8de) 94%, #fff);
+        border-bottom:1px solid var(--hg-line, var(--hairline));
+        box-shadow:none;
       }
       .dts-topnav{
         display:flex; align-items:flex-end; justify-content:center;
-        gap:clamp(30px, 5.6vw, 72px);
+        gap:clamp(18px, 4vw, 48px);
         min-width:0;
-        margin-left:-6px;
         overflow-x:auto;
         overflow-y:hidden;
-        padding:10px 4px 0;
+        padding:8px 4px 0;
         scrollbar-width:none;
         -ms-overflow-style:none;
+        width:100%;
       }
       .dts-topnav::-webkit-scrollbar{ display:none; }
       .dts-topnav-item{
         display:flex; flex-direction:column; align-items:center; justify-content:flex-end;
-        gap:5px;
+        gap:4px;
         flex:0 0 auto;
         min-width:0;
         text-align:center;
         user-select:none;
         position:relative;
-        padding:0 2px 10px;
+        padding:0 2px 8px;
       }
       .dts-topnav-item.is-active .dts-topnav-label{
-        color:oklch(from var(--ink) calc(l - 0.024) calc(c + 0.006) h);
+        color:var(--topnav-active);
         font-weight:600;
-        letter-spacing:0.105em;
+        letter-spacing:0.08em;
       }
       .dts-topnav-item.is-active::after{
         content:"";
@@ -805,58 +788,50 @@ function SuiteStyles() {
         left:50%;
         bottom:2px;
         transform:translateX(-50%);
-        width:min(100%, 172px);
+        width:min(100%, 148px);
         height:1px;
         background:linear-gradient(90deg, transparent,
-          oklch(from var(--gold-warm) calc(l - 0.04) c h / 0.62) 18%,
-          oklch(from var(--gold-warm) calc(l - 0.04) c h / 0.62) 82%, transparent);
+          color-mix(in srgb, var(--gold-warm) 70%, transparent) 18%,
+          color-mix(in srgb, var(--gold-warm) 70%, transparent) 82%, transparent);
         opacity:0.98;
       }
       .dts-topnav-label{
-        font-size:10px; font-weight:500; letter-spacing:0.11em;
+        font-size:10px; font-weight:500; letter-spacing:0.08em;
         text-transform:uppercase; color:var(--topnav-idle);
         white-space:nowrap;
         line-height:1.28;
+        text-decoration:none;
         transition:color var(--dt-dur-mid) var(--dt-ease), opacity var(--dt-dur-mid) var(--dt-ease);
       }
+      .dts-topnav-label:focus-visible{
+        outline:2px solid var(--hg-focus-ring, #cbbda9);
+        outline-offset:3px;
+        border-radius:4px;
+      }
       .dts-topnav-item:not(.is-active):hover .dts-topnav-label{
-        color:oklch(from var(--topnav-idle) calc(l - 0.04) c h);
+        color:var(--topnav-active);
       }
       .dts-topnav-soon{
-        font-size:6.5px; font-weight:400; letter-spacing:0.12em;
+        font-size:7px; font-weight:400; letter-spacing:0.1em;
         text-transform:uppercase; color:var(--ink-mute);
-        opacity:0.38;
+        opacity:0.48;
         line-height:1.18;
         margin-top:1px;
         transition:opacity var(--dt-dur-slow) var(--dt-ease), color var(--dt-dur-slow) var(--dt-ease);
       }
       .dts-topnav-item:not(.is-active):hover .dts-topnav-soon{
-        opacity:0.46;
-      }
-      .dts-topbar-actions{
-        display:flex; align-items:center; align-self:center; justify-content:flex-end;
-        gap:10px;
-      }
-      .dts-home-link{
-        display:flex; align-items:center; background:var(--hairline-soft);
-        border:none; cursor:pointer; padding:5px 9px; border-radius:999px;
-        font-size:10px; font-weight:500; letter-spacing:0.16em; color:var(--ink-soft);
-        text-decoration:none;
-        transition:background var(--dt-dur-mid) var(--dt-ease), color var(--dt-dur-mid) var(--dt-ease),
-          box-shadow var(--dt-dur-mid) var(--dt-ease);
-      }
-      .dts-home-link:hover{
-        color:var(--ink);
-        background:oklch(from var(--hairline-soft) l c h / 0.92);
-        box-shadow:0 1px 0 oklch(from var(--hairline) l c h / 0.35);
+        opacity:0.58;
       }
       .dts-main{
+        position:relative;
+        z-index:1;
         display:grid;
         grid-template-columns:256px minmax(0, 1fr);
         grid-template-rows:minmax(0, 1fr);
         overflow:visible;
         min-height:0;
         flex:1 1 auto;
+        width:100%;
       }
       @media (min-width: 769px) {
         .diamond-studio-main.dts-main{
@@ -872,6 +847,8 @@ function SuiteStyles() {
           grid-row:1;
           align-self:stretch;
           min-height:0;
+          max-height:100%;
+          height:100%;
           min-width:0;
           overflow-x:hidden;
           overflow-y:auto;
@@ -998,11 +975,11 @@ function SuiteStyles() {
       }
       .dts-card-head{
         display:flex; align-items:center; justify-content:space-between;
-        font-size:9.35px; font-weight:500; letter-spacing:0.168em; text-transform:uppercase;
+        font-size:9.5px; font-weight:500; letter-spacing:0.12em; text-transform:uppercase;
         color:var(--ink-soft); margin:0 0 8px;
       }
       .dts-info{
-        width:13px; height:13px; border-radius:50%; border:1px solid oklch(from var(--ink-mute) l c h / 0.75);
+        width:13px; height:13px; border-radius:50%; border:1px solid color-mix(in srgb, var(--ink-mute) 75%, transparent);
         color:var(--ink-mute); font-family:var(--serif); font-style:italic; font-size:9px;
         display:grid; place-items:center; cursor:help; line-height:1;
         padding:0; margin:0; background:transparent; font:inherit;
@@ -1011,8 +988,12 @@ function SuiteStyles() {
         transition:border-color var(--dt-dur-mid) var(--dt-ease), opacity var(--dt-dur-mid) var(--dt-ease), color var(--dt-dur-mid) var(--dt-ease);
       }
       .dts-info:hover{
-        border-color:oklch(from var(--ink-mute) l c h / 0.95);
+        border-color:var(--ink-mute);
         opacity:1;
+      }
+      .dts-info:focus-visible{
+        outline:2px solid var(--hg-focus-ring, #cbbda9);
+        outline-offset:2px;
       }
       .dts-stepper{
         display:flex; align-items:center; justify-content:center; gap:14px;
@@ -1028,8 +1009,12 @@ function SuiteStyles() {
       }
       .dts-stepper button:hover:not(:disabled){
         border-color:var(--ink-soft); color:var(--ink);
-        background:oklch(from var(--card) l c h / 0.98);
-        box-shadow:0 1px 2px oklch(from var(--hairline) l c h / 0.5);
+        background:color-mix(in srgb, var(--card) 98%, #fff);
+        box-shadow:0 1px 2px color-mix(in srgb, var(--hairline) 50%, transparent);
+      }
+      .dts-stepper button:focus-visible{
+        outline:2px solid var(--hg-focus-ring, #cbbda9);
+        outline-offset:2px;
       }
       .dts-stepper button:disabled{ opacity:0.35; cursor:default; }
       .dts-stepper .dts-step-val{
@@ -1266,13 +1251,17 @@ function SuiteStyles() {
       .dts-viewer{
         position:relative; width:min(578px,93.5%); aspect-ratio:7/9; max-height:96%;
         container-type:size;
-        overflow:visible;
+        overflow:hidden;
+        --dts-framing-lift:-5.25%;
+        --dts-diamond-x-nudge:0px;
+        --dts-diamond-y-nudge:-24px;
         --dts-ring-cluster-top:63.5%;
         --dts-ring-cluster-top-tall:62.1%;
       }
       .dts-layer-finger{
         position:absolute; inset:0; z-index:1; overflow:hidden;
         isolation:isolate;
+        transform:translateY(var(--dts-framing-lift));
       }
       .dts-layer-finger img{
         position:relative; z-index:0;
@@ -1320,7 +1309,7 @@ function SuiteStyles() {
         box-sizing:border-box;
         overflow:visible;
         top:var(--dts-ring-cluster-top);
-        transform:translate(calc(-50% + 4px), -50%);
+        transform:translate(calc(-50% + var(--dts-diamond-x-nudge, 0px)), calc(-50% + var(--dts-framing-lift, 0) + var(--dts-diamond-y-nudge, 0px)));
         transition:width var(--dt-dur-slow) var(--dt-ease),
           height var(--dt-dur-slow) var(--dt-ease),
           top var(--dt-dur-slow) var(--dt-ease),
@@ -1643,31 +1632,16 @@ function SuiteStyles() {
           padding-bottom:calc(env(safe-area-inset-bottom, 0px) + 96px);
         }
         .dts-topbar{
-          display:grid;
-          grid-template-columns:1fr auto;
-          grid-template-rows:auto auto;
-          column-gap:14px;
-          row-gap:8px;
-          padding:12px 20px 10px;
-          align-items:center;
-          min-height:0;
-        }
-        .dts-topbar-brand{
-          grid-column:1;
-          grid-row:1;
-          padding-right:0;
-        }
-        .dts-topbar-actions{
-          grid-column:2;
-          grid-row:1;
-          justify-self:end;
-          align-self:start;
+          display:flex;
+          align-items:stretch;
+          justify-content:flex-start;
+          padding:0 12px;
+          min-height:44px;
+          height:auto;
         }
         .dts-topnav{
-          grid-column:1 / -1;
-          grid-row:2;
           margin-left:0;
-          padding:2px 0 3px;
+          padding:8px 0 0;
           justify-content:flex-start;
           gap:clamp(16px,4.5vw,28px);
           width:100%;
@@ -1802,7 +1776,7 @@ function SuiteStyles() {
           filter:none;
         }
         .dts-layer-diamond{
-          transform:translate(calc(-50% + 4px), calc(-50% - 2px));
+          transform:translate(calc(-50% + 4px), calc(-50% - 2px + var(--dts-framing-lift, 0)));
         }
         .dts-viewer{
           width:100%;
@@ -1811,6 +1785,7 @@ function SuiteStyles() {
           margin:0 auto;
           max-height:min(48vh,352px);
           aspect-ratio:7 / 9.15;
+          --dts-framing-lift:-4.25%;
         }
         .dts-shape-strip{
           position:relative !important;
@@ -2107,7 +2082,6 @@ function SuiteStyles() {
         .dts-skin-pill,
         .dts-tone-swatch,
         .dts-stepper button,
-        .dts-home-link,
         .dts-slider .dts-handle,
         .dts-control-rail{
           transition-duration:0.01ms;
@@ -2677,42 +2651,29 @@ export default function DiamondStudioPage() {
   return (
     <div className="dts-shell h-full min-h-full w-full" data-theme="light">
       <SuiteStyles />
-      <div className="dts-app">
-        <header className="dts-topbar">
-          <div className="dts-topbar-brand">
-            <span className="dts-brand-name">DIAMOND STUDIO</span>
-          </div>
-          <nav className="dts-topnav" aria-label="Diamond Studio tools">
-            {STUDIO_HEADER_NAV.map((item) => (
-              <div
-                key={item.label}
-                className={`dts-topnav-item ${item.active ? "is-active" : "is-idle"}`}
-              >
-                {item.active || !item.href ? (
-                  <span className="dts-topnav-label">{item.label}</span>
-                ) : (
-                  <Link href={item.href} className="dts-topnav-label">
-                    {item.label}
-                  </Link>
-                )}
-                {!item.active && item.soon ? (
-                  <span className="dts-topnav-soon">Coming soon</span>
-                ) : null}
-              </div>
-            ))}
-          </nav>
-          <div className="dts-topbar-actions">
-            <Link
-              href="/"
-              className="dts-home-link"
-              aria-label="Home"
-              onClick={() => trackEvent("home_clicked")}
+      <nav className="dts-topbar" aria-label="Diamond Studio tools" data-dts-subnav>
+        <div className="dts-topnav">
+          {STUDIO_HEADER_NAV.map((item) => (
+            <div
+              key={item.label}
+              className={`dts-topnav-item ${item.active ? "is-active" : "is-idle"}`}
             >
-              HOME
-            </Link>
-          </div>
-        </header>
+              {item.active || !item.href ? (
+                <span className="dts-topnav-label">{item.label}</span>
+              ) : (
+                <Link href={item.href} className="dts-topnav-label">
+                  {item.label}
+                </Link>
+              )}
+              {!item.active && item.soon ? (
+                <span className="dts-topnav-soon">Coming soon</span>
+              ) : null}
+            </div>
+          ))}
+        </div>
+      </nav>
 
+      <div className="dts-app">
         <div className="dts-main diamond-studio-main diamond-studio-grid studio-layout">
           <aside
             className="dts-control-rail"

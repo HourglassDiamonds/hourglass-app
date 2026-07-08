@@ -1,7 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { DEFAULT_OPEN_GRAPH } from "@/lib/seo/site-metadata";
+import Header from "../shared-components/Header";
+import DiamondStudioBrandChrome from "./components/DiamondStudioBrandChrome";
 import DiamondStudioJsonLd from "./components/DiamondStudioJsonLd";
-import { DiamondStudioViewportLock } from "./viewport-lock";
 
 export const viewport: Viewport = {
   viewportFit: "cover",
@@ -38,31 +39,25 @@ export const metadata: Metadata = {
   },
 };
 
-/** Desktop: block document scroll before client hydration (Footer + min-h-screen). */
-const DIAMOND_STUDIO_VIEWPORT_CSS = `
+/**
+ * Document-scroll shell: canonical Header → instrument workspace → editorial →
+ * root Footer. Workspace height is `100dvh − measured chrome` (see brand chrome).
+ */
+const DIAMOND_STUDIO_SHELL_CSS = `
+[data-diamond-studio-route] {
+  --dts-header-h: var(--hg-studio-header-h, 7.5rem);
+  --dts-subnav-h: 44px;
+  --dts-chrome-h: calc(var(--dts-header-h) + var(--dts-subnav-h));
+  --dts-workspace-h: calc(100dvh - var(--dts-chrome-h));
+  background: var(--hg-ivory, #efe8de);
+  color: var(--hg-ink, #1c1b1a);
+}
 @media (min-width: 769px) {
-  html:has([data-diamond-studio-route]),
-  body:has([data-diamond-studio-route]) {
-    overflow: hidden !important;
-    height: 100dvh !important;
-    max-height: 100dvh !important;
-    overscroll-behavior: none;
-  }
-  body:has([data-diamond-studio-route]) > div {
-    min-height: 0 !important;
-    height: 100dvh !important;
-    max-height: 100dvh !important;
-    overflow: hidden !important;
-  }
-  body:has([data-diamond-studio-route]) main {
-    min-height: 0 !important;
-    height: 100dvh !important;
-    max-height: 100dvh !important;
-    overflow: hidden !important;
-    flex: 0 0 auto !important;
-  }
-  body:has([data-diamond-studio-route]) footer {
-    display: none !important;
+  [data-diamond-studio-route] .dts-app {
+    height: var(--dts-workspace-h);
+    max-height: var(--dts-workspace-h);
+    min-height: 0;
+    overflow: hidden;
   }
 }
 `;
@@ -75,12 +70,14 @@ export default function DiamondStudioLayout({
   return (
     <>
       <DiamondStudioJsonLd />
-      <style dangerouslySetInnerHTML={{ __html: DIAMOND_STUDIO_VIEWPORT_CSS }} />
-      <div
-        data-diamond-studio-route
-        className="diamond-studio-route fixed inset-0 z-[100] h-[100dvh] w-screen max-h-[100dvh] overflow-y-auto overscroll-y-contain"
-      >
-        <DiamondStudioViewportLock />
+      <style dangerouslySetInnerHTML={{ __html: DIAMOND_STUDIO_SHELL_CSS }} />
+      <div data-diamond-studio-route className="diamond-studio-route min-h-screen w-full">
+        <DiamondStudioBrandChrome />
+        <div className="diamond-studio-site-header" data-dts-site-header>
+          <div className="mx-auto w-full max-w-[1200px] px-6 md:px-10">
+            <Header currentPage="diamond-studio" />
+          </div>
+        </div>
         {children}
       </div>
     </>

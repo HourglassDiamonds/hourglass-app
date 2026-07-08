@@ -3,6 +3,24 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+
+  /* Hourglass brand surface system (marketing parchment) */
+  --hg-ivory: #efe8de;
+  --hg-body: #f7f3ee;
+  --hg-surface: #f8f3eb;
+  --hg-surface-soft: rgba(255, 255, 255, 0.42);
+  --hg-ink: #1c1b1a;
+  --hg-charcoal: #2b2723;
+  --hg-muted: #756b61;
+  --hg-eyebrow: #8a8177;
+  --hg-line: #e4dbcf;
+  --hg-line-strong: #d9cdbd;
+  --hg-gold: #ad9164;
+  --hg-gold-deep: #987648;
+  --hg-focus-ring: #cbbda9;
+
+  /* Studio shell height budget (set by DiamondStudioBrandChrome) */
+  --hg-studio-header-h: 7.5rem;
 }
 
 @theme inline {
