@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type {
   CompareSlotId,
@@ -13,16 +12,6 @@ import { OverlayStage } from "./components/overlay-stage";
 import { HandPhotoPanel } from "./components/hand-photo-panel";
 import { ShapeSelector } from "./components/shape-selector";
 import { ShapeStudioStyles } from "./components/shape-studio-styles";
-
-const STUDIO_HEADER_NAV: {
-  label: string;
-  active: boolean;
-  href?: string;
-}[] = [
-  { label: "Diamond Size Studio", active: false, href: "/diamond-studio" },
-  { label: "Diamond Shape Studio", active: true },
-  { label: "Light Performance", active: false, href: "/diamond-intelligence" },
-];
 
 const DEFAULT_POSITION: OverlayPosition = { xPct: 50, yPct: 42 };
 const COMPARE_A_POSITION: OverlayPosition = { xPct: 42, yPct: 42 };
@@ -129,36 +118,9 @@ export function ShapeStudioView() {
   }, [mode, singleSlot, compareA, compareB]);
 
   return (
-    <div className="dss-shell h-full w-full overflow-hidden" data-theme="light">
+    <div className="dss-shell h-full min-h-full w-full" data-theme="light">
       <ShapeStudioStyles />
       <div className="dss-app">
-        <header className="dss-topbar">
-          <div className="dss-topbar-brand">
-            <span className="dss-brand-name">DIAMOND STUDIO</span>
-          </div>
-          <nav className="dss-topnav" aria-label="Diamond Studio tools">
-            {STUDIO_HEADER_NAV.map((item) => (
-              <div
-                key={item.label}
-                className={`dss-topnav-item${item.active ? " is-active" : ""}`}
-              >
-                {item.active || !item.href ? (
-                  <span className="dss-topnav-label">{item.label}</span>
-                ) : (
-                  <Link href={item.href} className="dss-topnav-label">
-                    {item.label}
-                  </Link>
-                )}
-              </div>
-            ))}
-          </nav>
-          <div className="dss-topbar-actions">
-            <Link href="/" className="dss-home-link" aria-label="Home">
-              HOME
-            </Link>
-          </div>
-        </header>
-
         <div className="dss-main">
           <aside className="dss-control-rail" aria-label="Shape Studio controls">
             <HandPhotoPanel onImageSelected={handleImageSelected} />

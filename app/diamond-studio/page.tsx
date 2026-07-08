@@ -741,87 +741,6 @@ function SuiteStyles() {
           flex-shrink:0;
         }
       }
-      .dts-topbar{
-        position:relative;
-        z-index:2;
-        display:flex;
-        align-items:stretch;
-        justify-content:center;
-        padding:0 16px;
-        min-height:44px;
-        height:var(--dts-subnav-h, 44px);
-        flex-shrink:0;
-        background: color-mix(in srgb, var(--hg-ivory, #efe8de) 94%, #fff);
-        border-bottom:1px solid var(--hg-line, var(--hairline));
-        box-shadow:none;
-      }
-      .dts-topnav{
-        display:flex; align-items:flex-end; justify-content:center;
-        gap:clamp(18px, 4vw, 48px);
-        min-width:0;
-        overflow-x:auto;
-        overflow-y:hidden;
-        padding:8px 4px 0;
-        scrollbar-width:none;
-        -ms-overflow-style:none;
-        width:100%;
-      }
-      .dts-topnav::-webkit-scrollbar{ display:none; }
-      .dts-topnav-item{
-        display:flex; flex-direction:column; align-items:center; justify-content:flex-end;
-        gap:4px;
-        flex:0 0 auto;
-        min-width:0;
-        text-align:center;
-        user-select:none;
-        position:relative;
-        padding:0 2px 8px;
-      }
-      .dts-topnav-item.is-active .dts-topnav-label{
-        color:var(--topnav-active);
-        font-weight:600;
-        letter-spacing:0.08em;
-      }
-      .dts-topnav-item.is-active::after{
-        content:"";
-        position:absolute;
-        left:50%;
-        bottom:2px;
-        transform:translateX(-50%);
-        width:min(100%, 148px);
-        height:1px;
-        background:linear-gradient(90deg, transparent,
-          color-mix(in srgb, var(--gold-warm) 70%, transparent) 18%,
-          color-mix(in srgb, var(--gold-warm) 70%, transparent) 82%, transparent);
-        opacity:0.98;
-      }
-      .dts-topnav-label{
-        font-size:10px; font-weight:500; letter-spacing:0.08em;
-        text-transform:uppercase; color:var(--topnav-idle);
-        white-space:nowrap;
-        line-height:1.28;
-        text-decoration:none;
-        transition:color var(--dt-dur-mid) var(--dt-ease), opacity var(--dt-dur-mid) var(--dt-ease);
-      }
-      .dts-topnav-label:focus-visible{
-        outline:2px solid var(--hg-focus-ring, #cbbda9);
-        outline-offset:3px;
-        border-radius:4px;
-      }
-      .dts-topnav-item:not(.is-active):hover .dts-topnav-label{
-        color:var(--topnav-active);
-      }
-      .dts-topnav-soon{
-        font-size:7px; font-weight:400; letter-spacing:0.1em;
-        text-transform:uppercase; color:var(--ink-mute);
-        opacity:0.48;
-        line-height:1.18;
-        margin-top:1px;
-        transition:opacity var(--dt-dur-slow) var(--dt-ease), color var(--dt-dur-slow) var(--dt-ease);
-      }
-      .dts-topnav-item:not(.is-active):hover .dts-topnav-soon{
-        opacity:0.58;
-      }
       .dts-main{
         position:relative;
         z-index:1;
@@ -1569,14 +1488,6 @@ function SuiteStyles() {
         opacity:0.9;
       }
       @media (min-width: 1200px) and (max-width: 1440px) {
-        .dts-topbar{
-          padding:0 clamp(16px, 2vw, 24px);
-          column-gap:clamp(10px, 1.4vw, 14px);
-        }
-        .dts-topnav{
-          gap:clamp(18px, 2.8vw, 44px);
-          margin-left:0;
-        }
         .diamond-studio-main.dts-main{
           grid-template-columns:minmax(220px, 260px) minmax(0, 1fr) !important;
           width:100% !important;
@@ -1630,22 +1541,6 @@ function SuiteStyles() {
           height:auto;
           box-sizing:border-box;
           padding-bottom:calc(env(safe-area-inset-bottom, 0px) + 96px);
-        }
-        .dts-topbar{
-          display:flex;
-          align-items:stretch;
-          justify-content:flex-start;
-          padding:0 12px;
-          min-height:44px;
-          height:auto;
-        }
-        .dts-topnav{
-          margin-left:0;
-          padding:8px 0 0;
-          justify-content:flex-start;
-          gap:clamp(16px,4.5vw,28px);
-          width:100%;
-          min-width:0;
         }
         .dts-main{
           display:flex !important;
@@ -2302,17 +2197,6 @@ function attachHorizontalTrack(
   };
 }
 
-const STUDIO_HEADER_NAV: {
-  label: string;
-  active: boolean;
-  href?: string;
-  soon?: boolean;
-}[] = [
-  { label: "Diamond Size Studio", active: true },
-  { label: "Shape Comparison", active: false, soon: true },
-  { label: "Light Performance", active: false, href: "/diamond-intelligence" },
-];
-
 export default function DiamondStudioPage() {
   const [ringSize, setRingSize] = useState(6.0);
   const [carat, setCarat] = useState(2.5);
@@ -2651,28 +2535,6 @@ export default function DiamondStudioPage() {
   return (
     <div className="dts-shell h-full min-h-full w-full" data-theme="light">
       <SuiteStyles />
-      <nav className="dts-topbar" aria-label="Diamond Studio tools" data-dts-subnav>
-        <div className="dts-topnav">
-          {STUDIO_HEADER_NAV.map((item) => (
-            <div
-              key={item.label}
-              className={`dts-topnav-item ${item.active ? "is-active" : "is-idle"}`}
-            >
-              {item.active || !item.href ? (
-                <span className="dts-topnav-label">{item.label}</span>
-              ) : (
-                <Link href={item.href} className="dts-topnav-label">
-                  {item.label}
-                </Link>
-              )}
-              {!item.active && item.soon ? (
-                <span className="dts-topnav-soon">Coming soon</span>
-              ) : null}
-            </div>
-          ))}
-        </div>
-      </nav>
-
       <div className="dts-app">
         <div className="dts-main diamond-studio-main diamond-studio-grid studio-layout">
           <aside

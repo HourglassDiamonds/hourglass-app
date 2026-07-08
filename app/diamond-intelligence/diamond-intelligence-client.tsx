@@ -13,7 +13,6 @@ import {
 import type { DiamondIntelligenceUploadErrorKind } from "@/lib/diamond-intelligence/upload-format-policy";
 import { DI_V3_PAGE } from "./components/di-v3-styles";
 import LightPerformanceDashboard from "./components/LightPerformanceDashboard";
-import LightPerformanceStudioNav from "./components/LightPerformanceStudioNav";
 import type { ClientUploadPhase } from "./components/ReportUploadDock";
 import type { ReportUploadMimeHint } from "./components/di-v3-upload-hints";
 import { mergeReportUploadMimeHint } from "./components/di-v3-upload-hints";
@@ -136,8 +135,6 @@ export default function DiamondIntelligenceClient() {
 
   return (
     <div className={DI_V3_PAGE}>
-      <LightPerformanceStudioNav />
-
       <LightPerformanceDashboard
         fileName={fileName}
         uploadPhase={uploadPhase}

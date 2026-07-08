@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { DEFAULT_OPEN_GRAPH } from "@/lib/seo/site-metadata";
 import DiamondIntelligenceJsonLd from "./components/DiamondIntelligenceJsonLd";
+import DiamondStudioSuiteShell from "../diamond-studio/components/DiamondStudioSuiteShell";
 
 const DIAMOND_INTELLIGENCE_DESCRIPTION =
   "Upload an original GIA, IGI, or GCAL 8X grading report PDF and review the diamond through Hourglass standards.";
@@ -41,7 +42,7 @@ export default function DiamondIntelligenceLayout({
   return (
     <>
       <DiamondIntelligenceJsonLd />
-      {children}
+      <DiamondStudioSuiteShell>{children}</DiamondStudioSuiteShell>
     </>
   );
 }

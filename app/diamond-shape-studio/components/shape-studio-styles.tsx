@@ -29,11 +29,21 @@ export function ShapeStudioStyles() {
         font-family: var(--grot);
         -webkit-font-smoothing: antialiased;
         height:100%;
-        min-height:100dvh;
+        min-height:100%;
       }
-      .dss-shell::before{
+      .dss-app{
+        position:relative; z-index:1;
+        isolation:isolate;
+        width:100%;
+        height:auto;
+        display:flex;
+        flex-direction:column;
+        min-height:0;
+      }
+      .dss-app::before{
         content:"";
-        position:fixed; inset:0;
+        position:absolute;
+        inset:0;
         pointer-events:none;
         background: radial-gradient(ellipse 60% 55% at 50% 38%,
           oklch(from var(--bg) calc(l + 0.02) c h) 0%,
@@ -41,72 +51,6 @@ export function ShapeStudioStyles() {
           var(--bg-deep) 100%);
         z-index:0;
       }
-      .dss-app{
-        position:relative; z-index:1;
-        width:100%; height:100%;
-        display:grid; grid-template-rows:auto minmax(0, 1fr);
-      }
-      .dss-topbar{
-        display:grid;
-        grid-template-columns: minmax(108px, auto) 1fr auto;
-        align-items:stretch;
-        column-gap:14px;
-        padding:0 28px;
-        min-height:60px;
-        border-bottom:1px solid oklch(from var(--hairline-soft) l c h / 0.76);
-        flex-shrink:0;
-      }
-      .dss-topbar-brand{
-        display:flex; align-items:center; align-self:center;
-      }
-      .dss-brand-name{
-        font-size:9px; font-weight:500; letter-spacing:0.125em;
-        color:var(--ink-soft); line-height:1.35;
-      }
-      .dss-topnav{
-        display:flex; align-items:flex-end; justify-content:center;
-        gap:clamp(30px, 5.6vw, 72px);
-        min-width:0;
-        overflow-x:auto;
-        padding:10px 4px 0;
-        scrollbar-width:none;
-      }
-      .dss-topnav::-webkit-scrollbar{ display:none; }
-      .dss-topnav-item{
-        display:flex; flex-direction:column; align-items:center;
-        justify-content:flex-end; gap:5px;
-        flex:0 0 auto; padding:0 2px 10px; position:relative;
-      }
-      .dss-topnav-item.is-active .dss-topnav-label{
-        color:oklch(from var(--ink) calc(l - 0.024) calc(c + 0.006) h);
-        font-weight:600; letter-spacing:0.105em;
-      }
-      .dss-topnav-item.is-active::after{
-        content:"";
-        position:absolute; left:50%; bottom:2px; transform:translateX(-50%);
-        width:min(100%, 172px); height:1px;
-        background:linear-gradient(90deg, transparent,
-          oklch(from var(--gold-warm) calc(l - 0.04) c h / 0.62) 18%,
-          oklch(from var(--gold-warm) calc(l - 0.04) c h / 0.62) 82%, transparent);
-      }
-      .dss-topnav-label{
-        font-size:10px; font-weight:500; letter-spacing:0.11em;
-        text-transform:uppercase; color:var(--topnav-idle);
-        white-space:nowrap; text-decoration:none; line-height:1.28;
-      }
-      .dss-topnav-item:not(.is-active):hover .dss-topnav-label{
-        color:oklch(from var(--topnav-idle) calc(l - 0.04) c h);
-      }
-      .dss-topbar-actions{
-        display:flex; align-items:center; align-self:center;
-      }
-      .dss-home-link{
-        display:flex; align-items:center; background:var(--hairline-soft);
-        border:none; padding:5px 9px; border-radius:999px;
-        font-size:10px; font-weight:500; letter-spacing:0.16em;
-        color:var(--ink-soft); text-decoration:none;
-      }
-      .dss-home-link:hover{ color:var(--ink); }
       .dss-main{
         display:grid;
         grid-template-columns:256px minmax(0, 1fr);
@@ -345,22 +289,24 @@ export function ShapeStudioStyles() {
         margin:12px 0; font-size:12px; color:var(--ink-soft); text-align:center;
       }
       @media (min-width: 769px) {
-        .dss-shell{ height:100dvh; max-height:100dvh; overflow:hidden; }
-        .dss-app{ height:100dvh; max-height:100dvh; overflow:hidden; }
+        .dss-main{
+          flex:1 1 auto;
+          min-height:0;
+          overflow:hidden;
+        }
       }
       @media (max-width: 768px) {
-        .dss-shell{ overflow-x:hidden; overflow-y:auto; max-height:none; height:auto; }
-        .dss-app{ height:auto; min-height:100dvh; overflow:visible; }
-        .dss-topbar{
-          display:grid; grid-template-columns:1fr auto;
-          grid-template-rows:auto auto; padding:12px 20px 10px;
+        .dss-shell{
+          overflow-x:hidden;
+          overflow-y:auto;
+          scroll-padding-bottom:calc(env(safe-area-inset-bottom, 0px) + 96px);
         }
-        .dss-topbar-brand{ grid-column:1; grid-row:1; }
-        .dss-topbar-actions{ grid-column:2; grid-row:1; justify-self:end; }
-        .dss-topnav{
-          grid-column:1 / -1; grid-row:2;
-          justify-content:flex-start; gap:clamp(16px, 4.5vw, 28px);
-          padding:2px 0 3px;
+        .dss-app{
+          height:auto;
+          min-height:0;
+          overflow:visible;
+          box-sizing:border-box;
+          padding-bottom:calc(env(safe-area-inset-bottom, 0px) + 96px);
         }
         .dss-main{
           display:flex !important; flex-direction:column;

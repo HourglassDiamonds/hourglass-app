@@ -3,14 +3,14 @@
 import { useLayoutEffect } from "react";
 
 /**
- * Measures Diamond Studio site header + local subnav so the instrument
- * workspace height stays `100dvh − chrome` without magic numbers.
+ * Measures Diamond Studio suite header + subnav so instrument workspace
+ * height stays `100dvh − chrome` without magic numbers.
  */
 export default function DiamondStudioBrandChrome() {
   useLayoutEffect(() => {
-    const root = document.querySelector<HTMLElement>(
-      "[data-diamond-studio-route]",
-    );
+    const root =
+      document.querySelector<HTMLElement>("[data-diamond-studio-suite-route]") ??
+      document.querySelector<HTMLElement>("[data-diamond-studio-route]");
     if (!root) return;
 
     const apply = () => {
