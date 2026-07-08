@@ -1,11 +1,39 @@
 "use client";
 
 import React, { useRef, useState } from "react";
+import type { CSSProperties } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import Header from "../shared-components/Header";
 import CTAGlimmer from "../shared-components/motion/CTAGlimmer";
 import RevealOnScroll from "../shared-components/motion/RevealOnScroll";
 import { trackConsultationCtaClicked } from "@/lib/consultation-cta";
+
+const PERSPECTIVE_MAP = "/the-house/rupanuni-map-hero.png";
+
+const perspectiveMapMaskDesktop: CSSProperties = {
+  WebkitMaskImage:
+    "radial-gradient(ellipse 94% 86% at 50% 48%, black 0%, black 54%, rgba(0,0,0,0.52) 74%, rgba(0,0,0,0.14) 88%, transparent 100%)",
+  maskImage:
+    "radial-gradient(ellipse 94% 86% at 50% 48%, black 0%, black 54%, rgba(0,0,0,0.52) 74%, rgba(0,0,0,0.14) 88%, transparent 100%)",
+};
+
+const perspectiveMapMaskMobile: CSSProperties = {
+  WebkitMaskImage:
+    "radial-gradient(ellipse 100% 84% at 50% 46%, black 0%, black 48%, rgba(0,0,0,0.42) 72%, rgba(0,0,0,0.1) 86%, transparent 100%)",
+  maskImage:
+    "radial-gradient(ellipse 100% 84% at 50% 46%, black 0%, black 48%, rgba(0,0,0,0.42) 72%, rgba(0,0,0,0.1) 86%, transparent 100%)",
+};
+
+const perspectiveTextScrimDesktop: CSSProperties = {
+  background:
+    "radial-gradient(ellipse 118% 62% at 50% 50%, rgba(239,232,222,0.78) 0%, rgba(239,232,222,0.7) 18%, rgba(239,232,222,0.56) 36%, rgba(239,232,222,0.38) 50%, rgba(239,232,222,0.22) 64%, rgba(239,232,222,0.1) 76%, rgba(239,232,222,0.04) 86%, transparent 96%)",
+};
+
+const perspectiveTextScrimMobile: CSSProperties = {
+  background:
+    "radial-gradient(ellipse 108% 58% at 50% 50%, rgba(239,232,222,0.82) 0%, rgba(239,232,222,0.74) 16%, rgba(239,232,222,0.58) 34%, rgba(239,232,222,0.4) 48%, rgba(239,232,222,0.24) 62%, rgba(239,232,222,0.1) 76%, rgba(239,232,222,0.03) 88%, transparent 96%)",
+};
 
 export default function TheHousePageClient() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -51,8 +79,56 @@ export default function TheHousePageClient() {
         <Header currentPage="the-house" />
 
         {/* THE HOUSE INTRO */}
-        <section className="border-b border-[#e4dbcf] pb-[96px] pt-[64px] md:pb-[112px] md:pt-[80px]">
-          <div className="mx-auto max-w-[820px] text-center">
+        <section className="relative -mx-6 overflow-hidden border-b border-[#e4dbcf] px-6 pb-[104px] pt-[72px] md:-mx-10 md:px-10 md:pb-[128px] md:pt-[96px]">
+          <div aria-hidden className="pointer-events-none absolute inset-0">
+            <div
+              className="absolute inset-x-[-2%] inset-y-[4%] opacity-[0.58] md:hidden"
+              style={perspectiveMapMaskMobile}
+            >
+              <div className="relative h-full w-full">
+                <Image
+                  src={PERSPECTIVE_MAP}
+                  alt=""
+                  fill
+                  priority
+                  sizes="100vw"
+                  className="origin-[50%_56%] scale-[1.04] object-contain object-[50%_56%] saturate-[0.94] brightness-[1.01]"
+                />
+              </div>
+            </div>
+
+            <div
+              className="absolute inset-x-[-16%] inset-y-[-6%] hidden opacity-[0.76] md:block"
+              style={perspectiveMapMaskDesktop}
+            >
+              <div className="relative h-full w-full">
+                <Image
+                  src={PERSPECTIVE_MAP}
+                  alt=""
+                  fill
+                  priority
+                  sizes="(max-width: 768px) 0px, 1200px"
+                  className="origin-[50%_58%] scale-[1.1] object-contain object-[50%_58%] saturate-[0.96] brightness-[1.01]"
+                />
+              </div>
+            </div>
+
+            <div
+              className="absolute left-1/2 top-[46%] h-[76%] w-full -translate-x-1/2 -translate-y-1/2 md:hidden"
+              style={perspectiveTextScrimMobile}
+            />
+            <div
+              className="absolute left-1/2 top-[44%] hidden h-[80%] w-full -translate-x-1/2 -translate-y-1/2 md:block"
+              style={perspectiveTextScrimDesktop}
+            />
+
+            <div className="absolute inset-x-0 top-0 h-[26%] bg-gradient-to-b from-[#efe8de] via-[#efe8de]/62 to-transparent" />
+            <div className="absolute inset-x-0 bottom-0 h-[30%] bg-gradient-to-t from-[#efe8de] via-[#efe8de]/58 to-transparent" />
+            <div className="absolute inset-y-0 left-0 w-[16%] bg-gradient-to-r from-[#efe8de] to-transparent md:w-[9%]" />
+            <div className="absolute inset-y-0 right-0 w-[16%] bg-gradient-to-l from-[#efe8de] to-transparent md:w-[9%]" />
+          </div>
+
+          <div className="relative z-10 mx-auto max-w-[820px] text-center">
             <div className="text-[10px] uppercase tracking-[0.34em] text-[#8a8177]">
               The House
             </div>
