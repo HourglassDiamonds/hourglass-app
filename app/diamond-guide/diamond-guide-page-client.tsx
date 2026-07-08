@@ -1,57 +1,85 @@
 "use client";
 
+import type { ComponentType } from "react";
 import React from "react";
+import Image from "next/image";
 import Link from "next/link";
 import Header from "../shared-components/Header";
 import CTAGlimmer from "../shared-components/motion/CTAGlimmer";
 import RevealOnScroll from "../shared-components/motion/RevealOnScroll";
 import { trackConsultationCtaClicked } from "@/lib/consultation-cta";
+import {
+  BuyingStrategyIcon,
+  CertificationIcon,
+  DiamondClarityIcon,
+  DiamondColorIcon,
+  DiamondCutIcon,
+  DiamondShapesIcon,
+  DiamondSizeIcon,
+  LightPerformanceIcon,
+  ProposalPlanningIcon,
+  type GuideIconProps,
+} from "@/components/diamond-guide/GuideCategoryIcons";
 
-const categories = [
+const categories: {
+  title: string;
+  description: string;
+  href: string;
+  icon: ComponentType<GuideIconProps>;
+}[] = [
   {
     title: "Diamond Size",
     description: "How size actually shows up once it’s worn.",
     href: "/diamond-guide/diamond-size",
+    icon: DiamondSizeIcon,
   },
   {
     title: "Diamond Shapes",
     description: "How shape influences character, light, and feel.",
     href: "/diamond-guide/diamond-shapes",
+    icon: DiamondShapesIcon,
   },
   {
     title: "Diamond Cut",
     description: "What gives a diamond its life.",
     href: "/diamond-guide/diamond-cut",
+    icon: DiamondCutIcon,
   },
   {
     title: "Light Performance",
     description: "Understanding brilliance, fire, and movement.",
     href: "/diamond-guide/light-performance",
+    icon: LightPerformanceIcon,
   },
   {
     title: "Color",
     description: "When color matters and when it does not.",
     href: "/diamond-guide/diamond-color",
+    icon: DiamondColorIcon,
   },
   {
     title: "Clarity",
     description: "What matters, and what usually does not.",
     href: "/diamond-guide/diamond-clarity",
+    icon: DiamondClarityIcon,
   },
   {
     title: "Certification",
     description: "How to read grading reports with context.",
     href: "/diamond-guide/certification",
+    icon: CertificationIcon,
   },
   {
     title: "Buying Strategy",
     description: "How to balance quality, design, and budget.",
     href: "/diamond-guide/buying-strategy",
+    icon: BuyingStrategyIcon,
   },
   {
     title: "Proposal Planning",
     description: "How to prepare, propose, and celebrate with confidence.",
     href: "/diamond-guide/proposal-planning",
+    icon: ProposalPlanningIcon,
   },
 ];
 
@@ -118,50 +146,81 @@ const categoryPreview = [
 
 export default function DiamondGuidePageClient() {
   return (
-    <div className="min-h-screen bg-[#efe8de] text-[#1c1b1a]">
+    <div className="min-h-screen overflow-x-clip bg-[#efe8de] text-[#1c1b1a]">
       <div className="mx-auto max-w-[1200px] px-6 md:px-10">
         <Header currentPage="diamond-guide" />
+      </div>
 
-        <section className="border-b border-[#e4dbcf] pb-[96px] pt-[78px] md:pb-[116px] md:pt-[94px]">
-          <div className="mx-auto max-w-[720px] text-center">
-            <div className="text-[11px] uppercase tracking-[0.34em] text-[#9a9084]">
-              Diamond Guide
-            </div>
-
-            <h1
-              className="mt-5 text-[2.2rem] font-normal leading-[1.08] tracking-[-0.045em] text-[#1d1b18] md:text-[3rem]"
-              style={{ textWrap: "balance" }}
-            >
-              Clarity, before anything else.
-            </h1>
-
-            <p className="mx-auto mt-7 max-w-[620px] text-[1.03rem] leading-[1.9] text-[#6f675f]">
-              Choosing a diamond can feel overwhelming at first. This guide
-              brings together the details that matter most, from how a diamond
-              looks on the hand to how it handles light, so you can move
-              forward with clarity and confidence.
-            </p>
+      <section className="border-b border-[#e4dbcf] pb-[64px] pt-[78px] md:pb-[80px] md:pt-[94px]">
+        <div className="mx-auto max-w-[720px] px-6 text-center md:px-10">
+          <div className="text-[11px] uppercase tracking-[0.34em] text-[#9a9084]">
+            Diamond Guide
           </div>
-        </section>
 
-        <RevealOnScroll as="section" className="border-b border-[#e4dbcf] py-[106px] md:py-[124px]">
+          <h1
+            className="mt-5 text-[2.2rem] font-normal leading-[1.08] tracking-[-0.045em] text-[#1d1b18] md:text-[3rem]"
+            style={{ textWrap: "balance" }}
+          >
+            Clarity, before anything else.
+          </h1>
+
+          <p className="mx-auto mt-7 max-w-[620px] text-[1.03rem] leading-[1.9] text-[#6f675f]">
+            Choosing a diamond can feel overwhelming at first. This guide
+            brings together the details that matter most, from how a diamond
+            looks on the hand to how it handles light, so you can move
+            forward with clarity and confidence.
+          </p>
+        </div>
+
+        <div className="mx-auto mt-12 w-full max-w-[1380px] px-6 md:mt-16 md:px-10">
+          <div className="relative aspect-[4/3] overflow-hidden sm:aspect-[16/8] md:aspect-[1916/821]">
+            <Image
+              src="/diamond-guide/guide-hero-top.png"
+              alt="A curated library of books on diamonds, gemstones, jewelry, optics, proportion, and design"
+              fill
+              priority
+              sizes="(max-width: 640px) 100vw, (max-width: 1200px) 92vw, 1380px"
+              className="object-cover object-center"
+            />
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-[7%] bg-gradient-to-b from-[#efe8de]/70 to-transparent" />
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[10%] bg-gradient-to-t from-[#efe8de]/80 to-transparent" />
+            <div className="pointer-events-none absolute inset-y-0 left-0 hidden w-[4%] bg-gradient-to-r from-[#efe8de]/60 to-transparent md:block" />
+            <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-[4%] bg-gradient-to-l from-[#efe8de]/60 to-transparent md:block" />
+          </div>
+        </div>
+      </section>
+
+      <div className="mx-auto max-w-[1200px] px-6 md:px-10">
+        <RevealOnScroll as="section" className="border-b border-[#e4dbcf] pb-[106px] pt-[72px] md:pb-[124px] md:pt-[88px]">
           <div className="mx-auto max-w-[900px]">
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {categories.map((cat) => (
-                <Link
-                  key={cat.title}
-                  href={cat.href}
-                  className="rounded-[28px] bg-white/32 p-7 text-left transition duration-300 hover:bg-white/52"
-                >
-                  <div className="text-[1.15rem] font-normal leading-[1.2] tracking-[-0.02em] text-[#1d1b18]">
-                    {cat.title}
-                  </div>
+              {categories.map((cat) => {
+                const Icon = cat.icon;
 
-                  <p className="mt-3 max-w-[24ch] text-[0.95rem] leading-[1.75] text-[#6f675f]">
-                    {cat.description}
-                  </p>
-                </Link>
-              ))}
+                return (
+                  <Link
+                    key={cat.title}
+                    href={cat.href}
+                    className="group h-full rounded-[28px] bg-white/32 px-5 py-5 text-left transition duration-300 hover:bg-white/52 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a7834f]/35 focus-visible:ring-offset-2 focus-visible:ring-offset-[#efe8de] sm:px-6 sm:py-6"
+                  >
+                    <div className="flex h-full items-start gap-4">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center text-[#a7834f] transition-colors duration-300 group-hover:text-[#8f6d3e]">
+                        <Icon className="h-[29px] w-[29px] sm:h-[30px] sm:w-[30px]" />
+                      </div>
+
+                      <div className="min-w-0 pt-[1px]">
+                        <h3 className="text-[1.15rem] font-normal leading-[1.2] tracking-[-0.02em] text-[#1d1b18]">
+                          {cat.title}
+                        </h3>
+
+                        <p className="mt-2 max-w-[24ch] text-[0.95rem] leading-[1.75] text-[#6f675f]">
+                          {cat.description}
+                        </p>
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })}
             </div>
           </div>
         </RevealOnScroll>
