@@ -6,8 +6,8 @@ import { trackConsultationCtaClicked } from "@/lib/consultation-cta";
 
 export default function EngagementRingsClosingCta() {
   return (
-    <section className="border-t border-[#e4dbcf] bg-[#ebe4da]/25 py-[56px] md:py-[80px] lg:py-[96px]">
-      <div className="grid grid-cols-12 gap-x-6 gap-y-8 lg:gap-x-8 md:items-end">
+    <section className="border-t border-[#e4dbcf]/75 bg-[#ebe4da]/25 py-[52px] md:py-[64px] lg:py-[76px]">
+      <div className="grid grid-cols-12 gap-x-6 gap-y-7 lg:gap-x-8 md:items-end">
         <div className="col-span-12 md:col-span-6">
           <div className="text-[10px] uppercase tracking-[0.28em] text-[#8a8177]">
             A Private Conversation
@@ -25,7 +25,7 @@ export default function EngagementRingsClosingCta() {
             No pressure. No expectation that you already have everything figured
             out.
           </p>
-          <div className="mt-6 md:mt-7">
+          <div className="mt-6 md:mt-6">
             <CTAGlimmer>
               <Link
                 href="/concierge"

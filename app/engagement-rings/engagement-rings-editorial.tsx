@@ -4,6 +4,9 @@ import WhisperedPraiseLink from "../shared-components/WhisperedPraiseLink";
 const editorialLink =
   "text-[#6b5048] underline underline-offset-4 transition-colors hover:text-[#1f1d1a]";
 
+const resourceLink =
+  "text-[#6b5048] underline decoration-[#d9cfc2] underline-offset-[5px] transition-colors hover:text-[#1f1d1a] hover:decoration-[#b8a896] focus:outline-none focus-visible:rounded-sm focus-visible:ring-2 focus-visible:ring-[#cbbda9]/55 focus-visible:ring-offset-2 focus-visible:ring-offset-[#f7f2ea]";
+
 const LOWER_GRID = "grid grid-cols-12 gap-x-6 lg:gap-x-8";
 
 const processSteps = [
@@ -53,19 +56,17 @@ const authorityLinks = [
 export default function EngagementRingsEditorial() {
   return (
     <>
-      <section className="border-b border-[#e4dbcf] pt-[48px] pb-[56px] md:pt-[52px] md:pb-[72px] lg:pb-[88px]">
-        <div className={LOWER_GRID}>
-          <h2
-            className="col-span-12 max-w-[20ch] text-[1.75rem] font-light leading-[1.12] tracking-[-0.02em] text-[#1f1d1a] md:text-[2.15rem]"
-            style={{ textWrap: "balance" }}
-          >
-            Private guidance, sourced with judgment.
-          </h2>
+      <section className="border-b border-[#e4dbcf]/75 pt-[56px] pb-[56px] md:pt-[60px] md:pb-[72px] lg:pb-[88px]">
+        <div className={`${LOWER_GRID} md:items-start`}>
+          <div className="col-span-12 min-w-0 md:col-span-5">
+            <h2
+              className="max-w-[20ch] text-[1.75rem] font-light leading-[1.12] tracking-[-0.02em] text-[#1f1d1a] md:text-[2.15rem]"
+              style={{ textWrap: "balance" }}
+            >
+              Private guidance, sourced with judgment.
+            </h2>
 
-          <div
-            className={`col-span-12 mt-8 ${LOWER_GRID} md:mt-10 md:items-start`}
-          >
-            <div className="col-span-12 min-w-0 space-y-5 text-[0.98rem] leading-[1.88] text-[#5f5851] md:col-span-5 md:text-[1rem] md:leading-[1.9]">
+            <div className="mt-8 space-y-5 text-[0.98rem] leading-[1.88] text-[#5f5851] md:mt-9 md:text-[1rem] md:leading-[1.9]">
               <p>
                 Most engagement ring shopping still begins in a case or a cart.
                 Hourglass is structured differently. There is no showroom floor
@@ -90,8 +91,14 @@ export default function EngagementRingsEditorial() {
                 </Link>
               </p>
             </div>
+          </div>
 
-            <ol className="col-span-12 min-w-0 border-t border-[#e4dbcf] md:col-span-6 md:col-start-7">
+          <div className="col-span-12 min-w-0 md:col-span-6 md:col-start-7 md:pt-1">
+            <p className="text-[10px] uppercase tracking-[0.28em] text-[#8a8177]">
+              A guided process
+            </p>
+
+            <ol className="mt-6 border-t border-[#e4dbcf]">
               {processSteps.map((step) => (
                 <li
                   key={step.label}
@@ -110,7 +117,7 @@ export default function EngagementRingsEditorial() {
         </div>
       </section>
 
-      <section className="border-b border-[#e4dbcf] bg-[#ebe4da]/40 py-[56px] md:py-[80px] lg:py-[96px]">
+      <section className="border-b border-[#e4dbcf]/75 bg-[#ebe4da]/40 py-[56px] md:py-[72px] lg:py-[88px]">
         <div className={`${LOWER_GRID} md:items-start`}>
           <div className="col-span-12 md:col-span-4">
             <div className="text-[10px] uppercase tracking-[0.28em] text-[#8a8177]">
@@ -128,35 +135,35 @@ export default function EngagementRingsEditorial() {
           </div>
 
           <div className="col-span-12 mt-10 md:col-span-8 md:col-start-5 md:mt-0">
-            <ul className="grid border-t border-[#e4dbcf] sm:grid-cols-2">
-              {authorityLinks.map((item, index) => (
-                <li
-                  key={item.href}
-                  className={`min-w-0 border-b border-[#e4dbcf] py-5 sm:py-6 ${
-                    index % 2 === 0 ? "sm:border-r sm:pr-6 lg:pr-8" : "sm:pl-6 lg:pl-8"
-                  }`}
-                >
-                  <Link
-                    href={item.href}
-                    className={`${editorialLink} text-[1rem]`}
+            <div className="rounded-[24px] border border-[#e4dbcf]/55 bg-[radial-gradient(circle_at_14%_10%,rgba(255,255,255,0.4),rgba(251,246,238,0.52)_40%,rgba(245,238,228,0.34)_100%)] p-1.5 md:p-2">
+              <ul className="grid gap-1.5 sm:grid-cols-2">
+                {authorityLinks.map((item) => (
+                  <li
+                    key={item.href}
+                    className="rounded-[18px] border border-[#ebe3d6]/75 bg-white/28 px-5 py-5 transition-[background-color,border-color] duration-300 hover:border-[#e0d4c4]/85 hover:bg-white/40 md:px-6 md:py-[1.35rem]"
                   >
-                    {item.label}
-                  </Link>
-                  <p className="mt-2 max-w-[22rem] text-[0.95rem] leading-[1.82] text-[#534d47]">
-                    {item.description}
-                  </p>
-                </li>
-              ))}
-            </ul>
+                    <Link
+                      href={item.href}
+                      className={`${resourceLink} text-[0.98rem] md:text-[1rem]`}
+                    >
+                      {item.label}
+                    </Link>
+                    <p className="mt-2.5 max-w-[22rem] text-[0.94rem] leading-[1.8] text-[#534d47] md:text-[0.95rem]">
+                      {item.description}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            </div>
 
-            <blockquote className="mt-7 border-t border-[#e4dbcf] pt-7 md:mt-8 md:pt-8">
+            <blockquote className="mt-8 rounded-[22px] border border-[#e4dbcf]/55 bg-[#f5efe6]/38 px-6 py-7 md:mt-9 md:px-8 md:py-8">
               <p
                 className="max-w-[32rem] font-serif text-[1.28rem] font-normal leading-[1.4] tracking-[-0.02em] text-[#252220] md:text-[1.42rem] md:leading-[1.38]"
                 style={{ textWrap: "balance" }}
               >
                 &ldquo;It always felt like I was working with a partner.&rdquo;
               </p>
-              <footer className="mt-4">
+              <footer className="mt-5">
                 <WhisperedPraiseLink
                   variant="arrow"
                   className="text-[10.5px] tracking-[0.12em]"

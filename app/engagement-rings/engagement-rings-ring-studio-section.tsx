@@ -4,10 +4,10 @@ export default function EngagementRingsRingStudioSection() {
   return (
     <section
       id="ring-studio"
-      className="scroll-mt-24 border-b border-[#e4dbcf] py-[52px] md:py-[64px]"
+      className="scroll-mt-24 border-b border-[#e4dbcf]/75 py-[52px] md:py-[64px] md:pb-[70px]"
     >
       <div className="text-left">
-        <div className="text-[10px] uppercase tracking-[0.28em] text-[#8a8177]">
+        <div className="text-[10px] uppercase tracking-[0.34em] text-[#8a8177]">
           The Ring Studio
         </div>
         <h2
