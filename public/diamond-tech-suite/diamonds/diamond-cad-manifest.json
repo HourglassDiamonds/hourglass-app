@@ -1,0 +1,584 @@
+{
+  "generatedAt": "2026-07-08T14:26:43.776Z",
+  "alphaThreshold": 10,
+  "shapes": {
+    "round": {
+      "shapeId": "round",
+      "profile": "brilliant",
+      "shadow": "round",
+      "sourceFile": null,
+      "assets": {
+        "src": "/diamond-tech-suite/diamonds/rbc-cad-pop.png",
+        "originalSrc": "/diamond-tech-suite/diamonds/rbc-cad.png",
+        "switcherSrc": "/diamond-tech-suite/diamonds/rbc-cad-switcher.png",
+        "fallbackSrc": "/diamond-tech-suite/diamonds/round.png",
+        "variants": [
+          "/diamond-tech-suite/diamonds/rbc-cad-scintillation-a.png",
+          "/diamond-tech-suite/diamonds/rbc-cad-scintillation-b.png",
+          "/diamond-tech-suite/diamonds/rbc-cad-scintillation-c.png",
+          "/diamond-tech-suite/diamonds/rbc-cad-scintillation-d.png"
+        ],
+        "manifest": "/diamond-tech-suite/diamonds/rbc-cad-scintillation-variants.json"
+      },
+      "canvas": {
+        "width": 2560,
+        "height": 2560
+      },
+      "visibleBounds": {
+        "minX": 440,
+        "minY": 461,
+        "maxX": 2118,
+        "maxY": 2136,
+        "width": 1679,
+        "height": 1676
+      },
+      "centerX": 0.49975499015227465,
+      "centerY": 0.5072595106949171,
+      "visibleFillRatio": 0.655859375,
+      "visibleFillRatioH": 0.6546875,
+      "legacyVisibleFillRatio": 0.9466666666666667,
+      "visibleScale": 1.443398848520945,
+      "sourceMeasurements": null,
+      "switcher": {
+        "width": 512,
+        "height": 512,
+        "visibleBounds": {
+          "minX": 10,
+          "minY": 10,
+          "maxX": 501,
+          "maxY": 500,
+          "width": 492,
+          "height": 491
+        }
+      }
+    },
+    "oval": {
+      "shapeId": "oval",
+      "profile": "brilliant",
+      "shadow": "elongated",
+      "sourceFile": "HRG-OTH-R-96044-Oval 3 carat diamond.png",
+      "assets": {
+        "src": "/diamond-tech-suite/diamonds/oval-cad-pop.png",
+        "originalSrc": "/diamond-tech-suite/diamonds/oval-cad.png",
+        "switcherSrc": "/diamond-tech-suite/diamonds/oval-cad-switcher.png",
+        "fallbackSrc": "/diamond-tech-suite/diamonds/oval.png",
+        "variants": [
+          "/diamond-tech-suite/diamonds/oval-cad-scintillation-a.png",
+          "/diamond-tech-suite/diamonds/oval-cad-scintillation-b.png",
+          "/diamond-tech-suite/diamonds/oval-cad-scintillation-c.png",
+          "/diamond-tech-suite/diamonds/oval-cad-scintillation-d.png"
+        ],
+        "manifest": "/diamond-tech-suite/diamonds/oval-cad-scintillation-variants.json"
+      },
+      "canvas": {
+        "width": 2560,
+        "height": 2560
+      },
+      "visibleBounds": {
+        "minX": 695,
+        "minY": 471,
+        "maxX": 1864,
+        "maxY": 2115,
+        "width": 1170,
+        "height": 1645
+      },
+      "centerX": 0.4997719035094921,
+      "centerY": 0.5051072893652871,
+      "visibleFillRatio": 0.45703125,
+      "visibleFillRatioH": 0.642578125,
+      "legacyVisibleFillRatio": 0.6506666666666666,
+      "visibleScale": 1.4236809116809115,
+      "sourceMeasurements": {
+        "canvasWidth": 2560,
+        "canvasHeight": 2560,
+        "minX": 695,
+        "minY": 471,
+        "maxX": 1864,
+        "maxY": 2115,
+        "boundsW": 1170,
+        "boundsH": 1645,
+        "centroidX": 1279.4160729842997,
+        "centroidY": 1293.074660775135,
+        "opaqueCount": 1501364,
+        "visibleFillRatio": 0.45703125,
+        "visibleFillRatioH": 0.642578125,
+        "centerX": 0.4997719035094921,
+        "centerY": 0.5051072893652871
+      },
+      "switcher": {
+        "width": 512,
+        "height": 512,
+        "visibleBounds": {
+          "minX": 81,
+          "minY": 10,
+          "maxX": 429,
+          "maxY": 501,
+          "width": 349,
+          "height": 492
+        }
+      }
+    },
+    "cushion": {
+      "shapeId": "cushion",
+      "profile": "brilliant",
+      "shadow": "square",
+      "sourceFile": "HRG-OTH-R-96045-Cushion 3 carat diamond.png",
+      "assets": {
+        "src": "/diamond-tech-suite/diamonds/cushion-cad-pop.png",
+        "originalSrc": "/diamond-tech-suite/diamonds/cushion-cad.png",
+        "switcherSrc": "/diamond-tech-suite/diamonds/cushion-cad-switcher.png",
+        "fallbackSrc": "/diamond-tech-suite/diamonds/cushion.png",
+        "variants": [
+          "/diamond-tech-suite/diamonds/cushion-cad-scintillation-a.png",
+          "/diamond-tech-suite/diamonds/cushion-cad-scintillation-b.png",
+          "/diamond-tech-suite/diamonds/cushion-cad-scintillation-c.png",
+          "/diamond-tech-suite/diamonds/cushion-cad-scintillation-d.png"
+        ],
+        "manifest": "/diamond-tech-suite/diamonds/cushion-cad-scintillation-variants.json"
+      },
+      "canvas": {
+        "width": 2560,
+        "height": 2560
+      },
+      "visibleBounds": {
+        "minX": 683,
+        "minY": 672,
+        "maxX": 1875,
+        "maxY": 1877,
+        "width": 1193,
+        "height": 1206
+      },
+      "centerX": 0.4997751767251307,
+      "centerY": 0.49726160704585187,
+      "visibleFillRatio": 0.466015625,
+      "visibleFillRatioH": 0.47109375,
+      "legacyVisibleFillRatio": 0.9533333333333334,
+      "visibleScale": 2.045711092483934,
+      "sourceMeasurements": {
+        "canvasWidth": 2560,
+        "canvasHeight": 2560,
+        "minX": 683,
+        "minY": 672,
+        "maxX": 1875,
+        "maxY": 1877,
+        "boundsW": 1193,
+        "boundsH": 1206,
+        "centroidX": 1279.4244524163346,
+        "centroidY": 1272.9897140373807,
+        "opaqueCount": 1228762,
+        "visibleFillRatio": 0.466015625,
+        "visibleFillRatioH": 0.47109375,
+        "centerX": 0.4997751767251307,
+        "centerY": 0.49726160704585187
+      },
+      "switcher": {
+        "width": 512,
+        "height": 512,
+        "visibleBounds": {
+          "minX": 17,
+          "minY": 14,
+          "maxX": 494,
+          "maxY": 497,
+          "width": 478,
+          "height": 484
+        }
+      }
+    },
+    "radiant": {
+      "shapeId": "radiant",
+      "profile": "brilliant",
+      "shadow": "elongated",
+      "sourceFile": "HRG-OTH-R-96046-Radiant 3 carat diamond.png",
+      "assets": {
+        "src": "/diamond-tech-suite/diamonds/radiant-cad-pop.png",
+        "originalSrc": "/diamond-tech-suite/diamonds/radiant-cad.png",
+        "switcherSrc": "/diamond-tech-suite/diamonds/radiant-cad-switcher.png",
+        "fallbackSrc": "/diamond-tech-suite/diamonds/radiant.png",
+        "variants": [
+          "/diamond-tech-suite/diamonds/radiant-cad-scintillation-a.png",
+          "/diamond-tech-suite/diamonds/radiant-cad-scintillation-b.png",
+          "/diamond-tech-suite/diamonds/radiant-cad-scintillation-c.png",
+          "/diamond-tech-suite/diamonds/radiant-cad-scintillation-d.png"
+        ],
+        "manifest": "/diamond-tech-suite/diamonds/radiant-cad-scintillation-variants.json"
+      },
+      "canvas": {
+        "width": 2560,
+        "height": 2560
+      },
+      "visibleBounds": {
+        "minX": 759,
+        "minY": 552,
+        "maxX": 1800,
+        "maxY": 2031,
+        "width": 1042,
+        "height": 1480
+      },
+      "centerX": 0.4997651720999524,
+      "centerY": 0.5044388604559696,
+      "visibleFillRatio": 0.40703125,
+      "visibleFillRatioH": 0.578125,
+      "legacyVisibleFillRatio": 0.652,
+      "visibleScale": 1.6018426103646832,
+      "sourceMeasurements": {
+        "canvasWidth": 2560,
+        "canvasHeight": 2560,
+        "minX": 759,
+        "minY": 552,
+        "maxX": 1800,
+        "maxY": 2031,
+        "boundsW": 1042,
+        "boundsH": 1480,
+        "centroidX": 1279.3988405758782,
+        "centroidY": 1291.3634827672822,
+        "opaqueCount": 1512820,
+        "visibleFillRatio": 0.40703125,
+        "visibleFillRatioH": 0.578125,
+        "centerX": 0.4997651720999524,
+        "centerY": 0.5044388604559696
+      },
+      "switcher": {
+        "width": 512,
+        "height": 512,
+        "visibleBounds": {
+          "minX": 84,
+          "minY": 11,
+          "maxX": 427,
+          "maxY": 500,
+          "width": 344,
+          "height": 490
+        }
+      }
+    },
+    "emerald": {
+      "shapeId": "emerald",
+      "profile": "step",
+      "shadow": "elongated",
+      "sourceFile": "HRG-OTH-R-96047-Emerald 3 carat diamond.png",
+      "assets": {
+        "src": "/diamond-tech-suite/diamonds/emerald-cad-pop.png",
+        "originalSrc": "/diamond-tech-suite/diamonds/emerald-cad.png",
+        "switcherSrc": "/diamond-tech-suite/diamonds/emerald-cad-switcher.png",
+        "fallbackSrc": "/diamond-tech-suite/diamonds/emerald.png",
+        "variants": [
+          "/diamond-tech-suite/diamonds/emerald-cad-scintillation-a.png",
+          "/diamond-tech-suite/diamonds/emerald-cad-scintillation-b.png",
+          "/diamond-tech-suite/diamonds/emerald-cad-scintillation-c.png",
+          "/diamond-tech-suite/diamonds/emerald-cad-scintillation-d.png"
+        ],
+        "manifest": "/diamond-tech-suite/diamonds/emerald-cad-scintillation-variants.json"
+      },
+      "canvas": {
+        "width": 2560,
+        "height": 2560
+      },
+      "visibleBounds": {
+        "minX": 794,
+        "minY": 601,
+        "maxX": 1765,
+        "maxY": 1988,
+        "width": 972,
+        "height": 1388
+      },
+      "centerX": 0.4997509860593561,
+      "centerY": 0.5055688037468815,
+      "visibleFillRatio": 0.3796875,
+      "visibleFillRatioH": 0.5421875,
+      "legacyVisibleFillRatio": 0.6433333333333333,
+      "visibleScale": 1.6943758573388201,
+      "sourceMeasurements": {
+        "canvasWidth": 2560,
+        "canvasHeight": 2560,
+        "minX": 794,
+        "minY": 601,
+        "maxX": 1765,
+        "maxY": 1988,
+        "boundsW": 972,
+        "boundsH": 1388,
+        "centroidX": 1279.3625243119516,
+        "centroidY": 1294.2561375920168,
+        "opaqueCount": 1302343,
+        "visibleFillRatio": 0.3796875,
+        "visibleFillRatioH": 0.5421875,
+        "centerX": 0.4997509860593561,
+        "centerY": 0.5055688037468815
+      },
+      "switcher": {
+        "width": 512,
+        "height": 512,
+        "visibleBounds": {
+          "minX": 85,
+          "minY": 12,
+          "maxX": 426,
+          "maxY": 499,
+          "width": 342,
+          "height": 488
+        }
+      }
+    },
+    "asscher": {
+      "shapeId": "asscher",
+      "profile": "step",
+      "shadow": "square",
+      "sourceFile": "HRG-OTH-R-96048-Asscher 3 carat diamond.png",
+      "assets": {
+        "src": "/diamond-tech-suite/diamonds/asscher-cad-pop.png",
+        "originalSrc": "/diamond-tech-suite/diamonds/asscher-cad.png",
+        "switcherSrc": "/diamond-tech-suite/diamonds/asscher-cad-switcher.png",
+        "fallbackSrc": "/diamond-tech-suite/diamonds/asscher.png",
+        "variants": [
+          "/diamond-tech-suite/diamonds/asscher-cad-scintillation-a.png",
+          "/diamond-tech-suite/diamonds/asscher-cad-scintillation-b.png",
+          "/diamond-tech-suite/diamonds/asscher-cad-scintillation-c.png",
+          "/diamond-tech-suite/diamonds/asscher-cad-scintillation-d.png"
+        ],
+        "manifest": "/diamond-tech-suite/diamonds/asscher-cad-scintillation-variants.json"
+      },
+      "canvas": {
+        "width": 2560,
+        "height": 2560
+      },
+      "visibleBounds": {
+        "minX": 716,
+        "minY": 741,
+        "maxX": 1843,
+        "maxY": 1874,
+        "width": 1128,
+        "height": 1134
+      },
+      "centerX": 0.4998000962439373,
+      "centerY": 0.5107453278922731,
+      "visibleFillRatio": 0.440625,
+      "visibleFillRatioH": 0.44296875,
+      "legacyVisibleFillRatio": 0.9426666666666667,
+      "visibleScale": 2.139385342789598,
+      "sourceMeasurements": {
+        "canvasWidth": 2560,
+        "canvasHeight": 2560,
+        "minX": 716,
+        "minY": 741,
+        "maxX": 1843,
+        "maxY": 1874,
+        "boundsW": 1128,
+        "boundsH": 1134,
+        "centroidX": 1279.4882463844795,
+        "centroidY": 1307.5080394042193,
+        "opaqueCount": 1220986,
+        "visibleFillRatio": 0.440625,
+        "visibleFillRatioH": 0.44296875,
+        "centerX": 0.4998000962439373,
+        "centerY": 0.5107453278922731
+      },
+      "switcher": {
+        "width": 512,
+        "height": 512,
+        "visibleBounds": {
+          "minX": 16,
+          "minY": 15,
+          "maxX": 494,
+          "maxY": 496,
+          "width": 479,
+          "height": 482
+        }
+      }
+    },
+    "pear": {
+      "shapeId": "pear",
+      "profile": "brilliant",
+      "shadow": "elongated",
+      "sourceFile": "HRG-OTH-R-96049-Pear 3 carat diamond.png",
+      "assets": {
+        "src": "/diamond-tech-suite/diamonds/pear-cad-pop.png",
+        "originalSrc": "/diamond-tech-suite/diamonds/pear-cad.png",
+        "switcherSrc": "/diamond-tech-suite/diamonds/pear-cad-switcher.png",
+        "fallbackSrc": "/diamond-tech-suite/diamonds/pear.png",
+        "variants": [
+          "/diamond-tech-suite/diamonds/pear-cad-scintillation-a.png",
+          "/diamond-tech-suite/diamonds/pear-cad-scintillation-b.png",
+          "/diamond-tech-suite/diamonds/pear-cad-scintillation-c.png",
+          "/diamond-tech-suite/diamonds/pear-cad-scintillation-d.png"
+        ],
+        "manifest": "/diamond-tech-suite/diamonds/pear-cad-scintillation-variants.json"
+      },
+      "canvas": {
+        "width": 2560,
+        "height": 2560
+      },
+      "visibleBounds": {
+        "minX": 699,
+        "minY": 341,
+        "maxX": 1860,
+        "maxY": 2140,
+        "width": 1162,
+        "height": 1800
+      },
+      "centerX": 0.4997757498276766,
+      "centerY": 0.5172483581633636,
+      "visibleFillRatio": 0.45390625,
+      "visibleFillRatioH": 0.703125,
+      "legacyVisibleFillRatio": 0.5646666666666667,
+      "visibleScale": 1.2440160642570282,
+      "sourceMeasurements": {
+        "canvasWidth": 2560,
+        "canvasHeight": 2560,
+        "minX": 699,
+        "minY": 341,
+        "maxX": 1860,
+        "maxY": 2140,
+        "boundsW": 1162,
+        "boundsH": 1800,
+        "centroidX": 1279.425919558852,
+        "centroidY": 1324.1557968982108,
+        "opaqueCount": 1515319,
+        "visibleFillRatio": 0.45390625,
+        "visibleFillRatioH": 0.703125,
+        "centerX": 0.4997757498276766,
+        "centerY": 0.5172483581633636
+      },
+      "switcher": {
+        "width": 512,
+        "height": 512,
+        "visibleBounds": {
+          "minX": 97,
+          "minY": 10,
+          "maxX": 414,
+          "maxY": 502,
+          "width": 318,
+          "height": 493
+        }
+      }
+    },
+    "marquise": {
+      "shapeId": "marquise",
+      "profile": "brilliant",
+      "shadow": "elongated",
+      "sourceFile": "HRG-OTH-R-96050-Marquise 3 carat diamond.png",
+      "assets": {
+        "src": "/diamond-tech-suite/diamonds/marquise-cad-pop.png",
+        "originalSrc": "/diamond-tech-suite/diamonds/marquise-cad.png",
+        "switcherSrc": "/diamond-tech-suite/diamonds/marquise-cad-switcher.png",
+        "fallbackSrc": "/diamond-tech-suite/diamonds/marquise.png",
+        "variants": [
+          "/diamond-tech-suite/diamonds/marquise-cad-scintillation-a.png",
+          "/diamond-tech-suite/diamonds/marquise-cad-scintillation-b.png",
+          "/diamond-tech-suite/diamonds/marquise-cad-scintillation-c.png",
+          "/diamond-tech-suite/diamonds/marquise-cad-scintillation-d.png"
+        ],
+        "manifest": "/diamond-tech-suite/diamonds/marquise-cad-scintillation-variants.json"
+      },
+      "canvas": {
+        "width": 2560,
+        "height": 2560
+      },
+      "visibleBounds": {
+        "minX": 788,
+        "minY": 306,
+        "maxX": 1771,
+        "maxY": 2274,
+        "width": 984,
+        "height": 1969
+      },
+      "centerX": 0.4997697937895419,
+      "centerY": 0.5038716789348521,
+      "visibleFillRatio": 0.384375,
+      "visibleFillRatioH": 0.769140625,
+      "legacyVisibleFillRatio": 0.434,
+      "visibleScale": 1.1291056910569104,
+      "sourceMeasurements": {
+        "canvasWidth": 2560,
+        "canvasHeight": 2560,
+        "minX": 788,
+        "minY": 306,
+        "maxX": 1771,
+        "maxY": 2274,
+        "boundsW": 984,
+        "boundsH": 1969,
+        "centroidX": 1279.4106721012272,
+        "centroidY": 1289.9114980732213,
+        "opaqueCount": 1362637,
+        "visibleFillRatio": 0.384375,
+        "visibleFillRatioH": 0.769140625,
+        "centerX": 0.4997697937895419,
+        "centerY": 0.5038716789348521
+      },
+      "switcher": {
+        "width": 512,
+        "height": 512,
+        "visibleBounds": {
+          "minX": 132,
+          "minY": 9,
+          "maxX": 378,
+          "maxY": 502,
+          "width": 247,
+          "height": 494
+        }
+      }
+    },
+    "princess": {
+      "shapeId": "princess",
+      "profile": "brilliant",
+      "shadow": "square",
+      "sourceFile": "HRG-OTH-R-96051-Princess 3 carat diamond.png",
+      "assets": {
+        "src": "/diamond-tech-suite/diamonds/princess-cad-pop.png",
+        "originalSrc": "/diamond-tech-suite/diamonds/princess-cad.png",
+        "switcherSrc": "/diamond-tech-suite/diamonds/princess-cad-switcher.png",
+        "fallbackSrc": "/diamond-tech-suite/diamonds/princess.png",
+        "variants": [
+          "/diamond-tech-suite/diamonds/princess-cad-scintillation-a.png",
+          "/diamond-tech-suite/diamonds/princess-cad-scintillation-b.png",
+          "/diamond-tech-suite/diamonds/princess-cad-scintillation-c.png",
+          "/diamond-tech-suite/diamonds/princess-cad-scintillation-d.png"
+        ],
+        "manifest": "/diamond-tech-suite/diamonds/princess-cad-scintillation-variants.json"
+      },
+      "canvas": {
+        "width": 2560,
+        "height": 2560
+      },
+      "visibleBounds": {
+        "minX": 708,
+        "minY": 723,
+        "maxX": 1851,
+        "maxY": 1878,
+        "width": 1144,
+        "height": 1156
+      },
+      "centerX": 0.4997590781581285,
+      "centerY": 0.5079195088179066,
+      "visibleFillRatio": 0.446875,
+      "visibleFillRatioH": 0.4515625,
+      "legacyVisibleFillRatio": 0.9353333333333333,
+      "visibleScale": 2.093053613053613,
+      "sourceMeasurements": {
+        "canvasWidth": 2560,
+        "canvasHeight": 2560,
+        "minX": 708,
+        "minY": 723,
+        "maxX": 1851,
+        "maxY": 1878,
+        "boundsW": 1144,
+        "boundsH": 1156,
+        "centroidX": 1279.383240084809,
+        "centroidY": 1300.273942573841,
+        "opaqueCount": 1321558,
+        "visibleFillRatio": 0.446875,
+        "visibleFillRatioH": 0.4515625,
+        "centerX": 0.4997590781581285,
+        "centerY": 0.5079195088179066
+      },
+      "switcher": {
+        "width": 512,
+        "height": 512,
+        "visibleBounds": {
+          "minX": 17,
+          "minY": 15,
+          "maxX": 493,
+          "maxY": 496,
+          "width": 477,
+          "height": 482
+        }
+      }
+    }
+  }
+}

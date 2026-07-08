@@ -1,0 +1,435 @@
+{
+  "shapeId": "emerald",
+  "profile": "step",
+  "source": "diamond-tech-suite/diamonds/emerald-cad-pop.png",
+  "canvas": "2560x2560",
+  "alphaPreserved": true,
+  "brightLuminanceRange": [
+    200,
+    252
+  ],
+  "darkLuminanceRange": [
+    55,
+    195
+  ],
+  "trueCentralLuminanceRange": [
+    70,
+    210
+  ],
+  "trueCentralCentroidRange": [
+    0.02,
+    0.35
+  ],
+  "trueCentralPixelRadius": 0.42,
+  "brightLiftRgb": 8,
+  "outerDarkLuminanceMultiplier": 0.91,
+  "trueCentralDarkLuminanceMultiplier": 0.93,
+  "regionExpandRadiusPx": 10,
+  "centralRegionExpandRadiusPx": 12,
+  "girdleInsetPx": 10,
+  "featherRadiusPx": 2,
+  "brightRegionPool": 23,
+  "darkRegionPool": 42,
+  "trueCentralRegionPool": 4,
+  "nearCentralRegionPool": 21,
+  "patterns": {
+    "a": {
+      "file": "/diamond-tech-suite/diamonds/emerald-cad-scintillation-a.png",
+      "centralMode": "strong",
+      "brightRegions": 2,
+      "trueCentralRegions": 2,
+      "outerDarkRegions": 2,
+      "regionTiers": {
+        "bright": {
+          "small": 0,
+          "medium": 0,
+          "large": 2
+        },
+        "trueCentral": {
+          "small": 0,
+          "medium": 0,
+          "large": 2
+        },
+        "outerDark": {
+          "small": 0,
+          "medium": 0,
+          "large": 2
+        }
+      },
+      "coverage": {
+        "brightPercent": 3.54,
+        "trueCentralPercent": 2.58,
+        "outerDarkPercent": 4.35,
+        "totalPercent": 10.47,
+        "changedPercentCentral60Diameter": 15.91,
+        "changedPercentCentral35Diameter": 0,
+        "changedOpaquePercent": 9.45
+      },
+      "bright": [
+        {
+          "id": "ur:1284:674:14197",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 14197,
+          "quadrant": "ur",
+          "distNorm": 0.805,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ur:1493:763:4923",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 4923,
+          "quadrant": "ur",
+          "distNorm": 0.743,
+          "centralFraction35": 0
+        }
+      ],
+      "trueCentral": [
+        {
+          "id": "ul:1084:1208:10723",
+          "role": "large",
+          "sizeTier": "large",
+          "pixels": 10723,
+          "quadrant": "ul",
+          "distNorm": 0.278,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ll:1084:1381:10762",
+          "role": "medium",
+          "sizeTier": "large",
+          "pixels": 10762,
+          "quadrant": "ll",
+          "distNorm": 0.278,
+          "centralFraction35": 0
+        }
+      ],
+      "outerDark": [
+        {
+          "id": "ll:1279:1917:17104",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 17104,
+          "quadrant": "ll",
+          "distNorm": 0.807,
+          "centralFraction35": 0
+        },
+        {
+          "id": "lr:1281:1746:14686",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 14686,
+          "quadrant": "lr",
+          "distNorm": 0.586,
+          "centralFraction35": 0
+        }
+      ]
+    },
+    "b": {
+      "file": "/diamond-tech-suite/diamonds/emerald-cad-scintillation-b.png",
+      "centralMode": "subtle",
+      "brightRegions": 2,
+      "trueCentralRegions": 2,
+      "outerDarkRegions": 2,
+      "regionTiers": {
+        "bright": {
+          "small": 0,
+          "medium": 1,
+          "large": 1
+        },
+        "trueCentral": {
+          "small": 0,
+          "medium": 0,
+          "large": 2
+        },
+        "outerDark": {
+          "small": 0,
+          "medium": 0,
+          "large": 2
+        }
+      },
+      "coverage": {
+        "brightPercent": 1.61,
+        "trueCentralPercent": 3.56,
+        "outerDarkPercent": 4,
+        "totalPercent": 8.72,
+        "changedPercentCentral60Diameter": 9.86,
+        "changedPercentCentral35Diameter": 0,
+        "changedOpaquePercent": 8.4
+      },
+      "bright": [
+        {
+          "id": "ur:1471:913:4460",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 4460,
+          "quadrant": "ur",
+          "distNorm": 0.553,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ul:1279:744:3206",
+          "role": "outer",
+          "sizeTier": "medium",
+          "pixels": 3206,
+          "quadrant": "ul",
+          "distNorm": 0.714,
+          "centralFraction35": 0
+        }
+      ],
+      "trueCentral": [
+        {
+          "id": "lr:1475:1382:10614",
+          "role": "medium",
+          "sizeTier": "large",
+          "pixels": 10614,
+          "quadrant": "lr",
+          "distNorm": 0.278,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ll:909:1436:16796",
+          "role": "near",
+          "sizeTier": "large",
+          "pixels": 16796,
+          "quadrant": "ll",
+          "distNorm": 0.515,
+          "centralFraction35": 0
+        }
+      ],
+      "outerDark": [
+        {
+          "id": "lr:1298:1646:10430",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 10430,
+          "quadrant": "lr",
+          "distNorm": 0.457,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ul:1279:778:14435",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 14435,
+          "quadrant": "ul",
+          "distNorm": 0.669,
+          "centralFraction35": 0
+        }
+      ]
+    },
+    "c": {
+      "file": "/diamond-tech-suite/diamonds/emerald-cad-scintillation-c.png",
+      "centralMode": "strong",
+      "brightRegions": 2,
+      "trueCentralRegions": 2,
+      "outerDarkRegions": 2,
+      "regionTiers": {
+        "bright": {
+          "small": 0,
+          "medium": 0,
+          "large": 2
+        },
+        "trueCentral": {
+          "small": 0,
+          "medium": 0,
+          "large": 2
+        },
+        "outerDark": {
+          "small": 0,
+          "medium": 0,
+          "large": 2
+        }
+      },
+      "coverage": {
+        "brightPercent": 3.54,
+        "trueCentralPercent": 2.75,
+        "outerDarkPercent": 4.35,
+        "totalPercent": 10.64,
+        "changedPercentCentral60Diameter": 17.3,
+        "changedPercentCentral35Diameter": 0,
+        "changedOpaquePercent": 9.62
+      },
+      "bright": [
+        {
+          "id": "ur:1284:674:14197",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 14197,
+          "quadrant": "ur",
+          "distNorm": 0.805,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ur:1493:763:4923",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 4923,
+          "quadrant": "ur",
+          "distNorm": 0.743,
+          "centralFraction35": 0
+        }
+      ],
+      "trueCentral": [
+        {
+          "id": "ur:1475:1208:10567",
+          "role": "large",
+          "sizeTier": "large",
+          "pixels": 10567,
+          "quadrant": "ur",
+          "distNorm": 0.277,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ll:1084:1381:10762",
+          "role": "medium",
+          "sizeTier": "large",
+          "pixels": 10762,
+          "quadrant": "ll",
+          "distNorm": 0.278,
+          "centralFraction35": 0
+        }
+      ],
+      "outerDark": [
+        {
+          "id": "ll:1279:1917:17104",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 17104,
+          "quadrant": "ll",
+          "distNorm": 0.807,
+          "centralFraction35": 0
+        },
+        {
+          "id": "lr:1281:1746:14686",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 14686,
+          "quadrant": "lr",
+          "distNorm": 0.586,
+          "centralFraction35": 0
+        }
+      ]
+    },
+    "d": {
+      "file": "/diamond-tech-suite/diamonds/emerald-cad-scintillation-d.png",
+      "centralMode": "subtle",
+      "brightRegions": 2,
+      "trueCentralRegions": 2,
+      "outerDarkRegions": 2,
+      "regionTiers": {
+        "bright": {
+          "small": 0,
+          "medium": 1,
+          "large": 1
+        },
+        "trueCentral": {
+          "small": 0,
+          "medium": 0,
+          "large": 2
+        },
+        "outerDark": {
+          "small": 0,
+          "medium": 0,
+          "large": 2
+        }
+      },
+      "coverage": {
+        "brightPercent": 1.61,
+        "trueCentralPercent": 3.16,
+        "outerDarkPercent": 3.75,
+        "totalPercent": 7.73,
+        "changedPercentCentral60Diameter": 11.26,
+        "changedPercentCentral35Diameter": 0,
+        "changedOpaquePercent": 7.42
+      },
+      "bright": [
+        {
+          "id": "ur:1471:913:4460",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 4460,
+          "quadrant": "ur",
+          "distNorm": 0.553,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ul:1279:744:3206",
+          "role": "outer",
+          "sizeTier": "medium",
+          "pixels": 3206,
+          "quadrant": "ul",
+          "distNorm": 0.714,
+          "centralFraction35": 0
+        }
+      ],
+      "trueCentral": [
+        {
+          "id": "ul:1084:1208:10723",
+          "role": "medium",
+          "sizeTier": "large",
+          "pixels": 10723,
+          "quadrant": "ul",
+          "distNorm": 0.278,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ll:1279:1603:13673",
+          "role": "near",
+          "sizeTier": "large",
+          "pixels": 13673,
+          "quadrant": "ll",
+          "distNorm": 0.4,
+          "centralFraction35": 0
+        }
+      ],
+      "outerDark": [
+        {
+          "id": "ul:1279:778:14435",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 14435,
+          "quadrant": "ul",
+          "distNorm": 0.669,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ul:1277:717:11073",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 11073,
+          "quadrant": "ul",
+          "distNorm": 0.748,
+          "centralFraction35": 0
+        }
+      ]
+    }
+  },
+  "consecutiveOverlap": {
+    "a-b": {
+      "brightRegionOverlapPercent": 0,
+      "brightPixelOverlapPercent": 0,
+      "trueCentralRegionOverlapPercent": 0,
+      "trueCentralPixelOverlapPercent": 0,
+      "outerDarkRegionOverlapPercent": 0,
+      "outerDarkPixelOverlapPercent": 0
+    },
+    "b-c": {
+      "brightRegionOverlapPercent": 0,
+      "brightPixelOverlapPercent": 0,
+      "trueCentralRegionOverlapPercent": 0,
+      "trueCentralPixelOverlapPercent": 0,
+      "outerDarkRegionOverlapPercent": 0,
+      "outerDarkPixelOverlapPercent": 0
+    },
+    "c-d": {
+      "brightRegionOverlapPercent": 0,
+      "brightPixelOverlapPercent": 0,
+      "trueCentralRegionOverlapPercent": 0,
+      "trueCentralPixelOverlapPercent": 0,
+      "outerDarkRegionOverlapPercent": 0,
+      "outerDarkPixelOverlapPercent": 0
+    }
+  }
+}

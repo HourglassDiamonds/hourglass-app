@@ -4,6 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:lan": "next dev -H 0.0.0.0",
+    "dev:https": "next dev -H 0.0.0.0 --experimental-https --experimental-https-cert ./.cert/cert.pem --experimental-https-key ./.cert/key.pem",
+    "certs:lan": "node scripts/generate-shape-studio-https-certs.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
@@ -11,6 +14,8 @@
     "generate:diamond-studio-og": "node scripts/generate-diamond-studio-og.mjs",
     "generate:diamond-intelligence-og": "node scripts/generate-diamond-intelligence-og.mjs",
     "generate:homepage-og": "node scripts/generate-homepage-og.mjs",
+    "generate:diamond-cad-assets": "node scripts/generate-diamond-cad-assets.mjs",
+    "test:diamond-studio": "npx tsx --test app/diamond-studio/components/diamond-cad.test.ts",
     "intelligence:google-oauth": "node scripts/google-oauth-setup.mjs",
     "test:igi": "npx tsx --test lib/calibration-library/lg773657228.regression.test.ts lib/calibration-library/igi-diagram-image-ocr.test.ts lib/diamond-intelligence/igi-natural-pdf-regression.test.ts",
     "test:gia": "npx tsx --test lib/calibration-library/gia2527039693.regression.test.ts lib/calibration-library/gia-facsimile-image-ocr.test.ts lib/calibration-library/gia-facsimile-calibration-eligibility.test.ts lib/calibration-library/parsers/gia/gia-report-style.test.ts",

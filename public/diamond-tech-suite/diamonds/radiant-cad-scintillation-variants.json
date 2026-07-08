@@ -1,0 +1,561 @@
+{
+  "shapeId": "radiant",
+  "profile": "brilliant",
+  "source": "diamond-tech-suite/diamonds/radiant-cad-pop.png",
+  "canvas": "2560x2560",
+  "alphaPreserved": true,
+  "brightLuminanceRange": [
+    225,
+    254
+  ],
+  "darkLuminanceRange": [
+    70,
+    205
+  ],
+  "trueCentralLuminanceRange": [
+    85,
+    215
+  ],
+  "trueCentralCentroidRange": [
+    0.05,
+    0.24
+  ],
+  "trueCentralPixelRadius": 0.225,
+  "brightLiftRgb": 15,
+  "outerDarkLuminanceMultiplier": 0.83,
+  "trueCentralDarkLuminanceMultiplier": 0.86,
+  "regionExpandRadiusPx": 10,
+  "centralRegionExpandRadiusPx": 12,
+  "girdleInsetPx": 6,
+  "featherRadiusPx": 1,
+  "brightRegionPool": 206,
+  "darkRegionPool": 371,
+  "trueCentralRegionPool": 23,
+  "nearCentralRegionPool": 18,
+  "patterns": {
+    "a": {
+      "file": "/diamond-tech-suite/diamonds/radiant-cad-scintillation-a.png",
+      "centralMode": "strong",
+      "brightRegions": 4,
+      "trueCentralRegions": 2,
+      "outerDarkRegions": 4,
+      "regionTiers": {
+        "bright": {
+          "small": 0,
+          "medium": 0,
+          "large": 4
+        },
+        "trueCentral": {
+          "small": 0,
+          "medium": 0,
+          "large": 2
+        },
+        "outerDark": {
+          "small": 0,
+          "medium": 0,
+          "large": 4
+        }
+      },
+      "coverage": {
+        "brightPercent": 2.68,
+        "trueCentralPercent": 0.73,
+        "outerDarkPercent": 2.84,
+        "totalPercent": 6.25,
+        "changedPercentCentral60Diameter": 12.87,
+        "changedPercentCentral35Diameter": 5.16,
+        "changedOpaquePercent": 5.67
+      },
+      "bright": [
+        {
+          "id": "ll:1107:1626:4926",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 4926,
+          "quadrant": "ll",
+          "distNorm": 0.448,
+          "centralFraction35": 0
+        },
+        {
+          "id": "lr:1503:1655:4850",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 4850,
+          "quadrant": "lr",
+          "distNorm": 0.508,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ll:938:1496:3972",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 3972,
+          "quadrant": "ll",
+          "distNorm": 0.474,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ul:973:1011:3290",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 3290,
+          "quadrant": "ul",
+          "distNorm": 0.494,
+          "centralFraction35": 0
+        }
+      ],
+      "trueCentral": [
+        {
+          "id": "ul:1128:1270:2674",
+          "role": "large",
+          "sizeTier": "large",
+          "pixels": 2674,
+          "quadrant": "ul",
+          "distNorm": 0.182,
+          "centralFraction35": 0.424
+        },
+        {
+          "id": "ll:1125:1313:2401",
+          "role": "medium",
+          "sizeTier": "large",
+          "pixels": 2401,
+          "quadrant": "ll",
+          "distNorm": 0.185,
+          "centralFraction35": 0.337
+        }
+      ],
+      "outerDark": [
+        {
+          "id": "lr:1663:1619:4786",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 4786,
+          "quadrant": "lr",
+          "distNorm": 0.6,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ll:1123:1780:4521",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 4521,
+          "quadrant": "ll",
+          "distNorm": 0.611,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ll:1114:1881:4132",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 4132,
+          "quadrant": "ll",
+          "distNorm": 0.729,
+          "centralFraction35": 0
+        },
+        {
+          "id": "lr:1765:1804:4102",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 4102,
+          "quadrant": "lr",
+          "distNorm": 0.841,
+          "centralFraction35": 0
+        }
+      ]
+    },
+    "b": {
+      "file": "/diamond-tech-suite/diamonds/radiant-cad-scintillation-b.png",
+      "centralMode": "subtle",
+      "brightRegions": 4,
+      "trueCentralRegions": 2,
+      "outerDarkRegions": 3,
+      "regionTiers": {
+        "bright": {
+          "small": 0,
+          "medium": 0,
+          "large": 4
+        },
+        "trueCentral": {
+          "small": 0,
+          "medium": 0,
+          "large": 2
+        },
+        "outerDark": {
+          "small": 0,
+          "medium": 0,
+          "large": 3
+        }
+      },
+      "coverage": {
+        "brightPercent": 2.11,
+        "trueCentralPercent": 0.91,
+        "outerDarkPercent": 1.8,
+        "totalPercent": 4.82,
+        "changedPercentCentral60Diameter": 18.07,
+        "changedPercentCentral35Diameter": 6.96,
+        "changedOpaquePercent": 4.63
+      },
+      "bright": [
+        {
+          "id": "ll:881:1661:3137",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 3137,
+          "quadrant": "ll",
+          "distNorm": 0.647,
+          "centralFraction35": 0
+        },
+        {
+          "id": "lr:1580:1555:3112",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 3112,
+          "quadrant": "lr",
+          "distNorm": 0.476,
+          "centralFraction35": 0
+        },
+        {
+          "id": "lr:1393:1821:2906",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 2906,
+          "quadrant": "lr",
+          "distNorm": 0.644,
+          "centralFraction35": 0
+        },
+        {
+          "id": "lr:1560:1724:2330",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 2330,
+          "quadrant": "lr",
+          "distNorm": 0.614,
+          "centralFraction35": 0
+        }
+      ],
+      "trueCentral": [
+        {
+          "id": "ur:1421:1271:1195",
+          "role": "medium",
+          "sizeTier": "large",
+          "pixels": 1195,
+          "quadrant": "ur",
+          "distNorm": 0.17,
+          "centralFraction35": 0.59
+        },
+        {
+          "id": "lr:1385:1452:3440",
+          "role": "near",
+          "sizeTier": "large",
+          "pixels": 3440,
+          "quadrant": "lr",
+          "distNorm": 0.229,
+          "centralFraction35": 0.184
+        }
+      ],
+      "outerDark": [
+        {
+          "id": "lr:1702:1798:4062",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 4062,
+          "quadrant": "lr",
+          "distNorm": 0.786,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ur:1531:727:3989",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 3989,
+          "quadrant": "ur",
+          "distNorm": 0.735,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ll:978:1638:3770",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 3770,
+          "quadrant": "ll",
+          "distNorm": 0.547,
+          "centralFraction35": 0
+        }
+      ]
+    },
+    "c": {
+      "file": "/diamond-tech-suite/diamonds/radiant-cad-scintillation-c.png",
+      "centralMode": "strong",
+      "brightRegions": 4,
+      "trueCentralRegions": 2,
+      "outerDarkRegions": 3,
+      "regionTiers": {
+        "bright": {
+          "small": 0,
+          "medium": 0,
+          "large": 4
+        },
+        "trueCentral": {
+          "small": 0,
+          "medium": 0,
+          "large": 2
+        },
+        "outerDark": {
+          "small": 0,
+          "medium": 0,
+          "large": 3
+        }
+      },
+      "coverage": {
+        "brightPercent": 2.68,
+        "trueCentralPercent": 0.69,
+        "outerDarkPercent": 2.1,
+        "totalPercent": 5.48,
+        "changedPercentCentral60Diameter": 14.16,
+        "changedPercentCentral35Diameter": 5.34,
+        "changedOpaquePercent": 4.9
+      },
+      "bright": [
+        {
+          "id": "ll:1107:1626:4926",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 4926,
+          "quadrant": "ll",
+          "distNorm": 0.448,
+          "centralFraction35": 0
+        },
+        {
+          "id": "lr:1503:1655:4850",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 4850,
+          "quadrant": "lr",
+          "distNorm": 0.508,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ll:938:1496:3972",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 3972,
+          "quadrant": "ll",
+          "distNorm": 0.474,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ul:973:1011:3290",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 3290,
+          "quadrant": "ul",
+          "distNorm": 0.494,
+          "centralFraction35": 0
+        }
+      ],
+      "trueCentral": [
+        {
+          "id": "lr:1360:1419:1499",
+          "role": "large",
+          "sizeTier": "large",
+          "pixels": 1499,
+          "quadrant": "lr",
+          "distNorm": 0.179,
+          "centralFraction35": 0.422
+        },
+        {
+          "id": "ll:1194:1428:1425",
+          "role": "medium",
+          "sizeTier": "large",
+          "pixels": 1425,
+          "quadrant": "ll",
+          "distNorm": 0.192,
+          "centralFraction35": 0.262
+        }
+      ],
+      "outerDark": [
+        {
+          "id": "lr:1663:1619:4786",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 4786,
+          "quadrant": "lr",
+          "distNorm": 0.6,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ll:1123:1780:4521",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 4521,
+          "quadrant": "ll",
+          "distNorm": 0.611,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ll:1114:1881:4132",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 4132,
+          "quadrant": "ll",
+          "distNorm": 0.729,
+          "centralFraction35": 0
+        }
+      ]
+    },
+    "d": {
+      "file": "/diamond-tech-suite/diamonds/radiant-cad-scintillation-d.png",
+      "centralMode": "subtle",
+      "brightRegions": 4,
+      "trueCentralRegions": 2,
+      "outerDarkRegions": 4,
+      "regionTiers": {
+        "bright": {
+          "small": 0,
+          "medium": 0,
+          "large": 4
+        },
+        "trueCentral": {
+          "small": 0,
+          "medium": 0,
+          "large": 2
+        },
+        "outerDark": {
+          "small": 0,
+          "medium": 0,
+          "large": 4
+        }
+      },
+      "coverage": {
+        "brightPercent": 2.11,
+        "trueCentralPercent": 0.98,
+        "outerDarkPercent": 2.58,
+        "totalPercent": 5.67,
+        "changedPercentCentral60Diameter": 9.55,
+        "changedPercentCentral35Diameter": 2.23,
+        "changedOpaquePercent": 5.48
+      },
+      "bright": [
+        {
+          "id": "ll:881:1661:3137",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 3137,
+          "quadrant": "ll",
+          "distNorm": 0.647,
+          "centralFraction35": 0
+        },
+        {
+          "id": "lr:1580:1555:3112",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 3112,
+          "quadrant": "lr",
+          "distNorm": 0.476,
+          "centralFraction35": 0
+        },
+        {
+          "id": "lr:1393:1821:2906",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 2906,
+          "quadrant": "lr",
+          "distNorm": 0.644,
+          "centralFraction35": 0
+        },
+        {
+          "id": "lr:1560:1724:2330",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 2330,
+          "quadrant": "lr",
+          "distNorm": 0.614,
+          "centralFraction35": 0
+        }
+      ],
+      "trueCentral": [
+        {
+          "id": "lr:1440:1319:2719",
+          "role": "medium",
+          "sizeTier": "large",
+          "pixels": 2719,
+          "quadrant": "lr",
+          "distNorm": 0.194,
+          "centralFraction35": 0.153
+        },
+        {
+          "id": "lr:1534:1378:3105",
+          "role": "near",
+          "sizeTier": "large",
+          "pixels": 3105,
+          "quadrant": "lr",
+          "distNorm": 0.32,
+          "centralFraction35": 0
+        }
+      ],
+      "outerDark": [
+        {
+          "id": "lr:1331:1650:4389",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 4389,
+          "quadrant": "lr",
+          "distNorm": 0.431,
+          "centralFraction35": 0
+        },
+        {
+          "id": "lr:1765:1804:4102",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 4102,
+          "quadrant": "lr",
+          "distNorm": 0.841,
+          "centralFraction35": 0
+        },
+        {
+          "id": "lr:1702:1798:4062",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 4062,
+          "quadrant": "lr",
+          "distNorm": 0.786,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ur:1531:727:3989",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 3989,
+          "quadrant": "ur",
+          "distNorm": 0.735,
+          "centralFraction35": 0
+        }
+      ]
+    }
+  },
+  "consecutiveOverlap": {
+    "a-b": {
+      "brightRegionOverlapPercent": 0,
+      "brightPixelOverlapPercent": 0,
+      "trueCentralRegionOverlapPercent": 0,
+      "trueCentralPixelOverlapPercent": 0,
+      "outerDarkRegionOverlapPercent": 0,
+      "outerDarkPixelOverlapPercent": 0
+    },
+    "b-c": {
+      "brightRegionOverlapPercent": 0,
+      "brightPixelOverlapPercent": 0,
+      "trueCentralRegionOverlapPercent": 0,
+      "trueCentralPixelOverlapPercent": 51.3,
+      "outerDarkRegionOverlapPercent": 0,
+      "outerDarkPixelOverlapPercent": 0
+    },
+    "c-d": {
+      "brightRegionOverlapPercent": 0,
+      "brightPixelOverlapPercent": 0,
+      "trueCentralRegionOverlapPercent": 0,
+      "trueCentralPixelOverlapPercent": 0,
+      "outerDarkRegionOverlapPercent": 0,
+      "outerDarkPixelOverlapPercent": 0
+    }
+  }
+}

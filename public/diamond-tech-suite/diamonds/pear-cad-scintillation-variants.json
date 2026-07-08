@@ -1,0 +1,561 @@
+{
+  "shapeId": "pear",
+  "profile": "brilliant",
+  "source": "diamond-tech-suite/diamonds/pear-cad-pop.png",
+  "canvas": "2560x2560",
+  "alphaPreserved": true,
+  "brightLuminanceRange": [
+    225,
+    254
+  ],
+  "darkLuminanceRange": [
+    70,
+    205
+  ],
+  "trueCentralLuminanceRange": [
+    85,
+    215
+  ],
+  "trueCentralCentroidRange": [
+    0.05,
+    0.24
+  ],
+  "trueCentralPixelRadius": 0.225,
+  "brightLiftRgb": 15,
+  "outerDarkLuminanceMultiplier": 0.83,
+  "trueCentralDarkLuminanceMultiplier": 0.86,
+  "regionExpandRadiusPx": 10,
+  "centralRegionExpandRadiusPx": 12,
+  "girdleInsetPx": 6,
+  "featherRadiusPx": 1,
+  "brightRegionPool": 325,
+  "darkRegionPool": 380,
+  "trueCentralRegionPool": 21,
+  "nearCentralRegionPool": 20,
+  "patterns": {
+    "a": {
+      "file": "/diamond-tech-suite/diamonds/pear-cad-scintillation-a.png",
+      "centralMode": "strong",
+      "brightRegions": 4,
+      "trueCentralRegions": 2,
+      "outerDarkRegions": 4,
+      "regionTiers": {
+        "bright": {
+          "small": 0,
+          "medium": 0,
+          "large": 4
+        },
+        "trueCentral": {
+          "small": 0,
+          "medium": 0,
+          "large": 2
+        },
+        "outerDark": {
+          "small": 0,
+          "medium": 0,
+          "large": 4
+        }
+      },
+      "coverage": {
+        "brightPercent": 2.37,
+        "trueCentralPercent": 1.39,
+        "outerDarkPercent": 2.1,
+        "totalPercent": 5.67,
+        "changedPercentCentral60Diameter": 26.1,
+        "changedPercentCentral35Diameter": 13.34,
+        "changedOpaquePercent": 5.31
+      },
+      "bright": [
+        {
+          "id": "ll:858:1586:3802",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 3802,
+          "quadrant": "ll",
+          "distNorm": 0.505,
+          "centralFraction35": 0
+        },
+        {
+          "id": "lr:1450:1730:3149",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 3149,
+          "quadrant": "lr",
+          "distNorm": 0.448,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ul:1272:536:2586",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 2586,
+          "quadrant": "ul",
+          "distNorm": 0.802,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ur:1531:898:2324",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 2324,
+          "quadrant": "ur",
+          "distNorm": 0.503,
+          "centralFraction35": 0
+        }
+      ],
+      "trueCentral": [
+        {
+          "id": "ul:1129:1296:5087",
+          "role": "large",
+          "sizeTier": "large",
+          "pixels": 5087,
+          "quadrant": "ul",
+          "distNorm": 0.156,
+          "centralFraction35": 0.62
+        },
+        {
+          "id": "ul:1177:1170:3860",
+          "role": "medium",
+          "sizeTier": "large",
+          "pixels": 3860,
+          "quadrant": "ul",
+          "distNorm": 0.188,
+          "centralFraction35": 0.212
+        }
+      ],
+      "outerDark": [
+        {
+          "id": "lr:1725:1392:3607",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 3607,
+          "quadrant": "lr",
+          "distNorm": 0.459,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ll:1023:1662:3488",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 3488,
+          "quadrant": "ll",
+          "distNorm": 0.431,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ul:1273:568:2148",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 2148,
+          "quadrant": "ul",
+          "distNorm": 0.769,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ul:977:903:2033",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 2033,
+          "quadrant": "ul",
+          "distNorm": 0.527,
+          "centralFraction35": 0
+        }
+      ]
+    },
+    "b": {
+      "file": "/diamond-tech-suite/diamonds/pear-cad-scintillation-b.png",
+      "centralMode": "subtle",
+      "brightRegions": 4,
+      "trueCentralRegions": 2,
+      "outerDarkRegions": 3,
+      "regionTiers": {
+        "bright": {
+          "small": 0,
+          "medium": 0,
+          "large": 4
+        },
+        "trueCentral": {
+          "small": 0,
+          "medium": 0,
+          "large": 2
+        },
+        "outerDark": {
+          "small": 0,
+          "medium": 0,
+          "large": 3
+        }
+      },
+      "coverage": {
+        "brightPercent": 1.98,
+        "trueCentralPercent": 1.36,
+        "outerDarkPercent": 1.4,
+        "totalPercent": 4.74,
+        "changedPercentCentral60Diameter": 28.76,
+        "changedPercentCentral35Diameter": 5.2,
+        "changedOpaquePercent": 4.43
+      },
+      "bright": [
+        {
+          "id": "lr:1357:1711:2529",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 2529,
+          "quadrant": "lr",
+          "distNorm": 0.401,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ul:1028:898:2320",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 2320,
+          "quadrant": "ul",
+          "distNorm": 0.503,
+          "centralFraction35": 0
+        },
+        {
+          "id": "lr:1617:1725:2201",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 2201,
+          "quadrant": "lr",
+          "distNorm": 0.533,
+          "centralFraction35": 0
+        },
+        {
+          "id": "lr:1737:1621:2143",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 2143,
+          "quadrant": "lr",
+          "distNorm": 0.555,
+          "centralFraction35": 0
+        }
+      ],
+      "trueCentral": [
+        {
+          "id": "ur:1381:1171:3819",
+          "role": "medium",
+          "sizeTier": "large",
+          "pixels": 3819,
+          "quadrant": "ur",
+          "distNorm": 0.187,
+          "centralFraction35": 0.219
+        },
+        {
+          "id": "ur:1395:1100:4894",
+          "role": "near",
+          "sizeTier": "large",
+          "pixels": 4894,
+          "quadrant": "ur",
+          "distNorm": 0.257,
+          "centralFraction35": 0
+        }
+      ],
+      "outerDark": [
+        {
+          "id": "ul:868:1143:2042",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 2042,
+          "quadrant": "ul",
+          "distNorm": 0.457,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ul:1276:651:1955",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 1955,
+          "quadrant": "ul",
+          "distNorm": 0.685,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ur:1587:893:1896",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 1896,
+          "quadrant": "ur",
+          "distNorm": 0.538,
+          "centralFraction35": 0
+        }
+      ]
+    },
+    "c": {
+      "file": "/diamond-tech-suite/diamonds/pear-cad-scintillation-c.png",
+      "centralMode": "strong",
+      "brightRegions": 4,
+      "trueCentralRegions": 2,
+      "outerDarkRegions": 3,
+      "regionTiers": {
+        "bright": {
+          "small": 0,
+          "medium": 0,
+          "large": 4
+        },
+        "trueCentral": {
+          "small": 0,
+          "medium": 0,
+          "large": 2
+        },
+        "outerDark": {
+          "small": 0,
+          "medium": 0,
+          "large": 3
+        }
+      },
+      "coverage": {
+        "brightPercent": 2.37,
+        "trueCentralPercent": 1.07,
+        "outerDarkPercent": 1.57,
+        "totalPercent": 4.82,
+        "changedPercentCentral60Diameter": 23.93,
+        "changedPercentCentral35Diameter": 19.85,
+        "changedOpaquePercent": 4.45
+      },
+      "bright": [
+        {
+          "id": "ll:858:1586:3802",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 3802,
+          "quadrant": "ll",
+          "distNorm": 0.505,
+          "centralFraction35": 0
+        },
+        {
+          "id": "lr:1450:1730:3149",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 3149,
+          "quadrant": "lr",
+          "distNorm": 0.448,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ul:1272:536:2586",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 2586,
+          "quadrant": "ul",
+          "distNorm": 0.802,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ur:1531:898:2324",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 2324,
+          "quadrant": "ur",
+          "distNorm": 0.503,
+          "centralFraction35": 0
+        }
+      ],
+      "trueCentral": [
+        {
+          "id": "ur:1292:1226:3089",
+          "role": "large",
+          "sizeTier": "large",
+          "pixels": 3089,
+          "quadrant": "ur",
+          "distNorm": 0.101,
+          "centralFraction35": 0.903
+        },
+        {
+          "id": "ll:1134:1350:1831",
+          "role": "medium",
+          "sizeTier": "large",
+          "pixels": 1831,
+          "quadrant": "ll",
+          "distNorm": 0.15,
+          "centralFraction35": 0.96
+        }
+      ],
+      "outerDark": [
+        {
+          "id": "lr:1725:1392:3607",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 3607,
+          "quadrant": "lr",
+          "distNorm": 0.459,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ul:1273:568:2148",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 2148,
+          "quadrant": "ul",
+          "distNorm": 0.769,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ul:977:903:2033",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 2033,
+          "quadrant": "ul",
+          "distNorm": 0.527,
+          "centralFraction35": 0
+        }
+      ]
+    },
+    "d": {
+      "file": "/diamond-tech-suite/diamonds/pear-cad-scintillation-d.png",
+      "centralMode": "subtle",
+      "brightRegions": 4,
+      "trueCentralRegions": 2,
+      "outerDarkRegions": 4,
+      "regionTiers": {
+        "bright": {
+          "small": 0,
+          "medium": 0,
+          "large": 4
+        },
+        "trueCentral": {
+          "small": 0,
+          "medium": 0,
+          "large": 2
+        },
+        "outerDark": {
+          "small": 0,
+          "medium": 0,
+          "large": 4
+        }
+      },
+      "coverage": {
+        "brightPercent": 1.98,
+        "trueCentralPercent": 1.27,
+        "outerDarkPercent": 1.93,
+        "totalPercent": 5.18,
+        "changedPercentCentral60Diameter": 15.03,
+        "changedPercentCentral35Diameter": 11.64,
+        "changedOpaquePercent": 4.87
+      },
+      "bright": [
+        {
+          "id": "lr:1357:1711:2529",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 2529,
+          "quadrant": "lr",
+          "distNorm": 0.401,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ul:1028:898:2320",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 2320,
+          "quadrant": "ul",
+          "distNorm": 0.503,
+          "centralFraction35": 0
+        },
+        {
+          "id": "lr:1617:1725:2201",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 2201,
+          "quadrant": "lr",
+          "distNorm": 0.533,
+          "centralFraction35": 0
+        },
+        {
+          "id": "lr:1737:1621:2143",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 2143,
+          "quadrant": "lr",
+          "distNorm": 0.555,
+          "centralFraction35": 0
+        }
+      ],
+      "trueCentral": [
+        {
+          "id": "ul:1265:1232:3332",
+          "role": "medium",
+          "sizeTier": "large",
+          "pixels": 3332,
+          "quadrant": "ul",
+          "distNorm": 0.095,
+          "centralFraction35": 0.953
+        },
+        {
+          "id": "ur:1437:1049:3618",
+          "role": "near",
+          "sizeTier": "large",
+          "pixels": 3618,
+          "quadrant": "ur",
+          "distNorm": 0.323,
+          "centralFraction35": 0
+        }
+      ],
+      "outerDark": [
+        {
+          "id": "ll:1023:1662:3488",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 3488,
+          "quadrant": "ll",
+          "distNorm": 0.431,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ul:868:1143:2042",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 2042,
+          "quadrant": "ul",
+          "distNorm": 0.457,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ul:1276:651:1955",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 1955,
+          "quadrant": "ul",
+          "distNorm": 0.685,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ur:1587:893:1896",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 1896,
+          "quadrant": "ur",
+          "distNorm": 0.538,
+          "centralFraction35": 0
+        }
+      ]
+    }
+  },
+  "consecutiveOverlap": {
+    "a-b": {
+      "brightRegionOverlapPercent": 0,
+      "brightPixelOverlapPercent": 0,
+      "trueCentralRegionOverlapPercent": 0,
+      "trueCentralPixelOverlapPercent": 0,
+      "outerDarkRegionOverlapPercent": 0,
+      "outerDarkPixelOverlapPercent": 0
+    },
+    "b-c": {
+      "brightRegionOverlapPercent": 0,
+      "brightPixelOverlapPercent": 0,
+      "trueCentralRegionOverlapPercent": 0,
+      "trueCentralPixelOverlapPercent": 0,
+      "outerDarkRegionOverlapPercent": 0,
+      "outerDarkPixelOverlapPercent": 0
+    },
+    "c-d": {
+      "brightRegionOverlapPercent": 0,
+      "brightPixelOverlapPercent": 0,
+      "trueCentralRegionOverlapPercent": 0,
+      "trueCentralPixelOverlapPercent": 0,
+      "outerDarkRegionOverlapPercent": 0,
+      "outerDarkPixelOverlapPercent": 0
+    }
+  }
+}

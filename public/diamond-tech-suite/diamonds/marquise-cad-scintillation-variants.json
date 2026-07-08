@@ -1,0 +1,597 @@
+{
+  "shapeId": "marquise",
+  "profile": "brilliant",
+  "source": "diamond-tech-suite/diamonds/marquise-cad-pop.png",
+  "canvas": "2560x2560",
+  "alphaPreserved": true,
+  "brightLuminanceRange": [
+    225,
+    254
+  ],
+  "darkLuminanceRange": [
+    70,
+    205
+  ],
+  "trueCentralLuminanceRange": [
+    85,
+    215
+  ],
+  "trueCentralCentroidRange": [
+    0.05,
+    0.24
+  ],
+  "trueCentralPixelRadius": 0.225,
+  "brightLiftRgb": 15,
+  "outerDarkLuminanceMultiplier": 0.83,
+  "trueCentralDarkLuminanceMultiplier": 0.86,
+  "regionExpandRadiusPx": 10,
+  "centralRegionExpandRadiusPx": 12,
+  "girdleInsetPx": 6,
+  "featherRadiusPx": 1,
+  "brightRegionPool": 60,
+  "darkRegionPool": 188,
+  "trueCentralRegionPool": 13,
+  "nearCentralRegionPool": 20,
+  "patterns": {
+    "a": {
+      "file": "/diamond-tech-suite/diamonds/marquise-cad-scintillation-a.png",
+      "centralMode": "strong",
+      "brightRegions": 4,
+      "trueCentralRegions": 2,
+      "outerDarkRegions": 4,
+      "regionTiers": {
+        "bright": {
+          "small": 0,
+          "medium": 0,
+          "large": 4
+        },
+        "trueCentral": {
+          "small": 0,
+          "medium": 0,
+          "large": 2
+        },
+        "outerDark": {
+          "small": 0,
+          "medium": 0,
+          "large": 4
+        }
+      },
+      "coverage": {
+        "brightPercent": 1.57,
+        "trueCentralPercent": 1.2,
+        "outerDarkPercent": 2.3,
+        "totalPercent": 4.98,
+        "changedPercentCentral60Diameter": 26.14,
+        "changedPercentCentral35Diameter": 16.51,
+        "changedOpaquePercent": 4.6
+      },
+      "bright": [
+        {
+          "id": "lr:1280:1734:2854",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 2854,
+          "quadrant": "lr",
+          "distNorm": 0.451,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ll:919:1686:1684",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 1684,
+          "quadrant": "ll",
+          "distNorm": 0.545,
+          "centralFraction35": 0
+        },
+        {
+          "id": "lr:1640:1686:1629",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 1629,
+          "quadrant": "lr",
+          "distNorm": 0.545,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ul:1236:820:1325",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 1325,
+          "quadrant": "ul",
+          "distNorm": 0.48,
+          "centralFraction35": 0
+        }
+      ],
+      "trueCentral": [
+        {
+          "id": "ll:1181:1360:4422",
+          "role": "large",
+          "sizeTier": "large",
+          "pixels": 4422,
+          "quadrant": "ll",
+          "distNorm": 0.123,
+          "centralFraction35": 0.975
+        },
+        {
+          "id": "ul:1092:1265:3401",
+          "role": "medium",
+          "sizeTier": "large",
+          "pixels": 3401,
+          "quadrant": "ul",
+          "distNorm": 0.192,
+          "centralFraction35": 0.235
+        }
+      ],
+      "outerDark": [
+        {
+          "id": "ul:889:1062:4398",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 4398,
+          "quadrant": "ul",
+          "distNorm": 0.459,
+          "centralFraction35": 0
+        },
+        {
+          "id": "lr:1418:1694:3638",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 3638,
+          "quadrant": "lr",
+          "distNorm": 0.434,
+          "centralFraction35": 0
+        },
+        {
+          "id": "lr:1666:1614:2658",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 2658,
+          "quadrant": "lr",
+          "distNorm": 0.513,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ll:1228:2053:2436",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 2436,
+          "quadrant": "ll",
+          "distNorm": 0.777,
+          "centralFraction35": 0
+        }
+      ]
+    },
+    "b": {
+      "file": "/diamond-tech-suite/diamonds/marquise-cad-scintillation-b.png",
+      "centralMode": "subtle",
+      "brightRegions": 5,
+      "trueCentralRegions": 2,
+      "outerDarkRegions": 5,
+      "regionTiers": {
+        "bright": {
+          "small": 0,
+          "medium": 0,
+          "large": 5
+        },
+        "trueCentral": {
+          "small": 0,
+          "medium": 0,
+          "large": 2
+        },
+        "outerDark": {
+          "small": 0,
+          "medium": 0,
+          "large": 5
+        }
+      },
+      "coverage": {
+        "brightPercent": 1.15,
+        "trueCentralPercent": 1.21,
+        "outerDarkPercent": 1.97,
+        "totalPercent": 4.32,
+        "changedPercentCentral60Diameter": 32.82,
+        "changedPercentCentral35Diameter": 9.76,
+        "changedOpaquePercent": 4.22
+      },
+      "bright": [
+        {
+          "id": "ur:1323:820:1314",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 1314,
+          "quadrant": "ur",
+          "distNorm": 0.48,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ul:1179:854:772",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 772,
+          "quadrant": "ul",
+          "distNorm": 0.454,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ur:1379:854:771",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 771,
+          "quadrant": "ur",
+          "distNorm": 0.454,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ur:1678:1032:603",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 603,
+          "quadrant": "ur",
+          "distNorm": 0.482,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ul:1252:1151:638",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 638,
+          "quadrant": "ul",
+          "distNorm": 0.144,
+          "centralFraction35": 0.958
+        }
+      ],
+      "trueCentral": [
+        {
+          "id": "ur:1467:1265:3383",
+          "role": "medium",
+          "sizeTier": "large",
+          "pixels": 3383,
+          "quadrant": "ur",
+          "distNorm": 0.192,
+          "centralFraction35": 0.237
+        },
+        {
+          "id": "ll:1252:1529:2789",
+          "role": "near",
+          "sizeTier": "large",
+          "pixels": 2789,
+          "quadrant": "ll",
+          "distNorm": 0.245,
+          "centralFraction35": 0.019
+        }
+      ],
+      "outerDark": [
+        {
+          "id": "lr:1314:2120:1655",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 1655,
+          "quadrant": "lr",
+          "distNorm": 0.844,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ur:1290:422:1547",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 1547,
+          "quadrant": "ur",
+          "distNorm": 0.882,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ul:1093:624:1050",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 1050,
+          "quadrant": "ul",
+          "distNorm": 0.702,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ll:1137:1698:3332",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 3332,
+          "quadrant": "ll",
+          "distNorm": 0.439,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ll:865:1368:3121",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 3121,
+          "quadrant": "ll",
+          "distNorm": 0.428,
+          "centralFraction35": 0
+        }
+      ]
+    },
+    "c": {
+      "file": "/diamond-tech-suite/diamonds/marquise-cad-scintillation-c.png",
+      "centralMode": "strong",
+      "brightRegions": 4,
+      "trueCentralRegions": 2,
+      "outerDarkRegions": 3,
+      "regionTiers": {
+        "bright": {
+          "small": 0,
+          "medium": 0,
+          "large": 4
+        },
+        "trueCentral": {
+          "small": 0,
+          "medium": 0,
+          "large": 2
+        },
+        "outerDark": {
+          "small": 0,
+          "medium": 0,
+          "large": 3
+        }
+      },
+      "coverage": {
+        "brightPercent": 1.57,
+        "trueCentralPercent": 1.39,
+        "outerDarkPercent": 1.65,
+        "totalPercent": 4.51,
+        "changedPercentCentral60Diameter": 33.6,
+        "changedPercentCentral35Diameter": 25.12,
+        "changedOpaquePercent": 4.14
+      },
+      "bright": [
+        {
+          "id": "lr:1280:1734:2854",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 2854,
+          "quadrant": "lr",
+          "distNorm": 0.451,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ll:919:1686:1684",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 1684,
+          "quadrant": "ll",
+          "distNorm": 0.545,
+          "centralFraction35": 0
+        },
+        {
+          "id": "lr:1640:1686:1629",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 1629,
+          "quadrant": "lr",
+          "distNorm": 0.545,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ul:1236:820:1325",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 1325,
+          "quadrant": "ul",
+          "distNorm": 0.48,
+          "centralFraction35": 0
+        }
+      ],
+      "trueCentral": [
+        {
+          "id": "lr:1384:1363:4998",
+          "role": "large",
+          "sizeTier": "large",
+          "pixels": 4998,
+          "quadrant": "lr",
+          "distNorm": 0.13,
+          "centralFraction35": 0.897
+        },
+        {
+          "id": "ll:1235:1423:3386",
+          "role": "medium",
+          "sizeTier": "large",
+          "pixels": 3386,
+          "quadrant": "ll",
+          "distNorm": 0.143,
+          "centralFraction35": 0.685
+        }
+      ],
+      "outerDark": [
+        {
+          "id": "ul:889:1062:4398",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 4398,
+          "quadrant": "ul",
+          "distNorm": 0.459,
+          "centralFraction35": 0
+        },
+        {
+          "id": "lr:1666:1614:2658",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 2658,
+          "quadrant": "lr",
+          "distNorm": 0.513,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ll:1228:2053:2436",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 2436,
+          "quadrant": "ll",
+          "distNorm": 0.777,
+          "centralFraction35": 0
+        }
+      ]
+    },
+    "d": {
+      "file": "/diamond-tech-suite/diamonds/marquise-cad-scintillation-d.png",
+      "centralMode": "subtle",
+      "brightRegions": 5,
+      "trueCentralRegions": 2,
+      "outerDarkRegions": 4,
+      "regionTiers": {
+        "bright": {
+          "small": 0,
+          "medium": 1,
+          "large": 4
+        },
+        "trueCentral": {
+          "small": 0,
+          "medium": 0,
+          "large": 2
+        },
+        "outerDark": {
+          "small": 0,
+          "medium": 0,
+          "large": 4
+        }
+      },
+      "coverage": {
+        "brightPercent": 1.08,
+        "trueCentralPercent": 1.18,
+        "outerDarkPercent": 1.87,
+        "totalPercent": 4.13,
+        "changedPercentCentral60Diameter": 21.7,
+        "changedPercentCentral35Diameter": 10.72,
+        "changedOpaquePercent": 4.03
+      },
+      "bright": [
+        {
+          "id": "ur:1323:820:1314",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 1314,
+          "quadrant": "ur",
+          "distNorm": 0.48,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ul:1179:854:772",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 772,
+          "quadrant": "ul",
+          "distNorm": 0.454,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ur:1379:854:771",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 771,
+          "quadrant": "ur",
+          "distNorm": 0.454,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ur:1678:1032:603",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 603,
+          "quadrant": "ur",
+          "distNorm": 0.482,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ur:1439:990:517",
+          "role": "outer",
+          "sizeTier": "medium",
+          "pixels": 517,
+          "quadrant": "ur",
+          "distNorm": 0.346,
+          "centralFraction35": 0
+        }
+      ],
+      "trueCentral": [
+        {
+          "id": "lr:1324:1423:3412",
+          "role": "medium",
+          "sizeTier": "large",
+          "pixels": 3412,
+          "quadrant": "lr",
+          "distNorm": 0.143,
+          "centralFraction35": 0.688
+        },
+        {
+          "id": "ur:1520:1106:2707",
+          "role": "near",
+          "sizeTier": "large",
+          "pixels": 2707,
+          "quadrant": "ur",
+          "distNorm": 0.308,
+          "centralFraction35": 0
+        }
+      ],
+      "outerDark": [
+        {
+          "id": "lr:1418:1694:3638",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 3638,
+          "quadrant": "lr",
+          "distNorm": 0.434,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ll:1137:1698:3332",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 3332,
+          "quadrant": "ll",
+          "distNorm": 0.439,
+          "centralFraction35": 0
+        },
+        {
+          "id": "lr:1314:2120:1655",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 1655,
+          "quadrant": "lr",
+          "distNorm": 0.844,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ur:1290:422:1547",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 1547,
+          "quadrant": "ur",
+          "distNorm": 0.882,
+          "centralFraction35": 0
+        }
+      ]
+    }
+  },
+  "consecutiveOverlap": {
+    "a-b": {
+      "brightRegionOverlapPercent": 0,
+      "brightPixelOverlapPercent": 0,
+      "trueCentralRegionOverlapPercent": 0,
+      "trueCentralPixelOverlapPercent": 0,
+      "outerDarkRegionOverlapPercent": 0,
+      "outerDarkPixelOverlapPercent": 0
+    },
+    "b-c": {
+      "brightRegionOverlapPercent": 0,
+      "brightPixelOverlapPercent": 0,
+      "trueCentralRegionOverlapPercent": 0,
+      "trueCentralPixelOverlapPercent": 0,
+      "outerDarkRegionOverlapPercent": 0,
+      "outerDarkPixelOverlapPercent": 0
+    },
+    "c-d": {
+      "brightRegionOverlapPercent": 0,
+      "brightPixelOverlapPercent": 0,
+      "trueCentralRegionOverlapPercent": 0,
+      "trueCentralPixelOverlapPercent": 0,
+      "outerDarkRegionOverlapPercent": 0,
+      "outerDarkPixelOverlapPercent": 0
+    }
+  }
+}

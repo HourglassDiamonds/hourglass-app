@@ -16,26 +16,14 @@ import {
 import { trackConsultationCtaClicked } from "@/lib/consultation-cta";
 import DiamondStudioEditorial from "./components/DiamondStudioEditorial";
 import {
-  ROUND_CAD_ASSET,
-  ROUND_CAD_VISIBLE_SCALE,
-} from "./components/round-cad-asset";
-import RoundCadScintillation from "./components/RoundCadScintillation";
-import { ROUND_CAD_ADJUST_HOLD_MS } from "./components/round-cad-light";
+  getDiamondCadAsset,
+  nextCadFallbackSrc,
+} from "./components/diamond-cad-assets";
+import DiamondCadScintillation from "./components/DiamondCadScintillation";
+import { CAD_ADJUST_HOLD_MS } from "./components/diamond-cad-light";
+import type { ShapeId } from "./components/diamond-cad-types";
 
-/* -------------------------------------------------------------------------- */
-/* Types & tables                                                             */
-/* -------------------------------------------------------------------------- */
-
-type ShapeId =
-  | "round"
-  | "oval"
-  | "cushion"
-  | "princess"
-  | "marquise"
-  | "pear"
-  | "emerald"
-  | "radiant"
-  | "asscher";
+export type { ShapeId };
 
 type StoneOrientation = "ns" | "ew";
 
@@ -1390,30 +1378,33 @@ function SuiteStyles() {
         transform:rotate(90deg);
         transform-origin:center center;
       }
-      .dts-diamond-stack--rbc-cad::before{
+      .dts-diamond-stack--cad::before{
         display:none;
       }
-      .dts-diamond-rbc-cad-frame{
+      .dts-diamond-cad-frame{
         position:absolute; inset:0;
-        transform:scale(var(--dts-rbc-visible-scale));
-        transform-origin:var(--dts-rbc-center-x) var(--dts-rbc-center-y);
-        clip-path:circle(49.5% at var(--dts-rbc-center-x) var(--dts-rbc-center-y));
-        -webkit-clip-path:circle(49.5% at var(--dts-rbc-center-x) var(--dts-rbc-center-y));
+        transform:scale(var(--dts-cad-visible-scale));
+        transform-origin:var(--dts-cad-center-x) var(--dts-cad-center-y);
       }
-      .dts-diamond-rbc-cad-inner{
+      /* Round retained circular clip from the reference CAD path; fancy shapes use alpha silhouette. */
+      .dts-diamond-cad-frame[data-cad-shadow="round"]{
+        clip-path:circle(49.5% at var(--dts-cad-center-x) var(--dts-cad-center-y));
+        -webkit-clip-path:circle(49.5% at var(--dts-cad-center-x) var(--dts-cad-center-y));
+      }
+      .dts-diamond-cad-inner{
         position:absolute; inset:0;
       }
-      .dts-diamond-rbc-cad-inner.dts-diamond-rbc-cad-inner--ew{
+      .dts-diamond-cad-inner.dts-diamond-cad-inner--ew{
         transform:rotate(90deg);
         transform-origin:center center;
       }
-      .dts-diamond-rbc-cad-inner .dts-diamond-face.dts-diamond-face--ew{
+      .dts-diamond-cad-inner .dts-diamond-face.dts-diamond-face--ew{
         transform:none;
       }
-      .dts-rbc-cad-layers{
+      .dts-cad-layers{
         position:absolute; inset:0;
       }
-      .dts-rbc-cad-contact-shadow{
+      .dts-cad-contact-shadow{
         position:absolute;
         left:50%;
         top:72%;
@@ -1429,34 +1420,44 @@ function SuiteStyles() {
         filter:blur(6px);
         opacity:1;
       }
-      .dts-diamond-rbc-cad-frame .dts-rbc-cad-base{
+      .dts-cad-contact-shadow[data-cad-shadow="square"]{
+        width:62%;
+        height:15%;
+        top:71%;
+      }
+      .dts-cad-contact-shadow[data-cad-shadow="elongated"]{
+        width:58%;
+        height:14%;
+        top:73%;
+      }
+      .dts-diamond-cad-frame .dts-cad-base{
         position:absolute; inset:0;
         width:100%; height:100%;
         z-index:1;
         filter:none;
       }
-      .dts-rbc-cad-scintillation{
+      .dts-cad-scintillation{
         position:absolute; inset:0;
         pointer-events:none;
         z-index:2;
       }
-      .dts-rbc-cad-variant-slot{
+      .dts-cad-variant-slot{
         position:absolute; inset:0;
         opacity:0;
         transition:opacity 340ms ease-out;
       }
-      .dts-rbc-cad-variant-slot.is-visible{
+      .dts-cad-variant-slot.is-visible{
         opacity:1;
         transition:opacity 190ms ease-in;
       }
-      .dts-rbc-cad-variant-face{
+      .dts-cad-variant-face{
         position:absolute; inset:0;
         width:100%; height:100%;
         object-fit:contain;
         display:block;
       }
       @media (prefers-reduced-motion: reduce){
-        .dts-rbc-cad-variant-slot{
+        .dts-cad-variant-slot{
           transition:opacity 180ms ease;
         }
       }
@@ -1797,7 +1798,7 @@ function SuiteStyles() {
             drop-shadow(0 2px 4px rgba(0,0,0,0.14))
             drop-shadow(0 1px 1px rgba(0,0,0,0.06));
         }
-        .dts-diamond-stack--rbc-cad .dts-rbc-cad-base{
+        .dts-diamond-stack--cad .dts-cad-base{
           filter:none;
         }
         .dts-layer-diamond{
@@ -2135,13 +2136,8 @@ const SHAPES: ShapeId[] = [
 /**
  * Per-shape PNG, label, nominal length÷width (MVP), and face-up mm helper.
  * Stage sizing uses {@link faceAxesForSizing}; render-only boost uses
- * {@link SHAPE_RENDER_VISUAL_COMP}.
+ * {@link SHAPE_RENDER_VISUAL_COMP}. CAD stage assets live in DIAMOND_CAD_ASSETS.
  */
-/** Optional hi-res stage PNGs (e.g. 3000×3000); thumbs keep using {@link SHAPE_SUITE_CONFIG}.image. */
-function stagePreviewImage(shapeId: ShapeId): string {
-  return `/diamond-tech-suite/diamonds/stage/${shapeId}.png`;
-}
-
 const SHAPE_SUITE_CONFIG: Record<
   ShapeId,
   {
@@ -2223,70 +2219,27 @@ const SHAPE_SUITE_CONFIG: Record<
 function DiamondStageFace({
   shapeId,
   orientation,
-  preferHiResStage,
   caratAdjusting,
   carat,
 }: {
   shapeId: ShapeId;
   orientation: StoneOrientation;
-  preferHiResStage: boolean;
   caratAdjusting: boolean;
   carat: number;
 }) {
-  const useRoundCad = shapeId === "round";
-  const legacySrc = SHAPE_SUITE_CONFIG[shapeId].image;
-  const standardSrc = useRoundCad ? ROUND_CAD_ASSET.src : legacySrc;
-  const hiResSrc = stagePreviewImage(shapeId);
-  const [faceSrc, setFaceSrc] = useState(standardSrc);
-  const [useHiRes, setUseHiRes] = useState(false);
+  const cad = getDiamondCadAsset(shapeId);
+  const [faceSrc, setFaceSrc] = useState(cad.src);
   const faceRef = useRef<HTMLImageElement>(null);
 
-  useEffect(() => {
-    setUseHiRes(false);
-    setFaceSrc(standardSrc);
-  }, [standardSrc, shapeId]);
+  const cadFrameStyle = {
+    "--dts-cad-visible-scale": cad.visibleScale,
+    "--dts-cad-center-x": `${cad.centerX * 100}%`,
+    "--dts-cad-center-y": `${cad.centerY * 100}%`,
+  } as React.CSSProperties;
 
-  const pickSrcAfterLoad = useCallback(() => {
-    if (useRoundCad) return;
-    const img = faceRef.current;
-    if (!img || !preferHiResStage || useHiRes) return;
-    if (img.naturalWidth < 1 || img.naturalHeight < 1) return;
-    const dpr = window.devicePixelRatio || 1;
-    const needW = img.clientWidth * dpr;
-    const needH = img.clientHeight * dpr;
-    const upscaling =
-      needW > img.naturalWidth * 0.98 || needH > img.naturalHeight * 0.98;
-    if (upscaling && faceSrc !== hiResSrc) {
-      setUseHiRes(true);
-      setFaceSrc(hiResSrc);
-    }
-  }, [useRoundCad, preferHiResStage, useHiRes, faceSrc, hiResSrc]);
-
-  useEffect(() => {
-    const img = faceRef.current;
-    if (!img) return;
-    if (img.complete) pickSrcAfterLoad();
-    else img.addEventListener("load", pickSrcAfterLoad);
-    window.addEventListener("resize", pickSrcAfterLoad);
-    return () => {
-      window.removeEventListener("resize", pickSrcAfterLoad);
-      img.removeEventListener("load", pickSrcAfterLoad);
-    };
-  }, [faceSrc, orientation, pickSrcAfterLoad]);
-
-  const cadFrameStyle = useRoundCad
-    ? ({
-        "--dts-rbc-visible-scale": ROUND_CAD_VISIBLE_SCALE,
-        "--dts-rbc-center-x": `${ROUND_CAD_ASSET.centerX * 100}%`,
-        "--dts-rbc-center-y": `${ROUND_CAD_ASSET.centerY * 100}%`,
-      } as React.CSSProperties)
-    : undefined;
-
-  const faceClass = useRoundCad
-    ? `dts-diamond-face dts-rbc-cad-base${
-        orientation === "ew" ? " dts-diamond-face--ew" : ""
-      }`
-    : `dts-diamond-face${orientation === "ew" ? " dts-diamond-face--ew" : ""}`;
+  const faceClass = `dts-diamond-face dts-cad-base${
+    orientation === "ew" ? " dts-diamond-face--ew" : ""
+  }`;
 
   const faceImg = (
     /* eslint-disable-next-line @next/next/no-img-element */
@@ -2295,52 +2248,38 @@ function DiamondStageFace({
       src={faceSrc}
       alt=""
       className={faceClass}
-      onLoad={pickSrcAfterLoad}
       onError={() => {
-        if (useRoundCad) {
-          setFaceSrc((prev) => {
-            if (prev === ROUND_CAD_ASSET.src) return ROUND_CAD_ASSET.originalSrc;
-            if (prev === ROUND_CAD_ASSET.originalSrc) {
-              return ROUND_CAD_ASSET.fallbackSrc;
-            }
-            return prev;
-          });
-          return;
-        }
-        if (useHiRes) {
-          setUseHiRes(false);
-          setFaceSrc(legacySrc);
-          return;
-        }
         setFaceSrc((prev) =>
-          prev === DIAMOND_SHAPE_FALLBACK ? prev : DIAMOND_SHAPE_FALLBACK,
+          nextCadFallbackSrc(prev, cad, DIAMOND_SHAPE_FALLBACK),
         );
       }}
     />
   );
 
   return (
-    <div
-      className={`dts-diamond-stack${useRoundCad ? " dts-diamond-stack--rbc-cad" : ""}`}
-      style={cadFrameStyle}
-    >
-      {useRoundCad ? (
-        <div className="dts-diamond-rbc-cad-frame">
-          <div
-            className={`dts-diamond-rbc-cad-inner${
-              orientation === "ew" ? " dts-diamond-rbc-cad-inner--ew" : ""
-            }`}
-          >
-            <div className="dts-rbc-cad-layers">
-              <div className="dts-rbc-cad-contact-shadow" aria-hidden />
-              {faceImg}
-              <RoundCadScintillation active={caratAdjusting} carat={carat} />
-            </div>
+    <div className="dts-diamond-stack dts-diamond-stack--cad" style={cadFrameStyle}>
+      <div className="dts-diamond-cad-frame" data-cad-shadow={cad.shadow}>
+        <div
+          className={`dts-diamond-cad-inner${
+            orientation === "ew" ? " dts-diamond-cad-inner--ew" : ""
+          }`}
+        >
+          <div className="dts-cad-layers">
+            <div
+              className="dts-cad-contact-shadow"
+              data-cad-shadow={cad.shadow}
+              aria-hidden
+            />
+            {faceImg}
+            <DiamondCadScintillation
+              active={caratAdjusting}
+              carat={carat}
+              variants={cad.variants}
+              shapeId={shapeId}
+            />
           </div>
         </div>
-      ) : (
-        faceImg
-      )}
+      </div>
     </div>
   );
 }
@@ -2648,7 +2587,7 @@ export default function DiamondStudioPage() {
     caratAdjustFadeTimer.current = setTimeout(() => {
       setCaratAdjusting(false);
       caratAdjustFadeTimer.current = null;
-    }, ROUND_CAD_ADJUST_HOLD_MS);
+    }, CAD_ADJUST_HOLD_MS);
   }, []);
 
   const applyCarat = useCallback(
@@ -3076,10 +3015,10 @@ export default function DiamondStudioPage() {
                     }}
                   >
                     <DiamondStageFace
+                      key={diamondVisualShape}
                       shapeId={diamondVisualShape}
                       orientation={stoneOrientation}
-                      preferHiResStage={isMobileViewport}
-                      caratAdjusting={caratAdjusting && shape === "round"}
+                      caratAdjusting={caratAdjusting}
                       carat={carat}
                     />
                   </div>
@@ -3103,11 +3042,7 @@ export default function DiamondStudioPage() {
                   >
                     <div className="dts-thumb">
                       <ShapeStripThumb
-                        imageUrl={
-                          s === "round"
-                            ? ROUND_CAD_ASSET.switcherSrc
-                            : SHAPE_SUITE_CONFIG[s].image
-                        }
+                        imageUrl={getDiamondCadAsset(s).switcherSrc}
                       />
                     </div>
                     <div className="dts-name">{SHAPE_SUITE_CONFIG[s].label}</div>

@@ -1,0 +1,561 @@
+{
+  "shapeId": "princess",
+  "profile": "brilliant",
+  "source": "diamond-tech-suite/diamonds/princess-cad-pop.png",
+  "canvas": "2560x2560",
+  "alphaPreserved": true,
+  "brightLuminanceRange": [
+    225,
+    254
+  ],
+  "darkLuminanceRange": [
+    70,
+    205
+  ],
+  "trueCentralLuminanceRange": [
+    85,
+    215
+  ],
+  "trueCentralCentroidRange": [
+    0.05,
+    0.24
+  ],
+  "trueCentralPixelRadius": 0.225,
+  "brightLiftRgb": 15,
+  "outerDarkLuminanceMultiplier": 0.83,
+  "trueCentralDarkLuminanceMultiplier": 0.86,
+  "regionExpandRadiusPx": 10,
+  "centralRegionExpandRadiusPx": 12,
+  "girdleInsetPx": 6,
+  "featherRadiusPx": 1,
+  "brightRegionPool": 72,
+  "darkRegionPool": 208,
+  "trueCentralRegionPool": 10,
+  "nearCentralRegionPool": 15,
+  "patterns": {
+    "a": {
+      "file": "/diamond-tech-suite/diamonds/princess-cad-scintillation-a.png",
+      "centralMode": "strong",
+      "brightRegions": 4,
+      "trueCentralRegions": 2,
+      "outerDarkRegions": 4,
+      "regionTiers": {
+        "bright": {
+          "small": 0,
+          "medium": 1,
+          "large": 3
+        },
+        "trueCentral": {
+          "small": 0,
+          "medium": 0,
+          "large": 2
+        },
+        "outerDark": {
+          "small": 0,
+          "medium": 0,
+          "large": 4
+        }
+      },
+      "coverage": {
+        "brightPercent": 1.26,
+        "trueCentralPercent": 0.78,
+        "outerDarkPercent": 3.13,
+        "totalPercent": 5.17,
+        "changedPercentCentral60Diameter": 15.18,
+        "changedPercentCentral35Diameter": 9.27,
+        "changedOpaquePercent": 5.12
+      },
+      "bright": [
+        {
+          "id": "ur:1284:949:2518",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 2518,
+          "quadrant": "ur",
+          "distNorm": 0.433,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ll:955:1346:1775",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 1775,
+          "quadrant": "ll",
+          "distNorm": 0.403,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ll:1080:1700:1151",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 1151,
+          "quadrant": "ll",
+          "distNorm": 0.55,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ur:1811:1169:583",
+          "role": "outer",
+          "sizeTier": "medium",
+          "pixels": 583,
+          "quadrant": "ur",
+          "distNorm": 0.674,
+          "centralFraction35": 0
+        }
+      ],
+      "trueCentral": [
+        {
+          "id": "ul:1244:1180:1837",
+          "role": "large",
+          "sizeTier": "large",
+          "pixels": 1837,
+          "quadrant": "ul",
+          "distNorm": 0.154,
+          "centralFraction35": 0.707
+        },
+        {
+          "id": "ur:1315:1181:1831",
+          "role": "medium",
+          "sizeTier": "large",
+          "pixels": 1831,
+          "quadrant": "ur",
+          "distNorm": 0.154,
+          "centralFraction35": 0.708
+        }
+      ],
+      "outerDark": [
+        {
+          "id": "ll:891:1733:4531",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 4531,
+          "quadrant": "ll",
+          "distNorm": 0.716,
+          "centralFraction35": 0
+        },
+        {
+          "id": "lr:1667:1733:4521",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 4521,
+          "quadrant": "lr",
+          "distNorm": 0.716,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ll:782:1437:4407",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 4407,
+          "quadrant": "ll",
+          "distNorm": 0.635,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ul:836:1254:3762",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 3762,
+          "quadrant": "ul",
+          "distNorm": 0.55,
+          "centralFraction35": 0
+        }
+      ]
+    },
+    "b": {
+      "file": "/diamond-tech-suite/diamonds/princess-cad-scintillation-b.png",
+      "centralMode": "subtle",
+      "brightRegions": 4,
+      "trueCentralRegions": 2,
+      "outerDarkRegions": 3,
+      "regionTiers": {
+        "bright": {
+          "small": 0,
+          "medium": 3,
+          "large": 1
+        },
+        "trueCentral": {
+          "small": 0,
+          "medium": 0,
+          "large": 2
+        },
+        "outerDark": {
+          "small": 0,
+          "medium": 0,
+          "large": 3
+        }
+      },
+      "coverage": {
+        "brightPercent": 0.87,
+        "trueCentralPercent": 1.3,
+        "outerDarkPercent": 1.85,
+        "totalPercent": 4.02,
+        "changedPercentCentral60Diameter": 19.4,
+        "changedPercentCentral35Diameter": 6.96,
+        "changedOpaquePercent": 3.94
+      },
+      "bright": [
+        {
+          "id": "lr:1603:1346:1755",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 1755,
+          "quadrant": "lr",
+          "distNorm": 0.403,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ll:1103:1717:558",
+          "role": "outer",
+          "sizeTier": "medium",
+          "pixels": 558,
+          "quadrant": "ll",
+          "distNorm": 0.557,
+          "centralFraction35": 0
+        },
+        {
+          "id": "lr:1455:1717:545",
+          "role": "outer",
+          "sizeTier": "medium",
+          "pixels": 545,
+          "quadrant": "lr",
+          "distNorm": 0.556,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ll:879:1553:517",
+          "role": "outer",
+          "sizeTier": "medium",
+          "pixels": 517,
+          "quadrant": "ll",
+          "distNorm": 0.583,
+          "centralFraction35": 0
+        }
+      ],
+      "trueCentral": [
+        {
+          "id": "ur:1315:1181:1831",
+          "role": "medium",
+          "sizeTier": "large",
+          "pixels": 1831,
+          "quadrant": "ur",
+          "distNorm": 0.154,
+          "centralFraction35": 0.708
+        },
+        {
+          "id": "ll:1039:1352:5141",
+          "role": "near",
+          "sizeTier": "large",
+          "pixels": 5141,
+          "quadrant": "ll",
+          "distNorm": 0.302,
+          "centralFraction35": 0
+        }
+      ],
+      "outerDark": [
+        {
+          "id": "ur:1723:1254:3756",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 3756,
+          "quadrant": "ur",
+          "distNorm": 0.55,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ul:777:932:3623",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 3623,
+          "quadrant": "ul",
+          "distNorm": 0.766,
+          "centralFraction35": 0
+        },
+        {
+          "id": "lr:1280:1749:3221",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 3221,
+          "quadrant": "lr",
+          "distNorm": 0.552,
+          "centralFraction35": 0
+        }
+      ]
+    },
+    "c": {
+      "file": "/diamond-tech-suite/diamonds/princess-cad-scintillation-c.png",
+      "centralMode": "strong",
+      "brightRegions": 4,
+      "trueCentralRegions": 2,
+      "outerDarkRegions": 3,
+      "regionTiers": {
+        "bright": {
+          "small": 0,
+          "medium": 2,
+          "large": 2
+        },
+        "trueCentral": {
+          "small": 0,
+          "medium": 0,
+          "large": 2
+        },
+        "outerDark": {
+          "small": 0,
+          "medium": 0,
+          "large": 3
+        }
+      },
+      "coverage": {
+        "brightPercent": 1.1,
+        "trueCentralPercent": 0.83,
+        "outerDarkPercent": 2.56,
+        "totalPercent": 4.49,
+        "changedPercentCentral60Diameter": 18.8,
+        "changedPercentCentral35Diameter": 12.17,
+        "changedOpaquePercent": 4.43
+      },
+      "bright": [
+        {
+          "id": "ur:1284:949:2518",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 2518,
+          "quadrant": "ur",
+          "distNorm": 0.433,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ll:1080:1700:1151",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 1151,
+          "quadrant": "ll",
+          "distNorm": 0.55,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ur:1811:1169:583",
+          "role": "outer",
+          "sizeTier": "medium",
+          "pixels": 583,
+          "quadrant": "ur",
+          "distNorm": 0.674,
+          "centralFraction35": 0
+        },
+        {
+          "id": "lr:1686:1552:364",
+          "role": "outer",
+          "sizeTier": "medium",
+          "pixels": 364,
+          "quadrant": "lr",
+          "distNorm": 0.589,
+          "centralFraction35": 0
+        }
+      ],
+      "trueCentral": [
+        {
+          "id": "lr:1349:1401:1664",
+          "role": "large",
+          "sizeTier": "large",
+          "pixels": 1664,
+          "quadrant": "lr",
+          "distNorm": 0.151,
+          "centralFraction35": 0.704
+        },
+        {
+          "id": "ll:1210:1401:1666",
+          "role": "medium",
+          "sizeTier": "large",
+          "pixels": 1666,
+          "quadrant": "ll",
+          "distNorm": 0.151,
+          "centralFraction35": 0.708
+        }
+      ],
+      "outerDark": [
+        {
+          "id": "ll:891:1733:4531",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 4531,
+          "quadrant": "ll",
+          "distNorm": 0.716,
+          "centralFraction35": 0
+        },
+        {
+          "id": "lr:1667:1733:4521",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 4521,
+          "quadrant": "lr",
+          "distNorm": 0.716,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ll:782:1437:4407",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 4407,
+          "quadrant": "ll",
+          "distNorm": 0.635,
+          "centralFraction35": 0
+        }
+      ]
+    },
+    "d": {
+      "file": "/diamond-tech-suite/diamonds/princess-cad-scintillation-d.png",
+      "centralMode": "subtle",
+      "brightRegions": 4,
+      "trueCentralRegions": 2,
+      "outerDarkRegions": 4,
+      "regionTiers": {
+        "bright": {
+          "small": 0,
+          "medium": 2,
+          "large": 2
+        },
+        "trueCentral": {
+          "small": 0,
+          "medium": 0,
+          "large": 2
+        },
+        "outerDark": {
+          "small": 0,
+          "medium": 0,
+          "large": 4
+        }
+      },
+      "coverage": {
+        "brightPercent": 1.02,
+        "trueCentralPercent": 1.29,
+        "outerDarkPercent": 2.43,
+        "totalPercent": 4.73,
+        "changedPercentCentral60Diameter": 16.21,
+        "changedPercentCentral35Diameter": 4.35,
+        "changedOpaquePercent": 4.65
+      },
+      "bright": [
+        {
+          "id": "ll:955:1346:1775",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 1775,
+          "quadrant": "ll",
+          "distNorm": 0.403,
+          "centralFraction35": 0
+        },
+        {
+          "id": "lr:1603:1346:1755",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 1755,
+          "quadrant": "lr",
+          "distNorm": 0.403,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ll:1103:1717:558",
+          "role": "outer",
+          "sizeTier": "medium",
+          "pixels": 558,
+          "quadrant": "ll",
+          "distNorm": 0.557,
+          "centralFraction35": 0
+        },
+        {
+          "id": "lr:1455:1717:545",
+          "role": "outer",
+          "sizeTier": "medium",
+          "pixels": 545,
+          "quadrant": "lr",
+          "distNorm": 0.556,
+          "centralFraction35": 0
+        }
+      ],
+      "trueCentral": [
+        {
+          "id": "lr:1403:1366:1418",
+          "role": "medium",
+          "sizeTier": "large",
+          "pixels": 1418,
+          "quadrant": "lr",
+          "distNorm": 0.173,
+          "centralFraction35": 0.459
+        },
+        {
+          "id": "lr:1519:1352:5132",
+          "role": "near",
+          "sizeTier": "large",
+          "pixels": 5132,
+          "quadrant": "lr",
+          "distNorm": 0.302,
+          "centralFraction35": 0
+        }
+      ],
+      "outerDark": [
+        {
+          "id": "ul:836:1254:3762",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 3762,
+          "quadrant": "ul",
+          "distNorm": 0.55,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ur:1723:1254:3756",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 3756,
+          "quadrant": "ur",
+          "distNorm": 0.55,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ul:777:932:3623",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 3623,
+          "quadrant": "ul",
+          "distNorm": 0.766,
+          "centralFraction35": 0
+        },
+        {
+          "id": "lr:1280:1749:3221",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 3221,
+          "quadrant": "lr",
+          "distNorm": 0.552,
+          "centralFraction35": 0
+        }
+      ]
+    }
+  },
+  "consecutiveOverlap": {
+    "a-b": {
+      "brightRegionOverlapPercent": 0,
+      "brightPixelOverlapPercent": 0,
+      "trueCentralRegionOverlapPercent": 0,
+      "trueCentralPixelOverlapPercent": 26.3,
+      "outerDarkRegionOverlapPercent": 0,
+      "outerDarkPixelOverlapPercent": 0
+    },
+    "b-c": {
+      "brightRegionOverlapPercent": 0,
+      "brightPixelOverlapPercent": 0,
+      "trueCentralRegionOverlapPercent": 0,
+      "trueCentralPixelOverlapPercent": 0,
+      "outerDarkRegionOverlapPercent": 0,
+      "outerDarkPixelOverlapPercent": 0
+    },
+    "c-d": {
+      "brightRegionOverlapPercent": 0,
+      "brightPixelOverlapPercent": 0,
+      "trueCentralRegionOverlapPercent": 0,
+      "trueCentralPixelOverlapPercent": 0,
+      "outerDarkRegionOverlapPercent": 0,
+      "outerDarkPixelOverlapPercent": 0
+    }
+  }
+}

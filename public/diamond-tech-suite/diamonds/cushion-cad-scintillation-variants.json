@@ -1,0 +1,579 @@
+{
+  "shapeId": "cushion",
+  "profile": "brilliant",
+  "source": "diamond-tech-suite/diamonds/cushion-cad-pop.png",
+  "canvas": "2560x2560",
+  "alphaPreserved": true,
+  "brightLuminanceRange": [
+    225,
+    254
+  ],
+  "darkLuminanceRange": [
+    70,
+    205
+  ],
+  "trueCentralLuminanceRange": [
+    85,
+    215
+  ],
+  "trueCentralCentroidRange": [
+    0.05,
+    0.24
+  ],
+  "trueCentralPixelRadius": 0.225,
+  "brightLiftRgb": 15,
+  "outerDarkLuminanceMultiplier": 0.83,
+  "trueCentralDarkLuminanceMultiplier": 0.86,
+  "regionExpandRadiusPx": 10,
+  "centralRegionExpandRadiusPx": 12,
+  "girdleInsetPx": 6,
+  "featherRadiusPx": 1,
+  "brightRegionPool": 54,
+  "darkRegionPool": 80,
+  "trueCentralRegionPool": 5,
+  "nearCentralRegionPool": 9,
+  "patterns": {
+    "a": {
+      "file": "/diamond-tech-suite/diamonds/cushion-cad-scintillation-a.png",
+      "centralMode": "strong",
+      "brightRegions": 4,
+      "trueCentralRegions": 2,
+      "outerDarkRegions": 4,
+      "regionTiers": {
+        "bright": {
+          "small": 0,
+          "medium": 0,
+          "large": 4
+        },
+        "trueCentral": {
+          "small": 0,
+          "medium": 0,
+          "large": 2
+        },
+        "outerDark": {
+          "small": 0,
+          "medium": 0,
+          "large": 4
+        }
+      },
+      "coverage": {
+        "brightPercent": 1.4,
+        "trueCentralPercent": 0.76,
+        "outerDarkPercent": 2.93,
+        "totalPercent": 5.09,
+        "changedPercentCentral60Diameter": 15.6,
+        "changedPercentCentral35Diameter": 5.79,
+        "changedOpaquePercent": 4.96
+      },
+      "bright": [
+        {
+          "id": "ur:1326:998:1952",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 1952,
+          "quadrant": "ur",
+          "distNorm": 0.416,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ur:1755:957:1422",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 1422,
+          "quadrant": "ur",
+          "distNorm": 0.852,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ll:1102:1795:1055",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 1055,
+          "quadrant": "ll",
+          "distNorm": 0.824,
+          "centralFraction35": 0
+        },
+        {
+          "id": "lr:1736:1387:1039",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 1039,
+          "quadrant": "lr",
+          "distNorm": 0.702,
+          "centralFraction35": 0
+        }
+      ],
+      "trueCentral": [
+        {
+          "id": "ll:1215:1384:1403",
+          "role": "large",
+          "sizeTier": "large",
+          "pixels": 1403,
+          "quadrant": "ll",
+          "distNorm": 0.191,
+          "centralFraction35": 0.236
+        },
+        {
+          "id": "ul:1162:1250:1289",
+          "role": "medium",
+          "sizeTier": "large",
+          "pixels": 1289,
+          "quadrant": "ul",
+          "distNorm": 0.179,
+          "centralFraction35": 0.451
+        }
+      ],
+      "outerDark": [
+        {
+          "id": "ll:777:1336:4543",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 4543,
+          "quadrant": "ll",
+          "distNorm": 0.756,
+          "centralFraction35": 0
+        },
+        {
+          "id": "lr:1527:1520:4382",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 4382,
+          "quadrant": "lr",
+          "distNorm": 0.522,
+          "centralFraction35": 0
+        },
+        {
+          "id": "lr:1634:1408:4288",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 4288,
+          "quadrant": "lr",
+          "distNorm": 0.566,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ur:1537:759:3886",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 3886,
+          "quadrant": "ur",
+          "distNorm": 0.858,
+          "centralFraction35": 0
+        }
+      ]
+    },
+    "b": {
+      "file": "/diamond-tech-suite/diamonds/cushion-cad-scintillation-b.png",
+      "centralMode": "subtle",
+      "brightRegions": 4,
+      "trueCentralRegions": 2,
+      "outerDarkRegions": 4,
+      "regionTiers": {
+        "bright": {
+          "small": 0,
+          "medium": 1,
+          "large": 3
+        },
+        "trueCentral": {
+          "small": 0,
+          "medium": 1,
+          "large": 1
+        },
+        "outerDark": {
+          "small": 0,
+          "medium": 0,
+          "large": 4
+        }
+      },
+      "coverage": {
+        "brightPercent": 0.92,
+        "trueCentralPercent": 1.05,
+        "outerDarkPercent": 2.26,
+        "totalPercent": 4.23,
+        "changedPercentCentral60Diameter": 15.23,
+        "changedPercentCentral35Diameter": 3.72,
+        "changedOpaquePercent": 4.23
+      },
+      "bright": [
+        {
+          "id": "lr:1450:1790:899",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 899,
+          "quadrant": "lr",
+          "distNorm": 0.812,
+          "centralFraction35": 0
+        },
+        {
+          "id": "lr:1707:1318:755",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 755,
+          "quadrant": "lr",
+          "distNorm": 0.642,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ur:1711:1089:689",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 689,
+          "quadrant": "ur",
+          "distNorm": 0.699,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ur:1444:935:552",
+          "role": "outer",
+          "sizeTier": "medium",
+          "pixels": 552,
+          "quadrant": "ur",
+          "distNorm": 0.561,
+          "centralFraction35": 0
+        }
+      ],
+      "trueCentral": [
+        {
+          "id": "ur:1378:1244:414",
+          "role": "medium",
+          "sizeTier": "medium",
+          "pixels": 414,
+          "quadrant": "ur",
+          "distNorm": 0.154,
+          "centralFraction35": 0.862
+        },
+        {
+          "id": "ur:1473:1232:5197",
+          "role": "near",
+          "sizeTier": "large",
+          "pixels": 5197,
+          "quadrant": "ur",
+          "distNorm": 0.296,
+          "centralFraction35": 0.001
+        }
+      ],
+      "outerDark": [
+        {
+          "id": "ul:924:856:3642",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 3642,
+          "quadrant": "ul",
+          "distNorm": 0.818,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ur:1635:856:3553",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 3553,
+          "quadrant": "ur",
+          "distNorm": 0.818,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ul:785:1249:2410",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 2410,
+          "quadrant": "ul",
+          "distNorm": 0.739,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ll:885:1350:2279",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 2279,
+          "quadrant": "ll",
+          "distNorm": 0.6,
+          "centralFraction35": 0
+        }
+      ]
+    },
+    "c": {
+      "file": "/diamond-tech-suite/diamonds/cushion-cad-scintillation-c.png",
+      "centralMode": "strong",
+      "brightRegions": 4,
+      "trueCentralRegions": 2,
+      "outerDarkRegions": 4,
+      "regionTiers": {
+        "bright": {
+          "small": 0,
+          "medium": 1,
+          "large": 3
+        },
+        "trueCentral": {
+          "small": 0,
+          "medium": 1,
+          "large": 1
+        },
+        "outerDark": {
+          "small": 0,
+          "medium": 0,
+          "large": 4
+        }
+      },
+      "coverage": {
+        "brightPercent": 1.12,
+        "trueCentralPercent": 0.48,
+        "outerDarkPercent": 2.76,
+        "totalPercent": 4.36,
+        "changedPercentCentral60Diameter": 11.16,
+        "changedPercentCentral35Diameter": 8.61,
+        "changedOpaquePercent": 4.31
+      },
+      "bright": [
+        {
+          "id": "ur:1755:957:1422",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 1422,
+          "quadrant": "ur",
+          "distNorm": 0.852,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ll:1102:1795:1055",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 1055,
+          "quadrant": "ll",
+          "distNorm": 0.824,
+          "centralFraction35": 0
+        },
+        {
+          "id": "lr:1736:1387:1039",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 1039,
+          "quadrant": "lr",
+          "distNorm": 0.702,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ur:1792:1091:502",
+          "role": "outer",
+          "sizeTier": "medium",
+          "pixels": 502,
+          "quadrant": "ur",
+          "distNorm": 0.812,
+          "centralFraction35": 0
+        }
+      ],
+      "trueCentral": [
+        {
+          "id": "ur:1378:1244:414",
+          "role": "large",
+          "sizeTier": "medium",
+          "pixels": 414,
+          "quadrant": "ur",
+          "distNorm": 0.154,
+          "centralFraction35": 0.862
+        },
+        {
+          "id": "ll:1256:1362:866",
+          "role": "medium",
+          "sizeTier": "large",
+          "pixels": 866,
+          "quadrant": "ll",
+          "distNorm": 0.137,
+          "centralFraction35": 0.947
+        }
+      ],
+      "outerDark": [
+        {
+          "id": "ll:777:1336:4543",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 4543,
+          "quadrant": "ll",
+          "distNorm": 0.756,
+          "centralFraction35": 0
+        },
+        {
+          "id": "lr:1527:1520:4382",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 4382,
+          "quadrant": "lr",
+          "distNorm": 0.522,
+          "centralFraction35": 0
+        },
+        {
+          "id": "lr:1634:1408:4288",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 4288,
+          "quadrant": "lr",
+          "distNorm": 0.566,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ur:1765:1251:2122",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 2122,
+          "quadrant": "ur",
+          "distNorm": 0.726,
+          "centralFraction35": 0
+        }
+      ]
+    },
+    "d": {
+      "file": "/diamond-tech-suite/diamonds/cushion-cad-scintillation-d.png",
+      "centralMode": "subtle",
+      "brightRegions": 4,
+      "trueCentralRegions": 2,
+      "outerDarkRegions": 4,
+      "regionTiers": {
+        "bright": {
+          "small": 0,
+          "medium": 0,
+          "large": 4
+        },
+        "trueCentral": {
+          "small": 0,
+          "medium": 0,
+          "large": 2
+        },
+        "outerDark": {
+          "small": 0,
+          "medium": 0,
+          "large": 4
+        }
+      },
+      "coverage": {
+        "brightPercent": 1.16,
+        "trueCentralPercent": 1.12,
+        "outerDarkPercent": 2.46,
+        "totalPercent": 4.74,
+        "changedPercentCentral60Diameter": 16.78,
+        "changedPercentCentral35Diameter": 1.95,
+        "changedOpaquePercent": 4.67
+      },
+      "bright": [
+        {
+          "id": "ur:1326:998:1952",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 1952,
+          "quadrant": "ur",
+          "distNorm": 0.416,
+          "centralFraction35": 0
+        },
+        {
+          "id": "lr:1450:1790:899",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 899,
+          "quadrant": "lr",
+          "distNorm": 0.812,
+          "centralFraction35": 0
+        },
+        {
+          "id": "lr:1707:1318:755",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 755,
+          "quadrant": "lr",
+          "distNorm": 0.642,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ur:1711:1089:689",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 689,
+          "quadrant": "ur",
+          "distNorm": 0.699,
+          "centralFraction35": 0
+        }
+      ],
+      "trueCentral": [
+        {
+          "id": "lr:1318:1396:709",
+          "role": "medium",
+          "sizeTier": "large",
+          "pixels": 709,
+          "quadrant": "lr",
+          "distNorm": 0.192,
+          "centralFraction35": 0.217
+        },
+        {
+          "id": "ll:1107:1338:4686",
+          "role": "near",
+          "sizeTier": "large",
+          "pixels": 4686,
+          "quadrant": "ll",
+          "distNorm": 0.275,
+          "centralFraction35": 0
+        }
+      ],
+      "outerDark": [
+        {
+          "id": "ur:1537:759:3886",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 3886,
+          "quadrant": "ur",
+          "distNorm": 0.858,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ul:924:856:3642",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 3642,
+          "quadrant": "ul",
+          "distNorm": 0.818,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ur:1635:856:3553",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 3553,
+          "quadrant": "ur",
+          "distNorm": 0.818,
+          "centralFraction35": 0
+        },
+        {
+          "id": "ul:785:1249:2410",
+          "role": "outer",
+          "sizeTier": "large",
+          "pixels": 2410,
+          "quadrant": "ul",
+          "distNorm": 0.739,
+          "centralFraction35": 0
+        }
+      ]
+    }
+  },
+  "consecutiveOverlap": {
+    "a-b": {
+      "brightRegionOverlapPercent": 0,
+      "brightPixelOverlapPercent": 0,
+      "trueCentralRegionOverlapPercent": 0,
+      "trueCentralPixelOverlapPercent": 0,
+      "outerDarkRegionOverlapPercent": 0,
+      "outerDarkPixelOverlapPercent": 0
+    },
+    "b-c": {
+      "brightRegionOverlapPercent": 0,
+      "brightPixelOverlapPercent": 0,
+      "trueCentralRegionOverlapPercent": 0,
+      "trueCentralPixelOverlapPercent": 32.3,
+      "outerDarkRegionOverlapPercent": 0,
+      "outerDarkPixelOverlapPercent": 0
+    },
+    "c-d": {
+      "brightRegionOverlapPercent": 0,
+      "brightPixelOverlapPercent": 0,
+      "trueCentralRegionOverlapPercent": 0,
+      "trueCentralPixelOverlapPercent": 0,
+      "outerDarkRegionOverlapPercent": 0,
+      "outerDarkPixelOverlapPercent": 0
+    }
+  }
+}
