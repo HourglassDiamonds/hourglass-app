@@ -77,17 +77,18 @@ export default function EngagementRingsIntro() {
             </h1>
 
             <p className="mt-5 max-w-[32rem] text-[1rem] leading-[1.88] text-[#625b54] md:text-[1.04rem] lg:max-w-[28rem]">
-              An engagement ring should feel considered from every angle.
-              Hourglass brings the diamond, setting, proportions, and personal
-              details into one guided process, led by a Graduate Gemologist and
-              shaped around what matters to you.
+              Choosing an engagement ring is less about picking a setting from a
+              case and more about finding the right balance: diamond,
+              proportions, metal, hand, and everyday wear. Hourglass helps you
+              compare possibilities with clear guidance so the final ring feels
+              intentional rather than rushed.
             </p>
 
             <p className="mt-4 max-w-[32rem] text-[0.98rem] leading-[1.88] text-[#6a635c] lg:max-w-[28rem]">
-              Based in the Charlotte area and working with clients across South
-              Charlotte and nationwide, we offer personal guidance without the
-              pressure of a traditional showroom. Diamonds and settings are
-              considered together, with room to refine direction before
+              From refined house designs to modified settings, we work with
+              clients in Charlotte, South Charlotte, and nationwide to shape the
+              ring around the person who will wear it. You&apos;ll have room to
+              compare designs, adjust proportions, and choose the diamond before
               anything is finalized.
             </p>
 

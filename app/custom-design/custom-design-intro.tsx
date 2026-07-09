@@ -77,18 +77,17 @@ export default function CustomDesignIntro() {
             </h1>
 
             <p className="mt-5 max-w-[32rem] text-[1rem] leading-[1.88] text-[#625b54] md:text-[1.04rem] lg:max-w-[28rem]">
-              For clients in the Charlotte area, custom engagement rings begin
-              with what the finished piece should express. Guided by a Graduate
-              Gemologist, the diamond, setting, proportions, and personal
-              details are considered together from the first conversation, not
-              treated as separate decisions made under showroom pressure.
+              Custom design begins when the right ring does not already exist.
+              We translate references, sketches, heirloom details, and practical
+              constraints into a design that can be built with precision, not
+              just imagined beautifully.
             </p>
 
             <p className="mt-4 max-w-[32rem] text-[0.98rem] leading-[1.88] text-[#6a635c] lg:max-w-[28rem]">
-              Hourglass works with clients across Charlotte, South Charlotte,
-              and nationwide. References and ideas are interpreted into a
-              one-of-one design, with custom fine jewelry beyond engagement
-              rings available when the piece calls for it.
+              Led by a Graduate Gemologist, the process moves from conversation
+              to proportions, diamond selection, CAD, and refinement. The result
+              is a piece made for one person, not a customized version of
+              something meant for everyone.
             </p>
 
             <CustomDesignHeroActions />
