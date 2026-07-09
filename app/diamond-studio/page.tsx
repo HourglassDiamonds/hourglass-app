@@ -718,7 +718,7 @@ function SuiteStyles() {
         z-index:0;
         transition: background 600ms ease;
       }
-      @media (min-width: 769px) {
+      @media (min-width: 1024px) {
         .dts-shell{
           height:auto;
           max-height:none;
@@ -752,7 +752,7 @@ function SuiteStyles() {
         flex:1 1 auto;
         width:100%;
       }
-      @media (min-width: 769px) {
+      @media (min-width: 1024px) {
         .diamond-studio-main.dts-main{
           display:grid !important;
           grid-template-columns:256px minmax(0, 1fr) !important;
@@ -1235,8 +1235,8 @@ function SuiteStyles() {
           transform var(--dt-dur-slow) var(--dt-ease),
           opacity 200ms var(--dt-ease);
       }
-      @media (min-width: 769px) {
-        /* Shared ring-cluster: finger crop + diamond anchor track viewer aspect (all desktop widths). */
+      @media (min-width: 1024px) {
+        /* Shared ring-cluster: finger crop + diamond anchor track viewer aspect (side-by-side desktop). */
         @container (aspect-ratio > 7 / 8.5) {
           .dts-layer-finger img{
             object-position:50% calc(42% + clamp(0%, (1 - (7 * 100cqh) / (9 * 100cqw)) * 67%, 26%));
@@ -1381,7 +1381,7 @@ function SuiteStyles() {
         width:100%;
       }
       .dts-sentence .dts-article{ font-style:italic; color:var(--ink-soft); }
-      @media (min-width: 769px) {
+      @media (min-width: 1024px) {
         .dts-sentence-br{ display:none; }
       }
       .dts-stage-trust{
@@ -1527,7 +1527,8 @@ function SuiteStyles() {
           margin-bottom:clamp(2px, 0.5vh, 8px);
         }
       }
-      @media (max-width: 768px) {
+      /* Below full desktop width: vertical document flow (stage → shapes → controls). */
+      @media (max-width: 1023px) {
         .dts-shell{
           overflow-x:hidden;
           overflow-y:auto;
@@ -1674,13 +1675,12 @@ function SuiteStyles() {
           transform:translate(calc(-50% + 4px), calc(-50% - 2px + var(--dts-framing-lift, 0)));
         }
         .dts-viewer{
-          width:100%;
-          max-width:260px;
+          width:min(480px, 92%);
+          max-width:480px;
           min-width:0;
           margin:0 auto;
-          max-height:min(48vh,352px);
-          aspect-ratio:7 / 9.15;
-          --dts-framing-lift:-4.25%;
+          max-height:min(58vh, 540px);
+          aspect-ratio:7 / 9;
         }
         .dts-shape-strip{
           position:relative !important;
@@ -1871,7 +1871,52 @@ function SuiteStyles() {
           margin-top:5px;
         }
       }
-      @media (min-width: 769px) and (max-height: 900px) {
+      @media (max-width: 768px) {
+        .dts-layer-finger img{
+          object-position:50% 38%;
+        }
+        .dts-viewer{
+          width:100%;
+          max-width:260px;
+          max-height:min(48vh,352px);
+          aspect-ratio:7 / 9.15;
+          --dts-framing-lift:-4.25%;
+        }
+        .dts-sentence{
+          max-width:260px;
+        }
+        .dts-stage-trust{
+          max-width:260px;
+        }
+        .dts-page-title{
+          max-width:280px;
+        }
+        .dts-page-subhead{
+          max-width:280px;
+        }
+      }
+      @media (min-width: 769px) and (max-width: 1023px) {
+        .dts-layer-finger img{
+          object-position:50% 42%;
+        }
+        .dts-layer-diamond{
+          transform:translate(calc(-50% + var(--dts-diamond-x-nudge, 0px)), calc(-50% + var(--dts-framing-lift, 0) + var(--dts-diamond-y-nudge, 0px)));
+        }
+        .dts-sentence,
+        .dts-stage-trust,
+        .dts-page-title,
+        .dts-page-subhead{
+          max-width:min(480px, 92%);
+        }
+      }
+      @media (min-width: 1024px) {
+        /* Decorative stage layers must not intercept side-rail controls. */
+        .dts-viewer,
+        .dts-stage-canvas{
+          pointer-events:none;
+        }
+      }
+      @media (min-width: 1024px) and (max-height: 900px) {
         .dts-control-rail{
           gap:11px;
           padding:10px 14px 10px 18px;
@@ -1901,36 +1946,7 @@ function SuiteStyles() {
           padding-top:8px;
         }
       }
-      @media (min-width: 769px) and (max-width: 1023px) {
-        .diamond-studio-main.dts-main{
-          grid-template-columns:minmax(0, 1fr) !important;
-          grid-template-rows:auto minmax(0, 1fr) !important;
-        }
-        .dts-control-rail{
-          grid-column:1;
-          grid-row:2;
-          display:grid !important;
-          grid-template-columns:repeat(2, minmax(0, 1fr));
-          gap:12px;
-          padding:12px 20px 18px;
-          max-height:42vh;
-          overflow-y:auto;
-          align-content:start;
-        }
-        .dts-control-rail > .dts-card--presentation{
-          grid-column:1 / -1;
-        }
-        .dts-stage-stack{
-          grid-column:1;
-          grid-row:1;
-          min-height:0;
-        }
-        .dts-viewer{
-          width:min(480px, 88%);
-          max-height:min(44vh, 400px);
-        }
-      }
-      @media (min-width: 769px) and (max-height: 860px) {
+      @media (min-width: 1024px) and (max-height: 860px) {
         .dts-stage-stack .dts-stage-preview{
           padding-top:clamp(14px, 2vh, 22px);
           padding-bottom:4px;
@@ -1946,13 +1962,13 @@ function SuiteStyles() {
         }
         .dts-viewer{
           width:min(520px, 90%);
-          max-height:min(52vh, 460px);
+          max-height:min(44vh, 400px);
         }
         .dts-stage-stack .dts-shape-strip-wrap{
           margin-bottom:clamp(12px, 1.8vh, 22px);
         }
       }
-      @media (min-width: 769px) and (max-height: 720px) {
+      @media (min-width: 1024px) and (max-height: 720px) {
         .dts-viewer{
           width:min(480px, 86%);
           max-height:min(46vh, 400px);

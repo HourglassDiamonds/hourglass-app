@@ -13,7 +13,7 @@ const SUITE_SHELL_CSS = `
   background: var(--hg-ivory, #efe8de);
   color: var(--hg-ink, #1c1b1a);
 }
-@media (min-width: 769px) {
+@media (min-width: 1024px) {
   [data-diamond-studio-suite-route][data-suite-instrument] .dts-app,
   [data-diamond-studio-suite-route][data-suite-instrument] .dss-app {
     height: var(--dts-workspace-h);
