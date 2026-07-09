@@ -11,14 +11,14 @@ const TRUST_ITEMS = [
 export function DiSuiteToolIntro() {
   return (
     <header
-      className="border-b border-[#e4dbcf]/60 pb-5 pt-1 md:pb-6 md:pt-2"
+      className="border-b border-[#e4dbcf]/60 pb-4 pt-1 md:pb-5 md:pt-2"
       aria-label="Light Performance tool introduction"
     >
       <DiamondStudioToolHeader
         title="Light Performance"
         subhead="Upload an original GIA, IGI, or GCAL grading report for independent interpretation before you decide."
       />
-      <p className="mx-auto mt-3 max-w-[36rem] text-center text-[10px] uppercase tracking-[0.22em] text-[#948a80]">
+      <p className="mx-auto mt-2 max-w-[36rem] text-center text-[10px] uppercase tracking-[0.22em] text-[#948a80]">
         Diamond Intelligence · Private · No sales pressure
       </p>
     </header>

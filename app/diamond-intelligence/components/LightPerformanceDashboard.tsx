@@ -509,7 +509,7 @@ export default function LightPerformanceDashboard({
   const showLandingMarketing = resultState === "NO_RESULT" && !hasReport;
 
   const shellClass = showLandingMarketing
-    ? "mx-auto w-full max-w-[1180px] px-5 pb-10 pt-4 md:px-6 md:pb-12 md:pt-5"
+    ? "mx-auto w-full max-w-[1180px] px-5 pb-10 pt-3 md:px-6 md:pb-12 md:pt-4"
     : DI_V3_SHELL;
 
   return (

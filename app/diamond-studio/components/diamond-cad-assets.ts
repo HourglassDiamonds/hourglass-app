@@ -30,26 +30,13 @@ export type DiamondCadAsset = {
   shadow: CadShadowProfile;
 };
 
-const DIAMONDS = "/diamond-tech-suite/diamonds";
+const DIAMONDS_V2 = "/diamond-tech-suite/diamonds-v2";
 
-function cadPaths(prefix: "rbc" | ShapeIdExcludeRound, scintillationPrefix: string) {
-  const base = prefix === "rbc" ? "rbc-cad" : `${prefix}-cad`;
-  return {
-    src: `${DIAMONDS}/${base}-pop.png`,
-    originalSrc: `${DIAMONDS}/${base}.png`,
-    switcherSrc: `${DIAMONDS}/${base}-switcher.png`,
-    variants: [
-      `${DIAMONDS}/${scintillationPrefix}-a.png`,
-      `${DIAMONDS}/${scintillationPrefix}-b.png`,
-      `${DIAMONDS}/${scintillationPrefix}-c.png`,
-      `${DIAMONDS}/${scintillationPrefix}-d.png`,
-    ] as const,
-  };
+function v2Path(shapeId: ShapeId): string {
+  return `${DIAMONDS_V2}/diamond-${shapeId}-v2.png`;
 }
 
-type ShapeIdExcludeRound = Exclude<ShapeId, "round">;
-
-type DeliveredCadOpts = {
+type V2AssetOpts = {
   profile: CadScintillationProfile;
   shadow: CadShadowProfile;
   visibleBounds: DiamondCadAsset["visibleBounds"];
@@ -60,17 +47,14 @@ type DeliveredCadOpts = {
   visibleScale: number;
 };
 
-function deliveredCadAsset(
-  shapeId: ShapeIdExcludeRound,
-  opts: DeliveredCadOpts,
-): DiamondCadAsset {
-  const src = `${DIAMONDS}/diamond-${shapeId}-cad-3ct.png`;
+function v2Asset(shapeId: ShapeId, opts: V2AssetOpts): DiamondCadAsset {
+  const src = v2Path(shapeId);
   return {
     shapeId,
     src,
     originalSrc: src,
-    switcherSrc: `${DIAMONDS}/diamond-${shapeId}-cad-3ct-switcher.png`,
-    fallbackSrc: `${DIAMONDS}/${shapeId}.png`,
+    switcherSrc: src,
+    fallbackSrc: src,
     variants: [],
     scintillationEnabled: false,
     canvas: { width: 2560, height: 2560 },
@@ -78,12 +62,11 @@ function deliveredCadAsset(
   };
 }
 
+/** V2 diamond PNG bounds (alpha > 10) probed from public/diamond-tech-suite/diamonds-v2. */
 export const DIAMOND_CAD_ASSETS: Record<ShapeId, DiamondCadAsset> = {
-  round: {
-    shapeId: "round",
-    ...cadPaths("rbc", "rbc-cad-scintillation"),
-    scintillationEnabled: true,
-    fallbackSrc: `${DIAMONDS}/round.png`,
+  round: v2Asset("round", {
+    profile: "brilliant",
+    shadow: "round",
     visibleFillRatio: 1679 / 2560,
     visibleFillRatioH: 1676 / 2560,
     centerX: 1279.372774789823 / 2560,
@@ -97,95 +80,146 @@ export const DIAMOND_CAD_ASSETS: Record<ShapeId, DiamondCadAsset> = {
       width: 1679,
       height: 1676,
     },
-    canvas: { width: 2560, height: 2560 },
-    profile: "brilliant",
-    shadow: "round",
-  },
-  oval: deliveredCadAsset("oval", {
+  }),
+  oval: v2Asset("oval", {
     profile: "brilliant",
     shadow: "elongated",
-    visibleFillRatio: 1170 / 2560,
-    visibleFillRatioH: 1645 / 2560,
-    centerX: 0.4997719035094921,
-    centerY: 0.5051072893652871,
-    visibleScale: (976 / 1500) / (1170 / 2560),
-    visibleBounds: { minX: 695, minY: 471, maxX: 1864, maxY: 2115, width: 1170, height: 1645 },
+    visibleFillRatio: 1403 / 2560,
+    visibleFillRatioH: 1971 / 2560,
+    centerX: 1279.3721821611136 / 2560,
+    centerY: 1295.6192149422582 / 2560,
+    visibleScale: (976 / 1500) / (1403 / 2560),
+    visibleBounds: {
+      minX: 578,
+      minY: 310,
+      maxX: 1981,
+      maxY: 2281,
+      width: 1403,
+      height: 1971,
+    },
   }),
-  cushion: deliveredCadAsset("cushion", {
+  cushion: v2Asset("cushion", {
     profile: "brilliant",
     shadow: "square",
     visibleFillRatio: 1193 / 2560,
     visibleFillRatioH: 1206 / 2560,
-    centerX: 0.4997751767251307,
-    centerY: 0.49726160704585187,
+    centerX: 1279.4244524163346 / 2560,
+    centerY: 1272.9897140373807 / 2560,
     visibleScale: (1430 / 1500) / (1193 / 2560),
-    visibleBounds: { minX: 683, minY: 672, maxX: 1875, maxY: 1877, width: 1193, height: 1206 },
+    visibleBounds: {
+      minX: 683,
+      minY: 672,
+      maxX: 1875,
+      maxY: 1877,
+      width: 1193,
+      height: 1206,
+    },
   }),
-  princess: deliveredCadAsset("princess", {
+  princess: v2Asset("princess", {
     profile: "brilliant",
     shadow: "square",
     visibleFillRatio: 1144 / 2560,
     visibleFillRatioH: 1156 / 2560,
-    centerX: 0.4997590781581285,
-    centerY: 0.5079195088179066,
+    centerX: 1279.383240084809 / 2560,
+    centerY: 1300.273942573841 / 2560,
     visibleScale: (1403 / 1500) / (1144 / 2560),
-    visibleBounds: { minX: 708, minY: 723, maxX: 1851, maxY: 1878, width: 1144, height: 1156 },
+    visibleBounds: {
+      minX: 708,
+      minY: 723,
+      maxX: 1851,
+      maxY: 1878,
+      width: 1144,
+      height: 1156,
+    },
   }),
-  marquise: deliveredCadAsset("marquise", {
+  marquise: v2Asset("marquise", {
     profile: "brilliant",
     shadow: "elongated",
     visibleFillRatio: 984 / 2560,
     visibleFillRatioH: 1969 / 2560,
-    centerX: 0.4997697937895419,
-    centerY: 0.5038716789348521,
+    centerX: 1279.4106721012272 / 2560,
+    centerY: 1289.9114980732213 / 2560,
     visibleScale: (651 / 1500) / (984 / 2560),
-    visibleBounds: { minX: 788, minY: 306, maxX: 1771, maxY: 2274, width: 984, height: 1969 },
+    visibleBounds: {
+      minX: 788,
+      minY: 306,
+      maxX: 1771,
+      maxY: 2274,
+      width: 984,
+      height: 1969,
+    },
   }),
-  pear: deliveredCadAsset("pear", {
+  pear: v2Asset("pear", {
     profile: "brilliant",
     shadow: "elongated",
-    visibleFillRatio: 1162 / 2560,
-    visibleFillRatioH: 1800 / 2560,
-    centerX: 0.4997757498276766,
-    centerY: 0.5172483581633636,
-    visibleScale: (847 / 1500) / (1162 / 2560),
-    visibleBounds: { minX: 699, minY: 341, maxX: 1860, maxY: 2140, width: 1162, height: 1800 },
+    visibleFillRatio: 1235 / 2560,
+    visibleFillRatioH: 1972 / 2560,
+    centerX: 1279.332853772129 / 2560,
+    centerY: 1407.8543785824193 / 2560,
+    visibleScale: (847 / 1500) / (1235 / 2560),
+    visibleBounds: {
+      minX: 662,
+      minY: 309,
+      maxX: 1896,
+      maxY: 2280,
+      width: 1235,
+      height: 1972,
+    },
   }),
-  emerald: deliveredCadAsset("emerald", {
+  emerald: v2Asset("emerald", {
     profile: "step",
     shadow: "elongated",
     visibleFillRatio: 972 / 2560,
     visibleFillRatioH: 1388 / 2560,
-    centerX: 0.4997509860593561,
-    centerY: 0.5055688037468815,
+    centerX: 1279.3625243119516 / 2560,
+    centerY: 1294.2561375920168 / 2560,
     visibleScale: (965 / 1500) / (972 / 2560),
-    visibleBounds: { minX: 794, minY: 601, maxX: 1765, maxY: 1988, width: 972, height: 1388 },
+    visibleBounds: {
+      minX: 794,
+      minY: 601,
+      maxX: 1765,
+      maxY: 1988,
+      width: 972,
+      height: 1388,
+    },
   }),
-  radiant: deliveredCadAsset("radiant", {
+  radiant: v2Asset("radiant", {
     profile: "brilliant",
     shadow: "elongated",
-    visibleFillRatio: 1042 / 2560,
-    visibleFillRatioH: 1480 / 2560,
-    centerX: 0.4997651720999524,
-    centerY: 0.5044388604559696,
-    visibleScale: (978 / 1500) / (1042 / 2560),
-    visibleBounds: { minX: 759, minY: 552, maxX: 1800, maxY: 2031, width: 1042, height: 1480 },
+    visibleFillRatio: 1388 / 2560,
+    visibleFillRatioH: 1971 / 2560,
+    centerX: 1279.3804064450032 / 2560,
+    centerY: 1295.1410878271397 / 2560,
+    visibleScale: (978 / 1500) / (1388 / 2560),
+    visibleBounds: {
+      minX: 585,
+      minY: 310,
+      maxX: 1973,
+      maxY: 2281,
+      width: 1388,
+      height: 1971,
+    },
   }),
-  asscher: deliveredCadAsset("asscher", {
+  asscher: v2Asset("asscher", {
     profile: "step",
     shadow: "square",
-    visibleFillRatio: 1128 / 2560,
-    visibleFillRatioH: 1134 / 2560,
-    centerX: 0.4998000962439373,
-    centerY: 0.5107453278922731,
-    visibleScale: (1414 / 1500) / (1128 / 2560),
-    visibleBounds: { minX: 716, minY: 741, maxX: 1843, maxY: 1874, width: 1128, height: 1134 },
+    visibleFillRatio: 1668 / 2560,
+    visibleFillRatioH: 1675 / 2560,
+    centerX: 1279.3406576788173 / 2560,
+    centerY: 1304.8259921639321 / 2560,
+    visibleScale: (1414 / 1500) / (1668 / 2560),
+    visibleBounds: {
+      minX: 446,
+      minY: 468,
+      maxX: 2113,
+      maxY: 2142,
+      width: 1668,
+      height: 1675,
+    },
   }),
 };
 
-export const DELIVERED_CAD_SHAPE_IDS = ALL_SHAPE_IDS.filter(
-  (id) => id !== "round",
-) as Exclude<ShapeId, "round">[];
+export const DIAMOND_V2_SHAPE_IDS = ALL_SHAPE_IDS;
 
 export const DIAMOND_CAD_SHAPE_IDS = Object.keys(DIAMOND_CAD_ASSETS) as ShapeId[];
 
@@ -194,7 +228,7 @@ export function getDiamondCadAsset(shapeId: ShapeId): DiamondCadAsset {
 }
 
 export function isCadStageSrc(src: string, asset: DiamondCadAsset): boolean {
-  return src === asset.src || src === asset.originalSrc;
+  return src === asset.src;
 }
 
 export function nextCadFallbackSrc(
@@ -202,11 +236,7 @@ export function nextCadFallbackSrc(
   asset: DiamondCadAsset,
   ultimateFallback: string,
 ): string {
-  if (current === asset.src) {
-    if (asset.src === asset.originalSrc) return asset.fallbackSrc;
-    return asset.originalSrc;
-  }
-  if (current === asset.originalSrc) return asset.fallbackSrc;
-  if (current === asset.fallbackSrc) return ultimateFallback;
+  void ultimateFallback;
+  if (current === asset.src) return asset.src;
   return current;
 }
