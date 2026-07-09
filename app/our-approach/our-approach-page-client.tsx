@@ -94,7 +94,7 @@ export default function OurApproachPageClient() {
       <div className="mx-auto max-w-[1200px] px-6 md:px-10">
         <Header />
 
-        <section className="border-b border-[#e4dbcf] pb-[88px] pt-[64px] md:pb-[120px] md:pt-[80px]">
+        <section className="border-b border-[#e4dbcf] pb-[68px] pt-[64px] md:pb-[100px] md:pt-[80px]">
           <div className="mx-auto max-w-[820px] text-center">
             <p className="text-[10px] uppercase tracking-[0.34em] text-[#8a8177]">
               Our Approach
@@ -118,8 +118,11 @@ export default function OurApproachPageClient() {
           className="border-b border-[#e4dbcf] py-[80px] md:pb-[96px] md:pt-[112px]"
         >
           <div className="mx-auto max-w-[760px] text-center">
+            <p className="text-[10px] uppercase tracking-[0.34em] text-[#8a8177]">
+              Our Perspective
+            </p>
             <h2
-              className="mx-auto max-w-[28ch] font-serif text-[1.45rem] font-normal leading-[1.12] tracking-[-0.02em] text-[#1f1d1a] md:text-[1.85rem]"
+              className="mx-auto mt-4 max-w-[28ch] font-serif text-[1.45rem] font-normal leading-[1.12] tracking-[-0.02em] text-[#1f1d1a] md:text-[1.85rem]"
               style={{ textWrap: "balance" }}
             >
               The Hourglass Perspective
