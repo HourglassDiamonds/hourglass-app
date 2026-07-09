@@ -1875,6 +1875,7 @@ function SuiteStyles() {
           max-width:260px;
           max-height:min(48vh,352px);
           aspect-ratio:7 / 9.15;
+          --dts-composition-y:-18%;
           --dts-framing-lift:-4.25%;
         }
         .dts-sentence{
