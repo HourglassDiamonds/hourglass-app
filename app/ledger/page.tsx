@@ -67,6 +67,30 @@ export default function LedgerPage() {
         </div>
       </section>
 
+      {/* Context */}
+      <section className="py-16 md:py-20">
+        <div className="mx-auto max-w-[720px]">
+          <p className="text-[10px] uppercase tracking-[0.34em] text-[#8a8177]">
+            Why this belongs here
+          </p>
+          <div className="mt-6 space-y-5 text-[0.95rem] leading-[1.85] text-[#615a53]">
+            <p>
+              Diamonds do not exist outside the world. They move through energy
+              markets, shipping routes, currency pressure, mining regions,
+              laboratory capacity, insurance, credit, and consumer confidence
+              before they ever reach a ring box.
+            </p>
+            <p>
+              The Ledger is our weekly reading of those pressure systems. It is
+              not financial advice, political commentary, or a prediction
+              engine. It is a calm way to understand the conditions shaping rare
+              materials, global sourcing, and the decisions clients may face when
+              timing a meaningful purchase.
+            </p>
+          </div>
+        </div>
+      </section>
+
       <LedgerIndexesSection />
 
       {/* Current reading — compact GPI + weekly synopsis */}
