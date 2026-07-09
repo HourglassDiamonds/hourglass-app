@@ -2140,12 +2140,14 @@ function DiamondStageFace({
               aria-hidden
             />
             {faceImg}
-            <DiamondCadScintillation
-              active={caratAdjusting}
-              carat={carat}
-              variants={cad.variants}
-              shapeId={shapeId}
-            />
+            {cad.scintillationEnabled ? (
+              <DiamondCadScintillation
+                active={caratAdjusting}
+                carat={carat}
+                variants={cad.variants}
+                shapeId={shapeId}
+              />
+            ) : null}
           </div>
         </div>
       </div>

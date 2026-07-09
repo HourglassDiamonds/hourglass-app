@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-08T14:26:43.776Z",
+  "generatedAt": "2026-07-09T16:11:48.075Z",
   "alphaThreshold": 10,
   "shapes": {
     "round": {
@@ -58,17 +58,11 @@
       "shadow": "elongated",
       "sourceFile": "HRG-OTH-R-96044-Oval 3 carat diamond.png",
       "assets": {
-        "src": "/diamond-tech-suite/diamonds/oval-cad-pop.png",
-        "originalSrc": "/diamond-tech-suite/diamonds/oval-cad.png",
-        "switcherSrc": "/diamond-tech-suite/diamonds/oval-cad-switcher.png",
+        "src": "/diamond-tech-suite/diamonds/diamond-oval-cad-3ct.png",
+        "originalSrc": "/diamond-tech-suite/diamonds/diamond-oval-cad-3ct.png",
+        "switcherSrc": "/diamond-tech-suite/diamonds/diamond-oval-cad-3ct-switcher.png",
         "fallbackSrc": "/diamond-tech-suite/diamonds/oval.png",
-        "variants": [
-          "/diamond-tech-suite/diamonds/oval-cad-scintillation-a.png",
-          "/diamond-tech-suite/diamonds/oval-cad-scintillation-b.png",
-          "/diamond-tech-suite/diamonds/oval-cad-scintillation-c.png",
-          "/diamond-tech-suite/diamonds/oval-cad-scintillation-d.png"
-        ],
-        "manifest": "/diamond-tech-suite/diamonds/oval-cad-scintillation-variants.json"
+        "variants": []
       },
       "canvas": {
         "width": 2560,
@@ -116,7 +110,8 @@
           "width": 349,
           "height": 492
         }
-      }
+      },
+      "scintillationEnabled": false
     },
     "cushion": {
       "shapeId": "cushion",
@@ -124,17 +119,11 @@
       "shadow": "square",
       "sourceFile": "HRG-OTH-R-96045-Cushion 3 carat diamond.png",
       "assets": {
-        "src": "/diamond-tech-suite/diamonds/cushion-cad-pop.png",
-        "originalSrc": "/diamond-tech-suite/diamonds/cushion-cad.png",
-        "switcherSrc": "/diamond-tech-suite/diamonds/cushion-cad-switcher.png",
+        "src": "/diamond-tech-suite/diamonds/diamond-cushion-cad-3ct.png",
+        "originalSrc": "/diamond-tech-suite/diamonds/diamond-cushion-cad-3ct.png",
+        "switcherSrc": "/diamond-tech-suite/diamonds/diamond-cushion-cad-3ct-switcher.png",
         "fallbackSrc": "/diamond-tech-suite/diamonds/cushion.png",
-        "variants": [
-          "/diamond-tech-suite/diamonds/cushion-cad-scintillation-a.png",
-          "/diamond-tech-suite/diamonds/cushion-cad-scintillation-b.png",
-          "/diamond-tech-suite/diamonds/cushion-cad-scintillation-c.png",
-          "/diamond-tech-suite/diamonds/cushion-cad-scintillation-d.png"
-        ],
-        "manifest": "/diamond-tech-suite/diamonds/cushion-cad-scintillation-variants.json"
+        "variants": []
       },
       "canvas": {
         "width": 2560,
@@ -182,7 +171,8 @@
           "width": 478,
           "height": 484
         }
-      }
+      },
+      "scintillationEnabled": false
     },
     "radiant": {
       "shapeId": "radiant",
@@ -190,17 +180,11 @@
       "shadow": "elongated",
       "sourceFile": "HRG-OTH-R-96046-Radiant 3 carat diamond.png",
       "assets": {
-        "src": "/diamond-tech-suite/diamonds/radiant-cad-pop.png",
-        "originalSrc": "/diamond-tech-suite/diamonds/radiant-cad.png",
-        "switcherSrc": "/diamond-tech-suite/diamonds/radiant-cad-switcher.png",
+        "src": "/diamond-tech-suite/diamonds/diamond-radiant-cad-3ct.png",
+        "originalSrc": "/diamond-tech-suite/diamonds/diamond-radiant-cad-3ct.png",
+        "switcherSrc": "/diamond-tech-suite/diamonds/diamond-radiant-cad-3ct-switcher.png",
         "fallbackSrc": "/diamond-tech-suite/diamonds/radiant.png",
-        "variants": [
-          "/diamond-tech-suite/diamonds/radiant-cad-scintillation-a.png",
-          "/diamond-tech-suite/diamonds/radiant-cad-scintillation-b.png",
-          "/diamond-tech-suite/diamonds/radiant-cad-scintillation-c.png",
-          "/diamond-tech-suite/diamonds/radiant-cad-scintillation-d.png"
-        ],
-        "manifest": "/diamond-tech-suite/diamonds/radiant-cad-scintillation-variants.json"
+        "variants": []
       },
       "canvas": {
         "width": 2560,
@@ -248,7 +232,8 @@
           "width": 344,
           "height": 490
         }
-      }
+      },
+      "scintillationEnabled": false
     },
     "emerald": {
       "shapeId": "emerald",
@@ -256,17 +241,11 @@
       "shadow": "elongated",
       "sourceFile": "HRG-OTH-R-96047-Emerald 3 carat diamond.png",
       "assets": {
-        "src": "/diamond-tech-suite/diamonds/emerald-cad-pop.png",
-        "originalSrc": "/diamond-tech-suite/diamonds/emerald-cad.png",
-        "switcherSrc": "/diamond-tech-suite/diamonds/emerald-cad-switcher.png",
+        "src": "/diamond-tech-suite/diamonds/diamond-emerald-cad-3ct.png",
+        "originalSrc": "/diamond-tech-suite/diamonds/diamond-emerald-cad-3ct.png",
+        "switcherSrc": "/diamond-tech-suite/diamonds/diamond-emerald-cad-3ct-switcher.png",
         "fallbackSrc": "/diamond-tech-suite/diamonds/emerald.png",
-        "variants": [
-          "/diamond-tech-suite/diamonds/emerald-cad-scintillation-a.png",
-          "/diamond-tech-suite/diamonds/emerald-cad-scintillation-b.png",
-          "/diamond-tech-suite/diamonds/emerald-cad-scintillation-c.png",
-          "/diamond-tech-suite/diamonds/emerald-cad-scintillation-d.png"
-        ],
-        "manifest": "/diamond-tech-suite/diamonds/emerald-cad-scintillation-variants.json"
+        "variants": []
       },
       "canvas": {
         "width": 2560,
@@ -314,7 +293,8 @@
           "width": 342,
           "height": 488
         }
-      }
+      },
+      "scintillationEnabled": false
     },
     "asscher": {
       "shapeId": "asscher",
@@ -322,17 +302,11 @@
       "shadow": "square",
       "sourceFile": "HRG-OTH-R-96048-Asscher 3 carat diamond.png",
       "assets": {
-        "src": "/diamond-tech-suite/diamonds/asscher-cad-pop.png",
-        "originalSrc": "/diamond-tech-suite/diamonds/asscher-cad.png",
-        "switcherSrc": "/diamond-tech-suite/diamonds/asscher-cad-switcher.png",
+        "src": "/diamond-tech-suite/diamonds/diamond-asscher-cad-3ct.png",
+        "originalSrc": "/diamond-tech-suite/diamonds/diamond-asscher-cad-3ct.png",
+        "switcherSrc": "/diamond-tech-suite/diamonds/diamond-asscher-cad-3ct-switcher.png",
         "fallbackSrc": "/diamond-tech-suite/diamonds/asscher.png",
-        "variants": [
-          "/diamond-tech-suite/diamonds/asscher-cad-scintillation-a.png",
-          "/diamond-tech-suite/diamonds/asscher-cad-scintillation-b.png",
-          "/diamond-tech-suite/diamonds/asscher-cad-scintillation-c.png",
-          "/diamond-tech-suite/diamonds/asscher-cad-scintillation-d.png"
-        ],
-        "manifest": "/diamond-tech-suite/diamonds/asscher-cad-scintillation-variants.json"
+        "variants": []
       },
       "canvas": {
         "width": 2560,
@@ -380,7 +354,8 @@
           "width": 479,
           "height": 482
         }
-      }
+      },
+      "scintillationEnabled": false
     },
     "pear": {
       "shapeId": "pear",
@@ -388,17 +363,11 @@
       "shadow": "elongated",
       "sourceFile": "HRG-OTH-R-96049-Pear 3 carat diamond.png",
       "assets": {
-        "src": "/diamond-tech-suite/diamonds/pear-cad-pop.png",
-        "originalSrc": "/diamond-tech-suite/diamonds/pear-cad.png",
-        "switcherSrc": "/diamond-tech-suite/diamonds/pear-cad-switcher.png",
+        "src": "/diamond-tech-suite/diamonds/diamond-pear-cad-3ct.png",
+        "originalSrc": "/diamond-tech-suite/diamonds/diamond-pear-cad-3ct.png",
+        "switcherSrc": "/diamond-tech-suite/diamonds/diamond-pear-cad-3ct-switcher.png",
         "fallbackSrc": "/diamond-tech-suite/diamonds/pear.png",
-        "variants": [
-          "/diamond-tech-suite/diamonds/pear-cad-scintillation-a.png",
-          "/diamond-tech-suite/diamonds/pear-cad-scintillation-b.png",
-          "/diamond-tech-suite/diamonds/pear-cad-scintillation-c.png",
-          "/diamond-tech-suite/diamonds/pear-cad-scintillation-d.png"
-        ],
-        "manifest": "/diamond-tech-suite/diamonds/pear-cad-scintillation-variants.json"
+        "variants": []
       },
       "canvas": {
         "width": 2560,
@@ -446,7 +415,8 @@
           "width": 318,
           "height": 493
         }
-      }
+      },
+      "scintillationEnabled": false
     },
     "marquise": {
       "shapeId": "marquise",
@@ -454,17 +424,11 @@
       "shadow": "elongated",
       "sourceFile": "HRG-OTH-R-96050-Marquise 3 carat diamond.png",
       "assets": {
-        "src": "/diamond-tech-suite/diamonds/marquise-cad-pop.png",
-        "originalSrc": "/diamond-tech-suite/diamonds/marquise-cad.png",
-        "switcherSrc": "/diamond-tech-suite/diamonds/marquise-cad-switcher.png",
+        "src": "/diamond-tech-suite/diamonds/diamond-marquise-cad-3ct.png",
+        "originalSrc": "/diamond-tech-suite/diamonds/diamond-marquise-cad-3ct.png",
+        "switcherSrc": "/diamond-tech-suite/diamonds/diamond-marquise-cad-3ct-switcher.png",
         "fallbackSrc": "/diamond-tech-suite/diamonds/marquise.png",
-        "variants": [
-          "/diamond-tech-suite/diamonds/marquise-cad-scintillation-a.png",
-          "/diamond-tech-suite/diamonds/marquise-cad-scintillation-b.png",
-          "/diamond-tech-suite/diamonds/marquise-cad-scintillation-c.png",
-          "/diamond-tech-suite/diamonds/marquise-cad-scintillation-d.png"
-        ],
-        "manifest": "/diamond-tech-suite/diamonds/marquise-cad-scintillation-variants.json"
+        "variants": []
       },
       "canvas": {
         "width": 2560,
@@ -512,7 +476,8 @@
           "width": 247,
           "height": 494
         }
-      }
+      },
+      "scintillationEnabled": false
     },
     "princess": {
       "shapeId": "princess",
@@ -520,17 +485,11 @@
       "shadow": "square",
       "sourceFile": "HRG-OTH-R-96051-Princess 3 carat diamond.png",
       "assets": {
-        "src": "/diamond-tech-suite/diamonds/princess-cad-pop.png",
-        "originalSrc": "/diamond-tech-suite/diamonds/princess-cad.png",
-        "switcherSrc": "/diamond-tech-suite/diamonds/princess-cad-switcher.png",
+        "src": "/diamond-tech-suite/diamonds/diamond-princess-cad-3ct.png",
+        "originalSrc": "/diamond-tech-suite/diamonds/diamond-princess-cad-3ct.png",
+        "switcherSrc": "/diamond-tech-suite/diamonds/diamond-princess-cad-3ct-switcher.png",
         "fallbackSrc": "/diamond-tech-suite/diamonds/princess.png",
-        "variants": [
-          "/diamond-tech-suite/diamonds/princess-cad-scintillation-a.png",
-          "/diamond-tech-suite/diamonds/princess-cad-scintillation-b.png",
-          "/diamond-tech-suite/diamonds/princess-cad-scintillation-c.png",
-          "/diamond-tech-suite/diamonds/princess-cad-scintillation-d.png"
-        ],
-        "manifest": "/diamond-tech-suite/diamonds/princess-cad-scintillation-variants.json"
+        "variants": []
       },
       "canvas": {
         "width": 2560,
@@ -578,7 +537,8 @@
           "width": 477,
           "height": 482
         }
-      }
+      },
+      "scintillationEnabled": false
     }
   }
 }

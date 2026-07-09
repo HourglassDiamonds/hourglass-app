@@ -4,6 +4,7 @@ import path from "node:path";
 import { describe, it } from "node:test";
 import { PNG } from "pngjs";
 import {
+  DELIVERED_CAD_SHAPE_IDS,
   DIAMOND_CAD_ASSETS,
   DIAMOND_CAD_SHAPE_IDS,
   getDiamondCadAsset,
@@ -84,13 +85,20 @@ describe("Diamond CAD config completeness", () => {
     }
   });
 
-  it("provides base, original, switcher, four variants, and legacy fallback", () => {
+  it("provides base, original, switcher, variants, and legacy fallback", () => {
     for (const id of ALL_SHAPE_IDS) {
       const a = DIAMOND_CAD_ASSETS[id];
-      assert.ok(a.src.endsWith("-pop.png") || a.src.includes("rbc-cad-pop"));
-      assert.ok(a.originalSrc.endsWith("-cad.png") || a.originalSrc.includes("rbc-cad.png"));
+      if (a.scintillationEnabled) {
+        assert.ok(a.src.endsWith("-pop.png") || a.src.includes("rbc-cad-pop"));
+        assert.ok(a.originalSrc.endsWith("-cad.png") || a.originalSrc.includes("rbc-cad.png"));
+        assert.equal(a.variants.length, 4);
+      } else {
+        assert.match(a.src, new RegExp(`diamond-${id}-cad-3ct\\.png$`));
+        assert.match(a.switcherSrc, new RegExp(`diamond-${id}-cad-3ct-switcher\\.png$`));
+        assert.equal(a.variants.length, 0);
+        assert.equal(a.scintillationEnabled, false);
+      }
       assert.ok(a.switcherSrc.includes("-switcher.png"));
-      assert.equal(a.variants.length, 4);
       assert.ok(a.fallbackSrc.endsWith(`/${id === "round" ? "round" : id}.png`) || a.fallbackSrc.includes(`/${id}.png`));
       assert.ok(fs.existsSync(publicToFs(a.src)), a.src);
       assert.ok(fs.existsSync(publicToFs(a.originalSrc)), a.originalSrc);
@@ -127,6 +135,32 @@ describe("Diamond CAD config completeness", () => {
   });
 });
 
+describe("Delivered PNG fancy shapes (runtime render source)", () => {
+  for (const id of DELIVERED_CAD_SHAPE_IDS) {
+    it(`${id}: main stage src is diamond-${id}-cad-3ct.png`, () => {
+      const a = getDiamondCadAsset(id);
+      assert.equal(a.src, `/diamond-tech-suite/diamonds/diamond-${id}-cad-3ct.png`);
+      assert.equal(a.scintillationEnabled, false);
+      assert.equal(a.variants.length, 0);
+      assert.ok(!a.src.includes("cad-pop"), a.src);
+    });
+  }
+
+  it("only round may use rbc-cad-pop or scintillation variants", () => {
+    for (const id of ALL_SHAPE_IDS) {
+      const a = DIAMOND_CAD_ASSETS[id];
+      if (id === "round") {
+        assert.match(a.src, /rbc-cad-pop\.png$/);
+        assert.equal(a.scintillationEnabled, true);
+        continue;
+      }
+      assert.equal(a.scintillationEnabled, false, id);
+      assert.ok(!a.src.includes("cad-pop"), a.src);
+      assert.equal(a.variants.length, 0, id);
+    }
+  });
+});
+
 describe("Diamond CAD PNG / asset validation", () => {
   for (const id of ALL_SHAPE_IDS) {
     it(`${id}: base and variants share dimensions, bounds, alpha silhouette`, () => {
@@ -139,6 +173,14 @@ describe("Diamond CAD PNG / asset validation", () => {
       assert.ok(Math.abs(baseBounds.minY - asset.visibleBounds.minY) <= 1);
       assert.ok(Math.abs(baseBounds.maxX - asset.visibleBounds.maxX) <= 1);
       assert.ok(Math.abs(baseBounds.maxY - asset.visibleBounds.maxY) <= 1);
+
+      if (!asset.scintillationEnabled) {
+        const switcher = loadPng(publicToFs(asset.switcherSrc));
+        const swBounds = probeBounds(switcher);
+        assert.ok(swBounds.width > 10 && swBounds.height > 10);
+        assert.ok(switcher.width === 512 && switcher.height === 512);
+        return;
+      }
 
       for (const variantUrl of asset.variants) {
         const variant = loadPng(publicToFs(variantUrl));
@@ -307,18 +349,17 @@ describe("Diamond CAD render configuration", () => {
     }
   });
 
-  it("fallback chain is enhanced → original → legacy → ultimate", () => {
+  it("delivered fancy shapes skip pop/original in fallback chain", () => {
     const asset = getDiamondCadAsset("oval");
     const ultimate = "/diamond-tech-suite/diamonds/round.png";
-    assert.equal(nextCadFallbackSrc(asset.src, asset, ultimate), asset.originalSrc);
-    assert.equal(
-      nextCadFallbackSrc(asset.originalSrc, asset, ultimate),
-      asset.fallbackSrc,
-    );
+    assert.equal(nextCadFallbackSrc(asset.src, asset, ultimate), asset.fallbackSrc);
     assert.equal(
       nextCadFallbackSrc(asset.fallbackSrc, asset, ultimate),
       ultimate,
     );
+
+    const round = getDiamondCadAsset("round");
+    assert.equal(nextCadFallbackSrc(round.src, round, ultimate), round.originalSrc);
   });
 
   it("round visible scale matches the reference CAD compensation", () => {
@@ -326,11 +367,16 @@ describe("Diamond CAD render configuration", () => {
     assert.ok(Math.abs(round.visibleScale - (1420 / 1500) / (1679 / 2560)) < 1e-9);
   });
 
-  it("every shape uses CAD stage/switcher assets (not vendor or legacy stage primary)", () => {
+  it("every shape uses correct stage/switcher asset naming", () => {
     for (const id of ALL_SHAPE_IDS) {
       const a = DIAMOND_CAD_ASSETS[id];
-      assert.match(a.src, /cad-pop\.png$/);
-      assert.match(a.switcherSrc, /cad-switcher\.png$/);
+      if (a.scintillationEnabled) {
+        assert.match(a.src, /cad-pop\.png$/);
+        assert.match(a.switcherSrc, /cad-switcher\.png$/);
+      } else {
+        assert.match(a.src, /diamond-.*-cad-3ct\.png$/);
+        assert.match(a.switcherSrc, /diamond-.*-cad-3ct-switcher\.png$/);
+      }
     }
   });
 });
