@@ -1172,10 +1172,16 @@ function SuiteStyles() {
         container-type:size;
         overflow:hidden;
         --dts-framing-lift:-5.25%;
+        --dts-composition-y:-12%;
         --dts-diamond-x-nudge:0px;
         --dts-diamond-y-nudge:-24px;
         --dts-ring-cluster-top:63.5%;
         --dts-ring-cluster-top-tall:62.1%;
+      }
+      .dts-stage-composition{
+        position:absolute;
+        inset:0;
+        transform:translateY(var(--dts-composition-y, 0));
       }
       .dts-layer-finger{
         position:absolute; inset:0; z-index:1; overflow:hidden;
@@ -2842,26 +2848,28 @@ export default function DiamondStudioPage() {
 
               <div className="dts-stage-canvas dts-mobile-visual">
                 <div className="dts-viewer">
-                  <div className="dts-layer-finger" aria-hidden>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={fingerImageSrc} alt="" />
-                  </div>
+                  <div className="dts-stage-composition">
+                    <div className="dts-layer-finger" aria-hidden>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={fingerImageSrc} alt="" />
+                    </div>
 
-                  <div
-                    className={`dts-layer-diamond ${diamondSwapping ? "is-swapping" : ""}`}
-                    data-dts-stage-diamond-overlay=""
-                    style={{
-                      width: `${layerWidthCqw}cqw`,
-                      height: `${layerHeightCqw}cqw`,
-                    }}
-                  >
-                    <DiamondStageFace
-                      key={diamondVisualShape}
-                      shapeId={diamondVisualShape}
-                      orientation={stoneOrientation}
-                      caratAdjusting={caratAdjusting}
-                      carat={carat}
-                    />
+                    <div
+                      className={`dts-layer-diamond ${diamondSwapping ? "is-swapping" : ""}`}
+                      data-dts-stage-diamond-overlay=""
+                      style={{
+                        width: `${layerWidthCqw}cqw`,
+                        height: `${layerHeightCqw}cqw`,
+                      }}
+                    >
+                      <DiamondStageFace
+                        key={diamondVisualShape}
+                        shapeId={diamondVisualShape}
+                        orientation={stoneOrientation}
+                        caratAdjusting={caratAdjusting}
+                        carat={carat}
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
