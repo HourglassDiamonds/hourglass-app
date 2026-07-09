@@ -878,7 +878,7 @@ function SuiteStyles() {
         align-items:center;
         justify-content:center;
         overflow:visible;
-        padding:14px 0 22px;
+        padding:12px 0 20px;
         min-height:0;
         min-width:0;
       }
@@ -1377,7 +1377,7 @@ function SuiteStyles() {
       }
       .dts-layer-diamond.is-swapping{ opacity:0; }
       .dts-sentence{
-        position:relative; margin:0 12px 10px; text-align:center;
+        position:relative; margin:0 12px 8px; text-align:center;
         font-family:var(--serif); font-weight:300; font-size:21px; color:var(--ink);
         letter-spacing:0.01em; pointer-events:none; z-index:30; flex:0 0 auto;
         line-height:1.35;
@@ -1391,20 +1391,15 @@ function SuiteStyles() {
         .dts-sentence-br{ display:none; }
       }
       .dts-stage-trust{
-        margin:0 12px 10px; padding:0 8px; text-align:center;
+        margin:0 12px 8px; padding:0 8px; text-align:center;
         font-size:11px; line-height:1.65; letter-spacing:0.05em;
         color:var(--ink-soft); font-weight:400;
       }
       .dts-page-title{
-        margin:0 12px 4px; padding:0 8px; text-align:center;
+        margin:0 12px 2px; padding:0 8px; text-align:center;
         font-family:var(--serif); font-weight:400;
         font-size:clamp(1.05rem, 2.6vw, 1.3rem); line-height:1.25;
         letter-spacing:0.02em; color:var(--ink);
-      }
-      .dts-page-subhead{
-        margin:0 12px 10px; padding:0 8px; text-align:center;
-        font-size:10.5px; line-height:1.5; letter-spacing:0.03em;
-        color:var(--ink-soft); font-weight:400;
       }
       .dts-stage-trust-link{
         color:var(--ink-soft);
@@ -1632,7 +1627,7 @@ function SuiteStyles() {
           font-size:clamp(16.5px,4.4vw,18.5px);
           line-height:1.28;
           letter-spacing:0.006em;
-          margin:0 auto 6px;
+          margin:0 auto 4px;
           padding:0 2px;
           max-width:260px;
           position:relative !important;
@@ -1647,16 +1642,10 @@ function SuiteStyles() {
           font-size:10px;
         }
         .dts-page-title{
-          margin:0 auto 3px;
+          margin:0 auto 2px;
           max-width:280px;
           width:100%;
           font-size:clamp(1.05rem, 4.2vw, 1.2rem);
-        }
-        .dts-page-subhead{
-          margin:0 auto 8px;
-          max-width:280px;
-          width:100%;
-          font-size:10px;
         }
         .dts-layer-finger img{
           object-position:50% 38%;
@@ -1897,9 +1886,6 @@ function SuiteStyles() {
         .dts-page-title{
           max-width:280px;
         }
-        .dts-page-subhead{
-          max-width:280px;
-        }
       }
       @media (min-width: 769px) and (max-width: 1023px) {
         .dts-layer-finger img{
@@ -1910,8 +1896,7 @@ function SuiteStyles() {
         }
         .dts-sentence,
         .dts-stage-trust,
-        .dts-page-title,
-        .dts-page-subhead{
+        .dts-page-title{
           max-width:min(480px, 92%);
         }
       }
@@ -2821,9 +2806,6 @@ export default function DiamondStudioPage() {
             >
               <div className="dts-mobile-hero studio-preview finger-preview">
                 <h1 className="dts-page-title">Diamond Size Studio</h1>
-                <p className="dts-page-subhead">
-                  Compare carat, shape, and finger size before choosing a diamond.
-                </p>
                 <p className="dts-sentence">
                   A {formatCaratForHeadline(carat)}-carat{" "}
                   {SHAPE_LABELS[shape].toLowerCase()} diamond,

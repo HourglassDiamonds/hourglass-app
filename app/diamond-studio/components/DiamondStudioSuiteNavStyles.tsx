@@ -74,11 +74,25 @@ export default function DiamondStudioSuiteNavStyles() {
       .dts-topnav-item:not(.is-active):hover .dts-topnav-label{
         color:var(--hg-ink, #1c1b1a);
       }
+      @media (min-width: 1024px) {
+        [data-suite-instrument] .dts-topbar{
+          display:grid;
+          grid-template-columns:256px minmax(0, 1fr);
+          justify-content:stretch;
+          padding-left:0;
+          padding-right:16px;
+        }
+        [data-suite-instrument] .dts-topnav{
+          grid-column:2;
+          justify-content:center;
+          width:100%;
+        }
+      }
       @media (max-width: 768px) {
         .dts-topbar{
           display:flex;
           align-items:stretch;
-          justify-content:flex-start;
+          justify-content:center;
           padding:0 12px;
           min-height:44px;
           height:auto;
@@ -86,7 +100,7 @@ export default function DiamondStudioSuiteNavStyles() {
         .dts-topnav{
           margin-left:0;
           padding:8px 0 0;
-          justify-content:flex-start;
+          justify-content:center;
           gap:clamp(16px,4.5vw,28px);
           width:100%;
           min-width:0;
