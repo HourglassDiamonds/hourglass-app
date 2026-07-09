@@ -173,16 +173,26 @@ export function OverlayStage({
                 : null}
             </>
           ) : (
-            <p className="dss-stage-empty-copy">
-              Upload a hand photo or capture with your phone to begin.
-            </p>
+            <div className="dss-stage-empty" role="status">
+              <p className="dss-stage-empty-kicker">Hand preview</p>
+              <p className="dss-stage-empty-title">Add your hand photo</p>
+              <p className="dss-stage-empty-copy">
+                Upload from the left panel or capture with your phone. Diamonds
+                appear here at calibrated scale once a photo is ready.
+              </p>
+              <ol className="dss-stage-empty-steps">
+                <li>Add a clear photo of your hand</li>
+                <li>Choose shape and carat</li>
+                <li>Drag diamonds into position</li>
+              </ol>
+            </div>
           )}
         </div>
       </div>
       <p className="dss-stage-hint">
         {handImageUrl
           ? "Drag each diamond overlay to position it on your finger. Carat and ring size update scale automatically."
-          : "Ring size sets the scale reference. Use the left panel to upload or scan a QR code."}
+          : "Confirm your ring size for scale reference. Upload a photo or scan the QR code."}
       </p>
     </>
   );

@@ -4,23 +4,24 @@ export function ShapeStudioStyles() {
       dangerouslySetInnerHTML={{
         __html: `
       .dss-shell{
-        --gold: oklch(0.74 0.090 70);
-        --gold-soft: oklch(0.84 0.060 75);
-        --gold-warm: oklch(0.68 0.110 65);
-        --topnav-active: oklch(0.41 0.032 58);
-        --topnav-idle: oklch(0.36 0.012 60);
-        --bg: oklch(0.965 0.008 75);
-        --bg-deep: oklch(0.945 0.010 70);
-        --card: oklch(0.985 0.006 78);
-        --card-edge: oklch(0.93 0.006 72);
-        --ink: oklch(0.28 0.012 60);
-        --ink-soft: oklch(0.46 0.011 62);
-        --ink-mute: oklch(0.62 0.010 65);
-        --hairline: oklch(0.86 0.008 70);
-        --hairline-soft: oklch(0.92 0.006 72);
-        --pill-active: oklch(0.94 0.024 75);
-        --pill-edge: oklch(0.82 0.040 70);
-        --shadow-1: 0 1px 2px oklch(0.55 0.012 65 / 0.04), 0 4px 14px oklch(0.45 0.012 65 / 0.04);
+        --gold: var(--hg-gold, oklch(0.74 0.090 70));
+        --gold-soft: color-mix(in srgb, var(--hg-gold, #c4a574) 42%, #fff);
+        --gold-warm: var(--hg-gold-deep, oklch(0.68 0.110 65));
+        --topnav-active: var(--hg-ink, #1c1b1a);
+        --topnav-idle: var(--hg-muted, #756b61);
+        --bg: var(--hg-ivory, #efe8de);
+        --bg-deep: color-mix(in srgb, var(--hg-ivory, #efe8de) 88%, var(--hg-line, #e4dbcf));
+        --card: var(--hg-surface, #f7f2ea);
+        --card-edge: var(--hg-line, #e4dbcf);
+        --ink: var(--hg-ink, #1c1b1a);
+        --ink-soft: var(--hg-muted, #756b61);
+        --ink-mute: var(--hg-eyebrow, #8a8177);
+        --hairline: var(--hg-line, #e4dbcf);
+        --hairline-soft: color-mix(in srgb, var(--hg-line, #e4dbcf) 55%, #fff);
+        --pill-active: color-mix(in srgb, var(--hg-surface, #f7f2ea) 70%, #fff);
+        --pill-edge: var(--hg-line-strong, #d9cfc2);
+        --shadow-1: 0 1px 2px color-mix(in srgb, var(--hg-muted, #756b61) 8%, transparent),
+          0 8px 24px color-mix(in srgb, var(--hg-ink, #1c1b1a) 5%, transparent);
         --dt-ease: cubic-bezier(0.28, 0.11, 0.22, 1);
         --grot: var(--font-geist-sans), system-ui, sans-serif;
         --serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
@@ -80,10 +81,14 @@ export function ShapeStudioStyles() {
         padding:clamp(16px, 2.2vh, 28px) 0 8px;
         overflow:hidden;
       }
+      .dss-tool-header{
+        margin:0 12px 8px;
+        flex:0 0 auto;
+      }
       .dss-sentence{
         margin:0 12px 12px; text-align:center;
         font-family:var(--serif); font-weight:300;
-        font-size:clamp(17px, 2.4vh, 21px); line-height:1.35;
+        font-size:clamp(16px, 2.1vh, 19px); line-height:1.38;
         color:var(--ink); max-width:520px;
       }
       .dss-stage-canvas{
@@ -95,19 +100,80 @@ export function ShapeStudioStyles() {
         width:min(578px, 93.5%);
         aspect-ratio:7/9;
         max-height:96%;
-        background:var(--card);
-        border:1px solid var(--card-edge);
-        border-radius:12px;
+        background:color-mix(in srgb, var(--card) 88%, #fff);
+        border:1px solid color-mix(in srgb, var(--card-edge) 85%, var(--hairline));
+        border-radius:16px;
         overflow:hidden;
         box-shadow:var(--shadow-1);
       }
       .dss-viewer.is-empty{
-        display:grid; place-items:center;
-        padding:24px;
+        display:grid;
+        place-items:center;
+        padding:28px 24px;
+        background:
+          radial-gradient(ellipse 70% 55% at 50% 38%, color-mix(in srgb, var(--card) 92%, #fff), var(--card)),
+          linear-gradient(180deg, color-mix(in srgb, var(--card) 96%, #fff), var(--card));
+      }
+      .dss-viewer.is-empty::before{
+        content:"";
+        position:absolute;
+        inset:14px;
+        border:1px dashed color-mix(in srgb, var(--hairline) 90%, transparent);
+        border-radius:12px;
+        pointer-events:none;
+      }
+      .dss-stage-empty{
+        position:relative;
+        z-index:1;
+        display:flex;
+        flex-direction:column;
+        align-items:center;
+        gap:8px;
+        text-align:center;
+        max-width:300px;
+      }
+      .dss-stage-empty-kicker{
+        margin:0;
+        font-size:9px;
+        letter-spacing:0.2em;
+        text-transform:uppercase;
+        color:var(--ink-mute);
+      }
+      .dss-stage-empty-title{
+        margin:0;
+        font-family:var(--serif);
+        font-size:clamp(1.1rem, 2.4vh, 1.35rem);
+        font-weight:400;
+        line-height:1.25;
+        color:var(--ink);
       }
       .dss-stage-empty-copy{
-        margin:0; font-size:13px; line-height:1.5;
-        color:var(--ink-mute); text-align:center; max-width:280px;
+        margin:0;
+        font-size:12.5px;
+        line-height:1.55;
+        color:var(--ink-soft);
+      }
+      .dss-stage-empty-steps{
+        margin:6px 0 0;
+        padding:0;
+        list-style:none;
+        display:flex;
+        flex-direction:column;
+        gap:4px;
+        font-size:10px;
+        letter-spacing:0.06em;
+        text-transform:uppercase;
+        color:var(--ink-mute);
+      }
+      .dss-stage-empty-steps li::before{
+        content:"";
+        display:inline-block;
+        width:4px;
+        height:4px;
+        margin-right:8px;
+        border-radius:50%;
+        background:color-mix(in srgb, var(--gold-warm) 70%, var(--hairline));
+        vertical-align:middle;
       }
       .dss-hand-img{
         position:absolute; inset:0;
@@ -174,13 +240,18 @@ export function ShapeStudioStyles() {
       }
       .dss-shape-chip.is-selected .dss-name{ color:var(--ink); }
       .dss-card{
-        background:var(--card); border:1px solid var(--card-edge);
-        border-radius:12px; padding:13px 14px 14px;
-        box-shadow:var(--shadow-1); flex-shrink:0;
+        background:color-mix(in srgb, var(--card) 92%, #fff);
+        border:1px solid color-mix(in srgb, var(--card-edge) 88%, var(--hairline));
+        border-radius:14px;
+        padding:13px 14px 14px;
+        box-shadow:var(--shadow-1);
+        flex-shrink:0;
       }
       .dss-card-head{
         font-size:9.35px; font-weight:500; letter-spacing:0.168em;
         text-transform:uppercase; color:var(--ink-soft); margin:0 0 10px;
+        font-family:var(--serif);
+        font-style:italic;
       }
       .dss-stepper{
         display:flex; align-items:center; justify-content:center;
@@ -288,6 +359,11 @@ export function ShapeStudioStyles() {
       .dss-qr-loading{
         margin:12px 0; font-size:12px; color:var(--ink-soft); text-align:center;
       }
+      .dss-editorial{
+        position:relative;
+        z-index:1;
+        flex-shrink:0;
+      }
       @media (min-width: 769px) {
         .dss-main{
           flex:1 1 auto;
@@ -322,6 +398,11 @@ export function ShapeStudioStyles() {
         .dss-control-rail > .dss-card:nth-child(4){ order:7; }
         .dss-stage-stack{ display:contents; }
         .dss-stage-preview{ display:contents; }
+        .dss-tool-header{
+          order:1;
+          width:calc(100% - 40px);
+          margin:4px 20px 0;
+        }
         .dss-sentence{
           order:2; width:calc(100% - 40px); margin:2px 20px 8px;
           font-size:clamp(16.5px, 4.4vw, 18.5px); max-width:none;

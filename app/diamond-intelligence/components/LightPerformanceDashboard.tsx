@@ -47,8 +47,8 @@ import AnalysisProgressNarrative from "./AnalysisProgressNarrative";
 import { CONSUMER_COPY } from "./consumer-display-labels";
 import { DI_EDITORIAL_CARD, DI_EYEBROW_STUDIO } from "./di-studio-styles";
 import { DI_V3_SHELL } from "./di-v3-styles";
-import DiLandingMarketing, {
-  DiLandingIntro,
+import {
+  DiSuiteToolIntro,
   TrustPrivacyBand,
 } from "./DiLandingMarketing";
 import DiEducationalWrapper from "./DiEducationalWrapper";
@@ -509,23 +509,21 @@ export default function LightPerformanceDashboard({
   const showLandingMarketing = resultState === "NO_RESULT" && !hasReport;
 
   const shellClass = showLandingMarketing
-    ? "mx-auto w-full max-w-[1180px] px-5 pb-14 pt-0 md:px-6 md:pb-16"
+    ? "mx-auto w-full max-w-[1180px] px-5 pb-10 pt-4 md:px-6 md:pb-12 md:pt-5"
     : DI_V3_SHELL;
 
   return (
-    <>
-      {showLandingMarketing ? <DiLandingMarketing /> : null}
+    <section className={shellClass}>
+      {showLandingMarketing ? <DiSuiteToolIntro /> : null}
 
-      <section className={shellClass}>
-        {showLandingMarketing ? <DiLandingIntro /> : null}
-        <div
-          id="di-upload-form"
-          className={`scroll-mt-24 p-6 md:p-8 ${
-            showLandingMarketing
-              ? "bg-transparent pt-4 md:pt-6"
-              : `${DI_EDITORIAL_CARD} mb-8`
-          }`}
-        >
+      <div
+        id="di-upload-form"
+        className={`scroll-mt-24 ${
+          showLandingMarketing
+            ? `${DI_EDITORIAL_CARD} p-5 md:p-7`
+            : `${DI_EDITORIAL_CARD} mb-8 p-6 md:p-8`
+        }`}
+      >
         {!showLandingMarketing ? (
           <p className={DI_EYEBROW_STUDIO}>Diamond Intelligence</p>
         ) : null}
@@ -545,8 +543,6 @@ export default function LightPerformanceDashboard({
       </div>
 
       {showLandingMarketing ? <TrustPrivacyBand /> : null}
-
-      {showLandingMarketing ? <DiEducationalWrapper /> : null}
 
       {resultState === "PROCESSING" ? (
         <AnalysisProgressNarrative active />
@@ -709,7 +705,8 @@ export default function LightPerformanceDashboard({
           </p>
         </footer>
       ) : null}
-      </section>
-    </>
+
+      {showLandingMarketing ? <DiEducationalWrapper /> : null}
+    </section>
   );
 }

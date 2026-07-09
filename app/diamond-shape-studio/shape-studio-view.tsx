@@ -7,9 +7,12 @@ import type {
   OverlayPosition,
   StudioMode,
 } from "@/lib/shape-studio/types";
+import { SHAPE_LABELS } from "@/lib/shape-studio/constants";
 import { CaratControl, RingSizeControl } from "./components/calibration-controls";
-import { OverlayStage } from "./components/overlay-stage";
+import DiamondStudioToolHeader from "../diamond-studio/components/DiamondStudioToolHeader";
 import { HandPhotoPanel } from "./components/hand-photo-panel";
+import { OverlayStage } from "./components/overlay-stage";
+import ShapeComparisonEditorial from "./components/ShapeComparisonEditorial";
 import { ShapeSelector } from "./components/shape-selector";
 import { ShapeStudioStyles } from "./components/shape-studio-styles";
 
@@ -117,6 +120,11 @@ export function ShapeStudioView() {
     ];
   }, [mode, singleSlot, compareA, compareB]);
 
+  const shapeLabel = SHAPE_LABELS[activeSlot.shape].toLowerCase();
+  const liveSentence = handImageUrl
+    ? `A ${activeSlot.carat.toFixed(1)}-carat ${shapeLabel} diamond, shown on your hand preview.`
+    : "Upload a hand photo to compare shapes and carat sizes with calibrated scale.";
+
   return (
     <div className="dss-shell h-full min-h-full w-full" data-theme="light">
       <ShapeStudioStyles />
@@ -173,10 +181,12 @@ export function ShapeStudioView() {
 
           <div className="dss-stage-stack">
             <div className="dss-stage-preview" aria-label="Hand photo preview">
-              <p className="dss-sentence">
-                Compare diamond shapes and carat sizes on your own hand with
-                accurate scale references.
-              </p>
+              <DiamondStudioToolHeader
+                title="Shape Comparison"
+                subhead="Compare diamond shapes on the hand before choosing a setting."
+                className="dss-tool-header"
+              />
+              <p className="dss-sentence">{liveSentence}</p>
               <OverlayStage
                 handImageUrl={handImageUrl}
                 ringSize={ringSize}
@@ -190,6 +200,7 @@ export function ShapeStudioView() {
           </div>
         </div>
       </div>
+      <ShapeComparisonEditorial />
     </div>
   );
 }
