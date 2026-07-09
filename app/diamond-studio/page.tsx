@@ -358,7 +358,7 @@ function serverSnapshotMaxWidth768() {
   return false;
 }
 
-const DIAMOND_SHAPE_FALLBACK = "/diamond-tech-suite/diamonds/round.png";
+const DIAMOND_SHAPE_FALLBACK = "/diamond-tech-suite/diamonds-v2/diamond-round-v2.png";
 
 function ShapeStripThumb({ imageUrl }: { imageUrl: string }) {
   const [src, setSrc] = useState(imageUrl);
@@ -2020,7 +2020,7 @@ const SHAPE_SUITE_CONFIG: Record<
   round: {
     id: "round",
     label: SHAPE_LABELS.round,
-    image: "/diamond-tech-suite/diamonds/round.png",
+    image: "/diamond-tech-suite/diamonds-v2/diamond-round-v2.png",
     aspectRatio: 1,
     caratToFaceMm: (carat) => {
       const d = getRoundDiamondMm(carat);
@@ -2030,56 +2030,56 @@ const SHAPE_SUITE_CONFIG: Record<
   oval: {
     id: "oval",
     label: "Oval",
-    image: "/diamond-tech-suite/diamonds/oval.png",
+    image: "/diamond-tech-suite/diamonds-v2/diamond-oval-v2.png",
     aspectRatio: ovalLengthOverWidthAt1ct(),
     caratToFaceMm: (carat) => ovalFaceDimensionsMm(carat),
   },
   cushion: {
     id: "cushion",
     label: "Cushion",
-    image: "/diamond-tech-suite/diamonds/cushion.png",
+    image: "/diamond-tech-suite/diamonds-v2/diamond-cushion-v2.png",
     aspectRatio: 1,
     caratToFaceMm: (carat) => cushionFaceDimensionsMm(carat),
   },
   princess: {
     id: "princess",
     label: SHAPE_LABELS.princess,
-    image: "/diamond-tech-suite/diamonds/princess.png",
+    image: "/diamond-tech-suite/diamonds-v2/diamond-princess-v2.png",
     aspectRatio: 1,
     caratToFaceMm: (carat) => princessFaceDimensionsMm(carat),
   },
   marquise: {
     id: "marquise",
     label: SHAPE_LABELS.marquise,
-    image: "/diamond-tech-suite/diamonds/marquise.png",
+    image: "/diamond-tech-suite/diamonds-v2/diamond-marquise-v2.png",
     aspectRatio: MARQUISE_LENGTH_RATIO,
     caratToFaceMm: (carat) => marquiseFaceDimensionsMm(carat),
   },
   pear: {
     id: "pear",
     label: SHAPE_LABELS.pear,
-    image: "/diamond-tech-suite/diamonds/pear.png",
+    image: "/diamond-tech-suite/diamonds-v2/diamond-pear-v2.png",
     aspectRatio: PEAR_LENGTH_RATIO,
     caratToFaceMm: (carat) => pearFaceDimensionsMm(carat),
   },
   emerald: {
     id: "emerald",
     label: SHAPE_LABELS.emerald,
-    image: "/diamond-tech-suite/diamonds/emerald.png",
+    image: "/diamond-tech-suite/diamonds-v2/diamond-emerald-v2.png",
     aspectRatio: EMERALD_LENGTH_RATIO,
     caratToFaceMm: (carat) => emeraldFaceDimensionsMm(carat),
   },
   radiant: {
     id: "radiant",
     label: SHAPE_LABELS.radiant,
-    image: "/diamond-tech-suite/diamonds/radiant.png",
+    image: "/diamond-tech-suite/diamonds-v2/diamond-radiant-v2.png",
     aspectRatio: RADIANT_LENGTH_RATIO,
     caratToFaceMm: (carat) => radiantFaceDimensionsMm(carat),
   },
   asscher: {
     id: "asscher",
     label: SHAPE_LABELS.asscher,
-    image: "/diamond-tech-suite/diamonds/asscher.png",
+    image: "/diamond-tech-suite/diamonds-v2/diamond-asscher-v2.png",
     aspectRatio: 1,
     caratToFaceMm: (carat) => asscherFaceDimensionsMm(carat),
   },
@@ -2140,12 +2140,14 @@ function DiamondStageFace({
               aria-hidden
             />
             {faceImg}
-            <DiamondCadScintillation
-              active={caratAdjusting}
-              carat={carat}
-              variants={cad.variants}
-              shapeId={shapeId}
-            />
+            {cad.scintillationEnabled ? (
+              <DiamondCadScintillation
+                active={caratAdjusting}
+                carat={carat}
+                variants={cad.variants}
+                shapeId={shapeId}
+              />
+            ) : null}
           </div>
         </div>
       </div>

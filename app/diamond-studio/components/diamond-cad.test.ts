@@ -24,9 +24,11 @@ import {
 import { ALL_SHAPE_IDS, type ShapeId } from "./diamond-cad-types";
 
 const ROOT = path.resolve(process.cwd());
-const DIAMONDS_DIR = path.join(ROOT, "public/diamond-tech-suite/diamonds");
+const DIAMONDS_V2_DIR = path.join(ROOT, "public/diamond-tech-suite/diamonds-v2");
+const LEGACY_DIAMONDS_PREFIX = "/diamond-tech-suite/diamonds/";
+const V2_PREFIX = "/diamond-tech-suite/diamonds-v2/";
+const V2_CANONICAL = /^\/diamond-tech-suite\/diamonds-v2\/diamond-[a-z]+-v2\.png$/;
 const ALPHA = 10;
-const OPAQUE = 12;
 
 const VENDOR_PREFIX = "HRG-OTH-R-";
 
@@ -75,7 +77,11 @@ function probeBounds(png: PNG.PNG) {
   };
 }
 
-describe("Diamond CAD config completeness", () => {
+function collectAssetUrls(asset: (typeof DIAMOND_CAD_ASSETS)[ShapeId]): string[] {
+  return [asset.src, asset.originalSrc, asset.switcherSrc, asset.fallbackSrc, ...asset.variants];
+}
+
+describe("Diamond Studio V2 asset config", () => {
   it("covers every ShapeId exactly once", () => {
     assert.deepEqual([...DIAMOND_CAD_SHAPE_IDS].sort(), [...ALL_SHAPE_IDS].sort());
     for (const id of ALL_SHAPE_IDS) {
@@ -84,29 +90,42 @@ describe("Diamond CAD config completeness", () => {
     }
   });
 
-  it("provides base, original, switcher, four variants, and legacy fallback", () => {
+  it("every shape uses only diamonds-v2 canonical PNG paths", () => {
     for (const id of ALL_SHAPE_IDS) {
       const a = DIAMOND_CAD_ASSETS[id];
-      assert.ok(a.src.endsWith("-pop.png") || a.src.includes("rbc-cad-pop"));
-      assert.ok(a.originalSrc.endsWith("-cad.png") || a.originalSrc.includes("rbc-cad.png"));
-      assert.ok(a.switcherSrc.includes("-switcher.png"));
-      assert.equal(a.variants.length, 4);
-      assert.ok(a.fallbackSrc.endsWith(`/${id === "round" ? "round" : id}.png`) || a.fallbackSrc.includes(`/${id}.png`));
-      assert.ok(fs.existsSync(publicToFs(a.src)), a.src);
-      assert.ok(fs.existsSync(publicToFs(a.originalSrc)), a.originalSrc);
-      assert.ok(fs.existsSync(publicToFs(a.switcherSrc)), a.switcherSrc);
-      assert.ok(fs.existsSync(publicToFs(a.fallbackSrc)), a.fallbackSrc);
-      for (const v of a.variants) {
-        assert.ok(fs.existsSync(publicToFs(v)), v);
+      const expected = `${V2_PREFIX}diamond-${id}-v2.png`;
+      assert.equal(a.src, expected);
+      assert.equal(a.originalSrc, expected);
+      assert.equal(a.switcherSrc, expected);
+      assert.equal(a.fallbackSrc, expected);
+      assert.match(a.src, V2_CANONICAL);
+    }
+  });
+
+  it("does not reference legacy diamonds/, cad-pop, rbc-cad, or scintillation paths", () => {
+    for (const id of ALL_SHAPE_IDS) {
+      const urls = collectAssetUrls(DIAMOND_CAD_ASSETS[id]);
+      for (const url of urls) {
+        assert.ok(!url.startsWith(LEGACY_DIAMONDS_PREFIX), url);
+        assert.ok(!url.includes("cad-pop"), url);
+        assert.ok(!url.includes("rbc-cad"), url);
+        assert.ok(!url.includes("cad-scintillation"), url);
+        assert.ok(!url.includes("-cad-switcher"), url);
       }
+    }
+  });
+
+  it("disables scintillation for every shape", () => {
+    for (const id of ALL_SHAPE_IDS) {
+      const a = DIAMOND_CAD_ASSETS[id];
+      assert.equal(a.scintillationEnabled, false);
+      assert.equal(a.variants.length, 0);
     }
   });
 
   it("does not use vendor source filenames as runtime URLs", () => {
     for (const id of ALL_SHAPE_IDS) {
-      const a = DIAMOND_CAD_ASSETS[id];
-      const urls = [a.src, a.originalSrc, a.switcherSrc, a.fallbackSrc, ...a.variants];
-      for (const url of urls) {
+      for (const url of collectAssetUrls(DIAMOND_CAD_ASSETS[id])) {
         assert.ok(!url.includes(VENDOR_PREFIX), url);
         assert.ok(!url.includes(" 3 carat"), url);
         assert.ok(!/%20/.test(url), url);
@@ -117,90 +136,49 @@ describe("Diamond CAD config completeness", () => {
   it("maps unique asset paths per shape with no cross-shape collisions", () => {
     const seen = new Map<string, ShapeId>();
     for (const id of ALL_SHAPE_IDS) {
-      const a = DIAMOND_CAD_ASSETS[id];
-      for (const url of [a.src, a.originalSrc, a.switcherSrc, ...a.variants]) {
+      for (const url of collectAssetUrls(DIAMOND_CAD_ASSETS[id])) {
         const prev = seen.get(url);
         assert.ok(!prev || prev === id, `duplicate mapping ${url}: ${prev} vs ${id}`);
         seen.set(url, id);
       }
     }
   });
-});
 
-describe("Diamond CAD PNG / asset validation", () => {
-  for (const id of ALL_SHAPE_IDS) {
-    it(`${id}: base and variants share dimensions, bounds, alpha silhouette`, () => {
-      const asset = DIAMOND_CAD_ASSETS[id];
-      const base = loadPng(publicToFs(asset.src));
-      const baseBounds = probeBounds(base);
-      assert.equal(base.width, asset.canvas.width);
-      assert.equal(base.height, asset.canvas.height);
-      assert.ok(Math.abs(baseBounds.minX - asset.visibleBounds.minX) <= 1);
-      assert.ok(Math.abs(baseBounds.minY - asset.visibleBounds.minY) <= 1);
-      assert.ok(Math.abs(baseBounds.maxX - asset.visibleBounds.maxX) <= 1);
-      assert.ok(Math.abs(baseBounds.maxY - asset.visibleBounds.maxY) <= 1);
-
-      for (const variantUrl of asset.variants) {
-        const variant = loadPng(publicToFs(variantUrl));
-        assert.equal(variant.width, base.width);
-        assert.equal(variant.height, base.height);
-
-        const vBounds = probeBounds(variant);
-        assert.ok(Math.abs(vBounds.minX - baseBounds.minX) <= 1);
-        assert.ok(Math.abs(vBounds.minY - baseBounds.minY) <= 1);
-        assert.ok(Math.abs(vBounds.maxX - baseBounds.maxX) <= 1);
-        assert.ok(Math.abs(vBounds.maxY - baseBounds.maxY) <= 1);
-        assert.ok(Math.abs(vBounds.cx - baseBounds.cx) <= 1);
-        assert.ok(Math.abs(vBounds.cy - baseBounds.cy) <= 1);
-
-        let outsideSilhouette = 0;
-        let alphaMismatch = 0;
-        let changed = 0;
-        let opaque = 0;
-        const n = base.width * base.height;
-        for (let i = 0; i < n; i++) {
-          const o = i * 4;
-          const ba = base.data[o + 3]!;
-          const va = variant.data[o + 3]!;
-          if (ba !== va) alphaMismatch++;
-          if (ba < OPAQUE) {
-            if (va >= OPAQUE) outsideSilhouette++;
-            continue;
-          }
-          opaque++;
-          const dr = Math.abs(variant.data[o]! - base.data[o]!);
-          const dg = Math.abs(variant.data[o + 1]! - base.data[o + 1]!);
-          const db = Math.abs(variant.data[o + 2]! - base.data[o + 2]!);
-          if ((dr + dg + db) / 3 >= 1) changed++;
-        }
-        assert.equal(alphaMismatch, 0, `${id} ${variantUrl} alpha drifted`);
-        assert.equal(outsideSilhouette, 0, `${id} pixels outside silhouette`);
-        assert.ok(changed > 0, `${id} variant identical to base`);
-        const changedFrac = changed / opaque;
-        assert.ok(
-          changedFrac >= 0.005 && changedFrac <= 0.25,
-          `${id} changedFrac=${changedFrac}`,
-        );
-      }
-
-      const switcher = loadPng(publicToFs(asset.switcherSrc));
-      const swBounds = probeBounds(switcher);
-      assert.ok(swBounds.width > 10 && swBounds.height > 10);
-      assert.ok(switcher.width === 512 && switcher.height === 512);
-    });
-  }
-
-  it("studio manifest exists and matches shape set", () => {
-    const manifestPath = path.join(DIAMONDS_DIR, "diamond-cad-manifest.json");
-    assert.ok(fs.existsSync(manifestPath));
-    const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8")) as {
-      shapes: Record<string, { assets: { src: string } }>;
-    };
+  it("every referenced V2 file exists and is non-zero bytes", () => {
     for (const id of ALL_SHAPE_IDS) {
-      assert.ok(manifest.shapes[id], id);
-      assert.equal(manifest.shapes[id]!.assets.src, DIAMOND_CAD_ASSETS[id].src);
+      const a = DIAMOND_CAD_ASSETS[id];
+      for (const url of collectAssetUrls(a)) {
+        const fsPath = publicToFs(url);
+        assert.ok(fs.existsSync(fsPath), url);
+        const stat = fs.statSync(fsPath);
+        assert.ok(stat.size > 0, url);
+        assert.ok(fsPath.startsWith(DIAMONDS_V2_DIR), fsPath);
+      }
     }
   });
+
+  it("fallback chain stays on the V2 src", () => {
+    const asset = getDiamondCadAsset("oval");
+    const ultimate = "/diamond-tech-suite/diamonds-v2/diamond-round-v2.png";
+    assert.equal(nextCadFallbackSrc(asset.src, asset, ultimate), asset.src);
+    assert.equal(nextCadFallbackSrc(asset.originalSrc, asset, ultimate), asset.originalSrc);
+  });
+});
+
+describe("Diamond Studio V2 PNG bounds", () => {
+  for (const id of ALL_SHAPE_IDS) {
+    it(`${id}: probed bounds match configured visibleBounds`, () => {
+      const asset = DIAMOND_CAD_ASSETS[id];
+      const png = loadPng(publicToFs(asset.src));
+      const bounds = probeBounds(png);
+      assert.equal(png.width, asset.canvas.width);
+      assert.equal(png.height, asset.canvas.height);
+      assert.ok(Math.abs(bounds.minX - asset.visibleBounds.minX) <= 1);
+      assert.ok(Math.abs(bounds.minY - asset.visibleBounds.minY) <= 1);
+      assert.ok(Math.abs(bounds.maxX - asset.visibleBounds.maxX) <= 1);
+      assert.ok(Math.abs(bounds.maxY - asset.visibleBounds.maxY) <= 1);
+    });
+  }
 });
 
 describe("Diamond CAD scintillation state", () => {
@@ -307,30 +285,34 @@ describe("Diamond CAD render configuration", () => {
     }
   });
 
-  it("fallback chain is enhanced → original → legacy → ultimate", () => {
-    const asset = getDiamondCadAsset("oval");
-    const ultimate = "/diamond-tech-suite/diamonds/round.png";
-    assert.equal(nextCadFallbackSrc(asset.src, asset, ultimate), asset.originalSrc);
-    assert.equal(
-      nextCadFallbackSrc(asset.originalSrc, asset, ultimate),
-      asset.fallbackSrc,
-    );
-    assert.equal(
-      nextCadFallbackSrc(asset.fallbackSrc, asset, ultimate),
-      ultimate,
-    );
-  });
-
-  it("round visible scale matches the reference CAD compensation", () => {
+  it("round visible scale matches the reference compensation", () => {
     const round = getDiamondCadAsset("round");
     assert.ok(Math.abs(round.visibleScale - (1420 / 1500) / (1679 / 2560)) < 1e-9);
   });
+});
 
-  it("every shape uses CAD stage/switcher assets (not vendor or legacy stage primary)", () => {
-    for (const id of ALL_SHAPE_IDS) {
-      const a = DIAMOND_CAD_ASSETS[id];
-      assert.match(a.src, /cad-pop\.png$/);
-      assert.match(a.switcherSrc, /cad-switcher\.png$/);
+describe("Diamond Studio runtime must not reference legacy diamond paths", () => {
+  it("active diamond-studio source files exclude legacy diamonds/ stage paths", () => {
+    const studioRoot = path.join(ROOT, "app/diamond-studio");
+    const files = fs
+      .readdirSync(studioRoot, { recursive: true })
+      .filter(
+        (f): f is string =>
+          typeof f === "string" &&
+          (f.endsWith(".ts") || f.endsWith(".tsx")) &&
+          !f.endsWith(".test.ts"),
+      );
+    const banned = [
+      /\/diamond-tech-suite\/diamonds\/(?!v2)/,
+      /-cad-pop\.png/,
+      /\/diamond-tech-suite\/diamonds\/rbc-cad/,
+      /-cad-scintillation-[a-d]\.png/,
+    ];
+    for (const rel of files) {
+      const content = fs.readFileSync(path.join(studioRoot, rel), "utf8");
+      for (const pattern of banned) {
+        assert.ok(!pattern.test(content), `${rel} matches ${pattern}`);
+      }
     }
   });
 });

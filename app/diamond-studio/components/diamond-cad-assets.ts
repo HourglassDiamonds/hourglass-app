@@ -1,30 +1,22 @@
 import type { ShapeId } from "./diamond-cad-types";
+import { ALL_SHAPE_IDS } from "./diamond-cad-types";
 
 export type CadScintillationProfile = "brilliant" | "step";
 export type CadShadowProfile = "round" | "square" | "elongated";
 
 export type DiamondCadAsset = {
   shapeId: ShapeId;
-  /** Facet-definition enhanced base. */
   src: string;
-  /** Original normalized CAD (pre-enhancement). */
   originalSrc: string;
-  /** Tightly cropped switcher thumbnail. */
   switcherSrc: string;
-  /** Existing legacy shape PNG. */
   fallbackSrc: string;
-  /** Four contrast-shift scintillation variants. */
-  variants: readonly [string, string, string, string];
-  /** Visible stone width ÷ canvas width (alpha > 10). */
+  variants: readonly string[];
+  scintillationEnabled: boolean;
   visibleFillRatio: number;
-  /** Visible stone height ÷ canvas height (alpha > 10). */
   visibleFillRatioH: number;
-  /** Stone centroid as fraction of canvas. */
   centerX: number;
   centerY: number;
-  /** Scale so visible girdle matches legacy asset width fill. */
   visibleScale: number;
-  /** Alpha-bounds of the visible stone on the CAD canvas. */
   visibleBounds: {
     minX: number;
     minY: number;
@@ -38,34 +30,43 @@ export type DiamondCadAsset = {
   shadow: CadShadowProfile;
 };
 
-const DIAMONDS = "/diamond-tech-suite/diamonds";
+const DIAMONDS_V2 = "/diamond-tech-suite/diamonds-v2";
 
-function cadPaths(prefix: "rbc" | ShapeIdExcludeRound, scintillationPrefix: string) {
-  const base = prefix === "rbc" ? "rbc-cad" : `${prefix}-cad`;
+function v2Path(shapeId: ShapeId): string {
+  return `${DIAMONDS_V2}/diamond-${shapeId}-v2.png`;
+}
+
+type V2AssetOpts = {
+  profile: CadScintillationProfile;
+  shadow: CadShadowProfile;
+  visibleBounds: DiamondCadAsset["visibleBounds"];
+  centerX: number;
+  centerY: number;
+  visibleFillRatio: number;
+  visibleFillRatioH: number;
+  visibleScale: number;
+};
+
+function v2Asset(shapeId: ShapeId, opts: V2AssetOpts): DiamondCadAsset {
+  const src = v2Path(shapeId);
   return {
-    src: `${DIAMONDS}/${base}-pop.png`,
-    originalSrc: `${DIAMONDS}/${base}.png`,
-    switcherSrc: `${DIAMONDS}/${base}-switcher.png`,
-    variants: [
-      `${DIAMONDS}/${scintillationPrefix}-a.png`,
-      `${DIAMONDS}/${scintillationPrefix}-b.png`,
-      `${DIAMONDS}/${scintillationPrefix}-c.png`,
-      `${DIAMONDS}/${scintillationPrefix}-d.png`,
-    ] as const,
+    shapeId,
+    src,
+    originalSrc: src,
+    switcherSrc: src,
+    fallbackSrc: src,
+    variants: [],
+    scintillationEnabled: false,
+    canvas: { width: 2560, height: 2560 },
+    ...opts,
   };
 }
 
-type ShapeIdExcludeRound = Exclude<ShapeId, "round">;
-
-/**
- * Shape-keyed CAD configuration for Diamond Studio V2.
- * Measurements from scripts/generate-diamond-cad-assets.mjs (alpha threshold 10).
- */
+/** V2 diamond PNG bounds (alpha > 10) probed from public/diamond-tech-suite/diamonds-v2. */
 export const DIAMOND_CAD_ASSETS: Record<ShapeId, DiamondCadAsset> = {
-  round: {
-    shapeId: "round",
-    ...cadPaths("rbc", "rbc-cad-scintillation"),
-    fallbackSrc: `${DIAMONDS}/round.png`,
+  round: v2Asset("round", {
+    profile: "brilliant",
+    shadow: "round",
     visibleFillRatio: 1679 / 2560,
     visibleFillRatioH: 1676 / 2560,
     centerX: 1279.372774789823 / 2560,
@@ -79,35 +80,27 @@ export const DIAMOND_CAD_ASSETS: Record<ShapeId, DiamondCadAsset> = {
       width: 1679,
       height: 1676,
     },
-    canvas: { width: 2560, height: 2560 },
-    profile: "brilliant",
-    shadow: "round",
-  },
-  oval: {
-    shapeId: "oval",
-    ...cadPaths("oval", "oval-cad-scintillation"),
-    fallbackSrc: `${DIAMONDS}/oval.png`,
-    visibleFillRatio: 1170 / 2560,
-    visibleFillRatioH: 1645 / 2560,
-    centerX: 1279.4160729842997 / 2560,
-    centerY: 1293.074660775135 / 2560,
-    visibleScale: (976 / 1500) / (1170 / 2560),
-    visibleBounds: {
-      minX: 695,
-      minY: 471,
-      maxX: 1864,
-      maxY: 2115,
-      width: 1170,
-      height: 1645,
-    },
-    canvas: { width: 2560, height: 2560 },
+  }),
+  oval: v2Asset("oval", {
     profile: "brilliant",
     shadow: "elongated",
-  },
-  cushion: {
-    shapeId: "cushion",
-    ...cadPaths("cushion", "cushion-cad-scintillation"),
-    fallbackSrc: `${DIAMONDS}/cushion.png`,
+    visibleFillRatio: 1403 / 2560,
+    visibleFillRatioH: 1971 / 2560,
+    centerX: 1279.3721821611136 / 2560,
+    centerY: 1295.6192149422582 / 2560,
+    visibleScale: (976 / 1500) / (1403 / 2560),
+    visibleBounds: {
+      minX: 578,
+      minY: 310,
+      maxX: 1981,
+      maxY: 2281,
+      width: 1403,
+      height: 1971,
+    },
+  }),
+  cushion: v2Asset("cushion", {
+    profile: "brilliant",
+    shadow: "square",
     visibleFillRatio: 1193 / 2560,
     visibleFillRatioH: 1206 / 2560,
     centerX: 1279.4244524163346 / 2560,
@@ -121,14 +114,10 @@ export const DIAMOND_CAD_ASSETS: Record<ShapeId, DiamondCadAsset> = {
       width: 1193,
       height: 1206,
     },
-    canvas: { width: 2560, height: 2560 },
+  }),
+  princess: v2Asset("princess", {
     profile: "brilliant",
     shadow: "square",
-  },
-  princess: {
-    shapeId: "princess",
-    ...cadPaths("princess", "princess-cad-scintillation"),
-    fallbackSrc: `${DIAMONDS}/princess.png`,
     visibleFillRatio: 1144 / 2560,
     visibleFillRatioH: 1156 / 2560,
     centerX: 1279.383240084809 / 2560,
@@ -142,14 +131,10 @@ export const DIAMOND_CAD_ASSETS: Record<ShapeId, DiamondCadAsset> = {
       width: 1144,
       height: 1156,
     },
-    canvas: { width: 2560, height: 2560 },
+  }),
+  marquise: v2Asset("marquise", {
     profile: "brilliant",
-    shadow: "square",
-  },
-  marquise: {
-    shapeId: "marquise",
-    ...cadPaths("marquise", "marquise-cad-scintillation"),
-    fallbackSrc: `${DIAMONDS}/marquise.png`,
+    shadow: "elongated",
     visibleFillRatio: 984 / 2560,
     visibleFillRatioH: 1969 / 2560,
     centerX: 1279.4106721012272 / 2560,
@@ -163,35 +148,27 @@ export const DIAMOND_CAD_ASSETS: Record<ShapeId, DiamondCadAsset> = {
       width: 984,
       height: 1969,
     },
-    canvas: { width: 2560, height: 2560 },
+  }),
+  pear: v2Asset("pear", {
     profile: "brilliant",
     shadow: "elongated",
-  },
-  pear: {
-    shapeId: "pear",
-    ...cadPaths("pear", "pear-cad-scintillation"),
-    fallbackSrc: `${DIAMONDS}/pear.png`,
-    visibleFillRatio: 1162 / 2560,
-    visibleFillRatioH: 1800 / 2560,
-    centerX: 1279.425919558852 / 2560,
-    centerY: 1324.1557968982108 / 2560,
-    visibleScale: (847 / 1500) / (1162 / 2560),
+    visibleFillRatio: 1235 / 2560,
+    visibleFillRatioH: 1972 / 2560,
+    centerX: 1279.332853772129 / 2560,
+    centerY: 1407.8543785824193 / 2560,
+    visibleScale: (847 / 1500) / (1235 / 2560),
     visibleBounds: {
-      minX: 699,
-      minY: 341,
-      maxX: 1860,
-      maxY: 2140,
-      width: 1162,
-      height: 1800,
+      minX: 662,
+      minY: 309,
+      maxX: 1896,
+      maxY: 2280,
+      width: 1235,
+      height: 1972,
     },
-    canvas: { width: 2560, height: 2560 },
-    profile: "brilliant",
+  }),
+  emerald: v2Asset("emerald", {
+    profile: "step",
     shadow: "elongated",
-  },
-  emerald: {
-    shapeId: "emerald",
-    ...cadPaths("emerald", "emerald-cad-scintillation"),
-    fallbackSrc: `${DIAMONDS}/emerald.png`,
     visibleFillRatio: 972 / 2560,
     visibleFillRatioH: 1388 / 2560,
     centerX: 1279.3625243119516 / 2560,
@@ -205,53 +182,44 @@ export const DIAMOND_CAD_ASSETS: Record<ShapeId, DiamondCadAsset> = {
       width: 972,
       height: 1388,
     },
-    canvas: { width: 2560, height: 2560 },
-    profile: "step",
-    shadow: "elongated",
-  },
-  radiant: {
-    shapeId: "radiant",
-    ...cadPaths("radiant", "radiant-cad-scintillation"),
-    fallbackSrc: `${DIAMONDS}/radiant.png`,
-    visibleFillRatio: 1042 / 2560,
-    visibleFillRatioH: 1480 / 2560,
-    centerX: 1279.3988405758782 / 2560,
-    centerY: 1291.3634827672822 / 2560,
-    visibleScale: (978 / 1500) / (1042 / 2560),
-    visibleBounds: {
-      minX: 759,
-      minY: 552,
-      maxX: 1800,
-      maxY: 2031,
-      width: 1042,
-      height: 1480,
-    },
-    canvas: { width: 2560, height: 2560 },
+  }),
+  radiant: v2Asset("radiant", {
     profile: "brilliant",
     shadow: "elongated",
-  },
-  asscher: {
-    shapeId: "asscher",
-    ...cadPaths("asscher", "asscher-cad-scintillation"),
-    fallbackSrc: `${DIAMONDS}/asscher.png`,
-    visibleFillRatio: 1128 / 2560,
-    visibleFillRatioH: 1134 / 2560,
-    centerX: 1279.4882463844795 / 2560,
-    centerY: 1307.5080394042193 / 2560,
-    visibleScale: (1414 / 1500) / (1128 / 2560),
+    visibleFillRatio: 1388 / 2560,
+    visibleFillRatioH: 1971 / 2560,
+    centerX: 1279.3804064450032 / 2560,
+    centerY: 1295.1410878271397 / 2560,
+    visibleScale: (978 / 1500) / (1388 / 2560),
     visibleBounds: {
-      minX: 716,
-      minY: 741,
-      maxX: 1843,
-      maxY: 1874,
-      width: 1128,
-      height: 1134,
+      minX: 585,
+      minY: 310,
+      maxX: 1973,
+      maxY: 2281,
+      width: 1388,
+      height: 1971,
     },
-    canvas: { width: 2560, height: 2560 },
+  }),
+  asscher: v2Asset("asscher", {
     profile: "step",
     shadow: "square",
-  },
+    visibleFillRatio: 1668 / 2560,
+    visibleFillRatioH: 1675 / 2560,
+    centerX: 1279.3406576788173 / 2560,
+    centerY: 1304.8259921639321 / 2560,
+    visibleScale: (1414 / 1500) / (1668 / 2560),
+    visibleBounds: {
+      minX: 446,
+      minY: 468,
+      maxX: 2113,
+      maxY: 2142,
+      width: 1668,
+      height: 1675,
+    },
+  }),
 };
+
+export const DIAMOND_V2_SHAPE_IDS = ALL_SHAPE_IDS;
 
 export const DIAMOND_CAD_SHAPE_IDS = Object.keys(DIAMOND_CAD_ASSETS) as ShapeId[];
 
@@ -259,19 +227,16 @@ export function getDiamondCadAsset(shapeId: ShapeId): DiamondCadAsset {
   return DIAMOND_CAD_ASSETS[shapeId];
 }
 
-/** True when the URL is a CAD pop/original (not legacy or fallback). */
 export function isCadStageSrc(src: string, asset: DiamondCadAsset): boolean {
-  return src === asset.src || src === asset.originalSrc;
+  return src === asset.src;
 }
 
-/** Next fallback in the CAD → original → legacy → DIAMOND_SHAPE_FALLBACK chain. */
 export function nextCadFallbackSrc(
   current: string,
   asset: DiamondCadAsset,
   ultimateFallback: string,
 ): string {
-  if (current === asset.src) return asset.originalSrc;
-  if (current === asset.originalSrc) return asset.fallbackSrc;
-  if (current === asset.fallbackSrc) return ultimateFallback;
+  void ultimateFallback;
+  if (current === asset.src) return asset.src;
   return current;
 }
