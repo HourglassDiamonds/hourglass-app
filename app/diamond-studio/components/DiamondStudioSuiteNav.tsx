@@ -21,13 +21,23 @@ export default function DiamondStudioSuiteNav() {
       >
         <div className="dts-topnav">
           {DIAMOND_STUDIO_SUITE_NAV.map((item) => {
-            const active = isDiamondStudioSuiteNavActive(pathname, item.href);
+            const active =
+              !item.comingSoon &&
+              isDiamondStudioSuiteNavActive(pathname, item.href);
             return (
               <div
                 key={item.href}
-                className={`dts-topnav-item ${active ? "is-active" : "is-idle"}`}
+                className={`dts-topnav-item ${active ? "is-active" : "is-idle"}${item.comingSoon ? " is-soon" : ""}`}
               >
-                {active ? (
+                {item.comingSoon ? (
+                  <span
+                    className="dts-topnav-label"
+                    aria-disabled="true"
+                    title="Coming soon"
+                  >
+                    {item.label}
+                  </span>
+                ) : active ? (
                   <span className="dts-topnav-label">{item.label}</span>
                 ) : (
                   <Link href={item.href} className="dts-topnav-label">

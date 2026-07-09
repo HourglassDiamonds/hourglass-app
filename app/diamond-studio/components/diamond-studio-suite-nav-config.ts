@@ -1,11 +1,12 @@
 export type DiamondStudioSuiteNavItem = {
   label: string;
   href: string;
+  comingSoon?: boolean;
 };
 
 export const DIAMOND_STUDIO_SUITE_NAV: DiamondStudioSuiteNavItem[] = [
   { label: "Diamond Size Studio", href: "/diamond-studio" },
-  { label: "Shape Comparison", href: "/diamond-shape-studio" },
+  { label: "Shape Comparison", href: "/diamond-shape-studio", comingSoon: true },
   { label: "Light Performance", href: "/diamond-intelligence" },
 ];
 

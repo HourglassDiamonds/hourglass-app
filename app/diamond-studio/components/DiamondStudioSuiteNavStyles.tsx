@@ -71,8 +71,13 @@ export default function DiamondStudioSuiteNavStyles() {
         outline-offset:3px;
         border-radius:4px;
       }
-      .dts-topnav-item:not(.is-active):hover .dts-topnav-label{
+      .dts-topnav-item:not(.is-active):not(.is-soon):hover .dts-topnav-label{
         color:var(--hg-ink, #1c1b1a);
+      }
+      .dts-topnav-item.is-soon .dts-topnav-label{
+        color:color-mix(in srgb, var(--hg-muted, #756b61) 62%, #fff);
+        cursor:default;
+        pointer-events:none;
       }
       @media (min-width: 1024px) {
         [data-suite-instrument] .dts-topbar{
