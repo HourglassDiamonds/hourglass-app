@@ -1878,6 +1878,9 @@ function SuiteStyles() {
           --dts-composition-y:-18%;
           --dts-framing-lift:-4.25%;
         }
+        .dts-layer-diamond{
+          transform:translate(calc(-50% + 4px), calc(-50% - 12px + var(--dts-framing-lift, 0)));
+        }
         .dts-sentence{
           max-width:260px;
         }
