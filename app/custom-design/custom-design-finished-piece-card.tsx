@@ -47,7 +47,7 @@ export default function CustomDesignFinishedPieceCard() {
       <div aria-hidden className={MEDIA_WASH_CLASS} />
       <span
         aria-hidden
-        className="pointer-events-none absolute bottom-4 right-4 z-10 inline-flex items-center rounded-full border border-[#ddd3c6]/95 bg-[#f5f0e9]/90 px-3 py-1.5 text-[0.78rem] tracking-[0.02em] text-[#5f5851] shadow-[0_1px_2px_rgba(31,29,26,0.04)] backdrop-blur-[3px] transition-[border-color,background-color,color] duration-300 group-hover:border-[#cfc4b4] group-hover:bg-[#faf6f0]/94 group-hover:text-[#4a4440] sm:bottom-5 sm:right-5"
+        className="pointer-events-none absolute bottom-5 right-5 z-10 inline-flex items-center rounded-full border border-[#d9cfc2]/90 bg-[#f5f0e9]/88 px-2.5 py-1 text-[0.74rem] tracking-[0.02em] text-[#5f5851] shadow-[0_1px_3px_rgba(31,29,26,0.05)] backdrop-blur-[4px] transition-[border-color,background-color,color,box-shadow] duration-300 group-hover:border-[#cfc4b4] group-hover:bg-[#faf6f0]/92 group-hover:text-[#4a4440] group-hover:shadow-[0_2px_6px_rgba(31,29,26,0.07)]"
       >
         View Video →
       </span>
