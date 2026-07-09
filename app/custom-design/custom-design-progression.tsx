@@ -1,5 +1,5 @@
 import Image from "next/image";
-import CustomDesignMotionLink from "./custom-design-motion-link";
+import CustomDesignFinishedPieceCard from "./custom-design-finished-piece-card";
 import {
   CUSTOM_DESIGN_ALT,
   CUSTOM_DESIGN_MEDIA,
@@ -96,17 +96,12 @@ export default function CustomDesignProgression() {
           <div className="min-w-0">
             <div className={stageLabel}>02 · Finished Piece</div>
             <div className="mt-3">
-              <ProgressionMediaPanel
-                src={CUSTOM_DESIGN_MEDIA.finishedStill}
-                alt={CUSTOM_DESIGN_ALT.finishedStill}
-                objectFit="cover"
-              />
+              <CustomDesignFinishedPieceCard />
             </div>
             <p className={stageCaption}>
               The completed ring, reviewed against the approved direction before
               it is presented.
             </p>
-            <CustomDesignMotionLink />
           </div>
         </div>
       </div>
