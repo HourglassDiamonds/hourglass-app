@@ -14,16 +14,16 @@ const beginHereGuides = [
       "A clear explanation of what clarity actually measures, and what it does not.",
   },
   {
-    title: "Diamond Clarity Chart Explained",
-    href: "/diamond-guide/diamond-clarity-chart-explained",
-    description:
-      "How the grading scale works, and where differences begin to matter visually.",
-  },
-  {
     title: "Eye Clean Diamonds Explained",
     href: "/diamond-guide/eye-clean-diamonds-explained",
     description:
       "What people really mean by eye clean, and why it often matters more than the grade itself.",
+  },
+  {
+    title: "Best Diamond Clarity for Engagement Rings",
+    href: "/diamond-guide/best-diamond-clarity-for-engagement-rings",
+    description:
+      "A balanced approach to clarity that avoids overpaying for what is rarely seen.",
   },
 ];
 
@@ -41,10 +41,10 @@ const mostReadGuides = [
       "Where inclusions begin to become more noticeable, and how often they do not.",
   },
   {
-    title: "Best Diamond Clarity for Engagement Rings",
-    href: "/diamond-guide/best-diamond-clarity-for-engagement-rings",
+    title: "Diamond Clarity Chart Explained",
+    href: "/diamond-guide/diamond-clarity-chart-explained",
     description:
-      "A balanced approach to clarity that avoids overpaying for what is rarely seen.",
+      "How the grading scale works, and where differences begin to matter visually.",
   },
   {
     title: "Can You See Diamond Inclusions",

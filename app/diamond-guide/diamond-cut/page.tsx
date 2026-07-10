@@ -15,31 +15,31 @@ const beginHereGuides = [
       "A clear explanation of what cut actually refers to, and why it matters more than most expect.",
   },
   {
-    title: "How Diamond Cut Affects Sparkle",
-    href: "/diamond-guide/how-diamond-cut-affects-sparkle",
-    description:
-      "How proportions and angles determine how a diamond handles light.",
-  },
-  {
     title: "Excellent vs Very Good Cut",
     href: "/diamond-guide/excellent-vs-very-good-diamond-cut",
     description:
       "Where the real differences show, and when they matter in practice.",
   },
-];
-
-const mostReadGuides = [
   {
     title: "Ideal Diamond Cut Proportions",
     href: "/diamond-guide/ideal-diamond-cut-proportions",
     description:
       "What proportion ranges actually produce better light performance.",
   },
+];
+
+const mostReadGuides = [
   {
     title: "What Makes a Diamond Cut Good or Bad",
     href: "/diamond-guide/what-makes-a-diamond-cut-good-or-bad",
     description:
       "A more practical way to evaluate cut beyond grading labels alone.",
+  },
+  {
+    title: "How Diamond Cut Affects Sparkle",
+    href: "/diamond-guide/how-diamond-cut-affects-sparkle",
+    description:
+      "How proportions and angles determine how a diamond handles light.",
   },
   {
     title: "Does Diamond Cut Affect Size",

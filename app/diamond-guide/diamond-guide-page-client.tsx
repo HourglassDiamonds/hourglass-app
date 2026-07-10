@@ -84,12 +84,11 @@ const categories: {
 ];
 
 const popularGuides = [
-  { title: "Why Work With a Graduate Gemologist?", href: "/diamond-guide/why-work-with-a-graduate-gemologist" },
-  { title: "How Big is a 2 Carat Diamond", href: "/diamond-guide/how-big-is-a-2-carat-diamond" },
-  { title: "Oval vs Round Diamond", href: "/diamond-guide/oval-vs-round-diamond" },
-  { title: "Diamond Size on Hand", href: "/diamond-guide/diamond-size-on-hand" },
+  { title: "How to Read a Diamond Certificate", href: "/diamond-guide/how-to-read-a-diamond-certificate" },
   { title: "What is Diamond Cut", href: "/diamond-guide/what-is-diamond-cut" },
-  { title: "Diamond Color vs Clarity", href: "/diamond-guide/diamond-color-vs-clarity" },
+  { title: "What is Diamond Color", href: "/diamond-guide/what-is-diamond-color" },
+  { title: "What is Diamond Clarity", href: "/diamond-guide/what-is-diamond-clarity" },
+  { title: "What is Diamond Fluorescence", href: "/diamond-guide/what-is-diamond-fluorescence" },
   { title: "Natural vs Lab Diamonds", href: "/diamond-guide/natural-vs-lab-diamonds" },
 ];
 
