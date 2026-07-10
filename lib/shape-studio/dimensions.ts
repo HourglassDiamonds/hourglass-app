@@ -190,7 +190,22 @@ const OVAL_FACE_MM_BY_CARAT: Record<number, [number, number]> = {
   5.0: [10.0, 14.0],
 };
 
+/**
+ * Oval face-up axes (mm).
+ * Through the final table anchor: linear interpolation between explicit anchors.
+ * Above the final anchor: cube-root scale from that anchor (volume-consistent),
+ * not linear slope extrapolation (which inflated 10 ct to 15.0 × 21.5).
+ */
 function ovalFaceDimensionsMm(carat: number): [number, number] {
+  const keys = Object.keys(OVAL_FACE_MM_BY_CARAT)
+    .map(Number)
+    .sort((a, b) => a - b);
+  const finalCarat = keys[keys.length - 1]!;
+  if (carat > finalCarat) {
+    const [wFinal, lFinal] = OVAL_FACE_MM_BY_CARAT[finalCarat]!;
+    const scale = Math.cbrt(carat / finalCarat);
+    return [wFinal * scale, lFinal * scale];
+  }
   return interpAnchors(OVAL_FACE_MM_BY_CARAT, carat);
 }
 
