@@ -126,7 +126,11 @@ export function ShapeStudioView() {
     : "Upload a hand photo to compare shapes and carat sizes with calibrated scale.";
 
   return (
-    <div className="dss-shell h-full min-h-full w-full" data-theme="light">
+    <div
+      className="dss-shell h-full min-h-full w-full"
+      data-theme="light"
+      data-shape-studio-instrument
+    >
       <ShapeStudioStyles />
       <div className="dss-app">
         <div className="dss-main">
@@ -186,7 +190,9 @@ export function ShapeStudioView() {
                 subhead="Compare diamond shapes on the hand before choosing a setting."
                 className="dss-tool-header"
               />
-              <p className="dss-sentence">{liveSentence}</p>
+              {handImageUrl ? (
+                <p className="dss-sentence">{liveSentence}</p>
+              ) : null}
               <OverlayStage
                 handImageUrl={handImageUrl}
                 ringSize={ringSize}

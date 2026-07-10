@@ -3,6 +3,51 @@ export function ShapeStudioStyles() {
     <style
       dangerouslySetInnerHTML={{
         __html: `
+      /* Shape Studio–only suite chrome compact (does not affect Size Studio). */
+      @media (min-width: 768px) {
+        .diamond-studio-suite-route:has([data-shape-studio-instrument]) [data-dts-site-header] header > div {
+          padding-top: 0.7rem !important;
+          padding-bottom: 0.7rem !important;
+          align-items: center !important;
+        }
+        .diamond-studio-suite-route:has([data-shape-studio-instrument]) [data-dts-site-header] span.relative.block {
+          height: 52px !important;
+          width: 52px !important;
+        }
+      }
+      @media (min-width: 961px) {
+        .diamond-studio-suite-route:has([data-shape-studio-instrument]) {
+          --dts-subnav-h: 40px;
+        }
+        .diamond-studio-suite-route:has([data-shape-studio-instrument]) .dts-topbar {
+          min-height: 40px;
+          height: var(--dts-subnav-h, 40px);
+        }
+        .diamond-studio-suite-route:has([data-shape-studio-instrument]) .dts-topnav {
+          padding-top: 6px;
+        }
+        .diamond-studio-suite-route:has([data-shape-studio-instrument]) .dts-topnav-item {
+          padding-bottom: 6px;
+        }
+        /* Match Size Studio instrument height behavior starting at split-friendly width */
+        .diamond-studio-suite-route:has([data-shape-studio-instrument])[data-suite-instrument] .dss-app {
+          height: var(--dts-workspace-h);
+          max-height: var(--dts-workspace-h);
+          min-height: 0;
+          overflow: hidden;
+        }
+      }
+      @media (min-width: 1024px) {
+        .diamond-studio-suite-route:has([data-shape-studio-instrument])[data-suite-instrument] .dts-topbar {
+          grid-template-columns: 248px minmax(0, 1fr);
+        }
+      }
+      @media (min-width: 961px) and (max-width: 1200px) {
+        .diamond-studio-suite-route:has([data-shape-studio-instrument])[data-suite-instrument] .dts-topbar {
+          grid-template-columns: 216px minmax(0, 1fr);
+        }
+      }
+
       .dss-shell{
         --gold: var(--hg-gold, oklch(0.74 0.090 70));
         --gold-soft: color-mix(in srgb, var(--hg-gold, #c4a574) 42%, #fff);
@@ -46,27 +91,29 @@ export function ShapeStudioStyles() {
         position:absolute;
         inset:0;
         pointer-events:none;
-        background: radial-gradient(ellipse 60% 55% at 50% 38%,
+        background: radial-gradient(ellipse 58% 48% at 50% 32%,
           oklch(from var(--bg) calc(l + 0.02) c h) 0%,
-          var(--bg) 60%,
+          var(--bg) 58%,
           var(--bg-deep) 100%);
         z-index:0;
       }
       .dss-main{
         display:grid;
-        grid-template-columns:256px minmax(0, 1fr);
+        grid-template-columns:248px minmax(0, 1fr);
         grid-template-rows:minmax(0, 1fr);
         min-height:0;
         overflow:hidden;
+        flex:1 1 auto;
       }
       .dss-control-rail{
         grid-column:1; grid-row:1;
-        padding:16px 18px 16px 22px;
+        padding:12px 14px 14px 18px;
         overflow-y:auto;
         overflow-x:hidden;
-        display:flex; flex-direction:column; gap:18px;
+        display:flex; flex-direction:column; gap:12px;
         scrollbar-width:none;
         min-height:0;
+        align-self:stretch;
       }
       .dss-control-rail::-webkit-scrollbar{ display:none; }
       .dss-stage-stack{
@@ -78,28 +125,39 @@ export function ShapeStudioStyles() {
         flex:1 1 auto; min-height:0;
         display:flex; flex-direction:column; align-items:center;
         justify-content:flex-start;
-        padding:clamp(16px, 2.2vh, 28px) 0 8px;
+        padding:clamp(8px, 1.4vh, 16px) 12px 4px;
         overflow:hidden;
       }
       .dss-tool-header{
-        margin:0 12px 8px;
+        margin:0 12px 4px;
         flex:0 0 auto;
       }
+      .dss-tool-header h1{
+        font-size:clamp(1rem, 2.1vw, 1.18rem) !important;
+      }
+      .dss-tool-header p{
+        margin-top:0.2rem !important;
+        max-width:28rem !important;
+      }
       .dss-sentence{
-        margin:0 12px 12px; text-align:center;
+        margin:0 12px 8px; text-align:center;
         font-family:var(--serif); font-weight:300;
-        font-size:clamp(16px, 2.1vh, 19px); line-height:1.38;
-        color:var(--ink); max-width:520px;
+        font-size:clamp(15px, 1.8vh, 17px); line-height:1.35;
+        color:var(--ink); max-width:480px;
       }
       .dss-stage-canvas{
-        display:flex; justify-content:center; width:100%;
+        display:flex; justify-content:center; align-items:center; width:100%;
         min-width:0; flex:1 1 auto; min-height:0;
+      }
+      .dss-stage-canvas:has(.dss-viewer.is-empty){
+        align-items:flex-start;
+        padding-top:clamp(4px, 0.8vh, 10px);
       }
       .dss-viewer{
         position:relative;
-        width:min(578px, 93.5%);
+        width:min(520px, 90%);
         aspect-ratio:7/9;
-        max-height:96%;
+        max-height:min(62vh, 100%);
         background:color-mix(in srgb, var(--card) 88%, #fff);
         border:1px solid color-mix(in srgb, var(--card-edge) 85%, var(--hairline));
         border-radius:16px;
@@ -107,9 +165,12 @@ export function ShapeStudioStyles() {
         box-shadow:var(--shadow-1);
       }
       .dss-viewer.is-empty{
+        width:min(400px, 72%);
+        aspect-ratio:5/6;
+        max-height:min(48vh, 440px);
         display:grid;
         place-items:center;
-        padding:28px 24px;
+        padding:22px 20px;
         background:
           radial-gradient(ellipse 70% 55% at 50% 38%, color-mix(in srgb, var(--card) 92%, #fff), var(--card)),
           linear-gradient(180deg, color-mix(in srgb, var(--card) 96%, #fff), var(--card));
@@ -117,7 +178,7 @@ export function ShapeStudioStyles() {
       .dss-viewer.is-empty::before{
         content:"";
         position:absolute;
-        inset:14px;
+        inset:12px;
         border:1px dashed color-mix(in srgb, var(--hairline) 90%, transparent);
         border-radius:12px;
         pointer-events:none;
@@ -128,9 +189,9 @@ export function ShapeStudioStyles() {
         display:flex;
         flex-direction:column;
         align-items:center;
-        gap:8px;
+        gap:6px;
         text-align:center;
-        max-width:300px;
+        max-width:260px;
       }
       .dss-stage-empty-kicker{
         margin:0;
@@ -142,25 +203,25 @@ export function ShapeStudioStyles() {
       .dss-stage-empty-title{
         margin:0;
         font-family:var(--serif);
-        font-size:clamp(1.1rem, 2.4vh, 1.35rem);
+        font-size:clamp(1.05rem, 2.1vh, 1.22rem);
         font-weight:400;
         line-height:1.25;
         color:var(--ink);
       }
       .dss-stage-empty-copy{
         margin:0;
-        font-size:12.5px;
-        line-height:1.55;
+        font-size:12px;
+        line-height:1.5;
         color:var(--ink-soft);
       }
       .dss-stage-empty-steps{
-        margin:6px 0 0;
+        margin:4px 0 0;
         padding:0;
         list-style:none;
         display:flex;
         flex-direction:column;
-        gap:4px;
-        font-size:10px;
+        gap:3px;
+        font-size:9.5px;
         letter-spacing:0.06em;
         text-transform:uppercase;
         color:var(--ink-mute);
@@ -195,15 +256,15 @@ export function ShapeStudioStyles() {
         color:var(--ink-soft); white-space:nowrap; pointer-events:none;
       }
       .dss-stage-hint{
-        margin:8px 12px 0; font-size:11px; color:var(--ink-mute);
-        text-align:center; max-width:480px; line-height:1.5;
+        margin:6px 12px 0; font-size:10.5px; color:var(--ink-mute);
+        text-align:center; max-width:440px; line-height:1.45;
         flex:0 0 auto;
       }
       .dss-shape-strip-wrap{
         flex:0 0 auto;
         width:100%;
         display:flex; justify-content:center;
-        margin:clamp(10px, 1.6vh, 20px) 0 clamp(14px, 2.4vh, 28px);
+        margin:clamp(6px, 1.1vh, 12px) 0 clamp(10px, 1.8vh, 18px);
       }
       .dss-shape-strip{
         display:flex; align-items:stretch; gap:7px; padding:7px 11px;
@@ -243,19 +304,19 @@ export function ShapeStudioStyles() {
         background:color-mix(in srgb, var(--card) 92%, #fff);
         border:1px solid color-mix(in srgb, var(--card-edge) 88%, var(--hairline));
         border-radius:14px;
-        padding:13px 14px 14px;
+        padding:11px 12px 12px;
         box-shadow:var(--shadow-1);
         flex-shrink:0;
       }
       .dss-card-head{
         font-size:9.35px; font-weight:500; letter-spacing:0.168em;
-        text-transform:uppercase; color:var(--ink-soft); margin:0 0 10px;
+        text-transform:uppercase; color:var(--ink-soft); margin:0 0 8px;
         font-family:var(--serif);
         font-style:italic;
       }
       .dss-stepper{
         display:flex; align-items:center; justify-content:center;
-        gap:14px; margin:2px 0 8px;
+        gap:14px; margin:2px 0 6px;
       }
       .dss-stepper button{
         width:24px; height:24px; border-radius:50%;
@@ -264,12 +325,12 @@ export function ShapeStudioStyles() {
       }
       .dss-stepper button:disabled{ opacity:0.35; cursor:default; }
       .dss-step-val{
-        font-family:var(--serif); font-size:28px; min-width:56px;
+        font-family:var(--serif); font-size:24px; min-width:52px;
         text-align:center; font-variant-numeric:tabular-nums;
       }
-      .dss-slider{ position:relative; margin:6px 4px 2px; padding:0 8px; }
+      .dss-slider{ position:relative; margin:4px 4px 2px; padding:0 8px; }
       .dss-track{
-        position:relative; height:40px; margin:0;
+        position:relative; height:36px; margin:0;
         background-image:linear-gradient(var(--hairline),var(--hairline));
         background-size:100% 1px; background-position:center;
         background-repeat:no-repeat; touch-action:pan-x;
@@ -288,17 +349,17 @@ export function ShapeStudioStyles() {
       }
       .dss-endpoints{
         display:flex; justify-content:space-between;
-        font-size:8.5px; color:var(--ink-mute); margin-top:6px;
+        font-size:8.5px; color:var(--ink-mute); margin-top:4px;
       }
       .dss-dim-note{
-        margin-top:8px; font-size:11px; color:var(--ink-soft); text-align:center;
+        margin-top:6px; font-size:11px; color:var(--ink-soft); text-align:center;
       }
       .dss-dim-note strong{
         font-family:var(--serif); font-size:13px; color:var(--ink); font-weight:400;
       }
       .dss-mode-row{ display:flex; gap:6px; }
       .dss-mode-btn, .dss-slot-btn{
-        flex:1; padding:8px 6px; border-radius:8px;
+        flex:1; padding:7px 6px; border-radius:8px;
         border:1px solid var(--hairline); background:var(--hairline-soft);
         font-size:9px; letter-spacing:0.11em; text-transform:uppercase;
         color:var(--ink-soft); cursor:pointer;
@@ -306,10 +367,10 @@ export function ShapeStudioStyles() {
       .dss-mode-btn.is-active, .dss-slot-btn.is-active{
         background:var(--pill-active); border-color:var(--pill-edge); color:var(--ink);
       }
-      .dss-slot-row{ display:flex; gap:6px; margin-top:10px; }
-      .dss-upload-mode-row{ display:flex; gap:6px; margin-bottom:12px; }
+      .dss-slot-row{ display:flex; gap:6px; margin-top:8px; }
+      .dss-upload-mode-row{ display:flex; gap:6px; margin-bottom:10px; }
       .dss-upload-mode-btn{
-        flex:1; padding:8px 6px; border-radius:8px;
+        flex:1; padding:7px 6px; border-radius:8px;
         border:1px solid var(--hairline); background:var(--hairline-soft);
         font-size:9px; letter-spacing:0.11em; text-transform:uppercase;
         color:var(--ink-soft); cursor:pointer;
@@ -320,15 +381,15 @@ export function ShapeStudioStyles() {
       .dss-upload-mode-btn:disabled{ opacity:0.55; cursor:default; }
       .dss-upload-zone{
         border:1px dashed var(--hairline); border-radius:12px;
-        padding:20px 14px; text-align:center; cursor:pointer;
+        padding:14px 12px; text-align:center; cursor:pointer;
         background:var(--hairline-soft);
       }
       .dss-upload-zone.is-dragover{ border-color:var(--gold-warm); }
       .dss-upload-zone p{
-        margin:0; font-size:12px; color:var(--ink-soft); line-height:1.5;
+        margin:0; font-size:12px; color:var(--ink-soft); line-height:1.45;
       }
       .dss-upload-zone .dss-upload-cta{
-        display:inline-block; margin-top:8px; font-size:10px;
+        display:inline-block; margin-top:6px; font-size:10px;
         letter-spacing:0.14em; text-transform:uppercase; color:var(--ink);
       }
       .dss-qr-panel{
@@ -364,21 +425,38 @@ export function ShapeStudioStyles() {
         z-index:1;
         flex-shrink:0;
       }
-      @media (min-width: 769px) {
+
+      /* Split / mid desktop: denser rail, smaller empty stage */
+      @media (min-width: 961px) and (max-width: 1200px) {
+        .dss-main{ grid-template-columns:216px minmax(0, 1fr); }
+        .dss-control-rail{ padding:10px 10px 12px 12px; gap:10px; }
+        .dss-viewer{ width:min(460px, 92%); max-height:min(58vh, 100%); }
+        .dss-viewer.is-empty{
+          width:min(320px, 82%);
+          max-height:min(42vh, 360px);
+        }
+        .dss-step-val{ font-size:22px; min-width:48px; }
+        .dss-card{ padding:10px 11px 11px; }
+      }
+
+      @media (min-width: 961px) {
         .dss-main{
           flex:1 1 auto;
           min-height:0;
           overflow:hidden;
         }
       }
-      @media (max-width: 768px) {
+
+      /* Stack earlier for split-screen / tablet so the instrument stays readable */
+      @media (max-width: 960px) {
         .dss-shell{
           overflow-x:hidden;
           overflow-y:auto;
           scroll-padding-bottom:calc(env(safe-area-inset-bottom, 0px) + 96px);
         }
         .dss-app{
-          height:auto;
+          height:auto !important;
+          max-height:none !important;
           min-height:0;
           overflow:visible;
           box-sizing:border-box;
@@ -392,16 +470,16 @@ export function ShapeStudioStyles() {
         .dss-control-rail > .dss-card{
           width:calc(100% - 40px); margin-left:20px; margin-right:20px;
         }
-        .dss-control-rail > .dss-card:nth-child(1){ order:1; }
-        .dss-control-rail > .dss-card:nth-child(2){ order:5; }
-        .dss-control-rail > .dss-card:nth-child(3){ order:6; }
-        .dss-control-rail > .dss-card:nth-child(4){ order:7; }
+        .dss-control-rail > .dss-card:nth-child(1){ order:5; }
+        .dss-control-rail > .dss-card:nth-child(2){ order:6; }
+        .dss-control-rail > .dss-card:nth-child(3){ order:7; }
+        .dss-control-rail > .dss-card:nth-child(4){ order:8; }
         .dss-stage-stack{ display:contents; }
         .dss-stage-preview{ display:contents; }
         .dss-tool-header{
           order:1;
           width:calc(100% - 40px);
-          margin:4px 20px 0;
+          margin:8px 20px 0;
         }
         .dss-sentence{
           order:2; width:calc(100% - 40px); margin:2px 20px 8px;
@@ -409,9 +487,20 @@ export function ShapeStudioStyles() {
         }
         .dss-stage-canvas{ order:3; width:100%; padding:0 20px; box-sizing:border-box; }
         .dss-stage-hint{ order:4; width:calc(100% - 40px); margin:8px 20px 0; }
-        .dss-viewer{ width:100%; max-width:260px; max-height:min(48vh, 352px); aspect-ratio:7/9.15; }
+        .dss-viewer{
+          width:100%;
+          max-width:280px;
+          max-height:min(46vh, 340px);
+          aspect-ratio:7/9.15;
+        }
+        .dss-viewer.is-empty{
+          width:100%;
+          max-width:260px;
+          max-height:min(42vh, 300px);
+          aspect-ratio:5/6;
+        }
         .dss-shape-strip-wrap{
-          order:8; width:calc(100% - 40px); margin:4px 20px 12px;
+          order:9; width:calc(100% - 40px); margin:4px 20px 12px;
           -webkit-mask-image:linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
           mask-image:linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
         }
