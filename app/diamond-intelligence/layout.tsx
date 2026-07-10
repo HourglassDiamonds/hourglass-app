@@ -42,7 +42,7 @@ export default function DiamondIntelligenceLayout({
   return (
     <>
       <DiamondIntelligenceJsonLd />
-      <DiamondStudioSuiteShell>{children}</DiamondStudioSuiteShell>
+      <DiamondStudioSuiteShell instrument>{children}</DiamondStudioSuiteShell>
     </>
   );
 }

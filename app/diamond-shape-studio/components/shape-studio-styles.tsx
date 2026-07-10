@@ -3,32 +3,11 @@ export function ShapeStudioStyles() {
     <style
       dangerouslySetInnerHTML={{
         __html: `
-      /* Shape Studio–only suite chrome compact (does not affect Size Studio). */
-      @media (min-width: 768px) {
-        .diamond-studio-suite-route:has([data-shape-studio-instrument]) [data-dts-site-header] header > div {
-          padding-top: 0.7rem !important;
-          padding-bottom: 0.7rem !important;
-          align-items: center !important;
-        }
-        .diamond-studio-suite-route:has([data-shape-studio-instrument]) [data-dts-site-header] span.relative.block {
-          height: 52px !important;
-          width: 52px !important;
-        }
-      }
+      /* Phase 1: suite chrome uses shared Header / SuiteShell geometry (no compact).
+         Phase 1b: Scaled Preview joins shared suite-nav grid (256px) from
+         DiamondStudioSuiteNavStyles — no .dts-topbar column overrides.
+         .dss-main keeps its own instrument rail widths (248/216) separately. */
       @media (min-width: 961px) {
-        .diamond-studio-suite-route:has([data-shape-studio-instrument]) {
-          --dts-subnav-h: 40px;
-        }
-        .diamond-studio-suite-route:has([data-shape-studio-instrument]) .dts-topbar {
-          min-height: 40px;
-          height: var(--dts-subnav-h, 40px);
-        }
-        .diamond-studio-suite-route:has([data-shape-studio-instrument]) .dts-topnav {
-          padding-top: 6px;
-        }
-        .diamond-studio-suite-route:has([data-shape-studio-instrument]) .dts-topnav-item {
-          padding-bottom: 6px;
-        }
         /* Post-photo only: lock instrument height. Entry uses content height.
            Must override DiamondStudioSuiteShell's .dss-app workspace lock. */
         .diamond-studio-suite-route:has([data-shape-studio-instrument][data-entry-state="photo"])[data-suite-instrument] .dss-app {
@@ -42,16 +21,6 @@ export function ShapeStudioStyles() {
           max-height: none !important;
           min-height: 0;
           overflow: visible;
-        }
-      }
-      @media (min-width: 1024px) {
-        .diamond-studio-suite-route:has([data-shape-studio-instrument])[data-suite-instrument] .dts-topbar {
-          grid-template-columns: 248px minmax(0, 1fr);
-        }
-      }
-      @media (min-width: 961px) and (max-width: 1200px) {
-        .diamond-studio-suite-route:has([data-shape-studio-instrument])[data-suite-instrument] .dts-topbar {
-          grid-template-columns: 216px minmax(0, 1fr);
         }
       }
 
