@@ -319,7 +319,7 @@ export const articles: Article[] = [
   title: "Best Carat Size for an Engagement Ring",
   category: "Buying Guides",
   body: [
-    { type: "paragraph", text: "One of the most common questions people ask when choosing a diamond is what carat size is best for an engagement ring. While carat weight often becomes the focus of the conversation, the ideal size depends on several factors including personal style, finger size, ring design, and overall balance." },
+    { type: "paragraph", text: "One of the most common questions people ask when choosing a diamond is what carat size is best for an engagement ring. While carat weight often becomes the focus of the conversation, the ideal size depends on several factors including personal style, finger size, ring design, and overall balance. For millimeter references and face-up spread, start with the [diamond size chart](/diamond-guide/diamond-size-chart)." },
     { type: "paragraph", text: "Rather than a single “correct” carat weight, the best choice is usually the one that feels proportionate, visually balanced, and meaningful to the person wearing the ring." },
 
     { type: "heading", text: "Average Diamond Sizes for Engagement Rings" },
@@ -334,7 +334,7 @@ export const articles: Article[] = [
 
     { type: "heading", text: "Balancing Size and Proportion" },
     { type: "paragraph", text: "While size can be an important consideration, overall balance often matters more than carat weight alone." },
-    { type: "paragraph", text: "A well-cut diamond with balanced proportions and strong light performance will often appear brighter and more visually impressive than a larger diamond with weaker proportions." },
+    { type: "paragraph", text: "A well-cut diamond with balanced proportions and strong light performance will often appear brighter and more visually impressive than a larger diamond with weaker proportions. [What is diamond cut](/diamond-guide/what-is-diamond-cut) explains why performance often matters more than chasing a round carat number." },
     { type: "paragraph", text: "For many buyers, choosing a diamond that feels proportionate to the ring design ultimately produces the most satisfying result." },
 
     { type: "heading", text: "Choosing a Size That Feels Personal" },
@@ -349,9 +349,9 @@ export const articles: Article[] = [
   related: [
     { title: "Diamond Size Chart", href: "/diamond-guide/diamond-size-chart" },
     { title: "What is a Carat", href: "/diamond-guide/what-is-a-carat" },
-    { title: "Diamond Size Chart", href: "/diamond-guide/diamond-size-chart" },
     { title: "Diamond Size on Hand", href: "/diamond-guide/diamond-size-on-hand" },
     { title: "Diamond Carat vs Size", href: "/diamond-guide/diamond-carat-vs-size" },
+    { title: "What is Diamond Cut", href: "/diamond-guide/what-is-diamond-cut" },
     { title: "How to Make a Diamond Look Bigger", href: "/diamond-guide/how-to-make-a-diamond-look-bigger" },
   ],
 },
@@ -490,15 +490,15 @@ export const articles: Article[] = [
   title: "Buy Diamonds in Charlotte",
   category: "Charlotte Guides",
   body: [
-    { type: "paragraph", text: "Buying a diamond is often the most important step in choosing an engagement ring. In Charlotte, buyers have several options ranging from large jewelry retailers to independent jewelers who specialize in custom work." },
+    { type: "paragraph", text: "Buying a diamond is often the most important step in choosing an engagement ring. In Charlotte, buyers have several options ranging from large jewelry retailers to independent jewelers who specialize in custom work. For the broader buying framework, [diamond buying tips from jewelers](/diamond-guide/diamond-buying-tips-from-jewelers) is the practical pillar." },
     { type: "paragraph", text: "The key is not simply finding a place that sells diamonds, but finding a place that helps you understand them. A well-informed purchase leads to a diamond that looks exceptional and holds its beauty for decades." },
     { type: "paragraph", text: "Before visiting any jeweler, it helps to understand how diamonds are evaluated and what qualities truly affect their appearance." },
 
     { type: "heading", text: "Understanding Diamond Quality" },
     { type: "paragraph", text: "Most diamonds are graded using the Four Cs: cut, color, clarity, and carat weight. While these terms appear on grading reports, they can feel abstract until you see diamonds in person." },
-    { type: "paragraph", text: "Cut quality is the most important factor for visual beauty. A diamond with excellent proportions reflects light efficiently, creating brightness, contrast, and sparkle. Even a slightly smaller diamond with a superior cut often appears more lively than a larger stone with poor proportions." },
-    { type: "paragraph", text: "Color refers to the presence of subtle yellow or warm tones in a diamond. Many engagement rings look beautiful with near-colorless diamonds, especially once the stone is set in a ring." },
-    { type: "paragraph", text: "Clarity describes natural inclusions inside the diamond. Most inclusions are invisible without magnification, which means many diamonds offer excellent value while still appearing perfectly clean to the eye." },
+    { type: "paragraph", text: "Cut quality is the most important factor for visual beauty. A diamond with excellent proportions reflects light efficiently, creating brightness, contrast, and sparkle. Even a slightly smaller diamond with a superior cut often appears more lively than a larger stone with poor proportions. [What is diamond cut](/diamond-guide/what-is-diamond-cut) explains why." },
+    { type: "paragraph", text: "Color refers to the presence of subtle yellow or warm tones in a diamond. Many engagement rings look beautiful with near-colorless diamonds, especially once the stone is set in a ring. [What is diamond color](/diamond-guide/what-is-diamond-color) covers the scale and when letters matter on the hand." },
+    { type: "paragraph", text: "Clarity describes natural inclusions inside the diamond. Most inclusions are invisible without magnification, which means many diamonds offer excellent value while still appearing perfectly clean to the eye. [What is diamond clarity](/diamond-guide/what-is-diamond-clarity) focuses on the eye-clean standard." },
 
     { type: "heading", text: "Why Certification Matters" },
     { type: "paragraph", text: "When buying a diamond in Charlotte, certification provides an important layer of transparency." },
@@ -514,18 +514,18 @@ export const articles: Article[] = [
 
     { type: "heading", text: "Working With a Local Jeweler" },
     { type: "paragraph", text: "Charlotte has a growing community of independent jewelers who focus on education and craftsmanship. Many buyers appreciate the opportunity to ask questions and see how diamonds perform in different settings." },
-    { type: "paragraph", text: "Local jewelers may also help with custom designs, allowing the ring to reflect personal preferences rather than following a standard template." },
+    { type: "paragraph", text: "Local jewelers may also help with custom designs, allowing the ring to reflect personal preferences rather than following a standard template. [Why work with a Graduate Gemologist](/diamond-guide/why-work-with-a-graduate-gemologist) explains when trained eyes change the outcome." },
     { type: "paragraph", text: "The most important factor when choosing where to buy is transparency. A jeweler who explains how diamonds work, rather than simply presenting options, usually creates the best buying experience. [Our Approach](/our-approach) reflects the same standard: performance and honest guidance before inventory pressure." },
 
     { type: "paragraph", text: "Buying a diamond in Charlotte should feel thoughtful and enjoyable rather than rushed. With a basic understanding of diamond quality and a willingness to compare stones carefully, buyers can focus on what truly matters: finding a diamond that looks beautiful and feels meaningful for years to come. If origin is still part of your decision, [natural vs lab diamonds](/diamond-guide/natural-vs-lab-diamonds) offers a calm comparison. When personal guidance would help, you can [begin a private conversation](/concierge) at whatever pace suits you." },
   ],
   related: [
-    { title: "How to Read a Diamond Certificate", href: "/diamond-guide/how-to-read-a-diamond-certificate" },
+    { title: "Diamond Buying Tips from Jewelers", href: "/diamond-guide/diamond-buying-tips-from-jewelers" },
     { title: "Charlotte Diamond Advisor Guide", href: "/diamond-guide/charlotte-diamond-advisor-guide" },
+    { title: "How to Read a Diamond Certificate", href: "/diamond-guide/how-to-read-a-diamond-certificate" },
+    { title: "Why Work With a Graduate Gemologist", href: "/diamond-guide/why-work-with-a-graduate-gemologist" },
     { title: "Charlotte Engagement Ring Guide", href: "/diamond-guide/charlotte-engagement-ring-guide" },
     { title: "Custom Engagement Rings Charlotte", href: "/diamond-guide/custom-engagement-rings-in-charlotte" },
-    { title: "Diamond Size Guide Charlotte", href: "/diamond-guide/diamond-size-guide-for-charlotte-engagement-rings" },
-    { title: "Diamond Guide", href: "/diamond-guide" },
   ],
 },
 
@@ -605,13 +605,13 @@ export const articles: Article[] = [
     { type: "paragraph", text: "Charlotte offers plenty of options. The goal is not to visit all of them. It is to leave the process knowing why you chose this ring: how it looks, how it feels, and what you protected in the budget to get there. That is the confidence worth building before you buy — and if [personal guidance](/concierge) would help clarify the next step, it is available when you are ready." },
   ],
   related: [
+    { title: "Diamond Buying Tips from Jewelers", href: "/diamond-guide/diamond-buying-tips-from-jewelers" },
+    { title: "Charlotte Diamond Advisor Guide", href: "/diamond-guide/charlotte-diamond-advisor-guide" },
     { title: "How to Read a Diamond Certificate", href: "/diamond-guide/how-to-read-a-diamond-certificate" },
     { title: "Natural vs Lab Diamonds", href: "/diamond-guide/natural-vs-lab-diamonds" },
-    { title: "Charlotte Diamond Advisor Guide", href: "/diamond-guide/charlotte-diamond-advisor-guide" },
     { title: "Custom Engagement Rings Charlotte", href: "/diamond-guide/custom-engagement-rings-in-charlotte" },
     { title: "Buy Diamonds Charlotte", href: "/diamond-guide/buy-diamonds-in-charlotte" },
     { title: "Best Diamond Shapes Charlotte", href: "/diamond-guide/best-diamond-shapes-charlotte" },
-    { title: "Diamond Guide", href: "/diamond-guide" },
   ],
 },
 
@@ -892,12 +892,12 @@ export const articles: Article[] = [
   body: [
     { type: "paragraph", text: "A buyer once sat down with three printouts: same carat, same color, same clarity, all Excellent cut. They asked which was the better deal. On paper, the decision looked finished. In person, one stone looked alive. One looked acceptable. One looked tired, as if the light entered and never quite found its way back." },
     { type: "paragraph", text: "That moment happens more often than people expect. The research phase rewards comparison by specification. The diamond itself rewards comparison by eye. Most of the advice you will hear from jewelers is trying to bridge that gap. Some of it is excellent. Much of it is accurate but incomplete. A smaller amount is accurate within the limits of what someone happens to have in stock today." },
-    { type: "paragraph", text: "This is not a list of rules. It is what tends to matter when someone who has looked at thousands of diamonds is trying to help you avoid the mistakes that are easy to make and difficult to undo." },
+    { type: "paragraph", text: "This is not a list of rules. It is what tends to matter when someone who has looked at thousands of diamonds — including independent advisors serving Charlotte, South Charlotte, and Waxhaw buyers — is trying to help you avoid the mistakes that are easy to make and difficult to undo." },
 
     { type: "heading", text: "Why So Much Diamond Advice Sounds the Same" },
     { type: "paragraph", text: "Prioritize cut. Compare stones side by side. Do not rush. Consider the setting. These recommendations appear everywhere because they are true. They are also safe. They apply regardless of budget, shape, or whether you buy from a showroom, a website, or an independent advisor." },
     { type: "paragraph", text: "What they rarely explain is why two diamonds with matching grades can disappoint, or why a lower grade can outperform a higher one once the ring is on the hand. They also rarely name the structural bias in the room: a jeweler with inventory will naturally steer toward what is available now. An online listing will make every stone look equally plausible until you see it move under light. Neither is necessarily dishonest. Both are incomplete guides to a decision that is partly technical and partly visual." },
-    { type: "paragraph", text: "Useful advice should make you better at judging diamonds, not only at judging salesmanship. That distinction is where experienced guidance actually earns its keep." },
+    { type: "paragraph", text: "Useful advice should make you better at judging diamonds, not only at judging salesmanship. That distinction is where experienced guidance actually earns its keep. [Independent diamond advisor vs jewelry store](/diamond-guide/independent-diamond-advisor-vs-jewelry-store) explains how business structure shapes the recommendations you hear." },
 
     { type: "heading", text: "The First Mistake Is Usually the Starting Point" },
     { type: "paragraph", text: "Many searches begin with a carat number or a budget ceiling, then work backward through color and clarity until something fits. That is understandable. It is also how people end up paying for weight they cannot see, or clarity they will never notice, while the one characteristic that changes everything gets treated as a checkbox labeled Excellent. That characteristic is how the diamond handles light." },
@@ -905,10 +905,10 @@ export const articles: Article[] = [
     { type: "paragraph", text: "If you are still early in the process, resist the urge to finalize a specification before you have seen a few diamonds move. Your preferences are more specific than you think, and they rarely emerge from a filter menu alone." },
 
     { type: "heading", text: "What Matters More Than People Assume" },
-    { type: "paragraph", text: "Cut quality, or more precisely optical performance, is the factor most buyers underestimate and most experienced advisors return to first. A well-proportioned diamond can mask slight color, minimize the visibility of inclusions, and face up larger than a poorly proportioned stone of the same carat weight. A mediocre cut on an otherwise strong certificate is one of the most common reasons buyers feel vaguely disappointed after purchase, even when they did everything the internet told them to do." },
-    { type: "paragraph", text: "Eye cleanliness matters more than clarity alphabet. Many SI1 diamonds are entirely clean to the naked eye. Some VS stones have inclusions positioned where they catch light from the table. The question is not what the plot shows under ten-power magnification. The question is what you see when the diamond is set, at conversational distance, in the lighting you actually live in." },
+    { type: "paragraph", text: "Cut quality, or more precisely optical performance, is the factor most buyers underestimate and most experienced advisors return to first. A well-proportioned diamond can mask slight color, minimize the visibility of inclusions, and face up larger than a poorly proportioned stone of the same carat weight. A mediocre cut on an otherwise strong certificate is one of the most common reasons buyers feel vaguely disappointed after purchase, even when they did everything the internet told them to do. [What is diamond cut](/diamond-guide/what-is-diamond-cut) is the full performance guide." },
+    { type: "paragraph", text: "Eye cleanliness matters more than clarity alphabet. Many SI1 diamonds are entirely clean to the naked eye. Some VS stones have inclusions positioned where they catch light from the table. The question is not what the plot shows under ten-power magnification. The question is what you see when the diamond is set, at conversational distance, in the lighting you actually live in. [What is diamond clarity](/diamond-guide/what-is-diamond-clarity) covers the scale and the eye-clean standard." },
     { type: "paragraph", text: "Side-by-side comparison matters more than solitary inspection. A single diamond under jewelry-store lighting can look wonderful in isolation. Place it next to another stone with similar grades and the differences in liveliness, contrast, and presence become difficult to ignore. This is where paper equivalence breaks down. That is where [why work with a Graduate Gemologist](/diamond-guide/why-work-with-a-graduate-gemologist) becomes practical rather than theoretical. Trained eyes notice patterns quickly: which Excellent cuts actually perform, which inclusions will matter in a halo, which combinations of grades tend to look flat." },
-    { type: "paragraph", text: "The ring matters more than buyers expect. Platinum, white gold, and rose gold change how color reads. A high-set solitaire shows a diamond differently than a bezel. A halo adds sparkle and can forgive slightly warmer color. Choosing a stone without imagining the finished ring is how people discover, too late, that the diamond they loved loose looks different once it is worn." },
+    { type: "paragraph", text: "The ring matters more than buyers expect. Platinum, white gold, and rose gold change how color reads. A high-set solitaire shows a diamond differently than a bezel. A halo adds sparkle and can forgive slightly warmer color. Choosing a stone without imagining the finished ring is how people discover, too late, that the diamond they loved loose looks different once it is worn. [What is diamond color](/diamond-guide/what-is-diamond-color) explains how metal and lighting change what you see." },
 
     { type: "heading", text: "What Matters Less Than the Internet Suggests" },
     { type: "paragraph", text: "Perfect color grades are often less important than people fear. The step from G to D can be visually subtle once a diamond is set in white metal and returning light well. Paying heavily for colorless grades when a near-colorless stone would look identical on the hand is one of the most common overpayments in the trade. [Diamond price versus quality](/diamond-guide/diamond-price-vs-quality) explores that tradeoff in more detail." },
@@ -934,11 +934,13 @@ export const articles: Article[] = [
   related: [
     { title: "Why Work With a Graduate Gemologist", href: "/diamond-guide/why-work-with-a-graduate-gemologist" },
     { title: "Independent Diamond Advisor vs Jewelry Store", href: "/diamond-guide/independent-diamond-advisor-vs-jewelry-store" },
-    { title: "Diamond Price vs Quality", href: "/diamond-guide/diamond-price-vs-quality" },
-    { title: "Are Lab Diamonds a Good Choice", href: "/diamond-guide/are-lab-diamonds-a-good-choice" },
+    { title: "How to Read a Diamond Certificate", href: "/diamond-guide/how-to-read-a-diamond-certificate" },
+    { title: "What is Diamond Cut", href: "/diamond-guide/what-is-diamond-cut" },
+    { title: "What is Diamond Color", href: "/diamond-guide/what-is-diamond-color" },
+    { title: "What is Diamond Clarity", href: "/diamond-guide/what-is-diamond-clarity" },
     { title: "Natural vs Lab Diamonds", href: "/diamond-guide/natural-vs-lab-diamonds" },
-    { title: "When is the Best Time to Buy a Diamond", href: "/diamond-guide/when-is-the-best-time-to-buy-a-diamond" },
-    { title: "Round Diamond Guide", href: "/diamond-guide/round-diamond-guide" },
+    { title: "Diamond Price vs Quality", href: "/diamond-guide/diamond-price-vs-quality" },
+    { title: "Charlotte Diamond Advisor Guide", href: "/diamond-guide/charlotte-diamond-advisor-guide" },
   ],
 },
 
@@ -952,7 +954,7 @@ export const articles: Article[] = [
   visualCategory: "original-photo",
   visualStatus: "live",
   body: [
-    { type: "paragraph", text: "When people begin researching diamonds, one of the most common points of confusion is the difference between carat weight and visible size. The two are closely related, but they are not the same thing." },
+    { type: "paragraph", text: "When people begin researching diamonds, one of the most common points of confusion is the difference between carat weight and visible size. The two are closely related, but they are not the same thing. For millimeter charts and face-up references by carat, use the [diamond size chart](/diamond-guide/diamond-size-chart)." },
     { type: "paragraph", text: "Carat refers to the weight of the diamond, while size refers to the physical dimensions of the stone when viewed from above. Because of this distinction, two diamonds with identical carat weights may appear noticeably different once they are set in a ring." },
     { type: "paragraph", text: "Understanding this difference helps buyers evaluate diamonds more accurately and focus on the factors that truly influence appearance." },
 
@@ -968,23 +970,23 @@ export const articles: Article[] = [
 
     { type: "heading", text: "How Shape Affects Visible Size" },
     { type: "paragraph", text: "Diamond shape can also influence how large a diamond appears." },
-    { type: "paragraph", text: "Round diamonds tend to concentrate weight toward the center of the stone, while elongated shapes such as oval, marquise, and pear stretch across the finger and often appear larger." },
+    { type: "paragraph", text: "Round diamonds tend to concentrate weight toward the center of the stone, while elongated shapes such as oval, marquise, and pear stretch across the finger and often appear larger. [What diamond shape looks the largest](/diamond-guide/what-diamond-shape-looks-the-largest) summarizes those face-up tendencies." },
     { type: "paragraph", text: "Emerald and radiant cuts may also create the impression of greater size due to their broader table surfaces." },
 
     { type: "heading", text: "Why Cut Quality Matters" },
     { type: "paragraph", text: "Cut quality plays a major role in the relationship between carat weight and visible size." },
-    { type: "paragraph", text: "Diamonds with carefully balanced proportions reflect light more efficiently and maximize the diameter of the stone. This often makes them appear both brighter and larger than diamonds with weaker proportions." },
+    { type: "paragraph", text: "Diamonds with carefully balanced proportions reflect light more efficiently and maximize the diameter of the stone. This often makes them appear both brighter and larger than diamonds with weaker proportions. [What is diamond cut](/diamond-guide/what-is-diamond-cut) explains the performance side of that tradeoff." },
     { type: "paragraph", text: "Because of this, two diamonds with identical carat weights can look surprisingly different once they are placed side by side." },
 
     { type: "paragraph", text: "Carat weight is an important measurement, but it does not fully describe how large a diamond will appear." },
     { type: "paragraph", text: "Shape, cut proportions, and overall design all influence the visible presence of the stone once it is worn in a ring." },
-    { type: "paragraph", text: "By understanding the difference between carat weight and size, buyers can evaluate diamonds more confidently and [see how different carat weights face up](/diamond-studio) before selecting a stone that appears balanced, bright, and visually impressive." },
+    { type: "paragraph", text: "By understanding the difference between carat weight and size, buyers can evaluate diamonds more confidently and [see how different carat weights face up](/diamond-studio) before selecting a stone that appears balanced, bright, and visually impressive. When numbers and appearance need to be weighed together, [begin with Concierge](/concierge)." },
   ],
   related: [
-    { title: "What is a Carat", href: "/diamond-guide/what-is-a-carat" },
     { title: "Diamond Size Chart", href: "/diamond-guide/diamond-size-chart" },
+    { title: "What is a Carat", href: "/diamond-guide/what-is-a-carat" },
     { title: "Diamond Size on Hand", href: "/diamond-guide/diamond-size-on-hand" },
-    { title: "How Big is a 1 Carat Diamond", href: "/diamond-guide/how-big-is-a-1-carat-diamond" },
+    { title: "What is Diamond Cut", href: "/diamond-guide/what-is-diamond-cut" },
     { title: "How to Make a Diamond Look Bigger", href: "/diamond-guide/how-to-make-a-diamond-look-bigger" },
   ],
 },
@@ -1504,13 +1506,12 @@ export const articles: Article[] = [
       { type: "paragraph", text: "For the process that surrounds these tradeoffs, [diamond buying tips from jewelers](/diamond-guide/diamond-buying-tips-from-jewelers) and [why work with a Graduate Gemologist](/diamond-guide/why-work-with-a-graduate-gemologist) go deeper on comparison and judgment. The goal is not to spend less for its own sake. It is to spend on what you will actually notice, long after the receipt is filed away." },
     ],
     related: [
+      { title: "Diamond Buying Tips from Jewelers", href: "/diamond-guide/diamond-buying-tips-from-jewelers" },
+      { title: "What is Diamond Cut", href: "/diamond-guide/what-is-diamond-cut" },
       { title: "Natural vs Lab Diamonds", href: "/diamond-guide/natural-vs-lab-diamonds" },
       { title: "Independent Diamond Advisor vs Jewelry Store", href: "/diamond-guide/independent-diamond-advisor-vs-jewelry-store" },
-      { title: "Diamond Buying Tips from Jewelers", href: "/diamond-guide/diamond-buying-tips-from-jewelers" },
-      { title: "Round Diamond Guide", href: "/diamond-guide/round-diamond-guide" },
-      { title: "Cushion Diamond Guide", href: "/diamond-guide/cushion-diamond-guide" },
-      { title: "Radiant Diamond Guide", href: "/diamond-guide/radiant-diamond-guide" },
-      { title: "Are Lab Diamonds a Good Choice", href: "/diamond-guide/are-lab-diamonds-a-good-choice" }
+      { title: "Why Work With a Graduate Gemologist", href: "/diamond-guide/why-work-with-a-graduate-gemologist" },
+      { title: "How to Read a Diamond Certificate", href: "/diamond-guide/how-to-read-a-diamond-certificate" },
     ]
   },
 
@@ -1542,7 +1543,7 @@ export const articles: Article[] = [
 
       { type: "heading", text: "How Shape Influences Diamond Size" },
       { type: "paragraph", text: "The measurements above apply primarily to round brilliant diamonds. Other shapes distribute weight differently, which changes visible spread even at the same carat weight." },
-      { type: "paragraph", text: "Elongated shapes such as oval, marquise, and pear often cover more length across the finger. Square shapes such as cushion or princess cuts may face up slightly smaller because more weight sits toward the center of the stone." },
+      { type: "paragraph", text: "Elongated shapes such as oval, marquise, and pear often cover more length across the finger. Square shapes such as cushion or princess cuts may face up slightly smaller because more weight sits toward the center of the stone. [What diamond shape looks the largest](/diamond-guide/what-diamond-shape-looks-the-largest) and [do elongated diamonds look bigger](/diamond-guide/do-elongated-diamonds-look-bigger) compare those face-up tendencies in more detail." },
       {
         type: "shape-spread-table",
         rows: [
@@ -1559,7 +1560,7 @@ export const articles: Article[] = [
       { type: "paragraph", text: "Charts orient the conversation. [Diamond Studio](/diamond-studio) lets you compare how different carat weights and shapes face up across finger sizes before you view stones in person." },
 
       { type: "heading", text: "Why Cut Proportions Matter" },
-      { type: "paragraph", text: "Cut proportions influence both brightness and visible spread. A well-proportioned diamond distributes weight efficiently and returns light effectively, which often makes the stone appear larger and more lively." },
+      { type: "paragraph", text: "Cut proportions influence both brightness and visible spread. A well-proportioned diamond distributes weight efficiently and returns light effectively, which often makes the stone appear larger and more lively. [What is diamond cut](/diamond-guide/what-is-diamond-cut) is the full performance guide; [does diamond cut affect size](/diamond-guide/does-diamond-cut-affect-size) focuses on how depth and spread change face-up millimeters." },
       { type: "paragraph", text: "Diamonds with poor proportions may hide weight in the lower portion of the stone, reducing both sparkle and the face-up size you actually see in the setting." },
 
       { type: "heading", text: "Finger Coverage and Presence" },
@@ -1574,8 +1575,9 @@ export const articles: Article[] = [
       { title: "What is a Carat", href: "/diamond-guide/what-is-a-carat" },
       { title: "Diamond Carat vs Size", href: "/diamond-guide/diamond-carat-vs-size" },
       { title: "Diamond Size on Hand", href: "/diamond-guide/diamond-size-on-hand" },
-      { title: "How Big is a 1 Carat Diamond", href: "/diamond-guide/how-big-is-a-1-carat-diamond" },
-      { title: "Best Carat Size for Engagement Ring", href: "/diamond-guide/best-carat-size-for-an-engagement-ring" }
+      { title: "What Diamond Shape Looks the Largest", href: "/diamond-guide/what-diamond-shape-looks-the-largest" },
+      { title: "What is Diamond Cut", href: "/diamond-guide/what-is-diamond-cut" },
+      { title: "Best Carat Size for Engagement Ring", href: "/diamond-guide/best-carat-size-for-an-engagement-ring" },
     ]
   },
 
@@ -1584,7 +1586,7 @@ export const articles: Article[] = [
     title: "Diamond Size Guide for Charlotte Engagement Rings",
     category: "Charlotte Guides",
     body: [
-      { type: "paragraph", text: "Diamond size is one of the first things people think about when choosing an engagement ring. Many buyers in Charlotte begin their search by asking how large a diamond should be or what size looks balanced on the hand." },
+      { type: "paragraph", text: "Diamond size is one of the first things people think about when choosing an engagement ring. Many buyers in Charlotte begin their search by asking how large a diamond should be or what size looks balanced on the hand. For millimeter charts and face-up references, start with the [diamond size chart](/diamond-guide/diamond-size-chart)." },
       { type: "paragraph", text: "While carat weight is often used to describe size, the visual appearance of a diamond is influenced by more than just its weight. Shape, proportions, and ring design all contribute to how large a diamond appears once it is worn." },
       { type: "paragraph", text: "Understanding these factors can help buyers choose a diamond that looks impressive while still fitting comfortably within their budget." },
 
@@ -1611,16 +1613,16 @@ export const articles: Article[] = [
       { type: "paragraph", text: "Some Charlotte buyers prefer a subtle, understated diamond that feels timeless and wearable every day. Others enjoy a more prominent center stone that becomes the focal point of the ring." },
       { type: "paragraph", text: "Trying on different sizes can be helpful, especially when comparing how various shapes look on the hand. You can also [compare diamond size on the hand](/diamond-studio) ahead of an appointment. This process often reveals that visual balance matters more than simply choosing the largest carat weight possible." },
 
-        { type: "paragraph", text: "Diamond size is best understood as a combination of carat weight, shape, and design rather than a single number. By considering how these elements work together, Charlotte buyers can choose a diamond that feels balanced, elegant, and visually striking without focusing solely on carat weight alone." },
+        { type: "paragraph", text: "Diamond size is best understood as a combination of carat weight, shape, and design rather than a single number. By considering how these elements work together, Charlotte buyers can choose a diamond that feels balanced, elegant, and visually striking without focusing solely on carat weight alone. When you want local guidance translating size preference into a shortlist, [begin with Concierge](/concierge)." },
       
     ],
     related: [
       { title: "Diamond Size Chart", href: "/diamond-guide/diamond-size-chart" },
+      { title: "Diamond Carat vs Size", href: "/diamond-guide/diamond-carat-vs-size" },
       { title: "Charlotte Diamond Advisor Guide", href: "/diamond-guide/charlotte-diamond-advisor-guide" },
       { title: "Charlotte Engagement Ring Guide", href: "/diamond-guide/charlotte-engagement-ring-guide" },
       { title: "Buy Diamonds Charlotte", href: "/diamond-guide/buy-diamonds-in-charlotte" },
       { title: "Best Diamond Shapes Charlotte", href: "/diamond-guide/best-diamond-shapes-charlotte" },
-      { title: "Diamond Guide", href: "/diamond-guide" }
     ]
   },
 
@@ -1629,7 +1631,7 @@ export const articles: Article[] = [
     title: "Diamond Size on Hand",
     category: "Diamond Size",
     body: [
-      { type: "paragraph", text: "When choosing a diamond, many people wonder how different sizes will actually look once the ring is worn. While carat weight provides a numerical reference, the way a diamond appears on the hand depends on several additional factors." },
+      { type: "paragraph", text: "When choosing a diamond, many people wonder how different sizes will actually look once the ring is worn. While carat weight provides a numerical reference, the way a diamond appears on the hand depends on several additional factors. For millimeter charts and carat-to-spread references, see the [diamond size chart](/diamond-guide/diamond-size-chart)." },
       { type: "paragraph", text: "Finger size, diamond shape, ring design, and even band width can all influence how large or prominent a diamond appears. Understanding these elements helps buyers visualize how a ring will look in everyday wear." },
 
       { type: "heading", text: "How Finger Size Affects Diamond Appearance" },
@@ -1730,7 +1732,7 @@ export const articles: Article[] = [
     title: "What Diamond Shape Looks the Largest",
     category: "Diamond Shapes",
     body: [
-      { type: "paragraph", text: "When comparing diamonds of the same carat weight, many people assume the difference between shapes is subtle. In practice, the outline of a stone can change how large it appears on the hand, sometimes noticeably." },
+      { type: "paragraph", text: "When comparing diamonds of the same carat weight, many people assume the difference between shapes is subtle. In practice, the outline of a stone can change how large it appears on the hand, sometimes noticeably. For carat-to-millimeter references first, see the [diamond size chart](/diamond-guide/diamond-size-chart)." },
       { type: "paragraph", text: "Some shapes spread their weight across a longer or broader face-up surface. Others concentrate weight toward the center or carry more depth beneath the table. These differences influence visual size even when the carat weight is identical." },
       { type: "paragraph", text: "Understanding how shape affects face-up appearance helps buyers compare options with more clarity, especially when balancing size, brilliance, and personal style." },
 
@@ -1832,7 +1834,7 @@ export const articles: Article[] = [
   title: "Do Elongated Diamonds Look Bigger",
   category: "Diamond Size",
   body: [
-    { type: "paragraph", text: "Many people comparing diamond shapes notice that some diamonds appear larger than others even when their carat weight is the same. This is especially true with elongated diamond shapes such as oval, marquise, pear, and emerald cuts." },
+    { type: "paragraph", text: "Many people comparing diamond shapes notice that some diamonds appear larger than others even when their carat weight is the same. This is especially true with elongated diamond shapes such as oval, marquise, pear, and emerald cuts. For carat-to-millimeter references across shapes, start with the [diamond size chart](/diamond-guide/diamond-size-chart)." },
     { type: "paragraph", text: "Because these shapes stretch across the finger rather than concentrating their weight in a circular outline, they often create the impression of greater size. Understanding why this happens can help buyers choose a diamond shape that achieves the look they prefer." },
 
     { type: "heading", text: "What Makes a Diamond Look Larger" },
@@ -1863,6 +1865,7 @@ export const articles: Article[] = [
    
   ],
   related: [
+    { title: "Diamond Size Chart", href: "/diamond-guide/diamond-size-chart" },
     { title: "What Diamond Shape Looks the Largest", href: "/diamond-guide/what-diamond-shape-looks-the-largest" },
     { title: "Diamond Size on Hand", href: "/diamond-guide/diamond-size-on-hand" },
     { title: "What is Diamond Cut", href: "/diamond-guide/what-is-diamond-cut" },
@@ -1910,7 +1913,7 @@ export const articles: Article[] = [
   title: "Does Diamond Cut Affect Size",
   category: "Diamond Cut",
   body: [
-    { type: "paragraph", text: "Carat weight and face-up size are not the same. Cut controls spread. For the full cut guide, see [what is diamond cut](/diamond-guide/what-is-diamond-cut). This article explains how proportions change visible size." },
+    { type: "paragraph", text: "Carat weight and face-up size are not the same. Cut controls spread. For the full cut guide, see [what is diamond cut](/diamond-guide/what-is-diamond-cut). For carat-to-millimeter references, see the [diamond size chart](/diamond-guide/diamond-size-chart). This article explains how proportions change visible size." },
     { type: "heading", text: "Why Some Diamonds Look Larger Than Others" },
     { type: "paragraph", text: "Many buyers assume that carat weight alone determines how large a diamond appears. While carat weight does measure the diamond’s mass, the way a diamond is cut can strongly influence how large it looks when viewed from above." },
     { type: "paragraph", text: "Two diamonds with the same carat weight can appear noticeably different in size depending on their proportions. [see how different carat weights face up](/diamond-studio) when depth and spread change. A well-cut diamond spreads its weight in a way that maximizes the visible surface area, while a poorly cut diamond may hide weight in areas that are less visible." },
@@ -1932,15 +1935,15 @@ export const articles: Article[] = [
     { type: "paragraph", text: "This balance is why cut quality remains such an important factor when choosing a diamond." },
 
     { type: "paragraph", text: "Carat weight determines how much a diamond weighs, but cut influences how large that diamond appears. Proportions such as depth and diameter play a major role in the diamond’s visible size." },
-    { type: "paragraph", text: "By understanding how cut affects spread, buyers can evaluate diamonds more thoughtfully and choose a stone that offers both strong sparkle and satisfying visual presence." },
+    { type: "paragraph", text: "By understanding how cut affects spread, buyers can evaluate diamonds more thoughtfully and choose a stone that offers both strong sparkle and satisfying visual presence. [See how different carat weights face up](/diamond-studio) when you want to compare depth and spread visually, or [begin with Concierge](/concierge) when tradeoffs need a second set of eyes." },
     
   ],
   related: [
     { title: "What is Diamond Cut", href: "/diamond-guide/what-is-diamond-cut" },
+    { title: "Diamond Size Chart", href: "/diamond-guide/diamond-size-chart" },
+    { title: "Diamond Carat vs Size", href: "/diamond-guide/diamond-carat-vs-size" },
     { title: "How Diamond Cut Affects Sparkle", href: "/diamond-guide/how-diamond-cut-affects-sparkle" },
-    { title: "Diamond Cut vs Diamond Shape", href: "/diamond-guide/diamond-cut-vs-diamond-shape" },
     { title: "Ideal Diamond Cut Proportions", href: "/diamond-guide/ideal-diamond-cut-proportions" },
-    { title: "What Makes a Diamond Cut Good or Bad", href: "/diamond-guide/what-makes-a-diamond-cut-good-or-bad" }
   ]
 },
 
@@ -2356,7 +2359,7 @@ export const articles: Article[] = [
   title: "How Big is a 1 Carat Diamond",
   category: "Diamond Size",
   body: [
-    { type: "paragraph", text: "A one carat diamond is often considered the classic size for an engagement ring, but many people are surprised to learn that carat weight does not translate directly to visible size." },
+    { type: "paragraph", text: "A one carat diamond is often considered the classic size for an engagement ring, but many people are surprised to learn that carat weight does not translate directly to visible size. For millimeter charts across carat weights and shapes, see the [diamond size chart](/diamond-guide/diamond-size-chart)." },
     { type: "paragraph", text: "Carat refers to a diamond’s weight rather than its dimensions. Because of this, two diamonds with the same carat weight can appear noticeably different depending on their cut, shape, and proportions." },
     { type: "paragraph", text: "Understanding how large a one carat diamond actually looks helps set realistic expectations and makes it easier to compare different diamonds." },
 
@@ -2382,13 +2385,13 @@ export const articles: Article[] = [
 
     { type: "paragraph", text: "A one carat diamond is often considered a balanced choice for an engagement ring, offering noticeable presence while remaining versatile across many styles." },
     { type: "paragraph", text: "However, the visible size of a diamond depends on more than carat weight alone. Shape, cut proportions, and ring design all contribute to how large the diamond ultimately appears." },
-    { type: "paragraph", text: "By understanding these factors, it becomes easier to select a diamond that feels both visually balanced and personally meaningful." },
+    { type: "paragraph", text: "By understanding these factors, it becomes easier to select a diamond that feels both visually balanced and personally meaningful. When you want help translating a one-carat target into face-up presence, [begin with Concierge](/concierge)." },
     
   ],
   related: [
+    { title: "Diamond Size Chart", href: "/diamond-guide/diamond-size-chart" },
     { title: "What is a Carat", href: "/diamond-guide/what-is-a-carat" },
     { title: "Diamond Carat vs Size", href: "/diamond-guide/diamond-carat-vs-size" },
-    { title: "Diamond Size Chart", href: "/diamond-guide/diamond-size-chart" },
     { title: "Diamond Size on Hand", href: "/diamond-guide/diamond-size-on-hand" },
     { title: "How Big is a 2 Carat Diamond", href: "/diamond-guide/how-big-is-a-2-carat-diamond" }
   ]
@@ -2398,7 +2401,7 @@ export const articles: Article[] = [
   title: "How Big is a 2 Carat Diamond",
   category: "Diamond Size",
   body: [
-    { type: "paragraph", text: "A two carat diamond is often considered a statement piece for an engagement ring. While it is only twice the weight of a one carat diamond, the visual difference can feel much more significant once the stone is set in a ring." },
+    { type: "paragraph", text: "A two carat diamond is often considered a statement piece for an engagement ring. While it is only twice the weight of a one carat diamond, the visual difference can feel much more significant once the stone is set in a ring. For millimeter charts and face-up references, see the [diamond size chart](/diamond-guide/diamond-size-chart)." },
     { type: "paragraph", text: "However, as with all diamonds, carat weight refers to how much the stone weighs rather than its exact dimensions. Two diamonds with the same carat weight may appear slightly different in size depending on their shape and proportions." },
     { type: "paragraph", text: "Understanding how large a two carat diamond actually looks can help buyers compare options more confidently." },
 
@@ -2423,13 +2426,13 @@ export const articles: Article[] = [
 
     { type: "paragraph", text: "A two carat diamond offers a striking combination of size and brilliance, making it a popular choice for those seeking a ring with strong visual impact." },
     { type: "paragraph", text: "While carat weight is an important measurement, the appearance of the diamond ultimately depends on shape, cut quality, and the overall design of the ring." },
-    { type: "paragraph", text: "Understanding these factors helps ensure that a two carat diamond feels balanced, elegant, and visually impressive once it is worn every day." },
+    { type: "paragraph", text: "Understanding these factors helps ensure that a two carat diamond feels balanced, elegant, and visually impressive once it is worn every day. When presence and budget need to be weighed together, [begin with Concierge](/concierge)." },
     
   ],
   related: [
+    { title: "Diamond Size Chart", href: "/diamond-guide/diamond-size-chart" },
     { title: "What is a Carat", href: "/diamond-guide/what-is-a-carat" },
     { title: "Diamond Carat vs Size", href: "/diamond-guide/diamond-carat-vs-size" },
-    { title: "Diamond Size Chart", href: "/diamond-guide/diamond-size-chart" },
     { title: "Diamond Size on Hand", href: "/diamond-guide/diamond-size-on-hand" },
     { title: "How Big is a 1 Carat Diamond", href: "/diamond-guide/how-big-is-a-1-carat-diamond" }
   ]
@@ -2595,17 +2598,17 @@ export const articles: Article[] = [
   title: "How to Make a Diamond Look Bigger",
   category: "Buying Guides",
   body: [
-    { type: "paragraph", text: "Many engagement ring buyers wonder if there are ways to make a diamond appear larger without increasing carat weight. While the physical size of a diamond cannot change, several design choices can significantly influence how large the stone appears once it is set in a ring." },
+    { type: "paragraph", text: "Many engagement ring buyers wonder if there are ways to make a diamond appear larger without increasing carat weight. While the physical size of a diamond cannot change, several design choices can significantly influence how large the stone appears once it is set in a ring. For carat-to-millimeter context first, see the [diamond size chart](/diamond-guide/diamond-size-chart)." },
     { type: "paragraph", text: "Factors such as diamond shape, cut proportions, ring setting, and band design all contribute to how prominent the diamond looks on the hand." },
 
     { type: "heading", text: "Choose Shapes That Maximize Finger Coverage" },
     { type: "paragraph", text: "Some diamond shapes naturally appear larger because of how they distribute their weight." },
-    { type: "paragraph", text: "Elongated shapes such as oval, marquise, and pear diamonds stretch across the finger and often create more visible surface area than round diamonds of the same carat weight. This extended outline can make the diamond appear larger when viewed from above." },
+    { type: "paragraph", text: "Elongated shapes such as oval, marquise, and pear diamonds stretch across the finger and often create more visible surface area than round diamonds of the same carat weight. This extended outline can make the diamond appear larger when viewed from above. [Do elongated diamonds look bigger](/diamond-guide/do-elongated-diamonds-look-bigger) explains why." },
     { type: "paragraph", text: "These shapes are often chosen by buyers who want strong visual presence without increasing carat weight, and a [visual diamond size tool](/diamond-studio) helps judge that spread before you commit to a shape." },
 
     { type: "heading", text: "Prioritize Excellent Cut Proportions" },
     { type: "paragraph", text: "Cut quality plays a major role in how large a diamond appears." },
-    { type: "paragraph", text: "Diamonds that are cut too deep may hide much of their weight below the surface of the ring setting, which can reduce their visible diameter. In contrast, well-proportioned diamonds distribute their weight more efficiently across the top surface." },
+    { type: "paragraph", text: "Diamonds that are cut too deep may hide much of their weight below the surface of the ring setting, which can reduce their visible diameter. In contrast, well-proportioned diamonds distribute their weight more efficiently across the top surface. [What is diamond cut](/diamond-guide/what-is-diamond-cut) covers why performance and spread travel together." },
     { type: "paragraph", text: "This balanced structure can make the diamond appear both larger and brighter." },
 
     { type: "heading", text: "Consider a Halo Setting" },
@@ -2623,14 +2626,15 @@ export const articles: Article[] = [
     { type: "paragraph", text: "Yellow or rose gold can create beautiful contrast but may draw more attention to the setting rather than the diamond." },
 
     { type: "paragraph", text: "While carat weight determines the physical size of a diamond, thoughtful design choices can significantly influence how large the stone appears once it is worn." },
-    { type: "paragraph", text: "Diamond shape, cut quality, ring setting, and band design all contribute to the visual presence of the ring. By considering these elements together, it is possible to create a design that feels both balanced and visually impressive without relying on carat weight alone." },
+    { type: "paragraph", text: "Diamond shape, cut quality, ring setting, and band design all contribute to the visual presence of the ring. By considering these elements together, it is possible to create a design that feels both balanced and visually impressive without relying on carat weight alone. [Speak with Concierge](/concierge) when you want help balancing presence, setting style, and budget." },
     
   ],
   related: [
-    { title: "What is a Carat", href: "/diamond-guide/what-is-a-carat" },
+    { title: "Diamond Size Chart", href: "/diamond-guide/diamond-size-chart" },
     { title: "Diamond Size on Hand", href: "/diamond-guide/diamond-size-on-hand" },
     { title: "Diamond Carat vs Size", href: "/diamond-guide/diamond-carat-vs-size" },
     { title: "Do Elongated Diamonds Look Bigger", href: "/diamond-guide/do-elongated-diamonds-look-bigger" },
+    { title: "What is Diamond Cut", href: "/diamond-guide/what-is-diamond-cut" },
     { title: "Best Carat Size for Engagement Ring", href: "/diamond-guide/best-carat-size-for-an-engagement-ring" }
   ]
 },
@@ -3654,7 +3658,7 @@ export const articles: Article[] = [
   title: "What is a Carat?",
   category: "Diamond Size",
   body: [
-    { type: "paragraph", text: "When people begin researching diamonds, one of the first terms they encounter is carat weight. Carat is the standard unit used to measure how much a diamond weighs, and it is one of the four primary factors used to describe diamond quality." },
+    { type: "paragraph", text: "When people begin researching diamonds, one of the first terms they encounter is carat weight. Carat is the standard unit used to measure how much a diamond weighs, and it is one of the four primary factors used to describe diamond quality. For how weight translates into face-up millimeters, see the [diamond size chart](/diamond-guide/diamond-size-chart)." },
     { type: "paragraph", text: "Although carat weight is often associated with the size of a diamond, it technically refers only to weight. Two diamonds with the same carat weight can appear noticeably different depending on how they are cut and shaped." },
     { type: "paragraph", text: "Understanding what carat weight actually measures helps clarify how diamonds are evaluated and compared." },
 
@@ -3672,12 +3676,12 @@ export const articles: Article[] = [
     { type: "paragraph", text: "These milestones are often associated with higher demand, which can cause noticeable jumps in price. Some buyers choose diamonds just below these thresholds to maximize value while still achieving a similar visual size." },
 
     { type: "paragraph", text: "Carat weight is an important measurement, but it is only one part of the overall picture when evaluating a diamond." },
-    { type: "paragraph", text: "Cut quality, shape, and proportion all influence how large a diamond appears once it is set in a ring. By understanding how carat weight works alongside these other factors, it becomes easier to select a diamond that balances both beauty and presence." },
+    { type: "paragraph", text: "Cut quality, shape, and proportion all influence how large a diamond appears once it is set in a ring. By understanding how carat weight works alongside these other factors, it becomes easier to select a diamond that balances both beauty and presence. [Diamond carat vs size](/diamond-guide/diamond-carat-vs-size) goes deeper on that distinction." },
     
   ],
   related: [
-    { title: "Diamond Carat vs Size", href: "/diamond-guide/diamond-carat-vs-size" },
     { title: "Diamond Size Chart", href: "/diamond-guide/diamond-size-chart" },
+    { title: "Diamond Carat vs Size", href: "/diamond-guide/diamond-carat-vs-size" },
     { title: "Diamond Size on Hand", href: "/diamond-guide/diamond-size-on-hand" },
     { title: "How Big is a 1 Carat Diamond", href: "/diamond-guide/how-big-is-a-1-carat-diamond" },
     { title: "How Big is a 2 Carat Diamond", href: "/diamond-guide/how-big-is-a-2-carat-diamond" }
@@ -4593,13 +4597,13 @@ export const articles: Article[] = [
     { type: "paragraph", text: "Working with a gemologist should not feel like being sold to. It should feel like having a knowledgeable person in your corner, someone who will tell you when a diamond is genuinely beautiful and when it merely looks good on paper. Someone who will say, without hesitation, that a lower grade might serve you better than a higher one, if the visual difference is imperceptible and the savings are meaningful." },
     { type: "paragraph", text: "At Hourglass, gemological training informs every recommendation, but it does not dictate them. We are selective about what we recommend, not about who we help. The goal is not to impress you with terminology. It is to help you avoid the mistakes that are difficult to undo: overpaying for grades you cannot see, choosing a stone that underperforms its certificate, rushing a decision because an inventory sheet suggested urgency." },
     { type: "paragraph", text: "If you are early in your search, reading about [how to interpret a certificate](/diamond-guide/how-to-read-a-diamond-certificate) or [why certification matters](/diamond-guide/why-diamond-certification-matters) will give you a solid foundation. When you are ready to go further, [Diamond Intelligence](/diamond-intelligence) offers a structured way to understand what a specific report suggests about performance, not just grades." },
-    { type: "paragraph", text: "The credential opens the door. The years behind it are what make the guidance worth trusting." },
+    { type: "paragraph", text: "The credential opens the door. The years behind it are what make the guidance worth trusting. When you want that kind of review for a specific stone or shortlist, [begin a conversation](/concierge) at your own pace." },
   ],
   related: [
-    { title: "Independent Diamond Advisor vs Jewelry Store", href: "/diamond-guide/independent-diamond-advisor-vs-jewelry-store" },
     { title: "Diamond Buying Tips from Jewelers", href: "/diamond-guide/diamond-buying-tips-from-jewelers" },
-    { title: "Why Diamond Certification Matters", href: "/diamond-guide/why-diamond-certification-matters" },
+    { title: "Independent Diamond Advisor vs Jewelry Store", href: "/diamond-guide/independent-diamond-advisor-vs-jewelry-store" },
     { title: "How to Read a Diamond Certificate", href: "/diamond-guide/how-to-read-a-diamond-certificate" },
+    { title: "Why Diamond Certification Matters", href: "/diamond-guide/why-diamond-certification-matters" },
     { title: "Charlotte Diamond Advisor Guide", href: "/diamond-guide/charlotte-diamond-advisor-guide" },
   ],
 },
