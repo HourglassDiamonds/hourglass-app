@@ -51,8 +51,8 @@ export type OverlayPixelSize = {
  * (object-fit: contain), not the full stage box when letterboxed.
  *
  * Known-size / upload: use the selected `ringSize` → finger mm map.
- * Uncalibrated sources: use {@link UNCALIBRATED_FINGER_REFERENCE_MM} only
- * as a rendering reference — never as a claimed estimate.
+ * Card-calibrated: pass `pixelsPerMm` from the marked card edge —
+ * physical stone mm × pixelsPerMm (no visual compensation).
  */
 export function overlaySizePx(
   shape: ShapeId,
@@ -60,13 +60,26 @@ export function overlaySizePx(
   ringSize: number,
   referenceWidthPx: number,
   scaleSource: PhotoScaleSource | null = "known-size",
+  pixelsPerMm: number | null = null,
 ): OverlayPixelSize {
+  const rw = renderStoneWidthMm(shape, carat);
+  const rh = renderStoneHeightMm(shape, carat);
+
+  if (
+    scaleSource === "card-reference" &&
+    pixelsPerMm != null &&
+    pixelsPerMm > 0
+  ) {
+    return {
+      widthPx: rw * pixelsPerMm,
+      heightPx: rh * pixelsPerMm,
+    };
+  }
+
   const fingerMm =
     scaleSource === "card-reference"
       ? UNCALIBRATED_FINGER_REFERENCE_MM
       : (RING_SIZE_TO_MM[ringSize] ?? UNCALIBRATED_FINGER_REFERENCE_MM);
-  const rw = renderStoneWidthMm(shape, carat);
-  const rh = renderStoneHeightMm(shape, carat);
   const comp = SHAPE_RENDER_VISUAL_COMP[shape];
   const mmToStage = (HAND_PHOTO_FINGER_WIDTH_FRACTION * comp) / fingerMm;
   const widthPx = rw * mmToStage * referenceWidthPx;

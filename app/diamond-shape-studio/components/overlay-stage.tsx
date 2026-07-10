@@ -1,22 +1,40 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { shapeAssetPath } from "@/lib/shape-studio/constants";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  contentPointToStagePct,
+  isCardEdgeValid,
+  isFingerSpanValid,
+  pixelsPerMmFromCard,
+  stagePctToContentPoint,
+  type ContentRect,
+} from "@/lib/shape-studio/card-calibration";
+import { CARD_LONG_EDGE_MM, shapeAssetPath } from "@/lib/shape-studio/constants";
 import { overlaySizePx } from "@/lib/shape-studio/overlay-scale";
 import type {
+  CardCalibrationState,
+  ContentPoint,
   DiamondSlotState,
+  GuidedCalibrationStep,
   OverlayPosition,
   PhotoScaleSource,
   StudioMode,
 } from "@/lib/shape-studio/types";
+import { CalibrationMarkers } from "./calibration-markers";
 
 type OverlayLayerProps = {
   slot: DiamondSlotState;
   ringSize: number;
   referenceWidthPx: number;
   scaleSource: PhotoScaleSource | null;
+  pixelsPerMm: number | null;
+  content: ContentRect | null;
+  stageWidth: number;
+  stageHeight: number;
+  useContentPosition: boolean;
   label?: string;
   onPositionChange: (position: OverlayPosition) => void;
+  onContentPositionChange?: (position: ContentPoint) => void;
 };
 
 function OverlayLayer({
@@ -24,8 +42,14 @@ function OverlayLayer({
   ringSize,
   referenceWidthPx,
   scaleSource,
+  pixelsPerMm,
+  content,
+  stageWidth,
+  stageHeight,
+  useContentPosition,
   label,
   onPositionChange,
+  onContentPositionChange,
 }: OverlayLayerProps) {
   const draggingRef = useRef(false);
   const dragOffsetRef = useRef({ x: 0, y: 0 });
@@ -37,20 +61,46 @@ function OverlayLayer({
     ringSize,
     referenceWidthPx,
     scaleSource,
+    pixelsPerMm,
   );
+
+  const paintPosition = useMemo(() => {
+    if (
+      useContentPosition &&
+      slot.contentPosition &&
+      content &&
+      stageWidth > 0 &&
+      stageHeight > 0
+    ) {
+      return contentPointToStagePct(
+        slot.contentPosition,
+        content,
+        stageWidth,
+        stageHeight,
+      );
+    }
+    return slot.position;
+  }, [
+    useContentPosition,
+    slot.contentPosition,
+    slot.position,
+    content,
+    stageWidth,
+    stageHeight,
+  ]);
 
   const beginDrag = useCallback(
     (clientX: number, clientY: number) => {
       const stage = overlayRef.current?.parentElement;
       if (!stage) return;
       const rect = stage.getBoundingClientRect();
-      const centerX = rect.left + (slot.position.xPct / 100) * rect.width;
-      const centerY = rect.top + (slot.position.yPct / 100) * rect.height;
+      const centerX = rect.left + (paintPosition.xPct / 100) * rect.width;
+      const centerY = rect.top + (paintPosition.yPct / 100) * rect.height;
       draggingRef.current = true;
       dragOffsetRef.current = { x: clientX - centerX, y: clientY - centerY };
       overlayRef.current?.classList.add("is-dragging");
     },
-    [slot.position.xPct, slot.position.yPct],
+    [paintPosition.xPct, paintPosition.yPct],
   );
 
   const moveDrag = useCallback(
@@ -63,9 +113,23 @@ function OverlayLayer({
       const y = clientY - dragOffsetRef.current.y - rect.top;
       const xPct = Math.max(0, Math.min(100, (x / rect.width) * 100));
       const yPct = Math.max(0, Math.min(100, (y / rect.height) * 100));
-      onPositionChange({ xPct, yPct });
+      const stagePos = { xPct, yPct };
+
+      if (useContentPosition && content && onContentPositionChange) {
+        const next = stagePctToContentPoint(
+          stagePos,
+          content,
+          rect.width,
+          rect.height,
+        );
+        if (next) {
+          onContentPositionChange(next);
+          return;
+        }
+      }
+      onPositionChange(stagePos);
     },
-    [onPositionChange],
+    [onPositionChange, onContentPositionChange, useContentPosition, content],
   );
 
   const endDrag = useCallback(() => {
@@ -97,8 +161,8 @@ function OverlayLayer({
       ref={overlayRef}
       className="dss-overlay"
       style={{
-        left: `${slot.position.xPct}%`,
-        top: `${slot.position.yPct}%`,
+        left: `${paintPosition.xPct}%`,
+        top: `${paintPosition.yPct}%`,
         width: `${widthPx}px`,
         height: `${heightPx}px`,
       }}
@@ -141,12 +205,12 @@ export function containedImageWidth(
   return naturalWidth * scale;
 }
 
-function containedImageRect(
+export function containedImageRect(
   naturalWidth: number,
   naturalHeight: number,
   boxWidth: number,
   boxHeight: number,
-): { left: number; top: number; width: number; height: number } | null {
+): ContentRect | null {
   if (naturalWidth <= 0 || naturalHeight <= 0 || boxWidth <= 0 || boxHeight <= 0) {
     return null;
   }
@@ -164,13 +228,19 @@ function containedImageRect(
 function stageHint(
   hasImage: boolean,
   studioMode: StudioMode,
-  awaitingCalibration: boolean,
+  guidedStep: GuidedCalibrationStep | null,
 ): string {
   if (!hasImage) {
     return "Upload a photo or scan the QR code to begin your hand preview.";
   }
-  if (awaitingCalibration) {
-    return "Guided card and finger measurement is required before the scaled diamond preview is created.";
+  if (guidedStep === "mark-card" || guidedStep === "photo-ready") {
+    return "Align the precision lines with the two ends of the card’s long edge.";
+  }
+  if (guidedStep === "confirm-card") {
+    return `Card edge set to ${CARD_LONG_EDGE_MM.toFixed(2)} mm. This establishes the scale for this photo.`;
+  }
+  if (guidedStep === "mark-finger") {
+    return "Align the precision lines with the two sides of the finger where the ring will sit.";
   }
   if (studioMode === "single") {
     return "Click or tap the base of your ring finger to place the diamond, then drag to refine.";
@@ -183,11 +253,17 @@ export type OverlayStageProps = {
   ringSize: number;
   photoScaleSource?: PhotoScaleSource | null;
   studioMode?: StudioMode;
+  cardCalibration?: CardCalibrationState | null;
+  onCardCalibrationChange?: (next: CardCalibrationState) => void;
+  onGuidedContinue?: () => void;
+  onGuidedAdjust?: () => void;
+  onGuidedReset?: () => void;
   overlays: Array<{
     id: string;
     slot: DiamondSlotState;
     label?: string;
     onPositionChange: (position: OverlayPosition) => void;
+    onContentPositionChange?: (position: ContentPoint) => void;
   }>;
   onUploadClick?: () => void;
   onPhoneCaptureClick?: () => void;
@@ -198,6 +274,11 @@ export function OverlayStage({
   ringSize,
   photoScaleSource = null,
   studioMode = "single",
+  cardCalibration = null,
+  onCardCalibrationChange,
+  onGuidedContinue,
+  onGuidedAdjust,
+  onGuidedReset,
   overlays,
   onUploadClick,
   onPhoneCaptureClick,
@@ -207,45 +288,118 @@ export function OverlayStage({
   const [measure, setMeasure] = useState<{
     url: string;
     widthPx: number;
+    heightPx: number;
+    content: ContentRect;
+    stageWidth: number;
+    stageHeight: number;
   } | null>(null);
 
-  const measureReferenceWidth = useCallback(() => {
+  const measureLayout = useCallback(() => {
     const stage = stageRef.current;
     const img = handImgRef.current;
     if (!stage || !img || !handImageUrl) return;
     if (img.naturalWidth <= 0 || img.naturalHeight <= 0) return;
     const box = stage.getBoundingClientRect();
-    const widthPx = containedImageWidth(
+    const content = containedImageRect(
       img.naturalWidth,
       img.naturalHeight,
       box.width,
       box.height,
     );
-    if (widthPx <= 0) return;
-    setMeasure({ url: handImageUrl, widthPx });
+    if (!content || content.width <= 0) return;
+    setMeasure({
+      url: handImageUrl,
+      widthPx: content.width,
+      heightPx: content.height,
+      content,
+      stageWidth: box.width,
+      stageHeight: box.height,
+    });
   }, [handImageUrl]);
 
   useEffect(() => {
     const el = stageRef.current;
     if (!el || !handImageUrl) return;
     const ro = new ResizeObserver(() => {
-      measureReferenceWidth();
+      measureLayout();
     });
     ro.observe(el);
     if (handImgRef.current?.complete) {
-      queueMicrotask(() => measureReferenceWidth());
+      queueMicrotask(() => measureLayout());
     }
     return () => ro.disconnect();
-  }, [handImageUrl, measureReferenceWidth]);
+  }, [handImageUrl, measureLayout]);
 
-  const referenceWidthPx =
-    measure?.url === handImageUrl ? measure.widthPx : 0;
-  const awaitingCalibration = photoScaleSource === "card-reference";
-  const scaledPreviewActive = !awaitingCalibration;
+  const layout = measure?.url === handImageUrl ? measure : null;
+  const referenceWidthPx = layout?.widthPx ?? 0;
+  const content = layout?.content ?? null;
+  const guidedStep = cardCalibration?.step ?? null;
+  const isCardReference = photoScaleSource === "card-reference";
+  const calibrated =
+    isCardReference && guidedStep === "calibrated-preview";
+  const awaitingGuided =
+    isCardReference && Boolean(handImageUrl) && !calibrated;
+
+  const pixelsPerMm =
+    calibrated && content && cardCalibration
+      ? pixelsPerMmFromCard(
+          cardCalibration.cardA,
+          cardCalibration.cardB,
+          content.width,
+          content.height,
+        )
+      : null;
+
   const showOverlays =
-    scaledPreviewActive && referenceWidthPx > 0 && overlays.length > 0;
+    (!isCardReference || calibrated) &&
+    referenceWidthPx > 0 &&
+    overlays.length > 0 &&
+    (!isCardReference || (pixelsPerMm != null && pixelsPerMm > 0));
+
   const canPlace =
-    scaledPreviewActive && studioMode === "single" && Boolean(handImageUrl);
+    showOverlays && studioMode === "single" && Boolean(handImageUrl);
+
+  const showCardMarkers =
+    awaitingGuided &&
+    content &&
+    layout &&
+    cardCalibration &&
+    (guidedStep === "mark-card" ||
+      guidedStep === "confirm-card" ||
+      guidedStep === "photo-ready") &&
+    cardCalibration.cardA &&
+    cardCalibration.cardB;
+
+  const showFingerMarkers =
+    awaitingGuided &&
+    content &&
+    layout &&
+    cardCalibration &&
+    guidedStep === "mark-finger" &&
+    cardCalibration.fingerL &&
+    cardCalibration.fingerR;
+
+  const cardEdgeOk =
+    content &&
+    cardCalibration?.cardA &&
+    cardCalibration.cardB &&
+    isCardEdgeValid(
+      cardCalibration.cardA,
+      cardCalibration.cardB,
+      content.width,
+      content.height,
+    );
+
+  const fingerSpanOk =
+    content &&
+    cardCalibration?.fingerL &&
+    cardCalibration.fingerR &&
+    isFingerSpanValid(
+      cardCalibration.fingerL,
+      cardCalibration.fingerR,
+      content.width,
+      content.height,
+    );
 
   const placeSingleOverlay = useCallback(
     (clientX: number, clientY: number) => {
@@ -256,30 +410,44 @@ export function OverlayStage({
       if (!stage || !img || !single || img.naturalWidth <= 0) return;
 
       const box = stage.getBoundingClientRect();
-      const content = containedImageRect(
+      const nextContent = containedImageRect(
         img.naturalWidth,
         img.naturalHeight,
         box.width,
         box.height,
       );
-      if (!content) return;
+      if (!nextContent) return;
 
       const x = clientX - box.left;
       const y = clientY - box.top;
       if (
-        x < content.left ||
-        x > content.left + content.width ||
-        y < content.top ||
-        y > content.top + content.height
+        x < nextContent.left ||
+        x > nextContent.left + nextContent.width ||
+        y < nextContent.top ||
+        y > nextContent.top + nextContent.height
       ) {
         return;
       }
 
       const xPct = Math.max(0, Math.min(100, (x / box.width) * 100));
       const yPct = Math.max(0, Math.min(100, (y / box.height) * 100));
-      single.onPositionChange({ xPct, yPct });
+      const stagePos = { xPct, yPct };
+
+      if (calibrated && single.onContentPositionChange) {
+        const cp = stagePctToContentPoint(
+          stagePos,
+          nextContent,
+          box.width,
+          box.height,
+        );
+        if (cp) {
+          single.onContentPositionChange(cp);
+          return;
+        }
+      }
+      single.onPositionChange(stagePos);
     },
-    [canPlace, overlays],
+    [canPlace, overlays, calibrated],
   );
 
   return (
@@ -289,10 +457,10 @@ export function OverlayStage({
           ref={stageRef}
           className={`dss-viewer${handImageUrl ? "" : " is-empty"}${
             canPlace ? " is-placeable" : ""
-          }${awaitingCalibration && handImageUrl ? " is-awaiting-calibration" : ""}`}
+          }${awaitingGuided ? " is-awaiting-calibration" : ""}`}
           aria-label={
             handImageUrl
-              ? awaitingCalibration
+              ? awaitingGuided
                 ? "Hand photo awaiting guided measurement"
                 : "Hand photo with diamond overlay"
               : "Preview stage"
@@ -311,8 +479,50 @@ export function OverlayStage({
                 alt="Your hand"
                 className="dss-hand-img"
                 draggable={false}
-                onLoad={measureReferenceWidth}
+                onLoad={measureLayout}
               />
+              {showCardMarkers && cardCalibration.cardA && cardCalibration.cardB ? (
+                <CalibrationMarkers
+                  stageRef={stageRef}
+                  content={content!}
+                  stageWidth={layout!.stageWidth}
+                  stageHeight={layout!.stageHeight}
+                  mode="card"
+                  points={{
+                    a: cardCalibration.cardA,
+                    b: cardCalibration.cardB,
+                  }}
+                  onChange={({ a, b }) => {
+                    onCardCalibrationChange?.({
+                      ...cardCalibration,
+                      cardA: a,
+                      cardB: b,
+                    });
+                  }}
+                />
+              ) : null}
+              {showFingerMarkers &&
+              cardCalibration.fingerL &&
+              cardCalibration.fingerR ? (
+                <CalibrationMarkers
+                  stageRef={stageRef}
+                  content={content!}
+                  stageWidth={layout!.stageWidth}
+                  stageHeight={layout!.stageHeight}
+                  mode="finger"
+                  points={{
+                    a: cardCalibration.fingerL,
+                    b: cardCalibration.fingerR,
+                  }}
+                  onChange={({ a, b }) => {
+                    onCardCalibrationChange?.({
+                      ...cardCalibration,
+                      fingerL: a,
+                      fingerR: b,
+                    });
+                  }}
+                />
+              ) : null}
               {showOverlays
                 ? overlays.map((entry) => (
                     <OverlayLayer
@@ -321,8 +531,14 @@ export function OverlayStage({
                       ringSize={ringSize}
                       referenceWidthPx={referenceWidthPx}
                       scaleSource={photoScaleSource}
+                      pixelsPerMm={pixelsPerMm}
+                      content={content}
+                      stageWidth={layout?.stageWidth ?? 0}
+                      stageHeight={layout?.stageHeight ?? 0}
+                      useContentPosition={calibrated}
                       label={entry.label}
                       onPositionChange={entry.onPositionChange}
+                      onContentPositionChange={entry.onContentPositionChange}
                     />
                   ))
                 : null}
@@ -368,8 +584,92 @@ export function OverlayStage({
         </div>
       </div>
       <p className="dss-stage-hint">
-        {stageHint(Boolean(handImageUrl), studioMode, awaitingCalibration)}
+        {stageHint(Boolean(handImageUrl), studioMode, guidedStep)}
       </p>
+      {awaitingGuided && cardCalibration ? (
+        <div className="dss-guide-actions" role="group" aria-label="Guided measurement">
+          {guidedStep === "mark-card" || guidedStep === "photo-ready" ? (
+            <>
+              <button
+                type="button"
+                className="dss-guide-btn"
+                disabled={!cardEdgeOk}
+                onClick={onGuidedContinue}
+              >
+                Continue
+              </button>
+              <button
+                type="button"
+                className="dss-guide-btn dss-guide-btn--quiet"
+                onClick={onGuidedReset}
+              >
+                Reset points
+              </button>
+              {!cardEdgeOk && content ? (
+                <p className="dss-guide-warn">
+                  Move the points farther apart along the card’s long edge.
+                </p>
+              ) : null}
+            </>
+          ) : null}
+          {guidedStep === "confirm-card" ? (
+            <>
+              <button
+                type="button"
+                className="dss-guide-btn"
+                onClick={onGuidedContinue}
+              >
+                Continue
+              </button>
+              <button
+                type="button"
+                className="dss-guide-btn dss-guide-btn--quiet"
+                onClick={onGuidedAdjust}
+              >
+                Adjust marks
+              </button>
+            </>
+          ) : null}
+          {guidedStep === "mark-finger" ? (
+            <>
+              <p className="dss-guide-support">
+                This places the preview. It does not estimate your ring size.
+              </p>
+              <button
+                type="button"
+                className="dss-guide-btn"
+                disabled={!fingerSpanOk}
+                onClick={onGuidedContinue}
+              >
+                Show diamond preview
+              </button>
+              <button
+                type="button"
+                className="dss-guide-btn dss-guide-btn--quiet"
+                onClick={onGuidedAdjust}
+              >
+                Adjust card marks
+              </button>
+              {!fingerSpanOk ? (
+                <p className="dss-guide-warn">
+                  Place the points on opposite sides of the finger.
+                </p>
+              ) : null}
+            </>
+          ) : null}
+        </div>
+      ) : null}
+      {calibrated ? (
+        <div className="dss-guide-actions">
+          <button
+            type="button"
+            className="dss-guide-btn dss-guide-btn--quiet"
+            onClick={onGuidedReset}
+          >
+            Recalibrate photo scale
+          </button>
+        </div>
+      ) : null}
     </>
   );
 }

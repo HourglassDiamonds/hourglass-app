@@ -23,12 +23,15 @@ type RingSizeControlProps = {
   ringSize: number;
   onChange: (value: number) => void;
   photoScaleSource?: PhotoScaleSource | null;
+  /** Phase 2A: card scale complete — still no US size estimate. */
+  cardCalibrated?: boolean;
 };
 
 export function RingSizeControl({
   ringSize,
   onChange,
   photoScaleSource = null,
+  cardCalibrated = false,
 }: RingSizeControlProps) {
   const trackRef = useRef<HTMLDivElement>(null);
   const applyPct = useCallback(
@@ -47,11 +50,14 @@ export function RingSizeControl({
   if (isCardReference) {
     return (
       <section className="dss-card" aria-label="Ring size">
-        <div className="dss-card-head">Ring Size</div>
-        <p className="dss-ring-pending-val">Not estimated yet</p>
+        <div className="dss-card-head">Ring size</div>
+        <p className="dss-ring-pending-val">
+          {cardCalibrated ? "Not required for this preview" : "Not estimated yet"}
+        </p>
         <p className="dss-dim-note">
-          Ring-size estimation needs an additional guided step. Guided card and
-          finger measurement is required before a scaled preview is created.
+          {cardCalibrated
+            ? "Your card sets the photo scale. Final ring size should be confirmed by a jeweler."
+            : "Complete the card measurement to create a scaled preview."}
         </p>
       </section>
     );

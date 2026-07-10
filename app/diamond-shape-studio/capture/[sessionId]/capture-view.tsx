@@ -35,7 +35,7 @@ function modeCopy(mode: CaptureMode) {
       title: "Capture with a visual reference",
       instruction:
         "Place a blank gift card, hotel key, or standard-size loyalty card beside your hand. Avoid cards showing personal or financial information.",
-      note: "The card is not automatically measured yet. This is a visual preview, not a final sizing measurement.",
+      note: "On desktop, mark the card’s long edge to scale the diamond preview. Final ring size should still be confirmed by a jeweler.",
     };
   }
   return {

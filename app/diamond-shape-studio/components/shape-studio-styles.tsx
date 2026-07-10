@@ -297,6 +297,131 @@ export function ShapeStudioStyles() {
         font-size:8px; letter-spacing:0.12em; text-transform:uppercase;
         color:var(--ink-soft); white-space:nowrap; pointer-events:none;
       }
+      .dss-cal-layer{
+        position:absolute; inset:0; z-index:3; pointer-events:none;
+      }
+      .dss-cal-segment{
+        position:absolute;
+        height:1.5px;
+        background:color-mix(in srgb, var(--ink-soft) 55%, var(--gold-warm));
+        transform-origin:0 50%;
+        opacity:0.7;
+        pointer-events:none;
+      }
+      .dss-cal-endpoint{ pointer-events:none; }
+      .dss-cal-jaw-anchor{
+        position:absolute;
+        z-index:6;
+        width:0; height:0;
+        transform:translate(-50%, -50%);
+        pointer-events:none;
+      }
+      .dss-cal-stem{
+        position:absolute;
+        z-index:3;
+        height:1.5px;
+        background:color-mix(in srgb, var(--ink-soft) 42%, var(--gold-warm));
+        transform-origin:0 50%;
+        opacity:0.55;
+        pointer-events:none;
+      }
+      .dss-cal-handle{
+        position:absolute;
+        z-index:5;
+        width:38px; height:38px;
+        margin:0; padding:0;
+        border:none; background:transparent;
+        transform:translate(-50%, -50%);
+        cursor:grab; touch-action:none;
+        pointer-events:auto;
+      }
+      .dss-cal-handle:active,
+      .dss-cal-handle.is-dragging{ cursor:grabbing; }
+      /* Natively vertical precision mark; rotated by segment angle only. */
+      .dss-cal-jaw{
+        position:absolute;
+        left:50%; top:50%;
+        z-index:3;
+        width:1.75px;
+        height:28px;
+        margin:0;
+        background:color-mix(in srgb, var(--ink) 88%, var(--gold-warm));
+        opacity:0.96;
+        transform:translate(-50%, -50%) rotate(var(--dss-cal-jaw-angle, 0deg));
+        transform-origin:center center;
+        pointer-events:none;
+        border-radius:1px;
+      }
+      .dss-cal-handle-ring{
+        position:absolute;
+        left:50%; top:50%;
+        z-index:1;
+        width:21px; height:21px;
+        border-radius:50%;
+        background:color-mix(in srgb, var(--card) 42%, transparent);
+        border:1.5px solid color-mix(in srgb, var(--ink-soft) 55%, var(--gold-warm));
+        box-shadow:0 1px 3px oklch(from var(--hairline) l c h / 0.18);
+        transform:translate(-50%, -50%);
+        pointer-events:none;
+      }
+      .dss-cal-endpoint:has(.dss-cal-handle.is-dragging) .dss-cal-handle-ring{
+        border-color:color-mix(in srgb, var(--ink) 45%, var(--gold-warm));
+        box-shadow:0 1px 5px oklch(from var(--hairline) l c h / 0.28);
+      }
+      .dss-cal-handle-center{
+        position:absolute;
+        z-index:2;
+        left:50%; top:50%;
+        width:3px; height:3px;
+        border-radius:50%;
+        background:color-mix(in srgb, var(--ink) 82%, var(--gold-warm));
+        transform:translate(-50%, -50%);
+        pointer-events:none;
+      }
+      .dss-guide-actions{
+        display:flex; flex-wrap:wrap; justify-content:center; align-items:center;
+        gap:8px; margin:8px 12px 0; max-width:440px;
+      }
+      .dss-guide-btn{
+        padding:8px 14px;
+        border-radius:8px;
+        border:1px solid var(--pill-edge);
+        background:var(--pill-active);
+        font-size:9px;
+        letter-spacing:0.11em;
+        text-transform:uppercase;
+        color:var(--ink);
+        cursor:pointer;
+      }
+      .dss-guide-btn:disabled{
+        opacity:0.45; cursor:not-allowed;
+      }
+      .dss-guide-btn--quiet{
+        background:color-mix(in srgb, var(--hairline-soft) 70%, #fff);
+        border-color:var(--hairline);
+        color:var(--ink-soft);
+      }
+      .dss-guide-warn{
+        flex:1 0 100%;
+        margin:0;
+        text-align:center;
+        font-size:11px;
+        line-height:1.4;
+        color:var(--ink-mute);
+      }
+      .dss-guide-support{
+        flex:1 0 100%;
+        margin:0 0 2px;
+        text-align:center;
+        font-size:11px;
+        line-height:1.4;
+        color:var(--ink-soft);
+      }
+      .dss-viewer.is-awaiting-calibration{
+        box-shadow:
+          var(--shadow-1),
+          inset 0 0 0 1px color-mix(in srgb, var(--gold-warm) 28%, transparent);
+      }
       .dss-stage-hint{
         margin:6px 12px 0; font-size:10.5px; color:var(--ink-mute);
         text-align:center; max-width:440px; line-height:1.45;

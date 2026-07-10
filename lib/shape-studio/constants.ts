@@ -4,6 +4,15 @@ export const RING_SIZE_MIN = 4.0;
 export const RING_SIZE_MAX = 13.0;
 export const RING_SIZE_STEP = 0.5;
 
+/** ISO/IEC 7810 ID-1 long edge (mm) — manual card calibration reference. */
+export const CARD_LONG_EDGE_MM = 85.6;
+
+/**
+ * Reject card edges shorter than this fraction of the content diagonal.
+ * Guards against accidental near-zero marks.
+ */
+export const MIN_CARD_EDGE_DIAGONAL_FRACTION = 0.05;
+
 export const CARAT_MIN = 1.0;
 export const CARAT_MAX = 10.0;
 export const CARAT_STEP = 0.25;

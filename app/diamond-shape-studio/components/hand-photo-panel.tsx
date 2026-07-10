@@ -55,8 +55,8 @@ const PATH_CARDS: Array<{
   },
   {
     mode: "card-scale",
-    title: "I do not know my ring size",
-    body: "Place a blank gift card, hotel key, or standard-size loyalty card beside your hand. Avoid cards showing personal or financial information. The card is not automatically measured yet.",
+    title: "I don’t know my ring size",
+    body: "Use a standard-size card to scale the diamond preview to your photo. Final ring size should still be confirmed by a jeweler. Use a blank gift card, hotel key, or standard-size loyalty card. Avoid cards showing personal or financial information.",
     cta: "Create QR",
   },
 ];

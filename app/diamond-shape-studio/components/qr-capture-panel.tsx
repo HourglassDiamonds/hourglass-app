@@ -26,7 +26,7 @@ function formatExpiry(iso: string): string {
 
 function leadCopy(mode: CaptureMode): string {
   if (mode === "card-scale") {
-    return "Scan to capture your hand with a blank gift card, hotel key, or loyalty card beside it. Avoid cards with personal or financial information. The card is not automatically measured yet.";
+    return "Scan to capture your hand with a blank gift card, hotel key, or loyalty card beside it. Avoid cards with personal or financial information. On desktop, mark the card to scale the diamond preview.";
   }
   return "Scan to capture a clean hand photo. Your selected ring size helps guide the preview.";
 }

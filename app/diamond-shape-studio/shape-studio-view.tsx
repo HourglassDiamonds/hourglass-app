@@ -1,15 +1,23 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  createInitialCardCalibration,
+  defaultCardEndpoints,
+  defaultFingerEndpoints,
+  fingerMidpoint,
+} from "@/lib/shape-studio/card-calibration";
+import { SHAPE_LABELS } from "@/lib/shape-studio/constants";
+import { formatCaratLabel } from "@/lib/shape-studio/overlay-scale";
 import type {
+  CardCalibrationState,
   CompareSlotId,
+  ContentPoint,
   DiamondSlotState,
   OverlayPosition,
   PhotoScaleSource,
   StudioMode,
 } from "@/lib/shape-studio/types";
-import { SHAPE_LABELS } from "@/lib/shape-studio/constants";
-import { formatCaratLabel } from "@/lib/shape-studio/overlay-scale";
 import { CaratControl, RingSizeControl } from "./components/calibration-controls";
 import DiamondStudioToolHeader from "../diamond-studio/components/DiamondStudioToolHeader";
 import {
@@ -35,11 +43,24 @@ function createDefaultSlot(
   return { shape, carat, position };
 }
 
+function clearContentPositions(
+  slot: DiamondSlotState,
+  position: OverlayPosition,
+): DiamondSlotState {
+  return { shape: slot.shape, carat: slot.carat, position };
+}
+
 /** One source-specific trust line near the viewer. */
-function trustLine(source: PhotoScaleSource | null): string | null {
+function trustLine(
+  source: PhotoScaleSource | null,
+  calibrated: boolean,
+): string | null {
   if (!source) return null;
   if (source === "card-reference") {
-    return "The card has not been measured yet. Complete the guided measurement to create a scaled preview and estimate a starting ring size.";
+    if (calibrated) {
+      return "Scale comes from the card edge you marked. Final ring size should still be confirmed by a jeweler.";
+    }
+    return "Use a standard-size card to scale the diamond preview to your photo. Final ring size should still be confirmed by a jeweler.";
   }
   if (source === "known-size") {
     return "Your selected ring size helps guide this visual preview. Final sizing should be professionally confirmed.";
@@ -56,6 +77,8 @@ export function ShapeStudioView() {
   const [mode, setMode] = useState<StudioMode>("single");
   const [activeCompareSlot, setActiveCompareSlot] =
     useState<CompareSlotId>("a");
+  const [cardCalibration, setCardCalibration] =
+    useState<CardCalibrationState | null>(null);
 
   const [singleSlot, setSingleSlot] = useState<DiamondSlotState>(() =>
     createDefaultSlot(),
@@ -67,7 +90,11 @@ export function ShapeStudioView() {
     createDefaultSlot("oval", 2.0, COMPARE_B_POSITION),
   );
 
-  const awaitingCardCalibration = photoScaleSource === "card-reference";
+  const calibrated =
+    photoScaleSource === "card-reference" &&
+    cardCalibration?.step === "calibrated-preview";
+  const awaitingCardCalibration =
+    photoScaleSource === "card-reference" && !calibrated;
 
   const activeSlot =
     mode === "single"
@@ -102,15 +129,43 @@ export function ShapeStudioView() {
     [mode, activeCompareSlot],
   );
 
+  const resetSlotsForNewPhoto = useCallback(() => {
+    setSingleSlot((prev) => clearContentPositions(prev, DEFAULT_POSITION));
+    setCompareA((prev) => clearContentPositions(prev, COMPARE_A_POSITION));
+    setCompareB((prev) => clearContentPositions(prev, COMPARE_B_POSITION));
+  }, []);
+
+  const beginCardCalibration = useCallback(() => {
+    const { cardA, cardB } = defaultCardEndpoints();
+    setCardCalibration({
+      ...createInitialCardCalibration(),
+      step: "mark-card",
+      cardA,
+      cardB,
+    });
+  }, []);
+
   const handleImageSelected = useCallback(
     (url: string, source: PhotoScaleSource) => {
       setPhotoScaleSource(source);
+      resetSlotsForNewPhoto();
+      if (source === "card-reference") {
+        const { cardA, cardB } = defaultCardEndpoints();
+        setCardCalibration({
+          ...createInitialCardCalibration(),
+          step: "mark-card",
+          cardA,
+          cardB,
+        });
+      } else {
+        setCardCalibration(null);
+      }
       setHandImageUrl((prev) => {
         if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev);
         return url;
       });
     },
-    [],
+    [resetSlotsForNewPhoto],
   );
 
   useEffect(() => {
@@ -118,6 +173,73 @@ export function ShapeStudioView() {
       if (handImageUrl?.startsWith("blob:")) URL.revokeObjectURL(handImageUrl);
     };
   }, [handImageUrl]);
+
+  const applyFingerSeatPositions = useCallback(
+    (left: ContentPoint, right: ContentPoint) => {
+      const mid = fingerMidpoint(left, right);
+      /** Restrained A/B separation in content space around the finger seat. */
+      const compareOffsetU = 0.035;
+      setSingleSlot((prev) => ({
+        ...prev,
+        contentPosition: mid,
+        position: DEFAULT_POSITION,
+      }));
+      setCompareA((prev) => ({
+        ...prev,
+        contentPosition: {
+          u: Math.max(0, Math.min(1, mid.u - compareOffsetU)),
+          v: mid.v,
+        },
+        position: COMPARE_A_POSITION,
+      }));
+      setCompareB((prev) => ({
+        ...prev,
+        contentPosition: {
+          u: Math.max(0, Math.min(1, mid.u + compareOffsetU)),
+          v: mid.v,
+        },
+        position: COMPARE_B_POSITION,
+      }));
+    },
+    [],
+  );
+
+  const handleGuidedContinue = useCallback(() => {
+    if (!cardCalibration) return;
+    const prev = cardCalibration;
+    if (prev.step === "mark-card" || prev.step === "photo-ready") {
+      setCardCalibration({ ...prev, step: "confirm-card" });
+      return;
+    }
+    if (prev.step === "confirm-card") {
+      const { fingerL, fingerR } = defaultFingerEndpoints();
+      setCardCalibration({ ...prev, step: "mark-finger", fingerL, fingerR });
+      return;
+    }
+    if (prev.step === "mark-finger" && prev.fingerL && prev.fingerR) {
+      applyFingerSeatPositions(prev.fingerL, prev.fingerR);
+      setCardCalibration({ ...prev, step: "calibrated-preview" });
+    }
+  }, [cardCalibration, applyFingerSeatPositions]);
+
+  const handleGuidedAdjust = useCallback(() => {
+    setCardCalibration((prev) => {
+      if (!prev) return prev;
+      if (prev.step === "confirm-card") {
+        return { ...prev, step: "mark-card" };
+      }
+      if (prev.step === "mark-finger") {
+        return { ...prev, step: "confirm-card" };
+      }
+      return prev;
+    });
+  }, []);
+
+  const handleGuidedReset = useCallback(() => {
+    if (photoScaleSource !== "card-reference") return;
+    resetSlotsForNewPhoto();
+    beginCardCalibration();
+  }, [photoScaleSource, resetSlotsForNewPhoto, beginCardCalibration]);
 
   const overlayEntries = useMemo(() => {
     if (awaitingCardCalibration) return [];
@@ -128,6 +250,8 @@ export function ShapeStudioView() {
           slot: singleSlot,
           onPositionChange: (position: OverlayPosition) =>
             setSingleSlot((prev) => ({ ...prev, position })),
+          onContentPositionChange: (contentPosition: ContentPoint) =>
+            setSingleSlot((prev) => ({ ...prev, contentPosition })),
         },
       ];
     }
@@ -138,6 +262,8 @@ export function ShapeStudioView() {
         label: "A",
         onPositionChange: (position: OverlayPosition) =>
           setCompareA((prev) => ({ ...prev, position })),
+        onContentPositionChange: (contentPosition: ContentPoint) =>
+          setCompareA((prev) => ({ ...prev, contentPosition })),
       },
       {
         id: "compare-b",
@@ -145,6 +271,8 @@ export function ShapeStudioView() {
         label: "B",
         onPositionChange: (position: OverlayPosition) =>
           setCompareB((prev) => ({ ...prev, position })),
+        onContentPositionChange: (contentPosition: ContentPoint) =>
+          setCompareB((prev) => ({ ...prev, contentPosition })),
       },
     ];
   }, [awaitingCardCalibration, mode, singleSlot, compareA, compareB]);
@@ -154,9 +282,13 @@ export function ShapeStudioView() {
   const liveSentence = !handImageUrl
     ? "Upload a hand photo to compare shapes and carat sizes as a visual preview."
     : awaitingCardCalibration
-      ? "Your hand photo is ready."
+      ? cardCalibration?.step === "mark-finger"
+        ? "Align the precision lines with the two sides of the finger where the ring will sit."
+        : cardCalibration?.step === "confirm-card"
+          ? "Confirm the card scale for this photo."
+          : "Align the precision lines with the two ends of the card’s long edge."
       : `A ${caratLabel}-carat ${shapeLabel} diamond, shown as a visual preview on your hand.`;
-  const trustCopy = trustLine(photoScaleSource);
+  const trustCopy = trustLine(photoScaleSource, calibrated);
 
   return (
     <div
@@ -164,6 +296,7 @@ export function ShapeStudioView() {
       data-theme="light"
       data-shape-studio-instrument
       data-photo-scale-source={photoScaleSource ?? undefined}
+      data-guided-step={cardCalibration?.step ?? undefined}
     >
       <ShapeStudioStyles />
       <div className="dss-app">
@@ -216,6 +349,7 @@ export function ShapeStudioView() {
               ringSize={ringSize}
               onChange={setRingSize}
               photoScaleSource={photoScaleSource}
+              cardCalibrated={calibrated}
             />
             <CaratControl
               carat={activeSlot.carat}
@@ -244,6 +378,13 @@ export function ShapeStudioView() {
                 ringSize={ringSize}
                 photoScaleSource={photoScaleSource}
                 studioMode={mode}
+                cardCalibration={
+                  photoScaleSource === "card-reference" ? cardCalibration : null
+                }
+                onCardCalibrationChange={setCardCalibration}
+                onGuidedContinue={handleGuidedContinue}
+                onGuidedAdjust={handleGuidedAdjust}
+                onGuidedReset={handleGuidedReset}
                 overlays={overlayEntries}
                 onUploadClick={() => handPhotoRef.current?.openDevicePicker()}
                 onPhoneCaptureClick={() =>

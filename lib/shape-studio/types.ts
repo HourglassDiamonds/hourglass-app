@@ -18,7 +18,7 @@ export type CaptureMode = "known-size" | "card-scale";
 
 /**
  * Calibration context for the current hand photo.
- * Drives trust copy only — not automatic card measurement or sizing.
+ * Drives trust copy and scale path — not automatic card measurement or sizing.
  * Maps from CaptureMode / desktop upload; independent of hardware.
  */
 export type PhotoScaleSource = "upload" | "known-size" | "card-reference";
@@ -56,14 +56,45 @@ export type OverlayPosition = {
   yPct: number;
 };
 
+/**
+ * Point in displayed image-content space (object-fit: contain), not letterbox.
+ * Survives responsive layout changes when recomputed against the content rect.
+ */
+export type ContentPoint = {
+  u: number;
+  v: number;
+};
+
+/** Phase 2A guided card/finger marking — no ring-size estimate. */
+export type GuidedCalibrationStep =
+  | "photo-ready"
+  | "mark-card"
+  | "confirm-card"
+  | "mark-finger"
+  | "calibrated-preview";
+
+/**
+ * Authoritative card-reference calibration inputs only.
+ * Derive pixelsPerMm and finger midpoint; do not store estimates.
+ */
+export type CardCalibrationState = {
+  step: GuidedCalibrationStep;
+  cardA: ContentPoint | null;
+  cardB: ContentPoint | null;
+  fingerL: ContentPoint | null;
+  fingerR: ContentPoint | null;
+};
+
 export type DiamondSlotState = {
   shape: ShapeId;
   carat: number;
+  /** Stage % — used for known-size / upload previews. */
   position: OverlayPosition;
-};
-
-export type CalibrationState = {
-  ringSize: number;
+  /**
+   * Content-normalized center when card-calibrated.
+   * Takes precedence over `position` while calibrated.
+   */
+  contentPosition?: ContentPoint;
 };
 
 export const ACCEPTED_IMAGE_TYPES = [
