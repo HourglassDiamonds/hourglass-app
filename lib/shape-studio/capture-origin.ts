@@ -1,6 +1,9 @@
 import { SITE_URL } from "@/lib/seo/site-metadata";
 
-/** Resolve public origin for QR capture links (server). */
+/**
+ * Resolve public origin for QR capture links (server).
+ * Local LAN HTTPS: set SHAPE_STUDIO_PUBLIC_ORIGIN=https://<LAN-IP>:3000 in .env.local.
+ */
 export function resolveCaptureOrigin(request: Request): string {
   const fromEnv = process.env.SHAPE_STUDIO_PUBLIC_ORIGIN?.trim();
   if (fromEnv) return fromEnv.replace(/\/$/, "");
