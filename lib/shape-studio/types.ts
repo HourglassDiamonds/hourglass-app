@@ -13,6 +13,30 @@ export type StudioMode = "single" | "compare";
 
 export type CompareSlotId = "a" | "b";
 
+/** Phone QR capture path — guides mobile copy; does not change upload API. */
+export type CaptureMode = "known-size" | "card-scale";
+
+export const CAPTURE_MODES: readonly CaptureMode[] = [
+  "known-size",
+  "card-scale",
+] as const;
+
+export function parseCaptureMode(value: string | null | undefined): CaptureMode {
+  if (value === "card-scale") return "card-scale";
+  return "known-size";
+}
+
+export function withCaptureMode(captureUrl: string, mode: CaptureMode): string {
+  try {
+    const url = new URL(captureUrl);
+    url.searchParams.set("mode", mode);
+    return url.toString();
+  } catch {
+    const join = captureUrl.includes("?") ? "&" : "?";
+    return `${captureUrl}${join}mode=${mode}`;
+  }
+}
+
 /** Overlay center as percentage of stage width/height (0–100). */
 export type OverlayPosition = {
   xPct: number;

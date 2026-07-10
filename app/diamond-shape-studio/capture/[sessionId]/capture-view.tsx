@@ -1,12 +1,16 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
-import { ACCEPTED_IMAGE_TYPES } from "@/lib/shape-studio/types";
+import {
+  ACCEPTED_IMAGE_TYPES,
+  type CaptureMode,
+} from "@/lib/shape-studio/types";
 import { isAcceptedCaptureFile } from "@/lib/shape-studio/validate-image";
 import { CapturePageStyles } from "./capture-page-styles";
 
 type CaptureViewProps = {
   sessionId: string;
+  captureMode: CaptureMode;
 };
 
 type CaptureState = "idle" | "uploading" | "success" | "error";
@@ -22,10 +26,57 @@ function uploadErrorMessage(status: number, message?: string): string {
   return message ?? "Upload failed. Try again.";
 }
 
-export function CaptureView({ sessionId }: CaptureViewProps) {
+function modeCopy(mode: CaptureMode) {
+  if (mode === "card-scale") {
+    return {
+      title: "Capture with a scale reference",
+      instruction: "Place your hand and a standard credit card clearly in frame.",
+      note: "Use a card for scale. This helps us calibrate the preview more carefully. A final fit should still be confirmed with a proper sizing conversation.",
+    };
+  }
+  return {
+    title: "Capture your hand photo",
+    instruction: "Place your ring finger clearly in frame.",
+    note: "Your selected ring size on desktop will guide the preview scale.",
+  };
+}
+
+function CaptureGuide({ mode }: { mode: CaptureMode }) {
+  if (mode === "card-scale") {
+    return (
+      <div className="dss-capture-guide dss-capture-guide--card" aria-hidden>
+        <div className="dss-capture-guide-frame">
+          <span className="dss-capture-guide-card" />
+          <span className="dss-capture-guide-lane" />
+          <span className="dss-capture-guide-dot dss-capture-guide-dot--a" />
+          <span className="dss-capture-guide-dot dss-capture-guide-dot--b" />
+          <span className="dss-capture-guide-dot dss-capture-guide-dot--c" />
+          <span className="dss-capture-guide-ring" />
+        </div>
+        <p className="dss-capture-guide-caption">Hand + card in frame</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="dss-capture-guide dss-capture-guide--known" aria-hidden>
+      <div className="dss-capture-guide-frame">
+        <span className="dss-capture-guide-lane" />
+        <span className="dss-capture-guide-dot dss-capture-guide-dot--a" />
+        <span className="dss-capture-guide-dot dss-capture-guide-dot--b" />
+        <span className="dss-capture-guide-dot dss-capture-guide-dot--c" />
+        <span className="dss-capture-guide-ring" />
+      </div>
+      <p className="dss-capture-guide-caption">Ring finger lane</p>
+    </div>
+  );
+}
+
+export function CaptureView({ sessionId, captureMode }: CaptureViewProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [state, setState] = useState<CaptureState>("idle");
   const [error, setError] = useState<string | null>(null);
+  const copy = modeCopy(captureMode);
 
   const uploadFile = useCallback(
     async (file: File) => {
@@ -76,7 +127,7 @@ export function CaptureView({ sessionId }: CaptureViewProps) {
             Your hand photo has been sent to the desktop viewer.
           </p>
           <p className="dss-capture-hint">
-            Return to your computer to compare shapes and carat sizes.
+            Return to your desktop viewer to compare shapes and carat sizes.
           </p>
         </div>
       </div>
@@ -88,11 +139,12 @@ export function CaptureView({ sessionId }: CaptureViewProps) {
       <CapturePageStyles />
       <div className="dss-capture-card">
         <p className="dss-capture-brand">HOURGLASS</p>
-        <h1 className="dss-capture-title">Capture hand photo</h1>
-        <p className="dss-capture-body">
-          Take or upload a clear photo of your hand. It will appear on the
-          desktop Shape Studio viewer.
-        </p>
+        <h1 className="dss-capture-title">{copy.title}</h1>
+        <p className="dss-capture-body">{copy.instruction}</p>
+
+        <CaptureGuide mode={captureMode} />
+
+        <p className="dss-capture-note">{copy.note}</p>
 
         <button
           type="button"

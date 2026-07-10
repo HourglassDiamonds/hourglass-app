@@ -379,6 +379,55 @@ export function ShapeStudioStyles() {
         background:var(--pill-active); border-color:var(--pill-edge); color:var(--ink);
       }
       .dss-upload-mode-btn:disabled{ opacity:0.55; cursor:default; }
+      .dss-capture-path-label{
+        margin:14px 0 8px;
+        font-size:9px;
+        letter-spacing:0.14em;
+        text-transform:uppercase;
+        color:var(--ink-mute);
+        text-align:center;
+      }
+      .dss-capture-path-list{
+        display:flex;
+        flex-direction:column;
+        gap:8px;
+      }
+      .dss-capture-path{
+        display:flex;
+        flex-direction:column;
+        gap:10px;
+        padding:11px 12px 12px;
+        border-radius:12px;
+        border:1px solid color-mix(in srgb, var(--card-edge) 88%, var(--hairline));
+        background:color-mix(in srgb, var(--hairline-soft) 70%, #fff);
+      }
+      .dss-capture-path-title{
+        margin:0 0 4px;
+        font-family:var(--serif);
+        font-size:13.5px;
+        font-weight:400;
+        line-height:1.3;
+        color:var(--ink);
+      }
+      .dss-capture-path-body{
+        margin:0;
+        font-size:11px;
+        line-height:1.45;
+        color:var(--ink-soft);
+      }
+      .dss-capture-path-cta{
+        align-self:flex-start;
+        padding:7px 11px;
+        border-radius:8px;
+        border:1px solid var(--pill-edge);
+        background:var(--pill-active);
+        font-size:9px;
+        letter-spacing:0.12em;
+        text-transform:uppercase;
+        color:var(--ink);
+        cursor:pointer;
+      }
+      .dss-capture-path-cta:disabled{ opacity:0.55; cursor:default; }
       .dss-upload-zone{
         border:1px dashed var(--hairline); border-radius:12px;
         padding:14px 12px; text-align:center; cursor:pointer;

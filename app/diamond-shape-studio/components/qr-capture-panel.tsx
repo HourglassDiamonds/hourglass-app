@@ -1,9 +1,11 @@
 "use client";
 
 import QRCode from "react-qr-code";
+import type { CaptureMode } from "@/lib/shape-studio/types";
 
 type QrCapturePanelProps = {
   captureUrl: string;
+  captureMode: CaptureMode;
   expiresAt: string;
   waiting: boolean;
   expired: boolean;
@@ -22,8 +24,16 @@ function formatExpiry(iso: string): string {
   }
 }
 
+function leadCopy(mode: CaptureMode): string {
+  if (mode === "card-scale") {
+    return "Scan to capture your hand with a standard card in frame. Use a card for scale — this helps us calibrate the preview more carefully.";
+  }
+  return "Scan to capture a clean hand photo. Your selected ring size will guide the preview scale.";
+}
+
 export function QrCapturePanel({
   captureUrl,
+  captureMode,
   expiresAt,
   waiting,
   expired,
@@ -45,10 +55,7 @@ export function QrCapturePanel({
 
   return (
     <div className="dss-qr-panel">
-      <p className="dss-qr-lead">
-        Scan with your phone to capture a hand photo. It will appear here
-        automatically.
-      </p>
+      <p className="dss-qr-lead">{leadCopy(captureMode)}</p>
       <div className="dss-qr-frame" aria-hidden={!captureUrl}>
         <QRCode
           value={captureUrl}

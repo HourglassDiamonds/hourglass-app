@@ -4,6 +4,8 @@ import { useCallback, useRef, useState } from "react";
 import {
   ACCEPTED_IMAGE_EXTENSIONS,
   ACCEPTED_IMAGE_TYPES,
+  type CaptureMode,
+  withCaptureMode,
 } from "@/lib/shape-studio/types";
 import { useCaptureSessionPoll } from "@/lib/shape-studio/use-capture-session-poll";
 import { QrCapturePanel } from "./qr-capture-panel";
@@ -12,7 +14,7 @@ type HandPhotoPanelProps = {
   onImageSelected: (url: string) => void;
 };
 
-type UploadMode = "device" | "phone";
+type PanelView = "chooser" | "phone";
 
 function isAcceptedFile(file: File): boolean {
   if (
@@ -26,10 +28,32 @@ function isAcceptedFile(file: File): boolean {
   return ACCEPTED_IMAGE_EXTENSIONS.some((ext) => lower.endsWith(ext));
 }
 
+const PATH_CARDS: Array<{
+  mode: CaptureMode;
+  title: string;
+  body: string;
+  cta: string;
+}> = [
+  {
+    mode: "known-size",
+    title: "I know my ring size",
+    body: "Scan to capture a clean hand photo. Your selected ring size will guide the preview scale.",
+    cta: "Create QR",
+  },
+  {
+    mode: "card-scale",
+    title: "I do not know my ring size",
+    body: "Scan to capture your hand with a standard card in frame for scale reference.",
+    cta: "Create QR",
+  },
+];
+
 export function HandPhotoPanel({ onImageSelected }: HandPhotoPanelProps) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const creatingRef = useRef(false);
   const [dragOver, setDragOver] = useState(false);
-  const [mode, setMode] = useState<UploadMode>("device");
+  const [view, setView] = useState<PanelView>("chooser");
+  const [captureMode, setCaptureMode] = useState<CaptureMode | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [captureUrl, setCaptureUrl] = useState<string | null>(null);
   const [expiresAt, setExpiresAt] = useState<string | null>(null);
@@ -39,7 +63,9 @@ export function HandPhotoPanel({ onImageSelected }: HandPhotoPanelProps) {
   const [phoneWaiting, setPhoneWaiting] = useState(false);
 
   const resetPhoneCapture = useCallback(() => {
-    setMode("device");
+    creatingRef.current = false;
+    setView("chooser");
+    setCaptureMode(null);
     setSessionId(null);
     setCaptureUrl(null);
     setExpiresAt(null);
@@ -70,7 +96,7 @@ export function HandPhotoPanel({ onImageSelected }: HandPhotoPanelProps) {
 
   useCaptureSessionPoll({
     sessionId,
-    enabled: mode === "phone" && Boolean(sessionId) && !qrExpired,
+    enabled: view === "phone" && Boolean(sessionId) && !qrExpired,
     onImageReceived: handleImageFromPhone,
     onExpired: () => {
       setQrExpired(true);
@@ -82,12 +108,18 @@ export function HandPhotoPanel({ onImageSelected }: HandPhotoPanelProps) {
     },
   });
 
-  const startPhoneCapture = useCallback(async () => {
-    setMode("phone");
+  const startPhoneCapture = useCallback(async (mode: CaptureMode) => {
+    if (creatingRef.current) return;
+    creatingRef.current = true;
+    setView("phone");
+    setCaptureMode(mode);
     setCreatingSession(true);
     setQrError(null);
     setQrExpired(false);
     setPhoneWaiting(false);
+    setSessionId(null);
+    setCaptureUrl(null);
+    setExpiresAt(null);
 
     try {
       const res = await fetch("/api/shape-studio/sessions", { method: "POST" });
@@ -98,24 +130,29 @@ export function HandPhotoPanel({ onImageSelected }: HandPhotoPanelProps) {
         message?: string;
       };
 
-      if (!res.ok) {
+      if (!res.ok || !body.captureUrl) {
         setQrError(
           body.message ??
             "Phone capture is unavailable. Upload from this device instead.",
         );
-        setMode("device");
+        creatingRef.current = false;
+        setView("chooser");
+        setCaptureMode(null);
         return;
       }
 
       setSessionId(body.sessionId ?? null);
-      setCaptureUrl(body.captureUrl ?? null);
+      setCaptureUrl(withCaptureMode(body.captureUrl, mode));
       setExpiresAt(body.expiresAt ?? null);
       setPhoneWaiting(true);
     } catch {
       setQrError("Could not start phone capture. Try again or upload locally.");
-      setMode("device");
+      creatingRef.current = false;
+      setView("chooser");
+      setCaptureMode(null);
     } finally {
       setCreatingSession(false);
+      creatingRef.current = false;
     }
   }, []);
 
@@ -123,31 +160,7 @@ export function HandPhotoPanel({ onImageSelected }: HandPhotoPanelProps) {
     <section className="dss-card" aria-label="Hand photo">
       <div className="dss-card-head">Hand Photo</div>
 
-      <div className="dss-upload-mode-row">
-        <button
-          type="button"
-          className={`dss-upload-mode-btn${mode === "device" ? " is-active" : ""}`}
-          onClick={() => {
-            if (mode !== "device") resetPhoneCapture();
-            setMode("device");
-          }}
-        >
-          This device
-        </button>
-        <button
-          type="button"
-          className={`dss-upload-mode-btn${mode === "phone" ? " is-active" : ""}`}
-          onClick={() => {
-            if (mode === "phone" && sessionId) return;
-            void startPhoneCapture();
-          }}
-          disabled={creatingSession}
-        >
-          Phone via QR
-        </button>
-      </div>
-
-      {mode === "device" ? (
+      {view === "chooser" ? (
         <>
           <div
             className={`dss-upload-zone${dragOver ? " is-dragover" : ""}`}
@@ -171,7 +184,7 @@ export function HandPhotoPanel({ onImageSelected }: HandPhotoPanelProps) {
               handleImageFromDevice(e.dataTransfer.files[0]);
             }}
           >
-            <p>Drag and drop a hand photo, or choose a file.</p>
+            <p>This device — drag and drop a hand photo, or choose a file.</p>
             <span className="dss-upload-cta">Upload JPG, PNG, or WEBP</span>
           </div>
           <input
@@ -182,12 +195,38 @@ export function HandPhotoPanel({ onImageSelected }: HandPhotoPanelProps) {
             className="sr-only"
             onChange={(e) => handleImageFromDevice(e.target.files?.[0])}
           />
+
+          <p className="dss-capture-path-label">Or capture from your phone</p>
+
+          <div className="dss-capture-path-list">
+            {PATH_CARDS.map((card) => (
+              <div key={card.mode} className="dss-capture-path">
+                <div className="dss-capture-path-copy">
+                  <p className="dss-capture-path-title">{card.title}</p>
+                  <p className="dss-capture-path-body">{card.body}</p>
+                </div>
+                <button
+                  type="button"
+                  className="dss-capture-path-cta"
+                  disabled={creatingSession}
+                  onClick={() => void startPhoneCapture(card.mode)}
+                >
+                  {card.cta}
+                </button>
+              </div>
+            ))}
+          </div>
+
+          {qrError ? (
+            <p className="dss-qr-message dss-qr-message--warn">{qrError}</p>
+          ) : null}
         </>
       ) : creatingSession ? (
         <p className="dss-qr-loading">Preparing QR capture session…</p>
-      ) : captureUrl && expiresAt ? (
+      ) : captureUrl && expiresAt && captureMode ? (
         <QrCapturePanel
           captureUrl={captureUrl}
+          captureMode={captureMode}
           expiresAt={expiresAt}
           waiting={phoneWaiting}
           expired={qrExpired}
