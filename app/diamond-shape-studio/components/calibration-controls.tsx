@@ -16,15 +16,20 @@ import {
   snapRingSize,
 } from "@/lib/shape-studio/constants";
 import { formatDimensionReadout } from "@/lib/shape-studio/dimensions";
-import type { ShapeId } from "@/lib/shape-studio/types";
+import type { PhotoScaleSource, ShapeId } from "@/lib/shape-studio/types";
 import { useHorizontalTrack } from "./horizontal-track";
 
 type RingSizeControlProps = {
   ringSize: number;
   onChange: (value: number) => void;
+  photoScaleSource?: PhotoScaleSource | null;
 };
 
-export function RingSizeControl({ ringSize, onChange }: RingSizeControlProps) {
+export function RingSizeControl({
+  ringSize,
+  onChange,
+  photoScaleSource = null,
+}: RingSizeControlProps) {
   const trackRef = useRef<HTMLDivElement>(null);
   const applyPct = useCallback(
     (pct: number) => onChange(ringSizeFromSliderPct(pct)),
@@ -37,6 +42,20 @@ export function RingSizeControl({ ringSize, onChange }: RingSizeControlProps) {
   };
 
   const fill = ringSizeSliderPct(ringSize);
+  const isCardReference = photoScaleSource === "card-reference";
+
+  if (isCardReference) {
+    return (
+      <section className="dss-card" aria-label="Ring size">
+        <div className="dss-card-head">Ring Size</div>
+        <p className="dss-ring-pending-val">Not estimated yet</p>
+        <p className="dss-dim-note">
+          Ring-size estimation needs an additional guided step. Guided card and
+          finger measurement is required before a scaled preview is created.
+        </p>
+      </section>
+    );
+  }
 
   return (
     <section className="dss-card" aria-label="Ring size calibration">

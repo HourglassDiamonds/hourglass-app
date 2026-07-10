@@ -32,15 +32,16 @@ function uploadErrorMessage(status: number, message?: string): string {
 function modeCopy(mode: CaptureMode) {
   if (mode === "card-scale") {
     return {
-      title: "Capture with a scale reference",
-      instruction: "Place your hand and a standard credit card clearly in frame.",
-      note: "Use a card for scale to help calibrate the preview. This is a visual preview, not a final sizing measurement.",
+      title: "Capture with a visual reference",
+      instruction:
+        "Place a blank gift card, hotel key, or standard-size loyalty card beside your hand. Avoid cards showing personal or financial information.",
+      note: "The card is not automatically measured yet. This is a visual preview, not a final sizing measurement.",
     };
   }
   return {
     title: "Capture your hand photo",
     instruction: "Place your ring finger clearly in frame.",
-    note: "Your selected ring size on desktop guides the preview scale. This is a visual preview, not a final sizing measurement.",
+    note: "Your selected ring size on desktop helps guide this visual preview.",
   };
 }
 
@@ -56,7 +57,7 @@ function CaptureGuide({ mode }: { mode: CaptureMode }) {
           <span className="dss-capture-guide-dot dss-capture-guide-dot--c" />
           <span className="dss-capture-guide-ring" />
         </div>
-        <p className="dss-capture-guide-caption">Hand + card in frame</p>
+        <p className="dss-capture-guide-caption">Hand + blank card in frame</p>
       </div>
     );
   }

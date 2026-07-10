@@ -16,6 +16,19 @@ export type CompareSlotId = "a" | "b";
 /** Phone QR capture path — guides mobile copy; does not change upload API. */
 export type CaptureMode = "known-size" | "card-scale";
 
+/**
+ * Calibration context for the current hand photo.
+ * Drives trust copy only — not automatic card measurement or sizing.
+ * Maps from CaptureMode / desktop upload; independent of hardware.
+ */
+export type PhotoScaleSource = "upload" | "known-size" | "card-reference";
+
+export function photoScaleSourceFromCaptureMode(
+  mode: CaptureMode,
+): PhotoScaleSource {
+  return mode === "card-scale" ? "card-reference" : "known-size";
+}
+
 export const CAPTURE_MODES: readonly CaptureMode[] = [
   "known-size",
   "card-scale",

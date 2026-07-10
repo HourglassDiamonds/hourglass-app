@@ -5,9 +5,11 @@ import type {
   CompareSlotId,
   DiamondSlotState,
   OverlayPosition,
+  PhotoScaleSource,
   StudioMode,
 } from "@/lib/shape-studio/types";
 import { SHAPE_LABELS } from "@/lib/shape-studio/constants";
+import { formatCaratLabel } from "@/lib/shape-studio/overlay-scale";
 import { CaratControl, RingSizeControl } from "./components/calibration-controls";
 import DiamondStudioToolHeader from "../diamond-studio/components/DiamondStudioToolHeader";
 import {
@@ -19,9 +21,11 @@ import ShapeComparisonEditorial from "./components/ShapeComparisonEditorial";
 import { ShapeSelector } from "./components/shape-selector";
 import { ShapeStudioStyles } from "./components/shape-studio-styles";
 
-const DEFAULT_POSITION: OverlayPosition = { xPct: 50, yPct: 42 };
-const COMPARE_A_POSITION: OverlayPosition = { xPct: 42, yPct: 42 };
-const COMPARE_B_POSITION: OverlayPosition = { xPct: 58, yPct: 42 };
+/** Centered start — capture orientation is not enforced. */
+const DEFAULT_POSITION: OverlayPosition = { xPct: 50, yPct: 46 };
+/** Compare offsets keep A/B readable; not a ring-finger assumption. */
+const COMPARE_A_POSITION: OverlayPosition = { xPct: 42, yPct: 46 };
+const COMPARE_B_POSITION: OverlayPosition = { xPct: 58, yPct: 46 };
 
 function createDefaultSlot(
   shape: DiamondSlotState["shape"] = "round",
@@ -31,9 +35,23 @@ function createDefaultSlot(
   return { shape, carat, position };
 }
 
+/** One source-specific trust line near the viewer. */
+function trustLine(source: PhotoScaleSource | null): string | null {
+  if (!source) return null;
+  if (source === "card-reference") {
+    return "The card has not been measured yet. Complete the guided measurement to create a scaled preview and estimate a starting ring size.";
+  }
+  if (source === "known-size") {
+    return "Your selected ring size helps guide this visual preview. Final sizing should be professionally confirmed.";
+  }
+  return "This is a visual preview, not a final sizing measurement.";
+}
+
 export function ShapeStudioView() {
   const handPhotoRef = useRef<HandPhotoPanelHandle>(null);
   const [handImageUrl, setHandImageUrl] = useState<string | null>(null);
+  const [photoScaleSource, setPhotoScaleSource] =
+    useState<PhotoScaleSource | null>(null);
   const [ringSize, setRingSize] = useState(6.0);
   const [mode, setMode] = useState<StudioMode>("single");
   const [activeCompareSlot, setActiveCompareSlot] =
@@ -48,6 +66,8 @@ export function ShapeStudioView() {
   const [compareB, setCompareB] = useState<DiamondSlotState>(() =>
     createDefaultSlot("oval", 2.0, COMPARE_B_POSITION),
   );
+
+  const awaitingCardCalibration = photoScaleSource === "card-reference";
 
   const activeSlot =
     mode === "single"
@@ -82,12 +102,16 @@ export function ShapeStudioView() {
     [mode, activeCompareSlot],
   );
 
-  const handleImageSelected = useCallback((url: string) => {
-    setHandImageUrl((prev) => {
-      if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev);
-      return url;
-    });
-  }, []);
+  const handleImageSelected = useCallback(
+    (url: string, source: PhotoScaleSource) => {
+      setPhotoScaleSource(source);
+      setHandImageUrl((prev) => {
+        if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev);
+        return url;
+      });
+    },
+    [],
+  );
 
   useEffect(() => {
     return () => {
@@ -96,6 +120,7 @@ export function ShapeStudioView() {
   }, [handImageUrl]);
 
   const overlayEntries = useMemo(() => {
+    if (awaitingCardCalibration) return [];
     if (mode === "single") {
       return [
         {
@@ -122,18 +147,23 @@ export function ShapeStudioView() {
           setCompareB((prev) => ({ ...prev, position })),
       },
     ];
-  }, [mode, singleSlot, compareA, compareB]);
+  }, [awaitingCardCalibration, mode, singleSlot, compareA, compareB]);
 
   const shapeLabel = SHAPE_LABELS[activeSlot.shape].toLowerCase();
-  const liveSentence = handImageUrl
-    ? `A ${activeSlot.carat.toFixed(1)}-carat ${shapeLabel} diamond, shown on your hand preview.`
-    : "Upload a hand photo to compare shapes and carat sizes with calibrated scale.";
+  const caratLabel = formatCaratLabel(activeSlot.carat);
+  const liveSentence = !handImageUrl
+    ? "Upload a hand photo to compare shapes and carat sizes as a visual preview."
+    : awaitingCardCalibration
+      ? "Your hand photo is ready."
+      : `A ${caratLabel}-carat ${shapeLabel} diamond, shown as a visual preview on your hand.`;
+  const trustCopy = trustLine(photoScaleSource);
 
   return (
     <div
       className="dss-shell h-full min-h-full w-full"
       data-theme="light"
       data-shape-studio-instrument
+      data-photo-scale-source={photoScaleSource ?? undefined}
     >
       <ShapeStudioStyles />
       <div className="dss-app">
@@ -182,7 +212,11 @@ export function ShapeStudioView() {
               ) : null}
             </section>
 
-            <RingSizeControl ringSize={ringSize} onChange={setRingSize} />
+            <RingSizeControl
+              ringSize={ringSize}
+              onChange={setRingSize}
+              photoScaleSource={photoScaleSource}
+            />
             <CaratControl
               carat={activeSlot.carat}
               shape={activeSlot.shape}
@@ -198,11 +232,18 @@ export function ShapeStudioView() {
                 className="dss-tool-header"
               />
               {handImageUrl ? (
-                <p className="dss-sentence">{liveSentence}</p>
+                <>
+                  <p className="dss-sentence">{liveSentence}</p>
+                  {trustCopy ? (
+                    <p className="dss-trust-note">{trustCopy}</p>
+                  ) : null}
+                </>
               ) : null}
               <OverlayStage
                 handImageUrl={handImageUrl}
                 ringSize={ringSize}
+                photoScaleSource={photoScaleSource}
+                studioMode={mode}
                 overlays={overlayEntries}
                 onUploadClick={() => handPhotoRef.current?.openDevicePicker()}
                 onPhoneCaptureClick={() =>

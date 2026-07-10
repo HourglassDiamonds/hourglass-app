@@ -143,10 +143,23 @@ export function ShapeStudioStyles() {
         max-width:28rem !important;
       }
       .dss-sentence{
-        margin:0 12px 8px; text-align:center;
+        margin:0 12px 4px; text-align:center;
         font-family:var(--serif); font-weight:300;
         font-size:clamp(15px, 1.8vh, 17px); line-height:1.35;
         color:var(--ink); max-width:480px;
+      }
+      .dss-trust-note{
+        margin:0 16px 8px; text-align:center;
+        font-size:11px; line-height:1.45;
+        color:var(--ink-mute); max-width:420px;
+      }
+      .dss-ring-pending-val{
+        margin:4px 0 8px;
+        font-family:var(--serif);
+        font-size:clamp(1.05rem, 2vh, 1.25rem);
+        font-weight:400;
+        color:var(--ink-soft);
+        text-align:center;
       }
       .dss-stage-canvas{
         display:flex; justify-content:center; align-items:center; width:100%;
@@ -268,6 +281,8 @@ export function ShapeStudioStyles() {
         width:100%; height:100%; object-fit:contain;
         pointer-events:none; user-select:none;
       }
+      .dss-viewer.is-placeable{ cursor:crosshair; }
+      .dss-viewer.is-placeable .dss-overlay{ cursor:grab; }
       .dss-overlay{
         position:absolute; z-index:2; cursor:grab; touch-action:none;
         transform:translate(-50%, -50%);
@@ -562,8 +577,12 @@ export function ShapeStudioStyles() {
           margin:8px 20px 0;
         }
         .dss-sentence{
-          order:2; width:calc(100% - 40px); margin:2px 20px 8px;
+          order:2; width:calc(100% - 40px); margin:2px 20px 4px;
           font-size:clamp(16.5px, 4.4vw, 18.5px); max-width:none;
+        }
+        .dss-trust-note{
+          order:2; width:calc(100% - 40px); margin:0 20px 8px;
+          max-width:none;
         }
         .dss-stage-canvas{ order:3; width:100%; padding:0 20px; box-sizing:border-box; }
         .dss-stage-hint{ order:4; width:calc(100% - 40px); margin:8px 20px 0; }

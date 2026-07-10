@@ -26,9 +26,9 @@ function formatExpiry(iso: string): string {
 
 function leadCopy(mode: CaptureMode): string {
   if (mode === "card-scale") {
-    return "Scan to capture your hand with a standard card in frame. This is a visual preview, not a final sizing measurement.";
+    return "Scan to capture your hand with a blank gift card, hotel key, or loyalty card beside it. Avoid cards with personal or financial information. The card is not automatically measured yet.";
   }
-  return "Scan to capture a clean hand photo. This is a visual preview, not a final sizing measurement.";
+  return "Scan to capture a clean hand photo. Your selected ring size helps guide the preview.";
 }
 
 export function QrCapturePanel({

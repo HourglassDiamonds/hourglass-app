@@ -11,13 +11,15 @@ import {
   ACCEPTED_IMAGE_EXTENSIONS,
   ACCEPTED_IMAGE_TYPES,
   type CaptureMode,
+  type PhotoScaleSource,
+  photoScaleSourceFromCaptureMode,
   withCaptureMode,
 } from "@/lib/shape-studio/types";
 import { useCaptureSessionPoll } from "@/lib/shape-studio/use-capture-session-poll";
 import { QrCapturePanel } from "./qr-capture-panel";
 
 type HandPhotoPanelProps = {
-  onImageSelected: (url: string) => void;
+  onImageSelected: (url: string, source: PhotoScaleSource) => void;
 };
 
 export type HandPhotoPanelHandle = {
@@ -48,13 +50,13 @@ const PATH_CARDS: Array<{
   {
     mode: "known-size",
     title: "I know my ring size",
-    body: "Scan for a clean hand photo. Visual preview only — not a final sizing measurement.",
+    body: "Scan for a clean hand photo. Your selected ring size helps guide the preview.",
     cta: "Create QR",
   },
   {
     mode: "card-scale",
     title: "I do not know my ring size",
-    body: "Scan with a standard card in frame. Visual preview only — not a final sizing measurement.",
+    body: "Place a blank gift card, hotel key, or standard-size loyalty card beside your hand. Avoid cards showing personal or financial information. The card is not automatically measured yet.",
     cta: "Create QR",
   },
 ];
@@ -66,6 +68,7 @@ export const HandPhotoPanel = forwardRef<
   const inputRef = useRef<HTMLInputElement>(null);
   const panelRef = useRef<HTMLElement>(null);
   const creatingRef = useRef(false);
+  const captureModeRef = useRef<CaptureMode | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const [view, setView] = useState<PanelView>("chooser");
   const [captureMode, setCaptureMode] = useState<CaptureMode | null>(null);
@@ -87,51 +90,9 @@ export const HandPhotoPanel = forwardRef<
     window.setTimeout(() => el.classList.remove("is-start-focus"), 1600);
   }, []);
 
-  useImperativeHandle(
-    ref,
-    () => ({
-      openDevicePicker: () => {
-        if (view !== "chooser") {
-          creatingRef.current = false;
-          setView("chooser");
-          setCaptureMode(null);
-          setSessionId(null);
-          setCaptureUrl(null);
-          setExpiresAt(null);
-          setQrError(null);
-          setQrExpired(false);
-          setPhoneWaiting(false);
-          setCreatingSession(false);
-        }
-        pulsePanel();
-        window.setTimeout(() => inputRef.current?.click(), 120);
-      },
-      revealPhonePaths: () => {
-        if (view !== "chooser") {
-          creatingRef.current = false;
-          setView("chooser");
-          setCaptureMode(null);
-          setSessionId(null);
-          setCaptureUrl(null);
-          setExpiresAt(null);
-          setQrError(null);
-          setQrExpired(false);
-          setPhoneWaiting(false);
-          setCreatingSession(false);
-        }
-        pulsePanel();
-        window.setTimeout(() => {
-          panelRef.current
-            ?.querySelector<HTMLElement>(".dss-capture-path-list")
-            ?.scrollIntoView({ block: "nearest", behavior: "smooth" });
-        }, 80);
-      },
-    }),
-    [pulsePanel, view],
-  );
-
   const resetPhoneCapture = useCallback(() => {
     creatingRef.current = false;
+    captureModeRef.current = null;
     setView("chooser");
     setCaptureMode(null);
     setSessionId(null);
@@ -143,21 +104,44 @@ export const HandPhotoPanel = forwardRef<
     setCreatingSession(false);
   }, []);
 
+  useImperativeHandle(
+    ref,
+    () => ({
+      openDevicePicker: () => {
+        if (view !== "chooser") resetPhoneCapture();
+        pulsePanel();
+        window.setTimeout(() => inputRef.current?.click(), 120);
+      },
+      revealPhonePaths: () => {
+        if (view !== "chooser") resetPhoneCapture();
+        pulsePanel();
+        window.setTimeout(() => {
+          panelRef.current
+            ?.querySelector<HTMLElement>(".dss-capture-path-list")
+            ?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+        }, 80);
+      },
+    }),
+    [pulsePanel, resetPhoneCapture, view],
+  );
+
   const handleImageFromDevice = useCallback(
     (file: File | null | undefined) => {
       if (!file || !isAcceptedFile(file)) return;
       resetPhoneCapture();
       const url = URL.createObjectURL(file);
-      onImageSelected(url);
+      onImageSelected(url, "upload");
     },
     [onImageSelected, resetPhoneCapture],
   );
 
   const handleImageFromPhone = useCallback(
     (url: string) => {
+      const mode = captureModeRef.current ?? "known-size";
+      const source: PhotoScaleSource = photoScaleSourceFromCaptureMode(mode);
       setPhoneWaiting(false);
       resetPhoneCapture();
-      onImageSelected(url);
+      onImageSelected(url, source);
     },
     [onImageSelected, resetPhoneCapture],
   );
@@ -180,6 +164,7 @@ export const HandPhotoPanel = forwardRef<
     if (creatingRef.current) return;
     creatingRef.current = true;
     setView("phone");
+    captureModeRef.current = mode;
     setCaptureMode(mode);
     setCreatingSession(true);
     setQrError(null);
@@ -199,13 +184,11 @@ export const HandPhotoPanel = forwardRef<
       };
 
       if (!res.ok || !body.captureUrl) {
-        setQrError(
+        const message =
           body.message ??
-            "Phone capture is unavailable. Upload from this device instead.",
-        );
-        creatingRef.current = false;
-        setView("chooser");
-        setCaptureMode(null);
+          "Phone capture is unavailable. Upload from this device instead.";
+        resetPhoneCapture();
+        setQrError(message);
         return;
       }
 
@@ -214,15 +197,13 @@ export const HandPhotoPanel = forwardRef<
       setExpiresAt(body.expiresAt ?? null);
       setPhoneWaiting(true);
     } catch {
+      resetPhoneCapture();
       setQrError("Could not start phone capture. Try again or upload locally.");
-      creatingRef.current = false;
-      setView("chooser");
-      setCaptureMode(null);
     } finally {
       setCreatingSession(false);
       creatingRef.current = false;
     }
-  }, []);
+  }, [resetPhoneCapture]);
 
   return (
     <section
