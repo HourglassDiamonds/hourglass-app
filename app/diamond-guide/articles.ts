@@ -3801,6 +3801,11 @@ export const articles: Article[] = [
   slug: "what-is-diamond-clarity",
   title: "What is Diamond Clarity",
   category: "Diamond Clarity",
+  heroImage: "/diamond-guide/diamond-clarity-hero.png",
+  heroImageAlt:
+    "A loose diamond beside inspection tools on a warm stone surface, representing diamond clarity evaluation.",
+  visualCategory: "original-photo",
+  visualStatus: "live",
   body: [
     { type: "paragraph", text: "Diamond clarity describes internal and surface features in a diamond as gemologists see them under ten-power magnification. On a grading report it appears as a letter from Flawless down through Included. For most engagement rings the practical question is simpler: will you see anything on the hand? Eye clean in your setting usually matters more than chasing the top of the scale." },
     { type: "paragraph", text: "A buyer once refused an SI1 diamond because an article online said to stay above VS. The stone was eye clean in every lighting we tried. The inclusion sat beneath a prong where it would never catch light from the table. The VS2 they chose instead had a crystal dead center under the crown. They saw it within a week of wearing the ring. Clarity is part of the story. It is not the whole story." },
