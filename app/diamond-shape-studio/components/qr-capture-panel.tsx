@@ -11,6 +11,8 @@ type QrCapturePanelProps = {
   expired: boolean;
   error: string | null;
   onCancel: () => void;
+  /** Larger centered presentation for the pre-photo entry. */
+  variant?: "rail" | "stage";
 };
 
 function formatExpiry(iso: string): string {
@@ -24,49 +26,67 @@ function formatExpiry(iso: string): string {
   }
 }
 
-function leadCopy(mode: CaptureMode): string {
-  if (mode === "card-scale") {
-    return "Scan to capture your hand with a blank gift card, hotel key, or loyalty card beside it. Avoid cards with personal or financial information. On desktop, mark the card to scale the diamond preview.";
-  }
-  return "Scan to capture a clean hand photo. Your selected ring size helps guide the preview.";
-}
-
 export function QrCapturePanel({
   captureUrl,
-  captureMode,
+  captureMode: _captureMode,
   expiresAt,
   waiting,
   expired,
   error,
   onCancel,
+  variant = "stage",
 }: QrCapturePanelProps) {
+  void _captureMode;
+  const stage = variant === "stage";
+
   if (expired) {
     return (
-      <div className="dss-qr-panel">
+      <div className={`dss-qr-panel${stage ? " dss-qr-panel--stage" : ""}`}>
+        {stage ? (
+          <p className="dss-stage-empty-title">Scan with your phone</p>
+        ) : null}
         <p className="dss-qr-message dss-qr-message--warn">
           This capture session expired. Start a new QR session to try again.
         </p>
         <button type="button" className="dss-qr-cancel" onClick={onCancel}>
-          Back to upload options
+          Cancel phone capture
         </button>
       </div>
     );
   }
 
   return (
-    <div className="dss-qr-panel">
-      <p className="dss-qr-lead">{leadCopy(captureMode)}</p>
+    <div className={`dss-qr-panel${stage ? " dss-qr-panel--stage" : ""}`}>
+      {stage ? (
+        <>
+          <p className="dss-stage-empty-kicker">Hand preview</p>
+          <p className="dss-stage-empty-title">Scan with your phone</p>
+          <p className="dss-qr-lead">
+            Photograph your hand with a standard-size card beside it. Keep the
+            card and hand on approximately the same plane.
+          </p>
+        </>
+      ) : (
+        <p className="dss-qr-lead">
+          Photograph your hand with a standard-size card beside it. Keep the
+          card and hand on approximately the same plane.
+        </p>
+      )}
       <div className="dss-qr-frame" aria-hidden={!captureUrl}>
         <QRCode
           value={captureUrl}
-          size={148}
+          size={stage ? 208 : 148}
           bgColor="#faf8f5"
           fgColor="#2a2824"
-          style={{ height: "auto", maxWidth: "100%", width: "148px" }}
+          style={{
+            height: "auto",
+            maxWidth: "100%",
+            width: stage ? "208px" : "148px",
+          }}
         />
       </div>
       <p className="dss-qr-status">
-        {waiting ? "Waiting for phone capture…" : "Ready to scan"}
+        {waiting ? "Waiting for phone capture…" : "Ready on your phone"}
       </p>
       {expiresAt ? (
         <p className="dss-qr-meta">Session expires at {formatExpiry(expiresAt)}</p>

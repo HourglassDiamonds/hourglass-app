@@ -1,5 +1,9 @@
 import { RING_SIZE_TO_MM } from "./constants";
 import { renderStoneHeightMm, renderStoneWidthMm } from "./dimensions";
+import {
+  effectiveOrientation,
+  type StoneOrientation,
+} from "./orientation";
 import type { PhotoScaleSource, ShapeId } from "./types";
 
 /**
@@ -51,8 +55,8 @@ export type OverlayPixelSize = {
  * (object-fit: contain), not the full stage box when letterboxed.
  *
  * Known-size / upload: use the selected `ringSize` → finger mm map.
- * Card-calibrated: pass `pixelsPerMm` from the marked card edge —
- * physical stone mm × pixelsPerMm (no visual compensation).
+ * Card-calibrated: prefer `overlaySizeFromCardPpm` — physical stone mm ×
+ * display pixelsPerMm (no visual compensation, no ring size).
  */
 export function overlaySizePx(
   shape: ShapeId,
@@ -61,30 +65,65 @@ export function overlaySizePx(
   referenceWidthPx: number,
   scaleSource: PhotoScaleSource | null = "known-size",
   pixelsPerMm: number | null = null,
+  orientation: StoneOrientation = "ns",
 ): OverlayPixelSize {
-  const rw = renderStoneWidthMm(shape, carat);
-  const rh = renderStoneHeightMm(shape, carat);
-
   if (
     scaleSource === "card-reference" &&
     pixelsPerMm != null &&
     pixelsPerMm > 0
   ) {
-    return {
-      widthPx: rw * pixelsPerMm,
-      heightPx: rh * pixelsPerMm,
-    };
+    return overlaySizeFromCardPpm(shape, carat, pixelsPerMm, orientation);
   }
 
+  const axes = orientedStoneMm(shape, carat, orientation);
   const fingerMm =
     scaleSource === "card-reference"
       ? UNCALIBRATED_FINGER_REFERENCE_MM
       : (RING_SIZE_TO_MM[ringSize] ?? UNCALIBRATED_FINGER_REFERENCE_MM);
   const comp = SHAPE_RENDER_VISUAL_COMP[shape];
   const mmToStage = (HAND_PHOTO_FINGER_WIDTH_FRACTION * comp) / fingerMm;
-  const widthPx = rw * mmToStage * referenceWidthPx;
-  const heightPx = rh * mmToStage * referenceWidthPx;
+  const widthPx = axes.horizontalMm * mmToStage * referenceWidthPx;
+  const heightPx = axes.verticalMm * mmToStage * referenceWidthPx;
   return { widthPx, heightPx };
+}
+
+/**
+ * Canonical width × length in mm, swapped for E/W display axes.
+ * N/S: width horizontal, length vertical.
+ * E/W: length horizontal, width vertical.
+ */
+export function orientedStoneMm(
+  shape: ShapeId,
+  carat: number,
+  orientation: StoneOrientation = "ns",
+): { horizontalMm: number; verticalMm: number } {
+  const widthMm = renderStoneWidthMm(shape, carat);
+  const lengthMm = renderStoneHeightMm(shape, carat);
+  if (effectiveOrientation(shape, orientation) === "ew") {
+    return { horizontalMm: lengthMm, verticalMm: widthMm };
+  }
+  return { horizontalMm: widthMm, verticalMm: lengthMm };
+}
+
+/**
+ * Card-calibrated overlay size — stone mm × display pixels/mm only.
+ * Does not accept or use ring size. Orientation swaps display axes only;
+ * PPM and canonical mm values are unchanged.
+ */
+export function overlaySizeFromCardPpm(
+  shape: ShapeId,
+  carat: number,
+  pixelsPerMm: number,
+  orientation: StoneOrientation = "ns",
+): OverlayPixelSize {
+  if (!(pixelsPerMm > 0)) {
+    return { widthPx: 0, heightPx: 0 };
+  }
+  const axes = orientedStoneMm(shape, carat, orientation);
+  return {
+    widthPx: axes.horizontalMm * pixelsPerMm,
+    heightPx: axes.verticalMm * pixelsPerMm,
+  };
 }
 
 /** Exact selected carat for headlines — keeps quarter steps (2.25), trims .00. */

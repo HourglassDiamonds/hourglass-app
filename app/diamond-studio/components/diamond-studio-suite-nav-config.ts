@@ -6,7 +6,7 @@ export type DiamondStudioSuiteNavItem = {
 
 export const DIAMOND_STUDIO_SUITE_NAV: DiamondStudioSuiteNavItem[] = [
   { label: "Diamond Size Studio", href: "/diamond-studio" },
-  { label: "Shape Comparison", href: "/diamond-shape-studio", comingSoon: true },
+  { label: "Scaled Preview", href: "/diamond-shape-studio" },
   { label: "Light Performance", href: "/diamond-intelligence" },
 ];
 

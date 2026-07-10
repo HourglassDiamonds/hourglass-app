@@ -177,3 +177,40 @@ export function clientToContentPoint(
 export function isCalibratedPreview(step: GuidedCalibrationStep): boolean {
   return step === "calibrated-preview";
 }
+
+export function isMarkSeatStep(step: GuidedCalibrationStep): boolean {
+  return (
+    step === "mark-seat" ||
+    step === "mark-finger" ||
+    /** Legacy confirm-card normalizes to seat; keep markers/actions consistent. */
+    step === "confirm-card"
+  );
+}
+
+/** Rewrite legacy step names into the live public Scaled Preview flow. */
+export function migrateLegacyCalibration(
+  state: CardCalibrationState,
+): CardCalibrationState {
+  if (state.step === "mark-finger") {
+    return { ...state, step: "mark-seat" };
+  }
+  if (state.step === "photo-ready") {
+    return { ...state, step: "mark-card" };
+  }
+  if (state.step === "confirm-card") {
+    const seeded = defaultFingerEndpoints();
+    return {
+      ...state,
+      step: "mark-seat",
+      fingerL: state.fingerL ?? seeded.fingerL,
+      fingerR: state.fingerR ?? seeded.fingerR,
+      framing: null,
+      cardStillInFrame: undefined,
+    };
+  }
+  return state;
+}
+
+export function isMarkCardStep(step: GuidedCalibrationStep): boolean {
+  return step === "mark-card" || step === "photo-ready";
+}

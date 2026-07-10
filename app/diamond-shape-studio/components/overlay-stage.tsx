@@ -6,11 +6,14 @@ import {
   fingerMidpoint,
   isCardEdgeValid,
   isFingerSpanValid,
+  isMarkCardStep,
+  isMarkSeatStep,
   pixelsPerMmFromCard,
   stagePctToContentPoint,
   type ContentRect,
 } from "@/lib/shape-studio/card-calibration";
-import { CARD_LONG_EDGE_MM, shapeAssetPath } from "@/lib/shape-studio/constants";
+import { shapeAssetPath } from "@/lib/shape-studio/constants";
+import { overlayImageLayoutStyle } from "@/lib/shape-studio/asset-bounds";
 import {
   FRAMING_DEFAULT_CROP_OF_MAX,
   FRAMING_MAX_ZOOM_FACTOR,
@@ -25,25 +28,36 @@ import {
   viewerPointToSourcePoint,
   zoomFraming,
 } from "@/lib/shape-studio/framing";
-import { overlaySizePx } from "@/lib/shape-studio/overlay-scale";
-import type {
-  CardCalibrationState,
-  ContentPoint,
-  DiamondSlotState,
-  FramingState,
-  GuidedCalibrationStep,
-  OverlayPosition,
-  PhotoScaleSource,
-  StudioMode,
+import { overlaySizeFromCardPpm, overlaySizePx } from "@/lib/shape-studio/overlay-scale";
+import {
+  effectiveOrientation,
+  type StoneOrientation,
+} from "@/lib/shape-studio/orientation";
+import { renderStoneHeightMm, renderStoneWidthMm } from "@/lib/shape-studio/dimensions";
+import {
+  normalizeGuidedStep,
+  type CardCalibrationState,
+  type ContentPoint,
+  type DiamondSlotState,
+  type FramingState,
+  type GuidedCalibrationStep,
+  type OverlayPosition,
+  type PhotoScaleSource,
+  type StudioMode,
 } from "@/lib/shape-studio/types";
+import type { PhoneCaptureSession } from "@/lib/shape-studio/use-phone-capture-session";
+import { SCALED_CAPTURE_MODE } from "@/lib/shape-studio/use-phone-capture-session";
 import { CalibrationMarkers } from "./calibration-markers";
+import { QrCapturePanel } from "./qr-capture-panel";
 
 type OverlayLayerProps = {
   slot: DiamondSlotState;
-  ringSize: number;
+  /** Required only for non–card-calibrated (heuristic) sizing. */
+  ringSize?: number;
   referenceWidthPx: number;
   scaleSource: PhotoScaleSource | null;
   pixelsPerMm: number | null;
+  orientation: StoneOrientation;
   content: ContentRect | null;
   stageWidth: number;
   stageHeight: number;
@@ -63,6 +77,7 @@ function OverlayLayer({
   referenceWidthPx,
   scaleSource,
   pixelsPerMm,
+  orientation,
   content,
   stageWidth,
   stageHeight,
@@ -78,14 +93,42 @@ function OverlayLayer({
   const dragOffsetRef = useRef({ x: 0, y: 0 });
   const overlayRef = useRef<HTMLDivElement>(null);
 
-  const { widthPx, heightPx } = overlaySizePx(
-    slot.shape,
-    slot.carat,
-    ringSize,
-    referenceWidthPx,
-    scaleSource,
-    pixelsPerMm,
-  );
+  const renderOrientation = effectiveOrientation(slot.shape, orientation);
+  const { widthPx, heightPx } =
+    scaleSource === "card-reference" &&
+    pixelsPerMm != null &&
+    pixelsPerMm > 0
+      ? overlaySizeFromCardPpm(
+          slot.shape,
+          slot.carat,
+          pixelsPerMm,
+          renderOrientation,
+        )
+      : overlaySizePx(
+          slot.shape,
+          slot.carat,
+          ringSize ?? 0,
+          referenceWidthPx,
+          scaleSource,
+          pixelsPerMm,
+          renderOrientation,
+        );
+
+  /** Canonical N/S face box; E/W rotates this 90° inside the oriented outer. */
+  const nsFace =
+    scaleSource === "card-reference" &&
+    pixelsPerMm != null &&
+    pixelsPerMm > 0
+      ? overlaySizeFromCardPpm(slot.shape, slot.carat, pixelsPerMm, "ns")
+      : overlaySizePx(
+          slot.shape,
+          slot.carat,
+          ringSize ?? 0,
+          referenceWidthPx,
+          scaleSource,
+          pixelsPerMm,
+          "ns",
+        );
 
   const paintPosition = useMemo(() => {
     if (
@@ -254,8 +297,27 @@ function OverlayLayer({
       }}
     >
       {label ? <span className="dss-overlay-label">{label}</span> : null}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={shapeAssetPath(slot.shape)} alt="" draggable={false} />
+      <div
+        className={`dss-overlay-face${
+          renderOrientation === "ew" ? " dss-overlay-face--ew" : ""
+        }`}
+        style={
+          renderOrientation === "ew"
+            ? {
+                width: `${nsFace.widthPx}px`,
+                height: `${nsFace.heightPx}px`,
+              }
+            : undefined
+        }
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={shapeAssetPath(slot.shape)}
+          alt=""
+          draggable={false}
+          style={overlayImageLayoutStyle(slot.shape)}
+        />
+      </div>
     </div>
   );
 }
@@ -303,29 +365,28 @@ function stageHint(
   guidedStep: GuidedCalibrationStep | null,
 ): string {
   if (!hasImage) {
-    return "Upload a photo or scan the QR code to begin your hand preview.";
+    return "Upload a hand-and-card photo, or capture with your phone, to begin Scaled Preview.";
   }
-  if (guidedStep === "mark-card" || guidedStep === "photo-ready") {
+  const step = guidedStep ? normalizeGuidedStep(guidedStep) : null;
+  if (step === "mark-card") {
     return "Align the precision lines with the two ends of the card’s long edge.";
   }
-  if (guidedStep === "confirm-card") {
-    return `Card edge set to ${CARD_LONG_EDGE_MM.toFixed(2)} mm. This establishes the scale for this photo.`;
+  if (step === "mark-seat") {
+    return "Place the guide where the ring will sit.";
   }
-  if (guidedStep === "mark-finger") {
-    return "Align the precision lines with the two sides of the finger where the ring will sit.";
-  }
-  if (guidedStep === "frame") {
+  if (step === "frame") {
     return "Drag the photo to reposition. Use − / + to zoom.";
   }
   if (studioMode === "single") {
-    return "Click or tap the base of your ring finger to place the diamond, then drag to refine.";
+    return "Drag the diamond to refine its place on your finger.";
   }
-  return "Drag each diamond overlay to position it on your finger.";
+  return "Drag the diamond overlay to position it on your finger.";
 }
 
 export type OverlayStageProps = {
   handImageUrl: string | null;
-  ringSize: number;
+  /** Optional — unused on the public card-calibrated Scaled Preview path. */
+  ringSize?: number;
   photoScaleSource?: PhotoScaleSource | null;
   studioMode?: StudioMode;
   cardCalibration?: CardCalibrationState | null;
@@ -333,10 +394,13 @@ export type OverlayStageProps = {
   onGuidedContinue?: () => void;
   onGuidedAdjust?: () => void;
   onGuidedReset?: () => void;
+  onReframe?: () => void;
   onFramingChange?: (
     framing: FramingState,
     cardStillInFrame?: boolean,
   ) => void;
+  /** Elongated-shape face orientation preference (N/S default). */
+  stoneOrientation?: StoneOrientation;
   overlays: Array<{
     id: string;
     slot: DiamondSlotState;
@@ -345,7 +409,8 @@ export type OverlayStageProps = {
     onContentPositionChange?: (position: ContentPoint) => void;
   }>;
   onUploadClick?: () => void;
-  onPhoneCaptureClick?: () => void;
+  /** Single authoritative phone-capture session (centered entry only). */
+  phoneCapture?: PhoneCaptureSession | null;
 };
 
 export function OverlayStage({
@@ -358,10 +423,11 @@ export function OverlayStage({
   onGuidedContinue,
   onGuidedAdjust,
   onGuidedReset,
+  onReframe,
   onFramingChange,
+  stoneOrientation = "ns",
   overlays,
-  onUploadClick,
-  onPhoneCaptureClick,
+  phoneCapture = null,
 }: OverlayStageProps) {
   const stageRef = useRef<HTMLDivElement>(null);
   const handImgRef = useRef<HTMLImageElement>(null);
@@ -420,7 +486,10 @@ export function OverlayStage({
   const layout = measure?.url === handImageUrl ? measure : null;
   const referenceWidthPx = layout?.widthPx ?? 0;
   const content = layout?.content ?? null;
-  const guidedStep = cardCalibration?.step ?? null;
+  const rawGuidedStep = cardCalibration?.step ?? null;
+  const guidedStep = rawGuidedStep
+    ? normalizeGuidedStep(rawGuidedStep)
+    : null;
   const isCardReference = photoScaleSource === "card-reference";
   const calibrated =
     isCardReference && guidedStep === "calibrated-preview";
@@ -555,6 +624,67 @@ export function OverlayStage({
 
   const pixelsPerMm = framedDisplayPpm ?? containPixelsPerMm;
 
+  const primarySlot = overlays[0]?.slot ?? null;
+  /** QA-only: jaw span measures apparent finger width; never drives diamond scale. */
+  const fingerCoverageProbe = (() => {
+    if (
+      !sourceSize ||
+      sourcePpm == null ||
+      sourcePpm <= 0 ||
+      !cardCalibration?.fingerL ||
+      !cardCalibration.fingerR ||
+      !primarySlot
+    ) {
+      return null;
+    }
+    const fl = cardCalibration.fingerL;
+    const fr = cardCalibration.fingerR;
+    const jawSpanSourcePx = Math.hypot(
+      (fr.u - fl.u) * sourceSize.width,
+      (fr.v - fl.v) * sourceSize.height,
+    );
+    const apparentFingerWidthMm = jawSpanSourcePx / sourcePpm;
+    const visibleDiamondWidthMm = renderStoneWidthMm(
+      primarySlot.shape,
+      primarySlot.carat,
+    );
+    const diamondToFingerCoveragePct =
+      apparentFingerWidthMm > 0
+        ? (visibleDiamondWidthMm / apparentFingerWidthMm) * 100
+        : null;
+    return {
+      jawSpanSourcePx: String(jawSpanSourcePx),
+      apparentFingerWidthMm: String(apparentFingerWidthMm),
+      visibleDiamondWidthMm: String(visibleDiamondWidthMm),
+      diamondToFingerCoveragePct:
+        diamondToFingerCoveragePct != null
+          ? String(diamondToFingerCoveragePct)
+          : undefined,
+    };
+  })();
+  const scaleProbe =
+    calibrated &&
+    sourceSize &&
+    framing &&
+    sourcePpm != null &&
+    pixelsPerMm != null &&
+    primarySlot
+      ? {
+          sourceW: String(sourceSize.width),
+          sourceH: String(sourceSize.height),
+          sourcePpm: String(sourcePpm),
+          displayPpm: String(pixelsPerMm),
+          cropWidthU: String(framing.cropWidthU),
+          centerU: String(framing.centerU),
+          centerV: String(framing.centerV),
+          stoneWMm: String(renderStoneWidthMm(primarySlot.shape, primarySlot.carat)),
+          stoneHMm: String(
+            renderStoneHeightMm(primarySlot.shape, primarySlot.carat),
+          ),
+          ...fingerCoverageProbe,
+        }
+      : null;
+
   const showOverlays =
     (!isCardReference || calibrated) &&
     (useFramedRender
@@ -572,9 +702,8 @@ export function OverlayStage({
     markerContent &&
     layout &&
     cardCalibration &&
-    (guidedStep === "mark-card" ||
-      guidedStep === "confirm-card" ||
-      guidedStep === "photo-ready") &&
+    rawGuidedStep != null &&
+    isMarkCardStep(rawGuidedStep) &&
     cardCalibration.cardA &&
     cardCalibration.cardB;
 
@@ -583,7 +712,8 @@ export function OverlayStage({
     markerContent &&
     layout &&
     cardCalibration &&
-    (guidedStep === "mark-finger" || guidedStep === "frame") &&
+    rawGuidedStep != null &&
+    (isMarkSeatStep(rawGuidedStep) || guidedStep === "frame") &&
     cardCalibration.fingerL &&
     cardCalibration.fingerR;
 
@@ -762,26 +892,116 @@ export function OverlayStage({
     onFramingChange?.(suggested.framing, suggested.cardStillInFrame);
   }, [sourceSize, cardCalibration, viewerAspect, onFramingChange]);
 
+  /** Pre-photo entry / QR — separate from the calibrated viewer chrome. */
+  if (!handImageUrl) {
+    const showQr =
+      Boolean(phoneCapture) &&
+      (phoneCapture!.phase === "creating" ||
+        phoneCapture!.phase === "active" ||
+        Boolean(phoneCapture!.error) ||
+        phoneCapture!.expired);
+
+    return (
+      <div className="dss-entry-surface" data-dss-entry-panel>
+        <div
+          className={`dss-entry-card${showQr ? " dss-entry-card--qr" : ""}`}
+          role="status"
+          aria-label={showQr ? "Phone capture session" : "Scaled Preview entry"}
+        >
+          {showQr ? (
+            phoneCapture!.phase === "creating" ? (
+              <p className="dss-qr-loading">Preparing QR capture session…</p>
+            ) : phoneCapture!.captureUrl && phoneCapture!.expiresAt ? (
+              <QrCapturePanel
+                captureUrl={phoneCapture!.captureUrl}
+                captureMode={SCALED_CAPTURE_MODE}
+                expiresAt={phoneCapture!.expiresAt}
+                waiting={phoneCapture!.waiting}
+                expired={phoneCapture!.expired}
+                error={phoneCapture!.error}
+                onCancel={phoneCapture!.cancel}
+                variant="stage"
+              />
+            ) : (
+              <div className="dss-qr-panel dss-qr-panel--stage">
+                <p className="dss-qr-message dss-qr-message--warn">
+                  {phoneCapture!.error ?? "Unable to start phone capture."}
+                </p>
+                <button
+                  type="button"
+                  className="dss-qr-cancel"
+                  onClick={phoneCapture!.cancel}
+                >
+                  Cancel phone capture
+                </button>
+              </div>
+            )
+          ) : (
+            <>
+              <p className="dss-stage-empty-kicker">Hand preview</p>
+              <p className="dss-stage-empty-title">
+                Add your hand-and-card photo
+              </p>
+              <p className="dss-stage-empty-copy">
+                Use your phone to photograph your hand with a standard-size card
+                beside it. We’ll use the card to establish visual scale, then
+                frame it out of the final preview.
+              </p>
+              {phoneCapture ? (
+                <div className="dss-stage-empty-actions">
+                  <button
+                    type="button"
+                    className="dss-stage-empty-btn"
+                    onClick={phoneCapture.start}
+                  >
+                    Capture with phone
+                  </button>
+                </div>
+              ) : null}
+              <p className="dss-stage-empty-privacy">
+                Use a blank gift card, hotel key, or standard-size loyalty card.
+                Avoid cards showing personal or financial information.
+              </p>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <>
       <div className="dss-stage-canvas">
         <div
           ref={stageRef}
-          className={`dss-viewer${handImageUrl ? "" : " is-empty"}${
+          className={`dss-viewer${
             canPlace ? " is-placeable" : ""
           }${awaitingGuided ? " is-awaiting-calibration" : ""}${
             isFramingStep ? " is-framing" : ""
           }${panning ? " is-panning" : ""}${
             useFramedRender ? " is-framed-crop" : ""
           }`}
+          data-qa-source-w={scaleProbe?.sourceW}
+          data-qa-source-h={scaleProbe?.sourceH}
+          data-qa-source-ppm={scaleProbe?.sourcePpm}
+          data-qa-display-ppm={scaleProbe?.displayPpm}
+          data-qa-crop-width-u={scaleProbe?.cropWidthU}
+          data-qa-center-u={scaleProbe?.centerU}
+          data-qa-center-v={scaleProbe?.centerV}
+          data-qa-stone-w-mm={scaleProbe?.stoneWMm}
+          data-qa-stone-h-mm={scaleProbe?.stoneHMm}
+          data-qa-jaw-span-source-px={scaleProbe?.jawSpanSourcePx}
+          data-qa-apparent-finger-width-mm={scaleProbe?.apparentFingerWidthMm}
+          data-qa-visible-diamond-width-mm={scaleProbe?.visibleDiamondWidthMm}
+          data-qa-diamond-to-finger-coverage-pct={
+            scaleProbe?.diamondToFingerCoveragePct
+          }
           aria-label={
-            handImageUrl
-              ? isFramingStep
-                ? "Frame your hand photo"
-                : awaitingGuided
-                  ? "Hand photo awaiting guided measurement"
-                  : "Hand photo with diamond overlay"
-              : "Preview stage"
+            isFramingStep
+              ? "Frame your hand photo"
+              : awaitingGuided
+                ? "Hand photo awaiting guided measurement"
+                : "Hand photo with diamond overlay"
           }
           onClick={(e) => {
             if (!canPlace) return;
@@ -801,132 +1021,94 @@ export function OverlayStage({
             beginPan(t.clientX, t.clientY);
           }}
         >
-          {handImageUrl ? (
-            <>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                ref={handImgRef}
-                src={handImageUrl}
-                alt="Your hand"
-                className={`dss-hand-img${
-                  framedPaint ? " dss-hand-img--framed" : ""
-                }`}
-                style={
-                  framedPaint
-                    ? {
-                        width: framedPaint.width,
-                        height: framedPaint.height,
-                        left: framedPaint.left,
-                        top: framedPaint.top,
-                      }
-                    : undefined
-                }
-                draggable={false}
-                onLoad={measureLayout}
+          <>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              ref={handImgRef}
+              src={handImageUrl}
+              alt="Your hand"
+              className={`dss-hand-img${
+                framedPaint ? " dss-hand-img--framed" : ""
+              }`}
+              style={
+                framedPaint
+                  ? {
+                      width: framedPaint.width,
+                      height: framedPaint.height,
+                      left: framedPaint.left,
+                      top: framedPaint.top,
+                    }
+                  : undefined
+              }
+              draggable={false}
+              onLoad={measureLayout}
+            />
+            {showCardMarkers && cardCalibration.cardA && cardCalibration.cardB ? (
+              <CalibrationMarkers
+                stageRef={stageRef}
+                content={markerContent!}
+                stageWidth={layout!.stageWidth}
+                stageHeight={layout!.stageHeight}
+                mode="card"
+                points={{
+                  a: cardCalibration.cardA,
+                  b: cardCalibration.cardB,
+                }}
+                onChange={({ a, b }) => {
+                  onCardCalibrationChange?.({
+                    ...cardCalibration,
+                    cardA: a,
+                    cardB: b,
+                  });
+                }}
               />
-              {showCardMarkers && cardCalibration.cardA && cardCalibration.cardB ? (
-                <CalibrationMarkers
-                  stageRef={stageRef}
-                  content={markerContent!}
-                  stageWidth={layout!.stageWidth}
-                  stageHeight={layout!.stageHeight}
-                  mode="card"
-                  points={{
-                    a: cardCalibration.cardA,
-                    b: cardCalibration.cardB,
-                  }}
-                  onChange={({ a, b }) => {
-                    onCardCalibrationChange?.({
-                      ...cardCalibration,
-                      cardA: a,
-                      cardB: b,
-                    });
-                  }}
-                />
-              ) : null}
-              {showFingerMarkers &&
-              cardCalibration.fingerL &&
-              cardCalibration.fingerR ? (
-                <CalibrationMarkers
-                  stageRef={stageRef}
-                  content={markerContent!}
-                  stageWidth={layout!.stageWidth}
-                  stageHeight={layout!.stageHeight}
-                  mode="finger"
-                  points={{
-                    a: cardCalibration.fingerL,
-                    b: cardCalibration.fingerR,
-                  }}
-                  onChange={({ a, b }) => {
-                    onCardCalibrationChange?.({
-                      ...cardCalibration,
-                      fingerL: a,
-                      fingerR: b,
-                    });
-                  }}
-                />
-              ) : null}
-              {showOverlays
-                ? overlays.map((entry) => (
-                    <OverlayLayer
-                      key={entry.id}
-                      slot={entry.slot}
-                      ringSize={ringSize}
-                      referenceWidthPx={referenceWidthPx}
-                      scaleSource={photoScaleSource}
-                      pixelsPerMm={pixelsPerMm}
-                      content={content}
-                      stageWidth={layout?.stageWidth ?? 0}
-                      stageHeight={layout?.stageHeight ?? 0}
-                      useContentPosition={calibrated && !useFramedRender}
-                      framing={framing}
-                      sourceSize={sourceSize}
-                      useFramedMapping={calibrated && useFramedRender}
-                      label={entry.label}
-                      onPositionChange={entry.onPositionChange}
-                      onContentPositionChange={entry.onContentPositionChange}
-                    />
-                  ))
-                : null}
-            </>
-          ) : (
-            <div className="dss-stage-empty" role="status">
-              <p className="dss-stage-empty-kicker">Hand preview</p>
-              <p className="dss-stage-empty-title">Add your hand photo</p>
-              <p className="dss-stage-empty-copy">
-                Begin from the Hand Photo panel on the left, or use a shortcut
-                below. Diamonds appear here as a visual preview once a photo is
-                ready.
-              </p>
-              {onUploadClick || onPhoneCaptureClick ? (
-                <div className="dss-stage-empty-actions">
-                  {onUploadClick ? (
-                    <button
-                      type="button"
-                      className="dss-stage-empty-btn"
-                      onClick={onUploadClick}
-                    >
-                      Upload from this device
-                    </button>
-                  ) : null}
-                  {onPhoneCaptureClick ? (
-                    <button
-                      type="button"
-                      className="dss-stage-empty-btn dss-stage-empty-btn--quiet"
-                      onClick={onPhoneCaptureClick}
-                    >
-                      Capture with phone
-                    </button>
-                  ) : null}
-                </div>
-              ) : null}
-              <ol className="dss-stage-empty-steps">
-                <li>Add a clear photo of your hand</li>
-                <li>Choose shape and carat</li>
-                <li>Place and drag the diamond on your finger</li>
-              </ol>
-            </div>
-          )}
+            ) : null}
+            {showFingerMarkers &&
+            cardCalibration.fingerL &&
+            cardCalibration.fingerR ? (
+              <CalibrationMarkers
+                stageRef={stageRef}
+                content={markerContent!}
+                stageWidth={layout!.stageWidth}
+                stageHeight={layout!.stageHeight}
+                mode="finger"
+                points={{
+                  a: cardCalibration.fingerL,
+                  b: cardCalibration.fingerR,
+                }}
+                onChange={({ a, b }) => {
+                  onCardCalibrationChange?.({
+                    ...cardCalibration,
+                    fingerL: a,
+                    fingerR: b,
+                  });
+                }}
+              />
+            ) : null}
+            {showOverlays
+              ? overlays.map((entry) => (
+                  <OverlayLayer
+                    key={entry.id}
+                    slot={entry.slot}
+                    ringSize={ringSize}
+                    referenceWidthPx={referenceWidthPx}
+                    scaleSource={photoScaleSource}
+                    pixelsPerMm={pixelsPerMm}
+                    orientation={stoneOrientation}
+                    content={content}
+                    stageWidth={layout?.stageWidth ?? 0}
+                    stageHeight={layout?.stageHeight ?? 0}
+                    useContentPosition={calibrated && !useFramedRender}
+                    framing={framing}
+                    sourceSize={sourceSize}
+                    useFramedMapping={calibrated && useFramedRender}
+                    label={entry.label}
+                    onPositionChange={entry.onPositionChange}
+                    onContentPositionChange={entry.onContentPositionChange}
+                  />
+                ))
+              : null}
+          </>
         </div>
       </div>
       {isFramingStep ? (
@@ -942,8 +1124,8 @@ export function OverlayStage({
         </p>
       )}
       {awaitingGuided && cardCalibration ? (
-        <div className="dss-guide-actions" role="group" aria-label="Guided measurement">
-          {guidedStep === "mark-card" || guidedStep === "photo-ready" ? (
+        <div className="dss-guide-actions" role="group" aria-label="Scaled Preview steps">
+          {guidedStep === "mark-card" ? (
             <>
               <button
                 type="button"
@@ -951,7 +1133,7 @@ export function OverlayStage({
                 disabled={!cardEdgeOk}
                 onClick={onGuidedContinue}
               >
-                Continue
+                Set photo scale
               </button>
               <button
                 type="button"
@@ -967,28 +1149,11 @@ export function OverlayStage({
               ) : null}
             </>
           ) : null}
-          {guidedStep === "confirm-card" ? (
-            <>
-              <button
-                type="button"
-                className="dss-guide-btn"
-                onClick={onGuidedContinue}
-              >
-                Continue
-              </button>
-              <button
-                type="button"
-                className="dss-guide-btn dss-guide-btn--quiet"
-                onClick={onGuidedAdjust}
-              >
-                Adjust marks
-              </button>
-            </>
-          ) : null}
-          {guidedStep === "mark-finger" ? (
+          {guidedStep === "mark-seat" ? (
             <>
               <p className="dss-guide-support">
-                This places the preview. It does not estimate your ring size.
+                This sets the preview position. Scale comes from the card you
+                marked.
               </p>
               <button
                 type="button"
@@ -996,7 +1161,7 @@ export function OverlayStage({
                 disabled={!fingerSpanOk}
                 onClick={onGuidedContinue}
               >
-                Continue to framing
+                Frame my hand
               </button>
               <button
                 type="button"
@@ -1069,9 +1234,23 @@ export function OverlayStage({
           <button
             type="button"
             className="dss-guide-btn dss-guide-btn--quiet"
+            onClick={onReframe}
+          >
+            Reframe
+          </button>
+          <button
+            type="button"
+            className="dss-guide-btn dss-guide-btn--quiet"
+            onClick={onGuidedAdjust}
+          >
+            Adjust ring position
+          </button>
+          <button
+            type="button"
+            className="dss-guide-btn dss-guide-btn--quiet"
             onClick={onGuidedReset}
           >
-            Recalibrate photo scale
+            Adjust card marks
           </button>
         </div>
       ) : null}

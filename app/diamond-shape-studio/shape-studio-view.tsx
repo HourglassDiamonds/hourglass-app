@@ -6,19 +6,22 @@ import {
   defaultCardEndpoints,
   defaultFingerEndpoints,
   fingerMidpoint,
+  migrateLegacyCalibration,
 } from "@/lib/shape-studio/card-calibration";
 import { SHAPE_LABELS } from "@/lib/shape-studio/constants";
+import { formatDimensionReadout } from "@/lib/shape-studio/dimensions";
 import { formatCaratLabel } from "@/lib/shape-studio/overlay-scale";
+import type { StoneOrientation } from "@/lib/shape-studio/orientation";
 import type {
   CardCalibrationState,
-  CompareSlotId,
   ContentPoint,
   DiamondSlotState,
   OverlayPosition,
   PhotoScaleSource,
-  StudioMode,
 } from "@/lib/shape-studio/types";
-import { CaratControl, RingSizeControl } from "./components/calibration-controls";
+import { normalizeGuidedStep } from "@/lib/shape-studio/types";
+import { usePhoneCaptureSession } from "@/lib/shape-studio/use-phone-capture-session";
+import { CaratControl } from "./components/calibration-controls";
 import DiamondStudioToolHeader from "../diamond-studio/components/DiamondStudioToolHeader";
 import {
   HandPhotoPanel,
@@ -31,9 +34,6 @@ import { ShapeStudioStyles } from "./components/shape-studio-styles";
 
 /** Centered start — capture orientation is not enforced. */
 const DEFAULT_POSITION: OverlayPosition = { xPct: 50, yPct: 46 };
-/** Compare offsets keep A/B readable; not a ring-finger assumption. */
-const COMPARE_A_POSITION: OverlayPosition = { xPct: 42, yPct: 46 };
-const COMPARE_B_POSITION: OverlayPosition = { xPct: 58, yPct: 46 };
 
 function createDefaultSlot(
   shape: DiamondSlotState["shape"] = "round",
@@ -50,22 +50,20 @@ function clearContentPositions(
   return { shape: slot.shape, carat: slot.carat, position };
 }
 
-/** One source-specific trust line near the viewer. */
-function trustLine(
-  source: PhotoScaleSource | null,
-  calibrated: boolean,
-): string | null {
-  if (!source) return null;
-  if (source === "card-reference") {
-    if (calibrated) {
-      return "Scale comes from the card edge you marked. Final ring size should still be confirmed by a jeweler.";
-    }
-    return "Use a standard-size card to scale the diamond preview to your photo. Final ring size should still be confirmed by a jeweler.";
+const TRUST_CALIBRATED =
+  "Card-calibrated from your photograph. Final ring sizing should be confirmed by a jeweler.";
+
+function calibratedPreviewSentence(
+  shape: DiamondSlotState["shape"],
+  carat: number,
+): string {
+  const shapeLabel = SHAPE_LABELS[shape].toLowerCase();
+  const caratLabel = formatCaratLabel(carat);
+  const dims = formatDimensionReadout(shape, carat);
+  if (shape === "round") {
+    return `A ${caratLabel}-carat ${shapeLabel} diamond, shown at approximately ${dims.widthMm.toFixed(1)} mm on your hand.`;
   }
-  if (source === "known-size") {
-    return "Your selected ring size helps guide this visual preview. Final sizing should be professionally confirmed.";
-  }
-  return "This is a visual preview, not a final sizing measurement.";
+  return `A ${caratLabel}-carat ${shapeLabel} diamond, shown at approximately ${dims.widthMm.toFixed(1)} × ${dims.lengthMm.toFixed(1)} mm on your hand.`;
 }
 
 export function ShapeStudioView() {
@@ -73,21 +71,19 @@ export function ShapeStudioView() {
   const [handImageUrl, setHandImageUrl] = useState<string | null>(null);
   const [photoScaleSource, setPhotoScaleSource] =
     useState<PhotoScaleSource | null>(null);
-  const [ringSize, setRingSize] = useState(6.0);
-  const [mode, setMode] = useState<StudioMode>("single");
-  const [activeCompareSlot, setActiveCompareSlot] =
-    useState<CompareSlotId>("a");
+  /**
+   * Public Scaled Preview is always single-mode.
+   * Compare slot state remains dormant in the codebase but is never exposed.
+   */
+  const mode = "single" as const;
   const [cardCalibration, setCardCalibration] =
     useState<CardCalibrationState | null>(null);
+  /** Retained across shape switches; applied only to orientable shapes. */
+  const [stoneOrientation, setStoneOrientation] =
+    useState<StoneOrientation>("ns");
 
   const [singleSlot, setSingleSlot] = useState<DiamondSlotState>(() =>
     createDefaultSlot(),
-  );
-  const [compareA, setCompareA] = useState<DiamondSlotState>(() =>
-    createDefaultSlot("round", 2.0, COMPARE_A_POSITION),
-  );
-  const [compareB, setCompareB] = useState<DiamondSlotState>(() =>
-    createDefaultSlot("oval", 2.0, COMPARE_B_POSITION),
   );
 
   const calibrated =
@@ -96,43 +92,28 @@ export function ShapeStudioView() {
   const awaitingCardCalibration =
     photoScaleSource === "card-reference" && !calibrated;
 
-  const activeSlot =
-    mode === "single"
-      ? singleSlot
-      : activeCompareSlot === "a"
-        ? compareA
-        : compareB;
+  const guidedStep = cardCalibration
+    ? normalizeGuidedStep(cardCalibration.step)
+    : null;
 
-  const setActiveShape = useCallback(
-    (shape: DiamondSlotState["shape"]) => {
-      if (mode === "single") {
-        setSingleSlot((prev) => ({ ...prev, shape }));
-      } else if (activeCompareSlot === "a") {
-        setCompareA((prev) => ({ ...prev, shape }));
-      } else {
-        setCompareB((prev) => ({ ...prev, shape }));
-      }
-    },
-    [mode, activeCompareSlot],
-  );
+  const setCalibration = useCallback((next: CardCalibrationState | null) => {
+    if (!next) {
+      setCardCalibration(null);
+      return;
+    }
+    setCardCalibration(migrateLegacyCalibration(next));
+  }, []);
 
-  const setActiveCarat = useCallback(
-    (carat: number) => {
-      if (mode === "single") {
-        setSingleSlot((prev) => ({ ...prev, carat }));
-      } else if (activeCompareSlot === "a") {
-        setCompareA((prev) => ({ ...prev, carat }));
-      } else {
-        setCompareB((prev) => ({ ...prev, carat }));
-      }
-    },
-    [mode, activeCompareSlot],
-  );
+  const setActiveShape = useCallback((shape: DiamondSlotState["shape"]) => {
+    setSingleSlot((prev) => ({ ...prev, shape }));
+  }, []);
+
+  const setActiveCarat = useCallback((carat: number) => {
+    setSingleSlot((prev) => ({ ...prev, carat }));
+  }, []);
 
   const resetSlotsForNewPhoto = useCallback(() => {
     setSingleSlot((prev) => clearContentPositions(prev, DEFAULT_POSITION));
-    setCompareA((prev) => clearContentPositions(prev, COMPARE_A_POSITION));
-    setCompareB((prev) => clearContentPositions(prev, COMPARE_B_POSITION));
   }, []);
 
   const beginCardCalibration = useCallback(() => {
@@ -146,20 +127,18 @@ export function ShapeStudioView() {
   }, []);
 
   const handleImageSelected = useCallback(
-    (url: string, source: PhotoScaleSource) => {
-      setPhotoScaleSource(source);
+    (url: string, _source: PhotoScaleSource) => {
+      /** Public journey always enters card-reference Scaled Preview. */
+      void _source;
+      setPhotoScaleSource("card-reference");
       resetSlotsForNewPhoto();
-      if (source === "card-reference") {
-        const { cardA, cardB } = defaultCardEndpoints();
-        setCardCalibration({
-          ...createInitialCardCalibration(),
-          step: "mark-card",
-          cardA,
-          cardB,
-        });
-      } else {
-        setCardCalibration(null);
-      }
+      const { cardA, cardB } = defaultCardEndpoints();
+      setCardCalibration({
+        ...createInitialCardCalibration(),
+        step: "mark-card",
+        cardA,
+        cardB,
+      });
       setHandImageUrl((prev) => {
         if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev);
         return url;
@@ -168,37 +147,39 @@ export function ShapeStudioView() {
     [resetSlotsForNewPhoto],
   );
 
+  const phoneCapture = usePhoneCaptureSession(
+    useCallback(
+      (url: string) => {
+        handleImageSelected(url, "card-reference");
+      },
+      [handleImageSelected],
+    ),
+  );
+
+  const handleStartOver = useCallback(() => {
+    phoneCapture.cancel();
+    setHandImageUrl((prev) => {
+      if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev);
+      return null;
+    });
+    setPhotoScaleSource(null);
+    setCardCalibration(null);
+    setSingleSlot((prev) => clearContentPositions(prev, DEFAULT_POSITION));
+  }, [phoneCapture]);
+
   useEffect(() => {
     return () => {
       if (handImageUrl?.startsWith("blob:")) URL.revokeObjectURL(handImageUrl);
     };
   }, [handImageUrl]);
 
-  const applyFingerSeatPositions = useCallback(
+  const applySeatPositions = useCallback(
     (left: ContentPoint, right: ContentPoint) => {
       const mid = fingerMidpoint(left, right);
-      /** Restrained A/B separation in content space around the finger seat. */
-      const compareOffsetU = 0.035;
       setSingleSlot((prev) => ({
         ...prev,
         contentPosition: mid,
         position: DEFAULT_POSITION,
-      }));
-      setCompareA((prev) => ({
-        ...prev,
-        contentPosition: {
-          u: Math.max(0, Math.min(1, mid.u - compareOffsetU)),
-          v: mid.v,
-        },
-        position: COMPARE_A_POSITION,
-      }));
-      setCompareB((prev) => ({
-        ...prev,
-        contentPosition: {
-          u: Math.max(0, Math.min(1, mid.u + compareOffsetU)),
-          v: mid.v,
-        },
-        position: COMPARE_B_POSITION,
       }));
     },
     [],
@@ -206,19 +187,25 @@ export function ShapeStudioView() {
 
   const handleGuidedContinue = useCallback(() => {
     if (!cardCalibration) return;
-    const prev = cardCalibration;
-    if (prev.step === "mark-card" || prev.step === "photo-ready") {
-      setCardCalibration({ ...prev, step: "confirm-card" });
-      return;
-    }
-    if (prev.step === "confirm-card") {
+    const prev = migrateLegacyCalibration(cardCalibration);
+    const step = normalizeGuidedStep(prev.step);
+
+    if (step === "mark-card") {
       const { fingerL, fingerR } = defaultFingerEndpoints();
-      setCardCalibration({ ...prev, step: "mark-finger", fingerL, fingerR });
+      setCalibration({
+        ...prev,
+        step: "mark-seat",
+        fingerL: prev.fingerL ?? fingerL,
+        fingerR: prev.fingerR ?? fingerR,
+        framing: null,
+        cardStillInFrame: undefined,
+      });
       return;
     }
-    if (prev.step === "mark-finger" && prev.fingerL && prev.fingerR) {
-      applyFingerSeatPositions(prev.fingerL, prev.fingerR);
-      setCardCalibration({
+
+    if (step === "mark-seat" && prev.fingerL && prev.fingerR) {
+      applySeatPositions(prev.fingerL, prev.fingerR);
+      setCalibration({
         ...prev,
         step: "frame",
         framing: null,
@@ -226,29 +213,34 @@ export function ShapeStudioView() {
       });
       return;
     }
-    if (prev.step === "frame") {
-      setCardCalibration({ ...prev, step: "calibrated-preview" });
+
+    if (step === "frame") {
+      setCalibration({ ...prev, step: "calibrated-preview" });
     }
-  }, [cardCalibration, applyFingerSeatPositions]);
+  }, [cardCalibration, applySeatPositions, setCalibration]);
 
   const handleGuidedAdjust = useCallback(() => {
     setCardCalibration((prev) => {
       if (!prev) return prev;
-      if (prev.step === "confirm-card") {
-        return { ...prev, step: "mark-card" };
-      }
-      if (prev.step === "mark-finger") {
-        return { ...prev, step: "confirm-card" };
-      }
-      if (prev.step === "frame") {
-        return {
-          ...prev,
-          step: "mark-finger",
+      const migrated = migrateLegacyCalibration(prev);
+      const step = normalizeGuidedStep(migrated.step);
+      if (step === "mark-seat") {
+        return migrateLegacyCalibration({
+          ...migrated,
+          step: "mark-card",
           framing: null,
           cardStillInFrame: undefined,
-        };
+        });
       }
-      return prev;
+      if (step === "frame" || step === "calibrated-preview") {
+        return migrateLegacyCalibration({
+          ...migrated,
+          step: "mark-seat",
+          framing: null,
+          cardStillInFrame: undefined,
+        });
+      }
+      return migrated;
     });
   }, []);
 
@@ -257,6 +249,18 @@ export function ShapeStudioView() {
     resetSlotsForNewPhoto();
     beginCardCalibration();
   }, [photoScaleSource, resetSlotsForNewPhoto, beginCardCalibration]);
+
+  const handleReframe = useCallback(() => {
+    setCardCalibration((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        step: "frame",
+        framing: prev.framing,
+        cardStillInFrame: undefined,
+      };
+    });
+  }, []);
 
   const handleFramingChange = useCallback(
     (
@@ -277,54 +281,32 @@ export function ShapeStudioView() {
 
   const overlayEntries = useMemo(() => {
     if (awaitingCardCalibration) return [];
-    if (mode === "single") {
-      return [
-        {
-          id: "single",
-          slot: singleSlot,
-          onPositionChange: (position: OverlayPosition) =>
-            setSingleSlot((prev) => ({ ...prev, position })),
-          onContentPositionChange: (contentPosition: ContentPoint) =>
-            setSingleSlot((prev) => ({ ...prev, contentPosition })),
-        },
-      ];
-    }
     return [
       {
-        id: "compare-a",
-        slot: compareA,
-        label: "A",
+        id: "single",
+        slot: singleSlot,
         onPositionChange: (position: OverlayPosition) =>
-          setCompareA((prev) => ({ ...prev, position })),
+          setSingleSlot((prev) => ({ ...prev, position })),
         onContentPositionChange: (contentPosition: ContentPoint) =>
-          setCompareA((prev) => ({ ...prev, contentPosition })),
-      },
-      {
-        id: "compare-b",
-        slot: compareB,
-        label: "B",
-        onPositionChange: (position: OverlayPosition) =>
-          setCompareB((prev) => ({ ...prev, position })),
-        onContentPositionChange: (contentPosition: ContentPoint) =>
-          setCompareB((prev) => ({ ...prev, contentPosition })),
+          setSingleSlot((prev) => ({ ...prev, contentPosition })),
       },
     ];
-  }, [awaitingCardCalibration, mode, singleSlot, compareA, compareB]);
+  }, [awaitingCardCalibration, singleSlot]);
 
-  const shapeLabel = SHAPE_LABELS[activeSlot.shape].toLowerCase();
-  const caratLabel = formatCaratLabel(activeSlot.carat);
   const liveSentence = !handImageUrl
-    ? "Upload a hand photo to compare shapes and carat sizes as a visual preview."
+    ? null
     : awaitingCardCalibration
-      ? cardCalibration?.step === "frame"
+      ? guidedStep === "frame"
         ? "Position your hand within the frame. Keep the card out of view."
-        : cardCalibration?.step === "mark-finger"
-          ? "Align the precision lines with the two sides of the finger where the ring will sit."
-          : cardCalibration?.step === "confirm-card"
-            ? "Confirm the card scale for this photo."
-            : "Align the precision lines with the two ends of the card’s long edge."
-      : `A ${caratLabel}-carat ${shapeLabel} diamond, shown as a visual preview on your hand.`;
-  const trustCopy = trustLine(photoScaleSource, calibrated);
+        : guidedStep === "mark-seat"
+          ? "Place the guide where the ring will sit."
+          : "Align the precision lines with the two ends of the card’s long edge."
+      : calibratedPreviewSentence(singleSlot.shape, singleSlot.carat);
+  const trustCopy = calibrated ? TRUST_CALIBRATED : null;
+
+  const showCarat =
+    Boolean(handImageUrl) && (calibrated || awaitingCardCalibration);
+  const showRail = Boolean(handImageUrl);
 
   return (
     <div
@@ -332,107 +314,71 @@ export function ShapeStudioView() {
       data-theme="light"
       data-shape-studio-instrument
       data-photo-scale-source={photoScaleSource ?? undefined}
-      data-guided-step={cardCalibration?.step ?? undefined}
+      data-guided-step={guidedStep ?? undefined}
+      data-studio-mode="single"
+      data-entry-state={showRail ? "photo" : "capture"}
+      data-stone-orientation={stoneOrientation}
     >
       <ShapeStudioStyles />
       <div className="dss-app">
-        <div className="dss-main">
-          <aside className="dss-control-rail" aria-label="Shape Studio controls">
-            <HandPhotoPanel
-              ref={handPhotoRef}
-              onImageSelected={handleImageSelected}
-            />
+        <div className={`dss-main${showRail ? "" : " dss-main--entry"}`}>
+          {showRail ? (
+            <aside
+              className="dss-control-rail"
+              aria-label="Scaled Preview controls"
+            >
+              <HandPhotoPanel
+                ref={handPhotoRef}
+                onStartOver={handleStartOver}
+                onImageSelected={handleImageSelected}
+              />
 
-            <section className="dss-card" aria-label="Comparison mode">
-              <div className="dss-card-head">Mode</div>
-              <div className="dss-mode-row">
-                <button
-                  type="button"
-                  className={`dss-mode-btn${mode === "single" ? " is-active" : ""}`}
-                  onClick={() => setMode("single")}
-                >
-                  Single
-                </button>
-                <button
-                  type="button"
-                  className={`dss-mode-btn${mode === "compare" ? " is-active" : ""}`}
-                  onClick={() => setMode("compare")}
-                >
-                  Compare
-                </button>
-              </div>
-              {mode === "compare" ? (
-                <div className="dss-slot-row">
-                  <button
-                    type="button"
-                    className={`dss-slot-btn${activeCompareSlot === "a" ? " is-active" : ""}`}
-                    onClick={() => setActiveCompareSlot("a")}
-                  >
-                    Diamond A
-                  </button>
-                  <button
-                    type="button"
-                    className={`dss-slot-btn${activeCompareSlot === "b" ? " is-active" : ""}`}
-                    onClick={() => setActiveCompareSlot("b")}
-                  >
-                    Diamond B
-                  </button>
-                </div>
+              {showCarat ? (
+                <CaratControl
+                  carat={singleSlot.carat}
+                  shape={singleSlot.shape}
+                  onChange={setActiveCarat}
+                  orientation={stoneOrientation}
+                  onOrientationChange={setStoneOrientation}
+                />
               ) : null}
-            </section>
-
-            <RingSizeControl
-              ringSize={ringSize}
-              onChange={setRingSize}
-              photoScaleSource={photoScaleSource}
-              cardCalibrated={calibrated}
-            />
-            <CaratControl
-              carat={activeSlot.carat}
-              shape={activeSlot.shape}
-              onChange={setActiveCarat}
-            />
-          </aside>
+            </aside>
+          ) : null}
 
           <div className="dss-stage-stack">
             <div className="dss-stage-preview" aria-label="Hand photo preview">
               <DiamondStudioToolHeader
-                title="Shape Comparison"
-                subhead="Compare diamond shapes on the hand before choosing a setting."
+                title="Scaled Preview"
                 className="dss-tool-header"
               />
-              {handImageUrl ? (
-                <>
-                  <p className="dss-sentence">{liveSentence}</p>
-                  {trustCopy ? (
-                    <p className="dss-trust-note">{trustCopy}</p>
-                  ) : null}
-                </>
+              {liveSentence ? (
+                <p className="dss-sentence">{liveSentence}</p>
               ) : null}
+              {trustCopy ? <p className="dss-trust-note">{trustCopy}</p> : null}
               <OverlayStage
                 handImageUrl={handImageUrl}
-                ringSize={ringSize}
                 photoScaleSource={photoScaleSource}
                 studioMode={mode}
                 cardCalibration={
                   photoScaleSource === "card-reference" ? cardCalibration : null
                 }
-                onCardCalibrationChange={setCardCalibration}
+                onCardCalibrationChange={setCalibration}
                 onGuidedContinue={handleGuidedContinue}
                 onGuidedAdjust={handleGuidedAdjust}
                 onGuidedReset={handleGuidedReset}
+                onReframe={handleReframe}
                 onFramingChange={handleFramingChange}
+                stoneOrientation={stoneOrientation}
                 overlays={overlayEntries}
-                onUploadClick={() => handPhotoRef.current?.openDevicePicker()}
-                onPhoneCaptureClick={() =>
-                  handPhotoRef.current?.revealPhonePaths()
-                }
+                phoneCapture={showRail ? null : phoneCapture}
               />
             </div>
-            <ShapeSelector
-              selected={activeSlot.shape}
-              onSelect={setActiveShape}
-            />
+            {handImageUrl ? (
+              <ShapeSelector
+                selected={singleSlot.shape}
+                onSelect={setActiveShape}
+              />
+            ) : null}
           </div>
         </div>
       </div>

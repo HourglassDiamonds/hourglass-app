@@ -22,6 +22,14 @@ import {
 import DiamondCadScintillation from "./components/DiamondCadScintillation";
 import { CAD_ADJUST_HOLD_MS } from "./components/diamond-cad-light";
 import type { ShapeId } from "./components/diamond-cad-types";
+import {
+  EMERALD_LENGTH_RATIO,
+  MARQUISE_LENGTH_RATIO,
+  PEAR_LENGTH_RATIO,
+  RADIANT_LENGTH_RATIO,
+  faceAxesForSizing,
+  getRoundDiamondMm,
+} from "@/lib/diamond-tech-suite/face-dimensions";
 
 export type { ShapeId };
 
@@ -52,48 +60,8 @@ function indexToBandWidth(index: number): BandWidth {
   return BAND_WIDTH_VALUES[clamped]!;
 }
 
-/** Round brilliant face-up diameter (mm) — industry-style anchors, linear interpolation */
-const ROUND_BRILLIANT_MM_BY_CARAT: Record<number, number> = {
-  0.5: 5.1,
-  1.0: 6.5,
-  1.5: 7.3,
-  2.0: 8.1,
-  2.5: 8.8,
-  3.0: 9.3,
-  4.0: 10.2,
-  5.0: 11.0,
-  6.0: 11.7,
-  7.0: 12.3,
-  8.0: 12.9,
-  9.0: 13.4,
-  10.0: 14.0,
-};
-
-function getRoundDiamondMm(carat: number): number {
-  const table = ROUND_BRILLIANT_MM_BY_CARAT;
-  const keys = Object.keys(table)
-    .map(Number)
-    .sort((a, b) => a - b);
-  const loK = keys[0]!;
-  const hiK = keys[keys.length - 1]!;
-  if (carat <= loK) return table[loK]!;
-  if (carat >= hiK) {
-    const prevK = keys[keys.length - 2]!;
-    const slope = (table[hiK]! - table[prevK]!) / (hiK - prevK);
-    return table[hiK]! + slope * (carat - hiK);
-  }
-  for (let i = 0; i < keys.length - 1; i++) {
-    const lo = keys[i]!;
-    const hi = keys[i + 1]!;
-    if (carat >= lo && carat <= hi) {
-      const t = (carat - lo) / (hi - lo);
-      const a = table[lo]!;
-      const b = table[hi]!;
-      return a + (b - a) * t;
-    }
-  }
-  return table[hiK]!;
-}
+/** Round brilliant face-up diameter — canonical shared module. */
+// getRoundDiamondMm imported from @/lib/diamond-tech-suite/face-dimensions
 
 const RING_SIZE_TO_MM: Record<number, number> = {
   4.0: 14.86,
@@ -117,110 +85,13 @@ const RING_SIZE_TO_MM: Record<number, number> = {
   13.0: 22.2,
 };
 
-const SHAPE_ANCHORS: Record<
-  ShapeId,
-  Record<number, [number, number]>
-> = {
-  round: {
-    0.5: [5.15, 5.15],
-    0.75: [5.9, 5.9],
-    1.0: [6.5, 6.5],
-    1.5: [7.4, 7.4],
-    2.0: [8.1, 8.1],
-    2.5: [8.7, 8.7],
-    3.0: [9.3, 9.3],
-    4.0: [10.2, 10.2],
-    5.0: [11.0, 11.0],
-  },
-  oval: {
-    0.5: [4.2, 6.0],
-    0.75: [4.8, 6.9],
-    1.0: [5.3, 7.7],
-    1.5: [6.1, 8.8],
-    2.0: [6.8, 9.8],
-    2.5: [7.3, 10.5],
-    3.0: [7.8, 11.3],
-    4.0: [8.6, 12.5],
-    5.0: [9.3, 13.5],
-  },
-  cushion: {
-    0.5: [4.8, 4.95],
-    0.75: [5.5, 5.7],
-    1.0: [6.0, 6.2],
-    1.5: [6.8, 7.0],
-    2.0: [7.5, 7.75],
-    2.5: [8.1, 8.4],
-    3.0: [8.6, 8.9],
-    4.0: [9.5, 9.8],
-    5.0: [10.2, 10.55],
-  },
-  princess: {
-    0.5: [4.5, 4.5],
-    0.75: [5.2, 5.2],
-    1.0: [5.5, 5.5],
-    1.5: [6.3, 6.3],
-    2.0: [7.0, 7.0],
-    2.5: [7.5, 7.5],
-    3.0: [8.0, 8.0],
-    4.0: [8.8, 8.8],
-    5.0: [9.5, 9.5],
-  },
-  marquise: {
-    0.5: [3.5, 7.0],
-    0.75: [4.0, 8.0],
-    1.0: [4.5, 9.0],
-    1.5: [5.2, 10.4],
-    2.0: [5.8, 11.6],
-    2.5: [6.3, 12.6],
-    3.0: [6.8, 13.6],
-    4.0: [7.5, 15.0],
-    5.0: [8.1, 16.2],
-  },
-  pear: {
-    0.5: [4.3, 6.5],
-    0.75: [4.9, 7.4],
-    1.0: [5.4, 8.1],
-    1.5: [6.2, 9.3],
-    2.0: [6.9, 10.4],
-    2.5: [7.4, 11.2],
-    3.0: [7.9, 11.9],
-    4.0: [8.7, 13.1],
-    5.0: [9.4, 14.1],
-  },
-  emerald: {
-    0.5: [4.1, 5.8],
-    0.75: [4.7, 6.6],
-    1.0: [5.2, 7.3],
-    1.5: [5.9, 8.3],
-    2.0: [6.5, 9.2],
-    2.5: [7.0, 9.8],
-    3.0: [7.4, 10.4],
-    4.0: [8.2, 11.5],
-    5.0: [8.8, 12.3],
-  },
-  radiant: {
-    0.5: [4.5, 5.4],
-    0.75: [5.1, 6.1],
-    1.0: [5.6, 6.7],
-    1.5: [6.4, 7.7],
-    2.0: [7.1, 8.5],
-    2.5: [7.6, 9.1],
-    3.0: [8.1, 9.7],
-    4.0: [8.9, 10.7],
-    5.0: [9.6, 11.5],
-  },
-  asscher: {
-    0.5: [4.4, 4.4],
-    0.75: [5.0, 5.0],
-    1.0: [5.5, 5.5],
-    1.5: [6.3, 6.3],
-    2.0: [7.0, 7.0],
-    2.5: [7.5, 7.5],
-    3.0: [8.0, 8.0],
-    4.0: [8.8, 8.8],
-    5.0: [9.5, 9.5],
-  },
-};
+/**
+ * @deprecated Removed from public calculation paths.
+ * Historical SHAPE_ANCHORS previously powered presence-only widths and
+ * diverged from getRoundDiamondMm (e.g. 10 ct round → 15.0 mm vs 14.0 mm).
+ * All readout / presence / render mm now use getRepresentativeFaceUpDimensions
+ * via faceAxesForSizing / getRoundDiamondMm in @/lib/diamond-tech-suite/face-dimensions.
+ */
 
 const SHAPE_LABELS: Record<ShapeId, string> = {
   round: "Round",
@@ -379,63 +250,12 @@ function ShapeStripThumb({ imageUrl }: { imageUrl: string }) {
 }
 
 /* -------------------------------------------------------------------------- */
-/* Math                                                                       */
+/* Math — canonical face-up mm from @/lib/diamond-tech-suite/face-dimensions  */
 /* -------------------------------------------------------------------------- */
 
-function interpAnchors(
-  anchors: Record<number, [number, number]>,
-  carat: number,
-): [number, number] {
-  const keys = Object.keys(anchors)
-    .map(Number)
-    .sort((a, b) => a - b);
-  const loK = keys[0]!;
-  const hiK = keys[keys.length - 1]!;
-  if (carat <= loK) return anchors[loK]!;
-  if (carat >= hiK) {
-    const prevK = keys[keys.length - 2]!;
-    const [wL, lL] = anchors[prevK]!;
-    const [wH, lH] = anchors[hiK]!;
-    const extra = carat - hiK;
-    const slopeW = (wH - wL) / (hiK - prevK);
-    const slopeL = (lH - lL) / (hiK - prevK);
-    return [wH + slopeW * extra, lH + slopeL * extra];
-  }
-  for (let i = 0; i < keys.length - 1; i++) {
-    const lo = keys[i]!;
-    const hi = keys[i + 1]!;
-    if (carat >= lo && carat <= hi) {
-      const t = (carat - lo) / (hi - lo);
-      const [wL, lL] = anchors[lo]!;
-      const [wH, lH] = anchors[hi]!;
-      return [wL + (wH - wL) * t, lL + (lH - lL) * t];
-    }
-  }
-  return anchors[hiK]!;
-}
-
-function shapeDimensionsMm(shape: ShapeId, carat: number): [number, number] {
-  return interpAnchors(SHAPE_ANCHORS[shape] ?? SHAPE_ANCHORS.round, carat);
-}
-
-function caratToWidthMm(shape: ShapeId, carat: number): number {
-  return shapeDimensionsMm(shape, carat)[0];
-}
-
-/** Face-up width × length (mm), shorter × longer; linear interpolation between carats. */
-const OVAL_FACE_MM_BY_CARAT: Record<number, [number, number]> = {
-  0.5: [4.0, 6.0],
-  1.0: [5.5, 8.0],
-  1.5: [6.5, 9.0],
-  2.0: [7.0, 10.0],
-  2.5: [7.5, 10.5],
-  3.0: [8.0, 11.5],
-  4.0: [9.0, 12.5],
-  5.0: [10.0, 14.0],
-};
-
+/** Face-up axes — canonical shared module (Size Studio + Shape Studio). */
 function ovalFaceDimensionsMm(carat: number): [width: number, length: number] {
-  return interpAnchors(OVAL_FACE_MM_BY_CARAT, carat);
+  return faceAxesForSizing("oval", carat);
 }
 
 function ovalLengthOverWidthAt1ct(): number {
@@ -443,93 +263,45 @@ function ovalLengthOverWidthAt1ct(): number {
   return l / Math.max(w, 1e-9);
 }
 
-/** Cushion MVP: square face-up, slightly under round-brilliant spread. */
-const CUSHION_SPREAD_FACTOR = 0.96;
-
 function cushionFaceDimensionsMm(carat: number): [number, number] {
-  const d = getRoundDiamondMm(carat) * CUSHION_SPREAD_FACTOR;
-  return [d, d];
+  return faceAxesForSizing("cushion", carat);
 }
 
-/** Princess MVP: square, round spread × factor. */
-const PRINCESS_SPREAD_FACTOR = 0.92;
 function princessFaceDimensionsMm(carat: number): [number, number] {
-  const d = getRoundDiamondMm(carat) * PRINCESS_SPREAD_FACTOR;
-  return [d, d];
+  return faceAxesForSizing("princess", carat);
 }
 
-const RADIANT_WIDTH_FACTOR = 0.95;
-const RADIANT_LENGTH_RATIO = 1.3;
 function radiantFaceDimensionsMm(carat: number): [number, number] {
-  const w = getRoundDiamondMm(carat) * RADIANT_WIDTH_FACTOR;
-  const l = w * RADIANT_LENGTH_RATIO;
-  return [w, l];
+  return faceAxesForSizing("radiant", carat);
 }
 
-const EMERALD_WIDTH_FACTOR = 0.93;
-const EMERALD_LENGTH_RATIO = 1.4;
 function emeraldFaceDimensionsMm(carat: number): [number, number] {
-  const w = getRoundDiamondMm(carat) * EMERALD_WIDTH_FACTOR;
-  const l = w * EMERALD_LENGTH_RATIO;
-  return [w, l];
+  return faceAxesForSizing("emerald", carat);
 }
 
-const MARQUISE_WIDTH_FACTOR = 0.75;
-const MARQUISE_LENGTH_RATIO = 2.0;
 function marquiseFaceDimensionsMm(carat: number): [number, number] {
-  const w = getRoundDiamondMm(carat) * MARQUISE_WIDTH_FACTOR;
-  const l = w * MARQUISE_LENGTH_RATIO;
-  return [w, l];
+  return faceAxesForSizing("marquise", carat);
 }
 
-const PEAR_WIDTH_FACTOR = 0.82;
-const PEAR_LENGTH_RATIO = 1.55;
 function pearFaceDimensionsMm(carat: number): [number, number] {
-  const w = getRoundDiamondMm(carat) * PEAR_WIDTH_FACTOR;
-  const l = w * PEAR_LENGTH_RATIO;
-  return [w, l];
+  return faceAxesForSizing("pear", carat);
 }
 
-/** Asscher MVP: square, round spread × factor. */
-const ASSCHER_SPREAD_FACTOR = 0.9;
 function asscherFaceDimensionsMm(carat: number): [number, number] {
-  const d = getRoundDiamondMm(carat) * ASSCHER_SPREAD_FACTOR;
-  return [d, d];
+  return faceAxesForSizing("asscher", carat);
 }
 
-function faceAxesForSizing(
-  shape: ShapeId,
-  carat: number,
-): [width: number, length: number] {
-  switch (shape) {
-    case "oval":
-      return ovalFaceDimensionsMm(carat);
-    case "cushion":
-      return cushionFaceDimensionsMm(carat);
-    case "princess":
-      return princessFaceDimensionsMm(carat);
-    case "radiant":
-      return radiantFaceDimensionsMm(carat);
-    case "emerald":
-      return emeraldFaceDimensionsMm(carat);
-    case "marquise":
-      return marquiseFaceDimensionsMm(carat);
-    case "pear":
-      return pearFaceDimensionsMm(carat);
-    case "asscher":
-      return asscherFaceDimensionsMm(carat);
-    default:
-      return shapeDimensionsMm(shape, carat);
-  }
-}
-
-/** Horizontal stone span (mm) for coverage % — round stays on anchor width; others use N/S vs E/W. */
+/**
+ * Horizontal stone span (mm) for Finger Presence %.
+ * Uses the same canonical face-up width as readout/render (not a separate curve).
+ * Denominator remains RING_SIZE_TO_MM (standardized inside diameter).
+ */
 function coverageStoneWidthMm(
   shape: ShapeId,
   carat: number,
   orientation: StoneOrientation,
 ): number {
-  if (shape === "round") return caratToWidthMm(shape, carat);
+  if (shape === "round") return getRoundDiamondMm(carat);
   const [w, l] = faceAxesForSizing(shape, carat);
   return orientation === "ns" ? Math.min(w, l) : Math.max(w, l);
 }
@@ -617,14 +389,6 @@ function formatCaratForHeadline(carat: number): string {
 function formatRingSizeForHeadline(ringSize: number): string {
   const stepped = Math.round(ringSize * 2) / 2;
   return Number.isInteger(stepped) ? String(stepped) : stepped.toFixed(1);
-}
-
-function articleForCarat(carat: number): "A" | "An" {
-  const n = Math.round(carat * 10) / 10;
-  if (n === 8 || n === 11 || n === 18) return "An";
-  if (n > 7 && n < 9) return "An";
-  if (n > 10 && n < 12) return "An";
-  return "A";
 }
 
 /* -------------------------------------------------------------------------- */

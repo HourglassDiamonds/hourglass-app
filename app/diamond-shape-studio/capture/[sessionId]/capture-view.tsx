@@ -29,49 +29,29 @@ function uploadErrorMessage(status: number, message?: string): string {
   return message ?? "Upload failed. Try again.";
 }
 
-function modeCopy(mode: CaptureMode) {
-  if (mode === "card-scale") {
-    return {
-      title: "Capture with a visual reference",
-      instruction:
-        "Place a blank gift card, hotel key, or standard-size loyalty card beside your hand. Avoid cards showing personal or financial information.",
-      note: "On desktop, mark the card’s long edge to scale the diamond preview. Final ring size should still be confirmed by a jeweler.",
-    };
-  }
+function modeCopy(_mode: CaptureMode) {
+  void _mode;
   return {
-    title: "Capture your hand photo",
-    instruction: "Place your ring finger clearly in frame.",
-    note: "Your selected ring size on desktop helps guide this visual preview.",
+    title: "Capture for Scaled Preview",
+    instruction:
+      "Place a blank gift card, hotel key, or standard-size loyalty card beside your hand on the same surface. Photograph from directly overhead. Keep the card’s full long edge visible. Avoid cards showing personal or financial information.",
+    note: "On desktop, mark the card’s long edge to set visual scale, then frame the card out of your final preview. Final ring sizing should be confirmed by a jeweler.",
   };
 }
 
-function CaptureGuide({ mode }: { mode: CaptureMode }) {
-  if (mode === "card-scale") {
-    return (
-      <div className="dss-capture-guide dss-capture-guide--card" aria-hidden>
-        <div className="dss-capture-guide-frame">
-          <span className="dss-capture-guide-card" />
-          <span className="dss-capture-guide-lane" />
-          <span className="dss-capture-guide-dot dss-capture-guide-dot--a" />
-          <span className="dss-capture-guide-dot dss-capture-guide-dot--b" />
-          <span className="dss-capture-guide-dot dss-capture-guide-dot--c" />
-          <span className="dss-capture-guide-ring" />
-        </div>
-        <p className="dss-capture-guide-caption">Hand + blank card in frame</p>
-      </div>
-    );
-  }
-
+function CaptureGuide({ mode: _mode }: { mode: CaptureMode }) {
+  void _mode;
   return (
-    <div className="dss-capture-guide dss-capture-guide--known" aria-hidden>
+    <div className="dss-capture-guide dss-capture-guide--card" aria-hidden>
       <div className="dss-capture-guide-frame">
+        <span className="dss-capture-guide-card" />
         <span className="dss-capture-guide-lane" />
         <span className="dss-capture-guide-dot dss-capture-guide-dot--a" />
         <span className="dss-capture-guide-dot dss-capture-guide-dot--b" />
         <span className="dss-capture-guide-dot dss-capture-guide-dot--c" />
         <span className="dss-capture-guide-ring" />
       </div>
-      <p className="dss-capture-guide-caption">Ring finger lane</p>
+      <p className="dss-capture-guide-caption">Hand + blank card in frame</p>
     </div>
   );
 }
@@ -222,7 +202,8 @@ export function CaptureView({ sessionId, captureMode }: CaptureViewProps) {
               Your hand photo has been sent to the desktop viewer.
             </p>
             <p className="dss-capture-hint">
-              Return to your desktop viewer to compare shapes and carat sizes.
+              Return to your desktop viewer to mark the card, frame your hand, and
+              preview the diamond.
             </p>
           </>
         ) : (

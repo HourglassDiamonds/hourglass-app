@@ -15,8 +15,12 @@ import {
   snapCarat,
   snapRingSize,
 } from "@/lib/shape-studio/constants";
-import { formatDimensionReadout } from "@/lib/shape-studio/dimensions";
+import { formatFaceUpSizeCopy } from "@/lib/shape-studio/dimensions";
 import type { PhotoScaleSource, ShapeId } from "@/lib/shape-studio/types";
+import {
+  shapeSupportsOrientation,
+  type StoneOrientation,
+} from "@/lib/shape-studio/orientation";
 import { useHorizontalTrack } from "./horizontal-track";
 
 type RingSizeControlProps = {
@@ -106,9 +110,17 @@ type CaratControlProps = {
   carat: number;
   shape: ShapeId;
   onChange: (value: number) => void;
+  orientation?: StoneOrientation;
+  onOrientationChange?: (value: StoneOrientation) => void;
 };
 
-export function CaratControl({ carat, shape, onChange }: CaratControlProps) {
+export function CaratControl({
+  carat,
+  shape,
+  onChange,
+  orientation = "ns",
+  onOrientationChange,
+}: CaratControlProps) {
   const trackRef = useRef<HTMLDivElement>(null);
   const applyPct = useCallback(
     (pct: number) => onChange(caratFromSliderPct(pct)),
@@ -116,8 +128,10 @@ export function CaratControl({ carat, shape, onChange }: CaratControlProps) {
   );
   useHorizontalTrack(trackRef, applyPct);
 
-  const dims = formatDimensionReadout(shape, carat);
+  const faceUpCopy = formatFaceUpSizeCopy(shape, carat);
   const fill = caratSliderPct(carat);
+  const showOrientation =
+    shapeSupportsOrientation(shape) && Boolean(onOrientationChange);
 
   return (
     <section className="dss-card" aria-label="Carat weight">
@@ -154,9 +168,34 @@ export function CaratControl({ carat, shape, onChange }: CaratControlProps) {
           <span>{CARAT_MAX.toFixed(2)} ct</span>
         </div>
       </div>
-      <p className="dss-dim-note">
-        Est. dimensions: <strong>{dims.label}</strong>
-      </p>
+      <p className="dss-dim-note">{faceUpCopy}</p>
+      {showOrientation ? (
+        <div className="dss-orientation" role="group" aria-label="Orientation">
+          <div className="dss-orientation-label">Orientation</div>
+          <div className="dss-orientation-row">
+            <button
+              type="button"
+              className={`dss-orientation-pill${
+                orientation === "ns" ? " is-selected" : ""
+              }`}
+              aria-pressed={orientation === "ns"}
+              onClick={() => onOrientationChange?.("ns")}
+            >
+              N/S
+            </button>
+            <button
+              type="button"
+              className={`dss-orientation-pill${
+                orientation === "ew" ? " is-selected" : ""
+              }`}
+              aria-pressed={orientation === "ew"}
+              onClick={() => onOrientationChange?.("ew")}
+            >
+              E/W
+            </button>
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }

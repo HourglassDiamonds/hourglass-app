@@ -80,14 +80,30 @@ export type FramingState = {
   cropWidthU: number;
 };
 
-/** Phase 2A/3B1 guided card/finger marking — no ring-size estimate. */
+/**
+ * Public Scaled Preview guided steps (Phase 3B2).
+ * Legacy aliases `confirm-card` / `mark-finger` normalize to the live flow
+ * and must not be rendered as separate public screens.
+ */
 export type GuidedCalibrationStep =
   | "photo-ready"
   | "mark-card"
-  | "confirm-card"
-  | "mark-finger"
+  | "mark-seat"
   | "frame"
-  | "calibrated-preview";
+  | "calibrated-preview"
+  /** @deprecated Never render — treat as mark-seat when encountered. */
+  | "confirm-card"
+  /** @deprecated Prefer mark-seat. */
+  | "mark-finger";
+
+/** Map legacy step names onto the public Scaled Preview flow. */
+export function normalizeGuidedStep(
+  step: GuidedCalibrationStep,
+): Exclude<GuidedCalibrationStep, "confirm-card" | "mark-finger"> {
+  if (step === "confirm-card" || step === "mark-finger") return "mark-seat";
+  if (step === "photo-ready") return "mark-card";
+  return step;
+}
 
 /**
  * Authoritative card-reference calibration inputs only.

@@ -1,3 +1,4 @@
+import { getDiamondCadAsset } from "@/app/diamond-studio/components/diamond-cad-assets";
 import type { ShapeId } from "./types";
 
 export const RING_SIZE_MIN = 4.0;
@@ -64,11 +65,9 @@ export const SHAPES: ShapeId[] = [
   "asscher",
 ];
 
-/** Root path for overlay PNGs — swap files here for premium renders. */
-export const SHAPE_ASSET_BASE = "/shape-studio/assets";
-
+/** Canonical CAD/PNG path — same resolver as Diamond Size Studio. */
 export function shapeAssetPath(shapeId: ShapeId): string {
-  return `${SHAPE_ASSET_BASE}/${shapeId}.png`;
+  return getDiamondCadAsset(shapeId).src;
 }
 
 export function snapRingSize(value: number): number {
