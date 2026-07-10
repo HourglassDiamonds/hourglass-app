@@ -11,6 +11,7 @@ export function CapturePageStyles() {
         background:oklch(0.965 0.008 75);
         color:oklch(0.28 0.012 60);
         font-family:var(--font-geist-sans), system-ui, sans-serif;
+        pointer-events:auto;
       }
       .dss-capture-card{
         width:min(420px, 100%);
@@ -20,6 +21,9 @@ export function CapturePageStyles() {
         padding:28px 24px 24px;
         box-shadow:0 1px 2px oklch(0.55 0.012 65 / 0.04), 0 4px 14px oklch(0.45 0.012 65 / 0.04);
         text-align:center;
+        pointer-events:auto;
+        position:relative;
+        z-index:1;
       }
       .dss-capture-brand{
         font-size:9px; letter-spacing:0.18em; text-transform:uppercase;

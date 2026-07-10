@@ -11,37 +11,13 @@ function isHeicLike(file: File): boolean {
   );
 }
 
-async function canvasToJpegFile(file: File, quality = 0.92): Promise<File> {
-  const bitmap = await createImageBitmap(file);
-  try {
-    const canvas = document.createElement("canvas");
-    canvas.width = bitmap.width;
-    canvas.height = bitmap.height;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) throw new Error("Canvas unavailable");
-    ctx.drawImage(bitmap, 0, 0);
-
-    const blob = await new Promise<Blob>((resolve, reject) => {
-      canvas.toBlob(
-        (result) => {
-          if (result) resolve(result);
-          else reject(new Error("JPEG encode failed"));
-        },
-        "image/jpeg",
-        quality,
-      );
-    });
-
-    const base = file.name.replace(/\.[^.]+$/, "") || "capture";
-    return new File([blob], `${base}.jpg`, { type: "image/jpeg" });
-  } finally {
-    bitmap.close();
-  }
-}
-
 /**
- * Normalize phone camera / library picks into an uploadable JPG/PNG/WEBP File.
- * iPhone may return HEIC/HEIF or an empty MIME type.
+ * Normalize phone camera / library picks for upload.
+ *
+ * Important: do NOT decode/re-encode large iPhone photos in Safari
+ * (createImageBitmap + full-res canvas can hang indefinitely).
+ * Accepted JPEG/PNG/WEBP pass through. HEIC/empty MIME pass through
+ * for server-side sharp conversion.
  */
 export async function prepareCaptureFile(file: File): Promise<File> {
   if (isAcceptedCaptureFile(file) && !isHeicLike(file)) {
@@ -49,14 +25,7 @@ export async function prepareCaptureFile(file: File): Promise<File> {
   }
 
   if (isHeicLike(file) || !file.type || file.type === "application/octet-stream") {
-    try {
-      return await canvasToJpegFile(file);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "convert failed";
-      throw new Error(
-        `Could not convert this photo for upload (${message}). Try JPG or take the photo again.`,
-      );
-    }
+    return file;
   }
 
   throw new Error("Please choose a JPG, PNG, or WEBP image.");

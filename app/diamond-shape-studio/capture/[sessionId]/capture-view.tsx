@@ -6,13 +6,14 @@ import { prepareCaptureFile } from "@/lib/shape-studio/prepare-capture-file";
 import { CapturePageStyles } from "./capture-page-styles";
 
 const CAPTURE_INPUT_ID = "dss-capture-file-input";
+const UPLOAD_TIMEOUT_MS = 45_000;
 
 type CaptureViewProps = {
   sessionId: string;
   captureMode: CaptureMode;
 };
 
-type CaptureState = "idle" | "uploading" | "success" | "error";
+type CaptureState = "idle" | "preparing" | "uploading" | "success" | "error";
 
 function uploadErrorMessage(status: number, message?: string): string {
   if (status === 409) {
@@ -74,6 +75,12 @@ function CaptureGuide({ mode }: { mode: CaptureMode }) {
   );
 }
 
+function ctaLabel(state: CaptureState): string {
+  if (state === "preparing") return "Preparing photo…";
+  if (state === "uploading") return "Uploading…";
+  return "Take or choose photo";
+}
+
 export function CaptureView({ sessionId, captureMode }: CaptureViewProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const inFlightRef = useRef(false);
@@ -82,12 +89,21 @@ export function CaptureView({ sessionId, captureMode }: CaptureViewProps) {
   const [state, setState] = useState<CaptureState>("idle");
   const [error, setError] = useState<string | null>(null);
   const copy = modeCopy(captureMode);
-  const uploading = state === "uploading";
+  const busy = state === "preparing" || state === "uploading";
+
+  const resetForRetry = useCallback(() => {
+    inFlightRef.current = false;
+    handledTokenRef.current = null;
+    if (inputRef.current) inputRef.current.value = "";
+  }, []);
 
   const uploadFile = useCallback(
     async (rawFile: File) => {
       if (inFlightRef.current) return;
       inFlightRef.current = true;
+
+      setState("preparing");
+      setError(null);
 
       let file: File;
       try {
@@ -99,20 +115,24 @@ export function CaptureView({ sessionId, captureMode }: CaptureViewProps) {
             : "Please choose a JPG, PNG, or WEBP image.";
         setError(message);
         setState("error");
-        inFlightRef.current = false;
+        resetForRetry();
         return;
       }
 
       setState("uploading");
-      setError(null);
 
       const formData = new FormData();
       formData.append("file", file);
+      const controller = new AbortController();
+      const timeoutId = window.setTimeout(
+        () => controller.abort(),
+        UPLOAD_TIMEOUT_MS,
+      );
 
       try {
         const res = await fetch(
           `/api/shape-studio/sessions/${sessionId}/upload`,
-          { method: "POST", body: formData },
+          { method: "POST", body: formData, signal: controller.signal },
         );
         const body = (await res.json().catch(() => ({}))) as {
           message?: string;
@@ -123,18 +143,27 @@ export function CaptureView({ sessionId, captureMode }: CaptureViewProps) {
         if (!res.ok) {
           setError(uploadErrorMessage(res.status, bodyMessage));
           setState("error");
+          resetForRetry();
           return;
         }
 
         setState("success");
-      } catch {
-        setError("Network error. Check your connection and try again.");
+      } catch (err) {
+        const aborted =
+          err instanceof DOMException && err.name === "AbortError";
+        setError(
+          aborted
+            ? "Upload timed out. Check your Wi‑Fi and try again."
+            : "Network error. Check your connection and try again.",
+        );
         setState("error");
+        resetForRetry();
       } finally {
+        window.clearTimeout(timeoutId);
         inFlightRef.current = false;
       }
     },
-    [sessionId],
+    [resetForRetry, sessionId],
   );
 
   uploadFileRef.current = uploadFile;
@@ -150,14 +179,10 @@ export function CaptureView({ sessionId, captureMode }: CaptureViewProps) {
     if (handledTokenRef.current === token || inFlightRef.current) return;
 
     handledTokenRef.current = token;
-    // Capture File first; clear only after upload pipeline finishes.
-    void uploadFileRef.current(file).finally(() => {
-      if (inputRef.current) inputRef.current.value = "";
-    });
+    void uploadFileRef.current(file);
   }, []);
 
-  // Native change listener: more reliable than React onChange on iOS Safari.
-  // Resume polls cover cases where the file is attached without a change event.
+  // Native change listener is more reliable than React onChange on iOS Safari.
   useEffect(() => {
     const input = inputRef.current;
     if (!input) return;
@@ -217,10 +242,10 @@ export function CaptureView({ sessionId, captureMode }: CaptureViewProps) {
           Input stays mounted for the whole page lifetime.
         */}
         <div
-          className={`dss-capture-file-control${uploading ? " is-busy" : ""}${state === "success" ? " is-hidden" : ""}`}
+          className={`dss-capture-file-control${busy ? " is-busy" : ""}${state === "success" ? " is-hidden" : ""}`}
         >
           <span className="dss-capture-primary" aria-hidden="true">
-            {uploading ? "Uploading…" : "Take or choose photo"}
+            {ctaLabel(state)}
           </span>
           <input
             ref={inputRef}

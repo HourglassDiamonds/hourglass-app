@@ -20,7 +20,36 @@ const interpretRouteTracingIncludes = [
   "./lib/calibration-library/tessdata/**/*",
 ];
 
+/**
+ * Local LAN QA only: allow phone browsers to load /_next/* in `next dev`.
+ * Prefer ALLOWED_DEV_ORIGINS=host1,host2 or derive host from SHAPE_STUDIO_PUBLIC_ORIGIN.
+ * Never hard-code a machine LAN IP here.
+ */
+function allowedDevOriginsFromEnv(): string[] | undefined {
+  const explicit = process.env.ALLOWED_DEV_ORIGINS?.trim();
+  if (explicit) {
+    const list = explicit
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    return list.length ? list : undefined;
+  }
+
+  const publicOrigin = process.env.SHAPE_STUDIO_PUBLIC_ORIGIN?.trim();
+  if (!publicOrigin) return undefined;
+  try {
+    const host = new URL(publicOrigin).hostname;
+    if (!host || host === "localhost" || host === "127.0.0.1") return undefined;
+    return [host];
+  } catch {
+    return undefined;
+  }
+}
+
+const allowedDevOrigins = allowedDevOriginsFromEnv();
+
 const nextConfig: NextConfig = {
+  ...(allowedDevOrigins ? { allowedDevOrigins } : {}),
   images: {
     qualities: [75, 95, 100],
   },
