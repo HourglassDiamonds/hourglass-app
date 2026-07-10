@@ -293,24 +293,24 @@ export const articles: Article[] = [
     { type: "paragraph", text: "Because of their Art Deco heritage, Asscher diamonds frequently appear in vintage-inspired rings with detailed metalwork and milgrain edges." },
 
     { type: "heading", text: "Choosing a Beautiful Asscher Diamond" },
-    { type: "paragraph", text: "When selecting an Asscher diamond, proportions and symmetry are key considerations." },
-    { type: "paragraph", text: "The shape should appear balanced, with evenly trimmed corners that form a clear octagonal outline." },
+    { type: "paragraph", text: "When selecting an Asscher diamond, proportions and symmetry are key considerations. Asscher diamonds rarely receive a single overall cut grade, so [what is diamond cut](/diamond-guide/what-is-diamond-cut) is useful context for judging craftsmanship beyond the outline." },
+    { type: "paragraph", text: "The shape should appear balanced, with evenly trimmed corners that form a clear octagonal outline. Length-to-width and depth figures on [how to read a diamond certificate](/diamond-guide/how-to-read-a-diamond-certificate) help explain what you are seeing face-up." },
     { type: "paragraph", text: "The step facets should align precisely and reflect light in a clean, repeating pattern." },
-    { type: "paragraph", text: "Clarity should also be evaluated carefully so the interior of the diamond appears bright and uninterrupted." },
+    { type: "paragraph", text: "Clarity should also be evaluated carefully so the interior of the diamond appears bright and uninterrupted. [What is diamond clarity](/diamond-guide/what-is-diamond-clarity) explains why open step facets make eye cleanliness especially important." },
     { type: "paragraph", text: "Finally, the diamond should display attractive reflections as it moves under light, rather than appearing dark or flat." },
     { type: "paragraph", text: "When these elements come together, the Asscher diamond can display remarkable elegance and depth." },
 
     { type: "paragraph", text: "The Asscher diamond stands apart from most other shapes because of its distinctive step-cut structure and vintage heritage." },
     { type: "paragraph", text: "Its layered facets create long reflections that feel calm, precise, and architectural. Rather than overwhelming sparkle, the diamond offers a quiet and refined brilliance." },
     { type: "paragraph", text: "For engagement ring buyers drawn to geometric elegance and historical character, the Asscher cut can be a compelling choice." },
-    { type: "paragraph", text: "When carefully selected, an Asscher diamond can create a ring that feels timeless, sophisticated, and deeply distinctive." },
+    { type: "paragraph", text: "When carefully selected, an Asscher diamond can create a ring that feels timeless, sophisticated, and deeply distinctive. [Speak with Concierge](/concierge) if you want help comparing Asscher candidates against emerald or radiant options." },
   ],
   related: [
-    { title: "Diamond Buying Tips from Jewelers", href: "/diamond-guide/diamond-buying-tips-from-jewelers" },
+    { title: "What is Diamond Cut", href: "/diamond-guide/what-is-diamond-cut" },
     { title: "Emerald Diamond Guide", href: "/diamond-guide/emerald-diamond-guide" },
     { title: "Radiant Diamond Guide", href: "/diamond-guide/radiant-diamond-guide" },
-    { title: "Princess Diamond Guide", href: "/diamond-guide/princess-diamond-guide" },
-    { title: "Natural vs Lab Diamonds", href: "/diamond-guide/natural-vs-lab-diamonds" },
+    { title: "How to Read a Diamond Certificate", href: "/diamond-guide/how-to-read-a-diamond-certificate" },
+    { title: "Diamond Cut vs Diamond Shape", href: "/diamond-guide/diamond-cut-vs-diamond-shape" },
   ],
 },
 
@@ -667,23 +667,23 @@ export const articles: Article[] = [
     { type: "paragraph", text: "Because the cushion shape is both soft and distinctive, it adapts easily to a wide range of engagement ring styles." },
 
     { type: "heading", text: "Choosing a Beautiful Cushion Diamond" },
-    { type: "paragraph", text: "When evaluating cushion diamonds, several visual elements deserve attention." },
+    { type: "paragraph", text: "When evaluating cushion diamonds, several visual elements deserve attention. Cut quality and proportion matter differently by shape, and [what is diamond cut](/diamond-guide/what-is-diamond-cut) explains why lab cut grades alone rarely describe cushion appearance." },
     { type: "paragraph", text: "First is overall shape. The diamond should appear balanced, with smooth curves and evenly rounded corners." },
-    { type: "paragraph", text: "Next is brilliance. Whether the stone has a modern brilliant pattern or larger antique-style facets, the diamond should still appear lively and bright under light." },
+    { type: "paragraph", text: "Next is brilliance. Whether the stone has a modern brilliant pattern or larger antique-style facets, the diamond should still appear lively and bright under light. [Diamond Intelligence](/diamond-intelligence) can help when you are comparing report measurements against how a cushion actually returns light." },
     { type: "paragraph", text: "Symmetry is also important. The facets should align well, and the reflections within the diamond should feel balanced rather than uneven." },
     { type: "paragraph", text: "Because cushion diamonds vary widely in appearance, viewing multiple stones often helps reveal which style feels most appealing." },
 
     { type: "paragraph", text: "The cushion diamond remains one of the most enduring shapes in the world of engagement rings." },
     { type: "paragraph", text: "Its soft outline, rich history, and distinctive sparkle give it a personality that feels both romantic and timeless." },
     { type: "paragraph", text: "For buyers drawn to diamonds with character and heritage, the cushion cut offers a beautiful alternative to more modern geometric shapes." },
-    { type: "paragraph", text: "When carefully selected, a cushion diamond can create an engagement ring that feels elegant, personal, and full of warmth." },
+    { type: "paragraph", text: "When carefully selected, a cushion diamond can create an engagement ring that feels elegant, personal, and full of warmth. [Begin with Concierge](/concierge) when you want help narrowing cushion styles before you buy." },
   ],
   related: [
-    { title: "Diamond Buying Tips from Jewelers", href: "/diamond-guide/diamond-buying-tips-from-jewelers" },
-    { title: "Round Diamond Guide", href: "/diamond-guide/round-diamond-guide" },
-    { title: "Princess Diamond Guide", href: "/diamond-guide/princess-diamond-guide" },
+    { title: "What is Diamond Cut", href: "/diamond-guide/what-is-diamond-cut" },
     { title: "Radiant Diamond Guide", href: "/diamond-guide/radiant-diamond-guide" },
-    { title: "Diamond Price vs Quality", href: "/diamond-guide/diamond-price-vs-quality" },
+    { title: "Round Diamond Guide", href: "/diamond-guide/round-diamond-guide" },
+    { title: "Diamond Size on Hand", href: "/diamond-guide/diamond-size-on-hand" },
+    { title: "Do Fancy Shapes Have Cut Grades", href: "/diamond-guide/do-fancy-shape-diamonds-have-cut-grades" },
   ],
 },
 
@@ -1191,17 +1191,17 @@ export const articles: Article[] = [
     { type: "paragraph", text: "Although cut and shape describe different characteristics, they still work together to influence the diamond’s final appearance." },
     { type: "paragraph", text: "Certain shapes are designed specifically to maximize brilliance. The round brilliant cut, for example, was developed to produce strong light performance through carefully balanced facet angles." },
     { type: "paragraph", text: "Other shapes, such as emerald and asscher cuts, focus more on clarity and reflective patterns rather than intense sparkle." },
-    { type: "paragraph", text: "When selecting a diamond, shape helps define the style of the ring, while cut determines how lively and bright the stone will appear." },
+    { type: "paragraph", text: "When selecting a diamond, shape helps define the style of the ring, while cut determines how lively and bright the stone will appear. [Diamond Studio](/diamond-studio) is useful when you want to see how different outlines face up before you compare cut quality." },
 
     { type: "paragraph", text: "Diamond shape and diamond cut are closely related but distinct concepts. Shape describes the outline and visual style of the diamond, while cut describes the craftsmanship that allows the stone to interact with light." },
-    { type: "paragraph", text: "By understanding the difference between these two factors, buyers can evaluate diamonds more confidently and choose a stone that balances both style and brilliance." },
+    { type: "paragraph", text: "By understanding the difference between these two factors, buyers can evaluate diamonds more confidently and choose a stone that balances both style and brilliance. [How to read a diamond certificate](/diamond-guide/how-to-read-a-diamond-certificate) shows which report fields describe outline versus craftsmanship. [Speak with Concierge](/concierge) when you want help applying that distinction to a shortlist." },
   ],
   related: [
     { title: "What is Diamond Cut", href: "/diamond-guide/what-is-diamond-cut" },
-    { title: "Ideal Diamond Cut Proportions", href: "/diamond-guide/ideal-diamond-cut-proportions" },
-    { title: "What Makes a Diamond Cut Good or Bad", href: "/diamond-guide/what-makes-a-diamond-cut-good-or-bad" },
     { title: "Do Fancy Shapes Have Cut Grades", href: "/diamond-guide/do-fancy-shape-diamonds-have-cut-grades" },
-    { title: "Does Diamond Cut Affect Size", href: "/diamond-guide/does-diamond-cut-affect-size" },
+    { title: "Round Diamond Guide", href: "/diamond-guide/round-diamond-guide" },
+    { title: "Oval Diamond Guide", href: "/diamond-guide/oval-diamond-guide" },
+    { title: "How to Read a Diamond Certificate", href: "/diamond-guide/how-to-read-a-diamond-certificate" },
   ],
 },
 
@@ -1644,7 +1644,7 @@ export const articles: Article[] = [
 
       { type: "heading", text: "How Diamond Shape Influences Finger Coverage" },
       { type: "paragraph", text: "Diamond shape also affects how much space the stone covers across the finger." },
-      { type: "paragraph", text: "Elongated shapes such as oval, marquise, and pear diamonds stretch along the finger, which can make them appear larger than round diamonds of the same carat weight." },
+      { type: "paragraph", text: "Elongated shapes such as oval, marquise, and pear diamonds stretch along the finger, which can make them appear larger than round diamonds of the same carat weight. [What diamond shape looks the largest](/diamond-guide/what-diamond-shape-looks-the-largest) summarizes those face-up tendencies." },
       { type: "paragraph", text: "Round diamonds concentrate their weight more toward the center of the stone, which often produces a classic and symmetrical appearance rather than emphasizing length." },
 
       { type: "heading", text: "The Influence of Ring Design" },
@@ -1657,15 +1657,15 @@ export const articles: Article[] = [
       { type: "paragraph", text: "Comparing different carat weights and shapes side by side often makes subtle differences easier to recognize. This experience can help buyers develop a clearer sense of the proportions that feel right for their style." },
 
         { type: "paragraph", text: "Diamond size on the hand depends on more than carat weight alone." },
-      { type: "paragraph", text: "Finger size, diamond shape, cut proportions, and ring design all influence how the stone ultimately appears once it is worn. By considering these factors together, it becomes easier to choose a diamond that feels balanced, elegant, and well suited to the person wearing it." },
+      { type: "paragraph", text: "Finger size, diamond shape, cut proportions, and ring design all influence how the stone ultimately appears once it is worn. By considering these factors together, it becomes easier to choose a diamond that feels balanced, elegant, and well suited to the person wearing it. [Speak with Concierge](/concierge) if you want help translating on-hand preference into a shortlist." },
      
     ],
     related: [
-      { title: "What is a Carat", href: "/diamond-guide/what-is-a-carat" },
+      { title: "What Diamond Shape Looks the Largest", href: "/diamond-guide/what-diamond-shape-looks-the-largest" },
       { title: "Diamond Size Chart", href: "/diamond-guide/diamond-size-chart" },
-      { title: "Diamond Carat vs Size", href: "/diamond-guide/diamond-carat-vs-size" },
-      { title: "Best Carat Size for Engagement Ring", href: "/diamond-guide/best-carat-size-for-an-engagement-ring" },
-      { title: "Do Elongated Diamonds Look Bigger", href: "/diamond-guide/do-elongated-diamonds-look-bigger" }
+      { title: "Do Elongated Diamonds Look Bigger", href: "/diamond-guide/do-elongated-diamonds-look-bigger" },
+      { title: "What is Diamond Cut", href: "/diamond-guide/what-is-diamond-cut" },
+      { title: "Diamond Carat vs Size", href: "/diamond-guide/diamond-carat-vs-size" }
     ]
   },
 
@@ -1815,14 +1815,14 @@ export const articles: Article[] = [
         note: "Presence describes how a stone reads relative to the wearer, not carat weight alone.",
       },
 
-        { type: "paragraph", text: "No single diamond shape is universally the “largest.” Elongated cuts often create more finger coverage, while round and step-cut shapes offer different kinds of balance and character." },
-      { type: "paragraph", text: "The most satisfying choice usually comes from comparing face-up dimensions, cut quality, and how the stone feels on the hand, not from chasing a shape name alone." },
+        { type: "paragraph", text: "No single diamond shape is universally the “largest.” Elongated cuts often create more finger coverage, while round and step-cut shapes offer different kinds of balance and character. Cut quality still matters: a poorly proportioned elongated stone can look smaller than a well-cut round, which [what is diamond cut](/diamond-guide/what-is-diamond-cut) explains." },
+      { type: "paragraph", text: "The most satisfying choice usually comes from comparing face-up dimensions, cut quality, and how the stone feels on the hand, not from chasing a shape name alone. [Speak with Concierge](/concierge) if you want help translating size preference into a shortlist of shapes." },
     ],
     related: [
       { title: "Do Elongated Diamonds Look Bigger", href: "/diamond-guide/do-elongated-diamonds-look-bigger" },
       { title: "Diamond Size Chart", href: "/diamond-guide/diamond-size-chart" },
       { title: "Oval vs Round Diamond", href: "/diamond-guide/oval-vs-round-diamond" },
-      { title: "How to Make a Diamond Look Bigger", href: "/diamond-guide/how-to-make-a-diamond-look-bigger" },
+      { title: "What is Diamond Cut", href: "/diamond-guide/what-is-diamond-cut" },
       { title: "Diamond Size on Hand", href: "/diamond-guide/diamond-size-on-hand" },
     ],
   },
@@ -1850,24 +1850,24 @@ export const articles: Article[] = [
 
     { type: "heading", text: "The Role of Cut Proportions" },
     { type: "paragraph", text: "Cut proportions can influence how large an elongated diamond appears." },
-    { type: "paragraph", text: "If the diamond is cut too deep, some of its weight may be hidden in the lower portion of the stone, reducing its visible spread. Well-proportioned diamonds distribute their weight more evenly across the top surface, allowing the shape to appear larger and more balanced." },
+    { type: "paragraph", text: "If the diamond is cut too deep, some of its weight may be hidden in the lower portion of the stone, reducing its visible spread. Well-proportioned diamonds distribute their weight more evenly across the top surface, allowing the shape to appear larger and more balanced. [What is diamond cut](/diamond-guide/what-is-diamond-cut) explains why depth and craftsmanship change face-up size." },
     { type: "paragraph", text: "Careful selection of proportions helps ensure that elongated shapes achieve their full visual potential." },
 
     { type: "heading", text: "Choosing the Right Shape for Size Appearance" },
     { type: "paragraph", text: "Buyers who want a diamond that appears larger relative to its carat weight often explore elongated shapes." },
-    { type: "paragraph", text: "Oval, marquise, and pear diamonds are especially popular for this reason. These shapes provide strong visual presence while maintaining elegant proportions." },
+    { type: "paragraph", text: "Oval, marquise, and pear diamonds are especially popular for this reason. These shapes provide strong visual presence while maintaining elegant proportions. [What diamond shape looks the largest](/diamond-guide/what-diamond-shape-looks-the-largest) ranks common face-up tendencies in more detail." },
     { type: "paragraph", text: "However, the ideal shape depends on personal style, ring design, and how the diamond looks on the hand. The [visual diamond size tool](/diamond-studio) makes it easy to compare elongated shapes at the same carat." },
 
     { type: "paragraph", text: "Elongated diamond shapes often appear larger than round diamonds of the same carat weight because they extend across the finger and distribute their weight differently." },
-    { type: "paragraph", text: "While shape can influence the perception of size, cut quality and overall proportions remain just as important. A well-proportioned diamond will always appear more balanced and visually impressive than a stone with poor proportions." },
+    { type: "paragraph", text: "While shape can influence the perception of size, cut quality and overall proportions remain just as important. A well-proportioned diamond will always appear more balanced and visually impressive than a stone with poor proportions. [Begin with Concierge](/concierge) when you want help balancing spread, brilliance, and budget." },
    
   ],
   related: [
-    { title: "What is a Carat", href: "/diamond-guide/what-is-a-carat" },
+    { title: "What Diamond Shape Looks the Largest", href: "/diamond-guide/what-diamond-shape-looks-the-largest" },
     { title: "Diamond Size on Hand", href: "/diamond-guide/diamond-size-on-hand" },
-    { title: "Diamond Carat vs Size", href: "/diamond-guide/diamond-carat-vs-size" },
-    { title: "How to Make a Diamond Look Bigger", href: "/diamond-guide/how-to-make-a-diamond-look-bigger" },
-    { title: "Best Carat Size for Engagement Ring", href: "/diamond-guide/best-carat-size-for-an-engagement-ring" }
+    { title: "What is Diamond Cut", href: "/diamond-guide/what-is-diamond-cut" },
+    { title: "Oval Diamond Guide", href: "/diamond-guide/oval-diamond-guide" },
+    { title: "How to Make a Diamond Look Bigger", href: "/diamond-guide/how-to-make-a-diamond-look-bigger" }
   ]
 },
 
@@ -1964,8 +1964,8 @@ export const articles: Article[] = [
 
     { type: "heading", text: "How Jewelers Evaluate Fancy Shape Cut Quality" },
     { type: "paragraph", text: "Since fancy shapes do not receive a formal cut grade, evaluating their beauty requires a slightly different approach, one that often begins with [diamond cut versus diamond shape](/diamond-guide/diamond-cut-vs-diamond-shape) to separate outline from craftsmanship." },
-    { type: "paragraph", text: "Experts often begin by looking at the diamond’s overall proportions, including length-to-width ratio, depth percentage, and table size. These measurements help indicate whether the diamond’s structure is balanced." },
-    { type: "paragraph", text: "The next step is visual evaluation. Jewelers examine how the diamond reflects light, looking for brightness, contrast patterns, and overall liveliness." },
+    { type: "paragraph", text: "Experts often begin by looking at the diamond’s overall proportions, including length-to-width ratio, depth percentage, and table size. These measurements help indicate whether the diamond’s structure is balanced. [How to read a diamond certificate](/diamond-guide/how-to-read-a-diamond-certificate) shows where those fields appear when a cut grade does not." },
+    { type: "paragraph", text: "The next step is visual evaluation. Jewelers examine how the diamond reflects light, looking for brightness, contrast patterns, and overall liveliness. [Diamond Intelligence](/diamond-intelligence) can help when you want report proportions and light-performance context together." },
     { type: "paragraph", text: "Certain issues, such as dark areas or uneven light patterns, may suggest that the diamond’s proportions are less effective." },
 
     { type: "heading", text: "The Role of Personal Preference" },
@@ -1974,15 +1974,15 @@ export const articles: Article[] = [
     { type: "paragraph", text: "Because of this flexibility, evaluating fancy shapes often involves balancing proportion guidelines with personal aesthetic preference." },
 
     { type: "paragraph", text: "Fancy shape diamonds do not receive formal cut grades in the same way round diamonds do. Their wide variety of cutting styles makes standardized grading difficult." },
-    { type: "paragraph", text: "Instead, their beauty is evaluated through a combination of proportions, craftsmanship, and visual performance. With careful observation, buyers can still identify well-cut fancy shapes that display strong brightness and pleasing light patterns." },
+    { type: "paragraph", text: "Instead, their beauty is evaluated through a combination of proportions, craftsmanship, and visual performance. With careful observation, buyers can still identify well-cut fancy shapes that display strong brightness and pleasing light patterns. [Speak with Concierge](/concierge) when you want a Graduate Gemologist to review fancy-shape candidates with you." },
     
   ],
   related: [
     { title: "What is Diamond Cut", href: "/diamond-guide/what-is-diamond-cut" },
     { title: "Diamond Cut vs Diamond Shape", href: "/diamond-guide/diamond-cut-vs-diamond-shape" },
-    { title: "Ideal Diamond Cut Proportions", href: "/diamond-guide/ideal-diamond-cut-proportions" },
-    { title: "What Makes a Diamond Cut Good or Bad", href: "/diamond-guide/what-makes-a-diamond-cut-good-or-bad" },
-    { title: "Does Diamond Cut Affect Size", href: "/diamond-guide/does-diamond-cut-affect-size" }
+    { title: "How to Read a Diamond Certificate", href: "/diamond-guide/how-to-read-a-diamond-certificate" },
+    { title: "Oval Diamond Guide", href: "/diamond-guide/oval-diamond-guide" },
+    { title: "Cushion Diamond Guide", href: "/diamond-guide/cushion-diamond-guide" }
   ]
 },
 
@@ -2107,25 +2107,25 @@ export const articles: Article[] = [
     { type: "paragraph", text: "Because of their strong lines and symmetry, emerald diamonds often look particularly striking in refined, understated designs." },
 
     { type: "heading", text: "Choosing a Beautiful Emerald Diamond" },
-    { type: "paragraph", text: "When selecting an emerald diamond, several characteristics deserve attention." },
-    { type: "paragraph", text: "Proportions influence the overall appearance of the stone. Some emerald diamonds appear longer and slimmer, while others feel slightly wider. Personal preference usually determines which ratio feels most appealing." },
+    { type: "paragraph", text: "When selecting an emerald diamond, several characteristics deserve attention. Cut quality and proportion matter differently for step cuts than for rounds, which is why [what is diamond cut](/diamond-guide/what-is-diamond-cut) is worth reading before relying on a report summary alone." },
+    { type: "paragraph", text: "Proportions influence the overall appearance of the stone. Some emerald diamonds appear longer and slimmer, while others feel slightly wider. Personal preference usually determines which ratio feels most appealing. [How to read a diamond certificate](/diamond-guide/how-to-read-a-diamond-certificate) shows where length-to-width and depth appear on the report." },
     { type: "paragraph", text: "Symmetry is extremely important. The step facets should align evenly, and the diamond should appear balanced from end to end." },
-    { type: "paragraph", text: "Clarity should also be considered carefully. Because the cut reveals more of the interior structure, buyers often choose diamonds that appear visually clean." },
+    { type: "paragraph", text: "Clarity should also be considered carefully. Because the cut reveals more of the interior structure, buyers often choose diamonds that appear visually clean. [What is diamond clarity](/diamond-guide/what-is-diamond-clarity) explains how eye cleanliness works for open-facet shapes." },
     { type: "paragraph", text: "Finally, the diamond should display attractive light reflections across the step facets rather than appearing dull or flat." },
     { type: "paragraph", text: "When these elements come together, the emerald diamond can display remarkable elegance." },
 
     { type: "paragraph", text: "The emerald cut diamond offers a distinctive alternative to the sparkle-driven brilliance of many other shapes." },
     { type: "paragraph", text: "Its step-cut facets create long, elegant flashes of light and reveal the natural clarity of the stone. This transparency gives the diamond a calm, refined presence." },
     { type: "paragraph", text: "For engagement ring buyers drawn to clean lines and understated luxury, the emerald diamond often feels especially appealing." },
-    { type: "paragraph", text: "When carefully selected, an emerald cut diamond can produce a ring that feels timeless, sophisticated, and quietly striking." },
+    { type: "paragraph", text: "When carefully selected, an emerald cut diamond can produce a ring that feels timeless, sophisticated, and quietly striking. [Concierge](/concierge) can help you compare emerald candidates when clarity, proportions, and setting style need to be weighed together." },
     
   ],
   related: [
-    { title: "Diamond Buying Tips from Jewelers", href: "/diamond-guide/diamond-buying-tips-from-jewelers" },
+    { title: "What is Diamond Cut", href: "/diamond-guide/what-is-diamond-cut" },
     { title: "Asscher Diamond Guide", href: "/diamond-guide/asscher-diamond-guide" },
     { title: "Radiant Diamond Guide", href: "/diamond-guide/radiant-diamond-guide" },
-    { title: "Princess Diamond Guide", href: "/diamond-guide/princess-diamond-guide" },
-    { title: "Natural vs Lab Diamonds", href: "/diamond-guide/natural-vs-lab-diamonds" }
+    { title: "What is Diamond Clarity", href: "/diamond-guide/what-is-diamond-clarity" },
+    { title: "How to Read a Diamond Certificate", href: "/diamond-guide/how-to-read-a-diamond-certificate" }
   ]
 },
 {
@@ -2955,9 +2955,9 @@ export const articles: Article[] = [
     { type: "paragraph", text: "Like other elongated diamond shapes, marquise diamonds can display something known as a bow tie effect." },
     { type: "paragraph", text: "This refers to a darker shadow pattern that may appear across the center of the diamond when viewed face-up." },
     { type: "paragraph", text: "The bow tie occurs because of the way light travels through the elongated facets of the stone. Nearly all marquise diamonds will show some degree of this effect." },
-    { type: "paragraph", text: "A faint bow tie is completely normal. What matters is that the diamond still appears bright and lively overall." },
+    { type: "paragraph", text: "A faint bow tie is completely normal. What matters is that the diamond still appears bright and lively overall. [What is diamond cut](/diamond-guide/what-is-diamond-cut) explains why proportion and light return matter more here than a single lab cut grade." },
     { type: "paragraph", text: "In well-cut stones, the bow tie blends into the surrounding brilliance rather than appearing as a harsh or distracting dark band." },
-    { type: "paragraph", text: "Viewing the diamond under movement and different lighting can help reveal how balanced the light performance truly is." },
+    { type: "paragraph", text: "Viewing the diamond under movement and different lighting can help reveal how balanced the light performance truly is. [Diamond Intelligence](/diamond-intelligence) is useful when you want report proportions and light-performance context side by side." },
 
     { type: "heading", text: "Setting Marquise Diamonds in Engagement Rings" },
     { type: "paragraph", text: "Because of their pointed ends, marquise diamonds are usually set with protective prongs." },
@@ -2970,22 +2970,22 @@ export const articles: Article[] = [
     { type: "heading", text: "Choosing a Beautiful Marquise Diamond" },
     { type: "paragraph", text: "When selecting a marquise diamond, symmetry is extremely important." },
     { type: "paragraph", text: "The two points of the diamond should align evenly, and the curves along each side should mirror each other. Any imbalance in these curves can make the diamond appear slightly uneven." },
-    { type: "paragraph", text: "Proportions also influence the overall appearance. Some marquise diamonds appear very slender, while others feel slightly wider. Personal preference often determines which ratio feels most attractive." },
+    { type: "paragraph", text: "Proportions also influence the overall appearance. Some marquise diamonds appear very slender, while others feel slightly wider. Personal preference often determines which ratio feels most attractive. Length-to-width on [how to read a diamond certificate](/diamond-guide/how-to-read-a-diamond-certificate) is a helpful starting point before you view the stone." },
     { type: "paragraph", text: "Finally, the diamond should display lively sparkle across the surface of the stone rather than large dark areas." },
     { type: "paragraph", text: "When the shape is balanced and the light performance is strong, the marquise diamond can feel both elegant and dramatic." },
 
     { type: "paragraph", text: "The marquise diamond stands apart from most other diamond shapes because of its bold and elongated silhouette." },
     { type: "paragraph", text: "Its pointed ends and curved sides create a distinctive look that immediately draws attention. At the same time, its brilliant-style faceting allows the diamond to display lively sparkle." },
     { type: "paragraph", text: "For engagement ring buyers looking for a diamond that feels unique and expressive, the marquise cut offers a compelling option." },
-    { type: "paragraph", text: "When carefully selected and properly set, a marquise diamond can produce an engagement ring that feels both graceful and memorable." },
+    { type: "paragraph", text: "When carefully selected and properly set, a marquise diamond can produce an engagement ring that feels both graceful and memorable. [Concierge](/concierge) can help you weigh bow-tie tolerance, length, and setting protection before you decide." },
     
   ],
   related: [
-    { title: "Diamond Buying Tips from Jewelers", href: "/diamond-guide/diamond-buying-tips-from-jewelers" },
+    { title: "What is Diamond Cut", href: "/diamond-guide/what-is-diamond-cut" },
     { title: "Oval Diamond Guide", href: "/diamond-guide/oval-diamond-guide" },
     { title: "Pear Diamond Guide", href: "/diamond-guide/pear-diamond-guide" },
-    { title: "Radiant Diamond Guide", href: "/diamond-guide/radiant-diamond-guide" },
-    { title: "Diamond Price vs Quality", href: "/diamond-guide/diamond-price-vs-quality" }
+    { title: "What Diamond Shape Looks the Largest", href: "/diamond-guide/what-diamond-shape-looks-the-largest" },
+    { title: "Do Elongated Diamonds Look Bigger", href: "/diamond-guide/do-elongated-diamonds-look-bigger" }
   ]
 },
 {
@@ -3163,10 +3163,10 @@ export const articles: Article[] = [
 
     { type: "heading", text: "What Makes a Beautiful Oval Diamond" },
     { type: "paragraph", text: "Selecting a beautiful oval diamond involves looking at several visual elements together." },
-    { type: "paragraph", text: "Cut quality is the most important factor. Unlike round diamonds, oval diamonds do not have a single strict formula for ideal proportions. Because of this, visual evaluation becomes especially important." },
-    { type: "paragraph", text: "Length-to-width ratio also affects the personality of the diamond. Some oval diamonds are more elongated, while others appear slightly wider and softer in shape. Most people tend to prefer proportions that feel balanced and symmetrical." },
+    { type: "paragraph", text: "Cut quality is the most important factor. Unlike round diamonds, oval diamonds do not have a single strict formula for ideal proportions. Because of this, visual evaluation becomes especially important. [What is diamond cut](/diamond-guide/what-is-diamond-cut) explains why craftsmanship still matters when a formal cut grade is absent." },
+    { type: "paragraph", text: "Length-to-width ratio also affects the personality of the diamond. Some oval diamonds are more elongated, while others appear slightly wider and softer in shape. Most people tend to prefer proportions that feel balanced and symmetrical. Those measurements appear on [how to read a diamond certificate](/diamond-guide/how-to-read-a-diamond-certificate)." },
     { type: "paragraph", text: "Symmetry is another detail to watch. A well-cut oval should have evenly curved sides and aligned ends so the shape feels harmonious." },
-    { type: "paragraph", text: "Finally, brilliance matters. When the diamond moves under light, the entire surface should remain lively and bright rather than showing large dull areas." },
+    { type: "paragraph", text: "Finally, brilliance matters. When the diamond moves under light, the entire surface should remain lively and bright rather than showing large dull areas. [Diamond Intelligence](/diamond-intelligence) can help when you are comparing oval reports and want light-performance context beyond the grades." },
     { type: "paragraph", text: "When these characteristics come together, the result is an oval diamond that feels elegant, balanced, and full of life." },
 
     { type: "heading", text: "Why Oval Diamonds Work Beautifully in Engagement Rings" },
@@ -3178,15 +3178,15 @@ export const articles: Article[] = [
 
     { type: "paragraph", text: "Oval diamonds offer a refined combination of brilliance and elegance. Their elongated silhouette provides visual presence while maintaining the lively sparkle associated with brilliant-cut diamonds." },
     { type: "paragraph", text: "For many engagement ring buyers, the oval shape feels both timeless and slightly distinctive. It offers the brightness people love in round diamonds while creating a more unique visual identity." },
-    { type: "paragraph", text: "When carefully selected, a well-cut oval diamond can deliver both beauty and character, which is why it continues to grow in popularity among modern engagement rings." },
+    { type: "paragraph", text: "When carefully selected, a well-cut oval diamond can deliver both beauty and character, which is why it continues to grow in popularity among modern engagement rings. [Speak with Concierge](/concierge) if you want help comparing oval candidates against round or pear options." },
     
   ],
   related: [
-    { title: "Diamond Buying Tips from Jewelers", href: "/diamond-guide/diamond-buying-tips-from-jewelers" },
+    { title: "What is Diamond Cut", href: "/diamond-guide/what-is-diamond-cut" },
     { title: "Oval vs Round Diamond", href: "/diamond-guide/oval-vs-round-diamond" },
     { title: "Pear Diamond Guide", href: "/diamond-guide/pear-diamond-guide" },
-    { title: "Marquise Diamond Guide", href: "/diamond-guide/marquise-diamond-guide" },
-    { title: "Diamond Price vs Quality", href: "/diamond-guide/diamond-price-vs-quality" }
+    { title: "Diamond Cut vs Diamond Shape", href: "/diamond-guide/diamond-cut-vs-diamond-shape" },
+    { title: "What Diamond Shape Looks the Largest", href: "/diamond-guide/what-diamond-shape-looks-the-largest" }
   ]
 },
 {
@@ -3207,7 +3207,7 @@ export const articles: Article[] = [
 
     { type: "heading", text: "Sparkle and Light Performance" },
     { type: "paragraph", text: "Round diamonds are widely considered the benchmark for diamond brilliance. Their facet arrangement was mathematically developed to return as much light as possible back to the viewer’s eye." },
-    { type: "paragraph", text: "Because of this precise symmetry, round diamonds tend to produce very consistent sparkle across the entire surface of the stone." },
+    { type: "paragraph", text: "Because of this precise symmetry, round diamonds tend to produce very consistent sparkle across the entire surface of the stone. [What is diamond cut](/diamond-guide/what-is-diamond-cut) explains why rounds receive formal cut grades while ovals usually do not." },
     { type: "paragraph", text: "Oval diamonds are also brilliant cuts, but their elongated shape changes the way light moves through the diamond. While they can still appear very bright, their sparkle pattern is slightly different." },
     { type: "paragraph", text: "Instead of the evenly distributed brilliance seen in round diamonds, oval diamonds often display flashes of light that travel along the length of the stone. This can create a lively and elegant visual effect when the diamond moves." },
     { type: "paragraph", text: "Both shapes can be beautiful, but the round diamond typically offers the most predictable light performance." },
@@ -3243,15 +3243,15 @@ export const articles: Article[] = [
     { type: "paragraph", text: "Round diamonds offer unmatched symmetry and consistently strong sparkle. Their classic shape has defined engagement rings for generations." },
     { type: "paragraph", text: "Oval diamonds bring a more elongated silhouette while still delivering impressive brilliance. They often appear larger than their carat weight and can create a graceful look on the hand." },
     { type: "paragraph", text: "Choosing between the two shapes ultimately comes down to personal preference. Some buyers are drawn to the timeless perfection of a round diamond, while others appreciate the elegant individuality of an oval." },
-    { type: "paragraph", text: "Both shapes, when well cut, can produce an engagement ring that feels refined, balanced, and enduring." },
+    { type: "paragraph", text: "Both shapes, when well cut, can produce an engagement ring that feels refined, balanced, and enduring. [Speak with Concierge](/concierge) if you want help deciding which silhouette fits the ring and the hand." },
     
   ],
   related: [
-    { title: "Diamond Buying Tips from Jewelers", href: "/diamond-guide/diamond-buying-tips-from-jewelers" },
     { title: "Oval Diamond Guide", href: "/diamond-guide/oval-diamond-guide" },
     { title: "Round Diamond Guide", href: "/diamond-guide/round-diamond-guide" },
-    { title: "Pear Diamond Guide", href: "/diamond-guide/pear-diamond-guide" },
-    { title: "Best Time to Buy a Diamond", href: "/diamond-guide/when-is-the-best-time-to-buy-a-diamond" }
+    { title: "What is Diamond Cut", href: "/diamond-guide/what-is-diamond-cut" },
+    { title: "What Diamond Shape Looks the Largest", href: "/diamond-guide/what-diamond-shape-looks-the-largest" },
+    { title: "Diamond Cut vs Diamond Shape", href: "/diamond-guide/diamond-cut-vs-diamond-shape" }
   ]
 },
 {
@@ -3293,7 +3293,7 @@ export const articles: Article[] = [
     { type: "paragraph", text: "Like other elongated brilliant-cut diamonds, pear diamonds can display a bow tie effect." },
     { type: "paragraph", text: "This refers to a darker shadow that may appear across the center of the diamond when viewed face-up. The pattern resembles a small bow tie shape, which is where the term originates." },
     { type: "paragraph", text: "The bow tie occurs because of how light travels through the elongated facets of the stone." },
-    { type: "paragraph", text: "Nearly all pear diamonds will show some degree of this effect. The goal is not to eliminate it entirely, but to select a diamond where the bow tie appears subtle rather than overly dark." },
+    { type: "paragraph", text: "Nearly all pear diamonds will show some degree of this effect. The goal is not to eliminate it entirely, but to select a diamond where the bow tie appears subtle rather than overly dark. [What is diamond cut](/diamond-guide/what-is-diamond-cut) explains why visual light return matters more than a single fancy-shape cut grade." },
     { type: "paragraph", text: "A well-cut pear diamond should still display brightness and sparkle across the surface of the stone." },
 
     { type: "heading", text: "Protecting the Point of a Pear Diamond" },
@@ -3306,22 +3306,22 @@ export const articles: Article[] = [
     { type: "heading", text: "Choosing a Beautiful Pear Diamond" },
     { type: "paragraph", text: "When selecting a pear diamond, symmetry plays an important role." },
     { type: "paragraph", text: "The curved side of the diamond should flow smoothly into the pointed end without appearing uneven. If the curves are unbalanced, the shape can feel slightly off-center." },
-    { type: "paragraph", text: "Proportions also influence the personality of the stone. Some pear diamonds appear longer and more slender, while others feel slightly wider and softer in shape." },
+    { type: "paragraph", text: "Proportions also influence the personality of the stone. Some pear diamonds appear longer and more slender, while others feel slightly wider and softer in shape. [How to read a diamond certificate](/diamond-guide/how-to-read-a-diamond-certificate) shows where length-to-width and depth help frame that choice." },
     { type: "paragraph", text: "Finally, brilliance should remain lively across the diamond’s surface. A well-cut pear diamond will display bright reflections rather than dull areas." },
     { type: "paragraph", text: "When the shape and light performance work together, the pear diamond can appear exceptionally elegant." },
 
     { type: "paragraph", text: "The pear diamond offers a beautiful combination of brilliance and graceful shape." },
     { type: "paragraph", text: "Its rounded end and tapered point create a silhouette that feels fluid, expressive, and distinctive. At the same time, its brilliant-style faceting allows the diamond to produce lively sparkle." },
     { type: "paragraph", text: "For engagement ring buyers who appreciate elongated diamond shapes with a sense of movement and elegance, the pear diamond can be a compelling choice." },
-    { type: "paragraph", text: "When carefully selected and properly set, a pear diamond can create an engagement ring that feels both refined and memorable." },
+    { type: "paragraph", text: "When carefully selected and properly set, a pear diamond can create an engagement ring that feels both refined and memorable. [Begin with Concierge](/concierge) when you want help comparing pear length, bow-tie character, and setting protection." },
     
   ],
   related: [
-    { title: "Diamond Buying Tips from Jewelers", href: "/diamond-guide/diamond-buying-tips-from-jewelers" },
+    { title: "What is Diamond Cut", href: "/diamond-guide/what-is-diamond-cut" },
     { title: "Oval Diamond Guide", href: "/diamond-guide/oval-diamond-guide" },
     { title: "Marquise Diamond Guide", href: "/diamond-guide/marquise-diamond-guide" },
-    { title: "Cushion Diamond Guide", href: "/diamond-guide/cushion-diamond-guide" },
-    { title: "Best Time to Buy a Diamond", href: "/diamond-guide/when-is-the-best-time-to-buy-a-diamond" }
+    { title: "Do Elongated Diamonds Look Bigger", href: "/diamond-guide/do-elongated-diamonds-look-bigger" },
+    { title: "Diamond Size on Hand", href: "/diamond-guide/diamond-size-on-hand" }
   ]
 },
 {
@@ -3376,8 +3376,8 @@ export const articles: Article[] = [
     { type: "paragraph", text: "Because of their bold shape and bright sparkle, princess cut diamonds often appeal to buyers who appreciate contemporary design." },
 
     { type: "heading", text: "Choosing a Beautiful Princess Diamond" },
-    { type: "paragraph", text: "When selecting a princess cut diamond, several visual factors are worth paying attention to." },
-    { type: "paragraph", text: "Proportions play an important role. Many buyers prefer princess diamonds that appear close to perfectly square, although slight variations can still look attractive depending on personal preference." },
+    { type: "paragraph", text: "When selecting a princess cut diamond, several visual factors are worth paying attention to. Cut quality and proportion still matter even when a formal cut grade is limited, which [what is diamond cut](/diamond-guide/what-is-diamond-cut) explains clearly." },
+    { type: "paragraph", text: "Proportions play an important role. Many buyers prefer princess diamonds that appear close to perfectly square, although slight variations can still look attractive depending on personal preference. [How to read a diamond certificate](/diamond-guide/how-to-read-a-diamond-certificate) shows where length-to-width and depth help confirm that balance." },
     { type: "paragraph", text: "Symmetry should also be balanced. The facets should align cleanly, and the diamond should not appear uneven from one corner to another." },
     { type: "paragraph", text: "Cut quality remains important as well. A well-cut princess diamond will display bright reflections across the entire surface rather than large dark areas." },
     { type: "paragraph", text: "When these elements come together, the result is a princess diamond that feels crisp, lively, and visually striking." },
@@ -3385,15 +3385,15 @@ export const articles: Article[] = [
     { type: "paragraph", text: "The princess cut diamond offers a distinctive combination of modern geometry and strong brilliance." },
     { type: "paragraph", text: "Its square outline creates a bold and contemporary look, while the brilliant faceting ensures the diamond still sparkles beautifully." },
     { type: "paragraph", text: "For many engagement ring buyers, the princess cut represents a balance between traditional sparkle and modern design." },
-    { type: "paragraph", text: "When carefully chosen and properly set, a princess diamond can create an engagement ring that feels both elegant and confidently contemporary." },
+    { type: "paragraph", text: "When carefully chosen and properly set, a princess diamond can create an engagement ring that feels both elegant and confidently contemporary. [Speak with Concierge](/concierge) if you want help comparing princess candidates against cushion or radiant options." },
     
   ],
   related: [
-    { title: "Diamond Buying Tips from Jewelers", href: "/diamond-guide/diamond-buying-tips-from-jewelers" },
+    { title: "What is Diamond Cut", href: "/diamond-guide/what-is-diamond-cut" },
     { title: "Round Diamond Guide", href: "/diamond-guide/round-diamond-guide" },
     { title: "Cushion Diamond Guide", href: "/diamond-guide/cushion-diamond-guide" },
     { title: "Radiant Diamond Guide", href: "/diamond-guide/radiant-diamond-guide" },
-    { title: "Are Lab Diamonds a Good Choice", href: "/diamond-guide/are-lab-diamonds-a-good-choice" }
+    { title: "Diamond Cut vs Diamond Shape", href: "/diamond-guide/diamond-cut-vs-diamond-shape" }
   ]
 },
 {
@@ -3449,24 +3449,24 @@ export const articles: Article[] = [
     { type: "paragraph", text: "However, the diamond should still appear clean to the eye when viewed normally." },
 
     { type: "heading", text: "Choosing a Beautiful Radiant Diamond" },
-    { type: "paragraph", text: "When evaluating radiant diamonds, several visual characteristics are important." },
-    { type: "paragraph", text: "Proportions influence the overall shape of the diamond. Buyers often choose between square and rectangular outlines depending on their style preference." },
+    { type: "paragraph", text: "When evaluating radiant diamonds, several visual characteristics are important. Cut quality and proportion matter differently by shape, especially when a formal cut grade is incomplete, which [what is diamond cut](/diamond-guide/what-is-diamond-cut) covers in depth." },
+    { type: "paragraph", text: "Proportions influence the overall shape of the diamond. Buyers often choose between square and rectangular outlines depending on their style preference. [How to read a diamond certificate](/diamond-guide/how-to-read-a-diamond-certificate) shows where those measurements live on the report." },
     { type: "paragraph", text: "Symmetry should be well balanced, with evenly cut corners and smooth sides." },
-    { type: "paragraph", text: "The diamond should also appear lively under light. A well-cut radiant diamond will display consistent sparkle across the entire surface rather than dull areas." },
+    { type: "paragraph", text: "The diamond should also appear lively under light. A well-cut radiant diamond will display consistent sparkle across the entire surface rather than dull areas. [Diamond Intelligence](/diamond-intelligence) can help when you are comparing radiant reports and want light-performance context beyond polish and symmetry lines." },
     { type: "paragraph", text: "When these elements come together, the radiant cut can deliver both brilliance and strong visual structure." },
 
     { type: "paragraph", text: "The radiant diamond offers a unique combination of brilliance and geometry." },
     { type: "paragraph", text: "Its brilliant-style faceting produces lively sparkle, while its rectangular or square outline creates a bold and modern appearance." },
     { type: "paragraph", text: "For engagement ring buyers who want strong brilliance without choosing a round diamond, the radiant cut can be an appealing option." },
-    { type: "paragraph", text: "When carefully selected, a radiant diamond can create a ring that feels vibrant, elegant, and confidently contemporary." },
+    { type: "paragraph", text: "When carefully selected, a radiant diamond can create a ring that feels vibrant, elegant, and confidently contemporary. [Concierge](/concierge) can help you decide between radiant, emerald, and cushion when sparkle versus quiet geometry is the real question." },
     
   ],
   related: [
-    { title: "Diamond Buying Tips from Jewelers", href: "/diamond-guide/diamond-buying-tips-from-jewelers" },
+    { title: "What is Diamond Cut", href: "/diamond-guide/what-is-diamond-cut" },
     { title: "Cushion Diamond Guide", href: "/diamond-guide/cushion-diamond-guide" },
-    { title: "Princess Diamond Guide", href: "/diamond-guide/princess-diamond-guide" },
     { title: "Emerald Diamond Guide", href: "/diamond-guide/emerald-diamond-guide" },
-    { title: "Diamond Price vs Quality", href: "/diamond-guide/diamond-price-vs-quality" }
+    { title: "Princess Diamond Guide", href: "/diamond-guide/princess-diamond-guide" },
+    { title: "Do Fancy Shapes Have Cut Grades", href: "/diamond-guide/do-fancy-shape-diamonds-have-cut-grades" }
   ]
 },
 
@@ -3495,10 +3495,10 @@ export const articles: Article[] = [
 
     { type: "heading", text: "Understanding Round Brilliant Cut Quality" },
     { type: "paragraph", text: "Cut quality is especially important when evaluating round diamonds." },
-    { type: "paragraph", text: "Because round diamonds follow a well-defined set of proportions, gemologists have been able to study how small changes in angles and measurements affect light performance." },
+    { type: "paragraph", text: "Because round diamonds follow a well-defined set of proportions, gemologists have been able to study how small changes in angles and measurements affect light performance. [What is diamond cut](/diamond-guide/what-is-diamond-cut) is the best place to start if you want the full cut framework." },
     { type: "paragraph", text: "This research led to grading systems that evaluate how well a round diamond handles light. A well-cut round diamond reflects light efficiently, creating strong brilliance and lively sparkle." },
     { type: "paragraph", text: "Poorly cut stones, on the other hand, may allow light to escape through the bottom or sides of the diamond. When this happens, the diamond can appear dull or lifeless." },
-    { type: "paragraph", text: "For this reason, many jewelers place significant emphasis on cut quality when selecting round diamonds." },
+    { type: "paragraph", text: "For this reason, many jewelers place significant emphasis on cut quality when selecting round diamonds. [How to read a diamond certificate](/diamond-guide/how-to-read-a-diamond-certificate) shows where cut, polish, and symmetry appear on a round report." },
 
     { type: "heading", text: "Why Round Diamonds Often Cost More" },
     { type: "paragraph", text: "Round diamonds typically carry the highest price per carat among all diamond shapes." },
@@ -3516,7 +3516,7 @@ export const articles: Article[] = [
 
     { type: "heading", text: "Choosing a Beautiful Round Diamond" },
     { type: "paragraph", text: "While round diamonds are easier to evaluate than many other shapes, several factors still deserve attention." },
-    { type: "paragraph", text: "Cut quality remains the most important. A well-cut round diamond will display strong brilliance, crisp reflections, and balanced sparkle across the surface of the stone." },
+    { type: "paragraph", text: "Cut quality remains the most important. A well-cut round diamond will display strong brilliance, crisp reflections, and balanced sparkle across the surface of the stone. [Diamond Intelligence](/diamond-intelligence) can help when you want to compare cut grades and proportions across candidate reports." },
     { type: "paragraph", text: "Symmetry is another important element. The facets should appear evenly aligned, and the overall shape should feel perfectly circular." },
     { type: "paragraph", text: "Clarity and color also influence the diamond’s appearance, but many buyers prioritize cut first because it has the greatest impact on visual performance." },
     { type: "paragraph", text: "When these characteristics come together, the result is a round diamond that feels bright, lively, and refined." },
@@ -3524,15 +3524,15 @@ export const articles: Article[] = [
     { type: "paragraph", text: "The round diamond remains the benchmark for brilliance in the diamond world. Its precisely engineered faceting produces a level of sparkle that few other shapes can consistently match." },
     { type: "paragraph", text: "Beyond its light performance, the round diamond carries a sense of tradition and familiarity that many engagement ring buyers appreciate." },
     { type: "paragraph", text: "While other shapes may offer unique silhouettes or larger face-up size, the round diamond continues to represent the classic standard of diamond beauty." },
-    { type: "paragraph", text: "For those seeking timeless elegance and reliable brilliance, the round diamond remains one of the most enduring choices in engagement ring design." },
+    { type: "paragraph", text: "For those seeking timeless elegance and reliable brilliance, the round diamond remains one of the most enduring choices in engagement ring design. [Begin with Concierge](/concierge) when you want help comparing round cut grades against oval or cushion alternatives." },
     
   ],
   related: [
-    { title: "Diamond Buying Tips from Jewelers", href: "/diamond-guide/diamond-buying-tips-from-jewelers" },
+    { title: "What is Diamond Cut", href: "/diamond-guide/what-is-diamond-cut" },
+    { title: "Oval vs Round Diamond", href: "/diamond-guide/oval-vs-round-diamond" },
     { title: "Oval Diamond Guide", href: "/diamond-guide/oval-diamond-guide" },
-    { title: "Cushion Diamond Guide", href: "/diamond-guide/cushion-diamond-guide" },
-    { title: "Princess Diamond Guide", href: "/diamond-guide/princess-diamond-guide" },
-    { title: "Diamond Price vs Quality", href: "/diamond-guide/diamond-price-vs-quality" }
+    { title: "How to Read a Diamond Certificate", href: "/diamond-guide/how-to-read-a-diamond-certificate" },
+    { title: "Diamond Cut vs Diamond Shape", href: "/diamond-guide/diamond-cut-vs-diamond-shape" }
   ]
 },
 {
@@ -4540,17 +4540,18 @@ export const articles: Article[] = [
     { type: "paragraph", text: "In Charlotte, many custom designs focus on keeping the setting clean so the diamond shape remains the focal point." },
 
     { type: "heading", text: "What Matters Most When Choosing a Shape" },
-    { type: "paragraph", text: "While trends can be helpful for inspiration, the most important factor is how the diamond feels when you see it in person. Shape is one of the few aspects of a diamond that immediately stands out, so it should reflect your personal preference rather than a current style direction." },
+    { type: "paragraph", text: "While trends can be helpful for inspiration, the most important factor is how the diamond feels when you see it in person. Shape is one of the few aspects of a diamond that immediately stands out, so it should reflect your personal preference rather than a current style direction. [What is diamond cut](/diamond-guide/what-is-diamond-cut) is worth reading once shape is narrowed, because craftsmanship still decides how that outline performs." },
     { type: "paragraph", text: "Seeing different shapes on the hand often makes the decision clearer. What looks appealing in photos may feel different when worn, which is why many buyers take time to compare options before finalizing their choice." },
 
     { type: "paragraph", text: "The best diamond shape in Charlotte is not defined by a single trend, but by how the diamond looks, feels, and fits within the overall design of the ring. From classic round diamonds to modern elongated shapes, each option offers a distinct balance of brilliance, proportion, and character." },
-    { type: "paragraph", text: "By focusing on how the diamond actually appears on the hand, it becomes easier to choose a shape that feels natural and enduring rather than temporary — a priority that aligns with [Our Approach](/our-approach) at Hourglass: what you see in daily wear matters more than trend." },
+    { type: "paragraph", text: "By focusing on how the diamond actually appears on the hand, it becomes easier to choose a shape that feels natural and enduring rather than temporary, a priority that aligns with [Our Approach](/our-approach) at Hourglass: what you see in daily wear matters more than trend. [Speak with Concierge](/concierge) when you want local guidance comparing shapes for a Charlotte engagement ring." },
     
   ],
   related: [
     { title: "Charlotte Diamond Advisor Guide", href: "/diamond-guide/charlotte-diamond-advisor-guide" },
     { title: "Oval Diamond Guide", href: "/diamond-guide/oval-diamond-guide" },
     { title: "Cushion Diamond Guide", href: "/diamond-guide/cushion-diamond-guide" },
+    { title: "What is Diamond Cut", href: "/diamond-guide/what-is-diamond-cut" },
     { title: "Charlotte Engagement Ring Guide", href: "/diamond-guide/charlotte-engagement-ring-guide" }
   ]
 },
