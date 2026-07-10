@@ -26,9 +26,9 @@ function formatExpiry(iso: string): string {
 
 function leadCopy(mode: CaptureMode): string {
   if (mode === "card-scale") {
-    return "Scan to capture your hand with a standard card in frame. Use a card for scale — this helps us calibrate the preview more carefully.";
+    return "Scan to capture your hand with a standard card in frame. This is a visual preview, not a final sizing measurement.";
   }
-  return "Scan to capture a clean hand photo. Your selected ring size will guide the preview scale.";
+  return "Scan to capture a clean hand photo. This is a visual preview, not a final sizing measurement.";
 }
 
 export function QrCapturePanel({

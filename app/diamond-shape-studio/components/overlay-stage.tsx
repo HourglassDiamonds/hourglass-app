@@ -120,12 +120,16 @@ export type OverlayStageProps = {
     label?: string;
     onPositionChange: (position: OverlayPosition) => void;
   }>;
+  onUploadClick?: () => void;
+  onPhoneCaptureClick?: () => void;
 };
 
 export function OverlayStage({
   handImageUrl,
   ringSize,
   overlays,
+  onUploadClick,
+  onPhoneCaptureClick,
 }: OverlayStageProps) {
   const stageRef = useRef<HTMLDivElement>(null);
   const [stageWidthPx, setStageWidthPx] = useState(0);
@@ -177,9 +181,32 @@ export function OverlayStage({
               <p className="dss-stage-empty-kicker">Hand preview</p>
               <p className="dss-stage-empty-title">Add your hand photo</p>
               <p className="dss-stage-empty-copy">
-                Upload from the left panel or capture with your phone. Diamonds
-                appear here at calibrated scale once a photo is ready.
+                Begin from the Hand Photo panel on the left, or use a shortcut
+                below. Diamonds appear here at calibrated scale once a photo is
+                ready.
               </p>
+              {onUploadClick || onPhoneCaptureClick ? (
+                <div className="dss-stage-empty-actions">
+                  {onUploadClick ? (
+                    <button
+                      type="button"
+                      className="dss-stage-empty-btn"
+                      onClick={onUploadClick}
+                    >
+                      Upload from this device
+                    </button>
+                  ) : null}
+                  {onPhoneCaptureClick ? (
+                    <button
+                      type="button"
+                      className="dss-stage-empty-btn dss-stage-empty-btn--quiet"
+                      onClick={onPhoneCaptureClick}
+                    >
+                      Capture with phone
+                    </button>
+                  ) : null}
+                </div>
+              ) : null}
               <ol className="dss-stage-empty-steps">
                 <li>Add a clear photo of your hand</li>
                 <li>Choose shape and carat</li>

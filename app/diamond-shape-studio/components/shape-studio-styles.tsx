@@ -95,9 +95,11 @@ export function ShapeStudioStyles() {
           oklch(from var(--bg) calc(l + 0.02) c h) 0%,
           var(--bg) 58%,
           var(--bg-deep) 100%);
-        z-index:0;
+        z-index:-1;
       }
       .dss-main{
+        position:relative;
+        z-index:1;
         display:grid;
         grid-template-columns:248px minmax(0, 1fr);
         grid-template-rows:minmax(0, 1fr);
@@ -111,11 +113,12 @@ export function ShapeStudioStyles() {
         overflow-y:auto;
         overflow-x:hidden;
         display:flex; flex-direction:column; gap:12px;
-        scrollbar-width:none;
+        scrollbar-width:thin;
         min-height:0;
         align-self:stretch;
+        background:color-mix(in srgb, var(--card) 55%, transparent);
+        border-right:1px solid color-mix(in srgb, var(--hairline) 80%, transparent);
       }
-      .dss-control-rail::-webkit-scrollbar{ display:none; }
       .dss-stage-stack{
         grid-column:2; grid-row:1;
         display:flex; flex-direction:column;
@@ -191,7 +194,7 @@ export function ShapeStudioStyles() {
         align-items:center;
         gap:6px;
         text-align:center;
-        max-width:260px;
+        max-width:280px;
       }
       .dss-stage-empty-kicker{
         margin:0;
@@ -212,6 +215,30 @@ export function ShapeStudioStyles() {
         margin:0;
         font-size:12px;
         line-height:1.5;
+        color:var(--ink-soft);
+      }
+      .dss-stage-empty-actions{
+        display:flex;
+        flex-wrap:wrap;
+        justify-content:center;
+        gap:8px;
+        margin-top:10px;
+        width:100%;
+      }
+      .dss-stage-empty-btn{
+        padding:8px 12px;
+        border-radius:8px;
+        border:1px solid var(--pill-edge);
+        background:var(--pill-active);
+        font-size:9px;
+        letter-spacing:0.11em;
+        text-transform:uppercase;
+        color:var(--ink);
+        cursor:pointer;
+      }
+      .dss-stage-empty-btn--quiet{
+        background:color-mix(in srgb, var(--hairline-soft) 70%, #fff);
+        border-color:var(--hairline);
         color:var(--ink-soft);
       }
       .dss-stage-empty-steps{
@@ -301,8 +328,8 @@ export function ShapeStudioStyles() {
       }
       .dss-shape-chip.is-selected .dss-name{ color:var(--ink); }
       .dss-card{
-        background:color-mix(in srgb, var(--card) 92%, #fff);
-        border:1px solid color-mix(in srgb, var(--card-edge) 88%, var(--hairline));
+        background:color-mix(in srgb, var(--card) 96%, #fff);
+        border:1px solid color-mix(in srgb, var(--card-edge) 92%, var(--ink-mute));
         border-radius:14px;
         padding:11px 12px 12px;
         box-shadow:var(--shadow-1);
@@ -313,6 +340,10 @@ export function ShapeStudioStyles() {
         text-transform:uppercase; color:var(--ink-soft); margin:0 0 8px;
         font-family:var(--serif);
         font-style:italic;
+      }
+      .dss-card.is-start-focus{
+        outline:1px solid color-mix(in srgb, var(--gold-warm) 55%, var(--hairline));
+        box-shadow:0 0 0 3px color-mix(in srgb, var(--gold-soft) 35%, transparent), var(--shadow-1);
       }
       .dss-stepper{
         display:flex; align-items:center; justify-content:center;
@@ -380,7 +411,7 @@ export function ShapeStudioStyles() {
       }
       .dss-upload-mode-btn:disabled{ opacity:0.55; cursor:default; }
       .dss-capture-path-label{
-        margin:14px 0 8px;
+        margin:12px 0 6px;
         font-size:9px;
         letter-spacing:0.14em;
         text-transform:uppercase;
@@ -390,29 +421,29 @@ export function ShapeStudioStyles() {
       .dss-capture-path-list{
         display:flex;
         flex-direction:column;
-        gap:8px;
+        gap:7px;
       }
       .dss-capture-path{
         display:flex;
         flex-direction:column;
-        gap:10px;
-        padding:11px 12px 12px;
+        gap:8px;
+        padding:10px 11px 11px;
         border-radius:12px;
         border:1px solid color-mix(in srgb, var(--card-edge) 88%, var(--hairline));
-        background:color-mix(in srgb, var(--hairline-soft) 70%, #fff);
+        background:color-mix(in srgb, var(--hairline-soft) 55%, #fff);
       }
       .dss-capture-path-title{
-        margin:0 0 4px;
+        margin:0 0 3px;
         font-family:var(--serif);
-        font-size:13.5px;
+        font-size:13px;
         font-weight:400;
-        line-height:1.3;
+        line-height:1.25;
         color:var(--ink);
       }
       .dss-capture-path-body{
         margin:0;
-        font-size:11px;
-        line-height:1.45;
+        font-size:10.5px;
+        line-height:1.4;
         color:var(--ink-soft);
       }
       .dss-capture-path-cta{
@@ -430,8 +461,8 @@ export function ShapeStudioStyles() {
       .dss-capture-path-cta:disabled{ opacity:0.55; cursor:default; }
       .dss-upload-zone{
         border:1px dashed var(--hairline); border-radius:12px;
-        padding:14px 12px; text-align:center; cursor:pointer;
-        background:var(--hairline-soft);
+        padding:12px 11px; text-align:center; cursor:pointer;
+        background:color-mix(in srgb, var(--hairline-soft) 60%, #fff);
       }
       .dss-upload-zone.is-dragover{ border-color:var(--gold-warm); }
       .dss-upload-zone p{

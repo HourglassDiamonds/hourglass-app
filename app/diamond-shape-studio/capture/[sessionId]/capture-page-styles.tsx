@@ -43,6 +43,7 @@ export function CapturePageStyles() {
       .dss-capture-guide{
         margin:0 auto 16px;
         width:min(100%, 280px);
+        pointer-events:none;
       }
       .dss-capture-guide-frame{
         position:relative;
@@ -53,6 +54,14 @@ export function CapturePageStyles() {
         background:
           radial-gradient(ellipse 70% 55% at 50% 42%, oklch(0.99 0.004 78), oklch(0.96 0.008 75));
         overflow:hidden;
+        pointer-events:none;
+      }
+      .dss-capture-guide-lane,
+      .dss-capture-guide-dot,
+      .dss-capture-guide-ring,
+      .dss-capture-guide-card,
+      .dss-capture-guide-caption{
+        pointer-events:none;
       }
       .dss-capture-guide-lane{
         position:absolute;
@@ -132,7 +141,16 @@ export function CapturePageStyles() {
         text-transform:uppercase;
         color:oklch(0.58 0.010 65);
       }
+      .dss-capture-file-control{
+        position:relative;
+        z-index:2;
+        display:block;
+        width:100%;
+        cursor:pointer;
+      }
       .dss-capture-primary{
+        display:block;
+        box-sizing:border-box;
         width:100%;
         padding:12px 16px;
         border-radius:10px;
@@ -143,12 +161,42 @@ export function CapturePageStyles() {
         text-transform:uppercase;
         color:oklch(0.28 0.012 60);
         cursor:pointer;
+        text-align:center;
+        pointer-events:none;
       }
-      .dss-capture-primary:disabled{ opacity:0.6; cursor:default; }
+      .dss-capture-file-input{
+        position:absolute;
+        inset:0;
+        z-index:3;
+        width:100%;
+        height:100%;
+        margin:0;
+        padding:0;
+        opacity:0;
+        cursor:pointer;
+        font-size:16px;
+        border:0;
+      }
+      .dss-capture-file-control.is-busy .dss-capture-primary{
+        opacity:0.6;
+      }
+      .dss-capture-file-control.is-busy .dss-capture-file-input{
+        pointer-events:none;
+        cursor:default;
+      }
+      .dss-capture-file-control.is-hidden{
+        position:absolute;
+        width:1px;
+        height:1px;
+        overflow:hidden;
+        clip:rect(0,0,0,0);
+        pointer-events:none;
+      }
       .dss-capture-error{
         margin:14px 0 0;
-        font-size:12px;
-        color:oklch(0.48 0.08 35);
+        font-size:13px;
+        font-weight:600;
+        color:oklch(0.42 0.12 30);
         line-height:1.45;
       }
       .dss-capture-hint{

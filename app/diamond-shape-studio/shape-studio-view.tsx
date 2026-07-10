@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type {
   CompareSlotId,
   DiamondSlotState,
@@ -10,7 +10,10 @@ import type {
 import { SHAPE_LABELS } from "@/lib/shape-studio/constants";
 import { CaratControl, RingSizeControl } from "./components/calibration-controls";
 import DiamondStudioToolHeader from "../diamond-studio/components/DiamondStudioToolHeader";
-import { HandPhotoPanel } from "./components/hand-photo-panel";
+import {
+  HandPhotoPanel,
+  type HandPhotoPanelHandle,
+} from "./components/hand-photo-panel";
 import { OverlayStage } from "./components/overlay-stage";
 import ShapeComparisonEditorial from "./components/ShapeComparisonEditorial";
 import { ShapeSelector } from "./components/shape-selector";
@@ -29,6 +32,7 @@ function createDefaultSlot(
 }
 
 export function ShapeStudioView() {
+  const handPhotoRef = useRef<HandPhotoPanelHandle>(null);
   const [handImageUrl, setHandImageUrl] = useState<string | null>(null);
   const [ringSize, setRingSize] = useState(6.0);
   const [mode, setMode] = useState<StudioMode>("single");
@@ -135,7 +139,10 @@ export function ShapeStudioView() {
       <div className="dss-app">
         <div className="dss-main">
           <aside className="dss-control-rail" aria-label="Shape Studio controls">
-            <HandPhotoPanel onImageSelected={handleImageSelected} />
+            <HandPhotoPanel
+              ref={handPhotoRef}
+              onImageSelected={handleImageSelected}
+            />
 
             <section className="dss-card" aria-label="Comparison mode">
               <div className="dss-card-head">Mode</div>
@@ -197,6 +204,10 @@ export function ShapeStudioView() {
                 handImageUrl={handImageUrl}
                 ringSize={ringSize}
                 overlays={overlayEntries}
+                onUploadClick={() => handPhotoRef.current?.openDevicePicker()}
+                onPhoneCaptureClick={() =>
+                  handPhotoRef.current?.revealPhonePaths()
+                }
               />
             </div>
             <ShapeSelector

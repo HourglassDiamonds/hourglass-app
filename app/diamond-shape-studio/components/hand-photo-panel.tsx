@@ -1,6 +1,12 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import {
+  forwardRef,
+  useCallback,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from "react";
 import {
   ACCEPTED_IMAGE_EXTENSIONS,
   ACCEPTED_IMAGE_TYPES,
@@ -12,6 +18,11 @@ import { QrCapturePanel } from "./qr-capture-panel";
 
 type HandPhotoPanelProps = {
   onImageSelected: (url: string) => void;
+};
+
+export type HandPhotoPanelHandle = {
+  openDevicePicker: () => void;
+  revealPhonePaths: () => void;
 };
 
 type PanelView = "chooser" | "phone";
@@ -37,19 +48,23 @@ const PATH_CARDS: Array<{
   {
     mode: "known-size",
     title: "I know my ring size",
-    body: "Scan to capture a clean hand photo. Your selected ring size will guide the preview scale.",
+    body: "Scan for a clean hand photo. Visual preview only — not a final sizing measurement.",
     cta: "Create QR",
   },
   {
     mode: "card-scale",
     title: "I do not know my ring size",
-    body: "Scan to capture your hand with a standard card in frame for scale reference.",
+    body: "Scan with a standard card in frame. Visual preview only — not a final sizing measurement.",
     cta: "Create QR",
   },
 ];
 
-export function HandPhotoPanel({ onImageSelected }: HandPhotoPanelProps) {
+export const HandPhotoPanel = forwardRef<
+  HandPhotoPanelHandle,
+  HandPhotoPanelProps
+>(function HandPhotoPanel({ onImageSelected }, ref) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const panelRef = useRef<HTMLElement>(null);
   const creatingRef = useRef(false);
   const [dragOver, setDragOver] = useState(false);
   const [view, setView] = useState<PanelView>("chooser");
@@ -61,6 +76,59 @@ export function HandPhotoPanel({ onImageSelected }: HandPhotoPanelProps) {
   const [qrError, setQrError] = useState<string | null>(null);
   const [qrExpired, setQrExpired] = useState(false);
   const [phoneWaiting, setPhoneWaiting] = useState(false);
+
+  const pulsePanel = useCallback(() => {
+    const el = panelRef.current;
+    if (!el) return;
+    el.classList.remove("is-start-focus");
+    void el.offsetWidth;
+    el.classList.add("is-start-focus");
+    el.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    window.setTimeout(() => el.classList.remove("is-start-focus"), 1600);
+  }, []);
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      openDevicePicker: () => {
+        if (view !== "chooser") {
+          creatingRef.current = false;
+          setView("chooser");
+          setCaptureMode(null);
+          setSessionId(null);
+          setCaptureUrl(null);
+          setExpiresAt(null);
+          setQrError(null);
+          setQrExpired(false);
+          setPhoneWaiting(false);
+          setCreatingSession(false);
+        }
+        pulsePanel();
+        window.setTimeout(() => inputRef.current?.click(), 120);
+      },
+      revealPhonePaths: () => {
+        if (view !== "chooser") {
+          creatingRef.current = false;
+          setView("chooser");
+          setCaptureMode(null);
+          setSessionId(null);
+          setCaptureUrl(null);
+          setExpiresAt(null);
+          setQrError(null);
+          setQrExpired(false);
+          setPhoneWaiting(false);
+          setCreatingSession(false);
+        }
+        pulsePanel();
+        window.setTimeout(() => {
+          panelRef.current
+            ?.querySelector<HTMLElement>(".dss-capture-path-list")
+            ?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+        }, 80);
+      },
+    }),
+    [pulsePanel, view],
+  );
 
   const resetPhoneCapture = useCallback(() => {
     creatingRef.current = false;
@@ -157,7 +225,11 @@ export function HandPhotoPanel({ onImageSelected }: HandPhotoPanelProps) {
   }, []);
 
   return (
-    <section className="dss-card" aria-label="Hand photo">
+    <section
+      ref={panelRef}
+      className="dss-card"
+      aria-label="Hand photo"
+    >
       <div className="dss-card-head">Hand Photo</div>
 
       {view === "chooser" ? (
@@ -184,7 +256,7 @@ export function HandPhotoPanel({ onImageSelected }: HandPhotoPanelProps) {
               handleImageFromDevice(e.dataTransfer.files[0]);
             }}
           >
-            <p>This device — drag and drop a hand photo, or choose a file.</p>
+            <p>This device — drag and drop, or choose a file.</p>
             <span className="dss-upload-cta">Upload JPG, PNG, or WEBP</span>
           </div>
           <input
@@ -240,4 +312,4 @@ export function HandPhotoPanel({ onImageSelected }: HandPhotoPanelProps) {
       )}
     </section>
   );
-}
+});
