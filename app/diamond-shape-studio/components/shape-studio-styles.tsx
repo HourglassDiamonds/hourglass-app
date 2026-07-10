@@ -281,6 +281,53 @@ export function ShapeStudioStyles() {
         width:100%; height:100%; object-fit:contain;
         pointer-events:none; user-select:none;
       }
+      .dss-hand-img--framed{
+        inset:auto;
+        max-width:none;
+        object-fit:fill;
+      }
+      .dss-viewer.is-framed-crop,
+      .dss-viewer.is-framing{
+        overflow:hidden;
+      }
+      .dss-viewer.is-framing{
+        cursor:grab;
+        touch-action:none;
+      }
+      .dss-viewer.is-framing.is-panning{
+        cursor:grabbing;
+      }
+      .dss-viewer.is-framing .dss-cal-handle{
+        pointer-events:none;
+        opacity:0.4;
+      }
+      .dss-viewer.is-framing .dss-cal-jaw,
+      .dss-viewer.is-framing .dss-cal-stem,
+      .dss-viewer.is-framing .dss-cal-segment{
+        opacity:0.35;
+      }
+      .dss-frame-copy{
+        margin:8px 12px 0;
+        max-width:440px;
+        text-align:center;
+      }
+      .dss-frame-heading{
+        margin:0;
+        font-size:13px;
+        letter-spacing:0.08em;
+        text-transform:uppercase;
+        color:var(--ink);
+      }
+      .dss-frame-support{
+        margin:6px 0 0;
+        font-size:12px;
+        line-height:1.45;
+        color:var(--ink-soft);
+      }
+      .dss-frame-zoom{
+        display:inline-flex;
+        gap:6px;
+      }
       .dss-viewer.is-placeable{ cursor:crosshair; }
       .dss-viewer.is-placeable .dss-overlay{ cursor:grab; }
       .dss-overlay{

@@ -23,6 +23,7 @@ export function createInitialCardCalibration(): CardCalibrationState {
     cardB: null,
     fingerL: null,
     fingerR: null,
+    framing: null,
   };
 }
 

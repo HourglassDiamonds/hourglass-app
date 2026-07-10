@@ -57,25 +57,42 @@ export type OverlayPosition = {
 };
 
 /**
- * Point in displayed image-content space (object-fit: contain), not letterbox.
- * Survives responsive layout changes when recomputed against the content rect.
+ * Point normalized over the full oriented source image (0–1).
+ * Equivalent to content-normalized points over the full contained image —
+ * do not rescale existing values when treating them as source coordinates.
  */
 export type ContentPoint = {
-  u: number;
-  v: number;
+  u: number; // 0–1 across oriented source width
+  v: number; // 0–1 across oriented source height
 };
 
-/** Phase 2A guided card/finger marking — no ring-size estimate. */
+/** Alias clarifying source-normalized semantics; same values as ContentPoint. */
+export type SourcePoint = ContentPoint;
+
+/**
+ * Authoritative framing crop over the oriented source image.
+ * Crop height is derived from source size + viewer aspect — not stored.
+ */
+export type FramingState = {
+  centerU: number;
+  centerV: number;
+  /** Crop width as a fraction of oriented source width. */
+  cropWidthU: number;
+};
+
+/** Phase 2A/3B1 guided card/finger marking — no ring-size estimate. */
 export type GuidedCalibrationStep =
   | "photo-ready"
   | "mark-card"
   | "confirm-card"
   | "mark-finger"
+  | "frame"
   | "calibrated-preview";
 
 /**
  * Authoritative card-reference calibration inputs only.
  * Derive pixelsPerMm and finger midpoint; do not store estimates.
+ * Point values are source-normalized over the oriented image.
  */
 export type CardCalibrationState = {
   step: GuidedCalibrationStep;
@@ -83,6 +100,10 @@ export type CardCalibrationState = {
   cardB: ContentPoint | null;
   fingerL: ContentPoint | null;
   fingerR: ContentPoint | null;
+  /** Set when entering the frame step; reset with a replacement photo. */
+  framing: FramingState | null;
+  /** Non-blocking hint when suggested crop cannot fully exclude the card. */
+  cardStillInFrame?: boolean;
 };
 
 export type DiamondSlotState = {

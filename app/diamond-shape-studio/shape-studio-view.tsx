@@ -218,6 +218,15 @@ export function ShapeStudioView() {
     }
     if (prev.step === "mark-finger" && prev.fingerL && prev.fingerR) {
       applyFingerSeatPositions(prev.fingerL, prev.fingerR);
+      setCardCalibration({
+        ...prev,
+        step: "frame",
+        framing: null,
+        cardStillInFrame: undefined,
+      });
+      return;
+    }
+    if (prev.step === "frame") {
       setCardCalibration({ ...prev, step: "calibrated-preview" });
     }
   }, [cardCalibration, applyFingerSeatPositions]);
@@ -231,6 +240,14 @@ export function ShapeStudioView() {
       if (prev.step === "mark-finger") {
         return { ...prev, step: "confirm-card" };
       }
+      if (prev.step === "frame") {
+        return {
+          ...prev,
+          step: "mark-finger",
+          framing: null,
+          cardStillInFrame: undefined,
+        };
+      }
       return prev;
     });
   }, []);
@@ -240,6 +257,23 @@ export function ShapeStudioView() {
     resetSlotsForNewPhoto();
     beginCardCalibration();
   }, [photoScaleSource, resetSlotsForNewPhoto, beginCardCalibration]);
+
+  const handleFramingChange = useCallback(
+    (
+      framing: NonNullable<CardCalibrationState["framing"]>,
+      cardStillInFrame?: boolean,
+    ) => {
+      setCardCalibration((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          framing,
+          ...(cardStillInFrame !== undefined ? { cardStillInFrame } : {}),
+        };
+      });
+    },
+    [],
+  );
 
   const overlayEntries = useMemo(() => {
     if (awaitingCardCalibration) return [];
@@ -282,11 +316,13 @@ export function ShapeStudioView() {
   const liveSentence = !handImageUrl
     ? "Upload a hand photo to compare shapes and carat sizes as a visual preview."
     : awaitingCardCalibration
-      ? cardCalibration?.step === "mark-finger"
-        ? "Align the precision lines with the two sides of the finger where the ring will sit."
-        : cardCalibration?.step === "confirm-card"
-          ? "Confirm the card scale for this photo."
-          : "Align the precision lines with the two ends of the card’s long edge."
+      ? cardCalibration?.step === "frame"
+        ? "Position your hand within the frame. Keep the card out of view."
+        : cardCalibration?.step === "mark-finger"
+          ? "Align the precision lines with the two sides of the finger where the ring will sit."
+          : cardCalibration?.step === "confirm-card"
+            ? "Confirm the card scale for this photo."
+            : "Align the precision lines with the two ends of the card’s long edge."
       : `A ${caratLabel}-carat ${shapeLabel} diamond, shown as a visual preview on your hand.`;
   const trustCopy = trustLine(photoScaleSource, calibrated);
 
@@ -385,6 +421,7 @@ export function ShapeStudioView() {
                 onGuidedContinue={handleGuidedContinue}
                 onGuidedAdjust={handleGuidedAdjust}
                 onGuidedReset={handleGuidedReset}
+                onFramingChange={handleFramingChange}
                 overlays={overlayEntries}
                 onUploadClick={() => handPhotoRef.current?.openDevicePicker()}
                 onPhoneCaptureClick={() =>
