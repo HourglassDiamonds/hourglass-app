@@ -4022,6 +4022,11 @@ export const articles: Article[] = [
   slug: "what-is-diamond-cut",
   title: "What is Diamond Cut",
   category: "Diamond Cut",
+  heroImage: "/diamond-guide/diamond-cut-hero.png",
+  heroImageAlt:
+    "A round brilliant diamond beside gem inspection tools on a warm stone surface, representing diamond cut and light performance evaluation.",
+  visualCategory: "original-photo",
+  visualStatus: "live",
   body: [
     { type: "paragraph", text: "Diamond cut describes how precisely a diamond's facets are shaped, aligned, and polished to return light. On a grading report it appears as a cut grade for round brilliants, plus separate polish and symmetry lines. For most engagement rings the practical question is simpler: does the stone look alive on the hand? Light performance in wear usually matters more than treating Excellent as a checkbox." },
     { type: "paragraph", text: "Two round diamonds on a white tray. Same carat. Same color. Same clarity. Both graded Excellent cut. A buyer comparing certificates online would call them interchangeable. In person, one returns light evenly across the crown. The other looks acceptable under the spotlight and slightly tired everywhere else. That gap is why cut sits at the center of how experienced advisors think about diamonds." },
