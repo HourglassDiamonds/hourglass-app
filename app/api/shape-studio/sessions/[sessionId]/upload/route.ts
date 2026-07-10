@@ -122,9 +122,10 @@ export async function POST(request: Request, context: RouteContext) {
     const status =
       message === "Session not found"
         ? 404
-        : message === "Session expired"
+        : message === "Session expired" || message === "Session cancelled"
           ? 410
-          : message === "Session already has an image"
+          : message === "Session already has an image" ||
+              message === "Session already consumed"
             ? 409
             : 500;
     return NextResponse.json({ error: "upload_failed", message }, { status });

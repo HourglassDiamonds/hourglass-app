@@ -203,11 +203,39 @@ export function CapturePageStyles() {
         color:oklch(0.42 0.12 30);
         line-height:1.45;
       }
+      .dss-capture-actions{
+        margin:16px 0 0;
+        display:flex;
+        justify-content:center;
+      }
+      .dss-capture-secondary{
+        appearance:none;
+        border:1px solid oklch(0.86 0.012 70);
+        background:transparent;
+        color:oklch(0.36 0.012 60);
+        font-size:11px;
+        letter-spacing:0.08em;
+        text-transform:uppercase;
+        padding:10px 14px;
+        border-radius:10px;
+        cursor:pointer;
+      }
       .dss-capture-hint{
         margin:16px 0 0;
         font-size:10px;
         letter-spacing:0.06em;
         color:oklch(0.62 0.010 65);
+      }
+      .sr-only{
+        position:absolute;
+        width:1px;
+        height:1px;
+        padding:0;
+        margin:-1px;
+        overflow:hidden;
+        clip:rect(0,0,0,0);
+        white-space:nowrap;
+        border:0;
       }
     `,
       }}

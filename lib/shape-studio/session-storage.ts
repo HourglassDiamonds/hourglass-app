@@ -3,6 +3,7 @@ import { getSupabaseAdmin } from "@/lib/supabase/client";
 import type {
   CreateSessionResult,
   SessionPollResult,
+  ShapeStudioSessionRecord,
   ShapeStudioSessionStatus,
 } from "./session-types";
 import {
@@ -10,22 +11,16 @@ import {
   SHAPE_STUDIO_SESSION_TTL_MS,
   SHAPE_STUDIO_SIGNED_URL_TTL_SEC,
 } from "./session-config";
+import {
+  deleteShapeStudioCaptureObjects,
+  sessionMetaObjectPath,
+} from "./session-capture-delete";
+import { isValidSessionId } from "./session-id";
 
-type StorageSessionRecord = {
-  sessionId: string;
-  status: ShapeStudioSessionStatus;
-  imagePath: string | null;
-  imageMime: string | null;
-  createdAt: string;
-  expiresAt: string;
-};
+export type StorageSessionRecord = ShapeStudioSessionRecord;
 
-function sessionMetaPath(sessionId: string): string {
-  return `sessions/${sessionId}.json`;
-}
-
-function isExpired(expiresAt: string): boolean {
-  return Date.parse(expiresAt) <= Date.now();
+function isExpired(expiresAt: string, nowMs = Date.now()): boolean {
+  return Date.parse(expiresAt) <= nowMs;
 }
 
 async function readStorageSession(
@@ -36,7 +31,7 @@ async function readStorageSession(
 
   const { data, error } = await supabase.storage
     .from(SHAPE_STUDIO_CAPTURES_BUCKET)
-    .download(sessionMetaPath(sessionId));
+    .download(sessionMetaObjectPath(sessionId));
 
   if (error || !data) return null;
 
@@ -50,7 +45,7 @@ async function writeStorageSession(record: StorageSessionRecord): Promise<void> 
 
   const { error } = await supabase.storage
     .from(SHAPE_STUDIO_CAPTURES_BUCKET)
-    .upload(sessionMetaPath(record.sessionId), JSON.stringify(record), {
+    .upload(sessionMetaObjectPath(record.sessionId), JSON.stringify(record), {
       contentType: "application/json",
       upsert: true,
     });
@@ -74,6 +69,7 @@ export async function createStorageShapeStudioSession(): Promise<CreateSessionRe
     imageMime: null,
     createdAt,
     expiresAt,
+    acknowledgedAt: null,
   });
 
   return {
@@ -83,22 +79,27 @@ export async function createStorageShapeStudioSession(): Promise<CreateSessionRe
   };
 }
 
+async function signedUrlFor(imagePath: string): Promise<string | undefined> {
+  const supabase = getSupabaseAdmin();
+  if (!supabase) return undefined;
+  const { data, error } = await supabase.storage
+    .from(SHAPE_STUDIO_CAPTURES_BUCKET)
+    .createSignedUrl(imagePath, SHAPE_STUDIO_SIGNED_URL_TTL_SEC);
+  if (error || !data?.signedUrl) return undefined;
+  return data.signedUrl;
+}
+
 export async function getStorageShapeStudioSession(
   sessionId: string,
 ): Promise<SessionPollResult | null> {
   const record = await readStorageSession(sessionId);
   if (!record) return null;
 
-  if (record.status === "expired") {
-    return {
-      sessionId,
-      status: "expired",
-      expiresAt: record.expiresAt,
-    };
-  }
-
-  if (record.status !== "image_uploaded" && isExpired(record.expiresAt)) {
-    await writeStorageSession({ ...record, status: "expired" });
+  if (
+    (record.status === "pending" || record.status === "image_uploaded") &&
+    isExpired(record.expiresAt)
+  ) {
+    await expireStorageSessionWithCleanup(sessionId);
     return {
       sessionId,
       status: "expired",
@@ -112,25 +113,91 @@ export async function getStorageShapeStudioSession(
     expiresAt: record.expiresAt,
   };
 
+  if (record.acknowledgedAt) {
+    result.acknowledgedAt = record.acknowledgedAt;
+  }
+
   if (record.status === "image_uploaded" && record.imagePath) {
-    const supabase = getSupabaseAdmin();
-    if (supabase) {
-      const { data, error } = await supabase.storage
-        .from(SHAPE_STUDIO_CAPTURES_BUCKET)
-        .createSignedUrl(record.imagePath, SHAPE_STUDIO_SIGNED_URL_TTL_SEC);
-      if (!error && data?.signedUrl) {
-        result.imageUrl = data.signedUrl;
-      }
-    }
+    result.imageUrl = await signedUrlFor(record.imagePath);
   }
 
   return result;
 }
 
 export async function markStorageSessionExpired(sessionId: string): Promise<void> {
+  await expireStorageSessionWithCleanup(sessionId);
+}
+
+export async function expireStorageSessionWithCleanup(
+  sessionId: string,
+): Promise<void> {
   const record = await readStorageSession(sessionId);
-  if (!record || record.status === "image_uploaded") return;
-  await writeStorageSession({ ...record, status: "expired" });
+  if (!record) return;
+  if (record.status === "consumed" || record.status === "cancelled") return;
+  if (record.status === "expired" && !record.imagePath) return;
+
+  if (record.imagePath) {
+    await deleteShapeStudioCaptureObjects(sessionId, record.imagePath);
+  }
+
+  await writeStorageSession({
+    ...record,
+    status: "expired",
+    imagePath: null,
+    imageMime: null,
+  });
+}
+
+export async function cancelStorageSession(sessionId: string): Promise<void> {
+  const record = await readStorageSession(sessionId);
+  if (!record) throw new Error("Session not found");
+  if (record.status === "cancelled") return;
+  if (record.status === "consumed") return;
+  if (record.status === "expired") return;
+
+  if (record.imagePath) {
+    await deleteShapeStudioCaptureObjects(sessionId, record.imagePath);
+  }
+
+  await writeStorageSession({
+    ...record,
+    status: "cancelled",
+    imagePath: null,
+    imageMime: null,
+  });
+}
+
+export async function acknowledgeStorageSession(
+  sessionId: string,
+): Promise<{ status: ShapeStudioSessionStatus; acknowledgedAt: string }> {
+  const record = await readStorageSession(sessionId);
+  if (!record) throw new Error("Session not found");
+
+  if (record.status === "consumed") {
+    return {
+      status: "consumed",
+      acknowledgedAt: record.acknowledgedAt ?? new Date().toISOString(),
+    };
+  }
+
+  if (record.status !== "image_uploaded") {
+    throw new Error("Session has no image to acknowledge");
+  }
+
+  const acknowledgedAt = new Date().toISOString();
+  if (record.imagePath) {
+    await deleteShapeStudioCaptureObjects(sessionId, record.imagePath);
+  }
+
+  await writeStorageSession({
+    ...record,
+    status: "consumed",
+    imagePath: null,
+    imageMime: null,
+    acknowledgedAt,
+  });
+
+  return { status: "consumed", acknowledgedAt };
 }
 
 export async function readStorageSessionForUpload(
@@ -146,6 +213,17 @@ export async function updateStorageSessionAfterUpload(input: {
 }): Promise<void> {
   const record = await readStorageSession(input.sessionId);
   if (!record) throw new Error("Session not found");
+  if (record.status !== "pending") {
+    throw new Error(
+      record.status === "image_uploaded"
+        ? "Session already has an image"
+        : record.status === "cancelled"
+          ? "Session cancelled"
+          : record.status === "consumed"
+            ? "Session already consumed"
+            : "Session expired",
+    );
+  }
 
   await writeStorageSession({
     ...record,
@@ -160,8 +238,11 @@ export async function expireStorageSessionIfNeeded(
 ): Promise<void> {
   const record = await readStorageSession(sessionId);
   if (!record) return;
-  if (record.status !== "image_uploaded" && isExpired(record.expiresAt)) {
-    await writeStorageSession({ ...record, status: "expired" });
+  if (
+    (record.status === "pending" || record.status === "image_uploaded") &&
+    isExpired(record.expiresAt)
+  ) {
+    await expireStorageSessionWithCleanup(sessionId);
   }
 }
 
@@ -171,9 +252,37 @@ export async function forceExpireStorageSessionForTest(
 ): Promise<void> {
   const record = await readStorageSession(sessionId);
   if (!record) return;
+  if (record.imagePath) {
+    await deleteShapeStudioCaptureObjects(sessionId, record.imagePath);
+  }
   await writeStorageSession({
     ...record,
     status: "expired",
     expiresAt: expiredAt,
+    imagePath: null,
+    imageMime: null,
   });
+}
+
+export async function listStorageSessionsForCleanup(): Promise<
+  StorageSessionRecord[]
+> {
+  const supabase = getSupabaseAdmin();
+  if (!supabase) return [];
+
+  const { data, error } = await supabase.storage
+    .from(SHAPE_STUDIO_CAPTURES_BUCKET)
+    .list("sessions", { limit: 1000 });
+
+  if (error || !data) return [];
+
+  const records: StorageSessionRecord[] = [];
+  for (const entry of data) {
+    if (!entry.name?.endsWith(".json")) continue;
+    const sessionId = entry.name.replace(/\.json$/, "");
+    if (!isValidSessionId(sessionId)) continue;
+    const record = await readStorageSession(sessionId);
+    if (record) records.push(record);
+  }
+  return records;
 }

@@ -1,4 +1,5 @@
 import {
+  cancelShapeStudioSession,
   getShapeStudioSession,
   isShapeStudioSessionsAvailable,
   isValidSessionId,
@@ -31,5 +32,27 @@ export async function GET(_request: Request, context: RouteContext) {
   } catch (err) {
     const message = err instanceof Error ? err.message : "Session read failed";
     return NextResponse.json({ error: "session_read_failed", message }, { status: 500 });
+  }
+}
+
+/** Desktop cancel / Start over — invalidates session and deletes any capture object. */
+export async function DELETE(_request: Request, context: RouteContext) {
+  const { sessionId } = await context.params;
+
+  if (!isValidSessionId(sessionId)) {
+    return NextResponse.json({ error: "invalid_session" }, { status: 400 });
+  }
+
+  if (!isShapeStudioSessionsAvailable()) {
+    return NextResponse.json({ error: "capture_unavailable" }, { status: 503 });
+  }
+
+  try {
+    await cancelShapeStudioSession(sessionId);
+    return NextResponse.json({ ok: true, status: "cancelled" });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Cancel failed";
+    const status = message === "Session not found" ? 404 : 500;
+    return NextResponse.json({ error: "cancel_failed", message }, { status });
   }
 }

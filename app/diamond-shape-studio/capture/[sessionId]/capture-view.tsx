@@ -3,17 +3,35 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { type CaptureMode } from "@/lib/shape-studio/types";
 import { prepareCaptureFile } from "@/lib/shape-studio/prepare-capture-file";
+import {
+  captureGateUserMessage,
+  evaluateCaptureGate,
+  pollIndicatesDelivered,
+  pollIndicatesEnded,
+} from "@/lib/shape-studio/session-lifecycle";
+import type { CaptureGateResult } from "@/lib/shape-studio/session-types";
+import type { SessionPollResult } from "@/lib/shape-studio/session-types";
 import { CapturePageStyles } from "./capture-page-styles";
 
 const CAPTURE_INPUT_ID = "dss-capture-file-input";
 const UPLOAD_TIMEOUT_MS = 45_000;
+const ACK_POLL_MS = 1500;
 
 type CaptureViewProps = {
   sessionId: string;
   captureMode: CaptureMode;
+  initialGate: CaptureGateResult;
 };
 
-type CaptureState = "idle" | "preparing" | "uploading" | "success" | "error";
+type CaptureState =
+  | "blocked"
+  | "idle"
+  | "preparing"
+  | "uploading"
+  | "uploaded_waiting"
+  | "delivered"
+  | "ended"
+  | "error";
 
 function uploadErrorMessage(status: number, message?: string): string {
   if (status === 409) {
@@ -24,6 +42,9 @@ function uploadErrorMessage(status: number, message?: string): string {
   }
   if (status === 413) {
     return "Photo is too large (max 10 MB). Try again with a smaller image.";
+  }
+  if (status === 404) {
+    return "This capture link is not valid. Return to Scaled Preview on your computer and create a new capture session.";
   }
   if (status === 400 && message) return message;
   return message ?? "Upload failed. Try again.";
@@ -62,21 +83,136 @@ function ctaLabel(state: CaptureState): string {
   return "Take or choose photo";
 }
 
-export function CaptureView({ sessionId, captureMode }: CaptureViewProps) {
+function gateToBlockedState(gate: CaptureGateResult): {
+  state: CaptureState;
+  title: string;
+  body: string;
+} {
+  if (gate.reason === "consumed") {
+    return {
+      state: "delivered",
+      title: "Photo received on your computer.",
+      body: "Return to your desktop Scaled Preview to mark the card, frame your hand, and preview the diamond.",
+    };
+  }
+  if (gate.reason === "already_uploaded") {
+    return {
+      state: "uploaded_waiting",
+      title: "Photo uploaded. Waiting for your computer to receive it…",
+      body: "Keep this page open. Your computer must still be waiting on the Scaled Preview QR screen.",
+    };
+  }
+  return {
+    state: "blocked",
+    title: "Capture unavailable",
+    body: captureGateUserMessage(gate.reason),
+  };
+}
+
+export function CaptureView({
+  sessionId,
+  captureMode,
+  initialGate,
+}: CaptureViewProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const inFlightRef = useRef(false);
   const handledTokenRef = useRef<string | null>(null);
   const uploadFileRef = useRef<(file: File) => Promise<void>>(async () => undefined);
-  const [state, setState] = useState<CaptureState>("idle");
+  const initial = gateToBlockedState(initialGate);
+  const [state, setState] = useState<CaptureState>(
+    initialGate.allowed ? "idle" : initial.state,
+  );
+  const [title, setTitle] = useState(
+    initialGate.allowed ? modeCopy(captureMode).title : initial.title,
+  );
+  const [body, setBody] = useState(
+    initialGate.allowed ? modeCopy(captureMode).instruction : initial.body,
+  );
   const [error, setError] = useState<string | null>(null);
+  const [waitingHint, setWaitingHint] = useState(false);
   const copy = modeCopy(captureMode);
   const busy = state === "preparing" || state === "uploading";
+  const captureEnabled = state === "idle" || state === "error";
 
   const resetForRetry = useCallback(() => {
     inFlightRef.current = false;
     handledTokenRef.current = null;
     if (inputRef.current) inputRef.current.value = "";
   }, []);
+
+  const applyPollStatus = useCallback((session: SessionPollResult) => {
+    if (pollIndicatesDelivered(session)) {
+      setState("delivered");
+      setTitle("Photo received on your computer.");
+      setBody(
+        "Return to your desktop Scaled Preview to mark the card, frame your hand, and preview the diamond.",
+      );
+      setWaitingHint(false);
+      setError(null);
+      return;
+    }
+    if (pollIndicatesEnded(session)) {
+      setState("ended");
+      setTitle("Capture session ended");
+      setBody(captureGateUserMessage("cancelled"));
+      setWaitingHint(false);
+      return;
+    }
+    if (session.status === "image_uploaded") {
+      setState("uploaded_waiting");
+      setTitle("Photo uploaded. Waiting for your computer to receive it…");
+      setBody(
+        waitingHint
+          ? "Your photograph was uploaded, but the preview has not received it yet."
+          : "Keep this page open while your computer receives the photograph.",
+      );
+    }
+  }, [waitingHint]);
+
+  const refreshSessionStatus = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/shape-studio/sessions/${sessionId}`);
+      if (res.status === 404) {
+        setState("blocked");
+        setTitle("Capture unavailable");
+        setBody(captureGateUserMessage("not_found"));
+        return;
+      }
+      if (!res.ok) return;
+      const session = (await res.json()) as SessionPollResult;
+      const gate = evaluateCaptureGate(session);
+      if (state === "idle" || state === "error" || state === "blocked") {
+        if (!gate.allowed && gate.reason !== "already_uploaded") {
+          const blocked = gateToBlockedState(gate);
+          setState(blocked.state);
+          setTitle(blocked.title);
+          setBody(blocked.body);
+          return;
+        }
+      }
+      applyPollStatus(session);
+    } catch {
+      /* keep current state */
+    }
+  }, [applyPollStatus, sessionId, state]);
+
+  useEffect(() => {
+    if (state !== "uploaded_waiting") return;
+    const id = window.setInterval(() => {
+      void refreshSessionStatus();
+    }, ACK_POLL_MS);
+    const hintTimer = window.setTimeout(() => setWaitingHint(true), 20_000);
+    return () => {
+      window.clearInterval(id);
+      window.clearTimeout(hintTimer);
+    };
+  }, [refreshSessionStatus, state]);
+
+  useEffect(() => {
+    if (initialGate.reason === "already_uploaded") {
+      void refreshSessionStatus();
+    }
+  }, [initialGate.reason, refreshSessionStatus]);
 
   const uploadFile = useCallback(
     async (rawFile: File) => {
@@ -85,6 +221,8 @@ export function CaptureView({ sessionId, captureMode }: CaptureViewProps) {
 
       setState("preparing");
       setError(null);
+      setTitle(copy.title);
+      setBody("Uploading your photograph…");
 
       let file: File;
       try {
@@ -96,11 +234,13 @@ export function CaptureView({ sessionId, captureMode }: CaptureViewProps) {
             : "Please choose a JPG, PNG, or WEBP image.";
         setError(message);
         setState("error");
+        setBody(copy.instruction);
         resetForRetry();
         return;
       }
 
       setState("uploading");
+      setBody("Uploading your photograph…");
 
       const formData = new FormData();
       formData.append("file", file);
@@ -115,20 +255,27 @@ export function CaptureView({ sessionId, captureMode }: CaptureViewProps) {
           `/api/shape-studio/sessions/${sessionId}/upload`,
           { method: "POST", body: formData, signal: controller.signal },
         );
-        const body = (await res.json().catch(() => ({}))) as {
+        const bodyJson = (await res.json().catch(() => ({}))) as {
           message?: string;
           error?: string;
         };
-        const bodyMessage = body.message ?? body.error;
+        const bodyMessage = bodyJson.message ?? bodyJson.error;
 
         if (!res.ok) {
           setError(uploadErrorMessage(res.status, bodyMessage));
           setState("error");
+          setBody(copy.instruction);
           resetForRetry();
           return;
         }
 
-        setState("success");
+        setState("uploaded_waiting");
+        setTitle("Photo uploaded. Waiting for your computer to receive it…");
+        setBody(
+          "Keep this page open while your computer receives the photograph.",
+        );
+        setWaitingHint(false);
+        setError(null);
       } catch (err) {
         const aborted =
           err instanceof DOMException && err.name === "AbortError";
@@ -138,13 +285,14 @@ export function CaptureView({ sessionId, captureMode }: CaptureViewProps) {
             : "Network error. Check your connection and try again.",
         );
         setState("error");
+        setBody(copy.instruction);
         resetForRetry();
       } finally {
         window.clearTimeout(timeoutId);
         inFlightRef.current = false;
       }
     },
-    [resetForRetry, sessionId],
+    [copy.instruction, copy.title, resetForRetry, sessionId],
   );
 
   uploadFileRef.current = uploadFile;
@@ -163,7 +311,6 @@ export function CaptureView({ sessionId, captureMode }: CaptureViewProps) {
     void uploadFileRef.current(file);
   }, []);
 
-  // Native change listener is more reliable than React onChange on iOS Safari.
   useEffect(() => {
     const input = inputRef.current;
     if (!input) return;
@@ -190,60 +337,71 @@ export function CaptureView({ sessionId, captureMode }: CaptureViewProps) {
     };
   }, [consumeInputFile]);
 
+  const showGuide = state === "idle" || state === "error";
+  const showFileControl = captureEnabled;
+  const liveMessage =
+    state === "preparing" ||
+    state === "uploading" ||
+    state === "uploaded_waiting" ||
+    state === "delivered" ||
+    state === "ended" ||
+    state === "blocked"
+      ? title
+      : undefined;
+
   return (
     <div className="dss-capture-shell">
       <CapturePageStyles />
-      <div className="dss-capture-card">
-        {state === "success" ? (
-          <>
-            <p className="dss-capture-brand">HOURGLASS</p>
-            <h1 className="dss-capture-title">Photo sent</h1>
-            <p className="dss-capture-body">
-              Your hand photo has been sent to the desktop viewer.
-            </p>
-            <p className="dss-capture-hint">
-              Return to your desktop viewer to mark the card, frame your hand, and
-              preview the diamond.
-            </p>
-          </>
-        ) : (
-          <>
-            <p className="dss-capture-brand">HOURGLASS</p>
-            <h1 className="dss-capture-title">{copy.title}</h1>
-            <p className="dss-capture-body">{copy.instruction}</p>
+      <div className="dss-capture-card" aria-live="polite" aria-atomic="true">
+        <p className="dss-capture-brand">HOURGLASS</p>
+        <h1 className="dss-capture-title">{title}</h1>
+        <p className="dss-capture-body">{body}</p>
 
-            <CaptureGuide mode={captureMode} />
+        {showGuide ? <CaptureGuide mode={captureMode} /> : null}
+        {showGuide ? <p className="dss-capture-note">{copy.note}</p> : null}
 
-            <p className="dss-capture-note">{copy.note}</p>
-          </>
-        )}
-
-        {/*
-          Transparent <input type="file"> is the sole tappable control.
-          Styled CTA sits underneath (pointer-events:none). No <label>.
-          Input stays mounted for the whole page lifetime.
-        */}
-        <div
-          className={`dss-capture-file-control${busy ? " is-busy" : ""}${state === "success" ? " is-hidden" : ""}`}
-        >
-          <span className="dss-capture-primary" aria-hidden="true">
-            {ctaLabel(state)}
-          </span>
-          <input
-            ref={inputRef}
-            id={CAPTURE_INPUT_ID}
-            type="file"
-            accept="image/*"
-            capture="environment"
-            className="dss-capture-file-input"
-          />
-        </div>
-
-        {state !== "success" && error ? (
-          <p className="dss-capture-error">{error}</p>
+        {showFileControl ? (
+          <div
+            className={`dss-capture-file-control${busy ? " is-busy" : ""}`}
+          >
+            <span className="dss-capture-primary" aria-hidden="true">
+              {ctaLabel(state)}
+            </span>
+            <input
+              ref={inputRef}
+              id={CAPTURE_INPUT_ID}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className="dss-capture-file-input"
+              aria-label="Take or choose photo"
+              disabled={busy}
+            />
+          </div>
         ) : null}
-        {state !== "success" ? (
+
+        {state === "uploaded_waiting" ? (
+          <div className="dss-capture-actions">
+            <button
+              type="button"
+              className="dss-capture-secondary"
+              onClick={() => void refreshSessionStatus()}
+            >
+              Check status
+            </button>
+          </div>
+        ) : null}
+
+        {state === "error" && error ? (
+          <p className="dss-capture-error" role="alert">
+            {error}
+          </p>
+        ) : null}
+        {showFileControl ? (
           <p className="dss-capture-hint">JPG, PNG, or WEBP · Max 10 MB</p>
+        ) : null}
+        {liveMessage ? (
+          <span className="sr-only">{liveMessage}</span>
         ) : null}
       </div>
     </div>

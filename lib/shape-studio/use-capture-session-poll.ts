@@ -2,22 +2,33 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { SessionPollResult } from "@/lib/shape-studio/session-types";
+import {
+  pollIndicatesEnded,
+  pollIndicatesImageReady,
+} from "@/lib/shape-studio/session-lifecycle";
 
 export const SHAPE_STUDIO_POLL_INTERVAL_MS = 1500;
 
 type UseCaptureSessionPollOptions = {
   sessionId: string | null;
   enabled: boolean;
-  onImageReceived: (imageUrl: string) => void;
+  /**
+   * Fired when poll reports image_uploaded + signed URL.
+   * Must download + adopt locally before acknowledging.
+   * Throw to keep polling (do not treat as delivered).
+   */
+  onImageReady: (imageUrl: string) => void | Promise<void>;
   onExpired?: () => void;
+  onCancelled?: () => void;
   onError?: (message: string) => void;
 };
 
 export function useCaptureSessionPoll({
   sessionId,
   enabled,
-  onImageReceived,
+  onImageReady,
   onExpired,
+  onCancelled,
   onError,
 }: UseCaptureSessionPollOptions) {
   const [status, setStatus] = useState<SessionPollResult["status"] | "idle">(
@@ -25,6 +36,7 @@ export function useCaptureSessionPoll({
   );
   const [expiresAt, setExpiresAt] = useState<string | null>(null);
   const stoppedRef = useRef(false);
+  const adoptingRef = useRef(false);
 
   const stop = useCallback(() => {
     stoppedRef.current = true;
@@ -33,12 +45,12 @@ export function useCaptureSessionPoll({
   useEffect(() => {
     if (!enabled || !sessionId) {
       stoppedRef.current = false;
-      setStatus("idle");
-      setExpiresAt(null);
+      adoptingRef.current = false;
       return;
     }
 
     stoppedRef.current = false;
+    adoptingRef.current = false;
     let timer: ReturnType<typeof setTimeout> | null = null;
 
     const poll = async () => {
@@ -59,14 +71,36 @@ export function useCaptureSessionPoll({
         setStatus(data.status);
         setExpiresAt(data.expiresAt);
 
-        if (data.status === "image_uploaded" && data.imageUrl) {
-          onImageReceived(data.imageUrl);
-          stop();
-          return;
+        if (
+          pollIndicatesImageReady(data) &&
+          data.imageUrl &&
+          !adoptingRef.current
+        ) {
+          adoptingRef.current = true;
+          try {
+            // Signed-URL presence alone does not acknowledge or delete.
+            await onImageReady(data.imageUrl);
+            stop();
+            return;
+          } catch {
+            adoptingRef.current = false;
+            // Keep session recoverable until TTL — continue polling.
+          }
         }
 
         if (data.status === "expired") {
           onExpired?.();
+          stop();
+          return;
+        }
+
+        if (data.status === "cancelled" || pollIndicatesEnded(data)) {
+          onCancelled?.();
+          stop();
+          return;
+        }
+
+        if (data.status === "consumed") {
           stop();
           return;
         }
@@ -87,7 +121,15 @@ export function useCaptureSessionPoll({
       stoppedRef.current = true;
       if (timer) clearTimeout(timer);
     };
-  }, [sessionId, enabled, onImageReceived, onExpired, onError, stop]);
+  }, [
+    sessionId,
+    enabled,
+    onImageReady,
+    onExpired,
+    onCancelled,
+    onError,
+    stop,
+  ]);
 
   return { status, expiresAt, stopPolling: stop };
 }
