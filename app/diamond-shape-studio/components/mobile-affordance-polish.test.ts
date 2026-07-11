@@ -38,12 +38,14 @@ describe("mobile affordance polish — slider and guide lines", () => {
   );
   const mobileBlock = styles.slice(styles.indexOf("@media (max-width: 960px)"));
 
-  it("mobile slider exposes an effective ~48–52px touch target", () => {
-    assert.match(mobileBlock, /\.dss-track\{[\s\S]*?height:52px/);
-    assert.match(mobileBlock, /\.dss-track\{[\s\S]*?min-height:52px/);
-    assert.match(mobileBlock, /\.dss-handle\{[\s\S]*?width:52px;\s*height:52px/);
+  it("mobile slider exposes an effective ≥44px (~48px) touch target", () => {
+    assert.match(mobileBlock, /\.dss-track\{[\s\S]*?height:48px/);
+    assert.match(mobileBlock, /\.dss-track\{[\s\S]*?min-height:48px/);
+    assert.match(mobileBlock, /\.dss-handle\{[\s\S]*?width:48px;\s*height:48px/);
+    assert.match(mobileBlock, /\.dss-handle\{[\s\S]*?min-width:48px;\s*min-height:48px/);
     assert.match(styles, /\.dss-track\{[\s\S]*?touch-action:none/);
     assert.match(mobileBlock, /\.dss-shell\[data-slider-adjusting\]/);
+    assert.match(mobileBlock, /\.dss-handle::after\{[\s\S]*?width:20px;\s*height:20px/);
   });
 
   it("desktop slider geometry remains the quieter 36px / 10px treatment", () => {
@@ -64,10 +66,12 @@ describe("mobile affordance polish — slider and guide lines", () => {
     );
   });
 
-  it("uses pointer capture so drag continues outside the visible track", () => {
+  it("uses window-level pointer move so drag continues outside the visible track", () => {
     assert.match(track, /setPointerCapture/);
     assert.match(track, /pointerdown/);
     assert.match(track, /pointermove/);
+    assert.match(track, /typeof window !== "undefined" \? window : track/);
+    assert.match(track, /dragRoot\.addEventListener\("pointermove"/);
     assert.match(track, /pctFromClientX/);
   });
 
@@ -109,22 +113,27 @@ describe("mobile affordance polish — slider and guide lines", () => {
     assert.match(controls, /aria-valuenow=\{carat\}/);
   });
 
-  it("guide lines remain present; connector insets to each handle ring’s inner edge", () => {
+  it("outward grip handles keep precision ticks as measured endpoints", () => {
     assert.match(markers, /dss-cal-segment/);
     assert.match(markers, /dss-cal-handle/);
     assert.match(markers, /is-dragging/);
     assert.match(markers, /contentToStagePx/);
     assert.match(markers, /connectorSegmentGeometry/);
-    assert.match(markers, /HANDLE_RING_DIAMETER_PX = 21/);
-    assert.match(markers, /HANDLE_RING_DIAMETER_MOBILE_PX = 24/);
+    assert.match(markers, /GRIP_OFFSET_PX = 26/);
+    assert.match(markers, /GRIP_OFFSET_MOBILE_PX = 34/);
     assert.match(desktopBlock, /\.dss-cal-handle-ring\{[\s\S]*?width:21px;\s*height:21px/);
     assert.match(mobileBlock, /\.dss-cal-handle-ring\{[\s\S]*?width:24px;\s*height:24px/);
+    assert.match(desktopBlock, /\.dss-cal-handle\{[\s\S]*?width:44px;\s*height:44px/);
     assert.doesNotMatch(markers, /CARD_LONG_EDGE|85\.6|53\.98/);
     assert.doesNotMatch(styles, /pixelsPerMm|overlaySizeFromCardPpm/);
   });
 
-  it("mobile guide lines use dual-edge contrast without neon treatment", () => {
-    assert.match(mobileBlock, /\.dss-cal-segment\{[\s\S]*?box-shadow:/);
+  it("calibration overlays are predominantly white with restrained dark contrast", () => {
+    assert.match(desktopBlock, /\.dss-cal-segment\{[\s\S]*?background:#fff/);
+    assert.match(desktopBlock, /\.dss-cal-jaw\{[\s\S]*?background:#fff/);
+    assert.match(desktopBlock, /\.dss-cal-stem\{[\s\S]*?background:#fff/);
+    assert.match(desktopBlock, /\.dss-cal-handle-ring\{[\s\S]*?border:1\.5px solid #fff/);
+    assert.match(mobileBlock, /\.dss-cal-segment\{[\s\S]*?background:#fff/);
     assert.match(mobileBlock, /\.dss-cal-jaw\{[\s\S]*?box-shadow:/);
     assert.doesNotMatch(mobileBlock, /#00f|#0ff|neon|rgb\(0,\s*122,\s*255\)/i);
   });

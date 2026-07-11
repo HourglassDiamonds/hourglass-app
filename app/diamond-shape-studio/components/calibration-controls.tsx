@@ -134,7 +134,7 @@ export function CaratControl({
     shapeSupportsOrientation(shape) && Boolean(onOrientationChange);
 
   return (
-    <section className="dss-card" aria-label="Carat weight">
+    <section className="dss-card" aria-label="Carat weight" data-dss-carat-card>
       <div className="dss-card-head">Carat Weight</div>
       <div className="dss-stepper">
         <button

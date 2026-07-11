@@ -30,15 +30,16 @@ export type CalibrationMarkersProps = {
   onChange: (points: MarkerPair) => void;
 };
 
-/** Stage px from true endpoint to circular thumb center (outward along segment). */
-const THUMB_OFFSET_PX = 12;
-
 /**
- * Visual handle-ring diameter at rest — keep in sync with `.dss-cal-handle-ring`
- * in shape-studio-styles (desktop 21px; mobile ≤960px uses 24px).
+ * Stage px from precision-marker endpoint to circular grab-handle center,
+ * outward along the segment. Must exceed the visual ring radius so the stem
+ * and tick remain visible while a finger rests on the circle.
+ * Keep in sync with `.dss-cal-handle-ring` sizes in shape-studio-styles.
  */
-const HANDLE_RING_DIAMETER_PX = 21;
-const HANDLE_RING_DIAMETER_MOBILE_PX = 24;
+const GRIP_OFFSET_PX = 26;
+const GRIP_OFFSET_MOBILE_PX = 34;
+/** Tiny inset so the connector meets tick faces without covering them. */
+const TICK_CONNECTOR_INSET_PX = 1;
 const MOBILE_CAL_MQ = "(max-width: 960px)";
 
 type Vec2 = { x: number; y: number };
@@ -62,15 +63,14 @@ function stagePxToStyle(
   };
 }
 
-/** Rest-state ring radius used to inset the connector from each handle center. */
-function handleRingRadiusPx(): number {
+function gripOffsetPx(): number {
   if (
     typeof window !== "undefined" &&
     window.matchMedia(MOBILE_CAL_MQ).matches
   ) {
-    return HANDLE_RING_DIAMETER_MOBILE_PX / 2;
+    return GRIP_OFFSET_MOBILE_PX;
   }
-  return HANDLE_RING_DIAMETER_PX / 2;
+  return GRIP_OFFSET_PX;
 }
 
 /** Unit vector A→B in stage pixels; falls back to +X when coincident. */
@@ -89,9 +89,8 @@ function segmentUnit(
 }
 
 /**
- * Connector from inner edge of handle A to inner edge of handle B.
- * Endpoints are true edge centers; the visible line stops at each ring’s
- * inner rim so it never runs through either circle.
+ * Connector between vertical precision ticks (measured endpoints).
+ * Grab circles sit outward and do not participate in this segment.
  */
 function segmentStyle(
   a: ContentPoint,
@@ -100,7 +99,7 @@ function segmentStyle(
 ): CSSProperties {
   const p1 = contentToStagePx(a, content);
   const p2 = contentToStagePx(b, content);
-  const geom = connectorSegmentGeometry(p1, p2, handleRingRadiusPx());
+  const geom = connectorSegmentGeometry(p1, p2, TICK_CONNECTOR_INSET_PX);
   return {
     left: `${geom.left}px`,
     top: `${geom.top}px`,
@@ -109,12 +108,12 @@ function segmentStyle(
   };
 }
 
-function stemStyle(endpoint: Vec2, unitOutward: Vec2): CSSProperties {
+function stemStyle(endpoint: Vec2, unitOutward: Vec2, lengthPx: number): CSSProperties {
   const angle = (Math.atan2(unitOutward.y, unitOutward.x) * 180) / Math.PI;
   return {
     left: `${endpoint.x}px`,
     top: `${endpoint.y}px`,
-    width: `${THUMB_OFFSET_PX}px`,
+    width: `${lengthPx}px`,
     transform: `rotate(${angle}deg)`,
   };
 }
@@ -132,10 +131,19 @@ export function CalibrationMarkers({
   const endpointStartRef = useRef<ContentPoint>({ u: 0, v: 0 });
   const pointsRef = useRef(points);
   const [activeKey, setActiveKey] = useState<"a" | "b" | null>(null);
+  const [gripPx, setGripPx] = useState(GRIP_OFFSET_PX);
 
   useEffect(() => {
     pointsRef.current = points;
   }, [points]);
+
+  useEffect(() => {
+    const mq = window.matchMedia(MOBILE_CAL_MQ);
+    const sync = () => setGripPx(gripOffsetPx());
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
 
   /**
    * Delta-based drag: endpoint moves by the same stage-pixel delta as the pointer.
@@ -198,26 +206,27 @@ export function CalibrationMarkers({
 
   const unit = segmentUnit(points.a, points.b, content);
   // Jaw is natively vertical; rotate by segment angle only so a horizontal
-  // measurement shows vertical precision marks inside each handle.
+  // measurement shows vertical precision marks at each measured endpoint.
   const jawRotation = (Math.atan2(unit.y, unit.x) * 180) / Math.PI;
   const endA = contentToStagePx(points.a, content);
   const endB = contentToStagePx(points.b, content);
   const thumbA = {
-    x: endA.x - unit.x * THUMB_OFFSET_PX,
-    y: endA.y - unit.y * THUMB_OFFSET_PX,
+    x: endA.x - unit.x * gripPx,
+    y: endA.y - unit.y * gripPx,
   };
   const thumbB = {
-    x: endB.x + unit.x * THUMB_OFFSET_PX,
-    y: endB.y + unit.y * THUMB_OFFSET_PX,
+    x: endB.x + unit.x * gripPx,
+    y: endB.y + unit.y * gripPx,
   };
   const labelA = mode === "card" ? "A" : "L";
   const labelB = mode === "card" ? "B" : "R";
 
   return (
-    <div className="dss-cal-layer">
+    <div className="dss-cal-layer" data-dss-cal-grip-offset={gripPx}>
       <div
         className="dss-cal-segment"
         style={segmentStyle(points.a, points.b, content)}
+        data-dss-cal-connector
       />
       {(["a", "b"] as const).map((key) => {
         const end = key === "a" ? endA : endB;
@@ -227,7 +236,12 @@ export function CalibrationMarkers({
         const label = key === "a" ? labelA : labelB;
 
         return (
-          <div key={key} className="dss-cal-endpoint">
+          <div
+            key={key}
+            className="dss-cal-endpoint"
+            data-dss-cal-endpoint={key}
+          >
+            {/* Precision tick at the measured endpoint — remains visible while dragging. */}
             <div
               className="dss-cal-jaw-anchor"
               style={
@@ -236,22 +250,23 @@ export function CalibrationMarkers({
                   ["--dss-cal-jaw-angle" as string]: `${jawRotation}deg`,
                 } as CSSProperties
               }
+              data-dss-cal-tick
               aria-hidden
             >
-              {/* Ring behind jaw so the vertical precision mark reads through the circle. */}
-              <span className="dss-cal-handle-ring" />
-              <span className="dss-cal-handle-center" />
               <span className="dss-cal-jaw" />
             </div>
             <div
               className="dss-cal-stem"
-              style={stemStyle(end, outward)}
+              style={stemStyle(end, outward, gripPx)}
+              data-dss-cal-stem
               aria-hidden
             />
+            {/* Circular grab handle sits outward; drag still moves the endpoint. */}
             <button
               type="button"
               className={`dss-cal-handle${activeKey === key ? " is-dragging" : ""}`}
               style={stagePxToStyle(thumb.x, thumb.y, stageWidth, stageHeight)}
+              data-dss-cal-grip
               aria-label={
                 mode === "card"
                   ? `Card edge point ${label}`
@@ -268,7 +283,10 @@ export function CalibrationMarkers({
                 if (!t) return;
                 beginDrag(key, t.clientX, t.clientY);
               }}
-            />
+            >
+              <span className="dss-cal-handle-ring" aria-hidden />
+              <span className="dss-cal-handle-center" aria-hidden />
+            </button>
           </div>
         );
       })}

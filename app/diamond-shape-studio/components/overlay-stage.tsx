@@ -424,12 +424,12 @@ export type OverlayStageProps = {
   onConfirmLocalPhoto?: () => void;
   onRetakeLocalPhoto?: () => void;
   /**
-   * When true, mark-card Set photo scale / Reset points are hosted in the
-   * Photo rail card (mobile) — omit them from this stage guide row.
+   * Narrow layout: keep Start Over with step actions and host calibrated
+   * setup repairs in a low-emphasis disclosure after primary diamond controls.
    */
-  suppressMarkCardActions?: boolean;
-  /** Reports card-edge validity for the Photo-card mark-card CTAs. */
-  onCardEdgeOkChange?: (ok: boolean) => void;
+  narrowLayout?: boolean;
+  /** Authoritative reset — returns to capture entry. */
+  onStartOver?: () => void;
 };
 
 export function OverlayStage({
@@ -451,8 +451,8 @@ export function OverlayStage({
   onPendingLocalPhoto,
   onConfirmLocalPhoto,
   onRetakeLocalPhoto,
-  suppressMarkCardActions = false,
-  onCardEdgeOkChange,
+  narrowLayout = false,
+  onStartOver,
 }: OverlayStageProps) {
   const stageRef = useRef<HTMLDivElement>(null);
   const handImgRef = useRef<HTMLImageElement>(null);
@@ -764,10 +764,6 @@ export function OverlayStage({
       content.height,
     );
 
-  useEffect(() => {
-    onCardEdgeOkChange?.(Boolean(cardEdgeOk));
-  }, [cardEdgeOk, onCardEdgeOkChange]);
-
   const placeSingleOverlay = useCallback(
     (clientX: number, clientY: number) => {
       if (!canPlace) return;
@@ -1028,8 +1024,7 @@ export function OverlayStage({
   const showMarkCardStageActions =
     awaitingGuided &&
     Boolean(cardCalibration) &&
-    guidedStep === "mark-card" &&
-    !suppressMarkCardActions;
+    guidedStep === "mark-card";
   const showMarkSeatStageActions =
     awaitingGuided && Boolean(cardCalibration) && guidedStep === "mark-seat";
   const showFrameStageActions =
@@ -1068,7 +1063,7 @@ export function OverlayStage({
           }
           aria-label={
             isFramingStep
-              ? "Frame your hand photo"
+              ? "Frame your finger photo"
               : awaitingGuided
                 ? "Hand photo awaiting guided measurement"
                 : "Hand photo with diamond overlay"
@@ -1183,9 +1178,9 @@ export function OverlayStage({
       </div>
       {isFramingStep ? (
         <div className="dss-frame-copy">
-          <p className="dss-frame-heading">Frame your hand</p>
+          <p className="dss-frame-heading">Frame your finger</p>
           <p className="dss-frame-support">
-            Position your hand within the frame. Keep the card out of view.
+            Position your finger within the frame. Keep the card out of view.
           </p>
         </div>
       ) : (
@@ -1199,17 +1194,18 @@ export function OverlayStage({
           role="group"
           aria-label="Scaled Preview steps"
           data-dss-stage-guide-actions
+          data-dss-guide-step={guidedStep ?? undefined}
         >
           {showMarkCardStageActions ? (
             <>
               <button
                 type="button"
                 className="dss-guide-btn"
-                data-dss-stage-action="set-photo-scale"
+                data-dss-stage-action="set-card-scale"
                 disabled={!cardEdgeOk}
                 onClick={onGuidedContinue}
               >
-                Set photo scale
+                Set card scale
               </button>
               <button
                 type="button"
@@ -1224,6 +1220,16 @@ export function OverlayStage({
                   Move the points farther apart along the card’s long edge.
                 </p>
               ) : null}
+              {narrowLayout && onStartOver ? (
+                <button
+                  type="button"
+                  className="dss-guide-btn dss-guide-btn--quiet dss-guide-btn--tertiary"
+                  data-dss-stage-action="start-over"
+                  onClick={onStartOver}
+                >
+                  Start over
+                </button>
+              ) : null}
             </>
           ) : null}
           {showMarkSeatStageActions ? (
@@ -1235,22 +1241,34 @@ export function OverlayStage({
               <button
                 type="button"
                 className="dss-guide-btn"
+                data-dss-stage-action="frame-my-finger"
                 disabled={!fingerSpanOk}
                 onClick={onGuidedContinue}
               >
-                Frame my hand
+                Frame my finger
               </button>
               <button
                 type="button"
                 className="dss-guide-btn dss-guide-btn--quiet"
+                data-dss-stage-action="adjust-card-scale"
                 onClick={onGuidedAdjust}
               >
-                Adjust card marks
+                Adjust card scale
               </button>
               {!fingerSpanOk ? (
                 <p className="dss-guide-warn">
                   Place the points on opposite sides of the finger.
                 </p>
+              ) : null}
+              {narrowLayout && onStartOver ? (
+                <button
+                  type="button"
+                  className="dss-guide-btn dss-guide-btn--quiet dss-guide-btn--tertiary"
+                  data-dss-stage-action="start-over"
+                  onClick={onStartOver}
+                >
+                  Start over
+                </button>
               ) : null}
             </>
           ) : null}
@@ -1260,6 +1278,7 @@ export function OverlayStage({
                 <button
                   type="button"
                   className="dss-guide-btn dss-guide-btn--quiet"
+                  data-dss-stage-action="zoom-out"
                   onClick={() => handleZoom("out")}
                   aria-label="Zoom out"
                 >
@@ -1268,6 +1287,7 @@ export function OverlayStage({
                 <button
                   type="button"
                   className="dss-guide-btn dss-guide-btn--quiet"
+                  data-dss-stage-action="zoom-in"
                   onClick={() => handleZoom("in")}
                   aria-label="Zoom in"
                 >
@@ -1277,6 +1297,7 @@ export function OverlayStage({
               <button
                 type="button"
                 className="dss-guide-btn"
+                data-dss-stage-action="show-diamond-preview"
                 disabled={!framing}
                 onClick={onGuidedContinue}
               >
@@ -1285,6 +1306,7 @@ export function OverlayStage({
               <button
                 type="button"
                 className="dss-guide-btn dss-guide-btn--quiet"
+                data-dss-stage-action="reset-framing"
                 onClick={handleResetFraming}
               >
                 Reset framing
@@ -1292,6 +1314,7 @@ export function OverlayStage({
               <button
                 type="button"
                 className="dss-guide-btn dss-guide-btn--quiet"
+                data-dss-stage-action="adjust-ring-position"
                 onClick={onGuidedAdjust}
               >
                 Adjust ring position
@@ -1302,22 +1325,38 @@ export function OverlayStage({
                   with the card farther beside your hand.
                 </p>
               ) : null}
+              {narrowLayout && onStartOver ? (
+                <button
+                  type="button"
+                  className="dss-guide-btn dss-guide-btn--quiet dss-guide-btn--tertiary"
+                  data-dss-stage-action="start-over"
+                  onClick={onStartOver}
+                >
+                  Start over
+                </button>
+              ) : null}
             </>
           ) : null}
         </div>
       ) : null}
-      {calibrated ? (
-        <div className="dss-guide-actions">
+      {calibrated && !narrowLayout ? (
+        <div
+          className="dss-guide-actions"
+          data-dss-stage-guide-actions
+          data-dss-guide-step="calibrated-preview"
+        >
           <button
             type="button"
             className="dss-guide-btn dss-guide-btn--quiet"
+            data-dss-stage-action="reframe-finger"
             onClick={onReframe}
           >
-            Reframe
+            Reframe finger
           </button>
           <button
             type="button"
             className="dss-guide-btn dss-guide-btn--quiet"
+            data-dss-stage-action="adjust-ring-position"
             onClick={onGuidedAdjust}
           >
             Adjust ring position
@@ -1325,11 +1364,61 @@ export function OverlayStage({
           <button
             type="button"
             className="dss-guide-btn dss-guide-btn--quiet"
+            data-dss-stage-action="adjust-card-scale"
             onClick={onGuidedReset}
           >
-            Adjust card marks
+            Adjust card scale
           </button>
         </div>
+      ) : null}
+      {calibrated && narrowLayout ? (
+        <details
+          className="dss-setup-repair"
+          data-dss-setup-repair
+          data-dss-guide-step="calibrated-preview"
+        >
+          <summary className="dss-setup-repair-summary">Adjust photo setup</summary>
+          <div
+            className="dss-setup-repair-actions"
+            role="group"
+            aria-label="Photo setup adjustments"
+          >
+            <button
+              type="button"
+              className="dss-guide-btn dss-guide-btn--quiet"
+              data-dss-stage-action="reframe-finger"
+              onClick={onReframe}
+            >
+              Reframe finger
+            </button>
+            <button
+              type="button"
+              className="dss-guide-btn dss-guide-btn--quiet"
+              data-dss-stage-action="adjust-ring-position"
+              onClick={onGuidedAdjust}
+            >
+              Adjust ring position
+            </button>
+            <button
+              type="button"
+              className="dss-guide-btn dss-guide-btn--quiet"
+              data-dss-stage-action="adjust-card-scale"
+              onClick={onGuidedReset}
+            >
+              Adjust card scale
+            </button>
+            {onStartOver ? (
+              <button
+                type="button"
+                className="dss-guide-btn dss-guide-btn--quiet dss-guide-btn--tertiary"
+                data-dss-stage-action="start-over"
+                onClick={onStartOver}
+              >
+                Start over
+              </button>
+            ) : null}
+          </div>
+        </details>
       ) : null}
     </>
   );

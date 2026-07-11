@@ -512,13 +512,17 @@ export function ShapeStudioStyles() {
       .dss-cal-layer{
         position:absolute; inset:0; z-index:3; pointer-events:none;
       }
+      /* White overlay system with a narrow dark halo for light photo regions. */
       .dss-cal-segment{
         position:absolute;
         height:1.5px;
-        background:color-mix(in srgb, var(--ink-soft) 55%, var(--gold-warm));
+        background:#fff;
         transform-origin:0 50%;
-        opacity:0.7;
+        opacity:0.92;
         pointer-events:none;
+        box-shadow:
+          0 0 0 1px color-mix(in srgb, #000 28%, transparent),
+          0 1px 2px color-mix(in srgb, #000 18%, transparent);
       }
       .dss-cal-endpoint{ pointer-events:none; }
       .dss-cal-jaw-anchor{
@@ -532,15 +536,16 @@ export function ShapeStudioStyles() {
         position:absolute;
         z-index:3;
         height:1.5px;
-        background:color-mix(in srgb, var(--ink-soft) 42%, var(--gold-warm));
+        background:#fff;
         transform-origin:0 50%;
-        opacity:0.55;
+        opacity:0.88;
         pointer-events:none;
+        box-shadow:0 0 0 1px color-mix(in srgb, #000 26%, transparent);
       }
       .dss-cal-handle{
         position:absolute;
         z-index:5;
-        width:38px; height:38px;
+        width:44px; height:44px;
         margin:0; padding:0;
         border:none; background:transparent;
         transform:translate(-50%, -50%);
@@ -549,20 +554,23 @@ export function ShapeStudioStyles() {
       }
       .dss-cal-handle:active,
       .dss-cal-handle.is-dragging{ cursor:grabbing; }
-      /* Natively vertical precision mark; rotated by segment angle only. */
+      /* Natively vertical precision mark at the measured endpoint. */
       .dss-cal-jaw{
         position:absolute;
         left:50%; top:50%;
         z-index:3;
-        width:1.75px;
+        width:2px;
         height:28px;
         margin:0;
-        background:color-mix(in srgb, var(--ink) 88%, var(--gold-warm));
-        opacity:0.96;
+        background:#fff;
+        opacity:0.98;
         transform:translate(-50%, -50%) rotate(var(--dss-cal-jaw-angle, 0deg));
         transform-origin:center center;
         pointer-events:none;
         border-radius:1px;
+        box-shadow:
+          0 0 0 1px color-mix(in srgb, #000 32%, transparent),
+          0 1px 2px color-mix(in srgb, #000 16%, transparent);
       }
       .dss-cal-handle-ring{
         position:absolute;
@@ -570,15 +578,19 @@ export function ShapeStudioStyles() {
         z-index:1;
         width:21px; height:21px;
         border-radius:50%;
-        background:color-mix(in srgb, var(--card) 42%, transparent);
-        border:1.5px solid color-mix(in srgb, var(--ink-soft) 55%, var(--gold-warm));
-        box-shadow:0 1px 3px oklch(from var(--hairline) l c h / 0.18);
+        background:color-mix(in srgb, #fff 88%, transparent);
+        border:1.5px solid #fff;
+        box-shadow:
+          0 0 0 1px color-mix(in srgb, #000 30%, transparent),
+          0 1px 3px color-mix(in srgb, #000 22%, transparent);
         transform:translate(-50%, -50%);
         pointer-events:none;
       }
       .dss-cal-endpoint:has(.dss-cal-handle.is-dragging) .dss-cal-handle-ring{
-        border-color:color-mix(in srgb, var(--ink) 45%, var(--gold-warm));
-        box-shadow:0 1px 5px oklch(from var(--hairline) l c h / 0.28);
+        background:#fff;
+        box-shadow:
+          0 0 0 1px color-mix(in srgb, #000 36%, transparent),
+          0 1px 5px color-mix(in srgb, #000 26%, transparent);
       }
       .dss-cal-handle-center{
         position:absolute;
@@ -586,7 +598,8 @@ export function ShapeStudioStyles() {
         left:50%; top:50%;
         width:3px; height:3px;
         border-radius:50%;
-        background:color-mix(in srgb, var(--ink) 82%, var(--gold-warm));
+        background:#fff;
+        box-shadow:0 0 0 1px color-mix(in srgb, #000 28%, transparent);
         transform:translate(-50%, -50%);
         pointer-events:none;
       }
@@ -612,6 +625,51 @@ export function ShapeStudioStyles() {
         background:color-mix(in srgb, var(--hairline-soft) 70%, #fff);
         border-color:var(--hairline);
         color:var(--ink-soft);
+      }
+      .dss-guide-btn--tertiary{
+        flex:1 0 100%;
+        background:transparent;
+        border-color:transparent;
+        color:var(--ink-mute);
+        box-shadow:none;
+      }
+      .dss-guide-btn--tertiary:hover,
+      .dss-guide-btn--tertiary:focus-visible{
+        border-color:var(--hairline);
+        color:var(--ink-soft);
+      }
+      .dss-setup-repair{
+        width:100%;
+        max-width:440px;
+        margin:10px 12px 0;
+        border:1px solid var(--hairline);
+        border-radius:10px;
+        background:color-mix(in srgb, var(--hairline-soft) 55%, #fff);
+        padding:0;
+      }
+      .dss-setup-repair-summary{
+        list-style:none;
+        cursor:pointer;
+        padding:10px 14px;
+        font-size:9px;
+        letter-spacing:0.11em;
+        text-transform:uppercase;
+        color:var(--ink-soft);
+        user-select:none;
+      }
+      .dss-setup-repair-summary::-webkit-details-marker{ display:none; }
+      .dss-setup-repair-summary::after{
+        content:"▸";
+        float:right;
+        opacity:0.55;
+      }
+      .dss-setup-repair[open] .dss-setup-repair-summary::after{ content:"▾"; }
+      .dss-setup-repair-actions{
+        display:flex;
+        flex-wrap:wrap;
+        justify-content:center;
+        gap:8px;
+        padding:0 12px 12px;
       }
       .dss-guide-warn{
         flex:1 0 100%;
@@ -1059,10 +1117,8 @@ export function ShapeStudioStyles() {
         .dss-control-rail > .dss-card{
           width:calc(100% - 40px); margin-left:20px; margin-right:20px;
         }
-        .dss-control-rail > .dss-card:nth-child(1){ order:5; }
-        .dss-control-rail > .dss-card:nth-child(2){ order:6; }
-        .dss-control-rail > .dss-card:nth-child(3){ order:7; }
-        .dss-control-rail > .dss-card:nth-child(4){ order:8; }
+        .dss-control-rail > .dss-card[data-dss-photo-card]{ display:none; }
+        .dss-control-rail > .dss-card[data-dss-carat-card]{ order:6; }
         .dss-stage-stack{ display:contents; }
         .dss-stage-preview{ display:contents; }
         .dss-tool-header{
@@ -1080,14 +1136,39 @@ export function ShapeStudioStyles() {
         }
         .dss-stage-canvas{ order:3; width:100%; padding:0 20px; box-sizing:border-box; }
         .dss-stage-hint{ order:4; width:calc(100% - 40px); margin:8px 20px 0; }
+        .dss-frame-copy{
+          order:4;
+          width:calc(100% - 40px);
+          margin:8px 20px 0;
+          max-width:none;
+        }
         .dss-guide-actions{
           order:4;
           width:calc(100% - 40px);
           margin:8px 20px 0;
           max-width:none;
         }
-        .dss-photo-card-actions-row .dss-guide-btn,
-        .dss-photo-card-start-over{
+        .dss-guide-btn--tertiary{
+          min-height:44px;
+          font-size:10px;
+          letter-spacing:0.12em;
+        }
+        .dss-setup-repair{
+          order:10;
+          width:calc(100% - 40px);
+          margin:8px 20px 16px;
+          max-width:none;
+        }
+        .dss-setup-repair-summary{
+          min-height:44px;
+          display:flex;
+          align-items:center;
+          justify-content:space-between;
+          font-size:10px;
+          letter-spacing:0.12em;
+        }
+        .dss-setup-repair-summary::after{ float:none; }
+        .dss-setup-repair-actions .dss-guide-btn{
           min-height:44px;
           font-size:10px;
           letter-spacing:0.12em;
@@ -1109,31 +1190,42 @@ export function ShapeStudioStyles() {
         }
         .dss-shape-strip::-webkit-scrollbar{ display:none; }
 
-        /* Mobile affordance: carat slider — ~52px hit, restrained visual thumb */
+        /* Mobile affordance: carat slider — ≥44px hit, restrained visual thumb.
+           Mirrors Size Studio: tall invisible hit band + small visible marker.
+           Window-level pointermove (horizontal-track.ts) keeps drag after leave. */
         .dss-slider{
           margin:8px 2px 4px;
           padding:0 4px;
+          touch-action:pan-x;
+          -webkit-tap-highlight-color:transparent;
         }
         .dss-track{
-          height:52px;
-          min-height:52px;
+          height:48px;
+          min-height:48px;
+          /* Expand vertical hit into adjacent padding without growing the card */
+          margin:-4px 0;
           background-size:100% 2px;
+          touch-action:none;
+          -webkit-user-select:none;
+          user-select:none;
         }
         .dss-track::before{
           height:2px;
           opacity:0.7;
         }
         /*
-          Invisible 52px hit disc around the thumb; visual thumb stays ~20px
+          Invisible ≥44px hit disc around the thumb; visual thumb stays ~20px
           via ::after so acquisition is easy without a bulky control.
         */
         .dss-handle{
-          width:52px;
-          height:52px;
+          width:48px;
+          height:48px;
+          min-width:48px;
+          min-height:48px;
           background:transparent;
           border:none;
           box-shadow:none;
-          pointer-events:auto;
+          pointer-events:none;
         }
         .dss-handle::after{
           content:"";
@@ -1178,29 +1270,29 @@ export function ShapeStudioStyles() {
           font-size:18px;
         }
 
-        /* Mobile affordance: calibration guide lines — quieter at rest, clearer while dragging */
+        /* Mobile affordance: white calibration overlays — quieter at rest, clearer while dragging */
         .dss-cal-segment{
           height:2px;
-          opacity:0.88;
-          background:color-mix(in srgb, var(--ink) 62%, var(--gold-warm));
+          opacity:0.96;
+          background:#fff;
           box-shadow:
-            0 0 0 1px color-mix(in srgb, #fff 58%, transparent),
-            0 1px 2px color-mix(in srgb, #000 28%, transparent);
+            0 0 0 1px color-mix(in srgb, #000 34%, transparent),
+            0 1px 2px color-mix(in srgb, #000 22%, transparent);
         }
         .dss-cal-stem{
           height:2px;
-          opacity:0.72;
-          background:color-mix(in srgb, var(--ink-soft) 48%, var(--gold-warm));
-          box-shadow:0 0 0 1px color-mix(in srgb, #fff 45%, transparent);
+          opacity:0.92;
+          background:#fff;
+          box-shadow:0 0 0 1px color-mix(in srgb, #000 30%, transparent);
         }
         .dss-cal-jaw{
           width:2.25px;
           height:32px;
           opacity:1;
-          background:color-mix(in srgb, var(--ink) 90%, var(--gold-warm));
+          background:#fff;
           box-shadow:
-            0 0 0 1px color-mix(in srgb, #fff 62%, transparent),
-            0 0 0 2px color-mix(in srgb, #000 22%, transparent);
+            0 0 0 1px color-mix(in srgb, #000 36%, transparent),
+            0 0 0 2px color-mix(in srgb, #000 18%, transparent);
         }
         .dss-cal-handle{
           width:48px;
@@ -1210,45 +1302,43 @@ export function ShapeStudioStyles() {
           width:24px;
           height:24px;
           border-width:2px;
-          background:color-mix(in srgb, var(--card) 58%, transparent);
-          border-color:color-mix(in srgb, var(--ink) 42%, var(--gold-warm));
+          background:color-mix(in srgb, #fff 92%, transparent);
+          border-color:#fff;
           box-shadow:
-            0 0 0 1px color-mix(in srgb, #fff 50%, transparent),
-            0 1px 4px oklch(from var(--hairline) l c h / 0.28);
+            0 0 0 1px color-mix(in srgb, #000 34%, transparent),
+            0 1px 4px color-mix(in srgb, #000 24%, transparent);
         }
         .dss-cal-handle-center{
           width:4px;
           height:4px;
+          background:#fff;
         }
         .dss-cal-layer:has(.dss-cal-handle.is-dragging) .dss-cal-segment{
           height:2.5px;
           opacity:1;
           box-shadow:
-            0 0 0 1.5px color-mix(in srgb, #fff 78%, transparent),
-            0 0 0 3px color-mix(in srgb, #000 38%, transparent),
-            0 0 6px color-mix(in srgb, var(--gold-warm) 35%, transparent);
+            0 0 0 1.5px color-mix(in srgb, #000 40%, transparent),
+            0 1px 3px color-mix(in srgb, #000 22%, transparent);
         }
         .dss-cal-layer:has(.dss-cal-handle.is-dragging) .dss-cal-stem{
-          opacity:0.95;
+          opacity:1;
           box-shadow:
-            0 0 0 1px color-mix(in srgb, #fff 70%, transparent),
-            0 0 0 2px color-mix(in srgb, #000 30%, transparent);
+            0 0 0 1px color-mix(in srgb, #000 36%, transparent);
         }
         .dss-cal-layer:has(.dss-cal-handle.is-dragging) .dss-cal-jaw{
           width:2.75px;
           box-shadow:
-            0 0 0 1.5px color-mix(in srgb, #fff 80%, transparent),
-            0 0 0 3px color-mix(in srgb, #000 36%, transparent);
+            0 0 0 1.5px color-mix(in srgb, #000 42%, transparent),
+            0 0 0 3px color-mix(in srgb, #000 18%, transparent);
         }
         .dss-cal-endpoint:has(.dss-cal-handle.is-dragging) .dss-cal-handle-ring{
           width:28px;
           height:28px;
-          border-color:color-mix(in srgb, var(--ink) 55%, var(--gold-warm));
-          background:color-mix(in srgb, var(--card) 72%, transparent);
+          background:#fff;
+          border-color:#fff;
           box-shadow:
-            0 0 0 2px color-mix(in srgb, #fff 75%, transparent),
-            0 0 0 4px color-mix(in srgb, #000 30%, transparent),
-            0 0 8px color-mix(in srgb, var(--gold-warm) 30%, transparent);
+            0 0 0 1.5px color-mix(in srgb, #000 40%, transparent),
+            0 1px 5px color-mix(in srgb, #000 26%, transparent);
         }
 
         /* While carat slider is dragged, emphasize the live overlay silhouette */

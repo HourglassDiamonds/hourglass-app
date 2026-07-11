@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { describe, it } from "node:test";
+import { afterEach, describe, it } from "node:test";
 import {
   attachHorizontalTrack,
   pctFromClientX,
@@ -19,9 +19,9 @@ function createFakeTrack(width = 200, left = 0) {
         left,
         width,
         top: 0,
-        height: 52,
+        height: 48,
         right: left + width,
-        bottom: 52,
+        bottom: 48,
         x: left,
         y: 0,
         toJSON: () => ({}),
@@ -69,7 +69,39 @@ function createFakeTrack(width = 200, left = 0) {
   return track;
 }
 
+function installFakeWindow() {
+  const listeners = new Map<string, Set<Listener>>();
+  const fakeWindow = {
+    addEventListener: (type: string, fn: Listener) => {
+      if (!listeners.has(type)) listeners.set(type, new Set());
+      listeners.get(type)!.add(fn);
+    },
+    removeEventListener: (type: string, fn: Listener) => {
+      listeners.get(type)?.delete(fn);
+    },
+    dispatch: (type: string, ev: Record<string, unknown>) => {
+      for (const fn of listeners.get(type) ?? []) fn(ev);
+    },
+  };
+  const previous = (globalThis as { window?: unknown }).window;
+  (globalThis as { window: unknown }).window = fakeWindow;
+  return {
+    fakeWindow,
+    restore: () => {
+      if (previous === undefined) {
+        delete (globalThis as { window?: unknown }).window;
+      } else {
+        (globalThis as { window: unknown }).window = previous;
+      }
+    },
+  };
+}
+
 describe("horizontal track interaction", () => {
+  afterEach(() => {
+    delete (globalThis as { window?: unknown }).window;
+  });
+
   it("maps client X into 0–1 along the track", () => {
     assert.equal(pctFromClientX(0, { left: 0, width: 100 }), 0);
     assert.equal(pctFromClientX(50, { left: 0, width: 100 }), 0.5);
@@ -79,6 +111,7 @@ describe("horizontal track interaction", () => {
   });
 
   it("press on track immediately sets value (press-to-set)", () => {
+    const { fakeWindow, restore } = installFakeWindow();
     const track = createFakeTrack(200, 0);
     const draggingRef = { current: false };
     const values: number[] = [];
@@ -102,9 +135,12 @@ describe("horizontal track interaction", () => {
     assert.equal(track.isDraggingClass, true);
     assert.equal(track.capturedId, 7);
     cleanup();
+    restore();
+    void fakeWindow;
   });
 
-  it("continues drag after pointer moves outside the visible track bounds", () => {
+  it("continues drag via window listeners when the finger leaves the track", () => {
+    const { fakeWindow, restore } = installFakeWindow();
     const track = createFakeTrack(200, 0);
     const draggingRef = { current: false };
     const values: number[] = [];
@@ -121,14 +157,15 @@ describe("horizontal track interaction", () => {
       clientX: 20,
       preventDefault: () => {},
     });
-    // Far above/below the track — capture keeps events flowing to the track.
-    track.dispatch("pointermove", {
+    // Far above/below the track — window listeners keep the gesture alive
+    // even when setPointerCapture is unreliable (iOS Safari).
+    fakeWindow.dispatch("pointermove", {
       pointerId: 3,
       clientX: 160,
       clientY: -80,
       preventDefault: () => {},
     });
-    track.dispatch("pointerup", {
+    fakeWindow.dispatch("pointerup", {
       pointerId: 3,
       preventDefault: () => {},
     });
@@ -137,5 +174,6 @@ describe("horizontal track interaction", () => {
     assert.equal(draggingRef.current, false);
     assert.equal(track.isDraggingClass, false);
     cleanup();
+    restore();
   });
 });

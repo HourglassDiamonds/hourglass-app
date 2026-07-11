@@ -95,7 +95,6 @@ export function ShapeStudioView() {
   const pendingLocalPhotoUrlRef = useRef<string | null>(null);
   const [photoScaleSource, setPhotoScaleSource] =
     useState<PhotoScaleSource | null>(null);
-  const [cardEdgeOk, setCardEdgeOk] = useState(false);
   /**
    * Public Scaled Preview is always single-mode.
    * Compare slot state remains dormant in the codebase but is never exposed.
@@ -360,20 +359,27 @@ export function ShapeStudioView() {
     ? null
     : awaitingCardCalibration
       ? guidedStep === "frame"
-        ? "Position your hand within the frame. Keep the card out of view."
+        ? "Position your finger within the frame. Keep the card out of view."
         : guidedStep === "mark-seat"
           ? "Place the guide where the ring will sit."
           : "Align the precision lines with the two ends of the card’s long edge."
       : calibratedPreviewSentence(singleSlot.shape, singleSlot.carat);
   const trustCopy = calibrated ? TRUST_CALIBRATED : null;
 
-  const showCarat =
-    Boolean(handImageUrl) && (calibrated || awaitingCardCalibration);
+  /**
+   * Diamond controls:
+   * - Desktop: available once a photo is present (calibration + preview).
+   * - Mobile: only after calibrated-preview — hide during mark-card / mark-seat / frame.
+   * State (carat/shape) is preserved while controls are unmounted.
+   */
+  const showDiamondControls =
+    Boolean(handImageUrl) &&
+    (calibrated || (!narrowLayout && awaitingCardCalibration));
+  const showShapeSelector =
+    Boolean(handImageUrl) && (calibrated || !narrowLayout);
   const showRail = Boolean(handImageUrl);
-  const markCardInPhotoCard =
-    narrowLayout &&
-    awaitingCardCalibration &&
-    guidedStep === "mark-card";
+  /** Desktop-only Photo status card; mobile folds Start Over into step actions. */
+  const showPhotoCard = showRail && !narrowLayout;
 
   return (
     <div
@@ -385,7 +391,8 @@ export function ShapeStudioView() {
       data-studio-mode="single"
       data-entry-state={showRail ? "photo" : "capture"}
       data-stone-orientation={stoneOrientation}
-      data-mark-card-actions={markCardInPhotoCard ? "photo-card" : "stage"}
+      data-narrow-layout={narrowLayout ? "true" : "false"}
+      data-diamond-controls={showDiamondControls ? "visible" : "hidden"}
     >
       <ShapeStudioStyles />
       <div className="dss-app">
@@ -395,22 +402,15 @@ export function ShapeStudioView() {
               className="dss-control-rail"
               aria-label="Scaled Preview controls"
             >
-              <HandPhotoPanel
-                ref={handPhotoRef}
-                onStartOver={handleStartOver}
-                onImageSelected={handleImageSelected}
-                markCardActions={
-                  markCardInPhotoCard
-                    ? {
-                        onSetPhotoScale: handleGuidedContinue,
-                        onResetPoints: handleGuidedReset,
-                        cardEdgeOk,
-                      }
-                    : null
-                }
-              />
+              {showPhotoCard ? (
+                <HandPhotoPanel
+                  ref={handPhotoRef}
+                  onStartOver={handleStartOver}
+                  onImageSelected={handleImageSelected}
+                />
+              ) : null}
 
-              {showCarat ? (
+              {showDiamondControls ? (
                 <CaratControl
                   carat={singleSlot.carat}
                   shape={singleSlot.shape}
@@ -460,11 +460,11 @@ export function ShapeStudioView() {
                 onRetakeLocalPhoto={
                   showRail ? undefined : handleRetakeLocalPhoto
                 }
-                suppressMarkCardActions={markCardInPhotoCard}
-                onCardEdgeOkChange={setCardEdgeOk}
+                narrowLayout={narrowLayout}
+                onStartOver={handleStartOver}
               />
             </div>
-            {handImageUrl ? (
+            {showShapeSelector ? (
               <ShapeSelector
                 selected={singleSlot.shape}
                 onSelect={setActiveShape}

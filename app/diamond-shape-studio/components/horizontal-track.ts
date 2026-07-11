@@ -14,9 +14,10 @@ export function pctFromClientX(
 /**
  * Horizontal press-to-set + drag for Scaled Preview sliders.
  *
- * Uses Pointer Events + setPointerCapture so dragging continues when the
- * finger moves above/below the visible track, and so track presses set the
- * value immediately without requiring a precise thumb grab.
+ * Pointer-down is acquired on the track (large mobile hit band). Move/up are
+ * listened on `window` — same pattern as Diamond Size Studio — so iOS Safari
+ * keeps the gesture when the finger leaves the visible track even if
+ * setPointerCapture is unreliable.
  */
 export function attachHorizontalTrack(
   track: HTMLDivElement,
@@ -26,6 +27,9 @@ export function attachHorizontalTrack(
 ) {
   const shell = () =>
     track.closest<HTMLElement>("[data-shape-studio-instrument]");
+
+  const dragRoot: EventTarget =
+    typeof window !== "undefined" ? window : track;
 
   const setDraggingUi = (active: boolean) => {
     track.classList.toggle("is-dragging", active);
@@ -40,23 +44,25 @@ export function attachHorizontalTrack(
     applyPct(pctFromClientX(clientX, track.getBoundingClientRect()));
   };
 
-  const onPointerDown = (ev: PointerEvent) => {
-    if (ev.button !== 0 && ev.pointerType === "mouse") return;
+  const onPointerDown = (ev: Event) => {
+    const e = ev as PointerEvent;
+    if (e.button !== 0 && e.pointerType === "mouse") return;
     draggingRef.current = true;
     setDraggingUi(true);
     try {
-      track.setPointerCapture(ev.pointerId);
+      track.setPointerCapture(e.pointerId);
     } catch {
-      /* capture unsupported — window listeners still cover mouse */
+      /* capture optional — window move listeners are the reliable path */
     }
-    applyFromEvent(ev.clientX);
-    ev.preventDefault();
+    applyFromEvent(e.clientX);
+    e.preventDefault();
   };
 
-  const onPointerMove = (ev: PointerEvent) => {
+  const onPointerMove = (ev: Event) => {
     if (!draggingRef.current) return;
-    applyFromEvent(ev.clientX);
-    ev.preventDefault();
+    const e = ev as PointerEvent;
+    applyFromEvent(e.clientX);
+    e.preventDefault();
   };
 
   const endDrag = (ev?: PointerEvent) => {
@@ -75,34 +81,31 @@ export function attachHorizontalTrack(
     onDragEnd?.();
   };
 
-  const onPointerUp = (ev: PointerEvent) => {
-    endDrag(ev);
+  const onPointerUp = (ev: Event) => {
+    endDrag(ev as PointerEvent);
   };
 
-  const onPointerCancel = (ev: PointerEvent) => {
-    endDrag(ev);
+  const onPointerCancel = (ev: Event) => {
+    endDrag(ev as PointerEvent);
   };
 
   const onLostCapture = () => {
-    if (!draggingRef.current) return;
-    draggingRef.current = false;
-    setDraggingUi(false);
-    onDragEnd?.();
+    /* Keep dragging via window listeners until pointerup/cancel. */
   };
 
   track.addEventListener("pointerdown", onPointerDown);
-  track.addEventListener("pointermove", onPointerMove);
-  track.addEventListener("pointerup", onPointerUp);
-  track.addEventListener("pointercancel", onPointerCancel);
+  dragRoot.addEventListener("pointermove", onPointerMove);
+  dragRoot.addEventListener("pointerup", onPointerUp);
+  dragRoot.addEventListener("pointercancel", onPointerCancel);
   track.addEventListener("lostpointercapture", onLostCapture);
 
   return () => {
     setDraggingUi(false);
     draggingRef.current = false;
     track.removeEventListener("pointerdown", onPointerDown);
-    track.removeEventListener("pointermove", onPointerMove);
-    track.removeEventListener("pointerup", onPointerUp);
-    track.removeEventListener("pointercancel", onPointerCancel);
+    dragRoot.removeEventListener("pointermove", onPointerMove);
+    dragRoot.removeEventListener("pointerup", onPointerUp);
+    dragRoot.removeEventListener("pointercancel", onPointerCancel);
     track.removeEventListener("lostpointercapture", onLostCapture);
   };
 }
