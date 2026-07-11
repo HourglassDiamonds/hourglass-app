@@ -650,6 +650,35 @@ export function ShapeStudioStyles() {
         font-size:12px;
         color:var(--ink-soft);
       }
+      .dss-photo-card-actions{
+        display:flex;
+        flex-direction:column;
+        gap:8px;
+        width:100%;
+      }
+      .dss-photo-card-actions-row{
+        display:flex;
+        flex-wrap:wrap;
+        gap:8px;
+        width:100%;
+      }
+      .dss-photo-card-actions-row .dss-guide-btn{
+        flex:1 1 calc(50% - 4px);
+        min-width:0;
+        min-height:36px;
+        padding:10px 12px;
+        text-align:center;
+      }
+      .dss-photo-card-start-over{
+        width:100%;
+        min-height:36px;
+        padding:10px 12px;
+      }
+      .dss-photo-card-warn{
+        flex:none;
+        margin:0;
+        text-align:left;
+      }
       .dss-viewer.is-awaiting-calibration{
         box-shadow:
           var(--shadow-1),
@@ -1051,6 +1080,18 @@ export function ShapeStudioStyles() {
         }
         .dss-stage-canvas{ order:3; width:100%; padding:0 20px; box-sizing:border-box; }
         .dss-stage-hint{ order:4; width:calc(100% - 40px); margin:8px 20px 0; }
+        .dss-guide-actions{
+          order:4;
+          width:calc(100% - 40px);
+          margin:8px 20px 0;
+          max-width:none;
+        }
+        .dss-photo-card-actions-row .dss-guide-btn,
+        .dss-photo-card-start-over{
+          min-height:44px;
+          font-size:10px;
+          letter-spacing:0.12em;
+        }
         .dss-viewer{
           width:100%;
           max-width:280px;

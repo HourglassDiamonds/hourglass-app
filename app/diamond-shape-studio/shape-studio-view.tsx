@@ -20,7 +20,10 @@ import type {
   PhotoScaleSource,
 } from "@/lib/shape-studio/types";
 import { normalizeGuidedStep } from "@/lib/shape-studio/types";
-import { replacePendingObjectUrl } from "@/lib/shape-studio/local-photo-selection";
+import {
+  DIRECT_MOBILE_ENTRY_MAX_WIDTH_PX,
+  replacePendingObjectUrl,
+} from "@/lib/shape-studio/local-photo-selection";
 import { usePhoneCaptureSession } from "@/lib/shape-studio/use-phone-capture-session";
 import { CaratControl } from "./components/calibration-controls";
 import DiamondStudioToolHeader from "../diamond-studio/components/DiamondStudioToolHeader";
@@ -35,6 +38,20 @@ import { ShapeStudioStyles } from "./components/shape-studio-styles";
 
 /** Centered start — capture orientation is not enforced. */
 const DEFAULT_POSITION: OverlayPosition = { xPct: 50, yPct: 46 };
+
+function useNarrowShapeStudioLayout(): boolean {
+  const [narrow, setNarrow] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia(
+      `(max-width: ${DIRECT_MOBILE_ENTRY_MAX_WIDTH_PX}px)`,
+    );
+    const sync = () => setNarrow(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
+  return narrow;
+}
 
 function createDefaultSlot(
   shape: DiamondSlotState["shape"] = "round",
@@ -69,6 +86,7 @@ function calibratedPreviewSentence(
 
 export function ShapeStudioView() {
   const handPhotoRef = useRef<HandPhotoPanelHandle>(null);
+  const narrowLayout = useNarrowShapeStudioLayout();
   const [handImageUrl, setHandImageUrl] = useState<string | null>(null);
   /** Same-device pick awaiting USE THIS PHOTO — not yet in the calibration pipeline. */
   const [pendingLocalPhotoUrl, setPendingLocalPhotoUrl] = useState<
@@ -77,6 +95,7 @@ export function ShapeStudioView() {
   const pendingLocalPhotoUrlRef = useRef<string | null>(null);
   const [photoScaleSource, setPhotoScaleSource] =
     useState<PhotoScaleSource | null>(null);
+  const [cardEdgeOk, setCardEdgeOk] = useState(false);
   /**
    * Public Scaled Preview is always single-mode.
    * Compare slot state remains dormant in the codebase but is never exposed.
@@ -351,6 +370,10 @@ export function ShapeStudioView() {
   const showCarat =
     Boolean(handImageUrl) && (calibrated || awaitingCardCalibration);
   const showRail = Boolean(handImageUrl);
+  const markCardInPhotoCard =
+    narrowLayout &&
+    awaitingCardCalibration &&
+    guidedStep === "mark-card";
 
   return (
     <div
@@ -362,6 +385,7 @@ export function ShapeStudioView() {
       data-studio-mode="single"
       data-entry-state={showRail ? "photo" : "capture"}
       data-stone-orientation={stoneOrientation}
+      data-mark-card-actions={markCardInPhotoCard ? "photo-card" : "stage"}
     >
       <ShapeStudioStyles />
       <div className="dss-app">
@@ -375,6 +399,15 @@ export function ShapeStudioView() {
                 ref={handPhotoRef}
                 onStartOver={handleStartOver}
                 onImageSelected={handleImageSelected}
+                markCardActions={
+                  markCardInPhotoCard
+                    ? {
+                        onSetPhotoScale: handleGuidedContinue,
+                        onResetPoints: handleGuidedReset,
+                        cardEdgeOk,
+                      }
+                    : null
+                }
               />
 
               {showCarat ? (
@@ -427,6 +460,8 @@ export function ShapeStudioView() {
                 onRetakeLocalPhoto={
                   showRail ? undefined : handleRetakeLocalPhoto
                 }
+                suppressMarkCardActions={markCardInPhotoCard}
+                onCardEdgeOkChange={setCardEdgeOk}
               />
             </div>
             {handImageUrl ? (

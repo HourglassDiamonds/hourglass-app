@@ -423,6 +423,13 @@ export type OverlayStageProps = {
   onPendingLocalPhoto?: (objectUrl: string) => void;
   onConfirmLocalPhoto?: () => void;
   onRetakeLocalPhoto?: () => void;
+  /**
+   * When true, mark-card Set photo scale / Reset points are hosted in the
+   * Photo rail card (mobile) — omit them from this stage guide row.
+   */
+  suppressMarkCardActions?: boolean;
+  /** Reports card-edge validity for the Photo-card mark-card CTAs. */
+  onCardEdgeOkChange?: (ok: boolean) => void;
 };
 
 export function OverlayStage({
@@ -444,6 +451,8 @@ export function OverlayStage({
   onPendingLocalPhoto,
   onConfirmLocalPhoto,
   onRetakeLocalPhoto,
+  suppressMarkCardActions = false,
+  onCardEdgeOkChange,
 }: OverlayStageProps) {
   const stageRef = useRef<HTMLDivElement>(null);
   const handImgRef = useRef<HTMLImageElement>(null);
@@ -755,6 +764,10 @@ export function OverlayStage({
       content.height,
     );
 
+  useEffect(() => {
+    onCardEdgeOkChange?.(Boolean(cardEdgeOk));
+  }, [cardEdgeOk, onCardEdgeOkChange]);
+
   const placeSingleOverlay = useCallback(
     (clientX: number, clientY: number) => {
       if (!canPlace) return;
@@ -1012,6 +1025,20 @@ export function OverlayStage({
     );
   }
 
+  const showMarkCardStageActions =
+    awaitingGuided &&
+    Boolean(cardCalibration) &&
+    guidedStep === "mark-card" &&
+    !suppressMarkCardActions;
+  const showMarkSeatStageActions =
+    awaitingGuided && Boolean(cardCalibration) && guidedStep === "mark-seat";
+  const showFrameStageActions =
+    awaitingGuided && Boolean(cardCalibration) && guidedStep === "frame";
+  const showStageGuideActions =
+    showMarkCardStageActions ||
+    showMarkSeatStageActions ||
+    showFrameStageActions;
+
   return (
     <>
       <div className="dss-stage-canvas">
@@ -1166,13 +1193,19 @@ export function OverlayStage({
           {stageHint(Boolean(handImageUrl), studioMode, guidedStep)}
         </p>
       )}
-      {awaitingGuided && cardCalibration ? (
-        <div className="dss-guide-actions" role="group" aria-label="Scaled Preview steps">
-          {guidedStep === "mark-card" ? (
+      {showStageGuideActions ? (
+        <div
+          className="dss-guide-actions"
+          role="group"
+          aria-label="Scaled Preview steps"
+          data-dss-stage-guide-actions
+        >
+          {showMarkCardStageActions ? (
             <>
               <button
                 type="button"
                 className="dss-guide-btn"
+                data-dss-stage-action="set-photo-scale"
                 disabled={!cardEdgeOk}
                 onClick={onGuidedContinue}
               >
@@ -1181,6 +1214,7 @@ export function OverlayStage({
               <button
                 type="button"
                 className="dss-guide-btn dss-guide-btn--quiet"
+                data-dss-stage-action="reset-points"
                 onClick={onGuidedReset}
               >
                 Reset points
@@ -1192,7 +1226,7 @@ export function OverlayStage({
               ) : null}
             </>
           ) : null}
-          {guidedStep === "mark-seat" ? (
+          {showMarkSeatStageActions ? (
             <>
               <p className="dss-guide-support">
                 This sets the preview position. Scale comes from the card you
@@ -1220,7 +1254,7 @@ export function OverlayStage({
               ) : null}
             </>
           ) : null}
-          {guidedStep === "frame" ? (
+          {showFrameStageActions ? (
             <>
               <div className="dss-frame-zoom" role="group" aria-label="Zoom">
                 <button
@@ -1262,7 +1296,7 @@ export function OverlayStage({
               >
                 Adjust ring position
               </button>
-              {cardCalibration.cardStillInFrame ? (
+              {cardCalibration?.cardStillInFrame ? (
                 <p className="dss-guide-warn">
                   The card is still in frame. Reposition the photo or retake it
                   with the card farther beside your hand.
