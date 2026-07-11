@@ -1065,29 +1065,56 @@ export function ShapeStudioStyles() {
         }
         .dss-shape-strip::-webkit-scrollbar{ display:none; }
 
-        /* Mobile affordance: carat slider — 44px hit area, restrained visual thumb */
+        /* Mobile affordance: carat slider — ~52px hit, restrained visual thumb */
         .dss-slider{
           margin:8px 2px 4px;
           padding:0 4px;
         }
         .dss-track{
-          height:44px;
-          min-height:44px;
+          height:52px;
+          min-height:52px;
           background-size:100% 2px;
         }
         .dss-track::before{
           height:2px;
           opacity:0.7;
         }
+        /*
+          Invisible 52px hit disc around the thumb; visual thumb stays ~20px
+          via ::after so acquisition is easy without a bulky control.
+        */
         .dss-handle{
+          width:52px;
+          height:52px;
+          background:transparent;
+          border:none;
+          box-shadow:none;
+          pointer-events:auto;
+        }
+        .dss-handle::after{
+          content:"";
+          position:absolute;
+          left:50%;
+          top:50%;
           width:20px;
           height:20px;
-          border-width:1.5px;
+          border-radius:50%;
+          transform:translate(-50%,-50%);
+          background:var(--card);
+          border:1.5px solid oklch(from var(--ink-soft) l c h / 0.72);
           box-shadow:
             0 0 0 1px color-mix(in srgb, #fff 55%, transparent),
             0 1px 4px oklch(from var(--hairline) l c h / 0.28);
+          pointer-events:none;
         }
-        .dss-track.is-dragging .dss-handle{
+        .dss-track.is-dragging{
+          background-size:100% 2.5px;
+        }
+        .dss-track.is-dragging::before{
+          height:2.5px;
+          opacity:0.9;
+        }
+        .dss-track.is-dragging .dss-handle::after{
           width:22px;
           height:22px;
           border-color:color-mix(in srgb, var(--ink) 50%, var(--gold-warm));
@@ -1095,6 +1122,11 @@ export function ShapeStudioStyles() {
             0 0 0 2px color-mix(in srgb, #fff 70%, transparent),
             0 0 0 3px color-mix(in srgb, var(--ink) 28%, transparent),
             0 2px 6px oklch(from var(--hairline) l c h / 0.32);
+        }
+        /* While dragging, block page pan so the slider keeps the gesture */
+        .dss-shell[data-slider-adjusting]{
+          touch-action:none;
+          overscroll-behavior:none;
         }
         .dss-stepper button{
           width:44px;

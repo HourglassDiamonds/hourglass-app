@@ -38,25 +38,37 @@ describe("mobile affordance polish — slider and guide lines", () => {
   );
   const mobileBlock = styles.slice(styles.indexOf("@media (max-width: 960px)"));
 
-  it("mobile slider exposes an effective ~44px touch target", () => {
-    assert.match(mobileBlock, /\.dss-track\{[\s\S]*?height:44px/);
-    assert.match(mobileBlock, /\.dss-track\{[\s\S]*?min-height:44px/);
+  it("mobile slider exposes an effective ~48–52px touch target", () => {
+    assert.match(mobileBlock, /\.dss-track\{[\s\S]*?height:52px/);
+    assert.match(mobileBlock, /\.dss-track\{[\s\S]*?min-height:52px/);
+    assert.match(mobileBlock, /\.dss-handle\{[\s\S]*?width:52px;\s*height:52px/);
     assert.match(styles, /\.dss-track\{[\s\S]*?touch-action:none/);
+    assert.match(mobileBlock, /\.dss-shell\[data-slider-adjusting\]/);
   });
 
   it("desktop slider geometry remains the quieter 36px / 10px treatment", () => {
     assert.match(desktopBlock, /\.dss-track\{[\s\S]*?height:36px/);
     assert.match(desktopBlock, /\.dss-handle\{[\s\S]*?width:10px;\s*height:10px/);
-    assert.doesNotMatch(desktopBlock, /\.dss-track\{[\s\S]*?height:44px/);
-    assert.doesNotMatch(desktopBlock, /\.dss-handle\{[\s\S]*?width:20px/);
+    assert.doesNotMatch(desktopBlock, /\.dss-track\{[\s\S]*?height:52px/);
+    assert.doesNotMatch(desktopBlock, /\.dss-handle\{[\s\S]*?width:52px/);
   });
 
-  it("visual mobile thumb stays restrained (~20px), larger only while dragging", () => {
-    assert.match(mobileBlock, /\.dss-handle\{[\s\S]*?width:20px;\s*height:20px/);
+  it("visual mobile thumb stays restrained (~20px via ::after), larger only while dragging", () => {
     assert.match(
       mobileBlock,
-      /\.dss-track\.is-dragging \.dss-handle\{[\s\S]*?width:22px/,
+      /\.dss-handle::after\{[\s\S]*?width:20px;\s*height:20px/,
     );
+    assert.match(
+      mobileBlock,
+      /\.dss-track\.is-dragging \.dss-handle::after\{[\s\S]*?width:22px/,
+    );
+  });
+
+  it("uses pointer capture so drag continues outside the visible track", () => {
+    assert.match(track, /setPointerCapture/);
+    assert.match(track, /pointerdown/);
+    assert.match(track, /pointermove/);
+    assert.match(track, /pctFromClientX/);
   });
 
   it("slider min, max, step, and value mapping are unchanged", () => {
