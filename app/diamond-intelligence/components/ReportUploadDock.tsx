@@ -173,7 +173,11 @@ export function ReportUploadDock({
                 key={line}
                 className="text-[10px] leading-snug text-[#948a80]"
               >
-                {line}
+                {line === CONSUMER_COPY.uploadHelperLines[0] ? (
+                  <strong className="font-semibold">{line}</strong>
+                ) : (
+                  line
+                )}
               </p>
             ))}
           </div>
