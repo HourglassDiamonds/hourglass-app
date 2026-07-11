@@ -311,6 +311,9 @@ export function ShapeStudioStyles() {
         flex-direction:column;
         align-items:stretch;
       }
+      .dss-entry-card .dss-entry-mobile-actions{
+        margin-top:10px;
+      }
       .dss-entry-review-actions .dss-stage-empty-btn,
       .dss-entry-mobile-actions .dss-stage-empty-btn{
         min-width:0;

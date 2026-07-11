@@ -996,7 +996,7 @@ export function OverlayStage({
                   Avoid cards showing personal or financial information.
                 </p>
               </div>
-              {/* Narrow phone: same-device camera / library — no QR primary. */}
+              {/* Narrow phone: same-device camera capture — no QR primary. */}
               {onPendingLocalPhoto ? (
                 <DirectMobileEntry
                   onPhotoSelected={onPendingLocalPhoto}

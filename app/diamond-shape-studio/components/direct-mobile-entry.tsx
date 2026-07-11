@@ -13,7 +13,7 @@ type DirectMobileEntryProps = {
 };
 
 /**
- * Same-device phone entry: native camera / library pick only.
+ * Same-device phone entry: native camera capture only.
  * Does not create a capture relay session.
  */
 export function DirectMobileEntry({
@@ -21,7 +21,6 @@ export function DirectMobileEntry({
   onUseAnotherDevice,
 }: DirectMobileEntryProps) {
   const cameraInputRef = useRef<HTMLInputElement>(null);
-  const libraryInputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
 
   const applyFile = useCallback(
@@ -60,17 +59,6 @@ export function DirectMobileEntry({
         >
           Take a Photo
         </button>
-        <button
-          type="button"
-          className="dss-stage-empty-btn dss-stage-empty-btn--quiet"
-          aria-label="Choose from photos"
-          onClick={() => {
-            setError(null);
-            libraryInputRef.current?.click();
-          }}
-        >
-          Choose from Photos
-        </button>
       </div>
       {error ? (
         <p className="dss-entry-local-error" role="alert">
@@ -97,20 +85,6 @@ export function DirectMobileEntry({
         className="sr-only"
         data-dss-local-input="camera"
         capture="environment"
-        aria-hidden="true"
-        tabIndex={-1}
-        onChange={(e) => {
-          const file = e.target.files?.[0];
-          e.target.value = "";
-          applyFile(file);
-        }}
-      />
-      <input
-        ref={libraryInputRef}
-        type="file"
-        accept={LOCAL_PHOTO_ACCEPT}
-        className="sr-only"
-        data-dss-local-input="library"
         aria-hidden="true"
         tabIndex={-1}
         onChange={(e) => {

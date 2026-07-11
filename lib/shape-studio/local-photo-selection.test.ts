@@ -38,7 +38,7 @@ describe("local photo selection (same-device mobile entry)", () => {
     assert.equal(DIRECT_MOBILE_ENTRY_MAX_WIDTH_PX, 960);
   });
 
-  it("accepts image/* for native camera and library inputs", () => {
+  it("accepts image/* for the native camera input", () => {
     assert.equal(LOCAL_PHOTO_ACCEPT, "image/*");
   });
 

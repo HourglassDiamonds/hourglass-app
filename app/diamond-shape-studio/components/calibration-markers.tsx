@@ -13,6 +13,7 @@ import {
   type ContentRect,
 } from "@/lib/shape-studio/card-calibration";
 import type { ContentPoint } from "@/lib/shape-studio/types";
+import { connectorSegmentGeometry } from "./calibration-connector";
 
 type MarkerPair = {
   a: ContentPoint;
@@ -31,6 +32,14 @@ export type CalibrationMarkersProps = {
 
 /** Stage px from true endpoint to circular thumb center (outward along segment). */
 const THUMB_OFFSET_PX = 12;
+
+/**
+ * Visual handle-ring diameter at rest — keep in sync with `.dss-cal-handle-ring`
+ * in shape-studio-styles (desktop 21px; mobile ≤960px uses 24px).
+ */
+const HANDLE_RING_DIAMETER_PX = 21;
+const HANDLE_RING_DIAMETER_MOBILE_PX = 24;
+const MOBILE_CAL_MQ = "(max-width: 960px)";
 
 type Vec2 = { x: number; y: number };
 
@@ -53,6 +62,17 @@ function stagePxToStyle(
   };
 }
 
+/** Rest-state ring radius used to inset the connector from each handle center. */
+function handleRingRadiusPx(): number {
+  if (
+    typeof window !== "undefined" &&
+    window.matchMedia(MOBILE_CAL_MQ).matches
+  ) {
+    return HANDLE_RING_DIAMETER_MOBILE_PX / 2;
+  }
+  return HANDLE_RING_DIAMETER_PX / 2;
+}
+
 /** Unit vector A→B in stage pixels; falls back to +X when coincident. */
 function segmentUnit(
   a: ContentPoint,
@@ -68,6 +88,11 @@ function segmentUnit(
   return { x: dx / length, y: dy / length };
 }
 
+/**
+ * Connector from inner edge of handle A to inner edge of handle B.
+ * Endpoints are true edge centers; the visible line stops at each ring’s
+ * inner rim so it never runs through either circle.
+ */
 function segmentStyle(
   a: ContentPoint,
   b: ContentPoint,
@@ -75,15 +100,12 @@ function segmentStyle(
 ): CSSProperties {
   const p1 = contentToStagePx(a, content);
   const p2 = contentToStagePx(b, content);
-  const dx = p2.x - p1.x;
-  const dy = p2.y - p1.y;
-  const length = Math.hypot(dx, dy);
-  const angle = (Math.atan2(dy, dx) * 180) / Math.PI;
+  const geom = connectorSegmentGeometry(p1, p2, handleRingRadiusPx());
   return {
-    left: `${p1.x}px`,
-    top: `${p1.y}px`,
-    width: `${length}px`,
-    transform: `rotate(${angle}deg)`,
+    left: `${geom.left}px`,
+    top: `${geom.top}px`,
+    width: `${geom.width}px`,
+    transform: `rotate(${geom.angleDeg}deg)`,
   };
 }
 

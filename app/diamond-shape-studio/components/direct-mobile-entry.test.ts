@@ -26,11 +26,13 @@ describe("direct same-device mobile entry contracts", () => {
   const styles = readStudio("components/shape-studio-styles.tsx");
   const localLib = readLib("local-photo-selection.ts");
 
-  it("narrow mobile entry shows Take a Photo and Choose from Photos", () => {
+  it("narrow mobile entry shows only Take a Photo (no gallery picker)", () => {
     assert.match(entry, /Take a Photo/);
-    assert.match(entry, /Choose from Photos/);
     assert.match(entry, /aria-label="Take a photo"/);
-    assert.match(entry, /aria-label="Choose from photos"/);
+    assert.doesNotMatch(entry, /Choose from Photos/);
+    assert.doesNotMatch(entry, /aria-label="Choose from photos"/);
+    assert.doesNotMatch(entry, /data-dss-local-input="library"/);
+    assert.match(entry, /Using another device\?/);
   });
 
   it("narrow mobile entry does not present QR as the primary action", () => {
@@ -55,20 +57,17 @@ describe("direct same-device mobile entry contracts", () => {
     assert.match(stage, /QrCapturePanel/);
   });
 
-  it("Take a Photo uses the camera-hinted input; Choose from Photos does not", () => {
+  it("Take a Photo uses the camera-hinted input as the only local file control", () => {
     assert.match(entry, /data-dss-local-input="camera"/);
-    assert.match(entry, /data-dss-local-input="library"/);
     assert.match(
       entry,
       /data-dss-local-input="camera"[\s\S]*capture="environment"/,
     );
-    const libraryBlock = entry.slice(
-      entry.indexOf('data-dss-local-input="library"'),
+    assert.equal(
+      (entry.match(/data-dss-local-input=/g) ?? []).length,
+      1,
     );
-    assert.doesNotMatch(
-      libraryBlock.slice(0, 280),
-      /capture=/,
-    );
+    assert.equal((entry.match(/type="file"/g) ?? []).length, 1);
     assert.match(entry, /accept=\{LOCAL_PHOTO_ACCEPT\}/);
     assert.match(localLib, /LOCAL_PHOTO_ACCEPT = "image\/\*"/);
   });

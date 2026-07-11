@@ -109,11 +109,16 @@ describe("mobile affordance polish — slider and guide lines", () => {
     assert.match(controls, /aria-valuenow=\{carat\}/);
   });
 
-  it("guide lines remain present with positioned handles; no coordinate math changes", () => {
+  it("guide lines remain present; connector insets to each handle ring’s inner edge", () => {
     assert.match(markers, /dss-cal-segment/);
     assert.match(markers, /dss-cal-handle/);
     assert.match(markers, /is-dragging/);
     assert.match(markers, /contentToStagePx/);
+    assert.match(markers, /connectorSegmentGeometry/);
+    assert.match(markers, /HANDLE_RING_DIAMETER_PX = 21/);
+    assert.match(markers, /HANDLE_RING_DIAMETER_MOBILE_PX = 24/);
+    assert.match(desktopBlock, /\.dss-cal-handle-ring\{[\s\S]*?width:21px;\s*height:21px/);
+    assert.match(mobileBlock, /\.dss-cal-handle-ring\{[\s\S]*?width:24px;\s*height:24px/);
     assert.doesNotMatch(markers, /CARD_LONG_EDGE|85\.6|53\.98/);
     assert.doesNotMatch(styles, /pixelsPerMm|overlaySizeFromCardPpm/);
   });
