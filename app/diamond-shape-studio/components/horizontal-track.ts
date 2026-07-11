@@ -8,6 +8,18 @@ export function attachHorizontalTrack(
   applyPct: (pct: number) => void,
   onDragEnd?: () => void,
 ) {
+  const shell = () =>
+    track.closest<HTMLElement>("[data-shape-studio-instrument]");
+
+  const setDraggingUi = (active: boolean) => {
+    track.classList.toggle("is-dragging", active);
+    track.toggleAttribute("data-dss-slider-dragging", active);
+    const host = shell();
+    if (!host) return;
+    if (active) host.setAttribute("data-slider-adjusting", "");
+    else host.removeAttribute("data-slider-adjusting");
+  };
+
   const readPct = (clientX: number) => {
     const r = track.getBoundingClientRect();
     const x = clientX - r.left;
@@ -15,6 +27,7 @@ export function attachHorizontalTrack(
   };
   const down = (ev: MouseEvent | TouchEvent) => {
     draggingRef.current = true;
+    setDraggingUi(true);
     const cx = "touches" in ev ? ev.touches[0]!.clientX : ev.clientX;
     applyPct(readPct(cx));
     ev.preventDefault();
@@ -23,20 +36,23 @@ export function attachHorizontalTrack(
     if (!draggingRef.current) return;
     const cx = "touches" in ev ? ev.touches[0]!.clientX : ev.clientX;
     applyPct(readPct(cx));
+    if ("touches" in ev) ev.preventDefault();
   };
   const up = () => {
     if (draggingRef.current) {
       onDragEnd?.();
     }
     draggingRef.current = false;
+    setDraggingUi(false);
   };
   track.addEventListener("mousedown", down);
   track.addEventListener("touchstart", down, { passive: false });
   window.addEventListener("mousemove", move);
-  window.addEventListener("touchmove", move, { passive: true });
+  window.addEventListener("touchmove", move, { passive: false });
   window.addEventListener("mouseup", up);
   window.addEventListener("touchend", up);
   return () => {
+    setDraggingUi(false);
     track.removeEventListener("mousedown", down);
     track.removeEventListener("touchstart", down);
     window.removeEventListener("mousemove", move);

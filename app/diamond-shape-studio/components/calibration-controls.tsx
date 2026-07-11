@@ -159,9 +159,31 @@ export function CaratControl({
         <div
           ref={trackRef}
           className="dss-track"
+          role="slider"
+          tabIndex={0}
+          aria-label="Carat weight"
+          aria-valuemin={CARAT_MIN}
+          aria-valuemax={CARAT_MAX}
+          aria-valuenow={carat}
+          aria-valuetext={`${carat.toFixed(2)} carat`}
           style={{ "--dss-fill": `${fill}%` } as React.CSSProperties}
+          onKeyDown={(e) => {
+            if (e.key === "ArrowLeft" || e.key === "ArrowDown") {
+              e.preventDefault();
+              onChange(snapCarat(carat - CARAT_STEP));
+            } else if (e.key === "ArrowRight" || e.key === "ArrowUp") {
+              e.preventDefault();
+              onChange(snapCarat(carat + CARAT_STEP));
+            } else if (e.key === "Home") {
+              e.preventDefault();
+              onChange(CARAT_MIN);
+            } else if (e.key === "End") {
+              e.preventDefault();
+              onChange(CARAT_MAX);
+            }
+          }}
         >
-          <div className="dss-handle" style={{ left: `${fill}%` }} />
+          <div className="dss-handle" style={{ left: `${fill}%` }} aria-hidden />
         </div>
         <div className="dss-endpoints">
           <span>{CARAT_MIN.toFixed(2)} ct</span>

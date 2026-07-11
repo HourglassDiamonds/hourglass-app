@@ -8,7 +8,7 @@ import {
 
 type HandPhotoPanelProps = {
   onImageSelected: (url: string, source: "card-reference") => void;
-  /** Authoritative reset — returns to centered QR entry. */
+  /** Authoritative reset — returns to capture entry (QR on desktop, local on phone). */
   onStartOver: () => void;
 };
 

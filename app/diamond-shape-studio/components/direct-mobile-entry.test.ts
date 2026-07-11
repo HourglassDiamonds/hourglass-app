@@ -1,0 +1,194 @@
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { describe, it } from "node:test";
+
+const root = join(
+  dirname(fileURLToPath(import.meta.url)),
+  "..",
+  "..",
+  "..",
+);
+
+function readStudio(rel: string): string {
+  return readFileSync(join(root, "app", "diamond-shape-studio", rel), "utf8");
+}
+
+function readLib(rel: string): string {
+  return readFileSync(join(root, "lib", "shape-studio", rel), "utf8");
+}
+
+describe("direct same-device mobile entry contracts", () => {
+  const entry = readStudio("components/direct-mobile-entry.tsx");
+  const stage = readStudio("components/overlay-stage.tsx");
+  const view = readStudio("shape-studio-view.tsx");
+  const styles = readStudio("components/shape-studio-styles.tsx");
+  const localLib = readLib("local-photo-selection.ts");
+
+  it("narrow mobile entry shows Take a Photo and Choose from Photos", () => {
+    assert.match(entry, /Take a Photo/);
+    assert.match(entry, /Choose from Photos/);
+    assert.match(entry, /aria-label="Take a photo"/);
+    assert.match(entry, /aria-label="Choose from photos"/);
+  });
+
+  it("narrow mobile entry does not present QR as the primary action", () => {
+    assert.doesNotMatch(entry, /Capture with phone/);
+    assert.doesNotMatch(entry, /QrCapturePanel/);
+    assert.match(styles, /\.dss-entry-desktop\{\s*display:flex/);
+    assert.match(styles, /\.dss-entry-mobile\{\s*display:none/);
+    assert.match(
+      styles,
+      /@media \(max-width: 960px\)[\s\S]*\.dss-entry-desktop\{\s*display:none/,
+    );
+    assert.match(
+      styles,
+      /@media \(max-width: 960px\)[\s\S]*\.dss-entry-mobile\{\s*display:flex/,
+    );
+  });
+
+  it("desktop entry still shows the QR relay Capture with phone CTA", () => {
+    assert.match(stage, /data-dss-entry-desktop/);
+    assert.match(stage, /Capture with phone/);
+    assert.match(stage, /phoneCapture\.start/);
+    assert.match(stage, /QrCapturePanel/);
+  });
+
+  it("Take a Photo uses the camera-hinted input; Choose from Photos does not", () => {
+    assert.match(entry, /data-dss-local-input="camera"/);
+    assert.match(entry, /data-dss-local-input="library"/);
+    assert.match(
+      entry,
+      /data-dss-local-input="camera"[\s\S]*capture="environment"/,
+    );
+    const libraryBlock = entry.slice(
+      entry.indexOf('data-dss-local-input="library"'),
+    );
+    assert.doesNotMatch(
+      libraryBlock.slice(0, 280),
+      /capture=/,
+    );
+    assert.match(entry, /accept=\{LOCAL_PHOTO_ACCEPT\}/);
+    assert.match(localLib, /LOCAL_PHOTO_ACCEPT = "image\/\*"/);
+  });
+
+  it("camera and photo-picker cancellation leave entry intact (no error path)", () => {
+    assert.match(entry, /e\.target\.value = ""/);
+    assert.match(entry, /if \(result\.reason === "cancelled"\) return/);
+    assert.match(localLib, /reason: "cancelled"/);
+  });
+
+  it("selected photo enters a local review state with one image", () => {
+    assert.match(entry, /data-dss-direct-mobile-review/);
+    assert.match(entry, /Use This Photo/);
+    assert.match(entry, /Retake/);
+    assert.match(entry, /Selected hand-and-card photograph/);
+    assert.match(stage, /pendingLocalPhotoUrl/);
+    assert.match(stage, /DirectMobileReview/);
+    assert.equal(
+      (entry.match(/dss-entry-review-img/g) ?? []).length,
+      1,
+    );
+  });
+
+  it("USE THIS PHOTO invokes the existing local image pipeline exactly once", () => {
+    assert.match(view, /handleConfirmLocalPhoto/);
+    assert.match(
+      view,
+      /handleImageSelected\(url, "card-reference"\)/,
+    );
+    const confirm = view.slice(
+      view.indexOf("handleConfirmLocalPhoto"),
+      view.indexOf("handleRetakeLocalPhoto"),
+    );
+    assert.equal(
+      (confirm.match(/handleImageSelected\(/g) ?? []).length,
+      1,
+    );
+  });
+
+  it("RETAKE clears the pending image and revokes the prior object URL", () => {
+    assert.match(view, /handleRetakeLocalPhoto/);
+    assert.match(
+      view,
+      /replacePendingObjectUrl\(prev, null\)/,
+    );
+    assert.match(localLib, /URL\.revokeObjectURL\(previous\)/);
+  });
+
+  it("a second selection replaces the first preview without leaking the prior URL", () => {
+    assert.match(
+      view,
+      /replacePendingObjectUrl\(prev, objectUrl\)/,
+    );
+    assert.match(
+      localLib,
+      /previous\?\.startsWith\("blob:"\) && previous !== next/,
+    );
+  });
+
+  it("same-device mobile selection creates no capture relay session", () => {
+    assert.doesNotMatch(entry, /usePhoneCaptureSession/);
+    assert.doesNotMatch(entry, /\/api\/shape-studio/);
+    assert.doesNotMatch(entry, /createSession|startSession/);
+    assert.match(entry, /Does not create a capture relay session/);
+    assert.match(
+      view,
+      /onPendingLocalPhoto=\{[\s\S]*handlePendingLocalPhoto/,
+    );
+  });
+
+  it("same-device path does not call session upload APIs", () => {
+    assert.doesNotMatch(entry, /\/upload/);
+    assert.doesNotMatch(entry, /fetch\(/);
+    assert.doesNotMatch(localLib, /fetch\(/);
+    assert.doesNotMatch(localLib, /\/api\//);
+  });
+
+  it("same-device path does not show waiting-for-computer or Photo sent copy", () => {
+    assert.doesNotMatch(entry, /Photo sent/i);
+    assert.doesNotMatch(entry, /waiting for/i);
+    assert.doesNotMatch(entry, /Return to your desktop/i);
+    assert.doesNotMatch(entry, /sent to/i);
+    assert.match(
+      entry,
+      /Photograph your hand with a standard-size card fully visible beside it/,
+    );
+  });
+
+  it("Start over clears pending local review as well as the adopted photo", () => {
+    const startIdx = view.indexOf("const handleStartOver");
+    const startOver = view.slice(
+      startIdx,
+      view.indexOf("useEffect", startIdx),
+    );
+    assert.match(startOver, /replacePendingObjectUrl\(prev, null\)/);
+    assert.match(startOver, /phoneCapture\.cancel\(\)/);
+    assert.match(startOver, /setHandImageUrl/);
+  });
+
+  it("card instruction copy remains restrained and non-automatic", () => {
+    assert.match(
+      entry,
+      /The card allows the preview to be calibrated accurately/,
+    );
+    assert.doesNotMatch(entry, /automatically detect/i);
+    assert.doesNotMatch(entry, /computer vision/i);
+    assert.doesNotMatch(entry, /virtual try-on/i);
+    assert.doesNotMatch(entry, /ring size/i);
+  });
+
+  it("public name remains Scaled Preview with no naming/SEO changes in this phase", () => {
+    assert.match(view, /title="Scaled Preview"/);
+    assert.doesNotMatch(view, /Diamond Hand Preview/);
+  });
+
+  it("desktop QR showQr conditions remain the existing session phases", () => {
+    assert.match(
+      stage,
+      /phoneCapture!\.phase === "creating" \|\|[\s\S]*phoneCapture!\.phase === "active"/,
+    );
+    assert.match(stage, /phoneCapture!\.expired/);
+  });
+});

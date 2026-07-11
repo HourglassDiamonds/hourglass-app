@@ -48,6 +48,10 @@ import {
 import type { PhoneCaptureSession } from "@/lib/shape-studio/use-phone-capture-session";
 import { SCALED_CAPTURE_MODE } from "@/lib/shape-studio/use-phone-capture-session";
 import { CalibrationMarkers } from "./calibration-markers";
+import {
+  DirectMobileEntry,
+  DirectMobileReview,
+} from "./direct-mobile-entry";
 import { QrCapturePanel } from "./qr-capture-panel";
 
 type OverlayLayerProps = {
@@ -411,6 +415,14 @@ export type OverlayStageProps = {
   onUploadClick?: () => void;
   /** Single authoritative phone-capture session (centered entry only). */
   phoneCapture?: PhoneCaptureSession | null;
+  /**
+   * Same-device pending review URL (blob). When set, entry shows local review
+   * instead of capture CTAs. Confirm via onConfirmLocalPhoto.
+   */
+  pendingLocalPhotoUrl?: string | null;
+  onPendingLocalPhoto?: (objectUrl: string) => void;
+  onConfirmLocalPhoto?: () => void;
+  onRetakeLocalPhoto?: () => void;
 };
 
 export function OverlayStage({
@@ -428,6 +440,10 @@ export function OverlayStage({
   stoneOrientation = "ns",
   overlays,
   phoneCapture = null,
+  pendingLocalPhotoUrl = null,
+  onPendingLocalPhoto,
+  onConfirmLocalPhoto,
+  onRetakeLocalPhoto,
 }: OverlayStageProps) {
   const stageRef = useRef<HTMLDivElement>(null);
   const handImgRef = useRef<HTMLImageElement>(null);
@@ -900,13 +916,22 @@ export function OverlayStage({
         phoneCapture!.phase === "active" ||
         Boolean(phoneCapture!.error) ||
         phoneCapture!.expired);
+    const showLocalReview = Boolean(pendingLocalPhotoUrl) && !showQr;
 
     return (
       <div className="dss-entry-surface" data-dss-entry-panel>
         <div
-          className={`dss-entry-card${showQr ? " dss-entry-card--qr" : ""}`}
+          className={`dss-entry-card${showQr ? " dss-entry-card--qr" : ""}${
+            showLocalReview ? " dss-entry-card--review" : ""
+          }`}
           role="status"
-          aria-label={showQr ? "Phone capture session" : "Scaled Preview entry"}
+          aria-label={
+            showQr
+              ? "Phone capture session"
+              : showLocalReview
+                ? "Selected photograph review"
+                : "Scaled Preview entry"
+          }
         >
           {showQr ? (
             phoneCapture!.phase === "creating" ? (
@@ -936,32 +961,50 @@ export function OverlayStage({
                 </button>
               </div>
             )
+          ) : showLocalReview && pendingLocalPhotoUrl ? (
+            <DirectMobileReview
+              imageUrl={pendingLocalPhotoUrl}
+              onUseThisPhoto={() => onConfirmLocalPhoto?.()}
+              onRetake={() => onRetakeLocalPhoto?.()}
+            />
           ) : (
             <>
-              <p className="dss-stage-empty-kicker">Hand preview</p>
-              <p className="dss-stage-empty-title">
-                Add your hand-and-card photo
-              </p>
-              <p className="dss-stage-empty-copy">
-                Use your phone to photograph your hand with a standard-size card
-                beside it. We’ll use the card to establish visual scale, then
-                frame it out of the final preview.
-              </p>
-              {phoneCapture ? (
-                <div className="dss-stage-empty-actions">
-                  <button
-                    type="button"
-                    className="dss-stage-empty-btn"
-                    onClick={phoneCapture.start}
-                  >
-                    Capture with phone
-                  </button>
-                </div>
+              {/* Desktop / wide: QR relay remains the primary entry. */}
+              <div className="dss-entry-desktop" data-dss-entry-desktop>
+                <p className="dss-stage-empty-kicker">Hand preview</p>
+                <p className="dss-stage-empty-title">
+                  Add your hand-and-card photo
+                </p>
+                <p className="dss-stage-empty-copy">
+                  Use your phone to photograph your hand with a standard-size card
+                  beside it. We’ll use the card to establish visual scale, then
+                  frame it out of the final preview.
+                </p>
+                {phoneCapture ? (
+                  <div className="dss-stage-empty-actions">
+                    <button
+                      type="button"
+                      className="dss-stage-empty-btn"
+                      onClick={phoneCapture.start}
+                    >
+                      Capture with phone
+                    </button>
+                  </div>
+                ) : null}
+                <p className="dss-stage-empty-privacy">
+                  Use a blank gift card, hotel key, or standard-size loyalty card.
+                  Avoid cards showing personal or financial information.
+                </p>
+              </div>
+              {/* Narrow phone: same-device camera / library — no QR primary. */}
+              {onPendingLocalPhoto ? (
+                <DirectMobileEntry
+                  onPhotoSelected={onPendingLocalPhoto}
+                  onUseAnotherDevice={
+                    phoneCapture ? () => phoneCapture.start() : undefined
+                  }
+                />
               ) : null}
-              <p className="dss-stage-empty-privacy">
-                Use a blank gift card, hotel key, or standard-size loyalty card.
-                Avoid cards showing personal or financial information.
-              </p>
             </>
           )}
         </div>

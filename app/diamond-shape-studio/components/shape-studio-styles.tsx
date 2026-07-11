@@ -271,6 +271,80 @@ export function ShapeStudioStyles() {
         outline:2px solid color-mix(in srgb, var(--gold-warm) 55%, transparent);
         outline-offset:2px;
       }
+      /* Wide layout: QR relay entry. Narrow: same-device local entry. */
+      .dss-entry-desktop{
+        display:flex;
+        flex-direction:column;
+        align-items:center;
+        gap:10px;
+        width:100%;
+      }
+      .dss-entry-mobile{
+        display:none;
+        flex-direction:column;
+        align-items:center;
+        gap:10px;
+        width:100%;
+      }
+      .dss-entry-card--review{
+        max-width:520px;
+        padding:22px 20px 24px;
+      }
+      .dss-entry-review{
+        display:flex;
+        flex-direction:column;
+        align-items:center;
+        gap:12px;
+        width:100%;
+      }
+      .dss-entry-review-img{
+        display:block;
+        width:100%;
+        max-width:100%;
+        max-height:min(52vh, 420px);
+        object-fit:contain;
+        border-radius:10px;
+        background:color-mix(in srgb, var(--hairline-soft) 55%, #fff);
+      }
+      .dss-entry-review-actions,
+      .dss-entry-mobile-actions{
+        flex-direction:column;
+        align-items:stretch;
+      }
+      .dss-entry-review-actions .dss-stage-empty-btn,
+      .dss-entry-mobile-actions .dss-stage-empty-btn{
+        min-width:0;
+        width:100%;
+        min-height:44px;
+        padding:12px 18px;
+        font-size:11px;
+        letter-spacing:0.14em;
+      }
+      .dss-entry-local-error{
+        margin:0;
+        font-size:12.5px;
+        line-height:1.45;
+        color:color-mix(in srgb, #8a3a2a 88%, var(--ink));
+        max-width:36ch;
+      }
+      .dss-entry-secondary-link{
+        margin:2px 0 0;
+        padding:8px 4px;
+        border:0;
+        background:transparent;
+        font-size:12px;
+        line-height:1.4;
+        color:var(--ink-mute);
+        text-decoration:underline;
+        text-underline-offset:3px;
+        cursor:pointer;
+        min-height:44px;
+      }
+      .dss-entry-secondary-link:focus-visible{
+        outline:2px solid color-mix(in srgb, var(--gold-warm) 55%, transparent);
+        outline-offset:2px;
+        border-radius:4px;
+      }
       .dss-stage-empty{
         position:relative;
         z-index:1;
@@ -672,7 +746,12 @@ export function ShapeStudioStyles() {
         position:relative; height:36px; margin:0;
         background-image:linear-gradient(var(--hairline),var(--hairline));
         background-size:100% 1px; background-position:center;
-        background-repeat:no-repeat; touch-action:pan-x;
+        background-repeat:no-repeat; touch-action:none;
+        outline:none;
+      }
+      .dss-track:focus-visible{
+        box-shadow:0 0 0 2px color-mix(in srgb, var(--gold-warm) 55%, transparent);
+        border-radius:8px;
       }
       .dss-track::before{
         content:""; position:absolute; left:0; top:50%; height:1px;
@@ -685,6 +764,12 @@ export function ShapeStudioStyles() {
         border-radius:50%; background:var(--card);
         border:1px solid oklch(from var(--ink-soft) l c h / 0.72);
         transform:translate(-50%,-50%); cursor:grab; touch-action:none;
+        pointer-events:none;
+      }
+      .dss-track.is-dragging .dss-handle,
+      .dss-track:active .dss-handle{
+        cursor:grabbing;
+        border-color:color-mix(in srgb, var(--ink) 40%, var(--gold-warm));
       }
       .dss-endpoints{
         display:flex; justify-content:space-between;
@@ -936,6 +1021,8 @@ export function ShapeStudioStyles() {
         .dss-qr-panel--stage .dss-qr-lead{
           max-width:none;
         }
+        .dss-entry-desktop{ display:none; }
+        .dss-entry-mobile{ display:flex; }
         .dss-control-rail{ display:contents; }
         .dss-control-rail > .dss-card{
           width:calc(100% - 40px); margin-left:20px; margin-right:20px;
@@ -977,6 +1064,121 @@ export function ShapeStudioStyles() {
           scrollbar-width:none;
         }
         .dss-shape-strip::-webkit-scrollbar{ display:none; }
+
+        /* Mobile affordance: carat slider — 44px hit area, restrained visual thumb */
+        .dss-slider{
+          margin:8px 2px 4px;
+          padding:0 4px;
+        }
+        .dss-track{
+          height:44px;
+          min-height:44px;
+          background-size:100% 2px;
+        }
+        .dss-track::before{
+          height:2px;
+          opacity:0.7;
+        }
+        .dss-handle{
+          width:20px;
+          height:20px;
+          border-width:1.5px;
+          box-shadow:
+            0 0 0 1px color-mix(in srgb, #fff 55%, transparent),
+            0 1px 4px oklch(from var(--hairline) l c h / 0.28);
+        }
+        .dss-track.is-dragging .dss-handle{
+          width:22px;
+          height:22px;
+          border-color:color-mix(in srgb, var(--ink) 50%, var(--gold-warm));
+          box-shadow:
+            0 0 0 2px color-mix(in srgb, #fff 70%, transparent),
+            0 0 0 3px color-mix(in srgb, var(--ink) 28%, transparent),
+            0 2px 6px oklch(from var(--hairline) l c h / 0.32);
+        }
+        .dss-stepper button{
+          width:44px;
+          height:44px;
+          font-size:18px;
+        }
+
+        /* Mobile affordance: calibration guide lines — quieter at rest, clearer while dragging */
+        .dss-cal-segment{
+          height:2px;
+          opacity:0.88;
+          background:color-mix(in srgb, var(--ink) 62%, var(--gold-warm));
+          box-shadow:
+            0 0 0 1px color-mix(in srgb, #fff 58%, transparent),
+            0 1px 2px color-mix(in srgb, #000 28%, transparent);
+        }
+        .dss-cal-stem{
+          height:2px;
+          opacity:0.72;
+          background:color-mix(in srgb, var(--ink-soft) 48%, var(--gold-warm));
+          box-shadow:0 0 0 1px color-mix(in srgb, #fff 45%, transparent);
+        }
+        .dss-cal-jaw{
+          width:2.25px;
+          height:32px;
+          opacity:1;
+          background:color-mix(in srgb, var(--ink) 90%, var(--gold-warm));
+          box-shadow:
+            0 0 0 1px color-mix(in srgb, #fff 62%, transparent),
+            0 0 0 2px color-mix(in srgb, #000 22%, transparent);
+        }
+        .dss-cal-handle{
+          width:48px;
+          height:48px;
+        }
+        .dss-cal-handle-ring{
+          width:24px;
+          height:24px;
+          border-width:2px;
+          background:color-mix(in srgb, var(--card) 58%, transparent);
+          border-color:color-mix(in srgb, var(--ink) 42%, var(--gold-warm));
+          box-shadow:
+            0 0 0 1px color-mix(in srgb, #fff 50%, transparent),
+            0 1px 4px oklch(from var(--hairline) l c h / 0.28);
+        }
+        .dss-cal-handle-center{
+          width:4px;
+          height:4px;
+        }
+        .dss-cal-layer:has(.dss-cal-handle.is-dragging) .dss-cal-segment{
+          height:2.5px;
+          opacity:1;
+          box-shadow:
+            0 0 0 1.5px color-mix(in srgb, #fff 78%, transparent),
+            0 0 0 3px color-mix(in srgb, #000 38%, transparent),
+            0 0 6px color-mix(in srgb, var(--gold-warm) 35%, transparent);
+        }
+        .dss-cal-layer:has(.dss-cal-handle.is-dragging) .dss-cal-stem{
+          opacity:0.95;
+          box-shadow:
+            0 0 0 1px color-mix(in srgb, #fff 70%, transparent),
+            0 0 0 2px color-mix(in srgb, #000 30%, transparent);
+        }
+        .dss-cal-layer:has(.dss-cal-handle.is-dragging) .dss-cal-jaw{
+          width:2.75px;
+          box-shadow:
+            0 0 0 1.5px color-mix(in srgb, #fff 80%, transparent),
+            0 0 0 3px color-mix(in srgb, #000 36%, transparent);
+        }
+        .dss-cal-endpoint:has(.dss-cal-handle.is-dragging) .dss-cal-handle-ring{
+          width:28px;
+          height:28px;
+          border-color:color-mix(in srgb, var(--ink) 55%, var(--gold-warm));
+          background:color-mix(in srgb, var(--card) 72%, transparent);
+          box-shadow:
+            0 0 0 2px color-mix(in srgb, #fff 75%, transparent),
+            0 0 0 4px color-mix(in srgb, #000 30%, transparent),
+            0 0 8px color-mix(in srgb, var(--gold-warm) 30%, transparent);
+        }
+
+        /* While carat slider is dragged, emphasize the live overlay silhouette */
+        .dss-shell[data-slider-adjusting] .dss-overlay{
+          filter:drop-shadow(0 0 0.5px #fff) drop-shadow(0 0 1.5px rgba(0,0,0,0.55));
+        }
       }
     `,
       }}

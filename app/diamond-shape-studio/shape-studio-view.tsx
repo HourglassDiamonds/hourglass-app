@@ -20,6 +20,7 @@ import type {
   PhotoScaleSource,
 } from "@/lib/shape-studio/types";
 import { normalizeGuidedStep } from "@/lib/shape-studio/types";
+import { replacePendingObjectUrl } from "@/lib/shape-studio/local-photo-selection";
 import { usePhoneCaptureSession } from "@/lib/shape-studio/use-phone-capture-session";
 import { CaratControl } from "./components/calibration-controls";
 import DiamondStudioToolHeader from "../diamond-studio/components/DiamondStudioToolHeader";
@@ -69,6 +70,11 @@ function calibratedPreviewSentence(
 export function ShapeStudioView() {
   const handPhotoRef = useRef<HandPhotoPanelHandle>(null);
   const [handImageUrl, setHandImageUrl] = useState<string | null>(null);
+  /** Same-device pick awaiting USE THIS PHOTO — not yet in the calibration pipeline. */
+  const [pendingLocalPhotoUrl, setPendingLocalPhotoUrl] = useState<
+    string | null
+  >(null);
+  const pendingLocalPhotoUrlRef = useRef<string | null>(null);
   const [photoScaleSource, setPhotoScaleSource] =
     useState<PhotoScaleSource | null>(null);
   /**
@@ -147,6 +153,31 @@ export function ShapeStudioView() {
     [resetSlotsForNewPhoto],
   );
 
+  const handlePendingLocalPhoto = useCallback((objectUrl: string) => {
+    setPendingLocalPhotoUrl((prev) => {
+      const next = replacePendingObjectUrl(prev, objectUrl);
+      pendingLocalPhotoUrlRef.current = next;
+      return next;
+    });
+  }, []);
+
+  const handleConfirmLocalPhoto = useCallback(() => {
+    if (!pendingLocalPhotoUrl) return;
+    const url = pendingLocalPhotoUrl;
+    /** Clear pending without revoking — handImageUrl takes ownership. */
+    pendingLocalPhotoUrlRef.current = null;
+    setPendingLocalPhotoUrl(null);
+    handleImageSelected(url, "card-reference");
+  }, [pendingLocalPhotoUrl, handleImageSelected]);
+
+  const handleRetakeLocalPhoto = useCallback(() => {
+    setPendingLocalPhotoUrl((prev) => {
+      const next = replacePendingObjectUrl(prev, null);
+      pendingLocalPhotoUrlRef.current = next;
+      return next;
+    });
+  }, []);
+
   const phoneCapture = usePhoneCaptureSession(
     useCallback(
       (url: string) => {
@@ -158,6 +189,11 @@ export function ShapeStudioView() {
 
   const handleStartOver = useCallback(() => {
     phoneCapture.cancel();
+    setPendingLocalPhotoUrl((prev) => {
+      const next = replacePendingObjectUrl(prev, null);
+      pendingLocalPhotoUrlRef.current = next;
+      return next;
+    });
     setHandImageUrl((prev) => {
       if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev);
       return null;
@@ -172,6 +208,14 @@ export function ShapeStudioView() {
       if (handImageUrl?.startsWith("blob:")) URL.revokeObjectURL(handImageUrl);
     };
   }, [handImageUrl]);
+
+  /** Unmount-only cleanup for an unconfirmed pending preview. */
+  useEffect(() => {
+    return () => {
+      const pending = pendingLocalPhotoUrlRef.current;
+      if (pending?.startsWith("blob:")) URL.revokeObjectURL(pending);
+    };
+  }, []);
 
   const applySeatPositions = useCallback(
     (left: ContentPoint, right: ContentPoint) => {
@@ -371,6 +415,18 @@ export function ShapeStudioView() {
                 stoneOrientation={stoneOrientation}
                 overlays={overlayEntries}
                 phoneCapture={showRail ? null : phoneCapture}
+                pendingLocalPhotoUrl={
+                  showRail ? null : pendingLocalPhotoUrl
+                }
+                onPendingLocalPhoto={
+                  showRail ? undefined : handlePendingLocalPhoto
+                }
+                onConfirmLocalPhoto={
+                  showRail ? undefined : handleConfirmLocalPhoto
+                }
+                onRetakeLocalPhoto={
+                  showRail ? undefined : handleRetakeLocalPhoto
+                }
               />
             </div>
             {handImageUrl ? (
