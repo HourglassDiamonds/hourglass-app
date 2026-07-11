@@ -179,8 +179,8 @@ describe("direct same-device mobile entry contracts", () => {
     assert.doesNotMatch(entry, /ring size/i);
   });
 
-  it("public name remains Scaled Preview with no naming/SEO changes in this phase", () => {
-    assert.match(view, /title="Scaled Preview"/);
+  it("visible H1 aligns with suite nav; SEO title remains Scaled Preview", () => {
+    assert.match(view, /title="See It On Your Hand"/);
     assert.doesNotMatch(view, /Diamond Hand Preview/);
   });
 

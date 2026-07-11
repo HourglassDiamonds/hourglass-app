@@ -7,11 +7,21 @@ import DiamondStudioSuiteNav from "./DiamondStudioSuiteNav";
 const SUITE_SHELL_CSS = `
 [data-diamond-studio-suite-route] {
   --dts-header-h: var(--hg-studio-header-h, 7.5rem);
-  --dts-subnav-h: 44px;
+  --dts-subnav-h: 78px;
   --dts-chrome-h: calc(var(--dts-header-h) + var(--dts-subnav-h));
   --dts-workspace-h: calc(100dvh - var(--dts-chrome-h));
   background: var(--hg-ivory, #efe8de);
   color: var(--hg-ink, #1c1b1a);
+}
+@media (max-width: 768px) {
+  [data-diamond-studio-suite-route] {
+    --dts-subnav-h: 92px;
+  }
+}
+@media (max-width: 374px) {
+  [data-diamond-studio-suite-route] {
+    --dts-subnav-h: 78px;
+  }
 }
 @media (min-width: 1024px) {
   [data-diamond-studio-suite-route][data-suite-instrument] .dts-app,

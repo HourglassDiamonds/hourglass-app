@@ -1,13 +1,36 @@
 export type DiamondStudioSuiteNavItem = {
+  /** Full destination name — used for accessibility and desktop display. */
   label: string;
+  /**
+   * Controlled mobile line breaks for the primary label.
+   * Joined with a space on desktop; stacked on small screens.
+   */
+  labelLines: [string, string];
+  /** Quiet secondary line — customer outcome, not a product codename. */
+  descriptor: string;
   href: string;
   comingSoon?: boolean;
 };
 
 export const DIAMOND_STUDIO_SUITE_NAV: DiamondStudioSuiteNavItem[] = [
-  { label: "Diamond Size Studio", href: "/diamond-studio" },
-  { label: "Scaled Preview", href: "/diamond-shape-studio" },
-  { label: "Light Performance", href: "/diamond-intelligence" },
+  {
+    label: "See It On a Finger",
+    labelLines: ["See It On", "a Finger"],
+    descriptor: "Size & proportion",
+    href: "/diamond-studio",
+  },
+  {
+    label: "See It On Your Hand",
+    labelLines: ["See It On", "Your Hand"],
+    descriptor: "Upload your hand",
+    href: "/diamond-shape-studio",
+  },
+  {
+    label: "Analyze Sparkle",
+    labelLines: ["Analyze", "Sparkle"],
+    descriptor: "Light performance",
+    href: "/diamond-intelligence",
+  },
 ];
 
 export function isDiamondStudioSuiteNavActive(

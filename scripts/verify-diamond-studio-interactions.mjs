@@ -171,12 +171,12 @@ async function testViewport(browser, vp) {
 
   // Top nav hrefs + navigation
   for (const [navLabel, expectedPath] of [
-    ["Shape Comparison", "/diamond-shape-studio"],
-    ["Light Performance", "/diamond-intelligence"],
+    ["See It On Your Hand", "/diamond-shape-studio"],
+    ["Analyze Sparkle", "/diamond-intelligence"],
   ]) {
     await page.goto(`${BASE}/diamond-studio`, { waitUntil: "networkidle" });
     await page.waitForSelector("img.dts-cad-base");
-    const link = page.locator("a.dts-topnav-label", { hasText: navLabel });
+    const link = page.locator("a.dts-topnav-hit", { hasText: navLabel });
     assert(
       (await link.getAttribute("href")) === expectedPath,
       `${label}: ${navLabel} href mismatch`,

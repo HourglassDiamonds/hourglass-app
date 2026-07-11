@@ -392,7 +392,7 @@ export function ShapeStudioView() {
           <div className="dss-stage-stack">
             <div className="dss-stage-preview" aria-label="Hand photo preview">
               <DiamondStudioToolHeader
-                title="Scaled Preview"
+                title="See It On Your Hand"
                 className="dss-tool-header"
               />
               {liveSentence ? (
