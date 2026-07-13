@@ -11,7 +11,7 @@ const NAV_ITEMS = [
   { href: "/custom-design", label: "Custom Design" },
   { href: "/diamond-guide", label: "Diamond Guide" },
   { href: "/diamond-studio", label: "Diamond Studio" },
-  { href: "/concierge", label: "Begin the Conversation", cta: true },
+  { href: "/concierge", label: "Concierge" },
 ] as const;
 
 type HeaderProps = {
@@ -22,9 +22,21 @@ function isFeaturedNav(href: string): boolean {
   return href === "/diamond-studio";
 }
 
-function navLinkClass(isActive: boolean, featured?: boolean): string {
+/** Quiet emphasis for Concierge — editorial, not button-like. */
+function isEmphasizedNav(href: string): boolean {
+  return href === "/concierge";
+}
+
+function navLinkClass(
+  isActive: boolean,
+  featured?: boolean,
+  emphasized?: boolean,
+): string {
   if (isActive) {
-    return "text-[#1f1d1a]";
+    return "font-medium text-[#1f1d1a]";
+  }
+  if (emphasized) {
+    return "font-medium text-[#35312c] underline-offset-4 transition-colors duration-300 hover:text-[#1f1d1a] hover:underline";
   }
   if (featured) {
     return "font-medium text-[#35312c] hover:text-[#1f1d1a]";
@@ -88,24 +100,6 @@ export default function Header({ currentPage = "" }: HeaderProps) {
           {NAV_ITEMS.map((item) => {
             const key = item.href.replace("/", "");
             const isActive = currentPage === key;
-            const isCta = "cta" in item && item.cta;
-
-            if (isCta) {
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`shrink-0 whitespace-nowrap rounded-full border border-[#d6ccc0] bg-[#f7f3ec]/90 px-3.5 py-1.5 text-[11px] tracking-[0.06em] text-[#35312c] transition-colors duration-300 hover:border-[#cbbda9] hover:text-[#1f1d1a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#cbbda9] focus-visible:ring-offset-2 focus-visible:ring-offset-[#efe8de] lg:px-4 lg:text-[12px] ${
-                    isActive ? "border-[#cbbda9] text-[#1f1d1a]" : ""
-                  }`}
-                  onClick={() =>
-                    trackConsultationCtaClicked("header:nav_desktop")
-                  }
-                >
-                  {item.label}
-                </Link>
-              );
-            }
 
             return (
               <Link
@@ -114,7 +108,13 @@ export default function Header({ currentPage = "" }: HeaderProps) {
                 className={`shrink-0 whitespace-nowrap text-[12px] tracking-[0.04em] transition-colors duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#cbbda9] focus-visible:ring-offset-2 focus-visible:ring-offset-[#efe8de] lg:text-[13px] ${navLinkClass(
                   isActive,
                   isFeaturedNav(item.href),
+                  isEmphasizedNav(item.href),
                 )}`}
+                onClick={
+                  item.href === "/concierge"
+                    ? () => trackConsultationCtaClicked("header:nav_desktop")
+                    : undefined
+                }
               >
                 {item.label}
               </Link>
@@ -138,7 +138,6 @@ export default function Header({ currentPage = "" }: HeaderProps) {
               {NAV_ITEMS.map((item) => {
                 const key = item.href.replace("/", "");
                 const isActive = currentPage === key;
-                const isCta = "cta" in item && item.cta;
 
                 return (
                   <Link
@@ -151,15 +150,11 @@ export default function Header({ currentPage = "" }: HeaderProps) {
                       }
                       setMobileMenuOpen(false);
                     }}
-                    className={`block px-4 py-3.5 text-[13px] tracking-[0.02em] transition-colors duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#cbbda9] focus-visible:ring-inset ${
-                      isCta
-                        ? `mx-3 mb-3 mt-1 rounded-full border border-[#d6ccc0] bg-[#f7f3ec]/95 px-4 text-center ${
-                            isActive
-                              ? "border-[#cbbda9] text-[#1f1d1a]"
-                              : "text-[#35312c]"
-                          }`
-                        : navLinkClass(isActive, isFeaturedNav(item.href))
-                    }`}
+                    className={`block px-4 py-3.5 text-[13px] tracking-[0.02em] transition-colors duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#cbbda9] focus-visible:ring-inset ${navLinkClass(
+                      isActive,
+                      isFeaturedNav(item.href),
+                      isEmphasizedNav(item.href),
+                    )}`}
                   >
                     {item.label}
                   </Link>
