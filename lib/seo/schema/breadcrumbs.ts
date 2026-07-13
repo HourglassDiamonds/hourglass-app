@@ -112,6 +112,13 @@ export function diamondIntelligenceBreadcrumb(): JsonLdValue {
   ]);
 }
 
+export function diamondShapeStudioBreadcrumb(): JsonLdValue {
+  return buildBreadcrumbList([
+    HOME_CRUMB,
+    { name: "See It On Your Hand", path: "/diamond-shape-studio" },
+  ]);
+}
+
 export function marketingPageBreadcrumb(
   name: string,
   path: string,

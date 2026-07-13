@@ -71,12 +71,6 @@ export default function Footer() {
           </div>
 
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[11px] text-[#8a8178]">
-            <Link
-              href="/executive-dashboard"
-              className="text-[#9a9084] transition-colors hover:text-[#1f1d1a]"
-            >
-              Executive Dashboard
-            </Link>
             <Link href="/privacy" className="hover:text-[#1f1d1a]">
               Privacy
             </Link>

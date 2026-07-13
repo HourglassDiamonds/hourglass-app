@@ -1,0 +1,84 @@
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { describe, it, beforeEach } from "node:test";
+import {
+  checkConciergeRateLimit,
+  getConciergeClientIp,
+  resetConciergeRateLimits,
+} from "./rate-limit";
+
+const root = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
+
+describe("concierge honeypot contract", () => {
+  const route = readFileSync(
+    join(root, "app", "api", "concierge", "route.ts"),
+    "utf8",
+  );
+  const client = readFileSync(
+    join(root, "app", "concierge", "concierge-page-client.tsx"),
+    "utf8",
+  );
+
+  it("API soft-accepts honeypot with accepted false before rate limit and CRM", () => {
+    assert.match(route, /company_website/);
+    assert.match(route, /function softAcceptJson/);
+    assert.match(route, /accepted:\s*false/);
+    assert.match(route, /accepted:\s*true/);
+    const postStart = route.indexOf("export async function POST");
+    const honeypotInPost = route.indexOf("company_website", postStart);
+    const softAcceptInPost = route.indexOf("softAcceptJson()", postStart);
+    const rateInPost = route.indexOf("checkConciergeRateLimit", postStart);
+    const beginInPost = route.indexOf("beginConciergeSubmission", postStart);
+    assert.ok(postStart > 0);
+    assert.ok(honeypotInPost > postStart);
+    assert.ok(softAcceptInPost > honeypotInPost);
+    assert.ok(rateInPost > softAcceptInPost);
+    assert.ok(beginInPost > rateInPost);
+  });
+
+  it("client fires lead events only when accepted === true", () => {
+    assert.match(client, /data\.accepted === true/);
+    assert.match(client, /trackGenerateLead/);
+    assert.match(client, /trackConciergeFormSubmitted/);
+    assert.doesNotMatch(
+      client,
+      /if\s*\(\s*!leadTracked\.current\s*\)\s*\{\s*leadTracked\.current = true;\s*trackConciergeFormSubmitted/,
+    );
+  });
+});
+
+describe("checkConciergeRateLimit", () => {
+  beforeEach(() => {
+    resetConciergeRateLimits();
+  });
+
+  it("allows requests when IP cannot be determined", () => {
+    const result = checkConciergeRateLimit("");
+    assert.equal(result.allowed, true);
+  });
+
+  it("extracts the first x-forwarded-for hop", () => {
+    const request = new Request("https://example.com/api/concierge", {
+      headers: {
+        "x-forwarded-for": "203.0.113.10, 10.0.0.1",
+      },
+    });
+    assert.equal(getConciergeClientIp(request), "203.0.113.10");
+  });
+});
+
+describe("executive dashboard production deny contract", () => {
+  it("never opens production via an environment enable flag", () => {
+    const page = readFileSync(
+      join(root, "app", "executive-dashboard", "page.tsx"),
+      "utf8",
+    );
+    const envExample = readFileSync(join(root, ".env.example"), "utf8");
+    assert.match(page, /NODE_ENV !== "production"/);
+    assert.doesNotMatch(page, /EXECUTIVE_DASHBOARD_ENABLED/);
+    assert.doesNotMatch(envExample, /EXECUTIVE_DASHBOARD_ENABLED=true/);
+    assert.match(page, /noindex/);
+  });
+});

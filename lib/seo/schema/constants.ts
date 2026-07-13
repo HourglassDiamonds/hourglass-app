@@ -8,6 +8,7 @@ export const WEBSITE_ID = `${SITE_URL}#website`;
 export const JEWELRY_STORE_ID = `${SITE_URL}/#jewelry-store`;
 export const DIAMOND_STUDIO_APP_ID = `${SITE_URL}/diamond-studio#software`;
 export const DIAMOND_INTELLIGENCE_APP_ID = `${SITE_URL}/diamond-intelligence#software`;
+export const DIAMOND_SHAPE_STUDIO_APP_ID = `${SITE_URL}/diamond-shape-studio#software`;
 
 export const DIAMOND_INTELLIGENCE_NAME = "Diamond Intelligence";
 export const DIAMOND_INTELLIGENCE_DESCRIPTION =
@@ -26,6 +27,10 @@ export const PERSON_JOB_TITLE = "Graduate Gemologist";
 export const DIAMOND_STUDIO_NAME = "Diamond Size Studio";
 export const DIAMOND_STUDIO_DESCRIPTION =
   "An interactive diamond size comparison tool that helps clients visualize how carat weight, diamond shape, ring size, and finger coverage affect the way a diamond appears on the hand.";
+
+export const DIAMOND_SHAPE_STUDIO_NAME = "See It On Your Hand";
+export const DIAMOND_SHAPE_STUDIO_DESCRIPTION =
+  "Upload or photograph your hand and preview how different diamond shapes, carat weights, and proportions may appear before beginning a ring design.";
 
 /** Charlotte Metro communities served (no fabricated storefronts). */
 export const CHARLOTTE_METRO_AREA_SERVED = [

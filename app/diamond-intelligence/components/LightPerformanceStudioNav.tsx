@@ -7,22 +7,28 @@ import { usePathname } from "next/navigation";
 type NavItem = {
   label: string;
   href: string;
-  soon?: boolean;
 };
 
+/** Legacy suite nav — kept for reference; prefer diamond-studio-suite-nav-config. */
 const NAV: NavItem[] = [
-  { label: "Diamond Size Studio", href: "/diamond-studio" },
-  { label: "Shape Comparison", href: "/diamond-studio", soon: true },
-  { label: "Light Performance", href: "/diamond-intelligence" },
+  { label: "See It On a Finger", href: "/diamond-studio" },
+  { label: "See It On Your Hand", href: "/diamond-shape-studio" },
+  { label: "Analyze Sparkle", href: "/diamond-intelligence" },
 ];
 
 function isNavActive(pathname: string, item: NavItem): boolean {
-  if (item.label === "Diamond Size Studio") {
+  if (item.href === "/diamond-studio") {
     return (
       pathname === "/diamond-studio" || pathname.startsWith("/diamond-studio/")
     );
   }
-  if (item.label === "Light Performance") {
+  if (item.href === "/diamond-shape-studio") {
+    return (
+      pathname === "/diamond-shape-studio" ||
+      pathname.startsWith("/diamond-shape-studio/")
+    );
+  }
+  if (item.href === "/diamond-intelligence") {
     return (
       pathname === "/diamond-intelligence" ||
       pathname.startsWith("/diamond-intelligence/")
@@ -39,7 +45,7 @@ export default function LightPerformanceStudioNav() {
       <div className="mx-auto flex max-w-[1560px] flex-wrap items-center justify-between gap-4 px-4 py-4 md:px-6">
         <Link
           href="/"
-          className="flex items-center gap-3 shrink-0"
+          className="flex shrink-0 items-center gap-3"
           aria-label="Hourglass Diamonds home"
         >
           <Image
@@ -79,22 +85,11 @@ export default function LightPerformanceStudioNav() {
                     className="mx-auto mt-2 block h-px w-full max-w-[120px] bg-[#b8a99a]"
                     aria-hidden
                   />
-                ) : item.soon ? (
-                  <span className="mt-1 block text-[8px] uppercase tracking-[0.2em] text-[#b5a99a]">
-                    Coming soon
-                  </span>
                 ) : null}
               </div>
             );
           })}
         </nav>
-
-        <Link
-          href="/"
-          className="shrink-0 rounded-full border border-[#ddd1c2] bg-white/80 px-4 py-2 text-[9px] uppercase tracking-[0.22em] text-[#5f5851] transition hover:border-[#cbbda9] hover:bg-white"
-        >
-          Home
-        </Link>
       </div>
     </header>
   );

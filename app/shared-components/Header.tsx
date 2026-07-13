@@ -11,8 +11,8 @@ const NAV_ITEMS = [
   { href: "/custom-design", label: "Custom Design" },
   { href: "/diamond-guide", label: "Diamond Guide" },
   { href: "/diamond-studio", label: "Diamond Studio" },
-  { href: "/concierge", label: "Concierge" },
-];
+  { href: "/concierge", label: "Begin the Conversation", cta: true },
+] as const;
 
 type HeaderProps = {
   currentPage?: string;
@@ -75,7 +75,7 @@ export default function Header({ currentPage = "" }: HeaderProps) {
             aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
             aria-expanded={mobileMenuOpen}
             onClick={() => setMobileMenuOpen((open) => !open)}
-            className="inline-flex items-center justify-center rounded-full border border-[#e4dbcf]/90 bg-[#f7f3ec]/80 px-4 py-2.5 text-[11px] uppercase tracking-[0.22em] text-[#625b54] transition-colors duration-300 hover:text-[#1f1d1a] focus:outline-none focus:ring-2 focus:ring-[#cbbda9]/80 focus:ring-offset-2 focus:ring-offset-[#efe8de]"
+            className="inline-flex min-h-[44px] items-center justify-center rounded-full border border-[#e4dbcf]/90 bg-[#f7f3ec]/80 px-4 py-2.5 text-[11px] uppercase tracking-[0.22em] text-[#625b54] transition-colors duration-300 hover:text-[#1f1d1a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#cbbda9]/80 focus-visible:ring-offset-2 focus-visible:ring-offset-[#efe8de]"
           >
             Menu
           </button>
@@ -83,25 +83,38 @@ export default function Header({ currentPage = "" }: HeaderProps) {
 
         <nav
           aria-label="Primary"
-          className="hidden min-w-0 flex-1 items-end justify-end gap-5 pb-1.5 md:flex md:pb-2 lg:gap-6 xl:gap-7"
+          className="hidden min-w-0 flex-1 items-end justify-end gap-4 pb-1.5 md:flex md:pb-2 lg:gap-5 xl:gap-6"
         >
           {NAV_ITEMS.map((item) => {
             const key = item.href.replace("/", "");
             const isActive = currentPage === key;
+            const isCta = "cta" in item && item.cta;
+
+            if (isCta) {
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`shrink-0 whitespace-nowrap rounded-full border border-[#d6ccc0] bg-[#f7f3ec]/90 px-3.5 py-1.5 text-[11px] tracking-[0.06em] text-[#35312c] transition-colors duration-300 hover:border-[#cbbda9] hover:text-[#1f1d1a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#cbbda9] focus-visible:ring-offset-2 focus-visible:ring-offset-[#efe8de] lg:px-4 lg:text-[12px] ${
+                    isActive ? "border-[#cbbda9] text-[#1f1d1a]" : ""
+                  }`}
+                  onClick={() =>
+                    trackConsultationCtaClicked("header:nav_desktop")
+                  }
+                >
+                  {item.label}
+                </Link>
+              );
+            }
 
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                className={`shrink-0 whitespace-nowrap text-[12px] tracking-[0.04em] transition-colors duration-300 lg:text-[13px] ${navLinkClass(
+                className={`shrink-0 whitespace-nowrap text-[12px] tracking-[0.04em] transition-colors duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#cbbda9] focus-visible:ring-offset-2 focus-visible:ring-offset-[#efe8de] lg:text-[13px] ${navLinkClass(
                   isActive,
                   isFeaturedNav(item.href),
                 )}`}
-                onClick={
-                  item.href === "/concierge"
-                    ? () => trackConsultationCtaClicked("header:nav_desktop")
-                    : undefined
-                }
               >
                 {item.label}
               </Link>
@@ -125,6 +138,7 @@ export default function Header({ currentPage = "" }: HeaderProps) {
               {NAV_ITEMS.map((item) => {
                 const key = item.href.replace("/", "");
                 const isActive = currentPage === key;
+                const isCta = "cta" in item && item.cta;
 
                 return (
                   <Link
@@ -137,10 +151,15 @@ export default function Header({ currentPage = "" }: HeaderProps) {
                       }
                       setMobileMenuOpen(false);
                     }}
-                    className={`block px-4 py-3.5 text-[13px] tracking-[0.02em] transition-colors duration-300 ${navLinkClass(
-                      isActive,
-                      isFeaturedNav(item.href),
-                    )}`}
+                    className={`block px-4 py-3.5 text-[13px] tracking-[0.02em] transition-colors duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#cbbda9] focus-visible:ring-inset ${
+                      isCta
+                        ? `mx-3 mb-3 mt-1 rounded-full border border-[#d6ccc0] bg-[#f7f3ec]/95 px-4 text-center ${
+                            isActive
+                              ? "border-[#cbbda9] text-[#1f1d1a]"
+                              : "text-[#35312c]"
+                          }`
+                        : navLinkClass(isActive, isFeaturedNav(item.href))
+                    }`}
                   >
                     {item.label}
                   </Link>

@@ -14,6 +14,9 @@ import {
   DIAMOND_INTELLIGENCE_APP_ID,
   DIAMOND_INTELLIGENCE_DESCRIPTION,
   DIAMOND_INTELLIGENCE_NAME,
+  DIAMOND_SHAPE_STUDIO_APP_ID,
+  DIAMOND_SHAPE_STUDIO_DESCRIPTION,
+  DIAMOND_SHAPE_STUDIO_NAME,
   DIAMOND_STUDIO_APP_ID,
   DIAMOND_STUDIO_DESCRIPTION,
   DIAMOND_STUDIO_NAME,
@@ -219,6 +222,26 @@ export function buildDiamondIntelligenceApplicationJsonLd(): JsonLdValue {
   return {
     "@context": SCHEMA_CONTEXT,
     "@graph": [diamondIntelligenceApplicationNode()],
+  };
+}
+
+export function diamondShapeStudioApplicationNode(): JsonLdValue {
+  return {
+    "@type": "SoftwareApplication",
+    "@id": DIAMOND_SHAPE_STUDIO_APP_ID,
+    name: DIAMOND_SHAPE_STUDIO_NAME,
+    description: DIAMOND_SHAPE_STUDIO_DESCRIPTION,
+    url: absoluteUrl("/diamond-shape-studio"),
+    applicationCategory: "DesignApplication",
+    operatingSystem: "Web",
+    provider: { "@id": ORGANIZATION_ID },
+  };
+}
+
+export function buildDiamondShapeStudioApplicationJsonLd(): JsonLdValue {
+  return {
+    "@context": SCHEMA_CONTEXT,
+    "@graph": [diamondShapeStudioApplicationNode()],
   };
 }
 

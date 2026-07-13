@@ -12,10 +12,10 @@ export function DiSuiteToolIntro() {
   return (
     <header
       className="border-b border-[#e4dbcf]/60 pb-4 pt-1 md:pb-5 md:pt-2"
-      aria-label="Light Performance tool introduction"
+      aria-label="Analyze Sparkle tool introduction"
     >
       <DiamondStudioToolHeader
-        title="Light Performance"
+        title="Analyze Sparkle"
         subhead="Upload an original GIA, IGI, or GCAL grading report for independent interpretation before you decide."
       />
       <p className="mx-auto mt-2 max-w-[36rem] text-center text-[10px] uppercase tracking-[0.22em] text-[#948a80]">

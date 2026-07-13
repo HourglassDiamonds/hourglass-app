@@ -4,6 +4,8 @@ Founder operating system for market gravity: search authority, brand demand, con
 
 **Live route:** `/executive-dashboard` (internal, `noindex`)
 
+**Access:** Production always returns `notFound()` — there is no environment flag that opens this route on the public domain. `robots: noindex` is SEO-only and is **not** access control. Local and other non-production environments remain available for internal review. Do not link this route from the public footer. Any future production exposure requires genuine authentication or confirmed Vercel Deployment Protection.
+
 ---
 
 ## 1. Purpose

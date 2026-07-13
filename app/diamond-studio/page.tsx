@@ -2573,7 +2573,7 @@ export default function DiamondStudioPage() {
               aria-label="Diamond on hand"
             >
               <div className="dts-mobile-hero studio-preview finger-preview">
-                <h1 className="dts-page-title">Diamond Size Studio</h1>
+                <h1 className="dts-page-title">See It On a Finger</h1>
                 <p className="dts-sentence">
                   A {formatCaratForHeadline(carat)}-carat{" "}
                   {SHAPE_LABELS[shape].toLowerCase()} diamond,

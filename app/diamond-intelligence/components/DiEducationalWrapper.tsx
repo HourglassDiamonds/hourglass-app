@@ -147,7 +147,7 @@ export default function DiEducationalWrapper() {
                   opinion before scheduling a viewing or conversation. Pair it
                   with the{" "}
                   <Link href="/diamond-studio" className={editorialLink}>
-                    Diamond Size Studio
+                    See It On a Finger
                   </Link>{" "}
                   when size on the hand is part of the question, and with{" "}
                   <Link href="/our-approach" className={editorialLink}>

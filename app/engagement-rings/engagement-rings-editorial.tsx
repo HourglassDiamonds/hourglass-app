@@ -31,14 +31,19 @@ const processSteps = [
 const authorityLinks = [
   {
     href: "/diamond-intelligence",
-    label: "Diamond Intelligence",
+    label: "Analyze Sparkle",
     description:
       "Interpret proportions and light performance from an existing report.",
   },
   {
     href: "/diamond-studio",
-    label: "Diamond Size Studio",
+    label: "See It On a Finger",
     description: "Compare carat, shape, and finger coverage before you decide.",
+  },
+  {
+    href: "/diamond-shape-studio",
+    label: "See It On Your Hand",
+    description: "Preview diamond shapes and presence on your own hand.",
   },
   {
     href: "/diamond-guide/why-work-with-a-graduate-gemologist",

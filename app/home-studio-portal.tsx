@@ -45,20 +45,19 @@ const MOBILE_STUDIO_SCRIM = `
 
 const STUDIO_TOOLS = [
   {
-    title: "Diamond Size Studio",
+    title: "See It On a Finger",
     description: "Compare diamond size on your finger before you buy.",
     href: "/diamond-studio",
   },
   {
-    title: "Diamond Intelligence",
+    title: "Analyze Sparkle",
     description: "Analyze performance and report quality.",
     href: "/diamond-intelligence",
   },
   {
-    title: "Shape Comparison",
-    description: "Compare shape, spread, and presence on your own hand.",
-    status: "Coming Soon",
-    comingSoon: true,
+    title: "See It On Your Hand",
+    description: "Preview diamond shapes and presence on your own hand.",
+    href: "/diamond-shape-studio",
   },
 ] as const;
 
@@ -175,9 +174,7 @@ function StudioToolEditorialNav() {
           key={tool.title}
           title={tool.title}
           description={tool.description}
-          status={"status" in tool ? tool.status : undefined}
-          href={"href" in tool ? tool.href : undefined}
-          comingSoon={"comingSoon" in tool ? tool.comingSoon : false}
+          href={tool.href}
           showDivider={index > 0}
         />
       ))}

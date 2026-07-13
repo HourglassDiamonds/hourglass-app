@@ -23,6 +23,7 @@ describe("direct same-device mobile entry contracts", () => {
   const entry = readStudio("components/direct-mobile-entry.tsx");
   const stage = readStudio("components/overlay-stage.tsx");
   const view = readStudio("shape-studio-view.tsx");
+  const layout = readStudio("layout.tsx");
   const styles = readStudio("components/shape-studio-styles.tsx");
   const localLib = readLib("local-photo-selection.ts");
 
@@ -178,9 +179,11 @@ describe("direct same-device mobile entry contracts", () => {
     assert.doesNotMatch(entry, /ring size/i);
   });
 
-  it("visible H1 aligns with suite nav; SEO title remains Scaled Preview", () => {
+  it("visible H1 aligns with suite nav; layout metadata launches See It On Your Hand", () => {
     assert.match(view, /title="See It On Your Hand"/);
     assert.doesNotMatch(view, /Diamond Hand Preview/);
+    assert.match(layout, /See It On Your Hand \| Preview Diamond Shapes/);
+    assert.match(layout, /robots:\s*\{[\s\S]*index:\s*true/);
   });
 
   it("desktop QR showQr conditions remain the existing session phases", () => {
