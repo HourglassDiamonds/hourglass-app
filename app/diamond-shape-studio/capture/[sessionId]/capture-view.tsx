@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import { type CaptureMode } from "@/lib/shape-studio/types";
 import { prepareCaptureFile } from "@/lib/shape-studio/prepare-capture-file";
 import {
@@ -63,14 +64,16 @@ function modeCopy(_mode: CaptureMode) {
 function CaptureGuide({ mode: _mode }: { mode: CaptureMode }) {
   void _mode;
   return (
-    <div className="dss-capture-guide dss-capture-guide--card" aria-hidden>
+    <div className="dss-capture-guide">
       <div className="dss-capture-guide-frame">
-        <span className="dss-capture-guide-card" />
-        <span className="dss-capture-guide-lane" />
-        <span className="dss-capture-guide-dot dss-capture-guide-dot--a" />
-        <span className="dss-capture-guide-dot dss-capture-guide-dot--b" />
-        <span className="dss-capture-guide-dot dss-capture-guide-dot--c" />
-        <span className="dss-capture-guide-ring" />
+        <Image
+          src="/diamond-tech-suite/see-it-on-hgd.png"
+          alt="Example showing a hand and card positioned for scaled preview"
+          fill
+          className="object-contain"
+          sizes="280px"
+          priority
+        />
       </div>
       <p className="dss-capture-guide-caption">Hand + blank card in frame</p>
     </div>

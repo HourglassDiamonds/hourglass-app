@@ -60,90 +60,13 @@ export function CapturePageStyles() {
         overflow:hidden;
         pointer-events:none;
       }
-      .dss-capture-guide-lane,
-      .dss-capture-guide-dot,
-      .dss-capture-guide-ring,
-      .dss-capture-guide-card,
-      .dss-capture-guide-caption{
-        pointer-events:none;
-      }
-      .dss-capture-guide-lane{
-        position:absolute;
-        left:50%;
-        top:18%;
-        bottom:16%;
-        width:34%;
-        transform:translateX(-50%);
-        border-radius:999px;
-        border:1px dashed color-mix(in srgb, oklch(0.72 0.04 70) 70%, transparent);
-        opacity:0.85;
-      }
-      .dss-capture-guide-dot{
-        position:absolute;
-        width:7px; height:7px;
-        border-radius:50%;
-        background:color-mix(in srgb, oklch(0.68 0.08 70) 55%, #fff);
-        border:1px solid color-mix(in srgb, oklch(0.55 0.06 65) 40%, transparent);
-      }
-      .dss-capture-guide-dot--a{ left:50%; top:22%; transform:translate(-50%,-50%); }
-      .dss-capture-guide-dot--b{ left:50%; top:48%; transform:translate(-50%,-50%); }
-      .dss-capture-guide-dot--c{ left:50%; top:74%; transform:translate(-50%,-50%); }
-      .dss-capture-guide-ring{
-        position:absolute;
-        left:50%;
-        top:48%;
-        width:28px; height:18px;
-        transform:translate(-50%,-50%);
-        border:1.5px solid color-mix(in srgb, oklch(0.62 0.07 70) 65%, transparent);
-        border-radius:50%;
-        box-shadow:inset 0 0 0 1px color-mix(in srgb, #fff 35%, transparent);
-      }
-      .dss-capture-guide-card{
-        position:absolute;
-        left:12%;
-        bottom:14%;
-        width:42%;
-        aspect-ratio:1.586;
-        border-radius:8px;
-        border:1px solid color-mix(in srgb, oklch(0.62 0.04 70) 55%, transparent);
-        background:color-mix(in srgb, #fff 42%, transparent);
-        box-shadow:
-          0 0 0 1px color-mix(in srgb, oklch(0.88 0.01 72) 80%, transparent) inset;
-      }
-      .dss-capture-guide-card::before,
-      .dss-capture-guide-card::after{
-        content:"";
-        position:absolute;
-        width:10px; height:10px;
-        border-color:color-mix(in srgb, oklch(0.55 0.05 65) 55%, transparent);
-        border-style:solid;
-      }
-      .dss-capture-guide-card::before{
-        top:4px; left:4px;
-        border-width:1px 0 0 1px;
-        border-radius:2px 0 0 0;
-      }
-      .dss-capture-guide-card::after{
-        right:4px; bottom:4px;
-        border-width:0 1px 1px 0;
-        border-radius:0 0 2px 0;
-      }
-      .dss-capture-guide--card .dss-capture-guide-lane{
-        left:64%;
-        width:28%;
-      }
-      .dss-capture-guide--card .dss-capture-guide-dot--a,
-      .dss-capture-guide--card .dss-capture-guide-dot--b,
-      .dss-capture-guide--card .dss-capture-guide-dot--c,
-      .dss-capture-guide--card .dss-capture-guide-ring{
-        left:64%;
-      }
       .dss-capture-guide-caption{
         margin:8px 0 0;
         font-size:9px;
         letter-spacing:0.14em;
         text-transform:uppercase;
         color:oklch(0.58 0.010 65);
+        pointer-events:none;
       }
       .dss-capture-file-control{
         position:relative;
