@@ -3,36 +3,36 @@
  * Update values and copy here each week. Page layout is fixed in infrastructure-strain-index-view.
  */
 
-export const ISI_UPDATED_LABEL = "Updated weekly — July 6, 2026";
+export const ISI_UPDATED_LABEL = "Updated weekly — July 14, 2026";
 
 export const ISI_READING = {
   score: 87,
   label: "Infrastructure Strain",
   status: "Elevated Strain",
-  weeklyChange: 1,
+  weeklyChange: 0,
 } as const;
 
 export const ISI_INTRO =
   "A weekly reading of the physical constraints beneath digital, economic, and industrial acceleration: power, transmission, transformers, data centers, water, skilled labor, semiconductors, and logistics. The purpose is not to predict failure. It is to track a capacity expansion race — where capital deploys quickly, buildout timing stays uneven, and flexibility narrows beneath functioning systems.";
 
 export const ISI_SUMMARY =
-  "Strain rose as PJM activated emergency demand-response measures during the heat event — the Department of Energy authorized backup generation at data centers and other large-load facilities while the system moved from forecast risk into operational intervention. No widespread blackout occurred; flexibility narrowed.";
+  "Strain remains elevated after PJM served a record early-July peak through emergency demand response without widespread blackout. Flexibility stayed narrow: a new Hot Weather Alert covers July 14–17 as summer reliability remains an active constraint beneath functioning systems.";
 
 export const ISI_WEEKLY_SIGNAL =
-  "PJM forecast near-record demand amid a prolonged heat dome and activated systemwide emergency demand response. The Department of Energy authorized PJM to call on backup generation at data centers and other large-load facilities. Heat, grid demand, and data-center load interacted in the same event. FERC large-load deadlines continue approaching. Systems functioned without widespread blackout; spare capacity narrowed.";
+  "PJM confirmed a preliminary all-time peak near 168 GW on July 2, managed with emergency demand response and temporary DOE 202(c) authority; the large-load backup-generation action was warned but not issued. Orders covering that window have since expired. Structural tightness remains: interconnection, transformers, and large-load integration still limit spare capacity. PJM issued a Hot Weather Alert for July 14–17 with elevated forecast peaks. Systems continue to function; strain does not fall simply because the prior emergency was successfully managed.";
 
 export const ISI_CATEGORIES = [
   {
     name: "Grid & Transmission",
     score: 87,
     state: "High",
-    body: "PJM emergency demand response and DOE authorization for large-load backup generation made grid strain operational — interconnection queues and upgrade timelines remain core constraints beneath active heat stress.",
+    body: "Early-July emergency demand response proved the system can clear an extreme peak, but spare capacity remains thin — a new Hot Weather Alert for July 14–17 keeps operational readiness elevated beneath unresolved interconnection and large-load constraints.",
   },
   {
     name: "Data-Center Load",
     score: 90,
     state: "High",
-    body: "Hyperscale demand intersected live grid stress as DOE authorized PJM to call on backup generation at data centers and other large loads — siting and power availability increasingly strategic.",
+    body: "Hyperscale demand remains strategically coupled to grid readiness — siting and power availability still set practical pace after the early-July peak and under the July 14–17 alert.",
   },
   {
     name: "Transformer Supply",
@@ -56,15 +56,15 @@ export const ISI_CATEGORIES = [
     name: "Water & Cooling",
     score: 75,
     state: "Rising",
-    body: "Active heat stress elevated cooling load in reliability discussions — uneven by geography, with operational relevance rising during the PJM event.",
+    body: "Summer heat keeps cooling load relevant in reliability discussions — uneven by geography, with operational relevance sustained into the July 14–17 alert window.",
   },
 ] as const;
 
 export const ISI_RECENT_READINGS = [
   { week: "This Week", score: 87 },
-  { week: "Last Week", score: 86 },
-  { week: "2 Weeks Ago", score: 85 },
-  { week: "3 Weeks Ago", score: 82 },
+  { week: "Last Week", score: 87 },
+  { week: "2 Weeks Ago", score: 86 },
+  { week: "3 Weeks Ago", score: 85 },
 ] as const;
 
 export const ISI_BENCHMARKS = [
@@ -78,7 +78,7 @@ export const ISI_BENCHMARKS = [
 export const ISI_WHAT_WATCHING = [
   {
     title: "PJM summer reliability",
-    body: "Whether emergency measures recede with moderating heat or foreshadow a tighter reliability season across the Mid-Atlantic.",
+    body: "Whether the July 14–17 Hot Weather Alert clears without emergency escalation, and whether spare capacity remains thin through the rest of summer.",
   },
   {
     title: "FERC large-load integration",
@@ -90,7 +90,7 @@ export const ISI_WHAT_WATCHING = [
   },
   {
     title: "Large-load backup generation",
-    body: "How often DOE-authorized backup-generation calls are exercised as heat and data-center load interact.",
+    body: "Whether future heat events require issuing the large-load backup-generation action that was warned but not exercised in early July.",
   },
   {
     title: "Transformer manufacturing",
@@ -105,7 +105,7 @@ export const ISI_WHAT_WATCHING = [
 export const ISI_WHAT_WOULD_EASE = [
   {
     title: "Heat moderation without recurrence",
-    body: "Sustained relief from emergency grid measures without implying spare capacity has returned to comfortable levels.",
+    body: "Sustained relief from elevated summer alerts without implying spare capacity has returned to comfortable levels.",
   },
   {
     title: "Event logistics stabilization",
@@ -128,7 +128,7 @@ export const ISI_CALCULATION_ROWS = [
     score: "87",
     contribution: "20.9",
     reason:
-      "PJM emergency demand response and DOE large-load backup-generation authority made grid strain operational during heat.",
+      "Early-July peak managed without blackout; Hot Weather Alert for July 14–17 and thin spare capacity keep strain elevated.",
   },
   {
     category: "Data-Center Load",
@@ -136,7 +136,7 @@ export const ISI_CALCULATION_ROWS = [
     score: "90",
     contribution: "19.8",
     reason:
-      "Hyperscale demand intersected live grid stress; backup-generation authority and power availability increasingly strategic.",
+      "Hyperscale demand remains strategically coupled to grid readiness and large-load integration under summer alerts.",
   },
   {
     category: "Transformer Supply",
@@ -168,20 +168,20 @@ export const ISI_CALCULATION_ROWS = [
     score: "75",
     contribution: "9.0",
     reason:
-      "Active heat elevated cooling load in reliability discussions — operational relevance rising during the PJM event.",
+      "Summer heat keeps cooling load relevant in reliability discussions through the July 14–17 alert window.",
   },
 ] as const;
 
 export const ISI_CALCULATION_TOTAL = {
   contribution: "84.4 → 87",
   reason:
-    "Elevated operational strain from PJM emergency measures during heat, large-load backup-generation authority, and sustained event logistics — flexibility narrowing without widespread blackout.",
+    "Elevated strain holds after a managed early-July peak and a new Hot Weather Alert for July 14–17 — flexibility narrowing beneath still-functioning systems.",
 } as const;
 
 export const ISI_SOURCES = [
   {
     name: "Utility & Grid Reporting",
-    body: "PJM emergency operations, DOE orders, FERC large-load rules, transmission queues, interconnection delays, and regional upgrade timelines.",
+    body: "PJM operations updates, Hot Weather Alerts, DOE orders, FERC large-load rules, transmission queues, interconnection delays, and regional upgrade timelines.",
   },
   {
     name: "Data-Center Reporting",

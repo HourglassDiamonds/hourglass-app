@@ -5,12 +5,12 @@
 
 export type AcaiFillVariant = "cool" | "neutral" | "warm" | "hot" | "critical";
 
-export const ACAI_UPDATED_LABEL = "Updated weekly — July 6, 2026";
+export const ACAI_UPDATED_LABEL = "Updated weekly — July 14, 2026";
 
 export const ACAI_READING = {
   score: 84,
   status: "Power- and Grid-Bound Acceleration",
-  weeklyChange: 1,
+  weeklyChange: 0,
   markerPosition: 84,
   readingLabel: "Acceleration Reading",
 } as const;
@@ -19,10 +19,10 @@ export const ACAI_INTRO =
   "A weekly reading of how AI capability, deployment, and physical infrastructure are moving together — across models, agents, enterprise integration, power, and grid constraints. The purpose is not to forecast AGI. It is to track an industrial buildout: where software progress meets operational friction, energy limits, and organizational adaptation lag.";
 
 export const ACAI_SUMMARY =
-  "Capability advanced through broad Claude Sonnet 5 deployment across consumer, enterprise, coding, and API surfaces — while frontier access remains gated and grid constraints turned operational during the PJM heat event. Deployment friction and physical limits still set practical pace.";
+  "Capability remains advanced through broad Claude Sonnet 5 deployment across consumer, enterprise, coding, and API surfaces — while frontier access stays gated and summer grid tightness continues to bound practical pace after the early-July PJM peak and a new Hot Weather Alert for July 14–17.";
 
 export const ACAI_WEEKLY_SIGNAL =
-  "Claude Sonnet 5 launched June 30 with broad availability across plans, Claude Code, and the API — the week's clearest capability gain, with stronger agentic and tool-use behavior at a widely deployed tier. Partner-only frontier previews and government-coordinated release gates remain separate from broad deployment. PJM heat emergencies made grid and power constraints operational. Enterprise adoption and coding integration advanced; governance, energized capacity, and access qualification remain co-equal limits.";
+  "No new frontier capability shock moved the reading. Claude Sonnet 5's late-June broad availability remains the last clear deployment step; partner-only frontier previews and government-coordinated release gates stay separate from that baseline. Physical constraints continue to set practical pace: PJM managed a record early-July peak without blackout, and a Hot Weather Alert covers July 14–17. Enterprise adoption and coding integration hold; governance, energized capacity, and access qualification remain co-equal limits.";
 
 export const ACAI_METHOD_PILLS = [
   { label: "Reading Type", value: "Capability + infrastructure index" },
@@ -32,9 +32,9 @@ export const ACAI_METHOD_PILLS = [
 
 export const ACAI_RECENT_READINGS = [
   { week: "This Week", score: 84, state: "Accelerating" },
-  { week: "Last Week", score: 83, state: "Accelerating" },
-  { week: "2 Weeks Ago", score: 82, state: "Accelerating" },
-  { week: "3 Weeks Ago", score: 79, state: "Accelerating" },
+  { week: "Last Week", score: 84, state: "Accelerating" },
+  { week: "2 Weeks Ago", score: 83, state: "Accelerating" },
+  { week: "3 Weeks Ago", score: 82, state: "Accelerating" },
 ] as const;
 
 export const ACAI_CAPABILITY_BENCHMARKS = [
@@ -84,7 +84,7 @@ export const ACAI_CAPABILITY_READINGS = [
     score: 93,
     band: "Elevated",
     fill: "warm" as AcaiFillVariant,
-    text: "PJM heat emergencies made grid and power limits operational — backup-generation authority for large loads and demand response set deployment pace alongside model interest.",
+    text: "Summer power limits remain a binding constraint after the early-July PJM peak — the Hot Weather Alert for July 14–17 keeps deployment pace tied to grid and large-load readiness alongside model interest.",
   },
   {
     name: "Labor Substitution",
@@ -106,12 +106,12 @@ export const ACAI_CAPABILITY_READINGS = [
 
 export const ACAI_WHAT_MOVED = [
   {
-    title: "Broad Sonnet 5 deployment",
-    body: "Claude Sonnet 5 reached general availability across consumer, enterprise, coding, and API surfaces June 30 — meaningful agentic capability at a widely deployed tier.",
+    title: "Prior Sonnet 5 baseline holds",
+    body: "Claude Sonnet 5 remains generally available across consumer, enterprise, coding, and API surfaces — last week's clearest capability gain, unchanged as a new shock this week.",
   },
   {
-    title: "Grid constraints turned operational",
-    body: "PJM heat emergencies made power and grid limits operational — DOE authorized backup generation at large loads while systemwide demand response activated.",
+    title: "Summer grid constraints continue",
+    body: "PJM managed a record early-July peak without blackout; a Hot Weather Alert for July 14–17 keeps power and large-load limits operational beside software capability.",
   },
   {
     title: "Access remains qualified",
@@ -141,7 +141,7 @@ export const ACAI_FRONTIER_WATCHLIST = [
   {
     label: "System Layer",
     title: "Data centers & power",
-    body: "PJM emergency operations, FERC large-load rules, power contracts, grid queues, and cooling — operational pace-setters this cycle.",
+    body: "PJM summer operations, Hot Weather Alert posture, FERC large-load rules, power contracts, grid queues, and cooling — operational pace-setters this cycle.",
   },
   {
     label: "System Layer",
@@ -217,7 +217,7 @@ export const ACAI_CALCULATION_ROWS = [
     score: "93",
     contribution: "11.2",
     reason:
-      "PJM emergencies made grid constraints operational — backup-generation authority and demand response increasingly pace-setting.",
+      "Summer grid and power limits remain operational after the early-July PJM peak; Hot Weather Alert for July 14–17 keeps physical pace-setting live.",
   },
   {
     category: "Labor Substitution",

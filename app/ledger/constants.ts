@@ -18,18 +18,18 @@ export {
 export const QUIET_METRICS = [
   {
     label: "Energy Pressure",
-    value: "Fragile Relief",
-    note: "Partial Hormuz recovery with oil near pre-conflict levels — routing, insurance, and corridor governance remain unresolved.",
+    value: "Relief Retraced",
+    note: "Hormuz traffic relapsed and oil's risk premium returned — routing, insurance, and corridor governance remain unresolved.",
   },
   {
     label: "AI Compute Load",
     value: "Grid-Bound",
-    note: "Broad Sonnet 5 deployment advances capability; PJM heat emergencies made grid and power limits operational, not theoretical.",
+    note: "Capability gains remain real; summer grid alerts and large-load integration still set practical pace.",
   },
   {
     label: "Physical Constraints",
     value: "Operational Strain",
-    note: "PJM emergency demand response and large-load backup-generation authority during heat — flexibility narrowing beneath functioning systems.",
+    note: "Early-July PJM peak was managed; a new Hot Weather Alert for July 14–17 keeps flexibility narrow beneath functioning systems.",
   },
 ] as const;
 

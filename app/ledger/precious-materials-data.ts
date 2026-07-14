@@ -3,7 +3,7 @@
  * Update values and copy here each week. Page layout is fixed in precious-materials-index-view.
  */
 
-export const PMI_UPDATED_LABEL = "Updated weekly — July 6, 2026";
+export const PMI_UPDATED_LABEL = "Updated weekly — July 14, 2026";
 
 export const PMI_MARKET_PRESSURE = {
   score: 85,
@@ -42,15 +42,15 @@ export const PMI_CROSS_SYSTEM_BRIDGE =
   "Material markets remain connected to broader macro and reserve-asset conditions — but jewelry sourcing follows its own segmented logic beneath the geopolitical layer.";
 
 export const PMI_CROSS_SYSTEM_PRESSURE = [
-  "Central-bank net gold accumulation continued in May — reserve diversification supports the structural read beneath near-term real-yield sensitivity.",
-  "De Beers is aligning July sight rough pricing closer to market conditions while maintaining a leaner sightholder base — selective adjustment, not broad market stress.",
+  "Central-bank gold demand remains a structural support beneath near-term real-yield sensitivity as the restored energy and rate frame firms yields.",
+  "De Beers' July sight pricing alignment stays a selective pipeline watch rather than broad market stress.",
   "Lab-grown pricing compression continues in commercial and mid-tier ranges as an embedded factor, while premium natural holds firmer in selective sizes and cuts.",
   "High-quality natural stones increasingly behave as scarcity and reserve assets rather than simple luxury cyclicals.",
 ] as const;
 
 export const PMI_WHAT_MOVED = [
-  "Central banks added a net 41 tonnes in May, with Poland, China, and other reserve managers continuing accumulation — structurally firm beneath real-yield sensitivity.",
-  "De Beers signaled July sight pricing alignment closer to market conditions amid a leaner sightholder roster effective July 1.",
+  "No materials-regime change this week — central-bank gold demand and selective diamond segmentation continue as embedded supports.",
+  "Real-yield sensitivity stayed relevant as oil's restored risk premium fed rate-path uncertainty; gold monetary pressure held at 87.",
   "Lab-grown compression persisted in mid-tier channels as an embedded segmentation factor, not a newly accelerating shock.",
 ] as const;
 

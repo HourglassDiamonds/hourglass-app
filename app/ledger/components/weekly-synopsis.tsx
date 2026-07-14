@@ -1,18 +1,18 @@
 export const WEEKLY_SYNOPSIS = {
   eyebrow: "Weekly Synopsis",
-  headline: "Corridors remain fragile; grid strain turns operational.",
+  headline: "Corridor relief retraced; oil risk premium returns.",
   blocks: [
     {
       title: "What changed",
-      body: "Hormuz transit continued a partial recovery, but volumes remain materially below normal and corridor governance is unresolved. Oil prices eased toward pre-conflict levels. PJM entered emergency operations during the heat event as the Department of Energy authorized backup generation at data centers and other large-load facilities, while PJM separately activated systemwide emergency demand response. Broad AI deployment advanced through Claude Sonnet 5 across consumer, enterprise, coding, and API surfaces. Precious materials remained strategically firm as central-bank gold accumulation continued.",
+      body: "Hormuz transit relapsed after vessel attacks and the fraying of the June ceasefire framework, reversing the fragile recovery narrative. Oil's risk premium returned toward the mid-to-high $80s on Brent. The U.S. announced plans for a proposed 20% fee on Hormuz cargo and scheduled the reimposition of a naval blockade against Iranian shipping — measures described as announced, proposed, or scheduled for enforcement, not as settled corridor control. Official June CPI printed temporary energy-led disinflation (headline −0.4% m/m, 3.5% y/y; core 0.0% m/m, 2.6% y/y) that predates this week's oil move. PJM issued a Hot Weather Alert for July 14–17 after managing a record early-July peak. Precious materials and AI capability readings held.",
     },
     {
       title: "What's driving pressure",
-      body: "Corridor confidence remains thin — routing, insurance, and sovereignty questions persist beneath functioning energy markets. Grid flexibility narrowed as heat, data-center load, and emergency operations interacted in the same event. Financial conditions stay rate-sensitive. AI deployment advances, but access remains gated and physical infrastructure increasingly sets practical pace.",
+      body: "Corridor confidence, not a single day's open or closed claim, is the binding geopolitical-energy channel. Oil's rebound reintroduces forward inflation and rate risk even though June CPI showed temporary relief. Financial conditions stay rate-sensitive. Summer grid tightness remains elevated but secondary to the corridor reverse this week.",
     },
     {
       title: "What to watch next",
-      body: "Whether Hormuz transit stabilizes above current levels or stalls under route-control disputes. Whether PJM reliability holds through the rest of summer. Whether frontier-model access broadens beyond partner and government-coordinated previews. Whether De Beers' July sight confirms selective rough-price alignment. Whether current oil normalization persists as backlog barrels clear.",
+      body: "Whether Hormuz traceable traffic stabilizes above recent lows or stays depressed. Whether Brent holds a renewed premium or fades. Whether announced blockade and fee measures become practical enforcement. Whether June's CPI disinflation is overshadowed in markets by the new energy shock. Whether PJM reliability holds through the July 14–17 Hot Weather Alert. Whether the EU's July 15 oil-price-cap decision freezes the cap or allows an automatic reset — a secondary sanctions watch.",
     },
   ],
 } as const;

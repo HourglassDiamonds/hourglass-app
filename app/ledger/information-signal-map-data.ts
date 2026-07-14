@@ -3,7 +3,7 @@
  * Update values and copy here each week. Page layout is fixed in information-signal-map-view.
  */
 
-export const ISM_UPDATED_LABEL = "Updated weekly — July 6, 2026";
+export const ISM_UPDATED_LABEL = "Updated weekly — July 14, 2026";
 
 export const ISM_READING = {
   score: 85,
@@ -13,16 +13,16 @@ export const ISM_READING = {
 } as const;
 
 export const ISM_SUMMARY =
-  "High-attention, uneven clarity persists — access claims increasingly require qualification as \"released,\" \"available,\" and \"deployed\" describe different realities by geography, approval status, and account tier. World Cup fraud risk, Hormuz frame conflict, and Fed communication divergence continue beneath partial normalization in frontier-model access.";
+  "High-attention, uneven clarity persists — Hormuz framing now splits among corridor-open, corridor-risk, fee, and blockade narratives in the same cycle. June CPI's temporary disinflation and the renewed oil escalation are being told as sequential rather than simultaneous stories. Qualified AI access claims and embedded event-fraud risk remain background.";
 
 export const ISM_SIGNAL_GRID = [
   {
     title: "Consensus",
-    body: "Physical-capacity themes — grid emergencies, data-center load, corridor friction, and infrastructure strain — continue appearing together across institutional, market, and specialist sources.",
+    body: "Physical-capacity and corridor themes — summer grid alerts, data-center load, Hormuz friction, and infrastructure strain — continue appearing together across institutional, market, and specialist sources.",
   },
   {
     title: "Divergence",
-    body: "Hormuz framing splits between partial recovery and corridor-risk narratives; Fed communication under Warsh diverges from market repricing; AI coverage mixes broad deployment with gated frontier access.",
+    body: "Hormuz framing splits among open-corridor, closed-corridor, fee, and blockade narratives; June CPI temporary disinflation and the renewed oil escalation are sequenced differently across outlets; Chairman Warsh's July 14 Monetary Policy Report testimony pledges price stability with limited forward guidance while markets reprice energy risk.",
   },
   {
     title: "Underweighted",
@@ -33,19 +33,19 @@ export const ISM_SIGNAL_GRID = [
 export const ISM_SOURCE_STACK = [
   {
     title: "Institutional",
-    body: "Emphasizes Hormuz framework, Russia sanctions, energy security, and grid emergencies — measured language, coordination over alarm, with uneven agreement on corridor tempo.",
+    body: "Emphasizes ceasefire-framework failure, competing Hormuz governance claims, energy security, and measured Fed communication — including Chairman Warsh's July 14 semiannual Monetary Policy Report testimony — with uneven agreement on corridor tempo.",
   },
   {
     title: "Market",
-    body: "Emphasizes oil near pre-conflict levels, bond yields, hawkish Fed repricing, AI capex, and earnings resilience — with growing linkage between compute expansion and power infrastructure.",
+    body: "Emphasizes a restored oil risk premium, bond yields, rate-path sensitivity, AI capex, and earnings resilience — with growing linkage between compute expansion and power infrastructure.",
   },
   {
     title: "Infrastructure",
-    body: "Emphasizes PJM emergency operations, FERC large-load rules, World Cup transit strain, grid load, and data-center power access during active heat stress.",
+    body: "Emphasizes the early-July PJM peak, FERC large-load rules, World Cup transit strain, grid load, and the Hot Weather Alert covering July 14–17.",
   },
   {
     title: "Mainstream",
-    body: "Emphasizes World Cup scams, AI model releases, corridor friction, and grid heat coverage — with increasing references to qualified access and information integrity in the same cycle.",
+    body: "Emphasizes World Cup scams, AI model releases, corridor friction, vessel attacks, and grid heat coverage — with increasing references to qualified access and information integrity in the same cycle.",
   },
 ] as const;
 
@@ -56,20 +56,20 @@ export const ISM_NARRATIVE_MAP = [
   },
   {
     title: "Political Framing",
-    body: "Emphasizes Hormuz framework strain, Russia sanctions, grid emergencies, and policy response. Tends to underweight slow-moving information-integrity and access-qualification constraints.",
+    body: "Emphasizes Hormuz framework strain, announced fee and blockade measures, Russia sanctions secondary watches, and policy response. Tends to underweight slow-moving information-integrity and access-qualification constraints.",
   },
   {
     title: "Market Framing",
-    body: "Emphasizes calm oil pricing, bond yields, hawkish Fed outlook, AI capex, and earnings resilience. Tends to underweight World Cup scam activity, access gates, and physical load growth timelines.",
+    body: "Emphasizes restored oil risk premium, bond yields, rate-path sensitivity after Warsh's limited-guidance testimony, AI capex, and earnings resilience. Tends to underweight World Cup scam activity, access gates, and physical load growth timelines.",
   },
   {
     title: "Infrastructure Framing",
-    body: "Emphasizes PJM emergency measures, FERC large-load rules, electricity demand, data-center expansion, and transformer manufacturing. Tends to underweight near-term narrative compression in mainstream media cycles.",
+    body: "Emphasizes PJM's early-July peak, the July 14–17 Hot Weather Alert, FERC large-load rules, electricity demand, data-center expansion, and transformer manufacturing. Tends to underweight near-term narrative compression in mainstream media cycles.",
   },
 ] as const;
 
 export const ISM_NARRATIVE_SHIFT =
-  "The information environment refined rather than escalated. Access claims for AI models increasingly require qualification — broad deployment, partner-only previews, and government-coordinated releases describe different realities. Claude Fable 5 restoration is a partial normalization signal; earlier June export controls remain background context. World Cup fraud risk stays embedded from the prior week. Hormuz framing still splits between partial recovery and corridor-risk narratives.";
+  "The information environment intensified around corridor governance without justifying a clarity-score change. Competing claims — Iran asserting route control or closure, the U.S. asserting openness while announcing a proposed Hormuz cargo fee and scheduling blockade reimposition against Iranian shipping — appear in the same news cycle without a shared operational facts base. Market coverage shifted from oil near pre-conflict levels to a restored risk premium; institutional coverage reopened ceasefire-framework failure. In July 14 semiannual Monetary Policy Report testimony, Chairman Warsh pledged resolute commitment to restoring price stability and held the funds-rate range at 3½–3¾ percent from the June meeting, while offering limited forward guidance — leaving market energy-risk repricing less anchored by explicit policy signals. Official June CPI offered a temporary disinflation frame that does not yet include this week's oil move. Access-qualification friction in AI coverage and World Cup fraud risk remain embedded. Signal density rose; clarity did not improve enough to warrant a higher reading.";
 
 export const ISM_WHAT_TO_WATCH = [
   {
@@ -78,15 +78,15 @@ export const ISM_WHAT_TO_WATCH = [
   },
   {
     title: "Hormuz frame conflict",
-    body: "How often partial-recovery and corridor-risk narratives appear in the same coverage cycle — with routing, insurance, and sovereignty questions unresolved.",
+    body: "How often open-corridor, closed-corridor, fee, and blockade narratives appear in the same coverage cycle — with routing, insurance, and sovereignty questions unresolved.",
   },
   {
     title: "Fed communication divergence",
-    body: "Whether institutional communication simplification produces clearer or noisier market signal through the summer rate path.",
+    body: "Whether Chairman Warsh's limited-guidance approach in the July 14 Monetary Policy Report testimony produces clearer or noisier market signal through the summer rate path.",
   },
   {
-    title: "Grid emergency narrative",
-    body: "Whether PJM heat stress stays a localized operational story or broadens into sustained infrastructure narrative across regions.",
+    title: "Grid reliability narrative",
+    body: "Whether the July 14–17 Hot Weather Alert stays a localized operational story or broadens into sustained infrastructure narrative across regions.",
   },
 ] as const;
 
