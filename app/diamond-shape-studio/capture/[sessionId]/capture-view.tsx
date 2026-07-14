@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import Image from "next/image";
 import { type CaptureMode } from "@/lib/shape-studio/types";
 import { prepareCaptureFile } from "@/lib/shape-studio/prepare-capture-file";
 import {
@@ -12,6 +11,7 @@ import {
 } from "@/lib/shape-studio/session-lifecycle";
 import type { CaptureGateResult } from "@/lib/shape-studio/session-types";
 import type { SessionPollResult } from "@/lib/shape-studio/session-types";
+import { HandCardCaptureGuide } from "@/app/diamond-shape-studio/components/hand-card-capture-guide";
 import { CapturePageStyles } from "./capture-page-styles";
 
 const CAPTURE_INPUT_ID = "dss-capture-file-input";
@@ -59,25 +59,6 @@ function modeCopy(_mode: CaptureMode) {
       "Place a blank gift card, hotel key, or standard-size loyalty card beside your hand on the same surface. Photograph from directly overhead. Keep the card’s full long edge visible. Avoid cards showing personal or financial information.",
     note: "On desktop, mark the card’s long edge to set visual scale, then frame the card out of your final preview. Final ring sizing should be confirmed by a jeweler.",
   };
-}
-
-function CaptureGuide({ mode: _mode }: { mode: CaptureMode }) {
-  void _mode;
-  return (
-    <div className="dss-capture-guide">
-      <div className="dss-capture-guide-frame">
-        <Image
-          src="/diamond-tech-suite/see-it-on-hgd.png"
-          alt="Example showing a hand and card positioned for scaled preview"
-          fill
-          className="object-contain"
-          sizes="280px"
-          priority
-        />
-      </div>
-      <p className="dss-capture-guide-caption">Hand + blank card in frame</p>
-    </div>
-  );
 }
 
 function ctaLabel(state: CaptureState): string {
@@ -360,7 +341,7 @@ export function CaptureView({
         <h1 className="dss-capture-title">{title}</h1>
         <p className="dss-capture-body">{body}</p>
 
-        {showGuide ? <CaptureGuide mode={captureMode} /> : null}
+        {showGuide ? <HandCardCaptureGuide /> : null}
         {showGuide ? <p className="dss-capture-note">{copy.note}</p> : null}
 
         {showFileControl ? (

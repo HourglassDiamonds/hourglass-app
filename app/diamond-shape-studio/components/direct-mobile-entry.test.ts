@@ -153,7 +153,7 @@ describe("direct same-device mobile entry contracts", () => {
     assert.doesNotMatch(entry, /sent to/i);
     assert.match(
       entry,
-      /Photograph your hand with a standard-size card fully visible beside it/,
+      /Place a standard-size card beside your hand so we can calibrate the\s+preview accurately/,
     );
   });
 
@@ -171,12 +171,26 @@ describe("direct same-device mobile entry contracts", () => {
   it("card instruction copy remains restrained and non-automatic", () => {
     assert.match(
       entry,
-      /The card allows the preview to be calibrated accurately/,
+      /Place a standard-size card beside your hand so we can calibrate the\s+preview accurately/,
     );
     assert.doesNotMatch(entry, /automatically detect/i);
     assert.doesNotMatch(entry, /computer vision/i);
     assert.doesNotMatch(entry, /virtual try-on/i);
     assert.doesNotMatch(entry, /ring size/i);
+  });
+
+  it("mobile entry reuses the desktop capture hand-and-card instructional asset", () => {
+    assert.match(entry, /HandCardCaptureGuide/);
+    assert.match(entry, /showCaption=\{false\}/);
+    assert.match(
+      styles,
+      /\.dss-entry-mobile-guide[\s\S]*width:min\(100%, 340px\)/,
+    );
+    const guide = readStudio("components/hand-card-capture-guide.tsx");
+    assert.match(guide, /\/diamond-tech-suite\/see-it-on-hgd\.png/);
+    const captureView = readStudio("capture/[sessionId]/capture-view.tsx");
+    assert.match(captureView, /HandCardCaptureGuide/);
+    assert.doesNotMatch(captureView, /see-it-on-hgd\.png/);
   });
 
   it("visible H1 aligns with suite nav; layout metadata launches See It On Your Hand", () => {

@@ -5,6 +5,7 @@ import {
   LOCAL_PHOTO_ACCEPT,
   selectLocalPhotoFile,
 } from "@/lib/shape-studio/local-photo-selection";
+import { HandCardCaptureGuide } from "@/app/diamond-shape-studio/components/hand-card-capture-guide";
 
 type DirectMobileEntryProps = {
   onPhotoSelected: (objectUrl: string) => void;
@@ -40,12 +41,15 @@ export function DirectMobileEntry({
   return (
     <div className="dss-entry-mobile" data-dss-direct-mobile-entry>
       <p className="dss-stage-empty-kicker">Hand preview</p>
+      <HandCardCaptureGuide
+        className="dss-capture-guide dss-entry-mobile-guide"
+        sizes="(max-width: 400px) 88vw, 340px"
+        showCaption={false}
+      />
       <p className="dss-stage-empty-title">Photograph your hand</p>
       <p className="dss-stage-empty-copy">
-        Photograph your hand with a standard-size card fully visible beside it.
-      </p>
-      <p className="dss-stage-empty-privacy">
-        The card allows the preview to be calibrated accurately.
+        Place a standard-size card beside your hand so we can calibrate the
+        preview accurately.
       </p>
       <div className="dss-stage-empty-actions dss-entry-mobile-actions">
         <button

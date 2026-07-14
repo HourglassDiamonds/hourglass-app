@@ -283,8 +283,32 @@ export function ShapeStudioStyles() {
         display:none;
         flex-direction:column;
         align-items:center;
-        gap:10px;
+        gap:8px;
         width:100%;
+      }
+      /* Shared instructional figure (same asset/frame language as capture page).
+         Cap at 340px (~21% above the capture page’s 280px) when width allows. */
+      .dss-entry-mobile-guide{
+        margin:2px auto 0;
+        width:min(100%, 340px);
+        pointer-events:none;
+      }
+      .dss-entry-mobile-guide .dss-capture-guide-frame{
+        position:relative;
+        margin:0 auto;
+        width:100%;
+        aspect-ratio:4/5;
+        height:auto;
+        border-radius:14px;
+        border:1px solid color-mix(in srgb, var(--card-edge) 92%, var(--hairline));
+        background:
+          radial-gradient(
+            ellipse 70% 55% at 50% 42%,
+            color-mix(in srgb, var(--card) 98%, #fff),
+            color-mix(in srgb, var(--hairline-soft) 70%, #fff)
+          );
+        overflow:hidden;
+        pointer-events:none;
       }
       .dss-entry-card--review{
         max-width:520px;
