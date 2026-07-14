@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080" role="img" aria-label="Conversations episode poster">
+  <defs>
+    <linearGradient id="bg" x1="12%" y1="8%" x2="88%" y2="92%">
+      <stop offset="0%" stop-color="#322c28"/>
+      <stop offset="48%" stop-color="#1c1a18"/>
+      <stop offset="100%" stop-color="#3a322c"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="70%" cy="34%" r="48%">
+      <stop offset="0%" stop-color="#ad9164" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#ad9164" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1920" height="1080" fill="url(#bg)"/>
+  <rect width="1920" height="1080" fill="url(#glow)"/>
+  <rect x="64" y="64" width="1792" height="952" fill="none" stroke="#ebe3d8" stroke-opacity="0.1" stroke-width="1"/>
+</svg>

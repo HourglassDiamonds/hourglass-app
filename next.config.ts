@@ -53,6 +53,7 @@ const nextConfig: NextConfig = {
   images: {
     qualities: [75, 95, 100],
   },
+  transpilePackages: ["@mux/mux-player-react", "@mux/mux-player"],
   serverExternalPackages: ["tesseract.js", "@napi-rs/canvas", "pdfjs-dist"],
   outputFileTracingIncludes: {
     "/api/diamond-intelligence/interpret": interpretRouteTracingIncludes,

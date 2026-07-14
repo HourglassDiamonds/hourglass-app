@@ -51,6 +51,7 @@
   },
   "dependencies": {
     "@google-analytics/data": "^6.0.0",
+    "@mux/mux-player-react": "^3.13.0",
     "@napi-rs/canvas": "^1.0.0",
     "@supabase/supabase-js": "^2.106.1",
     "@vercel/blob": "^2.3.3",

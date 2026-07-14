@@ -1,6 +1,11 @@
 import type { MetadataRoute } from "next";
 import { articles } from "@/app/diamond-guide/articles";
 import { LEDGER_INDEXES } from "@/app/ledger/ledger-data";
+import {
+  episodePath,
+  getPublishedEpisodes,
+  isConversationsHubPublic,
+} from "@/lib/conversations/episodes";
 import { DIAMOND_GUIDE_CATEGORIES } from "@/lib/seo/diamond-guide-metadata";
 import { SITE_URL } from "@/lib/seo/site-metadata";
 
@@ -21,6 +26,15 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${SITE_URL}/whispered-praise`, priority: 0.85, lastModified },
     { url: `${SITE_URL}/ledger`, priority: 0.75, lastModified },
   ];
+
+  // Hub and episodes enter the sitemap only after published inventory exists.
+  if (isConversationsHubPublic()) {
+    corePages.push({
+      url: `${SITE_URL}/conversations`,
+      priority: 0.8,
+      lastModified,
+    });
+  }
 
   const ledgerIndexPages: MetadataRoute.Sitemap = LEDGER_INDEXES.map(
     (index) => ({
@@ -51,5 +65,21 @@ export default function sitemap(): MetadataRoute.Sitemap {
     lastModified,
   }));
 
-  return [...corePages, ...ledgerIndexPages, ...categoryPages, ...articlePages];
+  const conversationPages: MetadataRoute.Sitemap = getPublishedEpisodes().map(
+    (episode) => ({
+      url: `${SITE_URL}${episodePath(episode.slug)}`,
+      priority: 0.75,
+      lastModified: episode.publishedAt
+        ? new Date(episode.publishedAt)
+        : lastModified,
+    }),
+  );
+
+  return [
+    ...corePages,
+    ...ledgerIndexPages,
+    ...categoryPages,
+    ...articlePages,
+    ...conversationPages,
+  ];
 }
