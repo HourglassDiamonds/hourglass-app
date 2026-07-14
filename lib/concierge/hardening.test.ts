@@ -38,6 +38,24 @@ describe("concierge honeypot contract", () => {
     assert.ok(beginInPost > rateInPost);
   });
 
+  it("resolves HubSpot token server-side from ACCESS or PRIVATE_APP alias", () => {
+    assert.match(route, /resolveHubSpotToken/);
+    assert.match(route, /HUBSPOT_PRIVATE_APP_TOKEN/);
+    assert.match(route, /Authorization: `Bearer \$\{token\}`/);
+    assert.doesNotMatch(route, /NEXT_PUBLIC_.*HUBSPOT/);
+  });
+
+  it("logs association and note failures as nonfatal warning codes without CRM ids", () => {
+    assert.match(route, /CONCIERGE_ASSOCIATION_NONFATAL/);
+    assert.match(route, /CONCIERGE_NOTE_NONFATAL/);
+    assert.match(route, /console\.warn\(\s*"\[CONCIERGE_ASSOCIATION_NONFATAL\]"/);
+    assert.match(route, /console\.warn\(\s*"\[CONCIERGE_NOTE_NONFATAL\]"/);
+    assert.doesNotMatch(
+      route,
+      /console\.warn\(\s*"\[CONCIERGE_ASSOCIATION_NONFATAL\]"[\s\S]{0,240}contactId/,
+    );
+  });
+
   it("client fires lead events only when accepted === true", () => {
     assert.match(client, /data\.accepted === true/);
     assert.match(client, /trackGenerateLead/);

@@ -5,6 +5,15 @@ import {
   type AttributionSnapshot,
 } from "@/lib/attribution";
 import {
+  HubSpotConfigError,
+  HubSpotRequestError,
+  HUBSPOT_BASE_URL,
+  HUBSPOT_TIMEOUT_MS,
+  hubspotFetchJson,
+  resolveHubSpotToken,
+  sanitizeHubSpotErrorBody,
+} from "@/lib/concierge/hubspot-client";
+import {
   beginConciergeSubmission,
   checkConciergeRateLimit,
   completeConciergeSubmission,
@@ -19,24 +28,40 @@ import {
   validateConciergeContactFields,
 } from "@/lib/concierge/validation";
 
-const HUBSPOT_BASE_URL = "https://api.hubapi.com";
-const HUBSPOT_TIMEOUT_MS = 12_000;
 const VISITOR_ERROR =
   "We couldn’t send your note just now. Please try again, or contact us directly.";
 
 function getEnv(name: string) {
-  const value = process.env[name];
+  const value = process.env[name]?.trim();
   if (!value) {
-    throw new Error("missing_server_configuration");
+    throw new HubSpotConfigError();
   }
   return value;
 }
 
-function getHubSpotHeaders() {
-  return {
-    Authorization: `Bearer ${getEnv("HUBSPOT_ACCESS_TOKEN")}`,
-    "Content-Type": "application/json",
-  };
+function requireHubSpotToken(): string {
+  const { token, source } = resolveHubSpotToken();
+  if (!token) {
+    console.error("[concierge-config]", {
+      error: "missing_hubspot_token",
+      checked: ["HUBSPOT_ACCESS_TOKEN", "HUBSPOT_PRIVATE_APP_TOKEN"],
+    });
+    throw new HubSpotConfigError();
+  }
+  if (source === "HUBSPOT_PRIVATE_APP_TOKEN") {
+    console.info("[concierge-config]", {
+      tokenSource: "HUBSPOT_PRIVATE_APP_TOKEN",
+    });
+  }
+  return token;
+}
+
+function hubspotFetch<T>(
+  path: string,
+  init: RequestInit,
+  options?: { treatNotFoundAsEmpty?: boolean; token?: string },
+) {
+  return hubspotFetchJson<T>(path, init, options);
 }
 
 function clean(value: FormDataEntryValue | null) {
@@ -63,66 +88,15 @@ function displayContactMethod(value?: string) {
   return map[normalized];
 }
 
-async function hubspotFetch<T>(
-  path: string,
-  init: RequestInit,
-  options?: { treatNotFoundAsEmpty?: boolean },
-): Promise<T | null> {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), HUBSPOT_TIMEOUT_MS);
-
-  try {
-    const response = await fetch(`${HUBSPOT_BASE_URL}${path}`, {
-      ...init,
-      headers: {
-        ...getHubSpotHeaders(),
-        ...(init.headers || {}),
-      },
-      cache: "no-store",
-      signal: controller.signal,
-    });
-
-    if (response.status === 404 && options?.treatNotFoundAsEmpty) {
-      return null;
-    }
-
-    if (!response.ok) {
-      console.error("[concierge-hubspot]", {
-        path,
-        status: response.status,
-      });
-      throw new Error("hubspot_request_failed");
-    }
-
-    if (response.status === 204) {
-      return {} as T;
-    }
-
-    return (await response.json()) as T;
-  } catch (error) {
-    if (error instanceof Error && error.message === "hubspot_request_failed") {
-      throw error;
-    }
-    if (error instanceof Error && error.name === "AbortError") {
-      console.error("[concierge-hubspot-timeout]", { path });
-      throw new Error("hubspot_timeout");
-    }
-    console.error("[concierge-hubspot-network]", {
-      path,
-      error: error instanceof Error ? error.name : "unknown",
-    });
-    throw new Error("hubspot_network_error");
-  } finally {
-    clearTimeout(timeout);
-  }
-}
-
-async function upsertContact(payload: {
-  email: string;
-  fullName: string;
-  phone?: string;
-  preferredContactMethod?: string;
-}) {
+async function upsertContact(
+  payload: {
+    email: string;
+    fullName: string;
+    phone?: string;
+    preferredContactMethod?: string;
+  },
+  token: string,
+) {
   const { firstName, lastName } = splitName(payload.fullName);
 
   const properties: Record<string, string> = {
@@ -143,31 +117,62 @@ async function upsertContact(payload: {
     properties.preferred_contact_method = preferredContactMethod;
   }
 
-  const existing = await hubspotFetch<{ id: string }>(
-    `/crm/v3/objects/contacts/${encodeURIComponent(
-      payload.email,
-    )}?idProperty=email`,
-    {
-      method: "PATCH",
-      body: JSON.stringify({ properties }),
-    },
-    { treatNotFoundAsEmpty: true },
-  );
+  const contactPath = `/crm/v3/objects/contacts/${encodeURIComponent(
+    payload.email,
+  )}?idProperty=email`;
 
-  if (existing?.id) {
-    return existing.id;
+  async function patchContact() {
+    return hubspotFetch<{ id: string }>(
+      contactPath,
+      {
+        method: "PATCH",
+        body: JSON.stringify({ properties }),
+      },
+      { treatNotFoundAsEmpty: true, token },
+    );
   }
 
-  const created = await hubspotFetch<{ id: string }>("/crm/v3/objects/contacts", {
-    method: "POST",
-    body: JSON.stringify({ properties }),
-  });
-
-  if (!created?.id) {
-    throw new Error("hubspot_contact_create_failed");
+  async function createContact() {
+    const created = await hubspotFetch<{ id: string }>(
+      "/crm/v3/objects/contacts",
+      {
+        method: "POST",
+        body: JSON.stringify({ properties }),
+      },
+      { token },
+    );
+    if (!created?.id) {
+      throw new Error("hubspot_contact_create_failed");
+    }
+    return created.id;
   }
 
-  return created.id;
+  async function upsertOnce() {
+    const existing = await patchContact();
+    if (existing?.id) {
+      return existing.id;
+    }
+    return createContact();
+  }
+
+  try {
+    return await upsertOnce();
+  } catch (error) {
+    // Optional custom property rejection — retry without it once.
+    if (
+      error instanceof HubSpotRequestError &&
+      error.status === 400 &&
+      properties.preferred_contact_method
+    ) {
+      console.error("[concierge-hubspot-contact-retry]", {
+        status: error.status,
+        message: error.hubspotMessage || undefined,
+      });
+      delete properties.preferred_contact_method;
+      return upsertOnce();
+    }
+    throw error;
+  }
 }
 
 function formatAttributionLines(attribution: AttributionSnapshot): string[] {
@@ -241,20 +246,23 @@ function buildDealDescription(payload: {
   return lines.join("\n");
 }
 
-async function createDeal(payload: {
-  fullName: string;
-  projectType: string;
-  shapeInterest?: string;
-  designDirection?: string;
-  ringPresence?: string;
-  timeline?: string;
-  budgetRange?: string;
-  preferredContactMethod?: string;
-  inspirationNotes?: string;
-  source: string;
-  submissionId: string;
-  attribution: AttributionSnapshot;
-}) {
+async function createDeal(
+  payload: {
+    fullName: string;
+    projectType: string;
+    shapeInterest?: string;
+    designDirection?: string;
+    ringPresence?: string;
+    timeline?: string;
+    budgetRange?: string;
+    preferredContactMethod?: string;
+    inspirationNotes?: string;
+    source: string;
+    submissionId: string;
+    attribution: AttributionSnapshot;
+  },
+  token: string,
+) {
   const pipelineId = getEnv("HUBSPOT_DEAL_PIPELINE_ID");
   const stageId = getEnv("HUBSPOT_DEAL_STAGE_ID_NEW_INQUIRY");
 
@@ -267,10 +275,14 @@ async function createDeal(payload: {
     description: buildDealDescription(payload),
   };
 
-  const created = await hubspotFetch<{ id: string }>("/crm/v3/objects/deals", {
-    method: "POST",
-    body: JSON.stringify({ properties }),
-  });
+  const created = await hubspotFetch<{ id: string }>(
+    "/crm/v3/objects/deals",
+    {
+      method: "POST",
+      body: JSON.stringify({ properties }),
+    },
+    { token },
+  );
 
   if (!created?.id) {
     throw new Error("hubspot_deal_create_failed");
@@ -279,7 +291,11 @@ async function createDeal(payload: {
   return created.id;
 }
 
-async function associateContactToDeal(contactId: string, dealId: string) {
+async function associateContactToDeal(
+  contactId: string,
+  dealId: string,
+  token: string,
+) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), HUBSPOT_TIMEOUT_MS);
 
@@ -289,7 +305,8 @@ async function associateContactToDeal(contactId: string, dealId: string) {
       {
         method: "PUT",
         headers: {
-          Authorization: `Bearer ${getEnv("HUBSPOT_ACCESS_TOKEN")}`,
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
         cache: "no-store",
         signal: controller.signal,
@@ -297,8 +314,10 @@ async function associateContactToDeal(contactId: string, dealId: string) {
     );
 
     if (!response.ok) {
+      const raw = await response.text().catch(() => "");
       console.error("[concierge-hubspot-association]", {
         status: response.status,
+        message: sanitizeHubSpotErrorBody(raw) || undefined,
       });
       throw new Error("hubspot_association_failed");
     }
@@ -323,6 +342,7 @@ async function createDealNote(
     submissionId: string;
     attribution: AttributionSnapshot;
   },
+  token: string,
 ) {
   const lines = [
     `Submission ID: ${payload.submissionId}`,
@@ -351,26 +371,30 @@ async function createDealNote(
 
   const noteBody = lines.join("\n");
 
-  await hubspotFetch<{ id: string }>("/crm/v3/objects/notes", {
-    method: "POST",
-    body: JSON.stringify({
-      properties: {
-        hs_note_body: noteBody,
-        hs_timestamp: Date.now(),
-      },
-      associations: [
-        {
-          to: { id: dealId },
-          types: [
-            {
-              associationCategory: "HUBSPOT_DEFINED",
-              associationTypeId: 214,
-            },
-          ],
+  await hubspotFetch<{ id: string }>(
+    "/crm/v3/objects/notes",
+    {
+      method: "POST",
+      body: JSON.stringify({
+        properties: {
+          hs_note_body: noteBody,
+          hs_timestamp: String(Date.now()),
         },
-      ],
-    }),
-  });
+        associations: [
+          {
+            to: { id: dealId },
+            types: [
+              {
+                associationCategory: "HUBSPOT_DEFINED",
+                associationTypeId: 214,
+              },
+            ],
+          },
+        ],
+      }),
+    },
+    { token },
+  );
 }
 
 function visitorJson(message: string, status: number) {
@@ -397,7 +421,15 @@ function hardAcceptJson(submissionId: string) {
 
 export async function POST(request: Request) {
   try {
-    const formData = await request.formData();
+    let formData: FormData;
+    try {
+      formData = await request.formData();
+    } catch {
+      console.error("[concierge-submit-error]", {
+        error: "invalid_multipart_body",
+      });
+      return visitorJson("Please check the form and try again.", 400);
+    }
 
     // Honeypot first — do not consume rate-limit budget or create CRM records.
     const honeypot = clean(formData.get("company_website"));
@@ -484,6 +516,8 @@ export async function POST(request: Request) {
     }
 
     try {
+      const token = requireHubSpotToken();
+
       const dealPayload = {
         fullName,
         projectType: projectType || "Concierge Inquiry",
@@ -499,21 +533,37 @@ export async function POST(request: Request) {
         attribution,
       };
 
-      const contactId = await upsertContact({
-        email,
-        fullName,
-        phone: phone || undefined,
-        preferredContactMethod: preferredContactMethod || undefined,
-      });
+      const contactId = await upsertContact(
+        {
+          email,
+          fullName,
+          phone: phone || undefined,
+          preferredContactMethod: preferredContactMethod || undefined,
+        },
+        token,
+      );
 
-      const dealId = await createDeal(dealPayload);
-
-      await associateContactToDeal(contactId, dealId);
+      const dealId = await createDeal(dealPayload, token);
 
       try {
-        await createDealNote(dealId, dealPayload);
+        await associateContactToDeal(contactId, dealId, token);
+      } catch (associationError) {
+        // Contact + deal already exist — do not report the inquiry as unsent.
+        console.warn("[CONCIERGE_ASSOCIATION_NONFATAL]", {
+          code: "CONCIERGE_ASSOCIATION_NONFATAL",
+          submissionId: submissionId.slice(0, 12),
+          error:
+            associationError instanceof Error
+              ? associationError.message
+              : "unknown",
+        });
+      }
+
+      try {
+        await createDealNote(dealId, dealPayload, token);
       } catch (noteError) {
-        console.error("[concierge-note-nonfatal]", {
+        console.warn("[CONCIERGE_NOTE_NONFATAL]", {
+          code: "CONCIERGE_NOTE_NONFATAL",
           submissionId: submissionId.slice(0, 12),
           error: noteError instanceof Error ? noteError.message : "unknown",
         });
@@ -533,9 +583,22 @@ export async function POST(request: Request) {
       throw innerError;
     }
   } catch (error) {
-    console.error("[concierge-submit-error]", {
-      error: error instanceof Error ? error.message : "unknown",
-    });
+    if (error instanceof HubSpotConfigError) {
+      console.error("[concierge-submit-error]", {
+        error: "missing_server_configuration",
+      });
+    } else if (error instanceof HubSpotRequestError) {
+      console.error("[concierge-submit-error]", {
+        error: "hubspot_request_failed",
+        status: error.status,
+        path: error.path,
+        message: error.hubspotMessage || undefined,
+      });
+    } else {
+      console.error("[concierge-submit-error]", {
+        error: error instanceof Error ? error.message : "unknown",
+      });
+    }
 
     return visitorJson(VISITOR_ERROR, 500);
   }
