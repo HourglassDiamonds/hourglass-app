@@ -3,7 +3,7 @@
 export const DI_V3_PAGE = "w-full text-[var(--hg-ink,#1c1b1a)]";
 
 export const DI_V3_SHELL =
-  "mx-auto w-full max-w-[1180px] px-5 py-6 md:px-6 md:py-8 md:pb-12";
+  "mx-auto w-full max-w-[1180px] px-6 py-6 md:py-8 md:pb-12";
 
 export const DI_V3_HERO_CARD =
   "relative mx-auto w-full max-w-[860px] overflow-hidden rounded-[28px] border border-[rgba(58,48,38,0.32)] bg-[#fbf7ef] shadow-[0_28px_80px_rgba(30,26,22,0.08)] [background:linear-gradient(180deg,rgba(255,255,255,.48),rgba(255,255,255,.12)),#fbf7ef)] before:pointer-events-none before:absolute before:left-7 before:right-7 before:top-[26px] before:h-px before:bg-[linear-gradient(90deg,transparent,rgba(181,150,98,.5),transparent)] after:pointer-events-none after:absolute after:bottom-[26px] after:left-7 after:right-7 after:h-px after:bg-[linear-gradient(90deg,transparent,rgba(181,150,98,.5),transparent)]";

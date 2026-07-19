@@ -28,7 +28,7 @@ function MidPageCta() {
           <CTAGlimmer>
             <Link
               href="/diamond-intelligence"
-              className="inline-flex rounded-full border border-[#d9cdbd] bg-white/80 px-6 py-3 text-[11px] uppercase tracking-[0.28em] text-[#6f665d] transition hover:bg-white"
+              className="inline-flex min-h-11 items-center rounded-full border border-[#d9cdbd] bg-white/80 px-6 py-3 text-[11px] uppercase tracking-[0.28em] text-[#6f665d] transition hover:bg-white"
             >
               Explore Diamond Intelligence
             </Link>
@@ -65,7 +65,7 @@ function FinalCta() {
         <CTAGlimmer>
           <Link
             href="/diamond-intelligence"
-            className="inline-flex rounded-full border border-[#d9cdbd] bg-white/80 px-6 py-3 text-[11px] uppercase tracking-[0.28em] text-[#6f665d] transition hover:bg-white"
+            className="inline-flex min-h-11 items-center rounded-full border border-[#d9cdbd] bg-white/80 px-6 py-3 text-[11px] uppercase tracking-[0.28em] text-[#6f665d] transition hover:bg-white"
           >
             Explore Diamond Intelligence
           </Link>
@@ -73,7 +73,7 @@ function FinalCta() {
         <CTAGlimmer>
           <Link
             href="/concierge"
-            className="inline-flex rounded-full border border-[rgba(58,48,38,0.14)] bg-[#2b2723] px-6 py-3 text-[11px] uppercase tracking-[0.28em] text-white transition-opacity hover:opacity-90"
+            className="inline-flex min-h-11 items-center rounded-full border border-[rgba(58,48,38,0.14)] bg-[#2b2723] px-6 py-3 text-[11px] uppercase tracking-[0.28em] text-white transition-opacity hover:opacity-90"
             onClick={() =>
               trackConsultationCtaClicked("our_approach:final_cta")
             }
@@ -94,18 +94,18 @@ export default function OurApproachPageClient() {
       <div className="mx-auto max-w-[1200px] px-6 md:px-10">
         <Header />
 
-        <section className="border-b border-[#e4dbcf] pb-[68px] pt-[64px] md:pb-[100px] md:pt-[80px]">
+        <section className="border-b border-[#e4dbcf] pb-16 pt-14 md:pb-[100px] md:pt-[80px]">
           <div className="mx-auto max-w-[820px] text-center">
             <p className="text-[10px] uppercase tracking-[0.34em] text-[#8a8177]">
               Our Approach
             </p>
             <h1
-              className="mx-auto mt-4 max-w-[20ch] text-[1.65rem] font-light leading-[1.08] tracking-[-0.015em] text-[#1f1d1a] md:text-[2.15rem]"
+              className="mx-auto mt-4 max-w-[20ch] text-[2rem] font-light leading-[1.08] tracking-[-0.015em] text-[#1f1d1a] md:text-[2.45rem]"
               style={{ textWrap: "balance" }}
             >
               Why We Work This Way
             </h1>
-            <p className="mx-auto mt-6 max-w-[42rem] text-[1rem] leading-[1.9] text-[#615a53]">
+            <p className="mx-auto mt-5 max-w-[42rem] text-[0.95rem] leading-[1.85] text-[#615a53] md:mt-6 md:text-[1rem] md:leading-[1.9]">
               A thoughtful look at how we evaluate diamonds, make
               recommendations, and guide clients through one of life&apos;s most
               meaningful purchases.
@@ -115,7 +115,7 @@ export default function OurApproachPageClient() {
 
         <RevealOnScroll
           as="section"
-          className="border-b border-[#e4dbcf] py-[80px] md:pb-[96px] md:pt-[112px]"
+          className="border-b border-[#e4dbcf] py-16 md:pb-[96px] md:pt-[112px]"
         >
           <div className="mx-auto max-w-[760px] text-center">
             <p className="text-[10px] uppercase tracking-[0.34em] text-[#8a8177]">
@@ -145,7 +145,7 @@ export default function OurApproachPageClient() {
           </div>
         </RevealOnScroll>
 
-        <section className="py-[72px] md:py-[88px]">
+        <section className="py-16 md:py-[88px]">
           <div className={`${DI_V3_SECTIONS} !mt-0 !gap-5 md:!gap-6`}>
             <ApproachChapter chapter={chapter01} />
             <ApproachChapter chapter={chapter02} />
@@ -161,7 +161,7 @@ export default function OurApproachPageClient() {
           </div>
         </section>
 
-        <section className="border-t border-[#e4dbcf] py-[96px] md:py-[112px]">
+        <section className="border-t border-[#e4dbcf] py-20 md:py-[112px]">
           <FinalCta />
         </section>
       </div>

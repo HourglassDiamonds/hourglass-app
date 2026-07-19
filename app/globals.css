@@ -136,6 +136,28 @@ body {
   }
 }
 
+/* ── Invisible tap-target extension (WCAG 2.5.8 / 44px best practice) ──
+   For small, isolated text links used as actions. Centers a ≥44×44px hit
+   box on the element without affecting layout. Do NOT use on links inside
+   tightly wrapped clusters (use a real `min-h-11` row there instead) —
+   the extension would create overlapping hit targets. */
+@layer utilities {
+  .hg-tap {
+    position: relative;
+    display: inline-block;
+  }
+
+  .hg-tap::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: max(100%, 44px);
+    height: max(100%, 44px);
+    transform: translate(-50%, -50%);
+  }
+}
+
 /* ── Luxury motion pass ── */
 
 .luxury-reveal {

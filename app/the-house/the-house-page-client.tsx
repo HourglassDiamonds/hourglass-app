@@ -79,7 +79,7 @@ export default function TheHousePageClient() {
         <Header currentPage="the-house" />
 
         {/* THE HOUSE INTRO */}
-        <section className="relative -mx-6 overflow-hidden border-b border-[#e4dbcf] px-6 pb-[104px] pt-[72px] md:-mx-10 md:px-10 md:pb-[128px] md:pt-[96px]">
+        <section className="relative -mx-6 overflow-hidden border-b border-[#e4dbcf] px-6 pb-20 pt-16 md:-mx-10 md:px-10 md:pb-[128px] md:pt-[96px]">
           <div aria-hidden className="pointer-events-none absolute inset-0">
             <div
               className="absolute inset-x-[-2%] inset-y-[4%] opacity-[0.58] md:hidden"
@@ -134,7 +134,7 @@ export default function TheHousePageClient() {
             </div>
 
             <h1
-              className="mx-auto mt-4 max-w-[24ch] text-[1.6rem] font-light leading-[1.08] tracking-[-0.015em] text-[#1f1d1a] md:text-[2.1rem]"
+              className="mx-auto mt-4 max-w-[24ch] text-[2rem] font-light leading-[1.08] tracking-[-0.015em] text-[#1f1d1a] md:text-[2.45rem]"
               style={{ textWrap: "balance" }}
             >
               A perspective shaped over time.
@@ -202,7 +202,7 @@ export default function TheHousePageClient() {
                 <button
                   type="button"
                   onClick={handleReplay}
-                  className="rounded-full border border-white/30 bg-white/70 px-4 py-2 text-[10px] uppercase tracking-[0.22em] text-[#3a332c] backdrop-blur-md transition hover:bg-white"
+                  className="inline-flex min-h-11 items-center rounded-full border border-white/30 bg-white/70 px-5 text-[10px] uppercase tracking-[0.22em] text-[#3a332c] backdrop-blur-md transition hover:bg-white"
                 >
                   Replay
                 </button>
@@ -210,7 +210,7 @@ export default function TheHousePageClient() {
                 <button
                   type="button"
                   onClick={handleToggleSound}
-                  className="rounded-full border border-white/30 bg-white/70 px-4 py-2 text-[10px] uppercase tracking-[0.22em] text-[#3a332c] backdrop-blur-md transition hover:bg-white"
+                  className="inline-flex min-h-11 items-center rounded-full border border-white/30 bg-white/70 px-5 text-[10px] uppercase tracking-[0.22em] text-[#3a332c] backdrop-blur-md transition hover:bg-white"
                 >
                   {isSoundOn ? "Mute" : "Sound"}
                 </button>
@@ -311,7 +311,7 @@ export default function TheHousePageClient() {
               <CTAGlimmer>
                 <Link
                   href="/concierge"
-                  className="inline-flex rounded-full border border-[#d9cdbd] bg-white/80 px-6 py-3 text-[11px] uppercase tracking-[0.28em] text-[#6f665d] transition hover:bg-white"
+                  className="inline-flex min-h-11 items-center rounded-full border border-[#d9cdbd] bg-white/80 px-6 py-3 text-[11px] uppercase tracking-[0.28em] text-[#6f665d] transition hover:bg-white"
                   onClick={() => trackConsultationCtaClicked("the_house:footer")}
                 >
                   Start a Private Consultation

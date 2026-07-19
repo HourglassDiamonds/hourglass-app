@@ -58,13 +58,13 @@ function ShapeStudioExplainerChapter({
           <span className={titleClass}>{title}</span>
         </span>
         <span
-          className="grid h-[34px] w-[34px] shrink-0 place-items-center rounded-full border border-[rgba(181,150,98,0.32)] bg-[rgba(181,150,98,0.07)] text-[17px] font-light leading-none text-[#b59662] transition-transform duration-200 ease-out group-open:hidden"
+          className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-[rgba(181,150,98,0.32)] bg-[rgba(181,150,98,0.07)] text-[17px] font-light leading-none text-[#b59662] transition-transform duration-200 ease-out group-open:hidden"
           aria-hidden
         >
           ＋
         </span>
         <span
-          className="hidden h-[34px] w-[34px] shrink-0 place-items-center rounded-full border border-[rgba(181,150,98,0.32)] bg-[rgba(181,150,98,0.07)] text-[17px] font-light leading-none text-[#b59662] transition-transform duration-200 ease-out group-open:grid"
+          className="hidden h-11 w-11 shrink-0 place-items-center rounded-full border border-[rgba(181,150,98,0.32)] bg-[rgba(181,150,98,0.07)] text-[17px] font-light leading-none text-[#b59662] transition-transform duration-200 ease-out group-open:grid"
           aria-hidden
         >
           —

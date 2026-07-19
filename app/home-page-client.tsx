@@ -155,13 +155,13 @@ function FeaturedRingSection() {
               src={image}
               alt={`${title} ring`}
               fill
-              sizes="(max-width: 768px) 72vw, 16vw"
+              sizes="(max-width: 767px) 72vw, (max-width: 1279px) 30vw, 16vw"
               className="object-cover object-[50%_46%] max-md:origin-center max-md:scale-[0.94]"
             />
           </div>
         </a>
         <div className="flex flex-col pt-5 md:pt-6">
-          <div className="min-h-[1.35rem] text-[0.96rem] tracking-[-0.02em] text-[#1f1d1a]">
+          <div className="text-[0.96rem] tracking-[-0.02em] text-[#1f1d1a] md:text-[1rem] xl:text-[0.96rem]">
             {title}
           </div>
           <p className="mt-2.5 text-[10px] uppercase tracking-[0.32em] text-[#8a8176]">
@@ -169,12 +169,14 @@ function FeaturedRingSection() {
               href={href}
               target="_blank"
               rel="noopener noreferrer"
-              className="transition-colors duration-300 hover:text-[#5e5852]"
+              className="hg-tap transition-colors duration-300 hover:text-[#5e5852]"
             >
               Explore in Motion
             </a>
           </p>
-          <p className="mt-2.5 min-h-[4.35rem] max-w-[22ch] text-[0.76rem] leading-[1.78] text-[#6a635c] md:min-h-[4.75rem]">
+          {/* Equal meta height only on the dense 6-up desktop row — tablet
+              3-up has wider columns, so forced height creates empty air. */}
+          <p className="mt-2.5 max-w-[28ch] text-[0.76rem] leading-[1.78] text-[#6a635c] md:max-w-[32ch] md:text-[0.8rem] xl:min-h-[4.75rem] xl:max-w-[22ch] xl:text-[0.76rem]">
             {meta}
           </p>
         </div>
@@ -185,26 +187,28 @@ function FeaturedRingSection() {
   return (
     <RevealOnScroll
       as="section"
-      className="border-b border-[#e4dbcf]/60 py-[72px] md:py-[112px]"
+      className="border-b border-[#e4dbcf]/60 py-[64px] md:py-[88px] lg:py-[112px]"
       data-hourglass-home="house-designs"
     >
-      <div className="mb-10 flex flex-col gap-8 md:mb-16 md:flex-row md:items-end md:justify-between">
+      <div className="mb-10 flex flex-col gap-6 md:mb-12 md:flex-row md:items-end md:justify-between lg:mb-16 lg:gap-8">
         <div className="max-w-xl">
           <Eyebrow>House Designs</Eyebrow>
-          <h2 className="mt-5 text-[2rem] font-normal leading-[1.1] tracking-[-0.045em] text-[#1f1d1a] md:text-[2.5rem]">
+          <h2 className="mt-4 text-[1.85rem] font-normal leading-[1.12] tracking-[-0.04em] text-[#1f1d1a] md:mt-5 md:text-[2.15rem] lg:text-[2.5rem]">
             Signature directions, followed by more individual expressions.
           </h2>
         </div>
         <Link
           href="/engagement-rings"
-          className="shrink-0 text-[10px] uppercase tracking-[0.32em] text-[#7a7167] transition-colors duration-300 hover:text-[#2b2723]"
+          className="hg-tap shrink-0 text-[10px] uppercase tracking-[0.32em] text-[#7a7167] transition-colors duration-300 hover:text-[#2b2723]"
         >
           Explore Some Designs →
         </Link>
       </div>
 
+      {/* Mobile: snap carousel · tablet through large laptop (md–lg): 3-up —
+          six columns still crush at 1024 (~157px) · desktop (xl+): 6-up row. */}
       <div className="-mx-6 snap-x snap-mandatory overflow-x-auto scroll-pl-6 scroll-smooth px-6 pb-1 md:mx-0 md:snap-none md:overflow-visible md:scroll-pl-0 md:px-0">
-        <div className="flex w-max gap-4 md:grid md:w-full md:grid-cols-6 md:gap-4 lg:gap-6">
+        <div className="flex w-max gap-4 md:grid md:w-full md:grid-cols-3 md:gap-x-5 md:gap-y-12 xl:grid-cols-6 xl:gap-6 xl:gap-y-6">
           {galleryDesigns.map((design) => (
             <GalleryDesignCard key={design.title} {...design} />
           ))}
@@ -218,18 +222,18 @@ function ClosingValueSection() {
   return (
     <RevealOnScroll
       as="section"
-      className="border-b border-[#e4dbcf]/60 py-[64px] md:py-[100px]"
+      className="border-b border-[#e4dbcf]/60 py-[56px] md:py-[80px] lg:py-[100px]"
       data-hourglass-home="thoughtful-way"
     >
       <div className="mx-auto flex w-full max-w-3xl flex-col items-center text-center">
         <Link
           href="/our-approach"
-          className="text-[11px] uppercase tracking-[0.34em] text-[#8a8177] transition-colors duration-300 hover:text-[#5e5852]"
+          className="hg-tap text-[11px] uppercase tracking-[0.34em] text-[#8a8177] transition-colors duration-300 hover:text-[#5e5852]"
         >
           Our Approach →
         </Link>
 
-        <h2 className="mt-5 w-full text-[2rem] leading-[1.1] tracking-[-0.045em] text-[#1f1d1a] md:text-[2.65rem]">
+        <h2 className="mt-4 w-full text-[1.85rem] leading-[1.12] tracking-[-0.04em] text-[#1f1d1a] md:mt-5 md:text-[2.25rem] lg:text-[2.65rem]">
           A more thoughtful way to choose something that matters.
         </h2>
 
@@ -312,7 +316,7 @@ function TestimonialSection() {
   return (
     <RevealOnScroll
       as="section"
-      className="pb-[72px] pt-[72px] md:pb-[96px] md:pt-[104px]"
+      className="pb-[56px] pt-[56px] md:pb-[80px] md:pt-[88px] lg:pb-[96px] lg:pt-[104px]"
       data-hourglass-home="whispered-praise"
     >
       <div className={`relative mx-auto max-w-[1040px] bg-[#ece4da] ${HOME_CARD_RADIUS}`}>
@@ -350,7 +354,7 @@ function TestimonialSection() {
           <div className="mt-12">
             <Link
               href="/concierge"
-              className="inline-flex items-center justify-center rounded-full bg-[#2b2723] px-7 py-3 text-[11px] uppercase tracking-[0.28em] text-white transition-all duration-500 ease-out hover:-translate-y-[1px] hover:opacity-90"
+              className="inline-flex min-h-11 items-center justify-center rounded-full bg-[#2b2723] px-7 py-3 text-[11px] uppercase tracking-[0.28em] text-white transition-all duration-500 ease-out hover:-translate-y-[1px] hover:opacity-90"
               onClick={() => trackConsultationCtaClicked("home:testimonial")}
             >
               Begin the Conversation
@@ -378,7 +382,7 @@ function TestimonialSection() {
         Trusted quietly by clients across the country.{" "}
         <WhisperedPraiseLink
           variant="arrow"
-          className="text-[10px] font-medium tracking-[0.14em] text-[#6a635c]"
+          className="hg-tap text-[10px] font-medium tracking-[0.14em] text-[#6a635c]"
         >
           Whispered Praise →
         </WhisperedPraiseLink>
@@ -398,7 +402,7 @@ export default function HomePageClient() {
           <Header currentPage="home" />
         </div>
 
-        <section className="relative overflow-hidden border-b border-[#e4dbcf]/60 bg-[#efe8de] pb-[72px] pt-[44px] md:min-h-[500px] md:pb-[96px] md:pt-[48px] lg:min-h-[520px]">
+        <section className="relative overflow-hidden border-b border-[#e4dbcf]/60 bg-[#efe8de] pb-[56px] pt-[36px] md:min-h-[500px] md:pb-[96px] md:pt-[48px] lg:min-h-[520px]">
           <div
             aria-hidden
             className="absolute inset-0 hidden md:block"
@@ -421,13 +425,13 @@ export default function HomePageClient() {
               </div>
 
               <h1
-                className="mt-3 max-w-[12ch] text-[2.25rem] font-normal leading-[1.05] tracking-[-0.048em] text-[#1f1d1a] md:mt-4 md:text-[3.15rem]"
+                className="mt-3 max-w-[12ch] text-[2rem] font-normal leading-[1.08] tracking-[-0.045em] text-[#1f1d1a] min-[390px]:text-[2.25rem] min-[390px]:leading-[1.05] min-[390px]:tracking-[-0.048em] md:mt-4 md:text-[3.15rem]"
                 style={{ textWrap: "balance" }}
               >
                 Designing a ring should feel different than buying one.
               </h1>
 
-              <p className="mt-4 max-w-[30rem] text-[1rem] leading-[1.88] text-[#5e5852] md:mt-5 md:leading-[1.9]">
+              <p className="mt-4 max-w-[30rem] text-[0.95rem] leading-[1.85] text-[#5e5852] min-[390px]:text-[1rem] min-[390px]:leading-[1.88] md:mt-5 md:leading-[1.9]">
                 Most people never get that experience. Hourglass was built
                 around something more deliberate: guidance over pressure,
                 proportion over inventory, and a process that feels as
@@ -477,7 +481,7 @@ export default function HomePageClient() {
         <div className="px-6 md:px-10">
           <TrustTransitionStrip />
 
-          <RevealOnScroll as="section" className="border-b border-[#e4dbcf] py-[56px] md:py-[96px]">
+          <RevealOnScroll as="section" className="border-b border-[#e4dbcf] py-[48px] md:py-[72px] lg:py-[96px]">
             <HomeStudioPortal />
           </RevealOnScroll>
 

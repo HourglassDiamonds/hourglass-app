@@ -142,17 +142,17 @@ export default function DiamondCutPage() {
       <div className="mx-auto max-w-[1200px] px-6 md:px-10">
         <Header currentPage="diamond-guide" />
 
-        <section className="border-b border-[#e4dbcf] pb-[84px] pt-[82px] md:pb-[100px] md:pt-[98px]">
+        <section className="border-b border-[#e4dbcf] pb-16 pt-14 md:pb-[100px] md:pt-[98px]">
           <div className="mx-auto max-w-[760px] text-center">
             <div className="text-[11px] uppercase tracking-[0.34em] text-[#9a9084]">
               Diamond Guide / Diamond Cut
             </div>
 
-            <h1 className="mt-5 text-[2.25rem] font-normal leading-[1.05] tracking-[-0.048em] text-[#1d1b18] md:text-[3.15rem]">
+            <h1 className="mt-4 text-[1.95rem] font-normal leading-[1.1] tracking-[-0.042em] text-[#1d1b18] min-[390px]:text-[2.25rem] min-[390px]:leading-[1.05] min-[390px]:tracking-[-0.048em] md:mt-5 md:text-[3.15rem]">
               Cut is what brings a diamond to life.
             </h1>
 
-            <p className="mx-auto mt-7 max-w-[630px] text-[1.01rem] leading-[1.9] text-[#6f675f]">
+            <p className="mx-auto mt-5 max-w-[630px] text-[0.95rem] leading-[1.85] text-[#6f675f] md:mt-7 md:text-[1.01rem] md:leading-[1.9]">
               Cut determines how a diamond interacts with light, which is why it
               has such a strong influence on what you actually see. Two diamonds
               with similar color and clarity can feel completely different
@@ -161,13 +161,13 @@ export default function DiamondCutPage() {
           </div>
         </section>
 
-        <RevealOnScroll as="section" className="border-b border-[#e4dbcf] py-[96px] md:py-[110px]">
+        <RevealOnScroll as="section" className="border-b border-[#e4dbcf] py-16 md:py-[110px]">
           <div className="mx-auto max-w-[760px] text-center">
             <div className="text-[11px] uppercase tracking-[0.34em] text-[#9a9084]">
               Begin here
             </div>
 
-            <h2 className="mt-5 text-[2.15rem] font-normal leading-[1.1] tracking-[-0.042em] text-[#1d1b18] md:text-[2.5rem]">
+            <h2 className="mt-4 text-[1.85rem] font-normal leading-[1.12] tracking-[-0.038em] text-[#1d1b18] md:mt-5 md:text-[2.5rem] md:leading-[1.1] md:tracking-[-0.042em]">
               A few essentials.
             </h2>
           </div>
@@ -191,13 +191,13 @@ export default function DiamondCutPage() {
           </div>
         </RevealOnScroll>
 
-        <RevealOnScroll as="section" className="border-b border-[#e4dbcf] py-[96px] md:py-[110px]">
+        <RevealOnScroll as="section" className="border-b border-[#e4dbcf] py-16 md:py-[110px]">
           <div className="mx-auto max-w-[760px] text-center">
             <div className="text-[11px] uppercase tracking-[0.34em] text-[#9a9084]">
               Most read
             </div>
 
-            <h2 className="mt-5 text-[2.15rem] font-normal leading-[1.1] tracking-[-0.042em] text-[#1d1b18] md:text-[2.5rem]">
+            <h2 className="mt-4 text-[1.85rem] font-normal leading-[1.12] tracking-[-0.038em] text-[#1d1b18] md:mt-5 md:text-[2.5rem] md:leading-[1.1] md:tracking-[-0.042em]">
               The questions that come up first.
             </h2>
           </div>
@@ -221,13 +221,13 @@ export default function DiamondCutPage() {
           </div>
         </RevealOnScroll>
 
-        <RevealOnScroll as="section" className="border-b border-[#e4dbcf] py-[96px] md:py-[110px]">
+        <RevealOnScroll as="section" className="border-b border-[#e4dbcf] py-16 md:py-[110px]">
           <div className="mx-auto max-w-[760px] text-center">
             <div className="text-[11px] uppercase tracking-[0.34em] text-[#9a9084]">
               Continue exploring
             </div>
 
-            <h2 className="mt-5 text-[2.15rem] font-normal leading-[1.1] tracking-[-0.042em] text-[#1d1b18] md:text-[2.5rem]">
+            <h2 className="mt-4 text-[1.85rem] font-normal leading-[1.12] tracking-[-0.038em] text-[#1d1b18] md:mt-5 md:text-[2.5rem] md:leading-[1.1] md:tracking-[-0.042em]">
               A closer look.
             </h2>
           </div>
@@ -253,7 +253,7 @@ export default function DiamondCutPage() {
                     <Link
                       key={article.title}
                       href={article.href}
-                      className="flex w-full items-center justify-between gap-8 py-5 transition duration-300 hover:opacity-80"
+                      className="flex min-h-11 w-full items-center justify-between gap-8 py-5 transition duration-300 hover:opacity-80"
                     >
                       <div className="text-[0.98rem] font-normal leading-[1.5] tracking-[-0.01em] text-[#1d1b18]">
                         {article.title}
@@ -273,13 +273,13 @@ export default function DiamondCutPage() {
           </div>
         </RevealOnScroll>
 
-        <RevealOnScroll as="section" className="border-b border-[#e4dbcf] py-[104px] md:py-[122px]">
+        <RevealOnScroll as="section" className="border-b border-[#e4dbcf] py-20 md:py-[122px]">
           <div className="mx-auto max-w-[760px] text-center">
             <div className="text-[11px] uppercase tracking-[0.34em] text-[#9a9084]">
               Related topics
             </div>
 
-            <h2 className="mt-5 text-[2.05rem] font-normal leading-[1.1] tracking-[-0.042em] text-[#1d1b18] md:text-[2.45rem]">
+            <h2 className="mt-4 text-[1.8rem] font-normal leading-[1.12] tracking-[-0.038em] text-[#1d1b18] md:mt-5 md:text-[2.45rem] md:leading-[1.1] md:tracking-[-0.042em]">
               Where this naturally leads.
             </h2>
           </div>
@@ -303,13 +303,13 @@ export default function DiamondCutPage() {
           </div>
         </RevealOnScroll>
 
-        <RevealOnScroll as="section" className="py-[108px] md:py-[128px]">
+        <RevealOnScroll as="section" className="py-20 md:py-[128px]">
           <div className="mx-auto max-w-[720px] text-center">
             <div className="text-[11px] uppercase tracking-[0.34em] text-[#9a9084]">
               When the research becomes specific
             </div>
 
-            <h2 className="mx-auto mt-5 max-w-[12ch] text-[2.2rem] font-normal leading-[1.04] tracking-[-0.048em] text-[#1d1b18] md:text-[3.05rem]">
+            <h2 className="mx-auto mt-4 max-w-[12ch] text-[1.9rem] font-normal leading-[1.08] tracking-[-0.042em] text-[#1d1b18] md:mt-5 md:text-[3.05rem] md:leading-[1.04] md:tracking-[-0.048em]">
               Guidance that makes the next step clearer.
             </h2>
 

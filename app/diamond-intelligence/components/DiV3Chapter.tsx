@@ -76,9 +76,10 @@ export default function DiV3Chapter({
     ? "block font-serif text-[0.98rem] font-normal leading-[1.35] tracking-[-0.01em] text-[#1e1a16] md:text-[1.02rem]"
     : "block text-[11px] uppercase tracking-[0.11em] text-[#1e1a16] md:text-xs md:tracking-[0.15em]";
 
+  /* 44×44 control affordance — summary remains the full-row hit target. */
   const controlSizeClass = compact
-    ? "h-[30px] w-[30px] text-[15px]"
-    : "h-[34px] w-[34px] text-[17px]";
+    ? "h-11 w-11 text-[15px]"
+    : "h-11 w-11 text-[17px]";
 
   return (
     <details

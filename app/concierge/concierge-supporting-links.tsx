@@ -42,7 +42,7 @@ export default function ConciergeSupportingLinks() {
       <p className="mt-6">
         <WhisperedPraiseLink
           variant="arrow"
-          className="text-[11px] tracking-[0.1em]"
+          className="hg-tap text-[11px] tracking-[0.1em]"
         >
           A few reflections from people we&rsquo;ve worked with &rarr;
         </WhisperedPraiseLink>

@@ -53,7 +53,7 @@ function FeaturedEpisode({
           : "border-b border-[#e4dbcf] pb-16 pt-8 md:pb-20 md:pt-10"
       }
     >
-      <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)] lg:gap-12 xl:gap-14">
+      <div className="grid items-start gap-8 md:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)] md:gap-10 lg:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)] lg:gap-12 xl:gap-14">
         <Link
           href={href}
           aria-label={`Watch the Conversation: ${episode.title}`}
@@ -97,13 +97,13 @@ function FeaturedEpisode({
           </span>
         </Link>
 
-        <div className="lg:pt-2 lg:max-w-[22rem] xl:max-w-[24rem]">
+        <div className="md:pt-1 md:max-w-[20rem] lg:pt-2 lg:max-w-[22rem] xl:max-w-[24rem]">
           <p className="text-[10px] uppercase tracking-[0.34em] text-[#8a8177]">
             Latest Conversation
           </p>
           <FeaturedMeta episode={episode} />
           <h2
-            className="mt-5 text-[1.85rem] font-light leading-[1.12] tracking-[-0.025em] text-[#1f1d1a] md:text-[2.2rem]"
+            className="mt-4 text-[1.65rem] font-light leading-[1.14] tracking-[-0.022em] text-[#1f1d1a] md:mt-5 md:text-[1.95rem] lg:text-[2.2rem]"
             style={{ textWrap: "balance" }}
           >
             <Link

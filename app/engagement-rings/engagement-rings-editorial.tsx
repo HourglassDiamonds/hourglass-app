@@ -141,7 +141,7 @@ export default function EngagementRingsEditorial() {
 
           <div className="col-span-12 mt-10 md:col-span-8 md:col-start-5 md:mt-0">
             <div className="rounded-[24px] border border-[#e4dbcf]/55 bg-[radial-gradient(circle_at_14%_10%,rgba(255,255,255,0.4),rgba(251,246,238,0.52)_40%,rgba(245,238,228,0.34)_100%)] p-1.5 md:p-2">
-              <ul className="grid gap-1.5 sm:grid-cols-2">
+              <ul className="grid gap-2.5 sm:grid-cols-2">
                 {authorityLinks.map((item) => (
                   <li
                     key={item.href}
@@ -149,7 +149,7 @@ export default function EngagementRingsEditorial() {
                   >
                     <Link
                       href={item.href}
-                      className={`${resourceLink} text-[0.98rem] md:text-[1rem]`}
+                      className={`${resourceLink} inline-flex min-h-11 items-center text-[0.98rem] md:text-[1rem]`}
                     >
                       {item.label}
                     </Link>
@@ -171,7 +171,7 @@ export default function EngagementRingsEditorial() {
               <footer className="mt-5">
                 <WhisperedPraiseLink
                   variant="arrow"
-                  className="text-[10.5px] tracking-[0.12em]"
+                  className="hg-tap text-[10.5px] tracking-[0.12em]"
                 >
                   Whispered Praise &rarr;
                 </WhisperedPraiseLink>

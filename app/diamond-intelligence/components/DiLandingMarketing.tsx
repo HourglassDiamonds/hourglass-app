@@ -31,11 +31,11 @@ export function TrustPrivacyBand() {
       className="mt-5 border-t border-[#e4dbcf]/70 pt-5 md:mt-6 md:pt-6"
       aria-label="Trust and privacy"
     >
-      <ul className="grid grid-cols-2 gap-x-3 gap-y-3 md:grid-cols-4 md:gap-0">
+      <ul className="grid grid-cols-2 gap-x-4 gap-y-4 md:grid-cols-4 md:gap-0">
         {TRUST_ITEMS.map((item, index) => (
           <li
             key={item}
-            className={`px-1 text-center text-[9px] uppercase leading-snug tracking-[0.24em] text-[#8a8177] sm:text-[10px] sm:tracking-[0.28em] ${
+            className={`px-1 text-center text-[10px] uppercase leading-snug tracking-[0.26em] text-[#8a8177] sm:tracking-[0.28em] ${
               index > 0
                 ? "md:border-l md:border-[#e4dbcf]/70 md:px-4 lg:px-6"
                 : "md:px-4 lg:px-6"

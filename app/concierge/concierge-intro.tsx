@@ -84,7 +84,7 @@ export default function ConciergeIntro() {
             you prefer email first, reach Justin at{" "}
             <a
               href="mailto:justin@hourglassdiamonds.com"
-              className="text-[#6a635c] underline underline-offset-4 transition hover:text-[#1f1d1a]"
+              className="hg-tap text-[#6a635c] underline underline-offset-4 transition hover:text-[#1f1d1a]"
             >
               justin@hourglassdiamonds.com
             </a>

@@ -37,7 +37,7 @@ export default function EngagementRingsHeroActions() {
       <Link
         href="/concierge"
         onClick={() => trackConsultationCtaClicked("engagement_rings:hero")}
-        className="text-[0.92rem] text-[#6b5048] underline underline-offset-4 transition-colors hover:text-[#1f1d1a]"
+        className="hg-tap text-[0.92rem] text-[#6b5048] underline underline-offset-4 transition-colors hover:text-[#1f1d1a]"
       >
         Begin the Conversation
       </Link>

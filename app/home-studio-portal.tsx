@@ -448,7 +448,7 @@ function StudioCtaButton() {
       </div>
       <Link
         href="/diamond-studio"
-        className="relative z-[1] inline-flex items-center gap-2 rounded-full border border-[#ece4da]/70 bg-[rgba(255,252,248,0.94)] px-6 py-3 text-[11px] uppercase tracking-[0.26em] text-[#5c534a] shadow-[0_2px_10px_rgba(48,36,28,0.04)] backdrop-blur-[6px] transition-colors duration-300 hover:bg-[rgba(255,252,248,0.98)] hover:text-[#2b2723] md:px-5 md:py-2.5 md:text-[10px] md:tracking-[0.28em]"
+        className="relative z-[1] inline-flex min-h-11 items-center gap-2 rounded-full border border-[#ece4da]/70 bg-[rgba(255,252,248,0.94)] px-6 py-3 text-[11px] uppercase tracking-[0.26em] text-[#5c534a] shadow-[0_2px_10px_rgba(48,36,28,0.04)] backdrop-blur-[6px] transition-colors duration-300 hover:bg-[rgba(255,252,248,0.98)] hover:text-[#2b2723] md:text-[10px] md:tracking-[0.28em]"
       >
         Enter →
       </Link>

@@ -211,7 +211,7 @@ function HeroSplitCard({
         <p className="mt-6 max-w-[33ch] text-[0.93rem] leading-[1.84] text-[#5e5650] md:mt-7 md:text-[0.95rem] md:leading-[1.88]">
           {item.supporting}
         </p>
-        <footer className="mt-6 text-[9px] uppercase tracking-[0.36em] text-[#948a7e] md:mt-7">
+        <footer className="mt-6 text-[10px] uppercase tracking-[0.34em] text-[#948a7e] md:mt-7">
           {item.attribution}
         </footer>
       </blockquote>
@@ -352,7 +352,7 @@ function BreathingQuote({
           className="block h-px w-10 bg-gradient-to-r from-transparent via-[#d4c8ba]/90 to-transparent"
           aria-hidden
         />
-        <span className="text-[9px] uppercase tracking-[0.36em] text-[#877d72]">
+        <span className="text-[10px] uppercase tracking-[0.34em] text-[#877d72]">
           {attribution}
         </span>
       </figcaption>
@@ -451,18 +451,18 @@ export default function WhisperedPraisePage() {
           <Header />
         </div>
 
-        <section className="border-b border-[#e4dbcf] pb-28 pt-24 md:pb-48 md:pt-32">
+        <section className="border-b border-[#e4dbcf] pb-20 pt-16 md:pb-48 md:pt-32">
           <div className="whispered-enter-delay mx-auto max-w-[860px] text-center">
             <p className="text-[10px] uppercase tracking-[0.36em] text-[#8a8177]">
               Whispered Praise
             </p>
             <h1
-              className="mx-auto mt-8 max-w-[17ch] font-serif text-[2.15rem] font-normal leading-[1.14] tracking-[-0.02em] text-[#1f1d1a] md:mt-10 md:max-w-[18ch] md:text-[3rem] md:leading-[1.1]"
+              className="mx-auto mt-6 max-w-[17ch] font-serif text-[1.85rem] font-normal leading-[1.16] tracking-[-0.02em] text-[#1f1d1a] min-[390px]:text-[2.15rem] min-[390px]:leading-[1.14] md:mt-10 md:max-w-[18ch] md:text-[3rem] md:leading-[1.1]"
               style={{ textWrap: "balance" }}
             >
               Quiet words from people who trusted us with something meaningful.
             </h1>
-            <p className="mx-auto mt-10 max-w-[34rem] text-[1.08rem] leading-[2] text-[#5a534c] md:mt-12 md:text-[1.12rem]">
+            <p className="mx-auto mt-7 max-w-[34rem] text-[1rem] leading-[1.9] text-[#5a534c] md:mt-12 md:text-[1.12rem] md:leading-[2]">
               A collection of client reflections from proposals, redesigns, heirloom
               projects, and custom pieces — shared with the same quiet care that
               shaped the work itself.
@@ -470,7 +470,7 @@ export default function WhisperedPraisePage() {
           </div>
         </section>
 
-        <section className="pb-28 pt-12 md:pb-44 md:pt-16">
+        <section className="pb-20 pt-10 md:pb-44 md:pt-16">
           <HeroSplitCard
             item={TESTIMONIALS["If I could leave 100 stars, I would."]}
             imageSide="left"
@@ -529,34 +529,34 @@ export default function WhisperedPraisePage() {
           </div>
         </section>
 
-        <section className="relative mt-12 border-t border-[#e4dbcf]/65 pt-40 pb-28 md:mt-16 md:pt-60 md:pb-36">
+        <section className="relative mt-10 border-t border-[#e4dbcf]/65 pt-24 pb-20 md:mt-16 md:pt-60 md:pb-36">
           <div
             className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#ddd2c4]/80 to-transparent"
             aria-hidden
           />
           <div className="mx-auto max-w-[600px] text-center">
             <h2
-              className="mx-auto max-w-[19ch] font-serif text-[1.7rem] font-normal leading-[1.12] tracking-[-0.02em] text-[#1f1d1a] md:max-w-[20ch] md:text-[2.25rem] md:leading-[1.1]"
+              className="mx-auto max-w-[19ch] font-serif text-[1.55rem] font-normal leading-[1.14] tracking-[-0.02em] text-[#1f1d1a] min-[390px]:text-[1.7rem] min-[390px]:leading-[1.12] md:max-w-[20ch] md:text-[2.25rem] md:leading-[1.1]"
               style={{ textWrap: "balance" }}
             >
               A calmer way to create something lasting.
             </h2>
-            <p className="mx-auto mt-10 max-w-[29rem] text-[1.08rem] leading-[2] text-[#585049] md:max-w-[30rem]">
+            <p className="mx-auto mt-7 max-w-[29rem] text-[1rem] leading-[1.9] text-[#585049] md:mt-10 md:max-w-[30rem] md:text-[1.08rem] md:leading-[2]">
               The right ring should feel considered from every angle — the stone,
               the setting, the story, and the experience around it. Hourglass was
               built for clients who want thoughtful guidance, refined sourcing, and
               a process that feels personal from the first conversation.
             </p>
-            <div className="mt-16 flex flex-col items-center justify-center gap-7 sm:flex-row sm:gap-10">
+            <div className="mt-12 flex flex-col items-center justify-center gap-5 sm:flex-row sm:gap-10 md:mt-16 md:gap-10">
               <ConsultationCtaLink
                 location="whispered_praise:footer"
-                className="inline-flex rounded-full border border-[#cfc3b4] bg-[#f7f2eb]/30 px-9 py-3.5 text-[10.5px] uppercase tracking-[0.3em] text-[#5f574f] transition-[color,background-color,border-color,box-shadow,transform] duration-700 ease-out hover:-translate-y-px hover:border-[#b8a896] hover:bg-white/70 hover:text-[#3d3832] hover:shadow-[0_10px_32px_rgba(48,36,28,0.08)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-hg-focus focus-visible:ring-offset-2 focus-visible:ring-offset-hg-ivory"
+                className="inline-flex min-h-11 items-center rounded-full border border-[#cfc3b4] bg-[#f7f2eb]/30 px-9 py-3.5 text-[10.5px] uppercase tracking-[0.3em] text-[#5f574f] transition-[color,background-color,border-color,box-shadow,transform] duration-700 ease-out hover:-translate-y-px hover:border-[#b8a896] hover:bg-white/70 hover:text-[#3d3832] hover:shadow-[0_10px_32px_rgba(48,36,28,0.08)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-hg-focus focus-visible:ring-offset-2 focus-visible:ring-offset-hg-ivory"
               >
                 Begin the Conversation
               </ConsultationCtaLink>
               <Link
                 href="/diamond-studio"
-                className="rounded-sm px-2 text-[10.5px] uppercase tracking-[0.28em] text-[#756d64] transition-[color,opacity] duration-700 ease-out hover:text-[#1f1d1a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-hg-focus focus-visible:ring-offset-2 focus-visible:ring-offset-hg-ivory"
+                className="inline-flex min-h-11 items-center rounded-sm px-2 text-[10.5px] uppercase tracking-[0.28em] text-[#756d64] transition-[color,opacity] duration-700 ease-out hover:text-[#1f1d1a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-hg-focus focus-visible:ring-offset-2 focus-visible:ring-offset-hg-ivory"
               >
                 Explore the Diamond Studio
               </Link>
