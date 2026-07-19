@@ -1,40 +1,99 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* ── Hourglass brand tokens ─────────────────────────────────────────────
+     Canonical values consolidated from the July 2026 cohesion audit
+     (docs/cohesion-polish-audit-2026-07.md). Near-duplicate hexes
+     (#1f1d1a / #1d1b18 → ink, #e8e2d9 → line, …) normalize to these. */
 
-  /* Hourglass brand surface system (marketing parchment) */
+  /* Surfaces */
   --hg-ivory: #efe8de;
   --hg-body: #f7f3ee;
   --hg-surface: #f8f3eb;
   --hg-surface-soft: rgba(255, 255, 255, 0.42);
+  --hg-surface-dark: #2b2723; /* alias of charcoal for dark panels/CTAs */
+
+  /* Ink */
   --hg-ink: #1c1b1a;
   --hg-charcoal: #2b2723;
   --hg-muted: #756b61;
+  --hg-ink-muted: var(--hg-muted);
   --hg-eyebrow: #8a8177;
+
+  /* Lines / borders */
   --hg-line: #e4dbcf;
   --hg-line-strong: #d9cdbd;
+  --hg-border: var(--hg-line);
+
+  /* Accents */
   --hg-gold: #ad9164;
   --hg-gold-deep: #987648;
-  --hg-focus-ring: #cbbda9;
+  --hg-accent: var(--hg-gold);
 
-  /* Studio shell height budget (set by DiamondStudioBrandChrome) */
+  /* Focus indicator — deep gold; ≥3:1 contrast on both ivory (#efe8de)
+     and charcoal (#2b2723) per WCAG 1.4.11. Replaces #cbbda9 (~1.5:1). */
+  --hg-focus: var(--hg-gold-deep);
+  /* Legacy alias — studio CSS references --hg-focus-ring. */
+  --hg-focus-ring: var(--hg-focus);
+
+  /* Radii — the three card-surface radii already dominant in the codebase */
+  --hg-radius-panel: 18px;
+  --hg-radius-media: 22px;
+  --hg-radius-card: 28px;
+
+  /* Shadows */
+  --hg-shadow-soft: 0 6px 18px rgba(48, 36, 28, 0.04);
+  --hg-shadow-lifted: 0 26px 60px rgba(48, 36, 28, 0.12);
+
+  /* Content widths */
+  --hg-content-max: 1200px;
+  --hg-prose-max: 760px;
+
+  /* Motion — canonical duration/easing already dominant in the codebase */
+  --hg-motion-ui: 300ms;
+  --hg-motion-enter: 820ms;
+  --hg-ease: cubic-bezier(0.28, 0.11, 0.22, 1);
+
+  /* Base document theme resolves to brand tokens.
+     (Previously #ffffff/#171717 with an inert prefers-color-scheme flip
+     that fought the parchment brand — removed per audit C1.) */
+  --background: var(--hg-body);
+  --foreground: var(--hg-ink);
+
+  /* Studio shell height budget (fallback; measured at runtime) */
   --hg-studio-header-h: 7.5rem;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+
+  /* Brand color utilities: bg-hg-ivory, text-hg-ink, border-hg-line, … */
+  --color-hg-ivory: var(--hg-ivory);
+  --color-hg-body: var(--hg-body);
+  --color-hg-surface: var(--hg-surface);
+  --color-hg-surface-dark: var(--hg-surface-dark);
+  --color-hg-ink: var(--hg-ink);
+  --color-hg-ink-muted: var(--hg-ink-muted);
+  --color-hg-charcoal: var(--hg-charcoal);
+  --color-hg-eyebrow: var(--hg-eyebrow);
+  --color-hg-line: var(--hg-line);
+  --color-hg-line-strong: var(--hg-line-strong);
+  --color-hg-gold: var(--hg-gold);
+  --color-hg-gold-deep: var(--hg-gold-deep);
+  --color-hg-focus: var(--hg-focus);
+
+  /* rounded-hg-panel / rounded-hg-media / rounded-hg-card */
+  --radius-hg-panel: var(--hg-radius-panel);
+  --radius-hg-media: var(--hg-radius-media);
+  --radius-hg-card: var(--hg-radius-card);
+
+  /* shadow-hg-soft / shadow-hg-lifted */
+  --shadow-hg-soft: var(--hg-shadow-soft);
+  --shadow-hg-lifted: var(--hg-shadow-lifted);
+
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 html {
@@ -48,6 +107,35 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+/* ── Accessible focus (WCAG 1.4.11 & 2.4.7) ──
+   Defaults live in the `base` layer so Tailwind utilities (`@layer
+   utilities`) — e.g. `rounded-full`, `focus-visible:outline-none`, component
+   focus rings — always override them. Mouse clicks do not trigger
+   :focus-visible, so pointer UX is unchanged. */
+@layer base {
+  /* Controls (buttons, inputs, sliders) keep a close 2px ring; the outline
+     follows the element's own radius (pills stay pill-shaped). */
+  :where(button, input, select, textarea, [role="slider"], [role="tab"], [tabindex]):focus-visible {
+    outline: 2px solid var(--hg-focus);
+    outline-offset: 2px;
+  }
+
+  /* Text links, nav links, and disclosure summaries get a softer treatment:
+     more air around the letters and gently rounded corners, so keyboard
+     focus reads as an intentional halo rather than a tight box against the
+     text. Component radius/focus utilities still win (they layer higher). */
+  :where(a, summary):focus-visible {
+    outline: 2px solid var(--hg-focus);
+    outline-offset: 4px;
+    border-radius: 6px;
+  }
+
+  /* Skip-link target — programmatic focus only; no ring on the region. */
+  #main-content:focus {
+    outline: none;
+  }
+}
+
 /* ── Luxury motion pass ── */
 
 .luxury-reveal {
@@ -55,9 +143,9 @@ body {
   transform: translateY(12px);
   filter: blur(2px);
   transition:
-    opacity 820ms cubic-bezier(0.28, 0.11, 0.22, 1),
-    transform 820ms cubic-bezier(0.28, 0.11, 0.22, 1),
-    filter 820ms cubic-bezier(0.28, 0.11, 0.22, 1);
+    opacity var(--hg-motion-enter) var(--hg-ease),
+    transform var(--hg-motion-enter) var(--hg-ease),
+    filter var(--hg-motion-enter) var(--hg-ease);
 }
 
 .luxury-reveal--visible {
@@ -113,7 +201,7 @@ body {
 }
 
 .cta-glimmer--active::after {
-  animation: cta-glimmer-sweep 1.35s cubic-bezier(0.28, 0.11, 0.22, 1) forwards;
+  animation: cta-glimmer-sweep 1.35s var(--hg-ease) forwards;
 }
 
 @keyframes cta-glimmer-sweep {

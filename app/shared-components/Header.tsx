@@ -33,15 +33,15 @@ function navLinkClass(
   emphasized?: boolean,
 ): string {
   if (isActive) {
-    return "font-medium text-[#1f1d1a]";
+    return "font-medium text-hg-ink";
   }
   if (emphasized) {
-    return "font-medium text-[#35312c] underline-offset-4 transition-colors duration-300 hover:text-[#1f1d1a] hover:underline";
+    return "font-medium text-[#35312c] underline-offset-4 transition-colors duration-300 hover:text-hg-ink hover:underline";
   }
   if (featured) {
-    return "font-medium text-[#35312c] hover:text-[#1f1d1a]";
+    return "font-medium text-[#35312c] hover:text-hg-ink";
   }
-  return "text-[#6a635c] hover:text-[#1f1d1a]";
+  return "text-[#6a635c] hover:text-hg-ink";
 }
 
 function BrandMark() {
@@ -71,7 +71,7 @@ export default function Header({ currentPage = "" }: HeaderProps) {
   }, [mobileMenuOpen]);
 
   return (
-    <header className="sticky top-0 z-50 w-full max-w-[100vw] overflow-x-clip overflow-y-visible border-b border-[#e4dbcf]/55 bg-[#efe8de]/88 backdrop-blur-[10px] supports-[backdrop-filter]:bg-[#efe8de]/78">
+    <header className="sticky top-0 z-50 w-full max-w-[100vw] overflow-x-clip overflow-y-visible border-b border-hg-line/55 bg-hg-ivory/88 backdrop-blur-[10px] supports-[backdrop-filter]:bg-hg-ivory/78">
       <div className="relative mx-auto box-border flex w-full min-w-0 max-w-[1200px] flex-wrap items-center justify-between gap-x-4 gap-y-0 px-0 py-3.5 md:flex-nowrap md:items-end md:gap-8 md:py-0 md:pb-6 md:pt-7">
         <Link
           href="/"
@@ -87,7 +87,7 @@ export default function Header({ currentPage = "" }: HeaderProps) {
             aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
             aria-expanded={mobileMenuOpen}
             onClick={() => setMobileMenuOpen((open) => !open)}
-            className="inline-flex min-h-[44px] items-center justify-center rounded-full border border-[#e4dbcf]/90 bg-[#f7f3ec]/80 px-4 py-2.5 text-[11px] uppercase tracking-[0.22em] text-[#625b54] transition-colors duration-300 hover:text-[#1f1d1a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#cbbda9]/80 focus-visible:ring-offset-2 focus-visible:ring-offset-[#efe8de]"
+            className="inline-flex min-h-[44px] items-center justify-center rounded-full border border-hg-line/90 bg-[#f7f3ec]/80 px-4 py-2.5 text-[11px] uppercase tracking-[0.22em] text-[#625b54] transition-colors duration-300 hover:text-hg-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-hg-focus focus-visible:ring-offset-2 focus-visible:ring-offset-hg-ivory"
           >
             Menu
           </button>
@@ -105,7 +105,7 @@ export default function Header({ currentPage = "" }: HeaderProps) {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`shrink-0 whitespace-nowrap text-[12px] tracking-[0.04em] transition-colors duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#cbbda9] focus-visible:ring-offset-2 focus-visible:ring-offset-[#efe8de] lg:text-[13px] ${navLinkClass(
+                className={`shrink-0 whitespace-nowrap text-[12px] tracking-[0.04em] transition-colors duration-300 lg:text-[13px] ${navLinkClass(
                   isActive,
                   isFeaturedNav(item.href),
                   isEmphasizedNav(item.href),
@@ -126,15 +126,15 @@ export default function Header({ currentPage = "" }: HeaderProps) {
           <div
             role="menu"
             aria-label="Mobile navigation"
-            className="z-[80] mt-4 w-full min-w-0 basis-full overflow-hidden rounded-[18px] border border-[#e4dbcf] bg-[#f6f2eb]/95 shadow-[0_26px_60px_rgba(48,36,28,0.12)] ring-1 ring-[#e6ddd1]/60 backdrop-blur-[12px] md:hidden"
+            className="z-[80] mt-4 w-full min-w-0 basis-full overflow-hidden rounded-hg-panel border border-hg-line bg-[#f6f2eb]/95 shadow-hg-lifted ring-1 ring-[#e6ddd1]/60 backdrop-blur-[12px] md:hidden"
           >
             <div className="px-4 py-3.5">
-              <p className="text-[10px] uppercase tracking-[0.28em] text-[#8a8177]">
+              <p className="text-[10px] uppercase tracking-[0.28em] text-hg-eyebrow">
                 Navigation
               </p>
             </div>
 
-            <div className="border-t border-[#e4dbcf]/80">
+            <div className="border-t border-hg-line/80">
               {NAV_ITEMS.map((item) => {
                 const key = item.href.replace("/", "");
                 const isActive = currentPage === key;
@@ -150,7 +150,7 @@ export default function Header({ currentPage = "" }: HeaderProps) {
                       }
                       setMobileMenuOpen(false);
                     }}
-                    className={`block px-4 py-3.5 text-[13px] tracking-[0.02em] transition-colors duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#cbbda9] focus-visible:ring-inset ${navLinkClass(
+                    className={`block px-4 py-3.5 text-[13px] tracking-[0.02em] transition-colors duration-300 focus-visible:rounded-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-hg-focus ${navLinkClass(
                       isActive,
                       isFeaturedNav(item.href),
                       isEmphasizedNav(item.href),

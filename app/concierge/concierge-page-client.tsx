@@ -133,9 +133,9 @@ export default function ConciergeFormClient() {
   }, [searchParams]);
 
   const activePill =
-    "inline-flex min-h-[44px] items-center rounded-full border border-[#2b2723] bg-[#2b2723] px-3.5 py-2 text-[11px] uppercase tracking-[0.18em] text-white shadow-[0_10px_20px_rgba(43,39,35,0.10)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#cbbda9] focus-visible:ring-offset-2 focus-visible:ring-offset-[#efe8de]";
+    "inline-flex min-h-[44px] items-center rounded-full border border-[#2b2723] bg-[#2b2723] px-3.5 py-2 text-[11px] uppercase tracking-[0.18em] text-white shadow-[0_10px_20px_rgba(43,39,35,0.10)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-hg-focus focus-visible:ring-offset-2 focus-visible:ring-offset-hg-ivory";
   const pill =
-    "inline-flex min-h-[44px] items-center rounded-full border border-[#ddd1c2] bg-white/82 px-3.5 py-2 text-[11px] uppercase tracking-[0.18em] text-[#6f665d] transition duration-200 hover:border-[#ccbda9] hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#cbbda9] focus-visible:ring-offset-2 focus-visible:ring-offset-[#efe8de]";
+    "inline-flex min-h-[44px] items-center rounded-full border border-[#ddd1c2] bg-white/82 px-3.5 py-2 text-[11px] uppercase tracking-[0.18em] text-[#6f665d] transition duration-200 hover:border-[#ccbda9] hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-hg-focus focus-visible:ring-offset-2 focus-visible:ring-offset-hg-ivory";
 
   const directionNote = useMemo(() => {
     if (direction === "Modern Minimal") {
@@ -369,7 +369,7 @@ export default function ConciergeFormClient() {
   const fieldLabel =
     "text-[11px] uppercase tracking-[0.28em] text-[#857b70]";
   const inputClass =
-    "mt-3 w-full rounded-[18px] border border-[#ddd4c9] bg-white/78 px-4 py-3.5 text-sm text-[#3c3834] outline-none placeholder:text-[#8a8177] focus-visible:border-[#cbbda9] focus-visible:ring-2 focus-visible:ring-[#cbbda9]/70";
+    "mt-3 w-full rounded-[18px] border border-[#ddd4c9] bg-white/78 px-4 py-3.5 text-sm text-[#3c3834] outline-none placeholder:text-[#8a8177] focus-visible:border-hg-focus focus-visible:ring-2 focus-visible:ring-hg-focus";
   const inputInvalidClass =
     "mt-3 w-full rounded-[18px] border border-[#c9897c] bg-white/78 px-4 py-3.5 text-sm text-[#3c3834] outline-none placeholder:text-[#8a8177] focus-visible:ring-2 focus-visible:ring-[#c9897c]/50";
 
@@ -401,14 +401,14 @@ export default function ConciergeFormClient() {
         <div className="mt-8 flex flex-col items-start gap-4 sm:flex-row sm:items-center">
           <Link
             href="/diamond-guide"
-            className="inline-flex min-h-[44px] items-center justify-center rounded-full border border-[#2b2723] bg-[#2b2723] px-7 py-3 text-sm tracking-wide text-white transition hover:translate-y-[-1px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#cbbda9] focus-visible:ring-offset-2 focus-visible:ring-offset-[#efe8de]"
+            className="inline-flex min-h-[44px] items-center justify-center rounded-full border border-[#2b2723] bg-[#2b2723] px-7 py-3 text-sm tracking-wide text-white transition hover:translate-y-[-1px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-hg-focus focus-visible:ring-offset-2 focus-visible:ring-offset-hg-ivory"
           >
             Return to the Diamond Guide
           </Link>
           <button
             type="button"
             onClick={resetForAnotherInquiry}
-            className="inline-flex min-h-[44px] items-center justify-center rounded-full border border-[#d6ccc0] bg-transparent px-5 py-3 text-[13px] tracking-wide text-[#6f665d] transition hover:border-[#cbbda9] hover:text-[#1f1d1a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#cbbda9] focus-visible:ring-offset-2 focus-visible:ring-offset-[#efe8de]"
+            className="inline-flex min-h-[44px] items-center justify-center rounded-full border border-[#d6ccc0] bg-transparent px-5 py-3 text-[13px] tracking-wide text-[#6f665d] transition hover:border-[#cbbda9] hover:text-[#1f1d1a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-hg-focus focus-visible:ring-offset-2 focus-visible:ring-offset-hg-ivory"
           >
             Start another inquiry
           </button>
@@ -751,7 +751,7 @@ export default function ConciergeFormClient() {
           <button
             type="submit"
             disabled={submitState === "submitting"}
-            className="mt-7 inline-flex min-h-[44px] items-center justify-center rounded-full bg-[#2b2723] px-7 py-3 text-sm tracking-wide text-white shadow-[0_14px_28px_rgba(43,39,35,0.12)] transition hover:translate-y-[-1px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#cbbda9] focus-visible:ring-offset-2 focus-visible:ring-offset-[#efe8de] disabled:cursor-not-allowed disabled:opacity-70"
+            className="mt-7 inline-flex min-h-[44px] items-center justify-center rounded-full bg-[#2b2723] px-7 py-3 text-sm tracking-wide text-white shadow-[0_14px_28px_rgba(43,39,35,0.12)] transition hover:translate-y-[-1px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-hg-focus focus-visible:ring-offset-2 focus-visible:ring-offset-hg-ivory disabled:cursor-not-allowed disabled:opacity-70"
           >
             {submitState === "submitting"
               ? "Sending..."

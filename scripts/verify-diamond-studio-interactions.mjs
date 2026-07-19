@@ -169,6 +169,67 @@ async function testViewport(browser, vp) {
     );
   }
 
+  // Slider keyboard accessibility (WCAG 2.1.1) — carat track
+  const ctTrack = page.locator(".dts-slider--carat .dts-track");
+  if (await ctTrack.count()) {
+    await ctTrack.scrollIntoViewIfNeeded();
+    assert(
+      (await ctTrack.getAttribute("role")) === "slider",
+      `${label}: carat track missing role=slider`,
+    );
+    const kbBefore = await readState(page);
+    await ctTrack.focus();
+    await page.keyboard.press("ArrowRight");
+    await page.waitForTimeout(200);
+    const kbAfter = await readState(page);
+    assert(
+      kbAfter.caratVal !== kbBefore.caratVal,
+      `${label}: carat unchanged after ArrowRight (${kbBefore.caratVal})`,
+    );
+    const valuenow = await ctTrack.getAttribute("aria-valuenow");
+    assert(
+      Number(valuenow) === Number(kbAfter.caratVal),
+      `${label}: carat aria-valuenow=${valuenow} != displayed ${kbAfter.caratVal}`,
+    );
+    await page.keyboard.press("Home");
+    await page.waitForTimeout(200);
+    const kbHome = await readState(page);
+    assert(
+      Number(kbHome.caratVal) === 1,
+      `${label}: carat Home expected 1.00, got ${kbHome.caratVal}`,
+    );
+  }
+
+  // Slider keyboard accessibility — ring size track
+  const fsTrack = page.locator(".dts-slider--ring .dts-track");
+  if (await fsTrack.count()) {
+    await fsTrack.scrollIntoViewIfNeeded();
+    const kbBefore = await readState(page);
+    await fsTrack.focus();
+    await page.keyboard.press("ArrowLeft");
+    await page.waitForTimeout(200);
+    const kbAfter = await readState(page);
+    assert(
+      kbAfter.ringVal !== kbBefore.ringVal,
+      `${label}: ring size unchanged after ArrowLeft (${kbBefore.ringVal})`,
+    );
+  }
+
+  // Slider keyboard accessibility — band width track
+  const bwTrackKb = page.locator(".dts-slider--band .dts-track");
+  if (await bwTrackKb.count()) {
+    await bwTrackKb.scrollIntoViewIfNeeded();
+    const kbBefore = await readState(page);
+    await bwTrackKb.focus();
+    await page.keyboard.press("End");
+    await page.waitForTimeout(200);
+    const kbAfter = await readState(page);
+    assert(
+      kbAfter.bandVal !== kbBefore.bandVal && kbAfter.bandVal?.includes("5mm"),
+      `${label}: band width End expected 5mm, got ${kbAfter.bandVal}`,
+    );
+  }
+
   // Top nav hrefs + navigation
   for (const [navLabel, expectedPath] of [
     ["See It On Your Hand", "/diamond-shape-studio"],

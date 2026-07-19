@@ -16,7 +16,7 @@ type ConversationsHubClientProps = {
 };
 
 const WATCH_CTA_CLASS =
-  "inline-flex min-h-11 items-center justify-center rounded-full border border-[#d9cdbd] bg-white/80 px-7 py-3 text-[11px] uppercase tracking-[0.28em] text-[#6f665d] transition-all duration-500 ease-out hover:-translate-y-px hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#cbbda9]";
+  "inline-flex min-h-11 items-center justify-center rounded-full border border-[#d9cdbd] bg-white/80 px-7 py-3 text-[11px] uppercase tracking-[0.28em] text-[#6f665d] transition-all duration-500 ease-out hover:-translate-y-px hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-hg-focus";
 
 function FeaturedMeta({ episode }: { episode: ConversationEpisode }) {
   const seasonLabel = formatEpisodeLabel(episode);
@@ -60,7 +60,7 @@ function FeaturedEpisode({
           className={[
             "group relative block aspect-[16/9] w-full overflow-hidden rounded-[22px] border border-[#e4dbcf] bg-[#1c1a18]",
             "shadow-[0_14px_40px_rgba(49,38,29,0.08)]",
-            "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#cbbda9]",
+            "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-hg-focus",
             reducedMotion ? "" : "transition-transform duration-700 hover:-translate-y-0.5",
           ].join(" ")}
         >
@@ -108,7 +108,7 @@ function FeaturedEpisode({
           >
             <Link
               href={href}
-              className="no-underline transition-colors hover:text-[#3a332c] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#cbbda9]"
+              className="no-underline transition-colors hover:text-[#3a332c] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-hg-focus"
             >
               {episode.title}
             </Link>
@@ -142,7 +142,7 @@ function EpisodeListItem({ episode }: { episode: ConversationEpisode }) {
     <li className="border-t border-[#e4dbcf] py-8 first:border-t-0 md:py-9">
       <Link
         href={episodePath(episode.slug)}
-        className="group grid items-center gap-6 no-underline md:grid-cols-[11rem_1fr] md:gap-10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#cbbda9]"
+        className="group grid items-center gap-6 no-underline md:grid-cols-[11rem_1fr] md:gap-10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-hg-focus"
       >
         <div
           className={[

@@ -15,7 +15,7 @@
     "generate:diamond-intelligence-og": "node scripts/generate-diamond-intelligence-og.mjs",
     "generate:homepage-og": "node scripts/generate-homepage-og.mjs",
     "generate:diamond-cad-assets": "node scripts/generate-diamond-cad-assets.mjs",
-    "test:diamond-studio": "npx tsx --test app/diamond-studio/components/diamond-cad.test.ts",
+    "test:diamond-studio": "npx tsx --test app/diamond-studio/components/diamond-cad.test.ts app/diamond-studio/slider-keyboard.test.ts",
     "verify:diamond-studio": "node scripts/verify-diamond-studio-interactions.mjs",
     "intelligence:google-oauth": "node scripts/google-oauth-setup.mjs",
     "test:igi": "npx tsx --test lib/calibration-library/lg773657228.regression.test.ts lib/calibration-library/igi-diagram-image-ocr.test.ts lib/diamond-intelligence/igi-natural-pdf-regression.test.ts",

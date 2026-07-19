@@ -2,7 +2,7 @@ import Header from "../shared-components/Header";
 
 export default function PrivacyPage() {
   return (
-    <main className="min-h-screen bg-[#efe8de] text-[#1c1b1a]">
+    <div className="min-h-screen bg-hg-ivory text-hg-ink">
       <div className="mx-auto max-w-[1200px] px-6 md:px-10">
         <Header />
       </div>
@@ -51,6 +51,6 @@ export default function PrivacyPage() {
           </p>
         </div>
       </section>
-    </main>
+    </div>
   );
 }

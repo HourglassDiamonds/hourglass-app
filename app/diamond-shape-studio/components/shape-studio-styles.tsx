@@ -268,7 +268,7 @@ export function ShapeStudioStyles() {
         min-width:min(100%, 220px);
       }
       .dss-entry-card .dss-stage-empty-btn:focus-visible{
-        outline:2px solid color-mix(in srgb, var(--gold-warm) 55%, transparent);
+        outline:2px solid var(--hg-focus-ring, #987648);
         outline-offset:2px;
       }
       /* Wide layout: QR relay entry. Narrow: same-device local entry. */
@@ -368,7 +368,7 @@ export function ShapeStudioStyles() {
         min-height:44px;
       }
       .dss-entry-secondary-link:focus-visible{
-        outline:2px solid color-mix(in srgb, var(--gold-warm) 55%, transparent);
+        outline:2px solid var(--hg-focus-ring, #987648);
         outline-offset:2px;
         border-radius:4px;
       }
@@ -799,7 +799,7 @@ export function ShapeStudioStyles() {
         background:oklch(from var(--hairline-soft) l c h / 0.92);
       }
       .dss-shape-chip:focus-visible{
-        outline:2px solid color-mix(in srgb, var(--gold-warm) 55%, transparent);
+        outline:2px solid var(--hg-focus-ring, #987648);
         outline-offset:2px;
       }
       .dss-shape-chip.is-selected{
@@ -864,7 +864,7 @@ export function ShapeStudioStyles() {
         outline:none;
       }
       .dss-track:focus-visible{
-        box-shadow:0 0 0 2px color-mix(in srgb, var(--gold-warm) 55%, transparent);
+        box-shadow:0 0 0 2px var(--hg-focus-ring, #987648);
         border-radius:8px;
       }
       .dss-track::before{
@@ -922,7 +922,7 @@ export function ShapeStudioStyles() {
         font-weight:600;
       }
       .dss-orientation-pill:focus-visible{
-        outline:2px solid color-mix(in srgb, var(--gold-warm) 55%, transparent);
+        outline:2px solid var(--hg-focus-ring, #987648);
         outline-offset:2px;
       }
       .dss-mode-row{ display:flex; gap:6px; }

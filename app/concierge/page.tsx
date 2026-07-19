@@ -24,7 +24,7 @@ export default function ConciergePage() {
         <div className="mx-auto max-w-[1200px] px-6 md:px-10">
           <Header currentPage="concierge" />
 
-          <main>
+          <div>
             <section className="border-b border-[#e4dbcf] pb-[72px] pt-[52px] md:pb-[88px] md:pt-[64px]">
               <ConciergeIntro />
               <ConciergeTrustStrip />
@@ -33,7 +33,7 @@ export default function ConciergePage() {
               </Suspense>
               <ConciergeSupportingLinks />
             </section>
-          </main>
+          </div>
         </div>
       </div>
     </>

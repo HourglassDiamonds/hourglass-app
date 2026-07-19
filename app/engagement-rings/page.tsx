@@ -23,7 +23,7 @@ export default function EngagementRingsPage() {
         <div className="mx-auto max-w-[1200px] px-6 md:px-10">
           <Header currentPage="engagement-rings" />
 
-          <main>
+          <div>
             <section className="border-b border-[#e4dbcf] pb-[48px] pt-[52px] md:pb-[56px] md:pt-[64px]">
               <EngagementRingsIntro />
             </section>
@@ -31,7 +31,7 @@ export default function EngagementRingsPage() {
             <EngagementRingsRingStudioSection />
             <EngagementRingsEditorial />
             <EngagementRingsClosingCta />
-          </main>
+          </div>
         </div>
       </div>
     </>

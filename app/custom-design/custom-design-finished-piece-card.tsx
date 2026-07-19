@@ -8,7 +8,7 @@ import {
 } from "./custom-design-media-config";
 
 const MEDIA_PANEL_CLASS =
-  "group relative block aspect-square w-full overflow-hidden rounded-[22px] border border-[#ddd3c6] bg-[#f5f0e9] transition-[border-color,box-shadow] duration-300 hover:border-[#cfc4b4] hover:shadow-[0_10px_28px_-14px_rgba(31,29,26,0.14)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#cbbda9] focus-visible:ring-offset-2 focus-visible:ring-offset-[#efe8de]";
+  "group relative block aspect-square w-full overflow-hidden rounded-[22px] border border-[#ddd3c6] bg-[#f5f0e9] transition-[border-color,box-shadow] duration-300 hover:border-[#cfc4b4] hover:shadow-[0_10px_28px_-14px_rgba(31,29,26,0.14)] focus:outline-none focus-visible:ring-2 focus-visible:ring-hg-focus focus-visible:ring-offset-2 focus-visible:ring-offset-hg-ivory";
 
 const MEDIA_WASH_CLASS =
   "pointer-events-none absolute inset-0 bg-[#f5f0e9] mix-blend-multiply";

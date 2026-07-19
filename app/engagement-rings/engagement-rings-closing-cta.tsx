@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Button from "../shared-components/Button";
 import CTAGlimmer from "../shared-components/motion/CTAGlimmer";
 import { trackConsultationCtaClicked } from "@/lib/consultation-cta";
 
@@ -27,15 +27,14 @@ export default function EngagementRingsClosingCta() {
           </p>
           <div className="mt-6 md:mt-6">
             <CTAGlimmer>
-              <Link
+              <Button
                 href="/concierge"
-                className="inline-flex items-center justify-center rounded-full bg-[#2b2723] px-7 py-3 text-sm tracking-[0.08em] text-white shadow-[0_1px_2px_rgba(0,0,0,0.08)] transition-all duration-300 hover:opacity-95 hover:shadow-[0_2px_6px_rgba(0,0,0,0.12)] focus:outline-none focus:ring-2 focus:ring-[#cbbda9] focus:ring-offset-2 focus:ring-offset-[#efe8de]"
                 onClick={() =>
                   trackConsultationCtaClicked("engagement_rings:footer")
                 }
               >
                 Begin the Conversation
-              </Link>
+              </Button>
             </CTAGlimmer>
           </div>
         </div>

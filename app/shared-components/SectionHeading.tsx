@@ -1,38 +1,53 @@
 import React from "react";
+import Eyebrow from "./Eyebrow";
 
 type SectionHeadingProps = {
   title: string;
-  description?: string;
-  align?: "center" | "left";
   eyebrow?: string;
+  description?: string;
+  /** Heading level — pages use `h1` for intros, `h2` for sections. */
+  as?: "h1" | "h2";
+  align?: "center" | "left";
+  /** Wrapper spacing/width hooks (e.g. `mb-14 max-w-3xl`). */
+  className?: string;
+  /** Title-only hooks (e.g. `max-w-[14ch]`). */
+  titleClassName?: string;
 };
 
+/**
+ * Canonical Hourglass intro/section heading: eyebrow + light display title
+ * (+ optional description). Matches the dominant hand-rolled pattern on
+ * concierge / engagement-rings / custom-design intros. Unlike the previous
+ * version, spacing below the block is owned by the caller.
+ */
 export default function SectionHeading({
   title,
-  description,
-  align = "center",
   eyebrow,
+  description,
+  as: Heading = "h2",
+  align = "left",
+  className,
+  titleClassName,
 }: SectionHeadingProps) {
   return (
     <div
-      className={
-        align === "center"
-          ? "mx-auto mb-14 max-w-3xl text-center"
-          : "mb-14 max-w-2xl"
-      }
+      className={`${align === "center" ? "mx-auto text-center" : ""}${
+        className ? ` ${className}` : ""
+      }`}
     >
-      {eyebrow ? (
-        <div className="mb-4 text-[11px] uppercase tracking-[0.34em] text-[#8a8177]">
-          {eyebrow}
-        </div>
-      ) : null}
+      {eyebrow ? <Eyebrow>{eyebrow}</Eyebrow> : null}
 
-      <h2 className="text-[2rem] font-light leading-[1.12] tracking-[0.015em] text-[#1f1d1a] md:text-[2.45rem]">
+      <Heading
+        className={`${eyebrow ? "mt-4 " : ""}text-[2rem] font-light leading-[1.1] tracking-[0.015em] text-hg-ink md:text-[2.45rem]${
+          titleClassName ? ` ${titleClassName}` : ""
+        }`}
+        style={{ textWrap: "balance" }}
+      >
         {title}
-      </h2>
+      </Heading>
 
       {description ? (
-        <p className="mt-5 text-base leading-8 text-[#6a635c] md:text-lg">
+        <p className="mt-5 max-w-[32rem] text-[1rem] leading-[1.88] text-[#6a635c]">
           {description}
         </p>
       ) : null}

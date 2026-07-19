@@ -69,12 +69,20 @@ export default function RootLayout({
       suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full bg-[#f7f3ee] text-[#1f1d1a]">
+      <body className="min-h-full bg-hg-body text-hg-ink">
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:inline-flex focus:min-h-11 focus:items-center focus:rounded-full focus:border focus:border-hg-line focus:bg-hg-ivory focus:px-5 focus:py-3 focus:text-[12px] focus:tracking-[0.04em] focus:text-hg-ink focus:shadow-hg-lifted"
+        >
+          Skip to main content
+        </a>
         <FacetScintillationRail />
         <GlobalJsonLd />
         <GoogleAnalytics />
         <div className="flex min-h-screen flex-col">
-          <main className="flex-1">{children}</main>
+          <main id="main-content" tabIndex={-1} className="flex-1">
+            {children}
+          </main>
           <Footer />
         </div>
       </body>

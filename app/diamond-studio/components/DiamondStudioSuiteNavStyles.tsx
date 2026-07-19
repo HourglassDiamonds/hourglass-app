@@ -125,8 +125,9 @@ export default function DiamondStudioSuiteNavStyles() {
         pointer-events:none;
       }
       .dts-topnav-hit:focus-visible{
-        outline:2px solid var(--hg-focus-ring, #cbbda9);
-        outline-offset:2px;
+        outline:2px solid var(--hg-focus-ring, #987648);
+        outline-offset:4px;
+        border-radius:6px;
       }
       .dts-topnav-item.is-idle .dts-topnav-hit{
         border-color:color-mix(in srgb, var(--hg-line, #e4dbcf) 70%, transparent);

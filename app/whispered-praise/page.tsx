@@ -550,13 +550,13 @@ export default function WhisperedPraisePage() {
             <div className="mt-16 flex flex-col items-center justify-center gap-7 sm:flex-row sm:gap-10">
               <ConsultationCtaLink
                 location="whispered_praise:footer"
-                className="inline-flex rounded-full border border-[#cfc3b4] bg-[#f7f2eb]/30 px-9 py-3.5 text-[10.5px] uppercase tracking-[0.3em] text-[#5f574f] transition-[color,background-color,border-color,box-shadow,transform] duration-700 ease-out hover:-translate-y-px hover:border-[#b8a896] hover:bg-white/70 hover:text-[#3d3832] hover:shadow-[0_10px_32px_rgba(48,36,28,0.08)] focus:outline-none focus:ring-2 focus:ring-[#cbbda9]/70 focus:ring-offset-2 focus:ring-offset-[#efe8de]"
+                className="inline-flex rounded-full border border-[#cfc3b4] bg-[#f7f2eb]/30 px-9 py-3.5 text-[10.5px] uppercase tracking-[0.3em] text-[#5f574f] transition-[color,background-color,border-color,box-shadow,transform] duration-700 ease-out hover:-translate-y-px hover:border-[#b8a896] hover:bg-white/70 hover:text-[#3d3832] hover:shadow-[0_10px_32px_rgba(48,36,28,0.08)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-hg-focus focus-visible:ring-offset-2 focus-visible:ring-offset-hg-ivory"
               >
                 Begin the Conversation
               </ConsultationCtaLink>
               <Link
                 href="/diamond-studio"
-                className="rounded-sm px-2 text-[10.5px] uppercase tracking-[0.28em] text-[#756d64] transition-[color,opacity] duration-700 ease-out hover:text-[#1f1d1a] focus:outline-none focus:ring-2 focus:ring-[#cbbda9]/70 focus:ring-offset-2 focus:ring-offset-[#efe8de]"
+                className="rounded-sm px-2 text-[10.5px] uppercase tracking-[0.28em] text-[#756d64] transition-[color,opacity] duration-700 ease-out hover:text-[#1f1d1a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-hg-focus focus-visible:ring-offset-2 focus-visible:ring-offset-hg-ivory"
               >
                 Explore the Diamond Studio
               </Link>

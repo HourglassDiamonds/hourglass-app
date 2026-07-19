@@ -24,7 +24,7 @@ export default function CustomDesignPage() {
         <div className="mx-auto max-w-[1200px] px-6 md:px-10">
           <Header currentPage="custom-design" />
 
-          <main>
+          <div>
             <section className="border-b border-[#e4dbcf] pb-[48px] pt-[52px] md:pb-[56px] md:pt-[64px]">
               <CustomDesignIntro />
             </section>
@@ -32,7 +32,7 @@ export default function CustomDesignPage() {
             <CustomDesignProgression />
             <CustomDesignProcess />
             <CustomDesignClosingCta />
-          </main>
+          </div>
         </div>
       </div>
     </>

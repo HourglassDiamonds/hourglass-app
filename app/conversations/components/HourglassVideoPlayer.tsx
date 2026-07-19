@@ -238,7 +238,7 @@ export default function HourglassVideoPlayer({
               aria-label={`Play ${episode.title}`}
               className={[
                 "absolute inset-0 flex items-center justify-center",
-                "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-6px] focus-visible:outline-[#cbbda9]",
+                "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-6px] focus-visible:outline-hg-focus",
               ].join(" ")}
             >
               <span
@@ -348,7 +348,7 @@ export default function HourglassVideoPlayer({
           <p className="text-[0.9rem] leading-[1.6] text-[#efe8de]">{error}</p>
           <button
             type="button"
-            className="mt-3 min-h-11 rounded-full border border-white/25 px-5 text-[10px] uppercase tracking-[0.26em] text-[#f4eee6] transition hover:border-white/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#cbbda9]"
+            className="mt-3 min-h-11 rounded-full border border-white/25 px-5 text-[10px] uppercase tracking-[0.26em] text-[#f4eee6] transition hover:border-white/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hg-focus"
             onClick={() => {
               setError(null);
               setActivated(false);

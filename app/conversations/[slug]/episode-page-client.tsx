@@ -33,7 +33,7 @@ function RelatedResourceCard({
     <Link
       href={link.href}
       aria-label={`${link.eyebrow}: ${link.title}`}
-      className="group block min-h-11 border-t border-[#e4dbcf] py-7 no-underline transition-colors first:border-t-0 md:border-t-0 md:border-l md:border-[#e4dbcf] md:px-8 md:py-3 first:md:border-l-0 first:md:pl-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#cbbda9]"
+      className="group block min-h-11 border-t border-[#e4dbcf] py-7 no-underline transition-colors first:border-t-0 md:border-t-0 md:border-l md:border-[#e4dbcf] md:px-8 md:py-3 first:md:border-l-0 first:md:pl-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-hg-focus"
       onClick={() => {
         trackConversationRelatedResourceClicked({
           episode_slug: episode.slug,
@@ -258,7 +258,7 @@ export default function EpisodePageClient({ episode }: EpisodePageClientProps) {
                   glimmer
                   href={conciergeHref}
                   location={ctaLocation}
-                  className="inline-flex min-h-11 items-center justify-center rounded-full border border-[#4a4540]/55 bg-transparent px-7 py-3 text-[10px] uppercase tracking-[0.3em] text-[#3d3834] transition-all duration-500 ease-out hover:border-[#2b2723] hover:bg-[#2b2723] hover:text-[#faf7f3] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#cbbda9]"
+                  className="inline-flex min-h-11 items-center justify-center rounded-full border border-[#4a4540]/55 bg-transparent px-7 py-3 text-[10px] uppercase tracking-[0.3em] text-[#3d3834] transition-all duration-500 ease-out hover:border-[#2b2723] hover:bg-[#2b2723] hover:text-[#faf7f3] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-hg-focus"
                   onClick={() => {
                     trackConversationConciergeClicked({
                       episode_slug: episode.slug,

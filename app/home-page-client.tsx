@@ -3,6 +3,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import HomeStudioPortal from "./home-studio-portal";
+import Button from "./shared-components/Button";
+import Eyebrow from "./shared-components/Eyebrow";
 import Header from "./shared-components/Header";
 import CTAGlimmer from "./shared-components/motion/CTAGlimmer";
 import RevealOnScroll from "./shared-components/motion/RevealOnScroll";
@@ -78,9 +80,7 @@ function TrustTransitionStrip() {
               index > 0 ? "md:border-l md:border-[#e4dbcf]/70" : ""
             }`}
           >
-            <div className="text-[10px] uppercase tracking-[0.34em] text-[#8a8177]">
-              {pillar.title}
-            </div>
+            <Eyebrow size="xs">{pillar.title}</Eyebrow>
             <p className="mx-auto mt-2.5 max-w-[28ch] text-center text-[0.9rem] leading-[1.78] text-[#615a53] md:mt-3 md:leading-[1.82]">
               {pillar.description}
             </p>
@@ -190,9 +190,7 @@ function FeaturedRingSection() {
     >
       <div className="mb-10 flex flex-col gap-8 md:mb-16 md:flex-row md:items-end md:justify-between">
         <div className="max-w-xl">
-          <div className="text-[11px] uppercase tracking-[0.34em] text-[#8a8177]">
-            House Designs
-          </div>
+          <Eyebrow>House Designs</Eyebrow>
           <h2 className="mt-5 text-[2rem] font-normal leading-[1.1] tracking-[-0.045em] text-[#1f1d1a] md:text-[2.5rem]">
             Signature directions, followed by more individual expressions.
           </h2>
@@ -391,8 +389,8 @@ function TestimonialSection() {
 
 export default function HomePageClient() {
   return (
-    <main
-      className="min-h-screen bg-[#efe8de] pb-6 text-[#1c1b1a]"
+    <div
+      className="min-h-screen bg-hg-ivory pb-6 text-hg-ink"
       data-hourglass-home="atmospheric-house-pass"
     >
       <div className="mx-auto max-w-[1200px]">
@@ -438,13 +436,13 @@ export default function HomePageClient() {
 
               <div className="mt-6 md:mt-8">
                 <CTAGlimmer>
-                  <Link
+                  <Button
+                    variant="secondary"
                     href="/concierge"
-                    className="inline-flex rounded-full border border-[#d9cdbd] bg-white/80 px-6 py-3 text-[11px] uppercase tracking-[0.28em] text-[#2b2723] transition-all duration-500 ease-out hover:-translate-y-[1px] hover:bg-white"
                     onClick={() => trackConsultationCtaClicked("home:hero")}
                   >
                     Begin the Conversation
-                  </Link>
+                  </Button>
                 </CTAGlimmer>
 
                 <p className="mt-3.5 max-w-[28rem] text-[0.78rem] leading-[1.75] tracking-[0.015em] text-[#8a8176] md:mt-5">
@@ -488,6 +486,6 @@ export default function HomePageClient() {
           <TestimonialSection />
         </div>
       </div>
-    </main>
+    </div>
   );
 }

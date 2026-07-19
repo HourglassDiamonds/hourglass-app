@@ -1,5 +1,6 @@
 import Image from "next/image";
 import type { CSSProperties } from "react";
+import SectionHeading from "../shared-components/SectionHeading";
 
 const HERO_IMAGE = "/concierge-hero.png";
 const HERO_ALT =
@@ -65,16 +66,12 @@ export default function ConciergeIntro() {
 
       <div className="relative z-10 md:max-w-[min(100%,26rem)] lg:max-w-[min(100%,32rem)]">
         <div className="min-w-0 text-left">
-          <div className="text-[11px] uppercase tracking-[0.34em] text-[#8a8177]">
-            Concierge
-          </div>
-
-          <h1
-            className="mt-4 max-w-[14ch] text-[2rem] font-light leading-[1.1] tracking-[0.015em] text-[#1f1d1a] md:text-[2.45rem]"
-            style={{ textWrap: "balance" }}
-          >
-            A better place to begin.
-          </h1>
+          <SectionHeading
+            as="h1"
+            eyebrow="Concierge"
+            title="A better place to begin."
+            titleClassName="max-w-[14ch]"
+          />
 
           <p className="mt-5 max-w-[32rem] text-[1rem] leading-[1.88] text-[#6a635c] md:text-[1.04rem] lg:max-w-[28rem]">
             You might already know exactly what you&apos;re looking for, or just

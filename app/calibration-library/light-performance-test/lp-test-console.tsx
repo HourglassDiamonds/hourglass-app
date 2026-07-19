@@ -185,7 +185,7 @@ export default function LpTestConsole({
         </div>
       </header>
 
-      <main className="mx-auto max-w-7xl space-y-6 px-4 py-6">
+      <div className="mx-auto max-w-7xl space-y-6 px-4 py-6">
         <section className="rounded border border-indigo-200 bg-white p-4">
           <h2 className="text-xs font-semibold uppercase tracking-wide text-indigo-800">
             Distribution calibration (Phase 2)
@@ -741,7 +741,7 @@ export default function LpTestConsole({
             </div>
           </section>
         ) : null}
-      </main>
+      </div>
     </div>
   );
 }

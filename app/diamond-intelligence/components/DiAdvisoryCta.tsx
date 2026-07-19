@@ -30,7 +30,7 @@ export default function DiAdvisoryCta({
         </p>
         <Link
           href={conciergeHref}
-          className="mt-5 inline-flex items-center justify-center rounded-full border border-[rgba(58,48,38,0.14)] bg-[#2b2723] px-8 py-3.5 text-[10px] uppercase tracking-[0.28em] text-white transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#cbbda9]"
+          className="mt-5 inline-flex items-center justify-center rounded-full border border-[rgba(58,48,38,0.14)] bg-[#2b2723] px-8 py-3.5 text-[10px] uppercase tracking-[0.28em] text-white transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hg-focus"
           onClick={() =>
             trackConsultationCtaClicked("diamond_intelligence:advisory_cta")
           }

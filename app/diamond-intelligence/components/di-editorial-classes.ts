@@ -21,7 +21,7 @@ export const DI_SECTION =
   "border-b border-[#e4dbcf]/45 py-14 md:py-[5.5rem] last:border-b-0";
 
 export const DI_EYEBROW =
-  "text-[10px] uppercase tracking-[0.32em] text-[#8a8177]";
+  "text-[10px] uppercase tracking-[0.32em] text-hg-eyebrow";
 
 export const DI_EYEBROW_ACCENT =
   "text-[10px] uppercase tracking-[0.32em] text-[#a8926a]";

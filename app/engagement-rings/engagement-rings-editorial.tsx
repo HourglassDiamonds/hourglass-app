@@ -5,7 +5,7 @@ const editorialLink =
   "text-[#6b5048] underline underline-offset-4 transition-colors hover:text-[#1f1d1a]";
 
 const resourceLink =
-  "text-[#6b5048] underline decoration-[#d9cfc2] underline-offset-[5px] transition-colors hover:text-[#1f1d1a] hover:decoration-[#b8a896] focus:outline-none focus-visible:rounded-sm focus-visible:ring-2 focus-visible:ring-[#cbbda9]/55 focus-visible:ring-offset-2 focus-visible:ring-offset-[#f7f2ea]";
+  "text-[#6b5048] underline decoration-[#d9cfc2] underline-offset-[5px] transition-colors hover:text-[#1f1d1a] hover:decoration-[#b8a896] focus:outline-none focus-visible:rounded-sm focus-visible:ring-2 focus-visible:ring-hg-focus focus-visible:ring-offset-2 focus-visible:ring-offset-[#f7f2ea]";
 
 const LOWER_GRID = "grid grid-cols-12 gap-x-6 lg:gap-x-8";
 

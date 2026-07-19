@@ -3,7 +3,7 @@ import ConsultationCtaLink from "./ConsultationCtaLink";
 
 export default function Footer() {
   return (
-    <footer className="mt-24 border-t border-[#e8e2d9]">
+    <footer className="mt-24 border-t border-hg-line">
       <div className="mx-auto max-w-[1180px] px-6 py-10 md:px-8 md:py-12">
         
         {/* Top row */}
@@ -31,9 +31,9 @@ export default function Footer() {
         </div>
 
         {/* The Ledger — quiet editorial module */}
-        <div className="mt-10 grid gap-10 border-t border-[#ebe5dc] pt-10 md:grid-cols-2 md:gap-12">
+        <div className="mt-10 grid gap-10 border-t border-hg-line/70 pt-10 md:grid-cols-2 md:gap-12">
           <div className="max-w-[28rem]">
-            <p className="text-[10px] uppercase tracking-[0.32em] text-[#8a8176]">
+            <p className="text-[10px] uppercase tracking-[0.32em] text-hg-eyebrow">
               The Ledger
             </p>
             <p className="mt-3 text-[12px] leading-[1.75] text-[#7a7268]">
@@ -48,7 +48,7 @@ export default function Footer() {
             </Link>
           </div>
           <div className="max-w-[28rem]">
-            <p className="text-[10px] uppercase tracking-[0.32em] text-[#8a8176]">
+            <p className="text-[10px] uppercase tracking-[0.32em] text-hg-eyebrow">
               Whispered Praise
             </p>
             <p className="mt-3 text-[12px] leading-[1.75] text-[#7a7268]">
@@ -64,7 +64,7 @@ export default function Footer() {
         </div>
 
         {/* Bottom row */}
-        <div className="mt-8 flex flex-col gap-4 border-t border-[#e8e2d9] pt-6 md:flex-row md:items-center md:justify-between">
+        <div className="mt-8 flex flex-col gap-4 border-t border-hg-line pt-6 md:flex-row md:items-center md:justify-between">
 
           <div className="text-[11px] text-[#8a8178]">
             © {new Date().getFullYear()} Hourglass Diamonds · Charlotte, NC

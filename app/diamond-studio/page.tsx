@@ -675,7 +675,7 @@ function SuiteStyles() {
         opacity:1;
       }
       .dts-info:focus-visible{
-        outline:2px solid var(--hg-focus-ring, #cbbda9);
+        outline:2px solid var(--hg-focus-ring, #987648);
         outline-offset:2px;
       }
       .dts-stepper{
@@ -696,7 +696,7 @@ function SuiteStyles() {
         box-shadow:0 1px 2px color-mix(in srgb, var(--hairline) 50%, transparent);
       }
       .dts-stepper button:focus-visible{
-        outline:2px solid var(--hg-focus-ring, #cbbda9);
+        outline:2px solid var(--hg-focus-ring, #987648);
         outline-offset:2px;
       }
       .dts-stepper button:disabled{ opacity:0.35; cursor:default; }
@@ -720,6 +720,11 @@ function SuiteStyles() {
       }
       .dts-slider .dts-track{
         position:relative; height:1px; background:var(--hairline); margin:11px 8px 9px;
+      }
+      .dts-slider .dts-track:focus-visible{
+        outline:2px solid var(--hg-focus-ring, #987648);
+        outline-offset:8px;
+        border-radius:6px;
       }
       .dts-slider .dts-track::before{
         content:"";
@@ -1974,6 +1979,49 @@ function attachHorizontalTrack(
   };
 }
 
+/**
+ * WCAG 2.1.1 keyboard support for the role="slider" tracks.
+ *
+ * Attached as a native listener on the track element itself (not a React
+ * synthetic handler) so arrow keys work even if some other listener between
+ * the track and the React root interferes with propagation. preventDefault
+ * on handled keys keeps Up/Down/Home/End from scrolling the page.
+ */
+function attachSliderKeyboard(
+  track: HTMLElement,
+  handlers: {
+    decrease: () => void;
+    increase: () => void;
+    home: () => void;
+    end: () => void;
+  },
+) {
+  const onKeyDown = (e: KeyboardEvent) => {
+    switch (e.key) {
+      case "ArrowLeft":
+      case "ArrowDown":
+        e.preventDefault();
+        handlers.decrease();
+        break;
+      case "ArrowRight":
+      case "ArrowUp":
+        e.preventDefault();
+        handlers.increase();
+        break;
+      case "Home":
+        e.preventDefault();
+        handlers.home();
+        break;
+      case "End":
+        e.preventDefault();
+        handlers.end();
+        break;
+    }
+  };
+  track.addEventListener("keydown", onKeyDown);
+  return () => track.removeEventListener("keydown", onKeyDown);
+}
+
 export default function DiamondStudioPage() {
   const [ringSize, setRingSize] = useState(6.0);
   const [carat, setCarat] = useState(2.5);
@@ -2272,18 +2320,28 @@ export default function DiamondStudioPage() {
   useEffect(() => {
     const el = fsTrackRef.current;
     if (!el) return;
-    return attachHorizontalTrack(
+    const detachTrack = attachHorizontalTrack(
       el,
       fsDrag,
       (p) => applyRingSize(fsPctToSize(p), false),
       () => commitFingerSizeAnalytics(ringSizeRef.current),
     );
+    const detachKeys = attachSliderKeyboard(el, {
+      decrease: () => applyRingSize(ringSizeRef.current - 0.5, true),
+      increase: () => applyRingSize(ringSizeRef.current + 0.5, true),
+      home: () => applyRingSize(4, true),
+      end: () => applyRingSize(13, true),
+    });
+    return () => {
+      detachTrack();
+      detachKeys();
+    };
   }, [applyRingSize, commitFingerSizeAnalytics]);
 
   useEffect(() => {
     const el = ctTrackRef.current;
     if (!el) return;
-    return attachHorizontalTrack(
+    const detachTrack = attachHorizontalTrack(
       el,
       ctDrag,
       (p) => {
@@ -2292,17 +2350,39 @@ export default function DiamondStudioPage() {
       },
       () => commitCaratAnalytics(caratRef.current),
     );
+    const detachKeys = attachSliderKeyboard(el, {
+      decrease: () => applyCarat(caratRef.current - CARAT_STEP, true),
+      increase: () => applyCarat(caratRef.current + CARAT_STEP, true),
+      home: () => applyCarat(CARAT_MIN, true),
+      end: () => applyCarat(CARAT_MAX, true),
+    });
+    return () => {
+      detachTrack();
+      detachKeys();
+    };
   }, [applyCarat, commitCaratAnalytics, markCaratAdjusting]);
 
   useEffect(() => {
     const el = bwTrackRef.current;
     if (!el) return;
-    return attachHorizontalTrack(
+    const detachTrack = attachHorizontalTrack(
       el,
       bwDrag,
       (p) => applyBandWidth(bwPctToIndex(p), false),
       () => applyBandWidth(bandWidthToIndex(bandWidthRef.current), true),
     );
+    const detachKeys = attachSliderKeyboard(el, {
+      decrease: () =>
+        applyBandWidth(bandWidthToIndex(bandWidthRef.current) - 1, true),
+      increase: () =>
+        applyBandWidth(bandWidthToIndex(bandWidthRef.current) + 1, true),
+      home: () => applyBandWidth(0, true),
+      end: () => applyBandWidth(BAND_WIDTH_VALUES.length - 1, true),
+    });
+    return () => {
+      detachTrack();
+      detachKeys();
+    };
   }, [applyBandWidth]);
 
   const fsHandleLeft = ((ringSize - 4) / 9) * 100;
@@ -2361,10 +2441,18 @@ export default function DiamondStudioPage() {
                   <div
                     className="dts-track"
                     ref={fsTrackRef}
+                    role="slider"
+                    tabIndex={0}
+                    aria-label="Ring size"
+                    aria-valuemin={4}
+                    aria-valuemax={13}
+                    aria-valuenow={ringSize}
+                    aria-valuetext={`US ring size ${ringSize.toFixed(1)}`}
                     style={{ "--dts-fill": `${fsHandleLeft}%` } as React.CSSProperties}
                   >
                     <div
                       className="dts-handle"
+                      aria-hidden
                       style={{ left: `${fsHandleLeft}%` }}
                     />
                   </div>
@@ -2423,10 +2511,18 @@ export default function DiamondStudioPage() {
                     <div
                       className="dts-track"
                       ref={bwTrackRef}
+                      role="slider"
+                      tabIndex={0}
+                      aria-label="Band width"
+                      aria-valuemin={BAND_WIDTH_VALUES[0]}
+                      aria-valuemax={BAND_WIDTH_VALUES[BAND_WIDTH_VALUES.length - 1]}
+                      aria-valuenow={bandWidth}
+                      aria-valuetext={`${bandWidth} millimeter band`}
                       style={{ "--dts-fill": `${bwHandleLeft}%` } as React.CSSProperties}
                     >
                       <div
                         className="dts-handle"
+                        aria-hidden
                         style={{ left: `${bwHandleLeft}%` }}
                       />
                     </div>
@@ -2477,10 +2573,18 @@ export default function DiamondStudioPage() {
                 <div
                   className="dts-track"
                   ref={ctTrackRef}
+                  role="slider"
+                  tabIndex={0}
+                  aria-label="Diamond weight"
+                  aria-valuemin={CARAT_MIN}
+                  aria-valuemax={CARAT_MAX}
+                  aria-valuenow={carat}
+                  aria-valuetext={`${carat.toFixed(2)} carats`}
                   style={{ "--dts-fill": `${ctHandleLeft}%` } as React.CSSProperties}
                 >
                   <div
                     className="dts-handle"
+                    aria-hidden
                     style={{ left: `${ctHandleLeft}%` }}
                   />
                 </div>
