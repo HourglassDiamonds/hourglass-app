@@ -155,7 +155,11 @@ function FeaturedRingSection() {
               src={image}
               alt={`${title} ring`}
               fill
-              sizes="(max-width: 767px) 72vw, (max-width: 1279px) 30vw, 16vw"
+              /* Display widths are ~90vw / 46vw / ~30vw / ~16vw, but sources are
+                 landscape cropped via object-cover into 3:4 (~56% of width kept).
+                 Overspecify sizes so selected derivatives still have enough
+                 pixels after that crop at 2× DPR (mobile needs ~600px slot → 1200w). */
+              sizes="(max-width: 639px) 600px, (max-width: 767px) 85vw, (max-width: 1279px) 55vw, 30vw"
               className="object-cover object-[50%_46%] max-md:origin-center max-md:scale-[0.94]"
             />
           </div>
