@@ -18,18 +18,18 @@ export {
 export const QUIET_METRICS = [
   {
     label: "Energy Pressure",
-    value: "Relief Retraced",
-    note: "Hormuz traffic relapsed and oil's risk premium returned — routing, insurance, and corridor governance remain unresolved.",
+    value: "Operational Corridor Risk",
+    note: "Blockade reimposed, Hormuz transit constrained, and oil tested a higher band — routing, insurance, and corridor governance remain unresolved beneath functioning markets.",
   },
   {
     label: "AI Compute Load",
-    value: "Grid-Bound",
-    note: "Capability gains remain real; summer grid alerts and large-load integration still set practical pace.",
+    value: "Access Broadening",
+    note: "GPT-5.6 general availability and Kimi K3 product/API access broadened frontier diffusion; summer grid and large-load limits still set practical pace.",
   },
   {
     label: "Physical Constraints",
     value: "Operational Strain",
-    note: "Early-July PJM peak was managed; a new Hot Weather Alert for July 14–17 keeps flexibility narrow beneath functioning systems.",
+    note: "Mid-July PJM alerts and DOE Order 202-26-35 kept flexibility narrow beneath still-functioning systems; no publicly confirmed broad blackout in the reviewed evidence.",
   },
 ] as const;
 

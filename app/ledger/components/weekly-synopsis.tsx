@@ -1,18 +1,18 @@
 export const WEEKLY_SYNOPSIS = {
   eyebrow: "Weekly Synopsis",
-  headline: "Corridor relief retraced; oil risk premium returns.",
+  headline: "Corridor pressure holds; frontier access broadens.",
   blocks: [
     {
       title: "What changed",
-      body: "Hormuz transit relapsed after vessel attacks and the fraying of the June ceasefire framework, reversing the fragile recovery narrative. Oil's risk premium returned toward the mid-to-high $80s on Brent. The U.S. announced plans for a proposed 20% fee on Hormuz cargo and scheduled the reimposition of a naval blockade against Iranian shipping — measures described as announced, proposed, or scheduled for enforcement, not as settled corridor control. Official June CPI printed temporary energy-led disinflation (headline −0.4% m/m, 3.5% y/y; core 0.0% m/m, 2.6% y/y) that predates this week's oil move. PJM issued a Hot Weather Alert for July 14–17 after managing a record early-July peak. Precious materials and AI capability readings held.",
+      body: "Global geopolitical pressure remained at an extremely elevated 93. The corridor conflict became more operational — the U.S. naval blockade on Iranian ports was reimposed on July 14 within a campaign that began earlier in 2026, CENTCOM continued strikes framed around maritime security, commercial vessels were attacked near Oman with crews evacuated, and traceable Hormuz and LNG traffic stayed sharply reduced. Brent briefly tested above $90 before settling in the high $80s. A Houthi maritime-embargo declaration entered as a secondary corridor risk without demonstrated sustained enforcement. AI capability rose to 85 as frontier performance, practical access, cost compression, international competition, and adoption broadened together through GPT-5.6 general availability and Kimi K3 product and API access. Precious materials, infrastructure strain, and information clarity held within their established regimes.",
     },
     {
       title: "What's driving pressure",
-      body: "Corridor confidence, not a single day's open or closed claim, is the binding geopolitical-energy channel. Oil's rebound reintroduces forward inflation and rate risk even though June CPI showed temporary relief. Financial conditions stay rate-sensitive. Summer grid tightness remains elevated but secondary to the corridor reverse this week.",
+      body: "Corridor confidence and the energy premium remain the binding geopolitical channel, but this week largely confirmed the risk already incorporated in the July 14 increase rather than establishing a distinctly broader systemic regime. Markets remained functional; diplomatic and ceasefire efforts stay an offsetting consideration. On the AI side, broader frontier access and competitive diffusion moved the acceleration reading, while compute, electricity, and deployment infrastructure continue to bound practical pace.",
     },
     {
       title: "What to watch next",
-      body: "Whether Hormuz traceable traffic stabilizes above recent lows or stays depressed. Whether Brent holds a renewed premium or fades. Whether announced blockade and fee measures become practical enforcement. Whether June's CPI disinflation is overshadowed in markets by the new energy shock. Whether PJM reliability holds through the July 14–17 Hot Weather Alert. Whether the EU's July 15 oil-price-cap decision freezes the cap or allows an automatic reset — a secondary sanctions watch.",
+      body: "Whether Brent establishes a sustained settlement above $90. Whether traceable Hormuz and LNG traffic stabilizes or stays depressed. Whether the Houthi declaration shows practical enforcement. Whether additional Gulf infrastructure damage is confirmed. The status of ceasefire or diplomatic proposals. Whether energy pressure spreads into broader credit or liquidity stress. Whether Kimi K3 downloadable weights arrive as scheduled and how GPT-5.6 and competing models convert access into durable enterprise workflows under summer grid limits.",
     },
   ],
 } as const;

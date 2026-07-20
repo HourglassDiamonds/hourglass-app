@@ -3,7 +3,7 @@
  * Update values and copy here each week. Page layout is fixed in precious-materials-index-view.
  */
 
-export const PMI_UPDATED_LABEL = "Updated weekly — July 14, 2026";
+export const PMI_UPDATED_LABEL = "Updated weekly — July 20, 2026";
 
 export const PMI_MARKET_PRESSURE = {
   score: 85,
@@ -35,28 +35,29 @@ export const PMI_RECENT_READINGS = [
   { week: "This Week", score: 85 },
   { week: "Last Week", score: 85 },
   { week: "2 Weeks Ago", score: 85 },
-  { week: "3 Weeks Ago", score: 83 },
+  { week: "3 Weeks Ago", score: 85 },
 ] as const;
 
 export const PMI_CROSS_SYSTEM_BRIDGE =
   "Material markets remain connected to broader macro and reserve-asset conditions — but jewelry sourcing follows its own segmented logic beneath the geopolitical layer.";
 
 export const PMI_CROSS_SYSTEM_PRESSURE = [
-  "Central-bank gold demand remains a structural support beneath near-term real-yield sensitivity as the restored energy and rate frame firms yields.",
-  "De Beers' July sight pricing alignment stays a selective pipeline watch rather than broad market stress.",
+  "Structural central-bank and diversification demand continue to support the reading beneath near-term real-yield and rate-expectation pressure from the energy frame.",
+  "Gold is trading around the $4,000 area — near-term sensitivity without a materials-regime break.",
+  "Selective natural-diamond pipeline adjustments, including July sight pricing alignment, remain a segmented watch rather than broad market stress.",
   "Lab-grown pricing compression continues in commercial and mid-tier ranges as an embedded factor, while premium natural holds firmer in selective sizes and cuts.",
-  "High-quality natural stones increasingly behave as scarcity and reserve assets rather than simple luxury cyclicals.",
 ] as const;
 
 export const PMI_WHAT_MOVED = [
-  "No materials-regime change this week — central-bank gold demand and selective diamond segmentation continue as embedded supports.",
-  "Real-yield sensitivity stayed relevant as oil's restored risk premium fed rate-path uncertainty; gold monetary pressure held at 87.",
-  "Lab-grown compression persisted in mid-tier channels as an embedded segmentation factor, not a newly accelerating shock.",
+  "No materials-regime change this week — structural central-bank demand and selective diamond segmentation continue as embedded supports.",
+  "Near-term pressure from real yields and rate expectations kept gold trading around the $4,000 area; gold monetary pressure held at 87.",
+  "Selective natural-diamond pipeline adjustments and continued lab-grown price compression remained segmented factors, not a newly scored shock.",
 ] as const;
 
 export const PMI_WHAT_TO_WATCH = [
-  "Whether gold reconnects to reserve-asset demand or remains tethered to real yields through the summer rate path.",
-  "De Beers July sight outcomes and whether rough-price alignment stays selective rather than broad.",
+  "Whether gold reconnects more tightly to reserve-asset demand or remains tethered to real yields through the summer rate path.",
+  "Whether gold holds around the $4,000 area or breaks that near-term range on rate or energy news.",
+  "Selective natural-diamond pipeline outcomes and whether rough-price alignment stays segmented rather than broad.",
   "Whether high-quality natural diamonds continue holding firm as scarcity assets in premium categories.",
   "Lab-grown pricing pressure and its effect on commercial natural positioning — not premium heirloom-grade work.",
   "Sourcing discipline in a segmented market — provenance and selective inventory over reactive accumulation.",

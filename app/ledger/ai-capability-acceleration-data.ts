@@ -5,13 +5,13 @@
 
 export type AcaiFillVariant = "cool" | "neutral" | "warm" | "hot" | "critical";
 
-export const ACAI_UPDATED_LABEL = "Updated weekly — July 14, 2026";
+export const ACAI_UPDATED_LABEL = "Updated weekly — July 20, 2026";
 
 export const ACAI_READING = {
-  score: 84,
-  status: "Power- and Grid-Bound Acceleration",
-  weeklyChange: 0,
-  markerPosition: 84,
+  score: 85,
+  status: "Frontier Access Broadens, Grid-Bound",
+  weeklyChange: 1,
+  markerPosition: 85,
   readingLabel: "Acceleration Reading",
 } as const;
 
@@ -19,22 +19,22 @@ export const ACAI_INTRO =
   "A weekly reading of how AI capability, deployment, and physical infrastructure are moving together — across models, agents, enterprise integration, power, and grid constraints. The purpose is not to forecast AGI. It is to track an industrial buildout: where software progress meets operational friction, energy limits, and organizational adaptation lag.";
 
 export const ACAI_SUMMARY =
-  "Capability remains advanced through broad Claude Sonnet 5 deployment across consumer, enterprise, coding, and API surfaces — while frontier access stays gated and summer grid tightness continues to bound practical pace after the early-July PJM peak and a new Hot Weather Alert for July 14–17.";
+  "Acceleration rose to 85 as frontier access broadened — OpenAI's GPT-5.6 family is generally available across ChatGPT, Codex, and the API with stronger performance-per-dollar, coding, tool use, and multi-agent operation, while Kimi K3 is available through Kimi products and API at competitive cost with full downloadable weights still pending. Compute, electricity, and deployment infrastructure remain binding constraints.";
 
 export const ACAI_WEEKLY_SIGNAL =
-  "No new frontier capability shock moved the reading. Claude Sonnet 5's late-June broad availability remains the last clear deployment step; partner-only frontier previews and government-coordinated release gates stay separate from that baseline. Physical constraints continue to set practical pace: PJM managed a record early-July peak without blackout, and a Hot Weather Alert covers July 14–17. Enterprise adoption and coding integration hold; governance, energized capacity, and access qualification remain co-equal limits.";
+  "The reading moved to 85 because frontier capability, practical access, cost compression, competitive convergence, and real demand broadened together. GPT-5.6 Sol, Terra, and Luna are generally available across ChatGPT, Codex, and the OpenAI API rather than remaining limited to partner previews — bringing improved performance per dollar, stronger coding and agentic operation, broader tool use, and multi-agent capability into wider product surfaces. Kimi K3 is available through Kimi products and the Kimi API with strong reported benchmark performance and lower deployment or usage costs relative to several closed frontier tiers; full downloadable weights remain pending or incomplete, and not all vendor benchmark claims have been independently verified. Initial demand has pressed available capacity on some access paths. Claude Sonnet 5 remains a broadly deployed baseline beside these moves. Physical constraints still set practical pace after the early-July PJM peak and mid-July hot-weather operations under a renewed DOE order window. Enterprise adoption and coding integration continue; governance, energized capacity, and infrastructure readiness remain co-equal limits.";
 
 export const ACAI_METHOD_PILLS = [
   { label: "Reading Type", value: "Capability + infrastructure index" },
-  { label: "Primary Drivers", value: "Power, grid, deployment" },
-  { label: "Current Direction", value: "Advancing, grid-bound" },
+  { label: "Primary Drivers", value: "Access, cost, power, deployment" },
+  { label: "Current Direction", value: "Broadening, grid-bound" },
 ] as const;
 
 export const ACAI_RECENT_READINGS = [
-  { week: "This Week", score: 84, state: "Accelerating" },
+  { week: "This Week", score: 85, state: "Accelerating" },
   { week: "Last Week", score: 84, state: "Accelerating" },
-  { week: "2 Weeks Ago", score: 83, state: "Accelerating" },
-  { week: "3 Weeks Ago", score: 82, state: "Accelerating" },
+  { week: "2 Weeks Ago", score: 84, state: "Accelerating" },
+  { week: "3 Weeks Ago", score: 83, state: "Accelerating" },
 ] as const;
 
 export const ACAI_CAPABILITY_BENCHMARKS = [
@@ -49,34 +49,34 @@ export const ACAI_CAPABILITY_READINGS = [
   {
     name: "Frontier Models",
     weight: "22% Weight",
-    score: 78,
+    score: 83,
     band: "Elevated",
     fill: "warm" as AcaiFillVariant,
-    text: "Frontier capability remains meaningful but gated — partner-only previews and government-coordinated release paths separate headline movement from broad availability.",
+    text: "Frontier access broadened as GPT-5.6 became generally available across ChatGPT, Codex, and the API, while Kimi K3 added competitive product and API access — capability signals are no longer limited to partner previews, though some sensitive tiers remain more qualified and not all vendor benchmark claims are independently verified.",
   },
   {
     name: "Agents & Tool Use",
     weight: "20% Weight",
-    score: 79,
+    score: 82,
     band: "Rising",
     fill: "warm" as AcaiFillVariant,
-    text: "Claude Sonnet 5 broadened agentic and tool-use capability at a widely deployed tier — operational usefulness rising, with reliability and long-horizon consistency still uneven.",
+    text: "GPT-5.6 strengthened agentic operation, broader tool use, and multi-agent coordination at widely available product surfaces — operational usefulness rising, with reliability and long-horizon consistency still uneven across deployments.",
   },
   {
     name: "Coding & Software",
     weight: "18% Weight",
-    score: 82,
+    score: 84,
     band: "Accelerating",
     fill: "warm" as AcaiFillVariant,
-    text: "Continued acceleration in scaffolding, migration, and review through broadly available coding surfaces — verification and deployment discipline still define practical gains.",
+    text: "Coding acceleration continued through GPT-5.6 general availability, broadly deployed Claude Sonnet 5 surfaces, and Kimi K3 coding product and API access — verification and deployment discipline still define practical gains.",
   },
   {
     name: "Enterprise Deployment",
     weight: "14% Weight",
-    score: 75,
+    score: 77,
     band: "Cautious",
     fill: "neutral" as AcaiFillVariant,
-    text: "Sonnet 5 default availability across plans advanced workflow dependence — strongest where integration paths are clear, with broader operating-model change still uneven.",
+    text: "Wider frontier access and competitive cost tiers advanced workflow dependence where integration paths are clear — broader operating-model change remains uneven, and infrastructure readiness still gates scale.",
   },
   {
     name: "Infrastructure Demand",
@@ -84,7 +84,7 @@ export const ACAI_CAPABILITY_READINGS = [
     score: 93,
     band: "Elevated",
     fill: "warm" as AcaiFillVariant,
-    text: "Summer power limits remain a binding constraint after the early-July PJM peak — the Hot Weather Alert for July 14–17 keeps deployment pace tied to grid and large-load readiness alongside model interest.",
+    text: "Summer power limits remain a binding constraint after the early-July PJM peak and mid-July hot-weather operations — deployment pace stays tied to grid and large-load readiness alongside rising model access and demand.",
   },
   {
     name: "Labor Substitution",
@@ -97,25 +97,25 @@ export const ACAI_CAPABILITY_READINGS = [
   {
     name: "Governance & Risk",
     weight: "6% Weight",
-    score: 68,
+    score: 70,
     band: "Lagging",
     fill: "neutral" as AcaiFillVariant,
-    text: "Government-coordinated release gates and access qualification add policy friction — operational risk frameworks still trail deployment speed in core systems.",
+    text: "Broader general availability reduced some access friction, while trusted-access and sensitive-capability gates remain — operational risk frameworks still trail deployment speed in core systems.",
   },
 ] as const;
 
 export const ACAI_WHAT_MOVED = [
   {
-    title: "Prior Sonnet 5 baseline holds",
-    body: "Claude Sonnet 5 remains generally available across consumer, enterprise, coding, and API surfaces — last week's clearest capability gain, unchanged as a new shock this week.",
+    title: "GPT-5.6 general availability",
+    body: "The GPT-5.6 family moved from limited partner preview into general availability across ChatGPT, Codex, and the OpenAI API — improving practical access to stronger performance-per-dollar, coding, tool use, and multi-agent capability.",
   },
   {
-    title: "Summer grid constraints continue",
-    body: "PJM managed a record early-July peak without blackout; a Hot Weather Alert for July 14–17 keeps power and large-load limits operational beside software capability.",
+    title: "Kimi K3 product and API access",
+    body: "Kimi K3 is available through Kimi products and the Kimi API with competitive usage costs and strong reported benchmark performance; full downloadable weights remain pending, and not all vendor claims are independently verified. Initial demand has pressed available capacity on some paths.",
   },
   {
-    title: "Access remains qualified",
-    body: "Frontier models stay behind partner and government-coordinated gates — broad deployment and gated previews describe different capability realities in the same cycle.",
+    title: "Grid constraints still bind",
+    body: "Mid-July PJM hot-weather alerts and a renewed DOE order window keep power and large-load limits operational beside broader software access — acceleration broadened without removing physical pace-setters.",
   },
 ] as const;
 
@@ -141,22 +141,27 @@ export const ACAI_FRONTIER_WATCHLIST = [
   {
     label: "System Layer",
     title: "Data centers & power",
-    body: "PJM summer operations, Hot Weather Alert posture, FERC large-load rules, power contracts, grid queues, and cooling — operational pace-setters this cycle.",
+    body: "PJM summer operations, DOE order windows, FERC large-load rules, power contracts, grid queues, and cooling — operational pace-setters this cycle.",
   },
   {
     label: "System Layer",
     title: "Enterprise integration",
-    body: "Sonnet 5 default availability, workflow dependence, review layers, and organizational adaptation — how capability converts to operational use.",
+    body: "GPT-5.6 and Sonnet 5 workflow dependence, review layers, and organizational adaptation — how broader access converts to operational use.",
   },
   {
     label: "Frontier Lab",
     title: "OpenAI",
-    body: "Partner-gated frontier previews and enterprise APIs — weighed against integration depth, reliability, and infrastructure requirements.",
+    body: "GPT-5.6 Sol, Terra, and Luna general availability across ChatGPT, Codex, and the API — weighed against integration depth, reliability, and infrastructure requirements.",
   },
   {
     label: "Frontier Lab",
     title: "Anthropic",
     body: "Broad Sonnet 5 deployment, coding workflows, connectors, and release-gate dynamics under physical capacity constraints.",
+  },
+  {
+    label: "Frontier Lab",
+    title: "Moonshot / Kimi",
+    body: "Kimi K3 product and API availability, competitive cost, capacity pressure, and the still-pending full downloadable-weight release.",
   },
 ] as const;
 
@@ -182,34 +187,34 @@ export const ACAI_CALCULATION_ROWS = [
   {
     category: "Frontier Models",
     weight: "22%",
-    score: "78",
-    contribution: "17.2",
+    score: "83",
+    contribution: "18.3",
     reason:
-      "Frontier capability meaningful but gated — partner and government-coordinated release paths separate headlines from broad availability.",
+      "GPT-5.6 general availability and Kimi K3 product/API access broadened frontier access beyond partner previews; some sensitive tiers remain more qualified.",
   },
   {
     category: "Agents & Tool Use",
     weight: "20%",
-    score: "79",
-    contribution: "15.8",
+    score: "82",
+    contribution: "16.4",
     reason:
-      "Sonnet 5 broadened agentic capability at wide deployment; reliability and long-horizon consistency still uneven.",
+      "Stronger agentic operation, tool use, and multi-agent capability at widely available surfaces; long-horizon reliability still uneven.",
   },
   {
     category: "Coding & Software",
     weight: "18%",
-    score: "82",
-    contribution: "14.8",
+    score: "84",
+    contribution: "15.1",
     reason:
-      "Strong acceleration through broadly available coding surfaces; verification and deployment discipline remain limiting.",
+      "Coding acceleration through GPT-5.6, Sonnet 5, and Kimi coding surfaces; verification and deployment discipline remain limiting.",
   },
   {
     category: "Enterprise Deployment",
     weight: "14%",
-    score: "75",
-    contribution: "10.5",
+    score: "77",
+    contribution: "10.8",
     reason:
-      "Sonnet 5 default availability advanced workflow dependence — operating-model redesign still uneven.",
+      "Wider access and competitive cost tiers advanced workflow dependence — operating-model redesign still uneven.",
   },
   {
     category: "Infrastructure Demand",
@@ -217,7 +222,7 @@ export const ACAI_CALCULATION_ROWS = [
     score: "93",
     contribution: "11.2",
     reason:
-      "Summer grid and power limits remain operational after the early-July PJM peak; Hot Weather Alert for July 14–17 keeps physical pace-setting live.",
+      "Summer grid and power limits remain operational after early-July and mid-July heat windows; physical pace-setting stays live.",
   },
   {
     category: "Labor Substitution",
@@ -230,17 +235,17 @@ export const ACAI_CALCULATION_ROWS = [
   {
     category: "Governance & Risk",
     weight: "6%",
-    score: "68",
-    contribution: "4.1",
+    score: "70",
+    contribution: "4.2",
     reason:
-      "Release gates and access qualification add policy friction — frameworks lag deployment in core systems.",
+      "Broader GA reduced some access friction; trusted-access gates and risk frameworks still lag deployment in core systems.",
   },
 ] as const;
 
 export const ACAI_CALCULATION_TOTAL = {
-  contribution: "80.9 → 84",
+  contribution: "81.3 → 85",
   reason:
-    "Power- and grid-bound acceleration: broad Sonnet 5 deployment beneath gated frontier access and operational grid constraints.",
+    "Frontier access broadens beneath grid constraints: GPT-5.6 general availability and Kimi K3 product/API diffusion with continuing power and deployment limits.",
 } as const;
 
 export const ACAI_CAPABILITY_BANDS = [
@@ -282,16 +287,20 @@ export const ACAI_CAPABILITY_BANDS = [
 
 export const ACAI_SOURCES = [
   {
+    name: "OpenAI — GPT-5.6 Product Release",
+    body: "Official July 9, 2026 general-availability documentation for GPT-5.6 Sol, Terra, and Luna across ChatGPT, Codex, and the API — capability, efficiency, and access interpreted without promotional framing.",
+  },
+  {
+    name: "Kimi / Moonshot — K3 Documentation",
+    body: "Official Kimi K3 product and API availability, pricing, and stated weight-release timing, supplemented by independent reporting on benchmarks, demand, and access conditions.",
+  },
+  {
     name: "Infrastructure Reporting",
-    body: "PJM emergency operations, DOE orders, FERC large-load rules, data-center expansion, power, cooling, and regional siting economics.",
+    body: "PJM emergency and hot-weather operations, DOE orders, FERC large-load rules, data-center expansion, power, cooling, and regional siting economics.",
   },
   {
     name: "Enterprise & Deployment Signals",
-    body: "Sonnet 5 availability, adoption pace, workflow dependence, integration timelines, and organizational adaptation by sector.",
-  },
-  {
-    name: "OpenAI — Research & Product Releases",
-    body: "Partner-gated frontier previews, enterprise APIs, and deployment cost — interpreted alongside integration depth and reliability.",
+    body: "Frontier-model availability, adoption pace, workflow dependence, integration timelines, and organizational adaptation by sector.",
   },
   {
     name: "Anthropic — Claude Updates & Safety Materials",
@@ -316,13 +325,13 @@ export const ACAI_SCALE_LABELS = [
 
 export const ACAI_SECTION_SUBTITLES = {
   whatMoved:
-    "Broad Sonnet 5 deployment and operational grid constraints shaped the reading — gated frontier access and physical limits over headline cadence.",
+    "GPT-5.6 general availability and Kimi K3 product/API access broadened frontier diffusion — capability, cost, and competition over headline cadence alone.",
   milestones:
     "Developments that would justify a material change in the acceleration reading — grounded in operations, not hype.",
   frontierWatchlist:
     "System layers and integration paths worth tracking each week — capability and physical capacity together.",
   above85:
-    "The reading is advancing but below disruptive territory. These developments would justify a higher score.",
+    "The reading has entered the lower edge of disruptive territory. These developments would justify a higher score within the band.",
   calculated:
     "A weighted editorial model constrained by deployment pace, integration depth, infrastructure demand, and operational reliability.",
   capabilityBands:

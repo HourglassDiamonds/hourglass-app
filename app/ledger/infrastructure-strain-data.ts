@@ -3,7 +3,7 @@
  * Update values and copy here each week. Page layout is fixed in infrastructure-strain-index-view.
  */
 
-export const ISI_UPDATED_LABEL = "Updated weekly — July 14, 2026";
+export const ISI_UPDATED_LABEL = "Updated weekly — July 20, 2026";
 
 export const ISI_READING = {
   score: 87,
@@ -16,23 +16,23 @@ export const ISI_INTRO =
   "A weekly reading of the physical constraints beneath digital, economic, and industrial acceleration: power, transmission, transformers, data centers, water, skilled labor, semiconductors, and logistics. The purpose is not to predict failure. It is to track a capacity expansion race — where capital deploys quickly, buildout timing stays uneven, and flexibility narrows beneath functioning systems.";
 
 export const ISI_SUMMARY =
-  "Strain remains elevated after PJM served a record early-July peak through emergency demand response without widespread blackout. Flexibility stayed narrow: a new Hot Weather Alert covers July 14–17 as summer reliability remains an active constraint beneath functioning systems.";
+  "Strain remains elevated after PJM's early-July record peak and a mid-July hot-weather window that included Maximum Generation alerts and DOE Order 202-26-35 (July 14–21). No publicly confirmed broad blackout was found in the reviewed evidence; large-load and backup-generation flexibility remains a live concern beneath functioning systems.";
 
 export const ISI_WEEKLY_SIGNAL =
-  "PJM confirmed a preliminary all-time peak near 168 GW on July 2, managed with emergency demand response and temporary DOE 202(c) authority; the large-load backup-generation action was warned but not issued. Orders covering that window have since expired. Structural tightness remains: interconnection, transformers, and large-load integration still limit spare capacity. PJM issued a Hot Weather Alert for July 14–17 with elevated forecast peaks. Systems continue to function; strain does not fall simply because the prior emergency was successfully managed.";
+  "PJM's early-July preliminary all-time peak near 168 GW remains the summer benchmark. For July 14–17, PJM issued a Hot Weather Alert and Maximum Generation / Load Management alerts around elevated forecast peaks; DOE Order 202-26-35, effective July 14 through July 21, again authorized temporary environmental-permit flexibility for specified units and large-load backup-generation direction as a last resort. Publicly reviewed evidence does not show a confirmed broad blackout during that window; whether backup generation was dispatched is not stated here as a settled negative absent primary confirmation. Structural tightness remains: interconnection, transformers, and large-load integration still limit spare capacity. Systems continue to function; strain does not fall simply because an alert window was managed without a confirmed blackout.";
 
 export const ISI_CATEGORIES = [
   {
     name: "Grid & Transmission",
     score: 87,
     state: "High",
-    body: "Early-July emergency demand response proved the system can clear an extreme peak, but spare capacity remains thin — a new Hot Weather Alert for July 14–17 keeps operational readiness elevated beneath unresolved interconnection and large-load constraints.",
+    body: "Early-July emergency demand response and the mid-July Hot Weather and Maximum Generation alert window proved the system can clear elevated load under preparedness procedures, but spare capacity remains thin — DOE Order 202-26-35 through July 21 keeps operational readiness elevated beneath unresolved interconnection and large-load constraints.",
   },
   {
     name: "Data-Center Load",
     score: 90,
     state: "High",
-    body: "Hyperscale demand remains strategically coupled to grid readiness — siting and power availability still set practical pace after the early-July peak and under the July 14–17 alert.",
+    body: "Hyperscale demand remains strategically coupled to grid readiness — siting, power availability, and concern about large-load backup-generation flexibility still set practical pace after successive summer heat windows.",
   },
   {
     name: "Transformer Supply",
@@ -56,15 +56,15 @@ export const ISI_CATEGORIES = [
     name: "Water & Cooling",
     score: 75,
     state: "Rising",
-    body: "Summer heat keeps cooling load relevant in reliability discussions — uneven by geography, with operational relevance sustained into the July 14–17 alert window.",
+    body: "Summer heat keeps cooling load relevant in reliability discussions — uneven by geography, with operational relevance sustained through the mid-July alert window.",
   },
 ] as const;
 
 export const ISI_RECENT_READINGS = [
   { week: "This Week", score: 87 },
   { week: "Last Week", score: 87 },
-  { week: "2 Weeks Ago", score: 86 },
-  { week: "3 Weeks Ago", score: 85 },
+  { week: "2 Weeks Ago", score: 87 },
+  { week: "3 Weeks Ago", score: 86 },
 ] as const;
 
 export const ISI_BENCHMARKS = [
@@ -78,7 +78,11 @@ export const ISI_BENCHMARKS = [
 export const ISI_WHAT_WATCHING = [
   {
     title: "PJM summer reliability",
-    body: "Whether the July 14–17 Hot Weather Alert clears without emergency escalation, and whether spare capacity remains thin through the rest of summer.",
+    body: "Whether spare capacity remains thin through the rest of summer, and whether future heat events require escalation beyond the mid-July alert posture.",
+  },
+  {
+    title: "DOE order and large-load flexibility",
+    body: "How DOE Order 202-26-35 is used through its July 21 window, and whether large-load backup-generation authority is exercised under primary reporting.",
   },
   {
     title: "FERC large-load integration",
@@ -87,10 +91,6 @@ export const ISI_WHAT_WATCHING = [
   {
     title: "World Cup operational load",
     body: "Whether transportation, security, and crowd-management pressure stays localized through the knockout stage.",
-  },
-  {
-    title: "Large-load backup generation",
-    body: "Whether future heat events require issuing the large-load backup-generation action that was warned but not exercised in early July.",
   },
   {
     title: "Transformer manufacturing",
@@ -128,7 +128,7 @@ export const ISI_CALCULATION_ROWS = [
     score: "87",
     contribution: "20.9",
     reason:
-      "Early-July peak managed without blackout; Hot Weather Alert for July 14–17 and thin spare capacity keep strain elevated.",
+      "Early-July peak and mid-July Hot Weather / Maximum Generation alerts managed without a publicly confirmed broad blackout; thin spare capacity and DOE Order 202-26-35 keep strain elevated.",
   },
   {
     category: "Data-Center Load",
@@ -136,7 +136,7 @@ export const ISI_CALCULATION_ROWS = [
     score: "90",
     contribution: "19.8",
     reason:
-      "Hyperscale demand remains strategically coupled to grid readiness and large-load integration under summer alerts.",
+      "Hyperscale demand remains strategically coupled to grid readiness, large-load integration, and backup-generation flexibility under summer alerts.",
   },
   {
     category: "Transformer Supply",
@@ -168,20 +168,20 @@ export const ISI_CALCULATION_ROWS = [
     score: "75",
     contribution: "9.0",
     reason:
-      "Summer heat keeps cooling load relevant in reliability discussions through the July 14–17 alert window.",
+      "Summer heat keeps cooling load relevant in reliability discussions through successive July alert windows.",
   },
 ] as const;
 
 export const ISI_CALCULATION_TOTAL = {
   contribution: "84.4 → 87",
   reason:
-    "Elevated strain holds after a managed early-July peak and a new Hot Weather Alert for July 14–17 — flexibility narrowing beneath still-functioning systems.",
+    "Elevated strain holds after a managed early-July peak and a mid-July hot-weather alert window under DOE Order 202-26-35 — flexibility narrowing beneath still-functioning systems.",
 } as const;
 
 export const ISI_SOURCES = [
   {
     name: "Utility & Grid Reporting",
-    body: "PJM operations updates, Hot Weather Alerts, DOE orders, FERC large-load rules, transmission queues, interconnection delays, and regional upgrade timelines.",
+    body: "PJM operations updates, Hot Weather and Maximum Generation alerts, DOE Order 202-26-35, FERC large-load rules, transmission queues, interconnection delays, and regional upgrade timelines.",
   },
   {
     name: "Data-Center Reporting",

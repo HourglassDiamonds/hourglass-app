@@ -71,7 +71,7 @@ export type LedgerIndexDefinition = {
   watchingSectionTitle?: string;
 };
 
-export const LEDGER_UPDATED = "Updated weekly — July 14, 2026";
+export const LEDGER_UPDATED = "Updated weekly — July 20, 2026";
 
 const SCALE_GRADIENT_PRESSURE =
   "linear-gradient(90deg, #617f98 0%, #86a2b4 16%, #aaa99d 32%, #c6b384 50%, #bd8d55 66%, #985844 82%, #5f2d31 100%)";
@@ -105,30 +105,30 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     updatedLabel: LEDGER_UPDATED,
     reading: 93,
     readingLabel: "Pressure Reading",
-    status: "Elevated, Corridor Relief Retraced",
-    weeklyDelta: 2,
+    status: "Elevated, Corridor Pressure Operational",
+    weeklyDelta: 0,
     scaleLabels: ["Cold", "Stable", "Elevated", "Hot", "Critical"],
     scaleGradient: SCALE_GRADIENT_PRESSURE,
     summary:
-      "Hormuz corridor relief has retraced — transit volumes fell again after renewed vessel attacks and the fraying of the June ceasefire framework. Oil's risk premium returned toward the mid-to-high $80s on Brent; corridor governance, insurance, and enforcement claims remain unresolved beneath still-functioning markets.",
+      "Corridor pressure remains extremely elevated at 93 — the U.S. naval blockade on Iranian ports was reimposed on July 14 within a campaign that began earlier in 2026, commercial vessel attacks continued near Oman, and Hormuz transit stayed sharply reduced while Brent briefly tested above $90 before settling in the high $80s. Markets remained functional; the week largely confirmed the regime already priced in last week's increase.",
     summaryLead: "The system remains in an",
-    summaryEmphasis: "elevated environment with corridor relief retraced",
+    summaryEmphasis: "elevated environment with corridor pressure operational",
     summaryCompact:
-      "Corridor relief retraced — Hormuz traffic relapsed and oil's risk premium returned beneath rate-sensitive financial conditions and ongoing summer grid tightness.",
+      "Corridor pressure holds at 93 — blockade reimposed, transit constrained, and oil tested a higher band beneath still-functioning markets.",
     weeklyNote:
-      "The fragile corridor relief read of early July did not hold. After the June ceasefire framework frayed, vessel attacks and renewed U.S.–Iran exchanges pulled Hormuz traffic back toward multi-week lows, while oil reversed from near-pre-conflict levels toward the mid-to-high $80s on Brent. The U.S. announced plans for a proposed 20% fee on Hormuz cargo and scheduled the reimposition of a naval blockade against Iranian shipping — attributed as announced, proposed, or scheduled for enforcement measures, not settled control of the strait. Official June CPI showed meaningful temporary disinflation — headline −0.4% month over month and 3.5% year over year, with core CPI flat at 0.0% month over month and 2.6% year over year — largely through energy; that print precedes the renewed oil escalation and does not yet capture it. Forward inflation and rate risk have nonetheless re-entered the frame as yields responded to the energy shock. Markets remained functional. Russia sanctions pressure and the EU's July 15 oil-price-cap decision remain secondary watch items, not the week's primary driver. Summer grid reliability stayed elevated after PJM's early-July peak and a new Hot Weather Alert for July 14–17. This week confirms a retracing of corridor relief inside an already elevated regime — not a prediction of immediate crisis.",
+      "The corridor conflict moved further into practical enforcement, but much of that risk was already reflected in last week's increase. The U.S. naval blockade against Iranian shipping was resumed or reimposed on July 14 — not created that day — within a blockade campaign that began earlier in 2026; CENTCOM reported continued strikes framed around degrading capabilities used against commercial vessels and mariners in the Strait of Hormuz, and later updates described commercial vessels redirected under blockade enforcement. UK maritime reporting confirmed a vessel fire near Oman that was reclassified as a projectile attack, with the crew evacuated. Traceable Hormuz traffic and LNG movement remained sharply reduced. Brent briefly tested above $90 before settling in the high $80s. A Houthi maritime-embargo declaration aimed at Saudi Arabia is a secondary corridor-risk headline — a declaration, not demonstrated sustained closure of Red Sea relief routes. Reports of Gulf infrastructure strikes broaden the risk picture and should be attributed carefully. Diplomatic and ceasefire efforts remain an offsetting consideration. Financial and energy markets continued to function. The EU's temporary freeze of the Russia oil-price cap through July 23 stays a secondary sanctions watch. Summer grid tightness remained elevated but secondary to the corridor channel this week. These developments validate the existing 93 reading; they do not yet establish a distinctly broader systemic regime comparable with the conditions required for 94–96.",
     weeklyNoteCompact:
-      "Corridor relief retraced — Hormuz traffic relapsed, oil's risk premium returned, and forward inflation risk re-entered beneath still-functioning markets.",
+      "Corridor pressure holds — practical enforcement and constrained transit confirmed last week's elevated regime beneath still-functioning markets.",
     methodPills: [
       { label: "Reading Type", value: "Weighted editorial index" },
       { label: "Primary Drivers", value: "Corridor confidence, energy premium, rates" },
-      { label: "Current Direction", value: "Elevated, relief retraced" },
+      { label: "Current Direction", value: "Elevated, pressure operational" },
     ],
     recentReadings: [
       { week: "This Week", degrees: 93, state: "Elevated" },
-      { week: "Last Week", degrees: 91, state: "Elevated" },
+      { week: "Last Week", degrees: 93, state: "Elevated" },
       { week: "2 Weeks Ago", degrees: 91, state: "Elevated" },
-      { week: "3 Weeks Ago", degrees: 90, state: "Elevated" },
+      { week: "3 Weeks Ago", degrees: 91, state: "Elevated" },
     ],
     benchmarks: [
       { name: "Stable Expansion", score: 50, note: "Low pressure", tier: "quiet" },
@@ -141,15 +141,15 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     editorialBlocks: [
       {
         title: "Hormuz & shipping corridors",
-        body: "Transit confidence slipped again after vessel attacks and the fraying of the June framework. Traffic remained depressed relative to the late-June recovery window; AIS darkening and ship-to-ship workarounds show improvisation under risk, not normalized passage. Competing claims over route control matter more than any single declaration that the strait is open or closed.",
+        body: "Practical enforcement deepened after the July 14 blockade reimposition and continued vessel risk near Oman. Traceable traffic and LNG movement stayed sharply reduced; competing claims over route control still matter more than any declaration that the strait is open or closed. A Houthi maritime-embargo declaration is a secondary watch until sustained enforcement is demonstrated.",
       },
       {
         title: "Energy, prices & financial conditions",
-        body: "Oil's risk premium returned as corridor confidence thinned. June CPI captured temporary energy-led disinflation that predates this week's escalation; the renewed oil move reintroduces forward inflation and rate sensitivity beneath still-functioning markets.",
+        body: "Brent briefly tested above $90 before settling in the high $80s. Forward inflation and rate sensitivity remain live beneath still-functioning financial and energy markets — confirming last week's elevated energy-premium frame rather than establishing a new systemic band.",
       },
       {
-        title: "Secondary watch: sanctions & physical constraints",
-        body: "The EU's July 15 oil-price-cap decision and Russia sanctions enforcement remain active channels, but secondary to the corridor reverse. PJM's early-July peak was managed without blackout; a new Hot Weather Alert for July 14–17 keeps summer reliability live.",
+        title: "Secondary watch: sanctions, diplomacy & physical constraints",
+        body: "The EU's temporary oil-price-cap freeze through July 23 and ceasefire or diplomatic proposals remain offsetting or secondary channels. PJM managed mid-July hot-weather alerts under a renewed DOE order window; summer reliability stays elevated but secondary to the corridor channel.",
       },
     ],
   },
@@ -174,13 +174,13 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     scaleLabels: ["Quiet", "Clear", "Mixed", "Noisy", "Saturated"],
     scaleGradient: SCALE_GRADIENT_SIGNAL,
     summary:
-      "High-attention, uneven clarity persists — Hormuz framing now splits among corridor-open, corridor-risk, fee, and blockade narratives in the same cycle. June CPI's temporary disinflation and the renewed oil escalation are being told as sequential rather than simultaneous stories. Qualified AI access claims and embedded event-fraud risk remain background.",
+      "High-attention, uneven clarity persists — official military framing, physical shipping evidence, confirmed vessel attacks with disputed actor attribution, and a Houthi embargo declaration without demonstrated enforcement compete in the same cycle. Oil's intraday $90 test and lower settlement are told differently across outlets; GPT-5.6 general availability and Kimi K3 product/API access add a parallel capability-versus-qualification story.",
     summaryCompact:
-      "High-attention, uneven clarity — competing Hormuz control claims alongside sequenced CPI and oil narratives, with qualified AI access still unresolved.",
+      "High-attention, uneven clarity — competing corridor frames, oil band ambiguity, and AI access stories without a clarity-score increase.",
     weeklyNote:
-      "The information environment intensified around corridor governance without justifying a clarity-score change. Competing claims — Iran asserting route control or closure, the U.S. asserting openness while announcing a proposed Hormuz cargo fee and scheduling blockade reimposition against Iranian shipping — appear in the same news cycle without a shared operational facts base. Market coverage shifted from oil near pre-conflict levels to a restored risk premium; institutional coverage reopened ceasefire-framework failure. In July 14 semiannual Monetary Policy Report testimony, Chairman Warsh pledged resolute commitment to restoring price stability and held the funds-rate range at 3½–3¾ percent from the June meeting, while offering limited forward guidance — leaving market energy-risk repricing less anchored by explicit policy signals. Official June CPI offered a temporary disinflation frame that does not yet include this week's oil move. Access-qualification friction in AI coverage and World Cup fraud risk remain embedded. Signal density rose; clarity did not improve enough to warrant a higher reading.",
+      "Signal density rose around corridor enforcement without improving clarity enough to move the reading. Coverage now splits among reimposed blockade descriptions, open-corridor claims, confirmed vessel attacks near Oman, and disputed attribution of who struck which ships. Official military framing and physical shipping evidence do not always describe the same operational facts base. A Houthi maritime-embargo declaration entered the cycle as a secondary corridor headline before sustained enforcement was demonstrated. Market outlets treated Brent's brief move above $90 and its high-$80s settlement as different stories. On the AI channel, GPT-5.6 general availability across ChatGPT, Codex, and the API sits beside Kimi K3 product and API access with full downloadable weights still pending — another instance of \"available\" describing different realities. Diplomatic and ceasefire language remains an offsetting frame. Density increased; clarity did not improve enough to warrant a higher reading.",
     weeklyNoteCompact:
-      "Uneven clarity — competing Hormuz frames and sequenced CPI-versus-oil stories without a clarity-score increase.",
+      "Uneven clarity — competing blockade and shipping frames, oil band ambiguity, and layered AI access claims without a score increase.",
     methodPills: [
       { label: "Reading Type", value: "Editorial signal map" },
       { label: "Primary Channels", value: "Institutional, market, event, mainstream" },
@@ -190,7 +190,7 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
       { week: "This Week", degrees: 85, state: "Mixed" },
       { week: "Last Week", degrees: 85, state: "Mixed" },
       { week: "2 Weeks Ago", degrees: 85, state: "Mixed" },
-      { week: "3 Weeks Ago", degrees: 84, state: "Mixed" },
+      { week: "3 Weeks Ago", degrees: 85, state: "Mixed" },
     ],
     benchmarks: [
       { name: "Quiet Cycle", score: 42, note: "Low density" },
@@ -202,15 +202,15 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     editorialBlocks: [
       {
         title: "Qualified access claims",
-        body: "\"Released,\" \"available,\" and \"deployed\" increasingly describe different realities — geography, government approval, account tier, and partner access matter. The policy-gated model-release cycle remains structural background.",
+        body: "GPT-5.6 is generally available across ChatGPT, Codex, and the API, while Kimi K3 is usable through Kimi products and API with full downloadable weights still pending — \"available\" still describes different access paths in the same cycle.",
       },
       {
         title: "Corridor frame conflict",
-        body: "Hormuz coverage now spans open-corridor claims, closed-corridor claims, proposed fees, and scheduled blockade reimposition in the same cycle — raising attention without settling an operational facts base.",
+        body: "Coverage spans reimposed blockade descriptions, open-corridor claims, confirmed vessel attacks, disputed attribution, and a Houthi embargo declaration without demonstrated sustained enforcement — raising attention without settling a shared operational facts base.",
       },
       {
         title: "Institutional & market framing",
-        body: "Chairman Warsh's July 14 Monetary Policy Report testimony emphasized price-stability commitment with limited forward guidance, while markets repriced energy and rate risk after the oil reverse. June CPI and the renewed escalation remain sequential stories in coverage.",
+        body: "Official military framing and physical shipping evidence diverge; oil's intraday $90 test and high-$80s settlement are sequenced differently across outlets. Diplomatic and ceasefire language remains an offsetting frame beside energy-risk coverage.",
       },
     ],
   },
@@ -228,50 +228,50 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     intro:
       "A weekly index of how AI capability, deployment, and physical infrastructure move together: models, agents, enterprise integration, power, grid access, and organizational adaptation. The frame is operational and observational — not promotional.",
     updatedLabel: LEDGER_UPDATED,
-    reading: 84,
+    reading: 85,
     readingLabel: "Acceleration Reading",
-    status: "Power- and Grid-Bound Acceleration",
-    weeklyDelta: 0,
+    status: "Frontier Access Broadens, Grid-Bound",
+    weeklyDelta: 1,
     scaleLabels: ["Early", "Building", "Rising", "Fast", "Surge"],
     scaleGradient: SCALE_GRADIENT_AI,
     summary:
-      "Capability remains advanced through broad Claude Sonnet 5 deployment across consumer, enterprise, coding, and API surfaces — while frontier access stays gated and summer grid tightness continues to bound practical pace after the early-July PJM peak and a new Hot Weather Alert for July 14–17.",
+      "Acceleration rose to 85 as frontier access broadened — OpenAI's GPT-5.6 family is generally available across ChatGPT, Codex, and the API with stronger performance-per-dollar, coding, tool use, and multi-agent operation, while Kimi K3 is available through Kimi products and API at competitive cost with full downloadable weights still pending. Compute, electricity, and deployment infrastructure remain binding constraints.",
     summaryCompact:
-      "Power- and grid-bound acceleration — broad Sonnet 5 deployment beneath gated frontier access and continuing summer grid tightness.",
+      "Frontier access broadens to 85 — GPT-5.6 general availability and Kimi K3 product/API access beneath continuing grid and power limits.",
     weeklyNote:
-      "No new frontier capability shock moved the reading. Claude Sonnet 5's late-June broad availability remains the last clear deployment step; partner-only frontier previews and government-coordinated release gates stay separate from that baseline. Physical constraints continue to set practical pace: PJM managed a record early-July peak without blackout, and a Hot Weather Alert covers July 14–17. Enterprise adoption and coding integration hold; governance, energized capacity, and access qualification remain co-equal limits.",
+      "The reading moved to 85 because frontier capability, practical access, cost compression, competitive convergence, and real demand broadened together. GPT-5.6 Sol, Terra, and Luna are generally available across ChatGPT, Codex, and the OpenAI API rather than remaining limited to partner previews — bringing improved performance per dollar, stronger coding and agentic operation, broader tool use, and multi-agent capability into wider product surfaces. Kimi K3 is available through Kimi products and the Kimi API with strong reported benchmark performance and lower deployment or usage costs relative to several closed frontier tiers; full downloadable weights remain pending or incomplete, and not all vendor benchmark claims have been independently verified. Initial demand has pressed available capacity on some access paths. Claude Sonnet 5 remains a broadly deployed baseline beside these moves. Physical constraints still set practical pace after the early-July PJM peak and mid-July hot-weather operations under a renewed DOE order window. Enterprise adoption and coding integration continue; governance, energized capacity, and infrastructure readiness remain co-equal limits.",
     weeklyNoteCompact:
-      "Grid-bound acceleration holds — prior Sonnet 5 gains beneath continuing summer power constraints.",
+      "Frontier access broadens — GPT-5.6 general availability and Kimi K3 product/API access beneath continuing grid constraints.",
     methodPills: [
       { label: "Reading Type", value: "Capability + infrastructure index" },
-      { label: "Primary Drivers", value: "Power, grid, deployment" },
-      { label: "Current Direction", value: "Advancing, grid-bound" },
+      { label: "Primary Drivers", value: "Access, cost, power, deployment" },
+      { label: "Current Direction", value: "Broadening, grid-bound" },
     ],
     recentReadings: [
-      { week: "This Week", degrees: 84, state: "Accelerating" },
+      { week: "This Week", degrees: 85, state: "Accelerating" },
       { week: "Last Week", degrees: 84, state: "Accelerating" },
-      { week: "2 Weeks Ago", degrees: 83, state: "Accelerating" },
-      { week: "3 Weeks Ago", degrees: 82, state: "Accelerating" },
+      { week: "2 Weeks Ago", degrees: 84, state: "Accelerating" },
+      { week: "3 Weeks Ago", degrees: 83, state: "Accelerating" },
     ],
     benchmarks: [
       { name: "Pre-Transformer", score: 38, note: "2017 era" },
       { name: "ChatGPT Launch", score: 62, note: "Late 2022" },
       { name: "Enterprise Wave", score: 71, note: "2024" },
-      { name: "Capex Peak Cycle", score: 84, note: "Current" },
+      { name: "Capex Peak Cycle", score: 85, note: "Current" },
       { name: "Theoretical Max", score: 95, note: "Hypothetical" },
     ],
     editorialBlocks: [
       {
-        title: "Broad deployment baseline",
-        body: "Claude Sonnet 5 remains generally available across consumer, enterprise, coding, and API surfaces — meaningful agentic and tool-use capability at a widely deployed tier, distinct from partner-only frontier previews.",
+        title: "Frontier access broadening",
+        body: "GPT-5.6 is generally available across ChatGPT, Codex, and the API with stronger performance-per-dollar, coding, tool use, and multi-agent operation — a clear step beyond partner-only preview access, while some sensitive capability tiers remain more qualified.",
       },
       {
-        title: "Gated frontier access",
-        body: "Frontier models remain behind government-coordinated previews and partner gates — capability signals exist, but \"released\" and \"available\" describe different realities depending on access path and approval status.",
+        title: "International competitive diffusion",
+        body: "Kimi K3 is available through Kimi products and API with competitive cost and strong reported benchmark performance; full downloadable weights remain pending. Competitive convergence is real without implying any single lab has settled the frontier.",
       },
       {
         title: "Continuing grid constraints",
-        body: "Summer power limits remain operational after the early-July PJM peak — a Hot Weather Alert for July 14–17 keeps physical infrastructure as a co-equal pace-setter beside software capability.",
+        body: "Summer power limits remain operational after the early-July PJM peak and mid-July hot-weather alerts — physical infrastructure stays a co-equal pace-setter beside software capability and broader access.",
       },
     ],
   },
@@ -296,15 +296,15 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     scaleLabels: ["Soft", "Stable", "Firm", "Tight", "Constrained"],
     scaleGradient: SCALE_GRADIENT_MATERIALS,
     summary:
-      "Precious materials remain strategically firm — central-bank accumulation and reserve diversification support the structural read, while gold shows near-term real-yield sensitivity under a restored energy and rate-risk frame. Selective natural diamond categories stay firm; commercial ranges remain price-sensitive.",
+      "Precious materials remain strategically firm — central-bank accumulation and reserve diversification support the structural read, while gold trades around the $4,000 area under near-term real-yield and rate-expectation pressure from the energy frame. Selective natural-diamond pipeline adjustments continue; lab-grown price compression persists in commercial channels.",
     summaryLead: "Precious materials remain in a",
     summaryEmphasis: "strategically firm environment",
     summaryCompact:
-      "Strategically firm — central-bank gold demand and supply discipline, with selective diamond-pipeline softness and embedded lab-grown compression.",
+      "Strategically firm — structural central-bank demand beneath near-term real-yield pressure, with selective diamond-pipeline adjustments and lab-grown compression.",
     weeklyNote:
-      "No materials-regime change this week. Central-bank gold demand remains a structural support beneath near-term real-yield sensitivity as the renewed oil and rate frame firms yields. De Beers' July sight pricing alignment stays a selective pipeline watch rather than broad market stress. Premium natural categories held selective firmness; commercial ranges remain price-sensitive. Lab-grown compression persisted in mid-tier channels as an embedded factor, not a new shock.",
+      "No materials-regime change this week. Structural central-bank and diversification demand continue to support the reading, while near-term pressure from real yields and rate expectations — reinforced by the energy and inflation frame — keeps gold trading around the $4,000 area rather than breaking the strategic posture. Selective natural-diamond pipeline adjustments, including July sight pricing alignment, remain a segmented watch rather than broad market stress. Premium natural categories held selective firmness; commercial ranges remain price-sensitive. Lab-grown price compression persisted in mid-tier channels as an embedded factor, not a newly scored shock. Short-term price action alone does not move the index.",
     weeklyNoteCompact:
-      "Strategically firm — central-bank demand, selective diamond pipeline, gold still real-yield sensitive.",
+      "Strategically firm — central-bank demand, gold near $4,000 under real-yield pressure, selective diamond pipeline.",
     methodPills: [
       { label: "Reading Type", value: "Materials + sourcing index" },
       { label: "Primary Focus", value: "Gold, platinum, diamonds" },
@@ -314,7 +314,7 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
       { week: "This Week", degrees: 85, state: "Firm" },
       { week: "Last Week", degrees: 85, state: "Firm" },
       { week: "2 Weeks Ago", degrees: 85, state: "Firm" },
-      { week: "3 Weeks Ago", degrees: 83, state: "Firm" },
+      { week: "3 Weeks Ago", degrees: 85, state: "Firm" },
     ],
     benchmarks: [
       { name: "Quiet Wholesale", score: 45, note: "Buyer’s market" },
@@ -326,15 +326,15 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     editorialBlocks: [
       {
         title: "Gold & central-bank demand",
-        body: "Central-bank net buying continues to support the structural read. Near-term gold movement still shows real-yield sensitivity as the restored energy premium feeds rate-path uncertainty.",
+        body: "Structural central-bank and diversification demand continue to support the reading. Near-term gold trading around the $4,000 area still shows real-yield and rate-expectation sensitivity as the energy premium feeds the policy path.",
       },
       {
         title: "Natural diamonds",
-        body: "De Beers' July sight rough-price alignment remains selective rather than a broad loosening. Premium natural categories stay selectively firm in key sizes and cuts.",
+        body: "Selective natural-diamond pipeline adjustments, including July sight pricing alignment, remain segmented rather than a broad market break. Premium natural categories stay selectively firm in key sizes and cuts.",
       },
       {
         title: "Sourcing posture",
-        body: "Segmentation persists between structural precious-material demand and selective diamond-pipeline softness. Provenance, selective inventory, and patient sourcing remain preferable to reactive buying.",
+        body: "Segmentation persists between structural precious-material demand and selective diamond-pipeline softness, with continued lab-grown compression in commercial channels. Provenance, selective inventory, and patient sourcing remain preferable to reactive buying.",
       },
     ],
   },
@@ -359,13 +359,13 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     scaleLabels: ["Low", "Rising", "Elevated", "High", "Critical"],
     scaleGradient: SCALE_GRADIENT_INFRASTRUCTURE,
     summary:
-      "Strain remains elevated after PJM served a record early-July peak through emergency demand response without widespread blackout. Flexibility stayed narrow: a new Hot Weather Alert covers July 14–17 as summer reliability remains an active constraint beneath functioning systems.",
+      "Strain remains elevated after PJM's early-July record peak and a mid-July hot-weather window that included Maximum Generation alerts and DOE Order 202-26-35 (July 14–21). No publicly confirmed broad blackout was found in the reviewed evidence; large-load and backup-generation flexibility remains a live concern beneath functioning systems.",
     summaryCompact:
-      "Elevated strain — early-July PJM peak managed, with a new Hot Weather Alert for July 14–17 keeping summer reliability live.",
+      "Elevated strain — mid-July PJM alerts and a renewed DOE order window keep summer reliability live beneath still-functioning systems.",
     weeklyNote:
-      "PJM confirmed a preliminary all-time peak near 168 GW on July 2, managed with emergency demand response and temporary DOE 202(c) authority; the large-load backup-generation action was warned but not issued. Orders covering that window have since expired. Structural tightness remains: interconnection, transformers, and large-load integration still limit spare capacity. PJM issued a Hot Weather Alert for July 14–17 with elevated forecast peaks. Systems continue to function; strain does not fall simply because the prior emergency was successfully managed.",
+      "PJM's early-July preliminary all-time peak near 168 GW remains the summer benchmark. For July 14–17, PJM issued a Hot Weather Alert and Maximum Generation / Load Management alerts around elevated forecast peaks; DOE Order 202-26-35, effective July 14 through July 21, again authorized temporary environmental-permit flexibility for specified units and large-load backup-generation direction as a last resort. Publicly reviewed evidence does not show a confirmed broad blackout during that window; whether backup generation was dispatched is not stated here as a settled negative absent primary confirmation. Structural tightness remains: interconnection, transformers, and large-load integration still limit spare capacity. Systems continue to function; strain does not fall simply because an alert window was managed without a confirmed blackout.",
     weeklyNoteCompact:
-      "Elevated strain holds — early-July peak managed; Hot Weather Alert for July 14–17 keeps summer reliability live.",
+      "Elevated strain holds — mid-July hot-weather alerts and DOE Order 202-26-35 keep summer reliability live.",
     methodPills: [
       { label: "Reading Type", value: "Physical infrastructure index" },
       { label: "Primary Focus", value: "Grid, power, transit, logistics" },
@@ -374,8 +374,8 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     recentReadings: [
       { week: "This Week", degrees: 87, state: "Elevated" },
       { week: "Last Week", degrees: 87, state: "Elevated" },
-      { week: "2 Weeks Ago", degrees: 86, state: "Elevated" },
-      { week: "3 Weeks Ago", degrees: 85, state: "Elevated" },
+      { week: "2 Weeks Ago", degrees: 87, state: "Elevated" },
+      { week: "3 Weeks Ago", degrees: 86, state: "Elevated" },
     ],
     benchmarks: [
       { name: "Stable Buildout", score: 45, note: "Low constraint", tier: "quiet" },
@@ -387,11 +387,11 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     editorialBlocks: [
       {
         title: "PJM summer reliability",
-        body: "The early-July record peak was served without widespread blackout, proving extreme load can clear under emergency procedures. A new Hot Weather Alert for July 14–17 keeps operational readiness elevated; spare capacity remains thin.",
+        body: "The early-July record peak was served without widespread blackout. The mid-July Hot Weather and Maximum Generation alert window, under DOE Order 202-26-35 through July 21, kept operational readiness elevated; spare capacity remains thin.",
       },
       {
         title: "Grid & large-load integration",
-        body: "FERC large-load deadlines and data-center power demand continue to shape siting and interconnection — structural constraints remain after the acute heat peak.",
+        body: "FERC large-load deadlines, data-center power demand, and concern about backup-generation flexibility continue to shape siting and interconnection — structural constraints remain after successive heat windows.",
       },
       {
         title: "Event logistics & transit",
@@ -399,7 +399,7 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
       },
       {
         title: "Summer heat & reliability",
-        body: "Summer heat remains an active reliability factor after the early-July emergency window — cooling and transmission stress stay operational even without a new blackout event.",
+        body: "Summer heat remains an active reliability factor after early-July and mid-July alert windows — cooling and transmission stress stay operational even without a publicly confirmed broad blackout in the reviewed evidence.",
       },
     ],
     watchingSectionTitle: "What We're Watching",
@@ -438,18 +438,18 @@ export const GPI_BENCHMARKS = getLedgerIndex("global-pressure").benchmarks ?? []
 export const QUIET_METRICS = [
   {
     label: "Energy Pressure",
-    value: "Relief Retraced",
-    note: "Hormuz traffic relapsed and oil's risk premium returned — routing, insurance, and corridor governance remain unresolved.",
+    value: "Operational Corridor Risk",
+    note: "Blockade reimposed, Hormuz transit constrained, and oil tested a higher band — routing, insurance, and corridor governance remain unresolved beneath functioning markets.",
   },
   {
     label: "AI Compute Load",
-    value: "Grid-Bound",
-    note: "Capability gains remain real; summer grid alerts and large-load integration still set practical pace.",
+    value: "Access Broadening",
+    note: "GPT-5.6 general availability and Kimi K3 product/API access broadened frontier diffusion; summer grid and large-load limits still set practical pace.",
   },
   {
     label: "Physical Constraints",
     value: "Operational Strain",
-    note: "Early-July PJM peak was managed; a new Hot Weather Alert for July 14–17 keeps flexibility narrow beneath functioning systems.",
+    note: "Mid-July PJM alerts and DOE Order 202-26-35 kept flexibility narrow beneath still-functioning systems; no publicly confirmed broad blackout in the reviewed evidence.",
   },
 ] as const;
 
