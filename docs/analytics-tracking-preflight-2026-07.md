@@ -596,7 +596,7 @@ Existing `lib/attribution.test.ts` and `lib/concierge/hardening.test.ts` remain 
 
 ### What remains external / manual
 
-See **Production validation checklist** below — all account-side rows marked `MANUAL — NOT COMPLETED IN CODE`.
+See **Production validation checklist** below. Account-side GA4 Admin settings and production smoke results are recorded there; Vercel Preview isolation remains deferred.
 
 ### Deliberately deferred
 
@@ -605,24 +605,31 @@ See **Production validation checklist** below — all account-side rows marked `
 - Renaming `consultation_cta_clicked` / `concierge_form_started`
 - Stripping sensitive params from the **browser** Concierge URL (CRM prefill still needs them)
 - `home_clicked` wiring; capture-route `noindex`
+- Vercel Preview → production GA isolation confirmation (await next normal Preview deploy)
 
 ---
 
 ## Production validation checklist (Pass 1)
 
+**Validated:** production deploy after commit `de68ed7` (2026-07-21).  
+**Not claimed from code alone** — results below were observed in GA4 / HubSpot / browser behavior by the owner.
+
 | # | Check | Status |
 |---|--------|--------|
-| 1 | GA4 Enhanced Measurement → disable history-based page views | **MANUAL — NOT COMPLETED IN CODE** |
-| 2 | GA4 data redaction for sensitive query params (`report`, `url`, `sid`, `lab`, `email`, …) | **MANUAL — NOT COMPLETED IN CODE** |
-| 3 | GA4 email-address redaction (defense in depth) | **MANUAL — NOT COMPLETED IN CODE** |
-| 4 | DebugView: one initial `page_view` on hard load | Validate after deploy / `GA_CLIENT_ENABLED` |
-| 5 | DebugView: one `page_view` per client-side navigation | Validate after deploy |
-| 6 | Landing UTMs visible on sanitized `page_location` / `page_path` | Validate after deploy |
-| 7 | Sensitive query values absent from `page_location`, `page_path`, payloads | Validate after deploy |
-| 8 | Ordinary Vercel Preview visit sends **no** production hits | Validate on next Preview |
-| 9 | Confirmed Concierge submit → exactly one `generate_lead` | Validate after deploy |
-| 10 | Failed / rejected Concierge submit → no `generate_lead` | Validate after deploy |
+| 1 | GA4 Enhanced Measurement → disable history-based page views | **Verified (manual GA4 Admin)** — browser-history page views OFF |
+| 2 | GA4 URL query-parameter redaction for approved sensitive params | **Verified (manual GA4 Admin)** — redaction ON |
+| 3 | GA4 email-address redaction (defense in depth) | **Verified (manual GA4 Admin)** — email redaction ON |
+| 4 | One initial `page_view` per hard load | **Verified in production** |
+| 5 | One additional `page_view` per client-side route change | **Verified in production** |
+| 6 | Approved UTMs preserved on `page_location` and `page_path` | **Verified in production** |
+| 7 | Sensitive params `report`, `url`, and `shape` absent from GA4 payloads | **Verified in production** |
+| 7b | UTMs do not propagate onto internal page URLs | **Verified in production** |
+| 8 | Ordinary Vercel Preview visit sends **no** production hits | **Deferred** — confirm on next normal Preview deployment |
+| 9 | Confirmed Concierge submit → exactly one `generate_lead` | **Verified in production** — one `generate_lead`; no direct personal information in the event |
+| 9b | Successful Concierge submission created expected HubSpot deal | **Verified** |
+| 9c | Original campaign attribution persisted into HubSpot | **Verified** |
+| 10 | Failed-validation Concierge path → no `generate_lead` | **Verified in production** — missing required fields kept the form in validation/error; GA4 fired `concierge_form_error` (`reason=validation`); no additional `generate_lead` (Tag Assistant retained only the earlier successful one); no personal information in the validation-error payload |
 
 ---
 
-*Pass 1 code complete. Manual GA4 Admin items above are not completed by this repository change.*
+*Pass 1 code shipped (`de68ed7`). Production page-view, UTM, redaction, confirmed-lead, and failed-validation checks above are owner-verified. Preview isolation remains open until the next normal Preview deployment.*
