@@ -61,7 +61,7 @@ export function RingSizeControl({
         <p className="dss-dim-note">
           {cardCalibrated
             ? "Your card sets the photo scale. Final ring size should be confirmed by a jeweler."
-            : "Complete the card measurement to create a scaled preview."}
+            : "Complete the card measurement to create a calibrated preview."}
         </p>
       </section>
     );

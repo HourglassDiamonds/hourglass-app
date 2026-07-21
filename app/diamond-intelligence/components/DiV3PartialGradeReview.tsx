@@ -7,6 +7,8 @@ import {
   DI_V3_BRAND,
   DI_V3_PARTIAL_CARD,
   DI_V3_PRODUCT,
+  DI_V3_STATE_EYEBROW,
+  DI_V3_STATE_TITLE,
 } from "./di-v3-styles";
 import DiV3PartialScreenshotClarity from "./DiV3PartialScreenshotClarity";
 import {
@@ -59,13 +61,9 @@ export default function DiV3PartialGradeReview({
         <div className={`${DI_V3_PRODUCT} mt-3.5`}>Diamond Intelligence</div>
       </div>
 
-      <p className="text-[11px] uppercase tracking-[0.18em] text-[#9b8b78]">
-        {incompleteCopy.eyebrow}
-      </p>
+      <p className={DI_V3_STATE_EYEBROW}>{incompleteCopy.eyebrow}</p>
 
-      <h1 className="mt-4 font-serif text-[clamp(34px,5.5vw,52px)] font-normal uppercase leading-[0.98] tracking-[0.035em] text-[#1e1a16]">
-        {incompleteCopy.headline}
-      </h1>
+      <h1 className={DI_V3_STATE_TITLE}>{incompleteCopy.headline}</h1>
 
       <p className="mx-auto mt-6 max-w-[520px] text-[17px] leading-[1.72] text-[#6f665b]">
         {incompleteCopy.subhead}

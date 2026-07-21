@@ -3,23 +3,25 @@ export function CapturePageStyles() {
     <style
       dangerouslySetInnerHTML={{
         __html: `
+      /* Colors bound to the approved --hg-* brand tokens (with literal
+         fallbacks). Layout, behavior, and capture lifecycle are unchanged. */
       .dss-capture-shell{
         min-height:100dvh;
         display:grid;
         place-items:center;
         padding:24px 20px;
-        background:oklch(0.965 0.008 75);
-        color:oklch(0.28 0.012 60);
+        background:var(--hg-body, #f7f3ee);
+        color:var(--hg-ink, #1c1b1a);
         font-family:var(--font-geist-sans), system-ui, sans-serif;
         pointer-events:auto;
       }
       .dss-capture-card{
         width:min(420px, 100%);
-        background:oklch(0.985 0.006 78);
-        border:1px solid oklch(0.93 0.006 72);
+        background:oklch(from var(--hg-surface, #f8f3eb) calc(l + 0.015) c h);
+        border:1px solid var(--hg-line, #e4dbcf);
         border-radius:14px;
         padding:28px 24px 24px;
-        box-shadow:0 1px 2px oklch(0.55 0.012 65 / 0.04), 0 4px 14px oklch(0.45 0.012 65 / 0.04);
+        box-shadow:var(--hg-shadow-soft, 0 6px 18px rgba(48, 36, 28, 0.04));
         text-align:center;
         pointer-events:auto;
         position:relative;
@@ -27,7 +29,7 @@ export function CapturePageStyles() {
       }
       .dss-capture-brand{
         font-size:9px; letter-spacing:0.18em; text-transform:uppercase;
-        color:oklch(0.46 0.011 62);
+        color:var(--hg-eyebrow, #8a8177);
         margin:0 0 16px;
       }
       .dss-capture-title{
@@ -37,11 +39,11 @@ export function CapturePageStyles() {
         margin:0 0 10px;
       }
       .dss-capture-body{
-        font-size:13px; line-height:1.55; color:oklch(0.46 0.011 62);
+        font-size:13px; line-height:1.55; color:var(--hg-muted, #756b61);
         margin:0 0 16px;
       }
       .dss-capture-note{
-        font-size:11.5px; line-height:1.5; color:oklch(0.52 0.010 62);
+        font-size:11.5px; line-height:1.5; color:var(--hg-muted, #756b61);
         margin:0 0 18px;
       }
       .dss-capture-guide{
@@ -54,9 +56,11 @@ export function CapturePageStyles() {
         width:100%;
         aspect-ratio:4/5;
         border-radius:14px;
-        border:1px solid oklch(0.90 0.008 72);
+        border:1px solid var(--hg-line, #e4dbcf);
         background:
-          radial-gradient(ellipse 70% 55% at 50% 42%, oklch(0.99 0.004 78), oklch(0.96 0.008 75));
+          radial-gradient(ellipse 70% 55% at 50% 42%,
+            oklch(from var(--hg-body, #f7f3ee) calc(l + 0.02) c h),
+            var(--hg-body, #f7f3ee));
         overflow:hidden;
         pointer-events:none;
       }
@@ -65,7 +69,7 @@ export function CapturePageStyles() {
         font-size:9px;
         letter-spacing:0.14em;
         text-transform:uppercase;
-        color:oklch(0.58 0.010 65);
+        color:var(--hg-eyebrow, #8a8177);
         pointer-events:none;
       }
       .dss-capture-file-control{
@@ -81,12 +85,12 @@ export function CapturePageStyles() {
         width:100%;
         padding:12px 16px;
         border-radius:10px;
-        border:1px solid oklch(0.82 0.040 70);
-        background:oklch(0.94 0.024 75);
+        border:1px solid oklch(from var(--hg-gold, #ad9164) 0.82 0.04 h);
+        background:oklch(from var(--hg-gold, #ad9164) 0.94 0.024 h);
         font-size:11px;
         letter-spacing:0.12em;
         text-transform:uppercase;
-        color:oklch(0.28 0.012 60);
+        color:var(--hg-ink, #1c1b1a);
         cursor:pointer;
         text-align:center;
         pointer-events:none;
@@ -103,6 +107,13 @@ export function CapturePageStyles() {
         cursor:pointer;
         font-size:16px;
         border:0;
+      }
+      /* Keyboard focus lands on the invisible input — surface it on the
+         visible control instead. */
+      .dss-capture-file-control:has(.dss-capture-file-input:focus-visible)
+        .dss-capture-primary{
+        outline:2px solid var(--hg-focus-ring, #987648);
+        outline-offset:2px;
       }
       .dss-capture-file-control.is-busy .dss-capture-primary{
         opacity:0.6;
@@ -133,9 +144,9 @@ export function CapturePageStyles() {
       }
       .dss-capture-secondary{
         appearance:none;
-        border:1px solid oklch(0.86 0.012 70);
+        border:1px solid var(--hg-line-strong, #d9cdbd);
         background:transparent;
-        color:oklch(0.36 0.012 60);
+        color:var(--hg-charcoal, #2b2723);
         font-size:11px;
         letter-spacing:0.08em;
         text-transform:uppercase;
@@ -143,11 +154,15 @@ export function CapturePageStyles() {
         border-radius:10px;
         cursor:pointer;
       }
+      .dss-capture-secondary:focus-visible{
+        outline:2px solid var(--hg-focus-ring, #987648);
+        outline-offset:2px;
+      }
       .dss-capture-hint{
         margin:16px 0 0;
         font-size:10px;
         letter-spacing:0.06em;
-        color:oklch(0.62 0.010 65);
+        color:var(--hg-eyebrow, #8a8177);
       }
       .sr-only{
         position:absolute;

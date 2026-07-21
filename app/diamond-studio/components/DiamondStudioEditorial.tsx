@@ -16,9 +16,9 @@ const introCopy =
 
 const STUDIO_FAQS = [
   {
-    question: "What is the Diamond Size Studio?",
+    question: "What is the Size Studio?",
     answer:
-      "The Diamond Size Studio is an interactive tool that helps you compare how different diamond carat weights, shapes, and ring sizes appear on the finger.",
+      "The Size Studio is an interactive tool that helps you compare how different diamond carat weights, shapes, and ring sizes appear on the finger.",
   },
   {
     question: "Why do diamonds of the same carat weight look different?",
@@ -96,7 +96,7 @@ export default function DiamondStudioEditorial() {
                 explains why beauty should not be traded for spread alone. When
                 you have a report in hand,{" "}
                 <Link href="/diamond-intelligence" className={editorialLink}>
-                  Diamond Intelligence
+                  Analyze Sparkle
                 </Link>{" "}
                 can help translate proportions into practical context.
               </p>
@@ -222,7 +222,7 @@ export default function DiamondStudioEditorial() {
           >
             <div className={bodyCopy}>
               <p>
-                The Diamond Size Studio helps you understand scale before you
+                The Size Studio helps you understand scale before you
                 choose a stone: how carat, shape, ring size, and orientation
                 interact on the hand. It is a useful preview. It is not a
                 substitute for seeing diamonds move under light, comparing

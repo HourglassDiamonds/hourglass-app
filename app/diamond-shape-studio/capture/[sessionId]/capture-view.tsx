@@ -45,7 +45,7 @@ function uploadErrorMessage(status: number, message?: string): string {
     return "Photo is too large (max 10 MB). Try again with a smaller image.";
   }
   if (status === 404) {
-    return "This capture link is not valid. Return to Scaled Preview on your computer and create a new capture session.";
+    return "This capture link is not valid. Return to See It On Your Hand on your computer and create a new capture session.";
   }
   if (status === 400 && message) return message;
   return message ?? "Upload failed. Try again.";
@@ -54,7 +54,7 @@ function uploadErrorMessage(status: number, message?: string): string {
 function modeCopy(_mode: CaptureMode) {
   void _mode;
   return {
-    title: "Capture for Scaled Preview",
+    title: "Capture for See It On Your Hand",
     instruction:
       "Place a blank gift card, hotel key, or standard-size loyalty card beside your hand on the same surface. Photograph from directly overhead. Keep the card’s full long edge visible. Avoid cards showing personal or financial information.",
     note: "On desktop, mark the card’s long edge to set visual scale, then frame the card out of your final preview. Final ring sizing should be confirmed by a jeweler.",
@@ -76,14 +76,14 @@ function gateToBlockedState(gate: CaptureGateResult): {
     return {
       state: "delivered",
       title: "Photo received on your computer.",
-      body: "Return to your desktop Scaled Preview to mark the card, frame your hand, and preview the diamond.",
+      body: "Return to See It On Your Hand on your desktop to mark the card, frame your hand, and preview the diamond.",
     };
   }
   if (gate.reason === "already_uploaded") {
     return {
       state: "uploaded_waiting",
       title: "Photo uploaded. Waiting for your computer to receive it…",
-      body: "Keep this page open. Your computer must still be waiting on the Scaled Preview QR screen.",
+      body: "Keep this page open. Your computer must still be waiting on the See It On Your Hand QR screen.",
     };
   }
   return {
@@ -129,7 +129,7 @@ export function CaptureView({
       setState("delivered");
       setTitle("Photo received on your computer.");
       setBody(
-        "Return to your desktop Scaled Preview to mark the card, frame your hand, and preview the diamond.",
+        "Return to See It On Your Hand on your desktop to mark the card, frame your hand, and preview the diamond.",
       );
       setWaitingHint(false);
       setError(null);

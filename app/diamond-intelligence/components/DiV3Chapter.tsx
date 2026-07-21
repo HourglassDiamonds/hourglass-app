@@ -69,8 +69,8 @@ export default function DiV3Chapter({
       : "grid-cols-[1fr_auto]";
 
   const summaryClass = compact
-    ? `grid cursor-pointer list-none ${summaryGridClass} items-start gap-3 px-4 py-4 text-[#1e1a16] transition-colors duration-200 ease-out hover:bg-[rgba(255,255,255,0.18)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#b59662]/50 md:px-5 md:py-[18px] [&::-webkit-details-marker]:hidden`
-    : `grid cursor-pointer list-none ${summaryGridClass} items-center gap-3 px-[18px] py-[22px] text-[#1e1a16] transition-colors duration-200 ease-out hover:bg-[rgba(255,255,255,0.18)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#b59662]/50 md:gap-[18px] md:px-[30px] md:py-7 [&::-webkit-details-marker]:hidden`;
+    ? `grid cursor-pointer list-none ${summaryGridClass} items-start gap-3 px-4 py-4 text-[#1e1a16] transition-colors duration-200 ease-out hover:bg-[rgba(255,255,255,0.18)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hg-focus md:px-5 md:py-[18px] [&::-webkit-details-marker]:hidden`
+    : `grid cursor-pointer list-none ${summaryGridClass} items-center gap-3 px-[18px] py-[22px] text-[#1e1a16] transition-colors duration-200 ease-out hover:bg-[rgba(255,255,255,0.18)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hg-focus md:gap-[18px] md:px-[30px] md:py-7 [&::-webkit-details-marker]:hidden`;
 
   const titleClass = compact
     ? "block font-serif text-[0.98rem] font-normal leading-[1.35] tracking-[-0.01em] text-[#1e1a16] md:text-[1.02rem]"

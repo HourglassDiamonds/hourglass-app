@@ -45,19 +45,19 @@ const MOBILE_STUDIO_SCRIM = `
 
 const STUDIO_TOOLS = [
   {
-    title: "See It On a Finger",
-    description: "Compare diamond size on your finger before you buy.",
+    title: "Size Studio",
+    description: "Visualize diamond size and finger coverage.",
     href: "/diamond-studio",
   },
   {
-    title: "Analyze Sparkle",
-    description: "Analyze performance and report quality.",
-    href: "/diamond-intelligence",
+    title: "See It On Your Hand",
+    description: "Preview diamond shapes at calibrated scale on your own hand.",
+    href: "/diamond-shape-studio",
   },
   {
-    title: "See It On Your Hand",
-    description: "Preview diamond shapes and presence on your own hand.",
-    href: "/diamond-shape-studio",
+    title: "Analyze Sparkle",
+    description: "Evaluate likely light performance from a grading report.",
+    href: "/diamond-intelligence",
   },
 ] as const;
 

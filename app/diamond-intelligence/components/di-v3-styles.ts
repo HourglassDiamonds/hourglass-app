@@ -94,5 +94,16 @@ export const DI_V3_HERO_PROOF =
 export const DI_V3_TEXT_CTA =
   "inline-flex items-center gap-2 border-b border-[rgba(181,150,98,0.7)] pb-1 text-sm tracking-[0.04em] text-[#1e1a16] transition-opacity hover:opacity-80";
 
+/**
+ * Shared state-card hierarchy (error / partial / recovery presentation):
+ * eyebrow → title → body in one scale family. Calmer than the result hero —
+ * these cards state what happened, not a verdict.
+ */
+export const DI_V3_STATE_EYEBROW =
+  "text-[11px] uppercase tracking-[0.18em] text-[var(--hg-eyebrow,#8a8177)]";
+
+export const DI_V3_STATE_TITLE =
+  "mt-4 font-serif text-[clamp(26px,4vw,36px)] font-normal leading-[1.16] tracking-[0.005em] text-[#1e1a16]";
+
 export const DI_V3_PARTIAL_CARD =
   "relative mx-auto w-full max-w-[760px] overflow-hidden rounded-[28px] border border-[rgba(58,48,38,0.32)] bg-[#fbf7ef] px-[22px] py-[42px] text-center shadow-[0_28px_80px_rgba(30,26,22,0.08)] md:px-[38px] md:py-[58px]";

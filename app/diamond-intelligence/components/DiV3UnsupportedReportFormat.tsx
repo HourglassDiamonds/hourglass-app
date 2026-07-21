@@ -19,6 +19,8 @@ import {
   DI_V3_BRAND,
   DI_V3_PARTIAL_CARD,
   DI_V3_PRODUCT,
+  DI_V3_STATE_EYEBROW,
+  DI_V3_STATE_TITLE,
   DI_V3_TEXT_CTA,
 } from "./di-v3-styles";
 
@@ -41,11 +43,11 @@ export default function DiV3UnsupportedReportFormat({
         <div className={`${DI_V3_PRODUCT} mt-3.5`}>Diamond Intelligence</div>
       </div>
 
-      <p className="text-[11px] uppercase tracking-[0.18em] text-[#9b8b78]">
+      <p className={DI_V3_STATE_EYEBROW}>
         {CLIENT_UNSUPPORTED_REPORT_FORMAT_EYEBROW}
       </p>
 
-      <h1 className="mt-4 font-serif text-[clamp(34px,5.5vw,52px)] font-normal uppercase leading-[0.98] tracking-[0.035em] text-[#1e1a16]">
+      <h1 className={DI_V3_STATE_TITLE}>
         {CLIENT_UNSUPPORTED_REPORT_FORMAT_HEADLINE}
       </h1>
 

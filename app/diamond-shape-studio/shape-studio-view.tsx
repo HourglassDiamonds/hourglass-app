@@ -400,7 +400,7 @@ export function ShapeStudioView() {
           {showRail ? (
             <aside
               className="dss-control-rail"
-              aria-label="Scaled Preview controls"
+              aria-label="See It On Your Hand controls"
             >
               {showPhotoCard ? (
                 <HandPhotoPanel

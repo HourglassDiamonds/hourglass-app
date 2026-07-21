@@ -1,79 +1,15 @@
 "use client";
 
-import { useState, type ReactNode, type SyntheticEvent } from "react";
-import {
-  DI_V3_CHAPTER,
-  DI_V3_CHAPTER_BODY_STUDIO,
-  DI_V3_CHAPTER_STUDIO,
-  DI_V3_STUDIO_ACCORDION_GROUP,
-} from "@/app/diamond-intelligence/components/di-v3-styles";
+import Link from "next/link";
+import DiV3Chapter from "@/app/diamond-intelligence/components/DiV3Chapter";
+import { DI_V3_STUDIO_ACCORDION_GROUP } from "@/app/diamond-intelligence/components/di-v3-styles";
+import { trackConsultationCtaClicked } from "@/lib/consultation-cta";
 
 const bodyCopy =
   "space-y-4 text-[0.94rem] leading-[1.82] text-[var(--ink-soft)] md:text-[1rem] md:leading-[1.85]";
 
 const introCopy =
   "text-[0.94rem] leading-[1.82] text-[var(--ink-soft)] md:text-[1rem] md:leading-[1.85]";
-
-const summaryClass =
-  "grid cursor-pointer list-none grid-cols-[auto_1fr_auto] items-center gap-3 px-[18px] py-[22px] text-[#1e1a16] transition-colors duration-200 ease-out hover:bg-[rgba(255,255,255,0.18)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hg-focus md:gap-[18px] md:px-[30px] md:py-7 [&::-webkit-details-marker]:hidden";
-
-const titleClass =
-  "block text-[11px] uppercase tracking-[0.11em] text-[#1e1a16] md:text-xs md:tracking-[0.15em]";
-
-/**
- * Local studio accordion — open state stays inside Shape Studio so
- * Diamond Intelligence's DiV3Chapter remains untouched.
- */
-function ShapeStudioExplainerChapter({
-  number,
-  title,
-  chapterId,
-  defaultOpen = false,
-  children,
-}: {
-  number: string;
-  title: string;
-  chapterId: string;
-  defaultOpen?: boolean;
-  children: ReactNode;
-}) {
-  const [open, setOpen] = useState(defaultOpen);
-
-  const handleToggle = (event: SyntheticEvent<HTMLDetailsElement>) => {
-    setOpen(event.currentTarget.open);
-  };
-
-  return (
-    <details
-      open={open}
-      onToggle={handleToggle}
-      className={`${DI_V3_CHAPTER} ${DI_V3_CHAPTER_STUDIO} group`}
-      data-v3-chapter={chapterId}
-    >
-      <summary className={summaryClass}>
-        <span className="font-serif text-lg leading-none text-[#b59662] opacity-90">
-          {number}
-        </span>
-        <span className="min-w-0">
-          <span className={titleClass}>{title}</span>
-        </span>
-        <span
-          className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-[rgba(181,150,98,0.32)] bg-[rgba(181,150,98,0.07)] text-[17px] font-light leading-none text-[#b59662] transition-transform duration-200 ease-out group-open:hidden"
-          aria-hidden
-        >
-          ＋
-        </span>
-        <span
-          className="hidden h-11 w-11 shrink-0 place-items-center rounded-full border border-[rgba(181,150,98,0.32)] bg-[rgba(181,150,98,0.07)] text-[17px] font-light leading-none text-[#b59662] transition-transform duration-200 ease-out group-open:grid"
-          aria-hidden
-        >
-          —
-        </span>
-      </summary>
-      <div className={DI_V3_CHAPTER_BODY_STUDIO}>{children}</div>
-    </details>
-  );
-}
 
 export default function ShapeComparisonEditorial() {
   return (
@@ -99,10 +35,11 @@ export default function ShapeComparisonEditorial() {
         </div>
 
         <div className={DI_V3_STUDIO_ACCORDION_GROUP}>
-          <ShapeStudioExplainerChapter
+          <DiV3Chapter
             number="01"
             title="How the card sets scale"
             chapterId="shape-card-sets-scale"
+            studio
             defaultOpen
           >
             <div className={bodyCopy}>
@@ -115,29 +52,31 @@ export default function ShapeComparisonEditorial() {
                 overhead as practical.
               </p>
             </div>
-          </ShapeStudioExplainerChapter>
+          </DiV3Chapter>
 
-          <ShapeStudioExplainerChapter
+          <DiV3Chapter
             number="02"
             title="Why it may look different from Size Studio"
             chapterId="shape-vs-size-studio"
+            studio
           >
             <div className={bodyCopy}>
               <p>
-                Diamond Size Studio uses a standardized finger model associated
-                with ring size. Scaled Preview uses the visible proportions of
+                Size Studio uses a standardized finger model associated with
+                ring size. See It On Your Hand uses the visible proportions of
                 your photographed hand. Two people with the same ring size can
                 have different top-down finger widths, so the same diamond may
                 appear different while still using the same millimeter
                 dimensions.
               </p>
             </div>
-          </ShapeStudioExplainerChapter>
+          </DiV3Chapter>
 
-          <ShapeStudioExplainerChapter
+          <DiV3Chapter
             number="03"
             title="What the preview can and cannot show"
             chapterId="shape-preview-limits"
+            studio
           >
             <div className={bodyCopy}>
               <p>
@@ -149,8 +88,40 @@ export default function ShapeComparisonEditorial() {
                 confirmed before purchase.
               </p>
             </div>
-          </ShapeStudioExplainerChapter>
+          </DiV3Chapter>
         </div>
+
+        <aside
+          className="mt-12 border-t border-[#e4dbcf]/60 pt-9 text-center md:mt-14 md:pt-11"
+          aria-labelledby="dss-concierge-exit-heading"
+          data-dss-concierge-exit
+        >
+          <p className="text-[10px] uppercase tracking-[0.3em] text-[var(--hg-eyebrow,#8a8177)]">
+            Concierge
+          </p>
+          <h3
+            id="dss-concierge-exit-heading"
+            className="mt-3 font-serif text-[1.35rem] font-normal leading-[1.25] tracking-[-0.015em] text-[var(--ink)] md:text-[1.5rem]"
+          >
+            Want a second set of eyes?
+          </h3>
+          <p className={`${introCopy} mx-auto mt-4 max-w-[36rem]`}>
+            A calibrated preview can help with proportion and finger coverage.
+            Final shape, ratio, setting, and diamond selection still benefit
+            from experienced judgment.
+          </p>
+          <p className="mt-6">
+            <Link
+              href="/concierge"
+              className="inline-flex min-h-11 items-center border-b border-[var(--hg-line-strong,#d9cdbd)] pb-1 text-sm tracking-[0.04em] text-[var(--ink)] transition-colors duration-300 hover:border-[var(--hg-gold-deep,#987648)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hg-focus"
+              onClick={() =>
+                trackConsultationCtaClicked("diamond_shape_studio:editorial_inline")
+              }
+            >
+              Begin the Conversation →
+            </Link>
+          </p>
+        </aside>
       </div>
     </section>
   );

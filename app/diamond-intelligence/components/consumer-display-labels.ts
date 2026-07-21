@@ -264,7 +264,7 @@ export const V3_INCOMPLETE_PROPORTION_ASSESSMENT: V3IncompleteAssessmentCopy = {
 export const V3_INCOMPLETE_ASSESSMENT = V3_INCOMPLETE_GRADE_ASSESSMENT;
 
 export const V3_RATE_LIMITED = {
-  eyebrow: "Diamond Intelligence",
+  eyebrow: "Report Submission",
   headline: "Please Wait a Moment",
   bodyParagraphs: [
     "We've temporarily paused new report submissions to keep Diamond Intelligence responsive.",
@@ -277,7 +277,7 @@ export const V3_RATE_LIMITED = {
 } as const;
 
 export const V3_UNABLE_TO_VERIFY = {
-  eyebrow: "Diamond Intelligence",
+  eyebrow: "Report Read",
   headline: "We Couldn't Read This Report",
   body: "We weren't able to extract enough information from this file to provide a useful interpretation. The diamond may still be valid — the report or image may simply be difficult for software to read.",
   reassurance:
@@ -292,7 +292,7 @@ export const V3_UNABLE_TO_VERIFY = {
 
 /** Softer variant when an image upload did not yield a reliable read. */
 export const V3_UNABLE_TO_VERIFY_IMAGE = {
-  eyebrow: "Diamond Intelligence",
+  eyebrow: "Report Read",
   headline: V3_UNABLE_TO_VERIFY.headline,
   body: "We could not read enough of this screenshot to provide a reliable interpretation. This can happen when a report image is cropped, compressed, or difficult to read.",
   followUp:
@@ -319,7 +319,7 @@ export const V3_FANCY_COLOR_GUIDANCE = {
 } as const;
 
 export const V3_LISTING_INACCESSIBLE = {
-  eyebrow: "Diamond Intelligence",
+  eyebrow: "Listing Access",
   headline: "We Couldn't Access This Listing",
   bodyParagraphs: [
     "Some retailers restrict direct access to listing and grading report information. This does not indicate a problem with the diamond itself.",

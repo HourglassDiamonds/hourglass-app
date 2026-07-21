@@ -14,8 +14,8 @@ export type DiamondStudioSuiteNavItem = {
 
 export const DIAMOND_STUDIO_SUITE_NAV: DiamondStudioSuiteNavItem[] = [
   {
-    label: "See It On a Finger",
-    labelLines: ["See It On", "a Finger"],
+    label: "Size Studio",
+    labelLines: ["Size", "Studio"],
     descriptor: "Size & proportion",
     href: "/diamond-studio",
   },

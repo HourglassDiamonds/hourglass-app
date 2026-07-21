@@ -56,7 +56,7 @@ export const HandPhotoPanel = forwardRef<
   return (
     <section
       className="dss-card"
-      aria-label="Scaled Preview photo"
+      aria-label="See It On Your Hand photo"
       data-dss-photo-card
     >
       <div className="dss-card-head">Photo</div>

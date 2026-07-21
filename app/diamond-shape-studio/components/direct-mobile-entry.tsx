@@ -40,7 +40,7 @@ export function DirectMobileEntry({
 
   return (
     <div className="dss-entry-mobile" data-dss-direct-mobile-entry>
-      <p className="dss-stage-empty-kicker">Hand preview</p>
+      <p className="dss-stage-empty-kicker">See It On Your Hand</p>
       <HandCardCaptureGuide
         className="dss-capture-guide dss-entry-mobile-guide"
         sizes="(max-width: 400px) 88vw, 340px"

@@ -369,7 +369,7 @@ function stageHint(
   guidedStep: GuidedCalibrationStep | null,
 ): string {
   if (!hasImage) {
-    return "Upload a hand-and-card photo, or capture with your phone, to begin Scaled Preview.";
+    return "Upload a hand-and-card photo, or capture with your phone, to begin your calibrated preview.";
   }
   const step = guidedStep ? normalizeGuidedStep(guidedStep) : null;
   if (step === "mark-card") {
@@ -939,7 +939,7 @@ export function OverlayStage({
               ? "Phone capture session"
               : showLocalReview
                 ? "Selected photograph review"
-                : "Scaled Preview entry"
+                : "See It On Your Hand entry"
           }
         >
           {showQr ? (
@@ -980,7 +980,7 @@ export function OverlayStage({
             <>
               {/* Desktop / wide: QR relay remains the primary entry. */}
               <div className="dss-entry-desktop" data-dss-entry-desktop>
-                <p className="dss-stage-empty-kicker">Hand preview</p>
+                <p className="dss-stage-empty-kicker">See It On Your Hand</p>
                 <p className="dss-stage-empty-title">
                   Add your hand-and-card photo
                 </p>
@@ -1192,7 +1192,7 @@ export function OverlayStage({
         <div
           className="dss-guide-actions"
           role="group"
-          aria-label="Scaled Preview steps"
+          aria-label="See It On Your Hand steps"
           data-dss-stage-guide-actions
           data-dss-guide-step={guidedStep ?? undefined}
         >

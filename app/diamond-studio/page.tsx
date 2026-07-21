@@ -15,6 +15,7 @@ import {
 } from "./analytics";
 import { trackConsultationCtaClicked } from "@/lib/consultation-cta";
 import DiamondStudioEditorial from "./components/DiamondStudioEditorial";
+import DiamondStudioToolHeader from "./components/DiamondStudioToolHeader";
 import {
   getDiamondCadAsset,
   nextCadFallbackSrc,
@@ -1164,11 +1165,11 @@ function SuiteStyles() {
         font-size:11px; line-height:1.65; letter-spacing:0.05em;
         color:var(--ink-soft); font-weight:400;
       }
-      .dts-page-title{
-        margin:0 12px 2px; padding:0 8px; text-align:center;
-        font-family:var(--serif); font-weight:400;
-        font-size:clamp(1.05rem, 2.6vw, 1.3rem); line-height:1.25;
-        letter-spacing:0.02em; color:var(--ink);
+      /* Shared suite tool header (DiamondStudioToolHeader) — spacing only;
+         type comes from the shared component. */
+      .dts-tool-header{
+        margin:0 12px 2px; padding:0 8px;
+        flex:0 0 auto;
       }
       .dts-stage-trust-link{
         color:var(--ink-soft);
@@ -1410,10 +1411,12 @@ function SuiteStyles() {
           width:100%;
           font-size:10px;
         }
-        .dts-page-title{
+        .dts-tool-header{
           margin:0 auto 2px;
           max-width:280px;
           width:100%;
+        }
+        .dts-tool-header h1{
           font-size:clamp(1.05rem, 4.2vw, 1.2rem);
         }
         .dts-layer-finger img{
@@ -1656,7 +1659,7 @@ function SuiteStyles() {
         .dts-stage-trust{
           max-width:260px;
         }
-        .dts-page-title{
+        .dts-tool-header{
           max-width:280px;
         }
       }
@@ -1669,7 +1672,7 @@ function SuiteStyles() {
         }
         .dts-sentence,
         .dts-stage-trust,
-        .dts-page-title{
+        .dts-tool-header{
           max-width:min(480px, 92%);
         }
       }
@@ -2677,7 +2680,10 @@ export default function DiamondStudioPage() {
               aria-label="Diamond on hand"
             >
               <div className="dts-mobile-hero studio-preview finger-preview">
-                <h1 className="dts-page-title">See It On a Finger</h1>
+                <DiamondStudioToolHeader
+                  title="Size Studio"
+                  className="dts-tool-header"
+                />
                 <p className="dts-sentence">
                   A {formatCaratForHeadline(carat)}-carat{" "}
                   {SHAPE_LABELS[shape].toLowerCase()} diamond,

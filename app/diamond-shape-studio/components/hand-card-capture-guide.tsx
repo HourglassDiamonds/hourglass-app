@@ -5,7 +5,7 @@ export const HAND_CARD_CAPTURE_GUIDE_SRC =
   "/diamond-tech-suite/see-it-on-hgd.png";
 
 export const HAND_CARD_CAPTURE_GUIDE_ALT =
-  "Example showing a hand and card positioned for scaled preview";
+  "Example showing a hand and card positioned for a calibrated preview";
 
 type HandCardCaptureGuideProps = {
   /** Passed to next/image `sizes` for responsive src selection. */

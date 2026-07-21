@@ -59,7 +59,7 @@ export function QrCapturePanel({
     <div className={`dss-qr-panel${stage ? " dss-qr-panel--stage" : ""}`}>
       {stage ? (
         <>
-          <p className="dss-stage-empty-kicker">Hand preview</p>
+          <p className="dss-stage-empty-kicker">See It On Your Hand</p>
           <p className="dss-stage-empty-title">Scan with your phone</p>
           <p className="dss-qr-lead">
             Photograph your hand with a standard-size card beside it. Keep the

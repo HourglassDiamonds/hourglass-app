@@ -102,16 +102,16 @@ export function evaluateCaptureGate(
 export function captureGateUserMessage(reason: CaptureGateResult["reason"]): string {
   switch (reason) {
     case "not_found":
-      return "This capture link is not valid. Return to Scaled Preview on your computer and create a new capture session.";
+      return "This capture link is not valid. Return to See It On Your Hand on your computer and create a new capture session.";
     case "expired":
     case "cancelled":
-      return "This capture session has ended. Return to Scaled Preview on your computer and create a new one.";
+      return "This capture session has ended. Return to See It On Your Hand on your computer and create a new one.";
     case "consumed":
       return "This photograph was already received on your computer.";
     case "already_uploaded":
       return "A photograph was already uploaded for this session.";
     case "unavailable":
-      return "Phone capture is unavailable. Return to Scaled Preview on your computer and try again.";
+      return "Phone capture is unavailable. Return to See It On Your Hand on your computer and try again.";
     case "ok":
       return "";
   }
