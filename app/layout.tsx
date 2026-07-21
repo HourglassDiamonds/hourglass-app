@@ -9,6 +9,7 @@ import {
 import "./globals.css";
 import Footer from "./shared-components/Footer";
 import FacetScintillationRail from "./shared-components/motion/FacetScintillationRail";
+import { isClientAnalyticsEnabled } from "@/lib/analytics/client-enabled";
 import GlobalJsonLd from "./shared-components/GlobalJsonLd";
 import GoogleAnalytics from "./shared-components/GoogleAnalytics";
 
@@ -78,7 +79,7 @@ export default function RootLayout({
         </a>
         <FacetScintillationRail />
         <GlobalJsonLd />
-        <GoogleAnalytics />
+        <GoogleAnalytics enabled={isClientAnalyticsEnabled()} />
         <div className="flex min-h-screen flex-col">
           <main id="main-content" tabIndex={-1} className="flex-1">
             {children}

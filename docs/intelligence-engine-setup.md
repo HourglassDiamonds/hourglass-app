@@ -103,7 +103,7 @@ Service-account access is **not** used. Authenticate with the Google user that a
 
 **Production:** Add the same OAuth vars in Vercel; use a production redirect URI on the OAuth client and set `GOOGLE_OAUTH_REDIRECT_URI` if different from local.
 
-**Existing public GA:** `NEXT_PUBLIC_GA_ID` remains client-side only; intelligence uses the Data API via OAuth separately.
+**Existing public GA:** `NEXT_PUBLIC_GA_ID` remains client-side only; intelligence uses the Data API via OAuth separately. Client gtag loads on Vercel Production when the ID is set. Local and Preview stay off unless server-only `GA_CLIENT_ENABLED=1` (intentional DebugView). See `docs/analytics-tracking-preflight-2026-07.md` Pass 1 appendix.
 
 ### Google Search Console (optional — weekly ingest)
 
