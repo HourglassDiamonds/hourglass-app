@@ -5,6 +5,7 @@ import {
   isExecutiveDashboardPath,
   isExecutiveDashboardPublicAuthPath,
   EXECUTIVE_DASHBOARD_LOGIN_PATH,
+  EXECUTIVE_DASHBOARD_PRODUCTION_NOT_FOUND_REWRITE_PATH,
 } from "@/lib/executive-dashboard/access";
 import { EXECUTIVE_DASHBOARD_SESSION_COOKIE } from "@/lib/executive-dashboard/session";
 
@@ -12,6 +13,10 @@ import { EXECUTIVE_DASHBOARD_SESSION_COOKIE } from "@/lib/executive-dashboard/se
  * Next.js 16 Proxy — early network boundary for /executive-dashboard.
  * Authoritative auth still runs in server layouts/loaders (fail closed).
  * Proxy adds private cache headers and optimistic session redirects only.
+ *
+ * On Vercel production (`hidden`), rewrite to a neutral missing path before
+ * the App Router loads dashboard layouts/pages/metadata — otherwise
+ * layout-level `notFound()` still serializes login copy into the 404 RSC payload.
  */
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -25,8 +30,12 @@ export function proxy(request: NextRequest) {
   });
 
   if (decision.status === "hidden") {
-    // Let the App Router render the shared not-found page (no dashboard HTML).
-    return NextResponse.next();
+    // Fail closed at the proxy boundary: do not enter /executive-dashboard/**.
+    // Rewrite (not redirect) so the client URL is unchanged and status stays 404.
+    const notFoundUrl = request.nextUrl.clone();
+    notFoundUrl.pathname = EXECUTIVE_DASHBOARD_PRODUCTION_NOT_FOUND_REWRITE_PATH;
+    notFoundUrl.search = "";
+    return NextResponse.rewrite(notFoundUrl);
   }
 
   const isLogin = isExecutiveDashboardPublicAuthPath(pathname);

@@ -7,6 +7,14 @@ import { verifyExecutiveDashboardSessionToken } from "./session";
 export const EXECUTIVE_DASHBOARD_LOGIN_PATH = "/executive-dashboard/login";
 export const EXECUTIVE_DASHBOARD_ROOT_PATH = "/executive-dashboard";
 
+/**
+ * Neutral internal rewrite target for Vercel production hard-404.
+ * Must not exist as a real App Router page, and must sit outside
+ * `/executive-dashboard` so the dashboard route tree never loads.
+ */
+export const EXECUTIVE_DASHBOARD_PRODUCTION_NOT_FOUND_REWRITE_PATH =
+  "/__hg_production_not_found__";
+
 export const EXECUTIVE_DASHBOARD_GENERIC_AUTH_ERROR =
   "Invalid credentials. Please try again.";
 

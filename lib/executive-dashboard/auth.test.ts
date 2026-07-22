@@ -9,6 +9,7 @@ import {
   isExecutiveDashboardPublicAuthPath,
   EXECUTIVE_DASHBOARD_GENERIC_AUTH_ERROR,
   EXECUTIVE_DASHBOARD_LOGIN_PATH,
+  EXECUTIVE_DASHBOARD_PRODUCTION_NOT_FOUND_REWRITE_PATH,
 } from "./access";
 import {
   getExecutiveDashboardAuthConfig,
@@ -335,6 +336,55 @@ describe("executive dashboard auth", () => {
     );
   });
 
+  it("terminates production dashboard requests in proxy before the route tree", () => {
+    const proxy = readFileSync(join(ROOT, "proxy.ts"), "utf8");
+    const access = readFileSync(
+      join(ROOT, "lib", "executive-dashboard", "access.ts"),
+      "utf8",
+    );
+    assert.match(access, /EXECUTIVE_DASHBOARD_PRODUCTION_NOT_FOUND_REWRITE_PATH/);
+    assert.match(
+      access,
+      new RegExp(
+        EXECUTIVE_DASHBOARD_PRODUCTION_NOT_FOUND_REWRITE_PATH.replace(
+          /[.*+?^${}()|[\]\\]/g,
+          "\\$&",
+        ),
+      ),
+    );
+    assert.doesNotMatch(
+      EXECUTIVE_DASHBOARD_PRODUCTION_NOT_FOUND_REWRITE_PATH,
+      /^\/executive-dashboard/,
+    );
+    assert.match(proxy, /status === "hidden"/);
+    assert.match(proxy, /NextResponse\.rewrite/);
+    assert.match(proxy, /EXECUTIVE_DASHBOARD_PRODUCTION_NOT_FOUND_REWRITE_PATH/);
+    // Must not fall through into the dashboard App Router tree on production.
+    assert.doesNotMatch(
+      proxy,
+      /status === "hidden"[\s\S]*?return NextResponse\.next\(\)/,
+    );
+  });
+
+  it("keeps production hard-404 free of dashboard login copy and metadata sources", () => {
+    const loginPage = readFileSync(
+      join(ROOT, "app", "executive-dashboard", "login", "page.tsx"),
+      "utf8",
+    );
+    const layout = readFileSync(
+      join(ROOT, "app", "executive-dashboard", "layout.tsx"),
+      "utf8",
+    );
+    // Source still contains login copy for preview/local — production must
+    // never load these modules (proxy rewrite). Assert the leak phrases exist
+    // only under the dashboard tree, not in the neutral rewrite target.
+    assert.match(loginPage, /Executive access/);
+    assert.match(loginPage, /Sign in with founder credentials/);
+    assert.match(layout, /title:\s*"Executive Dashboard"/);
+    assert.match(layout, /notFound\(\)/);
+    assert.match(layout, /isExecutiveDashboardPublicProduction/);
+  });
+
   it("bounds repeated login failures in memory", () => {
     withEnv(
       {
@@ -374,5 +424,37 @@ describe("executive dashboard auth", () => {
       /matcher:\s*\[["']\/executive-dashboard["'],\s*["']\/executive-dashboard\/:path\*["']\]/,
     );
     assert.doesNotMatch(proxy, /diamond-studio|concierge|analyze-sparkle/);
+  });
+
+  it("keeps the production rewrite target outside all app routes", () => {
+    assert.equal(
+      EXECUTIVE_DASHBOARD_PRODUCTION_NOT_FOUND_REWRITE_PATH.startsWith("/"),
+      true,
+    );
+    assert.equal(
+      isExecutiveDashboardPath(
+        EXECUTIVE_DASHBOARD_PRODUCTION_NOT_FOUND_REWRITE_PATH,
+      ),
+      false,
+    );
+    // No App Router page should claim this path.
+    const candidates = [
+      join(ROOT, "app", "__hg_production_not_found__", "page.tsx"),
+      join(ROOT, "app", "__hg_production_not_found__", "page.ts"),
+      join(ROOT, "app", "__hg_production_not_found__", "route.ts"),
+    ];
+    for (const candidate of candidates) {
+      try {
+        readFileSync(candidate);
+        assert.fail(`unexpected route file: ${candidate}`);
+      } catch (error) {
+        assert.equal(
+          error && typeof error === "object" && "code" in error
+            ? error.code
+            : null,
+          "ENOENT",
+        );
+      }
+    }
   });
 });

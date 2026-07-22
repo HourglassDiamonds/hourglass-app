@@ -98,6 +98,7 @@ describe("executive dashboard production deny contract", () => {
       "utf8",
     );
     const envExample = readFileSync(join(root, ".env.example"), "utf8");
+    const proxy = readFileSync(join(root, "proxy.ts"), "utf8");
     assert.match(layout, /isExecutiveDashboardPublicProduction/);
     assert.match(layout, /noindex|robots/);
     assert.match(envModule, /VERCEL_ENV === "production"/);
@@ -105,5 +106,9 @@ describe("executive dashboard production deny contract", () => {
     assert.doesNotMatch(envExample, /EXECUTIVE_DASHBOARD_ENABLED=true/);
     assert.match(envExample, /EXECUTIVE_DASHBOARD_SESSION_SECRET/);
     assert.match(envExample, /EXECUTIVE_DASHBOARD_PASSWORD_HASH/);
+    // Production must hard-404 at proxy before dashboard RSC serialization.
+    assert.match(proxy, /NextResponse\.rewrite/);
+    assert.match(proxy, /EXECUTIVE_DASHBOARD_PRODUCTION_NOT_FOUND_REWRITE_PATH/);
+    assert.match(proxy, /status === "hidden"/);
   });
 });
