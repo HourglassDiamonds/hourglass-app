@@ -4,7 +4,7 @@ Founder operating system for market gravity: search authority, brand demand, con
 
 **Live route:** `/executive-dashboard` (internal, `noindex`)
 
-**Access:** Production always returns `notFound()` — there is no environment flag that opens this route on the public domain. `robots: noindex` is SEO-only and is **not** access control. Local and other non-production environments remain available for internal review. Do not link this route from the public footer. Any future production exposure requires genuine authentication or confirmed Vercel Deployment Protection.
+**Access (Option B):** When `VERCEL_ENV=production`, the entire `/executive-dashboard` tree returns `notFound()` (including login) — the public domain never reveals this surface. Preview and local environments require a signed founder session (`EXECUTIVE_DASHBOARD_*` env vars) before any dashboard HTML or metrics load. `robots: noindex` is SEO-only and is **not** access control. Do not link this route from the public footer. Future Agent OS access should use a separately scoped server-to-server token or authenticated internal API — never a permanent query-string bearer on this page.
 
 ---
 

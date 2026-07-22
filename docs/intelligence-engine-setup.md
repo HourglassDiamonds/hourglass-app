@@ -8,7 +8,7 @@ V1 backend for weekly GA4 intelligence, Supabase snapshots, Monday email briefs,
 
 | Item | Location |
 |------|----------|
-| Page route | `/executive-dashboard` → `app/executive-dashboard/page.tsx` |
+| Page route | `/executive-dashboard` → `app/executive-dashboard/(protected)/page.tsx` (auth required outside Vercel production; production 404s) |
 | Visual components | `app/executive-dashboard/dashboard-view.tsx` (same cards; expanded sections) |
 | Snapshot model | `lib/intelligence/dashboard-snapshot.ts` → `DashboardIntelligenceSnapshot` |
 | Display + payload | `lib/intelligence/dashboard-data.ts` → `ExecutiveDashboardPayload` |

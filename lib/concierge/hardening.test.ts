@@ -88,15 +88,22 @@ describe("checkConciergeRateLimit", () => {
 });
 
 describe("executive dashboard production deny contract", () => {
-  it("never opens production via an environment enable flag", () => {
-    const page = readFileSync(
-      join(root, "app", "executive-dashboard", "page.tsx"),
+  it("keeps Vercel production hidden and requires real auth elsewhere", () => {
+    const layout = readFileSync(
+      join(root, "app", "executive-dashboard", "layout.tsx"),
+      "utf8",
+    );
+    const envModule = readFileSync(
+      join(root, "lib", "executive-dashboard", "env.ts"),
       "utf8",
     );
     const envExample = readFileSync(join(root, ".env.example"), "utf8");
-    assert.match(page, /NODE_ENV !== "production"/);
-    assert.doesNotMatch(page, /EXECUTIVE_DASHBOARD_ENABLED/);
+    assert.match(layout, /isExecutiveDashboardPublicProduction/);
+    assert.match(layout, /noindex|robots/);
+    assert.match(envModule, /VERCEL_ENV === "production"/);
+    assert.doesNotMatch(layout, /EXECUTIVE_DASHBOARD_ENABLED/);
     assert.doesNotMatch(envExample, /EXECUTIVE_DASHBOARD_ENABLED=true/);
-    assert.match(page, /noindex/);
+    assert.match(envExample, /EXECUTIVE_DASHBOARD_SESSION_SECRET/);
+    assert.match(envExample, /EXECUTIVE_DASHBOARD_PASSWORD_HASH/);
   });
 });
