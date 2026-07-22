@@ -118,11 +118,49 @@ export default function DiamondStudioSuiteNavStyles() {
         transform:translateX(-50%);
         width:min(72%, 112px);
         height:1.5px;
+        /* Illuminated seam — antique gold edges, champagne center. */
         background:linear-gradient(90deg, transparent,
           color-mix(in srgb, var(--hg-gold-deep, #987648) 82%, transparent) 14%,
+          color-mix(in srgb, var(--hg-light-champagne, #f4e9d2) 62%, var(--hg-gold-deep, #987648)) 50%,
           color-mix(in srgb, var(--hg-gold-deep, #987648) 82%, transparent) 86%, transparent);
         opacity:1;
         pointer-events:none;
+      }
+      /* Route-entry — the seam resolves into position once, short and
+         direct; no travel across the nav. */
+      @media (prefers-reduced-motion: no-preference) {
+        .dts-topnav-item.is-active .dts-topnav-hit::after{
+          animation: dts-indicator-resolve 450ms var(--hg-motion-ease-luxury, cubic-bezier(0.19, 0.62, 0.17, 0.99)) backwards;
+        }
+      }
+      @keyframes dts-indicator-resolve {
+        0% {
+          opacity: 0;
+          transform: translateX(-50%) scaleX(0.55);
+        }
+        100% {
+          opacity: 1;
+          transform: translateX(-50%) scaleX(1);
+        }
+      }
+      /* Idle tools — a faint seam warms under hover/focus; no scale, no lift. */
+      .dts-topnav-item.is-idle .dts-topnav-hit::after{
+        content:"";
+        position:absolute;
+        left:50%;
+        bottom:3px;
+        transform:translateX(-50%);
+        width:min(72%, 112px);
+        height:1px;
+        background:linear-gradient(90deg, transparent,
+          color-mix(in srgb, var(--hg-gold-deep, #987648) 48%, transparent) 50%, transparent);
+        opacity:0;
+        transition:opacity 260ms cubic-bezier(0.28, 0.11, 0.22, 1);
+        pointer-events:none;
+      }
+      .dts-topnav-item.is-idle:hover .dts-topnav-hit::after,
+      .dts-topnav-item.is-idle .dts-topnav-hit:focus-visible::after{
+        opacity:1;
       }
       .dts-topnav-hit:focus-visible{
         outline:2px solid var(--hg-focus-ring, #987648);

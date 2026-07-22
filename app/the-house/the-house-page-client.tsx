@@ -6,6 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import Header from "../shared-components/Header";
 import CTAGlimmer from "../shared-components/motion/CTAGlimmer";
+import EditorialImageMotion from "../shared-components/motion/EditorialImageMotion";
 import RevealOnScroll from "../shared-components/motion/RevealOnScroll";
 import { trackConsultationCtaClicked } from "@/lib/consultation-cta";
 
@@ -101,7 +102,10 @@ export default function TheHousePageClient() {
               className="absolute inset-x-[-16%] inset-y-[-6%] hidden opacity-[0.76] md:block"
               style={perspectiveMapMaskDesktop}
             >
-              <div className="relative h-full w-full">
+              {/* Perspective light response — the map shifts by a few px
+                  with the pointer, heavily damped, like changing viewing
+                  angle over an old document. Desktop pointer devices only. */}
+              <EditorialImageMotion mode="light" className="relative h-full w-full">
                 <Image
                   src={PERSPECTIVE_MAP}
                   alt=""
@@ -110,7 +114,7 @@ export default function TheHousePageClient() {
                   sizes="(max-width: 768px) 0px, 1200px"
                   className="origin-[50%_58%] scale-[1.1] object-contain object-[50%_58%] saturate-[0.96] brightness-[1.01]"
                 />
-              </div>
+              </EditorialImageMotion>
             </div>
 
             <div
@@ -220,7 +224,11 @@ export default function TheHousePageClient() {
         </RevealOnScroll>
 
         {/* APPROACH */}
-        <RevealOnScroll as="section" className="border-b border-[#e4dbcf] py-[92px] md:py-[108px]">
+        <RevealOnScroll
+          as="section"
+          stagger
+          className="border-b border-[#e4dbcf] py-[92px] md:py-[108px]"
+        >
           <div className="mx-auto max-w-[760px] text-center">
             <div className="text-[10px] uppercase tracking-[0.34em] text-[#8a8177]">
               Our Approach
@@ -308,7 +316,7 @@ export default function TheHousePageClient() {
             </p>
 
             <div className="mt-10">
-              <CTAGlimmer>
+              <CTAGlimmer priority>
                 <Link
                   href="/concierge"
                   className="inline-flex min-h-11 items-center rounded-full border border-[#d9cdbd] bg-white/80 px-6 py-3 text-[11px] uppercase tracking-[0.28em] text-[#6f665d] transition hover:bg-white"

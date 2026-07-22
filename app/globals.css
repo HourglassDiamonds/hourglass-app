@@ -54,6 +54,19 @@
   --hg-motion-enter: 820ms;
   --hg-ease: cubic-bezier(0.28, 0.11, 0.22, 1);
 
+  /* ── Pass 3.5 — signature motion & atmosphere vocabulary ──
+     Light behaves like sun finding a seam in ancient material, never like
+     a widget. Durations are deliberately slow; easing settles like a heavy
+     object coming to rest. */
+  --hg-motion-reveal-duration: 650ms;
+  --hg-motion-reveal-stagger: 90ms;
+  --hg-motion-glimmer-duration: 1350ms;
+  --hg-motion-ease-luxury: cubic-bezier(0.19, 0.62, 0.17, 0.99);
+  --hg-motion-distance-sm: 10px;
+
+  /* Concentrated-light accent — used by the Diamond Studio nav seam. */
+  --hg-light-champagne: #f4e9d2;
+
   /* Base document theme resolves to brand tokens.
      (Previously #ffffff/#171717 with an inert prefers-color-scheme flip
      that fought the parchment brand — removed per audit C1.) */
@@ -160,20 +173,57 @@ body {
 
 /* ── Luxury motion pass ── */
 
+/* Pass 3.5 — content is *uncovered by changing light*, not flown in.
+   Starts nearly legible (0.92) so delayed JS never hides copy. */
 .luxury-reveal {
-  opacity: 0;
-  transform: translateY(12px);
-  filter: blur(2px);
+  opacity: 0.92;
+  transform: translateY(var(--hg-motion-distance-sm));
+  filter: blur(1.5px);
   transition:
-    opacity var(--hg-motion-enter) var(--hg-ease),
-    transform var(--hg-motion-enter) var(--hg-ease),
-    filter var(--hg-motion-enter) var(--hg-ease);
+    opacity var(--hg-motion-reveal-duration) var(--hg-motion-ease-luxury),
+    transform var(--hg-motion-reveal-duration) var(--hg-motion-ease-luxury),
+    filter var(--hg-motion-reveal-duration) var(--hg-motion-ease-luxury);
 }
 
 .luxury-reveal--visible {
   opacity: 1;
   transform: translateY(0);
   filter: blur(0);
+}
+
+/* Group stagger — direct children settle in sequence (eyebrow → heading →
+   copy → media/CTA). Wrapper stays static; sequence stays compact. */
+.luxury-reveal--stagger {
+  opacity: 1;
+  transform: none;
+  filter: none;
+  transition: none;
+}
+
+.luxury-reveal--stagger > * {
+  opacity: 0.92;
+  transform: translateY(var(--hg-motion-distance-sm));
+  filter: blur(1.5px);
+  transition:
+    opacity var(--hg-motion-reveal-duration) var(--hg-motion-ease-luxury),
+    transform var(--hg-motion-reveal-duration) var(--hg-motion-ease-luxury),
+    filter var(--hg-motion-reveal-duration) var(--hg-motion-ease-luxury);
+}
+
+.luxury-reveal--stagger > :nth-child(2) {
+  transition-delay: var(--hg-motion-reveal-stagger);
+}
+.luxury-reveal--stagger > :nth-child(3) {
+  transition-delay: calc(var(--hg-motion-reveal-stagger) * 2);
+}
+.luxury-reveal--stagger > :nth-child(n + 4) {
+  transition-delay: calc(var(--hg-motion-reveal-stagger) * 3);
+}
+
+.luxury-reveal--visible.luxury-reveal--stagger > * {
+  opacity: 1;
+  transform: none;
+  filter: none;
 }
 
 .cta-glimmer {
@@ -223,7 +273,14 @@ body {
 }
 
 .cta-glimmer--active::after {
-  animation: cta-glimmer-sweep 1.35s var(--hg-ease) forwards;
+  animation: cta-glimmer-sweep var(--hg-motion-glimmer-duration) var(--hg-ease)
+    forwards;
+}
+
+/* Hover/focus response — shorter, restrained pass. Autonomous pass
+   (--active) fires at most once per page view on one priority CTA. */
+.cta-glimmer--hover::after {
+  animation: cta-glimmer-sweep 750ms var(--hg-motion-ease-luxury) forwards;
 }
 
 @keyframes cta-glimmer-sweep {
@@ -243,12 +300,50 @@ body {
   }
 }
 
+/* ── Editorial image micro-motion (Pass 3.5) ──
+   Ambient optical drift — framing breathes like a locked-off cinema shot.
+   ~1.2% scale over 16s, alternating; no visible looping reset. Runs only
+   while onscreen (`--running`, toggled by IntersectionObserver), desktop
+   pointer devices only, never under reduced motion. */
+
+.hg-image-motion {
+  height: 100%;
+  width: 100%;
+}
+
+@media (min-width: 768px) and (hover: hover) and (pointer: fine) {
+  .hg-image-motion--drift.hg-image-motion--running {
+    animation: hg-image-drift 16s ease-in-out infinite alternate;
+    will-change: transform;
+  }
+}
+
+@keyframes hg-image-drift {
+  from {
+    transform: scale(1.002);
+  }
+  to {
+    transform: scale(1.014);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .luxury-reveal {
     opacity: 1;
     transform: none;
     filter: none;
     transition: none;
+  }
+
+  .luxury-reveal--stagger > * {
+    opacity: 1;
+    transform: none;
+    filter: none;
+    transition: none;
+  }
+
+  .hg-image-motion--drift.hg-image-motion--running {
+    animation: none !important;
   }
 
   .cta-glimmer::after {

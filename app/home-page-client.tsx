@@ -7,6 +7,7 @@ import Button from "./shared-components/Button";
 import Eyebrow from "./shared-components/Eyebrow";
 import Header from "./shared-components/Header";
 import CTAGlimmer from "./shared-components/motion/CTAGlimmer";
+import EditorialImageMotion from "./shared-components/motion/EditorialImageMotion";
 import RevealOnScroll from "./shared-components/motion/RevealOnScroll";
 import WhisperedPraiseLink from "./shared-components/WhisperedPraiseLink";
 import { trackConsultationCtaClicked } from "@/lib/consultation-cta";
@@ -226,6 +227,7 @@ function ClosingValueSection() {
   return (
     <RevealOnScroll
       as="section"
+      stagger
       className="border-b border-[#e4dbcf]/60 py-[56px] md:py-[80px] lg:py-[100px]"
       data-hourglass-home="thoughtful-way"
     >
@@ -412,14 +414,18 @@ export default function HomePageClient() {
             className="absolute inset-0 hidden md:block"
             style={heroDesktopMaskStyle}
           >
-            <Image
-              src={HERO_IMAGE}
-              alt=""
-              fill
-              priority
-              sizes="100vw"
-              className="object-cover object-[72%_38%] origin-[72%_38%] scale-[0.88] lg:object-[74%_36%] lg:origin-[74%_36%] lg:scale-[0.87]"
-            />
+            {/* Ambient optical drift — the mask stays fixed while the
+                framing breathes beneath it, like a locked-off cinema shot. */}
+            <EditorialImageMotion mode="drift" className="absolute inset-0">
+              <Image
+                src={HERO_IMAGE}
+                alt=""
+                fill
+                priority
+                sizes="100vw"
+                className="object-cover object-[72%_38%] origin-[72%_38%] scale-[0.88] lg:object-[74%_36%] lg:origin-[74%_36%] lg:scale-[0.87]"
+              />
+            </EditorialImageMotion>
           </div>
 
           <div className="relative z-10 flex min-h-0 flex-col justify-center px-6 md:min-h-[440px] md:px-10 lg:min-h-[500px]">
@@ -443,7 +449,7 @@ export default function HomePageClient() {
               </p>
 
               <div className="mt-6 md:mt-8">
-                <CTAGlimmer>
+                <CTAGlimmer priority>
                   <Button
                     variant="secondary"
                     href="/concierge"

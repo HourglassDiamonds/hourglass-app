@@ -15,6 +15,12 @@ type RevealOnScrollProps = {
   as?: ElementType;
   /** Stagger delay in milliseconds. */
   delay?: number;
+  /**
+   * Reveal direct children in sequence (eyebrow → heading → copy → media)
+   * using `--hg-motion-reveal-stagger`. The wrapper itself stays static so
+   * layout never shifts; only the children settle into clarity.
+   */
+  stagger?: boolean;
   id?: string;
 };
 
@@ -23,6 +29,7 @@ export default function RevealOnScroll({
   className = "",
   as: Tag = "div",
   delay = 0,
+  stagger = false,
   id,
 }: RevealOnScrollProps) {
   const reduced = useReducedMotion();
@@ -52,11 +59,20 @@ export default function RevealOnScroll({
     return () => observer.disconnect();
   }, [reduced]);
 
+  const classes = [
+    "luxury-reveal",
+    stagger ? "luxury-reveal--stagger" : "",
+    visible ? "luxury-reveal--visible" : "",
+    className,
+  ]
+    .filter(Boolean)
+    .join(" ");
+
   return (
     <Tag
       ref={ref}
       id={id}
-      className={`luxury-reveal${visible ? " luxury-reveal--visible" : ""}${className ? ` ${className}` : ""}`}
+      className={classes}
       style={delay > 0 ? { transitionDelay: `${delay}ms` } : undefined}
     >
       {children}
