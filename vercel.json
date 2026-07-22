@@ -7,6 +7,10 @@
     {
       "path": "/api/cron/shape-studio-capture-cleanup",
       "schedule": "15 4 * * *"
+    },
+    {
+      "path": "/api/cron/diamond-intelligence-submission-cleanup",
+      "schedule": "45 5 * * *"
     }
   ]
 }

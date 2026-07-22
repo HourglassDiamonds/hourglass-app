@@ -1,4 +1,12 @@
 import { getSupabaseAdmin } from "./client";
+import {
+  DI_SUBMISSION_CLEANUP_BATCH_SIZE,
+  DI_SUBMISSION_RETENTION_POLICY,
+  type DiSubmissionCleanupCandidate,
+  type DiSubmissionCleanupResult,
+  isMissingStorageObjectError,
+  runDiSubmissionCleanup,
+} from "@/lib/diamond-intelligence/submission-retention";
 
 export const DI_SUBMISSIONS_BUCKET = "diamond-intelligence-submissions";
 export const DI_SUBMISSIONS_SCHEMA_VERSION = 1;
@@ -61,6 +69,9 @@ export type DiamondIntelligenceSubmissionInsert = {
   reportUrl?: string | null;
   urlIngestionStatus?: string | null;
   urlIngestionWarnings?: string[];
+  metadataRetentionPolicy?: string;
+  uploadExpiresAt?: string | null;
+  ocrTextExpiresAt?: string | null;
 };
 
 export function isDiamondIntelligenceArchiveAvailable(): boolean {
@@ -117,6 +128,10 @@ function toRow(input: DiamondIntelligenceSubmissionInsert) {
     report_url: input.reportUrl ?? null,
     url_ingestion_status: input.urlIngestionStatus ?? null,
     url_ingestion_warnings: input.urlIngestionWarnings ?? [],
+    metadata_retention_policy:
+      input.metadataRetentionPolicy ?? DI_SUBMISSION_RETENTION_POLICY,
+    upload_expires_at: input.uploadExpiresAt ?? null,
+    ocr_text_expires_at: input.ocrTextExpiresAt ?? null,
     schema_version: DI_SUBMISSIONS_SCHEMA_VERSION,
   };
 }
@@ -191,4 +206,93 @@ function extensionForMime(mime: string, sourceFilename?: string): string {
     default:
       return ".bin";
   }
+}
+
+/** List expired submissions for cleanup — id, path, and created_at only. */
+export async function listExpiredDiamondIntelligenceSubmissions(
+  cutoffIso: string,
+  limit: number = DI_SUBMISSION_CLEANUP_BATCH_SIZE,
+): Promise<DiSubmissionCleanupCandidate[]> {
+  const supabase = getSupabaseAdmin();
+  if (!supabase) {
+    throw new Error("Supabase is not configured");
+  }
+
+  const { data, error } = await supabase
+    .from("diamond_intelligence_submissions")
+    .select("id, file_path, created_at")
+    .lt("created_at", cutoffIso)
+    .order("created_at", { ascending: true })
+    .limit(limit);
+
+  if (error) {
+    throw new Error(`DI archive list expired failed: ${error.message}`);
+  }
+
+  return (data ?? []).map((row) => ({
+    id: row.id as string,
+    filePath: (row.file_path as string | null) ?? null,
+    createdAt: row.created_at as string,
+  }));
+}
+
+/**
+ * Delete a DI archive storage object.
+ * Missing objects are treated as already gone (idempotent).
+ */
+export async function deleteDiamondIntelligenceSubmissionObject(
+  objectPath: string,
+): Promise<"deleted" | "already_missing"> {
+  const supabase = getSupabaseAdmin();
+  if (!supabase) {
+    throw new Error("Supabase is not configured");
+  }
+
+  const { error } = await supabase.storage
+    .from(DI_SUBMISSIONS_BUCKET)
+    .remove([objectPath]);
+
+  if (error) {
+    if (isMissingStorageObjectError(error.message)) {
+      return "already_missing";
+    }
+    throw new Error(`DI archive storage delete failed: ${error.message}`);
+  }
+
+  return "deleted";
+}
+
+export async function deleteDiamondIntelligenceSubmissionRow(
+  id: string,
+): Promise<void> {
+  const supabase = getSupabaseAdmin();
+  if (!supabase) {
+    throw new Error("Supabase is not configured");
+  }
+
+  const { error } = await supabase
+    .from("diamond_intelligence_submissions")
+    .delete()
+    .eq("id", id);
+
+  if (error) {
+    throw new Error(`DI archive row delete failed: ${error.message}`);
+  }
+}
+
+/**
+ * Bounded daily cleanup for Diamond Intelligence submissions older than
+ * DI_SUBMISSION_RETENTION_DAYS. Returns aggregate counts only.
+ */
+export async function cleanupExpiredDiamondIntelligenceSubmissions(options?: {
+  nowMs?: number;
+  batchSize?: number;
+}): Promise<DiSubmissionCleanupResult> {
+  return runDiSubmissionCleanup({
+    listExpired: listExpiredDiamondIntelligenceSubmissions,
+    deleteStorageObject: deleteDiamondIntelligenceSubmissionObject,
+    deleteRow: deleteDiamondIntelligenceSubmissionRow,
+    nowMs: options?.nowMs,
+    batchSize: options?.batchSize,
+  });
 }

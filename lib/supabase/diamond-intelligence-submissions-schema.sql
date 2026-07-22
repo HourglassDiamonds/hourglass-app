@@ -2,6 +2,17 @@
 -- Run in Supabase SQL editor after calibration_records schema.
 -- Internal admin only — service role access on server routes.
 --
+-- ── Retention (application-enforced; review before running in Supabase) ──────
+-- Policy: original file + row metadata retained for 30 days from created_at.
+-- Application constant: DI_SUBMISSION_RETENTION_DAYS = 30 (lib/.../submission-retention.ts).
+-- Cleanup cron: GET /api/cron/diamond-intelligence-submission-cleanup (daily).
+-- Eligibility uses created_at age — NOT the textual metadata_retention_policy alone.
+-- Existing rows with metadata_retention_policy = 'indefinite' are still cleaned
+-- when created_at is older than 30 days. Changing a column DEFAULT does not
+-- rewrite existing rows; optional backfill below is documentation only.
+-- This SQL file is documented intent — it is not proof of live production state.
+-- Do not execute production SQL from the app; review and run manually in Supabase.
+--
 -- Storage security (Supabase Cloud):
 -- - Bucket is private (public = false).
 -- - Application uploads via SUPABASE_SERVICE_ROLE_KEY, which bypasses storage RLS.
@@ -95,10 +106,13 @@ create table if not exists diamond_intelligence_submissions (
   render_audit jsonb,
   upload_metadata jsonb not null default '{}'::jsonb,
 
-  -- Retention preparation (policies not enforced yet)
+  -- Retention: 30 days from created_at (app cron deletes storage object + row).
+  -- upload_expires_at / ocr_text_expires_at are populated by the app on insert.
+  -- Cleanup eligibility is still computed from created_at so legacy rows work
+  -- without a destructive one-time migration.
   upload_expires_at timestamptz,
   ocr_text_expires_at timestamptz,
-  metadata_retention_policy text not null default 'indefinite',
+  metadata_retention_policy text not null default '30_days',
 
   schema_version integer not null default 1,
 
@@ -115,6 +129,7 @@ create table if not exists diamond_intelligence_submissions (
   url_ingestion_warnings jsonb not null default '[]'::jsonb
 );
 
+-- Supports cleanup listing: oldest expired rows first (created_at < cutoff).
 create index if not exists di_submissions_created_at_idx
   on diamond_intelligence_submissions (created_at desc);
 
@@ -136,6 +151,21 @@ create index if not exists di_submissions_file_sha256_idx
 alter table diamond_intelligence_submissions enable row level security;
 
 -- No public policies: access via service role on server only.
+-- Do not add browser-access policies. Bucket remains private.
+
+-- ── Retention default migration (existing production tables) ─────────────────
+-- Idempotent. Changing DEFAULT does not rewrite existing rows.
+-- App cleanup still deletes rows older than 30 days by created_at regardless
+-- of metadata_retention_policy. Optional label backfill is commented out —
+-- review before running; not required for cleanup to function.
+
+alter table diamond_intelligence_submissions
+  alter column metadata_retention_policy set default '30_days';
+
+-- Optional (not required for cleanup). Uncomment only after counsel/ops review:
+-- update diamond_intelligence_submissions
+-- set metadata_retention_policy = '30_days'
+-- where metadata_retention_policy = 'indefinite';
 
 -- ── URL ingestion columns (run on existing production table) ────────────────
 -- Idempotent migration for diamond_intelligence_submissions created before V1.

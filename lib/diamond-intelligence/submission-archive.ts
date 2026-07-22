@@ -14,12 +14,17 @@ import { resolveHourglassClarityPolicy } from "@/lib/diamond-intelligence/hourgl
 import {
   type DiamondIntelligenceSubmissionInsert,
   type DiamondIntelligenceSubmissionStatus,
+  deleteDiamondIntelligenceSubmissionObject,
   insertDiamondIntelligenceSubmission,
   isDiamondIntelligenceArchiveAvailable,
   uploadDiamondIntelligenceSubmissionFile,
 } from "@/lib/supabase/diamond-intelligence-submissions";
 import type { UrlArchiveMetadata } from "@/lib/diamond-intelligence/url-ingestion/archive-mapping";
 import type { UploadIngestMetadata } from "@/lib/diamond-intelligence/upload-normalize";
+import {
+  DI_SUBMISSION_RETENTION_POLICY,
+  computeDiSubmissionExpiry,
+} from "@/lib/diamond-intelligence/submission-retention";
 
 export type DiamondIntelligenceArchiveContext = {
   httpStatus: number;
@@ -186,6 +191,8 @@ export function buildDiamondIntelligenceArchiveRecord(
         ? "usefulness_gate_rejected_empty_snapshot"
         : null);
 
+  const expiresAt = computeDiSubmissionExpiry();
+
   return {
     status,
     httpStatus: ctx.httpStatus,
@@ -275,7 +282,47 @@ export function buildDiamondIntelligenceArchiveRecord(
     reportUrl: ctx.urlArchive?.report_url ?? null,
     urlIngestionStatus: ctx.urlArchive?.url_ingestion_status ?? null,
     urlIngestionWarnings: ctx.urlArchive?.url_ingestion_warnings ?? [],
+    metadataRetentionPolicy: DI_SUBMISSION_RETENTION_POLICY,
+    uploadExpiresAt: expiresAt,
+    ocrTextExpiresAt: expiresAt,
   };
+}
+
+/**
+ * Insert archive row after an optional storage upload.
+ * If insert fails and a storage object was uploaded, attempt compensating deletion.
+ * Always rethrows the original insert failure; compensating failures are logged
+ * generically without paths, filenames, or other customer identifiers.
+ */
+export async function insertDiamondIntelligenceArchiveWithCompensation(input: {
+  record: DiamondIntelligenceSubmissionInsert;
+  uploadedObjectPath: string | null;
+  insertRow?: (
+    record: DiamondIntelligenceSubmissionInsert,
+  ) => Promise<string>;
+  deleteObject?: (
+    objectPath: string,
+  ) => Promise<"deleted" | "already_missing">;
+}): Promise<string> {
+  const insertRow = input.insertRow ?? insertDiamondIntelligenceSubmission;
+  const deleteObject =
+    input.deleteObject ?? deleteDiamondIntelligenceSubmissionObject;
+
+  try {
+    return await insertRow(input.record);
+  } catch (insertErr) {
+    if (input.uploadedObjectPath) {
+      try {
+        await deleteObject(input.uploadedObjectPath);
+      } catch {
+        console.error(
+          "[di-submission-archive]",
+          "compensating_storage_delete_failed",
+        );
+      }
+    }
+    throw insertErr;
+  }
 }
 
 export async function persistDiamondIntelligenceArchive(
@@ -285,18 +332,23 @@ export async function persistDiamondIntelligenceArchive(
 
   const submissionId = randomUUID();
   const record = buildDiamondIntelligenceArchiveRecord(ctx);
+  let uploadedObjectPath: string | null = null;
 
   if (ctx.bytes && ctx.mime) {
     record.id = submissionId;
-    record.filePath = await uploadDiamondIntelligenceSubmissionFile({
+    uploadedObjectPath = await uploadDiamondIntelligenceSubmissionFile({
       submissionId,
       bytes: ctx.bytes,
       mime: ctx.mime,
       sourceFilename: ctx.sourceFilename,
     });
+    record.filePath = uploadedObjectPath;
   }
 
-  return insertDiamondIntelligenceSubmission(record);
+  return insertDiamondIntelligenceArchiveWithCompensation({
+    record,
+    uploadedObjectPath,
+  });
 }
 
 /** Awaited archive write — logs errors without failing the HTTP response. */
