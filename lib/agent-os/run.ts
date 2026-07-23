@@ -49,6 +49,20 @@ import {
 } from "./delivery";
 import { AGENT_OS_VERSION, type AgentRun, type DataSourceId } from "./types";
 import { getReportWeekRange } from "@/lib/intelligence/week-ranges";
+import {
+  persistAgentOsRun,
+  resolvePersistenceAdapter,
+  resolveFounderSurfaceEligibility,
+  type PersistAgentOsRunResult,
+} from "./persistence";
+import type {
+  AgentOsPersistedState,
+  PersistenceAdapterId,
+  RunTrigger,
+} from "./persistence/types";
+import type { AgentOsPersistenceStore } from "./persistence/store";
+import { isPersistenceError } from "./persistence/store";
+import { AgentOsPersistenceError } from "./persistence/types";
 
 export type RunAgentOsOptions = {
   mode?: AdapterMode;
@@ -56,6 +70,27 @@ export type RunAgentOsOptions = {
   synthesisProvider?: AgentOsSynthesisProvider;
   /** When true, skip any persistence — Decision Journal must not write in production runs */
   allowDecisionJournalWrite?: boolean;
+  /**
+   * When set: load prior → reconcile eligibility → CoS brief → atomic save.
+   * Recurrence gate runs before founder brief surfacing.
+   */
+  persistence?: {
+    enabled: boolean;
+    trigger?: RunTrigger;
+    adapter?: PersistenceAdapterId;
+    store?: AgentOsPersistenceStore;
+    filePath?: string;
+    /** Explicit non-durable live memory — never implicit. */
+    allowNonDurableLive?: boolean;
+    /**
+     * When true, persistence write/load failure cannot leave overall status as plain completed.
+     * Defaults true for live + scheduled trigger.
+     */
+    requirePersistenceWrite?: boolean;
+    /** Bypass recurrence cooldown (only when explicitly requested). */
+    onDemandRecurrenceBypass?: boolean;
+    now?: string;
+  };
 };
 
 export async function runAgentOsBrief(
@@ -209,6 +244,89 @@ export async function runAgentOsBrief(
     materialCount: provisionalMaterial,
   });
 
+  // --- Persistence load + recurrence eligibility BEFORE Chief of Staff brief ranking ---
+  const persistOpts = options.persistence;
+  const persistTrigger: RunTrigger = persistOpts?.trigger ?? "manual";
+  const persistNow = persistOpts?.now ?? new Date().toISOString();
+  const requirePersistenceWrite =
+    persistOpts?.requirePersistenceWrite ??
+    (persistOpts?.enabled === true &&
+      mode === "live" &&
+      persistTrigger === "scheduled");
+  const onDemandRecurrenceBypass =
+    persistOpts?.onDemandRecurrenceBypass === true ||
+    persistTrigger === "on-demand";
+
+  let priorState: AgentOsPersistedState | null = null;
+  let founderSurfaceEligibleIds: string[] | null = null;
+  let persistenceLoadError: string | null = null;
+  let resolvedStore: AgentOsPersistenceStore | undefined = persistOpts?.store;
+  let resolvedAdapterMeta: {
+    adapterId: string;
+    durabilityLabel: string;
+    nonDurableLive: boolean;
+  } | null = null;
+
+  if (persistOpts?.enabled) {
+    try {
+      if (!resolvedStore) {
+        const resolved = resolvePersistenceAdapter({
+          mode,
+          adapter: persistOpts.adapter,
+          filePath: persistOpts.filePath,
+          allowNonDurableLive: persistOpts.allowNonDurableLive,
+          requireDurableInLive:
+            mode === "live" && persistTrigger === "scheduled",
+        });
+        resolvedStore = resolved.store;
+        resolvedAdapterMeta = {
+          adapterId: resolved.adapterId,
+          durabilityLabel: resolved.durabilityLabel,
+          nonDurableLive: resolved.nonDurableLive,
+        };
+      } else {
+        resolvedAdapterMeta = {
+          adapterId: resolvedStore.adapterId,
+          durabilityLabel: resolvedStore.durability,
+          nonDurableLive:
+            mode === "live" && resolvedStore.adapterId === "memory",
+        };
+      }
+      priorState = await resolvedStore.load();
+      if (mode === "live" && priorState.modeScope === "fixture") {
+        throw new AgentOsPersistenceError(
+          "fixture-leak",
+          "Live mode refused to load fixture-scoped persisted state",
+        );
+      }
+      const mergedForGate = [
+        ...bi.recommendations,
+        ...search.recommendations,
+        ...content.recommendations,
+        ...opportunity.recommendations,
+      ];
+      const eligibility = resolveFounderSurfaceEligibility({
+        recommendations: mergedForGate,
+        priorRecommendations: priorState.recommendations,
+        nowIso: persistNow,
+        onDemand: onDemandRecurrenceBypass,
+      });
+      founderSurfaceEligibleIds = eligibility.eligibleIds;
+    } catch (err) {
+      persistenceLoadError =
+        err instanceof Error ? err.message : "persistence load failed";
+      warnings.push(
+        `Persistence load ${isPersistenceError(err) ? err.code : "error"}: ${redactSecretsAndPii(persistenceLoadError)}`,
+      );
+      if (requirePersistenceWrite) {
+        // Gate open (null) so CoS can still produce a brief; status adjusted after.
+        founderSurfaceEligibleIds = null;
+      } else {
+        founderSurfaceEligibleIds = null;
+      }
+    }
+  }
+
   const cos = runChiefOfStaff({
     bi,
     search,
@@ -218,6 +336,7 @@ export async function runAgentOsBrief(
     warnings: warnings.filter((w) => !w.startsWith("Source health summary:")),
     mode,
     briefEvidenceQuality: provisionalEvidenceQuality,
+    founderSurfaceEligibleIds,
   });
 
   const provider =
@@ -378,6 +497,93 @@ export async function runAgentOsBrief(
     run.warnings.push(
       `Fixture run produced ${materialCount} material recommendations (expected ≥3)`,
     );
+  }
+
+  if (options.persistence?.enabled) {
+    const startedAtIso = new Date(started).toISOString();
+    let persistResult: PersistAgentOsRunResult;
+    if (persistenceLoadError && !resolvedStore) {
+      persistResult = {
+        ok: false,
+        summary: null,
+        persistenceError: redactSecretsAndPii(persistenceLoadError),
+        persistenceErrorCode: "read-failed",
+        adapterId: resolvedAdapterMeta?.adapterId ?? persistOpts?.adapter ?? "unknown",
+        durabilityLabel: resolvedAdapterMeta?.durabilityLabel ?? "unknown",
+        nonDurableLive: resolvedAdapterMeta?.nonDurableLive ?? false,
+      };
+    } else {
+      try {
+        persistResult = await persistAgentOsRun({
+          run,
+          trigger: persistTrigger,
+          startedAt: startedAtIso,
+          now: persistNow,
+          store: resolvedStore,
+          resolve: {
+            mode,
+            adapter: options.persistence.adapter,
+            filePath: options.persistence.filePath,
+            allowNonDurableLive: options.persistence.allowNonDurableLive,
+            requireDurableInLive:
+              mode === "live" && persistTrigger === "scheduled",
+          },
+          requireWriteSuccess: requirePersistenceWrite,
+        });
+      } catch (err) {
+        persistResult = {
+          ok: false,
+          summary: null,
+          persistenceError:
+            err instanceof Error ? err.message : "persistence failed",
+          persistenceErrorCode: "write-failed",
+          adapterId: options.persistence.adapter ?? "unknown",
+          durabilityLabel: "unknown",
+          nonDurableLive: false,
+        };
+      }
+    }
+
+    run.persistence = {
+      attempted: true,
+      ok: persistResult.ok,
+      adapterId: persistResult.adapterId,
+      durabilityLabel: persistResult.durabilityLabel,
+      nonDurableLive: persistResult.nonDurableLive,
+      error: persistResult.persistenceError,
+      errorCode: persistResult.persistenceErrorCode,
+      findingChanges: persistResult.summary?.changes.filter(
+        (c) => c.kind === "finding",
+      ).length,
+      recommendationChanges: persistResult.summary?.changes.filter(
+        (c) => c.kind === "recommendation",
+      ).length,
+    };
+
+    if (!persistResult.ok) {
+      run.warnings.push(
+        `Persistence ${persistResult.persistenceErrorCode ?? "error"}: ${persistResult.persistenceError ?? "write failed"}`,
+      );
+      if (requirePersistenceWrite) {
+        // Must not report plain completed when durable persistence was required.
+        if (run.runStatus === "completed") {
+          run.runStatus = "completed-with-warnings";
+        }
+        if (
+          persistResult.persistenceErrorCode === "unconfigured" ||
+          persistResult.persistenceErrorCode === "write-failed" ||
+          persistResult.persistenceErrorCode === "read-failed"
+        ) {
+          run.deliveryGuidance = "send-failure-alert";
+        } else if (run.deliveryGuidance === "send-nothing") {
+          run.deliveryGuidance = "send-failure-alert";
+        }
+      }
+    } else if (persistResult.nonDurableLive) {
+      run.warnings.push(
+        "Live persistence used explicit non-durable in-memory adapter — state will not survive process restart",
+      );
+    }
   }
 
   return deepRedactUnknown(run) as AgentRun;

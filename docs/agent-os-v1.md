@@ -244,9 +244,9 @@ Related symptoms consolidate under these roots — not one gap per route or even
 - Missing live sources → source gaps; no synthetic conversions or funnel rates.
 - Path transitions exist in fixture only until a verified live path adapter exists.
 
-### Explicit non-goals
+### Explicit non-goals (journey pass)
 
-No website/CTA/route changes, no GA4/GTM/event instrumentation, no schema edits, no email/scheduling/persistence/CRM, no scraping, no fabricated analytics/funnel rates, no session replay/heatmaps/identity stitching, no deployments.
+No website/CTA/route changes, no GA4/GTM/event instrumentation, no schema edits, no email/CRM, no scraping, no fabricated analytics/funnel rates, no session replay/heatmaps/identity stitching, no deployments. Scheduling/persistence for Agent OS is documented in **Scheduling and persistence** below (email delivery still deferred).
 
 ### Module
 
@@ -484,11 +484,128 @@ Empty results and failed retrieval are different states.
 | Buffer / social | Unavailable — do not fabricate |
 | GBP | Unavailable — do not fabricate |
 
+## Scheduling and persistence
+
+### Persistence mission
+
+Make Agent OS durable across repeated runs: record when executives ran, track source health and run quality, preserve stable findings/recommendations, prevent unresolved issues from being re-created as new items, track lifecycle and recurrence, and support daily/weekly/on-demand cadence **definitions** without executing email or external jobs yet.
+
+Module: `lib/agent-os/persistence/`.
+
+### Internal mutation boundary
+
+Persistence may mutate **Agent OS operational state only** (run records, finding/recommendation lifecycle, cadence metadata). It must not mutate website content, customer data, GA4, GSC, GBP, social platforms, CRM, email, public files, content inventory outside Agent OS state, or source-system configuration.
+
+### Storage adapters
+
+| Adapter ID | Durability | Environments | Live eligible | Fixture eligible |
+|------------|------------|--------------|---------------|------------------|
+| `memory` | ephemeral | tests, fixture, explicit non-durable local | only with `allowNonDurableLive` | yes |
+| `file-local` | local-durable (crash-resistant replacement with last-known-good recovery; not single-syscall atomic on Windows) under `tmp/agent-os/state/` | local/manual Node single-host only | yes (not serverless/distributed-safe) | yes |
+| `unconfigured-production` | none | default live/serverless | no (explicit failure) | no |
+
+Supabase is the repo’s preferred production store for other products, but Agent OS does **not** write Supabase in this pass (no new Agent OS schema; `update-supabase` remains prohibited). Production durability for Agent OS remains **unconfigured** until a later founder-gated store.
+
+Local filesystem persistence is **not** production-safe on Vercel serverless. File-local never copies or streams new state directly over the only canonical file; it uses temp validation plus last-known-good backup recovery.
+
+### Run / executive / finding / recommendation records
+
+Typed records with `schemaVersion` (currently `1`): `AgentOsRunRecord`, `PersistedExecutiveRunRecord`, `PersistedFindingRecord`, `PersistedRecommendationRecord`. See `lib/agent-os/persistence/types.ts`.
+
+### Lifecycle model
+
+States used: `new`, `active`, `unchanged`, `improved`, `worsened`, `deferred`, `completed`, `resolved`, `superseded`, `stale`, `blocked`, `unknown`.
+
+Rules (summary):
+
+- **New** — first observation of a stable ID
+- **Unchanged** — same root + equivalent fingerprint; not recreated
+- **Improved / worsened** — only with healthy comparable sources and material fingerprint/severity/confidence change
+- **Resolved** — verified absent/corrected with healthy sources (never because a source disappeared)
+- **Stale** — healthy non-observation across freshness; never when sources were unavailable
+- **Deferred / completed** — preserved across runs; completion does not auto-resolve the finding
+- **Superseded** — canonical root replaces symptom IDs
+
+### Reconciliation
+
+After a fixture or live run (when persistence is enabled), the runtime sequence is:
+
+1. Load prior persisted state
+2. Run executives (evidence generation)
+3. Project prior + current fingerprints → **recurrence eligibility**
+4. Chief of Staff ranks full JSON, then surfaces founder brief **only from eligible IDs**
+5. Persist reconcile with surfaced-count updates
+6. Crash-resistant file-local save (temp → validate → last-known-good backup → promote → verify) or in-memory replace
+
+Failed runs record status but **do not erase** prior findings. Persistence write failure is an explicit error and must not make the run appear fully successful when `requirePersistenceWrite` is set (default for live + `scheduled`). The founder brief does not depend on a write succeeding unless that flag is set.
+
+### Evidence fingerprinting
+
+`buildEvidenceFingerprint` hashes normalized material only (stable ID, root, evidence class, metric tokens, severity/confidence buckets, blockers/deps). Excludes timestamps, run IDs, ordering noise, volatile prose, and raw third-party payloads.
+
+### Cadence definitions (no executor)
+
+Cadences are modeled and evaluated only — no cron wiring, no email, no OS schedulers in this pass.
+
+| Cadence ID | Scope | Frequency |
+|------------|-------|-----------|
+| `cos-daily-synthesis` | chief-of-staff | daily |
+| `cos-weekly-founder-brief` | chief-of-staff | weekly |
+| `bi-daily-source-health` | business-intelligence | daily |
+| `bi-weekly-performance` | business-intelligence | weekly |
+| `search-weekly-full` | search-strategy | weekly |
+| `search-daily-source-health` | search-strategy | daily (low-cost) |
+| `content-weekly-inventory` | content | weekly |
+| `content-on-demand-after-publish` | content | on-demand |
+| `opportunity-weekly-scan` | opportunity | weekly |
+| `agent-os-on-demand` | agent-os | on-demand |
+
+`evaluateCadence` returns reason codes: `due`, `not-due`, `minimum-interval`, `source-unavailable`, `degraded-allowed`, `dependency-stale`, `dependency-missing`, `already-running`, `disabled`, `manual-override`, `catch-up`, `timezone-window`.
+
+Internal timestamps are **UTC**. Founder-facing cadence timezone is `America/New_York`.
+
+### Freshness
+
+Source-health windows are hours; weekly strategic analyses are days; Chief of Staff must not silently mix incompatible windows — partial synthesis only under an explicit degraded policy (`evaluateChiefOfStaffDependencyFreshness`).
+
+### Founder-priority recurrence
+
+Cooldown + lifecycle gates prevent repeatedly surfacing the same unchanged priority. Critical unresolved items are never permanently hidden. One root problem → at most one founder priority. Brief remains ≤5 named priorities.
+
+### Fixture / live separation
+
+- Fixture state never enters live storage
+- Live refuses implicit memory; missing durable persistence fails explicitly via `unconfigured-production`
+- In-memory live requires `allowNonDurableLive` and is labeled non-durable
+- No fixture fallback for persistence
+
+### Schema versioning
+
+Unsupported future versions fail safely. Corrupted JSON fails safely. No destructive automatic migration. Minimal non-destructive cadence default fill is allowed on load.
+
+### Non-goals (this pass)
+
+- Email delivery / Gmail integration (next pass)
+- Automated executive cron execution
+- Public routes / dashboards
+- CRM / Buffer / Calendar scheduling
+- External writes outside Agent OS persistence
+- Fabricated persistence state
+
+### How to run with persistence
+
+```bash
+npm run agent-os:brief -- --fixture --persist
+npm run agent-os:brief -- --fixture --persist-file
+# live without configured durable store fails persistence explicitly:
+npm run agent-os:brief:live -- --persist
+```
+
 ## Decision Journal schema
 
 Typed in `lib/agent-os/decision-journal.ts`. Fields include decision ID, recommendation ID, executive, date proposed, evidence snapshot, confidence, founder decision/rationale, owner, target date, outcome status, measured outcome, review date, lesson learned.
 
-**No production write persistence in V1.** `InMemoryDecisionJournal` is test/local-only and must not write during production execution.
+**Decision Journal production writes remain disabled.** `InMemoryDecisionJournal` is test/local-only. Agent OS scheduling persistence (above) is separate from Decision Journal founder-outcome storage.
 
 ## Run lifecycle
 
@@ -584,12 +701,15 @@ This repository has **no OpenAI / AI SDK product dependency**. V1 uses determini
 
 1. ~~BI Conversion & Measurement expansion~~
 2. ~~Search Strategy Local Authority / GBP Intelligence~~
-3. ~~Client Journey & Conversion Analysis~~ (this pass — BI journey evidence + CoS sequencing; read-only)
-4. Optional GA4 read expansion for Concierge conversion events and/or path analytics — still read-only, no client tracking changes
-5. Decision Journal durable store (still founder-gated writes)
-6. Optional authenticated internal preview (separate from production hard-404 dashboard)
-7. Optional LLM brief polish behind the existing provider interface
-8. Optional verified Buffer / HubSpot-aggregate / paid-cost / remarketing-audience / GBP adapters (still read-only)
+3. ~~Client Journey & Conversion Analysis~~
+4. ~~Scheduling and persistence foundation~~ (run records, lifecycle reconciliation, cadence definitions — no email)
+5. Automated executive cadence + Chief of Staff brief assembly on schedule + founder email delivery
+6. Optional GA4 read expansion for Concierge conversion events and/or path analytics — still read-only, no client tracking changes
+7. Decision Journal durable store (still founder-gated writes)
+8. Optional authenticated internal preview (separate from production hard-404 dashboard)
+9. Optional LLM brief polish behind the existing provider interface
+10. Optional verified Buffer / HubSpot-aggregate / paid-cost / remarketing-audience / GBP adapters (still read-only)
+11. Optional production-durable Agent OS store (e.g. Supabase) behind the existing persistence interface — founder-gated
 
 ## Protected systems (do not touch from Agent OS)
 

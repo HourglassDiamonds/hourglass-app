@@ -29,6 +29,12 @@ export type ChiefOfStaffInput = {
   mode?: "fixture" | "live";
   /** When true, Markdown is labeled degraded / partial — JSON still holds full ranked set. */
   briefEvidenceQuality?: BriefEvidenceQuality;
+  /**
+   * When set, founder brief surfacing is restricted to these recommendation IDs
+   * (recurrence eligibility already applied). Full ranked JSON is unchanged.
+   * Order is priority preference for brief slots.
+   */
+  founderSurfaceEligibleIds?: string[] | null;
 };
 
 export type ChiefOfStaffOutput = {
@@ -108,7 +114,7 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
   const blocked = recommendations.filter((r) => r.status === "blocked");
 
   // Opportunity must not take a named brief slot unless surface-eligible
-  const surfacePool = active.filter((r) => {
+  let surfacePool = active.filter((r) => {
     if (r.originatingExecutive !== "opportunity") return true;
     return opportunityRecommendationIsSurfaceEligible(
       r.plainLanguageExplanation,
@@ -117,8 +123,35 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
     );
   });
 
-  const highest = surfacePool[0] ?? active.find(
-    (r) => r.originatingExecutive !== "opportunity",
+  // Recurrence eligibility BEFORE founder brief ranking/surfacing.
+  // When a gate is provided, only eligible IDs compete for ≤5 brief slots.
+  if (input.founderSurfaceEligibleIds) {
+    const allow = new Set(input.founderSurfaceEligibleIds);
+    const byId = new Map(surfacePool.map((r) => [r.recommendationId, r]));
+    surfacePool = input.founderSurfaceEligibleIds
+      .map((id) => byId.get(id))
+      .filter((r): r is Recommendation => Boolean(r));
+    // Keep any eligible that were in pool but missing from ordered list (safety)
+    for (const r of active) {
+      if (allow.has(r.recommendationId) && !surfacePool.some((x) => x.recommendationId === r.recommendationId)) {
+        if (
+          r.originatingExecutive !== "opportunity" ||
+          opportunityRecommendationIsSurfaceEligible(
+            r.plainLanguageExplanation,
+            r.title,
+            r.priorityScore,
+          )
+        ) {
+          surfacePool.push(r);
+        }
+      }
+    }
+  }
+
+  const highest = surfacePool[0] ?? (
+    input.founderSurfaceEligibleIds
+      ? undefined
+      : active.find((r) => r.originatingExecutive !== "opportunity")
   );
   const additionalSurfaced = pickAdditionalSurfaced(
     surfacePool.filter((r) => r.recommendationId !== highest?.recommendationId),

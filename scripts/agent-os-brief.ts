@@ -2,11 +2,18 @@
  * Manual Agent OS founder brief runner (Node / server only).
  *
  * Usage:
- *   npm run agent-os:brief          → --fixture (intentional sample data)
- *   npm run agent-os:brief:live     → --live (never falls back to fixtures)
+ *   npm run agent-os:brief          → --fixture (no persistence unless flagged)
+ *   npm run agent-os:brief:live     → --live (no persistence unless flagged)
  *
- * Writes artifacts only under tmp/agent-os/ (gitignored).
- * Read-only: no external writes, no public routes, no email/scheduling.
+ * Optional persistence (Agent OS operational state only — no email):
+ *   --persist              enable persistence (fixture→memory; live→unconfigured unless other flags)
+ *   --persist-file         file-local adapter under tmp/agent-os/state/ (gitignored)
+ *   --persist-memory-live  explicit non-durable live memory (labeled)
+ *   --require-persistence  fail CLI if persistence write/load fails (live scheduled semantics)
+ *   --on-demand            recurrence cooldown bypass for founder brief surfacing
+ *
+ * Default commands do NOT silently write durable state.
+ * State directory tmp/agent-os/ is gitignored.
  */
 
 import { mkdirSync, writeFileSync } from "node:fs";
@@ -16,6 +23,7 @@ import {
   containsLikelyPiiOrSecret,
   redactSecretsAndPii,
 } from "../lib/agent-os/redaction";
+import { defaultAgentOsStatePath } from "../lib/agent-os/persistence";
 
 async function main() {
   const args = process.argv.slice(2);
@@ -31,9 +39,42 @@ async function main() {
     // unreachable — fixture defaults when not live
   }
 
+  const persist = args.includes("--persist") || args.includes("--persist-file");
+  const persistFile = args.includes("--persist-file");
+  const persistMemoryLive = args.includes("--persist-memory-live");
+  const requirePersistence = args.includes("--require-persistence");
+  const onDemand = args.includes("--on-demand");
+
+  if (persistMemoryLive && !live) {
+    console.error(
+      "[agent-os] --persist-memory-live is only valid with --live",
+    );
+    process.exitCode = 2;
+    return;
+  }
+
   console.log(`[agent-os] Starting ${mode} brief run…`);
 
-  const run = await runAgentOsBrief({ mode });
+  const run = await runAgentOsBrief({
+    mode,
+    persistence: persist
+      ? {
+          enabled: true,
+          trigger: onDemand ? "on-demand" : "manual",
+          adapter: persistFile
+            ? "file-local"
+            : persistMemoryLive && live
+              ? "memory"
+              : mode === "fixture"
+                ? "memory"
+                : "unconfigured-production",
+          filePath: persistFile ? defaultAgentOsStatePath() : undefined,
+          allowNonDurableLive: persistMemoryLive,
+          requirePersistenceWrite: requirePersistence,
+          onDemandRecurrenceBypass: onDemand,
+        }
+      : undefined,
+  });
 
   if (run.mode !== mode) {
     console.error(
@@ -52,6 +93,13 @@ async function main() {
     );
     process.exitCode = 2;
     return;
+  }
+
+  if (requirePersistence && run.persistence && !run.persistence.ok) {
+    console.error(
+      `[agent-os] Required persistence failed (${run.persistence.errorCode}): ${run.persistence.error}`,
+    );
+    process.exitCode = 1;
   }
 
   const outDir = join(process.cwd(), "tmp", "agent-os");
@@ -92,6 +140,12 @@ async function main() {
   console.log(
     `[agent-os] opportunities=${run.briefSurfacing.opportunitiesDetected} ranked=${run.briefSurfacing.recommendationsRanked} surfacedInBrief=${run.briefSurfacing.recommendationsSurfacedInBrief} (jsonRecs=${run.recommendations.length}) anomalies=${run.anomalies.length} gaps=${run.dataGaps.length}`,
   );
+  if (run.persistence) {
+    console.log(
+      `[agent-os] persistence ok=${run.persistence.ok} adapter=${run.persistence.adapterId} durability=${run.persistence.durabilityLabel}` +
+        (run.persistence.error ? ` error=${run.persistence.error}` : ""),
+    );
+  }
   console.log(`[agent-os] wrote ${jsonPath}`);
   console.log(`[agent-os] wrote ${mdPath}`);
   console.log("\n--- Founder Brief ---\n");

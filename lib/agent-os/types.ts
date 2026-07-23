@@ -279,6 +279,21 @@ export type AgentRun = {
   durationMs: number;
   warnings: string[];
   agentOsVersion: typeof AGENT_OS_VERSION;
+  /**
+   * Optional persistence outcome when a persistence adapter was requested.
+   * Brief assembly does not require a successful write unless explicitly configured.
+   */
+  persistence?: {
+    attempted: boolean;
+    ok: boolean;
+    adapterId: string;
+    durabilityLabel: string;
+    nonDurableLive: boolean;
+    error: string | null;
+    errorCode: string | null;
+    findingChanges?: number;
+    recommendationChanges?: number;
+  };
 };
 
 export type DecisionOutcomeStatus =
