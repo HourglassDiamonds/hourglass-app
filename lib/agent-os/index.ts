@@ -141,8 +141,9 @@ export type {
 export {
   runSearchStrategy,
   emptySearchStrategyOutput,
+  type SearchStrategyOutput,
+  type RunSearchStrategyOptions,
 } from "./executives/search-strategy";
-export type { SearchStrategyOutput } from "./executives/search-strategy";
 
 export {
   runContentExecutive,
@@ -184,6 +185,9 @@ export {
   isLocalIntent,
   classifyQueryIntent,
   isSmallSample,
+  classifyLocalGeography,
+  classifyLocalIntentKind,
+  isLocalAuthorityQuery,
 } from "./search/classify";
 
 export { detectGscOpportunities } from "./search/opportunities";
@@ -191,6 +195,38 @@ export {
   inspectGuideAuthority,
   FAQ_SCHEMA_ARTICLE_SLUGS,
 } from "./search/guide-authority";
+
+export {
+  runLocalAuthorityIntelligence,
+  inspectLocalEntityInventory,
+  observeGbpIntelligence,
+  gbpReviewMetricsUnknown,
+  detectLocalAuthorityFindings,
+  buildLocalAuthorityFindingId,
+  localAuthorityIdLooksSafe,
+  LOCAL_AUTHORITY_FINDING_TYPES,
+  LOCAL_GEOGRAPHIES,
+  LOCAL_INTENT_KINDS,
+  GBP_ROOT_SOURCE_GAP_ID,
+  GBP_DIMENSION_KEYS,
+  buildLocalSemanticDedupeKey,
+  consolidateLegacyWithLocalAuthority,
+  applyLocalAuthorityFounderRankingGate,
+  isRepositoryBackedLocalAuthorityRec,
+  countFounderRankableRepositoryLocal,
+  recommendationIsFounderRankableLocal,
+} from "./search/local";
+export type {
+  LocalAuthorityAudit,
+  LocalAuthorityFinding,
+  LocalAuthorityFindingType,
+  LocalGeography,
+  LocalIntentKind,
+  LocalEvidenceClass,
+  GbpIntelligenceSnapshot,
+  LocalEntityInventory,
+  LocalAuthorityVolumeFunnel,
+} from "./search/local";
 
 export { inspectContentInventory, CONTENT_PUBLICATION_INVENTORY_GAP_ID } from "./content/inventory";
 export type {

@@ -1,5 +1,16 @@
 import { isBrandQuery } from "@/lib/intelligence/brand-queries";
 import type { SearchIntentClass } from "./types";
+import {
+  classifyLocalGeography,
+  classifyLocalIntentKind,
+  isLocalAuthorityQuery,
+} from "./local/geography";
+
+export {
+  classifyLocalGeography,
+  classifyLocalIntentKind,
+  isLocalAuthorityQuery,
+};
 
 const LOCAL_TERMS = [
   "charlotte",
@@ -12,6 +23,7 @@ const LOCAL_TERMS = [
   "indian trail",
   "monroe",
   "marvin",
+  "near me",
   "north carolina",
   "south carolina",
   " nc",
@@ -52,6 +64,7 @@ const NAVIGATIONAL_TERMS = [
 export { isBrandQuery };
 
 export function isLocalIntent(query: string): boolean {
+  if (isLocalAuthorityQuery(query)) return true;
   const q = query.toLowerCase();
   return LOCAL_TERMS.some((t) => q.includes(t.trim()));
 }

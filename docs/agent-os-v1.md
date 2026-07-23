@@ -12,7 +12,7 @@ V1 is deliberately small: five locked executives. **Operational now:** Chief of 
 
 1. **Chief of Staff** — orchestrates, ranks, reconciles, produces the founder brief
 2. **Business Intelligence** — trustworthy performance view, anomalies, measurement gaps
-3. **Search Strategy** — operational (GSC + Diamond Guide authority, local/GEO readiness)
+3. **Search Strategy** — operational (GSC + Diamond Guide authority + Local Authority / GBP intelligence)
 4. **Content** — operational (founder conversations, repurposing, sequencing, brand-fit)
 5. **Opportunity** — operational (underused demand, partnership/referral research, paid/remarketing readiness)
 
@@ -183,9 +183,9 @@ Live mode derives observations only from the existing GA4 weekly adapter allowli
 
 Decision-blocking measurement findings can outrank downstream speculative work when evidence is strong. Low-value gaps stay deferred. Measurement findings soft-dedupe against legacy BI heuristics. Founder brief still caps at **5** named priorities; full findings remain in JSON.
 
-### Next planned Search Strategy Local Authority / GBP expansion
+### Next planned Client Journey & Conversion Analysis pass
 
-After this BI conversion pass: deepen Search Strategy local authority with an optional verified GBP read adapter (still read-only) so local-pack/review evidence can graduate beyond GSC + Charlotte guide registry.
+After Local Authority / GBP Intelligence: deepen Client Journey & Conversion Analysis so qualified-prospect progression (guide → tool → Concierge) can be diagnosed with clearer stage ownership across BI and Search — still read-only.
 
 ## Content Executive
 
@@ -253,27 +253,87 @@ Invoked with BI + Search; titles prefixed `[Content]`; deduped/ranked with share
 
 Maintain and compound Hourglass search authority across traditional search, local search, and AI-assisted discovery without chasing generic SEO activity.
 
+### Local Authority / GBP mission
+
+Answer: where is Hourglass gaining or missing local discovery authority across Charlotte, Waxhaw, Fort Mill, South Charlotte, and the surrounding engagement-ring market—and what should be verified or improved next?
+
+Owned inside **Search Strategy** (not a sixth executive): local organic discovery, local-intent queries, GBP intelligence, location/entity consistency, local authority structure, local content coverage, local search/schema readiness, review/reputation measurement gaps, service-area clarity, and local guide/tool/Concierge handoffs.
+
+### Source-of-truth separation
+
+| Evidence class | Proves | Does not prove |
+|----------------|--------|----------------|
+| **Repository** (`search/local/entity-inventory.ts`, guides, schema, Concierge) | Site intent, NAP/schema readiness, hub/link structure | GBP acceptance, map-pack, review count, pack ranking |
+| **Search Console** | Local-intent demand, query/page alignment, CTR/position | Map-pack ranking or GBP performance |
+| **GBP observed** | Profile/completeness/engagement **only** via verified read adapter or trusted export | Anything when adapter is absent — use `unknown` |
+| **External citations** | (none in V1) | No NAP/citation consistency claims without verified external data |
+
+### Local entity inventory
+
+Bounded static inventory of business name, founder credentials, locality/region, service areas, LocalBusiness/Organization schema, Concierge + Whispered Praise routes, Charlotte Guides routes, and local metadata signals. Each field carries presence, normalized value, source, consistency, confidence, sensitivity, and whether external verification is required. No secrets or customer PII.
+
+### GBP intelligence model
+
+Typed snapshot in `lib/agent-os/search/local/gbp.ts` with source states `observed` | `partially-observed` | `not-configured` | `unavailable` | `unknown`. Dimensions (category, hours, reviews, calls, directions, etc.) stay **unknown** without a verified adapter. Missing adapter ⇒ **unknown**, not “incomplete profile.”
+
+### Geography model
+
+Explicit geographies: Charlotte, Waxhaw, Fort Mill, South Charlotte, Charlotte metro / regional, national. Intent kinds: city-name, near-me, regional service, branded location, venue/neighborhood, local informational, local commercial. Charlotte vs South Charlotte and Charlotte + nationwide are treated as **complementary** unless a true contradiction appears.
+
+### Local-intent classification & query-to-page alignment
+
+Uses GSC when available. High-value conditions: non-branded local positions 4–15, high impressions/weak CTR, local query on mismatched/generic page, hub gaps, tool/Concierge handoffs. Small samples lower confidence or suppress findings. Does not infer physical-user location from query text alone. Does not auto-recommend a page for every city.
+
+### Charlotte Guides hub logic
+
+Assesses whether Charlotte Guides have a mapped hub, orphaned routes, guide→tool/Concierge links, and service-page relationships. Recommendations name source/destination routes — Agent OS does not create pages.
+
+### Service-area consistency & schema readiness
+
+Repository consistency across schema, metadata, Concierge, and guides. Distinguishes complementary geography from real contradiction. Schema findings use **readiness** language only — no Google eligibility claims. AggregateRating/Review schema is not recommended unless visible content and policy support it.
+
+### Review / reputation & map-pack limits
+
+Without verified GBP/review data: review count, rating, recency, and response coverage are **unknown**. Repository testimonials ≠ GBP reviews. Map-pack analysis is readiness-only (`map-pack-readiness-signal` / `map-pack-data-unavailable`) — never ranking or visibility claims.
+
+### GBP root source gap
+
+Stable ID: `search-strategy:gbp:measurement-gap:google-business-profile`. One root recommendation replaces repetitive unknown-dimension priorities. Supporting unknown dimensions remain in JSON with `suppressRecommendation`.
+
+### Cross-executive ownership
+
+| Executive | Owns |
+|-----------|------|
+| Search Strategy | Local diagnosis, query/page alignment, GBP intelligence, schema/entity readiness |
+| Content | Local founder conversations / educational production |
+| Opportunity | Partnerships, bridal ecosystem, distribution, paid-search evaluation |
+| BI | Calls/directions/GBP-click measurement, attribution, conversion integrity |
+| Chief of Staff | Synthesis, priority, conflict resolution, founder brief (≤5 named) |
+
+### Stable IDs
+
+`search-strategy:local:<type>:<geography>:<subject>`, `search-strategy:repository:<type>:<subject>`, `search-strategy:gbp:measurement-gap:google-business-profile` — no PII, secrets, location IDs, or timestamps.
+
+### Live-data limitations
+
+Live mode uses live GSC when configured; uses a verified GBP adapter only if one exists (none in V1). Never uses fixture GBP or fixture local-query overlays. Degrades honestly when GSC/GBP unavailable. Repository-backed local findings still run.
+
+### How Search Strategy feeds Chief of Staff
+
+`runAgentOsBrief` invokes BI, Search Strategy, Content, and Opportunity, then Chief of Staff merges recommendations, deduplicates, ranks with the shared model, and prefixes executive titles (`[Search Strategy]`, `[Content]`, `[Opportunity]`) so the founder brief shows origin. Zero recommendations from an executive is a healthy outcome when evidence is thin. Unverified GBP dimensions and static repository gaps normally stay deferred; high-confidence local demand may surface within the 5-priority cap.
+
 ### Live data sources
 
 - **Google Search Console** (read-only) via `lib/integrations/gsc.ts` when OAuth + `GSC_SITE_URL` are configured
 - **Repository guide-authority adapter** (`lib/agent-os/search/guide-authority.ts`) inspecting `app/diamond-guide/articles.ts`, hub metadata, category map, FAQ schema wiring, and tool/Concierge links
+- **Local Authority module** (`lib/agent-os/search/local/`) — entity inventory, geography, GBP readiness, local findings
 - **GA4** may inform BI landings; Search Strategy does not invent GSC from GA4
 
-Missing GSC lowers confidence and blocks GSC-derived opportunities — repository analysis still runs. Missing GBP never blocks Search Strategy; local findings stay GSC + Charlotte guide registry only.
+Missing GSC lowers confidence and blocks GSC-derived opportunities — repository analysis still runs. Missing GBP never blocks Search Strategy.
 
 ### Search opportunity taxonomy
 
-Typed categories in `lib/agent-os/search/types.ts`:
-
-- `high-impression-low-ctr`, `near-page-one`
-- `declining-query`, `declining-page`, `rising-query`
-- `query-page-mismatch`, `possible-cannibalization` (inference; does not overclaim)
-- `content-gap`, `internal-link-gap`, `tool-handoff-gap`
-- `local-intent-gap`, `geo-readiness-gap`, `schema-gap`, `metadata-gap`, `measurement-gap`
-
-### Local-search logic
-
-Uses GSC local-intent classification (Charlotte, Waxhaw, Fort Mill, South Charlotte, metro terms) plus repository Charlotte Guides inventory. Does **not** fabricate GBP pack/review metrics.
+Typed categories in `lib/agent-os/search/types.ts` plus local-authority finding types in `lib/agent-os/search/local/types.ts`.
 
 ### GEO readiness logic
 
@@ -284,11 +344,11 @@ Scores answer-first openings, FAQ schema presence, tool interconnection, and rel
 - No query×page Search Console matrix → mismatch/cannibalization stay cautious inferences
 - Small samples reduce confidence
 - Revenue never inferred from impressions
-- “Publish more content” without evidence is rejected by design
+- “Publish more content” / “rank higher locally” / “get more reviews” without evidence is rejected by design
 
-### How Search Strategy feeds Chief of Staff
+### Next planned Client Journey & Conversion Analysis pass
 
-`runAgentOsBrief` invokes BI, Search Strategy, Content, and Opportunity, then Chief of Staff merges recommendations, deduplicates, ranks with the shared model, and prefixes executive titles (`[Search Strategy]`, `[Content]`, `[Opportunity]`) so the founder brief shows origin. Zero recommendations from an executive is a healthy outcome when evidence is thin.
+Deepen client-journey stage diagnosis (guide → tool → Concierge) with clearer BI/Search ownership — still read-only; optional verified GBP read adapter remains a later prerequisite for pack/review metrics.
 
 ## Permissions (read-only boundary)
 

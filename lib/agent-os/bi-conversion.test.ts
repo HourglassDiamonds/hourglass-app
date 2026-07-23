@@ -853,8 +853,14 @@ describe("Opportunity handoff deduplication", () => {
     assert.ok(anyPaid.length >= 0); // readiness retained in opportunity executive path
     void paidBlocked;
     for (const r of anyPaid) {
-      assert.ok(!/launch ads(?!.*Do not)/i.test(r.proposedAction));
-      assert.match(r.proposedAction + r.title, /Do not launch ads|measurement|prerequisite|BI/i);
+      // Allow explicit "Do not launch ads" refusals; reject affirmative launch language.
+      const action = r.proposedAction;
+      const stripped = action.replace(/do not launch ads/gi, "");
+      assert.ok(!/\blaunch ads\b/i.test(stripped));
+      assert.match(
+        r.proposedAction + r.title,
+        /Do not launch ads|measurement|prerequisite|BI/i,
+      );
     }
   });
 });

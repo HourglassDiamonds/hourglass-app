@@ -13,6 +13,7 @@ import {
   redactSecretsAndPii,
   runAgentOsBrief,
   runSearchStrategy,
+  emptySearchStrategyOutput,
   scaffoldExecutives,
   SEARCH_OPPORTUNITY_TYPES,
 } from "./index";
@@ -240,6 +241,7 @@ describe("Search Strategy executive", () => {
         facts: ["Repository authority inspected"],
         inferences: [],
         guideAuthority: inspectGuideAuthority([]),
+        localAuthority: emptySearchStrategyOutput().localAuthority,
       },
       reportingPeriod: { ...FIXTURE_REPORTING_PERIOD },
       warnings: [],

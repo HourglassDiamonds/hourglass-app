@@ -177,7 +177,7 @@ export async function runAgentOsBrief(
   // unless the entire live load was aborted for fixture leakage / fatal error.
   const search = skipSynthesis
     ? emptySearchStrategyOutput()
-    : runSearchStrategy(bundle, reportingPeriod);
+    : runSearchStrategy(bundle, reportingPeriod, { mode });
 
   const content = skipSynthesis
     ? emptyContentExecutiveOutput()

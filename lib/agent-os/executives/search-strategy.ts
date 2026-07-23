@@ -3,4 +3,5 @@ export {
   runSearchStrategy,
   emptySearchStrategyOutput,
   type SearchStrategyOutput,
+  type RunSearchStrategyOptions,
 } from "../search/index";

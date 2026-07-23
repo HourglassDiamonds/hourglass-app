@@ -13,6 +13,16 @@ import type { DataGap, Recommendation } from "../types";
 import { detectGscOpportunities } from "./opportunities";
 import { inspectGuideAuthority } from "./guide-authority";
 import { buildSearchRecommendationId } from "./ids";
+import {
+  emptyLocalAuthorityAudit,
+  runLocalAuthorityIntelligence,
+  GBP_ROOT_SOURCE_GAP_ID,
+  type LocalAuthorityAudit,
+} from "./local";
+import {
+  applyLocalAuthorityFounderRankingGate,
+  consolidateLegacyWithLocalAuthority,
+} from "./local/ranking-policy";
 import type { SearchOpportunity } from "./types";
 
 export type SearchStrategyOutput = {
@@ -22,14 +32,22 @@ export type SearchStrategyOutput = {
   facts: string[];
   inferences: string[];
   guideAuthority: ReturnType<typeof inspectGuideAuthority>;
+  /** Local Authority / GBP Intelligence audit (V1 expansion). */
+  localAuthority: LocalAuthorityAudit;
+};
+
+export type RunSearchStrategyOptions = {
+  mode?: "fixture" | "live";
 };
 
 export function runSearchStrategy(
   bundle: AgentOsDataBundle,
   reportingPeriod: { start: string; end: string },
+  options: RunSearchStrategyOptions = {},
 ): SearchStrategyOutput {
   assertOperationalForRecommendations("search-strategy");
 
+  const mode = options.mode ?? inferSearchMode(bundle);
   const dataGaps: DataGap[] = [];
   const facts: string[] = [];
   const inferences: string[] = [];
@@ -57,13 +75,14 @@ export function runSearchStrategy(
     );
   }
 
-  // GBP always explicit
+  // Single GBP root source gap — not per-dimension flood
   dataGaps.push({
-    id: "gap-search-gbp",
+    id: GBP_ROOT_SOURCE_GAP_ID,
     sourceId: "gbp",
-    description: "Google Business Profile metrics unavailable",
+    description:
+      "Google Business Profile metrics unavailable — root local-authority source gap",
     impactOnRecommendations:
-      "Local findings use GSC + repository only — no GBP pack/review claims",
+      "Local findings use GSC + repository only — no GBP pack/review/call/direction claims; unknown dimensions stay in JSON",
     suggestedRemedy: bundle.gbp.health.errors[0] ?? "No verified GBP adapter",
   });
 
@@ -93,9 +112,51 @@ export function runSearchStrategy(
   const collectedAt =
     bundle.gsc.data?.fetchedAt ?? new Date().toISOString();
 
-  const recommendations = opportunities
+  const baseRecommendations = opportunities
     .map((opp) => opportunityToRecommendation(opp, reportingPeriod, collectedAt))
     .filter((r) => !proposedActionImpliesWrite(r.proposedAction));
+
+  const localRun = runLocalAuthorityIntelligence({
+    mode,
+    bundle,
+    reportingPeriod,
+    guideAuthority,
+    gscAvailable: Boolean(gscAvailable),
+    existingSearchRecommendations: baseRecommendations,
+  });
+
+  facts.push(...localRun.audit.facts);
+  inferences.push(...localRun.audit.inferences);
+
+  // Emit local-intent SearchOpportunity mirrors so Content/Opportunity handoffs keep working
+  const localHandoffOpps = localFindingsAsSearchOpportunities(
+    localRun.audit.findings,
+  );
+  opportunities.push(...localHandoffOpps);
+
+  const hasObservedLocalDemand = localRun.audit.findings.some(
+    (f) =>
+      f.evidenceClass === "observed" &&
+      !f.suppressRecommendation &&
+      (f.type === "local-near-page-one" ||
+        f.type === "local-high-impression-low-ctr" ||
+        f.type === "local-query-page-mismatch"),
+  );
+
+  const merged = [
+    ...baseRecommendations,
+    ...localRun.recommendations.filter(
+      (r) => !proposedActionImpliesWrite(r.proposedAction),
+    ),
+  ];
+
+  const recommendations = applyLocalAuthorityFounderRankingGate(
+    consolidateLegacyWithLocalAuthority(merged),
+    {
+      gscAvailable: Boolean(gscAvailable),
+      hasObservedLocalDemand,
+    },
+  );
 
   return {
     recommendations,
@@ -104,7 +165,61 @@ export function runSearchStrategy(
     facts,
     inferences,
     guideAuthority,
+    localAuthority: localRun.audit,
   };
+}
+
+function localFindingsAsSearchOpportunities(
+  findings: LocalAuthorityAudit["findings"],
+): SearchOpportunity[] {
+  const out: SearchOpportunity[] = [];
+  for (const f of findings) {
+    // Handoff findings stay internal; Content keys off observed demand / hub diagnosis
+    if (
+      f.type === "local-authority-opportunity" ||
+      f.type === "local-measurement-gap"
+    ) {
+      continue;
+    }
+    if (
+      f.type !== "local-near-page-one" &&
+      f.type !== "local-high-impression-low-ctr" &&
+      f.type !== "local-hub-gap"
+    ) {
+      continue;
+    }
+    // Still emit opportunity mirrors for Content even when recommendation is suppressed
+    // for repository-backed hub (Content may produce founder-facing production priority).
+    if (
+      f.type === "local-near-page-one" ||
+      f.type === "local-high-impression-low-ctr" ||
+      f.type === "local-hub-gap"
+    ) {
+      out.push({
+        id: f.id,
+        type: "local-intent-gap",
+        title: f.title,
+        whyItMatters: f.whyItMatters,
+        recommendedAction: f.recommendedAction,
+        queryOrPage: f.queryOrPage ?? f.route ?? f.geography,
+        metric: f.type,
+        currentValue: f.evidenceNotes[0] ?? f.evidenceClass,
+        comparisonValue: null,
+        sampleSize: f.sampleSize ?? 0,
+        classifications: ["local", "non-branded"],
+        isInference: f.isInference,
+        confidence: f.confidence,
+        likelyImpact: f.likelyImpact,
+        effort: f.effort,
+        urgency: f.urgency,
+        dependency: f.dependency ?? undefined,
+        approvalRequired: f.founderApprovalRequired,
+        supportingReference: f.supportingReference,
+        evidenceNotes: f.evidenceNotes,
+      });
+    }
+  }
+  return out;
 }
 
 function opportunityToRecommendation(
@@ -170,6 +285,16 @@ function opportunityToRecommendation(
   });
 }
 
+function inferSearchMode(bundle: AgentOsDataBundle): "fixture" | "live" {
+  if (
+    bundle.gsc.health.retrievalState === "fixture" ||
+    bundle.ga4.health.retrievalState === "fixture"
+  ) {
+    return "fixture";
+  }
+  return "live";
+}
+
 /** Test helper: empty healthy Search Strategy output */
 export function emptySearchStrategyOutput(): SearchStrategyOutput {
   return {
@@ -179,5 +304,6 @@ export function emptySearchStrategyOutput(): SearchStrategyOutput {
     facts: [],
     inferences: [],
     guideAuthority: inspectGuideAuthority([]),
+    localAuthority: emptyLocalAuthorityAudit(),
   };
 }
