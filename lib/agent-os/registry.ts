@@ -48,6 +48,24 @@ const SCAFFOLD_ESCALATION: EscalationRule[] = [
   },
 ];
 
+const SEARCH_ESCALATION: EscalationRule[] = [
+  {
+    id: "search-gsc-gap",
+    condition: "GSC unavailable or incomplete",
+    action: "Continue repository authority analysis; do not fabricate GSC metrics",
+  },
+  {
+    id: "search-gbp-gap",
+    condition: "GBP metrics unavailable",
+    action: "Use GSC local-intent + Charlotte guide registry only; no pack claims",
+  },
+  {
+    id: "search-geo-readiness",
+    condition: "GEO readiness findings",
+    action: "Label as readiness signals, not confirmed AI citations",
+  },
+];
+
 export const EXECUTIVE_REGISTRY: readonly ExecutiveDefinition[] = [
   {
     id: "chief-of-staff",
@@ -107,22 +125,25 @@ export const EXECUTIVE_REGISTRY: readonly ExecutiveDefinition[] = [
     id: "search-strategy",
     displayName: "Search Strategy",
     mission:
-      "Own organic, local, and GEO/AI discovery strategy for Hourglass — Search Console, guide authority, content gaps, internal linking, and GBP search opportunity.",
+      "Maintain and compound Hourglass search authority across traditional search, local search, and AI-assisted discovery without chasing generic SEO activity.",
     ownedDomains: [
-      "organic search",
-      "local search",
-      "GEO/AI discovery",
-      "Search Console interpretation",
-      "guide authority",
+      "Google Search Console",
+      "organic landing-page performance",
+      "branded vs non-branded search",
+      "local intent",
+      "Diamond Guide structure",
       "content gaps",
-      "internal linking",
-      "GBP search opportunity",
+      "internal links",
+      "schema opportunities",
+      "tool/content handoffs",
+      "GEO / AI-answer readiness",
+      "GBP search visibility when data is available",
     ],
     allowedDataSources: ["gsc", "ga4", "gbp", "weekly-intelligence", "fixture"],
     prohibitedActions: SHARED_PROHIBITED,
-    escalationRules: SCAFFOLD_ESCALATION,
-    implementationStatus: "scaffold",
-    version: "0.1.0",
+    escalationRules: SEARCH_ESCALATION,
+    implementationStatus: "operational",
+    version: "1.0.0",
   },
   {
     id: "content",

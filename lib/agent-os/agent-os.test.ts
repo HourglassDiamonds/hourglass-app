@@ -49,10 +49,14 @@ describe("Agent OS registry", () => {
     assert.equal(EXECUTIVE_REGISTRY.length, 5);
   });
 
-  it("only Chief of Staff and BI are operational", () => {
+  it("only Chief of Staff, BI, and Search Strategy are operational", () => {
     const ops = operationalExecutives().map((e) => e.id);
-    assert.deepEqual(ops, ["chief-of-staff", "business-intelligence"]);
-    assert.equal(isExecutiveOperational("search-strategy"), false);
+    assert.deepEqual(ops, [
+      "chief-of-staff",
+      "business-intelligence",
+      "search-strategy",
+    ]);
+    assert.equal(isExecutiveOperational("search-strategy"), true);
     assert.equal(isExecutiveOperational("content"), false);
     assert.equal(isExecutiveOperational("opportunity"), false);
   });
@@ -601,10 +605,10 @@ describe("executives and brief", () => {
     assert.equal(run.mode, "fixture");
     assert.ok(run.executivesInvoked.includes("chief-of-staff"));
     assert.ok(run.executivesInvoked.includes("business-intelligence"));
+    assert.ok(run.executivesInvoked.includes("search-strategy"));
     assert.deepEqual(run.executivesNotOperational.sort(), [
       "content",
       "opportunity",
-      "search-strategy",
     ]);
     const actionable = run.recommendations.filter(
       (r) =>

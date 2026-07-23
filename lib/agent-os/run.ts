@@ -13,9 +13,12 @@ import type { AdapterMode } from "./adapters/types";
 import { runBusinessIntelligence } from "./executives/business-intelligence";
 import { runChiefOfStaff } from "./executives/chief-of-staff";
 import {
+  emptySearchStrategyOutput,
+  runSearchStrategy,
+} from "./executives/search-strategy";
+import {
   getContentContract,
   getOpportunityContract,
-  getSearchStrategyContract,
 } from "./executives/scaffolds";
 import {
   deterministicSynthesisProvider,
@@ -30,6 +33,12 @@ import {
   resolveRecommendationAvailability,
   resolveRunStatus,
 } from "./run-status";
+import {
+  resolveBiExecutiveStatus,
+  resolveBriefEvidenceQuality,
+  resolveDeliveryGuidance,
+  resolveSearchExecutiveStatus,
+} from "./delivery";
 import { AGENT_OS_VERSION, type AgentRun, type DataSourceId } from "./types";
 import { getReportWeekRange } from "@/lib/intelligence/week-ranges";
 
@@ -62,7 +71,6 @@ export async function runAgentOsBrief(
   const executivesInvoked = operationalExecutives().map((e) => e.id);
   const executivesNotOperational = scaffoldExecutives().map((e) => e.id);
 
-  void getSearchStrategyContract();
   void getContentContract();
   void getOpportunityContract();
 
@@ -160,11 +168,33 @@ export async function runAgentOsBrief(
       }
     : runBusinessIntelligence(bundle, reportingPeriod);
 
+  // Search Strategy still runs repository authority analysis when GSC is down,
+  // unless the entire live load was aborted for fixture leakage / fatal error.
+  const search = skipSynthesis
+    ? emptySearchStrategyOutput()
+    : runSearchStrategy(bundle, reportingPeriod);
+
+  const provisionalMaterial =
+    countMaterialRecommendations(bi.recommendations) +
+    countMaterialRecommendations(search.recommendations);
+  const provisionalEvidenceQuality = resolveBriefEvidenceQuality({
+    runStatus: fatalError
+      ? "failed"
+      : criticalDown
+        ? "blocked"
+        : "completed",
+    fatalError,
+    criticalSourcesDown: criticalDown || Boolean(fatalError),
+    materialCount: provisionalMaterial,
+  });
+
   const cos = runChiefOfStaff({
     bi,
+    search,
     reportingPeriod,
     warnings: warnings.filter((w) => !w.startsWith("Source health summary:")),
     mode,
+    briefEvidenceQuality: provisionalEvidenceQuality,
   });
 
   const provider =
@@ -173,9 +203,12 @@ export async function runAgentOsBrief(
     approvedContext: redactSecretsAndPii(
       [
         `mode=${mode}`,
+        `briefEvidenceQuality=${provisionalEvidenceQuality}`,
         ...bi.facts,
         ...bi.keyMetricChanges,
+        ...search.facts,
         ...bi.dataGaps.map((g) => g.description),
+        ...search.dataGaps.map((g) => g.description),
       ].join("\n"),
     ),
     deterministicBrief: cos.brief,
@@ -191,9 +224,68 @@ export async function runAgentOsBrief(
     criticalSourcesDown: criticalDown,
     fatalError,
     warningCount: warnings.length,
-    dataGapCount: bi.dataGaps.length,
+    dataGapCount: bi.dataGaps.length + search.dataGaps.length,
     recommendationAvailability,
   });
+
+  const briefEvidenceQuality = resolveBriefEvidenceQuality({
+    runStatus,
+    fatalError,
+    criticalSourcesDown: criticalDown || Boolean(fatalError),
+    materialCount,
+  });
+
+  const gscAvailable =
+    bundle.gsc.ok &&
+    bundle.gsc.data?.current != null &&
+    bundle.gsc.health.retrievalState !== "failed" &&
+    bundle.gsc.health.retrievalState !== "not-configured";
+
+  const executiveStatuses = [
+    resolveBiExecutiveStatus({
+      skipped: skipSynthesis,
+      criticalAnalyticsDown: criticalDown,
+      dataGapCount: bi.dataGaps.length,
+      recommendations: bi.recommendations,
+    }),
+    resolveSearchExecutiveStatus({
+      skipped: skipSynthesis,
+      gscAvailable: Boolean(gscAvailable),
+      recommendations: search.recommendations,
+      opportunityCount: search.opportunities.length,
+    }),
+    {
+      executiveId: "chief-of-staff" as const,
+      status: skipSynthesis
+        ? ("blocked" as const)
+        : runStatus === "failed"
+          ? ("failed" as const)
+          : materialCount > 0
+            ? ("completed" as const)
+            : criticalDown
+              ? ("blocked" as const)
+              : ("completed" as const),
+      materialRecommendationCount: materialCount,
+      note: skipSynthesis
+        ? "Orchestration aborted for fatal/live-load safety"
+        : briefEvidenceQuality === "partial-degraded"
+          ? "Partial brief: usable executive findings with critical sources down"
+          : undefined,
+    },
+  ];
+
+  const deliveryGuidance = resolveDeliveryGuidance({
+    runStatus,
+    recommendationAvailability,
+    briefEvidenceQuality,
+  });
+
+  const rankedActive = cos.recommendations.filter(
+    (r) =>
+      r.status !== "blocked" &&
+      r.status !== "ignore" &&
+      r.status !== "consolidated",
+  );
 
   const run: AgentRun = {
     runId: randomUUID(),
@@ -206,11 +298,19 @@ export async function runAgentOsBrief(
     sourceHealth,
     recommendations: cos.recommendations,
     anomalies: bi.anomalies,
-    dataGaps: bi.dataGaps,
+    dataGaps: [...bi.dataGaps, ...search.dataGaps],
     escalationItems: cos.escalationItems,
     brief,
     runStatus,
     recommendationAvailability,
+    executiveStatuses,
+    briefEvidenceQuality,
+    deliveryGuidance,
+    briefSurfacing: {
+      opportunitiesDetected: search.opportunities.length,
+      recommendationsRanked: rankedActive.length,
+      recommendationsSurfacedInBrief: cos.surfacedInBriefCount,
+    },
     durationMs: Date.now() - started,
     warnings: warnings.map(redactSecretsAndPii),
     agentOsVersion: AGENT_OS_VERSION,

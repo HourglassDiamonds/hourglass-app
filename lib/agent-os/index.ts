@@ -76,11 +76,50 @@ export {
 } from "./run-status";
 
 export {
+  resolveDeliveryGuidance,
+  resolveBriefEvidenceQuality,
+  resolveBiExecutiveStatus,
+  resolveSearchExecutiveStatus,
+} from "./delivery";
+
+export {
+  buildSearchOpportunityId,
+  buildSearchRecommendationId,
+  searchIdLooksSafe,
+} from "./search/ids";
+
+export {
   REQUIRED_BRIEF_QUESTIONS,
   runChiefOfStaff,
 } from "./executives/chief-of-staff";
 
 export { runBusinessIntelligence } from "./executives/business-intelligence";
+
+export {
+  runSearchStrategy,
+  emptySearchStrategyOutput,
+} from "./executives/search-strategy";
+export type { SearchStrategyOutput } from "./executives/search-strategy";
+
+export {
+  SEARCH_OPPORTUNITY_TYPES,
+  type SearchOpportunityType,
+  type SearchOpportunity,
+  type SearchIntentClass,
+} from "./search/types";
+
+export {
+  isBrandQuery,
+  isLocalIntent,
+  classifyQueryIntent,
+  isSmallSample,
+} from "./search/classify";
+
+export { detectGscOpportunities } from "./search/opportunities";
+export {
+  inspectGuideAuthority,
+  FAQ_SCHEMA_ARTICLE_SLUGS,
+} from "./search/guide-authority";
 
 export {
   getSearchStrategyContract,

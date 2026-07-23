@@ -108,11 +108,35 @@ export function createFixtureGscBundle(
           position: 3.2,
         },
         {
+          // high-impression / low-CTR non-brand
           query: "oval engagement ring",
           impressions: 2400,
           clicks: 48,
           ctr: 0.02,
           position: 22.1,
+        },
+        {
+          // near page one (positions 4–15)
+          query: "lab grown vs natural diamonds",
+          impressions: 860,
+          clicks: 42,
+          ctr: 0.049,
+          position: 8.4,
+        },
+        {
+          // local intent
+          query: "custom engagement rings charlotte",
+          impressions: 320,
+          clicks: 18,
+          ctr: 0.056,
+          position: 11.2,
+        },
+        {
+          query: "diamond fluorescence meaning",
+          impressions: 540,
+          clicks: 12,
+          ctr: 0.022,
+          position: 14.6,
         },
       ],
       topPages: [
@@ -124,11 +148,26 @@ export function createFixtureGscBundle(
           position: 14.2,
         },
         {
-          page: "https://www.hourglassdiamonds.com/guides/oval-vs-round",
+          page: "https://www.hourglassdiamonds.com/diamond-guide/oval-vs-round-diamond",
           impressions: 1800,
           clicks: 62,
           ctr: 0.0344,
           position: 16.8,
+        },
+        {
+          page: "https://www.hourglassdiamonds.com/diamond-guide/natural-vs-lab-diamonds",
+          impressions: 1200,
+          clicks: 55,
+          ctr: 0.0458,
+          position: 9.1,
+        },
+        {
+          // high impressions, weak CTR
+          page: "https://www.hourglassdiamonds.com/diamond-guide/what-is-diamond-cut",
+          impressions: 900,
+          clicks: 14,
+          ctr: 0.0156,
+          position: 12.4,
         },
       ],
     },
@@ -147,6 +186,20 @@ export function createFixtureGscBundle(
           ctr: 0.119,
           position: 3.4,
         },
+        {
+          query: "oval engagement ring",
+          impressions: 2100,
+          clicks: 55,
+          ctr: 0.026,
+          position: 21.0,
+        },
+        {
+          query: "lab grown vs natural diamonds",
+          impressions: 700,
+          clicks: 30,
+          ctr: 0.043,
+          position: 9.2,
+        },
       ],
       topPages: [
         {
@@ -155,6 +208,13 @@ export function createFixtureGscBundle(
           clicks: 88,
           ctr: 0.0303,
           position: 14.8,
+        },
+        {
+          page: "https://www.hourglassdiamonds.com/diamond-guide/oval-vs-round-diamond",
+          impressions: 1600,
+          clicks: 70,
+          ctr: 0.0438,
+          position: 15.5,
         },
       ],
     },

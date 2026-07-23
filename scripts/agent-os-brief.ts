@@ -81,10 +81,16 @@ async function main() {
     `[agent-os] status=${run.runStatus} recommendationAvailability=${run.recommendationAvailability} durationMs=${run.durationMs}`,
   );
   console.log(
+    `[agent-os] evidence=${run.briefEvidenceQuality} delivery=${run.deliveryGuidance}`,
+  );
+  console.log(
+    `[agent-os] executiveStatuses=${run.executiveStatuses.map((e) => `${e.executiveId}:${e.status}`).join(",")}`,
+  );
+  console.log(
     `[agent-os] executives invoked=${run.executivesInvoked.join(",")} scaffold=${run.executivesNotOperational.join(",")}`,
   );
   console.log(
-    `[agent-os] recommendations=${run.recommendations.length} anomalies=${run.anomalies.length} gaps=${run.dataGaps.length}`,
+    `[agent-os] opportunities=${run.briefSurfacing.opportunitiesDetected} ranked=${run.briefSurfacing.recommendationsRanked} surfacedInBrief=${run.briefSurfacing.recommendationsSurfacedInBrief} (jsonRecs=${run.recommendations.length}) anomalies=${run.anomalies.length} gaps=${run.dataGaps.length}`,
   );
   console.log(`[agent-os] wrote ${jsonPath}`);
   console.log(`[agent-os] wrote ${mdPath}`);

@@ -15,7 +15,7 @@ export function getOpportunityContract(): ExecutiveDefinition {
 }
 
 export function assertScaffoldCannotRecommend(
-  executiveId: "search-strategy" | "content" | "opportunity",
+  executiveId: "content" | "opportunity",
 ): never {
   throw new Error(
     `Executive "${executiveId}" is scaffold-only in Agent OS V1 and cannot generate recommendations.`,

@@ -1,9 +1,11 @@
 import type { BusinessIntelligenceOutput } from "./business-intelligence";
+import type { SearchStrategyOutput } from "./search-strategy";
 import { consolidateDuplicates } from "../recommendation";
 import { rankRecommendations } from "../ranking";
 import { scaffoldExecutives } from "../registry";
 import type {
   AgendaBucket,
+  BriefEvidenceQuality,
   EscalationItem,
   FounderBrief,
   Recommendation,
@@ -11,9 +13,12 @@ import type {
 
 export type ChiefOfStaffInput = {
   bi: BusinessIntelligenceOutput;
+  search?: SearchStrategyOutput;
   reportingPeriod: { start: string; end: string };
   warnings: string[];
   mode?: "fixture" | "live";
+  /** When true, Markdown is labeled degraded / partial — JSON still holds full ranked set. */
+  briefEvidenceQuality?: BriefEvidenceQuality;
 };
 
 export type ChiefOfStaffOutput = {
@@ -21,6 +26,8 @@ export type ChiefOfStaffOutput = {
   brief: FounderBrief;
   escalationItems: EscalationItem[];
   nonOperationalNote: string[];
+  /** Count of individually named priorities in Markdown (excl. deferred summaries). */
+  surfacedInBriefCount: number;
 };
 
 const REQUIRED_BRIEF_QUESTIONS = [
@@ -36,18 +43,27 @@ const REQUIRED_BRIEF_QUESTIONS = [
 
 export { REQUIRED_BRIEF_QUESTIONS };
 
+/** Highest-ROI (1) + this many additional named priorities in Markdown. */
+export const MAX_ADDITIONAL_SURFACED_PRIORITIES = 4;
+
 export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
   const scaffolds = scaffoldExecutives();
   const nonOperationalNote = scaffolds.map(
     (e) => `${e.displayName} not yet operational`,
   );
 
-  let recommendations = consolidateDuplicates(input.bi.recommendations);
+  const searchRecs = input.search?.recommendations ?? [];
+  const merged = [...input.bi.recommendations, ...searchRecs];
+  let recommendations = consolidateDuplicates(merged);
   recommendations = rankRecommendations(
     recommendations.filter((r) => r.status !== "consolidated"),
   );
 
-  // Prevent low-value work from displacing higher-value work
+  const conflicts = findExecutiveConflicts(recommendations);
+  for (const c of conflicts) {
+    input.warnings.push(c);
+  }
+
   recommendations = recommendations.map((r) => {
     if (
       r.agendaBucket === "ignore" ||
@@ -64,27 +80,43 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
   });
 
   const active = recommendations.filter(
-    (r) => r.status !== "blocked" && r.status !== "ignore" && r.status !== "consolidated",
+    (r) =>
+      r.status !== "blocked" &&
+      r.status !== "ignore" &&
+      r.status !== "consolidated",
   );
   const blocked = recommendations.filter((r) => r.status === "blocked");
-  const doNow = active.filter((r) => r.agendaBucket === "do-now");
-  const schedule = active.filter((r) => r.agendaBucket === "schedule-next");
-  const monitor = active.filter((r) => r.agendaBucket === "monitor");
 
   const highest = active[0];
+  const additionalSurfaced = pickAdditionalSurfaced(
+    active.slice(1),
+    MAX_ADDITIONAL_SURFACED_PRIORITIES,
+  );
+  const surfacedIds = new Set(
+    [highest, ...additionalSurfaced]
+      .filter(Boolean)
+      .map((r) => r!.recommendationId),
+  );
+
   const founderDecisions = active
-    .filter((r) => r.approvalRequired)
+    .filter((r) => r.approvalRequired && surfacedIds.has(r.recommendationId))
     .map((r) => r.title);
 
-  // Escalate measurement gaps that block reliable action
   const escalationItems: EscalationItem[] = [];
-  for (const gap of input.bi.dataGaps.slice(0, 6)) {
+  const allGaps = [
+    ...input.bi.dataGaps,
+    ...(input.search?.dataGaps ?? []),
+  ];
+  for (const gap of allGaps.slice(0, 8)) {
     escalationItems.push({
       id: `esc-${gap.id}`,
-      executiveId: "chief-of-staff",
+      executiveId: gap.id.includes("search")
+        ? "search-strategy"
+        : "chief-of-staff",
       title: gap.description,
       reason: gap.impactOnRecommendations,
-      requiresFounderDecision: gap.sourceId === "ga4" || gap.id.includes("tracking"),
+      requiresFounderDecision:
+        gap.sourceId === "ga4" || gap.id.includes("tracking"),
     });
   }
   if (input.bi.incompleteAttribution) {
@@ -98,8 +130,14 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
     });
   }
 
+  const searchChangeBits = (input.search?.opportunities ?? [])
+    .slice(0, 2)
+    .map((o) => o.title);
   const whatChanged =
-    input.bi.keyMetricChanges.slice(0, 4).join("; ") ||
+    [
+      ...input.bi.keyMetricChanges.slice(0, 3),
+      ...searchChangeBits,
+    ].join("; ") ||
     "Insufficient metric coverage to summarize changes.";
 
   const whyItMatters = highest
@@ -107,35 +145,57 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
     : "No high-confidence action is ready; measurement gaps dominate.";
 
   const needsAttentionToday = [
-    ...doNow.map((r) => r.title),
+    ...additionalSurfaced.map((r) => r.title),
     ...input.bi.anomalies
       .filter((a) => a.severity === "critical" || a.severity === "high")
       .map((a) => a.title),
-  ].slice(0, 5);
+  ].slice(0, MAX_ADDITIONAL_SURFACED_PRIORITIES);
 
-  if (needsAttentionToday.length === 0 && input.bi.dataGaps.length) {
+  if (needsAttentionToday.length === 0 && allGaps.length && !highest) {
     needsAttentionToday.push(
       "Close critical measurement gaps before prioritizing growth experiments",
     );
   }
 
-  const canSafelyWait = [
-    ...schedule.map((r) => r.title),
-    ...monitor.map((r) => r.title),
-    ...recommendations
-      .filter((r) => r.agendaBucket === "ignore" && r.status !== "blocked")
-      .map((r) => r.title),
-  ].slice(0, 5);
+  const deferred = active.filter((r) => !surfacedIds.has(r.recommendationId));
+  const scheduleCount = deferred.filter(
+    (r) => r.agendaBucket === "schedule-next",
+  ).length;
+  const monitorCount = deferred.filter(
+    (r) => r.agendaBucket === "monitor",
+  ).length;
+  const ignoreCount = recommendations.filter(
+    (r) =>
+      r.agendaBucket === "ignore" &&
+      r.status !== "blocked" &&
+      r.status !== "consolidated",
+  ).length;
+
+  const canSafelyWait: string[] = [];
+  const deferredTotal = scheduleCount + monitorCount;
+  if (deferredTotal > 0) {
+    canSafelyWait.push(
+      `${deferredTotal} lower-ranked findings deferred (${scheduleCount} schedule-next, ${monitorCount} monitor) — full ranked set retained in JSON`,
+    );
+  }
+  if (ignoreCount > 0) {
+    canSafelyWait.push(
+      `${ignoreCount} low-priority items marked ignore — not expanded here`,
+    );
+  }
+  if (canSafelyWait.length === 0) {
+    canSafelyWait.push("None");
+  }
 
   const blockedList = [
-    ...blocked.map(
+    ...blocked.slice(0, 3).map(
       (r) =>
         `${r.title}${r.blockedReasons?.length ? ` — ${r.blockedReasons[0]}` : ""}`,
     ),
     ...nonOperationalNote,
-  ].slice(0, 8);
+  ].slice(0, 6);
 
-  const missingOrUnreliableData = input.bi.dataGaps.map(
+  const missingOrUnreliableData = allGaps.map(
     (g) => `${g.description}: ${g.impactOnRecommendations}`,
   );
 
@@ -148,21 +208,32 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
   const founderDecisionNeeded =
     founderDecisions.length > 0
       ? founderDecisions
-      : active.length > 0
+      : highest
         ? [
             "Whether to spend founder time on the highest-ROI action above before starting new creative or SEO experiments",
           ]
-        : criticalGapsNeedDecision(input.bi)
+        : criticalGapsNeedDecision(input.bi, input.search)
           ? [
               "Whether to prioritize restoring read-only measurement (GA4 / Search Console / weekly intelligence) before asking Agent OS for growth recommendations",
             ]
           : ["None required this cycle"];
 
+  const surfacedPriorityTitles = [
+    ...(highest ? [highest.title] : []),
+    ...additionalSurfaced.map((r) => r.title),
+  ];
+
   const brief = buildFounderBrief({
     mode: input.mode ?? "fixture",
+    briefEvidenceQuality: input.briefEvidenceQuality ?? "full",
     whatChanged,
     whyItMatters,
-    needsAttentionToday,
+    needsAttentionToday:
+      needsAttentionToday.length > 0
+        ? needsAttentionToday
+        : highest
+          ? ["See highest-ROI action below"]
+          : ["None"],
     highestRoiAction: highest
       ? `${highest.title} — ${highest.proposedAction} (confidence ${highest.confidence})`
       : "None — resolve data gaps first",
@@ -171,8 +242,17 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
     founderDecisionNeeded,
     missingOrUnreliableData,
     period: input.reportingPeriod,
-    facts: input.bi.facts,
-    inferences: input.bi.inferences,
+    facts: [
+      ...input.bi.facts.slice(0, 5),
+      ...(input.search?.facts ?? []).slice(0, 4),
+    ],
+    inferences: [
+      ...input.bi.inferences.slice(0, 3),
+      ...(input.search?.inferences ?? []).slice(0, 3),
+    ],
+    surfacedPriorityTitles,
+    rankedRecommendationCount: active.length,
+    opportunitiesDetected: input.search?.opportunities.length ?? 0,
   });
 
   return {
@@ -180,11 +260,62 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
     brief,
     escalationItems,
     nonOperationalNote,
+    surfacedInBriefCount: surfacedPriorityTitles.length,
   };
 }
 
-function criticalGapsNeedDecision(bi: BusinessIntelligenceOutput): boolean {
-  return bi.dataGaps.some(
+/**
+ * Prefer do-now / high urgency for additional Markdown priorities.
+ * High-severity items are not dropped in favor of low-urgency noise.
+ */
+function pickAdditionalSurfaced(
+  rest: Recommendation[],
+  limit: number,
+): Recommendation[] {
+  const priority = [...rest].sort((a, b) => {
+    const score = (r: Recommendation) =>
+      (r.agendaBucket === "do-now" ? 100 : 0) +
+      (r.urgency === "critical" ? 50 : r.urgency === "high" ? 30 : 0) +
+      r.priorityScore;
+    return score(b) - score(a);
+  });
+  return priority.slice(0, limit);
+}
+
+function findExecutiveConflicts(recs: Recommendation[]): string[] {
+  const active = recs.filter(
+    (r) =>
+      r.status === "proposed" ||
+      r.status === "downgraded" ||
+      r.status === "monitor",
+  );
+  const bi = active.filter((r) => r.originatingExecutive === "business-intelligence");
+  const ss = active.filter((r) => r.originatingExecutive === "search-strategy");
+  if (!bi.length || !ss.length) return [];
+  const conflicts: string[] = [];
+  for (const s of ss.slice(0, 3)) {
+    const overlap = bi.find((b) =>
+      normalizeLoose(b.title).includes(normalizeLoose(s.title).slice(0, 18)),
+    );
+    if (overlap) {
+      conflicts.push(
+        `Conflict note: Search Strategy “${s.title}” overlaps BI “${overlap.title}” — ranked by shared priority model`,
+      );
+    }
+  }
+  return conflicts;
+}
+
+function normalizeLoose(s: string): string {
+  return s.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+}
+
+function criticalGapsNeedDecision(
+  bi: BusinessIntelligenceOutput,
+  search?: SearchStrategyOutput,
+): boolean {
+  const gaps = [...bi.dataGaps, ...(search?.dataGaps ?? [])];
+  return gaps.some(
     (g) =>
       g.sourceId === "ga4" ||
       g.sourceId === "gsc" ||
@@ -195,6 +326,7 @@ function criticalGapsNeedDecision(bi: BusinessIntelligenceOutput): boolean {
 
 function buildFounderBrief(input: {
   mode: "fixture" | "live";
+  briefEvidenceQuality: BriefEvidenceQuality;
   whatChanged: string;
   whyItMatters: string;
   needsAttentionToday: string[];
@@ -206,19 +338,32 @@ function buildFounderBrief(input: {
   period: { start: string; end: string };
   facts: string[];
   inferences: string[];
+  surfacedPriorityTitles: string[];
+  rankedRecommendationCount: number;
+  opportunitiesDetected: number;
 }): FounderBrief {
   const bullets = (items: string[]) =>
     items.length ? items.map((i) => `- ${i}`).join("\n") : "- None";
 
-  const modeLabel =
+  let modeLabel =
     input.mode === "fixture"
       ? "Fixture sample (not live production evidence)"
       : "Live read-only";
+  if (input.briefEvidenceQuality === "partial-degraded") {
+    modeLabel +=
+      " — DEGRADED / PARTIAL: usable findings present; critical analytics sources unavailable (not all-clear)";
+  } else if (input.briefEvidenceQuality === "none-blocked") {
+    modeLabel +=
+      " — BLOCKED: critical sources unavailable; do not treat as a quiet healthy week";
+  } else if (input.briefEvidenceQuality === "failed") {
+    modeLabel += " — FAILED: brief may be incomplete";
+  }
 
   const markdown = `# Hourglass Founder Brief
 
 Mode: ${modeLabel}
 Reporting period: ${input.period.start} → ${input.period.end}
+Surfacing: ${input.surfacedPriorityTitles.length} named priorities (${input.opportunitiesDetected} opportunities detected · ${input.rankedRecommendationCount} ranked active) — full set in JSON
 
 ## 1. What changed?
 ${input.whatChanged}
@@ -264,5 +409,6 @@ Agent OS V1 — read-only. No external writes. Revenue is never inferred from tr
     founderDecisionNeeded: input.founderDecisionNeeded,
     missingOrUnreliableData: input.missingOrUnreliableData,
     markdown,
+    surfacedPriorityTitles: input.surfacedPriorityTitles,
   };
 }

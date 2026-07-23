@@ -191,6 +191,48 @@ export type RecommendationAvailability =
   | "none-material"
   | "none-blocked-by-sources";
 
+/** Per-executive outcome — independent of overall runStatus. */
+export type ExecutiveRunStatus =
+  | "completed"
+  | "completed-with-warnings"
+  | "blocked"
+  | "skipped"
+  | "failed";
+
+export type ExecutiveRunSummary = {
+  executiveId: ExecutiveId;
+  status: ExecutiveRunStatus;
+  materialRecommendationCount: number;
+  note?: string;
+};
+
+/**
+ * Future automated delivery hint (no transport in V1).
+ * Distinguishes normal briefs, degraded partial briefs, failure alerts, and quiet weeks.
+ */
+export type DeliveryGuidance =
+  | "send-normal-brief"
+  | "send-degraded-partial-brief"
+  | "send-failure-alert"
+  | "send-nothing";
+
+/** Whether the founder brief carries usable evidence this cycle. */
+export type BriefEvidenceQuality =
+  | "full"
+  | "partial-degraded"
+  | "none-blocked"
+  | "failed";
+
+/**
+ * Separates opportunity detection, ranked recommendations, and Markdown surfacing.
+ * Full ranked set remains in AgentRun.recommendations / opportunities JSON.
+ */
+export type BriefSurfacingSummary = {
+  opportunitiesDetected: number;
+  recommendationsRanked: number;
+  recommendationsSurfacedInBrief: number;
+};
+
 export type FounderBrief = {
   whatChanged: string;
   whyItMatters: string;
@@ -201,6 +243,8 @@ export type FounderBrief = {
   founderDecisionNeeded: string[];
   missingOrUnreliableData: string[];
   markdown: string;
+  /** Individually named priority titles in the Markdown (excl. deferred summaries). */
+  surfacedPriorityTitles: string[];
 };
 
 export type AgentRun = {
@@ -224,6 +268,14 @@ export type AgentRun = {
    * Schedulers must not treat none-blocked-by-sources like none-material.
    */
   recommendationAvailability: RecommendationAvailability;
+  /** Per-executive completion — BI can be blocked while Search still completed. */
+  executiveStatuses: ExecutiveRunSummary[];
+  /** Usable evidence quality for the founder-facing brief. */
+  briefEvidenceQuality: BriefEvidenceQuality;
+  /** Hint for a future sender — not wired to email/cron in V1. */
+  deliveryGuidance: DeliveryGuidance;
+  /** Opportunity vs ranked vs Markdown surfacing counts. */
+  briefSurfacing: BriefSurfacingSummary;
   durationMs: number;
   warnings: string[];
   agentOsVersion: typeof AGENT_OS_VERSION;
