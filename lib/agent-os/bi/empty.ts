@@ -1,4 +1,5 @@
 import type { BusinessIntelligenceOutput } from "../executives/business-intelligence";
+import { emptyClientJourneyAudit } from "./journey";
 import type {
   ConversionMeasurementAudit,
   OpportunityMeasurementHandoff,
@@ -61,5 +62,6 @@ export function emptyBusinessIntelligenceOutput(
     incompleteAttribution: false,
     conversionAudit: { ...EMPTY_AUDIT, opportunityHandoff: handoff },
     opportunityHandoff: handoff,
+    journeyAudit: emptyClientJourneyAudit(),
   };
 }

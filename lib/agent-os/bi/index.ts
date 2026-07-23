@@ -188,3 +188,26 @@ export {
 } from "./recommendations";
 
 export { MIN_FUNNEL_SAMPLE } from "./findings";
+
+export {
+  runClientJourneyAnalysis,
+  emptyClientJourneyAudit,
+  buildJourneyFindingId,
+  journeyIdLooksSafe,
+  JOURNEY_FINDING_TYPES,
+  JOURNEY_PATH_MEASUREMENT_GAP_ID,
+  CONVERSION_EVENT_MEASUREMENT_GAP_ID,
+  TOOL_COMPLETION_MEASUREMENT_GAP_ID,
+  SOURCE_TO_LEAD_ATTRIBUTION_GAP_ID,
+  createFixtureJourneyObservations,
+  MIN_JOURNEY_SAMPLE,
+  applyJourneyFounderRankingGate,
+  consolidateJourneyDuplicates,
+  sequenceJourneyMeasurementPrerequisites,
+} from "./journey";
+export type {
+  ClientJourneyAudit,
+  JourneyFinding,
+  JourneyFindingType,
+  JourneyObservationBundle,
+} from "./journey";

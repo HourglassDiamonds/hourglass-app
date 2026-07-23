@@ -119,6 +119,9 @@ export const EXECUTIVE_REGISTRY: readonly ExecutiveDefinition[] = [
       "founder brief",
       "dependency tracking",
       "approval surfacing",
+      "client journey synthesis",
+      "journey prioritization",
+      "measurement-before-optimization sequencing",
     ],
     allowedDataSources: [
       "ga4",
@@ -136,7 +139,7 @@ export const EXECUTIVE_REGISTRY: readonly ExecutiveDefinition[] = [
     id: "business-intelligence",
     displayName: "Business Intelligence",
     mission:
-      "Maintain a trustworthy view of Hourglass performance, conversion measurement integrity, and detect meaningful movement before recommendations are made.",
+      "Maintain a trustworthy view of Hourglass performance, conversion measurement integrity, client journey evidence, and detect meaningful movement before recommendations are made.",
     ownedDomains: [
       "performance metrics",
       "anomalies",
@@ -151,6 +154,10 @@ export const EXECUTIVE_REGISTRY: readonly ExecutiveDefinition[] = [
       "conversion measurement",
       "funnel coverage",
       "journey progression",
+      "client journey analysis",
+      "journey surface inventory",
+      "journey friction detection",
+      "conversion-signal availability",
       "attribution quality",
       "event-health monitoring",
       "destination quality",
@@ -170,7 +177,7 @@ export const EXECUTIVE_REGISTRY: readonly ExecutiveDefinition[] = [
     prohibitedActions: SHARED_PROHIBITED,
     escalationRules: BI_ESCALATION,
     implementationStatus: "operational",
-    version: "1.1.0",
+    version: "1.2.0",
   },
   {
     id: "search-strategy",

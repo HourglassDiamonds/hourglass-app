@@ -2,6 +2,11 @@ import type { BusinessIntelligenceOutput } from "./business-intelligence";
 import type { ContentExecutiveOutput } from "./content";
 import type { OpportunityExecutiveOutput } from "./opportunity";
 import type { SearchStrategyOutput } from "./search-strategy";
+import {
+  applyJourneyFounderRankingGate,
+  consolidateJourneyDuplicates,
+  sequenceJourneyMeasurementPrerequisites,
+} from "../bi/journey";
 import { consolidateDuplicates } from "../recommendation";
 import { rankRecommendations } from "../ranking";
 import { opportunityRecommendationIsSurfaceEligible } from "../opportunity/qualify";
@@ -67,6 +72,9 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
     ...opportunityRecs,
   ];
   let recommendations = consolidateDuplicates(merged);
+  recommendations = consolidateJourneyDuplicates(recommendations);
+  recommendations = applyJourneyFounderRankingGate(recommendations);
+  recommendations = sequenceJourneyMeasurementPrerequisites(recommendations);
   recommendations = rankRecommendations(
     recommendations.filter((r) => r.status !== "consolidated"),
   );

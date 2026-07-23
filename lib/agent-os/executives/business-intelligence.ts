@@ -5,6 +5,10 @@ import {
   type ConversionMeasurementAudit,
   type OpportunityMeasurementHandoff,
 } from "../bi";
+import {
+  runClientJourneyAnalysis,
+  type ClientJourneyAudit,
+} from "../bi/journey";
 import { createEvidence } from "../evidence";
 import { buildRecommendation } from "../recommendation";
 import { assertOperationalForRecommendations } from "../registry";
@@ -26,6 +30,8 @@ export type BusinessIntelligenceOutput = {
   /** Conversion & Measurement Audit (V1 expansion). */
   conversionAudit: ConversionMeasurementAudit;
   opportunityHandoff: OpportunityMeasurementHandoff;
+  /** Client Journey & Conversion Analysis (shared with Chief of Staff). */
+  journeyAudit: ClientJourneyAudit;
 };
 
 export type RunBusinessIntelligenceOptions = {
@@ -493,7 +499,42 @@ export function runBusinessIntelligence(
     });
   }
 
-  const mergedRecommendations = [...recommendations, ...measurementRecs];
+  const { audit: journeyAudit, recommendations: journeyRecs } =
+    runClientJourneyAnalysis({
+      mode,
+      bundle,
+      reportingPeriod,
+      measurementRecommendations: measurementRecs,
+    });
+
+  facts.push(...journeyAudit.facts);
+  inferences.push(...journeyAudit.inferences);
+
+  for (const gap of journeyAudit.sourceGaps) {
+    if (gap.suppressFromFounderRanking && gap.founderRelevance !== "prerequisite") {
+      continue;
+    }
+    // Soft-dedupe conversion journey gap when Concierge measurement root exists
+    if (
+      gap.id.includes("conversion-event-measurement") &&
+      conciergeRootRec
+    ) {
+      continue;
+    }
+    dataGaps.push({
+      id: `gap-journey-${gap.id.split(":").pop() ?? "source"}`,
+      sourceId: gap.source === "cross-cutting" ? "ga4" : gap.source,
+      description: gap.scope,
+      impactOnRecommendations: gap.affectedAnalyses.join("; "),
+      suggestedRemedy: gap.resolutionPrerequisite,
+    });
+  }
+
+  const mergedRecommendations = [
+    ...recommendations,
+    ...measurementRecs,
+    ...journeyRecs,
+  ];
 
   return {
     recommendations: mergedRecommendations,
@@ -505,6 +546,7 @@ export function runBusinessIntelligence(
     incompleteAttribution,
     conversionAudit: audit,
     opportunityHandoff: audit.opportunityHandoff,
+    journeyAudit,
   };
 }
 

@@ -183,9 +183,74 @@ Live mode derives observations only from the existing GA4 weekly adapter allowli
 
 Decision-blocking measurement findings can outrank downstream speculative work when evidence is strong. Low-value gaps stay deferred. Measurement findings soft-dedupe against legacy BI heuristics. Founder brief still caps at **5** named priorities; full findings remain in JSON.
 
-### Next planned Client Journey & Conversion Analysis pass
+## Client Journey & Conversion Analysis
 
-After Local Authority / GBP Intelligence: deepen Client Journey & Conversion Analysis so qualified-prospect progression (guide → tool → Concierge) can be diagnosed with clearer stage ownership across BI and Search — still read-only.
+### Mission
+
+Identify how prospects discover Hourglass, which pages they enter, what they do next, where journeys stall or fragment, which behaviors are genuinely observable, which conversion signals remain unknown, and which founder actions are most likely to improve qualified conversations — without fabricating paths or conversion rates.
+
+### BI vs Chief of Staff ownership
+
+| Owner | Owns |
+|-------|------|
+| **Business Intelligence** | Source evidence, journey reconstruction, conversion-signal health, friction detection, measurement confidence, unknown-state handling, journey surface inventory, stable source gaps |
+| **Chief of Staff** | Cross-executive synthesis, prioritization, founder-facing interpretation, action sequencing (measurement before optimization), decision framing, brief capping |
+
+No sixth executive is created.
+
+### Evidence hierarchy
+
+1. **Observed analytics** — GA4 landings, allowlisted events, fixture path transitions when mode is fixture; never assumed.
+2. **Repository-backed journey readiness** — routes, CTAs, tool links, trust/conversion destinations (`lib/agent-os/bi/journey/inventory.ts`). Proves intended structure only — not that users followed the path.
+3. **Inferred journey hypotheses** — may combine landings + repo structure + GSC intent; always labeled `inferred`.
+4. **Source gaps** — missing path, conversion, tool-completion, or source-to-lead measurement remain explicit unknowns.
+
+### Observed vs inferred rules
+
+- Repository link A→B = `repository-available`, **not** `observed transition`.
+- Live GA4 weekly adapter does **not** expose path/next-page transitions → path movement is **unknown** in live mode (stable root gap).
+- Fixture mode may include synthetic transitions for validation only.
+- Never reconstruct fake paths from page-view totals alone.
+- Never present inferred paths as observed user behavior.
+
+### Conversion unknown-state behavior
+
+- Form-submit / `generate_lead` outside the live allowlist → `unknown` (not zero conversions, not “low conversion rate”).
+- Zero queried events ≠ zero real conversions without healthy verified measurement.
+- Soft-dedupes against the Concierge conversion measurement root when that root already exists.
+
+### Stable source gaps
+
+| ID | Scope | Founder brief |
+|----|--------|---------------|
+| `business-intelligence:journey:source-gap:journey-path-measurement` | Path / next-page analytics | **Diagnostic only** — suppressed from founder ranking (internal analytics prerequisite; distinct from Concierge conversion root) |
+| `business-intelligence:journey:source-gap:conversion-event-measurement` | Concierge submit / generate_lead | Soft-deduped under Concierge measurement root `business-intelligence:measurement:concierge-conversion-root:concierge` |
+| `business-intelligence:journey:source-gap:tool-completion-measurement` | Studio suite completion | Diagnostic / suppressed |
+| `business-intelligence:journey:source-gap:source-to-lead-attribution` | Channel→lead linkage | Diagnostic / suppressed; parent = Concierge conversion root |
+
+Related symptoms consolidate under these roots — not one gap per route or event. Live briefs must not surface two measurement priorities for the same analytics deficiency.
+
+### Founder-ranking safeguards
+
+- Cap **≤5** named priorities; thin evidence may yield fewer.
+- Internal Search/Content/Opportunity handoffs are not founder-rankable.
+- Repository-only journey findings are capped; observed evidence outranks structural inference.
+- Measurement prerequisites sequence before dependent journey optimization.
+- No generic “improve conversion” without a defined action and supporting evidence.
+
+### Fixture / live separation
+
+- Fixture imports gated in `resolveJourneyObservations`; live refuses fixture overlays and fixture-mode bundles.
+- Missing live sources → source gaps; no synthetic conversions or funnel rates.
+- Path transitions exist in fixture only until a verified live path adapter exists.
+
+### Explicit non-goals
+
+No website/CTA/route changes, no GA4/GTM/event instrumentation, no schema edits, no email/scheduling/persistence/CRM, no scraping, no fabricated analytics/funnel rates, no session replay/heatmaps/identity stitching, no deployments.
+
+### Module
+
+`lib/agent-os/bi/journey/` — types, inventory, observe, findings, recommendations, ranking-policy, fixtures. Wired through `runBusinessIntelligence` → `journeyAudit` and Chief of Staff journey ranking gates.
 
 ## Content Executive
 
@@ -345,10 +410,6 @@ Scores answer-first openings, FAQ schema presence, tool interconnection, and rel
 - Small samples reduce confidence
 - Revenue never inferred from impressions
 - “Publish more content” / “rank higher locally” / “get more reviews” without evidence is rejected by design
-
-### Next planned Client Journey & Conversion Analysis pass
-
-Deepen client-journey stage diagnosis (guide → tool → Concierge) with clearer BI/Search ownership — still read-only; optional verified GBP read adapter remains a later prerequisite for pack/review metrics.
 
 ## Permissions (read-only boundary)
 
@@ -513,6 +574,7 @@ This repository has **no OpenAI / AI SDK product dependency**. V1 uses determini
 - No GBP adapter → no local pack / review metrics (Search Strategy local findings use GSC + guide registry only)
 - No HubSpot weekly aggregate read → no consultation CRM funnel in Agent OS
 - Agent OS GA4 weekly adapter does not yet retrieve `generate_lead` / Concierge form events → conversion status often `unknown` in live mode
+- Live GA4 weekly adapter does not expose path/next-page transitions → journey next-step movement unknown until a verified path read exists
 - See It On Your Hand / Analyze Sparkle lack journey events in repository
 - CTA click samples can be small — percentage swings overstate urgency
 - Revenue must never be inferred from traffic, Studio views, or impressions
@@ -520,13 +582,14 @@ This repository has **no OpenAI / AI SDK product dependency**. V1 uses determini
 
 ## Next implementation phases
 
-1. ~~BI Conversion & Measurement expansion~~ (this pass — repository expected inventory + GA4-derived observation + Opportunity handoff)
-2. Optional GA4 read expansion for Concierge conversion events (`generate_lead`, form start/submit) — still read-only, no client tracking changes
-3. Search Strategy Local Authority / GBP expansion (verified GBP read when available)
-4. Decision Journal durable store (still founder-gated writes)
-5. Optional authenticated internal preview (separate from production hard-404 dashboard)
-6. Optional LLM brief polish behind the existing provider interface
-7. Optional verified Buffer / HubSpot-aggregate / paid-cost / remarketing-audience adapters (still read-only)
+1. ~~BI Conversion & Measurement expansion~~
+2. ~~Search Strategy Local Authority / GBP Intelligence~~
+3. ~~Client Journey & Conversion Analysis~~ (this pass — BI journey evidence + CoS sequencing; read-only)
+4. Optional GA4 read expansion for Concierge conversion events and/or path analytics — still read-only, no client tracking changes
+5. Decision Journal durable store (still founder-gated writes)
+6. Optional authenticated internal preview (separate from production hard-404 dashboard)
+7. Optional LLM brief polish behind the existing provider interface
+8. Optional verified Buffer / HubSpot-aggregate / paid-cost / remarketing-audience / GBP adapters (still read-only)
 
 ## Protected systems (do not touch from Agent OS)
 

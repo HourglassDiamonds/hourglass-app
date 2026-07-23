@@ -127,6 +127,20 @@ export {
   MIN_FUNNEL_SAMPLE,
   CONCIERGE_CONVERSION_ROOT_RECOMMENDATION_ID,
   isConciergeConversionClusterFinding,
+  runClientJourneyAnalysis,
+  emptyClientJourneyAudit,
+  buildJourneyFindingId,
+  journeyIdLooksSafe,
+  JOURNEY_FINDING_TYPES,
+  JOURNEY_PATH_MEASUREMENT_GAP_ID,
+  CONVERSION_EVENT_MEASUREMENT_GAP_ID,
+  TOOL_COMPLETION_MEASUREMENT_GAP_ID,
+  SOURCE_TO_LEAD_ATTRIBUTION_GAP_ID,
+  createFixtureJourneyObservations,
+  MIN_JOURNEY_SAMPLE,
+  applyJourneyFounderRankingGate,
+  consolidateJourneyDuplicates,
+  sequenceJourneyMeasurementPrerequisites,
 } from "./bi";
 export type {
   ConversionMeasurementAudit,
@@ -136,6 +150,10 @@ export type {
   MeasurementHealthType,
   ExpectedEventInventoryItem,
   MeasurementVolumeFunnel,
+  ClientJourneyAudit,
+  JourneyFinding,
+  JourneyFindingType,
+  JourneyObservationBundle,
 } from "./bi";
 
 export {
