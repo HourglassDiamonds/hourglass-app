@@ -1,0 +1,232 @@
+import type {
+  DataSourceId,
+  EscalationRule,
+  ExecutiveDefinition,
+  ExecutiveId,
+  ImplementationStatus,
+} from "./types";
+import { V1_PROHIBITED_ACTIONS } from "./types";
+
+const SHARED_PROHIBITED = [...V1_PROHIBITED_ACTIONS];
+
+const COS_ESCALATION: EscalationRule[] = [
+  {
+    id: "cos-founder-approval",
+    condition: "Recommendation requires founder approval or spend",
+    action: "Surface as explicit founder decision; do not self-approve",
+  },
+  {
+    id: "cos-conflicting-roi",
+    condition: "Executives recommend conflicting priorities",
+    action: "Reconcile by ROI, evidence quality, and dependency readiness",
+  },
+  {
+    id: "cos-data-blocked",
+    condition: "Missing or unreliable data blocks a high-ROI action",
+    action: "Escalate data gap before recommending irreversible work",
+  },
+];
+
+const BI_ESCALATION: EscalationRule[] = [
+  {
+    id: "bi-tracking-failure",
+    condition: "Metric drop coincides with incomplete or failed measurement",
+    action: "Flag tracking failure before declaring business decline",
+  },
+  {
+    id: "bi-attribution-incomplete",
+    condition: "Attribution coverage is incomplete or unverified",
+    action: "Separate known facts from inference; lower confidence",
+  },
+];
+
+const SCAFFOLD_ESCALATION: EscalationRule[] = [
+  {
+    id: "scaffold-not-operational",
+    condition: "Executive is scaffold-only in Agent OS V1",
+    action: "Do not emit recommendations; list owned domains only",
+  },
+];
+
+export const EXECUTIVE_REGISTRY: readonly ExecutiveDefinition[] = [
+  {
+    id: "chief-of-staff",
+    displayName: "Chief of Staff",
+    mission:
+      "Turn available Hourglass business evidence into a short, ranked founder agenda.",
+    ownedDomains: [
+      "orchestration",
+      "priority ranking",
+      "conflict reconciliation",
+      "founder brief",
+      "dependency tracking",
+      "approval surfacing",
+    ],
+    allowedDataSources: [
+      "ga4",
+      "gsc",
+      "weekly-intelligence",
+      "executive-dashboard-snapshot",
+      "fixture",
+    ],
+    prohibitedActions: SHARED_PROHIBITED,
+    escalationRules: COS_ESCALATION,
+    implementationStatus: "operational",
+    version: "1.0.0",
+  },
+  {
+    id: "business-intelligence",
+    displayName: "Business Intelligence",
+    mission:
+      "Maintain a trustworthy view of Hourglass performance and detect meaningful movement before recommendations are made.",
+    ownedDomains: [
+      "performance metrics",
+      "anomalies",
+      "conversion-funnel health",
+      "acquisition movement",
+      "landing-page movement",
+      "Diamond Studio engagement",
+      "Concierge activity signals",
+      "measurement gaps",
+      "source health",
+    ],
+    allowedDataSources: [
+      "ga4",
+      "gsc",
+      "weekly-intelligence",
+      "executive-dashboard-snapshot",
+      "hubspot-aggregates",
+      "fixture",
+    ],
+    prohibitedActions: SHARED_PROHIBITED,
+    escalationRules: BI_ESCALATION,
+    implementationStatus: "operational",
+    version: "1.0.0",
+  },
+  {
+    id: "search-strategy",
+    displayName: "Search Strategy",
+    mission:
+      "Own organic, local, and GEO/AI discovery strategy for Hourglass — Search Console, guide authority, content gaps, internal linking, and GBP search opportunity.",
+    ownedDomains: [
+      "organic search",
+      "local search",
+      "GEO/AI discovery",
+      "Search Console interpretation",
+      "guide authority",
+      "content gaps",
+      "internal linking",
+      "GBP search opportunity",
+    ],
+    allowedDataSources: ["gsc", "ga4", "gbp", "weekly-intelligence", "fixture"],
+    prohibitedActions: SHARED_PROHIBITED,
+    escalationRules: SCAFFOLD_ESCALATION,
+    implementationStatus: "scaffold",
+    version: "0.1.0",
+  },
+  {
+    id: "content",
+    displayName: "Content",
+    mission:
+      "Own founder conversations, long-form performance, clips, carousels, hook/title learning, production cadence, content reuse, and brand standards.",
+    ownedDomains: [
+      "founder conversations",
+      "long-form performance",
+      "clips",
+      "carousels",
+      "hook/title learning",
+      "production cadence",
+      "content reuse",
+      "brand standards",
+    ],
+    allowedDataSources: [
+      "ga4",
+      "weekly-intelligence",
+      "buffer",
+      "fixture",
+    ],
+    prohibitedActions: SHARED_PROHIBITED,
+    escalationRules: SCAFFOLD_ESCALATION,
+    implementationStatus: "scaffold",
+    version: "0.1.0",
+  },
+  {
+    id: "opportunity",
+    displayName: "Opportunity",
+    mission:
+      "Surface underpriced search demand, partnerships, referrals, local visibility, evidence-backed paid opportunities, and emerging channels aligned with Hourglass.",
+    ownedDomains: [
+      "underpriced search demand",
+      "partnerships",
+      "referrals",
+      "local visibility",
+      "paid opportunities",
+      "emerging channels",
+    ],
+    allowedDataSources: [
+      "gsc",
+      "ga4",
+      "gbp",
+      "hubspot-aggregates",
+      "weekly-intelligence",
+      "fixture",
+    ],
+    prohibitedActions: SHARED_PROHIBITED,
+    escalationRules: SCAFFOLD_ESCALATION,
+    implementationStatus: "scaffold",
+    version: "0.1.0",
+  },
+] as const;
+
+const LOCKED_ORDER: ExecutiveId[] = [
+  "chief-of-staff",
+  "business-intelligence",
+  "search-strategy",
+  "content",
+  "opportunity",
+];
+
+export function getExecutive(id: ExecutiveId): ExecutiveDefinition {
+  const found = EXECUTIVE_REGISTRY.find((e) => e.id === id);
+  if (!found) {
+    throw new Error(`Unknown executive: ${id}`);
+  }
+  return found;
+}
+
+export function listExecutives(): ExecutiveDefinition[] {
+  return LOCKED_ORDER.map((id) => getExecutive(id));
+}
+
+export function operationalExecutives(): ExecutiveDefinition[] {
+  return listExecutives().filter((e) => e.implementationStatus === "operational");
+}
+
+export function scaffoldExecutives(): ExecutiveDefinition[] {
+  return listExecutives().filter((e) => e.implementationStatus === "scaffold");
+}
+
+export function isExecutiveOperational(id: ExecutiveId): boolean {
+  return getExecutive(id).implementationStatus === "operational";
+}
+
+export function assertOperationalForRecommendations(id: ExecutiveId): void {
+  if (!isExecutiveOperational(id)) {
+    throw new Error(
+      `Executive "${id}" is not operational and cannot generate recommendations in Agent OS V1.`,
+    );
+  }
+}
+
+export function executiveAllowsSource(
+  id: ExecutiveId,
+  source: DataSourceId,
+): boolean {
+  return getExecutive(id).allowedDataSources.includes(source);
+}
+
+export function getImplementationStatus(
+  id: ExecutiveId,
+): ImplementationStatus {
+  return getExecutive(id).implementationStatus;
+}
