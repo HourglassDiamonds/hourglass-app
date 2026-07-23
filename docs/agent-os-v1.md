@@ -6,7 +6,7 @@ Practical operating system for a lean executive team — not a pile of prompt bo
 
 Hourglass Agent OS turns **available, read-only business evidence** into a short founder agenda. It prefers honest measurement gaps over invented certainty. It never publishes, edits CRM, posts social, or changes production configuration.
 
-V1 is deliberately small: five locked executives. **Operational now:** Chief of Staff, Business Intelligence, Search Strategy, and Content. **Scaffolded:** Opportunity. New capabilities should fold into these executives before new agents are created.
+V1 is deliberately small: five locked executives. **Operational now:** Chief of Staff, Business Intelligence, Search Strategy, Content, and Opportunity. New capabilities should fold into these executives before new agents are created.
 
 ## Executive structure (locked order)
 
@@ -14,7 +14,99 @@ V1 is deliberately small: five locked executives. **Operational now:** Chief of 
 2. **Business Intelligence** — trustworthy performance view, anomalies, measurement gaps
 3. **Search Strategy** — operational (GSC + Diamond Guide authority, local/GEO readiness)
 4. **Content** — operational (founder conversations, repurposing, sequencing, brand-fit)
-5. **Opportunity** — scaffold (underpriced demand, partnerships, referrals, paid when evidenced)
+5. **Opportunity** — operational (underused demand, partnership/referral research, paid/remarketing readiness)
+
+## Opportunity Executive
+
+### Mission
+
+Continuously identify low-cost, high-ROI growth opportunities that align with Hourglass positioning and can compound authority, qualified demand, referrals, and trust without distracting the business with generic marketing activity.
+
+Core question: which underused move has credible evidence, fits the brand, costs relatively little, and could materially improve qualified discovery or trust? Favor a small number of strong opportunities over a long speculative list.
+
+### Owned domains
+
+Underpriced/underused organic demand, paid-search readiness, local partnerships, referrals, bridal/wedding ecosystem, community visibility, podcast/newsletter/earned-media research, strategic content distribution, competitor positioning leverage (internal only), remarketing readiness, audience reuse, channel-fit, relationship-driven growth, founder-network leverage, low-cost experiments, and opportunities surfaced by Search/Content/BI that lack an owner.
+
+### Evidence sources
+
+- BI recommendations/evidence (Studio/CTA, measurement gaps, journeys)
+- Search Strategy opportunities (high-intent demand, local intent, positions 4–15) — Opportunity adds packaging/distribution leverage; Search retains technical SEO
+- Content opportunities (founder themes, handoffs) — Opportunity adds media/partner distribution research; Content retains production
+- Bounded repository strategy (`lib/agent-os/opportunity/strategy.ts`) — routes, partner categories, positioning claims, themes
+
+No web browsing. No scraping. No outbound connectors. Specific external businesses/outlets are never named as confirmed targets without a verified adapter.
+
+### Opportunity taxonomy
+
+Typed in `lib/agent-os/opportunity/types.ts` (underpriced-organic-demand, paid-search-readiness, remarketing-readiness, local-partnership-opportunity, referral-opportunity, bridal-ecosystem-opportunity, podcast/newsletter/earned-media, content/tool/guide distribution, competitor-positioning-gap, conversion-leverage-opportunity, measurement-gap, opportunity-already-covered, etc.).
+
+### Qualification rules
+
+Prefer buyer demand evidence, brand fit, high-intent audience, low/moderate cost, contained scope, measurable signal, compounding trust, existing guide/tool/Concierge connection, founder expertise, regional relevance, limited downside, clear next step, and not already covered.
+
+Penalize vague awareness, generic “network more / run ads,” expensive experiments, unverified audience claims, weak conversion paths, trends disconnected from Hourglass, high founder burden, active-sprint duplicates, and strategies needing unavailable social/GBP metrics.
+
+### Readiness states
+
+`ready-to-evaluate` | `ready-for-founder-decision` | `research-required` | `measurement-blocked` | `not-ready` | `already-covered` | `defer` | `rejected`
+
+Examples: GSC high-intent demand + landing path → ready-to-evaluate; partner category without verified targets → research-required; remarketing without audience/consent evidence → measurement-blocked; Content already owns production → already-covered.
+
+### Confidence vs attractiveness vs actionability
+
+Opportunity separates four signals:
+
+- **evidenceConfidence** — certainty about the diagnostic claim (e.g. “audience evidence is missing”)
+- **strategicAttractiveness** — how attractive the move would be if ready
+- **actionability** — readiness to act (measurement-blocked / research-required stay low)
+- **recommendation priority** — shared ranking uses attractiveness × actionability; high diagnostic confidence alone never raises blocked-item priority
+
+`measurement-blocked` / `already-covered` / generic `research-required` normally stay in structured JSON and deferred summaries — not named founder-brief slots.
+
+### Underused-demand logic
+
+Uses Search evidence (positions 4–15, high impressions/weak CTR, local intent) to recommend packaging, distribution, partner story, or Concierge connection — not technical SEO. Without paid-cost evidence, language stays “underused demand / existing leverage,” never “cheap CPC.”
+
+### Paid-search readiness
+
+Requires verified high-intent demand, relevant destination, Concierge/conversion path thinking, and founder approval. Missing CPC → cost class `unknown`; no CPC/lead/ROI estimates. Readiness assessment only — never launches ads.
+
+### Remarketing readiness
+
+Requires verified audience size, consent/privacy alignment, and audience config. Without evidence → `measurement-blocked`; do not recommend implementation or claim audience availability.
+
+### Local partnership / referral logic
+
+Category-level only (wedding planners, photographers, venues, advisors, etc.): trust transfer, audience moment, Hourglass asset, mutual value, research required, brand risks. No specific partner named as available.
+
+### Media / community research
+
+Category or research-brief angles from founder themes (podcast, newsletter, local media). No fabricated outlets, acceptance, or audience size.
+
+### Competitor-positioning limits
+
+Internal positioning leverage only (no inventory pressure, warmth not inspection, GG-led guidance, tech serving humanity). Never claim named competitors lack capabilities without verified evidence.
+
+### Cross-executive synthesis & already-covered
+
+Opportunity consumes BI/Search/Content signals and must add distinct leverage. Exact duplicates, same objective, active-plan items, or better-owned work are suppressed as `already-covered` / deferred.
+
+### Stable IDs
+
+`opportunity:<source>:<type>:<subject>:<readiness>` — deterministic, no PII/contacts/secrets/timestamps.
+
+### External-data limitations
+
+GBP, Buffer, HubSpot aggregates, CPC, remarketing audiences, and verified partner/outlet lists are unavailable in V1. Gaps are explicit; internal synthesis still runs.
+
+### How Opportunity feeds Chief of Staff
+
+Invoked after BI + Search + Content; titles prefixed `[Opportunity]`; deduped/ranked with the shared model; research-required and speculative ideas generally rank below verified operational issues; brief still caps at 5 named priorities; full set remains in JSON.
+
+### Next planned BI Conversion & Measurement expansion
+
+Deepen BI conversion-path and measurement diagnostics (assisted conversions, destination quality, attribution completeness) so Opportunity paid/remarketing readiness can graduate from gates to evidence-backed evaluation when adapters exist.
 
 ## Content Executive
 
@@ -76,10 +168,6 @@ Missing Buffer lowers confidence for channel-specific claims and never fabricate
 
 Invoked with BI + Search; titles prefixed `[Content]`; deduped/ranked with shared model; brief still caps at 5 named priorities; full set remains in JSON.
 
-### Next planned Opportunity Executive pass
-
-Opportunity becomes operational when underpriced-demand evidence can be verified without inventing partnership or paid metrics.
-
 ## Search Strategy
 
 ### Mission
@@ -121,11 +209,7 @@ Scores answer-first openings, FAQ schema presence, tool interconnection, and rel
 
 ### How Search Strategy feeds Chief of Staff
 
-`runAgentOsBrief` invokes BI, Search Strategy, and Content, then Chief of Staff merges recommendations, deduplicates, ranks with the shared model, and prefixes executive titles (`[Search Strategy]`, `[Content]`) so the founder brief shows origin. Zero recommendations from an executive is a healthy outcome when evidence is thin.
-
-### Next planned Opportunity executive pass
-
-Opportunity becomes operational when underpriced-demand / partnership evidence can be verified. Until then Opportunity remains scaffold-only.
+`runAgentOsBrief` invokes BI, Search Strategy, Content, and Opportunity, then Chief of Staff merges recommendations, deduplicates, ranks with the shared model, and prefixes executive titles (`[Search Strategy]`, `[Content]`, `[Opportunity]`) so the founder brief shows origin. Zero recommendations from an executive is a healthy outcome when evidence is thin.
 
 ## Permissions (read-only boundary)
 
@@ -210,8 +294,8 @@ Typed in `lib/agent-os/decision-journal.ts`. Fields include decision ID, recomme
 
 1. Load read-only adapters (fixture or live — live never falls back to fixtures)
 2. Collect source-health
-3. Invoke Business Intelligence
-4. Invoke Chief of Staff (rank, dedupe, brief)
+3. Invoke Business Intelligence, Search Strategy, Content, then Opportunity
+4. Invoke Chief of Staff (rank, dedupe, brief across all five executives)
 5. Optional synthesis provider (deterministic by default; no LLM installed)
 6. Emit JSON + markdown artifacts under `tmp/agent-os/`
 
@@ -250,7 +334,7 @@ Schedulers must not confuse `none-material` with `none-blocked-by-sources`. A ru
 
 ### Brief surfacing vs full JSON
 
-- `briefSurfacing.opportunitiesDetected` — Search opportunities found
+- `briefSurfacing.opportunitiesDetected` — Search + Content + Opportunity opportunities found
 - `briefSurfacing.recommendationsRanked` — active ranked recommendations retained in JSON
 - `briefSurfacing.recommendationsSurfacedInBrief` — individually named Markdown priorities (1 highest-ROI + ≤4 additional)
 
@@ -296,12 +380,12 @@ This repository has **no OpenAI / AI SDK product dependency**. V1 uses determini
 
 ## Next implementation phases
 
-1. Content operational once a verified social/content read adapter exists
-2. Opportunity operational on underpriced query + partnership evidence
-3. Decision Journal durable store (still founder-gated writes)
-4. Optional authenticated internal preview (separate from production hard-404 dashboard)
-5. Optional LLM brief polish behind the existing provider interface
-6. Optional verified GBP read adapter (still read-only)
+1. BI Conversion & Measurement expansion (assisted conversions, destination quality, attribution completeness)
+2. Decision Journal durable store (still founder-gated writes)
+3. Optional authenticated internal preview (separate from production hard-404 dashboard)
+4. Optional LLM brief polish behind the existing provider interface
+5. Optional verified GBP / Buffer / HubSpot-aggregate read adapters (still read-only)
+6. Optional verified paid-cost or remarketing-audience adapters so Opportunity readiness can advance beyond gates
 
 ## Protected systems (do not touch from Agent OS)
 

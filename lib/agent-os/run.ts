@@ -17,6 +17,10 @@ import {
   runContentExecutive,
 } from "./executives/content";
 import {
+  emptyOpportunityExecutiveOutput,
+  runOpportunityExecutive,
+} from "./executives/opportunity";
+import {
   emptySearchStrategyOutput,
   runSearchStrategy,
 } from "./executives/search-strategy";
@@ -39,6 +43,7 @@ import {
   resolveBriefEvidenceQuality,
   resolveContentExecutiveStatus,
   resolveDeliveryGuidance,
+  resolveOpportunityExecutiveStatus,
   resolveSearchExecutiveStatus,
 } from "./delivery";
 import { AGENT_OS_VERSION, type AgentRun, type DataSourceId } from "./types";
@@ -179,10 +184,21 @@ export async function runAgentOsBrief(
     ? emptyContentExecutiveOutput()
     : runContentExecutive(bundle, reportingPeriod, { search, bi });
 
+  // Fixture mode includes rejected-example transparency; live never uses fixture opportunity data.
+  const opportunity = skipSynthesis
+    ? emptyOpportunityExecutiveOutput()
+    : runOpportunityExecutive(bundle, reportingPeriod, {
+        search,
+        content,
+        bi,
+        includeRejectedExamples: mode === "fixture",
+      });
+
   const provisionalMaterial =
     countMaterialRecommendations(bi.recommendations) +
     countMaterialRecommendations(search.recommendations) +
-    countMaterialRecommendations(content.recommendations);
+    countMaterialRecommendations(content.recommendations) +
+    countMaterialRecommendations(opportunity.recommendations);
   const provisionalEvidenceQuality = resolveBriefEvidenceQuality({
     runStatus: fatalError
       ? "failed"
@@ -198,6 +214,7 @@ export async function runAgentOsBrief(
     bi,
     search,
     content,
+    opportunity,
     reportingPeriod,
     warnings: warnings.filter((w) => !w.startsWith("Source health summary:")),
     mode,
@@ -215,9 +232,11 @@ export async function runAgentOsBrief(
         ...bi.keyMetricChanges,
         ...search.facts,
         ...content.facts,
+        ...opportunity.facts,
         ...bi.dataGaps.map((g) => g.description),
         ...search.dataGaps.map((g) => g.description),
         ...content.dataGaps.map((g) => g.description),
+        ...opportunity.dataGaps.map((g) => g.description),
       ].join("\n"),
     ),
     deterministicBrief: cos.brief,
@@ -234,7 +253,10 @@ export async function runAgentOsBrief(
     fatalError,
     warningCount: warnings.length,
     dataGapCount:
-      bi.dataGaps.length + search.dataGaps.length + content.dataGaps.length,
+      bi.dataGaps.length +
+      search.dataGaps.length +
+      content.dataGaps.length +
+      opportunity.dataGaps.length,
     recommendationAvailability,
   });
 
@@ -272,6 +294,14 @@ export async function runAgentOsBrief(
       bufferAvailable: Boolean(bufferAvailable),
       recommendations: content.recommendations,
       opportunityCount: content.opportunities.length,
+    }),
+    resolveOpportunityExecutiveStatus({
+      skipped: skipSynthesis,
+      externalTargetsAvailable: Boolean(
+        opportunity.strategy.verifiedExternalTargetsAvailable,
+      ),
+      recommendations: opportunity.recommendations,
+      opportunityCount: opportunity.opportunities.length,
     }),
     {
       executiveId: "chief-of-staff" as const,
@@ -317,7 +347,12 @@ export async function runAgentOsBrief(
     sourceHealth,
     recommendations: cos.recommendations,
     anomalies: bi.anomalies,
-    dataGaps: [...bi.dataGaps, ...search.dataGaps, ...content.dataGaps],
+    dataGaps: [
+      ...bi.dataGaps,
+      ...search.dataGaps,
+      ...content.dataGaps,
+      ...opportunity.dataGaps,
+    ],
     escalationItems: cos.escalationItems,
     brief,
     runStatus,
@@ -327,7 +362,11 @@ export async function runAgentOsBrief(
     deliveryGuidance,
     briefSurfacing: {
       opportunitiesDetected:
-        search.opportunities.length + content.opportunities.length,
+        search.opportunities.length +
+        content.opportunities.length +
+        opportunity.opportunities.filter(
+          (o) => !o.rejected && o.readiness !== "rejected",
+        ).length,
       recommendationsRanked: rankedActive.length,
       recommendationsSurfacedInBrief: cos.surfacedInBriefCount,
     },

@@ -81,6 +81,7 @@ export {
   resolveBiExecutiveStatus,
   resolveSearchExecutiveStatus,
   resolveContentExecutiveStatus,
+  resolveOpportunityExecutiveStatus,
 } from "./delivery";
 
 export {
@@ -94,6 +95,12 @@ export {
   buildContentRecommendationId,
   contentIdLooksSafe,
 } from "./content/ids";
+
+export {
+  buildOpportunityId,
+  buildOpportunityRecommendationId,
+  opportunityIdLooksSafe,
+} from "./opportunity/ids";
 
 export {
   REQUIRED_BRIEF_QUESTIONS,
@@ -115,6 +122,12 @@ export {
 export type { ContentExecutiveOutput } from "./executives/content";
 
 export {
+  runOpportunityExecutive,
+  emptyOpportunityExecutiveOutput,
+} from "./executives/opportunity";
+export type { OpportunityExecutiveOutput } from "./executives/opportunity";
+
+export {
   SEARCH_OPPORTUNITY_TYPES,
   type SearchOpportunityType,
   type SearchOpportunity,
@@ -127,6 +140,15 @@ export {
   type ContentOpportunity,
   type ContentFormat,
 } from "./content/types";
+
+export {
+  OPPORTUNITY_TYPES,
+  OPPORTUNITY_READINESS_STATES,
+  type OpportunityType,
+  type OpportunityReadiness,
+  type GrowthOpportunity,
+  type OpportunityVolumeFunnel,
+} from "./opportunity/types";
 
 export {
   isBrandQuery,
@@ -149,6 +171,17 @@ export type {
 } from "./content/inventory";
 export { detectContentOpportunities } from "./content/opportunities";
 export { assessBrandFit } from "./content/brand-fit";
+
+export { collectOpportunitySignals } from "./opportunity/signals";
+export { detectGrowthOpportunities } from "./opportunity/opportunities";
+export { inspectRepositoryStrategy } from "./opportunity/strategy";
+export {
+  qualifyOpportunity,
+  opportunityIsSurfaceEligible,
+  opportunityRankingAdjustments,
+  actionabilityForReadiness,
+  withConfidenceContract,
+} from "./opportunity/qualify";
 
 export {
   getSearchStrategyContract,

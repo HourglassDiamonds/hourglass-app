@@ -28,13 +28,14 @@ import { FIXTURE_REPORTING_PERIOD } from "./fixtures/sample-data";
 import { MAX_ADDITIONAL_SURFACED_PRIORITIES } from "./executives/chief-of-staff";
 
 describe("Content Executive operational status", () => {
-  it("marks Content operational and keeps Opportunity scaffolded", () => {
+  it("marks Content operational alongside Opportunity", () => {
     assert.equal(isExecutiveOperational("content"), true);
-    assert.equal(isExecutiveOperational("opportunity"), false);
+    assert.equal(isExecutiveOperational("opportunity"), true);
     assert.equal(isExecutiveOperational("search-strategy"), true);
     const ops = operationalExecutives().map((e) => e.id);
     assert.ok(ops.includes("content"));
-    assert.deepEqual(scaffoldExecutives().map((e) => e.id), ["opportunity"]);
+    assert.ok(ops.includes("opportunity"));
+    assert.deepEqual(scaffoldExecutives().map((e) => e.id), []);
   });
 });
 
@@ -343,7 +344,8 @@ describe("Content Chief of Staff integration", () => {
         run.briefSurfacing.recommendationsSurfacedInBrief,
     );
     assert.ok(run.executivesInvoked.includes("content"));
-    assert.ok(run.executivesNotOperational.includes("opportunity"));
+    assert.ok(run.executivesInvoked.includes("opportunity"));
+    assert.deepEqual(run.executivesNotOperational, []);
     assert.ok(
       run.recommendations.some((r) => r.originatingExecutive === "content") ||
         run.briefSurfacing.opportunitiesDetected >= 1,

@@ -49,16 +49,17 @@ describe("Agent OS registry", () => {
     assert.equal(EXECUTIVE_REGISTRY.length, 5);
   });
 
-  it("only Chief of Staff, BI, Search Strategy, and Content are operational", () => {
+  it("all five locked executives are operational", () => {
     const ops = operationalExecutives().map((e) => e.id);
     assert.deepEqual(ops, [
       "chief-of-staff",
       "business-intelligence",
       "search-strategy",
       "content",
+      "opportunity",
     ]);
     assert.equal(isExecutiveOperational("content"), true);
-    assert.equal(isExecutiveOperational("opportunity"), false);
+    assert.equal(isExecutiveOperational("opportunity"), true);
   });
 });
 
@@ -569,9 +570,11 @@ describe("executives and brief", () => {
     );
   });
 
-  it("non-operational executives cannot generate recommendations", () => {
+  it("scaffold accessor still throws; Opportunity can generate recommendations", () => {
     assert.throws(() => assertScaffoldCannotRecommend("opportunity"));
-    assert.throws(() => assertOperationalForRecommendations("opportunity"));
+    assert.doesNotThrow(() =>
+      assertOperationalForRecommendations("opportunity"),
+    );
   });
 
   it("Decision Journal schema validates", () => {
@@ -607,7 +610,8 @@ describe("executives and brief", () => {
     assert.ok(run.executivesInvoked.includes("business-intelligence"));
     assert.ok(run.executivesInvoked.includes("search-strategy"));
     assert.ok(run.executivesInvoked.includes("content"));
-    assert.deepEqual(run.executivesNotOperational.sort(), ["opportunity"]);
+    assert.ok(run.executivesInvoked.includes("opportunity"));
+    assert.deepEqual(run.executivesNotOperational, []);
     const actionable = run.recommendations.filter(
       (r) =>
         r.status === "proposed" ||

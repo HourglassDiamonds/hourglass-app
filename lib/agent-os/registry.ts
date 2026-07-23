@@ -40,14 +40,6 @@ const BI_ESCALATION: EscalationRule[] = [
   },
 ];
 
-const SCAFFOLD_ESCALATION: EscalationRule[] = [
-  {
-    id: "scaffold-not-operational",
-    condition: "Executive is scaffold-only in Agent OS V1",
-    action: "Do not emit recommendations; list owned domains only",
-  },
-];
-
 const SEARCH_ESCALATION: EscalationRule[] = [
   {
     id: "search-gsc-gap",
@@ -83,6 +75,27 @@ const CONTENT_ESCALATION: EscalationRule[] = [
     id: "content-publish-boundary",
     condition: "Recommendation implies publishing or Buffer writes",
     action: "Block — Content V1 is read-only recommendations only",
+  },
+];
+
+const OPPORTUNITY_ESCALATION: EscalationRule[] = [
+  {
+    id: "opportunity-external-gap",
+    condition: "No verified external opportunity adapter",
+    action:
+      "Keep category/research-required labels; do not fabricate partners, outlets, CPC, or audiences",
+  },
+  {
+    id: "opportunity-ownership",
+    condition: "Overlap with Search technical SEO or Content production",
+    action:
+      "Defer to the owning executive unless Opportunity adds distinct distribution/partner leverage",
+  },
+  {
+    id: "opportunity-paid-remarketing",
+    condition: "Paid-search or remarketing suggested without measurement evidence",
+    action:
+      "Emit readiness/measurement-blocked assessments only — never launch or configure ads",
   },
 ];
 
@@ -205,14 +218,26 @@ export const EXECUTIVE_REGISTRY: readonly ExecutiveDefinition[] = [
     id: "opportunity",
     displayName: "Opportunity",
     mission:
-      "Surface underpriced search demand, partnerships, referrals, local visibility, evidence-backed paid opportunities, and emerging channels aligned with Hourglass.",
+      "Continuously identify low-cost, high-ROI growth opportunities that align with Hourglass positioning and can compound authority, qualified demand, referrals, and trust without distracting the business with generic marketing activity.",
     ownedDomains: [
-      "underpriced search demand",
-      "partnerships",
-      "referrals",
-      "local visibility",
-      "paid opportunities",
-      "emerging channels",
+      "underpriced organic demand",
+      "high-intent paid-search readiness",
+      "local partnership opportunities",
+      "referral opportunities",
+      "bridal and wedding ecosystem opportunities",
+      "community visibility",
+      "podcast and newsletter opportunities",
+      "earned-media opportunities",
+      "strategic content distribution",
+      "competitor positioning gaps",
+      "remarketing readiness",
+      "audience reuse opportunities",
+      "channel-fit opportunities",
+      "relationship-driven growth",
+      "founder-network leverage",
+      "low-cost experiments",
+      "emerging but brand-aligned opportunities",
+      "opportunities surfaced by Search, Content, or BI that lack an owner",
     ],
     allowedDataSources: [
       "gsc",
@@ -223,9 +248,9 @@ export const EXECUTIVE_REGISTRY: readonly ExecutiveDefinition[] = [
       "fixture",
     ],
     prohibitedActions: SHARED_PROHIBITED,
-    escalationRules: SCAFFOLD_ESCALATION,
-    implementationStatus: "scaffold",
-    version: "0.1.0",
+    escalationRules: OPPORTUNITY_ESCALATION,
+    implementationStatus: "operational",
+    version: "1.0.0",
   },
 ] as const;
 

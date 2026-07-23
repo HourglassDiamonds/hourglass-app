@@ -1,8 +1,10 @@
 import type { BusinessIntelligenceOutput } from "./business-intelligence";
 import type { ContentExecutiveOutput } from "./content";
+import type { OpportunityExecutiveOutput } from "./opportunity";
 import type { SearchStrategyOutput } from "./search-strategy";
 import { consolidateDuplicates } from "../recommendation";
 import { rankRecommendations } from "../ranking";
+import { opportunityRecommendationIsSurfaceEligible } from "../opportunity/qualify";
 import { scaffoldExecutives } from "../registry";
 import type {
   AgendaBucket,
@@ -16,6 +18,7 @@ export type ChiefOfStaffInput = {
   bi: BusinessIntelligenceOutput;
   search?: SearchStrategyOutput;
   content?: ContentExecutiveOutput;
+  opportunity?: OpportunityExecutiveOutput;
   reportingPeriod: { start: string; end: string };
   warnings: string[];
   mode?: "fixture" | "live";
@@ -56,10 +59,12 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
 
   const searchRecs = input.search?.recommendations ?? [];
   const contentRecs = input.content?.recommendations ?? [];
+  const opportunityRecs = input.opportunity?.recommendations ?? [];
   const merged = [
     ...input.bi.recommendations,
     ...searchRecs,
     ...contentRecs,
+    ...opportunityRecs,
   ];
   let recommendations = consolidateDuplicates(merged);
   recommendations = rankRecommendations(
@@ -94,9 +99,21 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
   );
   const blocked = recommendations.filter((r) => r.status === "blocked");
 
-  const highest = active[0];
+  // Opportunity must not take a named brief slot unless surface-eligible
+  const surfacePool = active.filter((r) => {
+    if (r.originatingExecutive !== "opportunity") return true;
+    return opportunityRecommendationIsSurfaceEligible(
+      r.plainLanguageExplanation,
+      r.title,
+      r.priorityScore,
+    );
+  });
+
+  const highest = surfacePool[0] ?? active.find(
+    (r) => r.originatingExecutive !== "opportunity",
+  );
   const additionalSurfaced = pickAdditionalSurfaced(
-    active.slice(1),
+    surfacePool.filter((r) => r.recommendationId !== highest?.recommendationId),
     MAX_ADDITIONAL_SURFACED_PRIORITIES,
   );
   const surfacedIds = new Set(
@@ -114,15 +131,18 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
     ...input.bi.dataGaps,
     ...(input.search?.dataGaps ?? []),
     ...(input.content?.dataGaps ?? []),
+    ...(input.opportunity?.dataGaps ?? []),
   ];
   for (const gap of allGaps.slice(0, 8)) {
     escalationItems.push({
       id: `esc-${gap.id}`,
-      executiveId: gap.id.includes("content")
-        ? "content"
-        : gap.id.includes("search")
-          ? "search-strategy"
-          : "chief-of-staff",
+      executiveId: gap.id.includes("opportunity")
+        ? "opportunity"
+        : gap.id.includes("content")
+          ? "content"
+          : gap.id.includes("search")
+            ? "search-strategy"
+            : "chief-of-staff",
       title: gap.description,
       reason: gap.impactOnRecommendations,
       requiresFounderDecision:
@@ -141,21 +161,30 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
   }
 
   const searchChangeBits = (input.search?.opportunities ?? [])
-    .slice(0, 2)
+    .slice(0, 1)
     .map((o) => o.title);
   const contentChangeBits = (input.content?.opportunities ?? [])
-    .slice(0, 2)
+    .slice(0, 1)
+    .map((o) => o.title);
+  const opportunityChangeBits = (input.opportunity?.opportunities ?? [])
+    .filter(
+      (o) =>
+        o.readiness === "ready-to-evaluate" ||
+        o.readiness === "ready-for-founder-decision",
+    )
+    .slice(0, 1)
     .map((o) => o.title);
   const whatChanged =
     [
-      ...input.bi.keyMetricChanges.slice(0, 3),
+      ...input.bi.keyMetricChanges.slice(0, 2),
       ...searchChangeBits,
       ...contentChangeBits,
+      ...opportunityChangeBits,
     ].join("; ") ||
     "Insufficient metric coverage to summarize changes.";
 
   const whyItMatters = highest
-    ? `${highest.whyItMattersNow} (top ranked: ${highest.title})`
+    ? highest.whyItMattersNow
     : "No high-confidence action is ready; measurement gaps dominate.";
 
   const needsAttentionToday = [
@@ -178,57 +207,71 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
   const monitorCount = deferred.filter(
     (r) => r.agendaBucket === "monitor",
   ).length;
-  const ignoreCount = recommendations.filter(
-    (r) =>
-      r.agendaBucket === "ignore" &&
-      r.status !== "blocked" &&
-      r.status !== "consolidated",
-  ).length;
 
   const canSafelyWait: string[] = [];
   const deferredTotal = scheduleCount + monitorCount;
+  const oppDeferred = (input.opportunity?.opportunities ?? []).filter(
+    (o) =>
+      o.readiness === "research-required" ||
+      o.readiness === "measurement-blocked" ||
+      o.readiness === "already-covered" ||
+      o.readiness === "rejected" ||
+      o.rejected,
+  );
+  const parts: string[] = [];
   if (deferredTotal > 0) {
-    canSafelyWait.push(
-      `${deferredTotal} lower-ranked findings deferred (${scheduleCount} schedule-next, ${monitorCount} monitor) — full ranked set retained in JSON`,
+    parts.push(`${deferredTotal} lower-ranked deferred (full set in JSON)`);
+  }
+  if (oppDeferred.length > 0) {
+    parts.push(
+      `Opportunity: ${oppDeferred.filter((o) => o.readiness === "research-required").length} research, ${oppDeferred.filter((o) => o.readiness === "measurement-blocked").length} measurement-blocked, ${oppDeferred.filter((o) => o.readiness === "already-covered").length} covered, ${oppDeferred.filter((o) => o.readiness === "rejected" || o.rejected).length} rejected`,
     );
   }
-  if (ignoreCount > 0) {
-    canSafelyWait.push(
-      `${ignoreCount} low-priority items marked ignore — not expanded here`,
-    );
-  }
-  if (canSafelyWait.length === 0) {
+  if (parts.length > 0) {
+    canSafelyWait.push(parts.join(" · "));
+  } else {
     canSafelyWait.push("None");
   }
 
   const blockedList = [
-    ...blocked.slice(0, 3).map(
+    ...blocked.slice(0, 2).map(
       (r) =>
         `${r.title}${r.blockedReasons?.length ? ` — ${r.blockedReasons[0]}` : ""}`,
     ),
     ...nonOperationalNote,
-  ].slice(0, 6);
+  ].slice(0, 4);
 
-  const missingOrUnreliableData = allGaps.map(
-    (g) => `${g.description}: ${g.impactOnRecommendations}`,
-  );
-
+  // Deduplicate gap descriptions for brief length
+  const seenGap = new Set<string>();
+  const missingOrUnreliableData: string[] = [];
   if (input.bi.incompleteAttribution) {
-    missingOrUnreliableData.unshift(
-      "Incomplete attribution: social/content ROI cannot be verified without a Buffer (or equivalent) adapter",
+    missingOrUnreliableData.push(
+      "Incomplete social attribution without Buffer adapter",
     );
+  }
+  for (const g of allGaps) {
+    const key = g.sourceId;
+    if (seenGap.has(key)) continue;
+    seenGap.add(key);
+    missingOrUnreliableData.push(`${g.description}`);
+    if (missingOrUnreliableData.length >= 5) break;
   }
 
   const founderDecisionNeeded =
     founderDecisions.length > 0
-      ? founderDecisions
+      ? founderDecisions.slice(0, 3)
       : highest
         ? [
-            "Whether to spend founder time on the highest-ROI action above before starting new creative or SEO experiments",
+            "Whether to spend founder time on the highest-ROI action above before new experiments",
           ]
-        : criticalGapsNeedDecision(input.bi, input.search, input.content)
+        : criticalGapsNeedDecision(
+              input.bi,
+              input.search,
+              input.content,
+              input.opportunity,
+            )
           ? [
-              "Whether to prioritize restoring read-only measurement (GA4 / Search Console / weekly intelligence) before asking Agent OS for growth recommendations",
+              "Whether to restore read-only measurement (GA4 / GSC / weekly) before growth recommendations",
             ]
           : ["None required this cycle"];
 
@@ -239,7 +282,12 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
 
   const opportunitiesDetected =
     (input.search?.opportunities.length ?? 0) +
-    (input.content?.opportunities.length ?? 0);
+    (input.content?.opportunities.length ?? 0) +
+    (input.opportunity?.volumeFunnel.qualifiedFindings ??
+      input.opportunity?.opportunities.filter(
+        (o) => !o.rejected && o.readiness !== "rejected",
+      ).length ??
+      0);
 
   const brief = buildFounderBrief({
     mode: input.mode ?? "fixture",
@@ -253,22 +301,22 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
           ? ["See highest-ROI action below"]
           : ["None"],
     highestRoiAction: highest
-      ? `${highest.title} — ${highest.proposedAction} (confidence ${highest.confidence})`
+      ? `${highest.title} — ${truncateAction(highest.proposedAction)} (confidence ${highest.confidence})`
       : "None — resolve data gaps first",
     canSafelyWait,
-    blocked: blockedList,
+    blocked: blockedList.length ? blockedList : ["None"],
     founderDecisionNeeded,
     missingOrUnreliableData,
     period: input.reportingPeriod,
     facts: [
-      ...input.bi.facts.slice(0, 4),
-      ...(input.search?.facts ?? []).slice(0, 3),
-      ...(input.content?.facts ?? []).slice(0, 3),
+      ...input.bi.facts.slice(0, 2),
+      ...(input.search?.facts ?? []).slice(0, 1),
+      ...(input.content?.facts ?? []).slice(0, 1),
+      ...(input.opportunity?.facts ?? []).slice(0, 1),
     ],
     inferences: [
-      ...input.bi.inferences.slice(0, 2),
-      ...(input.search?.inferences ?? []).slice(0, 2),
-      ...(input.content?.inferences ?? []).slice(0, 2),
+      ...input.bi.inferences.slice(0, 1),
+      ...(input.opportunity?.inferences ?? []).slice(0, 1),
     ],
     surfacedPriorityTitles,
     rankedRecommendationCount: active.length,
@@ -312,6 +360,9 @@ function findExecutiveConflicts(recs: Recommendation[]): string[] {
   const bi = active.filter((r) => r.originatingExecutive === "business-intelligence");
   const ss = active.filter((r) => r.originatingExecutive === "search-strategy");
   const content = active.filter((r) => r.originatingExecutive === "content");
+  const opportunity = active.filter(
+    (r) => r.originatingExecutive === "opportunity",
+  );
   const conflicts: string[] = [];
 
   for (const s of ss.slice(0, 3)) {
@@ -342,6 +393,29 @@ function findExecutiveConflicts(recs: Recommendation[]): string[] {
     }
   }
 
+  for (const o of opportunity.slice(0, 4)) {
+    const searchOverlap = ss.find((s) => ownershipOverlap(o.title, s.title));
+    if (searchOverlap) {
+      conflicts.push(
+        `Ownership note: Opportunity “${o.title}” relates to Search “${searchOverlap.title}” — Search keeps technical SEO; Opportunity keeps distribution/partner leverage only when distinct`,
+      );
+    }
+    const contentOverlap = content.find((c) =>
+      ownershipOverlap(o.title, c.title),
+    );
+    if (contentOverlap) {
+      conflicts.push(
+        `Ownership note: Opportunity “${o.title}” relates to Content “${contentOverlap.title}” — Content keeps production; Opportunity keeps distribution/partner research when distinct`,
+      );
+    }
+    const biOverlap = bi.find((b) => ownershipOverlap(o.title, b.title));
+    if (biOverlap) {
+      conflicts.push(
+        `Ownership note: Opportunity “${o.title}” relates to BI “${biOverlap.title}” — BI keeps measurement; Opportunity keeps conversion-leverage experiments when distinct`,
+      );
+    }
+  }
+
   return conflicts;
 }
 
@@ -361,15 +435,21 @@ function normalizeLoose(s: string): string {
   return s.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 }
 
+function truncateAction(s: string): string {
+  return s.length <= 140 ? s : `${s.slice(0, 137)}…`;
+}
+
 function criticalGapsNeedDecision(
   bi: BusinessIntelligenceOutput,
   search?: SearchStrategyOutput,
   content?: ContentExecutiveOutput,
+  opportunity?: OpportunityExecutiveOutput,
 ): boolean {
   const gaps = [
     ...bi.dataGaps,
     ...(search?.dataGaps ?? []),
     ...(content?.dataGaps ?? []),
+    ...(opportunity?.dataGaps ?? []),
   ];
   return gaps.some(
     (g) =>
@@ -403,23 +483,21 @@ function buildFounderBrief(input: {
 
   let modeLabel =
     input.mode === "fixture"
-      ? "Fixture sample (not live production evidence)"
+      ? "Fixture sample (not live evidence)"
       : "Live read-only";
   if (input.briefEvidenceQuality === "partial-degraded") {
-    modeLabel +=
-      " — DEGRADED / PARTIAL: usable findings present; critical analytics sources unavailable (not all-clear)";
+    modeLabel += " — DEGRADED / PARTIAL (critical sources down; not all-clear)";
   } else if (input.briefEvidenceQuality === "none-blocked") {
-    modeLabel +=
-      " — BLOCKED: critical sources unavailable; do not treat as a quiet healthy week";
+    modeLabel += " — BLOCKED (critical sources unavailable)";
   } else if (input.briefEvidenceQuality === "failed") {
-    modeLabel += " — FAILED: brief may be incomplete";
+    modeLabel += " — FAILED";
   }
 
   const markdown = `# Hourglass Founder Brief
 
 Mode: ${modeLabel}
-Reporting period: ${input.period.start} → ${input.period.end}
-Surfacing: ${input.surfacedPriorityTitles.length} named priorities (${input.opportunitiesDetected} opportunities detected · ${input.rankedRecommendationCount} ranked active) — full set in JSON
+Period: ${input.period.start} → ${input.period.end}
+Surfacing: ${input.surfacedPriorityTitles.length} named priorities (${input.opportunitiesDetected} detected · ${input.rankedRecommendationCount} ranked) — full set in JSON
 
 ## 1. What changed?
 ${input.whatChanged}
@@ -443,13 +521,13 @@ ${bullets(input.blocked)}
 ${bullets(input.founderDecisionNeeded)}
 
 ## 8. What data is missing or unreliable?
-${bullets(input.missingOrUnreliableData.slice(0, 8))}
+${bullets(input.missingOrUnreliableData.slice(0, 5))}
 
 ### Known facts
-${bullets(input.facts.slice(0, 6))}
+${bullets(input.facts.slice(0, 4))}
 
 ### Inferences (not facts)
-${bullets(input.inferences.slice(0, 4))}
+${bullets(input.inferences.slice(0, 2))}
 
 ---
 Agent OS V1 — read-only. No external writes. Revenue is never inferred from traffic alone.

@@ -181,3 +181,35 @@ export function resolveContentExecutiveStatus(input: {
     recommendations: input.recommendations,
   });
 }
+
+export function resolveOpportunityExecutiveStatus(input: {
+  skipped: boolean;
+  externalTargetsAvailable: boolean;
+  recommendations: Recommendation[];
+  opportunityCount: number;
+}): ExecutiveRunSummary {
+  if (input.skipped) {
+    return summarizeExecutiveRun({
+      executiveId: "opportunity",
+      status: "blocked",
+      recommendations: [],
+      note: "Opportunity skipped due to fatal/live-load abort",
+    });
+  }
+  if (!input.externalTargetsAvailable) {
+    return summarizeExecutiveRun({
+      executiveId: "opportunity",
+      status: "completed-with-warnings",
+      recommendations: input.recommendations,
+      note:
+        input.opportunityCount > 0
+          ? "Opportunity completed with internal synthesis; external targets/CPC/audiences unverified (not fabricated)"
+          : "Opportunity completed without verified external adapters; no material growth opportunities this cycle",
+    });
+  }
+  return summarizeExecutiveRun({
+    executiveId: "opportunity",
+    status: "completed",
+    recommendations: input.recommendations,
+  });
+}
