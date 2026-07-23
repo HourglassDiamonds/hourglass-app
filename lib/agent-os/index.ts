@@ -108,6 +108,35 @@ export {
 } from "./executives/chief-of-staff";
 
 export { runBusinessIntelligence } from "./executives/business-intelligence";
+export type {
+  BusinessIntelligenceOutput,
+  RunBusinessIntelligenceOptions,
+} from "./executives/business-intelligence";
+
+export {
+  runConversionMeasurementAudit,
+  buildMeasurementFindingId,
+  measurementIdLooksSafe,
+  EXPECTED_EVENT_INVENTORY,
+  AUTHORITATIVE_CONVERSION_EVENT,
+  GA4_ADAPTER_QUERIED_EVENTS,
+  FUNNEL_DEFINITIONS,
+  createFixtureConversionObservations,
+  MEASUREMENT_HEALTH_TYPES,
+  MEASUREMENT_DECISION_EFFECTS,
+  MIN_FUNNEL_SAMPLE,
+  CONCIERGE_CONVERSION_ROOT_RECOMMENDATION_ID,
+  isConciergeConversionClusterFinding,
+} from "./bi";
+export type {
+  ConversionMeasurementAudit,
+  MeasurementFinding,
+  OpportunityMeasurementHandoff,
+  MeasurementDecisionEffect,
+  MeasurementHealthType,
+  ExpectedEventInventoryItem,
+  MeasurementVolumeFunnel,
+} from "./bi";
 
 export {
   runSearchStrategy,

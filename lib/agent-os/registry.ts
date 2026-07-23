@@ -38,6 +38,13 @@ const BI_ESCALATION: EscalationRule[] = [
     condition: "Attribution coverage is incomplete or unverified",
     action: "Separate known facts from inference; lower confidence",
   },
+  {
+    id: "bi-conversion-measurement",
+    condition:
+      "Core conversion or funnel measurement is missing, unknown, or decision-blocking",
+    action:
+      "Surface measurement repair before Opportunity paid/remarketing or channel ROI claims",
+  },
 ];
 
 const SEARCH_ESCALATION: EscalationRule[] = [
@@ -129,7 +136,7 @@ export const EXECUTIVE_REGISTRY: readonly ExecutiveDefinition[] = [
     id: "business-intelligence",
     displayName: "Business Intelligence",
     mission:
-      "Maintain a trustworthy view of Hourglass performance and detect meaningful movement before recommendations are made.",
+      "Maintain a trustworthy view of Hourglass performance, conversion measurement integrity, and detect meaningful movement before recommendations are made.",
     ownedDomains: [
       "performance metrics",
       "anomalies",
@@ -140,6 +147,17 @@ export const EXECUTIVE_REGISTRY: readonly ExecutiveDefinition[] = [
       "Concierge activity signals",
       "measurement gaps",
       "source health",
+      "analytics integrity",
+      "conversion measurement",
+      "funnel coverage",
+      "journey progression",
+      "attribution quality",
+      "event-health monitoring",
+      "destination quality",
+      "conversion anomalies",
+      "measurement regressions",
+      "decision-quality safeguards",
+      "readiness evidence for Opportunity",
     ],
     allowedDataSources: [
       "ga4",
@@ -152,7 +170,7 @@ export const EXECUTIVE_REGISTRY: readonly ExecutiveDefinition[] = [
     prohibitedActions: SHARED_PROHIBITED,
     escalationRules: BI_ESCALATION,
     implementationStatus: "operational",
-    version: "1.0.0",
+    version: "1.1.0",
   },
   {
     id: "search-strategy",

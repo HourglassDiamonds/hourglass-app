@@ -391,6 +391,18 @@ function detectPaidSearchReadiness(
   );
   const measurementReady = bundle.strategy.paidSearchTelemetryAvailable;
   const cpcOk = bundle.strategy.cpcEvidenceAvailable;
+  const biMeasurementBlocked = bundle.signals.some(
+    (s) =>
+      s.id === "bi:handoff:paid-search-measurement-prerequisite" ||
+      (s.kind === "bi-measurement" &&
+        s.sourceExecutive === "business-intelligence" &&
+        /paid-search measurement prerequisite|generate_lead|concierge-submit|authoritative conversion/i.test(
+          s.title + s.summary,
+        )),
+  );
+  const biPrerequisiteIds = bundle.biRecommendationIds.filter((id) =>
+    id.includes(":measurement:"),
+  );
 
   if (!destination) {
     return [
@@ -486,12 +498,82 @@ function detectPaidSearchReadiness(
     ];
   }
 
-  // Destination + demand exist; measurement/CPC usually incomplete → evaluate readiness, not launch
-  const readiness = !measurementReady
-    ? ("ready-to-evaluate" as const)
-    : cpcOk
-      ? ("ready-for-founder-decision" as const)
-      : ("ready-to-evaluate" as const);
+  // Destination + demand exist; BI conversion measurement may still block
+  if (biMeasurementBlocked || !measurementReady) {
+    const readiness =
+      biMeasurementBlocked
+        ? ("measurement-blocked" as const)
+        : ("ready-to-evaluate" as const);
+    return [
+      ensureConfidenceFields({
+        id: buildOpportunityId({
+          source: "search",
+          type: "paid-search-readiness",
+          subject: demand.relatedQuery ?? demand.sourceEvidenceId,
+          readiness,
+        }),
+        type: "paid-search-readiness",
+        readiness,
+        title: biMeasurementBlocked
+          ? `Paid-search blocked: conversion measurement prerequisite for ${truncate(demand.relatedQuery ?? demand.title, 32)}`
+          : `Paid-search readiness: evaluate measurement for ${truncate(demand.relatedQuery ?? demand.title, 36)}`,
+        whyItMatters: biMeasurementBlocked
+          ? "High-intent demand and a destination exist, but BI reports authoritative conversion measurement is missing or unverified — paid evaluation must wait."
+          : "High-intent demand and a destination exist — next step is measurement readiness and founder approval. Cost and ROI remain unknown without CPC evidence.",
+        recommendedAction: biMeasurementBlocked
+          ? "Do not launch ads. Defer to BI conversion/measurement prerequisites; Opportunity adds paid leverage only after generate_lead (or equivalent) is verified."
+          : "Prepare measurement prerequisites (conversion tracking, destination quality, geographic fit) before any paid evaluation. Do not launch ads; cost remains unknown.",
+        targetAudience: "engagement-buyers",
+        geography: resolveGeography(demand.relatedQuery ?? "", demand),
+        funnelStage: "decision",
+        relatedQuery: demand.relatedQuery,
+        relatedPage: destination,
+        relatedTool: "/concierge",
+        sourceExecutive: "search-strategy",
+        sourceEvidenceId: demand.sourceEvidenceId,
+        costClass: "unknown",
+        effort: "medium",
+        reversibility: "easily-reversed",
+        timeToSignal: "weeks",
+        strategicFit: biMeasurementBlocked ? 3 : 6,
+        founderDependence: "light",
+        externalVerification: "source-gap",
+        isInference: true,
+        evidenceConfidence: Math.min(0.75, demand.confidence + 0.1),
+        strategicAttractiveness: biMeasurementBlocked ? 3 : 6,
+        urgency: "low",
+        dependency: biMeasurementBlocked
+          ? `BI measurement prerequisite: ${biPrerequisiteIds[0] ?? "conversion-event-verification"}`
+          : "Founder approval + measurement readiness before any spend",
+        approvalRequired: true,
+        owner: "Founder / Opportunity",
+        supportingReference: demand.supportingReference,
+        evidenceNotes: [
+          ...demand.evidenceNotes.slice(0, 2),
+          `Landing path: ${destination}`,
+          "CPC data unavailable — no underpriced-paid or ROI claim",
+          `measurementReady=${measurementReady}`,
+          `biMeasurementBlocked=${biMeasurementBlocked}`,
+          ...(biPrerequisiteIds.slice(0, 2).map((id) => `BI prerequisite: ${id}`)),
+          "Readiness assessment only — no campaign launch",
+        ],
+        disqualifyingRisks: [
+          "Budget unknown",
+          "Do not launch ads from Agent OS",
+        ],
+        alreadyCoveredBy: biMeasurementBlocked
+          ? biPrerequisiteIds[0] ?? "business-intelligence:measurement"
+          : null,
+        additionalLeverage: biMeasurementBlocked
+          ? "References BI conversion prerequisites without duplicating measurement repair"
+          : "Translates Search demand into a paid-readiness gate rather than duplicating SEO work",
+      }),
+    ];
+  }
+
+  const readiness = cpcOk
+    ? ("ready-for-founder-decision" as const)
+    : ("ready-to-evaluate" as const);
 
   return [
     ensureConfidenceFields({
@@ -506,9 +588,8 @@ function detectPaidSearchReadiness(
       title: `Paid-search readiness: evaluate measurement for ${truncate(demand.relatedQuery ?? demand.title, 36)}`,
       whyItMatters:
         "High-intent demand and a destination exist — next step is measurement readiness and founder approval. Cost and ROI remain unknown without CPC evidence.",
-      recommendedAction: measurementReady
-        ? "Evaluate a contained paid-search readiness brief for founder decision (Agent OS does not configure ads). Do not estimate CPC, lead volume, or ROI without cost data."
-        : "Prepare measurement prerequisites (conversion tracking, destination quality, geographic fit) before any paid evaluation. Do not launch ads; cost remains unknown.",
+      recommendedAction:
+        "Evaluate a contained paid-search readiness brief for founder decision (Agent OS does not configure ads). Do not estimate CPC, lead volume, or ROI without cost data. Do not launch ads.",
       targetAudience: "engagement-buyers",
       geography: resolveGeography(demand.relatedQuery ?? "", demand),
       funnelStage: "decision",
@@ -623,7 +704,12 @@ function detectConversionLeverage(
   if (!bi) return [];
 
   // Do not restate BI measurement repair as Opportunity work
-  if (/tracking|verify measurement|attribution/i.test(bi.title)) {
+  if (
+    /tracking|verify measurement|attribution|generate_lead|concierge-submit/i.test(
+      bi.title,
+    ) ||
+    bi.sourceEvidenceId.includes(":measurement:")
+  ) {
     return [
       ensureConfidenceFields({
         id: buildOpportunityId({
@@ -670,19 +756,30 @@ function detectConversionLeverage(
         source: "bi",
         type: "conversion-leverage-opportunity",
         subject: bi.sourceEvidenceId,
-        readiness: "ready-to-evaluate",
+        readiness: bundle.signals.some(
+          (s) => s.id === "bi:handoff:paid-search-measurement-prerequisite",
+        )
+          ? "measurement-blocked"
+          : "ready-to-evaluate",
       }),
       type: "conversion-leverage-opportunity",
-      readiness: "ready-to-evaluate",
+      readiness: bundle.signals.some(
+        (s) => s.id === "bi:handoff:paid-search-measurement-prerequisite",
+      )
+        ? "measurement-blocked"
+        : "ready-to-evaluate",
       title: "Conversion leverage: Studio engagement vs consultation movement",
       whyItMatters:
         "BI shows Studio usage movement without matching consultation progress — evaluate a contained handoff or partner-distribution experiment without duplicating BI’s measurement diagnosis.",
-      recommendedAction:
-        "Evaluate a contained Studio→Concierge handoff test and whether the tool could be useful in partner education (read-only — no site edits from Agent OS).",
+      recommendedAction: bundle.signals.some(
+        (s) => s.id === "bi:handoff:paid-search-measurement-prerequisite",
+      )
+        ? "Do not run conversion experiments until BI confirms authoritative conversion measurement. Opportunity adds handoff/partner leverage after the prerequisite closes."
+        : "Evaluate a contained Studio→Concierge handoff test and whether the tool could be useful in partner education (read-only — no site edits from Agent OS).",
       targetAudience: "engagement-buyers",
       geography: "charlotte-metro",
       funnelStage: "decision",
-      relatedTool: "/diamond-shape-studio",
+      relatedTool: "/diamond-studio",
       relatedPage: "/concierge",
       sourceExecutive: "business-intelligence",
       sourceEvidenceId: bi.sourceEvidenceId,
@@ -710,6 +807,7 @@ function detectConversionLeverage(
         "BI retains measurement ownership",
         "Do not alter Studio or analytics from Agent OS",
       ],
+      alreadyCoveredBy: null,
       additionalLeverage:
         "Adds partner-distribution / handoff-experiment framing beyond BI’s measurement finding",
     }),

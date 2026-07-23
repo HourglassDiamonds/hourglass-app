@@ -22,6 +22,7 @@ import {
 import { loadAllSources } from "./adapters/load";
 import { FIXTURE_REPORTING_PERIOD } from "./fixtures/sample-data";
 import { MAX_ADDITIONAL_SURFACED_PRIORITIES as COS_MAX } from "./executives/chief-of-staff";
+import { emptyBusinessIntelligenceOutput } from "./bi/empty";
 import type { GrowthOpportunity } from "./opportunity/types";
 
 describe("Confidence vs attractiveness vs actionability", () => {
@@ -220,8 +221,7 @@ describe("Opportunity surfacing safeguards", () => {
     });
     // Empty BI (simulating blocked)
     const emptyBi = {
-      recommendations: [],
-      anomalies: [],
+      ...emptyBusinessIntelligenceOutput("GA4 down — BI blocked"),
       dataGaps: [
         {
           id: "gap-ga4",
@@ -231,10 +231,6 @@ describe("Opportunity surfacing safeguards", () => {
           suggestedRemedy: "Restore GA4",
         },
       ],
-      keyMetricChanges: [],
-      facts: [],
-      inferences: [],
-      incompleteAttribution: false,
     };
     const cos = runChiefOfStaff({
       bi: emptyBi,

@@ -11,6 +11,7 @@ import { randomUUID } from "node:crypto";
 import { loadAllSources, getFixtureReportingPeriod } from "./adapters/load";
 import type { AdapterMode } from "./adapters/types";
 import { runBusinessIntelligence } from "./executives/business-intelligence";
+import { emptyBusinessIntelligenceOutput } from "./bi/empty";
 import { runChiefOfStaff } from "./executives/chief-of-staff";
 import {
   emptyContentExecutiveOutput,
@@ -155,24 +156,22 @@ export async function runAgentOsBrief(
 
   const bi = skipSynthesis
     ? {
-        recommendations: [],
-        anomalies: [],
+        ...emptyBusinessIntelligenceOutput(
+          fatalError ?? "Live run blocked — conversion audit not executed",
+        ),
         dataGaps: [
           {
             id: "gap-live-load-fatal",
-            sourceId: "ga4",
+            sourceId: "ga4" as const,
             description: fatalError ?? "Live run blocked",
             impactOnRecommendations:
               "No recommendations emitted — live mode does not substitute fixture data",
-            suggestedRemedy: "Configure read-only GA4/GSC/weekly sources or use --fixture",
+            suggestedRemedy:
+              "Configure read-only GA4/GSC/weekly sources or use --fixture",
           },
         ],
-        keyMetricChanges: [],
-        facts: [],
-        inferences: [],
-        incompleteAttribution: false,
       }
-    : runBusinessIntelligence(bundle, reportingPeriod);
+    : runBusinessIntelligence(bundle, reportingPeriod, { mode });
 
   // Search Strategy still runs repository authority analysis when GSC is down,
   // unless the entire live load was aborted for fixture leakage / fatal error.

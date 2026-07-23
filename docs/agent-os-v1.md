@@ -104,9 +104,88 @@ GBP, Buffer, HubSpot aggregates, CPC, remarketing audiences, and verified partne
 
 Invoked after BI + Search + Content; titles prefixed `[Opportunity]`; deduped/ranked with the shared model; research-required and speculative ideas generally rank below verified operational issues; brief still caps at 5 named priorities; full set remains in JSON.
 
-### Next planned BI Conversion & Measurement expansion
+### BI measurement handoff
 
-Deepen BI conversion-path and measurement diagnostics (assisted conversions, destination quality, attribution completeness) so Opportunity paid/remarketing readiness can graduate from gates to evidence-backed evaluation when adapters exist.
+Opportunity consumes `BusinessIntelligenceOutput.opportunityHandoff` for paid-search / remarketing / conversion-leverage gates. When authoritative conversion measurement is missing or unverified, paid-search readiness becomes `measurement-blocked` and references BI prerequisite IDs — it does **not** duplicate BI repair recommendations or launch ads.
+
+## Business Intelligence — Conversion & Measurement
+
+### Mission
+
+Answer: can Hourglass trust its current measurement, where are qualified prospects progressing or dropping out, and which conversion or tracking issue deserves attention first?
+
+BI owns measurement diagnosis, metric reliability, anomaly detection, conversion analysis, attribution quality, destination quality, event-health monitoring, and readiness evidence for Opportunity. It does **not** change GA4/GTM/HubSpot, add events, or launch ads.
+
+### Expected vs observed instrumentation
+
+| Layer | Proves | Does not prove |
+|-------|--------|----------------|
+| **Expected** (`lib/agent-os/bi/expected-events.ts`) | Repository intends an event (call site, constant, docs) | That the event fires in production |
+| **Observed** (GA4 weekly adapter / fixture overlay) | An event name has volume in a comparable period | User intent, revenue, or CRM qualification |
+| **Verified operational conversion** | Source definitively supports the action (e.g. `generate_lead` after Concierge soft-accept) | CTA click ≠ lead; tool pageview ≠ completion |
+
+Missing observed activity with unread metrics → `unknown`, not automatic “broken tracking.”
+
+### Funnel definitions
+
+Typed in `lib/agent-os/bi/funnels.ts`:
+
+- General consultation (landing → CTA → Concierge start → submit → `generate_lead`)
+- Diamond Studio / Size Studio (entry → engagement → CTA → Concierge)
+- See It On Your Hand / Analyze Sparkle (repository routes; unsupported stages marked as measurement gaps)
+- Content-to-conversion (conversation → related resource → Concierge)
+
+Unsupported stages are gaps — never invented as observed facts.
+
+### Measurement-health taxonomy
+
+Typed in `lib/agent-os/bi/types.ts` (`MEASUREMENT_HEALTH_TYPES`): expected-event-not-observed, observed-event-not-documented, funnel-stage-unmeasured, tool-entry-completion-gap, tool-to-concierge-gap, concierge-start-submit-gap, destination-quality-gap, attribution-gap, source-medium-anomaly, measurement-regression, sample-size-limitation, measurement-healthy, verification-required, etc.
+
+### Decision-effect / severity model
+
+- **decision-blocking** — cannot responsibly evaluate conversion, paid, remarketing, or major channel performance
+- **decision-degrading** — analysis possible but confidence materially lower
+- **monitor** — low-impact / low-volume / non-critical (usually suppressed from founder brief)
+
+Not every missing event is decision-blocking. Low-value dead events (e.g. `home_clicked`) stay monitor.
+
+### Conversion-integrity rules
+
+Prefer: absent/unknown core conversion, entry vs completion indistinguishability, Concierge start/submit inseparability, unmeasured destination paths, unreliable attribution, abrupt event regressions, Opportunity readiness blocked by measurement.
+
+Penalize: tiny samples, short windows, speculative stages, unavailable live sources, vanity metrics.
+
+Drop-off language requires comparable periods, sufficient sample, same source, and no known instrumentation mismatch. Prefer “progression gap” / “verification required” — never “users hate this page” or revenue claims.
+
+### Attribution, regression, destination quality
+
+- Attribution: channel groups always; source/medium fragmentation only with repeated high-volume variants (fixture) or explicit live gap when source/medium is not pulled
+- Regression: stable event, comparable prior period, minimum prior sample, cautious “possible” label
+- Destination: existing landing + Concierge/tool path + measurement posture; missing destination ≠ missing tracking
+
+### Opportunity-readiness handoff
+
+`OpportunityMeasurementHandoff` reports conversion verification, destination measurability, attribution usability, paid-search prerequisite missing, remarketing audience/consent unavailable, and BI finding IDs. When Concierge conversion findings cluster, prerequisites point at the single root recommendation ID `business-intelligence:measurement:concierge-conversion-root:concierge`. BI never recommends launching ads. Opportunity retains readiness states in JSON and must not duplicate founder-facing “fix tracking” recommendations.
+
+### Authoritative reporting conversion
+
+Repository instrumentation may list **candidates** (`generate_lead`, `concierge_form_submitted`) plus diagnostic events (`concierge_form_started`, `consultation_cta_clicked`). BI recommends designating **one** verified reporting conversion for Concierge success — not deleting or replacing events, and not assuming a single candidate is already the only correct production key event.
+
+### Live-data limitations
+
+Live mode derives observations only from the existing GA4 weekly adapter allowlist (`STUDIO_EVENTS`). Concierge `generate_lead` / form events are **unknown** until a later read-only adapter expansion — that is a verification requirement, not fabricated breakage. Live mode never uses fixture conversion overlays.
+
+### Stable IDs
+
+`business-intelligence:measurement:<type>:<subject>` — deterministic; no PII, sessions, uploads, secrets, or timestamps.
+
+### Chief of Staff prioritization
+
+Decision-blocking measurement findings can outrank downstream speculative work when evidence is strong. Low-value gaps stay deferred. Measurement findings soft-dedupe against legacy BI heuristics. Founder brief still caps at **5** named priorities; full findings remain in JSON.
+
+### Next planned Search Strategy Local Authority / GBP expansion
+
+After this BI conversion pass: deepen Search Strategy local authority with an optional verified GBP read adapter (still read-only) so local-pack/review evidence can graduate beyond GSC + Charlotte guide registry.
 
 ## Content Executive
 
@@ -158,7 +237,7 @@ Recommends next conversation at **map** level: audience question, core idea, sup
 |-----------|------|
 | Search Strategy | Technical SEO (CTR, schema, positions, guide-authority link audits) |
 | Content | Communication & production (conversation maps, clips, carousels, handoff storytelling) |
-| BI | Measurement diagnosis (tracking, CTA funnel health) |
+| BI | Measurement diagnosis (tracking, conversion integrity, CTA funnel health, attribution quality) |
 
 ### Limits without social data
 
@@ -373,19 +452,21 @@ This repository has **no OpenAI / AI SDK product dependency**. V1 uses determini
 - No Buffer / social API → incomplete social attribution
 - No GBP adapter → no local pack / review metrics (Search Strategy local findings use GSC + guide registry only)
 - No HubSpot weekly aggregate read → no consultation CRM funnel in Agent OS
-- Assisted conversion paths still pending in executive dashboard snapshots
+- Agent OS GA4 weekly adapter does not yet retrieve `generate_lead` / Concierge form events → conversion status often `unknown` in live mode
+- See It On Your Hand / Analyze Sparkle lack journey events in repository
 - CTA click samples can be small — percentage swings overstate urgency
 - Revenue must never be inferred from traffic, Studio views, or impressions
 - Charlotte Guides articles exist without a mapped category hub (repository finding)
 
 ## Next implementation phases
 
-1. BI Conversion & Measurement expansion (assisted conversions, destination quality, attribution completeness)
-2. Decision Journal durable store (still founder-gated writes)
-3. Optional authenticated internal preview (separate from production hard-404 dashboard)
-4. Optional LLM brief polish behind the existing provider interface
-5. Optional verified GBP / Buffer / HubSpot-aggregate read adapters (still read-only)
-6. Optional verified paid-cost or remarketing-audience adapters so Opportunity readiness can advance beyond gates
+1. ~~BI Conversion & Measurement expansion~~ (this pass — repository expected inventory + GA4-derived observation + Opportunity handoff)
+2. Optional GA4 read expansion for Concierge conversion events (`generate_lead`, form start/submit) — still read-only, no client tracking changes
+3. Search Strategy Local Authority / GBP expansion (verified GBP read when available)
+4. Decision Journal durable store (still founder-gated writes)
+5. Optional authenticated internal preview (separate from production hard-404 dashboard)
+6. Optional LLM brief polish behind the existing provider interface
+7. Optional verified Buffer / HubSpot-aggregate / paid-cost / remarketing-audience adapters (still read-only)
 
 ## Protected systems (do not touch from Agent OS)
 

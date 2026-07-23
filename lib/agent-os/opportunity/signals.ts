@@ -92,6 +92,50 @@ export function collectOpportunitySignals(
     raw.push(normalizeBiRecommendation(rec));
   }
 
+  // BI Opportunity handoff — measurement prerequisites without duplicating repair work
+  const handoff = input.bi?.opportunityHandoff;
+  if (handoff?.paidSearchMeasurementPrerequisiteMissing) {
+    raw.push({
+      id: "bi:handoff:paid-search-measurement-prerequisite",
+      kind: "bi-measurement",
+      sourceExecutive: "business-intelligence",
+      sourceEvidenceId:
+        handoff.measurementPrerequisites[0] ??
+        "bi-paid-search-measurement-prerequisite",
+      title: "Paid-search measurement prerequisite missing",
+      summary:
+        "BI reports authoritative conversion measurement is not verified — paid search stays gated",
+      confidence: 0.85,
+      likelyImpact: 8,
+      isTechnicalSeo: false,
+      isContentProduction: false,
+      isInference: false,
+      supportingReference: "bi.opportunityHandoff",
+      evidenceNotes: handoff.notes.slice(0, 3),
+    });
+  }
+  if (!handoff?.remarketingAudienceEvidenceAvailable) {
+    raw.push({
+      id: "bi:handoff:remarketing-audience-missing",
+      kind: "bi-measurement",
+      sourceExecutive: "business-intelligence",
+      sourceEvidenceId: "bi-remarketing-audience-consent",
+      title: "Remarketing audience/consent evidence unavailable",
+      summary:
+        "BI handoff: no verified audience or consent evidence for remarketing readiness",
+      confidence: 0.9,
+      likelyImpact: 3,
+      isTechnicalSeo: false,
+      isContentProduction: false,
+      isInference: false,
+      supportingReference: "bi.opportunityHandoff",
+      evidenceNotes: [
+        "remarketingAudienceEvidenceAvailable=false",
+        "remarketingConsentEvidenceAvailable=false",
+      ],
+    });
+  }
+
   // Repository strategy always contributes a bounded set of category signals
   for (const cat of strategy.partnerCategories) {
     raw.push({
@@ -241,7 +285,10 @@ function normalizeBiRecommendation(
   const id = rec.recommendationId;
   const isMeasurement =
     id.includes("tracking") ||
-    /tracking|measurement|attribution/i.test(rec.title);
+    id.includes(":measurement:") ||
+    /tracking|measurement|attribution|conversion|generate_lead|concierge-submit/i.test(
+      rec.title + rec.plainLanguageExplanation,
+    );
 
   return {
     id: `bi:${id}`,
@@ -250,7 +297,7 @@ function normalizeBiRecommendation(
     sourceEvidenceId: id,
     title: rec.title,
     summary: rec.whyItMattersNow,
-    relatedTool: /studio/i.test(rec.title) ? "/diamond-shape-studio" : null,
+    relatedTool: /studio/i.test(rec.title) ? "/diamond-studio" : null,
     confidence: rec.confidence,
     likelyImpact: rec.rankingFactors.expectedBusinessImpact,
     isTechnicalSeo: false,

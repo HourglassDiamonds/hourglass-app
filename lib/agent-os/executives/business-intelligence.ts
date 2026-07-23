@@ -1,5 +1,10 @@
 import { deltaPercentage, formatDeltaLine, formatInteger } from "@/lib/intelligence/compare";
 import type { AgentOsDataBundle } from "../adapters/types";
+import {
+  runConversionMeasurementAudit,
+  type ConversionMeasurementAudit,
+  type OpportunityMeasurementHandoff,
+} from "../bi";
 import { createEvidence } from "../evidence";
 import { buildRecommendation } from "../recommendation";
 import { assertOperationalForRecommendations } from "../registry";
@@ -18,14 +23,23 @@ export type BusinessIntelligenceOutput = {
   facts: string[];
   inferences: string[];
   incompleteAttribution: boolean;
+  /** Conversion & Measurement Audit (V1 expansion). */
+  conversionAudit: ConversionMeasurementAudit;
+  opportunityHandoff: OpportunityMeasurementHandoff;
+};
+
+export type RunBusinessIntelligenceOptions = {
+  mode?: "fixture" | "live";
 };
 
 export function runBusinessIntelligence(
   bundle: AgentOsDataBundle,
   reportingPeriod: { start: string; end: string },
+  options: RunBusinessIntelligenceOptions = {},
 ): BusinessIntelligenceOutput {
   assertOperationalForRecommendations("business-intelligence");
 
+  const mode = options.mode ?? inferMode(bundle);
   const recommendations: Recommendation[] = [];
   const anomalies: Anomaly[] = [];
   const dataGaps: DataGap[] = [];
@@ -303,8 +317,9 @@ export function runBusinessIntelligence(
       );
     }
 
-    const guideLanding = ga4.current.landingPages.find((p) =>
-      p.value.includes("/guides/"),
+    const guideLanding = ga4.current.landingPages.find(
+      (p) =>
+        p.value.includes("/diamond-guide/") || p.value.includes("/guides/"),
     );
     if (guideLanding) {
       recommendations.push(
@@ -430,13 +445,71 @@ export function runBusinessIntelligence(
   // Explicit: never invent revenue
   facts.push("No verified revenue metric is available to Agent OS V1");
 
+  // ——— Conversion & Measurement Audit ———
+  const { audit, recommendations: measurementRecs } =
+    runConversionMeasurementAudit({
+      mode,
+      bundle,
+      reportingPeriod,
+      legacyRecommendations: recommendations,
+    });
+
+  facts.push(...audit.facts);
+  inferences.push(...audit.inferences);
+
+  // One data-gap row for the Concierge conversion root; retain other non-cluster blockers
+  const conciergeRootRec = measurementRecs.find(
+    (r) =>
+      r.recommendationId ===
+      "business-intelligence:measurement:concierge-conversion-root:concierge",
+  );
+  if (conciergeRootRec) {
+    dataGaps.push({
+      id: "gap-measurement-concierge-conversion-root",
+      sourceId: "ga4",
+      description: conciergeRootRec.title,
+      impactOnRecommendations: conciergeRootRec.expectedUpside,
+      suggestedRemedy: conciergeRootRec.proposedAction,
+    });
+  }
+  for (const f of audit.findings) {
+    if (f.decisionEffect !== "decision-blocking") continue;
+    if (
+      f.type === "expected-event-not-observed" ||
+      f.type === "concierge-start-submit-gap" ||
+      f.type === "conversion-definition-gap" ||
+      (f.type === "verification-required" &&
+        (f.affectedEvent === "generate_lead" ||
+          f.affectedRoute === "/concierge"))
+    ) {
+      continue; // folded into Concierge conversion root gap
+    }
+    dataGaps.push({
+      id: `gap-measurement-${f.type}`,
+      sourceId: "ga4",
+      description: f.title,
+      impactOnRecommendations: f.likelyDecisionImpact,
+      suggestedRemedy: f.recommendedNextAction,
+    });
+  }
+
+  const mergedRecommendations = [...recommendations, ...measurementRecs];
+
   return {
-    recommendations,
+    recommendations: mergedRecommendations,
     anomalies,
     dataGaps,
     keyMetricChanges,
     facts,
     inferences,
     incompleteAttribution,
+    conversionAudit: audit,
+    opportunityHandoff: audit.opportunityHandoff,
   };
+}
+
+function inferMode(bundle: AgentOsDataBundle): "fixture" | "live" {
+  if (bundle.ga4.health.retrievalState === "fixture") return "fixture";
+  if (bundle.gsc.health.retrievalState === "fixture") return "fixture";
+  return "live";
 }

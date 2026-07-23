@@ -23,7 +23,7 @@ export function createFixtureGa4Bundle(
       landingPages: [
         { dimension: "landingPage", value: "/", sessions: 480 },
         { dimension: "landingPage", value: "/diamond-shape-studio", sessions: 390 },
-        { dimension: "landingPage", value: "/guides/oval-vs-round", sessions: 180 },
+        { dimension: "landingPage", value: "/diamond-guide/oval-vs-round-diamond", sessions: 180 },
         { dimension: "landingPage", value: "/concierge", sessions: 95 },
       ],
       devices: [
@@ -60,7 +60,7 @@ export function createFixtureGa4Bundle(
       landingPages: [
         { dimension: "landingPage", value: "/", sessions: 520 },
         { dimension: "landingPage", value: "/diamond-shape-studio", sessions: 360 },
-        { dimension: "landingPage", value: "/guides/oval-vs-round", sessions: 150 },
+        { dimension: "landingPage", value: "/diamond-guide/oval-vs-round-diamond", sessions: 150 },
         { dimension: "landingPage", value: "/concierge", sessions: 110 },
       ],
       devices: [
@@ -71,7 +71,8 @@ export function createFixtureGa4Bundle(
         diamond_studio_view: 360,
         shape_selected: 220,
         carat_changed: 170,
-        consultation_cta_clicked: 48,
+        // Prior CTA volume supports a possible regression signal vs current 42
+        consultation_cta_clicked: 70,
         studio_session_engaged: 150,
       },
       topShapes: [
@@ -79,7 +80,7 @@ export function createFixtureGa4Bundle(
         { shape: "round", eventCount: 80 },
         { shape: "emerald", eventCount: 28 },
       ],
-      consultationCtaClicks: 48,
+      consultationCtaClicks: 70,
       studioViews: 360,
     },
   };
