@@ -240,8 +240,8 @@ describe("Stable Search opportunity identifiers", () => {
 });
 
 describe("Hardening invariants", () => {
-  it("keeps Content and Opportunity non-operational", () => {
-    assert.equal(isExecutiveOperational("content"), false);
+  it("keeps Opportunity non-operational while Content is operational", () => {
+    assert.equal(isExecutiveOperational("content"), true);
     assert.equal(isExecutiveOperational("opportunity"), false);
     assert.equal(isExecutiveOperational("search-strategy"), true);
   });

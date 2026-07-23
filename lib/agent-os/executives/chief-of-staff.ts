@@ -1,4 +1,5 @@
 import type { BusinessIntelligenceOutput } from "./business-intelligence";
+import type { ContentExecutiveOutput } from "./content";
 import type { SearchStrategyOutput } from "./search-strategy";
 import { consolidateDuplicates } from "../recommendation";
 import { rankRecommendations } from "../ranking";
@@ -14,6 +15,7 @@ import type {
 export type ChiefOfStaffInput = {
   bi: BusinessIntelligenceOutput;
   search?: SearchStrategyOutput;
+  content?: ContentExecutiveOutput;
   reportingPeriod: { start: string; end: string };
   warnings: string[];
   mode?: "fixture" | "live";
@@ -53,7 +55,12 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
   );
 
   const searchRecs = input.search?.recommendations ?? [];
-  const merged = [...input.bi.recommendations, ...searchRecs];
+  const contentRecs = input.content?.recommendations ?? [];
+  const merged = [
+    ...input.bi.recommendations,
+    ...searchRecs,
+    ...contentRecs,
+  ];
   let recommendations = consolidateDuplicates(merged);
   recommendations = rankRecommendations(
     recommendations.filter((r) => r.status !== "consolidated"),
@@ -106,13 +113,16 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
   const allGaps = [
     ...input.bi.dataGaps,
     ...(input.search?.dataGaps ?? []),
+    ...(input.content?.dataGaps ?? []),
   ];
   for (const gap of allGaps.slice(0, 8)) {
     escalationItems.push({
       id: `esc-${gap.id}`,
-      executiveId: gap.id.includes("search")
-        ? "search-strategy"
-        : "chief-of-staff",
+      executiveId: gap.id.includes("content")
+        ? "content"
+        : gap.id.includes("search")
+          ? "search-strategy"
+          : "chief-of-staff",
       title: gap.description,
       reason: gap.impactOnRecommendations,
       requiresFounderDecision:
@@ -133,10 +143,14 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
   const searchChangeBits = (input.search?.opportunities ?? [])
     .slice(0, 2)
     .map((o) => o.title);
+  const contentChangeBits = (input.content?.opportunities ?? [])
+    .slice(0, 2)
+    .map((o) => o.title);
   const whatChanged =
     [
       ...input.bi.keyMetricChanges.slice(0, 3),
       ...searchChangeBits,
+      ...contentChangeBits,
     ].join("; ") ||
     "Insufficient metric coverage to summarize changes.";
 
@@ -212,7 +226,7 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
         ? [
             "Whether to spend founder time on the highest-ROI action above before starting new creative or SEO experiments",
           ]
-        : criticalGapsNeedDecision(input.bi, input.search)
+        : criticalGapsNeedDecision(input.bi, input.search, input.content)
           ? [
               "Whether to prioritize restoring read-only measurement (GA4 / Search Console / weekly intelligence) before asking Agent OS for growth recommendations",
             ]
@@ -222,6 +236,10 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
     ...(highest ? [highest.title] : []),
     ...additionalSurfaced.map((r) => r.title),
   ];
+
+  const opportunitiesDetected =
+    (input.search?.opportunities.length ?? 0) +
+    (input.content?.opportunities.length ?? 0);
 
   const brief = buildFounderBrief({
     mode: input.mode ?? "fixture",
@@ -243,16 +261,18 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
     missingOrUnreliableData,
     period: input.reportingPeriod,
     facts: [
-      ...input.bi.facts.slice(0, 5),
-      ...(input.search?.facts ?? []).slice(0, 4),
+      ...input.bi.facts.slice(0, 4),
+      ...(input.search?.facts ?? []).slice(0, 3),
+      ...(input.content?.facts ?? []).slice(0, 3),
     ],
     inferences: [
-      ...input.bi.inferences.slice(0, 3),
-      ...(input.search?.inferences ?? []).slice(0, 3),
+      ...input.bi.inferences.slice(0, 2),
+      ...(input.search?.inferences ?? []).slice(0, 2),
+      ...(input.content?.inferences ?? []).slice(0, 2),
     ],
     surfacedPriorityTitles,
     rankedRecommendationCount: active.length,
-    opportunitiesDetected: input.search?.opportunities.length ?? 0,
+    opportunitiesDetected,
   });
 
   return {
@@ -291,8 +311,9 @@ function findExecutiveConflicts(recs: Recommendation[]): string[] {
   );
   const bi = active.filter((r) => r.originatingExecutive === "business-intelligence");
   const ss = active.filter((r) => r.originatingExecutive === "search-strategy");
-  if (!bi.length || !ss.length) return [];
+  const content = active.filter((r) => r.originatingExecutive === "content");
   const conflicts: string[] = [];
+
   for (const s of ss.slice(0, 3)) {
     const overlap = bi.find((b) =>
       normalizeLoose(b.title).includes(normalizeLoose(s.title).slice(0, 18)),
@@ -303,7 +324,37 @@ function findExecutiveConflicts(recs: Recommendation[]): string[] {
       );
     }
   }
+
+  for (const c of content.slice(0, 4)) {
+    const searchOverlap = ss.find((s) =>
+      ownershipOverlap(c.title, s.title),
+    );
+    if (searchOverlap) {
+      conflicts.push(
+        `Ownership note: Content “${c.title}” relates to Search “${searchOverlap.title}” — Search keeps technical SEO; Content keeps communication/production`,
+      );
+    }
+    const biOverlap = bi.find((b) => ownershipOverlap(c.title, b.title));
+    if (biOverlap) {
+      conflicts.push(
+        `Ownership note: Content “${c.title}” relates to BI “${biOverlap.title}” — BI keeps measurement; Content keeps messaging`,
+      );
+    }
+  }
+
   return conflicts;
+}
+
+function ownershipOverlap(a: string, b: string): boolean {
+  const na = normalizeLoose(a);
+  const nb = normalizeLoose(b);
+  if (na.includes(nb.slice(0, 16)) || nb.includes(na.slice(0, 16))) return true;
+  const tokens = na.split(" ").filter((t) => t.length > 4);
+  let hits = 0;
+  for (const t of tokens.slice(0, 6)) {
+    if (nb.includes(t)) hits += 1;
+  }
+  return hits >= 2;
 }
 
 function normalizeLoose(s: string): string {
@@ -313,8 +364,13 @@ function normalizeLoose(s: string): string {
 function criticalGapsNeedDecision(
   bi: BusinessIntelligenceOutput,
   search?: SearchStrategyOutput,
+  content?: ContentExecutiveOutput,
 ): boolean {
-  const gaps = [...bi.dataGaps, ...(search?.dataGaps ?? [])];
+  const gaps = [
+    ...bi.dataGaps,
+    ...(search?.dataGaps ?? []),
+    ...(content?.dataGaps ?? []),
+  ];
   return gaps.some(
     (g) =>
       g.sourceId === "ga4" ||

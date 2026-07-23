@@ -13,13 +13,14 @@ import type { AdapterMode } from "./adapters/types";
 import { runBusinessIntelligence } from "./executives/business-intelligence";
 import { runChiefOfStaff } from "./executives/chief-of-staff";
 import {
+  emptyContentExecutiveOutput,
+  runContentExecutive,
+} from "./executives/content";
+import {
   emptySearchStrategyOutput,
   runSearchStrategy,
 } from "./executives/search-strategy";
-import {
-  getContentContract,
-  getOpportunityContract,
-} from "./executives/scaffolds";
+import { getOpportunityContract } from "./executives/scaffolds";
 import {
   deterministicSynthesisProvider,
   type AgentOsSynthesisProvider,
@@ -36,6 +37,7 @@ import {
 import {
   resolveBiExecutiveStatus,
   resolveBriefEvidenceQuality,
+  resolveContentExecutiveStatus,
   resolveDeliveryGuidance,
   resolveSearchExecutiveStatus,
 } from "./delivery";
@@ -71,7 +73,6 @@ export async function runAgentOsBrief(
   const executivesInvoked = operationalExecutives().map((e) => e.id);
   const executivesNotOperational = scaffoldExecutives().map((e) => e.id);
 
-  void getContentContract();
   void getOpportunityContract();
 
   let bundle;
@@ -174,9 +175,14 @@ export async function runAgentOsBrief(
     ? emptySearchStrategyOutput()
     : runSearchStrategy(bundle, reportingPeriod);
 
+  const content = skipSynthesis
+    ? emptyContentExecutiveOutput()
+    : runContentExecutive(bundle, reportingPeriod, { search, bi });
+
   const provisionalMaterial =
     countMaterialRecommendations(bi.recommendations) +
-    countMaterialRecommendations(search.recommendations);
+    countMaterialRecommendations(search.recommendations) +
+    countMaterialRecommendations(content.recommendations);
   const provisionalEvidenceQuality = resolveBriefEvidenceQuality({
     runStatus: fatalError
       ? "failed"
@@ -191,6 +197,7 @@ export async function runAgentOsBrief(
   const cos = runChiefOfStaff({
     bi,
     search,
+    content,
     reportingPeriod,
     warnings: warnings.filter((w) => !w.startsWith("Source health summary:")),
     mode,
@@ -207,8 +214,10 @@ export async function runAgentOsBrief(
         ...bi.facts,
         ...bi.keyMetricChanges,
         ...search.facts,
+        ...content.facts,
         ...bi.dataGaps.map((g) => g.description),
         ...search.dataGaps.map((g) => g.description),
+        ...content.dataGaps.map((g) => g.description),
       ].join("\n"),
     ),
     deterministicBrief: cos.brief,
@@ -224,7 +233,8 @@ export async function runAgentOsBrief(
     criticalSourcesDown: criticalDown,
     fatalError,
     warningCount: warnings.length,
-    dataGapCount: bi.dataGaps.length + search.dataGaps.length,
+    dataGapCount:
+      bi.dataGaps.length + search.dataGaps.length + content.dataGaps.length,
     recommendationAvailability,
   });
 
@@ -241,6 +251,9 @@ export async function runAgentOsBrief(
     bundle.gsc.health.retrievalState !== "failed" &&
     bundle.gsc.health.retrievalState !== "not-configured";
 
+  const bufferAvailable =
+    bundle.buffer.ok && bundle.buffer.health.retrievalState === "ok";
+
   const executiveStatuses = [
     resolveBiExecutiveStatus({
       skipped: skipSynthesis,
@@ -253,6 +266,12 @@ export async function runAgentOsBrief(
       gscAvailable: Boolean(gscAvailable),
       recommendations: search.recommendations,
       opportunityCount: search.opportunities.length,
+    }),
+    resolveContentExecutiveStatus({
+      skipped: skipSynthesis,
+      bufferAvailable: Boolean(bufferAvailable),
+      recommendations: content.recommendations,
+      opportunityCount: content.opportunities.length,
     }),
     {
       executiveId: "chief-of-staff" as const,
@@ -298,7 +317,7 @@ export async function runAgentOsBrief(
     sourceHealth,
     recommendations: cos.recommendations,
     anomalies: bi.anomalies,
-    dataGaps: [...bi.dataGaps, ...search.dataGaps],
+    dataGaps: [...bi.dataGaps, ...search.dataGaps, ...content.dataGaps],
     escalationItems: cos.escalationItems,
     brief,
     runStatus,
@@ -307,7 +326,8 @@ export async function runAgentOsBrief(
     briefEvidenceQuality,
     deliveryGuidance,
     briefSurfacing: {
-      opportunitiesDetected: search.opportunities.length,
+      opportunitiesDetected:
+        search.opportunities.length + content.opportunities.length,
       recommendationsRanked: rankedActive.length,
       recommendationsSurfacedInBrief: cos.surfacedInBriefCount,
     },

@@ -80,6 +80,7 @@ export {
   resolveBriefEvidenceQuality,
   resolveBiExecutiveStatus,
   resolveSearchExecutiveStatus,
+  resolveContentExecutiveStatus,
 } from "./delivery";
 
 export {
@@ -87,6 +88,12 @@ export {
   buildSearchRecommendationId,
   searchIdLooksSafe,
 } from "./search/ids";
+
+export {
+  buildContentOpportunityId,
+  buildContentRecommendationId,
+  contentIdLooksSafe,
+} from "./content/ids";
 
 export {
   REQUIRED_BRIEF_QUESTIONS,
@@ -102,11 +109,24 @@ export {
 export type { SearchStrategyOutput } from "./executives/search-strategy";
 
 export {
+  runContentExecutive,
+  emptyContentExecutiveOutput,
+} from "./executives/content";
+export type { ContentExecutiveOutput } from "./executives/content";
+
+export {
   SEARCH_OPPORTUNITY_TYPES,
   type SearchOpportunityType,
   type SearchOpportunity,
   type SearchIntentClass,
 } from "./search/types";
+
+export {
+  CONTENT_OPPORTUNITY_TYPES,
+  type ContentOpportunityType,
+  type ContentOpportunity,
+  type ContentFormat,
+} from "./content/types";
 
 export {
   isBrandQuery,
@@ -120,6 +140,15 @@ export {
   inspectGuideAuthority,
   FAQ_SCHEMA_ARTICLE_SLUGS,
 } from "./search/guide-authority";
+
+export { inspectContentInventory, CONTENT_PUBLICATION_INVENTORY_GAP_ID } from "./content/inventory";
+export type {
+  ContentMaterialState,
+  ContentPublicationState,
+  ContentInventoryCompleteness,
+} from "./content/inventory";
+export { detectContentOpportunities } from "./content/opportunities";
+export { assessBrandFit } from "./content/brand-fit";
 
 export {
   getSearchStrategyContract,

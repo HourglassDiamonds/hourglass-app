@@ -149,3 +149,35 @@ export function resolveSearchExecutiveStatus(input: {
     recommendations: input.recommendations,
   });
 }
+
+export function resolveContentExecutiveStatus(input: {
+  skipped: boolean;
+  bufferAvailable: boolean;
+  recommendations: Recommendation[];
+  opportunityCount: number;
+}): ExecutiveRunSummary {
+  if (input.skipped) {
+    return summarizeExecutiveRun({
+      executiveId: "content",
+      status: "blocked",
+      recommendations: [],
+      note: "Content skipped due to fatal/live-load abort",
+    });
+  }
+  if (!input.bufferAvailable) {
+    return summarizeExecutiveRun({
+      executiveId: "content",
+      status: "completed-with-warnings",
+      recommendations: input.recommendations,
+      note:
+        input.opportunityCount > 0
+          ? "Content completed with repository/search/BI findings; Buffer/social metrics unavailable (not fabricated)"
+          : "Content completed without Buffer; repository analysis produced no material opportunities",
+    });
+  }
+  return summarizeExecutiveRun({
+    executiveId: "content",
+    status: "completed",
+    recommendations: input.recommendations,
+  });
+}

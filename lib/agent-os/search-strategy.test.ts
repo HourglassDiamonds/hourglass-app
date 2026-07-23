@@ -26,15 +26,16 @@ import { runChiefOfStaff } from "./executives/chief-of-staff";
 import { runBusinessIntelligence } from "./executives/business-intelligence";
 
 describe("Search Strategy operational status", () => {
-  it("marks Search Strategy operational and keeps Content/Opportunity scaffolded", () => {
+  it("marks Search Strategy operational and keeps Opportunity scaffolded", () => {
     assert.equal(isExecutiveOperational("search-strategy"), true);
     assert.deepEqual(
       operationalExecutives().map((e) => e.id).includes("search-strategy"),
       true,
     );
+    assert.equal(isExecutiveOperational("content"), true);
     assert.deepEqual(
       scaffoldExecutives().map((e) => e.id).sort(),
-      ["content", "opportunity"],
+      ["opportunity"],
     );
   });
 });

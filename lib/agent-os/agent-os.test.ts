@@ -49,15 +49,15 @@ describe("Agent OS registry", () => {
     assert.equal(EXECUTIVE_REGISTRY.length, 5);
   });
 
-  it("only Chief of Staff, BI, and Search Strategy are operational", () => {
+  it("only Chief of Staff, BI, Search Strategy, and Content are operational", () => {
     const ops = operationalExecutives().map((e) => e.id);
     assert.deepEqual(ops, [
       "chief-of-staff",
       "business-intelligence",
       "search-strategy",
+      "content",
     ]);
-    assert.equal(isExecutiveOperational("search-strategy"), true);
-    assert.equal(isExecutiveOperational("content"), false);
+    assert.equal(isExecutiveOperational("content"), true);
     assert.equal(isExecutiveOperational("opportunity"), false);
   });
 });
@@ -570,7 +570,7 @@ describe("executives and brief", () => {
   });
 
   it("non-operational executives cannot generate recommendations", () => {
-    assert.throws(() => assertScaffoldCannotRecommend("content"));
+    assert.throws(() => assertScaffoldCannotRecommend("opportunity"));
     assert.throws(() => assertOperationalForRecommendations("opportunity"));
   });
 
@@ -606,10 +606,8 @@ describe("executives and brief", () => {
     assert.ok(run.executivesInvoked.includes("chief-of-staff"));
     assert.ok(run.executivesInvoked.includes("business-intelligence"));
     assert.ok(run.executivesInvoked.includes("search-strategy"));
-    assert.deepEqual(run.executivesNotOperational.sort(), [
-      "content",
-      "opportunity",
-    ]);
+    assert.ok(run.executivesInvoked.includes("content"));
+    assert.deepEqual(run.executivesNotOperational.sort(), ["opportunity"]);
     const actionable = run.recommendations.filter(
       (r) =>
         r.status === "proposed" ||

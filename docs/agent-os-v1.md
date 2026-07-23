@@ -6,15 +6,79 @@ Practical operating system for a lean executive team — not a pile of prompt bo
 
 Hourglass Agent OS turns **available, read-only business evidence** into a short founder agenda. It prefers honest measurement gaps over invented certainty. It never publishes, edits CRM, posts social, or changes production configuration.
 
-V1 is deliberately small: five locked executives. **Operational now:** Chief of Staff, Business Intelligence, and Search Strategy. **Scaffolded:** Content and Opportunity. New capabilities should fold into these executives before new agents are created.
+V1 is deliberately small: five locked executives. **Operational now:** Chief of Staff, Business Intelligence, Search Strategy, and Content. **Scaffolded:** Opportunity. New capabilities should fold into these executives before new agents are created.
 
 ## Executive structure (locked order)
 
 1. **Chief of Staff** — orchestrates, ranks, reconciles, produces the founder brief
 2. **Business Intelligence** — trustworthy performance view, anomalies, measurement gaps
 3. **Search Strategy** — operational (GSC + Diamond Guide authority, local/GEO readiness)
-4. **Content** — scaffold (conversations, long-form, clips, cadence, brand standards)
+4. **Content** — operational (founder conversations, repurposing, sequencing, brand-fit)
 5. **Opportunity** — scaffold (underpriced demand, partnerships, referrals, paid when evidenced)
+
+## Content Executive
+
+### Mission
+
+Develop a coherent founder-led content system that compounds Hourglass authority, expresses the brand clearly, supports search demand, and moves qualified prospects toward trust and conversation without chasing generic social trends.
+
+### Owned domains
+
+Founder conversations, long-form video, short-form clips, carousels, captions, editorial themes, sequencing, repurposing, content→guide/tool/Concierge handoffs, audience questions, message coverage/saturation, brand voice, production backlog, distribution recommendations, and content performance **only when verified**.
+
+### Repository content inventory
+
+`lib/agent-os/content/inventory.ts` inspects:
+
+- `lib/conversations/episodes.ts` (typed conversation registry)
+- Static message territories + planned conversation pipeline in `lib/agent-os/content/themes.ts`
+
+Deployment-safe: static imports only — no filesystem walks, no marketing-sprint directory scans, no transcript dumps in recommendations.
+
+**Material vs publication truth:** inventory separates `materialState` (source material exists / planned / incomplete) from `publicationState` (`verified-published` | `verified-scheduled` | `verified-unpublished` | `unknown`). Without a verified publication ledger or Buffer/social adapter, publication state stays **`unknown`**. Registry `draft` labels are material metadata only — never proof of operational unpublished status. Inventory completeness is typically **`partial`**.
+
+Narrative/planning sequence (`recommendedNarrativeSequence`) is allowed from themes; **verified publishing sequence** requires verified publication state.
+
+### Data sources
+
+- Repository inventory (always)
+- Search Strategy opportunities (communication translation — not technical SEO ownership)
+- BI recommendations (trust/messaging signals — not measurement ownership)
+- Buffer/social **only if configured** (currently unavailable; measurement gap is explicit)
+
+### Content opportunity taxonomy
+
+Typed in `lib/agent-os/content/types.ts` (founder-conversation-topic, repurposing-gap, handoffs, saturation/duplicate risks, search-demand-content, local-authority-content, content-measurement-gap, etc.).
+
+### Founder-conversation logic
+
+Recommends next conversation at **map** level: audience question, core idea, supporting areas, ownable lines, related guide/tool, clip territories, carousel only when sequencing helps. Does not emit finished scripts or publish.
+
+### Repurposing / sequence / brand-fit
+
+- Repurposing chooses formats that fit the idea (not every channel)
+- Sequence respects draft→published parent/child relationships
+- Brand-fit rejects clickbait, pressure, commodity framing, buyer elitism
+
+### Ownership boundaries
+
+| Executive | Owns |
+|-----------|------|
+| Search Strategy | Technical SEO (CTR, schema, positions, guide-authority link audits) |
+| Content | Communication & production (conversation maps, clips, carousels, handoff storytelling) |
+| BI | Measurement diagnosis (tracking, CTA funnel health) |
+
+### Limits without social data
+
+Missing Buffer lowers confidence for channel-specific claims and never fabricates reach/watch time. Repository + Search + BI content recommendations still run.
+
+### How Content feeds Chief of Staff
+
+Invoked with BI + Search; titles prefixed `[Content]`; deduped/ranked with shared model; brief still caps at 5 named priorities; full set remains in JSON.
+
+### Next planned Opportunity Executive pass
+
+Opportunity becomes operational when underpriced-demand evidence can be verified without inventing partnership or paid metrics.
 
 ## Search Strategy
 
@@ -57,11 +121,11 @@ Scores answer-first openings, FAQ schema presence, tool interconnection, and rel
 
 ### How Search Strategy feeds Chief of Staff
 
-`runAgentOsBrief` invokes BI and Search Strategy, then Chief of Staff merges recommendations, deduplicates, ranks with the shared model, and prefixes Search titles with `[Search Strategy]` so the founder brief shows origin. Zero Search recommendations is a healthy outcome when evidence is thin.
+`runAgentOsBrief` invokes BI, Search Strategy, and Content, then Chief of Staff merges recommendations, deduplicates, ranks with the shared model, and prefixes executive titles (`[Search Strategy]`, `[Content]`) so the founder brief shows origin. Zero recommendations from an executive is a healthy outcome when evidence is thin.
 
-### Next planned Content executive pass
+### Next planned Opportunity executive pass
 
-Content becomes operational once a verified social/content read adapter exists (Buffer or equivalent). Until then Content remains scaffold-only.
+Opportunity becomes operational when underpriced-demand / partnership evidence can be verified. Until then Opportunity remains scaffold-only.
 
 ## Permissions (read-only boundary)
 

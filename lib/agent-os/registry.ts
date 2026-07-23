@@ -66,6 +66,26 @@ const SEARCH_ESCALATION: EscalationRule[] = [
   },
 ];
 
+const CONTENT_ESCALATION: EscalationRule[] = [
+  {
+    id: "content-buffer-gap",
+    condition: "Buffer / social analytics unavailable",
+    action:
+      "Continue repository + Search/BI-backed recommendations; do not fabricate social metrics",
+  },
+  {
+    id: "content-vs-search-ownership",
+    condition: "Search technical SEO vs Content production overlap",
+    action:
+      "Keep Search for technical SEO; Content for communication/production framing",
+  },
+  {
+    id: "content-publish-boundary",
+    condition: "Recommendation implies publishing or Buffer writes",
+    action: "Block — Content V1 is read-only recommendations only",
+  },
+];
+
 export const EXECUTIVE_REGISTRY: readonly ExecutiveDefinition[] = [
   {
     id: "chief-of-staff",
@@ -149,27 +169,37 @@ export const EXECUTIVE_REGISTRY: readonly ExecutiveDefinition[] = [
     id: "content",
     displayName: "Content",
     mission:
-      "Own founder conversations, long-form performance, clips, carousels, hook/title learning, production cadence, content reuse, and brand standards.",
+      "Develop a coherent founder-led content system that compounds Hourglass authority, expresses the brand clearly, supports search demand, and moves qualified prospects toward trust and conversation without chasing generic social trends.",
     ownedDomains: [
       "founder conversations",
-      "long-form performance",
-      "clips",
+      "long-form video",
+      "short-form clips",
       "carousels",
-      "hook/title learning",
-      "production cadence",
-      "content reuse",
-      "brand standards",
+      "social captions",
+      "editorial themes",
+      "content sequencing",
+      "content repurposing",
+      "content-to-guide handoffs",
+      "content-to-tool handoffs",
+      "content-to-Concierge handoffs",
+      "audience questions",
+      "message repetition and coverage",
+      "brand voice consistency",
+      "production backlog",
+      "distribution recommendations",
+      "content performance when verified data exists",
     ],
     allowedDataSources: [
       "ga4",
+      "gsc",
       "weekly-intelligence",
       "buffer",
       "fixture",
     ],
     prohibitedActions: SHARED_PROHIBITED,
-    escalationRules: SCAFFOLD_ESCALATION,
-    implementationStatus: "scaffold",
-    version: "0.1.0",
+    escalationRules: CONTENT_ESCALATION,
+    implementationStatus: "operational",
+    version: "1.0.0",
   },
   {
     id: "opportunity",
