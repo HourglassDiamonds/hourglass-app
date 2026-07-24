@@ -9,5 +9,9 @@ export const CLIENT_UPLOAD_INTERPRET_ERROR =
 export const CLIENT_GIA_DIAGRAM_OCR_TIMEOUT_ERROR =
   "We read your report grades but couldn't finish reading the proportion diagram in time. Please try again or have Justin review it.";
 
+/** Diagram OCR required but OCR runtime unavailable (infrastructure failure). */
+export const CLIENT_OCR_RUNTIME_UNAVAILABLE_ERROR =
+  "We read your report grades but couldn't start proportion diagram OCR in this environment. Please try again shortly or have Justin review it.";
+
 export const CLIENT_RATE_LIMIT_ERROR =
   "Too many reports submitted. Please try again later.";

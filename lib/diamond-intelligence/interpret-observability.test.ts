@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  createInterpretRequestId,
   logDiamondIntelligenceInterpretObservability,
+  logDiamondIntelligenceInterpretStage,
 } from "./interpret-observability";
 import { emptyReportFields } from "@/lib/calibration-library/fields";
 import type { UploadExtractionOutput } from "@/lib/calibration-library/extract-upload-pipeline";
@@ -42,10 +44,23 @@ describe("interpret-observability", () => {
       },
     } as unknown as UploadExtractionOutput;
 
+    const requestId = createInterpretRequestId();
+    assert.ok(requestId.length > 8);
     assert.doesNotThrow(() =>
       logDiamondIntelligenceInterpretObservability({
         finalized,
         httpStatus: 200,
+        requestId,
+      }),
+    );
+    assert.doesNotThrow(() =>
+      logDiamondIntelligenceInterpretStage({
+        requestId,
+        event: {
+          stage: "interpret-complete",
+          status: "complete",
+          elapsedMs: 15,
+        },
       }),
     );
   });

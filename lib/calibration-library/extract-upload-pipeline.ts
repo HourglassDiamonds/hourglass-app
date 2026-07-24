@@ -143,6 +143,8 @@ export type UploadExtractionOutput = FinalizedCalibrationExtraction & {
   renderAudit?: PdfRenderAuditRecord;
   /** GCAL Sarine diagram OCR step trace — gated for DI_INTERPRET_DIAGNOSTICS. */
   gcalSarineOcrDiagnostics?: GcalSarineProportionOcrStepDiagnostics;
+  /** Client GIA path required diagram OCR for score-eligible cores. */
+  giaDiagramProportionWait?: boolean;
   gcalSarineDiagramProportionWait?: boolean;
   gcalSarineDiagramOcrFailure?: string;
   /** LGDR diagram OCR retry trace — production observability only. */
@@ -1009,6 +1011,7 @@ export async function runCalibrationUploadExtraction(
       pipelineError?: string;
       renderAudit?: PdfRenderAuditRecord;
       forensicSnapshots?: ForensicSnapshot[];
+    giaDiagramProportionWait?: boolean;
     gcalSarineDiagramProportionWait?: boolean;
     gcalSarineOcrDiagnostics?: GcalSarineProportionOcrStepDiagnostics;
     gcalSarineDiagramOcrFailure?: string;
@@ -1045,6 +1048,7 @@ export async function runCalibrationUploadExtraction(
       diagnostics: buildDiagnostics(finalized, extra.combined, extra.ocrAttempted),
       renderAudit: extra.renderAudit,
       forensicSnapshots: extra.forensicSnapshots,
+      giaDiagramProportionWait: extra.giaDiagramProportionWait,
       gcalSarineDiagramProportionWait: extra.gcalSarineDiagramProportionWait,
       gcalSarineOcrDiagnostics: extra.gcalSarineOcrDiagnostics,
       gcalSarineDiagramOcrFailure: extra.gcalSarineDiagramOcrFailure,
@@ -1424,6 +1428,7 @@ export async function runCalibrationUploadExtraction(
           forensicSnapshots: input.collectForensics
             ? drainForensicSnapshots()
             : undefined,
+          giaDiagramProportionWait: snapshot.giaDiagramProportionWait,
           gcalSarineDiagramProportionWait:
             snapshot.gcalSarineDiagramProportionWait,
           gcalSarineOcrDiagnostics: snapshot.gcalSarineOcrDiagnostics,
@@ -1510,6 +1515,7 @@ export async function runCalibrationUploadExtraction(
         timedOut: true,
         diagramOcrTimedOut: diagramWaitTimedOut,
         pipelineError: timeoutErrorMessage(err),
+        giaDiagramProportionWait: snapshot.giaDiagramProportionWait,
         gcalSarineDiagramProportionWait:
           snapshot.gcalSarineDiagramProportionWait,
         gcalSarineOcrDiagnostics: snapshot.gcalSarineOcrDiagnostics,

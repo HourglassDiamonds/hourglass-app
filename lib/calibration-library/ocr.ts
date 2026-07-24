@@ -47,6 +47,8 @@ let ocrRuntimeAvailable = false;
 let ocrRuntimeProbeError: string | undefined;
 let ocrRuntimeProbeDurationMs = 0;
 let ocrRuntimeProbeLog: string[] = [];
+/** Which OCR backend succeeded the last availability probe. */
+let ocrTransportMode: "none" | "remote" | "local" = "none";
 
 /** Override createWorker options (e.g. bundled lang data on DI interpret route). */
 let workerCreateOptions: Record<string, unknown> = { logger: () => {} };
@@ -59,6 +61,7 @@ export function setTesseractWorkerCreateOptions(
   ocrRuntimeAvailable = false;
   ocrRuntimeProbeError = undefined;
   ocrRuntimeProbeLog = [];
+  ocrTransportMode = "none";
 }
 
 export type OcrRuntimeProbeSnapshot = {
@@ -67,6 +70,7 @@ export type OcrRuntimeProbeSnapshot = {
   durationMs: number;
   error?: string;
   log?: string[];
+  transport?: "none" | "remote" | "local";
 };
 
 export function getOcrRuntimeProbeSnapshot(): OcrRuntimeProbeSnapshot {
@@ -76,6 +80,7 @@ export function getOcrRuntimeProbeSnapshot(): OcrRuntimeProbeSnapshot {
     durationMs: ocrRuntimeProbeDurationMs,
     error: ocrRuntimeProbeError,
     log: ocrRuntimeProbeLog.length > 0 ? [...ocrRuntimeProbeLog] : undefined,
+    transport: ocrTransportMode,
   };
 }
 
@@ -123,49 +128,38 @@ async function terminateWorkerSafe(
   }
 }
 
-/** Probe whether OCR can load in this runtime (e.g. Vercel vs local). */
-export async function isOcrRuntimeAvailable(): Promise<boolean> {
-  if (isOcrDisabledByEnv()) return false;
-  if (ocrRuntimeChecked) return ocrRuntimeAvailable;
-
-  if (isRemoteOcrConfigured()) {
-    const started = Date.now();
-    ocrRuntimeChecked = true;
-    ocrRuntimeProbeLog = [];
-    try {
-      ocrRuntimeAvailable = await remoteOcrRuntimeAvailable();
-      if (ocrRuntimeAvailable) {
-        ocrRuntimeProbeLog.push("remote-ocr-health-ok");
-      } else {
-        ocrRuntimeProbeError = "remote-ocr-unavailable";
-      }
-    } catch (err) {
-      ocrRuntimeAvailable = false;
-      ocrRuntimeProbeError =
-        err instanceof Error ? err.message : String(err);
-    } finally {
-      ocrRuntimeProbeDurationMs = Date.now() - started;
-      logCalibrationRuntimeCheck({
-        operation: "ocr-runtime-probe-remote",
-        durationMs: ocrRuntimeProbeDurationMs,
-        ocrDurationMs: ocrRuntimeProbeDurationMs,
-        error: ocrRuntimeProbeError,
-      });
-    }
-    return ocrRuntimeAvailable;
-  }
-
+async function probeLocalOcrRuntime(
+  priorRemoteError?: string,
+): Promise<boolean> {
   if (isBundledTesseractLangReady()) {
     ocrRuntimeChecked = true;
     ocrRuntimeAvailable = true;
-    ocrRuntimeProbeLog = ["bundled-lang-skip-probe"];
+    ocrTransportMode = "local";
+    ocrRuntimeProbeLog.push(
+      priorRemoteError
+        ? "remote-unavailable-bundled-lang-fallback"
+        : "bundled-lang-skip-probe",
+    );
     ocrRuntimeProbeDurationMs = 0;
+    // Keep remote error for diagnostics, but OCR is available via local.
+    if (priorRemoteError) {
+      ocrRuntimeProbeError = `${priorRemoteError};fallback=local-bundled`;
+    }
+    logCalibrationRuntimeCheck({
+      operation: "ocr-runtime-probe-local-fallback",
+      durationMs: 0,
+      ocrDurationMs: 0,
+      parserPath: "local-bundled",
+      error: priorRemoteError,
+    });
     return true;
   }
 
   const started = Date.now();
   ocrRuntimeChecked = true;
-  ocrRuntimeProbeLog = [];
+  if (ocrRuntimeProbeLog.length === 0) {
+    ocrRuntimeProbeLog = [];
+  }
 
   let worker: { terminate: () => Promise<unknown> } | null = null;
   let workerCleanupSuccess = false;
@@ -187,20 +181,34 @@ export async function isOcrRuntimeAvailable(): Promise<boolean> {
     );
     workerCleanupSuccess = await terminateWorkerSafe(worker, "ocr-runtime-probe");
     ocrRuntimeAvailable = workerCleanupSuccess;
-    if (!ocrRuntimeAvailable) {
-      ocrRuntimeProbeError = "worker-terminate-failed";
+    if (ocrRuntimeAvailable) {
+      ocrTransportMode = "local";
+      if (priorRemoteError) {
+        ocrRuntimeProbeLog.push("remote-unavailable-local-worker-fallback");
+        ocrRuntimeProbeError = `${priorRemoteError};fallback=local-worker`;
+      }
+    } else {
+      ocrTransportMode = "none";
+      ocrRuntimeProbeError = priorRemoteError
+        ? `${priorRemoteError};local-worker-terminate-failed`
+        : "worker-terminate-failed";
     }
   } catch (err) {
     ocrRuntimeAvailable = false;
-    ocrRuntimeProbeError =
-      err instanceof Error ? err.message : String(err);
+    ocrTransportMode = "none";
+    const localErr = err instanceof Error ? err.message : String(err);
+    ocrRuntimeProbeError = priorRemoteError
+      ? `${priorRemoteError};local=${localErr}`
+      : localErr;
   } finally {
     if (worker && !workerCleanupSuccess) {
       workerCleanupSuccess = await terminateWorkerSafe(worker, "ocr-runtime-probe-finally");
     }
     ocrRuntimeProbeDurationMs = Date.now() - started;
     logCalibrationRuntimeCheck({
-      operation: "ocr-runtime-probe",
+      operation: priorRemoteError
+        ? "ocr-runtime-probe-local-fallback"
+        : "ocr-runtime-probe",
       durationMs: ocrRuntimeProbeDurationMs,
       ocrDurationMs: ocrRuntimeProbeDurationMs,
       workerCleanupSuccess,
@@ -217,33 +225,64 @@ export async function isOcrRuntimeAvailable(): Promise<boolean> {
   return ocrRuntimeAvailable;
 }
 
-export async function ocrImageBuffer(buffer: Buffer): Promise<OcrResult> {
+/**
+ * Probe whether OCR can load in this runtime (e.g. Vercel vs local).
+ *
+ * When OCR_WORKER_URL is set but the remote worker is unhealthy (production
+ * evidence: health-http-404), fall back to in-process bundled Tesseract instead
+ * of marking OCR permanently unavailable.
+ */
+export async function isOcrRuntimeAvailable(): Promise<boolean> {
+  if (isOcrDisabledByEnv()) return false;
+  if (ocrRuntimeChecked) return ocrRuntimeAvailable;
+
+  if (isRemoteOcrConfigured()) {
+    const started = Date.now();
+    ocrRuntimeProbeLog = [];
+    let remoteError: string | undefined;
+    try {
+      const remoteOk = await remoteOcrRuntimeAvailable();
+      if (remoteOk) {
+        ocrRuntimeChecked = true;
+        ocrRuntimeAvailable = true;
+        ocrTransportMode = "remote";
+        ocrRuntimeProbeLog.push("remote-ocr-health-ok");
+        ocrRuntimeProbeDurationMs = Date.now() - started;
+        logCalibrationRuntimeCheck({
+          operation: "ocr-runtime-probe-remote",
+          durationMs: ocrRuntimeProbeDurationMs,
+          ocrDurationMs: ocrRuntimeProbeDurationMs,
+        });
+        return true;
+      }
+      remoteError = "remote-ocr-unavailable";
+      ocrRuntimeProbeLog.push("remote-ocr-fallback-local");
+    } catch (err) {
+      remoteError = err instanceof Error ? err.message : String(err);
+      ocrRuntimeProbeLog.push("remote-ocr-fallback-local");
+    } finally {
+      const remoteMs = Date.now() - started;
+      ocrRuntimeProbeDurationMs = remoteMs;
+      logCalibrationRuntimeCheck({
+        operation: "ocr-runtime-probe-remote",
+        durationMs: remoteMs,
+        ocrDurationMs: remoteMs,
+        error: remoteError,
+      });
+    }
+    return probeLocalOcrRuntime(remoteError);
+  }
+
+  return probeLocalOcrRuntime();
+}
+
+async function ocrImageBufferLocal(buffer: Buffer): Promise<OcrResult> {
   const started = Date.now();
   let worker: {
     recognize: (b: Buffer) => Promise<{ data: { text?: string } }>;
     terminate: () => Promise<unknown>;
   } | null = null;
   let workerCleanupSuccess = false;
-
-  if (!(await isOcrRuntimeAvailable())) {
-    return {
-      text: "",
-      ok: false,
-      error: "OCR not available in this environment",
-    };
-  }
-
-  if (buffer.length > MAX_IMAGE_UPLOAD_BYTES) {
-    return {
-      text: "",
-      ok: false,
-      error: `OCR image exceeds ${Math.floor(MAX_IMAGE_UPLOAD_BYTES / 1024 / 1024)}MB limit`,
-    };
-  }
-
-  if (isRemoteOcrConfigured()) {
-    return remoteOcrImageBuffer(buffer);
-  }
 
   try {
     const { createWorker } = await import("tesseract.js");
@@ -273,8 +312,43 @@ export async function ocrImageBuffer(buffer: Buffer): Promise<OcrResult> {
       ocrDurationMs: Date.now() - started,
       durationMs: Date.now() - started,
       workerCleanupSuccess,
+      parserPath: "local",
     });
   }
+}
+
+export async function ocrImageBuffer(buffer: Buffer): Promise<OcrResult> {
+  if (!(await isOcrRuntimeAvailable())) {
+    return {
+      text: "",
+      ok: false,
+      error: "OCR not available in this environment",
+    };
+  }
+
+  if (buffer.length > MAX_IMAGE_UPLOAD_BYTES) {
+    return {
+      text: "",
+      ok: false,
+      error: `OCR image exceeds ${Math.floor(MAX_IMAGE_UPLOAD_BYTES / 1024 / 1024)}MB limit`,
+    };
+  }
+
+  if (ocrTransportMode === "remote" && isRemoteOcrConfigured()) {
+    const remote = await remoteOcrImageBuffer(buffer);
+    if (remote.ok) return remote;
+    // Remote recognize failed after a healthy probe — fall back to local for
+    // this request and subsequent ones in the same isolate.
+    ocrTransportMode = "local";
+    ocrRuntimeProbeLog.push("remote-recognize-fallback-local");
+    logCalibrationRuntimeCheck({
+      operation: "ocr-image-remote-fallback-local",
+      error: remote.error,
+    });
+    return ocrImageBufferLocal(buffer);
+  }
+
+  return ocrImageBufferLocal(buffer);
 }
 
 export type PdfRenderBackend = "production" | "factory-fallback";
