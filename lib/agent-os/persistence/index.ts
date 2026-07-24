@@ -2,8 +2,8 @@
  * Agent OS scheduling & persistence — public surface (server-only).
  *
  * Mutation boundary: Agent OS operational state only.
- * Does not mutate website, GA4, GSC, GBP, CRM, email, or customer data.
- * Email delivery is explicitly deferred to a later pass.
+ * Does not mutate website, GA4, GSC, GBP, CRM, or customer data.
+ * Founder-brief email delivery lives in lib/agent-os/cadence-delivery/ (email-only writes).
  */
 
 export {
@@ -54,9 +54,16 @@ export { reconcilePersistedState } from "./reconcile";
 export {
   createEmptyPersistedState,
   MAX_RETAINED_RUNS,
+  MAX_RETAINED_DELIVERIES,
+  DELIVERY_CLAIM_LEASE_MS,
   isPersistenceError,
 } from "./store";
-export type { AgentOsPersistenceStore } from "./store";
+export type {
+  AgentOsPersistenceStore,
+  AtomicClaimDeliveryInput,
+  AtomicClaimDeliveryResult,
+  SavePersistenceOptions,
+} from "./store";
 
 export {
   validateAndMigrateState,
@@ -77,10 +84,27 @@ export type {
   FileLocalSaveTestHooks,
 } from "./adapters/file";
 export { UnconfiguredProductionAdapter } from "./adapters/unconfigured";
+export {
+  DurableTestPersistenceAdapter,
+  createSharedDurableTestBackend,
+} from "./adapters/durable-test";
+export type { SharedDurableTestBackend } from "./adapters/durable-test";
+export {
+  SupabasePersistenceAdapter,
+  tryCreateSupabasePersistenceAdapter,
+  createFakeAgentOsSupabaseDb,
+  createSupabaseAgentOsDb,
+} from "./adapters/supabase";
+export type { AgentOsSupabaseDb } from "./adapters/supabase";
+export {
+  decideClaimConflict,
+  isLeaseExpired,
+} from "./adapters/claim-lease-policy";
 
 export {
   resolvePersistenceAdapter,
   assertNoFixtureStateInLive,
+  assertScheduledLiveDurability,
 } from "./resolve";
 export type {
   ResolvePersistenceOptions,

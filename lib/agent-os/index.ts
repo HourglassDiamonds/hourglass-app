@@ -94,6 +94,7 @@ export {
   defaultAgentOsStatePath,
   fileLocalBackupPath,
   resolvePersistenceAdapter,
+  assertScheduledLiveDurability,
   extractPersistableFromRun,
   persistAgentOsRun,
   parsePersistedStateJson,
@@ -104,6 +105,15 @@ export {
   PERSISTENCE_FIELD_BOUNDS,
   timeZoneOffsetMinutes,
   localCalendarStamp,
+  DurableTestPersistenceAdapter,
+  createSharedDurableTestBackend,
+  tryCreateSupabasePersistenceAdapter,
+  SupabasePersistenceAdapter,
+  createFakeAgentOsSupabaseDb,
+  createSupabaseAgentOsDb,
+  DELIVERY_CLAIM_LEASE_MS,
+  decideClaimConflict,
+  isLeaseExpired,
 } from "./persistence";
 export type {
   AgentOsPersistenceStore,
@@ -115,7 +125,24 @@ export type {
   PersistedFindingRecord,
   PersistedRecommendationRecord,
   AgentOsRunRecord,
+  AgentOsDeliveryRecord,
+  DeliveryStatus,
 } from "./persistence";
+
+export {
+  executeAgentOsCadence,
+  inspectAgentOsDeliveries,
+  evaluateDeliveryEligibility,
+  createFakeEmailSender,
+  FOUNDER_BRIEF_CADENCE_IDS,
+  resolveUncertainDelivery,
+  listDueFounderCadencesInOrder,
+} from "./cadence-delivery";
+export type {
+  CadenceExecutionResult,
+  CadenceExecutionMode,
+  ExecuteCadenceOptions,
+} from "./cadence-delivery";
 
 export {
   AGENT_RUN_STATUSES,

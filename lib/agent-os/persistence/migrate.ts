@@ -6,6 +6,7 @@ import {
   AGENT_OS_PERSISTENCE_SCHEMA_VERSION,
   AgentOsPersistenceError,
   type AgentOsPersistedState,
+  type PersistenceAdapterId,
 } from "./types";
 import { defaultCadenceDefinitions } from "./cadence";
 
@@ -34,6 +35,17 @@ export function parsePersistedStateJson(raw: string): AgentOsPersistedState {
   return validateAndMigrateState(parsed);
 }
 
+const VALID_ADAPTER_IDS = new Set<PersistenceAdapterId>([
+  "memory",
+  "file-local",
+  "unconfigured-production",
+  "durable-test",
+  "supabase",
+]);
+
+/** Soft upper bound on persisted state JSON (~2 MiB). Oversized → fail closed. */
+export const MAX_PERSISTED_STATE_JSON_BYTES = 2 * 1024 * 1024;
+
 export function validateAndMigrateState(
   input: unknown,
 ): AgentOsPersistedState {
@@ -45,6 +57,23 @@ export function validateAndMigrateState(
   }
   const raw = input as Record<string, unknown>;
 
+  // Bound malformed / oversized payloads before deep walk
+  try {
+    const approx = JSON.stringify(raw);
+    if (approx.length > MAX_PERSISTED_STATE_JSON_BYTES) {
+      throw new AgentOsPersistenceError(
+        "corrupted-state",
+        `Persisted Agent OS state exceeds size bound (${MAX_PERSISTED_STATE_JSON_BYTES} bytes)`,
+      );
+    }
+  } catch (err) {
+    if (err instanceof AgentOsPersistenceError) throw err;
+    throw new AgentOsPersistenceError(
+      "corrupted-state",
+      "Persisted Agent OS state is not serializable",
+    );
+  }
+
   if (typeof raw.schemaVersion !== "number") {
     throw new AgentOsPersistenceError(
       "corrupted-state",
@@ -52,24 +81,31 @@ export function validateAndMigrateState(
     );
   }
 
-  if (raw.schemaVersion > AGENT_OS_PERSISTENCE_SCHEMA_VERSION) {
+  const schemaVersion = raw.schemaVersion;
+
+  if (schemaVersion > AGENT_OS_PERSISTENCE_SCHEMA_VERSION) {
     throw new AgentOsPersistenceError(
       "unsupported-schema",
-      `Unsupported future persistence schema version ${raw.schemaVersion} (supported ≤ ${AGENT_OS_PERSISTENCE_SCHEMA_VERSION})`,
+      `Unsupported future persistence schema version ${schemaVersion} (supported ≤ ${AGENT_OS_PERSISTENCE_SCHEMA_VERSION})`,
     );
   }
 
-  if (raw.schemaVersion < 1) {
+  if (schemaVersion < 1) {
     throw new AgentOsPersistenceError(
       "unsupported-schema",
-      `Unsupported persistence schema version ${raw.schemaVersion}`,
+      `Unsupported persistence schema version ${schemaVersion}`,
     );
   }
 
-  // Minimal migration path: v1 → current (currently identity).
-  // Never destructive — only fills missing cadence defaults.
-  if (raw.schemaVersion < AGENT_OS_PERSISTENCE_SCHEMA_VERSION) {
-    // No older versions yet; refuse silent destructive upgrades.
+  // Non-destructive v1 → v2: add deliveries map when missing.
+  if (schemaVersion === 1) {
+    if (raw.deliveries == null) {
+      raw.deliveries = {};
+    }
+    raw.schemaVersion = 2;
+  }
+
+  if ((raw.schemaVersion as number) < AGENT_OS_PERSISTENCE_SCHEMA_VERSION) {
     throw new AgentOsPersistenceError(
       "migration-refused",
       `No automatic destructive migration from schema ${raw.schemaVersion}`,
@@ -80,6 +116,7 @@ export function validateAndMigrateState(
   requireObjectMap(raw, "recommendations");
   requireObjectMap(raw, "cadences");
   requireObjectMap(raw, "inProgressByScope");
+  requireObjectMap(raw, "deliveries");
   if (!Array.isArray(raw.runs)) {
     throw new AgentOsPersistenceError(
       "corrupted-state",
@@ -89,9 +126,8 @@ export function validateAndMigrateState(
 
   const adapterId = raw.adapterId;
   if (
-    adapterId !== "memory" &&
-    adapterId !== "file-local" &&
-    adapterId !== "unconfigured-production"
+    typeof adapterId !== "string" ||
+    !VALID_ADAPTER_IDS.has(adapterId as PersistenceAdapterId)
   ) {
     throw new AgentOsPersistenceError(
       "corrupted-state",
@@ -107,6 +143,15 @@ export function validateAndMigrateState(
     if (!state.cadences[def.cadenceId]) {
       state.cadences[def.cadenceId] = def;
     }
+  }
+
+  // Non-destructive: ensure deliveries have required v2+ fields
+  for (const [id, rawDel] of Object.entries(state.deliveries ?? {})) {
+    const d = rawDel as Record<string, unknown>;
+    if (!Array.isArray(d.resolutionAudit)) d.resolutionAudit = [];
+    if (d.leaseExpiresAt === undefined) d.leaseExpiresAt = null;
+    if (d.claimOwner === undefined) d.claimOwner = null;
+    state.deliveries[id] = d as unknown as (typeof state.deliveries)[string];
   }
 
   state.schemaVersion = AGENT_OS_PERSISTENCE_SCHEMA_VERSION;

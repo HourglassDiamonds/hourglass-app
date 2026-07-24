@@ -30,6 +30,9 @@ export const SERVER_ONLY_INTELLIGENCE_ENV = [
   "INTELLIGENCE_EMAIL_FROM",
   "INTELLIGENCE_EMAIL_TO",
   "CRON_SECRET",
+  "AGENT_OS_EMAIL_FROM",
+  "AGENT_OS_EMAIL_TO",
+  "AGENT_OS_RECIPIENT_ALIAS",
 ] as const;
 
 /** Also server-only (existing app routes) — not for client bundles. */

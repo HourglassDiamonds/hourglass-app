@@ -16,19 +16,81 @@ import type {
 } from "../types";
 
 /** Persistence schema version — bump only with tested migration. */
-export const AGENT_OS_PERSISTENCE_SCHEMA_VERSION = 1 as const;
+export const AGENT_OS_PERSISTENCE_SCHEMA_VERSION = 2 as const;
 
 export type PersistenceSchemaVersion = typeof AGENT_OS_PERSISTENCE_SCHEMA_VERSION;
 
 export type PersistenceAdapterId =
   | "memory"
   | "file-local"
-  | "unconfigured-production";
+  | "unconfigured-production"
+  /** Explicit test-only durable adapter — never selected in production/scheduled-live without allowDurableTest. */
+  | "durable-test"
+  /** Production-durable Supabase/Postgres adapter (serverless-safe). */
+  | "supabase";
 
 export type PersistenceDurability =
   | "ephemeral"
   | "local-durable"
-  | "none";
+  | "none"
+  /** Process-local but crash-safe within a single test/process harness. */
+  | "test-durable"
+  /** Remote durable (Supabase) — survives process restart and multi-instance. */
+  | "remote-durable";
+
+/**
+ * Durable email delivery state machine.
+ * Never stores secrets, credentials, or raw recipient addresses.
+ */
+export type DeliveryStatus =
+  | "reserved"
+  | "sending"
+  | "sent"
+  | "failed"
+  | "uncertain"
+  | "suppressed";
+
+export type DeliveryKind = "founder-brief" | "failure-alert";
+
+export type DeliveryResolutionAuditEntry = {
+  at: string;
+  /** Operator action, e.g. resolve-sent | resolve-failed | system-transition */
+  action: string;
+  fromStatus: DeliveryStatus;
+  toStatus: DeliveryStatus;
+  /** Redacted note — never secrets or recipient addresses. */
+  note: string | null;
+};
+
+export type AgentOsDeliveryRecord = {
+  schemaVersion: PersistenceSchemaVersion;
+  deliveryId: string;
+  /** Stable non-secret idempotency key (hashed inputs). */
+  idempotencyKey: string;
+  cadenceId: string;
+  /** Cadence window identity (e.g. local calendar date or ISO week). */
+  cadenceWindow: string;
+  runId: string;
+  briefFingerprint: string;
+  /** Non-reversible recipient configuration fingerprint (alias/hash — not raw email). */
+  recipientConfigFingerprint: string;
+  kind: DeliveryKind;
+  status: DeliveryStatus;
+  suppressionReason: string | null;
+  /** Provider message id when known — never API keys. */
+  providerMessageId: string | null;
+  /** Redacted error summary when failed/uncertain. */
+  errorSummary: string | null;
+  reservedAt: string;
+  updatedAt: string;
+  sentAt: string | null;
+  /** Optional lease expiry (ISO). Expired reserved may reclaim; expired sending → uncertain. */
+  leaseExpiresAt: string | null;
+  /** Claim owner token (non-secret instance id) when reserved via atomic claim. */
+  claimOwner: string | null;
+  /** Operator/system resolution audit trail. */
+  resolutionAudit: DeliveryResolutionAuditEntry[];
+};
 
 export type RunTrigger =
   | "scheduled"
@@ -335,6 +397,11 @@ export type AgentOsPersistedState = {
   cadences: Record<string, CadenceDefinition>;
   /** Soft in-progress markers — not distributed locks. */
   inProgressByScope: Record<string, { runId: string; startedAt: string }>;
+  /**
+   * Durable delivery reservations / outcomes keyed by deliveryId.
+   * Also indexed by idempotencyKey via lookup helpers — never stores secrets.
+   */
+  deliveries: Record<string, AgentOsDeliveryRecord>;
 };
 
 export type PersistableFindingInput = {

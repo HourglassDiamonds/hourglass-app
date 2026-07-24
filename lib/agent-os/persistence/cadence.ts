@@ -53,7 +53,7 @@ export function defaultCadenceDefinitions(
       nextEligibleAt: null,
       lastAttemptedAt: null,
       lastSuccessfulAt: null,
-      description: "Weekly full founder brief assembly (delivery deferred to next pass)",
+      description: "Weekly full founder brief assembly + Chief of Staff email delivery when eligible",
     },
     {
       schemaVersion: AGENT_OS_PERSISTENCE_SCHEMA_VERSION,

@@ -1606,8 +1606,8 @@ describe("payload bounds and cadence contracts", () => {
 });
 
 describe("schema version constant", () => {
-  it("exposes schema version 1", () => {
-    assert.equal(AGENT_OS_PERSISTENCE_SCHEMA_VERSION, 1);
+  it("exposes schema version 2", () => {
+    assert.equal(AGENT_OS_PERSISTENCE_SCHEMA_VERSION, 2);
   });
 });
 

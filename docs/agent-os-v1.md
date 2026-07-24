@@ -501,16 +501,23 @@ Persistence may mutate **Agent OS operational state only** (run records, finding
 | Adapter ID | Durability | Environments | Live eligible | Fixture eligible |
 |------------|------------|--------------|---------------|------------------|
 | `memory` | ephemeral | tests, fixture, explicit non-durable local | only with `allowNonDurableLive` | yes |
-| `file-local` | local-durable (crash-resistant replacement with last-known-good recovery; not single-syscall atomic on Windows) under `tmp/agent-os/state/` | local/manual Node single-host only | yes (not serverless/distributed-safe) | yes |
-| `unconfigured-production` | none | default live/serverless | no (explicit failure) | no |
+| `file-local` | local-durable under `tmp/agent-os/state/` | local/manual Node single-host only | **rejected for scheduled live** | yes |
+| `durable-test` | test-durable (shared-backend CAS / atomic claim) | harness/tests with `allowDurableTest` | refused in production runtimes | yes |
+| `supabase` | remote-durable (Postgres) | production / serverless scheduled live | yes when env configured | no |
+| `unconfigured-production` | none | default when Supabase unset | no (explicit failure) | no |
 
-Supabase is the repo’s preferred production store for other products, but Agent OS does **not** write Supabase in this pass (no new Agent OS schema; `update-supabase` remains prohibited). Production durability for Agent OS remains **unconfigured** until a later founder-gated store.
+**Retention:**
+- State blob: runs capped at 50; deliveries capped at 100 (application-enforced).
+- Claim rows **intended** retention: approximately 90 days.
+- **Automatic purge: not yet enabled** — required before or shortly after scheduled-live activation.
+- Rows contain operational metadata only (no secrets / raw recipients).
+Apply `lib/supabase/agent-os-schema.sql` before production scheduled-live.
 
 Local filesystem persistence is **not** production-safe on Vercel serverless. File-local never copies or streams new state directly over the only canonical file; it uses temp validation plus last-known-good backup recovery.
 
 ### Run / executive / finding / recommendation records
 
-Typed records with `schemaVersion` (currently `1`): `AgentOsRunRecord`, `PersistedExecutiveRunRecord`, `PersistedFindingRecord`, `PersistedRecommendationRecord`. See `lib/agent-os/persistence/types.ts`.
+Typed records with `schemaVersion` (currently `2`): `AgentOsRunRecord`, `PersistedExecutiveRunRecord`, `PersistedFindingRecord`, `PersistedRecommendationRecord`, `AgentOsDeliveryRecord`. See `lib/agent-os/persistence/types.ts`.
 
 ### Lifecycle model
 
@@ -585,12 +592,35 @@ Unsupported future versions fail safely. Corrupted JSON fails safely. No destruc
 
 ### Non-goals (this pass)
 
-- Email delivery / Gmail integration (next pass)
-- Automated executive cron execution
+- Gmail / non-Resend providers
 - Public routes / dashboards
 - CRM / Buffer / Calendar scheduling
-- External writes outside Agent OS persistence
-- Fabricated persistence state
+- External writes outside Agent OS persistence + approved email delivery
+- Fabricated persistence or delivery state
+
+### Automated cadence + founder email delivery
+
+Module: `lib/agent-os/cadence-delivery/`.
+
+**Production durable store:** Supabase/Postgres via `SupabasePersistenceAdapter` (`adapterId: supabase`). Schema: `lib/supabase/agent-os-schema.sql` (`agent_os_persisted_state` + `agent_os_delivery_claims` with `UNIQUE(idempotency_key)`).
+
+**Atomic reservation:** Postgres create-if-absent on `idempotency_key`; expired **`reserved`** lease reclaim (15m); expired **`sending`** becomes **`uncertain`** (never auto-reclaimed for send). Uncertain blocks automatic resend until CLI `--resolve-uncertain --as failed|sent --confirm`. Defense in depth: Resend documented `idempotencyKey` (24h) using the stable internal delivery key.
+
+**Scheduled live** selects Supabase when configured; otherwise fails closed. `durable-test` is harness-only (refused in production).
+
+**Cadences:** when no cadence id is passed, all due founder-brief cadences run in order (weekly before daily).
+
+**Email config:** complete `AGENT_OS_EMAIL_*` pair → complete `INTELLIGENCE_EMAIL_*` pair → fail closed (no partial mixing).
+
+**Cron:** `GET|POST /api/cron/agent-os-cadence` — auth before work; header secrets only; `Cache-Control: no-store`; not in `vercel.json` yet.
+
+**Claim retention:** intended ~90 days; automatic purge not yet enabled (required before/shortly after scheduled-live).
+
+```bash
+npm run agent-os:cadence -- --dry-run --force
+npm run agent-os:cadence -- --scheduled-live
+npm run agent-os:cadence -- --resolve-uncertain --delivery-id del:… --as failed --confirm
+```
 
 ### How to run with persistence
 
@@ -703,7 +733,7 @@ This repository has **no OpenAI / AI SDK product dependency**. V1 uses determini
 2. ~~Search Strategy Local Authority / GBP Intelligence~~
 3. ~~Client Journey & Conversion Analysis~~
 4. ~~Scheduling and persistence foundation~~ (run records, lifecycle reconciliation, cadence definitions — no email)
-5. Automated executive cadence + Chief of Staff brief assembly on schedule + founder email delivery
+5. ~~Automated executive cadence + Chief of Staff brief assembly on schedule + founder email delivery~~
 6. Optional GA4 read expansion for Concierge conversion events and/or path analytics — still read-only, no client tracking changes
 7. Decision Journal durable store (still founder-gated writes)
 8. Optional authenticated internal preview (separate from production hard-404 dashboard)
