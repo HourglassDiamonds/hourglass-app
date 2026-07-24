@@ -63,11 +63,11 @@ describe("Conversations discoverability — homepage feature", () => {
     assert.equal(episodePath(latest.slug), "/conversations/why-we-re-here");
 
     assert.match(homeFeature, /getLatestPublishedEpisode/);
-    assert.match(homeFeature, /Hourglass Conversations/);
-    assert.match(homeFeature, /Watch the Conversation/);
-    assert.match(homeFeature, /Explore all Conversations/);
-    assert.match(homeFeature, /episode\.summary/);
     assert.match(homeFeature, /formatEpisodeLabel/);
+    assert.match(homeFeature, /Watch the Conversation/);
+    assert.match(homeFeature, /View all Conversations/);
+    assert.match(homeFeature, /episodeInterludeBody/);
+    assert.match(homeFeature, /episode\.summary/);
   });
 
   it("wires the feature into the homepage after House Designs and before Whispered Praise", () => {
@@ -153,8 +153,20 @@ describe("Conversations discoverability — homepage feature", () => {
     assert.match(homeFeature, /aspect-\[16\/9\]/);
     assert.match(homeFeature, /w-full/);
     assert.match(homeFeature, /flex-col/);
-    assert.equal(/w-\[[0-9]+px\]/.test(homeFeature), false);
+    assert.match(homeFeature, /max-w-\[22rem\]/);
     assert.equal(homeFeature.includes("overflow-x-hidden"), false);
+  });
+
+  it("reads as a quieter interlude with one primary CTA", () => {
+    assert.match(homeFeature, /max-w-\[920px\]/);
+    assert.match(homeFeature, /py-10 md:py-14 lg:py-16/);
+    assert.match(homeFeature, /View all Conversations/);
+    assert.match(homeFeature, /\{seriesLabel\}/);
+    assert.equal(homeFeature.includes("Explore all Conversations"), false);
+    assert.equal(
+      /Hourglass Conversations\s*\n\s*\{seriesLabel\}/.test(homeFeature),
+      false,
+    );
   });
 });
 
