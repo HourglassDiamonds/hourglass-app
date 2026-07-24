@@ -53,6 +53,14 @@ let ocrTransportMode: "none" | "remote" | "local" = "none";
 /** Override createWorker options (e.g. bundled lang data on DI interpret route). */
 let workerCreateOptions: Record<string, unknown> = { logger: () => {} };
 
+/** Isolate-scoped local Tesseract worker — reuse across diagram crops on Vercel. */
+type LocalOcrWorker = {
+  recognize: (b: Buffer) => Promise<{ data: { text?: string } }>;
+  terminate: () => Promise<unknown>;
+};
+let localOcrWorkerPromise: Promise<LocalOcrWorker> | null = null;
+let localOcrWorker: LocalOcrWorker | null = null;
+
 export function setTesseractWorkerCreateOptions(
   opts: Record<string, unknown> | null,
 ): void {
@@ -62,6 +70,13 @@ export function setTesseractWorkerCreateOptions(
   ocrRuntimeProbeError = undefined;
   ocrRuntimeProbeLog = [];
   ocrTransportMode = "none";
+  // Drop any cached worker so new lang/cache options take effect.
+  const stale = localOcrWorker;
+  localOcrWorker = null;
+  localOcrWorkerPromise = null;
+  if (stale) {
+    void terminateWorkerSafe(stale, "ocr-options-reset");
+  }
 }
 
 export type OcrRuntimeProbeSnapshot = {
@@ -276,44 +291,65 @@ export async function isOcrRuntimeAvailable(): Promise<boolean> {
   return probeLocalOcrRuntime();
 }
 
+async function getSharedLocalOcrWorker(): Promise<LocalOcrWorker> {
+  if (localOcrWorker) return localOcrWorker;
+  if (!localOcrWorkerPromise) {
+    localOcrWorkerPromise = (async () => {
+      const { createWorker } = await import("tesseract.js");
+      const worker = await withTimeout(
+        createWorker("eng", 1, tesseractWorkerOptions()),
+        OCR_WORKER_CREATE_TIMEOUT_MS,
+        "ocr-image-create-worker",
+      );
+      localOcrWorker = worker as LocalOcrWorker;
+      return localOcrWorker;
+    })().catch((err) => {
+      localOcrWorkerPromise = null;
+      localOcrWorker = null;
+      throw err;
+    });
+  }
+  return localOcrWorkerPromise;
+}
+
 async function ocrImageBufferLocal(buffer: Buffer): Promise<OcrResult> {
   const started = Date.now();
-  let worker: {
-    recognize: (b: Buffer) => Promise<{ data: { text?: string } }>;
-    terminate: () => Promise<unknown>;
-  } | null = null;
-  let workerCleanupSuccess = false;
-
   try {
-    const { createWorker } = await import("tesseract.js");
-    worker = await withTimeout(
-      createWorker("eng", 1, tesseractWorkerOptions()),
-      OCR_WORKER_CREATE_TIMEOUT_MS,
-      "ocr-image-create-worker",
-    );
+    const worker = await getSharedLocalOcrWorker();
     const { data } = await withTimeout(
       worker.recognize(buffer),
       OCR_SINGLE_IMAGE_TIMEOUT_MS,
       "ocr-image-recognize",
     );
+    logCalibrationRuntimeCheck({
+      operation: "ocr-image",
+      ocrDurationMs: Date.now() - started,
+      durationMs: Date.now() - started,
+      workerCleanupSuccess: true,
+      parserPath: "local-shared",
+    });
     return { text: (data.text ?? "").trim(), ok: true };
   } catch (err) {
-    return {
-      text: "",
-      ok: false,
-      error: err instanceof Error ? err.message : "OCR failed",
-    };
-  } finally {
-    if (worker) {
-      workerCleanupSuccess = await terminateWorkerSafe(worker, "ocr-image");
+    // Drop a poisoned shared worker so the next crop can recreate it.
+    const stale = localOcrWorker;
+    localOcrWorker = null;
+    localOcrWorkerPromise = null;
+    if (stale) {
+      void terminateWorkerSafe(stale, "ocr-image-poisoned");
     }
     logCalibrationRuntimeCheck({
       operation: "ocr-image",
       ocrDurationMs: Date.now() - started,
       durationMs: Date.now() - started,
-      workerCleanupSuccess,
-      parserPath: "local",
+      workerCleanupSuccess: false,
+      parserPath: "local-shared",
+      error: err instanceof Error ? err.message : String(err),
     });
+    return {
+      text: "",
+      ok: false,
+      error: err instanceof Error ? err.message : "OCR failed",
+    };
   }
 }
 
