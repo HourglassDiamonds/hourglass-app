@@ -5,6 +5,7 @@ import {
   buildConversationConciergeHref,
   resolveNewProgressMilestones,
   sanitizeConversationAnalyticsValue,
+  trackConversationDiscoverabilityClicked,
 } from "./analytics";
 
 describe("conversation analytics", () => {
@@ -80,5 +81,21 @@ describe("conversation analytics", () => {
       buildConversationConciergeHref("why-we-re-here"),
       "/concierge?tool=conversations&content=why-we-re-here",
     );
+  });
+
+  it("exposes discoverability tracking without inventing CRM or PII fields", () => {
+    assert.equal(typeof trackConversationDiscoverabilityClicked, "function");
+    const payload = buildConversationAnalyticsPayload({
+      episode_slug: "why-we-re-here",
+      season: 1,
+      episode_number: 1,
+      video_provider: "youtube",
+      destination_path: "/conversations/why-we-re-here",
+    });
+    assert.equal(payload.episode_slug, "why-we-re-here");
+    assert.equal(payload.destination_path, "/conversations/why-we-re-here");
+    assert.equal("email" in payload, false);
+    assert.equal("phone" in payload, false);
+    assert.equal("hubspot" in payload, false);
   });
 });

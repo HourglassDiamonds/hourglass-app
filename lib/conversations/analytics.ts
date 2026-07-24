@@ -142,6 +142,18 @@ export function trackConversationConciergeClicked(
 }
 
 /**
+ * Homepage / footer discoverability clicks into Conversations.
+ * Uses episode slug + destination path only — no PII or CRM fields.
+ */
+export function trackConversationDiscoverabilityClicked(
+  params: ConversationAnalyticsParams & {
+    destination_path: string;
+  },
+): void {
+  track("conversation_discoverability_clicked", params);
+}
+
+/**
  * Returns the next progress milestones crossed by `percent`, excluding any
  * already recorded in `fired`. Each milestone fires at most once per page view.
  */

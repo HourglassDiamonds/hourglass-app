@@ -24,6 +24,9 @@ export default function Footer() {
           >
             <Link href="/the-house" className={NAV_LINK}>The House</Link>
             <Link href="/our-approach" className={NAV_LINK}>Our Approach</Link>
+            <Link href="/conversations" className={NAV_LINK}>
+              Conversations
+            </Link>
             <Link href="/engagement-rings" className={NAV_LINK}>Engagement Rings</Link>
             <Link href="/custom-design" className={NAV_LINK}>Custom Design</Link>
             <Link href="/diamond-guide" className={NAV_LINK}>Diamond Guide</Link>

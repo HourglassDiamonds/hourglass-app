@@ -10,6 +10,7 @@ import {
   episodeIsPubliclyEligible,
   episodePath,
   formatEpisodeLabel,
+  getLatestPublishedEpisode,
   getListableEpisodes,
   getPublishedEpisodes,
   isConversationsHubPublic,
@@ -122,6 +123,14 @@ describe("published Why We’re Here episode", () => {
     assert.equal(listable.length, 1);
     assert.equal(listable[0]?.title, "Why Diamond Buying Should Still Feel Human");
     assert.equal(episodePath(listable[0]!.slug), "/conversations/why-we-re-here");
+  });
+
+  it("exposes the latest published episode for homepage discoverability", () => {
+    assert.equal(getLatestPublishedEpisode()?.slug, "why-we-re-here");
+    assert.equal(
+      getLatestPublishedEpisode()?.title,
+      "Why Diamond Buying Should Still Feel Human",
+    );
   });
 
   it("resolves the episode route in production-style requests", () => {
