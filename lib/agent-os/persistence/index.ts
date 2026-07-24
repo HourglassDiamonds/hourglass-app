@@ -32,7 +32,7 @@ export {
   FOUNDER_CADENCE_TIMEZONE,
 } from "./cadence";
 
-export { evaluateCadence, evaluateAllCadences } from "./evaluate-cadence";
+export { evaluateCadence, evaluateAllCadences, resolveLocalEligibleAt } from "./evaluate-cadence";
 export type { CadenceEvaluateInput } from "./evaluate-cadence";
 
 export {
@@ -128,7 +128,11 @@ export type { FounderSurfaceEligibility } from "./surface-eligibility";
 export {
   timeZoneOffsetMinutes,
   localCalendarStamp,
+  localMinutesSinceMidnight,
+  isAtOrAfterLocalTime,
+  utcIsoForLocalWallTime,
 } from "./timezone";
+export type { LocalCalendarStamp } from "./timezone";
 
 export { persistAgentOsRun } from "./persist-run";
 export type {

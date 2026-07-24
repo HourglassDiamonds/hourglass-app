@@ -56,7 +56,10 @@ import {
   cadenceWindowId,
   isFounderBriefCadence,
   listDueFounderCadencesInOrder,
+  weeklyFounderBriefOccupiesLocalDate,
 } from "./windows";
+import { FOUNDER_CADENCE_TIMEZONE } from "../persistence/cadence";
+import { localCalendarStamp } from "../persistence/timezone";
 
 export type CadenceExecutionMode =
   | "dry-run"
@@ -329,6 +332,43 @@ export async function executeAgentOsCadence(
     if (ordered.length > 1) {
       const results: CadenceExecutionResult[] = [];
       for (const id of ordered) {
+        // Same-day anti-redundancy: after a successful weekly founder-brief
+        // claim/send, skip the daily founder brief for that local date.
+        if (id === "cos-daily-synthesis") {
+          const liveState = await store.load().catch(() => state);
+          const localDate = localCalendarStamp(
+            nowIso,
+            FOUNDER_CADENCE_TIMEZONE,
+          ).date;
+          if (
+            weeklyFounderBriefOccupiesLocalDate(
+              liveState,
+              localDate,
+              FOUNDER_CADENCE_TIMEZONE,
+            )
+          ) {
+            results.push({
+              ok: true,
+              mode: options.mode,
+              cadenceId: id,
+              cadenceWindow: `day:${localDate}`,
+              runId: null,
+              runStatus: null,
+              deliveryGuidance: null,
+              deliveryAction: "send-nothing",
+              deliveryStatus: null,
+              emailSent: false,
+              dryRun,
+              suppressionReason:
+                "Weekly founder brief already claimed/sent for this local date",
+              error: null,
+              errorCode: null,
+              safeSummary:
+                "Skipped daily founder brief — weekly already occupied this local date",
+            });
+            continue;
+          }
+        }
         results.push(
           await executeAgentOsCadence({
             ...options,
@@ -386,6 +426,41 @@ export async function executeAgentOsCadence(
       error: `Cadence ${cadenceId} is not a founder-brief cadence`,
       errorCode: "mode-mismatch",
     });
+  }
+
+  // Same-day anti-redundancy for explicit daily runs (store is source of truth).
+  if (cadenceId === "cos-daily-synthesis" && !options.force) {
+    const localDate = localCalendarStamp(
+      nowIso,
+      FOUNDER_CADENCE_TIMEZONE,
+    ).date;
+    if (
+      weeklyFounderBriefOccupiesLocalDate(
+        state,
+        localDate,
+        FOUNDER_CADENCE_TIMEZONE,
+      )
+    ) {
+      return {
+        ok: true,
+        mode: options.mode,
+        cadenceId,
+        cadenceWindow: `day:${localDate}`,
+        runId: null,
+        runStatus: null,
+        deliveryGuidance: null,
+        deliveryAction: "send-nothing",
+        deliveryStatus: null,
+        emailSent: false,
+        dryRun,
+        suppressionReason:
+          "Weekly founder brief already claimed/sent for this local date",
+        error: null,
+        errorCode: null,
+        safeSummary:
+          "Skipped daily founder brief — weekly already occupied this local date",
+      };
+    }
   }
 
   // Refresh state after possible multi-cadence recursion sibling work

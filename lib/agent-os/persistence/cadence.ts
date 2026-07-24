@@ -30,11 +30,13 @@ export function defaultCadenceDefinitions(
       skipBehavior: "record-skip",
       catchUpBehavior: "run-if-stale",
       timezone: FOUNDER_CADENCE_TIMEZONE,
+      /** Founder-local morning gate — authoritative for daily occurrence eligibility. */
+      localEligibleAt: { hour: 7, minute: 0 },
       nextEligibleAt: null,
       lastAttemptedAt: null,
       lastSuccessfulAt: null,
       description:
-        "Daily Chief of Staff synthesis when fresh executive outputs exist",
+        "Daily Chief of Staff founder brief at/after 7:00 AM America/New_York",
     },
     {
       schemaVersion: AGENT_OS_PERSISTENCE_SCHEMA_VERSION,

@@ -4,7 +4,13 @@
 
 import { FOUNDER_CADENCE_TIMEZONE } from "../persistence/cadence";
 import { localCalendarStamp } from "../persistence/timezone";
-import type { CadenceDefinition, FrequencyClass } from "../persistence/types";
+import type {
+  AgentOsDeliveryRecord,
+  AgentOsPersistedState,
+  CadenceDefinition,
+  DeliveryStatus,
+  FrequencyClass,
+} from "../persistence/types";
 
 /**
  * Stable cadence window key for idempotency.
@@ -86,4 +92,75 @@ export function listDueFounderCadencesInOrder(
     if (!out.includes(id)) out.push(id);
   }
   return out;
+}
+
+/**
+ * Delivery statuses that mean the weekly founder brief successfully reserved,
+ * claimed, or (possibly) sent for anti-redundancy against the same-day daily.
+ * Failed / suppressed / absent do not suppress daily.
+ */
+const WEEKLY_OCCUPIES_DAILY_STATUSES: ReadonlySet<DeliveryStatus> = new Set([
+  "reserved",
+  "sending",
+  "sent",
+  "uncertain",
+]);
+
+/**
+ * True when a weekly founder-brief delivery has successfully claimed or sent
+ * for the given founder-local calendar date. Source of truth: delivery state
+ * machine records (not mere cadence evaluation).
+ */
+export function weeklyFounderBriefOccupiesLocalDate(
+  state: AgentOsPersistedState,
+  localDate: string,
+  timeZone: string = FOUNDER_CADENCE_TIMEZONE,
+): boolean {
+  for (const rec of Object.values(state.deliveries ?? {})) {
+    if (!deliveryOccupiesDailyAntiRedundancy(rec, localDate, timeZone)) {
+      continue;
+    }
+    return true;
+  }
+  return false;
+}
+
+function deliveryOccupiesDailyAntiRedundancy(
+  rec: AgentOsDeliveryRecord,
+  localDate: string,
+  timeZone: string,
+): boolean {
+  if (rec.cadenceId !== "cos-weekly-founder-brief") return false;
+  if (rec.kind !== "founder-brief") return false;
+  if (!WEEKLY_OCCUPIES_DAILY_STATUSES.has(rec.status)) return false;
+  const stampIso = rec.sentAt ?? rec.reservedAt ?? rec.updatedAt;
+  if (!stampIso) return false;
+  try {
+    return localCalendarStamp(stampIso, timeZone).date === localDate;
+  } catch {
+    return false;
+  }
+}
+
+/** Whether a cadence execution result indicates a successful founder-brief claim/send. */
+export function founderBriefClaimSucceeded(result: {
+  deliveryAction: string;
+  deliveryStatus: string | null;
+  emailSent: boolean;
+}): boolean {
+  if (result.emailSent) return true;
+  if (result.deliveryAction === "send-failure-alert") return false;
+  if (result.deliveryAction === "send-nothing") return false;
+  if (result.deliveryAction === "block") return false;
+  if (result.deliveryAction === "suppressed") return false;
+  const status = result.deliveryStatus;
+  if (
+    status === "reserved" ||
+    status === "sending" ||
+    status === "sent" ||
+    status === "uncertain"
+  ) {
+    return result.deliveryAction === "send-founder-brief" || status === "sent";
+  }
+  return false;
 }

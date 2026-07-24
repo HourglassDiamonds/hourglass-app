@@ -165,7 +165,15 @@ export type CadenceEvaluationReason =
   | "disabled"
   | "manual-override"
   | "catch-up"
-  | "timezone-window";
+  | "timezone-window"
+  | "local-time-before-window"
+  | "already-ran-local-date";
+
+/** Optional founder-local wall-clock gate (e.g. daily brief at 07:00). */
+export type CadenceLocalEligibleAt = {
+  hour: number;
+  minute: number;
+};
 
 export type RecurrenceEligibilityReason =
   | "newly-surfaced"
@@ -329,6 +337,12 @@ export type CadenceDefinition = {
   skipBehavior: CadenceSkipBehavior;
   catchUpBehavior: CadenceCatchUpBehavior;
   timezone: string;
+  /**
+   * When set, local wall-clock + local calendar date are authoritative for
+   * whether today's occurrence is eligible (still subject to sources / running).
+   * Null/undefined → interval/freshness-based due evaluation only.
+   */
+  localEligibleAt?: CadenceLocalEligibleAt | null;
   nextEligibleAt: string | null;
   lastAttemptedAt: string | null;
   lastSuccessfulAt: string | null;

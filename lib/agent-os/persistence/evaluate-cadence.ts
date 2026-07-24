@@ -8,9 +8,15 @@ import type {
   CadenceDefinition,
   CadenceEvaluation,
   CadenceEvaluationReason,
+  CadenceLocalEligibleAt,
   RunTrigger,
 } from "./types";
-import { localCalendarStamp } from "./timezone";
+import { getCadenceById } from "./cadence";
+import {
+  localCalendarStamp,
+  localMinutesSinceMidnight,
+  utcIsoForLocalWallTime,
+} from "./timezone";
 
 export type CadenceEvaluateInput = {
   cadence: CadenceDefinition;
@@ -53,6 +59,87 @@ function sourcesRequiredHealthy(
     if (!sourceOk(health, req)) missing.push(req);
   }
   return { ok: missing.length === 0, missing };
+}
+
+/** Resolve schedule gate from persisted cadence or seeded default. */
+export function resolveLocalEligibleAt(
+  cadence: CadenceDefinition,
+): CadenceLocalEligibleAt | null {
+  if (cadence.localEligibleAt) return cadence.localEligibleAt;
+  const seeded = getCadenceById(cadence.cadenceId);
+  return seeded?.localEligibleAt ?? null;
+}
+
+/**
+ * Local calendar schedule is authoritative when localEligibleAt is set:
+ * - before local wall time → not due
+ * - already succeeded on this local date → not due
+ * - otherwise continue (sources / deps); skip interval/freshness as primary blockers
+ */
+function evaluateLocalScheduleGate(
+  cadence: CadenceDefinition,
+  nowIso: string,
+  eligibleAt: CadenceLocalEligibleAt,
+): CadenceEvaluation | null {
+  const tz = cadence.timezone;
+  const local = localCalendarStamp(nowIso, tz);
+  const minutesNow = localMinutesSinceMidnight(local);
+  const minutesEligible = eligibleAt.hour * 60 + eligibleAt.minute;
+
+  if (minutesNow < minutesEligible) {
+    const next = utcIsoForLocalWallTime(
+      local.date,
+      eligibleAt.hour,
+      eligibleAt.minute,
+      tz,
+    );
+    return result(
+      cadence,
+      nowIso,
+      false,
+      false,
+      false,
+      true,
+      ["local-time-before-window", "not-due", "timezone-window"],
+      `Before local eligible time ${String(eligibleAt.hour).padStart(2, "0")}:${String(eligibleAt.minute).padStart(2, "0")} (local ${local.date} ${String(local.hour).padStart(2, "0")}:${String(local.minute).padStart(2, "0")} offsetMin=${local.offsetMinutes} tz=${tz})`,
+      next,
+    );
+  }
+
+  if (cadence.lastSuccessfulAt) {
+    const lastLocal = localCalendarStamp(cadence.lastSuccessfulAt, tz);
+    if (lastLocal.date === local.date) {
+      const nextDate = nextLocalDateString(local.date);
+      const next = utcIsoForLocalWallTime(
+        nextDate,
+        eligibleAt.hour,
+        eligibleAt.minute,
+        tz,
+      );
+      return result(
+        cadence,
+        nowIso,
+        false,
+        false,
+        false,
+        true,
+        ["already-ran-local-date", "not-due", "timezone-window"],
+        `Already succeeded on local date ${local.date} (tz=${tz})`,
+        next,
+      );
+    }
+  }
+
+  return null;
+}
+
+function nextLocalDateString(localDate: string): string {
+  const [y, m, d] = localDate.split("-").map(Number);
+  const utc = new Date(Date.UTC(y, m - 1, d + 1));
+  const yy = utc.getUTCFullYear();
+  const mm = String(utc.getUTCMonth() + 1).padStart(2, "0");
+  const dd = String(utc.getUTCDate()).padStart(2, "0");
+  return `${yy}-${mm}-${dd}`;
 }
 
 export function evaluateCadence(input: CadenceEvaluateInput): CadenceEvaluation {
@@ -126,41 +213,22 @@ export function evaluateCadence(input: CadenceEvaluateInput): CadenceEvaluation 
     );
   }
 
-  const lastSuccess = cadence.lastSuccessfulAt
-    ? Date.parse(cadence.lastSuccessfulAt)
-    : null;
-  const lastAttempt = cadence.lastAttemptedAt
-    ? Date.parse(cadence.lastAttemptedAt)
-    : null;
+  const localEligibleAt = resolveLocalEligibleAt(cadence);
+  if (localEligibleAt) {
+    const gated = evaluateLocalScheduleGate(cadence, nowIso, localEligibleAt);
+    if (gated) return gated;
+    // Past local eligible time and not yet successful today — local calendar
+    // is authoritative; skip rolling interval/freshness as primary blockers.
+  } else {
+    const lastSuccess = cadence.lastSuccessfulAt
+      ? Date.parse(cadence.lastSuccessfulAt)
+      : null;
+    const lastAttempt = cadence.lastAttemptedAt
+      ? Date.parse(cadence.lastAttemptedAt)
+      : null;
 
-  if (lastSuccess != null && now - lastSuccess < cadence.minimumIntervalMs) {
-    reasons.push("minimum-interval", "not-due");
-    const next = new Date(lastSuccess + cadence.minimumIntervalMs).toISOString();
-    return result(
-      cadence,
-      nowIso,
-      false,
-      false,
-      false,
-      true,
-      reasons,
-      "Minimum interval not satisfied",
-      next,
-    );
-  }
-
-  // Freshness of last success within window → not due
-  if (
-    lastSuccess != null &&
-    now - lastSuccess < cadence.freshnessWindowMs &&
-    cadence.frequencyClass !== "on-demand"
-  ) {
-    // Still check catch-up if never attempted after a long gap — handled below
-    const withinFresh = now - lastSuccess < cadence.freshnessWindowMs;
-    if (withinFresh && !(cadence.catchUpBehavior !== "none" && lastAttempt == null)) {
-      // due only if past minimum AND outside a "recent enough" half-window for weekly?
-      // Spec: is last run recent enough → not-due
-      reasons.push("not-due");
+    if (lastSuccess != null && now - lastSuccess < cadence.minimumIntervalMs) {
+      reasons.push("minimum-interval", "not-due");
       const next = new Date(lastSuccess + cadence.minimumIntervalMs).toISOString();
       return result(
         cadence,
@@ -170,11 +238,39 @@ export function evaluateCadence(input: CadenceEvaluateInput): CadenceEvaluation 
         false,
         true,
         reasons,
-        "Last successful run still within freshness window",
+        "Minimum interval not satisfied",
         next,
       );
     }
+
+    // Freshness of last success within window → not due
+    if (
+      lastSuccess != null &&
+      now - lastSuccess < cadence.freshnessWindowMs &&
+      cadence.frequencyClass !== "on-demand"
+    ) {
+      const withinFresh = now - lastSuccess < cadence.freshnessWindowMs;
+      if (withinFresh && !(cadence.catchUpBehavior !== "none" && lastAttempt == null)) {
+        reasons.push("not-due");
+        const next = new Date(lastSuccess + cadence.minimumIntervalMs).toISOString();
+        return result(
+          cadence,
+          nowIso,
+          false,
+          false,
+          false,
+          true,
+          reasons,
+          "Last successful run still within freshness window",
+          next,
+        );
+      }
+    }
   }
+
+  const lastSuccessForCatchUp = cadence.lastSuccessfulAt
+    ? Date.parse(cadence.lastSuccessfulAt)
+    : null;
 
   // Dependency freshness for CoS synthesis
   if (
@@ -248,8 +344,8 @@ export function evaluateCadence(input: CadenceEvaluateInput): CadenceEvaluation 
 
   // Catch-up: never succeeded but enabled, or last success beyond freshness
   if (
-    lastSuccess == null ||
-    now - lastSuccess > cadence.freshnessWindowMs
+    lastSuccessForCatchUp == null ||
+    now - lastSuccessForCatchUp > cadence.freshnessWindowMs
   ) {
     if (cadence.catchUpBehavior === "run-once" || cadence.catchUpBehavior === "run-if-stale") {
       reasons.push("catch-up");
@@ -269,7 +365,7 @@ export function evaluateCadence(input: CadenceEvaluateInput): CadenceEvaluation 
     reasons.includes("degraded-allowed"),
     false,
     reasons,
-    `Cadence due (local ${local.date} hour=${local.hour} offsetMin=${local.offsetMinutes} tz=${cadence.timezone})`,
+    `Cadence due (local ${local.date} hour=${local.hour} minute=${local.minute} offsetMin=${local.offsetMinutes} tz=${cadence.timezone})`,
     null,
   );
 }

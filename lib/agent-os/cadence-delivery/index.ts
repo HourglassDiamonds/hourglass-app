@@ -27,6 +27,8 @@ export {
   isFounderBriefCadence,
   pickPreferredFounderCadence,
   listDueFounderCadencesInOrder,
+  weeklyFounderBriefOccupiesLocalDate,
+  founderBriefClaimSucceeded,
 } from "./windows";
 export type { FounderBriefCadenceId } from "./windows";
 
