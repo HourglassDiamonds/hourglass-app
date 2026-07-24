@@ -100,7 +100,8 @@ Current first-episode poster is an SVG placeholder for layout review only. Repla
 
 ## 6. Title and description conventions
 
-- Title: calm, specific, no hard sell (`Why We’re Here`).
+- Title: calm, specific, no hard sell (`Why Diamond Buying Should Still Feel Human`).
+- Series label: `Hourglass Conversations 01` (via `formatEpisodeLabel`).
 - Summary: one or two sentences of editorial framing.
 - SEO description: long-form, human, no keyword stuffing.
 - Avoid urgency language and fabricated performance claims.
@@ -226,14 +227,15 @@ npm run build
 12. Run `npm run test:conversations` and `npm run build`.
 13. Preview locally, then merge/deploy through the normal review path.
 
-### First episode — operator input still required
+### First episode — live YouTube publish
 
-`why-we-re-here` is prepared as a draft with copy, SEO, related links, and Concierge attribution wiring.
+`why-we-re-here` is published with:
 
-Still required before public publish:
+- YouTube ID `8glfuhElhnA`
+- Public title `Why Diamond Buying Should Still Feel Human`
+- Series label `Hourglass Conversations 01`
+- YouTube `maxresdefault` thumbnail as temporary poster
+- Empty on-page transcript (YouTube captions cover playback; no draft markers)
+- Concierge attribution `/concierge?tool=conversations&content=why-we-re-here`
 
-1. Production YouTube video ID (or Mux playback ID)
-2. Final transcript (replace draft markers)
-3. Photo poster (replace SVG placeholder)
-4. Optional English WebVTT captions
-5. Flip `status` to `"published"`
+Optional polish later: custom photo poster, full edited transcript, WebVTT.

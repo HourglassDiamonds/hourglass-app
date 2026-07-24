@@ -52,6 +52,9 @@ export function conversationEpisodeMetadata(
     : imagePath.startsWith("/")
       ? imagePath
       : `/${imagePath}`;
+  const absoluteImageUrl = imageUrl.startsWith("http")
+    ? imageUrl
+    : `${SITE_URL}${imageUrl}`;
 
   const ogImages = [
     {
@@ -83,7 +86,7 @@ export function conversationEpisodeMetadata(
       card: "summary_large_image",
       title: openGraphTitle,
       description,
-      images: [`${SITE_URL}${imageUrl.startsWith("/") ? imageUrl : `/${imageUrl}`}`],
+      images: [absoluteImageUrl],
     },
   };
 

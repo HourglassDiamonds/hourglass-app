@@ -9,6 +9,7 @@ import { describe, it } from "node:test";
 import {
   buildYouTubeEmbedUrl,
   buildYouTubeIframeTitle,
+  buildYouTubeThumbnailUrl,
   buildYouTubeWatchUrl,
   isValidYouTubeVideoId,
   normalizeYouTubeVideoId,
@@ -46,14 +47,18 @@ describe("YouTube conversation helpers", () => {
     assert.equal(url.includes("autoplay=1"), true);
   });
 
-  it("builds watch URLs and accessible iframe titles", () => {
+  it("builds watch URLs, thumbnails, and accessible iframe titles", () => {
     assert.equal(
       buildYouTubeWatchUrl(FIXTURE_YOUTUBE_ID),
       `https://www.youtube.com/watch?v=${FIXTURE_YOUTUBE_ID}`,
     );
     assert.equal(
-      buildYouTubeIframeTitle("Why We’re Here"),
-      "Why We’re Here — Hourglass Conversations",
+      buildYouTubeThumbnailUrl(FIXTURE_YOUTUBE_ID),
+      `https://i.ytimg.com/vi/${FIXTURE_YOUTUBE_ID}/maxresdefault.jpg`,
+    );
+    assert.equal(
+      buildYouTubeIframeTitle("Why Diamond Buying Should Still Feel Human"),
+      "Why Diamond Buying Should Still Feel Human — Hourglass Conversations",
     );
   });
 

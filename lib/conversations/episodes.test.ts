@@ -4,18 +4,26 @@ import { join } from "node:path";
 import { describe, it } from "node:test";
 import {
   CONVERSATION_EPISODES,
+  WHY_WE_RE_HERE_YOUTUBE_VIDEO_ID,
   episodeHasPlayableVideo,
   episodeHasPublishableTranscript,
   episodeIsPubliclyEligible,
   episodePath,
+  formatEpisodeLabel,
   getListableEpisodes,
   getPublishedEpisodes,
   isConversationsHubPublic,
   resolveEpisodeForRequest,
+  shouldRenderEpisodeTranscript,
   shouldShowTemporaryPlaybackNote,
   type ConversationEpisode,
 } from "./episodes";
 import { buildConversationConciergeHref } from "./analytics";
+import {
+  buildYouTubeEmbedUrl,
+  buildYouTubeIframeTitle,
+  buildYouTubeThumbnailUrl,
+} from "./youtube";
 
 /** Synthetic fixture — tests only. Never ship in production episode data. */
 const FIXTURE_YOUTUBE_ID = "AbCdefGh_12";
@@ -71,200 +79,214 @@ function withPublishableTranscript(
   };
 }
 
-describe("conversation publishing rules", () => {
-  it("keeps the draft preview episode out of published inventory", () => {
+function withDraftTranscript(
+  episode: ConversationEpisode,
+): ConversationEpisode {
+  return {
+    ...episode,
+    transcript: [
+      {
+        heading: "Opening",
+        paragraphs: [
+          "Draft transcript — for typography and rhythm review only.",
+        ],
+      },
+    ],
+  };
+}
+
+describe("published Why We’re Here episode", () => {
+  const episode = CONVERSATION_EPISODES.find(
+    (item) => item.slug === "why-we-re-here",
+  );
+
+  it("uses the real production YouTube ID and published status", () => {
+    assert.ok(episode);
+    assert.equal(WHY_WE_RE_HERE_YOUTUBE_VIDEO_ID, "8glfuhElhnA");
+    assert.equal(episode.status, "published");
+    assert.equal(episode.video?.provider, "youtube");
+    assert.equal(episode.video?.youtubeVideoId, "8glfuhElhnA");
+    assert.equal(episode.title, "Why Diamond Buying Should Still Feel Human");
+    assert.equal(episode.seoTitle, "Why Diamond Buying Should Still Feel Human");
+    assert.equal(formatEpisodeLabel(episode), "Hourglass Conversations 01");
+  });
+
+  it("renders on the publicly listable hub inventory", () => {
+    assert.ok(episode);
     const published = getPublishedEpisodes();
-    assert.equal(published.length, 0);
-    assert.equal(isConversationsHubPublic(), false);
-    assert.ok(
-      CONVERSATION_EPISODES.some(
-        (episode) =>
-          episode.slug === "why-we-re-here" && episode.status === "draft",
-      ),
-    );
-  });
+    assert.equal(published.length, 1);
+    assert.equal(published[0]?.slug, "why-we-re-here");
+    assert.equal(isConversationsHubPublic(), true);
 
-  it("includes drafts in local listable inventory by default", () => {
-    const listable = getListableEpisodes({ includeDrafts: true });
-    assert.ok(listable.some((episode) => episode.slug === "why-we-re-here"));
-  });
-
-  it("renders hub inventory with exactly one listable episode in draft preview", () => {
-    const listable = getListableEpisodes({ includeDrafts: true });
+    const listable = getListableEpisodes({ includeDrafts: false });
     assert.equal(listable.length, 1);
-    assert.equal(listable[0]?.slug, "why-we-re-here");
-    assert.equal(listable[0]?.title, "Why We’re Here");
-    assert.ok(listable[0]?.summary.trim().length > 0);
+    assert.equal(listable[0]?.title, "Why Diamond Buying Should Still Feel Human");
     assert.equal(episodePath(listable[0]!.slug), "/conversations/why-we-re-here");
   });
 
-  it("excludes drafts from production-style listings", () => {
-    const listable = getListableEpisodes({ includeDrafts: false });
-    assert.equal(listable.length, 0);
-  });
-
-  it("resolves the Why We’re Here episode route when drafts are allowed", () => {
+  it("resolves the episode route in production-style requests", () => {
     assert.equal(
-      resolveEpisodeForRequest("why-we-re-here", { allowDrafts: true })?.slug,
+      resolveEpisodeForRequest("why-we-re-here", { allowDrafts: false })?.slug,
       "why-we-re-here",
     );
-  });
-
-  it("returns not-found behavior for missing and production-hidden drafts", () => {
     assert.equal(
-      resolveEpisodeForRequest("why-we-re-here", { allowDrafts: false }),
-      null,
-    );
-    assert.equal(
-      resolveEpisodeForRequest("missing-episode", { allowDrafts: true }),
+      resolveEpisodeForRequest("missing-episode", { allowDrafts: false }),
       null,
     );
   });
 
-  it("marks the draft preview as not yet playable and shows the temporary note", () => {
-    const draft = CONVERSATION_EPISODES.find(
-      (episode) => episode.slug === "why-we-re-here",
-    );
-    assert.ok(draft);
-    assert.equal(episodeHasPlayableVideo(draft), false);
-    assert.equal(draft.video, undefined);
-    assert.equal(shouldShowTemporaryPlaybackNote(draft), true);
-    assert.equal(episodeHasPublishableTranscript(draft), false);
+  it("is playable with no temporary missing-video note", () => {
+    assert.ok(episode);
+    assert.equal(episodeIsPubliclyEligible(episode), true);
+    assert.equal(episodeHasPlayableVideo(episode), true);
+    assert.equal(shouldShowTemporaryPlaybackNote(episode), false);
   });
 
+  it("uses the verified YouTube thumbnail as poster", () => {
+    assert.ok(episode);
+    const expected = buildYouTubeThumbnailUrl("8glfuhElhnA");
+    assert.equal(episode.poster, expected);
+    assert.equal(episode.thumbnail, expected);
+    assert.equal(episode.openGraphImage, expected);
+  });
+
+  it("omits on-page transcript so draft markers never render", () => {
+    assert.ok(episode);
+    assert.deepEqual(episode.transcript, []);
+    assert.equal(episodeHasPublishableTranscript(episode), false);
+    assert.equal(shouldRenderEpisodeTranscript(episode), false);
+    const joined = episode.transcript
+      .flatMap((section) => section.paragraphs)
+      .join("\n")
+      .toLowerCase();
+    assert.equal(joined.includes("draft transcript"), false);
+  });
+
+  it("keeps Concierge attribution on the stable slug", () => {
+    assert.equal(
+      buildConversationConciergeHref("why-we-re-here"),
+      "/concierge?tool=conversations&content=why-we-re-here",
+    );
+  });
+});
+
+describe("conversation publishing rules", () => {
   it("rejects incomplete published episodes from public surfaces", () => {
-    const draft = CONVERSATION_EPISODES.find(
+    const base = CONVERSATION_EPISODES.find(
       (episode) => episode.slug === "why-we-re-here",
     );
-    assert.ok(draft);
-    const incompletePublished = withStatus(draft, "published");
+    assert.ok(base);
+    const incompletePublished = {
+      ...base,
+      video: undefined,
+    };
 
     assert.equal(episodeIsPubliclyEligible(incompletePublished), false);
-    assert.equal(
-      resolveEpisodeForRequest(incompletePublished.slug, {
-        allowDrafts: false,
-      }),
-      null,
-    );
   });
 
-  it("accepts published Mux episodes only when complete and playable", () => {
-    const draft = CONVERSATION_EPISODES.find(
+  it("accepts published Mux episodes when complete and playable", () => {
+    const base = CONVERSATION_EPISODES.find(
       (episode) => episode.slug === "why-we-re-here",
     );
-    assert.ok(draft);
+    assert.ok(base);
     const complete = withPublishableTranscript(
-      withMuxPlayback(withStatus(draft, "published"), FIXTURE_MUX_ID),
+      withMuxPlayback(withStatus(base, "published"), FIXTURE_MUX_ID),
     );
     assert.equal(episodeIsPubliclyEligible(complete), true);
     assert.equal(episodeHasPlayableVideo(complete), true);
   });
 
-  it("accepts published YouTube episodes with a valid video ID and final transcript", () => {
-    const draft = CONVERSATION_EPISODES.find(
+  it("accepts published YouTube episodes with empty transcript for launch", () => {
+    const base = CONVERSATION_EPISODES.find(
       (episode) => episode.slug === "why-we-re-here",
     );
-    assert.ok(draft);
-    const complete = withPublishableTranscript(
-      withYouTubePlayback(withStatus(draft, "published"), FIXTURE_YOUTUBE_ID),
-    );
+    assert.ok(base);
+    const complete = {
+      ...withYouTubePlayback(withStatus(base, "published"), FIXTURE_YOUTUBE_ID),
+      transcript: [],
+    };
     assert.equal(episodeIsPubliclyEligible(complete), true);
-    assert.equal(episodeHasPlayableVideo(complete), true);
+    assert.equal(shouldRenderEpisodeTranscript(complete), false);
   });
 
   it("rejects invalid YouTube IDs as non-playable", () => {
-    const draft = CONVERSATION_EPISODES.find(
+    const base = CONVERSATION_EPISODES.find(
       (episode) => episode.slug === "why-we-re-here",
     );
-    assert.ok(draft);
-    const invalid = withYouTubePlayback(draft, "not-a-real-id");
+    assert.ok(base);
+    const invalid = withYouTubePlayback(base, "not-a-real-id");
     assert.equal(episodeHasPlayableVideo(invalid), false);
-    assert.equal(
-      episodeIsPubliclyEligible(
-        withPublishableTranscript(withStatus(invalid, "published")),
-      ),
-      false,
-    );
+    assert.equal(episodeIsPubliclyEligible(invalid), false);
   });
 
   it("rejects published episodes that still use draft transcript copy", () => {
-    const draft = CONVERSATION_EPISODES.find(
+    const base = CONVERSATION_EPISODES.find(
       (episode) => episode.slug === "why-we-re-here",
     );
-    assert.ok(draft);
-    const incomplete = withMuxPlayback(withStatus(draft, "published"), FIXTURE_MUX_ID);
+    assert.ok(base);
+    const incomplete = withDraftTranscript(base);
     assert.equal(episodeIsPubliclyEligible(incomplete), false);
+    assert.equal(shouldRenderEpisodeTranscript(incomplete), false);
   });
 
   it("allows future episodes to be added via the registry without new routes", () => {
-    const draft = CONVERSATION_EPISODES.find(
+    const base = CONVERSATION_EPISODES.find(
       (episode) => episode.slug === "why-we-re-here",
     );
-    assert.ok(draft);
+    assert.ok(base);
     const second: ConversationEpisode = {
-      ...withPublishableTranscript(
-        withYouTubePlayback(withStatus(draft, "published"), FIXTURE_YOUTUBE_ID),
-      ),
+      ...withYouTubePlayback(withStatus(base, "published"), FIXTURE_YOUTUBE_ID),
       slug: "options-without-clarity",
       title: "Options Without Clarity",
       episodeNumber: 2,
       publishedAt: "2026-08-01",
+      transcript: [],
     };
 
     assert.equal(episodePath(second.slug), "/conversations/options-without-clarity");
     assert.equal(episodeIsPubliclyEligible(second), true);
-    assert.notEqual(second.slug, draft.slug);
+    assert.equal(formatEpisodeLabel(second), "Hourglass Conversations 02");
+    assert.notEqual(second.slug, base.slug);
   });
 });
 
 describe("temporary playback note", () => {
-  it("shows the note for draft episodes without media", () => {
-    const draft = CONVERSATION_EPISODES.find(
-      (episode) => episode.slug === "why-we-re-here",
+  it("never shows the note for the published first episode", () => {
+    const episode = CONVERSATION_EPISODES.find(
+      (item) => item.slug === "why-we-re-here",
     );
-    assert.ok(draft);
+    assert.ok(episode);
+    assert.equal(shouldShowTemporaryPlaybackNote(episode), false);
+  });
+
+  it("shows the note only for drafts without media", () => {
+    const episode = CONVERSATION_EPISODES.find(
+      (item) => item.slug === "why-we-re-here",
+    );
+    assert.ok(episode);
+    const draft = withStatus(
+      {
+        ...episode,
+        video: undefined,
+      },
+      "draft",
+    );
     assert.equal(shouldShowTemporaryPlaybackNote(draft), true);
-  });
-
-  it("hides the note when a draft gains valid media", () => {
-    const draft = CONVERSATION_EPISODES.find(
-      (episode) => episode.slug === "why-we-re-here",
-    );
-    assert.ok(draft);
-    const withMedia = withYouTubePlayback(draft, FIXTURE_YOUTUBE_ID);
-    assert.equal(shouldShowTemporaryPlaybackNote(withMedia), false);
-    assert.equal(episodeHasPlayableVideo(withMedia), true);
-  });
-
-  it("never shows the note for published episodes", () => {
-    const draft = CONVERSATION_EPISODES.find(
-      (episode) => episode.slug === "why-we-re-here",
-    );
-    assert.ok(draft);
-    const publishedIncomplete = withStatus(draft, "published");
-    const publishedComplete = withMuxPlayback(
-      withStatus(draft, "published"),
-      FIXTURE_MUX_ID,
-    );
-
-    assert.equal(shouldShowTemporaryPlaybackNote(publishedIncomplete), false);
-    assert.equal(shouldShowTemporaryPlaybackNote(publishedComplete), false);
   });
 });
 
-describe("production placeholder isolation", () => {
-  it("does not treat draft transcript markers as publishable content", () => {
-    const draft = CONVERSATION_EPISODES.find(
-      (episode) => episode.slug === "why-we-re-here",
+describe("YouTube embed contract for the live episode", () => {
+  it("builds nocookie embeds without autoplay by default", () => {
+    const url = buildYouTubeEmbedUrl("8glfuhElhnA");
+    assert.equal(
+      url.startsWith("https://www.youtube-nocookie.com/embed/8glfuhElhnA?"),
+      true,
     );
-    assert.ok(draft);
-    const joined = draft.transcript
-      .flatMap((section) => section.paragraphs)
-      .join("\n")
-      .toLowerCase();
-    assert.ok(joined.includes("draft transcript"));
-    assert.equal(episodeHasPublishableTranscript(draft), false);
-    assert.equal(episodeIsPubliclyEligible(withStatus(draft, "published")), false);
+    assert.equal(url.includes("autoplay="), false);
+    assert.equal(
+      buildYouTubeIframeTitle("Why Diamond Buying Should Still Feel Human"),
+      "Why Diamond Buying Should Still Feel Human — Hourglass Conversations",
+    );
   });
 });
 
@@ -285,14 +307,5 @@ describe("Agent OS surfaces remain untouched by Conversations publishing gates",
       paths.some((path) => path.includes("daily")),
       false,
     );
-  });
-});
-
-describe("Concierge attribution", () => {
-  it("builds Conversations-specific Concierge attribution for Why We’re Here", () => {
-    const href = buildConversationConciergeHref("why-we-re-here");
-    assert.equal(href, "/concierge?tool=conversations&content=why-we-re-here");
-    assert.equal(href.includes("email="), false);
-    assert.equal(href.includes("phone="), false);
   });
 });

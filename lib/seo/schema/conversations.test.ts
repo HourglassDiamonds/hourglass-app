@@ -1,19 +1,18 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { CONVERSATION_EPISODES } from "@/lib/conversations/episodes";
+import {
+  CONVERSATION_EPISODES,
+  getPublishedEpisodes,
+} from "@/lib/conversations/episodes";
+import { buildYouTubeEmbedUrl } from "@/lib/conversations/youtube";
 import { conversationEpisodeMetadata } from "@/lib/seo/conversations-metadata";
 import {
   buildConversationEpisodeJsonLd,
   buildConversationVideoObject,
 } from "@/lib/seo/schema/conversations";
 import { serializeJsonLd } from "@/lib/seo/schema/json-ld";
-import { getPublishedEpisodes } from "@/lib/conversations/episodes";
-import { buildYouTubeEmbedUrl } from "@/lib/conversations/youtube";
 import sitemap from "@/app/sitemap";
 import { SITE_URL } from "@/lib/seo/site-metadata";
-
-/** Synthetic fixture — tests only. Never ship in production episode data. */
-const FIXTURE_YOUTUBE_ID = "AbCdefGh_12";
 
 function graphTypes(data: unknown): string[] {
   if (
@@ -36,104 +35,82 @@ function graphTypes(data: unknown): string[] {
 }
 
 describe("conversation SEO and schema", () => {
-  const draft = CONVERSATION_EPISODES.find(
-    (episode) => episode.slug === "why-we-re-here",
+  const episode = CONVERSATION_EPISODES.find(
+    (item) => item.slug === "why-we-re-here",
   );
 
-  it("marks draft episode metadata as noindex with correct title and description", () => {
-    assert.ok(draft);
-    const metadata = conversationEpisodeMetadata(draft);
-    assert.deepEqual(metadata.robots, { index: false, follow: false });
-    assert.equal(metadata.title, "Why We’re Here");
-    assert.ok(metadata.description?.includes("thoughtful guidance"));
+  it("marks the published episode as indexable with aligned title metadata", () => {
+    assert.ok(episode);
+    const metadata = conversationEpisodeMetadata(episode);
+    assert.equal(metadata.robots, undefined);
+    assert.equal(metadata.title, "Why Diamond Buying Should Still Feel Human");
+    assert.ok(metadata.description?.toLowerCase().includes("human"));
     assert.equal(
       (metadata.alternates as { canonical?: string } | undefined)?.canonical,
       "/conversations/why-we-re-here",
     );
+    assert.equal(
+      (metadata.openGraph as { images?: Array<{ url?: string }> } | undefined)
+        ?.images?.[0]?.url,
+      "https://i.ytimg.com/vi/8glfuhElhnA/maxresdefault.jpg",
+    );
   });
 
-  it("builds VideoObject without inventing content URLs when video is absent", () => {
-    assert.ok(draft);
-    const videoObject = buildConversationVideoObject(draft) as Record<
+  it("emits VideoObject with verified YouTube URLs and no invented fields", () => {
+    assert.ok(episode);
+    const videoObject = buildConversationVideoObject(episode) as Record<
       string,
       unknown
     >;
     assert.equal(videoObject["@type"], "VideoObject");
-    assert.equal(videoObject.name, draft.title);
-    assert.ok(typeof videoObject.thumbnailUrl === "string");
-    assert.equal("contentUrl" in videoObject, false);
-    assert.equal("embedUrl" in videoObject, false);
+    assert.equal(videoObject.name, episode.title);
+    assert.equal(
+      videoObject.thumbnailUrl,
+      "https://i.ytimg.com/vi/8glfuhElhnA/maxresdefault.jpg",
+    );
+    assert.equal(
+      videoObject.contentUrl,
+      "https://www.youtube.com/watch?v=8glfuhElhnA",
+    );
+    assert.equal(
+      videoObject.embedUrl,
+      buildYouTubeEmbedUrl("8glfuhElhnA", { autoplay: false }),
+    );
+    assert.equal(String(videoObject.embedUrl).includes("autoplay="), false);
+    assert.equal(String(videoObject.embedUrl).includes("youtube-nocookie.com"), true);
+    assert.equal(videoObject.uploadDate, "2026-07-21");
+    assert.equal(videoObject.duration, "PT11M42S");
   });
 
-  it("emits Mux content and embed URLs when Mux playback exists", () => {
-    assert.ok(draft);
-    const publishedFixture = {
-      ...draft,
-      status: "published" as const,
-      video: {
-        provider: "mux" as const,
-        playbackId: "abcPlaybackId",
-      },
-    };
-    const withVideo = buildConversationVideoObject(publishedFixture) as Record<
-      string,
-      unknown
-    >;
-    assert.equal(
-      withVideo.contentUrl,
-      "https://stream.mux.com/abcPlaybackId.m3u8",
-    );
-    assert.equal(withVideo.embedUrl, "https://player.mux.com/abcPlaybackId");
-  });
-
-  it("emits YouTube watch and privacy-enhanced embed URLs without autoplay in schema", () => {
-    assert.ok(draft);
-    const publishedFixture = {
-      ...draft,
-      status: "published" as const,
-      video: {
-        provider: "youtube" as const,
-        youtubeVideoId: FIXTURE_YOUTUBE_ID,
-      },
-    };
-    const withVideo = buildConversationVideoObject(publishedFixture) as Record<
-      string,
-      unknown
-    >;
-    assert.equal(
-      withVideo.contentUrl,
-      `https://www.youtube.com/watch?v=${FIXTURE_YOUTUBE_ID}`,
-    );
-    assert.equal(
-      withVideo.embedUrl,
-      buildYouTubeEmbedUrl(FIXTURE_YOUTUBE_ID, { autoplay: false }),
-    );
-    assert.equal(String(withVideo.embedUrl).includes("autoplay="), false);
+  it("omits playback URLs when video is absent rather than inventing them", () => {
+    assert.ok(episode);
+    const withoutVideo = buildConversationVideoObject({
+      ...episode,
+      video: undefined,
+    }) as Record<string, unknown>;
+    assert.equal("contentUrl" in withoutVideo, false);
+    assert.equal("embedUrl" in withoutVideo, false);
   });
 
   it("emits VideoObject and BreadcrumbList for episode graphs", () => {
-    assert.ok(draft);
-    const payload = buildConversationEpisodeJsonLd({
-      ...draft,
-      status: "published",
-    });
+    assert.ok(episode);
+    const payload = buildConversationEpisodeJsonLd(episode);
     const types = graphTypes(payload);
     assert.ok(types.includes("VideoObject"));
     assert.ok(types.includes("BreadcrumbList"));
     assert.equal(serializeJsonLd(payload).includes("<"), false);
   });
 
-  it("excludes draft conversations from the sitemap", () => {
+  it("includes the published conversation hub and episode in the sitemap", () => {
     const entries = sitemap();
     const conversationUrls = entries
       .map((entry) => entry.url)
       .filter((url) => url.includes("/conversations"));
 
-    assert.equal(getPublishedEpisodes().length, 0);
-    assert.deepEqual(conversationUrls, []);
-    assert.equal(
+    assert.equal(getPublishedEpisodes().length, 1);
+    assert.ok(conversationUrls.includes(`${SITE_URL}/conversations`));
+    assert.ok(
       conversationUrls.includes(`${SITE_URL}/conversations/why-we-re-here`),
-      false,
     );
   });
 });

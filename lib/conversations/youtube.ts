@@ -52,6 +52,18 @@ export function buildYouTubeWatchUrl(videoId: string): string {
   return `https://www.youtube.com/watch?v=${id}`;
 }
 
+/**
+ * Public YouTube thumbnail CDN URL (maxres when available for 16:9 posters).
+ * Derived from the video ID — not an invented asset path.
+ */
+export function buildYouTubeThumbnailUrl(videoId: string): string {
+  const id = normalizeYouTubeVideoId(videoId);
+  if (!id) {
+    throw new Error("Invalid YouTube video ID");
+  }
+  return `https://i.ytimg.com/vi/${id}/maxresdefault.jpg`;
+}
+
 export function buildYouTubeIframeTitle(episodeTitle: string): string {
   const title = episodeTitle.trim() || "Conversation";
   return `${title} — Hourglass Conversations`;

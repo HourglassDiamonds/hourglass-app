@@ -5,7 +5,10 @@
  * Operator guide: docs/conversations-publishing.md
  */
 
-import { isValidYouTubeVideoId } from "./youtube";
+import {
+  buildYouTubeThumbnailUrl,
+  isValidYouTubeVideoId,
+} from "./youtube";
 
 export type ConversationPublishStatus = "draft" | "published";
 
@@ -84,30 +87,38 @@ export type ConversationEpisode = {
  * All known episodes. Prefer `getPublishedEpisodes()` / `getEpisodeBySlug()`
  * for runtime listing and route resolution.
  */
+/** Production YouTube video ID for Conversations 01 — verified live upload. */
+export const WHY_WE_RE_HERE_YOUTUBE_VIDEO_ID = "8glfuhElhnA";
+
+const WHY_WE_RE_HERE_YOUTUBE_THUMBNAIL = buildYouTubeThumbnailUrl(
+  WHY_WE_RE_HERE_YOUTUBE_VIDEO_ID,
+);
+
 export const CONVERSATION_EPISODES: ConversationEpisode[] = [
   {
     slug: "why-we-re-here",
-    status: "draft",
-    title: "Why We’re Here",
+    status: "published",
+    title: "Why Diamond Buying Should Still Feel Human",
     eyebrow: "Conversations",
     summary:
-      "A slower conversation about diamonds, design, and what thoughtful guidance should feel like.",
+      "A long-form Hourglass conversation on why diamond buying should still feel human — slower guidance, clearer judgment, and technology that serves the decision rather than replacing it.",
     centralIdea:
       "An engagement decision still lives in the physical world — on the hand, in the light, and in the quiet confidence of knowing why a choice was made. Technology can sharpen that judgment. It should never replace it.",
     season: 1,
     episodeNumber: 1,
     topicLabel: "The House",
-    publishedAt: "2026-07-13",
-    durationLabel: "About 8 min",
-    durationIso: "PT8M",
-    poster: "/media/conversations/why-we-re-here-poster.svg",
-    thumbnail: "/media/conversations/why-we-re-here-poster.svg",
-    openGraphImage: "/media/conversations/why-we-re-here-poster.svg",
-    // No production playback source yet — do not invent YouTube / Mux IDs.
-    // When the long-form Conversation is live, insert ONE of:
-    //   video: { provider: "youtube", youtubeVideoId: "<11-char-id>" },
-    //   video: { provider: "mux", playbackId: "<mux-playback-id>" },
-    // Then replace the draft transcript, add captions + a photo poster, and set status: "published".
+    // Verified from the live YouTube upload (2026-07-21T21:00:10-07:00).
+    publishedAt: "2026-07-21",
+    // Verified from YouTube lengthSeconds=702 (~11m 42s).
+    durationLabel: "About 12 min",
+    durationIso: "PT11M42S",
+    poster: WHY_WE_RE_HERE_YOUTUBE_THUMBNAIL,
+    thumbnail: WHY_WE_RE_HERE_YOUTUBE_THUMBNAIL,
+    openGraphImage: WHY_WE_RE_HERE_YOUTUBE_THUMBNAIL,
+    video: {
+      provider: "youtube",
+      youtubeVideoId: WHY_WE_RE_HERE_YOUTUBE_VIDEO_ID,
+    },
     keyIdeas: [
       {
         title: "An engagement is still an analog moment",
@@ -122,36 +133,8 @@ export const CONVERSATION_EPISODES: ConversationEpisode[] = [
         body: "Studios and tools can reveal proportion, coverage, and light. The final read still belongs to a trained eye and a calm conversation.",
       },
     ],
-    transcript: [
-      {
-        heading: "Opening",
-        paragraphs: [
-          "Draft transcript — for typography and rhythm review only. Replace with the final spoken words after filming and edit.",
-          "I’m Justin Smith. This conversation is about why Hourglass exists, and why a slower way of looking at diamonds and design still matters when almost everything else in the market is trying to move faster.",
-        ],
-      },
-      {
-        heading: "What the decision actually is",
-        paragraphs: [
-          "An engagement ring is purchased in a digital age, but it is worn in an analog one. The certificate is useful. The photograph is useful. Neither one is the ring on the hand, catching light across a dinner table, or becoming familiar through ordinary days.",
-          "That is why we treat guidance as a conversation rather than a checkout flow. The goal is not to overwhelm you with every available option. The goal is to arrive at the few that will still feel clear when the noise is gone.",
-        ],
-      },
-      {
-        heading: "Clarity in a louder market",
-        paragraphs: [
-          "There has never been more access to diamonds, grading reports, and price comparisons. That abundance can feel like progress. It can also flatten judgment into a spreadsheet when the real question is quieter: will this stone and this design still feel right once you stop comparing?",
-          "Hourglass was built for that quieter question. We use technology carefully — to show scale, to interpret light performance, to make proportions easier to understand — and then we return to human judgment.",
-        ],
-      },
-      {
-        heading: "What this series is for",
-        paragraphs: [
-          "These conversations are long enough to think in. They are not pitch decks. They are a record of how we see diamonds, design, craft, and the decisions that matter before metal is set and a stone becomes part of someone’s life.",
-          "If you are beginning that process, you do not need more urgency. You need better information, a calmer pace, and someone willing to say when a beautiful option is still the wrong option.",
-        ],
-      },
-    ],
+    // Full on-page transcript deferred — YouTube captions cover playback for launch.
+    transcript: [],
     relatedArticle: {
       title: "Why Work With a Graduate Gemologist?",
       href: "/diamond-guide/why-work-with-a-graduate-gemologist",
@@ -167,9 +150,9 @@ export const CONVERSATION_EPISODES: ConversationEpisode[] = [
         "Upload a grading report and read light performance through Hourglass standards.",
       destinationType: "tool",
     },
-    seoTitle: "Why We’re Here",
+    seoTitle: "Why Diamond Buying Should Still Feel Human",
     seoDescription:
-      "A long-form Hourglass conversation with Justin Smith on diamonds, design, judgment, and what thoughtful guidance should feel like.",
+      "Watch Hourglass Conversations 01 with Justin Smith — why diamond buying should still feel human, and how thoughtful guidance shapes clearer engagement decisions.",
   },
 ];
 
@@ -300,8 +283,21 @@ export function episodeHasPublishableTranscript(
 }
 
 /**
+ * True when the episode page should render the transcript block.
+ * Empty or draft-marker transcripts stay hidden.
+ */
+export function shouldRenderEpisodeTranscript(
+  episode: ConversationEpisode,
+): boolean {
+  return episodeHasPublishableTranscript(episode);
+}
+
+/**
  * Production eligibility: published records must carry complete episode fields
  * plus playable media. Incomplete published records stay out of hub/sitemap/routes.
+ *
+ * On-page transcript is optional for launch (YouTube captions may cover playback).
+ * When a transcript is present, it must be publishable — draft markers block release.
  */
 export function episodeIsPubliclyEligible(
   episode: ConversationEpisode,
@@ -324,17 +320,20 @@ export function episodeIsPubliclyEligible(
   if (!poster) return false;
 
   if (!episodeHasPlayableVideo(episode)) return false;
-  if (!episodeHasPublishableTranscript(episode)) return false;
+
+  const hasTranscriptCopy = episode.transcript.some(
+    (section) => section.paragraphs.some((paragraph) => paragraph.trim()),
+  );
+  if (hasTranscriptCopy && !episodeHasPublishableTranscript(episode)) {
+    return false;
+  }
 
   return true;
 }
 
 export function formatEpisodeLabel(episode: ConversationEpisode): string | null {
-  if (episode.season != null && episode.episodeNumber != null) {
-    return `Season ${episode.season} · Episode ${episode.episodeNumber}`;
-  }
   if (episode.episodeNumber != null) {
-    return `Episode ${episode.episodeNumber}`;
+    return `Hourglass Conversations ${String(episode.episodeNumber).padStart(2, "0")}`;
   }
   return null;
 }

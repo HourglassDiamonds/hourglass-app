@@ -13,6 +13,7 @@ import type { ConversationEpisode } from "@/lib/conversations/episodes";
 import {
   formatEpisodeLabel,
   formatPublishedDate,
+  shouldRenderEpisodeTranscript,
 } from "@/lib/conversations/episodes";
 import HourglassVideoPlayer from "../components/HourglassVideoPlayer";
 
@@ -76,6 +77,7 @@ export default function EpisodePageClient({ episode }: EpisodePageClientProps) {
   >[];
   const conciergeHref = buildConversationConciergeHref(episode.slug);
   const ctaLocation = `conversations:${episode.slug}:footer`;
+  const showTranscript = shouldRenderEpisodeTranscript(episode);
 
   return (
     <div className="relative z-0 -mb-20 min-h-screen bg-[#efe8de] pb-6 text-[#1c1b1a] [background:radial-gradient(circle_at_top,rgba(255,255,255,0.42),transparent_36rem),linear-gradient(180deg,#efe8de,#ebe3d8)] md:-mb-24 md:pb-8">
@@ -173,50 +175,52 @@ export default function EpisodePageClient({ episode }: EpisodePageClientProps) {
             </div>
           </RevealOnScroll>
 
-          <RevealOnScroll
-            as="section"
-            className="border-b border-[#e4dbcf] py-[72px] md:py-[96px]"
-          >
-            <div className="mx-auto max-w-[680px]">
-              <p className="text-[10px] uppercase tracking-[0.34em] text-[#8a8177]">
-                Transcript
-              </p>
-              <h2
-                className="mt-4 text-[1.55rem] font-light tracking-[-0.02em] text-[#1f1d1a] md:text-[1.85rem]"
-                style={{ textWrap: "balance" }}
-              >
-                The conversation, written.
-              </h2>
-              <div className="mt-10">
-                {episode.transcript.map((section, index) => (
-                  <section
-                    key={section.heading ?? `section-${index}`}
-                    className={index === 0 ? undefined : "mt-12 md:mt-14"}
-                  >
-                    {section.heading ? (
-                      <h3 className="font-serif text-[1.15rem] font-medium tracking-[-0.015em] text-[#1f1d1a]">
-                        {section.heading}
-                      </h3>
-                    ) : null}
-                    <div
-                      className={
-                        section.heading ? "mt-3.5 space-y-5" : "space-y-5"
-                      }
+          {showTranscript ? (
+            <RevealOnScroll
+              as="section"
+              className="border-b border-[#e4dbcf] py-[72px] md:py-[96px]"
+            >
+              <div className="mx-auto max-w-[680px]">
+                <p className="text-[10px] uppercase tracking-[0.34em] text-[#8a8177]">
+                  Transcript
+                </p>
+                <h2
+                  className="mt-4 text-[1.55rem] font-light tracking-[-0.02em] text-[#1f1d1a] md:text-[1.85rem]"
+                  style={{ textWrap: "balance" }}
+                >
+                  The conversation, written.
+                </h2>
+                <div className="mt-10">
+                  {episode.transcript.map((section, index) => (
+                    <section
+                      key={section.heading ?? `section-${index}`}
+                      className={index === 0 ? undefined : "mt-12 md:mt-14"}
                     >
-                      {section.paragraphs.map((paragraph) => (
-                        <p
-                          key={paragraph.slice(0, 48)}
-                          className="text-[1.02rem] leading-[1.9] text-[#4f4942]"
-                        >
-                          {paragraph}
-                        </p>
-                      ))}
-                    </div>
-                  </section>
-                ))}
+                      {section.heading ? (
+                        <h3 className="font-serif text-[1.15rem] font-medium tracking-[-0.015em] text-[#1f1d1a]">
+                          {section.heading}
+                        </h3>
+                      ) : null}
+                      <div
+                        className={
+                          section.heading ? "mt-3.5 space-y-5" : "space-y-5"
+                        }
+                      >
+                        {section.paragraphs.map((paragraph) => (
+                          <p
+                            key={paragraph.slice(0, 48)}
+                            className="text-[1.02rem] leading-[1.9] text-[#4f4942]"
+                          >
+                            {paragraph}
+                          </p>
+                        ))}
+                      </div>
+                    </section>
+                  ))}
+                </div>
               </div>
-            </div>
-          </RevealOnScroll>
+            </RevealOnScroll>
+          ) : null}
 
           {related.length > 0 ? (
             <RevealOnScroll
