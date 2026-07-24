@@ -2,7 +2,6 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import HomeConversationsFeature from "./home-conversations-feature";
 import HomeStudioPortal from "./home-studio-portal";
 import Button from "./shared-components/Button";
 import Eyebrow from "./shared-components/Eyebrow";
@@ -498,7 +497,6 @@ export default function HomePageClient() {
 
           <ClosingValueSection />
           <FeaturedRingSection />
-          <HomeConversationsFeature />
           <TestimonialSection />
         </div>
       </div>

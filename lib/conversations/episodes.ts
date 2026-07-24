@@ -167,11 +167,6 @@ export function getPublishedEpisodes(): ConversationEpisode[] {
   );
 }
 
-/** Newest publicly eligible episode, or null when none are published. */
-export function getLatestPublishedEpisode(): ConversationEpisode | null {
-  return getPublishedEpisodes()[0] ?? null;
-}
-
 /**
  * Episodes visible on the hub for the current runtime.
  * Production: published only. Local/dev: published + draft (for design review).
