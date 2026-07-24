@@ -482,12 +482,20 @@ export default function LightPerformanceDashboard({
     lgdrPercentileCaution: lgdrPresentation.percentileCaution,
   });
 
+  const incompleteAssessmentActive = Boolean(
+    lowInterpretationConfidence &&
+      decisionProfile &&
+      !effectiveGcal8xPremium &&
+      !fancyShapePresentation,
+  );
+
   const traitLine = fancyShapePresentation && resolvedFancyShape
     ? buildFancyShapeTraitLine(resolvedFancyShape)
     : buildV3TraitLine(
         clientScore?.lightTraits ?? [],
         effectiveGcal8xPremium,
         gradeHints?.clarity ?? decisionProfile?.gradeHints.clarity,
+        { incompleteAssessment: incompleteAssessmentActive },
       );
 
   const resultState = resolveDiamondIntelligenceResultState({
@@ -657,6 +665,7 @@ export default function LightPerformanceDashboard({
               hasDecisionProfile: Boolean(decisionProfile),
               clarityExcluded: clarityPolicy.isExcluded,
               purchaseRecommendation,
+              isGcal8x: effectiveGcal8xPremium,
             })}
             assessmentFancyShape={shouldUseV3FancyShapeChapterLayout({
               fancyShapePresentation,

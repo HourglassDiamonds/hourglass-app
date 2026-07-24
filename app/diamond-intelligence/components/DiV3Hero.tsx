@@ -70,7 +70,7 @@ export default function DiV3Hero({
             <h1
               className={`${verdictSizeClass} mt-7 font-serif font-normal uppercase leading-[0.9] tracking-[0.035em] text-[#1e1a16] md:mt-8`}
             >
-              {gcal8xTier ?? hero.purchaseHeadline}
+              {hero.purchaseHeadline}
             </h1>
             <p className="mx-auto mt-8 max-w-[540px] font-serif text-[clamp(18px,2.4vw,24px)] leading-[1.35] text-[#514536] md:mt-10">
               Among the most selective performance-verified diamond classes.

@@ -38,6 +38,33 @@ export type V3PublicTier =
 
 export type V3Gcal8xTier = "Rare" | "Exceptional";
 
+/**
+ * Recognized GCAL 8X without a calculated display score — authoritative, not a
+ * scored optical tier (never Rare/Exceptional by default).
+ */
+export const GCAL_8X_PERFORMANCE_VERIFIED_HEADLINE =
+  "GCAL 8X PERFORMANCE VERIFIED";
+
+/** Neutral trait line when incomplete proportions would otherwise invent optical descriptors. */
+export const V3_INCOMPLETE_ASSESSMENT_TRAIT_LINE = "Limited Proportion Data";
+
+/** Scored GCAL 8X tier when present; otherwise the dedicated unverified-score headline. */
+export function resolveGcal8xPurchaseHeadline(
+  gcal8xTier: V3Gcal8xTier | null | undefined,
+): string {
+  return gcal8xTier ?? GCAL_8X_PERFORMANCE_VERIFIED_HEADLINE;
+}
+
+/** True when the headline is a coherent GCAL 8X hero (scored tier or dedicated verified). */
+export function isGcal8xCoherentHeroHeadline(headline: string): boolean {
+  const h = headline.trim();
+  return (
+    h === "Rare" ||
+    h === "Exceptional" ||
+    h === GCAL_8X_PERFORMANCE_VERIFIED_HEADLINE
+  );
+}
+
 export type V3PercentileScope = "broad" | "optical";
 
 export type V3PercentilePresentation = {
@@ -353,6 +380,18 @@ export function buildV3HeroPresentation(input: {
     input.purchaseRecommendation === "Outside Hourglass Standards" ||
     input.purchaseRecommendation === "Not Recommended";
 
+  // GCAL 8X precedes incomplete-proportions fallback — never Proportion Detail Needed
+  // solely because diagram fields / displayScore are unavailable.
+  if (input.isGcal8x) {
+    return {
+      purchaseHeadline: resolveGcal8xPurchaseHeadline(input.gcal8xTier),
+      purchaseSubline: null,
+      opticalPerformanceLine: null,
+      opticalDetailLine: null,
+      percentile: null,
+    };
+  }
+
   if (input.lowInterpretationConfidence && !gradeConstrainedPurchase) {
     const incomplete = resolveV3IncompleteAssessmentCopy(
       {
@@ -364,16 +403,6 @@ export function buildV3HeroPresentation(input: {
     return {
       purchaseHeadline: incomplete.headline,
       purchaseSubline: incomplete.subhead,
-      opticalPerformanceLine: null,
-      opticalDetailLine: null,
-      percentile: null,
-    };
-  }
-
-  if (input.isGcal8x && input.gcal8xTier) {
-    return {
-      purchaseHeadline: input.gcal8xTier,
-      purchaseSubline: null,
       opticalPerformanceLine: null,
       opticalDetailLine: null,
       percentile: null,
@@ -433,6 +462,10 @@ export function resolveV3HeroVerdictLabel(input: {
     return resolveV3FancyShapeAssessmentCopy(input.fancyShapeLabel).headline;
   }
 
+  if (input.isGcal8x) {
+    return resolveGcal8xPurchaseHeadline(input.gcal8xTier);
+  }
+
   if (input.lowInterpretationConfidence) {
     return input.opticalUnavailable
       ? "Limited Information Available"
@@ -445,7 +478,6 @@ export function resolveV3HeroVerdictLabel(input: {
         ).headline;
   }
 
-  if (input.isGcal8x && input.gcal8xTier) return input.gcal8xTier;
   return input.publicTier === "Open" ? "Needs Review" : input.publicTier;
 }
 
@@ -460,10 +492,36 @@ function traitWord(trait: ClientLightTrait): string | null {
   return trait.level === "Strong" ? trait.label : "Balanced";
 }
 
+/** Stem for semantic descriptor dedupe (Crisp vs Crisp Contrast, etc.). */
+export function v3TraitDescriptorStem(word: string): string {
+  const n = word.toLowerCase().replace(/\s+/g, " ").trim();
+  if (n === "crisp" || n.startsWith("crisp ")) return "crisp";
+  if (n === "bright" || n.startsWith("bright ")) return "bright";
+  if (n === "balanced" || n.startsWith("balanced ")) return "balanced";
+  if (n.includes("fire")) return "fire";
+  if (n.includes("sparkle") || n.includes("scintillation")) return "sparkle";
+  if (n.includes("light return") || n.includes("leakage")) return "light-return";
+  return n;
+}
+
+function pushUniqueTraitWord(words: string[], candidate: string): void {
+  const stem = v3TraitDescriptorStem(candidate);
+  const existingIdx = words.findIndex((w) => v3TraitDescriptorStem(w) === stem);
+  if (existingIdx < 0) {
+    words.push(candidate);
+    return;
+  }
+  // Prefer the shorter/cleaner form already chosen (e.g. Crisp over Crisp Contrast).
+  if (candidate.length < words[existingIdx].length) {
+    words[existingIdx] = candidate;
+  }
+}
+
 export function buildV3TraitLine(
   traits: ClientLightTrait[],
   isGcal8x: boolean,
   clarity?: string,
+  opts?: { incompleteAssessment?: boolean },
 ): string {
   if (resolveHourglassClarityPolicy(clarity).isExcluded) {
     return "Outside Hourglass Standards · Not Recommended";
@@ -473,19 +531,30 @@ export function buildV3TraitLine(
     return "Bright · Precise · Performance-Verified";
   }
 
+  // Incomplete non-8X reads must not advertise optical descriptors from finish alone.
+  if (opts?.incompleteAssessment) {
+    return V3_INCOMPLETE_ASSESSMENT_TRAIT_LINE;
+  }
+
   const words: string[] = [];
   const brightness = traits.find((t) => t.label === "Brightness");
   const contrast = traits.find((t) => t.label === "Contrast");
   const leakage = traits.find((t) => t.label === "Leakage control");
 
-  if (brightness && brightness.level !== "Needs review") words.push("Bright");
-  if (contrast && contrast.level === "Balanced") words.push("Balanced");
-  else if (contrast && contrast.level === "Strong") words.push("Crisp");
-  if (leakage && leakage.level === "Strong") words.push("Strong Light Return");
-  else if (words.length < 3) {
+  if (brightness && brightness.level !== "Needs review") {
+    pushUniqueTraitWord(words, "Bright");
+  }
+  if (contrast && contrast.level === "Balanced") {
+    pushUniqueTraitWord(words, "Balanced");
+  } else if (contrast && contrast.level === "Strong") {
+    pushUniqueTraitWord(words, "Crisp");
+  }
+  if (leakage && leakage.level === "Strong") {
+    pushUniqueTraitWord(words, "Strong Light Return");
+  } else if (words.length < 3) {
     for (const trait of traits) {
       const w = traitWord(trait);
-      if (w && !words.includes(w)) words.push(w);
+      if (w) pushUniqueTraitWord(words, w);
       if (words.length >= 3) break;
     }
   }
@@ -788,7 +857,10 @@ export function shouldUseV3IncompleteChapterLayout(input: {
   hasDecisionProfile: boolean;
   clarityExcluded: boolean;
   purchaseRecommendation?: PurchaseRecommendationLabel;
+  /** Recognized GCAL 8X — never use incomplete-proportions chapter stack. */
+  isGcal8x?: boolean;
 }): boolean {
+  if (input.isGcal8x) return false;
   if (input.fancyShapePresentation) return false;
   if (!input.lowInterpretationConfidence || !input.hasDecisionProfile) return false;
   if (input.clarityExcluded) return false;

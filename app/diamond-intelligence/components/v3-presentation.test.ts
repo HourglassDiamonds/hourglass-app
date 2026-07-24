@@ -103,6 +103,19 @@ describe("shouldUseV3IncompleteChapterLayout", () => {
     );
   });
 
+  it("suppresses incomplete chapter stack for recognized GCAL 8X", () => {
+    assert.equal(
+      shouldUseV3IncompleteChapterLayout({
+        lowInterpretationConfidence: true,
+        hasDecisionProfile: true,
+        clarityExcluded: false,
+        purchaseRecommendation: "Worth Reviewing After Additional Information",
+        isGcal8x: true,
+      }),
+      false,
+    );
+  });
+
   it("suppresses proportion-incomplete layout when fancy shape is active", () => {
     assert.equal(
       shouldUseV3IncompleteChapterLayout({

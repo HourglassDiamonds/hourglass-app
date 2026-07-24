@@ -38,7 +38,7 @@ import {
 } from "@/lib/diamond-intelligence/unsupported-report-format-copy";
 import { probeClientUnsupportedReportFormat } from "@/lib/diamond-intelligence/unsupported-format-probe";
 import type { UnsupportedReportFormatMatch } from "@/lib/diamond-intelligence/unsupported-report-format";
-
+import { logDiamondIntelligenceInterpretObservability } from "@/lib/diamond-intelligence/interpret-observability";
 export type InterpretUploadedReportInput = {
   bytes: Buffer;
   mime: string;
@@ -172,6 +172,11 @@ export async function interpretUploadedReport(
     const decision = classifyFinalized(finalized);
 
     if (finalized.diagramOcrTimedOut) {
+      logDiamondIntelligenceInterpretObservability({
+        finalized,
+        timedOut: true,
+        httpStatus: 504,
+      });
       return {
         ok: false,
         error: CLIENT_GIA_DIAGRAM_OCR_TIMEOUT_ERROR,
@@ -184,6 +189,11 @@ export async function interpretUploadedReport(
     }
 
     if (decision.tier === "failure") {
+      logDiamondIntelligenceInterpretObservability({
+        finalized,
+        timedOut: finalized.timedOut,
+        httpStatus: 422,
+      });
       return {
         ok: false,
         error: CLIENT_UPLOAD_INTERPRET_ERROR,
@@ -227,6 +237,12 @@ export async function interpretUploadedReport(
     if (decision.tier === "full" || suppressPartialConsumerNote) {
       setCachedClientInterpretation(bytes, interpretation);
     }
+
+    logDiamondIntelligenceInterpretObservability({
+      finalized,
+      timedOut: finalized.timedOut,
+      httpStatus: 200,
+    });
 
     return {
       ok: true,
