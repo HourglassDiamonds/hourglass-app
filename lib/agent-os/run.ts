@@ -48,6 +48,7 @@ import {
   resolveSearchExecutiveStatus,
 } from "./delivery";
 import { AGENT_OS_VERSION, type AgentRun, type DataSourceId } from "./types";
+import type { BriefCadenceIntent } from "./brief-quality";
 import { getReportWeekRange } from "@/lib/intelligence/week-ranges";
 import {
   persistAgentOsRun,
@@ -68,6 +69,13 @@ export type RunAgentOsOptions = {
   mode?: AdapterMode;
   reportingPeriod?: { start: string; end: string };
   synthesisProvider?: AgentOsSynthesisProvider;
+  /**
+   * Cadence intent for CoS framing + priority selection.
+   * Same orchestrator; daily vs weekly product intent only.
+   */
+  briefCadenceIntent?: BriefCadenceIntent;
+  /** America/New_York YYYY-MM-DD for daily Morning Brief framing. */
+  briefLocalDate?: string;
   /** When true, skip any persistence — Decision Journal must not write in production runs */
   allowDecisionJournalWrite?: boolean;
   /**
@@ -337,6 +345,8 @@ export async function runAgentOsBrief(
     mode,
     briefEvidenceQuality: provisionalEvidenceQuality,
     founderSurfaceEligibleIds,
+    briefCadenceIntent: options.briefCadenceIntent,
+    briefLocalDate: options.briefLocalDate,
   });
 
   const provider =

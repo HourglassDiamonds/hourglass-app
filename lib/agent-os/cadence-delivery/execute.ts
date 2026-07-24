@@ -60,6 +60,10 @@ import {
 } from "./windows";
 import { FOUNDER_CADENCE_TIMEZONE } from "../persistence/cadence";
 import { localCalendarStamp } from "../persistence/timezone";
+import {
+  localDateFromCadenceWindow,
+  resolveBriefCadenceIntent,
+} from "../brief-quality";
 
 export type CadenceExecutionMode =
   | "dry-run"
@@ -538,10 +542,14 @@ export async function executeAgentOsCadence(
   }
 
   // Run full Agent OS (all five executives via existing orchestrator)
+  const briefCadenceIntent = resolveBriefCadenceIntent(cadenceId);
+  const briefLocalDate = localDateFromCadenceWindow(window, nowIso);
   let run: AgentRun;
   try {
     run = await runAgentOsBrief({
       mode: adapterMode(options.mode),
+      briefCadenceIntent,
+      briefLocalDate,
       persistence: {
         enabled: true,
         trigger: triggerForMode(options.mode),

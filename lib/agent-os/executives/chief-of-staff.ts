@@ -7,6 +7,13 @@ import {
   consolidateJourneyDuplicates,
   sequenceJourneyMeasurementPrerequisites,
 } from "../bi/journey";
+import {
+  cleanFounderFacingAction,
+  formatFounderLocalDateLabel,
+  formatWeeklyRangeLabel,
+  selectFounderPriorities,
+  type BriefCadenceIntent,
+} from "../brief-quality";
 import { consolidateDuplicates } from "../recommendation";
 import { rankRecommendations } from "../ranking";
 import { opportunityRecommendationIsSurfaceEligible } from "../opportunity/qualify";
@@ -35,6 +42,14 @@ export type ChiefOfStaffInput = {
    * Order is priority preference for brief slots.
    */
   founderSurfaceEligibleIds?: string[] | null;
+  /**
+   * Cadence intent for synthesis framing + priority selection.
+   * Daily: today’s operating brief. Weekly: deeper performance review.
+   * Same orchestration path — not a parallel agent system.
+   */
+  briefCadenceIntent?: BriefCadenceIntent;
+  /** America/New_York YYYY-MM-DD for daily period framing. */
+  briefLocalDate?: string;
 };
 
 export type ChiefOfStaffOutput = {
@@ -148,20 +163,34 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
     }
   }
 
-  const highest = surfacePool[0] ?? (
-    input.founderSurfaceEligibleIds
-      ? undefined
-      : active.find((r) => r.originatingExecutive !== "opportunity")
-  );
-  const additionalSurfaced = pickAdditionalSurfaced(
-    surfacePool.filter((r) => r.recommendationId !== highest?.recommendationId),
-    MAX_ADDITIONAL_SURFACED_PRIORITIES,
-  );
+  const intent: BriefCadenceIntent = input.briefCadenceIntent ?? "weekly";
+  const poolForSelection =
+    surfacePool.length > 0
+      ? surfacePool
+      : input.founderSurfaceEligibleIds
+        ? []
+        : active.filter((r) => r.originatingExecutive !== "opportunity");
+
+  // Preserve ranked highest-ROI order; cluster/limitation rules only demote slots
+  // (see brief-quality.ts). Soft diversity is a fill tie-breaker, not a quota.
+  const selected = selectFounderPriorities(poolForSelection, {
+    max: MAX_ADDITIONAL_SURFACED_PRIORITIES + 1,
+  });
+  const highest = selected.highest;
+  const additionalSurfaced = selected.additional;
   const surfacedIds = new Set(
     [highest, ...additionalSurfaced]
       .filter(Boolean)
       .map((r) => r!.recommendationId),
   );
+
+  // Diverted internal limitations → blockers / data notes, not named priorities
+  const divertedAsBlockers = selected.divertedInternalLimitations
+    .slice(0, 2)
+    .map(
+      (r) =>
+        `Operator follow-up: ${r.title.replace(/^\[Content\]\s*/i, "").replace(/^Source material incomplete/i, "Complete source material")}`,
+    );
 
   const founderDecisions = active
     .filter((r) => r.approvalRequired && surfacedIds.has(r.recommendationId))
@@ -215,18 +244,34 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
     )
     .slice(0, 1)
     .map((o) => o.title);
+  const changeBits =
+    intent === "daily"
+      ? [
+          ...input.bi.keyMetricChanges.slice(0, 1),
+          ...input.bi.anomalies
+            .filter((a) => a.severity === "critical" || a.severity === "high")
+            .slice(0, 1)
+            .map((a) => a.title),
+          ...searchChangeBits.slice(0, 1),
+          ...contentChangeBits.slice(0, 1),
+        ]
+      : [
+          ...input.bi.keyMetricChanges.slice(0, 2),
+          ...searchChangeBits,
+          ...contentChangeBits,
+          ...opportunityChangeBits,
+        ];
   const whatChanged =
-    [
-      ...input.bi.keyMetricChanges.slice(0, 2),
-      ...searchChangeBits,
-      ...contentChangeBits,
-      ...opportunityChangeBits,
-    ].join("; ") ||
-    "Insufficient metric coverage to summarize changes.";
+    changeBits.filter(Boolean).join("; ") ||
+    (intent === "daily"
+      ? "No material day-over-day signal in available sources."
+      : "Insufficient metric coverage to summarize changes.");
 
   const whyItMatters = highest
     ? highest.whyItMattersNow
-    : "No high-confidence action is ready; measurement gaps dominate.";
+    : intent === "daily"
+      ? "No high-confidence founder move is ready today; watch measurement gaps quietly."
+      : "No high-confidence action is ready; measurement gaps dominate.";
 
   const needsAttentionToday = [
     ...additionalSurfaced.map((r) => r.title),
@@ -275,11 +320,13 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
   }
 
   const blockedList = [
+    ...divertedAsBlockers,
     ...blocked.slice(0, 2).map(
       (r) =>
         `${r.title}${r.blockedReasons?.length ? ` — ${r.blockedReasons[0]}` : ""}`,
     ),
-    ...nonOperationalNote,
+    // Daily briefs omit scaffold "not yet operational" noise from the founder list
+    ...(intent === "daily" ? [] : nonOperationalNote),
   ].slice(0, 4);
 
   // Deduplicate gap descriptions for brief length
@@ -330,9 +377,26 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
       ).length ??
       0);
 
+  const highestRoiAction = highest
+    ? intent === "daily"
+      ? `${highest.title} — ${truncateAction(cleanFounderFacingAction(highest.proposedAction))}`
+      : `${highest.title} — ${truncateAction(highest.proposedAction)} (confidence ${highest.confidence})`
+    : intent === "daily"
+      ? "None required today"
+      : "None — resolve data gaps first";
+
+  const periodLabel =
+    intent === "daily" && input.briefLocalDate
+      ? `Morning Brief · ${formatFounderLocalDateLabel(input.briefLocalDate)}`
+      : formatWeeklyRangeLabel(
+          input.reportingPeriod.start,
+          input.reportingPeriod.end,
+        );
+
   const brief = buildFounderBrief({
     mode: input.mode ?? "fixture",
     briefEvidenceQuality: input.briefEvidenceQuality ?? "full",
+    briefCadenceIntent: intent,
     whatChanged,
     whyItMatters,
     needsAttentionToday:
@@ -341,14 +405,12 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
         : highest
           ? ["See highest-ROI action below"]
           : ["None"],
-    highestRoiAction: highest
-      ? `${highest.title} — ${truncateAction(highest.proposedAction)} (confidence ${highest.confidence})`
-      : "None — resolve data gaps first",
+    highestRoiAction,
     canSafelyWait,
     blocked: blockedList.length ? blockedList : ["None"],
     founderDecisionNeeded,
     missingOrUnreliableData,
-    period: input.reportingPeriod,
+    periodLabel,
     facts: [
       ...input.bi.facts.slice(0, 2),
       ...(input.search?.facts ?? []).slice(0, 1),
@@ -371,24 +433,6 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
     nonOperationalNote,
     surfacedInBriefCount: surfacedPriorityTitles.length,
   };
-}
-
-/**
- * Prefer do-now / high urgency for additional Markdown priorities.
- * High-severity items are not dropped in favor of low-urgency noise.
- */
-function pickAdditionalSurfaced(
-  rest: Recommendation[],
-  limit: number,
-): Recommendation[] {
-  const priority = [...rest].sort((a, b) => {
-    const score = (r: Recommendation) =>
-      (r.agendaBucket === "do-now" ? 100 : 0) +
-      (r.urgency === "critical" ? 50 : r.urgency === "high" ? 30 : 0) +
-      r.priorityScore;
-    return score(b) - score(a);
-  });
-  return priority.slice(0, limit);
 }
 
 function findExecutiveConflicts(recs: Recommendation[]): string[] {
@@ -504,6 +548,7 @@ function criticalGapsNeedDecision(
 function buildFounderBrief(input: {
   mode: "fixture" | "live";
   briefEvidenceQuality: BriefEvidenceQuality;
+  briefCadenceIntent: BriefCadenceIntent;
   whatChanged: string;
   whyItMatters: string;
   needsAttentionToday: string[];
@@ -512,7 +557,7 @@ function buildFounderBrief(input: {
   blocked: string[];
   founderDecisionNeeded: string[];
   missingOrUnreliableData: string[];
-  period: { start: string; end: string };
+  periodLabel: string;
   facts: string[];
   inferences: string[];
   surfacedPriorityTitles: string[];
@@ -534,10 +579,33 @@ function buildFounderBrief(input: {
     modeLabel += " — FAILED";
   }
 
-  const markdown = `# Hourglass Founder Brief
+  const heading =
+    input.briefCadenceIntent === "daily"
+      ? "# Hourglass Morning Brief"
+      : "# Hourglass Founder Brief";
+  const intentLine =
+    input.briefCadenceIntent === "daily"
+      ? "Intent: Today’s priorities, decisions, blockers, and highest-ROI move"
+      : "Intent: Weekly performance review, trends, and cross-functional synthesis";
+
+  const dataSection =
+    input.briefCadenceIntent === "daily"
+      ? `## 8. Data confidence
+${bullets(
+  input.missingOrUnreliableData.length
+    ? [
+        input.missingOrUnreliableData.slice(0, 3).join("; "),
+      ]
+    : ["Sources available for this cycle"],
+)}`
+      : `## 8. What data is missing or unreliable?
+${bullets(input.missingOrUnreliableData.slice(0, 5))}`;
+
+  const markdown = `${heading}
 
 Mode: ${modeLabel}
-Period: ${input.period.start} → ${input.period.end}
+${intentLine}
+Period: ${input.periodLabel}
 Surfacing: ${input.surfacedPriorityTitles.length} named priorities (${input.opportunitiesDetected} detected · ${input.rankedRecommendationCount} ranked) — full set in JSON
 
 ## 1. What changed?
@@ -561,8 +629,7 @@ ${bullets(input.blocked)}
 ## 7. What decision does the founder need to make?
 ${bullets(input.founderDecisionNeeded)}
 
-## 8. What data is missing or unreliable?
-${bullets(input.missingOrUnreliableData.slice(0, 5))}
+${dataSection}
 
 ### Known facts
 ${bullets(input.facts.slice(0, 4))}
