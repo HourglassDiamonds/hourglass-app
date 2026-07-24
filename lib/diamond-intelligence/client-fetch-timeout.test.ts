@@ -18,8 +18,8 @@ describe("CLIENT_INTERPRET_FETCH_TIMEOUT_MS", () => {
     );
   });
 
-  it("does not exceed Vercel interpret maxDuration (120s)", () => {
-    assert.ok(CLIENT_INTERPRET_FETCH_TIMEOUT_MS <= 120_000);
+  it("does not exceed Vercel interpret maxDuration (300s)", () => {
+    assert.ok(CLIENT_INTERPRET_FETCH_TIMEOUT_MS <= 300_000);
   });
 });
 

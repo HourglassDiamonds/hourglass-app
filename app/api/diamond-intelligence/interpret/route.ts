@@ -31,8 +31,12 @@ import {
 import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
-/** GIA LGDR + GCAL Sarine cold Tesseract WASM on Vercel can exceed 90s. */
-export const maxDuration = 120;
+/**
+ * GIA LGDR + GCAL Sarine cold Tesseract WASM on Vercel can exceed 90s.
+ * When OCR_WORKER_URL is set but the remote worker is unhealthy, interpret falls
+ * back to in-process bundled Tesseract — cold isolates need headroom beyond 120s.
+ */
+export const maxDuration = 300;
 
 function json(body: Record<string, unknown>, status = 200, headers?: HeadersInit) {
   return NextResponse.json(toJsonSafe(body), { status, headers });
