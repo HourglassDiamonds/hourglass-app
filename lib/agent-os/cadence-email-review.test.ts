@@ -613,3 +613,30 @@ describe("lease constant documented", () => {
     assert.equal(AGENT_OS_PERSISTENCE_SCHEMA_VERSION, 2);
   });
 });
+
+describe("CLI --test email transport safety", () => {
+  it("defaults --test to fake sender and requires --allow-real-email for Resend", () => {
+    const src = readFileSync(
+      join(process.cwd(), "scripts/agent-os-cadence.ts"),
+      "utf8",
+    );
+    assert.match(src, /createFakeEmailSender/);
+    assert.match(src, /--allow-real-email/);
+    assert.match(
+      src,
+      /testMode && !allowRealEmail \? createFakeEmailSender\(\)/,
+    );
+    assert.match(
+      src,
+      /--allow-real-email is only valid with --test/,
+    );
+    assert.match(src, /fake in-process sender/);
+    assert.match(src, /no Resend \/ no external email/);
+    // Production path must remain explicit and must not inherit the fake default.
+    assert.match(src, /--scheduled-live/);
+    assert.doesNotMatch(
+      src,
+      /scheduledLive && !allowRealEmail \? createFakeEmailSender/,
+    );
+  });
+});

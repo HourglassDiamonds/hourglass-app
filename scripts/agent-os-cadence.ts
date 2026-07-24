@@ -3,9 +3,17 @@
  *
  * Live mode is NEVER implicit — require --scheduled-live.
  *
+ * Mode safety:
+ *   --dry-run         Never sends email; never writes delivery-success as sent.
+ *   --test            Fixture orchestration + durable claim path. Defaults to a
+ *                     fake in-process sender (no Resend / no external email).
+ *                     Pass --allow-real-email only for an intentional real send.
+ *   --scheduled-live  Approved production path (durable Supabase + real email).
+ *
  * Usage:
  *   npx tsx scripts/agent-os-cadence.ts --dry-run --force
  *   npx tsx scripts/agent-os-cadence.ts --test --cadence cos-weekly-founder-brief --force --persist-durable-test
+ *   npx tsx scripts/agent-os-cadence.ts --test --allow-real-email --cadence cos-daily-synthesis --force
  *   npx tsx scripts/agent-os-cadence.ts --scheduled-live
  *   npx tsx scripts/agent-os-cadence.ts --inspect --persist-durable-test
  *   npx tsx scripts/agent-os-cadence.ts --resolve-uncertain --delivery-id del:… --as failed --confirm --persist-durable-test
@@ -14,6 +22,7 @@
  */
 
 import {
+  createFakeEmailSender,
   executeAgentOsCadence,
   inspectAgentOsDeliveries,
   resolveUncertainDelivery,
@@ -41,6 +50,7 @@ async function main() {
   const persistFile = args.includes("--persist-file");
   const persistDurableTest = args.includes("--persist-durable-test");
   const confirm = args.includes("--confirm");
+  const allowRealEmail = args.includes("--allow-real-email");
 
   const modeFlags = [
     dryRun,
@@ -68,6 +78,14 @@ async function main() {
   if (persistDurableTest && process.env.NODE_ENV === "production") {
     console.error(
       "[agent-os-cadence] durable-test is unavailable in production",
+    );
+    process.exitCode = 2;
+    return;
+  }
+
+  if (allowRealEmail && !testMode) {
+    console.error(
+      "[agent-os-cadence] --allow-real-email is only valid with --test (use --scheduled-live for production)",
     );
     process.exitCode = 2;
     return;
@@ -186,8 +204,28 @@ async function main() {
       ? ("test" as const)
       : ("scheduled-live" as const);
 
+  // --test defaults to a fake sender so fixture runs cannot hit Resend unless
+  // the operator explicitly opts into a real send with --allow-real-email.
+  const testEmailSender =
+    testMode && !allowRealEmail ? createFakeEmailSender() : undefined;
+  const testEmailConfigOverride =
+    testMode && !allowRealEmail
+      ? {
+          apiKey: "re_test_cli_fake_key",
+          from: "agent-os-test@example.com",
+          to: "founder-test@example.com",
+          recipientAlias: "founder-test",
+        }
+      : undefined;
+
   console.log(
-    `[agent-os-cadence] mode=${mode} cadence=${cadenceId ?? "(all due)"}`,
+    `[agent-os-cadence] mode=${mode} cadence=${cadenceId ?? "(all due)"}${
+      testMode
+        ? allowRealEmail
+          ? " email=real(--allow-real-email)"
+          : " email=fake(default)"
+        : ""
+    }`,
   );
 
   const result = await executeAgentOsCadence({
@@ -201,6 +239,8 @@ async function main() {
       : scheduledLive
         ? undefined
         : undefined,
+    emailSender: testEmailSender,
+    emailConfigOverride: testEmailConfigOverride,
   });
 
   console.log(
@@ -216,6 +256,12 @@ async function main() {
         deliveryStatus: result.deliveryStatus,
         emailSent: result.emailSent,
         dryRun: result.dryRun,
+        testEmailTransport:
+          testMode && !allowRealEmail
+            ? "fake"
+            : testMode && allowRealEmail
+              ? "real"
+              : null,
         suppressionReason: result.suppressionReason,
         errorCode: result.errorCode,
         safeSummary: result.safeSummary,
