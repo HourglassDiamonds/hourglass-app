@@ -26,6 +26,11 @@ import {
   episodeHasPlayableVideo,
   shouldShowTemporaryPlaybackNote,
 } from "@/lib/conversations/episodes";
+import {
+  buildYouTubeEmbedUrl,
+  buildYouTubeIframeTitle,
+  normalizeYouTubeVideoId,
+} from "@/lib/conversations/youtube";
 
 type HourglassVideoPlayerProps = {
   episode: ConversationEpisode;
@@ -149,7 +154,11 @@ export default function HourglassVideoPlayer({
     if (!playable) return;
     setError(null);
     setActivated(true);
-  }, [playable]);
+    // YouTube iframe has no native progress API here — count activation as start.
+    if (video?.provider === "youtube") {
+      markStarted();
+    }
+  }, [markStarted, playable, video?.provider]);
 
   useEffect(() => {
     if (!activated || video?.provider !== "file") return;
@@ -290,6 +299,21 @@ export default function HourglassVideoPlayer({
             />
           ))}
         </video>
+      ) : null}
+
+      {activated &&
+      playable &&
+      video?.provider === "youtube" &&
+      normalizeYouTubeVideoId(video.youtubeVideoId) ? (
+        <iframe
+          title={buildYouTubeIframeTitle(episode.title)}
+          src={buildYouTubeEmbedUrl(video.youtubeVideoId!, { autoplay: true })}
+          className="absolute inset-0 h-full w-full border-0 bg-black"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          allowFullScreen
+          referrerPolicy="strict-origin-when-cross-origin"
+          loading="lazy"
+        />
       ) : null}
 
       {activated &&

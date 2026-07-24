@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   buildConversationAnalyticsPayload,
+  buildConversationConciergeHref,
   resolveNewProgressMilestones,
   sanitizeConversationAnalyticsValue,
 } from "./analytics";
@@ -39,7 +40,7 @@ describe("conversation analytics", () => {
       episode_slug: "why-we-re-here",
       season: 1,
       episode_number: 1,
-      video_provider: "mux",
+      video_provider: "youtube",
       progress_milestone: 25,
       destination_type: "article",
       destination_path: "/diamond-guide/why-work-with-a-graduate-gemologist",
@@ -49,7 +50,7 @@ describe("conversation analytics", () => {
       episode_slug: "why-we-re-here",
       season: 1,
       episode_number: 1,
-      video_provider: "mux",
+      video_provider: "youtube",
       progress_milestone: 25,
       destination_type: "article",
       destination_path: "/diamond-guide/why-work-with-a-graduate-gemologist",
@@ -72,5 +73,12 @@ describe("conversation analytics", () => {
     assert.equal(payload.destination_type, "tool");
     assert.equal(payload.destination_path, "/diamond-intelligence");
     assert.equal(payload.episode_slug, "why-we-re-here");
+  });
+
+  it("builds Concierge CTA attribution with tool=conversations and content slug", () => {
+    assert.equal(
+      buildConversationConciergeHref("why-we-re-here"),
+      "/concierge?tool=conversations&content=why-we-re-here",
+    );
   });
 });

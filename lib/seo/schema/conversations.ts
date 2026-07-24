@@ -4,6 +4,11 @@ import {
   episodePath,
 } from "@/lib/conversations/episodes";
 import {
+  buildYouTubeEmbedUrl,
+  buildYouTubeWatchUrl,
+  normalizeYouTubeVideoId,
+} from "@/lib/conversations/youtube";
+import {
   absoluteUrl,
   ORGANIZATION_ID,
   PERSON_ID,
@@ -61,6 +66,9 @@ function resolveThumbnailUrl(episode: ConversationEpisode): string {
 /**
  * Build a VideoObject node from an episode. Omits embed/content URLs when
  * no playable video exists yet so schema stays valid.
+ *
+ * Does not emit incomplete playback URLs. Callers should only attach this
+ * graph to publicly eligible episodes (see episode pages).
  */
 export function buildConversationVideoObject(
   episode: ConversationEpisode,
@@ -106,6 +114,13 @@ export function buildConversationVideoObject(
       node.contentUrl = episode.video.src.startsWith("http")
         ? episode.video.src
         : absoluteUrl(episode.video.src);
+    } else if (episode.video.provider === "youtube") {
+      const youtubeId = normalizeYouTubeVideoId(episode.video.youtubeVideoId);
+      if (youtubeId) {
+        node.contentUrl = buildYouTubeWatchUrl(youtubeId);
+        // Schema embed URL without autoplay — page player adds autoplay after click.
+        node.embedUrl = buildYouTubeEmbedUrl(youtubeId, { autoplay: false });
+      }
     }
   }
 

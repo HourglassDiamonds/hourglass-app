@@ -21,6 +21,7 @@
     "agent-os:brief": "npx tsx scripts/agent-os-brief.ts --fixture",
     "agent-os:brief:live": "npx tsx scripts/agent-os-brief.ts --live",
     "agent-os:cadence": "npx tsx scripts/agent-os-cadence.ts",
+    "test:conversations": "npx tsx --test lib/conversations/*.test.ts lib/seo/schema/conversations.test.ts",
     "test:agent-os": "npx tsx --test lib/agent-os/*.test.ts lib/agent-os/**/*.test.ts",
     "test:igi": "npx tsx --test lib/calibration-library/lg773657228.regression.test.ts lib/calibration-library/igi-diagram-image-ocr.test.ts lib/diamond-intelligence/igi-natural-pdf-regression.test.ts",
     "test:gia": "npx tsx --test lib/calibration-library/gia2527039693.regression.test.ts lib/calibration-library/gia-facsimile-image-ocr.test.ts lib/calibration-library/gia-facsimile-calibration-eligibility.test.ts lib/calibration-library/parsers/gia/gia-report-style.test.ts",

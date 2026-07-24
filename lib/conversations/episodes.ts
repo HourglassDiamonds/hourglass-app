@@ -1,11 +1,15 @@
 /**
  * Central episode content model for Hourglass Conversations.
  * Edit episode records here when publishing — no page redesign required.
+ *
+ * Operator guide: docs/conversations-publishing.md
  */
+
+import { isValidYouTubeVideoId } from "./youtube";
 
 export type ConversationPublishStatus = "draft" | "published";
 
-export type ConversationVideoProvider = "mux" | "file";
+export type ConversationVideoProvider = "mux" | "file" | "youtube";
 
 export type ConversationCaptionTrack = {
   src: string;
@@ -20,6 +24,11 @@ export type ConversationVideoSource = {
   playbackId?: string;
   /** Direct CDN or Cloudinary MP4/HLS URL for provider "file". */
   src?: string;
+  /**
+   * YouTube video ID (11 characters). Public, not a secret.
+   * Prefer privacy-enhanced embeds via `buildYouTubeEmbedUrl`.
+   */
+  youtubeVideoId?: string;
   /** Optional poster override (falls back to episode.poster). */
   poster?: string;
   captions?: ConversationCaptionTrack[];
@@ -94,7 +103,11 @@ export const CONVERSATION_EPISODES: ConversationEpisode[] = [
     poster: "/media/conversations/why-we-re-here-poster.svg",
     thumbnail: "/media/conversations/why-we-re-here-poster.svg",
     openGraphImage: "/media/conversations/why-we-re-here-poster.svg",
-    // No playback source yet — player renders a polished poster preview.
+    // No production playback source yet — do not invent YouTube / Mux IDs.
+    // When the long-form Conversation is live, insert ONE of:
+    //   video: { provider: "youtube", youtubeVideoId: "<11-char-id>" },
+    //   video: { provider: "mux", playbackId: "<mux-playback-id>" },
+    // Then replace the draft transcript, add captions + a photo poster, and set status: "published".
     keyIdeas: [
       {
         title: "An engagement is still an analog moment",
@@ -245,6 +258,9 @@ export function episodeHasPlayableVideo(
   }
   if (video.provider === "file") {
     return Boolean(video.src?.trim());
+  }
+  if (video.provider === "youtube") {
+    return isValidYouTubeVideoId(video.youtubeVideoId);
   }
   return false;
 }

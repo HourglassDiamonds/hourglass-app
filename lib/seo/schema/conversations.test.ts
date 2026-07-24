@@ -8,8 +8,12 @@ import {
 } from "@/lib/seo/schema/conversations";
 import { serializeJsonLd } from "@/lib/seo/schema/json-ld";
 import { getPublishedEpisodes } from "@/lib/conversations/episodes";
+import { buildYouTubeEmbedUrl } from "@/lib/conversations/youtube";
 import sitemap from "@/app/sitemap";
 import { SITE_URL } from "@/lib/seo/site-metadata";
+
+/** Synthetic fixture — tests only. Never ship in production episode data. */
+const FIXTURE_YOUTUBE_ID = "AbCdefGh_12";
 
 function graphTypes(data: unknown): string[] {
   if (
@@ -36,12 +40,16 @@ describe("conversation SEO and schema", () => {
     (episode) => episode.slug === "why-we-re-here",
   );
 
-  it("marks draft episode metadata as noindex", () => {
+  it("marks draft episode metadata as noindex with correct title and description", () => {
     assert.ok(draft);
     const metadata = conversationEpisodeMetadata(draft);
     assert.deepEqual(metadata.robots, { index: false, follow: false });
     assert.equal(metadata.title, "Why We’re Here");
     assert.ok(metadata.description?.includes("thoughtful guidance"));
+    assert.equal(
+      (metadata.alternates as { canonical?: string } | undefined)?.canonical,
+      "/conversations/why-we-re-here",
+    );
   });
 
   it("builds VideoObject without inventing content URLs when video is absent", () => {
@@ -55,7 +63,10 @@ describe("conversation SEO and schema", () => {
     assert.ok(typeof videoObject.thumbnailUrl === "string");
     assert.equal("contentUrl" in videoObject, false);
     assert.equal("embedUrl" in videoObject, false);
+  });
 
+  it("emits Mux content and embed URLs when Mux playback exists", () => {
+    assert.ok(draft);
     const publishedFixture = {
       ...draft,
       status: "published" as const,
@@ -73,6 +84,31 @@ describe("conversation SEO and schema", () => {
       "https://stream.mux.com/abcPlaybackId.m3u8",
     );
     assert.equal(withVideo.embedUrl, "https://player.mux.com/abcPlaybackId");
+  });
+
+  it("emits YouTube watch and privacy-enhanced embed URLs without autoplay in schema", () => {
+    assert.ok(draft);
+    const publishedFixture = {
+      ...draft,
+      status: "published" as const,
+      video: {
+        provider: "youtube" as const,
+        youtubeVideoId: FIXTURE_YOUTUBE_ID,
+      },
+    };
+    const withVideo = buildConversationVideoObject(publishedFixture) as Record<
+      string,
+      unknown
+    >;
+    assert.equal(
+      withVideo.contentUrl,
+      `https://www.youtube.com/watch?v=${FIXTURE_YOUTUBE_ID}`,
+    );
+    assert.equal(
+      withVideo.embedUrl,
+      buildYouTubeEmbedUrl(FIXTURE_YOUTUBE_ID, { autoplay: false }),
+    );
+    assert.equal(String(withVideo.embedUrl).includes("autoplay="), false);
   });
 
   it("emits VideoObject and BreadcrumbList for episode graphs", () => {

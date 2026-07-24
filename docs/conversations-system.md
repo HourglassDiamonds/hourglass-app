@@ -43,13 +43,16 @@ Each episode supports:
 
 ```ts
 video: {
-  provider: "mux" | "file",
-  playbackId?: string, // Mux public playback ID
-  src?: string,        // CDN MP4/HLS URL for provider "file"
+  provider: "mux" | "file" | "youtube",
+  playbackId?: string,     // Mux public playback ID
+  src?: string,            // CDN MP4/HLS URL for provider "file"
+  youtubeVideoId?: string, // 11-character YouTube video ID
   poster?: string,
   captions?: Array<{ src: string; label: string; srclang: string; default?: boolean }>
 }
 ```
+
+YouTube playback uses a click-to-activate privacy-enhanced embed (`youtube-nocookie.com`). Do not invent video IDs. Operator publishing steps: `docs/conversations-publishing.md`.
 
 Do not put large long-form masters in the Next.js `public/` folder.
 
@@ -59,8 +62,8 @@ Do not put large long-form masters in the Next.js `public/` folder.
 
 1. Edit the master video.
 2. Export a distribution copy for YouTube (platform packaging / end screen as needed).
-3. Export a clean website copy and upload it to Mux (preferred) or the selected CDN.
-4. Obtain the Mux playback ID or CDN URL.
+3. Prefer website playback via the YouTube video ID once the episode is live on YouTube, **or** export a clean website copy to Mux / CDN.
+4. Obtain the YouTube video ID (11 characters) and/or Mux playback ID / CDN URL — never invent these.
 5. Create a 16:9 poster image.
 6. Create a caption file (WebVTT).
 7. Add or update the episode record in `lib/conversations/episodes.ts`.
@@ -69,6 +72,8 @@ Do not put large long-form masters in the Next.js `public/` folder.
 10. Change `status` from `draft` to `published`.
 11. Verify metadata, Open Graph image, and `VideoObject` schema on the episode page.
 12. Add UTM links for social distribution that land on the Hourglass episode URL.
+
+See `docs/conversations-publishing.md` for the concise operator checklist.
 
 ### Future Mux upload workflow
 
