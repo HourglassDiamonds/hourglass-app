@@ -616,6 +616,8 @@ Module: `lib/agent-os/cadence-delivery/`.
 
 **Claim retention:** intended ~90 days; automatic purge not yet enabled (required before/shortly after scheduled-live).
 
+**Production activation / rollback runbook:** see [`docs/agent-os-production-activation.md`](./agent-os-production-activation.md) (preparation checklist, schema verification, env rules, smoke test, cron enablement, rollback). Do not treat that document as authorization to activate.
+
 ```bash
 npm run agent-os:cadence -- --dry-run --force
 npm run agent-os:cadence -- --scheduled-live
