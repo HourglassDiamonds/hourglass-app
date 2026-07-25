@@ -49,6 +49,24 @@ function assertFourCores(fields: {
   assert.ok(fields.pavilionAngle?.trim(), "pavilionAngle");
 }
 
+/** Compare measurement strings numerically when decimals are equivalent (33 vs 33.0). */
+function assertMeasurementEqual(
+  actual: string | undefined,
+  expected: string,
+  label: string,
+) {
+  const a = (actual ?? "").replace(/°/g, "").trim();
+  const e = expected.trim();
+  if (a === e) return;
+  const an = Number(a);
+  const en = Number(e);
+  assert.ok(
+    Number.isFinite(an) && Number.isFinite(en),
+    `${label}: non-numeric actual=${JSON.stringify(a)} expected=${JSON.stringify(e)}`,
+  );
+  assert.equal(an, en, label);
+}
+
 function installBrokenRemoteOcr() {
   process.env.OCR_WORKER_URL = "http://ocr-worker.broken.test";
   process.env.OCR_WORKER_SECRET = "test-secret";
@@ -107,10 +125,10 @@ describe("production OCR remote-fallback parity", () => {
 
       const fields = result.interpretation.interpretationFields;
       assertFourCores(fields);
-      assert.equal(fields.tablePercent, "56");
-      assert.equal(fields.depthPercent, "62.6");
-      assert.equal(fields.crownAngle?.replace(/°/g, ""), "36.5");
-      assert.equal(fields.pavilionAngle?.replace(/°/g, ""), "40.6");
+      assertMeasurementEqual(fields.tablePercent, "56", "tablePercent");
+      assertMeasurementEqual(fields.depthPercent, "62.6", "depthPercent");
+      assertMeasurementEqual(fields.crownAngle, "36.5", "crownAngle");
+      assertMeasurementEqual(fields.pavilionAngle, "40.6", "pavilionAngle");
 
       const completeness = assessExtractionCompleteness({ fields });
       assert.equal(completeness.scoreEligible, true);
@@ -157,10 +175,10 @@ describe("production OCR remote-fallback parity", () => {
 
       const fields = result.interpretation.interpretationFields;
       assertFourCores(fields);
-      assert.equal(fields.tablePercent, "59");
-      assert.equal(fields.depthPercent, "59.1");
-      assert.equal(fields.crownAngle?.replace(/°/g, ""), "33");
-      assert.equal(fields.pavilionAngle?.replace(/°/g, ""), "40.8");
+      assertMeasurementEqual(fields.tablePercent, "59", "tablePercent");
+      assertMeasurementEqual(fields.depthPercent, "59.1", "depthPercent");
+      assertMeasurementEqual(fields.crownAngle, "33", "crownAngle");
+      assertMeasurementEqual(fields.pavilionAngle, "40.8", "pavilionAngle");
       assert.ok((result.finalized.timings?.imageOcrMs ?? 0) > 500);
       assert.equal(getOcrRuntimeProbeSnapshot().transport, "local");
 
@@ -204,10 +222,10 @@ describe("production OCR remote-fallback parity", () => {
       const fields = result.interpretation.interpretationFields;
       const metadata = result.interpretation.metadata;
       assertFourCores(fields);
-      assert.equal(fields.tablePercent, "57");
-      assert.equal(fields.depthPercent, "61.6");
-      assert.equal(fields.crownAngle?.replace(/°/g, ""), "34");
-      assert.equal(fields.pavilionAngle?.replace(/°/g, ""), "40.8");
+      assertMeasurementEqual(fields.tablePercent, "57", "tablePercent");
+      assertMeasurementEqual(fields.depthPercent, "61.6", "depthPercent");
+      assertMeasurementEqual(fields.crownAngle, "34", "crownAngle");
+      assertMeasurementEqual(fields.pavilionAngle, "40.8", "pavilionAngle");
 
       const sarine = result.finalized.gcalSarineOcrDiagnostics;
       if (sarine) {

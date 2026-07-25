@@ -1,5 +1,9 @@
 import type { CalibrationReportFields, ReportFieldKey } from "../../types";
 import type { ParserType } from "../types";
+import {
+  logSafeDiagnostic,
+  populatedFieldKeysFromRecord,
+} from "../../safe-diagnostic-log";
 
 export type GcalRoutingCheckPayload = {
   reportNumber: string;
@@ -42,5 +46,10 @@ export function snapshotGcalRoutingFields(
 }
 
 export function logGcalRoutingCheck(payload: GcalRoutingCheckPayload): void {
-  console.log("[GCAL ROUTING CHECK]", payload);
+  logSafeDiagnostic("[GCAL ROUTING CHECK]", {
+    parserPathUsed: payload.parserPathUsed,
+    parserFamily: payload.detectedFormat ?? null,
+    recoveredFieldKeys: populatedFieldKeysFromRecord(payload.fieldsRecoveredByPath),
+    rejectedCandidateCount: payload.fieldsRejectedWithReason?.length ?? 0,
+  });
 }

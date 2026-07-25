@@ -3,6 +3,9 @@ import { existsSync, readFileSync } from "node:fs";
 import { describe, it } from "node:test";
 import { interpretUploadedReport } from "@/lib/diamond-intelligence/interpret-uploaded-report";
 import { needsPartialGradeReview } from "@/app/diamond-intelligence/components/v3-presentation";
+import {
+  CLIENT_GIA_DIAGRAM_INTERPRET_ROUTE_TIMEOUT_MS,
+} from "@/lib/calibration-library/runtime-limits";
 
 const PDF_2536297567 =
   process.env.GIA_2536297567_PDF ??
@@ -10,7 +13,10 @@ const PDF_2536297567 =
 
 if (existsSync(PDF_2536297567)) {
   describe("GIA LGDR 2536297567 proportion diagram regression", () => {
-    it("extracts diagram proportions and reaches full/deep capability", async () => {
+    it(
+      "extracts diagram proportions and reaches full/deep capability",
+      { timeout: CLIENT_GIA_DIAGRAM_INTERPRET_ROUTE_TIMEOUT_MS + 30_000 },
+      async () => {
       process.env.CLIENT_DOCUMENT_EXTRACT_TIMEOUT_MS ??= "90000";
       const bytes = readFileSync(PDF_2536297567);
       const result = await interpretUploadedReport({

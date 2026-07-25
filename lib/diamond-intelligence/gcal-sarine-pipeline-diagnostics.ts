@@ -97,5 +97,31 @@ export function buildGcalSarineInterpretDiagnostics(
 export function logGcalSarineInterpretDiagnostics(
   diagnostics: GcalSarineInterpretDiagnostics,
 ): void {
-  console.log("[gcal-sarine-pipeline-diag]", JSON.stringify(diagnostics));
+  console.log(
+    "[gcal-sarine-pipeline-diag]",
+    JSON.stringify({
+      parserFamily: diagnostics.parserFamily ?? null,
+      partial: diagnostics.partial,
+      tier: diagnostics.tier ?? null,
+      totalMs: diagnostics.totalMs,
+      imageOcrMs: diagnostics.imageOcrMs,
+      gcalSarineDiagramProportionWait:
+        diagnostics.gcalSarineDiagramProportionWait ?? null,
+      ocrAttempted: diagnostics.ocrAttempted,
+      diagramOcrTimedOut: diagnostics.diagramOcrTimedOut ?? null,
+      gcalSarineDiagramOcrFailure:
+        diagnostics.gcalSarineDiagramOcrFailure ?? null,
+      pipelineError: diagnostics.pipelineError ? "present" : null,
+      timedOut: diagnostics.timedOut ?? null,
+      warningCount: diagnostics.warnings.length,
+      noticeCount: diagnostics.pipelineNotices.length,
+      pageWidth: diagnostics.sarineOcrSteps?.pageWidth ?? null,
+      pageHeight: diagnostics.sarineOcrSteps?.pageHeight ?? null,
+      cropSucceeded: diagnostics.sarineOcrSteps?.cropSucceeded ?? null,
+      ocrTokenCount: diagnostics.sarineOcrSteps?.ocrRawLength ?? null,
+      ocrTransport: diagnostics.tesseractRuntime.transport ?? null,
+      ocrRuntimeAvailable: diagnostics.tesseractRuntime.available,
+      fieldsPresent: diagnostics.fieldsPresent,
+    }),
+  );
 }

@@ -35,9 +35,16 @@ export function toJsonSafe<T>(value: T): T {
 
 export function logGcalApiError(payload: GcalApiErrorPayload): void {
   try {
-    console.error("[GCAL API ERROR]", toJsonSafe(payload));
+    console.error("[GCAL API ERROR]", {
+      parserPath: payload.parserPath ?? null,
+      phase: payload.phase ?? null,
+      ocrStarted: payload.ocrStarted ?? null,
+      ocrCompleted: payload.ocrCompleted ?? null,
+      errorCategory: payload.name ?? "Error",
+      errorClass: payload.error?.slice(0, 120) ?? null,
+    });
   } catch {
-    console.error("[GCAL API ERROR]", payload.error);
+    console.error("[GCAL API ERROR]", { errorCategory: "log-failed" });
   }
 }
 

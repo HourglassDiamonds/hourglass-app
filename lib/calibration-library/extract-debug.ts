@@ -59,7 +59,7 @@ export function logExtractPipeline(
 ): void {
   console.log(
     `[calibration-extract] ${step}`,
-    JSON.stringify(payload, null, 2),
+    JSON.stringify({ keys: Object.keys(payload) }, null, 2),
   );
 }
 
@@ -100,17 +100,13 @@ export function logHydrationMergeBoundary(
     `[${label}]`,
     JSON.stringify(
       {
-        pavilionAngle: fields.pavilionAngle,
-        girdle: fields.girdle,
-        snapshot: snapshotProportionFields(fields),
-        fieldKeysOnObject,
+        pavilionAnglePresent: Boolean(fields.pavilionAngle?.trim()),
+        girdlePresent: Boolean(fields.girdle?.trim()),
+        populatedFieldKeys: EXTRACT_PIPELINE_FIELD_KEYS.filter((k) =>
+          Boolean(fields[k]?.trim()),
+        ),
         unexpectedKeys,
         aliasHits,
-        canonicalKeys: {
-          pavilionAngle: REPORT_FIELD_KEYS.includes("pavilionAngle"),
-          girdle: REPORT_FIELD_KEYS.includes("girdle"),
-        },
-        ...extra,
       },
       null,
       2,
@@ -128,10 +124,11 @@ export function logFinalDiagnosticBeforeReturn(
     "[FINAL DIAGNOSTIC BEFORE RETURN]",
     JSON.stringify(
       {
-        fields,
-        pavilionAngle: fields.pavilionAngle,
-        girdle: fields.girdle,
-        snapshot: snapshotProportionFields(fields),
+        pavilionAnglePresent: Boolean(fields.pavilionAngle?.trim()),
+        girdlePresent: Boolean(fields.girdle?.trim()),
+        populatedFieldKeys: EXTRACT_PIPELINE_FIELD_KEYS.filter((k) =>
+          Boolean(fields[k]?.trim()),
+        ),
       },
       null,
       2,

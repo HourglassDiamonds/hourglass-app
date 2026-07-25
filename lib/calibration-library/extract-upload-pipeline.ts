@@ -420,10 +420,10 @@ async function runImageOcrAugmentation(input: {
     ) {
       console.log("[upload-pipeline] sarine-ocr:skipped-gates", {
         parser: parsed.parserType,
-        tablePercent: parsed.fields.tablePercent.trim() || "(empty)",
-        depthPercent: parsed.fields.depthPercent.trim() || "(empty)",
-        crownAngle: parsed.fields.crownAngle.trim() || "(empty)",
-        pavilionAngle: parsed.fields.pavilionAngle.trim() || "(empty)",
+        tablePercentPresent: Boolean(parsed.fields.tablePercent.trim()),
+        depthPercentPresent: Boolean(parsed.fields.depthPercent.trim()),
+        crownAnglePresent: Boolean(parsed.fields.crownAngle.trim()),
+        pavilionAnglePresent: Boolean(parsed.fields.pavilionAngle.trim()),
       });
     }
     if (proportionGatePassed || finishGatePassed) {

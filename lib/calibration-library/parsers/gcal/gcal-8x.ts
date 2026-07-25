@@ -5,6 +5,10 @@ import type {
   GcalInternalFields,
   ReportFieldKey,
 } from "../../types";
+import {
+  logSafeDiagnostic,
+  populatedFieldKeysFromRecord,
+} from "../../safe-diagnostic-log";
 
 type FieldSetter = (
   key: ReportFieldKey,
@@ -604,31 +608,16 @@ export function logGcalWindowCheck(
   gradingIslandMatches: GcalGradingIslandMatches,
   proportionIslandMatches: GcalProportionIslandMatches,
   fields: CalibrationReportFields,
-  proportionNumericCandidates: GcalProportionNumericCandidates,
+  _proportionNumericCandidates: GcalProportionNumericCandidates,
   repairedProportionPreview = "",
 ): void {
-  console.log("[GCAL WINDOW CHECK]", {
-    gradingIslandMatches,
-    proportionIslandMatches,
-    proportionNumericCandidates,
-    repairedProportionPreview,
-    parsedFields: {
-      shape: fields.shape,
-      measurements: fields.measurements,
-      carat: fields.carat,
-      fluorescence: fields.fluorescence,
-      culet: fields.culet,
-      girdle: fields.girdle,
-      polish: fields.polish,
-      symmetry: fields.symmetry,
-      cutGrade: fields.cutGrade,
-      tablePercent: fields.tablePercent,
-      depthPercent: fields.depthPercent,
-      crownAngle: fields.crownAngle,
-      pavilionAngle: fields.pavilionAngle,
-      starLengthPercent: fields.starLengthPercent,
-      lowerHalfPercent: fields.lowerHalfPercent,
-    },
+  logSafeDiagnostic("[GCAL WINDOW CHECK]", {
+    assignedFieldKeys: populatedFieldKeysFromRecord({
+      ...gradingIslandMatches,
+      ...proportionIslandMatches,
+    } as Record<string, string>),
+    populatedFieldKeys: populatedFieldKeysFromRecord(fields),
+    ocrCharCount: repairedProportionPreview.length || null,
   });
 }
 

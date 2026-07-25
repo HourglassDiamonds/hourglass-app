@@ -23,6 +23,10 @@ import {
 } from "./gcal-8x";
 import { mkdir, writeFile } from "fs/promises";
 import { join } from "path";
+import {
+  logSafeDiagnostic,
+  populatedFieldKeysFromRecord,
+} from "../../safe-diagnostic-log";
 import { isOcrRuntimeAvailable, ocrImageBuffer, renderPdfPagePngAtScale, renderUploadImageAsPage } from "../shared/ocr-utils";
 import {
   SARINE_4CS_GRADING_PANEL_CROP,
@@ -219,18 +223,9 @@ function assessGcalCropOcr(
   finishText: string,
   actionTaken: string,
 ): void {
-  console.log("[GCAL CROP ASSESSMENT]", {
-    proportionCropHasDepthArea:
-      /61\.1|611|depth/i.test(proportionText) ||
-      /\b6[01]\s*\.?\s*1?\s*%/.test(proportionText),
-    proportionCropHasPavilionArea:
-      /40\.8|408|pavilion/i.test(proportionText) ||
-      /4[01]\s*\.?\s*8\s*°/.test(proportionText),
-    finishCropHasGradeRows:
-      /polish/i.test(finishText) &&
-      /symmetry/i.test(finishText) &&
-      (/excellent/i.test(finishText) || /\bex\b/i.test(finishText)),
-    actionTaken,
+  logSafeDiagnostic("[GCAL CROP ASSESSMENT]", {
+    reason: actionTaken,
+    ocrCharCount: proportionText.length + finishText.length,
   });
 }
 
@@ -696,5 +691,12 @@ export function logGcalImageOcrCheck(payload: {
     cutGrade: string;
   };
 }): void {
-  console.log("[GCAL IMAGE OCR CHECK]", payload);
+  logSafeDiagnostic("[GCAL IMAGE OCR CHECK]", {
+    ocrCharCount:
+      payload.proportionRegionLength + payload.finishRegionLength,
+    recoveredFieldKeys: populatedFieldKeysFromRecord(payload.recoveredFields),
+    assignedFieldKeys: populatedFieldKeysFromRecord(
+      payload.recoveredFinishGrades ?? {},
+    ),
+  });
 }

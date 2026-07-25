@@ -5,8 +5,9 @@ import { describe, it } from "node:test";
 import { extractFieldsFromReportText } from "@/lib/calibration-library/extract-from-text";
 import { runCalibrationUploadExtraction } from "@/lib/calibration-library/extract-upload-pipeline";
 import {
-  CLIENT_INTERPRET_ROUTE_TIMEOUT_MS,
-  CLIENT_UPLOAD_PIPELINE_TIMEOUT_MS,
+  CLIENT_GIA_DIAGRAM_INTERPRET_ROUTE_TIMEOUT_MS,
+  CLIENT_GIA_DIAGRAM_PIPELINE_TIMEOUT_MS,
+  CLIENT_GIA_DIAGRAM_REGION_OCR_TIMEOUT_MS,
 } from "@/lib/calibration-library/runtime-limits";
 import { withTimeout } from "@/lib/calibration-library/runtime-guard";
 import {
@@ -99,9 +100,10 @@ describe("GIA LGDR validation anchors — grade hint passthrough", () => {
           reportNumber: spec.id,
           lab: "GIA",
           mode: "client",
-          pipelineTimeoutMs: CLIENT_UPLOAD_PIPELINE_TIMEOUT_MS,
+          pipelineTimeoutMs: CLIENT_GIA_DIAGRAM_PIPELINE_TIMEOUT_MS,
+          regionOcrTimeoutMs: CLIENT_GIA_DIAGRAM_REGION_OCR_TIMEOUT_MS,
         }),
-        CLIENT_INTERPRET_ROUTE_TIMEOUT_MS,
+        CLIENT_GIA_DIAGRAM_INTERPRET_ROUTE_TIMEOUT_MS,
         `lgdr-grade-hints-${spec.id}`,
       );
 

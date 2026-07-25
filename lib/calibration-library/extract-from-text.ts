@@ -359,10 +359,10 @@ export function extractFieldsFromReportText(
     );
     console.log("[GIA FINAL CHECK]", {
       textMethod: result.textMethod,
-      foundPavilionCandidate: pavilionCandidate,
-      foundGirdleCandidate: girdleCandidate,
-      finalPavilionAngleBeforeReturn: finalized.fields.pavilionAngle,
-      finalGirdleBeforeReturn: finalized.fields.girdle,
+      foundPavilionCandidate: Boolean(pavilionCandidate?.trim()),
+      foundGirdleCandidate: Boolean(girdleCandidate?.trim()),
+      finalPavilionAnglePresent: Boolean(finalized.fields.pavilionAngle?.trim()),
+      finalGirdlePresent: Boolean(finalized.fields.girdle?.trim()),
     });
   }
 

@@ -8,6 +8,10 @@ import { formatIgiGirdlePhrase } from "../../igi-proportions";
 import { extractIgiProportionFields } from "../../igi-proportions";
 import { looksLikeIgiReportText } from "../../lab-parsers";
 import { isOcrRuntimeAvailable, ocrImageBuffer, renderPdfPagePngAtScale } from "../shared/ocr-utils";
+import {
+  logSafeDiagnostic,
+  populatedFieldKeysFromRecord,
+} from "../../safe-diagnostic-log";
 
 const IGI_PAGE_OCR_SCALE = 4;
 const REGION_PREVIEW_CHARS = 400;
@@ -177,7 +181,13 @@ export type IgiDiagramOcrCheckPayload = {
 };
 
 export function logIgiDiagramOcrCheck(payload: IgiDiagramOcrCheckPayload): void {
-  console.log("[IGI DIAGRAM OCR CHECK]", payload);
+  logSafeDiagnostic("[IGI DIAGRAM OCR CHECK]", {
+    triggered: payload.triggered,
+    reason: payload.reason,
+    durationMs: payload.durationMs,
+    assignedFieldKeys: populatedFieldKeysFromRecord(payload.assignmentsMade),
+    ocrCharCount: payload.ocrRawPreview?.length ?? null,
+  });
 }
 
 export async function applyIgiDiagramImageOcr(

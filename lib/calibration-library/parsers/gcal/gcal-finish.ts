@@ -1,5 +1,9 @@
 import { normalizeOcrText } from "../shared/normalization";
 import type { CalibrationReportFields, FieldConfidence, ReportFieldKey } from "../../types";
+import {
+  logSafeDiagnostic,
+  populatedFieldKeysFromRecord,
+} from "../../safe-diagnostic-log";
 
 const GCAL_FINISH_GRADE_WHITELIST = new Set([
   "Excellent",
@@ -213,5 +217,13 @@ export function logGcal8xFinishOcrCheck(payload: {
   assigned: Gcal8xFinishGrades;
   confidence: Record<string, string>;
 }): void {
-  console.log("[GCAL 8X FINISH OCR CHECK]", payload);
+  logSafeDiagnostic("[GCAL 8X FINISH OCR CHECK]", {
+    cropWidth: payload.cropRegion.width,
+    cropHeight: payload.cropRegion.height,
+    ocrCharCount: payload.ocrPreview?.length ?? null,
+    assignedFieldKeys: populatedFieldKeysFromRecord(
+      payload.assigned as unknown as Record<string, string>,
+    ),
+    rejectedCandidateCount: payload.rejectedGenericScale?.length ?? 0,
+  });
 }

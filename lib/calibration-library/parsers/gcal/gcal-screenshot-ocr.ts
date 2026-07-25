@@ -11,6 +11,10 @@ import {
   type GcalProportionNumericCandidates,
 } from "./gcal-8x";
 import { looksLikeGcal8xReportText } from "./gcal-layout-detector";
+import {
+  logSafeDiagnostic,
+  populatedFieldKeysFromRecord,
+} from "../../safe-diagnostic-log";
 
 export type GcalScreenshotOcrHints = {
   reportSource?: ReportSource;
@@ -289,5 +293,8 @@ export function buildGcalScreenshotOcrCheck(
 }
 
 export function logGcalScreenshotOcrCheck(payload: GcalScreenshotOcrCheckPayload): void {
-  console.log("[GCAL SCREENSHOT OCR CHECK]", payload);
+  logSafeDiagnostic("[GCAL SCREENSHOT OCR CHECK]", {
+    assignedFieldKeys: populatedFieldKeysFromRecord(payload.assignedFields),
+    ocrCharCount: payload.ocrRawTextPreview?.length ?? null,
+  });
 }

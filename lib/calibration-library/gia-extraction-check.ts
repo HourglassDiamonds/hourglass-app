@@ -1,6 +1,9 @@
-import type { CalibrationReportFields, ReportFieldKey } from "./types";
+import type { CalibrationReportFields } from "./types";
 import { REPORT_FIELD_KEYS } from "./types";
-import { toJsonSafe } from "./gcal-api-error";
+import {
+  logSafeDiagnostic,
+  populatedFieldKeysFromRecord,
+} from "./safe-diagnostic-log";
 
 export type GiaExtractionCheckPayload = {
   reportNumber?: string;
@@ -51,5 +54,10 @@ export function buildGiaExtractionCheck(
 }
 
 export function logGiaExtractionCheck(payload: GiaExtractionCheckPayload): void {
-  console.log("[GIA EXTRACTION CHECK]", toJsonSafe(payload));
+  logSafeDiagnostic("[GIA EXTRACTION CHECK]", {
+    parserPathUsed: payload.parserPathUsed ?? null,
+    assignedFieldKeys: populatedFieldKeysFromRecord(payload.assignedFields),
+    missingFieldKeys: payload.missingFields,
+    warningCount: payload.warnings.length,
+  });
 }

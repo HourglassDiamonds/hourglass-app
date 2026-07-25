@@ -37,6 +37,19 @@ export function logDiamondIntelligenceInterpretStage(input: {
   extras?: Record<string, unknown>;
 }): void {
   try {
+    const safeExtras: Record<string, unknown> = {};
+    const allowed = new Set([
+      "parserFamily",
+      "ocrTransport",
+      "imageOcrElapsedMs",
+      "scoreEligible",
+      "partial",
+      "errorCategory",
+      "errorClass",
+    ]);
+    for (const [k, v] of Object.entries(input.extras ?? {})) {
+      if (allowed.has(k)) safeExtras[k] = v;
+    }
     console.info("[di-interpret-stage]", {
       requestId: input.requestId,
       stage: input.event.stage,
@@ -44,7 +57,7 @@ export function logDiamondIntelligenceInterpretStage(input: {
       elapsedMs: input.event.elapsedMs ?? null,
       errorCategory: input.event.errorCategory ?? null,
       errorClass: input.event.errorClass ?? null,
-      ...(input.extras ?? {}),
+      ...safeExtras,
     });
   } catch {
     // Observability must never affect interpret outcomes.

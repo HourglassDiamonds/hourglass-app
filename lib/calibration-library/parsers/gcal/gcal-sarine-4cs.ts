@@ -17,6 +17,10 @@ import {
   applyGcal8xFinishGrades,
   extractGcal8xFinishGrades,
 } from "./gcal-finish";
+import {
+  logSafeDiagnostic,
+  populatedFieldKeysFromRecord,
+} from "../../safe-diagnostic-log";
 
 /**
  * Live Sarine diagram OCR — lower-half 77% often garbles as spaced digits (e.g. "1 7 7").
@@ -826,13 +830,38 @@ export type GcalSarineCheckPayload = {
 };
 
 export function logGcalSarineCheck(payload: GcalSarineCheckPayload): void {
-  console.log("[GCAL SARINE CHECK]", payload);
+  const crop = payload.cropDimensions;
+  logSafeDiagnostic("[GCAL SARINE CHECK]", {
+    parserType: payload.parserType ?? null,
+    parserPathUsed: payload.parserPathUsed ?? null,
+    phase: payload.phase ?? null,
+    cropAttempted: payload.cropAttempted ?? null,
+    cropGatePassed: payload.cropGatePassed ?? null,
+    ocrPathExecuted: payload.ocrPathExecuted ?? null,
+    failureMode: payload.failureMode ?? null,
+    ocrRuntimeAvailable: payload.ocrRuntimeAvailable ?? null,
+    pageRendered: payload.pageRendered ?? null,
+    pageWidth: payload.pageWidth ?? null,
+    pageHeight: payload.pageHeight ?? null,
+    cropSucceeded: payload.cropSucceeded ?? null,
+    ocrOk: payload.ocrOk ?? null,
+    renderScale: payload.renderScaleUsed ?? null,
+    cropWidth: crop?.width ?? null,
+    cropHeight: crop?.height ?? null,
+    ocrCharCount: payload.ocrRawTextPreview?.length ?? null,
+    recoveredFieldKeys: populatedFieldKeysFromRecord(payload.recoveredFields),
+    assignedFieldKeys: populatedFieldKeysFromRecord(
+      (payload.assignedProportionFields ?? {}) as Record<string, string>,
+    ),
+  });
   if (isForensicCollectionEnabled()) {
-    pushForensicSnapshot(
-      "gcal-sarine-4cs",
-      "image-ocr",
-      payload as unknown as Record<string, unknown>,
-    );
+    pushForensicSnapshot("gcal-sarine-4cs", "image-ocr", {
+      phase: payload.phase ?? null,
+      cropSucceeded: payload.cropSucceeded ?? null,
+      ocrOk: payload.ocrOk ?? null,
+      ocrCharCount: payload.ocrRawTextPreview?.length ?? 0,
+      recoveredFieldKeys: populatedFieldKeysFromRecord(payload.recoveredFields),
+    });
   }
 }
 

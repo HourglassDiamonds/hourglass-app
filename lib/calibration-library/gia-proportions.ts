@@ -519,8 +519,12 @@ function logGiaBlockSelectionDebug(
   selectedBlock: string,
 ): void {
   if (!shouldLogGiaOcrCaptureDebug()) return;
-  console.log("[GIA BLOCK CANDIDATES]", candidates);
-  console.log("[GIA BLOCK SELECTED]", selectedBlock);
+  console.log("[GIA BLOCK CANDIDATES]", {
+    candidateCount: candidates.length,
+  });
+  console.log("[GIA BLOCK SELECTED]", {
+    selectedCharCount: selectedBlock.length,
+  });
 }
 
 /** Wide proportion slice from raw OCR/PDF text (newlines preserved). */
@@ -547,8 +551,10 @@ export function getGiaProportionDebugSlices(rawText: string): {
 export function logGiaProportionSlicesForDebug(rawText: string): void {
   if (process.env.CALIBRATION_EXTRACT_DEBUG !== "1") return;
   const { rawSlice, normalizedSlice } = getGiaProportionDebugSlices(rawText);
-  console.log("[GIA RAW PROPORTIONS]", rawSlice);
-  console.log("[GIA NORMALIZED PROPORTIONS]", normalizedSlice);
+  console.log("[GIA RAW PROPORTIONS]", { charCount: rawSlice.length });
+  console.log("[GIA NORMALIZED PROPORTIONS]", {
+    charCount: normalizedSlice.length,
+  });
 }
 
 function logGiaProportionExtractionDebug(
@@ -556,13 +562,12 @@ function logGiaProportionExtractionDebug(
   fields: CalibrationReportFields,
 ): void {
   if (process.env.CALIBRATION_EXTRACT_DEBUG !== "1") return;
-  console.log("[GIA FINAL BLOCK]", proportionBlock);
-  console.log(
-    "[GIA EXTRACTED]",
-    Object.fromEntries(
-      GIA_DIAGRAM_FIELD_KEYS.map((k) => [k, fields[k] ?? ""]),
+  console.log("[GIA FINAL BLOCK]", { charCount: proportionBlock.length });
+  console.log("[GIA EXTRACTED]", {
+    populatedFieldKeys: GIA_DIAGRAM_FIELD_KEYS.filter((k) =>
+      Boolean(fields[k]?.trim()),
     ),
-  );
+  });
 }
 
 /** Star + table percents adjacent (live OCR: `Round Brilliant 50% 56%`). */
@@ -913,7 +918,9 @@ function logGiaPavilionHydration(
   payload: Record<string, unknown>,
 ): void {
   if (!shouldLogGiaFieldHydrationDebug()) return;
-  console.log(`[GIA PAVILION ${stage}]`, payload);
+  console.log(`[GIA PAVILION ${stage}]`, {
+    keys: Object.keys(payload),
+  });
 }
 
 function logGiaGirdleHydration(
@@ -921,7 +928,9 @@ function logGiaGirdleHydration(
   payload: Record<string, unknown>,
 ): void {
   if (!shouldLogGiaFieldHydrationDebug()) return;
-  console.log(`[GIA GIRDLE ${stage}]`, payload);
+  console.log(`[GIA GIRDLE ${stage}]`, {
+    keys: Object.keys(payload),
+  });
 }
 
 function needsGiaPavilionHydration(fields: CalibrationReportFields): boolean {
@@ -1077,7 +1086,7 @@ function logFallbackForensic(
   rawText: string,
 ): void {
   if (!shouldLogForensicHydration(rawText)) return;
-  console.log(label, JSON.stringify(payload, null, 2));
+  console.log(label, JSON.stringify({ keys: Object.keys(payload) }, null, 2));
 }
 
 function snapshotFieldsForFallback(
@@ -1260,8 +1269,8 @@ export function logGiaFieldsBeforeFinalize(
 ): void {
   if (!shouldLogGiaFieldHydrationDebug()) return;
   console.log(`[GIA PRE-FINALIZE ${step}]`, {
-    pavilionAngle: fields.pavilionAngle,
-    girdle: fields.girdle,
+    pavilionAnglePresent: Boolean(fields.pavilionAngle?.trim()),
+    girdlePresent: Boolean(fields.girdle?.trim()),
   });
 }
 
@@ -1536,23 +1545,16 @@ function logGiaPdfTextLayerDebug(
 ): void {
   if (!shouldLogExtractPipeline(rawText, reportNumberHint)) return;
 
-  const windows: Record<string, string> = {};
-  for (const lab of GIA_PDF_LAYER_LABELS) {
-    const idx = rawText.search(new RegExp(lab.replace(/\s+/g, "\\s+"), "i"));
-    if (idx >= 0) {
-      windows[lab] = rawText.slice(Math.max(0, idx - 30), idx + 140);
-    }
-  }
-
   console.log(
     "[calibration-extract] gia.pdf-text-layer",
     JSON.stringify(
       {
         proportionValuesPresent: giaProportionValuesPresent(rawText),
         proportionBlockLength: block.length,
-        proportionBlockPreview: block.slice(0, 500),
-        labelWindows: windows,
-        regexAttempts: regexLog,
+        labelWindowCount: GIA_PDF_LAYER_LABELS.filter((lab) =>
+          new RegExp(lab.replace(/\s+/g, "\\s+"), "i").test(rawText),
+        ).length,
+        regexAttemptCount: regexLog ? Object.keys(regexLog).length : 0,
       },
       null,
       2,
@@ -2786,7 +2788,13 @@ function logGiaOcrDiagramDebug(payload: GiaOcrDiagramDebug): void {
   if (!shouldLogGiaOcrDiagramDebug()) return;
   console.log(
     "[calibration-extract] gia.ocr-diagram",
-    JSON.stringify(payload, null, 2),
+    JSON.stringify(
+      {
+        keys: Object.keys(payload),
+      },
+      null,
+      2,
+    ),
   );
 }
 

@@ -11,6 +11,10 @@ import type {
   ReportFieldKey,
 } from "../../types";
 import {
+  logSafeDiagnostic,
+  populatedFieldKeysFromRecord,
+} from "../../safe-diagnostic-log";
+import {
   applyGiaOcrFieldHydrationFallback,
   extractGiaFallbackDiagramBlock,
   extractGiaGirdleFromFacsimileGradingResultsFragment,
@@ -852,21 +856,42 @@ export type GiaDiagramOcrCheckPayload = {
 };
 
 export function logGiaDiagramOcrCheck(payload: GiaDiagramOcrCheckPayload): void {
-  console.log("[GIA DIAGRAM OCR CHECK]", payload);
+  logSafeDiagnostic("[GIA DIAGRAM OCR CHECK]", {
+    triggered: payload.triggered,
+    reason: payload.reason,
+    durationMs: payload.durationMs,
+    timedOut: payload.timedOut,
+    assignedFieldKeys: populatedFieldKeysFromRecord(payload.assignmentsMade),
+    candidateFieldKeys: populatedFieldKeysFromRecord(payload.candidatesFound),
+    rejectedCandidateCount: payload.rejectedCandidates.length,
+    ocrCharCount: payload.ocrRawPreview?.length ?? null,
+  });
   if (isForensicCollectionEnabled()) {
     pushForensicSnapshot(
       "gia-facsimile",
       "diagram-ocr",
-      payload as unknown as Record<string, unknown>,
+      {
+        triggered: payload.triggered,
+        reason: payload.reason,
+        durationMs: payload.durationMs,
+        timedOut: payload.timedOut,
+        assignedFieldKeys: populatedFieldKeysFromRecord(payload.assignmentsMade),
+        candidateFieldKeys: populatedFieldKeysFromRecord(payload.candidatesFound),
+        rejectedCandidateCount: payload.rejectedCandidates.length,
+        ocrCharCount: payload.ocrRawPreview?.length ?? 0,
+      },
     );
   }
 }
 
 export function logGiaOcrVisualCheck(
-  reportNumber: string | undefined,
+  _reportNumber: string | undefined,
   passes: GiaOcrVisualPassLog[],
 ): void {
-  console.log("[GIA OCR VISUAL CHECK]", { reportNumber, passes });
+  logSafeDiagnostic("[GIA OCR VISUAL CHECK]", {
+    stage: "visual-passes",
+    noticeCount: passes.length,
+  });
 }
 
 async function attachNaturalFacsimileGradeHintSupplement(

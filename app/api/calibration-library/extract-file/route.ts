@@ -301,7 +301,7 @@ async function handleExtractFile(
             pastedTextLength: pastedText.length,
             textMethod: effectiveMethod,
             reportSource,
-            reportNumberHint,
+            reportNumberHintPresent: Boolean(reportNumberHint),
             uploadMime,
           }),
           null,
@@ -335,10 +335,11 @@ async function handleExtractFile(
         "[calibration-extract-file] response",
         JSON.stringify(
           toJsonSafe({
-            metadata: pipeline.metadata,
-            fields: pipeline.fields,
-            giaInternal: pipeline.giaInternal,
-            confidence: pipeline.confidence,
+            laboratory: pipeline.metadata.lab,
+            parserFamily: pipeline.parserType,
+            populatedFieldKeys: Object.entries(pipeline.fields)
+              .filter(([, v]) => Boolean(String(v ?? "").trim()))
+              .map(([k]) => k),
           }),
           null,
           2,

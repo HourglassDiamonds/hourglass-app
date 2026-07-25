@@ -4,6 +4,10 @@ import type {
   IgiInternalFields,
   ReportFieldKey,
 } from "./types";
+import {
+  logSafeDiagnostic,
+  populatedFieldKeysFromRecord,
+} from "./safe-diagnostic-log";
 
 type FieldSetter = (
   key: ReportFieldKey,
@@ -727,7 +731,12 @@ export function buildIgiExtractionCheck(
 }
 
 export function logIgiExtractionCheck(payload: IgiExtractionCheckPayload): void {
-  console.log("[IGI EXTRACTION CHECK]", payload);
+  logSafeDiagnostic("[IGI EXTRACTION CHECK]", {
+    parserPathUsed: payload.parserPathUsed ?? null,
+    assignedFieldKeys: populatedFieldKeysFromRecord(payload.assignedFields),
+    candidateFieldKeys: populatedFieldKeysFromRecord(payload.detectedCandidates),
+    rejectedCandidateCount: payload.rejectedCandidates?.length ?? 0,
+  });
 }
 
 export function extractIgiProportionFields(

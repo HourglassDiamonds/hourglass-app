@@ -82,9 +82,10 @@ export function logGiaQaTrace(entry: GiaQaTraceEntry): void {
   if (!isGiaQaTraceEnabled(entry.reportNumber)) return;
   console.log("[GIA QA TRACE]", {
     stage: entry.stage,
-    reportNumber: entry.reportNumber,
-    fields: entry.fields,
-    ...(entry.meta ? { meta: entry.meta } : {}),
+    populatedFieldKeys: Object.entries(entry.fields)
+      .filter(([, v]) => Boolean(v) && v !== "(empty)")
+      .map(([k]) => k),
+    metaKeys: entry.meta ? Object.keys(entry.meta) : [],
   });
 }
 
@@ -110,7 +111,7 @@ export function traceRawOcrPreview(
 ): void {
   if (!isGiaQaTraceEnabled(reportNumber)) return;
   const keys = giaQaTraceFieldsForReport(reportNumber);
-  const numericHints: Record<string, string[]> = {};
+  const hitKeys: string[] = [];
   for (const key of keys) {
     const patterns: Record<string, RegExp[]> = {
       tablePercent: [/\btable\b[^\d]{0,20}(\d{2}(?:\.\d+)?)/i, /\b(\d{2})\s*%[^\n]{0,30}table/i],
@@ -120,20 +121,19 @@ export function traceRawOcrPreview(
       girdle: [/\bgirdle\b/i],
       culet: [/\bculet\b/i],
     };
-    const hits: string[] = [];
     for (const re of patterns[key] ?? []) {
-      const m = rawText.match(re);
-      if (m) hits.push(m[0].slice(0, 48));
+      if (re.test(rawText)) {
+        hitKeys.push(key);
+        break;
+      }
     }
-    numericHints[key] = hits.length ? hits : ["(not found in raw OCR preview)"];
   }
   logGiaQaTrace({
     stage: "rawOcrPreview",
     reportNumber,
-    fields: Object.fromEntries(keys.map((k) => [k, numericHints[k]?.join(" | ") ?? ""])),
+    fields: Object.fromEntries(hitKeys.map((k) => [k, "detected"])),
     meta: {
       rawTextLength: rawText.length,
-      rawTextPreview: rawText.slice(0, 400),
       ...meta,
     },
   });
