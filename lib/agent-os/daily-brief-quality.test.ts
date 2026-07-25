@@ -239,15 +239,20 @@ describe("daily date framing", () => {
     assert.match(rendered.html, /Partial/);
   });
 
-  it("weekly brief still shows reporting period range", () => {
+  it("weekly brief shows ISO week range from cadence window — not stale reporting period", () => {
     const rendered = renderFounderBriefEmail({
       run: stubRun(),
       cadenceId: "cos-weekly-founder-brief",
-      cadenceWindow: "week:2026-07-13",
+      cadenceWindow: "week:2026-W30",
       degraded: false,
     });
-    assert.match(rendered.html, /Founder Brief/);
-    assert.match(rendered.html, /2026-07-13 — 2026-07-19/);
+    assert.match(rendered.html, /Weekly Brief/);
+    assert.match(rendered.subject, /Hourglass Weekly Brief · July 20–26, 2026/);
+    assert.match(rendered.html, /July 20–26, 2026/);
+    assert.match(rendered.text, /2026-07-20 — 2026-07-26/);
+    assert.doesNotMatch(rendered.html, /2026-07-13 — 2026-07-19/);
+    assert.doesNotMatch(rendered.subject, /week:2026-W30/);
+    assert.doesNotMatch(rendered.html, /cos-weekly-founder-brief/);
     assert.doesNotMatch(rendered.subject, /Morning Brief/);
   });
 

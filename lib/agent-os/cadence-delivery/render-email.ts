@@ -1,7 +1,7 @@
 /**
  * Render Chief of Staff founder brief email (HTML + text).
- * Daily: concise morning operating brief. Weekly: performance-review framing.
- * Readable, capped priorities, honest but compact data confidence.
+ * Daily: concise morning operating brief.
+ * Weekly: polished weekly brief — no engineering diagnostics.
  */
 
 import type { AgentRun } from "../types";
@@ -10,10 +10,19 @@ import {
   buildDataConfidenceNote,
   cleanFounderFacingAction,
   dailyTodayCall,
+  dedupePrioritiesAgainstHighestRoi,
+  filterFounderFacingBlockers,
+  filterGenuineFounderDecisions,
   formatFounderLocalDateLabel,
+  formatWeeklyFounderRangeLabel,
   formatWeeklyRangeLabel,
   localDateFromCadenceWindow,
   resolveBriefCadenceIntent,
+  sanitizeFounderFacingNarrative,
+  summarizeFounderAction,
+  toFounderFacingPriorityAction,
+  weeklyExecutiveSummary,
+  weeklyRangeFromCadenceWindow,
 } from "../brief-quality";
 
 function escapeHtml(text: string): string {
@@ -31,28 +40,40 @@ export type RenderedAgentOsEmail = {
 };
 
 function materialBlockers(blocked: string[]): string[] {
-  return blocked.filter(
-    (b) =>
-      b &&
-      !/^none$/i.test(b.trim()) &&
-      !/not yet operational/i.test(b),
+  return filterFounderFacingBlockers(
+    blocked.filter(
+      (b) =>
+        b &&
+        !/^none$/i.test(b.trim()) &&
+        !/not yet operational/i.test(b),
+    ),
   );
 }
 
-function materialDecisions(decisions: string[]): string[] {
-  return decisions.filter(
+function materialDecisions(
+  decisions: string[],
+  intent: "daily" | "weekly",
+): string[] {
+  const base = decisions.filter(
     (d) =>
       d &&
       !/^none required/i.test(d.trim()) &&
       !/^none$/i.test(d.trim()),
   );
+  if (intent === "weekly") {
+    const genuine = filterGenuineFounderDecisions(base);
+    return genuine;
+  }
+  return base.filter((d) => !/highest-roi action above/i.test(d));
 }
 
 function opportunityToWatch(run: AgentRun): string | null {
   const wait = run.brief.canSafelyWait.find(
     (w) => w && !/^none$/i.test(w.trim()) && !/deferred/i.test(w),
   );
-  if (wait && wait.length < 180) return wait;
+  if (wait && wait.length < 180 && !/full set in JSON/i.test(wait)) {
+    return wait;
+  }
   const watch = run.brief.needsAttentionToday.find(
     (t) =>
       t &&
@@ -63,6 +84,10 @@ function opportunityToWatch(run: AgentRun): string | null {
   return watch ?? null;
 }
 
+function sectionHeading(label: string): string {
+  return `<p style="margin:0 0 10px;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#8a8176;">${escapeHtml(label)}</p>`;
+}
+
 export function renderFounderBriefEmail(input: {
   run: AgentRun;
   cadenceId: string;
@@ -71,41 +96,54 @@ export function renderFounderBriefEmail(input: {
 }): RenderedAgentOsEmail {
   const { run, cadenceId, cadenceWindow, degraded } = input;
   const intent = resolveBriefCadenceIntent(cadenceId);
-  const titles = run.brief.surfacedPriorityTitles.slice(0, 5);
+
+  if (intent === "weekly") {
+    return renderWeeklyFounderBriefEmail({ run, cadenceWindow, degraded });
+  }
+  return renderDailyMorningBriefEmail({ run, cadenceWindow, degraded });
+}
+
+function renderDailyMorningBriefEmail(input: {
+  run: AgentRun;
+  cadenceWindow: string;
+  degraded: boolean;
+}): RenderedAgentOsEmail {
+  const { run, cadenceWindow, degraded } = input;
   const localDate = localDateFromCadenceWindow(
     cadenceWindow,
     run.generatedAt,
   );
   const dailyLabel = formatFounderLocalDateLabel(localDate);
-  const weeklyPeriod = formatWeeklyRangeLabel(
-    run.reportingPeriod.start,
-    run.reportingPeriod.end,
+  const highestRoi = summarizeFounderAction(
+    cleanFounderFacingAction(run.brief.highestRoiAction || "None this cycle"),
+    220,
   );
-
-  const heading =
-    intent === "daily" ? "Morning Brief" : "Founder Brief";
-  const periodLine =
-    intent === "daily" ? dailyLabel : weeklyPeriod;
-
-  const subject =
-    intent === "daily"
-      ? degraded
-        ? `Hourglass Morning Brief · Partial data · ${dailyLabel}`
-        : `Hourglass Morning Brief · ${dailyLabel}`
-      : degraded
-        ? `Hourglass Agent OS · Degraded founder brief · ${cadenceWindow}`
-        : `Hourglass Agent OS · Founder brief · ${cadenceWindow}`;
-
-  const highestRoi = cleanFounderFacingAction(
-    run.brief.highestRoiAction || "None this cycle",
+  const todayCall = dailyTodayCall({
+    whyItMatters: run.brief.whyItMatters,
+    highestRoiAction: highestRoi,
+  });
+  const titles = dedupePrioritiesAgainstHighestRoi(
+    run.brief.surfacedPriorityTitles,
+    highestRoi,
+    5,
   );
-  const todayCall =
-    intent === "daily"
-      ? dailyTodayCall({
-          whyItMatters: run.brief.whyItMatters,
-          highestRoiAction: highestRoi,
-        })
-      : run.brief.whyItMatters;
+  const decisions = materialDecisions(run.brief.founderDecisionNeeded, "daily");
+  const blockers = materialBlockers(run.brief.blocked);
+  const watch = opportunityToWatch(run);
+  const confidence = buildDataConfidenceNote({
+    missingOrUnreliableData: run.brief.missingOrUnreliableData,
+    executiveNotes: [],
+    briefEvidenceQuality: run.briefEvidenceQuality,
+    criticalFailure:
+      run.briefEvidenceQuality === "failed" ||
+      run.briefEvidenceQuality === "none-blocked" ||
+      run.runStatus === "failed",
+    intent: "daily",
+  });
+
+  const subject = degraded
+    ? `Hourglass Morning Brief · Partial data · ${dailyLabel}`
+    : `Hourglass Morning Brief · ${dailyLabel}`;
 
   const priorityLis = titles
     .map(
@@ -114,58 +152,9 @@ export function renderFounderBriefEmail(input: {
     )
     .join("");
 
-  const decisions = materialDecisions(run.brief.founderDecisionNeeded);
-  const blockers = materialBlockers(run.brief.blocked);
-  const watch = intent === "daily" ? opportunityToWatch(run) : null;
-
-  const execNotes = run.executiveStatuses
-    .filter((e) => e.status !== "completed")
-    .map(
-      (e) =>
-        `${e.executiveId}: ${e.status}${e.note ? ` — ${redactSecretsAndPii(e.note)}` : ""}`,
-    )
-    .slice(0, 6);
-
-  const confidence = buildDataConfidenceNote({
-    missingOrUnreliableData: run.brief.missingOrUnreliableData,
-    executiveNotes: intent === "weekly" ? execNotes : [],
-    briefEvidenceQuality: run.briefEvidenceQuality,
-    criticalFailure:
-      run.briefEvidenceQuality === "failed" ||
-      run.briefEvidenceQuality === "none-blocked" ||
-      run.runStatus === "failed",
-  });
-
-  const confidenceHtml =
-    intent === "daily"
-      ? `<tr><td style="padding:0 32px 20px;"><p style="margin:0 0 8px;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#8a8176;">Data confidence</p><p style="margin:0;font-size:13px;line-height:1.6;color:#6a635c;"><strong>${escapeHtml(confidence.level)}</strong> — ${escapeHtml(redactSecretsAndPii(confidence.summary))}</p>${
-          confidence.showDetails && confidence.detailLines.length
-            ? `<ul style="margin:10px 0 0;padding:0 0 0 18px;">${confidence.detailLines
-                .map(
-                  (l) =>
-                    `<li style="margin:0 0 6px;font-size:12px;line-height:1.5;color:#6a635c;">${escapeHtml(redactSecretsAndPii(l))}</li>`,
-                )
-                .join("")}</ul>`
-            : ""
-        }</td></tr>`
-      : [
-          run.brief.missingOrUnreliableData.length
-            ? `<tr><td style="padding:0 32px 24px;"><p style="margin:0 0 10px;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#8a8176;">Source gaps (not deterioration)</p><ul style="margin:0;padding:0 0 0 18px;">${run.brief.missingOrUnreliableData
-                .slice(0, 6)
-                .map(
-                  (g) =>
-                    `<li style="margin:0 0 8px;font-size:13px;line-height:1.55;color:#6a635c;">${escapeHtml(redactSecretsAndPii(g))}</li>`,
-                )
-                .join("")}</ul></td></tr>`
-            : "",
-          execNotes.length
-            ? `<tr><td style="padding:0 32px 24px;"><p style="margin:0 0 10px;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#8a8176;">Degraded areas</p><p style="margin:0;font-size:13px;line-height:1.6;color:#6a635c;">${escapeHtml(execNotes.join(" · "))}</p></td></tr>`
-            : "",
-        ].join("");
-
   const decisionsHtml =
     decisions.length > 0
-      ? `<tr><td style="padding:0 32px 24px;"><p style="margin:0 0 10px;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#8a8176;">Decisions / approvals needed</p><ul style="margin:0;padding:0 0 0 18px;">${decisions
+      ? `<tr><td style="padding:0 32px 24px;">${sectionHeading("Decisions / approvals needed")}<ul style="margin:0;padding:0 0 0 18px;">${decisions
           .map(
             (d) =>
               `<li style="margin:0 0 8px;font-size:14px;line-height:1.65;color:#4a443e;">${escapeHtml(redactSecretsAndPii(d))}</li>`,
@@ -175,7 +164,7 @@ export function renderFounderBriefEmail(input: {
 
   const blockersHtml =
     blockers.length > 0
-      ? `<tr><td style="padding:0 32px 24px;"><p style="margin:0 0 10px;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#8a8176;">Risks / blockers</p><ul style="margin:0;padding:0 0 0 18px;">${blockers
+      ? `<tr><td style="padding:0 32px 24px;">${sectionHeading("Risks / blockers")}<ul style="margin:0;padding:0 0 0 18px;">${blockers
           .map(
             (b) =>
               `<li style="margin:0 0 8px;font-size:14px;line-height:1.65;color:#4a443e;">${escapeHtml(redactSecretsAndPii(b))}</li>`,
@@ -183,20 +172,20 @@ export function renderFounderBriefEmail(input: {
           .join("")}</ul></td></tr>`
       : "";
 
-  const watchHtml =
-    watch
-      ? `<tr><td style="padding:0 32px 24px;"><p style="margin:0 0 10px;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#8a8176;">Opportunity to watch</p><p style="margin:0;font-size:14px;line-height:1.7;color:#3d3832;">${escapeHtml(redactSecretsAndPii(watch))}</p></td></tr>`
-      : "";
+  const watchHtml = watch
+    ? `<tr><td style="padding:0 32px 24px;">${sectionHeading("Opportunity to watch")}<p style="margin:0;font-size:14px;line-height:1.7;color:#3d3832;">${escapeHtml(redactSecretsAndPii(watch))}</p></td></tr>`
+    : "";
 
-  const metaLine =
-    intent === "daily"
-      ? ``
-      : `<p style="margin:6px 0 0;font-size:12px;color:#6a635c;">Cadence ${escapeHtml(cadenceId)} · window ${escapeHtml(cadenceWindow)}${degraded ? ` · ${escapeHtml(run.runStatus)}` : ""}</p>`;
-
-  const highestLabel =
-    intent === "daily" ? "Highest-ROI move" : "Highest-ROI action";
-  const prioritiesLabel =
-    intent === "daily" ? "Top priorities" : "Priorities (max 5)";
+  const confidenceHtml = `<tr><td style="padding:0 32px 20px;">${sectionHeading("Data confidence")}<p style="margin:0;font-size:13px;line-height:1.6;color:#6a635c;"><strong>${escapeHtml(confidence.level)}</strong> — ${escapeHtml(redactSecretsAndPii(confidence.summary))}</p>${
+    confidence.showDetails && confidence.detailLines.length
+      ? `<ul style="margin:10px 0 0;padding:0 0 0 18px;">${confidence.detailLines
+          .map(
+            (l) =>
+              `<li style="margin:0 0 6px;font-size:12px;line-height:1.5;color:#6a635c;">${escapeHtml(redactSecretsAndPii(l))}</li>`,
+          )
+          .join("")}</ul>`
+      : ""
+  }</td></tr>`;
 
   const html = `
 <!DOCTYPE html>
@@ -206,26 +195,25 @@ export function renderFounderBriefEmail(input: {
       <tr>
         <td style="padding:36px 32px 8px;">
           <p style="margin:0 0 6px;font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:#8a8176;">Hourglass Diamonds · Internal · Agent OS</p>
-          <h1 style="margin:0;font-size:22px;font-weight:400;color:#1a1816;font-family:Georgia,'Times New Roman',serif;">${escapeHtml(heading)}</h1>
-          <p style="margin:10px 0 0;font-size:12px;color:#6a635c;">${escapeHtml(periodLine)}</p>
-          ${metaLine}
+          <h1 style="margin:0;font-size:22px;font-weight:400;color:#1a1816;font-family:Georgia,'Times New Roman',serif;">Morning Brief</h1>
+          <p style="margin:10px 0 0;font-size:12px;color:#6a635c;">${escapeHtml(dailyLabel)}</p>
         </td>
       </tr>
       <tr>
         <td style="padding:0 32px 24px;">
-          <p style="margin:0 0 10px;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#8a8176;">${intent === "daily" ? "Today’s call" : "Why it matters"}</p>
+          ${sectionHeading("Today’s call")}
           <p style="margin:0;font-size:15px;line-height:1.75;color:#3d3832;font-family:Georgia,'Times New Roman',serif;">${escapeHtml(redactSecretsAndPii(todayCall || ""))}</p>
         </td>
       </tr>
       <tr>
         <td style="padding:0 32px 24px;">
-          <p style="margin:0 0 10px;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#8a8176;">${escapeHtml(highestLabel)}</p>
+          ${sectionHeading("Highest-ROI move")}
           <p style="margin:0;font-size:15px;line-height:1.75;color:#3d3832;font-family:Georgia,'Times New Roman',serif;">${escapeHtml(redactSecretsAndPii(highestRoi))}</p>
         </td>
       </tr>
       <tr>
         <td style="padding:0 32px 24px;">
-          <p style="margin:0 0 10px;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#8a8176;">${escapeHtml(prioritiesLabel)}</p>
+          ${sectionHeading("Top priorities")}
           ${
             titles.length
               ? `<ul style="margin:0;padding:0 0 0 18px;">${priorityLis}</ul>`
@@ -236,40 +224,22 @@ export function renderFounderBriefEmail(input: {
       ${decisionsHtml}
       ${blockersHtml}
       ${watchHtml}
-      ${
-        intent === "weekly"
-          ? `<tr><td style="padding:0 32px 24px;"><p style="margin:0 0 10px;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#8a8176;">Why it matters</p><p style="margin:0;font-size:14px;line-height:1.7;color:#3d3832;">${escapeHtml(redactSecretsAndPii(run.brief.whyItMatters || ""))}</p></td></tr>`
-          : ""
-      }
       ${confidenceHtml}
-      <tr>
-        <td style="padding:8px 32px 36px;font-size:11px;color:#9a9084;">
-          Internal run ${escapeHtml(run.runId)} · Agent OS ${escapeHtml(run.agentOsVersion)}. Not for external distribution.
-        </td>
-      </tr>
     </table>
   </body>
 </html>`;
 
   const textParts: string[] = [
-    intent === "daily"
-      ? `Hourglass Morning Brief · ${dailyLabel}`
-      : `Hourglass Agent OS — Founder Brief`,
-    intent === "daily" ? `Date: ${dailyLabel}` : `Period: ${weeklyPeriod}`,
-  ];
-  if (intent === "weekly") {
-    textParts.push(`Cadence: ${cadenceId} (${cadenceWindow})`);
-    if (degraded) textParts.push(`Status: ${run.runStatus} (degraded)`);
-  }
-  textParts.push(
+    `Hourglass Morning Brief · ${dailyLabel}`,
+    `Date: ${dailyLabel}`,
     ``,
-    intent === "daily" ? `Today’s call: ${redactSecretsAndPii(todayCall || "")}` : `Why it matters: ${redactSecretsAndPii(run.brief.whyItMatters || "")}`,
+    `Today’s call: ${redactSecretsAndPii(todayCall || "")}`,
     ``,
     `Highest-ROI: ${redactSecretsAndPii(highestRoi)}`,
     ``,
     `Priorities:`,
     ...titles.map((t, i) => `${i + 1}. ${redactSecretsAndPii(t)}`),
-  );
+  ];
   if (decisions.length) {
     textParts.push(``, `Decisions:`, ...decisions.map((d) => `- ${redactSecretsAndPii(d)}`));
   }
@@ -279,31 +249,199 @@ export function renderFounderBriefEmail(input: {
   if (watch) {
     textParts.push(``, `Watch: ${redactSecretsAndPii(watch)}`);
   }
-  if (intent === "daily") {
-    textParts.push(
-      ``,
-      `Data confidence: ${confidence.level} — ${redactSecretsAndPii(confidence.summary)}`,
-    );
-    if (confidence.showDetails) {
-      for (const l of confidence.detailLines) {
-        textParts.push(`- ${redactSecretsAndPii(l)}`);
-      }
-    }
-  } else {
-    if (run.brief.missingOrUnreliableData.length) {
-      textParts.push(
-        ``,
-        `Source gaps:`,
-        ...run.brief.missingOrUnreliableData
-          .slice(0, 6)
-          .map((g) => `- ${redactSecretsAndPii(g)}`),
-      );
-    }
-    if (execNotes.length) {
-      textParts.push(``, `Degraded areas:`, ...execNotes.map((n) => `- ${n}`));
+  textParts.push(
+    ``,
+    `Data confidence: ${confidence.level} — ${redactSecretsAndPii(confidence.summary)}`,
+  );
+  if (confidence.showDetails) {
+    for (const l of confidence.detailLines) {
+      textParts.push(`- ${redactSecretsAndPii(l)}`);
     }
   }
-  textParts.push(``, `Run: ${run.runId}`);
+
+  return { subject, html, text: textParts.join("\n") };
+}
+
+function renderWeeklyFounderBriefEmail(input: {
+  run: AgentRun;
+  cadenceWindow: string;
+  degraded: boolean;
+}): RenderedAgentOsEmail {
+  const { run, cadenceWindow, degraded } = input;
+  const range = weeklyRangeFromCadenceWindow(cadenceWindow, run.reportingPeriod);
+  const founderRange = formatWeeklyFounderRangeLabel(range.start, range.end);
+  const isoRange = formatWeeklyRangeLabel(range.start, range.end);
+
+  const highestRoi = summarizeFounderAction(
+    cleanFounderFacingAction(run.brief.highestRoiAction || ""),
+    320,
+  );
+  const rawWhatChanged = run.brief.whatChanged?.trim() ?? "";
+  const whatChangedUsable =
+    rawWhatChanged &&
+    !/reconstructed|persisted|delivery ledger|fixture|week:\d{4}-w\d{2}/i.test(
+      rawWhatChanged,
+    )
+      ? summarizeFounderAction(
+          sanitizeFounderFacingNarrative(rawWhatChanged),
+          320,
+        )
+      : null;
+  const executiveSummary = weeklyExecutiveSummary({
+    whyItMatters: sanitizeFounderFacingNarrative(run.brief.whyItMatters),
+    whatChanged: whatChangedUsable ?? "",
+    highestRoiAction: highestRoi,
+    weakEvidence:
+      run.briefEvidenceQuality === "partial-degraded" ||
+      run.briefEvidenceQuality === "none-blocked" ||
+      run.brief.missingOrUnreliableData.some((g) =>
+        /ga4|gsc|failed|unavailable/i.test(g),
+      ),
+  });
+  const whatChanged = whatChangedUsable;
+
+  const titles = dedupePrioritiesAgainstHighestRoi(
+    run.brief.surfacedPriorityTitles.map((t) =>
+      toFounderFacingPriorityAction(t),
+    ),
+    highestRoi,
+    5,
+  );
+  const decisions = materialDecisions(run.brief.founderDecisionNeeded, "weekly");
+  const blockers = materialBlockers(run.brief.blocked);
+
+  const confidence = buildDataConfidenceNote({
+    missingOrUnreliableData: run.brief.missingOrUnreliableData,
+    executiveNotes: [],
+    briefEvidenceQuality: run.briefEvidenceQuality,
+    criticalFailure:
+      run.briefEvidenceQuality === "failed" ||
+      run.briefEvidenceQuality === "none-blocked" ||
+      run.runStatus === "failed",
+    intent: "weekly",
+  });
+
+  const subject = degraded
+    ? `Hourglass Weekly Brief · Partial data · ${founderRange}`
+    : `Hourglass Weekly Brief · ${founderRange}`;
+
+  const priorityLis = titles
+    .map(
+      (t, i) =>
+        `<li style="margin:0 0 10px;font-size:14px;line-height:1.65;color:#4a443e;"><strong>${i + 1}.</strong> ${escapeHtml(redactSecretsAndPii(t))}</li>`,
+    )
+    .join("");
+
+  const decisionsHtml =
+    decisions.length > 0
+      ? `<tr><td style="padding:0 32px 24px;">${sectionHeading("Decisions / approvals needed")}<ul style="margin:0;padding:0 0 0 18px;">${decisions
+          .map(
+            (d) =>
+              `<li style="margin:0 0 8px;font-size:14px;line-height:1.65;color:#4a443e;">${escapeHtml(redactSecretsAndPii(d))}</li>`,
+          )
+          .join("")}</ul></td></tr>`
+      : `<tr><td style="padding:0 32px 24px;">${sectionHeading("Decisions / approvals needed")}<p style="margin:0;font-size:14px;line-height:1.65;color:#4a443e;">No founder approvals required this week.</p></td></tr>`;
+
+  const blockersHtml =
+    blockers.length > 0
+      ? `<tr><td style="padding:0 32px 24px;">${sectionHeading("Risks / blockers")}<ul style="margin:0;padding:0 0 0 18px;">${blockers
+          .map(
+            (b) =>
+              `<li style="margin:0 0 8px;font-size:14px;line-height:1.65;color:#4a443e;">${escapeHtml(redactSecretsAndPii(b))}</li>`,
+          )
+          .join("")}</ul></td></tr>`
+      : "";
+
+  const confidenceHtml = `<tr><td style="padding:0 32px 28px;">${sectionHeading("Data confidence")}<p style="margin:0;font-size:13px;line-height:1.6;color:#6a635c;"><strong>${escapeHtml(confidence.level)}</strong> — ${escapeHtml(redactSecretsAndPii(confidence.summary))}</p></td></tr>`;
+
+  const whatChangedHtml = whatChanged
+    ? `<tr>
+        <td style="padding:0 32px 24px;">
+          ${sectionHeading("What changed this week")}
+          <p style="margin:0;font-size:14px;line-height:1.7;color:#3d3832;">${escapeHtml(redactSecretsAndPii(whatChanged))}</p>
+        </td>
+      </tr>`
+    : "";
+
+  const html = `
+<!DOCTYPE html>
+<html>
+  <body style="margin:0;padding:32px 20px;background:#efe8de;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;margin:0 auto;background:#f7f3ee;border:1px solid #e4dbcf;">
+      <tr>
+        <td style="padding:36px 32px 8px;">
+          <p style="margin:0 0 6px;font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:#8a8176;">Hourglass Diamonds · Internal · Agent OS</p>
+          <h1 style="margin:0;font-size:22px;font-weight:400;color:#1a1816;font-family:Georgia,'Times New Roman',serif;">Weekly Brief</h1>
+          <p style="margin:10px 0 0;font-size:12px;color:#6a635c;">${escapeHtml(founderRange)}</p>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:0 32px 24px;">
+          ${sectionHeading("Executive summary")}
+          <p style="margin:0;font-size:15px;line-height:1.75;color:#3d3832;font-family:Georgia,'Times New Roman',serif;">${escapeHtml(redactSecretsAndPii(executiveSummary))}</p>
+        </td>
+      </tr>
+      ${whatChangedHtml}
+      <tr>
+        <td style="padding:0 32px 24px;">
+          ${sectionHeading("Highest-ROI action")}
+          <p style="margin:0;font-size:15px;line-height:1.75;color:#3d3832;font-family:Georgia,'Times New Roman',serif;">${escapeHtml(redactSecretsAndPii(highestRoi))}</p>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:0 32px 24px;">
+          ${sectionHeading("Priorities for the coming week")}
+          ${
+            titles.length
+              ? `<ul style="margin:0;padding:0 0 0 18px;">${priorityLis}</ul>`
+              : `<p style="margin:0;font-size:14px;color:#6a635c;">No additional priorities beyond the highest-ROI action.</p>`
+          }
+        </td>
+      </tr>
+      ${decisionsHtml}
+      ${blockersHtml}
+      ${confidenceHtml}
+    </table>
+  </body>
+</html>`;
+
+  const textParts: string[] = [
+    `Hourglass Weekly Brief · ${founderRange}`,
+    `Period: ${isoRange}`,
+    ``,
+    `Executive summary: ${redactSecretsAndPii(executiveSummary)}`,
+  ];
+  if (whatChanged) {
+    textParts.push(
+      ``,
+      `What changed this week: ${redactSecretsAndPii(whatChanged)}`,
+    );
+  }
+  textParts.push(
+    ``,
+    `Highest-ROI action: ${redactSecretsAndPii(highestRoi)}`,
+    ``,
+    `Priorities for the coming week:`,
+    ...(titles.length
+      ? titles.map((t, i) => `${i + 1}. ${redactSecretsAndPii(t)}`)
+      : ["(none beyond the highest-ROI action)"]),
+    ``,
+    `Decisions / approvals needed:`,
+    ...(decisions.length
+      ? decisions.map((d) => `- ${redactSecretsAndPii(d)}`)
+      : ["- No founder approvals required this week."]),
+  );
+  if (blockers.length) {
+    textParts.push(
+      ``,
+      `Risks / blockers:`,
+      ...blockers.map((b) => `- ${redactSecretsAndPii(b)}`),
+    );
+  }
+  textParts.push(
+    ``,
+    `Data confidence: ${confidence.level} — ${redactSecretsAndPii(confidence.summary)}`,
+  );
 
   return { subject, html, text: textParts.join("\n") };
 }

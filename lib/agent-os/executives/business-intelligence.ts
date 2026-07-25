@@ -241,7 +241,7 @@ export function runBusinessIntelligence(
           whyItMattersNow:
             "Acting on a false decline wastes founder time and can break a working funnel.",
           proposedAction:
-            "Review GA4 consultation_cta_clicked and diamond_studio_view event counts against Studio UI placements for the reporting week; confirm no client analytics gate regressions.",
+            "Review website consultation-request and Diamond Studio visit counts against Studio UI placements for the reporting week; confirm analytics gates are still recording cleanly.",
           expectedUpside:
             "Avoid mistaken product changes; restore trustworthy funnel signal within one cycle",
           effortEstimate: "low",
@@ -291,9 +291,9 @@ export function runBusinessIntelligence(
           whyItMattersNow:
             "If the CTA is under-firing or poorly placed, consultation intent is being lost despite healthy Studio use.",
           proposedAction:
-            "Compare Studio session_engaged and consultation_cta_clicked rates; inspect CTA visibility on mobile (majority of sessions).",
+            "Review the mobile path from Diamond Studio engagement to consultation requests, and improve CTA visibility where most sessions occur.",
           expectedUpside:
-            "Recover consultation intent from existing Studio traffic without paid spend",
+            "Recover qualified consultation inquiries from existing Studio traffic without paid spend",
           effortEstimate: "low",
           urgency: "high",
           reversibility: "easily-reversed",

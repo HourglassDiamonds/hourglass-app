@@ -62,6 +62,8 @@ scripts/.og-tmp/
 
 # Agent OS local artifacts
 tmp/agent-os/
+tmp-weekly-brief-preview/
+tmp-weekly-brief-replay/
 
 # OCR worker local runtime artifacts (do not commit)
 ocr-worker/node_modules/

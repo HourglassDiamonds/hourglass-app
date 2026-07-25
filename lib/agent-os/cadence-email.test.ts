@@ -690,7 +690,7 @@ describe("end-to-end scheduled live happy path with durable-test", () => {
     assert.equal(result.deliveryStatus, "sent");
     assert.ok(result.runId);
     assert.equal(sender.calls.length, 1);
-    assert.match(sender.calls[0]!.subject, /Founder brief|Degraded/i);
+    assert.match(sender.calls[0]!.subject, /Weekly Brief|Morning Brief|Founder brief|Degraded/i);
 
     const deliveries = Object.values(store.snapshot().deliveries);
     assert.ok(deliveries.some((d) => d.status === "sent"));

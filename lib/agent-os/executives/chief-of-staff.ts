@@ -9,9 +9,16 @@ import {
 } from "../bi/journey";
 import {
   cleanFounderFacingAction,
+  composeHighestRoiAction,
+  filterFounderFacingBlockers,
+  filterGenuineFounderDecisions,
   formatFounderLocalDateLabel,
   formatWeeklyRangeLabel,
+  isWeakAnalyticalObservation,
   selectFounderPriorities,
+  sanitizeFounderFacingNarrative,
+  toFounderFacingPriorityAction,
+  weeklyLowConfidenceHighestRoi,
   type BriefCadenceIntent,
 } from "../brief-quality";
 import { consolidateDuplicates } from "../recommendation";
@@ -164,37 +171,68 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
   }
 
   const intent: BriefCadenceIntent = input.briefCadenceIntent ?? "weekly";
-  const poolForSelection =
+  let poolForSelection =
     surfacePool.length > 0
       ? surfacePool
       : input.founderSurfaceEligibleIds
         ? []
         : active.filter((r) => r.originatingExecutive !== "opportunity");
 
+  // Weekly: demote weak analytical observations from the founder priority pool.
+  // They remain in ranked JSON; they must not become the highest-ROI action.
+  if (intent === "weekly") {
+    const actionable = poolForSelection.filter(
+      (r) => !isWeakAnalyticalObservation(r),
+    );
+    if (actionable.length > 0) {
+      poolForSelection = actionable;
+    }
+  }
+
   // Preserve ranked highest-ROI order; cluster/limitation rules only demote slots
   // (see brief-quality.ts). Soft diversity is a fill tie-breaker, not a quota.
   const selected = selectFounderPriorities(poolForSelection, {
     max: MAX_ADDITIONAL_SURFACED_PRIORITIES + 1,
   });
-  const highest = selected.highest;
+  let highest = selected.highest;
   const additionalSurfaced = selected.additional;
+
+  if (
+    intent === "weekly" &&
+    highest &&
+    isWeakAnalyticalObservation(highest)
+  ) {
+    highest = undefined;
+  }
+
   const surfacedIds = new Set(
     [highest, ...additionalSurfaced]
       .filter(Boolean)
       .map((r) => r!.recommendationId),
   );
 
-  // Diverted internal limitations → blockers / data notes, not named priorities
-  const divertedAsBlockers = selected.divertedInternalLimitations
-    .slice(0, 2)
-    .map(
-      (r) =>
-        `Operator follow-up: ${r.title.replace(/^\[Content\]\s*/i, "").replace(/^Source material incomplete/i, "Complete source material")}`,
-    );
+  // Diverted internal limitations stay in structured records — not as
+  // engineering-language blockers on the founder brief.
+  const divertedAsBlockers =
+    intent === "daily"
+      ? selected.divertedInternalLimitations.slice(0, 2).map(
+          (r) =>
+            `Operator follow-up: ${r.title.replace(/^\[Content\]\s*/i, "").replace(/^Source material incomplete/i, "Complete source material")}`,
+        )
+      : [];
 
   const founderDecisions = active
     .filter((r) => r.approvalRequired && surfacedIds.has(r.recommendationId))
-    .map((r) => r.title);
+    .map((r) => {
+      const choice = r.title.replace(/^\[[^\]]+\]\s*/, "");
+      const recommendation = cleanFounderFacingAction(r.proposedAction);
+      const reason = r.whyItMattersNow || r.plainLanguageExplanation;
+      const wait =
+        r.urgency === "critical" || r.urgency === "high"
+          ? "Waiting risks missing a time-sensitive window."
+          : "Waiting keeps the current path unchanged.";
+      return `Decide: ${choice}. Recommendation: ${recommendation}. Why: ${reason}. If deferred: ${wait}`;
+    });
 
   const escalationItems: EscalationItem[] = [];
   const allGaps = [
@@ -261,11 +299,15 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
           ...contentChangeBits,
           ...opportunityChangeBits,
         ];
-  const whatChanged =
+  const whatChangedRaw =
     changeBits.filter(Boolean).join("; ") ||
     (intent === "daily"
       ? "No material day-over-day signal in available sources."
       : "Insufficient metric coverage to summarize changes.");
+  const whatChanged =
+    intent === "weekly"
+      ? sanitizeFounderFacingNarrative(whatChangedRaw)
+      : whatChangedRaw;
 
   const whyItMatters = highest
     ? highest.whyItMattersNow
@@ -319,15 +361,20 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
     canSafelyWait.push("None");
   }
 
-  const blockedList = [
+  const blockedListRaw = [
     ...divertedAsBlockers,
     ...blocked.slice(0, 2).map(
       (r) =>
         `${r.title}${r.blockedReasons?.length ? ` — ${r.blockedReasons[0]}` : ""}`,
     ),
     // Daily briefs omit scaffold "not yet operational" noise from the founder list
-    ...(intent === "daily" ? [] : nonOperationalNote),
+    // Weekly founder email also omits scaffold notes (engineering inventory).
+    ...(intent === "daily" || intent === "weekly" ? [] : nonOperationalNote),
   ].slice(0, 4);
+  const blockedList =
+    intent === "weekly"
+      ? filterFounderFacingBlockers(blockedListRaw)
+      : blockedListRaw;
 
   // Deduplicate gap descriptions for brief length
   const seenGap = new Set<string>();
@@ -345,27 +392,43 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
     if (missingOrUnreliableData.length >= 5) break;
   }
 
-  const founderDecisionNeeded =
+  const founderDecisionNeededRaw =
     founderDecisions.length > 0
       ? founderDecisions.slice(0, 3)
-      : highest
-        ? [
-            "Whether to spend founder time on the highest-ROI action above before new experiments",
-          ]
-        : criticalGapsNeedDecision(
-              input.bi,
-              input.search,
-              input.content,
-              input.opportunity,
-            )
+      : intent === "weekly"
+        ? []
+        : highest
           ? [
-              "Whether to restore read-only measurement (GA4 / GSC / weekly) before growth recommendations",
+              "Whether to spend founder time on the highest-ROI action above before new experiments",
             ]
-          : ["None required this cycle"];
+          : criticalGapsNeedDecision(
+                input.bi,
+                input.search,
+                input.content,
+                input.opportunity,
+              )
+            ? [
+                "Whether to restore read-only measurement (GA4 / GSC / weekly) before growth recommendations",
+              ]
+            : ["None required this cycle"];
+
+  const founderDecisionNeeded =
+    intent === "weekly"
+      ? filterGenuineFounderDecisions(founderDecisionNeededRaw).length > 0
+        ? filterGenuineFounderDecisions(founderDecisionNeededRaw)
+        : ["No founder approvals required this week."]
+      : founderDecisionNeededRaw;
 
   const surfacedPriorityTitles = [
-    ...(highest ? [highest.title] : []),
-    ...additionalSurfaced.map((r) => r.title),
+    // Highest-ROI stands alone — do not repeat it under Priorities.
+    ...additionalSurfaced.map((r) =>
+      intent === "weekly"
+        ? toFounderFacingPriorityAction(
+            r.title.replace(/^\[[^\]]+\]\s*/, ""),
+            r.proposedAction,
+          )
+        : r.title.replace(/^\[[^\]]+\]\s*/, ""),
+    ),
   ];
 
   const opportunitiesDetected =
@@ -377,13 +440,28 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
       ).length ??
       0);
 
+  const hasCriticalSourceGaps = criticalGapsNeedDecision(
+    input.bi,
+    input.search,
+    input.content,
+    input.opportunity,
+  );
+
   const highestRoiAction = highest
-    ? intent === "daily"
-      ? `${highest.title} — ${truncateAction(cleanFounderFacingAction(highest.proposedAction))}`
-      : `${highest.title} — ${truncateAction(highest.proposedAction)} (confidence ${highest.confidence})`
+    ? composeHighestRoiAction({
+        title: highest.title,
+        proposedAction: highest.proposedAction,
+        intent,
+        plainLanguageExplanation: highest.plainLanguageExplanation,
+        expectedUpside: highest.expectedUpside,
+        whyItMattersNow: highest.whyItMattersNow,
+      })
     : intent === "daily"
       ? "None required today"
-      : "None — resolve data gaps first";
+      : weeklyLowConfidenceHighestRoi({
+          briefEvidenceQuality: input.briefEvidenceQuality,
+          hasCriticalSourceGaps,
+        });
 
   const periodLabel =
     intent === "daily" && input.briefLocalDate
@@ -431,7 +509,8 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
     brief,
     escalationItems,
     nonOperationalNote,
-    surfacedInBriefCount: surfacedPriorityTitles.length,
+    surfacedInBriefCount:
+      (highest ? 1 : 0) + surfacedPriorityTitles.length,
   };
 }
 
@@ -518,10 +597,6 @@ function ownershipOverlap(a: string, b: string): boolean {
 
 function normalizeLoose(s: string): string {
   return s.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
-}
-
-function truncateAction(s: string): string {
-  return s.length <= 140 ? s : `${s.slice(0, 137)}…`;
 }
 
 function criticalGapsNeedDecision(
