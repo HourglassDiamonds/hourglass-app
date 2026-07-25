@@ -612,7 +612,7 @@ Module: `lib/agent-os/cadence-delivery/`.
 
 **Email config:** complete `AGENT_OS_EMAIL_*` pair → complete `INTELLIGENCE_EMAIL_*` pair → fail closed (no partial mixing).
 
-**Cron:** `GET|POST /api/cron/agent-os-cadence` — auth before work; header secrets only; `Cache-Control: no-store`; not in `vercel.json` yet.
+**Cron:** `GET|POST /api/cron/agent-os-cadence` — auth before work; header secrets only; `Cache-Control: no-store`; scheduled twice daily in UTC (`0 11` / `0 12`) so the America/New_York `localEligibleAt` gate can hit 07:00 in both EDT and EST.
 
 **Claim retention:** intended ~90 days; automatic purge not yet enabled (required before/shortly after scheduled-live).
 

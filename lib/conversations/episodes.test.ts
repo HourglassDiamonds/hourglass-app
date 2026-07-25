@@ -291,7 +291,7 @@ describe("YouTube embed contract for the live episode", () => {
 });
 
 describe("Agent OS surfaces remain untouched by Conversations publishing gates", () => {
-  it("keeps Agent OS cron paths absent from vercel.json", () => {
+  it("preserves non-Agent-OS crons alongside the Agent OS cadence schedule", () => {
     const vercelPath = join(process.cwd(), "vercel.json");
     const raw = readFileSync(vercelPath, "utf8");
     const config = JSON.parse(raw) as {
@@ -299,13 +299,11 @@ describe("Agent OS surfaces remain untouched by Conversations publishing gates",
     };
     const paths = (config.crons ?? []).map((cron) => cron.path);
     assert.ok(paths.includes("/api/cron/weekly-intelligence"));
-    assert.equal(
-      paths.some((path) => path.includes("agent-os")),
-      false,
+    assert.ok(paths.includes("/api/cron/shape-studio-capture-cleanup"));
+    assert.ok(
+      paths.includes("/api/cron/diamond-intelligence-submission-cleanup"),
     );
-    assert.equal(
-      paths.some((path) => path.includes("daily")),
-      false,
-    );
+    // Agent OS cadence is registered separately; Conversations must not remove it.
+    assert.ok(paths.includes("/api/cron/agent-os-cadence"));
   });
 });

@@ -51,7 +51,7 @@ describe("Conversations discoverability — footer only", () => {
     );
   });
 
-  it("preserves episode Concierge attribution and leaves Agent OS cron untouched", () => {
+  it("preserves episode Concierge attribution without disturbing Agent OS cron", () => {
     const episodePage = readSource(
       "app/conversations/[slug]/episode-page-client.tsx",
     );
@@ -62,9 +62,7 @@ describe("Conversations discoverability — footer only", () => {
       crons?: Array<{ path: string }>;
     };
     const paths = (vercel.crons ?? []).map((cron) => cron.path);
-    assert.equal(
-      paths.some((path) => path.includes("agent-os")),
-      false,
-    );
+    // Discoverability work must not strip the Agent OS cadence cron.
+    assert.ok(paths.includes("/api/cron/agent-os-cadence"));
   });
 });

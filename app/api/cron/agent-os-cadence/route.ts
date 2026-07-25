@@ -17,7 +17,10 @@ export const revalidate = 0;
  *
  * GET is retained for compatibility with the established Vercel Cron pattern
  * used by `/api/cron/weekly-intelligence`. Caching is explicitly disabled.
- * Not registered in vercel.json until production Supabase + email env are ready.
+ *
+ * Vercel schedules are UTC. Two daily invocations (`0 11` and `0 12`) cover
+ * 07:00 America/New_York in both EDT and EST; the app `localEligibleAt` gate
+ * and delivery ledger select the valid hour and prevent duplicate sends.
  */
 function unauthorized() {
   return NextResponse.json(

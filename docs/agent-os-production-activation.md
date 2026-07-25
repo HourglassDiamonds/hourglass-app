@@ -21,7 +21,7 @@ Confirm all of the following before any write:
 
 1. Working tree is clean of tracked changes (`marketing-sprint/` and `tmp/` may remain untracked and must not be staged).
 2. Local `main` contains only the reviewed Agent OS commit stack ahead of `origin/main`.
-3. `vercel.json` does **not** yet list `/api/cron/agent-os-cadence`.
+3. `vercel.json` lists `/api/cron/agent-os-cadence` at `0 11 * * *` and `0 12 * * *` (dual UTC fire for 07:00 America/New_York).
 4. `lib/supabase/agent-os-schema.sql` is present.
 5. Agent OS email variables are not accidentally committed.
 6. `npm run test:agent-os` and `npm run build` pass on the activation SHA.
@@ -238,9 +238,13 @@ GET|POST /api/cron/agent-os-cadence
 
 Auth: shared `CRON_SECRET` via `Authorization: Bearer …` or `x-cron-secret` only (`timingSafeEqual`). Query-string secrets are rejected.
 
-**Recommended `vercel.json` entry (enable only after smoke test):**
+**Recommended `vercel.json` entries (dual UTC fire + New York app gate):**
 
 ```json
+{
+  "path": "/api/cron/agent-os-cadence",
+  "schedule": "0 11 * * *"
+},
 {
   "path": "/api/cron/agent-os-cadence",
   "schedule": "0 12 * * *"
@@ -249,10 +253,12 @@ Auth: shared `CRON_SECRET` via `Authorization: Bearer …` or `x-cron-secret` on
 
 Rationale:
 
-- Schedules are UTC.
-- `0 12 * * *` ≈ **07:00 EST** and **08:00 EDT** — always at/after the 07:00 New York gate; app-level `localEligibleAt` still enforces the gate and one-success-per-local-date.
-- Existing project already uses multiple once-daily crons; Hobby allows once-daily expressions, but per-hour (±59m) precision on Hobby may delay invocation within the hour. **Pro** is preferred for minute-level precision near the gate.
-- Do **not** enable hourly cron on Hobby (deploy will fail). On Pro, optional `5 * * * *` is acceptable because the route is idempotent and gated — but daily UTC noon is enough for V1.
+- Schedules are UTC; America/New_York offsets alternate between UTC−4 (EDT) and UTC−5 (EST).
+- `0 11 * * *` = **07:00 EDT**; `0 12 * * *` = **07:00 EST**.
+- App-level `localEligibleAt: { hour: 7, minute: 0 }` rejects the off-season early fire (e.g. 11:00 UTC during EST is still 06:00 local) and accepts any invocation at/after 07:00 local.
+- Delivery ledger + one-success-per-local-date make the second same-day fire a no-op after a successful send — no competing scheduler.
+- A delayed fire later in the local morning still runs (`catchUpBehavior: run-if-stale`) and does **not** silently skip the day.
+- Prefer dual daily UTC schedules over a single fixed-UTC hour or an hourly cron. Do **not** enable hourly cron on Hobby (deploy will fail).
 
 `maxDuration` on the route is 120s — confirm plan limits support it.
 
@@ -269,7 +275,7 @@ Default order (minimize “code expects missing infra” window):
 5. **Redeploy Production** so runtime picks up env (if env added after prior deploy).
 6. **Controlled live smoke** (`--scheduled-live` or single authenticated cron invoke).
 7. **Duplicate-send check**.
-8. **Enable cron** in `vercel.json` + deploy.
+8. **Confirm cron** entries in `vercel.json` (dual UTC) + deploy.
 9. Monitor first local morning + first weekly window.
 
 Deploying code **with cron still disabled** is safe: the route exists but is not invoked by schedule; unauthenticated calls 401; missing durable/email config fails closed.

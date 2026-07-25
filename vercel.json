@@ -11,6 +11,14 @@
     {
       "path": "/api/cron/diamond-intelligence-submission-cleanup",
       "schedule": "45 5 * * *"
+    },
+    {
+      "path": "/api/cron/agent-os-cadence",
+      "schedule": "0 11 * * *"
+    },
+    {
+      "path": "/api/cron/agent-os-cadence",
+      "schedule": "0 12 * * *"
     }
   ]
 }
