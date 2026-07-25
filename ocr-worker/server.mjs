@@ -6,6 +6,9 @@
  *   OCR_WORKER_SECRET (required for /recognize)
  *   OCR_WORKER_LANG (default eng)
  *   OCR_WORKER_MAX_BODY_BYTES (default 22MB — base64 overhead for 15MB PNG)
+ *
+ * Concurrency: a single Tesseract worker is not safe for overlapping recognize()
+ * calls — requests are serialized through an in-process queue.
  */
 
 import { createServer } from "node:http";
@@ -24,12 +27,26 @@ let workerWarm = false;
 let workerInitError = null;
 let workerInitStartedAt = Date.now();
 
+/** Serialize recognize() so parallel crop requests never overlap on one worker. */
+let recognizeChain = Promise.resolve();
+
+function enqueueRecognize(task) {
+  const run = recognizeChain.then(task, task);
+  // Keep the chain alive even when a task rejects.
+  recognizeChain = run.then(
+    () => undefined,
+    () => undefined,
+  );
+  return run;
+}
+
 async function initWorker() {
   workerInitStartedAt = Date.now();
   try {
     console.log("[ocr-worker] initializing tesseract worker", { lang: LANG });
     worker = await createWorker(LANG, 1, { logger: () => {} });
     workerWarm = true;
+    workerInitError = null;
     console.log("[ocr-worker] worker ready", {
       lang: LANG,
       durationMs: Date.now() - workerInitStartedAt,
@@ -37,6 +54,7 @@ async function initWorker() {
   } catch (err) {
     workerInitError = err instanceof Error ? err.message : String(err);
     workerWarm = false;
+    worker = null;
     console.error("[ocr-worker] worker init failed", {
       error: workerInitError,
       durationMs: Date.now() - workerInitStartedAt,
@@ -98,12 +116,22 @@ function authorize(req, res) {
 }
 
 async function handleHealth(_req, res) {
+  if (!workerWarm || !worker) {
+    // Non-200 until Tesseract is genuinely ready to accept work.
+    json(res, 503, {
+      ok: false,
+      available: false,
+      workerWarm: false,
+      lang: LANG,
+      error: workerInitError ?? "worker-not-ready",
+    });
+    return;
+  }
   json(res, 200, {
     ok: true,
-    available: workerWarm,
-    workerWarm,
+    available: true,
+    workerWarm: true,
     lang: LANG,
-    ...(workerInitError ? { initError: workerInitError } : {}),
   });
 }
 
@@ -124,7 +152,6 @@ async function handleRecognize(req, res) {
     return;
   }
 
-  const requestId = typeof body.requestId === "string" ? body.requestId : undefined;
   const imageBase64 = typeof body.imageBase64 === "string" ? body.imageBase64 : "";
   if (!imageBase64) {
     json(res, 400, {
@@ -138,7 +165,7 @@ async function handleRecognize(req, res) {
   if (!workerWarm || !worker) {
     json(res, 503, {
       ok: false,
-      error: workerInitError ?? "worker-init-failed",
+      error: workerInitError ?? "worker-not-ready",
       durationMs: Date.now() - started,
     });
     return;
@@ -146,24 +173,31 @@ async function handleRecognize(req, res) {
 
   try {
     const imageBuffer = Buffer.from(imageBase64, "base64");
-    const { data } = await worker.recognize(imageBuffer);
+    const result = await enqueueRecognize(async () => {
+      if (!workerWarm || !worker) {
+        throw new Error(workerInitError ?? "worker-not-ready");
+      }
+      return worker.recognize(imageBuffer);
+    });
     const durationMs = Date.now() - started;
+    // Safe diagnostics only — never log OCR text, image bytes, or requestId
+    // (callers may pass report-derived ids).
     console.log("[ocr-worker] recognize ok", {
-      requestId,
       bytes: imageBuffer.length,
-      textLength: (data.text ?? "").length,
+      textLength: (result.data.text ?? "").length,
       durationMs,
     });
     json(res, 200, {
       ok: true,
-      text: (data.text ?? "").trim(),
+      text: (result.data.text ?? "").trim(),
       durationMs,
     });
   } catch (err) {
     const durationMs = Date.now() - started;
     const error = err instanceof Error ? err.message : String(err);
-    console.error("[ocr-worker] recognize failed", { requestId, error, durationMs });
-    json(res, 500, {
+    console.error("[ocr-worker] recognize failed", { error, durationMs });
+    const status = /worker-not-ready|worker-init-failed/i.test(error) ? 503 : 500;
+    json(res, status, {
       ok: false,
       error,
       durationMs,
@@ -187,17 +221,36 @@ const server = createServer(async (req, res) => {
 await initWorker();
 
 server.listen(PORT, () => {
-  console.log("[ocr-worker] listening", { port: PORT, lang: LANG, workerWarm });
+  console.log("[ocr-worker] listening", {
+    port: PORT,
+    lang: LANG,
+    workerWarm,
+  });
 });
 
-process.on("SIGTERM", async () => {
-  console.log("[ocr-worker] shutting down");
+async function shutdown(signal) {
+  console.log("[ocr-worker] shutting down", { signal });
+  try {
+    await recognizeChain;
+  } catch {
+    /* ignore */
+  }
   if (worker) {
     try {
       await worker.terminate();
     } catch {
       /* ignore */
     }
+    worker = null;
+    workerWarm = false;
   }
   server.close(() => process.exit(0));
+  setTimeout(() => process.exit(0), 8_000).unref();
+}
+
+process.on("SIGTERM", () => {
+  void shutdown("SIGTERM");
+});
+process.on("SIGINT", () => {
+  void shutdown("SIGINT");
 });

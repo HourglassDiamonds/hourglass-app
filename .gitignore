@@ -62,3 +62,7 @@ scripts/.og-tmp/
 
 # Agent OS local artifacts
 tmp/agent-os/
+
+# OCR worker local runtime artifacts (do not commit)
+ocr-worker/node_modules/
+ocr-worker/eng.traineddata

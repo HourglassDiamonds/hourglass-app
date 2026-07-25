@@ -8,12 +8,29 @@ The main app continues to render PDF pages and crop diagram regions on Vercel. O
 
 ### `GET /health`
 
+Returns **HTTP 200** only when the warm Tesseract worker is ready. Returns
+**HTTP 503** while initializing or after init failure.
+
+Ready:
+
 ```json
 {
   "ok": true,
   "available": true,
   "workerWarm": true,
   "lang": "eng"
+}
+```
+
+Not ready:
+
+```json
+{
+  "ok": false,
+  "available": false,
+  "workerWarm": false,
+  "lang": "eng",
+  "error": "worker-not-ready"
 }
 ```
 
