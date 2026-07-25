@@ -1,0 +1,5 @@
+# Deploy only the OCR worker image context from this monorepo.
+*
+!ocr-worker/
+!ocr-worker/**
+!railway.toml
