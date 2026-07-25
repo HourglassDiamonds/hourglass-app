@@ -174,7 +174,11 @@ describe("Guide authority adapter", () => {
     assert.ok(handoff);
     assert.match(
       handoff!.recommendedAction,
-      /diamond-studio|diamond-shape-studio/,
+      /See It On Your Hand|Diamond Studio|contextual link/i,
+    );
+    assert.doesNotMatch(
+      handoff!.recommendedAction,
+      /\/diamond-studio|\/diamond-shape-studio|and\/or/i,
     );
   });
 

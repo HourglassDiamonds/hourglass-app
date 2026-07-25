@@ -210,11 +210,11 @@ export function inspectGuideAuthority(
           subject: `/diamond-guide/${article.slug}`,
         }),
         type: "tool-handoff-gap",
-        title: `Tool handoff gap on ${article.slug}`,
+        title: `Add a tool handoff on “${article.title}”`,
         whyItMatters:
-          "Size/shape education should connect to Size Studio or See It On Your Hand when readers are ready to try options on-hand.",
+          "Size/shape education should connect to Diamond Studio or See It On Your Hand when readers are ready to try options on-hand.",
         recommendedAction:
-          `Propose an editorial link from /diamond-guide/${article.slug} to /diamond-studio and/or /diamond-shape-studio (Agent OS does not edit content).`,
+          `Add a contextual link from the “${article.title}” Diamond Guide article to See It On Your Hand. Readers comparing shape characteristics are closest to a visualization step before a consultation.`,
         queryOrPage: `/diamond-guide/${article.slug}`,
         metric: "tool-handoff",
         currentValue: "missing studio handoff in related/body links",
@@ -229,8 +229,8 @@ export function inspectGuideAuthority(
         approvalRequired: false,
         supportingReference: `app/diamond-guide/articles.ts#${article.slug}`,
         evidenceNotes: [
-          `Source route: /diamond-guide/${article.slug}`,
-          "Destination candidates: /diamond-studio, /diamond-shape-studio",
+          `Source article: ${article.title}`,
+          "Primary destination: See It On Your Hand; Diamond Studio remains available when size/coverage is the reader intent.",
         ],
       });
     }
