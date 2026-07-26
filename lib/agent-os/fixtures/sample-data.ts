@@ -8,6 +8,15 @@ export function createFixtureGa4Bundle(
 ): Ga4WeeklyBundle {
   return {
     fetchedAt: collectedAt,
+    windowMeta: {
+      timezone: "America/New_York",
+      windowKind: "completed-7d-et",
+      currentRange: { start: "2026-07-13", end: "2026-07-19" },
+      previousRange: { start: "2026-07-06", end: "2026-07-12" },
+      mostRecentCompleteDay: { start: "2026-07-19", end: "2026-07-19" },
+      priorCompleteDay: { start: "2026-07-18", end: "2026-07-18" },
+      baseline28dRange: { start: "2026-06-22", end: "2026-07-19" },
+    },
     current: {
       traffic: {
         sessions: 1840,
@@ -36,6 +45,11 @@ export function createFixtureGa4Bundle(
         carat_changed: 180,
         consultation_cta_clicked: 42,
         studio_session_engaged: 160,
+        concierge_form_started: 48,
+        concierge_form_submitted: 0,
+        generate_lead: 0,
+        conversation_concierge_clicked: 4,
+        conversation_related_resource_clicked: 18,
       },
       topShapes: [
         { shape: "oval", eventCount: 110 },
@@ -44,6 +58,14 @@ export function createFixtureGa4Bundle(
       ],
       consultationCtaClicks: 42,
       studioViews: 390,
+      sourceMediumRows: [
+        { source: "google", medium: "organic", sessions: 580 },
+        { source: "(direct)", medium: "(none)", sessions: 510 },
+        { source: "instagram.com", medium: "referral", sessions: 45 },
+      ],
+      generateLeadCount: 0,
+      conciergeFormStarted: 48,
+      conciergeFormSubmitted: 0,
     },
     previous: {
       traffic: {
@@ -93,6 +115,21 @@ export function createFixtureGscBundle(
     status: "live",
     siteUrl: "https://www.hourglassdiamonds.com/",
     fetchedAt: collectedAt,
+    freshness: {
+      newestAvailableDate: "2026-07-17",
+      newestFinalizedDate: "2026-07-17",
+      firstIncompleteDate: "2026-07-18",
+      newestObservedActivityDate: "2026-07-17",
+      boundarySource: "metadata",
+      ageDays: 2,
+      lagClassification: "normal-delay",
+      confidenceMultiplier: 0.92,
+      windowsUsed: {
+        current: { start: "2026-07-11", end: "2026-07-17" },
+        previous: { start: "2026-07-04", end: "2026-07-10" },
+      },
+      timezone: "America/Los_Angeles",
+    },
     current: {
       totals: {
         impressions: 18200,

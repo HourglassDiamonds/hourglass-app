@@ -11,6 +11,7 @@ export type Ga4OAuthErrorCode =
   | "MISSING_ENV"
   | "INVALID_REFRESH_TOKEN"
   | "TOKEN_REFRESH_FAILED"
+  | "GA4_PROPERTY_ACCESS_DENIED"
   | "GA4_API_FAILED";
 
 export class Ga4OAuthError extends Error {
@@ -229,10 +230,36 @@ export function ga4PropertyResourceName(): string {
 
 /** Access token for Google APIs (GA4, GSC) using the shared refresh token. */
 export async function getGoogleAccessToken(): Promise<string | null> {
+  const detailed = await refreshGoogleAccessTokenDetailed();
+  return detailed.ok ? detailed.accessToken : null;
+}
+
+/**
+ * Classified OAuth refresh for preflight/smoke — never log or return secrets
+ * beyond the short-lived access token for in-process API use.
+ */
+export async function refreshGoogleAccessTokenDetailed(): Promise<
+  | { ok: true; accessToken: string }
+  | {
+      ok: false;
+      code: Extract<
+        Ga4OAuthErrorCode,
+        "MISSING_ENV" | "INVALID_REFRESH_TOKEN" | "TOKEN_REFRESH_FAILED"
+      >;
+      message: string;
+    }
+> {
   const clientId = getGoogleClientId();
   const clientSecret = getGoogleClientSecret();
   const refreshToken = getGoogleRefreshToken();
-  if (!clientId || !clientSecret || !refreshToken) return null;
+  if (!clientId || !clientSecret || !refreshToken) {
+    return {
+      ok: false,
+      code: "MISSING_ENV",
+      message:
+        "GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, and GOOGLE_REFRESH_TOKEN are required",
+    };
+  }
 
   const redirectUri =
     getGoogleOAuthRedirectUri() ??
@@ -247,9 +274,24 @@ export async function getGoogleAccessToken(): Promise<string | null> {
       typeof tokenResponse === "string"
         ? tokenResponse
         : tokenResponse?.token;
-    return token ?? null;
-  } catch {
-    return null;
+    if (!token) {
+      return {
+        ok: false,
+        code: "INVALID_REFRESH_TOKEN",
+        message: "No access token returned — refresh token may be invalid",
+      };
+    }
+    return { ok: true, accessToken: token };
+  } catch (err) {
+    const mapped = mapTokenError(err);
+    return {
+      ok: false,
+      code:
+        mapped.code === "INVALID_REFRESH_TOKEN"
+          ? "INVALID_REFRESH_TOKEN"
+          : "TOKEN_REFRESH_FAILED",
+      message: mapped.message,
+    };
   }
 }
 
@@ -259,8 +301,8 @@ export function mapGa4ApiError(err: unknown): Ga4OAuthError {
 
   if (lower.includes("permission_denied") || lower.includes("403")) {
     return new Ga4OAuthError(
-      "GA4 API permission denied — ensure the Google user has access to this GA4 property",
-      "GA4_API_FAILED",
+      "GA4 API permission denied — ensure the Google user has Viewer access to this GA4 property",
+      "GA4_PROPERTY_ACCESS_DENIED",
       err,
     );
   }
@@ -274,4 +316,14 @@ export function mapGa4ApiError(err: unknown): Ga4OAuthError {
   }
 
   return new Ga4OAuthError(`GA4 Data API request failed: ${message}`, "GA4_API_FAILED", err);
+}
+
+/** Sanitized property id for logs (never a secret; still avoid dumping full env blobs). */
+export function sanitizeGa4PropertyIdForDisplay(
+  propertyId: string | undefined | null,
+): string | null {
+  if (!propertyId) return null;
+  const trimmed = propertyId.trim();
+  if (!/^\d{6,12}$/.test(trimmed)) return "[invalid-property-id-format]";
+  return trimmed;
 }

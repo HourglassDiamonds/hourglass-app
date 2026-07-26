@@ -8,7 +8,7 @@
  */
 
 import { randomUUID } from "node:crypto";
-import { loadAllSources, getFixtureReportingPeriod } from "./adapters/load";
+import { loadAllSources, getFixtureReportingPeriod, getLiveAgentOsReportingPeriod } from "./adapters/load";
 import type { AdapterMode } from "./adapters/types";
 import { runBusinessIntelligence } from "./executives/business-intelligence";
 import { emptyBusinessIntelligenceOutput } from "./bi/empty";
@@ -49,7 +49,6 @@ import {
 } from "./delivery";
 import { AGENT_OS_VERSION, type AgentRun, type DataSourceId } from "./types";
 import type { BriefCadenceIntent } from "./brief-quality";
-import { getReportWeekRange } from "@/lib/intelligence/week-ranges";
 import {
   persistAgentOsRun,
   resolvePersistenceAdapter,
@@ -117,7 +116,7 @@ export async function runAgentOsBrief(
 
   const reportingPeriod =
     options.reportingPeriod ??
-    (mode === "fixture" ? getFixtureReportingPeriod() : getReportWeekRange());
+    (mode === "fixture" ? getFixtureReportingPeriod() : getLiveAgentOsReportingPeriod());
 
   const executivesInvoked = operationalExecutives().map((e) => e.id);
   const executivesNotOperational = scaffoldExecutives().map((e) => e.id);

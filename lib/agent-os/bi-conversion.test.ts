@@ -600,7 +600,7 @@ describe("Fixture vs live safety", () => {
       );
       assert.equal(
         resolveObservedStatus(AUTHORITATIVE_CONVERSION_EVENT, liveObs),
-        "unknown",
+        "not-observed",
       );
     }
     assert.throws(() =>
@@ -707,7 +707,7 @@ describe("Concierge conversion root consolidation", () => {
 });
 
 describe("Live expected-vs-observed language", () => {
-  it("event outside GA4 allowlist remains unknown in live mode", () => {
+  it("allowlisted zero-volume conversion is not-observed; unqueried page_view stays unknown", () => {
     const bundle = {
       ga4: {
         ...emptyUnavailable("ga4"),
@@ -762,24 +762,19 @@ describe("Live expected-vs-observed language", () => {
     assert.equal(liveObs!.mode, "live-derived");
     assert.equal(
       resolveObservedStatus(AUTHORITATIVE_CONVERSION_EVENT, liveObs),
-      "unknown",
+      "not-observed",
     );
+    assert.equal(resolveObservedStatus("page_view", liveObs), "unknown");
     const findings = detectMeasurementFindings({
       inventory: buildExpectedEventInventory(liveObs),
       observations: liveObs,
     });
-    assert.ok(
-      !findings.some((f) => f.type === "expected-event-not-observed"),
-    );
-    const unverified = findings.find(
-      (f) =>
-        f.type === "verification-required" &&
-        f.affectedEvent === AUTHORITATIVE_CONVERSION_EVENT,
-    );
-    assert.ok(unverified);
-    assert.match(unverified!.observedEvidence, /unknown|unverified/i);
-    assert.ok(!/broken tracking|users failed to convert|regressed/i.test(unverified!.observedEvidence));
-    assert.ok(!/is absent(?!.*not)/i.test(unverified!.title));
+    // Unqueried inventory events must not be invented as "broken tracking"
+    const pageViewText = findings
+      .filter((f) => f.affectedEvent === "page_view")
+      .map((f) => `${f.title} ${f.observedEvidence}`)
+      .join("\n");
+    assert.ok(!/broken tracking|users failed to convert|regressed/i.test(pageViewText));
   });
 
   it("unavailable GA4 cannot produce expected-event-not-observed", () => {

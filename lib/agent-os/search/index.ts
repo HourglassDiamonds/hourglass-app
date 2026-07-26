@@ -62,7 +62,9 @@ export function runSearchStrategy(
     dataGaps.push({
       id: "gap-search-gsc",
       sourceId: "gsc",
-      description: "Google Search Console unavailable or empty for Search Strategy",
+      description:
+        bundle.gsc.health.founderLabel ??
+        "Search Console unavailable or empty for Search Strategy",
       impactOnRecommendations:
         "No GSC-derived query/CTR/position findings will be fabricated",
       suggestedRemedy:
@@ -70,9 +72,32 @@ export function runSearchStrategy(
         "Configure GSC_SITE_URL and webmasters.readonly OAuth",
     });
   } else {
+    const freshness = bundle.gsc.data?.freshness;
     facts.push(
       `GSC clicks ${bundle.gsc.data!.current!.totals.clicks}; impressions ${bundle.gsc.data!.current!.totals.impressions}`,
     );
+    if (freshness?.newestFinalizedDate || freshness?.newestAvailableDate) {
+      const finalized =
+        freshness.newestFinalizedDate ?? freshness.newestAvailableDate;
+      facts.push(
+        `GSC newest finalized date ${finalized} (Pacific; age ${freshness.ageDays ?? "?"}d; ${freshness.lagClassification})`,
+      );
+    }
+    if (
+      bundle.gsc.health.healthCode === "stale-within-normal-delay" ||
+      bundle.gsc.health.healthCode === "stale-unusual"
+    ) {
+      dataGaps.push({
+        id: "gap-search-gsc-freshness",
+        sourceId: "gsc",
+        description:
+          bundle.gsc.health.founderLabel ??
+          "Search Console reporting delay within expected range",
+        impactOnRecommendations:
+          "Treat time-sensitive SEO claims with lag-adjusted confidence — not as an outage",
+        suggestedRemedy: "Normal Search Console delay; no credential action required",
+      });
+    }
   }
 
   // Single GBP root source gap — not per-dimension flood

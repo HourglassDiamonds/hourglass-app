@@ -173,7 +173,7 @@ Repository instrumentation may list **candidates** (`generate_lead`, `concierge_
 
 ### Live-data limitations
 
-Live mode derives observations only from the existing GA4 weekly adapter allowlist (`STUDIO_EVENTS`). Concierge `generate_lead` / form events are **unknown** until a later read-only adapter expansion — that is a verification requirement, not fabricated breakage. Live mode never uses fixture conversion overlays.
+Live mode derives observations from the GA4 Agent OS allowlist (Studio + Concierge conversion candidates + Conversations events). See `docs/agent-os-live-measurement.md` for OAuth setup, smoke testing, and source-health labels. Live mode never uses fixture conversion overlays.
 
 ### Stable IDs
 
@@ -215,7 +215,7 @@ No sixth executive is created.
 
 ### Conversion unknown-state behavior
 
-- Form-submit / `generate_lead` outside the live allowlist → `unknown` (not zero conversions, not “low conversion rate”).
+- Form-submit / `generate_lead` are on the live allowlist — zero volume → `not-observed` (not zero conversions invented as a rate).
 - Zero queried events ≠ zero real conversions without healthy verified measurement.
 - Soft-dedupes against the Concierge conversion measurement root when that root already exists.
 
@@ -722,8 +722,8 @@ This repository has **no OpenAI / AI SDK product dependency**. V1 uses determini
 - No Buffer / social API → incomplete social attribution
 - No GBP adapter → no local pack / review metrics (Search Strategy local findings use GSC + guide registry only)
 - No HubSpot weekly aggregate read → no consultation CRM funnel in Agent OS
-- Agent OS GA4 weekly adapter does not yet retrieve `generate_lead` / Concierge form events → conversion status often `unknown` in live mode
-- Live GA4 weekly adapter does not expose path/next-page transitions → journey next-step movement unknown until a verified path read exists
+- Agent OS GA4 adapter retrieves Concierge conversion candidates (`generate_lead`, form events) when OAuth is configured — status may still be `not-observed` if volume is zero
+- Live GA4 adapter does not expose path/next-page transitions → journey next-step movement unknown until a verified path read exists
 - See It On Your Hand / Analyze Sparkle lack journey events in repository
 - CTA click samples can be small — percentage swings overstate urgency
 - Revenue must never be inferred from traffic, Studio views, or impressions

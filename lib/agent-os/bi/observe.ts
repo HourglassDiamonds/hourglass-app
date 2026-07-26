@@ -18,14 +18,9 @@ import type {
   SourceMediumRow,
 } from "./types";
 
-/** Events fixture mode pretends Agent OS queried (broader than live GA4 adapter). */
+/** Events fixture mode pretends Agent OS queried (may exceed live allowlist intentionally). */
 export const FIXTURE_QUERIED_EVENTS = [
   ...GA4_ADAPTER_QUERIED_EVENTS,
-  "concierge_form_started",
-  "concierge_form_submitted",
-  AUTHORITATIVE_CONVERSION_EVENT,
-  "conversation_concierge_clicked",
-  "conversation_related_resource_clicked",
 ] as const;
 
 /**
@@ -133,7 +128,11 @@ export function deriveLiveConversionObservations(
       value: p.value,
       sessions: p.sessions,
     })),
-    sourceMediumRows: [], // live GA4 adapter does not pull sessionSource/sessionMedium
+    sourceMediumRows: (ga4.current.sourceMediumRows ?? []).map((r) => ({
+      source: r.source,
+      medium: r.medium,
+      sessions: r.sessions,
+    })),
     ga4Available: true,
     ga4RetrievalState: bundle.ga4.health.retrievalState,
     collectedAt: ga4.fetchedAt,

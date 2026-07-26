@@ -4,6 +4,7 @@
  * SERVER ONLY — do not import from Client Components.
  * Live paths may read process.env and call GA4, GSC, and Supabase weekly-report helpers.
  * Fixture paths stay in-process and do not call external providers.
+ * Live mode never falls back to fixtures.
  */
 
 import { registerConnector } from "../permissions";
@@ -19,6 +20,12 @@ import type { AdapterMode, AdapterResult, AgentOsDataBundle } from "./types";
 import { DEFAULT_ADAPTER_TIMEOUT_MS, withTimeout } from "./types";
 import type { Ga4WeeklyBundle, WeeklyReportRecord } from "@/lib/intelligence/types";
 import type { GscWeeklyBundle } from "@/lib/integrations/gsc";
+import {
+  classifyMeasurementFailure,
+  founderLabelForHealthCode,
+  type MeasurementHealthCode,
+} from "../measurement/health-codes";
+import { getAgentOsMeasurementWindows } from "../measurement/date-windows";
 
 registerConnector({
   id: "agent-os-ga4-read",
@@ -56,7 +63,76 @@ function unavailableAggregate(
       lastSuccessfulRead: null,
       errors: [reason],
       retrievalState: "not-configured",
+      healthCode: "not-configured",
+      founderLabel: reason,
     }),
+  };
+}
+
+function ga4HealthFromError(err: unknown): {
+  healthCode: MeasurementHealthCode;
+  founderLabel: string;
+  message: string;
+} {
+  const healthCode = classifyMeasurementFailure("ga4", err);
+  const message = redactError(err);
+  return {
+    healthCode,
+    founderLabel: founderLabelForHealthCode("ga4", healthCode),
+    message,
+  };
+}
+
+function gscHealthFromBundle(data: GscWeeklyBundle): {
+  healthCode: MeasurementHealthCode;
+  founderLabel: string;
+  failed: boolean;
+  empty: boolean;
+  fresh: boolean;
+} {
+  if (data.status === "unavailable") {
+    const healthCode = classifyMeasurementFailure("gsc", {
+      code: data.failureCode,
+      message: data.unavailableReason ?? "GSC unavailable",
+    });
+    return {
+      healthCode,
+      founderLabel: founderLabelForHealthCode("gsc", healthCode, {
+        newestAvailableDate: data.freshness?.newestFinalizedDate ?? data.freshness?.newestAvailableDate,
+        ageDays: data.freshness?.ageDays,
+      }),
+      failed: true,
+      empty: false,
+      fresh: false,
+    };
+  }
+
+  const empty =
+    (data.current?.totals.clicks ?? 0) === 0 &&
+    (data.current?.totals.impressions ?? 0) === 0;
+  const lag = data.freshness?.lagClassification;
+  let healthCode: MeasurementHealthCode = "ok";
+  // Unusual finalized-boundary age wins over empty (processing problem ≠ zero traffic).
+  // Zero traffic alone must not become a stale/auth failure.
+  if (lag === "unusual-stale") {
+    healthCode = "stale-unusual";
+  } else if (empty) {
+    healthCode = "empty";
+  } else if (lag === "normal-delay" || lag === "elevated-delay") {
+    healthCode = "stale-within-normal-delay";
+  }
+
+  return {
+    healthCode,
+    founderLabel: founderLabelForHealthCode("gsc", healthCode, {
+      newestAvailableDate:
+        data.freshness?.newestFinalizedDate ??
+        data.freshness?.newestAvailableDate,
+      ageDays: data.freshness?.ageDays,
+    }),
+    failed: false,
+    empty,
+    fresh: healthCode === "ok" || healthCode === "empty",
   };
 }
 
@@ -81,16 +157,15 @@ export async function loadGa4(
         permissionPosture: "read-only",
         lastSuccessfulRead: data.fetchedAt,
         retrievalState: "fixture",
+        healthCode: "fixture",
+        founderLabel: founderLabelForHealthCode("ga4", "fixture"),
       }),
     };
   }
 
   try {
-    const { isGa4Configured, fetchGa4WeeklyBundle } = await import(
+    const { isGa4Configured, fetchGa4AgentOsBundle } = await import(
       "@/lib/integrations/ga4"
-    );
-    const { getReportWeekRange, getComparisonWeekRange } = await import(
-      "@/lib/intelligence/week-ranges"
     );
     if (!isGa4Configured()) {
       return {
@@ -107,19 +182,20 @@ export async function loadGa4(
           complete: false,
           permissionPosture: "read-only",
           lastSuccessfulRead: null,
-          errors: ["GA4 OAuth / property not configured"],
+          errors: ["GA4 not configured"],
           retrievalState: "not-configured",
+          healthCode: "not-configured",
+          founderLabel: founderLabelForHealthCode("ga4", "not-configured"),
         }),
       };
     }
-    const current = getReportWeekRange();
-    const previous = getComparisonWeekRange(current);
     const data = await withTimeout(
-      fetchGa4WeeklyBundle(current, previous),
+      fetchGa4AgentOsBundle(new Date()),
       timeoutMs,
       "ga4",
     );
     const empty = data.current.traffic.sessions === 0;
+    const healthCode: MeasurementHealthCode = empty ? "empty" : "ok";
     return {
       sourceId: "ga4",
       ok: true,
@@ -135,9 +211,14 @@ export async function loadGa4(
         permissionPosture: "read-only",
         lastSuccessfulRead: data.fetchedAt,
         retrievalState: empty ? "empty" : "ok",
+        healthCode,
+        founderLabel: founderLabelForHealthCode("ga4", healthCode),
+        newestSourceDate: data.windowMeta?.mostRecentCompleteDay?.end ?? null,
+        sourceAgeDays: 0,
       }),
     };
   } catch (err) {
+    const classified = ga4HealthFromError(err);
     return {
       sourceId: "ga4",
       ok: false,
@@ -152,8 +233,10 @@ export async function loadGa4(
         complete: false,
         permissionPosture: "read-only",
         lastSuccessfulRead: null,
-        errors: [redactError(err)],
+        errors: [classified.message],
         retrievalState: "failed",
+        healthCode: classified.healthCode,
+        founderLabel: classified.founderLabel,
       }),
     };
   }
@@ -180,16 +263,15 @@ export async function loadGsc(
         permissionPosture: "read-only",
         lastSuccessfulRead: data.fetchedAt,
         retrievalState: "fixture",
+        healthCode: "fixture",
+        founderLabel: founderLabelForHealthCode("gsc", "fixture"),
       }),
     };
   }
 
   try {
-    const { isGscConfigured, fetchGscWeeklyBundle } = await import(
+    const { isGscConfigured, fetchGscAgentOsBundle } = await import(
       "@/lib/integrations/gsc"
-    );
-    const { getReportWeekRange, getComparisonWeekRange } = await import(
-      "@/lib/intelligence/week-ranges"
     );
     if (!isGscConfigured()) {
       return {
@@ -206,19 +288,20 @@ export async function loadGsc(
           complete: false,
           permissionPosture: "read-only",
           lastSuccessfulRead: null,
-          errors: ["GSC_SITE_URL or OAuth not configured"],
+          errors: ["Search Console not configured"],
           retrievalState: "not-configured",
+          healthCode: "not-configured",
+          founderLabel: founderLabelForHealthCode("gsc", "not-configured"),
         }),
       };
     }
-    const current = getReportWeekRange();
-    const previous = getComparisonWeekRange(current);
     const data = await withTimeout(
-      fetchGscWeeklyBundle(current, previous),
+      fetchGscAgentOsBundle(new Date()),
       timeoutMs,
       "gsc",
     );
-    if (data.status === "unavailable") {
+    const classified = gscHealthFromBundle(data);
+    if (classified.failed) {
       return {
         sourceId: "gsc",
         ok: false,
@@ -235,28 +318,42 @@ export async function loadGsc(
           lastSuccessfulRead: null,
           errors: [data.unavailableReason ?? "GSC unavailable"],
           retrievalState: "failed",
+          healthCode: classified.healthCode,
+          founderLabel: classified.founderLabel,
+          newestSourceDate:
+            data.freshness?.newestFinalizedDate ??
+            data.freshness?.newestAvailableDate ??
+            null,
+          sourceAgeDays: data.freshness?.ageDays ?? null,
         }),
       };
     }
-    const empty = (data.current?.totals.clicks ?? 0) === 0;
     return {
       sourceId: "gsc",
       ok: true,
       data,
-      empty,
+      empty: classified.empty,
       failed: false,
       health: buildSourceHealth({
         sourceId: "gsc",
         configured: true,
         reachable: true,
-        fresh: true,
-        complete: !empty,
+        fresh: classified.fresh,
+        complete: !classified.empty,
         permissionPosture: "read-only",
         lastSuccessfulRead: data.fetchedAt,
-        retrievalState: empty ? "empty" : "ok",
+        retrievalState: classified.empty ? "empty" : "ok",
+        healthCode: classified.healthCode,
+        founderLabel: classified.founderLabel,
+        newestSourceDate:
+          data.freshness?.newestFinalizedDate ??
+          data.freshness?.newestAvailableDate ??
+          null,
+        sourceAgeDays: data.freshness?.ageDays ?? null,
       }),
     };
   } catch (err) {
+    const healthCode = classifyMeasurementFailure("gsc", err);
     return {
       sourceId: "gsc",
       ok: false,
@@ -273,6 +370,8 @@ export async function loadGsc(
         lastSuccessfulRead: null,
         errors: [redactError(err)],
         retrievalState: "failed",
+        healthCode,
+        founderLabel: founderLabelForHealthCode("gsc", healthCode),
       }),
     };
   }
@@ -401,4 +500,9 @@ export async function loadAllSources(
 
 export function getFixtureReportingPeriod() {
   return { ...FIXTURE_REPORTING_PERIOD };
+}
+
+/** Live Agent OS reporting period = completed ET rolling 7d. */
+export function getLiveAgentOsReportingPeriod(asOf: Date = new Date()) {
+  return getAgentOsMeasurementWindows(asOf).rolling7d;
 }

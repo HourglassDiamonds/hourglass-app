@@ -145,6 +145,17 @@ export type SourceHealth = {
   errors: string[];
   effectOnConfidence: string;
   retrievalState: "ok" | "empty" | "failed" | "not-configured" | "fixture";
+  /**
+   * Precise measurement classification for GA4/GSC (and future adapters).
+   * Prefer this over parsing free-form errors when present.
+   */
+  healthCode?: import("./measurement/health-codes").MeasurementHealthCode;
+  /** Founder-facing compact label derived from healthCode. */
+  founderLabel?: string;
+  /** Newest reliable source date when known (YYYY-MM-DD). */
+  newestSourceDate?: string | null;
+  /** Age of newest source date vs most recent complete local day. */
+  sourceAgeDays?: number | null;
 };
 
 export type Anomaly = {

@@ -12,6 +12,8 @@ import {
 import { createEvidence } from "../evidence";
 import { buildRecommendation } from "../recommendation";
 import { assertOperationalForRecommendations } from "../registry";
+import { founderLabelForHealthCode } from "../measurement/health-codes";
+import { assessChange } from "../measurement/change-math";
 import type {
   Anomaly,
   DataGap,
@@ -92,7 +94,12 @@ export function runBusinessIntelligence(
     dataGaps.push({
       id: "gap-ga4-failed",
       sourceId: "ga4",
-      description: "GA4 retrieval failed",
+      description:
+        bundle.ga4.health.founderLabel ??
+        founderLabelForHealthCode(
+          "ga4",
+          bundle.ga4.health.healthCode ?? "upstream-request-failed",
+        ),
       impactOnRecommendations:
         "Do not declare traffic declines; treat as measurement failure until verified",
       suggestedRemedy: bundle.ga4.health.errors.join("; ") || "Inspect GA4 OAuth and property access",
@@ -101,7 +108,7 @@ export function runBusinessIntelligence(
     dataGaps.push({
       id: "gap-ga4-config",
       sourceId: "ga4",
-      description: "GA4 not configured",
+      description: bundle.ga4.health.founderLabel ?? "GA4 not configured",
       impactOnRecommendations: "Traffic and Studio recommendations blocked or low confidence",
       suggestedRemedy: "Configure GA4 readonly OAuth and GA4_PROPERTY_ID",
     });
@@ -109,7 +116,7 @@ export function runBusinessIntelligence(
     dataGaps.push({
       id: "gap-ga4-empty",
       sourceId: "ga4",
-      description: "GA4 returned empty traffic (distinct from failure)",
+      description: bundle.ga4.health.founderLabel ?? "GA4 returned no usable rows",
       impactOnRecommendations: "Zero sessions may be real or a filter issue — verify before acting",
       suggestedRemedy: "Confirm property ID and date range",
     });
@@ -119,12 +126,40 @@ export function runBusinessIntelligence(
     dataGaps.push({
       id: "gap-gsc",
       sourceId: "gsc",
-      description: bundle.gsc.failed
-        ? "Search Console retrieval failed"
-        : "Search Console not configured",
+      description:
+        bundle.gsc.health.founderLabel ??
+        (bundle.gsc.failed
+          ? "Search Console request failed"
+          : "Search Console not configured"),
       impactOnRecommendations: "Organic query/page recommendations limited",
       suggestedRemedy:
         bundle.gsc.health.errors.join("; ") || "Set GSC_SITE_URL with webmasters.readonly token",
+    });
+  } else if (
+    bundle.gsc.ok &&
+    (bundle.gsc.health.healthCode === "stale-within-normal-delay" ||
+      bundle.gsc.health.healthCode === "stale-unusual")
+  ) {
+    dataGaps.push({
+      id: "gap-gsc-freshness",
+      sourceId: "gsc",
+      description:
+        bundle.gsc.health.founderLabel ??
+        "Search Console reporting delay within expected range",
+      impactOnRecommendations:
+        bundle.gsc.health.healthCode === "stale-unusual"
+          ? "Lower confidence on time-sensitive SEO claims until fresher data arrives"
+          : "Normal Search Console lag — not an outage; confidence slightly reduced",
+      suggestedRemedy: "No action required for normal lag; re-check if age exceeds ~6 days",
+    });
+  } else if (bundle.gsc.empty) {
+    dataGaps.push({
+      id: "gap-gsc-empty",
+      sourceId: "gsc",
+      description:
+        bundle.gsc.health.founderLabel ?? "Search Console returned no usable rows",
+      impactOnRecommendations: "Empty search rows are distinct from auth failure",
+      suggestedRemedy: "Confirm GSC_SITE_URL and property coverage",
     });
   }
 
@@ -210,6 +245,16 @@ export function runBusinessIntelligence(
     ];
 
     if ((sessionsDelta ?? 0) <= -10) {
+      const sessionsChange = assessChange(
+        ga4.current.traffic.sessions,
+        ga4.previous.traffic.sessions,
+        { minPriorForPercent: 50, smallSampleCombined: 80 },
+      );
+      if (sessionsChange.smallSample || sessionsChange.ordinaryNoise) {
+        inferences.push(
+          `Sessions moved ${sessionsChange.summary} — monitor only; not a founder priority`,
+        );
+      } else {
       const trackingSuspect =
         bundle.ga4.failed ||
         !bundle.weeklyIntelligence.ok ||
@@ -278,6 +323,7 @@ export function runBusinessIntelligence(
           },
         }),
       );
+      } // end else (material sessions change)
     }
 
     if ((studioDelta ?? 0) >= 5 && (ctaDelta ?? 0) <= -8) {

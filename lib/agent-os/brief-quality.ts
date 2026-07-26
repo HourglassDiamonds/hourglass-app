@@ -26,6 +26,7 @@ import {
   synthesizeWeeklyExecutiveSummary,
   toFounderFacingPriorityAction,
 } from "./founder-language";
+import { shortenMeasurementGapLabel } from "./measurement/health-codes";
 
 export type BriefCadenceIntent = "daily" | "weekly";
 
@@ -919,20 +920,7 @@ export function buildDataConfidenceNote(input: DataConfidenceInput): {
 
 /** Daily-only compact labels (not used for weekly founder confidence). */
 function shortenGapLabelDaily(g: string): string {
-  const s = g.trim();
-  if (/hubspot/i.test(s)) return "HubSpot unavailable";
-  if (/buffer|social/i.test(s)) return "Buffer/social unavailable";
-  if (/gbp|google business/i.test(s)) return "GBP unavailable";
-  if (/ga4|google analytics/i.test(s)) return "GA4 unavailable";
-  if (/gsc|search console/i.test(s)) return "Search Console unavailable";
-  if (/weekly/i.test(s)) return "Weekly intelligence partial";
-  if (/retrieval failed|aggregates unavailable|not configured/i.test(s)) {
-    if (/ga4|analytics/i.test(s)) return "GA4 unavailable";
-    if (/gsc|search/i.test(s)) return "Search Console unavailable";
-    return "A measurement source is unavailable";
-  }
-  if (s.length > 72) return summarizeFounderAction(s, 72);
-  return s;
+  return shortenMeasurementGapLabel(g);
 }
 
 export function dailyTodayCall(input: {

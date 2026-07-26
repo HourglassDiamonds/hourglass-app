@@ -6,8 +6,8 @@
 import type { ExpectedEventDefinition } from "./types";
 
 /**
- * Events the Agent OS GA4 weekly adapter currently retrieves (studio allowlist).
- * Mirror of lib/integrations/ga4.ts STUDIO_EVENTS — do not expand the live adapter here.
+ * Events the Agent OS GA4 adapter currently retrieves (live allowlist).
+ * Mirror of lib/integrations/ga4.ts GA4_LIVE_QUERIED_EVENTS.
  */
 export const GA4_ADAPTER_QUERIED_EVENTS = [
   "diamond_studio_view",
@@ -20,6 +20,14 @@ export const GA4_ADAPTER_QUERIED_EVENTS = [
   "consultation_cta_clicked",
   "studio_session_engaged",
   "home_clicked",
+  "concierge_form_started",
+  "concierge_form_submitted",
+  "generate_lead",
+  "conversation_video_started",
+  "conversation_video_progress",
+  "conversation_video_completed",
+  "conversation_related_resource_clicked",
+  "conversation_concierge_clicked",
 ] as const;
 
 export const AUTHORITATIVE_CONVERSION_EVENT = "generate_lead" as const;

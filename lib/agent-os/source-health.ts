@@ -1,4 +1,5 @@
 import type { DataSourceId, SourceHealth } from "./types";
+import type { MeasurementHealthCode } from "./measurement/health-codes";
 
 export function buildSourceHealth(input: {
   sourceId: DataSourceId;
@@ -10,6 +11,10 @@ export function buildSourceHealth(input: {
   lastSuccessfulRead: string | null;
   errors?: string[];
   retrievalState: SourceHealth["retrievalState"];
+  healthCode?: MeasurementHealthCode;
+  founderLabel?: string;
+  newestSourceDate?: string | null;
+  sourceAgeDays?: number | null;
 }): SourceHealth {
   const errors = input.errors ?? [];
   return {
@@ -23,6 +28,10 @@ export function buildSourceHealth(input: {
     errors,
     effectOnConfidence: describeConfidenceEffect(input, errors),
     retrievalState: input.retrievalState,
+    healthCode: input.healthCode,
+    founderLabel: input.founderLabel,
+    newestSourceDate: input.newestSourceDate,
+    sourceAgeDays: input.sourceAgeDays,
   };
 }
 
@@ -33,9 +42,16 @@ function describeConfidenceEffect(
     fresh: boolean;
     complete: boolean;
     retrievalState: SourceHealth["retrievalState"];
+    healthCode?: MeasurementHealthCode;
   },
   errors: string[],
 ): string {
+  if (input.healthCode === "stale-within-normal-delay") {
+    return "Normal reporting lag — evidence usable with slightly reduced confidence";
+  }
+  if (input.healthCode === "stale-unusual") {
+    return "Unusually stale source — lower confidence; do not treat as an outage if API is healthy";
+  }
   if (input.retrievalState === "fixture") {
     return "Fixture data — useful for validation; not production evidence";
   }
@@ -63,9 +79,10 @@ function describeConfidenceEffect(
 export function summarizeSourceHealth(health: SourceHealth[]): string {
   const parts = health.map((h) => {
     const flag =
-      h.retrievalState === "ok" || h.retrievalState === "fixture"
+      h.healthCode ??
+      (h.retrievalState === "ok" || h.retrievalState === "fixture"
         ? "ok"
-        : h.retrievalState;
+        : h.retrievalState);
     return `${h.sourceId}:${flag}`;
   });
   return parts.join(", ");

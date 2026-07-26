@@ -9,6 +9,10 @@ export type Ga4TrafficMetrics = {
   sessions: number;
   engagedSessions: number;
   engagementRate: number;
+  /** Present when the Data API request includes activeUsers. */
+  activeUsers?: number;
+  /** Present when the Data API request includes newUsers. */
+  newUsers?: number;
 };
 
 export type Ga4DimensionRow = {
@@ -16,6 +20,12 @@ export type Ga4DimensionRow = {
   value: string;
   sessions: number;
   eventCount?: number;
+};
+
+export type Ga4SourceMediumRow = {
+  source: string;
+  medium: string;
+  sessions: number;
 };
 
 export type Ga4StudioEventCounts = Record<string, number>;
@@ -27,19 +37,51 @@ export type Ga4ShapeRow = {
 
 export type Ga4PeriodBundle = {
   traffic: Ga4TrafficMetrics;
+  /** sessionDefaultChannelGroup rows */
   sources: Ga4DimensionRow[];
   landingPages: Ga4DimensionRow[];
   devices: Ga4DimensionRow[];
+  /** Queried event allowlist counts (Studio + Concierge + Conversations when expanded). */
   studioEvents: Ga4StudioEventCounts;
   topShapes: Ga4ShapeRow[];
   consultationCtaClicks: number;
   studioViews: number;
+  /** sessionSource / sessionMedium rows when fetched. */
+  sourceMediumRows?: Ga4SourceMediumRow[];
+  /** generate_lead count when queried. */
+  generateLeadCount?: number;
+  conciergeFormStarted?: number;
+  conciergeFormSubmitted?: number;
+};
+
+export type Ga4BundleWindowMeta = {
+  timezone: string;
+  windowKind: "completed-7d-et" | "calendar-week-utc";
+  currentRange: WeekRange;
+  previousRange: WeekRange;
+  mostRecentCompleteDay?: WeekRange;
+  priorCompleteDay?: WeekRange;
+  baseline28dRange?: WeekRange;
 };
 
 export type Ga4WeeklyBundle = {
   current: Ga4PeriodBundle;
   previous: Ga4PeriodBundle;
   fetchedAt: string;
+  /** Optional Agent OS window metadata (weekly intelligence may omit). */
+  windowMeta?: Ga4BundleWindowMeta;
+  /** Lightweight day-over-day traffic when fetched for Agent OS. */
+  daily?: {
+    current: Pick<Ga4PeriodBundle, "traffic" | "studioEvents">;
+    previous: Pick<Ga4PeriodBundle, "traffic" | "studioEvents">;
+    currentRange: WeekRange;
+    previousRange: WeekRange;
+  };
+  /** Optional 28-day traffic baseline. */
+  baseline28d?: {
+    traffic: Ga4TrafficMetrics;
+    range: WeekRange;
+  };
 };
 
 /** Weekly ingestion payload stored in Supabase `weekly_reports.raw_payload`. */

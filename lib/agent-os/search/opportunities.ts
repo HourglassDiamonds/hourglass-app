@@ -29,6 +29,7 @@ export function detectGscOpportunities(
     return [];
   }
 
+  const freshnessMultiplier = gsc.freshness?.confidenceMultiplier ?? 1;
   const out: SearchOpportunity[] = [];
   const currentQueries = gsc.current.topQueries ?? [];
   const previousQueries = gsc.previous?.topQueries ?? [];
@@ -37,10 +38,9 @@ export function detectGscOpportunities(
 
   for (const row of currentQueries) {
     const classes = classifyQueryIntent(row.query);
-    const samplePenalty = sampleSizeConfidencePenalty(
-      row.impressions,
-      row.clicks,
-    );
+    const samplePenalty =
+      sampleSizeConfidencePenalty(row.impressions, row.clicks) *
+      freshnessMultiplier;
 
     if (
       row.impressions >= MIN_IMPRESSIONS_CTR &&
@@ -209,7 +209,7 @@ export function detectGscOpportunities(
           classifications: ["informational"],
           isInference: false,
           confidence: round(
-            0.62 * sampleSizeConfidencePenalty(row.impressions, row.clicks),
+            0.62 * (sampleSizeConfidencePenalty(row.impressions, row.clicks) * freshnessMultiplier),
           ),
           likelyImpact: 6,
           effort: "medium",
@@ -246,7 +246,7 @@ export function detectGscOpportunities(
         classifications: ["informational"],
         isInference: false,
         confidence: round(
-          0.72 * sampleSizeConfidencePenalty(row.impressions, row.clicks),
+          0.72 * (sampleSizeConfidencePenalty(row.impressions, row.clicks) * freshnessMultiplier),
         ),
         likelyImpact: 7,
         effort: "low",
@@ -289,7 +289,7 @@ export function detectGscOpportunities(
         classifications: classifyQueryIntent(q.query),
         isInference: true,
         confidence: round(
-          0.55 * sampleSizeConfidencePenalty(q.impressions, q.clicks),
+          0.55 * (sampleSizeConfidencePenalty(q.impressions, q.clicks) * freshnessMultiplier),
         ),
         likelyImpact: 7,
         effort: "medium",
@@ -373,7 +373,7 @@ export function detectGscOpportunities(
       classifications: classifyQueryIntent(top.query),
       isInference: false,
       confidence: round(
-        0.68 * sampleSizeConfidencePenalty(top.impressions, top.clicks),
+        0.68 * (sampleSizeConfidencePenalty(top.impressions, top.clicks) * freshnessMultiplier),
       ),
       likelyImpact: 7,
       effort: "medium",
