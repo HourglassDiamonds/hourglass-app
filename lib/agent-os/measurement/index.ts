@@ -38,8 +38,11 @@ export {
   safePercentChange,
   shouldSuppressGscRowForFounderPriority,
   dedupeStable,
+  judgeChange,
+  formatFounderMetricChange,
   type ChangeAssessment,
   type ChangeMathOptions,
+  type ChangeJudgment,
 } from "./change-math";
 
 export {

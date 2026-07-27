@@ -346,6 +346,7 @@ export async function runAgentOsBrief(
     founderSurfaceEligibleIds,
     briefCadenceIntent: options.briefCadenceIntent,
     briefLocalDate: options.briefLocalDate,
+    sourceHealth,
   });
 
   const provider =

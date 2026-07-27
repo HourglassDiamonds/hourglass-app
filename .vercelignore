@@ -4,3 +4,6 @@ node_modules
 *.log
 public/the-house/**/*.mp4
 .next.bak*/
+marketing-sprint/
+tmp/
+.git/

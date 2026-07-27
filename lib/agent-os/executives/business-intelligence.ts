@@ -13,7 +13,10 @@ import { createEvidence } from "../evidence";
 import { buildRecommendation } from "../recommendation";
 import { assertOperationalForRecommendations } from "../registry";
 import { founderLabelForHealthCode } from "../measurement/health-codes";
-import { assessChange } from "../measurement/change-math";
+import {
+  assessChange,
+  formatFounderMetricChange,
+} from "../measurement/change-math";
 import type {
   Anomaly,
   DataGap,
@@ -183,16 +186,50 @@ export function runBusinessIntelligence(
       ga4.current.consultationCtaClicks,
       ga4.previous.consultationCtaClicks,
     );
-    const engagementDelta = deltaPercentage(
-      ga4.current.traffic.engagementRate,
-      ga4.previous.traffic.engagementRate,
-    );
 
     keyMetricChanges.push(
-      `Sessions ${formatInteger(ga4.current.traffic.sessions)} (${formatDeltaLine(sessionsDelta)})`,
-      `Studio views ${formatInteger(ga4.current.studioViews)} (${formatDeltaLine(studioDelta)})`,
-      `Consultation CTA clicks ${formatInteger(ga4.current.consultationCtaClicks)} (${formatDeltaLine(ctaDelta)})`,
-      `Engagement rate ${(ga4.current.traffic.engagementRate * 100).toFixed(1)}% (${formatDeltaLine(engagementDelta)})`,
+      formatFounderMetricChange(
+        "Sessions",
+        ga4.current.traffic.sessions,
+        ga4.previous.traffic.sessions,
+        {
+          minPriorForPercent: 50,
+          smallSampleCombined: 80,
+          formatCurrent: formatInteger,
+        },
+      ),
+      formatFounderMetricChange(
+        "Studio views",
+        ga4.current.studioViews,
+        ga4.previous.studioViews,
+        {
+          minPriorForPercent: 30,
+          smallSampleCombined: 50,
+          formatCurrent: formatInteger,
+        },
+      ),
+      formatFounderMetricChange(
+        "Consultation CTA clicks",
+        ga4.current.consultationCtaClicks,
+        ga4.previous.consultationCtaClicks,
+        {
+          minPriorForPercent: 20,
+          smallSampleCombined: 40,
+          ordinaryNoiseAbsolute: 3,
+          formatCurrent: formatInteger,
+        },
+      ),
+      formatFounderMetricChange(
+        "Engagement rate",
+        ga4.current.traffic.engagementRate * 100,
+        ga4.previous.traffic.engagementRate * 100,
+        {
+          metricKind: "rate",
+          minPriorForPercent: 5,
+          ordinaryNoiseAbsolute: 2,
+          formatCurrent: (n) => `${n.toFixed(1)}%`,
+        },
+      ),
     );
 
     facts.push(
@@ -255,74 +292,98 @@ export function runBusinessIntelligence(
           `Sessions moved ${sessionsChange.summary} — monitor only; not a founder priority`,
         );
       } else {
-      const trackingSuspect =
-        bundle.ga4.failed ||
-        !bundle.weeklyIntelligence.ok ||
-        Math.abs(studioDelta ?? 0) > 5 && (ctaDelta ?? 0) < -5;
+        const ga4Unhealthy =
+          bundle.ga4.failed ||
+          bundle.ga4.health.retrievalState === "failed" ||
+          bundle.ga4.health.retrievalState === "not-configured" ||
+          bundle.ga4.health.healthCode === "oauth-auth-failed" ||
+          bundle.ga4.health.healthCode === "property-access-denied";
+        const trackingSuspect =
+          ga4Unhealthy ||
+          (Math.abs(studioDelta ?? 0) > 5 && (ctaDelta ?? 0) < -5);
 
-      anomalies.push({
-        id: "anom-sessions-soft",
-        severity: "high",
-        title: "Sessions softened week-over-week",
-        observation: `Sessions ${formatDeltaLine(sessionsDelta)}`,
-        evidence: sessionsEvidence,
-        possibleCauses: trackingSuspect
-          ? [
-              "Demand softness",
-              "Channel mix shift",
-              "Possible tracking or CTA instrumentation issue (Studio up / CTA down divergence)",
-            ]
-          : ["Demand softness", "Channel mix shift", "Seasonality"],
-        isTrackingFailureSuspect: Boolean(trackingSuspect),
-      });
+        anomalies.push({
+          id: "anom-sessions-soft",
+          severity: trackingSuspect ? "high" : "medium",
+          title: "Sessions softened week-over-week",
+          observation: formatFounderMetricChange(
+            "Sessions",
+            ga4.current.traffic.sessions,
+            ga4.previous.traffic.sessions,
+            {
+              minPriorForPercent: 50,
+              smallSampleCombined: 80,
+              formatCurrent: formatInteger,
+            },
+          ),
+          evidence: sessionsEvidence,
+          possibleCauses: trackingSuspect
+            ? [
+                "Demand softness",
+                "Channel mix shift",
+                "Possible tracking or CTA instrumentation issue (Studio up / CTA down divergence)",
+              ]
+            : ["Demand softness", "Channel mix shift", "Seasonality"],
+          isTrackingFailureSuspect: Boolean(trackingSuspect),
+        });
 
-      recommendations.push(
-        buildRecommendation({
-          recommendationId: "bi-verify-tracking-before-decline",
-          originatingExecutive: "business-intelligence",
-          title: "Verify measurement before treating traffic drop as demand decline",
-          plainLanguageExplanation:
-            "Sessions fell double-digits week-over-week. Studio engagement did not move the same way as consultation CTAs, so a tracking or funnel instrumentation issue is plausible.",
-          whyItMattersNow:
-            "Acting on a false decline wastes founder time and can break a working funnel.",
-          proposedAction:
-            "Review website consultation-request and Diamond Studio visit counts against Studio UI placements for the reporting week; confirm analytics gates are still recording cleanly.",
-          expectedUpside:
-            "Avoid mistaken product changes; restore trustworthy funnel signal within one cycle",
-          effortEstimate: "low",
-          urgency: "high",
-          reversibility: "easily-reversed",
-          baseConfidence: 0.72,
-          evidence: [
-            ...sessionsEvidence,
-            createEvidence({
-              source: "ga4",
-              sourceType: "analytics",
-              collectedAt,
-              reportingPeriod: period,
-              metricOrObservation: `studioViews=${ga4.current.studioViews}, ctaClicks=${ga4.current.consultationCtaClicks}`,
-              priorComparison: `studio ${formatDeltaLine(studioDelta)}; cta ${formatDeltaLine(ctaDelta)}`,
-              reliability: "reliable",
-              supportingReference: "ga4.studioEvents",
+        // Analytics-gate verification only when measurement integrity is in doubt.
+        // Healthy GA4 with a material demand move must not manufacture a founder
+        // "confirm analytics gates" priority.
+        if (trackingSuspect) {
+          recommendations.push(
+            buildRecommendation({
+              recommendationId: "bi-verify-tracking-before-decline",
+              originatingExecutive: "business-intelligence",
+              title:
+                "Verify measurement before treating traffic drop as demand decline",
+              plainLanguageExplanation:
+                "Sessions fell materially while Studio engagement and consultation CTAs diverged, so a tracking or funnel instrumentation issue is plausible.",
+              whyItMattersNow:
+                "Acting on a false decline wastes founder time and can break a working funnel.",
+              proposedAction:
+                "Review website consultation-request and Diamond Studio visit counts against Studio UI placements for the reporting week; confirm analytics gates are still recording cleanly.",
+              expectedUpside:
+                "Avoid mistaken product changes; restore trustworthy funnel signal within one cycle",
+              effortEstimate: "low",
+              urgency: "high",
+              reversibility: "easily-reversed",
+              baseConfidence: 0.72,
+              evidence: [
+                ...sessionsEvidence,
+                createEvidence({
+                  source: "ga4",
+                  sourceType: "analytics",
+                  collectedAt,
+                  reportingPeriod: period,
+                  metricOrObservation: `studioViews=${ga4.current.studioViews}, ctaClicks=${ga4.current.consultationCtaClicks}`,
+                  priorComparison: `studio ${formatDeltaLine(studioDelta)}; cta ${formatDeltaLine(ctaDelta)}`,
+                  reliability: "reliable",
+                  supportingReference: "ga4.studioEvents",
+                }),
+              ],
+              assumptions: [
+                "Week ranges are complete Mon–Sun periods",
+                "Event names match production instrumentation",
+              ],
+              risks: [
+                "Small sample CTA counts amplify percentage swings",
+                "One-week noise can overstate urgency",
+              ],
+              dependencies: ["GA4 event definitions verified"],
+              approvalRequired: false,
+              suggestedOwner: "Founder / analytics",
+              rankingFactors: {
+                expectedBusinessImpact: 8,
+                strategicAlignment: 9,
+              },
             }),
-          ],
-          assumptions: [
-            "Week ranges are complete Mon–Sun periods",
-            "Event names match production instrumentation",
-          ],
-          risks: [
-            "Small sample CTA counts amplify percentage swings",
-            "One-week noise can overstate urgency",
-          ],
-          dependencies: ["GA4 event definitions verified"],
-          approvalRequired: false,
-          suggestedOwner: "Founder / analytics",
-          rankingFactors: {
-            expectedBusinessImpact: 8,
-            strategicAlignment: 9,
-          },
-        }),
-      );
+          );
+        } else {
+          inferences.push(
+            `Sessions moved ${sessionsChange.summary} with healthy measurement — watch demand; do not prioritize analytics maintenance`,
+          );
+        }
       } // end else (material sessions change)
     }
 
@@ -463,13 +524,19 @@ export function runBusinessIntelligence(
     const gsc = bundle.gsc.data;
     const clicks = gsc.current!.totals.clicks;
     const prev = gsc.previous?.totals.clicks ?? null;
-    const clickDelta =
-      prev === null ? null : deltaPercentage(clicks, prev);
     facts.push(
-      `GSC clicks ${formatInteger(clicks)}${prev !== null ? ` (${formatDeltaLine(clickDelta)})` : ""}`,
+      formatFounderMetricChange("GSC clicks", clicks, prev, {
+        minPriorForPercent: 20,
+        smallSampleCombined: 40,
+        formatCurrent: formatInteger,
+      }),
     );
     keyMetricChanges.push(
-      `Search Console clicks ${formatInteger(clicks)} (${formatDeltaLine(clickDelta)})`,
+      formatFounderMetricChange("Search Console clicks", clicks, prev, {
+        minPriorForPercent: 20,
+        smallSampleCombined: 40,
+        formatCurrent: formatInteger,
+      }),
     );
 
     if ((gsc.current!.totals.impressions ?? 0) > 0 && clicks < 50) {

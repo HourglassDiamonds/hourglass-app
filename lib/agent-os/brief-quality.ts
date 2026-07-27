@@ -48,6 +48,13 @@ const INTERNAL_LIMITATION_ACTION_RE =
 const WEAK_ANALYTICAL_OBSERVATION_RE =
   /theme concentration|source material|broad theme|inventory completeness|registry draft|filming\/editing assets|do not invent|not a verified content gap|incomplete for “|incomplete for "/i;
 
+/**
+ * Generic analytics maintenance / gate-checking — not a commercial action.
+ * When GA4+GSC are healthy, these must not win highest-ROI.
+ */
+const ANALYTICS_MAINTENANCE_RE =
+  /confirm analytics gates|verify measurement before treating|verify tracking|restore (?:read-only )?measurement|check (?:ga4|gsc|analytics)|validate (?:ga4|gsc|analytics|tracking)|monitor analytics|instrumentation (?:issue|maintenance)|analytics gates are still recording|before treating traffic drop as demand/i;
+
 const ENGINEERING_BLOCKER_RE =
   /not yet operational|missing dependencies|measurement prerequisite|adapter|retrieval|pipeline|connector|dependency|aggregates unavailable|completed-with-warnings|fixture/i;
 
@@ -58,6 +65,9 @@ export function resolveBriefCadenceIntent(
   cadenceId: string | null | undefined,
 ): BriefCadenceIntent {
   if (cadenceId === "cos-daily-synthesis") return "daily";
+  if (cadenceId === "cos-weekly-founder-brief") return "weekly";
+  // Unknown / omitted cadence IDs are treated as weekly synthesis framing.
+  // Production daily/weekly paths must pass known cadence IDs (see execute.ts).
   return "weekly";
 }
 
@@ -124,6 +134,88 @@ export function isWeakAnalyticalObservation(
     return true;
   }
   return false;
+}
+
+/**
+ * True when the recommendation is generic analytics maintenance
+ * (confirm/restore/validate gates) rather than a commercial or integrity action.
+ */
+export function isAnalyticsMaintenanceRecommendation(
+  rec: Pick<
+    Recommendation,
+    "title" | "proposedAction" | "plainLanguageExplanation" | "recommendationId"
+  >,
+): boolean {
+  if (rec.recommendationId === "bi-verify-tracking-before-decline") return true;
+  const blob = `${rec.title}\n${rec.proposedAction}\n${rec.plainLanguageExplanation}\n${rec.recommendationId}`;
+  return ANALYTICS_MAINTENANCE_RE.test(blob);
+}
+
+/**
+ * True when primary analytics (GA4 + GSC) are healthy enough that
+ * generic instrumentation maintenance must not be the highest-ROI call.
+ * Normal GSC reporting lag is treated as healthy.
+ */
+export function primaryAnalyticsSourcesHealthy(
+  sourceHealth: Array<{
+    sourceId: string;
+    retrievalState: string;
+    healthCode?: string | null;
+  }> | null | undefined,
+): boolean {
+  if (!sourceHealth?.length) return false;
+  const ga4 = sourceHealth.find((h) => h.sourceId === "ga4");
+  const gsc = sourceHealth.find((h) => h.sourceId === "gsc");
+  if (!ga4 || !gsc) return false;
+  return isPrimarySourceHealthy(ga4) && isPrimarySourceHealthy(gsc);
+}
+
+function isPrimarySourceHealthy(h: {
+  retrievalState: string;
+  healthCode?: string | null;
+}): boolean {
+  if (
+    h.healthCode === "oauth-auth-failed" ||
+    h.healthCode === "property-access-denied" ||
+    h.healthCode === "site-access-denied" ||
+    h.healthCode === "not-configured" ||
+    h.healthCode === "upstream-request-failed" ||
+    h.healthCode === "timeout" ||
+    h.healthCode === "stale-unusual"
+  ) {
+    return false;
+  }
+  if (
+    h.retrievalState === "ok" ||
+    h.retrievalState === "empty" ||
+    h.healthCode === "stale-within-normal-delay" ||
+    h.healthCode === "ok" ||
+    h.healthCode === "empty"
+  ) {
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Suppress analytics-maintenance from the highest-ROI pool when both
+ * GA4 and GSC are healthy. Real integrity gaps (auth failure, missing
+ * conversion event, material Studio/CTA contradiction) are not suppressed
+ * via this helper alone — those use different recommendation IDs / evidence.
+ */
+export function shouldSuppressAnalyticsMaintenanceHighestRoi(input: {
+  recommendation: Pick<
+    Recommendation,
+    "title" | "proposedAction" | "plainLanguageExplanation" | "recommendationId"
+  >;
+  sourceHealth?: Array<{
+    sourceId: string;
+    retrievalState: string;
+    healthCode?: string | null;
+  }> | null;
+}): boolean {
+  if (!isAnalyticsMaintenanceRecommendation(input.recommendation)) return false;
+  return primaryAnalyticsSourcesHealthy(input.sourceHealth);
 }
 
 /** Stable topic/asset cluster key for near-duplicate control. */

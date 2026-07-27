@@ -127,7 +127,7 @@ function formatChangeSummary(input: {
   }
   if (input.percentClaimSafe && input.percentChange != null) {
     const pct = `${input.percentChange > 0 ? "+" : ""}${roundNice(input.percentChange)}%`;
-    return `${abs} (${pct})`;
+    return `${abs}, ${pct}`;
   }
   return `${abs} (percent suppressed — tiny prior)`;
 }
@@ -178,4 +178,68 @@ export function dedupeStable<T>(items: T[], keyFn: (item: T) => string): T[] {
     out.push(item);
   }
   return out;
+}
+
+/**
+ * Founder-facing judgment for a measured change.
+ * Used at the synthesis / rendering boundary — not only in adapters.
+ */
+export type ChangeJudgment =
+  | "suppress"
+  | "qualify"
+  | "state-normally"
+  | "elevate-as-material";
+
+export function judgeChange(assessment: ChangeAssessment): ChangeJudgment {
+  if (assessment.absoluteChange == null && assessment.percentChange == null) {
+    return "suppress";
+  }
+  if (assessment.smallSample && !assessment.percentClaimSafe) {
+    return "suppress";
+  }
+  if (assessment.ordinaryNoise || assessment.smallSample) {
+    return "qualify";
+  }
+  if (
+    assessment.percentClaimSafe &&
+    assessment.percentChange != null &&
+    Math.abs(assessment.percentChange) >= 20 &&
+    assessment.absoluteChange != null &&
+    Math.abs(assessment.absoluteChange) >= 30
+  ) {
+    return "elevate-as-material";
+  }
+  if (assessment.percentClaimSafe) {
+    return "state-normally";
+  }
+  return "qualify";
+}
+
+/**
+ * Founder-facing metric line: absolute current value + guarded change language.
+ * Prefer this over raw percentage deltas when writing What-changed copy.
+ */
+export function formatFounderMetricChange(
+  label: string,
+  current: number,
+  previous: number | null | undefined,
+  options: ChangeMathOptions & {
+    formatCurrent?: (n: number) => string;
+  } = {},
+): string {
+  const { formatCurrent, ...mathOpts } = options;
+  const cur = formatCurrent ? formatCurrent(current) : String(Math.round(current));
+  const assessment = assessChange(current, previous, mathOpts);
+  const judgment = judgeChange(assessment);
+
+  if (judgment === "suppress") {
+    if (previous == null || !Number.isFinite(previous)) {
+      return `${label} ${cur} (comparison unavailable)`;
+    }
+    return `${label} ${cur} (volume too limited for percent claims)`;
+  }
+  if (judgment === "qualify") {
+    return `${label} ${cur} (${assessment.summary}; treat as directional only)`;
+  }
+  return `${label} ${cur} (${assessment.summary})`;
 }

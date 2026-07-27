@@ -2,8 +2,14 @@
  * Manual Agent OS founder brief runner (Node / server only).
  *
  * Usage:
- *   npm run agent-os:brief          → --fixture (no persistence unless flagged)
- *   npm run agent-os:brief:live     → --live (no persistence unless flagged)
+ *   npm run agent-os:brief -- --cadence=daily
+ *   npm run agent-os:brief -- --cadence=weekly
+ *   npm run agent-os:brief:live -- --cadence=daily
+ *   npm run agent-os:brief:live -- --cadence=weekly
+ *
+ * Cadence intent (preview defaults to daily — never silently weekly):
+ *   --cadence=daily | --cadence=weekly
+ *   --daily | --weekly   (aliases)
  *
  * Optional persistence (Agent OS operational state only — no email):
  *   --persist              enable persistence (fixture→memory; live→unconfigured unless other flags)
@@ -12,31 +18,55 @@
  *   --require-persistence  fail CLI if persistence write/load fails (live scheduled semantics)
  *   --on-demand            recurrence cooldown bypass for founder brief surfacing
  *
- * Default commands do NOT silently write durable state.
+ * Local env (CLI only — never affects Vercel runtime):
+ *   Loads `.env.local` from cwd when present.
+ *   Precedence: already-set process/shell env wins; `.env.local` fills gaps only.
+ *   Never prints env values. Does not pull Production secrets from Vercel.
+ *
+ * Default commands do NOT silently write durable state or send email.
  * State directory tmp/agent-os/ is gitignored.
  */
 
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { runAgentOsBrief } from "../lib/agent-os/run";
+import type { BriefCadenceIntent } from "../lib/agent-os/brief-quality";
+import {
+  loadEnvLocalForPreview,
+  parseBriefCadenceIntent,
+} from "../lib/agent-os/preview-cli";
 import {
   containsLikelyPiiOrSecret,
   redactSecretsAndPii,
 } from "../lib/agent-os/redaction";
 import { defaultAgentOsStatePath } from "../lib/agent-os/persistence";
+import { FOUNDER_CADENCE_TIMEZONE } from "../lib/agent-os/persistence/cadence";
+import { localCalendarStamp } from "../lib/agent-os/persistence/timezone";
 
 async function main() {
   const args = process.argv.slice(2);
+  const envLoad = loadEnvLocalForPreview();
+  if (envLoad.loaded) {
+    console.log(
+      `[agent-os] loaded .env.local gaps-only (${envLoad.keysApplied} keys applied; shell env preserved)`,
+    );
+  }
+
   const live = args.includes("--live");
-  const fixture = args.includes("--fixture") || !live;
   if (live && args.includes("--fixture")) {
     console.error("[agent-os] Pass either --live or --fixture, not both");
     process.exitCode = 2;
     return;
   }
   const mode = live ? "live" : "fixture";
-  if (!fixture && !live) {
-    // unreachable — fixture defaults when not live
+
+  let briefCadenceIntent: BriefCadenceIntent;
+  try {
+    briefCadenceIntent = parseBriefCadenceIntent(args);
+  } catch (err) {
+    console.error(`[agent-os] ${err instanceof Error ? err.message : err}`);
+    process.exitCode = 2;
+    return;
   }
 
   const persist = args.includes("--persist") || args.includes("--persist-file");
@@ -53,10 +83,20 @@ async function main() {
     return;
   }
 
-  console.log(`[agent-os] Starting ${mode} brief run…`);
+  const briefLocalDate =
+    briefCadenceIntent === "daily"
+      ? localCalendarStamp(new Date().toISOString(), FOUNDER_CADENCE_TIMEZONE)
+          .date
+      : undefined;
+
+  console.log(
+    `[agent-os] Starting ${mode} brief run (cadence=${briefCadenceIntent}; persist=${persist}; deliver=never)…`,
+  );
 
   const run = await runAgentOsBrief({
     mode,
+    briefCadenceIntent,
+    briefLocalDate,
     persistence: persist
       ? {
           enabled: true,
@@ -106,8 +146,14 @@ async function main() {
   mkdirSync(outDir, { recursive: true });
 
   const stamp = run.generatedAt.replace(/[:.]/g, "-");
-  const jsonPath = join(outDir, `brief-${mode}-${stamp}.json`);
-  const mdPath = join(outDir, `brief-${mode}-${stamp}.md`);
+  const jsonPath = join(
+    outDir,
+    `brief-${mode}-${briefCadenceIntent}-${stamp}.json`,
+  );
+  const mdPath = join(
+    outDir,
+    `brief-${mode}-${briefCadenceIntent}-${stamp}.md`,
+  );
 
   const json = JSON.stringify(run, null, 2);
   const markdown = run.brief.markdown;
@@ -124,6 +170,7 @@ async function main() {
   writeFileSync(mdPath, redactSecretsAndPii(markdown), "utf8");
 
   console.log(`[agent-os] mode=${run.mode}`);
+  console.log(`[agent-os] cadenceIntent=${briefCadenceIntent}`);
   console.log(`[agent-os] runId=${run.runId}`);
   console.log(
     `[agent-os] status=${run.runStatus} recommendationAvailability=${run.recommendationAvailability} durationMs=${run.durationMs}`,
@@ -145,6 +192,8 @@ async function main() {
       `[agent-os] persistence ok=${run.persistence.ok} adapter=${run.persistence.adapterId} durability=${run.persistence.durabilityLabel}` +
         (run.persistence.error ? ` error=${run.persistence.error}` : ""),
     );
+  } else {
+    console.log(`[agent-os] persistence=null (non-persisting default)`);
   }
   console.log(`[agent-os] wrote ${jsonPath}`);
   console.log(`[agent-os] wrote ${mdPath}`);

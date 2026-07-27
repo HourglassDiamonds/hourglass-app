@@ -17,6 +17,7 @@ import {
   isWeakAnalyticalObservation,
   selectFounderPriorities,
   sanitizeFounderFacingNarrative,
+  shouldSuppressAnalyticsMaintenanceHighestRoi,
   toFounderFacingPriorityAction,
   weeklyLowConfidenceHighestRoi,
   type BriefCadenceIntent,
@@ -31,6 +32,7 @@ import type {
   EscalationItem,
   FounderBrief,
   Recommendation,
+  SourceHealth,
 } from "../types";
 
 export type ChiefOfStaffInput = {
@@ -53,10 +55,13 @@ export type ChiefOfStaffInput = {
    * Cadence intent for synthesis framing + priority selection.
    * Daily: today’s operating brief. Weekly: deeper performance review.
    * Same orchestration path — not a parallel agent system.
+   * Callers should pass this explicitly; default remains weekly for legacy callers.
    */
   briefCadenceIntent?: BriefCadenceIntent;
   /** America/New_York YYYY-MM-DD for daily period framing. */
   briefLocalDate?: string;
+  /** Adapter source health — used to suppress analytics-maintenance highest-ROI. */
+  sourceHealth?: SourceHealth[];
 };
 
 export type ChiefOfStaffOutput = {
@@ -170,6 +175,10 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
     }
   }
 
+  // Legacy fallback for callers that omit intent (mostly unit tests).
+  // Production daily/weekly paths must pass intent explicitly:
+  // executeAgentOsCadence → resolveBriefCadenceIntent(cadenceId),
+  // and scripts/agent-os-brief.ts → parseBriefCadenceIntent(args).
   const intent: BriefCadenceIntent = input.briefCadenceIntent ?? "weekly";
   let poolForSelection =
     surfacePool.length > 0
@@ -178,14 +187,40 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
         ? []
         : active.filter((r) => r.originatingExecutive !== "opportunity");
 
-  // Weekly: demote weak analytical observations from the founder priority pool.
+  // Demote weak analytical observations from the founder priority pool.
   // They remain in ranked JSON; they must not become the highest-ROI action.
-  if (intent === "weekly") {
+  {
     const actionable = poolForSelection.filter(
       (r) => !isWeakAnalyticalObservation(r),
     );
     if (actionable.length > 0) {
       poolForSelection = actionable;
+    }
+  }
+
+  // When GA4 + GSC are healthy, never let generic analytics maintenance win
+  // highest-ROI — prefer commercial / content / ops / quiet day instead.
+  {
+    const withoutAnalyticsMaint = poolForSelection.filter(
+      (r) =>
+        !shouldSuppressAnalyticsMaintenanceHighestRoi({
+          recommendation: r,
+          sourceHealth: input.sourceHealth,
+        }),
+    );
+    if (withoutAnalyticsMaint.length > 0) {
+      poolForSelection = withoutAnalyticsMaint;
+    } else if (
+      poolForSelection.some((r) =>
+        shouldSuppressAnalyticsMaintenanceHighestRoi({
+          recommendation: r,
+          sourceHealth: input.sourceHealth,
+        }),
+      )
+    ) {
+      // Only analytics-maintenance left and sources are healthy → empty pool
+      // so quiet-day / no-action messaging can win.
+      poolForSelection = [];
     }
   }
 
@@ -197,10 +232,15 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
   let highest = selected.highest;
   const additionalSurfaced = selected.additional;
 
+  if (highest && isWeakAnalyticalObservation(highest)) {
+    highest = undefined;
+  }
   if (
-    intent === "weekly" &&
     highest &&
-    isWeakAnalyticalObservation(highest)
+    shouldSuppressAnalyticsMaintenanceHighestRoi({
+      recommendation: highest,
+      sourceHealth: input.sourceHealth,
+    })
   ) {
     highest = undefined;
   }
@@ -268,12 +308,18 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
     });
   }
 
-  const searchChangeBits = (input.search?.opportunities ?? [])
-    .slice(0, 1)
-    .map((o) => o.title);
-  const contentChangeBits = (input.content?.opportunities ?? [])
-    .slice(0, 1)
-    .map((o) => o.title);
+  // What changed = business evidence only (metrics, material anomalies, ready
+  // opportunity signals). Repository / content-map inventory titles stay out.
+  const businessMetricChanges = input.bi.keyMetricChanges.filter(
+    (line) =>
+      !/repository|content-map|inventory|filming\/editing|registry draft/i.test(
+        line,
+      ),
+  );
+  const materialAnomalies = input.bi.anomalies
+    .filter((a) => a.severity === "critical" || a.severity === "high")
+    .slice(0, intent === "daily" ? 1 : 2)
+    .map((a) => a.observation || a.title);
   const opportunityChangeBits = (input.opportunity?.opportunities ?? [])
     .filter(
       (o) =>
@@ -285,25 +331,31 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
   const changeBits =
     intent === "daily"
       ? [
-          ...input.bi.keyMetricChanges.slice(0, 1),
-          ...input.bi.anomalies
-            .filter((a) => a.severity === "critical" || a.severity === "high")
-            .slice(0, 1)
-            .map((a) => a.title),
-          ...searchChangeBits.slice(0, 1),
-          ...contentChangeBits.slice(0, 1),
+          ...businessMetricChanges.slice(0, 2),
+          ...materialAnomalies.slice(0, 1),
         ]
       : [
-          ...input.bi.keyMetricChanges.slice(0, 2),
-          ...searchChangeBits,
-          ...contentChangeBits,
+          ...businessMetricChanges.slice(0, 3),
+          ...materialAnomalies,
           ...opportunityChangeBits,
         ];
+  const seenChange = new Set<string>();
+  const dedupedChangeBits: string[] = [];
+  for (const bit of changeBits) {
+    if (!bit) continue;
+    const key = bit.toLowerCase().replace(/\s+/g, " ").slice(0, 80);
+    // Also collapse near-duplicates that share the same leading metric label.
+    const lead = key.split(/[:(]/)[0]!.trim();
+    if (seenChange.has(key) || seenChange.has(`lead:${lead}`)) continue;
+    seenChange.add(key);
+    seenChange.add(`lead:${lead}`);
+    dedupedChangeBits.push(bit);
+  }
   const whatChangedRaw =
-    changeBits.filter(Boolean).join("; ") ||
+    dedupedChangeBits.join("; ") ||
     (intent === "daily"
       ? "No material day-over-day signal in available sources."
-      : "Insufficient metric coverage to summarize changes.");
+      : "No material week-over-week business signal in available sources.");
   const whatChanged =
     intent === "weekly"
       ? sanitizeFounderFacingNarrative(whatChangedRaw)
@@ -312,8 +364,8 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
   const whyItMatters = highest
     ? highest.whyItMattersNow
     : intent === "daily"
-      ? "No high-confidence founder move is ready today; watch measurement gaps quietly."
-      : "No high-confidence action is ready; measurement gaps dominate.";
+      ? "No high-confidence founder action required today."
+      : "No high-confidence action is ready this week.";
 
   const needsAttentionToday = [
     ...additionalSurfaced.map((r) => r.title),
@@ -322,7 +374,16 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
       .map((a) => a.title),
   ].slice(0, MAX_ADDITIONAL_SURFACED_PRIORITIES);
 
-  if (needsAttentionToday.length === 0 && allGaps.length && !highest) {
+  if (
+    needsAttentionToday.length === 0 &&
+    !highest &&
+    criticalGapsNeedDecision(
+      input.bi,
+      input.search,
+      input.content,
+      input.opportunity,
+    )
+  ) {
     needsAttentionToday.push(
       "Close critical measurement gaps before prioritizing growth experiments",
     );
@@ -384,12 +445,33 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
       "Incomplete social attribution without Buffer adapter",
     );
   }
+  const secondaryUnavailable: string[] = [];
   for (const g of allGaps) {
     const key = g.sourceId;
     if (seenGap.has(key)) continue;
     seenGap.add(key);
+    if (
+      key === "hubspot-aggregates" ||
+      key === "hubspot" ||
+      key === "buffer" ||
+      key === "gbp"
+    ) {
+      secondaryUnavailable.push(
+        key === "hubspot-aggregates" || key === "hubspot"
+          ? "HubSpot"
+          : key === "gbp"
+            ? "GBP"
+            : "Buffer",
+      );
+      continue;
+    }
     missingOrUnreliableData.push(`${g.description}`);
-    if (missingOrUnreliableData.length >= 5) break;
+    if (missingOrUnreliableData.length >= 4) break;
+  }
+  if (secondaryUnavailable.length > 0 && missingOrUnreliableData.length < 5) {
+    missingOrUnreliableData.push(
+      `${[...new Set(secondaryUnavailable)].join(" / ")} unavailable (not configured; not blocking unless a recommendation depends on them)`,
+    );
   }
 
   const founderDecisionNeededRaw =
@@ -457,7 +539,7 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
         whyItMattersNow: highest.whyItMattersNow,
       })
     : intent === "daily"
-      ? "None required today"
+      ? "No high-confidence founder action required today."
       : weeklyLowConfidenceHighestRoi({
           briefEvidenceQuality: input.briefEvidenceQuality,
           hasCriticalSourceGaps,
