@@ -1,4 +1,10 @@
 import type { LedgerIndexDefinition } from "../ledger-data";
+import {
+  GPI_CALCULATION_ROWS,
+  GPI_CALCULATION_TOTAL,
+  GPI_METHODOLOGY_PRINCIPLES,
+  GPI_RECALIBRATION_DATE,
+} from "../global-pressure-index-data";
 import "../global-pressure-index.css";
 import LedgerIndexBreadcrumb from "./ledger-index-breadcrumb";
 import { LEDGER_INDEX_PAGE_CLASS } from "./ledger-index-page-chrome";
@@ -58,6 +64,70 @@ function GpiWatchingSection({ index }: { index: LedgerIndexDefinition }) {
   );
 }
 
+function GpiMethodologySection() {
+  return (
+    <div className="gpi-methodology" id="gpi-methodology">
+      <h2 className="gpi-methodology-title">Methodology</h2>
+      <p className="gpi-methodology-lead">
+        Scoring principles for the recalibrated series beginning{" "}
+        {GPI_RECALIBRATION_DATE}. The public temperature is the weighted sum of
+        the six category scores below, rounded to the nearest degree.
+      </p>
+
+      <div className="gpi-methodology-principles">
+        {GPI_METHODOLOGY_PRINCIPLES.map((principle) => (
+          <article key={principle.title} className="gpi-methodology-card">
+            <h3>{principle.title}</h3>
+            <p>{principle.body}</p>
+          </article>
+        ))}
+      </div>
+
+      <h3 className="gpi-calc-title">How the Index Is Calculated</h3>
+      <div className="gpi-table-wrap">
+        <table className="gpi-table">
+          <thead>
+            <tr>
+              <th scope="col">Category</th>
+              <th scope="col">Weight</th>
+              <th scope="col">Score</th>
+              <th scope="col">Contribution</th>
+              <th scope="col">Reason</th>
+            </tr>
+          </thead>
+          <tbody>
+            {GPI_CALCULATION_ROWS.map((row) => (
+              <tr key={row.category}>
+                <td>{row.category}</td>
+                <td className="gpi-nowrap">{row.weight}</td>
+                <td className="gpi-nowrap">{row.score}</td>
+                <td className="gpi-nowrap">{row.contribution}</td>
+                <td>{row.reason}</td>
+              </tr>
+            ))}
+            <tr className="gpi-table-total">
+              <td>
+                <strong>Total</strong>
+              </td>
+              <td className="gpi-nowrap">100%</td>
+              <td className="gpi-nowrap">Weight</td>
+              <td className="gpi-nowrap">{GPI_CALCULATION_TOTAL.contribution}</td>
+              <td>{GPI_CALCULATION_TOTAL.reason}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p className="gpi-methodology-footnote">
+        Historical readings published before {GPI_RECALIBRATION_DATE} remain
+        visible as originally issued and are not rewritten under the
+        recalibrated rules. See the methodology recalibration note on the
+        current reading card.
+      </p>
+    </div>
+  );
+}
+
 export function LedgerIndexPageContent({ index }: LedgerIndexPageContentProps) {
   const isGpi = index.id === "global-pressure";
 
@@ -70,11 +140,13 @@ export function LedgerIndexPageContent({ index }: LedgerIndexPageContentProps) {
       <LedgerIndexMeter index={index} variant="full" />
 
       {isGpi ? (
-        <GpiWatchingSection index={index} />
+        <>
+          <GpiWatchingSection index={index} />
+          <GpiMethodologySection />
+        </>
       ) : (
         <DefaultWatchingSection index={index} />
       )}
     </section>
   );
 }
-

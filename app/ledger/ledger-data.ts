@@ -1,7 +1,31 @@
 /**
  * Hourglass Ledger — weekly index readings.
  * Update this file when publishing new weekly briefs.
+ *
+ * Global Pressure Index category scores and weighted calculation live in
+ * global-pressure-index-data.ts — the public reading is derived there.
  */
+
+import {
+  GPI_CALIBRATION_NOTE,
+  GPI_COMPUTED_READING,
+  GPI_METHODOLOGY_SHORT,
+  GPI_RECALIBRATION_DATE,
+} from "./global-pressure-index-data";
+
+export {
+  GPI_CALCULATION_ROWS,
+  GPI_CALCULATION_TOTAL,
+  GPI_CALIBRATION_NOTE,
+  GPI_CATEGORIES,
+  GPI_COMPUTED_READING,
+  GPI_METHODOLOGY_PRINCIPLES,
+  GPI_METHODOLOGY_SHORT,
+  GPI_RECALIBRATION_DATE,
+  GPI_WEIGHTED_TOTAL,
+  computeGpiReading,
+  computeGpiWeightedTotal,
+} from "./global-pressure-index-data";
 
 export type LedgerIndexId =
   | "global-pressure"
@@ -14,6 +38,8 @@ export type RecentReading = {
   week: string;
   degrees: number;
   state: string;
+  /** Optional chart/card annotation (e.g. methodology recalibration) */
+  annotation?: string;
 };
 
 export type MethodPill = {
@@ -53,6 +79,10 @@ export type LedgerIndexDefinition = {
   readingLabel: string;
   status: string;
   weeklyDelta: number;
+  /** Override the default weekly-delta pill label (e.g. methodology reset) */
+  weeklyDeltaLabel?: string;
+  /** Supporting note under the delta pill when week-over-week is not comparable */
+  weeklyDeltaExplanation?: string;
   scaleLabels: readonly string[];
   scaleGradient: string;
   summary: string;
@@ -69,6 +99,15 @@ export type LedgerIndexDefinition = {
   editorialBlocks?: readonly EditorialBlock[];
   /** Optional title for editorial watch section (defaults vary by page) */
   watchingSectionTitle?: string;
+  /** Editorial methodology disclosure (GPI recalibration, etc.) */
+  calibrationNote?: {
+    title: string;
+    body: string;
+  };
+  /** Short pointer into methodology section */
+  methodologyReference?: string;
+  /** Chart / recent-readings series note */
+  seriesAnnotation?: string;
 };
 
 export const LEDGER_UPDATED = "Updated weekly — July 20, 2026";
@@ -94,38 +133,56 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     slug: "global-pressure-index",
     seoTitle: "Global Pressure Index",
     seoDescription:
-      "Hourglass Ledger Global Pressure Index — weekly reading across energy, infrastructure, financial conditions, commodities, and geopolitical friction.",
+      "Hourglass Ledger Global Pressure Index — 84° High Heat, Concentrated Pressure. Weekly reading across geopolitics, energy, financial conditions, infrastructure, supply chains, and coordination.",
     displayTitle: "Global Pressure Index",
     subnavLabel: "Global Pressure",
     hubDescription:
-      "A composite degree reading across energy, infrastructure, financial conditions, and coordination channels — structurally elevated, observational in tone.",
+      "A composite degree reading across geopolitics, energy, financial conditions, infrastructure, supply chains, and coordination — high heat, concentrated rather than fully systemic.",
     kicker: "The Ledger Intelligence System",
     intro:
-      "A weekly reading of global pressure across geopolitics, energy, commodities, financial conditions, infrastructure, supply chains, and coordination channels. The purpose is not to predict collapse. It is to observe when stress is structurally elevated, when flexibility compresses, and when multiple systems respond more slowly beneath still-resilient markets.",
-    updatedLabel: LEDGER_UPDATED,
-    reading: 93,
+      "A weekly reading of global pressure across geopolitics, energy, commodities, financial conditions, infrastructure, supply chains, and coordination channels. The purpose is not to predict collapse. It is to observe when stress is structurally elevated, when flexibility compresses, and when multiple systems respond more slowly beneath still-resilient markets. The temperature measures pressure that has already transmitted into the system; escalation potential is stated separately in direction language.",
+    updatedLabel: `Updated weekly — ${GPI_RECALIBRATION_DATE}`,
+    // Derived from GPI_CATEGORIES — do not hard-code independently of component scores.
+    reading: GPI_COMPUTED_READING,
     readingLabel: "Pressure Reading",
-    status: "Elevated, Corridor Pressure Operational",
+    status: "High and unstable",
+    // Recalibration, not a weekly cooling of conditions — do not report a −9 weekly delta.
     weeklyDelta: 0,
+    weeklyDeltaLabel: "Methodology reset — no comparable weekly delta",
+    weeklyDeltaExplanation:
+      "The scoring methodology was recalibrated on July 27, 2026. The 93° and 84° readings should not be interpreted as a nine-degree cooling in underlying conditions.",
     scaleLabels: ["Cold", "Stable", "Elevated", "Hot", "Critical"],
     scaleGradient: SCALE_GRADIENT_PRESSURE,
     summary:
-      "Corridor pressure remains extremely elevated at 93 — the U.S. naval blockade on Iranian ports was reimposed on July 14 within a campaign that began earlier in 2026, commercial vessel attacks continued near Oman, and Hormuz transit stayed sharply reduced while Brent briefly tested above $90 before settling in the high $80s. Markets remained functional; the week largely confirmed the regime already priced in last week's increase.",
-    summaryLead: "The system remains in an",
-    summaryEmphasis: "elevated environment with corridor pressure operational",
+      "Global pressure remains exceptionally high, but the strain is concentrated rather than fully systemic. The geopolitical and energy channels are operating near the extreme end of the scale. Disruption around critical shipping corridors, attacks on energy infrastructure, and uncertainty surrounding major export routes have raised the risk of a broader inflationary and supply shock. That pressure has not yet transmitted into a 2008- or COVID-style system event. Financial markets remain functional, credit spreads remain comparatively contained, broader financial-stress measures remain below crisis levels, and economic activity has not entered a synchronized global contraction. The distinction matters: the world is facing unusually dangerous escalation potential, but potential failure is not the same as realized systemic failure.",
+    summaryLead: "The reading sits in",
+    summaryEmphasis: "High Heat, Concentrated Pressure",
     summaryCompact:
-      "Corridor pressure holds at 93 — blockade reimposed, transit constrained, and oil tested a higher band beneath still-functioning markets.",
+      "84° — High Heat, Concentrated Pressure. Geopolitics and energy near extremes; credit markets and expansion still offset full systemic transmission.",
     weeklyNote:
-      "The corridor conflict moved further into practical enforcement, but much of that risk was already reflected in last week's increase. The U.S. naval blockade against Iranian shipping was resumed or reimposed on July 14 — not created that day — within a blockade campaign that began earlier in 2026; CENTCOM reported continued strikes framed around degrading capabilities used against commercial vessels and mariners in the Strait of Hormuz, and later updates described commercial vessels redirected under blockade enforcement. UK maritime reporting confirmed a vessel fire near Oman that was reclassified as a projectile attack, with the crew evacuated. Traceable Hormuz traffic and LNG movement remained sharply reduced. Brent briefly tested above $90 before settling in the high $80s. A Houthi maritime-embargo declaration aimed at Saudi Arabia is a secondary corridor-risk headline — a declaration, not demonstrated sustained closure of Red Sea relief routes. Reports of Gulf infrastructure strikes broaden the risk picture and should be attributed carefully. Diplomatic and ceasefire efforts remain an offsetting consideration. Financial and energy markets continued to function. The EU's temporary freeze of the Russia oil-price cap through July 23 stays a secondary sanctions watch. Summer grid tightness remained elevated but secondary to the corridor channel this week. These developments validate the existing 93 reading; they do not yet establish a distinctly broader systemic regime comparable with the conditions required for 94–96.",
+      "Primary drivers remain energy corridors, geopolitical escalation, and shipping disruption. The primary offset remains functioning credit markets and continued economic expansion. Under the recalibrated methodology, extreme corridor and energy risk no longer automatically score near-crisis levels across financial, infrastructure, and institutional channels without confirmed transmission. Direction: high and unstable — escalation potential is elevated even while the current reading stays below collapse-era benchmarks.",
     weeklyNoteCompact:
-      "Corridor pressure holds — practical enforcement and constrained transit confirmed last week's elevated regime beneath still-functioning markets.",
+      "High and unstable — corridor and energy heat concentrated; credit markets still functioning. Methodology recalibrated July 27, 2026.",
     methodPills: [
       { label: "Reading Type", value: "Weighted editorial index" },
-      { label: "Primary Drivers", value: "Corridor confidence, energy premium, rates" },
-      { label: "Current Direction", value: "Elevated, pressure operational" },
+      {
+        label: "Primary Drivers",
+        value: "Energy corridors, geopolitical escalation, shipping disruption",
+      },
+      { label: "Current Direction", value: "High and unstable" },
+      {
+        label: "Primary Offset",
+        value: "Functioning credit markets and continued economic expansion",
+      },
     ],
     recentReadings: [
-      { week: "This Week", degrees: 93, state: "Elevated" },
+      {
+        week: "This Week",
+        degrees: GPI_COMPUTED_READING,
+        state: "High Heat",
+        annotation: "Methodology recalibrated",
+      },
+      // Preserved as originally published (pre-recalibration series).
       { week: "Last Week", degrees: 93, state: "Elevated" },
       { week: "2 Weeks Ago", degrees: 91, state: "Elevated" },
       { week: "3 Weeks Ago", degrees: 91, state: "Elevated" },
@@ -137,19 +194,31 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
       { name: "Covid Shock", score: 91, note: "2020", tier: "high" },
       { name: "2008 Collapse", score: 96, note: "Credit seizure", tier: "high" },
     ],
+    calibrationNote: GPI_CALIBRATION_NOTE,
+    methodologyReference: GPI_METHODOLOGY_SHORT,
+    seriesAnnotation:
+      "The scoring methodology was recalibrated on July 27, 2026. The 93° and 84° readings should not be interpreted as a nine-degree cooling in underlying conditions. Historical readings remain as originally published; This Week's card is annotated \"Methodology recalibrated.\"",
     watchingSectionTitle: "What We're Watching",
     editorialBlocks: [
       {
-        title: "Hormuz & shipping corridors",
-        body: "Practical enforcement deepened after the July 14 blockade reimposition and continued vessel risk near Oman. Traceable traffic and LNG movement stayed sharply reduced; competing claims over route control still matter more than any declaration that the strait is open or closed. A Houthi maritime-embargo declaration is a secondary watch until sustained enforcement is demonstrated.",
+        title: "Hormuz & Bab el-Mandeb corridors",
+        body: "Whether disruption through Hormuz and Bab el-Mandeb persists or broadens — including vessel risk, transit volumes, insurance conditions, and competing claims over route control.",
       },
       {
-        title: "Energy, prices & financial conditions",
-        body: "Brent briefly tested above $90 before settling in the high $80s. Forward inflation and rate sensitivity remain live beneath still-functioning financial and energy markets — confirming last week's elevated energy-premium frame rather than establishing a new systemic band.",
+        title: "Oil, inflation & policy path",
+        body: "Whether oil remains elevated long enough to materially affect inflation, consumption, and central-bank policy — distinct from a short-lived energy premium that never transmits.",
       },
       {
-        title: "Secondary watch: sanctions, diplomacy & physical constraints",
-        body: "The EU's temporary oil-price-cap freeze through July 23 and ceasefire or diplomatic proposals remain offsetting or secondary channels. PJM managed mid-July hot-weather alerts under a renewed DOE order window; summer reliability stays elevated but secondary to the corridor channel.",
+        title: "Credit, stress & volatility confirmation",
+        body: "Whether corporate-credit spreads, financial-stress measures, or volatility begin confirming the geopolitical signal. Without that transmission, financial-system scores stay below crisis bands.",
+      },
+      {
+        title: "Supply-chain transmission",
+        body: "Whether supply-chain disruption spreads beyond energy shipping into manufacturing, freight, and final-goods availability.",
+      },
+      {
+        title: "Electricity systems under demand",
+        body: "Whether electricity systems continue operating normally under record demand or increasingly require emergency measures.",
       },
     ],
   },
@@ -438,8 +507,8 @@ export const GPI_BENCHMARKS = getLedgerIndex("global-pressure").benchmarks ?? []
 export const QUIET_METRICS = [
   {
     label: "Energy Pressure",
-    value: "Operational Corridor Risk",
-    note: "Blockade reimposed, Hormuz transit constrained, and oil tested a higher band — routing, insurance, and corridor governance remain unresolved beneath functioning markets.",
+    value: "Concentrated Corridor Heat",
+    note: "Energy corridors and shipping disruption remain near extremes — still offset by functioning credit markets rather than confirmed systemic transmission.",
   },
   {
     label: "AI Compute Load",

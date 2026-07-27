@@ -36,6 +36,13 @@ function DegreeNumber({ value }: { value: number }) {
   );
 }
 
+function formatWeeklyDelta(change: number, override?: string): string {
+  if (override) return override;
+  if (change > 0) return `↑ +${change} Weekly Read`;
+  if (change < 0) return `↓ ${change} Weekly Read`;
+  return "Unchanged Weekly Read";
+}
+
 function benchTierClass(tier?: BenchmarkTier): string {
   if (!tier) return "";
   return `gpi-bench-${tier}`;
@@ -98,7 +105,10 @@ function IndexScaleBar({
         ))}
       </div>
       <p className="sr-only">
-        {index.displayTitle} at {clamped} degrees.
+        {index.displayTitle} at {clamped} degrees
+        {index.weeklyDeltaLabel
+          ? `. ${index.weeklyDeltaLabel}. ${index.weeklyDeltaExplanation ?? ""}`
+          : "."}
       </p>
     </div>
   );
@@ -111,11 +121,12 @@ function MainReadingRow({
   index: LedgerIndexDefinition;
   compact?: boolean;
 }) {
-  const isGpi = index.id === "global-pressure" && !compact;
-  const labelCls = isGpi ? GPI_LABEL : LABEL;
+  const isGpiFull = index.id === "global-pressure" && !compact;
+  const isGpi = index.id === "global-pressure";
+  const labelCls = isGpiFull ? GPI_LABEL : LABEL;
   const degreeClass = compact
     ? "font-serif text-[clamp(3.2rem,8vw,4.65rem)] font-bold leading-[0.88] tracking-[-0.07em] text-[#2a2826]"
-    : isGpi
+    : isGpiFull
       ? "gpi-main-degree font-serif text-[clamp(4rem,10vw,6.2rem)] font-bold leading-[0.88] tracking-[-0.07em] text-[#2a2826]"
       : "font-serif text-[clamp(3.6rem,8.5vw,5.35rem)] font-bold leading-[0.9] tracking-[-0.06em] text-[#2a2826]";
 
@@ -124,11 +135,16 @@ function MainReadingRow({
     : "flex flex-col gap-3.5 max-[800px]:block min-[801px]:flex-row min-[801px]:items-end min-[801px]:justify-between min-[801px]:gap-5";
 
   const deltaWrapClass = compact
-    ? "shrink-0 max-sm:mt-1 sm:pb-2.5 sm:text-right"
-    : "max-[800px]:mt-3.5 min-[801px]:shrink-0 min-[801px]:pb-2.5 min-[801px]:text-right";
+    ? "shrink-0 max-sm:mt-1 sm:pb-2.5 sm:max-w-[16rem] sm:text-right"
+    : "max-[800px]:mt-3.5 min-[801px]:shrink-0 min-[801px]:pb-2.5 min-[801px]:max-w-[18rem] min-[801px]:text-right";
+
+  const deltaLabel = formatWeeklyDelta(
+    index.weeklyDelta,
+    index.weeklyDeltaLabel,
+  );
 
   return (
-    <div className={`${rowClass} ${isGpi ? "" : "pb-4 md:pb-5"}`}>
+    <div className={`${rowClass} ${isGpiFull ? "" : "pb-4 md:pb-5"}`}>
       <div className="min-w-0 pt-0.5">
         <p className={degreeClass}>
           <DegreeNumber value={index.reading} />
@@ -139,13 +155,21 @@ function MainReadingRow({
         <span
           className={
             isGpi
-              ? "ledger-index-delta"
+              ? "ledger-index-delta gpi-delta-reset max-w-full whitespace-normal text-left leading-[1.45] tracking-[0.1em] sm:text-right"
               : "inline-flex items-center whitespace-nowrap rounded-full border border-[rgba(140,75,63,0.22)] bg-[rgba(140,75,63,0.055)] px-[10px] py-2 font-sans text-[10px] uppercase tracking-[0.13em] text-[#6f4038]"
           }
         >
-          ↑ +{index.weeklyDelta} Weekly Read
+          {deltaLabel}
         </span>
         <p className={`gpi-delta-note mt-[9px] ${labelCls}`}>{index.status}</p>
+        {index.weeklyDeltaExplanation ? (
+          <p
+            className="gpi-delta-explanation mt-2.5 max-w-none text-left text-[0.8rem] leading-[1.55] normal-case tracking-normal text-[#6f6a63] sm:max-w-[18rem] sm:text-right"
+            role="note"
+          >
+            {index.weeklyDeltaExplanation}
+          </p>
+        ) : null}
       </div>
     </div>
   );
@@ -208,8 +232,27 @@ function MeterCard({
         </strong>{" "}
         {compact ? index.weeklyNoteCompact : index.weeklyNote}
       </p>
+      {!compact && index.calibrationNote ? (
+        <aside
+          className="gpi-calibration-note"
+          aria-label={index.calibrationNote.title}
+        >
+          <p className="gpi-calibration-title">{index.calibrationNote.title}</p>
+          <p className="gpi-calibration-body">{index.calibrationNote.body}</p>
+          {index.methodologyReference ? (
+            <p className="gpi-calibration-ref">
+              <a href="#gpi-methodology">{index.methodologyReference}</a>
+            </p>
+          ) : null}
+        </aside>
+      ) : null}
     </>
   );
+
+  const methodPillCols =
+    isGpi && index.methodPills.length > 3
+      ? "min-[801px]:grid-cols-2"
+      : "min-[801px]:grid-cols-3";
 
   const methodPillsBlock = (
     <div
@@ -217,7 +260,7 @@ function MeterCard({
         isGpi ? "gpi-method-grid mt-[22px] gap-3" : "gap-3"
       } ${
         compact ? "mt-6 sm:grid-cols-3 md:mt-8" : isGpi ? "" : "mt-6 md:mt-8"
-      } ${!compact && !isGpi ? "min-[801px]:grid-cols-3" : !compact ? "min-[801px]:grid-cols-3" : ""}`}
+      } ${!compact ? methodPillCols : ""}`}
     >
       {index.methodPills.map((pill) => (
         <div key={pill.label} className={innerCls}>
@@ -250,15 +293,26 @@ function MeterCard({
           }`}
         >
           {index.recentReadings.map((item) => (
-            <div key={item.week} className={innerCls}>
+            <div
+              key={item.week}
+              className={`${innerCls}${item.annotation ? " gpi-reading-recalibrated" : ""}`}
+            >
               <p className={`${labelCls} gpi-inner-label`}>{item.week}</p>
               <p className="gpi-inner-score font-serif font-bold leading-none tracking-[-0.04em] text-[#2a2826]">
                 <DegreeNumber value={item.degrees} />
               </p>
               <p className={`${labelCls} gpi-inner-label`}>{item.state}</p>
+              {item.annotation ? (
+                <p className="gpi-reading-annotation">{item.annotation}</p>
+              ) : null}
             </div>
           ))}
         </div>
+        {isGpi && index.seriesAnnotation ? (
+          <p className="gpi-series-annotation" role="note">
+            {index.seriesAnnotation}
+          </p>
+        ) : null}
       </div>
     </div>
   );
@@ -286,12 +340,13 @@ function MeterCard({
         {isGpi ? (
           <div className="gpi-continuation">
             <p>
-              The reading sits in a persistent elevated pressure band —
-              structurally high but below disorder-level benchmarks. Market
-              resilience continues, but growing physical constraints in power,
-              transmission, cooling, and deployment capacity increasingly define
-              how quickly expansion proceeds. The watchlist below tracks where
-              coordination strain may broaden next.
+              The reading sits in a high-heat band with concentrated pressure —
+              geopolitics and energy near extremes, while credit markets and
+              economic expansion still offset full systemic transmission. It
+              remains below collapse-era benchmarks such as 2008 and March 2020.
+              Direction is high and unstable; the watchlist below tracks whether
+              corridor and energy stress begin confirming into credit, supply
+              chains, or electricity systems.
             </p>
           </div>
         ) : null}

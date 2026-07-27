@@ -18,8 +18,8 @@ export {
 export const QUIET_METRICS = [
   {
     label: "Energy Pressure",
-    value: "Operational Corridor Risk",
-    note: "Blockade reimposed, Hormuz transit constrained, and oil tested a higher band — routing, insurance, and corridor governance remain unresolved beneath functioning markets.",
+    value: "Concentrated Corridor Heat",
+    note: "Energy corridors and shipping disruption remain near extremes — still offset by functioning credit markets rather than confirmed systemic transmission.",
   },
   {
     label: "AI Compute Load",

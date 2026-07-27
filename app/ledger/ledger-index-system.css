@@ -218,6 +218,15 @@
   white-space: nowrap;
 }
 
+/* Allow longer GPI methodology-reset delta labels to wrap without overflow */
+.ledger-index-delta.gpi-delta-reset,
+.ledger-gpi .gpi-delta-reset {
+  max-width: 100%;
+  white-space: normal;
+  line-height: 1.45;
+  letter-spacing: 0.1em;
+}
+
 /* Shared editorial tables */
 .ledger-index-table-wrap {
   overflow-x: auto;

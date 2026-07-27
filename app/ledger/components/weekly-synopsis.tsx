@@ -1,18 +1,18 @@
 export const WEEKLY_SYNOPSIS = {
   eyebrow: "Weekly Synopsis",
-  headline: "Corridor pressure holds; frontier access broadens.",
+  headline: "Pressure recalibrated; corridor heat remains concentrated.",
   blocks: [
     {
       title: "What changed",
-      body: "Global geopolitical pressure remained at an extremely elevated 93. The corridor conflict became more operational — the U.S. naval blockade on Iranian ports was reimposed on July 14 within a campaign that began earlier in 2026, CENTCOM continued strikes framed around maritime security, commercial vessels were attacked near Oman with crews evacuated, and traceable Hormuz and LNG traffic stayed sharply reduced. Brent briefly tested above $90 before settling in the high $80s. A Houthi maritime-embargo declaration entered as a secondary corridor risk without demonstrated sustained enforcement. AI capability rose to 85 as frontier performance, practical access, cost compression, international competition, and adoption broadened together through GPT-5.6 general availability and Kimi K3 product and API access. Precious materials, infrastructure strain, and information clarity held within their established regimes.",
+      body: "The Global Pressure Index was recalibrated to 84° — High Heat, Concentrated Pressure — to separate current system pressure from future escalation risk. Earlier readings near 93° could overweight a single corridor event across related categories. Geopolitics and energy remain near the extreme end of the scale; financial markets, credit spreads, and broader economic activity have not confirmed a 2008- or COVID-style system event. AI capability, precious materials, infrastructure strain, and information clarity continue within their established regimes.",
     },
     {
       title: "What's driving pressure",
-      body: "Corridor confidence and the energy premium remain the binding geopolitical channel, but this week largely confirmed the risk already incorporated in the July 14 increase rather than establishing a distinctly broader systemic regime. Markets remained functional; diplomatic and ceasefire efforts stay an offsetting consideration. On the AI side, broader frontier access and competitive diffusion moved the acceleration reading, while compute, electricity, and deployment infrastructure continue to bound practical pace.",
+      body: "Primary drivers remain energy corridors, geopolitical escalation, and shipping disruption. The primary offset is functioning credit markets and continued economic expansion. Direction stays high and unstable: escalation potential is elevated even while the recalibrated reading stays below collapse-era benchmarks.",
     },
     {
       title: "What to watch next",
-      body: "Whether Brent establishes a sustained settlement above $90. Whether traceable Hormuz and LNG traffic stabilizes or stays depressed. Whether the Houthi declaration shows practical enforcement. Whether additional Gulf infrastructure damage is confirmed. The status of ceasefire or diplomatic proposals. Whether energy pressure spreads into broader credit or liquidity stress. Whether Kimi K3 downloadable weights arrive as scheduled and how GPT-5.6 and competing models convert access into durable enterprise workflows under summer grid limits.",
+      body: "Whether disruption through Hormuz and Bab el-Mandeb persists or broadens. Whether oil remains elevated long enough to affect inflation, consumption, and policy. Whether corporate-credit spreads, financial-stress measures, or volatility begin confirming the geopolitical signal. Whether supply-chain disruption spreads beyond energy shipping. Whether electricity systems continue operating normally under record demand or require emergency measures.",
     },
   ],
 } as const;
