@@ -55,6 +55,18 @@ import {
   categoryForFanOutStage,
 } from "./resilience";
 import {
+  buildFanOutUniverseStats,
+  formatFanOutUniverseReport,
+} from "./universe-stats";
+import {
+  classifyGscCandidate,
+  normalizeGscQuery,
+  clusterGscCandidates,
+  collectFixtureGscCandidates,
+  FIXTURE_GSC_CANDIDATE_QUERIES,
+  isBrandGscQuery,
+} from "./gsc-candidates";
+import {
   AUDIENCE_STAGES,
   QUERY_FAMILIES,
   RECOMMENDED_ACTIONS,
@@ -63,6 +75,11 @@ import {
   type FanOutFailureStage,
   type FanOutQuestion,
 } from "./types";
+import {
+  FAN_OUT_ACTIVE_CANONICAL_MAX,
+  FAN_OUT_ACTIVE_CANONICAL_MIN,
+  getFanOutQuestionsByStatus,
+} from "./seed-questions";
 
 export type RunFanOutCoverageOptions = {
   questions?: FanOutQuestion[];
@@ -180,6 +197,9 @@ export function emptyFanOutCoverageSnapshot(): FanOutCoverageSnapshot {
 }
 
 export type * from "./types";
+export type { FanOutUniverseStats, CountRow } from "./universe-stats";
+export type { NormalizedGscCandidate, GscCandidateKind } from "./gsc-candidates";
+export type { SeedDraft } from "./seed-builder";
 
 export {
   AUDIENCE_STAGES,
@@ -198,6 +218,9 @@ export {
   FULLY_COVERED_MIN_COMPLETENESS,
   FAN_OUT_SEED_QUESTIONS,
   getActiveFanOutQuestions,
+  getFanOutQuestionsByStatus,
+  FAN_OUT_ACTIVE_CANONICAL_MIN,
+  FAN_OUT_ACTIVE_CANONICAL_MAX,
   dedupeQuestionsByCanonicalText,
   validateQueryFamily,
   prioritizeFanOutOpportunities,
@@ -224,4 +247,12 @@ export {
   classifyFanOutFailure,
   fanOutCoverageDataGap,
   categoryForFanOutStage,
+  buildFanOutUniverseStats,
+  formatFanOutUniverseReport,
+  classifyGscCandidate,
+  normalizeGscQuery,
+  clusterGscCandidates,
+  collectFixtureGscCandidates,
+  FIXTURE_GSC_CANDIDATE_QUERIES,
+  isBrandGscQuery,
 };

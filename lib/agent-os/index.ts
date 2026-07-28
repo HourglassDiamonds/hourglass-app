@@ -311,6 +311,9 @@ export {
   FULLY_COVERED_MIN_COMPLETENESS,
   FAN_OUT_SEED_QUESTIONS,
   getActiveFanOutQuestions,
+  getFanOutQuestionsByStatus,
+  FAN_OUT_ACTIVE_CANONICAL_MIN,
+  FAN_OUT_ACTIVE_CANONICAL_MAX,
   dedupeQuestionsByCanonicalText,
   validateQueryFamily,
   prioritizeFanOutOpportunities,
@@ -331,6 +334,14 @@ export {
   resolveGapClusterId,
   dedupeMatchesByCanonicalSource,
   matchLooksLikeDirectAnswer,
+  buildFanOutUniverseStats,
+  formatFanOutUniverseReport,
+  classifyGscCandidate,
+  normalizeGscQuery,
+  clusterGscCandidates,
+  collectFixtureGscCandidates,
+  FIXTURE_GSC_CANDIDATE_QUERIES,
+  isBrandGscQuery,
 } from "./search/fan-out";
 export type {
   FanOutCoverageSnapshot,
@@ -349,6 +360,9 @@ export type {
   CoverageBand,
   RecommendedContentAction,
   RunFanOutCoverageOptions,
+  QuestionStatus,
+  QuestionSource,
+  FanOutUniverseStats,
 } from "./search/fan-out";
 
 export {

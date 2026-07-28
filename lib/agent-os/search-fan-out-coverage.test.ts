@@ -14,6 +14,8 @@ import {
   FAN_OUT_SEED_QUESTIONS,
   formatFanOutReport,
   getActiveFanOutQuestions,
+  FAN_OUT_ACTIVE_CANONICAL_MIN,
+  FAN_OUT_ACTIVE_CANONICAL_MAX,
   matchQuestionToContent,
   prioritizeFanOutOpportunities,
   runFanOutCoverageAnalyzer,
@@ -43,8 +45,8 @@ describe("Fan-out question-family validation", () => {
     for (const family of QUERY_FAMILIES) {
       assert.ok(families.has(family), `missing family ${family}`);
     }
-    assert.ok(active.length >= 35);
-    assert.ok(active.length < 80);
+    assert.ok(active.length >= FAN_OUT_ACTIVE_CANONICAL_MIN);
+    assert.ok(active.length <= FAN_OUT_ACTIVE_CANONICAL_MAX);
   });
 
   it("includes required audience stages and action types", () => {

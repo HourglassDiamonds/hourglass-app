@@ -1,66 +1,25 @@
 /**
- * Curated V1 question universe for AI Fan-Out Coverage Analyzer.
- * Representative coverage across required families — not hundreds of near-duplicates.
+ * Curated question universe for AI Fan-Out Coverage Analyzer.
+ * V1 seeds + V1.1 expansion — canonical intents, not wording inflation.
  */
 
-import { slugifyFanOutId } from "./normalize";
+import { buildFanOutSeedQuestion, type SeedDraft } from "./seed-builder";
+import { V11_EXPANSION_DRAFTS } from "./seed-v11-expansion";
 import {
   QUERY_FAMILIES,
-  type AudienceStage,
-  type FanOutGeography,
   type FanOutQuestion,
-  type FanOutSearchIntent,
   type QueryFamily,
-  type QuestionSource,
 } from "./types";
 
-const SEED_STAMP = "2026-07-27T00:00:00.000Z";
-
-type SeedDraft = {
-  question: string;
-  family: QueryFamily;
-  intent: FanOutSearchIntent;
-  stage: AudienceStage;
-  geography?: FanOutGeography;
-  commercial: number;
-  authority: number;
-  matchTerms: string[];
-  entities?: string[];
-  topics?: string[];
-  source?: QuestionSource;
-  duplicateOf?: string;
-  status?: FanOutQuestion["status"];
-};
-
 function q(draft: SeedDraft): FanOutQuestion {
-  const id = `fan-out-q:${slugifyFanOutId(draft.question)}`;
-  return {
-    id,
-    canonicalQuestion: draft.question,
-    queryFamily: draft.family,
-    searchIntent: draft.intent,
-    audienceStage: draft.stage,
-    geography: draft.geography ?? "unspecified",
-    commercialValue: draft.commercial,
-    authorityValue: draft.authority,
-    source: draft.source ?? "seed-curated",
-    status: draft.status ?? "active",
-    matchTerms: draft.matchTerms,
-    entities: draft.entities ?? [],
-    topics: draft.topics ?? [draft.family],
-    duplicateOfId: draft.duplicateOf
-      ? `fan-out-q:${slugifyFanOutId(draft.duplicateOf)}`
-      : null,
-    createdAt: SEED_STAMP,
-    updatedAt: SEED_STAMP,
-  };
+  return buildFanOutSeedQuestion(draft);
 }
 
 /**
- * Curated seed set (~45 active questions). Includes one intentional duplicate
- * marked deprecated so duplicate-handling tests and runtime filters work.
+ * V1 curated seed set (~44 active + 1 intentional duplicate).
+ * V1.1 expansion is appended via V11_EXPANSION_DRAFTS.
  */
-const SEED_DRAFTS: SeedDraft[] = [
+const SEED_DRAFTS_V1: SeedDraft[] = [
   // beginner-education
   {
     question: "What should I know before buying an engagement ring?",
@@ -628,12 +587,25 @@ const SEED_DRAFTS: SeedDraft[] = [
   },
 ];
 
+const SEED_DRAFTS: SeedDraft[] = [...SEED_DRAFTS_V1, ...V11_EXPANSION_DRAFTS];
+
 export const FAN_OUT_SEED_QUESTIONS: FanOutQuestion[] = SEED_DRAFTS.map(q);
+
+/** Target band for active canonical questions (V1.1). */
+export const FAN_OUT_ACTIVE_CANONICAL_MIN = 125;
+export const FAN_OUT_ACTIVE_CANONICAL_MAX = 175;
 
 export function getActiveFanOutQuestions(
   questions: FanOutQuestion[] = FAN_OUT_SEED_QUESTIONS,
 ): FanOutQuestion[] {
   return questions.filter((item) => item.status === "active");
+}
+
+export function getFanOutQuestionsByStatus(
+  status: FanOutQuestion["status"],
+  questions: FanOutQuestion[] = FAN_OUT_SEED_QUESTIONS,
+): FanOutQuestion[] {
+  return questions.filter((item) => item.status === status);
 }
 
 export function validateQueryFamily(value: string): value is QueryFamily {
@@ -646,14 +618,17 @@ export function dedupeQuestionsByCanonicalText(
   const seen = new Map<string, FanOutQuestion>();
   const out: FanOutQuestion[] = [];
   for (const question of questions) {
-    const key = question.canonicalQuestion.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+    const key = question.canonicalQuestion
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, " ")
+      .trim();
     const existing = seen.get(key);
     if (!existing) {
       seen.set(key, question);
       out.push(question);
       continue;
     }
-    // Keep active over duplicate/deprecated
+    // Keep active over duplicate/deprecated/deferred/rejected
     if (existing.status !== "active" && question.status === "active") {
       const idx = out.indexOf(existing);
       out[idx] = question;

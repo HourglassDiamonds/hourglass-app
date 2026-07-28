@@ -60,6 +60,8 @@ export const QUESTION_STATUSES = [
   "draft",
   "deprecated",
   "duplicate",
+  "deferred",
+  "rejected",
 ] as const;
 
 export type QuestionStatus = (typeof QUESTION_STATUSES)[number];
@@ -68,6 +70,10 @@ export const QUESTION_SOURCES = [
   "seed-curated",
   "faq-derived",
   "guide-title-derived",
+  "gsc-fixture",
+  "conversation-derived",
+  "local-intent-expansion",
+  "expert-curated",
   "manual",
 ] as const;
 
@@ -133,7 +139,14 @@ export type FanOutQuestion = {
   /** 1–10 authority / trust-building value */
   authorityValue: number;
   source: QuestionSource;
+  /**
+   * Optional provenance detail — e.g. fixture GSC query text, FAQ id,
+   * Conversation keyIdea, or guide slug. Never secrets.
+   */
+  sourceRef?: string | null;
   status: QuestionStatus;
+  /** Near-duplicate phrasings that resolve to this canonical (inspection only) */
+  aliases?: string[];
   /** Terms used for deterministic matching */
   matchTerms: string[];
   /** Entity/topic tags */
