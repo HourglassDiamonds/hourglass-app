@@ -26,9 +26,12 @@ import {
 import type { SearchOpportunity } from "./types";
 import {
   emptyFanOutCoverageSnapshot,
+  fanOutCoverageDataGap,
   runFanOutCoverageAnalyzer,
+  runFanOutCoverageGuarded,
   type FanOutCoverageSnapshot,
   type FanOutOpportunity,
+  type RunFanOutCoverageOptions,
 } from "./fan-out";
 
 export type SearchStrategyOutput = {
@@ -46,6 +49,15 @@ export type SearchStrategyOutput = {
 
 export type RunSearchStrategyOptions = {
   mode?: "fixture" | "live";
+  /**
+   * Injectable fan-out runner (tests). Default runs the production analyzer.
+   * Always executed inside a non-throwing guard so fan-out cannot abort Search Strategy.
+   */
+  runFanOutCoverage?: (
+    options?: RunFanOutCoverageOptions,
+  ) => FanOutCoverageSnapshot;
+  /** Options forwarded to the fan-out runner (includes test forceFailureAt). */
+  fanOutOptions?: RunFanOutCoverageOptions;
 };
 
 export function runSearchStrategy(
@@ -140,13 +152,30 @@ export function runSearchStrategy(
     );
   }
 
-  const fanOutCoverage = runFanOutCoverageAnalyzer();
-  facts.push(...fanOutCoverage.facts);
-  inferences.push(...fanOutCoverage.inferences);
-
-  const fanOutSearchOpps = fanOutOpportunitiesAsSearchOpportunities(
-    fanOutCoverage.founderFacingOpportunities,
+  // Fan-out is an enhancement — guarded so unexpected throws cannot abort Search Strategy.
+  const fanOutRunner =
+    options.runFanOutCoverage ?? runFanOutCoverageAnalyzer;
+  const fanOutCoverage = runFanOutCoverageGuarded(() =>
+    fanOutRunner(options.fanOutOptions),
   );
+
+  if (fanOutCoverage.status === "ok") {
+    facts.push(...fanOutCoverage.facts);
+    inferences.push(...fanOutCoverage.inferences);
+  } else if (fanOutCoverage.status === "failed") {
+    facts.push(...fanOutCoverage.facts);
+    inferences.push(...fanOutCoverage.inferences);
+    const gap = fanOutCoverageDataGap(fanOutCoverage);
+    if (gap) dataGaps.push(gap);
+  }
+  // status === "unavailable": leave silent beyond snapshot metadata
+
+  const fanOutSearchOpps =
+    fanOutCoverage.status === "ok"
+      ? fanOutOpportunitiesAsSearchOpportunities(
+          fanOutCoverage.founderFacingOpportunities,
+        )
+      : [];
 
   const opportunities = [
     ...gscOpps,

@@ -90,6 +90,13 @@ export function formatFanOutReport(snapshot: FanOutCoverageSnapshot): string {
   const lines: string[] = [];
   lines.push("# AI Fan-Out Coverage Analyzer — Report");
   lines.push("");
+  lines.push(`Status: ${snapshot.status}`);
+  if (snapshot.status === "failed" && snapshot.degradation) {
+    lines.push(
+      `Degradation: ${snapshot.degradation.errorCategory} @ ${snapshot.degradation.failedStage} — recommendations suppressed`,
+    );
+  }
+  lines.push("");
   lines.push("## Executive summary");
   lines.push(`- Questions analyzed: ${summary.totalQuestionsAnalyzed}`);
   lines.push(`- Fully covered: ${summary.fullyCovered}`);

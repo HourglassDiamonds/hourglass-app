@@ -294,6 +294,13 @@ export {
 export {
   runFanOutCoverageAnalyzer,
   emptyFanOutCoverageSnapshot,
+  runFanOutCoverageGuarded,
+  buildFailedFanOutCoverageSnapshot,
+  buildUnavailableFanOutCoverageSnapshot,
+  FanOutCoverageStageError,
+  fanOutCoverageDataGap,
+  sanitizeFanOutSafeMessage,
+  classifyFanOutFailure,
   buildFanOutContentInventory,
   matchQuestionToContent,
   scoreContentMatch,
@@ -327,6 +334,11 @@ export {
 } from "./search/fan-out";
 export type {
   FanOutCoverageSnapshot,
+  FanOutCoverageStatus,
+  FanOutCoverageErrorCategory,
+  FanOutFailureStage,
+  FanOutCoverageDegradation,
+  FanOutCoverageInternalEvent,
   FanOutQuestion,
   FanOutContentRecord,
   FanOutOpportunity,
@@ -336,6 +348,7 @@ export type {
   AudienceStage,
   CoverageBand,
   RecommendedContentAction,
+  RunFanOutCoverageOptions,
 } from "./search/fan-out";
 
 export {

@@ -7,7 +7,12 @@
  */
 
 import { buildFanOutContentInventory, summarizeInventory } from "./inventory";
-import { matchQuestionToContent, scoreContentMatch, dedupeMatchesByCanonicalSource, matchLooksLikeDirectAnswer } from "./match";
+import {
+  matchQuestionToContent,
+  scoreContentMatch,
+  dedupeMatchesByCanonicalSource,
+  matchLooksLikeDirectAnswer,
+} from "./match";
 import {
   coverageBandFromScore,
   scoreQuestionCoverage,
@@ -39,11 +44,23 @@ import { summarizeCanonicalInventory, canonicalSourceIdFromUrl } from "./canonic
 import { GAP_CLUSTER_DEFINITIONS, resolveGapClusterId } from "./clusters";
 import { formatFanOutAuditReport } from "./audit";
 import {
+  buildFailedFanOutCoverageSnapshot,
+  buildUnavailableFanOutCoverageSnapshot,
+  FanOutCoverageStageError,
+  runFanOutCoverageGuarded,
+  runFanOutStage,
+  sanitizeFanOutSafeMessage,
+  classifyFanOutFailure,
+  fanOutCoverageDataGap,
+  categoryForFanOutStage,
+} from "./resilience";
+import {
   AUDIENCE_STAGES,
   QUERY_FAMILIES,
   RECOMMENDED_ACTIONS,
   type FanOutContentRecord,
   type FanOutCoverageSnapshot,
+  type FanOutFailureStage,
   type FanOutQuestion,
 } from "./types";
 
@@ -52,41 +69,68 @@ export type RunFanOutCoverageOptions = {
   inventory?: FanOutContentRecord[];
   /** Max founder-facing opportunities forwarded into Search Strategy recs */
   founderFacingLimit?: number;
+  /** Deterministic test hook — throws at the named stage */
+  forceFailureAt?: FanOutFailureStage;
+  /** Injectable clock for completedAt */
+  now?: () => string;
 };
 
 /**
  * Run the full fan-out coverage analysis against repository content.
+ * May throw FanOutCoverageStageError — callers that must not abort should use
+ * `runFanOutCoverageGuarded(() => runFanOutCoverageAnalyzer(...))`.
  */
 export function runFanOutCoverageAnalyzer(
   options: RunFanOutCoverageOptions = {},
 ): FanOutCoverageSnapshot {
-  const allQuestions = dedupeQuestionsByCanonicalText(
-    options.questions ?? FAN_OUT_SEED_QUESTIONS,
+  const force = options.forceFailureAt;
+  const completedAt = options.now?.() ?? new Date().toISOString();
+
+  const allQuestions = runFanOutStage("question-loading", force, () =>
+    dedupeQuestionsByCanonicalText(options.questions ?? FAN_OUT_SEED_QUESTIONS),
   );
   const questions = getActiveFanOutQuestions(allQuestions);
-  const inventory = options.inventory ?? buildFanOutContentInventory();
 
-  const coverages = questions.map((question) => {
-    const matches = matchQuestionToContent(question, inventory);
-    return scoreQuestionCoverage(question, matches, inventory);
-  });
-
-  const opportunities = prioritizeFanOutOpportunities(
-    questions,
-    coverages,
-    inventory,
-  );
-  const founderFacingOpportunities = selectFounderFacingFanOut(
-    opportunities,
-    options.founderFacingLimit ?? MAX_FOUNDER_FACING_FAN_OUT,
+  const inventory = runFanOutStage("inventory", force, () =>
+    options.inventory ?? buildFanOutContentInventory(),
   );
 
-  const summary = buildFanOutExecutiveSummary({
-    questions,
-    coverages,
-    contentInventoryCount: inventory.length,
-    opportunities,
-  });
+  const matchBundles = runFanOutStage("matching", force, () =>
+    questions.map((question) => ({
+      question,
+      matches: matchQuestionToContent(question, inventory),
+    })),
+  );
+
+  const coverages = runFanOutStage("coverage-scoring", force, () =>
+    matchBundles.map(({ question, matches }) =>
+      scoreQuestionCoverage(question, matches, inventory),
+    ),
+  );
+
+  const { opportunities, founderFacingOpportunities } = runFanOutStage(
+    "prioritization",
+    force,
+    () => {
+      const opps = prioritizeFanOutOpportunities(questions, coverages, inventory);
+      return {
+        opportunities: opps,
+        founderFacingOpportunities: selectFounderFacingFanOut(
+          opps,
+          options.founderFacingLimit ?? MAX_FOUNDER_FACING_FAN_OUT,
+        ),
+      };
+    },
+  );
+
+  const summary = runFanOutStage("summary", force, () =>
+    buildFanOutExecutiveSummary({
+      questions,
+      coverages,
+      contentInventoryCount: inventory.length,
+      opportunities,
+    }),
+  );
 
   const canonical = summarizeCanonicalInventory(inventory);
   const facts = [
@@ -107,6 +151,18 @@ export function runFanOutCoverageAnalyzer(
   ];
 
   return {
+    status: "ok",
+    completedAt,
+    degradation: null,
+    internalEvents: [
+      {
+        at: completedAt,
+        level: "info",
+        category: "ok",
+        stage: null,
+        message: `Fan-out coverage completed (${questions.length} questions, ${inventory.length} inventory records)`,
+      },
+    ],
     summary,
     questions: allQuestions,
     contentInventory: inventory,
@@ -118,27 +174,9 @@ export function runFanOutCoverageAnalyzer(
   };
 }
 
+/** Intentionally unavailable snapshot (e.g. empty Search Strategy / skip synthesis). */
 export function emptyFanOutCoverageSnapshot(): FanOutCoverageSnapshot {
-  return {
-    summary: {
-      totalQuestionsAnalyzed: 0,
-      fullyCovered: 0,
-      partiallyCovered: 0,
-      uncovered: 0,
-      averageCoverageScore: 0,
-      strongestQueryFamilies: [],
-      weakestQueryFamilies: [],
-      contentInventoryCount: 0,
-      topOpportunityCount: 0,
-    },
-    questions: [],
-    contentInventory: [],
-    coverages: [],
-    opportunities: [],
-    founderFacingOpportunities: [],
-    facts: [],
-    inferences: [],
-  };
+  return buildUnavailableFanOutCoverageSnapshot();
 }
 
 export type * from "./types";
@@ -177,4 +215,13 @@ export {
   GAP_CLUSTER_DEFINITIONS,
   resolveGapClusterId,
   formatFanOutAuditReport,
+  buildFailedFanOutCoverageSnapshot,
+  buildUnavailableFanOutCoverageSnapshot,
+  FanOutCoverageStageError,
+  runFanOutCoverageGuarded,
+  runFanOutStage,
+  sanitizeFanOutSafeMessage,
+  classifyFanOutFailure,
+  fanOutCoverageDataGap,
+  categoryForFanOutStage,
 };

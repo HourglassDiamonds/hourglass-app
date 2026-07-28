@@ -224,6 +224,7 @@ describe("Fan-out Search Strategy integration", () => {
       mode: "fixture",
     });
     assert.ok(search.fanOutCoverage);
+    assert.equal(search.fanOutCoverage.status, "ok");
     assert.ok(search.fanOutCoverage.summary.totalQuestionsAnalyzed >= 35);
     assert.ok(
       search.fanOutCoverage.founderFacingOpportunities.length <=

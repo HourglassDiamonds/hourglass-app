@@ -264,7 +264,60 @@ export type FanOutExecutiveSummary = {
   topOpportunityCount: number;
 };
 
+/**
+ * Run outcome for the fan-out capability (enhancement — must not abort Search Strategy).
+ * - ok: analysis completed; recommendations may flow downstream
+ * - unavailable: intentionally skipped (e.g. synthesis aborted / empty output)
+ * - failed: unexpected failure; recommendations suppressed; inspect degradation
+ */
+export type FanOutCoverageStatus = "ok" | "unavailable" | "failed";
+
+/** Stable categories for tests and internal inspection (not founder-facing noise). */
+export type FanOutCoverageErrorCategory =
+  | "inventory-construction"
+  | "question-loading"
+  | "matching"
+  | "coverage-scoring"
+  | "prioritization"
+  | "summary-generation"
+  | "unexpected";
+
+export type FanOutFailureStage =
+  | "inventory"
+  | "question-loading"
+  | "matching"
+  | "coverage-scoring"
+  | "prioritization"
+  | "summary"
+  | "unknown";
+
+/** Structured degradation metadata — internal inspection only. */
+export type FanOutCoverageDegradation = {
+  errorCategory: FanOutCoverageErrorCategory;
+  failedStage: FanOutFailureStage;
+  /** Redacted, length-capped message — no stack traces or filesystem paths */
+  safeMessage: string;
+  recommendationsSuppressed: true;
+};
+
+/** Structured internal event (not founder brief content). */
+export type FanOutCoverageInternalEvent = {
+  at: string;
+  level: "info" | "warn" | "error";
+  category: FanOutCoverageErrorCategory | "ok" | "unavailable";
+  stage: FanOutFailureStage | null;
+  message: string;
+};
+
 export type FanOutCoverageSnapshot = {
+  /** Distinguishes success / intentional skip / failure without missing-property inference */
+  status: FanOutCoverageStatus;
+  /** ISO timestamp when analysis completed or failure was recorded; null if unavailable */
+  completedAt: string | null;
+  /** Present only when status === "failed" */
+  degradation: FanOutCoverageDegradation | null;
+  /** Inspectable internal events — never copy raw stacks into founder briefs */
+  internalEvents: FanOutCoverageInternalEvent[];
   summary: FanOutExecutiveSummary;
   questions: FanOutQuestion[];
   contentInventory: FanOutContentRecord[];

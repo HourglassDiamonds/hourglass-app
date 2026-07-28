@@ -24,6 +24,7 @@ import {
 import {
   emptySearchStrategyOutput,
   runSearchStrategy,
+  type RunSearchStrategyOptions,
 } from "./executives/search-strategy";
 import { getOpportunityContract } from "./executives/scaffolds";
 import {
@@ -98,6 +99,11 @@ export type RunAgentOsOptions = {
     onDemandRecurrenceBypass?: boolean;
     now?: string;
   };
+  /**
+   * Narrow test/ops hook forwarded into Search Strategy (e.g. fan-out forceFailureAt).
+   * Production callers omit this — fan-out still runs behind its non-throwing guard.
+   */
+  searchStrategyOptions?: Omit<RunSearchStrategyOptions, "mode">;
 };
 
 export async function runAgentOsBrief(
@@ -219,7 +225,10 @@ export async function runAgentOsBrief(
   // unless the entire live load was aborted for fixture leakage / fatal error.
   const search = skipSynthesis
     ? emptySearchStrategyOutput()
-    : runSearchStrategy(bundle, reportingPeriod, { mode });
+    : runSearchStrategy(bundle, reportingPeriod, {
+        mode,
+        ...options.searchStrategyOptions,
+      });
 
   const content = skipSynthesis
     ? emptyContentExecutiveOutput()
