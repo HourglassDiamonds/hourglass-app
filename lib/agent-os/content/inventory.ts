@@ -17,6 +17,7 @@ import {
 import {
   MESSAGE_TERRITORIES,
   PLANNED_CONVERSATION_TOPICS,
+  RESERVE_BACKLOG_CONVERSATION_TOPICS,
   type MessageTerritory,
   type PlannedConversationTopic,
 } from "./themes";
@@ -43,7 +44,7 @@ export type ContentInventoryCompleteness = "complete" | "partial" | "unknown";
 
 export type ContentInventoryItem = {
   id: string;
-  kind: "conversation-episode" | "planned-topic" | "message-territory";
+  kind: "conversation-episode" | "planned-topic" | "message-territory" | "reserve-backlog-topic";
   title: string;
   topic: string;
   format: "founder-conversation" | "theme" | "planned-map";
@@ -75,6 +76,7 @@ export type ContentInventorySnapshot = {
   /** Count of registry rows labeled draft — material label only */
   registryLabeledDraftCount: number;
   plannedTopicCount: number;
+  reserveBacklogTopicCount: number;
   messageTerritoryCount: number;
   uncoveredTerritoryCount: number;
   inventoryCompleteness: ContentInventoryCompleteness;
@@ -83,7 +85,10 @@ export type ContentInventorySnapshot = {
   hasVerifiedSocialAdapter: boolean;
   items: ContentInventoryItem[];
   episodes: ConversationEpisode[];
+  /** Active reserved Conversation sequence (canonical) */
   plannedTopics: PlannedConversationTopic[];
+  /** Older planned themes preserved for inspectability — not active sequence */
+  reserveBacklogTopics: PlannedConversationTopic[];
   territories: MessageTerritory[];
 };
 
@@ -149,14 +154,41 @@ export function inspectContentInventory(
       registryMaterialLabel: "planned",
       funnelStage: topic.funnelStage,
       audience: "engagement-buyers",
-      sourceReference: `lib/agent-os/content/themes.ts#${topic.id}`,
+      sourceReference: `lib/agent-os/content/editorial-sequence.ts#${topic.id}`,
       relatedGuide: topic.relatedGuideSlug
         ? `/diamond-guide/${topic.relatedGuideSlug}`
         : null,
       relatedTool: topic.relatedToolPath ?? null,
       relatedConcierge: topic.relatedToolPath === "/concierge" ? "/concierge" : null,
       parentSlug: topic.sequenceAfter ?? null,
-      messageTags: [topic.id],
+      messageTags: [topic.id, "reserved-sequence"],
+      hasTranscript: false,
+      hasVideoSource: false,
+      registryDateHint: null,
+    });
+  }
+
+  for (const topic of RESERVE_BACKLOG_CONVERSATION_TOPICS) {
+    items.push({
+      id: `reserve-backlog:${topic.id}`,
+      kind: "reserve-backlog-topic",
+      title: topic.title,
+      topic: topic.id,
+      format: "planned-map",
+      status: "planned",
+      materialState: "planned",
+      publicationState: "unknown",
+      registryMaterialLabel: "planned",
+      funnelStage: topic.funnelStage,
+      audience: "engagement-buyers",
+      sourceReference: `lib/agent-os/content/editorial-sequence.ts#reserve:${topic.id}`,
+      relatedGuide: topic.relatedGuideSlug
+        ? `/diamond-guide/${topic.relatedGuideSlug}`
+        : null,
+      relatedTool: topic.relatedToolPath ?? null,
+      relatedConcierge: topic.relatedToolPath === "/concierge" ? "/concierge" : null,
+      parentSlug: topic.sequenceAfter ?? null,
+      messageTags: [topic.id, "reserve-backlog"],
       hasTranscript: false,
       hasVideoSource: false,
       registryDateHint: null,
@@ -204,6 +236,7 @@ export function inspectContentInventory(
     registryLabeledPublishedCount,
     registryLabeledDraftCount,
     plannedTopicCount: PLANNED_CONVERSATION_TOPICS.length,
+    reserveBacklogTopicCount: RESERVE_BACKLOG_CONVERSATION_TOPICS.length,
     messageTerritoryCount: MESSAGE_TERRITORIES.length,
     uncoveredTerritoryCount,
     inventoryCompleteness,
@@ -213,9 +246,10 @@ export function inspectContentInventory(
         : "Publication/scheduling state cannot be reconciled — Buffer/social unavailable, no verified publication ledger, marketing-sprint assets not in this worktree, external platform history not readable",
     hasVerifiedPublicationLedger: publicationLedgerAvailable,
     hasVerifiedSocialAdapter: socialAdapterAvailable,
-    items: items.slice(0, 40),
+    items: items.slice(0, 50),
     episodes,
     plannedTopics: PLANNED_CONVERSATION_TOPICS,
+    reserveBacklogTopics: RESERVE_BACKLOG_CONVERSATION_TOPICS,
     territories: MESSAGE_TERRITORIES,
   };
 }

@@ -9,7 +9,8 @@ export type ContentOpportunitySource =
   | "repository"
   | "search"
   | "bi"
-  | "derived";
+  | "derived"
+  | "roi";
 
 /**
  * Stable ID shape:

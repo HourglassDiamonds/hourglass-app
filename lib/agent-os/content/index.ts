@@ -15,8 +15,18 @@ import { proposedActionImpliesWrite } from "../permissions";
 import type { DataGap, Recommendation } from "../types";
 import { inspectContentInventory } from "./inventory";
 import { detectContentOpportunities } from "./opportunities";
-import { buildContentRecommendationId } from "./ids";
-import type { ContentOpportunity } from "./types";
+import { buildContentOpportunityId, buildContentRecommendationId } from "./ids";
+import type { ContentFormat, ContentOpportunity } from "./types";
+import {
+  contentRoiDataGap,
+  emptyContentRoiSnapshot,
+  MAX_FOUNDER_FACING_CONTENT_ROI,
+  runContentRoiGuarded,
+  runContentRoiPrioritizer,
+  type ContentRoiSnapshot,
+  type RunContentRoiOptions,
+} from "./roi";
+import { assessBrandFit } from "./brand-fit";
 
 export type ContentExecutiveOutput = {
   recommendations: Recommendation[];
@@ -25,11 +35,17 @@ export type ContentExecutiveOutput = {
   facts: string[];
   inferences: string[];
   inventory: ReturnType<typeof inspectContentInventory>;
+  /** Editorial ROI snapshot — inspectable; founder brief stays capped */
+  contentRoi: ContentRoiSnapshot;
 };
 
 export type RunContentOptions = {
   search?: SearchStrategyOutput;
   bi?: BusinessIntelligenceOutput;
+  contentRoiOptions?: Pick<
+    RunContentRoiOptions,
+    "weights" | "founderFacingLimit" | "forceFailureAt" | "fanOutRunOptions"
+  >;
 };
 
 export function runContentExecutive(
@@ -83,13 +99,41 @@ export function runContentExecutive(
   const searchOpps = options.search?.opportunities ?? [];
   const biRecs = options.bi?.recommendations ?? [];
 
-  const opportunities = detectContentOpportunities({
+  const contentRoi = runContentRoiGuarded(() =>
+    runContentRoiPrioritizer({
+      fanOutCoverage: options.search?.fanOutCoverage,
+      ...options.contentRoiOptions,
+    }),
+  );
+
+  if (contentRoi.status === "ok") {
+    facts.push(...contentRoi.facts);
+    inferences.push(...contentRoi.inferences);
+  } else if (contentRoi.status === "failed") {
+    facts.push(...contentRoi.facts);
+    inferences.push(...contentRoi.inferences);
+    dataGaps.push(contentRoiDataGap(contentRoi));
+  }
+
+  const detected = detectContentOpportunities({
     inventory,
     searchOpportunities: searchOpps,
     biRecommendations: biRecs,
     bufferAvailable,
     socialPerformanceAvailable,
   });
+
+  const roiOpps =
+    contentRoi.status === "ok"
+      ? contentRoi.founderFacingPackages
+          .map((pkg) => editorialPackageToOpportunity(pkg))
+          .filter((o) => o.brandFitOk)
+      : [];
+
+  const opportunities = dedupeOpportunities([...roiOpps, ...detected]).slice(
+    0,
+    14 + MAX_FOUNDER_FACING_CONTENT_ROI,
+  );
 
   const collectedAt = new Date().toISOString();
   const recommendations = opportunities
@@ -105,7 +149,100 @@ export function runContentExecutive(
     facts,
     inferences,
     inventory,
+    contentRoi,
   };
+}
+
+function mapRoiFormatToContentFormat(
+  format: string,
+): ContentFormat {
+  switch (format) {
+    case "conversation":
+      return "founder-conversation";
+    case "short-form-series":
+      return "short-form-clip";
+    case "carousel":
+      return "carousel";
+    case "newsletter":
+      return "newsletter-section";
+    case "faq-cluster":
+      return "faq-extraction";
+    case "diamond-guide-flagship":
+    case "post-purchase-guide":
+    case "local-landing-enhancement":
+      return "guide-enhancement";
+    default:
+      return "caption";
+  }
+}
+
+function editorialPackageToOpportunity(
+  pkg: ContentRoiSnapshot["founderFacingPackages"][number],
+): ContentOpportunity {
+  const recommendedFormat = mapRoiFormatToContentFormat(pkg.primaryFormat);
+  const base = {
+    id: buildContentOpportunityId({
+      source: "roi",
+      type: "editorial-roi-package",
+      subject: pkg.id.replace(/^content-roi:/, "").slice(0, 80),
+      format: recommendedFormat,
+    }),
+    type: "editorial-roi-package" as const,
+    title: `Editorial ROI: ${pkg.workingTitle}`,
+    whyItMatters: pkg.whyItMattersToHourglass,
+    recommendedAction: `Plan ${pkg.primaryFormat} package after reserved Conversation cycles — outline only (ROI ${pkg.overallRoi}). Do not publish from Agent OS.`,
+    recommendedFormat,
+    formatRationale: pkg.reasoningSummary,
+    topicOrItem: pkg.id,
+    targetAudience: "engagement-buyers" as const,
+    funnelStage:
+      pkg.primaryFormat === "post-purchase-guide"
+        ? ("post-purchase" as const)
+        : pkg.primaryFormat === "local-landing-enhancement"
+          ? ("decision" as const)
+          : ("consideration" as const),
+    sourceMaterial: "Content ROI prioritizer + Fan-Out coverage",
+    supportingIdeaAreas: pkg.supportingQuestionAngles.slice(0, 5),
+    hookDirection: pkg.shortFormHooks[0] ?? undefined,
+    audienceQuestion: pkg.coreBuyerQuestion,
+    clipTerritories: pkg.shortFormHooks.slice(0, 3),
+    confidence: 0.8,
+    likelyImpact: Math.min(10, Math.max(1, Math.round(pkg.overallRoi / 10))),
+    effort: pkg.productionEffort,
+    urgency: "medium" as const,
+    dependency: "Complete reserved three Conversation cycles first",
+    approvalRequired: true,
+    supportingReference: `content/roi#${pkg.id}`,
+    evidenceNotes: [
+      ...pkg.scoreBreakdown.evidence.slice(0, 4),
+      `overallRoi=${pkg.overallRoi}`,
+      `primaryFormat=${pkg.primaryFormat}`,
+      `Founder-facing Content ROI cap=${MAX_FOUNDER_FACING_CONTENT_ROI}`,
+    ],
+    performanceInferred: true,
+    isInference: true,
+  };
+  const fit = assessBrandFit(
+    `${base.title} ${base.recommendedAction} ${base.hookDirection ?? ""}`,
+  );
+  return {
+    ...base,
+    brandFitOk: fit.ok,
+    brandFitNotes: fit.notes,
+  };
+}
+
+function dedupeOpportunities(
+  opps: ContentOpportunity[],
+): ContentOpportunity[] {
+  const seen = new Set<string>();
+  const out: ContentOpportunity[] = [];
+  for (const o of opps) {
+    if (seen.has(o.id)) continue;
+    seen.add(o.id);
+    out.push(o);
+  }
+  return out;
 }
 
 function opportunityToRecommendation(
@@ -198,5 +335,6 @@ export function emptyContentExecutiveOutput(): ContentExecutiveOutput {
     facts: [],
     inferences: [],
     inventory: inspectContentInventory([]),
+    contentRoi: emptyContentRoiSnapshot("unavailable"),
   };
 }

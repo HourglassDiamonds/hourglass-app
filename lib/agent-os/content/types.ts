@@ -26,6 +26,8 @@ export const CONTENT_OPPORTUNITY_TYPES = [
   "content-measurement-gap",
   "stale-content-plan",
   "duplicate-topic-risk",
+  /** Ranked editorial package from Content ROI (post reserved Conversation cycles) */
+  "editorial-roi-package",
 ] as const;
 
 export type ContentOpportunityType = (typeof CONTENT_OPPORTUNITY_TYPES)[number];

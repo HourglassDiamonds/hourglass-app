@@ -406,6 +406,28 @@ export type {
 export { detectContentOpportunities } from "./content/opportunities";
 export { assessBrandFit } from "./content/brand-fit";
 
+export {
+  runContentRoiPrioritizer,
+  runContentRoiGuarded,
+  formatContentRoiReport,
+  CONTENT_ROI_WEIGHTS,
+  MAX_FOUNDER_FACING_CONTENT_ROI,
+  RESERVED_CONVERSATION_CYCLES,
+  RESERVE_BACKLOG_CONVERSATION_TOPICS,
+  EDITORIAL_SEQUENCE_SOURCE_NOTE,
+  contentRoiDataGap,
+  emptyContentRoiSnapshot,
+  assertWeightsSumToOne,
+  type RunContentRoiOptions,
+} from "./content/roi";
+export type {
+  ContentRoiSnapshot,
+  ContentRoiEditorialPackage,
+  ContentRoiQuestionAssessment,
+  ContentRoiWeights,
+  ContentRoiBacklogCandidate,
+} from "./content/roi";
+
 export { collectOpportunitySignals } from "./opportunity/signals";
 export { detectGrowthOpportunities } from "./opportunity/opportunities";
 export { inspectRepositoryStrategy } from "./opportunity/strategy";
