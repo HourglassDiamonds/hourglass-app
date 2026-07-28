@@ -175,6 +175,45 @@ export function evaluateFounderRecurrence(
   );
 }
 
+/**
+ * When recurrence would leave a daily brief empty, select unresolved
+ * persisted recommendations to carry forward (cooldown bypass for emptiness only).
+ */
+export function selectCarryForwardRecommendationIds(input: {
+  priorRecommendations: Record<string, PersistedRecommendationRecord>;
+  currentRecommendations: Array<{ recommendationId: string; priorityScore: number }>;
+  nowIso: string;
+  max?: number;
+}): string[] {
+  const max = input.max ?? MAX_FOUNDER_BRIEF_PRIORITIES;
+  const currentIds = new Set(
+    input.currentRecommendations.map((r) => r.recommendationId),
+  );
+  const scoreById = new Map(
+    input.currentRecommendations.map((r) => [r.recommendationId, r.priorityScore]),
+  );
+
+  const candidates = Object.values(input.priorRecommendations)
+    .filter((r) => {
+      if (!r.founderRankable) return false;
+      if (r.lifecycleState === "completed" || r.completedAt) return false;
+      if (r.lifecycleState === "superseded" || r.supersededBy) return false;
+      if (deferralStillActive(r.deferredUntil, input.nowIso)) return false;
+      if (!currentIds.has(r.recommendationId) && r.timesSurfaced === 0) {
+        return false;
+      }
+      // Prefer items that still exist this cycle, or were previously surfaced.
+      return currentIds.has(r.recommendationId) || r.timesSurfaced > 0;
+    })
+    .sort((a, b) => {
+      const sa = scoreById.get(a.recommendationId) ?? a.priorityScore;
+      const sb = scoreById.get(b.recommendationId) ?? b.priorityScore;
+      return sb - sa;
+    });
+
+  return candidates.slice(0, max).map((c) => c.recommendationId);
+}
+
 /** Select up to max founder priorities applying recurrence rules + priority sort. */
 export function selectFounderPrioritiesForBrief(
   records: PersistedRecommendationRecord[],

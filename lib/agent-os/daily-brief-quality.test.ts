@@ -433,9 +433,11 @@ describe("diagnostic demotion + critical visibility", () => {
       ],
       executiveNotes: ["bi: completed-with-warnings"],
       briefEvidenceQuality: "partial-degraded",
+      intent: "daily",
     });
     assert.equal(note.level, "Partial");
-    assert.match(note.summary, /GA4/);
+    assert.match(note.summary, /Website or search|directional/i);
+    assert.doesNotMatch(note.summary, /HubSpot|Buffer|repository/i);
     assert.equal(note.showDetails, false);
   });
 
@@ -455,7 +457,7 @@ describe("diagnostic demotion + critical visibility", () => {
       degraded: true,
     });
     assert.match(rendered.html, /Critical/);
-    assert.match(rendered.html, /GA4/);
+    assert.match(rendered.html, /website or search measurement|provisional/i);
     assert.match(rendered.text, /Data confidence: Critical/);
   });
 

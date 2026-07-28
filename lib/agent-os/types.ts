@@ -256,6 +256,19 @@ export type FounderBrief = {
   markdown: string;
   /** Individually named priority titles in the Markdown (excl. deferred summaries). */
   surfacedPriorityTitles: string[];
+  /**
+   * Persistent sprint orientation for Today’s Call (daily).
+   * Not inventing evidence — carry-forward of master sprint focus.
+   */
+  sprintOrientation?: string | null;
+  /**
+   * Explicit day-job line from the master sprint (preferred for Today’s Call).
+   */
+  dayOrientation?: string | null;
+  /**
+   * Actionable opportunity-to-watch line with magnitude, or null when omitted.
+   */
+  opportunityToWatch?: string | null;
 };
 
 export type AgentRun = {

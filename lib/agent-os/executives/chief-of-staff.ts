@@ -12,14 +12,18 @@ import {
   composeHighestRoiAction,
   filterFounderFacingBlockers,
   filterGenuineFounderDecisions,
+  formatFounderDecisionLine,
   formatFounderLocalDateLabel,
   formatWeeklyRangeLabel,
+  isVagueMetricWithoutMagnitude,
   isWeakAnalyticalObservation,
+  MAX_DAILY_NAMED_PRIORITIES,
   selectFounderPriorities,
   sanitizeFounderFacingNarrative,
   shouldSuppressAnalyticsMaintenanceHighestRoi,
   toFounderFacingPriorityAction,
   weeklyLowConfidenceHighestRoi,
+  summarizeFounderAction,
   type BriefCadenceIntent,
 } from "../brief-quality";
 import { consolidateDuplicates } from "../recommendation";
@@ -34,6 +38,12 @@ import type {
   Recommendation,
   SourceHealth,
 } from "../types";
+import type { OperatingBacklog } from "../operating-backlog/types";
+import {
+  backlogOrientationSummary,
+  decisionRecommendationsFromBacklog,
+  recommendationsFromOperatingBacklog,
+} from "../operating-backlog";
 
 export type ChiefOfStaffInput = {
   bi: BusinessIntelligenceOutput;
@@ -49,6 +59,7 @@ export type ChiefOfStaffInput = {
    * When set, founder brief surfacing is restricted to these recommendation IDs
    * (recurrence eligibility already applied). Full ranked JSON is unchanged.
    * Order is priority preference for brief slots.
+   * Persistent operating-backlog IDs always remain eligible for daily briefs.
    */
   founderSurfaceEligibleIds?: string[] | null;
   /**
@@ -62,6 +73,16 @@ export type ChiefOfStaffInput = {
   briefLocalDate?: string;
   /** Adapter source health — used to suppress analytics-maintenance highest-ROI. */
   sourceHealth?: SourceHealth[];
+  /**
+   * Persistent master sprint / unfinished actions / open decisions.
+   * Authoritative for daily briefs; fresh evidence enriches but does not erase.
+   */
+  operatingBacklog?: OperatingBacklog | null;
+  /**
+   * Carry-forward unresolved recommendation IDs from persistence when
+   * recurrence cooldown would otherwise empty the daily brief.
+   */
+  carryForwardRecommendationIds?: string[] | null;
 };
 
 export type ChiefOfStaffOutput = {
@@ -95,10 +116,29 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
     (e) => `${e.displayName} not yet operational`,
   );
 
+  // Source hierarchy (daily): A backlog → B calendar (none yet) → C inbox (none)
+  // → D project/deploy (repo executives) → E analytics → F social → G opportunity.
+  // Missing lower sources must never erase higher persistent context.
+  const backlogRecs = input.operatingBacklog
+    ? recommendationsFromOperatingBacklog(input.operatingBacklog, {
+        collectedAt: `${input.reportingPeriod.end}T12:00:00.000Z`,
+      })
+    : [];
+  const backlogDecisionRecs = input.operatingBacklog
+    ? decisionRecommendationsFromBacklog(input.operatingBacklog, {
+        collectedAt: `${input.reportingPeriod.end}T12:00:00.000Z`,
+      })
+    : [];
+  const backlogOrientation = input.operatingBacklog
+    ? backlogOrientationSummary(input.operatingBacklog)
+    : null;
+
   const searchRecs = input.search?.recommendations ?? [];
   const contentRecs = input.content?.recommendations ?? [];
   const opportunityRecs = input.opportunity?.recommendations ?? [];
   const merged = [
+    ...backlogRecs,
+    ...backlogDecisionRecs,
     ...input.bi.recommendations,
     ...searchRecs,
     ...contentRecs,
@@ -152,10 +192,27 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
 
   // Recurrence eligibility BEFORE founder brief ranking/surfacing.
   // When a gate is provided, only eligible IDs compete for ≤5 brief slots.
+  // Persistent operating-backlog items always remain eligible (hierarchy A).
+  const backlogIds = new Set(backlogRecs.map((r) => r.recommendationId));
+  const carryIds = new Set(input.carryForwardRecommendationIds ?? []);
   if (input.founderSurfaceEligibleIds) {
-    const allow = new Set(input.founderSurfaceEligibleIds);
+    const allow = new Set([
+      ...input.founderSurfaceEligibleIds,
+      ...backlogIds,
+      ...carryIds,
+    ]);
     const byId = new Map(surfacePool.map((r) => [r.recommendationId, r]));
-    surfacePool = input.founderSurfaceEligibleIds
+    // Hierarchy order: backlog first, then carry-forward, then recurrence-eligible.
+    const orderedIds = [
+      ...backlogRecs.map((r) => r.recommendationId),
+      ...(input.carryForwardRecommendationIds ?? []).filter(
+        (id) => !backlogIds.has(id),
+      ),
+      ...input.founderSurfaceEligibleIds.filter(
+        (id) => !backlogIds.has(id) && !carryIds.has(id),
+      ),
+    ];
+    surfacePool = orderedIds
       .map((id) => byId.get(id))
       .filter((r): r is Recommendation => Boolean(r));
     // Keep any eligible that were in pool but missing from ordered list (safety)
@@ -173,6 +230,13 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
         }
       }
     }
+  } else if (backlogRecs.length > 0) {
+    // No persistence gate — still put backlog ahead of fresh evidence.
+    const backlogFirst = backlogRecs.filter((r) =>
+      surfacePool.some((s) => s.recommendationId === r.recommendationId),
+    );
+    const rest = surfacePool.filter((r) => !backlogIds.has(r.recommendationId));
+    surfacePool = [...backlogFirst, ...rest];
   }
 
   // Legacy fallback for callers that omit intent (mostly unit tests).
@@ -191,10 +255,12 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
   // They remain in ranked JSON; they must not become the highest-ROI action.
   {
     const actionable = poolForSelection.filter(
-      (r) => !isWeakAnalyticalObservation(r),
+      (r) => !isWeakAnalyticalObservation(r) && !r.approvalRequired,
     );
     if (actionable.length > 0) {
       poolForSelection = actionable;
+    } else {
+      poolForSelection = poolForSelection.filter((r) => !r.approvalRequired);
     }
   }
 
@@ -226,13 +292,48 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
 
   // Preserve ranked highest-ROI order; cluster/limitation rules only demote slots
   // (see brief-quality.ts). Soft diversity is a fill tie-breaker, not a quota.
-  const selected = selectFounderPriorities(poolForSelection, {
-    max: MAX_ADDITIONAL_SURFACED_PRIORITIES + 1,
+  // Daily: 1 highest-ROI + up to 3 named priorities (product contract).
+  // When a master sprint exists, fill named priority slots from persistent
+  // backlog first, then enrich with fresh evidence.
+  const maxPriorities =
+    intent === "daily"
+      ? MAX_DAILY_NAMED_PRIORITIES + 1
+      : MAX_ADDITIONAL_SURFACED_PRIORITIES + 1;
+
+  let poolForSelect = poolForSelection;
+  if (intent === "daily" && backlogRecs.length > 0) {
+    const backlogInPool = backlogRecs.filter((r) =>
+      poolForSelection.some((p) => p.recommendationId === r.recommendationId),
+    );
+    const fresh = poolForSelection.filter(
+      (r) => !backlogIds.has(r.recommendationId),
+    );
+    poolForSelect = [...backlogInPool, ...fresh];
+  }
+
+  const selected = selectFounderPriorities(poolForSelect, {
+    max: maxPriorities,
   });
   let highest = selected.highest;
-  const additionalSurfaced = selected.additional;
+  let additionalSurfaced = selected.additional;
 
-  if (highest && isWeakAnalyticalObservation(highest)) {
+  // Carry-forward safety: if daily pool emptied after filters but backlog exists,
+  // force backlog items into the brief.
+  if (intent === "daily" && !highest && backlogRecs.length > 0) {
+    const forced = selectFounderPriorities(
+      backlogRecs.filter(
+        (r) =>
+          r.status !== "blocked" &&
+          r.status !== "ignore" &&
+          r.status !== "consolidated",
+      ),
+      { max: maxPriorities },
+    );
+    highest = forced.highest;
+    additionalSurfaced = forced.additional;
+  }
+
+  if (highest && isWeakAnalyticalObservation(highest) && !backlogIds.has(highest.recommendationId)) {
     highest = undefined;
   }
   if (
@@ -240,7 +341,8 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
     shouldSuppressAnalyticsMaintenanceHighestRoi({
       recommendation: highest,
       sourceHealth: input.sourceHealth,
-    })
+    }) &&
+    !backlogIds.has(highest.recommendationId)
   ) {
     highest = undefined;
   }
@@ -253,26 +355,56 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
 
   // Diverted internal limitations stay in structured records — not as
   // engineering-language blockers on the founder brief.
-  const divertedAsBlockers =
-    intent === "daily"
-      ? selected.divertedInternalLimitations.slice(0, 2).map(
-          (r) =>
-            `Operator follow-up: ${r.title.replace(/^\[Content\]\s*/i, "").replace(/^Source material incomplete/i, "Complete source material")}`,
-        )
-      : [];
+  const divertedAsBlockers: string[] = [];
 
   const founderDecisions = active
     .filter((r) => r.approvalRequired && surfacedIds.has(r.recommendationId))
     .map((r) => {
       const choice = r.title.replace(/^\[[^\]]+\]\s*/, "");
       const recommendation = cleanFounderFacingAction(r.proposedAction);
-      const reason = r.whyItMattersNow || r.plainLanguageExplanation;
+      const reason = cleanFounderFacingAction(
+        r.whyItMattersNow || r.plainLanguageExplanation,
+      );
       const wait =
         r.urgency === "critical" || r.urgency === "high"
           ? "Waiting risks missing a time-sensitive window."
-          : "Waiting keeps the current path unchanged.";
-      return `Decide: ${choice}. Recommendation: ${recommendation}. Why: ${reason}. If deferred: ${wait}`;
+          : "Waiting keeps unfinished work competing with new experiments.";
+      const deadline =
+        r.recommendationId.startsWith("operating-backlog:") &&
+        input.operatingBacklog
+          ? input.operatingBacklog.masterSprint.items.find(
+              (i) => `operating-backlog:${i.id}` === r.recommendationId,
+            )?.deadline ?? null
+          : null;
+      return formatFounderDecisionLine({
+        decision: choice,
+        recommendation: recommendation.replace(/\.\.+/g, ".").replace(/\.\s*$/, ""),
+        why: reason.replace(/\.\.+/g, ".").replace(/\.\s*$/, ""),
+        costOfDelay: wait,
+        deadline,
+      });
     });
+
+  // Also surface open backlog decisions even if not highest-ROI slot winners.
+  if (input.operatingBacklog && intent === "daily") {
+    for (const item of input.operatingBacklog.masterSprint.items) {
+      if (item.kind !== "open-decision" || item.status !== "active") continue;
+      if (founderDecisions.some((d) => d.includes(item.title))) continue;
+      if (!item.recommendedChoice) continue;
+      founderDecisions.push(
+        formatFounderDecisionLine({
+          decision: item.title,
+          recommendation: item.recommendedChoice.replace(/\.\s*$/, ""),
+          why: item.why.replace(/\.\s*$/, ""),
+          costOfDelay: (
+            item.costOfDelay ??
+            "Delay keeps unfinished commitments and new work competing for the same hours."
+          ).replace(/\.\s*$/, ""),
+          deadline: item.deadline,
+        }),
+      );
+    }
+  }
 
   const escalationItems: EscalationItem[] = [];
   const allGaps = [
@@ -318,6 +450,11 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
   );
   const materialAnomalies = input.bi.anomalies
     .filter((a) => a.severity === "critical" || a.severity === "high")
+    .filter((a) => {
+      // Prefer observation (with magnitude) over vague titles.
+      const line = a.observation || a.title;
+      return !isVagueMetricWithoutMagnitude(line);
+    })
     .slice(0, intent === "daily" ? 1 : 2)
     .map((a) => a.observation || a.title);
   const opportunityChangeBits = (input.opportunity?.opportunities ?? [])
@@ -363,16 +500,19 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
 
   const whyItMatters = highest
     ? highest.whyItMattersNow
-    : intent === "daily"
-      ? "No high-confidence founder action required today."
-      : "No high-confidence action is ready this week.";
+    : intent === "daily" && backlogOrientation?.objective
+      ? backlogOrientation.objective
+      : intent === "daily"
+        ? "No durable operating priority is available to orient the day."
+        : "No high-confidence action is ready this week.";
 
   const needsAttentionToday = [
     ...additionalSurfaced.map((r) => r.title),
     ...input.bi.anomalies
       .filter((a) => a.severity === "critical" || a.severity === "high")
-      .map((a) => a.title),
-  ].slice(0, MAX_ADDITIONAL_SURFACED_PRIORITIES);
+      .map((a) => a.observation || a.title)
+      .filter((line) => !isVagueMetricWithoutMagnitude(line)),
+  ].slice(0, intent === "daily" ? MAX_DAILY_NAMED_PRIORITIES : MAX_ADDITIONAL_SURFACED_PRIORITIES);
 
   if (
     needsAttentionToday.length === 0 &&
@@ -398,28 +538,44 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
   ).length;
 
   const canSafelyWait: string[] = [];
-  const deferredTotal = scheduleCount + monitorCount;
-  const oppDeferred = (input.opportunity?.opportunities ?? []).filter(
-    (o) =>
-      o.readiness === "research-required" ||
-      o.readiness === "measurement-blocked" ||
-      o.readiness === "already-covered" ||
-      o.readiness === "rejected" ||
-      o.rejected,
-  );
-  const parts: string[] = [];
-  if (deferredTotal > 0) {
-    parts.push(`${deferredTotal} lower-ranked deferred (full set in JSON)`);
-  }
-  if (oppDeferred.length > 0) {
-    parts.push(
-      `Opportunity: ${oppDeferred.filter((o) => o.readiness === "research-required").length} research, ${oppDeferred.filter((o) => o.readiness === "measurement-blocked").length} measurement-blocked, ${oppDeferred.filter((o) => o.readiness === "already-covered").length} covered, ${oppDeferred.filter((o) => o.readiness === "rejected" || o.rejected).length} rejected`,
-    );
-  }
-  if (parts.length > 0) {
-    canSafelyWait.push(parts.join(" · "));
+  if (intent === "daily") {
+    if (
+      backlogOrientation?.deferredTitles.length ||
+      (input.operatingBacklog?.deferred.length ?? 0) > 0
+    ) {
+      const titles =
+        backlogOrientation?.deferredTitles.slice(0, 2) ??
+        input.operatingBacklog!.deferred.slice(0, 2).map((d) => d.title);
+      canSafelyWait.push(
+        `Deferred: ${titles.join("; ")} — revisit only after active sprint priorities clear.`,
+      );
+    } else {
+      canSafelyWait.push("None");
+    }
   } else {
-    canSafelyWait.push("None");
+    const deferredTotal = scheduleCount + monitorCount;
+    const oppDeferred = (input.opportunity?.opportunities ?? []).filter(
+      (o) =>
+        o.readiness === "research-required" ||
+        o.readiness === "measurement-blocked" ||
+        o.readiness === "already-covered" ||
+        o.readiness === "rejected" ||
+        o.rejected,
+    );
+    const parts: string[] = [];
+    if (deferredTotal > 0) {
+      parts.push(`${deferredTotal} lower-ranked deferred (full set in JSON)`);
+    }
+    if (oppDeferred.length > 0) {
+      parts.push(
+        `Opportunity: ${oppDeferred.filter((o) => o.readiness === "research-required").length} research, ${oppDeferred.filter((o) => o.readiness === "measurement-blocked").length} measurement-blocked, ${oppDeferred.filter((o) => o.readiness === "already-covered").length} covered, ${oppDeferred.filter((o) => o.readiness === "rejected" || o.rejected).length} rejected`,
+      );
+    }
+    if (parts.length > 0) {
+      canSafelyWait.push(parts.join(" · "));
+    } else {
+      canSafelyWait.push("None");
+    }
   }
 
   const blockedListRaw = [
@@ -428,49 +584,48 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
       (r) =>
         `${r.title}${r.blockedReasons?.length ? ` — ${r.blockedReasons[0]}` : ""}`,
     ),
-    // Daily briefs omit scaffold "not yet operational" noise from the founder list
-    // Weekly founder email also omits scaffold notes (engineering inventory).
-    ...(intent === "daily" || intent === "weekly" ? [] : nonOperationalNote),
   ].slice(0, 4);
-  const blockedList =
-    intent === "weekly"
-      ? filterFounderFacingBlockers(blockedListRaw)
-      : blockedListRaw;
+  const blockedList = filterFounderFacingBlockers(blockedListRaw);
 
-  // Deduplicate gap descriptions for brief length
+  // Deduplicate gap descriptions for brief length.
+  // Only critical website/search gaps may appear founder-facing, and only as
+  // business-effect language. Opportunity/Buffer/HubSpot/GBP stay internal.
   const seenGap = new Set<string>();
   const missingOrUnreliableData: string[] = [];
+  const internalSecondaryGaps: string[] = [];
   if (input.bi.incompleteAttribution) {
-    missingOrUnreliableData.push(
+    internalSecondaryGaps.push(
       "Incomplete social attribution without Buffer adapter",
     );
   }
-  const secondaryUnavailable: string[] = [];
   for (const g of allGaps) {
-    const key = g.sourceId;
+    const key = String(g.sourceId);
     if (seenGap.has(key)) continue;
     seenGap.add(key);
+    const desc = g.description;
     if (
+      /adapter|hubspot|buffer|gbp|not configured|opportunity adapter|fixture|evidence unavailable|cpc|paid-search cost|remarketing audience/i.test(
+        desc,
+      ) ||
       key === "hubspot-aggregates" ||
       key === "hubspot" ||
       key === "buffer" ||
-      key === "gbp"
+      key === "gbp" ||
+      /opportunity/i.test(key)
     ) {
-      secondaryUnavailable.push(
-        key === "hubspot-aggregates" || key === "hubspot"
-          ? "HubSpot"
-          : key === "gbp"
-            ? "GBP"
-            : "Buffer",
-      );
+      internalSecondaryGaps.push(desc);
       continue;
     }
-    missingOrUnreliableData.push(`${g.description}`);
-    if (missingOrUnreliableData.length >= 4) break;
+    if (key === "ga4" || key === "gsc" || key === "weekly-intelligence") {
+      missingOrUnreliableData.push(desc);
+    } else {
+      internalSecondaryGaps.push(desc);
+    }
+    if (missingOrUnreliableData.length >= 3) break;
   }
-  if (secondaryUnavailable.length > 0 && missingOrUnreliableData.length < 5) {
-    missingOrUnreliableData.push(
-      `${[...new Set(secondaryUnavailable)].join(" / ")} unavailable (not configured; not blocking unless a recommendation depends on them)`,
+  if (internalSecondaryGaps.length > 0) {
+    input.warnings.push(
+      `Internal secondary source gaps (not founder-facing): ${internalSecondaryGaps.slice(0, 3).join("; ")}`,
     );
   }
 
@@ -479,39 +634,68 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
       ? founderDecisions.slice(0, 3)
       : intent === "weekly"
         ? []
-        : highest
+        : criticalGapsNeedDecision(
+              input.bi,
+              input.search,
+              input.content,
+              input.opportunity,
+            )
           ? [
-              "Whether to spend founder time on the highest-ROI action above before new experiments",
+              formatFounderDecisionLine({
+                decision:
+                  "Whether to restore trustworthy website and search reporting before growth experiments",
+                recommendation:
+                  "Restore reliable website and search analytics before changing growth direction.",
+                why: "Without trustworthy measurement, new experiments cannot be evaluated.",
+                costOfDelay:
+                  "Delay risks shipping changes that cannot be measured.",
+              }),
             ]
-          : criticalGapsNeedDecision(
-                input.bi,
-                input.search,
-                input.content,
-                input.opportunity,
-              )
-            ? [
-                "Whether to restore read-only measurement (GA4 / GSC / weekly) before growth recommendations",
-              ]
-            : ["None required this cycle"];
+          : [];
 
   const founderDecisionNeeded =
     intent === "weekly"
       ? filterGenuineFounderDecisions(founderDecisionNeededRaw).length > 0
         ? filterGenuineFounderDecisions(founderDecisionNeededRaw)
         : ["No founder approvals required this week."]
-      : founderDecisionNeededRaw;
+      : founderDecisionNeededRaw.length > 0
+        ? founderDecisionNeededRaw
+        : [];
 
   const surfacedPriorityTitles = [
     // Highest-ROI stands alone — do not repeat it under Priorities.
-    ...additionalSurfaced.map((r) =>
-      intent === "weekly"
-        ? toFounderFacingPriorityAction(
-            r.title.replace(/^\[[^\]]+\]\s*/, ""),
-            r.proposedAction,
-          )
-        : r.title.replace(/^\[[^\]]+\]\s*/, ""),
-    ),
-  ];
+    ...additionalSurfaced.map((r) => {
+      const title = r.title.replace(/^\[[^\]]+\]\s*/, "");
+      if (intent === "weekly") {
+        return toFounderFacingPriorityAction(title, r.proposedAction);
+      }
+      // Daily: keep persistent backlog wording concrete (no editorial rewrite).
+      if (r.recommendationId.startsWith("operating-backlog:")) {
+        const action = cleanFounderFacingAction(r.proposedAction);
+        return action && !action.toLowerCase().includes(title.toLowerCase().slice(0, 20))
+          ? `${title} — ${summarizeFounderAction(action, 140)}`
+          : title;
+      }
+      return toFounderFacingPriorityAction(title, r.proposedAction);
+    }),
+  ].slice(0, intent === "daily" ? MAX_DAILY_NAMED_PRIORITIES : 5);
+
+  // When daily has a highest-ROI but no additional priorities, promote the
+  // highest into named priorities only if we somehow have zero titles AND
+  // no highest — otherwise keep highest separate. If both empty after filters,
+  // leave empty for quality gate / send-nothing.
+  if (
+    intent === "daily" &&
+    surfacedPriorityTitles.length === 0 &&
+    highest &&
+    backlogOrientation?.activePriorityTitles.length
+  ) {
+    for (const title of backlogOrientation.activePriorityTitles) {
+      if (title === highest.title.replace(/^\[[^\]]+\]\s*/, "")) continue;
+      surfacedPriorityTitles.push(title);
+      if (surfacedPriorityTitles.length >= MAX_DAILY_NAMED_PRIORITIES) break;
+    }
+  }
 
   const opportunitiesDetected =
     (input.search?.opportunities.length ?? 0) +
@@ -530,20 +714,34 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
   );
 
   const highestRoiAction = highest
-    ? composeHighestRoiAction({
-        title: highest.title,
-        proposedAction: highest.proposedAction,
+    ? enrichDailyHighestRoi(
+        composeHighestRoiAction({
+          title: highest.title,
+          proposedAction: highest.proposedAction,
+          intent,
+          plainLanguageExplanation: highest.plainLanguageExplanation,
+          expectedUpside: highest.expectedUpside,
+          whyItMattersNow: highest.whyItMattersNow,
+        }),
         intent,
-        plainLanguageExplanation: highest.plainLanguageExplanation,
-        expectedUpside: highest.expectedUpside,
-        whyItMattersNow: highest.whyItMattersNow,
-      })
-    : intent === "daily"
-      ? "No high-confidence founder action required today."
-      : weeklyLowConfidenceHighestRoi({
-          briefEvidenceQuality: input.briefEvidenceQuality,
-          hasCriticalSourceGaps,
-        });
+        highest,
+        input.operatingBacklog,
+      )
+    : intent === "daily" && backlogOrientation?.activePriorityTitles[0]
+      ? composeHighestRoiAction({
+          title: backlogOrientation.activePriorityTitles[0],
+          proposedAction:
+            "Finish the top unresolved sprint commitment before opening new work.",
+          intent,
+          expectedUpside: "Protect focus and clear the highest-value open item.",
+          whyItMattersNow: backlogOrientation.objective,
+        })
+      : intent === "daily"
+        ? "No durable operating priority is available for a highest-ROI move."
+        : weeklyLowConfidenceHighestRoi({
+            briefEvidenceQuality: input.briefEvidenceQuality,
+            hasCriticalSourceGaps,
+          });
 
   const periodLabel =
     intent === "daily" && input.briefLocalDate
@@ -552,6 +750,20 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
           input.reportingPeriod.start,
           input.reportingPeriod.end,
         );
+
+  const sprintOrientationLine =
+    intent === "daily" && backlogOrientation
+      ? backlogOrientation.activePriorityTitles[0] ??
+        backlogOrientation.sprintName
+      : null;
+
+  const opportunityToWatch =
+    intent === "daily"
+      ? buildActionableOpportunityWatch({
+          anomalies: input.bi.anomalies,
+          keyMetricChanges: businessMetricChanges,
+        })
+      : null;
 
   const brief = buildFounderBrief({
     mode: input.mode ?? "fixture",
@@ -576,6 +788,9 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
       ...(input.search?.facts ?? []).slice(0, 1),
       ...(input.content?.facts ?? []).slice(0, 1),
       ...(input.opportunity?.facts ?? []).slice(0, 1),
+      ...(sprintOrientationLine
+        ? [`Persistent sprint focus: ${sprintOrientationLine}`]
+        : []),
     ],
     inferences: [
       ...input.bi.inferences.slice(0, 1),
@@ -584,6 +799,10 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
     surfacedPriorityTitles,
     rankedRecommendationCount: active.length,
     opportunitiesDetected,
+    sprintOrientation: sprintOrientationLine,
+    dayOrientation:
+      intent === "daily" ? backlogOrientation?.dayOrientation ?? null : null,
+    opportunityToWatch,
   });
 
   return {
@@ -702,6 +921,45 @@ function criticalGapsNeedDecision(
   );
 }
 
+function enrichDailyHighestRoi(
+  composed: string,
+  intent: BriefCadenceIntent,
+  highest: Recommendation,
+  backlog: OperatingBacklog | null | undefined,
+): string {
+  if (intent !== "daily" || !backlog) return composed;
+  // Daily Highest-ROI is the concrete move only — checklist belongs in priorities / completion conditions, not this section.
+  return composed.replace(/\.\.+/g, ".");
+}
+
+function buildActionableOpportunityWatch(input: {
+  anomalies: BusinessIntelligenceOutput["anomalies"];
+  keyMetricChanges: string[];
+}): string | null {
+  for (const a of input.anomalies) {
+    if (a.severity !== "critical" && a.severity !== "high") continue;
+    const magnitudeLine = a.observation?.trim() || "";
+    if (!magnitudeLine || isVagueMetricWithoutMagnitude(magnitudeLine)) continue;
+    if (isVagueMetricWithoutMagnitude(a.title) && !magnitudeLine) continue;
+    const hypothesis =
+      a.possibleCauses?.[0] != null
+        ? `Hypothesis: ${a.possibleCauses[0]}.`
+        : "Hypothesis: channel mix or demand softness — confirm before acting.";
+    const trigger =
+      "Act if the same direction repeats next cycle with comparable magnitude, or if consultation requests move with sessions.";
+    const next = a.isTrackingFailureSuspect
+      ? "Recommended next step: verify consultation-request and Studio visit recording before changing product direction."
+      : "Recommended next step: review top landing pages for the same period and decide whether the move is demand or mix.";
+    return `${magnitudeLine}. ${hypothesis} Trigger: ${trigger} ${next}`;
+  }
+  for (const line of input.keyMetricChanges) {
+    if (!line || isVagueMetricWithoutMagnitude(line)) continue;
+    if (!/\d/.test(line)) continue;
+    return `${cleanFounderFacingAction(line)}. Hypothesis: ordinary mix or demand shift until page-level confirmation. Trigger: act only if the move repeats with similar magnitude next cycle. Recommended next step: compare the top three landing pages week-over-week before changing offers.`;
+  }
+  return null;
+}
+
 function buildFounderBrief(input: {
   mode: "fixture" | "live";
   briefEvidenceQuality: BriefEvidenceQuality;
@@ -720,6 +978,9 @@ function buildFounderBrief(input: {
   surfacedPriorityTitles: string[];
   rankedRecommendationCount: number;
   opportunitiesDetected: number;
+  sprintOrientation?: string | null;
+  dayOrientation?: string | null;
+  opportunityToWatch?: string | null;
 }): FounderBrief {
   const bullets = (items: string[]) =>
     items.length ? items.map((i) => `- ${i}`).join("\n") : "- None";
@@ -809,5 +1070,8 @@ Agent OS V1 — read-only. No external writes. Revenue is never inferred from tr
     missingOrUnreliableData: input.missingOrUnreliableData,
     markdown,
     surfacedPriorityTitles: input.surfacedPriorityTitles,
+    sprintOrientation: input.sprintOrientation ?? null,
+    dayOrientation: input.dayOrientation ?? null,
+    opportunityToWatch: input.opportunityToWatch ?? null,
   };
 }

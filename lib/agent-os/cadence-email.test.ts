@@ -526,9 +526,28 @@ describe("failed / incomplete / degraded / source-gap handling", () => {
         deliveryGuidance: "send-degraded-partial-brief",
         briefEvidenceQuality: "partial-degraded",
         recommendationAvailability: "has-material-recommendations",
-        brief: { surfacedPriorityTitles: ["One"] },
+        brief: {
+          whatChanged: "Sessions 1,840 (−13% WoW).",
+          whyItMatters: "Protect Concierge path clarity before new experiments.",
+          needsAttentionToday: ["Clarify Studio → Concierge handoff"],
+          highestRoiAction:
+            "Confirm Concierge CTA attribution on flagship pages. Expected outcome: intact attribution on three live CTAs.",
+          canSafelyWait: ["None"],
+          blocked: ["None"],
+          founderDecisionNeeded: [
+            "Decide: Whether to open new growth experiments. Recommendation: Defer until Concierge path is finished. Why: Focus. Cost of delay: Split attention.",
+          ],
+          missingOrUnreliableData: [],
+          markdown: "# stub",
+          surfacedPriorityTitles: [
+            "Clarify Studio engagement vs consultation ask",
+          ],
+          sprintOrientation: "Confirm Concierge path from flagship content",
+          opportunityToWatch: null,
+        },
       } as never,
       persistenceOk: true,
+      intent: "daily",
     });
     assert.equal(e.action, "send-founder-brief");
     if (e.action === "send-founder-brief") {

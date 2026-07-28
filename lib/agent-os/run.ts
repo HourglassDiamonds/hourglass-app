@@ -64,6 +64,11 @@ import type {
 import type { AgentOsPersistenceStore } from "./persistence/store";
 import { isPersistenceError } from "./persistence/store";
 import { AgentOsPersistenceError } from "./persistence/types";
+import {
+  loadOperatingBacklog,
+  type OperatingBacklog,
+} from "./operating-backlog";
+import { selectCarryForwardRecommendationIds } from "./persistence/recurrence";
 
 export type RunAgentOsOptions = {
   mode?: AdapterMode;
@@ -78,6 +83,11 @@ export type RunAgentOsOptions = {
   briefLocalDate?: string;
   /** When true, skip any persistence — Decision Journal must not write in production runs */
   allowDecisionJournalWrite?: boolean;
+  /**
+   * Persistent master sprint override (tests/preview). Default = CURRENT_OPERATING_BACKLOG.
+   * Pass `null` to disable backlog injection.
+   */
+  operatingBacklog?: OperatingBacklog | null;
   /**
    * When set: load prior → reconcile eligibility → CoS brief → atomic save.
    * Recurrence gate runs before founder brief surfacing.
@@ -98,6 +108,11 @@ export type RunAgentOsOptions = {
     /** Bypass recurrence cooldown (only when explicitly requested). */
     onDemandRecurrenceBypass?: boolean;
     now?: string;
+    /**
+     * Load prior persisted state for recurrence / carry-forward, but do not
+     * write recommendation lifecycle updates (manual-preview).
+     */
+    skipWrite?: boolean;
   };
   /**
    * Narrow test/ops hook forwarded into Search Strategy (e.g. fan-out forceFailureAt).
@@ -275,6 +290,7 @@ export async function runAgentOsBrief(
 
   let priorState: AgentOsPersistedState | null = null;
   let founderSurfaceEligibleIds: string[] | null = null;
+  let carryForwardRecommendationIds: string[] | null = null;
   let persistenceLoadError: string | null = null;
   let resolvedStore: AgentOsPersistenceStore | undefined = persistOpts?.store;
   let resolvedAdapterMeta: {
@@ -282,6 +298,13 @@ export async function runAgentOsBrief(
     durabilityLabel: string;
     nonDurableLive: boolean;
   } | null = null;
+
+  const operatingBacklog =
+    options.operatingBacklog === null
+      ? null
+      : loadOperatingBacklog({
+          override: options.operatingBacklog,
+        });
 
   if (persistOpts?.enabled) {
     try {
@@ -328,6 +351,17 @@ export async function runAgentOsBrief(
         onDemand: onDemandRecurrenceBypass,
       });
       founderSurfaceEligibleIds = eligibility.eligibleIds;
+      if (
+        (options.briefCadenceIntent ?? "weekly") === "daily" &&
+        eligibility.eligibleIds.length === 0
+      ) {
+        carryForwardRecommendationIds = selectCarryForwardRecommendationIds({
+          priorRecommendations: priorState.recommendations,
+          currentRecommendations: mergedForGate,
+          nowIso: persistNow,
+          max: 3,
+        });
+      }
     } catch (err) {
       persistenceLoadError =
         err instanceof Error ? err.message : "persistence load failed";
@@ -353,9 +387,11 @@ export async function runAgentOsBrief(
     mode,
     briefEvidenceQuality: provisionalEvidenceQuality,
     founderSurfaceEligibleIds,
+    carryForwardRecommendationIds,
     briefCadenceIntent: options.briefCadenceIntent,
     briefLocalDate: options.briefLocalDate,
     sourceHealth,
+    operatingBacklog,
   });
 
   const provider =
@@ -521,7 +557,20 @@ export async function runAgentOsBrief(
   if (options.persistence?.enabled) {
     const startedAtIso = new Date(started).toISOString();
     let persistResult: PersistAgentOsRunResult;
-    if (persistenceLoadError && !resolvedStore) {
+    if (options.persistence.skipWrite === true) {
+      persistResult = {
+        ok: true,
+        summary: null,
+        persistenceError: null,
+        persistenceErrorCode: null,
+        adapterId: resolvedAdapterMeta?.adapterId ?? persistOpts?.adapter ?? "memory",
+        durabilityLabel: resolvedAdapterMeta?.durabilityLabel ?? "read-only-manual",
+        nonDurableLive: resolvedAdapterMeta?.nonDurableLive ?? false,
+      };
+      run.warnings.push(
+        "Persistence write skipped (manual read-only run — actions not consumed)",
+      );
+    } else if (persistenceLoadError && !resolvedStore) {
       persistResult = {
         ok: false,
         summary: null,

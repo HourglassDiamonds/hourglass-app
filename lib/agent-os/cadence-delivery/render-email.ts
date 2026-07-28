@@ -16,6 +16,7 @@ import {
   formatFounderLocalDateLabel,
   formatWeeklyFounderRangeLabel,
   formatWeeklyRangeLabel,
+  isVagueMetricWithoutMagnitude,
   localDateFromCadenceWindow,
   resolveBriefCadenceIntent,
   sanitizeFounderFacingNarrative,
@@ -68,18 +69,27 @@ function materialDecisions(
 }
 
 function opportunityToWatch(run: AgentRun): string | null {
-  const wait = run.brief.canSafelyWait.find(
-    (w) => w && !/^none$/i.test(w.trim()) && !/deferred/i.test(w),
-  );
-  if (wait && wait.length < 180 && !/full set in JSON/i.test(wait)) {
-    return wait;
+  const structured = run.brief.opportunityToWatch?.trim();
+  if (structured && !isVagueMetricWithoutMagnitude(structured)) {
+    return structured;
   }
+  const wait = run.brief.canSafelyWait.find(
+    (w) =>
+      w &&
+      !/^none$/i.test(w.trim()) &&
+      !/deferred/i.test(w) &&
+      !/full set in JSON/i.test(w) &&
+      !isVagueMetricWithoutMagnitude(w) &&
+      w.length < 280,
+  );
+  if (wait) return wait;
   const watch = run.brief.needsAttentionToday.find(
     (t) =>
       t &&
       !/^see highest/i.test(t) &&
       !/^none$/i.test(t) &&
-      !run.brief.surfacedPriorityTitles.includes(t),
+      !run.brief.surfacedPriorityTitles.includes(t) &&
+      !isVagueMetricWithoutMagnitude(t),
   );
   return watch ?? null;
 }
@@ -115,18 +125,39 @@ function renderDailyMorningBriefEmail(input: {
   );
   const dailyLabel = formatFounderLocalDateLabel(localDate);
   const highestRoi = summarizeFounderAction(
-    cleanFounderFacingAction(run.brief.highestRoiAction || "None this cycle"),
-    220,
+    cleanFounderFacingAction(run.brief.highestRoiAction || ""),
+    280,
   );
   const todayCall = dailyTodayCall({
     whyItMatters: run.brief.whyItMatters,
     highestRoiAction: highestRoi,
+    sprintOrientation: run.brief.sprintOrientation,
+    dayOrientation: run.brief.dayOrientation,
+    whatChanged: run.brief.whatChanged,
   });
   const titles = dedupePrioritiesAgainstHighestRoi(
     run.brief.surfacedPriorityTitles,
     highestRoi,
-    5,
+    3,
+    { rewriteForFounder: false },
   );
+  // If dedupe emptied priorities but we have a concrete ROI, keep 1–3 from
+  // needsAttention / sprint rather than rendering an empty list copy.
+  const fallbackPriorities =
+    titles.length === 0
+      ? dedupePrioritiesAgainstHighestRoi(
+          [
+            ...run.brief.needsAttentionToday.filter(
+              (t) => t && !/^none$/i.test(t) && !/^see highest/i.test(t),
+            ),
+            ...(run.brief.sprintOrientation ? [run.brief.sprintOrientation] : []),
+          ],
+          highestRoi,
+          3,
+          { rewriteForFounder: false },
+        )
+      : titles;
+  const priorities = fallbackPriorities.slice(0, 3);
   const decisions = materialDecisions(run.brief.founderDecisionNeeded, "daily");
   const blockers = materialBlockers(run.brief.blocked);
   const watch = opportunityToWatch(run);
@@ -145,7 +176,7 @@ function renderDailyMorningBriefEmail(input: {
     ? `Hourglass Morning Brief · Partial data · ${dailyLabel}`
     : `Hourglass Morning Brief · ${dailyLabel}`;
 
-  const priorityLis = titles
+  const priorityLis = priorities
     .map(
       (t, i) =>
         `<li style="margin:0 0 10px;font-size:14px;line-height:1.65;color:#4a443e;"><strong>${i + 1}.</strong> ${escapeHtml(redactSecretsAndPii(t))}</li>`,
@@ -176,49 +207,53 @@ function renderDailyMorningBriefEmail(input: {
     ? `<tr><td style="padding:0 32px 24px;">${sectionHeading("Opportunity to watch")}<p style="margin:0;font-size:14px;line-height:1.7;color:#3d3832;">${escapeHtml(redactSecretsAndPii(watch))}</p></td></tr>`
     : "";
 
-  const confidenceHtml = `<tr><td style="padding:0 32px 20px;">${sectionHeading("Data confidence")}<p style="margin:0;font-size:13px;line-height:1.6;color:#6a635c;"><strong>${escapeHtml(confidence.level)}</strong> — ${escapeHtml(redactSecretsAndPii(confidence.summary))}</p>${
-    confidence.showDetails && confidence.detailLines.length
-      ? `<ul style="margin:10px 0 0;padding:0 0 0 18px;">${confidence.detailLines
-          .map(
-            (l) =>
-              `<li style="margin:0 0 6px;font-size:12px;line-height:1.5;color:#6a635c;">${escapeHtml(redactSecretsAndPii(l))}</li>`,
-          )
-          .join("")}</ul>`
-      : ""
-  }</td></tr>`;
+  const confidenceHtml = confidence.renderInFounderEmail
+    ? `<tr><td style="padding:0 32px 20px;">${sectionHeading("Data confidence")}<p style="margin:0;font-size:13px;line-height:1.6;color:#6a635c;"><strong>${escapeHtml(confidence.level)}</strong> — ${escapeHtml(redactSecretsAndPii(confidence.summary))}</p>${
+        confidence.showDetails && confidence.detailLines.length
+          ? `<ul style="margin:10px 0 0;padding:0 0 0 18px;">${confidence.detailLines
+              .map(
+                (l) =>
+                  `<li style="margin:0 0 6px;font-size:12px;line-height:1.5;color:#6a635c;">${escapeHtml(redactSecretsAndPii(l))}</li>`,
+              )
+              .join("")}</ul>`
+          : ""
+      }</td></tr>`
+    : "";
+
+  const prioritiesHtml = priorities.length
+    ? `<ul style="margin:0;padding:0 0 0 18px;">${priorityLis}</ul>`
+    : highestRoi && !/^no durable/i.test(highestRoi)
+      ? `<p style="margin:0;font-size:14px;line-height:1.65;color:#4a443e;">1. ${escapeHtml(redactSecretsAndPii(summarizeFounderAction(highestRoi.split(".")[0] ?? highestRoi, 160)))}</p>`
+      : `<p style="margin:0;font-size:14px;color:#6a635c;">Carry-forward priorities unavailable — brief should not have been sent.</p>`;
 
   const html = `
 <!DOCTYPE html>
 <html>
-  <body style="margin:0;padding:32px 20px;background:#efe8de;">
-    <table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;margin:0 auto;background:#f7f3ee;border:1px solid #e4dbcf;">
+  <body style="margin:0;padding:32px 12px;background:#efe8de;">
+    <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="max-width:560px;margin:0 auto;background:#f7f3ee;border:1px solid #e4dbcf;">
       <tr>
-        <td style="padding:36px 32px 8px;">
-          <p style="margin:0 0 6px;font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:#8a8176;">Hourglass Diamonds · Internal · Agent OS</p>
+        <td style="padding:28px 24px 8px;">
+          <p style="margin:0 0 6px;font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:#8a8176;">Hourglass Diamonds · Internal</p>
           <h1 style="margin:0;font-size:22px;font-weight:400;color:#1a1816;font-family:Georgia,'Times New Roman',serif;">Morning Brief</h1>
           <p style="margin:10px 0 0;font-size:12px;color:#6a635c;">${escapeHtml(dailyLabel)}</p>
         </td>
       </tr>
       <tr>
-        <td style="padding:0 32px 24px;">
+        <td style="padding:0 24px 24px;">
           ${sectionHeading("Today’s call")}
           <p style="margin:0;font-size:15px;line-height:1.75;color:#3d3832;font-family:Georgia,'Times New Roman',serif;">${escapeHtml(redactSecretsAndPii(todayCall || ""))}</p>
         </td>
       </tr>
       <tr>
-        <td style="padding:0 32px 24px;">
+        <td style="padding:0 24px 24px;">
           ${sectionHeading("Highest-ROI move")}
           <p style="margin:0;font-size:15px;line-height:1.75;color:#3d3832;font-family:Georgia,'Times New Roman',serif;">${escapeHtml(redactSecretsAndPii(highestRoi))}</p>
         </td>
       </tr>
       <tr>
-        <td style="padding:0 32px 24px;">
+        <td style="padding:0 24px 24px;">
           ${sectionHeading("Top priorities")}
-          ${
-            titles.length
-              ? `<ul style="margin:0;padding:0 0 0 18px;">${priorityLis}</ul>`
-              : `<p style="margin:0;font-size:14px;color:#6a635c;">No named priorities this cycle.</p>`
-          }
+          ${prioritiesHtml}
         </td>
       </tr>
       ${decisionsHtml}
@@ -238,7 +273,9 @@ function renderDailyMorningBriefEmail(input: {
     `Highest-ROI: ${redactSecretsAndPii(highestRoi)}`,
     ``,
     `Priorities:`,
-    ...titles.map((t, i) => `${i + 1}. ${redactSecretsAndPii(t)}`),
+    ...(priorities.length
+      ? priorities.map((t, i) => `${i + 1}. ${redactSecretsAndPii(t)}`)
+      : [`1. ${redactSecretsAndPii(summarizeFounderAction(highestRoi.split(".")[0] ?? highestRoi, 160))}`]),
   ];
   if (decisions.length) {
     textParts.push(``, `Decisions:`, ...decisions.map((d) => `- ${redactSecretsAndPii(d)}`));
@@ -249,14 +286,11 @@ function renderDailyMorningBriefEmail(input: {
   if (watch) {
     textParts.push(``, `Watch: ${redactSecretsAndPii(watch)}`);
   }
-  textParts.push(
-    ``,
-    `Data confidence: ${confidence.level} — ${redactSecretsAndPii(confidence.summary)}`,
-  );
-  if (confidence.showDetails) {
-    for (const l of confidence.detailLines) {
-      textParts.push(`- ${redactSecretsAndPii(l)}`);
-    }
+  if (confidence.renderInFounderEmail) {
+    textParts.push(
+      ``,
+      `Data confidence: ${confidence.level} — ${redactSecretsAndPii(confidence.summary)}`,
+    );
   }
 
   return { subject, html, text: textParts.join("\n") };

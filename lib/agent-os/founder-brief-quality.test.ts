@@ -371,7 +371,7 @@ describe("analytics-maintenance highest-ROI suppression", () => {
     );
   });
 
-  it("healthy quiet day → no founder action required", () => {
+  it("healthy quiet day without backlog → empty brief blocked by quality gate", () => {
     const bi = emptyBusinessIntelligenceOutput();
     bi.keyMetricChanges = [
       "Sessions 182 (within ordinary variance; treat as directional only)",
@@ -387,10 +387,11 @@ describe("analytics-maintenance highest-ROI suppression", () => {
       mode: "live",
       briefCadenceIntent: "daily",
       sourceHealth: healthyGa4Gsc(),
+      operatingBacklog: null,
     });
     assert.match(
       cos.brief.highestRoiAction,
-      /no high-confidence founder action required today/i,
+      /no durable operating priority|no high-confidence/i,
     );
     assert.doesNotMatch(cos.brief.markdown, /completed-with-warnings/);
   });

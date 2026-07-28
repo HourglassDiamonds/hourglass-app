@@ -60,6 +60,7 @@ export {
 } from "./execute";
 export type {
   CadenceExecutionMode,
+  CadenceRunMode,
   ExecuteCadenceOptions,
   CadenceExecutionResult,
 } from "./execute";

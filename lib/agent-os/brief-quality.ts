@@ -26,11 +26,14 @@ import {
   synthesizeWeeklyExecutiveSummary,
   toFounderFacingPriorityAction,
 } from "./founder-language";
-import { shortenMeasurementGapLabel } from "./measurement/health-codes";
+
 
 export type BriefCadenceIntent = "daily" | "weekly";
 
 export const MAX_SURFACED_FOUNDER_PRIORITIES = 5;
+
+/** Daily Morning Brief: exactly 1–3 meaningful named priorities (plus highest-ROI). */
+export const MAX_DAILY_NAMED_PRIORITIES = 3;
 
 /** Max named priorities allowed from the same topic/asset cluster. */
 export const MAX_PER_TOPIC_CLUSTER = 2;
@@ -587,6 +590,7 @@ export function humanizeFounderTitle(title: string): string {
 
 /** Strip operator/debug parentheticals from founder-facing action lines. */
 export function cleanFounderFacingAction(text: string): string {
+  if (!text) return "";
   return toFounderFacingPlainLanguage(
     replaceFounderFacingRoutes(
       text
@@ -723,11 +727,19 @@ export function composeHighestRoiAction(input: {
     !action.toLowerCase().includes(title.toLowerCase().slice(0, 24))
       ? `${title} — ${action}`
       : action || title;
+
+  // Daily Highest-ROI is the concrete move alone — do not title-prefix a complete action.
+  if (input.intent === "daily") {
+    const dailyMove =
+      action && action.length >= 48 && /^(verify|confirm|finish|tighten|align|add|ensure|spot-check)\b/i.test(action)
+        ? action
+        : combined;
+    return summarizeFounderAction(dailyMove, 280);
+  }
+
   return summarizeFounderAction(
-    input.intent === "weekly"
-      ? makeDecisiveFounderRecommendation(combined)
-      : combined,
-    input.intent === "daily" ? 220 : 320,
+    makeDecisiveFounderRecommendation(combined),
+    320,
   );
 }
 
@@ -799,14 +811,16 @@ export function dedupePrioritiesAgainstHighestRoi(
   priorities: string[],
   highestRoiAction: string,
   max = 5,
+  options?: { rewriteForFounder?: boolean },
 ): string[] {
   const highest = normalizeTokens(highestRoiAction);
   const highestTitle = highest.split(" ").slice(0, 8).join(" ");
+  const rewrite = options?.rewriteForFounder !== false;
   const out: string[] = [];
   for (const p of priorities) {
-    const cleaned = toFounderFacingPriorityAction(
-      p.replace(/^\[[^\]]+\]\s*/, ""),
-    );
+    const cleaned = rewrite
+      ? toFounderFacingPriorityAction(p.replace(/^\[[^\]]+\]\s*/, ""))
+      : cleanFounderFacingAction(p.replace(/^\[[^\]]+\]\s*/, ""));
     const norm = normalizeTokens(cleaned);
     if (!norm) continue;
     if (norm === highest || highest.includes(norm) || norm.includes(highestTitle)) {
@@ -944,14 +958,17 @@ export function buildWeeklyDataConfidenceSummary(input: {
 /**
  * Compact data-confidence line for founder email.
  * Weekly: business-effect language only (no connector inventory).
- * Daily: compact labels; critical failures stay visible.
- * Technical source status remains on run.brief.missingOrUnreliableData.
+ * Daily: disclose only when a limitation materially changes a recommendation;
+ * never expose adapter/debug inventory or “rely on repository” language.
+ * Technical source status remains on run.brief.missingOrUnreliableData (internal).
  */
 export function buildDataConfidenceNote(input: DataConfidenceInput): {
   level: "Full" | "Partial" | "Critical";
   summary: string;
   showDetails: boolean;
   detailLines: string[];
+  /** When false, email should omit the Data confidence section entirely. */
+  renderInFounderEmail: boolean;
 } {
   const gaps = input.missingOrUnreliableData.filter(Boolean);
   const critical =
@@ -970,64 +987,145 @@ export function buildDataConfidenceNote(input: DataConfidenceInput): {
       summary: weekly.summary,
       showDetails: false,
       detailLines: [],
+      renderInFounderEmail: true,
     };
   }
 
+  // Daily: only material business-effect disclosures.
   if (critical) {
-    const short = gaps.map(shortenGapLabelDaily).filter(Boolean).slice(0, 3);
     return {
       level: "Critical",
       summary:
-        short[0] ??
-        "Critical measurement sources unavailable — treat recommendations as provisional.",
-      showDetails: short.length > 1,
-      detailLines: short.slice(1),
-    };
-  }
-
-  if (gaps.length === 0 && input.executiveNotes.length === 0) {
-    return {
-      level: "Full",
-      summary: "Sources available for this cycle.",
+        "Core website or search measurement is incomplete — treat growth conclusions as provisional until reporting is trustworthy again.",
       showDetails: false,
       detailLines: [],
+      renderInFounderEmail: true,
     };
   }
 
-  const shortGaps = gaps
-    .map(shortenGapLabelDaily)
-    .filter(Boolean)
-    .slice(0, 4);
-  const unique = [...new Set(shortGaps)];
+  const domains = new Set(gaps.map(classifyEvidenceDomain));
+  const missingWebsite = domains.has("website");
+  const missingSearch = domains.has("search");
+  // Secondary gaps (client/social/local) must not appear as founder-facing inventory.
+  if (missingWebsite || missingSearch) {
+    return {
+      level: "Partial",
+      summary:
+        "Website or search performance data is incomplete for this cycle, so treat traffic conclusions as directional.",
+      showDetails: false,
+      detailLines: [],
+      renderInFounderEmail: true,
+    };
+  }
+
   return {
-    level: "Partial",
-    summary:
-      unique.length > 0
-        ? `${unique.join("; ")}; recommendations rely on repository and internal evidence.`
-        : "Some sources unavailable; recommendations rely on repository and internal evidence.",
+    level: "Full",
+    summary: "Evidence coverage is sufficient for today’s operating conclusions.",
     showDetails: false,
     detailLines: [],
+    // Full confidence with no material limitation → omit from email.
+    renderInFounderEmail: false,
   };
 }
 
-/** Daily-only compact labels (not used for weekly founder confidence). */
-function shortenGapLabelDaily(g: string): string {
-  return shortenMeasurementGapLabel(g);
-}
-
+/**
+ * Today’s Call = day orientation + reason.
+ * Must not duplicate the Highest-ROI concrete action line.
+ */
 export function dailyTodayCall(input: {
   whyItMatters: string;
   highestRoiAction: string;
+  /** Persistent sprint orientation when available. */
+  sprintOrientation?: string | null;
+  /** Explicit day-job line from the master sprint (preferred when set). */
+  dayOrientation?: string | null;
+  whatChanged?: string | null;
 }): string {
-  const why = input.whyItMatters.trim();
+  const why = cleanFounderFacingAction(input.whyItMatters).trim();
+  const action = cleanFounderFacingAction(input.highestRoiAction).trim();
+  const day = input.dayOrientation?.trim();
+  const sprint = input.sprintOrientation?.trim();
+  const changed = input.whatChanged?.trim();
+
+  if (day && actionJaccard(day, action) < 0.72) {
+    return summarizeFounderAction(day, 240);
+  }
+
+  if (sprint && why && !/^no high-confidence/i.test(why)) {
+    const orientation = `Orient the day around the open sprint: ${sprint}.`;
+    const reason = why.length <= 160 ? why : why.slice(0, 157).replace(/\s+\S*$/, "") + ".";
+    const combined = `${orientation} ${reason}`;
+    // Guard against duplicating the ROI action verbatim.
+    if (actionJaccard(combined, action) < 0.72) return summarizeFounderAction(combined, 240);
+  }
+
   if (why && why.length <= 220 && !/^no high-confidence/i.test(why)) {
+    if (action && actionJaccard(why, action) >= 0.72) {
+      const lead =
+        day ||
+        sprint ||
+        (changed && !/^no material/i.test(changed)
+          ? `Use today’s signal (${summarizeFounderAction(changed, 100)}) to protect unfinished work.`
+          : "Protect unfinished sprint work before opening new experiments.");
+      return summarizeFounderAction(`${lead} ${why}`, 240);
+    }
     return why;
   }
-  const action = cleanFounderFacingAction(input.highestRoiAction);
-  if (action && !/^none/i.test(action)) {
-    return `Focus founder time on: ${action.split("—")[0]!.trim()}.`;
+
+  if (day) {
+    return summarizeFounderAction(day, 240);
   }
-  return "Quiet operating day — no high-confidence founder move required.";
+
+  if (sprint) {
+    return summarizeFounderAction(
+      `Orient the day around the open sprint: ${sprint}. Finish the highest-value unresolved commitment before new experiments.`,
+      240,
+    );
+  }
+
+  if (action && !/^none/i.test(action) && !/^no high-confidence/i.test(action)) {
+    return summarizeFounderAction(
+      `Protect focus: complete the single highest-value open commitment before approving new work.`,
+      220,
+    );
+  }
+
+  // Empty / quiet — callers should quality-gate this rather than email it.
+  return "No durable operating priority is available to orient the day.";
+}
+
+/** True when a metric/opportunity line has a numeric magnitude or clear count. */
+export function hasNumericMagnitude(text: string): boolean {
+  return /\d+(\.\d+)?\s*%|\b\d{1,3}(,\d{3})+\b|\b\d+\b/.test(text);
+}
+
+/**
+ * Vague metric headlines without magnitude (e.g. “Sessions softened week-over-week”)
+ * must not render as Opportunity to watch.
+ */
+export function isVagueMetricWithoutMagnitude(text: string): boolean {
+  const t = text.trim();
+  if (!t) return true;
+  if (hasNumericMagnitude(t)) return false;
+  return /\b(sessions?|clicks?|impressions?|views?|ctr|traffic)\b.+\b(softened|declined|dropped|rose|increased|fell|up|down|week-over-week|wow)\b/i.test(
+    t,
+  );
+}
+
+/** Format a structured founder decision line (always includes recommendation). */
+export function formatFounderDecisionLine(input: {
+  decision: string;
+  recommendation: string;
+  why: string;
+  costOfDelay: string;
+  deadline?: string | null;
+}): string {
+  const clean = (s: string) =>
+    cleanFounderFacingAction(s).replace(/\.\.+/g, ".").replace(/\.\s*$/, "").trim();
+  const deadline = input.deadline?.trim()
+    ? ` Deadline: ${input.deadline.trim().replace(/\.\s*$/, "")}.`
+    : "";
+  return `Decide: ${clean(input.decision)}. Recommendation: ${clean(input.recommendation)}. Why: ${clean(input.why)}. Cost of delay: ${clean(input.costOfDelay)}.${deadline}`;
 }
 
 /** Executive summary for weekly: situation synthesis — not a copy of the ROI action. */

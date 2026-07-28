@@ -1,8 +1,14 @@
 /**
  * Delivery eligibility — Chief of Staff owns synthesis; this gate decides send vs alert vs nothing.
+ * Includes founder-facing brief quality gate (empty / duplicative / leaky briefs).
  */
 
 import type { AgentRun, DeliveryGuidance } from "../types";
+import {
+  dailyTodayCall,
+  isVagueMetricWithoutMagnitude,
+} from "../brief-quality";
+import { evaluateBriefQualityGate } from "../brief-quality-gate";
 
 export type DeliveryEligibility =
   | {
@@ -34,8 +40,11 @@ export function evaluateDeliveryEligibility(input: {
   /** When persistence was required and failed. */
   persistenceOk: boolean;
   dryRun?: boolean;
+  /** Cadence intent — quality rules are stricter for daily Morning Brief. */
+  intent?: "daily" | "weekly";
 }): DeliveryEligibility {
   const { run } = input;
+  const intent = input.intent ?? "daily";
 
   if (!input.persistenceOk) {
     return {
@@ -92,16 +101,44 @@ export function evaluateDeliveryEligibility(input: {
     };
   }
 
-  if (guidance === "send-degraded-partial-brief") {
-    return {
-      action: "send-founder-brief",
-      degraded: true,
-      reason:
-        "Degraded but usable run — brief must identify degraded areas; source gaps are not deterioration",
-    };
-  }
+  if (
+    guidance === "send-degraded-partial-brief" ||
+    guidance === "send-normal-brief"
+  ) {
+    if (intent === "daily") {
+      const todayCall = dailyTodayCall({
+        whyItMatters: run.brief.whyItMatters,
+        highestRoiAction: run.brief.highestRoiAction,
+        sprintOrientation: run.brief.sprintOrientation,
+        dayOrientation: run.brief.dayOrientation,
+        whatChanged: run.brief.whatChanged,
+      });
+      const watch = run.brief.opportunityToWatch;
+      const quality = evaluateBriefQualityGate({
+        brief: run.brief,
+        todayCall,
+        opportunityWatch:
+          watch && !isVagueMetricWithoutMagnitude(watch) ? watch : null,
+        intent: "daily",
+      });
+      if (!quality.ok) {
+        return {
+          action: "send-nothing",
+          reason: `Morning Brief quality gate blocked send: ${quality.violations
+            .map((v) => v.code)
+            .join(", ")}`,
+        };
+      }
+    }
 
-  if (guidance === "send-normal-brief") {
+    if (guidance === "send-degraded-partial-brief") {
+      return {
+        action: "send-founder-brief",
+        degraded: true,
+        reason:
+          "Degraded but usable run — brief must identify degraded areas; source gaps are not deterioration",
+      };
+    }
     return {
       action: "send-founder-brief",
       degraded: false,

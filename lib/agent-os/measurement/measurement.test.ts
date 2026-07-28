@@ -100,7 +100,7 @@ describe("measurement health codes", () => {
 });
 
 describe("daily brief health copy", () => {
-  it("preserves precise GA4/GSC reasons in data confidence", () => {
+  it("uses business-effect language for GA4/GSC gaps — no adapter inventory", () => {
     const note = buildDataConfidenceNote({
       missingOrUnreliableData: [
         "GA4 OAuth authentication failed",
@@ -109,10 +109,11 @@ describe("daily brief health copy", () => {
       ],
       executiveNotes: [],
       briefEvidenceQuality: "partial-degraded",
+      intent: "daily",
     });
     assert.equal(note.level, "Partial");
-    assert.match(note.summary, /GA4 OAuth authentication failed/);
-    assert.match(note.summary, /Search Console site access denied/);
+    assert.match(note.summary, /Website or search|directional/i);
+    assert.doesNotMatch(note.summary, /HubSpot|adapter|repository/i);
     assert.doesNotMatch(note.summary, /^GA4 unavailable;/);
   });
 });
