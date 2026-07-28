@@ -24,6 +24,12 @@ import {
   consolidateLegacyWithLocalAuthority,
 } from "./local/ranking-policy";
 import type { SearchOpportunity } from "./types";
+import {
+  emptyFanOutCoverageSnapshot,
+  runFanOutCoverageAnalyzer,
+  type FanOutCoverageSnapshot,
+  type FanOutOpportunity,
+} from "./fan-out";
 
 export type SearchStrategyOutput = {
   recommendations: Recommendation[];
@@ -34,6 +40,8 @@ export type SearchStrategyOutput = {
   guideAuthority: ReturnType<typeof inspectGuideAuthority>;
   /** Local Authority / GBP Intelligence audit (V1 expansion). */
   localAuthority: LocalAuthorityAudit;
+  /** AI Fan-Out Coverage Analyzer snapshot (question universe × content inventory). */
+  fanOutCoverage: FanOutCoverageSnapshot;
 };
 
 export type RunSearchStrategyOptions = {
@@ -132,7 +140,19 @@ export function runSearchStrategy(
     );
   }
 
-  const opportunities = [...gscOpps, ...guideAuthority.opportunities];
+  const fanOutCoverage = runFanOutCoverageAnalyzer();
+  facts.push(...fanOutCoverage.facts);
+  inferences.push(...fanOutCoverage.inferences);
+
+  const fanOutSearchOpps = fanOutOpportunitiesAsSearchOpportunities(
+    fanOutCoverage.founderFacingOpportunities,
+  );
+
+  const opportunities = [
+    ...gscOpps,
+    ...guideAuthority.opportunities,
+    ...fanOutSearchOpps,
+  ];
 
   const collectedAt =
     bundle.gsc.data?.fetchedAt ?? new Date().toISOString();
@@ -191,7 +211,57 @@ export function runSearchStrategy(
     inferences,
     guideAuthority,
     localAuthority: localRun.audit,
+    fanOutCoverage,
   };
+}
+
+function fanOutOpportunitiesAsSearchOpportunities(
+  fanOutOpps: FanOutOpportunity[],
+): SearchOpportunity[] {
+  return fanOutOpps.map((opp) => ({
+    id: opp.id,
+    type: "fan-out-coverage-gap" as const,
+    title: `Fan-out coverage gap: ${opp.question}`,
+    whyItMatters: `${opp.whyCoverageWeak[0] ?? "Authority density gap"} Commercial ${opp.commercialValue}/10 · Authority ${opp.authorityValue}/10.`,
+    recommendedAction: formatFanOutAction(opp),
+    queryOrPage: opp.suggestedExistingPage ?? opp.question,
+    metric: "fan-out-coverage-score",
+    currentValue: `${opp.coverageScore} (${opp.coverageBand})`,
+    comparisonValue: `priority ${opp.priorityScore}`,
+    sampleSize: 1,
+    classifications: (
+      opp.geography === "charlotte" ||
+      opp.geography === "waxhaw" ||
+      opp.geography === "charlotte-metro"
+        ? ["local", "informational"]
+        : ["informational", "non-branded"]
+    ) as SearchOpportunity["classifications"],
+    isInference: true,
+    confidence: 0.62,
+    likelyImpact: Math.min(10, Math.round(opp.priorityScore / 10)),
+    effort: opp.recommendedAction === "expand-existing-page" ? "low" : "medium",
+    urgency: opp.audienceStage === "ready-to-contact" ? "medium" : "low",
+    approvalRequired: false,
+    supportingReference: `fan-out:${opp.questionId}`,
+    evidenceNotes: [
+      `Family ${opp.queryFamily}; stage ${opp.audienceStage}`,
+      ...opp.priorityReasons.slice(0, 2),
+      "Repository fan-out signal — not confirmed AI citation share",
+    ],
+  }));
+}
+
+function formatFanOutAction(opp: FanOutOpportunity): string {
+  const cluster =
+    opp.clusterRole === "flagship" && opp.flagshipTitle
+      ? ` Flagship: “${opp.flagshipTitle}” covering ${opp.supportingQuestionIds.length} related gaps.`
+      : opp.clusterRole === "supporting-faq" && opp.flagshipTitle
+        ? ` Supporting FAQ under “${opp.flagshipTitle}” — avoid a competing thin page.`
+        : "";
+  const page = opp.suggestedExistingPage
+    ? ` Prefer strengthening ${opp.suggestedExistingPage}.`
+    : "";
+  return `Fan-out recommendation: ${opp.recommendedAction.replace(/-/g, " ")} (${opp.recommendedFormat.replace(/-/g, " ")}).${cluster}${page} ${opp.whyCoverageWeak[0] ?? ""}`.trim();
 }
 
 function localFindingsAsSearchOpportunities(
@@ -330,5 +400,6 @@ export function emptySearchStrategyOutput(): SearchStrategyOutput {
     inferences: [],
     guideAuthority: inspectGuideAuthority([]),
     localAuthority: emptyLocalAuthorityAudit(),
+    fanOutCoverage: emptyFanOutCoverageSnapshot(),
   };
 }

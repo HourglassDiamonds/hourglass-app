@@ -228,11 +228,11 @@ describe("Search Strategy executive", () => {
   it("zero-recommendation Search Strategy path remains healthy via CoS", async () => {
     const bundle = await loadAllSources("fixture");
     const bi = runBusinessIntelligence(bundle, { ...FIXTURE_REPORTING_PERIOD });
+    const emptySearch = emptySearchStrategyOutput();
     const cos = runChiefOfStaff({
       bi,
       search: {
-        recommendations: [],
-        opportunities: [],
+        ...emptySearch,
         dataGaps: [
           {
             id: "gap-search-gsc",
@@ -243,9 +243,7 @@ describe("Search Strategy executive", () => {
           },
         ],
         facts: ["Repository authority inspected"],
-        inferences: [],
         guideAuthority: inspectGuideAuthority([]),
-        localAuthority: emptySearchStrategyOutput().localAuthority,
       },
       reportingPeriod: { ...FIXTURE_REPORTING_PERIOD },
       warnings: [],

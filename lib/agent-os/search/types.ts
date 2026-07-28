@@ -12,6 +12,7 @@ export const SEARCH_OPPORTUNITY_TYPES = [
   "query-page-mismatch",
   "possible-cannibalization",
   "content-gap",
+  "fan-out-coverage-gap",
   "internal-link-gap",
   "tool-handoff-gap",
   "local-intent-gap",
