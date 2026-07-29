@@ -1,5 +1,6 @@
 import Image from "next/image";
 import type { CSSProperties } from "react";
+import { CONCIERGE_VISIBLE_COPY } from "@/lib/concierge/conversational-copy";
 import SectionHeading from "../shared-components/SectionHeading";
 
 const HERO_IMAGE = "/concierge-hero.png";
@@ -42,6 +43,8 @@ const MOBILE_LEFT_BLEND =
 const MOBILE_BOTTOM_BLEND =
   "linear-gradient(to top, #efe8de 0%, rgba(239,232,222,0.82) 16%, transparent 38%)";
 
+const copy = CONCIERGE_VISIBLE_COPY.hero;
+
 export default function ConciergeIntro() {
   return (
     <div className="relative overflow-hidden md:min-h-[380px] lg:min-h-[420px]">
@@ -68,20 +71,17 @@ export default function ConciergeIntro() {
         <div className="min-w-0 text-left">
           <SectionHeading
             as="h1"
-            eyebrow="Concierge"
-            title="A better place to begin."
+            eyebrow={copy.eyebrow}
+            title={copy.title}
             titleClassName="max-w-[14ch]"
           />
 
           <p className="mt-5 max-w-[32rem] text-[1rem] leading-[1.88] text-[#6a635c] md:text-[1.04rem] lg:max-w-[28rem]">
-            You might already know exactly what you&apos;re looking for, or just
-            have a sense of how it should feel. Either is enough to start a
-            considered conversation about rings, diamonds, and custom design.
+            {copy.body}
           </p>
 
           <p className="mt-5 max-w-[32rem] text-[0.95rem] leading-[1.88] text-[#7a7268] lg:max-w-[28rem]">
-            We personally read and reply to every submission within 24 hours. If
-            you prefer email first, reach Justin at{" "}
+            {copy.followUpPrefix}{" "}
             <a
               href="mailto:justin@hourglassdiamonds.com"
               className="hg-tap text-[#6a635c] underline underline-offset-4 transition hover:text-[#1f1d1a]"
@@ -92,8 +92,7 @@ export default function ConciergeIntro() {
           </p>
 
           <p className="mt-6 max-w-[28rem] text-[0.88rem] leading-[1.75] tracking-[0.01em] text-[#8a8177] md:mt-7">
-            Share a few details below when you&apos;re ready. There is no
-            pressure to have everything decided.
+            {copy.reassurance}
           </p>
         </div>
       </div>

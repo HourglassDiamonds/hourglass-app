@@ -16,6 +16,15 @@ import {
   trackConciergeFormSubmitted,
   trackGenerateLead,
 } from "@/lib/concierge/analytics";
+import {
+  CONCIERGE_CTA_LABEL,
+  CONCIERGE_FORM_FIELD_NAMES,
+  CONCIERGE_OPTION_VALUES,
+  CONCIERGE_VISIBLE_COPY,
+  buildConciergeSummary,
+  contextualReassuranceForSelection,
+  type ConciergeContextualField,
+} from "@/lib/concierge/conversational-copy";
 import { diamondIntelligencePrefillFromSearchParams } from "@/lib/concierge/diamond-intelligence-context";
 import CTAGlimmer from "../shared-components/motion/CTAGlimmer";
 
@@ -33,6 +42,8 @@ const DEFAULTS = {
   budget: "Prefer to Discuss",
   preferredContact: "Email",
 } as const;
+
+const copy = CONCIERGE_VISIBLE_COPY;
 
 function createSubmissionId(): string {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
@@ -85,6 +96,9 @@ export default function ConciergeFormClient() {
   const [preferredContact, setPreferredContact] = useState<string>(
     DEFAULTS.preferredContact,
   );
+  const [contextualNotes, setContextualNotes] = useState<
+    Partial<Record<ConciergeContextualField, string>>
+  >({});
 
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -137,46 +151,16 @@ export default function ConciergeFormClient() {
   const pill =
     "inline-flex min-h-[44px] items-center rounded-full border border-[#ddd1c2] bg-white/82 px-3.5 py-2 text-[11px] uppercase tracking-[0.18em] text-[#6f665d] transition duration-200 hover:border-[#ccbda9] hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-hg-focus focus-visible:ring-offset-2 focus-visible:ring-offset-hg-ivory";
 
-  const directionNote = useMemo(() => {
-    if (direction === "Modern Minimal") {
-      return "Clean lines, quieter detail, and a more restrained point of view.";
-    }
-    if (direction === "Classic Timeless") {
-      return "Balanced proportion and a sense of permanence that never feels overstated.";
-    }
-    if (direction === "Bold Presence") {
-      return "A stronger visual statement with more sculptural presence.";
-    }
-    if (direction === "Still Discovering") {
-      return "An open starting point we can shape together in the first conversation.";
-    }
-    if (direction === "Quiet Elegance") {
-      return "A softer direction built around balance, proportion, and calm elegance.";
-    }
-    return "An open starting point we can shape together in the first conversation.";
-  }, [direction]);
-
-  const briefLine = useMemo(() => {
-    const project =
-      projectType === "Still Exploring" ? "piece" : projectType.toLowerCase();
-
-    const shapeLine =
-      shape === "Not Sure Yet"
-        ? "a shape still to be refined"
-        : `${shape.toLowerCase()} lines`;
-
-    const directionLine =
-      direction === "Still Discovering"
-        ? "an open design direction"
-        : `a ${direction.toLowerCase()} direction`;
-
-    const presenceLine =
-      presence === "Still Exploring"
-        ? "with room to shape the final presence together"
-        : `with a ${presence.toLowerCase()} presence`;
-
-    return `A ${project} guided by ${shapeLine}, ${directionLine}, and ${presenceLine}.`;
-  }, [projectType, shape, direction, presence]);
+  const summary = useMemo(
+    () =>
+      buildConciergeSummary({
+        projectType,
+        shape,
+        direction,
+        presence,
+      }),
+    [projectType, shape, direction, presence],
+  );
 
   function normalizePreferredContact(value: string) {
     if (value === "Any Is Fine") return "any";
@@ -191,6 +175,23 @@ export default function ConciergeFormClient() {
     formStarted.current = true;
     setSessionFlag(STARTED_STORAGE_KEY, "1");
     trackConciergeFormStarted();
+  }
+
+  function updateContextualNote(
+    field: ConciergeContextualField,
+    value: string,
+  ) {
+    const note = contextualReassuranceForSelection(field, value);
+    setContextualNotes((current) => {
+      if (!note) {
+        if (!(field in current)) return current;
+        const next = { ...current };
+        delete next[field];
+        return next;
+      }
+      if (current[field] === note) return current;
+      return { ...current, [field]: note };
+    });
   }
 
   function resetForAnotherInquiry() {
@@ -211,6 +212,7 @@ export default function ConciergeFormClient() {
     setTimeline(DEFAULTS.timeline);
     setBudget(DEFAULTS.budget);
     setPreferredContact(DEFAULTS.preferredContact);
+    setContextualNotes({});
   }
 
   function validateClient(): Record<string, string> {
@@ -255,21 +257,21 @@ export default function ConciergeFormClient() {
         formData.set(key, value);
       }
 
-      formData.set("projectType", projectType);
-      formData.set("shapeInterest", shape);
-      formData.set("designDirection", direction);
-      formData.set("ringPresence", presence);
-      formData.set("timeline", timeline);
-      formData.set("budgetRange", budget);
+      formData.set(CONCIERGE_FORM_FIELD_NAMES.projectType, projectType);
+      formData.set(CONCIERGE_FORM_FIELD_NAMES.shapeInterest, shape);
+      formData.set(CONCIERGE_FORM_FIELD_NAMES.designDirection, direction);
+      formData.set(CONCIERGE_FORM_FIELD_NAMES.ringPresence, presence);
+      formData.set(CONCIERGE_FORM_FIELD_NAMES.timeline, timeline);
+      formData.set(CONCIERGE_FORM_FIELD_NAMES.budgetRange, budget);
       formData.set(
-        "preferredContactMethod",
+        CONCIERGE_FORM_FIELD_NAMES.preferredContactMethod,
         normalizePreferredContact(preferredContact),
       );
-      formData.set("submissionId", submissionId);
-      formData.set("fullName", fullName.trim());
-      formData.set("email", email.trim());
-      formData.set("phone", phone.trim());
-      formData.set("inspirationNotes", inspirationNotes);
+      formData.set(CONCIERGE_FORM_FIELD_NAMES.submissionId, submissionId);
+      formData.set(CONCIERGE_FORM_FIELD_NAMES.fullName, fullName.trim());
+      formData.set(CONCIERGE_FORM_FIELD_NAMES.email, email.trim());
+      formData.set(CONCIERGE_FORM_FIELD_NAMES.phone, phone.trim());
+      formData.set(CONCIERGE_FORM_FIELD_NAMES.inspirationNotes, inspirationNotes);
 
       const response = await fetch("/api/concierge", {
         method: "POST",
@@ -332,14 +334,16 @@ export default function ConciergeFormClient() {
     value,
     setValue,
     groupName,
+    contextualField,
   }: {
     legend: string;
-    options: string[];
+    options: readonly string[];
     value: string;
     setValue: (value: string) => void;
     groupName: string;
+    contextualField?: ConciergeContextualField;
   }) => (
-    <fieldset className="mt-4 border-0 p-0">
+    <fieldset className="mt-2.5 border-0 p-0">
       <legend className="sr-only">{legend}</legend>
       <div className="flex flex-wrap gap-2.5" role="group" aria-label={legend}>
         {options.map((option) => {
@@ -352,6 +356,9 @@ export default function ConciergeFormClient() {
               onClick={() => {
                 markFormStarted();
                 setValue(option);
+                if (contextualField) {
+                  updateContextualNote(contextualField, option);
+                }
               }}
               className={selected ? activePill : pill}
             >
@@ -367,11 +374,16 @@ export default function ConciergeFormClient() {
   const sectionLabel =
     "text-[10px] uppercase tracking-[0.32em] text-[#8a8177]";
   const fieldLabel =
+    "text-[11px] tracking-[0.02em] text-[#857b70] md:text-[12px] md:leading-snug";
+  const fieldLabelUpper =
     "text-[11px] uppercase tracking-[0.28em] text-[#857b70]";
+  const helperText = "mt-2 max-w-[36rem] text-[12px] leading-5 text-[#8a8177]";
+  const contextualText =
+    "mt-2 max-w-[32rem] text-[12px] leading-5 text-[#8a8177]";
   const inputClass =
-    "mt-3 w-full rounded-[18px] border border-[#ddd4c9] bg-white/78 px-4 py-3.5 text-sm text-[#3c3834] outline-none placeholder:text-[#8a8177] focus-visible:border-hg-focus focus-visible:ring-2 focus-visible:ring-hg-focus";
+    "mt-2.5 w-full rounded-[18px] border border-[#ddd4c9] bg-white/78 px-4 py-3.5 text-sm text-[#3c3834] outline-none placeholder:text-[#8a8177] focus-visible:border-hg-focus focus-visible:ring-2 focus-visible:ring-hg-focus";
   const inputInvalidClass =
-    "mt-3 w-full rounded-[18px] border border-[#c9897c] bg-white/78 px-4 py-3.5 text-sm text-[#3c3834] outline-none placeholder:text-[#8a8177] focus-visible:ring-2 focus-visible:ring-[#c9897c]/50";
+    "mt-2.5 w-full rounded-[18px] border border-[#c9897c] bg-white/78 px-4 py-3.5 text-sm text-[#3c3834] outline-none placeholder:text-[#8a8177] focus-visible:ring-2 focus-visible:ring-[#c9897c]/50";
 
   if (submitState === "success") {
     return (
@@ -421,8 +433,10 @@ export default function ConciergeFormClient() {
   const emailErrorId = `${formId}-email-error`;
   const phoneErrorId = `${formId}-phone-error`;
   const statusId = `${formId}-status`;
+  const summaryId = `${formId}-summary`;
   const phoneRequired =
     preferredContact === "Phone" || preferredContact === "Text";
+  const showEngagementTimelineHelper = projectType === "Engagement Ring";
 
   return (
     <form
@@ -442,186 +456,184 @@ export default function ConciergeFormClient() {
         aria-hidden="true"
       />
 
-      <div>
-        <div className={sectionLabel}>The Foundation</div>
-        <h2 className="mt-2 text-[1.05rem] tracking-[-0.02em] text-[#1f1d1a]">
-          The essentials that help shape the conversation.
+      <div className="border-b border-[#e8dfd4] pb-7 md:pb-8">
+        <div className={sectionLabel}>{copy.whatHappensNext.heading}</div>
+        <p className="mt-2.5 max-w-[34rem] text-[13px] leading-6 text-[#7b7268] md:text-[14px] md:leading-7">
+          {copy.whatHappensNext.body}
+        </p>
+      </div>
+
+      <div className="mt-7">
+        <div className={sectionLabel}>{copy.opening.sectionLabel}</div>
+        <h2 className="mt-1.5 text-[1.05rem] tracking-[-0.02em] text-[#1f1d1a]">
+          {copy.opening.sectionTitle}
         </h2>
 
-        <div className="mt-6 space-y-6">
+        <div className="mt-5 space-y-5">
           <div>
             <div className={fieldLabel} id={`${formId}-project-label`}>
-              Project Type
+              {copy.opening.projectType}
             </div>
             <PillRow
-              legend="Project Type"
+              legend={copy.opening.projectType}
               groupName="projectTypeDisplay"
-              options={[
-                "Engagement Ring",
-                "Custom Jewelry",
-                "Wedding Band",
-                "Still Exploring",
-              ]}
+              options={CONCIERGE_OPTION_VALUES.projectTypes}
               value={projectType}
               setValue={setProjectType}
+              contextualField="projectType"
             />
+            {contextualNotes.projectType ? (
+              <p className={contextualText} aria-live="polite">
+                {contextualNotes.projectType}
+              </p>
+            ) : null}
           </div>
 
           <div>
-            <div className={fieldLabel}>Shape Interest</div>
+            <div className={fieldLabel}>{copy.opening.shapeInterest}</div>
             <PillRow
-              legend="Shape Interest"
+              legend={copy.opening.shapeInterest}
               groupName="shapeInterestDisplay"
-              options={[
-                "Round",
-                "Oval",
-                "Radiant",
-                "Cushion",
-                "Emerald",
-                "Pear",
-                "Marquise",
-                "Not Sure Yet",
-              ]}
+              options={CONCIERGE_OPTION_VALUES.shapes}
               value={shape}
               setValue={setShape}
+              contextualField="shape"
             />
+            {contextualNotes.shape ? (
+              <p className={contextualText} aria-live="polite">
+                {contextualNotes.shape}
+              </p>
+            ) : null}
           </div>
         </div>
       </div>
 
-      <div className="mt-8 border-t border-[#e8dfd4] pt-8">
-        <div className={sectionLabel}>Design Direction</div>
-        <h2 className="mt-2 text-[1.05rem] tracking-[-0.02em] text-[#1f1d1a]">
-          The tone and direction that feel most natural.
+      <div className="mt-7 border-t border-[#e8dfd4] pt-7">
+        <div className={sectionLabel}>{copy.design.sectionLabel}</div>
+        <h2 className="mt-1.5 text-[1.05rem] tracking-[-0.02em] text-[#1f1d1a]">
+          {copy.design.sectionTitle}
         </h2>
 
-        <div className="mt-6 space-y-6">
+        <div className="mt-5 space-y-5">
           <div>
-            <div className={fieldLabel}>Design Direction</div>
+            <div className={fieldLabel}>{copy.design.designDirection}</div>
             <PillRow
-              legend="Design Direction"
+              legend={copy.design.designDirection}
               groupName="designDirectionDisplay"
-              options={[
-                "Quiet Elegance",
-                "Modern Minimal",
-                "Classic Timeless",
-                "Bold Presence",
-                "Still Discovering",
-              ]}
+              options={CONCIERGE_OPTION_VALUES.directions}
               value={direction}
               setValue={setDirection}
             />
           </div>
 
           <div>
-            <div className={fieldLabel}>Ring Presence</div>
+            <div className={fieldLabel}>{copy.design.ringPresence}</div>
             <PillRow
-              legend="Ring Presence"
+              legend={copy.design.ringPresence}
               groupName="ringPresenceDisplay"
-              options={[
-                "Understated",
-                "Balanced",
-                "Statement",
-                "Still Exploring",
-              ]}
+              options={CONCIERGE_OPTION_VALUES.presences}
               value={presence}
               setValue={setPresence}
             />
           </div>
 
-          <div className="rounded-[20px] border border-[#e7ddd1] bg-[linear-gradient(160deg,#f4eee6_0%,#fbf8f3_100%)] p-5">
+          <div
+            className="rounded-[20px] border border-[#e7ddd1] bg-[linear-gradient(160deg,#f4eee6_0%,#fbf8f3_100%)] p-4 md:p-[1.15rem]"
+            aria-live="polite"
+            aria-atomic="true"
+            id={summaryId}
+          >
             <div className="text-[10px] uppercase tracking-[0.26em] text-[#8a8177]">
-              Current Direction
+              {copy.design.summaryLabel}
             </div>
-            <div className="mt-3 text-[1.02rem] tracking-[-0.02em] text-[#201d1a]">
-              {shape} · {direction}
+            <div className="mt-2.5 text-[1.02rem] tracking-[-0.02em] text-[#201d1a]">
+              {summary.heading}
             </div>
-            <p className="mt-3 max-w-[34rem] text-[14px] leading-7 text-[#6a635c]">
-              {directionNote}
-            </p>
-            <p className="mt-4 text-[14px] leading-7 text-[#615a53]">
-              {briefLine}
+            <p className="mt-2 max-w-[34rem] text-[13px] leading-6 text-[#6a635c] md:text-[14px] md:leading-7">
+              {summary.body}
             </p>
           </div>
         </div>
       </div>
 
-      <div className="mt-8 border-t border-[#e8dfd4] pt-8">
-        <div className={sectionLabel}>A Few Final Details</div>
-        <h2 className="mt-2 text-[1.05rem] tracking-[-0.02em] text-[#1f1d1a]">
-          A few details that help us respond clearly.
+      <div className="mt-7 border-t border-[#e8dfd4] pt-7">
+        <div className={sectionLabel}>{copy.practical.sectionLabel}</div>
+        <h2 className="mt-1.5 text-[1.05rem] tracking-[-0.02em] text-[#1f1d1a]">
+          {copy.practical.sectionTitle}
         </h2>
 
-        <div className="mt-6 space-y-6">
+        <div className="mt-5 space-y-5">
           <div>
-            <div className={fieldLabel}>Timeline</div>
+            <div className={fieldLabel}>{copy.practical.timeline}</div>
             <PillRow
-              legend="Timeline"
+              legend={copy.practical.timeline}
               groupName="timelineDisplay"
-              options={["0–2 months", "3–4 months", "6+ months", "Flexible"]}
+              options={CONCIERGE_OPTION_VALUES.timelines}
               value={timeline}
               setValue={setTimeline}
             />
+            {showEngagementTimelineHelper ? (
+              <p className={helperText}>{copy.practical.timelineHelperEngagement}</p>
+            ) : null}
           </div>
 
           <div>
-            <div className={fieldLabel}>Budget Range</div>
+            <div className={fieldLabel}>{copy.practical.budget}</div>
             <PillRow
-              legend="Budget Range"
+              legend={copy.practical.budget}
               groupName="budgetRangeDisplay"
-              options={[
-                "Under 10k",
-                "10–20k",
-                "20–30k",
-                "30–50k",
-                "50k+",
-                "Prefer to Discuss",
-              ]}
+              options={CONCIERGE_OPTION_VALUES.budgets}
               value={budget}
               setValue={setBudget}
+              contextualField="budget"
             />
+            <p className={helperText}>{copy.practical.budgetHelper}</p>
+            {contextualNotes.budget ? (
+              <p className={contextualText} aria-live="polite">
+                {contextualNotes.budget}
+              </p>
+            ) : null}
           </div>
 
           <div>
             <label className={fieldLabel} htmlFor={`${formId}-notes`}>
-              Inspiration or Notes
+              {copy.practical.notes}
             </label>
             <textarea
               id={`${formId}-notes`}
-              name="inspirationNotes"
-              rows={6}
+              name={CONCIERGE_FORM_FIELD_NAMES.inspirationNotes}
+              rows={5}
               value={inspirationNotes}
               onChange={(event) => {
                 markFormStarted();
                 setInspirationNotes(event.target.value);
               }}
-              placeholder="Anything you'd like us to know. References, ideas, timing, or even a rough direction."
+              placeholder={copy.practical.notesPlaceholder}
               className={`${inputClass} resize-none leading-7`}
             />
           </div>
 
           <div>
-            <div className={fieldLabel}>Reference Images</div>
-            <p className="mt-3 max-w-[36rem] text-[14px] leading-7 text-[#6a635c]">
-              Reference images can be shared securely after the initial
-              conversation.
+            <div className={fieldLabelUpper}>Reference Images</div>
+            <p className="mt-2 max-w-[36rem] text-[13px] leading-6 text-[#6a635c]">
+              {copy.practical.referenceImages}
             </p>
           </div>
 
-          <div>
-            <div className={fieldLabel}>Contact</div>
-            <p className="mt-2 text-[14px] leading-7 text-[#6f665d]">
-              How you’d prefer we reach out.
+          <div className="pt-1">
+            <div className={fieldLabel}>{copy.practical.contact}</div>
+            <p className="mt-1.5 text-[13px] leading-6 text-[#6f665d]">
+              {copy.practical.contactSupport}
             </p>
 
-            <div className="mt-5 grid gap-5 md:grid-cols-2">
+            <div className="mt-4 grid gap-4 md:grid-cols-2">
               <div>
-                <label className={fieldLabel} htmlFor={`${formId}-name`}>
+                <label className={fieldLabelUpper} htmlFor={`${formId}-name`}>
                   Name
                 </label>
                 <input
                   id={`${formId}-name`}
-                  name="fullName"
+                  name={CONCIERGE_FORM_FIELD_NAMES.fullName}
                   type="text"
                   autoComplete="name"
                   placeholder="Your name"
@@ -650,12 +662,12 @@ export default function ConciergeFormClient() {
               </div>
 
               <div>
-                <label className={fieldLabel} htmlFor={`${formId}-email`}>
+                <label className={fieldLabelUpper} htmlFor={`${formId}-email`}>
                   Email
                 </label>
                 <input
                   id={`${formId}-email`}
-                  name="email"
+                  name={CONCIERGE_FORM_FIELD_NAMES.email}
                   type="email"
                   autoComplete="email"
                   inputMode="email"
@@ -685,13 +697,13 @@ export default function ConciergeFormClient() {
               </div>
 
               <div className="md:col-span-2">
-                <label className={fieldLabel} htmlFor={`${formId}-phone`}>
+                <label className={fieldLabelUpper} htmlFor={`${formId}-phone`}>
                   Phone Number
                   {phoneRequired ? " (required)" : " (optional)"}
                 </label>
                 <input
                   id={`${formId}-phone`}
-                  name="phone"
+                  name={CONCIERGE_FORM_FIELD_NAMES.phone}
                   type="tel"
                   autoComplete="tel"
                   inputMode="tel"
@@ -723,11 +735,11 @@ export default function ConciergeFormClient() {
           </div>
 
           <div>
-            <div className={fieldLabel}>Preferred Contact</div>
+            <div className={fieldLabelUpper}>{copy.practical.preferredContact}</div>
             <PillRow
-              legend="Preferred Contact"
+              legend={copy.practical.preferredContact}
               groupName="preferredContactDisplay"
-              options={["Email", "Phone", "Text", "Any Is Fine"]}
+              options={CONCIERGE_OPTION_VALUES.preferredContacts}
               value={preferredContact}
               setValue={setPreferredContact}
             />
@@ -741,21 +753,18 @@ export default function ConciergeFormClient() {
         </div>
       </div>
 
-      <div className="mt-10 border-t border-[#e8dfd4] pt-8 text-center">
+      <div className="mt-8 border-t border-[#e8dfd4] pt-6 text-center">
         <p className="mx-auto max-w-[34rem] text-[13px] leading-7 text-[#7b7268]">
-          You don’t need to have everything figured out. This is simply a
-          starting point.
+          {copy.closing.primary}
         </p>
 
         <CTAGlimmer>
           <button
             type="submit"
             disabled={submitState === "submitting"}
-            className="mt-7 inline-flex min-h-[44px] items-center justify-center rounded-full bg-[#2b2723] px-7 py-3 text-sm tracking-wide text-white shadow-[0_14px_28px_rgba(43,39,35,0.12)] transition hover:translate-y-[-1px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-hg-focus focus-visible:ring-offset-2 focus-visible:ring-offset-hg-ivory disabled:cursor-not-allowed disabled:opacity-70"
+            className="mt-5 inline-flex min-h-[44px] items-center justify-center rounded-full bg-[#2b2723] px-7 py-3 text-sm tracking-wide text-white shadow-[0_14px_28px_rgba(43,39,35,0.12)] transition hover:translate-y-[-1px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-hg-focus focus-visible:ring-offset-2 focus-visible:ring-offset-hg-ivory disabled:cursor-not-allowed disabled:opacity-70"
           >
-            {submitState === "submitting"
-              ? "Sending..."
-              : "Begin the Conversation"}
+            {submitState === "submitting" ? "Sending..." : CONCIERGE_CTA_LABEL}
           </button>
         </CTAGlimmer>
 
@@ -765,7 +774,7 @@ export default function ConciergeFormClient() {
           tabIndex={-1}
           role="status"
           aria-live="polite"
-          className="mx-auto mt-5 min-h-[1.5rem] max-w-[34rem] outline-none"
+          className="mx-auto mt-4 min-h-[1.5rem] max-w-[34rem] outline-none"
         >
           {formMessage ? (
             <p
