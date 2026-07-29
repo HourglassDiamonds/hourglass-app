@@ -9,6 +9,10 @@ import {
   runClientJourneyAnalysis,
   type ClientJourneyAudit,
 } from "../bi/journey";
+import {
+  runClientAttentionAnalysis,
+  type ClientAttentionAudit,
+} from "../bi/client-attention";
 import { createEvidence } from "../evidence";
 import { buildRecommendation } from "../recommendation";
 import { assertOperationalForRecommendations } from "../registry";
@@ -37,6 +41,8 @@ export type BusinessIntelligenceOutput = {
   opportunityHandoff: OpportunityMeasurementHandoff;
   /** Client Journey & Conversion Analysis (shared with Chief of Staff). */
   journeyAudit: ClientJourneyAudit;
+  /** Client Attention — CRM/inbox intelligence (fixture or live adapters). */
+  clientAttentionAudit: ClientAttentionAudit;
 };
 
 export type RunBusinessIntelligenceOptions = {
@@ -643,10 +649,38 @@ export function runBusinessIntelligence(
     });
   }
 
+  const clientAttention = runClientAttentionAnalysis({
+    mode,
+    reportingPeriod,
+    fixturePreset: mode === "fixture" ? "success" : undefined,
+  });
+  facts.push(...clientAttention.audit.facts);
+  inferences.push(...clientAttention.audit.inferences);
+  for (const gap of clientAttention.audit.dataGaps) {
+    if (gap.suppressFromFounderRanking && gap.founderRelevance === "suppressed") {
+      continue;
+    }
+    if (
+      gap.suppressFromFounderRanking &&
+      gap.founderRelevance === "diagnostic" &&
+      !gap.id.includes("pipeline-incomplete")
+    ) {
+      continue;
+    }
+    dataGaps.push({
+      id: `gap-client-attention-${gap.id.split(":").pop() ?? "source"}`,
+      sourceId: "hubspot-aggregates",
+      description: gap.scope,
+      impactOnRecommendations: gap.affectedAnalyses.join("; "),
+      suggestedRemedy: gap.resolutionPrerequisite,
+    });
+  }
+
   const mergedRecommendations = [
     ...recommendations,
     ...measurementRecs,
     ...journeyRecs,
+    ...clientAttention.recommendations,
   ];
 
   return {
@@ -660,6 +694,7 @@ export function runBusinessIntelligence(
     conversionAudit: audit,
     opportunityHandoff: audit.opportunityHandoff,
     journeyAudit,
+    clientAttentionAudit: clientAttention.audit,
   };
 }
 

@@ -240,11 +240,17 @@ describe("POST /api/concierge", () => {
   });
 
   it("still accepts when association fails after contact and deal succeed", async () => {
-    const warnings: string[] = [];
+    const warnCalls: unknown[][] = [];
     const originalWarn = console.warn;
     console.warn = (...args: unknown[]) => {
-      warnings.push(args.map(String).join(" "));
+      warnCalls.push(args);
     };
+
+    // Deterministic id that deliberately contains "c2"/"d2" hex substrings —
+    // the old /c2|d2/ body check false-failed on random UUIDs with those digits.
+    const submissionId = "c2c2c2c2-d2d2-4d2d-8c2c-d2d2d2d2d2d2";
+    const hubspotContactId = "hs-contact-assoc-fail";
+    const hubspotDealId = "hs-deal-assoc-fail";
 
     try {
       globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -254,10 +260,14 @@ describe("POST /api/concierge", () => {
           return new Response("not found", { status: 404 });
         }
         if (url.endsWith("/contacts") && method === "POST") {
-          return new Response(JSON.stringify({ id: "c2" }), { status: 201 });
+          return new Response(JSON.stringify({ id: hubspotContactId }), {
+            status: 201,
+          });
         }
         if (url.endsWith("/deals") && method === "POST") {
-          return new Response(JSON.stringify({ id: "d2" }), { status: 201 });
+          return new Response(JSON.stringify({ id: hubspotDealId }), {
+            status: 201,
+          });
         }
         if (url.includes("/associations/") && method === "PUT") {
           return new Response(
@@ -273,29 +283,56 @@ describe("POST /api/concierge", () => {
 
       const response = await POST(
         buildFormRequest(
-          { ...validFields, submissionId: crypto.randomUUID() },
+          { ...validFields, submissionId },
           { ip: "203.0.113.16" },
         ),
       );
       const body = await response.json();
       assert.equal(response.status, 200);
+      assert.equal(body.ok, true);
       assert.equal(body.accepted, true);
-      assert.ok(
-        warnings.some((line) => line.includes("CONCIERGE_ASSOCIATION_NONFATAL")),
+      assert.equal(body.submissionId, submissionId);
+      assert.deepEqual(Object.keys(body).sort(), [
+        "accepted",
+        "message",
+        "ok",
+        "submissionId",
+      ]);
+      assert.equal("contactId" in body, false);
+      assert.equal("dealId" in body, false);
+      assert.doesNotMatch(JSON.stringify(body), new RegExp(hubspotContactId));
+      assert.doesNotMatch(JSON.stringify(body), new RegExp(hubspotDealId));
+
+      const assocWarn = warnCalls.find(
+        (args) => args[0] === "[CONCIERGE_ASSOCIATION_NONFATAL]",
       );
-      assert.doesNotMatch(warnings.join("\n"), /c2|d2|alex\.example/i);
-      assert.doesNotMatch(JSON.stringify(body), /c2|d2|contactId|dealId/i);
+      assert.ok(assocWarn, "expected CONCIERGE_ASSOCIATION_NONFATAL warning");
+      assert.equal(typeof assocWarn[1], "object");
+      const payload = assocWarn[1] as Record<string, unknown>;
+      assert.equal(payload.code, "CONCIERGE_ASSOCIATION_NONFATAL");
+      assert.equal(payload.submissionId, submissionId.slice(0, 12));
+      assert.equal("contactId" in payload, false);
+      assert.equal("dealId" in payload, false);
+      assert.equal("email" in payload, false);
+      const payloadJson = JSON.stringify(payload);
+      assert.doesNotMatch(payloadJson, new RegExp(hubspotContactId));
+      assert.doesNotMatch(payloadJson, new RegExp(hubspotDealId));
+      assert.doesNotMatch(payloadJson, /alex\.example/i);
     } finally {
       console.warn = originalWarn;
     }
   });
 
   it("still accepts when note creation fails after contact and deal succeed", async () => {
-    const warnings: string[] = [];
+    const warnCalls: unknown[][] = [];
     const originalWarn = console.warn;
     console.warn = (...args: unknown[]) => {
-      warnings.push(args.map(String).join(" "));
+      warnCalls.push(args);
     };
+
+    const submissionId = "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee";
+    const hubspotContactId = "hs-contact-note-fail";
+    const hubspotDealId = "hs-deal-note-fail";
 
     try {
       globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -305,10 +342,14 @@ describe("POST /api/concierge", () => {
           return new Response("not found", { status: 404 });
         }
         if (url.endsWith("/contacts") && method === "POST") {
-          return new Response(JSON.stringify({ id: "c3" }), { status: 201 });
+          return new Response(JSON.stringify({ id: hubspotContactId }), {
+            status: 201,
+          });
         }
         if (url.endsWith("/deals") && method === "POST") {
-          return new Response(JSON.stringify({ id: "d3" }), { status: 201 });
+          return new Response(JSON.stringify({ id: hubspotDealId }), {
+            status: 201,
+          });
         }
         if (url.includes("/associations/") && method === "PUT") {
           return new Response(null, { status: 204 });
@@ -323,15 +364,31 @@ describe("POST /api/concierge", () => {
 
       const response = await POST(
         buildFormRequest(
-          { ...validFields, submissionId: crypto.randomUUID() },
+          { ...validFields, submissionId },
           { ip: "203.0.113.17" },
         ),
       );
       const body = await response.json();
       assert.equal(response.status, 200);
       assert.equal(body.accepted, true);
-      assert.ok(warnings.some((line) => line.includes("CONCIERGE_NOTE_NONFATAL")));
-      assert.doesNotMatch(warnings.join("\n"), /c3|d3|alex\.example/i);
+      assert.equal(body.submissionId, submissionId);
+      assert.equal("contactId" in body, false);
+      assert.equal("dealId" in body, false);
+
+      const noteWarn = warnCalls.find(
+        (args) => args[0] === "[CONCIERGE_NOTE_NONFATAL]",
+      );
+      assert.ok(noteWarn, "expected CONCIERGE_NOTE_NONFATAL warning");
+      const payload = noteWarn[1] as Record<string, unknown>;
+      assert.equal(payload.code, "CONCIERGE_NOTE_NONFATAL");
+      assert.equal(payload.submissionId, submissionId.slice(0, 12));
+      assert.equal("contactId" in payload, false);
+      assert.equal("dealId" in payload, false);
+      assert.equal("email" in payload, false);
+      const payloadJson = JSON.stringify(payload);
+      assert.doesNotMatch(payloadJson, new RegExp(hubspotContactId));
+      assert.doesNotMatch(payloadJson, new RegExp(hubspotDealId));
+      assert.doesNotMatch(payloadJson, /alex\.example/i);
     } finally {
       console.warn = originalWarn;
     }

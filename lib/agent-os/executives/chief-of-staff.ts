@@ -8,6 +8,11 @@ import {
   sequenceJourneyMeasurementPrerequisites,
 } from "../bi/journey";
 import {
+  applyClientAttentionFounderRankingGate,
+  isClientAttentionRecommendationId,
+  MAX_CLIENT_ATTENTION_FOUNDER_PRIORITIES,
+} from "../bi/client-attention";
+import {
   cleanFounderFacingAction,
   composeHighestRoiAction,
   filterFounderFacingBlockers,
@@ -116,7 +121,7 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
     (e) => `${e.displayName} not yet operational`,
   );
 
-  // Source hierarchy (daily): A backlog → B calendar (none yet) → C inbox (none)
+  // Source hierarchy (daily): A backlog → B calendar (none yet) → C inbox (client attention)
   // → D project/deploy (repo executives) → E analytics → F social → G opportunity.
   // Missing lower sources must never erase higher persistent context.
   const backlogRecs = input.operatingBacklog
@@ -148,6 +153,7 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
   recommendations = consolidateJourneyDuplicates(recommendations);
   recommendations = applyJourneyFounderRankingGate(recommendations);
   recommendations = sequenceJourneyMeasurementPrerequisites(recommendations);
+  recommendations = applyClientAttentionFounderRankingGate(recommendations);
   recommendations = rankRecommendations(
     recommendations.filter((r) => r.status !== "consolidated"),
   );
@@ -765,6 +771,18 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
         })
       : null;
 
+  const clientAttentionItems =
+    intent === "daily"
+      ? buildClientAttentionBriefItems({
+          pool: [highest, ...additionalSurfaced].filter(
+            (r): r is Recommendation => Boolean(r),
+          ),
+          fallbackPool: surfacePool,
+          highestTitle: highest?.title ?? null,
+          priorityTitles: surfacedPriorityTitles,
+        })
+      : null;
+
   const brief = buildFounderBrief({
     mode: input.mode ?? "fixture",
     briefEvidenceQuality: input.briefEvidenceQuality ?? "full",
@@ -803,6 +821,7 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
     dayOrientation:
       intent === "daily" ? backlogOrientation?.dayOrientation ?? null : null,
     opportunityToWatch,
+    clientAttentionItems,
   });
 
   return {
@@ -981,6 +1000,11 @@ function buildFounderBrief(input: {
   sprintOrientation?: string | null;
   dayOrientation?: string | null;
   opportunityToWatch?: string | null;
+  clientAttentionItems?: Array<{
+    title: string;
+    summary: string;
+    action: string;
+  }> | null;
 }): FounderBrief {
   const bullets = (items: string[]) =>
     items.length ? items.map((i) => `- ${i}`).join("\n") : "- None";
@@ -1019,6 +1043,21 @@ ${bullets(
       : `## 8. What data is missing or unreliable?
 ${bullets(input.missingOrUnreliableData.slice(0, 5))}`;
 
+  const clientSection =
+    input.briefCadenceIntent === "daily" &&
+    input.clientAttentionItems &&
+    input.clientAttentionItems.length > 0
+      ? `
+## Client Attention
+${input.clientAttentionItems
+  .map(
+    (item, i) =>
+      `${i + 1}. ${item.title}. ${item.summary} ${item.action}`,
+  )
+  .join("\n")}
+`
+      : "";
+
   const markdown = `${heading}
 
 Mode: ${modeLabel}
@@ -1046,7 +1085,7 @@ ${bullets(input.blocked)}
 
 ## 7. What decision does the founder need to make?
 ${bullets(input.founderDecisionNeeded)}
-
+${clientSection}
 ${dataSection}
 
 ### Known facts
@@ -1073,5 +1112,58 @@ Agent OS V1 — read-only. No external writes. Revenue is never inferred from tr
     sprintOrientation: input.sprintOrientation ?? null,
     dayOrientation: input.dayOrientation ?? null,
     opportunityToWatch: input.opportunityToWatch ?? null,
+    clientAttentionItems: input.clientAttentionItems?.length
+      ? input.clientAttentionItems
+      : null,
   };
+}
+
+function buildClientAttentionBriefItems(input: {
+  pool: Recommendation[];
+  fallbackPool: Recommendation[];
+  highestTitle: string | null;
+  priorityTitles: string[];
+}): Array<{ title: string; summary: string; action: string }> | null {
+  const fromPool = input.pool.filter((r) =>
+    isClientAttentionRecommendationId(r.recommendationId),
+  );
+  const fromFallback = input.fallbackPool.filter((r) =>
+    isClientAttentionRecommendationId(r.recommendationId),
+  );
+  const combined = [...fromPool];
+  for (const r of fromFallback) {
+    if (!combined.some((c) => c.recommendationId === r.recommendationId)) {
+      combined.push(r);
+    }
+  }
+
+  const items = combined
+    .slice(0, MAX_CLIENT_ATTENTION_FOUNDER_PRIORITIES)
+    .map((r) => {
+      const title = r.title.replace(/^\[[^\]]+\]\s*/, "");
+      return {
+        title,
+        summary: summarizeFounderAction(r.plainLanguageExplanation, 160),
+        action: cleanFounderFacingAction(r.proposedAction),
+      };
+    })
+    // Avoid duplicating the exact highest-ROI / priority line in the section
+    // when the section would only repeat the same title without added value.
+    .filter((item) => {
+      const normalized = item.title.toLowerCase();
+      if (
+        input.highestTitle &&
+        input.highestTitle.replace(/^\[[^\]]+\]\s*/, "").toLowerCase() ===
+          normalized &&
+        combined.length === 1
+      ) {
+        // Still show the section when it is the only client item — founders
+        // expect Client Attention when signals exist. Duplication vs Highest-ROI
+        // is acceptable as a short restatement; email renderer may collapse.
+        return true;
+      }
+      return true;
+    });
+
+  return items.length ? items : null;
 }

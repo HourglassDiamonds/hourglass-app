@@ -155,6 +155,7 @@ export const EXECUTIVE_REGISTRY: readonly ExecutiveDefinition[] = [
       "funnel coverage",
       "journey progression",
       "client journey analysis",
+      "client attention intelligence",
       "journey surface inventory",
       "journey friction detection",
       "conversion-signal availability",

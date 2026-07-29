@@ -207,6 +207,18 @@ function renderDailyMorningBriefEmail(input: {
     ? `<tr><td style="padding:0 32px 24px;">${sectionHeading("Opportunity to watch")}<p style="margin:0;font-size:14px;line-height:1.7;color:#3d3832;">${escapeHtml(redactSecretsAndPii(watch))}</p></td></tr>`
     : "";
 
+  const clientItems = run.brief.clientAttentionItems ?? [];
+  const clientAttentionHtml =
+    clientItems.length > 0
+      ? `<tr><td style="padding:0 24px 24px;">${sectionHeading("Client Attention")}<ol style="margin:0;padding:0 0 0 18px;">${clientItems
+          .slice(0, 2)
+          .map(
+            (item) =>
+              `<li style="margin:0 0 10px;font-size:14px;line-height:1.65;color:#4a443e;"><strong>${escapeHtml(redactSecretsAndPii(item.title))}</strong> — ${escapeHtml(redactSecretsAndPii(item.summary))} ${escapeHtml(redactSecretsAndPii(item.action))}</li>`,
+          )
+          .join("")}</ol></td></tr>`
+      : "";
+
   const confidenceHtml = confidence.renderInFounderEmail
     ? `<tr><td style="padding:0 32px 20px;">${sectionHeading("Data confidence")}<p style="margin:0;font-size:13px;line-height:1.6;color:#6a635c;"><strong>${escapeHtml(confidence.level)}</strong> — ${escapeHtml(redactSecretsAndPii(confidence.summary))}</p>${
         confidence.showDetails && confidence.detailLines.length
@@ -256,6 +268,7 @@ function renderDailyMorningBriefEmail(input: {
           ${prioritiesHtml}
         </td>
       </tr>
+      ${clientAttentionHtml}
       ${decisionsHtml}
       ${blockersHtml}
       ${watchHtml}
@@ -277,6 +290,18 @@ function renderDailyMorningBriefEmail(input: {
       ? priorities.map((t, i) => `${i + 1}. ${redactSecretsAndPii(t)}`)
       : [`1. ${redactSecretsAndPii(summarizeFounderAction(highestRoi.split(".")[0] ?? highestRoi, 160))}`]),
   ];
+  if (clientItems.length) {
+    textParts.push(
+      ``,
+      `Client Attention:`,
+      ...clientItems
+        .slice(0, 2)
+        .map(
+          (item, i) =>
+            `${i + 1}. ${redactSecretsAndPii(item.title)} — ${redactSecretsAndPii(item.summary)} ${redactSecretsAndPii(item.action)}`,
+        ),
+    );
+  }
   if (decisions.length) {
     textParts.push(``, `Decisions:`, ...decisions.map((d) => `- ${redactSecretsAndPii(d)}`));
   }

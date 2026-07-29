@@ -269,6 +269,15 @@ export type FounderBrief = {
    * Actionable opportunity-to-watch line with magnitude, or null when omitted.
    */
   opportunityToWatch?: string | null;
+  /**
+   * Optional Client Attention lines (max 2). Omitted when empty.
+   * Safe display names only — no emails, phones, or CRM IDs.
+   */
+  clientAttentionItems?: Array<{
+    title: string;
+    summary: string;
+    action: string;
+  }> | null;
 };
 
 export type AgentRun = {
