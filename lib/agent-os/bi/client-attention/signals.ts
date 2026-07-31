@@ -1,8 +1,16 @@
 /**
  * Generate actionable ClientAttentionSignal records from resolved identities + sources.
+ *
+ * Reply-state authority:
+ * - Gmail (ok/fixture/empty) is required to assert reply-overdue / unanswered-inbound.
+ * - HubSpot/Concierge alone never claims “you have not replied.”
+ * - Recent unhandled Concierge may become new-inquiry-needs-review (unknown response state).
  */
 
-import type { ClientAttentionSourceBundle } from "./adapters/types";
+import type {
+  ClientAttentionSourceBundle,
+  NormalizedHubSpotDeal,
+} from "./adapters/types";
 import type { ResolvedClientIdentity } from "./identity";
 import type {
   BuyerConcernSignal,
@@ -24,6 +32,24 @@ export type SignalGenerationResult = {
   suppressedCount: number;
 };
 
+export type ResponseState = ClientAttentionSignal["responseState"];
+
+/** True when Gmail adapter ran and can confirm inbound/outbound ordering. */
+export function gmailCanConfirmReplyState(
+  bundle: ClientAttentionSourceBundle,
+): boolean {
+  const status = bundle.gmail.status;
+  return status === "ok" || status === "fixture" || status === "empty";
+}
+
+export function isTerminalDeal(deal: NormalizedHubSpotDeal): boolean {
+  if (deal.closed || deal.deferred) return true;
+  const stage = (deal.stage || "").toLowerCase();
+  return /closedwon|closedlost|closed.?won|closed.?lost|lost|disqualified|spam|test|archived|junk/.test(
+    stage,
+  );
+}
+
 export function generateClientAttentionSignals(input: {
   bundle: ClientAttentionSourceBundle;
   identities: ResolvedClientIdentity[];
@@ -34,16 +60,15 @@ export function generateClientAttentionSignals(input: {
   const now = Date.parse(input.nowIso);
   const signals: ClientAttentionSignal[] = [];
   let suppressedCount = 0;
+  const gmailReplyAuthority = gmailCanConfirmReplyState(input.bundle);
 
-  const bySubject = new Map(
-    input.identities.map((i) => [i.subjectKey, i] as const),
-  );
   const identityForEmail = (email?: string) =>
-    input.identities.find((i) => i.normalizedEmail && email && i.normalizedEmail === email);
+    input.identities.find(
+      (i) => i.normalizedEmail && email && i.normalizedEmail === email,
+    );
   const identityForContact = (contactId?: string) =>
     input.identities.find((i) => contactId && i.contactIds.includes(contactId));
 
-  // Index HubSpot by contact
   const contactById = new Map(
     input.bundle.hubspot.contacts.map((c) => [c.contactId, c] as const),
   );
@@ -76,7 +101,6 @@ export function generateClientAttentionSignals(input: {
       suppressedCount += 1;
       return;
     }
-    // Deduplicate by signalType + subjectKey
     const dedupeKey = `${signal.signalType}:${signal.subjectKey}`;
     if (signals.some((s) => `${s.signalType}:${s.subjectKey}` === dedupeKey)) {
       suppressedCount += 1;
@@ -85,7 +109,13 @@ export function generateClientAttentionSignals(input: {
     signals.push(signal);
   };
 
-  // A. New Concierge inquiry / reply overdue
+  const contactHasOnlyTerminalDeals = (contactId: string): boolean => {
+    const deals = dealsByContact.get(contactId) ?? [];
+    if (!deals.length) return false;
+    return deals.every(isTerminalDeal);
+  };
+
+  // A. Concierge — never assert reply-overdue without Gmail confirmation.
   for (const sub of input.bundle.concierge.submissions) {
     if (!sub.accepted) continue;
     const identity =
@@ -94,21 +124,43 @@ export function generateClientAttentionSignals(input: {
       input.identities.find((i) => i.submissionIds.includes(sub.submissionId));
     if (!identity) continue;
 
-    const hours =
-      (now - Date.parse(sub.submittedAt)) / 3600_000;
-    const threads = sub.normalizedEmail
-      ? threadsByEmail.get(sub.normalizedEmail) ?? []
-      : [];
-    const hasOutbound = threads.some((t) => t.hasLaterOutboundReply);
+    const hours = (now - Date.parse(sub.submittedAt)) / 3600_000;
     const deals = identity.contactIds.flatMap(
       (id) => dealsByContact.get(id) ?? [],
     );
-    const closedOrDeferred = deals.some((d) => d.closed || d.deferred);
-    const completedFollowUp = (tasksByContact.get(identity.contactIds[0] ?? "") ?? []).some(
-      (t) => t.status === "completed",
+    const openDeals = deals.filter((d) => !isTerminalDeal(d));
+    const terminalOnly = deals.length > 0 && openDeals.length === 0;
+    const tasks = identity.contactIds.flatMap(
+      (id) => tasksByContact.get(id) ?? [],
+    );
+    const completedFollowUp = tasks.some((t) => t.status === "completed");
+    const openOverdueTask = tasks.some(
+      (t) =>
+        t.status === "open" && t.dueAt && Date.parse(t.dueAt) <= now,
+    );
+    const futureNext = openDeals.some(
+      (d) => d.nextActivityAt && Date.parse(d.nextActivityAt) > now,
     );
 
-    if (hasOutbound || closedOrDeferred || completedFollowUp) {
+    if (terminalOnly || completedFollowUp) {
+      suppressedCount += 1;
+      continue;
+    }
+
+    const threads = sub.normalizedEmail
+      ? threadsByEmail.get(sub.normalizedEmail) ?? []
+      : [];
+    const gmailConfirmedUnreplied = threads.some(
+      (t) =>
+        t.businessRelevant &&
+        !t.automated &&
+        t.latestDirection === "inbound" &&
+        !t.hasLaterOutboundReply &&
+        Boolean(t.lastInboundAt),
+    );
+
+    // Gmail path owns reply-overdue; Concierge does not invent it.
+    if (gmailReplyAuthority && gmailConfirmedUnreplied) {
       suppressedCount += 1;
       continue;
     }
@@ -118,91 +170,147 @@ export function generateClientAttentionSignals(input: {
       continue;
     }
 
-    let urgency: Urgency = "medium";
-    if (hours >= thresholds.newInquiryCriticalHours) urgency = "critical";
-    else if (hours >= thresholds.newInquiryHighHours) urgency = "high";
+    // Without Gmail reply authority: only a recent, unhandled review item.
+    if (!gmailReplyAuthority) {
+      if (hours > thresholds.conciergeReviewMaxAgeHoursWithoutGmail) {
+        // Stale open inquiry — do not claim awaiting email reply.
+        // Explicit CRM anchors (overdue task / future next) are handled elsewhere.
+            if (!openOverdueTask && !futureNext) {
+              suppressedCount += 1;
+              continue;
+            }
+            // Explicit CRM anchors still should not invent reply-overdue here;
+            // overdue tasks / next steps are emitted from HubSpot loops below.
+            suppressedCount += 1;
+            continue;
+      }
 
-    push(
-      buildSignal({
-        identity,
-        signalType: hours >= thresholds.newInquiryHighHours ? "reply-overdue" : "new-inquiry",
-        urgency,
-        confidence: identity.sourceTypes.length > 1 ? "high" : "medium",
-        summary: `A new Concierge inquiry has been waiting ${Math.round(hours)} hours.`,
-        whyItMatters:
-          "Hourglass aims to respond within about 24 hours; delay risks losing a warm conversation.",
-        recommendedAction: `Reply this morning and confirm ${identity.displayName.split(" ")[0]}'s preferred next step.`,
-        firstSeenAt: sub.submittedAt,
-        lastInboundAt: sub.submittedAt,
-        targetDate: deals[0]?.proposalDate ?? deals[0]?.targetDate,
-        evidence: [
-          evidence("concierge", "concierge-submission", sub.submissionId, {
-            observation: `Accepted Concierge submission age ~${Math.round(hours)}h.`,
-          }),
-          ...threads.slice(0, 1).map((t) =>
-            evidence("gmail", "gmail-thread-meta", t.threadId, {
-              observation: "No later outbound reply found on related thread.",
+      let urgency: Urgency = "medium";
+      if (hours >= thresholds.newInquiryCriticalHours) urgency = "high";
+      else if (hours >= thresholds.newInquiryHighHours) urgency = "high";
+
+      push(
+        buildSignal({
+          identity,
+          signalType: "new-inquiry-needs-review",
+          urgency,
+          confidence: "low",
+          responseState: "unknown",
+          summary: `Recent Concierge inquiry (~${Math.round(hours)}h) has no Gmail confirmation of reply status.`,
+          whyItMatters:
+            "Worth a calm CRM check — HubSpot alone cannot prove whether an email reply is still owed.",
+          recommendedAction: `Review this recent Concierge inquiry for ${identity.displayName} and confirm the next step.`,
+          firstSeenAt: sub.submittedAt,
+          evidence: [
+            evidence("concierge", "concierge-submission", sub.submissionId, {
+              observation: `Accepted Concierge submission age ~${Math.round(hours)}h; response state unknown without Gmail.`,
+              reliability: "unverified",
             }),
-          ),
-        ],
-      }),
-    );
-  }
-
-  // B. Unanswered inbound Gmail
-  for (const thread of input.bundle.gmail.threads) {
-    if (thread.automated || !thread.businessRelevant) continue;
-    if (thread.latestDirection !== "inbound") continue;
-    if (thread.hasLaterOutboundReply) continue;
-    if (!thread.lastInboundAt) continue;
-
-    const hours = (now - Date.parse(thread.lastInboundAt)) / 3600_000;
-    if (hours < thresholds.unansweredInboundHours) {
-      suppressedCount += 1;
+            evidence("derived", "source-gap", "gmail-reply-state", {
+              observation: "Gmail reply authority unavailable this run.",
+              reliability: "unavailable",
+            }),
+          ],
+        }),
+      );
       continue;
     }
 
-    const identity =
-      identityForEmail(thread.normalizedPrimaryEmail) ||
-      input.identities.find((i) => i.threadIds.includes(thread.threadId));
-    if (!identity) continue;
-
-    // Skip if already covered as Concierge reply-overdue for same subject
-    if (
-      signals.some(
-        (s) =>
-          s.subjectKey === identity.subjectKey &&
-          (s.signalType === "reply-overdue" || s.signalType === "new-inquiry"),
-      )
-    ) {
+    // Gmail available but no confirming unreplied thread yet — still not reply-overdue.
+    if (hours <= thresholds.conciergeReviewMaxAgeHoursWithoutGmail) {
+      push(
+        buildSignal({
+          identity,
+          signalType: "new-inquiry-needs-review",
+          urgency: hours >= thresholds.newInquiryHighHours ? "medium" : "low",
+          confidence: "medium",
+          responseState: "unknown",
+          summary: `Recent Concierge inquiry (~${Math.round(hours)}h) needs review; no matching unreplied Gmail thread confirmed.`,
+          whyItMatters:
+            "Keep the Concierge response promise without inventing an unanswered-email claim.",
+          recommendedAction: `Review this recent Concierge inquiry for ${identity.displayName}.`,
+          firstSeenAt: sub.submittedAt,
+          evidence: [
+            evidence("concierge", "concierge-submission", sub.submissionId, {
+              observation: `Submission age ~${Math.round(hours)}h without Gmail-confirmed unreplied inbound.`,
+              reliability: "degraded",
+            }),
+          ],
+        }),
+      );
+    } else {
       suppressedCount += 1;
-      continue;
     }
-
-    push(
-      buildSignal({
-        identity,
-        signalType: "unanswered-inbound",
-        urgency: hours >= 48 ? "high" : "medium",
-        confidence: identity.contactIds.length ? "high" : "medium",
-        summary: `Inbound email has been waiting about ${Math.round(hours)} hours without a reply.`,
-        whyItMatters:
-          "An unanswered client thread can stall a live conversation.",
-        recommendedAction: `Reply today with a calm next step for ${identity.displayName}.`,
-        lastInboundAt: thread.lastInboundAt,
-        evidence: [
-          evidence("gmail", "gmail-thread-meta", thread.threadId, {
-            observation: `Inbound unreplied ~${Math.round(hours)}h.`,
-          }),
-        ],
-      }),
-    );
   }
 
-  // C. Follow-up due (next activity / open tasks)
+  // B. Unanswered inbound / reply-overdue — Gmail authority only.
+  if (gmailReplyAuthority) {
+    for (const thread of input.bundle.gmail.threads) {
+      if (thread.automated || !thread.businessRelevant) continue;
+      if (thread.latestDirection !== "inbound") continue;
+      if (thread.hasLaterOutboundReply) continue;
+      if (!thread.lastInboundAt) continue;
+
+      const hours = (now - Date.parse(thread.lastInboundAt)) / 3600_000;
+      if (hours < thresholds.unansweredInboundHours) {
+        suppressedCount += 1;
+        continue;
+      }
+
+      const identity =
+        identityForEmail(thread.normalizedPrimaryEmail) ||
+        input.identities.find((i) => i.threadIds.includes(thread.threadId));
+      if (!identity) continue;
+
+      const deals = identity.contactIds.flatMap(
+        (id) => dealsByContact.get(id) ?? [],
+      );
+      if (deals.length > 0 && deals.every(isTerminalDeal)) {
+        suppressedCount += 1;
+        continue;
+      }
+
+      const isOverdue = hours >= thresholds.newInquiryHighHours;
+      const signalType = isOverdue ? "reply-overdue" : "unanswered-inbound";
+      let urgency: Urgency = "medium";
+      if (hours >= thresholds.newInquiryCriticalHours) urgency = "critical";
+      else if (hours >= thresholds.newInquiryHighHours) urgency = "high";
+
+      push(
+        buildSignal({
+          identity,
+          signalType,
+          urgency,
+          confidence: identity.contactIds.length ? "high" : "medium",
+          responseState: "confirmed-awaiting-reply",
+          summary: isOverdue
+            ? `Inbound email has been waiting about ${Math.round(hours)} hours without a reply.`
+            : `Inbound email has been waiting about ${Math.round(hours)} hours without a reply.`,
+          whyItMatters: isOverdue
+            ? "Hourglass aims to respond within about 24 hours; delay risks losing a warm conversation."
+            : "An unanswered client thread can stall a live conversation.",
+          recommendedAction: isOverdue
+            ? `Reply this morning and confirm ${identity.displayName.split(" ")[0]}'s preferred next step.`
+            : `Reply today with a calm next step for ${identity.displayName}.`,
+          lastInboundAt: thread.lastInboundAt,
+          evidence: [
+            evidence("gmail", "gmail-thread-meta", thread.threadId, {
+              observation: `Gmail-confirmed inbound unreplied ~${Math.round(hours)}h.`,
+            }),
+          ],
+        }),
+      );
+    }
+  }
+
+  // C. Follow-up due (explicit next activity / open tasks) — HubSpot OK without Gmail.
   for (const contact of input.bundle.hubspot.contacts) {
     const identity = identityForContact(contact.contactId);
     if (!identity) continue;
+    if (contactHasOnlyTerminalDeals(contact.contactId)) {
+      suppressedCount += 1;
+      continue;
+    }
 
     const nextAt = contact.nextActivityAt;
     if (nextAt) {
@@ -213,7 +321,8 @@ export function generateClientAttentionSignals(input: {
             identity,
             signalType: "follow-up-due",
             urgency: dueMs < now - 86400_000 ? "high" : "medium",
-            confidence: "high",
+            confidence: gmailReplyAuthority ? "high" : "medium",
+            responseState: "not-applicable",
             summary: "A scheduled HubSpot follow-up is due or overdue.",
             whyItMatters:
               "A promised next step loses trust when it slips without notice.",
@@ -238,7 +347,8 @@ export function generateClientAttentionSignals(input: {
           signalType: "follow-up-due",
           urgency: "high",
           confidence: "high",
-          summary: "An open client task is overdue.",
+          responseState: "not-applicable",
+          summary: "An open HubSpot task is overdue.",
           whyItMatters: "Open CRM tasks that slip become silent relationship risk.",
           recommendedAction: `Clear the overdue follow-up for ${identity.displayName} today.`,
           nextActivityAt: task.dueAt,
@@ -252,9 +362,9 @@ export function generateClientAttentionSignals(input: {
     }
   }
 
-  // D/F/G. Stalled / missing next step / deal-stage risk
+  // D/E/F/G. Deal-based HubSpot signals (open deals only).
   for (const deal of input.bundle.hubspot.deals) {
-    if (deal.closed || deal.deferred) continue;
+    if (isTerminalDeal(deal)) continue;
     const contactId = deal.contactIds[0];
     const identity = identityForContact(contactId);
     if (!identity) continue;
@@ -262,7 +372,9 @@ export function generateClientAttentionSignals(input: {
     const lastActivity = deal.lastActivityAt || contact?.lastActivityAt;
     const hasNext =
       Boolean(deal.nextActivityAt && Date.parse(deal.nextActivityAt) > now) ||
-      Boolean(contact?.nextActivityAt && Date.parse(contact.nextActivityAt) > now) ||
+      Boolean(
+        contact?.nextActivityAt && Date.parse(contact.nextActivityAt) > now,
+      ) ||
       (tasksByContact.get(contactId ?? "") ?? []).some(
         (t) => t.status === "open" && t.dueAt && Date.parse(t.dueAt) > now,
       );
@@ -271,6 +383,9 @@ export function generateClientAttentionSignals(input: {
     const stallDays = advanced
       ? thresholds.stalledAdvancedDays
       : thresholds.stalledEarlyDays;
+    const hubspotConfidence: ClientAttentionConfidence = gmailReplyAuthority
+      ? "medium"
+      : "low";
 
     if (!hasNext && lastActivity) {
       const days = (now - Date.parse(lastActivity)) / 86400_000;
@@ -280,39 +395,40 @@ export function generateClientAttentionSignals(input: {
             identity,
             signalType: "stalled-conversation",
             urgency: advanced ? "high" : "medium",
-            confidence: "medium",
-            summary: `No next step after about ${Math.round(days)} days of quiet.`,
+            confidence: hubspotConfidence,
+            responseState: "not-applicable",
+            summary: `CRM shows about ${Math.round(days)} days of quiet with no recorded next action.`,
             whyItMatters: advanced
-              ? "An advanced conversation without a next move can cool quickly."
-              : "Early inquiries still need a clear, low-pressure next step.",
-            recommendedAction: advanced
-              ? `Send a brief confidence-check email to ${identity.displayName}.`
-              : `Offer ${identity.displayName} one calm next step (call or Concierge follow-up).`,
+              ? "An advanced open opportunity without a next move can cool quickly."
+              : "Open inquiries still need a clear, low-pressure next step in CRM.",
+            recommendedAction: `Confirm the next step on this open opportunity with ${identity.displayName}.`,
             lastActivityAt: lastActivity,
             evidence: [
               evidence("hubspot", "hubspot-deal", deal.dealId, {
-                observation: `Deal inactive ~${Math.round(days)}d without future step.`,
+                observation: `Open deal inactive ~${Math.round(days)}d without future step.`,
               }),
             ],
           }),
         );
-      } else if (advanced || days >= 3) {
-        // F. Missing next step on qualified deals even before full stall window
+      } else if (
+        (advanced || days >= thresholds.missingNextStepMinIdleDays) &&
+        days >= 1
+      ) {
         push(
           buildSignal({
             identity,
             signalType: "missing-next-step",
             urgency: "medium",
-            confidence: "medium",
-            summary:
-              "Active inquiry has no recorded future meeting, task, or reply.",
+            confidence: hubspotConfidence,
+            responseState: "not-applicable",
+            summary: "CRM shows no recorded next action on an open opportunity.",
             whyItMatters:
-              "Without a next move, even healthy conversations drift.",
+              "Without a next move in CRM, even healthy conversations drift.",
             recommendedAction: `Set one clear next step with ${identity.displayName} today.`,
             lastActivityAt: lastActivity,
             evidence: [
               evidence("hubspot", "hubspot-deal", deal.dealId, {
-                observation: "No future activity on an active deal.",
+                observation: "No future activity on an active open deal.",
               }),
             ],
           }),
@@ -320,7 +436,6 @@ export function generateClientAttentionSignals(input: {
       }
     }
 
-    // E. Proposal / deadline approaching
     const target = deal.proposalDate || deal.targetDate || deal.appointmentDate;
     if (target) {
       const daysUntil = (Date.parse(target) - now) / 86400_000;
@@ -333,8 +448,10 @@ export function generateClientAttentionSignals(input: {
           buildSignal({
             identity,
             signalType: "proposal-date-approaching",
-            urgency: daysUntil <= 3 ? "critical" : daysUntil <= 7 ? "high" : "medium",
+            urgency:
+              daysUntil <= 3 ? "critical" : daysUntil <= 7 ? "high" : "medium",
             confidence: "high",
+            responseState: "not-applicable",
             summary: `A target date is about ${Math.round(daysUntil)} days away.`,
             whyItMatters:
               "Proposal and ceremony dates need progress before the window closes.",
@@ -349,7 +466,6 @@ export function generateClientAttentionSignals(input: {
         );
       }
 
-      // G. Deal-stage risk: advanced + aging proposal window without progress
       if (advanced && lastActivity) {
         const idleDays = (now - Date.parse(lastActivity)) / 86400_000;
         if (idleDays >= thresholds.stalledAdvancedDays && daysUntil <= 7) {
@@ -358,11 +474,12 @@ export function generateClientAttentionSignals(input: {
               identity,
               signalType: "deal-stage-risk",
               urgency: "high",
-              confidence: "medium",
+              confidence: hubspotConfidence,
+              responseState: "not-applicable",
               summary:
-                "Advanced-stage deal is near a deadline with prolonged inactivity.",
+                "Advanced-stage open deal is near a deadline with prolonged CRM inactivity.",
               whyItMatters:
-                "Structured risk — not ordinary silence — when stage and deadline both press.",
+                "Structured risk — not an asserted unanswered email — when stage and deadline both press.",
               recommendedAction: `Prioritize a short check-in with ${identity.displayName} on remaining decisions.`,
               lastActivityAt: lastActivity,
               targetDate: target,
@@ -378,7 +495,7 @@ export function generateClientAttentionSignals(input: {
     }
   }
 
-  // H. Material data discrepancies
+  // H. Material data discrepancies (require Gmail for reply-status class)
   for (const identity of input.identities) {
     const contact = identity.contactIds
       .map((id) => contactById.get(id))
@@ -399,8 +516,8 @@ export function generateClientAttentionSignals(input: {
         t.businessRelevant,
     );
 
-    // HubSpot "contacted" style lead status but Gmail shows no outbound
     if (
+      gmailReplyAuthority &&
       contact?.leadStatus &&
       /contacted|in_progress/i.test(contact.leadStatus) &&
       unrepliedInbound &&
@@ -412,6 +529,7 @@ export function generateClientAttentionSignals(input: {
           signalType: "data-discrepancy",
           urgency: "medium",
           confidence: "medium",
+          responseState: "confirmed-awaiting-reply",
           discrepancyClass: "reply-status-gmail-vs-hubspot",
           summary:
             "CRM suggests contact was made, but Gmail shows an unreplied inbound thread.",
@@ -430,8 +548,8 @@ export function generateClientAttentionSignals(input: {
       );
     }
 
-    // Gmail recent reply but CRM activity stale
     if (
+      gmailReplyAuthority &&
       latestOutbound?.lastOutboundAt &&
       contact?.lastActivityAt &&
       Date.parse(latestOutbound.lastOutboundAt) >
@@ -443,11 +561,11 @@ export function generateClientAttentionSignals(input: {
           signalType: "data-discrepancy",
           urgency: "low",
           confidence: "medium",
+          responseState: "not-applicable",
           discrepancyClass: "last-activity-timestamp-mismatch",
           summary:
             "Gmail shows a newer outbound reply than HubSpot last activity.",
-          whyItMatters:
-            "Stale CRM activity can hide completed follow-ups.",
+          whyItMatters: "Stale CRM activity can hide completed follow-ups.",
           recommendedAction: `Update CRM activity for ${identity.displayName} or trust Gmail for today's move.`,
           founderRankable: false,
           suppressReason: "Immaterial unless it changes today's action.",
@@ -458,23 +576,20 @@ export function generateClientAttentionSignals(input: {
           ],
         }),
       );
-      // Immaterial discrepancy — counted but not founder-rankable
       suppressedCount += 1;
     }
   }
-
-  // Possible duplicates from identity layer — only when actionable
-  // (handled as DataGap in audit; optional signal if both are active)
-  void bySubject;
 
   const buyerConcerns = aggregateBuyerConcerns(
     input.bundle,
     thresholds.buyerConcernMinEvidence,
   );
 
-  // I. At most one buyer-concern pattern signal when threshold met
   const topConcern = buyerConcerns[0];
-  if (topConcern && topConcern.evidenceCount >= thresholds.buyerConcernMinEvidence) {
+  if (
+    topConcern &&
+    topConcern.evidenceCount >= thresholds.buyerConcernMinEvidence
+  ) {
     push({
       id: `${CLIENT_ATTENTION_RECOMMENDATION_PREFIX}:buyer-concern-pattern:${slug(topConcern.concern)}`,
       subjectKey: hashPatternKey(topConcern.concern),
@@ -482,6 +597,7 @@ export function generateClientAttentionSignals(input: {
       signalType: "buyer-concern-pattern",
       urgency: "low",
       confidence: topConcern.confidence,
+      responseState: "not-applicable",
       summary: `Recurring buyer concern: ${topConcern.concern}.`,
       whyItMatters:
         "A repeating concern can shape Concierge language and content — without changing Content ROI automatically.",
@@ -509,6 +625,7 @@ function buildSignal(input: {
   signalType: ClientAttentionSignal["signalType"];
   urgency: Urgency;
   confidence: ClientAttentionConfidence;
+  responseState: ResponseState;
   summary: string;
   whyItMatters: string;
   recommendedAction: string;
@@ -533,6 +650,7 @@ function buildSignal(input: {
     signalType: input.signalType,
     urgency: input.urgency,
     confidence: input.confidence,
+    responseState: input.responseState,
     firstSeenAt: input.firstSeenAt,
     lastInboundAt: input.lastInboundAt,
     lastOutboundAt: input.lastOutboundAt,
@@ -553,7 +671,10 @@ function evidence(
   sourceType: ClientSignalEvidence["sourceType"],
   kind: ClientSignalEvidence["kind"],
   sourceObjectId: string,
-  opts: { observation: string },
+  opts: {
+    observation: string;
+    reliability?: ClientSignalEvidence["reliability"];
+  },
 ): ClientSignalEvidence {
   return {
     id: `ev:${kind}:${sourceObjectId}`.slice(0, 120),
@@ -561,7 +682,7 @@ function evidence(
     kind,
     observation: opts.observation,
     sourceObjectId,
-    reliability: "reliable",
+    reliability: opts.reliability ?? "reliable",
     redactionStatus: "clean",
   };
 }
@@ -630,7 +751,10 @@ function aggregateBuyerConcerns(
       evidenceCount: v.count,
     }))
     .filter((c) => c.evidenceCount >= minEvidence)
-    .sort((a, b) => b.evidenceCount - a.evidenceCount || b.recencyScore - a.recencyScore);
+    .sort(
+      (a, b) =>
+        b.evidenceCount - a.evidenceCount || b.recencyScore - a.recencyScore,
+    );
 }
 
 function slug(value: string): string {

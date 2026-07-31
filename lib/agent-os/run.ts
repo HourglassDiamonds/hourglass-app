@@ -11,6 +11,7 @@ import { randomUUID } from "node:crypto";
 import { loadAllSources, getFixtureReportingPeriod, getLiveAgentOsReportingPeriod } from "./adapters/load";
 import type { AdapterMode } from "./adapters/types";
 import { runBusinessIntelligence } from "./executives/business-intelligence";
+import { loadClientAttentionSourcesAsync } from "./bi/client-attention";
 import { emptyBusinessIntelligenceOutput } from "./bi/empty";
 import { runChiefOfStaff } from "./executives/chief-of-staff";
 import {
@@ -217,6 +218,11 @@ export async function runAgentOsBrief(
         (s) => s.health.retrievalState === "fixture",
       ));
 
+  const clientAttentionSources =
+    skipSynthesis || mode !== "live"
+      ? undefined
+      : await loadClientAttentionSourcesAsync({ mode }).catch(() => undefined);
+
   const bi = skipSynthesis
     ? {
         ...emptyBusinessIntelligenceOutput(
@@ -234,7 +240,10 @@ export async function runAgentOsBrief(
           },
         ],
       }
-    : runBusinessIntelligence(bundle, reportingPeriod, { mode });
+    : runBusinessIntelligence(bundle, reportingPeriod, {
+        mode,
+        clientAttentionSources,
+      });
 
   // Search Strategy still runs repository authority analysis when GSC is down,
   // unless the entire live load was aborted for fixture leakage / fatal error.

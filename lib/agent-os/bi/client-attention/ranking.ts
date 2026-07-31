@@ -80,11 +80,14 @@ function scoreSignal(signal: ClientAttentionSignal): RankedClientAttentionSignal
     missingNextStep: signal.signalType === "missing-next-step" ? 7 : signal.signalType === "stalled-conversation" ? 6 : 2,
     explicitUrgency: URGENCY_SCORE[signal.urgency],
     reputationalRisk:
-      signal.signalType === "reply-overdue" || signal.signalType === "new-inquiry"
+      signal.signalType === "reply-overdue"
         ? 8
-        : signal.signalType === "data-discrepancy"
-          ? 4
-          : 2,
+        : signal.signalType === "new-inquiry" ||
+            signal.signalType === "new-inquiry-needs-review"
+          ? 5
+          : signal.signalType === "data-discrepancy"
+            ? 4
+            : 2,
     easeOfResolvingToday:
       signal.signalType === "buyer-concern-pattern" ? 2 : 7,
     dataConfidence:
@@ -111,8 +114,15 @@ function scoreSignal(signal: ClientAttentionSignal): RankedClientAttentionSignal
   const totalScore = Math.round(raw * confidenceAdjustment * 10) / 10;
 
   const appliedThresholds: string[] = [];
-  if (signal.signalType === "reply-overdue" || signal.signalType === "new-inquiry") {
+  if (
+    signal.signalType === "reply-overdue" ||
+    signal.signalType === "new-inquiry" ||
+    signal.signalType === "new-inquiry-needs-review"
+  ) {
     appliedThresholds.push("newInquiryMediumHours/High/Critical");
+  }
+  if (signal.signalType === "new-inquiry-needs-review") {
+    appliedThresholds.push("conciergeReviewMaxAgeHoursWithoutGmail");
   }
   if (signal.signalType === "unanswered-inbound") {
     appliedThresholds.push("unansweredInboundHours");
@@ -145,8 +155,14 @@ function scoreResponseDelay(signal: ClientAttentionSignal): number {
   if (
     signal.signalType !== "reply-overdue" &&
     signal.signalType !== "new-inquiry" &&
+    signal.signalType !== "new-inquiry-needs-review" &&
     signal.signalType !== "unanswered-inbound"
   ) {
+    return 2;
+  }
+  if (signal.signalType === "new-inquiry-needs-review") {
+    if (signal.urgency === "high") return 5;
+    if (signal.urgency === "medium") return 4;
     return 2;
   }
   if (signal.urgency === "critical") return 10;

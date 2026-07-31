@@ -7,8 +7,10 @@
 
 import {
   loadClientAttentionSources,
+  loadClientAttentionSourcesAsync,
   type LoadClientAttentionSourcesOptions,
 } from "./adapters/load";
+import type { ClientAttentionSourceBundle } from "./adapters/types";
 import { buildClientActionBacklogCandidates } from "./backlog-candidates";
 import {
   buildSuccessFixtureSources,
@@ -19,6 +21,7 @@ import { rankClientAttentionSignals } from "./ranking";
 import { clientAttentionToRecommendations } from "./recommendations";
 import { redactClientAttentionAudit } from "./redaction";
 import {
+  emptyClientAttentionRunResult,
   runClientAttentionGuarded,
   type ClientAttentionRunResult,
 } from "./resilience";
@@ -72,9 +75,25 @@ export {
   runClientAttentionGuarded,
 } from "./resilience";
 export type { ClientAttentionRunResult } from "./resilience";
-export { redactClientAttentionAudit, founderFacingTextsAreSafe } from "./redaction";
+export { redactClientAttentionAudit, founderFacingTextsAreSafe, founderFacingOverstatesUnknownReply } from "./redaction";
+export {
+  gmailCanConfirmReplyState,
+  isTerminalDeal,
+  generateClientAttentionSignals,
+} from "./signals";
 export { DEFAULT_CLIENT_ATTENTION_THRESHOLDS, mergeThresholds } from "./thresholds";
 export { buildSuccessFixtureSources, CLIENT_ATTENTION_FIXTURE_NOW } from "./fixtures";
+export {
+  loadClientAttentionSources,
+  loadClientAttentionSourcesAsync,
+} from "./adapters/load";
+export { fetchHubSpotClientAttentionLive } from "./adapters/hubspot-live";
+export {
+  conciergeReconstructionQualityReport,
+  parseConciergeDealDescription,
+  reconstructConciergeFromHubSpot,
+} from "./adapters/concierge-from-hubspot";
+export { gmailLiveReadiness } from "./adapters/gmail";
 
 export type ClientAttentionFixturePreset =
   | "success"
@@ -89,6 +108,8 @@ export type RunClientAttentionAnalysisInput = {
   reportingPeriod: { start: string; end: string };
   thresholds?: Partial<ClientAttentionThresholds>;
   sourceOverrides?: Partial<LoadClientAttentionSourcesOptions>;
+  /** Prefetched live/fixture bundle — skips adapter load when provided. */
+  prefetchedSources?: ClientAttentionSourceBundle;
   fixturePreset?: ClientAttentionFixturePreset;
 };
 
@@ -100,6 +121,43 @@ export function runClientAttentionAnalysis(
     input.reportingPeriod,
     input.mode,
   );
+}
+
+/**
+ * Live path: async HubSpot CRM reads + Concierge reconstruction, then sync analysis.
+ * Never fabricates fixtures in live mode.
+ */
+export async function runClientAttentionAnalysisAsync(
+  input: RunClientAttentionAnalysisInput,
+): Promise<ClientAttentionRunResult> {
+  try {
+    if (input.prefetchedSources) {
+      return runClientAttentionAnalysis(input);
+    }
+    const nowIso =
+      input.nowIso ??
+      (input.mode === "fixture"
+        ? CLIENT_ATTENTION_FIXTURE_NOW
+        : new Date().toISOString());
+    const thresholds = mergeThresholds(input.thresholds);
+    const preset =
+      input.fixturePreset ?? (input.mode === "fixture" ? "success" : undefined);
+    const loadOpts = buildLoadOptions(
+      input.mode,
+      preset,
+      input.sourceOverrides,
+      nowIso,
+      thresholds,
+    );
+    const prefetchedSources = await loadClientAttentionSourcesAsync(loadOpts);
+    return runClientAttentionAnalysis({ ...input, prefetchedSources, nowIso });
+  } catch {
+    return emptyClientAttentionRunResult(
+      input.reportingPeriod,
+      input.mode,
+      "Client Attention analysis failed safely; Morning Brief continues without client pipeline items.",
+    );
+  }
 }
 
 function runClientAttentionAnalysisUnsafe(
@@ -116,7 +174,8 @@ function runClientAttentionAnalysisUnsafe(
   const preset = input.fixturePreset ?? (input.mode === "fixture" ? "success" : undefined);
 
   const loadOpts = buildLoadOptions(input.mode, preset, input.sourceOverrides, nowIso, thresholds);
-  const bundle = loadClientAttentionSources(loadOpts);
+  const bundle =
+    input.prefetchedSources ?? loadClientAttentionSources(loadOpts);
 
   const identityResult = resolveClientIdentities(bundle);
   const generated = generateClientAttentionSignals({
@@ -258,7 +317,7 @@ function buildLoadOptions(
 }
 
 function toAvailability(
-  bundle: ReturnType<typeof loadClientAttentionSources>,
+  bundle: ClientAttentionSourceBundle,
 ): ClientAttentionSourceAvailability {
   return {
     gmail: bundle.gmail.status === "fixture" ? "fixture" : bundle.gmail.status,
@@ -269,7 +328,9 @@ function toAvailability(
         ? "fixture"
         : bundle.concierge.status === "not-configured"
           ? "via-hubspot"
-          : bundle.concierge.status,
+          : bundle.concierge.status === "ok"
+            ? "ok"
+            : bundle.concierge.status,
   };
 }
 

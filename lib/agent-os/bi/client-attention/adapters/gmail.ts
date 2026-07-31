@@ -1,15 +1,10 @@
 /**
  * Read-only Gmail adapter boundary for Client Attention.
- * Live OAuth is not wired in this sprint — fixture or not-configured only.
  *
- * Required for a future live connection (document only — do not configure here):
- * - GOOGLE_CLIENT_ID
- * - GOOGLE_CLIENT_SECRET
- * - GOOGLE_REFRESH_TOKEN (or a dedicated Gmail refresh token)
- * - Scope: https://www.googleapis.com/auth/gmail.readonly
- * - AGENT_OS_GMAIL_USER (mailbox address to inspect)
+ * Existing Google OAuth (GA4/GSC) scopes are analytics.readonly + webmasters.readonly.
+ * Live Client Attention Gmail requires gmail.readonly + AGENT_OS_GMAIL_USER.
  *
- * Never: send, draft, mark-read, archive, or mutate labels.
+ * This sprint: fixture or not-configured. Never send, draft, mark-read, archive, or mutate labels.
  */
 
 import type { ClientAttentionThresholds } from "../thresholds";
@@ -20,10 +15,17 @@ export const GMAIL_READ_REQUIRED_ENV = [
   "GOOGLE_CLIENT_ID",
   "GOOGLE_CLIENT_SECRET",
   "GOOGLE_REFRESH_TOKEN",
+  "AGENT_OS_GMAIL_USER",
 ] as const;
 
 export const GMAIL_READ_REQUIRED_SCOPES = [
   "https://www.googleapis.com/auth/gmail.readonly",
+] as const;
+
+/** Scopes granted by the existing GA4/GSC OAuth helper — not sufficient for Gmail. */
+export const GMAIL_EXISTING_GOOGLE_OAUTH_SCOPES = [
+  "https://www.googleapis.com/auth/analytics.readonly",
+  "https://www.googleapis.com/auth/webmasters.readonly",
 ] as const;
 
 export const GMAIL_AUTOMATION_MARKERS = [
@@ -53,6 +55,28 @@ export function filterBusinessRelevantThreads(
   );
 }
 
+export function gmailLiveReadiness(env: NodeJS.ProcessEnv = process.env): {
+  ready: boolean;
+  missingConfiguration: string[];
+  note: string;
+} {
+  const missing: string[] = [];
+  for (const key of GMAIL_READ_REQUIRED_ENV) {
+    if (!env[key]?.trim()) missing.push(key);
+  }
+  missing.push(`scope:${GMAIL_READ_REQUIRED_SCOPES[0]}`);
+  missing.push(
+    "Existing Google OAuth does not include gmail.readonly (GA4/GSC only)",
+  );
+
+  return {
+    ready: false,
+    missingConfiguration: missing,
+    note:
+      "Gmail live metadata reads stop at the adapter boundary until gmail.readonly is granted and AGENT_OS_GMAIL_USER is set. Existing GOOGLE_* credentials (if present) are for Analytics/Search Console only.",
+  };
+}
+
 export type LoadGmailOptions = {
   mode: "fixture" | "live";
   nowIso?: string;
@@ -60,6 +84,8 @@ export type LoadGmailOptions = {
   fixtureThreads?: NormalizedGmailThread[];
   /** Force failure for resilience fixtures. */
   forceStatus?: "failed" | "not-configured" | "empty";
+  /** Prefetched live snapshot — reserved for a future Gmail live fetch. */
+  liveResult?: GmailAdapterResult;
 };
 
 export function loadGmailClientAttention(
@@ -83,21 +109,30 @@ export function loadGmailClientAttention(
     };
   }
 
-  if (options.forceStatus === "not-configured" || options.mode === "live") {
-    // Live Gmail is intentionally unavailable this sprint.
+  if (options.forceStatus === "not-configured") {
+    const readiness = gmailLiveReadiness();
     return {
       sourceType: "gmail",
       status: "not-configured",
       collectedAt: nowIso,
       recordCount: 0,
       threads: [],
-      missingConfiguration: [
-        ...GMAIL_READ_REQUIRED_ENV,
-        `scope:${GMAIL_READ_REQUIRED_SCOPES[0]}`,
-        "AGENT_OS_GMAIL_USER",
-      ],
-      configurationNote:
-        "Gmail read-only adapter is not live-connected. Fixture mode is available for validation.",
+      missingConfiguration: readiness.missingConfiguration,
+      configurationNote: "Forced not-configured fixture.",
+    };
+  }
+
+  if (options.mode === "live") {
+    if (options.liveResult) return options.liveResult;
+    const readiness = gmailLiveReadiness();
+    return {
+      sourceType: "gmail",
+      status: "not-configured",
+      collectedAt: nowIso,
+      recordCount: 0,
+      threads: [],
+      missingConfiguration: readiness.missingConfiguration,
+      configurationNote: readiness.note,
     };
   }
 

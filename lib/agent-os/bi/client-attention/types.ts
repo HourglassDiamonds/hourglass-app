@@ -29,6 +29,7 @@ export {
 
 export const CLIENT_ATTENTION_SIGNAL_TYPES = [
   "new-inquiry",
+  "new-inquiry-needs-review",
   "reply-overdue",
   "unanswered-inbound",
   "stalled-conversation",
@@ -123,6 +124,13 @@ export type ClientAttentionSignal = {
   whyItMatters: string;
   recommendedAction: string;
   evidence: ClientSignalEvidence[];
+  /**
+   * Whether inbound→outbound email response state is established.
+   * `confirmed-awaiting-reply` requires Gmail (or equivalent) ordering evidence.
+   * `unknown` when HubSpot/Concierge alone cannot prove a reply is owed.
+   * `not-applicable` for CRM-task / deadline / stage signals.
+   */
+  responseState: "confirmed-awaiting-reply" | "unknown" | "not-applicable";
   /** Set when Gmail / HubSpot / Concierge materially disagree. */
   discrepancyClass?: ClientAttentionDiscrepancyClass;
   /** True when the signal is a recurring concern pattern, not a single contact. */

@@ -13,6 +13,7 @@ import {
   runClientAttentionAnalysis,
   type ClientAttentionAudit,
 } from "../bi/client-attention";
+import type { ClientAttentionSourceBundle } from "../bi/client-attention/adapters/types";
 import { createEvidence } from "../evidence";
 import { buildRecommendation } from "../recommendation";
 import { assertOperationalForRecommendations } from "../registry";
@@ -47,6 +48,8 @@ export type BusinessIntelligenceOutput = {
 
 export type RunBusinessIntelligenceOptions = {
   mode?: "fixture" | "live";
+  /** Prefetched Client Attention sources (live HubSpot reads). */
+  clientAttentionSources?: ClientAttentionSourceBundle;
 };
 
 export function runBusinessIntelligence(
@@ -653,6 +656,7 @@ export function runBusinessIntelligence(
     mode,
     reportingPeriod,
     fixturePreset: mode === "fixture" ? "success" : undefined,
+    prefetchedSources: options.clientAttentionSources,
   });
   facts.push(...clientAttention.audit.facts);
   inferences.push(...clientAttention.audit.inferences);

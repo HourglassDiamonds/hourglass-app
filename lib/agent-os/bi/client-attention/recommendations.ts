@@ -96,7 +96,9 @@ function signalToRecommendation(
 function titleForType(signal: ClientAttentionSignal): string {
   switch (signal.signalType) {
     case "new-inquiry":
-      return "new Concierge inquiry awaiting reply";
+      return "new Concierge inquiry";
+    case "new-inquiry-needs-review":
+      return "Concierge inquiry needs review";
     case "reply-overdue":
       return "reply overdue";
     case "unanswered-inbound":

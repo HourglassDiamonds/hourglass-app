@@ -107,11 +107,87 @@ describe("client-attention identity resolution", () => {
 });
 
 describe("client-attention adapters", () => {
-  it("returns not-configured for live Gmail and HubSpot", () => {
+  it("returns not-configured for live Gmail and sync HubSpot without prefetch", () => {
     const bundle = loadClientAttentionSources({ mode: "live" });
     assert.equal(bundle.gmail.status, "not-configured");
     assert.equal(bundle.hubspot.status, "not-configured");
-    assert.ok((bundle.gmail.missingConfiguration?.length ?? 0) > 0);
+    assert.ok(
+      bundle.gmail.missingConfiguration?.some((m) =>
+        m.includes("gmail.readonly"),
+      ),
+    );
+  });
+
+  it("accepts prefetched live HubSpot snapshot without fixtures", () => {
+    const result = runClientAttentionAnalysis({
+      mode: "live",
+      reportingPeriod: { start: "2026-07-22", end: "2026-07-28" },
+      prefetchedSources: {
+        gmail: {
+          sourceType: "gmail",
+          status: "not-configured",
+          collectedAt: "2026-07-28T12:00:00.000Z",
+          recordCount: 0,
+          threads: [],
+          missingConfiguration: ["scope:gmail.readonly"],
+        },
+        hubspot: {
+          sourceType: "hubspot",
+          status: "ok",
+          collectedAt: "2026-07-28T12:00:00.000Z",
+          recordCount: 1,
+          contacts: [
+            {
+              contactId: "c-live-1",
+              normalizedEmail: "live.client@clients.example.test",
+              firstName: "Live",
+              lastName: "Client",
+              lastActivityAt: "2026-07-20T12:00:00.000Z",
+            },
+          ],
+          deals: [
+            {
+              dealId: "d-live-1",
+              contactIds: ["c-live-1"],
+              dealName: "Live Client – Engagement Ring",
+              stage: "appointmentscheduled",
+              createdAt: "2026-07-20T10:00:00.000Z",
+              lastActivityAt: "2026-07-20T12:00:00.000Z",
+            },
+          ],
+          tasks: [],
+        },
+        concierge: {
+          sourceType: "concierge",
+          status: "ok",
+          collectedAt: "2026-07-28T12:00:00.000Z",
+          recordCount: 1,
+          submissions: [
+            {
+              submissionId: "sub-live-1",
+              accepted: true,
+              submittedAt: "2026-07-20T10:00:00.000Z",
+              normalizedEmail: "live.client@clients.example.test",
+              firstName: "Live",
+              lastName: "Client",
+              projectType: "Engagement Ring",
+              timeline: "1-3 months",
+              budgetRange: "$5k-$8k",
+              hubspotContactId: "c-live-1",
+              hubspotDealId: "d-live-1",
+            },
+          ],
+        },
+      },
+    });
+    assert.equal(result.audit.mode, "live");
+    assert.equal(result.audit.sourceAvailability.hubspot, "ok");
+    assert.equal(result.audit.sourceAvailability.gmail, "not-configured");
+    assert.ok(result.audit.counts.contactsInspected >= 1);
+    assert.ok(
+      !JSON.stringify(result.audit).includes("fixture@") &&
+        result.audit.mode === "live",
+    );
   });
 
   it("excludes automated newsletter threads from success fixtures", () => {

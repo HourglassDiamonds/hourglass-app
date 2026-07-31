@@ -36,6 +36,7 @@ export function stripInternalIdsFromSignal(
     signalType: signal.signalType,
     urgency: signal.urgency,
     confidence: signal.confidence,
+    responseState: signal.responseState,
     firstSeenAt: signal.firstSeenAt,
     lastInboundAt: signal.lastInboundAt,
     lastOutboundAt: signal.lastOutboundAt,
@@ -104,6 +105,18 @@ export function assertFounderFacingSafe(text: string): boolean {
   if (/Bearer\s+\S+/i.test(text)) return false;
   if (containsLikelyPiiOrSecret(text)) return false;
   return true;
+}
+
+/** Reply-state language that must not appear when responseState is unknown. */
+const OVERSTATED_REPLY_LANGUAGE =
+  /\breply overdue\b|\bunanswered\b|\bwaiting for your reply\b|\bwithout a reply\b/i;
+
+export function founderFacingOverstatesUnknownReply(
+  signal: Pick<ClientAttentionSignal, "responseState" | "summary" | "recommendedAction" | "whyItMatters" | "signalType">,
+): boolean {
+  if (signal.responseState !== "unknown") return false;
+  const blob = `${signal.summary}\n${signal.recommendedAction}\n${signal.whyItMatters}\n${signal.signalType}`;
+  return OVERSTATED_REPLY_LANGUAGE.test(blob);
 }
 
 export function founderFacingTextsAreSafe(texts: string[]): boolean {

@@ -5,12 +5,13 @@
  * Credentials (same token env as Concierge, when scopes allow CRM reads):
  * - HUBSPOT_ACCESS_TOKEN or HUBSPOT_PRIVATE_APP_TOKEN
  *
- * Required private-app scopes for a future live read (document only):
+ * Required private-app scopes for live read:
  * - crm.objects.contacts.read
  * - crm.objects.deals.read
  * - crm.objects.tasks.read (optional; tasks may be empty)
  *
- * This sprint: fixture or not-configured. Do not change production credentials.
+ * Live mode: pass `liveResult` from fetchHubSpotClientAttentionLive, or call
+ * loadClientAttentionSourcesAsync which performs the bounded read.
  */
 
 import { resolveHubSpotToken } from "@/lib/concierge/hubspot-client";
@@ -44,6 +45,8 @@ export type LoadHubSpotOptions = {
   fixtureDeals?: NormalizedHubSpotDeal[];
   fixtureTasks?: NormalizedHubSpotTask[];
   forceStatus?: "failed" | "not-configured" | "empty";
+  /** Prefetched live snapshot from fetchHubSpotClientAttentionLive. */
+  liveResult?: HubSpotAdapterResult;
 };
 
 export function loadHubSpotClientAttention(
@@ -74,6 +77,9 @@ export function loadHubSpotClientAttention(
   }
 
   if (options.mode === "live") {
+    if (options.liveResult) {
+      return options.liveResult;
+    }
     const { token, source } = resolveHubSpotToken();
     if (!token) {
       return notConfigured(
@@ -90,11 +96,9 @@ export function loadHubSpotClientAttention(
       deals: [],
       tasks: [],
       missingConfiguration: [
-        ...HUBSPOT_READ_REQUIRED_SCOPES,
-        ...HUBSPOT_READ_OPTIONAL_SCOPES,
-        "Agent OS HubSpot read adapter implementation",
+        "async live prefetch (loadClientAttentionSourcesAsync / fetchHubSpotClientAttentionLive)",
       ],
-      configurationNote: `Token present via ${source}, but Agent OS HubSpot CRM read is not live-connected this sprint. Concierge write path is unchanged.`,
+      configurationNote: `Token present via ${source}, but live HubSpot snapshot was not prefetched. Call loadClientAttentionSourcesAsync for bounded CRM reads.`,
     };
   }
 

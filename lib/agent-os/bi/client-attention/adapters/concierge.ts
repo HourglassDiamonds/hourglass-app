@@ -1,6 +1,6 @@
 /**
  * Concierge source adapter for Client Attention.
- * Normalizes fixture / ledger-shaped submissions — does not change live Concierge payload.
+ * Normalizes fixture / reconstructed submissions — does not change live Concierge payload.
  */
 
 import type { ClientAttentionThresholds } from "../thresholds";
@@ -16,12 +16,13 @@ export type LoadConciergeOptions = {
   thresholds?: Partial<ClientAttentionThresholds>;
   fixtureSubmissions?: NormalizedConciergeSubmission[];
   forceStatus?: "failed" | "not-configured" | "empty";
+  /** Prefetched reconstruction from HubSpot deal descriptions. */
+  liveResult?: ConciergeAdapterResult;
 };
 
 /**
- * Live Concierge submissions land in HubSpot; Agent OS has no separate submission
- * ledger yet. Live mode reports via-hubspot / empty unless fixtures are supplied
- * for validation.
+ * Live Concierge submissions land in HubSpot deal descriptions.
+ * Prefer liveResult from fetchHubSpotClientAttentionLive / loadClientAttentionSourcesAsync.
  */
 export function loadConciergeClientAttention(
   options: LoadConciergeOptions,
@@ -44,7 +45,7 @@ export function loadConciergeClientAttention(
     };
   }
 
-  if (options.forceStatus === "not-configured" || options.mode === "live") {
+  if (options.forceStatus === "not-configured") {
     return {
       sourceType: "concierge",
       status: "not-configured",
@@ -55,8 +56,24 @@ export function loadConciergeClientAttention(
         "Agent OS Concierge submission ledger (future)",
         "or HubSpot deal properties populated by Concierge write path",
       ],
+      configurationNote: "Forced not-configured fixture.",
+    };
+  }
+
+  if (options.mode === "live") {
+    if (options.liveResult) return options.liveResult;
+    return {
+      sourceType: "concierge",
+      status: "not-configured",
+      collectedAt: nowIso,
+      recordCount: 0,
+      submissions: [],
+      missingConfiguration: [
+        "HubSpot live prefetch for Concierge reconstruction",
+        "or Agent OS Concierge submission ledger (future)",
+      ],
       configurationNote:
-        "Concierge inquiries are written to HubSpot at submit time; Agent OS has no separate live submission ledger yet. Use fixtures or HubSpot CRM reads when available.",
+        "Concierge inquiries are written to HubSpot at submit time; reconstruct via loadClientAttentionSourcesAsync when HubSpot reads succeed.",
     };
   }
 
