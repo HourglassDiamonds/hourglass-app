@@ -1,9 +1,18 @@
 /**
- * Precious Materials Index — weekly data.
- * Update values and copy here each week. Page layout is fixed in precious-materials-index-view.
+ * Precious Materials — weekly data.
+ * ARCHIVED NUMERICAL SERIES — public page is a qualitative Precious Materials Monitor.
+ * Proprietary 0–100 scores and weighting rows remain for rebuild.
  */
 
-export const PMI_UPDATED_LABEL = "Updated weekly — July 20, 2026";
+import {
+  LEDGER_EVIDENCE_CUTOFF,
+  LEDGER_METHODOLOGY_VERSION,
+  latestSnapshot,
+  type LedgerMonitorSeries,
+} from "./ledger-monitor-framework";
+
+export const PMI_UPDATED_LABEL =
+  "Interim status — methodology revision in progress";
 
 export const PMI_MARKET_PRESSURE = {
   score: 85,
@@ -42,16 +51,16 @@ export const PMI_CROSS_SYSTEM_BRIDGE =
   "Material markets remain connected to broader macro and reserve-asset conditions — but jewelry sourcing follows its own segmented logic beneath the geopolitical layer.";
 
 export const PMI_CROSS_SYSTEM_PRESSURE = [
-  "Structural central-bank and diversification demand continue to support the reading beneath near-term real-yield and rate-expectation pressure from the energy frame.",
-  "Gold is trading around the $4,000 area — near-term sensitivity without a materials-regime break.",
+  "Structural central-bank and diversification demand continue to support conditions beneath near-term real-yield and rate-expectation pressure from the energy frame.",
+  "Market pricing indicated gold trading around the $4,000 area — near-term sensitivity without a materials-regime break. The Ledger’s current interpretation is that this remains a firm monetary-demand read, not a materials-regime change.",
   "Selective natural-diamond pipeline adjustments, including July sight pricing alignment, remain a segmented watch rather than broad market stress.",
   "Lab-grown pricing compression continues in commercial and mid-tier ranges as an embedded factor, while premium natural holds firmer in selective sizes and cuts.",
 ] as const;
 
 export const PMI_WHAT_MOVED = [
   "No materials-regime change this week — structural central-bank demand and selective diamond segmentation continue as embedded supports.",
-  "Near-term pressure from real yields and rate expectations kept gold trading around the $4,000 area; gold monetary pressure held at 87.",
-  "Selective natural-diamond pipeline adjustments and continued lab-grown price compression remained segmented factors, not a newly scored shock.",
+  "Near-term pressure from real yields and rate expectations kept market pricing for gold around the $4,000 area; gold monetary demand remained elevated.",
+  "Selective natural-diamond pipeline adjustments and continued lab-grown price compression remained segmented factors, not a newly confirmed regime shock.",
 ] as const;
 
 export const PMI_WHAT_TO_WATCH = [
@@ -71,7 +80,50 @@ export const PMI_CALCULATION_ROWS = [
 ] as const;
 
 export const PMI_SOURCES_NOTE =
-  "Sources include public metals benchmarks, wholesale diamond market commentary, trade press, and Hourglass sourcing intelligence. Figures are normalized to a 0–100 scale for comparison. This index is editorial — not a traded product or investment recommendation.";
+  "Directly sourced market prices and observable movements are retained. This monitor is editorial — not a traded product or investment recommendation.";
 
 export const PMI_FOOTER_METHOD_NOTE =
-  "The Precious Materials Index is a weighted editorial composite published weekly by Hourglass Ledger. It is designed for orientation in fine jewelry sourcing — not commodity speculation.";
+  "The Precious Materials Monitor is a qualitative editorial framework for fine jewelry sourcing orientation — not commodity speculation.";
+
+/** Append-only public series. Future reviews push a new snapshot. */
+export const PMI_SERIES: LedgerMonitorSeries = {
+  id: "precious-materials",
+  methodologyVersion: LEDGER_METHODOLOGY_VERSION,
+  snapshots: [
+    {
+      reviewDate: "August 3, 2026",
+      evidenceCutoff: LEDGER_EVIDENCE_CUTOFF,
+      currentState: "Strategically firm",
+      currentDirection: "Highly segmented",
+      previousState: "Strategically Firm (archived numerical series)",
+      materialChangeSummary:
+        "No materials-regime change. Market pricing indicated gold near the $4,000 area; diamond segmentation and lab-grown compression continued.",
+      methodologyVersion: LEDGER_METHODOLOGY_VERSION,
+      sources: [
+        {
+          institution: "LBMA / public spot market reporting",
+          title: "Gold spot price near the $4,000 area",
+          date: "Accessed August 3, 2026",
+          supports:
+            "Market pricing indicated gold trading around the $4,000 area without a materials-regime break",
+        },
+        {
+          institution: "Wholesale diamond market commentary",
+          title: "July sight pricing alignment and segmented natural demand",
+          date: "Reviewed through August 3, 2026",
+          supports:
+            "Selective natural-diamond pipeline adjustments remaining segmented rather than broad stress",
+        },
+        {
+          institution: "Trade press / lab-grown pricing surveys",
+          title: "Commercial and mid-tier lab-grown price compression",
+          date: "Reviewed through August 3, 2026",
+          supports:
+            "Continued lab-grown pricing compression as an embedded commercial-factor",
+        },
+      ],
+    },
+  ],
+};
+
+export const PMI_SNAPSHOT = latestSnapshot(PMI_SERIES);

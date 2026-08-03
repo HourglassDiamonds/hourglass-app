@@ -2,15 +2,16 @@
  * Hourglass Ledger — weekly index readings.
  * Update this file when publishing new weekly briefs.
  *
- * Global Pressure Index category scores and weighted calculation live in
- * global-pressure-index-data.ts — the public reading is derived there.
+ * Global Pressure: public page is an interim qualitative monitor
+ * (global-pressure-monitor-data.ts). Numerical category scores and weighted
+ * calculation remain in global-pressure-index-data.ts for the archived meter
+ * and methodology rebuild — they are not rendered publicly.
  */
 
 import {
   GPI_CALIBRATION_NOTE,
   GPI_COMPUTED_READING,
   GPI_METHODOLOGY_SHORT,
-  GPI_RECALIBRATION_DATE,
 } from "./global-pressure-index-data";
 
 export {
@@ -131,50 +132,54 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
   {
     id: "global-pressure",
     slug: "global-pressure-index",
-    seoTitle: "Global Pressure Index",
+    seoTitle: "Global Pressure Monitor",
     seoDescription:
-      "Hourglass Ledger Global Pressure Index — 84° High Heat, Concentrated Pressure. Weekly reading across geopolitics, energy, financial conditions, infrastructure, supply chains, and coordination.",
-    displayTitle: "Global Pressure Index",
+      "Hourglass Ledger Global Pressure Monitor — interim qualitative status while the numerical index methodology is rebuilt and historically tested.",
+    displayTitle: "Global Pressure Monitor",
     subnavLabel: "Global Pressure",
     hubDescription:
-      "A composite degree reading across geopolitics, energy, financial conditions, infrastructure, supply chains, and coordination — high heat, concentrated rather than fully systemic.",
+      "Interim qualitative monitor of external threat pressure and systemic transmission — numerical readings paused pending methodology revision.",
     kicker: "The Ledger Intelligence System",
     intro:
-      "A weekly reading of global pressure across geopolitics, energy, commodities, financial conditions, infrastructure, supply chains, and coordination channels. The purpose is not to predict collapse. It is to observe when stress is structurally elevated, when flexibility compresses, and when multiple systems respond more slowly beneath still-resilient markets. The temperature measures pressure that has already transmitted into the system; escalation potential is stated separately in direction language.",
-    updatedLabel: `Updated weekly — ${GPI_RECALIBRATION_DATE}`,
-    // Derived from GPI_CATEGORIES — do not hard-code independently of component scores.
+      "An interim qualitative monitor of external threat pressure and systemic transmission. Numerical index readings are paused while the model is rebuilt around a fixed, auditable methodology.",
+    // Do not claim weekly numerical updates until the revised framework is operational.
+    updatedLabel: "Interim status — methodology revision in progress",
+    // Archived numerical series — still derived for rebuild work; not rendered publicly.
     reading: GPI_COMPUTED_READING,
     readingLabel: "Pressure Reading",
-    status: "High and unstable",
-    // Recalibration, not a weekly cooling of conditions — do not report a −9 weekly delta.
+    status: "High external pressure / Contained systemic transmission",
     weeklyDelta: 0,
-    weeklyDeltaLabel: "Methodology reset — no comparable weekly delta",
+    weeklyDeltaLabel: "Numerical series paused — methodology revision",
     weeklyDeltaExplanation:
-      "The scoring methodology was recalibrated on July 27, 2026. The 93° and 84° readings should not be interpreted as a nine-degree cooling in underlying conditions.",
+      "Earlier numerical readings are archived and should not be interpreted as directly comparable. Numerical readings will return only after the revised model has been historically tested and documented.",
     scaleLabels: ["Cold", "Stable", "Elevated", "Hot", "Critical"],
     scaleGradient: SCALE_GRADIENT_PRESSURE,
     summary:
-      "Global pressure remains exceptionally high, but the strain is concentrated rather than fully systemic. The geopolitical and energy channels are operating near the extreme end of the scale. Disruption around critical shipping corridors, attacks on energy infrastructure, and uncertainty surrounding major export routes have raised the risk of a broader inflationary and supply shock. That pressure has not yet transmitted into a 2008- or COVID-style system event. Financial markets remain functional, credit spreads remain comparatively contained, broader financial-stress measures remain below crisis levels, and economic activity has not entered a synchronized global contraction. The distinction matters: the world is facing unusually dangerous escalation potential, but potential failure is not the same as realized systemic failure.",
-    summaryLead: "The reading sits in",
-    summaryEmphasis: "High Heat, Concentrated Pressure",
+      "Geopolitical and energy risks remain unusually elevated, particularly around critical shipping corridors. Financial markets and the wider economy have not yet confirmed a systemic transmission event. This monitor is being rebuilt around a fixed, auditable methodology.",
+    summaryLead: "Current state:",
+    summaryEmphasis: "High external pressure / Contained systemic transmission",
     summaryCompact:
-      "84° — High Heat, Concentrated Pressure. Geopolitics and energy near extremes; credit markets and expansion still offset full systemic transmission.",
+      "High external pressure / Contained systemic transmission. Direction unstable, with near-term easing in financial transmission. Numerical readings paused.",
     weeklyNote:
-      "Primary drivers remain energy corridors, geopolitical escalation, and shipping disruption. The primary offset remains functioning credit markets and continued economic expansion. Under the recalibrated methodology, extreme corridor and energy risk no longer automatically score near-crisis levels across financial, infrastructure, and institutional channels without confirmed transmission. Direction: high and unstable — escalation potential is elevated even while the current reading stays below collapse-era benchmarks.",
+      "Threat pressure remains very high around shipping corridors, geopolitical escalation, oil/commodity sensitivity, and grid constraints. System transmission is moderate and currently easing: oil declined after the pause in planned military action, equities rallied, Treasury yields eased, and credit is not showing crisis-level stress.",
     weeklyNoteCompact:
-      "High and unstable — corridor and energy heat concentrated; credit markets still functioning. Methodology recalibrated July 27, 2026.",
+      "High external pressure; systemic transmission contained and currently easing. Numerical series paused for methodology revision.",
     methodPills: [
-      { label: "Reading Type", value: "Weighted editorial index" },
+      { label: "Monitor Type", value: "Interim qualitative status" },
       {
         label: "Primary Drivers",
-        value: "Energy corridors, geopolitical escalation, shipping disruption",
+        value: "Shipping corridors, geopolitical escalation, energy sensitivity",
       },
-      { label: "Current Direction", value: "High and unstable" },
+      {
+        label: "Current Direction",
+        value: "Unstable, with near-term easing in financial transmission",
+      },
       {
         label: "Primary Offset",
-        value: "Functioning credit markets and continued economic expansion",
+        value: "Functioning credit markets; no confirmed systemic transmission event",
       },
     ],
+    // Preserved for archived numerical meter — not rendered on the public monitor.
     recentReadings: [
       {
         week: "This Week",
@@ -182,7 +187,6 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
         state: "High Heat",
         annotation: "Methodology recalibrated",
       },
-      // Preserved as originally published (pre-recalibration series).
       { week: "Last Week", degrees: 93, state: "Elevated" },
       { week: "2 Weeks Ago", degrees: 91, state: "Elevated" },
       { week: "3 Weeks Ago", degrees: 91, state: "Elevated" },
@@ -197,7 +201,7 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     calibrationNote: GPI_CALIBRATION_NOTE,
     methodologyReference: GPI_METHODOLOGY_SHORT,
     seriesAnnotation:
-      "The scoring methodology was recalibrated on July 27, 2026. The 93° and 84° readings should not be interpreted as a nine-degree cooling in underlying conditions. Historical readings remain as originally published; This Week's card is annotated \"Methodology recalibrated.\"",
+      "Methodology revision in progress. Earlier numerical readings are archived and should not be interpreted as directly comparable.",
     watchingSectionTitle: "What We're Watching",
     editorialBlocks: [
       {
@@ -210,7 +214,7 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
       },
       {
         title: "Credit, stress & volatility confirmation",
-        body: "Whether corporate-credit spreads, financial-stress measures, or volatility begin confirming the geopolitical signal. Without that transmission, financial-system scores stay below crisis bands.",
+        body: "Whether corporate-credit spreads, financial-stress measures, or volatility begin confirming the geopolitical signal. Without that transmission, financial-system stress stays below crisis bands.",
       },
       {
         title: "Supply-chain transmission",
@@ -227,25 +231,25 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     slug: "information-signal-map",
     seoTitle: "Information Signal Map",
     seoDescription:
-      "Hourglass Ledger Information Signal Map — a calm read on narrative density, institutional messaging, and information velocity across markets and policy.",
+      "Hourglass Ledger Information Signal Map — qualitative narrative density, institutional messaging, and information velocity across markets and policy.",
     displayTitle: "Information Signal Map",
     subnavLabel: "Information Map",
     hubDescription:
-      "A narrative layer reading on signal convergence, framing comparison, and how institutional, market, and infrastructure channels interpret the same pressures.",
+      "High-attention / Uneven clarity — narrative convergence, framing divergence, and underweighted signals across institutional, market, and infrastructure channels.",
     kicker: "The Ledger Intelligence System",
     intro:
-      "A weekly map of how narratives move through markets, media, policy, and institutions — not to chase hidden truths, but to track when different information layers begin describing the same systems story. The goal is orientation: where framing converges, where it diverges, and what remains underweighted.",
-    updatedLabel: LEDGER_UPDATED,
+      "A qualitative map of how narratives move through markets, media, policy, and institutions — not to chase hidden truths, but to track when different information layers begin describing the same systems story. The goal is orientation: where framing converges, where it diverges, and what remains underweighted.",
+    updatedLabel: "Interim status — methodology revision in progress",
     reading: 85,
     readingLabel: "Signal Clarity",
-    status: "High-Attention, Uneven Clarity",
+    status: "High-attention / Uneven clarity",
     weeklyDelta: 0,
     scaleLabels: ["Quiet", "Clear", "Mixed", "Noisy", "Saturated"],
     scaleGradient: SCALE_GRADIENT_SIGNAL,
     summary:
       "High-attention, uneven clarity persists — official military framing, physical shipping evidence, confirmed vessel attacks with disputed actor attribution, and a Houthi embargo declaration without demonstrated enforcement compete in the same cycle. Oil's intraday $90 test and lower settlement are told differently across outlets; GPT-5.6 general availability and Kimi K3 product/API access add a parallel capability-versus-qualification story.",
     summaryCompact:
-      "High-attention, uneven clarity — competing corridor frames, oil band ambiguity, and AI access stories without a clarity-score increase.",
+      "High-attention / Uneven clarity — competing corridor frames, oil band ambiguity, and AI access stories without a clarity improvement.",
     weeklyNote:
       "Signal density rose around corridor enforcement without improving clarity enough to move the reading. Coverage now splits among reimposed blockade descriptions, open-corridor claims, confirmed vessel attacks near Oman, and disputed attribution of who struck which ships. Official military framing and physical shipping evidence do not always describe the same operational facts base. A Houthi maritime-embargo declaration entered the cycle as a secondary corridor headline before sustained enforcement was demonstrated. Market outlets treated Brent's brief move above $90 and its high-$80s settlement as different stories. On the AI channel, GPT-5.6 general availability across ChatGPT, Codex, and the API sits beside Kimi K3 product and API access with full downloadable weights still pending — another instance of \"available\" describing different realities. Diplomatic and ceasefire language remains an offsetting frame. Density increased; clarity did not improve enough to warrant a higher reading.",
     weeklyNoteCompact:
@@ -286,31 +290,31 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
   {
     id: "ai-capability",
     slug: "ai-capability-acceleration-index",
-    seoTitle: "AI Capability Acceleration Index",
+    seoTitle: "AI Capability Monitor",
     seoDescription:
-      "Hourglass Ledger AI Capability Acceleration Index — analytical tracking of compute expansion, model capability, and infrastructure scaling.",
-    displayTitle: "AI Capability Acceleration Index",
+      "Hourglass Ledger AI Capability Monitor — qualitative tracking of compute expansion, model capability, and infrastructure scaling.",
+    displayTitle: "AI Capability Monitor",
     subnavLabel: "AI Acceleration",
     hubDescription:
-      "An analytical read on AI as industrial buildout — capability, deployment friction, and physical infrastructure constraints, without hype or fear framing.",
+      "Capability pace: Accelerating — frontier access broadening beneath infrastructure-bound deployment conditions.",
     kicker: "The Ledger Intelligence System",
     intro:
-      "A weekly index of how AI capability, deployment, and physical infrastructure move together: models, agents, enterprise integration, power, grid access, and organizational adaptation. The frame is operational and observational — not promotional.",
-    updatedLabel: LEDGER_UPDATED,
+      "A qualitative monitor of how AI capability, deployment, and physical infrastructure move together: models, agents, enterprise integration, power, grid access, and organizational adaptation. The frame is operational and observational — not promotional.",
+    updatedLabel: "Interim status — methodology revision in progress",
     reading: 85,
     readingLabel: "Acceleration Reading",
-    status: "Frontier Access Broadens, Grid-Bound",
+    status: "Capability pace: Accelerating",
     weeklyDelta: 1,
     scaleLabels: ["Early", "Building", "Rising", "Fast", "Surge"],
     scaleGradient: SCALE_GRADIENT_AI,
     summary:
-      "Acceleration rose to 85 as frontier access broadened — OpenAI's GPT-5.6 family is generally available across ChatGPT, Codex, and the API with stronger performance-per-dollar, coding, tool use, and multi-agent operation, while Kimi K3 is available through Kimi products and API at competitive cost with full downloadable weights still pending. Compute, electricity, and deployment infrastructure remain binding constraints.",
+      "Acceleration continues as frontier access broadened — OpenAI's GPT-5.6 family is generally available across ChatGPT, Codex, and the API with stronger performance-per-dollar, coding, tool use, and multi-agent operation, while Kimi K3 is available through Kimi products and API at competitive cost with full downloadable weights still pending. Compute, electricity, and deployment infrastructure remain binding constraints.",
     summaryCompact:
-      "Frontier access broadens to 85 — GPT-5.6 general availability and Kimi K3 product/API access beneath continuing grid and power limits.",
+      "Capability pace accelerating — GPT-5.6 general availability and Kimi K3 product/API access beneath continuing grid and power limits.",
     weeklyNote:
-      "The reading moved to 85 because frontier capability, practical access, cost compression, competitive convergence, and real demand broadened together. GPT-5.6 Sol, Terra, and Luna are generally available across ChatGPT, Codex, and the OpenAI API rather than remaining limited to partner previews — bringing improved performance per dollar, stronger coding and agentic operation, broader tool use, and multi-agent capability into wider product surfaces. Kimi K3 is available through Kimi products and the Kimi API with strong reported benchmark performance and lower deployment or usage costs relative to several closed frontier tiers; full downloadable weights remain pending or incomplete, and not all vendor benchmark claims have been independently verified. Initial demand has pressed available capacity on some access paths. Claude Sonnet 5 remains a broadly deployed baseline beside these moves. Physical constraints still set practical pace after the early-July PJM peak and mid-July hot-weather operations under a renewed DOE order window. Enterprise adoption and coding integration continue; governance, energized capacity, and infrastructure readiness remain co-equal limits.",
+      "Frontier capability, practical access, cost compression, competitive convergence, and real demand broadened together. GPT-5.6 Sol, Terra, and Luna are generally available across ChatGPT, Codex, and the OpenAI API rather than remaining limited to partner previews — bringing improved performance per dollar, stronger coding and agentic operation, broader tool use, and multi-agent capability into wider product surfaces. Kimi K3 is available through Kimi products and the Kimi API with strong reported benchmark performance and lower deployment or usage costs relative to several closed frontier tiers; full downloadable weights remain pending or incomplete, and not all vendor benchmark claims have been independently verified. Initial demand has pressed available capacity on some access paths. Claude Sonnet 5 remains a broadly deployed baseline beside these moves. Physical constraints still set practical pace after the early-July PJM peak and mid-July hot-weather operations under a renewed DOE order window. Enterprise adoption and coding integration continue; governance, energized capacity, and infrastructure readiness remain co-equal limits.",
     weeklyNoteCompact:
-      "Frontier access broadens — GPT-5.6 general availability and Kimi K3 product/API access beneath continuing grid constraints.",
+      "Frontier access broadening, infrastructure-bound — GPT-5.6 GA and Kimi K3 product/API access beneath grid limits.",
     methodPills: [
       { label: "Reading Type", value: "Capability + infrastructure index" },
       { label: "Primary Drivers", value: "Access, cost, power, deployment" },
@@ -347,20 +351,20 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
   {
     id: "precious-materials",
     slug: "precious-materials-index",
-    seoTitle: "Precious Materials Index",
+    seoTitle: "Precious Materials Monitor",
     seoDescription:
-      "Hourglass Ledger Precious Materials Index — elegant weekly intelligence on gold, platinum, diamonds, and the materials that shape fine jewelry markets.",
-    displayTitle: "Precious Materials Index",
+      "Hourglass Ledger Precious Materials Monitor — qualitative intelligence on gold, platinum, diamonds, and the materials that shape fine jewelry markets.",
+    displayTitle: "Precious Materials Monitor",
     subnavLabel: "Precious Materials",
     hubDescription:
-      "Market pressure, metals map, diamond split, and jewelry demand — scored on a 0–100 scale for fine jewelry sourcing.",
+      "Strategically firm / Highly segmented — metals, diamonds, and jewelry demand as qualitative market states for fine jewelry sourcing.",
     kicker: "The Ledger Intelligence System",
     intro:
-      "A weekly reading of the material conditions behind fine jewelry — gold, platinum, natural diamonds, and the sourcing realities that shape quality, availability, and long-term value. The purpose is not to chase commodity headlines. It is to clarify when material markets are firm, selective, or shifting beneath the surface.",
-    updatedLabel: LEDGER_UPDATED,
+      "A qualitative monitor of the material conditions behind fine jewelry — gold, platinum, natural diamonds, and the sourcing realities that shape quality, availability, and long-term value. The purpose is not to chase commodity headlines. It is to clarify when material markets are firm, selective, or shifting beneath the surface.",
+    updatedLabel: "Interim status — methodology revision in progress",
     reading: 85,
     readingLabel: "Materials Reading",
-    status: "Strategically Firm",
+    status: "Strategically firm",
     weeklyDelta: 0,
     scaleLabels: ["Soft", "Stable", "Firm", "Tight", "Constrained"],
     scaleGradient: SCALE_GRADIENT_MATERIALS,
@@ -410,20 +414,20 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
   {
     id: "infrastructure-strain",
     slug: "infrastructure-strain-index",
-    seoTitle: "Infrastructure Strain Index",
+    seoTitle: "Infrastructure Strain Monitor",
     seoDescription:
-      "Hourglass Ledger Infrastructure Strain Index — weekly reading of power, transmission, data centers, transformers, semiconductors, labor, and logistics constraints.",
-    displayTitle: "Infrastructure Strain Index",
+      "Hourglass Ledger Infrastructure Strain Monitor — qualitative reading of power, transmission, data centers, transformers, semiconductors, labor, and logistics constraints.",
+    displayTitle: "Infrastructure Strain Monitor",
     subnavLabel: "Infrastructure",
     hubDescription:
-      "A weekly reading of physical constraints in a capacity expansion race — power, grid, data centers, transformers, chips, labor, and water.",
+      "Elevated infrastructure strain — functioning systems with narrowed flexibility across grid, data centers, transformers, chips, labor, and cooling.",
     kicker: "The Ledger Intelligence System",
     intro:
-      "A weekly reading of physical constraints beneath digital and industrial acceleration: AI data-center load, power demand, transformers, interconnection, cooling, transmission, labor, and permitting — where systems function but flexibility narrows.",
-    updatedLabel: LEDGER_UPDATED,
+      "A qualitative monitor of physical constraints beneath digital and industrial acceleration: AI data-center load, power demand, transformers, interconnection, cooling, transmission, labor, and permitting — where systems function but flexibility narrows.",
+    updatedLabel: "Interim status — methodology revision in progress",
     reading: 87,
     readingLabel: "Infrastructure Strain",
-    status: "Elevated Strain",
+    status: "Elevated infrastructure strain",
     weeklyDelta: 0,
     scaleLabels: ["Low", "Rising", "Elevated", "High", "Critical"],
     scaleGradient: SCALE_GRADIENT_INFRASTRUCTURE,
@@ -493,7 +497,7 @@ export const LEDGER_HUB_INDEXES = LEDGER_INDEXES;
 export const GLOBAL_PRESSURE_INDEX = getLedgerIndex("global-pressure").reading;
 export const PRESSURE_STATUS = getLedgerIndex("global-pressure").status;
 export const WEEKLY_DELTA = getLedgerIndex("global-pressure").weeklyDelta;
-export const GPI_UPDATED_LABEL = LEDGER_UPDATED;
+export const GPI_UPDATED_LABEL = getLedgerIndex("global-pressure").updatedLabel;
 export const GPI_SCALE_LABELS = getLedgerIndex("global-pressure").scaleLabels;
 export const GPI_SCALE_GRADIENT = getLedgerIndex("global-pressure").scaleGradient;
 export const GPI_SUMMARY = getLedgerIndex("global-pressure").summary;

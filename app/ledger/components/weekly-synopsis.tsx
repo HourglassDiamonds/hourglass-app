@@ -1,14 +1,14 @@
 export const WEEKLY_SYNOPSIS = {
   eyebrow: "Weekly Synopsis",
-  headline: "Pressure recalibrated; corridor heat remains concentrated.",
+  headline: "External pressure high; systemic transmission still contained.",
   blocks: [
     {
       title: "What changed",
-      body: "The Global Pressure Index was recalibrated to 84° — High Heat, Concentrated Pressure — to separate current system pressure from future escalation risk. Earlier readings near 93° could overweight a single corridor event across related categories. Geopolitics and energy remain near the extreme end of the scale; financial markets, credit spreads, and broader economic activity have not confirmed a 2008- or COVID-style system event. AI capability, precious materials, infrastructure strain, and information clarity continue within their established regimes.",
+      body: "Composite numerical scoring across the Ledger monitoring system is paused while methodology is standardized and historically validated. Public surfaces now use qualitative states, direction, documented evidence, and defined change triggers. Geopolitical and energy risks remain unusually elevated around critical shipping corridors; financial markets and the wider economy have not confirmed a systemic transmission event. AI capability pace is accelerating beneath infrastructure-bound deployment. Precious materials remain strategically firm and highly segmented. Infrastructure strain stays elevated with narrowed flexibility.",
     },
     {
       title: "What's driving pressure",
-      body: "Primary drivers remain energy corridors, geopolitical escalation, and shipping disruption. The primary offset is functioning credit markets and continued economic expansion. Direction stays high and unstable: escalation potential is elevated even while the recalibrated reading stays below collapse-era benchmarks.",
+      body: "Threat pressure remains very high: shipping-corridor disruption, geopolitical escalation risk, oil and commodity sensitivity, and structural electricity-grid constraints. System transmission is moderate and currently easing — oil declined after the pause in planned military action, equities rallied, Treasury yields eased, and credit markets are not showing crisis-level stress. Signal density is rising without clarity gains. Frontier AI access broadened while grid and power limits still set practical pace.",
     },
     {
       title: "What to watch next",

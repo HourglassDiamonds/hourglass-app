@@ -7,9 +7,20 @@ import {
   computeGpiReading,
   computeGpiWeightedTotal,
 } from "./global-pressure-index-data";
+import {
+  GPM_CURRENT_DIRECTION,
+  GPM_CURRENT_STATE,
+  GPM_DISPLAY_TITLE,
+  GPM_LEAD,
+  GPM_METHODOLOGY_NOTICE,
+  GPM_SNAPSHOT,
+  GPM_STATUS_LABEL,
+  GPM_WHAT_CHANGED,
+} from "./global-pressure-monitor-data";
+import { LEDGER_EVIDENCE_CUTOFF } from "./ledger-monitor-framework";
 import { getLedgerIndex } from "./ledger-data";
 
-describe("Global Pressure Index weighted reading", () => {
+describe("Global Pressure Index weighted reading (archived numerical series)", () => {
   it("weights sum to 100%", () => {
     const weightSum = GPI_CATEGORIES.reduce((sum, c) => sum + c.weight, 0);
     assert.equal(Number(weightSum.toFixed(6)), 1);
@@ -24,22 +35,38 @@ describe("Global Pressure Index weighted reading", () => {
     assert.equal(GPI_COMPUTED_READING, 84);
   });
 
-  it("ledger reading matches derived category total", () => {
+  it("preserves archived numerical fields without publishing them as the public title", () => {
     const gpi = getLedgerIndex("global-pressure");
     assert.equal(gpi.reading, GPI_COMPUTED_READING);
-    assert.equal(gpi.status, "High and unstable");
-    assert.equal(gpi.summaryEmphasis, "High Heat, Concentrated Pressure");
+    assert.equal(gpi.displayTitle, GPM_DISPLAY_TITLE);
     assert.equal(
-      gpi.weeklyDeltaLabel,
-      "Methodology reset — no comparable weekly delta",
+      gpi.status,
+      "High external pressure / Contained systemic transmission",
     );
-    assert.match(
-      gpi.weeklyDeltaExplanation ?? "",
-      /should not be interpreted as a nine-degree cooling/,
-    );
+    assert.match(gpi.updatedLabel, /methodology revision/i);
+    assert.doesNotMatch(gpi.updatedLabel, /updated weekly/i);
+    assert.doesNotMatch(gpi.seoDescription, /84°/);
     assert.equal(gpi.recentReadings[0]?.degrees, 84);
-    assert.equal(gpi.recentReadings[0]?.annotation, "Methodology recalibrated");
     assert.equal(gpi.recentReadings[1]?.degrees, 93);
-    assert.match(gpi.calibrationNote?.title ?? "", /Methodology recalibration/);
+  });
+});
+
+describe("Global Pressure Monitor interim copy", () => {
+  it("states qualitative status without a published temperature", () => {
+    assert.equal(
+      GPM_CURRENT_STATE,
+      "High external pressure / Contained systemic transmission",
+    );
+    assert.equal(
+      GPM_CURRENT_DIRECTION,
+      "Unstable, with near-term easing in financial transmission",
+    );
+    assert.match(GPM_LEAD, /Numerical readings will return only after/);
+    assert.doesNotMatch(GPM_LEAD, /\d+°/);
+    assert.match(GPM_STATUS_LABEL, /Methodology revision in progress/i);
+    assert.match(GPM_METHODOLOGY_NOTICE, /Composite numerical scoring is paused/);
+    assert.match(GPM_WHAT_CHANGED, /previous review/i);
+    assert.equal(GPM_SNAPSHOT.evidenceCutoff, LEDGER_EVIDENCE_CUTOFF);
+    assert.ok(GPM_SNAPSHOT.sources.length > 0);
   });
 });

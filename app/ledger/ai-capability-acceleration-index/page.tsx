@@ -4,9 +4,9 @@ import LedgerPageFooter from "../components/ledger-page-footer";
 import LedgerShell from "../components/ledger-shell";
 
 export const metadata: Metadata = {
-  title: "AI Capability Acceleration Index",
+  title: "AI Capability Monitor",
   description:
-    "Hourglass Ledger AI Capability Acceleration Index — deployment-bound AI buildout across capability, enterprise friction, and physical infrastructure constraints.",
+    "Hourglass Ledger AI Capability Monitor — qualitative tracking of AI buildout across capability, enterprise friction, and physical infrastructure constraints.",
   alternates: {
     canonical: "/ledger/ai-capability-acceleration-index",
   },

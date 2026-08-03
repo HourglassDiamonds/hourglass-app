@@ -144,6 +144,292 @@
   box-shadow: var(--ledger-shadow);
 }
 
+/* Shared qualitative monitor hero (status / direction / category states) */
+.ledger-monitor-status-pair {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 18px;
+  padding-bottom: 22px;
+  margin-bottom: 22px;
+  border-bottom: 1px solid var(--ledger-rule-soft);
+}
+
+@media (min-width: 768px) {
+  .ledger-monitor-status-pair {
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+}
+
+.ledger-monitor-pair-label {
+  margin: 0 0 8px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.13em;
+  line-height: 1.45;
+  text-transform: uppercase;
+  color: var(--ledger-label);
+}
+
+.ledger-monitor-pair-value {
+  margin: 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(1.15rem, 2.4vw, 1.45rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.28;
+  color: #1f1d1a;
+}
+
+.ledger-monitor-lead {
+  margin: 0 0 22px;
+  max-width: var(--ledger-editorial-width);
+  font-size: 1.02rem;
+  line-height: 1.72;
+  color: #272727;
+}
+
+.ledger-monitor-state-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  margin: 0 0 22px;
+}
+
+@media (min-width: 768px) {
+  .ledger-monitor-state-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Optional three columns only when cards stay comfortably wide */
+@media (min-width: 1200px) {
+  .ledger-monitor-state-grid.ledger-monitor-state-grid--wide3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* Seventh card (e.g. Governance & Risk): full-row span at 2-col and 3-col */
+@media (min-width: 768px) {
+  .ledger-monitor-state-grid.ledger-monitor-state-grid--seven > :last-child {
+    grid-column: 1 / -1;
+  }
+}
+
+.ledger-monitor-status-lines {
+  margin-top: 12px;
+}
+
+.ledger-monitor-status-lines .ledger-index-updated {
+  margin-top: 0;
+}
+
+.ledger-monitor-evidence-cutoff {
+  margin: 6px 0 0;
+  max-width: var(--ledger-editorial-width);
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 0.82rem;
+  letter-spacing: 0.04em;
+  line-height: 1.55;
+  color: var(--ledger-muted);
+}
+
+.ledger-sources-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+@media (min-width: 768px) {
+  .ledger-sources-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.ledger-source-item {
+  border: 1px solid var(--ledger-rule);
+  border-radius: var(--ledger-radius-md);
+  background: rgba(255, 253, 249, 0.72);
+  padding: var(--ledger-card-pad);
+}
+
+.ledger-source-institution {
+  margin: 0 0 6px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ledger-label);
+}
+
+.ledger-source-title {
+  margin: 0 0 6px;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.35;
+  color: #1f1d1a;
+}
+
+.ledger-source-title a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.ledger-source-title a:hover {
+  color: #4a4540;
+}
+
+.ledger-source-meta {
+  margin: 0 0 8px;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: var(--ledger-muted);
+}
+
+.ledger-source-supports {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: #5c554d;
+}
+
+.ledger-qual-states-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+@media (min-width: 768px) {
+  .ledger-qual-states-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .ledger-qual-states-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+.ledger-qual-state-card {
+  border: 1px solid var(--ledger-rule);
+  border-radius: var(--ledger-radius-md);
+  background: rgba(255, 253, 249, 0.72);
+  padding: 14px;
+}
+
+.ledger-qual-state-label {
+  margin: 0 0 6px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ledger-label);
+}
+
+.ledger-qual-state-def {
+  margin: 0;
+  font-size: 0.86rem;
+  line-height: 1.55;
+  color: #5c554d;
+}
+
+.ledger-inline-link {
+  color: #4a4540;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.ledger-inline-link:hover {
+  color: #1f1d1a;
+}
+
+.ledger-monitor-lead + .ledger-monitor-lead {
+  margin-top: -8px;
+}
+
+.ledger-changed-section {
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid var(--ledger-rule-soft);
+}
+
+.ledger-signal-block {
+  margin: 0 0 22px;
+}
+
+.ledger-changed-label {
+  margin: 0 0 8px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ledger-label);
+}
+
+.ledger-changed-body {
+  margin: 0;
+  max-width: var(--ledger-editorial-width);
+  font-size: 0.95rem;
+  line-height: 1.68;
+  color: #5c554d;
+}
+
+.ledger-monitor-state-card {
+  border: 1px solid var(--ledger-rule);
+  border-radius: var(--ledger-radius-md);
+  background: rgba(255, 253, 249, 0.72);
+  padding: var(--ledger-card-pad);
+}
+
+.ledger-monitor-state-name {
+  margin: 0 0 6px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  line-height: 1.45;
+  text-transform: uppercase;
+  color: var(--ledger-label);
+}
+
+.ledger-monitor-state-level {
+  margin: 0 0 8px;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  line-height: 1.28;
+  color: #1f1d1a;
+}
+
+.ledger-monitor-state-body {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: #5c554d;
+}
+
+.ledger-monitor-method-notice {
+  margin: 0;
+  max-width: var(--ledger-editorial-width);
+  font-size: 0.88rem;
+  line-height: 1.64;
+  color: var(--ledger-muted);
+}
+
+.ledger-hub-method-notice {
+  margin: 24px 0 0;
+  max-width: 40rem;
+  font-size: 0.9rem;
+  line-height: 1.7;
+  color: #6f6760;
+}
+
 /* Denser pages — extra calm before hero (ACAI, ISI) */
 .ledger-acai,
 .ledger-isi {
@@ -182,6 +468,10 @@
   font-size: 0.95rem;
   line-height: 1.66;
   color: var(--ledger-muted);
+}
+
+.ledger-qual-states-note {
+  margin-top: -4px;
 }
 
 /* Shared inner card module (watch boxes, grid cells) */

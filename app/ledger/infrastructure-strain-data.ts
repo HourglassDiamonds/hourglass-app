@@ -1,9 +1,18 @@
 /**
- * Infrastructure Strain Index — weekly data.
- * Update values and copy here each week. Page layout is fixed in infrastructure-strain-index-view.
+ * Infrastructure Strain — weekly data.
+ * ARCHIVED NUMERICAL SERIES — public page is a qualitative Infrastructure Strain Monitor.
+ * Composite scores, recent readings, benchmarks, and calculation rows remain for rebuild.
  */
 
-export const ISI_UPDATED_LABEL = "Updated weekly — July 20, 2026";
+import {
+  LEDGER_EVIDENCE_CUTOFF,
+  LEDGER_METHODOLOGY_VERSION,
+  latestSnapshot,
+  type LedgerMonitorSeries,
+} from "./ledger-monitor-framework";
+
+export const ISI_UPDATED_LABEL =
+  "Interim status — methodology revision in progress";
 
 export const ISI_READING = {
   score: 87,
@@ -16,10 +25,10 @@ export const ISI_INTRO =
   "A weekly reading of the physical constraints beneath digital, economic, and industrial acceleration: power, transmission, transformers, data centers, water, skilled labor, semiconductors, and logistics. The purpose is not to predict failure. It is to track a capacity expansion race — where capital deploys quickly, buildout timing stays uneven, and flexibility narrows beneath functioning systems.";
 
 export const ISI_SUMMARY =
-  "Strain remains elevated after PJM's early-July record peak and a mid-July hot-weather window that included Maximum Generation alerts and DOE Order 202-26-35 (July 14–21). No publicly confirmed broad blackout was found in the reviewed evidence; large-load and backup-generation flexibility remains a live concern beneath functioning systems.";
+  "Strain remains elevated after PJM reported an early-July record peak and a mid-July hot-weather window with Maximum Generation alerts and DOE Order 202-26-35 (July 14–21). Reviewed evidence does not show a confirmed broad blackout. The Ledger’s current interpretation is that large-load flexibility remains a live concern beneath still-functioning systems — elevated strain, not confirmed failure.";
 
 export const ISI_WEEKLY_SIGNAL =
-  "PJM's early-July preliminary all-time peak near 168 GW remains the summer benchmark. For July 14–17, PJM issued a Hot Weather Alert and Maximum Generation / Load Management alerts around elevated forecast peaks; DOE Order 202-26-35, effective July 14 through July 21, again authorized temporary environmental-permit flexibility for specified units and large-load backup-generation direction as a last resort. Publicly reviewed evidence does not show a confirmed broad blackout during that window; whether backup generation was dispatched is not stated here as a settled negative absent primary confirmation. Structural tightness remains: interconnection, transformers, and large-load integration still limit spare capacity. Systems continue to function; strain does not fall simply because an alert window was managed without a confirmed blackout.";
+  "PJM reported a preliminary all-time peak near 168 GW in early July, and Hot Weather plus Maximum Generation alerts for July 14–17. DOE Order 202-26-35 (July 14–21) again authorized temporary permit flexibility for specified units and large-load backup generation as a last resort. Reviewed evidence does not show a confirmed broad blackout. Interconnection, transformers, and large-load integration still limit spare capacity — systems function, but strain does not fall simply because an alert window was managed.";
 
 export const ISI_CATEGORIES = [
   {
@@ -202,4 +211,49 @@ export const ISI_SOURCES = [
 ] as const;
 
 export const ISI_FOOTER_NOTE =
-  "The Infrastructure Strain Index is a weekly editorial framework. It compresses physical-system constraints into a directional reading — whether growth is supported by available capacity, slowed by bottlenecks, or operating with narrowing flexibility beneath still-functioning systems.";
+  "The Infrastructure Strain Monitor is an editorial framework. It tracks physical-system constraints — whether growth is supported by available capacity, slowed by bottlenecks, or operating with narrowing flexibility beneath still-functioning systems.";
+
+/** Append-only public series. Future reviews push a new snapshot. */
+export const ISI_SERIES: LedgerMonitorSeries = {
+  id: "infrastructure-strain",
+  methodologyVersion: LEDGER_METHODOLOGY_VERSION,
+  snapshots: [
+    {
+      reviewDate: "August 3, 2026",
+      evidenceCutoff: LEDGER_EVIDENCE_CUTOFF,
+      currentState: "Elevated infrastructure strain",
+      currentDirection: "Functioning with narrowed flexibility",
+      previousState: "Elevated Strain (archived numerical series)",
+      materialChangeSummary:
+        "PJM summer alert window and DOE Order 202-26-35 managed without a confirmed broad blackout; structural tightness remains.",
+      methodologyVersion: LEDGER_METHODOLOGY_VERSION,
+      sources: [
+        {
+          institution: "PJM Interconnection",
+          title: "Operations updates — peak demand and summer alerts",
+          date: "July 2026 (reviewed through August 3, 2026)",
+          url: "https://www.pjm.com/",
+          supports:
+            "Early-July peak near 168 GW; Hot Weather and Maximum Generation alerts July 14–17",
+        },
+        {
+          institution: "U.S. Department of Energy",
+          title: "DOE Order 202-26-35",
+          date: "Effective July 14–21, 2026",
+          supports:
+            "Temporary environmental-permit flexibility for specified units and large-load backup generation",
+        },
+        {
+          institution: "Federal Energy Regulatory Commission",
+          title: "Large-load integration rulemaking and related notices",
+          date: "Accessed August 3, 2026",
+          url: "https://www.ferc.gov/",
+          supports:
+            "Ongoing large-load cost, siting, and interconnection debates",
+        },
+      ],
+    },
+  ],
+};
+
+export const ISI_SNAPSHOT = latestSnapshot(ISI_SERIES);

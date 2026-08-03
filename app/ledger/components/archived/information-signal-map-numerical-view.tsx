@@ -1,29 +1,28 @@
 /**
- * Information Signal Map — qualitative public view.
- * Numerical score UI archived at ./archived/information-signal-map-numerical-view.tsx
+ * ARCHIVED � numerical UI disabled from public render.
+ * Do not import from public Ledger routes.
  */
 import {
-  ISM_CURRENT_DIRECTION,
-  ISM_CURRENT_STATE,
   ISM_FOOTER_NOTE,
   ISM_NARRATIVE_MAP,
   ISM_NARRATIVE_SHIFT,
+  ISM_READING,
   ISM_SIGNAL_GRID,
-  ISM_SNAPSHOT,
   ISM_SOURCE_STACK,
   ISM_SUMMARY,
+  ISM_UPDATED_LABEL,
   ISM_WHAT_TO_WATCH,
   ISM_WHAT_WOULD_CHANGE,
-} from "../information-signal-map-data";
-import LedgerIndexBreadcrumb from "./ledger-index-breadcrumb";
-import { LEDGER_INDEX_PAGE_CLASS } from "./ledger-index-page-chrome";
-import {
-  LedgerMonitorMethodNotice,
-  LedgerMonitorStatusLines,
-  LedgerQualitativeStatesBlock,
-  LedgerSourcesReviewed,
-} from "./ledger-monitor-chrome";
-import "../information-signal-map.css";
+} from "../../information-signal-map-data";
+import LedgerIndexBreadcrumb from "../ledger-index-breadcrumb";
+import { LEDGER_INDEX_PAGE_CLASS } from "../ledger-index-page-chrome";
+import "../../information-signal-map.css";
+
+function formatWeeklyDelta(change: number): string {
+  if (change > 0) return `↑ +${change} Weekly Read`;
+  if (change < 0) return `↓ ${change} Weekly Read`;
+  return "Unchanged Weekly Read";
+}
 
 function SignalBox({ title, body }: { title: string; body: string }) {
   return (
@@ -35,44 +34,40 @@ function SignalBox({ title, body }: { title: string; body: string }) {
 }
 
 export default function InformationSignalMapView() {
+  const { score, label, status, weeklyChange } = ISM_READING;
+
   return (
-    <section
-      className={`ledger-index-page ledger-im ${LEDGER_INDEX_PAGE_CLASS}`}
-    >
+    <section className={`ledger-index-page ledger-im ${LEDGER_INDEX_PAGE_CLASS}`}>
       <LedgerIndexBreadcrumb current="Information Signal Map" />
 
-      <span className="im-kicker ledger-index-kicker">
-        The Ledger Intelligence System
-      </span>
+      <span className="im-kicker ledger-index-kicker">The Ledger Intelligence System</span>
       <h1 className="im-title ledger-index-title">Information Signal Map</h1>
-      <p className="ledger-index-intro">
-        A qualitative map of how narratives move through markets, media, policy,
-        and institutions — where framing converges, where it diverges, and what
-        remains underweighted.
+      <p className="im-updated ledger-index-updated">
+        <em>{ISM_UPDATED_LABEL}</em>
       </p>
-      <LedgerMonitorStatusLines />
 
       <div className="im-card ledger-index-hero-card">
-        <div className="ledger-monitor-status-pair">
+        <div className="im-main">
           <div>
-            <p className="ledger-monitor-pair-label">Current State</p>
-            <p className="ledger-monitor-pair-value">{ISM_CURRENT_STATE}</p>
+            <div className="im-score">
+              {score}
+              <span>/100</span>
+            </div>
+            <div className="im-label">{label}</div>
           </div>
           <div>
-            <p className="ledger-monitor-pair-label">Current Direction</p>
-            <p className="ledger-monitor-pair-value">{ISM_CURRENT_DIRECTION}</p>
+            <div className="im-delta ledger-index-delta">{formatWeeklyDelta(weeklyChange)}</div>
+            <div className="im-label">{status}</div>
           </div>
         </div>
 
-        <p className="im-summary ledger-monitor-lead">{ISM_SUMMARY}</p>
+        <p className="im-summary">{ISM_SUMMARY}</p>
 
         <div className="im-grid-3">
           {ISM_SIGNAL_GRID.map((item) => (
             <SignalBox key={item.title} title={item.title} body={item.body} />
           ))}
         </div>
-
-        <LedgerMonitorMethodNotice />
       </div>
 
       <div className="im-section ledger-index-section">
@@ -122,10 +117,9 @@ export default function InformationSignalMapView() {
         </div>
       </div>
 
-      <LedgerSourcesReviewed sources={ISM_SNAPSHOT.sources} />
-      <LedgerQualitativeStatesBlock />
-
       <p className="im-footer ledger-index-page-note">{ISM_FOOTER_NOTE}</p>
     </section>
   );
 }
+
+

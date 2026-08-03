@@ -45,10 +45,15 @@
 }
 
 .ledger-acai .acai-hero {
-  display: grid;
-  grid-template-columns: minmax(0, 1.12fr) minmax(340px, 0.88fr);
-  gap: 22px;
+  display: block;
+  width: 100%;
   margin: var(--ledger-hero-gap) 0 34px;
+}
+
+.ledger-acai .acai-hero > .acai-card,
+.ledger-acai .acai-hero > .ledger-index-hero-card {
+  width: 100%;
+  max-width: none;
 }
 
 .ledger-acai .acai-card {
@@ -610,8 +615,6 @@
 
 @media (max-width: 920px) {
   .ledger-acai .acai-hero {
-    grid-template-columns: 1fr;
-    gap: 20px;
     margin-bottom: 32px;
   }
 

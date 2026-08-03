@@ -1,14 +1,14 @@
-import { getLedgerIndex } from "../ledger-data";
-import LedgerIndexMeter from "./ledger-index-meter";
+/**
+ * Public GPI entry — interim Global Pressure Monitor (no numerical reading).
+ * Numerical meter archived at ./archived/global-pressure-numerical-meter.tsx
+ */
+import GlobalPressureMonitor from "./global-pressure-monitor";
 
 type GlobalPressureMeterProps = {
   variant?: "compact" | "full";
   className?: string;
 };
 
-/** @deprecated Use LedgerIndexMeter — kept for existing imports */
 export default function GlobalPressureMeter(props: GlobalPressureMeterProps) {
-  return (
-    <LedgerIndexMeter index={getLedgerIndex("global-pressure")} {...props} />
-  );
+  return <GlobalPressureMonitor {...props} />;
 }

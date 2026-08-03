@@ -1,3 +1,175 @@
+/* =========================================================
+   Interim Global Pressure Monitor (qualitative — no degree gauge)
+   ========================================================= */
+
+.ledger-gpi .gpm-meter-card,
+.gpm-surface .gpm-meter-card {
+  margin-top: 0;
+  border-radius: var(--ledger-radius-lg, 22px);
+  border: 1px solid var(--ledger-rule, rgba(32, 28, 24, 0.1));
+  background: var(--ledger-card, #fffdf9);
+  padding: var(--ledger-hero-pad, 30px 28px 28px);
+  box-shadow: var(
+    --ledger-shadow,
+    0 20px 46px rgba(28, 24, 20, 0.052),
+    0 5px 14px rgba(28, 24, 20, 0.028)
+  );
+}
+
+.ledger-gpi .gpm-status-pair,
+.gpm-surface .gpm-status-pair {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 18px;
+  padding-bottom: 22px;
+  margin-bottom: 22px;
+  border-bottom: 1px solid var(--ledger-rule-soft, rgba(32, 28, 24, 0.08));
+}
+
+@media (min-width: 768px) {
+  .ledger-gpi .gpm-status-pair,
+  .gpm-surface .gpm-status-pair {
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+}
+
+.ledger-gpi .gpm-pair-label,
+.gpm-surface .gpm-pair-label {
+  margin: 0 0 8px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.13em;
+  line-height: 1.45;
+  text-transform: uppercase;
+  color: var(--ledger-label, #5f5a54);
+}
+
+.ledger-gpi .gpm-pair-value,
+.gpm-surface .gpm-pair-value {
+  margin: 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(1.15rem, 2.4vw, 1.45rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.28;
+  color: #1f1d1a;
+}
+
+.ledger-gpi .gpm-lead,
+.gpm-surface .gpm-lead {
+  margin: 0 0 22px;
+  max-width: var(--ledger-editorial-width, 880px);
+  font-size: 1.02rem;
+  line-height: 1.72;
+  color: #272727;
+}
+
+.ledger-gpi .gpm-lead-compact,
+.gpm-surface .gpm-lead-compact {
+  margin-bottom: 18px;
+  font-size: 0.98rem;
+}
+
+.ledger-gpi .gpm-panel-grid,
+.gpm-surface .gpm-panel-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  margin-top: 22px;
+  margin-bottom: 22px;
+  padding-bottom: 22px;
+  border-bottom: 1px solid var(--ledger-rule-soft, rgba(32, 28, 24, 0.08));
+}
+
+@media (min-width: 768px) {
+  .ledger-gpi .gpm-panel-grid,
+  .gpm-surface .gpm-panel-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.ledger-gpi .gpm-status-panel,
+.gpm-surface .gpm-status-panel {
+  border: 1px solid var(--ledger-rule, rgba(32, 28, 24, 0.1));
+  border-radius: var(--ledger-radius-md, 14px);
+  background: rgba(255, 253, 249, 0.72);
+  padding: var(--ledger-card-pad, 16px);
+}
+
+.ledger-gpi .gpm-panel-label,
+.gpm-surface .gpm-panel-label {
+  margin: 0 0 8px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.13em;
+  line-height: 1.45;
+  text-transform: uppercase;
+  color: var(--ledger-label, #5f5a54);
+}
+
+.ledger-gpi .gpm-panel-level,
+.gpm-surface .gpm-panel-level {
+  margin: 0 0 14px;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.2rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  color: #1f1d1a;
+}
+
+.ledger-gpi .gpm-panel-list-label,
+.gpm-surface .gpm-panel-list-label {
+  margin: 0 0 8px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  line-height: 1.45;
+  text-transform: uppercase;
+  color: var(--ledger-label, #5f5a54);
+}
+
+.ledger-gpi .gpm-panel-list,
+.gpm-surface .gpm-panel-list {
+  margin: 0;
+  padding: 0 0 0 1.1rem;
+  list-style: disc;
+}
+
+.ledger-gpi .gpm-panel-list li,
+.gpm-surface .gpm-panel-list li {
+  margin: 0 0 8px;
+  font-size: 0.92rem;
+  line-height: 1.58;
+  color: #5c554d;
+}
+
+.ledger-gpi .gpm-panel-list li:last-child,
+.gpm-surface .gpm-panel-list li:last-child {
+  margin-bottom: 0;
+}
+
+.ledger-gpi .gpm-methodology-notice,
+.gpm-surface .gpm-methodology-notice {
+  margin: 0;
+  max-width: var(--ledger-editorial-width, 880px);
+  font-size: 0.88rem;
+  line-height: 1.64;
+  color: var(--ledger-muted, #6f6a63);
+}
+
+@media (max-width: 800px) {
+  .ledger-gpi .gpm-meter-card,
+  .gpm-surface .gpm-meter-card {
+    padding: 24px 20px 22px;
+  }
+}
+
+/* =========================================================
+   Archived numerical GPI styles (kept for rebuild; not public)
+   ========================================================= */
+
 /* Global Pressure Index — polish layer (scoped to .ledger-gpi) */
 
 .ledger-gpi .gpi-meter-card {

@@ -1,123 +1,115 @@
+/**
+ * Precious Materials Monitor — qualitative public view.
+ * Numerical model archived at ./archived/precious-materials-numerical-view.tsx
+ */
 import {
-  PMI_CALCULATION_ROWS,
   PMI_CROSS_SYSTEM_BRIDGE,
   PMI_CROSS_SYSTEM_PRESSURE,
-  PMI_DIAMOND_SPLIT,
   PMI_FOOTER_METHOD_NOTE,
-  PMI_INTRO,
-  PMI_JEWELRY_DEMAND,
-  PMI_MARKET_PRESSURE,
-  PMI_METALS_PRESSURE,
-  PMI_RECENT_READINGS,
+  PMI_SNAPSHOT,
   PMI_SOURCES_NOTE,
-  PMI_UPDATED_LABEL,
   PMI_WHAT_MOVED,
   PMI_WHAT_TO_WATCH,
 } from "../precious-materials-data";
 import LedgerIndexBreadcrumb from "./ledger-index-breadcrumb";
 import { LEDGER_INDEX_PAGE_CLASS } from "./ledger-index-page-chrome";
+import {
+  LedgerMonitorMethodNotice,
+  LedgerMonitorStatusLines,
+  LedgerQualitativeStatesBlock,
+  LedgerSourcesReviewed,
+} from "./ledger-monitor-chrome";
 import "../precious-materials-index.css";
 
-function MapBar({ score }: { score: number }) {
-  return (
-    <div className="pmi-map-bar-track" aria-hidden>
-      <div
-        className="pmi-map-bar-fill"
-        style={{ width: `${Math.min(100, Math.max(0, score))}%` }}
-      />
-    </div>
-  );
-}
+const DISPLAY_TITLE = "Precious Materials Monitor";
+const INTRO =
+  "A qualitative monitor of the material conditions behind fine jewelry — gold, platinum, natural diamonds, and the sourcing environment that shapes quality, availability, and long-term value for clients and makers.";
 
-function formatWeeklyDelta(change: number): string {
-  if (change > 0) return `↑ +${change} Weekly Read`;
-  if (change < 0) return `↓ ${change} Weekly Read`;
-  return "Unchanged Weekly Read";
-}
+const MATERIAL_STATES = [
+  {
+    name: "Gold",
+    level: "Elevated monetary demand",
+    body: "Structural central-bank and diversification demand continue to support the read. Market pricing indicated gold around the $4,000 area — near-term sensitivity without a materials-regime break.",
+  },
+  {
+    name: "Silver",
+    level: "Elevated",
+    body: "Elevated pressure continues beside gold, with industrial and monetary demand keeping conditions firm rather than soft.",
+  },
+  {
+    name: "Platinum / Palladium",
+    level: "Firm",
+    body: "Industrial and jewelry-linked demand keep the complex firm without a broad regime shift.",
+  },
+  {
+    name: "Premium Natural Diamonds",
+    level: "Selectively firm",
+    body: "Selective strength in key sizes and cuts; scarcity-asset positioning continues in premium categories.",
+  },
+  {
+    name: "Commercial Natural Diamonds",
+    level: "Price-sensitive",
+    body: "Commercial channels remain price-sensitive as buyers discriminate more carefully across grades and sizes.",
+  },
+  {
+    name: "Lab-Grown Diamonds",
+    level: "Continued price compression",
+    body: "Pricing compression continues in commercial and mid-tier ranges as an embedded factor, while premium natural holds firmer in selective sizes and cuts.",
+  },
+  {
+    name: "Jewelry Demand",
+    level: "Bridal and high jewelry firm",
+    body: "Bridal and high-jewelry channels remain comparatively firm beneath a segmented wholesale environment.",
+  },
+  {
+    name: "Colored Gemstones",
+    level: "Selective scarcity",
+    body: "Key origins remain constrained; scarcity is selective rather than uniform across all colored stones.",
+  },
+] as const;
 
 export default function PreciousMaterialsIndexView() {
-  const { score, status, weeklyChange } = PMI_MARKET_PRESSURE;
-
   return (
-    <section className={`ledger-index-page ledger-pmi ${LEDGER_INDEX_PAGE_CLASS}`}>
-      <LedgerIndexBreadcrumb current="Precious Materials Index" />
+    <section
+      className={`ledger-index-page ledger-pmi ${LEDGER_INDEX_PAGE_CLASS}`}
+    >
+      <LedgerIndexBreadcrumb current={DISPLAY_TITLE} />
 
-      <span className="pmi-kicker ledger-index-kicker">The Ledger Intelligence System</span>
-      <h1 className="pmi-title ledger-index-title">Precious Materials Index</h1>
-      <p className="pmi-intro ledger-index-intro">{PMI_INTRO}</p>
-      <p className="pmi-updated ledger-index-updated">
-        <em>{PMI_UPDATED_LABEL}</em>
-      </p>
+      <span className="pmi-kicker ledger-index-kicker">
+        The Ledger Intelligence System
+      </span>
+      <h1 className="pmi-title ledger-index-title">{DISPLAY_TITLE}</h1>
+      <p className="pmi-intro ledger-index-intro">{INTRO}</p>
+      <LedgerMonitorStatusLines />
 
       <div className="pmi-hero">
         <div className="pmi-card ledger-index-hero-card">
-          <div className="pmi-main-row">
-            <div className="pmi-main-score">
-              <p className="pmi-main-number">
-                {score}
-                <span className="pmi-max">/100</span>
+          <div className="ledger-monitor-status-pair">
+            <div>
+              <p className="ledger-monitor-pair-label">Current State</p>
+              <p className="ledger-monitor-pair-value">
+                {PMI_SNAPSHOT.currentState}
               </p>
-              <p className="pmi-main-label">Market Pressure</p>
             </div>
-            <div className="pmi-delta-wrap">
-              <span className="pmi-delta ledger-index-delta">{formatWeeklyDelta(weeklyChange)}</span>
-              <p className="pmi-delta-note">{status}</p>
-            </div>
-          </div>
-
-          <div className="pmi-maps-grid">
-            <div className="pmi-map-block">
-              <span className="pmi-section-title">Metals Pressure Map</span>
-              {PMI_METALS_PRESSURE.map((row) => (
-                <div key={row.metal} className="pmi-map-row">
-                  <div className="pmi-map-row-header">
-                    <span className="pmi-map-label">{row.metal}</span>
-                    <span className="pmi-map-score">{row.score}/100</span>
-                  </div>
-                  <MapBar score={row.score} />
-                  <p className="pmi-map-state">{row.state}</p>
-                </div>
-              ))}
-            </div>
-
-            <div className="pmi-map-block">
-              <span className="pmi-section-title">Diamond Market Split</span>
-              <div className="pmi-split-grid">
-                {PMI_DIAMOND_SPLIT.map((item) => (
-                  <div key={item.segment} className="pmi-split-item">
-                    <p className="pmi-split-segment">{item.segment}</p>
-                    <p className="pmi-split-score">{item.score}/100</p>
-                    <p className="pmi-split-note">{item.note}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="pmi-map-block">
-              <span className="pmi-section-title">Jewelry Demand Read</span>
-              <div className="pmi-demand-grid">
-                {PMI_JEWELRY_DEMAND.map((item) => (
-                  <div key={item.channel} className="pmi-demand-item">
-                    <p className="pmi-demand-channel">{item.channel}</p>
-                    <p className="pmi-demand-read">{item.read}</p>
-                    <p className="pmi-demand-note">{item.note}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="pmi-map-block">
-              <span className="pmi-section-title">Recent Weekly Readings</span>
-              <div className="pmi-split-grid">
-                {PMI_RECENT_READINGS.map((item) => (
-                  <div key={item.week} className="pmi-split-item">
-                    <p className="pmi-split-segment">{item.week}</p>
-                    <p className="pmi-split-score">{item.score}/100</p>
-                  </div>
-                ))}
-              </div>
+            <div>
+              <p className="ledger-monitor-pair-label">Market Structure</p>
+              <p className="ledger-monitor-pair-value">
+                {PMI_SNAPSHOT.currentDirection}
+              </p>
             </div>
           </div>
+
+          <div className="ledger-monitor-state-grid">
+            {MATERIAL_STATES.map((item) => (
+              <article key={item.name} className="ledger-monitor-state-card">
+                <p className="ledger-monitor-state-name">{item.name}</p>
+                <p className="ledger-monitor-state-level">{item.level}</p>
+                <p className="ledger-monitor-state-body">{item.body}</p>
+              </article>
+            ))}
+          </div>
+
+          <LedgerMonitorMethodNotice />
         </div>
       </div>
 
@@ -136,7 +128,7 @@ export default function PreciousMaterialsIndexView() {
       </div>
 
       <div className="pmi-editorial-section ledger-index-section">
-        <span className="pmi-editorial-kicker">What Moved the Index</span>
+        <span className="pmi-editorial-kicker">What Moved</span>
         {PMI_WHAT_MOVED.map((item) => (
           <p key={item} className="pmi-editorial-body">
             {item}
@@ -153,35 +145,17 @@ export default function PreciousMaterialsIndexView() {
         ))}
       </div>
 
-      <div className="pmi-table-wrap">
-        <span className="pmi-editorial-kicker">How the Index Is Calculated</span>
-        <table className="pmi-table">
-          <thead>
-            <tr>
-              <th className="pmi-table-th">Component</th>
-              <th className="pmi-table-th">Weight</th>
-              <th className="pmi-table-th">Notes</th>
-            </tr>
-          </thead>
-          <tbody>
-            {PMI_CALCULATION_ROWS.map((row) => (
-              <tr key={row.component}>
-                <td>{row.component}</td>
-                <td>{row.weight}</td>
-                <td>{row.note}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <LedgerSourcesReviewed sources={PMI_SNAPSHOT.sources} />
+      <LedgerQualitativeStatesBlock />
 
       <div className="pmi-sources-block">
-        <span className="pmi-sources-kicker">Sources &amp; Method Note</span>
+        <span className="pmi-sources-kicker">Editorial note</span>
         <p className="pmi-sources-body">{PMI_SOURCES_NOTE}</p>
       </div>
 
-      <span className="pmi-footer-note ledger-index-page-note">{PMI_FOOTER_METHOD_NOTE}</span>
+      <span className="pmi-footer-note ledger-index-page-note">
+        {PMI_FOOTER_METHOD_NOTE}
+      </span>
     </section>
   );
 }
-

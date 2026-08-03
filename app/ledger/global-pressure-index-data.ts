@@ -15,8 +15,10 @@
  *    March 2020 ≈ 91°). Dangerous geopolitics without comparable transmission
  *    should remain below those benchmarks.
  *
- * Update category scores here each week. The public reading is derived from
- * the weighted sum — do not hard-code a total that can drift from components.
+ * ARCHIVED NUMERICAL SERIES — not rendered on the public Global Pressure
+ * Monitor. Category scores remain for rebuild / historical testing. When the
+ * revised methodology ships, derive the public reading from the weighted sum —
+ * do not hard-code a total that can drift from components.
  */
 
 export type GpiCategoryId =

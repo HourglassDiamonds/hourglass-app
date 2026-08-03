@@ -1,11 +1,20 @@
 /**
- * AI Capability Acceleration Index — weekly data.
- * Update values and copy here each week. Page layout is fixed in ai-capability-acceleration-index-view.
+ * AI Capability Acceleration — weekly data.
+ * ARCHIVED NUMERICAL SERIES — public page is a qualitative AI Capability Monitor.
+ * Scores, recent readings, benchmarks, calculation rows, and bands remain for rebuild.
  */
+
+import {
+  LEDGER_EVIDENCE_CUTOFF,
+  LEDGER_METHODOLOGY_VERSION,
+  latestSnapshot,
+  type LedgerMonitorSeries,
+} from "./ledger-monitor-framework";
 
 export type AcaiFillVariant = "cool" | "neutral" | "warm" | "hot" | "critical";
 
-export const ACAI_UPDATED_LABEL = "Updated weekly — July 20, 2026";
+export const ACAI_UPDATED_LABEL =
+  "Interim status — methodology revision in progress";
 
 export const ACAI_READING = {
   score: 85,
@@ -19,10 +28,13 @@ export const ACAI_INTRO =
   "A weekly reading of how AI capability, deployment, and physical infrastructure are moving together — across models, agents, enterprise integration, power, and grid constraints. The purpose is not to forecast AGI. It is to track an industrial buildout: where software progress meets operational friction, energy limits, and organizational adaptation lag.";
 
 export const ACAI_SUMMARY =
-  "Acceleration rose to 85 as frontier access broadened — OpenAI's GPT-5.6 family is generally available across ChatGPT, Codex, and the API with stronger performance-per-dollar, coding, tool use, and multi-agent operation, while Kimi K3 is available through Kimi products and API at competitive cost with full downloadable weights still pending. Compute, electricity, and deployment infrastructure remain binding constraints.";
+  "Frontier access broadened as GPT-5.6 became generally available and Kimi K3 added competitive product and API paths. The Ledger’s current interpretation is that capability pace is accelerating, while compute, electricity, and deployment infrastructure remain binding constraints.";
 
 export const ACAI_WEEKLY_SIGNAL =
-  "The reading moved to 85 because frontier capability, practical access, cost compression, competitive convergence, and real demand broadened together. GPT-5.6 Sol, Terra, and Luna are generally available across ChatGPT, Codex, and the OpenAI API rather than remaining limited to partner previews — bringing improved performance per dollar, stronger coding and agentic operation, broader tool use, and multi-agent capability into wider product surfaces. Kimi K3 is available through Kimi products and the Kimi API with strong reported benchmark performance and lower deployment or usage costs relative to several closed frontier tiers; full downloadable weights remain pending or incomplete, and not all vendor benchmark claims have been independently verified. Initial demand has pressed available capacity on some access paths. Claude Sonnet 5 remains a broadly deployed baseline beside these moves. Physical constraints still set practical pace after the early-July PJM peak and mid-July hot-weather operations under a renewed DOE order window. Enterprise adoption and coding integration continue; governance, energized capacity, and infrastructure readiness remain co-equal limits.";
+  "OpenAI reported GPT-5.6 Sol, Terra, and Luna general availability across ChatGPT, Codex, and the API. Kimi reported product and API access for K3 with full downloadable weights still pending. Claude Sonnet 5 remains a broadly deployed baseline. PJM summer operations and a renewed DOE order window kept physical pace-setters live beside broader software access.";
+
+export const ACAI_ASSESSMENT =
+  "Capability, practical access, cost compression, and competitive diffusion moved together. Vendor benchmark claims are not all independently verified; initial demand has pressed capacity on some access paths. Enterprise adoption continues unevenly. Governance, energized capacity, and infrastructure readiness remain co-equal limits.";
 
 export const ACAI_METHOD_PILLS = [
   { label: "Reading Type", value: "Capability + infrastructure index" },
@@ -52,7 +64,7 @@ export const ACAI_CAPABILITY_READINGS = [
     score: 83,
     band: "Elevated",
     fill: "warm" as AcaiFillVariant,
-    text: "Frontier access broadened as GPT-5.6 became generally available across ChatGPT, Codex, and the API, while Kimi K3 added competitive product and API access — capability signals are no longer limited to partner previews, though some sensitive tiers remain more qualified and not all vendor benchmark claims are independently verified.",
+    text: "OpenAI reported GPT-5.6 general availability across ChatGPT, Codex, and the API; Kimi reported competitive product and API access for K3. Capability signals are no longer limited to partner previews.",
   },
   {
     name: "Agents & Tool Use",
@@ -60,7 +72,7 @@ export const ACAI_CAPABILITY_READINGS = [
     score: 82,
     band: "Rising",
     fill: "warm" as AcaiFillVariant,
-    text: "GPT-5.6 strengthened agentic operation, broader tool use, and multi-agent coordination at widely available product surfaces — operational usefulness rising, with reliability and long-horizon consistency still uneven across deployments.",
+    text: "GPT-5.6 strengthened agentic operation, tool use, and multi-agent coordination at widely available surfaces. Long-horizon reliability remains uneven.",
   },
   {
     name: "Coding & Software",
@@ -68,7 +80,7 @@ export const ACAI_CAPABILITY_READINGS = [
     score: 84,
     band: "Accelerating",
     fill: "warm" as AcaiFillVariant,
-    text: "Coding acceleration continued through GPT-5.6 general availability, broadly deployed Claude Sonnet 5 surfaces, and Kimi K3 coding product and API access — verification and deployment discipline still define practical gains.",
+    text: "Coding acceleration continued through GPT-5.6, Claude Sonnet 5, and Kimi coding surfaces. Verification and deployment discipline still define practical gains.",
   },
   {
     name: "Enterprise Deployment",
@@ -76,7 +88,7 @@ export const ACAI_CAPABILITY_READINGS = [
     score: 77,
     band: "Cautious",
     fill: "neutral" as AcaiFillVariant,
-    text: "Wider frontier access and competitive cost tiers advanced workflow dependence where integration paths are clear — broader operating-model change remains uneven, and infrastructure readiness still gates scale.",
+    text: "Wider access advanced workflow dependence where integration paths are clear. Broader operating-model change remains uneven and infrastructure-gated.",
   },
   {
     name: "Infrastructure Demand",
@@ -84,7 +96,7 @@ export const ACAI_CAPABILITY_READINGS = [
     score: 93,
     band: "Elevated",
     fill: "warm" as AcaiFillVariant,
-    text: "Summer power limits remain a binding constraint after the early-July PJM peak and mid-July hot-weather operations — deployment pace stays tied to grid and large-load readiness alongside rising model access and demand.",
+    text: "PJM summer operations and a renewed DOE order window kept power and large-load limits operational beside rising model access.",
   },
   {
     name: "Labor Substitution",
@@ -92,7 +104,7 @@ export const ACAI_CAPABILITY_READINGS = [
     score: 66,
     band: "Widening",
     fill: "neutral" as AcaiFillVariant,
-    text: "Gradual but widening pressure in repetitive knowledge workflows — supervised, sector-specific, and rarely broad autonomous replacement at scale.",
+    text: "Gradual but widening pressure in repetitive knowledge workflows — supervised, sector-specific, and rarely broad autonomous replacement.",
   },
   {
     name: "Governance & Risk",
@@ -100,7 +112,7 @@ export const ACAI_CAPABILITY_READINGS = [
     score: 70,
     band: "Lagging",
     fill: "neutral" as AcaiFillVariant,
-    text: "Broader general availability reduced some access friction, while trusted-access and sensitive-capability gates remain — operational risk frameworks still trail deployment speed in core systems.",
+    text: "Broader availability reduced some access friction, while trusted-access gates and risk frameworks still trail deployment speed.",
   },
 ] as const;
 
@@ -313,7 +325,7 @@ export const ACAI_SOURCES = [
 ] as const;
 
 export const ACAI_FOOTER_NOTE =
-  "The AI Capability Acceleration Index is a weekly editorial framework. It compresses public signals into a directional reading — whether progress is steady, deployment-bound, or beginning to affect work, infrastructure, and markets — without techno-prophecy or acceleration theater.";
+  "The AI Capability Acceleration Index is an editorial framework. It compresses public signals into a directional reading — whether progress is steady, deployment-bound, or beginning to affect work, infrastructure, and markets — without techno-prophecy or acceleration theater.";
 
 export const ACAI_SCALE_LABELS = [
   "Slow",
@@ -331,7 +343,7 @@ export const ACAI_SECTION_SUBTITLES = {
   frontierWatchlist:
     "System layers and integration paths worth tracking each week — capability and physical capacity together.",
   above85:
-    "The reading has entered the lower edge of disruptive territory. These developments would justify a higher score within the band.",
+    "Capability pace is accelerating but not yet disruptive. These developments would justify a stronger qualitative assessment.",
   calculated:
     "A weighted editorial model constrained by deployment pace, integration depth, infrastructure demand, and operational reliability.",
   capabilityBands:
@@ -339,3 +351,64 @@ export const ACAI_SECTION_SUBTITLES = {
   sources:
     "The reading is based on public model releases, company documentation, product updates, deployment signals, infrastructure reporting, and observed operational thresholds. It is an interpretive framework, not a forecast.",
 } as const;
+
+/** Append-only public series. Future reviews push a new snapshot. */
+export const ACAI_SERIES: LedgerMonitorSeries = {
+  id: "ai-capability",
+  methodologyVersion: LEDGER_METHODOLOGY_VERSION,
+  snapshots: [
+    {
+      reviewDate: "August 3, 2026",
+      evidenceCutoff: LEDGER_EVIDENCE_CUTOFF,
+      currentState: "Capability pace: Accelerating",
+      currentDirection: "Broadening, infrastructure-bound",
+      previousState: "Accelerating (archived numerical series)",
+      materialChangeSummary:
+        "OpenAI reported GPT-5.6 general availability; Kimi reported K3 product and API access. Physical infrastructure constraints remained binding.",
+      methodologyVersion: LEDGER_METHODOLOGY_VERSION,
+      sources: [
+        {
+          institution: "OpenAI",
+          title: "GPT-5.6: Frontier intelligence that scales with your ambition",
+          date: "July 9, 2026",
+          url: "https://openai.com/index/gpt-5-6/",
+          supports:
+            "Frontier model general availability across ChatGPT, Codex, and the API",
+        },
+        {
+          institution: "Moonshot / Kimi",
+          title: "Kimi K3 release and product documentation",
+          date: "July 16, 2026",
+          url: "https://www.kimi.com/blog/kimi-k3",
+          supports:
+            "Competitive product and API access for K3; full downloadable weights still pending",
+        },
+        {
+          institution: "Anthropic",
+          title: "Introducing Claude Sonnet 5",
+          date: "June 30, 2026",
+          url: "https://www.anthropic.com/news/claude-sonnet-5",
+          supports: "Broadly deployed baseline beside newer frontier releases",
+        },
+        {
+          institution: "PJM Interconnection",
+          title: "PJM Hot Weather Operations Update – July 15, 2026",
+          date: "July 15, 2026",
+          url: "https://insidelines.pjm.com/pjm-hot-weather-operations-update-july-15-2026/",
+          supports:
+            "Physical power and large-load limits remaining operational pace-setters",
+        },
+        {
+          institution: "U.S. Department of Energy",
+          title: "DOE Order No. 202-26-35",
+          date: "July 14, 2026",
+          url: "https://www.energy.gov/ceser/federal-power-act-section-202c-pjm-interconnection-llc-pjm-order-no-202-26-35",
+          supports:
+            "Renewed temporary flexibility for specified units and large-load backup generation",
+        },
+      ],
+    },
+  ],
+};
+
+export const ACAI_SNAPSHOT = latestSnapshot(ACAI_SERIES);
