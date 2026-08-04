@@ -493,15 +493,15 @@ function SuiteStyles() {
           overflow:visible;
         }
         .dts-app{
-          height: var(--dts-workspace-h, calc(100dvh - 7.5rem - 44px));
-          max-height: var(--dts-workspace-h, calc(100dvh - 7.5rem - 44px));
-          overflow:hidden;
+          height:auto;
+          max-height:none;
+          overflow:visible;
           flex-shrink:0;
         }
         .dts-main{
-          flex:1 1 auto;
+          flex:0 1 auto;
           min-height:0;
-          overflow:hidden;
+          overflow:visible;
         }
         .dts-editorial{
           position:relative;
@@ -514,7 +514,7 @@ function SuiteStyles() {
         z-index:1;
         display:grid;
         grid-template-columns:256px minmax(0, 1fr);
-        grid-template-rows:minmax(0, 1fr);
+        grid-template-rows:auto;
         overflow:visible;
         min-height:0;
         flex:1 1 auto;
@@ -524,32 +524,26 @@ function SuiteStyles() {
         .diamond-studio-main.dts-main{
           display:grid !important;
           grid-template-columns:256px minmax(0, 1fr) !important;
-          grid-template-rows:minmax(0, 1fr) !important;
+          grid-template-rows:auto !important;
           gap:0 !important;
           width:auto !important;
           flex-direction:unset !important;
+          overflow:visible !important;
+          height:auto !important;
+          max-height:none !important;
         }
         .dts-control-rail{
           grid-column:1;
           grid-row:1;
-          align-self:stretch;
-          min-height:0;
-          max-height:100%;
-          height:100%;
+          align-self:start;
           min-width:0;
-          overflow-x:hidden;
-          overflow-y:auto;
-          overscroll-behavior:contain;
-          padding:12px 16px 12px 20px;
+          height:max-content;
+          max-height:none;
+          overflow:visible;
+          padding:12px 14px 20px 20px;
           display:flex;
           flex-direction:column;
           gap:13px;
-          scrollbar-width:none;
-          -ms-overflow-style:none;
-        }
-        .dts-control-rail::-webkit-scrollbar{
-          width:0;
-          height:0;
         }
         .dts-control-rail > *{
           flex-shrink:0;
@@ -598,9 +592,11 @@ function SuiteStyles() {
           align-self:stretch;
           min-width:0;
           min-height:0;
+          height:auto;
+          max-height:none;
           display:flex;
           flex-direction:column;
-          overflow:hidden;
+          overflow:visible;
           justify-content:flex-start;
         }
         .dts-stage-stack .dts-stage-preview{
@@ -610,7 +606,7 @@ function SuiteStyles() {
           min-width:0;
           padding:clamp(16px, 2.2vh, 28px) 0 8px;
           justify-content:flex-start;
-          overflow:hidden;
+          overflow:visible;
         }
         .dts-stage-stack .dts-shape-strip-wrap{
           order:2;
@@ -1686,34 +1682,91 @@ function SuiteStyles() {
           pointer-events:none;
         }
       }
+      /* Short desktop viewports: compress panel spacing so controls sit more
+         compactly above editorial content; keep typography intact. */
+      @media (min-width: 1024px) and (max-height: 1080px) {
+        .dts-control-rail{
+          gap:12px;
+          padding:11px 14px 18px 18px;
+        }
+      }
       @media (min-width: 1024px) and (max-height: 900px) {
         .dts-control-rail{
-          gap:11px;
-          padding:10px 14px 10px 18px;
+          gap:9px;
+          padding:8px 12px 18px 16px;
         }
         .dts-control-rail .dts-card{
-          padding:10px 11px 11px;
+          padding:9px 10px 10px;
         }
         .dts-finger-stack .dts-card--finger,
         .dts-finger-stack .dts-card--band-width{
-          padding:10px 11px 11px;
+          padding:9px 10px 10px;
         }
         .dts-finger-stack .dts-card--finger{
           padding-bottom:0;
         }
         .dts-finger-stack .dts-card--band-width{
           padding-top:0;
-          padding-bottom:10px;
+          padding-bottom:9px;
+        }
+        .dts-card-head{
+          margin-bottom:6px;
+        }
+        .dts-stepper{
+          margin:0 0 4px;
+          gap:12px;
+        }
+        .dts-slider{
+          margin:4px 4px 0;
+        }
+        .dts-slider-endpoints{
+          margin-top:4px;
+        }
+        .dts-card .dts-card-note{
+          margin-top:6px;
         }
         .dts-card--presentation .dts-cov-pct{
           font-size:26px;
         }
         .dts-card--presentation .dts-zone-bar{
-          margin-top:8px;
+          margin-top:7px;
         }
         .dts-card-section{
+          margin-top:7px;
+          padding-top:7px;
+        }
+        .dts-skin-row{
+          gap:6px;
+        }
+        .dts-tone-swatches{
+          gap:6px;
+        }
+      }
+      @media (min-width: 1024px) and (max-height: 800px) {
+        .dts-control-rail{
+          gap:8px;
+          padding:7px 10px 16px 14px;
+        }
+        .dts-control-rail .dts-card{
+          padding:8px 9px 9px;
+        }
+        .dts-finger-stack .dts-card--finger,
+        .dts-finger-stack .dts-card--band-width{
+          padding:8px 9px 9px;
+        }
+        .dts-finger-stack .dts-card--finger{
+          padding-bottom:0;
+        }
+        .dts-finger-stack .dts-card--band-width{
+          padding-top:0;
+          padding-bottom:8px;
+        }
+        .dts-card-section{
+          margin-top:6px;
+          padding-top:6px;
+        }
+        .dts-zone-bar{
           margin-top:8px;
-          padding-top:8px;
         }
       }
       @media (min-width: 1024px) and (max-height: 860px) {
@@ -2396,7 +2449,7 @@ export default function DiamondStudioPage() {
   const bwHandleLeft =
     (bandWidthToIndex(bandWidth) / (BAND_WIDTH_VALUES.length - 1)) * 100;
   return (
-    <div className="dts-shell h-full min-h-full w-full" data-theme="light">
+    <div className="dts-shell w-full" data-theme="light">
       <SuiteStyles />
       <div className="dts-app">
         <div className="dts-main diamond-studio-main diamond-studio-grid studio-layout">

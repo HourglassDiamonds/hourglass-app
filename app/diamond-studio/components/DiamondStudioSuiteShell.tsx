@@ -24,7 +24,7 @@ const SUITE_SHELL_CSS = `
   }
 }
 @media (min-width: 1024px) {
-  [data-diamond-studio-suite-route][data-suite-instrument] .dts-app,
+  /* Shape Studio keeps a locked instrument workspace; Size Studio scrolls with the page. */
   [data-diamond-studio-suite-route][data-suite-instrument] .dss-app {
     height: var(--dts-workspace-h);
     max-height: var(--dts-workspace-h);
