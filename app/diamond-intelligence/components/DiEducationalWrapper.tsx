@@ -185,15 +185,16 @@ export default function DiEducationalWrapper() {
                 <Link href="/the-house" className={editorialLink}>
                   The House
                 </Link>
-                . If you would rather talk through a specific stone, you can{" "}
+                . For a specific stone, setting, or shortlist under that same
+                standard,{" "}
                 <ConsultationCtaLink
                   location="diamond_intelligence:editorial"
                   tool="diamond-intelligence"
                   className={editorialLink}
                 >
-                  begin the conversation
-                </ConsultationCtaLink>{" "}
-                without pressure.
+                  Begin the Conversation
+                </ConsultationCtaLink>
+                .
               </p>
             </div>
           </DiV3Chapter>

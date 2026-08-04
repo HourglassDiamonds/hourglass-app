@@ -1775,7 +1775,7 @@ export const articles: Article[] = [
       {
         type: "studio-callout",
         heading: "Compare shape and size on the hand",
-        text: "Use the [Diamond Studio](/diamond-studio) to compare how different shapes and carat weights face up across finger sizes.",
+        text: "Use the [Diamond Studio](/diamond-studio) to see how different shapes and carat weights face up across finger sizes — useful before you narrow a personal shortlist.",
       },
 
       { type: "heading", text: "What “Largest” Means on the Hand" },

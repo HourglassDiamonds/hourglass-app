@@ -16,8 +16,8 @@ export default function ComparingDiamondsPanel({
         Concierge
       </p>
       <p className="mt-0.5 text-[13px] leading-[1.72] text-[#5f5851]">
-        We can review this diamond alongside comparable options and provide
-        candid guidance on value, performance, and tradeoffs.
+        We can set this diamond beside comparable options and speak plainly
+        about value, performance, and fit.
       </p>
       <ConsultationCtaLink
         location="diamond_intelligence:comparing"

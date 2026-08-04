@@ -270,8 +270,8 @@ export default function HomeStudioPortal() {
                 className="mt-4 max-w-[30ch] text-[0.92rem] leading-[1.72] max-md:mx-auto md:mt-3 md:text-[0.88rem] md:leading-[1.65]"
                 style={{ color: STUDIO_GRAPHITE.body }}
               >
-                Professional tools for scale, light performance, and report
-                quality.
+                Explore scale, light, and report quality on your own — guidance
+                when the decision becomes personal.
               </p>
             </div>
           </div>

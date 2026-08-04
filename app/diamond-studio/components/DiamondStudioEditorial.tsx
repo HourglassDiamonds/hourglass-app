@@ -242,20 +242,20 @@ export default function DiamondStudioEditorial() {
                 of a typical jewelry blog.
               </p>
               <p>
-                When you are ready to move from preview to plan,{" "}
+                When you are ready to move from preview to plan, exploring{" "}
                 <Link href="/engagement-rings" className={editorialLink}>
                   engagement rings
                 </Link>{" "}
-                is the natural next step. If you would rather talk through
-                proportions and options with a Graduate Gemologist, you can{" "}
+                is the natural next step. For help translating proportion and
+                presence into a stone for the hand,{" "}
                 <ConsultationCtaLink
                   location="diamond_studio:result"
                   tool="diamond-studio"
                   className={editorialLink}
                 >
-                  begin the conversation
-                </ConsultationCtaLink>{" "}
-                at your own pace.
+                  Begin the Conversation
+                </ConsultationCtaLink>
+                .
               </p>
             </div>
           </DiV3Chapter>

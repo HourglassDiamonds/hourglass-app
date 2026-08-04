@@ -255,7 +255,7 @@ export default function GuidedReportCompletion({
               )
             }
           >
-            Have Justin review this diamond
+            Have Justin Review This Diamond
           </Link>
         </div>
 

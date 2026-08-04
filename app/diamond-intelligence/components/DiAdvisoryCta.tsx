@@ -17,16 +17,10 @@ export default function DiAdvisoryCta({
           Concierge
         </p>
         <h2 className="mt-4 font-serif text-[clamp(26px,3.5vw,34px)] font-normal leading-[1.12] text-[#1e1a16]">
-          {CONSUMER_COPY.justinReviewCta}
+          {CONSUMER_COPY.justinReviewCtaHeadline}
         </h2>
         <p className="mt-4 max-w-lg text-[15px] leading-[1.78] text-[#6f665b]">
-          {CONSUMER_COPY.justinReviewCtaPhilosophy}
-        </p>
-        <p className="mt-4 max-w-lg text-[15px] leading-[1.78] text-[#6f665b]">
-          {CONSUMER_COPY.justinReviewCtaCompetitive}
-        </p>
-        <p className="mt-4 max-w-lg text-[15px] leading-[1.78] text-[#6f665b]">
-          {CONSUMER_COPY.justinReviewCtaGoal}
+          {CONSUMER_COPY.justinReviewCtaLead}
         </p>
         <Link
           href={conciergeHref}

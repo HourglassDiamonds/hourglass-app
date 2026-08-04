@@ -102,12 +102,12 @@ export default function ShapeComparisonEditorial() {
             id="dss-concierge-exit-heading"
             className="mt-3 font-serif text-[1.35rem] font-normal leading-[1.25] tracking-[-0.015em] text-[var(--ink)] md:text-[1.5rem]"
           >
-            Want a second set of eyes?
+            Seeing it on the hand is a beginning
           </h3>
           <p className={`${introCopy} mx-auto mt-4 max-w-[36rem]`}>
-            A calibrated preview can help with proportion and finger coverage.
-            Final shape, ratio, setting, and diamond selection still benefit
-            from experienced judgment.
+            A calibrated preview shows how a shape may sit. Settling on the
+            diamond, ratio, and setting that belong there still benefits from
+            a closer look together.
           </p>
           <p className="mt-6">
             <ConsultationCtaLink

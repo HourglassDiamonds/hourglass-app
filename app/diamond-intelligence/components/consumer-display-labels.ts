@@ -51,18 +51,15 @@ export const CONSUMER_COPY = {
   listingLinkConciergePrefix:
     "Only have a screenshot, image, or listing link?",
   listingLinkConciergeCta: "Begin the Conversation",
-  listingLinkConciergeSuffix: "and we'll review it personally.",
+  listingLinkConciergeSuffix: "and we will review it personally.",
   pdfOnlyRejectionPrimary:
     "Diamond Intelligence currently accepts original grading report PDFs only.",
   pdfOnlyRejectionSecondary:
-    "If you only have a screenshot, image, or listing link, we can review it personally through Concierge.",
+    "Send a screenshot, image, or listing through",
   justinReviewCta: "Have Justin Review This Diamond",
-  justinReviewCtaPhilosophy:
-    "We are extremely selective about what we recommend, but not about who we help.",
-  justinReviewCtaCompetitive:
-    "Within the quality range we believe in, we are generally very competitive. What we will not do is recommend diamonds we would not personally pursue ourselves.",
-  justinReviewCtaGoal:
-    "Our goal is not simply to find the lowest price. It is to identify the strongest value among diamonds genuinely worth considering.",
+  justinReviewCtaHeadline: "A closer look at this diamond",
+  justinReviewCtaLead:
+    "The report tells you a great deal. Justin can review this stone with you—how it may look in person, what to watch for, and whether it belongs in your shortlist.",
   uploadHelperLines: [
     "Round brilliant diamonds only.",
     "The analysis evaluates the diamond itself — not the asking price.",

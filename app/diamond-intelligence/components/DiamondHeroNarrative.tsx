@@ -44,15 +44,15 @@ export default function DiamondHeroNarrative({
           {interpretationSummary}
         </p>
         <p className="mt-4 max-w-sm text-[12px] leading-[1.68] text-[#948a80]">
-          Interpretation only — not a laboratory grade. Justin can review the
-          diamond with you before you decide.
+          Interpretation only — not a laboratory grade. Justin can review
+          this diamond with you before you decide.
         </p>
         <ConsultationCtaLink
           location="diamond_intelligence:hero"
           tool="diamond-intelligence"
           className="mt-3.5 inline-flex text-[11px] tracking-[0.12em] text-[#6b5048] underline underline-offset-4"
         >
-          Have Justin review this diamond
+          Have Justin Review This Diamond
         </ConsultationCtaLink>
       </div>
     </div>

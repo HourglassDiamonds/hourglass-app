@@ -102,7 +102,7 @@ export default function DiHeroVerdictSection({
                 tool="diamond-intelligence"
                 className={DI_LINK}
               >
-                Learn more about this diamond
+                Have Justin Review This Diamond
               </ConsultationCtaLink>
             </p>
           </div>

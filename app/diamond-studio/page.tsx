@@ -2748,6 +2748,10 @@ export default function DiamondStudioPage() {
                   shown on a size {formatRingSizeForHeadline(ringSize)} finger.
                 </p>
                 <p className="dts-stage-trust">
+                  Compare scale at your pace. We help decide what feels
+                  right on the hand.
+                </p>
+                <p className="dts-stage-trust">
                   <CTAGlimmer variant="text">
                     <Link
                       href={buildConciergeHref({

@@ -269,8 +269,8 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
           >
             <p className="mx-auto max-w-[28rem] text-[0.95rem] leading-[1.8] text-[#6a635c]">
               {isCohesionArticle
-                ? "When shape, spread, and finger size need to be weighed together, a private conversation can help clarify what will read best on the hand."
-                : "If this would help with your own diamond or ring, a private conversation is available."}
+                ? "When the question turns from charts to your hand, a private conversation can help settle shape, spread, and finger size together."
+                : "If you would like this applied to your own diamond or ring, a private conversation is available."}
             </p>
 
             <div className="mt-6 flex justify-center md:mt-7">
