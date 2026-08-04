@@ -8,7 +8,7 @@ import Header from "../shared-components/Header";
 import CTAGlimmer from "../shared-components/motion/CTAGlimmer";
 import EditorialImageMotion from "../shared-components/motion/EditorialImageMotion";
 import RevealOnScroll from "../shared-components/motion/RevealOnScroll";
-import { trackConsultationCtaClicked } from "@/lib/consultation-cta";
+import ConsultationCtaLink from "../shared-components/ConsultationCtaLink";
 
 const PERSPECTIVE_MAP = "/the-house/rupanuni-map-hero.png";
 
@@ -317,13 +317,12 @@ export default function TheHousePageClient() {
 
             <div className="mt-10">
               <CTAGlimmer priority>
-                <Link
-                  href="/concierge"
+                <ConsultationCtaLink
+                  location="the_house:footer"
                   className="inline-flex min-h-11 items-center rounded-full border border-[#d9cdbd] bg-white/80 px-6 py-3 text-[11px] uppercase tracking-[0.28em] text-[#6f665d] transition hover:bg-white"
-                  onClick={() => trackConsultationCtaClicked("the_house:footer")}
                 >
                   Start a Private Consultation
-                </Link>
+                </ConsultationCtaLink>
               </CTAGlimmer>
             </div>
           </div>

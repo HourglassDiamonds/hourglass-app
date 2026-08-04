@@ -1,8 +1,7 @@
 "use client";
 
-import Link from "next/link";
+import ConsultationCtaLink from "../shared-components/ConsultationCtaLink";
 import { event as gtagEvent } from "@/lib/gtag";
-import { trackConsultationCtaClicked } from "@/lib/consultation-cta";
 
 function trackRingStudioCta(location: string) {
   if (typeof window === "undefined") return;
@@ -34,13 +33,12 @@ export default function EngagementRingsHeroActions() {
       >
         Explore the Ring Studio
       </a>
-      <Link
-        href="/concierge"
-        onClick={() => trackConsultationCtaClicked("engagement_rings:hero")}
+      <ConsultationCtaLink
+        location="engagement_rings:hero"
         className="hg-tap text-[0.92rem] text-[#6b5048] underline underline-offset-4 transition-colors hover:text-[#1f1d1a]"
       >
         Begin the Conversation
-      </Link>
+      </ConsultationCtaLink>
     </div>
   );
 }

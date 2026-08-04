@@ -1,7 +1,6 @@
 "use client";
 
-import Link from "next/link";
-import { trackConsultationCtaClicked } from "@/lib/consultation-cta";
+import ConsultationCtaLink from "@/app/shared-components/ConsultationCtaLink";
 import { DI_LINK } from "./di-editorial-classes";
 
 export default function ComparingDiamondsPanel({
@@ -20,15 +19,13 @@ export default function ComparingDiamondsPanel({
         We can review this diamond alongside comparable options and provide
         candid guidance on value, performance, and tradeoffs.
       </p>
-      <Link
-        href="/concierge"
+      <ConsultationCtaLink
+        location="diamond_intelligence:comparing"
+        tool="diamond-intelligence"
         className={`mt-4 inline-block ${DI_LINK} text-[11px] tracking-[0.1em]`}
-        onClick={() =>
-          trackConsultationCtaClicked("diamond_intelligence:comparing_diamonds")
-        }
       >
         Begin the Conversation
-      </Link>
+      </ConsultationCtaLink>
     </div>
   );
 }

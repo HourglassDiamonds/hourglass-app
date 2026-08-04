@@ -1,9 +1,7 @@
 "use client";
 
-import Link from "next/link";
+import ConsultationCtaLink from "@/app/shared-components/ConsultationCtaLink";
 import type { DiamondDecisionProfile } from "@/lib/diamond-intelligence/diamond-decision-profile";
-import type { EditorialLightPerformancePresentation } from "@/lib/diamond-intelligence/client-editorial-language";
-import { trackConsultationCtaClicked } from "@/lib/consultation-cta";
 import DiamondPurchasePersonalitySection from "./DiamondPurchasePersonalitySection";
 import { RecommendationBlock } from "./decision-profile-blocks";
 
@@ -49,15 +47,13 @@ export default function DiamondHeroNarrative({
           Interpretation only — not a laboratory grade. Justin can review the
           diamond with you before you decide.
         </p>
-        <Link
-          href="/concierge"
+        <ConsultationCtaLink
+          location="diamond_intelligence:hero"
+          tool="diamond-intelligence"
           className="mt-3.5 inline-flex text-[11px] tracking-[0.12em] text-[#6b5048] underline underline-offset-4"
-          onClick={() =>
-            trackConsultationCtaClicked("diamond_intelligence:hero_verdict")
-          }
         >
           Have Justin review this diamond
-        </Link>
+        </ConsultationCtaLink>
       </div>
     </div>
   );

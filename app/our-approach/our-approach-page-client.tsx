@@ -4,7 +4,7 @@ import Link from "next/link";
 import Header from "@/app/shared-components/Header";
 import CTAGlimmer from "@/app/shared-components/motion/CTAGlimmer";
 import RevealOnScroll from "@/app/shared-components/motion/RevealOnScroll";
-import { trackConsultationCtaClicked } from "@/lib/consultation-cta";
+import ConsultationCtaLink from "@/app/shared-components/ConsultationCtaLink";
 import { DI_V3_SECTIONS } from "@/app/diamond-intelligence/components/di-v3-styles";
 import { APPROACH_CHAPTERS } from "./content";
 import ApproachChapter from "./components/ApproachChapter";
@@ -71,15 +71,12 @@ function FinalCta() {
           </Link>
         </CTAGlimmer>
         <CTAGlimmer>
-          <Link
-            href="/concierge"
+          <ConsultationCtaLink
+            location="our_approach:final_cta"
             className="inline-flex min-h-11 items-center rounded-full border border-[rgba(58,48,38,0.14)] bg-[#2b2723] px-6 py-3 text-[11px] uppercase tracking-[0.28em] text-white transition-opacity hover:opacity-90"
-            onClick={() =>
-              trackConsultationCtaClicked("our_approach:final_cta")
-            }
           >
             Begin the Conversation
-          </Link>
+          </ConsultationCtaLink>
         </CTAGlimmer>
       </div>
     </RevealOnScroll>

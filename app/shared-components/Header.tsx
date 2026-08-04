@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import React from "react";
-import { trackConsultationCtaClicked } from "@/lib/consultation-cta";
+import ConsultationCtaLink from "./ConsultationCtaLink";
 
 const NAV_ITEMS = [
   { href: "/the-house", label: "The House" },
@@ -103,22 +103,26 @@ export default function Header({ currentPage = "" }: HeaderProps) {
           {NAV_ITEMS.map((item) => {
             const key = item.href.replace("/", "");
             const isActive = currentPage === key;
+            const className = `inline-flex min-h-11 shrink-0 items-end whitespace-nowrap text-[12px] tracking-[0.04em] transition-colors duration-300 lg:text-[13px] ${navLinkClass(
+              isActive,
+              isFeaturedNav(item.href),
+              isEmphasizedNav(item.href),
+            )}`;
+
+            if (item.href === "/concierge") {
+              return (
+                <ConsultationCtaLink
+                  key={item.href}
+                  location="header:nav"
+                  className={className}
+                >
+                  {item.label}
+                </ConsultationCtaLink>
+              );
+            }
 
             return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`inline-flex min-h-11 shrink-0 items-end whitespace-nowrap text-[12px] tracking-[0.04em] transition-colors duration-300 lg:text-[13px] ${navLinkClass(
-                  isActive,
-                  isFeaturedNav(item.href),
-                  isEmphasizedNav(item.href),
-                )}`}
-                onClick={
-                  item.href === "/concierge"
-                    ? () => trackConsultationCtaClicked("header:nav_desktop")
-                    : undefined
-                }
-              >
+              <Link key={item.href} href={item.href} className={className}>
                 {item.label}
               </Link>
             );
@@ -142,23 +146,33 @@ export default function Header({ currentPage = "" }: HeaderProps) {
               {NAV_ITEMS.map((item) => {
                 const key = item.href.replace("/", "");
                 const isActive = currentPage === key;
+                const className = `flex min-h-11 items-center px-4 py-3.5 text-[13px] tracking-[0.02em] transition-colors duration-300 focus-visible:rounded-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-hg-focus ${navLinkClass(
+                  isActive,
+                  isFeaturedNav(item.href),
+                  isEmphasizedNav(item.href),
+                )}`;
+
+                if (item.href === "/concierge") {
+                  return (
+                    <ConsultationCtaLink
+                      key={item.href}
+                      location="header:nav"
+                      role="menuitem"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={className}
+                    >
+                      {item.label}
+                    </ConsultationCtaLink>
+                  );
+                }
 
                 return (
                   <Link
                     key={item.href}
                     href={item.href}
                     role="menuitem"
-                    onClick={() => {
-                      if (item.href === "/concierge") {
-                        trackConsultationCtaClicked("header:nav_mobile");
-                      }
-                      setMobileMenuOpen(false);
-                    }}
-                    className={`flex min-h-11 items-center px-4 py-3.5 text-[13px] tracking-[0.02em] transition-colors duration-300 focus-visible:rounded-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-hg-focus ${navLinkClass(
-                      isActive,
-                      isFeaturedNav(item.href),
-                      isEmphasizedNav(item.href),
-                    )}`}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={className}
                   >
                     {item.label}
                   </Link>

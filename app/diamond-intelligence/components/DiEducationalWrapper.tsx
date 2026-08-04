@@ -1,4 +1,5 @@
 import Link from "next/link";
+import ConsultationCtaLink from "@/app/shared-components/ConsultationCtaLink";
 import {
   DIAMOND_INTELLIGENCE_CERTIFICATION_LINKS,
   DIAMOND_INTELLIGENCE_FAQS,
@@ -185,9 +186,13 @@ export default function DiEducationalWrapper() {
                   The House
                 </Link>
                 . If you would rather talk through a specific stone, you can{" "}
-                <Link href="/concierge" className={editorialLink}>
+                <ConsultationCtaLink
+                  location="diamond_intelligence:editorial"
+                  tool="diamond-intelligence"
+                  className={editorialLink}
+                >
                   begin the conversation
-                </Link>{" "}
+                </ConsultationCtaLink>{" "}
                 without pressure.
               </p>
             </div>

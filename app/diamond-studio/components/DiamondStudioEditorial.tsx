@@ -1,4 +1,5 @@
 import Link from "next/link";
+import ConsultationCtaLink from "@/app/shared-components/ConsultationCtaLink";
 import DiV3Chapter from "@/app/diamond-intelligence/components/DiV3Chapter";
 import {
   DI_V3_FAQ_ACCORDION_GROUP,
@@ -247,9 +248,13 @@ export default function DiamondStudioEditorial() {
                 </Link>{" "}
                 is the natural next step. If you would rather talk through
                 proportions and options with a Graduate Gemologist, you can{" "}
-                <Link href="/concierge" className={editorialLink}>
+                <ConsultationCtaLink
+                  location="diamond_studio:result"
+                  tool="diamond-studio"
+                  className={editorialLink}
+                >
                   begin the conversation
-                </Link>{" "}
+                </ConsultationCtaLink>{" "}
                 at your own pace.
               </p>
             </div>

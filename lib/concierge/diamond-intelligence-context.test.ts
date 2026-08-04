@@ -73,6 +73,7 @@ describe("buildConciergeHrefFromDiamondIntelligence", () => {
     const url = new URL(href, "https://hourglass.test");
     assert.equal(url.pathname, "/concierge");
     assert.equal(url.searchParams.get("source"), "diamond-intelligence");
+    assert.equal(url.searchParams.get("tool"), "diamond-intelligence");
     assert.equal(url.searchParams.get("lab"), "GCAL");
     assert.equal(url.searchParams.get("report"), "LG360196394");
     assert.equal(url.searchParams.get("carat"), "1.06 ct");

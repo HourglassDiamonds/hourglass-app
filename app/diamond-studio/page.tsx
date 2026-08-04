@@ -13,7 +13,10 @@ import {
   trackDiamondStudioEvent,
   type DiamondStudioEventProperties,
 } from "./analytics";
-import { trackConsultationCtaClicked } from "@/lib/consultation-cta";
+import {
+  buildConciergeHref,
+  trackConsultationCtaClicked,
+} from "@/lib/consultation-cta";
 import DiamondStudioEditorial from "./components/DiamondStudioEditorial";
 import DiamondStudioToolHeader from "./components/DiamondStudioToolHeader";
 import {
@@ -2694,10 +2697,13 @@ export default function DiamondStudioPage() {
                 <p className="dts-stage-trust">
                   <CTAGlimmer variant="text">
                     <Link
-                      href="/concierge"
+                      href={buildConciergeHref({
+                        tool: "diamond-studio",
+                        params: { location: "diamond_studio:result" },
+                      })}
                       className="dts-stage-trust-link"
                       onClick={() =>
-                        trackConsultationCtaClicked("diamond_studio:editorial_inline")
+                        trackConsultationCtaClicked("diamond_studio:result")
                       }
                     >
                       Begin the Conversation →

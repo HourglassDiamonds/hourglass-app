@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useId, useState } from "react";
-import Link from "next/link";
+import ConsultationCtaLink from "@/app/shared-components/ConsultationCtaLink";
 import {
   DI_CLIENT_ACCEPT,
   isPublicDiamondIntelligencePdfUpload,
@@ -237,12 +237,13 @@ export function ReportUploadDock({
           </p>
           <p className="text-xs leading-relaxed text-[#75675e]">
             {CONSUMER_COPY.pdfOnlyRejectionSecondary}{" "}
-            <Link
-              href="/concierge"
+            <ConsultationCtaLink
+              location="diamond_intelligence:pdf_rejection"
+              tool="diamond-intelligence"
               className="text-[#948a80] underline decoration-[rgba(181,150,98,0.32)] underline-offset-[3px] transition-colors hover:text-[#75675e]"
             >
               Concierge
-            </Link>
+            </ConsultationCtaLink>
             .
           </p>
         </div>

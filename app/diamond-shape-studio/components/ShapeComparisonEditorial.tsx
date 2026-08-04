@@ -1,9 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import DiV3Chapter from "@/app/diamond-intelligence/components/DiV3Chapter";
 import { DI_V3_STUDIO_ACCORDION_GROUP } from "@/app/diamond-intelligence/components/di-v3-styles";
-import { trackConsultationCtaClicked } from "@/lib/consultation-cta";
+import ConsultationCtaLink from "@/app/shared-components/ConsultationCtaLink";
 
 const bodyCopy =
   "space-y-4 text-[0.94rem] leading-[1.82] text-[var(--ink-soft)] md:text-[1rem] md:leading-[1.85]";
@@ -111,15 +110,13 @@ export default function ShapeComparisonEditorial() {
             from experienced judgment.
           </p>
           <p className="mt-6">
-            <Link
-              href="/concierge"
+            <ConsultationCtaLink
+              location="shape_studio:result"
+              tool="diamond-shape-studio"
               className="inline-flex min-h-11 items-center border-b border-[var(--hg-line-strong,#d9cdbd)] pb-1 text-sm tracking-[0.04em] text-[var(--ink)] transition-colors duration-300 hover:border-[var(--hg-gold-deep,#987648)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-hg-focus"
-              onClick={() =>
-                trackConsultationCtaClicked("diamond_shape_studio:editorial_inline")
-              }
             >
               Begin the Conversation →
-            </Link>
+            </ConsultationCtaLink>
           </p>
         </aside>
       </div>

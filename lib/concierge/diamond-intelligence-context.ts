@@ -161,6 +161,7 @@ export function buildConciergeHrefFromDiamondIntelligence(
 ): string {
   const params = new URLSearchParams();
   params.set(CONCIERGE_PARAM_KEYS.source, "diamond-intelligence");
+  params.set("tool", "diamond-intelligence");
 
   setParamIfPresent(params, CONCIERGE_PARAM_KEYS.lab, ctx.lab);
   setParamIfPresent(params, CONCIERGE_PARAM_KEYS.report, ctx.reportNumber);

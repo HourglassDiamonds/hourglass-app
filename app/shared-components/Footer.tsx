@@ -32,7 +32,7 @@ export default function Footer() {
             <Link href="/diamond-guide" className={NAV_LINK}>Diamond Guide</Link>
             <Link href="/diamond-studio" className={NAV_LINK}>Diamond Studio</Link>
             <ConsultationCtaLink
-              location="footer:nav_concierge"
+              location="footer:cta"
               className={NAV_LINK}
             >
               Concierge

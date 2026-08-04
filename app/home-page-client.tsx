@@ -10,7 +10,11 @@ import CTAGlimmer from "./shared-components/motion/CTAGlimmer";
 import EditorialImageMotion from "./shared-components/motion/EditorialImageMotion";
 import RevealOnScroll from "./shared-components/motion/RevealOnScroll";
 import WhisperedPraiseLink from "./shared-components/WhisperedPraiseLink";
-import { trackConsultationCtaClicked } from "@/lib/consultation-cta";
+import ConsultationCtaLink from "./shared-components/ConsultationCtaLink";
+import {
+  buildConciergeHref,
+  trackConsultationCtaClicked,
+} from "@/lib/consultation-cta";
 
 const HERO_IMAGE = "/homepage/hero/hgd-hero-3x.png";
 
@@ -358,13 +362,12 @@ function TestimonialSection() {
           </div>
 
           <div className="mt-12">
-            <Link
-              href="/concierge"
+            <ConsultationCtaLink
+              location="home:testimonial"
               className="inline-flex min-h-11 items-center justify-center rounded-full bg-[#2b2723] px-7 py-3 text-[11px] uppercase tracking-[0.28em] text-white transition-all duration-500 ease-out hover:-translate-y-[1px] hover:opacity-90"
-              onClick={() => trackConsultationCtaClicked("home:testimonial")}
             >
               Begin the Conversation
-            </Link>
+            </ConsultationCtaLink>
           </div>
         </div>
 
@@ -452,7 +455,9 @@ export default function HomePageClient() {
                 <CTAGlimmer priority>
                   <Button
                     variant="secondary"
-                    href="/concierge"
+                    href={buildConciergeHref({
+                      params: { location: "home:hero" },
+                    })}
                     onClick={() => trackConsultationCtaClicked("home:hero")}
                   >
                     Begin the Conversation

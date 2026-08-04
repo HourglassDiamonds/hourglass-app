@@ -361,7 +361,10 @@ export function ArticleEditorialImage({
 export function StudioCallout({
   heading,
   text,
-}: Extract<ArticleBlock, { type: "studio-callout" }>) {
+  articleSlug,
+}: Extract<ArticleBlock, { type: "studio-callout" }> & {
+  articleSlug?: string;
+}) {
   return (
     <aside
       className={`${FIGURE_SPACE} ${SHELL_RADIUS} border border-[#ddd5c8]/90 bg-[#faf7f3] px-6 py-7 shadow-[0_12px_44px_-30px_rgba(31,29,26,0.14),inset_0_1px_0_rgba(255,255,255,0.82)] sm:px-8 sm:py-8 md:px-9 md:py-9`}
@@ -371,7 +374,9 @@ export function StudioCallout({
         <h3 className="mt-2.5 font-serif text-[1.22rem] font-normal leading-[1.28] tracking-[-0.02em] text-[#1f1d1a] md:text-[1.32rem]">
           {heading}
         </h3>
-        <p className={`mt-4 ${bodyCopyClass}`}>{renderInlineContent(text)}</p>
+        <p className={`mt-4 ${bodyCopyClass}`}>
+          {renderInlineContent(text, { articleSlug })}
+        </p>
       </div>
     </aside>
   );

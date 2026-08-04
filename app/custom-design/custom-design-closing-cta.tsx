@@ -2,7 +2,10 @@
 
 import Button from "../shared-components/Button";
 import CTAGlimmer from "../shared-components/motion/CTAGlimmer";
-import { trackConsultationCtaClicked } from "@/lib/consultation-cta";
+import {
+  buildConciergeHref,
+  trackConsultationCtaClicked,
+} from "@/lib/consultation-cta";
 
 export default function CustomDesignClosingCta() {
   return (
@@ -28,7 +31,9 @@ export default function CustomDesignClosingCta() {
           <div className="mt-6 md:mt-7">
             <CTAGlimmer>
               <Button
-                href="/concierge"
+                href={buildConciergeHref({
+                  params: { location: "custom_design:footer" },
+                })}
                 onClick={() =>
                   trackConsultationCtaClicked("custom_design:footer")
                 }

@@ -1,9 +1,8 @@
 "use client";
 
-import Link from "next/link";
+import ConsultationCtaLink from "@/app/shared-components/ConsultationCtaLink";
 import type { DiamondDecisionProfile } from "@/lib/diamond-intelligence/diamond-decision-profile";
 import type { EditorialLightPerformancePresentation } from "@/lib/diamond-intelligence/client-editorial-language";
-import { trackConsultationCtaClicked } from "@/lib/consultation-cta";
 import DiEditorialImage from "./DiEditorialImage";
 import {
   DI_BODY,
@@ -98,15 +97,13 @@ export default function DiHeroVerdictSection({
 
             <p className={`${DI_BODY_MUTED} mt-8 text-[0.84rem] leading-[1.65]`}>
               Interpretation only — not a laboratory grade.{" "}
-              <Link
-                href="/concierge"
+              <ConsultationCtaLink
+                location="diamond_intelligence:hero"
+                tool="diamond-intelligence"
                 className={DI_LINK}
-                onClick={() =>
-                  trackConsultationCtaClicked("diamond_intelligence:hero_verdict")
-                }
               >
                 Learn more about this diamond
-              </Link>
+              </ConsultationCtaLink>
             </p>
           </div>
         </div>

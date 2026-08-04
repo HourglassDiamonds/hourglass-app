@@ -55,8 +55,9 @@ describe("Conversations discoverability — footer only", () => {
     const episodePage = readSource(
       "app/conversations/[slug]/episode-page-client.tsx",
     );
-    assert.match(episodePage, /buildConversationConciergeHref/);
-    assert.match(episodePage, /tool=conversations|conversations:/);
+    assert.match(episodePage, /tool=["']conversations["']/);
+    assert.match(episodePage, /content=\{episode\.slug\}/);
+    assert.match(episodePage, /conversation:footer/);
 
     const vercel = JSON.parse(readSource("vercel.json")) as {
       crons?: Array<{ path: string }>;

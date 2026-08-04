@@ -7,7 +7,7 @@ import Link from "next/link";
 import Header from "../shared-components/Header";
 import CTAGlimmer from "../shared-components/motion/CTAGlimmer";
 import RevealOnScroll from "../shared-components/motion/RevealOnScroll";
-import { trackConsultationCtaClicked } from "@/lib/consultation-cta";
+import ConsultationCtaLink from "@/app/shared-components/ConsultationCtaLink";
 import {
   BuyingStrategyIcon,
   CertificationIcon,
@@ -340,13 +340,13 @@ export default function DiamondGuidePageClient() {
               </Link>
 
               <CTAGlimmer>
-                <Link
-                  href="/concierge"
-                  className="rounded-full border border-[#2b2621] bg-[#2b2621] px-6 py-3 text-[11px] uppercase tracking-[0.32em] text-white transition duration-300 hover:opacity-90"
-                  onClick={() => trackConsultationCtaClicked("diamond_guide:index")}
-                >
-                  Begin the Conversation
-                </Link>
+                <ConsultationCtaLink
+                location="guide_hub:index"
+                tool="diamond-guide"
+                className="rounded-full border border-[#2b2621] bg-[#2b2621] px-6 py-3 text-[11px] uppercase tracking-[0.32em] text-white transition duration-300 hover:opacity-90"
+              >
+                Begin the Conversation
+              </ConsultationCtaLink>
               </CTAGlimmer>
             </div>
           </div>

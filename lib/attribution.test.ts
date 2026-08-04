@@ -1,7 +1,9 @@
-import assert from "node:assert/strict";
-import { describe, it } from "node:test";
+﻿import assert from "node:assert/strict";
+import { describe, it, beforeEach, afterEach } from "node:test";
 import {
   buildHumanReadableSource,
+  captureAttributionFromLocation,
+  getAttributionSnapshot,
   sanitizeAttributionFromFormData,
   sanitizeAttributionRecord,
   sanitizeAttributionValue,
@@ -91,5 +93,99 @@ describe("buildHumanReadableSource", () => {
     assert.match(source, /tool:diamond-intelligence/);
     assert.match(source, /utm:google/);
     assert.doesNotMatch(source, /@/);
+  });
+});
+
+describe("captureAttributionFromLocation handoff", () => {
+  const memory = new Map();
+
+  beforeEach(() => {
+    memory.clear();
+    const store = {
+      getItem: (key) => memory.get(key) ?? null,
+      setItem: (key, value) => {
+        memory.set(key, value);
+      },
+      removeItem: (key) => {
+        memory.delete(key);
+      },
+      clear: () => memory.clear(),
+      key: () => null,
+      length: 0,
+    };
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      value: { location: { pathname: "/", search: "" } },
+    });
+    Object.defineProperty(globalThis, "sessionStorage", {
+      configurable: true,
+      value: store,
+    });
+    Object.defineProperty(globalThis, "document", {
+      configurable: true,
+      value: { referrer: "" },
+    });
+  });
+
+  afterEach(() => {
+    Reflect.deleteProperty(globalThis, "window");
+    Reflect.deleteProperty(globalThis, "sessionStorage");
+    Reflect.deleteProperty(globalThis, "document");
+  });
+
+  it("preserves first-touch UTMs while allowing tool/content handoff overwrite", () => {
+    captureAttributionFromLocation(
+      "/diamond-guide",
+      "utm_source=google&utm_medium=cpc&utm_campaign=spring",
+    );
+    captureAttributionFromLocation(
+      "/concierge",
+      "tool=diamond-guide&content=what-is-cut&utm_source=later",
+    );
+
+    const snap = getAttributionSnapshot();
+    assert.equal(snap.utm_source, "google");
+    assert.equal(snap.utm_medium, "cpc");
+    assert.equal(snap.utm_campaign, "spring");
+    assert.equal(snap.landing_path, "/diamond-guide");
+    assert.equal(snap.originating_tool, "diamond-guide");
+    assert.equal(snap.originating_content, "what-is-cut");
+  });
+
+  it("overwrites originating tool/content when explicit handoff params are present", () => {
+    captureAttributionFromLocation(
+      "/concierge",
+      "tool=diamond-studio&content=preview",
+    );
+    captureAttributionFromLocation(
+      "/concierge",
+      "tool=diamond-guide&content=article-slug",
+    );
+
+    const snap = getAttributionSnapshot();
+    assert.equal(snap.originating_tool, "diamond-guide");
+    assert.equal(snap.originating_content, "article-slug");
+  });
+
+  it("captures location query into last_cta_location", () => {
+    captureAttributionFromLocation(
+      "/concierge",
+      "tool=diamond-guide&location=guide_article:footer",
+    );
+    const snap = getAttributionSnapshot();
+    assert.equal(snap.originating_tool, "diamond-guide");
+    assert.equal(snap.last_cta_location, "guide_article:footer");
+  });
+
+  it("does not clear originating tool/content when params are missing", () => {
+    captureAttributionFromLocation(
+      "/concierge",
+      "tool=diamond-studio&content=result",
+    );
+    captureAttributionFromLocation("/concierge", "");
+
+    const snap = getAttributionSnapshot();
+    assert.equal(snap.originating_tool, "diamond-studio");
+    assert.equal(snap.originating_content, "result");
   });
 });

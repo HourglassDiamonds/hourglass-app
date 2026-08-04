@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 import type { CalibrationReportFields } from "@/lib/calibration-library/types";
+import ConsultationCtaLink from "@/app/shared-components/ConsultationCtaLink";
 import {
   buildBalanceProfileAxes,
   buildDiamondInterpretationContext,
@@ -81,6 +81,7 @@ import {
 import { parseReportGradeHints } from "@/lib/diamond-intelligence/report-grade-hints";
 import {
   buildConciergeContextFromReport,
+  buildConciergeHrefFromDiamondIntelligence,
   type DiamondIntelligenceConciergeContext,
 } from "@/lib/concierge/diamond-intelligence-context";
 import {
@@ -700,12 +701,13 @@ export default function LightPerformanceDashboard({
           <p>{CONSUMER_COPY.betaDisclosure}</p>
           <p className="mt-2">
             {CONSUMER_COPY.betaDisclosureOutreachPrefix}{" "}
-            <Link
-              href="/concierge"
+            <ConsultationCtaLink
+              href={buildConciergeHrefFromDiamondIntelligence(reportContext)}
+              location="diamond_intelligence:result_footer"
               className="text-[#8b735b] underline decoration-[rgba(181,150,98,0.4)] underline-offset-[3px] transition-colors hover:text-[#5f5851]"
             >
               {CONSUMER_COPY.betaDisclosureConciergeLinkLabel}
-            </Link>
+            </ConsultationCtaLink>
             .
           </p>
           <p className="mt-2">

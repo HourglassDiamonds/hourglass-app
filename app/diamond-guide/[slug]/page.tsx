@@ -155,7 +155,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
     }
 
     if (block.type === "studio-callout") {
-      return <StudioCallout key={key} {...block} />;
+      return <StudioCallout key={key} {...block} articleSlug={slug} />;
     }
 
     if (block.type === "editorial-image") {
@@ -164,7 +164,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
 
     return (
       <p key={key} className={paragraphClass}>
-        {renderInlineContent(block.text)}
+        {renderInlineContent(block.text, { articleSlug: slug })}
       </p>
     );
   }
@@ -276,7 +276,9 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
             <div className="mt-6 flex justify-center md:mt-7">
               <ConsultationCtaLink
                 glimmer
-                location={`diamond_guide_article:${slug}:footer`}
+                location="guide_article:footer"
+                tool="diamond-guide"
+                content={slug}
                 className="inline-flex items-center justify-center rounded-full border border-[#4a4540]/55 bg-transparent px-6 py-2.5 text-[10px] uppercase tracking-[0.3em] text-[#3d3834] transition-all duration-500 ease-out hover:border-[#2b2723] hover:bg-[#2b2723] hover:text-[#faf7f3]"
               >
                 Begin the Conversation

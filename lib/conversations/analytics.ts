@@ -1,4 +1,5 @@
 import { event as gtagEvent } from "@/lib/gtag";
+import { buildConciergeHref } from "@/lib/consultation-cta";
 import type { ConversationVideoProvider } from "./episodes";
 
 export const CONVERSATION_VIDEO_PROGRESS_MILESTONES = [
@@ -162,9 +163,8 @@ export function buildConversationConciergeHref(slug: string): string {
   const safeSlug =
     sanitizeConversationAnalyticsValue(slug, SAFE_PARAM_MAX.episode_slug) ??
     slug;
-  const params = new URLSearchParams({
+  return buildConciergeHref({
     tool: "conversations",
     content: safeSlug,
   });
-  return `/concierge?${params.toString()}`;
 }

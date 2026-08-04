@@ -5,7 +5,7 @@ import Link from "next/link";
 import Header from "../../shared-components/Header";
 import CTAGlimmer from "../../shared-components/motion/CTAGlimmer";
 import RevealOnScroll from "../../shared-components/motion/RevealOnScroll";
-import { trackConsultationCtaClicked } from "@/lib/consultation-cta";
+import ConsultationCtaLink from "@/app/shared-components/ConsultationCtaLink";
 
 const beginHereGuides = [
   {
@@ -330,13 +330,13 @@ export default function DiamondCutPage() {
               <CTAGlimmer>
 
 
-                <Link
-                href="/concierge"
+                <ConsultationCtaLink
+                location="guide_hub:diamond_cut"
+                tool="diamond-guide"
                 className="rounded-full border border-[#2b2621] bg-[#2b2621] px-6 py-3 text-[11px] uppercase tracking-[0.32em] text-white transition duration-300 hover:opacity-90"
-                onClick={() => trackConsultationCtaClicked("diamond_guide:diamond_cut")}
               >
                 Begin the Conversation
-              </Link>
+              </ConsultationCtaLink>
 
 
               </CTAGlimmer>

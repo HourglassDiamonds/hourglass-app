@@ -215,11 +215,13 @@ export function captureAttributionFromLocation(
     if (value) next[key] = value;
   }
 
+  // Explicit Concierge handoff params update tool/content when present.
+  // Missing params must not clear first-touch / existing values.
   const tool = sanitizeAttributionValue(
     params.get("tool") || params.get("source"),
     ATTRIBUTION_MAX.tool,
   );
-  if (tool && !next.originating_tool) {
+  if (tool) {
     next.originating_tool = tool;
   }
 
@@ -227,8 +229,17 @@ export function captureAttributionFromLocation(
     params.get("content") || params.get("article") || params.get("slug"),
     ATTRIBUTION_MAX.content,
   );
-  if (content && !next.originating_content) {
+  if (content) {
     next.originating_content = content;
+  }
+
+  // Explicit location/cta query updates last CTA when present (new-tab safe).
+  const ctaLocation = sanitizeAttributionValue(
+    params.get("location") || params.get("cta"),
+    ATTRIBUTION_MAX.cta,
+  );
+  if (ctaLocation) {
+    next.last_cta_location = ctaLocation;
   }
 
   writeStored(next);

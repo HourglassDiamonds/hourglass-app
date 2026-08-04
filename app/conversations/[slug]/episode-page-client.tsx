@@ -5,7 +5,6 @@ import ConsultationCtaLink from "@/app/shared-components/ConsultationCtaLink";
 import Header from "@/app/shared-components/Header";
 import RevealOnScroll from "@/app/shared-components/motion/RevealOnScroll";
 import {
-  buildConversationConciergeHref,
   trackConversationConciergeClicked,
   trackConversationRelatedResourceClicked,
 } from "@/lib/conversations/analytics";
@@ -75,8 +74,7 @@ export default function EpisodePageClient({ episode }: EpisodePageClientProps) {
   ) as NonNullable<
     ConversationEpisode["relatedArticle"] | ConversationEpisode["relatedTool"]
   >[];
-  const conciergeHref = buildConversationConciergeHref(episode.slug);
-  const ctaLocation = `conversations:${episode.slug}:footer`;
+  const ctaLocation = "conversation:footer";
   const showTranscript = shouldRenderEpisodeTranscript(episode);
 
   return (
@@ -260,8 +258,9 @@ export default function EpisodePageClient({ episode }: EpisodePageClientProps) {
               <div className="mt-8 flex justify-center">
                 <ConsultationCtaLink
                   glimmer
-                  href={conciergeHref}
                   location={ctaLocation}
+                  tool="conversations"
+                  content={episode.slug}
                   className="inline-flex min-h-11 items-center justify-center rounded-full border border-[#4a4540]/55 bg-transparent px-7 py-3 text-[10px] uppercase tracking-[0.3em] text-[#3d3834] transition-all duration-500 ease-out hover:border-[#2b2723] hover:bg-[#2b2723] hover:text-[#faf7f3] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-hg-focus"
                   onClick={() => {
                     trackConversationConciergeClicked({

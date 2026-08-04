@@ -1,9 +1,8 @@
 "use client";
 
-import Link from "next/link";
+import ConsultationCtaLink from "@/app/shared-components/ConsultationCtaLink";
 import type { ClientSafeMetadata } from "@/lib/diamond-intelligence";
 import type { DiamondIntelligenceUploadErrorKind } from "@/lib/diamond-intelligence/upload-format-policy";
-import { trackConsultationCtaClicked } from "@/lib/consultation-cta";
 import { ReportUploadDock, type ClientUploadPhase } from "./ReportUploadDock";
 import { CONSUMER_COPY } from "./consumer-display-labels";
 import { DI_EYEBROW_STUDIO } from "./di-studio-styles";
@@ -54,17 +53,13 @@ export function DiamondIntelligenceIngestDock({
 
       <p className="mt-5 max-w-[52ch] text-[10px] leading-relaxed text-[#a89888]">
         {CONSUMER_COPY.listingLinkConciergePrefix}{" "}
-        <Link
-          href="/concierge"
+        <ConsultationCtaLink
+          location="diamond_intelligence:listing_fallback"
+          tool="diamond-intelligence"
           className="text-[#948a80] underline decoration-[rgba(181,150,98,0.32)] underline-offset-[3px] transition-colors hover:text-[#75675e]"
-          onClick={() =>
-            trackConsultationCtaClicked(
-              "diamond_intelligence:listing_link_fallback",
-            )
-          }
         >
           {CONSUMER_COPY.listingLinkConciergeCta}
-        </Link>{" "}
+        </ConsultationCtaLink>{" "}
         {CONSUMER_COPY.listingLinkConciergeSuffix}
       </p>
 
@@ -72,12 +67,13 @@ export function DiamondIntelligenceIngestDock({
         <p>{CONSUMER_COPY.betaDisclosure}</p>
         <p className="mt-2">
           {CONSUMER_COPY.betaDisclosureOutreachPrefix}{" "}
-          <Link
-            href="/concierge"
+          <ConsultationCtaLink
+            location="diamond_intelligence:beta_disclosure"
+            tool="diamond-intelligence"
             className="text-[#8b735b] underline decoration-[rgba(181,150,98,0.4)] underline-offset-[3px] transition-colors hover:text-[#5f5851]"
           >
             {CONSUMER_COPY.betaDisclosureConciergeLinkLabel}
-          </Link>
+          </ConsultationCtaLink>
           .
         </p>
       </div>
