@@ -72,4 +72,27 @@ describe("Size Studio desktop control rail page scroll", () => {
       /@media \(max-width: 1023px\)[\s\S]*?\.dts-control-rail\{\s*display:contents/,
     );
   });
+
+  it("sizes the laptop finger viewer as a tall portrait stage, not a shallow banner", () => {
+    assert.match(
+      pageSource,
+      /@media \(min-width: 1024px\) and \(max-height: 860px\)[\s\S]*?\.dts-viewer\{[\s\S]*?max-height:min\(72vh, 580px\)/,
+    );
+    assert.match(
+      pageSource,
+      /@media \(min-width: 1024px\) and \(max-height: 720px\)[\s\S]*?\.dts-viewer\{[\s\S]*?max-height:min\(70vh, 520px\)/,
+    );
+    assert.doesNotMatch(
+      pageSource,
+      /max-height:min\(44vh, 400px\)/,
+    );
+    assert.doesNotMatch(
+      pageSource,
+      /max-height:min\(46vh, 400px\)/,
+    );
+    assert.match(
+      pageSource,
+      /@media \(min-width: 1024px\) and \(max-height: 960px\)[\s\S]*?\.dts-stage-stack \.dts-stage-preview\{[\s\S]*?flex:0 1 auto/,
+    );
+  });
 });

@@ -1769,9 +1769,26 @@ function SuiteStyles() {
           margin-top:8px;
         }
       }
+      /*
+        Laptop / short desktop stages: prior max-height caps (≈44–46vh / 400px)
+        forced a wide shallow viewer (aspect ≈1.45 vs 7/9), cropping finger
+        above/below the ring and leaving blank flex space above the shape strip.
+        Size Studio scrolls with the page — prefer a taller portrait stage that
+        preserves aspect-ratio, without changing diamond mm / overlay math.
+      */
+      @media (min-width: 1024px) and (max-height: 960px) {
+        /* Match large-desktop stage flex so the strip sits under the viewer. */
+        .dts-stage-stack{
+          justify-content:flex-start;
+        }
+        .dts-stage-stack .dts-stage-preview{
+          flex:0 1 auto;
+          justify-content:flex-start;
+        }
+      }
       @media (min-width: 1024px) and (max-height: 860px) {
         .dts-stage-stack .dts-stage-preview{
-          padding-top:clamp(14px, 2vh, 22px);
+          padding-top:clamp(12px, 1.8vh, 22px);
           padding-bottom:4px;
         }
         .dts-sentence{
@@ -1784,17 +1801,19 @@ function SuiteStyles() {
           line-height:1.55;
         }
         .dts-viewer{
-          width:min(520px, 90%);
-          max-height:min(44vh, 400px);
+          /* Height-led width keeps 7/9 when vh is the binding constraint. */
+          width:min(540px, 90%, calc(72vh * 7 / 9));
+          max-height:min(72vh, 580px);
         }
         .dts-stage-stack .dts-shape-strip-wrap{
+          margin-top:clamp(8px, 1.2vh, 16px);
           margin-bottom:clamp(12px, 1.8vh, 22px);
         }
       }
       @media (min-width: 1024px) and (max-height: 720px) {
         .dts-viewer{
-          width:min(480px, 86%);
-          max-height:min(46vh, 400px);
+          width:min(500px, 88%, calc(70vh * 7 / 9));
+          max-height:min(70vh, 520px);
         }
         .dts-sentence{
           font-size:clamp(16px, 2.2vh, 18px);
