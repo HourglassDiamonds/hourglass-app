@@ -7,20 +7,51 @@ import type {
   ShapeStudioSessionStatus,
 } from "./session-types";
 import {
+  deleteShapeStudioCaptureObjects,
+  deleteShapeStudioSessionMetaObjects,
+  buildSessionMetaRevisionId,
+  pruneOlderSessionMetaRevisions,
+  selectNewestSessionMetaRevisionName,
+  sessionMetaObjectPath,
+  sessionMetaRevisionObjectPath,
+  sessionMetaRevisionPrefix,
+} from "./session-capture-delete";
+import { isValidSessionId } from "./session-id";
+import {
   SHAPE_STUDIO_CAPTURES_BUCKET,
   SHAPE_STUDIO_SESSION_TTL_MS,
   SHAPE_STUDIO_SIGNED_URL_TTL_SEC,
+  SHAPE_STUDIO_TOMBSTONE_TTL_MS,
 } from "./session-config";
-import {
-  deleteShapeStudioCaptureObjects,
-  sessionMetaObjectPath,
-} from "./session-capture-delete";
-import { isValidSessionId } from "./session-id";
 
 export type StorageSessionRecord = ShapeStudioSessionRecord;
 
+/**
+ * Session meta is polled as the delivery signal. Supabase Storage defaults to
+ * `max-age=3600`, so overwriting the same object left production GET polls on
+ * stale `image_uploaded` long after acknowledge wrote `consumed`.
+ * Writes use cacheControl 0 plus a unique revision key (CDN-safe).
+ */
+export const SESSION_META_CACHE_CONTROL = "0";
+
 function isExpired(expiresAt: string, nowMs = Date.now()): boolean {
   return Date.parse(expiresAt) <= nowMs;
+}
+
+async function downloadSessionMetaJson(
+  objectPath: string,
+): Promise<StorageSessionRecord | null> {
+  const supabase = getSupabaseAdmin();
+  if (!supabase) return null;
+
+  const { data, error } = await supabase.storage
+    .from(SHAPE_STUDIO_CAPTURES_BUCKET)
+    .download(objectPath);
+
+  if (error || !data) return null;
+
+  const text = await data.text();
+  return JSON.parse(text) as StorageSessionRecord;
 }
 
 async function readStorageSession(
@@ -29,30 +60,95 @@ async function readStorageSession(
   const supabase = getSupabaseAdmin();
   if (!supabase) return null;
 
-  const { data, error } = await supabase.storage
+  // Prefer the newest unique revision — never previously cached under this key.
+  const { data: revisions } = await supabase.storage
     .from(SHAPE_STUDIO_CAPTURES_BUCKET)
-    .download(sessionMetaObjectPath(sessionId));
+    .list(sessionMetaRevisionPrefix(sessionId), {
+      limit: 100,
+      sortBy: { column: "name", order: "desc" },
+    });
 
-  if (error || !data) return null;
+  const newest = selectNewestSessionMetaRevisionName(
+    (revisions ?? [])
+      .map((entry) => entry.name)
+      .filter((name): name is string => Boolean(name)),
+  );
 
-  const text = await data.text();
-  return JSON.parse(text) as StorageSessionRecord;
+  if (newest) {
+    const revisionId = newest.replace(/\.json$/, "");
+    try {
+      const revised = await downloadSessionMetaJson(
+        sessionMetaRevisionObjectPath(sessionId, revisionId),
+      );
+      if (revised) return revised;
+    } catch {
+      /* fall through to legacy flat path */
+    }
+  }
+
+  return downloadSessionMetaJson(sessionMetaObjectPath(sessionId));
+}
+
+function isTerminalPastTombstone(
+  record: StorageSessionRecord,
+  nowMs = Date.now(),
+): boolean {
+  if (
+    record.status !== "consumed" &&
+    record.status !== "cancelled" &&
+    record.status !== "expired"
+  ) {
+    return false;
+  }
+  const anchor =
+    record.acknowledgedAt ?? record.expiresAt ?? record.createdAt;
+  const anchorMs = Date.parse(anchor);
+  if (!Number.isFinite(anchorMs)) return false;
+  return anchorMs + SHAPE_STUDIO_TOMBSTONE_TTL_MS <= nowMs;
 }
 
 async function writeStorageSession(record: StorageSessionRecord): Promise<void> {
   const supabase = getSupabaseAdmin();
   if (!supabase) throw new Error("Supabase is not configured");
 
-  const { error } = await supabase.storage
+  const payload = JSON.stringify(record);
+  const revisionId = buildSessionMetaRevisionId();
+  const revisionPath = sessionMetaRevisionObjectPath(
+    record.sessionId,
+    revisionId,
+  );
+
+  const revisionUpload = await supabase.storage
     .from(SHAPE_STUDIO_CAPTURES_BUCKET)
-    .upload(sessionMetaObjectPath(record.sessionId), JSON.stringify(record), {
+    .upload(revisionPath, payload, {
       contentType: "application/json",
-      upsert: true,
+      upsert: false,
+      cacheControl: SESSION_META_CACHE_CONTROL,
     });
 
-  if (error) {
-    throw new Error(`Shape Studio session write failed: ${error.message}`);
+  if (revisionUpload.error) {
+    throw new Error(
+      `Shape Studio session write failed: ${revisionUpload.error.message}`,
+    );
   }
+
+  // Legacy flat path kept for cleanup listing + older readers.
+  const legacyUpload = await supabase.storage
+    .from(SHAPE_STUDIO_CAPTURES_BUCKET)
+    .upload(sessionMetaObjectPath(record.sessionId), payload, {
+      contentType: "application/json",
+      upsert: true,
+      cacheControl: SESSION_META_CACHE_CONTROL,
+    });
+
+  if (legacyUpload.error) {
+    throw new Error(
+      `Shape Studio session write failed: ${legacyUpload.error.message}`,
+    );
+  }
+
+  // Drop superseded immutable revisions so cleanup cannot leave them forever.
+  await pruneOlderSessionMetaRevisions(record.sessionId, revisionId);
 }
 
 export async function createStorageShapeStudioSession(): Promise<CreateSessionResult> {
@@ -282,7 +378,23 @@ export async function listStorageSessionsForCleanup(): Promise<
     const sessionId = entry.name.replace(/\.json$/, "");
     if (!isValidSessionId(sessionId)) continue;
     const record = await readStorageSession(sessionId);
-    if (record) records.push(record);
+    if (!record) continue;
+
+    // Cron scans this list: purge terminal tombstones past retention so
+    // legacy flat + revision objects do not accumulate indefinitely.
+    if (isTerminalPastTombstone(record)) {
+      try {
+        if (record.imagePath) {
+          await deleteShapeStudioCaptureObjects(sessionId, record.imagePath);
+        }
+        await deleteShapeStudioSessionMetaObjects(sessionId);
+      } catch {
+        /* keep scanning */
+      }
+      continue;
+    }
+
+    records.push(record);
   }
   return records;
 }
