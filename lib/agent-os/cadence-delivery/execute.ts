@@ -1218,6 +1218,48 @@ export async function executeAgentOsCadence(
 
   const deliveryId = deliveryIdFor(idempotencyKey);
 
+  // force-send recovery: reopen suppressed claims for this official window so a
+  // cooldown false-success can be retried. "sent" remains terminal (no duplicate).
+  if (isForceSendRunMode(runMode) && mutateScheduledState) {
+    try {
+      const live = await store.load();
+      const deliveries = { ...(live.deliveries ?? {}) };
+      let changed = false;
+      for (const [id, rec] of Object.entries(deliveries)) {
+        if (
+          rec.cadenceId === cadenceId &&
+          rec.cadenceWindow === window &&
+          rec.kind === kind &&
+          rec.status === "suppressed"
+        ) {
+          deliveries[id] = {
+            ...rec,
+            status: "failed",
+            errorSummary:
+              "force-send recovery reopened suppressed delivery for retry",
+            updatedAt: nowIso,
+            suppressionReason: null,
+          };
+          changed = true;
+          logCadenceDeliveryEvent("recovery_reopen_suppressed", {
+            cadenceId,
+            cadenceWindow: window,
+            deliveryId: id,
+          });
+        }
+      }
+      if (changed) {
+        await store.save({
+          ...deepCloneState(live),
+          deliveries,
+          updatedAt: nowIso,
+        });
+      }
+    } catch {
+      // Best-effort reopen; reserve may still skip.
+    }
+  }
+
   // Manual preview uses a distinct window (`:manual-preview`) so it never claims
   // the official daily delivery slot. Cooldown is bypassed for manual windows.
   let reserve = await reserveDelivery({
@@ -1234,7 +1276,12 @@ export async function executeAgentOsCadence(
     cooldownMs:
       kind === "failure-alert"
         ? (options.failureAlertCooldownMs ?? 6 * 60 * 60 * 1000)
-        : isManualRunMode(runMode)
+        : isManualRunMode(runMode) ||
+            isForceSendRunMode(runMode) ||
+            // Daily Morning Brief is window-idempotent (day:YYYY-MM-DD).
+            // A 7-day unchanged-fingerprint cooldown incorrectly suppressed
+            // subsequent mornings after a successful send (P0-2).
+            cadenceId === "cos-daily-synthesis"
           ? 0
           : DEFAULT_FOUNDER_COOLDOWN_MS,
   });
@@ -1254,7 +1301,9 @@ export async function executeAgentOsCadence(
       cooldownMs:
         kind === "failure-alert"
           ? (options.failureAlertCooldownMs ?? 6 * 60 * 60 * 1000)
-          : isManualRunMode(runMode)
+          : isManualRunMode(runMode) ||
+              isForceSendRunMode(runMode) ||
+              cadenceId === "cos-daily-synthesis"
             ? 0
             : DEFAULT_FOUNDER_COOLDOWN_MS,
     });
@@ -1286,12 +1335,13 @@ export async function executeAgentOsCadence(
   }
 
   if (reserve.outcome === "already-terminal") {
+    const terminalSent = reserve.record.status === "sent";
     if (mutateScheduledState) {
       await updateCadenceTimestamps({
         store,
         cadenceId,
         nowIso,
-        success: true,
+        success: terminalSent,
         runId: run.runId,
         clearInProgress: true,
       }).catch(() => undefined);
@@ -1317,7 +1367,8 @@ export async function executeAgentOsCadence(
       deliveryStatus: reserve.record.status,
       emailSent: false,
       dryRun: false,
-      suppressionReason: reserve.record.suppressionReason,
+      suppressionReason:
+        reserve.record.suppressionReason ?? reserve.reason,
       error: null,
       errorCode: null,
       safeSummary: reserve.reason,
@@ -1360,7 +1411,8 @@ export async function executeAgentOsCadence(
         store,
         cadenceId,
         nowIso,
-        success: true,
+        // Suppression is not a delivered brief — do not close the local day.
+        success: false,
         runId: run.runId,
         clearInProgress: true,
       }).catch(() => undefined);
