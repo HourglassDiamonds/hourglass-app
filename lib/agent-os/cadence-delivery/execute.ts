@@ -58,6 +58,13 @@ import {
   listDueFounderCadencesInOrder,
   weeklyFounderBriefOccupiesLocalDate,
 } from "./windows";
+import {
+  isInProgressActive,
+  isInProgressStale,
+  logCadenceDeliveryEvent,
+  resolveCadenceDeliveryOutcome,
+  type CadenceDeliveryOutcome,
+} from "./outcome";
 import { FOUNDER_CADENCE_TIMEZONE } from "../persistence/cadence";
 import { localCalendarStamp } from "../persistence/timezone";
 import {
@@ -77,8 +84,9 @@ export type CadenceExecutionMode =
  * Product run identity for founder-brief delivery.
  * - scheduled: normal cron / scheduled-live path (mutates cadence + official delivery)
  * - manual-preview: live reads, no email, no scheduled-state mutation
+ * - force-send: authenticated manual recovery — bypasses due gate, sends for real
  */
-export type CadenceRunMode = "scheduled" | "manual-preview";
+export type CadenceRunMode = "scheduled" | "manual-preview" | "force-send";
 
 export type ExecuteCadenceOptions = {
   mode: CadenceExecutionMode;
@@ -149,10 +157,21 @@ export type CadenceExecutionResult = {
   cadenceLastSuccessfulAtBefore?: string | null;
   /** Cadence lastSuccessfulAt after this invocation (manual proof). */
   cadenceLastSuccessfulAtAfter?: string | null;
+  /**
+   * Explicit delivery outcome — never rely on ok alone when emailSent is false.
+   * sent | skipped_with_reason | failed
+   */
+  deliveryOutcome?: CadenceDeliveryOutcome;
+  /** Provider message id when accepted (safe to return). */
+  providerMessageId?: string | null;
 };
 
 function resolveRunMode(options: ExecuteCadenceOptions): CadenceRunMode {
-  if (options.runMode === "manual-preview" || options.runMode === "scheduled") {
+  if (
+    options.runMode === "manual-preview" ||
+    options.runMode === "scheduled" ||
+    options.runMode === "force-send"
+  ) {
     return options.runMode;
   }
   return "scheduled";
@@ -162,21 +181,78 @@ function isManualRunMode(runMode: CadenceRunMode): boolean {
   return runMode === "manual-preview";
 }
 
+function isForceSendRunMode(runMode: CadenceRunMode): boolean {
+  return runMode === "force-send";
+}
+
 function triggerForMode(
   mode: CadenceExecutionMode,
   runMode: CadenceRunMode,
 ): RunTrigger {
-  if (isManualRunMode(runMode)) return "manual";
+  if (isManualRunMode(runMode) || isForceSendRunMode(runMode)) return "manual";
   if (mode === "scheduled-live") return "scheduled";
   if (mode === "test") return "test";
   return "manual";
+}
+
+function finalizeResult(
+  partial: CadenceExecutionResult,
+): CadenceExecutionResult {
+  const deliveryOutcome =
+    partial.deliveryOutcome ??
+    resolveCadenceDeliveryOutcome({
+      emailSent: partial.emailSent,
+      ok: partial.ok,
+      dryRun: partial.dryRun,
+      deliveryAction: partial.deliveryAction,
+      errorCode: partial.errorCode,
+      safeSummary: partial.safeSummary,
+      suppressionReason: partial.suppressionReason,
+    });
+
+  // Quality-gate / failed outcomes must not present as ok success.
+  const ok =
+    deliveryOutcome === "failed"
+      ? false
+      : deliveryOutcome === "sent"
+        ? true
+        : partial.ok;
+
+  // emailSent:false must always carry an explicit operator-facing reason.
+  const suppressionReason =
+    partial.emailSent
+      ? partial.suppressionReason ?? null
+      : partial.suppressionReason ??
+        partial.error ??
+        partial.safeSummary ??
+        "Email not sent";
+
+  const safeSummary =
+    partial.safeSummary ||
+    suppressionReason ||
+    (partial.emailSent ? "Email sent" : "Email not sent");
+
+  return {
+    ...partial,
+    ok,
+    deliveryOutcome,
+    providerMessageId: partial.providerMessageId ?? null,
+    suppressionReason,
+    safeSummary,
+  };
 }
 
 function adapterMode(
   mode: CadenceExecutionMode,
   runMode: CadenceRunMode,
 ): "fixture" | "live" {
-  if (isManualRunMode(runMode) || mode === "scheduled-live") return "live";
+  if (
+    isManualRunMode(runMode) ||
+    isForceSendRunMode(runMode) ||
+    mode === "scheduled-live"
+  ) {
+    return "live";
+  }
   return "fixture";
 }
 
@@ -196,7 +272,9 @@ async function resolveStore(
   adapterId: PersistenceAdapterId;
 }> {
   const liveDurable =
-    options.mode === "scheduled-live" || isManualRunMode(runMode);
+    options.mode === "scheduled-live" ||
+    isManualRunMode(runMode) ||
+    isForceSendRunMode(runMode);
   if (options.store) {
     if (liveDurable) {
       assertScheduledLiveDurability({
@@ -322,33 +400,40 @@ export async function executeAgentOsCadence(
         "manual-preview requires mode=scheduled-live (live adapters + durable store)",
     };
   }
-  const force = options.force === true || isManualRunMode(runMode);
+  const force =
+    options.force === true ||
+    isManualRunMode(runMode) ||
+    isForceSendRunMode(runMode);
   const dryRun = options.mode === "dry-run" || runMode === "manual-preview";
+  // force-send mutates official delivery (recovery); manual-preview does not.
   const mutateScheduledState = !isManualRunMode(runMode);
   const baseFail = (
     partial: Partial<CadenceExecutionResult> & { error: string; errorCode?: string },
-  ): CadenceExecutionResult => ({
-    ok: false,
-    mode: options.mode,
-    runMode,
-    cadenceId: partial.cadenceId ?? options.cadenceId ?? null,
-    cadenceWindow: partial.cadenceWindow ?? null,
-    officialCadenceWindow: partial.officialCadenceWindow ?? null,
-    runId: partial.runId ?? null,
-    runStatus: partial.runStatus ?? null,
-    deliveryGuidance: partial.deliveryGuidance ?? null,
-    deliveryAction: partial.deliveryAction ?? "block",
-    deliveryStatus: partial.deliveryStatus ?? null,
-    emailSent: false,
-    dryRun,
-    suppressionReason: partial.suppressionReason ?? null,
-    error: redactSecretsAndPii(partial.error),
-    errorCode: partial.errorCode ?? "failed",
-    safeSummary: redactSecretsAndPii(partial.error),
-    previewRender: partial.previewRender ?? null,
-    cadenceLastSuccessfulAtBefore: partial.cadenceLastSuccessfulAtBefore,
-    cadenceLastSuccessfulAtAfter: partial.cadenceLastSuccessfulAtAfter,
-  });
+  ): CadenceExecutionResult =>
+    finalizeResult({
+      ok: false,
+      mode: options.mode,
+      runMode,
+      cadenceId: partial.cadenceId ?? options.cadenceId ?? null,
+      cadenceWindow: partial.cadenceWindow ?? null,
+      officialCadenceWindow: partial.officialCadenceWindow ?? null,
+      runId: partial.runId ?? null,
+      runStatus: partial.runStatus ?? null,
+      deliveryGuidance: partial.deliveryGuidance ?? null,
+      deliveryAction: partial.deliveryAction ?? "block",
+      deliveryStatus: partial.deliveryStatus ?? null,
+      emailSent: false,
+      dryRun,
+      suppressionReason: partial.suppressionReason ?? null,
+      error: redactSecretsAndPii(partial.error),
+      errorCode: partial.errorCode ?? "failed",
+      safeSummary: redactSecretsAndPii(partial.error),
+      previewRender: partial.previewRender ?? null,
+      cadenceLastSuccessfulAtBefore: partial.cadenceLastSuccessfulAtBefore,
+      cadenceLastSuccessfulAtAfter: partial.cadenceLastSuccessfulAtAfter,
+      deliveryOutcome: "failed",
+      providerMessageId: partial.providerMessageId ?? null,
+    });
 
   let store: AgentOsPersistenceStore;
   try {
@@ -401,6 +486,81 @@ export async function executeAgentOsCadence(
       ? Object.values(state.cadences)
       : defaultCadenceDefinitions();
 
+  // Reclaim crashed leftovers: shared chief-of-staff scope lock with no TTL
+  // previously caused permanent "No founder-brief cadence due" + HTTP 200.
+  {
+    const progress = { ...state.inProgressByScope };
+    let cleared = false;
+    for (const [scope, entry] of Object.entries(progress)) {
+      if (entry && isInProgressStale(entry.startedAt, nowIso)) {
+        logCadenceDeliveryEvent("in_progress_stale_cleared", {
+          scope,
+          runId: entry.runId,
+          startedAt: entry.startedAt,
+          nowIso,
+        });
+        delete progress[scope];
+        cleared = true;
+      }
+    }
+    if (cleared) {
+      state = {
+        ...deepCloneState(state),
+        updatedAt: nowIso,
+        inProgressByScope: progress,
+      };
+      await store.save(state).catch(() => undefined);
+    }
+  }
+
+  // force-send / force: clear lock for recovery so a stuck warm lock cannot block.
+  // Scoped to the target cadence when known; otherwise clear founder CoS scope only.
+  // Concurrent force-send still cannot double-send: reserveDelivery idempotency
+  // admits a single reserved claim per cadence window.
+  if (force && mutateScheduledState) {
+    if (isForceSendRunMode(runMode)) {
+      logCadenceDeliveryEvent("recovery_force_send", {
+        cadenceId: options.cadenceId ?? null,
+        nowIso,
+        note: "Authenticated force-send recovery — bypasses due gate",
+      });
+    }
+    const progress = { ...state.inProgressByScope };
+    let cleared = false;
+    const scopesToClear = new Set<string>();
+    if (options.cadenceId) {
+      const target =
+        state.cadences[options.cadenceId] ??
+        getCadenceById(options.cadenceId) ??
+        defaultCadenceDefinitions().find((c) => c.cadenceId === options.cadenceId);
+      if (target) scopesToClear.add(String(target.scope));
+    } else {
+      scopesToClear.add("chief-of-staff");
+    }
+    for (const scope of scopesToClear) {
+      const entry = progress[scope];
+      if (entry) {
+        logCadenceDeliveryEvent("in_progress_force_cleared", {
+          scope,
+          runId: entry.runId,
+          startedAt: entry.startedAt,
+          nowIso,
+          recovery: isForceSendRunMode(runMode),
+        });
+        delete progress[scope];
+        cleared = true;
+      }
+    }
+    if (cleared) {
+      state = {
+        ...deepCloneState(state),
+        updatedAt: nowIso,
+        inProgressByScope: progress,
+      };
+      await store.save(state).catch(() => undefined);
+    }
+  }
+
   if (!options.cadenceId) {
     const evaluations = evaluateAllCadences(cadences, {
       nowIso,
@@ -411,16 +571,29 @@ export async function executeAgentOsCadence(
         if (!e.shouldProceed || !isFounderBriefCadence(e.cadenceId)) return false;
         const c = cadences.find((x) => x.cadenceId === e.cadenceId);
         if (!c) return false;
-        const running = state.inProgressByScope[String(c.scope)]?.runId;
-        if (running) return false;
+        const running = state.inProgressByScope[String(c.scope)];
+        if (isInProgressActive(running, nowIso)) return false;
         return true;
       })
       .map((e) => e.cadenceId);
     const ordered = listDueFounderCadencesInOrder(due);
     if (ordered.length === 0) {
-      return {
+      const activeLocks = Object.entries(state.inProgressByScope)
+        .filter(([, entry]) => isInProgressActive(entry, nowIso))
+        .map(([scope, entry]) => `${scope}:${entry.runId}`);
+      const summary =
+        activeLocks.length > 0
+          ? `No founder-brief cadence due (in-progress lock active: ${activeLocks.join(",")})`
+          : "No founder-brief cadence due";
+      logCadenceDeliveryEvent("run_skipped", {
+        nowIso,
+        reason: summary,
+        deliveryOutcome: "skipped_with_reason",
+      });
+      return finalizeResult({
         ok: true,
         mode: options.mode,
+        runMode,
         cadenceId: null,
         cadenceWindow: null,
         runId: null,
@@ -430,11 +603,12 @@ export async function executeAgentOsCadence(
         deliveryStatus: null,
         emailSent: false,
         dryRun,
-        suppressionReason: null,
+        suppressionReason: summary,
         error: null,
         errorCode: null,
-        safeSummary: "No founder-brief cadence due",
-      };
+        safeSummary: summary,
+        deliveryOutcome: "skipped_with_reason",
+      });
     }
     if (ordered.length > 1) {
       const results: CadenceExecutionResult[] = [];
@@ -454,25 +628,29 @@ export async function executeAgentOsCadence(
               FOUNDER_CADENCE_TIMEZONE,
             )
           ) {
-            results.push({
-              ok: true,
-              mode: options.mode,
-              cadenceId: id,
-              cadenceWindow: `day:${localDate}`,
-              runId: null,
-              runStatus: null,
-              deliveryGuidance: null,
-              deliveryAction: "send-nothing",
-              deliveryStatus: null,
-              emailSent: false,
-              dryRun,
-              suppressionReason:
-                "Weekly founder brief already claimed/sent for this local date",
-              error: null,
-              errorCode: null,
-              safeSummary:
-                "Skipped daily founder brief — weekly already occupied this local date",
-            });
+            results.push(
+              finalizeResult({
+                ok: true,
+                mode: options.mode,
+                runMode,
+                cadenceId: id,
+                cadenceWindow: `day:${localDate}`,
+                runId: null,
+                runStatus: null,
+                deliveryGuidance: null,
+                deliveryAction: "send-nothing",
+                deliveryStatus: null,
+                emailSent: false,
+                dryRun,
+                suppressionReason:
+                  "Weekly founder brief already claimed/sent for this local date",
+                error: null,
+                errorCode: null,
+                safeSummary:
+                  "Skipped daily founder brief — weekly already occupied this local date",
+                deliveryOutcome: "skipped_with_reason",
+              }),
+            );
             continue;
           }
         }
@@ -484,22 +662,39 @@ export async function executeAgentOsCadence(
           }),
         );
       }
-      const anyFail = results.some((r) => !r.ok);
+      const anyFail = results.some(
+        (r) => !r.ok || r.deliveryOutcome === "failed",
+      );
+      const anySent = results.some((r) => r.emailSent);
       const last = results[results.length - 1]!;
-      return {
+      const deliveryOutcome: CadenceDeliveryOutcome = anySent
+        ? "sent"
+        : anyFail
+          ? "failed"
+          : "skipped_with_reason";
+      return finalizeResult({
         ...last,
-        ok: !anyFail,
-        emailSent: results.some((r) => r.emailSent),
-        safeSummary: results.map((r) => `${r.cadenceId}:${r.deliveryAction}`).join("; "),
+        ok: deliveryOutcome !== "failed",
+        emailSent: anySent,
+        safeSummary: results
+          .map(
+            (r) =>
+              `${r.cadenceId}:${r.deliveryOutcome ?? r.deliveryAction}`,
+          )
+          .join("; "),
         error: anyFail
           ? results
-              .filter((r) => !r.ok)
+              .filter((r) => !r.ok || r.deliveryOutcome === "failed")
               .map((r) => r.error)
               .filter(Boolean)
               .join("; ")
           : null,
-        errorCode: anyFail ? results.find((r) => !r.ok)?.errorCode ?? "failed" : null,
-      };
+        errorCode: anyFail
+          ? results.find((r) => !r.ok || r.deliveryOutcome === "failed")
+              ?.errorCode ?? "failed"
+          : null,
+        deliveryOutcome,
+      });
     }
     // single due — fall through with explicit id
     options = { ...options, cadenceId: ordered[0] };
@@ -508,9 +703,10 @@ export async function executeAgentOsCadence(
   const cadenceId = options.cadenceId ?? null;
 
   if (!cadenceId) {
-    return {
+    return finalizeResult({
       ok: true,
       mode: options.mode,
+      runMode,
       cadenceId: null,
       cadenceWindow: null,
       runId: null,
@@ -520,11 +716,12 @@ export async function executeAgentOsCadence(
       deliveryStatus: null,
       emailSent: false,
       dryRun,
-      suppressionReason: null,
+      suppressionReason: "No founder-brief cadence due",
       error: null,
       errorCode: null,
       safeSummary: "No founder-brief cadence due",
-    };
+      deliveryOutcome: "skipped_with_reason",
+    });
   }
 
   if (!isFounderBriefCadence(cadenceId)) {
@@ -550,7 +747,7 @@ export async function executeAgentOsCadence(
         FOUNDER_CADENCE_TIMEZONE,
       )
     ) {
-      return {
+      return finalizeResult({
         ok: true,
         mode: options.mode,
         runMode,
@@ -570,7 +767,8 @@ export async function executeAgentOsCadence(
         errorCode: null,
         safeSummary:
           "Skipped daily founder brief — weekly already occupied this local date",
-      };
+        deliveryOutcome: "skipped_with_reason",
+      });
     }
   }
 
@@ -600,7 +798,10 @@ export async function executeAgentOsCadence(
     });
   }
 
-  const inProgress = state.inProgressByScope[String(cadence.scope)]?.runId;
+  const inProgressEntry = state.inProgressByScope[String(cadence.scope)];
+  const inProgress = isInProgressActive(inProgressEntry, nowIso)
+    ? inProgressEntry?.runId
+    : null;
   const evaluation = evaluateCadence({
     cadence,
     nowIso,
@@ -610,13 +811,20 @@ export async function executeAgentOsCadence(
   });
 
   if (!force && !evaluation.shouldProceed) {
-    return {
+    const window = cadenceWindowId(cadence, nowIso);
+    logCadenceDeliveryEvent("run_skipped", {
+      cadenceId,
+      cadenceWindow: window,
+      reasonCodes: evaluation.reasonCodes,
+      deliveryOutcome: "skipped_with_reason",
+    });
+    return finalizeResult({
       ok: true,
       mode: options.mode,
       runMode,
       cadenceId,
-      cadenceWindow: cadenceWindowId(cadence, nowIso),
-      officialCadenceWindow: cadenceWindowId(cadence, nowIso),
+      cadenceWindow: window,
+      officialCadenceWindow: window,
       runId: null,
       runStatus: null,
       deliveryGuidance: null,
@@ -624,11 +832,12 @@ export async function executeAgentOsCadence(
       deliveryStatus: null,
       emailSent: false,
       dryRun,
-      suppressionReason: null,
+      suppressionReason: `Cadence not due: ${evaluation.reasonCodes.join(",")}`,
       error: null,
       errorCode: null,
       safeSummary: `Cadence not due: ${evaluation.reasonCodes.join(",")}`,
-    };
+      deliveryOutcome: "skipped_with_reason",
+    });
   }
 
   const officialWindow = cadenceWindowId(cadence, nowIso);
@@ -656,6 +865,40 @@ export async function executeAgentOsCadence(
     }
   }
 
+  /**
+   * Release this invocation's lock if it still owns the scope.
+   * Path-level clearInProgress handles normal exits; this is the backstop for
+   * unexpected throws. Does not clear a newer run's lock (runId match required).
+   */
+  const releaseOwnedInProgressLock = async (): Promise<void> => {
+    if (!mutateScheduledState) return;
+    try {
+      const latest = await store.load();
+      const scopeKey = String(cadence.scope);
+      const entry = latest.inProgressByScope[scopeKey];
+      if (!entry || entry.runId !== provisionalRunId) return;
+      const releaseIso = new Date().toISOString();
+      await updateCadenceTimestamps({
+        store,
+        cadenceId,
+        nowIso: releaseIso,
+        success: false,
+        runId: provisionalRunId,
+        clearInProgress: true,
+      });
+      logCadenceDeliveryEvent("in_progress_finally_released", {
+        cadenceId,
+        runId: provisionalRunId,
+        scope: scopeKey,
+        startedAt: entry.startedAt,
+        releasedAt: releaseIso,
+      });
+    } catch {
+      // Best-effort — stale TTL remains the durable backstop.
+    }
+  };
+
+  try {
   // Run full Agent OS (all five executives via existing orchestrator)
   const briefCadenceIntent = resolveBriefCadenceIntent(cadenceId);
   const briefLocalDate = localDateFromCadenceWindow(officialWindow, nowIso);
@@ -799,7 +1042,7 @@ export async function executeAgentOsCadence(
       degraded: run.briefEvidenceQuality === "partial-degraded",
     });
     const cadenceLastSuccessfulAtAfter = await readCadenceLastSuccessfulAfter();
-    return {
+    return finalizeResult({
       ok: true,
       mode: options.mode,
       runMode,
@@ -824,16 +1067,19 @@ export async function executeAgentOsCadence(
           : null,
       cadenceLastSuccessfulAtBefore,
       cadenceLastSuccessfulAtAfter,
-    };
+      deliveryOutcome: "skipped_with_reason",
+    });
   }
 
   if (eligibility.action === "send-nothing") {
+    const qualityBlocked = /quality gate/i.test(eligibility.reason);
     if (mutateScheduledState) {
       await updateCadenceTimestamps({
         store,
         cadenceId,
         nowIso,
-        success: true,
+        // Quiet cycles may close the day; quality-gate blocks must not.
+        success: !qualityBlocked,
         runId: run.runId,
         clearInProgress: true,
       }).catch(() => undefined);
@@ -844,8 +1090,14 @@ export async function executeAgentOsCadence(
       cadenceWindow: officialWindow,
       degraded: false,
     });
-    return {
-      ok: true,
+    logCadenceDeliveryEvent(qualityBlocked ? "run_failed" : "run_skipped", {
+      cadenceId,
+      cadenceWindow: window,
+      reason: eligibility.reason,
+      deliveryOutcome: qualityBlocked ? "failed" : "skipped_with_reason",
+    });
+    return finalizeResult({
+      ok: !qualityBlocked,
       mode: options.mode,
       runMode,
       cadenceId,
@@ -858,9 +1110,9 @@ export async function executeAgentOsCadence(
       deliveryStatus: null,
       emailSent: false,
       dryRun: false,
-      suppressionReason: null,
-      error: null,
-      errorCode: null,
+      suppressionReason: eligibility.reason,
+      error: qualityBlocked ? eligibility.reason : null,
+      errorCode: qualityBlocked ? "failed" : null,
       safeSummary: eligibility.reason,
       previewRender:
         options.includePreviewRender || isManualRunMode(runMode)
@@ -868,7 +1120,8 @@ export async function executeAgentOsCadence(
           : null,
       cadenceLastSuccessfulAtBefore,
       cadenceLastSuccessfulAtAfter: await readCadenceLastSuccessfulAfter(),
-    };
+      deliveryOutcome: qualityBlocked ? "failed" : "skipped_with_reason",
+    });
   }
 
   if (eligibility.action === "block") {
@@ -1043,7 +1296,14 @@ export async function executeAgentOsCadence(
         clearInProgress: true,
       }).catch(() => undefined);
     }
-    return {
+    logCadenceDeliveryEvent("run_skipped", {
+      cadenceId,
+      cadenceWindow: window,
+      reason: reserve.reason,
+      deliveryStatus: reserve.record.status,
+      deliveryOutcome: "skipped_with_reason",
+    });
+    return finalizeResult({
       ok: true,
       mode: options.mode,
       runMode,
@@ -1063,7 +1323,8 @@ export async function executeAgentOsCadence(
       safeSummary: reserve.reason,
       cadenceLastSuccessfulAtBefore,
       cadenceLastSuccessfulAtAfter: await readCadenceLastSuccessfulAfter(),
-    };
+      deliveryOutcome: "skipped_with_reason",
+    });
   }
 
   if (reserve.outcome === "blocked-uncertain") {
@@ -1104,7 +1365,13 @@ export async function executeAgentOsCadence(
         clearInProgress: true,
       }).catch(() => undefined);
     }
-    return {
+    logCadenceDeliveryEvent("run_skipped", {
+      cadenceId,
+      cadenceWindow: window,
+      reason: reserve.reason,
+      deliveryOutcome: "skipped_with_reason",
+    });
+    return finalizeResult({
       ok: true,
       mode: options.mode,
       runMode,
@@ -1124,7 +1391,8 @@ export async function executeAgentOsCadence(
       safeSummary: reserve.reason,
       cadenceLastSuccessfulAtBefore,
       cadenceLastSuccessfulAtAfter: await readCadenceLastSuccessfulAfter(),
-    };
+      deliveryOutcome: "skipped_with_reason",
+    });
   }
 
   await transitionDeliveryStatus({
@@ -1136,7 +1404,7 @@ export async function executeAgentOsCadence(
     expectedClaimOwner: reserve.record.claimOwner ?? undefined,
   });
 
-  let rendered =
+  const rendered =
     kind === "failure-alert"
       ? renderFailureAlertEmail({
           cadenceId,
@@ -1153,6 +1421,13 @@ export async function executeAgentOsCadence(
             eligibility.action === "send-founder-brief" &&
             eligibility.degraded,
         });
+
+  logCadenceDeliveryEvent("send_attempted", {
+    cadenceId,
+    cadenceWindow: window,
+    kind,
+    runId: run.runId,
+  });
 
   const sendResult = await sender({
     config: emailConfig,
@@ -1180,7 +1455,13 @@ export async function executeAgentOsCadence(
         clearInProgress: true,
       }).catch(() => undefined);
     }
-    return {
+    logCadenceDeliveryEvent("provider_accepted", {
+      cadenceId,
+      cadenceWindow: window,
+      providerMessageId: sendResult.providerMessageId,
+      deliveryOutcome: "sent",
+    });
+    return finalizeResult({
       ok: true,
       mode: options.mode,
       runMode,
@@ -1207,7 +1488,9 @@ export async function executeAgentOsCadence(
           : null,
       cadenceLastSuccessfulAtBefore,
       cadenceLastSuccessfulAtAfter: await readCadenceLastSuccessfulAfter(),
-    };
+      deliveryOutcome: "sent",
+      providerMessageId: sendResult.providerMessageId,
+    });
   }
 
   const nextStatus = sendResult.uncertain ? "uncertain" : "failed";
@@ -1252,6 +1535,9 @@ export async function executeAgentOsCadence(
     cadenceLastSuccessfulAtBefore,
     cadenceLastSuccessfulAtAfter: await readCadenceLastSuccessfulAfter(),
   });
+  } finally {
+    await releaseOwnedInProgressLock();
+  }
 }
 
 /** Inspect recent delivery outcomes (safe — no secrets/recipients). */

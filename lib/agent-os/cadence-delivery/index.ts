@@ -64,3 +64,12 @@ export type {
   ExecuteCadenceOptions,
   CadenceExecutionResult,
 } from "./execute";
+
+export {
+  resolveCadenceDeliveryOutcome,
+  httpStatusForCadenceOutcome,
+  isInProgressStale,
+  isInProgressActive,
+  STALE_IN_PROGRESS_MS,
+} from "./outcome";
+export type { CadenceDeliveryOutcome } from "./outcome";

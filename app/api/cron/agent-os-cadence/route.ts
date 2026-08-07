@@ -11,6 +11,8 @@
  * - runMode=manual-preview — live reads, synthesis, quality gate, renderer;
  *   no email; no official cadence-window claim; lastSuccessfulAt unchanged;
  *   returns rendered subject/text only to authenticated callers
+ * - runMode=force-send or force=1 — bypass due/in-progress gates and send
+ *   (recovery / Vercel Cron Jobs manual verification)
  *
  * GET is retained for compatibility with the established Vercel Cron pattern
  * used by `/api/cron/weekly-intelligence`. Caching is explicitly disabled.
@@ -23,6 +25,12 @@
 import { NextResponse } from "next/server";
 import { verifyCronRequest } from "@/lib/intelligence/cron-auth";
 import type { CadenceRunMode } from "@/lib/agent-os/cadence-delivery";
+import {
+  httpStatusForCadenceOutcome,
+  logCadenceDeliveryEvent,
+  resolveCadenceDeliveryOutcome,
+  type CadenceDeliveryOutcome,
+} from "@/lib/agent-os/cadence-delivery/outcome";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -55,7 +63,11 @@ function safeJson(
 }
 
 function parseRunMode(raw: string | null | undefined): CadenceRunMode | undefined {
-  if (raw === "manual-preview" || raw === "scheduled") {
+  if (
+    raw === "manual-preview" ||
+    raw === "scheduled" ||
+    raw === "force-send"
+  ) {
     return raw;
   }
   return undefined;
@@ -74,6 +86,10 @@ function resultBody(result: {
   errorCode: string | null;
   safeSummary: string;
   runMode?: CadenceRunMode;
+  dryRun?: boolean;
+  suppressionReason?: string | null;
+  deliveryOutcome?: CadenceDeliveryOutcome;
+  providerMessageId?: string | null;
   cadenceLastSuccessfulAtBefore?: string | null;
   cadenceLastSuccessfulAtAfter?: string | null;
   previewRender?: {
@@ -86,8 +102,21 @@ function resultBody(result: {
     providerMessageId: string | null;
   } | null;
 }) {
+  const deliveryOutcome =
+    result.deliveryOutcome ??
+    resolveCadenceDeliveryOutcome({
+      emailSent: result.emailSent,
+      ok: result.ok,
+      dryRun: result.dryRun,
+      deliveryAction: result.deliveryAction,
+      errorCode: result.errorCode,
+      safeSummary: result.safeSummary,
+      suppressionReason: result.suppressionReason,
+    });
+
   const body: Record<string, unknown> = {
-    ok: result.ok,
+    ok: deliveryOutcome === "failed" ? false : result.ok,
+    outcome: deliveryOutcome,
     runMode: result.runMode ?? "scheduled",
     cadenceId: result.cadenceId,
     cadenceWindow: result.cadenceWindow,
@@ -99,6 +128,8 @@ function resultBody(result: {
     emailSent: result.emailSent,
     errorCode: result.errorCode,
     safeSummary: result.safeSummary,
+    suppressionReason: result.suppressionReason ?? null,
+    providerMessageId: result.providerMessageId ?? null,
     cadenceLastSuccessfulAtBefore: result.cadenceLastSuccessfulAtBefore ?? null,
     cadenceLastSuccessfulAtAfter: result.cadenceLastSuccessfulAtAfter ?? null,
   };
@@ -114,6 +145,30 @@ function resultBody(result: {
   }
 
   return body;
+}
+
+function statusForResult(result: {
+  ok: boolean;
+  emailSent: boolean;
+  errorCode: string | null;
+  deliveryOutcome?: CadenceDeliveryOutcome;
+  dryRun?: boolean;
+  deliveryAction: string;
+  safeSummary: string;
+  suppressionReason?: string | null;
+}): number {
+  const outcome =
+    result.deliveryOutcome ??
+    resolveCadenceDeliveryOutcome({
+      emailSent: result.emailSent,
+      ok: result.ok,
+      dryRun: result.dryRun,
+      deliveryAction: result.deliveryAction,
+      errorCode: result.errorCode,
+      safeSummary: result.safeSummary,
+      suppressionReason: result.suppressionReason,
+    });
+  return httpStatusForCadenceOutcome(outcome, result.errorCode);
 }
 
 export async function GET(request: Request) {
@@ -135,36 +190,66 @@ export async function GET(request: Request) {
   const cadenceParam = url.searchParams.get("cadence");
   const cadenceId =
     cadenceParam && cadenceParam.length > 0 ? cadenceParam : undefined;
-  const force = url.searchParams.get("force") === "1";
+  const force =
+    url.searchParams.get("force") === "1" ||
+    url.searchParams.get("runMode") === "force-send";
   const runMode = parseRunMode(url.searchParams.get("runMode"));
+
+  logCadenceDeliveryEvent("run_started", {
+    method: "GET",
+    cadenceId: cadenceId ?? null,
+    force,
+    runMode: runMode ?? "scheduled",
+    recovery: runMode === "force-send" || force,
+  });
+
+  if (runMode === "force-send" || url.searchParams.get("force") === "1") {
+    logCadenceDeliveryEvent("recovery_force_send", {
+      method: "GET",
+      cadenceId: cadenceId ?? null,
+      note: "Authenticated force-send / force=1 recovery invocation",
+    });
+  }
 
   let result;
   try {
     result = await executeAgentOsCadence({
       mode: "scheduled-live",
       cadenceId,
-      force: force || runMode === "manual-preview",
-      runMode,
+      force: force || runMode === "manual-preview" || runMode === "force-send",
+      runMode: runMode === "force-send" ? "force-send" : runMode,
       includePreviewRender: runMode === "manual-preview",
     });
   } catch {
+    logCadenceDeliveryEvent("run_failed", {
+      errorCode: "failed",
+      safeSummary: "Agent OS cadence job failed",
+    });
     return safeJson(
       {
         ok: false,
+        outcome: "failed",
         errorCode: "failed",
+        emailSent: false,
         safeSummary: "Agent OS cadence job failed",
       },
       500,
     );
   }
 
-  const status = result.ok
-    ? 200
-    : result.errorCode === "unconfigured"
-      ? 503
-      : 500;
+  const body = resultBody(result);
+  const status = statusForResult(result);
+  logCadenceDeliveryEvent("run_finished", {
+    outcome: body.outcome,
+    status,
+    cadenceId: result.cadenceId,
+    cadenceWindow: result.cadenceWindow,
+    emailSent: result.emailSent,
+    providerMessageId: result.providerMessageId ?? null,
+    safeSummary: result.safeSummary,
+  });
 
-  return safeJson(resultBody(result), status);
+  return safeJson(body, status);
 }
 
 /** POST supported for explicit scheduler / authenticated manual invocations. */
@@ -191,25 +276,38 @@ export async function POST(request: Request) {
       runMode?: string;
     };
     cadenceId = body.cadenceId;
-    force = body.force === true;
+    force = body.force === true || body.runMode === "force-send";
     runMode = parseRunMode(body.runMode);
   } catch {
     cadenceId = undefined;
   }
 
+  logCadenceDeliveryEvent("run_started", {
+    method: "POST",
+    cadenceId: cadenceId ?? null,
+    force,
+    runMode: runMode ?? "scheduled",
+  });
+
   const result = await executeAgentOsCadence({
     mode: "scheduled-live",
     cadenceId,
-    force: force || runMode === "manual-preview",
-    runMode,
+    force: force || runMode === "manual-preview" || runMode === "force-send",
+    runMode: runMode === "force-send" ? "force-send" : runMode,
     includePreviewRender: runMode === "manual-preview",
   });
 
-  const status = result.ok
-    ? 200
-    : result.errorCode === "unconfigured"
-      ? 503
-      : 500;
+  const body = resultBody(result);
+  const status = statusForResult(result);
+  logCadenceDeliveryEvent("run_finished", {
+    outcome: body.outcome,
+    status,
+    cadenceId: result.cadenceId,
+    cadenceWindow: result.cadenceWindow,
+    emailSent: result.emailSent,
+    providerMessageId: result.providerMessageId ?? null,
+    safeSummary: result.safeSummary,
+  });
 
-  return safeJson(resultBody(result), status);
+  return safeJson(body, status);
 }
