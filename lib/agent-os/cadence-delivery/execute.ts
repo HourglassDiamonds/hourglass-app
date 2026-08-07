@@ -261,6 +261,9 @@ function deliveryWindowForRun(
   runMode: CadenceRunMode,
 ): string {
   if (runMode === "manual-preview") return `${officialWindow}:manual-preview`;
+  // Distinct claim key so authenticated recovery can send after a suppressed
+  // official-day claim without double-sending the scheduled window.
+  if (runMode === "force-send") return `${officialWindow}:force-send`;
   return officialWindow;
 }
 
