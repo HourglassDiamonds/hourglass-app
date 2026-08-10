@@ -19,6 +19,7 @@ import {
 } from "@/lib/consultation-cta";
 import DiamondStudioEditorial from "./components/DiamondStudioEditorial";
 import DiamondStudioToolHeader from "./components/DiamondStudioToolHeader";
+import ShareStudioView from "./components/ShareStudioView";
 import {
   getDiamondCadAsset,
   nextCadFallbackSrc,
@@ -34,6 +35,11 @@ import {
   faceAxesForSizing,
   getRoundDiamondMm,
 } from "@/lib/diamond-tech-suite/face-dimensions";
+import {
+  buildStudioSharePath,
+  parseStudioSearchParams,
+  serializeStudioSearchParams,
+} from "@/lib/diamond-studio/url-state";
 
 export type { ShapeId };
 
@@ -1188,6 +1194,24 @@ function SuiteStyles() {
         letter-spacing:0.06em;
         white-space:nowrap;
       }
+      button.dts-share-view{
+        appearance:none;
+        background:transparent;
+        border:0;
+        border-bottom:1px solid oklch(from var(--hairline) l c h / 0.85);
+        padding:0;
+        margin:0;
+        font:inherit;
+        letter-spacing:0.06em;
+        color:var(--ink-soft);
+        cursor:pointer;
+        white-space:nowrap;
+        transition:color 0.45s ease, border-color 0.45s ease;
+      }
+      button.dts-share-view:hover{
+        color:var(--ink);
+        border-color:var(--ink-soft);
+      }
       .dts-shape-strip-wrap{
         position:relative;
         width:100%;
@@ -2200,6 +2224,7 @@ export default function DiamondStudioPage() {
       shape,
       carat,
       fingerSize: ringSize,
+      bandWidth,
       skinTone,
       orientation: stoneOrientation,
       coveragePercent,
@@ -2210,10 +2235,88 @@ export default function DiamondStudioPage() {
     shape,
     carat,
     ringSize,
+    bandWidth,
     skinTone,
     stoneOrientation,
     deviceType,
   ]);
+
+  const getShareUrl = useCallback(() => {
+    const path = buildStudioSharePath({
+      shape,
+      carat,
+      ringSize,
+      bandWidth,
+      skinTone,
+      orientation: stoneOrientation,
+    });
+    if (typeof window === "undefined") return path;
+    return `${window.location.origin}${path}`;
+  }, [shape, carat, ringSize, bandWidth, skinTone, stoneOrientation]);
+
+  const urlSyncReadyRef = useRef(false);
+
+  useEffect(() => {
+    const { state, loadedFromUrl } = parseStudioSearchParams(
+      window.location.search,
+    );
+    setRingSize(state.ringSize);
+    setCarat(state.carat);
+    setSkinTone(state.skinTone);
+    setBandWidth(state.bandWidth);
+    setShape(state.shape);
+    setDiamondVisualShape(state.shape);
+    setStoneOrientation(state.orientation);
+    urlSyncReadyRef.current = true;
+
+    if (loadedFromUrl) {
+      const coveragePercent =
+        Math.round(
+          coveragePct(
+            state.shape,
+            state.carat,
+            state.ringSize,
+            state.orientation,
+          ) * 10,
+        ) / 10;
+      trackDiamondStudioEvent("diamond_studio_configuration_loaded", {
+        shape: state.shape,
+        carat: state.carat,
+        fingerSize: state.ringSize,
+        bandWidth: state.bandWidth,
+        skinTone: state.skinTone,
+        orientation: state.orientation,
+        coveragePercent,
+        coverageZone: classifyPresence(
+          state.shape,
+          state.carat,
+          state.ringSize,
+          state.orientation,
+        ),
+        deviceType: window.matchMedia("(max-width: 768px)").matches
+          ? "mobile"
+          : "desktop",
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!urlSyncReadyRef.current) return;
+    const query = serializeStudioSearchParams({
+      shape,
+      carat,
+      ringSize,
+      bandWidth,
+      skinTone,
+      orientation: stoneOrientation,
+    });
+    const nextUrl = query
+      ? `${window.location.pathname}?${query}`
+      : window.location.pathname;
+    const current = `${window.location.pathname}${window.location.search}`;
+    if (current === nextUrl) return;
+    window.history.replaceState(null, "", nextUrl);
+  }, [shape, carat, ringSize, bandWidth, skinTone, stoneOrientation]);
 
   const trackEvent = useCallback(
     (eventName: Parameters<typeof trackDiamondStudioEvent>[0]) => {
@@ -2846,6 +2949,10 @@ export default function DiamondStudioPage() {
                     </Link>
                   </CTAGlimmer>
                 </p>
+                <ShareStudioView
+                  getShareUrl={getShareUrl}
+                  analyticsProps={analyticsProps}
+                />
               </div>
 
               <div className="dts-stage-canvas dts-mobile-visual">
@@ -2918,7 +3025,7 @@ export default function DiamondStudioPage() {
           
         </div>
       </div>
-      <DiamondStudioEditorial />
+      <DiamondStudioEditorial analyticsProps={analyticsProps()} />
     </div>
   );
 }

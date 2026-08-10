@@ -26,7 +26,7 @@ export const PERSON_JOB_TITLE = "Graduate Gemologist";
 
 export const DIAMOND_STUDIO_NAME = "Diamond Size Studio";
 export const DIAMOND_STUDIO_DESCRIPTION =
-  "An interactive diamond size comparison tool that helps clients visualize how carat weight, diamond shape, ring size, and finger coverage affect the way a diamond appears on the hand.";
+  "Compare diamond shapes and carat weights on different finger sizes. Visualize scale, finger coverage, band width, and proportion before choosing a diamond.";
 
 export const DIAMOND_SHAPE_STUDIO_NAME = "See It On Your Hand";
 export const DIAMOND_SHAPE_STUDIO_DESCRIPTION =

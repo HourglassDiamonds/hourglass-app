@@ -329,7 +329,7 @@ export const articles: Article[] = [
 
     { type: "heading", text: "Factors That Influence the Ideal Size" },
     { type: "paragraph", text: "The best carat size often depends on how the diamond interacts with other elements of the ring." },
-    { type: "paragraph", text: "Finger size can influence how prominent the diamond appears. On smaller fingers, a one carat diamond may appear quite substantial, while the same stone may appear more understated on larger hands. You can [compare diamond size on the hand](/diamond-studio) across ring sizes to see the difference." },
+    { type: "paragraph", text: "Finger size can influence how prominent the diamond appears. On smaller fingers, a one carat diamond may appear quite substantial, while the same stone may appear more understated on larger hands. You can [compare the same carat across ring sizes in the Diamond Size Studio](/diamond-studio) before deciding what presence feels right." },
     { type: "paragraph", text: "Ring design also plays a role. Thin bands and minimalist settings can make a diamond appear larger, while wider bands may create a more balanced appearance with larger stones." },
 
     { type: "heading", text: "Balancing Size and Proportion" },
@@ -980,7 +980,7 @@ export const articles: Article[] = [
 
     { type: "paragraph", text: "Carat weight is an important measurement, but it does not fully describe how large a diamond will appear." },
     { type: "paragraph", text: "Shape, cut proportions, and overall design all influence the visible presence of the stone once it is worn in a ring." },
-    { type: "paragraph", text: "By understanding the difference between carat weight and size, buyers can evaluate diamonds more confidently and [see how different carat weights face up](/diamond-studio) before selecting a stone that appears balanced, bright, and visually impressive. When numbers and appearance need to be weighed together, [begin with Concierge](/concierge)." },
+    { type: "paragraph", text: "By understanding the difference between carat weight and size, buyers can evaluate diamonds more confidently and [preview face-up scale in the Diamond Size Studio](/diamond-studio) before selecting a stone that appears balanced, bright, and visually impressive. When numbers and appearance need to be weighed together, [begin with Concierge](/concierge)." },
   ],
   related: [
     { title: "Diamond Size Chart", href: "/diamond-guide/diamond-size-chart" },
@@ -1557,7 +1557,7 @@ export const articles: Article[] = [
       },
 
       { type: "heading", text: "See It on the Hand" },
-      { type: "paragraph", text: "Charts orient the conversation. [Diamond Studio](/diamond-studio) lets you compare how different carat weights and shapes face up across finger sizes before you view stones in person." },
+      { type: "paragraph", text: "Charts orient the conversation. The [Diamond Size Studio](/diamond-studio) lets you compare shapes and carat weights across finger sizes before you view stones in person." },
 
       { type: "heading", text: "Why Cut Proportions Matter" },
       { type: "paragraph", text: "Cut proportions influence both brightness and visible spread. A well-proportioned diamond distributes weight efficiently and returns light effectively, which often makes the stone appear larger and more lively. [What is diamond cut](/diamond-guide/what-is-diamond-cut) is the full performance guide; [does diamond cut affect size](/diamond-guide/does-diamond-cut-affect-size) focuses on how depth and spread change face-up millimeters." },
@@ -1655,7 +1655,7 @@ export const articles: Article[] = [
       { type: "paragraph", text: "In contrast, wider bands or heavy settings may make the center diamond appear slightly smaller because the surrounding metal occupies more visual space." },
 
       { type: "heading", text: "Seeing Diamond Size in Person" },
-      { type: "paragraph", text: "While charts and measurements provide helpful guidance, many people find that [comparing diamond size on the hand](/diamond-studio) offers the clearest perspective before seeing stones in person." },
+      { type: "paragraph", text: "While charts and measurements provide helpful guidance, many people find that [comparing diamond size on the hand in the Diamond Size Studio](/diamond-studio) offers the clearest perspective before viewing stones in person." },
       { type: "paragraph", text: "Comparing different carat weights and shapes side by side often makes subtle differences easier to recognize. This experience can help buyers develop a clearer sense of the proportions that feel right for their style." },
 
         { type: "paragraph", text: "Diamond size on the hand depends on more than carat weight alone." },
@@ -2381,7 +2381,7 @@ export const articles: Article[] = [
     { type: "heading", text: "How a 1 Carat Diamond Looks on the Hand" },
     { type: "paragraph", text: "Finger size also influences how large a diamond appears." },
     { type: "paragraph", text: "On smaller ring sizes, a one carat diamond can look quite prominent because it occupies more space across the finger. On larger ring sizes, the same diamond may appear slightly more subtle." },
-    { type: "paragraph", text: "Because of this, many clients find it helpful to [compare diamond size on the hand](/diamond-studio) before seeing diamonds in person to better understand how different sizes appear when worn." },
+    { type: "paragraph", text: "Because of this, many clients find it helpful to [try a one-carat outline on different finger sizes in the Diamond Size Studio](/diamond-studio) before viewing diamonds in person." },
 
     { type: "paragraph", text: "A one carat diamond is often considered a balanced choice for an engagement ring, offering noticeable presence while remaining versatile across many styles." },
     { type: "paragraph", text: "However, the visible size of a diamond depends on more than carat weight alone. Shape, cut proportions, and ring design all contribute to how large the diamond ultimately appears." },
@@ -2422,7 +2422,7 @@ export const articles: Article[] = [
     { type: "heading", text: "How a 2 Carat Diamond Looks on the Hand" },
     { type: "paragraph", text: "Finger size and ring design influence how prominent a two carat diamond appears once worn." },
     { type: "paragraph", text: "On smaller ring sizes, a two carat diamond can feel very substantial and may dominate the design of the ring. On larger hands, the same diamond may appear more balanced while still offering strong visual presence." },
-    { type: "paragraph", text: "Band width and setting style can also influence how large the diamond appears once the ring is complete. [see how different carat weights face up](/diamond-studio) alongside finger size when you are weighing those tradeoffs." },
+    { type: "paragraph", text: "Band width and setting style can also influence how large the diamond appears once the ring is complete. [Compare a two-carat outline alongside finger size in the Diamond Size Studio](/diamond-studio) when you are weighing those tradeoffs." },
 
     { type: "paragraph", text: "A two carat diamond offers a striking combination of size and brilliance, making it a popular choice for those seeking a ring with strong visual impact." },
     { type: "paragraph", text: "While carat weight is an important measurement, the appearance of the diamond ultimately depends on shape, cut quality, and the overall design of the ring." },

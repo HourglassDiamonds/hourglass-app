@@ -10,7 +10,10 @@ export type DiamondStudioEventName =
   | "coverage_zone_changed"
   | "consultation_cta_clicked"
   | "studio_session_engaged"
-  | "home_clicked";
+  | "home_clicked"
+  | "diamond_studio_share"
+  | "diamond_studio_configuration_loaded"
+  | "diamond_studio_editorial_contact";
 
 export type DiamondStudioDeviceType = "mobile" | "desktop";
 
@@ -20,6 +23,7 @@ export type DiamondStudioEventProperties = {
   shape: string;
   carat: number;
   fingerSize: number;
+  bandWidth: number;
   skinTone: string;
   orientation: string;
   coveragePercent: number;

@@ -5,14 +5,19 @@ import {
   buildGlobalSiteJsonLd,
   diamondIntelligenceApplicationNode,
   diamondIntelligenceFaqNode,
+  diamondStudioApplicationNode,
+  diamondStudioFaqNode,
+  diamondStudioWebPageNode,
   engagementRingsFaqNode,
   globalEntityGraph,
 } from "./entities";
 import {
   diamondIntelligenceBreadcrumb,
+  diamondStudioBreadcrumb,
   marketingPageBreadcrumb,
 } from "./breadcrumbs";
 import { jsonLdGraph, serializeJsonLd } from "./json-ld";
+import { DIAMOND_STUDIO_FAQS } from "@/lib/seo/diamond-studio-educational";
 
 function graphTypes(data: unknown): string[] {
   if (
@@ -133,6 +138,27 @@ describe("structured data builders", () => {
     expect(types).toContain("FAQPage");
     expect(types).toContain("BreadcrumbList");
     expect(serializeJsonLd(payload)).toContain("diamond-intelligence");
+  });
+
+  it("emits Diamond Size Studio webpage, application, FAQ, and breadcrumb graph", () => {
+    const payload = jsonLdGraph([
+      diamondStudioWebPageNode(),
+      diamondStudioApplicationNode(),
+      diamondStudioFaqNode(),
+      diamondStudioBreadcrumb(),
+    ]);
+    const types = graphTypes(payload);
+    const serialized = serializeJsonLd(payload);
+
+    expect(types).toContain("WebPage");
+    expect(types).toContain("SoftwareApplication");
+    expect(types).toContain("FAQPage");
+    expect(types).toContain("BreadcrumbList");
+    expect(serialized).toContain("diamond-studio");
+    expect(serialized).toContain("creator");
+    for (const faq of DIAMOND_STUDIO_FAQS) {
+      expect(serialized).toContain(faq.question);
+    }
   });
 
   it("emits engagement rings FAQ and breadcrumb graph", () => {
