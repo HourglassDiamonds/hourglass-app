@@ -65,7 +65,7 @@ export default function EngagementRingsIntro() {
 
         <div className="relative z-10 md:max-w-[min(100%,28rem)] lg:max-w-[min(100%,32rem)]">
           <div className="min-w-0 text-left">
-            <div className="text-[11px] uppercase tracking-[0.34em] text-[#8a8177]">
+            <div className="text-[11px] uppercase tracking-[0.34em] text-[#6d655e]">
               Engagement Rings
             </div>
 
@@ -126,7 +126,7 @@ export default function EngagementRingsIntro() {
         </div>
       </div>
 
-      <p className="mt-8 border-t border-[#e4dbcf]/80 pt-6 text-center text-[0.72rem] uppercase tracking-[0.28em] text-[#8a8177] md:mt-9 md:text-[0.74rem]">
+      <p className="mt-8 border-t border-[#e4dbcf]/80 pt-6 text-center text-[0.72rem] uppercase tracking-[0.28em] text-[#6d655e] md:mt-9 md:text-[0.74rem]">
         Graduate Gemologist · Global Sourcing · Personal Guidance
       </p>
     </>

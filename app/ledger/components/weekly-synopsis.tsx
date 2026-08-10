@@ -30,7 +30,7 @@ export default function WeeklySynopsis({ className = "" }: WeeklySynopsisProps) 
       aria-labelledby="weekly-synopsis-heading"
     >
       <div className="mx-auto max-w-[880px]">
-        <p className="text-center font-sans text-[10px] uppercase tracking-[0.32em] text-[#8a8176] md:text-left">
+        <p className="text-center font-sans text-[10px] uppercase tracking-[0.32em] text-[#6d655e] md:text-left">
           {eyebrow}
         </p>
         <h2
@@ -50,7 +50,7 @@ export default function WeeklySynopsis({ className = "" }: WeeklySynopsisProps) 
               index === 0 ? "md:pl-0" : "border-t md:border-t-0 md:border-l"
             } ${index === blocks.length - 1 ? "md:pr-0" : ""}`}
           >
-            <h3 className="font-sans text-[10px] uppercase tracking-[0.22em] text-[#8a8176]">
+            <h3 className="font-sans text-[10px] uppercase tracking-[0.22em] text-[#6d655e]">
               {block.title}
             </h3>
             <p className="mt-4 max-w-[22rem] text-[0.95rem] leading-[1.85] text-[#5c554d] md:max-w-none">

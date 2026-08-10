@@ -20,7 +20,7 @@ export default function DiV3FancyColorGuidance({
 
   return (
     <section className={`${DI_V3_PARTIAL_CARD} mx-auto max-w-[860px]`}>
-      <p className="text-[11px] uppercase tracking-[0.16em] text-[#9b8b78]">
+      <p className="text-[11px] uppercase tracking-[0.16em] text-[#766a58]">
         {V3_FANCY_COLOR_GUIDANCE.eyebrow}
       </p>
       <h2 className="mt-4 font-serif text-[clamp(28px,4.5vw,40px)] font-normal leading-[1.05] text-[#1e1a16]">

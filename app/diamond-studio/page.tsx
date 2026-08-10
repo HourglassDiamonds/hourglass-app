@@ -39,6 +39,8 @@ export type { ShapeId };
 
 type StoneOrientation = "ns" | "ew";
 
+const ORIENTATIONS: readonly StoneOrientation[] = ["ns", "ew"];
+
 type SkinTone = "light" | "medium" | "dark";
 
 type BandWidth = 2 | 2.5 | 3 | 3.5 | 4 | 4.5 | 5;
@@ -757,7 +759,8 @@ function SuiteStyles() {
         display:flex; justify-content:space-between; align-items:center;
         margin:7px 0 0;
         font-size:8.5px; letter-spacing:0.06em;
-        color:oklch(from var(--ink-mute) l c h / 0.72);
+        /* P0-4 (WCAG 1.4.3): alpha dilution dropped tiny labels below 4.5:1. */
+        color:var(--ink-mute);
         font-variant-numeric:tabular-nums;
       }
       .dts-carat-step-hint{
@@ -766,7 +769,7 @@ function SuiteStyles() {
         font-size:8.5px;
         line-height:1.45;
         letter-spacing:0.04em;
-        color:oklch(from var(--ink-mute) l c h / 0.62);
+        color:var(--ink-mute);
         text-align:center;
       }
       .dts-card .dts-card-note{
@@ -825,7 +828,7 @@ function SuiteStyles() {
         font-weight:500;
         letter-spacing:0.14em;
         text-transform:uppercase;
-        color:oklch(from var(--ink-mute) l c h / 0.88);
+        color:var(--ink-mute);
       }
       .dts-card-subhead-val{
         font-family:var(--serif);
@@ -881,7 +884,7 @@ function SuiteStyles() {
         font-weight:500;
         letter-spacing:0.12em;
         text-transform:uppercase;
-        color:oklch(from var(--ink-mute) l c h / 0.82);
+        color:var(--ink-mute);
         line-height:1.2;
       }
       .dts-tone-swatch.is-selected .dts-tone-swatch-label{
@@ -911,11 +914,13 @@ function SuiteStyles() {
         display:flex; justify-content:space-between; align-items:center; margin-top:7px;
         font-size:7.5px; letter-spacing:0.14em; text-transform:uppercase; color:var(--ink-mute);
       }
-      .dts-zone-labels .dts-endcap{ flex:0 0 auto; opacity:0.55; }
-      .dts-zone-labels .dts-active-lbl{ flex:1 1 auto; text-align:center; color:var(--gold-warm); font-weight:600; letter-spacing:0.18em; }
+      .dts-zone-labels .dts-endcap{ flex:0 0 auto; }
+      /* P0-4 (WCAG 1.4.3): deep gold (#987648, 3.4:1) darkened for this tiny
+         active label; hue preserved. */
+      .dts-zone-labels .dts-active-lbl{ flex:1 1 auto; text-align:center; color:#7a5f3b; font-weight:600; letter-spacing:0.18em; }
       .dts-cov-helper{
         font-family:var(--serif); font-style:italic; font-size:10px; line-height:1.3;
-        color:oklch(from var(--ink-soft) l c h / 0.88); margin:6px 2px 0; text-align:center;
+        color:var(--ink-soft); margin:6px 2px 0; text-align:center;
         white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
       }
       .dts-card--presentation .dts-card-section .dts-card-head{
@@ -1162,7 +1167,9 @@ function SuiteStyles() {
       .dts-stage-trust{
         margin:0 12px 8px; padding:0 8px; text-align:center;
         font-size:11px; line-height:1.65; letter-spacing:0.05em;
-        color:var(--ink-soft); font-weight:400;
+        /* P0-4 (WCAG 1.4.3): stage strip bg (~#e3dbd1) is darker than the
+           cards; muted token only reaches ~4.2:1 there. */
+        color:#635a50; font-weight:400;
       }
       /* Shared suite tool header (DiamondStudioToolHeader) — spacing only;
          type comes from the shared component. */
@@ -1171,7 +1178,7 @@ function SuiteStyles() {
         flex:0 0 auto;
       }
       .dts-stage-trust-link{
-        color:var(--ink-soft);
+        color:#635a50;
         border-bottom:1px solid oklch(from var(--hairline) l c h / 0.85);
         text-decoration:none;
         transition:color 0.45s ease, border-color 0.45s ease;
@@ -1859,6 +1866,33 @@ const SHAPES: ShapeId[] = [
   "radiant",
   "asscher",
 ];
+
+/**
+ * P0-4 (WCAG 4.1.2) — roving-tabindex keyboard model for the custom radio
+ * groups (shape strip, stone orientation). Arrow keys move selection and
+ * focus, matching the ARIA radio-group pattern. Presentation-only; the
+ * select callbacks are the same ones pointer input uses.
+ */
+function handleRadioGroupKeyDown<T extends string>(
+  event: React.KeyboardEvent<HTMLButtonElement>,
+  values: readonly T[],
+  current: T,
+  select: (value: T) => void,
+  dataAttr: string,
+) {
+  let delta = 0;
+  if (event.key === "ArrowRight" || event.key === "ArrowDown") delta = 1;
+  else if (event.key === "ArrowLeft" || event.key === "ArrowUp") delta = -1;
+  else return;
+  event.preventDefault();
+  const index = values.indexOf(current);
+  const next = values[(index + delta + values.length) % values.length];
+  select(next);
+  event.currentTarget
+    .closest('[role="radiogroup"]')
+    ?.querySelector<HTMLButtonElement>(`[${dataAttr}="${next}"]`)
+    ?.focus();
+}
 
 /**
  * Per-shape PNG, label, nominal length÷width (MVP), and face-up mm helper.
@@ -2689,20 +2723,46 @@ export default function DiamondStudioPage() {
               </div>
               <div
                 className="dts-skin-row"
-                role="group"
+                role="radiogroup"
                 aria-label="Stone orientation"
               >
                 <button
                   type="button"
+                  role="radio"
+                  aria-checked={stoneOrientation === "ns"}
+                  tabIndex={stoneOrientation === "ns" ? 0 : -1}
+                  data-orientation="ns"
                   className={`dts-skin-pill ${stoneOrientation === "ns" ? "is-selected" : ""}`}
                   onClick={() => selectOrientation("ns")}
+                  onKeyDown={(event) =>
+                    handleRadioGroupKeyDown(
+                      event,
+                      ORIENTATIONS,
+                      stoneOrientation,
+                      selectOrientation,
+                      "data-orientation",
+                    )
+                  }
                 >
                   N/S
                 </button>
                 <button
                   type="button"
+                  role="radio"
+                  aria-checked={stoneOrientation === "ew"}
+                  tabIndex={stoneOrientation === "ew" ? 0 : -1}
+                  data-orientation="ew"
                   className={`dts-skin-pill ${stoneOrientation === "ew" ? "is-selected" : ""}`}
                   onClick={() => selectOrientation("ew")}
+                  onKeyDown={(event) =>
+                    handleRadioGroupKeyDown(
+                      event,
+                      ORIENTATIONS,
+                      stoneOrientation,
+                      selectOrientation,
+                      "data-orientation",
+                    )
+                  }
                 >
                   E/W
                 </button>
@@ -2820,16 +2880,28 @@ export default function DiamondStudioPage() {
             <div className="dts-shape-strip-wrap" data-nosnippet>
               <div
                 className="dts-shape-strip shape-selector"
-                role="tablist"
-                aria-label="Shape"
+                role="radiogroup"
+                aria-label="Diamond shape"
               >
                 {SHAPES.map((s) => (
                   <button
                     key={s}
                     type="button"
+                    role="radio"
+                    aria-checked={s === shape}
+                    tabIndex={s === shape ? 0 : -1}
                     className={`dts-shape-chip ${s === shape ? "is-selected" : ""}`}
                     data-shape={s}
                     onClick={() => selectShape(s)}
+                    onKeyDown={(event) =>
+                      handleRadioGroupKeyDown(
+                        event,
+                        SHAPES,
+                        shape,
+                        selectShape,
+                        "data-shape",
+                      )
+                    }
                   >
                     <div className="dts-thumb">
                       <ShapeStripThumb

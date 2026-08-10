@@ -79,7 +79,7 @@ export default function DiV3PartialGradeReview({
           {incompleteCopy.sectionBody}
         </p>
 
-        <p className="mb-4 mt-8 text-[11px] uppercase tracking-[0.14em] text-[#9b8b78]">
+        <p className="mb-4 mt-8 text-[11px] uppercase tracking-[0.14em] text-[#766a58]">
           {incompleteCopy.nextStep}
         </p>
         <ul className="mb-8 grid list-none gap-2.5 p-0 text-[15px] text-[#514536]">
@@ -97,7 +97,7 @@ export default function DiV3PartialGradeReview({
         <div className="grid gap-5 sm:grid-cols-2">
           <div className="rounded-[18px] border border-[rgba(181,150,98,0.28)] bg-[rgba(255,255,255,0.35)] p-5 text-left">
             <label className="block">
-              <span className="mb-3 block text-[11px] uppercase tracking-[0.13em] text-[#9b8b78]">
+              <span className="mb-3 block text-[11px] uppercase tracking-[0.13em] text-[#766a58]">
                 Color Grade
               </span>
               <select
@@ -131,7 +131,7 @@ export default function DiV3PartialGradeReview({
 
           <div className="rounded-[18px] border border-[rgba(181,150,98,0.28)] bg-[rgba(255,255,255,0.35)] p-5 text-left">
             <label className="block">
-              <span className="mb-3 block text-[11px] uppercase tracking-[0.13em] text-[#9b8b78]">
+              <span className="mb-3 block text-[11px] uppercase tracking-[0.13em] text-[#766a58]">
                 Clarity Grade
               </span>
               <select
@@ -152,13 +152,13 @@ export default function DiV3PartialGradeReview({
       </div>
 
       <div className="mx-auto mt-10 max-w-[520px] rounded-[18px] border border-[rgba(58,48,38,0.14)] bg-[rgba(255,255,255,0.28)] p-5 text-left">
-        <p className="text-[11px] uppercase tracking-[0.14em] text-[#9b8b78]">
+        <p className="text-[11px] uppercase tracking-[0.14em] text-[#766a58]">
           Report Details
         </p>
         <dl className="mt-4 grid gap-3 text-[14px]">
           {technicalItems.map((item) => (
             <div key={item.label}>
-              <dt className="text-[#9b8b78]">{item.label}</dt>
+              <dt className="text-[#766a58]">{item.label}</dt>
               <dd className="mt-0.5 text-[#1e1a16]">{item.value}</dd>
             </div>
           ))}

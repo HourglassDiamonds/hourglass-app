@@ -51,26 +51,26 @@ export function DiamondIntelligenceIngestDock({
         fileName={fileName}
       />
 
-      <p className="mt-5 max-w-[52ch] text-[10px] leading-relaxed text-[#a89888]">
+      <p className="mt-5 max-w-[52ch] text-[10px] leading-relaxed text-[#756a5f]">
         {CONSUMER_COPY.listingLinkConciergePrefix}{" "}
         <ConsultationCtaLink
           location="diamond_intelligence:listing_fallback"
           tool="diamond-intelligence"
-          className="text-[#948a80] underline decoration-[rgba(181,150,98,0.32)] underline-offset-[3px] transition-colors hover:text-[#75675e]"
+          className="text-[#6d655e] underline decoration-[rgba(181,150,98,0.32)] underline-offset-[3px] transition-colors hover:text-[#75675e]"
         >
           {CONSUMER_COPY.listingLinkConciergeCta}
         </ConsultationCtaLink>{" "}
         {CONSUMER_COPY.listingLinkConciergeSuffix}
       </p>
 
-      <div className="mt-5 border-t border-[rgba(181,150,98,0.16)] pt-4 text-[10px] leading-relaxed text-[#9b8b78]">
+      <div className="mt-5 border-t border-[rgba(181,150,98,0.16)] pt-4 text-[10px] leading-relaxed text-[#766a58]">
         <p>{CONSUMER_COPY.betaDisclosure}</p>
         <p className="mt-2">
           {CONSUMER_COPY.betaDisclosureOutreachPrefix}{" "}
           <ConsultationCtaLink
             location="diamond_intelligence:beta_disclosure"
             tool="diamond-intelligence"
-            className="text-[#8b735b] underline decoration-[rgba(181,150,98,0.4)] underline-offset-[3px] transition-colors hover:text-[#5f5851]"
+            className="text-[#75603f] underline decoration-[rgba(181,150,98,0.4)] underline-offset-[3px] transition-colors hover:text-[#5f5851]"
           >
             {CONSUMER_COPY.betaDisclosureConciergeLinkLabel}
           </ConsultationCtaLink>

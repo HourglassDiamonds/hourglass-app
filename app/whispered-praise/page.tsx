@@ -211,7 +211,7 @@ function HeroSplitCard({
         <p className="mt-6 max-w-[33ch] text-[0.93rem] leading-[1.84] text-[#5e5650] md:mt-7 md:text-[0.95rem] md:leading-[1.88]">
           {item.supporting}
         </p>
-        <footer className="mt-6 text-[10px] uppercase tracking-[0.34em] text-[#948a7e] md:mt-7">
+        <footer className="mt-6 text-[10px] uppercase tracking-[0.34em] text-[#6d655e] md:mt-7">
           {item.attribution}
         </footer>
       </blockquote>
@@ -352,7 +352,7 @@ function BreathingQuote({
           className="block h-px w-10 bg-gradient-to-r from-transparent via-[#d4c8ba]/90 to-transparent"
           aria-hidden
         />
-        <span className="text-[10px] uppercase tracking-[0.34em] text-[#877d72]">
+        <span className="text-[10px] uppercase tracking-[0.34em] text-[#6d655e]">
           {attribution}
         </span>
       </figcaption>
@@ -396,6 +396,16 @@ export default function WhisperedPraisePage() {
         .whispered-enter-delay {
           animation: whispered-enter 2.1s ease-out 0.25s forwards;
           opacity: 0;
+        }
+        /* P0-4 advisory (WCAG 2.3.3 / AAA): honor reduced motion — content
+           lands in its final state with no entrance travel or fade. */
+        @media (prefers-reduced-motion: reduce) {
+          .whispered-enter,
+          .whispered-enter-delay {
+            animation: none;
+            opacity: 1;
+            transform: none;
+          }
         }
         .whispered-grain {
           pointer-events: none;
@@ -453,7 +463,7 @@ export default function WhisperedPraisePage() {
 
         <section className="border-b border-[#e4dbcf] pb-20 pt-16 md:pb-48 md:pt-32">
           <div className="whispered-enter-delay mx-auto max-w-[860px] text-center">
-            <p className="text-[10px] uppercase tracking-[0.36em] text-[#8a8177]">
+            <p className="text-[10px] uppercase tracking-[0.36em] text-[#6d655e]">
               Whispered Praise
             </p>
             <h1
@@ -557,7 +567,7 @@ export default function WhisperedPraisePage() {
               </ConsultationCtaLink>
               <Link
                 href="/diamond-studio"
-                className="inline-flex min-h-11 items-center rounded-sm px-2 text-[10.5px] uppercase tracking-[0.28em] text-[#756d64] transition-[color,opacity] duration-700 ease-out hover:text-[#1f1d1a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-hg-focus focus-visible:ring-offset-2 focus-visible:ring-offset-hg-ivory"
+                className="inline-flex min-h-11 items-center rounded-sm px-2 text-[10.5px] uppercase tracking-[0.28em] text-[#6d655e] transition-[color,opacity] duration-700 ease-out hover:text-[#1f1d1a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-hg-focus focus-visible:ring-offset-2 focus-visible:ring-offset-hg-ivory"
               >
                 Explore the Diamond Studio
               </Link>

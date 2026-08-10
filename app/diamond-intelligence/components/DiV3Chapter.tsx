@@ -102,7 +102,7 @@ export default function DiV3Chapter({
           <span className={titleClass}>{title}</span>
           {showNote ? (
             <span
-              className={`mt-1.5 block font-sans text-[12.5px] normal-case leading-snug tracking-normal text-[#9b8b78] md:text-[13px] md:leading-[1.4] ${hideNoteWhenOpen ? "group-open:hidden" : ""}`}
+              className={`mt-1.5 block font-sans text-[12.5px] normal-case leading-snug tracking-normal text-[#766a58] md:text-[13px] md:leading-[1.4] ${hideNoteWhenOpen ? "group-open:hidden" : ""}`}
             >
               {note}
             </span>

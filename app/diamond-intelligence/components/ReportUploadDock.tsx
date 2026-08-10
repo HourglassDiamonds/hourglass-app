@@ -150,7 +150,7 @@ export function ReportUploadDock({
             </div>
           </div>
         ) : (
-          <p className="pointer-events-none relative z-0 text-[10px] uppercase tracking-[0.28em] text-[#948a80]">
+          <p className="pointer-events-none relative z-0 text-[10px] uppercase tracking-[0.28em] text-[#6d655e]">
             Upload report PDF
           </p>
         )}
@@ -171,7 +171,7 @@ export function ReportUploadDock({
             {CONSUMER_COPY.uploadHelperLines.map((line) => (
               <p
                 key={line}
-                className="text-[10px] leading-snug text-[#948a80]"
+                className="text-[10px] leading-snug text-[#6d655e]"
               >
                 {line === CONSUMER_COPY.uploadHelperLines[0] ? (
                   <strong className="font-semibold">{line}</strong>
@@ -182,7 +182,7 @@ export function ReportUploadDock({
             ))}
           </div>
         ) : !busy ? (
-          <p className="pointer-events-none relative z-0 mt-2 text-[10px] leading-snug text-[#948a80]">
+          <p className="pointer-events-none relative z-0 mt-2 text-[10px] leading-snug text-[#6d655e]">
             Or click to browse · PDF only
           </p>
         ) : null}
@@ -207,13 +207,13 @@ export function ReportUploadDock({
 
       {!busy ? (
         <div className="mt-3 max-w-[52ch] space-y-2">
-          <p className="text-[10px] leading-relaxed text-[#a89888]">
+          <p className="text-[10px] leading-relaxed text-[#756a5f]">
             {CONSUMER_COPY.uploadBestPracticeLine}
           </p>
-          <p className="hidden text-[10px] leading-relaxed text-[#a89888] md:block">
+          <p className="hidden text-[10px] leading-relaxed text-[#756a5f] md:block">
             {CONSUMER_COPY.uploadDesktopHelperLine}
           </p>
-          <p className="text-[10px] leading-relaxed text-[#a89888] md:hidden">
+          <p className="text-[10px] leading-relaxed text-[#756a5f] md:hidden">
             {CONSUMER_COPY.uploadMobileHelperLine}
           </p>
         </div>
@@ -228,8 +228,12 @@ export function ReportUploadDock({
           <p className="text-xs leading-relaxed text-[#6f665d]">{statusNote}</p>
         </div>
       ) : null}
+      {/* P0-4 (WCAG 4.1.3): rejection/server errors were visible but never
+          announced to assistive technology. The alert role announces the
+          block when it mounts; it unmounts when cleared, so no stale
+          announcements. Copy and validation rules unchanged. */}
       {showPdfOnlyRejection ? (
-        <div className="mt-3 space-y-2">
+        <div role="alert" className="mt-3 space-y-2">
           <p className="text-xs leading-relaxed text-[#6b5048]">
             {localPdfRejection
               ? CONSUMER_COPY.pdfOnlyRejectionPrimary
@@ -240,7 +244,7 @@ export function ReportUploadDock({
             <ConsultationCtaLink
               location="diamond_intelligence:pdf_rejection"
               tool="diamond-intelligence"
-              className="text-[#948a80] underline decoration-[rgba(181,150,98,0.32)] underline-offset-[3px] transition-colors hover:text-[#75675e]"
+              className="text-[#6d655e] underline decoration-[rgba(181,150,98,0.32)] underline-offset-[3px] transition-colors hover:text-[#75675e]"
             >
               Concierge
             </ConsultationCtaLink>
@@ -248,7 +252,7 @@ export function ReportUploadDock({
           </p>
         </div>
       ) : showServerError ? (
-        <p className="mt-3 text-xs leading-relaxed text-[#6b5048]">
+        <p role="alert" className="mt-3 text-xs leading-relaxed text-[#6b5048]">
           {errorMessage}
         </p>
       ) : null}

@@ -323,12 +323,12 @@ export default function DiV3ResultSections({
           chapterId="justins-perspective"
         >
           <DiV3BodyParagraphs paragraphs={[fancyCopy.justinNote]} />
-          <p className="mt-6 text-[13px] tracking-[0.04em] text-[#8a8177]">
+          <p className="mt-6 text-[13px] tracking-[0.04em] text-[#6d655e]">
             Justin Smith, GG
           </p>
           <Link
             href={conciergeHref}
-            className={`${DI_V3_TEXT_CTA} mt-5 text-[13px] text-[#8a8177]`}
+            className={`${DI_V3_TEXT_CTA} mt-5 text-[13px] text-[#6d655e]`}
             onClick={() =>
               trackConsultationCtaClicked(
                 "diamond_intelligence:justins_perspective",
@@ -345,7 +345,7 @@ export default function DiV3ResultSections({
           note="Extracted values from the uploaded report."
           chapterId="fancy-shape-report-details"
         >
-          <p className="mb-5 max-w-[62ch] text-[13px] leading-[1.65] text-[#8a8177]">
+          <p className="mb-5 max-w-[62ch] text-[13px] leading-[1.65] text-[#6d655e]">
             {CONSUMER_COPY.reportMeasurementsSubcopy}
           </p>
           <DiV3DataGrid items={reportDetailItems} />
@@ -441,7 +441,7 @@ export default function DiV3ResultSections({
 
   const igiNaturalLabContextCallout = igiNaturalLabContextActive ? (
     <div className="mb-6 max-w-[62ch] rounded-[18px] border border-[rgba(181,150,98,0.22)] bg-[rgba(255,255,255,0.36)] px-5 py-5 md:px-6 md:py-6">
-      <p className="text-[11px] uppercase tracking-[0.16em] text-[#9b8b78]">
+      <p className="text-[11px] uppercase tracking-[0.16em] text-[#766a58]">
         {CONSUMER_COPY.igiNaturalLabContextTitle}
       </p>
       <div className="mt-3 grid gap-3">
@@ -490,12 +490,12 @@ export default function DiV3ResultSections({
             <p key={p.slice(0, 48)}>{p}</p>
           ))}
         </div>
-        <p className="mt-6 text-[13px] tracking-[0.04em] text-[#8a8177]">
+        <p className="mt-6 text-[13px] tracking-[0.04em] text-[#6d655e]">
           Justin Smith, GG
         </p>
         <Link
           href={conciergeHref}
-          className={`${DI_V3_TEXT_CTA} mt-5 text-[13px] text-[#8a8177]`}
+          className={`${DI_V3_TEXT_CTA} mt-5 text-[13px] text-[#6d655e]`}
           onClick={() =>
             trackConsultationCtaClicked(
               "diamond_intelligence:justins_perspective",
@@ -560,7 +560,7 @@ export default function DiV3ResultSections({
           <DiV3Gcal8xSpectrum activeTier={gcal8xTier} />
         ) : (
           <>
-            <p className="mb-6 max-w-[62ch] text-[14px] leading-[1.65] text-[#8a8177]">
+            <p className="mb-6 max-w-[62ch] text-[14px] leading-[1.65] text-[#6d655e]">
               This spectrum reflects reported proportions and optical indicators
               only. It does not override color, clarity, fluorescence, value, or
               Hourglass standards.
@@ -586,7 +586,7 @@ export default function DiV3ResultSections({
           ))}
         </ul>
         {!isGcal8x ? (
-          <p className="mt-6 max-w-[62ch] text-[14px] leading-[1.68] text-[#8a8177]">
+          <p className="mt-6 max-w-[62ch] text-[14px] leading-[1.68] text-[#6d655e]">
             These factors are best evaluated through advanced imagery or direct
             inspection — a normal part of choosing well.
           </p>
@@ -605,7 +605,7 @@ export default function DiV3ResultSections({
         >
           {igiNaturalLabContextCallout}
           <DiV3DataGrid items={technicalItems} />
-          <p className="mt-6 max-w-[62ch] text-[13px] leading-[1.68] text-[#8a8177]">
+          <p className="mt-6 max-w-[62ch] text-[13px] leading-[1.68] text-[#6d655e]">
             {CONSUMER_COPY.assessmentScopeCopy}
           </p>
         </DiV3Chapter>
@@ -617,7 +617,7 @@ export default function DiV3ResultSections({
           chapterId="report-measurements"
           demoted
         >
-          <p className="mb-5 max-w-[62ch] text-[13px] leading-[1.65] text-[#8a8177]">
+          <p className="mb-5 max-w-[62ch] text-[13px] leading-[1.65] text-[#6d655e]">
             {CONSUMER_COPY.reportMeasurementsSubcopy}
           </p>
           <DiV3DataGrid items={measurementItems} />

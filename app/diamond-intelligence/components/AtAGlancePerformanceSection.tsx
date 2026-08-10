@@ -23,7 +23,7 @@ export default function AtAGlancePerformanceSection({
     <DashboardCard title="At-a-glance performance" tone="default">
       <div className="grid items-center gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,300px)] lg:gap-10">
         <div className="max-w-md">
-          <p className="text-[10px] uppercase tracking-[0.26em] text-[#948a80]">
+          <p className="text-[10px] uppercase tracking-[0.26em] text-[#6d655e]">
             Performance profile
           </p>
           <p className="mt-3 text-[13px] leading-[1.72] text-[#5f5851]">
@@ -31,7 +31,7 @@ export default function AtAGlancePerformanceSection({
               ? "Not enough proportion detail yet for a calculated profile."
               : "Reported proportions translated into a visual balance profile — supporting evidence, not the verdict itself."}
           </p>
-          <p className="mt-3 text-[11px] leading-[1.6] tracking-[0.02em] text-[#948a80]">
+          <p className="mt-3 text-[11px] leading-[1.6] tracking-[0.02em] text-[#6d655e]">
             Based on reported proportions and finish. Not a laboratory scan.
           </p>
         </div>

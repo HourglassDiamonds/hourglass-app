@@ -1,9 +1,9 @@
 import Link from "next/link";
 import type { LedgerIndexDefinition } from "../ledger-data";
 
-const LABEL = "font-sans text-[10px] uppercase tracking-[0.16em] text-[#6f6a63]";
+const LABEL = "font-sans text-[10px] uppercase tracking-[0.16em] text-[#6d655e]";
 const SCALE_LABEL =
-  "font-sans text-[10px] uppercase tracking-[0.08em] text-[#6f6a63]";
+  "font-sans text-[10px] uppercase tracking-[0.08em] text-[#6d655e]";
 
 const METER_CARD =
   "rounded-[20px] border border-black/[0.08] bg-[#faf6ef] shadow-[0_16px_40px_rgba(28,22,16,0.055),0_2px_10px_rgba(28,22,16,0.03)]";
@@ -124,7 +124,7 @@ function MainReadingRow({
         <p className={`mt-[9px] ${LABEL}`}>{index.status}</p>
         {index.weeklyDeltaExplanation ? (
           <p
-            className="mt-2.5 max-w-none text-left text-[0.8rem] leading-[1.55] normal-case tracking-normal text-[#6f6a63] sm:max-w-[18rem] sm:text-right"
+            className="mt-2.5 max-w-none text-left text-[0.8rem] leading-[1.55] normal-case tracking-normal text-[#6d655e] sm:max-w-[18rem] sm:text-right"
             role="note"
           >
             {index.weeklyDeltaExplanation}
@@ -172,7 +172,7 @@ function MeterCard({
         )}
       </p>
       <p
-        className={`border-t border-black/[0.08] leading-[1.78] text-[#6f6a63] ${
+        className={`border-t border-black/[0.08] leading-[1.78] text-[#6d655e] ${
           compact
             ? "mt-6 pt-5 text-[0.95rem] md:mt-7 md:pt-5 md:text-[1.02rem]"
             : "mt-7 pt-5 text-[1.05rem] md:mt-8 md:pt-6"
@@ -272,7 +272,7 @@ export default function LedgerIndexMeter({
           <p className="mt-6 max-w-[680px] font-serif text-[1.05rem] leading-[1.78] text-[#2c2a27]">
             {index.intro}
           </p>
-          <p className="mt-4 text-[0.95rem] italic text-[#6f6a63]">
+          <p className="mt-4 text-[0.95rem] italic text-[#6d655e]">
             {index.updatedLabel}
           </p>
           <div className="mt-10 md:mt-14">
@@ -299,7 +299,7 @@ export default function LedgerIndexMeter({
           <div className="mt-8 md:mt-10">
             <MeterCard index={index} variant="compact" />
           </div>
-          <p className="mt-5 text-[0.95rem] italic text-[#6f6a63]">
+          <p className="mt-5 text-[0.95rem] italic text-[#6d655e]">
             {index.updatedLabel}
           </p>
         </>

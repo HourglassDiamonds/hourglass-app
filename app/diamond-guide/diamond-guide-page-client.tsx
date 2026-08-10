@@ -152,7 +152,7 @@ export default function DiamondGuidePageClient() {
 
       <section className="border-b border-[#e4dbcf] pb-[64px] pt-[78px] md:pb-[80px] md:pt-[94px]">
         <div className="mx-auto max-w-[720px] px-6 text-center md:px-10">
-          <div className="text-[11px] uppercase tracking-[0.34em] text-[#9a9084]">
+          <div className="text-[11px] uppercase tracking-[0.34em] text-[#6d655e]">
             Diamond Guide
           </div>
 
@@ -230,7 +230,7 @@ export default function DiamondGuidePageClient() {
           className="border-b border-[#e4dbcf] py-[104px] md:py-[124px]"
         >
           <div className="mx-auto max-w-[760px] text-center">
-            <div className="text-[11px] uppercase tracking-[0.34em] text-[#9a9084]">
+            <div className="text-[11px] uppercase tracking-[0.34em] text-[#6d655e]">
               Popular Guides
             </div>
 
@@ -259,7 +259,7 @@ export default function DiamondGuidePageClient() {
 
         <RevealOnScroll as="section" className="border-b border-[#e4dbcf] py-[108px] md:py-[128px]">
           <div className="mx-auto max-w-[760px] text-center">
-            <div className="text-[11px] uppercase tracking-[0.34em] text-[#9a9084]">
+            <div className="text-[11px] uppercase tracking-[0.34em] text-[#6d655e]">
               Browse the Guide
             </div>
 
@@ -300,7 +300,7 @@ export default function DiamondGuidePageClient() {
 
                   <Link
                     href={section.href}
-                    className="px-2 py-[0.72rem] text-[11px] uppercase tracking-[0.3em] text-[#8d8378] transition duration-300 hover:text-[#5f5851]"
+                    className="px-2 py-[0.72rem] text-[11px] uppercase tracking-[0.3em] text-[#6d655e] transition duration-300 hover:text-[#5f5851]"
                   >
                     View All →
                   </Link>
@@ -312,7 +312,7 @@ export default function DiamondGuidePageClient() {
 
         <RevealOnScroll as="section" className="py-[108px] md:py-[128px]">
           <div className="mx-auto max-w-[760px] text-center">
-            <div className="text-[11px] uppercase tracking-[0.34em] text-[#9a9084]">
+            <div className="text-[11px] uppercase tracking-[0.34em] text-[#6d655e]">
               A More Considered Way to Research
             </div>
 

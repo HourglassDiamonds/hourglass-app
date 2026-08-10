@@ -21,7 +21,7 @@ export default function ProportionDiagram({
   return (
     <svg
       viewBox="0 0 120 160"
-      className="h-auto w-full max-w-[140px] text-[#8a8177]"
+      className="h-auto w-full max-w-[140px] text-[#6d655e]"
       aria-hidden
     >
       <path

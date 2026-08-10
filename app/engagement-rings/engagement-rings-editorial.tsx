@@ -99,7 +99,7 @@ export default function EngagementRingsEditorial() {
           </div>
 
           <div className="col-span-12 min-w-0 md:col-span-6 md:col-start-7 md:pt-1">
-            <p className="text-[10px] uppercase tracking-[0.28em] text-[#8a8177]">
+            <p className="text-[10px] uppercase tracking-[0.28em] text-[#6d655e]">
               A guided process
             </p>
 
@@ -109,7 +109,7 @@ export default function EngagementRingsEditorial() {
                   key={step.label}
                   className="border-b border-[#e4dbcf] py-5 md:py-[1.35rem]"
                 >
-                  <div className="text-[10px] uppercase tracking-[0.26em] text-[#8a8177]">
+                  <div className="text-[10px] uppercase tracking-[0.26em] text-[#6d655e]">
                     {step.label}
                   </div>
                   <p className="mt-2.5 max-w-[36rem] text-[0.95rem] leading-[1.78] text-[#5f5851] md:text-[0.96rem]">
@@ -125,7 +125,7 @@ export default function EngagementRingsEditorial() {
       <section className="border-b border-[#e4dbcf]/75 bg-[#ebe4da]/40 py-[56px] md:py-[72px] lg:py-[88px]">
         <div className={`${LOWER_GRID} md:items-start`}>
           <div className="col-span-12 md:col-span-4">
-            <div className="text-[10px] uppercase tracking-[0.28em] text-[#8a8177]">
+            <div className="text-[10px] uppercase tracking-[0.28em] text-[#6d655e]">
               Judgment Before Inventory
             </div>
             <h2

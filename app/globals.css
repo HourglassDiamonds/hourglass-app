@@ -13,12 +13,16 @@
   --hg-surface-soft: rgba(255, 255, 255, 0.42);
   --hg-surface-dark: #2b2723; /* alias of charcoal for dark panels/CTAs */
 
-  /* Ink */
+  /* Ink
+     P0-4 (WCAG 1.4.3): muted/eyebrow darkened to hold ≥4.5:1 for small text
+     on the darkest light surface they appear over (#ede6dc–#efe8de).
+     muted  #756b61 → #70665d (4.28:1 → 4.61:1 on ivory)
+     eyebrow #8a8177 → #6e665f (3.14:1 → 4.63:1 on ivory) */
   --hg-ink: #1c1b1a;
   --hg-charcoal: #2b2723;
-  --hg-muted: #756b61;
+  --hg-muted: #70665d;
   --hg-ink-muted: var(--hg-muted);
-  --hg-eyebrow: #8a8177;
+  --hg-eyebrow: #6e665f;
 
   /* Lines / borders */
   --hg-line: #e4dbcf;
@@ -143,8 +147,9 @@ body {
     border-radius: 6px;
   }
 
-  /* Skip-link target — programmatic focus only; no ring on the region. */
-  #main-content:focus {
+  /* Skip-link targets — programmatic focus only; no ring on the region. */
+  #main-content:focus,
+  #hg-page-content:focus {
     outline: none;
   }
 }
@@ -174,9 +179,11 @@ body {
 /* ── Luxury motion pass ── */
 
 /* Pass 3.5 — content is *uncovered by changing light*, not flown in.
-   Starts nearly legible (0.92) so delayed JS never hides copy. */
+   P0-4 (WCAG 1.4.3): the pre-reveal state no longer dims text (was 0.92) —
+   opacity dilution pushed borderline muted copy below 4.5:1 while waiting
+   for the intersection observer. Blur + translate carry the motion. */
 .luxury-reveal {
-  opacity: 0.92;
+  opacity: 1;
   transform: translateY(var(--hg-motion-distance-sm));
   filter: blur(1.5px);
   transition:
@@ -201,7 +208,7 @@ body {
 }
 
 .luxury-reveal--stagger > * {
-  opacity: 0.92;
+  opacity: 1;
   transform: translateY(var(--hg-motion-distance-sm));
   filter: blur(1.5px);
   transition:

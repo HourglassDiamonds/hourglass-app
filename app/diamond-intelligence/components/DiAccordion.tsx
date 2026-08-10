@@ -30,13 +30,13 @@ export default function DiAccordion({
             {title}
           </span>
           {description && !open ? (
-            <span className="mt-1.5 block text-[0.9rem] leading-[1.65] text-[#8a8177]">
+            <span className="mt-1.5 block text-[0.9rem] leading-[1.65] text-[#6d655e]">
               {description}
             </span>
           ) : null}
         </span>
         <span
-          className={`mt-1 shrink-0 text-[#948a80] transition-transform duration-300 ${
+          className={`mt-1 shrink-0 text-[#6d655e] transition-transform duration-300 ${
             open ? "rotate-180" : ""
           }`}
           aria-hidden

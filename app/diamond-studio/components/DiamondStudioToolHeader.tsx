@@ -17,7 +17,7 @@ export default function DiamondStudioToolHeader({
         {title}
       </h1>
       {subhead ? (
-        <p className="mx-auto mt-1 max-w-[32rem] px-2 text-[10.5px] leading-[1.5] tracking-[0.03em] text-[var(--hg-muted,#756b61)]">
+        <p className="mx-auto mt-1 max-w-[32rem] px-2 text-[10.5px] leading-[1.5] tracking-[0.03em] text-[var(--hg-muted,#70665d)]">
           {subhead}
         </p>
       ) : null}

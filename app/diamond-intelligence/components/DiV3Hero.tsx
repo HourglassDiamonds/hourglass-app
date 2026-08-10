@@ -100,7 +100,7 @@ export default function DiV3Hero({
             </p>
 
             {hero.opticalPerformanceLine || hero.opticalDetailLine ? (
-              <div className="mx-auto mt-8 max-w-[520px] space-y-2 text-[14px] leading-[1.6] text-[#8a8177] md:mt-10">
+              <div className="mx-auto mt-8 max-w-[520px] space-y-2 text-[14px] leading-[1.6] text-[#6d655e] md:mt-10">
                 {hero.opticalPerformanceLine ? (
                   <p>{hero.opticalPerformanceLine}</p>
                 ) : null}

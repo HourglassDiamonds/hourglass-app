@@ -182,7 +182,7 @@ export default function GuidedReportCompletion({
           {fieldsToAsk.map((key) => (
             <label
               key={key}
-              className="block text-[9px] uppercase tracking-[0.24em] text-[#948a80]"
+              className="block text-[9px] uppercase tracking-[0.24em] text-[#6d655e]"
             >
               {CLIENT_FIELD_LABELS[key]}
               {key === "girdle" ? (
@@ -235,7 +235,7 @@ export default function GuidedReportCompletion({
           </p>
         ))}
 
-        <p className="mt-2 text-[10px] leading-snug text-[#948a80]">
+        <p className="mt-2 text-[10px] leading-snug text-[#6d655e]">
           For this interpretation only — not a laboratory grade.
         </p>
 

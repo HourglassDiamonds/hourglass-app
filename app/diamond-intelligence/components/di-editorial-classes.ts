@@ -27,7 +27,7 @@ export const DI_EYEBROW_ACCENT =
   "text-[10px] uppercase tracking-[0.32em] text-[#a8926a]";
 
 export const DI_EYEBROW_MUTED =
-  "text-[10px] uppercase tracking-[0.28em] text-[#b0a698]";
+  "text-[10px] uppercase tracking-[0.28em] text-[#756a5f]";
 
 export const DI_HEADLINE_SERIF =
   "font-serif font-normal tracking-[-0.025em] text-[#1f1d1a]";
@@ -50,10 +50,10 @@ export const DI_BODY_LARGE =
   "text-[1.08rem] leading-[1.82] text-[#5f5851] md:text-[1.15rem] md:leading-[1.86]";
 
 export const DI_BODY_MUTED =
-  "text-[0.94rem] leading-[1.75] text-[#8a8177]";
+  "text-[0.94rem] leading-[1.75] text-[#6d655e]";
 
 export const DI_CAPTION =
-  "text-[11px] leading-[1.65] tracking-[0.02em] text-[#948a80]";
+  "text-[11px] leading-[1.65] tracking-[0.02em] text-[#6d655e]";
 
 export const DI_LINK =
   "text-[#6b5048] underline underline-offset-4 transition-colors hover:text-[#1f1d1a]";

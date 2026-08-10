@@ -27,7 +27,7 @@ export default function DiamondStudioSuiteNavStyles() {
         font-weight:500;
         letter-spacing:0.14em;
         text-transform:uppercase;
-        color:color-mix(in srgb, var(--hg-muted, #756b61) 78%, var(--hg-ink, #1c1b1a));
+        color:color-mix(in srgb, var(--hg-muted, #70665d) 78%, var(--hg-ink, #1c1b1a));
         line-height:1.2;
         text-align:center;
         user-select:none;
@@ -77,7 +77,7 @@ export default function DiamondStudioSuiteNavStyles() {
         display:inline;
         font-size:10px; font-weight:500; letter-spacing:0.07em;
         text-transform:uppercase;
-        color:color-mix(in srgb, var(--hg-muted, #756b61) 88%, var(--hg-ink, #1c1b1a));
+        color:color-mix(in srgb, var(--hg-muted, #70665d) 88%, var(--hg-ink, #1c1b1a));
         white-space:nowrap;
         line-height:1.25;
         text-decoration:none;
@@ -93,7 +93,9 @@ export default function DiamondStudioSuiteNavStyles() {
         font-weight:400;
         letter-spacing:0.04em;
         text-transform:none;
-        color:color-mix(in srgb, var(--hg-muted, #756b61) 72%, #fff);
+        /* P0-4 (WCAG 1.4.3): was muted mixed 72% toward #fff (~2.5:1 on the
+           parchment bar); full muted token holds ≥4.5:1 at this tiny size. */
+        color:var(--hg-muted, #70665d);
         line-height:1.2;
         white-space:nowrap;
       }
@@ -108,7 +110,7 @@ export default function DiamondStudioSuiteNavStyles() {
         letter-spacing:0.07em;
       }
       .dts-topnav-item.is-active .dts-topnav-desc{
-        color:color-mix(in srgb, var(--hg-muted, #756b61) 70%, var(--hg-ink, #1c1b1a));
+        color:color-mix(in srgb, var(--hg-muted, #70665d) 70%, var(--hg-ink, #1c1b1a));
       }
       .dts-topnav-item.is-active .dts-topnav-hit::after{
         content:"";
@@ -178,10 +180,10 @@ export default function DiamondStudioSuiteNavStyles() {
         color:var(--hg-ink, #1c1b1a);
       }
       .dts-topnav-item.is-idle:hover .dts-topnav-desc{
-        color:color-mix(in srgb, var(--hg-muted, #756b61) 80%, var(--hg-ink, #1c1b1a));
+        color:color-mix(in srgb, var(--hg-muted, #70665d) 80%, var(--hg-ink, #1c1b1a));
       }
       .dts-topnav-item.is-soon .dts-topnav-hit{
-        color:color-mix(in srgb, var(--hg-muted, #756b61) 62%, #fff);
+        color:color-mix(in srgb, var(--hg-muted, #70665d) 62%, #fff);
         cursor:default;
         pointer-events:none;
         border-color:transparent;

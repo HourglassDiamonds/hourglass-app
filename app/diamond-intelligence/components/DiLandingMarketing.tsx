@@ -18,7 +18,7 @@ export function DiSuiteToolIntro() {
         title="Analyze Sparkle"
         subhead="Upload an original GIA, IGI, or GCAL grading report for independent interpretation before you decide."
       />
-      <p className="mx-auto mt-2 max-w-[36rem] text-center text-[10px] uppercase tracking-[0.22em] text-[#948a80]">
+      <p className="mx-auto mt-2 max-w-[36rem] text-center text-[10px] uppercase tracking-[0.22em] text-[#6d655e]">
         Diamond Intelligence · Private · No sales pressure
       </p>
     </header>
@@ -35,7 +35,7 @@ export function TrustPrivacyBand() {
         {TRUST_ITEMS.map((item, index) => (
           <li
             key={item}
-            className={`px-1 text-center text-[10px] uppercase leading-snug tracking-[0.26em] text-[#8a8177] sm:tracking-[0.28em] ${
+            className={`px-1 text-center text-[10px] uppercase leading-snug tracking-[0.26em] text-[#6d655e] sm:tracking-[0.28em] ${
               index > 0
                 ? "md:border-l md:border-[#e4dbcf]/70 md:px-4 lg:px-6"
                 : "md:px-4 lg:px-6"

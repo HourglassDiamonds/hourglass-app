@@ -44,7 +44,7 @@ function ProfileDimension({
           {score !== null &&
           score !== undefined &&
           label === "Optical Performance" ? (
-            <span className="ml-1.5 font-normal text-[#948a80]">
+            <span className="ml-1.5 font-normal text-[#6d655e]">
               ({Math.round(score)})
             </span>
           ) : null}
@@ -270,7 +270,7 @@ export default function DiTechnicalAccordions({
                   "Certain light leakage, obstruction, or patterning behaviors",
                 ].map((item) => (
                   <li key={item} className={`${DI_BODY} flex gap-2 text-[0.92rem]`}>
-                    <span className="mt-[0.5em] h-1 w-1 shrink-0 rounded-full bg-[#948a80]" />
+                    <span className="mt-[0.5em] h-1 w-1 shrink-0 rounded-full bg-[#6d655e]" />
                     {item}
                   </li>
                 ))}

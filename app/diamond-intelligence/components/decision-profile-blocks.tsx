@@ -38,13 +38,13 @@ export function ProfileDimensionRow({
   subdued?: boolean;
 }) {
   const labelClass = subdued
-    ? "text-[9px] uppercase tracking-[0.2em] text-[#b0a698]"
-    : "text-[10px] uppercase tracking-[0.22em] text-[#948a80]";
+    ? "text-[9px] uppercase tracking-[0.2em] text-[#756a5f]"
+    : "text-[10px] uppercase tracking-[0.22em] text-[#6d655e]";
   const bandClass = subdued
     ? "text-[0.88rem] font-medium tracking-[-0.01em] text-[#6f665d]"
     : "text-right text-[0.94rem] font-medium tracking-[-0.01em] text-[#1f1d1a]";
   const bodyClass = subdued
-    ? "mt-2 text-[12px] leading-[1.65] text-[#948a80]"
+    ? "mt-2 text-[12px] leading-[1.65] text-[#6d655e]"
     : "mt-2 text-[13px] leading-[1.7] text-[#5f5851]";
 
   return (
@@ -56,7 +56,7 @@ export function ProfileDimensionRow({
           {score !== null &&
           score !== undefined &&
           label === "Optical Performance" ? (
-            <span className="ml-1.5 text-[11px] font-normal text-[#b0a698]">
+            <span className="ml-1.5 text-[11px] font-normal text-[#756a5f]">
               ({Math.round(score)})
             </span>
           ) : null}

@@ -14,7 +14,7 @@
   --ledger-soft: #fbf8f1;
   --ledger-ink: #171717;
   --ledger-body: #2c2a27;
-  --ledger-muted: #6f6a63;
+  --ledger-muted: #6d655e;
   --ledger-label: #5f5a54;
   --ledger-rule: rgba(32, 28, 24, 0.1);
   --ledger-rule-soft: rgba(32, 28, 24, 0.08);
@@ -71,7 +71,7 @@
   font-size: 10px;
   letter-spacing: 0.34em;
   text-transform: uppercase;
-  color: #8a8177;
+  color: #6d655e;
 }
 
 .ledger-index-breadcrumb a {

@@ -45,7 +45,7 @@ function RelatedResourceCard({
         });
       }}
     >
-      <p className="text-[10px] uppercase tracking-[0.3em] text-[#8a8177]">
+      <p className="text-[10px] uppercase tracking-[0.3em] text-[#6d655e]">
         {link.eyebrow}
       </p>
       <h3 className="mt-3 font-serif text-[1.2rem] font-normal tracking-[-0.02em] text-[#1f1d1a] underline decoration-transparent underline-offset-[0.35em] transition-[color,text-decoration-color] duration-300 group-hover:decoration-[#cbbda9]/85">
@@ -85,16 +85,16 @@ export default function EpisodePageClient({ episode }: EpisodePageClientProps) {
         <article>
           <header className="border-b border-[#e4dbcf] pb-[56px] pt-[56px] md:pb-[72px] md:pt-[72px]">
             <div className="mx-auto max-w-[760px] text-center">
-              <p className="text-[10px] uppercase tracking-[0.34em] text-[#8a8177]">
+              <p className="text-[10px] uppercase tracking-[0.34em] text-[#6d655e]">
                 {episode.eyebrow}
               </p>
               {episodeLabel || episode.topicLabel ? (
-                <p className="mt-4 text-[0.78rem] tracking-[0.04em] text-[#756b61]">
+                <p className="mt-4 text-[0.78rem] tracking-[0.04em] text-[#70665d]">
                   {[episodeLabel, episode.topicLabel].filter(Boolean).join(" · ")}
                 </p>
               ) : null}
               {episode.status === "draft" ? (
-                <p className="mt-4 text-[10px] uppercase tracking-[0.28em] text-[#8a8177]">
+                <p className="mt-4 text-[10px] uppercase tracking-[0.28em] text-[#6d655e]">
                   Draft preview — local review only
                 </p>
               ) : null}
@@ -107,7 +107,7 @@ export default function EpisodePageClient({ episode }: EpisodePageClientProps) {
               <p className="mx-auto mt-6 max-w-[40rem] text-[1.05rem] leading-[1.85] text-[#615a53]">
                 {episode.summary}
               </p>
-              <div className="mt-7 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-[0.8rem] tracking-[0.02em] text-[#8a8177]">
+              <div className="mt-7 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-[0.8rem] tracking-[0.02em] text-[#6d655e]">
                 {publishedLabel ? <span>{publishedLabel}</span> : null}
                 {publishedLabel && episode.durationLabel ? (
                   <span aria-hidden>·</span>
@@ -130,7 +130,7 @@ export default function EpisodePageClient({ episode }: EpisodePageClientProps) {
             className="border-b border-[#e4dbcf] py-[72px] md:py-[96px]"
           >
             <div className="mx-auto max-w-[680px]">
-              <p className="text-[10px] uppercase tracking-[0.34em] text-[#8a8177]">
+              <p className="text-[10px] uppercase tracking-[0.34em] text-[#6d655e]">
                 The Central Idea
               </p>
               <p
@@ -147,7 +147,7 @@ export default function EpisodePageClient({ episode }: EpisodePageClientProps) {
             className="border-b border-[#e4dbcf] py-[72px] md:py-[96px]"
           >
             <div className="mx-auto max-w-[880px]">
-              <p className="text-center text-[10px] uppercase tracking-[0.34em] text-[#8a8177]">
+              <p className="text-center text-[10px] uppercase tracking-[0.34em] text-[#6d655e]">
                 Three Key Ideas
               </p>
               <ol className="mt-12 space-y-0">
@@ -179,7 +179,7 @@ export default function EpisodePageClient({ episode }: EpisodePageClientProps) {
               className="border-b border-[#e4dbcf] py-[72px] md:py-[96px]"
             >
               <div className="mx-auto max-w-[680px]">
-                <p className="text-[10px] uppercase tracking-[0.34em] text-[#8a8177]">
+                <p className="text-[10px] uppercase tracking-[0.34em] text-[#6d655e]">
                   Transcript
                 </p>
                 <h2
@@ -226,7 +226,7 @@ export default function EpisodePageClient({ episode }: EpisodePageClientProps) {
               className="border-b border-[#e4dbcf] py-[72px] md:py-[88px]"
             >
               <div className="mx-auto max-w-[880px]">
-                <p className="text-center text-[10px] uppercase tracking-[0.34em] text-[#8a8177]">
+                <p className="text-center text-[10px] uppercase tracking-[0.34em] text-[#6d655e]">
                   Continue Exploring
                 </p>
                 <div className="mt-10 grid md:grid-cols-2">

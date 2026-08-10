@@ -156,7 +156,7 @@
   max-width: var(--ledger-editorial-width, 880px);
   font-size: 0.88rem;
   line-height: 1.64;
-  color: var(--ledger-muted, #6f6a63);
+  color: var(--ledger-muted, #6d655e);
 }
 
 @media (max-width: 800px) {

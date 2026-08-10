@@ -613,7 +613,7 @@ export default function LightPerformanceDashboard({
             </div>
           ) : null}
           {metadata.reportNumber ? (
-            <p className="mx-auto mb-6 max-w-[960px] text-center text-[11px] uppercase tracking-[0.14em] text-[#9b8b78]">
+            <p className="mx-auto mb-6 max-w-[960px] text-center text-[11px] uppercase tracking-[0.14em] text-[#766a58]">
               Current Report · {metadata.lab} {metadata.reportNumber}
             </p>
           ) : null}
@@ -697,14 +697,14 @@ export default function LightPerformanceDashboard({
       interpretationSummary &&
       metadata &&
       fields ? (
-        <footer className="mx-auto mt-12 max-w-[960px] border-t border-[rgba(181,150,98,0.16)] py-7 text-[10px] leading-relaxed text-[#9b8b78]">
+        <footer className="mx-auto mt-12 max-w-[960px] border-t border-[rgba(181,150,98,0.16)] py-7 text-[10px] leading-relaxed text-[#766a58]">
           <p>{CONSUMER_COPY.betaDisclosure}</p>
           <p className="mt-2">
             {CONSUMER_COPY.betaDisclosureOutreachPrefix}{" "}
             <ConsultationCtaLink
               href={buildConciergeHrefFromDiamondIntelligence(reportContext)}
               location="diamond_intelligence:result_footer"
-              className="text-[#8b735b] underline decoration-[rgba(181,150,98,0.4)] underline-offset-[3px] transition-colors hover:text-[#5f5851]"
+              className="text-[#75603f] underline decoration-[rgba(181,150,98,0.4)] underline-offset-[3px] transition-colors hover:text-[#5f5851]"
             >
               {CONSUMER_COPY.betaDisclosureConciergeLinkLabel}
             </ConsultationCtaLink>

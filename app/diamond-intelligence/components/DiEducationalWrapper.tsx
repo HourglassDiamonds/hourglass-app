@@ -229,7 +229,7 @@ export default function DiEducationalWrapper() {
         >
           <h2
             id="di-cert-reading-heading"
-            className="text-[9px] font-normal uppercase tracking-[0.38em] text-[#9a9084]"
+            className="text-[9px] font-normal uppercase tracking-[0.38em] text-[#6d655e]"
           >
             Further reading
           </h2>

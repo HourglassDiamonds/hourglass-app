@@ -4,7 +4,7 @@ export const DI_EDITORIAL_CARD =
   "rounded-[28px] border border-[rgba(181,150,98,0.22)] bg-[rgba(251,247,239,0.72)] shadow-[0_18px_56px_rgba(30,26,22,0.045)]";
 
 export const DI_EYEBROW_STUDIO =
-  "text-[10px] font-semibold uppercase tracking-[0.28em] text-[#8b735b]";
+  "text-[10px] font-semibold uppercase tracking-[0.28em] text-[#75603f]";
 
 export const DI_SERIF_HEADLINE = "font-serif text-[#211a16]";
 

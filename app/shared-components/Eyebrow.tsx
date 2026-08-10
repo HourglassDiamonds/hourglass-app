@@ -20,7 +20,7 @@ const SIZE_CLASS: Record<NonNullable<EyebrowProps["size"]>, string> = {
 /**
  * Canonical Hourglass eyebrow label.
  * Consolidates the hand-rolled `text-[10/11px] uppercase tracking-[0.34em]
- * text-[#8a8177]` pattern (283 call sites at audit time). Pass `className`
+ * text-[#6d655e]` pattern (283 call sites at audit time). Pass `className`
  * for contextual color/tracking overrides (e.g. dark surfaces) rather than
  * adding variants here.
  */

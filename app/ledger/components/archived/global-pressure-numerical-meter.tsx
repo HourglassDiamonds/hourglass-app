@@ -16,14 +16,14 @@ import "../../global-pressure-index.css";
 const GPI_LABEL =
   "gpi-label ledger-index-label font-sans text-[11px] uppercase tracking-[0.13em]";
 const SCALE_LABEL =
-  "font-sans text-[10px] uppercase tracking-[0.08em] text-[#6f6a63]";
+  "font-sans text-[10px] uppercase tracking-[0.08em] text-[#6d655e]";
 const INNER_PILL =
   "rounded-[14px] border border-black/[0.08] bg-[#f7f2e8] p-[13px]";
 const GPI_INNER_CARD = "ledger-index-inner-card";
 const CONTENT_WIDTH = "mx-auto w-full max-w-[920px]";
 const GPI_CONTENT_WIDTH = "w-full";
 const LABEL =
-  "font-sans text-[10px] uppercase tracking-[0.16em] text-[#6f6a63]";
+  "font-sans text-[10px] uppercase tracking-[0.16em] text-[#6d655e]";
 
 type ArchivedGlobalPressureNumericalMeterProps = {
   index: LedgerIndexDefinition;
@@ -148,7 +148,7 @@ function MainReadingRow({
         <p className={`gpi-delta-note mt-[9px] ${labelCls}`}>{index.status}</p>
         {index.weeklyDeltaExplanation ? (
           <p
-            className="gpi-delta-explanation mt-2.5 max-w-none text-left text-[0.8rem] leading-[1.55] normal-case tracking-normal text-[#6f6a63] sm:max-w-[18rem] sm:text-right"
+            className="gpi-delta-explanation mt-2.5 max-w-none text-left text-[0.8rem] leading-[1.55] normal-case tracking-normal text-[#6d655e] sm:max-w-[18rem] sm:text-right"
             role="note"
           >
             {index.weeklyDeltaExplanation}
@@ -201,8 +201,8 @@ function MeterCard({
       <p
         className={
           compact
-            ? "mt-6 border-t border-black/[0.08] pt-5 text-[0.95rem] leading-[1.78] text-[#6f6a63] md:mt-7 md:pt-5 md:text-[1.02rem]"
-            : "gpi-weekly-signal mt-[22px] border-t border-[rgba(32,28,24,0.08)] pt-[22px] text-[0.96rem] leading-[1.72] text-[#6f6a63]"
+            ? "mt-6 border-t border-black/[0.08] pt-5 text-[0.95rem] leading-[1.78] text-[#6d655e] md:mt-7 md:pt-5 md:text-[1.02rem]"
+            : "gpi-weekly-signal mt-[22px] border-t border-[rgba(32,28,24,0.08)] pt-[22px] text-[0.96rem] leading-[1.72] text-[#6d655e]"
         }
       >
         <strong className="font-semibold text-[#4a4540]">
@@ -410,7 +410,7 @@ export default function ArchivedGlobalPressureNumericalMeter({
           <div className="mt-8 md:mt-10">
             <MeterCard index={index} variant="compact" />
           </div>
-          <p className="mt-5 text-[0.95rem] italic text-[#6f6a63]">
+          <p className="mt-5 text-[0.95rem] italic text-[#6d655e]">
             {index.updatedLabel}
           </p>
         </>

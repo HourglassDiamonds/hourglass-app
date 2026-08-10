@@ -80,7 +80,7 @@ export default function ConciergeIntro() {
             {copy.body}
           </p>
 
-          <p className="mt-5 max-w-[32rem] text-[0.95rem] leading-[1.88] text-[#7a7268] lg:max-w-[28rem]">
+          <p className="mt-5 max-w-[32rem] text-[0.95rem] leading-[1.88] text-[#6d655e] lg:max-w-[28rem]">
             {copy.followUpPrefix}{" "}
             <a
               href="mailto:justin@hourglassdiamonds.com"
@@ -91,7 +91,7 @@ export default function ConciergeIntro() {
             .
           </p>
 
-          <p className="mt-6 max-w-[28rem] text-[0.88rem] leading-[1.75] tracking-[0.01em] text-[#8a8177] md:mt-7">
+          <p className="mt-6 max-w-[28rem] text-[0.88rem] leading-[1.75] tracking-[0.01em] text-[#6d655e] md:mt-7">
             {copy.reassurance}
           </p>
         </div>

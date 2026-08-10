@@ -12,10 +12,10 @@ export const DI_V3_HERO_INNER =
   "relative z-[1] px-[22px] py-[58px] text-center md:px-[42px] md:py-[72px]";
 
 export const DI_V3_HERO_KICKER_BRAND =
-  "font-serif text-[10px] font-medium uppercase tracking-[0.24em] text-[#9b8b78] md:text-[11px] md:tracking-[0.28em]";
+  "font-serif text-[10px] font-medium uppercase tracking-[0.24em] text-[#766a58] md:text-[11px] md:tracking-[0.28em]";
 
 export const DI_V3_HERO_KICKER_PRODUCT =
-  "mt-2 text-[10px] uppercase tracking-[0.16em] text-[#b0a698] md:text-[11px] md:tracking-[0.18em]";
+  "mt-2 text-[10px] uppercase tracking-[0.16em] text-[#756a5f] md:text-[11px] md:tracking-[0.18em]";
 
 export const DI_V3_HERO_WATERMARK =
   "pointer-events-none absolute inset-0 z-0 flex items-center justify-center overflow-hidden";
@@ -89,7 +89,7 @@ export const DI_V3_HERO_TRAIT =
   "mx-auto max-w-[620px] font-serif text-[clamp(21px,3vw,30px)] font-normal leading-[1.25] tracking-[0.02em] text-[#514536]";
 
 export const DI_V3_HERO_PROOF =
-  "mx-auto mt-10 max-w-[480px] border-t border-[rgba(58,48,38,0.12)] pt-7 text-[13px] leading-[1.65] text-[#9b8b78] md:mt-12 md:pt-8";
+  "mx-auto mt-10 max-w-[480px] border-t border-[rgba(58,48,38,0.12)] pt-7 text-[13px] leading-[1.65] text-[#766a58] md:mt-12 md:pt-8";
 
 export const DI_V3_TEXT_CTA =
   "inline-flex items-center gap-2 border-b border-[rgba(181,150,98,0.7)] pb-1 text-sm tracking-[0.04em] text-[#1e1a16] transition-opacity hover:opacity-80";
@@ -100,7 +100,7 @@ export const DI_V3_TEXT_CTA =
  * these cards state what happened, not a verdict.
  */
 export const DI_V3_STATE_EYEBROW =
-  "text-[11px] uppercase tracking-[0.18em] text-[var(--hg-eyebrow,#8a8177)]";
+  "text-[11px] uppercase tracking-[0.18em] text-[var(--hg-eyebrow,#6d655e)]";
 
 export const DI_V3_STATE_TITLE =
   "mt-4 font-serif text-[clamp(26px,4vw,36px)] font-normal leading-[1.16] tracking-[0.005em] text-[#1e1a16]";

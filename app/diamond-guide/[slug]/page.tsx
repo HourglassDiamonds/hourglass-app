@@ -181,7 +181,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
           }`}
         >
           <div className="text-center">
-            <div className="text-[10px] uppercase tracking-[0.34em] text-[#9a9084]">
+            <div className="text-[10px] uppercase tracking-[0.34em] text-[#6d655e]">
               {article.category}
             </div>
 
@@ -234,7 +234,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
                 : "mt-16 pt-10"
             } ${isCohesionArticle ? proseWrapClass : isReferenceArticle ? `mx-auto ${proseWrapClass}` : ""}`}
           >
-            <p className="text-[9px] font-normal uppercase tracking-[0.38em] text-[#9a9084]">
+            <p className="text-[9px] font-normal uppercase tracking-[0.38em] text-[#6d655e]">
               Further reading
             </p>
             <h3 className="mt-2 font-serif text-[1.2rem] font-normal tracking-[-0.02em] text-[#1f1d1a] md:text-[1.28rem]">

@@ -22,7 +22,7 @@ export default function DiV3PartialScreenshotClarity({
 
   return (
     <div className="mx-auto mt-8 max-w-[520px] rounded-[18px] border border-[rgba(181,150,98,0.22)] bg-[rgba(255,255,255,0.28)] px-5 py-6 text-left">
-      <p className="text-[11px] uppercase tracking-[0.16em] text-[#9b8b78]">
+      <p className="text-[11px] uppercase tracking-[0.16em] text-[#766a58]">
         {V3_PARTIAL_SCREENSHOT_CLARITY.eyebrow}
       </p>
       <p className="mt-4 text-[15px] leading-[1.72] text-[#6f665b]">

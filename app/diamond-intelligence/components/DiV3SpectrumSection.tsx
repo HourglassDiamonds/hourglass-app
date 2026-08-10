@@ -28,7 +28,7 @@ export function DiV3ExcludedClarityStatus() {
 
   return (
     <div className="max-w-[620px] rounded-[22px] border border-[rgba(58,48,38,0.22)] bg-[rgba(255,255,255,0.28)] p-6 md:p-8">
-      <p className="text-[11px] uppercase tracking-[0.15em] text-[#9b8b78]">
+      <p className="text-[11px] uppercase tracking-[0.15em] text-[#766a58]">
         {status.title}
       </p>
       <p className="mt-4 font-serif text-[clamp(32px,5vw,44px)] leading-none text-[#1e1a16]">
@@ -83,7 +83,7 @@ export function DiV3StandardSpectrum({
                   {meta.description}
                 </p>
               ) : (
-                <p className="mt-2 max-w-[62ch] text-[13px] leading-[1.6] text-[#8a8177]">
+                <p className="mt-2 max-w-[62ch] text-[13px] leading-[1.6] text-[#6d655e]">
                   {meta.description}
                 </p>
               )}
@@ -92,7 +92,7 @@ export function DiV3StandardSpectrum({
         })}
       </div>
 
-      <p className="mt-7 max-w-[62ch] text-[14px] leading-[1.68] text-[#8a8177]">
+      <p className="mt-7 max-w-[62ch] text-[14px] leading-[1.68] text-[#6d655e]">
         This assessment places the diamond in the{" "}
         {displayV3PublicTierLabel(activeTier)} range — a report-based
         classification, not a substitute for in-person confirmation.
@@ -122,7 +122,7 @@ export function DiV3Gcal8xSpectrum({
   return (
     <>
       <div className="mb-6 rounded-none border border-[rgba(181,150,98,0.22)] bg-[rgba(255,255,255,0.14)] p-5 md:p-6">
-        <p className="mb-5 text-[11px] uppercase tracking-[0.15em] text-[#9b8b78]">
+        <p className="mb-5 text-[11px] uppercase tracking-[0.15em] text-[#766a58]">
           GCAL 8X Performance Class
         </p>
         <div className="grid gap-4 md:grid-cols-2">
@@ -157,7 +157,7 @@ export function DiV3Gcal8xSpectrum({
         </div>
       </div>
 
-      <div className="grid max-w-[62ch] gap-4 text-[14px] leading-[1.68] text-[#8a8177]">
+      <div className="grid max-w-[62ch] gap-4 text-[14px] leading-[1.68] text-[#6d655e]">
         <p>
           GCAL 8X diamonds are measured against an already elite pool — not
           ordinary report-only stones.
@@ -183,14 +183,14 @@ export function DiV3StrengthColumns({
   return (
     <div className="grid gap-10 md:grid-cols-2 md:gap-8">
       <div>
-        <h3 className="mb-4 text-[11px] uppercase tracking-[0.14em] text-[#9b8b78]">
+        <h3 className="mb-4 text-[11px] uppercase tracking-[0.14em] text-[#766a58]">
           What Supports This Read
         </h3>
         <CleanList items={strengths} variant="checks" />
       </div>
       {limitations.length > 0 ? (
         <div>
-          <h3 className="mb-4 text-[11px] uppercase tracking-[0.14em] text-[#b0a698]">
+          <h3 className="mb-4 text-[11px] uppercase tracking-[0.14em] text-[#756a5f]">
             {limitationTitle}
           </h3>
           <CleanList items={limitations} variant="dots" />
@@ -222,7 +222,7 @@ export function DiV3DataGrid({
           key={label}
           className="border-b border-[rgba(58,48,38,0.18)] pb-3"
         >
-          <div className="mb-1.5 text-[11px] uppercase tracking-[0.13em] text-[#9b8b78]">
+          <div className="mb-1.5 text-[11px] uppercase tracking-[0.13em] text-[#766a58]">
             {label}
           </div>
           <div className="font-serif text-2xl leading-tight text-[#1e1a16]">

@@ -388,7 +388,7 @@ export default function HourglassVideoPlayer({
       </div>
 
       {showTemporaryNote ? (
-        <p className="mt-5 text-center text-[0.92rem] leading-[1.7] text-[#8a8177]">
+        <p className="mt-5 text-center text-[0.92rem] leading-[1.7] text-[#6d655e]">
           The finished conversation will play in this frame. Poster and
           transcript are ready for review while the master is prepared.
         </p>

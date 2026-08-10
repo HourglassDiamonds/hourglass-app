@@ -9,7 +9,7 @@ export default function TermsPage() {
 
       <section className="mx-auto max-w-[760px] px-6 py-20 md:px-10 md:py-28">
         
-        <div className="mb-10 text-[11px] uppercase tracking-[0.28em] text-[#8a8178]">
+        <div className="mb-10 text-[11px] uppercase tracking-[0.28em] text-[#6d655e]">
           Terms
         </div>
 

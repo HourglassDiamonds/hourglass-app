@@ -173,7 +173,10 @@ function FeaturedRingSection() {
           <div className="text-[0.96rem] tracking-[-0.02em] text-[#1f1d1a] md:text-[1rem] xl:text-[0.96rem]">
             {title}
           </div>
-          <p className="mt-2.5 text-[10px] uppercase tracking-[0.32em] text-[#8a8176]">
+          <p className="mt-2.5 text-[10px] uppercase tracking-[0.32em] text-[#6d655e]">
+            {/* P0-4 (WCAG 2.4.4): six identical "Explore in Motion" links
+                lead to different designs — hidden card title disambiguates
+                the accessible name without changing visible copy. */}
             <a
               href={href}
               target="_blank"
@@ -181,6 +184,7 @@ function FeaturedRingSection() {
               className="hg-tap transition-colors duration-300 hover:text-[#5e5852]"
             >
               Explore in Motion
+              <span className="sr-only"> — {title}</span>
             </a>
           </p>
           {/* Equal meta height only on the dense 6-up desktop row — tablet
@@ -208,7 +212,7 @@ function FeaturedRingSection() {
         </div>
         <Link
           href="/engagement-rings"
-          className="hg-tap shrink-0 text-[10px] uppercase tracking-[0.32em] text-[#7a7167] transition-colors duration-300 hover:text-[#2b2723]"
+          className="hg-tap shrink-0 text-[10px] uppercase tracking-[0.32em] text-[#6d655e] transition-colors duration-300 hover:text-[#2b2723]"
         >
           Explore Some Designs →
         </Link>
@@ -238,7 +242,7 @@ function ClosingValueSection() {
       <div className="mx-auto flex w-full max-w-3xl flex-col items-center text-center">
         <Link
           href="/our-approach"
-          className="hg-tap text-[11px] uppercase tracking-[0.34em] text-[#8a8177] transition-colors duration-300 hover:text-[#5e5852]"
+          className="hg-tap text-[11px] uppercase tracking-[0.34em] text-[#6d655e] transition-colors duration-300 hover:text-[#5e5852]"
         >
           Our Approach →
         </Link>
@@ -346,7 +350,7 @@ function TestimonialSection() {
         </div>
 
         <div className="relative z-10 flex flex-col justify-center px-8 py-10 md:w-[56%] md:px-11 md:py-12 lg:px-14">
-          <div className="text-[10px] uppercase tracking-[0.34em] text-[#8a8177]">
+          <div className="text-[10px] uppercase tracking-[0.34em] text-[#6d655e]">
             Whispered Praise
           </div>
 
@@ -357,7 +361,7 @@ function TestimonialSection() {
             to find this level of care.”
           </p>
 
-          <div className="mt-6 text-[10px] uppercase tracking-[0.28em] text-[#7d746a]">
+          <div className="mt-6 text-[10px] uppercase tracking-[0.28em] text-[#6a625b]">
             Google Review · KH, California
           </div>
 
@@ -387,7 +391,7 @@ function TestimonialSection() {
         </div>
       </div>
 
-      <p className="mt-8 text-center text-[10px] leading-[1.85] tracking-[0.14em] text-[#8a8176]">
+      <p className="mt-8 text-center text-[10px] leading-[1.85] tracking-[0.14em] text-[#6d655e]">
         Trusted quietly by clients across the country.{" "}
         <WhisperedPraiseLink
           variant="arrow"
@@ -433,7 +437,7 @@ export default function HomePageClient() {
 
           <div className="relative z-10 flex min-h-0 flex-col justify-center px-6 md:min-h-[440px] md:px-10 lg:min-h-[500px]">
             <div className="min-w-0 max-w-[440px]">
-              <div className="text-[11px] uppercase tracking-[0.34em] text-[#8d8275]">
+              <div className="text-[11px] uppercase tracking-[0.34em] text-[#6d655e]">
                 Hourglass Diamonds
               </div>
 
@@ -464,7 +468,7 @@ export default function HomePageClient() {
                   </Button>
                 </CTAGlimmer>
 
-                <p className="mt-3.5 max-w-[28rem] text-[0.78rem] leading-[1.75] tracking-[0.015em] text-[#8a8176] md:mt-5">
+                <p className="mt-3.5 max-w-[28rem] text-[0.78rem] leading-[1.75] tracking-[0.015em] text-[#6d655e] md:mt-5">
                   Guided by Graduate Gemologist Justin Smith.
                 </p>
               </div>

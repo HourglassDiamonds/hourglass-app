@@ -42,7 +42,7 @@ export default function LedgerPage() {
       {/* Hero */}
       <section className="border-b border-[#e4dbcf] pb-20 pt-14 md:pb-24 md:pt-20">
         <div className="mx-auto max-w-[720px] text-center">
-          <p className="text-[10px] uppercase tracking-[0.34em] text-[#8a8177]">
+          <p className="text-[10px] uppercase tracking-[0.34em] text-[#6d655e]">
             The Ledger
           </p>
           <h1
@@ -70,7 +70,7 @@ export default function LedgerPage() {
       {/* Context */}
       <section className="py-16 md:py-20">
         <div className="mx-auto max-w-[720px]">
-          <p className="text-[10px] uppercase tracking-[0.34em] text-[#8a8177]">
+          <p className="text-[10px] uppercase tracking-[0.34em] text-[#6d655e]">
             Why this belongs here
           </p>
           <div className="mt-6 space-y-5 text-[0.95rem] leading-[1.85] text-[#615a53]">
@@ -107,7 +107,7 @@ export default function LedgerPage() {
               key={metric.label}
               className="rounded-sm border border-[#e4dbcf] bg-[#faf7f2]/40 p-6 md:p-7"
             >
-              <p className="text-[10px] uppercase tracking-[0.28em] text-[#8a8176]">
+              <p className="text-[10px] uppercase tracking-[0.28em] text-[#6d655e]">
                 {metric.label}
               </p>
               <p className="mt-3 font-serif text-[1.35rem] font-normal tracking-[-0.02em] text-[#1f1d1a]">
@@ -124,7 +124,7 @@ export default function LedgerPage() {
       {/* What we track */}
       <section className="py-16 md:py-20">
         <div className="mb-10 text-center">
-          <p className="text-[10px] uppercase tracking-[0.3em] text-[#8a8176]">
+          <p className="text-[10px] uppercase tracking-[0.3em] text-[#6d655e]">
             What we track
           </p>
           <h2 className="mt-3 font-serif text-[1.4rem] font-normal tracking-[-0.02em] text-[#1f1d1a] md:text-[1.55rem]">

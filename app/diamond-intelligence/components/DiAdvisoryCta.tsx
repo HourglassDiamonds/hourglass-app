@@ -13,7 +13,7 @@ export default function DiAdvisoryCta({
   return (
     <section className={`${DI_V3_SECTIONS} !mt-6 !gap-0`} aria-label="Concierge review">
       <div className="overflow-hidden rounded-[22px] border border-[rgba(181,150,98,0.28)] bg-[radial-gradient(circle_at_top_left,rgba(181,150,98,0.10),transparent_24rem),rgba(251,247,239,0.82)] px-7 py-10 md:px-10 md:py-12">
-        <p className="text-[11px] uppercase tracking-[0.16em] text-[#9b8b78]">
+        <p className="text-[11px] uppercase tracking-[0.16em] text-[#766a58]">
           Concierge
         </p>
         <h2 className="mt-4 font-serif text-[clamp(26px,3.5vw,34px)] font-normal leading-[1.12] text-[#1e1a16]">
@@ -34,7 +34,7 @@ export default function DiAdvisoryCta({
       </div>
 
       <div className="mt-6 rounded-[18px] border border-[rgba(181,150,98,0.16)] bg-[rgba(255,255,255,0.42)] px-7 py-8 md:px-9 md:py-9">
-        <p className="text-[11px] uppercase tracking-[0.16em] text-[#9b8b78]">
+        <p className="text-[11px] uppercase tracking-[0.16em] text-[#766a58]">
           {CONSUMER_COPY.beyondTheReportTitle}
         </p>
         <p className="mt-4 max-w-2xl font-serif text-[clamp(20px,2.6vw,24px)] leading-[1.35] text-[#1e1a16]">

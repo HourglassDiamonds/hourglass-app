@@ -37,13 +37,13 @@ export default function DiamondHeroNarrative({
       />
 
       <div className="border-t border-[#ebe4da]/50 pt-5">
-        <p className="text-[10px] uppercase tracking-[0.28em] text-[#948a80]">
+        <p className="text-[10px] uppercase tracking-[0.28em] text-[#6d655e]">
           Optical interpretation
         </p>
         <p className="mt-3 max-w-md font-serif text-[1.15rem] font-normal leading-[1.48] tracking-[-0.015em] text-[#1f1d1a] md:text-[1.22rem] md:leading-[1.52]">
           {interpretationSummary}
         </p>
-        <p className="mt-4 max-w-sm text-[12px] leading-[1.68] text-[#948a80]">
+        <p className="mt-4 max-w-sm text-[12px] leading-[1.68] text-[#6d655e]">
           Interpretation only — not a laboratory grade. Justin can review
           this diamond with you before you decide.
         </p>

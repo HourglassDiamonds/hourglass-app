@@ -60,18 +60,33 @@ function BrandMark() {
 
 export default function Header({ currentPage = "" }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
+  const menuButtonRef = React.useRef<HTMLButtonElement>(null);
 
   React.useEffect(() => {
     if (!mobileMenuOpen) return;
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setMobileMenuOpen(false);
+      if (event.key === "Escape") {
+        setMobileMenuOpen(false);
+        // WCAG 2.4.3: return focus to the disclosure toggle when Escape closes the menu.
+        menuButtonRef.current?.focus();
+      }
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [mobileMenuOpen]);
 
   return (
-    <header className="sticky top-0 z-50 w-full max-w-[100vw] overflow-x-clip overflow-y-visible border-b border-hg-line/55 bg-hg-ivory/88 backdrop-blur-[10px] supports-[backdrop-filter]:bg-hg-ivory/78">
+    <>
+      {/* Skip link lives with the header so activating it lands *after* the
+          repeated navigation (WCAG 2.4.1). The header renders inside <main>
+          on every page, so targeting the layout-level <main> cannot bypass it. */}
+      <a
+        href="#hg-page-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:inline-flex focus:min-h-11 focus:items-center focus:rounded-full focus:border focus:border-hg-line focus:bg-hg-ivory focus:px-5 focus:py-3 focus:text-[12px] focus:tracking-[0.04em] focus:text-hg-ink focus:shadow-hg-lifted"
+      >
+        Skip to main content
+      </a>
+      <header className="sticky top-0 z-50 w-full max-w-[100vw] overflow-x-clip overflow-y-visible border-b border-hg-line/55 bg-hg-ivory/88 backdrop-blur-[10px] supports-[backdrop-filter]:bg-hg-ivory/78">
       {/* Desktop nav from `lg` (1024px) — six nowrap links crowd the bar at
           768–1023px (audit Pass 2 / mobile deep-dive). */}
       <div className="relative mx-auto box-border flex w-full min-w-0 max-w-[1200px] flex-wrap items-center justify-between gap-x-4 gap-y-0 px-0 py-3.5 lg:flex-nowrap lg:items-end lg:gap-8 lg:py-0 lg:pb-6 lg:pt-7">
@@ -85,6 +100,7 @@ export default function Header({ currentPage = "" }: HeaderProps) {
 
         <div className="relative z-[55] shrink-0 lg:hidden">
           <button
+            ref={menuButtonRef}
             type="button"
             aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
             aria-expanded={mobileMenuOpen}
@@ -130,9 +146,8 @@ export default function Header({ currentPage = "" }: HeaderProps) {
         </nav>
 
         {mobileMenuOpen ? (
-          <div
+          <nav
             id="hg-mobile-nav"
-            role="menu"
             aria-label="Mobile navigation"
             className="z-[80] mt-4 w-full min-w-0 basis-full overflow-hidden rounded-hg-panel border border-hg-line bg-[#f6f2eb]/95 shadow-hg-lifted ring-1 ring-[#e6ddd1]/60 backdrop-blur-[12px] lg:hidden"
           >
@@ -142,7 +157,7 @@ export default function Header({ currentPage = "" }: HeaderProps) {
               </p>
             </div>
 
-            <div className="border-t border-hg-line/80">
+            <ul className="border-t border-hg-line/80">
               {NAV_ITEMS.map((item) => {
                 const key = item.href.replace("/", "");
                 const isActive = currentPage === key;
@@ -154,34 +169,37 @@ export default function Header({ currentPage = "" }: HeaderProps) {
 
                 if (item.href === "/concierge") {
                   return (
-                    <ConsultationCtaLink
-                      key={item.href}
-                      location="header:nav"
-                      role="menuitem"
-                      onClick={() => setMobileMenuOpen(false)}
-                      className={className}
-                    >
-                      {item.label}
-                    </ConsultationCtaLink>
+                    <li key={item.href}>
+                      <ConsultationCtaLink
+                        location="header:nav"
+                        onClick={() => setMobileMenuOpen(false)}
+                        className={className}
+                      >
+                        {item.label}
+                      </ConsultationCtaLink>
+                    </li>
                   );
                 }
 
                 return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    role="menuitem"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className={className}
-                  >
-                    {item.label}
-                  </Link>
+                  <li key={item.href}>
+                    <Link
+                      href={item.href}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={className}
+                    >
+                      {item.label}
+                    </Link>
+                  </li>
                 );
               })}
-            </div>
-          </div>
+            </ul>
+          </nav>
         ) : null}
       </div>
-    </header>
+      </header>
+      {/* Skip-link destination: focus lands here, immediately past the header. */}
+      <div id="hg-page-content" tabIndex={-1} />
+    </>
   );
 }

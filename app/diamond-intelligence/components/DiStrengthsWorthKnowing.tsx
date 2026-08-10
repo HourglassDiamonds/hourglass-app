@@ -61,7 +61,7 @@ export default function DiStrengthsWorthKnowing({
                   className={`${DI_BODY} flex gap-3 text-[0.98rem]`}
                 >
                   <span
-                    className="mt-[0.55em] h-1 w-1 shrink-0 rounded-full bg-[#948a80]"
+                    className="mt-[0.55em] h-1 w-1 shrink-0 rounded-full bg-[#6d655e]"
                     aria-hidden
                   />
                   <span>{item}</span>

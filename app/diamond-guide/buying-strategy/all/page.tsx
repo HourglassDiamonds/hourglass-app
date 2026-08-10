@@ -82,7 +82,7 @@ export default function BuyingStrategyAllPage() {
 
         <section className="border-b border-[#e4dbcf] pb-[70px] pt-[80px] md:pb-[90px] md:pt-[95px]">
           <div className="mx-auto max-w-[720px] text-center">
-            <div className="text-[11px] uppercase tracking-[0.34em] text-[#9a9084]">
+            <div className="text-[11px] uppercase tracking-[0.34em] text-[#6d655e]">
               Diamond Guide / Buying Strategy
             </div>
 

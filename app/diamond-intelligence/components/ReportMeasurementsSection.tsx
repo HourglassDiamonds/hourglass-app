@@ -45,7 +45,7 @@ export default function ReportMeasurementsSection({
       <p className="text-[9px] font-semibold uppercase tracking-[0.22em] text-[#c4bbb2]">
         {CONSUMER_COPY.reportMeasurementsTitle}
       </p>
-      <div className="mt-3 max-w-3xl text-[10px] leading-[1.6] text-[#b0a698]">
+      <div className="mt-3 max-w-3xl text-[10px] leading-[1.6] text-[#756a5f]">
         <p className="mb-2">{CONSUMER_COPY.reportMeasurementsSubcopy}</p>
         <p>{lines.filter((l) => !l.endsWith(": —")).join(" · ")}</p>
       </div>

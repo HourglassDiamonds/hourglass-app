@@ -95,7 +95,7 @@ export default function ShapeComparisonEditorial() {
           aria-labelledby="dss-concierge-exit-heading"
           data-dss-concierge-exit
         >
-          <p className="text-[10px] uppercase tracking-[0.3em] text-[var(--hg-eyebrow,#8a8177)]">
+          <p className="text-[10px] uppercase tracking-[0.3em] text-[var(--hg-eyebrow,#6d655e)]">
             Concierge
           </p>
           <h3

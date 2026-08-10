@@ -148,7 +148,7 @@ export default function DiamondShapesPage() {
 
         <section className="border-b border-[#e4dbcf] pb-[92px] pt-[82px] md:pb-[112px] md:pt-[98px]">
           <div className="mx-auto max-w-[760px] text-center">
-            <div className="text-[11px] uppercase tracking-[0.34em] text-[#9a9084]">
+            <div className="text-[11px] uppercase tracking-[0.34em] text-[#6d655e]">
               Diamond Guide / Diamond Shapes
             </div>
 
@@ -174,7 +174,7 @@ export default function DiamondShapesPage() {
 
         <RevealOnScroll as="section" className="border-b border-[#e4dbcf] py-[102px] md:py-[118px]">
           <div className="mx-auto max-w-[760px] text-center">
-            <div className="text-[11px] uppercase tracking-[0.34em] text-[#9a9084]">
+            <div className="text-[11px] uppercase tracking-[0.34em] text-[#6d655e]">
               Begin here
             </div>
 
@@ -204,7 +204,7 @@ export default function DiamondShapesPage() {
 
         <RevealOnScroll as="section" className="border-b border-[#e4dbcf] py-[102px] md:py-[118px]">
           <div className="mx-auto max-w-[760px] text-center">
-            <div className="text-[11px] uppercase tracking-[0.34em] text-[#9a9084]">
+            <div className="text-[11px] uppercase tracking-[0.34em] text-[#6d655e]">
               Most read
             </div>
 
@@ -234,7 +234,7 @@ export default function DiamondShapesPage() {
 
         <RevealOnScroll as="section" className="border-b border-[#e4dbcf] py-[106px] md:py-[126px]">
           <div className="mx-auto max-w-[760px] text-center">
-            <div className="text-[11px] uppercase tracking-[0.34em] text-[#9a9084]">
+            <div className="text-[11px] uppercase tracking-[0.34em] text-[#6d655e]">
               Continue exploring
             </div>
 
@@ -286,7 +286,7 @@ export default function DiamondShapesPage() {
 
         <RevealOnScroll as="section" className="border-b border-[#e4dbcf] py-[104px] md:py-[122px]">
           <div className="mx-auto max-w-[760px] text-center">
-            <div className="text-[11px] uppercase tracking-[0.34em] text-[#9a9084]">
+            <div className="text-[11px] uppercase tracking-[0.34em] text-[#6d655e]">
               Related topics
             </div>
 
@@ -316,7 +316,7 @@ export default function DiamondShapesPage() {
 
         <RevealOnScroll as="section" className="py-[108px] md:py-[128px]">
           <div className="mx-auto max-w-[720px] text-center">
-            <div className="text-[11px] uppercase tracking-[0.34em] text-[#9a9084]">
+            <div className="text-[11px] uppercase tracking-[0.34em] text-[#6d655e]">
               When the research becomes specific
             </div>
 

@@ -28,7 +28,7 @@ function FeaturedMeta({ episode }: { episode: ConversationEpisode }) {
   ].filter(Boolean);
 
   return (
-    <div className="mt-4 space-y-2 text-[0.78rem] tracking-[0.04em] text-[#8a8177]">
+    <div className="mt-4 space-y-2 text-[0.78rem] tracking-[0.04em] text-[#6d655e]">
       {seasonLabel ? <p>{seasonLabel}</p> : null}
       {detailParts.length > 0 ? <p>{detailParts.join(" · ")}</p> : null}
     </div>
@@ -98,7 +98,7 @@ function FeaturedEpisode({
         </Link>
 
         <div className="md:pt-1 md:max-w-[20rem] lg:pt-2 lg:max-w-[22rem] xl:max-w-[24rem]">
-          <p className="text-[10px] uppercase tracking-[0.34em] text-[#8a8177]">
+          <p className="text-[10px] uppercase tracking-[0.34em] text-[#6d655e]">
             Latest Conversation
           </p>
           <FeaturedMeta episode={episode} />
@@ -166,7 +166,7 @@ function EpisodeListItem({ episode }: { episode: ConversationEpisode }) {
             {episode.title}
           </h3>
           {meta.length > 0 ? (
-            <p className="mt-3 text-[0.78rem] tracking-[0.04em] text-[#8a8177]">
+            <p className="mt-3 text-[0.78rem] tracking-[0.04em] text-[#6d655e]">
               {meta.join(" · ")}
             </p>
           ) : null}
@@ -227,7 +227,7 @@ export default function ConversationsHubClient({
 
         <section className="border-b border-[#e4dbcf] pb-12 pt-14 md:pb-14 md:pt-16">
           <div className="mx-auto max-w-[820px] text-center">
-            <p className="text-[10px] uppercase tracking-[0.34em] text-[#8a8177]">
+            <p className="text-[10px] uppercase tracking-[0.34em] text-[#6d655e]">
               Conversations
             </p>
             <h1
@@ -253,7 +253,7 @@ export default function ConversationsHubClient({
         {hasPrevious ? (
           <section className="pb-4 pt-14 md:pb-6 md:pt-16">
             <div className="mx-auto max-w-[880px]">
-              <p className="text-[10px] uppercase tracking-[0.34em] text-[#8a8177]">
+              <p className="text-[10px] uppercase tracking-[0.34em] text-[#6d655e]">
                 Previous Conversations
               </p>
               <ul className="mt-8">

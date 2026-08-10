@@ -29,7 +29,7 @@ export function CapturePageStyles() {
       }
       .dss-capture-brand{
         font-size:9px; letter-spacing:0.18em; text-transform:uppercase;
-        color:var(--hg-eyebrow, #8a8177);
+        color:var(--hg-eyebrow, #6d655e);
         margin:0 0 16px;
       }
       .dss-capture-title{
@@ -39,11 +39,11 @@ export function CapturePageStyles() {
         margin:0 0 10px;
       }
       .dss-capture-body{
-        font-size:13px; line-height:1.55; color:var(--hg-muted, #756b61);
+        font-size:13px; line-height:1.55; color:var(--hg-muted, #70665d);
         margin:0 0 16px;
       }
       .dss-capture-note{
-        font-size:11.5px; line-height:1.5; color:var(--hg-muted, #756b61);
+        font-size:11.5px; line-height:1.5; color:var(--hg-muted, #70665d);
         margin:0 0 18px;
       }
       .dss-capture-guide{
@@ -69,7 +69,7 @@ export function CapturePageStyles() {
         font-size:9px;
         letter-spacing:0.14em;
         text-transform:uppercase;
-        color:var(--hg-eyebrow, #8a8177);
+        color:var(--hg-eyebrow, #6d655e);
         pointer-events:none;
       }
       .dss-capture-file-control{
@@ -162,7 +162,7 @@ export function CapturePageStyles() {
         margin:16px 0 0;
         font-size:10px;
         letter-spacing:0.06em;
-        color:var(--hg-eyebrow, #8a8177);
+        color:var(--hg-eyebrow, #6d655e);
       }
       .sr-only{
         position:absolute;

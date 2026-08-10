@@ -123,14 +123,14 @@ export default function OpticalBalanceGraph({
   const labelFill =
     surface === "light"
       ? refinedGold
-        ? "#8a8177"
-        : "#948a80"
+        ? "#6d655e"
+        : "#6d655e"
       : refinedGold
         ? "#d4c4a8"
         : "#cbc4ba";
   const centerFill = empty
     ? surface === "light"
-      ? "#948a80"
+      ? "#6d655e"
       : "#8f8980"
     : restrained
       ? surface === "light"
@@ -139,8 +139,8 @@ export default function OpticalBalanceGraph({
       : surface === "light"
         ? "#1f1d1a"
         : "#efe9df";
-  const subLabelFill = surface === "light" ? "#948a80" : "#938d84";
-  const emptySubFill = surface === "light" ? "#948a80" : "#7c766d";
+  const subLabelFill = surface === "light" ? "#6d655e" : "#938d84";
+  const emptySubFill = surface === "light" ? "#6d655e" : "#7c766d";
   const markerFill = empty
     ? surface === "light"
       ? "rgba(180,170,158,0.15)"

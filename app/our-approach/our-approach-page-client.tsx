@@ -93,7 +93,7 @@ export default function OurApproachPageClient() {
 
         <section className="border-b border-[#e4dbcf] pb-16 pt-14 md:pb-[100px] md:pt-[80px]">
           <div className="mx-auto max-w-[820px] text-center">
-            <p className="text-[10px] uppercase tracking-[0.34em] text-[#8a8177]">
+            <p className="text-[10px] uppercase tracking-[0.34em] text-[#6d655e]">
               Our Approach
             </p>
             <h1
@@ -115,7 +115,7 @@ export default function OurApproachPageClient() {
           className="border-b border-[#e4dbcf] py-16 md:pb-[96px] md:pt-[112px]"
         >
           <div className="mx-auto max-w-[760px] text-center">
-            <p className="text-[10px] uppercase tracking-[0.34em] text-[#8a8177]">
+            <p className="text-[10px] uppercase tracking-[0.34em] text-[#6d655e]">
               Our Perspective
             </p>
             <h2

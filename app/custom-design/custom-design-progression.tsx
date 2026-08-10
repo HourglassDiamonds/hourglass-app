@@ -8,7 +8,7 @@ import {
 const GRID = "grid grid-cols-12 gap-x-6 lg:gap-x-8";
 
 const stageLabel =
-  "text-[10px] uppercase tracking-[0.26em] text-[#8a8177]";
+  "text-[10px] uppercase tracking-[0.26em] text-[#6d655e]";
 
 const stageCaption =
   "mt-3 text-[1.02rem] leading-[1.9] text-[#4a4440] md:text-[1.04rem]";
@@ -61,7 +61,7 @@ export default function CustomDesignProgression() {
     <section className="border-b border-[#e4dbcf] py-[56px] md:py-[72px] lg:py-[96px]">
       <div className={`${GRID} items-start`}>
         <div className="col-span-12 md:col-span-3">
-          <div className="text-[10px] uppercase tracking-[0.28em] text-[#8a8177]">
+          <div className="text-[10px] uppercase tracking-[0.28em] text-[#6d655e]">
             From Direction to Form
           </div>
           <h2

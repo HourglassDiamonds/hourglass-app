@@ -47,7 +47,7 @@ export default function Footer() {
             <p className="text-[10px] uppercase tracking-[0.32em] text-hg-eyebrow">
               The Ledger
             </p>
-            <p className="mt-3 text-[12px] leading-[1.75] text-[#7a7268]">
+            <p className="mt-3 text-[12px] leading-[1.75] text-[#6d655e]">
               Weekly intelligence on markets, infrastructure, AI, energy, and
               global systems.
             </p>
@@ -62,7 +62,7 @@ export default function Footer() {
             <p className="text-[10px] uppercase tracking-[0.32em] text-hg-eyebrow">
               Whispered Praise
             </p>
-            <p className="mt-3 text-[12px] leading-[1.75] text-[#7a7268]">
+            <p className="mt-3 text-[12px] leading-[1.75] text-[#6d655e]">
               Quiet reflections from clients who trusted the process.
             </p>
             <Link
@@ -77,11 +77,11 @@ export default function Footer() {
         {/* Bottom row */}
         <div className="mt-8 flex flex-col gap-2 border-t border-hg-line pt-4 md:flex-row md:items-center md:justify-between md:gap-4 md:pt-6">
 
-          <div className="text-[11px] text-[#8a8178]">
+          <div className="text-[11px] text-[#6d655e]">
             © {new Date().getFullYear()} Hourglass Diamonds · Charlotte, NC
           </div>
 
-          <div className="flex flex-wrap items-center gap-x-5 text-[11px] text-[#8a8178] md:gap-x-4">
+          <div className="flex flex-wrap items-center gap-x-5 text-[11px] text-[#6d655e] md:gap-x-4">
             <Link href="/privacy" className={LEGAL_LINK}>
               Privacy
             </Link>

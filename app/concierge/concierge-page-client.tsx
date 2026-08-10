@@ -372,18 +372,18 @@ export default function ConciergeFormClient() {
   );
 
   const sectionLabel =
-    "text-[10px] uppercase tracking-[0.32em] text-[#8a8177]";
+    "text-[10px] uppercase tracking-[0.32em] text-[#6d655e]";
   const fieldLabel =
-    "text-[11px] tracking-[0.02em] text-[#857b70] md:text-[12px] md:leading-snug";
+    "text-[11px] tracking-[0.02em] text-[#6d655e] md:text-[12px] md:leading-snug";
   const fieldLabelUpper =
-    "text-[11px] uppercase tracking-[0.28em] text-[#857b70]";
-  const helperText = "mt-2 max-w-[36rem] text-[12px] leading-5 text-[#8a8177]";
+    "text-[11px] uppercase tracking-[0.28em] text-[#6d655e]";
+  const helperText = "mt-2 max-w-[36rem] text-[12px] leading-5 text-[#6d655e]";
   const contextualText =
-    "mt-2 max-w-[32rem] text-[12px] leading-5 text-[#8a8177]";
+    "mt-2 max-w-[32rem] text-[12px] leading-5 text-[#6d655e]";
   const inputClass =
-    "mt-2.5 w-full rounded-[18px] border border-[#ddd4c9] bg-white/78 px-4 py-3.5 text-sm text-[#3c3834] outline-none placeholder:text-[#8a8177] focus-visible:border-hg-focus focus-visible:ring-2 focus-visible:ring-hg-focus";
+    "mt-2.5 w-full rounded-[18px] border border-[#ddd4c9] bg-white/78 px-4 py-3.5 text-sm text-[#3c3834] outline-none placeholder:text-[#6d655e] focus-visible:border-hg-focus focus-visible:ring-2 focus-visible:ring-hg-focus";
   const inputInvalidClass =
-    "mt-2.5 w-full rounded-[18px] border border-[#c9897c] bg-white/78 px-4 py-3.5 text-sm text-[#3c3834] outline-none placeholder:text-[#8a8177] focus-visible:ring-2 focus-visible:ring-[#c9897c]/50";
+    "mt-2.5 w-full rounded-[18px] border border-[#c9897c] bg-white/78 px-4 py-3.5 text-sm text-[#3c3834] outline-none placeholder:text-[#6d655e] focus-visible:ring-2 focus-visible:ring-[#c9897c]/50";
 
   if (submitState === "success") {
     return (
@@ -392,7 +392,7 @@ export default function ConciergeFormClient() {
         role="status"
         aria-live="polite"
       >
-        <p className="text-[10px] uppercase tracking-[0.32em] text-[#8a8177]">
+        <p className="text-[10px] uppercase tracking-[0.32em] text-[#6d655e]">
           Received
         </p>
         <h2
@@ -406,7 +406,7 @@ export default function ConciergeFormClient() {
           Justin personally reviews every Concierge request. You can expect a
           thoughtful reply within 24 hours.
         </p>
-        <p className="mt-4 max-w-[36rem] text-[14px] leading-7 text-[#7b7268]">
+        <p className="mt-4 max-w-[36rem] text-[14px] leading-7 text-[#6d655e]">
           There is nothing more you need to do for now. When you are ready,
           continue exploring the Diamond Guide.
         </p>
@@ -458,7 +458,7 @@ export default function ConciergeFormClient() {
 
       <div className="border-b border-[#e8dfd4] pb-7 md:pb-8">
         <div className={sectionLabel}>{copy.whatHappensNext.heading}</div>
-        <p className="mt-2.5 max-w-[34rem] text-[13px] leading-6 text-[#7b7268] md:text-[14px] md:leading-7">
+        <p className="mt-2.5 max-w-[34rem] text-[13px] leading-6 text-[#6d655e] md:text-[14px] md:leading-7">
           {copy.whatHappensNext.body}
         </p>
       </div>
@@ -543,7 +543,7 @@ export default function ConciergeFormClient() {
             aria-atomic="true"
             id={summaryId}
           >
-            <div className="text-[10px] uppercase tracking-[0.26em] text-[#8a8177]">
+            <div className="text-[10px] uppercase tracking-[0.26em] text-[#6d655e]">
               {copy.design.summaryLabel}
             </div>
             <div className="mt-2.5 text-[1.02rem] tracking-[-0.02em] text-[#201d1a]">
@@ -744,7 +744,7 @@ export default function ConciergeFormClient() {
               setValue={setPreferredContact}
             />
             {preferredContact === "Text" ? (
-              <p className="mt-4 max-w-[36rem] text-[13px] leading-6 text-[#7b7268]">
+              <p className="mt-4 max-w-[36rem] text-[13px] leading-6 text-[#6d655e]">
                 By selecting Text, you agree that Hourglass Diamonds may reply
                 to this inquiry by text. Message and data rates may apply.
               </p>
@@ -754,7 +754,7 @@ export default function ConciergeFormClient() {
       </div>
 
       <div className="mt-8 border-t border-[#e8dfd4] pt-6 text-center">
-        <p className="mx-auto max-w-[34rem] text-[13px] leading-7 text-[#7b7268]">
+        <p className="mx-auto max-w-[34rem] text-[13px] leading-7 text-[#6d655e]">
           {copy.closing.primary}
         </p>
 

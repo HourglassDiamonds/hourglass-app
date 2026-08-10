@@ -17,7 +17,7 @@ export default function LookingDeeperPanel({
         expert review, video analysis, eye-clean verification, or optical
         imaging such as ASET or IdealScope when available.
       </p>
-      <p className="mt-2.5 text-[12px] leading-[1.65] text-[#948a80]">
+      <p className="mt-2.5 text-[12px] leading-[1.65] text-[#6d655e]">
         Not every diamond needs every step — the right review depends on what
         you are deciding.
       </p>

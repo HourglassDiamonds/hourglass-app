@@ -26,7 +26,7 @@ export default function DiamondPurchasePersonalitySection({
       <p className="mt-2.5 font-serif text-[1.15rem] leading-[1.2] tracking-[-0.02em] text-[#1f1d1a] md:text-[1.22rem]">
         {personality.label}
       </p>
-      <p className="mt-2 font-serif text-[13px] leading-[1.58] text-[#8a8177]">
+      <p className="mt-2 font-serif text-[13px] leading-[1.58] text-[#6d655e]">
         {personality.translation}
       </p>
       <p className="mt-3 text-[13px] leading-[1.72] text-[#5f5851]">

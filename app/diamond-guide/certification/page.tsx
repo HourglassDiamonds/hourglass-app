@@ -151,7 +151,7 @@ export default function CertificationPage() {
 
         <section className="border-b border-[#e4dbcf] pb-[84px] pt-[82px] md:pb-[100px] md:pt-[98px]">
           <div className="mx-auto max-w-[760px] text-center">
-            <div className="text-[11px] uppercase tracking-[0.34em] text-[#9a9084]">
+            <div className="text-[11px] uppercase tracking-[0.34em] text-[#6d655e]">
               Diamond Guide / Certification
             </div>
 
@@ -184,7 +184,7 @@ export default function CertificationPage() {
 
         <RevealOnScroll as="section" className="border-b border-[#e4dbcf] py-[96px] md:py-[110px]">
           <div className="mx-auto max-w-[760px] text-center">
-            <div className="text-[11px] uppercase tracking-[0.34em] text-[#9a9084]">
+            <div className="text-[11px] uppercase tracking-[0.34em] text-[#6d655e]">
               Begin here
             </div>
 
@@ -213,7 +213,7 @@ export default function CertificationPage() {
 
         <RevealOnScroll as="section" className="border-b border-[#e4dbcf] py-[96px] md:py-[110px]">
           <div className="mx-auto max-w-[760px] text-center">
-            <div className="text-[11px] uppercase tracking-[0.34em] text-[#9a9084]">
+            <div className="text-[11px] uppercase tracking-[0.34em] text-[#6d655e]">
               Most read
             </div>
 

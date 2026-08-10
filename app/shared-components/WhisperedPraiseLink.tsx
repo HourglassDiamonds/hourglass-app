@@ -12,7 +12,7 @@ const inlineClass =
   "border-b border-[#d4c8ba]/75 text-[#6a635c] decoration-0 transition-[color,border-color] duration-500 hover:border-[#b8a896] hover:text-[#3d3832]";
 
 const arrowClass =
-  "text-[#8a8176] transition-colors duration-500 hover:text-[#4a443e]";
+  "text-[#6d655e] transition-colors duration-500 hover:text-[#4a443e]";
 
 export default function WhisperedPraiseLink({
   children,

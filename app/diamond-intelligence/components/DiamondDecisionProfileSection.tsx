@@ -19,7 +19,7 @@ function DimensionRow({
   return (
     <div className="border-t border-[#ebe4da]/45 pt-4 first:border-t-0 first:pt-0">
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
-        <p className="text-[10px] uppercase tracking-[0.22em] text-[#948a80]">
+        <p className="text-[10px] uppercase tracking-[0.22em] text-[#6d655e]">
           {label}
         </p>
         <p className="text-right text-[0.94rem] font-medium tracking-[-0.01em] text-[#1f1d1a]">
@@ -27,7 +27,7 @@ function DimensionRow({
           {score !== null &&
           score !== undefined &&
           label === "Optical Performance" ? (
-            <span className="ml-1.5 text-[12px] font-normal text-[#948a80]">
+            <span className="ml-1.5 text-[12px] font-normal text-[#6d655e]">
               ({Math.round(score)})
             </span>
           ) : null}
@@ -86,7 +86,7 @@ export default function DiamondDecisionProfileSection({
         <p className="mb-4 text-[10px] uppercase tracking-[0.26em] text-[#b8afa6]">
           Technical dimensions
         </p>
-        <p className="mb-4 text-[12px] leading-[1.6] text-[#948a80]">
+        <p className="mb-4 text-[12px] leading-[1.6] text-[#6d655e]">
           Architecture, presence, confidence, and risk — each answers a different
           question.
         </p>

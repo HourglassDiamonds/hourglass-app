@@ -66,7 +66,7 @@ export default function GlobalPressureMonitor({
         className={`gpm-surface mx-auto w-full max-w-[920px] text-[#171717] ${className}`}
         aria-labelledby={headingId}
       >
-        <p className="font-sans text-[10px] uppercase tracking-[0.16em] text-[#6f6a63]">
+        <p className="font-sans text-[10px] uppercase tracking-[0.16em] text-[#6d655e]">
           Current status
         </p>
         <div className="mt-3 flex flex-wrap items-baseline justify-between gap-3">
@@ -78,7 +78,7 @@ export default function GlobalPressureMonitor({
           </h2>
           <Link
             href="/ledger/global-pressure-index"
-            className="font-sans text-[10px] uppercase tracking-[0.16em] text-[#6f6a63] hover:text-[#4a4540]"
+            className="font-sans text-[10px] uppercase tracking-[0.16em] text-[#6d655e] hover:text-[#4a4540]"
           >
             View full monitor →
           </Link>

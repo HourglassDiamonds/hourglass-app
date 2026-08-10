@@ -6,7 +6,7 @@ import { LEDGER_INDEX_PAGE_CLASS } from "./ledger-index-page-chrome";
 import LedgerIndexMeter from "./ledger-index-meter";
 
 const LABEL =
-  "font-sans text-[10px] uppercase tracking-[0.16em] text-[#6f6a63]";
+  "font-sans text-[10px] uppercase tracking-[0.16em] text-[#6d655e]";
 
 type LedgerIndexPageContentProps = {
   index: LedgerIndexDefinition;

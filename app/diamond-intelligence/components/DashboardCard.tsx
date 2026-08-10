@@ -97,7 +97,7 @@ export function MetricRow({
 
   return (
     <div className="flex justify-between gap-4 border-b border-[#ebe4da]/40 py-2.5 text-[13px] last:border-0">
-      <span className="text-[#948a80]">{label}</span>
+      <span className="text-[#6d655e]">{label}</span>
       <span className="shrink-0 text-right font-medium tracking-[-0.01em] text-[#1f1d1a]">
         {value}
       </span>

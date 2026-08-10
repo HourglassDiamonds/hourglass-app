@@ -30,7 +30,7 @@ export default function PerformanceReadSidebar({
                   / 100
                 </span>
               </p>
-              <p className="mt-2 text-[10px] tracking-[0.1em] text-[#948a80]">
+              <p className="mt-2 text-[10px] tracking-[0.1em] text-[#6d655e]">
                 {CONSUMER_COPY.estimatedReadLabel}
               </p>
             </>
@@ -43,7 +43,7 @@ export default function PerformanceReadSidebar({
           )}
         </>
       ) : (
-        <p className="text-[13px] leading-relaxed text-[#948a80]">
+        <p className="text-[13px] leading-relaxed text-[#6d655e]">
           Upload a report to see your performance read.
         </p>
       )}

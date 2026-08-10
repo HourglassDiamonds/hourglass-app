@@ -65,7 +65,7 @@ export default function CustomDesignIntro() {
 
         <div className="relative z-10 md:max-w-[min(100%,26rem)] lg:max-w-[min(100%,32rem)]">
           <div className="min-w-0 text-left">
-            <div className="text-[11px] uppercase tracking-[0.34em] text-[#8a8177]">
+            <div className="text-[11px] uppercase tracking-[0.34em] text-[#6d655e]">
               Custom Design
             </div>
 
@@ -124,7 +124,7 @@ export default function CustomDesignIntro() {
         </div>
       </div>
 
-      <p className="mt-6 border-t border-[#e4dbcf]/80 pt-5 text-center text-[0.72rem] uppercase tracking-[0.28em] text-[#8a8177] md:mt-7 md:pt-5 md:text-[0.74rem]">
+      <p className="mt-6 border-t border-[#e4dbcf]/80 pt-5 text-center text-[0.72rem] uppercase tracking-[0.28em] text-[#6d655e] md:mt-7 md:pt-5 md:text-[0.74rem]">
         Graduate Gemologist · Global Sourcing · Custom Design
       </p>
     </>

@@ -67,7 +67,7 @@ export default function DiV3UnableToVerify({
 
       {!difficultImageRead ? (
         <>
-          <p className="mx-auto mt-8 max-w-[520px] text-[11px] uppercase tracking-[0.14em] text-[#9b8b78]">
+          <p className="mx-auto mt-8 max-w-[520px] text-[11px] uppercase tracking-[0.14em] text-[#766a58]">
             Potential reasons
           </p>
           <ul className="mx-auto mt-4 max-w-[520px] grid list-none gap-3 p-0 text-left text-[15px] text-[#514536]">

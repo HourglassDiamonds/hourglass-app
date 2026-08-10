@@ -21,10 +21,10 @@ export default function DiamondTechnicalProfileSection({
 
   return (
     <section className="border-t border-[#ebe4da]/50 py-6 md:py-8">
-      <p className={`${DI_EYEBROW_STUDIO} text-[9px] tracking-[0.24em] text-[#b0a698]`}>
+      <p className={`${DI_EYEBROW_STUDIO} text-[9px] tracking-[0.24em] text-[#756a5f]`}>
         {CONSUMER_COPY.technicalDecisionProfileTitle}
       </p>
-      <div className="mt-4 max-w-3xl space-y-4 text-xs leading-[1.65] text-[#948a80]">
+      <div className="mt-4 max-w-3xl space-y-4 text-xs leading-[1.65] text-[#6d655e]">
         <ProfileDimensionRow
           label={profile.opticalPerformance.label}
           band={opticalDisplay.band}

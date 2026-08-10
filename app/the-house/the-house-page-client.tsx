@@ -133,7 +133,7 @@ export default function TheHousePageClient() {
           </div>
 
           <div className="relative z-10 mx-auto max-w-[820px] text-center">
-            <div className="text-[10px] uppercase tracking-[0.34em] text-[#8a8177]">
+            <div className="text-[10px] uppercase tracking-[0.34em] text-[#6d655e]">
               The House
             </div>
 
@@ -177,7 +177,7 @@ export default function TheHousePageClient() {
         <RevealOnScroll as="section" className="border-b border-[#e4dbcf] pb-[104px] pt-[88px] md:pb-[120px] md:pt-[104px]">
           <div className="mx-auto max-w-[1040px]">
             <div className="mx-auto max-w-[720px] text-center">
-              <div className="text-[10px] uppercase tracking-[0.34em] text-[#8a8177]">
+              <div className="text-[10px] uppercase tracking-[0.34em] text-[#6d655e]">
                 A Closer Look
               </div>
 
@@ -230,7 +230,7 @@ export default function TheHousePageClient() {
           className="border-b border-[#e4dbcf] py-[92px] md:py-[108px]"
         >
           <div className="mx-auto max-w-[760px] text-center">
-            <div className="text-[10px] uppercase tracking-[0.34em] text-[#8a8177]">
+            <div className="text-[10px] uppercase tracking-[0.34em] text-[#6d655e]">
               Our Approach
             </div>
 
@@ -287,7 +287,7 @@ export default function TheHousePageClient() {
                 key={value.title}
                 className="rounded-[22px] border border-[#e4dbcf] bg-white/55 p-6 text-center shadow-[0_6px_18px_rgba(48,36,28,0.04)]"
               >
-                <div className="text-[10px] uppercase tracking-[0.28em] text-[#8a8177]">
+                <div className="text-[10px] uppercase tracking-[0.28em] text-[#6d655e]">
                   {value.title}
                 </div>
 

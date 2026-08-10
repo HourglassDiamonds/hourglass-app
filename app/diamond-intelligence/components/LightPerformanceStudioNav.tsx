@@ -75,7 +75,7 @@ export default function LightPerformanceStudioNav() {
                 ) : (
                   <Link
                     href={item.href}
-                    className="block text-[10px] uppercase tracking-[0.26em] text-[#948a80] transition hover:text-[#5f5851]"
+                    className="block text-[10px] uppercase tracking-[0.26em] text-[#6d655e] transition hover:text-[#5f5851]"
                   >
                     {item.label}
                   </Link>

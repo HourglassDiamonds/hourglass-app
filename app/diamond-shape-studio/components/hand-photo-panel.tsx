@@ -69,12 +69,18 @@ export const HandPhotoPanel = forwardRef<
       >
         Start over
       </button>
+      {/* P0-4 (WCAG 2.4.7/2.1) — programmatic hook only (openDevicePicker),
+          mirroring direct-mobile-entry. Without aria-hidden/tabIndex=-1 this
+          invisible input was a focusable keyboard stop with no visible focus.
+          Visible upload paths (QR flow, same-device entry) are unaffected. */}
       <input
         ref={inputRef}
         type="file"
         accept={ACCEPTED_IMAGE_TYPES.join(",")}
         capture="environment"
         className="sr-only"
+        aria-hidden="true"
+        tabIndex={-1}
         onChange={(e) => handleImageFromDevice(e.target.files?.[0])}
       />
     </section>

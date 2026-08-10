@@ -41,7 +41,7 @@ export default function CustomDesignProcess() {
   return (
     <section className="border-b border-[#e4dbcf] pt-[56px] pb-[48px] md:pt-[72px] md:pb-[56px] lg:pt-[88px] lg:pb-[64px]">
       <div className="mx-auto max-w-[40rem] text-center">
-        <div className="text-[10px] uppercase tracking-[0.28em] text-[#8a8177]">
+        <div className="text-[10px] uppercase tracking-[0.28em] text-[#6d655e]">
           The Custom Process
         </div>
         <h2
@@ -62,7 +62,7 @@ export default function CustomDesignProcess() {
             key={step.label}
             className="border-b border-[#e4dbcf] py-5 md:py-[1.3rem]"
           >
-            <div className="text-[10px] uppercase tracking-[0.26em] text-[#8a8177]">
+            <div className="text-[10px] uppercase tracking-[0.26em] text-[#6d655e]">
               {step.label}
             </div>
             <p className="mt-2.5 max-w-[34rem] text-[1.02rem] leading-[1.88] text-[#4f4842] md:text-[1.04rem]">

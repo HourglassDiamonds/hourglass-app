@@ -110,7 +110,7 @@ export default function AnalysisProgressNarrative({
 
       <aside className="mt-12 max-w-lg border-t border-[rgba(181,150,98,0.14)] pt-6">
         <p className={DI_EYEBROW_MUTED}>{ANALYSIS_PROGRESS_EDUCATION.title}</p>
-        <p className="mt-3 text-[0.82rem] leading-[1.7] text-[#9b8b78]">
+        <p className="mt-3 text-[0.82rem] leading-[1.7] text-[#766a58]">
           {ANALYSIS_PROGRESS_EDUCATION.body}
         </p>
       </aside>

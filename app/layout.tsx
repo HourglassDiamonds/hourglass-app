@@ -71,12 +71,9 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full bg-hg-body text-hg-ink">
-        <a
-          href="#main-content"
-          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:inline-flex focus:min-h-11 focus:items-center focus:rounded-full focus:border focus:border-hg-line focus:bg-hg-ivory focus:px-5 focus:py-3 focus:text-[12px] focus:tracking-[0.04em] focus:text-hg-ink focus:shadow-hg-lifted"
-        >
-          Skip to main content
-        </a>
+        {/* Skip navigation renders inside the shared Header (see Header.tsx) so
+            its target lands past the repeated navigation. Pages without the
+            site header (phone capture, login) have no repeated nav to bypass. */}
         <FacetScintillationRail />
         <GlobalJsonLd />
         <GoogleAnalytics enabled={isClientAnalyticsEnabled()} />

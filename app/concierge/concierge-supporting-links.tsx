@@ -10,11 +10,11 @@ export default function ConciergeSupportingLinks() {
       className="mx-auto mt-12 max-w-[680px] border-t border-[#e4dbcf] pt-10 md:mt-14 md:pt-12"
       aria-label="Further reading"
     >
-      <p className="text-[10px] uppercase tracking-[0.32em] text-[#8a8177]">
+      <p className="text-[10px] uppercase tracking-[0.32em] text-[#6d655e]">
         Still gathering context
       </p>
 
-      <p className="mt-4 text-[0.94rem] leading-[1.88] text-[#7a7268]">
+      <p className="mt-4 text-[0.94rem] leading-[1.88] text-[#6d655e]">
         None of this is required before you reach out. If helpful,{" "}
         <Link
           href="/diamond-guide/why-work-with-a-graduate-gemologist"

@@ -85,6 +85,19 @@ export function QrCapturePanel({
           }}
         />
       </div>
+      {/* P0-4 (WCAG 1.1.1) — text equivalent for the QR code. Same capability
+          URL the QR encodes; opens in a new tab so the desktop session panel
+          keeps waiting for the phone. */}
+      {captureUrl ? (
+        <a
+          className="dss-qr-link"
+          href={captureUrl}
+          target="_blank"
+          rel="noopener"
+        >
+          Open phone capture link
+        </a>
+      ) : null}
       <p className="dss-qr-status">
         {waiting ? "Waiting for phone capture…" : "Ready on your phone"}
       </p>

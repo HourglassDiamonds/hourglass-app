@@ -14,7 +14,7 @@ const FIGURE_HEADER =
 const SHELL_RADIUS = "rounded-[24px]";
 
 const eyebrowClass =
-  "text-[9px] font-normal uppercase tracking-[0.38em] text-[#9a9084]";
+  "text-[9px] font-normal uppercase tracking-[0.38em] text-[#6d655e]";
 
 const noteClass =
   "mt-5 max-w-[38rem] text-[0.86rem] leading-[1.74] text-[#8f867c]";
@@ -94,7 +94,7 @@ function CaratScalePlate({ rows }: { rows: { carat: string; mm: string }[] }) {
                   <p className="mt-4 w-full truncate text-center text-[0.7rem] font-medium tracking-[0.03em] text-[#625c55] tabular-nums">
                     {row.carat.replace(" ct", "")}
                   </p>
-                  <p className="mt-1 text-center text-[0.64rem] tracking-[0.05em] text-[#9a9084] tabular-nums">
+                  <p className="mt-1 text-center text-[0.64rem] tracking-[0.05em] text-[#6d655e] tabular-nums">
                     {row.mm}
                   </p>
                 </div>
@@ -128,7 +128,7 @@ function CaratScalePlate({ rows }: { rows: { carat: string; mm: string }[] }) {
               <p className="mt-3.5 w-full text-center text-[0.63rem] font-medium leading-tight tracking-[0.02em] text-[#625c55] tabular-nums">
                 {row.carat.replace(" ct", "")}
               </p>
-              <p className="mt-1 text-center text-[0.59rem] leading-tight tracking-[0.04em] text-[#9a9084] tabular-nums">
+              <p className="mt-1 text-center text-[0.59rem] leading-tight tracking-[0.04em] text-[#6d655e] tabular-nums">
                 {row.mm}
               </p>
             </div>

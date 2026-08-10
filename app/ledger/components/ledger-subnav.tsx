@@ -15,7 +15,7 @@ export default function LedgerSubnav({
       aria-label="Ledger indexes"
       className={`border-b border-[#e4dbcf]/80 pb-2 ${className}`}
     >
-      <ul className="flex flex-wrap items-center gap-x-1 font-sans text-[10px] uppercase tracking-[0.14em] text-[#8a8176] md:gap-x-2 md:tracking-[0.16em]">
+      <ul className="flex flex-wrap items-center gap-x-1 font-sans text-[10px] uppercase tracking-[0.14em] text-[#6d655e] md:gap-x-2 md:tracking-[0.16em]">
         {LEDGER_INDEXES.map((index, i) => (
           <li key={index.id} className="flex items-center">
             {i > 0 ? (
