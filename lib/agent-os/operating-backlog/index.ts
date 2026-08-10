@@ -1,6 +1,7 @@
 /**
  * Operating backlog loader.
  * Default = CURRENT_OPERATING_BACKLOG. Optional override for tests.
+ * Persistence overlays terminal lifecycle via hydrateOperatingBacklogFromPersistence.
  */
 
 import { CURRENT_OPERATING_BACKLOG } from "./current-sprint";
@@ -25,6 +26,22 @@ export {
   decisionRecommendationsFromBacklog,
   backlogOrientationSummary,
 } from "./to-recommendations";
+export {
+  operatingBacklogRecommendationId,
+  canonicalIdForBacklogItem,
+  canonicalIdForRecommendationId,
+  OPERATING_BACKLOG_CANONICAL_IDS,
+} from "./canonical";
+export {
+  hydrateOperatingBacklogFromPersistence,
+  findTerminalMatch,
+  isPersistedRecommendationTerminal,
+  deriveDayOrientationFromBacklog,
+} from "./hydrate";
+export type {
+  HydrateOperatingBacklogResult,
+  BacklogHydrationDecision,
+} from "./hydrate";
 export type {
   OperatingBacklog,
   OperatingBacklogItem,

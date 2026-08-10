@@ -64,7 +64,8 @@ export type ChiefOfStaffInput = {
    * When set, founder brief surfacing is restricted to these recommendation IDs
    * (recurrence eligibility already applied). Full ranked JSON is unchanged.
    * Order is priority preference for brief slots.
-   * Persistent operating-backlog IDs always remain eligible for daily briefs.
+   * Active (non-terminal) operating-backlog IDs remain eligible for daily briefs.
+   * Terminal backlog items must not be force-included.
    */
   founderSurfaceEligibleIds?: string[] | null;
   /**
@@ -198,7 +199,8 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
 
   // Recurrence eligibility BEFORE founder brief ranking/surfacing.
   // When a gate is provided, only eligible IDs compete for ≤5 brief slots.
-  // Persistent operating-backlog items always remain eligible (hierarchy A).
+  // Active operating-backlog items remain eligible (hierarchy A).
+  // Terminal backlog items are already excluded from backlogRecs via hydration.
   const backlogIds = new Set(backlogRecs.map((r) => r.recommendationId));
   const carryIds = new Set(input.carryForwardRecommendationIds ?? []);
   if (input.founderSurfaceEligibleIds) {

@@ -18,6 +18,8 @@ import {
   MAX_FOUNDER_BRIEF_PRIORITIES,
   selectFounderPrioritiesForBrief,
 } from "./recurrence";
+import { logRecommendationLifecycleEvent } from "./lifecycle-log";
+import { isPersistedRecommendationTerminal } from "../operating-backlog/hydrate";
 
 function severityRank(u: string): number {
   if (u === "critical") return 4;
@@ -28,8 +30,27 @@ function severityRank(u: string): number {
 }
 
 /**
+ * Resolve prior record by exact ID, else by shared rootProblemId / canonical.
+ */
+function resolvePriorRecord(
+  rec: Recommendation,
+  prior: Record<string, PersistedRecommendationRecord>,
+): PersistedRecommendationRecord | undefined {
+  const exact = prior[rec.recommendationId];
+  if (exact) return exact;
+  const root = inferRootProblemId(rec.recommendationId);
+  if (!root) return undefined;
+  for (const candidate of Object.values(prior)) {
+    if (candidate.rootProblemId === root) return candidate;
+  }
+  return undefined;
+}
+
+/**
  * Build provisional persisted-shaped records for recurrence evaluation.
  * Preserves prior first/last surfaced and occurrence metadata.
+ * Terminal prior state (including canonical matches) stays terminal unless
+ * explicitly reopened via applyRecommendationReopen.
  */
 export function projectRecurrenceRecords(
   recommendations: Recommendation[],
@@ -40,7 +61,7 @@ export function projectRecurrenceRecords(
     if (!recommendationIsFounderRankable(rec)) continue;
     const fp = fingerprintForRecommendation(rec);
     const root = inferRootProblemId(rec.recommendationId);
-    const existing = prior[rec.recommendationId];
+    const existing = resolvePriorRecord(rec, prior);
     if (!existing) {
       out.push({
         schemaVersion: AGENT_OS_PERSISTENCE_SCHEMA_VERSION,
@@ -73,6 +94,21 @@ export function projectRecurrenceRecords(
       continue;
     }
 
+    if (
+      existing.recommendationId !== rec.recommendationId ||
+      isPersistedRecommendationTerminal(existing)
+    ) {
+      logRecommendationLifecycleEvent("recommendation_matched_existing", {
+        recommendationId: rec.recommendationId,
+        canonicalId: root ?? existing.rootProblemId,
+        lifecycleState: existing.lifecycleState,
+        matchedTerminalId:
+          existing.recommendationId !== rec.recommendationId
+            ? existing.recommendationId
+            : undefined,
+      });
+    }
+
     const fingerprintChanged = existing.evidenceFingerprint !== fp;
     let changeClassification = existing.changeClassification;
     let lifecycleState = existing.lifecycleState;
@@ -80,12 +116,27 @@ export function projectRecurrenceRecords(
     if (existing.lifecycleState === "deferred" && existing.deferredUntil) {
       changeClassification = "deferred";
       lifecycleState = "deferred";
-    } else if (existing.lifecycleState === "completed" || existing.completedAt) {
-      changeClassification = "completed";
-      lifecycleState = "completed";
-    } else if (existing.lifecycleState === "superseded" || existing.supersededBy) {
-      changeClassification = "superseded";
-      lifecycleState = "superseded";
+    } else if (
+      existing.changeClassification === "reopened" &&
+      !isPersistedRecommendationTerminal(existing)
+    ) {
+      changeClassification = "reopened";
+      lifecycleState = "active";
+    } else if (isPersistedRecommendationTerminal(existing)) {
+      // Suppress regeneration of terminal work — do not reopen from detector reruns.
+      changeClassification =
+        existing.lifecycleState === "superseded" ? "superseded" : "completed";
+      lifecycleState =
+        existing.lifecycleState === "superseded" ? "superseded" : "completed";
+      logRecommendationLifecycleEvent("recommendation_suppressed_terminal", {
+        recommendationId: rec.recommendationId,
+        canonicalId: root ?? existing.rootProblemId,
+        lifecycleState,
+        matchedTerminalId: existing.recommendationId,
+        reason: fingerprintChanged
+          ? "terminal-match-ignore-non-material-drift"
+          : "terminal-match-no-material-evidence",
+      });
     } else if (!fingerprintChanged) {
       changeClassification = "unchanged";
       lifecycleState = "unchanged";
@@ -106,6 +157,7 @@ export function projectRecurrenceRecords(
 
     out.push({
       ...existing,
+      recommendationId: rec.recommendationId,
       priorityScore: rec.priorityScore,
       confidence: rec.confidence,
       founderRankable: true,
@@ -117,10 +169,13 @@ export function projectRecurrenceRecords(
       urgency: rec.urgency,
       changeClassification,
       lifecycleState,
+      completedAt:
+        lifecycleState === "completed"
+          ? (existing.completedAt ?? existing.firstSeenAt)
+          : existing.completedAt,
     });
   }
 
-  // Include prior root-only records that map children — handled via rootProblemId on children
   return out;
 }
 
@@ -134,6 +189,7 @@ export type FounderSurfaceEligibility = {
 /**
  * Recurrence eligibility BEFORE founder brief ranking/surfacing.
  * Returns ordered eligible recommendation IDs (priority desc, root-deduped).
+ * Terminal matches never consume founder priority slots.
  */
 export function resolveFounderSurfaceEligibility(input: {
   recommendations: Recommendation[];

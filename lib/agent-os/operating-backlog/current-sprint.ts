@@ -2,6 +2,9 @@
  * Current Hourglass master sprint — authoritative persistent priorities.
  * Updated when the founder completes, cancels, replaces, or defers work.
  * Do not invent evidence here; these are operational commitments.
+ *
+ * Completion awareness also hydrates from Agent OS persistence at run time.
+ * Static statuses below are the default source of truth when persistence is empty.
  */
 
 import type { OperatingBacklog } from "./types";
@@ -10,6 +13,12 @@ import type { OperatingBacklog } from "./types";
  * Active Week 2 operating sprint (affirmed around July 27–28, 2026).
  * Drawn from ongoing Agent OS / Concierge / Studio / measurement commitments —
  * not from overnight adapter freshness.
+ *
+ * Reconciliation (2026-08-10, P0-3):
+ * - Concierge CTA attribution: completed via 6d225b5 (shipped to production).
+ * - Studio→Concierge handoff clarity: completed via 4cb9d3f (shipped to production).
+ * - Charlotte guide hub titles: still open (Charlotte Guides still unmapped in category-map).
+ * - Paid-search readiness: still open / deferred-due (review not performed).
  */
 export const CURRENT_OPERATING_BACKLOG: OperatingBacklog = {
   schemaVersion: 1,
@@ -17,10 +26,14 @@ export const CURRENT_OPERATING_BACKLOG: OperatingBacklog = {
     id: "hourglass-sprint-2026-w31",
     name: "Week of July 27 — Concierge clarity & measurement trust",
     objective:
-      "Keep Concierge conversion paths clear, protect measurement integrity, and finish open content/search commitments before opening new growth experiments.",
+      "Finish remaining local-authority and paid-readiness commitments after Concierge path and Studio handoff clarity shipped.",
+    /**
+     * Documentation-only default. At runtime, dayOrientation is always re-derived
+     * from the reconciled active priority set (see deriveDayOrientationFromBacklog).
+     */
     dayOrientation:
-      "Finish the Concierge conversion path before opening any new growth experiments.",
-    affirmedLocalDate: "2026-07-27",
+      "Strengthen Charlotte guide hub alignment before opening paid-search or new growth experiments.",
+    affirmedLocalDate: "2026-08-10",
     items: [
       {
         id: "sprint-concierge-cta-path",
@@ -31,7 +44,7 @@ export const CURRENT_OPERATING_BACKLOG: OperatingBacklog = {
         why: "Qualified viewers should reach Concierge calmly without losing attribution.",
         expectedOutcome:
           "Every primary CTA lands in Concierge with intact attribution within one sitting.",
-        status: "active",
+        status: "completed",
         urgency: "high",
         rank: 1,
         completionCondition:
@@ -47,7 +60,7 @@ export const CURRENT_OPERATING_BACKLOG: OperatingBacklog = {
         why: "Studio interest without a clear Concierge handoff wastes high-intent attention.",
         expectedOutcome:
           "Studio visitors see a single, calm next step into Concierge without pressure.",
-        status: "active",
+        status: "completed",
         urgency: "high",
         rank: 2,
         completionCondition: "Complete one clarity pass on Studio → Concierge wording (~45 min).",
@@ -70,16 +83,16 @@ export const CURRENT_OPERATING_BACKLOG: OperatingBacklog = {
         id: "decision-new-growth-experiments",
         kind: "open-decision",
         title: "Whether to open new growth experiments this week",
-        action: "Decide whether to keep focus on Concierge/Studio clarity or approve a new experiment.",
-        why: "New experiments dilute unfinished conversion-path work.",
+        action: "Decide whether to keep focus on remaining local-authority work or approve a new experiment.",
+        why: "New experiments still dilute unfinished Charlotte hub and paid-readiness work.",
         expectedOutcome: "A clear yes/no so the team does not split attention.",
         status: "active",
         urgency: "medium",
         rank: 4,
         recommendedChoice:
-          "Defer new growth experiments until Concierge CTA attribution and Studio→Concierge clarity are finished.",
+          "Defer new growth experiments until Charlotte guide hub alignment is finished and paid-search readiness is explicitly reviewed.",
         costOfDelay:
-          "Another week of traffic may reach Concierge without reliable attribution or a sufficiently clear next step.",
+          "Another week of divided attention delays the remaining local-authority commitment.",
         deadline: null,
       },
     ],
@@ -96,6 +109,8 @@ export const CURRENT_OPERATING_BACKLOG: OperatingBacklog = {
       status: "deferred",
       urgency: "low",
       rank: 1,
+      // Due since 2026-08-04 — Concierge path/Studio clarity are now complete;
+      // the readiness review itself has not been performed.
       deferredUntil: "2026-08-04T00:00:00.000Z",
     },
   ],

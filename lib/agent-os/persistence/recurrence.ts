@@ -53,7 +53,13 @@ export function evaluateFounderRecurrence(
     return decision(record, false, "superseded-hidden", false, "Superseded");
   }
 
-  if (record.lifecycleState === "completed" || record.completedAt) {
+  // completedAt is retained after explicit reopen for history — do not hide reopened work.
+  if (
+    record.lifecycleState === "completed" ||
+    (Boolean(record.completedAt) &&
+      record.changeClassification !== "reopened" &&
+      record.lifecycleState !== "active")
+  ) {
     return decision(
       record,
       false,
@@ -196,7 +202,14 @@ export function selectCarryForwardRecommendationIds(input: {
   const candidates = Object.values(input.priorRecommendations)
     .filter((r) => {
       if (!r.founderRankable) return false;
-      if (r.lifecycleState === "completed" || r.completedAt) return false;
+      if (
+        r.lifecycleState === "completed" ||
+        (Boolean(r.completedAt) &&
+          r.changeClassification !== "reopened" &&
+          r.lifecycleState !== "active")
+      ) {
+        return false;
+      }
       if (r.lifecycleState === "superseded" || r.supersededBy) return false;
       if (deferralStillActive(r.deferredUntil, input.nowIso)) return false;
       if (!currentIds.has(r.recommendationId) && r.timesSurfaced === 0) {

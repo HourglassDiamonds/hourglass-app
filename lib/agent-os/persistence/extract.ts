@@ -27,6 +27,7 @@ import type {
   RunTrigger,
 } from "./types";
 import { AGENT_OS_PERSISTENCE_SCHEMA_VERSION } from "./types";
+import { canonicalIdForRecommendationId } from "../operating-backlog/canonical";
 
 const KNOWN_ROOTS = new Set<string>([
   CONCIERGE_CONVERSION_ROOT_RECOMMENDATION_ID,
@@ -46,6 +47,8 @@ const JOURNEY_ROOTS = new Set<string>([
 
 export function inferRootProblemId(recommendationId: string): string | null {
   if (KNOWN_ROOTS.has(recommendationId)) return recommendationId;
+  const backlogCanonical = canonicalIdForRecommendationId(recommendationId);
+  if (backlogCanonical) return backlogCanonical;
   if (recommendationId.includes("concierge-conversion")) {
     return CONCIERGE_CONVERSION_ROOT_RECOMMENDATION_ID;
   }
@@ -93,6 +96,11 @@ export function recommendationIsFounderRankable(rec: Recommendation): boolean {
   return true;
 }
 
+/**
+ * Evidence fingerprint for lifecycle / reopen detection.
+ * Excludes proposedAction wording so copy edits alone cannot reopen completed work.
+ * Material regression must change evidence dimensions, severity, or blockers.
+ */
 export function fingerprintForRecommendation(rec: Recommendation): string {
   const dims = [
     ...rec.evidence.map(
@@ -101,6 +109,7 @@ export function fingerprintForRecommendation(rec: Recommendation): string {
     ),
     ...extractMetricTokens(truncate(rec.plainLanguageExplanation, MAX_SUMMARY)),
   ];
+  const isBacklog = rec.recommendationId.startsWith("operating-backlog:");
   return buildEvidenceFingerprint({
     stableId: rec.recommendationId,
     rootProblemId: inferRootProblemId(rec.recommendationId),
@@ -108,7 +117,8 @@ export function fingerprintForRecommendation(rec: Recommendation): string {
     evidenceClass: rec.evidence[0]?.sourceType ?? "derived",
     evidenceDimensions: dims,
     severity: rec.urgency,
-    confidenceBucket: confidenceBucket(rec.confidence),
+    // Confidence wobble must not reopen terminal work.
+    confidenceBucket: isBacklog ? "high" : confidenceBucket(rec.confidence),
     sourceHealth: rec.evidence[0]?.reliability ?? "unverified",
     blockers: (rec.blockedReasons ?? [])
       .slice(0, MAX_BLOCKERS)
@@ -116,7 +126,7 @@ export function fingerprintForRecommendation(rec: Recommendation): string {
     dependencies: rec.dependencies
       .slice(0, MAX_DEPS)
       .map((d) => truncate(d, MAX_DEP_LEN)),
-    actionToken: truncate(rec.proposedAction, MAX_ACTION),
+    // Deliberately omit actionToken — wording ≠ new evidence.
   });
 }
 

@@ -139,3 +139,32 @@ export type {
   PersistAgentOsRunOptions,
   PersistAgentOsRunResult,
 } from "./persist-run";
+
+export {
+  applyRecommendationTerminalState,
+  markRecommendationTerminal,
+  applyRecommendationReopen,
+  reopenRecommendation,
+} from "./mark-terminal";
+export type {
+  TerminalRecommendationStatus,
+  TerminalCompletionSource,
+  MarkRecommendationTerminalInput,
+  MarkRecommendationTerminalResult,
+  ReopenRecommendationInput,
+  ReopenRecommendationResult,
+} from "./mark-terminal";
+
+export {
+  bootstrapHistoricalTerminalsFromStaticBacklog,
+} from "./bootstrap-historical";
+export type {
+  BootstrapHistoricalTerminalsResult,
+  BootstrapSkip,
+  BootstrapSkipReason,
+} from "./bootstrap-historical";
+
+export {
+  logRecommendationLifecycleEvent,
+} from "./lifecycle-log";
+export type { RecommendationLifecycleEvent } from "./lifecycle-log";

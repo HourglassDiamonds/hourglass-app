@@ -67,9 +67,12 @@ import { isPersistenceError } from "./persistence/store";
 import { AgentOsPersistenceError } from "./persistence/types";
 import {
   loadOperatingBacklog,
+  hydrateOperatingBacklogFromPersistence,
+  recommendationsFromOperatingBacklog,
   type OperatingBacklog,
 } from "./operating-backlog";
 import { selectCarryForwardRecommendationIds } from "./persistence/recurrence";
+import { bootstrapHistoricalTerminalsFromStaticBacklog } from "./persistence/bootstrap-historical";
 
 export type RunAgentOsOptions = {
   mode?: AdapterMode;
@@ -308,7 +311,7 @@ export async function runAgentOsBrief(
     nonDurableLive: boolean;
   } | null = null;
 
-  const operatingBacklog =
+  let operatingBacklog: OperatingBacklog | null =
     options.operatingBacklog === null
       ? null
       : loadOperatingBacklog({
@@ -347,7 +350,55 @@ export async function runAgentOsBrief(
           "Live mode refused to load fixture-scoped persisted state",
         );
       }
+
+      // Lifecycle reconciliation MUST complete before eligibility / CoS / email.
+      // Order: load → historical bootstrap (insert-if-absent) → hydrate → eligibility.
+      if (operatingBacklog) {
+        const staticBacklog = loadOperatingBacklog({
+          override: options.operatingBacklog,
+        });
+
+        // Bootstrap durable terminals from static completed items (migration).
+        // Runs before hydrate + founder ranking so the first post-deploy brief
+        // cannot email historically completed work.
+        if (!persistOpts.skipWrite) {
+          const boot = bootstrapHistoricalTerminalsFromStaticBacklog(
+            priorState,
+            staticBacklog,
+            { nowIso: persistNow },
+          );
+          if (boot.changed) {
+            const expectedUpdatedAt = priorState.updatedAt;
+            priorState = boot.state;
+            try {
+              await resolvedStore.save(priorState, { expectedUpdatedAt });
+            } catch {
+              // In-memory priorState still drives this run's hydrate/eligibility
+              // even if CAS save lost a race — avoids a transitional stale brief.
+              warnings.push(
+                "Persistence bootstrap of static terminal backlog items could not be saved this run",
+              );
+            }
+          } else {
+            priorState = boot.state;
+          }
+        }
+
+        const hydrated = hydrateOperatingBacklogFromPersistence(
+          staticBacklog,
+          priorState.recommendations,
+        );
+        operatingBacklog = hydrated.backlog;
+      }
+
+      const backlogForGate = operatingBacklog
+        ? recommendationsFromOperatingBacklog(operatingBacklog, {
+            nowIso: persistNow,
+            collectedAt: persistNow,
+          })
+        : [];
       const mergedForGate = [
+        ...backlogForGate,
         ...bi.recommendations,
         ...search.recommendations,
         ...content.recommendations,

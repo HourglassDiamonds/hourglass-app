@@ -7,6 +7,12 @@ import { createEvidence } from "../evidence";
 import { buildRecommendation } from "../recommendation";
 import type { Recommendation } from "../types";
 import { activeBacklogItems } from "./current-sprint";
+import {
+  backlogProblemEvidenceDimensions,
+  canonicalIdForBacklogItem,
+  operatingBacklogRecommendationId,
+} from "./canonical";
+import { deriveDayOrientationFromBacklog } from "./hydrate";
 import type { OperatingBacklog, OperatingBacklogItem } from "./types";
 
 const BACKLOG_EVIDENCE_PERIOD = { start: "2026-07-20", end: "2026-07-26" };
@@ -21,9 +27,16 @@ function itemToRecommendation(
     item.kind === "open-decision" && item.recommendedChoice
       ? item.recommendedChoice
       : item.action;
+  const recommendationId = operatingBacklogRecommendationId(item.id);
+  const canonicalId = canonicalIdForBacklogItem(item.id);
+  const problemDims = backlogProblemEvidenceDimensions({
+    itemId: item.id,
+    kind: item.kind,
+    urgency: item.urgency,
+  });
 
-  return buildRecommendation({
-    recommendationId: `operating-backlog:${item.id}`,
+  const rec = buildRecommendation({
+    recommendationId,
     originatingExecutive: "chief-of-staff",
     title: item.title,
     plainLanguageExplanation: item.why,
@@ -41,13 +54,15 @@ function itemToRecommendation(
         sourceType: "internal-report",
         collectedAt,
         reportingPeriod: BACKLOG_EVIDENCE_PERIOD,
-        metricOrObservation: `Persistent operating commitment from ${sprintName}`,
+        // Problem-stable observation — wording changes must not reopen lifecycle.
+        metricOrObservation: problemDims.join("|"),
         reliability: "reliable",
         supportingReference: `operating-backlog://${item.id}`,
       }),
     ],
     assumptions: [
       "Item remains active until explicitly completed, cancelled, replaced, or deferred",
+      `Canonical problem identity: ${canonicalId}`,
     ],
     risks: ["Ignoring persistent sprint work recreates empty Morning Briefs"],
     dependencies: [],
@@ -60,12 +75,15 @@ function itemToRecommendation(
       dataQuality: 0.9,
     },
   });
+
+  return rec;
 }
 
 /**
  * Build founder-rankable recommendations from the operating backlog.
  * Sprint priorities + founder actions only (for ROI / Top Priorities).
  * Open decisions are emitted separately via `decisionRecommendationsFromBacklog`.
+ * Terminal backlog statuses are never emitted.
  */
 export function recommendationsFromOperatingBacklog(
   backlog: OperatingBacklog,
@@ -74,6 +92,13 @@ export function recommendationsFromOperatingBacklog(
   const nowIso = options?.nowIso ?? new Date().toISOString();
   const collectedAt = options?.collectedAt ?? nowIso;
   const items = activeBacklogItems(backlog, nowIso).filter((i) => {
+    if (
+      i.status === "completed" ||
+      i.status === "cancelled" ||
+      i.status === "replaced"
+    ) {
+      return false;
+    }
     if (i.kind === "open-decision" || i.kind === "recurring-obligation") {
       return false;
     }
@@ -119,7 +144,10 @@ export function decisionRecommendationsFromBacklog(
 }
 
 /** Human labels for email / Today’s call framing. */
-export function backlogOrientationSummary(backlog: OperatingBacklog): {
+export function backlogOrientationSummary(
+  backlog: OperatingBacklog,
+  options?: { nowIso?: string },
+): {
   sprintName: string;
   objective: string;
   dayOrientation: string | null;
@@ -127,11 +155,13 @@ export function backlogOrientationSummary(backlog: OperatingBacklog): {
   openDecisionTitles: string[];
   deferredTitles: string[];
 } {
+  const nowIso = options?.nowIso ?? new Date().toISOString();
   const active = backlog.masterSprint.items.filter((i) => i.status === "active");
   return {
     sprintName: backlog.masterSprint.name,
     objective: backlog.masterSprint.objective,
-    dayOrientation: backlog.masterSprint.dayOrientation?.trim() || null,
+    // Always derive from reconciled active set — never echo a stale static sentence.
+    dayOrientation: deriveDayOrientationFromBacklog(backlog, nowIso),
     activePriorityTitles: active
       .filter((i) => i.kind === "sprint-priority" || i.kind === "founder-action")
       .sort((a, b) => a.rank - b.rank)
