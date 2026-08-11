@@ -2,6 +2,7 @@ import Image from "next/image";
 import type { CSSProperties } from "react";
 import { CONCIERGE_VISIBLE_COPY } from "@/lib/concierge/conversational-copy";
 import SectionHeading from "../shared-components/SectionHeading";
+import ConciergeOfficeInfo from "./concierge-office-info";
 
 const HERO_IMAGE = "/concierge-hero.png";
 const HERO_ALT =
@@ -94,6 +95,8 @@ export default function ConciergeIntro() {
           <p className="mt-6 max-w-[28rem] text-[0.88rem] leading-[1.75] tracking-[0.01em] text-[#6d655e] md:mt-7">
             {copy.reassurance}
           </p>
+
+          <ConciergeOfficeInfo />
         </div>
       </div>
 

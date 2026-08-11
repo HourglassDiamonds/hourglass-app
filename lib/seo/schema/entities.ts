@@ -11,6 +11,13 @@ import { DIAMOND_STUDIO_FAQS } from "@/lib/seo/diamond-studio-educational";
 import { ENGAGEMENT_RINGS_FAQS } from "@/lib/seo/engagement-rings-educational";
 import {
   absoluteUrl,
+  BUSINESS_ADDRESS_COUNTRY,
+  BUSINESS_ADDRESS_LOCALITY,
+  BUSINESS_ADDRESS_REGION,
+  BUSINESS_OPENING_HOURS,
+  BUSINESS_POSTAL_CODE,
+  BUSINESS_TELEPHONE_E164,
+  businessStreetAddressLine,
   CHARLOTTE_METRO_AREA_SERVED,
   DIAMOND_INTELLIGENCE_APP_ID,
   DIAMOND_INTELLIGENCE_DESCRIPTION,
@@ -94,11 +101,20 @@ function jewelryStoreNode(): JsonLdValue {
     description: ORGANIZATION_DESCRIPTION,
     image: absoluteUrl(LOGO_PATH),
     parentOrganization: { "@id": ORGANIZATION_ID },
+    telephone: BUSINESS_TELEPHONE_E164,
     address: {
       "@type": "PostalAddress",
-      addressLocality: "Charlotte",
-      addressRegion: "NC",
-      addressCountry: "US",
+      streetAddress: businessStreetAddressLine(),
+      addressLocality: BUSINESS_ADDRESS_LOCALITY,
+      addressRegion: BUSINESS_ADDRESS_REGION,
+      postalCode: BUSINESS_POSTAL_CODE,
+      addressCountry: BUSINESS_ADDRESS_COUNTRY,
+    },
+    openingHoursSpecification: {
+      "@type": "OpeningHoursSpecification",
+      dayOfWeek: [...BUSINESS_OPENING_HOURS.dayOfWeek],
+      opens: BUSINESS_OPENING_HOURS.opens,
+      closes: BUSINESS_OPENING_HOURS.closes,
     },
     areaServed: [
       {
@@ -114,6 +130,7 @@ function jewelryStoreNode(): JsonLdValue {
     contactPoint: {
       "@type": "ContactPoint",
       contactType: "customer service",
+      telephone: BUSINESS_TELEPHONE_E164,
       url: absoluteUrl("/concierge"),
     },
   };

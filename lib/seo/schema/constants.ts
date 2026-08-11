@@ -24,6 +24,37 @@ export const ORGANIZATION_DESCRIPTION =
 
 export const PERSON_JOB_TITLE = "Graduate Gemologist";
 
+/** Canonical public Charlotte office NAP (founder-approved). Single source for schema + Concierge. */
+export const BUSINESS_STREET_ADDRESS = "15720 Brixham Hill Ave";
+export const BUSINESS_SUITE = "Suite 300";
+export const BUSINESS_ADDRESS_LOCALITY = "Charlotte";
+export const BUSINESS_ADDRESS_REGION = "NC";
+export const BUSINESS_POSTAL_CODE = "28277";
+export const BUSINESS_ADDRESS_COUNTRY = "US";
+/** Public display phone (hyphenated). */
+export const BUSINESS_TELEPHONE_DISPLAY = "980-259-9485";
+/** E.164 for `tel:` links and schema.org `telephone`. */
+export const BUSINESS_TELEPHONE_E164 = "+19802599485";
+/** Quiet-luxury office hours label for Concierge / contact UI. */
+export const BUSINESS_OFFICE_HOURS_LABEL = "Monday–Friday, 9–5";
+/** Schema.org OpeningHoursSpecification (Mon–Fri, office staffed). Consultations remain by appointment. */
+export const BUSINESS_OPENING_HOURS = {
+  dayOfWeek: [
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+  ] as const,
+  opens: "09:00",
+  closes: "17:00",
+} as const;
+
+/** Full street line including suite — for PostalAddress.streetAddress and visible UI. */
+export function businessStreetAddressLine(): string {
+  return `${BUSINESS_STREET_ADDRESS}, ${BUSINESS_SUITE}`;
+}
+
 export const DIAMOND_STUDIO_NAME = "Diamond Size Studio";
 export const DIAMOND_STUDIO_DESCRIPTION =
   "Compare diamond shapes and carat weights on different finger sizes. Visualize scale, finger coverage, band width, and proportion before choosing a diamond.";
