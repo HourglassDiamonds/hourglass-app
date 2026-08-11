@@ -654,6 +654,52 @@ describe("Concierge SLA Chief of Staff integration", () => {
           ?.priorityScore ?? 0),
     );
 
+    // Daily backlog reorder must not demote live overdue Concierge below sprint work.
+    const withBacklog = runChiefOfStaff({
+      bi: {
+        ...bi,
+        recommendations: [seoish],
+      },
+      reportingPeriod: { start: "2026-08-01", end: "2026-08-10" },
+      warnings: [],
+      mode: "fixture",
+      briefCadenceIntent: "daily",
+      founderSurfaceEligibleIds: [],
+      conciergeSlaOverdueCount: 1,
+      operatingBacklog: {
+        schemaVersion: 1,
+        masterSprint: {
+          id: "sprint-p05-test",
+          name: "Synthetic sprint",
+          objective: "Ordinary marketing work",
+          affirmedLocalDate: "2026-08-11",
+          items: [
+            {
+              id: "paid-search-readiness",
+              kind: "sprint-priority",
+              title: "Paid-search readiness review",
+              action: "Review paid-search readiness",
+              why: "Ordinary marketing sprint item",
+              expectedOutcome: "Paid readiness checked",
+              status: "active",
+              urgency: "high",
+              rank: 1,
+            },
+          ],
+        },
+        deferred: [],
+        recurring: [],
+      },
+    });
+    assert.match(
+      withBacklog.brief.markdown,
+      /## 4\. What is the single highest-ROI action\?\nOverdue Concierge first-contact SLA/i,
+    );
+    assert.doesNotMatch(
+      withBacklog.brief.markdown,
+      /## 4\. What is the single highest-ROI action\?\nPaid-search readiness/i,
+    );
+
     const cleared = runChiefOfStaff({
       bi: { ...bi, recommendations: [seoish] },
       reportingPeriod: { start: "2026-08-01", end: "2026-08-10" },

@@ -344,6 +344,19 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
     poolForSelect = [...backlogInPool, ...fresh];
   }
 
+  // P0-5: live overdue Concierge must stay ahead of daily backlog reorder.
+  // Backlog-first fill is correct for ordinary sprint work, but must not demote
+  // an operational overdue Concierge SLA below SEO/marketing/content items.
+  {
+    const overdueIdx = poolForSelect.findIndex((r) =>
+      isConciergeSlaOverdueRecommendationId(r.recommendationId),
+    );
+    if (overdueIdx > 0) {
+      const [overdue] = poolForSelect.splice(overdueIdx, 1);
+      poolForSelect = [overdue, ...poolForSelect];
+    }
+  }
+
   const selected = selectFounderPriorities(poolForSelect, {
     max: maxPriorities,
   });
