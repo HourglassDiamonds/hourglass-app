@@ -609,19 +609,26 @@ function SuiteStyles() {
         }
         .dts-stage-stack .dts-stage-preview{
           order:1;
-          flex:1 1 auto;
+          /* Size to copy + viewer — do not flex-grow or the strip detaches
+             below empty stage space when the control rail stretches the column. */
+          flex:0 1 auto;
           min-height:0;
           min-width:0;
-          padding:clamp(16px, 2.2vh, 28px) 0 8px;
+          padding:clamp(12px, 1.8vh, 24px) 0 0;
           justify-content:flex-start;
           overflow:visible;
         }
         .dts-stage-stack .dts-shape-strip-wrap{
           order:2;
           flex:0 0 auto;
-          align-self:center;
-          margin-top:clamp(10px, 1.6vh, 20px);
-          margin-bottom:clamp(14px, 2.4vh, 28px);
+          align-self:stretch;
+          width:100%;
+          box-sizing:border-box;
+          padding-inline:clamp(12px, 2vw, 28px);
+          /* Snug under the viewer so the rail sits with the control stack. */
+          margin-top:clamp(4px, 0.6vh, 8px);
+          margin-bottom:clamp(8px, 1.2vh, 14px);
+          justify-content:stretch;
         }
         .dts-stage-stack .dts-shape-strip{
           position:relative;
@@ -630,9 +637,23 @@ function SuiteStyles() {
           bottom:auto;
           inset:auto;
           transform:none;
+          width:100%;
+          max-width:none;
+          display:grid;
+          grid-template-columns:repeat(9, minmax(0, 1fr));
+          align-items:stretch;
+          gap:clamp(4px, 0.7vw, 10px);
+          padding:7px clamp(8px, 1vw, 14px);
+          box-sizing:border-box;
+        }
+        .dts-stage-stack .dts-shape-chip{
+          min-width:0;
+          width:auto;
+          flex:unset;
+          padding:7px 4px 6px;
         }
         .dts-stage-stack .dts-stage-canvas{
-          margin-bottom:clamp(4px, 0.8vh, 12px);
+          margin-bottom:0;
         }
       }
       .dts-stage-stack{
@@ -1310,22 +1331,50 @@ function SuiteStyles() {
       }
       @media (min-width: 1441px) {
         .dts-stage-stack{
-          justify-content:center;
-          gap:clamp(8px, 1.2vh, 14px);
+          justify-content:flex-start;
+          gap:0;
         }
         .dts-stage-stack .dts-stage-preview{
           flex:0 1 auto;
-          justify-content:center;
+          justify-content:flex-start;
           padding:clamp(12px, 1.6vh, 22px) 0 0;
         }
         .dts-stage-stack .dts-shape-strip-wrap{
           flex:0 0 auto;
-          align-self:center;
-          margin-top:0;
-          margin-bottom:clamp(12px, 2vh, 24px);
+          align-self:stretch;
+          margin-top:clamp(4px, 0.6vh, 8px);
+          margin-bottom:clamp(8px, 1.2vh, 14px);
         }
         .dts-stage-stack .dts-stage-canvas{
-          margin-bottom:clamp(2px, 0.5vh, 8px);
+          margin-bottom:0;
+        }
+      }
+      /*
+        Taller desktops: seat the shape rail on the stage bottom so its bottom
+        optically tracks the left control stack. Shared grid area + end alignment
+        lifts the rail without negative margins, sticky/fixed, or resizing the
+        approved viewer. min-height 880px covers constrained laptop windows
+        just under 900px; shorter desktops keep the snug in-flow gap.
+      */
+      @media (min-width: 1024px) and (min-height: 880px) {
+        .dts-stage-stack{
+          display:grid;
+          grid-template-columns:minmax(0, 1fr);
+          gap:0;
+        }
+        .dts-stage-stack .dts-stage-preview{
+          grid-area:1 / 1;
+          padding-bottom:1.5rem;
+        }
+        .dts-stage-stack .dts-shape-strip-wrap{
+          grid-area:1 / 1;
+          align-self:end;
+          justify-self:stretch;
+          height:max-content;
+          width:100%;
+          margin-top:0;
+          margin-bottom:0;
+          z-index:6;
         }
       }
       /* Below full desktop width: vertical document flow (stage → shapes → controls). */
@@ -1712,6 +1761,20 @@ function SuiteStyles() {
         .dts-stage-canvas{
           pointer-events:none;
         }
+        /*
+          Must follow the base .dts-viewer rule in this stylesheet so width /
+          max-height actually win. Budget keeps the portrait stage dominant;
+          the wide shape rail may sit at the fold or need a short scroll.
+
+          Use budget×0.96 (not max-height:96%) so the clamp is not a percentage
+          of .dts-stage-canvas — a % max-height against that flex parent leaves
+          a phantom canvas band under the viewer and pushes the shape rail down.
+        */
+        .dts-viewer{
+          --dts-viewer-budget:calc(100dvh - var(--dts-chrome-h) - 14rem);
+          width:min(578px, 93.5%, calc(var(--dts-viewer-budget) * 7 / 9));
+          max-height:calc(var(--dts-viewer-budget) * 0.96);
+        }
       }
       /* Short desktop viewports: compress panel spacing so controls sit more
          compactly above editorial content; keep typography intact. */
@@ -1801,14 +1864,12 @@ function SuiteStyles() {
         }
       }
       /*
-        Laptop / short desktop stages: prior max-height caps (≈44–46vh / 400px)
-        forced a wide shallow viewer (aspect ≈1.45 vs 7/9), cropping finger
-        above/below the ring and leaving blank flex space above the shape strip.
-        Size Studio scrolls with the page — prefer a taller portrait stage that
-        preserves aspect-ratio, without changing diamond mm / overlay math.
+        Laptop / short desktop stages: keep portrait 7/9 sizing (avoid the old
+        shallow ~44–46vh banner crop). Prefer a larger finger hero; the wide
+        shape rail may peek or need ~50–100px scroll rather than shrinking the
+        stage to force the rail fully above the fold.
       */
       @media (min-width: 1024px) and (max-height: 960px) {
-        /* Match large-desktop stage flex so the strip sits under the viewer. */
         .dts-stage-stack{
           justify-content:flex-start;
         }
@@ -1816,39 +1877,45 @@ function SuiteStyles() {
           flex:0 1 auto;
           justify-content:flex-start;
         }
+        .dts-viewer{
+          --dts-viewer-budget:calc(100dvh - var(--dts-chrome-h) - 9.25rem);
+          width:min(560px, 92%, calc(var(--dts-viewer-budget) * 7 / 9));
+          max-height:min(68vh, 575px, var(--dts-viewer-budget));
+        }
       }
       @media (min-width: 1024px) and (max-height: 860px) {
         .dts-stage-stack .dts-stage-preview{
-          padding-top:clamp(12px, 1.8vh, 22px);
+          padding-top:clamp(10px, 1.6vh, 18px);
           padding-bottom:4px;
         }
         .dts-sentence{
-          margin-bottom:10px;
+          margin-bottom:8px;
           font-size:clamp(17px, 2.4vh, 20px);
         }
         .dts-stage-trust{
-          margin-bottom:8px;
+          margin-bottom:6px;
           font-size:10px;
           line-height:1.55;
         }
         .dts-viewer{
-          /* Height-led width keeps 7/9 when vh is the binding constraint. */
-          width:min(540px, 90%, calc(72vh * 7 / 9));
-          max-height:min(72vh, 580px);
+          --dts-viewer-budget:calc(100dvh - var(--dts-chrome-h) - 7rem);
+          width:min(540px, 90%, calc(var(--dts-viewer-budget) * 7 / 9));
+          max-height:min(62vh, 475px, var(--dts-viewer-budget));
         }
         .dts-stage-stack .dts-shape-strip-wrap{
-          margin-top:clamp(8px, 1.2vh, 16px);
-          margin-bottom:clamp(12px, 1.8vh, 22px);
+          margin-top:clamp(4px, 0.5vh, 6px);
+          margin-bottom:clamp(8px, 1.2vh, 14px);
         }
       }
       @media (min-width: 1024px) and (max-height: 720px) {
         .dts-viewer{
-          width:min(500px, 88%, calc(70vh * 7 / 9));
-          max-height:min(70vh, 520px);
+          --dts-viewer-budget:calc(100dvh - var(--dts-chrome-h) - 6rem);
+          width:min(520px, 88%, calc(var(--dts-viewer-budget) * 7 / 9));
+          max-height:min(60vh, 440px, var(--dts-viewer-budget));
         }
         .dts-sentence{
           font-size:clamp(16px, 2.2vh, 18px);
-          margin-bottom:8px;
+          margin-bottom:6px;
         }
       }
       @media (prefers-reduced-motion: reduce){

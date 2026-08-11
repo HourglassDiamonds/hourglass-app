@@ -76,11 +76,11 @@ describe("Size Studio desktop control rail page scroll", () => {
   it("sizes the laptop finger viewer as a tall portrait stage, not a shallow banner", () => {
     assert.match(
       pageSource,
-      /@media \(min-width: 1024px\) and \(max-height: 860px\)[\s\S]*?\.dts-viewer\{[\s\S]*?max-height:min\(72vh, 580px\)/,
+      /@media \(min-width: 1024px\) and \(max-height: 860px\)[\s\S]*?\.dts-viewer\{[\s\S]*?max-height:min\(62vh, 475px, var\(--dts-viewer-budget\)\)/,
     );
     assert.match(
       pageSource,
-      /@media \(min-width: 1024px\) and \(max-height: 720px\)[\s\S]*?\.dts-viewer\{[\s\S]*?max-height:min\(70vh, 520px\)/,
+      /@media \(min-width: 1024px\) and \(max-height: 720px\)[\s\S]*?\.dts-viewer\{[\s\S]*?max-height:min\(60vh, 440px, var\(--dts-viewer-budget\)\)/,
     );
     assert.doesNotMatch(
       pageSource,
@@ -93,6 +93,41 @@ describe("Size Studio desktop control rail page scroll", () => {
     assert.match(
       pageSource,
       /@media \(min-width: 1024px\) and \(max-height: 960px\)[\s\S]*?\.dts-stage-stack \.dts-stage-preview\{[\s\S]*?flex:0 1 auto/,
+    );
+  });
+
+  it("keeps the desktop shape rail attached under the stage and spanning the workspace", () => {
+    assert.match(
+      pageSource,
+      /@media \(min-width: 1024px\) \{[\s\S]*?\.dts-stage-stack \.dts-stage-preview\{[\s\S]*?flex:0 1 auto/,
+    );
+    assert.match(
+      pageSource,
+      /@media \(min-width: 1024px\) \{[\s\S]*?\.dts-stage-stack \.dts-shape-strip-wrap\{[\s\S]*?align-self:stretch/,
+    );
+    assert.match(
+      pageSource,
+      /@media \(min-width: 1024px\) \{[\s\S]*?\.dts-stage-stack \.dts-shape-strip\{[\s\S]*?grid-template-columns:repeat\(9, minmax\(0, 1fr\)\)/,
+    );
+    assert.match(
+      pageSource,
+      /--dts-viewer-budget:calc\(100dvh - var\(--dts-chrome-h\) - 14rem\)/,
+    );
+    assert.match(
+      pageSource,
+      /Decorative stage layers must not intercept[\s\S]*?\.dts-viewer\{[\s\S]*?--dts-viewer-budget/,
+    );
+    assert.match(
+      pageSource,
+      /@media \(min-width: 1441px\) \{[\s\S]*?\.dts-stage-stack\{[\s\S]*?justify-content:flex-start/,
+    );
+    assert.match(
+      pageSource,
+      /@media \(min-width: 1024px\) and \(min-height: 880px\) \{[\s\S]*?\.dts-stage-stack \.dts-shape-strip-wrap\{[\s\S]*?align-self:end/,
+    );
+    assert.match(
+      pageSource,
+      /@media \(min-width: 1024px\) and \(min-height: 880px\) \{[\s\S]*?padding-bottom:1\.5rem/,
     );
   });
 });
