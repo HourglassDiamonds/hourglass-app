@@ -14,6 +14,8 @@ import { runBusinessIntelligence } from "./executives/business-intelligence";
 import { loadClientAttentionSourcesAsync } from "./bi/client-attention";
 import { emptyBusinessIntelligenceOutput } from "./bi/empty";
 import { runChiefOfStaff } from "./executives/chief-of-staff";
+import { countOverdueConciergeSla } from "@/lib/concierge/sla/watchdog";
+import { isConciergeSlaEnabled } from "@/lib/concierge/sla/enabled";
 import {
   emptyContentExecutiveOutput,
   runContentExecutive,
@@ -437,6 +439,14 @@ export async function runAgentOsBrief(
     }
   }
 
+  const conciergeSlaOverdueCount =
+    mode === "live" && isConciergeSlaEnabled()
+      ? await countOverdueConciergeSla({
+          nowIso: persistNow,
+          enabled: true,
+        }).catch(() => 0)
+      : 0;
+
   const cos = runChiefOfStaff({
     bi,
     search,
@@ -452,6 +462,7 @@ export async function runAgentOsBrief(
     briefLocalDate: options.briefLocalDate,
     sourceHealth,
     operatingBacklog,
+    conciergeSlaOverdueCount,
   });
 
   const provider =

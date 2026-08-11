@@ -2,6 +2,11 @@ import assert from "node:assert/strict";
 import { afterEach, beforeEach, describe, it } from "node:test";
 import { POST } from "@/app/api/concierge/route";
 import { resetConciergeRateLimits } from "./rate-limit";
+import {
+  getDefaultConciergeSlaStore,
+  resetConciergeSlaTestStore,
+} from "./sla/ledger";
+import { createMemoryConciergeSlaStore } from "./sla/memory-store";
 
 const ORIGINAL_ENV = { ...process.env };
 const ORIGINAL_FETCH = globalThis.fetch;
@@ -68,6 +73,19 @@ function mockSuccessfulHubSpot() {
     if (url.endsWith("/crm/v3/objects/notes") && method === "POST") {
       return new Response(JSON.stringify({ id: "note-1" }), { status: 201 });
     }
+    // P0-5 Concierge SLA task paths
+    if (url.includes("/associations/tasks") && method === "GET") {
+      return new Response(JSON.stringify({ results: [] }), { status: 200 });
+    }
+    if (url.includes("/crm/v3/objects/tasks/") && method === "GET") {
+      return new Response(null, { status: 404 });
+    }
+    if (url.endsWith("/crm/v3/objects/tasks") && method === "POST") {
+      return new Response(JSON.stringify({ id: "task-1" }), { status: 201 });
+    }
+    if (url.includes("/crm/v3/owners/") && method === "GET") {
+      return new Response(JSON.stringify({ id: "owner-1" }), { status: 200 });
+    }
     return new Response(JSON.stringify({ message: `unmocked ${method} ${url}` }), {
       status: 500,
     });
@@ -77,19 +95,24 @@ function mockSuccessfulHubSpot() {
 describe("POST /api/concierge", () => {
   beforeEach(() => {
     resetConciergeRateLimits();
+    resetConciergeSlaTestStore();
     process.env = { ...ORIGINAL_ENV };
     process.env.HUBSPOT_ACCESS_TOKEN = "pat-test-access-token";
     process.env.HUBSPOT_PRIVATE_APP_TOKEN = "";
     process.env.HUBSPOT_DEAL_PIPELINE_ID = "default";
     process.env.HUBSPOT_DEAL_STAGE_ID_NEW_INQUIRY = "stage-new";
     process.env.CONCIERGE_RATE_LIMIT_DISABLED = "1";
+    process.env.CONCIERGE_SLA_TEST_MEMORY = "1";
     process.env.NODE_ENV = "test";
+    // Default: SLA gate OFF — mirrors production ship-safe posture.
+    delete process.env.CONCIERGE_SLA_ENABLED;
   });
 
   afterEach(() => {
     process.env = { ...ORIGINAL_ENV };
     globalThis.fetch = ORIGINAL_FETCH;
     resetConciergeRateLimits();
+    resetConciergeSlaTestStore();
   });
 
   it("accepts a successful HubSpot submission", async () => {
@@ -469,5 +492,153 @@ describe("POST /api/concierge", () => {
     assert.equal(body.ok, true);
     assert.equal(body.accepted, false);
     assert.equal(fetchCalls, 0);
+  });
+
+  it("SLA disabled: contact → deal → association/note → accepted with zero SLA side effects", async () => {
+    delete process.env.CONCIERGE_SLA_ENABLED;
+    process.env.CONCIERGE_SLA_TEST_MEMORY = "1";
+
+    let contactPosts = 0;
+    let dealPosts = 0;
+    let associationPuts = 0;
+    let notePosts = 0;
+    let taskCalls = 0;
+
+    globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      const method = (init?.method || "GET").toUpperCase();
+
+      if (url.includes("/crm/v3/objects/contacts/") && method === "PATCH") {
+        return new Response("not found", { status: 404 });
+      }
+      if (url.endsWith("/crm/v3/objects/contacts") && method === "POST") {
+        contactPosts += 1;
+        return new Response(JSON.stringify({ id: "contact-legacy" }), {
+          status: 201,
+        });
+      }
+      if (url.endsWith("/crm/v3/objects/deals") && method === "POST") {
+        dealPosts += 1;
+        return new Response(JSON.stringify({ id: "deal-legacy" }), {
+          status: 201,
+        });
+      }
+      if (url.includes("/associations/deals/") && method === "PUT") {
+        associationPuts += 1;
+        return new Response(null, { status: 204 });
+      }
+      if (url.endsWith("/crm/v3/objects/notes") && method === "POST") {
+        notePosts += 1;
+        return new Response(JSON.stringify({ id: "note-legacy" }), {
+          status: 201,
+        });
+      }
+      if (url.includes("/tasks")) {
+        taskCalls += 1;
+        return new Response(
+          JSON.stringify({ message: "SLA task API must not run when disabled" }),
+          { status: 500 },
+        );
+      }
+      return new Response(
+        JSON.stringify({ message: `unmocked ${method} ${url}` }),
+        { status: 500 },
+      );
+    }) as typeof fetch;
+
+    const submissionId = crypto.randomUUID();
+    const response = await POST(
+      buildFormRequest(
+        { ...validFields, submissionId },
+        { ip: "203.0.113.90" },
+      ),
+    );
+    const body = await response.json();
+
+    assert.equal(response.status, 200);
+    assert.equal(body.ok, true);
+    assert.equal(body.accepted, true);
+    assert.equal(contactPosts, 1);
+    assert.equal(dealPosts, 1);
+    assert.ok(associationPuts >= 1);
+    assert.equal(notePosts, 1);
+    assert.equal(taskCalls, 0);
+
+    const store = getDefaultConciergeSlaStore() as
+      | (ReturnType<typeof createMemoryConciergeSlaStore>)
+      | null;
+    assert.ok(store);
+    assert.equal((await store.listOpen()).length, 0);
+    assert.equal(store._rows.size, 0);
+  });
+
+  it("SLA enabled: creates follow-up task after accepted deal", async () => {
+    process.env.CONCIERGE_SLA_ENABLED = "true";
+    process.env.CONCIERGE_SLA_TEST_MEMORY = "1";
+    process.env.RESEND_API_KEY = "re_test_key";
+    process.env.CONCIERGE_ALERT_EMAIL_FROM = "alerts@hourglass.test";
+    process.env.CONCIERGE_ALERT_EMAIL_TO = "founder@hourglass.test";
+
+    let taskCreates = 0;
+    globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      const method = (init?.method || "GET").toUpperCase();
+
+      if (url.includes("/crm/v3/objects/contacts/") && method === "PATCH") {
+        return new Response("not found", { status: 404 });
+      }
+      if (url.endsWith("/crm/v3/objects/contacts") && method === "POST") {
+        return new Response(JSON.stringify({ id: "contact-sla" }), {
+          status: 201,
+        });
+      }
+      if (url.endsWith("/crm/v3/objects/deals") && method === "POST") {
+        return new Response(JSON.stringify({ id: "deal-sla" }), { status: 201 });
+      }
+      if (url.includes("/associations/deals/") && method === "PUT") {
+        return new Response(null, { status: 204 });
+      }
+      if (url.endsWith("/crm/v3/objects/notes") && method === "POST") {
+        return new Response(JSON.stringify({ id: "note-sla" }), { status: 201 });
+      }
+      if (url.includes("/associations/tasks") && method === "GET") {
+        return new Response(JSON.stringify({ results: [] }), { status: 200 });
+      }
+      if (url.includes("/crm/v3/objects/tasks/") && method === "GET") {
+        return new Response(null, { status: 404 });
+      }
+      if (url.endsWith("/crm/v3/objects/tasks") && method === "POST") {
+        taskCreates += 1;
+        return new Response(JSON.stringify({ id: "task-sla" }), { status: 201 });
+      }
+      if (url.includes("/crm/v3/owners/") && method === "GET") {
+        return new Response(JSON.stringify({ id: "owner-1" }), { status: 200 });
+      }
+      if (url.includes("api.resend.com/emails") && method === "POST") {
+        return new Response(JSON.stringify({ id: "email-sla" }), { status: 200 });
+      }
+      return new Response(
+        JSON.stringify({ message: `unmocked ${method} ${url}` }),
+        { status: 500 },
+      );
+    }) as typeof fetch;
+
+    const submissionId = crypto.randomUUID();
+    const response = await POST(
+      buildFormRequest(
+        { ...validFields, submissionId },
+        { ip: "203.0.113.91" },
+      ),
+    );
+    const body = await response.json();
+    assert.equal(response.status, 200);
+    assert.equal(body.accepted, true);
+    assert.equal(taskCreates, 1);
+
+    const store = getDefaultConciergeSlaStore();
+    assert.ok(store);
+    const row = await store.getByDealId("deal-sla");
+    assert.ok(row);
+    assert.equal(row.taskId, "task-sla");
   });
 });

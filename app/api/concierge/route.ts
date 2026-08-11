@@ -569,6 +569,30 @@ export async function POST(request: Request) {
         });
       }
 
+      // P0-5: SLA ledger + HubSpot task + immediate founder alert.
+      // Deal already exists — SLA failures must not fail the customer response.
+      try {
+        const { setupConciergeSlaAfterDeal } = await import(
+          "@/lib/concierge/sla/setup"
+        );
+        await setupConciergeSlaAfterDeal({
+          dealId,
+          contactId,
+          submissionId,
+          token,
+          submittedAt: new Date().toISOString(),
+        });
+      } catch (slaError) {
+        console.error("[concierge_sla_setup_failed]", {
+          event: "concierge_sla_setup_failed",
+          severity: "high",
+          deal_id: dealId,
+          submission_id: submissionId.slice(0, 12),
+          error:
+            slaError instanceof Error ? slaError.message : "sla_setup_threw",
+        });
+      }
+
       completeConciergeSubmission(submissionId);
 
       console.info("[concierge-submit-ok]", {

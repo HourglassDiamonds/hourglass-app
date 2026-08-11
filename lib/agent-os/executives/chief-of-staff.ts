@@ -49,6 +49,11 @@ import {
   decisionRecommendationsFromBacklog,
   recommendationsFromOperatingBacklog,
 } from "../operating-backlog";
+import {
+  injectConciergeSlaOverdueIntoSurfacePool,
+  isConciergeSlaOverdueRecommendationId,
+} from "@/lib/concierge/sla/cos-escalation";
+import { CONCIERGE_SLA_OVERDUE_RECOMMENDATION_ID } from "@/lib/concierge/sla/types";
 
 export type ChiefOfStaffInput = {
   bi: BusinessIntelligenceOutput;
@@ -89,6 +94,12 @@ export type ChiefOfStaffInput = {
    * recurrence cooldown would otherwise empty the daily brief.
    */
   carryForwardRecommendationIds?: string[] | null;
+  /**
+   * Live overdue Concierge SLA count (P0-5). Operational state — not a
+   * persisted recommendation lifecycle item. Outranks ordinary sprint work and
+   * cannot be suppressed by P0-3 terminal completion records.
+   */
+  conciergeSlaOverdueCount?: number;
 };
 
 export type ChiefOfStaffOutput = {
@@ -208,6 +219,8 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
       ...input.founderSurfaceEligibleIds,
       ...backlogIds,
       ...carryIds,
+      // Live Concierge SLA is never gated by recommendation lifecycle.
+      CONCIERGE_SLA_OVERDUE_RECOMMENDATION_ID,
     ]);
     const byId = new Map(surfacePool.map((r) => [r.recommendationId, r]));
     // Hierarchy order: backlog first, then carry-forward, then recurrence-eligible.
@@ -232,7 +245,8 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
             r.plainLanguageExplanation,
             r.title,
             r.priorityScore,
-          )
+          ) ||
+          isConciergeSlaOverdueRecommendationId(r.recommendationId)
         ) {
           surfacePool.push(r);
         }
@@ -245,6 +259,17 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
     );
     const rest = surfacePool.filter((r) => !backlogIds.has(r.recommendationId));
     surfacePool = [...backlogFirst, ...rest];
+  }
+
+  // P0-5: live overdue Concierge SLA — operational state, not lifecycle-gated.
+  {
+    const injected = injectConciergeSlaOverdueIntoSurfacePool({
+      recommendations,
+      surfacePool,
+      overdueCount: input.conciergeSlaOverdueCount ?? 0,
+    });
+    recommendations = injected.recommendations;
+    surfacePool = injected.surfacePool;
   }
 
   // Legacy fallback for callers that omit intent (mostly unit tests).
