@@ -11,13 +11,13 @@ export default function DiamondStudioSuiteNavStyles() {
         flex-direction:column;
         align-items:center;
         justify-content:center;
-        gap:4px;
-        padding:8px 16px 6px;
+        gap:2px;
+        padding:4px 16px 3px;
         min-height:44px;
         height:auto;
         flex-shrink:0;
-        background: color-mix(in srgb, var(--hg-ivory, #efe8de) 94%, #fff);
-        border-bottom:1px solid var(--hg-line, #e4dbcf);
+        background: color-mix(in srgb, var(--hg-ivory, #efe8de) 88%, #f7f1e8);
+        border-bottom:1px solid color-mix(in srgb, var(--hg-line, #e4dbcf) 82%, var(--hg-gold-deep, #987648));
         box-shadow:none;
       }
       .dts-topnav-eyebrow{
@@ -27,14 +27,14 @@ export default function DiamondStudioSuiteNavStyles() {
         font-weight:500;
         letter-spacing:0.14em;
         text-transform:uppercase;
-        color:color-mix(in srgb, var(--hg-muted, #70665d) 78%, var(--hg-ink, #1c1b1a));
+        color:color-mix(in srgb, var(--hg-muted, #70665d) 72%, var(--hg-ink, #1c1b1a));
         line-height:1.2;
         text-align:center;
         user-select:none;
       }
       .dts-topnav{
         display:flex; align-items:stretch; justify-content:center;
-        gap:clamp(10px, 2.4vw, 28px);
+        gap:clamp(12px, 2vw, 22px);
         min-width:0;
         overflow-x:visible;
         overflow-y:hidden;
@@ -47,7 +47,8 @@ export default function DiamondStudioSuiteNavStyles() {
         flex-direction:column;
         align-items:stretch;
         justify-content:stretch;
-        flex:0 1 auto;
+        flex:0 0 auto;
+        width:clamp(148px, 11.2vw, 162px);
         min-width:0;
         text-align:center;
         user-select:none;
@@ -59,14 +60,16 @@ export default function DiamondStudioSuiteNavStyles() {
         flex-direction:column;
         align-items:center;
         justify-content:center;
-        gap:2px;
-        min-height:44px;
-        padding:7px 14px 10px;
+        gap:3px;
+        box-sizing:border-box;
+        width:100%;
+        min-height:52px;
+        padding:9px 12px 11px;
         text-decoration:none;
         color:inherit;
-        border-radius:3px;
-        border:1px solid transparent;
-        background:transparent;
+        border-radius:4px;
+        border:1px solid color-mix(in srgb, var(--hg-line, #e4dbcf) 78%, var(--hg-gold-deep, #987648));
+        background:color-mix(in srgb, var(--hg-ivory, #efe8de) 62%, #fff8ef);
         transition:
           color 260ms cubic-bezier(0.28, 0.11, 0.22, 1),
           background-color 260ms cubic-bezier(0.28, 0.11, 0.22, 1),
@@ -75,11 +78,11 @@ export default function DiamondStudioSuiteNavStyles() {
       }
       .dts-topnav-label{
         display:inline;
-        font-size:10px; font-weight:500; letter-spacing:0.07em;
+        font-size:11.5px; font-weight:500; letter-spacing:0.08em;
         text-transform:uppercase;
-        color:color-mix(in srgb, var(--hg-muted, #70665d) 88%, var(--hg-ink, #1c1b1a));
+        color:color-mix(in srgb, var(--hg-muted, #70665d) 55%, var(--hg-ink, #1c1b1a));
         white-space:nowrap;
-        line-height:1.25;
+        line-height:1.2;
         text-decoration:none;
       }
       .dts-topnav-line{
@@ -89,36 +92,37 @@ export default function DiamondStudioSuiteNavStyles() {
         display:inline;
       }
       .dts-topnav-desc{
-        font-size:8.5px;
+        font-size:9.5px;
         font-weight:400;
-        letter-spacing:0.04em;
+        letter-spacing:0.045em;
         text-transform:none;
-        /* P0-4 (WCAG 1.4.3): was muted mixed 72% toward #fff (~2.5:1 on the
-           parchment bar); full muted token holds ≥4.5:1 at this tiny size. */
+        /* P0-4 (WCAG 1.4.3): keep ≥4.5:1 on parchment surfaces. */
         color:var(--hg-muted, #70665d);
         line-height:1.2;
         white-space:nowrap;
       }
       .dts-topnav-item.is-active .dts-topnav-hit{
-        background:color-mix(in srgb, var(--hg-ivory, #efe8de) 55%, #fff);
-        border-color:color-mix(in srgb, var(--hg-line, #e4dbcf) 88%, var(--hg-gold-deep, #987648));
-        box-shadow:0 1px 0 color-mix(in srgb, var(--hg-gold-deep, #987648) 18%, transparent);
+        background:color-mix(in srgb, #fff 58%, var(--hg-ivory, #efe8de));
+        border-color:color-mix(in srgb, var(--hg-line, #e4dbcf) 55%, var(--hg-gold-deep, #987648));
+        box-shadow:
+          0 1px 0 color-mix(in srgb, var(--hg-gold-deep, #987648) 22%, transparent),
+          inset 0 0 0 1px color-mix(in srgb, #fff 55%, transparent);
       }
       .dts-topnav-item.is-active .dts-topnav-label{
         color:var(--hg-ink, #1c1b1a);
         font-weight:600;
-        letter-spacing:0.07em;
+        letter-spacing:0.075em;
       }
       .dts-topnav-item.is-active .dts-topnav-desc{
-        color:color-mix(in srgb, var(--hg-muted, #70665d) 70%, var(--hg-ink, #1c1b1a));
+        color:color-mix(in srgb, var(--hg-muted, #70665d) 58%, var(--hg-ink, #1c1b1a));
       }
       .dts-topnav-item.is-active .dts-topnav-hit::after{
         content:"";
         position:absolute;
         left:50%;
-        bottom:3px;
+        bottom:4px;
         transform:translateX(-50%);
-        width:min(72%, 112px);
+        width:min(68%, 104px);
         height:1.5px;
         /* Illuminated seam — antique gold edges, champagne center. */
         background:linear-gradient(90deg, transparent,
@@ -150,9 +154,9 @@ export default function DiamondStudioSuiteNavStyles() {
         content:"";
         position:absolute;
         left:50%;
-        bottom:3px;
+        bottom:4px;
         transform:translateX(-50%);
-        width:min(72%, 112px);
+        width:min(68%, 104px);
         height:1px;
         background:linear-gradient(90deg, transparent,
           color-mix(in srgb, var(--hg-gold-deep, #987648) 48%, transparent) 50%, transparent);
@@ -170,34 +174,36 @@ export default function DiamondStudioSuiteNavStyles() {
         border-radius:6px;
       }
       .dts-topnav-item.is-idle .dts-topnav-hit{
-        border-color:color-mix(in srgb, var(--hg-line, #e4dbcf) 70%, transparent);
+        border-color:color-mix(in srgb, var(--hg-line, #e4dbcf) 72%, var(--hg-gold-deep, #987648));
       }
       .dts-topnav-item.is-idle:hover .dts-topnav-hit{
-        background:color-mix(in srgb, var(--hg-ivory, #efe8de) 70%, #fff);
-        border-color:var(--hg-line, #e4dbcf);
+        background:color-mix(in srgb, var(--hg-ivory, #efe8de) 48%, #fff);
+        border-color:color-mix(in srgb, var(--hg-line, #e4dbcf) 58%, var(--hg-gold-deep, #987648));
       }
       .dts-topnav-item.is-idle:hover .dts-topnav-label{
         color:var(--hg-ink, #1c1b1a);
       }
       .dts-topnav-item.is-idle:hover .dts-topnav-desc{
-        color:color-mix(in srgb, var(--hg-muted, #70665d) 80%, var(--hg-ink, #1c1b1a));
+        color:color-mix(in srgb, var(--hg-muted, #70665d) 70%, var(--hg-ink, #1c1b1a));
       }
       .dts-topnav-item.is-soon .dts-topnav-hit{
         color:color-mix(in srgb, var(--hg-muted, #70665d) 62%, #fff);
         cursor:default;
         pointer-events:none;
         border-color:transparent;
+        background:transparent;
       }
       @media (min-width: 1024px) {
         [data-suite-instrument] .dts-topbar{
           display:grid;
+          /* Mirror Size Studio main columns so eyebrow / nav / stage title share one axis. */
           grid-template-columns:256px minmax(0, 1fr);
           grid-template-rows:auto auto;
           justify-content:stretch;
           align-items:center;
           padding-left:0;
-          padding-right:16px;
-          gap:4px 0;
+          padding-right:0;
+          gap:2px 0;
         }
         [data-suite-instrument] .dts-topnav-eyebrow{
           grid-column:2;
@@ -208,7 +214,14 @@ export default function DiamondStudioSuiteNavStyles() {
           grid-column:2;
           grid-row:2;
           justify-content:center;
-          width:100%;
+          justify-self:center;
+          width:max-content;
+          max-width:100%;
+        }
+      }
+      @media (min-width: 1200px) and (max-width: 1440px) {
+        [data-suite-instrument] .dts-topbar{
+          grid-template-columns:minmax(220px, 260px) minmax(0, 1fr);
         }
       }
       @media (max-width: 768px) {
@@ -238,6 +251,7 @@ export default function DiamondStudioSuiteNavStyles() {
           width:100%;
           min-width:0;
           height:100%;
+          flex:1 1 auto;
         }
         .dts-topnav-hit{
           width:100%;

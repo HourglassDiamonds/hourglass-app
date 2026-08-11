@@ -643,14 +643,15 @@ function SuiteStyles() {
           grid-template-columns:repeat(9, minmax(0, 1fr));
           align-items:stretch;
           gap:clamp(4px, 0.7vw, 10px);
-          padding:7px clamp(8px, 1vw, 14px);
+          /* Reclaim vertical padding so stones can fill the cell without growing the rail. */
+          padding:4px clamp(8px, 1vw, 14px);
           box-sizing:border-box;
         }
         .dts-stage-stack .dts-shape-chip{
           min-width:0;
           width:auto;
           flex:unset;
-          padding:7px 4px 6px;
+          padding:1px 1px;
         }
         .dts-stage-stack .dts-stage-canvas{
           margin-bottom:0;
@@ -1242,7 +1243,7 @@ function SuiteStyles() {
       }
       .dts-shape-strip{
         position:relative;
-        display:flex; align-items:stretch; gap:7px; padding:7px 11px;
+        display:flex; align-items:stretch; gap:7px; padding:6px 10px;
         background:oklch(from var(--card) l c h / 0.74);
         border:1px solid oklch(from var(--card-edge) l c h / 0.42);
         border-radius:16px;
@@ -1251,17 +1252,19 @@ function SuiteStyles() {
           0 0 0 1px oklch(from var(--hairline-soft) l c h / 0.22) inset;
         z-index:20; white-space:nowrap;
         opacity:0.88;
+        overflow:visible;
       }
       .dts-shape-chip{
-        display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
-        padding:7px 6px 6px; border-radius:11px; border:1px solid transparent; cursor:pointer;
+        display:flex; flex-direction:column; align-items:center; justify-content:center; gap:0;
+        padding:4px 3px; border-radius:11px; border:1px solid transparent; cursor:pointer;
         background:transparent;
+        overflow:visible;
         transform-origin:center center;
         transition:background var(--dt-dur-slow) var(--dt-ease),
           border-color var(--dt-dur-slow) var(--dt-ease),
           box-shadow var(--dt-dur-slow) var(--dt-ease),
           transform var(--dt-dur-slow) var(--dt-ease);
-        min-width:49px; flex:0 0 auto;
+        min-width:0; flex:0 0 auto;
       }
       .dts-shape-chip{ background:oklch(from var(--hairline-soft) l c h / 0.72); }
       .dts-shape-chip:hover{
@@ -1274,40 +1277,105 @@ function SuiteStyles() {
       }
       .dts-shape-chip.is-selected{
         background:oklch(from var(--pill-active) l c h / 0.52);
-        border-color:oklch(from var(--pill-edge) l c h / 0.16);
-        box-shadow:0 0 0 1px oklch(from var(--hairline) l c h / 0.16),
-          0 2px 10px oklch(from var(--gold) l c h / 0.018);
+        border-color:oklch(from var(--pill-edge) l c h / 0.22);
+        box-shadow:0 0 0 1px oklch(from var(--hairline) l c h / 0.18),
+          0 2px 10px oklch(from var(--gold) l c h / 0.024);
         transition:background var(--dt-dur-slow) var(--dt-ease),
           border-color var(--dt-dur-slow) var(--dt-ease),
           box-shadow var(--dt-dur-slow) var(--dt-ease),
           transform var(--dt-dur-slow) var(--dt-ease);
       }
       .dts-shape-chip .dts-thumb{
-        height:24.5px;
-        max-height:26.5px;
-        min-height:20px;
-        width:26.5px;
-        max-width:26.5px;
+        position:relative;
+        height:56px;
+        max-height:58px;
+        min-height:50px;
+        width:100%;
+        max-width:none;
         display:flex;
         align-items:center;
         justify-content:center;
+        overflow:visible;
       }
       .dts-shape-thumb-img{
-        max-height:24.5px;
-        max-width:26.5px;
+        /* Bitmap canvases are letterboxed; size is set per-shape so the
+           opaque stone (not the transparent pad) hits the optical target. */
+        max-height:86px;
+        max-width:none;
         width:auto;
         height:auto;
         object-fit:contain;
         display:block;
       }
+      /* Optical targets (~54–58 / 50–54 / 52–56 visual stone height).
+         Assets are square canvases — height drives size; width may overflow
+         the thumb box (transparent pad) while opaque stone stays centered. */
+      .dts-shape-chip[data-shape="round"] .dts-shape-thumb-img,
+      .dts-shape-chip[data-shape="asscher"] .dts-shape-thumb-img{
+        max-height:86px;
+      }
+      .dts-shape-chip[data-shape="cushion"] .dts-shape-thumb-img{
+        max-height:120px;
+      }
+      .dts-shape-chip[data-shape="princess"] .dts-shape-thumb-img{
+        max-height:124px;
+      }
+      .dts-shape-chip[data-shape="oval"] .dts-shape-thumb-img{
+        max-height:74px; /* +~5% optical vs approved 70 */
+      }
+      .dts-shape-chip[data-shape="marquise"] .dts-shape-thumb-img,
+      .dts-shape-chip[data-shape="pear"] .dts-shape-thumb-img{
+        max-height:77px; /* +~7% optical vs approved 72 */
+      }
+      .dts-shape-chip[data-shape="emerald"] .dts-shape-thumb-img{
+        max-height:102px; /* +~4% optical vs approved 98 */
+      }
+      .dts-shape-chip[data-shape="radiant"] .dts-shape-thumb-img{
+        max-height:73px; /* +~4% optical vs approved 70 */
+      }
       .dts-shape-chip .dts-name{
-        font-size:7px; font-weight:500; letter-spacing:0.11em; text-transform:uppercase; color:var(--ink-soft);
-        transition:color var(--dt-dur-slow) var(--dt-ease), opacity var(--dt-dur-slow) var(--dt-ease);
+        position:absolute;
+        left:50%;
+        top:50%;
+        transform:translate(-50%, -50%);
+        z-index:2;
+        box-sizing:border-box;
+        max-width:calc(100% - 2px);
+        padding:2px 6px;
+        border-radius:2px;
+        font-size:7px;
+        font-weight:600;
+        letter-spacing:0.09em;
+        text-transform:uppercase;
+        line-height:1.1;
+        color:var(--ink);
+        text-align:center;
+        white-space:nowrap;
+        overflow:hidden;
+        text-overflow:ellipsis;
+        pointer-events:none;
+        /* Translucent parchment veil — identify without covering facets. */
+        background:linear-gradient(90deg,
+          transparent 0%,
+          color-mix(in srgb, var(--card) 42%, transparent) 12%,
+          color-mix(in srgb, #fff8ef 58%, transparent) 50%,
+          color-mix(in srgb, var(--card) 42%, transparent) 88%,
+          transparent 100%);
+        box-shadow:0 0 0 1px color-mix(in srgb, var(--card-edge) 18%, transparent);
+        transition:color var(--dt-dur-slow) var(--dt-ease), opacity var(--dt-dur-slow) var(--dt-ease),
+          background var(--dt-dur-slow) var(--dt-ease), box-shadow var(--dt-dur-slow) var(--dt-ease);
       }
       .dts-shape-chip.is-selected .dts-name{
         color:var(--ink);
-        font-weight:500;
-        opacity:0.9;
+        font-weight:600;
+        opacity:1;
+        background:linear-gradient(90deg,
+          transparent 0%,
+          color-mix(in srgb, var(--card) 48%, transparent) 10%,
+          color-mix(in srgb, #fff 52%, transparent) 50%,
+          color-mix(in srgb, var(--card) 48%, transparent) 90%,
+          transparent 100%);
+        box-shadow:0 0 0 1px color-mix(in srgb, var(--pill-edge) 20%, transparent);
       }
       @media (min-width: 1200px) and (max-width: 1440px) {
         .diamond-studio-main.dts-main{
@@ -1571,10 +1639,49 @@ function SuiteStyles() {
         }
         .dts-shape-chip{
           flex:0 0 auto;
-          min-width:46px;
-          min-height:38px;
-          padding:4px 7px 3px;
+          min-width:58px;
+          min-height:52px;
+          padding:2px 5px;
           touch-action:manipulation;
+          overflow:visible;
+        }
+        .dts-shape-chip .dts-thumb{
+          height:48px;
+          min-height:44px;
+          max-height:52px;
+          overflow:visible;
+        }
+        .dts-shape-thumb-img{
+          max-height:72px;
+          max-width:none;
+        }
+        .dts-shape-chip[data-shape="round"] .dts-shape-thumb-img,
+        .dts-shape-chip[data-shape="asscher"] .dts-shape-thumb-img{
+          max-height:72px;
+        }
+        .dts-shape-chip[data-shape="cushion"] .dts-shape-thumb-img{
+          max-height:100px;
+        }
+        .dts-shape-chip[data-shape="princess"] .dts-shape-thumb-img{
+          max-height:104px;
+        }
+        .dts-shape-chip[data-shape="marquise"] .dts-shape-thumb-img,
+        .dts-shape-chip[data-shape="pear"] .dts-shape-thumb-img{
+          max-height:66px;
+        }
+        .dts-shape-chip[data-shape="oval"] .dts-shape-thumb-img,
+        .dts-shape-chip[data-shape="radiant"] .dts-shape-thumb-img{
+          max-height:63px;
+        }
+        .dts-shape-chip[data-shape="emerald"] .dts-shape-thumb-img{
+          max-height:87px;
+        }
+        /* Compact overlay labels so longer names fit narrow scroll chips. */
+        .dts-shape-chip .dts-name{
+          font-size:5.5px;
+          letter-spacing:0.045em;
+          padding:1px 3px;
+          max-width:calc(100% - 1px);
         }
         .dts-shell[data-theme="light"] .dts-card,
         .dts-shell[data-theme="light"] .dts-card--coverage{
@@ -3081,8 +3188,10 @@ export default function DiamondStudioPage() {
                       <ShapeStripThumb
                         imageUrl={getDiamondCadAsset(s).switcherSrc}
                       />
+                      <span className="dts-name">
+                        {SHAPE_SUITE_CONFIG[s].label}
+                      </span>
                     </div>
-                    <div className="dts-name">{SHAPE_SUITE_CONFIG[s].label}</div>
                   </button>
                 ))}
               </div>
