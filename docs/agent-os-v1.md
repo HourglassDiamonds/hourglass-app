@@ -404,6 +404,16 @@ Typed categories in `lib/agent-os/search/types.ts` plus local-authority finding 
 
 Scores answer-first openings, FAQ schema presence, tool interconnection, and related-link density. Labeled **readiness signals only** — never claimed AI-engine rankings or citations.
 
+### Search & GEO / Technical SEO specialist (V1)
+
+Owned inside **Search Strategy** (not a sixth executive). Module: `lib/agent-os/search/tech-seo/`.
+
+- **Standalone first:** invoke via `npm run agent-os:tech-seo` (optional `--live-http`).
+- **Not wired** into recurring `runSearchStrategy()` / founder briefs in V1.
+- **Audit only:** evidence → diagnosis → recommendation. No apply/fix/patch/deploy path.
+- Artifacts: `tmp/agent-os/tech-seo-p1-tech-1-{stamp}.{json,md}` only.
+- GREEN/YELLOW/RED map onto existing read-only primitives (`approvalRequired`, `V1_PROHIBITED_ACTIONS`); YELLOW/RED never auto-execute.
+
 ### Limits of inference
 
 - No query×page Search Console matrix → mismatch/cannibalization stay cautious inferences

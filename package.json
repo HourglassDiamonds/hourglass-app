@@ -24,6 +24,7 @@
     "agent-os:cadence": "npx tsx scripts/agent-os-cadence.ts",
     "agent-os:measurement-smoke": "npx tsx scripts/agent-os-measurement-smoke.ts",
     "agent-os:fan-out": "npx tsx scripts/agent-os-fan-out-coverage.ts",
+    "agent-os:tech-seo": "npx tsx scripts/agent-os-tech-seo-audit.ts",
     "agent-os:content-roi": "npx tsx scripts/agent-os-content-roi.ts",
     "agent-os:client-attention": "npx tsx scripts/agent-os-client-attention.ts",
     "agent-os:mark-recommendation": "npx tsx scripts/agent-os-mark-recommendation.ts",

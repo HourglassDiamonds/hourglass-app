@@ -63,6 +63,12 @@ const SEARCH_ESCALATION: EscalationRule[] = [
     condition: "GEO readiness findings",
     action: "Label as readiness signals, not confirmed AI citations",
   },
+  {
+    id: "search-tech-seo-audit-only",
+    condition: "Technical SEO / P1-TECH-1 findings",
+    action:
+      "Standalone audit via agent-os:tech-seo only in V1 — do not auto-apply site edits; YELLOW/RED require founder approval; not wired into recurring Search Strategy briefs yet",
+  },
 ];
 
 const CONTENT_ESCALATION: EscalationRule[] = [
@@ -208,6 +214,9 @@ export const EXECUTIVE_REGISTRY: readonly ExecutiveDefinition[] = [
       "tool/content handoffs",
       "GEO / AI-answer readiness",
       "GBP search visibility when data is available",
+      "Search & GEO / Technical SEO specialist",
+      "technical SEO audit (canonicals, sitemap, robots, indexability)",
+      "duplicate URL / canonical cluster diagnosis",
     ],
     allowedDataSources: ["gsc", "ga4", "gbp", "weekly-intelligence", "fixture"],
     prohibitedActions: SHARED_PROHIBITED,
