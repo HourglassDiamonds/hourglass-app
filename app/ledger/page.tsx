@@ -3,6 +3,7 @@ import Link from "next/link";
 import GlobalPressureMeter from "./components/global-pressure-meter";
 import LedgerIndexesSection from "./components/ledger-indexes-section";
 import LedgerShell from "./components/ledger-shell";
+import SystemTemperature from "./components/system-temperature";
 import WeeklySynopsis from "./components/weekly-synopsis";
 import { QUIET_METRICS, TRACK_TOPICS } from "./constants";
 
@@ -58,17 +59,17 @@ export default function LedgerPage() {
           </p>
           <div className="mt-10 flex justify-center">
             <Link
-              href="/ledger/global-pressure-index"
+              href="#ledger-system-temperature-heading"
               className="inline-block rounded-sm border border-[#3a3632] bg-[#2f2b27] px-7 py-3.5 text-[10px] uppercase tracking-[0.28em] text-[#faf7f2] transition-colors hover:bg-[#1f1d1a]"
             >
-              Read the Latest Brief
+              View System Temperature
             </Link>
           </div>
         </div>
       </section>
 
       {/* Context */}
-      <section className="py-16 md:py-20">
+      <section className="border-b border-[#e4dbcf] py-16 md:py-20">
         <div className="mx-auto max-w-[720px]">
           <p className="text-[10px] uppercase tracking-[0.34em] text-[#6d655e]">
             Why this belongs here
@@ -91,9 +92,11 @@ export default function LedgerPage() {
         </div>
       </section>
 
+      <SystemTemperature />
+
       <LedgerIndexesSection />
 
-      {/* Current reading — compact GPI + weekly synopsis */}
+      {/* Supporting Global Pressure teaser + weekly synopsis */}
       <section className="border-b border-[#e4dbcf] py-16 md:py-20">
         <GlobalPressureMeter variant="compact" />
         <WeeklySynopsis />

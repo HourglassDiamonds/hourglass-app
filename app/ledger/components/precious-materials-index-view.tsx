@@ -29,7 +29,7 @@ const MATERIAL_STATES = [
   {
     name: "Gold",
     level: "Elevated monetary demand",
-    body: "Structural central-bank and diversification demand continue to support the read. Market pricing indicated gold around the $4,000 area — near-term sensitivity without a materials-regime break.",
+    body: "World Gold Council Q2 data show a strong official-sector purchase rebound. Market pricing indicated gold near the $4,400 area into August 12 — near-term sensitivity without a materials-regime break.",
   },
   {
     name: "Silver",

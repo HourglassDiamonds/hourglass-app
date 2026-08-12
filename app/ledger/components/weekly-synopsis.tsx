@@ -1,18 +1,19 @@
 export const WEEKLY_SYNOPSIS = {
   eyebrow: "Weekly Synopsis",
-  headline: "External pressure high; systemic transmission still contained.",
+  headline:
+    "Corridor pressure very high; energy premium partial; broader systems still functioning.",
   blocks: [
     {
       title: "What changed",
-      body: "Composite numerical scoring across the Ledger monitoring system is paused while methodology is standardized and historically validated. Public surfaces now use qualitative states, direction, documented evidence, and defined change triggers. Geopolitical and energy risks remain unusually elevated around critical shipping corridors; financial markets and the wider economy have not confirmed a systemic transmission event. AI capability pace is accelerating beneath infrastructure-bound deployment. Precious materials remain strategically firm and highly segmented. Infrastructure strain stays elevated with narrowed flexibility.",
+      body: "Evidence reviewed through August 12, 2026. Hormuz reopen hopes faded amid fresh shipping attacks; Reuters-cited vessel tracking showed a one-week-low Hormuz count near eight (Kpler) / eleven (LSEG) versus roughly 130–140 pre-conflict, with Brent around $89. OpenAI’s August 6 ChatGPT updates broadened consumer GPT-5.6 access while leaving Work/Codex on July versions. PJM’s large-load / Interim Resource Adequacy framework replaced expired mid-July emergency-order language as the live infrastructure story. The first official Ledger System Temperature baseline is established on the hub at 66° (High) with Moderate confidence.",
     },
     {
       title: "What's driving pressure",
-      body: "Threat pressure remains very high: shipping-corridor disruption, geopolitical escalation risk, oil and commodity sensitivity, and structural electricity-grid constraints. System transmission is moderate and currently easing — oil declined after the pause in planned military action, equities rallied, Treasury yields eased, and credit markets are not showing crisis-level stress. Signal density is rising without clarity gains. Frontier AI access broadened while grid and power limits still set practical pace.",
+      body: "Very high external corridor pressure remains the primary heat source. Transmission is partial into energy prices and contained in credit — reviewed spreads stay near historically tight levels. Infrastructure strain is elevated and structural. Precious materials remain strategically firm and segmented. Information clarity stays uneven, which lowers confidence without independently raising temperature.",
     },
     {
       title: "What to watch next",
-      body: "Whether disruption through Hormuz and Bab el-Mandeb persists or broadens. Whether oil remains elevated long enough to affect inflation, consumption, and policy. Whether corporate-credit spreads, financial-stress measures, or volatility begin confirming the geopolitical signal. Whether supply-chain disruption spreads beyond energy shipping. Whether electricity systems continue operating normally under record demand or require emergency measures.",
+      body: "Whether Hormuz transit and official flow claims converge. Whether oil near $90 transmits into inflation and policy more than into credit stress. Whether PJM’s large-load adequacy path advances at FERC. Whether consumer AI access updates remain distinct from enterprise deployment reality. Whether gold near $4,400 and official-sector demand stay supports rather than a jewelry-regime break.",
     },
   ],
 } as const;

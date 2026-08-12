@@ -51,23 +51,23 @@ export const PMI_CROSS_SYSTEM_BRIDGE =
   "Material markets remain connected to broader macro and reserve-asset conditions — but jewelry sourcing follows its own segmented logic beneath the geopolitical layer.";
 
 export const PMI_CROSS_SYSTEM_PRESSURE = [
-  "Structural central-bank and diversification demand continue to support conditions beneath near-term real-yield and rate-expectation pressure from the energy frame.",
-  "Market pricing indicated gold trading around the $4,000 area — near-term sensitivity without a materials-regime break. The Ledger’s current interpretation is that this remains a firm monetary-demand read, not a materials-regime change.",
-  "Selective natural-diamond pipeline adjustments, including July sight pricing alignment, remain a segmented watch rather than broad market stress.",
-  "Lab-grown pricing compression continues in commercial and mid-tier ranges as an embedded factor, while premium natural holds firmer in selective sizes and cuts.",
+  "World Gold Council Q2 2026 data show official-sector purchases rebounded sharply (289t), supporting the structural reserve-demand read beneath near-term price action.",
+  "Market pricing indicated gold trading near the $4,400 area into August 12 — higher than the early-August ~$4,000 area references, still without a confirmed jewelry-market regime break.",
+  "Natural-diamond trade commentary continues to describe relative stability versus lab-grown alternatives in parts of the wholesale/retail narrative, while commercial ranges remain price-sensitive.",
+  "Lab-grown price compression remains an embedded commercial factor rather than a newly scored shock.",
 ] as const;
 
 export const PMI_WHAT_MOVED = [
-  "No materials-regime change this week — structural central-bank demand and selective diamond segmentation continue as embedded supports.",
-  "Near-term pressure from real yields and rate expectations kept market pricing for gold around the $4,000 area; gold monetary demand remained elevated.",
-  "Selective natural-diamond pipeline adjustments and continued lab-grown price compression remained segmented factors, not a newly confirmed regime shock.",
+  "No materials-regime change this week — structural official-sector demand and segmented diamond conditions continue as embedded supports.",
+  "Gold traded near the $4,400 area into the August 12 review window as markets awaited U.S. CPI; spot movement alone does not rewrite the strategic posture.",
+  "Natural vs lab-grown segmentation remains the dominant jewelry-market frame rather than a broad natural-diamond breakdown.",
 ] as const;
 
 export const PMI_WHAT_TO_WATCH = [
-  "Whether gold reconnects more tightly to reserve-asset demand or remains tethered to real yields through the summer rate path.",
-  "Whether gold holds around the $4,000 area or breaks that near-term range on rate or energy news.",
-  "Selective natural-diamond pipeline outcomes and whether rough-price alignment stays segmented rather than broad.",
-  "Whether high-quality natural diamonds continue holding firm as scarcity assets in premium categories.",
+  "Whether gold holds around the $4,400 area or re-prices with CPI, real yields, and energy-premium headlines.",
+  "Whether official-sector accumulation remains a multi-quarter support after the strong Q2 rebound.",
+  "Whether natural-diamond stability narratives broaden beyond selective wholesale/retail commentary.",
+  "Whether high-quality natural diamonds continue holding as scarcity assets in premium categories.",
   "Lab-grown pricing pressure and its effect on commercial natural positioning — not premium heirloom-grade work.",
   "Sourcing discipline in a segmented market — provenance and selective inventory over reactive accumulation.",
 ] as const;
@@ -92,7 +92,7 @@ export const PMI_SERIES: LedgerMonitorSeries = {
   snapshots: [
     {
       reviewDate: "August 3, 2026",
-      evidenceCutoff: LEDGER_EVIDENCE_CUTOFF,
+      evidenceCutoff: "August 3, 2026",
       currentState: "Strategically firm",
       currentDirection: "Highly segmented",
       previousState: "Strategically Firm (archived numerical series)",
@@ -107,19 +107,40 @@ export const PMI_SERIES: LedgerMonitorSeries = {
           supports:
             "Market pricing indicated gold trading around the $4,000 area without a materials-regime break",
         },
+      ],
+    },
+    {
+      reviewDate: "August 12, 2026",
+      evidenceCutoff: LEDGER_EVIDENCE_CUTOFF,
+      currentState: "Strategically firm",
+      currentDirection: "Highly segmented",
+      previousState: "Strategically firm",
+      materialChangeSummary:
+        "No materials-regime change. Gold traded near the $4,400 area; World Gold Council Q2 data showed a strong official-sector purchase rebound; diamond markets remained segmented.",
+      methodologyVersion: LEDGER_METHODOLOGY_VERSION,
+      sources: [
         {
-          institution: "Wholesale diamond market commentary",
-          title: "July sight pricing alignment and segmented natural demand",
-          date: "Reviewed through August 3, 2026",
+          institution: "World Gold Council",
+          title: "Gold Demand Trends: Q2 2026",
+          date: "Published July 30, 2026 (reviewed August 12, 2026)",
+          url: "https://www.gold.org/goldhub/research/gold-demand-trends/gold-demand-trends-q2-2026",
           supports:
-            "Selective natural-diamond pipeline adjustments remaining segmented rather than broad stress",
+            "Official-sector net purchases of 289t in Q2; elevated average gold prices without treating spot moves as a jewelry-regime break",
         },
         {
-          institution: "Trade press / lab-grown pricing surveys",
-          title: "Commercial and mid-tier lab-grown price compression",
-          date: "Reviewed through August 3, 2026",
+          institution: "LBMA / public spot market reporting",
+          title: "Gold near the $4,400 area ahead of U.S. CPI",
+          date: "Accessed August 12, 2026",
+          url: "https://www.lbma.org.uk/prices-and-data/precious-metal-prices#/",
           supports:
-            "Continued lab-grown pricing compression as an embedded commercial-factor",
+            "Market pricing indicated gold trading near the $4,400 area into the review window",
+        },
+        {
+          institution: "Rapaport / trade commentary synthesis",
+          title: "Natural vs lab-grown demand and pricing stability commentary",
+          date: "Reviewed through August 12, 2026",
+          supports:
+            "Segmented natural-diamond stability narratives beside continued lab-grown commercial pressure",
         },
       ],
     },

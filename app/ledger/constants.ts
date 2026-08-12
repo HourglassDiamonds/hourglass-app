@@ -18,18 +18,18 @@ export {
 export const QUIET_METRICS = [
   {
     label: "Energy Pressure",
-    value: "Concentrated Corridor Heat",
-    note: "Energy corridors and shipping disruption remain near extremes — still offset by functioning credit markets rather than confirmed systemic transmission.",
+    value: "Hormuz Constraint",
+    note: "Hormuz transit remains a fraction of pre-conflict norms and Brent sits around $89 — partial energy transmission without confirmed credit-market seizure.",
   },
   {
     label: "AI Compute Load",
     value: "Access Broadening",
-    note: "GPT-5.6 general availability and Kimi K3 product/API access broadened frontier diffusion; summer grid and large-load limits still set practical pace.",
+    note: "August ChatGPT GPT-5.6 updates broadened consumer access while Work/Codex versions remain distinct; PJM large-load adequacy still sets practical pace.",
   },
   {
     label: "Physical Constraints",
-    value: "Operational Strain",
-    note: "Mid-July PJM alerts and DOE Order 202-26-35 kept flexibility narrow beneath still-functioning systems; no publicly confirmed broad blackout in the reviewed evidence.",
+    value: "Structural Adequacy Strain",
+    note: "PJM’s IRAS / large-load framework treats AI demand as a binding reliability problem beneath still-functioning systems; expired July emergency windows are historical context only.",
   },
 ] as const;
 

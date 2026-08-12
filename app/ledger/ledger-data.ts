@@ -111,7 +111,7 @@ export type LedgerIndexDefinition = {
   seriesAnnotation?: string;
 };
 
-export const LEDGER_UPDATED = "Updated weekly — July 20, 2026";
+export const LEDGER_UPDATED = "Evidence reviewed through August 12, 2026";
 
 const SCALE_GRADIENT_PRESSURE =
   "linear-gradient(90deg, #617f98 0%, #86a2b4 16%, #aaa99d 32%, #c6b384 50%, #bd8d55 66%, #985844 82%, #5f2d31 100%)";
@@ -138,16 +138,16 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     displayTitle: "Global Pressure Monitor",
     subnavLabel: "Global Pressure",
     hubDescription:
-      "Interim qualitative monitor of external threat pressure and systemic transmission — numerical readings paused pending methodology revision.",
+      "Very high external pressure / Partial energy transmission — Hormuz and Red Sea shipping stress remain elevated while broader credit-system function holds.",
     kicker: "The Ledger Intelligence System",
     intro:
-      "An interim qualitative monitor of external threat pressure and systemic transmission. Numerical index readings are paused while the model is rebuilt around a fixed, auditable methodology.",
+      "An interim qualitative monitor of external threat pressure and systemic transmission. Numerical index readings remain paused on this page while the qualitative evidence framework is standardized and historically validated.",
     // Do not claim weekly numerical updates until the revised framework is operational.
     updatedLabel: "Interim status — methodology revision in progress",
     // Archived numerical series — still derived for rebuild work; not rendered publicly.
     reading: GPI_COMPUTED_READING,
     readingLabel: "Pressure Reading",
-    status: "High external pressure / Contained systemic transmission",
+    status: "Very high external pressure / Partial energy transmission",
     weeklyDelta: 0,
     weeklyDeltaLabel: "Numerical series paused — methodology revision",
     weeklyDeltaExplanation:
@@ -155,28 +155,28 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     scaleLabels: ["Cold", "Stable", "Elevated", "Hot", "Critical"],
     scaleGradient: SCALE_GRADIENT_PRESSURE,
     summary:
-      "Geopolitical and energy risks remain unusually elevated, particularly around critical shipping corridors. Financial markets and the wider economy have not yet confirmed a systemic transmission event. This monitor is being rebuilt around a fixed, auditable methodology.",
+      "Shipping through Hormuz remains far below pre-conflict norms (Reuters-cited Kpler/LSEG single-digit counts versus ~130–140 daily). Renewed maritime attacks and stalled negotiations have supported Brent around $89. Credit markets have not confirmed a systemic financial transmission event.",
     summaryLead: "Current state:",
-    summaryEmphasis: "High external pressure / Contained systemic transmission",
+    summaryEmphasis: "Very high external pressure / Partial energy transmission",
     summaryCompact:
-      "High external pressure / Contained systemic transmission. Direction unstable, with near-term easing in financial transmission. Numerical readings paused.",
+      "Very high external pressure / Partial energy transmission. Brent around $89; credit transmission still contained. Numerical readings paused.",
     weeklyNote:
-      "Threat pressure remains very high around shipping corridors, geopolitical escalation, oil/commodity sensitivity, and grid constraints. System transmission is moderate and currently easing: oil declined after the pause in planned military action, equities rallied, Treasury yields eased, and credit is not showing crisis-level stress.",
+      "Threat pressure remains very high around Hormuz and Bab el-Mandeb. System transmission is partial into energy prices and contained in credit: Brent around $89 as reopen hopes faded, while reviewed credit spreads remain near historically tight levels.",
     weeklyNoteCompact:
-      "High external pressure; systemic transmission contained and currently easing. Numerical series paused for methodology revision.",
+      "Very high external pressure; partial energy transmission; credit still contained. Numerical series paused.",
     methodPills: [
       { label: "Monitor Type", value: "Interim qualitative status" },
       {
         label: "Primary Drivers",
-        value: "Shipping corridors, geopolitical escalation, energy sensitivity",
+        value: "Hormuz transit, shipping attacks, energy premium",
       },
       {
         label: "Current Direction",
-        value: "Unstable, with near-term easing in financial transmission",
+        value: "Unstable — energy premium reasserted as reopen hopes faded",
       },
       {
         label: "Primary Offset",
-        value: "Functioning credit markets; no confirmed systemic transmission event",
+        value: "Functioning credit markets; no confirmed systemic financial event",
       },
     ],
     // Preserved for archived numerical meter — not rendered on the public monitor.
@@ -205,24 +205,24 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     watchingSectionTitle: "What We're Watching",
     editorialBlocks: [
       {
-        title: "Hormuz & Bab el-Mandeb corridors",
-        body: "Whether disruption through Hormuz and Bab el-Mandeb persists or broadens — including vessel risk, transit volumes, insurance conditions, and competing claims over route control.",
+        title: "Hormuz reopen vs continued constraint",
+        body: "Whether diplomacy restores meaningful two-way transit — distinct from contested claims of control or recovered flows that vessel-tracking still does not fully corroborate.",
       },
       {
         title: "Oil, inflation & policy path",
-        body: "Whether oil remains elevated long enough to materially affect inflation, consumption, and central-bank policy — distinct from a short-lived energy premium that never transmits.",
+        body: "Whether oil remains elevated long enough to materially affect inflation, consumption, and central-bank policy — beyond a short-lived risk premium.",
       },
       {
         title: "Credit, stress & volatility confirmation",
         body: "Whether corporate-credit spreads, financial-stress measures, or volatility begin confirming the geopolitical signal. Without that transmission, financial-system stress stays below crisis bands.",
       },
       {
-        title: "Supply-chain transmission",
-        body: "Whether supply-chain disruption spreads beyond energy shipping into manufacturing, freight, and final-goods availability.",
+        title: "Bab el-Mandeb / Red Sea secondary corridor risk",
+        body: "Whether Houthi and related shipping attacks broaden into a sustained second corridor shock beyond the primary Hormuz constraint.",
       },
       {
-        title: "Electricity systems under demand",
-        body: "Whether electricity systems continue operating normally under record demand or increasingly require emergency measures.",
+        title: "Supply-chain transmission beyond energy",
+        body: "Whether disruption spreads from energy shipping into manufacturing, freight, and final-goods availability.",
       },
     ],
   },
@@ -235,7 +235,7 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     displayTitle: "Information Signal Map",
     subnavLabel: "Information Map",
     hubDescription:
-      "High-attention / Uneven clarity — narrative convergence, framing divergence, and underweighted signals across institutional, market, and infrastructure channels.",
+      "High-attention / Uneven clarity — recovered-flow claims, vessel-tracking prints, and reopen diplomacy still compete without a shared operational facts base.",
     kicker: "The Ledger Intelligence System",
     intro:
       "A qualitative map of how narratives move through markets, media, policy, and institutions — not to chase hidden truths, but to track when different information layers begin describing the same systems story. The goal is orientation: where framing converges, where it diverges, and what remains underweighted.",
@@ -296,7 +296,7 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     displayTitle: "AI Capability Monitor",
     subnavLabel: "AI Acceleration",
     hubDescription:
-      "Capability pace: Accelerating — frontier access broadening beneath infrastructure-bound deployment conditions.",
+      "Capability pace: Accelerating — consumer GPT-5.6 access broadened in August while Work/Codex versions remain distinct; deployment stays infrastructure-bound.",
     kicker: "The Ledger Intelligence System",
     intro:
       "A qualitative monitor of how AI capability, deployment, and physical infrastructure move together: models, agents, enterprise integration, power, grid access, and organizational adaptation. The frame is operational and observational — not promotional.",
@@ -357,7 +357,7 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     displayTitle: "Precious Materials Monitor",
     subnavLabel: "Precious Materials",
     hubDescription:
-      "Strategically firm / Highly segmented — metals, diamonds, and jewelry demand as qualitative market states for fine jewelry sourcing.",
+      "Strategically firm / Highly segmented — gold near $4,400 with strong official-sector demand; natural vs lab-grown diamond markets remain segmented.",
     kicker: "The Ledger Intelligence System",
     intro:
       "A qualitative monitor of the material conditions behind fine jewelry — gold, platinum, natural diamonds, and the sourcing realities that shape quality, availability, and long-term value. The purpose is not to chase commodity headlines. It is to clarify when material markets are firm, selective, or shifting beneath the surface.",
@@ -369,15 +369,15 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     scaleLabels: ["Soft", "Stable", "Firm", "Tight", "Constrained"],
     scaleGradient: SCALE_GRADIENT_MATERIALS,
     summary:
-      "Precious materials remain strategically firm — central-bank accumulation and reserve diversification support the structural read, while gold trades around the $4,000 area under near-term real-yield and rate-expectation pressure from the energy frame. Selective natural-diamond pipeline adjustments continue; lab-grown price compression persists in commercial channels.",
+      "Precious materials remain strategically firm — World Gold Council Q2 data show a strong official-sector purchase rebound, while gold trades near the $4,400 area under near-term rate and energy-frame sensitivity. Natural vs lab-grown diamond markets remain segmented; lab-grown price compression persists in commercial channels.",
     summaryLead: "Precious materials remain in a",
     summaryEmphasis: "strategically firm environment",
     summaryCompact:
-      "Strategically firm — structural central-bank demand beneath near-term real-yield pressure, with selective diamond-pipeline adjustments and lab-grown compression.",
+      "Strategically firm — official-sector demand beneath gold near $4,400, with selective diamond segmentation and lab-grown compression.",
     weeklyNote:
-      "No materials-regime change this week. Structural central-bank and diversification demand continue to support the reading, while near-term pressure from real yields and rate expectations — reinforced by the energy and inflation frame — keeps gold trading around the $4,000 area rather than breaking the strategic posture. Selective natural-diamond pipeline adjustments, including July sight pricing alignment, remain a segmented watch rather than broad market stress. Premium natural categories held selective firmness; commercial ranges remain price-sensitive. Lab-grown price compression persisted in mid-tier channels as an embedded factor, not a newly scored shock. Short-term price action alone does not move the index.",
+      "No materials-regime change this week. Structural official-sector demand continues to support the reading, while near-term gold trading near the $4,400 area reflects rate-path and energy-frame sensitivity rather than a jewelry-market break. Natural-diamond stability narratives remain selective; commercial ranges stay price-sensitive. Lab-grown price compression persists in mid-tier channels as an embedded factor, not a newly scored shock. Short-term price action alone does not move the monitor.",
     weeklyNoteCompact:
-      "Strategically firm — central-bank demand, gold near $4,000 under real-yield pressure, selective diamond pipeline.",
+      "Strategically firm — official-sector demand, gold near $4,400, selective diamond segmentation.",
     methodPills: [
       { label: "Reading Type", value: "Materials + sourcing index" },
       { label: "Primary Focus", value: "Gold, platinum, diamonds" },
@@ -398,16 +398,16 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     ],
     editorialBlocks: [
       {
-        title: "Gold & central-bank demand",
-        body: "Structural central-bank and diversification demand continue to support the reading. Near-term gold trading around the $4,000 area still shows real-yield and rate-expectation sensitivity as the energy premium feeds the policy path.",
+        title: "Gold & official-sector demand",
+        body: "World Gold Council Q2 purchases rebounded strongly. Near-term gold trading around the $4,400 area still shows rate-expectation and energy-frame sensitivity without a materials-regime break.",
       },
       {
         title: "Natural diamonds",
-        body: "Selective natural-diamond pipeline adjustments, including July sight pricing alignment, remain segmented rather than a broad market break. Premium natural categories stay selectively firm in key sizes and cuts.",
+        body: "Natural vs lab-grown segmentation continues. Premium natural categories stay selectively firm in key sizes and cuts; commercial ranges remain price-sensitive.",
       },
       {
         title: "Sourcing posture",
-        body: "Segmentation persists between structural precious-material demand and selective diamond-pipeline softness, with continued lab-grown compression in commercial channels. Provenance, selective inventory, and patient sourcing remain preferable to reactive buying.",
+        body: "Segmentation persists between structural precious-material demand and selective diamond-market softness, with continued lab-grown compression in commercial channels. Provenance, selective inventory, and patient sourcing remain preferable to reactive buying.",
       },
     ],
   },
@@ -420,7 +420,7 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     displayTitle: "Infrastructure Strain Monitor",
     subnavLabel: "Infrastructure",
     hubDescription:
-      "Elevated infrastructure strain — functioning systems with narrowed flexibility across grid, data centers, transformers, chips, labor, and cooling.",
+      "Elevated infrastructure strain — functioning systems with narrowed flexibility as PJM large-load adequacy frameworks treat AI demand as a structural reliability problem.",
     kicker: "The Ledger Intelligence System",
     intro:
       "A qualitative monitor of physical constraints beneath digital and industrial acceleration: AI data-center load, power demand, transformers, interconnection, cooling, transmission, labor, and permitting — where systems function but flexibility narrows.",
@@ -432,17 +432,17 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     scaleLabels: ["Low", "Rising", "Elevated", "High", "Critical"],
     scaleGradient: SCALE_GRADIENT_INFRASTRUCTURE,
     summary:
-      "Strain remains elevated after PJM's early-July record peak and a mid-July hot-weather window that included Maximum Generation alerts and DOE Order 202-26-35 (July 14–21). No publicly confirmed broad blackout was found in the reviewed evidence; large-load and backup-generation flexibility remains a live concern beneath functioning systems.",
+      "Strain remains elevated as a structural large-load and resource-adequacy problem under PJM’s Interim Resource Adequacy / large-load framework. Expired mid-July emergency-order windows are historical context only. Systems continue to function with narrowed flexibility.",
     summaryCompact:
-      "Elevated strain — mid-July PJM alerts and a renewed DOE order window keep summer reliability live beneath still-functioning systems.",
+      "Elevated strain — PJM large-load adequacy frameworks keep flexibility narrow beneath still-functioning systems.",
     weeklyNote:
-      "PJM's early-July preliminary all-time peak near 168 GW remains the summer benchmark. For July 14–17, PJM issued a Hot Weather Alert and Maximum Generation / Load Management alerts around elevated forecast peaks; DOE Order 202-26-35, effective July 14 through July 21, again authorized temporary environmental-permit flexibility for specified units and large-load backup-generation direction as a last resort. Publicly reviewed evidence does not show a confirmed broad blackout during that window; whether backup generation was dispatched is not stated here as a settled negative absent primary confirmation. Structural tightness remains: interconnection, transformers, and large-load integration still limit spare capacity. Systems continue to function; strain does not fall simply because an alert window was managed without a confirmed blackout.",
+      "PJM’s IRAS / bring-your-own-capacity framing treats AI data-center growth as a binding reliability and cost-allocation problem, with proposed curtailment pathways for non-firm new large loads from 2027. Interconnection, transformers, and labor remain structural limits. Systems function; strain does not fall simply because summer emergency windows expired.",
     weeklyNoteCompact:
-      "Elevated strain holds — mid-July hot-weather alerts and DOE Order 202-26-35 keep summer reliability live.",
+      "Elevated strain holds — structural large-load adequacy replaces expired July emergency-order language as the live story.",
     methodPills: [
       { label: "Reading Type", value: "Physical infrastructure index" },
-      { label: "Primary Focus", value: "Grid, power, transit, logistics" },
-      { label: "Current Direction", value: "Elevated, operational strain" },
+      { label: "Primary Focus", value: "Grid, power, large-load adequacy" },
+      { label: "Current Direction", value: "Elevated, structural strain" },
     ],
     recentReadings: [
       { week: "This Week", degrees: 87, state: "Elevated" },
@@ -459,20 +459,16 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     ],
     editorialBlocks: [
       {
-        title: "PJM summer reliability",
-        body: "The early-July record peak was served without widespread blackout. The mid-July Hot Weather and Maximum Generation alert window, under DOE Order 202-26-35 through July 21, kept operational readiness elevated; spare capacity remains thin.",
+        title: "PJM large-load adequacy",
+        body: "Whether IRAS / bring-your-own-capacity proposals advance at FERC and how new data-center loads secure firm service without shifting emergency risk onto other customers.",
       },
       {
-        title: "Grid & large-load integration",
-        body: "FERC large-load deadlines, data-center power demand, and concern about backup-generation flexibility continue to shape siting and interconnection — structural constraints remain after successive heat windows.",
+        title: "Grid & interconnection",
+        body: "Transformer lead times, interconnection queues, and energized-capacity timelines remain the practical choke points beneath AI load growth.",
       },
       {
-        title: "Event logistics & transit",
-        body: "World Cup host-city load remains a secondary operational layer — localized strain that may stay contained as the tournament progresses.",
-      },
-      {
-        title: "Summer heat & reliability",
-        body: "Summer heat remains an active reliability factor after early-July and mid-July alert windows — cooling and transmission stress stay operational even without a publicly confirmed broad blackout in the reviewed evidence.",
+        title: "Cooling, water & labor",
+        body: "Whether large-load proposals increasingly stall on cooling, water, skilled trades, or local acceptance rather than software demand alone.",
       },
     ],
     watchingSectionTitle: "What We're Watching",
@@ -511,18 +507,18 @@ export const GPI_BENCHMARKS = getLedgerIndex("global-pressure").benchmarks ?? []
 export const QUIET_METRICS = [
   {
     label: "Energy Pressure",
-    value: "Concentrated Corridor Heat",
-    note: "Energy corridors and shipping disruption remain near extremes — still offset by functioning credit markets rather than confirmed systemic transmission.",
+    value: "Hormuz Constraint",
+    note: "Hormuz transit remains a fraction of pre-conflict norms and Brent sits around $89 — partial energy transmission without confirmed credit-market seizure.",
   },
   {
     label: "AI Compute Load",
     value: "Access Broadening",
-    note: "GPT-5.6 general availability and Kimi K3 product/API access broadened frontier diffusion; summer grid and large-load limits still set practical pace.",
+    note: "August ChatGPT GPT-5.6 updates broadened consumer access while Work/Codex versions remain distinct; PJM large-load adequacy still sets practical pace.",
   },
   {
     label: "Physical Constraints",
-    value: "Operational Strain",
-    note: "Mid-July PJM alerts and DOE Order 202-26-35 kept flexibility narrow beneath still-functioning systems; no publicly confirmed broad blackout in the reviewed evidence.",
+    value: "Structural Adequacy Strain",
+    note: "PJM’s IRAS / large-load framework treats AI demand as a binding reliability problem beneath still-functioning systems; expired July emergency windows are historical context only.",
   },
 ] as const;
 

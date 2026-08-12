@@ -25,23 +25,23 @@ export const ISI_INTRO =
   "A weekly reading of the physical constraints beneath digital, economic, and industrial acceleration: power, transmission, transformers, data centers, water, skilled labor, semiconductors, and logistics. The purpose is not to predict failure. It is to track a capacity expansion race — where capital deploys quickly, buildout timing stays uneven, and flexibility narrows beneath functioning systems.";
 
 export const ISI_SUMMARY =
-  "Strain remains elevated after PJM reported an early-July record peak and a mid-July hot-weather window with Maximum Generation alerts and DOE Order 202-26-35 (July 14–21). Reviewed evidence does not show a confirmed broad blackout. The Ledger’s current interpretation is that large-load flexibility remains a live concern beneath still-functioning systems — elevated strain, not confirmed failure.";
+  "Strain remains elevated as a structural large-load and resource-adequacy problem. PJM’s Interim Resource Adequacy / large-load framework — including registry, bring-your-own-capacity pathways, and proposed curtailment for non-firm new large loads from June 2027 — is now the live planning story. Mid-July DOE emergency-order and Maximum Generation alert windows have expired and are historical context only. Reviewed evidence does not show a confirmed broad blackout; systems function with narrowed flexibility.";
 
 export const ISI_WEEKLY_SIGNAL =
-  "PJM reported a preliminary all-time peak near 168 GW in early July, and Hot Weather plus Maximum Generation alerts for July 14–17. DOE Order 202-26-35 (July 14–21) again authorized temporary permit flexibility for specified units and large-load backup generation as a last resort. Reviewed evidence does not show a confirmed broad blackout. Interconnection, transformers, and large-load integration still limit spare capacity — systems function, but strain does not fall simply because an alert window was managed.";
+  "PJM board materials and subsequent coverage describe a multi-part large-load adequacy package: a large-load registry, Interim Resource Adequacy Service for new loads that do not bring sufficient capacity, and related reliability-backstop procurement work aimed at FERC. The practical effect is that AI data-center growth is being treated as a binding reliability and cost-allocation problem, not merely a summer heat anecdote. Expired July 14–21 emergency-order language is no longer described as current.";
 
 export const ISI_CATEGORIES = [
   {
     name: "Grid & Transmission",
     score: 87,
     state: "High",
-    body: "Early-July emergency demand response and the mid-July Hot Weather and Maximum Generation alert window proved the system can clear elevated load under preparedness procedures, but spare capacity remains thin — DOE Order 202-26-35 through July 21 keeps operational readiness elevated beneath unresolved interconnection and large-load constraints.",
+    body: "Resource-adequacy shortfalls and large-load additions dominate the live read. Summer 2026 heat alerts and the expired DOE Order 202-26-35 window remain useful historical context for thin spare capacity, but they are not current emergency authorities.",
   },
   {
     name: "Data-Center Load",
     score: 90,
     state: "High",
-    body: "Hyperscale demand remains strategically coupled to grid readiness — siting, power availability, and concern about large-load backup-generation flexibility still set practical pace after successive summer heat windows.",
+    body: "PJM’s IRAS / bring-your-own-capacity framing would require many new large loads to secure supply or accept priority curtailment in shortage conditions from 2027 — a structural transmission of AI load into interconnection and siting reality.",
   },
   {
     name: "Transformer Supply",
@@ -59,13 +59,13 @@ export const ISI_CATEGORIES = [
     name: "Skilled Labor",
     score: 79,
     state: "Elevated",
-    body: "Electrical, utility, HVAC, and event-security labor demand sustained by World Cup logistics and industrial construction — translating capital plans into energized capacity takes longer.",
+    body: "Electrical, utility, HVAC, and industrial construction labor remain practical limits on how quickly capital plans become energized capacity.",
   },
   {
     name: "Water & Cooling",
     score: 75,
-    state: "Rising",
-    body: "Summer heat keeps cooling load relevant in reliability discussions — uneven by geography, with operational relevance sustained through the mid-July alert window.",
+    state: "Elevated",
+    body: "Cooling and water constraints remain relevant for large-load siting even outside active heat-alert windows — uneven by geography, structurally persistent.",
   },
 ] as const;
 
@@ -86,20 +86,16 @@ export const ISI_BENCHMARKS = [
 
 export const ISI_WHAT_WATCHING = [
   {
-    title: "PJM summer reliability",
-    body: "Whether spare capacity remains thin through the rest of summer, and whether future heat events require escalation beyond the mid-July alert posture.",
+    title: "PJM IRAS / large-load FERC path",
+    body: "Whether PJM’s Interim Resource Adequacy and related large-load filings advance, face challenge, or are revised before the 2027 curtailment framework would apply.",
   },
   {
-    title: "DOE order and large-load flexibility",
-    body: "How DOE Order 202-26-35 is used through its July 21 window, and whether large-load backup-generation authority is exercised under primary reporting.",
+    title: "Bring-your-own-capacity contracting",
+    body: "Whether new data-center projects secure generation or demand-response arrangements fast enough to retain firmer service characteristics.",
   },
   {
-    title: "FERC large-load integration",
-    body: "Whether regional grid operator responses by August accelerate data-center cost, siting, and interconnection debates.",
-  },
-  {
-    title: "World Cup operational load",
-    body: "Whether transportation, security, and crowd-management pressure stays localized through the knockout stage.",
+    title: "Reliability backstop procurement",
+    body: "How one-time or emergency capacity procurements interact with ordinary auctions and ratepayer-protection commitments.",
   },
   {
     title: "Transformer manufacturing",
@@ -109,24 +105,28 @@ export const ISI_WHAT_WATCHING = [
     title: "Electrical labor availability",
     body: "Electricians, lineworkers, utility engineers, and industrial crews — the practical limit on how fast plans become energized capacity.",
   },
+  {
+    title: "Cooling and water siting constraints",
+    body: "Whether large-load proposals increasingly stall on cooling, water, or local acceptance rather than software demand alone.",
+  },
 ] as const;
 
 export const ISI_WHAT_WOULD_EASE = [
   {
-    title: "Heat moderation without recurrence",
-    body: "Sustained relief from elevated summer alerts without implying spare capacity has returned to comfortable levels.",
+    title: "Matched load and supply growth",
+    body: "New large loads arriving with committed capacity, demand response, or onsite generation that protects existing customers.",
   },
   {
-    title: "Event logistics stabilization",
-    body: "World Cup transit and security pressure remaining localized rather than broadening into wider infrastructure narrative.",
+    title: "Interconnection throughput",
+    body: "Faster, clearer pathways from queued projects to energized capacity without shifting emergency risk onto the broader system.",
   },
   {
     title: "Transformer lead-time relief",
     body: "Expanded manufacturing throughput and shorter delivery windows for large electrical equipment serving grid and data-center load.",
   },
   {
-    title: "Aligned load growth",
-    body: "Data-center siting, onsite generation, demand response, and efficiency gains better matched to available power and cooling capacity.",
+    title: "Labor and construction capacity",
+    body: "More available electrical and utility trades so capital plans convert into operating infrastructure on shorter timelines.",
   },
 ] as const;
 
@@ -220,7 +220,7 @@ export const ISI_SERIES: LedgerMonitorSeries = {
   snapshots: [
     {
       reviewDate: "August 3, 2026",
-      evidenceCutoff: LEDGER_EVIDENCE_CUTOFF,
+      evidenceCutoff: "August 3, 2026",
       currentState: "Elevated infrastructure strain",
       currentDirection: "Functioning with narrowed flexibility",
       previousState: "Elevated Strain (archived numerical series)",
@@ -236,20 +236,34 @@ export const ISI_SERIES: LedgerMonitorSeries = {
           supports:
             "Early-July peak near 168 GW; Hot Weather and Maximum Generation alerts July 14–17",
         },
+      ],
+    },
+    {
+      reviewDate: "August 12, 2026",
+      evidenceCutoff: LEDGER_EVIDENCE_CUTOFF,
+      currentState: "Elevated infrastructure strain",
+      currentDirection: "Functioning with narrowed flexibility",
+      previousState: "Elevated infrastructure strain",
+      materialChangeSummary:
+        "Live story shifted from expired mid-July emergency-order/alert windows to PJM’s structural large-load / Interim Resource Adequacy framework and related FERC-path proposals.",
+      methodologyVersion: LEDGER_METHODOLOGY_VERSION,
+      sources: [
         {
-          institution: "U.S. Department of Energy",
-          title: "DOE Order 202-26-35",
-          date: "Effective July 14–21, 2026",
+          institution: "PJM Interconnection",
+          title:
+            "Interim Resource Adequacy Service / framework for service during periods of insufficient resource adequacy",
+          date: "July 27, 2026 board materials (reviewed August 12, 2026)",
+          url: "https://www.pjm.com/-/media/DotCom/about-pjm/who-we-are/public-disclosures/2026/20260727-cifp-framework-for-service-during-periods-of-insufficient-resource-adequacy-executive-summary.pdf",
           supports:
-            "Temporary environmental-permit flexibility for specified units and large-load backup generation",
+            "Primary IRAS / BYONC framing for new large loads and curtailment pathways when resource adequacy is short",
         },
         {
-          institution: "Federal Energy Regulatory Commission",
-          title: "Large-load integration rulemaking and related notices",
-          date: "Accessed August 3, 2026",
-          url: "https://www.ferc.gov/",
+          institution: "Data Center Knowledge",
+          title: "PJM says AI data centers must bring capacity to earn firm service",
+          date: "Reviewed August 12, 2026",
+          url: "https://www.datacenterknowledge.com/energy-power-supply/pjm-says-ai-data-centers-must-bring-capacity-to-earn-firm-service",
           supports:
-            "Ongoing large-load cost, siting, and interconnection debates",
+            "Independent industry read-through of PJM large-load curtailment and capacity requirements",
         },
       ],
     },

@@ -28,13 +28,13 @@ export const ACAI_INTRO =
   "A weekly reading of how AI capability, deployment, and physical infrastructure are moving together — across models, agents, enterprise integration, power, and grid constraints. The purpose is not to forecast AGI. It is to track an industrial buildout: where software progress meets operational friction, energy limits, and organizational adaptation lag.";
 
 export const ACAI_SUMMARY =
-  "Frontier access broadened as GPT-5.6 became generally available and Kimi K3 added competitive product and API paths. The Ledger’s current interpretation is that capability pace is accelerating, while compute, electricity, and deployment infrastructure remain binding constraints.";
+  "Frontier access continues to broaden. OpenAI’s August 6 ChatGPT updates improved GPT-5.6 Sol for Plus/Pro users and expanded GPT-5.6 Luna access for Free users, while explicitly leaving Work and Codex on the previously released July model versions. Capability pace remains accelerating beneath grid and large-load constraints — deployment is still infrastructure-bound.";
 
 export const ACAI_WEEKLY_SIGNAL =
-  "OpenAI reported GPT-5.6 Sol, Terra, and Luna general availability across ChatGPT, Codex, and the API. Kimi reported product and API access for K3 with full downloadable weights still pending. Claude Sonnet 5 remains a broadly deployed baseline. PJM summer operations and a renewed DOE order window kept physical pace-setters live beside broader software access.";
+  "OpenAI published August 6 ChatGPT updates for GPT-5.6 Sol and Luna, expanding consumer access while stating that Codex and ChatGPT Work remain on the July GPT-5.6 versions. Kimi K3 product/API access from mid-July remains part of the competitive landscape. PJM’s large-load / Interim Resource Adequacy framework keeps physical power and curtailment pathways as co-equal pace-setters beside software access.";
 
 export const ACAI_ASSESSMENT =
-  "Capability, practical access, cost compression, and competitive diffusion moved together. Vendor benchmark claims are not all independently verified; initial demand has pressed capacity on some access paths. Enterprise adoption continues unevenly. Governance, energized capacity, and infrastructure readiness remain co-equal limits.";
+  "Consumer access broadened without collapsing the distinction between ChatGPT chat surfaces and Work/Codex deployments. Vendor capability claims still require careful qualification. Enterprise adoption continues unevenly. Energized capacity, interconnection, and large-load adequacy remain binding limits on real-world deployment pace.";
 
 export const ACAI_METHOD_PILLS = [
   { label: "Reading Type", value: "Capability + infrastructure index" },
@@ -118,16 +118,16 @@ export const ACAI_CAPABILITY_READINGS = [
 
 export const ACAI_WHAT_MOVED = [
   {
-    title: "GPT-5.6 general availability",
-    body: "The GPT-5.6 family moved from limited partner preview into general availability across ChatGPT, Codex, and the OpenAI API — improving practical access to stronger performance-per-dollar, coding, tool use, and multi-agent capability.",
+    title: "August ChatGPT access updates",
+    body: "OpenAI’s August 6 updates improved GPT-5.6 Sol for Plus/Pro ChatGPT users and expanded GPT-5.6 Luna for Free users, while stating that Work and Codex remain on the July model versions.",
   },
   {
-    title: "Kimi K3 product and API access",
-    body: "Kimi K3 is available through Kimi products and the Kimi API with competitive usage costs and strong reported benchmark performance; full downloadable weights remain pending, and not all vendor claims are independently verified. Initial demand has pressed available capacity on some paths.",
+    title: "Qualified access still matters",
+    body: "“Updated” does not mean identical capability across ChatGPT chat, Work, and Codex. Competitive product/API paths such as Kimi K3 remain part of the landscape; deployment still requires qualification.",
   },
   {
-    title: "Grid constraints still bind",
-    body: "Mid-July PJM hot-weather alerts and a renewed DOE order window keep power and large-load limits operational beside broader software access — acceleration broadened without removing physical pace-setters.",
+    title: "Grid and large-load constraints still bind",
+    body: "PJM’s large-load / Interim Resource Adequacy framing keeps physical power and curtailment pathways as co-equal pace-setters — acceleration continues without removing infrastructure limits.",
   },
 ] as const;
 
@@ -359,7 +359,7 @@ export const ACAI_SERIES: LedgerMonitorSeries = {
   snapshots: [
     {
       reviewDate: "August 3, 2026",
-      evidenceCutoff: LEDGER_EVIDENCE_CUTOFF,
+      evidenceCutoff: "August 3, 2026",
       currentState: "Capability pace: Accelerating",
       currentDirection: "Broadening, infrastructure-bound",
       previousState: "Accelerating (archived numerical series)",
@@ -375,36 +375,42 @@ export const ACAI_SERIES: LedgerMonitorSeries = {
           supports:
             "Frontier model general availability across ChatGPT, Codex, and the API",
         },
+      ],
+    },
+    {
+      reviewDate: "August 12, 2026",
+      evidenceCutoff: LEDGER_EVIDENCE_CUTOFF,
+      currentState: "Capability pace: Accelerating",
+      currentDirection: "Consumer access broadening, infrastructure-bound",
+      previousState: "Capability pace: Accelerating",
+      materialChangeSummary:
+        "OpenAI’s August 6 ChatGPT updates broadened consumer GPT-5.6 Sol/Luna access while leaving Work/Codex on July versions; PJM large-load adequacy framing replaced expired mid-July emergency-order language as the live physical constraint story.",
+      methodologyVersion: LEDGER_METHODOLOGY_VERSION,
+      sources: [
         {
-          institution: "Moonshot / Kimi",
-          title: "Kimi K3 release and product documentation",
-          date: "July 16, 2026",
-          url: "https://www.kimi.com/blog/kimi-k3",
+          institution: "OpenAI",
+          title:
+            "Improving GPT-5.6 Sol in ChatGPT—and expanding access to GPT-5.6 Luna for free users",
+          date: "August 6, 2026",
+          url: "https://openai.com/index/improving-gpt-5-6-sol-in-chatgpt/",
           supports:
-            "Competitive product and API access for K3; full downloadable weights still pending",
+            "Consumer ChatGPT Sol/Luna updates distinct from unchanged Work/Codex July model versions",
         },
         {
-          institution: "Anthropic",
-          title: "Introducing Claude Sonnet 5",
-          date: "June 30, 2026",
-          url: "https://www.anthropic.com/news/claude-sonnet-5",
-          supports: "Broadly deployed baseline beside newer frontier releases",
+          institution: "OpenAI Deployment Safety Hub",
+          title: "GPT-5.6 — August Updates",
+          date: "August 6, 2026",
+          url: "https://deploymentsafety.openai.com/gpt-5-6-august-update",
+          supports:
+            "August ChatGPT model versions treated separately from July Codex/Work deployments",
         },
         {
           institution: "PJM Interconnection",
-          title: "PJM Hot Weather Operations Update – July 15, 2026",
-          date: "July 15, 2026",
-          url: "https://insidelines.pjm.com/pjm-hot-weather-operations-update-july-15-2026/",
+          title: "Interim Resource Adequacy / large-load framework materials",
+          date: "Reviewed through August 12, 2026",
+          url: "https://www.pjm.com/-/media/DotCom/about-pjm/who-we-are/public-disclosures/2026/20260727-cifp-framework-for-service-during-periods-of-insufficient-resource-adequacy-executive-summary.pdf",
           supports:
-            "Physical power and large-load limits remaining operational pace-setters",
-        },
-        {
-          institution: "U.S. Department of Energy",
-          title: "DOE Order No. 202-26-35",
-          date: "July 14, 2026",
-          url: "https://www.energy.gov/ceser/federal-power-act-section-202c-pjm-interconnection-llc-pjm-order-no-202-26-35",
-          supports:
-            "Renewed temporary flexibility for specified units and large-load backup generation",
+            "Physical power and large-load adequacy remaining co-equal deployment limits",
         },
       ],
     },
