@@ -29,6 +29,38 @@ const SEARCH_ANALYTICS_BASE =
 /** Bounded lookback for the single freshness discovery query. */
 const GSC_FRESHNESS_LOOKBACK_DAYS = 16;
 
+/** V1 Search Analytics dimensions — device/country are intentionally omitted. */
+export const GSC_V1_SEARCH_ANALYTICS_DIMENSIONS = [
+  "query",
+  "page",
+  "date",
+] as const;
+
+export type GscV1SearchAnalyticsDimension =
+  (typeof GSC_V1_SEARCH_ANALYTICS_DIMENSIONS)[number];
+
+/** Hard stop so pagination cannot loop indefinitely. */
+export const GSC_PAGINATION_MAX_REQUESTS = 6;
+export const GSC_QUERY_ROW_LIMIT_PER_REQUEST = 5000;
+export const GSC_QUERY_MAX_ROWS = 15_000;
+export const GSC_PAGE_ROW_LIMIT_PER_REQUEST = 2500;
+export const GSC_PAGE_MAX_ROWS = 5000;
+
+export const GSC_QUERY_COVERAGE_NOTE =
+  "Search Console does not guarantee all queries. Returned rows are a bounded sample of available Search Analytics rows; anonymized and lower-volume queries may be omitted. This is not all queries for the property.";
+
+export const GSC_CRITICAL_PAGE_PATHS = [
+  "/",
+  "/engagement-rings",
+  "/custom-design",
+  "/concierge",
+  "/diamond-studio",
+  "/diamond-intelligence",
+  "/diamond-shape-studio",
+] as const;
+
+export type GscCriticalPagePath = (typeof GSC_CRITICAL_PAGE_PATHS)[number];
+
 export type GscIntegrationStatus = "live" | "unavailable" | "pending";
 
 export type GscPeriodTotals = {
@@ -93,6 +125,52 @@ export type GscFreshness = {
   probeRange?: WeekRange;
 };
 
+export type GscDimensionRetrievalMeta = {
+  rowsReturned: number;
+  requestLimit: number;
+  requestsMade: number;
+  truncatedOrPotentiallyIncomplete: boolean;
+  stoppedReason: "complete" | "max-rows" | "max-requests";
+  note: string;
+};
+
+export type GscCriticalPageLookupState =
+  | "observed"
+  | "filtered-lookup-empty"
+  | "lookup-failed"
+  | "not-fetched";
+
+export type GscCriticalPageRow = {
+  path: GscCriticalPagePath;
+  pageUrl: string;
+  state: GscCriticalPageLookupState;
+  inGlobalTopPages: boolean | null;
+  metrics: GscPageRow | null;
+};
+
+export type GscSitemapContent = {
+  type: string | null;
+  submitted: number | null;
+};
+
+export type GscSitemapEntry = {
+  path: string;
+  type: string | null;
+  lastSubmitted: string | null;
+  lastDownloaded: string | null;
+  isPending: boolean | null;
+  isSitemapsIndex: boolean | null;
+  warnings: number | null;
+  errors: number | null;
+  contents: GscSitemapContent[];
+};
+
+export type GscSitemapFetchResult = {
+  status: "observed" | "unavailable";
+  unavailableReason: string | null;
+  entries: GscSitemapEntry[];
+};
+
 export type GscWeeklyBundle = {
   status: GscIntegrationStatus;
   siteUrl: string | null;
@@ -107,6 +185,15 @@ export type GscWeeklyBundle = {
   };
   freshness?: GscFreshness;
   fetchedAt: string;
+  retrieval?: {
+    queries: GscDimensionRetrievalMeta;
+    pages: GscDimensionRetrievalMeta;
+  };
+  criticalPages?: {
+    current: GscCriticalPageRow[];
+    previous: GscCriticalPageRow[];
+  };
+  sitemaps?: GscSitemapFetchResult;
 };
 
 export type GscErrorCode =
@@ -192,8 +279,17 @@ async function searchAnalyticsQuery(params: {
   siteUrl: string;
   accessToken: string;
   week: WeekRange;
-  dimensions?: ("query" | "page" | "date" | "device" | "country")[];
+  dimensions?: GscV1SearchAnalyticsDimension[];
   rowLimit?: number;
+  startRow?: number;
+  dimensionFilterGroups?: Array<{
+    groupType?: "and" | "or";
+    filters: Array<{
+      dimension: "page" | "query";
+      operator: "equals" | "contains";
+      expression: string;
+    }>;
+  }>;
   /** Omit / "final" = finalized only; "all" includes fresh incomplete rows + metadata. */
   dataState?: "all" | "final";
 }): Promise<SearchAnalyticsQueryResult> {
@@ -204,8 +300,14 @@ async function searchAnalyticsQuery(params: {
     endDate: params.week.end,
     rowLimit: params.rowLimit ?? 100,
   };
+  if (params.startRow && params.startRow > 0) {
+    body.startRow = params.startRow;
+  }
   if (params.dimensions?.length) {
     body.dimensions = params.dimensions;
+  }
+  if (params.dimensionFilterGroups?.length) {
+    body.dimensionFilterGroups = params.dimensionFilterGroups;
   }
   if (params.dataState) {
     body.dataState = params.dataState;
@@ -298,6 +400,281 @@ function mapPageRows(rows: SearchAnalyticsRow[]): GscPageRow[] {
     .sort((a, b) => b.impressions - a.impressions);
 }
 
+export type SearchAnalyticsPageRequest = {
+  startRow: number;
+  rowLimit: number;
+};
+
+/**
+ * Bounded pagination over Search Analytics pages.
+ * Always stops at maxRequests even if the fetcher keeps returning full pages.
+ */
+export async function collectSearchAnalyticsRows(options: {
+  fetchPage: (
+    req: SearchAnalyticsPageRequest,
+  ) => Promise<{ rows: SearchAnalyticsRow[] }>;
+  pageSize: number;
+  maxRows: number;
+  maxRequests: number;
+  coverageNote: string;
+}): Promise<{
+  rows: SearchAnalyticsRow[];
+  meta: GscDimensionRetrievalMeta;
+}> {
+  const maxRequests = Math.max(1, Math.min(options.maxRequests, GSC_PAGINATION_MAX_REQUESTS));
+  const pageSize = Math.max(1, options.pageSize);
+  const maxRows = Math.max(1, options.maxRows);
+
+  const rows: SearchAnalyticsRow[] = [];
+  let startRow = 0;
+  let requestsMade = 0;
+  let stoppedReason: GscDimensionRetrievalMeta["stoppedReason"] = "complete";
+
+  while (requestsMade < maxRequests && rows.length < maxRows) {
+    const remaining = maxRows - rows.length;
+    const rowLimit = Math.min(pageSize, remaining);
+    const previousStart = startRow;
+    requestsMade += 1;
+    const page = await options.fetchPage({ startRow, rowLimit });
+    const batch = page.rows ?? [];
+    rows.push(...batch);
+
+    if (batch.length < rowLimit) {
+      stoppedReason = "complete";
+      break;
+    }
+    if (rows.length >= maxRows) {
+      stoppedReason = "max-rows";
+      break;
+    }
+    startRow += batch.length;
+    if (startRow <= previousStart) {
+      stoppedReason = "complete";
+      break;
+    }
+    if (requestsMade >= maxRequests) {
+      stoppedReason = "max-requests";
+      break;
+    }
+  }
+
+  const truncatedOrPotentiallyIncomplete =
+    stoppedReason === "max-rows" || stoppedReason === "max-requests";
+
+  return {
+    rows,
+    meta: {
+      rowsReturned: rows.length,
+      requestLimit: maxRows,
+      requestsMade,
+      truncatedOrPotentiallyIncomplete,
+      stoppedReason,
+      note: options.coverageNote,
+    },
+  };
+}
+
+function parseOptionalNumber(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string" && value.trim() !== "") {
+    const n = Number(value);
+    return Number.isFinite(n) ? n : null;
+  }
+  return null;
+}
+
+function parseOptionalBool(value: unknown): boolean | null {
+  if (typeof value === "boolean") return value;
+  return null;
+}
+
+function parseOptionalString(value: unknown): string | null {
+  if (typeof value === "string" && value.trim()) return value.trim();
+  return null;
+}
+
+/** Map sitemaps.list JSON — ignores deprecated contents[].indexed. */
+export function mapGscSitemapListPayload(payload: unknown): GscSitemapEntry[] {
+  if (!payload || typeof payload !== "object") return [];
+  const list = (payload as { sitemap?: unknown }).sitemap;
+  if (!Array.isArray(list)) return [];
+
+  const entries: GscSitemapEntry[] = [];
+  for (const raw of list) {
+    if (!raw || typeof raw !== "object") continue;
+    const row = raw as Record<string, unknown>;
+    const path = parseOptionalString(row.path);
+    if (!path) continue;
+
+    const contentsRaw = Array.isArray(row.contents) ? row.contents : [];
+    const contents: GscSitemapContent[] = [];
+    for (const c of contentsRaw) {
+      if (!c || typeof c !== "object") continue;
+      const content = c as Record<string, unknown>;
+      contents.push({
+        type: parseOptionalString(content.type),
+        submitted: parseOptionalNumber(content.submitted),
+      });
+    }
+
+    const isIndex = parseOptionalBool(row.isSitemapsIndex);
+    entries.push({
+      path,
+      type: isIndex ? "index" : (contents[0]?.type ?? null),
+      lastSubmitted: parseOptionalString(row.lastSubmitted),
+      lastDownloaded: parseOptionalString(row.lastDownloaded),
+      isPending: parseOptionalBool(row.isPending),
+      isSitemapsIndex: isIndex,
+      warnings: parseOptionalNumber(row.warnings),
+      errors: parseOptionalNumber(row.errors),
+      contents,
+    });
+  }
+  return entries;
+}
+
+export async function listGscSitemaps(params: {
+  siteUrl: string;
+  accessToken: string;
+}): Promise<GscSitemapFetchResult> {
+  const url = `${SEARCH_ANALYTICS_BASE}/${encodeSiteUrl(params.siteUrl)}/sitemaps`;
+  const res = await fetch(url, {
+    method: "GET",
+    headers: { Authorization: `Bearer ${params.accessToken}` },
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    const lower = text.toLowerCase();
+    if (res.status === 403 || lower.includes("permission")) {
+      throw new GscError(
+        "Search Console sitemap list permission denied",
+        "API_FORBIDDEN",
+        text,
+      );
+    }
+    throw new GscError(
+      `Search Console sitemap list error (${res.status}): ${text.slice(0, 200)}`,
+      "API_FAILED",
+      text,
+    );
+  }
+  const payload: unknown = await res.json();
+  return {
+    status: "observed",
+    unavailableReason: null,
+    entries: mapGscSitemapListPayload(payload),
+  };
+}
+
+export function criticalPageAbsoluteUrl(path: GscCriticalPagePath): string {
+  const origin = "https://www.hourglassdiamonds.com";
+  if (path === "/") return `${origin}/`;
+  return `${origin}${path}`;
+}
+
+function pagePathFromGscUrl(page: string): string {
+  try {
+    const u = new URL(page);
+    const pathname = u.pathname || "/";
+    return pathname === "" ? "/" : pathname;
+  } catch {
+    return page.startsWith("/") ? page : `/${page}`;
+  }
+}
+
+export function annotateCriticalPagesWithGlobalTop(
+  rows: GscCriticalPageRow[],
+  globalPages: GscPageRow[],
+): GscCriticalPageRow[] {
+  const topPaths = new Set(globalPages.map((p) => pagePathFromGscUrl(p.page)));
+  return rows.map((row) => ({
+    ...row,
+    inGlobalTopPages: topPaths.has(row.path),
+  }));
+}
+
+async function fetchCriticalPageLookups(params: {
+  siteUrl: string;
+  accessToken: string;
+  week: WeekRange;
+  globalPages: GscPageRow[];
+}): Promise<GscCriticalPageRow[]> {
+  const lookups = await Promise.all(
+    GSC_CRITICAL_PAGE_PATHS.map(async (path) => {
+      const pageUrl = criticalPageAbsoluteUrl(path);
+      try {
+        const result = await searchAnalyticsQuery({
+          siteUrl: params.siteUrl,
+          accessToken: params.accessToken,
+          week: params.week,
+          dimensions: ["page"],
+          rowLimit: 5,
+          dimensionFilterGroups: [
+            {
+              filters: [
+                {
+                  dimension: "page",
+                  operator: "equals",
+                  expression: pageUrl,
+                },
+              ],
+            },
+          ],
+        });
+        const mapped = mapPageRows(result.rows);
+        const metrics = mapped[0] ?? null;
+        return {
+          path,
+          pageUrl,
+          state: (metrics ? "observed" : "filtered-lookup-empty") as GscCriticalPageLookupState,
+          inGlobalTopPages: null,
+          metrics,
+        };
+      } catch (err) {
+        const message =
+          err instanceof Error ? err.message.slice(0, 180) : "critical page lookup failed";
+        console.warn(`[hourglass:intelligence] GSC critical page ${path}: ${message}`);
+        return {
+          path,
+          pageUrl,
+          state: "lookup-failed" as const,
+          inGlobalTopPages: null,
+          metrics: null,
+        };
+      }
+    }),
+  );
+  return annotateCriticalPagesWithGlobalTop(lookups, params.globalPages);
+}
+
+async function fetchSpecialistDimensionRows(params: {
+  siteUrl: string;
+  accessToken: string;
+  week: WeekRange;
+  dimension: "query" | "page";
+}): Promise<{ rows: SearchAnalyticsRow[]; meta: GscDimensionRetrievalMeta }> {
+  const isQuery = params.dimension === "query";
+  return collectSearchAnalyticsRows({
+    pageSize: isQuery
+      ? GSC_QUERY_ROW_LIMIT_PER_REQUEST
+      : GSC_PAGE_ROW_LIMIT_PER_REQUEST,
+    maxRows: isQuery ? GSC_QUERY_MAX_ROWS : GSC_PAGE_MAX_ROWS,
+    maxRequests: GSC_PAGINATION_MAX_REQUESTS,
+    coverageNote: isQuery
+      ? GSC_QUERY_COVERAGE_NOTE
+      : "Search Console page rows are a bounded retrieval, not a complete URL inventory. Pages with no returned rows are not observed zeros.",
+    fetchPage: (req) =>
+      searchAnalyticsQuery({
+        siteUrl: params.siteUrl,
+        accessToken: params.accessToken,
+        week: params.week,
+        dimensions: [params.dimension],
+        rowLimit: req.rowLimit,
+        startRow: req.startRow,
+      }),
+  });
+}
+
 function sumBrandMetrics(queries: GscQueryRow[]): GscBrandPeriod {
   let impressions = 0;
   let clicks = 0;
@@ -341,6 +718,46 @@ async function fetchPeriodBundle(
     totals,
     topQueries: mapQueryRows(queryResult.rows),
     topPages: mapPageRows(pageResult.rows),
+  };
+}
+
+async function fetchSpecialistPeriodBundle(
+  siteUrl: string,
+  accessToken: string,
+  week: WeekRange,
+): Promise<{
+  bundle: GscPeriodBundle;
+  retrieval: {
+    queries: GscDimensionRetrievalMeta;
+    pages: GscDimensionRetrievalMeta;
+  };
+}> {
+  const [totalResult, queryCollected, pageCollected] = await Promise.all([
+    searchAnalyticsQuery({ siteUrl, accessToken, week, rowLimit: 1 }),
+    fetchSpecialistDimensionRows({
+      siteUrl,
+      accessToken,
+      week,
+      dimension: "query",
+    }),
+    fetchSpecialistDimensionRows({
+      siteUrl,
+      accessToken,
+      week,
+      dimension: "page",
+    }),
+  ]);
+
+  return {
+    bundle: {
+      totals: aggregateTotals(totalResult.rows),
+      topQueries: mapQueryRows(queryCollected.rows),
+      topPages: mapPageRows(pageCollected.rows),
+    },
+    retrieval: {
+      queries: queryCollected.meta,
+      pages: pageCollected.meta,
+    },
   };
 }
 
@@ -503,7 +920,8 @@ export async function fetchGscWeeklyBundle(
 /**
  * Agent OS GSC pull — discovers newest finalized Pacific date, then builds
  * comparison windows ending on that date. Normal reporting lag is not an outage.
- * API cost: 1 freshness probe + 2×3 period queries (same as before for periods).
+ * Specialist path: bounded paginated query/page rows + critical-page filters +
+ * read-only sitemaps.list. Sitemap failure does not drop Search Analytics.
  */
 export async function fetchGscAgentOsBundle(
   asOf: Date = new Date(),
@@ -535,6 +953,14 @@ export async function fetchGscAgentOsBundle(
         current: boundary.probeRange,
         previous: boundary.probeRange,
       };
+      const emptyRetrieval: GscDimensionRetrievalMeta = {
+        rowsReturned: 0,
+        requestLimit: GSC_QUERY_MAX_ROWS,
+        requestsMade: 0,
+        truncatedOrPotentiallyIncomplete: false,
+        stoppedReason: "complete",
+        note: GSC_QUERY_COVERAGE_NOTE,
+      };
       return {
         status: "live",
         siteUrl,
@@ -554,14 +980,69 @@ export async function fetchGscAgentOsBundle(
         },
         freshness: freshnessFromBoundary(boundary, emptyWindows),
         fetchedAt: new Date().toISOString(),
+        retrieval: {
+          queries: emptyRetrieval,
+          pages: {
+            ...emptyRetrieval,
+            requestLimit: GSC_PAGE_MAX_ROWS,
+          },
+        },
+        criticalPages: {
+          current: GSC_CRITICAL_PAGE_PATHS.map((path) => ({
+            path,
+            pageUrl: criticalPageAbsoluteUrl(path),
+            state: "filtered-lookup-empty",
+            inGlobalTopPages: false,
+            metrics: null,
+          })),
+          previous: GSC_CRITICAL_PAGE_PATHS.map((path) => ({
+            path,
+            pageUrl: criticalPageAbsoluteUrl(path),
+            state: "filtered-lookup-empty",
+            inGlobalTopPages: false,
+            metrics: null,
+          })),
+        },
+        sitemaps: await listGscSitemaps({ siteUrl, accessToken }).catch(
+          (err: unknown) => ({
+            status: "unavailable" as const,
+            unavailableReason:
+              err instanceof Error ? err.message : "Sitemap list failed",
+            entries: [],
+          }),
+        ),
       };
     }
 
     const windows = getWindowsEndingOn(finalized, GSC_SOURCE_TIMEZONE);
 
-    const [current, previous] = await Promise.all([
-      fetchPeriodBundle(siteUrl, accessToken, windows.rolling7d),
-      fetchPeriodBundle(siteUrl, accessToken, windows.prior7d),
+    const [currentSpecialist, previousSpecialist] = await Promise.all([
+      fetchSpecialistPeriodBundle(siteUrl, accessToken, windows.rolling7d),
+      fetchSpecialistPeriodBundle(siteUrl, accessToken, windows.prior7d),
+    ]);
+
+    const current = currentSpecialist.bundle;
+    const previous = previousSpecialist.bundle;
+
+    const [criticalCurrent, criticalPrevious, sitemaps] = await Promise.all([
+      fetchCriticalPageLookups({
+        siteUrl,
+        accessToken,
+        week: windows.rolling7d,
+        globalPages: current.topPages,
+      }),
+      fetchCriticalPageLookups({
+        siteUrl,
+        accessToken,
+        week: windows.prior7d,
+        globalPages: previous.topPages,
+      }),
+      listGscSitemaps({ siteUrl, accessToken }).catch((err: unknown) => ({
+        status: "unavailable" as const,
+        unavailableReason:
+          err instanceof Error ? err.message : "Sitemap list failed",
+        entries: [],
+      })),
     ]);
 
     const brand = {
@@ -580,6 +1061,12 @@ export async function fetchGscAgentOsBundle(
         previous: windows.prior7d,
       }),
       fetchedAt: new Date().toISOString(),
+      retrieval: currentSpecialist.retrieval,
+      criticalPages: {
+        current: criticalCurrent,
+        previous: criticalPrevious,
+      },
+      sitemaps,
     };
   } catch (err) {
     const message =

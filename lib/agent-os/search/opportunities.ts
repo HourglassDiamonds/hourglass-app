@@ -4,6 +4,8 @@
  */
 
 import type { GscWeeklyBundle } from "@/lib/integrations/gsc";
+import type { GscEvidenceBundle } from "./gsc-evidence";
+import { sitemapHasObservedErrors } from "./gsc-evidence";
 import {
   classifyQueryIntent,
   isBrandQuery,
@@ -77,7 +79,9 @@ export function detectGscOpportunities(
           isSmallSample(row.impressions, row.clicks)
             ? "Sample size is modest — treat as directional"
             : "Sample size adequate for CTR review",
+          "Observed GSC metrics; recommended action is inference",
         ],
+        epistemicClass: "observed",
       });
     }
 
@@ -114,7 +118,9 @@ export function detectGscOpportunities(
         supportingReference: "gsc.topQueries",
         evidenceNotes: [
           `Non-branded query in positions ${NEAR_PAGE_ONE_MIN}–${NEAR_PAGE_ONE_MAX}`,
+          "Observed GSC metrics; recommended action is inference",
         ],
+        epistemicClass: "observed",
       });
     }
 
@@ -149,7 +155,11 @@ export function detectGscOpportunities(
           urgency: "medium",
           approvalRequired: false,
           supportingReference: "gsc.topQueries.wow",
-          evidenceNotes: [`Click delta ${delta.toFixed(0)}% vs prior week`],
+          evidenceNotes: [
+            `Click delta ${delta.toFixed(0)}% vs prior week`,
+            "DERIVED week-over-week from overlapping returned query rows",
+          ],
+          epistemicClass: "derived",
         });
       }
       if (delta >= RISE_PCT && row.impressions >= 100) {
@@ -178,7 +188,11 @@ export function detectGscOpportunities(
           urgency: "medium",
           approvalRequired: false,
           supportingReference: "gsc.topQueries.wow",
-          evidenceNotes: [`Click delta +${delta.toFixed(0)}% vs prior week`],
+          evidenceNotes: [
+            `Click delta +${delta.toFixed(0)}% vs prior week`,
+            "DERIVED week-over-week from overlapping returned query rows",
+          ],
+          epistemicClass: "derived",
         });
       }
     }
@@ -216,7 +230,11 @@ export function detectGscOpportunities(
           urgency: "medium",
           approvalRequired: false,
           supportingReference: "gsc.topPages.wow",
-          evidenceNotes: [`Page click delta ${delta.toFixed(0)}%`],
+          evidenceNotes: [
+            `Page click delta ${delta.toFixed(0)}%`,
+            "DERIVED week-over-week from overlapping returned page rows",
+          ],
+          epistemicClass: "derived",
         });
       }
     }
@@ -255,7 +273,9 @@ export function detectGscOpportunities(
         supportingReference: "gsc.topPages",
         evidenceNotes: [
           `Position ${row.position.toFixed(1)}; CTR ${(row.ctr * 100).toFixed(2)}%`,
+          "Observed GSC metrics; recommended action is inference",
         ],
+        epistemicClass: "observed",
       });
     }
   }
@@ -301,6 +321,7 @@ export function detectGscOpportunities(
           "Inference from top-query vs top-page lists (not query×page cross-dimension)",
           "Do not treat as confirmed cannibalization",
         ],
+        epistemicClass: "inferred",
       });
     }
   }
@@ -343,6 +364,7 @@ export function detectGscOpportunities(
           "Labeled possible only — adapter lacks query×page matrix",
           "Do not overclaim cannibalization",
         ],
+        epistemicClass: "inferred",
       });
     }
   }
@@ -383,7 +405,65 @@ export function detectGscOpportunities(
       supportingReference: "gsc.local-intent",
       evidenceNotes: [
         "GBP search visibility not measured — measurement gap remains explicit",
+        "Local class is DERIVED from query text, not a country dimension",
       ],
+      epistemicClass: "derived",
+    });
+  }
+
+  return out;
+}
+
+/**
+ * Evidence-bundle supplements. Never converts UNKNOWN critical-page lookups into zeros.
+ */
+export function detectGscEvidenceOpportunities(
+  evidence: GscEvidenceBundle | null,
+): SearchOpportunity[] {
+  if (!evidence || evidence.availability === "not-configured") return [];
+  if (
+    evidence.availability === "auth-failed" ||
+    evidence.availability === "property-denied" ||
+    evidence.availability === "unavailable"
+  ) {
+    return [];
+  }
+
+  const out: SearchOpportunity[] = [];
+  const sitemaps = evidence.observed.sitemaps;
+  if (sitemaps && sitemapHasObservedErrors(sitemaps)) {
+    const errorCount = sitemaps.reduce((n, e) => n + (e.errors ?? 0), 0);
+    out.push({
+      id: buildSearchOpportunityId({
+        source: "gsc",
+        type: "measurement-gap",
+        subject: "sitemaps",
+      }),
+      type: "measurement-gap",
+      title: "Search Console reported sitemap errors",
+      whyItMatters:
+        "Observed sitemap.list errors are not Coverage-report indexing reasons; they still warrant a read-only inspection.",
+      recommendedAction:
+        "Review submitted sitemap files in Search Console UI — do not submit, delete, or request indexing from Agent OS.",
+      queryOrPage: sitemaps[0]?.path ?? "sitemap",
+      metric: "sitemap-errors",
+      currentValue: `${errorCount} error(s) across ${sitemaps.length} sitemap(s)`,
+      comparisonValue: null,
+      sampleSize: sitemaps.length,
+      classifications: ["informational"],
+      isInference: true,
+      confidence: 0.7,
+      likelyImpact: 5,
+      effort: "low",
+      urgency: "medium",
+      approvalRequired: false,
+      supportingReference: "gsc.sitemaps",
+      evidenceNotes: [
+        "Observed sitemaps.list errors/warnings only",
+        "contents[].indexed is not modeled; bulk Coverage remains UNKNOWN",
+        "Recommended action is inference",
+      ],
+      epistemicClass: "observed",
     });
   }
 

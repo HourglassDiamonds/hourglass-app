@@ -79,6 +79,17 @@ Store the refresh token as `GOOGLE_REFRESH_TOKEN` (never commit it).
 |----------|----------------|
 | `GSC_SITE_URL` | GSC reads |
 
+Search Strategy consumes a typed `GscEvidenceBundle` (`lib/agent-os/search/gsc-evidence.ts`) built from the same adapter:
+
+- **OBSERVED** — Search Analytics rows, critical-page filtered lookups, `sitemaps.list` fields (path, type, lastSubmitted, lastDownloaded, isPending, isSitemapsIndex, warnings, errors, contents[].submitted/type).
+- **DERIVED / APPROXIMATE** — branded vs non-branded from returned query rows via `lib/intelligence/brand-queries.ts#isBrandQuery` (not a GSC dimension; not all queries).
+- **INFERRED** — Search Strategy recommendations only.
+- **UNKNOWN** — Coverage/Pages indexing reasons, URL Inspection, device/country, omitted query/page rows (never filled with zero).
+
+Query retrieval is bounded/paginated (`rowLimit` + `startRow`) with explicit `rowsReturned`, `requestLimit`, and `truncatedOrPotentiallyIncomplete`. Returned queries are **not** “all queries.”
+
+`contents[].indexed` is deprecated and is not modeled. Sitemap data is not a Coverage report.
+
 ### Not used for these adapters
 
 - No `NEXT_PUBLIC_*` secrets

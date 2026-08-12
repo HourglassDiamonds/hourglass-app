@@ -54,4 +54,9 @@ export type SearchOpportunity = {
   approvalRequired: boolean;
   supportingReference: string;
   evidenceNotes: string[];
+  /**
+   * Epistemic class of the *metric claim*.
+   * Recommended actions remain inference even when metrics are observed.
+   */
+  epistemicClass?: "observed" | "derived" | "inferred" | "unknown";
 };

@@ -17,7 +17,11 @@ import {
   FIXTURE_REPORTING_PERIOD,
 } from "../fixtures/sample-data";
 import type { AdapterMode, AdapterResult, AgentOsDataBundle } from "./types";
-import { DEFAULT_ADAPTER_TIMEOUT_MS, withTimeout } from "./types";
+import {
+  DEFAULT_ADAPTER_TIMEOUT_MS,
+  GSC_EVIDENCE_ADAPTER_TIMEOUT_MS,
+  withTimeout,
+} from "./types";
 import type { Ga4WeeklyBundle, WeeklyReportRecord } from "@/lib/intelligence/types";
 import type { GscWeeklyBundle } from "@/lib/integrations/gsc";
 import {
@@ -475,7 +479,12 @@ export async function loadAllSources(
 ): Promise<AgentOsDataBundle> {
   const [ga4, gsc, weeklyIntelligence] = await Promise.all([
     loadGa4(mode),
-    loadGsc(mode),
+    loadGsc(
+      mode,
+      mode === "live"
+        ? GSC_EVIDENCE_ADAPTER_TIMEOUT_MS
+        : DEFAULT_ADAPTER_TIMEOUT_MS,
+    ),
     loadWeeklyIntelligence(mode),
   ]);
 

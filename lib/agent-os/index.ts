@@ -260,6 +260,15 @@ export {
 } from "./search/types";
 
 export {
+  buildGscEvidenceBundle,
+  emptyGscEvidenceBundle,
+  GSC_EVIDENCE_SOURCE,
+  GSC_BRAND_CLASSIFIER_ID,
+  type GscEvidenceBundle,
+  type GscEpistemicClass,
+} from "./search/gsc-evidence";
+
+export {
   CONTENT_OPPORTUNITY_TYPES,
   type ContentOpportunityType,
   type ContentOpportunity,
@@ -285,7 +294,7 @@ export {
   isLocalAuthorityQuery,
 } from "./search/classify";
 
-export { detectGscOpportunities } from "./search/opportunities";
+export { detectGscOpportunities, detectGscEvidenceOpportunities } from "./search/opportunities";
 export {
   inspectGuideAuthority,
   FAQ_SCHEMA_ARTICLE_SLUGS,

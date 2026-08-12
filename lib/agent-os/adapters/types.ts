@@ -26,6 +26,9 @@ export type AgentOsDataBundle = {
 
 export const DEFAULT_ADAPTER_TIMEOUT_MS = 12_000;
 
+/** Bounded timeout for evidence-grade / paginated Agent OS GSC reads only. */
+export const GSC_EVIDENCE_ADAPTER_TIMEOUT_MS = 60_000;
+
 export async function withTimeout<T>(
   promise: Promise<T>,
   ms: number,

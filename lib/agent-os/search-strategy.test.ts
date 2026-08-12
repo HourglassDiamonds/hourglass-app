@@ -207,6 +207,10 @@ describe("Search Strategy executive", () => {
       assert.match(r.title, /\[Search Strategy\]/);
     }
     assert.ok(out.dataGaps.some((g) => g.sourceId === "gbp"));
+    assert.equal(out.gscEvidence.source, "google-search-console");
+    assert.ok(out.gscEvidence.fetchedAt);
+    assert.equal(out.gscEvidence.derived.brandedVsNonBranded?.approximate, true);
+    assert.equal(out.gscEvidence.derived.brandedVsNonBranded?.epistemic, "derived");
   });
 
   it("with GSC unavailable still returns repository findings and no fabricated GSC opps", () => {
@@ -223,6 +227,9 @@ describe("Search Strategy executive", () => {
         o.supportingReference.includes("category-map"),
       ),
     );
+    assert.equal(out.gscEvidence.availability, "not-configured");
+    assert.equal(out.gscEvidence.observed.totals, null);
+    assert.equal(out.gscEvidence.derived.brandedVsNonBranded, null);
   });
 
   it("zero-recommendation Search Strategy path remains healthy via CoS", async () => {

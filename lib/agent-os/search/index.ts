@@ -10,7 +10,7 @@ import { buildRecommendation } from "../recommendation";
 import { assertOperationalForRecommendations } from "../registry";
 import { proposedActionImpliesWrite } from "../permissions";
 import type { DataGap, Recommendation } from "../types";
-import { detectGscOpportunities } from "./opportunities";
+import { detectGscOpportunities, detectGscEvidenceOpportunities } from "./opportunities";
 import { inspectGuideAuthority } from "./guide-authority";
 import { buildSearchRecommendationId } from "./ids";
 import {
@@ -24,6 +24,12 @@ import {
   consolidateLegacyWithLocalAuthority,
 } from "./local/ranking-policy";
 import type { SearchOpportunity } from "./types";
+import {
+  buildGscEvidenceBundle,
+  emptyGscEvidenceBundle,
+  gscEvidenceDataGaps,
+  type GscEvidenceBundle,
+} from "./gsc-evidence";
 import {
   emptyFanOutCoverageSnapshot,
   fanOutCoverageDataGap,
@@ -45,6 +51,8 @@ export type SearchStrategyOutput = {
   localAuthority: LocalAuthorityAudit;
   /** AI Fan-Out Coverage Analyzer snapshot (question universe × content inventory). */
   fanOutCoverage: FanOutCoverageSnapshot;
+  /** Typed GSC evidence — unavailable bundle when GSC is down. */
+  gscEvidence: GscEvidenceBundle;
 };
 
 export type RunSearchStrategyOptions = {
@@ -135,6 +143,36 @@ export function runSearchStrategy(
     available: Boolean(gscAvailable),
   });
 
+  const gscEvidence = buildGscEvidenceBundle(bundle.gsc.data, {
+    available: Boolean(gscAvailable),
+  });
+  const evidenceOpps = detectGscEvidenceOpportunities(gscEvidence);
+  dataGaps.push(...gscEvidenceDataGaps(gscEvidence));
+
+  if (gscAvailable) {
+    const coverage = gscEvidence.retrieval.queries;
+    if (coverage) {
+      facts.push(
+        `GSC query rows returned ${coverage.rowsReturned} (cap ${coverage.requestLimit}; truncatedOrPotentiallyIncomplete=${coverage.truncatedOrPotentiallyIncomplete})`,
+      );
+      facts.push(coverage.note);
+    }
+    const brand = gscEvidence.derived.brandedVsNonBranded;
+    if (brand) {
+      facts.push(
+        `Approximate branded vs non-branded (DERIVED from returned query rows): branded ${brand.branded.clicks} clicks / ${brand.branded.impressions} impressions; non-branded ${brand.nonBranded.clicks} clicks / ${brand.nonBranded.impressions} impressions`,
+      );
+      inferences.push(brand.coverageNote);
+    }
+    if (gscEvidence.observed.sitemaps) {
+      facts.push(
+        `GSC sitemaps.list observed ${gscEvidence.observed.sitemaps.length} submitted sitemap(s)`,
+      );
+    } else {
+      facts.push("GSC sitemap state UNKNOWN — not treated as Coverage/indexing");
+    }
+  }
+
   const guideAuthority = inspectGuideAuthority();
   facts.push(
     `Diamond Guide registry: ${guideAuthority.articleCount} articles across ${guideAuthority.hubSegments.length} hubs`,
@@ -179,6 +217,7 @@ export function runSearchStrategy(
 
   const opportunities = [
     ...gscOpps,
+    ...evidenceOpps,
     ...guideAuthority.opportunities,
     ...fanOutSearchOpps,
   ];
@@ -241,6 +280,7 @@ export function runSearchStrategy(
     guideAuthority,
     localAuthority: localRun.audit,
     fanOutCoverage,
+    gscEvidence,
   };
 }
 
@@ -430,5 +470,6 @@ export function emptySearchStrategyOutput(): SearchStrategyOutput {
     guideAuthority: inspectGuideAuthority([]),
     localAuthority: emptyLocalAuthorityAudit(),
     fanOutCoverage: emptyFanOutCoverageSnapshot(),
+    gscEvidence: emptyGscEvidenceBundle({ availability: "not-configured" }),
   };
 }
