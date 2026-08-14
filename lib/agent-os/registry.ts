@@ -89,6 +89,12 @@ const CONTENT_ESCALATION: EscalationRule[] = [
     condition: "Recommendation implies publishing or Buffer writes",
     action: "Block — Content V1 is read-only recommendations only",
   },
+  {
+    id: "content-authority-ownership",
+    condition: "Case Study pipeline or current authority outreach wave",
+    action:
+      "Keep under Content Authority specialist; Opportunity must not duplicate the current outreach wave; do not send or publish",
+  },
 ];
 
 const OPPORTUNITY_ESCALATION: EscalationRule[] = [
@@ -245,6 +251,8 @@ export const EXECUTIVE_REGISTRY: readonly ExecutiveDefinition[] = [
       "message repetition and coverage",
       "brand voice consistency",
       "production backlog",
+      "case study pipeline",
+      "authority outreach lifecycle",
       "distribution recommendations",
       "content performance when verified data exists",
     ],
@@ -258,7 +266,7 @@ export const EXECUTIVE_REGISTRY: readonly ExecutiveDefinition[] = [
     prohibitedActions: SHARED_PROHIBITED,
     escalationRules: CONTENT_ESCALATION,
     implementationStatus: "operational",
-    version: "1.0.0",
+    version: "1.1.0",
   },
   {
     id: "opportunity",

@@ -180,6 +180,29 @@ export function collectOpportunitySignals(
     });
   }
 
+  if (input.content?.authority) {
+    raw.unshift({
+      id: "content:authority:current-outreach-wave",
+      kind: "content-theme",
+      sourceExecutive: "content",
+      sourceEvidenceId: "authority:current-outreach-wave",
+      title: "Current authority outreach wave owned by Content",
+      summary:
+        "Content Authority owns the current editorial outreach-wave lifecycle — Opportunity must not duplicate it",
+      relatedContent: "authority:current-outreach-wave",
+      confidence: 0.95,
+      likelyImpact: 4,
+      isTechnicalSeo: false,
+      isContentProduction: false,
+      isInference: false,
+      supportingReference: "lib/agent-os/content/authority/ledger.ts",
+      evidenceNotes: [
+        `followUpEligibility=${input.content.authority.outreach.followUpEligibility}`,
+        "No new outreach wave; no contacts",
+      ],
+    });
+  }
+
   const capped = raw.length > MAX_SIGNALS;
   const signals = raw.slice(0, MAX_SIGNALS);
 
@@ -256,7 +279,9 @@ function normalizeContentOpportunity(
     opp.type === "carousel-opportunity" ||
     opp.type === "caption-opportunity" ||
     opp.type === "repurposing-gap" ||
-    opp.type === "sequence-gap";
+    opp.type === "sequence-gap" ||
+    opp.type === "case-study-production" ||
+    opp.type === "case-study-founder-input";
 
   return {
     id: `content:${opp.id}`,

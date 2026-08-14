@@ -945,7 +945,8 @@ function detectMediaCommunityResearch(
     (s) =>
       s.sourceExecutive === "content" &&
       (s.kind === "content-theme" || s.kind === "content-production") &&
-      !/measurement-gap/i.test(s.title),
+      !/measurement-gap/i.test(s.title) &&
+      !/current-outreach-wave|authority outreach/i.test(`${s.id} ${s.title} ${s.relatedContent ?? ""}`),
   );
   const angle =
     bundle.strategy.mediaAngles[0] ??
@@ -1083,6 +1084,58 @@ function detectAlreadyCovered(
   );
 
   const out: GrowthOpportunity[] = [];
+
+  const authorityWave = bundle.signals.find(
+    (s) =>
+      s.sourceEvidenceId === "authority:current-outreach-wave" ||
+      /current-outreach-wave/i.test(s.id),
+  );
+  if (authorityWave) {
+    out.push(
+      ensureConfidenceFields({
+        id: buildOpportunityId({
+          source: "content",
+          type: "opportunity-already-covered",
+          subject: "current-outreach-wave",
+          readiness: "already-covered",
+        }),
+        type: "opportunity-already-covered",
+        readiness: "already-covered",
+        title: "Already covered by Content: current authority outreach wave",
+        whyItMatters:
+          "Content Authority owns the current editorial outreach-wave lifecycle — Opportunity must not open a parallel wave.",
+        recommendedAction:
+          "Defer. Let Content retain the current outreach-wave object.",
+        targetAudience: "founders-peers",
+        geography: "unspecified",
+        funnelStage: "awareness",
+        relatedContent: "authority:current-outreach-wave",
+        sourceExecutive: "content",
+        sourceEvidenceId: authorityWave.sourceEvidenceId,
+        costClass: "none",
+        effort: "low",
+        reversibility: "easily-reversed",
+        timeToSignal: "unknown",
+        strategicFit: 2,
+        founderDependence: "none",
+        externalVerification: "not-applicable",
+        isInference: false,
+        evidenceConfidence: 0.95,
+        strategicAttractiveness: 1,
+        urgency: "low",
+        approvalRequired: false,
+        owner: "Content",
+        supportingReference: authorityWave.supportingReference,
+        evidenceNotes: [
+          "Canonical object: authority:current-outreach-wave",
+          "No new contacts, lists, or send actions from Opportunity",
+        ],
+        disqualifyingRisks: ["Duplicate of Content Authority ownership"],
+        alreadyCoveredBy: "content",
+        additionalLeverage: "None — explicitly deferred to Content Authority",
+      }),
+    );
+  }
 
   if (contentProd) {
     out.push(

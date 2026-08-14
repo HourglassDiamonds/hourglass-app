@@ -27,6 +27,14 @@ import {
   type RunContentRoiOptions,
 } from "./roi";
 import { assessBrandFit } from "./brand-fit";
+import {
+  authoritySnapshotToOpportunities,
+  emptyAuthoritySnapshot,
+  isOrdinaryEditorialOpportunityType,
+  runAuthoritySpecialist,
+  type AuthoritySnapshot,
+  type RunAuthorityOptions,
+} from "./authority";
 
 export type ContentExecutiveOutput = {
   recommendations: Recommendation[];
@@ -37,6 +45,8 @@ export type ContentExecutiveOutput = {
   inventory: ReturnType<typeof inspectContentInventory>;
   /** Editorial ROI snapshot — inspectable; founder brief stays capped */
   contentRoi: ContentRoiSnapshot;
+  /** Authority specialist — Case Study pipeline + current outreach wave */
+  authority: AuthoritySnapshot;
 };
 
 export type RunContentOptions = {
@@ -46,6 +56,8 @@ export type RunContentOptions = {
     RunContentRoiOptions,
     "weights" | "founderFacingLimit" | "forceFailureAt" | "fanOutRunOptions"
   >;
+  /** Test/ops override for Authority specialist. Production omits this. */
+  authorityOptions?: RunAuthorityOptions;
 };
 
 export function runContentExecutive(
@@ -99,6 +111,23 @@ export function runContentExecutive(
   const searchOpps = options.search?.opportunities ?? [];
   const biRecs = options.bi?.recommendations ?? [];
 
+  const authority = runAuthoritySpecialist(options.authorityOptions);
+  facts.unshift(...authority.facts);
+  inferences.push(...authority.inferences);
+
+  if (authority.caseStudies.inventoryState === "empty") {
+    dataGaps.push({
+      id: "gap-content-authority-case-study-inventory",
+      sourceId: "weekly-intelligence",
+      description:
+        "No founder-affirmed Case Study inventory is connected for Content Authority",
+      impactOnRecommendations:
+        "Next Case Study cannot be selected; founder input is required. Conversations are not substituted.",
+      suggestedRemedy:
+        "Affirm at least one Case Study on the Authority ledger before treating production as operational",
+    });
+  }
+
   const contentRoi = runContentRoiGuarded(() =>
     runContentRoiPrioritizer({
       fanOutCoverage: options.search?.fanOutCoverage,
@@ -130,10 +159,12 @@ export function runContentExecutive(
           .filter((o) => o.brandFitOk)
       : [];
 
-  const opportunities = dedupeOpportunities([...roiOpps, ...detected]).slice(
-    0,
-    14 + MAX_FOUNDER_FACING_CONTENT_ROI,
-  );
+  const authorityOpps = authoritySnapshotToOpportunities(authority);
+
+  const opportunities = applyCaseStudyFounderNowPrecedence(
+    dedupeOpportunities([...authorityOpps, ...roiOpps, ...detected]),
+    authority.caseStudyFounderNow,
+  ).slice(0, 14 + MAX_FOUNDER_FACING_CONTENT_ROI + authorityOpps.length);
 
   const collectedAt = new Date().toISOString();
   const recommendations = opportunities
@@ -150,6 +181,7 @@ export function runContentExecutive(
     inferences,
     inventory,
     contentRoi,
+    authority,
   };
 }
 
@@ -230,6 +262,29 @@ function editorialPackageToOpportunity(
     brandFitOk: fit.ok,
     brandFitNotes: fit.notes,
   };
+}
+
+/**
+ * While Case Study production is founder-now, ordinary Conversation / ROI
+ * opportunities remain inspectable but must not compete as the daily agenda.
+ */
+function applyCaseStudyFounderNowPrecedence(
+  opps: ContentOpportunity[],
+  caseStudyFounderNow: boolean,
+): ContentOpportunity[] {
+  if (!caseStudyFounderNow) return opps;
+  return opps.map((o) => {
+    if (!isOrdinaryEditorialOpportunityType(o.type)) return o;
+    return {
+      ...o,
+      urgency: "low" as const,
+      likelyImpact: Math.min(o.likelyImpact, 4),
+      evidenceNotes: [
+        ...o.evidenceNotes,
+        "Demoted while Case Study production is founder-now — watch/background evidence only",
+      ],
+    };
+  });
 }
 
 function dedupeOpportunities(
@@ -336,5 +391,6 @@ export function emptyContentExecutiveOutput(): ContentExecutiveOutput {
     inferences: [],
     inventory: inspectContentInventory([]),
     contentRoi: emptyContentRoiSnapshot("unavailable"),
+    authority: emptyAuthoritySnapshot(false),
   };
 }

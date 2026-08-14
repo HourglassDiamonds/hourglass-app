@@ -28,6 +28,12 @@ export const CONTENT_OPPORTUNITY_TYPES = [
   "duplicate-topic-risk",
   /** Ranked editorial package from Content ROI (post reserved Conversation cycles) */
   "editorial-roi-package",
+  /** Authority specialist — Case Study production */
+  "case-study-production",
+  /** Authority specialist — empty/blocked ledger needs founder input */
+  "case-study-founder-input",
+  /** Authority specialist — current outreach wave follow-up readiness (not a send) */
+  "authority-outreach-follow-up",
 ] as const;
 
 export type ContentOpportunityType = (typeof CONTENT_OPPORTUNITY_TYPES)[number];

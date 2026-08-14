@@ -301,12 +301,29 @@ Recommends next conversation at **map** level: audience question, core idea, sup
 | Executive | Owns |
 |-----------|------|
 | Search Strategy | Technical SEO (CTR, schema, positions, guide-authority link audits) |
-| Content | Communication & production (conversation maps, clips, carousels, handoff storytelling) |
+| Content | Communication & production (conversation maps, clips, carousels, handoff storytelling); **Case Study pipeline and current authority-outreach-wave lifecycle** (Authority specialist) |
 | BI | Measurement diagnosis (tracking, conversion integrity, CTA funnel health, attribution quality) |
 
 ### Limits without social data
 
 Missing Buffer lowers confidence for channel-specific claims and never fabricates reach/watch time. Repository + Search + BI content recommendations still run.
+
+### Authority specialist (Case Study + current outreach wave)
+
+Owned inside **Content** (not a sixth executive). Module: `lib/agent-os/content/authority/`.
+
+Follows the Search/GEO specialist pattern: typed evidence, stable IDs, epistemic labels, bounded recommendations, shared lifecycle. Zero recommendations is healthy when the ledger is empty and Case Study is not founder-now.
+
+**Case Study ledger** (`ledger.ts`) is founder-affirmed and static. Production inventory is **empty** until the founder adds real entries. The specialist must not scrape HubSpot, filenames, or Conversations. Fixture rows are `fixture-` prefixed and cannot enter production runs.
+
+**While Case Study production is founder-now:**
+- Content Authority determines the next Case Study (or reports that founder input is required)
+- Ordinary Conversation / Content ROI packages remain inspectable as watch/background evidence
+- They must not become Today’s Call or weekly Highest-ROI over an actionable Case Study (or over the empty-inventory founder-input gate)
+
+**Current authority outreach wave** is the canonical object `authority:current-outreach-wave`. Follow-up eligibility is management-affirmed. Missing send dates stay `unknown` — they are never invented. Not-due → watch only. Due → at most one follow-up readiness signal. Sending remains RED. Opportunity must treat this object as already-covered.
+
+P1-AUTH-1 executes GREEN only (inspect / report / recommend). Prepare-to-publish and prepare-follow-up-copy are YELLOW; publish/send/CRM/deploy are RED with no execution path.
 
 ### How Content feeds Chief of Staff
 

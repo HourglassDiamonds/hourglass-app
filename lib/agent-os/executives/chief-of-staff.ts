@@ -37,6 +37,8 @@ import { consolidateDuplicates } from "../recommendation";
 import { rankRecommendations } from "../ranking";
 import { opportunityRecommendationIsSurfaceEligible } from "../opportunity/qualify";
 import { scaffoldExecutives } from "../registry";
+import { isCaseStudyProductionFounderNow } from "../content/authority";
+import type { AuthoritySnapshot } from "../content/authority";
 import type {
   AgendaBucket,
   BriefEvidenceQuality,
@@ -355,7 +357,11 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
     const fresh = poolForSelection.filter(
       (r) => !backlogIds.has(r.recommendationId),
     );
-    poolForSelect = [...backlogInPool, ...fresh];
+    const caseStudyNow = isCaseStudyProductionFounderNow(input.operatingBacklog);
+    const weeklyFresh = caseStudyNow
+      ? fresh.filter((r) => !isOrdinaryEditorialContentRecommendation(r))
+      : fresh;
+    poolForSelect = [...backlogInPool, ...weeklyFresh];
   }
 
   // P0-5: live overdue Concierge must stay ahead of daily backlog reorder.
@@ -601,7 +607,10 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
   const canSafelyWait: string[] = [];
   const watchNoActionItems =
     intent === "daily" && input.operatingBacklog
-      ? watchLinesFromOperatingBacklog(input.operatingBacklog)
+      ? applyAuthorityOutreachWatchLine(
+          watchLinesFromOperatingBacklog(input.operatingBacklog),
+          input.content?.authority,
+        )
       : [];
   if (intent === "daily") {
     if (watchNoActionItems.length > 0) {
@@ -787,6 +796,7 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
         intent,
         highest,
         input.operatingBacklog,
+        input.content?.authority,
       )
     : intent === "daily" && backlogOrientation?.activePriorityTitles[0]
       ? composeHighestRoiAction({
@@ -874,7 +884,13 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
     opportunitiesDetected,
     sprintOrientation: sprintOrientationLine,
     dayOrientation:
-      intent === "daily" ? backlogOrientation?.dayOrientation ?? null : null,
+      intent === "daily"
+        ? applyAuthorityDayOrientation(
+            backlogOrientation?.dayOrientation ?? null,
+            input.operatingBacklog,
+            input.content?.authority,
+          )
+        : null,
     opportunityToWatch,
     clientAttentionItems,
     watchNoActionItems:
@@ -995,13 +1011,84 @@ function criticalGapsNeedDecision(
 
 function enrichDailyHighestRoi(
   composed: string,
-  intent: BriefCadenceIntent,
+  _intent: BriefCadenceIntent,
   highest: Recommendation,
   backlog: OperatingBacklog | null | undefined,
+  authority?: AuthoritySnapshot | null,
 ): string {
-  if (intent !== "daily" || !backlog) return composed;
-  // Daily Highest-ROI is the concrete move only — checklist belongs in priorities / completion conditions, not this section.
-  return composed.replace(/\.\.+/g, ".");
+  if (!backlog) return composed.replace(/\.\.+/g, ".");
+  const framed = applyAuthorityHighestRoi(composed, backlog, authority, highest);
+  return framed.replace(/\.\.+/g, ".");
+}
+
+function isOrdinaryEditorialContentRecommendation(r: Recommendation): boolean {
+  if (r.originatingExecutive !== "content") return false;
+  const blob = `${r.recommendationId}\n${r.title}`;
+  if (/case-study|authority-outreach/i.test(blob)) return false;
+  return /editorial-roi-package|founder-conversation-topic|follow-up-conversation|Editorial ROI:|founder conversation/i.test(
+    blob,
+  );
+}
+
+function applyAuthorityDayOrientation(
+  fallback: string | null,
+  backlog: OperatingBacklog | null | undefined,
+  authority: AuthoritySnapshot | null | undefined,
+): string | null {
+  if (!isCaseStudyProductionFounderNow(backlog) || !authority) return fallback;
+  if (authority.caseStudies.nextCaseStudy) {
+    const title = authority.caseStudies.nextCaseStudy.workingTitle;
+    return `Advance the next Case Study (“${title}”). Protect conversion gains; do not open leftover local-guide or Conversation work.`;
+  }
+  return "Case Study production is the priority, but founder input/material is required.";
+}
+
+function applyAuthorityHighestRoi(
+  composed: string,
+  backlog: OperatingBacklog | null | undefined,
+  authority: AuthoritySnapshot | null | undefined,
+  highest: Recommendation,
+): string {
+  if (!isCaseStudyProductionFounderNow(backlog) || !authority) return composed;
+  const isCaseStudySlot =
+    /case study/i.test(highest.title) ||
+    /case-study/i.test(highest.recommendationId) ||
+    highest.recommendationId.includes("sprint-case-study-production");
+  if (!isCaseStudySlot && isOrdinaryEditorialContentRecommendation(highest)) {
+    if (authority.caseStudies.nextCaseStudy) {
+      return authority.caseStudies.nextCaseStudy.nextAction;
+    }
+    return (
+      authority.caseStudies.founderInputReason ??
+      "Affirm the next Case Study in the Authority ledger. Do not substitute a Conversation."
+    );
+  }
+  if (!isCaseStudySlot) return composed;
+  if (authority.caseStudies.nextCaseStudy) {
+    return authority.caseStudies.nextCaseStudy.nextAction;
+  }
+  return (
+    authority.caseStudies.founderInputReason ??
+    "Affirm the next Case Study in the Authority ledger. Do not substitute a Conversation."
+  );
+}
+
+function applyAuthorityOutreachWatchLine(
+  lines: string[],
+  authority: AuthoritySnapshot | null | undefined,
+): string[] {
+  if (!authority) return lines;
+  const dueLine = authority.outreach.watchLine;
+  const replaced = lines.map((line) =>
+    /authority outreach/i.test(line) ? dueLine : line,
+  );
+  if (
+    authority.outreach.founderTask === "follow-up-readiness" &&
+    !replaced.some((l) => /authority outreach/i.test(l))
+  ) {
+    return [dueLine, ...replaced].slice(0, 5);
+  }
+  return replaced;
 }
 
 function buildActionableOpportunityWatch(input: {

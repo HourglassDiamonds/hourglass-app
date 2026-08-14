@@ -416,6 +416,26 @@ export { detectContentOpportunities } from "./content/opportunities";
 export { assessBrandFit } from "./content/brand-fit";
 
 export {
+  runAuthoritySpecialist,
+  emptyAuthoritySnapshot,
+  selectNextCaseStudy,
+  isCaseStudyProductionFounderNow,
+  authorityIdLooksSafe,
+  classifyAuthorityPermissionTier,
+  authorityMayExecute,
+  PRODUCTION_CASE_STUDY_LEDGER,
+  PRODUCTION_AUTHORITY_OUTREACH_WAVE,
+  AUTHORITY_OUTREACH_WAVE_ID,
+  AUTHORITY_CASE_STUDY_INVENTORY_ID,
+  AUTHORITY_OUTREACH_FOLLOW_UP_ID,
+} from "./content/authority";
+export type {
+  AuthoritySnapshot,
+  CaseStudyLedgerEntry,
+  AuthorityOutreachWave,
+} from "./content/authority";
+
+export {
   runContentRoiPrioritizer,
   runContentRoiGuarded,
   formatContentRoiReport,

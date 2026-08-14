@@ -209,7 +209,7 @@ describe("P1-COS-2 founder-now Case Study", () => {
     assert.match(cos.brief.highestRoiAction, /Case Study/i);
     assert.match(
       cos.brief.highestRoiAction,
-      /sales-proof and publishing asset/i,
+      /founder-affirmed|Affirm the next Case Study|sales-proof/i,
     );
   });
 });

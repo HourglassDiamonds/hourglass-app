@@ -10,7 +10,8 @@ export type ContentOpportunitySource =
   | "search"
   | "bi"
   | "derived"
-  | "roi";
+  | "roi"
+  | "authority";
 
 /**
  * Stable ID shape:
@@ -57,7 +58,7 @@ export function contentIdLooksSafe(id: string): boolean {
   // Reject long free-text that looks like transcript fragments
   if (id.length > 180) return false;
   if (/\bi'm justin\b|\bdraft transcript\b/i.test(id)) return false;
-  return /^content:(repository|search|bi|derived):[a-z0-9-]+:[a-z0-9-]+(?::[a-z0-9-]+)?$/.test(
+  return /^content:(repository|search|bi|derived|roi|authority):[a-z0-9-]+:[a-z0-9-]+(?::[a-z0-9-]+)?$/.test(
     id,
   );
 }
