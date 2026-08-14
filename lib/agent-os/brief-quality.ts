@@ -849,6 +849,85 @@ export type DataConfidenceInput = {
   intent?: BriefCadenceIntent;
 };
 
+/**
+ * Healthy GSC epistemic boundaries (Coverage / URL Inspection / device-country /
+ * expected lag). These are not source failures and must not drive founder-facing
+ * Partial “website or search performance is incomplete” copy.
+ */
+export function isByDesignHealthySearchLimitation(gap: string): boolean {
+  const raw = gap.trim();
+  const s = raw.toLowerCase();
+  if (!s) return false;
+
+  if (
+    /unusually stale|stale-unusual|oauth|not configured|access denied|request failed|timed out|no usable rows|returned no usable/.test(
+      s,
+    )
+  ) {
+    return false;
+  }
+  if (/search console unavailable|gsc unavailable/.test(s) && !/^unknown:/.test(s)) {
+    return false;
+  }
+
+  if (/^unknown:/.test(s)) return true;
+  if (
+    /search console api does not expose|url inspection is out of v1|does not request device or country/.test(
+      s,
+    )
+  ) {
+    return true;
+  }
+  if (
+    /processing delay; expected|within expected range|normal processing delay|normal search console (?:delay|lag)/.test(
+      s,
+    )
+  ) {
+    return true;
+  }
+  return false;
+}
+
+export function materialFounderMeasurementGaps(gaps: string[]): string[] {
+  return gaps.filter((g) => g && !isByDesignHealthySearchLimitation(g));
+}
+
+/**
+ * Genuine GA4/GSC/weekly-intelligence retrieval failures that may mint a
+ * founder measurement gate. V1 adapter absences, CPC-unavailable rows, and
+ * by-design GSC UNKNOWNs must not.
+ */
+export function isGenuineMeasurementSourceFailure(gap: {
+  id?: string;
+  sourceId?: string;
+  description: string;
+}): boolean {
+  if (gap.id?.includes("live-load")) return true;
+  const desc = gap.description.trim();
+  const s = desc.toLowerCase();
+  if (!s) return false;
+  if (isByDesignHealthySearchLimitation(desc)) return false;
+  if (
+    /no verified external opportunity adapter|paid-search cost \(cpc\)|cpc\) evidence unavailable|unavailable in agent os v1|fixture data/.test(
+      s,
+    )
+  ) {
+    return false;
+  }
+  const source = gap.sourceId ?? "";
+  if (
+    source &&
+    source !== "ga4" &&
+    source !== "gsc" &&
+    source !== "weekly-intelligence"
+  ) {
+    return false;
+  }
+  return /oauth|authentication failed|not configured|access denied|request failed|timed out|no usable rows|returned no usable|unusually stale|search console unavailable|gsc unavailable|ga4 unavailable|weekly intelligence report read failed/.test(
+    s,
+  );
+}
+
 type EvidenceDomain =
   | "website"
   | "search"
@@ -881,7 +960,9 @@ export function buildWeeklyDataConfidenceSummary(input: {
   briefEvidenceQuality?: string;
   criticalFailure?: boolean;
 }): { level: "Full" | "Partial" | "Critical"; summary: string } {
-  const gaps = input.missingOrUnreliableData.filter(Boolean);
+  const gaps = materialFounderMeasurementGaps(
+    input.missingOrUnreliableData.filter(Boolean),
+  );
   const critical =
     input.criticalFailure === true ||
     input.briefEvidenceQuality === "none-blocked" ||
@@ -970,7 +1051,9 @@ export function buildDataConfidenceNote(input: DataConfidenceInput): {
   /** When false, email should omit the Data confidence section entirely. */
   renderInFounderEmail: boolean;
 } {
-  const gaps = input.missingOrUnreliableData.filter(Boolean);
+  const gaps = materialFounderMeasurementGaps(
+    input.missingOrUnreliableData.filter(Boolean),
+  );
   const critical =
     input.criticalFailure === true ||
     input.briefEvidenceQuality === "none-blocked" ||

@@ -25,7 +25,16 @@ export {
   recommendationsFromOperatingBacklog,
   decisionRecommendationsFromBacklog,
   backlogOrientationSummary,
+  watchItemsFromOperatingBacklog,
+  watchLinesFromOperatingBacklog,
 } from "./to-recommendations";
+export {
+  resolveSurfacePolicy,
+  isFounderNowItem,
+  isWatchItem,
+  isBackgroundItem,
+  MAX_WATCH_EMAIL_ITEMS,
+} from "./surface-policy";
 export {
   operatingBacklogRecommendationId,
   canonicalIdForBacklogItem,
@@ -48,4 +57,5 @@ export type {
   MasterSprint,
   BacklogItemKind,
   BacklogItemStatus,
+  SurfacePolicy,
 } from "./types";

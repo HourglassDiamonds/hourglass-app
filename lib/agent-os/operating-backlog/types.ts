@@ -18,6 +18,12 @@ export type BacklogItemKind =
   | "deferred-work"
   | "recurring-obligation";
 
+/**
+ * Founder-attention band. Independent of status / deferredUntil.
+ * A past-due watch item stays watch until management promotes it.
+ */
+export type SurfacePolicy = "founder-now" | "watch" | "background";
+
 export type OperatingBacklogItem = {
   id: string;
   kind: BacklogItemKind;
@@ -30,6 +36,18 @@ export type OperatingBacklogItem = {
   expectedOutcome: string;
   status: BacklogItemStatus;
   urgency: "critical" | "high" | "medium" | "low";
+  /**
+   * Founder-attention band. Omit only on historical fixtures —
+   * resolveSurfacePolicy supplies compatible defaults.
+   */
+  surfacePolicy?: SurfacePolicy;
+  /**
+   * Today’s Call orientation when this item is the top founder-now priority.
+   * Must not duplicate the Highest-ROI action line.
+   */
+  orientation?: string | null;
+  /** Compact Watch / No Action line for the daily email. */
+  watchLine?: string | null;
   /** Rank within kind (1 = highest). */
   rank: number;
   /** Optional completion condition or time box. */

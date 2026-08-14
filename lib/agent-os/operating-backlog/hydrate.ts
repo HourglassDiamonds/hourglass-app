@@ -27,6 +27,10 @@ import type {
 } from "../persistence/types";
 import { isTerminalLifecycle } from "../persistence/lifecycle";
 import { logRecommendationLifecycleEvent } from "../persistence/lifecycle-log";
+import {
+  isFounderNowItem,
+  isNonTerminalBacklogStatus,
+} from "./surface-policy";
 
 export type BacklogHydrationDecision = {
   itemId: string;
@@ -219,43 +223,46 @@ export function hydrateOperatingBacklogFromPersistence(
 }
 
 /**
- * Build Today's Call orientation from the reconciled active priority set.
+ * Build Today's Call orientation from founder-now items only.
+ * Watch / background / deferred-due items must not orient the day.
  * Must not reference terminal/suppressed recommendations.
  */
 export function deriveDayOrientationFromBacklog(
   backlog: OperatingBacklog,
   nowIso = new Date().toISOString(),
 ): string | null {
-  const now = Date.parse(nowIso);
-  const activePriorities = backlog.masterSprint.items
+  void nowIso;
+  const founderNowPriorities = [
+    ...backlog.masterSprint.items,
+    ...backlog.deferred,
+  ]
     .filter(
       (i) =>
-        i.status === "active" &&
-        (i.kind === "sprint-priority" || i.kind === "founder-action"),
+        isNonTerminalBacklogStatus(i.status) &&
+        isFounderNowItem(i) &&
+        (i.kind === "sprint-priority" ||
+          i.kind === "founder-action" ||
+          i.kind === "deferred-work"),
     )
     .sort((a, b) => a.rank - b.rank);
 
-  const deferredDue = backlog.deferred
-    .filter((i) => {
-      if (i.status === "cancelled" || i.status === "completed") return false;
-      if (i.status === "replaced") return false;
-      if (!i.deferredUntil) return i.status === "active";
-      return Date.parse(i.deferredUntil) <= now;
-    })
-    .sort((a, b) => a.rank - b.rank);
-
-  const top = activePriorities[0] ?? deferredDue[0] ?? null;
+  const top = founderNowPriorities[0] ?? null;
   if (!top) {
     const openDecision = backlog.masterSprint.items.find(
-      (i) => i.kind === "open-decision" && i.status === "active",
+      (i) =>
+        i.kind === "open-decision" &&
+        i.status === "active" &&
+        isFounderNowItem(i),
     );
     if (openDecision) {
       return `Resolve “${openDecision.title}” before opening new growth experiments.`;
     }
-    return "No durable operating priority is available to orient the day.";
+    return "Protect conversion gains. No additional founder-now work is queued today.";
   }
 
-  return `Focus on ${top.title} before opening new growth experiments.`;
+  const orientation = top.orientation?.trim();
+  if (orientation) return orientation;
+  return `Protect conversion gains and focus on ${top.title}.`;
 }
 
 export function isPersistedRecommendationTerminal(

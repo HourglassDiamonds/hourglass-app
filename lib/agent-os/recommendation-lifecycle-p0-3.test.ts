@@ -381,13 +381,14 @@ describe("P0-3 recommendation lifecycle", () => {
     assert.ok(eligibility.eligibleIds.includes(rec.recommendationId));
   });
 
-  it("Test 5 — unfinished Charlotte / paid-search tasks remain active on current backlog", () => {
+  it("Test 5 — Case Study is founder-now; Charlotte and paid-search stay watch", () => {
     const recs = recommendationsFromOperatingBacklog(CURRENT_OPERATING_BACKLOG, {
       nowIso: NOW,
     });
     const titles = recs.map((r) => r.title);
-    assert.ok(titles.includes("Strengthen Charlotte guide hub titles"));
-    assert.ok(titles.includes("Paid-search readiness review"));
+    assert.ok(titles.some((t) => /Case Study/i.test(t)));
+    assert.equal(titles.includes("Strengthen Charlotte guide hub titles"), false);
+    assert.equal(titles.includes("Paid-search readiness review"), false);
     assert.equal(
       titles.includes("Clarify Studio engagement vs consultation ask"),
       false,
@@ -548,21 +549,20 @@ describe("P0-3 recommendation lifecycle", () => {
     assert.doesNotMatch(blob, /Finish the Concierge conversion path before opening/);
     assert.doesNotMatch(blob, /intact attribution parameters/);
     assert.doesNotMatch(blob, /Clarify Studio engagement vs consultation ask/);
-    assert.match(blob, /Charlotte/i);
-    assert.ok(
-      /Charlotte/i.test(cos.brief.highestRoiAction) ||
-        cos.brief.surfacedPriorityTitles.some((t) => /Charlotte/i.test(t)),
+    assert.match(blob, /Case Study/i);
+    assert.doesNotMatch(blob, /Strengthen Charlotte guide hub titles/i);
+    assert.equal(
+      cos.brief.surfacedPriorityTitles.includes("Paid-search readiness review"),
+      false,
     );
-    assert.ok(
-      cos.brief.surfacedPriorityTitles.includes("Paid-search readiness review") ||
-        /paid-search/i.test(blob),
-    );
+    assert.doesNotMatch(cos.brief.highestRoiAction, /paid-search/i);
     // Primary strategic call should no longer be Concierge conversion finish.
     assert.doesNotMatch(
       cos.brief.dayOrientation ?? "",
       /Finish the Concierge conversion path|Clarify Studio|Studio engagement/i,
     );
-    assert.match(
+    assert.match(cos.brief.dayOrientation ?? "", /Case Study/i);
+    assert.doesNotMatch(
       cos.brief.dayOrientation ?? "",
       /Strengthen Charlotte guide hub titles/i,
     );
@@ -627,7 +627,8 @@ describe("P0-3 lifecycle hardening", () => {
         blob,
         /Finish the Concierge conversion path|intact attribution|Clarify Studio engagement/i,
       );
-      assert.match(blob, /Charlotte/i);
+      assert.match(blob, /Case Study/i);
+      assert.doesNotMatch(blob, /Strengthen Charlotte guide hub titles/i);
 
       const after = await store.load();
       const concierge =
@@ -882,7 +883,8 @@ describe("P0-3 lifecycle hardening", () => {
       {},
     );
     const orientation = hydrated.backlog.masterSprint.dayOrientation ?? "";
-    assert.match(orientation, /Strengthen Charlotte guide hub titles/i);
+    assert.match(orientation, /Case Study/i);
+    assert.doesNotMatch(orientation, /Strengthen Charlotte guide hub titles/i);
     assert.doesNotMatch(
       orientation,
       /Concierge conversion path|Clarify Studio|Studio engagement|intact attribution/i,

@@ -5,12 +5,21 @@
 
 /** Canonical problem keys used as rootProblemId across runs. */
 export const OPERATING_BACKLOG_CANONICAL_IDS = {
+  "sprint-case-study-production": "content:case-study-production",
   "sprint-concierge-cta-path": "conversion:concierge-attribution",
   "sprint-studio-consultation-clarity": "studio:concierge-handoff-clarity",
+  "watch-size-studio-measurement": "studio:size-studio-measurement",
+  "watch-authority-outreach-wave": "authority:current-outreach-wave",
+  "watch-weddington-prominence": "local:weddington-prominence",
   "sprint-charlotte-guide-authority": "search:charlotte-guide-hub-alignment",
   "deferred-paid-search-readiness": "growth:paid-search-readiness",
   "decision-new-growth-experiments": "growth:new-experiments-gate",
   "recurring-morning-operating-review": "ops:morning-operating-review",
+  "background-search-geo-infra": "infra:search-geo",
+  "background-geo-expansion": "local:geo-expansion",
+  "background-backlink-recovery": "search:backlink-recovery",
+  "background-ledger-ftm": "ledger:financial-transmission-monitor",
+  "background-agent-infra": "ops:additional-agent-infra",
 } as const;
 
 export type OperatingBacklogItemId =

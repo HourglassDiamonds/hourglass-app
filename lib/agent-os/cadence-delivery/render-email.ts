@@ -141,23 +141,9 @@ function renderDailyMorningBriefEmail(input: {
     3,
     { rewriteForFounder: false },
   );
-  // If dedupe emptied priorities but we have a concrete ROI, keep 1–3 from
-  // needsAttention / sprint rather than rendering an empty list copy.
-  const fallbackPriorities =
-    titles.length === 0
-      ? dedupePrioritiesAgainstHighestRoi(
-          [
-            ...run.brief.needsAttentionToday.filter(
-              (t) => t && !/^none$/i.test(t) && !/^see highest/i.test(t),
-            ),
-            ...(run.brief.sprintOrientation ? [run.brief.sprintOrientation] : []),
-          ],
-          highestRoi,
-          3,
-          { rewriteForFounder: false },
-        )
-      : titles;
-  const priorities = fallbackPriorities.slice(0, 3);
+  // Daily named slots are founder-now only. Do not backfill from anomalies,
+  // needsAttention, or sprint leftover copy merely to fill the list.
+  const priorities = titles.slice(0, 3);
   const decisions = materialDecisions(run.brief.founderDecisionNeeded, "daily");
   const blockers = materialBlockers(run.brief.blocked);
   const watch = opportunityToWatch(run);
@@ -199,6 +185,19 @@ function renderDailyMorningBriefEmail(input: {
           .map(
             (b) =>
               `<li style="margin:0 0 8px;font-size:14px;line-height:1.65;color:#4a443e;">${escapeHtml(redactSecretsAndPii(b))}</li>`,
+          )
+          .join("")}</ul></td></tr>`
+      : "";
+
+  const watchNoAction = (run.brief.watchNoActionItems ?? []).filter(
+    (line) => line && !/^none$/i.test(line.trim()),
+  );
+  const watchNoActionHtml =
+    watchNoAction.length > 0
+      ? `<tr><td style="padding:0 32px 24px;">${sectionHeading("Watch / no action")}<ul style="margin:0;padding:0 0 0 18px;">${watchNoAction
+          .map(
+            (line) =>
+              `<li style="margin:0 0 8px;font-size:14px;line-height:1.65;color:#4a443e;">${escapeHtml(redactSecretsAndPii(line))}</li>`,
           )
           .join("")}</ul></td></tr>`
       : "";
@@ -271,6 +270,7 @@ function renderDailyMorningBriefEmail(input: {
       ${clientAttentionHtml}
       ${decisionsHtml}
       ${blockersHtml}
+      ${watchNoActionHtml}
       ${watchHtml}
       ${confidenceHtml}
     </table>
@@ -307,6 +307,13 @@ function renderDailyMorningBriefEmail(input: {
   }
   if (blockers.length) {
     textParts.push(``, `Blockers:`, ...blockers.map((b) => `- ${redactSecretsAndPii(b)}`));
+  }
+  if (watchNoAction.length) {
+    textParts.push(
+      ``,
+      `Watch / no action:`,
+      ...watchNoAction.map((line) => `- ${redactSecretsAndPii(line)}`),
+    );
   }
   if (watch) {
     textParts.push(``, `Watch: ${redactSecretsAndPii(watch)}`);

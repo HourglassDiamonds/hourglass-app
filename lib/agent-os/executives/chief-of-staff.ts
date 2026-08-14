@@ -20,6 +20,8 @@ import {
   formatFounderDecisionLine,
   formatFounderLocalDateLabel,
   formatWeeklyRangeLabel,
+  isByDesignHealthySearchLimitation,
+  isGenuineMeasurementSourceFailure,
   isVagueMetricWithoutMagnitude,
   isWeakAnalyticalObservation,
   MAX_DAILY_NAMED_PRIORITIES,
@@ -48,7 +50,9 @@ import {
   backlogOrientationSummary,
   decisionRecommendationsFromBacklog,
   recommendationsFromOperatingBacklog,
+  watchLinesFromOperatingBacklog,
 } from "../operating-backlog";
+import { isFounderNowItem } from "../operating-backlog/surface-policy";
 import {
   injectConciergeSlaOverdueIntoSurfacePool,
   isConciergeSlaOverdueRecommendationId,
@@ -133,8 +137,9 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
     (e) => `${e.displayName} not yet operational`,
   );
 
-  // Source hierarchy (daily): A backlog → B calendar (none yet) → C inbox (client attention)
-  // → D project/deploy (repo executives) → E analytics → F social → G opportunity.
+  // Source hierarchy (daily): A founder-now backlog → B calendar (none yet)
+  // → C inbox (client attention) → D project/deploy → E analytics → F social
+  // → G opportunity. Watch/background backlog never occupies hierarchy A.
   // Missing lower sources must never erase higher persistent context.
   const backlogRecs = input.operatingBacklog
     ? recommendationsFromOperatingBacklog(input.operatingBacklog, {
@@ -210,7 +215,8 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
 
   // Recurrence eligibility BEFORE founder brief ranking/surfacing.
   // When a gate is provided, only eligible IDs compete for ≤5 brief slots.
-  // Active operating-backlog items remain eligible (hierarchy A).
+  // Founder-now operating-backlog items remain eligible (hierarchy A).
+  // Watch/background backlog IDs are not force-included.
   // Terminal backlog items are already excluded from backlogRecs via hydration.
   const backlogIds = new Set(backlogRecs.map((r) => r.recommendationId));
   const carryIds = new Set(input.carryForwardRecommendationIds ?? []);
@@ -326,15 +332,23 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
   // Preserve ranked highest-ROI order; cluster/limitation rules only demote slots
   // (see brief-quality.ts). Soft diversity is a fill tie-breaker, not a quota.
   // Daily: 1 highest-ROI + up to 3 named priorities (product contract).
-  // When a master sprint exists, fill named priority slots from persistent
-  // backlog first, then enrich with fresh evidence.
+  // Daily named slots come from founder-now backlog only — do not backfill with
+  // Search/Content/Opportunity busywork to reach the cap.
   const maxPriorities =
     intent === "daily"
       ? MAX_DAILY_NAMED_PRIORITIES + 1
       : MAX_ADDITIONAL_SURFACED_PRIORITIES + 1;
 
   let poolForSelect = poolForSelection;
-  if (intent === "daily" && backlogRecs.length > 0) {
+  if (intent === "daily" && input.operatingBacklog) {
+    // Management backlog is present: named daily slots are founder-now only.
+    // Do not backfill with Search/Content/Opportunity to reach the cap.
+    // Watch-only backlogs yield an empty named pool (quiet day), not busywork.
+    const backlogInPool = backlogRecs.filter((r) =>
+      poolForSelection.some((p) => p.recommendationId === r.recommendationId),
+    );
+    poolForSelect = [...backlogInPool];
+  } else if (intent !== "daily" && backlogRecs.length > 0) {
     const backlogInPool = backlogRecs.filter((r) =>
       poolForSelection.some((p) => p.recommendationId === r.recommendationId),
     );
@@ -435,6 +449,7 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
   if (input.operatingBacklog && intent === "daily") {
     for (const item of input.operatingBacklog.masterSprint.items) {
       if (item.kind !== "open-decision" || item.status !== "active") continue;
+      if (!isFounderNowItem(item)) continue;
       if (founderDecisions.some((d) => d.includes(item.title))) continue;
       if (!item.recommendedChoice) continue;
       founderDecisions.push(
@@ -584,17 +599,13 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
   ).length;
 
   const canSafelyWait: string[] = [];
+  const watchNoActionItems =
+    intent === "daily" && input.operatingBacklog
+      ? watchLinesFromOperatingBacklog(input.operatingBacklog)
+      : [];
   if (intent === "daily") {
-    if (
-      backlogOrientation?.deferredTitles.length ||
-      (input.operatingBacklog?.deferred.length ?? 0) > 0
-    ) {
-      const titles =
-        backlogOrientation?.deferredTitles.slice(0, 2) ??
-        input.operatingBacklog!.deferred.slice(0, 2).map((d) => d.title);
-      canSafelyWait.push(
-        `Deferred: ${titles.join("; ")} — revisit only after active sprint priorities clear.`,
-      );
+    if (watchNoActionItems.length > 0) {
+      canSafelyWait.push(...watchNoActionItems);
     } else {
       canSafelyWait.push("None");
     }
@@ -645,10 +656,14 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
     );
   }
   for (const g of allGaps) {
+    const desc = g.description;
+    if (isByDesignHealthySearchLimitation(desc)) {
+      internalSecondaryGaps.push(desc);
+      continue;
+    }
     const key = String(g.sourceId);
     if (seenGap.has(key)) continue;
     seenGap.add(key);
-    const desc = g.description;
     if (
       /adapter|hubspot|buffer|gbp|not configured|opportunity adapter|fixture|evidence unavailable|cpc|paid-search cost|remarketing audience/i.test(
         desc,
@@ -862,6 +877,10 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
       intent === "daily" ? backlogOrientation?.dayOrientation ?? null : null,
     opportunityToWatch,
     clientAttentionItems,
+    watchNoActionItems:
+      intent === "daily" && watchNoActionItems.length > 0
+        ? watchNoActionItems
+        : null,
   });
 
   return {
@@ -971,13 +990,7 @@ function criticalGapsNeedDecision(
     ...(content?.dataGaps ?? []),
     ...(opportunity?.dataGaps ?? []),
   ];
-  return gaps.some(
-    (g) =>
-      g.sourceId === "ga4" ||
-      g.sourceId === "gsc" ||
-      g.sourceId === "weekly-intelligence" ||
-      g.id.includes("live-load"),
-  );
+  return gaps.some((g) => isGenuineMeasurementSourceFailure(g));
 }
 
 function enrichDailyHighestRoi(
@@ -1045,6 +1058,7 @@ function buildFounderBrief(input: {
     summary: string;
     action: string;
   }> | null;
+  watchNoActionItems?: string[] | null;
 }): FounderBrief {
   const bullets = (items: string[]) =>
     items.length ? items.map((i) => `- ${i}`).join("\n") : "- None";
@@ -1154,6 +1168,9 @@ Agent OS V1 — read-only. No external writes. Revenue is never inferred from tr
     opportunityToWatch: input.opportunityToWatch ?? null,
     clientAttentionItems: input.clientAttentionItems?.length
       ? input.clientAttentionItems
+      : null,
+    watchNoActionItems: input.watchNoActionItems?.length
+      ? input.watchNoActionItems
       : null,
   };
 }

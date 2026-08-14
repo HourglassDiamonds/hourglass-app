@@ -278,6 +278,11 @@ export type FounderBrief = {
     summary: string;
     action: string;
   }> | null;
+  /**
+   * Daily Watch / No Action lines (management watch band). Omitted when empty.
+   * Never used as Today’s Call / Highest-ROI / Top Priorities.
+   */
+  watchNoActionItems?: string[] | null;
 };
 
 export type AgentRun = {

@@ -38,6 +38,7 @@ async function main() {
     whyItMatters: run.brief.whyItMatters,
     highestRoiAction: run.brief.highestRoiAction,
     sprintOrientation: run.brief.sprintOrientation,
+    dayOrientation: run.brief.dayOrientation,
     whatChanged: run.brief.whatChanged,
   });
   const quality = evaluateBriefQualityGate({
