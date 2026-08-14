@@ -1,7 +1,5 @@
 "use client";
 
-import Link from "next/link";
-import CTAGlimmer from "../shared-components/motion/CTAGlimmer";
 import React, {
   useCallback,
   useEffect,
@@ -13,11 +11,8 @@ import {
   trackDiamondStudioEvent,
   type DiamondStudioEventProperties,
 } from "./analytics";
-import {
-  buildConciergeHref,
-  trackConsultationCtaClicked,
-} from "@/lib/consultation-cta";
 import DiamondStudioEditorial from "./components/DiamondStudioEditorial";
+import DiamondStudioHandoff from "./components/DiamondStudioHandoff";
 import DiamondStudioToolHeader from "./components/DiamondStudioToolHeader";
 import ShareStudioView from "./components/ShareStudioView";
 import {
@@ -481,6 +476,11 @@ function SuiteStyles() {
         flex-direction:column;
         min-height:0;
       }
+      .dts-handoff{
+        position:relative;
+        z-index:1;
+        flex-shrink:0;
+      }
       .dts-app::before{
         content:"";
         position:absolute;
@@ -511,6 +511,7 @@ function SuiteStyles() {
           min-height:0;
           overflow:visible;
         }
+        .dts-handoff,
         .dts-editorial{
           position:relative;
           z-index:1;
@@ -3107,22 +3108,6 @@ export default function DiamondStudioPage() {
                   Compare scale at your pace. We help decide what feels
                   right on the hand.
                 </p>
-                <p className="dts-stage-trust">
-                  <CTAGlimmer variant="text">
-                    <Link
-                      href={buildConciergeHref({
-                        tool: "diamond-studio",
-                        params: { location: "diamond_studio:result" },
-                      })}
-                      className="dts-stage-trust-link"
-                      onClick={() =>
-                        trackConsultationCtaClicked("diamond_studio:result")
-                      }
-                    >
-                      Begin the Conversation →
-                    </Link>
-                  </CTAGlimmer>
-                </p>
                 <ShareStudioView
                   getShareUrl={getShareUrl}
                   analyticsProps={analyticsProps}
@@ -3201,6 +3186,7 @@ export default function DiamondStudioPage() {
           
         </div>
       </div>
+      <DiamondStudioHandoff />
       <DiamondStudioEditorial analyticsProps={analyticsProps()} />
     </div>
   );
