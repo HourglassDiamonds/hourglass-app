@@ -314,7 +314,7 @@ Owned inside **Content** (not a sixth executive). Module: `lib/agent-os/content/
 
 Follows the Search/GEO specialist pattern: typed evidence, stable IDs, epistemic labels, bounded recommendations, shared lifecycle. Zero recommendations is healthy when the ledger is empty and Case Study is not founder-now.
 
-**Case Study ledger** (`ledger.ts`) is founder-affirmed and static. Production inventory is **empty** until the founder adds real entries. The specialist must not scrape HubSpot, filenames, or Conversations. Fixture rows are `fixture-` prefixed and cannot enter production runs.
+**Case Study ledger** (`ledger.ts`) is founder-affirmed and static. Production inventory currently holds six founder-affirmed project candidates (four `candidate`, two `paused`); none have an explicit `nextAction` yet. The specialist must not scrape HubSpot, filenames, or Conversations. Fixture rows are `fixture-` prefixed and cannot enter production runs.
 
 **While Case Study production is founder-now:**
 - Content Authority determines the next Case Study (or reports that founder input is required)

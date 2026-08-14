@@ -37,7 +37,11 @@ import {
   FIXTURE_CASE_STUDY_READY,
   FIXTURE_OUTREACH_WAVE_DUE,
 } from "./content/authority/fixtures";
-import { assertProductionLedgerSafe } from "./content/authority/ledger";
+import {
+  assertProductionLedgerSafe,
+  isFixtureOnlyCaseStudyId,
+} from "./content/authority/ledger";
+import { ACTIVE_CANDIDATE_FOUNDER_TRIAGE_REASON } from "./content/authority/evidence";
 import {
   AUTHORITY_CASE_STUDY_INVENTORY_ID,
   authoritySnapshotToOpportunities,
@@ -128,8 +132,7 @@ describe("P1-AUTH-1 registry", () => {
 });
 
 describe("P1-AUTH-1 Case Study ledger", () => {
-  it("production ledger is empty and has no invented clients or geography", () => {
-    assert.equal(PRODUCTION_CASE_STUDY_LEDGER.length, 0);
+  it("outreach wave remains watch / not-due with unknown send date", () => {
     assert.equal(PRODUCTION_AUTHORITY_OUTREACH_WAVE.originalSendDate, null);
     assert.equal(
       PRODUCTION_AUTHORITY_OUTREACH_WAVE.sendDateEpistemicClass,
@@ -159,11 +162,17 @@ describe("P1-AUTH-1 Case Study ledger", () => {
 describe("P1-AUTH-1 empty production inventory", () => {
   it("reports UNKNOWN / founder input and does not fake a Case Study or Conversation", async () => {
     const bundle = await loadAllSources("fixture");
-    const content = runContentExecutive(bundle, PERIOD);
+    const content = runContentExecutive(bundle, PERIOD, {
+      authorityOptions: { ledger: [], caseStudyFounderNow: true },
+    });
     assert.equal(content.authority.status, "empty-inventory");
     assert.equal(content.authority.caseStudies.founderAffirmedCount, 0);
     assert.equal(content.authority.caseStudies.nextCaseStudy, null);
     assert.equal(content.authority.caseStudies.needsFounderInput, true);
+    assert.match(
+      content.authority.caseStudies.founderInputReason ?? "",
+      /No founder-affirmed Case Study inventory exists/i,
+    );
     assert.ok(
       content.opportunities.some((o) => o.type === "case-study-founder-input"),
     );
@@ -452,5 +461,183 @@ describe("P1-AUTH-1 production-shaped brief", () => {
     assert.match(run.brief.highestRoiAction, /Case Study/i);
     assert.doesNotMatch(run.brief.highestRoiAction, /Fixture Case Study/i);
     assert.doesNotMatch(run.brief.highestRoiAction, /Editorial ROI/i);
+    assert.doesNotMatch(
+      run.brief.highestRoiAction,
+      /No founder-affirmed Case Study inventory exists/i,
+    );
+    assert.doesNotMatch(run.brief.highestRoiAction, /Start Aviary Bloom/i);
+  });
+});
+
+describe("P1-AUTH-2 production Case Study ledger", () => {
+  const IDS = [
+    "case-study-aviary-bloom-wedding-set",
+    "case-study-modern-vintage-sapphire-bypass",
+    "case-study-pear-small-halo",
+    "case-study-large-oval-hidden-halo",
+    "case-study-moval-rbc-cluster",
+    "case-study-marquise-east-west-band",
+  ] as const;
+
+  it("contains exactly six founder-affirmed records and no invented clients, geography, or publication", () => {
+    assert.equal(PRODUCTION_CASE_STUDY_LEDGER.length, 6);
+    assert.deepEqual(
+      PRODUCTION_CASE_STUDY_LEDGER.map((e) => e.caseStudyId),
+      [...IDS],
+    );
+    assertProductionLedgerSafe(PRODUCTION_CASE_STUDY_LEDGER);
+    const blob = JSON.stringify(PRODUCTION_CASE_STUDY_LEDGER);
+    assert.doesNotMatch(blob, /@[a-z0-9.-]+\.[a-z]{2,}/i);
+    assert.doesNotMatch(
+      blob,
+      /\b(Charlotte|Weddington|Waxhaw|Fort Mill|California)\b/i,
+    );
+    assert.doesNotMatch(blob, /\b(HubSpot|scrape|inferred)\b/i);
+    for (const entry of PRODUCTION_CASE_STUDY_LEDGER) {
+      assert.equal(entry.publicationState, "unknown");
+      assert.equal(entry.materialReadiness, "unknown");
+      assert.equal(isFixtureOnlyCaseStudyId(entry.caseStudyId), false);
+    }
+  });
+
+  it("does not invent a next action for candidate Cases 1–4", () => {
+    const candidates = PRODUCTION_CASE_STUDY_LEDGER.filter(
+      (e) => e.status === "candidate",
+    );
+    assert.equal(candidates.length, 4);
+    for (const entry of candidates) {
+      assert.equal(entry.nextAction, null);
+      assert.equal(entry.blocker, null);
+      assert.equal(entry.materialReadiness, "unknown");
+    }
+  });
+
+  it("keeps pending-sale Cases 5–6 paused and not completed", () => {
+    const paused = PRODUCTION_CASE_STUDY_LEDGER.filter(
+      (e) => e.status === "paused",
+    );
+    assert.deepEqual(
+      paused.map((e) => e.caseStudyId),
+      ["case-study-moval-rbc-cluster", "case-study-marquise-east-west-band"],
+    );
+    for (const entry of paused) {
+      assert.equal(entry.nextAction, null);
+      assert.equal(entry.publicationState, "unknown");
+      assert.match(entry.blocker ?? "", /Potential sale pending/i);
+      assert.doesNotMatch(entry.blocker ?? "", /sale closed|completed client/i);
+    }
+    assert.equal(
+      PRODUCTION_CASE_STUDY_LEDGER.filter((e) => e.status === "published")
+        .length,
+      0,
+    );
+  });
+
+  it("paused pending sales cannot become actionable even with a nextAction", () => {
+    const forced = PRODUCTION_CASE_STUDY_LEDGER.filter(
+      (e) => e.status === "paused",
+    ).map((e) => ({ ...e, nextAction: "Draft the Case Study" }));
+    assert.equal(selectNextCaseStudy(forced), null);
+  });
+
+  it("selector returns no actionable Case Study while candidates have nextAction null", () => {
+    assert.equal(selectNextCaseStudy(PRODUCTION_CASE_STUDY_LEDGER), null);
+    const snap = runAuthoritySpecialist();
+    assert.equal(snap.status, "ok");
+    assert.equal(snap.caseStudies.inventoryState, "has-entries");
+    assert.equal(snap.caseStudies.founderAffirmedCount, 6);
+    assert.equal(snap.caseStudies.activeCount, 4);
+    assert.equal(
+      PRODUCTION_CASE_STUDY_LEDGER.filter((e) => Boolean(e.blocker?.trim()))
+        .length,
+      2,
+    );
+    assert.equal(snap.caseStudies.blockedCount, 6);
+    assert.equal(snap.caseStudies.publishedCount, 0);
+    assert.equal(snap.caseStudies.nextCaseStudy, null);
+    assert.equal(snap.caseStudies.needsFounderInput, true);
+    assert.equal(
+      snap.caseStudies.founderInputReason,
+      ACTIVE_CANDIDATE_FOUNDER_TRIAGE_REASON,
+    );
+    assert.doesNotMatch(
+      snap.caseStudies.founderInputReason ?? "",
+      /Potential sale pending/i,
+    );
+    assert.doesNotMatch(
+      snap.caseStudies.founderInputReason ?? "",
+      /No founder-affirmed Case Study inventory exists/i,
+    );
+    assert.doesNotMatch(snap.facts.join("\n"), /Start Aviary Bloom/i);
+    assert.equal(snap.outreach.followUpEligibility, "not-due");
+    assert.equal(snap.outreach.founderTask, "none");
+  });
+
+  it("does not substitute a Conversation or invent Aviary Bloom production", async () => {
+    const bundle = await loadAllSources("fixture");
+    const content = runContentExecutive(bundle, PERIOD);
+    assert.equal(content.authority.caseStudies.founderAffirmedCount, 6);
+    assert.equal(
+      content.opportunities.some((o) => o.type === "case-study-production"),
+      false,
+    );
+    assert.ok(
+      content.opportunities.some((o) => o.type === "case-study-founder-input"),
+    );
+    const recBlob = content.recommendations
+      .map((r) => `${r.title}\n${r.proposedAction}`)
+      .join("\n");
+    assert.doesNotMatch(recBlob, /Start Aviary Bloom/i);
+  });
+});
+
+describe("P1-AUTH-2 founderInputReason precedence", () => {
+  it("prefers active-candidate triage over a paused pending-sale blocker", () => {
+    const snap = runAuthoritySpecialist();
+    assert.equal(snap.caseStudies.activeCount, 4);
+    assert.equal(snap.caseStudies.nextCaseStudy, null);
+    assert.equal(
+      snap.caseStudies.founderInputReason,
+      ACTIVE_CANDIDATE_FOUNDER_TRIAGE_REASON,
+    );
+    assert.doesNotMatch(
+      snap.caseStudies.founderInputReason ?? "",
+      /Potential sale pending/i,
+    );
+  });
+
+  it("uses an explicit blocker when only paused projects exist", () => {
+    const pausedOnly = PRODUCTION_CASE_STUDY_LEDGER.filter(
+      (e) => e.status === "paused",
+    );
+    const snap = runAuthoritySpecialist({
+      ledger: pausedOnly,
+      caseStudyFounderNow: true,
+    });
+    assert.equal(snap.caseStudies.activeCount, 0);
+    assert.equal(snap.caseStudies.nextCaseStudy, null);
+    assert.match(
+      snap.caseStudies.founderInputReason ?? "",
+      /Potential sale pending/i,
+    );
+    assert.notEqual(
+      snap.caseStudies.founderInputReason,
+      ACTIVE_CANDIDATE_FOUNDER_TRIAGE_REASON,
+    );
+  });
+
+  it("leaves next-Case-Study selection unchanged when a Case Study is actionable", () => {
+    const snap = runAuthoritySpecialist({
+      ledger: [FIXTURE_CASE_STUDY_READY, ...PRODUCTION_CASE_STUDY_LEDGER],
+      allowFixtureLedger: true,
+      caseStudyFounderNow: true,
+    });
+    assert.equal(snap.caseStudies.nextCaseStudy?.caseStudyId, "fixture-case-study-alpha");
+    assert.equal(
+      snap.caseStudies.nextCaseStudy?.nextAction,
+      "Draft the opening narrative from affirmed material",
+    );
+    assert.equal(snap.caseStudies.needsFounderInput, false);
+    assert.equal(snap.caseStudies.founderInputReason, null);
   });
 });

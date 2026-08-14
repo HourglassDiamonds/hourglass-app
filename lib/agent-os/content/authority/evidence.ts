@@ -11,6 +11,35 @@ import {
   type CaseStudyLedgerEntry,
 } from "./types";
 
+/** Evidence-only founder-input copy. Never written to a ledger row. */
+export const ACTIVE_CANDIDATE_FOUNDER_TRIAGE_REASON =
+  "Review the active Case Study candidates and confirm material readiness and the next production action.";
+
+function isActiveCandidateNeedingFounderTriage(
+  entry: CaseStudyLedgerEntry,
+): boolean {
+  if (!ACTIVE_CASE_STUDY_STATUSES.includes(entry.status)) return false;
+  return !entry.nextAction?.trim() || entry.materialReadiness === "unknown";
+}
+
+function founderInputReasonWhenNoNext(
+  entries: readonly CaseStudyLedgerEntry[],
+  inventoryState: AuthorityCaseStudyEvidence["inventoryState"],
+): string {
+  if (inventoryState === "empty") {
+    return "No founder-affirmed Case Study inventory exists yet. Do not invent a Case Study or substitute a Conversation.";
+  }
+  const activeNeedingTriage = entries.some(isActiveCandidateNeedingFounderTriage);
+  if (activeNeedingTriage) {
+    return ACTIVE_CANDIDATE_FOUNDER_TRIAGE_REASON;
+  }
+  const firstBlocker = entries.find((e) => e.blocker?.trim())?.blocker?.trim();
+  return (
+    firstBlocker ??
+    "Case Studies exist but none have an explicit next action. Founder input is required."
+  );
+}
+
 export function buildCaseStudyEvidence(
   entries: readonly CaseStudyLedgerEntry[],
 ): AuthorityCaseStudyEvidence {
@@ -32,17 +61,9 @@ export function buildCaseStudyEvidence(
 
   const inventoryState = founderAffirmedCount === 0 ? "empty" : "has-entries";
   const needsFounderInput = nextCaseStudy === null;
-
-  let founderInputReason: string | null = null;
-  if (inventoryState === "empty") {
-    founderInputReason =
-      "No founder-affirmed Case Study inventory exists yet. Do not invent a Case Study or substitute a Conversation.";
-  } else if (!nextCaseStudy) {
-    const firstBlocker = entries.find((e) => e.blocker?.trim())?.blocker ?? null;
-    founderInputReason =
-      firstBlocker ??
-      "Case Studies exist but none have an explicit next action. Founder input is required.";
-  }
+  const founderInputReason = needsFounderInput
+    ? founderInputReasonWhenNoNext(entries, inventoryState)
+    : null;
 
   const epistemicNotes = [
     "OBSERVED: explicit ledger rows only",
