@@ -45,6 +45,12 @@ const BI_ESCALATION: EscalationRule[] = [
     action:
       "Surface measurement repair before Opportunity paid/remarketing or channel ROI claims",
   },
+  {
+    id: "bi-website-qa-health",
+    condition: "Website / Engineering QA production-health findings",
+    action:
+      "Healthy stays silent. Material regression emits one root exception. Do not auto-fix or deploy.",
+  },
 ];
 
 const SEARCH_ESCALATION: EscalationRule[] = [
@@ -178,6 +184,8 @@ export const EXECUTIVE_REGISTRY: readonly ExecutiveDefinition[] = [
       "measurement regressions",
       "decision-quality safeguards",
       "readiness evidence for Opportunity",
+      "website / engineering QA",
+      "production route health",
     ],
     allowedDataSources: [
       "ga4",
@@ -190,7 +198,7 @@ export const EXECUTIVE_REGISTRY: readonly ExecutiveDefinition[] = [
     prohibitedActions: SHARED_PROHIBITED,
     escalationRules: BI_ESCALATION,
     implementationStatus: "operational",
-    version: "1.2.0",
+    version: "1.3.0",
   },
   {
     id: "search-strategy",

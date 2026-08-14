@@ -195,8 +195,8 @@ function watchOnlyBacklog(): OperatingBacklog {
   };
 }
 
-describe("P1-COS-2 founder-now Case Study", () => {
-  it("Case Study produces Today's Call and Highest-ROI", () => {
+describe("P1-COS-2 founder-now Website QA activation", () => {
+  it("completed QA activation is not Today's Call; Case Study stays watch", () => {
     const cos = runDaily(CURRENT_OPERATING_BACKLOG);
     const today = dailyTodayCall({
       whyItMatters: cos.brief.whyItMatters,
@@ -204,12 +204,20 @@ describe("P1-COS-2 founder-now Case Study", () => {
       sprintOrientation: cos.brief.sprintOrientation,
       dayOrientation: cos.brief.dayOrientation,
     });
-    assert.match(today, /Case Study/i);
+    assert.doesNotMatch(today, /Activate the Website \/ Engineering QA/i);
     assert.doesNotMatch(today, /Strengthen Charlotte guide hub titles/i);
-    assert.match(cos.brief.highestRoiAction, /Case Study/i);
-    assert.match(
+    assert.doesNotMatch(
       cos.brief.highestRoiAction,
-      /founder-affirmed|Affirm the next Case Study|sales-proof/i,
+      /Activate the Website \/ Engineering QA/i,
+    );
+    assert.match(
+      cos.brief.dayOrientation ?? "",
+      /No additional founder-now work is queued today/i,
+    );
+    assert.ok(
+      (cos.brief.watchNoActionItems ?? []).some((l) =>
+        /Case Study production — paused by founder/i.test(l),
+      ),
     );
   });
 });
@@ -437,7 +445,7 @@ describe("P1-COS-2 Watch / No Action email", () => {
 
     const lines = watchLinesFromOperatingBacklog(CURRENT_OPERATING_BACKLOG);
     assert.ok(lines.length > 0);
-    assert.ok(lines.length <= 5);
+    assert.ok(lines.length <= 6);
     assert.equal(
       lines.some((l) => /Search\/GEO infrastructure/i.test(l)),
       false,

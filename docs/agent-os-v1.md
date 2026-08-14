@@ -126,6 +126,16 @@ BI owns measurement diagnosis, metric reliability, anomaly detection, conversion
 
 Missing observed activity with unread metrics → `unknown`, not automatic “broken tracking.”
 
+### Website / Engineering QA specialist
+
+Owned inside **Business Intelligence** (not a sixth executive). Module: `lib/agent-os/bi/website-qa/`.
+
+Emotional model is Concierge SLA: healthy → silent; material exception → at most one root production-health recommendation. It is **not** a website-improvement generator.
+
+P1-QA-1 probes a small allowlist of revenue/trust-critical public routes with GREEN HTTP reads (reusing Search/GEO live-probe helpers). HEALTHY requires the full allowlist to be observed successfully. Timeout, network failure, skipped probes, or epistemic unknown on any required route stay UNKNOWN — silent, not an invented outage, and not HEALTHY. Conversion integrity is read from the existing BI conversion audit — low-volume events are not a QA regression. Completed Concierge / Studio / accessibility / schema work is not reopened without a demonstrated production regression.
+
+Publish/deploy/analytics-config remain RED. The specialist does not auto-fix.
+
 ### Funnel definitions
 
 Typed in `lib/agent-os/bi/funnels.ts`:
@@ -302,7 +312,7 @@ Recommends next conversation at **map** level: audience question, core idea, sup
 |-----------|------|
 | Search Strategy | Technical SEO (CTR, schema, positions, guide-authority link audits) |
 | Content | Communication & production (conversation maps, clips, carousels, handoff storytelling); **Case Study pipeline and current authority-outreach-wave lifecycle** (Authority specialist) |
-| BI | Measurement diagnosis (tracking, conversion integrity, CTA funnel health, attribution quality) |
+| BI | Measurement diagnosis (tracking, conversion integrity, CTA funnel health, attribution quality); **production route health** (Website / Engineering QA specialist) |
 
 ### Limits without social data
 

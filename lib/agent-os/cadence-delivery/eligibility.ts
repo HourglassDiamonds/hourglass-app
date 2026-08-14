@@ -8,7 +8,10 @@ import {
   dailyTodayCall,
   isVagueMetricWithoutMagnitude,
 } from "../brief-quality";
-import { evaluateBriefQualityGate } from "../brief-quality-gate";
+import {
+  evaluateBriefQualityGate,
+  isQuietDayQualityFailure,
+} from "../brief-quality-gate";
 
 export type DeliveryEligibility =
   | {
@@ -122,6 +125,12 @@ export function evaluateDeliveryEligibility(input: {
         intent: "daily",
       });
       if (!quality.ok) {
+        if (isQuietDayQualityFailure(quality)) {
+          return {
+            action: "send-nothing",
+            reason: "Healthy quiet cycle — no material founder priorities",
+          };
+        }
         return {
           action: "send-nothing",
           reason: `Morning Brief quality gate blocked send: ${quality.violations

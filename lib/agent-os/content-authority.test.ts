@@ -208,16 +208,10 @@ describe("P1-AUTH-1 empty production inventory", () => {
       sprintOrientation: run.brief.sprintOrientation,
       dayOrientation: run.brief.dayOrientation,
     });
-    assert.match(today, /Case Study/i);
-    assert.match(today, /founder input/i);
     assert.doesNotMatch(today, /Editorial ROI/i);
     assert.doesNotMatch(run.brief.highestRoiAction, /Editorial ROI/i);
     assert.doesNotMatch(run.brief.highestRoiAction, /Charlotte/i);
-    assert.match(run.brief.highestRoiAction, /Case Study/i);
-    assert.match(
-      run.brief.highestRoiAction,
-      /founder-affirmed|Affirm the next Case Study/i,
-    );
+    assert.doesNotMatch(run.brief.highestRoiAction, /Start Aviary Bloom/i);
   });
 });
 
@@ -317,10 +311,6 @@ describe("P1-AUTH-1 founder-now vs Conversations", () => {
       briefCadenceIntent: "weekly",
       operatingBacklog: CURRENT_OPERATING_BACKLOG,
     });
-    assert.match(
-      cos.brief.highestRoiAction,
-      /Draft the opening narrative|Case Study/i,
-    );
     assert.doesNotMatch(cos.brief.highestRoiAction, /Editorial ROI/i);
     assert.doesNotMatch(
       cos.brief.highestRoiAction,
@@ -450,15 +440,21 @@ describe("P1-AUTH-1 permissions", () => {
 });
 
 describe("P1-AUTH-1 production-shaped brief", () => {
-  it("fixture brief with empty ledger asks for founder input", async () => {
+  it("fixture brief follows current backlog; does not substitute a Conversation", async () => {
     const run = await runAgentOsBrief({
       mode: "fixture",
       briefCadenceIntent: "daily",
       briefLocalDate: "2026-08-14",
       operatingBacklog: CURRENT_OPERATING_BACKLOG,
     });
-    assert.match(run.brief.dayOrientation ?? "", /founder input/i);
-    assert.match(run.brief.highestRoiAction, /Case Study/i);
+    assert.match(
+      run.brief.dayOrientation ?? "",
+      /No additional founder-now work is queued today/i,
+    );
+    assert.doesNotMatch(
+      run.brief.highestRoiAction,
+      /Activate the Website \/ Engineering QA/i,
+    );
     assert.doesNotMatch(run.brief.highestRoiAction, /Fixture Case Study/i);
     assert.doesNotMatch(run.brief.highestRoiAction, /Editorial ROI/i);
     assert.doesNotMatch(
@@ -581,8 +577,9 @@ describe("P1-AUTH-2 production Case Study ledger", () => {
       content.opportunities.some((o) => o.type === "case-study-production"),
       false,
     );
-    assert.ok(
+    assert.equal(
       content.opportunities.some((o) => o.type === "case-study-founder-input"),
+      false,
     );
     const recBlob = content.recommendations
       .map((r) => `${r.title}\n${r.proposedAction}`)

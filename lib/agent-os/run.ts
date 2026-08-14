@@ -13,6 +13,10 @@ import type { AdapterMode } from "./adapters/types";
 import { runBusinessIntelligence } from "./executives/business-intelligence";
 import { loadClientAttentionSourcesAsync } from "./bi/client-attention";
 import { emptyBusinessIntelligenceOutput } from "./bi/empty";
+import {
+  emptyWebsiteQaSnapshot,
+  runWebsiteQaSpecialist,
+} from "./bi/website-qa";
 import { runChiefOfStaff } from "./executives/chief-of-staff";
 import { countOverdueConciergeSla } from "@/lib/concierge/sla/watchdog";
 import { isConciergeSlaEnabled } from "@/lib/concierge/sla/enabled";
@@ -53,6 +57,7 @@ import {
 } from "./delivery";
 import { AGENT_OS_VERSION, type AgentRun, type DataSourceId } from "./types";
 import type { BriefCadenceIntent } from "./brief-quality";
+import { isQuietDayFounderBrief } from "./brief-quality-gate";
 import {
   persistAgentOsRun,
   resolvePersistenceAdapter,
@@ -125,6 +130,15 @@ export type RunAgentOsOptions = {
    * Production callers omit this — fan-out still runs behind its non-throwing guard.
    */
   searchStrategyOptions?: Omit<RunSearchStrategyOptions, "mode">;
+  /**
+   * Website QA specialist (BI). Fixture defaults to skipped HTTP (UNKNOWN, silent).
+   * Live runs probe production GREEN/read-only unless skipSynthesis.
+   */
+  websiteQaOptions?: {
+    liveHttp?: boolean;
+    probe?: import("./bi/website-qa/probe").WebsiteQaProbeFn;
+    routeProbes?: import("./bi/website-qa/types").WebsiteQaSnapshot["routes"];
+  };
 };
 
 export async function runAgentOsBrief(
@@ -228,11 +242,21 @@ export async function runAgentOsBrief(
       ? undefined
       : await loadClientAttentionSourcesAsync({ mode }).catch(() => undefined);
 
+  const websiteQa = skipSynthesis
+    ? emptyWebsiteQaSnapshot()
+    : await runWebsiteQaSpecialist({
+        liveHttp:
+          options.websiteQaOptions?.liveHttp ?? mode === "live",
+        probe: options.websiteQaOptions?.probe,
+        routeProbes: options.websiteQaOptions?.routeProbes,
+      });
+
   const bi = skipSynthesis
     ? {
         ...emptyBusinessIntelligenceOutput(
           fatalError ?? "Live run blocked — conversion audit not executed",
         ),
+        websiteQa,
         dataGaps: [
           {
             id: "gap-live-load-fatal",
@@ -248,6 +272,7 @@ export async function runAgentOsBrief(
     : runBusinessIntelligence(bundle, reportingPeriod, {
         mode,
         clientAttentionSources,
+        websiteQa,
       });
 
   // Search Strategy still runs repository authority analysis when GSC is down,
@@ -567,11 +592,20 @@ export async function runAgentOsBrief(
     },
   ];
 
-  const deliveryGuidance = resolveDeliveryGuidance({
+  let deliveryGuidance = resolveDeliveryGuidance({
     runStatus,
     recommendationAvailability,
     briefEvidenceQuality,
   });
+  // Daily with no founder-now work is a healthy quiet skip, not a sendable brief.
+  // Search/Content/Opportunity recs may still exist; they must not force a send.
+  if (
+    options.briefCadenceIntent === "daily" &&
+    deliveryGuidance !== "send-failure-alert" &&
+    isQuietDayFounderBrief(brief)
+  ) {
+    deliveryGuidance = "send-nothing";
+  }
 
   const rankedActive = cos.recommendations.filter(
     (r) =>

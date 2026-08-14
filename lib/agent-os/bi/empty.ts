@@ -1,6 +1,7 @@
 import type { BusinessIntelligenceOutput } from "../executives/business-intelligence";
 import { emptyClientJourneyAudit } from "./journey";
 import { emptyClientAttentionAudit } from "./client-attention/resilience";
+import { emptyWebsiteQaSnapshot } from "./website-qa";
 import type {
   ConversionMeasurementAudit,
   OpportunityMeasurementHandoff,
@@ -69,5 +70,6 @@ export function emptyBusinessIntelligenceOutput(
       "live",
       note,
     ),
+    websiteQa: emptyWebsiteQaSnapshot(),
   };
 }

@@ -14,42 +14,61 @@
 import type { OperatingBacklog } from "./types";
 
 /**
- * Reconciliation (2026-08-14, P1-COS-2):
- * - P1-CONV-2 closed and production verified — Size Studio is measure-only.
- * - Concierge CTA attribution: completed (6d225b5).
- * - Studio→Concierge handoff implementation: completed (4cb9d3f / later handoff work).
- * - Case Studies are the current founder-now publishing / sales-proof engine.
- * - Charlotte hub, paid-search, Weddington, authority outreach: watch.
+ * Reconciliation (2026-08-14, P1-QA-1):
+ * - Website / Engineering QA specialist is operational (activation completed).
+ * - Authority / Case Study production is strategically paused (Watch) — inventory intact.
+ * - No current founder-now item. Quiet day is valid.
+ * - Charlotte hub, paid-search, Weddington, authority outreach, Size Studio: watch.
  * - Stale “defer experiments until Charlotte + paid-search” decision: cancelled.
  */
 export const CURRENT_OPERATING_BACKLOG: OperatingBacklog = {
   schemaVersion: 1,
   masterSprint: {
     id: "hourglass-sprint-2026-w33",
-    name: "Week of August 14 — Case Studies as sales-proof engine",
+    name: "Week of August 14 — operating watch",
     objective:
-      "Protect verified conversion gains and advance Case Studies as the primary publishing and sales-proof asset.",
+      "Website / Engineering QA is operational and silent when healthy. Case Study production remains intact on Watch.",
     /**
      * Documentation-only default. At runtime, dayOrientation is always re-derived
      * from founder-now items (see deriveDayOrientationFromBacklog).
      */
     dayOrientation:
-      "Protect conversion gains. Use the day for Case Study production, not leftover local-guide work.",
+      "Protect conversion gains. No additional founder-now work is queued today.",
     affirmedLocalDate: "2026-08-14",
     items: [
+      {
+        id: "sprint-activate-website-qa",
+        kind: "sprint-priority",
+        title: "Activate the Website / Engineering QA health specialist",
+        action:
+          "Activate the Website / Engineering QA health specialist as a silent production-health capability under Business Intelligence.",
+        why: "Authority / Case Study work is strategically paused while remaining Agent OS specialists are activated. Production health must be known without becoming a website-improvement generator.",
+        expectedOutcome:
+          "QA specialist is operational: healthy production stays silent; only material exceptions reach the founder.",
+        status: "completed",
+        urgency: "high",
+        rank: 1,
+        surfacePolicy: "founder-now",
+        orientation:
+          "Protect conversion gains. No additional founder-now work is queued today.",
+        completionCondition:
+          "Specialist ships GREEN-only; healthy production emits zero founder QA tasks.",
+        linkedRecommendationId: null,
+      },
       {
         id: "sprint-case-study-production",
         kind: "sprint-priority",
         title: "Advance the next client Case Study",
         action:
           "Advance the next client Case Study as Hourglass's primary sales-proof and publishing asset.",
-        why: "Case Studies are the current publishing and proof engine for qualified-client trust, founder authority, social, and organic corroboration — without inventing geography or SEO-first stories.",
+        why: "Case Studies remain the publishing and proof engine — strategically paused, not cancelled.",
         expectedOutcome:
-          "The next real client Case Study moves forward as the day’s sales-proof work.",
+          "The next real client Case Study moves forward when founder resumes Case Study production.",
         status: "active",
-        urgency: "high",
-        rank: 1,
-        surfacePolicy: "founder-now",
+        urgency: "low",
+        rank: 2,
+        surfacePolicy: "watch",
+        watchLine: "Case Study production — paused by founder; inventory intact",
         orientation:
           "Protect conversion gains. Use the day for Case Study production, not leftover local-guide work.",
         completionCondition:

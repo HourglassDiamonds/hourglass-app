@@ -218,6 +218,10 @@ export {
   applyJourneyFounderRankingGate,
   consolidateJourneyDuplicates,
   sequenceJourneyMeasurementPrerequisites,
+  runWebsiteQaSpecialist,
+  emptyWebsiteQaSnapshot,
+  WEBSITE_QA_CRITICAL_ROUTES,
+  WEBSITE_QA_ROOT_EXCEPTION_ID,
 } from "./bi";
 export type {
   ConversionMeasurementAudit,

@@ -5,6 +5,7 @@
 
 /** Canonical problem keys used as rootProblemId across runs. */
 export const OPERATING_BACKLOG_CANONICAL_IDS = {
+  "sprint-activate-website-qa": "ops:website-qa-activation",
   "sprint-case-study-production": "content:case-study-production",
   "sprint-concierge-cta-path": "conversion:concierge-attribution",
   "sprint-studio-consultation-clarity": "studio:concierge-handoff-clarity",

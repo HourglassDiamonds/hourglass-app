@@ -21,6 +21,7 @@ export function loadOperatingBacklog(
 
 export { CURRENT_OPERATING_BACKLOG } from "./current-sprint";
 export { activeBacklogItems } from "./current-sprint";
+export { operatingBacklogForCadenceSendPath } from "./cadence-send-path";
 export {
   recommendationsFromOperatingBacklog,
   decisionRecommendationsFromBacklog,

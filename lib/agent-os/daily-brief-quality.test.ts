@@ -491,11 +491,11 @@ describe("delivery safety unchanged + no real email", () => {
       emailSender: sender,
     });
     assert.equal(result.ok, true);
-    assert.ok(Array.isArray(sender.calls));
-    if (result.emailSent) {
-      assert.equal(sender.calls.length, 1);
-      assert.match(sender.calls[0]!.subject, /Morning Brief|July 24/);
-    }
+    assert.equal(result.emailSent, false);
+    assert.equal(result.deliveryOutcome, "skipped_with_reason");
+    assert.doesNotMatch(result.safeSummary, /quality gate/i);
+    assert.match(result.safeSummary, /quiet cycle|no material founder/i);
+    assert.equal(sender.calls.length, 0);
 
     // Re-render the fixture smoke shape to prove product framing without Resend
     const preview = renderFounderBriefEmail({

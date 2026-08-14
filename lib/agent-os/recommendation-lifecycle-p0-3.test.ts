@@ -381,12 +381,13 @@ describe("P0-3 recommendation lifecycle", () => {
     assert.ok(eligibility.eligibleIds.includes(rec.recommendationId));
   });
 
-  it("Test 5 — Case Study is founder-now; Charlotte and paid-search stay watch", () => {
+  it("Test 5 — QA activation is completed; Case Study, Charlotte and paid-search stay watch", () => {
     const recs = recommendationsFromOperatingBacklog(CURRENT_OPERATING_BACKLOG, {
       nowIso: NOW,
     });
     const titles = recs.map((r) => r.title);
-    assert.ok(titles.some((t) => /Case Study/i.test(t)));
+    assert.equal(titles.some((t) => /Website \/ Engineering QA/i.test(t)), false);
+    assert.equal(titles.some((t) => /Advance the next client Case Study/i.test(t)), false);
     assert.equal(titles.includes("Strengthen Charlotte guide hub titles"), false);
     assert.equal(titles.includes("Paid-search readiness review"), false);
     assert.equal(
@@ -549,19 +550,26 @@ describe("P0-3 recommendation lifecycle", () => {
     assert.doesNotMatch(blob, /Finish the Concierge conversion path before opening/);
     assert.doesNotMatch(blob, /intact attribution parameters/);
     assert.doesNotMatch(blob, /Clarify Studio engagement vs consultation ask/);
-    assert.match(blob, /Case Study/i);
+    assert.doesNotMatch(blob, /Activate the Website \/ Engineering QA/i);
     assert.doesNotMatch(blob, /Strengthen Charlotte guide hub titles/i);
     assert.equal(
       cos.brief.surfacedPriorityTitles.includes("Paid-search readiness review"),
       false,
     );
     assert.doesNotMatch(cos.brief.highestRoiAction, /paid-search/i);
-    // Primary strategic call should no longer be Concierge conversion finish.
     assert.doesNotMatch(
       cos.brief.dayOrientation ?? "",
       /Finish the Concierge conversion path|Clarify Studio|Studio engagement/i,
     );
-    assert.match(cos.brief.dayOrientation ?? "", /Case Study/i);
+    assert.match(
+      cos.brief.dayOrientation ?? "",
+      /No additional founder-now work is queued today/i,
+    );
+    assert.ok(
+      (cos.brief.watchNoActionItems ?? []).some((l) =>
+        /Case Study production — paused by founder/i.test(l),
+      ),
+    );
     assert.doesNotMatch(
       cos.brief.dayOrientation ?? "",
       /Strengthen Charlotte guide hub titles/i,
@@ -627,8 +635,12 @@ describe("P0-3 lifecycle hardening", () => {
         blob,
         /Finish the Concierge conversion path|intact attribution|Clarify Studio engagement/i,
       );
-      assert.match(blob, /Case Study/i);
+      assert.doesNotMatch(blob, /Activate the Website \/ Engineering QA/i);
       assert.doesNotMatch(blob, /Strengthen Charlotte guide hub titles/i);
+      assert.match(
+        run.brief.dayOrientation ?? "",
+        /No additional founder-now work is queued today/i,
+      );
 
       const after = await store.load();
       const concierge =
@@ -883,7 +895,11 @@ describe("P0-3 lifecycle hardening", () => {
       {},
     );
     const orientation = hydrated.backlog.masterSprint.dayOrientation ?? "";
-    assert.match(orientation, /Case Study/i);
+    assert.match(
+      orientation,
+      /No additional founder-now work is queued today/i,
+    );
+    assert.doesNotMatch(orientation, /Activate the Website \/ Engineering QA/i);
     assert.doesNotMatch(orientation, /Strengthen Charlotte guide hub titles/i);
     assert.doesNotMatch(
       orientation,

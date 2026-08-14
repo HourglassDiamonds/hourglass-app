@@ -222,6 +222,32 @@ export function evaluateBriefQualityGate(input: {
   return { ok: false, violations };
 }
 
+/** Quality codes that describe a legitimate quiet day — not a hollow/leaky brief. */
+const QUIET_DAY_VIOLATION_CODES: ReadonlySet<BriefQualityViolationCode> = new Set([
+  "no-named-priority",
+  "empty-no-action-brief",
+  "no-concrete-founder-content",
+]);
+
+/** True when the only quality failures are quiet-day emptiness, not leaky/hollow copy. */
+export function isQuietDayQualityFailure(
+  result: BriefQualityGateResult,
+): boolean {
+  if (result.ok || result.violations.length === 0) return false;
+  return result.violations.every((v) => QUIET_DAY_VIOLATION_CODES.has(v.code));
+}
+
+/**
+ * Daily brief with no named founder-now work and no-action Highest-ROI.
+ * Distinct from a leaky hollow brief (July 28 class).
+ */
+export function isQuietDayFounderBrief(brief: FounderBrief): boolean {
+  const namedPriorities = brief.surfacedPriorityTitles.filter(
+    (t) => t && !/^none$/i.test(t) && !isNoActionCopy(t),
+  );
+  return namedPriorities.length === 0 && isNoActionCopy(brief.highestRoiAction);
+}
+
 /** True when copy looks like quiet-day / no-action filler. */
 export function isEmptyNoActionBrief(brief: FounderBrief, todayCall?: string): boolean {
   return !evaluateBriefQualityGate({ brief, todayCall, intent: "daily" }).ok;

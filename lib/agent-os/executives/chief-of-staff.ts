@@ -60,6 +60,11 @@ import {
   isConciergeSlaOverdueRecommendationId,
 } from "@/lib/concierge/sla/cos-escalation";
 import { CONCIERGE_SLA_OVERDUE_RECOMMENDATION_ID } from "@/lib/concierge/sla/types";
+import {
+  injectWebsiteQaCriticalIntoSurfacePool,
+  isWebsiteQaExceptionRecommendationId,
+} from "../bi/website-qa/cos-escalation";
+import { WEBSITE_QA_ROOT_EXCEPTION_ID } from "../bi/website-qa/types";
 
 export type ChiefOfStaffInput = {
   bi: BusinessIntelligenceOutput;
@@ -227,8 +232,10 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
       ...input.founderSurfaceEligibleIds,
       ...backlogIds,
       ...carryIds,
-      // Live Concierge SLA is never gated by recommendation lifecycle.
+      // Live Concierge SLA / critical production-health exceptions are
+      // never gated by recommendation lifecycle.
       CONCIERGE_SLA_OVERDUE_RECOMMENDATION_ID,
+      WEBSITE_QA_ROOT_EXCEPTION_ID,
     ]);
     const byId = new Map(surfacePool.map((r) => [r.recommendationId, r]));
     // Hierarchy order: backlog first, then carry-forward, then recurrence-eligible.
@@ -254,7 +261,8 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
             r.title,
             r.priorityScore,
           ) ||
-          isConciergeSlaOverdueRecommendationId(r.recommendationId)
+          isConciergeSlaOverdueRecommendationId(r.recommendationId) ||
+          isWebsiteQaExceptionRecommendationId(r.recommendationId)
         ) {
           surfacePool.push(r);
         }
@@ -278,6 +286,15 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
     });
     recommendations = injected.recommendations;
     surfacePool = injected.surfacePool;
+  }
+
+  {
+    const qaInjected = injectWebsiteQaCriticalIntoSurfacePool({
+      recommendations,
+      surfacePool,
+    });
+    recommendations = qaInjected.recommendations;
+    surfacePool = qaInjected.surfacePool;
   }
 
   // Legacy fallback for callers that omit intent (mostly unit tests).
@@ -374,6 +391,27 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
     if (overdueIdx > 0) {
       const [overdue] = poolForSelect.splice(overdueIdx, 1);
       poolForSelect = [overdue, ...poolForSelect];
+    }
+  }
+
+  // Critical production-health exception may outrank ordinary founder-now
+  // work. Concierge overdue still wins if both exist.
+  {
+    const qa = recommendations.find(
+      (r) =>
+        isWebsiteQaExceptionRecommendationId(r.recommendationId) &&
+        r.urgency === "critical",
+    );
+    if (qa) {
+      const without = poolForSelect.filter(
+        (r) => !isWebsiteQaExceptionRecommendationId(r.recommendationId),
+      );
+      const conciergeFirst =
+        without[0] &&
+        isConciergeSlaOverdueRecommendationId(without[0].recommendationId);
+      poolForSelect = conciergeFirst
+        ? [without[0], qa, ...without.slice(1)]
+        : [qa, ...without];
     }
   }
 

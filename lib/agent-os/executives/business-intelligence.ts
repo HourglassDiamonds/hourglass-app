@@ -14,6 +14,12 @@ import {
   type ClientAttentionAudit,
 } from "../bi/client-attention";
 import type { ClientAttentionSourceBundle } from "../bi/client-attention/adapters/types";
+import {
+  emptyWebsiteQaSnapshot,
+  websiteQaRecommendations,
+  withConversionAudit,
+  type WebsiteQaSnapshot,
+} from "../bi/website-qa";
 import { createEvidence } from "../evidence";
 import { buildRecommendation } from "../recommendation";
 import { assertOperationalForRecommendations } from "../registry";
@@ -44,12 +50,16 @@ export type BusinessIntelligenceOutput = {
   journeyAudit: ClientJourneyAudit;
   /** Client Attention — CRM/inbox intelligence (fixture or live adapters). */
   clientAttentionAudit: ClientAttentionAudit;
+  /** Website / Engineering QA specialist — silent when healthy. */
+  websiteQa: WebsiteQaSnapshot;
 };
 
 export type RunBusinessIntelligenceOptions = {
   mode?: "fixture" | "live";
   /** Prefetched Client Attention sources (live HubSpot reads). */
   clientAttentionSources?: ClientAttentionSourceBundle;
+  /** Prefetched Website QA snapshot (probes run by the async orchestrator). */
+  websiteQa?: WebsiteQaSnapshot;
 };
 
 export function runBusinessIntelligence(
@@ -680,25 +690,38 @@ export function runBusinessIntelligence(
     });
   }
 
+  const websiteQa = withConversionAudit(
+    options.websiteQa ?? emptyWebsiteQaSnapshot(),
+    audit,
+  );
+  const qaRecs = websiteQaRecommendations(
+    websiteQa,
+    reportingPeriod,
+    collectedAt,
+  );
+
   const mergedRecommendations = [
+    ...qaRecs,
     ...recommendations,
     ...measurementRecs,
     ...journeyRecs,
     ...clientAttention.recommendations,
   ];
 
+  const silentQa = websiteQa.exception == null;
   return {
     recommendations: mergedRecommendations,
     anomalies,
     dataGaps,
     keyMetricChanges,
-    facts,
-    inferences,
+    facts: silentQa ? facts : [...websiteQa.facts, ...facts],
+    inferences: silentQa ? inferences : [...inferences, ...websiteQa.inferences],
     incompleteAttribution,
     conversionAudit: audit,
     opportunityHandoff: audit.opportunityHandoff,
     journeyAudit,
     clientAttentionAudit: clientAttention.audit,
+    websiteQa,
   };
 }
 

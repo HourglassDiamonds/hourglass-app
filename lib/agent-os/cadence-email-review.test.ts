@@ -29,6 +29,7 @@ import {
   renderFailureAlertEmail,
 } from "./cadence-delivery";
 import { GET as cronGet } from "../../app/api/cron/agent-os-cadence/route";
+import { operatingBacklogForCadenceSendPath } from "./operating-backlog";
 
 const EMAIL_OVERRIDE = {
   apiKey: "re_test_fake_key",
@@ -511,6 +512,7 @@ describe("simultaneous due cadences", () => {
       nowIso: "2026-07-20T12:00:00.000Z",
       emailConfigOverride: EMAIL_OVERRIDE,
       emailSender: createFakeEmailSender(),
+      operatingBacklog: operatingBacklogForCadenceSendPath(),
     });
     assert.equal(weekly.cadenceId, "cos-weekly-founder-brief");
     assert.equal(daily.cadenceId, "cos-daily-synthesis");

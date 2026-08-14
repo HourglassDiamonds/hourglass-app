@@ -25,6 +25,7 @@ import {
   type AgentOsDeliveryRecord,
   type CadenceDefinition,
 } from "./persistence/types";
+import { operatingBacklogForCadenceSendPath } from "./operating-backlog";
 
 const EMAIL_OVERRIDE = {
   apiKey: "re_test_key_not_real",
@@ -224,6 +225,7 @@ describe("daily delivery idempotency + fake email", () => {
       nowIso,
       emailConfigOverride: EMAIL_OVERRIDE,
       emailSender: sender,
+      operatingBacklog: operatingBacklogForCadenceSendPath(),
     });
     assert.equal(first.ok, true);
     assert.equal(first.emailSent, true);
@@ -237,6 +239,7 @@ describe("daily delivery idempotency + fake email", () => {
       nowIso,
       emailConfigOverride: EMAIL_OVERRIDE,
       emailSender: sender,
+      operatingBacklog: operatingBacklogForCadenceSendPath(),
     });
     assert.equal(second.ok, true);
     assert.equal(second.emailSent, false);
@@ -259,6 +262,7 @@ describe("daily delivery idempotency + fake email", () => {
       nowIso: "2026-07-15T12:00:00.000Z",
       emailConfigOverride: EMAIL_OVERRIDE,
       emailSender: sender,
+      operatingBacklog: operatingBacklogForCadenceSendPath(),
     });
     assert.ok(sender.calls.length <= 1);
     // Fake sender records calls locally — never Resend.
@@ -290,6 +294,7 @@ describe("weekly vs daily anti-redundancy", () => {
       nowIso: "2026-07-14T12:00:00.000Z", // Tuesday — different local date
       emailConfigOverride: EMAIL_OVERRIDE,
       emailSender: sender,
+      operatingBacklog: operatingBacklogForCadenceSendPath(),
     });
     assert.equal(daily.emailSent, true);
     assert.equal(sender.calls.length, 2);
@@ -379,6 +384,7 @@ describe("weekly vs daily anti-redundancy", () => {
       nowIso,
       emailConfigOverride: EMAIL_OVERRIDE,
       emailSender: sender,
+      operatingBacklog: operatingBacklogForCadenceSendPath(),
     });
     assert.equal(daily.ok, true);
     assert.equal(daily.emailSent, true);
@@ -429,6 +435,7 @@ describe("weekly vs daily anti-redundancy", () => {
       nowIso,
       emailConfigOverride: EMAIL_OVERRIDE,
       emailSender: sender,
+      operatingBacklog: operatingBacklogForCadenceSendPath(),
     });
     assert.equal(daily.emailSent, true);
   });

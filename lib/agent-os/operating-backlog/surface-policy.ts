@@ -12,7 +12,7 @@ export const SURFACE_POLICIES = [
 ] as const satisfies readonly SurfacePolicy[];
 
 /** Daily email Watch / No Action cap (excludes background). */
-export const MAX_WATCH_EMAIL_ITEMS = 5;
+export const MAX_WATCH_EMAIL_ITEMS = 6;
 
 /**
  * Resolve founder-attention band.

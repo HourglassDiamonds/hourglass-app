@@ -11,6 +11,7 @@
 import { createHash, randomUUID } from "node:crypto";
 import { runAgentOsBrief } from "../run";
 import type { AgentRun } from "../types";
+import type { OperatingBacklog } from "../operating-backlog";
 import {
   assertScheduledLiveDurability,
   resolvePersistenceAdapter,
@@ -113,6 +114,11 @@ export type ExecuteCadenceOptions = {
     to: string;
     recipientAlias: string;
   }>;
+  /**
+   * Optional operating-backlog override forwarded to runAgentOsBrief.
+   * Tests/ops only — production cadence uses CURRENT_OPERATING_BACKLOG.
+   */
+  operatingBacklog?: OperatingBacklog | null;
   /** Failure-alert cooldown (default 6h). */
   failureAlertCooldownMs?: number;
   /**
@@ -911,6 +917,7 @@ export async function executeAgentOsCadence(
       mode: adapterMode(options.mode, runMode),
       briefCadenceIntent,
       briefLocalDate,
+      operatingBacklog: options.operatingBacklog,
       persistence: {
         enabled: true,
         trigger: triggerForMode(options.mode, runMode),

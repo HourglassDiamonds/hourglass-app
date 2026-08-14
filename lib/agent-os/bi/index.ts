@@ -182,6 +182,23 @@ export {
 export { emptyBusinessIntelligenceOutput } from "./empty";
 
 export {
+  runWebsiteQaSpecialist,
+  emptyWebsiteQaSnapshot,
+  websiteQaRecommendations,
+  WEBSITE_QA_CRITICAL_ROUTES,
+  WEBSITE_QA_ROOT_EXCEPTION_ID,
+  WEBSITE_QA_GREEN_CAPABILITIES,
+  WEBSITE_QA_RED_CAPABILITIES,
+  classifyWebsiteQaPermissionTier,
+  websiteQaMayExecute,
+} from "./website-qa";
+export type {
+  WebsiteQaSnapshot,
+  WebsiteQaHealthState,
+  WebsiteQaRouteProbe,
+} from "./website-qa";
+
+export {
   isConciergeConversionClusterFinding,
   buildConciergeConversionRootRecommendation,
   buildMeasurementVolumeFunnel,

@@ -14,6 +14,7 @@ import {
 } from "./cadence-delivery";
 import { DurableTestPersistenceAdapter } from "./persistence/adapters/durable-test";
 import { getCadenceById } from "./persistence/cadence";
+import { operatingBacklogForCadenceSendPath } from "./operating-backlog";
 
 const EMAIL_OVERRIDE = {
   apiKey: "re_test_fake_key",
@@ -226,6 +227,7 @@ describe("P0-2 cadence 200-without-email regression", () => {
       nowIso,
       emailSender: sender,
       emailConfigOverride: EMAIL_OVERRIDE,
+      operatingBacklog: operatingBacklogForCadenceSendPath(),
     });
     assert.equal(first.deliveryOutcome, "sent");
     assert.equal(first.emailSent, true);

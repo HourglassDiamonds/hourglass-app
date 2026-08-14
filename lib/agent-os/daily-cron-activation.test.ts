@@ -18,6 +18,7 @@ import {
 } from "./persistence";
 import { DurableTestPersistenceAdapter } from "./persistence/adapters/durable-test";
 import type { CadenceDefinition } from "./persistence/types";
+import { operatingBacklogForCadenceSendPath } from "./operating-backlog";
 
 const EMAIL_OVERRIDE = {
   apiKey: "re_test_key_not_real",
@@ -152,6 +153,7 @@ describe("late cron invocation and failed-delivery recovery", () => {
       nowIso,
       emailConfigOverride: EMAIL_OVERRIDE,
       emailSender: failSender,
+      operatingBacklog: operatingBacklogForCadenceSendPath(),
     });
     assert.equal(failed.emailSent, false);
     assert.ok(
@@ -178,6 +180,7 @@ describe("late cron invocation and failed-delivery recovery", () => {
       nowIso: "2026-07-15T12:05:00.000Z",
       emailConfigOverride: EMAIL_OVERRIDE,
       emailSender: retrySender,
+      operatingBacklog: operatingBacklogForCadenceSendPath(),
     });
     assert.equal(retry.ok, true);
     assert.equal(retry.emailSent, true);
@@ -198,6 +201,7 @@ describe("late cron invocation and failed-delivery recovery", () => {
       nowIso: firstIso,
       emailConfigOverride: EMAIL_OVERRIDE,
       emailSender: sender,
+      operatingBacklog: operatingBacklogForCadenceSendPath(),
     });
     assert.equal(first.emailSent, true);
 
@@ -209,6 +213,7 @@ describe("late cron invocation and failed-delivery recovery", () => {
       nowIso: secondIso,
       emailConfigOverride: EMAIL_OVERRIDE,
       emailSender: sender,
+      operatingBacklog: operatingBacklogForCadenceSendPath(),
     });
     assert.equal(second.emailSent, false);
     assert.equal(sender.calls.length, 1);
