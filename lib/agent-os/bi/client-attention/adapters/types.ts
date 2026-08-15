@@ -111,6 +111,13 @@ export type NormalizedConciergeSubmission = {
   originatingTool?: string;
   originatingContent?: string;
   landingPath?: string;
+  utmSource?: string;
+  utmMedium?: string;
+  utmCampaign?: string;
+  utmContent?: string;
+  utmTerm?: string;
+  lastCtaLocation?: string;
+  referrerHost?: string;
   hubspotContactId?: string;
   hubspotDealId?: string;
 };

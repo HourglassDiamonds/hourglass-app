@@ -26,7 +26,11 @@ const SAMPLE_DESCRIPTION = [
   "",
   "Attribution:",
   "UTM Source: google",
+  "UTM Medium: cpc",
+  "UTM Campaign: engagement-ring",
   "Landing path: /engagement-rings",
+  "Referrer host: google.com /aclk",
+  "Last CTA: engagement_rings:hero",
   "Originating Tool: Diamond Studio",
   "",
   "Inspiration / Notes:",
@@ -44,6 +48,11 @@ describe("concierge-from-hubspot reconstruction", () => {
     assert.equal(parsed.preferredContact, "Email");
     assert.equal(parsed.originatingTool, "Diamond Studio");
     assert.equal(parsed.landingPath, "/engagement-rings");
+    assert.equal(parsed.utmSource, "google");
+    assert.equal(parsed.utmMedium, "cpc");
+    assert.equal(parsed.utmCampaign, "engagement-ring");
+    assert.equal(parsed.lastCtaLocation, "engagement_rings:hero");
+    assert.equal(parsed.referrerHost, "google.com");
     assert.ok(parsed.inspirationNotes?.includes("summer proposal"));
   });
 
@@ -76,6 +85,29 @@ describe("concierge-from-hubspot reconstruction", () => {
     assert.equal(result.submissions[0].normalizedEmail, "alex.fixture@clients.example.test");
     assert.equal(result.submissions[0].hubspotDealId, "d1");
     assert.equal(result.submissions[0].projectType, "Engagement Ring");
+    assert.equal(result.submissions[0].originatingTool, "Diamond Studio");
+    assert.equal(result.submissions[0].lastCtaLocation, "engagement_rings:hero");
+    assert.equal(result.submissions[0].utmMedium, "cpc");
+    assert.equal(result.submissions[0].referrerHost, "google.com");
+  });
+
+  it("does not treat every HubSpot deal as a Concierge inquiry", () => {
+    const result = reconstructConciergeFromHubSpot({
+      nowIso: "2026-07-28T12:00:00.000Z",
+      maxSubmissions: 10,
+      dealDescriptions: { "other": "Internal wholesale conversation" },
+      deals: [
+        {
+          dealId: "other",
+          contactIds: ["c1"],
+          dealName: "Trade account — restock",
+          createdAt: "2026-07-27T15:00:00.000Z",
+        },
+      ],
+      contacts: [{ contactId: "c1" }],
+    });
+    assert.equal(result.submissions.length, 0);
+    assert.equal(result.status, "empty");
   });
 
   it("documents ledger gaps without building a ledger", () => {

@@ -51,6 +51,13 @@ const BI_ESCALATION: EscalationRule[] = [
     action:
       "Healthy stays silent. Material regression emits one root exception. Do not auto-fix or deploy.",
   },
+  {
+    id: "bi-accepted-inquiry-attribution",
+    condition:
+      "Accepted Concierge inquiry origin coverage collapses or a material origin pattern is evidence-supported",
+    action:
+      "Keep ordinary tiny-sample attribution silent. Escalate only capture-integrity collapse or a material sample. Do not join GA4 to CRM identities or attribute revenue.",
+  },
 ];
 
 const SEARCH_ESCALATION: EscalationRule[] = [
@@ -186,6 +193,7 @@ export const EXECUTIVE_REGISTRY: readonly ExecutiveDefinition[] = [
       "readiness evidence for Opportunity",
       "website / engineering QA",
       "production route health",
+      "accepted-inquiry attribution evidence",
     ],
     allowedDataSources: [
       "ga4",

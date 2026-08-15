@@ -2,6 +2,7 @@ import type { BusinessIntelligenceOutput } from "../executives/business-intellig
 import { emptyClientJourneyAudit } from "./journey";
 import { emptyClientAttentionAudit } from "./client-attention/resilience";
 import { emptyWebsiteQaSnapshot } from "./website-qa";
+import { emptyAttributionSnapshot } from "./attribution";
 import type {
   ConversionMeasurementAudit,
   OpportunityMeasurementHandoff,
@@ -71,5 +72,6 @@ export function emptyBusinessIntelligenceOutput(
       note,
     ),
     websiteQa: emptyWebsiteQaSnapshot(),
+    acceptedInquiryAttribution: emptyAttributionSnapshot(note),
   };
 }

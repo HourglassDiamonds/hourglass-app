@@ -10,16 +10,26 @@ import {
   type ClientJourneyAudit,
 } from "../bi/journey";
 import {
+  CLIENT_ATTENTION_FIXTURE_NOW,
+  DEFAULT_CLIENT_ATTENTION_THRESHOLDS,
+  loadClientAttentionSources,
   runClientAttentionAnalysis,
   type ClientAttentionAudit,
 } from "../bi/client-attention";
-import type { ClientAttentionSourceBundle } from "../bi/client-attention/adapters/types";
+import type {
+  ClientAttentionSourceBundle,
+  ConciergeAdapterResult,
+} from "../bi/client-attention/adapters/types";
 import {
   emptyWebsiteQaSnapshot,
   websiteQaRecommendations,
   withConversionAudit,
   type WebsiteQaSnapshot,
 } from "../bi/website-qa";
+import {
+  runAcceptedInquiryAttributionSpecialist,
+  type AcceptedInquiryAttributionSnapshot,
+} from "../bi/attribution";
 import { createEvidence } from "../evidence";
 import { buildRecommendation } from "../recommendation";
 import { assertOperationalForRecommendations } from "../registry";
@@ -52,6 +62,8 @@ export type BusinessIntelligenceOutput = {
   clientAttentionAudit: ClientAttentionAudit;
   /** Website / Engineering QA specialist — silent when healthy. */
   websiteQa: WebsiteQaSnapshot;
+  /** Accepted Concierge inquiry origin evidence — silent at tiny sample. */
+  acceptedInquiryAttribution: AcceptedInquiryAttributionSnapshot;
 };
 
 export type RunBusinessIntelligenceOptions = {
@@ -60,6 +72,14 @@ export type RunBusinessIntelligenceOptions = {
   clientAttentionSources?: ClientAttentionSourceBundle;
   /** Prefetched Website QA snapshot (probes run by the async orchestrator). */
   websiteQa?: WebsiteQaSnapshot;
+  /** Prefetched Concierge reconstructions for attribution (defaults to Client Attention). */
+  attributionConcierge?: ConciergeAdapterResult;
+  /** HubSpot search window that produced attribution reconstructions. */
+  attributionCrmReadLookbackDays?: number;
+  /** Deal search cap used for the attribution CRM read. */
+  attributionCrmRecordCap?: number | null;
+  /** Deals returned by that search — detects cap truncation. */
+  attributionCrmRecordsReturned?: number | null;
 };
 
 export function runBusinessIntelligence(
@@ -700,8 +720,43 @@ export function runBusinessIntelligence(
     collectedAt,
   );
 
+  const attributionNowIso =
+    mode === "fixture" ? CLIENT_ATTENTION_FIXTURE_NOW : collectedAt;
+  const attributionConcierge =
+    options.attributionConcierge ??
+    options.clientAttentionSources?.concierge ??
+    (mode === "fixture"
+      ? loadClientAttentionSources({
+          mode: "fixture",
+          nowIso: attributionNowIso,
+        }).concierge
+      : undefined);
+  const attribution = runAcceptedInquiryAttributionSpecialist({
+    mode,
+    nowIso: attributionNowIso,
+    reportingPeriod,
+    concierge: attributionConcierge,
+    crmReadLookbackDays:
+      options.attributionCrmReadLookbackDays ??
+      DEFAULT_CLIENT_ATTENTION_THRESHOLDS.lookbackDays,
+    crmRecordCap:
+      options.attributionCrmRecordCap ??
+      DEFAULT_CLIENT_ATTENTION_THRESHOLDS.maxHubSpotDeals,
+    crmRecordsReturned: options.attributionCrmRecordsReturned,
+    ga4Available: Boolean(bundle.ga4.ok && bundle.ga4.data),
+    ga4Current: bundle.ga4.data?.current
+      ? {
+          generateLeadCount: bundle.ga4.data.current.generateLeadCount,
+          conciergeFormStarted: bundle.ga4.data.current.conciergeFormStarted,
+          conciergeFormSubmitted: bundle.ga4.data.current.conciergeFormSubmitted,
+          consultationCtaClicks: bundle.ga4.data.current.consultationCtaClicks,
+        }
+      : null,
+  });
+
   const mergedRecommendations = [
     ...qaRecs,
+    ...attribution.recommendations,
     ...recommendations,
     ...measurementRecs,
     ...journeyRecs,
@@ -709,19 +764,31 @@ export function runBusinessIntelligence(
   ];
 
   const silentQa = websiteQa.exception == null;
+  const silentAttribution = !attribution.snapshot.coverageIntegrityFinding;
+  const founderFacts = [
+    ...(silentQa ? [] : websiteQa.facts),
+    ...(silentAttribution ? [] : attribution.snapshot.facts),
+    ...facts,
+  ];
+  const founderInferences = [
+    ...(silentQa ? [] : websiteQa.inferences),
+    ...(silentAttribution ? [] : attribution.snapshot.inferences),
+    ...inferences,
+  ];
   return {
     recommendations: mergedRecommendations,
     anomalies,
     dataGaps,
     keyMetricChanges,
-    facts: silentQa ? facts : [...websiteQa.facts, ...facts],
-    inferences: silentQa ? inferences : [...inferences, ...websiteQa.inferences],
+    facts: founderFacts,
+    inferences: founderInferences,
     incompleteAttribution,
     conversionAudit: audit,
     opportunityHandoff: audit.opportunityHandoff,
     journeyAudit,
     clientAttentionAudit: clientAttention.audit,
     websiteQa,
+    acceptedInquiryAttribution: attribution.snapshot,
   };
 }
 

@@ -222,6 +222,18 @@ export {
   emptyWebsiteQaSnapshot,
   WEBSITE_QA_CRITICAL_ROUTES,
   WEBSITE_QA_ROOT_EXCEPTION_ID,
+  runAcceptedInquiryAttributionSpecialist,
+  emptyAttributionSnapshot,
+  ATTRIBUTION_PRIMARY_LOOKBACK_DAYS,
+  ATTRIBUTION_COVERAGE_INTEGRITY_ID,
+  ATTRIBUTION_FUNNEL_STAGES,
+  ATTRIBUTION_JOIN_STATUS,
+  classifyAttributionPermissionTier,
+  attributionMayExecute,
+  injectAttributionIntegrityIntoSurfacePool,
+  isAttributionIntegrityRecommendationId,
+  classifyInquiryOrigin,
+  founderFacingAttributionTextContainsPii,
 } from "./bi";
 export type {
   ConversionMeasurementAudit,
@@ -235,6 +247,7 @@ export type {
   JourneyFinding,
   JourneyFindingType,
   JourneyObservationBundle,
+  AcceptedInquiryAttributionSnapshot,
 } from "./bi";
 
 export {

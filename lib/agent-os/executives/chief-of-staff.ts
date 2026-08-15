@@ -65,6 +65,11 @@ import {
   isWebsiteQaExceptionRecommendationId,
 } from "../bi/website-qa/cos-escalation";
 import { WEBSITE_QA_ROOT_EXCEPTION_ID } from "../bi/website-qa/types";
+import {
+  injectAttributionIntegrityIntoSurfacePool,
+  isAttributionIntegrityRecommendationId,
+} from "../bi/attribution/cos-escalation";
+import { ATTRIBUTION_COVERAGE_INTEGRITY_ID } from "../bi/attribution/types";
 
 export type ChiefOfStaffInput = {
   bi: BusinessIntelligenceOutput;
@@ -236,6 +241,7 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
       // never gated by recommendation lifecycle.
       CONCIERGE_SLA_OVERDUE_RECOMMENDATION_ID,
       WEBSITE_QA_ROOT_EXCEPTION_ID,
+      ATTRIBUTION_COVERAGE_INTEGRITY_ID,
     ]);
     const byId = new Map(surfacePool.map((r) => [r.recommendationId, r]));
     // Hierarchy order: backlog first, then carry-forward, then recurrence-eligible.
@@ -262,7 +268,8 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
             r.priorityScore,
           ) ||
           isConciergeSlaOverdueRecommendationId(r.recommendationId) ||
-          isWebsiteQaExceptionRecommendationId(r.recommendationId)
+          isWebsiteQaExceptionRecommendationId(r.recommendationId) ||
+          isAttributionIntegrityRecommendationId(r.recommendationId)
         ) {
           surfacePool.push(r);
         }
@@ -295,6 +302,15 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
     });
     recommendations = qaInjected.recommendations;
     surfacePool = qaInjected.surfacePool;
+  }
+
+  {
+    const attributionInjected = injectAttributionIntegrityIntoSurfacePool({
+      recommendations,
+      surfacePool,
+    });
+    recommendations = attributionInjected.recommendations;
+    surfacePool = attributionInjected.surfacePool;
   }
 
   // Legacy fallback for callers that omit intent (mostly unit tests).
@@ -412,6 +428,26 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
       poolForSelect = conciergeFirst
         ? [without[0], qa, ...without.slice(1)]
         : [qa, ...without];
+    }
+  }
+
+  {
+    const attribution = recommendations.find(
+      (r) =>
+        isAttributionIntegrityRecommendationId(r.recommendationId) &&
+        r.urgency === "critical",
+    );
+    if (attribution) {
+      const without = poolForSelect.filter(
+        (r) => !isAttributionIntegrityRecommendationId(r.recommendationId),
+      );
+      const opsFirst =
+        without[0] &&
+        (isConciergeSlaOverdueRecommendationId(without[0].recommendationId) ||
+          isWebsiteQaExceptionRecommendationId(without[0].recommendationId));
+      poolForSelect = opsFirst
+        ? [without[0], attribution, ...without.slice(1)]
+        : [attribution, ...without];
     }
   }
 

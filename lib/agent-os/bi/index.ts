@@ -199,6 +199,25 @@ export type {
 } from "./website-qa";
 
 export {
+  runAcceptedInquiryAttributionSpecialist,
+  emptyAttributionSnapshot,
+  ATTRIBUTION_PRIMARY_LOOKBACK_DAYS,
+  ATTRIBUTION_COVERAGE_INTEGRITY_ID,
+  ATTRIBUTION_FUNNEL_STAGES,
+  ATTRIBUTION_JOIN_STATUS,
+  classifyAttributionPermissionTier,
+  attributionMayExecute,
+  injectAttributionIntegrityIntoSurfacePool,
+  isAttributionIntegrityRecommendationId,
+  classifyInquiryOrigin,
+  founderFacingAttributionTextContainsPii,
+} from "./attribution";
+export type {
+  AcceptedInquiryAttributionSnapshot,
+  AttributionSampleStrength,
+} from "./attribution";
+
+export {
   isConciergeConversionClusterFinding,
   buildConciergeConversionRootRecommendation,
   buildMeasurementVolumeFunnel,

@@ -28,6 +28,13 @@ export type ParsedConciergeDealDescription = {
   originatingContent?: string;
   landingPath?: string;
   utmSource?: string;
+  utmMedium?: string;
+  utmCampaign?: string;
+  utmContent?: string;
+  utmTerm?: string;
+  lastCtaLocation?: string;
+  /** Hostname only — path/query from the referrer line are dropped. */
+  referrerHost?: string;
   inspirationNotes?: string;
   /** Fields that were present as labeled lines but empty / "Not provided". */
   emptyLabeledFields: string[];
@@ -100,6 +107,14 @@ export function parseConciergeDealDescription(
     originatingContent: attributionLine(attributionBlock, "Originating Content"),
     landingPath: attributionLine(attributionBlock, "Landing path"),
     utmSource: attributionLine(attributionBlock, "UTM Source"),
+    utmMedium: attributionLine(attributionBlock, "UTM Medium"),
+    utmCampaign: attributionLine(attributionBlock, "UTM Campaign"),
+    utmContent: attributionLine(attributionBlock, "UTM Content"),
+    utmTerm: attributionLine(attributionBlock, "UTM Term"),
+    lastCtaLocation: attributionLine(attributionBlock, "Last CTA"),
+    referrerHost: hostFromReferrerLine(
+      attributionLine(attributionBlock, "Referrer host"),
+    ),
     inspirationNotes: inspirationBlock?.trim() || undefined,
     emptyLabeledFields: [...new Set(emptyLabeledFields)],
     missingLabeledFields: [...new Set(missingLabeledFields)].filter((label) =>
@@ -212,6 +227,13 @@ export function reconstructConciergeFromHubSpot(
       originatingTool: parsed.originatingTool,
       originatingContent: parsed.originatingContent,
       landingPath: parsed.landingPath,
+      utmSource: parsed.utmSource,
+      utmMedium: parsed.utmMedium,
+      utmCampaign: parsed.utmCampaign,
+      utmContent: parsed.utmContent,
+      utmTerm: parsed.utmTerm,
+      lastCtaLocation: parsed.lastCtaLocation,
+      referrerHost: parsed.referrerHost,
       hubspotContactId: primaryContact?.contactId,
       hubspotDealId: deal.dealId,
     });
@@ -285,6 +307,18 @@ function safeNotesSummary(notes: string | undefined): string | undefined {
   const cleaned = notes.replace(/\s+/g, " ").trim();
   if (cleaned.length <= 80) return "Inspiration notes on file.";
   return "Inspiration notes on file (truncated).";
+}
+
+/**
+ * Concierge writes `Referrer host: hostname[ pathname]`. Keep hostname only.
+ * Do not keep path/query (may be identifying). UNKNOWN if the token is not a host.
+ */
+function hostFromReferrerLine(raw: string | undefined): string | undefined {
+  if (!raw) return undefined;
+  const token = raw.trim().split(/\s+/)[0]?.replace(/[/,]+$/g, "") ?? "";
+  if (!token || /@/.test(token)) return undefined;
+  if (!/^[a-z0-9.-]+$/i.test(token)) return undefined;
+  return token.toLowerCase();
 }
 
 function attributionLine(block: string | undefined, label: string): string | undefined {

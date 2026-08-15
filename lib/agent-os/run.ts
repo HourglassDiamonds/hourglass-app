@@ -11,7 +11,12 @@ import { randomUUID } from "node:crypto";
 import { loadAllSources, getFixtureReportingPeriod, getLiveAgentOsReportingPeriod } from "./adapters/load";
 import type { AdapterMode } from "./adapters/types";
 import { runBusinessIntelligence } from "./executives/business-intelligence";
-import { loadClientAttentionSourcesAsync } from "./bi/client-attention";
+import {
+  loadClientAttentionSourcesAsync,
+  fetchHubSpotClientAttentionLive,
+  DEFAULT_CLIENT_ATTENTION_THRESHOLDS,
+} from "./bi/client-attention";
+import { ATTRIBUTION_PRIMARY_LOOKBACK_DAYS } from "./bi/attribution";
 import { emptyBusinessIntelligenceOutput } from "./bi/empty";
 import {
   emptyWebsiteQaSnapshot,
@@ -237,10 +242,33 @@ export async function runAgentOsBrief(
         (s) => s.health.retrievalState === "fixture",
       ));
 
-  const clientAttentionSources =
+  const liveCrm =
     skipSynthesis || mode !== "live"
-      ? undefined
-      : await loadClientAttentionSourcesAsync({ mode }).catch(() => undefined);
+      ? {
+          clientAttentionSources: undefined as
+            | Awaited<ReturnType<typeof loadClientAttentionSourcesAsync>>
+            | undefined,
+          attributionLive: undefined as
+            | Awaited<ReturnType<typeof fetchHubSpotClientAttentionLive>>
+            | undefined,
+        }
+      : await Promise.all([
+          loadClientAttentionSourcesAsync({ mode }).catch(() => undefined),
+          fetchHubSpotClientAttentionLive({
+            thresholds: {
+              lookbackDays: ATTRIBUTION_PRIMARY_LOOKBACK_DAYS,
+            },
+          }).catch(() => undefined),
+        ]).then(([clientAttentionSources, attributionLive]) => ({
+          clientAttentionSources,
+          attributionLive,
+        }));
+
+  const clientAttentionSources = liveCrm.clientAttentionSources;
+  const attributionLive = liveCrm.attributionLive;
+  const attributionNinetyDayUsable =
+    attributionLive?.concierge.status === "ok" ||
+    attributionLive?.concierge.status === "empty";
 
   const websiteQa = skipSynthesis
     ? emptyWebsiteQaSnapshot()
@@ -273,6 +301,17 @@ export async function runAgentOsBrief(
         mode,
         clientAttentionSources,
         websiteQa,
+        attributionConcierge: attributionNinetyDayUsable
+          ? attributionLive?.concierge
+          : clientAttentionSources?.concierge,
+        attributionCrmReadLookbackDays: attributionNinetyDayUsable
+          ? ATTRIBUTION_PRIMARY_LOOKBACK_DAYS
+          : DEFAULT_CLIENT_ATTENTION_THRESHOLDS.lookbackDays,
+        attributionCrmRecordCap:
+          DEFAULT_CLIENT_ATTENTION_THRESHOLDS.maxHubSpotDeals,
+        attributionCrmRecordsReturned: attributionNinetyDayUsable
+          ? attributionLive?.hubspot.deals.length
+          : clientAttentionSources?.hubspot.deals.length,
       });
 
   // Search Strategy still runs repository authority analysis when GSC is down,
