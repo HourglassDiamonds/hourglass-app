@@ -12,8 +12,8 @@ import { loadAllSources, getFixtureReportingPeriod, getLiveAgentOsReportingPerio
 import type { AdapterMode } from "./adapters/types";
 import { runBusinessIntelligence } from "./executives/business-intelligence";
 import {
-  loadClientAttentionSourcesAsync,
-  fetchHubSpotClientAttentionLive,
+  loadClientAttentionSources,
+  loadSharedLiveCrmForAgentOs,
   DEFAULT_CLIENT_ATTENTION_THRESHOLDS,
 } from "./bi/client-attention";
 import { ATTRIBUTION_PRIMARY_LOOKBACK_DAYS } from "./bi/attribution";
@@ -246,23 +246,32 @@ export async function runAgentOsBrief(
     skipSynthesis || mode !== "live"
       ? {
           clientAttentionSources: undefined as
-            | Awaited<ReturnType<typeof loadClientAttentionSourcesAsync>>
+            | ReturnType<typeof loadClientAttentionSources>
             | undefined,
           attributionLive: undefined as
-            | Awaited<ReturnType<typeof fetchHubSpotClientAttentionLive>>
+            | Awaited<ReturnType<typeof loadSharedLiveCrmForAgentOs>>["attribution"]
             | undefined,
         }
-      : await Promise.all([
-          loadClientAttentionSourcesAsync({ mode }).catch(() => undefined),
-          fetchHubSpotClientAttentionLive({
-            thresholds: {
-              lookbackDays: ATTRIBUTION_PRIMARY_LOOKBACK_DAYS,
-            },
-          }).catch(() => undefined),
-        ]).then(([clientAttentionSources, attributionLive]) => ({
-          clientAttentionSources,
-          attributionLive,
-        }));
+      : await loadSharedLiveCrmForAgentOs({
+          // One 90-day CRM reconstruction per live run. Client Attention
+          // derives its 30-day view in memory — no second HubSpot search.
+          thresholds: {
+            lookbackDays: ATTRIBUTION_PRIMARY_LOOKBACK_DAYS,
+          },
+        })
+          .then((shared) => ({
+            clientAttentionSources: loadClientAttentionSources({
+              mode,
+              nowIso: shared.attribution.hubspot.collectedAt,
+              hubspot: { liveResult: shared.clientAttention.hubspot },
+              concierge: { liveResult: shared.clientAttention.concierge },
+            }),
+            attributionLive: shared.attribution,
+          }))
+          .catch(() => ({
+            clientAttentionSources: undefined,
+            attributionLive: undefined,
+          }));
 
   const clientAttentionSources = liveCrm.clientAttentionSources;
   const attributionLive = liveCrm.attributionLive;

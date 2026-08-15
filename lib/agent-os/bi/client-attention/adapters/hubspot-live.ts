@@ -12,6 +12,7 @@ import {
 import { normalizeEmail, normalizePhone } from "../hash";
 import type { ClientAttentionThresholds } from "../thresholds";
 import { DEFAULT_CLIENT_ATTENTION_THRESHOLDS } from "../thresholds";
+import { ATTRIBUTION_PRIMARY_LOOKBACK_DAYS } from "../../attribution/types";
 import {
   enrichContactsFromConciergeDeals,
   reconstructConciergeFromHubSpot,
@@ -41,6 +42,7 @@ const CONTACT_PROPERTIES = [
   "notes_next_activity_date",
   "hubspot_owner_id",
   "preferred_contact_method",
+  "lastmodifieddate",
   "hs_lastmodifieddate",
   "createdate",
 ] as const;
@@ -90,6 +92,8 @@ export type FetchHubSpotLiveOptions = {
   /** Injected for tests — never use write methods. */
   fetchJson?: typeof hubspotFetchJson;
   token?: string;
+  /** Observability for tests / one-off verification. Path only — no bodies. */
+  onRequest?: (path: string) => void;
 };
 
 export type HubSpotLiveFetchBundle = {
@@ -109,7 +113,11 @@ export async function fetchHubSpotClientAttentionLive(
     ...DEFAULT_CLIENT_ATTENTION_THRESHOLDS,
     ...options.thresholds,
   };
-  const fetchJson = options.fetchJson ?? hubspotFetchJson;
+  const innerFetch = options.fetchJson ?? hubspotFetchJson;
+  const fetchJson: typeof hubspotFetchJson = async (path, init, fetchOptions) => {
+    options.onRequest?.(path);
+    return innerFetch(path, init, fetchOptions);
+  };
   const { token, source } = options.token
     ? { token: options.token, source: "injected" as const }
     : resolveHubSpotToken();
@@ -126,8 +134,10 @@ export async function fetchHubSpotClientAttentionLive(
     };
   }
 
+  const nowMs = options.nowIso ? Date.parse(options.nowIso) : Date.now();
   const lookbackMs =
-    Date.now() - thresholds.lookbackDays * 24 * 60 * 60 * 1000;
+    (Number.isFinite(nowMs) ? nowMs : Date.now()) -
+    thresholds.lookbackDays * 24 * 60 * 60 * 1000;
   const lookbackValue = String(lookbackMs);
 
   try {
@@ -294,6 +304,163 @@ export async function fetchHubSpotClientAttentionLive(
   }
 }
 
+export type SharedLiveCrmLoad = {
+  attribution: HubSpotLiveFetchBundle;
+  clientAttention: HubSpotLiveFetchBundle;
+  requestPaths: string[];
+};
+
+/**
+ * One bounded HubSpot reconstruction per Agent OS run.
+ * Attribution consumes the requested 90-day search window.
+ * Client Attention derives its 30-day view in memory — no second CRM search.
+ */
+export async function loadSharedLiveCrmForAgentOs(
+  options: FetchHubSpotLiveOptions & {
+    clientAttentionLookbackDays?: number;
+  } = {},
+): Promise<SharedLiveCrmLoad> {
+  const requestPaths: string[] = [];
+  const attributionLookbackDays =
+    options.thresholds?.lookbackDays ?? ATTRIBUTION_PRIMARY_LOOKBACK_DAYS;
+  const attribution = await fetchHubSpotClientAttentionLive({
+    ...options,
+    thresholds: {
+      ...options.thresholds,
+      lookbackDays: attributionLookbackDays,
+    },
+    onRequest: (path) => {
+      requestPaths.push(path);
+      options.onRequest?.(path);
+    },
+  });
+  const clientAttention = sliceHubSpotLiveBundleForLookback(attribution, {
+    lookbackDays:
+      options.clientAttentionLookbackDays ??
+      DEFAULT_CLIENT_ATTENTION_THRESHOLDS.lookbackDays,
+    nowIso: options.nowIso ?? attribution.hubspot.collectedAt,
+    maxHubSpotDeals:
+      options.thresholds?.maxHubSpotDeals ??
+      DEFAULT_CLIENT_ATTENTION_THRESHOLDS.maxHubSpotDeals,
+    maxHubSpotContacts:
+      options.thresholds?.maxHubSpotContacts ??
+      DEFAULT_CLIENT_ATTENTION_THRESHOLDS.maxHubSpotContacts,
+  });
+  return { attribution, clientAttention, requestPaths };
+}
+
+/**
+ * Filter a shared CRM reconstruction to a shorter last-modified window.
+ * Does not call HubSpot. Preserves failed / not-configured status.
+ */
+export function sliceHubSpotLiveBundleForLookback(
+  bundle: HubSpotLiveFetchBundle,
+  options: {
+    lookbackDays: number;
+    nowIso?: string;
+    maxHubSpotDeals?: number;
+    maxHubSpotContacts?: number;
+  },
+): HubSpotLiveFetchBundle {
+  if (
+    bundle.hubspot.status === "failed" ||
+    bundle.hubspot.status === "not-configured"
+  ) {
+    return bundle;
+  }
+
+  const nowIso = options.nowIso ?? bundle.hubspot.collectedAt;
+  const maxDeals =
+    options.maxHubSpotDeals ??
+    DEFAULT_CLIENT_ATTENTION_THRESHOLDS.maxHubSpotDeals;
+  const maxContacts =
+    options.maxHubSpotContacts ??
+    DEFAULT_CLIENT_ATTENTION_THRESHOLDS.maxHubSpotContacts;
+  const cutoffMs =
+    Date.parse(nowIso) - options.lookbackDays * 24 * 60 * 60 * 1000;
+
+  const deals = bundle.hubspot.deals
+    .filter((deal) => recordInLookbackWindow(deal, cutoffMs))
+    .slice(0, maxDeals);
+  const keptDealIds = new Set(deals.map((deal) => deal.dealId));
+  const contactIdsFromDeals = new Set(deals.flatMap((deal) => deal.contactIds));
+
+  const contacts = bundle.hubspot.contacts
+    .filter(
+      (contact) =>
+        recordInLookbackWindow(contact, cutoffMs) ||
+        contactIdsFromDeals.has(contact.contactId),
+    )
+    .slice(0, maxContacts);
+  const keptContactIds = new Set(contacts.map((contact) => contact.contactId));
+
+  const tasks = bundle.hubspot.tasks.filter(
+    (task) =>
+      recordInLookbackWindow(task, cutoffMs) ||
+      (task.contactId != null && keptContactIds.has(task.contactId)) ||
+      (task.dealId != null && keptDealIds.has(task.dealId)),
+  );
+
+  const dealDescriptions: Record<string, string | undefined> = {};
+  for (const dealId of keptDealIds) {
+    if (Object.prototype.hasOwnProperty.call(bundle.dealDescriptions, dealId)) {
+      dealDescriptions[dealId] = bundle.dealDescriptions[dealId];
+    }
+  }
+
+  const recordCount = contacts.length + deals.length + tasks.length;
+  const hubspot: HubSpotAdapterResult = {
+    ...bundle.hubspot,
+    status: recordCount ? bundle.hubspot.status : "empty",
+    recordCount,
+    contacts,
+    deals,
+    tasks,
+    configurationNote: [
+      bundle.hubspot.configurationNote,
+      `Client Attention ${options.lookbackDays}d view derived in-memory from the shared CRM read. No second HubSpot search.`,
+    ]
+      .filter(Boolean)
+      .join(" "),
+  };
+
+  const concierge =
+    bundle.concierge.status === "failed" ||
+    bundle.concierge.status === "not-configured"
+      ? bundle.concierge
+      : reconstructConciergeFromHubSpot({
+          deals,
+          contacts,
+          dealDescriptions,
+          nowIso,
+          maxSubmissions: maxContacts,
+        });
+
+  return { hubspot, concierge, dealDescriptions };
+}
+
+function recordInLookbackWindow(
+  record: {
+    lastModifiedAt?: string;
+    lastActivityAt?: string;
+    createdAt?: string;
+    dueAt?: string;
+    completedAt?: string;
+  },
+  cutoffMs: number,
+): boolean {
+  const iso =
+    record.lastModifiedAt ||
+    record.lastActivityAt ||
+    record.createdAt ||
+    record.dueAt ||
+    record.completedAt;
+  if (!iso) return true;
+  const t = Date.parse(iso);
+  if (Number.isNaN(t)) return true;
+  return t >= cutoffMs;
+}
+
 async function searchObjects(
   fetchJson: typeof hubspotFetchJson,
   token: string,
@@ -444,6 +611,10 @@ function normalizeContact(obj: HubSpotObject): NormalizedHubSpotContact {
       hubspotDateToIso(p.notes_last_contacted) ||
       hubspotDateToIso(p.hs_lastmodifieddate) ||
       hubspotDateToIso(obj.updatedAt),
+    lastModifiedAt:
+      hubspotDateToIso(p.lastmodifieddate) ||
+      hubspotDateToIso(p.hs_lastmodifieddate) ||
+      hubspotDateToIso(obj.updatedAt),
     nextActivityAt: hubspotDateToIso(p.notes_next_activity_date),
     ownerId: p.hubspot_owner_id || undefined,
     conciergePreferredContact: p.preferred_contact_method || undefined,
@@ -471,6 +642,9 @@ function normalizeDeal(obj: HubSpotObject): NormalizedHubSpotDeal {
       hubspotDateToIso(p.notes_last_updated) ||
       hubspotDateToIso(p.hs_lastmodifieddate) ||
       hubspotDateToIso(obj.updatedAt),
+    lastModifiedAt:
+      hubspotDateToIso(p.hs_lastmodifieddate) ||
+      hubspotDateToIso(obj.updatedAt),
     createdAt: hubspotDateToIso(p.createdate) || hubspotDateToIso(obj.createdAt),
     closed,
     deferred: /deferred|nurture|on.?hold/i.test(p.dealstage || ""),
@@ -492,6 +666,9 @@ function normalizeTask(obj: HubSpotObject): NormalizedHubSpotTask {
     dealId: obj.associations?.deals?.results?.[0]?.id,
     subject: p.hs_task_subject || undefined,
     dueAt: hubspotDateToIso(p.hs_timestamp),
+    lastModifiedAt:
+      hubspotDateToIso(p.hs_lastmodifieddate) ||
+      hubspotDateToIso(obj.updatedAt),
     status,
     completedAt: hubspotDateToIso(p.hs_task_completion_date),
   };

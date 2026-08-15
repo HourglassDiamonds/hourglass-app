@@ -43,17 +43,40 @@ export function sanitizeHubSpotErrorBody(text: string, max = 400): string {
     .slice(0, max);
 }
 
+/** Parse HTTP Retry-After (delta-seconds or HTTP-date). */
+export function parseHubSpotRetryAfterSeconds(
+  value: string | null | undefined,
+): number | undefined {
+  if (!value?.trim()) return undefined;
+  const seconds = Number.parseInt(value.trim(), 10);
+  if (Number.isFinite(seconds) && seconds >= 0) {
+    return seconds;
+  }
+  const dateMs = Date.parse(value);
+  if (Number.isNaN(dateMs)) return undefined;
+  const delta = Math.ceil((dateMs - Date.now()) / 1000);
+  return delta >= 0 ? delta : 0;
+}
+
 export class HubSpotRequestError extends Error {
   readonly status: number;
   readonly path: string;
   readonly hubspotMessage: string;
+  /** Present when HubSpot sent Retry-After. Not used for unbounded retry. */
+  readonly retryAfterSeconds?: number;
 
-  constructor(status: number, path: string, hubspotMessage: string) {
+  constructor(
+    status: number,
+    path: string,
+    hubspotMessage: string,
+    retryAfterSeconds?: number,
+  ) {
     super("hubspot_request_failed");
     this.name = "HubSpotRequestError";
     this.status = status;
     this.path = path;
     this.hubspotMessage = hubspotMessage;
+    this.retryAfterSeconds = retryAfterSeconds;
   }
 }
 
@@ -70,6 +93,13 @@ export type HubSpotFetchOptions = {
   fetchImpl?: typeof fetch;
 };
 
+/**
+ * Single-attempt HubSpot HTTP JSON helper.
+ * Captures Retry-After when present. Does not retry.
+ * Agent OS rate-limit resilience is per-run read reuse (one CRM
+ * reconstruction), not a retry loop. HubSpot search is ~4 req/s;
+ * Retry-After is diagnostic, not an automatic wait-and-repeat driver.
+ */
 export async function hubspotFetchJson<T>(
   path: string,
   init: RequestInit,
@@ -103,12 +133,22 @@ export async function hubspotFetchJson<T>(
     if (!response.ok) {
       const raw = await response.text().catch(() => "");
       const hubspotMessage = sanitizeHubSpotErrorBody(raw);
+      const retryAfterSeconds = parseHubSpotRetryAfterSeconds(
+        response.headers.get("Retry-After") ??
+          response.headers.get("retry-after"),
+      );
       console.error("[concierge-hubspot]", {
         path,
         status: response.status,
+        retryAfterSeconds,
         message: hubspotMessage || undefined,
       });
-      throw new HubSpotRequestError(response.status, path, hubspotMessage);
+      throw new HubSpotRequestError(
+        response.status,
+        path,
+        hubspotMessage,
+        retryAfterSeconds,
+      );
     }
 
     if (response.status === 204) {

@@ -89,6 +89,10 @@ export {
 } from "./adapters/load";
 export { fetchHubSpotClientAttentionLive } from "./adapters/hubspot-live";
 export {
+  loadSharedLiveCrmForAgentOs,
+  sliceHubSpotLiveBundleForLookback,
+} from "./adapters/hubspot-live";
+export {
   conciergeReconstructionQualityReport,
   parseConciergeDealDescription,
   reconstructConciergeFromHubSpot,

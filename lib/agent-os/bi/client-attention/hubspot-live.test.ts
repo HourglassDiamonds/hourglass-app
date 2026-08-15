@@ -10,7 +10,10 @@ import {
   parseConciergeDealDescription,
   reconstructConciergeFromHubSpot,
 } from "./adapters/concierge-from-hubspot";
-import { fetchHubSpotClientAttentionLive } from "./adapters/hubspot-live";
+import {
+  fetchHubSpotClientAttentionLive,
+  sliceHubSpotLiveBundleForLookback,
+} from "./adapters/hubspot-live";
 import { gmailLiveReadiness } from "./adapters/gmail";
 
 const SAMPLE_DESCRIPTION = [
@@ -232,5 +235,92 @@ describe("hubspot live fetch (mocked)", () => {
     assert.ok(
       bundle.hubspot.missingConfiguration?.includes("crm.objects.contacts.read"),
     );
+  });
+
+  it("treats 429 as a failed CRM read without fabricating records", async () => {
+    const fetchJson = async (path: string) => {
+      throw new HubSpotRequestError(429, path, "secondly limit", 1);
+    };
+
+    const bundle = await fetchHubSpotClientAttentionLive({
+      token: "pat-test-token",
+      fetchJson: fetchJson as never,
+    });
+    assert.equal(bundle.hubspot.status, "failed");
+    assert.equal(bundle.hubspot.recordCount, 0);
+    assert.equal(bundle.concierge.submissions.length, 0);
+  });
+});
+
+describe("sliceHubSpotLiveBundleForLookback", () => {
+  const nowIso = "2026-08-15T16:00:00.000Z";
+
+  it("derives a 30-day Client Attention view without HubSpot calls and keeps deal-linked contacts", () => {
+    const sliced = sliceHubSpotLiveBundleForLookback(
+      {
+        hubspot: {
+          sourceType: "hubspot",
+          status: "ok",
+          collectedAt: nowIso,
+          recordCount: 3,
+          contacts: [
+            {
+              contactId: "c-recent",
+              lastModifiedAt: "2026-08-03T16:00:00.000Z",
+            },
+            {
+              contactId: "c-linked-older",
+              lastModifiedAt: "2026-06-21T16:00:00.000Z",
+            },
+            {
+              contactId: "c-unlinked-older",
+              lastModifiedAt: "2026-06-21T16:00:00.000Z",
+            },
+          ],
+          deals: [
+            {
+              dealId: "d-recent",
+              contactIds: ["c-recent", "c-linked-older"],
+              lastModifiedAt: "2026-08-03T16:00:00.000Z",
+              createdAt: "2026-08-03T16:00:00.000Z",
+            },
+            {
+              dealId: "d-older",
+              contactIds: ["c-unlinked-older"],
+              lastModifiedAt: "2026-06-21T16:00:00.000Z",
+              createdAt: "2026-06-21T16:00:00.000Z",
+            },
+          ],
+          tasks: [],
+        },
+        concierge: {
+          sourceType: "concierge",
+          status: "ok",
+          collectedAt: nowIso,
+          recordCount: 0,
+          submissions: [],
+        },
+        dealDescriptions: {
+          "d-recent": SAMPLE_DESCRIPTION,
+          "d-older": SAMPLE_DESCRIPTION.replace("sub-abc-123", "sub-older"),
+        },
+      },
+      { lookbackDays: 30, nowIso },
+    );
+
+    assert.deepEqual(
+      sliced.hubspot.deals.map((d) => d.dealId),
+      ["d-recent"],
+    );
+    assert.deepEqual(
+      sliced.hubspot.contacts.map((c) => c.contactId).sort(),
+      ["c-linked-older", "c-recent"],
+    );
+    assert.equal(
+      sliced.hubspot.contacts.some((c) => c.contactId === "c-unlinked-older"),
+      false,
+    );
+    assert.equal(sliced.concierge.submissions.length, 1);
+    assert.equal(sliced.concierge.submissions[0]?.submissionId, "sub-abc-123");
   });
 });

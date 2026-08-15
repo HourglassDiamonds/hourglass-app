@@ -4,6 +4,7 @@ import {
   HubSpotConfigError,
   HubSpotRequestError,
   hubspotFetchJson,
+  parseHubSpotRetryAfterSeconds,
   resolveHubSpotToken,
   sanitizeHubSpotErrorBody,
 } from "./hubspot-client";
@@ -48,6 +49,18 @@ describe("sanitizeHubSpotErrorBody", () => {
     assert.doesNotMatch(sanitized, /user@example.com/i);
     assert.match(sanitized, /Bearer \[redacted\]/);
     assert.match(sanitized, /\[redacted-email\]/);
+  });
+});
+
+describe("parseHubSpotRetryAfterSeconds", () => {
+  it("parses delta-seconds and HTTP-date Retry-After", () => {
+    assert.equal(parseHubSpotRetryAfterSeconds("2"), 2);
+    assert.equal(parseHubSpotRetryAfterSeconds("0"), 0);
+    assert.equal(parseHubSpotRetryAfterSeconds(""), undefined);
+    assert.equal(parseHubSpotRetryAfterSeconds(null), undefined);
+    const future = new Date(Date.now() + 5_000).toUTCString();
+    const parsed = parseHubSpotRetryAfterSeconds(future);
+    assert.ok(parsed !== undefined && parsed >= 4 && parsed <= 6);
   });
 });
 
@@ -150,5 +163,44 @@ describe("hubspotFetchJson", () => {
       },
     );
     assert.equal(result, null);
+  });
+
+  it("captures Retry-After on 429 and does not retry", async () => {
+    let attempts = 0;
+    await assert.rejects(
+      () =>
+        hubspotFetchJson(
+          "/crm/v3/objects/contacts/search",
+          { method: "POST", body: "{}" },
+          {
+            token: "pat-ok",
+            fetchImpl: async () => {
+              attempts += 1;
+              return new Response(
+                JSON.stringify({
+                  status: "error",
+                  message: "You have reached your secondly limit.",
+                  errorType: "RATE_LIMIT",
+                }),
+                {
+                  status: 429,
+                  headers: {
+                    "Retry-After": "1",
+                    "X-HubSpot-RateLimit-Secondly": "4",
+                    "X-HubSpot-RateLimit-Secondly-Remaining": "0",
+                    "X-HubSpot-RateLimit-Interval-Milliseconds": "10000",
+                  },
+                },
+              );
+            },
+          },
+        ),
+      (error: unknown) =>
+        error instanceof HubSpotRequestError &&
+        error.status === 429 &&
+        error.retryAfterSeconds === 1 &&
+        error.path === "/crm/v3/objects/contacts/search",
+    );
+    assert.equal(attempts, 1);
   });
 });

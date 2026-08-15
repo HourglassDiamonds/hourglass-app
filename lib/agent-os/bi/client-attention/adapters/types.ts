@@ -53,6 +53,7 @@ export type NormalizedHubSpotContact = {
   lifecycleStage?: string;
   leadStatus?: string;
   lastActivityAt?: string;
+  lastModifiedAt?: string;
   nextActivityAt?: string;
   ownerId?: string;
   sourceAttribution?: string;
@@ -75,6 +76,7 @@ export type NormalizedHubSpotDeal = {
   proposalDate?: string;
   appointmentDate?: string;
   lastActivityAt?: string;
+  lastModifiedAt?: string;
   nextActivityAt?: string;
   createdAt?: string;
   closed?: boolean;
@@ -87,6 +89,7 @@ export type NormalizedHubSpotTask = {
   dealId?: string;
   subject?: string;
   dueAt?: string;
+  lastModifiedAt?: string;
   status: "open" | "completed" | "unknown";
   completedAt?: string;
 };
