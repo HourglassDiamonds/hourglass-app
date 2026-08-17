@@ -18,6 +18,13 @@ import {
 } from "./fixtures";
 import { resolveClientIdentities } from "./identity";
 import { rankClientAttentionSignals } from "./ranking";
+import {
+  countClientOpsSeverities,
+  resolveClientOpsHealth,
+  selectFounderClientOpsExceptions,
+  suppressClientOpsOverlappingConciergeSla,
+  type ConciergeSlaOverdueIdentity,
+} from "./client-ops";
 import { clientAttentionToRecommendations } from "./recommendations";
 import { redactClientAttentionAudit } from "./redaction";
 import {
@@ -98,6 +105,40 @@ export {
   reconstructConciergeFromHubSpot,
 } from "./adapters/concierge-from-hubspot";
 export { gmailLiveReadiness } from "./adapters/gmail";
+export {
+  classifyClientOpsPermissionTier,
+  clientOpsMayExecute,
+  CLIENT_OPS_GREEN_CAPABILITIES,
+  CLIENT_OPS_YELLOW_CAPABILITIES,
+  CLIENT_OPS_RED_CAPABILITIES,
+} from "./permissions";
+export {
+  V1_CLIENT_OPS_SIGNAL_TYPES,
+  HUBSPOT_V1_CLIENT_OPS_SIGNAL_TYPES,
+  GMAIL_DEPENDENT_CLIENT_OPS_SIGNAL_TYPES,
+  CLIENT_OPS_HEALTH_STATES,
+  CLIENT_OPS_SEVERITIES,
+  isV1ClientOpsSignalType,
+  isHubSpotV1ClientOpsSignalType,
+  isGmailDependentClientOpsSignalType,
+  hubSpotLiveCanProveInboundWithoutLaterReply,
+  gmailLiveCanConfirmReplyState,
+  severityForClientOpsSignal,
+  selectFounderClientOpsExceptions,
+  resolveClientOpsHealth,
+  clientAttentionSignalOverlapsConciergeSla,
+  founderFacingContainsDisallowedAmount,
+} from "./client-ops";
+export type {
+  ClientOpsHealth,
+  ClientOpsSeverity,
+  ConciergeSlaOverdueIdentity,
+  ClientOpsSeverityCounts,
+} from "./client-ops";
+export {
+  injectUrgentClientOpsIntoSurfacePool,
+  isUrgentClientOpsRecommendation,
+} from "./cos-escalation";
 
 export type ClientAttentionFixturePreset =
   | "success"
@@ -115,6 +156,12 @@ export type RunClientAttentionAnalysisInput = {
   /** Prefetched live/fixture bundle — skips adapter load when provided. */
   prefetchedSources?: ClientAttentionSourceBundle;
   fixturePreset?: ClientAttentionFixturePreset;
+  /**
+   * Overdue Concierge SLA identities (deal/contact/submission ids only).
+   * When the same object is already a first-contact SLA exception, Client Ops
+   * suppresses the duplicate founder action.
+   */
+  conciergeSlaOverdueIdentities?: ConciergeSlaOverdueIdentity[];
 };
 
 export function runClientAttentionAnalysis(
@@ -188,15 +235,36 @@ function runClientAttentionAnalysisUnsafe(
     nowIso,
     thresholds,
   });
-  const rankedSignals = rankClientAttentionSignals(generated.signals);
-  const recommendations = clientAttentionToRecommendations(
+  const signals = suppressClientOpsOverlappingConciergeSla(
+    generated.signals,
+    input.conciergeSlaOverdueIdentities,
+  );
+  const rankedSignals = rankClientAttentionSignals(signals);
+  const sourceAvailability = toAvailability(bundle);
+  const severityCounts = countClientOpsSeverities(
     rankedSignals,
+    sourceAvailability.gmail,
+  );
+  const clientOpsHealth = resolveClientOpsHealth({
+    hubspotAvailability: sourceAvailability.hubspot,
+    actionableCount:
+      severityCounts.critical + severityCounts.action,
+  });
+  const founderExceptions = selectFounderClientOpsExceptions(
+    rankedSignals,
+    clientOpsHealth,
+    undefined,
+    sourceAvailability.gmail,
+  );
+  const recommendations = clientAttentionToRecommendations(
+    founderExceptions,
     input.reportingPeriod,
     nowIso,
   );
-  const backlogCandidates = buildClientActionBacklogCandidates(rankedSignals);
+  const backlogCandidates = buildClientActionBacklogCandidates(
+    founderExceptions,
+  );
 
-  const sourceAvailability = toAvailability(bundle);
   const dataGaps = buildDataGaps(
     sourceAvailability,
     identityResult.possibleDuplicatePairs.length,
@@ -204,25 +272,29 @@ function runClientAttentionAnalysisUnsafe(
   );
 
   const signalsByType: Partial<Record<ClientAttentionSignalType, number>> = {};
-  for (const s of generated.signals) {
+  for (const s of signals) {
     signalsByType[s.signalType] = (signalsByType[s.signalType] ?? 0) + 1;
   }
 
   const facts: string[] = [];
   const inferences: string[] = [];
-  if (rankedSignals[0]) {
+  if (clientOpsHealth === "exceptions" && founderExceptions[0]) {
     facts.push(
-      `Top client attention: ${rankedSignals[0].signal.displayName} — ${rankedSignals[0].signal.signalType}.`,
+      `Top client attention: ${founderExceptions[0].signal.displayName} — ${founderExceptions[0].signal.signalType}.`,
     );
   }
-  if (sourceAvailability.gmail === "not-configured" || sourceAvailability.gmail === "failed") {
+  if (clientOpsHealth === "unknown") {
+    inferences.push(
+      "Client Ops is UNKNOWN because HubSpot CRM evidence was unavailable; this is not a finding of zero client issues.",
+    );
+  }
+  if (
+    clientOpsHealth !== "unknown" &&
+    (sourceAvailability.gmail === "not-configured" ||
+      sourceAvailability.gmail === "failed")
+  ) {
     inferences.push(
       "Gmail client-thread checks were incomplete; HubSpot/Concierge may still contribute.",
-    );
-  }
-  if (sourceAvailability.hubspot === "not-configured" || sourceAvailability.hubspot === "failed") {
-    inferences.push(
-      "HubSpot CRM reads were incomplete; Gmail/Concierge fixtures may still contribute.",
     );
   }
   if (preset === "recovery") {
@@ -234,7 +306,7 @@ function runClientAttentionAnalysisUnsafe(
     reportingPeriod: input.reportingPeriod,
     mode: input.mode,
     sourceAvailability,
-    signals: generated.signals,
+    signals,
     rankedSignals,
     buyerConcerns: generated.buyerConcerns,
     backlogCandidates,
@@ -253,6 +325,8 @@ function runClientAttentionAnalysisUnsafe(
     facts,
     inferences,
     redacted: false,
+    clientOpsHealth,
+    clientOpsSeverityCounts: severityCounts,
   };
 
   const audit = redactClientAttentionAudit(auditRaw);
@@ -387,9 +461,9 @@ function buildDataGaps(
       scope:
         "Client pipeline intelligence was incomplete this morning because HubSpot and Gmail data were unavailable.",
       affectedAnalyses: ["client-attention"],
-      founderRelevance: "prerequisite",
+      founderRelevance: "diagnostic",
       resolutionPrerequisite: "Restore at least one client data source.",
-      suppressFromFounderRanking: false,
+      suppressFromFounderRanking: true,
     });
   }
 

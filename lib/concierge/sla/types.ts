@@ -102,3 +102,10 @@ export const CONCIERGE_SLA_MAX_TASK_RECOVERY_ATTEMPTS = 5;
 
 export const CONCIERGE_SLA_OVERDUE_RECOMMENDATION_ID =
   "concierge-sla:overdue-live";
+
+/** Non-PII identity keys for overlapping Client Ops first-contact suppression. */
+export type ConciergeSlaOverdueIdentity = {
+  dealId: string;
+  contactId: string | null;
+  submissionId: string | null;
+};

@@ -45,7 +45,9 @@ export function gmailCanConfirmReplyState(
 export function isTerminalDeal(deal: NormalizedHubSpotDeal): boolean {
   if (deal.closed || deal.deferred) return true;
   const stage = (deal.stage || "").toLowerCase();
-  return /closedwon|closedlost|closed.?won|closed.?lost|lost|disqualified|spam|test|archived|junk/.test(
+  // Token-bounded: do not treat "appointmentscheduled" / similar as inactive.
+  if (/(^|[^a-z0-9])inactive([^a-z0-9]|$)/.test(stage)) return true;
+  return /closedwon|closedlost|closed.?won|closed.?lost|lost|cancelled|canceled|disqualified|spam|test|archived|junk/.test(
     stage,
   );
 }
@@ -436,8 +438,40 @@ export function generateClientAttentionSignals(input: {
       }
     }
 
-    const target = deal.proposalDate || deal.targetDate || deal.appointmentDate;
-    if (target) {
+    const approachingUrgency = (daysUntil: number): Urgency => {
+      if (daysUntil <= 3) return "critical";
+      if (daysUntil <= 7) return "high";
+      return "low";
+    };
+
+    const appointment = deal.appointmentDate;
+    if (appointment && advanced) {
+      const daysUntil = (Date.parse(appointment) - now) / 86400_000;
+      if (daysUntil >= 0 && daysUntil <= thresholds.proposalApproachingDays) {
+        push(
+          buildSignal({
+            identity,
+            signalType: "appointment-approaching",
+            urgency: approachingUrgency(daysUntil),
+            confidence: "high",
+            responseState: "not-applicable",
+            summary: `An appointment date is about ${Math.round(daysUntil)} days away.`,
+            whyItMatters:
+              "Upcoming appointments need a confirmed next step before the window closes.",
+            recommendedAction: `Confirm the appointment and outstanding decisions with ${identity.displayName}.`,
+            targetDate: appointment,
+            evidence: [
+              evidence("hubspot", "hubspot-deal", deal.dealId, {
+                observation: `Appointment date within ${thresholds.proposalApproachingDays}d.`,
+              }),
+            ],
+          }),
+        );
+      }
+    }
+
+    const target = deal.proposalDate || deal.targetDate;
+    if (target && target !== appointment) {
       const daysUntil = (Date.parse(target) - now) / 86400_000;
       if (
         daysUntil >= 0 &&
@@ -448,8 +482,7 @@ export function generateClientAttentionSignals(input: {
           buildSignal({
             identity,
             signalType: "proposal-date-approaching",
-            urgency:
-              daysUntil <= 3 ? "critical" : daysUntil <= 7 ? "high" : "medium",
+            urgency: approachingUrgency(daysUntil),
             confidence: "high",
             responseState: "not-applicable",
             summary: `A target date is about ${Math.round(daysUntil)} days away.`,

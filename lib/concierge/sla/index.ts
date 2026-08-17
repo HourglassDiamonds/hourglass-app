@@ -5,6 +5,7 @@ export type {
   ConciergeSlaUpsertInput,
   ConciergeSlaPatch,
   ConciergeSlaSetupFailedComponent,
+  ConciergeSlaOverdueIdentity,
 } from "./types";
 export {
   CONCIERGE_SLA_DUE_HOURS,
@@ -55,6 +56,7 @@ export {
 export { setupConciergeSlaAfterDeal } from "./setup";
 export {
   countOverdueConciergeSla,
+  listOverdueConciergeSlaIdentities,
   runConciergeSlaWatchdog,
 } from "./watchdog";
 export {

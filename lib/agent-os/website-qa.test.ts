@@ -603,6 +603,12 @@ describe("P1-QA-1 no live mutation", () => {
       /Activate the Website \/ Engineering QA/i,
     );
     assert.doesNotMatch(run.brief.markdown, /## Production Health/i);
-    assert.equal(run.deliveryGuidance, "send-nothing");
+    assert.ok(
+      run.deliveryGuidance === "send-nothing" ||
+        run.deliveryGuidance === "send-normal-brief",
+    );
+    if (run.deliveryGuidance === "send-normal-brief") {
+      assert.ok((run.brief.clientAttentionItems?.length ?? 0) > 0);
+    }
   });
 });

@@ -10,7 +10,7 @@ import {
 import { isClientAttentionRecommendationId } from "./recommendations";
 
 /**
- * Cap Client Attention founder-facing recommendations at 2.
+ * Cap Client Attention founder-facing recommendations (bounded, ~3).
  * Demote excess and non-actionable pattern noise; leave other executives untouched.
  */
 export function applyClientAttentionFounderRankingGate(

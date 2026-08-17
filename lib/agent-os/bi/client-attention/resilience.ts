@@ -63,6 +63,8 @@ export function emptyClientAttentionAudit(
     facts: [],
     inferences: [reason],
     redacted: true,
+    clientOpsHealth: "unknown",
+    clientOpsSeverityCounts: { critical: 0, action: 0, watch: 0 },
   };
 }
 

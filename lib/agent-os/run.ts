@@ -23,7 +23,7 @@ import {
   runWebsiteQaSpecialist,
 } from "./bi/website-qa";
 import { runChiefOfStaff } from "./executives/chief-of-staff";
-import { countOverdueConciergeSla } from "@/lib/concierge/sla/watchdog";
+import { listOverdueConciergeSlaIdentities } from "@/lib/concierge/sla/watchdog";
 import { isConciergeSlaEnabled } from "@/lib/concierge/sla/enabled";
 import {
   emptyContentExecutiveOutput,
@@ -288,6 +288,14 @@ export async function runAgentOsBrief(
         routeProbes: options.websiteQaOptions?.routeProbes,
       });
 
+  const conciergeSlaOverdueIdentities =
+    mode === "live" && isConciergeSlaEnabled()
+      ? await listOverdueConciergeSlaIdentities({
+          nowIso: new Date().toISOString(),
+          enabled: true,
+        }).catch(() => [])
+      : [];
+
   const bi = skipSynthesis
     ? {
         ...emptyBusinessIntelligenceOutput(
@@ -321,6 +329,7 @@ export async function runAgentOsBrief(
         attributionCrmRecordsReturned: attributionNinetyDayUsable
           ? attributionLive?.hubspot.deals.length
           : clientAttentionSources?.hubspot.deals.length,
+        conciergeSlaOverdueIdentities,
       });
 
   // Search Strategy still runs repository authority analysis when GSC is down,
@@ -512,13 +521,7 @@ export async function runAgentOsBrief(
     }
   }
 
-  const conciergeSlaOverdueCount =
-    mode === "live" && isConciergeSlaEnabled()
-      ? await countOverdueConciergeSla({
-          nowIso: persistNow,
-          enabled: true,
-        }).catch(() => 0)
-      : 0;
+  const conciergeSlaOverdueCount = conciergeSlaOverdueIdentities.length;
 
   const cos = runChiefOfStaff({
     bi,

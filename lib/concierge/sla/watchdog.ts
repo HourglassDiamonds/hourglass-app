@@ -19,6 +19,7 @@ import { logConciergeSla } from "./log";
 import { ageHours, isDueSoonWindow, isOverdueWindow } from "./time";
 import {
   CONCIERGE_SLA_MAX_TASK_RECOVERY_ATTEMPTS,
+  type ConciergeSlaOverdueIdentity,
   type ConciergeSlaRecord,
   type ConciergeSlaStore,
 } from "./types";
@@ -394,6 +395,38 @@ export async function runConciergeSlaWatchdog(
   return result;
 }
 
+/** Live overdue Concierge SLA identities for Client Ops first-contact dedupe. */
+export async function listOverdueConciergeSlaIdentities(
+  options: {
+    nowIso?: string;
+    store?: ConciergeSlaStore | null;
+    enabled?: boolean;
+  } = {},
+): Promise<ConciergeSlaOverdueIdentity[]> {
+  const enabled =
+    options.enabled !== undefined ? options.enabled : isConciergeSlaEnabled();
+  if (!enabled) return [];
+
+  const nowIso = options.nowIso ?? new Date().toISOString();
+  const store =
+    options.store === undefined
+      ? getDefaultConciergeSlaStore()
+      : options.store;
+  if (!store) return [];
+  try {
+    const overdue = await store.listOverdueOpen(nowIso);
+    return overdue
+      .filter((r) => !r.completedAt)
+      .map((r) => ({
+        dealId: r.dealId,
+        contactId: r.contactId,
+        submissionId: r.submissionId,
+      }));
+  } catch {
+    return [];
+  }
+}
+
 /** Live overdue count for Chief of Staff secondary escalation. */
 export async function countOverdueConciergeSla(
   options: {
@@ -402,20 +435,6 @@ export async function countOverdueConciergeSla(
     enabled?: boolean;
   } = {},
 ): Promise<number> {
-  const enabled =
-    options.enabled !== undefined ? options.enabled : isConciergeSlaEnabled();
-  if (!enabled) return 0;
-
-  const nowIso = options.nowIso ?? new Date().toISOString();
-  const store =
-    options.store === undefined
-      ? getDefaultConciergeSlaStore()
-      : options.store;
-  if (!store) return 0;
-  try {
-    const overdue = await store.listOverdueOpen(nowIso);
-    return overdue.filter((r) => !r.completedAt).length;
-  } catch {
-    return 0;
-  }
+  const identities = await listOverdueConciergeSlaIdentities(options);
+  return identities.length;
 }

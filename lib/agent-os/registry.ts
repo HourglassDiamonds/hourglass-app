@@ -58,6 +58,12 @@ const BI_ESCALATION: EscalationRule[] = [
     action:
       "Keep ordinary tiny-sample attribution silent. Escalate only capture-integrity collapse or a material sample. Do not join GA4 to CRM identities or attribute revenue.",
   },
+  {
+    id: "bi-client-ops-exceptions",
+    condition: "Client Ops / Client Attention operational exceptions",
+    action:
+      "Healthy stays silent. Real client exceptions surface in Client Attention, capped. Do not send, mutate CRM, or invent a founder-now backlog item. HubSpot unavailable is UNKNOWN, not zero clients.",
+  },
 ];
 
 const SEARCH_ESCALATION: EscalationRule[] = [
@@ -194,6 +200,8 @@ export const EXECUTIVE_REGISTRY: readonly ExecutiveDefinition[] = [
       "website / engineering QA",
       "production route health",
       "accepted-inquiry attribution evidence",
+      "client ops",
+      "client operational exceptions",
     ],
     allowedDataSources: [
       "ga4",

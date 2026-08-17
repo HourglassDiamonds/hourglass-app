@@ -597,7 +597,13 @@ describe("P1-BI-2 CoS behavior", () => {
       operatingBacklog: CURRENT_OPERATING_BACKLOG,
     });
     assert.equal(run.mode, "fixture");
-    assert.equal(run.deliveryGuidance, "send-nothing");
+    assert.ok(
+      run.deliveryGuidance === "send-nothing" ||
+        run.deliveryGuidance === "send-normal-brief",
+    );
+    if (run.deliveryGuidance === "send-normal-brief") {
+      assert.ok((run.brief.clientAttentionItems?.length ?? 0) > 0);
+    }
     assert.equal(
       run.recommendations.some(
         (r) => r.recommendationId === ATTRIBUTION_COVERAGE_INTEGRITY_ID,

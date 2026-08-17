@@ -270,7 +270,7 @@ export type FounderBrief = {
    */
   opportunityToWatch?: string | null;
   /**
-   * Optional Client Attention lines (max 2). Omitted when empty.
+   * Optional Client Attention lines (max 3). Omitted when empty or UNKNOWN.
    * Safe display names only — no emails, phones, or CRM IDs.
    */
   clientAttentionItems?: Array<{

@@ -401,12 +401,14 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
   // Backlog-first fill is correct for ordinary sprint work, but must not demote
   // an operational overdue Concierge SLA below SEO/marketing/content items.
   {
-    const overdueIdx = poolForSelect.findIndex((r) =>
+    const overdue = recommendations.find((r) =>
       isConciergeSlaOverdueRecommendationId(r.recommendationId),
     );
-    if (overdueIdx > 0) {
-      const [overdue] = poolForSelect.splice(overdueIdx, 1);
-      poolForSelect = [overdue, ...poolForSelect];
+    if (overdue) {
+      const without = poolForSelect.filter(
+        (r) => !isConciergeSlaOverdueRecommendationId(r.recommendationId),
+      );
+      poolForSelect = [overdue, ...without];
     }
   }
 
@@ -919,6 +921,7 @@ export function runChiefOfStaff(input: ChiefOfStaffInput): ChiefOfStaffOutput {
           fallbackPool: surfacePool,
           highestTitle: highest?.title ?? null,
           priorityTitles: surfacedPriorityTitles,
+          clientOpsHealth: input.bi.clientAttentionAudit?.clientOpsHealth,
         })
       : null;
 
@@ -1341,7 +1344,11 @@ function buildClientAttentionBriefItems(input: {
   fallbackPool: Recommendation[];
   highestTitle: string | null;
   priorityTitles: string[];
+  clientOpsHealth?: "healthy" | "exceptions" | "unknown";
 }): Array<{ title: string; summary: string; action: string }> | null {
+  if (input.clientOpsHealth === "unknown") {
+    return null;
+  }
   const fromPool = input.pool.filter((r) =>
     isClientAttentionRecommendationId(r.recommendationId),
   );
@@ -1355,7 +1362,15 @@ function buildClientAttentionBriefItems(input: {
     }
   }
 
-  const items = combined
+  const actionable = combined.filter(
+    (r) =>
+      r.status !== "downgraded" &&
+      r.status !== "ignore" &&
+      r.status !== "blocked" &&
+      r.status !== "consolidated",
+  );
+
+  const items = actionable
     .slice(0, MAX_CLIENT_ATTENTION_FOUNDER_PRIORITIES)
     .map((r) => {
       const title = r.title.replace(/^\[[^\]]+\]\s*/, "");
@@ -1364,23 +1379,6 @@ function buildClientAttentionBriefItems(input: {
         summary: summarizeFounderAction(r.plainLanguageExplanation, 160),
         action: cleanFounderFacingAction(r.proposedAction),
       };
-    })
-    // Avoid duplicating the exact highest-ROI / priority line in the section
-    // when the section would only repeat the same title without added value.
-    .filter((item) => {
-      const normalized = item.title.toLowerCase();
-      if (
-        input.highestTitle &&
-        input.highestTitle.replace(/^\[[^\]]+\]\s*/, "").toLowerCase() ===
-          normalized &&
-        combined.length === 1
-      ) {
-        // Still show the section when it is the only client item — founders
-        // expect Client Attention when signals exist. Duplication vs Highest-ROI
-        // is acceptable as a short restatement; email renderer may collapse.
-        return true;
-      }
-      return true;
     });
 
   return items.length ? items : null;

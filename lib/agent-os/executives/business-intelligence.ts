@@ -15,6 +15,7 @@ import {
   loadClientAttentionSources,
   runClientAttentionAnalysis,
   type ClientAttentionAudit,
+  type ConciergeSlaOverdueIdentity,
 } from "../bi/client-attention";
 import type {
   ClientAttentionSourceBundle,
@@ -74,6 +75,11 @@ export type RunBusinessIntelligenceOptions = {
   websiteQa?: WebsiteQaSnapshot;
   /** Prefetched Concierge reconstructions for attribution (defaults to Client Attention). */
   attributionConcierge?: ConciergeAdapterResult;
+  /**
+   * Overdue Concierge SLA identities for Client Ops first-contact dedupe.
+   * Deal/contact/submission ids only — no PII.
+   */
+  conciergeSlaOverdueIdentities?: ConciergeSlaOverdueIdentity[];
   /** HubSpot search window that produced attribution reconstructions. */
   attributionCrmReadLookbackDays?: number;
   /** Deal search cap used for the attribution CRM read. */
@@ -687,17 +693,25 @@ export function runBusinessIntelligence(
     reportingPeriod,
     fixturePreset: mode === "fixture" ? "success" : undefined,
     prefetchedSources: options.clientAttentionSources,
+    conciergeSlaOverdueIdentities: options.conciergeSlaOverdueIdentities,
   });
-  facts.push(...clientAttention.audit.facts);
-  inferences.push(...clientAttention.audit.inferences);
+  const silentClientOps =
+    clientAttention.audit.clientOpsHealth !== "exceptions";
+  if (!silentClientOps) {
+    facts.push(...clientAttention.audit.facts);
+    inferences.push(...clientAttention.audit.inferences);
+  } else {
+    facts.push(
+      ...clientAttention.audit.facts.filter((f) => /recovered/i.test(f)),
+    );
+  }
   for (const gap of clientAttention.audit.dataGaps) {
     if (gap.suppressFromFounderRanking && gap.founderRelevance === "suppressed") {
       continue;
     }
     if (
       gap.suppressFromFounderRanking &&
-      gap.founderRelevance === "diagnostic" &&
-      !gap.id.includes("pipeline-incomplete")
+      gap.founderRelevance === "diagnostic"
     ) {
       continue;
     }

@@ -236,6 +236,16 @@ export type ClientAttentionAudit = {
   inferences: string[];
   /** True when audit fields have been PII-stripped for persistence / CLI. */
   redacted: boolean;
+  /**
+   * V1 Client Ops health. UNKNOWN when HubSpot is unavailable — never
+   * interpret an empty exception list as "zero clients need attention."
+   */
+  clientOpsHealth: "healthy" | "exceptions" | "unknown";
+  clientOpsSeverityCounts: {
+    critical: number;
+    action: number;
+    watch: number;
+  };
 };
 
 /** Recommendation id prefix — stable namespace under Business Intelligence. */
@@ -243,7 +253,7 @@ export const CLIENT_ATTENTION_RECOMMENDATION_PREFIX =
   "business-intelligence:client-attention" as const;
 
 /** Soft cap: client-attention items competing inside the daily 3-priority budget. */
-export const MAX_CLIENT_ATTENTION_FOUNDER_PRIORITIES = 2;
+export const MAX_CLIENT_ATTENTION_FOUNDER_PRIORITIES = 3;
 
 /** Hard cap on normalized signals retained per run (JSON may keep more raw). */
 export const MAX_CLIENT_ATTENTION_SIGNALS = 40;

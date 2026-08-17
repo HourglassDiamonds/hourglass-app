@@ -242,6 +242,9 @@ export function isQuietDayQualityFailure(
  * Distinct from a leaky hollow brief (July 28 class).
  */
 export function isQuietDayFounderBrief(brief: FounderBrief): boolean {
+  if (brief.clientAttentionItems && brief.clientAttentionItems.length > 0) {
+    return false;
+  }
   const namedPriorities = brief.surfacedPriorityTitles.filter(
     (t) => t && !/^none$/i.test(t) && !isNoActionCopy(t),
   );

@@ -56,7 +56,7 @@ export function stripInternalIdsFromSignal(
 
 function redactEvidence(ev: ClientSignalEvidence): ClientSignalEvidence {
   return {
-    id: ev.id,
+    id: redactText(ev.id),
     sourceType: ev.sourceType,
     kind: ev.kind,
     observedAt: ev.observedAt,
