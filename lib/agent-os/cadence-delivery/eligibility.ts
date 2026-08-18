@@ -10,6 +10,7 @@ import {
 } from "../brief-quality";
 import {
   evaluateBriefQualityGate,
+  isQuietDayFounderBrief,
   isQuietDayQualityFailure,
 } from "../brief-quality-gate";
 
@@ -17,6 +18,7 @@ export type DeliveryEligibility =
   | {
       action: "send-founder-brief";
       degraded: boolean;
+      allClear?: boolean;
       reason: string;
     }
   | {
@@ -97,11 +99,52 @@ export function evaluateDeliveryEligibility(input: {
     };
   }
 
-  if (guidance === "send-nothing") {
+  const qualityInput = (forAllClear: boolean) => {
+    const todayCall = dailyTodayCall({
+      whyItMatters: run.brief.whyItMatters,
+      highestRoiAction: run.brief.highestRoiAction,
+      sprintOrientation: run.brief.sprintOrientation,
+      dayOrientation: run.brief.dayOrientation,
+      whatChanged: run.brief.whatChanged,
+    });
+    const watch = run.brief.opportunityToWatch;
+    return evaluateBriefQualityGate({
+      brief: forAllClear
+        ? { ...run.brief, missingOrUnreliableData: [] }
+        : run.brief,
+      todayCall,
+      opportunityWatch:
+        watch && !isVagueMetricWithoutMagnitude(watch) ? watch : null,
+      intent,
+    });
+  };
+
+  const officialQuietAllClear = (): DeliveryEligibility => {
+    const quality = qualityInput(true);
+    if (!quality.ok && !isQuietDayQualityFailure(quality)) {
+      return {
+        action: "send-nothing",
+        reason: `Morning Brief quality gate blocked send: ${quality.violations
+          .map((v) => v.code)
+          .join(", ")}`,
+      };
+    }
     return {
-      action: "send-nothing",
-      reason: "Healthy quiet cycle — no material founder priorities",
+      action: "send-founder-brief",
+      degraded: false,
+      allClear: true,
+      reason:
+        intent === "weekly"
+          ? "Official weekly all-clear — no major strategic change"
+          : "Official daily all-clear — no material founder priorities",
     };
+  };
+
+  if (
+    guidance === "send-nothing" ||
+    isQuietDayFounderBrief(run.brief)
+  ) {
+    return officialQuietAllClear();
   }
 
   if (
@@ -127,8 +170,11 @@ export function evaluateDeliveryEligibility(input: {
       if (!quality.ok) {
         if (isQuietDayQualityFailure(quality)) {
           return {
-            action: "send-nothing",
-            reason: "Healthy quiet cycle — no material founder priorities",
+            action: "send-founder-brief",
+            degraded: false,
+            allClear: true,
+            reason:
+              "Official daily all-clear — no material founder priorities",
           };
         }
         return {

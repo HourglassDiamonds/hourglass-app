@@ -103,14 +103,161 @@ export function renderFounderBriefEmail(input: {
   cadenceId: string;
   cadenceWindow: string;
   degraded: boolean;
+  allClear?: boolean;
 }): RenderedAgentOsEmail {
   const { run, cadenceId, cadenceWindow, degraded } = input;
   const intent = resolveBriefCadenceIntent(cadenceId);
 
   if (intent === "weekly") {
+    if (input.allClear) {
+      return renderWeeklyAllClearEmail({ run, cadenceWindow, degraded });
+    }
     return renderWeeklyFounderBriefEmail({ run, cadenceWindow, degraded });
   }
+  if (input.allClear) {
+    return renderDailyAllClearEmail({ run, cadenceWindow, degraded });
+  }
   return renderDailyMorningBriefEmail({ run, cadenceWindow, degraded });
+}
+
+function renderDailyAllClearEmail(input: {
+  run: AgentRun;
+  cadenceWindow: string;
+  degraded: boolean;
+}): RenderedAgentOsEmail {
+  const { run, cadenceWindow, degraded } = input;
+  const localDate = localDateFromCadenceWindow(
+    cadenceWindow,
+    run.generatedAt,
+  );
+  const dailyLabel = formatFounderLocalDateLabel(localDate);
+  const subject = degraded
+    ? `Hourglass Morning Brief · Partial data · ${dailyLabel}`
+    : `Hourglass Morning Brief · ${dailyLabel}`;
+  const call = "No material founder priorities require action today.";
+  const watchNoAction = (run.brief.watchNoActionItems ?? []).filter(
+    (line) => line && !/^none$/i.test(line.trim()),
+  );
+  const watch = opportunityToWatch(run);
+  const confidence = buildDataConfidenceNote({
+    missingOrUnreliableData: run.brief.missingOrUnreliableData,
+    executiveNotes: [],
+    briefEvidenceQuality: run.briefEvidenceQuality,
+    criticalFailure: false,
+    intent: "daily",
+  });
+
+  const watchHtml =
+    watchNoAction.length > 0
+      ? `<tr><td style="padding:0 32px 24px;">${sectionHeading("Watch")}<ul style="margin:0;padding:0 0 0 18px;">${watchNoAction
+          .map(
+            (line) =>
+              `<li style="margin:0 0 8px;font-size:14px;line-height:1.65;color:#4a443e;">${escapeHtml(redactSecretsAndPii(line))}</li>`,
+          )
+          .join("")}</ul></td></tr>`
+      : watch
+        ? `<tr><td style="padding:0 32px 24px;">${sectionHeading("Watch")}<p style="margin:0;font-size:14px;line-height:1.7;color:#3d3832;">${escapeHtml(redactSecretsAndPii(watch))}</p></td></tr>`
+        : "";
+
+  const confidenceHtml = confidence.renderInFounderEmail
+    ? `<tr><td style="padding:0 32px 20px;">${sectionHeading("Systems")}<p style="margin:0;font-size:13px;line-height:1.6;color:#6a635c;">${escapeHtml(redactSecretsAndPii(confidence.summary))}</p></td></tr>`
+    : "";
+
+  const html = `
+<!DOCTYPE html>
+<html>
+  <body style="margin:0;padding:32px 12px;background:#efe8de;">
+    <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="max-width:560px;margin:0 auto;background:#f7f3ee;border:1px solid #e4dbcf;">
+      <tr>
+        <td style="padding:28px 24px 8px;">
+          <p style="margin:0 0 6px;font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:#8a8176;">Hourglass Diamonds · Internal</p>
+          <h1 style="margin:0;font-size:22px;font-weight:400;color:#1a1816;font-family:Georgia,'Times New Roman',serif;">Morning Brief</h1>
+          <p style="margin:10px 0 0;font-size:12px;color:#6a635c;">${escapeHtml(dailyLabel)}</p>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:0 24px 24px;">
+          <p style="margin:0;font-size:15px;line-height:1.75;color:#3d3832;font-family:Georgia,'Times New Roman',serif;">${escapeHtml(call)}</p>
+        </td>
+      </tr>
+      ${watchHtml}
+      ${confidenceHtml}
+    </table>
+  </body>
+</html>`;
+
+  const textParts = [
+    `Hourglass Morning Brief · ${dailyLabel}`,
+    ``,
+    call,
+  ];
+  if (watchNoAction.length) {
+    textParts.push(``, `Watch:`, ...watchNoAction.map((l) => `- ${redactSecretsAndPii(l)}`));
+  } else if (watch) {
+    textParts.push(``, `Watch: ${redactSecretsAndPii(watch)}`);
+  }
+  if (confidence.renderInFounderEmail) {
+    textParts.push(``, `Systems: ${redactSecretsAndPii(confidence.summary)}`);
+  }
+
+  return { subject, html, text: textParts.join("\n") };
+}
+
+function renderWeeklyAllClearEmail(input: {
+  run: AgentRun;
+  cadenceWindow: string;
+  degraded: boolean;
+}): RenderedAgentOsEmail {
+  const { run, cadenceWindow, degraded } = input;
+  const range = weeklyRangeFromCadenceWindow(cadenceWindow, run.reportingPeriod);
+  const founderRange = formatWeeklyFounderRangeLabel(range.start, range.end);
+  const subject = degraded
+    ? `Hourglass Weekly Brief · Partial data · ${founderRange}`
+    : `Hourglass Weekly Brief · ${founderRange}`;
+  const summary =
+    "No major strategic change this week. No material founder priorities require action.";
+  const confidence = buildDataConfidenceNote({
+    missingOrUnreliableData: run.brief.missingOrUnreliableData,
+    executiveNotes: [],
+    briefEvidenceQuality: run.briefEvidenceQuality,
+    criticalFailure: false,
+    intent: "weekly",
+  });
+  const confidenceHtml = confidence.renderInFounderEmail
+    ? `<tr><td style="padding:0 32px 28px;">${sectionHeading("Systems")}<p style="margin:0;font-size:13px;line-height:1.6;color:#6a635c;">${escapeHtml(redactSecretsAndPii(confidence.summary))}</p></td></tr>`
+    : "";
+
+  const html = `
+<!DOCTYPE html>
+<html>
+  <body style="margin:0;padding:32px 20px;background:#efe8de;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;margin:0 auto;background:#f7f3ee;border:1px solid #e4dbcf;">
+      <tr>
+        <td style="padding:36px 32px 8px;">
+          <p style="margin:0 0 6px;font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:#8a8176;">Hourglass Diamonds · Internal</p>
+          <h1 style="margin:0;font-size:22px;font-weight:400;color:#1a1816;font-family:Georgia,'Times New Roman',serif;">Weekly Brief</h1>
+          <p style="margin:10px 0 0;font-size:12px;color:#6a635c;">${escapeHtml(founderRange)}</p>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:0 32px 24px;">
+          <p style="margin:0;font-size:15px;line-height:1.75;color:#3d3832;font-family:Georgia,'Times New Roman',serif;">${escapeHtml(summary)}</p>
+        </td>
+      </tr>
+      ${confidenceHtml}
+    </table>
+  </body>
+</html>`;
+
+  const textParts = [
+    `Hourglass Weekly Brief · ${founderRange}`,
+    ``,
+    summary,
+  ];
+  if (confidence.renderInFounderEmail) {
+    textParts.push(``, `Systems: ${redactSecretsAndPii(confidence.summary)}`);
+  }
+  return { subject, html, text: textParts.join("\n") };
 }
 
 function renderDailyMorningBriefEmail(input: {

@@ -472,7 +472,7 @@ describe("diagnostic demotion + critical visibility", () => {
 });
 
 describe("delivery safety unchanged + no real email", () => {
-  it("quiet-cycle send-nothing and idempotency keys remain stable", async () => {
+  it("quiet-cycle official all-clear sends once and keeps idempotency keys stable", async () => {
     const store = new DurableTestPersistenceAdapter({ modeScope: "live" });
     const sender = createFakeEmailSender({ messageId: "msg_quality_1" });
     const result = await executeAgentOsCadence({
@@ -491,11 +491,13 @@ describe("delivery safety unchanged + no real email", () => {
       emailSender: sender,
     });
     assert.equal(result.ok, true);
-    assert.equal(result.emailSent, false);
-    assert.equal(result.deliveryOutcome, "skipped_with_reason");
-    assert.doesNotMatch(result.safeSummary, /quality gate/i);
-    assert.match(result.safeSummary, /quiet cycle|no material founder/i);
-    assert.equal(sender.calls.length, 0);
+    assert.equal(result.emailSent, true);
+    assert.equal(result.deliveryOutcome, "sent");
+    assert.match(
+      `${result.safeSummary} ${sender.calls[0]?.text ?? ""}`,
+      /no material founder priorities/i,
+    );
+    assert.equal(sender.calls.length, 1);
 
     // Re-render the fixture smoke shape to prove product framing without Resend
     const preview = renderFounderBriefEmail({

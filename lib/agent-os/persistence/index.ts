@@ -32,7 +32,12 @@ export {
   FOUNDER_CADENCE_TIMEZONE,
 } from "./cadence";
 
-export { evaluateCadence, evaluateAllCadences, resolveLocalEligibleAt } from "./evaluate-cadence";
+export {
+  evaluateCadence,
+  evaluateAllCadences,
+  resolveLocalEligibleAt,
+  resolveLocalEligibleWeekdays,
+} from "./evaluate-cadence";
 export type { CadenceEvaluateInput } from "./evaluate-cadence";
 
 export {
@@ -131,6 +136,7 @@ export {
   localMinutesSinceMidnight,
   isAtOrAfterLocalTime,
   utcIsoForLocalWallTime,
+  founderLocalIsoWeekday,
 } from "./timezone";
 export type { LocalCalendarStamp } from "./timezone";
 

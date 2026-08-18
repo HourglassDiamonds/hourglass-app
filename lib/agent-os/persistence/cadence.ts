@@ -52,10 +52,14 @@ export function defaultCadenceDefinitions(
       skipBehavior: "record-skip",
       catchUpBehavior: "run-once",
       timezone: FOUNDER_CADENCE_TIMEZONE,
+      /** Same morning gate as Daily — Monday-anchored, not rolling freshness. */
+      localEligibleAt: { hour: 7, minute: 0 },
+      localEligibleWeekdays: [1],
       nextEligibleAt: null,
       lastAttemptedAt: null,
       lastSuccessfulAt: null,
-      description: "Weekly full founder brief assembly + Chief of Staff email delivery when eligible",
+      description:
+        "Weekly Chief of Staff founder brief Monday at/after 7:00 AM America/New_York",
     },
     {
       schemaVersion: AGENT_OS_PERSISTENCE_SCHEMA_VERSION,

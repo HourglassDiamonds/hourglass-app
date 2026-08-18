@@ -13,6 +13,7 @@ import type {
 } from "./types";
 import { getCadenceById } from "./cadence";
 import {
+  founderLocalIsoWeekday,
   localCalendarStamp,
   localMinutesSinceMidnight,
   utcIsoForLocalWallTime,
@@ -70,6 +71,19 @@ export function resolveLocalEligibleAt(
   return seeded?.localEligibleAt ?? null;
 }
 
+/** ISO weekdays (1=Monday … 7=Sunday) from persisted cadence or seeded default. */
+export function resolveLocalEligibleWeekdays(
+  cadence: CadenceDefinition,
+): number[] | null {
+  if (cadence.localEligibleWeekdays && cadence.localEligibleWeekdays.length > 0) {
+    return cadence.localEligibleWeekdays;
+  }
+  const seeded = getCadenceById(cadence.cadenceId);
+  return seeded?.localEligibleWeekdays?.length
+    ? seeded.localEligibleWeekdays
+    : null;
+}
+
 /**
  * Local calendar schedule is authoritative when localEligibleAt is set:
  * - before local wall time → not due
@@ -104,6 +118,24 @@ function evaluateLocalScheduleGate(
       `Before local eligible time ${String(eligibleAt.hour).padStart(2, "0")}:${String(eligibleAt.minute).padStart(2, "0")} (local ${local.date} ${String(local.hour).padStart(2, "0")}:${String(local.minute).padStart(2, "0")} offsetMin=${local.offsetMinutes} tz=${tz})`,
       next,
     );
+  }
+
+  const weekdays = resolveLocalEligibleWeekdays(cadence);
+  if (weekdays && weekdays.length > 0) {
+    const dow = founderLocalIsoWeekday(local.date);
+    if (!weekdays.includes(dow)) {
+      return result(
+        cadence,
+        nowIso,
+        false,
+        false,
+        false,
+        true,
+        ["weekday-outside-window", "not-due", "timezone-window"],
+        `Local weekday ${dow} is outside eligible weekdays [${weekdays.join(",")}] (local ${local.date} tz=${tz})`,
+        null,
+      );
+    }
   }
 
   if (cadence.lastSuccessfulAt) {

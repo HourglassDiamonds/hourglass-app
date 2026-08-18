@@ -270,7 +270,7 @@ describe("daily delivery idempotency + fake email", () => {
   });
 });
 
-describe("weekly vs daily anti-redundancy", () => {
+describe("weekly vs daily independent Monday delivery", () => {
   it("weekly and daily can coexist on different local dates", async () => {
     const store = new DurableTestPersistenceAdapter({ modeScope: "live" });
     const sender = createFakeEmailSender();
@@ -300,10 +300,10 @@ describe("weekly vs daily anti-redundancy", () => {
     assert.equal(sender.calls.length, 2);
   });
 
-  it("successfully delivered weekly suppresses redundant daily on same local date", async () => {
+  it("successfully delivered weekly does not suppress daily on the same local date", async () => {
     const store = new DurableTestPersistenceAdapter({ modeScope: "live" });
     const sender = createFakeEmailSender();
-    const nowIso = "2026-07-20T12:00:00.000Z"; // 08:00 EDT
+    const nowIso = "2026-07-20T12:00:00.000Z"; // 08:00 EDT Monday
 
     const weekly = await executeAgentOsCadence({
       mode: "test",
@@ -320,23 +320,21 @@ describe("weekly vs daily anti-redundancy", () => {
     const localDate = localCalendarStamp(nowIso, FOUNDER_CADENCE_TIMEZONE).date;
     assert.equal(
       weeklyFounderBriefOccupiesLocalDate(store.snapshot(), localDate),
-      true,
+      false,
     );
 
     const daily = await executeAgentOsCadence({
       mode: "test",
       cadenceId: "cos-daily-synthesis",
-      // no force — anti-redundancy must apply on scheduled path
       store,
       nowIso,
       emailConfigOverride: EMAIL_OVERRIDE,
       emailSender: sender,
+      operatingBacklog: operatingBacklogForCadenceSendPath(),
     });
     assert.equal(daily.ok, true);
-    assert.equal(daily.emailSent, false);
-    assert.equal(daily.deliveryAction, "send-nothing");
-    assert.match(String(daily.suppressionReason), /weekly/i);
-    assert.equal(sender.calls.length, 1);
+    assert.equal(daily.emailSent, true);
+    assert.equal(sender.calls.length, 2);
   });
 
   it("weekly send-nothing does not erase a valid daily brief", async () => {

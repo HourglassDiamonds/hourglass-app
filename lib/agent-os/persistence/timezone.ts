@@ -83,6 +83,17 @@ export function localCalendarStamp(
   };
 }
 
+/**
+ * ISO weekday from a YYYY-MM-DD calendar date (1=Monday … 7=Sunday).
+ * Uses UTC noon of that date so DST does not shift the weekday.
+ */
+export function founderLocalIsoWeekday(localDate: string): number {
+  const [y, m, d] = localDate.split("-").map(Number);
+  const date = new Date(Date.UTC(y, m - 1, d, 12, 0, 0));
+  const day = date.getUTCDay();
+  return day === 0 ? 7 : day;
+}
+
 /** Minutes since local midnight for a stamp. */
 export function localMinutesSinceMidnight(stamp: {
   hour: number;

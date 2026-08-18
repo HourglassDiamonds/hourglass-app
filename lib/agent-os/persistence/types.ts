@@ -167,7 +167,8 @@ export type CadenceEvaluationReason =
   | "catch-up"
   | "timezone-window"
   | "local-time-before-window"
-  | "already-ran-local-date";
+  | "already-ran-local-date"
+  | "weekday-outside-window";
 
 /** Optional founder-local wall-clock gate (e.g. daily brief at 07:00). */
 export type CadenceLocalEligibleAt = {
@@ -343,6 +344,11 @@ export type CadenceDefinition = {
    * Null/undefined → interval/freshness-based due evaluation only.
    */
   localEligibleAt?: CadenceLocalEligibleAt | null;
+  /**
+   * ISO weekdays (1=Monday … 7=Sunday) when localEligibleAt applies.
+   * Empty/undefined → every local day after the wall-clock gate.
+   */
+  localEligibleWeekdays?: number[] | null;
   nextEligibleAt: string | null;
   lastAttemptedAt: string | null;
   lastSuccessfulAt: string | null;

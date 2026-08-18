@@ -55,9 +55,11 @@ import {
 import { reserveDelivery, transitionDeliveryStatus } from "./reserve";
 import {
   cadenceWindowId,
+  FOUNDER_BRIEF_CADENCE_IDS,
   isFounderBriefCadence,
   listDueFounderCadencesInOrder,
-  weeklyFounderBriefOccupiesLocalDate,
+  officialInProgressKey,
+  isOfficialGuaranteedWindowOpen,
 } from "./windows";
 import {
   isInProgressActive,
@@ -66,8 +68,6 @@ import {
   resolveCadenceDeliveryOutcome,
   type CadenceDeliveryOutcome,
 } from "./outcome";
-import { FOUNDER_CADENCE_TIMEZONE } from "../persistence/cadence";
-import { localCalendarStamp } from "../persistence/timezone";
 import {
   dailyTodayCall,
   localDateFromCadenceWindow,
@@ -339,7 +339,11 @@ async function updateCadenceTimestamps(input: {
   };
   const inProgress = { ...prior.inProgressByScope };
   if (input.clearInProgress) {
-    delete inProgress[String(cadence.scope)];
+    delete inProgress[officialInProgressKey(input.cadenceId)];
+    const legacy = inProgress[String(cadence.scope)];
+    if (legacy?.runId === input.runId) {
+      delete inProgress[String(cadence.scope)];
+    }
   }
   const next = {
     ...deepCloneState(prior),
@@ -362,7 +366,7 @@ async function markInProgress(input: {
     updatedAt: input.nowIso,
     inProgressByScope: {
       ...prior.inProgressByScope,
-      [String(input.cadence.scope)]: {
+      [officialInProgressKey(input.cadence.cadenceId)]: {
         runId: input.runId,
         startedAt: input.nowIso,
       },
@@ -495,8 +499,9 @@ export async function executeAgentOsCadence(
       ? Object.values(state.cadences)
       : defaultCadenceDefinitions();
 
-  // Reclaim crashed leftovers: shared chief-of-staff scope lock with no TTL
-  // previously caused permanent "No founder-brief cadence due" + HTTP 200.
+  // Reclaim crashed leftovers: cadence-specific official locks (and any
+  // leftover shared-scope keys) with no TTL previously caused permanent
+  // "No founder-brief cadence due" + HTTP 200.
   {
     const progress = { ...state.inProgressByScope };
     let cleared = false;
@@ -536,27 +541,31 @@ export async function executeAgentOsCadence(
     }
     const progress = { ...state.inProgressByScope };
     let cleared = false;
-    const scopesToClear = new Set<string>();
+    const keysToClear = new Set<string>();
     if (options.cadenceId) {
+      keysToClear.add(officialInProgressKey(options.cadenceId));
       const target =
         state.cadences[options.cadenceId] ??
         getCadenceById(options.cadenceId) ??
         defaultCadenceDefinitions().find((c) => c.cadenceId === options.cadenceId);
-      if (target) scopesToClear.add(String(target.scope));
+      if (target) keysToClear.add(String(target.scope));
     } else {
-      scopesToClear.add("chief-of-staff");
+      for (const id of FOUNDER_BRIEF_CADENCE_IDS) {
+        keysToClear.add(officialInProgressKey(id));
+      }
+      keysToClear.add("chief-of-staff");
     }
-    for (const scope of scopesToClear) {
-      const entry = progress[scope];
+    for (const key of keysToClear) {
+      const entry = progress[key];
       if (entry) {
         logCadenceDeliveryEvent("in_progress_force_cleared", {
-          scope,
+          scope: key,
           runId: entry.runId,
           startedAt: entry.startedAt,
           nowIso,
           recovery: isForceSendRunMode(runMode),
         });
-        delete progress[scope];
+        delete progress[key];
         cleared = true;
       }
     }
@@ -577,12 +586,13 @@ export async function executeAgentOsCadence(
     });
     const due = evaluations
       .filter((e) => {
-        if (!e.shouldProceed || !isFounderBriefCadence(e.cadenceId)) return false;
+        if (!isFounderBriefCadence(e.cadenceId)) return false;
         const c = cadences.find((x) => x.cadenceId === e.cadenceId);
         if (!c) return false;
-        const running = state.inProgressByScope[String(c.scope)];
+        const running =
+          state.inProgressByScope[officialInProgressKey(c.cadenceId)];
         if (isInProgressActive(running, nowIso)) return false;
-        return true;
+        return isOfficialGuaranteedWindowOpen(c, state, nowIso);
       })
       .map((e) => e.cadenceId);
     const ordered = listDueFounderCadencesInOrder(due);
@@ -622,47 +632,6 @@ export async function executeAgentOsCadence(
     if (ordered.length > 1) {
       const results: CadenceExecutionResult[] = [];
       for (const id of ordered) {
-        // Same-day anti-redundancy: after a successful weekly founder-brief
-        // claim/send, skip the daily founder brief for that local date.
-        if (id === "cos-daily-synthesis") {
-          const liveState = await store.load().catch(() => state);
-          const localDate = localCalendarStamp(
-            nowIso,
-            FOUNDER_CADENCE_TIMEZONE,
-          ).date;
-          if (
-            weeklyFounderBriefOccupiesLocalDate(
-              liveState,
-              localDate,
-              FOUNDER_CADENCE_TIMEZONE,
-            )
-          ) {
-            results.push(
-              finalizeResult({
-                ok: true,
-                mode: options.mode,
-                runMode,
-                cadenceId: id,
-                cadenceWindow: `day:${localDate}`,
-                runId: null,
-                runStatus: null,
-                deliveryGuidance: null,
-                deliveryAction: "send-nothing",
-                deliveryStatus: null,
-                emailSent: false,
-                dryRun,
-                suppressionReason:
-                  "Weekly founder brief already claimed/sent for this local date",
-                error: null,
-                errorCode: null,
-                safeSummary:
-                  "Skipped daily founder brief — weekly already occupied this local date",
-                deliveryOutcome: "skipped_with_reason",
-              }),
-            );
-            continue;
-          }
-        }
         results.push(
           await executeAgentOsCadence({
             ...options,
@@ -741,46 +710,6 @@ export async function executeAgentOsCadence(
     });
   }
 
-  // Same-day anti-redundancy for explicit daily runs (store is source of truth).
-  // Manual preview/smoke may proceed even if weekly already occupied — they use
-  // a distinct delivery window and do not claim the official day.
-  if (cadenceId === "cos-daily-synthesis" && !force) {
-    const localDate = localCalendarStamp(
-      nowIso,
-      FOUNDER_CADENCE_TIMEZONE,
-    ).date;
-    if (
-      weeklyFounderBriefOccupiesLocalDate(
-        state,
-        localDate,
-        FOUNDER_CADENCE_TIMEZONE,
-      )
-    ) {
-      return finalizeResult({
-        ok: true,
-        mode: options.mode,
-        runMode,
-        cadenceId,
-        cadenceWindow: `day:${localDate}`,
-        officialCadenceWindow: `day:${localDate}`,
-        runId: null,
-        runStatus: null,
-        deliveryGuidance: null,
-        deliveryAction: "send-nothing",
-        deliveryStatus: null,
-        emailSent: false,
-        dryRun,
-        suppressionReason:
-          "Weekly founder brief already claimed/sent for this local date",
-        error: null,
-        errorCode: null,
-        safeSummary:
-          "Skipped daily founder brief — weekly already occupied this local date",
-        deliveryOutcome: "skipped_with_reason",
-      });
-    }
-  }
-
   // Refresh state after possible multi-cadence recursion sibling work
   try {
     state = await store.load();
@@ -807,7 +736,8 @@ export async function executeAgentOsCadence(
     });
   }
 
-  const inProgressEntry = state.inProgressByScope[String(cadence.scope)];
+  const inProgressEntry =
+    state.inProgressByScope[officialInProgressKey(cadence.cadenceId)];
   const inProgress = isInProgressActive(inProgressEntry, nowIso)
     ? inProgressEntry?.runId
     : null;
@@ -819,12 +749,18 @@ export async function executeAgentOsCadence(
     sourceHealth: [],
   });
 
-  if (!force && !evaluation.shouldProceed) {
+  const windowOpen = isOfficialGuaranteedWindowOpen(cadence, state, nowIso);
+  if (!force && (evaluation.reasonCodes.includes("already-running") || !windowOpen)) {
     const window = cadenceWindowId(cadence, nowIso);
+    const reasonCodes = evaluation.reasonCodes.includes("already-running")
+      ? evaluation.reasonCodes
+      : windowOpen
+        ? evaluation.reasonCodes
+        : ["not-due"];
     logCadenceDeliveryEvent("run_skipped", {
       cadenceId,
       cadenceWindow: window,
-      reasonCodes: evaluation.reasonCodes,
+      reasonCodes,
       deliveryOutcome: "skipped_with_reason",
     });
     return finalizeResult({
@@ -841,10 +777,10 @@ export async function executeAgentOsCadence(
       deliveryStatus: null,
       emailSent: false,
       dryRun,
-      suppressionReason: `Cadence not due: ${evaluation.reasonCodes.join(",")}`,
+      suppressionReason: `Cadence not due: ${reasonCodes.join(",")}`,
       error: null,
       errorCode: null,
-      safeSummary: `Cadence not due: ${evaluation.reasonCodes.join(",")}`,
+      safeSummary: `Cadence not due: ${reasonCodes.join(",")}`,
       deliveryOutcome: "skipped_with_reason",
     });
   }
@@ -883,8 +819,8 @@ export async function executeAgentOsCadence(
     if (!mutateScheduledState) return;
     try {
       const latest = await store.load();
-      const scopeKey = String(cadence.scope);
-      const entry = latest.inProgressByScope[scopeKey];
+      const lockKey = officialInProgressKey(cadence.cadenceId);
+      const entry = latest.inProgressByScope[lockKey];
       if (!entry || entry.runId !== provisionalRunId) return;
       const releaseIso = new Date().toISOString();
       await updateCadenceTimestamps({
@@ -898,7 +834,7 @@ export async function executeAgentOsCadence(
       logCadenceDeliveryEvent("in_progress_finally_released", {
         cadenceId,
         runId: provisionalRunId,
-        scope: scopeKey,
+        scope: lockKey,
         startedAt: entry.startedAt,
         releasedAt: releaseIso,
       });
@@ -1038,9 +974,7 @@ export async function executeAgentOsCadence(
         store,
         cadenceId,
         nowIso,
-        success:
-          run.runStatus === "completed" ||
-          run.runStatus === "completed-with-warnings",
+        success: false,
         runId: run.runId,
         clearInProgress: true,
       }).catch(() => undefined);
@@ -1050,6 +984,9 @@ export async function executeAgentOsCadence(
       cadenceId,
       cadenceWindow: officialWindow,
       degraded: run.briefEvidenceQuality === "partial-degraded",
+      allClear:
+        eligibility.action === "send-founder-brief" &&
+        eligibility.allClear === true,
     });
     const cadenceLastSuccessfulAtAfter = await readCadenceLastSuccessfulAfter();
     return finalizeResult({
@@ -1088,8 +1025,7 @@ export async function executeAgentOsCadence(
         store,
         cadenceId,
         nowIso,
-        // Quiet cycles may close the day; quality-gate blocks must not.
-        success: !qualityBlocked,
+        success: false,
         runId: run.runId,
         clearInProgress: true,
       }).catch(() => undefined);
@@ -1288,10 +1224,7 @@ export async function executeAgentOsCadence(
         ? (options.failureAlertCooldownMs ?? 6 * 60 * 60 * 1000)
         : isManualRunMode(runMode) ||
             isForceSendRunMode(runMode) ||
-            // Daily Morning Brief is window-idempotent (day:YYYY-MM-DD).
-            // A 7-day unchanged-fingerprint cooldown incorrectly suppressed
-            // subsequent mornings after a successful send (P0-2).
-            cadenceId === "cos-daily-synthesis"
+            isFounderBriefCadence(cadenceId)
           ? 0
           : DEFAULT_FOUNDER_COOLDOWN_MS,
   });
@@ -1313,7 +1246,8 @@ export async function executeAgentOsCadence(
           ? (options.failureAlertCooldownMs ?? 6 * 60 * 60 * 1000)
           : isManualRunMode(runMode) ||
               isForceSendRunMode(runMode) ||
-              cadenceId === "cos-daily-synthesis"
+              cadenceId === "cos-daily-synthesis" ||
+              cadenceId === "cos-weekly-founder-brief"
             ? 0
             : DEFAULT_FOUNDER_COOLDOWN_MS,
     });
@@ -1482,6 +1416,9 @@ export async function executeAgentOsCadence(
           degraded:
             eligibility.action === "send-founder-brief" &&
             eligibility.degraded,
+          allClear:
+            eligibility.action === "send-founder-brief" &&
+            eligibility.allClear === true,
         });
 
   logCadenceDeliveryEvent("send_attempted", {

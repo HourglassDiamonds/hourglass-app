@@ -648,10 +648,11 @@ export async function runAgentOsBrief(
     recommendationAvailability,
     briefEvidenceQuality,
   });
-  // Daily with no founder-now work is a healthy quiet skip, not a sendable brief.
-  // Search/Content/Opportunity recs may still exist; they must not force a send.
+  // Daily/Weekly with no founder-now work is a healthy quiet cycle.
+  // Delivery layer sends a concise all-clear; synthesis must not invent work.
   if (
-    options.briefCadenceIntent === "daily" &&
+    (options.briefCadenceIntent === "daily" ||
+      options.briefCadenceIntent === "weekly") &&
     deliveryGuidance !== "send-failure-alert" &&
     isQuietDayFounderBrief(brief)
   ) {

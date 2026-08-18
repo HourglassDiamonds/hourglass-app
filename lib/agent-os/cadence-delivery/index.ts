@@ -25,10 +25,14 @@ export {
   windowForFrequency,
   FOUNDER_BRIEF_CADENCE_IDS,
   isFounderBriefCadence,
+  officialInProgressKey,
+  isOfficialInProgressKey,
   pickPreferredFounderCadence,
   listDueFounderCadencesInOrder,
   weeklyFounderBriefOccupiesLocalDate,
   founderBriefClaimSucceeded,
+  officialWindowHasAcceptedSend,
+  isOfficialGuaranteedWindowOpen,
 } from "./windows";
 export type { FounderBriefCadenceId } from "./windows";
 

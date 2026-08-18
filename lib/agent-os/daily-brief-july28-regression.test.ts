@@ -371,7 +371,10 @@ describe("July 28 failed brief regression", () => {
       persistenceOk: true,
       intent: "daily",
     });
-    assert.equal(el.action, "send-nothing");
+    assert.equal(el.action, "send-founder-brief");
+    if (el.action === "send-founder-brief") {
+      assert.equal(el.allClear, true);
+    }
   });
 
   it("current operating backlog is available for local preview", () => {

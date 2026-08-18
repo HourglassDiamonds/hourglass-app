@@ -75,19 +75,35 @@ export function createFakeEmailSender(options?: {
   /** Simulate provider returning same message id on duplicate idempotency key. */
   honorIdempotencyKey?: boolean;
 }): AgentOsEmailSender & {
-  calls: Array<{ subject: string; toAlias: string; idempotencyKey?: string }>;
+  calls: Array<{
+    subject: string;
+    text: string;
+    html: string;
+    toAlias: string;
+    idempotencyKey?: string;
+  }>;
 } {
   const calls: Array<{
     subject: string;
+    text: string;
+    html: string;
     toAlias: string;
     idempotencyKey?: string;
   }> = [];
   const seenKeys = new Map<string, string>();
   const sender: AgentOsEmailSender & {
-    calls: Array<{ subject: string; toAlias: string; idempotencyKey?: string }>;
+    calls: Array<{
+      subject: string;
+      text: string;
+      html: string;
+      toAlias: string;
+      idempotencyKey?: string;
+    }>;
   } = async ({ config, rendered, idempotencyKey }) => {
     calls.push({
       subject: rendered.subject,
+      text: rendered.text,
+      html: rendered.html,
       toAlias: config.recipientAlias,
       idempotencyKey,
     });

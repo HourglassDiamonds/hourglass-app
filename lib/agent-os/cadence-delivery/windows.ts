@@ -3,12 +3,18 @@
  */
 
 import { FOUNDER_CADENCE_TIMEZONE } from "../persistence/cadence";
-import { localCalendarStamp } from "../persistence/timezone";
+import {
+  founderLocalIsoWeekday,
+  localCalendarStamp,
+  localMinutesSinceMidnight,
+} from "../persistence/timezone";
+import {
+  resolveLocalEligibleAt,
+  resolveLocalEligibleWeekdays,
+} from "../persistence/evaluate-cadence";
 import type {
-  AgentOsDeliveryRecord,
   AgentOsPersistedState,
   CadenceDefinition,
-  DeliveryStatus,
   FrequencyClass,
 } from "../persistence/types";
 
@@ -68,6 +74,72 @@ export function isFounderBriefCadence(cadenceId: string): boolean {
   return (FOUNDER_BRIEF_CADENCE_IDS as readonly string[]).includes(cadenceId);
 }
 
+/**
+ * Official in-progress lock identity.
+ * Daily and Weekly CoS must not share `chief-of-staff` — a Monday weekly
+ * run must not mark daily as already-running / already satisfied.
+ */
+export function officialInProgressKey(cadenceId: string): string {
+  return `cadence:${cadenceId}`;
+}
+
+export function isOfficialInProgressKey(key: string): boolean {
+  return key.startsWith("cadence:");
+}
+
+const ACCEPTED_OFFICIAL_STATUSES = new Set(["sent"]);
+
+/**
+ * True when the official founder-brief window has provider-accepted send.
+ * Uncertain / failed / suppressed / reserved do not satisfy the contract.
+ */
+export function officialWindowHasAcceptedSend(
+  state: AgentOsPersistedState,
+  cadenceId: string,
+  officialWindow: string,
+): boolean {
+  for (const rec of Object.values(state.deliveries ?? {})) {
+    if (rec.cadenceId !== cadenceId) continue;
+    if (rec.kind !== "founder-brief") continue;
+    if (rec.cadenceWindow !== officialWindow) continue;
+    if (ACCEPTED_OFFICIAL_STATUSES.has(rec.status)) return true;
+  }
+  return false;
+}
+
+/**
+ * True when a guaranteed Daily/Weekly window is still open:
+ * after local eligible time, on an eligible weekday, and no accepted send
+ * for this official window. Catch-up is the same-day remaining scheduler
+ * invocations (7 AM + 8 AM America/New_York). Next local date / next Monday
+ * is a new window — ancient misses are not replayed.
+ */
+export function isOfficialGuaranteedWindowOpen(
+  cadence: CadenceDefinition,
+  state: AgentOsPersistedState,
+  nowIso: string,
+): boolean {
+  if (!isFounderBriefCadence(cadence.cadenceId) || !cadence.enabled) {
+    return false;
+  }
+  const tz = cadence.timezone || FOUNDER_CADENCE_TIMEZONE;
+  const stamp = localCalendarStamp(nowIso, tz);
+  const eligibleAt = resolveLocalEligibleAt(cadence);
+  if (eligibleAt) {
+    const minutesNow = localMinutesSinceMidnight(stamp);
+    if (minutesNow < eligibleAt.hour * 60 + eligibleAt.minute) return false;
+  }
+  const weekdays = resolveLocalEligibleWeekdays(cadence);
+  if (weekdays && weekdays.length > 0) {
+    if (!weekdays.includes(founderLocalIsoWeekday(stamp.date))) return false;
+  }
+  const window = cadenceWindowId(cadence, nowIso);
+  if (officialWindowHasAcceptedSend(state, cadence.cadenceId, window)) {
+    return false;
+  }
+  return true;
+}
+
 /** Prefer weekly founder brief when listing; does not mark others complete. */
 export function pickPreferredFounderCadence(
   dueCadenceIds: string[],
@@ -95,51 +167,19 @@ export function listDueFounderCadencesInOrder(
 }
 
 /**
- * Delivery statuses that mean the weekly founder brief successfully reserved,
- * claimed, or (possibly) sent for anti-redundancy against the same-day daily.
- * Failed / suppressed / absent do not suppress daily.
- */
-const WEEKLY_OCCUPIES_DAILY_STATUSES: ReadonlySet<DeliveryStatus> = new Set([
-  "reserved",
-  "sending",
-  "sent",
-  "uncertain",
-]);
-
-/**
- * True when a weekly founder-brief delivery has successfully claimed or sent
- * for the given founder-local calendar date. Source of truth: delivery state
- * machine records (not mere cadence evaluation).
+ * Historical same-day anti-redundancy helper.
+ * Product contract (P0-COS-3): Monday Daily and Weekly are independently
+ * guaranteed. Callers must not use this to skip Daily after Weekly.
  */
 export function weeklyFounderBriefOccupiesLocalDate(
-  state: AgentOsPersistedState,
-  localDate: string,
-  timeZone: string = FOUNDER_CADENCE_TIMEZONE,
+  _state: AgentOsPersistedState,
+  _localDate: string,
+  _timeZone: string = FOUNDER_CADENCE_TIMEZONE,
 ): boolean {
-  for (const rec of Object.values(state.deliveries ?? {})) {
-    if (!deliveryOccupiesDailyAntiRedundancy(rec, localDate, timeZone)) {
-      continue;
-    }
-    return true;
-  }
+  void _state;
+  void _localDate;
+  void _timeZone;
   return false;
-}
-
-function deliveryOccupiesDailyAntiRedundancy(
-  rec: AgentOsDeliveryRecord,
-  localDate: string,
-  timeZone: string,
-): boolean {
-  if (rec.cadenceId !== "cos-weekly-founder-brief") return false;
-  if (rec.kind !== "founder-brief") return false;
-  if (!WEEKLY_OCCUPIES_DAILY_STATUSES.has(rec.status)) return false;
-  const stampIso = rec.sentAt ?? rec.reservedAt ?? rec.updatedAt;
-  if (!stampIso) return false;
-  try {
-    return localCalendarStamp(stampIso, timeZone).date === localDate;
-  } catch {
-    return false;
-  }
 }
 
 /** Whether a cadence execution result indicates a successful founder-brief claim/send. */
