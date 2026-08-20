@@ -5,6 +5,8 @@ import Link from "next/link";
 import Header from "../../shared-components/Header";
 import CTAGlimmer from "../../shared-components/motion/CTAGlimmer";
 import RevealOnScroll from "../../shared-components/motion/RevealOnScroll";
+import CategoryPageBreadcrumbs from "../components/CategoryPageBreadcrumbs";
+import CategoryGuideJsonLd from "../components/CategoryGuideJsonLd";
 
 const beginHereGuides = [
   {
@@ -142,14 +144,13 @@ const relatedTopics = [
 export default function DiamondClarityPage() {
   return (
     <div className="min-h-screen bg-[#efe8de] text-[#1c1b1a]">
+      <CategoryGuideJsonLd segment="diamond-clarity" variant="hub" />
       <div className="mx-auto max-w-[1200px] px-6 md:px-10">
         <Header currentPage="diamond-guide" />
 
         <section className="border-b border-[#e4dbcf] pb-[84px] pt-[82px] md:pb-[100px] md:pt-[98px]">
           <div className="mx-auto max-w-[760px] text-center">
-            <div className="text-[11px] uppercase tracking-[0.34em] text-[#6d655e]">
-              Diamond Guide / Diamond Clarity
-            </div>
+            <CategoryPageBreadcrumbs segment="diamond-clarity" variant="hub" />
 
             <h1 className="mt-5 text-[2.25rem] font-normal leading-[1.05] tracking-[-0.048em] text-[#1d1b18] md:text-[3.15rem]">
               Clarity matters less than it first appears.

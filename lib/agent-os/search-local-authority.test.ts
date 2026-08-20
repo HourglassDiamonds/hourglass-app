@@ -184,7 +184,7 @@ describe("Local Authority — GSC local detectors", () => {
 });
 
 describe("Local Authority — repository hub and handoffs", () => {
-  it("detects Charlotte Guides hub gap and guide-to-tool/Concierge gaps", async () => {
+  it("maps Charlotte Guides to the official hub and still detects tool/Concierge gaps", async () => {
     const bundle = await loadAllSources("fixture");
     const result = runLocalAuthorityIntelligence({
       mode: "fixture",
@@ -193,7 +193,10 @@ describe("Local Authority — repository hub and handoffs", () => {
       guideAuthority: inspectGuideAuthority(),
       gscAvailable: true,
     });
-    assert.ok(result.audit.findings.some((f) => f.type === "local-hub-gap"));
+    assert.equal(
+      result.audit.findings.some((f) => f.type === "local-hub-gap"),
+      false,
+    );
     assert.ok(
       result.audit.findings.some(
         (f) =>

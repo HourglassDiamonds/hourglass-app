@@ -1,4 +1,7 @@
-import type { DiamondGuideCategorySegment } from "@/lib/seo/diamond-guide-metadata";
+import {
+  getCategoryConfig,
+  type DiamondGuideCategorySegment,
+} from "@/lib/seo/diamond-guide-metadata";
 import { absoluteUrl } from "./constants";
 import {
   categoryHubPath,
@@ -38,6 +41,14 @@ export function diamondGuideHubBreadcrumb(): JsonLdValue {
   return buildBreadcrumbList([HOME_CRUMB, DIAMOND_GUIDE_CRUMB]);
 }
 
+export function allGuidesIndexBreadcrumb(): JsonLdValue {
+  return buildBreadcrumbList([
+    HOME_CRUMB,
+    DIAMOND_GUIDE_CRUMB,
+    { name: "All Diamond Guides", path: "/diamond-guide/all" },
+  ]);
+}
+
 export function categoryHubBreadcrumb(
   segment: DiamondGuideCategorySegment,
 ): JsonLdValue {
@@ -54,16 +65,16 @@ export function categoryHubBreadcrumb(
 export function categoryIndexBreadcrumb(
   segment: DiamondGuideCategorySegment,
 ): JsonLdValue {
-  const hubTitle = categoryHubTitle(segment);
+  const config = getCategoryConfig(segment);
   return buildBreadcrumbList([
     HOME_CRUMB,
     DIAMOND_GUIDE_CRUMB,
     {
-      name: hubTitle,
+      name: config.navTitle,
       path: categoryHubPath(segment),
     },
     {
-      name: `All ${hubTitle.replace(/ Guide$/, "")} Guides`,
+      name: config.indexTitle,
       path: categoryIndexPath(segment),
     },
   ]);

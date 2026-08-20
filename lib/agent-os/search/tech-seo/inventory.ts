@@ -82,6 +82,22 @@ export function buildP1Tech1Inventory(): TechSeoInventoryItem[] {
       metadataSourceFile: "app/concierge/page.tsx",
     },
     {
+      path: "/diamond-guide",
+      label: "Diamond Guide",
+      kind: "editorial-hub",
+      expectedInSitemap: true,
+      indexIntent: "index",
+      metadataSourceFile: "app/diamond-guide/page.tsx",
+    },
+    {
+      path: "/diamond-guide/all",
+      label: "All Diamond Guides",
+      kind: "guide",
+      expectedInSitemap: true,
+      indexIntent: "index",
+      metadataSourceFile: "app/diamond-guide/all/page.tsx",
+    },
+    {
       path: "/privacy",
       label: "Privacy",
       kind: "legal",

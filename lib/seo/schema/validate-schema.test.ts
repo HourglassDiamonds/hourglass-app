@@ -12,10 +12,14 @@ import {
   globalEntityGraph,
 } from "./entities";
 import {
+  allGuidesIndexBreadcrumb,
+  categoryHubBreadcrumb,
+  categoryIndexBreadcrumb,
   diamondIntelligenceBreadcrumb,
   diamondStudioBreadcrumb,
   marketingPageBreadcrumb,
 } from "./breadcrumbs";
+import { categoryCollectionPage } from "./category-map";
 import { jsonLdGraph, serializeJsonLd } from "./json-ld";
 import { DIAMOND_STUDIO_FAQS } from "@/lib/seo/diamond-studio-educational";
 
@@ -171,5 +175,34 @@ describe("structured data builders", () => {
     expect(types).toContain("FAQPage");
     expect(types).toContain("BreadcrumbList");
     expect(serializeJsonLd(payload)).toContain("engagement-rings");
+  });
+
+  it("emits All Diamond Guides breadcrumb", () => {
+    const payload = allGuidesIndexBreadcrumb();
+    const types = graphTypes(payload);
+
+    expect(types).toContain("BreadcrumbList");
+    expect(serializeJsonLd(payload)).toContain("/diamond-guide/all");
+  });
+
+  it("emits one CollectionPage and one BreadcrumbList per category hub and index", () => {
+    const hub = jsonLdGraph([
+      categoryCollectionPage("charlotte-guides", "hub"),
+      categoryHubBreadcrumb("charlotte-guides"),
+    ]);
+    const index = jsonLdGraph([
+      categoryCollectionPage("buying-strategy", "index"),
+      categoryIndexBreadcrumb("buying-strategy"),
+    ]);
+
+    expect(graphTypes(hub).filter((type) => type === "CollectionPage")).toHaveLength(1);
+    expect(graphTypes(hub).filter((type) => type === "BreadcrumbList")).toHaveLength(1);
+    expect(serializeJsonLd(hub)).toContain("/diamond-guide/charlotte-guides");
+    expect(serializeJsonLd(hub)).not.toContain("/diamond-guide/all#charlotte-guides");
+
+    expect(graphTypes(index).filter((type) => type === "CollectionPage")).toHaveLength(1);
+    expect(graphTypes(index).filter((type) => type === "BreadcrumbList")).toHaveLength(1);
+    expect(serializeJsonLd(index)).toContain("Buying Strategy");
+    expect(serializeJsonLd(index)).toContain("/diamond-guide/buying-strategy/all");
   });
 });

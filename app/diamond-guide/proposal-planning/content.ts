@@ -90,37 +90,6 @@ export const articleGroups = [
   },
 ];
 
-export const allArticleGroups = [
-  {
-    title: "Charlotte Locations",
-    articles: proposalPlanningArticles.filter((article) =>
-      [
-        "/diamond-guide/best-places-to-propose-in-charlotte",
-        "/diamond-guide/best-charlotte-rooftop-proposal-locations",
-      ].includes(article.href),
-    ),
-  },
-  {
-    title: "Planning the Moment",
-    articles: proposalPlanningArticles.filter((article) =>
-      [
-        "/diamond-guide/how-to-plan-a-proposal-in-charlotte",
-        "/diamond-guide/how-to-plan-a-proposal-she-will-never-forget",
-        "/diamond-guide/best-proposal-photographers-in-charlotte",
-      ].includes(article.href),
-    ),
-  },
-  {
-    title: "Celebration & After",
-    articles: proposalPlanningArticles.filter((article) =>
-      [
-        "/diamond-guide/most-romantic-restaurants-charlotte-engagement-celebration",
-        "/diamond-guide/first-30-days-after-you-get-engaged",
-      ].includes(article.href),
-    ),
-  },
-];
-
 export const relatedTopics = [
   {
     title: "Buying Strategy",
@@ -129,8 +98,8 @@ export const relatedTopics = [
       "How to choose the ring with clarity before the proposal date arrives.",
   },
   {
-    title: "Charlotte Diamond Advisor Guide",
-    href: "/diamond-guide/charlotte-diamond-advisor-guide",
+    title: "Charlotte Guides",
+    href: "/diamond-guide/charlotte-guides",
     description:
       "Local guidance for navigating the Charlotte diamond market with confidence.",
   },

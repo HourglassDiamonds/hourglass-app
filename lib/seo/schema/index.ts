@@ -21,8 +21,10 @@ export {
 } from "./conversations";
 export {
   articleCategorySegment,
+  categoryCollectionPage,
   categoryHubPath,
   categoryHubTitle,
+  categoryIndexPath,
 } from "./category-map";
 export {
   absoluteUrl,

@@ -112,3 +112,13 @@ export function ProposalPlanningIcon(props: GuideIconProps) {
     </svg>
   );
 }
+
+export function CharlotteGuidesIcon(props: GuideIconProps) {
+  return (
+    <svg {...sharedProps} {...props}>
+      <path d="M16 5.25c-4.05 0-7.35 3.2-7.35 7.15 0 5.35 7.35 14.35 7.35 14.35s7.35-9 7.35-14.35c0-3.95-3.3-7.15-7.35-7.15Z" />
+      <path d="M16 8.6 13.55 11.2 16 16.15l2.45-4.95L16 8.6Z" />
+      <path d="M13.55 11.2h4.9" />
+    </svg>
+  );
+}

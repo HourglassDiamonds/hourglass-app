@@ -52,6 +52,7 @@ export function reconstructSitemapPaths(): {
     "/diamond-shape-studio",
     "/diamond-intelligence",
     "/diamond-guide",
+    "/diamond-guide/all",
     "/whispered-praise",
     "/ledger",
   ];

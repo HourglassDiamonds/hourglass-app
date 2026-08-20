@@ -23,6 +23,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${SITE_URL}/diamond-shape-studio`, priority: 0.9, lastModified },
     { url: `${SITE_URL}/diamond-intelligence`, priority: 0.9, lastModified },
     { url: `${SITE_URL}/diamond-guide`, priority: 0.85, lastModified },
+    { url: `${SITE_URL}/diamond-guide/all`, priority: 0.82, lastModified },
     { url: `${SITE_URL}/whispered-praise`, priority: 0.85, lastModified },
     { url: `${SITE_URL}/ledger`, priority: 0.75, lastModified },
   ];

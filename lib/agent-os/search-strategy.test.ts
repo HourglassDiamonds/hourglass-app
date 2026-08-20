@@ -129,7 +129,7 @@ describe("Guide authority adapter", () => {
   it("runs without GSC and surfaces repository findings", () => {
     const snap = inspectGuideAuthority();
     assert.ok(snap.articleCount > 50);
-    assert.equal(snap.charlotteHubMapped, false);
+    assert.equal(snap.charlotteHubMapped, true);
     assert.ok(
       snap.opportunities.some(
         (o) =>

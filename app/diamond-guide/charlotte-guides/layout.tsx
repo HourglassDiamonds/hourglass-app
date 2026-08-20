@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { categoryHubMetadata } from "@/lib/seo/diamond-guide-metadata";
 
-export const metadata: Metadata = categoryHubMetadata("diamond-clarity");
+export const metadata: Metadata = categoryHubMetadata("charlotte-guides");
 
-export default function DiamondClarityLayout({
+export default function CharlotteGuidesLayout({
   children,
 }: {
   children: React.ReactNode;

@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import JsonLd from "@/app/shared-components/JsonLd";
 import { articlePageMetadata } from "@/lib/seo/diamond-guide-metadata";
@@ -29,6 +28,12 @@ import {
 } from "../article-blocks";
 import { articles, type ArticleBlock } from "../articles";
 import { renderInlineContent } from "../inline-content";
+import GuideBreadcrumbs from "../components/GuideBreadcrumbs";
+import RelatedReadingSection from "../components/RelatedReading";
+import {
+  articleVisualBreadcrumbs,
+  resolveRelatedReading,
+} from "@/lib/diamond-guide/guide-architecture";
 
 type ArticlePageProps = {
   params: Promise<{
@@ -180,6 +185,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
             isCohesionArticle ? "md:pb-[140px]" : ""
           }`}
         >
+          <GuideBreadcrumbs items={articleVisualBreadcrumbs(article)} />
           <div className="text-center">
             <div className="text-[10px] uppercase tracking-[0.34em] text-[#6d655e]">
               {article.category}
@@ -227,40 +233,10 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
             })}
           </div>
 
-          <section
-            className={`border-t border-[#e4dbcf]/55 ${
-              isReferenceArticle
-                ? "mt-20 pt-12 md:mt-24 md:pt-14"
-                : "mt-16 pt-10"
-            } ${isCohesionArticle ? proseWrapClass : isReferenceArticle ? `mx-auto ${proseWrapClass}` : ""}`}
-          >
-            <p className="text-[9px] font-normal uppercase tracking-[0.38em] text-[#6d655e]">
-              Further reading
-            </p>
-            <h3 className="mt-2 font-serif text-[1.2rem] font-normal tracking-[-0.02em] text-[#1f1d1a] md:text-[1.28rem]">
-              Continue Exploring
-            </h3>
-
-            <ul className="mt-7 flex flex-col divide-y divide-[#ebe4da]/35 md:mt-9 md:grid md:grid-cols-2 md:gap-x-12 md:divide-y-0">
-              {article.related.map((item, index) => (
-                <li
-                  key={item.href}
-                  className={`border-[#ebe4da]/35 py-[1.15rem] first:border-t-0 md:border-t md:py-5 ${
-                    index < 2 ? "md:border-t-0" : ""
-                  }`}
-                >
-                  <Link
-                    href={item.href}
-                    className="group block no-underline transition-colors duration-300"
-                  >
-                    <span className="font-serif text-[1.02rem] tracking-[-0.01em] text-[#3a3632] transition-colors duration-300 group-hover:text-[#1f1d1a]">
-                      {item.title}
-                    </span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </section>
+          <RelatedReadingSection
+            reading={resolveRelatedReading(article)}
+            compact={!isReferenceArticle}
+          />
 
           <section
             className={`rounded-[24px] border border-[#e0d8cc]/75 bg-[#f9f6f1]/80 px-6 py-8 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.75)] sm:px-8 sm:py-9 md:px-10 ${

@@ -6,6 +6,8 @@ import Header from "../../shared-components/Header";
 import CTAGlimmer from "../../shared-components/motion/CTAGlimmer";
 import RevealOnScroll from "../../shared-components/motion/RevealOnScroll";
 import ConsultationCtaLink from "@/app/shared-components/ConsultationCtaLink";
+import CategoryPageBreadcrumbs from "../components/CategoryPageBreadcrumbs";
+import CategoryGuideJsonLd from "../components/CategoryGuideJsonLd";
 
 const beginHereGuides = [
   {
@@ -139,14 +141,13 @@ const relatedTopics = [
 export default function DiamondCutPage() {
   return (
     <div className="min-h-screen bg-[#efe8de] text-[#1c1b1a]">
+      <CategoryGuideJsonLd segment="diamond-cut" variant="hub" />
       <div className="mx-auto max-w-[1200px] px-6 md:px-10">
         <Header currentPage="diamond-guide" />
 
         <section className="border-b border-[#e4dbcf] pb-16 pt-14 md:pb-[100px] md:pt-[98px]">
           <div className="mx-auto max-w-[760px] text-center">
-            <div className="text-[11px] uppercase tracking-[0.34em] text-[#6d655e]">
-              Diamond Guide / Diamond Cut
-            </div>
+            <CategoryPageBreadcrumbs segment="diamond-cut" variant="hub" />
 
             <h1 className="mt-4 text-[1.95rem] font-normal leading-[1.1] tracking-[-0.042em] text-[#1d1b18] min-[390px]:text-[2.25rem] min-[390px]:leading-[1.05] min-[390px]:tracking-[-0.048em] md:mt-5 md:text-[3.15rem]">
               Cut is what brings a diamond to life.
