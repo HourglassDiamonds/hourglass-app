@@ -13,12 +13,11 @@ import {
 
 export type AcaiFillVariant = "cool" | "neutral" | "warm" | "hot" | "critical";
 
-export const ACAI_UPDATED_LABEL =
-  "Interim status — methodology revision in progress";
+export const ACAI_UPDATED_LABEL = "";
 
 export const ACAI_READING = {
   score: 85,
-  status: "Frontier Access Broadens, Grid-Bound",
+  status: "Industrialization Capital- and Grid-Bound",
   weeklyChange: 1,
   markerPosition: 85,
   readingLabel: "Acceleration Reading",
@@ -28,13 +27,31 @@ export const ACAI_INTRO =
   "A weekly reading of how AI capability, deployment, and physical infrastructure are moving together — across models, agents, enterprise integration, power, and grid constraints. The purpose is not to forecast AGI. It is to track an industrial buildout: where software progress meets operational friction, energy limits, and organizational adaptation lag.";
 
 export const ACAI_SUMMARY =
-  "Frontier access continues to broaden. OpenAI’s August 6 ChatGPT updates improved GPT-5.6 Sol for Plus/Pro users and expanded GPT-5.6 Luna access for Free users, while explicitly leaving Work and Codex on the previously released July model versions. Capability pace remains accelerating beneath grid and large-load constraints — deployment is still infrastructure-bound.";
+  "Capability pace remains accelerating. The live deployment story is industrialization: capital- and grid-bound. Frontier model capability continues to broaden — GPT-5.6 remains the baseline, Gemini 3.7 Flash entered the cycle, and agents / coding / workflow automation keep widening. Enterprise usage is real, but electricity, interconnection, data-center capacity, long-duration capital, cooling, and physical buildout now set practical pace as clearly as model releases.";
 
 export const ACAI_WEEKLY_SIGNAL =
-  "OpenAI published August 6 ChatGPT updates for GPT-5.6 Sol and Luna, expanding consumer access while stating that Codex and ChatGPT Work remain on the July GPT-5.6 versions. Kimi K3 product/API access from mid-July remains part of the competitive landscape. PJM’s large-load / Interim Resource Adequacy framework keeps physical power and curtailment pathways as co-equal pace-setters beside software access.";
+  "GPT-5.6 general availability is no longer the primary weekly event. The August 18 signal is large AI/data-center financing and electricity-demand developments — including hyperscale power contracting and residual chip-financing structures — beside Gemini 3.7 Flash. Kimi K3 remains competitive context, not this week’s lead. Capability is not unconstrained deployment.";
 
 export const ACAI_ASSESSMENT =
-  "Consumer access broadened without collapsing the distinction between ChatGPT chat surfaces and Work/Codex deployments. Vendor capability claims still require careful qualification. Enterprise adoption continues unevenly. Energized capacity, interconnection, and large-load adequacy remain binding limits on real-world deployment pace.";
+  "Three layers now need to be read together. Model capability is still accelerating. Deployment is broadening through enterprise usage, agent workflows, and consumer access. Industrial constraints — electricity, interconnection, data-center capacity, long-duration capital, large financing structures, cooling, and physical buildout — are binding. Grid and power limits are the infrastructure story as much as the software story.";
+
+export const ACAI_LAYERS = [
+  {
+    name: "Model capability",
+    level: "Accelerating",
+    body: "GPT-5.6 remains the deployed baseline. Gemini 3.7 Flash (August 13) adds another frontier-access surface. Agents, coding, and workflow automation continue to improve without implying a single lab has settled the frontier.",
+  },
+  {
+    name: "Deployment",
+    level: "Broadening, uneven",
+    body: "Enterprise usage, agent workflows, automation, and consumer access keep widening. “Available” still describes different surfaces, integration depths, and governed versus experimental use.",
+  },
+  {
+    name: "Industrial constraints",
+    level: "Capital- and grid-bound",
+    body: "Electricity, interconnection, data-center capacity, long-duration capital, large financing structures, cooling, and physical buildout now co-equal the software layer.",
+  },
+] as const;
 
 export const ACAI_METHOD_PILLS = [
   { label: "Reading Type", value: "Capability + infrastructure index" },
@@ -64,7 +81,7 @@ export const ACAI_CAPABILITY_READINGS = [
     score: 83,
     band: "Elevated",
     fill: "warm" as AcaiFillVariant,
-    text: "OpenAI reported GPT-5.6 general availability across ChatGPT, Codex, and the API; Kimi reported competitive product and API access for K3. Capability signals are no longer limited to partner previews.",
+    text: "GPT-5.6 remains the broadly deployed baseline; Gemini 3.7 Flash added another frontier-access surface on August 13. Capability signals are no longer a single-lab access event.",
   },
   {
     name: "Agents & Tool Use",
@@ -96,7 +113,7 @@ export const ACAI_CAPABILITY_READINGS = [
     score: 93,
     band: "Elevated",
     fill: "warm" as AcaiFillVariant,
-    text: "PJM summer operations and a renewed DOE order window kept power and large-load limits operational beside rising model access.",
+    text: "Hyperscale electricity demand, interconnection queues, data-center capacity, long-duration capital, and cooling remain co-equal limits. Large AI/data-center financing structures — including multi-gigawatt power leases and residual chip-support facilities — confirm industrialization is capital- and grid-bound.",
   },
   {
     name: "Labor Substitution",
@@ -118,16 +135,16 @@ export const ACAI_CAPABILITY_READINGS = [
 
 export const ACAI_WHAT_MOVED = [
   {
-    title: "August ChatGPT access updates",
-    body: "OpenAI’s August 6 updates improved GPT-5.6 Sol for Plus/Pro ChatGPT users and expanded GPT-5.6 Luna for Free users, while stating that Work and Codex remain on the July model versions.",
+    title: "Industrialization, not a model-access week",
+    body: "The live signal is capital- and power-intensive buildout: multi-gigawatt data-center power contracting and large residual financing structures beside still-accelerating model capability.",
   },
   {
-    title: "Qualified access still matters",
-    body: "“Updated” does not mean identical capability across ChatGPT chat, Work, and Codex. Competitive product/API paths such as Kimi K3 remain part of the landscape; deployment still requires qualification.",
+    title: "Frontier capability still broadening",
+    body: "GPT-5.6 remains the baseline; Gemini 3.7 Flash entered on August 13. Agents, coding, and workflow automation continue. Kimi K3 is competitive context, not this week’s primary event.",
   },
   {
-    title: "Grid and large-load constraints still bind",
-    body: "PJM’s large-load / Interim Resource Adequacy framing keeps physical power and curtailment pathways as co-equal pace-setters — acceleration continues without removing infrastructure limits.",
+    title: "Grid and power remain binding",
+    body: "Electricity, interconnection, and large-load adequacy remain practical limits on how fast capability can be deployed.",
   },
 ] as const;
 
@@ -153,7 +170,7 @@ export const ACAI_FRONTIER_WATCHLIST = [
   {
     label: "System Layer",
     title: "Data centers & power",
-    body: "PJM summer operations, DOE order windows, FERC large-load rules, power contracts, grid queues, and cooling — operational pace-setters this cycle.",
+    body: "PJM large-load adequacy, interconnection queues, hyperscale power contracts, cooling, and long-duration financing — operational pace-setters this cycle. Expired July DOE windows are not current heat.",
   },
   {
     label: "System Layer",
@@ -163,7 +180,7 @@ export const ACAI_FRONTIER_WATCHLIST = [
   {
     label: "Frontier Lab",
     title: "OpenAI",
-    body: "GPT-5.6 Sol, Terra, and Luna general availability across ChatGPT, Codex, and the API — weighed against integration depth, reliability, and infrastructure requirements.",
+    body: "GPT-5.6 remains the deployed baseline; August access updates are no longer the weekly event. Watch integration depth, reliability, and infrastructure requirements beside new financing structures.",
   },
   {
     label: "Frontier Lab",
@@ -172,8 +189,8 @@ export const ACAI_FRONTIER_WATCHLIST = [
   },
   {
     label: "Frontier Lab",
-    title: "Moonshot / Kimi",
-    body: "Kimi K3 product and API availability, competitive cost, capacity pressure, and the still-pending full downloadable-weight release.",
+    title: "Google",
+    body: "Gemini 3.7 Flash (August 13) as an additional frontier-access surface — capability broadening without treating any single release as the weekly system event.",
   },
 ] as const;
 
@@ -337,7 +354,7 @@ export const ACAI_SCALE_LABELS = [
 
 export const ACAI_SECTION_SUBTITLES = {
   whatMoved:
-    "GPT-5.6 general availability and Kimi K3 product/API access broadened frontier diffusion — capability, cost, and competition over headline cadence alone.",
+    "Industrialization is becoming capital- and grid-bound — financing and electricity demand now sit beside continuing model-capability gains.",
   milestones:
     "Developments that would justify a material change in the acceleration reading — grounded in operations, not hype.",
   frontierWatchlist:
@@ -379,7 +396,7 @@ export const ACAI_SERIES: LedgerMonitorSeries = {
     },
     {
       reviewDate: "August 12, 2026",
-      evidenceCutoff: LEDGER_EVIDENCE_CUTOFF,
+      evidenceCutoff: "August 12, 2026",
       currentState: "Capability pace: Accelerating",
       currentDirection: "Consumer access broadening, infrastructure-bound",
       previousState: "Capability pace: Accelerating",
@@ -408,6 +425,50 @@ export const ACAI_SERIES: LedgerMonitorSeries = {
           institution: "PJM Interconnection",
           title: "Interim Resource Adequacy / large-load framework materials",
           date: "Reviewed through August 12, 2026",
+          url: "https://www.pjm.com/-/media/DotCom/about-pjm/who-we-are/public-disclosures/2026/20260727-cifp-framework-for-service-during-periods-of-insufficient-resource-adequacy-executive-summary.pdf",
+          supports:
+            "Physical power and large-load adequacy remaining co-equal deployment limits",
+        },
+      ],
+    },
+    {
+      reviewDate: "August 18, 2026",
+      evidenceCutoff: LEDGER_EVIDENCE_CUTOFF,
+      currentState: "Capability pace: Accelerating",
+      currentDirection: "Industrialization: capital- and grid-bound",
+      previousState: "Capability pace: Accelerating",
+      materialChangeSummary:
+        "Deployment interpretation shifted from consumer-access broadening to capital- and grid-bound industrialization. Gemini 3.7 Flash and major AI/data-center financing entered the evidence. GPT-5.6 GA and Kimi K3 are no longer the weekly event. Internal Technology / AI temperature remains elevated / partial.",
+      methodologyVersion: LEDGER_METHODOLOGY_VERSION,
+      sources: [
+        {
+          institution: "Google",
+          title: "Gemini 3.7 Flash: our most intelligent workhorse model",
+          date: "August 13, 2026",
+          url: "https://blog.google/innovation-and-ai/models-and-research/gemini-models/introducing-gemini-3-7-flash/",
+          supports:
+            "Additional frontier-access surface in the current cycle; model capability still broadening",
+        },
+        {
+          institution: "OpenAI",
+          title: "OpenAI joins PORTS-Pike project",
+          date: "August 17, 2026 (reviewed August 18, 2026)",
+          url: "https://openai.com/index/openai-joins-ports-pike-project/",
+          supports:
+            "Approximately 8 GW-IT Ohio lease with SB Energy; electricity, interconnection, and long-duration capital as binding industrial constraints",
+        },
+        {
+          institution: "NVIDIA / U.S. SEC",
+          title: "NVIDIA Form 8-K — residual-value guaranties at PORTS-Pike",
+          date: "August 17, 2026 (reviewed August 18, 2026)",
+          url: "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000069/nvda-20260817.htm",
+          supports:
+            "Credit-support / residual-value structures around the initial 4.25 GW IT load; industrialization as capital- and grid-bound rather than a model-access week",
+        },
+        {
+          institution: "PJM Interconnection",
+          title: "Interim Resource Adequacy / large-load framework materials",
+          date: "Reviewed through August 18, 2026",
           url: "https://www.pjm.com/-/media/DotCom/about-pjm/who-we-are/public-disclosures/2026/20260727-cifp-framework-for-service-during-periods-of-insufficient-resource-adequacy-executive-summary.pdf",
           supports:
             "Physical power and large-load adequacy remaining co-equal deployment limits",

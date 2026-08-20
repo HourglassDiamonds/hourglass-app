@@ -9,15 +9,12 @@
 export const LEDGER_METHODOLOGY_VERSION = "qualitative-v1";
 
 /** Shared evidence cutoff for the current public review cycle. */
-export const LEDGER_EVIDENCE_CUTOFF = "August 12, 2026";
+export const LEDGER_EVIDENCE_CUTOFF = "August 18, 2026";
 
 export const LEDGER_EVIDENCE_CUTOFF_LABEL = `Evidence reviewed through ${LEDGER_EVIDENCE_CUTOFF}`;
 
-export const LEDGER_STATUS_LABEL =
-  "Interim status — methodology revision in progress";
-
 export const LEDGER_METHOD_NOTICE =
-  "Composite numerical scoring is paused while the methodology is standardized and historically validated. Current readings use qualitative states, direction, documented evidence, and defined change triggers.";
+  "Composite numerical scoring is paused. Current readings use qualitative states, direction, documented evidence, and defined change triggers.";
 
 export type LedgerQualitativeStateId =
   | "low"

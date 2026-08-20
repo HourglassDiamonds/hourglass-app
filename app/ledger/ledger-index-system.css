@@ -8,7 +8,8 @@
 .ledger-pmi,
 .ledger-im,
 .ledger-acai,
-.ledger-isi {
+.ledger-isi,
+.ledger-gws {
   --ledger-max: 1120px;
   --ledger-card: #fffdf9;
   --ledger-soft: #fbf8f1;
@@ -42,11 +43,13 @@
 .ledger-index-page.ledger-im,
 .ledger-index-page.ledger-acai,
 .ledger-index-page.ledger-isi,
+.ledger-index-page.ledger-gws,
 .ledger-gpi,
 .ledger-pmi,
 .ledger-im,
 .ledger-acai,
-.ledger-isi {
+.ledger-isi,
+.ledger-gws {
   max-width: var(--ledger-max);
   margin: 0 auto;
   padding: 0 0 var(--ledger-page-pad-bottom);
@@ -59,7 +62,8 @@
 .ledger-pmi *,
 .ledger-im *,
 .ledger-acai *,
-.ledger-isi * {
+.ledger-isi *,
+.ledger-gws * {
   box-sizing: border-box;
 }
 
@@ -432,12 +436,14 @@
 
 /* Denser pages — extra calm before hero (ACAI, ISI) */
 .ledger-acai,
-.ledger-isi {
+.ledger-isi,
+.ledger-gws {
   --ledger-hero-gap: 32px;
 }
 
 .ledger-acai .ledger-index-updated,
-.ledger-isi .ledger-index-updated {
+.ledger-isi .ledger-index-updated,
+.ledger-gws .ledger-index-updated {
   margin-bottom: 2px;
 }
 
@@ -592,11 +598,13 @@
   .ledger-index-page.ledger-im,
   .ledger-index-page.ledger-acai,
   .ledger-index-page.ledger-isi,
+  .ledger-index-page.ledger-gws,
   .ledger-gpi,
   .ledger-pmi,
   .ledger-im,
   .ledger-acai,
-  .ledger-isi {
+  .ledger-isi,
+  .ledger-gws {
     padding-left: 0;
     padding-right: 0;
   }
@@ -614,7 +622,8 @@
 .ledger-im .im-card.ledger-index-hero-card,
 .ledger-isi .isi-card.ledger-index-hero-card,
 .ledger-acai .acai-card.ledger-index-hero-card,
-.ledger-pmi .pmi-card.ledger-index-hero-card {
+.ledger-pmi .pmi-card.ledger-index-hero-card,
+.ledger-gws .gws-card.ledger-index-hero-card {
   padding: var(--ledger-hero-pad);
 }
 
@@ -622,7 +631,8 @@
   .ledger-im .im-card.ledger-index-hero-card,
   .ledger-isi .isi-card.ledger-index-hero-card,
   .ledger-acai .acai-card.ledger-index-hero-card,
-  .ledger-pmi .pmi-card.ledger-index-hero-card {
+  .ledger-pmi .pmi-card.ledger-index-hero-card,
+  .ledger-gws .gws-card.ledger-index-hero-card {
     padding: 24px 20px 22px;
   }
 }

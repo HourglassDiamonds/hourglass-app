@@ -11,8 +11,7 @@ import {
   type LedgerMonitorSeries,
 } from "./ledger-monitor-framework";
 
-export const PMI_UPDATED_LABEL =
-  "Interim status — methodology revision in progress";
+export const PMI_UPDATED_LABEL = "";
 
 export const PMI_MARKET_PRESSURE = {
   score: 85,
@@ -48,27 +47,27 @@ export const PMI_RECENT_READINGS = [
 ] as const;
 
 export const PMI_CROSS_SYSTEM_BRIDGE =
-  "Material markets remain connected to broader macro and reserve-asset conditions — but jewelry sourcing follows its own segmented logic beneath the geopolitical layer.";
+  "Material markets remain connected to broader macro and reserve-asset conditions — but jewelry sourcing follows its own segmented logic beneath the geopolitical layer. Gold is not a simple war-to-price story this week.";
 
 export const PMI_CROSS_SYSTEM_PRESSURE = [
-  "World Gold Council Q2 2026 data show official-sector purchases rebounded sharply (289t), supporting the structural reserve-demand read beneath near-term price action.",
-  "Market pricing indicated gold trading near the $4,400 area into August 12 — higher than the early-August ~$4,000 area references, still without a confirmed jewelry-market regime break.",
-  "Natural-diamond trade commentary continues to describe relative stability versus lab-grown alternatives in parts of the wholesale/retail narrative, while commercial ranges remain price-sensitive.",
-  "Lab-grown price compression remains an embedded commercial factor rather than a newly scored shock.",
+  "Gold remains around the $4,400 area. Safe-haven demand stays strong and central-bank reserve demand remains structural, while higher long-duration yields are competing against that support. Jewelry demand remains price-sensitive.",
+  "World Gold Council Q2 2026 data show official-sector purchases of 289t, supporting the structural reserve-demand read beneath near-term price action.",
+  "Natural-diamond markets are segmented: higher-value / better goods remain relatively firmer, commercial / lower-value goods stay price-sensitive, and supply discipline continues to shape producer economics and rough / polished dynamics. This is not a generic scarcity story.",
+  "Lab-grown continues to track wholesale compression, commodity economics, manufacturing scale, adoption, and retailer margin structure.",
 ] as const;
 
 export const PMI_WHAT_MOVED = [
-  "No materials-regime change this week — structural official-sector demand and segmented diamond conditions continue as embedded supports.",
-  "Gold traded near the $4,400 area into the August 12 review window as markets awaited U.S. CPI; spot movement alone does not rewrite the strategic posture.",
-  "Natural vs lab-grown segmentation remains the dominant jewelry-market frame rather than a broad natural-diamond breakdown.",
+  "No materials-regime change this week — strategically firm and highly segmented remains the posture.",
+  "Gold around ~$4,400 reflects interacting safe-haven and official-sector support against higher long-duration yields, not a monocausal war bid.",
+  "Natural diamonds should be read as segmented (premium versus commercial, supply discipline, producer economics) rather than as broadly scarce.",
 ] as const;
 
 export const PMI_WHAT_TO_WATCH = [
-  "Whether gold holds around the $4,400 area or re-prices with CPI, real yields, and energy-premium headlines.",
+  "Whether gold holds around the $4,400 area as long-duration yields compete with safe-haven and official-sector demand.",
   "Whether official-sector accumulation remains a multi-quarter support after the strong Q2 rebound.",
-  "Whether natural-diamond stability narratives broaden beyond selective wholesale/retail commentary.",
-  "Whether high-quality natural diamonds continue holding as scarcity assets in premium categories.",
-  "Lab-grown pricing pressure and its effect on commercial natural positioning — not premium heirloom-grade work.",
+  "Whether higher-value natural goods continue to diverge from commercial / lower-value ranges.",
+  "Producer economics, supply discipline, and rough / polished dynamics — not a generic scarcity headline.",
+  "Lab-grown wholesale compression, manufacturing scale, adoption, and retailer margin structure.",
   "Sourcing discipline in a segmented market — provenance and selective inventory over reactive accumulation.",
 ] as const;
 
@@ -111,7 +110,7 @@ export const PMI_SERIES: LedgerMonitorSeries = {
     },
     {
       reviewDate: "August 12, 2026",
-      evidenceCutoff: LEDGER_EVIDENCE_CUTOFF,
+      evidenceCutoff: "August 12, 2026",
       currentState: "Strategically firm",
       currentDirection: "Highly segmented",
       previousState: "Strategically firm",
@@ -141,6 +140,42 @@ export const PMI_SERIES: LedgerMonitorSeries = {
           date: "Reviewed through August 12, 2026",
           supports:
             "Segmented natural-diamond stability narratives beside continued lab-grown commercial pressure",
+        },
+      ],
+    },
+    {
+      reviewDate: "August 18, 2026",
+      evidenceCutoff: LEDGER_EVIDENCE_CUTOFF,
+      currentState: "Strategically firm / Highly segmented",
+      currentDirection: "Highly segmented",
+      previousState: "Strategically firm",
+      materialChangeSummary:
+        "No materials-regime change. Gold remains around ~$4,400 as safe-haven and official-sector demand compete with higher long-duration yields. Natural diamonds are read as segmented rather than generically scarce; lab-grown wholesale compression continues.",
+      methodologyVersion: LEDGER_METHODOLOGY_VERSION,
+      sources: [
+        {
+          institution: "World Gold Council",
+          title: "Gold Demand Trends: Q2 2026",
+          date: "Published July 30, 2026 (reviewed August 18, 2026)",
+          url: "https://www.gold.org/goldhub/research/gold-demand-trends/gold-demand-trends-q2-2026",
+          supports:
+            "Official-sector net purchases of 289t in Q2 as structural reserve-demand context beneath near-term gold around $4,400",
+        },
+        {
+          institution: "FXStreet",
+          title: "Gold Price Forecast: XAU/USD eases below $4,400 as US yields rally",
+          date: "August 18, 2026",
+          url: "https://www.fxstreet.com/news/gold-price-forecast-xau-usd-eases-below-4-400-as-us-yields-rally-202608181043",
+          supports:
+            "Spot gold around / just below the $4,400 area on August 18 as higher long-duration yields competed against safe-haven support",
+        },
+        {
+          institution: "De Beers Group",
+          title: "Interim financial results for 2026",
+          date: "H1 2026 results (reviewed August 18, 2026)",
+          url: "https://www.debeersgroup.com/news-insights/latest-group-news/2026/interim-financial-results-for-2026",
+          supports:
+            "Producer economics and sales-mix toward lower-value goods; segmented natural market rather than generic scarcity; smaller/lower-quality naturals under lab-grown price pressure, with synthetic retail prices continuing to fall",
         },
       ],
     },

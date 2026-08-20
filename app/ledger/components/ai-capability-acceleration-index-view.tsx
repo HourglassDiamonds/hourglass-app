@@ -16,6 +16,7 @@ import {
   ACAI_CAPABILITY_READINGS,
   ACAI_FOOTER_NOTE,
   ACAI_FRONTIER_WATCHLIST,
+  ACAI_LAYERS,
   ACAI_MILESTONES,
   ACAI_SECTION_SUBTITLES,
   ACAI_SNAPSHOT,
@@ -78,6 +79,16 @@ export default function AICapabilityAccelerationIndexView() {
 
           <p className="acai-summary ledger-monitor-lead">{ACAI_SUMMARY}</p>
           <p className="acai-assessment ledger-monitor-lead">{ACAI_ASSESSMENT}</p>
+
+          <div className="ledger-monitor-state-grid">
+            {ACAI_LAYERS.map((layer) => (
+              <article key={layer.name} className="ledger-monitor-state-card">
+                <p className="ledger-monitor-state-name">{layer.name}</p>
+                <p className="ledger-monitor-state-level">{layer.level}</p>
+                <p className="ledger-monitor-state-body">{layer.body}</p>
+              </article>
+            ))}
+          </div>
 
           <div className="ledger-signal-block">
             <p className="ledger-changed-label">This week&apos;s signal</p>

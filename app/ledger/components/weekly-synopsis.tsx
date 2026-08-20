@@ -1,19 +1,19 @@
 export const WEEKLY_SYNOPSIS = {
   eyebrow: "Weekly Synopsis",
   headline:
-    "Corridor pressure very high; energy premium partial; broader systems still functioning.",
+    "Energy pressure reaches rates as water and grid constraints broaden.",
   blocks: [
     {
       title: "What changed",
-      body: "Evidence reviewed through August 12, 2026. Hormuz reopen hopes faded amid fresh shipping attacks; Reuters-cited vessel tracking showed a one-week-low Hormuz count near eight (Kpler) / eleven (LSEG) versus roughly 130–140 pre-conflict, with Brent around $89. OpenAI’s August 6 ChatGPT updates broadened consumer GPT-5.6 access while leaving Work/Codex on July versions. PJM’s large-load / Interim Resource Adequacy framework replaced expired mid-July emergency-order language as the live infrastructure story. The first official Ledger System Temperature baseline is established on the hub at 66° (High) with Moderate confidence.",
+      body: "Evidence reviewed through August 18, 2026. Brent moved above $90 as the negotiating window expired and Hormuz restriction continued. Long-duration sovereign yields repriced — U.S. 30-year around 5.32–5.33% and 10-year above ~4.7% — as energy, fiscal issuance, and AI-infrastructure capital demand interacted, even while near-term Fed-hike expectations softened. European water stress produced real power and freight effects; PJM structural adequacy stress remains. AI industrialization is increasingly capital- and power-intensive. Gold remains around ~$4,400, firm but restrained by higher yields. System Temperature is 69°, +3° from the August 12 baseline of 66°.",
     },
     {
-      title: "What's driving pressure",
-      body: "Very high external corridor pressure remains the primary heat source. Transmission is partial into energy prices and contained in credit — reviewed spreads stay near historically tight levels. Infrastructure strain is elevated and structural. Precious materials remain strategically firm and segmented. Information clarity stays uneven, which lowers confidence without independently raising temperature.",
+      title: "Why temperature rose — and why not more",
+      body: "The move is driven by financial conditions tightening as long-duration borrowing costs repriced. Corridor pressure was already severe, so a higher oil print does not, by itself, raise that channel further. Physical systems remain under strain, with operators adapting. Credit and funding markets continue to function; alternative crude routing remains active.",
     },
     {
       title: "What to watch next",
-      body: "Whether Hormuz transit and official flow claims converge. Whether oil near $90 transmits into inflation and policy more than into credit stress. Whether PJM’s large-load adequacy path advances at FERC. Whether consumer AI access updates remain distinct from enterprise deployment reality. Whether gold near $4,400 and official-sector demand stay supports rather than a jewelry-regime break.",
+      body: "Sustained Brent in the mid-$90s or toward $100. Restoration or further deterioration of Hormuz transit. Direction of the 30-year Treasury. Confirmation of IG/HY spreads from dated credit prints. European river recovery or deterioration, nuclear / hydro restoration, and PJM reliability actions. An actual Gulf desalination outage versus strategic exposure only. AI infrastructure financing and power demand.",
     },
   ],
 } as const;

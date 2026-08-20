@@ -22,7 +22,7 @@ export const SYSTEM_TEMPERATURE_METHODOLOGY_POINTS = [
   },
   {
     title: "Cooling is mandatory",
-    body: "Every review must examine what improved, normalized, failed to transmit, was absorbed, or should decay. Unresolved risks do not add fresh heat every week without a material change.",
+    body: "Each review accounts for what improved, normalized, failed to transmit, was absorbed, or faded. Unresolved risks do not add heat every week without a material change.",
   },
 ] as const;
 

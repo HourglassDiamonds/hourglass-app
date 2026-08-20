@@ -29,7 +29,7 @@ const MATERIAL_STATES = [
   {
     name: "Gold",
     level: "Elevated monetary demand",
-    body: "World Gold Council Q2 data show a strong official-sector purchase rebound. Market pricing indicated gold near the $4,400 area into August 12 — near-term sensitivity without a materials-regime break.",
+    body: "World Gold Council Q2 data show a strong official-sector purchase rebound (289t). Gold remains around ~$4,400: safe-haven and reserve demand stay strong, while higher long-duration yields compete against that support. Jewelry demand remains price-sensitive. This is not a simple war-to-gold story.",
   },
   {
     name: "Silver",
@@ -44,17 +44,17 @@ const MATERIAL_STATES = [
   {
     name: "Premium Natural Diamonds",
     level: "Selectively firm",
-    body: "Selective strength in key sizes and cuts; scarcity-asset positioning continues in premium categories.",
+    body: "Higher-value / better goods remain relatively firmer in key sizes and cuts. Supply discipline and producer economics matter; this is not generic natural-diamond scarcity.",
   },
   {
     name: "Commercial Natural Diamonds",
     level: "Price-sensitive",
-    body: "Commercial channels remain price-sensitive as buyers discriminate more carefully across grades and sizes.",
+    body: "Commercial / lower-value goods remain price-sensitive as buyers discriminate more carefully across grades and sizes. Rough / polished dynamics stay segmented from the premium complex.",
   },
   {
     name: "Lab-Grown Diamonds",
     level: "Continued price compression",
-    body: "Pricing compression continues in commercial and mid-tier ranges as an embedded factor, while premium natural holds firmer in selective sizes and cuts.",
+    body: "Wholesale compression, commodity economics, manufacturing scale, adoption, and retailer margin structure continue. This is an embedded commercial factor, not a new weekly shock.",
   },
   {
     name: "Jewelry Demand",

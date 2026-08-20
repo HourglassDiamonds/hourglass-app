@@ -15,7 +15,6 @@ import {
   GPM_LEAD,
   GPM_METHODOLOGY_NOTICE,
   GPM_SNAPSHOT,
-  GPM_STATUS_LABEL,
   GPM_WHAT_CHANGED,
 } from "./global-pressure-monitor-data";
 import { LEDGER_EVIDENCE_CUTOFF } from "./ledger-monitor-framework";
@@ -42,9 +41,9 @@ describe("Global Pressure Index weighted reading (archived numerical series)", (
     assert.equal(gpi.displayTitle, GPM_DISPLAY_TITLE);
     assert.equal(
       gpi.status,
-      "Very high external pressure / Partial energy transmission",
+      "Very high external pressure / Cross-system transmission emerging",
     );
-    assert.match(gpi.updatedLabel, /methodology revision/i);
+    assert.equal(gpi.updatedLabel, "");
     assert.doesNotMatch(gpi.updatedLabel, /updated weekly/i);
     assert.doesNotMatch(gpi.seoDescription, /84°/);
     assert.equal(gpi.recentReadings[0]?.degrees, 84);
@@ -56,22 +55,24 @@ describe("Global Pressure Monitor interim copy", () => {
   it("states qualitative status without a published temperature", () => {
     assert.equal(
       GPM_CURRENT_STATE,
-      "Very high external pressure / Partial energy transmission",
+      "Very high external pressure / Cross-system transmission emerging",
     );
     assert.equal(
       GPM_CURRENT_DIRECTION,
-      "Unstable — energy premium reasserted as reopen hopes faded",
+      "Worsening — energy disruption is beginning to transmit into broader financial conditions while systemic function remains intact.",
     );
-    assert.match(GPM_LEAD, /credit markets/i);
-    assert.match(GPM_LEAD, /Kpler|LSEG|130/);
+    assert.match(GPM_LEAD, /credit|function/i);
+    assert.match(GPM_LEAD, /130/);
     assert.doesNotMatch(GPM_LEAD, /\d+°/);
     assert.doesNotMatch(GPM_INTRO, /System Temperature/i);
-    assert.match(GPM_STATUS_LABEL, /Methodology revision in progress/i);
+    assert.doesNotMatch(GPM_INTRO, /interim|methodology revision/i);
     assert.match(GPM_METHODOLOGY_NOTICE, /Composite numerical scoring is paused/);
-    assert.match(GPM_WHAT_CHANGED, /August 3 review/i);
+    assert.match(GPM_WHAT_CHANGED, /August 12 review/i);
     assert.equal(GPM_SNAPSHOT.evidenceCutoff, LEDGER_EVIDENCE_CUTOFF);
     assert.ok(
-      GPM_SNAPSHOT.sources.some((source) => source.institution === "Reuters"),
+      GPM_SNAPSHOT.sources.some((source) =>
+        source.institution.includes("Reuters") || source.institution === "The National",
+      ),
     );
     assert.ok(
       GPM_SNAPSHOT.sources.some((source) =>

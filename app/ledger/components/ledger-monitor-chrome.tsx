@@ -3,7 +3,6 @@ import {
   LEDGER_EVIDENCE_CUTOFF_LABEL,
   LEDGER_METHOD_NOTICE,
   LEDGER_QUALITATIVE_STATES,
-  LEDGER_STATUS_LABEL,
   type LedgerEvidenceSource,
 } from "../ledger-monitor-framework";
 
@@ -11,15 +10,12 @@ type EvidenceCutoffProps = {
   className?: string;
 };
 
-/** Shared interim status + evidence cutoff under monitor titles. */
+/** Evidence cutoff under monitor titles. */
 export function LedgerMonitorStatusLines({
   className = "",
 }: EvidenceCutoffProps) {
   return (
     <div className={`ledger-monitor-status-lines ${className}`}>
-      <p className="ledger-index-updated">
-        <em>{LEDGER_STATUS_LABEL}</em>
-      </p>
       <p className="ledger-monitor-evidence-cutoff">
         {LEDGER_EVIDENCE_CUTOFF_LABEL}
       </p>

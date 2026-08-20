@@ -5,6 +5,7 @@
 
 import Link from "next/link";
 import {
+  SYSTEM_TEMPERATURE_LEDGER_NOTE,
   SYSTEM_TEMPERATURE_METHODOLOGY_POINTS,
   SYSTEM_TEMPERATURE_METHODOLOGY_SHORT,
   SYSTEM_TEMPERATURE_READING,
@@ -63,9 +64,16 @@ export default function SystemTemperature() {
               <p className="font-sans text-[10px] uppercase tracking-[0.18em] text-[#6d655e]">
                 Confidence: {confidenceLabel(reading.confidence)}
               </p>
-              <p className="mt-2 font-sans text-[10px] uppercase tracking-[0.14em] text-[#6d655e]">
-                {reading.baselineLabel}
-              </p>
+              {reading.weeklyDelta !== null ? (
+                <p className="mt-2 font-sans text-[10px] uppercase tracking-[0.14em] text-[#6d655e]">
+                  {reading.weeklyDelta > 0 ? "+" : ""}
+                  {reading.weeklyDelta}° from the August 12 baseline
+                </p>
+              ) : reading.baselineLabel ? (
+                <p className="mt-2 font-sans text-[10px] uppercase tracking-[0.14em] text-[#6d655e]">
+                  {reading.baselineLabel}
+                </p>
+              ) : null}
               <p className="mt-2 text-[0.88rem] leading-[1.7] text-[#6f6760]">
                 Evidence reviewed through {reading.evidenceCutoff}
               </p>
@@ -89,6 +97,15 @@ export default function SystemTemperature() {
           <p className="mt-6 max-w-[44rem] text-[0.95rem] leading-[1.85] text-[#5c554d]">
             {reading.explanation}
           </p>
+
+          <div className="mt-8 border-t border-[#e4dbcf] pt-6">
+            <p className="font-sans text-[10px] uppercase tracking-[0.28em] text-[#6d655e]">
+              Ledger Note
+            </p>
+            <p className="mt-3 max-w-[44rem] text-[0.95rem] leading-[1.85] text-[#5c554d]">
+              {SYSTEM_TEMPERATURE_LEDGER_NOTE}
+            </p>
+          </div>
 
           <p className="mt-4 text-[0.88rem] leading-[1.75] text-[#6f6760]">
             {SYSTEM_TEMPERATURE_METHODOLOGY_SHORT}{" "}

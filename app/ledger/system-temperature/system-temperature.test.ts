@@ -12,10 +12,12 @@ import {
   publishTemperatureReading,
   SYSTEM_TEMPERATURE_READING,
   SYSTEM_TEMPERATURE_SNAPSHOT_2026_08_12,
+  SYSTEM_TEMPERATURE_SNAPSHOT_2026_08_18,
   TEMPERATURE_BANDS,
   TEMPERATURE_CHANNEL_WEIGHTS,
   TRANSMISSION_CAPS,
   assertWeightsSumToOne,
+  validateTemperatureReading,
 } from "./index";
 import {
   evaluateFixture,
@@ -163,12 +165,15 @@ describe("System Temperature methodology", () => {
       })),
       explanation: "No material change.",
     };
+    const baselineDegrees = computeTemperatureDegrees(
+      SYSTEM_TEMPERATURE_SNAPSHOT_2026_08_12,
+    );
     const reading = publishTemperatureReading(unchanged, {
       isBaseline: false,
-      previousDegrees: SYSTEM_TEMPERATURE_READING.degrees,
+      previousDegrees: baselineDegrees,
     });
     // Same inputs → same degrees, and upward-move validators would fire if delta > 0
-    assert.equal(reading.degrees, SYSTEM_TEMPERATURE_READING.degrees);
+    assert.equal(reading.degrees, baselineDegrees);
     assert.equal(reading.weeklyDelta, 0);
   });
 
@@ -202,7 +207,9 @@ describe("System Temperature methodology", () => {
     };
     const reading = publishTemperatureReading(cooled, {
       isBaseline: false,
-      previousDegrees: SYSTEM_TEMPERATURE_READING.degrees,
+      previousDegrees: computeTemperatureDegrees(
+        SYSTEM_TEMPERATURE_SNAPSHOT_2026_08_12,
+      ),
     });
     assert.ok((reading.weeklyDelta ?? 0) < 0);
     assert.equal(reading.validation.ok, true);
@@ -213,7 +220,8 @@ describe("System Temperature methodology", () => {
       ...SYSTEM_TEMPERATURE_SNAPSHOT_2026_08_12,
       isBaselineReading: false,
       editorialOverrideDegrees: {
-        degrees: SYSTEM_TEMPERATURE_READING.degrees + 8,
+        degrees:
+          computeTemperatureDegrees(SYSTEM_TEMPERATURE_SNAPSHOT_2026_08_12) + 8,
         reason: "Attempted unsupported jump",
       },
       channels: SYSTEM_TEMPERATURE_SNAPSHOT_2026_08_12.channels.map((channel) => ({
@@ -223,7 +231,9 @@ describe("System Temperature methodology", () => {
     };
     const reading = publishTemperatureReading(spiked, {
       isBaseline: false,
-      previousDegrees: SYSTEM_TEMPERATURE_READING.degrees,
+      previousDegrees: computeTemperatureDegrees(
+        SYSTEM_TEMPERATURE_SNAPSHOT_2026_08_12,
+      ),
     });
     assert.equal(reading.validation.ok, false);
     assert.ok(
@@ -305,25 +315,109 @@ describe("Historical calibration fixtures", () => {
   });
 });
 
-describe("August 12, 2026 published reading", () => {
-  it("publishes a validated baseline without legacy delta", () => {
-    assert.equal(SYSTEM_TEMPERATURE_READING.degrees, 66);
-    assert.equal(SYSTEM_TEMPERATURE_READING.bandLabel, "High");
-    assert.equal(SYSTEM_TEMPERATURE_READING.confidence, "moderate");
-    assert.equal(SYSTEM_TEMPERATURE_READING.weeklyDelta, null);
+describe("August 12, 2026 baseline snapshot", () => {
+  it("remains a validated 66° baseline and is not mutated", () => {
+    const baseline = publishTemperatureReading(
+      SYSTEM_TEMPERATURE_SNAPSHOT_2026_08_12,
+      { isBaseline: true, previousDegrees: null },
+    );
+    assert.equal(baseline.degrees, 66);
+    assert.equal(baseline.bandLabel, "High");
+    assert.equal(baseline.confidence, "moderate");
+    assert.equal(baseline.weeklyDelta, null);
     assert.match(
-      SYSTEM_TEMPERATURE_READING.baselineLabel ?? "",
+      baseline.baselineLabel ?? "",
       /Baseline established August 12, 2026/,
     );
-    assert.equal(SYSTEM_TEMPERATURE_READING.evidenceCutoff, "August 12, 2026");
-    assert.equal(SYSTEM_TEMPERATURE_READING.validation.ok, true);
-    assert.ok(SYSTEM_TEMPERATURE_READING.degrees < 90);
+    assert.equal(baseline.evidenceCutoff, "August 12, 2026");
+    assert.equal(baseline.validation.ok, true);
+    assert.ok(!SYSTEM_TEMPERATURE_SNAPSHOT_2026_08_12.editorialOverrideDegrees);
+    assert.equal(
+      SYSTEM_TEMPERATURE_SNAPSHOT_2026_08_12.channels.find(
+        (channel) => channel.id === "financial-economic",
+      )?.pressure,
+      "elevated",
+    );
+    assert.equal(
+      SYSTEM_TEMPERATURE_SNAPSHOT_2026_08_12.channels.find(
+        (channel) => channel.id === "physical-infrastructure",
+      )?.pressure,
+      "high",
+    );
   });
 
   it("uses pressure midpoints and transmission caps as designed", () => {
     assert.equal(PRESSURE_MIDPOINTS.normal, 50);
     assert.equal(TRANSMISSION_CAPS.contained, 64);
     assert.equal(TRANSMISSION_CAPS.partial, 74);
+  });
+});
+
+describe("August 18, 2026 published reading", () => {
+  it("computes 69° from 68.7 without an editorial override", () => {
+    const weighted = computeWeightedTemperature(
+      SYSTEM_TEMPERATURE_SNAPSHOT_2026_08_18.channels,
+    );
+    assert.equal(Number(weighted.toFixed(1)), 68.7);
+    assert.equal(SYSTEM_TEMPERATURE_READING.degrees, 69);
+    assert.equal(SYSTEM_TEMPERATURE_READING.weeklyDelta, 3);
+    assert.equal(SYSTEM_TEMPERATURE_READING.previousDegrees, 66);
+    assert.equal(SYSTEM_TEMPERATURE_READING.bandLabel, "High");
+    assert.equal(
+      SYSTEM_TEMPERATURE_READING.functioningLabel,
+      "Systems Functioning",
+    );
+    assert.equal(SYSTEM_TEMPERATURE_READING.confidence, "moderate");
+    assert.equal(SYSTEM_TEMPERATURE_READING.evidenceCutoff, "August 18, 2026");
+    assert.equal(SYSTEM_TEMPERATURE_READING.validation.ok, true);
+    assert.equal(SYSTEM_TEMPERATURE_READING.baselineLabel, null);
+    assert.ok(!SYSTEM_TEMPERATURE_SNAPSHOT_2026_08_18.editorialOverrideDegrees);
+    assert.ok(SYSTEM_TEMPERATURE_READING.degrees < 90);
+  });
+
+  it("keeps geo and infrastructure discrete levels unchanged while financial rises", () => {
+    const byId = Object.fromEntries(
+      SYSTEM_TEMPERATURE_SNAPSHOT_2026_08_18.channels.map((channel) => [
+        channel.id,
+        channel,
+      ]),
+    );
+    assert.equal(byId["geopolitics-energy-supply"]?.pressure, "severe");
+    assert.equal(byId["geopolitics-energy-supply"]?.transmission, "partial");
+    assert.equal(byId["financial-economic"]?.pressure, "high");
+    assert.equal(byId["financial-economic"]?.transmission, "partial");
+    assert.equal(byId["physical-infrastructure"]?.pressure, "high");
+    assert.equal(byId["physical-infrastructure"]?.transmission, "partial");
+    assert.notEqual(byId["physical-infrastructure"]?.pressure, "very-high");
+    assert.equal(byId["commodities-materials"]?.pressure, "elevated");
+    assert.equal(byId["commodities-materials"]?.transmission, "contained");
+    assert.equal(byId["technology-ai"]?.pressure, "elevated");
+    assert.equal(byId["technology-ai"]?.transmission, "partial");
+  });
+
+  it("does not give Information Signal or Water a temperature weight", () => {
+    assert.equal(Object.keys(TEMPERATURE_CHANNEL_WEIGHTS).length, 5);
+    assert.ok(!("information-signal" in TEMPERATURE_CHANNEL_WEIGHTS));
+    assert.ok(!("global-water-stress" in TEMPERATURE_CHANNEL_WEIGHTS));
+    assert.equal(
+      SYSTEM_TEMPERATURE_SNAPSHOT_2026_08_18.channels.some(
+        (channel) => channel.id === "information-signal",
+      ),
+      false,
+    );
+  });
+
+  it("validates the published move against the August 12 prior channels", () => {
+    const issues = validateTemperatureReading({
+      snapshot: SYSTEM_TEMPERATURE_SNAPSHOT_2026_08_18,
+      degrees: SYSTEM_TEMPERATURE_READING.degrees,
+      previousDegrees: 66,
+      weeklyDelta: 3,
+      isBaseline: false,
+      priorChannels: SYSTEM_TEMPERATURE_SNAPSHOT_2026_08_12.channels,
+    });
+    assert.equal(issues.ok, true);
+    assert.equal(issues.issues.length, 0);
   });
 });
 
@@ -334,6 +428,8 @@ describe("Public route wiring", () => {
     assert.match(hub, /SystemTemperature/);
     assert.match(component, /data-ledger-system-temperature/);
     assert.match(component, /data-ledger-temperature-scale-key/);
+    assert.match(component, /Ledger Note/);
+    assert.doesNotMatch(component, /User Note|USER NOTE|user note/);
     assert.doesNotMatch(component, /\+[0-9]+°/);
   });
 
@@ -344,6 +440,7 @@ describe("Public route wiring", () => {
       "ai-capability-acceleration-index/page.tsx",
       "precious-materials-index/page.tsx",
       "infrastructure-strain-index/page.tsx",
+      "global-water-stress/page.tsx",
     ];
     for (const route of routes) {
       const source = readLedger(route);
@@ -362,9 +459,9 @@ describe("Public route wiring", () => {
 });
 
 describe("Hub / monitor status sync", () => {
-  it("keeps evidence cutoff at August 12, 2026", async () => {
+  it("keeps evidence cutoff at August 18, 2026", async () => {
     const { LEDGER_EVIDENCE_CUTOFF } = await import("../ledger-monitor-framework");
-    assert.equal(LEDGER_EVIDENCE_CUTOFF, "August 12, 2026");
+    assert.equal(LEDGER_EVIDENCE_CUTOFF, "August 18, 2026");
   });
 
   it("syncs hub statuses with monitor snapshot states", async () => {
@@ -374,6 +471,7 @@ describe("Hub / monitor status sync", () => {
     const { ACAI_SNAPSHOT } = await import("../ai-capability-acceleration-data");
     const { PMI_SNAPSHOT } = await import("../precious-materials-data");
     const { ISI_SNAPSHOT } = await import("../infrastructure-strain-data");
+    const { GWS_SNAPSHOT } = await import("../global-water-stress-data");
 
     assert.equal(getLedgerIndex("global-pressure").status, GPM_CURRENT_STATE);
     assert.equal(getLedgerIndex("information-signal").status, ISM_CURRENT_STATE);
@@ -383,5 +481,6 @@ describe("Hub / monitor status sync", () => {
       getLedgerIndex("infrastructure-strain").status,
       ISI_SNAPSHOT.currentState,
     );
+    assert.equal(getLedgerIndex("global-water-stress").status, GWS_SNAPSHOT.currentState);
   });
 });

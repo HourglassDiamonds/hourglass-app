@@ -7,7 +7,6 @@ import {
   LEDGER_EVIDENCE_CUTOFF,
   LEDGER_METHODOLOGY_VERSION,
   LEDGER_METHOD_NOTICE,
-  LEDGER_STATUS_LABEL,
   latestSnapshot,
   type LedgerMonitorSeries,
 } from "./ledger-monitor-framework";
@@ -17,55 +16,53 @@ export const GPM_DISPLAY_TITLE = "Global Pressure Monitor";
 export const GPM_SEO_TITLE = "Global Pressure Monitor";
 
 export const GPM_SEO_DESCRIPTION =
-  "Hourglass Ledger Global Pressure Monitor — interim qualitative status while the numerical index methodology is rebuilt and historically tested.";
+  "Hourglass Ledger Global Pressure Monitor — qualitative status of external threat pressure and systemic transmission.";
 
 export const GPM_HUB_DESCRIPTION =
-  "Very high external pressure / Partial energy transmission — Hormuz and Red Sea shipping stress remain elevated while broader credit-system function holds.";
+  "Very high external pressure / Cross-system transmission emerging — energy disruption is beginning to transmit into broader financial conditions while systemic function remains intact.";
 
 export const GPM_KICKER = "The Ledger Intelligence System";
 
 export const GPM_INTRO =
-  "An interim qualitative monitor of external threat pressure and systemic transmission. Numerical index readings remain paused on this page while the qualitative evidence framework is standardized and historically validated.";
-
-export const GPM_STATUS_LABEL = LEDGER_STATUS_LABEL;
+  "A qualitative monitor of external threat pressure and systemic transmission. Numerical index readings remain paused on this page.";
 
 export const GPM_CURRENT_STATE_LABEL = "Current State";
 
 export const GPM_CURRENT_STATE =
-  "Very high external pressure / Partial energy transmission";
+  "Very high external pressure / Cross-system transmission emerging";
 
 export const GPM_CURRENT_DIRECTION_LABEL = "Current Direction";
 
 export const GPM_CURRENT_DIRECTION =
-  "Unstable — energy premium reasserted as reopen hopes faded";
+  "Worsening — energy disruption is beginning to transmit into broader financial conditions while systemic function remains intact.";
 
 export const GPM_LEAD =
-  "Shipping through the Strait of Hormuz remains far below pre-conflict norms. Reuters reporting citing Kpler and LSEG showed a one-week-low transit count around eight vessels on the latest tracked day (LSEG around eleven), versus roughly 130–140 daily before the conflict. Renewed maritime attacks and stalled U.S.–Iran negotiations have supported Brent near the high-$80s / around $89 a barrel. Credit markets and broader funding conditions have not confirmed a systemic financial transmission event. The Ledger’s current interpretation is concentrated external pressure with partial energy-price transmission — not systemic dysfunction.";
+  "The U.S.–Iran negotiating window expired without an extension or scheduled talks. Hormuz transit remains extremely restricted: vessel-tracking prints cited in the current cycle remain in the low single digits versus roughly 130–140 daily before the conflict, and below the already-low August 12 counts. Brent has established a higher ~$90–91+ regime. Alternative Gulf crude-routing remains functional, and reviewed evidence does not show a broad non-energy supply-chain seizure. Energy-price effects are confirmed; credit and funding markets continue to function.";
 
 export const GPM_WHAT_CHANGED =
-  "Since the August 3 review, hopes for a near-term Hormuz reopening faded as talks remained deadlocked and fresh shipping attacks were reported around Hormuz and Bab el-Mandeb. Vessel-tracking counts cited by Reuters fell to a one-week low near eight (Kpler), with LSEG near eleven, against a pre-conflict baseline of roughly 130–140 daily. Brent traded around $89 as the energy-risk premium reasserted. Credit-spread measures reviewed for this cycle remained near historically tight levels, so financial-system transmission stays contained.";
+  "Since the August 12 review, the negotiating window failed and expired, with no talks scheduled. Hormuz restriction continued at extreme levels, shipping counts moved lower still, and additional cargo / regional military risk remained in the cycle. Brent moved from around $89 into a ~$90–91+ regime. Alternative routing continues to absorb part of the shock. Credit and funding markets have not confirmed a seizure, so energy disruption is beginning to reach broader financial conditions even while systemic function remains intact.";
 
 export const GPM_THREAT_PANEL = {
   title: "Threat Pressure",
   level: "Very High",
   listLabel: "Drivers",
   items: [
-    "Hormuz transit near a one-week low (~8 Kpler / ~11 LSEG vs ~130–140 pre-conflict)",
-    "Renewed commercial-shipping attacks near Hormuz and Bab el-Mandeb",
-    "Elevated oil sensitivity with Brent around $89 / the high-$80s",
-    "Prolonged Middle East production/flow recovery risk in EIA outlooks",
+    "Failed / expired U.S.–Iran negotiating window; no talks scheduled",
+    "Hormuz transit still extreme (low-single-digit prints vs ~130–140 pre-conflict)",
+    "Brent established in a ~$90–91+ regime",
+    "Continuing cargo and regional military risk beside the primary corridor constraint",
   ],
 } as const;
 
 export const GPM_TRANSMISSION_PANEL = {
   title: "System Transmission",
-  level: "Partial (energy) / Contained (credit)",
+  level: "Partial (energy) / Emerging (financial path)",
   listLabel: "Evidence",
   items: [
-    "Brent around $89 as maritime attacks and stalled negotiations supported the premium",
-    "EIA outlooks continue to treat prolonged Hormuz-linked disruption as material",
-    "Reviewed U.S. credit-spread measures remain near historically tight levels",
-    "No confirmed crisis-style funding-market seizure in the reviewed evidence",
+    "Energy-price transmission is confirmed at a higher oil regime",
+    "Long-duration borrowing costs have risen alongside the energy shock, without a confirmed funding-market seizure",
+    "Alternative Gulf crude-routing remains functional",
+    "No verified broad non-energy supply-chain or funding-market seizure in the evidence reviewed",
   ],
 } as const;
 
@@ -75,24 +72,24 @@ export const GPM_WATCHING_TITLE = "What We're Watching";
 
 export const GPM_WATCHING_BLOCKS = [
   {
-    title: "Hormuz reopen vs continued constraint",
-    body: "Whether diplomacy restores meaningful two-way transit — distinct from contested claims of control or recovered flows that vessel-tracking still does not fully corroborate.",
+    title: "Hormuz transit vs continued restriction",
+    body: "Whether independently trackable transit recovers from extreme single-digit prints, or whether restriction deepens further.",
   },
   {
-    title: "Oil, inflation & policy path",
-    body: "Whether oil remains elevated long enough to materially affect inflation, consumption, and central-bank policy — beyond a short-lived risk premium.",
+    title: "Diplomatic path after the expired window",
+    body: "Whether a new scheduled negotiating framework appears — distinct from contested control claims or unrecovered flow statements.",
+  },
+  {
+    title: "Oil regime durability",
+    body: "Whether Brent holds mid-$90s or approaches $100, versus a return below the newly established $90+ band.",
   },
   {
     title: "Credit, stress & volatility confirmation",
-    body: "Whether corporate-credit spreads, financial-stress measures, or volatility begin confirming the geopolitical signal. Without that transmission, financial-system stress stays below crisis bands.",
-  },
-  {
-    title: "Bab el-Mandeb / Red Sea secondary corridor risk",
-    body: "Whether Houthi and related shipping attacks broaden into a sustained second corridor shock beyond the primary Hormuz constraint.",
+    body: "Whether corporate-credit spreads, financial-stress measures, or funding markets begin confirming a seizure. Absent that, financial-system stress stays below crisis bands.",
   },
   {
     title: "Supply-chain transmission beyond energy",
-    body: "Whether disruption spreads from energy shipping into manufacturing, freight, and final-goods availability.",
+    body: "Whether disruption spreads from energy shipping into manufacturing, freight, and final-goods availability. That transmission is not confirmed in the current evidence.",
   },
 ] as const;
 
@@ -124,11 +121,13 @@ export const GPM_SERIES: LedgerMonitorSeries = {
     },
     {
       reviewDate: "August 12, 2026",
-      evidenceCutoff: LEDGER_EVIDENCE_CUTOFF,
-      currentState: GPM_CURRENT_STATE,
-      currentDirection: GPM_CURRENT_DIRECTION,
+      evidenceCutoff: "August 12, 2026",
+      currentState: "Very high external pressure / Partial energy transmission",
+      currentDirection:
+        "Unstable — energy premium reasserted as reopen hopes faded",
       previousState: "High external pressure / Contained systemic transmission",
-      materialChangeSummary: GPM_WHAT_CHANGED,
+      materialChangeSummary:
+        "Since the August 3 review, hopes for a near-term Hormuz reopening faded as talks remained deadlocked and fresh shipping attacks were reported around Hormuz and Bab el-Mandeb. Vessel-tracking counts cited by Reuters fell to a one-week low near eight (Kpler), with LSEG near eleven, against a pre-conflict baseline of roughly 130–140 daily. Brent traded around $89 as the energy-risk premium reasserted. Credit-spread measures reviewed for this cycle remained near historically tight levels, so financial-system transmission stays contained.",
       methodologyVersion: LEDGER_METHODOLOGY_VERSION,
       sources: [
         {
@@ -164,6 +163,76 @@ export const GPM_SERIES: LedgerMonitorSeries = {
           url: "https://fred.stlouisfed.org/series/BAMLC0A0CM",
           supports:
             "Investment-grade credit spreads remaining near historically tight levels — no confirmed crisis-style financial transmission",
+        },
+      ],
+    },
+    {
+      reviewDate: "August 18, 2026",
+      evidenceCutoff: LEDGER_EVIDENCE_CUTOFF,
+      currentState: GPM_CURRENT_STATE,
+      currentDirection: GPM_CURRENT_DIRECTION,
+      previousState: "Very high external pressure / Partial energy transmission",
+      materialChangeSummary: GPM_WHAT_CHANGED,
+      methodologyVersion: LEDGER_METHODOLOGY_VERSION,
+      sources: [
+        {
+          institution: "The National",
+          title:
+            "Hormuz traffic falls to single digits as 60-day deadline for US-Iran MoU expires",
+          date: "August 17, 2026 (reviewed August 18, 2026)",
+          url: "https://www.thenationalnews.com/business/energy/2026/08/17/hormuz-traffic-falls-to-single-digits-as-60-day-deadline-for-us-iran-mou-expires/",
+          supports:
+            "Expired 60-day MoU; single-digit Hormuz crossings; Iranian Hormuz oil flows down sharply; pre-conflict transit far above current prints",
+        },
+        {
+          institution: "Marine Link / Reuters",
+          title: "No US-Iran Talks Planned, Hormuz Remains Closed",
+          date: "August 18, 2026",
+          url: "https://www.marinelink.com/news/usiran-talks-planned-hormuz-remains-542205",
+          supports:
+            "No talks taking place or scheduled; Brent settled just over $91; preliminary shipping data still in single digits",
+        },
+        {
+          institution: "Al Jazeera / UKMTO",
+          title:
+            "Vessel hit by ‘unknown projectile’ in Strait of Hormuz, UKMTO says",
+          date: "August 18, 2026",
+          url: "https://www.aljazeera.com/news/2026/8/18/vessel-hit-by-unknown-projectile-in-strait-of-hormuz-ukmto-says",
+          supports:
+            "Additional cargo / maritime-risk incident in the strait beside the primary transit constraint; single-digit crossings versus 130+ pre-conflict",
+        },
+        {
+          institution: "OilPrice.com",
+          title: "How Gulf Oil Is Escaping the Strait of Hormuz",
+          date: "August 18, 2026",
+          url: "https://oilprice.com/Energy/Crude-Oil/How-Gulf-Oil-Is-Escaping-the-Strait-of-Hormuz.html",
+          supports:
+            "Brent around $91; Monday commodity-vessel count in low single digits; alternative routing / ship-to-ship and bypass mechanisms remaining part of the absorption story",
+        },
+        {
+          institution: "U.S. Energy Information Administration",
+          title: "Short-Term Energy Outlook — Hormuz-linked disruption context",
+          date: "Accessed August 18, 2026",
+          url: "https://www.eia.gov/outlooks/steo/",
+          supports:
+            "Prolonged Middle East flow/production recovery risk under continued Hormuz-linked disruption",
+        },
+        {
+          institution: "Federal Reserve Bank of St. Louis (FRED)",
+          title: "ICE BofA US Corporate Index Option-Adjusted Spread (BAMLC0A0CM)",
+          date: "Latest observation August 17, 2026 (accessed August 18, 2026)",
+          url: "https://fred.stlouisfed.org/series/BAMLC0A0CM",
+          supports:
+            "No verified broad credit-spread or funding-market dysfunction in the evidence reviewed; August 17 IG OAS observation 0.81 — not an August 18 live print",
+        },
+        {
+          institution: "Federal Reserve Bank of St. Louis (FRED)",
+          title:
+            "ICE BofA US High Yield Index Option-Adjusted Spread (BAMLH0A0HYM2)",
+          date: "Latest observation August 17, 2026 (accessed August 18, 2026)",
+          url: "https://fred.stlouisfed.org/series/BAMLH0A0HYM2",
+          supports:
+            "August 17 HY OAS observation 2.70; dated credit print, not an August 18 live funding-market seizure",
         },
       ],
     },

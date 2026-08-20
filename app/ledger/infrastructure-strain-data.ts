@@ -11,13 +11,12 @@ import {
   type LedgerMonitorSeries,
 } from "./ledger-monitor-framework";
 
-export const ISI_UPDATED_LABEL =
-  "Interim status — methodology revision in progress";
+export const ISI_UPDATED_LABEL = "";
 
 export const ISI_READING = {
   score: 87,
   label: "Infrastructure Strain",
-  status: "Elevated Strain",
+  status: "High Strain",
   weeklyChange: 0,
 } as const;
 
@@ -25,23 +24,23 @@ export const ISI_INTRO =
   "A weekly reading of the physical constraints beneath digital, economic, and industrial acceleration: power, transmission, transformers, data centers, water, skilled labor, semiconductors, and logistics. The purpose is not to predict failure. It is to track a capacity expansion race — where capital deploys quickly, buildout timing stays uneven, and flexibility narrows beneath functioning systems.";
 
 export const ISI_SUMMARY =
-  "Strain remains elevated as a structural large-load and resource-adequacy problem. PJM’s Interim Resource Adequacy / large-load framework — including registry, bring-your-own-capacity pathways, and proposed curtailment for non-firm new large loads from June 2027 — is now the live planning story. Mid-July DOE emergency-order and Maximum Generation alert windows have expired and are historical context only. Reviewed evidence does not show a confirmed broad blackout; systems function with narrowed flexibility.";
+  "Public infrastructure strain is now high and multi-regional, with active adaptation. PJM’s 6,831 MW 2028/29 adequacy shortfall, reliability backstop, and IRAS / large-load framework remain the U.S. planning constraint. European drought has produced confirmed hydro weakness, nuclear-cooling effects, and Rhine/Danube freight consequences. Power systems remain functioning: operators are adapting, imports and alternate generation are available where relevant, and river freight is constrained rather than universally stopped. There is no synchronized continental grid failure.";
 
 export const ISI_WEEKLY_SIGNAL =
-  "PJM board materials and subsequent coverage describe a multi-part large-load adequacy package: a large-load registry, Interim Resource Adequacy Service for new loads that do not bring sufficient capacity, and related reliability-backstop procurement work aimed at FERC. The practical effect is that AI data-center growth is being treated as a binding reliability and cost-allocation problem, not merely a summer heat anecdote. Expired July 14–21 emergency-order language is no longer described as current.";
+  "The live story is broader geographically and operationally than the August 12 PJM-centric picture. U.S. large-load adequacy planning and European water-constrained power and freight now sit together, with operators adapting and systems still functioning.";
 
 export const ISI_CATEGORIES = [
   {
     name: "Grid & Transmission",
     score: 87,
     state: "High",
-    body: "Resource-adequacy shortfalls and large-load additions dominate the live read. Summer 2026 heat alerts and the expired DOE Order 202-26-35 window remain useful historical context for thin spare capacity, but they are not current emergency authorities.",
+    body: "PJM’s 6,831 MW adequacy shortfall, reliability backstop, and IRAS / large-load planning remain binding. European operators are compensating through imports and alternate generation where available. Systems function; spare flexibility is narrower.",
   },
   {
     name: "Data-Center Load",
     score: 90,
     state: "High",
-    body: "PJM’s IRAS / bring-your-own-capacity framing would require many new large loads to secure supply or accept priority curtailment in shortage conditions from 2027 — a structural transmission of AI load into interconnection and siting reality.",
+    body: "Large-load / data-center adaptation is now an explicit reliability problem: bring-your-own-capacity, registry, and proposed curtailment pathways for non-firm new loads.",
   },
   {
     name: "Transformer Supply",
@@ -63,9 +62,9 @@ export const ISI_CATEGORIES = [
   },
   {
     name: "Water & Cooling",
-    score: 75,
-    state: "Elevated",
-    body: "Cooling and water constraints remain relevant for large-load siting even outside active heat-alert windows — uneven by geography, structurally persistent.",
+    score: 82,
+    state: "High",
+    body: "European river-level constraints are transmitting into nuclear cooling, hydro output, freight, and some municipal / agricultural restrictions. This is multi-regional operational strain, not a continental water-system collapse. Improving basins are tracked on the Water monitor.",
   },
 ] as const;
 
@@ -86,28 +85,28 @@ export const ISI_BENCHMARKS = [
 
 export const ISI_WHAT_WATCHING = [
   {
-    title: "PJM IRAS / large-load FERC path",
-    body: "Whether PJM’s Interim Resource Adequacy and related large-load filings advance, face challenge, or are revised before the 2027 curtailment framework would apply.",
+    title: "PJM reliability actions",
+    body: "Whether the 6,831 MW shortfall, reliability-backstop auction, and IRAS / large-load path advance, face challenge, or are revised.",
+  },
+  {
+    title: "European river recovery or deterioration",
+    body: "Whether Danube and Rhine levels, nuclear cooling, hydro output, and freight constraints ease seasonally or deepen.",
+  },
+  {
+    title: "Nuclear / hydro restoration",
+    body: "Whether affected units return as cooling water recovers, or whether output remains derated.",
   },
   {
     title: "Bring-your-own-capacity contracting",
-    body: "Whether new data-center projects secure generation or demand-response arrangements fast enough to retain firmer service characteristics.",
-  },
-  {
-    title: "Reliability backstop procurement",
-    body: "How one-time or emergency capacity procurements interact with ordinary auctions and ratepayer-protection commitments.",
+    body: "Whether new data-center projects secure generation or demand-response arrangements fast enough to retain firmer service.",
   },
   {
     title: "Transformer manufacturing",
     body: "Lead times, order books, and competition between utilities and hyperscalers for large transformer capacity.",
   },
   {
-    title: "Electrical labor availability",
-    body: "Electricians, lineworkers, utility engineers, and industrial crews — the practical limit on how fast plans become energized capacity.",
-  },
-  {
-    title: "Cooling and water siting constraints",
-    body: "Whether large-load proposals increasingly stall on cooling, water, or local acceptance rather than software demand alone.",
+    title: "Cooling, water & labor siting",
+    body: "Whether large-load proposals stall on cooling, water, skilled trades, or local acceptance rather than software demand alone.",
   },
 ] as const;
 
@@ -240,7 +239,7 @@ export const ISI_SERIES: LedgerMonitorSeries = {
     },
     {
       reviewDate: "August 12, 2026",
-      evidenceCutoff: LEDGER_EVIDENCE_CUTOFF,
+      evidenceCutoff: "August 12, 2026",
       currentState: "Elevated infrastructure strain",
       currentDirection: "Functioning with narrowed flexibility",
       previousState: "Elevated infrastructure strain",
@@ -264,6 +263,62 @@ export const ISI_SERIES: LedgerMonitorSeries = {
           url: "https://www.datacenterknowledge.com/energy-power-supply/pjm-says-ai-data-centers-must-bring-capacity-to-earn-firm-service",
           supports:
             "Independent industry read-through of PJM large-load curtailment and capacity requirements",
+        },
+      ],
+    },
+    {
+      reviewDate: "August 18, 2026",
+      evidenceCutoff: LEDGER_EVIDENCE_CUTOFF,
+      currentState: "High infrastructure strain / Active adaptation",
+      currentDirection: "Multi-regional — systems functioning",
+      previousState: "Elevated infrastructure strain",
+      materialChangeSummary:
+        "Public state moved from elevated/PJM-centric to high / active adaptation across U.S. large-load adequacy and European water-constrained power and freight. Operators are adapting; there is no synchronized grid failure. Internal System Temperature infrastructure remains high / partial and does not cross to very-high.",
+      methodologyVersion: LEDGER_METHODOLOGY_VERSION,
+      sources: [
+        {
+          institution: "PJM Interconnection",
+          title: "2028/2029 Base Residual Auction Report",
+          date: "July 14, 2026 (reviewed August 18, 2026)",
+          url: "https://www.pjm.com/-/media/DotCom/markets-ops/rpm/rpm-auction-info/2028-2029/2028-2029-bra-results-report.pdf",
+          supports:
+            "6,831.3 MW UCAP short of the 2028/2029 RTO Reliability Requirement; structural adequacy gap, not a current blackout",
+        },
+        {
+          institution: "PJM Interconnection / PR Newswire",
+          title:
+            "PJM Capacity Auction Procures 138,318 MW of Generation Resources as Work Continues To Address Growing Electricity Demand",
+          date: "July 14, 2026 (reviewed August 18, 2026)",
+          url: "https://www.prnewswire.com/news-releases/pjm-capacity-auction-procures-138-318-mw-of-generation-resources-as-work-continues-to-address-growing-electricity-demand-302825613.html",
+          supports:
+            "6,831 MW short of the reliability requirement; planned reliability-backstop procurement as active adaptation, not loss of current system function",
+        },
+        {
+          institution: "PJM Interconnection",
+          title:
+            "Interim Resource Adequacy Service / framework for service during periods of insufficient resource adequacy",
+          date: "July 27, 2026 board materials (reviewed August 18, 2026)",
+          url: "https://www.pjm.com/-/media/DotCom/about-pjm/who-we-are/public-disclosures/2026/20260727-cifp-framework-for-service-during-periods-of-insufficient-resource-adequacy-executive-summary.pdf",
+          supports:
+            "IRAS / large-load / bring-your-own-capacity adaptation framework remaining the live U.S. planning constraint",
+        },
+        {
+          institution: "BBC News",
+          title:
+            "Romania shuts only nuclear plant as heat causes drop in Danube River level",
+          date: "August 13–14, 2026 (reviewed August 18, 2026)",
+          url: "https://www.bbc.com/news/articles/cqlxpq5q799o",
+          supports:
+            "Cernavodă shutdown on low Danube cooling water; hydro weakness; Rhine traffic severely limited; operators adapting via imports and alternate generation",
+        },
+        {
+          institution: "Euronews",
+          title:
+            "Romania shuts off second reactor at Cernavodă NPP amid low water levels on Danube",
+          date: "August 13, 2026 (reviewed August 18, 2026)",
+          url: "https://www.euronews.com/my-europe/2026/08/13/romania-shuts-off-second-reactor-at-cernavoda-npp-amid-low-water-levels-on-danube",
+          supports:
+            "Danube-linked nuclear and shipping effects; neighboring plants still operating with emergency measures — no synchronized continental grid failure",
         },
       ],
     },

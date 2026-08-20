@@ -32,7 +32,7 @@ const QUALITATIVE_STATES: Record<string, string> = {
   "Transformer Supply": "Constrained",
   "Semiconductor Capacity": "Elevated",
   "Skilled Labor": "Elevated",
-  "Water & Cooling": "Elevated",
+  "Water & Cooling": "High",
 };
 
 function WatchCard({ title, body }: { title: string; body: string }) {
