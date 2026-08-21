@@ -241,6 +241,15 @@ describe("AA-4 Diamond Studio selection semantics (WCAG 4.1.2)", () => {
       "shape strip and both orientation buttons wire the handler",
     );
   });
+
+  it("skin-tone and band-metal swatches keep accessible names without visible labels", () => {
+    assert.match(studioPage, /aria-label="Skin tone"/);
+    assert.match(studioPage, /aria-label="Band metal"/);
+    assert.match(studioPage, /data-skin=\{id\}/);
+    assert.match(studioPage, /data-metal=\{id\}/);
+    assert.match(studioPage, /aria-label=\{label\}/);
+    assert.doesNotMatch(studioPage, /className="dts-tone-swatch-label"/);
+  });
 });
 
 /* ── AA-5: Diamond Intelligence error announcements ─────────────────── */

@@ -13,7 +13,9 @@ export type DiamondStudioEventName =
   | "home_clicked"
   | "diamond_studio_share"
   | "diamond_studio_configuration_loaded"
-  | "diamond_studio_editorial_contact";
+  | "diamond_studio_editorial_contact"
+  | "band_metal_changed"
+  | "band_width_changed";
 
 export type DiamondStudioDeviceType = "mobile" | "desktop";
 
@@ -25,6 +27,7 @@ export type DiamondStudioEventProperties = {
   fingerSize: number;
   bandWidth: number;
   skinTone: string;
+  metal: string;
   orientation: string;
   coveragePercent: number;
   coverageZone: string;
@@ -34,6 +37,10 @@ export type DiamondStudioEventProperties = {
   placement?: string;
   /** studio_session_engaged */
   engagementTrigger?: DiamondStudioEngagementTrigger;
+  /** band_metal_changed */
+  previousMetal?: string;
+  /** band_width_changed */
+  previousBandWidth?: number;
 };
 
 export function trackDiamondStudioEvent(

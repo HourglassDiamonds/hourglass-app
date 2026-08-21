@@ -1,8 +1,19 @@
 import { ALL_SHAPE_IDS, type ShapeId } from "@/app/diamond-studio/components/diamond-cad-types";
+import {
+  BAND_METALS,
+  BAND_WIDTHS,
+  DEFAULT_BAND_METAL,
+  DEFAULT_BAND_WIDTH,
+  SKIN_TONES,
+  type BandMetal,
+  type BandWidth,
+  type SkinTone,
+} from "@/lib/diamond-studio/band-assets";
 
-export type StudioSkinTone = "light" | "medium" | "dark";
+export type StudioSkinTone = SkinTone;
 export type StudioOrientation = "ns" | "ew";
-export type StudioBandWidth = 2 | 2.5 | 3 | 3.5 | 4 | 4.5 | 5;
+export type StudioBandWidth = BandWidth;
+export type StudioBandMetal = BandMetal;
 
 export type DiamondStudioUrlState = {
   shape: ShapeId;
@@ -11,23 +22,33 @@ export type DiamondStudioUrlState = {
   bandWidth: StudioBandWidth;
   skinTone: StudioSkinTone;
   orientation: StudioOrientation;
+  metal: StudioBandMetal;
 };
 
 export const DIAMOND_STUDIO_URL_DEFAULTS: DiamondStudioUrlState = {
   shape: "round",
   carat: 2.5,
   ringSize: 6,
-  bandWidth: 2.5,
+  bandWidth: DEFAULT_BAND_WIDTH,
   skinTone: "light",
   orientation: "ns",
+  metal: DEFAULT_BAND_METAL,
 };
 
-export const STUDIO_BAND_WIDTHS: readonly StudioBandWidth[] = [
-  2, 2.5, 3, 3.5, 4, 4.5, 5,
-] as const;
+export const STUDIO_BAND_WIDTHS: readonly StudioBandWidth[] = BAND_WIDTHS;
+export const STUDIO_BAND_METALS: readonly StudioBandMetal[] = BAND_METALS;
 
-const SKIN_TONES = new Set<StudioSkinTone>(["light", "medium", "dark"]);
+const SKIN_TONE_SET = new Set<StudioSkinTone>(SKIN_TONES);
+const METAL_SET = new Set<StudioBandMetal>(BAND_METALS);
 const SHAPE_SET = new Set<string>(ALL_SHAPE_IDS);
+const METAL_ALIASES: Record<string, StudioBandMetal> = {
+  yellow: "yellow-gold",
+  white: "white-gold",
+  rose: "rose-gold",
+  "yellow-gold": "yellow-gold",
+  "white-gold": "white-gold",
+  "rose-gold": "rose-gold",
+};
 
 const CARAT_MIN = 1;
 const CARAT_MAX = 10;
@@ -70,7 +91,15 @@ function parseBandWidth(raw: string | null): StudioBandWidth | null {
 function parseSkinTone(raw: string | null): StudioSkinTone | null {
   if (!raw) return null;
   const value = raw.trim().toLowerCase() as StudioSkinTone;
-  return SKIN_TONES.has(value) ? value : null;
+  return SKIN_TONE_SET.has(value) ? value : null;
+}
+
+function parseMetal(raw: string | null): StudioBandMetal | null {
+  if (!raw) return null;
+  const value = raw.trim().toLowerCase();
+  return METAL_ALIASES[value] ?? (METAL_SET.has(value as StudioBandMetal)
+    ? (value as StudioBandMetal)
+    : null);
 }
 
 function parseOrientation(raw: string | null): StudioOrientation | null {
@@ -107,6 +136,7 @@ export function parseStudioSearchParams(
   const bandWidth = parseBandWidth(params.get("bandWidth"));
   const skinTone = parseSkinTone(params.get("skinTone"));
   const orientation = parseOrientation(params.get("orientation"));
+  const metal = parseMetal(params.get("metal"));
 
   const state: DiamondStudioUrlState = { ...defaults };
 
@@ -132,6 +162,10 @@ export function parseStudioSearchParams(
   }
   if (orientation) {
     state.orientation = orientation;
+    loadedFromUrl = true;
+  }
+  if (metal) {
+    state.metal = metal;
     loadedFromUrl = true;
   }
 
@@ -175,6 +209,9 @@ export function serializeStudioSearchParams(
   if (state.orientation !== defaults.orientation) {
     params.set("orientation", state.orientation);
   }
+  if (state.metal !== defaults.metal) {
+    params.set("metal", state.metal);
+  }
 
   return params.toString();
 }
@@ -198,6 +235,7 @@ export function studioStatesEqual(
     Math.abs(a.ringSize - b.ringSize) < 0.001 &&
     Math.abs(a.bandWidth - b.bandWidth) < 0.001 &&
     a.skinTone === b.skinTone &&
-    a.orientation === b.orientation
+    a.orientation === b.orientation &&
+    a.metal === b.metal
   );
 }

@@ -52,6 +52,7 @@ describe("Size Studio slider keyboard accessibility (WCAG 2.1.1)", () => {
     assert.match(page, /aria-valuetext=\{`US ring size \$\{ringSize\.toFixed\(1\)\}`\}/);
     assert.match(page, /aria-valuetext=\{`\$\{carat\.toFixed\(2\)\} carats`\}/);
     assert.match(page, /aria-valuetext=\{`\$\{bandWidth\} millimeter band`\}/);
+    assert.match(page, /useState<BandWidth>\(DEFAULT_BAND_WIDTH\)/);
   });
 
   it("keyboard focus on the track has a visible focus treatment", () => {

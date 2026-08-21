@@ -31,6 +31,18 @@ import {
   getRoundDiamondMm,
 } from "@/lib/diamond-tech-suite/face-dimensions";
 import {
+  adjacentBandWidths,
+  BAND_METALS,
+  BAND_WIDTHS,
+  DEFAULT_BAND_METAL,
+  DEFAULT_BAND_WIDTH,
+  SKIN_TONES,
+  getBandAssetSrc,
+  type BandMetal,
+  type BandWidth,
+  type SkinTone,
+} from "@/lib/diamond-studio/band-assets";
+import {
   buildStudioSharePath,
   parseStudioSearchParams,
   serializeStudioSearchParams,
@@ -42,11 +54,7 @@ type StoneOrientation = "ns" | "ew";
 
 const ORIENTATIONS: readonly StoneOrientation[] = ["ns", "ew"];
 
-type SkinTone = "light" | "medium" | "dark";
-
-type BandWidth = 2 | 2.5 | 3 | 3.5 | 4 | 4.5 | 5;
-
-const BAND_WIDTH_VALUES: BandWidth[] = [2, 2.5, 3, 3.5, 4, 4.5, 5];
+const BAND_WIDTH_VALUES: BandWidth[] = [...BAND_WIDTHS];
 
 const SKIN_TONE_SWATCHES: { id: SkinTone; label: string; color: string }[] = [
   { id: "light", label: "Light", color: "oklch(0.88 0.038 68)" },
@@ -54,9 +62,11 @@ const SKIN_TONE_SWATCHES: { id: SkinTone; label: string; color: string }[] = [
   { id: "dark", label: "Dark", color: "oklch(0.52 0.048 52)" },
 ];
 
-function getFingerImageSrc(tone: SkinTone, width: BandWidth): string {
-  return `/diamond-tech-suite/finger/band-widths/finger-${tone}-${width}.png`;
-}
+const BAND_METAL_SWATCHES: { id: BandMetal; label: string }[] = [
+  { id: "yellow-gold", label: "Yellow Gold" },
+  { id: "white-gold", label: "White Gold" },
+  { id: "rose-gold", label: "Rose Gold" },
+];
 
 function bandWidthToIndex(width: BandWidth): number {
   return BAND_WIDTH_VALUES.indexOf(width);
@@ -544,14 +554,15 @@ function SuiteStyles() {
         .dts-control-rail{
           grid-column:1;
           grid-row:1;
-          align-self:start;
+          align-self:stretch;
           min-width:0;
-          height:max-content;
+          height:auto;
           max-height:none;
           overflow:visible;
           padding:12px 14px 20px 20px;
           display:flex;
           flex-direction:column;
+          justify-content:space-between;
           gap:13px;
         }
         .dts-control-rail > *{
@@ -918,6 +929,59 @@ function SuiteStyles() {
       }
       .dts-tone-swatch.is-selected .dts-tone-swatch-label{
         color:var(--ink-soft);
+      }
+      .dts-swatch-row{
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:8px;
+        margin-top:8px;
+        padding-top:8px;
+      }
+      .dts-swatch-row .dts-card-subhead{
+        margin:0;
+        flex:0 1 auto;
+      }
+      .dts-swatch-row .dts-tone-swatches{
+        margin:0;
+        gap:2px;
+        justify-content:flex-end;
+        align-items:center;
+        flex:0 0 auto;
+      }
+      .dts-swatch-row .dts-tone-swatch{
+        min-width:36px;
+        min-height:36px;
+        padding:8px 6px;
+        justify-content:center;
+        gap:0;
+      }
+      .dts-swatch-row .dts-tone-swatch-circle{
+        width:16px;
+        height:16px;
+        border-color:oklch(from var(--hairline) l c h / 0.55);
+      }
+      .dts-swatch-row .dts-metal-swatch .dts-tone-swatch-circle{
+        box-shadow:inset 0 1px 1px oklch(1 0 0 / 0.28);
+      }
+      .dts-metal-swatch--yellow-gold{
+        background:
+          radial-gradient(circle at 30% 24%, #e3cc96 0%, #c9a66b 52%, #b39252 100%);
+      }
+      .dts-metal-swatch--white-gold{
+        background:
+          radial-gradient(circle at 30% 24%, #e6e4df 0%, #c8c6c0 52%, #b7b4ae 100%);
+      }
+      .dts-metal-swatch--rose-gold{
+        background:
+          radial-gradient(circle at 30% 24%, #dbb2a8 0%, #c58f83 50%, #b67c72 100%);
+      }
+      .dts-swatch-row .dts-tone-swatch.is-selected .dts-tone-swatch-circle{
+        border-color:oklch(from var(--gold-warm) l c h / 0.42);
+        box-shadow:
+          0 0 0 1.5px var(--card),
+          0 0 0 2.5px oklch(from var(--gold-warm) l c h / 0.58),
+          inset 0 1px 1px oklch(1 0 0 / 0.22);
       }
       .dts-cov-pct{
         text-align:center; margin:4px 0 6px;
@@ -1426,6 +1490,9 @@ function SuiteStyles() {
         just under 900px; shorter desktops keep the snug in-flow gap.
       */
       @media (min-width: 1024px) and (min-height: 880px) {
+        .dts-control-rail{
+          padding-bottom:0;
+        }
         .dts-stage-stack{
           display:grid;
           grid-template-columns:minmax(0, 1fr);
@@ -1740,6 +1807,11 @@ function SuiteStyles() {
           min-width:44px;
           justify-content:center;
         }
+        .dts-swatch-row .dts-tone-swatch{
+          min-width:44px;
+          min-height:44px;
+          padding:12px 8px;
+        }
         .dts-skin-row{
           gap:5px;
         }
@@ -1969,6 +2041,11 @@ function SuiteStyles() {
         }
         .dts-zone-bar{
           margin-top:8px;
+        }
+      }
+      @media (min-width: 1024px) and (min-height: 880px) {
+        .dts-control-rail{
+          padding-bottom:0;
         }
       }
       /*
@@ -2337,7 +2414,8 @@ export default function DiamondStudioPage() {
   const [ringSize, setRingSize] = useState(6.0);
   const [carat, setCarat] = useState(2.5);
   const [skinTone, setSkinTone] = useState<SkinTone>("light");
-  const [bandWidth, setBandWidth] = useState<BandWidth>(2.5);
+  const [bandWidth, setBandWidth] = useState<BandWidth>(DEFAULT_BAND_WIDTH);
+  const [metal, setMetal] = useState<BandMetal>(DEFAULT_BAND_METAL);
   const [shape, setShape] = useState<ShapeId>("round");
   const [diamondVisualShape, setDiamondVisualShape] =
     useState<ShapeId>("round");
@@ -2373,7 +2451,7 @@ export default function DiamondStudioPage() {
     setDiamondVisualShape(shapeRef.current);
   }, [carat, ringSize]);
 
-  const fingerImageSrc = getFingerImageSrc(skinTone, bandWidth);
+  const fingerImageSrc = getBandAssetSrc(skinTone, bandWidth, metal);
   const fingerMm = RING_SIZE_TO_MM[ringSize] ?? 16.51;
   const diamondReadoutMm =
     shape === "round"
@@ -2401,6 +2479,7 @@ export default function DiamondStudioPage() {
       fingerSize: ringSize,
       bandWidth,
       skinTone,
+      metal,
       orientation: stoneOrientation,
       coveragePercent,
       coverageZone,
@@ -2412,6 +2491,7 @@ export default function DiamondStudioPage() {
     ringSize,
     bandWidth,
     skinTone,
+    metal,
     stoneOrientation,
     deviceType,
   ]);
@@ -2424,10 +2504,11 @@ export default function DiamondStudioPage() {
       bandWidth,
       skinTone,
       orientation: stoneOrientation,
+      metal,
     });
     if (typeof window === "undefined") return path;
     return `${window.location.origin}${path}`;
-  }, [shape, carat, ringSize, bandWidth, skinTone, stoneOrientation]);
+  }, [shape, carat, ringSize, bandWidth, skinTone, stoneOrientation, metal]);
 
   const urlSyncReadyRef = useRef(false);
 
@@ -2439,6 +2520,7 @@ export default function DiamondStudioPage() {
     setCarat(state.carat);
     setSkinTone(state.skinTone);
     setBandWidth(state.bandWidth);
+    setMetal(state.metal);
     setShape(state.shape);
     setDiamondVisualShape(state.shape);
     setStoneOrientation(state.orientation);
@@ -2460,6 +2542,7 @@ export default function DiamondStudioPage() {
         fingerSize: state.ringSize,
         bandWidth: state.bandWidth,
         skinTone: state.skinTone,
+        metal: state.metal,
         orientation: state.orientation,
         coveragePercent,
         coverageZone: classifyPresence(
@@ -2484,6 +2567,7 @@ export default function DiamondStudioPage() {
       bandWidth,
       skinTone,
       orientation: stoneOrientation,
+      metal,
     });
     const nextUrl = query
       ? `${window.location.pathname}?${query}`
@@ -2491,7 +2575,7 @@ export default function DiamondStudioPage() {
     const current = `${window.location.pathname}${window.location.search}`;
     if (current === nextUrl) return;
     window.history.replaceState(null, "", nextUrl);
-  }, [shape, carat, ringSize, bandWidth, skinTone, stoneOrientation]);
+  }, [shape, carat, ringSize, bandWidth, skinTone, stoneOrientation, metal]);
 
   const trackEvent = useCallback(
     (eventName: Parameters<typeof trackDiamondStudioEvent>[0]) => {
@@ -2537,6 +2621,29 @@ export default function DiamondStudioPage() {
     }, 45_000);
     return () => window.clearTimeout(timer);
   }, [tryFireSessionEngaged]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const preload = (src: string) => {
+      const image = new Image();
+      image.src = src;
+    };
+    const run = () => {
+      for (const other of BAND_METALS) {
+        if (other === metal) continue;
+        preload(getBandAssetSrc(skinTone, bandWidth, other));
+      }
+      for (const width of adjacentBandWidths(bandWidth)) {
+        preload(getBandAssetSrc(skinTone, width, metal));
+      }
+    };
+    if (typeof window.requestIdleCallback === "function") {
+      const idle = window.requestIdleCallback(run, { timeout: 1200 });
+      return () => window.cancelIdleCallback(idle);
+    }
+    const timeout = window.setTimeout(run, 200);
+    return () => window.clearTimeout(timeout);
+  }, [skinTone, bandWidth, metal]);
 
   const prevZoneRef = useRef(zone);
   useEffect(() => {
@@ -2592,6 +2699,21 @@ export default function DiamondStudioPage() {
       recordMeaningfulInteraction();
     },
     [skinTone, analyticsProps, recordMeaningfulInteraction],
+  );
+
+  const selectMetal = useCallback(
+    (next: BandMetal) => {
+      if (next === metal) return;
+      const previousMetal = metal;
+      setMetal(next);
+      trackDiamondStudioEvent("band_metal_changed", {
+        ...analyticsProps(),
+        metal: next,
+        previousMetal,
+      });
+      recordMeaningfulInteraction();
+    },
+    [metal, analyticsProps, recordMeaningfulInteraction],
   );
 
   const rw = renderStoneWidthMm(diamondVisualShape, carat, stoneOrientation);
@@ -2676,16 +2798,28 @@ export default function DiamondStudioPage() {
     [commitCaratAnalytics, markCaratAdjusting],
   );
 
+  const commitBandWidthAnalytics = useCallback(
+    (nextWidth: BandWidth, previousWidth: BandWidth) => {
+      trackDiamondStudioEvent("band_width_changed", {
+        ...analyticsProps(),
+        bandWidth: nextWidth,
+        previousBandWidth: previousWidth,
+      });
+      recordMeaningfulInteraction();
+    },
+    [analyticsProps, recordMeaningfulInteraction],
+  );
+
   const applyBandWidth = useCallback(
     (index: number, trackCommit: boolean) => {
       const next = indexToBandWidth(index);
       setBandWidth((prev) => {
         if (prev === next) return prev;
-        if (trackCommit) recordMeaningfulInteraction();
+        if (trackCommit) commitBandWidthAnalytics(next, prev);
         return next;
       });
     },
-    [recordMeaningfulInteraction],
+    [commitBandWidthAnalytics],
   );
 
   const fsTrackRef = useRef<HTMLDivElement>(null);
@@ -2856,7 +2990,7 @@ export default function DiamondStudioPage() {
                   diameter
                 </p>
 
-                <div className="dts-card-section">
+                <div className="dts-card-section dts-swatch-row">
                   <div className="dts-card-subhead">
                     <span>Skin Tone</span>
                   </div>
@@ -2870,16 +3004,68 @@ export default function DiamondStudioPage() {
                         key={id}
                         type="button"
                         role="radio"
+                        aria-label={label}
+                        title={label}
                         aria-checked={skinTone === id}
+                        tabIndex={skinTone === id ? 0 : -1}
+                        data-skin={id}
                         className={`dts-tone-swatch ${skinTone === id ? "is-selected" : ""}`}
                         onClick={() => selectSkinTone(id)}
+                        onKeyDown={(event) =>
+                          handleRadioGroupKeyDown(
+                            event,
+                            SKIN_TONES,
+                            skinTone,
+                            selectSkinTone,
+                            "data-skin",
+                          )
+                        }
                       >
                         <span
                           className="dts-tone-swatch-circle"
                           style={{ background: color }}
                           aria-hidden
                         />
-                        <span className="dts-tone-swatch-label">{label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="dts-card-section dts-swatch-row">
+                  <div className="dts-card-subhead">
+                    <span>Band Metal</span>
+                  </div>
+                  <div
+                    className="dts-tone-swatches"
+                    role="radiogroup"
+                    aria-label="Band metal"
+                  >
+                    {BAND_METAL_SWATCHES.map(({ id, label }) => (
+                      <button
+                        key={id}
+                        type="button"
+                        role="radio"
+                        aria-label={label}
+                        title={label}
+                        aria-checked={metal === id}
+                        tabIndex={metal === id ? 0 : -1}
+                        data-metal={id}
+                        className={`dts-tone-swatch dts-metal-swatch ${metal === id ? "is-selected" : ""}`}
+                        onClick={() => selectMetal(id)}
+                        onKeyDown={(event) =>
+                          handleRadioGroupKeyDown(
+                            event,
+                            BAND_METALS,
+                            metal,
+                            selectMetal,
+                            "data-metal",
+                          )
+                        }
+                      >
+                        <span
+                          className={`dts-tone-swatch-circle dts-metal-swatch--${id}`}
+                          aria-hidden
+                        />
                       </button>
                     ))}
                   </div>
