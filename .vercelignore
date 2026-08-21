@@ -7,3 +7,6 @@ public/the-house/**/*.mp4
 marketing-sprint/
 tmp/
 .git/
+.review/
+qa-artifacts/
+

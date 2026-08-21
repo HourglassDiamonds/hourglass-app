@@ -47,6 +47,11 @@ import {
   parseStudioSearchParams,
   serializeStudioSearchParams,
 } from "@/lib/diamond-studio/url-state";
+import {
+  RING_SIZE_TO_MM,
+  diamondLayerCqw,
+  renderStoneWidthMm,
+} from "@/lib/diamond-studio/stage-calibration";
 
 export type { ShapeId };
 
@@ -80,27 +85,6 @@ function indexToBandWidth(index: number): BandWidth {
 /** Round brilliant face-up diameter — canonical shared module. */
 // getRoundDiamondMm imported from @/lib/diamond-tech-suite/face-dimensions
 
-const RING_SIZE_TO_MM: Record<number, number> = {
-  4.0: 14.86,
-  4.5: 15.27,
-  5.0: 15.7,
-  5.5: 16.1,
-  6.0: 16.51,
-  6.5: 16.92,
-  7.0: 17.32,
-  7.5: 17.73,
-  8.0: 18.14,
-  8.5: 18.54,
-  9.0: 18.95,
-  9.5: 19.35,
-  10.0: 19.76,
-  10.5: 20.17,
-  11.0: 20.57,
-  11.5: 20.98,
-  12.0: 21.39,
-  12.5: 21.79,
-  13.0: 22.2,
-};
 
 /**
  * @deprecated Removed from public calculation paths.
@@ -202,33 +186,8 @@ function caratSliderPct(value: number): number {
   return ((value - CARAT_MIN) / (CARAT_MAX - CARAT_MIN)) * 100;
 }
 
-/** Width on viewer = (mm / finger mm) * factor; +3% vs original 0.46 for truer visual coverage */
-const STONE_VIEWER_WIDTH_FACTOR = 0.46 * 1.03;
-/** Render-only: on-stage diamond scale; does not affect mm readout or coverage */
-const DIAMOND_VISUAL_COMPENSATION = 1.06;
-
-/**
- * On-stage scale per shape (layer cqw only). Readout/coverage use mm from
- * {@link faceAxesForSizing} / {@link getRoundDiamondMm} — not these factors.
- */
-const SHAPE_RENDER_VISUAL_COMP: Record<ShapeId, number> = {
-  round: DIAMOND_VISUAL_COMPENSATION,
-  oval: 1.58,
-  cushion: 1.12,
-  princess: 1.12,
-  marquise: 2.15,
-  pear: 1.66,
-  emerald: 1.48,
-  radiant: 1.28,
-  asscher: 1.14,
-};
-
-function renderVisualCompensation(shapeId: ShapeId): number {
-  return SHAPE_RENDER_VISUAL_COMP[shapeId];
-}
-
-/** Mobile-only on-stage scale; does not affect mm readout or coverage. */
-const MOBILE_STONE_RENDER_SCALE = 1.07;
+/* Sizing constants live in @/lib/diamond-studio/stage-calibration
+ * (STONE_VIEWER_WIDTH_FACTOR, SHAPE_RENDER_VISUAL_COMP, MOBILE_STONE_RENDER_SCALE). */
 
 function subscribeMaxWidth768(callback: () => void) {
   if (typeof window === "undefined") return () => {};
@@ -318,32 +277,11 @@ function coverageStoneWidthMm(
   carat: number,
   orientation: StoneOrientation,
 ): number {
-  if (shape === "round") return getRoundDiamondMm(carat);
-  const [w, l] = faceAxesForSizing(shape, carat);
-  return orientation === "ns" ? Math.min(w, l) : Math.max(w, l);
+  return renderStoneWidthMm(shape, carat, orientation);
 }
 
-/** Horizontal span (mm) for on-stage width % — round uses round-brilliant table (unchanged). */
-function renderStoneWidthMm(
-  shape: ShapeId,
-  carat: number,
-  orientation: StoneOrientation,
-): number {
-  if (shape === "round") return getRoundDiamondMm(carat);
-  const [w, l] = faceAxesForSizing(shape, carat);
-  return orientation === "ns" ? Math.min(w, l) : Math.max(w, l);
-}
-
-/** Vertical span (mm) for layer aspect ratio — round unchanged; elongated stones swap with orientation. */
-function renderStoneHeightMm(
-  shape: ShapeId,
-  carat: number,
-  orientation: StoneOrientation,
-): number {
-  if (shape === "round") return getRoundDiamondMm(carat);
-  const [w, l] = faceAxesForSizing(shape, carat);
-  return orientation === "ns" ? Math.max(w, l) : Math.min(w, l);
-}
+/** Horizontal span (mm) for on-stage width % — canonical shared module. */
+// renderStoneWidthMm / renderStoneHeightMm imported from stage-calibration
 
 function coveragePct(
   shape: ShapeId,
@@ -1295,9 +1233,121 @@ function SuiteStyles() {
         white-space:nowrap;
         transition:color 0.45s ease, border-color 0.45s ease;
       }
-      button.dts-share-view:hover{
+      button.dts-share-view:hover,
+      button.dts-share-view:focus-visible{
         color:var(--ink);
         border-color:var(--ink-soft);
+      }
+      .dts-share{
+        position:relative;
+        z-index:30;
+        overflow:visible;
+      }
+      .dts-share-menu{
+        position:absolute;
+        left:50%;
+        top:calc(100% + 8px);
+        transform:translateX(-50%);
+        min-width:220px;
+        max-width:min(280px, calc(100vw - 32px));
+        width:max-content;
+        padding:6px 0;
+        background:var(--card);
+        border:1px solid var(--hairline);
+        box-shadow:var(--shadow-1);
+        text-align:left;
+      }
+      .dts-share-menu-primary{
+        white-space:normal;
+      }
+      .dts-share-menu-hint{
+        display:block;
+        margin-top:3px;
+        font-size:10px;
+        letter-spacing:0.02em;
+        line-height:1.35;
+        color:var(--ink-faint, color-mix(in srgb, var(--ink-soft) 80%, transparent));
+        white-space:normal;
+      }
+      .dts-share-email{
+        display:flex;
+        flex-direction:column;
+        gap:6px;
+        padding:4px 14px 10px;
+      }
+      .dts-share-email-label{
+        font-size:10px;
+        letter-spacing:0.04em;
+        color:var(--ink-soft);
+      }
+      .dts-share-optional{
+        letter-spacing:0.02em;
+        opacity:0.7;
+      }
+      .dts-share-email-input{
+        width:100%;
+        min-height:44px;
+        box-sizing:border-box;
+        padding:8px 10px;
+        border:1px solid var(--hairline);
+        background:color-mix(in srgb, var(--card) 86%, #fff);
+        color:var(--ink);
+        font:inherit;
+        font-size:14px;
+      }
+      .dts-share-email-submit{
+        min-height:44px;
+        margin-top:4px;
+        padding:8px 14px;
+        border:1px solid var(--hairline);
+        background:transparent;
+        color:var(--ink);
+        font:inherit;
+        font-size:11px;
+        letter-spacing:0.06em;
+        text-transform:uppercase;
+        cursor:pointer;
+      }
+      .dts-share-email-status{
+        margin:2px 0 0;
+        font-size:10px;
+        letter-spacing:0.03em;
+        color:var(--ink-soft);
+      }
+      .dts-share-honeypot{
+        position:absolute;
+        left:-10000px;
+        width:1px;
+        height:1px;
+        overflow:hidden;
+      }
+      .dts-share-menu button{
+        appearance:none;
+        display:block;
+        width:100%;
+        background:transparent;
+        border:0;
+        margin:0;
+        padding:8px 14px;
+        font:inherit;
+        font-size:11px;
+        letter-spacing:0.04em;
+        color:var(--ink-soft);
+        cursor:pointer;
+        text-align:left;
+        white-space:nowrap;
+      }
+      .dts-share-menu button.dts-share-menu-primary{
+        white-space:normal;
+      }
+      .dts-share-menu button:hover,
+      .dts-share-menu button:focus-visible{
+        color:var(--ink);
+        background:color-mix(in srgb, var(--card) 70%, #fff);
+      }
+      .dts-share-menu button:disabled{
+        opacity:0.55;
+        cursor:wait;
       }
       .dts-shape-strip-wrap{
         position:relative;
@@ -2173,7 +2223,8 @@ function handleRadioGroupKeyDown<T extends string>(
 /**
  * Per-shape PNG, label, nominal length÷width (MVP), and face-up mm helper.
  * Stage sizing uses {@link faceAxesForSizing}; render-only boost uses
- * {@link SHAPE_RENDER_VISUAL_COMP}. CAD stage assets live in DIAMOND_CAD_ASSETS.
+ * `SHAPE_RENDER_VISUAL_COMP` in `@/lib/diamond-studio/stage-calibration`.
+ * CAD stage assets live in DIAMOND_CAD_ASSETS.
  */
 const SHAPE_SUITE_CONFIG: Record<
   ShapeId,
@@ -2716,15 +2767,13 @@ export default function DiamondStudioPage() {
     [metal, analyticsProps, recordMeaningfulInteraction],
   );
 
-  const rw = renderStoneWidthMm(diamondVisualShape, carat, stoneOrientation);
-  const rh = renderStoneHeightMm(diamondVisualShape, carat, stoneOrientation);
-  /** N/S vs E/W: swapped rw/rh on the layer box; E/W also rotates the face img 90deg (see dts-diamond-face--ew). */
-  const stoneMmToStage =
-    (STONE_VIEWER_WIDTH_FACTOR * renderVisualCompensation(diamondVisualShape)) /
-    fingerMm;
-  const mobileStoneRenderScale = isMobileViewport ? MOBILE_STONE_RENDER_SCALE : 1;
-  const layerWidthCqw = rw * stoneMmToStage * 100 * mobileStoneRenderScale;
-  const layerHeightCqw = rh * stoneMmToStage * 100 * mobileStoneRenderScale;
+  const { widthCqw: layerWidthCqw, heightCqw: layerHeightCqw } = diamondLayerCqw({
+    shape: diamondVisualShape,
+    carat,
+    orientation: stoneOrientation,
+    ringSize,
+    isMobileViewport,
+  });
 
   const zoneShort: Record<ZoneKey, string> = {
     understated: "Quiet",
@@ -3297,6 +3346,15 @@ export default function DiamondStudioPage() {
                 <ShareStudioView
                   getShareUrl={getShareUrl}
                   analyticsProps={analyticsProps}
+                  configuration={{
+                    shape,
+                    carat,
+                    ringSize,
+                    bandWidth,
+                    skinTone,
+                    orientation: stoneOrientation,
+                    metal,
+                  }}
                 />
               </div>
 

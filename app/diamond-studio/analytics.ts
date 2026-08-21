@@ -15,7 +15,11 @@ export type DiamondStudioEventName =
   | "diamond_studio_configuration_loaded"
   | "diamond_studio_editorial_contact"
   | "band_metal_changed"
-  | "band_width_changed";
+  | "band_width_changed"
+  | "studio_snapshot_created"
+  | "studio_snapshot_shared"
+  | "studio_share_card_created"
+  | "studio_view_emailed";
 
 export type DiamondStudioDeviceType = "mobile" | "desktop";
 
@@ -41,6 +45,9 @@ export type DiamondStudioEventProperties = {
   previousMetal?: string;
   /** band_width_changed */
   previousBandWidth?: number;
+  /** studio_snapshot_created / studio_snapshot_shared / studio_share_card_created / studio_view_emailed */
+  snapshotVariant?: "clean" | "card";
+  shareMethod?: "web_share" | "download" | "clipboard";
 };
 
 export function trackDiamondStudioEvent(
@@ -54,4 +61,31 @@ export function trackDiamondStudioEvent(
   } catch {
     /* provider missing or blocked — fail silently */
   }
+}
+
+const GA_PII_KEYS = [
+  "email",
+  "name",
+  "firstName",
+  "lastName",
+  "phone",
+  "emailHash",
+  "email_hash",
+  "recipientEmail",
+  "recipient_email",
+] as const;
+
+/** Analytics payload contract — never include recipient identity. */
+export function studioViewEmailedHasPii(
+  properties: Record<string, unknown>,
+): boolean {
+  for (const key of GA_PII_KEYS) {
+    if (key in properties) return true;
+  }
+  for (const value of Object.values(properties)) {
+    if (typeof value === "string" && /[^\s@]+@[^\s@]+\.[^\s@]+/.test(value)) {
+      return true;
+    }
+  }
+  return false;
 }
