@@ -30,6 +30,7 @@ describe("Continuum contracts", () => {
     }
     assert.equal(validateIdentityKind("hubspot_contact_id").ok, true);
     assert.equal(validateIdentityKind("email_hash").ok, true);
+    assert.equal(validateIdentityKind("import_row_key").ok, true);
   });
 
   it("accepts recursive JSON-safe observation values and rejects Date", () => {

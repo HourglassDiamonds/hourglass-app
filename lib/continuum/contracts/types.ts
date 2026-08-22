@@ -30,7 +30,8 @@ export type ContinuumSourceSystem =
   | "gsc"
   | "concierge-sla"
   | "agent-os"
-  | "continuum";
+  | "continuum"
+  | "continuum-reconciliation-v3";
 
 export const CONTINUUM_SOURCE_SYSTEMS = [
   "studio-identified",
@@ -41,6 +42,7 @@ export const CONTINUUM_SOURCE_SYSTEMS = [
   "concierge-sla",
   "agent-os",
   "continuum",
+  "continuum-reconciliation-v3",
 ] as const satisfies readonly ContinuumSourceSystem[];
 
 export type EvidenceSourceKind =
@@ -64,13 +66,15 @@ export type IdentityKind =
   | "hubspot_contact_id"
   | "email_hash"
   | "phone_hash"
-  | "google_contact_id";
+  | "google_contact_id"
+  | "import_row_key";
 
 export const PERSON_IDENTITY_KINDS = [
   "hubspot_contact_id",
   "email_hash",
   "phone_hash",
   "google_contact_id",
+  "import_row_key",
 ] as const satisfies readonly IdentityKind[];
 
 export type EntityKind = "person" | "project" | "other";

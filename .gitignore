@@ -60,6 +60,12 @@ scripts/.og-tmp/
 # local auth QA secrets (synthetic only - never commit)
 .qa-auth-temp.json
 
+# local review screenshots and sensitive workbooks (never commit)
+.review/
+
+# local QA capture artifacts
+qa-artifacts/
+
 # Agent OS local artifacts
 tmp/agent-os/
 tmp-weekly-brief-preview/
