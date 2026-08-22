@@ -16,6 +16,8 @@ export type {
   ContinuumExceptionStatus,
   ContinuumExceptionType,
   ContinuumId,
+  ContinuumJsonPrimitive,
+  ContinuumJsonValue,
   ContinuumObservation,
   ContinuumObservationValue,
   ContinuumObservationEvidence,
@@ -42,6 +44,7 @@ export {
 export {
   assertNoPii,
   findPiiViolation,
+  isContinuumJsonValue,
   isPersonIdentityKind,
   validateConfidence,
   validateEvidenceSourceRefs,

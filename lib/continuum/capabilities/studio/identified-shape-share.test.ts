@@ -4,7 +4,11 @@ import { describe, it } from "node:test";
 import { randomUUID } from "node:crypto";
 import { resolve } from "node:path";
 import { CONTINUUM_SCHEMA_VERSION } from "../../contracts/types";
-import type { ContinuumEvent, ContinuumEvidence } from "../../contracts/types";
+import type {
+  ContinuumEvent,
+  ContinuumEvidence,
+  ContinuumJsonValue,
+} from "../../contracts/types";
 import { InMemoryContinuumStore } from "../../persistence/memory";
 import { executeCapability } from "../runtime";
 import type { CapabilityContext } from "../types";
@@ -27,6 +31,12 @@ const AUGUST = {
   start: "2026-08-01T00:00:00.000Z",
   end: "2026-08-31T23:59:59.000Z",
 };
+
+function isJsonRecord(
+  value: unknown,
+): value is { readonly [key: string]: ContinuumJsonValue } {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
 
 const silentLog = { info() {}, warn() {} };
 
@@ -323,6 +333,20 @@ describe("studio-identified-shape-share capability", () => {
       ),
       false,
     );
+    assert.equal(
+      studioIdentifiedShapeShareCapability.validateObservationValue(
+        STUDIO_IDENTIFIED_SHAPE_SHARE_OBSERVATION_TYPE,
+        {
+          shape: "oval",
+          share: 0.5,
+          count: 2,
+          total: 4,
+          windowStart: JULY.end,
+          windowEnd: JULY.start,
+        },
+      ),
+      false,
+    );
   });
 
   it("does not create entities, recommendations, or import Supabase", () => {
@@ -405,7 +429,7 @@ describe("studio shape-share in-memory persistence", () => {
     const ovalObs = observations.filter(
       (row) =>
         row.observationType === STUDIO_IDENTIFIED_SHAPE_SHARE_OBSERVATION_TYPE &&
-        row.value &&
+        isJsonRecord(row.value) &&
         row.value.shape === "oval",
     );
     assert.equal(ovalObs.length, 2);

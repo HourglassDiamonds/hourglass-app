@@ -201,6 +201,43 @@ describe("Continuum observation persistence", () => {
     assert.equal("evidenceIds" in inserted.record, false);
   });
 
+  it("round-trips nested JSON-safe observation values", async () => {
+    const store = new InMemoryContinuumStore();
+    const nested = {
+      shape: "oval",
+      metrics: { share: 0.42, count: 4 },
+      samples: [1, 2, 3],
+    };
+    const observation: ContinuumObservation = {
+      id: randomUUID(),
+      schemaVersion: CONTINUUM_SCHEMA_VERSION,
+      observationType: "test.nested",
+      subjectEntityId: null,
+      statement: "Nested JSON-safe value.",
+      value: nested,
+      epistemicClass: "derived",
+      confidence: 1,
+      producedBy: "continuum.test",
+      createdAt: NOW,
+      validFrom: NOW,
+      validUntil: null,
+      supersedesId: null,
+      materiality: "monitor",
+      urgency: "low",
+    };
+    await store.insertObservation(observation);
+    const read = await store.getObservationById(observation.id);
+    assert.deepEqual(read?.value, nested);
+    const arrayObservation: ContinuumObservation = {
+      ...observation,
+      id: randomUUID(),
+      value: ["oval", "round"],
+    };
+    await store.insertObservation(arrayObservation);
+    const arrayRead = await store.getObservationById(arrayObservation.id);
+    assert.deepEqual(arrayRead?.value, ["oval", "round"]);
+  });
+
   it("supersession closes prior validity without deleting history", async () => {
     const store = new InMemoryContinuumStore();
     const first: ContinuumObservation = {

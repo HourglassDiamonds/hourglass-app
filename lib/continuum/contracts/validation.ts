@@ -3,6 +3,7 @@ import {
   PERSON_IDENTITY_KINDS,
   type ContinuumEvidence,
   type ContinuumException,
+  type ContinuumJsonValue,
   type ContinuumObservation,
   type EvidenceSourceKind,
   type IdentityKind,
@@ -108,10 +109,32 @@ export function validateEvidenceSourceRefs(
   return { ok: true };
 }
 
+export function isContinuumJsonValue(
+  value: unknown,
+): value is ContinuumJsonValue {
+  if (value === null) return true;
+  const t = typeof value;
+  if (t === "string" || t === "boolean") return true;
+  if (t === "number") return Number.isFinite(value);
+  if (Array.isArray(value)) return value.every(isContinuumJsonValue);
+  if (t === "object") {
+    if (Object.getPrototypeOf(value) !== Object.prototype) return false;
+    return Object.values(value as Record<string, unknown>).every(
+      isContinuumJsonValue,
+    );
+  }
+  return false;
+}
+
 export function validateObservation(
-  observation: Pick<ContinuumObservation, "confidence" | "epistemicClass">,
+  observation: Pick<ContinuumObservation, "confidence" | "epistemicClass" | "value">,
 ): ContinuumValidation {
-  return validateConfidence(observation.confidence);
+  const confidence = validateConfidence(observation.confidence);
+  if (!confidence.ok) return confidence;
+  if (!isContinuumJsonValue(observation.value)) {
+    return { ok: false, reason: "observation value is not JSON-safe" };
+  }
+  return { ok: true };
 }
 
 export function validateExceptionPayload(

@@ -78,6 +78,9 @@ export function isStudioShapeShareValue(
   if (typeof record.windowEnd !== "string" || !isIsoTimestamp(record.windowEnd)) {
     return false;
   }
+  if (Date.parse(record.windowStart) > Date.parse(record.windowEnd)) {
+    return false;
+  }
   const expected = record.count / record.total;
   if (Math.abs(record.share - expected) > 1e-12) return false;
   return true;

@@ -18,6 +18,7 @@ import {
   validateCapabilityDefinition,
   validateCapabilityInvocation,
   validateObservationDraftShape,
+  validateRequiredSourceHealth,
 } from "./validation";
 
 function failedResult<V extends JsonValue>(
@@ -105,6 +106,10 @@ async function validateCapabilityResult<I, V extends JsonValue>(
       "capability does not produce observations",
     );
   }
+  const sourceHealth = validateRequiredSourceHealth(capability.definition, result);
+  if (!sourceHealth.ok) {
+    return failedResult(version, sourceHealth.failureCode, sourceHealth.reason);
+  }
 
   const normalized: ObservationDraft<V>[] = [];
   for (const draft of result.observations) {
@@ -170,7 +175,7 @@ async function persistDrafts<V extends JsonValue>(
       observationType: draft.observationType,
       subjectEntityId: draft.subjectEntityId,
       statement: draft.statement,
-      value: toObservationValue(draft.value),
+      value: draft.value,
       epistemicClass: draft.epistemicClass,
       confidence: draft.confidence,
       producedBy,
@@ -189,26 +194,4 @@ async function persistDrafts<V extends JsonValue>(
       });
     }
   }
-}
-
-function toObservationValue(
-  value: JsonValue,
-): { readonly [key: string]: string | number | boolean | null } | null {
-  if (value === null || typeof value !== "object" || Array.isArray(value)) {
-    return null;
-  }
-  const out: { [key: string]: string | number | boolean | null } = {};
-  for (const [key, child] of Object.entries(value)) {
-    if (
-      child === null ||
-      typeof child === "string" ||
-      typeof child === "number" ||
-      typeof child === "boolean"
-    ) {
-      out[key] = child;
-    } else {
-      return null;
-    }
-  }
-  return out;
 }

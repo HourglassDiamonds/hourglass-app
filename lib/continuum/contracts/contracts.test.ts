@@ -10,9 +10,11 @@ import {
 } from "./types";
 import {
   assertNoPii,
+  isContinuumJsonValue,
   validateConfidence,
   validateEvidenceSourceRefs,
   validateIdentityKind,
+  validateObservation,
 } from "./validation";
 
 describe("Continuum contracts", () => {
@@ -28,6 +30,31 @@ describe("Continuum contracts", () => {
     }
     assert.equal(validateIdentityKind("hubspot_contact_id").ok, true);
     assert.equal(validateIdentityKind("email_hash").ok, true);
+  });
+
+  it("accepts recursive JSON-safe observation values and rejects Date", () => {
+    assert.equal(
+      isContinuumJsonValue({
+        shape: "oval",
+        metrics: { share: 0.42, count: 4 },
+        samples: [1, 2, 3],
+      }),
+      true,
+    );
+    assert.equal(isContinuumJsonValue(["oval", "round"]), true);
+    assert.equal(isContinuumJsonValue(null), true);
+    assert.equal(
+      isContinuumJsonValue({ when: new Date("2026-08-22T00:00:00.000Z") }),
+      false,
+    );
+    assert.equal(
+      validateObservation({
+        confidence: 1,
+        epistemicClass: "derived",
+        value: { when: new Date("2026-08-22T00:00:00.000Z") } as never,
+      }).ok,
+      false,
+    );
   });
 
   it("rejects confidence outside 0–1", () => {

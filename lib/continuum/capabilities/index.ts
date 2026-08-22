@@ -31,4 +31,5 @@ export {
   validateCapabilityDefinition,
   validateCapabilityInvocation,
   validateObservationDraftShape,
+  validateRequiredSourceHealth,
 } from "./validation";

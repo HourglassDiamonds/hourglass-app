@@ -15,6 +15,7 @@ import type {
   Capability,
   CapabilityContext,
   CapabilityDefinition,
+  CapabilitySourceHealth,
   JsonValue,
   ObservationDraft,
 } from "./types";
@@ -54,6 +55,22 @@ const baseDefinition: CapabilityDefinition = {
   reads: ["continuum.evidence"],
   producesObservations: true,
 };
+
+function continuumHealth(
+  extras?: Partial<CapabilitySourceHealth>,
+): CapabilitySourceHealth[] {
+  return [
+    {
+      sourceId: "continuum",
+      required: true,
+      availability: "available",
+      quality: "healthy",
+      freshness: "fresh",
+      note: "ok",
+      ...extras,
+    },
+  ];
+}
 
 function draft(evidenceId: string, extras?: Partial<ObservationDraft>): ObservationDraft {
   return {
@@ -152,7 +169,7 @@ describe("capability contract validation", () => {
     const cap = capabilityWithRun(async () => ({
       status: "completed",
       observations: [draft(evidenceId, { observationType: "not.allowed" })],
-      sourceHealth: [],
+      sourceHealth: continuumHealth(),
       diagnostics: { capabilityVersion: "1.0.0", notes: [] },
     }));
     const result = await executeCapability({
@@ -170,7 +187,7 @@ describe("capability contract validation", () => {
     const cap = capabilityWithRun(async () => ({
       status: "completed",
       observations: [draft(evidenceId, { confidence: 1.2 })],
-      sourceHealth: [],
+      sourceHealth: continuumHealth(),
       diagnostics: { capabilityVersion: "1.0.0", notes: [] },
     }));
     const result = await executeCapability({
@@ -191,7 +208,7 @@ describe("capability contract validation", () => {
           evidenceRefs: [] as unknown as [string, ...string[]],
         }),
       ],
-      sourceHealth: [],
+      sourceHealth: continuumHealth(),
       diagnostics: { capabilityVersion: "1.0.0", notes: [] },
     }));
     const result = await executeCapability({
@@ -209,7 +226,7 @@ describe("capability contract validation", () => {
     const cap = capabilityWithRun(async () => ({
       status: "completed",
       observations: [draft(evidenceId)],
-      sourceHealth: [],
+      sourceHealth: continuumHealth(),
       diagnostics: { capabilityVersion: "1.0.0", notes: [] },
     }));
     const result = await executeCapability({
@@ -229,7 +246,7 @@ describe("capability contract validation", () => {
     const cap = capabilityWithRun(async () => ({
       status: "completed",
       observations: [draft(evidenceId)],
-      sourceHealth: [],
+      sourceHealth: continuumHealth(),
       diagnostics: { capabilityVersion: "1.0.0", notes: [] },
     }));
     const result = await executeCapability({
@@ -254,7 +271,7 @@ describe("capability contract validation", () => {
       run: async () => ({
         status: "completed",
         observations: [draft(evidenceId)],
-        sourceHealth: [],
+        sourceHealth: continuumHealth(),
         diagnostics: { capabilityVersion: "1.0.0", notes: [] },
       }),
     };
@@ -275,7 +292,7 @@ describe("capability contract validation", () => {
       observations: [
         draft(evidenceId, { statement: "Email visitor@example.com a follow-up." }),
       ],
-      sourceHealth: [],
+      sourceHealth: continuumHealth(),
       diagnostics: { capabilityVersion: "1.0.0", notes: [] },
     }));
     const result = await executeCapability({
@@ -296,7 +313,7 @@ describe("capability contract validation", () => {
       return {
         status: "completed",
         observations: [d],
-        sourceHealth: [],
+        sourceHealth: continuumHealth(),
         diagnostics: { capabilityVersion: "1.0.0", notes: [] },
       };
     });
@@ -311,13 +328,205 @@ describe("capability contract validation", () => {
   });
 });
 
+describe("producesObservations and requiredSources enforcement", () => {
+  it("rejects observations when producesObservations is false", async () => {
+    const evidenceId = randomUUID();
+    const cap = capabilityWithRun(
+      async () => ({
+        status: "completed",
+        observations: [draft(evidenceId)],
+        sourceHealth: continuumHealth(),
+        diagnostics: { capabilityVersion: "1.0.0", notes: [] },
+      }),
+      { ...baseDefinition, producesObservations: false },
+    );
+    const store = new InMemoryContinuumStore();
+    const result = await executeCapability({
+      capability: cap,
+      domainInput: null,
+      context: context("test-capability"),
+      evidence: { getById: async () => evidenceRow(evidenceId) },
+      persist: store,
+    });
+    assert.equal(result.status, "failed");
+    assert.equal(result.failureCode, "invalid-result");
+    assert.deepEqual(result.observations, []);
+    assert.equal((await store.listObservations()).length, 0);
+  });
+
+  it("rejects a required source missing from sourceHealth", async () => {
+    const evidenceId = randomUUID();
+    const cap = capabilityWithRun(async () => ({
+      status: "completed",
+      observations: [draft(evidenceId)],
+      sourceHealth: [],
+      diagnostics: { capabilityVersion: "1.0.0", notes: [] },
+    }));
+    const store = new InMemoryContinuumStore();
+    const result = await executeCapability({
+      capability: cap,
+      domainInput: null,
+      context: context("test-capability"),
+      evidence: { getById: async () => evidenceRow(evidenceId) },
+      persist: store,
+    });
+    assert.equal(result.status, "failed");
+    assert.equal(result.failureCode, "invalid-source-health");
+    assert.deepEqual(result.observations, []);
+    assert.equal((await store.listObservations()).length, 0);
+  });
+
+  it("rejects a required source marked required=false", async () => {
+    const evidenceId = randomUUID();
+    const cap = capabilityWithRun(async () => ({
+      status: "completed",
+      observations: [draft(evidenceId)],
+      sourceHealth: continuumHealth({ required: false }),
+      diagnostics: { capabilityVersion: "1.0.0", notes: [] },
+    }));
+    const result = await executeCapability({
+      capability: cap,
+      domainInput: null,
+      context: context("test-capability"),
+      evidence: { getById: async () => evidenceRow(evidenceId) },
+    });
+    assert.equal(result.status, "failed");
+    assert.equal(result.failureCode, "invalid-source-health");
+  });
+
+  it("rejects required source unavailable reported as completed", async () => {
+    const evidenceId = randomUUID();
+    const cap = capabilityWithRun(async () => ({
+      status: "completed",
+      observations: [draft(evidenceId)],
+      sourceHealth: continuumHealth({
+        availability: "unavailable",
+        quality: "unknown",
+        freshness: "unknown",
+      }),
+      diagnostics: { capabilityVersion: "1.0.0", notes: [] },
+    }));
+    const result = await executeCapability({
+      capability: cap,
+      domainInput: null,
+      context: context("test-capability"),
+      evidence: { getById: async () => evidenceRow(evidenceId) },
+    });
+    assert.equal(result.status, "failed");
+    assert.equal(result.failureCode, "invalid-source-health");
+    assert.deepEqual(result.observations, []);
+  });
+
+  it("rejects required source not-configured reported as completed", async () => {
+    const evidenceId = randomUUID();
+    const cap = capabilityWithRun(async () => ({
+      status: "completed",
+      observations: [draft(evidenceId)],
+      sourceHealth: continuumHealth({
+        availability: "not-configured",
+        quality: "unknown",
+        freshness: "unavailable",
+      }),
+      diagnostics: { capabilityVersion: "1.0.0", notes: [] },
+    }));
+    const result = await executeCapability({
+      capability: cap,
+      domainInput: null,
+      context: context("test-capability"),
+      evidence: { getById: async () => evidenceRow(evidenceId) },
+    });
+    assert.equal(result.status, "failed");
+    assert.equal(result.failureCode, "invalid-source-health");
+  });
+
+  it("accepts required source unavailable reported as blocked", async () => {
+    const cap = capabilityWithRun(async () => ({
+      status: "blocked",
+      observations: [],
+      sourceHealth: continuumHealth({
+        availability: "unavailable",
+        quality: "unknown",
+        freshness: "unknown",
+        note: "down",
+      }),
+      diagnostics: { capabilityVersion: "1.0.0", notes: [] },
+    }));
+    const result = await executeCapability({
+      capability: cap,
+      domainInput: null,
+      context: context("test-capability"),
+    });
+    assert.equal(result.status, "blocked");
+    assert.deepEqual(result.observations, []);
+  });
+
+  it("accepts required source empty as completed with no observations", async () => {
+    const cap = capabilityWithRun(async () => ({
+      status: "completed",
+      observations: [],
+      sourceHealth: continuumHealth({
+        availability: "empty",
+        quality: "healthy",
+      }),
+      diagnostics: { capabilityVersion: "1.0.0", notes: [] },
+    }));
+    const result = await executeCapability({
+      capability: cap,
+      domainInput: null,
+      context: context("test-capability"),
+    });
+    assert.equal(result.status, "completed");
+    assert.deepEqual(result.observations, []);
+  });
+
+  it("accepts required stale/degraded as completed-degraded", async () => {
+    const evidenceId = randomUUID();
+    const cap = capabilityWithRun(async () => ({
+      status: "completed-degraded",
+      observations: [draft(evidenceId)],
+      sourceHealth: continuumHealth({
+        quality: "degraded",
+        freshness: "stale",
+        note: "partial",
+      }),
+      diagnostics: { capabilityVersion: "1.0.0", notes: [] },
+    }));
+    const result = await executeCapability({
+      capability: cap,
+      domainInput: null,
+      context: context("test-capability"),
+      evidence: { getById: async () => evidenceRow(evidenceId) },
+    });
+    assert.equal(result.status, "completed-degraded");
+    assert.equal(result.observations.length, 1);
+  });
+
+  it("rejects required degraded reported as completed with observations", async () => {
+    const evidenceId = randomUUID();
+    const cap = capabilityWithRun(async () => ({
+      status: "completed",
+      observations: [draft(evidenceId)],
+      sourceHealth: continuumHealth({ quality: "degraded" }),
+      diagnostics: { capabilityVersion: "1.0.0", notes: [] },
+    }));
+    const result = await executeCapability({
+      capability: cap,
+      domainInput: null,
+      context: context("test-capability"),
+      evidence: { getById: async () => evidenceRow(evidenceId) },
+    });
+    assert.equal(result.status, "failed");
+    assert.equal(result.failureCode, "invalid-source-health");
+  });
+});
+
 describe("generic capability runtime", () => {
   it("returns completed with observations", async () => {
     const evidenceId = randomUUID();
     const cap = capabilityWithRun(async () => ({
       status: "completed",
       observations: [draft(evidenceId)],
-      sourceHealth: [],
+      sourceHealth: continuumHealth(),
       diagnostics: { capabilityVersion: "1.0.0", notes: [] },
     }));
     const result = await executeCapability({
@@ -334,7 +543,7 @@ describe("generic capability runtime", () => {
     const cap = capabilityWithRun(async () => ({
       status: "completed",
       observations: [],
-      sourceHealth: [],
+      sourceHealth: continuumHealth({ availability: "empty" }),
       diagnostics: { capabilityVersion: "1.0.0", notes: [] },
     }));
     const result = await executeCapability({
@@ -428,7 +637,12 @@ describe("generic capability runtime", () => {
     const cap = capabilityWithRun(async () => ({
       status: "blocked",
       observations: [],
-      sourceHealth: [],
+      sourceHealth: continuumHealth({
+        availability: "unavailable",
+        quality: "unknown",
+        freshness: "unknown",
+        note: "down",
+      }),
       diagnostics: { capabilityVersion: "1.0.0", notes: [] },
     }));
     await executeCapability({
@@ -480,7 +694,7 @@ describe("in-memory persistence proof", () => {
     const cap = capabilityWithRun(async () => ({
       status: "completed",
       observations: [draft(e1, { evidenceRefs: [e2, e1, e1] })],
-      sourceHealth: [],
+      sourceHealth: continuumHealth(),
       diagnostics: { capabilityVersion: "1.0.0", notes: [] },
     }));
     const result = await executeCapability({
@@ -500,5 +714,57 @@ describe("in-memory persistence proof", () => {
     assert.equal(rows[0]?.supersedesId, null);
     const linked = await store.listEvidenceIdsForObservation(rows[0]!.id);
     assert.deepEqual(linked, [e1, e2].sort());
+  });
+
+  it("persists nested JSON-safe values without flattening to null", async () => {
+    const store = new InMemoryContinuumStore();
+    const evidenceId = randomUUID();
+    await store.insertEvidence({
+      ...evidenceRow(evidenceId),
+      idempotencyKey: `studio-record:${evidenceId}`,
+    });
+    const nested = {
+      shape: "oval",
+      metrics: { share: 0.42, count: 4 },
+      samples: [1, 2, 3],
+    };
+    const nestedCap = capabilityWithRun(async () => ({
+      status: "completed",
+      observations: [draft(evidenceId, { value: nested })],
+      sourceHealth: continuumHealth(),
+      diagnostics: { capabilityVersion: "1.0.0", notes: [] },
+    }));
+    const nestedResult = await executeCapability({
+      capability: nestedCap,
+      domainInput: null,
+      context: context("test-capability"),
+      evidence: { getById: async (id) => store.getEvidenceById(id) },
+      persist: store,
+    });
+    assert.equal(nestedResult.status, "completed");
+    const nestedStored = (await store.listObservations())[0];
+    assert.deepEqual(nestedStored?.value, nested);
+
+    store.reset();
+    await store.insertEvidence({
+      ...evidenceRow(evidenceId),
+      idempotencyKey: `studio-record:${evidenceId}`,
+    });
+    const arrayValue = ["oval", "round"];
+    const arrayCap = capabilityWithRun(async () => ({
+      status: "completed",
+      observations: [draft(evidenceId, { value: arrayValue })],
+      sourceHealth: continuumHealth(),
+      diagnostics: { capabilityVersion: "1.0.0", notes: [] },
+    }));
+    const arrayResult = await executeCapability({
+      capability: arrayCap,
+      domainInput: null,
+      context: context("test-capability"),
+      evidence: { getById: async (id) => store.getEvidenceById(id) },
+      persist: store,
+    });
+    assert.equal(arrayResult.status, "completed");
+    assert.deepEqual((await store.listObservations())[0]?.value, arrayValue);
   });
 });

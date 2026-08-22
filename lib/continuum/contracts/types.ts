@@ -157,10 +157,19 @@ export type ContinuumEvidence = {
   claimFingerprint: string | null;
 };
 
-/** JSON-safe object stored on Observation.value (SQL jsonb). */
-export type ContinuumObservationValue = {
-  readonly [key: string]: string | number | boolean | null;
-} | null;
+/** JSON-safe primitive stored in jsonb (SQL json null / scalar). */
+export type ContinuumJsonPrimitive = string | number | boolean | null;
+
+/**
+ * Recursive JSON-safe value stored on Observation.value (SQL jsonb).
+ * Matches JSONB: primitive, array, or object. No Date, undefined, or class instances.
+ */
+export type ContinuumJsonValue =
+  | ContinuumJsonPrimitive
+  | readonly ContinuumJsonValue[]
+  | { readonly [key: string]: ContinuumJsonValue };
+
+export type ContinuumObservationValue = ContinuumJsonValue;
 
 export type ContinuumObservation = {
   id: ContinuumId;

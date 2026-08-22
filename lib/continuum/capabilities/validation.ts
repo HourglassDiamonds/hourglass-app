@@ -8,12 +8,18 @@ import {
   type Materiality,
   type Urgency,
 } from "../contracts/types";
-import { assertNoPii, findPiiViolation, validateConfidence } from "../contracts/validation";
+import {
+  assertNoPii,
+  findPiiViolation,
+  isContinuumJsonValue,
+  validateConfidence,
+} from "../contracts/validation";
 import {
   CAPABILITY_CONTRACT_VERSION,
   CAPABILITY_DOMAINS,
   type CapabilityDefinition,
   type CapabilityInvocation,
+  type CapabilityResult,
   type JsonValue,
   type ObservationDraft,
 } from "./types";
@@ -33,17 +39,7 @@ export function isIsoTimestamp(value: string): boolean {
 }
 
 export function isJsonValue(value: unknown): value is JsonValue {
-  if (value === null) return true;
-  const t = typeof value;
-  if (t === "string" || t === "number" || t === "boolean") {
-    return t !== "number" || Number.isFinite(value as number);
-  }
-  if (Array.isArray(value)) return value.every(isJsonValue);
-  if (t === "object") {
-    if (Object.getPrototypeOf(value) !== Object.prototype) return false;
-    return Object.values(value as Record<string, unknown>).every(isJsonValue);
-  }
-  return false;
+  return isContinuumJsonValue(value);
 }
 
 export function validateCapabilityDefinition(
@@ -159,6 +155,63 @@ export function validateCapabilityInvocation(
         ok: false,
         reason: "window start after end",
         failureCode: "invalid-invocation",
+      };
+    }
+  }
+  return { ok: true };
+}
+
+/**
+ * Domain-neutral requiredSources ↔ sourceHealth protocol.
+ * Does not fetch sources or interpret domain-specific health notes.
+ */
+export function validateRequiredSourceHealth(
+  definition: CapabilityDefinition,
+  result: Pick<CapabilityResult, "status" | "observations" | "sourceHealth">,
+): CapabilityValidation {
+  if (result.status === "failed") {
+    return { ok: true };
+  }
+  for (const sourceId of definition.requiredSources) {
+    const health = result.sourceHealth.find((row) => row.sourceId === sourceId);
+    if (!health) {
+      return {
+        ok: false,
+        reason: `missing SourceHealth for required source ${sourceId}`,
+        failureCode: "invalid-source-health",
+      };
+    }
+    if (health.required !== true) {
+      return {
+        ok: false,
+        reason: `required source ${sourceId} must not set required=false`,
+        failureCode: "invalid-source-health",
+      };
+    }
+    if (
+      health.availability === "unavailable" ||
+      health.availability === "not-configured"
+    ) {
+      if (result.status !== "blocked" || result.observations.length > 0) {
+        return {
+          ok: false,
+          reason: `required source ${sourceId} unavailable/not-configured must be blocked without observations`,
+          failureCode: "invalid-source-health",
+        };
+      }
+      continue;
+    }
+    const degradedOrStale =
+      health.quality === "degraded" || health.freshness === "stale";
+    if (
+      degradedOrStale &&
+      result.status === "completed" &&
+      result.observations.length > 0
+    ) {
+      return {
+        ok: false,
+        reason: `required source ${sourceId} degraded/stale cannot be completed with observations`,
+        failureCode: "invalid-source-health",
       };
     }
   }

@@ -6,6 +6,8 @@
 import type {
   ContinuumEvidence,
   ContinuumId,
+  ContinuumJsonPrimitive,
+  ContinuumJsonValue,
   ContinuumObservation,
   ContinuumObservationEvidence,
   EpistemicClass,
@@ -100,11 +102,8 @@ export type CapabilitySourceHealth = {
   note: string;
 };
 
-export type JsonPrimitive = string | number | boolean | null;
-export type JsonValue =
-  | JsonPrimitive
-  | readonly JsonValue[]
-  | { readonly [key: string]: JsonValue };
+export type JsonPrimitive = ContinuumJsonPrimitive;
+export type JsonValue = ContinuumJsonValue;
 
 export type ObservationDraft<V extends JsonValue = JsonValue> = {
   observationType: string;
