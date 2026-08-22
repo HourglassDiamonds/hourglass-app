@@ -58,6 +58,8 @@ async function submit(
     persist?: (
       record: StudioViewEmailedRecord,
     ) => Promise<StudioPersistResult>;
+    continuum?: import("@/lib/continuum/persistence").ContinuumStore | null;
+    operationId?: string;
   },
 ) {
   const sender = extras?.sender ?? createFakeStudioViewEmailSender();
@@ -69,6 +71,10 @@ async function submit(
       sender,
       composeCard: fakeCompose,
       env: extras?.env ?? TEST_ENV,
+      continuum: extras?.continuum ?? null,
+      createOperationId: extras?.operationId
+        ? () => extras.operationId as string
+        : undefined,
       persist:
         extras?.persist ??
         (async (record) => {

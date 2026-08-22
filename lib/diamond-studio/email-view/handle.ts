@@ -26,6 +26,13 @@ import {
 import {
   recordStudioOperationalSignal,
 } from "@/lib/agent-os/diamond-studio/operational";
+import {
+  ingestStudioViewEmailedBestEffort,
+  mapStudioConfiguration,
+  recordIdentifiedPersistenceFailedBestEffort,
+} from "@/lib/continuum/ingest";
+import { tryCreateContinuumStore } from "@/lib/continuum/persistence";
+import type { ContinuumStore } from "@/lib/continuum/persistence";
 
 const VISITOR_RETRY =
   "We couldn’t send that just now. Please try again.";
@@ -41,6 +48,9 @@ export type HandleEmailStudioViewDeps = {
   persist?: (
     record: StudioViewEmailedRecord,
   ) => Promise<StudioPersistResult>;
+  /** Injected Continuum store. Production uses Supabase when configured. */
+  continuum?: ContinuumStore | null;
+  createOperationId?: () => string;
 };
 
 export async function handleEmailStudioView(input: {
@@ -108,6 +118,12 @@ export async function handleEmailStudioView(input: {
       message: VISITOR_RETRY,
     };
   }
+
+  const operationId = (input.deps?.createOperationId ?? randomUUID)();
+  const continuum =
+    input.deps && "continuum" in input.deps
+      ? (input.deps.continuum ?? null)
+      : tryCreateContinuumStore();
 
   const sharePath = configurationSharePath(validated.configuration);
   const rendered = renderStudioViewEmail({
@@ -203,16 +219,34 @@ export async function handleEmailStudioView(input: {
       failed: true,
       durable: false,
       emailSent: true,
+      operationId,
     });
+    // Legacy in-process signal. Continuum exception is the durable path when
+    // Continuum storage is available. A shared Postgres outage can lose both.
     recordStudioOperationalSignal({
       type: "identified-event-persistence-failed",
       timestamp,
       emailsSent: 1,
     });
+    await recordIdentifiedPersistenceFailedBestEffort({
+      store: continuum,
+      operationId,
+      nowIso: timestamp,
+    });
   } else if (persistResult.status === "durable") {
     recordStudioOperationalSignal({
       type: "identified-event-persistence-healthy",
       timestamp,
+    });
+    await ingestStudioViewEmailedBestEffort({
+      store: continuum,
+      operationId,
+      source: {
+        identifiedRecordId: record.id,
+        occurredAt: record.timestamp,
+        sharePath: record.studioSharePath,
+        configuration: mapStudioConfiguration(record.configuration),
+      },
     });
   }
 
