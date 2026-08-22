@@ -1,8 +1,9 @@
 /**
- * Client Memory V1 contracts.
+ * Client Memory V1 contracts (schema version 2).
  * Protected PII plane — not for generic Continuum Event/Evidence/Observation.
  */
 
+import type { ContinuumJsonValue } from "../contracts/types";
 import type {
   ContinuumEntity,
   ContinuumId,
@@ -12,19 +13,57 @@ import type {
   IdentityKind,
 } from "../contracts/types";
 
-export const CLIENT_MEMORY_SCHEMA_VERSION = 1 as const;
+export const CLIENT_MEMORY_SCHEMA_VERSION = 2 as const;
 export const CLIENT_MEMORY_ARTIFACT_ID = "continuum-reconciliation-v3" as const;
 
-export const CLIENT_MEMORY_SOURCE_SYSTEM =
-  "continuum-reconciliation-v3" satisfies ContinuumSourceSystem;
+export const CLIENT_MEMORY_SOURCE_SYSTEM: ContinuumSourceSystem =
+  "continuum-reconciliation-v3";
 
-export type PersonRole = "client" | "prospect" | "vendor-contact" | "other";
+export type ClientMemoryVisibility =
+  | "internal-only"
+  | "client-visible"
+  | "household-visible";
+
+export const CLIENT_MEMORY_VISIBILITIES = [
+  "internal-only",
+  "client-visible",
+  "household-visible",
+] as const satisfies readonly ClientMemoryVisibility[];
+
+export const DEFAULT_VISIBILITY: ClientMemoryVisibility = "internal-only";
+
+export type UsagePermission =
+  | "unset"
+  | "remember-only"
+  | "gift-planning-allowed"
+  | "partner-share-allowed";
+
+export const USAGE_PERMISSIONS = [
+  "unset",
+  "remember-only",
+  "gift-planning-allowed",
+  "partner-share-allowed",
+] as const satisfies readonly UsagePermission[];
+
+export const DEFAULT_USAGE_PERMISSION: UsagePermission = "unset";
+
+export type PersonRole =
+  | "client"
+  | "prospect"
+  | "vendor-contact"
+  | "personal"
+  | "family"
+  | "friend"
+  | "business-contact";
 
 export const PERSON_ROLES = [
   "client",
   "prospect",
   "vendor-contact",
-  "other",
+  "personal",
+  "family",
+  "friend",
+  "business-contact",
 ] as const satisfies readonly PersonRole[];
 
 export type RelationshipKind =
@@ -38,7 +77,8 @@ export type RelationshipKind =
   | "business-partner"
   | "referral"
   | "gift-planning"
-  | "household-member";
+  | "household-member"
+  | "client-project";
 
 export const RELATIONSHIP_KINDS = [
   "spouse",
@@ -52,7 +92,16 @@ export const RELATIONSHIP_KINDS = [
   "referral",
   "gift-planning",
   "household-member",
+  "client-project",
 ] as const satisfies readonly RelationshipKind[];
+
+export type RelationshipStatus = "active" | "ended" | "disputed";
+
+export const RELATIONSHIP_STATUSES = [
+  "active",
+  "ended",
+  "disputed",
+] as const satisfies readonly RelationshipStatus[];
 
 export type FactStatus = "current" | "conflicting" | "superseded" | "candidate";
 export type FactApprovalStatus = "approved" | "pending-review" | "rejected";
@@ -83,6 +132,7 @@ export type IdentityReasonCode =
   | "REVIEW_CROSS_KEY_CONFLICT"
   | "REVIEW_NAME_ONLY_NEVER_MERGE"
   | "REVIEW_LIKELY_NOT_IDENTITY_PROOF"
+  | "REVIEW_UNSUPPORTED_PHONE"
   | "INVALID_NO_DETERMINISTIC_IDENTITY"
   | "INVALID_MALFORMED_IDENTITY";
 
@@ -92,18 +142,19 @@ export type PersonRowClass =
   | "needs-review"
   | "invalid";
 
-export type DryRunPersonAction =
-  | "would-create-person"
-  | "would-match-person"
-  | "identity-review"
-  | "invalid";
-
 export type ProjectMatchJudgment =
   | "exact"
   | "likely"
   | "ambiguous"
   | "no-exact"
   | "malformed-source-value";
+
+export const PROJECT_MATCH_JUDGMENTS = [
+  "exact",
+  "likely",
+  "ambiguous",
+  "no-exact",
+] as const;
 
 export type PersonProfile = {
   personId: ContinuumId;
@@ -128,13 +179,13 @@ export type PersonFact = {
   id: ContinuumId;
   personId: ContinuumId;
   factType: string;
-  value: unknown;
+  value: ContinuumJsonValue;
   confidence: number;
   verification: string | null;
   approvalStatus: FactApprovalStatus;
   status: FactStatus;
-  visibility: string;
-  usagePermission: string;
+  visibility: ClientMemoryVisibility;
+  usagePermission: UsagePermission;
   validFrom: string | null;
   validUntil: string | null;
   supersedesId: ContinuumId | null;
@@ -148,6 +199,7 @@ export type EntityRelationship = {
   fromEntityId: ContinuumId;
   toEntityId: ContinuumId;
   kind: RelationshipKind;
+  status: RelationshipStatus;
   sourceSystem: ContinuumSourceSystem;
   createdAt: string;
   createdBy: string;
@@ -160,6 +212,7 @@ export type SourceNote = {
   sourceSystem: ContinuumSourceSystem;
   sourceArtifact: string;
   sourceSheet: string;
+  sourceField: string;
   importRowKey: string;
   gmailThreadId: string | null;
   noteText: string;
@@ -175,8 +228,8 @@ export type Wish = {
   description: string;
   category: string | null;
   status: string;
-  visibility: string;
-  usagePermission: string;
+  visibility: ClientMemoryVisibility;
+  usagePermission: UsagePermission;
   sourceSystem: ContinuumSourceSystem;
   createdAt: string;
   createdBy: string;
@@ -185,11 +238,24 @@ export type Wish = {
 export type ProjectProfile = {
   projectId: ContinuumId;
   displayTitle: string;
+  visibility: ClientMemoryVisibility;
+  importRowKey: string | null;
+  sourceSystem: ContinuumSourceSystem;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type ProjectHistory = {
+  projectId: ContinuumId;
   cadJobNumber: string | null;
   orderNumber: string | null;
   gmailThreadId: string | null;
-  matchJudgment: ProjectMatchJudgment | null;
-  attributes: Record<string, unknown>;
+  matchJudgment: Exclude<ProjectMatchJudgment, "malformed-source-value"> | null;
+  matchJudgmentRaw: string | null;
+  fingerSize: string | null;
+  metal: string | null;
+  centerStone: string | null;
+  diamondSupplyNotes: string | null;
   sourceSystem: ContinuumSourceSystem;
   createdAt: string;
   updatedAt: string;
@@ -216,9 +282,7 @@ export type IdentityClaims = {
   phoneHash?: string | null;
   importRowKey?: string | null;
   googleContactId?: string | null;
-  /** Ignored for matching. Name is never an identity key. */
   displayName?: string | null;
-  /** Workbook "Likely" is never global identity proof. */
   likelyMatch?: boolean;
 };
 
@@ -228,6 +292,7 @@ export type IdentityResolution = {
   personId: ContinuumId | null;
   matchedBy: IdentityKind | null;
   conflictingPersonIds: ContinuumId[];
+  unsupportedPhone?: boolean;
 };
 
 export type InsertResult<T> =
@@ -242,6 +307,10 @@ export type IdentityWriteResult<T> =
       incomingEntityId: ContinuumId;
     };
 
+export type ProfileMergeResult =
+  | { status: "unchanged" | "populated"; profile: PersonProfile }
+  | { status: "conflict"; field: string };
+
 export type ClientMemoryEntity = ContinuumEntity;
 export type ClientMemoryExternalIdentity = ExternalIdentity;
-export type { EntityKind, IdentityKind, ContinuumSourceSystem };
+export type { EntityKind, IdentityKind, ContinuumSourceSystem, ContinuumJsonValue };

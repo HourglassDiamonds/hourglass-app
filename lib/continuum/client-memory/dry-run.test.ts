@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { spawnSync } from "node:child_process";
 import { findPiiViolation } from "../contracts/validation";
-import { APPLY_NOT_IMPLEMENTED, dryRunReconciliationWorkbook } from "./dry-run";
+import { dryRunReconciliationWorkbook } from "./dry-run";
 import { hashEmail, peopleImportRowKey } from "./hashes";
 import {
   InMemoryClientMemoryStore,
@@ -212,18 +212,46 @@ describe("Client Memory dry-run importer", () => {
     assert.equal(result.wouldMatchPersons, 1);
   });
 
-  it("fails closed when --apply is passed to the CLI", () => {
+  it("fails closed when --apply is passed without confirmation gates", () => {
+    const { writeFileSync, unlinkSync } = require("node:fs") as typeof import("node:fs");
+    const { join } = require("node:path") as typeof import("node:path");
+    const { tmpdir } = require("node:os") as typeof import("node:os");
+    const workbook = join(tmpdir(), "continuum-client-memory-apply-gate.xlsx");
+    writeFileSync(
+      workbook,
+      buildSyntheticXlsx(
+        emptyWorkbookSheets({
+          people: [
+            personCells({ name: "Ada Lovelace", email: "ada@example.com" }),
+          ],
+        }),
+      ),
+    );
     const npx = process.platform === "win32" ? "npx.cmd" : "npx";
     const ran = spawnSync(
       npx,
-      ["tsx", "scripts/continuum-client-memory-import.ts", "--apply"],
+      [
+        "tsx",
+        "scripts/continuum-client-memory-import.ts",
+        `--workbook=${workbook}`,
+        "--apply",
+      ],
       {
         cwd: process.cwd(),
         encoding: "utf8",
         shell: true,
+        env: { ...process.env, CONTINUUM_CLIENT_MEMORY_IMPORT_ENABLED: "" },
       },
     );
+    try {
+      unlinkSync(workbook);
+    } catch {
+      /* ignore */
+    }
     assert.notEqual(ran.status, 0);
-    assert.match(`${ran.stdout}\n${ran.stderr}`, /APPLY NOT IMPLEMENTED/);
+    assert.match(
+      `${ran.stdout}\n${ran.stderr}`,
+      /APPLY_REQUIRES_CONFIRMATION/,
+    );
   });
 });

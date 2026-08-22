@@ -1,26 +1,38 @@
 /**
- * Client Memory V1 dry-run importer.
- *
- * Usage:
- *   npx tsx scripts/continuum-client-memory-import.ts
- *   npx tsx scripts/continuum-client-memory-import.ts --workbook=.review/client-memory/Continuum_Reconciliation_v3.xlsx
+ * Client Memory V1 dry-run / gated apply importer.
  *
  * Default is DRY RUN. No writes.
- * --apply fails closed in this phase.
+ *
+ * Apply requires ALL of:
+ *   --apply
+ *   --confirm-production-client-import
+ *   CONTINUUM_CLIENT_MEMORY_IMPORT_ENABLED=true
+ *   matching audited workbook fingerprint
+ *   --target=memory | --target=supabase
+ *
+ * --target=supabase is the only path that uses the production adapter.
  * Never prints client name, email, phone, or address.
  */
 
+import { execSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { findPiiViolation } from "../lib/continuum/contracts/validation";
+import { applyReconciliationWorkbook } from "../lib/continuum/client-memory/apply";
+import { AUDITED_RECONCILIATION_V3 } from "../lib/continuum/client-memory/artifact";
+import { dryRunReconciliationWorkbook } from "../lib/continuum/client-memory/dry-run";
 import {
-  APPLY_NOT_IMPLEMENTED,
-  dryRunReconciliationWorkbook,
-} from "../lib/continuum/client-memory/dry-run";
+  envImportEnabled,
+  type ApplyTarget,
+} from "../lib/continuum/client-memory/gates";
+import {
+  InMemoryClientMemoryStore,
+  type ClientMemoryStore,
+} from "../lib/continuum/client-memory/store";
 
 const DEFAULT_WORKBOOK = resolve(
   process.cwd(),
-  ".review/client-memory/Continuum_Reconciliation_v3.xlsx",
+  AUDITED_RECONCILIATION_V3.relativePath,
 );
 
 function workbookPathFromArgs(args: string[]): string {
@@ -31,14 +43,37 @@ function workbookPathFromArgs(args: string[]): string {
   return DEFAULT_WORKBOOK;
 }
 
-async function main() {
-  const args = process.argv.slice(2);
-  if (args.includes("--apply")) {
-    console.error(APPLY_NOT_IMPLEMENTED);
+function targetFromArgs(args: string[]): ApplyTarget | null {
+  const flagged = args.find((arg) => arg.startsWith("--target="));
+  const raw = flagged
+    ? flagged.slice("--target=".length)
+    : args.includes("--target")
+      ? args[args.indexOf("--target") + 1]
+      : null;
+  if (raw === "memory" || raw === "supabase") return raw;
+  return null;
+}
+
+function implementationCommit(): string | null {
+  try {
+    return execSync("git rev-parse HEAD", { encoding: "utf8" }).trim();
+  } catch {
+    return null;
+  }
+}
+
+function emitJson(payload: unknown): void {
+  const pii = findPiiViolation(payload);
+  if (pii) {
+    console.error(JSON.stringify({ ok: false, reason: "refused-pii-in-report" }));
     process.exitCode = 2;
     return;
   }
+  console.log(JSON.stringify(payload, null, 2));
+}
 
+async function main() {
+  const args = process.argv.slice(2);
   const workbookPath = workbookPathFromArgs(args);
   if (!existsSync(workbookPath)) {
     console.error(
@@ -53,35 +88,54 @@ async function main() {
   }
 
   const buffer = readFileSync(workbookPath);
-  const result = await dryRunReconciliationWorkbook(buffer);
-  const pii = findPiiViolation(result);
-  if (pii) {
-    console.error(
-      JSON.stringify({
-        ok: false,
-        reason: "refused-pii-in-dry-run-report",
-      }),
+
+  if (args.includes("--apply")) {
+    const target = targetFromArgs(args);
+    const confirmProductionClientImport = args.includes(
+      "--confirm-production-client-import",
     );
-    process.exitCode = 2;
+    const envEnabled = envImportEnabled();
+    let store: ClientMemoryStore | undefined;
+    if (
+      target === "supabase" &&
+      confirmProductionClientImport &&
+      envEnabled
+    ) {
+      const { createSupabaseClientMemoryStore } = await import(
+        "../lib/continuum/client-memory/persistence/supabase"
+      );
+      store = createSupabaseClientMemoryStore();
+    } else if (target === "memory") {
+      store = new InMemoryClientMemoryStore();
+    }
+    const result = await applyReconciliationWorkbook(buffer, {
+      apply: true,
+      confirmProductionClientImport,
+      envEnabled,
+      target,
+      store,
+      implementationCommit: implementationCommit(),
+    });
+    if (!result.ok) {
+      console.error(JSON.stringify(result));
+      process.exitCode = 2;
+      return;
+    }
+    emitJson(result);
     return;
   }
 
+  const result = await dryRunReconciliationWorkbook(buffer);
   const verbose = args.includes("--verbose") || args.includes("--debug");
   const payload = verbose
-    ? { ...result, verbose: true, piiRedacted: true }
+    ? {
+        ...result,
+        verbose: true,
+        piiRedacted: true,
+        implementationCommit: implementationCommit(),
+      }
     : result;
-  const again = findPiiViolation(payload);
-  if (again) {
-    console.error(
-      JSON.stringify({
-        ok: false,
-        reason: "refused-pii-in-dry-run-report",
-      }),
-    );
-    process.exitCode = 2;
-    return;
-  }
-  console.log(JSON.stringify(payload, null, 2));
+  emitJson(payload);
 }
 
 main().catch((error: unknown) => {

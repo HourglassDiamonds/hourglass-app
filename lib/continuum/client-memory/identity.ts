@@ -5,7 +5,7 @@
 
 import { validateIdentityKind } from "../contracts/validation";
 import type { ExternalIdentity, IdentityKind } from "../contracts/types";
-import { hashEmail, hashPhone, normalizeEmail, normalizePhone } from "./hashes";
+import { hashEmail, hashPhone, classifyPhone, normalizeEmail } from "./hashes";
 import type {
   IdentityClaims,
   IdentityReasonCode,
@@ -41,6 +41,7 @@ export type PreparedIdentityClaim = {
 export type PreparedClaims = {
   claims: PreparedIdentityClaim[];
   malformed: Array<"email" | "phone">;
+  unsupportedPhone: boolean;
   nameOnly: boolean;
   likelyMatch: boolean;
 };
@@ -48,6 +49,7 @@ export type PreparedClaims = {
 export function prepareIdentityClaims(input: IdentityClaims): PreparedClaims {
   const claims: PreparedIdentityClaim[] = [];
   const malformed: Array<"email" | "phone"> = [];
+  let unsupportedPhone = false;
   const hubspot = trimToNull(input.hubspotContactId);
   if (hubspot) {
     claims.push({ identityKind: "hubspot_contact_id", identifier: hubspot });
@@ -76,12 +78,20 @@ export function prepareIdentityClaims(input: IdentityClaims): PreparedClaims {
 
   const phoneRaw = trimToNull(input.phone);
   if (phoneRaw) {
-    const hashed = input.phoneHash ?? hashPhone(phoneRaw);
-    if (hashed && normalizePhone(phoneRaw)) {
-      claims.push({ identityKind: "phone_hash", identifier: hashed });
+    const classified = classifyPhone(phoneRaw);
+    if (classified.status === "international") {
+      unsupportedPhone = true;
+    } else if (classified.status === "us-compatible") {
+      const hashed = input.phoneHash ?? hashPhone(phoneRaw);
+      if (hashed) {
+        claims.push({ identityKind: "phone_hash", identifier: hashed });
+      }
     } else if (input.phoneHash) {
-      claims.push({ identityKind: "phone_hash", identifier: input.phoneHash });
-    } else {
+      claims.push({
+        identityKind: "phone_hash",
+        identifier: input.phoneHash,
+      });
+    } else if (classified.status === "too-short") {
       malformed.push("phone");
     }
   } else if (trimToNull(input.phoneHash)) {
@@ -104,34 +114,46 @@ export function prepareIdentityClaims(input: IdentityClaims): PreparedClaims {
   return {
     claims,
     malformed,
+    unsupportedPhone,
     nameOnly,
     likelyMatch: Boolean(input.likelyMatch),
   };
+}
+
+export function identityResolution(
+  partial: Omit<IdentityResolution, "unsupportedPhone">,
+  unsupportedPhone = false,
+): IdentityResolution {
+  return { ...partial, unsupportedPhone };
 }
 
 export async function resolvePersonIdentity(
   lookup: IdentityLookup,
   input: IdentityClaims,
 ): Promise<IdentityResolution> {
+  const preparedEarly = prepareIdentityClaims(input);
   if (input.likelyMatch) {
-    return {
-      status: "review",
-      reasonCode: "REVIEW_LIKELY_NOT_IDENTITY_PROOF",
-      personId: null,
-      matchedBy: null,
-      conflictingPersonIds: [],
-    };
+    return identityResolution(
+      {
+        status: "review",
+        reasonCode: "REVIEW_LIKELY_NOT_IDENTITY_PROOF",
+        personId: null,
+        matchedBy: null,
+        conflictingPersonIds: [],
+      },
+      preparedEarly.unsupportedPhone,
+    );
   }
 
-  const prepared = prepareIdentityClaims(input);
+  const prepared = preparedEarly;
   if (prepared.nameOnly) {
-    return {
+    return identityResolution({
       status: "review",
       reasonCode: "REVIEW_NAME_ONLY_NEVER_MERGE",
       personId: null,
       matchedBy: null,
       conflictingPersonIds: [],
-    };
+    });
   }
 
   const exactKinds: IdentityKind[] = [
@@ -144,21 +166,27 @@ export async function resolvePersonIdentity(
 
   if (prioritized.length === 0) {
     if (prepared.malformed.length > 0) {
-      return {
+      return identityResolution(
+        {
+          status: "invalid",
+          reasonCode: "INVALID_MALFORMED_IDENTITY",
+          personId: null,
+          matchedBy: null,
+          conflictingPersonIds: [],
+        },
+        prepared.unsupportedPhone,
+      );
+    }
+    return identityResolution(
+      {
         status: "invalid",
-        reasonCode: "INVALID_MALFORMED_IDENTITY",
+        reasonCode: "INVALID_NO_DETERMINISTIC_IDENTITY",
         personId: null,
         matchedBy: null,
         conflictingPersonIds: [],
-      };
-    }
-    return {
-      status: "invalid",
-      reasonCode: "INVALID_NO_DETERMINISTIC_IDENTITY",
-      personId: null,
-      matchedBy: null,
-      conflictingPersonIds: [],
-    };
+      },
+      prepared.unsupportedPhone,
+    );
   }
 
   const entityIdsByKind = new Map<IdentityKind, string[]>();
@@ -167,13 +195,16 @@ export async function resolvePersonIdentity(
   for (const claim of prioritized) {
     const kindCheck = validateIdentityKind(claim.identityKind);
     if (!kindCheck.ok) {
-      return {
-        status: "invalid",
-        reasonCode: "INVALID_MALFORMED_IDENTITY",
-        personId: null,
-        matchedBy: null,
-        conflictingPersonIds: [],
-      };
+      return identityResolution(
+        {
+          status: "invalid",
+          reasonCode: "INVALID_MALFORMED_IDENTITY",
+          personId: null,
+          matchedBy: null,
+          conflictingPersonIds: [],
+        },
+        prepared.unsupportedPhone,
+      );
     }
     const hits = await lookup.findActiveIdentities({
       identityKind: claim.identityKind,
@@ -185,26 +216,32 @@ export async function resolvePersonIdentity(
         .map((row) => String(row.entityId)),
     );
     if (entityIds.length > 1) {
-      return {
-        status: "review",
-        reasonCode: "REVIEW_IDENTITY_COLLISION",
-        personId: null,
-        matchedBy: claim.identityKind,
-        conflictingPersonIds: entityIds,
-      };
+      return identityResolution(
+        {
+          status: "review",
+          reasonCode: "REVIEW_IDENTITY_COLLISION",
+          personId: null,
+          matchedBy: claim.identityKind,
+          conflictingPersonIds: entityIds,
+        },
+        prepared.unsupportedPhone,
+      );
     }
     entityIdsByKind.set(claim.identityKind, entityIds);
     for (const id of entityIds) allEntityIds.add(id);
   }
 
   if (allEntityIds.size > 1) {
-    return {
-      status: "review",
-      reasonCode: "REVIEW_CROSS_KEY_CONFLICT",
-      personId: null,
-      matchedBy: null,
-      conflictingPersonIds: [...allEntityIds],
-    };
+    return identityResolution(
+      {
+        status: "review",
+        reasonCode: "REVIEW_CROSS_KEY_CONFLICT",
+        personId: null,
+        matchedBy: null,
+        conflictingPersonIds: [...allEntityIds],
+      },
+      prepared.unsupportedPhone,
+    );
   }
 
   if (allEntityIds.size === 1) {
@@ -214,22 +251,28 @@ export async function resolvePersonIdentity(
         const ids = entityIdsByKind.get(kind) ?? [];
         return ids.includes(personId);
       }) ?? null;
-    return {
-      status: "matched",
-      reasonCode: reasonForMatch(matchedBy),
-      personId,
-      matchedBy,
-      conflictingPersonIds: [],
-    };
+    return identityResolution(
+      {
+        status: "matched",
+        reasonCode: reasonForMatch(matchedBy),
+        personId,
+        matchedBy,
+        conflictingPersonIds: [],
+      },
+      prepared.unsupportedPhone,
+    );
   }
 
-  return {
-    status: "new",
-    reasonCode: "NEW_PERSON",
-    personId: null,
-    matchedBy: null,
-    conflictingPersonIds: [],
-  };
+  return identityResolution(
+    {
+      status: "new",
+      reasonCode: "NEW_PERSON",
+      personId: null,
+      matchedBy: null,
+      conflictingPersonIds: [],
+    },
+    prepared.unsupportedPhone,
+  );
 }
 
 function trimToNull(value: string | null | undefined): string | null {

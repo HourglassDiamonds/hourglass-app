@@ -4,14 +4,22 @@
  */
 
 import type { ContinuumStore } from "../persistence/types";
-import { CLIENT_MEMORY_SOURCE_SYSTEM } from "./types";
-import { hashEmail, hashPhone } from "./hashes";
+import {
+  AUDITED_RECONCILIATION_V3,
+  fingerprintWorkbook,
+  workbookFingerprintMatch,
+} from "./artifact";
+import { classifyPhone, hashEmail, hashPhone } from "./hashes";
 import { resolvePersonIdentity, type IdentityLookup } from "./identity";
 import {
   InMemoryClientMemoryStore,
   newExternalIdentity,
   type ClientMemoryStore,
 } from "./store";
+import {
+  CLIENT_MEMORY_SCHEMA_VERSION,
+  CLIENT_MEMORY_SOURCE_SYSTEM,
+} from "./types";
 import {
   WORKBOOK_AUDIT_EXPECTATIONS,
   hasNonEmpty,
@@ -22,17 +30,20 @@ import {
   type ParsedWorkbook,
 } from "./workbook";
 
-export const APPLY_NOT_IMPLEMENTED =
-  "APPLY NOT IMPLEMENTED IN CLIENT MEMORY V1 PHASE 1";
-
 export type ClientMemoryDryRunResult = {
   mode: "dry-run";
   artifact: "continuum-reconciliation-v3";
+  schemaVersion: typeof CLIENT_MEMORY_SCHEMA_VERSION;
+  sourceArtifactVersion: typeof AUDITED_RECONCILIATION_V3.sourceArtifactVersion;
+  frozenSeed: true;
+  workbookFingerprint: string;
+  workbookFingerprintMatch: boolean;
   peopleRowsScanned: number;
   personCandidates: number;
   organizationCandidates: number;
   peopleNeedsReview: number;
   invalidPeople: number;
+  unsupportedPhoneReviews: number;
   wouldCreatePersons: number;
   wouldMatchPersons: number;
   identityCollisions: number;
@@ -56,6 +67,8 @@ export type ClientMemoryDryRunResult = {
   malformedCellWarnings: number;
   projectNotesPopulated: number;
   gmailThreadsDiscovered: number;
+  gmailThreadsCanonical: number;
+  gmailThreadsInvalid: number;
   cadLinkedNames: number;
   cadUnresolvedNames: number;
   salesExactNameLinks: number;
@@ -67,6 +80,7 @@ export type DryRunOptions = {
   store?: ClientMemoryStore;
   /** Present only so tests can prove generic Event payloads are never written. */
   continuumStore?: ContinuumStore | null;
+  expectedFingerprint?: string | null;
 };
 
 class CompositeIdentityLookup implements IdentityLookup {
@@ -99,12 +113,21 @@ export function dryRunReconciliationWorkbook(
   options: DryRunOptions = {},
 ): Promise<ClientMemoryDryRunResult> {
   const parsed = parseReconciliationWorkbook(buffer);
-  return dryRunParsedWorkbook(parsed, options);
+  const fingerprint = fingerprintWorkbook(buffer);
+  const match =
+    options.expectedFingerprint != null
+      ? fingerprint === options.expectedFingerprint
+      : workbookFingerprintMatch(buffer);
+  return dryRunParsedWorkbook(parsed, options, { fingerprint, match });
 }
 
 export async function dryRunParsedWorkbook(
   parsed: ParsedWorkbook,
   options: DryRunOptions = {},
+  fingerprint: { fingerprint: string; match: boolean } = {
+    fingerprint: "synthetic",
+    match: false,
+  },
 ): Promise<ClientMemoryDryRunResult> {
   const store = options.store ?? new InMemoryClientMemoryStore();
   const shadow = new InMemoryClientMemoryStore();
@@ -115,6 +138,7 @@ export async function dryRunParsedWorkbook(
   let organizationCandidates = 0;
   let peopleNeedsReview = 0;
   let invalidPeople = 0;
+  let unsupportedPhoneReviews = 0;
   let wouldCreatePersons = 0;
   let wouldMatchPersons = 0;
   let identityCollisions = 0;
@@ -127,6 +151,11 @@ export async function dryRunParsedWorkbook(
     else invalidPeople += 1;
 
     if (row.classification !== "person-candidate") continue;
+
+    if (classifyPhone(row.phone).status === "international") {
+      unsupportedPhoneReviews += 1;
+      continue;
+    }
 
     const resolution = await resolvePersonIdentity(lookup, {
       email: row.email || null,
@@ -201,6 +230,8 @@ export async function dryRunParsedWorkbook(
   let supplyNoteCandidates = 0;
   let projectNotesPopulated = 0;
   let gmailThreadsDiscovered = 0;
+  let gmailThreadsCanonical = 0;
+  let gmailThreadsInvalid = 0;
 
   for (const row of parsed.projects) {
     if (row.matchConfidenceMalformed) malformedCellWarnings += 1;
@@ -219,6 +250,8 @@ export async function dryRunParsedWorkbook(
     }
     if (row.reviewFlagProse) sourceNotesDiscovered += 1;
     if (hasNonEmpty(row.gmailThreadId)) gmailThreadsDiscovered += 1;
+    if (row.gmailThread.status === "canonical") gmailThreadsCanonical += 1;
+    if (row.gmailThread.status === "invalid") gmailThreadsInvalid += 1;
 
     if (row.matchJudgment === "malformed-source-value") {
       malformedCellWarnings += 1;
@@ -248,6 +281,8 @@ export async function dryRunParsedWorkbook(
   let cadUnresolvedNames = 0;
   for (const row of parsed.cad) {
     cadPointersDiscovered += 1;
+    if (row.gmailThread.status === "canonical") gmailThreadsCanonical += 1;
+    if (row.gmailThread.status === "invalid") gmailThreadsInvalid += 1;
     if (!hasNonEmpty(row.client)) {
       cadUnresolvedNames += 1;
       continue;
@@ -278,11 +313,17 @@ export async function dryRunParsedWorkbook(
   return {
     mode: "dry-run",
     artifact: "continuum-reconciliation-v3",
+    schemaVersion: CLIENT_MEMORY_SCHEMA_VERSION,
+    sourceArtifactVersion: AUDITED_RECONCILIATION_V3.sourceArtifactVersion,
+    frozenSeed: true,
+    workbookFingerprint: fingerprint.fingerprint,
+    workbookFingerprintMatch: fingerprint.match,
     peopleRowsScanned: parsed.people.length,
     personCandidates,
     organizationCandidates,
     peopleNeedsReview,
     invalidPeople,
+    unsupportedPhoneReviews,
     wouldCreatePersons,
     wouldMatchPersons,
     identityCollisions,
@@ -306,6 +347,8 @@ export async function dryRunParsedWorkbook(
     malformedCellWarnings,
     projectNotesPopulated,
     gmailThreadsDiscovered,
+    gmailThreadsCanonical,
+    gmailThreadsInvalid,
     cadLinkedNames,
     cadUnresolvedNames,
     salesExactNameLinks,

@@ -1,0 +1,712 @@
+/**
+ * Server-only Supabase Client Memory persistence.
+ * Do not import from client components or the public client-memory index.
+ * Service-role only. Not invoked by dry-run.
+ */
+
+import { randomUUID } from "node:crypto";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { getSupabaseAdmin } from "@/lib/supabase/client";
+import { validateIdentityKind } from "../../contracts/validation";
+import type {
+  ContinuumSourceSystem,
+  EntityKind,
+  ExternalIdentity,
+  IdentityKind,
+} from "../../contracts/types";
+import { assertFactValue, assertPersonRoles } from "../contracts";
+import { planProfileMerge } from "../merge";
+import type {
+  ApplyExistingPersonInput,
+  ApplyExistingPersonResult,
+  ClientMemoryCounts,
+  ClientMemoryStore,
+  CreatePersonAtomicInput,
+  CreatePersonAtomicResult,
+} from "../store";
+import type {
+  ClientMemoryEntity,
+  EntityRelationship,
+  IdentityReview,
+  IdentityWriteResult,
+  InsertResult,
+  PersonFact,
+  PersonProfile,
+  ProjectHistory,
+  ProjectProfile,
+  SourceNote,
+  Wish,
+} from "../types";
+
+const UNIQUE_VIOLATION = "23505";
+
+function isUniqueViolation(error: { code?: string } | null): boolean {
+  return error?.code === UNIQUE_VIOLATION;
+}
+
+function requireClient(client: SupabaseClient | null): SupabaseClient {
+  if (!client) throw new Error("supabase-admin-unavailable");
+  return client;
+}
+
+function throwQuery(error: { message?: string } | null, fallback: string): never {
+  throw new Error(error?.message ?? fallback);
+}
+
+export class SupabaseClientMemoryStore implements ClientMemoryStore {
+  constructor(private readonly client: SupabaseClient) {}
+
+  async insertEntity(input: {
+    id?: string;
+    kind: EntityKind;
+    createdAt: string;
+    createdBy: string;
+  }): Promise<InsertResult<ClientMemoryEntity>> {
+    const id = input.id ?? randomUUID();
+    const { data, error } = await this.client
+      .from("continuum_entities")
+      .insert({
+        id,
+        kind: input.kind,
+        created_at: input.createdAt,
+        created_by: input.createdBy,
+      })
+      .select("id, kind, created_at, created_by")
+      .single();
+    if (error && isUniqueViolation(error)) {
+      const existing = await this.getEntity(id);
+      if (existing) return { status: "already-present", record: existing };
+    }
+    if (error) throwQuery(error, "insert-entity-failed");
+    return {
+      status: "inserted",
+      record: {
+        id: String(data.id),
+        kind: data.kind as EntityKind,
+        createdAt: String(data.created_at),
+        createdBy: String(data.created_by),
+      },
+    };
+  }
+
+  async getEntity(id: string): Promise<ClientMemoryEntity | null> {
+    const { data, error } = await this.client
+      .from("continuum_entities")
+      .select("id, kind, created_at, created_by")
+      .eq("id", id)
+      .maybeSingle();
+    if (error) throwQuery(error, "get-entity-failed");
+    if (!data) return null;
+    return {
+      id: String(data.id),
+      kind: data.kind as EntityKind,
+      createdAt: String(data.created_at),
+      createdBy: String(data.created_by),
+    };
+  }
+
+  async insertExternalIdentity(
+    identity: ExternalIdentity,
+  ): Promise<IdentityWriteResult<ExternalIdentity>> {
+    return this.writeIdentity(identity);
+  }
+
+  async upsertExternalIdentity(
+    identity: ExternalIdentity,
+  ): Promise<IdentityWriteResult<ExternalIdentity>> {
+    return this.writeIdentity(identity);
+  }
+
+  async getExternalIdentity(id: string): Promise<ExternalIdentity | null> {
+    const { data, error } = await this.client
+      .from("continuum_external_identities")
+      .select(
+        "id, entity_id, source_system, identity_kind, identifier, created_at, revoked_at",
+      )
+      .eq("id", id)
+      .maybeSingle();
+    if (error) throwQuery(error, "get-identity-failed");
+    return data ? rowToIdentity(data) : null;
+  }
+
+  async findActiveIdentities(input: {
+    identityKind: IdentityKind;
+    identifier: string;
+  }): Promise<ExternalIdentity[]> {
+    const { data, error } = await this.client
+      .from("continuum_external_identities")
+      .select(
+        "id, entity_id, source_system, identity_kind, identifier, created_at, revoked_at",
+      )
+      .eq("identity_kind", input.identityKind)
+      .eq("identifier", input.identifier)
+      .is("revoked_at", null);
+    if (error) throwQuery(error, "find-identities-failed");
+    return (data ?? []).map(rowToIdentity);
+  }
+
+  async insertPersonProfile(
+    profile: PersonProfile,
+  ): Promise<InsertResult<PersonProfile>> {
+    await this.assertEntityKind(profile.personId, "person");
+    assertPersonRoles(profile.roles);
+    const { error } = await this.client.from("continuum_person_profiles").insert(
+      profileToRow(profile),
+    );
+    if (error && isUniqueViolation(error)) {
+      const existing = await this.getPersonProfile(profile.personId);
+      if (existing) return { status: "already-present", record: existing };
+    }
+    if (error) throwQuery(error, "insert-profile-failed");
+    return { status: "inserted", record: profile };
+  }
+
+  async getPersonProfile(personId: string): Promise<PersonProfile | null> {
+    const { data, error } = await this.client
+      .from("continuum_person_profiles")
+      .select("*")
+      .eq("person_id", personId)
+      .maybeSingle();
+    if (error) throwQuery(error, "get-profile-failed");
+    return data ? rowToProfile(data) : null;
+  }
+
+  async updatePersonProfile(
+    personId: string,
+    patch: Partial<
+      Omit<PersonProfile, "personId" | "createdAt" | "sourceSystem">
+    > & { updatedAt: string },
+  ): Promise<PersonProfile | null> {
+    const row: Record<string, unknown> = { updated_at: patch.updatedAt };
+    if (patch.displayName !== undefined) row.display_name = patch.displayName;
+    if (patch.givenName !== undefined) row.given_name = patch.givenName;
+    if (patch.familyName !== undefined) row.family_name = patch.familyName;
+    if (patch.organizationName !== undefined) {
+      row.organization_name = patch.organizationName;
+    }
+    if (patch.email !== undefined) row.email = patch.email;
+    if (patch.phone !== undefined) row.phone = patch.phone;
+    if (patch.streetAddress !== undefined) row.street_address = patch.streetAddress;
+    if (patch.city !== undefined) row.city = patch.city;
+    if (patch.state !== undefined) row.state = patch.state;
+    if (patch.country !== undefined) row.country = patch.country;
+    if (patch.postalCode !== undefined) row.postal_code = patch.postalCode;
+    if (patch.roles !== undefined) {
+      assertPersonRoles(patch.roles);
+      row.roles = patch.roles;
+    }
+    const { error } = await this.client
+      .from("continuum_person_profiles")
+      .update(row)
+      .eq("person_id", personId);
+    if (error) throwQuery(error, "update-profile-failed");
+    return this.getPersonProfile(personId);
+  }
+
+  async insertPersonFact(fact: PersonFact): Promise<InsertResult<PersonFact>> {
+    await this.assertEntityKind(fact.personId, "person");
+    assertFactValue(fact.value);
+    const { error } = await this.client.from("continuum_person_facts").insert({
+      id: fact.id,
+      person_id: fact.personId,
+      fact_type: fact.factType,
+      value: fact.value,
+      confidence: fact.confidence,
+      verification: fact.verification,
+      approval_status: fact.approvalStatus,
+      status: fact.status,
+      visibility: fact.visibility,
+      usage_permission: fact.usagePermission,
+      valid_from: fact.validFrom,
+      valid_until: fact.validUntil,
+      supersedes_id: fact.supersedesId,
+      source_system: fact.sourceSystem,
+      created_at: fact.createdAt,
+      created_by: fact.createdBy,
+    });
+    if (error && isUniqueViolation(error)) {
+      throw new Error("current-fact-conflict");
+    }
+    if (error) throwQuery(error, "insert-fact-failed");
+    return { status: "inserted", record: fact };
+  }
+
+  async getPersonFact(id: string): Promise<PersonFact | null> {
+    const { data, error } = await this.client
+      .from("continuum_person_facts")
+      .select("*")
+      .eq("id", id)
+      .maybeSingle();
+    if (error) throwQuery(error, "get-fact-failed");
+    if (!data) return null;
+    return {
+      id: String(data.id),
+      personId: String(data.person_id),
+      factType: String(data.fact_type),
+      value: data.value,
+      confidence: Number(data.confidence),
+      verification: data.verification == null ? null : String(data.verification),
+      approvalStatus: data.approval_status,
+      status: data.status,
+      visibility: data.visibility,
+      usagePermission: data.usage_permission,
+      validFrom: data.valid_from == null ? null : String(data.valid_from),
+      validUntil: data.valid_until == null ? null : String(data.valid_until),
+      supersedesId: data.supersedes_id == null ? null : String(data.supersedes_id),
+      sourceSystem: data.source_system,
+      createdAt: String(data.created_at),
+      createdBy: String(data.created_by),
+    };
+  }
+
+  async insertRelationship(
+    row: EntityRelationship,
+  ): Promise<InsertResult<EntityRelationship>> {
+    if (row.fromEntityId === row.toEntityId) throw new Error("relationship-self");
+    const { error } = await this.client.from("continuum_relationships").insert({
+      id: row.id,
+      from_entity_id: row.fromEntityId,
+      to_entity_id: row.toEntityId,
+      kind: row.kind,
+      status: row.status,
+      source_system: row.sourceSystem,
+      created_at: row.createdAt,
+      created_by: row.createdBy,
+    });
+    if (error && isUniqueViolation(error)) {
+      return { status: "already-present", record: row };
+    }
+    if (error) throwQuery(error, "insert-relationship-failed");
+    return { status: "inserted", record: row };
+  }
+
+  async insertSourceNote(row: SourceNote): Promise<InsertResult<SourceNote>> {
+    const { error } = await this.client.from("continuum_source_notes").insert({
+      id: row.id,
+      person_id: row.personId,
+      project_id: row.projectId,
+      source_system: row.sourceSystem,
+      source_artifact: row.sourceArtifact,
+      source_sheet: row.sourceSheet,
+      source_field: row.sourceField,
+      import_row_key: row.importRowKey,
+      gmail_thread_id: row.gmailThreadId,
+      note_text: row.noteText,
+      created_at: row.createdAt,
+    });
+    if (error && isUniqueViolation(error)) {
+      return { status: "already-present", record: row };
+    }
+    if (error) throwQuery(error, "insert-note-failed");
+    return { status: "inserted", record: row };
+  }
+
+  async insertWish(row: Wish): Promise<InsertResult<Wish>> {
+    await this.assertEntityKind(row.personId, "person");
+    const { error } = await this.client.from("continuum_wishes").insert({
+      id: row.id,
+      person_id: row.personId,
+      household_id: row.householdId,
+      project_id: row.projectId,
+      related_fact_id: row.relatedFactId,
+      description: row.description,
+      category: row.category,
+      status: row.status,
+      visibility: row.visibility,
+      usage_permission: row.usagePermission,
+      source_system: row.sourceSystem,
+      created_at: row.createdAt,
+      created_by: row.createdBy,
+    });
+    if (error && isUniqueViolation(error)) {
+      return { status: "already-present", record: row };
+    }
+    if (error) throwQuery(error, "insert-wish-failed");
+    return { status: "inserted", record: row };
+  }
+
+  async insertProjectProfile(
+    profile: ProjectProfile,
+  ): Promise<InsertResult<ProjectProfile>> {
+    await this.assertEntityKind(profile.projectId, "project");
+    const { error } = await this.client.from("continuum_project_profiles").insert({
+      project_id: profile.projectId,
+      display_title: profile.displayTitle,
+      visibility: profile.visibility,
+      import_row_key: profile.importRowKey,
+      source_system: profile.sourceSystem,
+      created_at: profile.createdAt,
+      updated_at: profile.updatedAt,
+    });
+    if (error && isUniqueViolation(error)) {
+      const existing = await this.getProjectProfile(profile.projectId);
+      if (existing) return { status: "already-present", record: existing };
+    }
+    if (error) throwQuery(error, "insert-project-profile-failed");
+    return { status: "inserted", record: profile };
+  }
+
+  async getProjectProfile(projectId: string): Promise<ProjectProfile | null> {
+    const { data, error } = await this.client
+      .from("continuum_project_profiles")
+      .select("*")
+      .eq("project_id", projectId)
+      .maybeSingle();
+    if (error) throwQuery(error, "get-project-profile-failed");
+    if (!data) return null;
+    return {
+      projectId: String(data.project_id),
+      displayTitle: String(data.display_title),
+      visibility: data.visibility,
+      importRowKey: data.import_row_key == null ? null : String(data.import_row_key),
+      sourceSystem: data.source_system,
+      createdAt: String(data.created_at),
+      updatedAt: String(data.updated_at),
+    };
+  }
+
+  async findProjectByImportRowKey(input: {
+    sourceSystem: ContinuumSourceSystem;
+    importRowKey: string;
+  }): Promise<ProjectProfile | null> {
+    const { data, error } = await this.client
+      .from("continuum_project_profiles")
+      .select("*")
+      .eq("source_system", input.sourceSystem)
+      .eq("import_row_key", input.importRowKey)
+      .maybeSingle();
+    if (error) throwQuery(error, "find-project-import-key-failed");
+    if (!data) return null;
+    return {
+      projectId: String(data.project_id),
+      displayTitle: String(data.display_title),
+      visibility: data.visibility,
+      importRowKey: data.import_row_key == null ? null : String(data.import_row_key),
+      sourceSystem: data.source_system,
+      createdAt: String(data.created_at),
+      updatedAt: String(data.updated_at),
+    };
+  }
+
+  async insertProjectHistory(
+    history: ProjectHistory,
+  ): Promise<InsertResult<ProjectHistory>> {
+    const { error } = await this.client.from("continuum_project_history").insert({
+      project_id: history.projectId,
+      cad_job_number: history.cadJobNumber,
+      order_number: history.orderNumber,
+      gmail_thread_id: history.gmailThreadId,
+      match_judgment: history.matchJudgment,
+      match_judgment_raw: history.matchJudgmentRaw,
+      finger_size: history.fingerSize,
+      metal: history.metal,
+      center_stone: history.centerStone,
+      diamond_supply_notes: history.diamondSupplyNotes,
+      source_system: history.sourceSystem,
+      created_at: history.createdAt,
+      updated_at: history.updatedAt,
+    });
+    if (error && isUniqueViolation(error)) {
+      const existing = await this.getProjectHistory(history.projectId);
+      if (existing) return { status: "already-present", record: existing };
+    }
+    if (error) throwQuery(error, "insert-project-history-failed");
+    return { status: "inserted", record: history };
+  }
+
+  async getProjectHistory(projectId: string): Promise<ProjectHistory | null> {
+    const { data, error } = await this.client
+      .from("continuum_project_history")
+      .select("*")
+      .eq("project_id", projectId)
+      .maybeSingle();
+    if (error) throwQuery(error, "get-project-history-failed");
+    if (!data) return null;
+    return {
+      projectId: String(data.project_id),
+      cadJobNumber: data.cad_job_number,
+      orderNumber: data.order_number,
+      gmailThreadId: data.gmail_thread_id,
+      matchJudgment: data.match_judgment,
+      matchJudgmentRaw: data.match_judgment_raw,
+      fingerSize: data.finger_size,
+      metal: data.metal,
+      centerStone: data.center_stone,
+      diamondSupplyNotes: data.diamond_supply_notes,
+      sourceSystem: data.source_system,
+      createdAt: String(data.created_at),
+      updatedAt: String(data.updated_at),
+    };
+  }
+
+  async insertIdentityReview(
+    row: IdentityReview,
+  ): Promise<InsertResult<IdentityReview>> {
+    const { error } = await this.client.from("continuum_identity_reviews").insert({
+      id: row.id,
+      status: row.status,
+      reason_code: row.reasonCode,
+      left_person_id: row.leftPersonId,
+      right_person_id: row.rightPersonId,
+      import_row_key: row.importRowKey,
+      issue_text: row.issueText,
+      resolution_text: row.resolutionText,
+      source_system: row.sourceSystem,
+      created_at: row.createdAt,
+    });
+    if (error && isUniqueViolation(error)) {
+      return { status: "already-present", record: row };
+    }
+    if (error) throwQuery(error, "insert-review-failed");
+    return { status: "inserted", record: row };
+  }
+
+  async createPersonAtomic(
+    input: CreatePersonAtomicInput,
+  ): Promise<CreatePersonAtomicResult> {
+    const personId = input.entityId ?? randomUUID();
+    const { data, error } = await this.client.rpc(
+      "continuum_client_memory_create_person",
+      {
+        p_entity_id: personId,
+        p_created_at: input.createdAt,
+        p_created_by: input.createdBy,
+        p_profile: {
+          display_name: input.profile.displayName,
+          given_name: input.profile.givenName,
+          family_name: input.profile.familyName,
+          organization_name: input.profile.organizationName,
+          email: input.profile.email,
+          phone: input.profile.phone,
+          street_address: input.profile.streetAddress,
+          city: input.profile.city,
+          state: input.profile.state,
+          country: input.profile.country,
+          postal_code: input.profile.postalCode,
+          roles: input.profile.roles,
+          source_system: input.profile.sourceSystem,
+        },
+        p_identities: input.identities.map((identity) => ({
+          id: identity.id ?? randomUUID(),
+          source_system: identity.sourceSystem,
+          identity_kind: identity.identityKind,
+          identifier: identity.identifier,
+          created_at: input.createdAt,
+        })),
+      },
+    );
+    if (error) throwQuery(error, "create-person-atomic-failed");
+    const status =
+      data && typeof data === "object" && "status" in data
+        ? String((data as { status: string }).status)
+        : "inserted";
+    const profile = { ...input.profile, personId };
+    return {
+      status: status === "already-present" ? "already-present" : "inserted",
+      personId,
+      profile,
+    };
+  }
+
+  async applyExistingPersonAtomic(
+    input: ApplyExistingPersonInput,
+  ): Promise<ApplyExistingPersonResult> {
+    const existing = await this.getPersonProfile(input.personId);
+    if (!existing) throw new Error("person profile missing");
+    const plan = planProfileMerge(existing, input.profile);
+    if (plan.status === "conflict") {
+      return { status: "conflict", reason: "profile_conflict", field: plan.field };
+    }
+    const { error } = await this.client.rpc(
+      "continuum_client_memory_apply_existing_person",
+      {
+        p_person_id: input.personId,
+        p_updated_at: input.updatedAt,
+        p_profile: {
+          display_name: input.profile.displayName ?? null,
+          given_name: input.profile.givenName ?? null,
+          family_name: input.profile.familyName ?? null,
+          organization_name: input.profile.organizationName ?? null,
+          email: input.profile.email ?? null,
+          phone: input.profile.phone ?? null,
+          street_address: input.profile.streetAddress ?? null,
+          city: input.profile.city ?? null,
+          state: input.profile.state ?? null,
+          country: input.profile.country ?? null,
+          postal_code: input.profile.postalCode ?? null,
+        },
+        p_identities: input.identities.map((identity) => ({
+          id: identity.id ?? randomUUID(),
+          source_system: identity.sourceSystem,
+          identity_kind: identity.identityKind,
+          identifier: identity.identifier,
+          created_at: identity.createdAt,
+        })),
+      },
+    );
+    if (error) {
+      const message = error.message ?? "";
+      if (message.includes("profile_conflict")) {
+        return { status: "conflict", reason: "profile_conflict" };
+      }
+      if (message.includes("identity_conflict")) {
+        return { status: "conflict", reason: "identity_conflict" };
+      }
+      throwQuery(error, "apply-existing-person-failed");
+    }
+    return {
+      status: "applied",
+      personId: input.personId,
+      populated: plan.status === "populate",
+    };
+  }
+
+  async inspectCounts(): Promise<ClientMemoryCounts> {
+    const persons = await this.countEq("continuum_entities", "kind", "person");
+    return {
+      persons,
+      profiles: await this.count("continuum_person_profiles"),
+      identities: await this.count("continuum_external_identities"),
+      notes: await this.count("continuum_source_notes"),
+      projects: await this.count("continuum_project_profiles"),
+      histories: await this.count("continuum_project_history"),
+      reviews: await this.count("continuum_identity_reviews"),
+      facts: await this.count("continuum_person_facts"),
+      relationships: await this.count("continuum_relationships"),
+    };
+  }
+
+  private async count(table: string): Promise<number> {
+    const { count, error } = await this.client
+      .from(table)
+      .select("*", { count: "exact", head: true });
+    if (error) throwQuery(error, `count-${table}-failed`);
+    return count ?? 0;
+  }
+
+  private async countEq(
+    table: string,
+    column: string,
+    value: string,
+  ): Promise<number> {
+    const { count, error } = await this.client
+      .from(table)
+      .select("*", { count: "exact", head: true })
+      .eq(column, value);
+    if (error) throwQuery(error, `count-${table}-failed`);
+    return count ?? 0;
+  }
+
+  private async assertEntityKind(id: string, kind: EntityKind): Promise<void> {
+    const entity = await this.getEntity(id);
+    if (!entity || entity.kind !== kind) {
+      throw new Error(
+        kind === "person"
+          ? "person-profile-requires-person-entity"
+          : "project-profile-requires-project-entity",
+      );
+    }
+  }
+
+  private async writeIdentity(
+    identity: ExternalIdentity,
+  ): Promise<IdentityWriteResult<ExternalIdentity>> {
+    const kind = validateIdentityKind(identity.identityKind);
+    if (!kind.ok) throw new Error(kind.reason);
+    if (identity.identityKind === ("hubspot_deal_id" as IdentityKind)) {
+      throw new Error("hubspot_deal_id is not a person identity");
+    }
+    const { error } = await this.client.from("continuum_external_identities").insert({
+      id: identity.id,
+      entity_id: identity.entityId,
+      source_system: identity.sourceSystem,
+      identity_kind: identity.identityKind,
+      identifier: identity.identifier,
+      created_at: identity.createdAt,
+      revoked_at: identity.revokedAt,
+    });
+    if (error && isUniqueViolation(error)) {
+      const hits = await this.findActiveIdentities({
+        identityKind: identity.identityKind,
+        identifier: identity.identifier,
+      });
+      const existing =
+        hits.find((row) => row.sourceSystem === identity.sourceSystem) ?? hits[0];
+      if (existing && existing.entityId === identity.entityId) {
+        return { status: "already-present", record: existing };
+      }
+      if (existing) {
+        return {
+          status: "conflict",
+          record: existing,
+          incomingEntityId: identity.entityId ?? "",
+        };
+      }
+    }
+    if (error) throwQuery(error, "insert-identity-failed");
+    return { status: "inserted", record: identity };
+  }
+}
+
+export function createSupabaseClientMemoryStore(
+  client?: SupabaseClient | null,
+): SupabaseClientMemoryStore {
+  return new SupabaseClientMemoryStore(
+    requireClient(client === undefined ? getSupabaseAdmin() : client),
+  );
+}
+
+function rowToIdentity(row: Record<string, unknown>): ExternalIdentity {
+  return {
+    id: String(row.id),
+    entityId: row.entity_id == null ? null : String(row.entity_id),
+    sourceSystem: row.source_system as ContinuumSourceSystem,
+    identityKind: row.identity_kind as IdentityKind,
+    identifier: String(row.identifier),
+    createdAt: String(row.created_at),
+    revokedAt: row.revoked_at == null ? null : String(row.revoked_at),
+  };
+}
+
+function profileToRow(profile: PersonProfile) {
+  return {
+    person_id: profile.personId,
+    display_name: profile.displayName,
+    given_name: profile.givenName,
+    family_name: profile.familyName,
+    organization_name: profile.organizationName,
+    email: profile.email,
+    phone: profile.phone,
+    street_address: profile.streetAddress,
+    city: profile.city,
+    state: profile.state,
+    country: profile.country,
+    postal_code: profile.postalCode,
+    roles: profile.roles,
+    source_system: profile.sourceSystem,
+    created_at: profile.createdAt,
+    updated_at: profile.updatedAt,
+  };
+}
+
+function rowToProfile(row: Record<string, unknown>): PersonProfile {
+  return {
+    personId: String(row.person_id),
+    displayName: String(row.display_name),
+    givenName: row.given_name == null ? null : String(row.given_name),
+    familyName: row.family_name == null ? null : String(row.family_name),
+    organizationName:
+      row.organization_name == null ? null : String(row.organization_name),
+    email: row.email == null ? null : String(row.email),
+    phone: row.phone == null ? null : String(row.phone),
+    streetAddress: row.street_address == null ? null : String(row.street_address),
+    city: row.city == null ? null : String(row.city),
+    state: row.state == null ? null : String(row.state),
+    country: row.country == null ? null : String(row.country),
+    postalCode: row.postal_code == null ? null : String(row.postal_code),
+    roles: Array.isArray(row.roles) ? (row.roles as PersonProfile["roles"]) : [],
+    sourceSystem: row.source_system as PersonProfile["sourceSystem"],
+    createdAt: String(row.created_at),
+    updatedAt: String(row.updated_at),
+  };
+}

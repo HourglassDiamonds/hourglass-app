@@ -55,6 +55,7 @@ describe("Client Memory PII boundary", () => {
       sourceSystem: CLIENT_MEMORY_SOURCE_SYSTEM,
       sourceArtifact: "synthetic",
       sourceSheet: "People",
+      sourceField: "Notes",
       importRowKey: "continuum-reconciliation-v3:People:2",
       gmailThreadId: null,
       noteText: "Call Ada Lovelace at ada@example.com",
@@ -200,23 +201,29 @@ describe("Client Memory PII boundary", () => {
       resolve(process.cwd(), "lib/supabase/continuum-client-memory-schema.sql"),
       "utf8",
     );
-    assert.match(sql, /UNAPPLIED DRAFT\. DO NOT APPLY TO PRODUCTION/);
+    assert.match(sql, /UNAPPLIED/);
+    assert.match(sql, /DO NOT RUN AGAINST PRODUCTION/);
     assert.match(sql, /continuum_person_profiles/);
     assert.match(sql, /continuum_relationships/);
     assert.match(sql, /continuum_person_facts/);
     assert.match(sql, /continuum_source_notes/);
     assert.match(sql, /continuum_wishes/);
     assert.match(sql, /continuum_project_profiles/);
+    assert.match(sql, /continuum_project_history/);
     assert.match(sql, /continuum_identity_reviews/);
     assert.match(sql, /continuum_fact_evidence/);
     assert.match(sql, /continuum_wish_evidence/);
+    assert.match(sql, /source_field/);
+    assert.match(sql, /continuum_person_facts_one_current_uq/);
+    assert.match(sql, /pg_get_constraintdef/);
+    assert.match(sql, /import_row_key/);
     assert.doesNotMatch(
       sql,
       /identity_kind in \([^)]*hubspot_deal_id/,
     );
     assert.match(sql, /Do not add hubspot_deal_id/);
     assert.doesNotMatch(sql, /create policy/i);
-    assert.equal((sql.match(/enable row level security/g) ?? []).length, 9);
+    assert.equal((sql.match(/enable row level security/g) ?? []).length, 10);
     assert.equal(validateIdentityKind("import_row_key").ok, true);
   });
 });

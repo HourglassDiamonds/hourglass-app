@@ -1,7 +1,11 @@
 /**
  * Deterministic Client Memory identity hashes.
- * Normalization matches Client Attention (email lowercase; phone last 10 digits).
- * Hash prefix is Continuum-specific so raw email/phone never appear in identifiers.
+ * Email: lowercase. Phone: US / +1 10-digit only (no last-10 truncation for
+ * international numbers). Hash prefix is Continuum-specific so raw email/phone
+ * never appear in identifiers.
+ *
+ * import_row_key helpers below are for the frozen Continuum Reconciliation v3
+ * seed only. Excel-row keys are not a generic reusable importer strategy.
  */
 
 import { createHash } from "node:crypto";
@@ -17,10 +21,30 @@ export function normalizeEmail(raw: string | null | undefined): string | null {
 }
 
 export function normalizePhone(raw: string | null | undefined): string | null {
-  if (!raw) return null;
+  const classified = classifyPhone(raw);
+  if (classified.status !== "us-compatible") return null;
+  return classified.normalized;
+}
+
+export type PhoneClassification =
+  | { status: "us-compatible"; normalized: string }
+  | { status: "blank" }
+  | { status: "too-short" }
+  | { status: "international" };
+
+/**
+ * US / +1: 10 digits, or 11 starting with 1.
+ * Longer or non-+1 11-digit values are international — do not last-10 hash.
+ */
+export function classifyPhone(raw: string | null | undefined): PhoneClassification {
+  if (!raw || !raw.trim()) return { status: "blank" };
   const digits = raw.replace(/\D+/g, "");
-  if (digits.length < 10) return null;
-  return digits.slice(-10);
+  if (digits.length < 10) return { status: "too-short" };
+  if (digits.length === 10) return { status: "us-compatible", normalized: digits };
+  if (digits.length === 11 && digits.startsWith("1")) {
+    return { status: "us-compatible", normalized: digits.slice(1) };
+  }
+  return { status: "international" };
 }
 
 export function hashIdentityMaterial(
@@ -45,6 +69,7 @@ export function hashPhone(raw: string | null | undefined): string | null {
 }
 
 export function peopleImportRowKey(excelRow: number): string {
+  // Frozen v3 seed only: continuum-reconciliation-v3:{Sheet}:{excelRow}
   return `continuum-reconciliation-v3:People:${excelRow}`;
 }
 

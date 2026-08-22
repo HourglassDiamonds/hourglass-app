@@ -3,6 +3,7 @@
  * Reads row-1 headers + used range. Ignores Excel table XML.
  */
 
+import { coerceGmailThreadId, type GmailThreadCoercion } from "./gmail";
 import {
   cadImportRowKey,
   peopleImportRowKey,
@@ -123,6 +124,7 @@ export type ParsedProjectRow = {
   supplyNotes: CellScalar;
   notes: CellScalar;
   gmailThreadId: CellScalar;
+  gmailThread: GmailThreadCoercion;
   matchConfidenceRaw: string;
   reviewFlagRaw: string;
   matchConfidenceMalformed: boolean;
@@ -135,7 +137,8 @@ export type ParsedCadRow = {
   importRowKey: string;
   client: string;
   filePointer: string;
-  gmailThreadId: string;
+  gmailThreadId: CellScalar;
+  gmailThread: GmailThreadCoercion;
 };
 
 export type ParsedSalesRow = {
@@ -261,6 +264,7 @@ function parseProjectRow(row: SheetTable["rows"][number]): ParsedProjectRow {
     supplyNotes: scalar(row.values, "Diamond / Supply Notes"),
     notes: scalar(row.values, "Notes"),
     gmailThreadId: scalar(row.values, "Gmail Thread ID"),
+    gmailThread: coerceGmailThreadId(scalar(row.values, "Gmail Thread ID")),
     matchConfidenceRaw,
     reviewFlagRaw,
     matchConfidenceMalformed:
@@ -272,12 +276,14 @@ function parseProjectRow(row: SheetTable["rows"][number]): ParsedProjectRow {
 }
 
 function parseCadRow(row: SheetTable["rows"][number]): ParsedCadRow {
+  const gmailThreadId = scalar(row.values, "Gmail Thread ID");
   return {
     excelRow: row.excelRow,
     importRowKey: cadImportRowKey(row.excelRow),
     client: text(row.values, "Client"),
     filePointer: text(row.values, "File / Attachment"),
-    gmailThreadId: text(row.values, "Gmail Thread ID"),
+    gmailThreadId,
+    gmailThread: coerceGmailThreadId(gmailThreadId),
   };
 }
 
