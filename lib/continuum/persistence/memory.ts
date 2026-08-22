@@ -73,6 +73,21 @@ export class InMemoryContinuumStore implements ContinuumStore {
     return existing ? clone(existing) : null;
   }
 
+  async getEvidenceById(id: string): Promise<ContinuumEvidence | null> {
+    for (const row of this.evidence.values()) {
+      if (row.id === id) return clone(row);
+    }
+    return null;
+  }
+
+  listEvents(): ContinuumEvent[] {
+    return [...this.events.values()].map(clone);
+  }
+
+  listEvidence(): ContinuumEvidence[] {
+    return [...this.evidence.values()].map(clone);
+  }
+
   async insertObservation(
     observation: ContinuumObservation,
   ): Promise<InsertResult<ContinuumObservation>> {

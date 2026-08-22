@@ -8,7 +8,7 @@ import {
   type IdentityKind,
 } from "./types";
 
-const EMAIL_RE = /[^\s@]+@[^\s@]+\.[^\s@]+/;
+const EMAIL_RE = /[^\s@]+@[^\s@]+\.[A-Za-z]{2,}/;
 const US_PHONE_RE =
   /(?:\+?1[-.\s]?)?(?:\(?\d{3}\)?[-.\s]*)\d{3}[-.\s]*\d{4}/;
 const FORBIDDEN_PII_KEYS = new Set([

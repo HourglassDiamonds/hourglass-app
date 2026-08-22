@@ -17,6 +17,7 @@ export type {
   ContinuumExceptionType,
   ContinuumId,
   ContinuumObservation,
+  ContinuumObservationValue,
   ContinuumObservationEvidence,
   ContinuumSourceSystem,
   EntityKind,

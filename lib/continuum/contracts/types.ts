@@ -157,13 +157,18 @@ export type ContinuumEvidence = {
   claimFingerprint: string | null;
 };
 
+/** JSON-safe object stored on Observation.value (SQL jsonb). */
+export type ContinuumObservationValue = {
+  readonly [key: string]: string | number | boolean | null;
+} | null;
+
 export type ContinuumObservation = {
   id: ContinuumId;
   schemaVersion: typeof CONTINUUM_SCHEMA_VERSION;
   observationType: string;
   subjectEntityId: ContinuumId | null;
   statement: string;
-  value: { kind: string; ovalShare?: number } | null;
+  value: ContinuumObservationValue;
   epistemicClass: EpistemicClass;
   confidence: number;
   producedBy: string;
