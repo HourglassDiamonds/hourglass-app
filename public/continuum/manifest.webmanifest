@@ -1,0 +1,31 @@
+{
+  "name": "Continuum",
+  "short_name": "Continuum",
+  "description": "Private relationship memory",
+  "start_url": "/executive-dashboard/concierge",
+  "scope": "/executive-dashboard/",
+  "display": "standalone",
+  "background_color": "#14110f",
+  "theme_color": "#14110f",
+  "lang": "en",
+  "icons": [
+    {
+      "src": "/continuum/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/continuum/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/continuum/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

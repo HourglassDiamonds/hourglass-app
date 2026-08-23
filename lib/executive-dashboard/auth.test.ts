@@ -386,9 +386,9 @@ describe("executive dashboard auth", () => {
       join(ROOT, "app", "executive-dashboard", "(protected)", "layout.tsx"),
       "utf8",
     );
-    assert.match(loginPage, /Executive access/);
+    assert.match(loginPage, /Continuum/);
     assert.match(loginPage, /Sign in with founder credentials/);
-    assert.match(layout, /title:\s*"Executive Dashboard"/);
+    assert.match(layout, /CONTINUUM_APP_NAME|applicationName/);
     assert.match(protectedLayout, /notFound\(\)/);
     assert.match(protectedLayout, /getExecutiveDashboardAccessDecision/);
   });

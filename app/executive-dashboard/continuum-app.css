@@ -1,0 +1,17 @@
+html:has([data-continuum-app]),
+body:has([data-continuum-app]) {
+  background: #14110f;
+}
+
+body:has([data-continuum-app]) > div {
+  background: #14110f;
+}
+
+body:has([data-continuum-app]) footer {
+  display: none;
+}
+
+body:has([data-continuum-app]) .facet-scintillation-rail,
+body:has([data-continuum-app]) [data-facet-rail] {
+  display: none;
+}

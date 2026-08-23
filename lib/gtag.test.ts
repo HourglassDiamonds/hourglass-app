@@ -123,4 +123,16 @@ describe("GoogleAnalytics loader contract", () => {
     assert.match(source, /pageview\(pathname,\s*query\)/);
     assert.doesNotMatch(source, /gtag\('config'/);
   });
+
+  it("does not load gtag.js on private Continuum / executive-dashboard routes", () => {
+    assert.match(
+      source,
+      /isPrivateContinuumPath|startsWith\("\/executive-dashboard"\)/,
+    );
+    assert.match(source, /if \(isPrivateApp\) return/);
+    assert.match(
+      source,
+      /loadGa = enabled && Boolean\(measurementId\) && !isPrivateApp/,
+    );
+  });
 });

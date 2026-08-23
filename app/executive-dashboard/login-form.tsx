@@ -26,7 +26,7 @@ export function ExecutiveDashboardLoginForm() {
       <div>
         <label
           htmlFor="executive-dashboard-username"
-          className="block text-[10px] uppercase tracking-[0.28em] text-[#948a80]"
+          className="block text-[10px] uppercase tracking-[0.28em] text-[#8d8073]"
         >
           Username
         </label>
@@ -37,13 +37,14 @@ export function ExecutiveDashboardLoginForm() {
           autoComplete="username"
           required
           spellCheck={false}
-          className="mt-2 w-full border border-[#e4dbcf] bg-white/70 px-3 py-2.5 text-[15px] text-[#1f1c19] outline-none transition-[border-color,box-shadow] focus-visible:border-[#1f1c19] focus-visible:shadow-[0_0_0_3px_rgba(31,28,25,0.18)]"
+          enterKeyHint="next"
+          className="mt-2 min-h-12 w-full rounded-[18px] border border-white/[0.08] bg-[#1d1916] px-4 text-[16px] text-[#efe8de] outline-none transition-[border-color,box-shadow] focus-visible:border-[#ad9164]/70 focus-visible:shadow-[0_0_0_3px_rgba(173,145,100,0.22)]"
         />
       </div>
       <div>
         <label
           htmlFor="executive-dashboard-password"
-          className="block text-[10px] uppercase tracking-[0.28em] text-[#948a80]"
+          className="block text-[10px] uppercase tracking-[0.28em] text-[#8d8073]"
         >
           Password
         </label>
@@ -53,7 +54,8 @@ export function ExecutiveDashboardLoginForm() {
           type="password"
           autoComplete="current-password"
           required
-          className="mt-2 w-full border border-[#e4dbcf] bg-white/70 px-3 py-2.5 text-[15px] text-[#1f1c19] outline-none transition-[border-color,box-shadow] focus-visible:border-[#1f1c19] focus-visible:shadow-[0_0_0_3px_rgba(31,28,25,0.18)]"
+          enterKeyHint="go"
+          className="mt-2 min-h-12 w-full rounded-[18px] border border-white/[0.08] bg-[#1d1916] px-4 text-[16px] text-[#efe8de] outline-none transition-[border-color,box-shadow] focus-visible:border-[#ad9164]/70 focus-visible:shadow-[0_0_0_3px_rgba(173,145,100,0.22)]"
         />
       </div>
       {state.error ? (
@@ -61,7 +63,7 @@ export function ExecutiveDashboardLoginForm() {
           ref={errorRef}
           tabIndex={-1}
           role="alert"
-          className="text-[13px] leading-relaxed text-[#7a4a3a] outline-none"
+          className="text-[13px] leading-relaxed text-[#d2b8a8] outline-none"
         >
           {state.error}
         </p>
@@ -69,7 +71,7 @@ export function ExecutiveDashboardLoginForm() {
       <button
         type="submit"
         disabled={pending}
-        className="w-full border border-[#1f1c19] bg-[#1f1c19] px-4 py-3 text-[11px] uppercase tracking-[0.28em] text-[#f7f3ec] transition-opacity disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1f1c19]"
+        className="min-h-12 w-full rounded-[18px] border border-[#ad9164]/50 bg-[#1d1916] px-4 text-[11px] uppercase tracking-[0.22em] text-[#efe8de] outline-none transition-opacity hover:border-[#ad9164] focus-visible:shadow-[0_0_0_3px_rgba(173,145,100,0.22)] disabled:opacity-60"
       >
         {pending ? "Signing in…" : "Sign in"}
       </button>

@@ -29,19 +29,19 @@ export default async function ExecutiveDashboardLoginPage() {
   }
 
   return (
-    <main className="relative min-h-screen bg-[#f7f3ec] text-[#1f1c19]">
+    <main className="relative min-h-[100dvh] overflow-x-hidden bg-[#14110f] text-[#efe8de]">
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(255,255,255,0.72),_transparent_55%),linear-gradient(180deg,#f7f3ec_0%,#efe8dc_100%)]"
+        className="pointer-events-none absolute inset-x-0 top-0 h-[28rem] bg-[radial-gradient(ellipse_at_top,_rgba(173,145,100,0.08),_transparent_58%)]"
       />
-      <div className="relative mx-auto flex min-h-screen w-full max-w-md flex-col justify-center px-6 py-16">
-        <p className="font-serif text-[1.65rem] tracking-[-0.02em] text-[#1f1c19]">
-          Hourglass Diamonds
+      <div className="relative mx-auto flex min-h-[100dvh] w-full max-w-md flex-col justify-center px-6 pb-[max(2.5rem,env(safe-area-inset-bottom))] pt-[max(2.5rem,env(safe-area-inset-top))]">
+        <p className="text-[11px] uppercase tracking-[0.28em] text-[#8d8073]">
+          Continuum
         </p>
-        <h1 className="mt-3 text-[11px] uppercase tracking-[0.34em] text-[#948a80]">
-          Executive access
+        <h1 className="mt-3 font-serif text-[2.15rem] font-normal leading-[1.08] tracking-[-0.04em] text-[#efe8de]">
+          Concierge
         </h1>
-        <p className="mt-4 max-w-[34ch] text-[14px] leading-relaxed text-[#5f5851]">
+        <p className="mt-4 max-w-[34ch] text-[15px] leading-relaxed text-[#c4b7aa]">
           Sign in with founder credentials. This surface is private and is not
           indexed.
         </p>
