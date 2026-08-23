@@ -5,6 +5,7 @@
  * Service-role SELECT only. Never INSERT/UPDATE/DELETE.
  */
 
+import { isRelationshipContextLayer } from "../contracts";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getSupabaseAdmin } from "@/lib/supabase/client";
 import { composePersonProfile, listOpenReviewsForPerson } from "./profile";
@@ -56,7 +57,7 @@ const FACT_COLUMNS =
 const WISH_COLUMNS =
   "id, person_id, household_id, project_id, related_fact_id, description, category, status, visibility, usage_permission, source_system, created_at, created_by";
 const NOTE_COLUMNS =
-  "id, person_id, project_id, source_system, source_artifact, source_sheet, source_field, import_row_key, gmail_thread_id, note_text, created_at";
+  "id, person_id, project_id, context_layer, source_system, source_artifact, source_sheet, source_field, import_row_key, gmail_thread_id, note_text, created_at";
 const REVIEW_COLUMNS =
   "id, status, reason_code, left_person_id, right_person_id, import_row_key, source_system, created_at";
 const PROJECT_PROFILE_COLUMNS =
@@ -139,10 +140,14 @@ function rowToWish(row: Record<string, unknown>): Wish {
 }
 
 function rowToNote(row: Record<string, unknown>): SourceNote {
+  if (!isRelationshipContextLayer(row.context_layer)) {
+    throw new Error("invalid-context-layer");
+  }
   return {
     id: String(row.id),
     personId: row.person_id == null ? null : String(row.person_id),
     projectId: row.project_id == null ? null : String(row.project_id),
+    contextLayer: row.context_layer,
     sourceSystem: row.source_system as SourceNote["sourceSystem"],
     sourceArtifact: String(row.source_artifact),
     sourceSheet: String(row.source_sheet),

@@ -122,6 +122,9 @@ describe("Client Memory person profile composition", () => {
     const created = composed.profile.sourceNotes.map((row) => row.createdAt);
     const sorted = [...created].sort((a, b) => (a < b ? 1 : a > b ? -1 : 0));
     assert.deepEqual(created, sorted);
+    assert.ok(
+      composed.profile.sourceNotes.every((row) => row.contextLayer === "client"),
+    );
   });
 
   it("keeps only current facts in the truth section", async () => {

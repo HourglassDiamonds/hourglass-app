@@ -52,6 +52,7 @@ describe("Client Memory PII boundary", () => {
       id: randomUUID(),
       personId: person.record.id,
       projectId: null,
+      contextLayer: "client",
       sourceSystem: CLIENT_MEMORY_SOURCE_SYSTEM,
       sourceArtifact: "synthetic",
       sourceSheet: "People",

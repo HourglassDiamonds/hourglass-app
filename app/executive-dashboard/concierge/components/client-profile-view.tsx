@@ -1,17 +1,24 @@
 import Link from "next/link";
 import {
+  conciergeAddNotePath,
   memoryReviewLabel,
   relationshipLabel,
+  visibleCurrentFacts,
   wishHeadline,
 } from "@/lib/continuum/client-memory/read/presentation";
-import { visibleCurrentFacts } from "@/lib/continuum/client-memory/read/presentation";
 import type { ConciergePersonProfile } from "@/lib/continuum/client-memory/read/types";
 import { ClientMemorySection } from "./client-memory-section";
-import { ClientNoteList } from "./client-note-list";
 import { ClientProfileHeader } from "./client-profile-header";
 import { ClientProjectCard } from "./client-project-card";
+import { ClientRecentNotes } from "./client-recent-notes";
 
-export function ClientProfileView({ profile }: { profile: ConciergePersonProfile }) {
+export function ClientProfileView({
+  profile,
+  justSaved = false,
+}: {
+  profile: ConciergePersonProfile;
+  justSaved?: boolean;
+}) {
   const facts = visibleCurrentFacts(profile.facts.current);
   const memoryReview = memoryReviewLabel(
     profile.facts.candidateCount,
@@ -30,6 +37,21 @@ export function ClientProfileView({ profile }: { profile: ConciergePersonProfile
   return (
     <article>
       <ClientProfileHeader profile={profile} />
+
+      {justSaved ? (
+        <p className="mt-6 text-[13px] tracking-[0.04em] text-[#c4b7aa]" role="status">
+          Note saved.
+        </p>
+      ) : null}
+
+      <div className="mt-6">
+        <Link
+          href={conciergeAddNotePath(profile.person.id)}
+          className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.24em] text-[#8d8073] outline-none hover:text-[#efe8de] focus-visible:text-[#efe8de] focus-visible:shadow-[0_0_0_3px_rgba(173,145,100,0.22)]"
+        >
+          Add Note
+        </Link>
+      </div>
 
       {showMemory ? (
         <ClientMemorySection title="Memory">
@@ -94,16 +116,14 @@ export function ClientProfileView({ profile }: { profile: ConciergePersonProfile
 
       {profile.sourceNotes.length > 0 ? (
         <ClientMemorySection title="Recent notes">
-          <ClientNoteList
+          <ClientRecentNotes
             notes={profile.sourceNotes}
-            projectTitles={
-              new Map(
-                profile.projects.map((project) => [
-                  project.profile.projectId,
-                  project.profile.displayTitle,
-                ]),
-              )
-            }
+            projectTitles={Object.fromEntries(
+              profile.projects.map((project) => [
+                project.profile.projectId,
+                project.profile.displayTitle,
+              ]),
+            )}
           />
         </ClientMemorySection>
       ) : null}

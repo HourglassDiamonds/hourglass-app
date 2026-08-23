@@ -14,7 +14,7 @@ import type {
   ExternalIdentity,
   IdentityKind,
 } from "../../contracts/types";
-import { assertFactValue, assertPersonRoles } from "../contracts";
+import { assertFactValue, assertPersonRoles, isRelationshipContextLayer } from "../contracts";
 import { planProfileMerge } from "../merge";
 import type {
   ApplyExistingPersonInput,
@@ -285,6 +285,7 @@ export class SupabaseClientMemoryStore implements ClientMemoryStore {
       id: row.id,
       person_id: row.personId,
       project_id: row.projectId,
+      context_layer: row.contextLayer,
       source_system: row.sourceSystem,
       source_artifact: row.sourceArtifact,
       source_sheet: row.sourceSheet,
@@ -299,6 +300,55 @@ export class SupabaseClientMemoryStore implements ClientMemoryStore {
     }
     if (error) throwQuery(error, "insert-note-failed");
     return { status: "inserted", record: row };
+  }
+
+  async findSourceNoteByIdentity(input: {
+    sourceSystem: ContinuumSourceSystem;
+    importRowKey: string;
+    sourceField: string;
+  }): Promise<SourceNote | null> {
+    const { data, error } = await this.client
+      .from("continuum_source_notes")
+      .select(
+        "id, person_id, project_id, context_layer, source_system, source_artifact, source_sheet, source_field, import_row_key, gmail_thread_id, note_text, created_at",
+      )
+      .eq("source_system", input.sourceSystem)
+      .eq("import_row_key", input.importRowKey)
+      .eq("source_field", input.sourceField)
+      .maybeSingle();
+    if (error) throwQuery(error, "find-note-failed");
+    if (!data) return null;
+    return persistRowToNote(data);
+  }
+
+  async hasActiveClientProjectLink(
+    personId: string,
+    projectId: string,
+  ): Promise<boolean> {
+    const person = await this.getEntity(personId);
+    const project = await this.getEntity(projectId);
+    if (!person || person.kind !== "person") return false;
+    if (!project || project.kind !== "project") return false;
+    const forward = await this.client
+      .from("continuum_relationships")
+      .select("id")
+      .eq("kind", "client-project")
+      .eq("status", "active")
+      .eq("from_entity_id", personId)
+      .eq("to_entity_id", projectId)
+      .limit(1);
+    if (forward.error) throwQuery(forward.error, "find-client-project-link-failed");
+    if ((forward.data?.length ?? 0) > 0) return true;
+    const reverse = await this.client
+      .from("continuum_relationships")
+      .select("id")
+      .eq("kind", "client-project")
+      .eq("status", "active")
+      .eq("from_entity_id", projectId)
+      .eq("to_entity_id", personId)
+      .limit(1);
+    if (reverse.error) throwQuery(reverse.error, "find-client-project-link-failed");
+    return (reverse.data?.length ?? 0) > 0;
   }
 
   async insertWish(row: Wish): Promise<InsertResult<Wish>> {
@@ -657,6 +707,26 @@ export function createSupabaseClientMemoryStore(
   return new SupabaseClientMemoryStore(
     requireClient(client === undefined ? getSupabaseAdmin() : client),
   );
+}
+
+function persistRowToNote(row: Record<string, unknown>): SourceNote {
+  if (!isRelationshipContextLayer(row.context_layer)) {
+    throw new Error("invalid-context-layer");
+  }
+  return {
+    id: String(row.id),
+    personId: row.person_id == null ? null : String(row.person_id),
+    projectId: row.project_id == null ? null : String(row.project_id),
+    contextLayer: row.context_layer,
+    sourceSystem: row.source_system as SourceNote["sourceSystem"],
+    sourceArtifact: String(row.source_artifact),
+    sourceSheet: String(row.source_sheet),
+    sourceField: String(row.source_field),
+    importRowKey: String(row.import_row_key),
+    gmailThreadId: row.gmail_thread_id == null ? null : String(row.gmail_thread_id),
+    noteText: String(row.note_text),
+    createdAt: String(row.created_at),
+  };
 }
 
 function rowToIdentity(row: Record<string, unknown>): ExternalIdentity {

@@ -46,8 +46,17 @@ describe("Concierge Client Memory UI", () => {
       createElement(ClientProfileView, { profile: composed.profile }),
     );
     assert.match(html, /Ada Lovelace/);
+    assert.match(html, /Add Note/);
     assert.doesNotMatch(html, /Ring size|On their radar|Projects|Recent notes/i);
     assert.doesNotMatch(html, /No facts|coming soon|placeholder/i);
+    const saved = renderToStaticMarkup(
+      createElement(ClientProfileView, {
+        profile: composed.profile,
+        justSaved: true,
+      }),
+    );
+    assert.match(saved, /Note saved/);
+    assert.doesNotMatch(saved, /Prefers morning|ada@example/);
   });
 
   it("renders projects, notes, review indicator, and omits client-project as a social row", () => {
@@ -113,6 +122,12 @@ describe("Concierge Client Memory UI", () => {
     assert.match(html, /CAD-77/);
     assert.match(html, /Prefers morning calls/);
     assert.match(html, /Historical client record/);
+    assert.match(html, /Client/);
+    assert.match(html, /Add Note/);
+    assert.match(html, /All/);
+    assert.match(html, /Networking/);
+    assert.match(html, /Personal/);
+    assert.doesNotMatch(html, /concierge-manual/);
     assert.match(html, /Needs review/);
     assert.match(html, /6\.25/);
     assert.match(html, /Quiet yellow gold/);
@@ -182,6 +197,31 @@ describe("Concierge Client Memory UI", () => {
     assert.match(search, /Search your client memory/);
     const actions = readFileSync(join(CONCIERGE_DIR, "actions.ts"), "utf8");
     assert.match(actions, /getAuthenticatedClientMemoryReader/);
+    assert.match(actions, /getAuthenticatedClientMemoryNoteWriter/);
+    assert.match(actions, /saved=1/);
     assert.doesNotMatch(actions, /from\("continuum_/);
+    assert.doesNotMatch(actions, /noteText=/);
+    const addNote = readFileSync(
+      join(CONCIERGE_DIR, "client", "[personId]", "note", "new", "page.tsx"),
+      "utf8",
+    );
+    assert.match(addNote, /title:\s*"Add Note"/);
+    assert.match(addNote, /randomUUID/);
+    assert.doesNotMatch(addNote, /concierge-manual:/);
+    const form = readFileSync(
+      join(CONCIERGE_DIR, "components", "add-note-form.tsx"),
+      "utf8",
+    );
+    assert.match(form, /Relationship context/);
+    assert.match(form, /RELATIONSHIP_CONTEXT_LAYERS/);
+    assert.match(form, /RELATIONSHIP_CONTEXT_LAYER_LABELS/);
+    assert.match(form, /Save Note/);
+    assert.match(form, /Cancel/);
+    assert.match(form, /Related project/);
+    assert.match(form, /radiogroup/);
+    assert.match(form, /textarea/);
+    assert.match(form, /htmlFor=\{noteId\}/);
+    assert.doesNotMatch(form, /concierge-manual/);
+    assert.doesNotMatch(form, /manual-note/);
   });
 });

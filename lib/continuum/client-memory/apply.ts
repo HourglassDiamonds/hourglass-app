@@ -246,6 +246,7 @@ export async function applyParsedWorkbook(
       id: randomUUID(),
       personId: note.sourceField === "Gmail Thread ID" ? null : personId,
       projectId,
+      contextLayer: "client",
       sourceSystem: CLIENT_MEMORY_SOURCE_SYSTEM,
       sourceArtifact: AUDITED_RECONCILIATION_V3.artifactId,
       sourceSheet: note.sourceSheet,

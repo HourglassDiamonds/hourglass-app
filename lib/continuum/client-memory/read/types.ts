@@ -64,6 +64,7 @@ export type SourceNoteSummary = Pick<
   SourceNote,
   | "id"
   | "projectId"
+  | "contextLayer"
   | "sourceSystem"
   | "sourceArtifact"
   | "sourceSheet"

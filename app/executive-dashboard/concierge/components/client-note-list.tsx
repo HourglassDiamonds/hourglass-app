@@ -1,5 +1,6 @@
 import {
   formatNoteDate,
+  noteContextLabel,
   noteProjectTitle,
   noteSourceLabel,
 } from "@/lib/continuum/client-memory/read/presentation";
@@ -16,10 +17,13 @@ export function ClientNoteList({
   return (
     <ol className="space-y-5">
       {notes.map((note) => {
+        const context = noteContextLabel(note.contextLayer);
         const source = noteSourceLabel(note);
         const date = formatNoteDate(note.createdAt);
         const project = noteProjectTitle(note, projectTitles);
-        const provenance = [source, date, project].filter(Boolean).join(" · ");
+        const provenance = [context, source, date, project]
+          .filter(Boolean)
+          .join(" · ");
         return (
           <li
             key={note.id}

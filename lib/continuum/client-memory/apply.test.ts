@@ -121,6 +121,9 @@ describe("Client Memory apply importer", () => {
     assert.equal(first.sourceNotesInserted, 2);
     assert.equal(first.reviewQueueImported, 1);
     assert.equal(findPiiViolation(first), null);
+    assert.ok(
+      store.listSourceNotes().every((row) => row.contextLayer === "client"),
+    );
     const counts = await store.inspectCounts();
     assert.equal(counts.persons, 1);
     assert.equal(counts.profiles, 1);

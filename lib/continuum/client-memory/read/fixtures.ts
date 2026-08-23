@@ -165,12 +165,15 @@ export function note(input: {
   createdAt: string;
   text?: string;
   sourceField?: string;
+  contextLayer?: SourceNote["contextLayer"];
+  sourceSystem?: SourceNote["sourceSystem"];
 }): SourceNote {
   return {
     id: randomUUID(),
     personId: input.personId ?? null,
     projectId: input.projectId ?? null,
-    sourceSystem: CLIENT_MEMORY_SOURCE_SYSTEM,
+    contextLayer: input.contextLayer ?? "client",
+    sourceSystem: input.sourceSystem ?? CLIENT_MEMORY_SOURCE_SYSTEM,
     sourceArtifact: "continuum-reconciliation-v3",
     sourceSheet: "Reconciled Projects",
     sourceField: input.sourceField ?? "Notes",

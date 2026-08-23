@@ -89,6 +89,7 @@ function toNoteSummary(note: ClientMemoryReadSnapshot["sourceNotes"][number]): S
   return {
     id: note.id,
     projectId: note.projectId,
+    contextLayer: note.contextLayer,
     sourceSystem: note.sourceSystem,
     sourceArtifact: note.sourceArtifact,
     sourceSheet: note.sourceSheet,

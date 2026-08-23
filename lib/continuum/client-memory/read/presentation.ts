@@ -10,13 +10,33 @@ import type {
   SourceNoteSummary,
   WishSummary,
 } from "@/lib/continuum/client-memory/read/types";
-import type { RelationshipKind } from "@/lib/continuum/client-memory/types";
+import type {
+  RelationshipContextLayer,
+  RelationshipKind,
+} from "@/lib/continuum/client-memory/types";
 import { CLIENT_MEMORY_SOURCE_SYSTEM } from "@/lib/continuum/client-memory/types";
 
 export const CONCIERGE_HOME_PATH = "/executive-dashboard/concierge";
 
 export function conciergeClientPath(personId: string): string {
   return `${CONCIERGE_HOME_PATH}/client/${personId}`;
+}
+
+export function conciergeAddNotePath(personId: string): string {
+  return `${conciergeClientPath(personId)}/note/new`;
+}
+
+export const RELATIONSHIP_CONTEXT_LAYER_LABELS: Record<
+  RelationshipContextLayer,
+  string
+> = {
+  client: "Client",
+  networking: "Networking",
+  personal: "Personal",
+};
+
+export function noteContextLabel(layer: RelationshipContextLayer): string {
+  return RELATIONSHIP_CONTEXT_LAYER_LABELS[layer];
 }
 
 const RELATIONSHIP_LABELS: Partial<Record<RelationshipKind, string>> = {
@@ -90,6 +110,8 @@ export function noteSourceLabel(note: SourceNoteSummary): string {
     return "Historical client record";
   }
   switch (String(note.sourceSystem)) {
+    case "concierge-manual":
+      return "Concierge";
     case "gmail":
       return "Email";
     case "plaud":

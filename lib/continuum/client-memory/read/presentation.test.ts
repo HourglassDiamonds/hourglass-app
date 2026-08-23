@@ -6,6 +6,7 @@ import {
   historyFields,
   isPersonIdParam,
   memoryReviewLabel,
+  noteContextLabel,
   noteProjectTitle,
   noteSourceLabel,
   projectCountLabel,
@@ -70,6 +71,7 @@ describe("Concierge presentation", () => {
     const note: SourceNoteSummary = {
       id: "n1",
       projectId: null,
+      contextLayer: "client",
       sourceSystem: CLIENT_MEMORY_SOURCE_SYSTEM,
       sourceArtifact: "continuum-reconciliation-v3",
       sourceSheet: "Reconciled Projects",
@@ -80,6 +82,15 @@ describe("Concierge presentation", () => {
     };
     assert.equal(noteSourceLabel(note), "Historical client record");
     assert.doesNotMatch(noteSourceLabel(note), /import_row_key|xlsx|Reconciled/i);
+    assert.equal(noteContextLabel(note.contextLayer), "Client");
+    assert.equal(
+      noteSourceLabel({ ...note, sourceSystem: "concierge-manual" }),
+      "Concierge",
+    );
+    assert.doesNotMatch(
+      noteSourceLabel({ ...note, sourceSystem: "concierge-manual" }),
+      /concierge-manual|manual-note/,
+    );
     assert.equal(
       noteProjectTitle({ ...note, projectId: "proj-1" }, { "proj-1": "Oval ring" }),
       "Oval ring",

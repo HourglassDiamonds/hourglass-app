@@ -12,6 +12,7 @@ import {
   FACT_APPROVAL_STATUSES,
   FACT_STATUSES,
   PERSON_ROLES,
+  RELATIONSHIP_CONTEXT_LAYERS,
   RELATIONSHIP_KINDS,
   RELATIONSHIP_STATUSES,
   USAGE_PERMISSIONS,
@@ -19,6 +20,7 @@ import {
   type FactApprovalStatus,
   type FactStatus,
   type PersonRole,
+  type RelationshipContextLayer,
   type RelationshipKind,
   type RelationshipStatus,
   type UsagePermission,
@@ -44,6 +46,15 @@ export function isPersonRole(value: unknown): value is PersonRole {
   return (
     typeof value === "string" &&
     (PERSON_ROLES as readonly string[]).includes(value)
+  );
+}
+
+export function isRelationshipContextLayer(
+  value: unknown,
+): value is RelationshipContextLayer {
+  return (
+    typeof value === "string" &&
+    (RELATIONSHIP_CONTEXT_LAYERS as readonly string[]).includes(value)
   );
 }
 

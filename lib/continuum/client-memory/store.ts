@@ -17,6 +17,7 @@ import {
   assertPersonRoles,
   isFactApprovalStatus,
   isFactStatus,
+  isRelationshipContextLayer,
   isRelationshipKind,
   isRelationshipStatus,
   isUsagePermission,
@@ -123,6 +124,15 @@ export type ClientMemoryStore = {
     row: EntityRelationship,
   ): Promise<InsertResult<EntityRelationship>>;
   insertSourceNote(row: SourceNote): Promise<InsertResult<SourceNote>>;
+  findSourceNoteByIdentity(input: {
+    sourceSystem: ContinuumSourceSystem;
+    importRowKey: string;
+    sourceField: string;
+  }): Promise<SourceNote | null>;
+  hasActiveClientProjectLink(
+    personId: string,
+    projectId: string,
+  ): Promise<boolean>;
   insertWish(row: Wish): Promise<InsertResult<Wish>>;
   insertProjectProfile(
     profile: ProjectProfile,
@@ -362,6 +372,9 @@ export class InMemoryClientMemoryStore implements ClientMemoryStore {
 
   async insertSourceNote(row: SourceNote): Promise<InsertResult<SourceNote>> {
     if (!row.sourceField.trim()) throw new Error("source-field-required");
+    if (!isRelationshipContextLayer(row.contextLayer)) {
+      throw new Error("invalid-context-layer");
+    }
     const existing = this.notes.get(row.id);
     if (existing) return { status: "already-present", record: clone(existing) };
     const key = noteKey(row);
@@ -374,6 +387,41 @@ export class InMemoryClientMemoryStore implements ClientMemoryStore {
     this.noteKeys.set(key, row.id);
     this.notes.set(row.id, clone(row));
     return { status: "inserted", record: clone(row) };
+  }
+
+  async findSourceNoteByIdentity(input: {
+    sourceSystem: ContinuumSourceSystem;
+    importRowKey: string;
+    sourceField: string;
+  }): Promise<SourceNote | null> {
+    const existingId = this.noteKeys.get(noteKey(input));
+    if (!existingId) return null;
+    const present = this.notes.get(existingId);
+    return present ? clone(present) : null;
+  }
+
+  async hasActiveClientProjectLink(
+    personId: string,
+    projectId: string,
+  ): Promise<boolean> {
+    const person = this.entities.get(personId);
+    const project = this.entities.get(projectId);
+    if (!person || person.kind !== "person") return false;
+    if (!project || project.kind !== "project") return false;
+    for (const row of this.relationships.values()) {
+      if (row.kind !== "client-project" || row.status !== "active") continue;
+      if (
+        (row.fromEntityId === personId && row.toEntityId === projectId) ||
+        (row.fromEntityId === projectId && row.toEntityId === personId)
+      ) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  listSourceNotes(): SourceNote[] {
+    return [...this.notes.values()].map((row) => clone(row));
   }
 
   async insertWish(row: Wish): Promise<InsertResult<Wish>> {

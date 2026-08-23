@@ -29,6 +29,7 @@ export type ContinuumSourceSystem =
   | "ga4"
   | "gsc"
   | "concierge-sla"
+  | "concierge-manual"
   | "agent-os"
   | "continuum"
   | "continuum-reconciliation-v3";
@@ -40,6 +41,7 @@ export const CONTINUUM_SOURCE_SYSTEMS = [
   "ga4",
   "gsc",
   "concierge-sla",
+  "concierge-manual",
   "agent-os",
   "continuum",
   "continuum-reconciliation-v3",

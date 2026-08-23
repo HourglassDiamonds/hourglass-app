@@ -66,6 +66,19 @@ export const PERSON_ROLES = [
   "business-contact",
 ] as const satisfies readonly PersonRole[];
 
+/**
+ * Context of a memory/source note. Not a Person identity and not a role.
+ * One Person. One memory. Multiple relationship contexts.
+ */
+export const RELATIONSHIP_CONTEXT_LAYERS = [
+  "client",
+  "networking",
+  "personal",
+] as const;
+
+export type RelationshipContextLayer =
+  (typeof RELATIONSHIP_CONTEXT_LAYERS)[number];
+
 export type RelationshipKind =
   | "spouse"
   | "partner"
@@ -211,6 +224,7 @@ export type SourceNote = {
   id: ContinuumId;
   personId: ContinuumId | null;
   projectId: ContinuumId | null;
+  contextLayer: RelationshipContextLayer;
   sourceSystem: ContinuumSourceSystem;
   sourceArtifact: string;
   sourceSheet: string;

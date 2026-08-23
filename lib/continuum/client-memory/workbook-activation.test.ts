@@ -59,6 +59,10 @@ describe("Client Memory frozen workbook activation simulation", () => {
     assert.equal(first.wishesCreated, 0);
     assert.equal(first.manifest.factsWouldCreate, 0);
     assert.equal(first.manifest.wishesWouldCreate, 0);
+    assert.ok(store.listSourceNotes().length > 0);
+    assert.ok(
+      store.listSourceNotes().every((row) => row.contextLayer === "client"),
+    );
 
     const counts = await store.inspectCounts();
     assert.equal(counts.persons, first.personsCreated);
