@@ -534,6 +534,7 @@ export class SupabaseClientMemoryStore implements ClientMemoryStore {
           state: input.profile.state ?? null,
           country: input.profile.country ?? null,
           postal_code: input.profile.postalCode ?? null,
+          roles: input.roles ?? [],
         },
         p_identities: input.identities.map((identity) => ({
           id: identity.id ?? randomUUID(),
@@ -567,12 +568,14 @@ export class SupabaseClientMemoryStore implements ClientMemoryStore {
       persons,
       profiles: await this.count("continuum_person_profiles"),
       identities: await this.count("continuum_external_identities"),
+      identitiesByKind: {},
       notes: await this.count("continuum_source_notes"),
       projects: await this.count("continuum_project_profiles"),
       histories: await this.count("continuum_project_history"),
       reviews: await this.count("continuum_identity_reviews"),
       facts: await this.count("continuum_person_facts"),
       relationships: await this.count("continuum_relationships"),
+      wishes: await this.count("continuum_wishes"),
     };
   }
 

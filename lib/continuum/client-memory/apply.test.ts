@@ -253,7 +253,7 @@ describe("Client Memory apply importer", () => {
     assert.equal(profile?.email, "old@example.com");
   });
 
-  it("does not create a person for unsupported international phones", async () => {
+  it("creates a person for unsupported international phones without hashing the phone", async () => {
     const xlsx = peopleBook([
       personCells({
         name: "Ada Lovelace",
@@ -265,9 +265,78 @@ describe("Client Memory apply importer", () => {
     const result = await applyReconciliationWorkbook(xlsx, applyOpts(store, xlsx));
     assert.equal(result.ok, true);
     if (!result.ok) return;
-    assert.equal(result.skippedUnsupportedPhone, 1);
+    assert.equal(result.skippedUnsupportedPhone, 0);
+    assert.equal(result.personsCreated, 1);
+    assert.equal(result.identityWarnings, 1);
+    const counts = await store.inspectCounts();
+    assert.equal(counts.persons, 1);
+    assert.equal(counts.identitiesByKind.phone_hash ?? 0, 0);
+    assert.ok((counts.identitiesByKind.import_row_key ?? 0) >= 1);
+    assert.ok((counts.identitiesByKind.email_hash ?? 0) >= 1);
+    assert.ok(counts.reviews >= 1);
+  });
+
+  it("creates an eligible person with malformed email and does not attach email_hash", async () => {
+    const xlsx = peopleBook([
+      personCells({ name: "Ada Lovelace", email: "not-an-email" }),
+    ]);
+    const store = new InMemoryClientMemoryStore();
+    const result = await applyReconciliationWorkbook(xlsx, applyOpts(store, xlsx));
+    assert.equal(result.ok, true);
+    if (!result.ok) return;
+    assert.equal(result.personsCreated, 1);
+    const counts = await store.inspectCounts();
+    assert.equal(counts.identitiesByKind.email_hash ?? 0, 0);
+    assert.equal(counts.identitiesByKind.import_row_key, 1);
+    const hits = await store.findActiveIdentities({
+      identityKind: "import_row_key",
+      identifier: peopleImportRowKey(2),
+    });
+    const profile = await store.getPersonProfile(hits[0].entityId!);
+    assert.deepEqual(profile?.roles, ["client"]);
+    assert.equal(profile?.email, "not-an-email");
+  });
+
+  it("adds client role without replacing existing roles on a matched person", async () => {
+    const xlsx = peopleBook([
+      personCells({ name: "Ada Lovelace", email: "ada@example.com" }),
+    ]);
+    const store = new InMemoryClientMemoryStore();
+    const created = await store.createPersonAtomic({
+      createdAt: NOW,
+      createdBy: "test",
+      profile: {
+        displayName: "Ada Lovelace",
+        givenName: "Ada",
+        familyName: "Lovelace",
+        organizationName: null,
+        email: "ada@example.com",
+        phone: null,
+        streetAddress: "1 Test Street",
+        city: "Miami",
+        state: "FL",
+        country: "US",
+        postalCode: "33101",
+        roles: ["prospect"],
+        sourceSystem: CLIENT_MEMORY_SOURCE_SYSTEM,
+        createdAt: NOW,
+        updatedAt: NOW,
+      },
+      identities: [
+        {
+          identityKind: "import_row_key",
+          identifier: peopleImportRowKey(2),
+          sourceSystem: CLIENT_MEMORY_SOURCE_SYSTEM,
+        },
+      ],
+    });
+    const result = await applyReconciliationWorkbook(xlsx, applyOpts(store, xlsx));
+    assert.equal(result.ok, true);
+    if (!result.ok) return;
     assert.equal(result.personsCreated, 0);
-    assert.equal((await store.inspectCounts()).persons, 0);
+    assert.equal(result.personsMatched, 1);
+    const profile = await store.getPersonProfile(created.personId);
+    assert.deepEqual(profile?.roles, ["prospect", "client"]);
   });
 
   it("does not apply needs-review people rows", async () => {

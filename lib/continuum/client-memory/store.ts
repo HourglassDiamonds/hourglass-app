@@ -21,6 +21,7 @@ import {
   isRelationshipStatus,
   isUsagePermission,
   isVisibility,
+  unionPersonRoles,
 } from "./contracts";
 import { planProfileMerge, type ProtectedProfileField } from "./merge";
 import type {
@@ -31,6 +32,7 @@ import type {
   InsertResult,
   PersonFact,
   PersonProfile,
+  PersonRole,
   ProjectHistory,
   ProjectProfile,
   SourceNote,
@@ -58,6 +60,7 @@ export type ApplyExistingPersonInput = {
   personId: string;
   updatedAt: string;
   profile: Partial<Pick<PersonProfile, ProtectedProfileField>>;
+  roles?: PersonRole[];
   identities: Array<{
     id?: string;
     identityKind: IdentityKind;
@@ -75,12 +78,14 @@ export type ClientMemoryCounts = {
   persons: number;
   profiles: number;
   identities: number;
+  identitiesByKind: Record<string, number>;
   notes: number;
   projects: number;
   histories: number;
   reviews: number;
   facts: number;
   relationships: number;
+  wishes: number;
 };
 
 export type ClientMemoryStore = {
@@ -540,6 +545,18 @@ export class InMemoryClientMemoryStore implements ClientMemoryStore {
           updatedAt: input.updatedAt,
         });
       }
+      if (input.roles && input.roles.length > 0) {
+        const current = this.profiles.get(input.personId);
+        if (current) {
+          const merged = unionPersonRoles(current.roles, input.roles);
+          if (merged.length !== current.roles.length) {
+            await this.updatePersonProfile(input.personId, {
+              roles: merged,
+              updatedAt: input.updatedAt,
+            });
+          }
+        }
+      }
       for (const identity of input.identities) {
         const written = await this.upsertExternalIdentity({
           id: identity.id ?? randomUUID(),
@@ -571,16 +588,23 @@ export class InMemoryClientMemoryStore implements ClientMemoryStore {
     for (const entity of this.entities.values()) {
       if (entity.kind === "person") persons += 1;
     }
+    const identitiesByKind: Record<string, number> = {};
+    for (const row of this.identitiesById.values()) {
+      identitiesByKind[row.identityKind] =
+        (identitiesByKind[row.identityKind] ?? 0) + 1;
+    }
     return {
       persons,
       profiles: this.profiles.size,
       identities: this.identitiesById.size,
+      identitiesByKind,
       notes: this.notes.size,
       projects: this.projects.size,
       histories: this.histories.size,
       reviews: this.reviews.size,
       facts: this.facts.size,
       relationships: this.relationships.size,
+      wishes: this.wishes.size,
     };
   }
 

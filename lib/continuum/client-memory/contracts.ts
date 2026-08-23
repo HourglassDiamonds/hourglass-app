@@ -92,3 +92,18 @@ export function assertPersonRoles(roles: unknown): asserts roles is PersonRole[]
     throw new Error("unsupported person role");
   }
 }
+
+export function unionPersonRoles(
+  existing: PersonRole[],
+  incoming: PersonRole[],
+): PersonRole[] {
+  const out = [...existing];
+  for (const role of incoming) {
+    if (!out.includes(role)) out.push(role);
+  }
+  return out;
+}
+
+export function rolesFromRelationship(relationship: string): PersonRole[] {
+  return relationship.trim().toLowerCase() === "client" ? ["client"] : [];
+}

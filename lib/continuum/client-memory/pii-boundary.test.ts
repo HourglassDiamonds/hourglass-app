@@ -215,7 +215,8 @@ describe("Client Memory PII boundary", () => {
     assert.match(sql, /continuum_wish_evidence/);
     assert.match(sql, /source_field/);
     assert.match(sql, /continuum_person_facts_one_current_uq/);
-    assert.match(sql, /pg_get_constraintdef/);
+    assert.match(sql, /drop constraint if exists continuum_external_identities_identity_kind_check/);
+    assert.doesNotMatch(sql, /pg_get_constraintdef/);
     assert.match(sql, /import_row_key/);
     assert.doesNotMatch(
       sql,

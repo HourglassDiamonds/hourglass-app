@@ -11,9 +11,14 @@ import {
 } from "./artifact";
 import { splitDisplayName } from "./classify";
 import { DEFAULT_VISIBILITY } from "./contracts";
+import { evaluatePersonRow, type PersonRowEvaluation } from "./eligibility";
 import { evaluateApplyGates, type ApplyTarget } from "./gates";
-import { classifyPhone } from "./hashes";
-import { prepareIdentityClaims, resolvePersonIdentity } from "./identity";
+import {
+  buildWorkbookSidePlan,
+  dedupeReviews,
+  type ClientMemoryImportManifest,
+  type PlannedReview,
+} from "./plan";
 import {
   InMemoryClientMemoryStore,
   type ClientMemoryStore,
@@ -25,7 +30,6 @@ import {
   type ProjectHistory,
 } from "./types";
 import {
-  isProseCandidate,
   parseReconciliationWorkbook,
   type ParsedPersonRow,
   type ParsedProjectRow,
@@ -74,12 +78,16 @@ export type ApplySuccess = {
   skippedUnsupportedPhone: number;
   skippedInvalidPeople: number;
   identityConflicts: number;
+  identityWarnings: number;
   profileConflicts: number;
   projectsExactLinked: number;
   projectsReviewUnlinked: number;
   projectsUnresolved: number;
   reviewQueueImported: number;
   vendorRowsSkipped: number;
+  factsCreated: number;
+  wishesCreated: number;
+  manifest: ClientMemoryImportManifest;
 };
 
 export type ApplyResult = ApplyFailure | ApplySuccess;
@@ -137,34 +145,46 @@ export async function applyParsedWorkbook(
   let personsUnchanged = 0;
   let profilesPopulated = 0;
   let identitiesAttached = 0;
-  let reviewsOpened = 0;
   let skippedNeedsReview = 0;
   let skippedOrganization = 0;
-  let skippedUnsupportedPhone = 0;
   let skippedInvalidPeople = 0;
   let identityConflicts = 0;
+  let identityWarnings = 0;
   let profileConflicts = 0;
 
+  const people: Array<{ row: ParsedPersonRow; evaluation: PersonRowEvaluation }> =
+    [];
+  const applyTimeReviews: PlannedReview[] = [];
+
   for (const row of parsed.people) {
-    const outcome = await applyPersonRow(store, row, {
+    const evaluation = await evaluatePersonRow(store, row);
+    people.push({ row, evaluation });
+    identityWarnings += evaluation.identityWarnings.length;
+    const outcome = await applyPersonRow(store, row, evaluation, {
       now,
       personIdByImportKey,
       uniqueNameToPersonId,
       duplicateNames,
+      applyTimeReviews,
     });
     personsCreated += outcome.personsCreated;
     personsMatched += outcome.personsMatched;
     personsUnchanged += outcome.personsUnchanged;
     profilesPopulated += outcome.profilesPopulated;
     identitiesAttached += outcome.identitiesAttached;
-    reviewsOpened += outcome.reviewsOpened;
     skippedNeedsReview += outcome.skippedNeedsReview;
     skippedOrganization += outcome.skippedOrganization;
-    skippedUnsupportedPhone += outcome.skippedUnsupportedPhone;
     skippedInvalidPeople += outcome.skippedInvalidPeople;
     identityConflicts += outcome.identityConflicts;
     profileConflicts += outcome.profileConflicts;
   }
+
+  const side = buildWorkbookSidePlan(
+    parsed,
+    people,
+    new Set(uniqueNameToPersonId.keys()),
+  );
+  const projectIdByImportKey = new Map<string, string>();
 
   let sourceNotesInserted = 0;
   let sourceNotesAlreadyPresent = 0;
@@ -175,25 +195,26 @@ export async function applyParsedWorkbook(
   let projectsReviewUnlinked = 0;
   let projectsUnresolved = 0;
 
-  for (const row of parsed.projects) {
-    if (row.matchJudgment === "no-exact") {
+  for (const planned of side.projects) {
+    const row = planned.row;
+    if (planned.action === "unresolved") {
       projectsUnresolved += 1;
       continue;
     }
 
     const personId =
-      row.matchJudgment === "exact" &&
-      row.canonicalClient &&
-      !duplicateNames.has(row.canonicalClient)
+      planned.action === "exact-link"
         ? (uniqueNameToPersonId.get(row.canonicalClient) ?? null)
         : null;
 
-    if (row.matchJudgment === "exact" && personId) {
-      const project = await createProjectBundle(store, row, now);
-      if (project.created) {
-        projectsCreated += 1;
-        projectHistoriesCreated += 1;
-      }
+    const project = await createProjectBundle(store, row, now);
+    projectIdByImportKey.set(row.importRowKey, project.projectId);
+    if (project.created) {
+      projectsCreated += 1;
+      projectHistoriesCreated += 1;
+    }
+
+    if (planned.action === "exact-link" && personId) {
       const link = await store.insertRelationship({
         id: randomUUID(),
         fromEntityId: personId,
@@ -206,54 +227,53 @@ export async function applyParsedWorkbook(
       });
       if (link.status === "inserted") projectPersonLinks += 1;
       projectsExactLinked += 1;
-      const notes = await insertProjectNotes(
-        store,
-        row,
-        personId,
-        project.projectId,
-        now,
-      );
-      sourceNotesInserted += notes.inserted;
-      sourceNotesAlreadyPresent += notes.alreadyPresent;
-      continue;
+    } else {
+      projectsReviewUnlinked += 1;
     }
-
-    const project = await createProjectBundle(store, row, now);
-    if (project.created) {
-      projectsCreated += 1;
-      projectHistoriesCreated += 1;
-      reviewsOpened += await openReview(store, {
-        reasonCode:
-          row.matchJudgment === "malformed-source-value"
-            ? "REVIEW_MALFORMED_PROJECT_MATCH"
-            : row.matchJudgment === "exact"
-              ? "REVIEW_EXACT_NAME_NOT_UNIQUE_OR_UNIMPORTED"
-              : "REVIEW_PROJECT_PERSON_LINK",
-        importRowKey: row.importRowKey,
-        now,
-      });
-    }
-    projectsReviewUnlinked += 1;
-    const notes = await insertProjectNotes(
-      store,
-      row,
-      null,
-      project.projectId,
-      now,
-    );
-    sourceNotesInserted += notes.inserted;
-    sourceNotesAlreadyPresent += notes.alreadyPresent;
   }
 
-  let reviewQueueImported = 0;
-  for (const row of parsed.reviewQueue) {
-    reviewQueueImported += await openReview(store, {
-      reasonCode: "REVIEW_QUEUE_SEEDED",
-      importRowKey: row.importRowKey,
-      now,
-      issueText: row.issue || null,
-      resolutionText: row.recommendedResolution || null,
+  for (const note of side.notes) {
+    const projectId = projectIdByImportKey.get(note.importRowKey);
+    if (!projectId) continue;
+    const projectRow = parsed.projects.find(
+      (row) => row.importRowKey === note.importRowKey,
+    );
+    const personId =
+      projectRow && uniqueNameToPersonId.has(projectRow.canonicalClient)
+        ? (uniqueNameToPersonId.get(projectRow.canonicalClient) ?? null)
+        : null;
+    const result = await store.insertSourceNote({
+      id: randomUUID(),
+      personId: note.sourceField === "Gmail Thread ID" ? null : personId,
+      projectId,
+      sourceSystem: CLIENT_MEMORY_SOURCE_SYSTEM,
+      sourceArtifact: AUDITED_RECONCILIATION_V3.artifactId,
+      sourceSheet: note.sourceSheet,
+      sourceField: note.sourceField,
+      importRowKey: note.importRowKey,
+      gmailThreadId:
+        projectRow?.gmailThread.status === "canonical"
+          ? projectRow.gmailThread.value
+          : null,
+      noteText: note.text,
+      createdAt: now,
     });
+    if (result.status === "inserted") sourceNotesInserted += 1;
+    else sourceNotesAlreadyPresent += 1;
+  }
+
+  let reviewsOpened = 0;
+  let reviewQueueImported = 0;
+  const reviewsToOpen = dedupeReviews([...side.reviews, ...applyTimeReviews]);
+  for (const review of reviewsToOpen) {
+    const opened = await openReview(store, {
+      ...review,
+      now,
+    });
+    reviewsOpened += opened;
+    if (review.reasonCode === "REVIEW_QUEUE_SEEDED") {
+      reviewQueueImported += opened;
+    }
   }
 
   void personIdByImportKey;
@@ -279,15 +299,19 @@ export async function applyParsedWorkbook(
     projectPersonLinks,
     skippedNeedsReview,
     skippedOrganization,
-    skippedUnsupportedPhone,
+    skippedUnsupportedPhone: 0,
     skippedInvalidPeople,
     identityConflicts,
+    identityWarnings,
     profileConflicts,
     projectsExactLinked,
     projectsReviewUnlinked,
     projectsUnresolved,
     reviewQueueImported,
     vendorRowsSkipped: parsed.vloraRows,
+    factsCreated: 0,
+    wishesCreated: 0,
+    manifest: side.manifest,
   };
 }
 
@@ -297,10 +321,8 @@ type PersonApplyDelta = {
   personsUnchanged: number;
   profilesPopulated: number;
   identitiesAttached: number;
-  reviewsOpened: number;
   skippedNeedsReview: number;
   skippedOrganization: number;
-  skippedUnsupportedPhone: number;
   skippedInvalidPeople: number;
   identityConflicts: number;
   profileConflicts: number;
@@ -309,11 +331,13 @@ type PersonApplyDelta = {
 async function applyPersonRow(
   store: ClientMemoryStore,
   row: ParsedPersonRow,
+  evaluation: PersonRowEvaluation,
   ctx: {
     now: string;
     personIdByImportKey: Map<string, string>;
     uniqueNameToPersonId: Map<string, string>;
     duplicateNames: Set<string>;
+    applyTimeReviews: PlannedReview[];
   },
 ): Promise<PersonApplyDelta> {
   const zero: PersonApplyDelta = {
@@ -322,70 +346,27 @@ async function applyPersonRow(
     personsUnchanged: 0,
     profilesPopulated: 0,
     identitiesAttached: 0,
-    reviewsOpened: 0,
     skippedNeedsReview: 0,
     skippedOrganization: 0,
-    skippedUnsupportedPhone: 0,
     skippedInvalidPeople: 0,
     identityConflicts: 0,
     profileConflicts: 0,
   };
 
-  if (row.classification === "organization-candidate") {
+  if (evaluation.eligibility === "organization") {
     return { ...zero, skippedOrganization: 1 };
   }
-  if (row.classification === "needs-review") {
-    const opened = await openReview(store, {
-      reasonCode: "PEOPLE_NEEDS_REVIEW",
-      importRowKey: row.importRowKey,
-      now: ctx.now,
-    });
-    return { ...zero, skippedNeedsReview: 1, reviewsOpened: opened };
+  if (evaluation.eligibility === "needs-review") {
+    return { ...zero, skippedNeedsReview: 1 };
   }
-  if (row.classification !== "person-candidate") {
-    const opened = await openReview(store, {
-      reasonCode: "INVALID_PERSON_ROW",
-      importRowKey: row.importRowKey,
-      now: ctx.now,
-    });
-    return { ...zero, skippedInvalidPeople: 1, reviewsOpened: opened };
+  if (evaluation.eligibility === "invalid") {
+    return { ...zero, skippedInvalidPeople: 1 };
+  }
+  if (evaluation.eligibility === "identity-conflict") {
+    return { ...zero, identityConflicts: 1 };
   }
 
-  if (classifyPhone(row.phone).status === "international") {
-    const opened = await openReview(store, {
-      reasonCode: "REVIEW_UNSUPPORTED_PHONE",
-      importRowKey: row.importRowKey,
-      now: ctx.now,
-    });
-    return { ...zero, skippedUnsupportedPhone: 1, reviewsOpened: opened };
-  }
-
-  const claims = {
-    email: row.email || null,
-    phone: row.phone || null,
-    importRowKey: row.importRowKey,
-  };
-  const prepared = prepareIdentityClaims(claims);
-  const resolution = await resolvePersonIdentity(store, claims);
-
-  if (prepared.malformed.length > 0 || resolution.status === "invalid") {
-    const opened = await openReview(store, {
-      reasonCode: resolution.reasonCode,
-      importRowKey: row.importRowKey,
-      now: ctx.now,
-    });
-    return { ...zero, skippedInvalidPeople: 1, reviewsOpened: opened };
-  }
-  if (resolution.status === "review") {
-    const opened = await openReview(store, {
-      reasonCode: resolution.reasonCode,
-      importRowKey: row.importRowKey,
-      now: ctx.now,
-    });
-    return { ...zero, identityConflicts: 1, reviewsOpened: opened };
-  }
-
-  const identities = prepared.claims.map((claim) => ({
+  const identities = evaluation.validIdentityClaims.map((claim) => ({
     identityKind: claim.identityKind,
     identifier: claim.identifier,
     sourceSystem: CLIENT_MEMORY_SOURCE_SYSTEM,
@@ -394,30 +375,29 @@ async function applyPersonRow(
   const names = splitDisplayName(row.name);
   const profilePatch = profileFromRow(row, names);
 
-  if (resolution.status === "matched" && resolution.personId) {
+  if (evaluation.mutation === "match" && evaluation.personId) {
     const applied = await store.applyExistingPersonAtomic({
-      personId: resolution.personId,
+      personId: evaluation.personId,
       updatedAt: ctx.now,
       profile: profilePatch,
+      roles: evaluation.roles,
       identities,
     });
     if (applied.status === "conflict") {
-      const opened = await openReview(store, {
+      ctx.applyTimeReviews.push({
+        importRowKey: row.importRowKey,
         reasonCode:
           applied.reason === "profile_conflict"
             ? "REVIEW_PROFILE_CONFLICT"
             : "REVIEW_IDENTITY_COLLISION",
-        importRowKey: row.importRowKey,
-        now: ctx.now,
       });
       return {
         ...zero,
         identityConflicts: applied.reason === "identity_conflict" ? 1 : 0,
         profileConflicts: applied.reason === "profile_conflict" ? 1 : 0,
-        reviewsOpened: opened,
       };
     }
-    rememberPerson(ctx, row, resolution.personId);
+    rememberPerson(ctx, row, evaluation.personId);
     return {
       ...zero,
       personsMatched: 1,
@@ -432,7 +412,7 @@ async function applyPersonRow(
     createdBy: CREATED_BY,
     profile: {
       ...profilePatch,
-      roles: [],
+      roles: evaluation.roles,
       sourceSystem: CLIENT_MEMORY_SOURCE_SYSTEM,
       createdAt: ctx.now,
       updatedAt: ctx.now,
@@ -442,7 +422,8 @@ async function applyPersonRow(
   rememberPerson(ctx, row, created.personId);
   return {
     ...zero,
-    personsCreated: 1,
+    personsCreated: created.status === "already-present" ? 0 : 1,
+    personsMatched: created.status === "already-present" ? 1 : 0,
     identitiesAttached: identities.length,
   };
 }
@@ -537,75 +518,12 @@ async function createProjectBundle(
     updatedAt: now,
   };
   await store.insertProjectHistory(history);
-  if (row.gmailThread.status === "invalid") {
-    await openReview(store, {
-      reasonCode: "REVIEW_INVALID_GMAIL_THREAD_ID",
-      importRowKey: row.importRowKey,
-      now,
-    });
-    await store.insertSourceNote({
-      id: randomUUID(),
-      personId: null,
-      projectId,
-      sourceSystem: CLIENT_MEMORY_SOURCE_SYSTEM,
-      sourceArtifact: AUDITED_RECONCILIATION_V3.artifactId,
-      sourceSheet: "Reconciled Projects",
-      sourceField: "Gmail Thread ID",
-      importRowKey: row.importRowKey,
-      gmailThreadId: null,
-      noteText: row.gmailThread.source,
-      createdAt: now,
-    });
-  }
   return { projectId, created: true };
-}
-
-async function insertProjectNotes(
-  store: ClientMemoryStore,
-  row: ParsedProjectRow,
-  personId: string | null,
-  projectId: string,
-  now: string,
-): Promise<{ inserted: number; alreadyPresent: number }> {
-  let inserted = 0;
-  let alreadyPresent = 0;
-  const writes: Array<{ field: string; text: string }> = [];
-  if (isProseCandidate(row.notes)) {
-    writes.push({ field: "Notes", text: cellText(row.notes) });
-  }
-  if (row.reviewFlagProse) {
-    writes.push({ field: "Review Flag", text: row.reviewFlagProse });
-  }
-  for (const write of writes) {
-    const result = await store.insertSourceNote({
-      id: randomUUID(),
-      personId,
-      projectId,
-      sourceSystem: CLIENT_MEMORY_SOURCE_SYSTEM,
-      sourceArtifact: AUDITED_RECONCILIATION_V3.artifactId,
-      sourceSheet: "Reconciled Projects",
-      sourceField: write.field,
-      importRowKey: row.importRowKey,
-      gmailThreadId:
-        row.gmailThread.status === "canonical" ? row.gmailThread.value : null,
-      noteText: write.text,
-      createdAt: now,
-    });
-    if (result.status === "inserted") inserted += 1;
-    else alreadyPresent += 1;
-  }
-  return { inserted, alreadyPresent };
 }
 
 async function openReview(
   store: ClientMemoryStore,
-  input: {
-    reasonCode: string;
-    importRowKey: string;
-    now: string;
-    issueText?: string | null;
-    resolutionText?: string | null;
-  },
+  input: PlannedReview & { now: string },
 ): Promise<0 | 1> {
   const result = await store.insertIdentityReview({
     id: randomUUID(),

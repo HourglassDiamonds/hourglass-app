@@ -9,8 +9,9 @@ import {
   fingerprintWorkbook,
   workbookFingerprintMatch,
 } from "./artifact";
-import { classifyPhone, hashEmail, hashPhone } from "./hashes";
-import { resolvePersonIdentity, type IdentityLookup } from "./identity";
+import { evaluatePersonRow } from "./eligibility";
+import { type IdentityLookup } from "./identity";
+import { buildWorkbookSidePlan, type ClientMemoryImportManifest } from "./plan";
 import {
   InMemoryClientMemoryStore,
   newExternalIdentity,
@@ -27,6 +28,7 @@ import {
   isProseCandidate,
   isProjectAttributeCandidate,
   parseReconciliationWorkbook,
+  type ParsedPersonRow,
   type ParsedWorkbook,
 } from "./workbook";
 
@@ -47,6 +49,9 @@ export type ClientMemoryDryRunResult = {
   wouldCreatePersons: number;
   wouldMatchPersons: number;
   identityCollisions: number;
+  identityWarnings: number;
+  identityConflicts: number;
+  personsEligible: number;
   projectRowsScanned: number;
   projectsExactEligible: number;
   projectsReviewLink: number;
@@ -74,6 +79,10 @@ export type ClientMemoryDryRunResult = {
   salesExactNameLinks: number;
   salesUniqueLinkedClients: number;
   salesAnomalyCount: number;
+  factsWouldCreate: 0;
+  wishesWouldCreate: 0;
+  reviewsWouldOpen: number;
+  manifest: ClientMemoryImportManifest;
 };
 
 export type DryRunOptions = {
@@ -143,6 +152,11 @@ export async function dryRunParsedWorkbook(
   let wouldMatchPersons = 0;
   let identityCollisions = 0;
 
+  const people: Array<{
+    row: ParsedPersonRow;
+    evaluation: Awaited<ReturnType<typeof evaluatePersonRow>>;
+  }> = [];
+
   for (const row of parsed.people) {
     if (row.classification === "person-candidate") personCandidates += 1;
     else if (row.classification === "organization-candidate") {
@@ -150,31 +164,26 @@ export async function dryRunParsedWorkbook(
     } else if (row.classification === "needs-review") peopleNeedsReview += 1;
     else invalidPeople += 1;
 
-    if (row.classification !== "person-candidate") continue;
+    const evaluation = await evaluatePersonRow(lookup, row);
+    people.push({ row, evaluation });
 
-    if (classifyPhone(row.phone).status === "international") {
+    if (evaluation.identityWarnings.includes("REVIEW_UNSUPPORTED_PHONE")) {
       unsupportedPhoneReviews += 1;
-      continue;
     }
 
-    const resolution = await resolvePersonIdentity(lookup, {
-      email: row.email || null,
-      phone: row.phone || null,
-      importRowKey: row.importRowKey,
-    });
-
-    if (resolution.status === "matched") {
-      wouldMatchPersons += 1;
+    if (evaluation.eligibility === "invalid") {
+      if (row.classification === "person-candidate") invalidPeople += 1;
       continue;
     }
-    if (resolution.status === "review") {
+    if (evaluation.eligibility === "identity-conflict") {
       identityCollisions += 1;
       continue;
     }
-    if (resolution.status === "invalid") {
-      invalidPeople += 1;
+    if (evaluation.mutation === "match") {
+      wouldMatchPersons += 1;
       continue;
     }
+    if (evaluation.mutation !== "create") continue;
 
     wouldCreatePersons += 1;
     const inserted = await shadow.insertEntity({
@@ -183,47 +192,22 @@ export async function dryRunParsedWorkbook(
       createdBy: "client-memory-dry-run",
     });
     const personId = inserted.record.id;
-    const emailHash = hashEmail(row.email);
-    const phoneHash = hashPhone(row.phone);
-    await shadow.upsertExternalIdentity(
-      newExternalIdentity({
-        entityId: personId,
-        sourceSystem: CLIENT_MEMORY_SOURCE_SYSTEM,
-        identityKind: "import_row_key",
-        identifier: row.importRowKey,
-        createdAt: now,
-      }),
-    );
-    if (emailHash) {
+    for (const claim of evaluation.validIdentityClaims) {
       await shadow.upsertExternalIdentity(
         newExternalIdentity({
           entityId: personId,
           sourceSystem: CLIENT_MEMORY_SOURCE_SYSTEM,
-          identityKind: "email_hash",
-          identifier: emailHash,
-          createdAt: now,
-        }),
-      );
-    }
-    if (phoneHash) {
-      await shadow.upsertExternalIdentity(
-        newExternalIdentity({
-          entityId: personId,
-          sourceSystem: CLIENT_MEMORY_SOURCE_SYSTEM,
-          identityKind: "phone_hash",
-          identifier: phoneHash,
+          identityKind: claim.identityKind,
+          identifier: claim.identifier,
           createdAt: now,
         }),
       );
     }
   }
 
-  let projectsExactEligible = 0;
-  let projectsReviewLink = 0;
-  let projectsUnresolved = 0;
-  let projectPersonExactLinks = 0;
+  const side = buildWorkbookSidePlan(parsed, people);
+
   let malformedCellWarnings = 0;
-  let sourceNotesDiscovered = 0;
   let fingerSizeCandidates = 0;
   let metalCandidates = 0;
   let centerStoneCandidates = 0;
@@ -246,33 +230,15 @@ export async function dryRunParsedWorkbook(
     }
     if (isProseCandidate(row.notes)) {
       projectNotesPopulated += 1;
-      sourceNotesDiscovered += 1;
     }
-    if (row.reviewFlagProse) sourceNotesDiscovered += 1;
     if (hasNonEmpty(row.gmailThreadId)) gmailThreadsDiscovered += 1;
     if (row.gmailThread.status === "canonical") gmailThreadsCanonical += 1;
-    if (row.gmailThread.status === "invalid") gmailThreadsInvalid += 1;
+    if (row.gmailThread.status === "invalid") {
+      gmailThreadsInvalid += 1;
+    }
 
     if (row.matchJudgment === "malformed-source-value") {
       malformedCellWarnings += 1;
-      projectsReviewLink += 1;
-      continue;
-    }
-    if (row.matchJudgment === "likely" || row.matchJudgment === "ambiguous") {
-      projectsReviewLink += 1;
-      continue;
-    }
-    if (row.matchJudgment === "no-exact") {
-      projectsUnresolved += 1;
-      continue;
-    }
-
-    const nameHits = parsed.peopleNameCounts.get(row.canonicalClient) ?? 0;
-    if (nameHits === 1) {
-      projectsExactEligible += 1;
-      projectPersonExactLinks += 1;
-    } else {
-      projectsReviewLink += 1;
     }
   }
 
@@ -327,12 +293,15 @@ export async function dryRunParsedWorkbook(
     wouldCreatePersons,
     wouldMatchPersons,
     identityCollisions,
+    identityWarnings: side.manifest.identityWarnings,
+    identityConflicts: side.manifest.identityConflicts,
+    personsEligible: side.manifest.personsEligible,
     projectRowsScanned: parsed.projects.length,
-    projectsExactEligible,
-    projectsReviewLink,
-    projectsUnresolved,
-    projectPersonExactLinks,
-    sourceNotesDiscovered,
+    projectsExactEligible: side.manifest.projectsExactEligible,
+    projectsReviewLink: side.manifest.projectsReviewLink,
+    projectsUnresolved: side.manifest.projectsUnresolved,
+    projectPersonExactLinks: side.manifest.projectsExactEligible,
+    sourceNotesDiscovered: side.manifest.sourceNotesWouldCreate,
     cadPointersDiscovered,
     salesRowsDiscovered: parsed.sales.length,
     reviewRowsDiscovered: parsed.reviewQueue.length,
@@ -354,6 +323,10 @@ export async function dryRunParsedWorkbook(
     salesExactNameLinks,
     salesUniqueLinkedClients: linkedSalesClients.size,
     salesAnomalyCount,
+    factsWouldCreate: 0,
+    wishesWouldCreate: 0,
+    reviewsWouldOpen: side.manifest.reviewsWouldOpen,
+    manifest: side.manifest,
   };
 }
 

@@ -144,6 +144,8 @@ describe("Client Memory dry-run importer", () => {
     assert.equal(result.organizationCandidates, 0);
     assert.equal(result.wouldCreatePersons, 3);
     assert.equal(result.wouldMatchPersons, 0);
+    assert.equal(result.personsEligible, 3);
+    assert.equal(result.identityConflicts, 0);
     assert.equal(result.projectsExactEligible, 1);
     assert.equal(result.projectPersonExactLinks, 1);
     assert.equal(result.projectsReviewLink, 2);

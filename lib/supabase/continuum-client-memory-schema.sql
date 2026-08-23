@@ -7,61 +7,28 @@
 
 -- ---------------------------------------------------------------------------
 -- Kernel identity_kind extension
--- Production continuum_external_identities (kernel SQL) defines an INLINE,
--- unnamed CHECK:
---   identity_kind in (
---     'hubspot_contact_id', 'email_hash', 'phone_hash', 'google_contact_id'
---   )
--- Postgres usually names that continuum_external_identities_identity_kind_check,
--- but this block locates the live constraint by catalog definition — it does
--- not guess the name. Existing rows remain valid. Active unique index
--- continuum_external_identities_active_uq is unchanged.
+-- Production constraint name independently verified:
+--   continuum_external_identities_identity_kind_check
+-- Deterministic drop/add. Do not catalog-scan unrelated CHECKs.
+-- Existing rows remain valid (new list is a superset).
+-- Active unique index continuum_external_identities_active_uq is unchanged.
 -- Do not add hubspot_deal_id.
 -- ---------------------------------------------------------------------------
 
-do $$
-declare
-  rec record;
-begin
-  for rec in
-    select c.conname as name
-    from pg_constraint c
-    join pg_class rel on rel.oid = c.conrelid
-    join pg_namespace nsp on nsp.oid = rel.relnamespace
-    where nsp.nspname = 'public'
-      and rel.relname = 'continuum_external_identities'
-      and c.contype = 'c'
-      and pg_get_constraintdef(c.oid) ~* 'identity_kind'
-      and pg_get_constraintdef(c.oid) not like '%import_row_key%'
-  loop
-    execute format(
-      'alter table public.continuum_external_identities drop constraint %I',
-      rec.name
-    );
-  end loop;
+alter table public.continuum_external_identities
+  drop constraint if exists continuum_external_identities_identity_kind_check;
 
-  if not exists (
-    select 1
-    from pg_constraint c
-    join pg_class rel on rel.oid = c.conrelid
-    join pg_namespace nsp on nsp.oid = rel.relnamespace
-    where nsp.nspname = 'public'
-      and rel.relname = 'continuum_external_identities'
-      and c.conname = 'continuum_external_identities_identity_kind_check'
-  ) then
-    alter table public.continuum_external_identities
-      add constraint continuum_external_identities_identity_kind_check
-      check (
-        identity_kind in (
-          'hubspot_contact_id',
-          'email_hash',
-          'phone_hash',
-          'google_contact_id',
-          'import_row_key'
-        )
-      );
-  end if;
-end $$;
+alter table public.continuum_external_identities
+  add constraint continuum_external_identities_identity_kind_check
+  check (
+    identity_kind in (
+      'hubspot_contact_id',
+      'email_hash',
+      'phone_hash',
+      'google_contact_id',
+      'import_row_key'
+    )
+  );
 
 -- ---------------------------------------------------------------------------
 -- Protected Person profile
@@ -357,7 +324,7 @@ alter table continuum_wish_evidence enable row level security;
 -- Atomic Person create (single Postgres function = one transaction)
 -- ---------------------------------------------------------------------------
 
-create or replace function continuum_client_memory_create_person(
+create or replace function public.continuum_client_memory_create_person(
   p_entity_id uuid,
   p_created_at timestamptz,
   p_created_by text,
@@ -366,28 +333,28 @@ create or replace function continuum_client_memory_create_person(
 ) returns jsonb
 language plpgsql
 security definer
-set search_path = public
+set search_path = ''
 as $$
 declare
   ident jsonb;
 begin
   begin
-    insert into continuum_entities (id, kind, created_at, created_by)
+    insert into public.continuum_entities (id, kind, created_at, created_by)
     values (p_entity_id, 'person', p_created_at, p_created_by);
   exception
     when unique_violation then
       if exists (
-        select 1 from continuum_entities
+        select 1 from public.continuum_entities
         where id = p_entity_id and kind = 'person'
       ) and exists (
-        select 1 from continuum_person_profiles where person_id = p_entity_id
+        select 1 from public.continuum_person_profiles where person_id = p_entity_id
       ) then
         return jsonb_build_object('status', 'already-present', 'person_id', p_entity_id);
       end if;
       raise;
   end;
 
-  insert into continuum_person_profiles (
+  insert into public.continuum_person_profiles (
     person_id, display_name, given_name, family_name, organization_name,
     email, phone, street_address, city, state, country, postal_code,
     roles, source_system, created_at, updated_at
@@ -415,7 +382,7 @@ begin
 
   for ident in select value from jsonb_array_elements(coalesce(p_identities, '[]'::jsonb))
   loop
-    insert into continuum_external_identities (
+    insert into public.continuum_external_identities (
       id, entity_id, source_system, identity_kind, identifier, created_at, revoked_at
     ) values (
       (ident->>'id')::uuid,
@@ -432,13 +399,15 @@ begin
 end;
 $$;
 
-revoke all on function continuum_client_memory_create_person(uuid, timestamptz, text, jsonb, jsonb) from public;
-revoke all on function continuum_client_memory_create_person(uuid, timestamptz, text, jsonb, jsonb) from anon;
-revoke all on function continuum_client_memory_create_person(uuid, timestamptz, text, jsonb, jsonb) from authenticated;
+revoke all on function public.continuum_client_memory_create_person(uuid, timestamptz, text, jsonb, jsonb) from public;
+revoke all on function public.continuum_client_memory_create_person(uuid, timestamptz, text, jsonb, jsonb) from anon;
+revoke all on function public.continuum_client_memory_create_person(uuid, timestamptz, text, jsonb, jsonb) from authenticated;
+grant execute on function public.continuum_client_memory_create_person(uuid, timestamptz, text, jsonb, jsonb) to service_role;
 
 -- Existing-Person update: attach missing identities + populate blank profile
 -- fields. Conflicting nonblank profile values raise and roll back.
-create or replace function continuum_client_memory_apply_existing_person(
+-- Roles are additive.
+create or replace function public.continuum_client_memory_apply_existing_person(
   p_person_id uuid,
   p_updated_at timestamptz,
   p_profile jsonb,
@@ -446,7 +415,7 @@ create or replace function continuum_client_memory_apply_existing_person(
 ) returns jsonb
 language plpgsql
 security definer
-set search_path = public
+set search_path = ''
 as $$
 declare
   ident jsonb;
@@ -459,13 +428,13 @@ declare
   ];
 begin
   if not exists (
-    select 1 from continuum_entities
+    select 1 from public.continuum_entities
     where id = p_person_id and kind = 'person'
   ) then
     raise exception 'person entity missing';
   end if;
 
-  perform 1 from continuum_person_profiles
+  perform 1 from public.continuum_person_profiles
     where person_id = p_person_id
     for update;
 
@@ -473,7 +442,7 @@ begin
   loop
     incoming := nullif(btrim(coalesce(p_profile->>field, '')), '');
     execute format(
-      'select nullif(btrim(coalesce(%I, '''')), '''') from continuum_person_profiles where person_id = $1',
+      'select nullif(btrim(coalesce(%I, '''')), '''') from public.continuum_person_profiles where person_id = $1',
       field
     ) into existing using p_person_id;
     if incoming is null then
@@ -481,7 +450,7 @@ begin
     end if;
     if existing is null then
       execute format(
-        'update continuum_person_profiles set %I = $1, updated_at = $2 where person_id = $3',
+        'update public.continuum_person_profiles set %I = $1, updated_at = $2 where person_id = $3',
         field
       ) using incoming, p_updated_at, p_person_id;
     elsif lower(existing) <> lower(incoming) then
@@ -489,10 +458,25 @@ begin
     end if;
   end loop;
 
+  update public.continuum_person_profiles
+  set
+    roles = (
+      select coalesce(array_agg(distinct r), '{}'::text[])
+      from unnest(
+        coalesce(roles, '{}'::text[])
+        || coalesce(
+          array(select jsonb_array_elements_text(p_profile->'roles')),
+          '{}'::text[]
+        )
+      ) as r
+    ),
+    updated_at = p_updated_at
+  where person_id = p_person_id;
+
   for ident in select value from jsonb_array_elements(coalesce(p_identities, '[]'::jsonb))
   loop
     begin
-      insert into continuum_external_identities (
+      insert into public.continuum_external_identities (
         id, entity_id, source_system, identity_kind, identifier, created_at, revoked_at
       ) values (
         (ident->>'id')::uuid,
@@ -507,7 +491,7 @@ begin
       when unique_violation then
         if exists (
           select 1
-          from continuum_external_identities
+          from public.continuum_external_identities
           where source_system = ident->>'source_system'
             and identity_kind = ident->>'identity_kind'
             and identifier = ident->>'identifier'
@@ -523,6 +507,8 @@ begin
 end;
 $$;
 
-revoke all on function continuum_client_memory_apply_existing_person(uuid, timestamptz, jsonb, jsonb) from public;
-revoke all on function continuum_client_memory_apply_existing_person(uuid, timestamptz, jsonb, jsonb) from anon;
-revoke all on function continuum_client_memory_apply_existing_person(uuid, timestamptz, jsonb, jsonb) from authenticated;
+revoke all on function public.continuum_client_memory_apply_existing_person(uuid, timestamptz, jsonb, jsonb) from public;
+revoke all on function public.continuum_client_memory_apply_existing_person(uuid, timestamptz, jsonb, jsonb) from anon;
+revoke all on function public.continuum_client_memory_apply_existing_person(uuid, timestamptz, jsonb, jsonb) from authenticated;
+grant execute on function public.continuum_client_memory_apply_existing_person(uuid, timestamptz, jsonb, jsonb) to service_role;
+

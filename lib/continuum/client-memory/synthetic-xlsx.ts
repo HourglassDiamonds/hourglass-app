@@ -244,6 +244,7 @@ export function personCells(input: {
   state?: string;
   phone?: string;
   email?: string;
+  relationship?: string;
   linkedProjects?: number;
 }): SyntheticCell[] {
   return [
@@ -258,7 +259,7 @@ export function personCells(input: {
     input.email ?? "",
     "",
     0,
-    "Client",
+    input.relationship ?? "Client",
     "Uploaded Clients.xlsx",
     {
       formula: `COUNTIF('Reconciled Projects'!A:A,A2)`,

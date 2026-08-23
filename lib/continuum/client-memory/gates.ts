@@ -50,6 +50,12 @@ export function evaluateApplyGates(intent: ApplyIntent): ApplyGateFailure | Appl
   return { ok: true, target: intent.target };
 }
 
+export function evaluateApplyFlagGates(
+  intent: Omit<ApplyIntent, "fingerprintMatch">,
+): ApplyGateFailure | ApplyGateSuccess {
+  return evaluateApplyGates({ ...intent, fingerprintMatch: true });
+}
+
 export function envImportEnabled(
   env: NodeJS.ProcessEnv = process.env,
 ): boolean {
