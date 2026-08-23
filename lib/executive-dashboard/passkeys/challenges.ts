@@ -7,9 +7,6 @@ import {
 import type { PasskeyChallengeKind, PasskeyChallengePayload } from "./types";
 import { EXECUTIVE_DASHBOARD_SESSION_PATH } from "../session";
 
-const consumed = new Map<string, number>();
-const MAX_CONSUMED = 4_000;
-
 function hmacSign(body: string, secret: string): string {
   return createHmac("sha256", secret).update(body).digest("base64url");
 }
@@ -21,16 +18,8 @@ function signaturesMatch(a: string, b: string): boolean {
   return timingSafeEqual(left, right);
 }
 
-function pruneConsumed(now: number): void {
-  const cutoff = now - PASSKEY_CHALLENGE_TTL_MS;
-  for (const [jti, exp] of consumed) {
-    if (exp <= cutoff) consumed.delete(jti);
-  }
-  while (consumed.size > MAX_CONSUMED) {
-    const first = consumed.keys().next().value;
-    if (!first) break;
-    consumed.delete(first);
-  }
+export function newPasskeyChallengeJti(): string {
+  return randomBytes(16).toString("base64url");
 }
 
 export function sessionFingerprint(sessionToken: string, secret: string): string {
@@ -66,10 +55,14 @@ export function clearPasskeyChallengeCookieOptions(secure: boolean): {
   };
 }
 
+/**
+ * Signed cookie binding only. The WebAuthn challenge bytes live in the
+ * durable ledger, not in this cookie.
+ */
 export function createPasskeyChallengeToken(
   input: {
     kind: PasskeyChallengeKind;
-    challenge: string;
+    jti: string;
     founderUserId: string;
     sessionFingerprint?: string;
     secret: string;
@@ -79,10 +72,9 @@ export function createPasskeyChallengeToken(
 ): { token: string; payload: PasskeyChallengePayload } {
   const iat = Math.floor(nowMs / 1000);
   const payload: PasskeyChallengePayload = {
-    v: 1,
+    v: 2,
     k: input.kind,
-    jti: randomBytes(16).toString("base64url"),
-    ch: input.challenge,
+    jti: input.jti,
     iat,
     exp: iat + Math.floor(ttlMs / 1000),
     uid: input.founderUserId,
@@ -93,22 +85,18 @@ export function createPasskeyChallengeToken(
   return { token, payload };
 }
 
-export type ConsumePasskeyChallengeResult =
+export type ReadPasskeyChallengeCookieResult =
   | { ok: true; payload: PasskeyChallengePayload }
   | {
       ok: false;
-      reason:
-        | "missing-challenge"
-        | "invalid-challenge"
-        | "expired-challenge"
-        | "replayed-challenge";
+      reason: "missing-challenge" | "invalid-challenge" | "expired-challenge";
     };
 
-export function consumePasskeyChallengeToken(
+export function readPasskeyChallengeCookie(
   token: string | undefined | null,
   secret: string,
   nowMs = Date.now(),
-): ConsumePasskeyChallengeResult {
+): ReadPasskeyChallengeCookieResult {
   if (!token) return { ok: false, reason: "missing-challenge" };
   const parts = token.split(".");
   if (parts.length !== 2 || !parts[0] || !parts[1]) {
@@ -129,14 +117,11 @@ export function consumePasskeyChallengeToken(
     return { ok: false, reason: "invalid-challenge" };
   }
 
-  if (payload.v !== 1) return { ok: false, reason: "invalid-challenge" };
+  if (payload.v !== 2) return { ok: false, reason: "invalid-challenge" };
   if (payload.k !== "reg" && payload.k !== "auth") {
     return { ok: false, reason: "invalid-challenge" };
   }
   if (typeof payload.jti !== "string" || !payload.jti) {
-    return { ok: false, reason: "invalid-challenge" };
-  }
-  if (typeof payload.ch !== "string" || !payload.ch) {
     return { ok: false, reason: "invalid-challenge" };
   }
   if (typeof payload.uid !== "string" || !payload.uid) {
@@ -150,16 +135,7 @@ export function consumePasskeyChallengeToken(
   if (payload.exp <= nowSec) return { ok: false, reason: "expired-challenge" };
   if (payload.iat > nowSec + 60) return { ok: false, reason: "invalid-challenge" };
 
-  pruneConsumed(nowMs);
-  if (consumed.has(payload.jti)) {
-    return { ok: false, reason: "replayed-challenge" };
-  }
-  consumed.set(payload.jti, payload.exp * 1000);
   return { ok: true, payload };
-}
-
-export function resetPasskeyChallenges(): void {
-  consumed.clear();
 }
 
 export { PASSKEY_CHALLENGE_COOKIE };

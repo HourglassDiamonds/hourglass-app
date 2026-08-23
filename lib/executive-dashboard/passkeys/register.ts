@@ -1,17 +1,20 @@
 import {
   CONTINUUM_FOUNDER_WEBAUTHN_USER_ID,
+  PASSKEY_CHALLENGE_TTL_MS,
   getContinuumWebAuthnRelyingParty,
 } from "./config";
 import {
-  consumePasskeyChallengeToken,
   createPasskeyChallengeToken,
+  newPasskeyChallengeJti,
+  readPasskeyChallengeCookie,
   sessionFingerprint,
 } from "./challenges";
 import type { PasskeyCrypto } from "./crypto";
 import { parseRegistrationResponse } from "./parse";
 import type {
   FounderPasskeyStore,
-  PasskeyChallengePayload,
+  PasskeyChallengeLedger,
+  PasskeyChallengeRecord,
   PasskeyOperationReason,
 } from "./types";
 
@@ -27,6 +30,7 @@ export const defaultPasskeyClock: PasskeyFlowClock = {
 
 export type PasskeyRegistrationDeps = {
   store: FounderPasskeyStore;
+  challenges: PasskeyChallengeLedger;
   crypto: PasskeyCrypto;
   secret: string;
   clock?: PasskeyFlowClock;
@@ -90,28 +94,53 @@ export async function beginPasskeyRegistration(
       })),
   });
 
+  const now = clockOf(deps).now();
+  const jti = newPasskeyChallengeJti();
+  const sfp = sessionFingerprint(input.sessionToken, deps.secret);
+  try {
+    await deps.challenges.issue({
+      jti,
+      purpose: "reg",
+      founderUserId: CONTINUUM_FOUNDER_WEBAUTHN_USER_ID,
+      challenge: options.challenge,
+      origin: rp.origin,
+      rpId: rp.rpID,
+      sessionFingerprint: sfp,
+      expiresAt: new Date(now + PASSKEY_CHALLENGE_TTL_MS).toISOString(),
+      createdAt: clockOf(deps).nowIso(),
+    });
+  } catch {
+    return { ok: false, reason: "unavailable" };
+  }
+
   const { token } = createPasskeyChallengeToken(
     {
       kind: "reg",
-      challenge: options.challenge,
+      jti,
       founderUserId: CONTINUUM_FOUNDER_WEBAUTHN_USER_ID,
-      sessionFingerprint: sessionFingerprint(input.sessionToken, deps.secret),
+      sessionFingerprint: sfp,
       secret: deps.secret,
     },
-    clockOf(deps).now(),
+    now,
   );
 
   return { ok: true, options, challengeToken: token };
 }
 
-function challengeKind(
-  payload: PasskeyChallengePayload,
-  expected: "reg" | "auth",
+function bindChallenge(
+  record: PasskeyChallengeRecord,
+  expected: {
+    kind: "reg" | "auth";
+    origin: string;
+    rpId: string;
+  },
 ): PasskeyOperationReason | null {
-  if (payload.k !== expected) return "wrong-challenge-kind";
-  if (payload.uid !== CONTINUUM_FOUNDER_WEBAUTHN_USER_ID) {
+  if (record.purpose !== expected.kind) return "wrong-challenge-kind";
+  if (record.founderUserId !== CONTINUUM_FOUNDER_WEBAUTHN_USER_ID) {
     return "invalid-challenge";
   }
+  if (record.origin !== expected.origin) return "origin-mismatch";
+  if (record.rpId !== expected.rpId) return "rp-mismatch";
   return null;
 }
 
@@ -126,18 +155,40 @@ export async function completePasskeyRegistration(
   const rp = getContinuumWebAuthnRelyingParty();
   if (!rp.ok) return { ok: false, reason: "invalid-rp" };
 
-  const consumed = consumePasskeyChallengeToken(
+  const cookie = readPasskeyChallengeCookie(
     input.challengeToken,
     deps.secret,
     clockOf(deps).now(),
   );
-  if (!consumed.ok) return { ok: false, reason: consumed.reason };
-
-  const kindError = challengeKind(consumed.payload, "reg");
-  if (kindError) return { ok: false, reason: kindError };
+  if (!cookie.ok) return { ok: false, reason: cookie.reason };
+  if (cookie.payload.k !== "reg") return { ok: false, reason: "wrong-challenge-kind" };
+  if (cookie.payload.uid !== CONTINUUM_FOUNDER_WEBAUTHN_USER_ID) {
+    return { ok: false, reason: "invalid-challenge" };
+  }
 
   const expectedFp = sessionFingerprint(input.sessionToken, deps.secret);
-  if (!consumed.payload.sfp || consumed.payload.sfp !== expectedFp) {
+  if (!cookie.payload.sfp || cookie.payload.sfp !== expectedFp) {
+    return { ok: false, reason: "session-mismatch" };
+  }
+
+  let consumed: Awaited<ReturnType<PasskeyChallengeLedger["consume"]>>;
+  try {
+    consumed = await deps.challenges.consume(cookie.payload.jti);
+  } catch {
+    return { ok: false, reason: "unavailable" };
+  }
+  if (!consumed.ok) return { ok: false, reason: consumed.reason };
+
+  const bindError = bindChallenge(consumed.record, {
+    kind: "reg",
+    origin: rp.origin,
+    rpId: rp.rpID,
+  });
+  if (bindError) return { ok: false, reason: bindError };
+  if (
+    !consumed.record.sessionFingerprint ||
+    consumed.record.sessionFingerprint !== expectedFp
+  ) {
     return { ok: false, reason: "session-mismatch" };
   }
 
@@ -146,7 +197,7 @@ export async function completePasskeyRegistration(
 
   const verified = await deps.crypto.verifyRegistrationResponse({
     response,
-    expectedChallenge: consumed.payload.ch,
+    expectedChallenge: consumed.record.challenge,
     expectedOrigin: rp.origin,
     expectedRPID: rp.rpID,
   });

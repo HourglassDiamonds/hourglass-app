@@ -47,14 +47,48 @@ export type FounderPasskeyStore = {
 export type PasskeyChallengeKind = "reg" | "auth";
 
 export type PasskeyChallengePayload = {
-  v: 1;
+  v: 2;
   k: PasskeyChallengeKind;
   jti: string;
-  ch: string;
   iat: number;
   exp: number;
   uid: string;
   sfp?: string;
+};
+
+export type PasskeyChallengeRecord = {
+  jti: string;
+  purpose: PasskeyChallengeKind;
+  founderUserId: string;
+  challenge: string;
+  origin: string;
+  rpId: string;
+  sessionFingerprint: string | null;
+  expiresAt: string;
+  consumedAt: string | null;
+  createdAt: string;
+};
+
+export type PasskeyChallengeIssue = {
+  jti: string;
+  purpose: PasskeyChallengeKind;
+  founderUserId: string;
+  challenge: string;
+  origin: string;
+  rpId: string;
+  sessionFingerprint: string | null;
+  expiresAt: string;
+  createdAt: string;
+};
+
+export type PasskeyChallengeLedger = {
+  issue(record: PasskeyChallengeIssue): Promise<void>;
+  consume(
+    jti: string,
+  ): Promise<
+    | { ok: true; record: PasskeyChallengeRecord }
+    | { ok: false; reason: "missing-challenge" | "replayed-challenge" | "expired-challenge" }
+  >;
 };
 
 export type PasskeyOperationReason =

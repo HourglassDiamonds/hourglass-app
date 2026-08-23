@@ -9,8 +9,12 @@ import { readExecutiveDashboardSession } from "@/lib/executive-dashboard/access"
 import { getExecutiveDashboardAuthConfig } from "@/lib/executive-dashboard/env";
 import { EXECUTIVE_DASHBOARD_SESSION_COOKIE } from "@/lib/executive-dashboard/session";
 import { simpleWebAuthnCrypto } from "./crypto";
-import { createSupabaseFounderPasskeyStore } from "./server";
-import type { FounderPasskeyRecord, FounderPasskeyStore } from "./types";
+import { createSupabaseFounderPasskeyStore, createSupabasePasskeyChallengeLedger } from "./server";
+import type {
+  FounderPasskeyRecord,
+  FounderPasskeyStore,
+  PasskeyChallengeLedger,
+} from "./types";
 
 export async function readFounderPasskeySession(): Promise<
   | { ok: true; username: string; token: string }
@@ -32,10 +36,19 @@ export function tryCreateFounderPasskeyStore(): FounderPasskeyStore | null {
   }
 }
 
+export function tryCreatePasskeyChallengeLedger(): PasskeyChallengeLedger | null {
+  try {
+    return createSupabasePasskeyChallengeLedger();
+  } catch {
+    return null;
+  }
+}
+
 export function getFounderPasskeyRuntime():
   | {
       ok: true;
       store: FounderPasskeyStore;
+      challenges: PasskeyChallengeLedger;
       crypto: typeof simpleWebAuthnCrypto;
       secret: string;
       username: string;
@@ -44,10 +57,12 @@ export function getFounderPasskeyRuntime():
   const config = getExecutiveDashboardAuthConfig();
   if (!config.ok) return { ok: false, reason: "unavailable" };
   const store = tryCreateFounderPasskeyStore();
-  if (!store) return { ok: false, reason: "unavailable" };
+  const challenges = tryCreatePasskeyChallengeLedger();
+  if (!store || !challenges) return { ok: false, reason: "unavailable" };
   return {
     ok: true,
     store,
+    challenges,
     crypto: simpleWebAuthnCrypto,
     secret: config.sessionSecret,
     username: config.username,

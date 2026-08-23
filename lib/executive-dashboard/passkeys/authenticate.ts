@@ -1,14 +1,20 @@
 import {
   CONTINUUM_FOUNDER_WEBAUTHN_USER_ID,
+  PASSKEY_CHALLENGE_TTL_MS,
   getContinuumWebAuthnRelyingParty,
 } from "./config";
 import {
-  consumePasskeyChallengeToken,
   createPasskeyChallengeToken,
+  newPasskeyChallengeJti,
+  readPasskeyChallengeCookie,
 } from "./challenges";
 import type { PasskeyCrypto } from "./crypto";
 import { parseAuthenticationResponse } from "./parse";
-import type { FounderPasskeyStore, PasskeyOperationReason } from "./types";
+import type {
+  FounderPasskeyStore,
+  PasskeyChallengeLedger,
+  PasskeyOperationReason,
+} from "./types";
 import {
   defaultPasskeyClock,
   type PasskeyFlowClock,
@@ -16,6 +22,7 @@ import {
 
 export type PasskeyAuthenticationDeps = {
   store: FounderPasskeyStore;
+  challenges: PasskeyChallengeLedger;
   crypto: PasskeyCrypto;
   secret: string;
   clock?: PasskeyFlowClock;
@@ -63,14 +70,32 @@ export async function beginPasskeyAuthentication(
     })),
   });
 
+  const now = clockOf(deps).now();
+  const jti = newPasskeyChallengeJti();
+  try {
+    await deps.challenges.issue({
+      jti,
+      purpose: "auth",
+      founderUserId: CONTINUUM_FOUNDER_WEBAUTHN_USER_ID,
+      challenge: options.challenge,
+      origin: rp.origin,
+      rpId: rp.rpID,
+      sessionFingerprint: null,
+      expiresAt: new Date(now + PASSKEY_CHALLENGE_TTL_MS).toISOString(),
+      createdAt: clockOf(deps).nowIso(),
+    });
+  } catch {
+    return { ok: false, reason: "unavailable" };
+  }
+
   const { token } = createPasskeyChallengeToken(
     {
       kind: "auth",
-      challenge: options.challenge,
+      jti,
       founderUserId: CONTINUUM_FOUNDER_WEBAUTHN_USER_ID,
       secret: deps.secret,
     },
-    clockOf(deps).now(),
+    now,
   );
 
   return { ok: true, options, challengeToken: token };
@@ -86,17 +111,37 @@ export async function completePasskeyAuthentication(
   const rp = getContinuumWebAuthnRelyingParty();
   if (!rp.ok) return { ok: false, reason: "invalid-rp" };
 
-  const consumed = consumePasskeyChallengeToken(
+  const cookie = readPasskeyChallengeCookie(
     input.challengeToken,
     deps.secret,
     clockOf(deps).now(),
   );
-  if (!consumed.ok) return { ok: false, reason: consumed.reason };
-  if (consumed.payload.k !== "auth") {
+  if (!cookie.ok) return { ok: false, reason: cookie.reason };
+  if (cookie.payload.k !== "auth") {
     return { ok: false, reason: "wrong-challenge-kind" };
   }
-  if (consumed.payload.uid !== CONTINUUM_FOUNDER_WEBAUTHN_USER_ID) {
+  if (cookie.payload.uid !== CONTINUUM_FOUNDER_WEBAUTHN_USER_ID) {
     return { ok: false, reason: "invalid-challenge" };
+  }
+
+  let consumed: Awaited<ReturnType<PasskeyChallengeLedger["consume"]>>;
+  try {
+    consumed = await deps.challenges.consume(cookie.payload.jti);
+  } catch {
+    return { ok: false, reason: "unavailable" };
+  }
+  if (!consumed.ok) return { ok: false, reason: consumed.reason };
+  if (consumed.record.purpose !== "auth") {
+    return { ok: false, reason: "wrong-challenge-kind" };
+  }
+  if (consumed.record.founderUserId !== CONTINUUM_FOUNDER_WEBAUTHN_USER_ID) {
+    return { ok: false, reason: "invalid-challenge" };
+  }
+  if (consumed.record.origin !== rp.origin) {
+    return { ok: false, reason: "origin-mismatch" };
+  }
+  if (consumed.record.rpId !== rp.rpID) {
+    return { ok: false, reason: "rp-mismatch" };
   }
 
   const response = parseAuthenticationResponse(input.response);
@@ -119,7 +164,7 @@ export async function completePasskeyAuthentication(
 
   const verified = await deps.crypto.verifyAuthenticationResponse({
     response,
-    expectedChallenge: consumed.payload.ch,
+    expectedChallenge: consumed.record.challenge,
     expectedOrigin: rp.origin,
     expectedRPID: rp.rpID,
     credential,

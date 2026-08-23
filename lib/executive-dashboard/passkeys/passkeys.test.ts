@@ -27,11 +27,11 @@ import {
   revokeFounderPasskey,
 } from "./authenticate";
 import {
-  consumePasskeyChallengeToken,
   createPasskeyChallengeToken,
-  resetPasskeyChallenges,
+  readPasskeyChallengeCookie,
   sessionFingerprint,
 } from "./challenges";
+import { InMemoryPasskeyChallengeLedger } from "./challenge-ledger";
 import {
   CONTINUUM_FOUNDER_WEBAUTHN_USER_ID,
   CONTINUUM_PRODUCTION_WEBAUTHN_ORIGIN,
@@ -53,6 +53,7 @@ import {
   completePasskeyRegistration,
 } from "./register";
 import { InMemoryFounderPasskeyStore } from "./store";
+import type { PasskeyChallengeRecord } from "./types";
 import {
   checkExecutiveDashboardLoginRateLimit,
   EXEC_AUTH_RATE_LIMIT_MAX,
@@ -246,6 +247,8 @@ function productionEnv(fn: () => void): void {
 
 describe("founder passkeys", () => {
   let store: InMemoryFounderPasskeyStore;
+  let challenges: InMemoryPasskeyChallengeLedger;
+  let challengeState: Map<string, PasskeyChallengeRecord>;
   let crypto: PasskeyCrypto;
   const clock = {
     now: () => NOW,
@@ -257,16 +260,20 @@ describe("founder passkeys", () => {
     NOW,
   );
 
+  function deps() {
+    return { store, challenges, crypto, secret: SECRET, clock };
+  }
+
   beforeEach(() => {
     store = new InMemoryFounderPasskeyStore();
+    challengeState = new Map();
+    challenges = new InMemoryPasskeyChallengeLedger(challengeState, () => NOW);
     crypto = createTestCrypto();
-    resetPasskeyChallenges();
     resetPasskeyRateLimits();
     resetExecutiveDashboardLoginRateLimits();
   });
 
   afterEach(() => {
-    resetPasskeyChallenges();
     resetPasskeyRateLimits();
     resetExecutiveDashboardLoginRateLimits();
   });
@@ -304,14 +311,14 @@ describe("founder passkeys", () => {
   it("rejects unauthenticated enrollment", async () => {
     await productionEnvAsync(async () => {
       const begin = await beginPasskeyRegistration(
-        { store, crypto, secret: SECRET, clock },
+        deps(),
         { sessionOk: false, sessionToken: undefined },
       );
       assert.equal(begin.ok, false);
       if (!begin.ok) assert.equal(begin.reason, "unauthenticated");
 
       const complete = await completePasskeyRegistration(
-        { store, crypto, secret: SECRET, clock },
+        deps(),
         {
           sessionOk: false,
           sessionToken: undefined,
@@ -327,13 +334,13 @@ describe("founder passkeys", () => {
   it("registers a credential only with a founder session and bound challenge", async () => {
     await productionEnvAsync(async () => {
       const begin = await beginPasskeyRegistration(
-        { store, crypto, secret: SECRET, clock },
+        deps(),
         { sessionOk: true, sessionToken },
       );
       assert.equal(begin.ok, true);
       if (!begin.ok) return;
       const complete = await completePasskeyRegistration(
-        { store, crypto, secret: SECRET, clock },
+        deps(),
         {
           sessionOk: true,
           sessionToken,
@@ -357,13 +364,13 @@ describe("founder passkeys", () => {
   it("rejects a replayed registration challenge", async () => {
     await productionEnvAsync(async () => {
       const begin = await beginPasskeyRegistration(
-        { store, crypto, secret: SECRET, clock },
+        deps(),
         { sessionOk: true, sessionToken },
       );
       assert.equal(begin.ok, true);
       if (!begin.ok) return;
       const first = await completePasskeyRegistration(
-        { store, crypto, secret: SECRET, clock },
+        deps(),
         {
           sessionOk: true,
           sessionToken,
@@ -376,7 +383,7 @@ describe("founder passkeys", () => {
       );
       assert.equal(first.ok, true);
       const replay = await completePasskeyRegistration(
-        { store, crypto, secret: SECRET, clock },
+        deps(),
         {
           sessionOk: true,
           sessionToken,
@@ -392,36 +399,53 @@ describe("founder passkeys", () => {
     });
   });
 
-  it("rejects an expired challenge", () => {
+  it("rejects an expired challenge cookie", () => {
     const { token } = createPasskeyChallengeToken(
       {
         kind: "auth",
-        challenge: "abc",
+        jti: "expired-jti",
         founderUserId: CONTINUUM_FOUNDER_WEBAUTHN_USER_ID,
         secret: SECRET,
       },
       NOW,
       60_000,
     );
-    const expired = consumePasskeyChallengeToken(token, SECRET, NOW + 120_000);
+    const expired = readPasskeyChallengeCookie(token, SECRET, NOW + 120_000);
     assert.equal(expired.ok, false);
     if (!expired.ok) assert.equal(expired.reason, "expired-challenge");
+  });
+
+  it("rejects the same jti on a second independent verifier sharing durable state", async () => {
+    const shared = new Map<string, PasskeyChallengeRecord>();
+    const instanceA = new InMemoryPasskeyChallengeLedger(shared, () => NOW);
+    const instanceB = new InMemoryPasskeyChallengeLedger(shared, () => NOW);
+    await instanceA.issue({
+      jti: "shared-jti",
+      purpose: "auth",
+      founderUserId: CONTINUUM_FOUNDER_WEBAUTHN_USER_ID,
+      challenge: "challenge-bytes",
+      origin: CONTINUUM_PRODUCTION_WEBAUTHN_ORIGIN,
+      rpId: CONTINUUM_PRODUCTION_WEBAUTHN_RP_ID,
+      sessionFingerprint: null,
+      expiresAt: new Date(NOW + 300_000).toISOString(),
+      createdAt: new Date(NOW).toISOString(),
+    });
+    const first = await instanceA.consume("shared-jti");
+    const second = await instanceB.consume("shared-jti");
+    assert.equal(first.ok, true);
+    assert.equal(second.ok, false);
+    if (!second.ok) assert.equal(second.reason, "replayed-challenge");
   });
 
   it("rejects wrong origin, wrong RP ID, unknown and revoked credentials", async () => {
     await productionEnvAsync(async () => {
       const enrolled = await enrollIphone();
-      const begin = await beginPasskeyAuthentication({
-        store,
-        crypto,
-        secret: SECRET,
-        clock,
-      });
+      const begin = await beginPasskeyAuthentication(deps());
       assert.equal(begin.ok, true);
       if (!begin.ok) return;
 
       const wrongOrigin = await completePasskeyAuthentication(
-        { store, crypto, secret: SECRET, clock },
+        deps(),
         {
           challengeToken: begin.challengeToken,
           response: assertion("cred-iphone", {
@@ -433,16 +457,11 @@ describe("founder passkeys", () => {
       assert.equal(wrongOrigin.ok, false);
       if (!wrongOrigin.ok) assert.equal(wrongOrigin.reason, "origin-mismatch");
 
-      const beginRp = await beginPasskeyAuthentication({
-        store,
-        crypto,
-        secret: SECRET,
-        clock,
-      });
+      const beginRp = await beginPasskeyAuthentication(deps());
       assert.equal(beginRp.ok, true);
       if (!beginRp.ok) return;
       const wrongRp = await completePasskeyAuthentication(
-        { store, crypto, secret: SECRET, clock },
+        deps(),
         {
           challengeToken: beginRp.challengeToken,
           response: assertion("cred-iphone", {
@@ -454,16 +473,11 @@ describe("founder passkeys", () => {
       assert.equal(wrongRp.ok, false);
       if (!wrongRp.ok) assert.equal(wrongRp.reason, "rp-mismatch");
 
-      const beginUnknown = await beginPasskeyAuthentication({
-        store,
-        crypto,
-        secret: SECRET,
-        clock,
-      });
+      const beginUnknown = await beginPasskeyAuthentication(deps());
       assert.equal(beginUnknown.ok, true);
       if (!beginUnknown.ok) return;
       const unknown = await completePasskeyAuthentication(
-        { store, crypto, secret: SECRET, clock },
+        deps(),
         {
           challengeToken: beginUnknown.challengeToken,
           response: assertion("missing-cred", {
@@ -475,13 +489,13 @@ describe("founder passkeys", () => {
       if (!unknown.ok) assert.equal(unknown.reason, "unknown-credential");
 
       const backupBegin = await beginPasskeyRegistration(
-        { store, crypto, secret: SECRET, clock },
+        deps(),
         { sessionOk: true, sessionToken },
       );
       assert.equal(backupBegin.ok, true);
       if (!backupBegin.ok) return;
       const backup = await completePasskeyRegistration(
-        { store, crypto, secret: SECRET, clock },
+        deps(),
         {
           sessionOk: true,
           sessionToken,
@@ -500,16 +514,11 @@ describe("founder passkeys", () => {
         { sessionOk: true, id: enrolled.id },
       );
       assert.equal(revoked.ok, true);
-      const beginRevoked = await beginPasskeyAuthentication({
-        store,
-        crypto,
-        secret: SECRET,
-        clock,
-      });
+      const beginRevoked = await beginPasskeyAuthentication(deps());
       assert.equal(beginRevoked.ok, true);
       if (!beginRevoked.ok) return;
       const revokedAuth = await completePasskeyAuthentication(
-        { store, crypto, secret: SECRET, clock },
+        deps(),
         {
           challengeToken: beginRevoked.challengeToken,
           response: assertion("cred-iphone", {
@@ -528,16 +537,11 @@ describe("founder passkeys", () => {
   it("accepts a valid credential, updates the counter, and uses the existing session cookie helper", async () => {
     await productionEnvAsync(async () => {
       await enrollIphone();
-      const begin = await beginPasskeyAuthentication({
-        store,
-        crypto,
-        secret: SECRET,
-        clock,
-      });
+      const begin = await beginPasskeyAuthentication(deps());
       assert.equal(begin.ok, true);
       if (!begin.ok) return;
       const done = await completePasskeyAuthentication(
-        { store, crypto, secret: SECRET, clock },
+        deps(),
         {
           challengeToken: begin.challengeToken,
           response: assertion("cred-iphone", {
@@ -563,16 +567,11 @@ describe("founder passkeys", () => {
   it("rejects a stale authenticator counter", async () => {
     await productionEnvAsync(async () => {
       await enrollIphone();
-      const firstBegin = await beginPasskeyAuthentication({
-        store,
-        crypto,
-        secret: SECRET,
-        clock,
-      });
+      const firstBegin = await beginPasskeyAuthentication(deps());
       assert.equal(firstBegin.ok, true);
       if (!firstBegin.ok) return;
       const first = await completePasskeyAuthentication(
-        { store, crypto, secret: SECRET, clock },
+        deps(),
         {
           challengeToken: firstBegin.challengeToken,
           response: assertion("cred-iphone", {
@@ -583,16 +582,11 @@ describe("founder passkeys", () => {
       );
       assert.equal(first.ok, true);
 
-      const secondBegin = await beginPasskeyAuthentication({
-        store,
-        crypto,
-        secret: SECRET,
-        clock,
-      });
+      const secondBegin = await beginPasskeyAuthentication(deps());
       assert.equal(secondBegin.ok, true);
       if (!secondBegin.ok) return;
       const stale = await completePasskeyAuthentication(
-        { store, crypto, secret: SECRET, clock },
+        deps(),
         {
           challengeToken: secondBegin.challengeToken,
           response: assertion("cred-iphone", {
@@ -640,27 +634,28 @@ describe("founder passkeys", () => {
     assert.notEqual(fp, other);
     const { token } = createPasskeyChallengeToken({
       kind: "reg",
-      challenge: "ch",
+      jti: "sfp-jti",
       founderUserId: CONTINUUM_FOUNDER_WEBAUTHN_USER_ID,
       sessionFingerprint: fp,
       secret: SECRET,
     }, NOW);
-    const consumed = consumePasskeyChallengeToken(token, SECRET, NOW);
-    assert.equal(consumed.ok, true);
-    if (consumed.ok) assert.equal(consumed.payload.sfp, fp);
+    const cookie = readPasskeyChallengeCookie(token, SECRET, NOW);
+    assert.equal(cookie.ok, true);
+    if (cookie.ok) assert.equal(cookie.payload.sfp, fp);
+    assert.equal("ch" in (cookie.ok ? cookie.payload : {}), false);
   });
 
   it("allows multiple credentials and soft-revokes without deleting history", async () => {
     await productionEnvAsync(async () => {
       const first = await enrollIphone();
       const begin = await beginPasskeyRegistration(
-        { store, crypto, secret: SECRET, clock },
+        deps(),
         { sessionOk: true, sessionToken },
       );
       assert.equal(begin.ok, true);
       if (!begin.ok) return;
       const second = await completePasskeyRegistration(
-        { store, crypto, secret: SECRET, clock },
+        deps(),
         {
           sessionOk: true,
           sessionToken,
@@ -699,6 +694,11 @@ describe("founder passkeys", () => {
     assert.match(cryptoSrc, /generateRegistrationOptions/);
     assert.match(cryptoSrc, /verifyAuthenticationResponse/);
     assert.doesNotMatch(cryptoSrc, /authenticatorAttachment/);
+    const challengeSrc = read("lib/executive-dashboard/passkeys/challenges.ts");
+    assert.doesNotMatch(challengeSrc, /const consumed = new Map/);
+    assert.match(challengeSrc, /v: 2/);
+    const sql = read("lib/supabase/continuum-founder-passkeys-schema.sql");
+    assert.match(sql, /continuum_founder_webauthn_consume_challenge/);
     assert.match(actions, /loginExecutiveDashboard/);
     assert.match(actions, /issueExecutiveDashboardSession/);
     assert.match(passkeyActions, /issueExecutiveDashboardSession/);
@@ -749,17 +749,22 @@ describe("founder passkeys", () => {
     }
     const server = read("lib/executive-dashboard/passkeys/server.ts");
     assert.match(server, /import "server-only"/);
+    const encoded = Buffer.from(new Uint8Array([1, 2, 255, 0, 7])).toString(
+      "base64url",
+    );
+    const decoded = new Uint8Array(Buffer.from(encoded, "base64url"));
+    assert.deepEqual([...decoded], [1, 2, 255, 0, 7]);
   });
 
   async function enrollIphone(): Promise<{ id: string }> {
     const begin = await beginPasskeyRegistration(
-      { store, crypto, secret: SECRET, clock },
+      deps(),
       { sessionOk: true, sessionToken },
     );
     assert.equal(begin.ok, true);
     if (!begin.ok) throw new Error("begin-failed");
     const complete = await completePasskeyRegistration(
-      { store, crypto, secret: SECRET, clock },
+      deps(),
       {
         sessionOk: true,
         sessionToken,

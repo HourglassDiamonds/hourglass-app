@@ -7,5 +7,7 @@ import "server-only";
 
 export {
   createSupabaseFounderPasskeyStore,
+  createSupabasePasskeyChallengeLedger,
   SupabaseFounderPasskeyStore,
+  SupabasePasskeyChallengeLedger,
 } from "./supabase";
