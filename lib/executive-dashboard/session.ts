@@ -97,6 +97,28 @@ export function executiveDashboardSessionCookieOptions(secure: boolean): {
   };
 }
 
+/**
+ * Same session cookie password auth already issues.
+ * Passkey success must use this helper — do not invent a second session.
+ */
+export function buildExecutiveDashboardSessionCookie(
+  username: string,
+  secret: string,
+  nowMs = Date.now(),
+): {
+  name: string;
+  value: string;
+  options: ReturnType<typeof executiveDashboardSessionCookieOptions>;
+} {
+  return {
+    name: EXECUTIVE_DASHBOARD_SESSION_COOKIE,
+    value: createExecutiveDashboardSessionToken(username, secret, nowMs),
+    options: executiveDashboardSessionCookieOptions(
+      shouldUseSecureExecutiveDashboardCookie(),
+    ),
+  };
+}
+
 /** Secure cookies on Vercel (HTTPS). Local next start stays HTTP-compatible. */
 export function shouldUseSecureExecutiveDashboardCookie(): boolean {
   return process.env.VERCEL === "1";

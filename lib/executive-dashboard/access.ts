@@ -8,6 +8,10 @@ export const EXECUTIVE_DASHBOARD_LOGIN_PATH = "/executive-dashboard/login";
 export const EXECUTIVE_DASHBOARD_ROOT_PATH = "/executive-dashboard";
 export const EXECUTIVE_DASHBOARD_CONCIERGE_PATH =
   "/executive-dashboard/concierge";
+export const EXECUTIVE_DASHBOARD_SECURITY_PATH =
+  "/executive-dashboard/security";
+export const EXECUTIVE_DASHBOARD_PASSKEYS_PATH =
+  "/executive-dashboard/security/passkeys";
 
 /**
  * Neutral internal rewrite target for Vercel production hard-404.
@@ -22,6 +26,12 @@ export const EXECUTIVE_DASHBOARD_GENERIC_AUTH_ERROR =
 
 export const EXECUTIVE_DASHBOARD_AUTH_UNAVAILABLE_ERROR =
   "Sign-in is unavailable. Contact the founder.";
+
+export const EXECUTIVE_DASHBOARD_PASSKEY_AUTH_ERROR =
+  "Unable to verify passkey. Try again or use your password.";
+
+export const EXECUTIVE_DASHBOARD_PASSKEY_ENROLL_ERROR =
+  "Unable to create passkey. Try again.";
 
 /** Paths under /executive-dashboard that do not require a session. */
 export function isExecutiveDashboardPublicAuthPath(pathname: string): boolean {
@@ -43,6 +53,14 @@ export function isExecutiveDashboardConciergePath(pathname: string): boolean {
   return (
     pathname === EXECUTIVE_DASHBOARD_CONCIERGE_PATH ||
     pathname.startsWith(`${EXECUTIVE_DASHBOARD_CONCIERGE_PATH}/`)
+  );
+}
+
+/** Private founder security (passkeys). Session-gated like Concierge; not Client Memory. */
+export function isExecutiveDashboardSecurityPath(pathname: string): boolean {
+  return (
+    pathname === EXECUTIVE_DASHBOARD_SECURITY_PATH ||
+    pathname.startsWith(`${EXECUTIVE_DASHBOARD_SECURITY_PATH}/`)
   );
 }
 

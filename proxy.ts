@@ -5,6 +5,7 @@ import {
   isExecutiveDashboardConciergePath,
   isExecutiveDashboardPath,
   isExecutiveDashboardPublicAuthPath,
+  isExecutiveDashboardSecurityPath,
   readExecutiveDashboardSession,
   EXECUTIVE_DASHBOARD_CONCIERGE_PATH,
   EXECUTIVE_DASHBOARD_LOGIN_PATH,
@@ -18,8 +19,8 @@ import { EXECUTIVE_DASHBOARD_SESSION_COOKIE } from "@/lib/executive-dashboard/se
  * Proxy adds private cache headers and optimistic session redirects only.
  *
  * On Vercel production (`hidden`), the metrics dashboard is rewritten to a
- * neutral 404 before the App Router loads. Login and Concierge stay
- * session-gated so the founder can use Client Memory on a phone.
+ * neutral 404 before the App Router loads. Login, Concierge, and founder
+ * security/passkeys stay session-gated so Continuum can run on a phone.
  */
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -31,8 +32,9 @@ export function proxy(request: NextRequest) {
   const cookieValue = request.cookies.get(EXECUTIVE_DASHBOARD_SESSION_COOKIE)?.value;
   const isLogin = isExecutiveDashboardPublicAuthPath(pathname);
   const isConcierge = isExecutiveDashboardConciergePath(pathname);
+  const isSecurity = isExecutiveDashboardSecurityPath(pathname);
 
-  if (isLogin || isConcierge) {
+  if (isLogin || isConcierge || isSecurity) {
     const session = readExecutiveDashboardSession(cookieValue);
     if (!session.ok && !isLogin) {
       const loginUrl = request.nextUrl.clone();

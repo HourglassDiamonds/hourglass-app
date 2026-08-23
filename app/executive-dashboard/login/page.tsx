@@ -7,7 +7,9 @@ import {
 import { isExecutiveDashboardPublicProduction } from "@/lib/executive-dashboard/env";
 import { EXECUTIVE_DASHBOARD_SESSION_COOKIE } from "@/lib/executive-dashboard/session";
 import { requireInternalClientMemorySession } from "@/lib/continuum/client-memory/read/access";
+import { founderPasskeysAreEnrolled } from "@/lib/executive-dashboard/passkeys/load";
 import { ExecutiveDashboardLoginForm } from "../login-form";
+import { PasskeyLoginButton } from "../passkey-login-button";
 
 export const metadata = {
   title: "Sign in",
@@ -28,6 +30,8 @@ export default async function ExecutiveDashboardLoginPage() {
     );
   }
 
+  const passkeysAvailable = await founderPasskeysAreEnrolled();
+
   return (
     <main className="relative min-h-[100dvh] overflow-x-hidden bg-[#14110f] text-[#efe8de]">
       <div
@@ -45,7 +49,17 @@ export default async function ExecutiveDashboardLoginPage() {
           Sign in with founder credentials. This surface is private and is not
           indexed.
         </p>
-        <div className="mt-10">
+        <div className="mt-10 space-y-8">
+          {passkeysAvailable ? (
+            <>
+              <PasskeyLoginButton />
+              <div className="flex items-center gap-4 text-[10px] uppercase tracking-[0.28em] text-[#8d8073]">
+                <span className="h-px flex-1 bg-white/[0.08]" />
+                or
+                <span className="h-px flex-1 bg-white/[0.08]" />
+              </div>
+            </>
+          ) : null}
           <ExecutiveDashboardLoginForm />
         </div>
       </div>

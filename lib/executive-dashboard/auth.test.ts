@@ -8,6 +8,7 @@ import {
   isExecutiveDashboardConciergePath,
   isExecutiveDashboardPath,
   isExecutiveDashboardPublicAuthPath,
+  isExecutiveDashboardSecurityPath,
   executiveDashboardPostLoginPath,
   EXECUTIVE_DASHBOARD_CONCIERGE_PATH,
   EXECUTIVE_DASHBOARD_GENERIC_AUTH_ERROR,
@@ -229,6 +230,7 @@ describe("executive dashboard auth", () => {
       "utf8",
     );
     assert.match(actions, /maxAge:\s*0/);
+    assert.match(actions, /issueExecutiveDashboardSession/);
     assert.match(actions, /logoutExecutiveDashboard/);
     assert.match(actions, /EXECUTIVE_DASHBOARD_SESSION_COOKIE/);
     assert.equal(EXECUTIVE_DASHBOARD_SESSION_COOKIE, "hgd_ed_session");
@@ -491,5 +493,16 @@ describe("executive dashboard auth", () => {
     );
     assert.match(conciergeLayout, /requireInternalClientMemorySession/);
     assert.match(conciergeLayout, /force-dynamic/);
+    assert.equal(
+      isExecutiveDashboardSecurityPath("/executive-dashboard/security/passkeys"),
+      true,
+    );
+    assert.match(proxy, /isExecutiveDashboardSecurityPath/);
+    const securityLayout = readFileSync(
+      join(ROOT, "app", "executive-dashboard", "security", "layout.tsx"),
+      "utf8",
+    );
+    assert.match(securityLayout, /readExecutiveDashboardSession/);
+    assert.match(securityLayout, /force-dynamic/);
   });
 });

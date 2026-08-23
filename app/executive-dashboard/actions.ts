@@ -16,15 +16,14 @@ import {
   getExecutiveDashboardAuthClientIp,
   recordExecutiveDashboardLoginFailure,
 } from "@/lib/executive-dashboard/rate-limit";
+import { issueExecutiveDashboardSession } from "@/lib/executive-dashboard/issue-session";
 import {
   usernamesMatch,
   verifyExecutiveDashboardPassword,
 } from "@/lib/executive-dashboard/password";
 import {
-  createExecutiveDashboardSessionToken,
   EXECUTIVE_DASHBOARD_SESSION_COOKIE,
   EXECUTIVE_DASHBOARD_SESSION_PATH,
-  executiveDashboardSessionCookieOptions,
   shouldUseSecureExecutiveDashboardCookie,
 } from "@/lib/executive-dashboard/session";
 
@@ -65,18 +64,7 @@ export async function loginExecutiveDashboard(
 
   clearExecutiveDashboardLoginFailures(ip);
 
-  const token = createExecutiveDashboardSessionToken(
-    config.username,
-    config.sessionSecret,
-  );
-  const jar = await cookies();
-  jar.set(
-    EXECUTIVE_DASHBOARD_SESSION_COOKIE,
-    token,
-    executiveDashboardSessionCookieOptions(
-      shouldUseSecureExecutiveDashboardCookie(),
-    ),
-  );
+  await issueExecutiveDashboardSession(config.username, config.sessionSecret);
 
   redirect(executiveDashboardPostLoginPath());
 }
