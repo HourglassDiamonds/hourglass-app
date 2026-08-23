@@ -16,7 +16,7 @@ export const CLIENT_MEMORY_CONCIERGE_AUTH_GATE = {
   mechanism: "executive-dashboard-session",
   audience: "justin-internal",
   cookiePath: "/executive-dashboard",
-  productionUi: "not-exposed",
+  productionUi: "session-gated",
 } as const;
 
 export function requireInternalClientMemorySession(

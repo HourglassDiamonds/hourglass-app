@@ -17,6 +17,8 @@ import type {
   Wish,
 } from "../types";
 
+export type { PersonFact };
+
 export const CLIENT_MEMORY_SEARCH_LIMIT = 20;
 export const CLIENT_MEMORY_NOTE_LIMIT = 25;
 
@@ -61,6 +63,7 @@ export type LinkedProjectRead = {
 export type SourceNoteSummary = Pick<
   SourceNote,
   | "id"
+  | "projectId"
   | "sourceSystem"
   | "sourceArtifact"
   | "sourceSheet"

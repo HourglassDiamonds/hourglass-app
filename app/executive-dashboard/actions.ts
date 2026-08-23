@@ -6,7 +6,7 @@ import {
   EXECUTIVE_DASHBOARD_AUTH_UNAVAILABLE_ERROR,
   EXECUTIVE_DASHBOARD_GENERIC_AUTH_ERROR,
   EXECUTIVE_DASHBOARD_LOGIN_PATH,
-  EXECUTIVE_DASHBOARD_ROOT_PATH,
+  executiveDashboardPostLoginPath,
 } from "@/lib/executive-dashboard/access";
 import { getExecutiveDashboardAuthConfig } from "@/lib/executive-dashboard/env";
 import {
@@ -78,7 +78,7 @@ export async function loginExecutiveDashboard(
     ),
   );
 
-  redirect(EXECUTIVE_DASHBOARD_ROOT_PATH);
+  redirect(executiveDashboardPostLoginPath());
 }
 
 export async function logoutExecutiveDashboard(): Promise<void> {

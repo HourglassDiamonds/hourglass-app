@@ -22,7 +22,7 @@ export function ExecutiveDashboardLoginForm() {
   }, [state.error]);
 
   return (
-    <form action={formAction} className="space-y-5" method="post" noValidate>
+    <form action={formAction} className="space-y-5" noValidate>
       <div>
         <label
           htmlFor="executive-dashboard-username"

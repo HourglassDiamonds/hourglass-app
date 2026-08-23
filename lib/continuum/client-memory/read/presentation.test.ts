@@ -1,0 +1,126 @@
+import assert from "node:assert/strict";
+import { describe, it } from "node:test";
+import {
+  formatFactValue,
+  formatLocation,
+  historyFields,
+  isPersonIdParam,
+  memoryReviewLabel,
+  noteProjectTitle,
+  noteSourceLabel,
+  projectCountLabel,
+  relationshipLabel,
+  reviewIndicatorLabel,
+  telHref,
+} from "./presentation";
+import { CLIENT_MEMORY_SOURCE_SYSTEM } from "../types";
+import type { LinkedProjectRead, PersonFact, SourceNoteSummary } from "./types";
+
+describe("Concierge presentation", () => {
+  it("formats location without empty parts", () => {
+    assert.equal(
+      formatLocation({
+        id: "1",
+        displayName: "Ada",
+        givenName: "Ada",
+        familyName: "Lovelace",
+        organizationName: null,
+        email: null,
+        phone: null,
+        streetAddress: null,
+        city: "Miami",
+        state: "FL",
+        country: "US",
+        postalCode: null,
+        roles: ["client"],
+      }),
+      "Miami, FL, US",
+    );
+  });
+
+  it("does not infer social relationship labels for client-project rows", () => {
+    assert.equal(relationshipLabel("client-project"), null);
+    assert.equal(relationshipLabel("spouse"), "Spouse");
+  });
+
+  it("keeps fact values human-readable and skips JSON objects", () => {
+    const current: PersonFact = {
+      id: "f1",
+      personId: "p1",
+      factType: "ring-size",
+      value: "6.25",
+      confidence: 1,
+      verification: null,
+      approvalStatus: "approved",
+      status: "current",
+      visibility: "internal-only",
+      usagePermission: "unset",
+      validFrom: null,
+      validUntil: null,
+      supersedesId: null,
+      sourceSystem: CLIENT_MEMORY_SOURCE_SYSTEM,
+      createdAt: "2026-08-22T00:00:00.000Z",
+      createdBy: "test",
+    };
+    assert.equal(formatFactValue(current), "6.25");
+    assert.equal(formatFactValue({ ...current, value: { nested: true } }), null);
+  });
+
+  it("labels imported notes conservatively", () => {
+    const note: SourceNoteSummary = {
+      id: "n1",
+      projectId: null,
+      sourceSystem: CLIENT_MEMORY_SOURCE_SYSTEM,
+      sourceArtifact: "continuum-reconciliation-v3",
+      sourceSheet: "Reconciled Projects",
+      sourceField: "Notes",
+      gmailThreadId: null,
+      noteText: "hello",
+      createdAt: "2026-08-22T00:00:00.000Z",
+    };
+    assert.equal(noteSourceLabel(note), "Historical client record");
+    assert.doesNotMatch(noteSourceLabel(note), /import_row_key|xlsx|Reconciled/i);
+    assert.equal(
+      noteProjectTitle({ ...note, projectId: "proj-1" }, { "proj-1": "Oval ring" }),
+      "Oval ring",
+    );
+    assert.equal(noteProjectTitle(note, { "proj-1": "Oval ring" }), null);
+  });
+
+  it("omits empty project history fields and financial names", () => {
+    const project: LinkedProjectRead = {
+      profile: {
+        projectId: "proj-1",
+        displayTitle: "Oval ring",
+        visibility: "internal-only",
+      },
+      internalHistory: {
+        cadJobNumber: "CAD-1",
+        orderNumber: null,
+        gmailThreadId: null,
+        matchJudgment: "exact",
+        fingerSize: "6",
+        metal: null,
+        centerStone: null,
+        diamondSupplyNotes: null,
+      },
+    };
+    const fields = historyFields(project);
+    assert.deepEqual(
+      fields.map((row) => row.label),
+      ["CAD", "Finger size"],
+    );
+    assert.equal(fields.some((row) => /cost|margin|price/i.test(row.label)), false);
+  });
+
+  it("builds review and project count copy", () => {
+    assert.equal(reviewIndicatorLabel(0), null);
+    assert.equal(reviewIndicatorLabel(1), "Needs review · 1");
+    assert.equal(projectCountLabel(2), "2 projects");
+    assert.equal(memoryReviewLabel(1, 1), "2 memories need review");
+    assert.equal(telHref("(305) 555-0100"), "tel:+13055550100");
+    assert.equal(telHref("not-a-phone"), null);
+    assert.equal(isPersonIdParam("not-a-uuid"), false);
+    assert.equal(isPersonIdParam("eb2802bd-e312-471e-8582-8dbd5ad2e04b"), true);
+  });
+});

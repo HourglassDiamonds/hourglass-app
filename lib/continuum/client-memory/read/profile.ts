@@ -88,6 +88,7 @@ function toHistorySummary(
 function toNoteSummary(note: ClientMemoryReadSnapshot["sourceNotes"][number]): SourceNoteSummary {
   return {
     id: note.id,
+    projectId: note.projectId,
     sourceSystem: note.sourceSystem,
     sourceArtifact: note.sourceArtifact,
     sourceSheet: note.sourceSheet,

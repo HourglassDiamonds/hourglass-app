@@ -99,8 +99,13 @@ describe("executive dashboard production deny contract", () => {
     );
     const envExample = readFileSync(join(root, ".env.example"), "utf8");
     const proxy = readFileSync(join(root, "proxy.ts"), "utf8");
-    assert.match(layout, /isExecutiveDashboardPublicProduction/);
+    const protectedLayout = readFileSync(
+      join(root, "app", "executive-dashboard", "(protected)", "layout.tsx"),
+      "utf8",
+    );
     assert.match(layout, /noindex|robots/);
+    assert.match(protectedLayout, /notFound\(/);
+    assert.match(protectedLayout, /getExecutiveDashboardAccessDecision/);
     assert.match(envModule, /VERCEL_ENV === "production"/);
     assert.doesNotMatch(layout, /EXECUTIVE_DASHBOARD_ENABLED/);
     assert.doesNotMatch(envExample, /EXECUTIVE_DASHBOARD_ENABLED=true/);

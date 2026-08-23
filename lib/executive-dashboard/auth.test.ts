@@ -5,8 +5,11 @@ import { fileURLToPath } from "node:url";
 import { describe, it, beforeEach, afterEach } from "node:test";
 import {
   getExecutiveDashboardAccessDecision,
+  isExecutiveDashboardConciergePath,
   isExecutiveDashboardPath,
   isExecutiveDashboardPublicAuthPath,
+  executiveDashboardPostLoginPath,
+  EXECUTIVE_DASHBOARD_CONCIERGE_PATH,
   EXECUTIVE_DASHBOARD_GENERIC_AUTH_ERROR,
   EXECUTIVE_DASHBOARD_LOGIN_PATH,
   EXECUTIVE_DASHBOARD_PRODUCTION_NOT_FOUND_REWRITE_PATH,
@@ -332,6 +335,10 @@ describe("executive dashboard auth", () => {
           cookieValue: token,
         });
         assert.equal(decision.status, "hidden");
+        assert.equal(
+          executiveDashboardPostLoginPath(),
+          EXECUTIVE_DASHBOARD_CONCIERGE_PATH,
+        );
       },
     );
   });
@@ -375,14 +382,15 @@ describe("executive dashboard auth", () => {
       join(ROOT, "app", "executive-dashboard", "layout.tsx"),
       "utf8",
     );
-    // Source still contains login copy for preview/local — production must
-    // never load these modules (proxy rewrite). Assert the leak phrases exist
-    // only under the dashboard tree, not in the neutral rewrite target.
+    const protectedLayout = readFileSync(
+      join(ROOT, "app", "executive-dashboard", "(protected)", "layout.tsx"),
+      "utf8",
+    );
     assert.match(loginPage, /Executive access/);
     assert.match(loginPage, /Sign in with founder credentials/);
     assert.match(layout, /title:\s*"Executive Dashboard"/);
-    assert.match(layout, /notFound\(\)/);
-    assert.match(layout, /isExecutiveDashboardPublicProduction/);
+    assert.match(protectedLayout, /notFound\(\)/);
+    assert.match(protectedLayout, /getExecutiveDashboardAccessDecision/);
   });
 
   it("bounds repeated login failures in memory", () => {
@@ -414,16 +422,19 @@ describe("executive dashboard auth", () => {
     );
     assert.match(actions, /"use server"/);
     assert.match(form, /useActionState/);
-    assert.match(form, /method="post"/);
+    assert.match(form, /formAction/);
+    assert.doesNotMatch(form, /method="post"/);
   });
 
   it("leaves public marketing routes outside the proxy matcher", () => {
     const proxy = readFileSync(join(ROOT, "proxy.ts"), "utf8");
+    const matcher = proxy.slice(proxy.indexOf("matcher:"));
     assert.match(
       proxy,
       /matcher:\s*\[["']\/executive-dashboard["'],\s*["']\/executive-dashboard\/:path\*["']\]/,
     );
-    assert.doesNotMatch(proxy, /diamond-studio|concierge|analyze-sparkle/);
+    assert.doesNotMatch(matcher, /["']\/concierge["']/);
+    assert.doesNotMatch(matcher, /diamond-studio|analyze-sparkle/);
   });
 
   it("keeps the production rewrite target outside all app routes", () => {
@@ -456,5 +467,29 @@ describe("executive dashboard auth", () => {
         );
       }
     }
+  });
+
+  it("gates Concierge under the founder session path without exposing public /concierge", () => {
+    assert.equal(
+      isExecutiveDashboardConciergePath("/executive-dashboard/concierge"),
+      true,
+    );
+    assert.equal(
+      isExecutiveDashboardConciergePath(
+        "/executive-dashboard/concierge/client/abc",
+      ),
+      true,
+    );
+    assert.equal(isExecutiveDashboardConciergePath("/concierge"), false);
+    assert.equal(isExecutiveDashboardPublicAuthPath("/executive-dashboard/login"), true);
+    const proxy = readFileSync(join(ROOT, "proxy.ts"), "utf8");
+    assert.match(proxy, /isExecutiveDashboardConciergePath/);
+    assert.match(proxy, /readExecutiveDashboardSession/);
+    const conciergeLayout = readFileSync(
+      join(ROOT, "app", "executive-dashboard", "concierge", "layout.tsx"),
+      "utf8",
+    );
+    assert.match(conciergeLayout, /requireInternalClientMemorySession/);
+    assert.match(conciergeLayout, /force-dynamic/);
   });
 });

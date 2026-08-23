@@ -2,8 +2,11 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import {
   getExecutiveDashboardAccessDecision,
+  isExecutiveDashboardConciergePath,
   isExecutiveDashboardPath,
   isExecutiveDashboardPublicAuthPath,
+  readExecutiveDashboardSession,
+  EXECUTIVE_DASHBOARD_CONCIERGE_PATH,
   EXECUTIVE_DASHBOARD_LOGIN_PATH,
   EXECUTIVE_DASHBOARD_PRODUCTION_NOT_FOUND_REWRITE_PATH,
 } from "@/lib/executive-dashboard/access";
@@ -14,9 +17,9 @@ import { EXECUTIVE_DASHBOARD_SESSION_COOKIE } from "@/lib/executive-dashboard/se
  * Authoritative auth still runs in server layouts/loaders (fail closed).
  * Proxy adds private cache headers and optimistic session redirects only.
  *
- * On Vercel production (`hidden`), rewrite to a neutral missing path before
- * the App Router loads dashboard layouts/pages/metadata — otherwise
- * layout-level `notFound()` still serializes login copy into the 404 RSC payload.
+ * On Vercel production (`hidden`), the metrics dashboard is rewritten to a
+ * neutral 404 before the App Router loads. Login and Concierge stay
+ * session-gated so the founder can use Client Memory on a phone.
  */
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -25,35 +28,48 @@ export function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const decision = getExecutiveDashboardAccessDecision({
-    cookieValue: request.cookies.get(EXECUTIVE_DASHBOARD_SESSION_COOKIE)?.value,
-  });
+  const cookieValue = request.cookies.get(EXECUTIVE_DASHBOARD_SESSION_COOKIE)?.value;
+  const isLogin = isExecutiveDashboardPublicAuthPath(pathname);
+  const isConcierge = isExecutiveDashboardConciergePath(pathname);
+
+  if (isLogin || isConcierge) {
+    const session = readExecutiveDashboardSession(cookieValue);
+    if (!session.ok && !isLogin) {
+      const loginUrl = request.nextUrl.clone();
+      loginUrl.pathname = EXECUTIVE_DASHBOARD_LOGIN_PATH;
+      loginUrl.search = "";
+      const redirectResponse = NextResponse.redirect(loginUrl);
+      applyExecutiveDashboardHeaders(redirectResponse);
+      return redirectResponse;
+    }
+    if (session.ok && isLogin) {
+      const nextUrl = request.nextUrl.clone();
+      nextUrl.pathname = EXECUTIVE_DASHBOARD_CONCIERGE_PATH;
+      nextUrl.search = "";
+      const redirectResponse = NextResponse.redirect(nextUrl);
+      applyExecutiveDashboardHeaders(redirectResponse);
+      return redirectResponse;
+    }
+    const response = NextResponse.next();
+    applyExecutiveDashboardHeaders(response);
+    return response;
+  }
+
+  const decision = getExecutiveDashboardAccessDecision({ cookieValue });
 
   if (decision.status === "hidden") {
-    // Fail closed at the proxy boundary: do not enter /executive-dashboard/**.
-    // Rewrite (not redirect) so the client URL is unchanged and status stays 404.
+    // Fail closed at the proxy boundary: do not enter the metrics dashboard.
     const notFoundUrl = request.nextUrl.clone();
     notFoundUrl.pathname = EXECUTIVE_DASHBOARD_PRODUCTION_NOT_FOUND_REWRITE_PATH;
     notFoundUrl.search = "";
     return NextResponse.rewrite(notFoundUrl);
   }
 
-  const isLogin = isExecutiveDashboardPublicAuthPath(pathname);
-
-  if (decision.status === "unauthenticated" && !isLogin) {
+  if (decision.status === "unauthenticated") {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = EXECUTIVE_DASHBOARD_LOGIN_PATH;
     loginUrl.search = "";
     const redirectResponse = NextResponse.redirect(loginUrl);
-    applyExecutiveDashboardHeaders(redirectResponse);
-    return redirectResponse;
-  }
-
-  if (decision.status === "authenticated" && isLogin) {
-    const dashUrl = request.nextUrl.clone();
-    dashUrl.pathname = "/executive-dashboard";
-    dashUrl.search = "";
-    const redirectResponse = NextResponse.redirect(dashUrl);
     applyExecutiveDashboardHeaders(redirectResponse);
     return redirectResponse;
   }

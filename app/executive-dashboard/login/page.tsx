@@ -1,10 +1,12 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import {
+  EXECUTIVE_DASHBOARD_CONCIERGE_PATH,
   EXECUTIVE_DASHBOARD_ROOT_PATH,
-  getExecutiveDashboardAccessDecision,
 } from "@/lib/executive-dashboard/access";
+import { isExecutiveDashboardPublicProduction } from "@/lib/executive-dashboard/env";
 import { EXECUTIVE_DASHBOARD_SESSION_COOKIE } from "@/lib/executive-dashboard/session";
+import { requireInternalClientMemorySession } from "@/lib/continuum/client-memory/read/access";
 import { ExecutiveDashboardLoginForm } from "../login-form";
 
 export const metadata = {
@@ -14,12 +16,16 @@ export const metadata = {
 
 export default async function ExecutiveDashboardLoginPage() {
   const jar = await cookies();
-  const decision = getExecutiveDashboardAccessDecision({
-    cookieValue: jar.get(EXECUTIVE_DASHBOARD_SESSION_COOKIE)?.value,
-  });
+  const session = requireInternalClientMemorySession(
+    jar.get(EXECUTIVE_DASHBOARD_SESSION_COOKIE)?.value,
+  );
 
-  if (decision.status === "authenticated") {
-    redirect(EXECUTIVE_DASHBOARD_ROOT_PATH);
+  if (session.ok) {
+    redirect(
+      isExecutiveDashboardPublicProduction()
+        ? EXECUTIVE_DASHBOARD_CONCIERGE_PATH
+        : EXECUTIVE_DASHBOARD_ROOT_PATH,
+    );
   }
 
   return (

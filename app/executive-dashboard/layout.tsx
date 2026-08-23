@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
-import { notFound } from "next/navigation";
-import { isExecutiveDashboardPublicProduction } from "@/lib/executive-dashboard/env";
 
 export const metadata: Metadata = {
   title: "Executive Dashboard",
@@ -12,17 +10,14 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 /**
- * Option B — Vercel production always 404s the entire /executive-dashboard tree
- * (including login), so the public domain never reveals this surface.
+ * Shared private headers for founder surfaces.
+ * Metrics dashboard production hide lives in `(protected)/layout`.
+ * Concierge is session-gated separately so it can run on a phone.
  */
 export default function ExecutiveDashboardRootLayout({
   children,
 }: {
   children: ReactNode;
 }) {
-  if (isExecutiveDashboardPublicProduction()) {
-    notFound();
-  }
-
   return children;
 }

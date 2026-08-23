@@ -6,6 +6,8 @@ import { verifyExecutiveDashboardSessionToken } from "./session";
 
 export const EXECUTIVE_DASHBOARD_LOGIN_PATH = "/executive-dashboard/login";
 export const EXECUTIVE_DASHBOARD_ROOT_PATH = "/executive-dashboard";
+export const EXECUTIVE_DASHBOARD_CONCIERGE_PATH =
+  "/executive-dashboard/concierge";
 
 /**
  * Neutral internal rewrite target for Vercel production hard-404.
@@ -34,6 +36,20 @@ export function isExecutiveDashboardPath(pathname: string): boolean {
     pathname === EXECUTIVE_DASHBOARD_ROOT_PATH ||
     pathname.startsWith(`${EXECUTIVE_DASHBOARD_ROOT_PATH}/`)
   );
+}
+
+/** Internal Concierge Client Memory UI — session-gated, not the metrics dashboard. */
+export function isExecutiveDashboardConciergePath(pathname: string): boolean {
+  return (
+    pathname === EXECUTIVE_DASHBOARD_CONCIERGE_PATH ||
+    pathname.startsWith(`${EXECUTIVE_DASHBOARD_CONCIERGE_PATH}/`)
+  );
+}
+
+export function executiveDashboardPostLoginPath(): string {
+  return isExecutiveDashboardPublicProduction()
+    ? EXECUTIVE_DASHBOARD_CONCIERGE_PATH
+    : EXECUTIVE_DASHBOARD_ROOT_PATH;
 }
 
 /**

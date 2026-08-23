@@ -27,6 +27,7 @@ function AnalyticsController({ enabled }: { enabled: boolean }) {
     captureAttributionFromLocation(pathname, query);
 
     if (!enabled || !measurementId) return;
+    if (pathname.startsWith("/executive-dashboard")) return;
 
     if (!configuredRef.current) {
       configureGaWithoutAutomaticPageViews(measurementId);

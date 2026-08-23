@@ -1,0 +1,46 @@
+body:has([data-concierge-shell]) {
+  background: #14110f;
+}
+
+body:has([data-concierge-shell]) > div {
+  background: #14110f;
+}
+
+body:has([data-concierge-shell]) footer {
+  display: none;
+}
+
+body:has([data-concierge-shell]) .facet-scintillation-rail,
+body:has([data-concierge-shell]) [data-facet-rail] {
+  display: none;
+}
+
+[data-concierge-shell] details summary::-webkit-details-marker {
+  display: none;
+}
+
+[data-concierge-shell] details summary {
+  list-style: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hg-concierge-fade {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+@keyframes hg-concierge-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.hg-concierge-fade {
+  animation: hg-concierge-enter 280ms cubic-bezier(0.28, 0.11, 0.22, 1) both;
+}
