@@ -1,16 +1,32 @@
 "use client";
 
-import { useId, useState, type FormEvent } from "react";
+import { useId, useState, useTransition, type FormEvent } from "react";
+import { askConcierge } from "../actions";
+import { AskConciergeAnswerView } from "./ask-concierge-answer";
+import {
+  ASK_PENDING_MESSAGE,
+  type AskConciergeAnswer,
+} from "@/lib/continuum/client-memory/ask/types";
 
-const ASK_NOTICE = "Ask Concierge isn't connected yet.";
+const EXAMPLES = [
+  "Who has a birthday in November?",
+  "Birthdays next month",
+] as const;
 
 export function AskConciergeShell() {
   const inputId = useId();
-  const [notice, setNotice] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
+  const [answer, setAnswer] = useState<AskConciergeAnswer | null>(null);
+  const [pending, startTransition] = useTransition();
 
   function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setNotice(ASK_NOTICE);
+    const trimmed = query.trim();
+    if (!trimmed) return;
+    startTransition(async () => {
+      const next = await askConcierge(trimmed);
+      setAnswer(next);
+    });
   }
 
   return (
@@ -27,6 +43,8 @@ export function AskConciergeShell() {
             id={inputId}
             type="search"
             name="ask"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
             autoComplete="off"
             autoCorrect="off"
             spellCheck={false}
@@ -42,17 +60,17 @@ export function AskConciergeShell() {
           </button>
         </div>
       </form>
-      {notice ? (
+      {pending ? (
         <p className="mt-4 text-[14px] leading-relaxed text-[#c4b7aa]" role="status">
-          {notice}
+          {ASK_PENDING_MESSAGE}
         </p>
+      ) : answer ? (
+        <AskConciergeAnswerView answer={answer} />
       ) : (
         <p className="mt-4 text-[12px] leading-relaxed text-[#7d7268]">
-          How many birthdays are coming up?
+          {EXAMPLES[0]}
           <br />
-          Who should I follow up with?
-          <br />
-          What do I know about Sarah?
+          {EXAMPLES[1]}
         </p>
       )}
     </section>

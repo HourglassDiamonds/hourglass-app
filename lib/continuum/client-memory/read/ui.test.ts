@@ -20,13 +20,14 @@ import {
 import { ClientProfileView } from "../../../../app/executive-dashboard/concierge/components/client-profile-view";
 import { ClientSearchResultRow } from "../../../../app/executive-dashboard/concierge/components/client-search-result";
 import { ConciergeUnavailable } from "../../../../app/executive-dashboard/concierge/components/client-profile-view";
-import { AskConciergeShell } from "../../../../app/executive-dashboard/concierge/components/ask-concierge-shell";
+import { AskConciergeAnswerView } from "../../../../app/executive-dashboard/concierge/components/ask-concierge-answer";
 import { ChiefOfStaffToday } from "../../../../app/executive-dashboard/concierge/components/chief-of-staff-today";
 import { QuickCapture } from "../../../../app/executive-dashboard/concierge/components/quick-capture";
 import { composeContinuumHome, greetingLine } from "../../dashboard/compose";
 import {
   conciergeAddNotePath,
   conciergeAddNotePickerPath,
+  conciergeClientPath,
 } from "./presentation";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "../../../..");
@@ -282,6 +283,7 @@ describe("Concierge Client Memory UI", () => {
     assert.doesNotMatch(command, /intent=/);
     const actions = readFileSync(join(CONCIERGE_DIR, "actions.ts"), "utf8");
     assert.match(actions, /getAuthenticatedClientMemoryReader/);
+    assert.match(actions, /askConcierge/);
     assert.match(actions, /getAuthenticatedClientMemoryNoteWriter/);
     assert.match(actions, /getAuthenticatedClientMemoryFactWriter/);
     assert.match(actions, /saved=1/);
@@ -361,20 +363,97 @@ describe("Concierge Client Memory UI", () => {
     assert.doesNotMatch(command, /autoFocus/);
   });
 
-  it("keeps Ask Concierge local, disconnected, and non-persistent", () => {
+  it("connects Ask Concierge to a narrow authenticated Server Action", () => {
     const ask = readFileSync(
       join(CONCIERGE_DIR, "components", "ask-concierge-shell.tsx"),
       "utf8",
     );
-    assert.match(ask, /Ask Concierge isn't connected yet/);
+    const answerView = readFileSync(
+      join(CONCIERGE_DIR, "components", "ask-concierge-answer.tsx"),
+      "utf8",
+    );
+    const actions = readFileSync(join(CONCIERGE_DIR, "actions.ts"), "utf8");
+    assert.match(ask, /askConcierge/);
     assert.match(ask, /preventDefault/);
+    assert.match(ask, /useTransition/);
+    assert.match(ask, /ASK_PENDING_MESSAGE/);
+    assert.match(answerView, /conciergeClientPath/);
     assert.doesNotMatch(ask, /searchConciergeClients|fetch\(|\/api\//);
     assert.doesNotMatch(ask, /localStorage|sessionStorage|gtag/);
-    assert.doesNotMatch(ask, /getAuthenticatedClientMemoryReader/);
-    const html = renderToStaticMarkup(createElement(AskConciergeShell));
-    assert.match(html, /Ask Concierge/);
-    assert.match(html, /How many birthdays are coming up/);
-    assert.doesNotMatch(html, /<button[^>]*birthdays/i);
+    assert.doesNotMatch(ask, /getAuthenticatedClientMemoryReader|listCurrentBirthdaysByMonth/);
+    assert.doesNotMatch(answerView, /listCurrentBirthdaysByMonth|getAuthenticatedClientMemoryReader/);
+    assert.doesNotMatch(ask, /How many birthdays are coming up|Who should I follow up with|What do I know about Sarah/);
+    assert.match(actions, /askConcierge/);
+    assert.match(actions, /getAuthenticatedClientMemoryReader/);
+    assert.match(actions, /answerAskConciergeQuery/);
+    assert.doesNotMatch(actions, /console\.(log|info|debug|warn|error)/);
+    assert.match(ask, /Who has a birthday in November/);
+    assert.match(ask, /Birthdays next month/);
+    assert.doesNotMatch(ask, /How many birthdays are coming up/);
+    const one = renderToStaticMarkup(
+      createElement(AskConciergeAnswerView, {
+        answer: {
+          kind: "birthdays-by-month",
+          month: 11,
+          people: [
+            {
+              factId: "f-sarah",
+              personId: "p-sarah",
+              displayName: "Sarah Miller",
+              month: 11,
+              day: 12,
+              year: 1985,
+              verification: "manual",
+              sourceSystem: "concierge-manual",
+            },
+          ],
+        },
+      }),
+    );
+    assert.match(one, /I currently have 1 November birthday recorded/);
+    assert.match(one, /Sarah Miller/);
+    assert.match(one, /November 12/);
+    assert.match(one, new RegExp(conciergeClientPath("p-sarah")));
+    assert.doesNotMatch(one, /1985|age|years old|f-sarah|concierge-manual|confidence/);
+    const unknownDay = renderToStaticMarkup(
+      createElement(AskConciergeAnswerView, {
+        answer: {
+          kind: "birthdays-by-month",
+          month: 11,
+          people: [
+            {
+              factId: "f-mike",
+              personId: "p-mike",
+              displayName: "Mike Jones",
+              month: 11,
+              day: null,
+              year: null,
+              verification: "manual",
+              sourceSystem: "concierge-manual",
+            },
+          ],
+        },
+      }),
+    );
+    assert.match(unknownDay, /November/);
+    assert.doesNotMatch(unknownDay, /Unknown|November 0/);
+    const zero = renderToStaticMarkup(
+      createElement(AskConciergeAnswerView, {
+        answer: { kind: "birthdays-by-month", month: 11, people: [] },
+      }),
+    );
+    const error = renderToStaticMarkup(
+      createElement(AskConciergeAnswerView, { answer: { kind: "error" } }),
+    );
+    const unsupported = renderToStaticMarkup(
+      createElement(AskConciergeAnswerView, { answer: { kind: "unsupported" } }),
+    );
+    assert.match(zero, /No birthdays are currently recorded for November/);
+    assert.match(error, /read relationship memory just now/);
+    assert.match(unsupported, /from structured memory yet/);
+    assert.notEqual(zero, error);
+    assert.notEqual(zero, unsupported);
+    assert.notEqual(error, unsupported);
   });
 
   it("requires a Person for Add Note and does not create an orphan write path", () => {

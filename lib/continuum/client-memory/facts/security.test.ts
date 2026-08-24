@@ -58,9 +58,10 @@ describe("Client Memory fact writer security", () => {
     const concierge = join(ROOT, "app", "executive-dashboard", "concierge");
     const command = readFileSync(join(concierge, "components", "command-center-home.tsx"), "utf8");
     const ask = readFileSync(join(concierge, "components", "ask-concierge-shell.tsx"), "utf8");
+    const askAnswer = readFileSync(join(concierge, "components", "ask-concierge-answer.tsx"), "utf8");
     const cos = readFileSync(join(concierge, "components", "chief-of-staff-today.tsx"), "utf8");
     const dashboard = join(ROOT, "lib", "continuum", "dashboard");
-    for (const source of [command, ask, cos]) {
+    for (const source of [command, ask, askAnswer, cos]) {
       assert.doesNotMatch(source, /setManualBirthday|listCurrentBirthdaysByMonth/);
     }
     for (const file of walkFiles(dashboard, ".ts")) {
