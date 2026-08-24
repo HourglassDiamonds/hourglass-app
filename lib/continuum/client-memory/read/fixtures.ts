@@ -115,7 +115,7 @@ export function fact(input: {
   personId: string;
   factType: string;
   status: PersonFact["status"];
-  value?: string;
+  value?: PersonFact["value"];
 }): PersonFact {
   return {
     id: randomUUID(),

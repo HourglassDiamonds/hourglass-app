@@ -33,7 +33,7 @@ describe("Client Memory note writer security", () => {
     assert.doesNotMatch(readIndex, /write\//);
     assert.deepEqual(
       [...CLIENT_MEMORY_READER_METHODS].sort(),
-      ["getPersonProfile", "listOpenIdentityReviews", "searchPeople"].sort(),
+      ["getPersonProfile", "listCurrentBirthdaysByMonth", "listOpenIdentityReviews", "searchPeople"].sort(),
     );
   });
 

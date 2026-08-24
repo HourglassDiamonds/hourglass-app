@@ -1,6 +1,8 @@
 import Link from "next/link";
 import {
   conciergeAddNotePath,
+  conciergeBirthdayPath,
+  currentBirthdayFact,
   memoryReviewLabel,
   relationshipLabel,
   visibleCurrentFacts,
@@ -15,11 +17,14 @@ import { ClientRecentNotes } from "./client-recent-notes";
 export function ClientProfileView({
   profile,
   justSaved = false,
+  justSavedBirthday = false,
 }: {
   profile: ConciergePersonProfile;
   justSaved?: boolean;
+  justSavedBirthday?: boolean;
 }) {
   const facts = visibleCurrentFacts(profile.facts.current);
+  const birthday = currentBirthdayFact(profile.facts.current);
   const memoryReview = memoryReviewLabel(
     profile.facts.candidateCount,
     profile.facts.conflictingCount,
@@ -43,13 +48,24 @@ export function ClientProfileView({
           Note saved.
         </p>
       ) : null}
+      {justSavedBirthday ? (
+        <p className="mt-6 text-[13px] tracking-[0.04em] text-[#c4b7aa]" role="status">
+          Birthday saved.
+        </p>
+      ) : null}
 
-      <div className="mt-6">
+      <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-2">
         <Link
           href={conciergeAddNotePath(profile.person.id)}
           className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.24em] text-[#8d8073] outline-none hover:text-[#efe8de] focus-visible:text-[#efe8de] focus-visible:shadow-[0_0_0_3px_rgba(173,145,100,0.22)]"
         >
           Add Note
+        </Link>
+        <Link
+          href={conciergeBirthdayPath(profile.person.id)}
+          className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.24em] text-[#8d8073] outline-none hover:text-[#efe8de] focus-visible:text-[#efe8de] focus-visible:shadow-[0_0_0_3px_rgba(173,145,100,0.22)]"
+        >
+          {birthday ? "Edit birthday" : "Add birthday"}
         </Link>
       </div>
 

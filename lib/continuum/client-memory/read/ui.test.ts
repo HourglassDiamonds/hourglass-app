@@ -55,6 +55,7 @@ describe("Concierge Client Memory UI", () => {
     );
     assert.match(html, /Ada Lovelace/);
     assert.match(html, /Add Note/);
+    assert.match(html, /Add birthday/);
     assert.doesNotMatch(html, /Ring size|On their radar|Projects|Recent notes/i);
     assert.doesNotMatch(html, /No facts|coming soon|placeholder/i);
     const saved = renderToStaticMarkup(
@@ -65,6 +66,43 @@ describe("Concierge Client Memory UI", () => {
     );
     assert.match(saved, /Note saved/);
     assert.doesNotMatch(saved, /Prefers morning|ada@example/);
+  });
+
+  it("displays a typed birthday without dumping JSON and offers Edit birthday", () => {
+    const person = personProfile({ displayName: "Sarah Miller" });
+    const composed = composePersonProfile(
+      {
+        ...emptyReadSnapshot(),
+        profiles: [person],
+        facts: [
+          fact({
+            personId: person.personId,
+            factType: "birthday",
+            status: "current",
+            value: { calendar: "gregorian", month: 11, day: 12, year: null },
+          }),
+        ],
+      },
+      person.personId,
+    );
+    assert.equal(composed.ok, true);
+    if (!composed.ok) return;
+    const html = renderToStaticMarkup(
+      createElement(ClientProfileView, { profile: composed.profile }),
+    );
+    assert.match(html, /Sarah Miller/);
+    assert.match(html, /Birthday/);
+    assert.match(html, /November 12/);
+    assert.match(html, /Edit birthday/);
+    assert.doesNotMatch(html, /Add birthday/);
+    assert.doesNotMatch(html, /"calendar"|gregorian/);
+    const saved = renderToStaticMarkup(
+      createElement(ClientProfileView, {
+        profile: composed.profile,
+        justSavedBirthday: true,
+      }),
+    );
+    assert.match(saved, /Birthday saved/);
   });
 
   it("renders projects, notes, review indicator, and omits client-project as a social row", () => {
@@ -245,7 +283,9 @@ describe("Concierge Client Memory UI", () => {
     const actions = readFileSync(join(CONCIERGE_DIR, "actions.ts"), "utf8");
     assert.match(actions, /getAuthenticatedClientMemoryReader/);
     assert.match(actions, /getAuthenticatedClientMemoryNoteWriter/);
+    assert.match(actions, /getAuthenticatedClientMemoryFactWriter/);
     assert.match(actions, /saved=1/);
+    assert.match(actions, /saved=birthday/);
     assert.doesNotMatch(actions, /from\("continuum_/);
     assert.doesNotMatch(actions, /noteText=/);
     const addNote = readFileSync(
@@ -270,6 +310,22 @@ describe("Concierge Client Memory UI", () => {
     assert.match(form, /htmlFor=\{noteId\}/);
     assert.doesNotMatch(form, /concierge-manual/);
     assert.doesNotMatch(form, /manual-note/);
+    const birthdayPage = readFileSync(
+      join(CONCIERGE_DIR, "client", "[personId]", "birthday", "page.tsx"),
+      "utf8",
+    );
+    assert.match(birthdayPage, /title:\s*"Birthday"/);
+    assert.match(birthdayPage, /AddBirthdayForm/);
+    assert.doesNotMatch(birthdayPage, /confidence|usagePermission|visibility/);
+    const birthdayForm = readFileSync(
+      join(CONCIERGE_DIR, "components", "add-birthday-form.tsx"),
+      "utf8",
+    );
+    assert.match(birthdayForm, /Save Birthday/);
+    assert.match(birthdayForm, /Adding birthday for/);
+    assert.match(birthdayForm, /Saving will replace the current birthday on record/);
+    assert.doesNotMatch(birthdayForm, /confidence|verification|visibility|usage permission|source_system/i);
+    assert.doesNotMatch(birthdayForm, /Add Fact|spouse|fiancé/i);
   });
 
   it("renders an honest command center without fake intelligence", () => {

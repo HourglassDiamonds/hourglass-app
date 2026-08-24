@@ -15,6 +15,8 @@ import type {
   RelationshipKind,
 } from "@/lib/continuum/client-memory/types";
 import { CLIENT_MEMORY_SOURCE_SYSTEM } from "@/lib/continuum/client-memory/types";
+import { formatBirthday, parseBirthdayValue } from "@/lib/continuum/client-memory/facts/date";
+import { PERSON_FACT_TYPE_BIRTHDAY } from "@/lib/continuum/client-memory/facts/types";
 
 export const CONCIERGE_HOME_PATH = "/executive-dashboard/concierge";
 
@@ -24,6 +26,10 @@ export function conciergeClientPath(personId: string): string {
 
 export function conciergeAddNotePath(personId: string): string {
   return `${conciergeClientPath(personId)}/note/new`;
+}
+
+export function conciergeBirthdayPath(personId: string): string {
+  return `${conciergeClientPath(personId)}/birthday`;
 }
 
 export function conciergeAddNotePickerPath(): string {
@@ -80,6 +86,10 @@ export function formatFactLabel(factType: string): string {
 }
 
 export function formatFactValue(fact: PersonFact): string | null {
+  if (fact.factType === PERSON_FACT_TYPE_BIRTHDAY) {
+    const parsed = parseBirthdayValue(fact.value);
+    if (parsed.ok) return formatBirthday(parsed.value);
+  }
   const value = fact.value;
   if (typeof value === "string") {
     const trimmed = value.trim();
@@ -92,6 +102,15 @@ export function formatFactValue(fact: PersonFact): string | null {
     return value ? "Yes" : "No";
   }
   return null;
+}
+
+export function currentBirthdayFact(facts: PersonFact[]): PersonFact | null {
+  return (
+    facts.find(
+      (fact) =>
+        fact.factType === PERSON_FACT_TYPE_BIRTHDAY && fact.status === "current",
+    ) ?? null
+  );
 }
 
 export function visibleCurrentFacts(facts: PersonFact[]): Array<{

@@ -10,6 +10,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { getSupabaseAdmin } from "@/lib/supabase/client";
 import { composePersonProfile, listOpenReviewsForPerson } from "./profile";
 import { searchPeopleFromSnapshot } from "./search";
+import { isCalendarMonth, listCurrentBirthdaysByMonthFromRows } from "./birthdays";
 import type { ClientMemoryReader } from "./reader";
 import {
   CLIENT_MEMORY_NOTE_LIMIT,
@@ -29,6 +30,8 @@ import type {
   SourceNote,
   Wish,
 } from "../types";
+import type { BirthdayRead } from "../facts/types";
+import { PERSON_FACT_TYPE_BIRTHDAY } from "../facts/types";
 
 function requireClient(client: SupabaseClient | null): SupabaseClient {
   if (!client) throw new Error("supabase-admin-unavailable");
@@ -245,6 +248,35 @@ export class SupabaseClientMemoryReader implements ClientMemoryReader {
   async listOpenIdentityReviews(personId: string): Promise<IdentityReviewSummary[]> {
     const snapshot = await this.loadPersonSnapshot(personId);
     return listOpenReviewsForPerson(snapshot, personId);
+  }
+
+  async listCurrentBirthdaysByMonth(month: number): Promise<BirthdayRead[]> {
+    if (!isCalendarMonth(month)) return [];
+    const factRows = await rows<Record<string, unknown>>(
+      this.client
+        .from("continuum_person_facts")
+        .select(FACT_COLUMNS)
+        .eq("fact_type", PERSON_FACT_TYPE_BIRTHDAY)
+        .eq("status", "current")
+        .filter("value->>month", "eq", String(month)),
+      "read-birthdays-failed",
+    );
+    const facts = factRows.map(rowToFact);
+    const personIds = [...new Set(facts.map((row) => row.personId))];
+    const profileRows =
+      personIds.length > 0
+        ? await rows<Record<string, unknown>>(
+            this.client
+              .from("continuum_person_profiles")
+              .select("person_id, display_name")
+              .in("person_id", personIds),
+            "read-birthday-profiles-failed",
+          )
+        : [];
+    const namesByPersonId = new Map(
+      profileRows.map((row) => [String(row.person_id), String(row.display_name)]),
+    );
+    return listCurrentBirthdaysByMonthFromRows({ month, facts, namesByPersonId });
   }
 
   private async loadPersonSnapshot(personId: string): Promise<ClientMemoryReadSnapshot> {

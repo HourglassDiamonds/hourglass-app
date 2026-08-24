@@ -24,6 +24,7 @@ import {
   isVisibility,
   unionPersonRoles,
 } from "./contracts";
+import type { SetCurrentPersonFactResult } from "./facts/write";
 import { planProfileMerge, type ProtectedProfileField } from "./merge";
 import type {
   ClientMemoryEntity,
@@ -120,6 +121,7 @@ export type ClientMemoryStore = {
   ): Promise<PersonProfile | null>;
   insertPersonFact(fact: PersonFact): Promise<InsertResult<PersonFact>>;
   getPersonFact(id: string): Promise<PersonFact | null>;
+  setCurrentPersonFact(fact: PersonFact): Promise<SetCurrentPersonFactResult>;
   insertRelationship(
     row: EntityRelationship,
   ): Promise<InsertResult<EntityRelationship>>;
@@ -206,6 +208,7 @@ export class InMemoryClientMemoryStore implements ClientMemoryStore {
   private reviews = new Map<string, IdentityReview>();
   private reviewKeys = new Map<string, string>();
   failNextCreateAfter: "entity" | "profile" | "identity" | null = null;
+  failNextSetCurrentAfterSupersede = false;
 
   reset(): void {
     this.entities.clear();
@@ -225,6 +228,7 @@ export class InMemoryClientMemoryStore implements ClientMemoryStore {
     this.reviews.clear();
     this.reviewKeys.clear();
     this.failNextCreateAfter = null;
+    this.failNextSetCurrentAfterSupersede = false;
   }
 
   async insertEntity(input: {
@@ -339,6 +343,75 @@ export class InMemoryClientMemoryStore implements ClientMemoryStore {
   async getPersonFact(id: string): Promise<PersonFact | null> {
     const existing = this.facts.get(id);
     return existing ? clone(existing) : null;
+  }
+
+  listPersonFacts(): PersonFact[] {
+    return [...this.facts.values()].map((row) => clone(row));
+  }
+
+  async setCurrentPersonFact(
+    fact: PersonFact,
+  ): Promise<SetCurrentPersonFactResult> {
+    const entity = this.entities.get(fact.personId);
+    if (!entity || entity.kind !== "person") {
+      throw new Error("person-not-found");
+    }
+    assertFactValue(fact.value);
+    if (!isVisibility(fact.visibility)) throw new Error("invalid visibility");
+    if (!isUsagePermission(fact.usagePermission)) {
+      throw new Error("invalid usage permission");
+    }
+    if (!isFactApprovalStatus(fact.approvalStatus)) {
+      throw new Error("invalid fact approval status");
+    }
+
+    const existingById = this.facts.get(fact.id);
+    if (existingById) {
+      if (
+        existingById.personId !== fact.personId ||
+        existingById.factType !== fact.factType ||
+        JSON.stringify(existingById.value) !== JSON.stringify(fact.value)
+      ) {
+        throw new Error("fact-id-conflict");
+      }
+      return { status: "already-present", record: clone(existingById) };
+    }
+
+    const snapshot = this.snapshot();
+    try {
+      const key = currentFactKey(fact.personId, fact.factType);
+      const currentId = this.currentFacts.get(key);
+      const current = currentId ? this.facts.get(currentId) : null;
+      if (current && JSON.stringify(current.value) === JSON.stringify(fact.value)) {
+        return { status: "already-present", record: clone(current) };
+      }
+
+      let supersededId: string | null = null;
+      if (current) {
+        this.facts.set(current.id, { ...current, status: "superseded" });
+        this.currentFacts.delete(key);
+        supersededId = current.id;
+      }
+      if (this.failNextSetCurrentAfterSupersede) {
+        this.failNextSetCurrentAfterSupersede = false;
+        throw new Error("set-current-failed");
+      }
+
+      const next: PersonFact = {
+        ...fact,
+        status: "current",
+        supersedesId: supersededId,
+      };
+      const inserted = await this.insertPersonFact(next);
+      return {
+        status: "inserted",
+        record: inserted.record,
+        supersededId,
+      };
+    } catch (error) {
+      this.restore(snapshot);
+      throw error;
+    }
   }
 
   async insertRelationship(

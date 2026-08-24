@@ -5,6 +5,8 @@ import { getAuthenticatedClientMemoryReader } from "@/lib/continuum/client-memor
 import { conciergeClientPath } from "@/lib/continuum/client-memory/read/presentation";
 import type { ClientSearchResult } from "@/lib/continuum/client-memory/read/types";
 import { isRelationshipContextLayer } from "@/lib/continuum/client-memory/contracts";
+import { getAuthenticatedClientMemoryFactWriter } from "@/lib/continuum/client-memory/facts/load";
+import type { SetManualBirthdayResult } from "@/lib/continuum/client-memory/facts/write";
 import { getAuthenticatedClientMemoryNoteWriter } from "@/lib/continuum/client-memory/write/load";
 import type { AddManualNoteResult } from "@/lib/continuum/client-memory/write/types";
 
@@ -79,4 +81,65 @@ export async function saveManualConciergeNote(
   }
 
   return { ok: false, message: humanSaveMessage(result) };
+}
+
+export type SaveManualBirthdayState = {
+  ok: false;
+  message: string;
+};
+
+function humanBirthdayMessage(result: SetManualBirthdayResult): string {
+  if (result.ok) return "Unable to save the birthday.";
+  if (result.reason === "invalid-input" && result.code === "missing-month") {
+    return "Choose a month.";
+  }
+  if (result.reason === "invalid-input" && result.code === "invalid-month") {
+    return "Choose a month.";
+  }
+  if (result.reason === "invalid-input" && result.code === "invalid-day") {
+    return "That day isn't valid for the selected month.";
+  }
+  if (result.reason === "invalid-input" && result.code === "invalid-year") {
+    return "Enter a valid year, or leave year blank.";
+  }
+  if (result.reason === "person-not-found") {
+    return "This person could not be found.";
+  }
+  return "Unable to save the birthday.";
+}
+
+export async function saveManualBirthday(
+  _prev: SaveManualBirthdayState | null,
+  formData: FormData,
+): Promise<SaveManualBirthdayState> {
+  const auth = await getAuthenticatedClientMemoryFactWriter();
+  if (!auth.ok) {
+    return {
+      ok: false,
+      message:
+        auth.reason === "unauthorized"
+          ? "Sign in to continue."
+          : "Unable to save the birthday.",
+    };
+  }
+
+  const personId = String(formData.get("personId") ?? "").trim();
+  const submissionId = String(formData.get("submissionId") ?? "").trim();
+  const monthRaw = String(formData.get("month") ?? "").trim();
+  const dayRaw = String(formData.get("day") ?? "").trim();
+  const yearRaw = String(formData.get("year") ?? "").trim();
+
+  const result = await auth.writer.setManualBirthday({
+    personId,
+    submissionId,
+    month: monthRaw,
+    day: dayRaw || null,
+    year: yearRaw || null,
+  });
+
+  if (result.ok) {
+    redirect(`${conciergeClientPath(personId)}?saved=birthday`);
+  }
+
+  return { ok: false, message: humanBirthdayMessage(result) };
 }

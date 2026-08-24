@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 import {
   conciergeAddNotePath,
   conciergeAddNotePickerPath,
+  conciergeBirthdayPath,
   formatFactValue,
   formatLocation,
   historyFields,
@@ -67,6 +68,14 @@ describe("Concierge presentation", () => {
     };
     assert.equal(formatFactValue(current), "6.25");
     assert.equal(formatFactValue({ ...current, value: { nested: true } }), null);
+    assert.equal(
+      formatFactValue({
+        ...current,
+        factType: "birthday",
+        value: { calendar: "gregorian", month: 11, day: 12, year: null },
+      }),
+      "November 12",
+    );
   });
 
   it("labels imported notes conservatively", () => {
@@ -145,6 +154,10 @@ describe("Concierge presentation", () => {
     assert.equal(
       conciergeAddNotePath("eb2802bd-e312-471e-8582-8dbd5ad2e04b"),
       "/executive-dashboard/concierge/client/eb2802bd-e312-471e-8582-8dbd5ad2e04b/note/new",
+    );
+    assert.equal(
+      conciergeBirthdayPath("eb2802bd-e312-471e-8582-8dbd5ad2e04b"),
+      "/executive-dashboard/concierge/client/eb2802bd-e312-471e-8582-8dbd5ad2e04b/birthday",
     );
     assert.notEqual(
       conciergeAddNotePickerPath(),

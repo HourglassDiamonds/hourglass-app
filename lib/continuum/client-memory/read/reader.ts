@@ -4,6 +4,7 @@
 
 import { listOpenReviewsForPerson, composePersonProfile } from "./profile";
 import { searchPeopleFromSnapshot } from "./search";
+import { isCalendarMonth, listCurrentBirthdaysByMonthFromRows } from "./birthdays";
 import {
   CLIENT_MEMORY_SEARCH_LIMIT,
   type ClientMemoryReadSnapshot,
@@ -11,6 +12,7 @@ import {
   type ConciergePersonProfileResult,
   type IdentityReviewSummary,
 } from "./types";
+import type { BirthdayRead } from "../facts/types";
 
 export type ClientMemoryReader = {
   searchPeople(
@@ -19,6 +21,7 @@ export type ClientMemoryReader = {
   ): Promise<ClientSearchResult[]>;
   getPersonProfile(personId: string): Promise<ConciergePersonProfileResult>;
   listOpenIdentityReviews(personId: string): Promise<IdentityReviewSummary[]>;
+  listCurrentBirthdaysByMonth(month: number): Promise<BirthdayRead[]>;
 };
 
 export class InMemoryClientMemoryReader implements ClientMemoryReader {
@@ -42,6 +45,18 @@ export class InMemoryClientMemoryReader implements ClientMemoryReader {
   async listOpenIdentityReviews(personId: string): Promise<IdentityReviewSummary[]> {
     return listOpenReviewsForPerson(this.snapshot, personId);
   }
+
+  async listCurrentBirthdaysByMonth(month: number): Promise<BirthdayRead[]> {
+    if (!isCalendarMonth(month)) return [];
+    const namesByPersonId = new Map(
+      this.snapshot.profiles.map((row) => [row.personId, row.displayName]),
+    );
+    return listCurrentBirthdaysByMonthFromRows({
+      month,
+      facts: this.snapshot.facts,
+      namesByPersonId,
+    });
+  }
 }
 
 export function createInMemoryClientMemoryReader(
@@ -54,4 +69,5 @@ export const CLIENT_MEMORY_READER_METHODS = [
   "searchPeople",
   "getPersonProfile",
   "listOpenIdentityReviews",
+  "listCurrentBirthdaysByMonth",
 ] as const satisfies readonly (keyof ClientMemoryReader)[];

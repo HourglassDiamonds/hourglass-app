@@ -78,6 +78,7 @@ export default async function ConciergeClientPage({
         <ClientProfileView
           profile={result.profile}
           justSaved={query.saved === "1"}
+          justSavedBirthday={query.saved === "birthday"}
         />
       </div>
     </ConciergeShell>

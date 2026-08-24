@@ -15,6 +15,7 @@ import type {
   IdentityKind,
 } from "../../contracts/types";
 import { assertFactValue, assertPersonRoles, isRelationshipContextLayer } from "../contracts";
+import type { SetCurrentPersonFactResult } from "../facts/write";
 import { planProfileMerge } from "../merge";
 import type {
   ApplyExistingPersonInput,
@@ -257,6 +258,38 @@ export class SupabaseClientMemoryStore implements ClientMemoryStore {
       createdAt: String(data.created_at),
       createdBy: String(data.created_by),
     };
+  }
+
+  async setCurrentPersonFact(
+    fact: PersonFact,
+  ): Promise<SetCurrentPersonFactResult> {
+    assertFactValue(fact.value);
+    const { data, error } = await this.client.rpc(
+      "continuum_client_memory_set_current_person_fact",
+      {
+        p_fact_id: fact.id,
+        p_person_id: fact.personId,
+        p_fact_type: fact.factType,
+        p_value: fact.value,
+        p_confidence: fact.confidence,
+        p_verification: fact.verification,
+        p_approval_status: fact.approvalStatus,
+        p_visibility: fact.visibility,
+        p_usage_permission: fact.usagePermission,
+        p_valid_from: fact.validFrom,
+        p_valid_until: fact.validUntil,
+        p_source_system: fact.sourceSystem,
+        p_created_at: fact.createdAt,
+        p_created_by: fact.createdBy,
+      },
+    );
+    if (error) {
+      const message = error.message ?? "";
+      if (message.includes("person-not-found")) throw new Error("person-not-found");
+      if (message.includes("fact-id-conflict")) throw new Error("fact-id-conflict");
+      throwQuery(error, "set-current-fact-failed");
+    }
+    return rpcToSetCurrentResult(data, fact);
   }
 
   async insertRelationship(
@@ -707,6 +740,49 @@ export function createSupabaseClientMemoryStore(
   return new SupabaseClientMemoryStore(
     requireClient(client === undefined ? getSupabaseAdmin() : client),
   );
+}
+
+function persistRowToFact(row: Record<string, unknown>): PersonFact {
+  return {
+    id: String(row.id),
+    personId: String(row.person_id),
+    factType: String(row.fact_type),
+    value: row.value as PersonFact["value"],
+    confidence: Number(row.confidence),
+    verification: row.verification == null ? null : String(row.verification),
+    approvalStatus: row.approval_status as PersonFact["approvalStatus"],
+    status: row.status as PersonFact["status"],
+    visibility: row.visibility as PersonFact["visibility"],
+    usagePermission: row.usage_permission as PersonFact["usagePermission"],
+    validFrom: row.valid_from == null ? null : String(row.valid_from),
+    validUntil: row.valid_until == null ? null : String(row.valid_until),
+    supersedesId: row.supersedes_id == null ? null : String(row.supersedes_id),
+    sourceSystem: row.source_system as PersonFact["sourceSystem"],
+    createdAt: String(row.created_at),
+    createdBy: String(row.created_by),
+  };
+}
+
+function rpcToSetCurrentResult(
+  data: unknown,
+  fallback: PersonFact,
+): SetCurrentPersonFactResult {
+  const payload =
+    data && typeof data === "object" ? (data as Record<string, unknown>) : null;
+  const status =
+    payload && typeof payload.status === "string" ? payload.status : "inserted";
+  const factRow =
+    payload && payload.fact && typeof payload.fact === "object"
+      ? persistRowToFact(payload.fact as Record<string, unknown>)
+      : fallback;
+  if (status === "already-present") {
+    return { status: "already-present", record: factRow };
+  }
+  return {
+    status: "inserted",
+    record: factRow,
+    supersededId: factRow.supersedesId,
+  };
 }
 
 function persistRowToNote(row: Record<string, unknown>): SourceNote {
