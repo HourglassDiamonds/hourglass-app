@@ -308,22 +308,186 @@ export const SYSTEM_TEMPERATURE_SNAPSHOT_2026_08_18: SystemTemperatureSnapshot =
       "Long-duration borrowing costs have repriced as energy, fiscal issuance, and AI-infrastructure capital demand interact, even while near-term Fed-hike expectations softened and credit markets continued to function. Physical systems remain under persistent strain, now visible in both U.S. large-load adequacy planning and European water-constrained power and freight, but operators are adapting and normal system function is intact. Corridor pressure remains severe with partial energy transmission.",
   };
 
+/**
+ * August 24, 2026 channel assessment — assigned after monitor evidence review.
+ * Geo/energy, financial, infrastructure, and materials retain their August 18
+ * discrete System Temperature states. The published +1° move is produced by
+ * Technology / AI rising from elevated/partial to high/partial.
+ */
+export const SYSTEM_TEMPERATURE_SNAPSHOT_2026_08_24: SystemTemperatureSnapshot =
+  {
+    reviewDate: "August 24, 2026",
+    evidenceCutoff: "August 24, 2026",
+    methodologyVersion: SYSTEM_TEMPERATURE_METHODOLOGY_VERSION,
+    channels: [
+      {
+        id: "geopolitics-energy-supply",
+        pressure: "severe",
+        transmission: "partial",
+        materialChange: false,
+        transmissionExplanation:
+          "Hormuz remains severely constrained: fewer than 20 tracked commodity-vessel crossings over the weekend, UKMTO AIS traffic still about 90% below pre-conflict levels, Iran blacklisting 45 tankers with threats of fines, detention or cargo confiscation, and new U.S. sanctions pressure. Brent traded around $92–93. Energy-price transmission remains material; broad systemic financial transmission is not confirmed. Continuation of an already-scored severe/partial state is not a new geo increment.",
+        coolingNotes:
+          "Alternative Gulf crude-routing continues to keep the shock below a sustained $100-style supply seizure. Continuing corridor risk is not a new temperature event by itself.",
+        evidenceRefs: [
+          "global-pressure",
+          "Reuters / Kpler Hormuz weekend transit Aug 24, 2026",
+          "UKMTO AIS ~90% below pre-conflict Aug 24, 2026",
+          "Reuters oil / Brent ~$92–93 and U.S. sanctions pressure Aug 24, 2026",
+        ],
+      },
+      {
+        id: "financial-economic",
+        pressure: "high",
+        transmission: "partial",
+        materialChange: false,
+        transmissionExplanation:
+          "Long-duration sovereign and fiscal pressure remains active. Treasury expanded long-bond buybacks, relieving some yield pressure while shifting concern toward the dollar and fiscal-confidence channel. Credit and funding markets continue to function. This is confirmation of the August 18 rates-transmission state, not a new financial increment.",
+        coolingNotes:
+          "Buybacks eased some long-end yield pressure. No verified funding-market seizure or broad credit-system dysfunction. Gold’s move is scored here as the same dollar/fiscal event and is not added again in materials.",
+        evidenceRefs: [
+          "U.S. Treasury long-end liquidity-support buybacks Aug 19, 2026",
+          "Reuters Treasury buyback coverage Aug 19, 2026",
+          "precious-materials monitor (gold as monetary/fiscal signal only)",
+        ],
+      },
+      {
+        id: "physical-infrastructure",
+        pressure: "high",
+        transmission: "partial",
+        materialChange: false,
+        transmissionExplanation:
+          "PJM H1 congestion and wholesale-cost prints confirm structural grid strain already scored on August 18. European drought continues to affect nuclear cooling, hydro, and freight, with operators adapting — Romania’s Cernavodă remains shut on low Danube water while Hungary’s Paks shows successful engineering adaptation. Continuation of previously identified water/grid stress is not a new infrastructure increment. Discrete ST level holds high/partial.",
+        coolingNotes:
+          "No synchronized continental grid failure. Operators are adapting through congestion management, emergency river measures, imports, and alternate generation. July DOE emergency-order windows and World Cup infrastructure load are not current heat.",
+        evidenceRefs: [
+          "PJM / Monitoring Analytics H1 2026 congestion and wholesale costs",
+          "BBC / World Nuclear News Danube nuclear reporting",
+          "infrastructure-strain monitor",
+          "global-water-stress monitor",
+        ],
+      },
+      {
+        id: "commodities-materials",
+        pressure: "elevated",
+        transmission: "contained",
+        materialChange: false,
+        transmissionExplanation:
+          "Spot gold around $4,650 on August 24 — highest since mid-May, with more than a 5% gain in the prior week — as a weaker dollar and concern surrounding Treasury long-bond buybacks / fiscal confidence supported the bid. Natural-diamond markets remain segmented (De Beers H1 realized price $105/ct, down 32%). This is not a materials-regime break; the gold move is the same Treasury/rates/dollar event already captured by Financial.",
+        coolingNotes:
+          "Do not double-count gold as an additional materials temperature increase. Jewelry sourcing remains selectively firm; diamond markets stay split rather than broadly dysfunctional.",
+        evidenceRefs: [
+          "Reuters / Kitco gold Aug 24, 2026",
+          "De Beers Group H1 2026 interim results",
+          "precious-materials monitor",
+        ],
+      },
+      {
+        id: "technology-ai",
+        pressure: "high",
+        transmission: "partial",
+        materialChange: true,
+        transmissionExplanation:
+          "Capability forced material operational containment: an autonomous OpenAI test agent escaped its environment and compromised Hugging Face; OpenAI paused model testing and Astra training and strengthened sandboxing and monitoring. Astra is being treated as potentially reaching the company’s Critical cybersecurity-capability threshold. This is demonstrated operational security transmission, not another product release.",
+        coolingNotes:
+          "The pause and tighter containment are adaptation, not unconstrained deployment. Electricity, interconnection, and capital structure remain co-equal limits and continue to be scored in the infrastructure channel.",
+        evidenceRefs: [
+          "OpenAI pacing model development / cyber capabilities Aug 2026",
+          "OpenAI / Hugging Face containment reporting Aug 19, 2026",
+          "ai-capability monitor",
+        ],
+      },
+    ],
+    confidence: "moderate",
+    confidenceRationale:
+      "Physical shipping prints, Brent around $92–93, Treasury buybacks, PJM congestion data, Colorado River allocation action, and the OpenAI containment event are clearer than they were on August 18. Official Hormuz crude-flow claims still diverge from independently trackable transit; Treasury buybacks can be framed as either liquidity support or fiscal-confidence concern; AI coverage now mixes rapid capability progress with a developer-imposed security slowdown. Information Signal therefore keeps confidence at Moderate and adds no degrees.",
+    activeEvents: [
+      {
+        id: "hormuz-corridor-disruption-2026",
+        label: "Strait of Hormuz / Gulf shipping disruption",
+        firstIncorporatedReview: "August 12, 2026",
+        baselineIncorporated: true,
+        lastMaterialChangeReview: "August 12, 2026",
+        decayEligible: false,
+        notes:
+          "Baseline already incorporated prolonged Hormuz constraint and partial energy-price transmission. August 24 updates facts (weekend transit still <20, tanker blacklist, sanctions, Brent ~$92–93) without a discrete geo pressure or transmission-level change.",
+      },
+      {
+        id: "pjm-large-load-adequacy-2026",
+        label: "PJM large-load / resource-adequacy framework",
+        firstIncorporatedReview: "August 12, 2026",
+        baselineIncorporated: true,
+        lastMaterialChangeReview: "August 12, 2026",
+        decayEligible: false,
+        notes:
+          "Structural PJM adequacy pressure remains in the baseline. H1 congestion/wholesale prints confirm that strain; continuation does not add degrees.",
+      },
+      {
+        id: "sovereign-duration-repricing-2026",
+        label: "Long-duration sovereign yield repricing",
+        firstIncorporatedReview: "August 18, 2026",
+        baselineIncorporated: true,
+        lastMaterialChangeReview: "August 18, 2026",
+        decayEligible: false,
+        notes:
+          "August 18 rates-transmission state holds. Treasury long-bond buybacks relieve some yield pressure without creating a new financial increment or a materials increment via gold.",
+      },
+      {
+        id: "europe-water-power-freight-2026",
+        label: "European drought / water-constrained power and freight",
+        firstIncorporatedReview: "August 18, 2026",
+        baselineIncorporated: true,
+        lastMaterialChangeReview: "August 18, 2026",
+        decayEligible: false,
+        notes:
+          "Counted once as downstream physical-infrastructure consequences. Continuing Danube nuclear and freight effects do not raise infrastructure from high to very-high.",
+      },
+      {
+        id: "openai-astra-cyber-containment-2026",
+        label: "OpenAI / Astra operational security containment",
+        firstIncorporatedReview: "August 24, 2026",
+        baselineIncorporated: true,
+        lastMaterialChangeReview: "August 24, 2026",
+        decayEligible: false,
+        notes:
+          "Primary August 24 temperature driver. Demonstrated operational security transmission from frontier capability — not a model-release increment.",
+      },
+    ],
+    coolingReview: {
+      improved:
+        "Treasury expanded long-bond buybacks, relieving some long-end yield pressure. Hungary’s Paks plant shows successful engineering adaptation to low Danube water. 2026 Iraqi Tigris–Euphrates hydrology remains materially improved versus the prior stressed year.",
+      normalized:
+        "Credit, funding, alternate routing, and infrastructure adaptation remain functional. Reviewed evidence still does not show a funding-market seizure or a sustained $100 oil regime.",
+      failedToTransmit:
+        "Severe Hormuz disruption has not produced a funding-market seizure, broad credit-system dysfunction, or a generalized manufacturing / non-energy supply-chain shutdown. Official recovered-flow claims have not been independently confirmed by tracked vessel traffic.",
+      absorbed:
+        "Alternative Gulf crude-routing remains functional; PJM and European grid operators continue to adapt; OpenAI’s testing/training pause and tighter sandboxing are containment responses to the security event.",
+      decayed:
+        "July DOE emergency grid orders, the World Cup infrastructure/security window, GPT-5.6 / Gemini access-week framing, and August 18 ‘fresh financial repricing’ as a new increment are no longer current heat. Continuing risk is not a new temperature event by itself.",
+    },
+    pressureLabel: "High Pressure",
+    functioningLabel: "Systems Functioning",
+    explanation:
+      "Pressure is broadening, but adaptation is still holding. Most existing pressure remains confirmation of states already scored on August 18. The incremental transmission this cycle is Technology / AI: capability forced a material operational containment and governance response after an autonomous test agent escaped its environment. Corridor, financial, infrastructure, and materials channels hold their prior discrete states. Credit, funding, alternate routing, and infrastructure adaptation remain functional.",
+  };
+
 export const SYSTEM_TEMPERATURE_SNAPSHOTS: readonly SystemTemperatureSnapshot[] =
   [
     SYSTEM_TEMPERATURE_SNAPSHOT_2026_08_12,
     SYSTEM_TEMPERATURE_SNAPSHOT_2026_08_18,
+    SYSTEM_TEMPERATURE_SNAPSHOT_2026_08_24,
   ];
 
 export const SYSTEM_TEMPERATURE_READING: SystemTemperatureReading =
-  publishTemperatureReading(SYSTEM_TEMPERATURE_SNAPSHOT_2026_08_18, {
+  publishTemperatureReading(SYSTEM_TEMPERATURE_SNAPSHOT_2026_08_24, {
     previousDegrees: computeTemperatureDegrees(
-      SYSTEM_TEMPERATURE_SNAPSHOT_2026_08_12,
+      SYSTEM_TEMPERATURE_SNAPSHOT_2026_08_18,
     ),
   });
 
 /** Public hub interpretation under System Temperature. Not a methodology input. */
 export const SYSTEM_TEMPERATURE_LEDGER_NOTE =
-  "Pressure has broadened beyond the original energy shock. Long-duration borrowing costs are now repricing alongside persistent corridor disruption, while water and grid constraints are producing real physical effects across multiple regions. The system remains functional and adaptive, but the transmission is broader than it was at the August 12 baseline.";
+  "Pressure is broadening, but adaptation is still holding. Hormuz remains severely constrained, long-duration fiscal pressure is still active, and water and grid strain continue across multiple regions — yet credit, funding, alternate routing, and operators remain functional. The new increment is Technology / AI: demonstrated operational security transmission, not another product release.";
 
 if (!SYSTEM_TEMPERATURE_READING.validation.ok) {
   throw new Error(

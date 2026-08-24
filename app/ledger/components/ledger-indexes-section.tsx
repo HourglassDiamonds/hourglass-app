@@ -2,7 +2,7 @@ import Link from "next/link";
 import { LEDGER_HUB_INDEXES } from "../ledger-data";
 
 const HUB_METHOD_NOTICE =
-  "Composite numerical scoring is paused. Current readings use qualitative states, direction, documented evidence and defined change triggers.";
+  "Individual monitors are qualitative. They use states, direction, documented evidence, and defined change triggers. System Temperature, published on the Ledger hub, is the only composite numerical reading.";
 
 function hubCardKind(id: string): string {
   if (id === "information-signal") return "Map";

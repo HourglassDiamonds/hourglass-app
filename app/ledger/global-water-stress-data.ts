@@ -23,13 +23,13 @@ export const GWS_INTRO =
 export const GWS_CURRENT_STATE = "High water stress / Multi-system transmission";
 
 export const GWS_CURRENT_DIRECTION =
-  "Worsening globally / highly uneven regionally";
+  "Worsening / Policy transmission broadening";
 
 export const GWS_SUMMARY =
-  "Water stress is high and transmitting into multiple systems, but the map is highly uneven. European rivers are producing real power, freight, agricultural, and municipal effects this season. The Colorado River remains a long-running structural stress, not a new weekly shock. The Tigris–Euphrates system is materially improved after winter precipitation and higher Iraqi reserves, while remaining structurally vulnerable to upstream dependence. Gulf desalination is a strategic vulnerability in a war setting — not a current regional drinking-water collapse. India is watch / elevated seasonal risk; rainfall forecasts are not confirmed system failure.";
+  "Water stress is high and transmitting into multiple systems, but the map is highly uneven. Europe retains high seasonal stress with confirmed power, freight, and agricultural transmission. Colorado River conditions are now a material change since August 18: federal 2027–2028 Lower Basin allocation reductions of about 1.25 million acre-feet a year, with potential for deeper later cuts; Lake Powell and Lake Mead at record-low conditions; Powell approaching the minimum elevation needed for Glen Canyon Dam hydropower. The Tigris–Euphrates system remains materially improved and structurally vulnerable. Gulf desalination is a strategic vulnerability, not a current regional drinking-water collapse. India is watch / elevated seasonal risk. Water remains qualitative and receives no System Temperature weight.";
 
 export const GWS_WEEKLY_SIGNAL =
-  "Europe is carrying the clearest near-term water stress, with low river levels affecting power generation, freight and agriculture. Conditions across the Tigris–Euphrates system have improved materially in 2026, though upstream dependence remains a structural vulnerability. The Colorado River remains under long-term stress, but current conditions do not represent a new weekly deterioration.";
+  "Colorado River allocation policy is the material change since August 18. Europe continues to carry high seasonal stress with confirmed power/freight/agricultural transmission. Tigris–Euphrates remains a hydrologic improvement inside structural vulnerability. Water is an evidence layer, not a sixth temperature weight.";
 
 export const GWS_CATEGORIES = [
   {
@@ -74,10 +74,10 @@ export const GWS_REGIONS = [
   },
   {
     name: "Colorado River",
-    level: "Severe structural stress",
-    direction: "Long-running",
+    level: "Severe structural stress / Confirmed allocation response",
+    direction: "Worsening / policy transmission",
     transmission: "Water / hydropower / allocations",
-    body: "Persistent structural drought and allocation pressure continue. Current conditions extend the long-running basin stress rather than a new weekly deterioration.",
+    body: "Federal 2027–2028 Lower Basin allocation reductions of about 1.25 million acre-feet a year, with potential for materially deeper later cuts. Lake Powell and Lake Mead are at record-low conditions, and Powell is approaching the minimum elevation needed for Glen Canyon Dam hydropower operation. This is confirmed allocation-policy transmission, not merely continuation of known drought.",
   },
   {
     name: "Tigris / Euphrates",
@@ -116,8 +116,8 @@ export const GWS_WHAT_WATCHING = [
     body: "Whether the 2026 hydrologic improvement holds through the dry season, distinct from unchanged upstream dependence.",
   },
   {
-    title: "Colorado allocation actions",
-    body: "Whether structural basin stress produces a material new policy or hydropower event, rather than continuation of the known drought.",
+    title: "Colorado allocation follow-through",
+    body: "Whether 2027–2028 Lower Basin cuts of about 1.25 million acre-feet a year hold, deepen later, or are accompanied by hydropower constraint at Glen Canyon.",
   },
   {
     title: "India monsoon realization",
@@ -135,9 +135,9 @@ export const GWS_SERIES: LedgerMonitorSeries = {
   snapshots: [
     {
       reviewDate: "August 18, 2026",
-      evidenceCutoff: LEDGER_EVIDENCE_CUTOFF,
-      currentState: GWS_CURRENT_STATE,
-      currentDirection: GWS_CURRENT_DIRECTION,
+      evidenceCutoff: "August 18, 2026",
+      currentState: "High water stress / Multi-system transmission",
+      currentDirection: "Worsening globally / highly uneven regionally",
       previousState: null,
       materialChangeSummary:
         "First published water monitor. High water stress with multi-system transmission, worsening globally and highly uneven regionally. Europe is the live seasonal deterioration; Colorado is long-running structural stress; Tigris–Euphrates is a material improvement inside continued structural vulnerability; Gulf desalination is strategic exposure rather than current collapse; India is watch / forecast, not confirmed failure.",
@@ -194,6 +194,51 @@ export const GWS_SERIES: LedgerMonitorSeries = {
           url: "https://mausam.imd.gov.in/Forecast/marquee_data/Press_release_2nd_stage_LRF_29_May_2026-Final.pdf",
           supports:
             "Official seasonal rainfall forecast of below-normal monsoon (90% of LPA ±4%) — India remains watch / forecast, not confirmed agricultural or municipal system failure",
+        },
+      ],
+    },
+    {
+      reviewDate: "August 24, 2026",
+      evidenceCutoff: LEDGER_EVIDENCE_CUTOFF,
+      currentState: GWS_CURRENT_STATE,
+      currentDirection: GWS_CURRENT_DIRECTION,
+      previousState: "High water stress / Multi-system transmission",
+      materialChangeSummary:
+        "Colorado River is now a material change since August 18: federal 2027–2028 Lower Basin allocation reductions of about 1.25 million acre-feet a year, with potential for deeper later cuts; Lake Powell and Lake Mead at record-low conditions; Powell approaching the minimum elevation needed for Glen Canyon Dam hydropower. Europe retains high seasonal stress with confirmed power/freight/agricultural transmission. Tigris/Euphrates remains materially improved / structurally vulnerable. Gulf desalination remains a strategic vulnerability, not a regional tap collapse. India remains watch/elevated seasonal risk. Water stays qualitative with no System Temperature weight.",
+      methodologyVersion: LEDGER_METHODOLOGY_VERSION,
+      sources: [
+        {
+          institution: "U.S. Department of the Interior",
+          title: "Interior Department Finalizes Plans for 2027-2028 Colorado River Operations",
+          date: "August 21, 2026 (reviewed August 24, 2026)",
+          url: "https://www.doi.gov/pressreleases/interior-department-finalizes-plans-2027-2028-colorado-river-operations",
+          supports:
+            "Federal 2027–2028 Lower Basin delivery reductions of 1.25 million acre-feet a year; Powell beginning the water year in the lower-elevation infrastructure-protection range",
+        },
+        {
+          institution: "U.S. Bureau of Reclamation",
+          title: "Colorado River Post-2026 Operations",
+          date: "August 21, 2026 Record of Decision (reviewed August 24, 2026)",
+          url: "https://www.usbr.gov/ColoradoRiverBasin/post2026/index.html",
+          supports:
+            "Record of Decision and 2027–2028 operating guidelines as confirmed allocation-policy transmission, not merely continuation of known drought",
+        },
+        {
+          institution: "AP News",
+          title: "Amid dire drought on the Colorado River, federal officials announce water cuts to three states",
+          date: "August 21, 2026 (reviewed August 24, 2026)",
+          url: "https://apnews.com/article/colorado-river-drought-water-cuts-dfb3a5deec3ecaeab0632dca7a10612e",
+          supports:
+            "Lake Mead and Lake Powell at record-low conditions; Lower Basin cuts with potential for deeper later reductions",
+        },
+        {
+          institution: "BBC News",
+          title:
+            "Romania shuts only nuclear plant as heat causes drop in Danube River level",
+          date: "August 13–14, 2026 (reviewed August 24, 2026)",
+          url: "https://www.bbc.com/news/articles/cqlxpq5q799o",
+          supports:
+            "European high seasonal water stress continuing to transmit into nuclear cooling, hydro, and Rhine freight; operators adapting",
         },
       ],
     },

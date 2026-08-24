@@ -50,20 +50,20 @@ export const PMI_CROSS_SYSTEM_BRIDGE =
   "Material markets remain connected to broader macro and reserve-asset conditions — but jewelry sourcing follows its own segmented logic beneath the geopolitical layer. Gold is not a simple war-to-price story this week.";
 
 export const PMI_CROSS_SYSTEM_PRESSURE = [
-  "Gold remains around the $4,400 area. Safe-haven demand stays strong and central-bank reserve demand remains structural, while higher long-duration yields are competing against that support. Jewelry demand remains price-sensitive.",
+  "Gold remains around $4,650 on August 24 — highest since mid-May, with more than a 5% gain in the prior week — as a weaker dollar and concern surrounding Treasury long-bond buybacks / fiscal confidence supported the bid. Jewelry demand remains price-sensitive. This is the same monetary/fiscal event already captured in the Financial System Temperature channel, not a separate materials increment.",
   "World Gold Council Q2 2026 data show official-sector purchases of 289t, supporting the structural reserve-demand read beneath near-term price action.",
-  "Natural-diamond markets are segmented: higher-value / better goods remain relatively firmer, commercial / lower-value goods stay price-sensitive, and supply discipline continues to shape producer economics and rough / polished dynamics. This is not a generic scarcity story.",
+  "Natural-diamond markets remain segmented rather than broadly recovered or collapsed. De Beers H1 realized price was $105/ct, down 32%. Larger/higher-quality natural goods were comparatively resilient; smaller/lower-value natural goods remain pressured by synthetic lab-grown competition. Global finished diamond jewelry sales were broadly stable year-on-year, with better U.S. independent-jeweler signals and continued mainland-China weakness.",
   "Lab-grown continues to track wholesale compression, commodity economics, manufacturing scale, adoption, and retailer margin structure.",
 ] as const;
 
 export const PMI_WHAT_MOVED = [
   "No materials-regime change this week — strategically firm and highly segmented remains the posture.",
-  "Gold around ~$4,400 reflects interacting safe-haven and official-sector support against higher long-duration yields, not a monocausal war bid.",
+  "Gold around ~$4,650 reflects weaker-dollar and fiscal-confidence sensitivity around Treasury long-bond buybacks, not a monocausal war bid. Do not double-count this as a materials System Temperature increment.",
   "Natural diamonds should be read as segmented (premium versus commercial, supply discipline, producer economics) rather than as broadly scarce.",
 ] as const;
 
 export const PMI_WHAT_TO_WATCH = [
-  "Whether gold holds around the $4,400 area as long-duration yields compete with safe-haven and official-sector demand.",
+  "Whether gold holds around the $4,650 area as dollar and fiscal-confidence signals compete with official-sector demand.",
   "Whether official-sector accumulation remains a multi-quarter support after the strong Q2 rebound.",
   "Whether higher-value natural goods continue to diverge from commercial / lower-value ranges.",
   "Producer economics, supply discipline, and rough / polished dynamics — not a generic scarcity headline.",
@@ -145,7 +145,7 @@ export const PMI_SERIES: LedgerMonitorSeries = {
     },
     {
       reviewDate: "August 18, 2026",
-      evidenceCutoff: LEDGER_EVIDENCE_CUTOFF,
+      evidenceCutoff: "August 18, 2026",
       currentState: "Strategically firm / Highly segmented",
       currentDirection: "Highly segmented",
       previousState: "Strategically firm",
@@ -176,6 +176,43 @@ export const PMI_SERIES: LedgerMonitorSeries = {
           url: "https://www.debeersgroup.com/news-insights/latest-group-news/2026/interim-financial-results-for-2026",
           supports:
             "Producer economics and sales-mix toward lower-value goods; segmented natural market rather than generic scarcity; smaller/lower-quality naturals under lab-grown price pressure, with synthetic retail prices continuing to fall",
+        },
+      ],
+    },
+    {
+      reviewDate: "August 24, 2026",
+      evidenceCutoff: LEDGER_EVIDENCE_CUTOFF,
+      currentState: "Strategically firm / Highly segmented",
+      currentDirection: "Highly segmented",
+      previousState: "Strategically firm / Highly segmented",
+      materialChangeSummary:
+        "No materials-regime change and no System Temperature materials increment. Spot gold around $4,650 on August 24 — highest since mid-May, with more than a 5% prior-week gain — as a weaker dollar and concern surrounding Treasury long-bond buybacks / fiscal confidence supported the bid. Gold state: monetary demand strengthening / fiscal-confidence sensitivity rising. De Beers H1 realized price $105/ct, down 32%; larger/higher-quality naturals comparatively resilient; smaller/lower-value goods pressured by lab-grown competition. The gold/Treasury/dollar event is already captured in Financial.",
+      methodologyVersion: LEDGER_METHODOLOGY_VERSION,
+      sources: [
+        {
+          institution: "Reuters",
+          title: "Gold rally gains momentum ahead of US inflation, Jackson Hole event",
+          date: "August 24, 2026",
+          url: "https://www.kitco.com/news/off-the-wire/2026-08-24/gold-rally-gains-momentum-ahead-us-inflation-jackson-hole-event",
+          supports:
+            "Spot gold in the mid-$4,600s on August 24, highest since mid-May, with a more-than-5% prior-week gain; weaker dollar and Treasury buyback/fiscal-confidence concern as material drivers",
+        },
+        {
+          institution: "U.S. Department of the Treasury",
+          title:
+            "Treasury Announces Increased Sizes of Nominal Long-End Liquidity Support Buybacks Beginning September 9",
+          date: "August 19, 2026 (reviewed August 24, 2026)",
+          url: "https://home.treasury.gov/news/press-releases/sb0607",
+          supports:
+            "Official long-end buyback expansion as a fiscal-confidence / dollar-channel driver of gold — already scored in Financial, not added again in Materials",
+        },
+        {
+          institution: "De Beers Group",
+          title: "Interim financial results for 2026",
+          date: "H1 2026 results (reviewed August 24, 2026)",
+          url: "https://www.debeersgroup.com/news-insights/latest-group-news/2026/interim-financial-results-for-2026",
+          supports:
+            "H1 realized price $105/ct, down 32%; segmented natural market with larger/higher-quality goods comparatively resilient and smaller/lower-value goods pressured by lab-grown competition",
         },
       ],
     },

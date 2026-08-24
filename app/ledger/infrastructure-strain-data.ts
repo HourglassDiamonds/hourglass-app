@@ -24,17 +24,17 @@ export const ISI_INTRO =
   "A weekly reading of the physical constraints beneath digital, economic, and industrial acceleration: power, transmission, transformers, data centers, water, skilled labor, semiconductors, and logistics. The purpose is not to predict failure. It is to track a capacity expansion race — where capital deploys quickly, buildout timing stays uneven, and flexibility narrows beneath functioning systems.";
 
 export const ISI_SUMMARY =
-  "Public infrastructure strain is now high and multi-regional, with active adaptation. PJM’s 6,831 MW 2028/29 adequacy shortfall, reliability backstop, and IRAS / large-load framework remain the U.S. planning constraint. European drought has produced confirmed hydro weakness, nuclear-cooling effects, and Rhine/Danube freight consequences. Power systems remain functioning: operators are adapting, imports and alternate generation are available where relevant, and river freight is constrained rather than universally stopped. There is no synchronized continental grid failure.";
+  "Public infrastructure strain remains high and multi-regional, with active adaptation. New PJM H1 evidence confirms structural grid strain: transmission congestion costs about $6B (+43%), real-time wholesale power cost about $29.4B versus $20.4B, average wholesale about $72.54/MWh versus $51.75, and 500-kV operating-limit incidents materially higher. Data-center and other large-load growth remains part of structural demand pressure. Romania's Cernavoda remains shut because of historically low Danube water, with emergency measures to raise river levels; Hungary's Paks shows successful engineering adaptation and planned recovery. July emergency-order and World Cup language are not live drivers. Systems function; there is no synchronized grid failure.";
 
 export const ISI_WEEKLY_SIGNAL =
-  "The live story is broader geographically and operationally than the August 12 PJM-centric picture. U.S. large-load adequacy planning and European water-constrained power and freight now sit together, with operators adapting and systems still functioning.";
+  "The live U.S. evidence is now H1 congestion and wholesale-cost confirmation of structural grid strain, not expired July emergency orders. In Europe, Cernavoda remains shut on low Danube water while Paks demonstrates engineering adaptation. The interpretation contains both strain and adaptation. Internal System Temperature infrastructure holds high / partial.";
 
 export const ISI_CATEGORIES = [
   {
     name: "Grid & Transmission",
     score: 87,
     state: "High",
-    body: "PJM’s 6,831 MW adequacy shortfall, reliability backstop, and IRAS / large-load planning remain binding. European operators are compensating through imports and alternate generation where available. Systems function; spare flexibility is narrower.",
+    body: "PJM H1 congestion costs about $6B (+43%) and wholesale power costs are materially higher, with 500-kV operating-limit incidents up sharply. Large-load growth remains a structural demand driver. European operators continue compensating through imports, alternate generation, and river engineering. Systems function; spare flexibility is narrower.",
   },
   {
     name: "Data-Center Load",
@@ -189,7 +189,7 @@ export const ISI_CALCULATION_TOTAL = {
 export const ISI_SOURCES = [
   {
     name: "Utility & Grid Reporting",
-    body: "PJM operations updates, Hot Weather and Maximum Generation alerts, DOE Order 202-26-35, FERC large-load rules, transmission queues, interconnection delays, and regional upgrade timelines.",
+    body: "PJM H1 congestion and wholesale-cost reporting, Monitoring Analytics State of the Market, FERC large-load rules, transmission queues, interconnection delays, and regional upgrade timelines. Expired July emergency-order windows are historical context, not current heat.",
   },
   {
     name: "Data-Center Reporting",
@@ -197,7 +197,7 @@ export const ISI_SOURCES = [
   },
   {
     name: "Event & Transit Reporting",
-    body: "World Cup transportation, security, weather response, crowd management, and host-city infrastructure capacity.",
+    body: "Danube nuclear-cooling and freight reporting, including Cernavoda shutdowns and Paks engineering adaptation. World Cup event-load language is no longer a live driver.",
   },
   {
     name: "Shipping & Energy Reporting",
@@ -268,7 +268,7 @@ export const ISI_SERIES: LedgerMonitorSeries = {
     },
     {
       reviewDate: "August 18, 2026",
-      evidenceCutoff: LEDGER_EVIDENCE_CUTOFF,
+      evidenceCutoff: "August 18, 2026",
       currentState: "High infrastructure strain / Active adaptation",
       currentDirection: "Multi-regional — systems functioning",
       previousState: "Elevated infrastructure strain",
@@ -319,6 +319,42 @@ export const ISI_SERIES: LedgerMonitorSeries = {
           url: "https://www.euronews.com/my-europe/2026/08/13/romania-shuts-off-second-reactor-at-cernavoda-npp-amid-low-water-levels-on-danube",
           supports:
             "Danube-linked nuclear and shipping effects; neighboring plants still operating with emergency measures — no synchronized continental grid failure",
+        },
+      ],
+    },
+    {
+      reviewDate: "August 24, 2026",
+      evidenceCutoff: LEDGER_EVIDENCE_CUTOFF,
+      currentState: "High infrastructure strain",
+      currentDirection: "Active adaptation / Multi-regional constraints",
+      previousState: "High infrastructure strain / Active adaptation",
+      materialChangeSummary:
+        "Public state remains high strain with active adaptation across multiple regions. New PJM H1 evidence confirms structural grid congestion and wholesale-cost pressure. Romania’s Cernavodă remains shut on historically low Danube water, with emergency river-level measures; Hungary’s Paks shows successful engineering adaptation. July emergency-order and World Cup language are no longer live drivers. Internal System Temperature infrastructure holds high / partial.",
+      methodologyVersion: LEDGER_METHODOLOGY_VERSION,
+      sources: [
+        {
+          institution: "Reuters / Monitoring Analytics",
+          title: "Largest US grid's transmission constraint costs surge to $6 billion in 2026",
+          date: "August 21, 2026 (reviewed August 24, 2026)",
+          url: "http://www.kitco.com/news/off-the-wire/2026-08-21/largest-us-grids-transmission-constraint-costs-surge-6-billion-2026",
+          supports:
+            "PJM H1 congestion costs about $6B, +43%; real-time wholesale cost about $29.4B vs $20.4B; average wholesale about $72.54/MWh vs $51.75; 500-kV operating-limit incidents materially higher",
+        },
+        {
+          institution: "World Nuclear News",
+          title: "Romanian plant taken offline as Hungary moves to keep Paks operating",
+          date: "August 2026 (reviewed August 24, 2026)",
+          url: "https://world-nuclear-news.org/articles/romanian-plant-taken-offline-as-hungary-moves-to-keep-paks-operating",
+          supports:
+            "Cernavodă remains offline on low Danube cooling water; Hungary taking engineering measures so Paks can continue operating — strain plus adaptation",
+        },
+        {
+          institution: "EU Today",
+          title: "Romania begins emergency river works to restore Cernavoda cooling supply",
+          date: "August 21, 2026 (reviewed August 24, 2026)",
+          url: "https://eutoday.net/romania-emergency-river-engineering-cernavoda-cooling/",
+          supports:
+            "Emergency measures to raise Danube levels for Cernavodă cooling; both reactors still shut as of the review window",
         },
       ],
     },

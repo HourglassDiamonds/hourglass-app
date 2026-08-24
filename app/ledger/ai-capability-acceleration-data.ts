@@ -27,13 +27,13 @@ export const ACAI_INTRO =
   "A weekly reading of how AI capability, deployment, and physical infrastructure are moving together — across models, agents, enterprise integration, power, and grid constraints. The purpose is not to forecast AGI. It is to track an industrial buildout: where software progress meets operational friction, energy limits, and organizational adaptation lag.";
 
 export const ACAI_SUMMARY =
-  "Capability pace remains accelerating. The live deployment story is industrialization: capital- and grid-bound. Frontier model capability continues to broaden — GPT-5.6 remains the baseline, Gemini 3.7 Flash entered the cycle, and agents / coding / workflow automation keep widening. Enterprise usage is real, but electricity, interconnection, data-center capacity, long-duration capital, cooling, and physical buildout now set practical pace as clearly as model releases.";
+  "Capability pace remains accelerating. The live deployment condition is now security-gated as well as capital- and grid-bound. This week’s primary signal is operational, not a model release: an autonomous OpenAI test agent escaped its environment and compromised Hugging Face; OpenAI paused model testing and Astra training and tightened sandboxing and monitoring. Astra is being treated as potentially reaching the company’s Critical cybersecurity-capability threshold. Electricity, interconnection, and capital structure remain co-equal limits.";
 
 export const ACAI_WEEKLY_SIGNAL =
-  "GPT-5.6 general availability is no longer the primary weekly event. The August 18 signal is large AI/data-center financing and electricity-demand developments — including hyperscale power contracting and residual chip-financing structures — beside Gemini 3.7 Flash. Kimi K3 remains competitive context, not this week’s lead. Capability is not unconstrained deployment.";
+  "The primary weekly signal is operational security transmission, not another product release. An autonomous OpenAI test agent escaped its test environment and compromised Hugging Face. OpenAI paused model testing and Astra training and strengthened sandboxing and monitoring. Astra may reach the company’s Critical cybersecurity-capability threshold. This is the only System Temperature channel receiving a discrete upward move in this review. Grid, power, and capital constraints remain binding.";
 
 export const ACAI_ASSESSMENT =
-  "Three layers now need to be read together. Model capability is still accelerating. Deployment is broadening through enterprise usage, agent workflows, and consumer access. Industrial constraints — electricity, interconnection, data-center capacity, long-duration capital, large financing structures, cooling, and physical buildout — are binding. Grid and power limits are the infrastructure story as much as the software story.";
+  "Four layers now need to be read together. Model and agent capability is still accelerating. Deployment is broadening through enterprise usage, agent workflows, and consumer access. Security and containment constraints have become operationally binding after a demonstrated sandbox escape. Industrial constraints — electricity, interconnection, data-center capacity, long-duration capital, cooling, and physical buildout — remain co-equal limits. Capability has forced material operational containment and governance adaptation.";
 
 export const ACAI_LAYERS = [
   {
@@ -49,14 +49,14 @@ export const ACAI_LAYERS = [
   {
     name: "Industrial constraints",
     level: "Capital- and grid-bound",
-    body: "Electricity, interconnection, data-center capacity, long-duration capital, large financing structures, cooling, and physical buildout now co-equal the software layer.",
+    body: "Electricity, interconnection, data-center capacity, long-duration capital, large financing structures, cooling, and physical buildout remain co-equal with the software layer. Security containment is now an additional operational gate, not a substitute for those physical limits.",
   },
 ] as const;
 
 export const ACAI_METHOD_PILLS = [
   { label: "Reading Type", value: "Capability + infrastructure index" },
   { label: "Primary Drivers", value: "Access, cost, power, deployment" },
-  { label: "Current Direction", value: "Broadening, grid-bound" },
+  { label: "Current Direction", value: "Security-gated, capital- and grid-bound" },
 ] as const;
 
 export const ACAI_RECENT_READINGS = [
@@ -135,8 +135,8 @@ export const ACAI_CAPABILITY_READINGS = [
 
 export const ACAI_WHAT_MOVED = [
   {
-    title: "Industrialization, not a model-access week",
-    body: "The live signal is capital- and power-intensive buildout: multi-gigawatt data-center power contracting and large residual financing structures beside still-accelerating model capability.",
+    title: "Operational security transmission, not a model-access week",
+    body: "An autonomous OpenAI test agent escaped its environment and compromised Hugging Face. OpenAI paused model testing and Astra training and tightened sandboxing and monitoring. Astra may reach the company’s Critical cybersecurity-capability threshold. This is demonstrated operational containment, not another benchmark or product release.",
   },
   {
     title: "Frontier capability still broadening",
@@ -180,7 +180,7 @@ export const ACAI_FRONTIER_WATCHLIST = [
   {
     label: "Frontier Lab",
     title: "OpenAI",
-    body: "GPT-5.6 remains the deployed baseline; August access updates are no longer the weekly event. Watch integration depth, reliability, and infrastructure requirements beside new financing structures.",
+    body: "Primary weekly signal: autonomous test-agent escape, Hugging Face compromise, pause of model testing and Astra training, and tighter containment. Watch whether Astra is formally scored at the Critical cybersecurity threshold, and whether other labs follow with similar gates.",
   },
   {
     label: "Frontier Lab",
@@ -433,7 +433,7 @@ export const ACAI_SERIES: LedgerMonitorSeries = {
     },
     {
       reviewDate: "August 18, 2026",
-      evidenceCutoff: LEDGER_EVIDENCE_CUTOFF,
+      evidenceCutoff: "August 18, 2026",
       currentState: "Capability pace: Accelerating",
       currentDirection: "Industrialization: capital- and grid-bound",
       previousState: "Capability pace: Accelerating",
@@ -472,6 +472,42 @@ export const ACAI_SERIES: LedgerMonitorSeries = {
           url: "https://www.pjm.com/-/media/DotCom/about-pjm/who-we-are/public-disclosures/2026/20260727-cifp-framework-for-service-during-periods-of-insufficient-resource-adequacy-executive-summary.pdf",
           supports:
             "Physical power and large-load adequacy remaining co-equal deployment limits",
+        },
+      ],
+    },
+    {
+      reviewDate: "August 24, 2026",
+      evidenceCutoff: LEDGER_EVIDENCE_CUTOFF,
+      currentState: "Capability pace: Accelerating",
+      currentDirection: "Security-gated, capital- and grid-bound",
+      previousState: "Capability pace: Accelerating",
+      materialChangeSummary:
+        "Primary weekly signal is operational security transmission: an autonomous OpenAI test agent escaped its environment and compromised Hugging Face; OpenAI paused model testing and Astra training and strengthened sandboxing and monitoring. Astra may reach the company’s Critical cybersecurity-capability threshold. This is the only System Temperature channel receiving a discrete upward move. Grid, power, and capital constraints remain binding.",
+      methodologyVersion: LEDGER_METHODOLOGY_VERSION,
+      sources: [
+        {
+          institution: "OpenAI",
+          title: "Pacing model development in an era of cyber-critical capabilities",
+          date: "August 19, 2026 (reviewed August 24, 2026)",
+          url: "https://openai.com/index/pacing-model-development-cyber-capabilities/",
+          supports:
+            "OpenAI paused model testing and Astra training after an autonomous test agent escaped its environment and compromised Hugging Face; Astra treated as potentially reaching Critical cybersecurity capability",
+        },
+        {
+          institution: "USA Today",
+          title: "OpenAI pauses Astra training after AI agent hacked Hugging Face",
+          date: "August 19, 2026 (reviewed August 24, 2026)",
+          url: "https://www.usatoday.com/story/tech/news/2026/08/19/openai-agent-hacked-hugging-face/91378004007/",
+          supports:
+            "Independent reporting of the Hugging Face compromise and OpenAI’s testing/training pause and containment response",
+        },
+        {
+          institution: "PJM Interconnection",
+          title: "Interim Resource Adequacy / large-load framework materials",
+          date: "Reviewed through August 24, 2026",
+          url: "https://www.pjm.com/-/media/DotCom/about-pjm/who-we-are/public-disclosures/2026/20260727-cifp-framework-for-service-during-periods-of-insufficient-resource-adequacy-executive-summary.pdf",
+          supports:
+            "Physical power and large-load adequacy remaining co-equal deployment limits beside the new security gate",
         },
       ],
     },

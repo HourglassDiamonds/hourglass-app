@@ -2,10 +2,11 @@
  * Hourglass Ledger — weekly index readings.
  * Update this file when publishing new weekly briefs.
  *
- * Global Pressure: public page is an interim qualitative monitor
+ * Global Pressure: public page is a qualitative monitor
  * (global-pressure-monitor-data.ts). Numerical category scores and weighted
  * calculation remain in global-pressure-index-data.ts for the archived meter
- * and methodology rebuild — they are not rendered publicly.
+ * — they are not rendered publicly. System Temperature on the hub is the
+ * only composite numerical reading.
  */
 
 import {
@@ -13,6 +14,7 @@ import {
   GPI_COMPUTED_READING,
   GPI_METHODOLOGY_SHORT,
 } from "./global-pressure-index-data";
+import { LEDGER_EVIDENCE_CUTOFF_LABEL } from "./ledger-monitor-framework";
 
 export {
   GPI_CALCULATION_ROWS,
@@ -112,7 +114,7 @@ export type LedgerIndexDefinition = {
   seriesAnnotation?: string;
 };
 
-export const LEDGER_UPDATED = "Evidence reviewed through August 18, 2026";
+export const LEDGER_UPDATED = LEDGER_EVIDENCE_CUTOFF_LABEL;
 
 const SCALE_GRADIENT_PRESSURE =
   "linear-gradient(90deg, #617f98 0%, #86a2b4 16%, #aaa99d 32%, #c6b384 50%, #bd8d55 66%, #985844 82%, #5f2d31 100%)";
@@ -142,40 +144,40 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     displayTitle: "Global Pressure Monitor",
     subnavLabel: "Global Pressure",
     hubDescription:
-      "Very high external pressure / Cross-system transmission emerging — energy disruption is beginning to transmit into broader financial conditions while systemic function remains intact.",
+      "Very high external pressure / Cross-system transmission emerging — energy transmission is material, while broad systemic financial transmission is not confirmed and adaptation still limits broader failure.",
     kicker: "The Ledger Intelligence System",
     intro:
-      "A qualitative monitor of external threat pressure and systemic transmission. Numerical index readings remain paused on this page.",
+      "A qualitative monitor of external threat pressure and systemic transmission. This page does not publish a numerical index.",
     updatedLabel: "",
     // Archived numerical series — still derived for rebuild work; not rendered publicly.
     reading: GPI_COMPUTED_READING,
     readingLabel: "Pressure Reading",
     status: "Very high external pressure / Cross-system transmission emerging",
     weeklyDelta: 0,
-    weeklyDeltaLabel: "Numerical series paused",
+    weeklyDeltaLabel: "Qualitative monitor",
     weeklyDeltaExplanation:
-      "Earlier numerical readings are archived and should not be interpreted as directly comparable. Numerical readings will return only after the revised model has been historically tested and documented.",
+      "This page is a qualitative monitor. Archived numerical GPI readings are not comparable to System Temperature and are not published here.",
     scaleLabels: ["Cold", "Stable", "Elevated", "Hot", "Critical"],
     scaleGradient: SCALE_GRADIENT_PRESSURE,
     summary:
-      "The negotiating window expired without scheduled talks. Hormuz remains extremely restricted, Brent has established a ~$90–91+ regime, and alternative routing continues to function. Energy-price effects are confirmed; credit markets continue to function. No broad non-energy supply-chain seizure is confirmed.",
+      "Hormuz remains severely constrained. Fewer than 20 tracked commodity-vessel crossings over the weekend, UKMTO AIS traffic still about 90% below pre-conflict levels, Iran blacklisting 45 tankers, and new U.S. sanctions pressure. Brent traded around $92–93 — above $92, but not a sustained $100 regime. Alternative routing, credit, and funding continue to function. Energy-price transmission is material; broad systemic financial transmission is not confirmed.",
     summaryLead: "Current state:",
     summaryEmphasis: "Very high external pressure / Cross-system transmission emerging",
     summaryCompact:
-      "Very high external pressure / Cross-system transmission emerging. Brent ~$90–91+; credit still functioning. Numerical readings paused.",
+      "Very high external pressure / Cross-system transmission emerging. Brent ~$92–93; credit still functioning.",
     weeklyNote:
-      "Threat pressure remains very high around Hormuz. Energy disruption is beginning to reach broader financial conditions, while systemic function remains intact.",
+      "Threat pressure remains very high around Hormuz. Energy transmission is material; broad systemic financial transmission is not confirmed. Adaptation still limits broader failure.",
     weeklyNoteCompact:
-      "Very high external pressure; cross-system transmission emerging; systems still functioning. Numerical series paused.",
+      "Very high external pressure; cross-system transmission emerging; systems still functioning.",
     methodPills: [
-      { label: "Monitor Type", value: "Interim qualitative status" },
+      { label: "Monitor Type", value: "Qualitative status" },
       {
         label: "Primary Drivers",
         value: "Hormuz transit, shipping attacks, energy premium",
       },
       {
         label: "Current Direction",
-        value: "Worsening — energy disruption beginning to reach financial conditions",
+        value: "Escalating corridor coercion / Adaptation still limiting broader failure",
       },
       {
         label: "Primary Offset",
@@ -204,7 +206,7 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     calibrationNote: GPI_CALIBRATION_NOTE,
     methodologyReference: GPI_METHODOLOGY_SHORT,
     seriesAnnotation:
-      "Earlier numerical readings are archived and should not be interpreted as directly comparable. Numerical readings will return only after the revised model has been historically tested and documented.",
+      "Earlier numerical GPI readings are archived and should not be interpreted as comparable to System Temperature. This page publishes qualitative status only.",
     watchingSectionTitle: "What We're Watching",
     editorialBlocks: [
       {
@@ -238,7 +240,7 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     displayTitle: "Information Signal Map",
     subnavLabel: "Information Map",
     hubDescription:
-      "High-attention / Uneven clarity — physical evidence is becoming clearer while strategic intent remains more uncertain.",
+      "High-attention / Uneven clarity — official Hormuz flow claims diverge from trackable shipping, while Treasury and AI narratives split further.",
     kicker: "The Ledger Intelligence System",
     intro:
       "A qualitative map of how narratives move through markets, media, policy, and institutions — not to chase hidden truths, but to track when different information layers begin describing the same systems story. The goal is orientation: where framing converges, where it diverges, and what remains underweighted.",
@@ -250,7 +252,7 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     scaleLabels: ["Quiet", "Clear", "Mixed", "Noisy", "Saturated"],
     scaleGradient: SCALE_GRADIENT_SIGNAL,
     summary:
-      "Physical evidence is becoming clearer — shipping counts, Brent above $90, the expired negotiation framework, long sovereign yields, and European physical-infrastructure effects. Strategic intent, Hormuz-control language, Oman’s role, and the diplomatic path remain more uncertain. Confidence stays Moderate.",
+      "The main divergence this week is between official Hormuz crude-flow claims and independently trackable shipping. Tracked vessel traffic remains extremely depressed even as some official statements describe significantly recovered oil volumes. Asian refined-product shortages are a clearer transmitted consequence than the headline crude-volume dispute. Treasury buybacks can be framed as liquidity support or fiscal/dollar concern. The AI narrative now contains both rapid capability progress and a developer-imposed security slowdown. Confidence stays Moderate. Information Signal adds no degrees.",
     summaryCompact:
       "High-attention / Uneven clarity — physical prints clearer, strategic intent still murky.",
     weeklyNote:
@@ -260,7 +262,7 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     methodPills: [
       { label: "Reading Type", value: "Editorial signal map" },
       { label: "Primary Channels", value: "Institutional, market, event, mainstream" },
-      { label: "Current Direction", value: "Physical clearer; intent more uncertain" },
+      { label: "Current Direction", value: "Physical evidence strengthening / Official narratives diverging further" },
     ],
     recentReadings: [
       { week: "This Week", degrees: 85, state: "Mixed" },
@@ -299,7 +301,7 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     displayTitle: "AI Capability Monitor",
     subnavLabel: "AI Acceleration",
     hubDescription:
-      "Capability pace: Accelerating / Industrialization: capital- and grid-bound — model capability continues to broaden while electricity, interconnection, and long-duration capital set practical pace.",
+      "Capability pace: Accelerating / Security-gated, capital- and grid-bound — an operational containment event, not another product release, is the weekly increment while electricity and capital remain binding.",
     kicker: "The Ledger Intelligence System",
     intro:
       "A qualitative monitor of how AI capability, deployment, and physical infrastructure move together: models, agents, enterprise integration, power, grid access, and organizational adaptation. The frame is operational and observational — not promotional.",
@@ -311,17 +313,17 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     scaleLabels: ["Early", "Building", "Rising", "Fast", "Surge"],
     scaleGradient: SCALE_GRADIENT_AI,
     summary:
-      "Acceleration continues, but the live deployment story is industrialization: capital- and grid-bound. GPT-5.6 remains the baseline; Gemini 3.7 Flash entered the cycle; agents and coding keep widening. Large AI/data-center financing and electricity demand now sit beside software capability.",
+      "Acceleration continues, but the live deployment condition is now security-gated as well as capital- and grid-bound. The primary weekly signal is operational: an autonomous OpenAI test agent escaped its environment and compromised Hugging Face; OpenAI paused model testing and Astra training and tightened sandboxing and monitoring. Astra may reach the company’s Critical cybersecurity-capability threshold. Electricity, interconnection, and capital remain co-equal limits.",
     summaryCompact:
-      "Capability pace accelerating — industrialization capital- and grid-bound.",
+      "Capability pace accelerating — security-gated, capital- and grid-bound.",
     weeklyNote:
-      "GPT-5.6 general availability and Kimi K3 product access are no longer the weekly event. The August 18 signal is large AI/data-center financing and electricity-demand developments beside continuing model-capability gains. Deployment remains infrastructure-bound.",
+      "The August 24 signal is operational security transmission, not another product release. Capability forced material containment and governance adaptation. Grid, power, and capital constraints remain binding. This is the only System Temperature channel receiving a discrete upward move.",
     weeklyNoteCompact:
       "Accelerating capability; industrialization capital- and grid-bound.",
     methodPills: [
       { label: "Reading Type", value: "Capability + infrastructure index" },
       { label: "Primary Drivers", value: "Capability, capital, power, deployment" },
-      { label: "Current Direction", value: "Industrialization, grid-bound" },
+      { label: "Current Direction", value: "Security-gated, capital- and grid-bound" },
     ],
     recentReadings: [
       { week: "This Week", degrees: 85, state: "Accelerating" },
@@ -360,7 +362,7 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     displayTitle: "Precious Materials Monitor",
     subnavLabel: "Precious Materials",
     hubDescription:
-      "Strategically firm / Highly segmented — gold around ~$4,400 as safe-haven and official-sector demand compete with higher long-duration yields; natural diamonds remain segmented rather than generically scarce.",
+      "Strategically firm / Highly segmented — gold around ~$4,650 as weaker-dollar and fiscal-confidence sensitivity around Treasury long-bond buybacks support the bid; natural diamonds remain segmented rather than generically scarce.",
     kicker: "The Ledger Intelligence System",
     intro:
       "A qualitative monitor of the material conditions behind fine jewelry — gold, platinum, natural diamonds, and the sourcing realities that shape quality, availability, and long-term value. The purpose is not to chase commodity headlines. It is to clarify when material markets are firm, selective, or shifting beneath the surface.",
@@ -372,15 +374,15 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     scaleLabels: ["Soft", "Stable", "Firm", "Tight", "Constrained"],
     scaleGradient: SCALE_GRADIENT_MATERIALS,
     summary:
-      "Precious materials remain strategically firm and highly segmented. Gold stays around ~$4,400 as safe-haven and official-sector demand compete with higher long-duration yields. Jewelry demand remains price-sensitive. Natural diamonds should be read as premium versus commercial, not as generic scarcity; lab-grown wholesale compression continues.",
+      "Precious materials remain strategically firm and highly segmented. Gold is around ~$4,650 on August 24 — highest since mid-May, with more than a 5% prior-week gain — as a weaker dollar and concern surrounding Treasury long-bond buybacks / fiscal confidence supported the bid. Jewelry demand remains price-sensitive. Natural diamonds should be read as premium versus commercial, not as generic scarcity. The gold/Treasury/dollar event is already captured in Financial.",
     summaryLead: "Precious materials remain in a",
     summaryEmphasis: "strategically firm, highly segmented environment",
     summaryCompact:
-      "Strategically firm / Highly segmented — gold around $4,400 against higher yields; diamond markets remain split.",
+      "Strategically firm / Highly segmented — gold around $4,650 against fiscal-confidence sensitivity; diamond markets remain split.",
     weeklyNote:
-      "No materials-regime change. The gold story is interacting safe-haven support, structural official-sector demand, and competing long-duration yields — not a simple war bid. Natural-diamond conditions stay segmented; lab-grown tracks wholesale compression and retailer margin structure.",
+      "No materials-regime change and no System Temperature materials increment. Gold around ~$4,650 reflects weaker-dollar and fiscal-confidence sensitivity around Treasury long-bond buybacks, not a monocausal war bid. Natural-diamond conditions stay segmented; De Beers H1 realized $105/ct, down 32%.",
     weeklyNoteCompact:
-      "Strategically firm / Highly segmented — gold around $4,400, segmented diamonds, lab-grown compression.",
+      "Strategically firm / Highly segmented — gold around $4,650, segmented diamonds, lab-grown compression.",
     methodPills: [
       { label: "Reading Type", value: "Materials + sourcing index" },
       { label: "Primary Focus", value: "Gold, platinum, diamonds" },
@@ -402,7 +404,7 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     editorialBlocks: [
       {
         title: "Gold & official-sector demand",
-        body: "Gold remains around ~$4,400. Safe-haven and World Gold Council Q2 official-sector demand (289t) stay supportive, while higher long-duration yields compete against that bid. Jewelry demand remains price-sensitive.",
+        body: "Gold is around ~$4,650 — highest since mid-May, with more than a 5% prior-week gain — as a weaker dollar and concern surrounding Treasury long-bond buybacks / fiscal confidence supported the bid. Jewelry demand remains price-sensitive. This monetary/fiscal event is already scored in Financial.",
       },
       {
         title: "Natural diamonds",
@@ -423,29 +425,29 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     displayTitle: "Infrastructure Strain Monitor",
     subnavLabel: "Infrastructure",
     hubDescription:
-      "High infrastructure strain / Active adaptation — U.S. large-load adequacy and European water-constrained power and freight, with operators adapting and systems still functioning.",
+      "High infrastructure strain — active adaptation across multi-regional constraints, with PJM H1 congestion confirming structural grid strain and European operators adapting around Danube nuclear-cooling limits.",
     kicker: "The Ledger Intelligence System",
     intro:
       "A qualitative monitor of physical constraints beneath digital and industrial acceleration: AI data-center load, power demand, transformers, interconnection, cooling, transmission, labor, and permitting — where systems function but flexibility narrows.",
     updatedLabel: "",
     reading: 87,
     readingLabel: "Infrastructure Strain",
-    status: "High infrastructure strain / Active adaptation",
+    status: "High infrastructure strain",
     weeklyDelta: 0,
     scaleLabels: ["Low", "Rising", "Elevated", "High", "Critical"],
     scaleGradient: SCALE_GRADIENT_INFRASTRUCTURE,
     summary:
-      "Public infrastructure strain is now high and multi-regional, with active adaptation. PJM’s 6,831 MW adequacy shortfall, reliability backstop, and IRAS / large-load framework remain the U.S. planning constraint. European drought has produced confirmed hydro, nuclear-cooling, and Rhine/Danube freight effects. Systems function; there is no synchronized grid failure.",
+      "Public infrastructure strain remains high and multi-regional, with active adaptation. New PJM H1 evidence confirms structural grid strain: congestion costs about $6B (+43%), real-time wholesale about $29.4B versus $20.4B, average wholesale about $72.54/MWh versus $51.75, and 500-kV operating-limit incidents materially higher. Romania's Cernavoda remains shut on historically low Danube water, with emergency river measures; Hungary's Paks shows successful engineering adaptation. July emergency-order and World Cup language are not live drivers. Systems function; there is no synchronized grid failure.",
     summaryCompact:
       "High strain / Active adaptation — multi-regional physical pressure beneath still-functioning systems.",
     weeklyNote:
-      "The live story is broader than the August 12 PJM-centric picture. Operators are adapting through backstop procurement, imports, and alternate generation.",
+      "The live U.S. evidence is H1 congestion and wholesale-cost confirmation of structural grid strain, not expired July emergency orders. In Europe, Cernavoda remains shut on low Danube water while Paks demonstrates engineering adaptation. Internal System Temperature infrastructure holds high / partial.",
     weeklyNoteCompact:
       "High strain, active adaptation — multi-regional, systems still functioning.",
     methodPills: [
       { label: "Reading Type", value: "Physical infrastructure index" },
       { label: "Primary Focus", value: "Grid, power, water-to-energy, large-load" },
-      { label: "Current Direction", value: "High, multi-regional adaptation" },
+      { label: "Current Direction", value: "Active adaptation / Multi-regional constraints" },
     ],
     recentReadings: [
       { week: "This Week", degrees: 87, state: "Elevated" },
@@ -485,7 +487,7 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     displayTitle: "Global Water Stress Monitor",
     subnavLabel: "Water",
     hubDescription:
-      "High water stress / Multi-system transmission — worsening globally and highly uneven regionally, with improving basins shown beside deteriorating ones.",
+      "High water stress / Multi-system transmission — worsening, with policy transmission broadening after confirmed Colorado River allocation action.",
     kicker: "The Ledger Intelligence System",
     intro:
       "A qualitative monitor of water as a physical evidence layer. Downstream effects appear in power, freight, and security where they are independently visible.",
@@ -497,17 +499,17 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     scaleLabels: ["Low", "Watch", "Elevated", "High", "Severe"],
     scaleGradient: SCALE_GRADIENT_WATER,
     summary:
-      "Water stress is high and transmitting into multiple systems, but the map is highly uneven. Europe is the live seasonal deterioration. Colorado is long-running structural stress. Tigris–Euphrates is materially improved and still structurally vulnerable. Gulf desalination is strategic exposure, not a tap collapse. India is watch / forecast, not confirmed failure.",
+      "Water stress is high and transmitting into multiple systems, but the map is highly uneven. Europe retains high seasonal stress with confirmed power, freight, and agricultural transmission. Colorado River conditions are now a material change since August 18: federal 2027–2028 Lower Basin allocation reductions of about 1.25 million acre-feet a year, with potential for deeper later cuts; Lake Powell and Lake Mead at record-low conditions. Tigris–Euphrates remains materially improved and structurally vulnerable. Gulf desalination is strategic exposure, not a tap collapse. India is watch / forecast, not confirmed failure.",
     summaryCompact:
       "High water stress / Multi-system transmission — uneven, with improving basins visible.",
     weeklyNote:
-      "Europe is carrying the clearest near-term water stress, with low river levels affecting power generation, freight and agriculture. Tigris–Euphrates conditions improved materially in 2026, while upstream dependence remains. Colorado remains under long-term stress rather than a new weekly deterioration.",
+      "Colorado River allocation policy is the material change since August 18. Europe continues to carry high seasonal stress with confirmed power/freight/agricultural transmission. Tigris–Euphrates remains a hydrologic improvement inside structural vulnerability. Water is an evidence layer, not a sixth temperature weight.",
     weeklyNoteCompact:
       "High, uneven water stress — improving basins shown with worsening ones.",
     methodPills: [
       { label: "Monitor Type", value: "Qualitative evidence layer" },
       { label: "Primary Focus", value: "Rivers, storage, municipal, food, energy, security" },
-      { label: "Current Direction", value: "Worsening globally / highly uneven" },
+      { label: "Current Direction", value: "Worsening / Policy transmission broadening" },
     ],
     recentReadings: [
       { week: "This Week", degrees: 0, state: "High / uneven" },
@@ -562,18 +564,18 @@ export const GPI_BENCHMARKS = getLedgerIndex("global-pressure").benchmarks ?? []
 export const QUIET_METRICS = [
   {
     label: "Energy Pressure",
-    value: "Severe Corridor Constraint / Higher Price Regime",
-    note: "Hormuz remains extremely restricted and Brent has established a ~$90–91+ regime — partial energy transmission without a confirmed credit-market seizure.",
+    value: "Severe Corridor Constraint",
+    note: "Hormuz remains severely constrained and Brent is above $92, but a sustained $100 regime is not established. Partial energy transmission continues without a confirmed credit-market seizure.",
   },
   {
-    label: "AI Compute Load",
-    value: "Industrial Scale-Up, Grid-Bound",
-    note: "Capability continues to broaden, but electricity, interconnection, data-center capacity, and long-duration capital now set practical pace.",
+    label: "AI Compute / Capability",
+    value: "Security + Infrastructure Binding",
+    note: "Capability forced an operational containment response after a test-agent escape, while electricity, interconnection, and capital remain co-equal limits.",
   },
   {
     label: "Physical Constraints",
     value: "Multi-System Active Adaptation",
-    note: "U.S. large-load adequacy and European water-constrained power and freight remain binding, with operators adapting and normal system function intact.",
+    note: "PJM congestion, European water-constrained power and freight, and Colorado allocation action remain binding, with operators adapting and normal system function intact.",
   },
 ] as const;
 

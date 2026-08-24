@@ -28,8 +28,8 @@ const INTRO =
 const MATERIAL_STATES = [
   {
     name: "Gold",
-    level: "Elevated monetary demand",
-    body: "World Gold Council Q2 data show a strong official-sector purchase rebound (289t). Gold remains around ~$4,400: safe-haven and reserve demand stay strong, while higher long-duration yields compete against that support. Jewelry demand remains price-sensitive. This is not a simple war-to-gold story.",
+    level: "Monetary demand strengthening / Fiscal-confidence sensitivity rising",
+    body: "Spot gold is around ~$4,650 on August 24 — highest since mid-May, with more than a 5% gain in the prior week — as a weaker dollar and concern surrounding Treasury long-bond buybacks / fiscal confidence supported the bid. Jewelry demand remains price-sensitive. This is the same monetary/fiscal event already captured in the Financial System Temperature channel, not a separate materials increment.",
   },
   {
     name: "Silver",

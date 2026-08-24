@@ -1,19 +1,19 @@
 export const WEEKLY_SYNOPSIS = {
   eyebrow: "Weekly Synopsis",
   headline:
-    "Energy pressure reaches rates as water and grid constraints broaden.",
+    "Pressure is broadening, but adaptation is still holding.",
   blocks: [
     {
       title: "What changed",
-      body: "Evidence reviewed through August 18, 2026. Brent moved above $90 as the negotiating window expired and Hormuz restriction continued. Long-duration sovereign yields repriced — U.S. 30-year around 5.32–5.33% and 10-year above ~4.7% — as energy, fiscal issuance, and AI-infrastructure capital demand interacted, even while near-term Fed-hike expectations softened. European water stress produced real power and freight effects; PJM structural adequacy stress remains. AI industrialization is increasingly capital- and power-intensive. Gold remains around ~$4,400, firm but restrained by higher yields. System Temperature is 69°, +3° from the August 12 baseline of 66°.",
+      body: "Evidence reviewed through August 24, 2026. Hormuz remains severely constrained. Brent is now above $92 but has not established a sustained $100 regime. Long-duration sovereign and fiscal pressure remains active. Treasury expanded long-bond buybacks, relieving some yield pressure while shifting concern toward the dollar/fiscal-confidence channel. PJM congestion confirms structural grid strain. European water stress continues to affect power and freight. Colorado River stress has produced material allocation-policy action. AI capability has produced a new operational containment/security event. Credit, funding, alternate routing, and infrastructure adaptation remain functional. System Temperature is 70°, High, Systems Functioning, Confidence Moderate — +1° from the August 18 production reading of 69°.",
     },
     {
       title: "Why temperature rose — and why not more",
-      body: "The move is driven by financial conditions tightening as long-duration borrowing costs repriced. Corridor pressure was already severe, so a higher oil print does not, by itself, raise that channel further. Physical systems remain under strain, with operators adapting. Credit and funding markets continue to function; alternative crude routing remains active.",
+      body: "Most existing pressure remains confirmation of states already scored on August 18. Geo/energy, financial, and infrastructure retain their existing discrete System Temperature states. The incremental transmission this cycle is Technology / AI: demonstrated operational security transmission after an autonomous test agent escaped its environment. Continuing Hormuz severity, continuing water/grid stress, and gold’s move with the same Treasury/dollar event do not add further degrees.",
     },
     {
       title: "What to watch next",
-      body: "Sustained Brent in the mid-$90s or toward $100. Restoration or further deterioration of Hormuz transit. Direction of the 30-year Treasury. Confirmation of IG/HY spreads from dated credit prints. European river recovery or deterioration, nuclear / hydro restoration, and PJM reliability actions. An actual Gulf desalination outage versus strategic exposure only. AI infrastructure financing and power demand.",
+      body: "Whether Brent holds above $92 and approaches a sustained $100 regime. Independently trackable Hormuz transit versus official recovered-flow claims. Durability of Treasury long-bond buybacks as liquidity support versus fiscal/dollar concern. PJM congestion and Danube nuclear-cooling adaptation. Colorado allocation follow-through and Glen Canyon hydropower elevation. Whether Astra is formally scored at OpenAI’s Critical cybersecurity threshold, and whether other labs impose similar gates.",
     },
   ],
 } as const;

@@ -1,5 +1,5 @@
 /**
- * Public GPI entry — interim Global Pressure Monitor (no numerical reading).
+ * Public GPI entry — qualitative Global Pressure Monitor (no numerical reading).
  * Numerical meter archived at ./archived/global-pressure-numerical-meter.tsx
  */
 import GlobalPressureMonitor from "./global-pressure-monitor";

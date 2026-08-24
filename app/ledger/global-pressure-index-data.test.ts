@@ -59,15 +59,15 @@ describe("Global Pressure Monitor interim copy", () => {
     );
     assert.equal(
       GPM_CURRENT_DIRECTION,
-      "Worsening — energy disruption is beginning to transmit into broader financial conditions while systemic function remains intact.",
+      "Escalating corridor coercion / Adaptation still limiting broader failure",
     );
     assert.match(GPM_LEAD, /credit|function/i);
     assert.match(GPM_LEAD, /130/);
     assert.doesNotMatch(GPM_LEAD, /\d+°/);
     assert.doesNotMatch(GPM_INTRO, /System Temperature/i);
     assert.doesNotMatch(GPM_INTRO, /interim|methodology revision/i);
-    assert.match(GPM_METHODOLOGY_NOTICE, /Composite numerical scoring is paused/);
-    assert.match(GPM_WHAT_CHANGED, /August 12 review/i);
+    assert.match(GPM_METHODOLOGY_NOTICE, /System Temperature/);
+    assert.match(GPM_WHAT_CHANGED, /August 18 review/i);
     assert.equal(GPM_SNAPSHOT.evidenceCutoff, LEDGER_EVIDENCE_CUTOFF);
     assert.ok(
       GPM_SNAPSHOT.sources.some((source) =>

@@ -67,7 +67,7 @@ export default function SystemTemperature() {
               {reading.weeklyDelta !== null ? (
                 <p className="mt-2 font-sans text-[10px] uppercase tracking-[0.14em] text-[#6d655e]">
                   {reading.weeklyDelta > 0 ? "+" : ""}
-                  {reading.weeklyDelta}° from the August 12 baseline
+                  {reading.weeklyDelta}° from the prior reading
                 </p>
               ) : reading.baselineLabel ? (
                 <p className="mt-2 font-sans text-[10px] uppercase tracking-[0.14em] text-[#6d655e]">

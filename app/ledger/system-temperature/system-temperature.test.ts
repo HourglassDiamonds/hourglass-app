@@ -13,6 +13,7 @@ import {
   SYSTEM_TEMPERATURE_READING,
   SYSTEM_TEMPERATURE_SNAPSHOT_2026_08_12,
   SYSTEM_TEMPERATURE_SNAPSHOT_2026_08_18,
+  SYSTEM_TEMPERATURE_SNAPSHOT_2026_08_24,
   TEMPERATURE_BANDS,
   TEMPERATURE_CHANNEL_WEIGHTS,
   TRANSMISSION_CAPS,
@@ -353,26 +354,27 @@ describe("August 12, 2026 baseline snapshot", () => {
   });
 });
 
-describe("August 18, 2026 published reading", () => {
+describe("August 18, 2026 snapshot (history unchanged)", () => {
   it("computes 69° from 68.7 without an editorial override", () => {
     const weighted = computeWeightedTemperature(
       SYSTEM_TEMPERATURE_SNAPSHOT_2026_08_18.channels,
     );
-    assert.equal(Number(weighted.toFixed(1)), 68.7);
-    assert.equal(SYSTEM_TEMPERATURE_READING.degrees, 69);
-    assert.equal(SYSTEM_TEMPERATURE_READING.weeklyDelta, 3);
-    assert.equal(SYSTEM_TEMPERATURE_READING.previousDegrees, 66);
-    assert.equal(SYSTEM_TEMPERATURE_READING.bandLabel, "High");
-    assert.equal(
-      SYSTEM_TEMPERATURE_READING.functioningLabel,
-      "Systems Functioning",
+    const published = publishTemperatureReading(
+      SYSTEM_TEMPERATURE_SNAPSHOT_2026_08_18,
+      { previousDegrees: 66 },
     );
-    assert.equal(SYSTEM_TEMPERATURE_READING.confidence, "moderate");
-    assert.equal(SYSTEM_TEMPERATURE_READING.evidenceCutoff, "August 18, 2026");
-    assert.equal(SYSTEM_TEMPERATURE_READING.validation.ok, true);
-    assert.equal(SYSTEM_TEMPERATURE_READING.baselineLabel, null);
+    assert.equal(Number(weighted.toFixed(1)), 68.7);
+    assert.equal(published.degrees, 69);
+    assert.equal(published.weeklyDelta, 3);
+    assert.equal(published.previousDegrees, 66);
+    assert.equal(published.bandLabel, "High");
+    assert.equal(published.functioningLabel, "Systems Functioning");
+    assert.equal(published.confidence, "moderate");
+    assert.equal(published.evidenceCutoff, "August 18, 2026");
+    assert.equal(published.validation.ok, true);
+    assert.equal(published.baselineLabel, null);
     assert.ok(!SYSTEM_TEMPERATURE_SNAPSHOT_2026_08_18.editorialOverrideDegrees);
-    assert.ok(SYSTEM_TEMPERATURE_READING.degrees < 90);
+    assert.ok(published.degrees < 90);
   });
 
   it("keeps geo and infrastructure discrete levels unchanged while financial rises", () => {
@@ -399,18 +401,20 @@ describe("August 18, 2026 published reading", () => {
     assert.equal(Object.keys(TEMPERATURE_CHANNEL_WEIGHTS).length, 5);
     assert.ok(!("information-signal" in TEMPERATURE_CHANNEL_WEIGHTS));
     assert.ok(!("global-water-stress" in TEMPERATURE_CHANNEL_WEIGHTS));
-    assert.equal(
-      SYSTEM_TEMPERATURE_SNAPSHOT_2026_08_18.channels.some(
-        (channel) => channel.id === "information-signal",
-      ),
-      false,
+    const channelIds = SYSTEM_TEMPERATURE_SNAPSHOT_2026_08_18.channels.map(
+      (channel) => String(channel.id),
     );
+    assert.equal(channelIds.includes("information-signal"), false);
   });
 
-  it("validates the published move against the August 12 prior channels", () => {
+  it("validates the August 18 move against the August 12 prior channels", () => {
+    const published = publishTemperatureReading(
+      SYSTEM_TEMPERATURE_SNAPSHOT_2026_08_18,
+      { previousDegrees: 66 },
+    );
     const issues = validateTemperatureReading({
       snapshot: SYSTEM_TEMPERATURE_SNAPSHOT_2026_08_18,
-      degrees: SYSTEM_TEMPERATURE_READING.degrees,
+      degrees: published.degrees,
       previousDegrees: 66,
       weeklyDelta: 3,
       isBaseline: false,
@@ -418,6 +422,78 @@ describe("August 18, 2026 published reading", () => {
     });
     assert.equal(issues.ok, true);
     assert.equal(issues.issues.length, 0);
+  });
+});
+
+describe("August 24, 2026 published reading", () => {
+  it("publishes 70° / High / Systems Functioning / Moderate", () => {
+    const weighted = computeWeightedTemperature(
+      SYSTEM_TEMPERATURE_SNAPSHOT_2026_08_24.channels,
+    );
+    assert.equal(Number(weighted.toFixed(1)), 69.7);
+    assert.equal(SYSTEM_TEMPERATURE_READING.degrees, 70);
+    assert.equal(SYSTEM_TEMPERATURE_READING.weeklyDelta, 1);
+    assert.equal(SYSTEM_TEMPERATURE_READING.previousDegrees, 69);
+    assert.equal(SYSTEM_TEMPERATURE_READING.bandLabel, "High");
+    assert.equal(
+      SYSTEM_TEMPERATURE_READING.functioningLabel,
+      "Systems Functioning",
+    );
+    assert.equal(SYSTEM_TEMPERATURE_READING.confidence, "moderate");
+    assert.equal(SYSTEM_TEMPERATURE_READING.evidenceCutoff, "August 24, 2026");
+    assert.equal(SYSTEM_TEMPERATURE_READING.validation.ok, true);
+    assert.equal(SYSTEM_TEMPERATURE_READING.validation.issues.length, 0);
+  });
+
+  it("moves only Technology / AI from elevated/partial to high/partial", () => {
+    const prior = Object.fromEntries(
+      SYSTEM_TEMPERATURE_SNAPSHOT_2026_08_18.channels.map((channel) => [
+        channel.id,
+        channel,
+      ]),
+    );
+    const current = Object.fromEntries(
+      SYSTEM_TEMPERATURE_SNAPSHOT_2026_08_24.channels.map((channel) => [
+        channel.id,
+        channel,
+      ]),
+    );
+    assert.equal(current["geopolitics-energy-supply"]?.pressure, "severe");
+    assert.equal(current["geopolitics-energy-supply"]?.transmission, "partial");
+    assert.equal(current["geopolitics-energy-supply"]?.materialChange, false);
+    assert.equal(current["financial-economic"]?.pressure, "high");
+    assert.equal(current["financial-economic"]?.transmission, "partial");
+    assert.equal(current["financial-economic"]?.materialChange, false);
+    assert.equal(current["physical-infrastructure"]?.pressure, "high");
+    assert.equal(current["physical-infrastructure"]?.transmission, "partial");
+    assert.notEqual(current["physical-infrastructure"]?.pressure, "very-high");
+    assert.equal(current["physical-infrastructure"]?.materialChange, false);
+    assert.equal(current["commodities-materials"]?.pressure, "elevated");
+    assert.equal(current["commodities-materials"]?.transmission, "contained");
+    assert.equal(current["commodities-materials"]?.materialChange, false);
+    assert.equal(current["technology-ai"]?.pressure, "high");
+    assert.equal(current["technology-ai"]?.transmission, "partial");
+    assert.equal(current["technology-ai"]?.materialChange, true);
+    assert.equal(prior["technology-ai"]?.pressure, "elevated");
+  });
+
+  it("does not let Information Signal or Water change degrees", () => {
+    assert.ok(!("information-signal" in TEMPERATURE_CHANNEL_WEIGHTS));
+    assert.ok(!("global-water-stress" in TEMPERATURE_CHANNEL_WEIGHTS));
+    const channelIds = SYSTEM_TEMPERATURE_SNAPSHOT_2026_08_24.channels.map(
+      (channel) => String(channel.id),
+    );
+    assert.equal(channelIds.includes("information-signal"), false);
+    assert.equal(channelIds.includes("global-water-stress"), false);
+    const financial = SYSTEM_TEMPERATURE_SNAPSHOT_2026_08_24.channels.find(
+      (channel) => channel.id === "financial-economic",
+    );
+    const materials = SYSTEM_TEMPERATURE_SNAPSHOT_2026_08_24.channels.find(
+      (channel) => channel.id === "commodities-materials",
+    );
+    assert.equal(financial?.pressure, "high");
+    assert.equal(materials?.pressure, "elevated");
+    assert.equal(materials?.transmission, "contained");
   });
 });
 
@@ -459,9 +535,30 @@ describe("Public route wiring", () => {
 });
 
 describe("Hub / monitor status sync", () => {
-  it("keeps evidence cutoff at August 18, 2026", async () => {
+  it("keeps evidence cutoff at August 24, 2026", async () => {
     const { LEDGER_EVIDENCE_CUTOFF } = await import("../ledger-monitor-framework");
-    assert.equal(LEDGER_EVIDENCE_CUTOFF, "August 18, 2026");
+    assert.equal(LEDGER_EVIDENCE_CUTOFF, "August 24, 2026");
+  });
+
+  it("has no stale public interim-methodology language", () => {
+    const files = [
+      "ledger-data.ts",
+      "ledger-monitor-framework.ts",
+      "global-pressure-monitor-data.ts",
+      "information-signal-map-data.ts",
+      "ai-capability-acceleration-data.ts",
+      "precious-materials-data.ts",
+      "infrastructure-strain-data.ts",
+      "global-water-stress-data.ts",
+      "components/weekly-synopsis.tsx",
+      "components/ledger-indexes-section.tsx",
+      "page.tsx",
+    ];
+    const stale =
+      /Interim status|methodology revision in progress|methodology is rebuilt|methodology is standardized|Composite numerical scoring is paused/i;
+    for (const file of files) {
+      assert.doesNotMatch(readLedger(file), stale, file);
+    }
   });
 
   it("syncs hub statuses with monitor snapshot states", async () => {

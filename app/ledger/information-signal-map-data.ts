@@ -22,20 +22,20 @@ export const ISM_READING = {
 } as const;
 
 export const ISM_SUMMARY =
-  "Physical evidence is becoming clearer while strategic intent remains more uncertain. Shipping counts, Brent above $90, the failed / expired negotiation framework, long sovereign yields, and European physical-infrastructure effects are now more directly observable. Control-of-Hormuz language, Oman’s role, the diplomatic path, and escalation intentions remain contested. Confidence stays Moderate.";
+  "The main divergence this week is between official Hormuz crude-flow claims and independently trackable shipping and flow estimates. Tracked physical vessel traffic remains extremely depressed even as some official statements describe significantly recovered oil volumes. Refined-product shortages in Asia are a clearer transmitted consequence than the headline dispute over exact crude volumes. Treasury buybacks can be framed as liquidity support or as evidence of fiscal/dollar concern. The AI narrative now contains both rapid capability progress and an actual developer-imposed security slowdown. Confidence stays Moderate. Information Signal adds no degrees.";
 
 export const ISM_SIGNAL_GRID = [
   {
     title: "Consensus",
-    body: "Hormuz remains extremely constrained; Brent is in a $90+ regime; long-duration sovereign yields have repriced; European water-to-power and freight effects are physical, not merely narrative.",
+    body: "Hormuz remains extremely constrained on independently trackable shipping prints; Brent is above $92; long-duration fiscal pressure remains active; European water-to-power effects and the OpenAI containment event are physical/operational, not merely narrative.",
   },
   {
     title: "Divergence",
-    body: "Physical shipping and price prints versus claims about who controls the strait, what diplomacy can still produce, and how far escalation is intended to go. Market outlets now agree oil is above $90; they still disagree about duration and policy path.",
+    body: "Official Hormuz crude-flow recovery claims versus independently trackable vessel traffic that remains extremely depressed. Treasury buybacks framed as liquidity support versus fiscal/dollar concern. AI coverage mixing rapid capability progress with a developer-imposed security slowdown.",
   },
   {
     title: "Underweighted",
-    body: "The distinction between clearer physical facts and still-opaque strategic intent — and the fact that rates transmission is an interaction among energy, fiscal issuance, and AI-capital demand, not a single Hormuz-to-yields pipeline.",
+    body: "Asian refined-product shortages as a clearer transmitted consequence than the headline fight over exact crude volumes — and the fact that Information Signal still sets confidence only.",
   },
 ] as const;
 
@@ -78,7 +78,7 @@ export const ISM_NARRATIVE_MAP = [
 ] as const;
 
 export const ISM_NARRATIVE_SHIFT =
-  "Clarity improved on physical facts and deteriorated on intent. Brent has held a higher ~$90+ regime rather than settling back into the high-$80s. Reopening hopes have faded. Model-access headlines are no longer the main AI story this week. Density remains high; confidence stays Moderate because strategic intent is still unresolved.";
+  "Physical evidence strengthened while official narratives diverged further. Independently trackable Hormuz traffic remains extremely depressed despite claims of recovered crude volumes. Asian refined-product shortages are a clearer transmitted consequence than the headline volume dispute. Treasury buybacks can be read as liquidity support or fiscal/dollar concern. AI coverage now contains both rapid capability progress and a developer-imposed security slowdown. Density remains high; confidence stays Moderate; Information Signal adds no degrees.";
 
 export const ISM_WHAT_TO_WATCH = [
   {
@@ -124,12 +124,12 @@ export const ISM_FOOTER_NOTE =
 export const ISM_CURRENT_STATE = "High-attention / Uneven clarity";
 
 export const ISM_CURRENT_DIRECTION =
-  "Physical evidence clearer; strategic intent more uncertain.";
+  "Physical evidence strengthening / Official narratives diverging further";
 
 export const ISM_HUB_STATUS = ISM_CURRENT_STATE;
 
 export const ISM_HUB_DESCRIPTION =
-  "High-attention / Uneven clarity — physical prints are clearer while Hormuz control, diplomacy, and escalation intent remain contested.";
+  "High-attention / Uneven clarity — official Hormuz flow claims diverge from trackable shipping, while Treasury and AI narratives split further.";
 
 /** Append-only public series. Future reviews push a new snapshot. */
 export const ISM_SERIES: LedgerMonitorSeries = {
@@ -204,9 +204,9 @@ export const ISM_SERIES: LedgerMonitorSeries = {
     },
     {
       reviewDate: "August 18, 2026",
-      evidenceCutoff: LEDGER_EVIDENCE_CUTOFF,
-      currentState: ISM_CURRENT_STATE,
-      currentDirection: ISM_CURRENT_DIRECTION,
+      evidenceCutoff: "August 18, 2026",
+      currentState: "High-attention / Uneven clarity",
+      currentDirection: "Physical evidence clearer; strategic intent more uncertain.",
       previousState: "High-attention / Uneven clarity",
       materialChangeSummary:
         "Physical evidence (shipping counts, Brent above $90, expired talks, long yields, European water-to-power effects) became clearer while strategic intent, Hormuz-control language, Oman’s role, and the diplomatic path remained more uncertain. Confidence stays Moderate; Information Signal still adds no degrees.",
@@ -236,6 +236,44 @@ export const ISM_SERIES: LedgerMonitorSeries = {
           url: "https://www.bbc.com/news/articles/cqlxpq5q799o",
           supports:
             "European physical-infrastructure effects independently reportable rather than purely narrative",
+        },
+      ],
+    },
+    {
+      reviewDate: "August 24, 2026",
+      evidenceCutoff: LEDGER_EVIDENCE_CUTOFF,
+      currentState: ISM_CURRENT_STATE,
+      currentDirection: ISM_CURRENT_DIRECTION,
+      previousState: "High-attention / Uneven clarity",
+      materialChangeSummary:
+        "Major divergence between official Hormuz crude-flow claims and independently trackable shipping/flow estimates; tracked vessel traffic remains extremely depressed. Asian refined-product shortages are a clearer transmitted consequence than the headline crude-volume dispute. Treasury buybacks can be framed as liquidity support or fiscal/dollar concern. AI narrative now contains both rapid capability progress and a developer-imposed security slowdown. Confidence stays Moderate; Information Signal adds no degrees.",
+      methodologyVersion: LEDGER_METHODOLOGY_VERSION,
+      sources: [
+        {
+          institution: "Reuters",
+          title:
+            "Fewer than 20 ships transit key Strait of Hormuz over weekend, data shows",
+          date: "August 24, 2026",
+          url: "https://www.thehindu.com/news/international/fewer-than-20-ships-transit-key-strait-of-hormuz-over-weekend-data-shows/article71383056.ece",
+          supports:
+            "Independently trackable weekend Hormuz transit still below 20; UKMTO AIS about 90% below pre-conflict baselines beside official recovered-flow claims",
+        },
+        {
+          institution: "U.S. Department of the Treasury",
+          title:
+            "Treasury Announces Increased Sizes of Nominal Long-End Liquidity Support Buybacks Beginning September 9",
+          date: "August 19, 2026 (reviewed August 24, 2026)",
+          url: "https://home.treasury.gov/news/press-releases/sb0607",
+          supports:
+            "Official long-end buyback expansion that can be framed as liquidity support or as evidence of fiscal/dollar concern",
+        },
+        {
+          institution: "OpenAI",
+          title: "Pacing model development in an era of cyber-critical capabilities",
+          date: "August 19, 2026 (reviewed August 24, 2026)",
+          url: "https://openai.com/index/pacing-model-development-cyber-capabilities/",
+          supports:
+            "AI narrative now containing both rapid capability progress and an actual developer-imposed security slowdown after the Hugging Face incident and Astra cyber-threshold review",
         },
       ],
     },

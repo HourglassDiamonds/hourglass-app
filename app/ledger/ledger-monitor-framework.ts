@@ -9,12 +9,12 @@
 export const LEDGER_METHODOLOGY_VERSION = "qualitative-v1";
 
 /** Shared evidence cutoff for the current public review cycle. */
-export const LEDGER_EVIDENCE_CUTOFF = "August 18, 2026";
+export const LEDGER_EVIDENCE_CUTOFF = "August 24, 2026";
 
 export const LEDGER_EVIDENCE_CUTOFF_LABEL = `Evidence reviewed through ${LEDGER_EVIDENCE_CUTOFF}`;
 
 export const LEDGER_METHOD_NOTICE =
-  "Composite numerical scoring is paused. Current readings use qualitative states, direction, documented evidence, and defined change triggers.";
+  "Individual monitors are qualitative. They use states, direction, documented evidence, and defined change triggers. System Temperature, published on the Ledger hub, is the only composite numerical reading.";
 
 export type LedgerQualitativeStateId =
   | "low"
