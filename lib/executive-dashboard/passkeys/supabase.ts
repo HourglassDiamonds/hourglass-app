@@ -15,6 +15,9 @@ import type {
   PasskeyChallengeKind,
   PasskeyChallengeLedger,
   PasskeyChallengeRecord,
+  PasskeyPairingInsert,
+  PasskeyPairingRecord,
+  PasskeyPairingStore,
 } from "./types";
 
 const TABLE = "continuum_founder_passkeys";
@@ -249,4 +252,132 @@ export class SupabasePasskeyChallengeLedger implements PasskeyChallengeLedger {
 
 export function createSupabasePasskeyChallengeLedger(): PasskeyChallengeLedger {
   return new SupabasePasskeyChallengeLedger(requireClient(getSupabaseAdmin()));
+}
+
+const PAIRING_TABLE = "continuum_founder_passkey_pairings";
+const PAIRING_CLAIM_RPC = "continuum_founder_passkey_pairing_claim";
+const PAIRING_TRANSITION_RPC = "continuum_founder_passkey_pairing_transition";
+const PAIRING_CANCEL_RPC = "continuum_founder_passkey_pairing_cancel";
+
+type PairingRow = {
+  id: string;
+  founder_user_id: string;
+  token_hash: string;
+  status: PasskeyPairingRecord["status"];
+  match_code: string;
+  device_hint: string | null;
+  claimed_session_hash: string | null;
+  created_at: string;
+  expires_at: string;
+  claimed_at: string | null;
+  approved_at: string | null;
+  completed_at: string | null;
+};
+
+function rowToPairing(row: PairingRow): PasskeyPairingRecord {
+  return {
+    id: row.id,
+    founderUserId: row.founder_user_id,
+    tokenHash: row.token_hash,
+    status: row.status,
+    matchCode: row.match_code,
+    deviceHint: row.device_hint,
+    claimedSessionHash: row.claimed_session_hash,
+    createdAt: row.created_at,
+    expiresAt: row.expires_at,
+    claimedAt: row.claimed_at,
+    approvedAt: row.approved_at,
+    completedAt: row.completed_at,
+  };
+}
+
+export class SupabasePasskeyPairingStore implements PasskeyPairingStore {
+  constructor(private readonly client: SupabaseClient) {}
+
+  async insert(record: PasskeyPairingInsert): Promise<PasskeyPairingRecord> {
+    const { data, error } = await this.client
+      .from(PAIRING_TABLE)
+      .insert({
+        founder_user_id: record.founderUserId,
+        token_hash: record.tokenHash,
+        status: "pending",
+        match_code: record.matchCode,
+        created_at: record.createdAt,
+        expires_at: record.expiresAt,
+      })
+      .select(
+        "id, founder_user_id, token_hash, status, match_code, device_hint, claimed_session_hash, created_at, expires_at, claimed_at, approved_at, completed_at",
+      )
+      .single();
+    if (error) throw error;
+    return rowToPairing(data as PairingRow);
+  }
+
+  async getById(id: string): Promise<PasskeyPairingRecord | null> {
+    const { data, error } = await this.client
+      .from(PAIRING_TABLE)
+      .select(
+        "id, founder_user_id, token_hash, status, match_code, device_hint, claimed_session_hash, created_at, expires_at, claimed_at, approved_at, completed_at",
+      )
+      .eq("id", id)
+      .maybeSingle();
+    if (error) throw error;
+    if (!data) return null;
+    return rowToPairing(data as PairingRow);
+  }
+
+  async claim(input: {
+    tokenHash: string;
+    claimedSessionHash: string;
+    deviceHint: string | null;
+  }): Promise<
+    | { ok: true; record: PasskeyPairingRecord }
+    | { ok: false; reason: "invalid-pairing" | "already-claimed" | "pairing-expired" }
+  > {
+    const { data, error } = await this.client.rpc(PAIRING_CLAIM_RPC, {
+      p_token_hash: input.tokenHash,
+      p_claimed_session_hash: input.claimedSessionHash,
+      p_device_hint: input.deviceHint,
+    });
+    if (error) throw error;
+    const row = Array.isArray(data) ? data[0] : data;
+    if (!row) return { ok: false, reason: "already-claimed" };
+    return { ok: true, record: rowToPairing(row as PairingRow) };
+  }
+
+  async transition(
+    id: string,
+    from: "claimed" | "approved",
+    to: "approved" | "completed",
+  ): Promise<
+    | { ok: true; record: PasskeyPairingRecord }
+    | { ok: false; reason: "pairing-not-usable" }
+  > {
+    const { data, error } = await this.client.rpc(PAIRING_TRANSITION_RPC, {
+      p_id: id,
+      p_from_status: from,
+      p_to_status: to,
+    });
+    if (error) throw error;
+    const row = Array.isArray(data) ? data[0] : data;
+    if (!row) return { ok: false, reason: "pairing-not-usable" };
+    return { ok: true, record: rowToPairing(row as PairingRow) };
+  }
+
+  async cancel(id: string): Promise<
+    | { ok: true; record: PasskeyPairingRecord }
+    | { ok: false; reason: "pairing-not-usable" }
+  > {
+    const { data, error } = await this.client.rpc(PAIRING_CANCEL_RPC, {
+      p_id: id,
+    });
+    if (error) throw error;
+    const row = Array.isArray(data) ? data[0] : data;
+    if (!row) return { ok: false, reason: "pairing-not-usable" };
+    return { ok: true, record: rowToPairing(row as PairingRow) };
+  }
+}
+
+export function createSupabasePasskeyPairingStore(): PasskeyPairingStore {
+  return new SupabasePasskeyPairingStore(requireClient(getSupabaseAdmin()));
 }

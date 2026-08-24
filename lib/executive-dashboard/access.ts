@@ -12,6 +12,9 @@ export const EXECUTIVE_DASHBOARD_SECURITY_PATH =
   "/executive-dashboard/security";
 export const EXECUTIVE_DASHBOARD_PASSKEYS_PATH =
   "/executive-dashboard/security/passkeys";
+export const EXECUTIVE_DASHBOARD_PASSKEY_PAIR_PATH =
+  "/executive-dashboard/security/passkeys/pair";
+export const EXECUTIVE_DASHBOARD_PATHNAME_HEADER = "x-hg-ed-pathname";
 
 /**
  * Neutral internal rewrite target for Vercel production hard-404.
@@ -32,6 +35,9 @@ export const EXECUTIVE_DASHBOARD_PASSKEY_AUTH_ERROR =
 
 export const EXECUTIVE_DASHBOARD_PASSKEY_ENROLL_ERROR =
   "Unable to create passkey. Try again.";
+
+export const EXECUTIVE_DASHBOARD_PASSKEY_PAIR_ERROR =
+  "This setup session has expired or was cancelled.";
 
 /** Paths under /executive-dashboard that do not require a session. */
 export function isExecutiveDashboardPublicAuthPath(pathname: string): boolean {
@@ -61,6 +67,17 @@ export function isExecutiveDashboardSecurityPath(pathname: string): boolean {
   return (
     pathname === EXECUTIVE_DASHBOARD_SECURITY_PATH ||
     pathname.startsWith(`${EXECUTIVE_DASHBOARD_SECURITY_PATH}/`)
+  );
+}
+
+/**
+ * iPhone QR pairing page. Reachable without a founder session, but only
+ * with a one-time token then an HttpOnly pairing cookie. Not Concierge.
+ */
+export function isExecutiveDashboardPasskeyPairPath(pathname: string): boolean {
+  return (
+    pathname === EXECUTIVE_DASHBOARD_PASSKEY_PAIR_PATH ||
+    pathname.startsWith(`${EXECUTIVE_DASHBOARD_PASSKEY_PAIR_PATH}/`)
   );
 }
 

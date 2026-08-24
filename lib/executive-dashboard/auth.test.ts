@@ -503,6 +503,8 @@ describe("executive dashboard auth", () => {
       "utf8",
     );
     assert.match(securityLayout, /readExecutiveDashboardSession/);
+    assert.match(securityLayout, /isExecutiveDashboardPasskeyPairPath/);
     assert.match(securityLayout, /force-dynamic/);
+    assert.match(proxy, /isExecutiveDashboardPasskeyPairPath/);
   });
 });

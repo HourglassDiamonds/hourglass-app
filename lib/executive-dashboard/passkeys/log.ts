@@ -7,6 +7,7 @@ export function logPasskeyOperation(event: {
   op: string;
   ok: boolean;
   reason: string;
+  pairingId?: string;
 }): void {
   console.info(
     JSON.stringify({
@@ -14,6 +15,7 @@ export function logPasskeyOperation(event: {
       op: event.op,
       ok: event.ok,
       reason: event.reason,
+      ...(event.pairingId ? { pairingId: event.pairingId } : {}),
       ts: new Date().toISOString(),
     }),
   );

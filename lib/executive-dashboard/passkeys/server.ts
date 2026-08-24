@@ -8,6 +8,8 @@ import "server-only";
 export {
   createSupabaseFounderPasskeyStore,
   createSupabasePasskeyChallengeLedger,
+  createSupabasePasskeyPairingStore,
   SupabaseFounderPasskeyStore,
   SupabasePasskeyChallengeLedger,
+  SupabasePasskeyPairingStore,
 } from "./supabase";

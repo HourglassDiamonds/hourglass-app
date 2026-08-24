@@ -2,6 +2,7 @@ import Link from "next/link";
 import { EXECUTIVE_DASHBOARD_CONCIERGE_PATH } from "@/lib/executive-dashboard/access";
 import { listActiveFounderPasskeys } from "@/lib/executive-dashboard/passkeys/load";
 import { PasskeysManager } from "./passkeys-manager";
+import { IphoneSetup } from "./iphone-setup";
 
 export default async function FounderPasskeysPage() {
   const listed = await listActiveFounderPasskeys();
@@ -35,6 +36,9 @@ export default async function FounderPasskeysPage() {
         <p className="mt-4 max-w-[34ch] text-[15px] leading-relaxed text-[#c4b7aa]">
           Founder devices only. Password sign-in remains.
         </p>
+        <div className="mt-10">
+          <IphoneSetup disabled={unavailable} />
+        </div>
         <PasskeysManager passkeys={passkeys} unavailable={unavailable} />
       </div>
     </main>

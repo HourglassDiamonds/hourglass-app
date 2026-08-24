@@ -3,12 +3,14 @@ import type { NextRequest } from "next/server";
 import {
   getExecutiveDashboardAccessDecision,
   isExecutiveDashboardConciergePath,
+  isExecutiveDashboardPasskeyPairPath,
   isExecutiveDashboardPath,
   isExecutiveDashboardPublicAuthPath,
   isExecutiveDashboardSecurityPath,
   readExecutiveDashboardSession,
   EXECUTIVE_DASHBOARD_CONCIERGE_PATH,
   EXECUTIVE_DASHBOARD_LOGIN_PATH,
+  EXECUTIVE_DASHBOARD_PATHNAME_HEADER,
   EXECUTIVE_DASHBOARD_PRODUCTION_NOT_FOUND_REWRITE_PATH,
 } from "@/lib/executive-dashboard/access";
 import { EXECUTIVE_DASHBOARD_SESSION_COOKIE } from "@/lib/executive-dashboard/session";
@@ -33,6 +35,18 @@ export function proxy(request: NextRequest) {
   const isLogin = isExecutiveDashboardPublicAuthPath(pathname);
   const isConcierge = isExecutiveDashboardConciergePath(pathname);
   const isSecurity = isExecutiveDashboardSecurityPath(pathname);
+  const isPair = isExecutiveDashboardPasskeyPairPath(pathname);
+
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set(EXECUTIVE_DASHBOARD_PATHNAME_HEADER, pathname);
+
+  if (isPair) {
+    const response = NextResponse.next({
+      request: { headers: requestHeaders },
+    });
+    applyExecutiveDashboardHeaders(response);
+    return response;
+  }
 
   if (isLogin || isConcierge || isSecurity) {
     const session = readExecutiveDashboardSession(cookieValue);
@@ -52,7 +66,9 @@ export function proxy(request: NextRequest) {
       applyExecutiveDashboardHeaders(redirectResponse);
       return redirectResponse;
     }
-    const response = NextResponse.next();
+    const response = NextResponse.next({
+      request: { headers: requestHeaders },
+    });
     applyExecutiveDashboardHeaders(response);
     return response;
   }

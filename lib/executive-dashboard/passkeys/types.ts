@@ -91,6 +91,72 @@ export type PasskeyChallengeLedger = {
   >;
 };
 
+export type PasskeyPairingStoredStatus =
+  | "pending"
+  | "claimed"
+  | "approved"
+  | "completed"
+  | "cancelled";
+
+export type PasskeyPairingStatus = PasskeyPairingStoredStatus | "expired";
+
+export type PasskeyPairingRecord = {
+  id: string;
+  founderUserId: string;
+  tokenHash: string;
+  status: PasskeyPairingStoredStatus;
+  matchCode: string;
+  deviceHint: string | null;
+  claimedSessionHash: string | null;
+  createdAt: string;
+  expiresAt: string;
+  claimedAt: string | null;
+  approvedAt: string | null;
+  completedAt: string | null;
+};
+
+export type PasskeyPairingPublicView = {
+  id: string;
+  status: PasskeyPairingStatus;
+  matchCode: string;
+  deviceHint: string | null;
+  createdAt: string;
+  expiresAt: string;
+};
+
+export type PasskeyPairingInsert = {
+  founderUserId: string;
+  tokenHash: string;
+  matchCode: string;
+  createdAt: string;
+  expiresAt: string;
+};
+
+export type PasskeyPairingStore = {
+  insert(record: PasskeyPairingInsert): Promise<PasskeyPairingRecord>;
+  getById(id: string): Promise<PasskeyPairingRecord | null>;
+  claim(input: {
+    tokenHash: string;
+    claimedSessionHash: string;
+    deviceHint: string | null;
+  }): Promise<
+    | { ok: true; record: PasskeyPairingRecord }
+    | { ok: false; reason: "invalid-pairing" | "already-claimed" | "pairing-expired" }
+  >;
+  transition(
+    id: string,
+    from: "claimed" | "approved",
+    to: "approved" | "completed",
+  ): Promise<
+    | { ok: true; record: PasskeyPairingRecord }
+    | { ok: false; reason: "pairing-not-usable" }
+  >;
+  cancel(id: string): Promise<
+    | { ok: true; record: PasskeyPairingRecord }
+    | { ok: false; reason: "pairing-not-usable" }
+  >;
+};
+
 export type PasskeyOperationReason =
   | "ok"
   | "unauthenticated"
@@ -111,6 +177,11 @@ export type PasskeyOperationReason =
   | "counter-invalid"
   | "verify-failed"
   | "store-failed"
-  | "invalid-response";
+  | "invalid-response"
+  | "invalid-pairing"
+  | "already-claimed"
+  | "pairing-expired"
+  | "pairing-not-approved"
+  | "pairing-not-usable";
 
 export const PASSKEY_GENERIC_AUTH_REASON: PasskeyOperationReason = "verify-failed";

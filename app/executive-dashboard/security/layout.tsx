@@ -1,8 +1,10 @@
 import type { ReactNode } from "react";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import {
   EXECUTIVE_DASHBOARD_LOGIN_PATH,
+  EXECUTIVE_DASHBOARD_PATHNAME_HEADER,
+  isExecutiveDashboardPasskeyPairPath,
   readExecutiveDashboardSession,
 } from "@/lib/executive-dashboard/access";
 import { EXECUTIVE_DASHBOARD_SESSION_COOKIE } from "@/lib/executive-dashboard/session";
@@ -19,6 +21,12 @@ export default async function ExecutiveDashboardSecurityLayout({
 }: {
   children: ReactNode;
 }) {
+  const headerList = await headers();
+  const pathname = headerList.get(EXECUTIVE_DASHBOARD_PATHNAME_HEADER) ?? "";
+  if (isExecutiveDashboardPasskeyPairPath(pathname)) {
+    return children;
+  }
+
   const jar = await cookies();
   const session = readExecutiveDashboardSession(
     jar.get(EXECUTIVE_DASHBOARD_SESSION_COOKIE)?.value,

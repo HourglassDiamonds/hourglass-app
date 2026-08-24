@@ -158,6 +158,9 @@ function createTestCrypto(): PasskeyCrypto {
         authenticatorSelection: {
           residentKey: "preferred",
           userVerification: "required",
+          ...(input.authenticatorAttachment
+            ? { authenticatorAttachment: input.authenticatorAttachment }
+            : {}),
         },
         attestation: "none",
       } satisfies PublicKeyCredentialCreationOptionsJSON;
@@ -693,7 +696,8 @@ describe("founder passkeys", () => {
     assert.match(cryptoSrc, /@simplewebauthn\/server/);
     assert.match(cryptoSrc, /generateRegistrationOptions/);
     assert.match(cryptoSrc, /verifyAuthenticationResponse/);
-    assert.doesNotMatch(cryptoSrc, /authenticatorAttachment/);
+    assert.match(cryptoSrc, /input.authenticatorAttachment/);
+    assert.doesNotMatch(cryptoSrc, /authenticatorAttachment: "platform"/);
     const challengeSrc = read("lib/executive-dashboard/passkeys/challenges.ts");
     assert.doesNotMatch(challengeSrc, /const consumed = new Map/);
     assert.match(challengeSrc, /v: 2/);

@@ -39,6 +39,7 @@ export type PasskeyRegistrationDeps = {
 export type BeginRegistrationInput = {
   sessionOk: boolean;
   sessionToken: string | undefined;
+  authenticatorAttachment?: "platform";
 };
 
 export type BeginRegistrationResult =
@@ -61,6 +62,19 @@ export type CompleteRegistrationInput = {
 
 export type CompleteRegistrationResult =
   | { ok: true; id: string }
+  | { ok: false; reason: PasskeyOperationReason };
+
+export type VerifiedRegistrationResult =
+  | {
+      ok: true;
+      credentialId: string;
+      publicKey: Uint8Array;
+      counter: number;
+      transports: string[] | null;
+      deviceType: string;
+      backedUp: boolean;
+      label: string | null;
+    }
   | { ok: false; reason: PasskeyOperationReason };
 
 function clockOf(deps: PasskeyRegistrationDeps): PasskeyFlowClock {
@@ -92,6 +106,7 @@ export async function beginPasskeyRegistration(
         id: row.credentialId,
         transports: row.transports ?? undefined,
       })),
+    authenticatorAttachment: input.authenticatorAttachment,
   });
 
   const now = clockOf(deps).now();
@@ -144,10 +159,10 @@ function bindChallenge(
   return null;
 }
 
-export async function completePasskeyRegistration(
+export async function verifyPasskeyRegistration(
   deps: PasskeyRegistrationDeps,
   input: CompleteRegistrationInput,
-): Promise<CompleteRegistrationResult> {
+): Promise<VerifiedRegistrationResult> {
   if (!input.sessionOk || !input.sessionToken) {
     return { ok: false, reason: "unauthenticated" };
   }
@@ -204,19 +219,37 @@ export async function completePasskeyRegistration(
   if (!verified.verified) return { ok: false, reason: "verify-failed" };
 
   const label = input.label?.trim() ? input.label.trim().slice(0, 80) : null;
+  return {
+    ok: true,
+    credentialId: verified.credential.id,
+    publicKey: verified.credential.publicKey,
+    counter: verified.credential.counter,
+    transports: verified.credential.transports
+      ? [...verified.credential.transports]
+      : null,
+    deviceType: verified.deviceType,
+    backedUp: verified.backedUp,
+    label,
+  };
+}
+
+export async function completePasskeyRegistration(
+  deps: PasskeyRegistrationDeps,
+  input: CompleteRegistrationInput,
+): Promise<CompleteRegistrationResult> {
+  const verified = await verifyPasskeyRegistration(deps, input);
+  if (!verified.ok) return verified;
 
   try {
     const saved = await deps.store.insert({
       founderUserId: CONTINUUM_FOUNDER_WEBAUTHN_USER_ID,
-      credentialId: verified.credential.id,
-      publicKey: verified.credential.publicKey,
-      counter: verified.credential.counter,
-      transports: verified.credential.transports
-        ? [...verified.credential.transports]
-        : null,
+      credentialId: verified.credentialId,
+      publicKey: verified.publicKey,
+      counter: verified.counter,
+      transports: verified.transports,
       deviceType: verified.deviceType,
       backedUp: verified.backedUp,
-      label,
+      label: verified.label,
       createdAt: clockOf(deps).nowIso(),
     });
     return { ok: true, id: saved.id };

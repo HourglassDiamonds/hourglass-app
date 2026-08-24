@@ -39,6 +39,12 @@ export const PASSKEY_WEBAUTHN_TIMEOUT_MS = 60_000;
 
 export const PASSKEY_CHALLENGE_COOKIE = "hgd_ed_wa_chal";
 
+/** One-time iPhone QR bootstrap. Raw token is never stored. */
+export const PASSKEY_PAIRING_COOKIE = "hgd_ed_pk_pair";
+export const PASSKEY_PAIRING_TTL_MS = 5 * 60 * 1000;
+export const PASSKEY_PAIRING_TTL_SEC = 5 * 60;
+export const PASSKEY_PAIRING_TOKEN_BYTES = 32;
+
 export type ContinuumWebAuthnRelyingParty =
   | { ok: true; origin: string; rpID: string }
   | { ok: false; reason: "invalid-rp" };

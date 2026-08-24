@@ -24,6 +24,8 @@ import type { FounderPasskeyRecord } from "./types";
 export type PasskeyRegistrationBeginInput = {
   rpID: string;
   excludeCredentialIds: { id: string; transports?: string[] }[];
+  /** iPhone pairing only. Desktop enrollment omits this so hybrid remains possible. */
+  authenticatorAttachment?: "platform";
 };
 
 export type PasskeyRegistrationVerifyInput = {
@@ -105,6 +107,9 @@ export const simpleWebAuthnCrypto: PasskeyCrypto = {
       authenticatorSelection: {
         residentKey: "preferred",
         userVerification: "required",
+        ...(input.authenticatorAttachment
+          ? { authenticatorAttachment: input.authenticatorAttachment }
+          : {}),
       },
     });
   },
