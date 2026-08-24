@@ -135,10 +135,10 @@ export function ConciergeBackLink() {
   return (
     <Link
       href="/executive-dashboard/concierge"
-      aria-label="Back to Concierge"
+      aria-label="Back to Continuum"
       className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.24em] text-[#8d8073] outline-none hover:text-[#efe8de] focus-visible:text-[#efe8de]"
     >
-      ← Concierge
+      ← Continuum
     </Link>
   );
 }

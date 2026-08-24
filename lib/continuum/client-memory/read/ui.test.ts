@@ -20,6 +20,14 @@ import {
 import { ClientProfileView } from "../../../../app/executive-dashboard/concierge/components/client-profile-view";
 import { ClientSearchResultRow } from "../../../../app/executive-dashboard/concierge/components/client-search-result";
 import { ConciergeUnavailable } from "../../../../app/executive-dashboard/concierge/components/client-profile-view";
+import { AskConciergeShell } from "../../../../app/executive-dashboard/concierge/components/ask-concierge-shell";
+import { ChiefOfStaffToday } from "../../../../app/executive-dashboard/concierge/components/chief-of-staff-today";
+import { QuickCapture } from "../../../../app/executive-dashboard/concierge/components/quick-capture";
+import { composeContinuumHome, greetingLine } from "../../dashboard/compose";
+import {
+  conciergeAddNotePath,
+  conciergeAddNotePickerPath,
+} from "./presentation";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "../../../..");
 const CONCIERGE_DIR = join(ROOT, "app", "executive-dashboard", "concierge");
@@ -159,6 +167,29 @@ describe("Concierge Client Memory UI", () => {
     assert.match(resultHtml, /2 projects/);
     assert.doesNotMatch(resultHtml, /ada@example.com/);
 
+    const noteRow = renderToStaticMarkup(
+      createElement(ClientSearchResultRow, {
+        result: {
+          personId: "11111111-1111-4111-8111-111111111111",
+          displayName: "Ada Lovelace",
+          organizationName: "Analytical Engines",
+          email: "ada@example.com",
+          phone: "3055550100",
+          roles: ["client"],
+          linkedProjectCount: 2,
+        },
+        href: conciergeAddNotePath("11111111-1111-4111-8111-111111111111"),
+      }),
+    );
+    assert.match(
+      noteRow,
+      /\/executive-dashboard\/concierge\/client\/11111111-1111-4111-8111-111111111111\/note\/new/,
+    );
+    assert.doesNotMatch(
+      noteRow,
+      /\/executive-dashboard\/concierge\/client\/11111111-1111-4111-8111-111111111111"/,
+    );
+
     const missing = renderToStaticMarkup(
       createElement(ConciergeUnavailable, {
         title: "Client record unavailable.",
@@ -189,12 +220,28 @@ describe("Concierge Client Memory UI", () => {
     assert.match(page, /title:\s*"Client"/);
     assert.doesNotMatch(page, /displayName/);
     const home = readFileSync(join(CONCIERGE_DIR, "page.tsx"), "utf8");
-    assert.match(home, /Search your client memory|ConciergeSearch/);
+    assert.match(home, /loadContinuumHomeModel/);
+    assert.match(home, /CommandCenterHome/);
+    assert.match(home, /variant="home"/);
+    assert.doesNotMatch(home, /Search your client memory|Search clients/);
     const search = readFileSync(
       join(CONCIERGE_DIR, "components", "concierge-search.tsx"),
       "utf8",
     );
-    assert.match(search, /Search your client memory/);
+    assert.match(search, /Search people/);
+    assert.match(search, /No people found/);
+    assert.match(search, /searchPeople|searchConciergeClients/);
+    assert.doesNotMatch(search, /Search clients|Search your client memory/);
+    assert.doesNotMatch(search, /All \| Clients|Networking filter|Personal filter/);
+    assert.match(search, /autoFocus = false/);
+    const command = readFileSync(
+      join(CONCIERGE_DIR, "components", "command-center-home.tsx"),
+      "utf8",
+    );
+    assert.match(command, /People/);
+    assert.match(command, /<ConciergeSearch \/>/);
+    assert.doesNotMatch(command, /autoFocus/);
+    assert.doesNotMatch(command, /intent=/);
     const actions = readFileSync(join(CONCIERGE_DIR, "actions.ts"), "utf8");
     assert.match(actions, /getAuthenticatedClientMemoryReader/);
     assert.match(actions, /getAuthenticatedClientMemoryNoteWriter/);
@@ -223,5 +270,120 @@ describe("Concierge Client Memory UI", () => {
     assert.match(form, /htmlFor=\{noteId\}/);
     assert.doesNotMatch(form, /concierge-manual/);
     assert.doesNotMatch(form, /manual-note/);
+  });
+
+  it("renders an honest command center without fake intelligence", () => {
+    const model = composeContinuumHome({
+      now: new Date("2026-08-24T18:00:00.000Z"),
+    });
+    const command = readFileSync(
+      join(CONCIERGE_DIR, "components", "command-center-home.tsx"),
+      "utf8",
+    );
+    const home = readFileSync(join(CONCIERGE_DIR, "page.tsx"), "utf8");
+    const cos = renderToStaticMarkup(
+      createElement(ChiefOfStaffToday, { chiefOfStaff: model.chiefOfStaff }),
+    );
+    const capture = renderToStaticMarkup(createElement(QuickCapture));
+    assert.equal(greetingLine(model), "Good afternoon, Justin.");
+    assert.match(home, /loadContinuumHomeModel/);
+    assert.match(home, /CommandCenterHome/);
+    assert.match(command, /greetingLine/);
+    assert.match(command, /ChiefOfStaffToday/);
+    assert.match(command, /AskConciergeShell/);
+    assert.match(command, /People/);
+    assert.match(command, /QuickCapture/);
+    assert.match(cos, /Chief of Staff/);
+    assert.match(cos, /Today/);
+    assert.match(cos, /Nothing in memory needs your attention yet/);
+    assert.doesNotMatch(cos, /coming soon|warming up|learning/i);
+    assert.doesNotMatch(cos, /follow-up overdue|sentiment|SLA overdue/i);
+    assert.match(capture, /Quick Capture/);
+    assert.match(capture, /Add Note/);
+    assert.match(capture, /\/executive-dashboard\/concierge\/note\/new/);
+    assert.doesNotMatch(command, /Search clients|Search your client memory/);
+    assert.doesNotMatch(command, /autoFocus/);
+  });
+
+  it("keeps Ask Concierge local, disconnected, and non-persistent", () => {
+    const ask = readFileSync(
+      join(CONCIERGE_DIR, "components", "ask-concierge-shell.tsx"),
+      "utf8",
+    );
+    assert.match(ask, /Ask Concierge isn't connected yet/);
+    assert.match(ask, /preventDefault/);
+    assert.doesNotMatch(ask, /searchConciergeClients|fetch\(|\/api\//);
+    assert.doesNotMatch(ask, /localStorage|sessionStorage|gtag/);
+    assert.doesNotMatch(ask, /getAuthenticatedClientMemoryReader/);
+    const html = renderToStaticMarkup(createElement(AskConciergeShell));
+    assert.match(html, /Ask Concierge/);
+    assert.match(html, /How many birthdays are coming up/);
+    assert.doesNotMatch(html, /<button[^>]*birthdays/i);
+  });
+
+  it("requires a Person for Add Note and does not create an orphan write path", () => {
+    const picker = readFileSync(
+      join(CONCIERGE_DIR, "note", "new", "page.tsx"),
+      "utf8",
+    );
+    const capture = renderToStaticMarkup(createElement(QuickCapture));
+    assert.match(capture, new RegExp(conciergeAddNotePickerPath()));
+    assert.match(picker, /intent="add-note"/);
+    assert.match(picker, /title:\s*"Add Note"/);
+    assert.match(picker, /Who is this about/);
+    assert.match(picker, /index:\s*false/);
+    assert.doesNotMatch(picker, /saveManualConciergeNote|addManualNote|noteText/);
+    assert.doesNotMatch(picker, /displayName|Justin@/);
+    const search = readFileSync(
+      join(CONCIERGE_DIR, "components", "concierge-search.tsx"),
+      "utf8",
+    );
+    assert.match(search, /conciergeAddNotePath/);
+    assert.match(search, /conciergeClientPath/);
+    assert.doesNotMatch(search, /suggestRelationshipContextLayer/);
+    assert.doesNotMatch(search, /contextLayer/);
+  });
+
+  it("does not treat note context as a Person role on the home or picker", () => {
+    const home = readFileSync(
+      join(CONCIERGE_DIR, "components", "command-center-home.tsx"),
+      "utf8",
+    );
+    const picker = readFileSync(
+      join(CONCIERGE_DIR, "note", "new", "page.tsx"),
+      "utf8",
+    );
+    const search = readFileSync(
+      join(CONCIERGE_DIR, "components", "concierge-search.tsx"),
+      "utf8",
+    );
+    for (const source of [home, picker, search]) {
+      assert.doesNotMatch(source, /RELATIONSHIP_CONTEXT_LAYERS/);
+      assert.doesNotMatch(source, /Clients \| Networking \| Personal/);
+      assert.doesNotMatch(source, /filter.*contextLayer|contextLayer ===/);
+    }
+    const profile = readFileSync(
+      join(CONCIERGE_DIR, "client", "[personId]", "page.tsx"),
+      "utf8",
+    );
+    assert.match(profile, /getPersonProfile/);
+    assert.match(profile, /ClientProfileView/);
+  });
+
+  it("leaves founder auth and passkeys outside the command center", () => {
+    const dashboardDir = join(ROOT, "lib", "continuum", "dashboard");
+    for (const file of walk(dashboardDir)) {
+      if (file.endsWith(".test.ts")) continue;
+      const source = readFileSync(file, "utf8");
+      assert.doesNotMatch(source, /passkeys|WebAuthn|issue-session|password\.ts/);
+      assert.doesNotMatch(source, /lib\/agent-os/);
+    }
+    const layout = readFileSync(join(CONCIERGE_DIR, "layout.tsx"), "utf8");
+    assert.match(layout, /requireInternalClientMemorySession/);
+    const picker = readFileSync(
+      join(CONCIERGE_DIR, "note", "new", "page.tsx"),
+      "utf8",
+    );
+    assert.match(picker, /CONCIERGE_HOME_PATH/);
   });
 });

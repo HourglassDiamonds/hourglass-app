@@ -4,10 +4,20 @@ import { useEffect, useId, useRef, useState, useTransition } from "react";
 import { searchConciergeClients } from "../actions";
 import { ClientSearchResultRow } from "./client-search-result";
 import type { ClientSearchResult } from "@/lib/continuum/client-memory/read/types";
+import {
+  conciergeAddNotePath,
+  conciergeClientPath,
+} from "@/lib/continuum/client-memory/read/presentation";
 
 const DEBOUNCE_MS = 180;
 
-export function ConciergeSearch() {
+export function ConciergeSearch({
+  autoFocus = false,
+  intent = "profile",
+}: {
+  autoFocus?: boolean;
+  intent?: "profile" | "add-note";
+}) {
   const inputId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   const requestIdRef = useRef(0);
@@ -17,8 +27,9 @@ export function ConciergeSearch() {
   const [pending, startTransition] = useTransition();
 
   useEffect(() => {
+    if (!autoFocus) return;
     inputRef.current?.focus();
-  }, []);
+  }, [autoFocus]);
 
   useEffect(() => {
     const trimmed = query.trim();
@@ -38,7 +49,7 @@ export function ConciergeSearch() {
           setError(
             state.reason === "unauthorized"
               ? "Sign in to continue."
-              : "Client record unavailable.",
+              : "Unable to search people.",
           );
           return;
         }
@@ -50,14 +61,15 @@ export function ConciergeSearch() {
   }, [query]);
 
   const trimmed = query.trim();
-  const showEmptyHome = !trimmed;
   const showNoResults =
     Boolean(trimmed) && !pending && results && results.length === 0 && !error;
+  const hrefForPerson =
+    intent === "add-note" ? conciergeAddNotePath : conciergeClientPath;
 
   return (
     <div>
       <label htmlFor={inputId} className="sr-only">
-        Search clients
+        Search people
       </label>
       <input
         ref={inputRef}
@@ -68,18 +80,12 @@ export function ConciergeSearch() {
         autoCorrect="off"
         spellCheck={false}
         enterKeyHint="search"
-        placeholder="Search clients"
+        placeholder="Search people"
         onChange={(event) => setQuery(event.target.value)}
         className="min-h-14 w-full rounded-[22px] border border-white/[0.08] bg-[#1d1916] px-5 text-[17px] text-[#efe8de] outline-none placeholder:text-[#7d7268] focus-visible:border-[#ad9164]/70 focus-visible:shadow-[0_0_0_3px_rgba(173,145,100,0.22)]"
       />
 
-      <div className="mt-8 min-h-[8rem]" aria-live="polite">
-        {showEmptyHome ? (
-          <p className="max-w-[18ch] font-serif text-[1.45rem] leading-[1.2] tracking-[-0.03em] text-[#d8cfc4]">
-            Search your client memory.
-          </p>
-        ) : null}
-
+      <div className="mt-4" aria-live="polite">
         {pending && trimmed && !results ? (
           <p className="text-[13px] tracking-[0.04em] text-[#9a8e82]">Searching…</p>
         ) : null}
@@ -90,7 +96,7 @@ export function ConciergeSearch() {
 
         {showNoResults ? (
           <p className="text-[15px] leading-relaxed text-[#c4b7aa]">
-            No clients found.
+            No people found.
           </p>
         ) : null}
 
@@ -98,7 +104,10 @@ export function ConciergeSearch() {
           <ul className="hg-concierge-fade divide-y divide-white/[0.06]">
             {results.map((result) => (
               <li key={result.personId}>
-                <ClientSearchResultRow result={result} />
+                <ClientSearchResultRow
+                  result={result}
+                  href={hrefForPerson(result.personId)}
+                />
               </li>
             ))}
           </ul>

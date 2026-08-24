@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  conciergeAddNotePath,
+  conciergeAddNotePickerPath,
   formatFactValue,
   formatLocation,
   historyFields,
@@ -133,5 +135,20 @@ describe("Concierge presentation", () => {
     assert.equal(telHref("not-a-phone"), null);
     assert.equal(isPersonIdParam("not-a-uuid"), false);
     assert.equal(isPersonIdParam("eb2802bd-e312-471e-8582-8dbd5ad2e04b"), true);
+  });
+
+  it("keeps Add Note picker and person-note paths distinct", () => {
+    assert.equal(
+      conciergeAddNotePickerPath(),
+      "/executive-dashboard/concierge/note/new",
+    );
+    assert.equal(
+      conciergeAddNotePath("eb2802bd-e312-471e-8582-8dbd5ad2e04b"),
+      "/executive-dashboard/concierge/client/eb2802bd-e312-471e-8582-8dbd5ad2e04b/note/new",
+    );
+    assert.notEqual(
+      conciergeAddNotePickerPath(),
+      conciergeAddNotePath("eb2802bd-e312-471e-8582-8dbd5ad2e04b"),
+    );
   });
 });

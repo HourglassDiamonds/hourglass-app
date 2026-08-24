@@ -109,3 +109,21 @@ body:has([data-concierge-shell]) [data-facet-rail] {
   border-color: rgba(173, 145, 100, 0.55);
   color: #efe8de;
 }
+
+.hg-command-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+  margin-top: 1.15rem;
+}
+
+@media (min-width: 1024px) {
+  .hg-command-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.7fr) minmax(20rem, 0.95fr);
+    align-items: start;
+    column-gap: 4.5rem;
+    row-gap: 0;
+    margin-top: 1.65rem;
+  }
+}
