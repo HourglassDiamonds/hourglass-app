@@ -3,7 +3,7 @@
  * WebAuthn registration reuses the durable challenge ledger.
  */
 
-import { CONTINUUM_FOUNDER_WEBAUTHN_USER_ID, PASSKEY_PAIRING_TTL_MS } from "./config";
+import { CONTINUUM_FOUNDER_WEBAUTHN_USER_ID, PASSKEY_PAIRING_TTL_MS, PASSKEY_PAIRING_TTL_SEC } from "./config";
 import { getContinuumWebAuthnRelyingParty } from "./config";
 import type {
   PasskeyChallengeLedger,
@@ -124,6 +124,7 @@ export async function claimIphonePairing(
       ok: true;
       pairing: PairingPublicView;
       pairingCookie: string;
+      cookieMaxAgeSec: number;
     }
   | { ok: false; reason: PasskeyOperationReason }
 > {
@@ -147,6 +148,10 @@ export async function claimIphonePairing(
     1_000,
     Date.parse(claimed.record.expiresAt) - clockOf(deps).now(),
   );
+  const cookieMaxAgeSec = Math.min(
+    PASSKEY_PAIRING_TTL_SEC,
+    Math.max(1, Math.ceil(remainingMs / 1000)),
+  );
   const { token } = createPasskeyPairingCookie(
     {
       pairingId: claimed.record.id,
@@ -161,6 +166,7 @@ export async function claimIphonePairing(
     ok: true,
     pairing: toPairingPublicView(claimed.record, clockOf(deps).now()),
     pairingCookie: token,
+    cookieMaxAgeSec,
   };
 }
 
@@ -294,6 +300,8 @@ export async function beginIphonePairingRegistration(
 
   return beginPasskeyRegistration(deps, {
     sessionOk: true,
+    // Pairing cookie fingerprint — not hgd_ed_session. Durable ledger
+    // still stores purpose=reg, founder_user_id, origin, rpID, and this sfp.
     sessionToken: input.pairingCookie,
     authenticatorAttachment: "platform",
   });
@@ -325,34 +333,29 @@ export async function completeIphonePairingRegistration(
   });
   if (!verified.ok) return verified;
 
-  let finished: Awaited<ReturnType<PasskeyPairingStore["transition"]>>;
+  let finished: Awaited<ReturnType<PasskeyPairingStore["finalize"]>>;
   try {
-    finished = await deps.pairings.transition(
-      approved.pairingId,
-      "approved",
-      "completed",
-    );
+    finished = await deps.pairings.finalize({
+      pairingId: approved.pairingId,
+      founderUserId: CONTINUUM_FOUNDER_WEBAUTHN_USER_ID,
+      claimedSessionHash: hashPairingSession(approved.nonce),
+      credential: {
+        founderUserId: CONTINUUM_FOUNDER_WEBAUTHN_USER_ID,
+        credentialId: verified.credentialId,
+        publicKey: verified.publicKey,
+        counter: verified.counter,
+        transports: verified.transports,
+        deviceType: verified.deviceType,
+        backedUp: verified.backedUp,
+        label: verified.label,
+        createdAt: clockOf(deps).nowIso(),
+      },
+    });
   } catch {
     return { ok: false, reason: "unavailable" };
   }
-  if (!finished.ok) return { ok: false, reason: "pairing-not-usable" };
-
-  try {
-    const saved = await deps.store.insert({
-      founderUserId: CONTINUUM_FOUNDER_WEBAUTHN_USER_ID,
-      credentialId: verified.credentialId,
-      publicKey: verified.publicKey,
-      counter: verified.counter,
-      transports: verified.transports,
-      deviceType: verified.deviceType,
-      backedUp: verified.backedUp,
-      label: verified.label,
-      createdAt: clockOf(deps).nowIso(),
-    });
-    return { ok: true, id: saved.id, issueFounderSession: true };
-  } catch {
-    return { ok: false, reason: "store-failed" };
-  }
+  if (!finished.ok) return finished;
+  return { ok: true, id: finished.credential.id, issueFounderSession: true };
 }
 
 export type { FounderPasskeyStore, PasskeyChallengeLedger };

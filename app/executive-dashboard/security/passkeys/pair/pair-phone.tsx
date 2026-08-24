@@ -2,10 +2,14 @@
 
 import { useEffect, useRef, useState } from "react";
 import { startRegistration } from "@simplewebauthn/browser";
-import { formatMatchCode } from "@/lib/executive-dashboard/passkeys/pairing-format";
+import {
+  formatMatchCode,
+  readPairingTokenFromHash,
+} from "@/lib/executive-dashboard/passkeys/pairing-format";
 import type { PasskeyPairingPublicView } from "@/lib/executive-dashboard/passkeys/types";
 import {
   beginIphonePairingRegistrationAction,
+  claimIphonePairingFromTokenAction,
   completeIphonePairingRegistrationAction,
   readPhonePairingAction,
 } from "./actions";
@@ -21,11 +25,11 @@ export function PairPhone({
   const [pairing, setPairing] = useState<PasskeyPairingPublicView | null>(
     initial.ok ? initial.pairing : null,
   );
-  const [error, setError] = useState<string | null>(
-    initial.ok ? null : PAIR_ERROR,
-  );
+  const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [claiming, setClaiming] = useState(!initial.ok);
   const started = useRef(false);
+  const claimed = useRef(false);
   const errorRef = useRef<HTMLParagraphElement>(null);
 
   useEffect(() => {
@@ -33,11 +37,29 @@ export function PairPhone({
   }, [error]);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (window.location.search.includes("t=")) {
-      window.history.replaceState(null, "", window.location.pathname);
+    if (typeof window === "undefined" || claimed.current) return;
+    claimed.current = true;
+    const token = readPairingTokenFromHash(window.location.hash);
+    window.history.replaceState(null, "", window.location.pathname);
+
+    if (!token) {
+      setClaiming(false);
+      if (!initial.ok) setError(PAIR_ERROR);
+      return;
     }
-  }, []);
+
+    void claimIphonePairingFromTokenAction(token).then((result) => {
+      setClaiming(false);
+      if (result.ok) {
+        setPairing(result.pairing);
+        setError(null);
+        return;
+      }
+      if (initial.ok) return;
+      setPairing(null);
+      setError(PAIR_ERROR);
+    });
+  }, [initial.ok]);
 
   useEffect(() => {
     if (!pairing) return;
@@ -93,6 +115,24 @@ export function PairPhone({
     } finally {
       setPending(false);
     }
+  }
+
+  if (claiming && !pairing) {
+    return (
+      <main className="relative min-h-[100dvh] overflow-x-hidden bg-[#14110f] text-[#efe8de]">
+        <div className="relative mx-auto flex min-h-[100dvh] w-full max-w-md flex-col justify-center px-6">
+          <p className="text-[11px] uppercase tracking-[0.28em] text-[#8d8073]">
+            Continuum
+          </p>
+          <h1 className="mt-3 font-serif text-[2.15rem] font-normal leading-[1.08] tracking-[-0.04em] text-[#efe8de]">
+            Set up this device?
+          </h1>
+          <p className="mt-4 text-[15px] leading-relaxed text-[#c4b7aa]">
+            Connecting this iPhone…
+          </p>
+        </div>
+      </main>
+    );
   }
 
   if (!pairing) {

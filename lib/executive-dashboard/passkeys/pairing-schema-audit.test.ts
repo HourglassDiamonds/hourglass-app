@@ -88,10 +88,23 @@ describe("founder passkey pairing schema (unapplied)", () => {
     assert.match(sql, /and p\.expires_at > now\(\)/);
     assert.match(sql, /set search_path = ''/);
     assert.match(sql, /security definer/);
+    assert.match(sql, /grant execute on function public\.continuum_founder_passkey_pairing_claim\(text, text, text\) to service_role;/i);
     assert.match(
       sql,
-      /grant execute on function public\.continuum_founder_passkey_pairing_claim\(text, text, text\) to service_role;/i,
+      /create or replace function public\.continuum_founder_passkey_pairing_finalize/,
     );
+    assert.match(sql, /insert into public\.continuum_founder_passkeys/);
+    assert.match(sql, /for update/);
+    assert.match(
+      sql,
+      /grant execute on function public\.continuum_founder_passkey_pairing_finalize\(uuid, text, text, text, text, bigint, jsonb, text, boolean, text, timestamptz\) to service_role;/i,
+    );
+    assert.match(
+      sql,
+      /revoke all on function public\.continuum_founder_passkey_pairing_finalize\(uuid, text, text, text, text, bigint, jsonb, text, boolean, text, timestamptz\) from public;/i,
+    );
+    assert.match(sql, /and p_from_status = 'claimed'/);
+    assert.match(sql, /and p_to_status = 'approved'/);
   });
 
   it("is not mixed into Client Memory, kernel, or the applied passkeys schema file", () => {

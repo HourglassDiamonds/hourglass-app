@@ -101,6 +101,7 @@ function applyExecutiveDashboardHeaders(response: NextResponse): void {
   response.headers.set("Cache-Control", "private, no-store");
   response.headers.set("X-Robots-Tag", "noindex, nofollow, noarchive");
   response.headers.set("X-Frame-Options", "DENY");
+  response.headers.set("Referrer-Policy", "no-referrer");
 }
 
 export const config = {

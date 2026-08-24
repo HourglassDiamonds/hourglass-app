@@ -145,11 +145,20 @@ export type PasskeyPairingStore = {
   >;
   transition(
     id: string,
-    from: "claimed" | "approved",
-    to: "approved" | "completed",
+    from: "claimed",
+    to: "approved",
   ): Promise<
     | { ok: true; record: PasskeyPairingRecord }
     | { ok: false; reason: "pairing-not-usable" }
+  >;
+  finalize(input: {
+    pairingId: string;
+    founderUserId: string;
+    claimedSessionHash: string;
+    credential: FounderPasskeyInsert;
+  }): Promise<
+    | { ok: true; credential: FounderPasskeyRecord; pairing: PasskeyPairingRecord }
+    | { ok: false; reason: "pairing-not-usable" | "store-failed" }
   >;
   cancel(id: string): Promise<
     | { ok: true; record: PasskeyPairingRecord }

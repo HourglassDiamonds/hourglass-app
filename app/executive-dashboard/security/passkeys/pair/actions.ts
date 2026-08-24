@@ -6,7 +6,6 @@ import {
   EXECUTIVE_DASHBOARD_CONCIERGE_PATH,
   EXECUTIVE_DASHBOARD_PASSKEY_ENROLL_ERROR,
   EXECUTIVE_DASHBOARD_PASSKEY_PAIR_ERROR,
-  EXECUTIVE_DASHBOARD_PASSKEY_PAIR_PATH,
 } from "@/lib/executive-dashboard/access";
 import { issueExecutiveDashboardSession } from "@/lib/executive-dashboard/issue-session";
 import { getExecutiveDashboardAuthClientIp } from "@/lib/executive-dashboard/rate-limit";
@@ -55,12 +54,15 @@ async function clientIp(): Promise<string> {
   return getExecutiveDashboardAuthClientIp(headerList);
 }
 
-async function setPairingCookie(token: string): Promise<void> {
+async function setPairingCookie(token: string, maxAgeSec: number): Promise<void> {
   const jar = await cookies();
   jar.set(
     PASSKEY_PAIRING_COOKIE,
     token,
-    passkeyPairingCookieOptions(shouldUseSecureExecutiveDashboardCookie()),
+    passkeyPairingCookieOptions(
+      shouldUseSecureExecutiveDashboardCookie(),
+      maxAgeSec,
+    ),
   );
 }
 
@@ -98,11 +100,13 @@ async function readAndClearChallengeCookie(): Promise<string | undefined> {
   return token;
 }
 
-export async function claimIphonePairingFromToken(rawToken: string): Promise<void> {
+export async function claimIphonePairingFromTokenAction(
+  rawToken: string,
+): Promise<PhonePairingViewState> {
   const runtime = getFounderPasskeyPairingRuntime();
   if (!runtime.ok) {
     logPasskeyOperation({ op: "pair.claim", ok: false, reason: "unavailable" });
-    redirect(EXECUTIVE_DASHBOARD_PASSKEY_PAIR_PATH);
+    return { ok: false, error: EXECUTIVE_DASHBOARD_PASSKEY_PAIR_ERROR };
   }
   const headerList = await headers();
   const result = await claimIphonePairing(runtime, {
@@ -115,16 +119,16 @@ export async function claimIphonePairingFromToken(rawToken: string): Promise<voi
       ok: false,
       reason: result.reason,
     });
-    redirect(EXECUTIVE_DASHBOARD_PASSKEY_PAIR_PATH);
+    return { ok: false, error: EXECUTIVE_DASHBOARD_PASSKEY_PAIR_ERROR };
   }
-  await setPairingCookie(result.pairingCookie);
+  await setPairingCookie(result.pairingCookie, result.cookieMaxAgeSec);
   logPasskeyOperation({
     op: "pair.claim",
     ok: true,
     reason: "ok",
     pairingId: result.pairing.id,
   });
-  redirect(EXECUTIVE_DASHBOARD_PASSKEY_PAIR_PATH);
+  return { ok: true, pairing: result.pairing };
 }
 
 export async function readPhonePairingAction(): Promise<PhonePairingViewState> {

@@ -258,6 +258,7 @@ const PAIRING_TABLE = "continuum_founder_passkey_pairings";
 const PAIRING_CLAIM_RPC = "continuum_founder_passkey_pairing_claim";
 const PAIRING_TRANSITION_RPC = "continuum_founder_passkey_pairing_transition";
 const PAIRING_CANCEL_RPC = "continuum_founder_passkey_pairing_cancel";
+const PAIRING_FINALIZE_RPC = "continuum_founder_passkey_pairing_finalize";
 
 type PairingRow = {
   id: string;
@@ -347,8 +348,8 @@ export class SupabasePasskeyPairingStore implements PasskeyPairingStore {
 
   async transition(
     id: string,
-    from: "claimed" | "approved",
-    to: "approved" | "completed",
+    from: "claimed",
+    to: "approved",
   ): Promise<
     | { ok: true; record: PasskeyPairingRecord }
     | { ok: false; reason: "pairing-not-usable" }
@@ -362,6 +363,43 @@ export class SupabasePasskeyPairingStore implements PasskeyPairingStore {
     const row = Array.isArray(data) ? data[0] : data;
     if (!row) return { ok: false, reason: "pairing-not-usable" };
     return { ok: true, record: rowToPairing(row as PairingRow) };
+  }
+
+  async finalize(input: {
+    pairingId: string;
+    founderUserId: string;
+    claimedSessionHash: string;
+    credential: FounderPasskeyInsert;
+  }): Promise<
+    | { ok: true; credential: FounderPasskeyRecord; pairing: PasskeyPairingRecord }
+    | { ok: false; reason: "pairing-not-usable" | "store-failed" }
+  > {
+    const { data, error } = await this.client.rpc(PAIRING_FINALIZE_RPC, {
+      p_pairing_id: input.pairingId,
+      p_founder_user_id: input.founderUserId,
+      p_claimed_session_hash: input.claimedSessionHash,
+      p_credential_id: input.credential.credentialId,
+      p_public_key: encodePublicKey(input.credential.publicKey),
+      p_counter: input.credential.counter,
+      p_transports: input.credential.transports,
+      p_device_type: input.credential.deviceType,
+      p_backed_up: input.credential.backedUp,
+      p_label: input.credential.label,
+      p_created_at: input.credential.createdAt,
+    });
+    if (error) {
+      if (error.code === "23505") return { ok: false, reason: "store-failed" };
+      throw error;
+    }
+    const row = Array.isArray(data) ? data[0] : data;
+    if (!row) return { ok: false, reason: "pairing-not-usable" };
+    const pairing = await this.getById(input.pairingId);
+    if (!pairing) return { ok: false, reason: "pairing-not-usable" };
+    return {
+      ok: true,
+      credential: rowToRecord(row as PasskeyRow),
+      pairing,
+    };
   }
 
   async cancel(id: string): Promise<

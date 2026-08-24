@@ -1,4 +1,4 @@
-import { claimIphonePairingFromToken, readPhonePairingAction } from "./actions";
+import { readPhonePairingAction } from "./actions";
 import { PairPhone } from "./pair-phone";
 
 export const dynamic = "force-dynamic";
@@ -8,17 +8,7 @@ export const metadata = {
   robots: { index: false, follow: false, nocache: true, noarchive: true },
 };
 
-export default async function IphonePasskeyPairPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ t?: string }>;
-}) {
-  const query = await searchParams;
-  const rawToken = query.t?.trim();
-  if (rawToken) {
-    await claimIphonePairingFromToken(rawToken);
-  }
-
+export default async function IphonePasskeyPairPage() {
   const initial = await readPhonePairingAction();
   return (
     <PairPhone

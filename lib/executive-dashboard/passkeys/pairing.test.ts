@@ -22,6 +22,8 @@ import {
   CONTINUUM_FOUNDER_WEBAUTHN_USER_ID,
   CONTINUUM_PRODUCTION_WEBAUTHN_ORIGIN,
   getContinuumWebAuthnRelyingParty,
+  PASSKEY_PAIRING_COOKIE,
+  PASSKEY_PAIRING_TTL_SEC,
 } from "./config";
 import type { PasskeyCrypto } from "./crypto";
 import {
@@ -35,18 +37,21 @@ import {
   readIphonePairingForPhone,
 } from "./pairing";
 import { InMemoryPasskeyPairingStore } from "./pairing-store";
+import { formatMatchCode, readPairingTokenFromHash } from "./pairing-format";
 import {
   hashPairingToken,
-  formatMatchCode,
   newPairingToken,
   pairingDeviceHint,
+  pairingPageUrl,
+  passkeyPairingCookieOptions,
+  hashPairingSession,
 } from "./pairing-token";
 import {
   beginPasskeyRegistration,
   completePasskeyRegistration,
 } from "./register";
 import { InMemoryFounderPasskeyStore } from "./store";
-import type { PasskeyPairingRecord } from "./types";
+import type { FounderPasskeyInsert, PasskeyPairingRecord } from "./types";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const SECRET = "test-session-secret-32chars-minimum!!";
@@ -192,7 +197,7 @@ describe("iphone passkey pairing", () => {
     store = new InMemoryFounderPasskeyStore();
     challenges = new InMemoryPasskeyChallengeLedger(new Map(), () => now);
     pairingRows = new Map();
-    pairings = new InMemoryPasskeyPairingStore(pairingRows, () => now);
+    pairings = new InMemoryPasskeyPairingStore(pairingRows, () => now, store);
     crypto = createTestCrypto();
   });
 
@@ -209,7 +214,7 @@ describe("iphone passkey pairing", () => {
       const created = await createIphonePairing(deps(), { sessionOk: true });
       assert.equal(created.ok, true);
       if (!created.ok) return;
-      assert.match(created.pairUrl, /^https:\/\/www\.hourglassdiamonds\.com\/executive-dashboard\/security\/passkeys\/pair\?t=/);
+      assert.match(created.pairUrl, /^https:\/\/www\.hourglassdiamonds\.com\/executive-dashboard\/security\/passkeys\/pair#t=/);
       assert.equal(created.rawToken.length >= 32, true);
       assert.equal(created.matchCode.length, 6);
       const row = [...pairingRows.values()][0];
@@ -264,8 +269,8 @@ describe("iphone passkey pairing", () => {
       const created = await createIphonePairing(deps(), { sessionOk: true });
       assert.equal(created.ok, true);
       if (!created.ok) return;
-      const instanceA = new InMemoryPasskeyPairingStore(pairingRows, () => now);
-      const instanceB = new InMemoryPasskeyPairingStore(pairingRows, () => now);
+      const instanceA = new InMemoryPasskeyPairingStore(pairingRows, () => now, store);
+      const instanceB = new InMemoryPasskeyPairingStore(pairingRows, () => now, store);
       const sharedDepsA = { ...deps(), pairings: instanceA };
       const sharedDepsB = { ...deps(), pairings: instanceB };
       const first = await claimIphonePairing(sharedDepsA, {
@@ -498,6 +503,7 @@ describe("iphone passkey pairing", () => {
     const proxy = read("proxy.ts");
     assert.match(proxy, /isExecutiveDashboardPasskeyPairPath/);
     assert.match(proxy, /if \(isPair\)/);
+    assert.match(proxy, /Referrer-Policy.*no-referrer/);
     const layout = read("app/executive-dashboard/security/layout.tsx");
     assert.match(layout, /isExecutiveDashboardPasskeyPairPath/);
     const concierge = read("app/executive-dashboard/concierge/layout.tsx");
@@ -513,8 +519,28 @@ describe("iphone passkey pairing", () => {
     const desktopActions = read(
       "app/executive-dashboard/security/passkeys/pairing-actions.ts",
     );
+    assert.match(pairActions, /claimIphonePairingFromTokenAction/);
     assert.match(pairActions, /issueExecutiveDashboardSession/);
     assert.match(pairActions, /completeIphonePairingRegistration/);
+    assert.doesNotMatch(pairActions, /searchParams/);
+    const pairPage = read("app/executive-dashboard/security/passkeys/pair/page.tsx");
+    assert.doesNotMatch(pairPage, /searchParams|\?t=/);
+    assert.match(
+      read("app/executive-dashboard/security/passkeys/pair/pair-phone.tsx"),
+      /readPairingTokenFromHash/,
+    );
+    assert.match(
+      read("app/executive-dashboard/security/passkeys/pair/pair-phone.tsx"),
+      /history\.replaceState/,
+    );
+    assert.match(
+      read("lib/executive-dashboard/passkeys/pairing-token.ts"),
+      /#t=/,
+    );
+    assert.doesNotMatch(
+      read("lib/executive-dashboard/passkeys/pairing-token.ts"),
+      /\?t=/,
+    );
     assert.match(desktopActions, /readFounderPasskeySession/);
     assert.doesNotMatch(pairActions, /approveIphonePairing\(/);
     assert.doesNotMatch(desktopActions, /console\.(log|info|debug).*pairUrl/);
@@ -531,10 +557,16 @@ describe("iphone passkey pairing", () => {
       read("app/executive-dashboard/security/passkeys/iphone-setup.tsx"),
       /localStorage|sessionStorage/,
     );
+    assert.doesNotMatch(
+      read("app/executive-dashboard/security/passkeys/pair/pair-phone.tsx"),
+      /localStorage|sessionStorage/,
+    );
+    assert.match(proxy, /Referrer-Policy.*no-referrer/);
     const pairingFlow = read("lib/executive-dashboard/passkeys/pairing.ts");
     assert.match(pairingFlow, /authenticatorAttachment: "platform"/);
     assert.match(pairingFlow, /beginPasskeyRegistration/);
     assert.match(pairingFlow, /verifyPasskeyRegistration/);
+    assert.match(pairingFlow, /pairings\.finalize/);
     assert.doesNotMatch(pairingFlow, /from "\.\/password"|passwordHash/);
     assert.match(read("lib/executive-dashboard/passkeys/log.ts"), /pairingId/);
     const payload = read("lib/executive-dashboard/passkeys/log.ts").slice(
@@ -610,5 +642,195 @@ describe("iphone passkey pairing", () => {
       });
       assert.equal(complete.ok, false);
     });
+  });
+
+  function credentialInsert(credentialId: string): FounderPasskeyInsert {
+    return {
+      founderUserId: CONTINUUM_FOUNDER_WEBAUTHN_USER_ID,
+      credentialId,
+      publicKey: new Uint8Array([1, 2, 3, 4]),
+      counter: 0,
+      transports: ["internal"],
+      deviceType: "singleDevice",
+      backedUp: false,
+      label: "iPhone",
+      createdAt: clock.nowIso(),
+    };
+  }
+
+  async function approvedPairingRow() {
+    const created = await createIphonePairing(deps(), { sessionOk: true });
+    assert.equal(created.ok, true);
+    if (!created.ok) throw new Error("create");
+    const claimed = await claimIphonePairing(deps(), {
+      rawToken: created.rawToken,
+    });
+    assert.equal(claimed.ok, true);
+    if (!claimed.ok) throw new Error("claim");
+    const approved = await approveIphonePairing(deps(), {
+      founderSessionOk: true,
+      pairingId: created.pairingId,
+    });
+    assert.equal(approved.ok, true);
+    const row = pairingRows.get(created.pairingId);
+    if (!row?.claimedSessionHash) throw new Error("claimed-hash");
+    return { created, claimed, row };
+  }
+
+  it("commits credential and completed pairing together", async () => {
+    await productionEnvAsync(async () => {
+      const { row } = await approvedPairingRow();
+      const finished = await pairings.finalize({
+        pairingId: row.id,
+        founderUserId: CONTINUUM_FOUNDER_WEBAUTHN_USER_ID,
+        claimedSessionHash: row.claimedSessionHash as string,
+        credential: credentialInsert("cred-atomic-ok"),
+      });
+      assert.equal(finished.ok, true);
+      if (!finished.ok) return;
+      assert.equal(finished.pairing.status, "completed");
+      assert.equal(finished.credential.credentialId, "cred-atomic-ok");
+      assert.equal((await store.list()).length, 1);
+    });
+  });
+
+  it("rolls back pairing completion when credential id already exists", async () => {
+    await productionEnvAsync(async () => {
+      await store.insert(credentialInsert("cred-dup"));
+      const { row } = await approvedPairingRow();
+      const finished = await pairings.finalize({
+        pairingId: row.id,
+        founderUserId: CONTINUUM_FOUNDER_WEBAUTHN_USER_ID,
+        claimedSessionHash: row.claimedSessionHash as string,
+        credential: credentialInsert("cred-dup"),
+      });
+      assert.equal(finished.ok, false);
+      if (!finished.ok) assert.equal(finished.reason, "store-failed");
+      assert.equal(pairingRows.get(row.id)?.status, "approved");
+      assert.equal((await store.list()).length, 1);
+    });
+  });
+
+  it("does not insert a credential for expired or unapproved pairings", async () => {
+    await productionEnvAsync(async () => {
+      const created = await createIphonePairing(deps(), { sessionOk: true });
+      assert.equal(created.ok, true);
+      if (!created.ok) return;
+      const claimed = await claimIphonePairing(deps(), {
+        rawToken: created.rawToken,
+      });
+      assert.equal(claimed.ok, true);
+      const row = pairingRows.get(created.pairingId);
+      const unapproved = await pairings.finalize({
+        pairingId: created.pairingId,
+        founderUserId: CONTINUUM_FOUNDER_WEBAUTHN_USER_ID,
+        claimedSessionHash: row?.claimedSessionHash ?? "x",
+        credential: credentialInsert("cred-unapproved"),
+      });
+      assert.equal(unapproved.ok, false);
+      assert.equal((await store.list()).length, 0);
+
+      const { row: approved } = await approvedPairingRow();
+      now = NOW + 5 * 60 * 1000 + 1;
+      const expired = await pairings.finalize({
+        pairingId: approved.id,
+        founderUserId: CONTINUUM_FOUNDER_WEBAUTHN_USER_ID,
+        claimedSessionHash: approved.claimedSessionHash as string,
+        credential: credentialInsert("cred-expired"),
+      });
+      assert.equal(expired.ok, false);
+      assert.equal((await store.list()).length, 0);
+      assert.equal(pairingRows.get(approved.id)?.status, "approved");
+    });
+  });
+
+  it("rejects finalize with the wrong claimed session hash", async () => {
+    await productionEnvAsync(async () => {
+      const { row } = await approvedPairingRow();
+      const finished = await pairings.finalize({
+        pairingId: row.id,
+        founderUserId: CONTINUUM_FOUNDER_WEBAUTHN_USER_ID,
+        claimedSessionHash: hashPairingSession("other-phone-nonce"),
+        credential: credentialInsert("cred-wrong-hash"),
+      });
+      assert.equal(finished.ok, false);
+      assert.equal((await store.list()).length, 0);
+      assert.equal(pairingRows.get(row.id)?.status, "approved");
+    });
+  });
+
+  it("allows only one of two simultaneous finalize attempts to persist", async () => {
+    await productionEnvAsync(async () => {
+      const { row } = await approvedPairingRow();
+      const instanceA = new InMemoryPasskeyPairingStore(pairingRows, () => now, store);
+      const instanceB = new InMemoryPasskeyPairingStore(pairingRows, () => now, store);
+      const [first, second] = await Promise.all([
+        instanceA.finalize({
+          pairingId: row.id,
+          founderUserId: CONTINUUM_FOUNDER_WEBAUTHN_USER_ID,
+          claimedSessionHash: row.claimedSessionHash as string,
+          credential: credentialInsert("cred-race-a"),
+        }),
+        instanceB.finalize({
+          pairingId: row.id,
+          founderUserId: CONTINUUM_FOUNDER_WEBAUTHN_USER_ID,
+          claimedSessionHash: row.claimedSessionHash as string,
+          credential: credentialInsert("cred-race-b"),
+        }),
+      ]);
+      const wins = [first, second].filter((item) => item.ok);
+      const losses = [first, second].filter((item) => !item.ok);
+      assert.equal(wins.length, 1);
+      assert.equal(losses.length, 1);
+      assert.equal((await store.list()).length, 1);
+      assert.equal(pairingRows.get(row.id)?.status, "completed");
+    });
+  });
+
+  it("does not issue a founder session when finalization fails", async () => {
+    await productionEnvAsync(async () => {
+      const { claimed, created } = await approvedPairingRow();
+      await store.insert(credentialInsert("cred-iphone-pair"));
+      const begin = await beginIphonePairingRegistration(deps(), {
+        pairingCookie: claimed.pairingCookie,
+      });
+      assert.equal(begin.ok, true);
+      if (!begin.ok) return;
+      const complete = await completeIphonePairingRegistration(deps(), {
+        pairingCookie: claimed.pairingCookie,
+        challengeToken: begin.challengeToken,
+        response: attestation({
+          testChallenge: begin.options.challenge,
+          testCredentialId: "cred-iphone-pair",
+        }),
+      });
+      assert.equal(complete.ok, false);
+      assert.equal("issueFounderSession" in complete, false);
+      assert.equal(pairingRows.get(created.pairingId)?.status, "approved");
+    });
+  });
+
+  it("keeps the pairing token in the URL fragment, not the request query", () => {
+    const url = pairingPageUrl(
+      "https://www.hourglassdiamonds.com",
+      "opaque-token",
+    );
+    assert.equal(
+      url,
+      "https://www.hourglassdiamonds.com/executive-dashboard/security/passkeys/pair#t=opaque-token",
+    );
+    assert.equal(readPairingTokenFromHash("#t=opaque-token"), "opaque-token");
+    assert.equal(readPairingTokenFromHash(""), null);
+    const cookie = passkeyPairingCookieOptions(true, 180);
+    assert.equal(cookie.httpOnly, true);
+    assert.equal(cookie.secure, true);
+    assert.equal(cookie.sameSite, "lax");
+    assert.equal(cookie.path, EXECUTIVE_DASHBOARD_PASSKEY_PAIR_PATH);
+    assert.equal(cookie.maxAge, 180);
+    assert.equal(PASSKEY_PAIRING_COOKIE, "hgd_ed_pk_pair");
+    assert.equal(
+      passkeyPairingCookieOptions(true, 10_000).maxAge,
+      PASSKEY_PAIRING_TTL_SEC,
+    );
   });
 });

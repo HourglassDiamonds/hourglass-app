@@ -1,10 +1,12 @@
 /**
  * In-memory iPhone pairing store. Tests only.
- * Production uses Postgres atomic claim/transition RPCs.
+ * Production uses Postgres atomic claim/finalize RPCs.
  */
 
-import { randomUUID } from "node:crypto";
 import type {
+  FounderPasskeyInsert,
+  FounderPasskeyRecord,
+  FounderPasskeyStore,
   PasskeyPairingInsert,
   PasskeyPairingRecord,
   PasskeyPairingStore,
@@ -18,11 +20,12 @@ export class InMemoryPasskeyPairingStore implements PasskeyPairingStore {
   constructor(
     private readonly rows: Map<string, PasskeyPairingRecord> = new Map(),
     private readonly now: () => number = () => Date.now(),
+    private readonly passkeys?: FounderPasskeyStore,
   ) {}
 
   async insert(record: PasskeyPairingInsert): Promise<PasskeyPairingRecord> {
     const saved: PasskeyPairingRecord = {
-      id: randomUUID(),
+      id: crypto.randomUUID(),
       founderUserId: record.founderUserId,
       tokenHash: record.tokenHash,
       status: "pending",
@@ -76,8 +79,8 @@ export class InMemoryPasskeyPairingStore implements PasskeyPairingStore {
 
   async transition(
     id: string,
-    from: "claimed" | "approved",
-    to: "approved" | "completed",
+    from: "claimed",
+    to: "approved",
   ): Promise<
     | { ok: true; record: PasskeyPairingRecord }
     | { ok: false; reason: "pairing-not-usable" }
@@ -88,19 +91,53 @@ export class InMemoryPasskeyPairingStore implements PasskeyPairingStore {
     if (Date.parse(row.expiresAt) <= nowMs) {
       return { ok: false, reason: "pairing-not-usable" };
     }
-    if (row.status !== from) return { ok: false, reason: "pairing-not-usable" };
+    if (row.status !== "claimed" || from !== "claimed" || to !== "approved") {
+      return { ok: false, reason: "pairing-not-usable" };
+    }
+    row.status = "approved";
+    row.approvedAt = new Date(nowMs).toISOString();
+    return { ok: true, record: clone(row) };
+  }
+
+  async finalize(input: {
+    pairingId: string;
+    founderUserId: string;
+    claimedSessionHash: string;
+    credential: FounderPasskeyInsert;
+  }): Promise<
+    | { ok: true; credential: FounderPasskeyRecord; pairing: PasskeyPairingRecord }
+    | { ok: false; reason: "pairing-not-usable" | "store-failed" }
+  > {
+    if (!this.passkeys) return { ok: false, reason: "store-failed" };
+    const nowMs = this.now();
+    const row = this.rows.get(input.pairingId);
+    if (!row) return { ok: false, reason: "pairing-not-usable" };
+    if (Date.parse(row.expiresAt) <= nowMs) {
+      return { ok: false, reason: "pairing-not-usable" };
+    }
+    if (row.status !== "approved") {
+      return { ok: false, reason: "pairing-not-usable" };
+    }
+    if (row.founderUserId !== input.founderUserId) {
+      return { ok: false, reason: "pairing-not-usable" };
+    }
     if (
-      !(
-        (from === "claimed" && to === "approved") ||
-        (from === "approved" && to === "completed")
-      )
+      !row.claimedSessionHash ||
+      row.claimedSessionHash !== input.claimedSessionHash
     ) {
       return { ok: false, reason: "pairing-not-usable" };
     }
-    row.status = to;
-    if (to === "approved") row.approvedAt = new Date(nowMs).toISOString();
-    if (to === "completed") row.completedAt = new Date(nowMs).toISOString();
-    return { ok: true, record: clone(row) };
+
+    row.status = "completed";
+    row.completedAt = new Date(nowMs).toISOString();
+    try {
+      const credential = await this.passkeys.insert(input.credential);
+      return { ok: true, credential, pairing: clone(row) };
+    } catch {
+      row.status = "approved";
+      row.completedAt = null;
+      return { ok: false, reason: "store-failed" };
+    }
   }
 
   async cancel(id: string): Promise<

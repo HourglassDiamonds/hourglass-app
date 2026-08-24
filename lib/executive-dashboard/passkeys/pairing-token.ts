@@ -11,7 +11,6 @@ import {
   PASSKEY_PAIRING_TTL_SEC,
   PASSKEY_PAIRING_TOKEN_BYTES,
 } from "./config";
-import { EXECUTIVE_DASHBOARD_SESSION_PATH } from "../session";
 import { EXECUTIVE_DASHBOARD_PASSKEY_PAIR_PATH } from "../access";
 import { formatMatchCode } from "./pairing-format";
 
@@ -61,10 +60,13 @@ export function newMatchCode(): string {
 export function pairingPageUrl(origin: string, rawToken?: string): string {
   const base = `${origin.replace(/\/$/, "")}${EXECUTIVE_DASHBOARD_PASSKEY_PAIR_PATH}`;
   if (!rawToken) return base;
-  return `${base}?t=${encodeURIComponent(rawToken)}`;
+  return `${base}#t=${encodeURIComponent(rawToken)}`;
 }
 
-export function passkeyPairingCookieOptions(secure: boolean): {
+export function passkeyPairingCookieOptions(
+  secure: boolean,
+  maxAgeSec = PASSKEY_PAIRING_TTL_SEC,
+): {
   httpOnly: true;
   secure: boolean;
   sameSite: "lax";
@@ -75,8 +77,8 @@ export function passkeyPairingCookieOptions(secure: boolean): {
     httpOnly: true,
     secure,
     sameSite: "lax",
-    path: EXECUTIVE_DASHBOARD_SESSION_PATH,
-    maxAge: PASSKEY_PAIRING_TTL_SEC,
+    path: EXECUTIVE_DASHBOARD_PASSKEY_PAIR_PATH,
+    maxAge: Math.min(PASSKEY_PAIRING_TTL_SEC, Math.max(0, maxAgeSec)),
   };
 }
 
