@@ -171,4 +171,29 @@ describe("Chief of Staff in-memory store", () => {
         error.code === "entity-not-found",
     );
   });
+
+  it("does not persist later items after an invalid entity in the same upsert", async () => {
+    const store = new InMemoryChiefOfStaffStore({
+      nowIso: () => NOW,
+      entities: kinds({ [PERSON]: "person", [PROJECT]: "project" }),
+    });
+    const valid = item({
+      id: "valid",
+      dedupeKey: "valid",
+      personId: PERSON,
+    });
+    const invalid = item({
+      id: "invalid",
+      dedupeKey: "invalid",
+      personId: PROJECT,
+    });
+    await assert.rejects(
+      () => store.upsertItems([valid, invalid]),
+      (error: unknown) =>
+        error instanceof ChiefOfStaffPersistenceError &&
+        error.code === "entity-kind-invalid",
+    );
+    assert.equal((await store.loadItem("valid"))?.id, "valid");
+    assert.equal(await store.loadItem("invalid"), null);
+  });
 });

@@ -285,6 +285,36 @@ describe("Chief of Staff Supabase mapping / store", () => {
     );
   });
 
+  it("does not persist a later item after an invalid entity in the same upsert", async () => {
+    const db = {
+      items: [] as Row[],
+      briefs: [] as Row[],
+      entities: [
+        { id: PERSON, kind: "person" },
+        { id: PROJECT, kind: "project" },
+      ],
+    };
+    const store = new SupabaseChiefOfStaffStore(fakeClient(db), () => NOW);
+    const valid = sampleItem({
+      id: "valid",
+      dedupeKey: "valid",
+      personId: PERSON,
+    });
+    const invalid = sampleItem({
+      id: "invalid",
+      dedupeKey: "invalid",
+      personId: PROJECT,
+    });
+    await assert.rejects(
+      () => store.upsertItems([valid, invalid]),
+      (error: unknown) =>
+        error instanceof ChiefOfStaffPersistenceError &&
+        error.code === "entity-kind-invalid",
+    );
+    assert.equal(db.items.length, 1);
+    assert.equal(db.items[0]?.id, "valid");
+  });
+
   it("surfaces persistence failure as unavailable without a durable brief", async () => {
     const store = new SupabaseChiefOfStaffStore(
       fakeClient({ items: [], briefs: [], entities: [], fail: true }),

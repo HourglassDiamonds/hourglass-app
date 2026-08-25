@@ -178,4 +178,66 @@ describe("Chief of Staff Phase 1B shadow persist → reload", () => {
     assert.equal("brief" in result, false);
     assert.equal("email" in result, false);
   });
+
+  it("does not claim a durable brief when a later item fails entity validation", async () => {
+    const PERSON = "11111111-1111-4111-8111-111111111111";
+    const PROJECT = "22222222-2222-4222-8222-222222222222";
+    const store = new InMemoryChiefOfStaffStore({
+      nowIso: () => GENERATED_AT,
+      entities: {
+        async getKind(id) {
+          if (id === PERSON) return "person";
+          if (id === PROJECT) return "project";
+          return null;
+        },
+      },
+    });
+    const observations: SpecialistObservation[] = [
+      {
+        specialist: "founder-focus",
+        kind: "founder-focus-now",
+        subject: { personId: PERSON },
+        summary: "Follow up with Charlotte editorial contact today",
+        whyItMatters: "Authority gap.",
+        recommendedAction: "Follow up with Charlotte editorial contact today",
+        epistemicClass: "observed",
+        importanceHint: "high",
+        urgencyHint: "today",
+        audienceHint: "founder-action",
+        confidence: "high",
+        evidenceIds: [],
+        observationIds: [],
+        observedAt: GENERATED_AT,
+        dedupeKey: "founder-focus:ok",
+        changeClass: "novel",
+      },
+      {
+        specialist: "founder-focus",
+        kind: "founder-focus-now",
+        subject: { personId: PROJECT },
+        summary: "Invalid project as person",
+        epistemicClass: "observed",
+        importanceHint: "high",
+        urgencyHint: "today",
+        audienceHint: "founder-action",
+        confidence: "high",
+        evidenceIds: [],
+        observationIds: [],
+        observedAt: GENERATED_AT,
+        dedupeKey: "founder-focus:bad",
+        changeClass: "novel",
+      },
+    ];
+    const result = await runChiefOfStaffShadow({
+      localDate: LOCAL_DATE,
+      generatedAt: GENERATED_AT,
+      observations,
+      store,
+    });
+    assert.equal(result.ok, false);
+    if (result.ok) return;
+    assert.equal(result.durable, false);
+    assert.equal(result.code, "entity-kind-invalid");
+    assert.equal(await store.getBriefByLocalDate(LOCAL_DATE), null);
+  });
 });
