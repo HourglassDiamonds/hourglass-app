@@ -67,6 +67,20 @@ describe("Concierge Client Memory UI", () => {
     );
     assert.match(saved, /Note saved/);
     assert.doesNotMatch(saved, /Prefers morning|ada@example/);
+    const savedClient = renderToStaticMarkup(
+      createElement(ClientProfileView, {
+        profile: composed.profile,
+        justSavedClient: true,
+      }),
+    );
+    assert.match(savedClient, /Client added/);
+    const existingClient = renderToStaticMarkup(
+      createElement(ClientProfileView, {
+        profile: composed.profile,
+        justExistingClient: true,
+      }),
+    );
+    assert.match(existingClient, /already in Continuum/);
   });
 
   it("displays a typed birthday without dumping JSON and offers Edit birthday", () => {
@@ -286,8 +300,11 @@ describe("Concierge Client Memory UI", () => {
     assert.match(actions, /askConcierge/);
     assert.match(actions, /getAuthenticatedClientMemoryNoteWriter/);
     assert.match(actions, /getAuthenticatedClientMemoryFactWriter/);
+    assert.match(actions, /getAuthenticatedClientMemoryPersonWriter/);
     assert.match(actions, /saved=1/);
     assert.match(actions, /saved=birthday/);
+    assert.match(actions, /saved=client/);
+    assert.match(actions, /existing=client/);
     assert.doesNotMatch(actions, /from\("continuum_/);
     assert.doesNotMatch(actions, /noteText=/);
     const addNote = readFileSync(
@@ -328,6 +345,26 @@ describe("Concierge Client Memory UI", () => {
     assert.match(birthdayForm, /Saving will replace the current birthday on record/);
     assert.doesNotMatch(birthdayForm, /confidence|verification|visibility|usage permission|source_system/i);
     assert.doesNotMatch(birthdayForm, /Add Fact|spouse|fiancé/i);
+    const addClientPage = readFileSync(
+      join(CONCIERGE_DIR, "client", "new", "page.tsx"),
+      "utf8",
+    );
+    assert.match(addClientPage, /title:\s*"Add Client"/);
+    assert.match(addClientPage, /randomUUID/);
+    assert.match(addClientPage, /AddClientForm/);
+    assert.doesNotMatch(addClientPage, /concierge-manual/);
+    const addClientForm = readFileSync(
+      join(CONCIERGE_DIR, "components", "add-client-form.tsx"),
+      "utf8",
+    );
+    assert.match(addClientForm, /First name/);
+    assert.match(addClientForm, /Last name/);
+    assert.match(addClientForm, /name="email"/);
+    assert.match(addClientForm, /name="phone"/);
+    assert.match(addClientForm, /name="organization"/);
+    assert.match(addClientForm, /Add Client/);
+    assert.doesNotMatch(addClientForm, /street|address|spouse|birthday|project|noteText/i);
+    assert.doesNotMatch(addClientForm, /roles|source_system|created_by/);
   });
 
   it("renders an honest command center without fake intelligence", () => {
@@ -358,7 +395,9 @@ describe("Concierge Client Memory UI", () => {
     assert.doesNotMatch(cos, /follow-up overdue|sentiment|SLA overdue/i);
     assert.match(capture, /Quick Capture/);
     assert.match(capture, /Add Note/);
+    assert.match(capture, /Add Client/);
     assert.match(capture, /\/executive-dashboard\/concierge\/note\/new/);
+    assert.match(capture, /\/executive-dashboard\/concierge\/client\/new/);
     assert.doesNotMatch(command, /Search clients|Search your client memory/);
     assert.doesNotMatch(command, /autoFocus/);
   });

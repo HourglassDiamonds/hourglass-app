@@ -18,10 +18,14 @@ export function ClientProfileView({
   profile,
   justSaved = false,
   justSavedBirthday = false,
+  justSavedClient = false,
+  justExistingClient = false,
 }: {
   profile: ConciergePersonProfile;
   justSaved?: boolean;
   justSavedBirthday?: boolean;
+  justSavedClient?: boolean;
+  justExistingClient?: boolean;
 }) {
   const facts = visibleCurrentFacts(profile.facts.current);
   const birthday = currentBirthdayFact(profile.facts.current);
@@ -51,6 +55,16 @@ export function ClientProfileView({
       {justSavedBirthday ? (
         <p className="mt-6 text-[13px] tracking-[0.04em] text-[#c4b7aa]" role="status">
           Birthday saved.
+        </p>
+      ) : null}
+      {justSavedClient ? (
+        <p className="mt-6 text-[13px] tracking-[0.04em] text-[#c4b7aa]" role="status">
+          Client added.
+        </p>
+      ) : null}
+      {justExistingClient ? (
+        <p className="mt-6 text-[13px] tracking-[0.04em] text-[#c4b7aa]" role="status">
+          This person was already in Continuum. Client status is now active.
         </p>
       ) : null}
 

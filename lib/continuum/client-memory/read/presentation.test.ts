@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  conciergeAddClientPath,
   conciergeAddNotePath,
   conciergeAddNotePickerPath,
   conciergeBirthdayPath,
@@ -158,6 +159,10 @@ describe("Concierge presentation", () => {
     assert.equal(
       conciergeBirthdayPath("eb2802bd-e312-471e-8582-8dbd5ad2e04b"),
       "/executive-dashboard/concierge/client/eb2802bd-e312-471e-8582-8dbd5ad2e04b/birthday",
+    );
+    assert.equal(
+      conciergeAddClientPath(),
+      "/executive-dashboard/concierge/client/new",
     );
     assert.notEqual(
       conciergeAddNotePickerPath(),

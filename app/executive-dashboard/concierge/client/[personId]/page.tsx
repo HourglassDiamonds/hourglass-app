@@ -19,7 +19,7 @@ export default async function ConciergeClientPage({
   searchParams,
 }: {
   params: Promise<{ personId: string }>;
-  searchParams?: Promise<{ saved?: string }>;
+  searchParams?: Promise<{ saved?: string; existing?: string }>;
 }) {
   const { personId } = await params;
   const query = searchParams ? await searchParams : {};
@@ -79,6 +79,8 @@ export default async function ConciergeClientPage({
           profile={result.profile}
           justSaved={query.saved === "1"}
           justSavedBirthday={query.saved === "birthday"}
+          justSavedClient={query.saved === "client"}
+          justExistingClient={query.existing === "client"}
         />
       </div>
     </ConciergeShell>

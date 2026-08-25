@@ -36,6 +36,10 @@ export function conciergeAddNotePickerPath(): string {
   return `${CONCIERGE_HOME_PATH}/note/new`;
 }
 
+export function conciergeAddClientPath(): string {
+  return `${CONCIERGE_HOME_PATH}/client/new`;
+}
+
 export const RELATIONSHIP_CONTEXT_LAYER_LABELS: Record<
   RelationshipContextLayer,
   string
