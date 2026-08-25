@@ -45,6 +45,7 @@ export {
   assertNoPii,
   findPiiViolation,
   isContinuumJsonValue,
+  isContinuumSourceSystem,
   isPersonIdentityKind,
   validateConfidence,
   validateEvidenceSourceRefs,

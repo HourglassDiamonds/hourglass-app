@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { describe, it } from "node:test";
 import { resolve } from "node:path";
 import {
+  CONTINUUM_SOURCE_SYSTEMS,
   PERSON_IDENTITY_KINDS,
   type ContinuumEvent,
   type ContinuumEvidence,
@@ -11,6 +12,7 @@ import {
 import {
   assertNoPii,
   isContinuumJsonValue,
+  isContinuumSourceSystem,
   validateConfidence,
   validateEvidenceSourceRefs,
   validateIdentityKind,
@@ -31,6 +33,19 @@ describe("Continuum contracts", () => {
     assert.equal(validateIdentityKind("hubspot_contact_id").ok, true);
     assert.equal(validateIdentityKind("email_hash").ok, true);
     assert.equal(validateIdentityKind("import_row_key").ok, true);
+  });
+
+  it("accepts gmail as a Continuum source system for protected source records", () => {
+    assert.equal(
+      (CONTINUUM_SOURCE_SYSTEMS as readonly string[]).includes("gmail"),
+      true,
+    );
+    assert.equal(
+      (CONTINUUM_SOURCE_SYSTEMS as readonly string[]).includes("google-contacts"),
+      false,
+    );
+    assert.equal(isContinuumSourceSystem("gmail"), true);
+    assert.equal(isContinuumSourceSystem("google-contacts"), false);
   });
 
   it("accepts recursive JSON-safe observation values and rejects Date", () => {

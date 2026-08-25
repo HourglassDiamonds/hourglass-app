@@ -1,6 +1,8 @@
 import {
+  CONTINUUM_SOURCE_SYSTEMS,
   EVIDENCE_SOURCE_KINDS,
   PERSON_IDENTITY_KINDS,
+  type ContinuumSourceSystem,
   type ContinuumEvidence,
   type ContinuumException,
   type ContinuumJsonValue,
@@ -34,6 +36,12 @@ const FORBIDDEN_PII_KEYS = new Set([
 export type ContinuumValidation =
   | { ok: true }
   | { ok: false; reason: string };
+
+export function isContinuumSourceSystem(
+  value: string,
+): value is ContinuumSourceSystem {
+  return (CONTINUUM_SOURCE_SYSTEMS as readonly string[]).includes(value);
+}
 
 export function isPersonIdentityKind(value: string): value is IdentityKind {
   return (PERSON_IDENTITY_KINDS as readonly string[]).includes(value);

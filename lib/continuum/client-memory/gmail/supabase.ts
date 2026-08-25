@@ -1,0 +1,225 @@
+/**
+ * Supabase protected Gmail source-index adapter.
+ * App Router / server entry: import from `./server` (enforces `server-only`).
+ * Service-role only. Never writes Persons, facts, notes, wishes, projects,
+ * or kernel Event/Evidence/Observation.
+ */
+
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { getSupabaseAdmin } from "@/lib/supabase/client";
+import {
+  assertGmailCheckpoint,
+  buildGmailIndexedMessage,
+  isGmailMessageDirection,
+  mergeIndexedGmailMessage,
+} from "./record";
+import type { GmailIndexStore } from "./store";
+import {
+  GMAIL_SOURCE_SYSTEM,
+  type GmailCheckpoint,
+  type GmailCheckpointJobKey,
+  type GmailIndexInput,
+  type GmailIndexedMessage,
+  type IndexGmailMessageResult,
+} from "./types";
+
+const MESSAGE_COLUMNS =
+  "message_id, thread_id, sent_at, indexed_at, subject, from_email_hash, to_email_hashes, cc_email_hashes, direction, label_ids, has_attachments, source_system";
+
+const CHECKPOINT_COLUMNS =
+  "job_key, status, window_start, window_end, page_token, history_id, cursor_message_id, indexed_count, updated_at, error_code";
+
+const UNIQUE_VIOLATION = "23505";
+
+function requireClient(client: SupabaseClient | null): SupabaseClient {
+  if (!client) throw new Error("supabase-admin-unavailable");
+  return client;
+}
+
+function isUniqueViolation(error: { code?: string } | null): boolean {
+  return error?.code === UNIQUE_VIOLATION;
+}
+
+function asStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.map((item) => String(item));
+}
+
+function rowToMessage(row: Record<string, unknown>): GmailIndexedMessage {
+  if (!isGmailMessageDirection(row.direction)) {
+    throw new Error("gmail-direction-invalid");
+  }
+  if (row.source_system !== GMAIL_SOURCE_SYSTEM) {
+    throw new Error("gmail-source-system-invalid");
+  }
+  return {
+    messageId: String(row.message_id),
+    threadId: String(row.thread_id),
+    sentAt: String(row.sent_at),
+    indexedAt: String(row.indexed_at),
+    subject: row.subject == null ? null : String(row.subject),
+    fromEmailHash: row.from_email_hash == null ? null : String(row.from_email_hash),
+    toEmailHashes: asStringArray(row.to_email_hashes),
+    ccEmailHashes: asStringArray(row.cc_email_hashes),
+    direction: row.direction,
+    labelIds: asStringArray(row.label_ids),
+    hasAttachments: Boolean(row.has_attachments),
+    sourceSystem: GMAIL_SOURCE_SYSTEM,
+  };
+}
+
+function messageToRow(message: GmailIndexedMessage): Record<string, unknown> {
+  return {
+    message_id: message.messageId,
+    thread_id: message.threadId,
+    sent_at: message.sentAt,
+    indexed_at: message.indexedAt,
+    subject: message.subject,
+    from_email_hash: message.fromEmailHash,
+    to_email_hashes: [...message.toEmailHashes],
+    cc_email_hashes: [...message.ccEmailHashes],
+    direction: message.direction,
+    label_ids: [...message.labelIds],
+    has_attachments: message.hasAttachments,
+    source_system: GMAIL_SOURCE_SYSTEM,
+  };
+}
+
+function rowToCheckpoint(row: Record<string, unknown>): GmailCheckpoint {
+  return {
+    jobKey: row.job_key as GmailCheckpointJobKey,
+    status: row.status as GmailCheckpoint["status"],
+    windowStart: row.window_start == null ? null : String(row.window_start),
+    windowEnd: row.window_end == null ? null : String(row.window_end),
+    pageToken: row.page_token == null ? null : String(row.page_token),
+    historyId: row.history_id == null ? null : String(row.history_id),
+    cursorMessageId:
+      row.cursor_message_id == null ? null : String(row.cursor_message_id),
+    indexedCount: Number(row.indexed_count),
+    updatedAt: String(row.updated_at),
+    errorCode: row.error_code == null ? null : String(row.error_code),
+  };
+}
+
+function checkpointToRow(row: GmailCheckpoint): Record<string, unknown> {
+  return {
+    job_key: row.jobKey,
+    status: row.status,
+    window_start: row.windowStart,
+    window_end: row.windowEnd,
+    page_token: row.pageToken,
+    history_id: row.historyId,
+    cursor_message_id: row.cursorMessageId,
+    indexed_count: row.indexedCount,
+    updated_at: row.updatedAt,
+    error_code: row.errorCode,
+  };
+}
+
+export class SupabaseGmailIndexStore implements GmailIndexStore {
+  constructor(private readonly client: SupabaseClient) {}
+
+  async indexMessage(
+    input: GmailIndexInput,
+    indexedAt: string,
+  ): Promise<IndexGmailMessageResult> {
+    const incoming = buildGmailIndexedMessage(input, indexedAt);
+    const existing = await this.getMessage(incoming.messageId);
+    if (!existing) {
+      const { data, error } = await this.client
+        .from("continuum_gmail_messages")
+        .insert(messageToRow(incoming))
+        .select(MESSAGE_COLUMNS)
+        .single();
+      if (error) {
+        if (isUniqueViolation(error)) {
+          const raced = await this.getMessage(incoming.messageId);
+          if (!raced) throw error;
+          return this.persistMerge(raced, incoming);
+        }
+        throw error;
+      }
+      return { status: "inserted", record: rowToMessage(data) };
+    }
+
+    return this.persistMerge(existing, incoming);
+  }
+
+  private async persistMerge(
+    existing: GmailIndexedMessage,
+    incoming: GmailIndexedMessage,
+  ): Promise<IndexGmailMessageResult> {
+    const merged = mergeIndexedGmailMessage(existing, incoming);
+    if (merged.status !== "updated") return merged;
+
+    const { data, error } = await this.client
+      .from("continuum_gmail_messages")
+      .update({
+        subject: merged.record.subject,
+        from_email_hash: merged.record.fromEmailHash,
+        to_email_hashes: [...merged.record.toEmailHashes],
+        cc_email_hashes: [...merged.record.ccEmailHashes],
+        direction: merged.record.direction,
+        label_ids: [...merged.record.labelIds],
+        has_attachments: merged.record.hasAttachments,
+      })
+      .eq("message_id", merged.record.messageId)
+      .select(MESSAGE_COLUMNS)
+      .single();
+    if (error) throw error;
+    return { status: "updated", record: rowToMessage(data) };
+  }
+
+  async getMessage(messageId: string): Promise<GmailIndexedMessage | null> {
+    const { data, error } = await this.client
+      .from("continuum_gmail_messages")
+      .select(MESSAGE_COLUMNS)
+      .eq("message_id", messageId.trim())
+      .maybeSingle();
+    if (error) throw error;
+    if (!data) return null;
+    return rowToMessage(data);
+  }
+
+  async listMessagesByThread(threadId: string): Promise<GmailIndexedMessage[]> {
+    const { data, error } = await this.client
+      .from("continuum_gmail_messages")
+      .select(MESSAGE_COLUMNS)
+      .eq("thread_id", threadId.trim())
+      .order("sent_at", { ascending: true });
+    if (error) throw error;
+    return (data ?? []).map((row) => rowToMessage(row));
+  }
+
+  async getCheckpoint(
+    jobKey: GmailCheckpointJobKey,
+  ): Promise<GmailCheckpoint | null> {
+    const { data, error } = await this.client
+      .from("continuum_gmail_checkpoints")
+      .select(CHECKPOINT_COLUMNS)
+      .eq("job_key", jobKey)
+      .maybeSingle();
+    if (error) throw error;
+    if (!data) return null;
+    return rowToCheckpoint(data);
+  }
+
+  async putCheckpoint(row: GmailCheckpoint): Promise<GmailCheckpoint> {
+    assertGmailCheckpoint(row);
+    const { data, error } = await this.client
+      .from("continuum_gmail_checkpoints")
+      .upsert(checkpointToRow(row), { onConflict: "job_key" })
+      .select(CHECKPOINT_COLUMNS)
+      .single();
+    if (error) throw error;
+    return rowToCheckpoint(data);
+  }
+}
+
+export function createSupabaseGmailIndexStore(
+  client?: SupabaseClient | null,
+): SupabaseGmailIndexStore {
+  return new SupabaseGmailIndexStore(
+    requireClient(client === undefined ? getSupabaseAdmin() : client),
+  );
+}

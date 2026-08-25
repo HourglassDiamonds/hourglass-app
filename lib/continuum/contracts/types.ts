@@ -32,7 +32,8 @@ export type ContinuumSourceSystem =
   | "concierge-manual"
   | "agent-os"
   | "continuum"
-  | "continuum-reconciliation-v3";
+  | "continuum-reconciliation-v3"
+  | "gmail";
 
 export const CONTINUUM_SOURCE_SYSTEMS = [
   "studio-identified",
@@ -45,6 +46,7 @@ export const CONTINUUM_SOURCE_SYSTEMS = [
   "agent-os",
   "continuum",
   "continuum-reconciliation-v3",
+  "gmail",
 ] as const satisfies readonly ContinuumSourceSystem[];
 
 export type EvidenceSourceKind =
