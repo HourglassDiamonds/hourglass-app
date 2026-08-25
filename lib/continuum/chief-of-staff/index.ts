@@ -28,6 +28,17 @@ export { founderLocalDate } from "./time";
 export { presentCommandCenter } from "./present/command-center";
 export { renderMorningEmail } from "./present/email";
 export { InMemoryChiefOfStaffStore } from "./persistence/memory";
+export type { ChiefOfStaffStore } from "./persistence/contract";
+export { OPEN_ATTENTION_STATUSES } from "./persistence/contract";
+export {
+  ChiefOfStaffPersistenceError,
+  isChiefOfStaffPersistenceError,
+} from "./persistence/errors";
+export { runChiefOfStaffShadow } from "./shadow";
+export type {
+  ChiefOfStaffShadowResult,
+  RunChiefOfStaffShadowInput,
+} from "./shadow";
 export { observationsFromOperatingBacklog } from "./adapters/founder-focus";
 export { observationsFromUpcomingBirthdays } from "./adapters/birthdays";
 export { observationsFromClientAttention } from "./adapters/client-attention";

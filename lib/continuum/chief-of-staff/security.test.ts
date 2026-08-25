@@ -16,18 +16,30 @@ function walkFiles(dir: string, suffix: string, found: string[] = []): string[] 
   return found;
 }
 
-describe("Chief of Staff Phase 1A security / PII boundary", () => {
+describe("Chief of Staff Phase 1B security / PII boundary", () => {
   it("keeps CoS modules free of LLM, Resend, Gmail, and browser storage", () => {
     for (const file of walkFiles(COS_DIR, ".ts")) {
       if (file.endsWith(".test.ts")) continue;
       const source = readFileSync(file, "utf8");
       assert.doesNotMatch(source, /openai|anthropic|grok|generateText/i);
       assert.doesNotMatch(source, /from ["']resend["']/);
-      assert.doesNotMatch(source, /gmail\.readonly|gmail-index|Gmail Memory/i);
+      assert.doesNotMatch(source, /gmail\.readonly|Gmail Memory/i);
+      assert.doesNotMatch(source, /continuum_gmail_messages|continuum_gmail_checkpoints/);
       assert.doesNotMatch(source, /localStorage|sessionStorage|gtag/);
       assert.doesNotMatch(source, /console\.(log|info|debug|warn|error)/);
       assert.doesNotMatch(source, /insertObservation|continuum_observations/);
+      assert.doesNotMatch(source, /continuum_events|continuum_evidence/);
     }
+  });
+
+  it("keeps the Supabase store off the public barrel and behind server-only", () => {
+    const barrel = readFileSync(join(COS_DIR, "index.ts"), "utf8");
+    const server = readFileSync(join(COS_DIR, "persistence", "server.ts"), "utf8");
+    assert.match(server, /import "server-only"/);
+    assert.match(server, /createSupabaseChiefOfStaffStore/);
+    assert.doesNotMatch(barrel, /createSupabaseChiefOfStaffStore/);
+    assert.doesNotMatch(barrel, /from "\.\/persistence\/supabase"/);
+    assert.doesNotMatch(barrel, /from "\.\/persistence\/server"/);
   });
 
   it("does not attach a public CoS API or client Supabase", () => {
