@@ -35,16 +35,18 @@ describe("Continuum contracts", () => {
     assert.equal(validateIdentityKind("import_row_key").ok, true);
   });
 
-  it("accepts gmail as a Continuum source system for protected source records", () => {
+  it("accepts gmail, plaud, and remarkable as protected source systems", () => {
     assert.equal(
       (CONTINUUM_SOURCE_SYSTEMS as readonly string[]).includes("gmail"),
       true,
     );
+    assert.equal(isContinuumSourceSystem("gmail"), true);
+    assert.equal(isContinuumSourceSystem("plaud"), true);
+    assert.equal(isContinuumSourceSystem("remarkable"), true);
     assert.equal(
       (CONTINUUM_SOURCE_SYSTEMS as readonly string[]).includes("google-contacts"),
       false,
     );
-    assert.equal(isContinuumSourceSystem("gmail"), true);
     assert.equal(isContinuumSourceSystem("google-contacts"), false);
   });
 

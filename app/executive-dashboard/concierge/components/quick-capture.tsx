@@ -2,6 +2,7 @@ import Link from "next/link";
 import {
   conciergeAddClientPath,
   conciergeAddNotePickerPath,
+  conciergeInboxPath,
 } from "@/lib/continuum/client-memory/read/presentation";
 
 export function QuickCapture() {
@@ -11,6 +12,12 @@ export function QuickCapture() {
         Quick Capture
       </h2>
       <div className="mt-4 flex flex-col items-start gap-3">
+        <Link
+          href={conciergeInboxPath()}
+          className="inline-flex min-h-12 items-center text-[11px] uppercase tracking-[0.24em] text-[#efe8de] outline-none hover:text-[#ad9164] focus-visible:text-[#ad9164] focus-visible:shadow-[0_0_0_3px_rgba(173,145,100,0.22)]"
+        >
+          Inbox
+        </Link>
         <Link
           href={conciergeAddNotePickerPath()}
           className="inline-flex min-h-12 items-center text-[11px] uppercase tracking-[0.24em] text-[#efe8de] outline-none hover:text-[#ad9164] focus-visible:text-[#ad9164] focus-visible:shadow-[0_0_0_3px_rgba(173,145,100,0.22)]"

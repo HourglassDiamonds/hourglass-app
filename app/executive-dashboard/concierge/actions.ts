@@ -4,9 +4,14 @@ import { redirect } from "next/navigation";
 import { answerAskConciergeQuery } from "@/lib/continuum/client-memory/ask/query";
 import type { AskConciergeAnswer } from "@/lib/continuum/client-memory/ask/types";
 import { getAuthenticatedClientMemoryReader } from "@/lib/continuum/client-memory/read/load";
-import { conciergeClientPath } from "@/lib/continuum/client-memory/read/presentation";
+import {
+  conciergeClientPath,
+  conciergeInboxSourcePath,
+} from "@/lib/continuum/client-memory/read/presentation";
 import type { ClientSearchResult } from "@/lib/continuum/client-memory/read/types";
 import { isRelationshipContextLayer } from "@/lib/continuum/client-memory/contracts";
+import { suggestRelationshipContextLayer } from "@/lib/continuum/client-memory/write/context";
+import type { RelationshipContextLayer } from "@/lib/continuum/client-memory/types";
 import { getAuthenticatedClientMemoryFactWriter } from "@/lib/continuum/client-memory/facts/load";
 import type { SetManualBirthdayResult } from "@/lib/continuum/client-memory/facts/write";
 import { getAuthenticatedClientMemoryPersonWriter } from "@/lib/continuum/client-memory/person/load";
@@ -16,6 +21,18 @@ import type {
 } from "@/lib/continuum/client-memory/person/types";
 import { getAuthenticatedClientMemoryNoteWriter } from "@/lib/continuum/client-memory/write/load";
 import type { AddManualNoteResult } from "@/lib/continuum/client-memory/write/types";
+import { getAuthenticatedHumanSourceStore } from "@/lib/continuum/client-memory/human-intake/load";
+import {
+  HUMAN_COMMUNICATION_TYPES,
+  HUMAN_SOURCE_FILE_MAX_BYTES,
+  PLAUD_SOURCE_TYPE,
+  decodeUtf8Bytes,
+  extractPlaudRawText,
+  isAllowedPlaudMime,
+  plaudFileKindFromName,
+  type HumanCommunicationType,
+  type IngestHumanSourceResult,
+} from "@/lib/continuum/client-memory/human-intake";
 
 export type ConciergeSearchState =
   | { ok: true; results: ClientSearchResult[] }
@@ -263,4 +280,161 @@ export async function savePersonProfile(
     conflictingPersonIds:
       result.status === "identity-conflict" ? result.conflictingPersonIds : undefined,
   };
+}
+
+export type LinkedProjectOption = {
+  id: string;
+  title: string;
+};
+
+export async function loadLinkedProjectsForPerson(
+  personId: string,
+): Promise<
+  | {
+      ok: true;
+      projects: LinkedProjectOption[];
+      suggestedContext: RelationshipContextLayer | null;
+    }
+  | { ok: false }
+> {
+  const auth = await getAuthenticatedClientMemoryReader();
+  if (!auth.ok) return { ok: false };
+  try {
+    const result = await auth.reader.getPersonProfile(personId);
+    if (!result.ok) {
+      return { ok: true, projects: [], suggestedContext: null };
+    }
+    return {
+      ok: true,
+      projects: result.profile.projects.map((project) => ({
+        id: project.profile.projectId,
+        title: project.profile.displayTitle,
+      })),
+      suggestedContext: suggestRelationshipContextLayer(result.profile.person.roles),
+    };
+  } catch {
+    return { ok: false };
+  }
+}
+
+export type SavePlaudSourceState = {
+  ok: false;
+  message: string;
+};
+
+function isCommunicationType(value: string): value is HumanCommunicationType {
+  return (HUMAN_COMMUNICATION_TYPES as readonly string[]).includes(value);
+}
+
+function humanPlaudMessage(result: IngestHumanSourceResult): string {
+  if (result.ok) return "Unable to save the source.";
+  if (result.reason === "invalid-input" && result.code === "empty-text") {
+    return "Paste a transcript or choose a file.";
+  }
+  if (result.reason === "invalid-input" && result.code === "oversized-text") {
+    return "That transcript is too long to store.";
+  }
+  if (result.reason === "invalid-input" && result.code === "oversized-file") {
+    return "That file is too large.";
+  }
+  if (result.reason === "entity-not-found" || result.reason === "entity-kind-mismatch") {
+    return "That person or project could not be used.";
+  }
+  if (result.reason === "idempotency-conflict") {
+    return "This source conflicts with a record already stored.";
+  }
+  return "Unable to save the source.";
+}
+
+async function plaudTextFromForm(formData: FormData): Promise<
+  | { ok: true; text: string; file: { bytes: Uint8Array; mimeType: string; fileName: string } | null }
+  | { ok: false; message: string }
+> {
+  const pasted = String(formData.get("transcript") ?? "");
+  const fileValue = formData.get("transcriptFile");
+  const file =
+    fileValue instanceof File && fileValue.size > 0 ? fileValue : null;
+  if (!file) {
+    return { ok: true, text: pasted, file: null };
+  }
+  if (file.size > HUMAN_SOURCE_FILE_MAX_BYTES) {
+    return { ok: false, message: "That file is too large." };
+  }
+  const kind = plaudFileKindFromName(file.name);
+  if (!kind) {
+    return { ok: false, message: "Use a .txt, .vtt, .json, or .md file." };
+  }
+  if (!isAllowedPlaudMime(file.type)) {
+    return { ok: false, message: "Use a .txt, .vtt, .json, or .md file." };
+  }
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  const decoded = decodeUtf8Bytes(bytes);
+  if (decoded == null) {
+    return { ok: false, message: "That file could not be read as text." };
+  }
+  return {
+    ok: true,
+    text: extractPlaudRawText({ kind, decoded }),
+    file: {
+      bytes,
+      mimeType: file.type || "text/plain",
+      fileName: file.name,
+    },
+  };
+}
+
+export async function savePlaudHumanSource(
+  _prev: SavePlaudSourceState | null,
+  formData: FormData,
+): Promise<SavePlaudSourceState> {
+  const auth = await getAuthenticatedHumanSourceStore();
+  if (!auth.ok) {
+    return {
+      ok: false,
+      message:
+        auth.reason === "unauthorized"
+          ? "Sign in to continue."
+          : "Unable to save the source.",
+    };
+  }
+
+  const parsed = await plaudTextFromForm(formData);
+  if (!parsed.ok) return parsed;
+
+  const communicationRaw = String(formData.get("communicationType") ?? "").trim();
+  const communicationType = isCommunicationType(communicationRaw)
+    ? communicationRaw
+    : "unknown";
+  if (communicationType === "handwritten") {
+    return { ok: false, message: "Unable to save the source." };
+  }
+
+  const contextRaw = String(formData.get("contextLayer") ?? "").trim();
+  const contextLayer = contextRaw
+    ? isRelationshipContextLayer(contextRaw)
+      ? contextRaw
+      : null
+    : null;
+  if (contextRaw && !contextLayer) {
+    return { ok: false, message: "Unable to save the source." };
+  }
+
+  const personId = String(formData.get("personId") ?? "").trim() || null;
+  const projectId = String(formData.get("projectId") ?? "").trim() || null;
+
+  const result = await auth.store.ingest({
+    sourceType: PLAUD_SOURCE_TYPE,
+    rawText: parsed.text,
+    rawFile: parsed.file,
+    reportedCommunicationType: communicationType,
+    contextLayerConfirmed: contextLayer,
+    contextLayerProposed: contextLayer,
+    personId,
+    projectId,
+  });
+
+  if (result.ok) {
+    redirect(conciergeInboxSourcePath(result.sourceId));
+  }
+  return { ok: false, message: humanPlaudMessage(result) };
 }

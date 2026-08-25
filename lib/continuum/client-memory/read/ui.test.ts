@@ -28,6 +28,7 @@ import {
   conciergeAddNotePath,
   conciergeAddNotePickerPath,
   conciergeClientPath,
+  conciergeInboxPath,
 } from "./presentation";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "../../../..");
@@ -307,6 +308,8 @@ describe("Concierge Client Memory UI", () => {
     assert.match(actions, /existing=client/);
     assert.match(actions, /saved=profile/);
     assert.match(actions, /savePersonProfile/);
+    assert.match(actions, /savePlaudHumanSource/);
+    assert.match(actions, /getAuthenticatedHumanSourceStore/);
     assert.doesNotMatch(actions, /from\("continuum_/);
     assert.doesNotMatch(actions, /noteText=/);
     const addNote = readFileSync(
@@ -532,6 +535,8 @@ describe("Concierge Client Memory UI", () => {
     );
     const capture = renderToStaticMarkup(createElement(QuickCapture));
     assert.match(capture, new RegExp(conciergeAddNotePickerPath()));
+    assert.match(capture, new RegExp(conciergeInboxPath()));
+    assert.match(capture, />Inbox</);
     assert.match(picker, /intent="add-note"/);
     assert.match(picker, /title:\s*"Add Note"/);
     assert.match(picker, /Who is this about/);

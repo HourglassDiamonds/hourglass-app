@@ -6,6 +6,9 @@ import {
   conciergeEditPersonPath,
   conciergeAddNotePickerPath,
   conciergeBirthdayPath,
+  conciergeInboxNewPath,
+  conciergeInboxPath,
+  conciergeInboxSourcePath,
   formatFactValue,
   formatLocation,
   historyFields,
@@ -168,6 +171,12 @@ describe("Concierge presentation", () => {
     assert.equal(
       conciergeEditPersonPath("eb2802bd-e312-471e-8582-8dbd5ad2e04b"),
       "/executive-dashboard/concierge/client/eb2802bd-e312-471e-8582-8dbd5ad2e04b/edit",
+    );
+    assert.equal(conciergeInboxPath(), "/executive-dashboard/concierge/inbox");
+    assert.equal(conciergeInboxNewPath(), "/executive-dashboard/concierge/inbox/new");
+    assert.equal(
+      conciergeInboxSourcePath("eb2802bd-e312-471e-8582-8dbd5ad2e04b"),
+      "/executive-dashboard/concierge/inbox/eb2802bd-e312-471e-8582-8dbd5ad2e04b",
     );
     assert.notEqual(
       conciergeAddNotePickerPath(),

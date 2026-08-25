@@ -36,6 +36,18 @@ export function conciergeAddNotePickerPath(): string {
   return `${CONCIERGE_HOME_PATH}/note/new`;
 }
 
+export function conciergeInboxPath(): string {
+  return `${CONCIERGE_HOME_PATH}/inbox`;
+}
+
+export function conciergeInboxNewPath(): string {
+  return `${conciergeInboxPath()}/new`;
+}
+
+export function conciergeInboxSourcePath(sourceId: string): string {
+  return `${conciergeInboxPath()}/${sourceId}`;
+}
+
 export function conciergeAddClientPath(): string {
   return `${CONCIERGE_HOME_PATH}/client/new`;
 }
