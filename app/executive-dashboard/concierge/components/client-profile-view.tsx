@@ -2,6 +2,7 @@ import Link from "next/link";
 import {
   conciergeAddNotePath,
   conciergeBirthdayPath,
+  conciergeEditPersonPath,
   currentBirthdayFact,
   memoryReviewLabel,
   relationshipLabel,
@@ -20,12 +21,14 @@ export function ClientProfileView({
   justSavedBirthday = false,
   justSavedClient = false,
   justExistingClient = false,
+  justSavedProfile = false,
 }: {
   profile: ConciergePersonProfile;
   justSaved?: boolean;
   justSavedBirthday?: boolean;
   justSavedClient?: boolean;
   justExistingClient?: boolean;
+  justSavedProfile?: boolean;
 }) {
   const facts = visibleCurrentFacts(profile.facts.current);
   const birthday = currentBirthdayFact(profile.facts.current);
@@ -67,8 +70,19 @@ export function ClientProfileView({
           This person was already in Continuum. Client status is now active.
         </p>
       ) : null}
+      {justSavedProfile ? (
+        <p className="mt-6 text-[13px] tracking-[0.04em] text-[#c4b7aa]" role="status">
+          Updated.
+        </p>
+      ) : null}
 
       <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-2">
+        <Link
+          href={conciergeEditPersonPath(profile.person.id)}
+          className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.24em] text-[#8d8073] outline-none hover:text-[#efe8de] focus-visible:text-[#efe8de] focus-visible:shadow-[0_0_0_3px_rgba(173,145,100,0.22)]"
+        >
+          Edit
+        </Link>
         <Link
           href={conciergeAddNotePath(profile.person.id)}
           className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.24em] text-[#8d8073] outline-none hover:text-[#efe8de] focus-visible:text-[#efe8de] focus-visible:shadow-[0_0_0_3px_rgba(173,145,100,0.22)]"

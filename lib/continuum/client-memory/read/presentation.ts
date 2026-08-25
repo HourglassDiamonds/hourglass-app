@@ -40,6 +40,10 @@ export function conciergeAddClientPath(): string {
   return `${CONCIERGE_HOME_PATH}/client/new`;
 }
 
+export function conciergeEditPersonPath(personId: string): string {
+  return `${conciergeClientPath(personId)}/edit`;
+}
+
 export const RELATIONSHIP_CONTEXT_LAYER_LABELS: Record<
   RelationshipContextLayer,
   string

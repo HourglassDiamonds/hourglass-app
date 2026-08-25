@@ -9,8 +9,14 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { getSupabaseAdmin } from "@/lib/supabase/client";
 import { createSupabaseClientMemoryStore } from "../persistence/supabase";
 import { addManualClient } from "./add-manual-client";
+import { editPersonProfile } from "./edit-person";
 import type { ClientMemoryPersonWriter } from "./writer";
-import type { AddManualClientInput, AddManualClientResult } from "./types";
+import type {
+  AddManualClientInput,
+  AddManualClientResult,
+  EditPersonProfileInput,
+  EditPersonProfileResult,
+} from "./types";
 
 function requireClient(client: SupabaseClient | null): SupabaseClient {
   if (!client) throw new Error("supabase-admin-unavailable");
@@ -30,6 +36,19 @@ export class SupabaseClientMemoryPersonWriter implements ClientMemoryPersonWrite
         getPersonProfile: (personId) => store.getPersonProfile(personId),
         updatePersonProfile: (personId, patch) =>
           store.updatePersonProfile(personId, patch),
+      },
+      input,
+    );
+  }
+
+  editPersonProfile(input: EditPersonProfileInput): Promise<EditPersonProfileResult> {
+    const store = createSupabaseClientMemoryStore(this.client);
+    return editPersonProfile(
+      {
+        nowIso: () => new Date().toISOString(),
+        findActiveIdentities: (query) => store.findActiveIdentities(query),
+        getPersonProfile: (personId) => store.getPersonProfile(personId),
+        updatePersonContactAtomic: (row) => store.updatePersonContactAtomic(row),
       },
       input,
     );

@@ -305,6 +305,8 @@ describe("Concierge Client Memory UI", () => {
     assert.match(actions, /saved=birthday/);
     assert.match(actions, /saved=client/);
     assert.match(actions, /existing=client/);
+    assert.match(actions, /saved=profile/);
+    assert.match(actions, /savePersonProfile/);
     assert.doesNotMatch(actions, /from\("continuum_/);
     assert.doesNotMatch(actions, /noteText=/);
     const addNote = readFileSync(
@@ -365,6 +367,34 @@ describe("Concierge Client Memory UI", () => {
     assert.match(addClientForm, /Add Client/);
     assert.doesNotMatch(addClientForm, /street|address|spouse|birthday|project|noteText/i);
     assert.doesNotMatch(addClientForm, /roles|source_system|created_by/);
+    const profileView = readFileSync(
+      join(CONCIERGE_DIR, "components", "client-profile-view.tsx"),
+      "utf8",
+    );
+    assert.match(profileView, /conciergeEditPersonPath/);
+    assert.match(profileView, />\s*Edit\s*</);
+    assert.match(profileView, /Updated\./);
+    const editPage = readFileSync(
+      join(CONCIERGE_DIR, "client", "[personId]", "edit", "page.tsx"),
+      "utf8",
+    );
+    assert.match(editPage, /title:\s*"Edit"/);
+    assert.match(editPage, /randomUUID/);
+    assert.match(editPage, /EditPersonForm/);
+    assert.doesNotMatch(editPage, /concierge-manual/);
+    assert.doesNotMatch(editPage, /spouse|birthday|roles|source_system/);
+    const editForm = readFileSync(
+      join(CONCIERGE_DIR, "components", "edit-person-form.tsx"),
+      "utf8",
+    );
+    assert.match(editForm, /First name/);
+    assert.match(editForm, /Last name/);
+    assert.match(editForm, /name="email"/);
+    assert.match(editForm, /name="phone"/);
+    assert.match(editForm, /name="organization"/);
+    assert.match(editForm, /Save Changes/);
+    assert.doesNotMatch(editForm, /street|address|spouse|birthday|project|noteText/i);
+    assert.doesNotMatch(editForm, /roles|source_system|created_by/);
   });
 
   it("renders an honest command center without fake intelligence", () => {

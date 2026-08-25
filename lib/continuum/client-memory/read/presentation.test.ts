@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 import {
   conciergeAddClientPath,
   conciergeAddNotePath,
+  conciergeEditPersonPath,
   conciergeAddNotePickerPath,
   conciergeBirthdayPath,
   formatFactValue,
@@ -163,6 +164,10 @@ describe("Concierge presentation", () => {
     assert.equal(
       conciergeAddClientPath(),
       "/executive-dashboard/concierge/client/new",
+    );
+    assert.equal(
+      conciergeEditPersonPath("eb2802bd-e312-471e-8582-8dbd5ad2e04b"),
+      "/executive-dashboard/concierge/client/eb2802bd-e312-471e-8582-8dbd5ad2e04b/edit",
     );
     assert.notEqual(
       conciergeAddNotePickerPath(),

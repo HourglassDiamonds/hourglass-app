@@ -5,10 +5,17 @@
 
 import type { InMemoryClientMemoryStore } from "../store";
 import { addManualClient } from "./add-manual-client";
-import type { AddManualClientInput, AddManualClientResult } from "./types";
+import { editPersonProfile } from "./edit-person";
+import type {
+  AddManualClientInput,
+  AddManualClientResult,
+  EditPersonProfileInput,
+  EditPersonProfileResult,
+} from "./types";
 
 export type ClientMemoryPersonWriter = {
   addManualClient(input: AddManualClientInput): Promise<AddManualClientResult>;
+  editPersonProfile(input: EditPersonProfileInput): Promise<EditPersonProfileResult>;
 };
 
 export class InMemoryClientMemoryPersonWriter implements ClientMemoryPersonWriter {
@@ -23,6 +30,18 @@ export class InMemoryClientMemoryPersonWriter implements ClientMemoryPersonWrite
         getPersonProfile: (personId) => this.store.getPersonProfile(personId),
         updatePersonProfile: (personId, patch) =>
           this.store.updatePersonProfile(personId, patch),
+      },
+      input,
+    );
+  }
+
+  editPersonProfile(input: EditPersonProfileInput): Promise<EditPersonProfileResult> {
+    return editPersonProfile(
+      {
+        nowIso: () => new Date().toISOString(),
+        findActiveIdentities: (query) => this.store.findActiveIdentities(query),
+        getPersonProfile: (personId) => this.store.getPersonProfile(personId),
+        updatePersonContactAtomic: (row) => this.store.updatePersonContactAtomic(row),
       },
       input,
     );

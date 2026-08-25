@@ -24,6 +24,8 @@ import type {
   ClientMemoryStore,
   CreatePersonAtomicInput,
   CreatePersonAtomicResult,
+  UpdatePersonContactInput,
+  UpdatePersonContactResult,
 } from "../store";
 import type {
   ClientMemoryEntity,
@@ -643,6 +645,41 @@ export class SupabaseClientMemoryStore implements ClientMemoryStore {
       personId: input.personId,
       populated: plan.status === "populate",
     };
+  }
+
+  async updatePersonContactAtomic(
+    input: UpdatePersonContactInput,
+  ): Promise<UpdatePersonContactResult> {
+    const { error } = await this.client.rpc(
+      "continuum_client_memory_update_person_contact",
+      {
+        p_person_id: input.personId,
+        p_updated_at: input.updatedAt,
+        p_profile: {
+          display_name: input.profile.displayName,
+          given_name: input.profile.givenName,
+          family_name: input.profile.familyName,
+          organization_name: input.profile.organizationName,
+          email: input.profile.email,
+          phone: input.profile.phone,
+        },
+        p_identities: input.identities.map((identity) => ({
+          id: identity.id ?? randomUUID(),
+          source_system: identity.sourceSystem,
+          identity_kind: identity.identityKind,
+          identifier: identity.identifier,
+          created_at: identity.createdAt,
+        })),
+      },
+    );
+    if (error) {
+      const message = error.message ?? "";
+      if (message.includes("identity_conflict")) {
+        return { status: "conflict", reason: "identity_conflict" };
+      }
+      throwQuery(error, "update-person-contact-failed");
+    }
+    return { status: "updated", personId: input.personId };
   }
 
   async inspectCounts(): Promise<ClientMemoryCounts> {

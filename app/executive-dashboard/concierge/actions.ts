@@ -10,7 +10,10 @@ import { isRelationshipContextLayer } from "@/lib/continuum/client-memory/contra
 import { getAuthenticatedClientMemoryFactWriter } from "@/lib/continuum/client-memory/facts/load";
 import type { SetManualBirthdayResult } from "@/lib/continuum/client-memory/facts/write";
 import { getAuthenticatedClientMemoryPersonWriter } from "@/lib/continuum/client-memory/person/load";
-import type { AddManualClientResult } from "@/lib/continuum/client-memory/person/types";
+import type {
+  AddManualClientResult,
+  EditPersonProfileResult,
+} from "@/lib/continuum/client-memory/person/types";
 import { getAuthenticatedClientMemoryNoteWriter } from "@/lib/continuum/client-memory/write/load";
 import type { AddManualNoteResult } from "@/lib/continuum/client-memory/write/types";
 
@@ -202,6 +205,61 @@ export async function saveManualClient(
   return {
     ok: false,
     message: humanClientMessage(result),
+    conflictingPersonIds:
+      result.status === "identity-conflict" ? result.conflictingPersonIds : undefined,
+  };
+}
+
+export type SavePersonProfileState = {
+  ok: false;
+  message: string;
+  conflictingPersonIds?: string[];
+};
+
+function humanProfileMessage(result: EditPersonProfileResult): string {
+  if (result.status === "validation-error") return result.message;
+  if (result.status === "identity-conflict") {
+    return "These contact details match a different person already in Continuum. Nothing was changed.";
+  }
+  if (result.status === "person-not-found") {
+    return "This person could not be found.";
+  }
+  return "Unable to save the profile.";
+}
+
+export async function savePersonProfile(
+  _prev: SavePersonProfileState | null,
+  formData: FormData,
+): Promise<SavePersonProfileState> {
+  const auth = await getAuthenticatedClientMemoryPersonWriter();
+  if (!auth.ok) {
+    return {
+      ok: false,
+      message:
+        auth.reason === "unauthorized"
+          ? "Sign in to continue."
+          : "Unable to save the profile.",
+    };
+  }
+
+  const personId = String(formData.get("personId") ?? "").trim();
+  const result = await auth.writer.editPersonProfile({
+    personId,
+    submissionId: String(formData.get("submissionId") ?? ""),
+    givenName: String(formData.get("givenName") ?? ""),
+    familyName: String(formData.get("familyName") ?? ""),
+    email: String(formData.get("email") ?? ""),
+    phone: String(formData.get("phone") ?? ""),
+    organization: String(formData.get("organization") ?? ""),
+  });
+
+  if (result.status === "updated") {
+    redirect(`${conciergeClientPath(result.personId)}?saved=profile`);
+  }
+
+  return {
+    ok: false,
+    message: humanProfileMessage(result),
     conflictingPersonIds:
       result.status === "identity-conflict" ? result.conflictingPersonIds : undefined,
   };

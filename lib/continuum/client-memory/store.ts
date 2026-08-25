@@ -76,6 +76,30 @@ export type ApplyExistingPersonResult =
   | { status: "applied"; personId: string; populated: boolean }
   | { status: "conflict"; reason: "profile_conflict" | "identity_conflict"; field?: string };
 
+export type UpdatePersonContactInput = {
+  personId: string;
+  updatedAt: string;
+  profile: {
+    displayName: string;
+    givenName: string | null;
+    familyName: string | null;
+    organizationName: string | null;
+    email: string | null;
+    phone: string | null;
+  };
+  identities: Array<{
+    id?: string;
+    identityKind: Extract<IdentityKind, "email_hash" | "phone_hash">;
+    identifier: string;
+    sourceSystem: ContinuumSourceSystem;
+    createdAt: string;
+  }>;
+};
+
+export type UpdatePersonContactResult =
+  | { status: "updated"; personId: string }
+  | { status: "conflict"; reason: "identity_conflict" };
+
 export type ClientMemoryCounts = {
   persons: number;
   profiles: number;
@@ -157,6 +181,9 @@ export type ClientMemoryStore = {
   applyExistingPersonAtomic(
     input: ApplyExistingPersonInput,
   ): Promise<ApplyExistingPersonResult>;
+  updatePersonContactAtomic(
+    input: UpdatePersonContactInput,
+  ): Promise<UpdatePersonContactResult>;
   inspectCounts(): Promise<ClientMemoryCounts>;
 };
 
@@ -698,6 +725,93 @@ export class InMemoryClientMemoryStore implements ClientMemoryStore {
         personId: input.personId,
         populated: plan.status === "populate",
       };
+    } catch (error) {
+      this.restore(snapshot);
+      throw error;
+    }
+  }
+
+  async updatePersonContactAtomic(
+    input: UpdatePersonContactInput,
+  ): Promise<UpdatePersonContactResult> {
+    const snapshot = this.snapshot();
+    try {
+      const entity = this.entities.get(input.personId);
+      if (!entity || entity.kind !== "person") {
+        throw new Error("person entity missing");
+      }
+      const existing = this.profiles.get(input.personId);
+      if (!existing) throw new Error("person profile missing");
+      if (!input.profile.displayName.trim()) {
+        throw new Error("invalid-input");
+      }
+
+      for (const identity of input.identities) {
+        if (
+          identity.identityKind !== "email_hash" &&
+          identity.identityKind !== "phone_hash"
+        ) {
+          throw new Error("invalid-input");
+        }
+        const hits = await this.findActiveIdentities({
+          identityKind: identity.identityKind,
+          identifier: identity.identifier,
+        });
+        if (hits.some((row) => row.entityId && row.entityId !== input.personId)) {
+          this.restore(snapshot);
+          return { status: "conflict", reason: "identity_conflict" };
+        }
+      }
+
+      await this.updatePersonProfile(input.personId, {
+        displayName: input.profile.displayName,
+        givenName: input.profile.givenName,
+        familyName: input.profile.familyName,
+        organizationName: input.profile.organizationName,
+        email: input.profile.email,
+        phone: input.profile.phone,
+        updatedAt: input.updatedAt,
+      });
+
+      for (const identity of input.identities) {
+        for (const row of this.identitiesById.values()) {
+          if (row.entityId !== input.personId) continue;
+          if (row.identityKind !== identity.identityKind) continue;
+          if (row.revokedAt) continue;
+          if (row.identifier === identity.identifier) continue;
+          const key = identityKey(row);
+          this.activeIdentityKeys.delete(key);
+          this.identitiesById.set(row.id, {
+            ...row,
+            revokedAt: input.updatedAt,
+          });
+        }
+
+        const alreadyActive = [...this.identitiesById.values()].some(
+          (row) =>
+            row.entityId === input.personId &&
+            row.identityKind === identity.identityKind &&
+            row.identifier === identity.identifier &&
+            row.revokedAt == null,
+        );
+        if (alreadyActive) continue;
+
+        const written = await this.upsertExternalIdentity({
+          id: identity.id ?? randomUUID(),
+          entityId: input.personId,
+          sourceSystem: identity.sourceSystem,
+          identityKind: identity.identityKind,
+          identifier: identity.identifier,
+          createdAt: identity.createdAt,
+          revokedAt: null,
+        });
+        if (written.status === "conflict") {
+          this.restore(snapshot);
+          return { status: "conflict", reason: "identity_conflict" };
+        }
+      }
+
+      return { status: "updated", personId: input.personId };
     } catch (error) {
       this.restore(snapshot);
       throw error;

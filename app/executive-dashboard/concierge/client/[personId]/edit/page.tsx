@@ -1,28 +1,28 @@
+import { randomUUID } from "node:crypto";
+import Link from "next/link";
 import { getAuthenticatedClientMemoryReader } from "@/lib/continuum/client-memory/read/load";
-import { isPersonIdParam } from "@/lib/continuum/client-memory/read/presentation";
-import { ConciergeShell } from "../../components/concierge-shell";
 import {
-  ClientProfileView,
-  ConciergeBackLink,
-  ConciergeUnavailable,
-} from "../../components/client-profile-view";
+  conciergeClientPath,
+  isPersonIdParam,
+} from "@/lib/continuum/client-memory/read/presentation";
+import { seedEditedNameFields } from "@/lib/continuum/client-memory/person/parse";
+import { ConciergeShell } from "../../../components/concierge-shell";
+import { ConciergeUnavailable } from "../../../components/client-profile-view";
+import { EditPersonForm } from "../../../components/edit-person-form";
 
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Client",
+  title: "Edit",
   robots: { index: false, follow: false, nocache: true, noarchive: true },
 };
 
-export default async function ConciergeClientPage({
+export default async function ConciergeEditPersonPage({
   params,
-  searchParams,
 }: {
   params: Promise<{ personId: string }>;
-  searchParams?: Promise<{ saved?: string; existing?: string }>;
 }) {
   const { personId } = await params;
-  const query = searchParams ? await searchParams : {};
   if (!isPersonIdParam(personId)) {
     return (
       <ConciergeShell>
@@ -71,18 +71,33 @@ export default async function ConciergeClientPage({
     );
   }
 
+  const profile = result.profile.person;
+  const names = seedEditedNameFields(profile);
+
   return (
     <ConciergeShell>
-      <ConciergeBackLink />
+      <Link
+        href={conciergeClientPath(personId)}
+        aria-label={`Back to ${profile.displayName}`}
+        className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.24em] text-[#8d8073] outline-none hover:text-[#efe8de] focus-visible:text-[#efe8de]"
+      >
+        ← {profile.displayName}
+      </Link>
       <div className="hg-concierge-fade mt-8">
-        <ClientProfileView
-          profile={result.profile}
-          justSaved={query.saved === "1"}
-          justSavedBirthday={query.saved === "birthday"}
-          justSavedClient={query.saved === "client"}
-          justExistingClient={query.existing === "client"}
-          justSavedProfile={query.saved === "profile"}
-        />
+        <h1 className="font-serif text-[2.15rem] font-normal leading-[1.08] tracking-[-0.04em] text-[#efe8de]">
+          Edit
+        </h1>
+        <div className="mt-8">
+          <EditPersonForm
+            personId={personId}
+            submissionId={randomUUID()}
+            initialGivenName={names.givenName}
+            initialFamilyName={names.familyName}
+            initialEmail={profile.email ?? ""}
+            initialPhone={profile.phone ?? ""}
+            initialOrganization={profile.organizationName ?? ""}
+          />
+        </div>
       </div>
     </ConciergeShell>
   );

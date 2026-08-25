@@ -5,12 +5,7 @@
  */
 
 import { unionPersonRoles } from "../contracts";
-import {
-  classifyPhone,
-  hashEmail,
-  hashPhone,
-  normalizeEmail,
-} from "../hashes";
+import { hashEmail, hashPhone } from "../hashes";
 import { resolvePersonIdentity, type IdentityLookup } from "../identity";
 import type {
   CreatePersonAtomicInput,
@@ -18,18 +13,17 @@ import type {
 } from "../store";
 import type { PersonProfile, PersonRole } from "../types";
 import {
+  displayNameFromParts,
+  isManualPersonUuid,
+  parseManualPersonFields,
+} from "./parse";
+import {
   MANUAL_PERSON_CREATED_BY,
-  MANUAL_PERSON_EMAIL_MAX_LENGTH,
-  MANUAL_PERSON_NAME_MAX_LENGTH,
-  MANUAL_PERSON_ORGANIZATION_MAX_LENGTH,
   MANUAL_PERSON_SOURCE_SYSTEM,
   type AddManualClientInput,
   type AddManualClientResult,
   type AddManualClientValidationCode,
 } from "./types";
-
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 const CLIENT_ROLE: PersonRole = "client";
 
@@ -45,16 +39,6 @@ export type AddManualClientDeps = {
     patch: { roles: PersonRole[]; updatedAt: string },
   ) => Promise<PersonProfile | null>;
 };
-
-function isUuid(value: string): boolean {
-  return UUID_RE.test(value.trim());
-}
-
-function trimToNull(value: string | null | undefined): string | null {
-  if (value == null) return null;
-  const trimmed = value.trim();
-  return trimmed ? trimmed : null;
-}
 
 function validationError(
   code: AddManualClientValidationCode,
@@ -72,13 +56,6 @@ function isIdentityRace(error: unknown): boolean {
     message.includes("23505") ||
     message.includes("continuum_external_identities_active_uq")
   );
-}
-
-function displayNameFromParts(
-  givenName: string | null,
-  familyName: string | null,
-): string {
-  return [givenName, familyName].filter(Boolean).join(" ");
 }
 
 async function ensureClientRole(
@@ -106,63 +83,26 @@ function parseInput(input: AddManualClientInput): AddManualClientResult | {
   phone: string | null;
 } {
   const submissionId = input.submissionId.trim();
-  if (!isUuid(submissionId)) {
+  if (!isManualPersonUuid(submissionId)) {
     return validationError("invalid-id", "Unable to save the client.");
   }
 
-  const givenName = trimToNull(input.givenName);
-  const familyName = trimToNull(input.familyName);
-  if (!givenName && !familyName) {
-    return validationError("missing-name", "Enter a first or last name.");
-  }
-  if (
-    (givenName && givenName.length > MANUAL_PERSON_NAME_MAX_LENGTH) ||
-    (familyName && familyName.length > MANUAL_PERSON_NAME_MAX_LENGTH)
-  ) {
-    return validationError("oversized-name", "That name is too long.");
-  }
-
-  const organizationName = trimToNull(input.organization);
-  if (
-    organizationName &&
-    organizationName.length > MANUAL_PERSON_ORGANIZATION_MAX_LENGTH
-  ) {
-    return validationError(
-      "oversized-organization",
-      "That organization name is too long.",
-    );
-  }
-
-  const emailRaw = trimToNull(input.email);
-  if (emailRaw && emailRaw.length > MANUAL_PERSON_EMAIL_MAX_LENGTH) {
-    return validationError("invalid-email", "Enter a valid email, or leave it blank.");
-  }
-  const email = emailRaw ? normalizeEmail(emailRaw) : null;
-  if (emailRaw && !email) {
-    return validationError("invalid-email", "Enter a valid email, or leave it blank.");
-  }
-
-  const phoneRaw = trimToNull(input.phone);
-  let phone: string | null = null;
-  if (phoneRaw) {
-    const classified = classifyPhone(phoneRaw);
-    if (classified.status !== "us-compatible") {
-      return validationError(
-        "invalid-phone",
-        "Enter a valid U.S. phone number, or leave it blank.",
-      );
+  const parsed = parseManualPersonFields(input);
+  if (!parsed.ok) {
+    if (parsed.code === "email-required" || parsed.code === "phone-required") {
+      return validationError("invalid-email", "Unable to save the client.");
     }
-    phone = classified.normalized;
+    return validationError(parsed.code, parsed.message);
   }
 
   return {
     submissionId,
-    givenName,
-    familyName,
-    displayName: displayNameFromParts(givenName, familyName),
-    organizationName,
-    email,
-    phone,
+    givenName: parsed.value.givenName,
+    familyName: parsed.value.familyName,
+    displayName: displayNameFromParts(parsed.value.givenName, parsed.value.familyName),
+    organizationName: parsed.value.organizationName,
+    email: parsed.value.email,
+    phone: parsed.value.phone,
   };
 }
 

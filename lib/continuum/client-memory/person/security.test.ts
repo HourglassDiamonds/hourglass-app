@@ -29,6 +29,9 @@ describe("Client Memory Person writer security", () => {
     const readIndex = readFileSync(join(PERSON_DIR, "../read/index.ts"), "utf8");
     assert.doesNotMatch(readIndex, /person\/add-manual-client/);
     assert.doesNotMatch(readIndex, /addManualClient/);
+    assert.doesNotMatch(readIndex, /editPersonProfile/);
+    const edit = readFileSync(join(PERSON_DIR, "edit-person.ts"), "utf8");
+    assert.doesNotMatch(edit, /applyExistingPersonAtomic|planProfileMerge|createPersonAtomic/);
     assert.ok(CLIENT_MEMORY_READER_METHODS.includes("searchPeople"));
   });
 
@@ -51,8 +54,10 @@ describe("Client Memory Person writer security", () => {
       const source = readFileSync(file, "utf8");
       assert.doesNotMatch(source, /client-memory\/person/);
       assert.doesNotMatch(source, /addManualClient/);
+      assert.doesNotMatch(source, /editPersonProfile/);
       assert.doesNotMatch(source, /createSupabaseClientMemoryPersonWriter/);
       assert.doesNotMatch(source, /saveManualClient/);
+      assert.doesNotMatch(source, /savePersonProfile/);
     }
   });
 
@@ -64,12 +69,12 @@ describe("Client Memory Person writer security", () => {
     const cos = readFileSync(join(concierge, "components", "chief-of-staff-today.tsx"), "utf8");
     const dashboard = join(ROOT, "lib", "continuum", "dashboard");
     for (const source of [command, ask, askAnswer, cos]) {
-      assert.doesNotMatch(source, /addManualClient|saveManualClient/);
+      assert.doesNotMatch(source, /addManualClient|saveManualClient|editPersonProfile|savePersonProfile/);
     }
     for (const file of walkFiles(dashboard, ".ts")) {
       if (file.endsWith(".test.ts")) continue;
       const source = readFileSync(file, "utf8");
-      assert.doesNotMatch(source, /addManualClient|saveManualClient/);
+      assert.doesNotMatch(source, /addManualClient|saveManualClient|editPersonProfile|savePersonProfile/);
     }
   });
 

@@ -42,3 +42,32 @@ export type AddManualClientResult =
       code: AddManualClientValidationCode;
     }
   | { status: "error" };
+
+export type EditPersonProfileInput = {
+  personId: string;
+  submissionId: string;
+  givenName?: string | null;
+  familyName?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  organization?: string | null;
+};
+
+export type EditPersonProfileValidationCode =
+  | AddManualClientValidationCode
+  | "email-required"
+  | "phone-required";
+
+export type EditPersonProfileResult =
+  | { status: "updated"; personId: string }
+  | {
+      status: "identity-conflict";
+      conflictingPersonIds: string[];
+    }
+  | {
+      status: "validation-error";
+      message: string;
+      code: EditPersonProfileValidationCode;
+    }
+  | { status: "person-not-found" }
+  | { status: "error" };

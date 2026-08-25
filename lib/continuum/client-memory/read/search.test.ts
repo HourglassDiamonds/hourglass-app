@@ -149,5 +149,6 @@ describe("Client Memory search", () => {
     assert.equal("insertPersonProfile" in reader, false);
     assert.equal("updatePersonProfile" in reader, false);
     assert.equal("applyExistingPersonAtomic" in reader, false);
+    assert.equal("updatePersonContactAtomic" in reader, false);
   });
 });
