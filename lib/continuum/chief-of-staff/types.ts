@@ -3,7 +3,7 @@
  * Founder-facing copy may name people. Do not write this into kernel observations.
  */
 
-export const CHIEF_OF_STAFF_CONTRACT_VERSION = "2.0.0-phase1a" as const;
+export const CHIEF_OF_STAFF_CONTRACT_VERSION = "2.0.0-phase1b" as const;
 
 export const ATTENTION_KINDS = [
   "founder-action",
@@ -137,6 +137,7 @@ export type AttentionItem = {
   acknowledgedAt?: string;
   resolvedAt?: string;
   createdAt: string;
+  updatedAt?: string;
   reasonCodes: string[];
 };
 
