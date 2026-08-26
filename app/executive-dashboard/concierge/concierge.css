@@ -117,6 +117,12 @@ body:has([data-concierge-shell]) [data-facet-rail] {
   margin-top: 1.15rem;
 }
 
+.hg-project-book {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.85rem;
+}
+
 @media (min-width: 1024px) {
   .hg-command-grid {
     display: grid;
@@ -125,5 +131,10 @@ body:has([data-concierge-shell]) [data-facet-rail] {
     column-gap: 4.5rem;
     row-gap: 0;
     margin-top: 1.65rem;
+  }
+
+  .hg-project-book {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
   }
 }

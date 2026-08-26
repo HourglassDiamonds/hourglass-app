@@ -19,9 +19,18 @@ import { formatBirthday, parseBirthdayValue } from "@/lib/continuum/client-memor
 import { PERSON_FACT_TYPE_BIRTHDAY } from "@/lib/continuum/client-memory/facts/types";
 
 export const CONCIERGE_HOME_PATH = "/executive-dashboard/concierge";
+export const CONCIERGE_PROJECTS_PATH = `${CONCIERGE_HOME_PATH}/projects`;
 
 export function conciergeClientPath(personId: string): string {
   return `${CONCIERGE_HOME_PATH}/client/${personId}`;
+}
+
+export function conciergeProjectsPath(): string {
+  return CONCIERGE_PROJECTS_PATH;
+}
+
+export function conciergeProjectPath(projectId: string): string {
+  return `${CONCIERGE_PROJECTS_PATH}/${projectId}`;
 }
 
 export function conciergeAddNotePath(personId: string): string {
@@ -148,7 +157,7 @@ export function visibleCurrentFacts(facts: PersonFact[]): Array<{
     .filter((row): row is { id: string; label: string; value: string } => row != null);
 }
 
-export function noteSourceLabel(note: SourceNoteSummary): string {
+export function noteSourceLabel(note: Pick<SourceNoteSummary, "sourceSystem">): string {
   if (note.sourceSystem === CLIENT_MEMORY_SOURCE_SYSTEM) {
     return "Historical client record";
   }
@@ -250,5 +259,9 @@ const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export function isPersonIdParam(value: string): boolean {
+  return UUID_RE.test(value.trim());
+}
+
+export function isProjectIdParam(value: string): boolean {
   return UUID_RE.test(value.trim());
 }

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { CONCIERGE_HOME_PATH } from "@/lib/continuum/client-memory/read/presentation";
 import { CONTINUUM_APP_NAME } from "@/lib/continuum/pwa/config";
 
-export type ConciergeShellVariant = "home" | "document";
+export type ConciergeShellVariant = "home" | "document" | "book";
 
 export function ConciergeShell({
   children,
@@ -15,7 +15,7 @@ export function ConciergeShell({
   variant?: ConciergeShellVariant;
 }) {
   const frame =
-    variant === "home"
+    variant === "home" || variant === "book"
       ? "relative mx-auto w-full max-w-[34rem] px-5 pb-[max(3rem,env(safe-area-inset-bottom))] pt-[max(1.1rem,env(safe-area-inset-top))] md:max-w-[75rem] md:px-8 md:pt-10"
       : "relative mx-auto w-full max-w-[34rem] px-5 pb-[max(4rem,env(safe-area-inset-bottom))] pt-[max(2.5rem,env(safe-area-inset-top))] md:max-w-[38rem] md:px-8 md:pt-14";
 

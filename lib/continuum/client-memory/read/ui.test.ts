@@ -182,7 +182,9 @@ describe("Concierge Client Memory UI", () => {
     );
     assert.match(html, /Oval ring/);
     assert.match(html, /CAD-77/);
+    assert.match(html, /\/executive-dashboard\/concierge\/projects\//);
     assert.match(html, /Prefers morning calls/);
+    assert.match(html, /\/executive-dashboard\/concierge\/projects\//);
     assert.match(html, /Historical client record/);
     assert.match(html, /Client/);
     assert.match(html, /Add Note/);
@@ -275,6 +277,7 @@ describe("Concierge Client Memory UI", () => {
     assert.doesNotMatch(page, /displayName/);
     const home = readFileSync(join(CONCIERGE_DIR, "page.tsx"), "utf8");
     assert.match(home, /loadContinuumHomeModel/);
+    assert.match(home, /loadProjectBookPreview/);
     assert.match(home, /CommandCenterHome/);
     assert.match(home, /variant="home"/);
     assert.doesNotMatch(home, /Search your client memory|Search clients/);
@@ -293,6 +296,7 @@ describe("Concierge Client Memory UI", () => {
       "utf8",
     );
     assert.match(command, /People/);
+    assert.match(command, /ProjectsHome/);
     assert.match(command, /<ConciergeSearch \/>/);
     assert.doesNotMatch(command, /autoFocus/);
     assert.doesNotMatch(command, /intent=/);
@@ -310,6 +314,7 @@ describe("Concierge Client Memory UI", () => {
     assert.match(actions, /savePersonProfile/);
     assert.match(actions, /savePlaudHumanSource/);
     assert.match(actions, /getAuthenticatedHumanSourceStore/);
+    assert.doesNotMatch(actions, /saveProjectLifecycle/);
     assert.doesNotMatch(actions, /from\("continuum_/);
     assert.doesNotMatch(actions, /noteText=/);
     const addNote = readFileSync(
@@ -415,12 +420,14 @@ describe("Concierge Client Memory UI", () => {
     const capture = renderToStaticMarkup(createElement(QuickCapture));
     assert.equal(greetingLine(model), "Good afternoon, Justin.");
     assert.match(home, /loadContinuumHomeModel/);
+    assert.match(home, /loadProjectBookPreview/);
     assert.match(home, /CommandCenterHome/);
     assert.match(command, /greetingLine/);
     assert.match(command, /ChiefOfStaffToday/);
     assert.match(command, /AskConciergeShell/);
     assert.match(command, /People/);
     assert.match(command, /QuickCapture/);
+    assert.match(command, /ProjectsHome/);
     assert.match(cos, /Chief of Staff/);
     assert.match(cos, /Today/);
     assert.match(cos, /Nothing in memory needs your attention yet/);

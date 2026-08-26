@@ -4,6 +4,8 @@ import {
   conciergeAddClientPath,
   conciergeAddNotePath,
   conciergeEditPersonPath,
+  conciergeProjectPath,
+  conciergeProjectsPath,
   conciergeAddNotePickerPath,
   conciergeBirthdayPath,
   conciergeInboxNewPath,
@@ -13,6 +15,7 @@ import {
   formatLocation,
   historyFields,
   isPersonIdParam,
+  isProjectIdParam,
   memoryReviewLabel,
   noteContextLabel,
   noteProjectTitle,
@@ -149,6 +152,17 @@ describe("Concierge presentation", () => {
     assert.equal(telHref("not-a-phone"), null);
     assert.equal(isPersonIdParam("not-a-uuid"), false);
     assert.equal(isPersonIdParam("eb2802bd-e312-471e-8582-8dbd5ad2e04b"), true);
+    assert.equal(isProjectIdParam("not-a-uuid"), false);
+    assert.equal(isProjectIdParam("eb2802bd-e312-471e-8582-8dbd5ad2e04b"), true);
+    assert.equal(
+      conciergeProjectPath("eb2802bd-e312-471e-8582-8dbd5ad2e04b"),
+      "/executive-dashboard/concierge/projects/eb2802bd-e312-471e-8582-8dbd5ad2e04b",
+    );
+    assert.equal(conciergeProjectsPath(), "/executive-dashboard/concierge/projects");
+    assert.doesNotMatch(
+      conciergeProjectsPath(),
+      /lifecycle/,
+    );
   });
 
   it("keeps Add Note picker and person-note paths distinct", () => {

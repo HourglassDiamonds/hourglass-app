@@ -1,14 +1,22 @@
 import Link from "next/link";
 import { greetingLine } from "@/lib/continuum/dashboard/compose";
 import type { ContinuumHomeModel } from "@/lib/continuum/dashboard/types";
+import type { ProjectDeskSummary } from "@/lib/continuum/client-memory/project-desk/types";
 import { EXECUTIVE_DASHBOARD_PASSKEYS_PATH } from "@/lib/executive-dashboard/access";
 import { AskConciergeShell } from "./ask-concierge-shell";
 import { ChiefOfStaffToday } from "./chief-of-staff-today";
 import { ConciergeSearch } from "./concierge-search";
 import { ConciergeSignOut } from "./concierge-sign-out";
+import { ProjectsHome } from "./projects-home";
 import { QuickCapture } from "./quick-capture";
 
-export function CommandCenterHome({ model }: { model: ContinuumHomeModel }) {
+export function CommandCenterHome({
+  model,
+  projects,
+}: {
+  model: ContinuumHomeModel;
+  projects: ProjectDeskSummary[];
+}) {
   return (
     <div data-command-center className="hg-command-grid">
       <div className="flex flex-col gap-9 lg:gap-11">
@@ -19,6 +27,7 @@ export function CommandCenterHome({ model }: { model: ContinuumHomeModel }) {
         <AskConciergeShell />
       </div>
       <div className="flex flex-col gap-9 lg:gap-10">
+        <ProjectsHome projects={projects} />
         <section>
           <h2 className="text-[11px] uppercase tracking-[0.28em] text-[#8d8073]">
             People
