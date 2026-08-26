@@ -50,6 +50,14 @@ describe("Continuum contracts", () => {
     assert.equal(isContinuumSourceSystem("google-contacts"), false);
   });
 
+  it("accepts continuum-card as a protected identity-exchange source system", () => {
+    assert.equal(
+      (CONTINUUM_SOURCE_SYSTEMS as readonly string[]).includes("continuum-card"),
+      true,
+    );
+    assert.equal(isContinuumSourceSystem("continuum-card"), true);
+  });
+
   it("accepts recursive JSON-safe observation values and rejects Date", () => {
     assert.equal(
       isContinuumJsonValue({

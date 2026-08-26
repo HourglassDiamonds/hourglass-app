@@ -35,7 +35,8 @@ export type ContinuumSourceSystem =
   | "continuum-reconciliation-v3"
   | "gmail"
   | "plaud"
-  | "remarkable";
+  | "remarkable"
+  | "continuum-card";
 
 export const CONTINUUM_SOURCE_SYSTEMS = [
   "studio-identified",
@@ -51,6 +52,7 @@ export const CONTINUUM_SOURCE_SYSTEMS = [
   "gmail",
   "plaud",
   "remarkable",
+  "continuum-card",
 ] as const satisfies readonly ContinuumSourceSystem[];
 
 export type EvidenceSourceKind =

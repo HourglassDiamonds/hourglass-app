@@ -429,8 +429,10 @@ describe("Concierge Client Memory UI", () => {
     assert.match(capture, /Quick Capture/);
     assert.match(capture, /Add Note/);
     assert.match(capture, /Add Client/);
+    assert.match(capture, /My Card/);
     assert.match(capture, /\/executive-dashboard\/concierge\/note\/new/);
     assert.match(capture, /\/executive-dashboard\/concierge\/client\/new/);
+    assert.match(capture, /\/executive-dashboard\/concierge\/card/);
     assert.doesNotMatch(command, /Search clients|Search your client memory/);
     assert.doesNotMatch(command, /autoFocus/);
   });
