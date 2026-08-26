@@ -1,14 +1,27 @@
 "use client";
 
-import { useActionState, useEffect, useId, useRef } from "react";
+import { useActionState, useEffect, useId, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { CONCIERGE_HOME_PATH } from "@/lib/continuum/client-memory/read/presentation";
-import type { DigitalCard } from "@/lib/continuum/digital-card/types";
+import {
+  MY_CARD_FIELD_ORDER,
+  clientMyCardFieldErrors,
+  myCardFormValuesFromFormData,
+  resolveMyCardFormDisplay,
+} from "@/lib/continuum/digital-card/form-state";
+import type { DigitalCard, SaveDigitalCardField } from "@/lib/continuum/digital-card/types";
+import { publicCardAbsoluteUrl } from "@/lib/continuum/digital-card/origin";
 import { saveOwnerCard, type SaveOwnerCardState } from "../card/actions";
 import { CardQr } from "./card-qr";
 
 const FIELD_CLASS =
   "mt-3 min-h-12 w-full rounded-[18px] border border-white/[0.08] bg-[#1d1916] px-4 text-[16px] text-[#efe8de] outline-none placeholder:text-[#7d7268] focus-visible:border-[#ad9164]/70 focus-visible:shadow-[0_0_0_3px_rgba(173,145,100,0.22)]";
+const FIELD_INVALID_CLASS =
+  "mt-3 min-h-12 w-full rounded-[18px] border border-[#c9896a]/80 bg-[#1d1916] px-4 text-[16px] text-[#efe8de] outline-none placeholder:text-[#7d7268] focus-visible:border-[#c9896a] focus-visible:shadow-[0_0_0_3px_rgba(201,137,106,0.28)]";
+
+function fieldClass(invalid: boolean): string {
+  return invalid ? FIELD_INVALID_CLASS : FIELD_CLASS;
+}
 
 function CheckRow({
   id,
@@ -36,6 +49,15 @@ function CheckRow({
   );
 }
 
+function FieldError({ id, message }: { id: string; message?: string }) {
+  if (!message) return null;
+  return (
+    <p id={id} role="alert" className="mt-2 text-[13px] leading-relaxed text-[#d2b8a8]">
+      {message}
+    </p>
+  );
+}
+
 export function MyCardForm({
   card,
   publicUrl = null,
@@ -47,6 +69,7 @@ export function MyCardForm({
     saveOwnerCard,
     null as SaveOwnerCardState | null,
   );
+  const [clientErrors, setClientErrors] = useState(state?.fieldErrors ?? {});
   const errorRef = useRef<HTMLParagraphElement>(null);
   const nameId = useId();
   const memorableId = useId();
@@ -59,21 +82,113 @@ export function MyCardForm({
   const instagramId = useId();
   const avatarId = useId();
   const slugId = useId();
+  const link1LabelId = useId();
+  const link1UrlId = useId();
+  const link2LabelId = useId();
+  const link2UrlId = useId();
+  const websiteErrorId = useId();
+  const linkedinErrorId = useId();
+  const instagramErrorId = useId();
+  const avatarErrorId = useId();
+  const slugErrorId = useId();
+  const nameErrorId = useId();
+  const memorableErrorId = useId();
+  const titleErrorId = useId();
+  const companyErrorId = useId();
+  const emailErrorId = useId();
+  const phoneErrorId = useId();
+  const link1LabelErrorId = useId();
+  const link1UrlErrorId = useId();
+  const link2LabelErrorId = useId();
+  const link2UrlErrorId = useId();
+
+  const display = resolveMyCardFormDisplay({
+    card: state?.status === "saved" ? state.card : card,
+    status: state?.status ?? null,
+    submitted: state?.status === "error" ? state.values : null,
+    fieldErrors: state?.status === "error" ? state.fieldErrors : clientErrors,
+    message: state?.message ?? null,
+    savedAt: state?.status === "saved" ? state.card.updatedAt : null,
+  });
+  const fieldErrors =
+    state?.status === "error"
+      ? state.fieldErrors
+      : Object.keys(clientErrors).length
+        ? clientErrors
+        : {};
+  const values = display.values;
+  const shownCard = state?.status === "saved" ? state.card : card;
+  const shownPublicUrl = shownCard?.published
+    ? shownCard.slug === card?.slug && publicUrl
+      ? publicUrl
+      : publicCardAbsoluteUrl(shownCard.slug)
+    : null;
+  const errorSignature = `${display.formKey}:${MY_CARD_FIELD_ORDER.filter((field) => fieldErrors[field]).join(",")}`;
+  const summary =
+    display.summary ??
+    (Object.keys(fieldErrors).length > 0 ? "Check the highlighted fields." : null);
+
+  const ids: Record<SaveDigitalCardField, string> = {
+    displayName: nameId,
+    memorableTitle: memorableId,
+    professionalTitle: titleId,
+    company: companyId,
+    email: emailId,
+    phone: phoneId,
+    websiteUrl: websiteId,
+    linkedinUrl: linkedinId,
+    instagramUrl: instagramId,
+    avatarUrl: avatarId,
+    slug: slugId,
+    published: "published",
+    emailPublic: `${emailId}-public`,
+    phonePublic: `${phoneId}-public`,
+    link1Label: link1LabelId,
+    link1Url: link1UrlId,
+    link2Label: link2LabelId,
+    link2Url: link2UrlId,
+  };
+
+  const idsRef = useRef(ids);
+  idsRef.current = ids;
 
   useEffect(() => {
-    if (state?.message) errorRef.current?.focus();
-  }, [state?.message]);
+    const first = MY_CARD_FIELD_ORDER.find((field) => fieldErrors[field]);
+    if (first) {
+      const node = document.getElementById(idsRef.current[first]);
+      node?.focus();
+      node?.scrollIntoView({ block: "center", behavior: "smooth" });
+      return;
+    }
+    if (display.summary) errorRef.current?.focus();
+    // errorSignature already encodes invalid fields; avoid re-focusing every render.
+  }, [errorSignature, display.summary]);
 
-  const extra = card?.additionalLinks ?? [];
+  function onSubmit(event: FormEvent<HTMLFormElement>) {
+    const submitted = myCardFormValuesFromFormData(new FormData(event.currentTarget));
+    const errors = clientMyCardFieldErrors(submitted);
+    if (Object.keys(errors).length > 0) {
+      event.preventDefault();
+      setClientErrors(errors);
+      return;
+    }
+    setClientErrors({});
+  }
 
   return (
-    <form action={formAction} className="flex flex-col" noValidate>
-      {publicUrl && card?.published ? (
+    <form
+      key={display.formKey}
+      action={formAction}
+      onSubmit={onSubmit}
+      className="flex flex-col"
+      noValidate
+    >
+      {shownPublicUrl && shownCard?.published ? (
         <div className="mb-10 flex flex-col items-center">
-          <CardQr url={publicUrl} label="QR code for your public Continuum card" />
-          <p className="mt-4 break-all text-center text-[13px] text-[#8d8073]">{publicUrl}</p>
+          <CardQr url={shownPublicUrl} label="QR code for your public Continuum card" />
+          <p className="mt-4 break-all text-center text-[13px] text-[#8d8073]">{shownPublicUrl}</p>
           <a
-            href={publicUrl}
+            href={shownPublicUrl}
             target="_blank"
             rel="noreferrer"
             className="mt-2 inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.22em] text-[#8d8073] outline-none hover:text-[#efe8de] focus-visible:text-[#efe8de]"
@@ -88,10 +203,13 @@ export function MyCardForm({
       <input
         id={nameId}
         name="displayName"
-        defaultValue={card?.displayName ?? ""}
+        defaultValue={values.displayName}
         autoComplete="name"
-        className={FIELD_CLASS}
+        aria-invalid={Boolean(fieldErrors.displayName)}
+        aria-describedby={fieldErrors.displayName ? nameErrorId : undefined}
+        className={fieldClass(Boolean(fieldErrors.displayName))}
       />
+      <FieldError id={nameErrorId} message={fieldErrors.displayName} />
 
       <div className="mt-6">
         <label
@@ -103,9 +221,12 @@ export function MyCardForm({
         <input
           id={memorableId}
           name="memorableTitle"
-          defaultValue={card?.memorableTitle ?? ""}
-          className={FIELD_CLASS}
+          defaultValue={values.memorableTitle}
+          aria-invalid={Boolean(fieldErrors.memorableTitle)}
+          aria-describedby={fieldErrors.memorableTitle ? memorableErrorId : undefined}
+          className={fieldClass(Boolean(fieldErrors.memorableTitle))}
         />
+        <FieldError id={memorableErrorId} message={fieldErrors.memorableTitle} />
       </div>
 
       <div className="mt-6">
@@ -118,10 +239,13 @@ export function MyCardForm({
         <input
           id={titleId}
           name="professionalTitle"
-          defaultValue={card?.professionalTitle ?? ""}
+          defaultValue={values.professionalTitle}
           autoComplete="organization-title"
-          className={FIELD_CLASS}
+          aria-invalid={Boolean(fieldErrors.professionalTitle)}
+          aria-describedby={fieldErrors.professionalTitle ? titleErrorId : undefined}
+          className={fieldClass(Boolean(fieldErrors.professionalTitle))}
         />
+        <FieldError id={titleErrorId} message={fieldErrors.professionalTitle} />
       </div>
 
       <div className="mt-6">
@@ -134,10 +258,13 @@ export function MyCardForm({
         <input
           id={companyId}
           name="company"
-          defaultValue={card?.company ?? ""}
+          defaultValue={values.company}
           autoComplete="organization"
-          className={FIELD_CLASS}
+          aria-invalid={Boolean(fieldErrors.company)}
+          aria-describedby={fieldErrors.company ? companyErrorId : undefined}
+          className={fieldClass(Boolean(fieldErrors.company))}
         />
+        <FieldError id={companyErrorId} message={fieldErrors.company} />
       </div>
 
       <div className="mt-6">
@@ -148,15 +275,18 @@ export function MyCardForm({
           id={emailId}
           name="email"
           type="email"
-          defaultValue={card?.email ?? ""}
+          defaultValue={values.email}
           autoComplete="email"
-          className={FIELD_CLASS}
+          aria-invalid={Boolean(fieldErrors.email)}
+          aria-describedby={fieldErrors.email ? emailErrorId : undefined}
+          className={fieldClass(Boolean(fieldErrors.email))}
         />
+        <FieldError id={emailErrorId} message={fieldErrors.email} />
         <CheckRow
           id={`${emailId}-public`}
           name="emailPublic"
           label="Show email on the public card"
-          defaultChecked={card?.emailPublic ?? true}
+          defaultChecked={values.emailPublic}
         />
       </div>
 
@@ -168,15 +298,18 @@ export function MyCardForm({
           id={phoneId}
           name="phone"
           type="tel"
-          defaultValue={card?.phone ?? ""}
+          defaultValue={values.phone}
           autoComplete="tel"
-          className={FIELD_CLASS}
+          aria-invalid={Boolean(fieldErrors.phone)}
+          aria-describedby={fieldErrors.phone ? phoneErrorId : undefined}
+          className={fieldClass(Boolean(fieldErrors.phone))}
         />
+        <FieldError id={phoneErrorId} message={fieldErrors.phone} />
         <CheckRow
           id={`${phoneId}-public`}
           name="phonePublic"
           label="Show phone on the public card"
-          defaultChecked={card?.phonePublic ?? true}
+          defaultChecked={values.phonePublic}
         />
       </div>
 
@@ -191,10 +324,15 @@ export function MyCardForm({
           id={websiteId}
           name="websiteUrl"
           type="url"
-          defaultValue={card?.websiteUrl ?? ""}
+          inputMode="url"
+          placeholder="https://"
+          defaultValue={values.websiteUrl}
           autoComplete="url"
-          className={FIELD_CLASS}
+          aria-invalid={Boolean(fieldErrors.websiteUrl)}
+          aria-describedby={fieldErrors.websiteUrl ? websiteErrorId : undefined}
+          className={fieldClass(Boolean(fieldErrors.websiteUrl))}
         />
+        <FieldError id={websiteErrorId} message={fieldErrors.websiteUrl} />
       </div>
 
       <div className="mt-6">
@@ -208,9 +346,14 @@ export function MyCardForm({
           id={linkedinId}
           name="linkedinUrl"
           type="url"
-          defaultValue={card?.linkedinUrl ?? ""}
-          className={FIELD_CLASS}
+          inputMode="url"
+          placeholder="https://"
+          defaultValue={values.linkedinUrl}
+          aria-invalid={Boolean(fieldErrors.linkedinUrl)}
+          aria-describedby={fieldErrors.linkedinUrl ? linkedinErrorId : undefined}
+          className={fieldClass(Boolean(fieldErrors.linkedinUrl))}
         />
+        <FieldError id={linkedinErrorId} message={fieldErrors.linkedinUrl} />
       </div>
 
       <div className="mt-6">
@@ -223,33 +366,72 @@ export function MyCardForm({
         <input
           id={instagramId}
           name="instagramUrl"
-          defaultValue={card?.instagramUrl ?? ""}
-          className={FIELD_CLASS}
+          inputMode="url"
+          placeholder="@handle or https://"
+          defaultValue={values.instagramUrl}
+          aria-invalid={Boolean(fieldErrors.instagramUrl)}
+          aria-describedby={fieldErrors.instagramUrl ? instagramErrorId : undefined}
+          className={fieldClass(Boolean(fieldErrors.instagramUrl))}
         />
+        <FieldError id={instagramErrorId} message={fieldErrors.instagramUrl} />
       </div>
 
       <div className="mt-6">
         <p className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
           Additional links
         </p>
-        {[0, 1].map((index) => (
-          <div key={index} className="mt-4 grid grid-cols-1 gap-3">
-            <input
-              name={`link${index + 1}Label`}
-              defaultValue={extra[index]?.label ?? ""}
-              placeholder="Label"
-              aria-label={`Additional link ${index + 1} label`}
-              className={FIELD_CLASS}
-            />
-            <input
-              name={`link${index + 1}Url`}
-              defaultValue={extra[index]?.url ?? ""}
-              placeholder="https://"
-              aria-label={`Additional link ${index + 1} address`}
-              className={FIELD_CLASS}
-            />
-          </div>
-        ))}
+        <div className="mt-4 grid grid-cols-1 gap-3">
+          <input
+            id={link1LabelId}
+            name="link1Label"
+            defaultValue={values.link1Label}
+            placeholder="Label"
+            aria-label="Additional link 1 label"
+            aria-invalid={Boolean(fieldErrors.link1Label)}
+            aria-describedby={fieldErrors.link1Label ? link1LabelErrorId : undefined}
+            className={fieldClass(Boolean(fieldErrors.link1Label))}
+          />
+          <FieldError id={link1LabelErrorId} message={fieldErrors.link1Label} />
+          <input
+            id={link1UrlId}
+            name="link1Url"
+            type="url"
+            inputMode="url"
+            defaultValue={values.link1Url}
+            placeholder="https://"
+            aria-label="Additional link 1 address"
+            aria-invalid={Boolean(fieldErrors.link1Url)}
+            aria-describedby={fieldErrors.link1Url ? link1UrlErrorId : undefined}
+            className={fieldClass(Boolean(fieldErrors.link1Url))}
+          />
+          <FieldError id={link1UrlErrorId} message={fieldErrors.link1Url} />
+        </div>
+        <div className="mt-4 grid grid-cols-1 gap-3">
+          <input
+            id={link2LabelId}
+            name="link2Label"
+            defaultValue={values.link2Label}
+            placeholder="Label"
+            aria-label="Additional link 2 label"
+            aria-invalid={Boolean(fieldErrors.link2Label)}
+            aria-describedby={fieldErrors.link2Label ? link2LabelErrorId : undefined}
+            className={fieldClass(Boolean(fieldErrors.link2Label))}
+          />
+          <FieldError id={link2LabelErrorId} message={fieldErrors.link2Label} />
+          <input
+            id={link2UrlId}
+            name="link2Url"
+            type="url"
+            inputMode="url"
+            defaultValue={values.link2Url}
+            placeholder="https://"
+            aria-label="Additional link 2 address"
+            aria-invalid={Boolean(fieldErrors.link2Url)}
+            aria-describedby={fieldErrors.link2Url ? link2UrlErrorId : undefined}
+            className={fieldClass(Boolean(fieldErrors.link2Url))}
+          />
+          <FieldError id={link2UrlErrorId} message={fieldErrors.link2Url} />
+        </div>
       </div>
 
       <div className="mt-6">
@@ -260,9 +442,14 @@ export function MyCardForm({
           id={avatarId}
           name="avatarUrl"
           type="url"
-          defaultValue={card?.avatarUrl ?? ""}
-          className={FIELD_CLASS}
+          inputMode="url"
+          placeholder="https://"
+          defaultValue={values.avatarUrl}
+          aria-invalid={Boolean(fieldErrors.avatarUrl)}
+          aria-describedby={fieldErrors.avatarUrl ? avatarErrorId : undefined}
+          className={fieldClass(Boolean(fieldErrors.avatarUrl))}
         />
+        <FieldError id={avatarErrorId} message={fieldErrors.avatarUrl} />
       </div>
 
       <div className="mt-6">
@@ -272,9 +459,12 @@ export function MyCardForm({
         <input
           id={slugId}
           name="slug"
-          defaultValue={card?.slug ?? ""}
-          className={FIELD_CLASS}
+          defaultValue={values.slug}
+          aria-invalid={Boolean(fieldErrors.slug)}
+          aria-describedby={fieldErrors.slug ? slugErrorId : undefined}
+          className={fieldClass(Boolean(fieldErrors.slug))}
         />
+        <FieldError id={slugErrorId} message={fieldErrors.slug} />
         <p className="mt-2 text-[13px] leading-relaxed text-[#8d8073]">
           hourglassdiamonds.com/c/your-name
         </p>
@@ -284,17 +474,19 @@ export function MyCardForm({
         id="published"
         name="published"
         label="Publish this card"
-        defaultChecked={card?.published ?? false}
+        defaultChecked={values.published}
       />
 
-      {state?.message ? (
+      {summary ? (
         <p
           ref={errorRef}
           tabIndex={-1}
-          role="alert"
-          className="mt-6 text-[14px] leading-relaxed text-[#d2b8a8] outline-none"
+          role="status"
+          className={`mt-6 text-[14px] leading-relaxed outline-none ${
+            display.saved ? "text-[#c4b7aa]" : "text-[#d2b8a8]"
+          }`}
         >
-          {state.message}
+          {summary}
         </p>
       ) : null}
 
@@ -304,7 +496,7 @@ export function MyCardForm({
           disabled={pending}
           className="min-h-12 flex-1 rounded-[18px] border border-[#ad9164]/50 bg-[#1d1916] px-4 text-[11px] uppercase tracking-[0.22em] text-[#efe8de] outline-none hover:border-[#ad9164] focus-visible:shadow-[0_0_0_3px_rgba(173,145,100,0.22)] disabled:opacity-50"
         >
-          {pending ? "Saving???" : "Save card"}
+          {pending ? "Saving…" : "Save card"}
         </button>
         <Link
           href={CONCIERGE_HOME_PATH}

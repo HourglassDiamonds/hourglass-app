@@ -76,6 +76,10 @@ describe("digital-card UI and public retrieval", () => {
     assert.match(form, /Memorable title/);
     assert.match(form, /Publish this card/);
     assert.match(form, /Preview public card/);
+    assert.match(form, /aria-invalid/);
+    assert.match(form, /aria-describedby/);
+    assert.match(form, /clientMyCardFieldErrors/);
+    assert.match(form, /resolveMyCardFormDisplay/);
     assert.doesNotMatch(form, /drag-and-drop|Justin Smith/);
   });
 

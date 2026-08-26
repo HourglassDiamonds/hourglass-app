@@ -26,7 +26,12 @@ export async function saveOwnerDigitalCard(
 ): Promise<SaveDigitalCardResult> {
   const parsed = parseDigitalCardFields(input);
   if (!parsed.ok) {
-    return { status: "validation-error", code: parsed.code, message: parsed.message };
+    return {
+      status: "validation-error",
+      code: parsed.code,
+      message: parsed.message,
+      fieldErrors: parsed.fieldErrors,
+    };
   }
 
   try {
@@ -38,6 +43,7 @@ export async function saveOwnerDigitalCard(
         status: "validation-error",
         code: "slug-taken",
         message: "That public link is already in use.",
+        fieldErrors: { slug: "That public link is already in use." },
       };
     }
 

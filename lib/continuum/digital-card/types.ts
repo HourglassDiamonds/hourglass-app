@@ -133,6 +133,11 @@ export type PublicDigitalCard = {
   avatarUrl: string | null;
 };
 
+export type SaveDigitalCardLinkDraft = {
+  label?: string | null;
+  url?: string | null;
+};
+
 export type SaveDigitalCardInput = {
   slug?: string | null;
   published?: boolean;
@@ -147,9 +152,31 @@ export type SaveDigitalCardInput = {
   websiteUrl?: string | null;
   linkedinUrl?: string | null;
   instagramUrl?: string | null;
-  additionalLinks?: DigitalCardAdditionalLink[] | string | null;
+  additionalLinks?: DigitalCardAdditionalLink[] | SaveDigitalCardLinkDraft[] | string | null;
   avatarUrl?: string | null;
 };
+
+export type SaveDigitalCardField =
+  | "displayName"
+  | "memorableTitle"
+  | "professionalTitle"
+  | "company"
+  | "email"
+  | "phone"
+  | "websiteUrl"
+  | "linkedinUrl"
+  | "instagramUrl"
+  | "avatarUrl"
+  | "slug"
+  | "published"
+  | "emailPublic"
+  | "phonePublic"
+  | "link1Label"
+  | "link1Url"
+  | "link2Label"
+  | "link2Url";
+
+export type SaveDigitalCardFieldErrors = Partial<Record<SaveDigitalCardField, string>>;
 
 export type SaveDigitalCardValidationCode =
   | "missing-name"
@@ -161,6 +188,10 @@ export type SaveDigitalCardValidationCode =
   | "invalid-slug"
   | "slug-taken"
   | "invalid-url"
+  | "invalid-website-url"
+  | "invalid-linkedin-url"
+  | "invalid-instagram-url"
+  | "invalid-portrait-url"
   | "too-many-links"
   | "invalid-link";
 
@@ -170,6 +201,7 @@ export type SaveDigitalCardResult =
       status: "validation-error";
       code: SaveDigitalCardValidationCode;
       message: string;
+      fieldErrors: SaveDigitalCardFieldErrors;
     }
   | { status: "unauthorized" }
   | { status: "error" };

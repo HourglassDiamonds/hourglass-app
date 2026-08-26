@@ -43,6 +43,22 @@ describe("digital-card parsing", () => {
     if (instagram.ok) {
       assert.equal(instagram.url, "https://www.instagram.com/hourglassdiamonds");
     }
+    const blank = parseDigitalCardFields({
+      displayName: "Ada",
+      websiteUrl: " ",
+      linkedinUrl: "",
+      avatarUrl: "\n",
+    });
+    assert.equal(blank.ok, true);
+    const website = parseDigitalCardFields({
+      displayName: "Ada",
+      websiteUrl: "www.hourglassdiamonds.com",
+    });
+    assert.equal(website.ok, false);
+    if (!website.ok) {
+      assert.equal(website.fieldErrors.websiteUrl, "Enter a valid website URL.");
+      assert.doesNotMatch(website.message, /Enter a valid web address/);
+    }
   });
 
   it("requires a name and valid optional contact fields on the owner card", () => {

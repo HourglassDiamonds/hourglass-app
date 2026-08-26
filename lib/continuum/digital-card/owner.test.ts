@@ -32,7 +32,10 @@ describe("owner digital card writer", () => {
       { displayName: "Someone Else", slug: "ada-lovelace", published: true },
     );
     assert.equal(taken.status, "validation-error");
-    if (taken.status === "validation-error") assert.equal(taken.code, "slug-taken");
+    if (taken.status === "validation-error") {
+      assert.equal(taken.code, "slug-taken");
+      assert.equal(taken.fieldErrors.slug, "That public link is already in use.");
+    }
   });
 
   it("does not authorize writes by itself ??? session gating lives in load.ts", async () => {
