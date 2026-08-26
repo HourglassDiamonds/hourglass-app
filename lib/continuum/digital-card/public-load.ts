@@ -1,6 +1,6 @@
 /**
  * Public digital-card reads and share ingest. No founder session.
- * Returns published public DTOs only ??? never internal ids or private fields.
+ * Returns published public DTOs only — never internal ids or private fields.
  */
 
 import "server-only";

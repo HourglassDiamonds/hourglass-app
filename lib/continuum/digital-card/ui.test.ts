@@ -72,14 +72,31 @@ describe("digital-card UI and public retrieval", () => {
       join(ROOT, "app", "executive-dashboard", "concierge", "components", "my-card-form.tsx"),
       "utf8",
     );
+    const qr = readFileSync(
+      join(ROOT, "app", "executive-dashboard", "concierge", "components", "card-qr.tsx"),
+      "utf8",
+    );
+    const page = readFileSync(
+      join(ROOT, "app", "executive-dashboard", "concierge", "card", "page.tsx"),
+      "utf8",
+    );
+    assert.match(page, /Share your Continuum card/);
+    assert.match(page, /My Card/);
+    assert.match(page, /A simple way to exchange your details and stay connected/);
+    assert.doesNotMatch(page, /\?\?\?/);
+    assert.doesNotMatch(page, /quiet public profile/);
     assert.match(form, /Full name/);
     assert.match(form, /Memorable title/);
     assert.match(form, /Publish this card/);
-    assert.match(form, /Preview public card/);
+    assert.match(qr, /Preview Public Card/);
+    assert.match(qr, /Copy Link/);
+    assert.match(qr, /value=\{url\}/);
+    assert.match(form, /Card Details/);
     assert.match(form, /aria-invalid/);
     assert.match(form, /aria-describedby/);
     assert.match(form, /clientMyCardFieldErrors/);
     assert.match(form, /resolveMyCardFormDisplay/);
+    assert.doesNotMatch(form, /break-all/);
     assert.doesNotMatch(form, /drag-and-drop|Justin Smith/);
   });
 

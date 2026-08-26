@@ -1,6 +1,6 @@
 /**
  * Continuum digital card public surface.
- * Does not export the Supabase adapter ??? import that from `./server`.
+ * Does not export the Supabase adapter — import that from `./server`.
  */
 
 export {

@@ -3,12 +3,17 @@
 import { useRef } from "react";
 import QRCode from "react-qr-code";
 
+const ACTION_CLASS =
+  "inline-flex min-h-12 w-full items-center justify-center rounded-[16px] border border-white/[0.12] bg-[#1d1916] px-3 text-[11px] uppercase tracking-[0.12em] text-[#efe8de] outline-none hover:border-[#ad9164]/70 focus-visible:shadow-[0_0_0_3px_rgba(173,145,100,0.22)]";
+
 export function CardQr({
   url,
   label,
+  previewHref,
 }: {
   url: string;
   label: string;
+  previewHref?: string | null;
 }) {
   const frameRef = useRef<HTMLDivElement>(null);
 
@@ -26,10 +31,10 @@ export function CardQr({
   }
 
   return (
-    <div className="flex flex-col items-center">
+    <div className="flex w-full flex-col items-center">
       <div
         ref={frameRef}
-        className="rounded-[24px] bg-[#efe8de] p-5"
+        className="rounded-[24px] bg-[#efe8de] p-5 md:p-6"
         aria-label={label}
       >
         <QRCode
@@ -40,22 +45,30 @@ export function CardQr({
           style={{ height: "auto", maxWidth: "196px", width: "196px" }}
         />
       </div>
-      <button
-        type="button"
-        onClick={downloadSvg}
-        className="mt-4 inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.22em] text-[#8d8073] outline-none hover:text-[#efe8de] focus-visible:text-[#efe8de]"
-      >
-        Download QR
-      </button>
-      <button
-        type="button"
-        onClick={() => {
-          void navigator.clipboard.writeText(url);
-        }}
-        className="mt-2 inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.22em] text-[#8d8073] outline-none hover:text-[#efe8de] focus-visible:text-[#efe8de]"
-      >
-        Copy link
-      </button>
+      <div className="mt-5 grid w-full max-w-[20rem] grid-cols-2 gap-2">
+        <button type="button" onClick={downloadSvg} className={ACTION_CLASS}>
+          Download QR
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            void navigator.clipboard.writeText(url);
+          }}
+          className={ACTION_CLASS}
+        >
+          Copy Link
+        </button>
+      </div>
+      {previewHref ? (
+        <a
+          href={previewHref}
+          target="_blank"
+          rel="noreferrer"
+          className={`${ACTION_CLASS} mt-2 max-w-[20rem] border-[#ad9164]/40`}
+        >
+          Preview Public Card
+        </a>
+      ) : null}
     </div>
   );
 }

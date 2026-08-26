@@ -88,7 +88,7 @@ export function ShareYourInfoForm({
         Share your info
       </h2>
       <p className="mt-2 text-[14px] leading-relaxed text-[#c4b7aa]">
-        A short exchange ??? name, and a number or email if you like.
+        A short exchange — name, and a number or email if you like.
       </p>
 
       <div className="mt-6">
@@ -192,7 +192,7 @@ export function ShareYourInfoForm({
           disabled={pending}
           className="min-h-12 flex-1 rounded-[18px] border border-[#ad9164]/50 bg-[#1d1916] px-4 text-[11px] uppercase tracking-[0.22em] text-[#efe8de] outline-none hover:border-[#ad9164] focus-visible:shadow-[0_0_0_3px_rgba(173,145,100,0.22)] disabled:opacity-50"
         >
-          {pending ? "Sending???" : "Send"}
+          {pending ? "Sending…" : "Send"}
         </button>
         <button
           type="button"

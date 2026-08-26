@@ -29,7 +29,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     title: result.card.displayName,
     description: [result.card.memorableTitle, result.card.professionalTitle, result.card.company]
       .filter(Boolean)
-      .join(" ?? "),
+      .join(" · "),
     robots: { index: false, follow: false, nocache: true, noarchive: true },
   };
 }

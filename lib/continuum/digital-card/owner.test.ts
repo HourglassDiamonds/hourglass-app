@@ -38,7 +38,7 @@ describe("owner digital card writer", () => {
     }
   });
 
-  it("does not authorize writes by itself ??? session gating lives in load.ts", async () => {
+  it("does not authorize writes by itself — session gating lives in load.ts", async () => {
     const source = readFileSync(
       join(dirname(fileURLToPath(import.meta.url)), "load.ts"),
       "utf8",

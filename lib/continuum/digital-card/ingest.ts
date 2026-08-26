@@ -1,6 +1,6 @@
 /**
  * Digital-card identity exchange.
- * Resolves a visitor against canonical Person identity ??? never name-merge.
+ * Resolves a visitor against canonical Person identity — never name-merge.
  */
 
 import { randomUUID } from "node:crypto";

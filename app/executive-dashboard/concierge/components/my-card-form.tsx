@@ -127,42 +127,56 @@ export function MyCardForm({
   const summary =
     display.summary ??
     (Object.keys(fieldErrors).length > 0 ? "Check the highlighted fields." : null);
-
-  const ids: Record<SaveDigitalCardField, string> = {
-    displayName: nameId,
-    memorableTitle: memorableId,
-    professionalTitle: titleId,
-    company: companyId,
-    email: emailId,
-    phone: phoneId,
-    websiteUrl: websiteId,
-    linkedinUrl: linkedinId,
-    instagramUrl: instagramId,
-    avatarUrl: avatarId,
-    slug: slugId,
-    published: "published",
-    emailPublic: `${emailId}-public`,
-    phonePublic: `${phoneId}-public`,
-    link1Label: link1LabelId,
-    link1Url: link1UrlId,
-    link2Label: link2LabelId,
-    link2Url: link2UrlId,
-  };
-
-  const idsRef = useRef(ids);
-  idsRef.current = ids;
+  const firstInvalid = MY_CARD_FIELD_ORDER.find((field) => fieldErrors[field]) ?? null;
 
   useEffect(() => {
-    const first = MY_CARD_FIELD_ORDER.find((field) => fieldErrors[field]);
-    if (first) {
-      const node = document.getElementById(idsRef.current[first]);
+    const map: Record<SaveDigitalCardField, string> = {
+      displayName: nameId,
+      memorableTitle: memorableId,
+      professionalTitle: titleId,
+      company: companyId,
+      email: emailId,
+      phone: phoneId,
+      websiteUrl: websiteId,
+      linkedinUrl: linkedinId,
+      instagramUrl: instagramId,
+      avatarUrl: avatarId,
+      slug: slugId,
+      published: "published",
+      emailPublic: `${emailId}-public`,
+      phonePublic: `${phoneId}-public`,
+      link1Label: link1LabelId,
+      link1Url: link1UrlId,
+      link2Label: link2LabelId,
+      link2Url: link2UrlId,
+    };
+    if (firstInvalid) {
+      const node = document.getElementById(map[firstInvalid]);
       node?.focus();
       node?.scrollIntoView({ block: "center", behavior: "smooth" });
       return;
     }
     if (display.summary) errorRef.current?.focus();
-    // errorSignature already encodes invalid fields; avoid re-focusing every render.
-  }, [errorSignature, display.summary]);
+  }, [
+    firstInvalid,
+    errorSignature,
+    display.summary,
+    nameId,
+    memorableId,
+    titleId,
+    companyId,
+    emailId,
+    phoneId,
+    websiteId,
+    linkedinId,
+    instagramId,
+    avatarId,
+    slugId,
+    link1LabelId,
+    link1UrlId,
+    link2LabelId,
+    link2UrlId,
+  ]);
 
   function onSubmit(event: FormEvent<HTMLFormElement>) {
     const submitted = myCardFormValuesFromFormData(new FormData(event.currentTarget));
@@ -184,20 +198,27 @@ export function MyCardForm({
       noValidate
     >
       {shownPublicUrl && shownCard?.published ? (
-        <div className="mb-10 flex flex-col items-center">
-          <CardQr url={shownPublicUrl} label="QR code for your public Continuum card" />
-          <p className="mt-4 break-all text-center text-[13px] text-[#8d8073]">{shownPublicUrl}</p>
-          <a
-            href={shownPublicUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="mt-2 inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.22em] text-[#8d8073] outline-none hover:text-[#efe8de] focus-visible:text-[#efe8de]"
-          >
-            Preview public card
-          </a>
+        <div className="mb-8 flex flex-col items-center">
+          <CardQr
+            url={shownPublicUrl}
+            label="QR code for your public Continuum card"
+            previewHref={shownPublicUrl}
+          />
         </div>
       ) : null}
-      <label htmlFor={nameId} className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
+      <div
+        className={
+          shownPublicUrl && shownCard?.published
+            ? "border-t border-white/[0.08] pt-8"
+            : undefined
+        }
+      >
+        <p className="text-[11px] uppercase tracking-[0.16em] text-[#8d8073]">Card Details</p>
+        <p className="mt-2 max-w-[22.5rem] text-[14px] leading-relaxed text-[#c4b7aa]">
+          Update the information people see when they open your card.
+        </p>
+      </div>
+      <label htmlFor={nameId} className="mt-6 text-[11px] uppercase tracking-[0.14em] text-[#8d8073]">
         Full name
       </label>
       <input
@@ -214,7 +235,7 @@ export function MyCardForm({
       <div className="mt-6">
         <label
           htmlFor={memorableId}
-          className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]"
+          className="text-[11px] uppercase tracking-[0.14em] text-[#8d8073]"
         >
           Memorable title
         </label>
@@ -232,7 +253,7 @@ export function MyCardForm({
       <div className="mt-6">
         <label
           htmlFor={titleId}
-          className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]"
+          className="text-[11px] uppercase tracking-[0.14em] text-[#8d8073]"
         >
           Professional title
         </label>
@@ -251,7 +272,7 @@ export function MyCardForm({
       <div className="mt-6">
         <label
           htmlFor={companyId}
-          className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]"
+          className="text-[11px] uppercase tracking-[0.14em] text-[#8d8073]"
         >
           Company
         </label>
@@ -268,7 +289,7 @@ export function MyCardForm({
       </div>
 
       <div className="mt-6">
-        <label htmlFor={emailId} className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
+        <label htmlFor={emailId} className="text-[11px] uppercase tracking-[0.14em] text-[#8d8073]">
           Email
         </label>
         <input
@@ -291,7 +312,7 @@ export function MyCardForm({
       </div>
 
       <div className="mt-6">
-        <label htmlFor={phoneId} className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
+        <label htmlFor={phoneId} className="text-[11px] uppercase tracking-[0.14em] text-[#8d8073]">
           Phone
         </label>
         <input
@@ -316,7 +337,7 @@ export function MyCardForm({
       <div className="mt-6">
         <label
           htmlFor={websiteId}
-          className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]"
+          className="text-[11px] uppercase tracking-[0.14em] text-[#8d8073]"
         >
           Website
         </label>
@@ -338,7 +359,7 @@ export function MyCardForm({
       <div className="mt-6">
         <label
           htmlFor={linkedinId}
-          className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]"
+          className="text-[11px] uppercase tracking-[0.14em] text-[#8d8073]"
         >
           LinkedIn
         </label>
@@ -359,7 +380,7 @@ export function MyCardForm({
       <div className="mt-6">
         <label
           htmlFor={instagramId}
-          className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]"
+          className="text-[11px] uppercase tracking-[0.14em] text-[#8d8073]"
         >
           Instagram
         </label>
@@ -377,7 +398,7 @@ export function MyCardForm({
       </div>
 
       <div className="mt-6">
-        <p className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
+        <p className="text-[11px] uppercase tracking-[0.14em] text-[#8d8073]">
           Additional links
         </p>
         <div className="mt-4 grid grid-cols-1 gap-3">
@@ -435,7 +456,7 @@ export function MyCardForm({
       </div>
 
       <div className="mt-6">
-        <label htmlFor={avatarId} className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
+        <label htmlFor={avatarId} className="text-[11px] uppercase tracking-[0.14em] text-[#8d8073]">
           Portrait address
         </label>
         <input
@@ -453,7 +474,7 @@ export function MyCardForm({
       </div>
 
       <div className="mt-6">
-        <label htmlFor={slugId} className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
+        <label htmlFor={slugId} className="text-[11px] uppercase tracking-[0.14em] text-[#8d8073]">
           Public address
         </label>
         <input
@@ -494,13 +515,13 @@ export function MyCardForm({
         <button
           type="submit"
           disabled={pending}
-          className="min-h-12 flex-1 rounded-[18px] border border-[#ad9164]/50 bg-[#1d1916] px-4 text-[11px] uppercase tracking-[0.22em] text-[#efe8de] outline-none hover:border-[#ad9164] focus-visible:shadow-[0_0_0_3px_rgba(173,145,100,0.22)] disabled:opacity-50"
+          className="min-h-12 flex-1 rounded-[18px] border border-[#ad9164]/50 bg-[#1d1916] px-4 text-[11px] uppercase tracking-[0.12em] text-[#efe8de] outline-none hover:border-[#ad9164] focus-visible:shadow-[0_0_0_3px_rgba(173,145,100,0.22)] disabled:opacity-50"
         >
           {pending ? "Saving…" : "Save card"}
         </button>
         <Link
           href={CONCIERGE_HOME_PATH}
-          className="inline-flex min-h-12 min-w-[6.5rem] items-center justify-center rounded-[18px] px-4 text-[11px] uppercase tracking-[0.22em] text-[#8d8073] outline-none hover:text-[#efe8de] focus-visible:shadow-[0_0_0_3px_rgba(173,145,100,0.22)]"
+          className="inline-flex min-h-12 min-w-[6.5rem] items-center justify-center rounded-[18px] px-4 text-[11px] uppercase tracking-[0.12em] text-[#8d8073] outline-none hover:text-[#efe8de] focus-visible:shadow-[0_0_0_3px_rgba(173,145,100,0.22)]"
         >
           Cancel
         </Link>
