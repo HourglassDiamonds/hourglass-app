@@ -7,6 +7,7 @@ import {
   CLIENT_MEMORY_NOTE_LIMIT,
   isHistoryVisibleNoteLifecycle,
 } from "../read/types";
+import type { ProjectHistoryRevision } from "../types";
 import {
   PROJECT_DESK_NOTE_LIMIT,
   type ListProjectsFilter,
@@ -83,6 +84,18 @@ function notesForProject(
     }));
 }
 
+function specCorrectionsForProject(
+  projectId: string,
+  snapshot: ProjectDeskSnapshot,
+): ProjectHistoryRevision[] {
+  return (snapshot.specRevisions ?? [])
+    .filter((row) => row.projectId === projectId)
+    .sort((a, b) => {
+      if (a.changedAt === b.changedAt) return b.id.localeCompare(a.id);
+      return a.changedAt < b.changedAt ? 1 : -1;
+    });
+}
+
 function composeSummary(
   snapshot: ProjectDeskSnapshot,
   profile: ProjectDeskSnapshot["projectProfiles"][number],
@@ -151,6 +164,7 @@ export function getProjectDeskFromSnapshot(
     recordCreatedAt: summary.recordCreatedAt,
     people: summary.people,
     specs: specFieldsFromHistory(history),
+    specCorrections: specCorrectionsForProject(trimmed, snapshot),
     notes,
     latestNoteAt: summary.latestNoteAt,
     latestNotePreview: summary.latestNotePreview,

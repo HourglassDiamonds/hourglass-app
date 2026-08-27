@@ -16,10 +16,13 @@ export const metadata = {
 
 export default async function ConciergeProjectDeskPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ projectId: string }>;
+  searchParams?: Promise<{ saved?: string }>;
 }) {
   const { projectId } = await params;
+  const query = searchParams ? await searchParams : {};
   if (!isProjectIdParam(projectId)) {
     return (
       <ConciergeShell>
@@ -72,7 +75,10 @@ export default async function ConciergeProjectDeskPage({
     <ConciergeShell>
       <ConciergeBackLink />
       <div className="hg-concierge-fade mt-8">
-        <ProjectDeskView desk={result.desk} />
+        <ProjectDeskView
+        desk={result.desk}
+        justSavedSpec={query.saved === "spec"}
+      />
       </div>
     </ConciergeShell>
   );

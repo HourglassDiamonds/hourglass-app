@@ -482,32 +482,12 @@ function rememberPerson(
   }
 }
 
-async function createProjectBundle(
-  store: ClientMemoryStore,
+function historyFromParsedRow(
+  projectId: string,
   row: ParsedProjectRow,
   now: string,
-): Promise<{ projectId: string; created: boolean }> {
-  const existing = await store.findProjectByImportRowKey({
-    sourceSystem: CLIENT_MEMORY_SOURCE_SYSTEM,
-    importRowKey: row.importRowKey,
-  });
-  if (existing) return { projectId: existing.projectId, created: false };
-  const entity = await store.insertEntity({
-    kind: "project",
-    createdAt: now,
-    createdBy: CREATED_BY,
-  });
-  const projectId = entity.record.id;
-  await store.insertProjectProfile({
-    projectId,
-    displayTitle: row.displayTitle || `project:${row.importRowKey}`,
-    visibility: DEFAULT_VISIBILITY,
-    importRowKey: row.importRowKey,
-    sourceSystem: CLIENT_MEMORY_SOURCE_SYSTEM,
-    createdAt: now,
-    updatedAt: now,
-  });
-  const history: ProjectHistory = {
+): ProjectHistory {
+  return {
     projectId,
     cadJobNumber: row.cadJobNumber || null,
     orderNumber: row.orderNumber || null,
@@ -524,7 +504,39 @@ async function createProjectBundle(
     createdAt: now,
     updatedAt: now,
   };
-  await store.insertProjectHistory(history);
+}
+
+async function createProjectBundle(
+  store: ClientMemoryStore,
+  row: ParsedProjectRow,
+  now: string,
+): Promise<{ projectId: string; created: boolean }> {
+  const existing = await store.findProjectByImportRowKey({
+    sourceSystem: CLIENT_MEMORY_SOURCE_SYSTEM,
+    importRowKey: row.importRowKey,
+  });
+  if (existing) {
+    await store.applyImportedProjectHistory(
+      historyFromParsedRow(existing.projectId, row, now),
+    );
+    return { projectId: existing.projectId, created: false };
+  }
+  const entity = await store.insertEntity({
+    kind: "project",
+    createdAt: now,
+    createdBy: CREATED_BY,
+  });
+  const projectId = entity.record.id;
+  await store.insertProjectProfile({
+    projectId,
+    displayTitle: row.displayTitle || `project:${row.importRowKey}`,
+    visibility: DEFAULT_VISIBILITY,
+    importRowKey: row.importRowKey,
+    sourceSystem: CLIENT_MEMORY_SOURCE_SYSTEM,
+    createdAt: now,
+    updatedAt: now,
+  });
+  await store.insertProjectHistory(historyFromParsedRow(projectId, row, now));
   return { projectId, created: true };
 }
 

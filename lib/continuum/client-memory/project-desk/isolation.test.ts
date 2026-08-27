@@ -122,6 +122,30 @@ describe("Project Desk cross-project isolation", () => {
         note(projectB.projectId, "B-note", "2026-08-21T00:00:00.000Z", ada.personId),
         note(null, "Person-only note", "2026-08-22T00:00:00.000Z", ada.personId),
       ],
+      specRevisions: [
+        {
+          id: randomUUID(),
+          projectId: projectA.projectId,
+          mutationId: randomUUID(),
+          fieldName: "finger_size",
+          priorValue: "141",
+          newValue: "6.5",
+          sourceSystem: CLIENT_MEMORY_SOURCE_SYSTEM,
+          changedAt: "2026-08-27T12:00:00.000Z",
+          changedBy: "justin",
+        },
+        {
+          id: randomUUID(),
+          projectId: projectB.projectId,
+          mutationId: randomUUID(),
+          fieldName: "order_number",
+          priorValue: "99",
+          newValue: "100",
+          sourceSystem: CLIENT_MEMORY_SOURCE_SYSTEM,
+          changedAt: "2026-08-27T12:00:00.000Z",
+          changedBy: "justin",
+        },
+      ],
     });
 
     const deskA = getProjectDeskFromSnapshot(data, projectA.projectId);
@@ -154,6 +178,14 @@ describe("Project Desk cross-project isolation", () => {
     assert.deepEqual(
       deskB.desk.specs.map((row) => `${row.label}:${row.value}`),
       ["CAD:CAD-B", "Metal:gold"],
+    );
+    assert.deepEqual(
+      deskA.desk.specCorrections.map((row) => row.priorValue),
+      ["141"],
+    );
+    assert.deepEqual(
+      deskB.desk.specCorrections.map((row) => row.priorValue),
+      ["99"],
     );
 
     assert.deepEqual(

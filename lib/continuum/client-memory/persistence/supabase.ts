@@ -14,10 +14,19 @@ import type {
   ExternalIdentity,
   IdentityKind,
 } from "../../contracts/types";
-import { assertFactValue, assertPersonRoles } from "../contracts";
+import { assertFactValue, assertPersonRoles, isEditableProjectSpecField } from "../contracts";
 import { SOURCE_NOTE_COLUMNS, rowToSourceNote, sourceNoteInsertRow } from "../source-note-row";
 import type { SetCurrentPersonFactResult } from "../facts/write";
 import { planProfileMerge } from "../merge";
+import {
+  importedHistoryEqualsCurrent,
+  mergeImportedProjectHistory,
+} from "../project-spec/import-guard";
+import { PROJECT_SPEC_CORRECTION_SOURCE_SYSTEM } from "../project-spec/types";
+import type {
+  ProjectSpecCorrectionApplyInput,
+  ProjectSpecCorrectionApplyResult,
+} from "../project-spec/correct";
 import type {
   ApplyExistingPersonInput,
   ApplyExistingPersonResult,
@@ -30,6 +39,7 @@ import type {
 } from "../store";
 import type {
   ClientMemoryEntity,
+  EditableProjectSpecField,
   EntityRelationship,
   IdentityReview,
   IdentityWriteResult,
@@ -56,6 +66,34 @@ function requireClient(client: SupabaseClient | null): SupabaseClient {
 
 function throwQuery(error: { message?: string } | null, fallback: string): never {
   throw new Error(error?.message ?? fallback);
+}
+
+function founderCorrectedFieldsFrom(value: unknown): EditableProjectSpecField[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter(isEditableProjectSpecField);
+}
+
+function rowToProjectHistory(data: Record<string, unknown>): ProjectHistory {
+  return {
+    projectId: String(data.project_id),
+    cadJobNumber: data.cad_job_number == null ? null : String(data.cad_job_number),
+    orderNumber: data.order_number == null ? null : String(data.order_number),
+    gmailThreadId: data.gmail_thread_id == null ? null : String(data.gmail_thread_id),
+    matchJudgment: (data.match_judgment ?? null) as ProjectHistory["matchJudgment"],
+    matchJudgmentRaw:
+      data.match_judgment_raw == null ? null : String(data.match_judgment_raw),
+    fingerSize: data.finger_size == null ? null : String(data.finger_size),
+    metal: data.metal == null ? null : String(data.metal),
+    centerStone: data.center_stone == null ? null : String(data.center_stone),
+    diamondSupplyNotes:
+      data.diamond_supply_notes == null ? null : String(data.diamond_supply_notes),
+    sourceSystem: data.source_system as ProjectHistory["sourceSystem"],
+    createdAt: String(data.created_at),
+    updatedAt: String(data.updated_at),
+    founderCorrectedFields: founderCorrectedFieldsFrom(
+      data.founder_corrected_fields,
+    ),
+  };
 }
 
 export class SupabaseClientMemoryStore implements ClientMemoryStore {
@@ -544,20 +582,81 @@ export class SupabaseClientMemoryStore implements ClientMemoryStore {
       .maybeSingle();
     if (error) throwQuery(error, "get-project-history-failed");
     if (!data) return null;
+    return rowToProjectHistory(data as Record<string, unknown>);
+  }
+
+  async applyProjectSpecCorrection(
+    input: ProjectSpecCorrectionApplyInput,
+  ): Promise<ProjectSpecCorrectionApplyResult> {
+    const { data, error } = await this.client.rpc(
+      "continuum_client_memory_correct_project_spec",
+      {
+        p_project_id: input.projectId,
+        p_mutation_id: input.mutationId,
+        p_revision_id: input.revisionId,
+        p_field_name: input.fieldName,
+        p_new_value: input.newValue,
+        p_changed_at: input.changedAt,
+        p_changed_by: input.changedBy,
+        p_source_system: PROJECT_SPEC_CORRECTION_SOURCE_SYSTEM,
+      },
+    );
+    if (error) {
+      const message = error.message ?? "";
+      if (message.includes("project-not-found")) throw new Error("project-not-found");
+      if (message.includes("entity-kind-mismatch")) {
+        throw new Error("entity-kind-mismatch");
+      }
+      if (message.includes("project-history-not-found")) {
+        throw new Error("project-history-not-found");
+      }
+      throwQuery(error, "correct-project-spec-failed");
+    }
+    const payload =
+      data && typeof data === "object" ? (data as Record<string, unknown>) : null;
+    const status: ProjectSpecCorrectionApplyResult["status"] =
+      payload && payload.status === "already-present"
+        ? "already-present"
+        : "updated";
+    const history =
+      payload && payload.history && typeof payload.history === "object"
+        ? rowToProjectHistory(payload.history as Record<string, unknown>)
+        : input.next;
     return {
-      projectId: String(data.project_id),
-      cadJobNumber: data.cad_job_number,
-      orderNumber: data.order_number,
-      gmailThreadId: data.gmail_thread_id,
-      matchJudgment: data.match_judgment,
-      matchJudgmentRaw: data.match_judgment_raw,
-      fingerSize: data.finger_size,
-      metal: data.metal,
-      centerStone: data.center_stone,
-      diamondSupplyNotes: data.diamond_supply_notes,
-      sourceSystem: data.source_system,
-      createdAt: String(data.created_at),
-      updatedAt: String(data.updated_at),
+      status,
+      history,
+      revisionId:
+        payload && payload.revision_id != null
+          ? String(payload.revision_id)
+          : null,
+    };
+  }
+
+  async applyImportedProjectHistory(
+    history: ProjectHistory,
+  ): Promise<InsertResult<ProjectHistory>> {
+    const existing = await this.getProjectHistory(history.projectId);
+    if (!existing) return this.insertProjectHistory(history);
+    const merged = mergeImportedProjectHistory(existing, history);
+    if (importedHistoryEqualsCurrent(existing, merged)) {
+      return { status: "already-present", record: existing };
+    }
+    const { error } = await this.client
+      .from("continuum_project_history")
+      .update({
+        cad_job_number: merged.cadJobNumber,
+        order_number: merged.orderNumber,
+        finger_size: merged.fingerSize,
+        metal: merged.metal,
+        center_stone: merged.centerStone,
+        diamond_supply_notes: merged.diamondSupplyNotes,
+        updated_at: history.updatedAt,
+      })
+      .eq("project_id", history.projectId);
+    if (error) throwQuery(error, "merge-imported-project-history-failed");
+    return {
+      status: "already-present",
+      record: { ...merged, updatedAt: history.updatedAt },
     };
   }
 

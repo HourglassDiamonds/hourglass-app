@@ -15,10 +15,12 @@ import {
   RELATIONSHIP_CONTEXT_LAYERS,
   RELATIONSHIP_KINDS,
   RELATIONSHIP_STATUSES,
+  EDITABLE_PROJECT_SPEC_FIELDS,
   SOURCE_NOTE_CHANGE_KINDS,
   SOURCE_NOTE_LIFECYCLE_STATUSES,
   USAGE_PERMISSIONS,
   type ClientMemoryVisibility,
+  type EditableProjectSpecField,
   type FactApprovalStatus,
   type FactStatus,
   type PersonRole,
@@ -77,6 +79,15 @@ export function isSourceNoteChangeKind(
   return (
     typeof value === "string" &&
     (SOURCE_NOTE_CHANGE_KINDS as readonly string[]).includes(value)
+  );
+}
+
+export function isEditableProjectSpecField(
+  value: unknown,
+): value is EditableProjectSpecField {
+  return (
+    typeof value === "string" &&
+    (EDITABLE_PROJECT_SPEC_FIELDS as readonly string[]).includes(value)
   );
 }
 

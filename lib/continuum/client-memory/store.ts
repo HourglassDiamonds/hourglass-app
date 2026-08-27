@@ -27,6 +27,16 @@ import {
   unionPersonRoles,
 } from "./contracts";
 import type { SetCurrentPersonFactResult } from "./facts/write";
+import {
+  importedHistoryEqualsCurrent,
+  mergeImportedProjectHistory,
+} from "./project-spec/import-guard";
+import {
+  projectSpecRevisionFromApply,
+  type ProjectSpecCorrectionApplyInput,
+  type ProjectSpecCorrectionApplyResult,
+} from "./project-spec/correct";
+import { currentSpecValue } from "./project-spec/types";
 import { planProfileMerge, type ProtectedProfileField } from "./merge";
 import type {
   NoteMutationApplyInput,
@@ -43,6 +53,7 @@ import type {
   PersonProfile,
   PersonRole,
   ProjectHistory,
+  ProjectHistoryRevision,
   ProjectProfile,
   SourceNote,
   SourceNoteRevision,
@@ -184,6 +195,12 @@ export type ClientMemoryStore = {
     history: ProjectHistory,
   ): Promise<InsertResult<ProjectHistory>>;
   getProjectHistory(projectId: string): Promise<ProjectHistory | null>;
+  applyProjectSpecCorrection(
+    input: ProjectSpecCorrectionApplyInput,
+  ): Promise<ProjectSpecCorrectionApplyResult>;
+  applyImportedProjectHistory(
+    history: ProjectHistory,
+  ): Promise<InsertResult<ProjectHistory>>;
   insertIdentityReview(
     row: IdentityReview,
   ): Promise<InsertResult<IdentityReview>>;
@@ -246,11 +263,14 @@ export class InMemoryClientMemoryStore implements ClientMemoryStore {
   private projects = new Map<string, ProjectProfile>();
   private projectImportKeys = new Map<string, string>();
   private histories = new Map<string, ProjectHistory>();
+  private projectSpecRevisions = new Map<string, ProjectHistoryRevision>();
+  private projectSpecMutationIds = new Map<string, string>();
   private reviews = new Map<string, IdentityReview>();
   private reviewKeys = new Map<string, string>();
   failNextCreateAfter: "entity" | "profile" | "identity" | null = null;
   failNextSetCurrentAfterSupersede = false;
   failNextNoteMutationAfter: "revision" | "update" | null = null;
+  failNextProjectSpecMutationAfter: "revision" | "update" | null = null;
 
   reset(): void {
     this.entities.clear();
@@ -269,10 +289,14 @@ export class InMemoryClientMemoryStore implements ClientMemoryStore {
     this.projects.clear();
     this.projectImportKeys.clear();
     this.histories.clear();
+    this.projectSpecRevisions.clear();
+    this.projectSpecMutationIds.clear();
     this.reviews.clear();
     this.reviewKeys.clear();
     this.failNextCreateAfter = null;
     this.failNextSetCurrentAfterSupersede = false;
+    this.failNextNoteMutationAfter = null;
+    this.failNextProjectSpecMutationAfter = null;
   }
 
   async insertEntity(input: {
@@ -659,13 +683,89 @@ export class InMemoryClientMemoryStore implements ClientMemoryStore {
     }
     const existing = this.histories.get(history.projectId);
     if (existing) return { status: "already-present", record: clone(existing) };
-    this.histories.set(history.projectId, clone(history));
-    return { status: "inserted", record: clone(history) };
+    this.histories.set(history.projectId, clone({
+      ...history,
+      founderCorrectedFields: history.founderCorrectedFields ?? [],
+    }));
+    return { status: "inserted", record: clone(this.histories.get(history.projectId)!) };
   }
 
   async getProjectHistory(projectId: string): Promise<ProjectHistory | null> {
     const existing = this.histories.get(projectId);
     return existing ? clone(existing) : null;
+  }
+
+  async applyProjectSpecCorrection(
+    input: ProjectSpecCorrectionApplyInput,
+  ): Promise<ProjectSpecCorrectionApplyResult> {
+    const existingMutation = this.projectSpecMutationIds.get(input.mutationId);
+    if (existingMutation) {
+      const revision = this.projectSpecRevisions.get(existingMutation);
+      const history = revision
+        ? this.histories.get(revision.projectId)
+        : this.histories.get(input.projectId);
+      if (!history) throw new Error("project-history-not-found");
+      return {
+        status: "already-present",
+        history: clone(history),
+        revisionId: revision?.id ?? null,
+      };
+    }
+    const current = this.histories.get(input.projectId);
+    if (!current) throw new Error("project-history-not-found");
+    if (currentSpecValue(current, input.fieldName) === input.newValue) {
+      return {
+        status: "already-present",
+        history: clone(current),
+        revisionId: null,
+      };
+    }
+    if (this.failNextProjectSpecMutationAfter === "revision") {
+      this.failNextProjectSpecMutationAfter = null;
+      throw new Error("project-spec-revision-failed");
+    }
+    const revision = projectSpecRevisionFromApply(input);
+    this.projectSpecRevisions.set(revision.id, clone(revision));
+    this.projectSpecMutationIds.set(input.mutationId, revision.id);
+    if (this.failNextProjectSpecMutationAfter === "update") {
+      this.failNextProjectSpecMutationAfter = null;
+      this.projectSpecRevisions.delete(revision.id);
+      this.projectSpecMutationIds.delete(input.mutationId);
+      throw new Error("project-spec-update-failed");
+    }
+    this.histories.set(current.projectId, clone(input.next));
+    return {
+      status: "updated",
+      history: clone(input.next),
+      revisionId: revision.id,
+    };
+  }
+
+  async applyImportedProjectHistory(
+    history: ProjectHistory,
+  ): Promise<InsertResult<ProjectHistory>> {
+    const existing = this.histories.get(history.projectId);
+    if (!existing) return this.insertProjectHistory(history);
+    const merged = mergeImportedProjectHistory(existing, history);
+    if (importedHistoryEqualsCurrent(existing, merged)) {
+      return { status: "already-present", record: clone(existing) };
+    }
+    const next: ProjectHistory = {
+      ...merged,
+      updatedAt: history.updatedAt,
+    };
+    this.histories.set(existing.projectId, clone(next));
+    return { status: "already-present", record: clone(next) };
+  }
+
+  listProjectHistoryRevisions(projectId?: string): ProjectHistoryRevision[] {
+    return [...this.projectSpecRevisions.values()]
+      .filter((row) => (projectId ? row.projectId === projectId : true))
+      .sort((a, b) => {
+        if (a.changedAt === b.changedAt) return b.id.localeCompare(a.id);
+        return a.changedAt < b.changedAt ? 1 : -1;
+      })
+      .map((row) => clone(row));
   }
 
   async insertIdentityReview(

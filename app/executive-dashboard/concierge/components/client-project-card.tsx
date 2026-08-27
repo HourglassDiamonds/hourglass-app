@@ -1,4 +1,5 @@
 import {
+  conciergeCorrectProjectSpecPath,
   conciergeProjectPath,
   historyFields,
 } from "@/lib/continuum/client-memory/read/presentation";
@@ -25,12 +26,23 @@ export function ClientProjectCard({ project }: { project: LinkedProjectRead }) {
           </summary>
           <dl className="mt-3 space-y-2.5">
             {details.map((row) => (
-              <div key={row.label}>
+              <div key={row.fieldName}>
                 <dt className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
                   {row.label}
                 </dt>
                 <dd className="mt-1 break-words text-[14.5px] leading-relaxed text-[#e7ddd2]">
                   {row.value}
+                </dd>
+                <dd>
+                  <Link
+                    href={conciergeCorrectProjectSpecPath(
+                      project.profile.projectId,
+                      row.fieldName,
+                    )}
+                    className="mt-1 inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.24em] text-[#8d8073] outline-none hover:text-[#efe8de] focus-visible:text-[#efe8de]"
+                  >
+                    Correct
+                  </Link>
                 </dd>
               </div>
             ))}

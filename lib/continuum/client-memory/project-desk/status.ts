@@ -8,6 +8,11 @@ import type {
   ProjectDeskOperationalStatus,
   ProjectSpecField,
 } from "./types";
+import {
+  PROJECT_SPEC_FIELD_LABELS,
+  PROJECT_SPEC_HISTORY_KEY,
+} from "../project-spec/types";
+import { EDITABLE_PROJECT_SPEC_FIELDS } from "../types";
 
 export const SLICE_A_STATUS_EVIDENCE =
   "Open jobs, files, and email are not connected yet. Current operating state is unknown.";
@@ -44,16 +49,16 @@ export function specFieldsFromHistory(history: {
 } | null): ProjectSpecField[] {
   if (!history) return [];
   const rows: ProjectSpecField[] = [];
-  const push = (label: string, value: string | null) => {
-    const trimmed = value?.trim();
-    if (trimmed) rows.push({ label, value: trimmed });
-  };
-  push("CAD", history.cadJobNumber);
-  push("Order", history.orderNumber);
-  push("Finger size", history.fingerSize);
-  push("Metal", history.metal);
-  push("Center stone", history.centerStone);
-  push("Supply notes", history.diamondSupplyNotes);
+  for (const fieldName of EDITABLE_PROJECT_SPEC_FIELDS) {
+    const key = PROJECT_SPEC_HISTORY_KEY[fieldName];
+    const trimmed = history[key]?.trim();
+    if (!trimmed) continue;
+    rows.push({
+      fieldName,
+      label: PROJECT_SPEC_FIELD_LABELS[fieldName],
+      value: trimmed,
+    });
+  }
   return rows;
 }
 

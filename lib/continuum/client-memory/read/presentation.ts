@@ -14,7 +14,11 @@ import type {
   RelationshipContextLayer,
   RelationshipKind,
 } from "@/lib/continuum/client-memory/types";
-import { CLIENT_MEMORY_SOURCE_SYSTEM } from "@/lib/continuum/client-memory/types";
+import {
+  PROJECT_SPEC_FIELD_LABELS,
+  PROJECT_SPEC_HISTORY_KEY,
+} from "@/lib/continuum/client-memory/project-spec/types";
+import { EDITABLE_PROJECT_SPEC_FIELDS, CLIENT_MEMORY_SOURCE_SYSTEM } from "@/lib/continuum/client-memory/types";
 import { formatBirthday, parseBirthdayValue } from "@/lib/continuum/client-memory/facts/date";
 import { PERSON_FACT_TYPE_BIRTHDAY } from "@/lib/continuum/client-memory/facts/types";
 
@@ -31,6 +35,13 @@ export function conciergeProjectsPath(): string {
 
 export function conciergeProjectPath(projectId: string): string {
   return `${CONCIERGE_PROJECTS_PATH}/${projectId}`;
+}
+
+export function conciergeCorrectProjectSpecPath(
+  projectId: string,
+  fieldName: string,
+): string {
+  return `${conciergeProjectPath(projectId)}/correct/${fieldName}`;
 }
 
 export function conciergeAddNotePath(personId: string): string {
@@ -265,22 +276,27 @@ export function wishHeadline(wish: WishSummary): string {
 }
 
 export function historyFields(project: LinkedProjectRead): Array<{
+  fieldName: (typeof EDITABLE_PROJECT_SPEC_FIELDS)[number];
   label: string;
   value: string;
 }> {
   const history = project.internalHistory;
   if (!history) return [];
-  const rows: Array<{ label: string; value: string }> = [];
-  const push = (label: string, value: string | null) => {
-    const trimmed = value?.trim();
-    if (trimmed) rows.push({ label, value: trimmed });
-  };
-  push("CAD", history.cadJobNumber);
-  push("Order", history.orderNumber);
-  push("Finger size", history.fingerSize);
-  push("Metal", history.metal);
-  push("Center stone", history.centerStone);
-  push("Supply notes", history.diamondSupplyNotes);
+  const rows: Array<{
+    fieldName: (typeof EDITABLE_PROJECT_SPEC_FIELDS)[number];
+    label: string;
+    value: string;
+  }> = [];
+  for (const fieldName of EDITABLE_PROJECT_SPEC_FIELDS) {
+    const key = PROJECT_SPEC_HISTORY_KEY[fieldName];
+    const trimmed = history[key]?.trim();
+    if (!trimmed) continue;
+    rows.push({
+      fieldName,
+      label: PROJECT_SPEC_FIELD_LABELS[fieldName],
+      value: trimmed,
+    });
+  }
   return rows;
 }
 

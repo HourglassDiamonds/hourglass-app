@@ -60,6 +60,8 @@ describe("Project Desk UI", () => {
     assert.match(html, /Not connected yet/);
     assert.match(html, /No project files stored yet/);
     assert.match(html, /Add a note/);
+    assert.match(html, /Correct/);
+    assert.match(html, /Correction history/);
     assert.doesNotMatch(html, /ProjectLifecycleForm|saveProjectLifecycle/);
     assert.doesNotMatch(html, /Waiting on Client|No Current Action|overdue/);
     assert.doesNotMatch(html, /gmail_thread|thread-secret|import_row/);

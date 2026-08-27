@@ -12,6 +12,7 @@ import {
   conciergeInboxNewPath,
   conciergeInboxPath,
   conciergeInboxSourcePath,
+  conciergeCorrectProjectSpecPath,
   formatFactValue,
   formatLocation,
   historyFields,
@@ -205,6 +206,13 @@ describe("Concierge presentation", () => {
     assert.equal(
       conciergeInboxSourcePath("eb2802bd-e312-471e-8582-8dbd5ad2e04b"),
       "/executive-dashboard/concierge/inbox/eb2802bd-e312-471e-8582-8dbd5ad2e04b",
+    );
+    assert.equal(
+      conciergeCorrectProjectSpecPath(
+        "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "finger_size",
+      ),
+      "/executive-dashboard/concierge/projects/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/correct/finger_size",
     );
     assert.notEqual(
       conciergeAddNotePickerPath(),

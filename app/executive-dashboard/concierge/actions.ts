@@ -8,6 +8,7 @@ import {
   conciergeClientPath,
   conciergeHistoryPath,
   conciergeInboxSourcePath,
+  conciergeProjectPath,
 } from "@/lib/continuum/client-memory/read/presentation";
 import type { ClientSearchResult } from "@/lib/continuum/client-memory/read/types";
 import { isRelationshipContextLayer } from "@/lib/continuum/client-memory/contracts";
@@ -23,6 +24,8 @@ import type {
 import { getAuthenticatedClientMemoryNoteWriter } from "@/lib/continuum/client-memory/write/load";
 import type { AddManualNoteResult } from "@/lib/continuum/client-memory/write/types";
 import type { MutateNoteResult } from "@/lib/continuum/client-memory/write/mutate-note";
+import { getAuthenticatedClientMemoryProjectSpecWriter } from "@/lib/continuum/client-memory/project-spec/load";
+import type { CorrectProjectSpecResult } from "@/lib/continuum/client-memory/project-spec/correct";
 import { getAuthenticatedHumanSourceStore } from "@/lib/continuum/client-memory/human-intake/load";
 import {
   HUMAN_COMMUNICATION_TYPES,
@@ -174,6 +177,59 @@ function humanMutateMessage(result: MutateNoteResult, verb: string): string {
     return "This note could not be found.";
   }
   return `Unable to ${verb} the note.`;
+}
+
+export type SaveProjectSpecCorrectionState = {
+  ok: false;
+  message: string;
+};
+
+function humanSpecCorrectionMessage(result: CorrectProjectSpecResult): string {
+  if (result.ok) return "Unable to save the correction.";
+  if (result.reason === "invalid-input" && result.code === "implausible-finger-size") {
+    return "That finger size isn't plausible. Enter the real size without changing nearby fields.";
+  }
+  if (result.reason === "invalid-input" && result.code === "invalid-value") {
+    return "That value couldn't be saved.";
+  }
+  if (result.reason === "invalid-input" && result.code === "invalid-field") {
+    return "That detail can't be corrected here.";
+  }
+  if (result.reason === "entity-kind-mismatch" || result.reason === "project-not-found") {
+    return "That project could not be found.";
+  }
+  if (result.reason === "project-history-not-found") {
+    return "This project has no details to correct yet.";
+  }
+  return "Unable to save the correction.";
+}
+
+export async function saveProjectSpecCorrection(
+  _prev: SaveProjectSpecCorrectionState | null,
+  formData: FormData,
+): Promise<SaveProjectSpecCorrectionState> {
+  const auth = await getAuthenticatedClientMemoryProjectSpecWriter();
+  if (!auth.ok) {
+    return {
+      ok: false,
+      message:
+        auth.reason === "unauthorized"
+          ? "Sign in to continue."
+          : "Unable to save the correction.",
+    };
+  }
+  const projectId = String(formData.get("projectId") ?? "").trim();
+  const result = await auth.writer.correctProjectSpec({
+    mutationId: String(formData.get("mutationId") ?? "").trim(),
+    projectId,
+    fieldName: String(formData.get("fieldName") ?? "").trim(),
+    newValue: String(formData.get("newValue") ?? ""),
+    actor: auth.username,
+  });
+  if (result.ok) {
+    redirect(`${conciergeProjectPath(projectId)}?saved=spec`);
+  }
+  return { ok: false, message: humanSpecCorrectionMessage(result) };
 }
 
 export async function editConciergeNote(

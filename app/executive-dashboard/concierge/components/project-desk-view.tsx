@@ -2,18 +2,22 @@ import Link from "next/link";
 import {
   conciergeAddNotePath,
   conciergeClientPath,
+  conciergeCorrectProjectSpecPath,
   formatNoteDate,
   noteContextLabel,
   noteSourceLabel,
 } from "@/lib/continuum/client-memory/read/presentation";
 import type { ProjectDeskRead } from "@/lib/continuum/client-memory/project-desk/types";
 import { coverageRows } from "@/lib/continuum/client-memory/project-desk/status";
+import { PROJECT_SPEC_FIELD_LABELS } from "@/lib/continuum/client-memory/project-spec/types";
 import { ClientMemorySection } from "./client-memory-section";
 
 export function ProjectDeskView({
   desk,
+  justSavedSpec = false,
 }: {
   desk: ProjectDeskRead;
+  justSavedSpec?: boolean;
 }) {
   const coverage = coverageRows(desk.coverage);
   const notePeople = desk.people;
@@ -23,6 +27,11 @@ export function ProjectDeskView({
       <h1 className="font-serif text-[2.15rem] font-normal leading-[1.08] tracking-[-0.045em] text-[#efe8de]">
         {desk.title}
       </h1>
+      {justSavedSpec ? (
+        <p className="mt-4 text-[15px] leading-relaxed text-[#c4b7aa]" role="status">
+          Correction saved.
+        </p>
+      ) : null}
 
       <section className="mt-8">
         <p className="text-[11px] uppercase tracking-[0.28em] text-[#ad9164]">
@@ -70,16 +79,51 @@ export function ProjectDeskView({
         <ClientMemorySection title="Project Details">
           <dl className="space-y-3">
             {desk.specs.map((row) => (
-              <div key={row.label}>
+              <div key={row.fieldName}>
                 <dt className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
                   {row.label}
                 </dt>
                 <dd className="mt-1 break-words text-[15px] leading-relaxed text-[#e7ddd2]">
                   {row.value}
                 </dd>
+                <dd>
+                  <Link
+                    href={conciergeCorrectProjectSpecPath(desk.projectId, row.fieldName)}
+                    className="mt-1 inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.24em] text-[#8d8073] outline-none hover:text-[#efe8de] focus-visible:text-[#efe8de]"
+                  >
+                    Correct
+                  </Link>
+                </dd>
               </div>
             ))}
           </dl>
+        </ClientMemorySection>
+      ) : null}
+
+      {desk.specCorrections.length > 0 ? (
+        <ClientMemorySection title="Correction history">
+          <details className="group">
+            <summary className="flex min-h-11 cursor-pointer list-none items-center text-[12px] uppercase tracking-[0.2em] text-[#ad9164] outline-none focus-visible:text-[#efe8de]">
+              <span className="group-open:hidden">Show prior values</span>
+              <span className="hidden group-open:inline">Hide prior values</span>
+            </summary>
+            <ol className="mt-3 space-y-4">
+              {desk.specCorrections.map((row) => (
+                <li key={row.id}>
+                  <p className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
+                    {PROJECT_SPEC_FIELD_LABELS[row.fieldName]}
+                  </p>
+                  <p className="mt-1 break-words text-[15px] leading-relaxed text-[#e7ddd2]">
+                    {row.priorValue ?? "—"} → {row.newValue ?? "—"}
+                  </p>
+                  <p className="mt-1 text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
+                    Corrected {formatNoteDate(row.changedAt)}
+                    {row.changedBy ? ` by ${row.changedBy}` : ""}
+                  </p>
+                </li>
+              ))}
+            </ol>
+          </details>
         </ClientMemorySection>
       ) : null}
 

@@ -8,10 +8,12 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getSupabaseAdmin } from "@/lib/supabase/client";
+import { isEditableProjectSpecField } from "../contracts";
 import { SOURCE_NOTE_COLUMNS, rowToSourceNote } from "../source-note-row";
 import type {
   EntityRelationship,
   ProjectHistory,
+  ProjectHistoryRevision,
   ProjectProfile,
   SourceNote,
 } from "../types";
@@ -48,7 +50,9 @@ async function rows<T>(
 const PROJECT_PROFILE_COLUMNS =
   "project_id, display_title, visibility, import_row_key, source_system, created_at, updated_at";
 const PROJECT_HISTORY_COLUMNS =
-  "project_id, cad_job_number, order_number, gmail_thread_id, match_judgment, match_judgment_raw, finger_size, metal, center_stone, diamond_supply_notes, source_system, created_at, updated_at";
+  "project_id, cad_job_number, order_number, gmail_thread_id, match_judgment, match_judgment_raw, finger_size, metal, center_stone, diamond_supply_notes, source_system, created_at, updated_at, founder_corrected_fields";
+const PROJECT_HISTORY_REVISION_COLUMNS =
+  "id, project_id, mutation_id, field_name, prior_value, new_value, source_system, changed_at, changed_by";
 const RELATIONSHIP_COLUMNS =
   "id, from_entity_id, to_entity_id, kind, status, source_system, created_at, created_by";
 const NOTE_COLUMNS = SOURCE_NOTE_COLUMNS;
@@ -82,6 +86,26 @@ function rowToProjectHistory(row: Record<string, unknown>): ProjectHistory {
     sourceSystem: row.source_system as ProjectHistory["sourceSystem"],
     createdAt: String(row.created_at),
     updatedAt: String(row.updated_at),
+    founderCorrectedFields: Array.isArray(row.founder_corrected_fields)
+      ? row.founder_corrected_fields.filter(isEditableProjectSpecField)
+      : [],
+  };
+}
+
+function rowToProjectHistoryRevision(
+  row: Record<string, unknown>,
+): ProjectHistoryRevision | null {
+  if (!isEditableProjectSpecField(row.field_name)) return null;
+  return {
+    id: String(row.id),
+    projectId: String(row.project_id),
+    mutationId: String(row.mutation_id),
+    fieldName: row.field_name,
+    priorValue: row.prior_value == null ? null : String(row.prior_value),
+    newValue: row.new_value == null ? null : String(row.new_value),
+    sourceSystem: row.source_system as ProjectHistoryRevision["sourceSystem"],
+    changedAt: String(row.changed_at),
+    changedBy: String(row.changed_by),
   };
 }
 
@@ -106,6 +130,7 @@ async function loadSnapshot(client: SupabaseClient): Promise<ProjectDeskSnapshot
   const [
     projectProfileRows,
     projectHistoryRows,
+    specRevisionRows,
     relationshipRows,
     noteRows,
     personRows,
@@ -117,6 +142,12 @@ async function loadSnapshot(client: SupabaseClient): Promise<ProjectDeskSnapshot
     rows<Record<string, unknown>>(
       client.from("continuum_project_history").select(PROJECT_HISTORY_COLUMNS),
       "read-project-history-failed",
+    ),
+    rows<Record<string, unknown>>(
+      client
+        .from("continuum_project_history_revisions")
+        .select(PROJECT_HISTORY_REVISION_COLUMNS),
+      "read-project-history-revisions-failed",
     ),
     rows<Record<string, unknown>>(
       client
@@ -142,6 +173,10 @@ async function loadSnapshot(client: SupabaseClient): Promise<ProjectDeskSnapshot
   return {
     projectProfiles: projectProfileRows.map(rowToProjectProfile),
     projectHistories: projectHistoryRows.map(rowToProjectHistory),
+    specRevisions: specRevisionRows.flatMap((row) => {
+      const mapped = rowToProjectHistoryRevision(row);
+      return mapped ? [mapped] : [];
+    }),
     relationships: relationshipRows.map(rowToRelationship),
     people: personRows.map((row) => ({
       personId: String(row.person_id),

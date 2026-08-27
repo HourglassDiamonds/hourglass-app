@@ -7,6 +7,7 @@
 import type {
   EntityRelationship,
   ProjectHistory,
+  ProjectHistoryRevision,
   ProjectProfile,
   SourceNote,
 } from "../types";
@@ -41,6 +42,13 @@ export type ProjectDeskPerson = {
 };
 
 export type ProjectSpecField = {
+  fieldName:
+    | "finger_size"
+    | "order_number"
+    | "cad_job_number"
+    | "metal"
+    | "center_stone"
+    | "diamond_supply_notes";
   label: string;
   value: string;
 };
@@ -74,6 +82,7 @@ export type ProjectDeskRead = {
   recordCreatedAt: string;
   people: ProjectDeskPerson[];
   specs: ProjectSpecField[];
+  specCorrections: ProjectHistoryRevision[];
   notes: ProjectDeskNote[];
   latestNoteAt: string | null;
   latestNotePreview: string | null;
@@ -86,6 +95,7 @@ export type ProjectDeskRead = {
 export type ProjectDeskSnapshot = {
   projectProfiles: ProjectProfile[];
   projectHistories: ProjectHistory[];
+  specRevisions?: ProjectHistoryRevision[];
   relationships: EntityRelationship[];
   people: Array<{
     personId: string;

@@ -327,6 +327,18 @@ export type ProjectProfile = {
   updatedAt: string;
 };
 
+export const EDITABLE_PROJECT_SPEC_FIELDS = [
+  "cad_job_number",
+  "order_number",
+  "finger_size",
+  "metal",
+  "center_stone",
+  "diamond_supply_notes",
+] as const;
+
+export type EditableProjectSpecField =
+  (typeof EDITABLE_PROJECT_SPEC_FIELDS)[number];
+
 export type ProjectHistory = {
   projectId: ContinuumId;
   cadJobNumber: string | null;
@@ -341,6 +353,19 @@ export type ProjectHistory = {
   sourceSystem: ContinuumSourceSystem;
   createdAt: string;
   updatedAt: string;
+  founderCorrectedFields?: EditableProjectSpecField[];
+};
+
+export type ProjectHistoryRevision = {
+  id: ContinuumId;
+  projectId: ContinuumId;
+  mutationId: ContinuumId;
+  fieldName: EditableProjectSpecField;
+  priorValue: string | null;
+  newValue: string | null;
+  sourceSystem: ContinuumSourceSystem;
+  changedAt: string;
+  changedBy: string;
 };
 
 export type IdentityReview = {
