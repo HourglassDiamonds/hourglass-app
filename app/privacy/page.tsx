@@ -1,4 +1,17 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { pageMetadata } from "@/lib/seo/site-metadata";
 import Header from "../shared-components/Header";
+
+export const metadata: Metadata = pageMetadata({
+  title: "Privacy",
+  description:
+    "How Hourglass Diamonds handles information shared through this site, including consultation details, visualization tools, analytics, and authorized Google account data used by Continuum.",
+  path: "/privacy",
+});
+
+const LEGAL_LINK =
+  "underline decoration-[#c4b8a8] underline-offset-4 transition-colors hover:text-[#1f1d1a]";
 
 export default function PrivacyPage() {
   return (
@@ -118,6 +131,61 @@ export default function PrivacyPage() {
 
           <div className="space-y-4">
             <h2 className="text-[18px] font-medium leading-[1.35] text-[#1f1d1a]">
+              Google Account and Gmail Data
+            </h2>
+            <p>
+              Continuum is Hourglass Diamonds&apos; private business operating
+              system. If an authorized Hourglass user connects a Google account
+              to Continuum, Hourglass may access Gmail using Google&apos;s
+              read-only Gmail permission. That access is used to organize
+              relevant business communication history, correlate communications
+              with existing client and project records, and support private
+              business workflow and reconstruction functions requested by the
+              authorized account holder. A brief public description of Continuum
+              is available on the{" "}
+              <Link href="/continuum" className={LEGAL_LINK}>
+                Continuum
+              </Link>{" "}
+              page.
+            </p>
+            <p>
+              Continuum does not use this permission to send, modify, or delete
+              Gmail messages.
+            </p>
+            <p>
+              Mailbox-wide indexing is intentionally limited primarily to
+              protected message metadata rather than storing the entire mailbox
+              body corpus. When an authorized workflow requires examination of a
+              specific communication or project thread, message content may be
+              accessed on demand for that private business purpose.
+            </p>
+            <p>
+              Gmail and Google data is not sold. It is not used for advertising.
+              OAuth credentials and tokens are handled as protected server-side
+              credentials and are not exposed publicly.
+            </p>
+            <p>
+              The account connection can be disconnected by the authorized user.
+              Disconnecting stops future Gmail access. Already-created legitimate
+              business records are not silently destroyed merely because the
+              connection is disconnected.
+            </p>
+            <p>
+              Hourglass Diamonds&apos; use and transfer of information received
+              from Google APIs will adhere to the{" "}
+              <a
+                href="https://developers.google.com/terms/api-services-user-data-policy"
+                className={LEGAL_LINK}
+              >
+                Google API Services User Data Policy
+              </a>
+              {", "}
+              including the Limited Use requirements.
+            </p>
+          </div>
+
+          <div className="space-y-4">
+            <h2 className="text-[18px] font-medium leading-[1.35] text-[#1f1d1a]">
               Your rights and how to reach us
             </h2>
             <p>
@@ -125,7 +193,7 @@ export default function PrivacyPage() {
               personal information, or with any privacy question. Email{" "}
               <a
                 href="mailto:justin@hourglassdiamonds.com"
-                className="underline decoration-[#c4b8a8] underline-offset-4 transition-colors hover:text-[#1f1d1a]"
+                className={LEGAL_LINK}
               >
                 justin@hourglassdiamonds.com
               </a>

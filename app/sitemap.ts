@@ -26,6 +26,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${SITE_URL}/diamond-guide/all`, priority: 0.82, lastModified },
     { url: `${SITE_URL}/whispered-praise`, priority: 0.85, lastModified },
     { url: `${SITE_URL}/ledger`, priority: 0.75, lastModified },
+    { url: `${SITE_URL}/privacy`, priority: 0.4, lastModified },
+    { url: `${SITE_URL}/continuum`, priority: 0.4, lastModified },
   ];
 
   // Hub and episodes enter the sitemap only after published inventory exists.

@@ -55,6 +55,8 @@ export function reconstructSitemapPaths(): {
     "/diamond-guide/all",
     "/whispered-praise",
     "/ledger",
+    "/privacy",
+    "/continuum",
   ];
   for (const p of core) paths.add(p);
 
