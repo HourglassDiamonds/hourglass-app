@@ -67,14 +67,31 @@ export function conciergeEditPersonPath(personId: string): string {
 
 export function conciergeHistoryPath(
   personId: string,
-  query?: { page?: number; source?: string | null },
+  query?: { page?: number; source?: string | null; lifecycle?: "trashed" | null },
 ): string {
   const path = `${conciergeClientPath(personId)}/history`;
   const params = new URLSearchParams();
   if (query?.page && query.page > 1) params.set("page", String(query.page));
   if (query?.source?.trim()) params.set("source", query.source.trim());
+  if (query?.lifecycle === "trashed") params.set("lifecycle", "trashed");
   const encoded = params.toString();
   return encoded ? `${path}?${encoded}` : path;
+}
+
+export function conciergeEditNotePath(personId: string, noteId: string): string {
+  return `${conciergeClientPath(personId)}/note/${noteId}/edit`;
+}
+
+export function conciergeMoveNotePath(personId: string, noteId: string): string {
+  return `${conciergeClientPath(personId)}/note/${noteId}/move`;
+}
+
+export function conciergeTrashNotePath(personId: string, noteId: string): string {
+  return `${conciergeClientPath(personId)}/note/${noteId}/trash`;
+}
+
+export function conciergeRestoreNotePath(personId: string, noteId: string): string {
+  return `${conciergeClientPath(personId)}/note/${noteId}/restore`;
 }
 
 export const RELATIONSHIP_CONTEXT_LAYER_LABELS: Record<

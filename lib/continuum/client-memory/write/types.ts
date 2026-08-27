@@ -20,6 +20,7 @@ export type AddManualNoteInput = {
   projectId?: string | null;
   contextLayer: RelationshipContextLayer;
   noteText: string;
+  actor?: string | null;
 };
 
 export type AddManualNoteInvalidCode =

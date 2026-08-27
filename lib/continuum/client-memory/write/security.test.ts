@@ -67,6 +67,7 @@ describe("Client Memory note writer security", () => {
       assert.doesNotMatch(source, /createSupabaseClientMemoryNoteWriter/);
       assert.doesNotMatch(source, /addManualNote/);
       assert.doesNotMatch(source, /saveManualConciergeNote/);
+      assert.doesNotMatch(source, /editConciergeNote|moveConciergeNote|trashConciergeNote|restoreConciergeNote/);
     }
   });
 

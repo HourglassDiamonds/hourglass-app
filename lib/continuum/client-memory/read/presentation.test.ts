@@ -90,6 +90,7 @@ describe("Concierge presentation", () => {
   it("labels imported notes conservatively", () => {
     const note: SourceNoteSummary = {
       id: "n1",
+      personId: "p1",
       projectId: null,
       contextLayer: "client",
       sourceSystem: CLIENT_MEMORY_SOURCE_SYSTEM,
@@ -99,6 +100,7 @@ describe("Concierge presentation", () => {
       gmailThreadId: null,
       noteText: "hello",
       createdAt: "2026-08-22T00:00:00.000Z",
+      lifecycleStatus: "absorbed",
     };
     assert.equal(noteSourceLabel(note), "Historical client record");
     assert.doesNotMatch(noteSourceLabel(note), /import_row_key|xlsx|Reconciled/i);

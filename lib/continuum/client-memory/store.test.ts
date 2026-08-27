@@ -6,6 +6,7 @@ import {
   newExternalIdentity,
 } from "./store";
 import { CLIENT_MEMORY_SOURCE_SYSTEM } from "./types";
+import { newSourceNoteLifecycle } from "./source-note-row";
 
 const NOW = "2026-08-22T00:00:00.000Z";
 
@@ -349,6 +350,10 @@ describe("Client Memory store", () => {
       gmailThreadId: null,
       noteText: "note",
       createdAt: NOW,
+      ...newSourceNoteLifecycle({
+        sourceSystem: CLIENT_MEMORY_SOURCE_SYSTEM,
+        createdAt: NOW,
+      }),
     });
     const flag = await store.insertSourceNote({
       id: "n2",
@@ -363,6 +368,10 @@ describe("Client Memory store", () => {
       gmailThreadId: null,
       noteText: "flag",
       createdAt: NOW,
+      ...newSourceNoteLifecycle({
+        sourceSystem: CLIENT_MEMORY_SOURCE_SYSTEM,
+        createdAt: NOW,
+      }),
     });
     assert.equal(notes.status, "inserted");
     assert.equal(flag.status, "inserted");

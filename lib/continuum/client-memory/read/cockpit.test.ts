@@ -381,7 +381,80 @@ describe("Person memory cockpit", () => {
     assert.match(html, /History \/ Sources/);
     assert.match(html, /All sources/);
     assert.match(html, /Page 1 of 2/);
+    assert.match(html, /Trashed/);
     assert.doesNotMatch(html, /Waiting on Client|Waiting on Hourglass|Open Jobs/);
+  });
+
+  it("shows only kept founder notes on the cockpit and keeps absorbed evidence in History", () => {
+    const person = personProfile({ displayName: "Sarah Miller" });
+    const kept = note({
+      personId: person.personId,
+      sourceSystem: COCKPIT_MANUAL_SOURCE_SYSTEM,
+      createdAt: "2026-08-20T00:00:00.000Z",
+      text: "Founder kept note",
+      lifecycleStatus: "kept",
+    });
+    const inbox = note({
+      personId: person.personId,
+      sourceSystem: COCKPIT_MANUAL_SOURCE_SYSTEM,
+      createdAt: "2026-08-21T00:00:00.000Z",
+      text: "Inbox capture",
+      lifecycleStatus: "inbox",
+    });
+    const absorbed = note({
+      personId: person.personId,
+      createdAt: "2026-08-19T00:00:00.000Z",
+      text: "Imported absorbed evidence",
+      lifecycleStatus: "absorbed",
+    });
+    const trashed = note({
+      personId: person.personId,
+      sourceSystem: COCKPIT_MANUAL_SOURCE_SYSTEM,
+      createdAt: "2026-08-18T00:00:00.000Z",
+      text: "Trashed founder note",
+      lifecycleStatus: "trashed",
+    });
+    const snapshot = {
+      ...emptyReadSnapshot(),
+      profiles: [person],
+      sourceNotes: [kept, inbox, absorbed, trashed],
+    };
+    const composed = composePersonCockpit(snapshot, person.personId);
+    assert.equal(composed.ok, true);
+    if (!composed.ok) return;
+    assert.deepEqual(
+      composed.cockpit.recentManualNotes.map((row) => row.noteText),
+      ["Founder kept note"],
+    );
+    assert.equal(composed.cockpit.history.noteCount, 2);
+    const html = renderToStaticMarkup(
+      createElement(ClientProfileView, { cockpit: composed.cockpit }),
+    );
+    assert.match(html, /Founder kept note/);
+    assert.match(html, />Edit</);
+    assert.match(html, />Move</);
+    assert.match(html, />Trash</);
+    assert.doesNotMatch(html, /Inbox capture|Imported absorbed evidence|Trashed founder note/);
+    const history = listPersonSourceHistoryFromSnapshot(snapshot, person.personId);
+    assert.equal(history.ok, true);
+    if (!history.ok) return;
+    assert.deepEqual(
+      history.history.notes.map((row) => row.noteText).sort(),
+      ["Founder kept note", "Imported absorbed evidence"],
+    );
+    const trashedHistory = listPersonSourceHistoryFromSnapshot(
+      snapshot,
+      person.personId,
+      { lifecycle: "trashed" },
+    );
+    assert.equal(trashedHistory.ok, true);
+    if (!trashedHistory.ok) return;
+    assert.equal(trashedHistory.history.notes[0]?.noteText, "Trashed founder note");
+    const historyHtml = renderToStaticMarkup(
+      createElement(ClientHistoryView, { history: trashedHistory.history }),
+    );
+    assert.match(historyHtml, /Restore/);
+    assert.doesNotMatch(historyHtml, /Waiting on Client|Open Jobs/);
   });
 
   it("exposes cockpit methods on the in-memory reader", async () => {
@@ -412,6 +485,7 @@ describe("Person cockpit query contract", () => {
     assert.match(source, /loadPersonCockpitSnapshot/);
     assert.match(source, /CLIENT_MEMORY_COCKPIT_NOTE_LIMIT/);
     assert.match(source, /COCKPIT_MANUAL_SOURCE_SYSTEM/);
+    assert.match(source, /lifecycle_status/);
     assert.match(source, /countPersonNotes/);
     assert.match(source, /head: true/);
     assert.match(source, /\.in\("person_id", counterpartIds\)/);

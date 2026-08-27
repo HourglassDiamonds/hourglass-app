@@ -5,7 +5,6 @@
  * Service-role SELECT only. Never INSERT/UPDATE/DELETE.
  */
 
-import { isRelationshipContextLayer } from "../contracts";
 import { CONTINUUM_SOURCE_SYSTEMS } from "../../contracts/types";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getSupabaseAdmin } from "@/lib/supabase/client";
@@ -14,6 +13,7 @@ import { composePersonCockpit } from "./cockpit";
 import { searchPeopleFromSnapshot } from "./search";
 import { isCalendarMonth, listCurrentBirthdaysByMonthFromRows } from "./birthdays";
 import type { ClientMemoryReader } from "./reader";
+import { SOURCE_NOTE_COLUMNS, rowToSourceNote } from "../source-note-row";
 import {
   CLIENT_MEMORY_COCKPIT_NOTE_LIMIT,
   CLIENT_MEMORY_HISTORY_PAGE_SIZE,
@@ -67,8 +67,7 @@ const FACT_COLUMNS =
   "id, person_id, fact_type, value, confidence, verification, approval_status, status, visibility, usage_permission, valid_from, valid_until, supersedes_id, source_system, created_at, created_by";
 const WISH_COLUMNS =
   "id, person_id, household_id, project_id, related_fact_id, description, category, status, visibility, usage_permission, source_system, created_at, created_by";
-const NOTE_COLUMNS =
-  "id, person_id, project_id, context_layer, source_system, source_artifact, source_sheet, source_field, import_row_key, gmail_thread_id, note_text, created_at";
+const NOTE_COLUMNS = SOURCE_NOTE_COLUMNS;
 const REVIEW_COLUMNS =
   "id, status, reason_code, left_person_id, right_person_id, import_row_key, source_system, created_at";
 const PROJECT_PROFILE_COLUMNS =
@@ -151,23 +150,7 @@ function rowToWish(row: Record<string, unknown>): Wish {
 }
 
 function rowToNote(row: Record<string, unknown>): SourceNote {
-  if (!isRelationshipContextLayer(row.context_layer)) {
-    throw new Error("invalid-context-layer");
-  }
-  return {
-    id: String(row.id),
-    personId: row.person_id == null ? null : String(row.person_id),
-    projectId: row.project_id == null ? null : String(row.project_id),
-    contextLayer: row.context_layer,
-    sourceSystem: row.source_system as SourceNote["sourceSystem"],
-    sourceArtifact: String(row.source_artifact),
-    sourceSheet: String(row.source_sheet),
-    sourceField: String(row.source_field),
-    importRowKey: String(row.import_row_key),
-    gmailThreadId: row.gmail_thread_id == null ? null : String(row.gmail_thread_id),
-    noteText: String(row.note_text),
-    createdAt: String(row.created_at),
-  };
+  return rowToSourceNote(row);
 }
 
 function rowToReview(row: Record<string, unknown>): IdentityReview {
@@ -458,7 +441,7 @@ export class SupabaseClientMemoryReader implements ClientMemoryReader {
             .is("revoked_at", null),
           "read-person-identities-failed",
         ),
-        countPersonNotes(this.client, trimmed, null),
+        countPersonNotes(this.client, trimmed, null, "default"),
       ]);
 
     const relationships = relationshipRows.map(rowToRelationship);
@@ -504,6 +487,7 @@ export class SupabaseClientMemoryReader implements ClientMemoryReader {
           .select(NOTE_COLUMNS)
           .eq("person_id", trimmed)
           .eq("source_system", COCKPIT_MANUAL_SOURCE_SYSTEM)
+          .eq("lifecycle_status", "kept")
           .order("created_at", { ascending: false })
           .limit(CLIENT_MEMORY_COCKPIT_NOTE_LIMIT),
         "read-cockpit-notes-failed",
@@ -570,16 +554,18 @@ export class SupabaseClientMemoryReader implements ClientMemoryReader {
         : CLIENT_MEMORY_HISTORY_PAGE_SIZE;
     const page = query?.page && query.page > 0 ? query.page : 1;
     const sourceSystem = allowedHistorySource(query?.sourceSystem);
+    const lifecycle = query?.lifecycle === "trashed" ? "trashed" : null;
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
 
     const [noteRows, total] = await Promise.all([
       loadHistoryNotes(this.client, trimmed, {
         sourceSystem,
+        lifecycle,
         from,
         to,
       }),
-      countPersonNotes(this.client, trimmed, sourceSystem),
+      countPersonNotes(this.client, trimmed, sourceSystem, lifecycle ?? "default"),
     ]);
     const notes = noteRows.map(rowToNote);
     const projectIds = [
@@ -607,6 +593,7 @@ export class SupabaseClientMemoryReader implements ClientMemoryReader {
         displayName: String(profile.display_name),
         notes: notes.map((note) => ({
           id: note.id,
+          personId: note.personId,
           projectId: note.projectId,
           contextLayer: note.contextLayer,
           sourceSystem: note.sourceSystem,
@@ -616,6 +603,7 @@ export class SupabaseClientMemoryReader implements ClientMemoryReader {
           gmailThreadId: note.gmailThreadId,
           noteText: note.noteText,
           createdAt: note.createdAt,
+          lifecycleStatus: note.lifecycleStatus,
         })),
         projectTitles: Object.fromEntries(
           projectRows.map((row) => [
@@ -627,6 +615,7 @@ export class SupabaseClientMemoryReader implements ClientMemoryReader {
         page,
         pageSize,
         sourceSystem,
+        lifecycle,
       },
     };
   }
@@ -706,12 +695,17 @@ async function countPersonNotes(
   client: SupabaseClient,
   personId: string,
   sourceSystem: string | null,
+  lifecycle: "default" | "trashed" = "default",
 ): Promise<number> {
   let query = client
     .from("continuum_source_notes")
     .select("id", { count: "exact", head: true })
     .eq("person_id", personId);
   if (sourceSystem) query = query.eq("source_system", sourceSystem);
+  query =
+    lifecycle === "trashed"
+      ? query.eq("lifecycle_status", "trashed")
+      : query.in("lifecycle_status", ["kept", "absorbed"]);
   const { count, error } = await query;
   if (error) throwQuery(error, "count-source-notes-failed");
   return count ?? 0;
@@ -720,7 +714,12 @@ async function countPersonNotes(
 async function loadHistoryNotes(
   client: SupabaseClient,
   personId: string,
-  input: { sourceSystem: string | null; from: number; to: number },
+  input: {
+    sourceSystem: string | null;
+    lifecycle: "trashed" | null;
+    from: number;
+    to: number;
+  },
 ): Promise<Record<string, unknown>[]> {
   let query = client
     .from("continuum_source_notes")
@@ -731,6 +730,10 @@ async function loadHistoryNotes(
   if (input.sourceSystem) {
     query = query.eq("source_system", input.sourceSystem);
   }
+  query =
+    input.lifecycle === "trashed"
+      ? query.eq("lifecycle_status", "trashed")
+      : query.in("lifecycle_status", ["kept", "absorbed"]);
   return rows<Record<string, unknown>>(query, "read-source-history-failed");
 }
 
@@ -745,6 +748,7 @@ async function loadNotes(
         .from("continuum_source_notes")
         .select(NOTE_COLUMNS)
         .eq("person_id", personId)
+        .in("lifecycle_status", ["kept", "absorbed"])
         .order("created_at", { ascending: false })
         .limit(CLIENT_MEMORY_NOTE_LIMIT),
       "read-source-notes-failed",
@@ -755,6 +759,7 @@ async function loadNotes(
       .from("continuum_source_notes")
       .select(NOTE_COLUMNS)
       .or(`person_id.eq.${personId},project_id.in.(${projectIds.join(",")})`)
+      .in("lifecycle_status", ["kept", "absorbed"])
       .order("created_at", { ascending: false })
       .limit(CLIENT_MEMORY_NOTE_LIMIT),
     "read-source-notes-failed",

@@ -3,7 +3,10 @@
  * Does not infer Open Jobs, Gmail state, artifacts, or project lifecycle.
  */
 
-import { CLIENT_MEMORY_NOTE_LIMIT } from "../read/types";
+import {
+  CLIENT_MEMORY_NOTE_LIMIT,
+  isHistoryVisibleNoteLifecycle,
+} from "../read/types";
 import {
   PROJECT_DESK_NOTE_LIMIT,
   type ListProjectsFilter,
@@ -53,7 +56,11 @@ function notesForProject(
     snapshot.people.map((row) => [row.personId, row.displayName]),
   );
   return snapshot.sourceNotes
-    .filter((row) => row.projectId === projectId)
+    .filter(
+      (row) =>
+        row.projectId === projectId &&
+        isHistoryVisibleNoteLifecycle(row.lifecycleStatus),
+    )
     .sort((a, b) => {
       if (a.createdAt === b.createdAt) return b.id.localeCompare(a.id);
       return a.createdAt < b.createdAt ? 1 : -1;

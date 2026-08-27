@@ -10,8 +10,9 @@ import {
   CLIENT_MEMORY_COCKPIT_NOTE_LIMIT,
   CLIENT_MEMORY_HISTORY_PAGE_SIZE,
   CLIENT_MEMORY_PROJECT_PREVIEW_LIMIT,
-  COCKPIT_MANUAL_SOURCE_SYSTEM,
   isActiveWishStatus,
+  isCockpitVisibleNote,
+  isHistoryVisibleNoteLifecycle,
   type ClientMemoryReadSnapshot,
   type PersonCockpit,
   type PersonCockpitProject,
@@ -58,6 +59,7 @@ function toNoteSummary(
 ): SourceNoteSummary {
   return {
     id: note.id,
+    personId: note.personId,
     projectId: note.projectId,
     contextLayer: note.contextLayer,
     sourceSystem: note.sourceSystem,
@@ -67,6 +69,7 @@ function toNoteSummary(
     gmailThreadId: note.gmailThreadId,
     noteText: note.noteText,
     createdAt: note.createdAt,
+    lifecycleStatus: note.lifecycleStatus,
   };
 }
 
@@ -231,10 +234,11 @@ export function composePersonCockpit(
 
   const projectIds = linkedProjectIds(trimmed, relationships);
   const ownedNotes = personNotes(snapshot, trimmed);
+  const historyNotes = ownedNotes.filter((row) =>
+    isHistoryVisibleNoteLifecycle(row.lifecycleStatus),
+  );
   const recentManualNotes = sortNotesNewestFirst(
-    ownedNotes.filter(
-      (row) => row.sourceSystem === COCKPIT_MANUAL_SOURCE_SYSTEM,
-    ),
+    ownedNotes.filter(isCockpitVisibleNote),
   )
     .slice(0, CLIENT_MEMORY_COCKPIT_NOTE_LIMIT)
     .map(toNoteSummary);
@@ -276,7 +280,7 @@ export function composePersonCockpit(
         .length,
     },
     history: {
-      noteCount: counts?.noteCount ?? ownedNotes.length,
+      noteCount: counts?.noteCount ?? historyNotes.length,
     },
   };
 
@@ -299,11 +303,14 @@ export function listPersonSourceHistoryFromSnapshot(
       : CLIENT_MEMORY_HISTORY_PAGE_SIZE;
   const page = query.page && query.page > 0 ? query.page : 1;
   const sourceSystem = query.sourceSystem?.trim() || null;
+  const lifecycle = query.lifecycle === "trashed" ? "trashed" : null;
 
   const filtered = sortNotesNewestFirst(
-    personNotes(snapshot, trimmed).filter((row) =>
-      sourceSystem ? row.sourceSystem === sourceSystem : true,
-    ),
+    personNotes(snapshot, trimmed).filter((row) => {
+      if (sourceSystem && row.sourceSystem !== sourceSystem) return false;
+      if (lifecycle === "trashed") return row.lifecycleStatus === "trashed";
+      return isHistoryVisibleNoteLifecycle(row.lifecycleStatus);
+    }),
   );
   const start = (page - 1) * pageSize;
   const pageNotes = filtered.slice(start, start + pageSize).map(toNoteSummary);
@@ -322,6 +329,7 @@ export function listPersonSourceHistoryFromSnapshot(
     page,
     pageSize,
     sourceSystem,
+    lifecycle,
   };
   return { ok: true, history };
 }

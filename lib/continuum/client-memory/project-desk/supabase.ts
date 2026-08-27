@@ -8,7 +8,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getSupabaseAdmin } from "@/lib/supabase/client";
-import { isRelationshipContextLayer } from "../contracts";
+import { SOURCE_NOTE_COLUMNS, rowToSourceNote } from "../source-note-row";
 import type {
   EntityRelationship,
   ProjectHistory,
@@ -51,8 +51,7 @@ const PROJECT_HISTORY_COLUMNS =
   "project_id, cad_job_number, order_number, gmail_thread_id, match_judgment, match_judgment_raw, finger_size, metal, center_stone, diamond_supply_notes, source_system, created_at, updated_at";
 const RELATIONSHIP_COLUMNS =
   "id, from_entity_id, to_entity_id, kind, status, source_system, created_at, created_by";
-const NOTE_COLUMNS =
-  "id, person_id, project_id, context_layer, source_system, source_artifact, source_sheet, source_field, import_row_key, gmail_thread_id, note_text, created_at";
+const NOTE_COLUMNS = SOURCE_NOTE_COLUMNS;
 
 function rowToProjectProfile(row: Record<string, unknown>): ProjectProfile {
   return {
@@ -100,23 +99,7 @@ function rowToRelationship(row: Record<string, unknown>): EntityRelationship {
 }
 
 function rowToNote(row: Record<string, unknown>): SourceNote {
-  if (!isRelationshipContextLayer(row.context_layer)) {
-    throw new Error("invalid-context-layer");
-  }
-  return {
-    id: String(row.id),
-    personId: row.person_id == null ? null : String(row.person_id),
-    projectId: row.project_id == null ? null : String(row.project_id),
-    contextLayer: row.context_layer,
-    sourceSystem: row.source_system as SourceNote["sourceSystem"],
-    sourceArtifact: String(row.source_artifact),
-    sourceSheet: String(row.source_sheet),
-    sourceField: String(row.source_field),
-    importRowKey: String(row.import_row_key),
-    gmailThreadId: row.gmail_thread_id == null ? null : String(row.gmail_thread_id),
-    noteText: String(row.note_text),
-    createdAt: String(row.created_at),
-  };
+  return rowToSourceNote(row);
 }
 
 async function loadSnapshot(client: SupabaseClient): Promise<ProjectDeskSnapshot> {

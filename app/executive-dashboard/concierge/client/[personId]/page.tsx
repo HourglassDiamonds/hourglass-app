@@ -19,7 +19,7 @@ export default async function ConciergeClientPage({
   searchParams,
 }: {
   params: Promise<{ personId: string }>;
-  searchParams?: Promise<{ saved?: string; existing?: string }>;
+  searchParams?: Promise<{ saved?: string; existing?: string; moved?: string; trashed?: string }>;
 }) {
   const { personId } = await params;
   const query = searchParams ? await searchParams : {};
@@ -82,6 +82,9 @@ export default async function ConciergeClientPage({
           justSavedClient={query.saved === "client"}
           justExistingClient={query.existing === "client"}
           justSavedProfile={query.saved === "profile"}
+          justSavedNote={query.saved === "note"}
+          justMovedNote={query.moved === "1"}
+          justTrashedNote={query.trashed === "1"}
         />
       </div>
     </ConciergeShell>

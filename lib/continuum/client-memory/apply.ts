@@ -11,6 +11,7 @@ import {
 } from "./artifact";
 import { splitDisplayName } from "./classify";
 import { DEFAULT_VISIBILITY } from "./contracts";
+import { newSourceNoteLifecycle } from "./source-note-row";
 import { evaluatePersonRow, type PersonRowEvaluation } from "./eligibility";
 import { evaluateApplyGates, type ApplyTarget } from "./gates";
 import {
@@ -258,6 +259,11 @@ export async function applyParsedWorkbook(
           : null,
       noteText: note.text,
       createdAt: now,
+      ...newSourceNoteLifecycle({
+        sourceSystem: CLIENT_MEMORY_SOURCE_SYSTEM,
+        createdAt: now,
+        lifecycleStatus: "absorbed",
+      }),
     });
     if (result.status === "inserted") sourceNotesInserted += 1;
     else sourceNotesAlreadyPresent += 1;

@@ -61,6 +61,11 @@ describe("Client Memory PII boundary", () => {
       gmailThreadId: null,
       noteText: "Call Ada Lovelace at ada@example.com",
       createdAt: NOW,
+      lifecycleStatus: "absorbed",
+      updatedAt: NOW,
+      updatedBy: null,
+      deletedAt: null,
+      previousLifecycle: null,
     });
     assert.equal(note.status, "inserted");
     assert.equal(assertNoPii(note.record, "source-note").ok, false);

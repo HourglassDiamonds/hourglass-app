@@ -31,7 +31,14 @@ export default async function ConciergePersonHistoryPage({
   searchParams,
 }: {
   params: Promise<{ personId: string }>;
-  searchParams?: Promise<{ page?: string; source?: string }>;
+  searchParams?: Promise<{
+    page?: string;
+    source?: string;
+    lifecycle?: string;
+    trashed?: string;
+    restored?: string;
+    saved?: string;
+  }>;
 }) {
   const { personId } = await params;
   const query = searchParams ? await searchParams : {};
@@ -60,11 +67,13 @@ export default async function ConciergePersonHistoryPage({
 
   const page = parsePage(query.page);
   const sourceSystem = parseSource(query.source);
+  const lifecycle = query.lifecycle === "trashed" ? "trashed" : null;
   let result: Awaited<ReturnType<typeof auth.reader.listPersonSourceHistory>>;
   try {
     result = await auth.reader.listPersonSourceHistory(personId, {
       page,
       sourceSystem,
+      lifecycle,
     });
   } catch {
     return (
@@ -92,7 +101,12 @@ export default async function ConciergePersonHistoryPage({
     <ConciergeShell>
       <ConciergeBackLink />
       <div className="hg-concierge-fade mt-8">
-        <ClientHistoryView history={result.history} />
+        <ClientHistoryView
+          history={result.history}
+          justTrashed={query.trashed === "1"}
+          justRestored={query.restored === "1"}
+          justSavedNote={query.saved === "note"}
+        />
       </div>
     </ConciergeShell>
   );

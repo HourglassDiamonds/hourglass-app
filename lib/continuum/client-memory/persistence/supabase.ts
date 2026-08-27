@@ -14,7 +14,8 @@ import type {
   ExternalIdentity,
   IdentityKind,
 } from "../../contracts/types";
-import { assertFactValue, assertPersonRoles, isRelationshipContextLayer } from "../contracts";
+import { assertFactValue, assertPersonRoles } from "../contracts";
+import { SOURCE_NOTE_COLUMNS, rowToSourceNote, sourceNoteInsertRow } from "../source-note-row";
 import type { SetCurrentPersonFactResult } from "../facts/write";
 import { planProfileMerge } from "../merge";
 import type {
@@ -40,6 +41,7 @@ import type {
   SourceNote,
   Wish,
 } from "../types";
+import type { NoteMutationApplyInput, NoteMutationApplyResult } from "../write/mutate-note";
 
 const UNIQUE_VIOLATION = "23505";
 
@@ -316,25 +318,60 @@ export class SupabaseClientMemoryStore implements ClientMemoryStore {
   }
 
   async insertSourceNote(row: SourceNote): Promise<InsertResult<SourceNote>> {
-    const { error } = await this.client.from("continuum_source_notes").insert({
-      id: row.id,
-      person_id: row.personId,
-      project_id: row.projectId,
-      context_layer: row.contextLayer,
-      source_system: row.sourceSystem,
-      source_artifact: row.sourceArtifact,
-      source_sheet: row.sourceSheet,
-      source_field: row.sourceField,
-      import_row_key: row.importRowKey,
-      gmail_thread_id: row.gmailThreadId,
-      note_text: row.noteText,
-      created_at: row.createdAt,
-    });
+    const { error } = await this.client.from("continuum_source_notes").insert(
+      sourceNoteInsertRow(row),
+    );
     if (error && isUniqueViolation(error)) {
       return { status: "already-present", record: row };
     }
     if (error) throwQuery(error, "insert-note-failed");
     return { status: "inserted", record: row };
+  }
+
+  async getSourceNote(id: string): Promise<SourceNote | null> {
+    const { data, error } = await this.client
+      .from("continuum_source_notes")
+      .select(SOURCE_NOTE_COLUMNS)
+      .eq("id", id)
+      .maybeSingle();
+    if (error) throwQuery(error, "get-note-failed");
+    if (!data) return null;
+    return rowToSourceNote(data);
+  }
+
+  async applySourceNoteMutation(
+    input: NoteMutationApplyInput,
+  ): Promise<NoteMutationApplyResult> {
+    const { data, error } = await this.client.rpc(
+      "continuum_client_memory_mutate_source_note",
+      {
+        p_note_id: input.prior.id,
+        p_mutation_id: input.mutationId,
+        p_change_kind: input.changeKind,
+        p_edited_at: input.editedAt,
+        p_edited_by: input.editedBy,
+        p_revision_id: input.revisionId,
+        p_note_text: input.next.noteText,
+        p_person_id: input.next.personId,
+        p_project_id: input.next.projectId,
+        p_context_layer: input.next.contextLayer,
+        p_cross_person_confirmed: true,
+      },
+    );
+    if (error) {
+      const message = error.message ?? "";
+      if (message.includes("note-not-found")) throw new Error("note-not-found");
+      if (message.includes("person-not-found")) throw new Error("person-not-found");
+      if (message.includes("project-not-linked")) throw new Error("project-not-linked");
+      if (message.includes("entity-kind-mismatch")) {
+        throw new Error("entity-kind-mismatch");
+      }
+      if (message.includes("cross-person-unconfirmed")) {
+        throw new Error("cross-person-unconfirmed");
+      }
+      throwQuery(error, "mutate-source-note-failed");
+    }
+    return rpcToNoteMutationResult(data, input);
   }
 
   async findSourceNoteByIdentity(input: {
@@ -345,7 +382,7 @@ export class SupabaseClientMemoryStore implements ClientMemoryStore {
     const { data, error } = await this.client
       .from("continuum_source_notes")
       .select(
-        "id, person_id, project_id, context_layer, source_system, source_artifact, source_sheet, source_field, import_row_key, gmail_thread_id, note_text, created_at",
+        "id, person_id, project_id, context_layer, source_system, source_artifact, source_sheet, source_field, import_row_key, gmail_thread_id, note_text, created_at, lifecycle_status, updated_at, updated_by, deleted_at, previous_lifecycle",
       )
       .eq("source_system", input.sourceSystem)
       .eq("import_row_key", input.importRowKey)
@@ -353,7 +390,7 @@ export class SupabaseClientMemoryStore implements ClientMemoryStore {
       .maybeSingle();
     if (error) throwQuery(error, "find-note-failed");
     if (!data) return null;
-    return persistRowToNote(data);
+    return rowToSourceNote(data);
   }
 
   async hasActiveClientProjectLink(
@@ -822,24 +859,23 @@ function rpcToSetCurrentResult(
   };
 }
 
-function persistRowToNote(row: Record<string, unknown>): SourceNote {
-  if (!isRelationshipContextLayer(row.context_layer)) {
-    throw new Error("invalid-context-layer");
-  }
-  return {
-    id: String(row.id),
-    personId: row.person_id == null ? null : String(row.person_id),
-    projectId: row.project_id == null ? null : String(row.project_id),
-    contextLayer: row.context_layer,
-    sourceSystem: row.source_system as SourceNote["sourceSystem"],
-    sourceArtifact: String(row.source_artifact),
-    sourceSheet: String(row.source_sheet),
-    sourceField: String(row.source_field),
-    importRowKey: String(row.import_row_key),
-    gmailThreadId: row.gmail_thread_id == null ? null : String(row.gmail_thread_id),
-    noteText: String(row.note_text),
-    createdAt: String(row.created_at),
-  };
+function rpcToNoteMutationResult(
+  data: unknown,
+  fallback: NoteMutationApplyInput,
+): NoteMutationApplyResult {
+  const payload =
+    data && typeof data === "object" ? (data as Record<string, unknown>) : null;
+  const status =
+    payload && payload.status === "already-present"
+      ? "already-present"
+      : "updated";
+  const noteRow =
+    payload && payload.note && typeof payload.note === "object"
+      ? rowToSourceNote(payload.note as Record<string, unknown>)
+      : fallback.next;
+  const revisionId =
+    payload && payload.revision_id != null ? String(payload.revision_id) : null;
+  return { status, note: noteRow, revisionId };
 }
 
 function rowToIdentity(row: Record<string, unknown>): ExternalIdentity {

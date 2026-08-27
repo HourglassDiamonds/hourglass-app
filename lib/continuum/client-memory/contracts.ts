@@ -15,6 +15,8 @@ import {
   RELATIONSHIP_CONTEXT_LAYERS,
   RELATIONSHIP_KINDS,
   RELATIONSHIP_STATUSES,
+  SOURCE_NOTE_CHANGE_KINDS,
+  SOURCE_NOTE_LIFECYCLE_STATUSES,
   USAGE_PERMISSIONS,
   type ClientMemoryVisibility,
   type FactApprovalStatus,
@@ -23,6 +25,8 @@ import {
   type RelationshipContextLayer,
   type RelationshipKind,
   type RelationshipStatus,
+  type SourceNoteChangeKind,
+  type SourceNoteLifecycleStatus,
   type UsagePermission,
 } from "./types";
 
@@ -55,6 +59,24 @@ export function isRelationshipContextLayer(
   return (
     typeof value === "string" &&
     (RELATIONSHIP_CONTEXT_LAYERS as readonly string[]).includes(value)
+  );
+}
+
+export function isSourceNoteLifecycleStatus(
+  value: unknown,
+): value is SourceNoteLifecycleStatus {
+  return (
+    typeof value === "string" &&
+    (SOURCE_NOTE_LIFECYCLE_STATUSES as readonly string[]).includes(value)
+  );
+}
+
+export function isSourceNoteChangeKind(
+  value: unknown,
+): value is SourceNoteChangeKind {
+  return (
+    typeof value === "string" &&
+    (SOURCE_NOTE_CHANGE_KINDS as readonly string[]).includes(value)
   );
 }
 

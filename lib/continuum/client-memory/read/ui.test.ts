@@ -314,6 +314,10 @@ describe("Concierge Client Memory UI", () => {
     assert.match(actions, /existing=client/);
     assert.match(actions, /saved=profile/);
     assert.match(actions, /savePersonProfile/);
+    assert.match(actions, /editConciergeNote/);
+    assert.match(actions, /moveConciergeNote/);
+    assert.match(actions, /trashConciergeNote/);
+    assert.match(actions, /restoreConciergeNote/);
     assert.match(actions, /savePlaudHumanSource/);
     assert.match(actions, /getAuthenticatedHumanSourceStore/);
     assert.doesNotMatch(actions, /saveProjectLifecycle/);
@@ -341,6 +345,45 @@ describe("Concierge Client Memory UI", () => {
     assert.match(form, /htmlFor=\{noteId\}/);
     assert.doesNotMatch(form, /concierge-manual/);
     assert.doesNotMatch(form, /manual-note/);
+    const editNote = readFileSync(
+      join(CONCIERGE_DIR, "client", "[personId]", "note", "[noteId]", "edit", "page.tsx"),
+      "utf8",
+    );
+    assert.match(editNote, /title:\s*"Edit Note"/);
+    assert.match(editNote, /EditNoteForm/);
+    assert.match(editNote, /getAuthenticatedClientMemoryNoteWriter/);
+    assert.doesNotMatch(editNote, /create corrected copy|hard delete/i);
+    const editNoteForm = readFileSync(
+      join(CONCIERGE_DIR, "components", "edit-note-form.tsx"),
+      "utf8",
+    );
+    assert.match(editNoteForm, /editConciergeNote/);
+    assert.doesNotMatch(editNoteForm, /createSupabaseClientMemoryNoteWriter/);
+    const moveNote = readFileSync(
+      join(CONCIERGE_DIR, "client", "[personId]", "note", "[noteId]", "move", "page.tsx"),
+      "utf8",
+    );
+    assert.match(moveNote, /title:\s*"Move Note"/);
+    assert.match(moveNote, /MoveNoteForm/);
+    const moveForm = readFileSync(
+      join(CONCIERGE_DIR, "components", "move-note-form.tsx"),
+      "utf8",
+    );
+    assert.match(moveForm, /\bCurrent\b/);
+    assert.match(moveForm, /\bTarget\b/);
+    assert.match(moveForm, /crossPersonConfirmed/);
+    assert.match(moveForm, /Move this note from/);
+    assert.doesNotMatch(moveForm, /createSupabaseClientMemoryNoteWriter/);
+    const trashNote = readFileSync(
+      join(CONCIERGE_DIR, "client", "[personId]", "note", "[noteId]", "trash", "page.tsx"),
+      "utf8",
+    );
+    assert.match(trashNote, /title:\s*"Trash Note"/);
+    const restoreNote = readFileSync(
+      join(CONCIERGE_DIR, "client", "[personId]", "note", "[noteId]", "restore", "page.tsx"),
+      "utf8",
+    );
+    assert.match(restoreNote, /title:\s*"Restore Note"/);
     const birthdayPage = readFileSync(
       join(CONCIERGE_DIR, "client", "[personId]", "birthday", "page.tsx"),
       "utf8",

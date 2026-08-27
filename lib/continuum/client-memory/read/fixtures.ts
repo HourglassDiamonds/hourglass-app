@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { CLIENT_MEMORY_SOURCE_SYSTEM } from "../types";
+import { CLIENT_MEMORY_SOURCE_SYSTEM, classifySourceNoteLifecycle } from "../types";
 import type {
   EntityRelationship,
   IdentityReview,
@@ -167,13 +167,17 @@ export function note(input: {
   sourceField?: string;
   contextLayer?: SourceNote["contextLayer"];
   sourceSystem?: SourceNote["sourceSystem"];
+  lifecycleStatus?: SourceNote["lifecycleStatus"];
 }): SourceNote {
+  const sourceSystem = input.sourceSystem ?? CLIENT_MEMORY_SOURCE_SYSTEM;
+  const lifecycleStatus =
+    input.lifecycleStatus ?? classifySourceNoteLifecycle(sourceSystem);
   return {
     id: randomUUID(),
     personId: input.personId ?? null,
     projectId: input.projectId ?? null,
     contextLayer: input.contextLayer ?? "client",
-    sourceSystem: input.sourceSystem ?? CLIENT_MEMORY_SOURCE_SYSTEM,
+    sourceSystem,
     sourceArtifact: "continuum-reconciliation-v3",
     sourceSheet: "Reconciled Projects",
     sourceField: input.sourceField ?? "Notes",
@@ -181,6 +185,11 @@ export function note(input: {
     gmailThreadId: null,
     noteText: input.text ?? "note",
     createdAt: input.createdAt,
+    lifecycleStatus,
+    updatedAt: input.createdAt,
+    updatedBy: null,
+    deletedAt: lifecycleStatus === "trashed" ? input.createdAt : null,
+    previousLifecycle: lifecycleStatus === "trashed" ? "kept" : null,
   };
 }
 

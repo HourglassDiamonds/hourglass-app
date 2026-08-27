@@ -70,6 +70,11 @@ function note(
     gmailThreadId: null,
     noteText: text,
     createdAt,
+    lifecycleStatus: "absorbed",
+    updatedAt: createdAt,
+    updatedBy: null,
+    deletedAt: null,
+    previousLifecycle: null,
   };
 }
 

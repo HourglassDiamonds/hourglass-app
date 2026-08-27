@@ -6,6 +6,7 @@
 import {
   CLIENT_MEMORY_NOTE_LIMIT,
   isActiveWishStatus,
+  isHistoryVisibleNoteLifecycle,
   type ClientMemoryReadSnapshot,
   type ClientRelationshipSummary,
   type ConciergePersonProfile,
@@ -88,6 +89,7 @@ function toHistorySummary(
 function toNoteSummary(note: ClientMemoryReadSnapshot["sourceNotes"][number]): SourceNoteSummary {
   return {
     id: note.id,
+    personId: note.personId,
     projectId: note.projectId,
     contextLayer: note.contextLayer,
     sourceSystem: note.sourceSystem,
@@ -97,6 +99,7 @@ function toNoteSummary(note: ClientMemoryReadSnapshot["sourceNotes"][number]): S
     gmailThreadId: note.gmailThreadId,
     noteText: note.noteText,
     createdAt: note.createdAt,
+    lifecycleStatus: note.lifecycleStatus,
   };
 }
 
@@ -157,8 +160,9 @@ export function composePersonProfile(
   const sourceNotes: SourceNoteSummary[] = snapshot.sourceNotes
     .filter(
       (row) =>
-        row.personId === trimmed ||
-        (row.projectId != null && projectIds.includes(row.projectId)),
+        isHistoryVisibleNoteLifecycle(row.lifecycleStatus) &&
+        (row.personId === trimmed ||
+          (row.projectId != null && projectIds.includes(row.projectId))),
     )
     .sort((a, b) => {
       if (a.createdAt === b.createdAt) return b.id.localeCompare(a.id);

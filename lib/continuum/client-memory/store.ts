@@ -20,12 +20,19 @@ import {
   isRelationshipContextLayer,
   isRelationshipKind,
   isRelationshipStatus,
+  isSourceNoteChangeKind,
+  isSourceNoteLifecycleStatus,
   isUsagePermission,
   isVisibility,
   unionPersonRoles,
 } from "./contracts";
 import type { SetCurrentPersonFactResult } from "./facts/write";
 import { planProfileMerge, type ProtectedProfileField } from "./merge";
+import type {
+  NoteMutationApplyInput,
+  NoteMutationApplyResult,
+} from "./write/mutate-note";
+import { notesEqual, priorStateRevision } from "./write/mutate-note";
 import type {
   ClientMemoryEntity,
   EntityRelationship,
@@ -38,6 +45,7 @@ import type {
   ProjectHistory,
   ProjectProfile,
   SourceNote,
+  SourceNoteRevision,
   Wish,
 } from "./types";
 
@@ -150,11 +158,15 @@ export type ClientMemoryStore = {
     row: EntityRelationship,
   ): Promise<InsertResult<EntityRelationship>>;
   insertSourceNote(row: SourceNote): Promise<InsertResult<SourceNote>>;
+  getSourceNote(id: string): Promise<SourceNote | null>;
   findSourceNoteByIdentity(input: {
     sourceSystem: ContinuumSourceSystem;
     importRowKey: string;
     sourceField: string;
   }): Promise<SourceNote | null>;
+  applySourceNoteMutation(
+    input: NoteMutationApplyInput,
+  ): Promise<NoteMutationApplyResult>;
   hasActiveClientProjectLink(
     personId: string,
     projectId: string,
@@ -228,6 +240,8 @@ export class InMemoryClientMemoryStore implements ClientMemoryStore {
   private activeRelationships = new Map<string, string>();
   private notes = new Map<string, SourceNote>();
   private noteKeys = new Map<string, string>();
+  private noteRevisions = new Map<string, SourceNoteRevision>();
+  private noteMutationIds = new Map<string, string>();
   private wishes = new Map<string, Wish>();
   private projects = new Map<string, ProjectProfile>();
   private projectImportKeys = new Map<string, string>();
@@ -236,6 +250,7 @@ export class InMemoryClientMemoryStore implements ClientMemoryStore {
   private reviewKeys = new Map<string, string>();
   failNextCreateAfter: "entity" | "profile" | "identity" | null = null;
   failNextSetCurrentAfterSupersede = false;
+  failNextNoteMutationAfter: "revision" | "update" | null = null;
 
   reset(): void {
     this.entities.clear();
@@ -248,6 +263,8 @@ export class InMemoryClientMemoryStore implements ClientMemoryStore {
     this.activeRelationships.clear();
     this.notes.clear();
     this.noteKeys.clear();
+    this.noteRevisions.clear();
+    this.noteMutationIds.clear();
     this.wishes.clear();
     this.projects.clear();
     this.projectImportKeys.clear();
@@ -475,6 +492,9 @@ export class InMemoryClientMemoryStore implements ClientMemoryStore {
     if (!isRelationshipContextLayer(row.contextLayer)) {
       throw new Error("invalid-context-layer");
     }
+    if (!isSourceNoteLifecycleStatus(row.lifecycleStatus)) {
+      throw new Error("invalid-lifecycle-status");
+    }
     const existing = this.notes.get(row.id);
     if (existing) return { status: "already-present", record: clone(existing) };
     const key = noteKey(row);
@@ -487,6 +507,58 @@ export class InMemoryClientMemoryStore implements ClientMemoryStore {
     this.noteKeys.set(key, row.id);
     this.notes.set(row.id, clone(row));
     return { status: "inserted", record: clone(row) };
+  }
+
+  async getSourceNote(id: string): Promise<SourceNote | null> {
+    const present = this.notes.get(id);
+    return present ? clone(present) : null;
+  }
+
+  async applySourceNoteMutation(
+    input: NoteMutationApplyInput,
+  ): Promise<NoteMutationApplyResult> {
+    if (!isSourceNoteChangeKind(input.changeKind)) {
+      throw new Error("invalid-change-kind");
+    }
+    const existingMutation = this.noteMutationIds.get(input.mutationId);
+    if (existingMutation) {
+      const revision = this.noteRevisions.get(existingMutation);
+      const note = revision ? this.notes.get(revision.noteId) : this.notes.get(input.prior.id);
+      if (!note) throw new Error("note index corrupt");
+      return {
+        status: "already-present",
+        note: clone(note),
+        revisionId: revision?.id ?? null,
+      };
+    }
+    const current = this.notes.get(input.prior.id);
+    if (!current) throw new Error("note-not-found");
+    if (notesEqual(current, input.next)) {
+      return {
+        status: "already-present",
+        note: clone(current),
+        revisionId: null,
+      };
+    }
+    if (this.failNextNoteMutationAfter === "revision") {
+      this.failNextNoteMutationAfter = null;
+      throw new Error("note-mutation-revision-failed");
+    }
+    const revision = priorStateRevision(input);
+    this.noteRevisions.set(revision.id, clone(revision));
+    this.noteMutationIds.set(input.mutationId, revision.id);
+    if (this.failNextNoteMutationAfter === "update") {
+      this.failNextNoteMutationAfter = null;
+      this.noteRevisions.delete(revision.id);
+      this.noteMutationIds.delete(input.mutationId);
+      throw new Error("note-mutation-update-failed");
+    }
+    this.notes.set(current.id, clone(input.next));
+    return {
+      status: "updated",
+      note: clone(input.next),
+      revisionId: revision.id,
+    };
   }
 
   async findSourceNoteByIdentity(input: {
@@ -522,6 +594,12 @@ export class InMemoryClientMemoryStore implements ClientMemoryStore {
 
   listSourceNotes(): SourceNote[] {
     return [...this.notes.values()].map((row) => clone(row));
+  }
+
+  listSourceNoteRevisions(noteId?: string): SourceNoteRevision[] {
+    return [...this.noteRevisions.values()]
+      .filter((row) => (noteId ? row.noteId === noteId : true))
+      .map((row) => clone(row));
   }
 
   async insertWish(row: Wish): Promise<InsertResult<Wish>> {

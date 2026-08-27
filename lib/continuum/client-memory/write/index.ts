@@ -10,6 +10,14 @@ export {
   createInMemoryClientMemoryNoteWriter,
 } from "./writer";
 export { addManualNote } from "./add-manual-note";
+export {
+  absorbSourceNote,
+  editSourceNote,
+  keepSourceNote,
+  moveSourceNote,
+  restoreSourceNote,
+  trashSourceNote,
+} from "./mutate-note";
 export { suggestRelationshipContextLayer } from "./context";
 export {
   CONCIERGE_MANUAL_SOURCE_SYSTEM,
@@ -24,3 +32,9 @@ export type {
   AddManualNoteResult,
   AddManualNoteInvalidCode,
 } from "./types";
+export type {
+  EditSourceNoteInput,
+  LifecycleSourceNoteInput,
+  MoveSourceNoteInput,
+  MutateNoteResult,
+} from "./mutate-note";

@@ -17,6 +17,7 @@ import type {
   RelationshipKind,
   RelationshipStatus,
   SourceNote,
+  SourceNoteLifecycleStatus,
   Wish,
 } from "../types";
 
@@ -70,6 +71,7 @@ export type LinkedProjectRead = {
 export type SourceNoteSummary = Pick<
   SourceNote,
   | "id"
+  | "personId"
   | "projectId"
   | "contextLayer"
   | "sourceSystem"
@@ -79,6 +81,7 @@ export type SourceNoteSummary = Pick<
   | "gmailThreadId"
   | "noteText"
   | "createdAt"
+  | "lifecycleStatus"
 >;
 
 export type WishSummary = Pick<
@@ -173,6 +176,7 @@ export type PersonSourceHistoryQuery = {
   page?: number;
   pageSize?: number;
   sourceSystem?: string | null;
+  lifecycle?: "trashed" | null;
 };
 
 export type PersonSourceHistory = {
@@ -184,6 +188,7 @@ export type PersonSourceHistory = {
   page: number;
   pageSize: number;
   sourceSystem: string | null;
+  lifecycle: "trashed" | null;
 };
 
 export type PersonSourceHistoryResult =
@@ -238,6 +243,21 @@ export const CLIENT_MEMORY_FINANCIAL_FIELD_NAMES = [
 export function isActiveWishStatus(status: string): boolean {
   const normalized = status.trim().toLowerCase();
   return (ACTIVE_WISH_STATUSES as readonly string[]).includes(normalized);
+}
+
+export function isHistoryVisibleNoteLifecycle(
+  status: SourceNoteLifecycleStatus,
+): boolean {
+  return status === "kept" || status === "absorbed";
+}
+
+export function isCockpitVisibleNote(
+  note: Pick<SourceNote, "sourceSystem" | "lifecycleStatus">,
+): boolean {
+  return (
+    note.sourceSystem === COCKPIT_MANUAL_SOURCE_SYSTEM &&
+    note.lifecycleStatus === "kept"
+  );
 }
 
 export type { ClientMemoryVisibility };

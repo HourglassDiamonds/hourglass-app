@@ -25,6 +25,9 @@ export function ClientProfileView({
   justSavedClient = false,
   justExistingClient = false,
   justSavedProfile = false,
+  justSavedNote = false,
+  justMovedNote = false,
+  justTrashedNote = false,
 }: {
   cockpit: PersonCockpit;
   justSaved?: boolean;
@@ -32,6 +35,9 @@ export function ClientProfileView({
   justSavedClient?: boolean;
   justExistingClient?: boolean;
   justSavedProfile?: boolean;
+  justSavedNote?: boolean;
+  justMovedNote?: boolean;
+  justTrashedNote?: boolean;
 }) {
   const birthdayValue = cockpit.birthday
     ? formatFactValue(cockpit.birthday)
@@ -94,6 +100,21 @@ export function ClientProfileView({
           Updated.
         </p>
       ) : null}
+      {justSavedNote ? (
+        <p className="mt-6 text-[13px] tracking-[0.04em] text-[#c4b7aa]" role="status">
+          Note updated.
+        </p>
+      ) : null}
+      {justMovedNote ? (
+        <p className="mt-6 text-[13px] tracking-[0.04em] text-[#c4b7aa]" role="status">
+          Note moved.
+        </p>
+      ) : null}
+      {justTrashedNote ? (
+        <p className="mt-6 text-[13px] tracking-[0.04em] text-[#c4b7aa]" role="status">
+          Note moved to trash.
+        </p>
+      ) : null}
 
       <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-2">
         <Link
@@ -149,6 +170,9 @@ export function ClientProfileView({
               <ClientNoteList
                 notes={cockpit.recentManualNotes}
                 projectTitles={new Map(Object.entries(projectTitles))}
+                personId={cockpit.person.id}
+                actions
+                returnTo="cockpit"
               />
             </div>
           ) : null}

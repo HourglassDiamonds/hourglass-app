@@ -55,6 +55,7 @@ describe("Client Memory manual note writer", () => {
       ["client memory", "networking memory", "personal memory"],
     );
     assert.ok(notes.every((row) => row.sourceSystem === "concierge-manual"));
+    assert.ok(notes.every((row) => row.lifecycleStatus === "kept"));
     assert.ok(notes.every((row) => row.sourceSheet === "manual-note"));
     assert.ok(notes.every((row) => row.sourceField === "note"));
     const counts = await store.inspectCounts();

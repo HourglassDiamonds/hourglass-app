@@ -7,6 +7,7 @@
 import { randomUUID } from "node:crypto";
 import { isRelationshipContextLayer } from "../contracts";
 import type { ClientMemoryEntity, SourceNote } from "../types";
+import { newSourceNoteLifecycle } from "../source-note-row";
 import {
   CONCIERGE_MANUAL_SOURCE_ARTIFACT,
   CONCIERGE_MANUAL_SOURCE_FIELD,
@@ -109,6 +110,7 @@ export async function addManualNote(
       projectId = requestedProjectId;
     }
 
+    const createdAt = deps.nowIso();
     const row: SourceNote = {
       id: deps.newNoteId(),
       personId,
@@ -121,7 +123,13 @@ export async function addManualNote(
       importRowKey: conciergeManualImportRowKey(submissionId),
       gmailThreadId: null,
       noteText,
-      createdAt: deps.nowIso(),
+      createdAt,
+      ...newSourceNoteLifecycle({
+        sourceSystem: CONCIERGE_MANUAL_SOURCE_SYSTEM,
+        createdAt,
+        updatedBy: input.actor?.trim() || null,
+        lifecycleStatus: "kept",
+      }),
     };
 
     const status = await deps.insertNote(row);

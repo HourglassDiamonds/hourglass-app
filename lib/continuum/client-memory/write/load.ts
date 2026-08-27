@@ -10,7 +10,7 @@ import type { ClientMemoryNoteWriter } from "@/lib/continuum/client-memory/write
 import { EXECUTIVE_DASHBOARD_SESSION_COOKIE } from "@/lib/executive-dashboard/session";
 
 export type AuthenticatedNoteWriter =
-  | { ok: true; writer: ClientMemoryNoteWriter }
+  | { ok: true; writer: ClientMemoryNoteWriter; username: string }
   | { ok: false; reason: "unauthorized" | "unavailable" };
 
 export async function getAuthenticatedClientMemoryNoteWriter(): Promise<AuthenticatedNoteWriter> {
@@ -22,7 +22,11 @@ export async function getAuthenticatedClientMemoryNoteWriter(): Promise<Authenti
     return { ok: false, reason: "unauthorized" };
   }
   try {
-    return { ok: true, writer: createSupabaseClientMemoryNoteWriter() };
+    return {
+      ok: true,
+      writer: createSupabaseClientMemoryNoteWriter(),
+      username: session.username,
+    };
   } catch {
     return { ok: false, reason: "unavailable" };
   }

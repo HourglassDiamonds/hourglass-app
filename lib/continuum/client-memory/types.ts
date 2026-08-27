@@ -220,6 +220,53 @@ export type EntityRelationship = {
   createdBy: string;
 };
 
+export const SOURCE_NOTE_LIFECYCLE_STATUSES = [
+  "inbox",
+  "kept",
+  "absorbed",
+  "trashed",
+] as const;
+
+export type SourceNoteLifecycleStatus =
+  (typeof SOURCE_NOTE_LIFECYCLE_STATUSES)[number];
+
+export const SOURCE_NOTE_CHANGE_KINDS = [
+  "edit",
+  "move",
+  "trash",
+  "restore",
+  "absorb",
+  "keep",
+] as const;
+
+export type SourceNoteChangeKind = (typeof SOURCE_NOTE_CHANGE_KINDS)[number];
+
+export const HISTORY_VISIBLE_NOTE_LIFECYCLES = [
+  "kept",
+  "absorbed",
+] as const satisfies readonly SourceNoteLifecycleStatus[];
+
+export const COCKPIT_VISIBLE_NOTE_LIFECYCLE = "kept" as const;
+
+/**
+ * Deterministic backfill / insert default.
+ * concierge-manual → kept (founder-authored).
+ * All other source systems, including continuum-reconciliation-v3 and
+ * any unexpected value → absorbed (evidence, not cockpit).
+ */
+export function classifySourceNoteLifecycle(
+  sourceSystem: string,
+): Extract<SourceNoteLifecycleStatus, "kept" | "absorbed"> {
+  return sourceSystem === "concierge-manual" ? "kept" : "absorbed";
+}
+
+export function isKnownSourceNoteBackfillSystem(sourceSystem: string): boolean {
+  return (
+    sourceSystem === "concierge-manual" ||
+    sourceSystem === "continuum-reconciliation-v3"
+  );
+}
+
 export type SourceNote = {
   id: ContinuumId;
   personId: ContinuumId | null;
@@ -233,6 +280,25 @@ export type SourceNote = {
   gmailThreadId: string | null;
   noteText: string;
   createdAt: string;
+  lifecycleStatus: SourceNoteLifecycleStatus;
+  updatedAt: string;
+  updatedBy: string | null;
+  deletedAt: string | null;
+  previousLifecycle: SourceNoteLifecycleStatus | null;
+};
+
+export type SourceNoteRevision = {
+  id: ContinuumId;
+  noteId: ContinuumId;
+  mutationId: ContinuumId;
+  noteText: string;
+  personId: ContinuumId | null;
+  projectId: ContinuumId | null;
+  contextLayer: RelationshipContextLayer;
+  lifecycleStatus: SourceNoteLifecycleStatus;
+  changeKind: SourceNoteChangeKind;
+  editedAt: string;
+  editedBy: string;
 };
 
 export type Wish = {

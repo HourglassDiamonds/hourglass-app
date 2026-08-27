@@ -6,6 +6,7 @@ import type { AskConciergeAnswer } from "@/lib/continuum/client-memory/ask/types
 import { getAuthenticatedClientMemoryReader } from "@/lib/continuum/client-memory/read/load";
 import {
   conciergeClientPath,
+  conciergeHistoryPath,
   conciergeInboxSourcePath,
 } from "@/lib/continuum/client-memory/read/presentation";
 import type { ClientSearchResult } from "@/lib/continuum/client-memory/read/types";
@@ -21,6 +22,7 @@ import type {
 } from "@/lib/continuum/client-memory/person/types";
 import { getAuthenticatedClientMemoryNoteWriter } from "@/lib/continuum/client-memory/write/load";
 import type { AddManualNoteResult } from "@/lib/continuum/client-memory/write/types";
+import type { MutateNoteResult } from "@/lib/continuum/client-memory/write/mutate-note";
 import { getAuthenticatedHumanSourceStore } from "@/lib/continuum/client-memory/human-intake/load";
 import {
   HUMAN_COMMUNICATION_TYPES,
@@ -104,6 +106,7 @@ export async function saveManualConciergeNote(
     projectId: projectIdRaw || null,
     contextLayer: contextLayerRaw,
     noteText,
+    actor: auth.username,
   });
 
   if (result.ok) {
@@ -111,6 +114,181 @@ export async function saveManualConciergeNote(
   }
 
   return { ok: false, message: humanSaveMessage(result) };
+}
+
+export type MutateNoteState = {
+  ok: false;
+  message: string;
+};
+
+function historyReturn(formData: FormData, personId: string, extra?: Record<string, string>) {
+  const pageRaw = String(formData.get("page") ?? "").trim();
+  const page = Number(pageRaw);
+  const source = String(formData.get("source") ?? "").trim() || null;
+  const lifecycleRaw = String(formData.get("lifecycle") ?? "").trim();
+  const base = conciergeHistoryPath(personId, {
+    page: Number.isInteger(page) && page > 1 ? page : undefined,
+    source,
+    lifecycle: lifecycleRaw === "trashed" ? "trashed" : null,
+  });
+  if (!extra) return base;
+  const extraParams = new URLSearchParams();
+  for (const [key, value] of Object.entries(extra)) extraParams.set(key, value);
+  const extraEncoded = extraParams.toString();
+  return extraEncoded
+    ? `${base}${base.includes("?") ? "&" : "?"}${extraEncoded}`
+    : base;
+}
+
+function noteReturnPath(
+  formData: FormData,
+  personId: string,
+  extra?: Record<string, string>,
+): string {
+  const returnTo = String(formData.get("returnTo") ?? "").trim();
+  if (returnTo === "history") return historyReturn(formData, personId, extra);
+  const params = new URLSearchParams(extra ?? {});
+  const encoded = params.toString();
+  const base = conciergeClientPath(personId);
+  return encoded ? `${base}?${encoded}` : base;
+}
+
+function humanMutateMessage(result: MutateNoteResult, verb: string): string {
+  if (result.ok) return `Unable to ${verb} the note.`;
+  if (result.reason === "invalid-input" && result.code === "empty-note") {
+    return "Enter a note before saving.";
+  }
+  if (result.reason === "invalid-input" && result.code === "cross-person-unconfirmed") {
+    return "Confirm moving this note to a different person.";
+  }
+  if (result.reason === "project-not-linked") {
+    return "That project isn't linked to this person.";
+  }
+  if (result.reason === "entity-kind-mismatch") {
+    return "That project could not be used.";
+  }
+  if (result.reason === "person-not-found") {
+    return "That person could not be found.";
+  }
+  if (result.reason === "note-not-found") {
+    return "This note could not be found.";
+  }
+  return `Unable to ${verb} the note.`;
+}
+
+export async function editConciergeNote(
+  _prev: MutateNoteState | null,
+  formData: FormData,
+): Promise<MutateNoteState> {
+  const auth = await getAuthenticatedClientMemoryNoteWriter();
+  if (!auth.ok) {
+    return {
+      ok: false,
+      message:
+        auth.reason === "unauthorized"
+          ? "Sign in to continue."
+          : "Unable to save the note.",
+    };
+  }
+  const personId = String(formData.get("personId") ?? "").trim();
+  const result = await auth.writer.editNote({
+    mutationId: String(formData.get("mutationId") ?? "").trim(),
+    noteId: String(formData.get("noteId") ?? "").trim(),
+    noteText: String(formData.get("noteText") ?? ""),
+    actor: auth.username,
+  });
+  if (result.ok) {
+    redirect(noteReturnPath(formData, personId, { saved: "note" }));
+  }
+  return { ok: false, message: humanMutateMessage(result, "save") };
+}
+
+export async function moveConciergeNote(
+  _prev: MutateNoteState | null,
+  formData: FormData,
+): Promise<MutateNoteState> {
+  const auth = await getAuthenticatedClientMemoryNoteWriter();
+  if (!auth.ok) {
+    return {
+      ok: false,
+      message:
+        auth.reason === "unauthorized"
+          ? "Sign in to continue."
+          : "Unable to move the note.",
+    };
+  }
+  const contextLayerRaw = String(formData.get("contextLayer") ?? "").trim();
+  if (!isRelationshipContextLayer(contextLayerRaw)) {
+    return { ok: false, message: "Unable to move the note." };
+  }
+  const currentPersonId = String(formData.get("currentPersonId") ?? "").trim();
+  const targetPersonId = String(formData.get("personId") ?? "").trim();
+  const confirmed = String(formData.get("crossPersonConfirmed") ?? "") === "1";
+  const result = await auth.writer.moveNote({
+    mutationId: String(formData.get("mutationId") ?? "").trim(),
+    noteId: String(formData.get("noteId") ?? "").trim(),
+    personId: targetPersonId,
+    projectId: String(formData.get("projectId") ?? "").trim() || null,
+    contextLayer: contextLayerRaw,
+    actor: auth.username,
+    crossPersonConfirmed: confirmed,
+  });
+  if (result.ok) {
+    redirect(`${conciergeClientPath(targetPersonId || currentPersonId)}?moved=1`);
+  }
+  return { ok: false, message: humanMutateMessage(result, "move") };
+}
+
+export async function trashConciergeNote(
+  _prev: MutateNoteState | null,
+  formData: FormData,
+): Promise<MutateNoteState> {
+  const auth = await getAuthenticatedClientMemoryNoteWriter();
+  if (!auth.ok) {
+    return {
+      ok: false,
+      message:
+        auth.reason === "unauthorized"
+          ? "Sign in to continue."
+          : "Unable to trash the note.",
+    };
+  }
+  const personId = String(formData.get("personId") ?? "").trim();
+  const result = await auth.writer.trashNote({
+    mutationId: String(formData.get("mutationId") ?? "").trim(),
+    noteId: String(formData.get("noteId") ?? "").trim(),
+    actor: auth.username,
+  });
+  if (result.ok) {
+    redirect(noteReturnPath(formData, personId, { trashed: "1" }));
+  }
+  return { ok: false, message: humanMutateMessage(result, "trash") };
+}
+
+export async function restoreConciergeNote(
+  _prev: MutateNoteState | null,
+  formData: FormData,
+): Promise<MutateNoteState> {
+  const auth = await getAuthenticatedClientMemoryNoteWriter();
+  if (!auth.ok) {
+    return {
+      ok: false,
+      message:
+        auth.reason === "unauthorized"
+          ? "Sign in to continue."
+          : "Unable to restore the note.",
+    };
+  }
+  const personId = String(formData.get("personId") ?? "").trim();
+  const result = await auth.writer.restoreNote({
+    mutationId: String(formData.get("mutationId") ?? "").trim(),
+    noteId: String(formData.get("noteId") ?? "").trim(),
+    actor: auth.username,
+  });
+  if (result.ok) {
+    redirect(`${conciergeHistoryPath(personId)}?restored=1`);
+  }
+  return { ok: false, message: humanMutateMessage(result, "restore") };
 }
 
 export type SaveManualBirthdayState = {
