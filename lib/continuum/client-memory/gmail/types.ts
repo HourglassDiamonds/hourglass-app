@@ -42,6 +42,7 @@ export type GmailParticipantHashes = {
   fromEmailHash: string | null;
   toEmailHashes: readonly string[];
   ccEmailHashes: readonly string[];
+  bccEmailHashes: readonly string[];
 };
 
 /**
@@ -57,6 +58,7 @@ export type GmailIndexedMessage = {
   fromEmailHash: string | null;
   toEmailHashes: readonly string[];
   ccEmailHashes: readonly string[];
+  bccEmailHashes: readonly string[];
   direction: GmailMessageDirection;
   labelIds: readonly string[];
   hasAttachments: boolean;
@@ -75,6 +77,7 @@ export type GmailIndexInput = {
   fromEmail?: string | null;
   toEmails?: readonly string[];
   ccEmails?: readonly string[];
+  bccEmails?: readonly string[];
   direction: GmailMessageDirection;
   labelIds?: readonly string[];
   hasAttachments?: boolean;
