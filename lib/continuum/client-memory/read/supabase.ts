@@ -6,19 +6,27 @@
  */
 
 import { isRelationshipContextLayer } from "../contracts";
+import { CONTINUUM_SOURCE_SYSTEMS } from "../../contracts/types";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getSupabaseAdmin } from "@/lib/supabase/client";
 import { composePersonProfile, listOpenReviewsForPerson } from "./profile";
+import { composePersonCockpit } from "./cockpit";
 import { searchPeopleFromSnapshot } from "./search";
 import { isCalendarMonth, listCurrentBirthdaysByMonthFromRows } from "./birthdays";
 import type { ClientMemoryReader } from "./reader";
 import {
+  CLIENT_MEMORY_COCKPIT_NOTE_LIMIT,
+  CLIENT_MEMORY_HISTORY_PAGE_SIZE,
   CLIENT_MEMORY_NOTE_LIMIT,
   CLIENT_MEMORY_SEARCH_LIMIT,
+  COCKPIT_MANUAL_SOURCE_SYSTEM,
   type ClientMemoryReadSnapshot,
   type ClientSearchResult,
   type ConciergePersonProfileResult,
   type IdentityReviewSummary,
+  type PersonCockpitResult,
+  type PersonSourceHistoryQuery,
+  type PersonSourceHistoryResult,
 } from "./types";
 import type {
   EntityRelationship,
@@ -245,6 +253,21 @@ export class SupabaseClientMemoryReader implements ClientMemoryReader {
     return composePersonProfile(snapshot, personId);
   }
 
+  async getPersonCockpit(personId: string): Promise<PersonCockpitResult> {
+    const loaded = await this.loadPersonCockpitSnapshot(personId);
+    if (!loaded) return { ok: false, reason: "not-found" };
+    return composePersonCockpit(loaded.snapshot, personId, {
+      noteCount: loaded.noteCount,
+    });
+  }
+
+  async listPersonSourceHistory(
+    personId: string,
+    query?: PersonSourceHistoryQuery,
+  ): Promise<PersonSourceHistoryResult> {
+    return this.loadPersonSourceHistory(personId, query);
+  }
+
   async listOpenIdentityReviews(personId: string): Promise<IdentityReviewSummary[]> {
     const snapshot = await this.loadPersonSnapshot(personId);
     return listOpenReviewsForPerson(snapshot, personId);
@@ -386,6 +409,227 @@ export class SupabaseClientMemoryReader implements ClientMemoryReader {
       projectHistories: projectHistoryRows.map(rowToProjectHistory),
     };
   }
+
+  private async loadPersonCockpitSnapshot(personId: string): Promise<{
+    snapshot: ClientMemoryReadSnapshot;
+    noteCount: number;
+  } | null> {
+    const trimmed = personId.trim();
+    if (!trimmed) return null;
+
+    const profileRows = await rows<Record<string, unknown>>(
+      this.client
+        .from("continuum_person_profiles")
+        .select(PROFILE_COLUMNS)
+        .eq("person_id", trimmed),
+      "read-person-profile-failed",
+    );
+    const profiles = profileRows.map(rowToSearchProfile);
+    if (profiles.length === 0) return null;
+
+    const [relationshipRows, factRows, wishRows, identityRows, noteCount] =
+      await Promise.all([
+        rows<Record<string, unknown>>(
+          this.client
+            .from("continuum_relationships")
+            .select(RELATIONSHIP_COLUMNS)
+            .or(`from_entity_id.eq.${trimmed},to_entity_id.eq.${trimmed}`),
+          "read-person-relationships-failed",
+        ),
+        rows<Record<string, unknown>>(
+          this.client
+            .from("continuum_person_facts")
+            .select(FACT_COLUMNS)
+            .eq("person_id", trimmed),
+          "read-person-facts-failed",
+        ),
+        rows<Record<string, unknown>>(
+          this.client
+            .from("continuum_wishes")
+            .select(WISH_COLUMNS)
+            .eq("person_id", trimmed),
+          "read-person-wishes-failed",
+        ),
+        rows<Record<string, unknown>>(
+          this.client
+            .from("continuum_external_identities")
+            .select(IDENTITY_COLUMNS)
+            .eq("entity_id", trimmed)
+            .is("revoked_at", null),
+          "read-person-identities-failed",
+        ),
+        countPersonNotes(this.client, trimmed, null),
+      ]);
+
+    const relationships = relationshipRows.map(rowToRelationship);
+    const projectIds = linkedActiveProjectIds(trimmed, relationships);
+    const counterpartIds = counterpartPersonIds(trimmed, relationships);
+
+    const [
+      projectProfileRows,
+      projectHistoryRows,
+      counterpartRows,
+      noteRows,
+    ] = await Promise.all([
+      projectIds.length > 0
+        ? rows<Record<string, unknown>>(
+            this.client
+              .from("continuum_project_profiles")
+              .select(PROJECT_PROFILE_COLUMNS)
+              .in("project_id", projectIds),
+            "read-project-profiles-failed",
+          )
+        : Promise.resolve([]),
+      projectIds.length > 0
+        ? rows<Record<string, unknown>>(
+            this.client
+              .from("continuum_project_history")
+              .select(PROJECT_HISTORY_COLUMNS)
+              .in("project_id", projectIds),
+            "read-project-history-failed",
+          )
+        : Promise.resolve([]),
+      counterpartIds.length > 0
+        ? rows<Record<string, unknown>>(
+            this.client
+              .from("continuum_person_profiles")
+              .select("person_id, display_name")
+              .in("person_id", counterpartIds),
+            "read-counterpart-profiles-failed",
+          )
+        : Promise.resolve([]),
+      rows<Record<string, unknown>>(
+        this.client
+          .from("continuum_source_notes")
+          .select(NOTE_COLUMNS)
+          .eq("person_id", trimmed)
+          .eq("source_system", COCKPIT_MANUAL_SOURCE_SYSTEM)
+          .order("created_at", { ascending: false })
+          .limit(CLIENT_MEMORY_COCKPIT_NOTE_LIMIT),
+        "read-cockpit-notes-failed",
+      ),
+    ]);
+
+    const importKeys = [
+      ...identityRows
+        .filter((row) => String(row.identity_kind) === "import_row_key")
+        .map((row) => String(row.identifier)),
+      ...projectProfileRows
+        .map((row) => row.import_row_key)
+        .filter(
+          (value): value is string =>
+            typeof value === "string" && value.length > 0,
+        ),
+    ];
+    const reviewRows = await loadReviews(this.client, trimmed, importKeys);
+    const counterpartProfiles = counterpartRows.map((row) =>
+      nameOnlyProfile(String(row.person_id), String(row.display_name)),
+    );
+
+    return {
+      noteCount,
+      snapshot: {
+        profiles: [...profiles, ...counterpartProfiles],
+        identities: identityRows.map((row) => ({
+          entityId: row.entity_id == null ? null : String(row.entity_id),
+          identityKind: String(row.identity_kind),
+          identifier: String(row.identifier),
+          revokedAt: row.revoked_at == null ? null : String(row.revoked_at),
+        })),
+        relationships,
+        facts: factRows.map(rowToFact),
+        wishes: wishRows.map(rowToWish),
+        sourceNotes: noteRows.map(rowToNote),
+        reviews: reviewRows.map(rowToReview),
+        projectProfiles: projectProfileRows.map(rowToProjectProfile),
+        projectHistories: projectHistoryRows.map(rowToProjectHistory),
+      },
+    };
+  }
+
+  private async loadPersonSourceHistory(
+    personId: string,
+    query?: PersonSourceHistoryQuery,
+  ): Promise<PersonSourceHistoryResult> {
+    const trimmed = personId.trim();
+    if (!trimmed) return { ok: false, reason: "not-found" };
+
+    const profileRows = await rows<Record<string, unknown>>(
+      this.client
+        .from("continuum_person_profiles")
+        .select("person_id, display_name")
+        .eq("person_id", trimmed),
+      "read-person-profile-failed",
+    );
+    const profile = profileRows[0];
+    if (!profile) return { ok: false, reason: "not-found" };
+
+    const pageSize =
+      query?.pageSize && query.pageSize > 0
+        ? Math.min(query.pageSize, CLIENT_MEMORY_HISTORY_PAGE_SIZE)
+        : CLIENT_MEMORY_HISTORY_PAGE_SIZE;
+    const page = query?.page && query.page > 0 ? query.page : 1;
+    const sourceSystem = allowedHistorySource(query?.sourceSystem);
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
+
+    const [noteRows, total] = await Promise.all([
+      loadHistoryNotes(this.client, trimmed, {
+        sourceSystem,
+        from,
+        to,
+      }),
+      countPersonNotes(this.client, trimmed, sourceSystem),
+    ]);
+    const notes = noteRows.map(rowToNote);
+    const projectIds = [
+      ...new Set(
+        notes
+          .map((note) => note.projectId)
+          .filter((value): value is string => Boolean(value)),
+      ),
+    ];
+    const projectRows =
+      projectIds.length > 0
+        ? await rows<Record<string, unknown>>(
+            this.client
+              .from("continuum_project_profiles")
+              .select("project_id, display_title")
+              .in("project_id", projectIds),
+            "read-history-project-titles-failed",
+          )
+        : [];
+
+    return {
+      ok: true,
+      history: {
+        personId: trimmed,
+        displayName: String(profile.display_name),
+        notes: notes.map((note) => ({
+          id: note.id,
+          projectId: note.projectId,
+          contextLayer: note.contextLayer,
+          sourceSystem: note.sourceSystem,
+          sourceArtifact: note.sourceArtifact,
+          sourceSheet: note.sourceSheet,
+          sourceField: note.sourceField,
+          gmailThreadId: note.gmailThreadId,
+          noteText: note.noteText,
+          createdAt: note.createdAt,
+        })),
+        projectTitles: Object.fromEntries(
+          projectRows.map((row) => [
+            String(row.project_id),
+            String(row.display_title),
+          ]),
+        ),
+        total,
+        page,
+        pageSize,
+        sourceSystem,
+      },
+    };
+  }
 }
 
 function emptySnapshot(): ClientMemoryReadSnapshot {
@@ -400,6 +644,94 @@ function emptySnapshot(): ClientMemoryReadSnapshot {
     projectProfiles: [],
     projectHistories: [],
   };
+}
+
+function linkedActiveProjectIds(
+  personId: string,
+  relationships: EntityRelationship[],
+): string[] {
+  const ids: string[] = [];
+  for (const row of relationships) {
+    if (row.kind !== "client-project" || row.status !== "active") continue;
+    if (row.fromEntityId === personId) ids.push(row.toEntityId);
+    else if (row.toEntityId === personId) ids.push(row.fromEntityId);
+  }
+  return [...new Set(ids)];
+}
+
+function counterpartPersonIds(
+  personId: string,
+  relationships: EntityRelationship[],
+): string[] {
+  const ids: string[] = [];
+  for (const row of relationships) {
+    if (row.status !== "active" || row.kind === "client-project") continue;
+    const counterpartId =
+      row.fromEntityId === personId ? row.toEntityId : row.fromEntityId;
+    if (counterpartId && counterpartId !== personId) ids.push(counterpartId);
+  }
+  return [...new Set(ids)];
+}
+
+function nameOnlyProfile(
+  personId: string,
+  displayName: string,
+): ClientMemoryReadSnapshot["profiles"][number] {
+  return {
+    personId,
+    displayName,
+    givenName: null,
+    familyName: null,
+    organizationName: null,
+    email: null,
+    phone: null,
+    streetAddress: null,
+    city: null,
+    state: null,
+    country: null,
+    postalCode: null,
+    roles: [],
+  };
+}
+
+function allowedHistorySource(value: string | null | undefined): string | null {
+  const trimmed = value?.trim() ?? "";
+  if (!trimmed) return null;
+  return (CONTINUUM_SOURCE_SYSTEMS as readonly string[]).includes(trimmed)
+    ? trimmed
+    : null;
+}
+
+async function countPersonNotes(
+  client: SupabaseClient,
+  personId: string,
+  sourceSystem: string | null,
+): Promise<number> {
+  let query = client
+    .from("continuum_source_notes")
+    .select("id", { count: "exact", head: true })
+    .eq("person_id", personId);
+  if (sourceSystem) query = query.eq("source_system", sourceSystem);
+  const { count, error } = await query;
+  if (error) throwQuery(error, "count-source-notes-failed");
+  return count ?? 0;
+}
+
+async function loadHistoryNotes(
+  client: SupabaseClient,
+  personId: string,
+  input: { sourceSystem: string | null; from: number; to: number },
+): Promise<Record<string, unknown>[]> {
+  let query = client
+    .from("continuum_source_notes")
+    .select(NOTE_COLUMNS)
+    .eq("person_id", personId)
+    .order("created_at", { ascending: false })
+    .range(input.from, input.to);
+  if (input.sourceSystem) {
+    query = query.eq("source_system", input.sourceSystem);
+  }
+  return rows<Record<string, unknown>>(query, "read-source-history-failed");
 }
 
 async function loadNotes(

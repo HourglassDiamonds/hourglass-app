@@ -4,6 +4,7 @@
  * Never send these shapes to Continuum kernel Events/Evidence/Observations.
  */
 
+import type { ContinuumSourceSystem } from "../../contracts/types";
 import type {
   ClientMemoryVisibility,
   EntityRelationship,
@@ -13,6 +14,8 @@ import type {
   ProjectHistory,
   ProjectMatchJudgment,
   ProjectProfile,
+  RelationshipKind,
+  RelationshipStatus,
   SourceNote,
   Wish,
 } from "../types";
@@ -21,6 +24,10 @@ export type { PersonFact };
 
 export const CLIENT_MEMORY_SEARCH_LIMIT = 20;
 export const CLIENT_MEMORY_NOTE_LIMIT = 25;
+export const CLIENT_MEMORY_COCKPIT_NOTE_LIMIT = 5;
+export const CLIENT_MEMORY_HISTORY_PAGE_SIZE = 20;
+export const CLIENT_MEMORY_PROJECT_PREVIEW_LIMIT = 3;
+export const COCKPIT_MANUAL_SOURCE_SYSTEM = "concierge-manual" as const;
 
 export const ACTIVE_WISH_STATUSES = ["active", "considering"] as const;
 
@@ -117,6 +124,70 @@ export type ConciergePersonProfile = {
 
 export type ConciergePersonProfileResult =
   | { ok: true; profile: ConciergePersonProfile }
+  | { ok: false; reason: "not-found" };
+
+export type PersonCockpitPerson = ConciergePersonProfile["person"];
+
+export type PersonCockpitRelationship = {
+  id: string;
+  kind: Exclude<RelationshipKind, "client-project">;
+  status: RelationshipStatus;
+  counterpartPersonId: string;
+  counterpartName: string;
+};
+
+export type PersonCockpitProject = LinkedProjectRead & {
+  sourceSystem: ContinuumSourceSystem;
+  imported: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type PersonCockpit = {
+  person: PersonCockpitPerson;
+  birthday: PersonFact | null;
+  personalFacts: PersonFact[];
+  work: {
+    organizationName: string | null;
+    roles: PersonRole[];
+  };
+  relationships: PersonCockpitRelationship[];
+  projects: PersonCockpitProject[];
+  wishes: WishSummary[];
+  recentManualNotes: SourceNoteSummary[];
+  reviews: {
+    openCount: number;
+    candidateCount: number;
+    conflictingCount: number;
+  };
+  history: {
+    noteCount: number;
+  };
+};
+
+export type PersonCockpitResult =
+  | { ok: true; cockpit: PersonCockpit }
+  | { ok: false; reason: "not-found" };
+
+export type PersonSourceHistoryQuery = {
+  page?: number;
+  pageSize?: number;
+  sourceSystem?: string | null;
+};
+
+export type PersonSourceHistory = {
+  personId: string;
+  displayName: string;
+  notes: SourceNoteSummary[];
+  projectTitles: Record<string, string>;
+  total: number;
+  page: number;
+  pageSize: number;
+  sourceSystem: string | null;
+};
+
+export type PersonSourceHistoryResult =
+  | { ok: true; history: PersonSourceHistory }
   | { ok: false; reason: "not-found" };
 
 export type ClientMemoryReadSnapshot = {

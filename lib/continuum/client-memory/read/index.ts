@@ -17,7 +17,11 @@ export {
 export {
   CLIENT_MEMORY_FINANCIAL_FIELD_NAMES,
   CLIENT_MEMORY_NOTE_LIMIT,
+  CLIENT_MEMORY_COCKPIT_NOTE_LIMIT,
+  CLIENT_MEMORY_HISTORY_PAGE_SIZE,
+  CLIENT_MEMORY_PROJECT_PREVIEW_LIMIT,
   CLIENT_MEMORY_SEARCH_LIMIT,
+  COCKPIT_MANUAL_SOURCE_SYSTEM,
   ACTIVE_WISH_STATUSES,
 } from "./types";
 export type {
@@ -27,6 +31,14 @@ export type {
   ClientRelationshipSummary,
   IdentityReviewSummary,
   LinkedProjectRead,
+  PersonCockpit,
+  PersonCockpitPerson,
+  PersonCockpitProject,
+  PersonCockpitRelationship,
+  PersonCockpitResult,
+  PersonSourceHistory,
+  PersonSourceHistoryQuery,
+  PersonSourceHistoryResult,
   ProjectHistorySummary,
   ProjectProfileSummary,
   SourceNoteSummary,
@@ -35,3 +47,8 @@ export type {
 } from "./types";
 export { searchPeopleFromSnapshot, rankSearchHit, SEARCH_RANK } from "./search";
 export { composePersonProfile } from "./profile";
+export {
+  composePersonCockpit,
+  listPersonSourceHistoryFromSnapshot,
+  partitionCockpitProjects,
+} from "./cockpit";

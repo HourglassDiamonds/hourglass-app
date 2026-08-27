@@ -143,7 +143,8 @@ describe("Client Memory search", () => {
   it("exposes no write methods", async () => {
     const reader = createInMemoryClientMemoryReader(emptyReadSnapshot());
     assert.equal("searchPeople" in reader, true);
-    assert.equal("getPersonProfile" in reader, true);
+    assert.equal("getPersonCockpit" in reader, true);
+    assert.equal("listPersonSourceHistory" in reader, true);
     assert.equal("listOpenIdentityReviews" in reader, true);
     assert.equal("insertEntity" in reader, false);
     assert.equal("insertPersonProfile" in reader, false);

@@ -50,6 +50,12 @@ function createSpyReader(options?: {
       calls.getPersonProfile.push(personId);
       return { ok: false, reason: "not-found" };
     },
+    async getPersonCockpit() {
+      return { ok: false as const, reason: "not-found" as const };
+    },
+    async listPersonSourceHistory() {
+      return { ok: false as const, reason: "not-found" as const };
+    },
     async listOpenIdentityReviews(personId: string): Promise<IdentityReviewSummary[]> {
       calls.listOpenIdentityReviews.push(personId);
       return [];

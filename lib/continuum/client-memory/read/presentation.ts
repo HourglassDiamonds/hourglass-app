@@ -65,6 +65,18 @@ export function conciergeEditPersonPath(personId: string): string {
   return `${conciergeClientPath(personId)}/edit`;
 }
 
+export function conciergeHistoryPath(
+  personId: string,
+  query?: { page?: number; source?: string | null },
+): string {
+  const path = `${conciergeClientPath(personId)}/history`;
+  const params = new URLSearchParams();
+  if (query?.page && query.page > 1) params.set("page", String(query.page));
+  if (query?.source?.trim()) params.set("source", query.source.trim());
+  const encoded = params.toString();
+  return encoded ? `${path}?${encoded}` : path;
+}
+
 export const RELATIONSHIP_CONTEXT_LAYER_LABELS: Record<
   RelationshipContextLayer,
   string

@@ -3,52 +3,71 @@ import {
   conciergeAddNotePath,
   conciergeBirthdayPath,
   conciergeEditPersonPath,
-  currentBirthdayFact,
+  conciergeHistoryPath,
+  conciergeInboxPath,
+  formatFactValue,
+  formatFactLabel,
   memoryReviewLabel,
   relationshipLabel,
-  visibleCurrentFacts,
   wishHeadline,
 } from "@/lib/continuum/client-memory/read/presentation";
-import type { ConciergePersonProfile } from "@/lib/continuum/client-memory/read/types";
+import { partitionCockpitProjects } from "@/lib/continuum/client-memory/read/cockpit";
+import type { PersonCockpit } from "@/lib/continuum/client-memory/read/types";
 import { ClientMemorySection } from "./client-memory-section";
+import { ClientNoteList } from "./client-note-list";
 import { ClientProfileHeader } from "./client-profile-header";
 import { ClientProjectCard } from "./client-project-card";
-import { ClientRecentNotes } from "./client-recent-notes";
 
 export function ClientProfileView({
-  profile,
+  cockpit,
   justSaved = false,
   justSavedBirthday = false,
   justSavedClient = false,
   justExistingClient = false,
   justSavedProfile = false,
 }: {
-  profile: ConciergePersonProfile;
+  cockpit: PersonCockpit;
   justSaved?: boolean;
   justSavedBirthday?: boolean;
   justSavedClient?: boolean;
   justExistingClient?: boolean;
   justSavedProfile?: boolean;
 }) {
-  const facts = visibleCurrentFacts(profile.facts.current);
-  const birthday = currentBirthdayFact(profile.facts.current);
-  const memoryReview = memoryReviewLabel(
-    profile.facts.candidateCount,
-    profile.facts.conflictingCount,
-  );
-  const social = profile.relationships
-    .map((row) => {
-      const label = relationshipLabel(row.kind);
-      if (!label) return null;
-      return { id: row.id, label };
+  const birthdayValue = cockpit.birthday
+    ? formatFactValue(cockpit.birthday)
+    : null;
+  const personalFacts = cockpit.personalFacts
+    .map((fact) => {
+      const value = formatFactValue(fact);
+      if (!value) return null;
+      return { id: fact.id, label: formatFactLabel(fact.factType), value };
     })
-    .filter((row): row is { id: string; label: string } => row != null);
-  const showMemory =
-    facts.length > 0 || profile.wishes.length > 0 || social.length > 0 || Boolean(memoryReview);
+    .filter((row): row is { id: string; label: string; value: string } => row != null);
+  const memoryReview = memoryReviewLabel(
+    cockpit.reviews.candidateCount,
+    cockpit.reviews.conflictingCount,
+  );
+  const showCurrentContext =
+    cockpit.recentManualNotes.length > 0 ||
+    cockpit.wishes.length > 0 ||
+    Boolean(memoryReview);
+  const showPersonal = Boolean(birthdayValue) || personalFacts.length > 0;
+  const showWork =
+    Boolean(cockpit.work.organizationName?.trim()) || cockpit.work.roles.length > 0;
+  const projectTitles = Object.fromEntries(
+    cockpit.projects.map((project) => [
+      project.profile.projectId,
+      project.profile.displayTitle,
+    ]),
+  );
+  const { preview, remaining } = partitionCockpitProjects(cockpit.projects);
 
   return (
     <article>
-      <ClientProfileHeader profile={profile} />
+      <ClientProfileHeader
+        person={cockpit.person}
+        openCount={cockpit.reviews.openCount}
+      />
 
       {justSaved ? (
         <p className="mt-6 text-[13px] tracking-[0.04em] text-[#c4b7aa]" role="status">
@@ -78,48 +97,39 @@ export function ClientProfileView({
 
       <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-2">
         <Link
-          href={conciergeEditPersonPath(profile.person.id)}
+          href={conciergeEditPersonPath(cockpit.person.id)}
           className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.24em] text-[#8d8073] outline-none hover:text-[#efe8de] focus-visible:text-[#efe8de] focus-visible:shadow-[0_0_0_3px_rgba(173,145,100,0.22)]"
         >
           Edit
         </Link>
         <Link
-          href={conciergeAddNotePath(profile.person.id)}
+          href={conciergeAddNotePath(cockpit.person.id)}
           className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.24em] text-[#8d8073] outline-none hover:text-[#efe8de] focus-visible:text-[#efe8de] focus-visible:shadow-[0_0_0_3px_rgba(173,145,100,0.22)]"
         >
           Add Note
         </Link>
         <Link
-          href={conciergeBirthdayPath(profile.person.id)}
+          href={conciergeBirthdayPath(cockpit.person.id)}
           className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.24em] text-[#8d8073] outline-none hover:text-[#efe8de] focus-visible:text-[#efe8de] focus-visible:shadow-[0_0_0_3px_rgba(173,145,100,0.22)]"
         >
-          {birthday ? "Edit birthday" : "Add birthday"}
+          {birthdayValue ? "Edit birthday" : "Add birthday"}
         </Link>
       </div>
 
-      {showMemory ? (
-        <ClientMemorySection title="Memory">
-          {facts.length > 0 ? (
-            <dl className="space-y-4">
-              {facts.map((fact) => (
-                <div key={fact.id}>
-                  <dt className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
-                    {fact.label}
-                  </dt>
-                  <dd className="mt-1 font-serif text-[1.2rem] leading-snug tracking-[-0.02em] text-[#efe8de]">
-                    {fact.value}
-                  </dd>
-                </div>
-              ))}
-            </dl>
+      {showCurrentContext ? (
+        <ClientMemorySection title="Current context">
+          {memoryReview ? (
+            <p className="text-[12px] tracking-[0.04em] text-[#ad9164]">
+              {memoryReview}
+            </p>
           ) : null}
-          {profile.wishes.length > 0 ? (
-            <div className={facts.length > 0 ? "mt-8" : undefined}>
+          {cockpit.wishes.length > 0 ? (
+            <div className={memoryReview ? "mt-6" : undefined}>
               <p className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
                 On their radar
               </p>
               <ul className="mt-3 space-y-3">
-                {profile.wishes.map((wish) => (
+                {cockpit.wishes.map((wish) => (
                   <li
                     key={wish.id}
                     className="font-serif text-[1.15rem] leading-snug tracking-[-0.02em] text-[#efe8de]"
@@ -130,47 +140,141 @@ export function ClientProfileView({
               </ul>
             </div>
           ) : null}
-          {social.length > 0 ? (
-            <ul className={`space-y-2 text-[15px] text-[#d8cfc4] ${facts.length || profile.wishes.length ? "mt-8" : ""}`}>
-              {social.map((row) => (
-                <li key={row.id}>{row.label}</li>
-              ))}
-            </ul>
+          {cockpit.recentManualNotes.length > 0 ? (
+            <div
+              className={
+                memoryReview || cockpit.wishes.length > 0 ? "mt-6" : undefined
+              }
+            >
+              <ClientNoteList
+                notes={cockpit.recentManualNotes}
+                projectTitles={new Map(Object.entries(projectTitles))}
+              />
+            </div>
           ) : null}
-          {memoryReview ? (
-            <p className="mt-5 text-[12px] tracking-[0.04em] text-[#ad9164]">
-              {memoryReview}
+        </ClientMemorySection>
+      ) : null}
+
+      {showPersonal ? (
+        <ClientMemorySection title="Personal">
+          <dl className="space-y-4">
+            {birthdayValue ? (
+              <div>
+                <dt className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
+                  Birthday
+                </dt>
+                <dd className="mt-1 font-serif text-[1.2rem] leading-snug tracking-[-0.02em] text-[#efe8de]">
+                  {birthdayValue}
+                </dd>
+              </div>
+            ) : null}
+            {personalFacts.map((fact) => (
+              <div key={fact.id}>
+                <dt className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
+                  {fact.label}
+                </dt>
+                <dd className="mt-1 font-serif text-[1.2rem] leading-snug tracking-[-0.02em] text-[#efe8de]">
+                  {fact.value}
+                </dd>
+              </div>
+            ))}
+          </dl>
+        </ClientMemorySection>
+      ) : null}
+
+      {cockpit.relationships.length > 0 ? (
+        <ClientMemorySection title="Relationships">
+          <ul className="space-y-3">
+            {cockpit.relationships.map((row) => {
+              const kind = relationshipLabel(row.kind) ?? row.kind;
+              return (
+                <li key={row.id}>
+                  <p className="font-serif text-[1.15rem] leading-snug tracking-[-0.02em] text-[#efe8de]">
+                    {row.counterpartName}
+                  </p>
+                  <p className="mt-1 text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
+                    {kind}
+                  </p>
+                </li>
+              );
+            })}
+          </ul>
+        </ClientMemorySection>
+      ) : null}
+
+      {showWork ? (
+        <ClientMemorySection title="Work">
+          {cockpit.work.organizationName ? (
+            <p className="font-serif text-[1.2rem] leading-snug tracking-[-0.02em] text-[#efe8de]">
+              {cockpit.work.organizationName}
+            </p>
+          ) : null}
+          {cockpit.work.roles.length > 0 ? (
+            <p
+              className={`text-[11px] uppercase tracking-[0.18em] text-[#8d8073] ${
+                cockpit.work.organizationName ? "mt-2" : ""
+              }`}
+            >
+              {cockpit.work.roles.join(" · ")}
             </p>
           ) : null}
         </ClientMemorySection>
       ) : null}
 
-      {profile.projects.length > 0 ? (
+      {cockpit.projects.length > 0 ? (
         <ClientMemorySection title="Projects">
           <div className="space-y-3">
-            {profile.projects.map((project) => (
+            {preview.map((project) => (
               <ClientProjectCard
                 key={project.profile.projectId}
                 project={project}
               />
             ))}
           </div>
+          {remaining.length > 0 ? (
+            <details className="group mt-4">
+              <summary className="flex min-h-11 cursor-pointer list-none items-center text-[12px] uppercase tracking-[0.2em] text-[#ad9164] outline-none focus-visible:text-[#efe8de]">
+                <span className="group-open:hidden">
+                  Imported or other projects · {remaining.length}
+                </span>
+                <span className="hidden group-open:inline">Hide imported or other projects</span>
+              </summary>
+              <div className="mt-3 space-y-3">
+                {remaining.map((project) => (
+                  <ClientProjectCard
+                    key={project.profile.projectId}
+                    project={project}
+                  />
+                ))}
+              </div>
+            </details>
+          ) : null}
         </ClientMemorySection>
       ) : null}
 
-      {profile.sourceNotes.length > 0 ? (
-        <ClientMemorySection title="Recent notes">
-          <ClientRecentNotes
-            notes={profile.sourceNotes}
-            projectTitles={Object.fromEntries(
-              profile.projects.map((project) => [
-                project.profile.projectId,
-                project.profile.displayTitle,
-              ]),
-            )}
-          />
-        </ClientMemorySection>
-      ) : null}
+      <ClientMemorySection title="History / Sources">
+        <p className="max-w-[42ch] text-[15px] leading-relaxed text-[#c4b7aa]">
+          {cockpit.history.noteCount > 0
+            ? cockpit.history.noteCount === 1
+              ? "1 source note on file."
+              : `${cockpit.history.noteCount} source notes on file.`
+            : "Source notes and imported evidence live here."}
+        </p>
+        <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2">
+          <Link
+            href={conciergeHistoryPath(cockpit.person.id)}
+            className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.24em] text-[#8d8073] outline-none hover:text-[#efe8de] focus-visible:text-[#efe8de]"
+          >
+            View sources
+          </Link>
+          <Link
+            href={conciergeInboxPath()}
+            className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.24em] text-[#8d8073] outline-none hover:text-[#efe8de] focus-visible:text-[#efe8de]"
+          >
+            Inbox
+          </Link>
+        </div>
+      </ClientMemorySection>
     </article>
   );
 }

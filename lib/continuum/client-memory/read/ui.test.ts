@@ -5,7 +5,7 @@ import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { renderToStaticMarkup } from "react-dom/server";
 import { createElement } from "react";
-import { composePersonProfile } from "./profile";
+import { composePersonCockpit } from "./cockpit";
 import {
   emptyReadSnapshot,
   fact,
@@ -46,23 +46,24 @@ function walk(dir: string, found: string[] = []): string[] {
 describe("Concierge Client Memory UI", () => {
   it("renders empty facts and wishes without placeholders", () => {
     const person = personProfile({ displayName: "Ada Lovelace" });
-    const composed = composePersonProfile(
+    const composed = composePersonCockpit(
       { ...emptyReadSnapshot(), profiles: [person] },
       person.personId,
     );
     assert.equal(composed.ok, true);
     if (!composed.ok) return;
     const html = renderToStaticMarkup(
-      createElement(ClientProfileView, { profile: composed.profile }),
+      createElement(ClientProfileView, { cockpit: composed.cockpit }),
     );
     assert.match(html, /Ada Lovelace/);
     assert.match(html, /Add Note/);
     assert.match(html, /Add birthday/);
     assert.doesNotMatch(html, /Ring size|On their radar|Projects|Recent notes/i);
+    assert.match(html, /History \/ Sources/);
     assert.doesNotMatch(html, /No facts|coming soon|placeholder/i);
     const saved = renderToStaticMarkup(
       createElement(ClientProfileView, {
-        profile: composed.profile,
+        cockpit: composed.cockpit,
         justSaved: true,
       }),
     );
@@ -70,14 +71,14 @@ describe("Concierge Client Memory UI", () => {
     assert.doesNotMatch(saved, /Prefers morning|ada@example/);
     const savedClient = renderToStaticMarkup(
       createElement(ClientProfileView, {
-        profile: composed.profile,
+        cockpit: composed.cockpit,
         justSavedClient: true,
       }),
     );
     assert.match(savedClient, /Client added/);
     const existingClient = renderToStaticMarkup(
       createElement(ClientProfileView, {
-        profile: composed.profile,
+        cockpit: composed.cockpit,
         justExistingClient: true,
       }),
     );
@@ -86,7 +87,7 @@ describe("Concierge Client Memory UI", () => {
 
   it("displays a typed birthday without dumping JSON and offers Edit birthday", () => {
     const person = personProfile({ displayName: "Sarah Miller" });
-    const composed = composePersonProfile(
+    const composed = composePersonCockpit(
       {
         ...emptyReadSnapshot(),
         profiles: [person],
@@ -104,7 +105,7 @@ describe("Concierge Client Memory UI", () => {
     assert.equal(composed.ok, true);
     if (!composed.ok) return;
     const html = renderToStaticMarkup(
-      createElement(ClientProfileView, { profile: composed.profile }),
+      createElement(ClientProfileView, { cockpit: composed.cockpit }),
     );
     assert.match(html, /Sarah Miller/);
     assert.match(html, /Birthday/);
@@ -114,7 +115,7 @@ describe("Concierge Client Memory UI", () => {
     assert.doesNotMatch(html, /"calendar"|gregorian/);
     const saved = renderToStaticMarkup(
       createElement(ClientProfileView, {
-        profile: composed.profile,
+        cockpit: composed.cockpit,
         justSavedBirthday: true,
       }),
     );
@@ -129,7 +130,7 @@ describe("Concierge Client Memory UI", () => {
       phone: "3055550100",
     });
     const project = projectProfile({ displayTitle: "Oval ring" });
-    const composed = composePersonProfile(
+    const composed = composePersonCockpit(
       {
         ...emptyReadSnapshot(),
         profiles: [person],
@@ -147,6 +148,7 @@ describe("Concierge Client Memory UI", () => {
           note({
             personId: person.personId,
             projectId: project.projectId,
+            sourceSystem: "concierge-manual",
             createdAt: "2026-08-22T00:00:00.000Z",
             text: "Prefers morning calls.",
           }),
@@ -178,19 +180,19 @@ describe("Concierge Client Memory UI", () => {
     assert.equal(composed.ok, true);
     if (!composed.ok) return;
     const html = renderToStaticMarkup(
-      createElement(ClientProfileView, { profile: composed.profile }),
+      createElement(ClientProfileView, { cockpit: composed.cockpit }),
     );
     assert.match(html, /Oval ring/);
     assert.match(html, /CAD-77/);
     assert.match(html, /\/executive-dashboard\/concierge\/projects\//);
     assert.match(html, /Prefers morning calls/);
-    assert.match(html, /\/executive-dashboard\/concierge\/projects\//);
-    assert.match(html, /Historical client record/);
-    assert.match(html, /Client/);
     assert.match(html, /Add Note/);
-    assert.match(html, /All/);
-    assert.match(html, /Networking/);
+    assert.match(html, /Analytical Engines/);
+    assert.match(html, /Work/);
     assert.match(html, /Personal/);
+    assert.match(html, /Current context/);
+    assert.match(html, /History \/ Sources/);
+    assert.doesNotMatch(html, /Recent notes/);
     assert.doesNotMatch(html, /concierge-manual/);
     assert.match(html, /Needs review/);
     assert.match(html, /6\.25/);
@@ -580,11 +582,18 @@ describe("Concierge Client Memory UI", () => {
       assert.doesNotMatch(source, /Clients \| Networking \| Personal/);
       assert.doesNotMatch(source, /filter.*contextLayer|contextLayer ===/);
     }
+    const historyPage = readFileSync(
+      join(CONCIERGE_DIR, "client", "[personId]", "history", "page.tsx"),
+      "utf8",
+    );
+    assert.match(historyPage, /title:\s*"History \/ Sources"/);
+    assert.match(historyPage, /listPersonSourceHistory/);
+    assert.doesNotMatch(historyPage, /raw_text|continuum_human_sources|getPersonProfile/);
     const profile = readFileSync(
       join(CONCIERGE_DIR, "client", "[personId]", "page.tsx"),
       "utf8",
     );
-    assert.match(profile, /getPersonProfile/);
+    assert.match(profile, /getPersonCockpit/);
     assert.match(profile, /ClientProfileView/);
   });
 

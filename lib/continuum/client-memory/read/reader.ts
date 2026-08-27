@@ -3,6 +3,7 @@
  */
 
 import { listOpenReviewsForPerson, composePersonProfile } from "./profile";
+import { composePersonCockpit, listPersonSourceHistoryFromSnapshot } from "./cockpit";
 import { searchPeopleFromSnapshot } from "./search";
 import { isCalendarMonth, listCurrentBirthdaysByMonthFromRows } from "./birthdays";
 import {
@@ -11,6 +12,9 @@ import {
   type ClientSearchResult,
   type ConciergePersonProfileResult,
   type IdentityReviewSummary,
+  type PersonCockpitResult,
+  type PersonSourceHistoryQuery,
+  type PersonSourceHistoryResult,
 } from "./types";
 import type { BirthdayRead } from "../facts/types";
 
@@ -20,6 +24,11 @@ export type ClientMemoryReader = {
     options?: { limit?: number },
   ): Promise<ClientSearchResult[]>;
   getPersonProfile(personId: string): Promise<ConciergePersonProfileResult>;
+  getPersonCockpit(personId: string): Promise<PersonCockpitResult>;
+  listPersonSourceHistory(
+    personId: string,
+    query?: PersonSourceHistoryQuery,
+  ): Promise<PersonSourceHistoryResult>;
   listOpenIdentityReviews(personId: string): Promise<IdentityReviewSummary[]>;
   listCurrentBirthdaysByMonth(month: number): Promise<BirthdayRead[]>;
 };
@@ -40,6 +49,17 @@ export class InMemoryClientMemoryReader implements ClientMemoryReader {
 
   async getPersonProfile(personId: string): Promise<ConciergePersonProfileResult> {
     return composePersonProfile(this.snapshot, personId);
+  }
+
+  async getPersonCockpit(personId: string): Promise<PersonCockpitResult> {
+    return composePersonCockpit(this.snapshot, personId);
+  }
+
+  async listPersonSourceHistory(
+    personId: string,
+    query?: PersonSourceHistoryQuery,
+  ): Promise<PersonSourceHistoryResult> {
+    return listPersonSourceHistoryFromSnapshot(this.snapshot, personId, query);
   }
 
   async listOpenIdentityReviews(personId: string): Promise<IdentityReviewSummary[]> {
@@ -68,6 +88,8 @@ export function createInMemoryClientMemoryReader(
 export const CLIENT_MEMORY_READER_METHODS = [
   "searchPeople",
   "getPersonProfile",
+  "getPersonCockpit",
+  "listPersonSourceHistory",
   "listOpenIdentityReviews",
   "listCurrentBirthdaysByMonth",
 ] as const satisfies readonly (keyof ClientMemoryReader)[];

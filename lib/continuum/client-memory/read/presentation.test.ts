@@ -4,6 +4,7 @@ import {
   conciergeAddClientPath,
   conciergeAddNotePath,
   conciergeEditPersonPath,
+  conciergeHistoryPath,
   conciergeProjectPath,
   conciergeProjectsPath,
   conciergeAddNotePickerPath,
@@ -185,6 +186,17 @@ describe("Concierge presentation", () => {
     assert.equal(
       conciergeEditPersonPath("eb2802bd-e312-471e-8582-8dbd5ad2e04b"),
       "/executive-dashboard/concierge/client/eb2802bd-e312-471e-8582-8dbd5ad2e04b/edit",
+    );
+    assert.equal(
+      conciergeHistoryPath("eb2802bd-e312-471e-8582-8dbd5ad2e04b"),
+      "/executive-dashboard/concierge/client/eb2802bd-e312-471e-8582-8dbd5ad2e04b/history",
+    );
+    assert.equal(
+      conciergeHistoryPath("eb2802bd-e312-471e-8582-8dbd5ad2e04b", {
+        page: 2,
+        source: "concierge-manual",
+      }),
+      "/executive-dashboard/concierge/client/eb2802bd-e312-471e-8582-8dbd5ad2e04b/history?page=2&source=concierge-manual",
     );
     assert.equal(conciergeInboxPath(), "/executive-dashboard/concierge/inbox");
     assert.equal(conciergeInboxNewPath(), "/executive-dashboard/concierge/inbox/new");

@@ -73,7 +73,7 @@ describe("Client Memory reader security", () => {
   it("documents the reader as search/profile only", () => {
     assert.deepEqual(
       [...CLIENT_MEMORY_READER_METHODS].sort(),
-      ["getPersonProfile", "listCurrentBirthdaysByMonth", "listOpenIdentityReviews", "searchPeople"].sort(),
+      ["getPersonCockpit", "getPersonProfile", "listCurrentBirthdaysByMonth", "listOpenIdentityReviews", "listPersonSourceHistory", "searchPeople"].sort(),
     );
   });
 });
