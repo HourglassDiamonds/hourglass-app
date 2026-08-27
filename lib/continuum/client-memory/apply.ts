@@ -516,9 +516,8 @@ async function createProjectBundle(
     importRowKey: row.importRowKey,
   });
   if (existing) {
-    await store.applyImportedProjectHistory(
-      historyFromParsedRow(existing.projectId, row, now),
-    );
+    // Replay stays skip-on-existing. applyImportedProjectHistory is the
+    // field-level guard if a later import path writes current specs.
     return { projectId: existing.projectId, created: false };
   }
   const entity = await store.insertEntity({
