@@ -161,6 +161,23 @@ export const NO_EVIDENCE_THREAD: GmailApiThread = {
   ],
 };
 
+export const AMBIGUOUS_SIZE_THREAD_ID = "19ddd444eee555ff";
+
+export const AMBIGUOUS_SIZE_THREAD: GmailApiThread = {
+  id: AMBIGUOUS_SIZE_THREAD_ID,
+  messages: [
+    message({
+      id: "msg-ambiguous-1",
+      threadId: AMBIGUOUS_SIZE_THREAD_ID,
+      internalDate: "1724500000000",
+      from: CLIENT,
+      to: FOUNDER,
+      subject: "Size question",
+      body: "ring size 6 or 7 — not sure yet.",
+    }),
+  ],
+};
+
 export const ADJACENCY_THREAD: GmailApiThread = {
   id: ADJACENCY_THREAD_ID,
   messages: [

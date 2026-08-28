@@ -31,6 +31,7 @@ export type ProtectedExactThreadAttachment = {
 export type ProtectedExactThreadMessage = {
   messageId: string;
   internalDate: string | null;
+  direction: "inbound" | "outbound" | "unknown";
   from: string | null;
   to: readonly string[];
   cc: readonly string[];
@@ -110,6 +111,17 @@ function internalDateIso(message: GmailApiMessage): string | null {
   }
 }
 
+function directionFromLabels(
+  labelIds: readonly string[] | undefined,
+): ProtectedExactThreadMessage["direction"] {
+  const labels = new Set(
+    (labelIds ?? []).map((label) => label.trim().toUpperCase()),
+  );
+  if (labels.has("SENT")) return "outbound";
+  if (labels.has("INBOX")) return "inbound";
+  return "unknown";
+}
+
 export function protectExactThreadMessage(
   message: GmailApiMessage,
 ): ProtectedExactThreadMessage {
@@ -132,6 +144,7 @@ export function protectExactThreadMessage(
   return {
     messageId: message.id,
     internalDate,
+    direction: directionFromLabels(message.labelIds),
     from: addresses.fromEmail,
     to: addresses.toEmails,
     cc: addresses.ccEmails,

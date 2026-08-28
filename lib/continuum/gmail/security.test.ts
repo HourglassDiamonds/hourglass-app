@@ -85,6 +85,23 @@ describe("Gmail activation security", () => {
     assert.doesNotMatch(payload, /\/messages\/[^?\s"'`]+\/attachments\//);
     assert.doesNotMatch(actions, /runExactProjectThreadFetch/);
     assert.doesNotMatch(historyActions, /runExactProjectThreadFetch/);
+    const achedekalActions = readFileSync(
+      join(ROOT, "app/executive-dashboard/concierge/achedekal-review-actions.ts"),
+      "utf8",
+    );
+    const achedekalPage = readFileSync(
+      join(
+        ROOT,
+        "app/executive-dashboard/concierge/project-reconstruction/achedekal/page.tsx",
+      ),
+      "utf8",
+    );
+    assert.match(achedekalActions, /"use server"/);
+    assert.match(achedekalActions, /getAuthenticatedGmailConnectionStore/);
+    assert.match(achedekalActions, /executeAchedekalEvidenceReview/);
+    assert.match(achedekalActions, /ACHEDEKAL_PROJECT_ID/);
+    assert.doesNotMatch(achedekalActions, /formData\.get\(/);
+    assert.doesNotMatch(achedekalPage, /runExactProjectThreadFetch|getThread\(/);
     assert.doesNotMatch(exact, /putCheckpoint|tryClaimHistoricalChunk|indexMessage/);
     assert.doesNotMatch(exact, /insertObservation|continuum_observations/);
   });
