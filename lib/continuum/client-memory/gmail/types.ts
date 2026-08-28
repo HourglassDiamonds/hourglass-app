@@ -34,6 +34,8 @@ export const GMAIL_CHECKPOINT_STATUSES = [
 
 export type GmailCheckpointStatus = (typeof GMAIL_CHECKPOINT_STATUSES)[number];
 
+export const GMAIL_SYNC_ALREADY_RUNNING = "gmail-sync-already-running" as const;
+
 /**
  * SHA-256 hashes from hashEmail (continuum:client-memory:v1).
  * Never raw addresses.

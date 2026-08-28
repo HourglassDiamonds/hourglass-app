@@ -82,6 +82,35 @@ describe("Gmail activation security", () => {
     assert.doesNotMatch(actions, /formData\.get\(/);
   });
 
+  it("keeps the founder history chunk runner private, one-page, and count-only", () => {
+    const history = readFileSync(join(GMAIL_DIR, "history.ts"), "utf8");
+    const actions = readFileSync(
+      join(ROOT, "app/executive-dashboard/concierge/gmail-history-actions.ts"),
+      "utf8",
+    );
+    const ui = readFileSync(
+      join(ROOT, "app/executive-dashboard/concierge/components/gmail-history.tsx"),
+      "utf8",
+    );
+    const page = readFileSync(
+      join(ROOT, "app/executive-dashboard/concierge/gmail/page.tsx"),
+      "utf8",
+    );
+    assert.match(history, /GMAIL_HISTORY_CHUNK_MAX_PAGES = 1/);
+    assert.match(history, /runHistoricalSync/);
+    assert.match(actions, /"use server"/);
+    assert.match(actions, /runGmailHistoryChunk/);
+    assert.doesNotMatch(actions, /formData\.get\(/);
+    assert.doesNotMatch(actions, /runHistoricalSync/);
+    assert.match(page, /GmailHistoryForm/);
+    assert.match(ui, /Start backfill/);
+    assert.doesNotMatch(ui, /mailboxEmailHash|ciphertext|subject|snippet/);
+    for (const file of walk(join(ROOT, "app/api"), ".ts")) {
+      const source = readFileSync(file, "utf8");
+      assert.doesNotMatch(source, /runGmailHistoryChunk|runHistoricalSync/);
+    }
+  });
+
   it("keeps the founder Gmail connection test off public routes and mailbox content", () => {
     const probe = readFileSync(join(GMAIL_DIR, "connection-test.ts"), "utf8");
     const page = readFileSync(

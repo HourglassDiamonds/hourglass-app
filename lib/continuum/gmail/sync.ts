@@ -25,6 +25,7 @@ import {
   sentAtFromInternalDate,
 } from "./payload";
 import type { GmailCheckpoint } from "@/lib/continuum/client-memory/gmail/types";
+import { GMAIL_SYNC_ALREADY_RUNNING } from "@/lib/continuum/client-memory/gmail/types";
 
 export const HISTORICAL_LOOKBACK_MONTHS = 24;
 
@@ -73,7 +74,7 @@ export type HistoricalSyncDeps = {
 };
 
 export type HistoricalSyncResult = {
-  status: "completed" | "failed" | "paused" | "revoked" | "disconnected";
+  status: "completed" | "running" | "failed" | "paused" | "revoked" | "disconnected";
   indexedCount: number;
   errorCode: string | null;
 };
@@ -146,9 +147,14 @@ export async function runHistoricalSync(
       errorCode: null,
     } satisfies GmailCheckpoint);
 
+  if (existing.status === "completed" && existing.pageToken == null) {
+    return { status: "completed", indexedCount: existing.indexedCount, errorCode: null };
+  }
+
   const windowStart = existing.windowStart
     ? new Date(existing.windowStart)
     : historicalWindowStart(now);
+  const windowEndIso = existing.windowEnd ?? nowIso;
   const query = historicalGmailQuery(windowStart);
   let pageToken = existing.pageToken;
   let indexedCount = existing.indexedCount;
@@ -158,11 +164,14 @@ export async function runHistoricalSync(
     ...existing,
     status: "running",
     windowStart: windowStart.toISOString(),
-    windowEnd: nowIso,
+    windowEnd: windowEndIso,
     pageToken,
     indexedCount,
     updatedAt: nowIso,
-    errorCode: null,
+    errorCode:
+      existing.errorCode === GMAIL_SYNC_ALREADY_RUNNING
+        ? GMAIL_SYNC_ALREADY_RUNNING
+        : null,
   });
 
   try {
@@ -219,7 +228,7 @@ export async function runHistoricalSync(
         jobKey: GMAIL_HISTORICAL_JOB_KEY,
         status: pageToken ? "running" : "completed",
         windowStart: windowStart.toISOString(),
-        windowEnd: nowIso,
+        windowEnd: windowEndIso,
         pageToken,
         historyId: existing.historyId,
         cursorMessageId,
@@ -237,7 +246,11 @@ export async function runHistoricalSync(
       if (!pageToken) break;
     }
 
-    return { status: "completed", indexedCount, errorCode: null };
+    return {
+      status: pageToken ? "running" : "completed",
+      indexedCount,
+      errorCode: null,
+    };
   } catch (error) {
     const message = error instanceof Error ? error.message : "gmail-sync-failed";
     if (message === "invalid_grant" || message.includes("invalid_grant")) {
@@ -246,7 +259,7 @@ export async function runHistoricalSync(
         jobKey: GMAIL_HISTORICAL_JOB_KEY,
         status: "failed",
         windowStart: windowStart.toISOString(),
-        windowEnd: nowIso,
+        windowEnd: windowEndIso,
         pageToken,
         historyId: existing.historyId,
         cursorMessageId,
@@ -267,7 +280,7 @@ export async function runHistoricalSync(
       jobKey: GMAIL_HISTORICAL_JOB_KEY,
       status: "failed",
       windowStart: windowStart.toISOString(),
-      windowEnd: nowIso,
+      windowEnd: windowEndIso,
       pageToken,
       historyId: existing.historyId,
       cursorMessageId,

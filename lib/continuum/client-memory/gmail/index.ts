@@ -9,6 +9,7 @@ export {
   GMAIL_INDEX_SCHEMA_VERSION,
   GMAIL_MESSAGE_DIRECTIONS,
   GMAIL_SOURCE_SYSTEM,
+  GMAIL_SYNC_ALREADY_RUNNING,
 } from "./types";
 export type {
   GmailCheckpoint,

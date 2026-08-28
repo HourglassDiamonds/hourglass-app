@@ -16,6 +16,7 @@ import {
 import type { GmailIndexStore } from "./store";
 import {
   GMAIL_SOURCE_SYSTEM,
+  GMAIL_SYNC_ALREADY_RUNNING,
   type GmailCheckpoint,
   type GmailCheckpointJobKey,
   type GmailIndexInput,
@@ -216,6 +217,63 @@ export class SupabaseGmailIndexStore implements GmailIndexStore {
       .single();
     if (error) throw error;
     return rowToCheckpoint(data);
+  }
+
+  async tryClaimHistoricalChunk(nowIso: string, leaseMs: number): Promise<boolean> {
+    const existing = await this.getCheckpoint("gmail-historical");
+    if (!existing) {
+      const { error } = await this.client.from("continuum_gmail_checkpoints").insert(
+        checkpointToRow({
+          jobKey: "gmail-historical",
+          status: "idle",
+          windowStart: null,
+          windowEnd: null,
+          pageToken: null,
+          historyId: null,
+          cursorMessageId: null,
+          indexedCount: 0,
+          updatedAt: nowIso,
+          errorCode: GMAIL_SYNC_ALREADY_RUNNING,
+        }),
+      );
+      if (isUniqueViolation(error)) return false;
+      if (error) throw error;
+      return true;
+    }
+    if (existing.errorCode === GMAIL_SYNC_ALREADY_RUNNING) {
+      const age = Date.parse(nowIso) - Date.parse(existing.updatedAt);
+      if (Number.isFinite(age) && age >= 0 && age < leaseMs) return false;
+    }
+    let query = this.client
+      .from("continuum_gmail_checkpoints")
+      .update({
+        error_code: GMAIL_SYNC_ALREADY_RUNNING,
+        updated_at: nowIso,
+      })
+      .eq("job_key", "gmail-historical");
+    if (existing.errorCode === GMAIL_SYNC_ALREADY_RUNNING) {
+      query = query
+        .eq("error_code", GMAIL_SYNC_ALREADY_RUNNING)
+        .lt("updated_at", new Date(Date.parse(nowIso) - leaseMs).toISOString());
+    } else if (existing.errorCode) {
+      query = query.eq("error_code", existing.errorCode);
+    } else {
+      query = query.is("error_code", null);
+    }
+    const { data, error } = await query.select("job_key").maybeSingle();
+    if (error) throw error;
+    return Boolean(data);
+  }
+
+  async releaseHistoricalChunk(nowIso: string): Promise<void> {
+    const existing = await this.getCheckpoint("gmail-historical");
+    if (!existing || existing.errorCode !== GMAIL_SYNC_ALREADY_RUNNING) return;
+    const { error } = await this.client
+      .from("continuum_gmail_checkpoints")
+      .update({ error_code: null, updated_at: nowIso })
+      .eq("job_key", "gmail-historical")
+      .eq("error_code", GMAIL_SYNC_ALREADY_RUNNING);
+    if (error) throw error;
   }
 }
 

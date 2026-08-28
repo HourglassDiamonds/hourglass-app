@@ -298,6 +298,60 @@ describe("Gmail historical sync", () => {
     assert.equal(api.calls.length, 0);
   });
 
+  it("locks the 24-month window across maxPages=1 chunks and returns running until the last page", async () => {
+    const api = new MockGmailApi();
+    api.setMessage(INBOX_FIXTURE_MESSAGE);
+    api.setMessage(SENT_FIXTURE_MESSAGE);
+    api.setListPage(null, {
+      messages: [{ id: "msg-inbox-1", threadId: "thread-sarah-1" }],
+      nextPageToken: "page-2",
+    });
+    api.setListPage("page-2", {
+      messages: [{ id: "msg-sent-1", threadId: "thread-sarah-1" }],
+      nextPageToken: null,
+    });
+    const index = new InMemoryGmailIndexStore();
+    const attachments = new InMemoryGmailAttachmentStore();
+    const connections = new InMemoryGmailConnectionStore();
+    await connected(connections);
+    let now = NOW;
+    const movingClock = {
+      now: () => now,
+      sleep: async () => {},
+    };
+    const first = await runHistoricalSync({
+      api,
+      index,
+      attachments,
+      connections,
+      founderMailboxHash: FOUNDER_HASH,
+      clock: movingClock,
+      maxPages: 1,
+    });
+    assert.equal(first.status, "running");
+    const firstCheckpoint = await index.getCheckpoint("gmail-historical");
+    assert.equal(firstCheckpoint?.status, "running");
+    assert.equal(firstCheckpoint?.pageToken, "page-2");
+    assert.equal(firstCheckpoint?.windowStart, "2024-08-27T00:00:00.000Z");
+    assert.equal(firstCheckpoint?.windowEnd, NOW.toISOString());
+    now = new Date("2026-08-28T16:00:00.000Z");
+    const second = await runHistoricalSync({
+      api,
+      index,
+      attachments,
+      connections,
+      founderMailboxHash: FOUNDER_HASH,
+      clock: movingClock,
+      maxPages: 1,
+    });
+    assert.equal(second.status, "completed");
+    const done = await index.getCheckpoint("gmail-historical");
+    assert.equal(done?.status, "completed");
+    assert.equal(done?.windowStart, firstCheckpoint?.windowStart);
+    assert.equal(done?.windowEnd, firstCheckpoint?.windowEnd);
+    assert.equal(done?.indexedCount, 2);
+  });
+
   it("does not persist payload body fields from attachment extraction", () => {
     const attachments = extractAttachmentMetadata(
       INBOX_FIXTURE_MESSAGE,

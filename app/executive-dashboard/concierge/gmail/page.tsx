@@ -1,8 +1,11 @@
 import Link from "next/link";
 import { CONCIERGE_HOME_PATH } from "@/lib/continuum/client-memory/read/presentation";
-import { getAuthenticatedGmailConnectionStore } from "@/lib/continuum/gmail/load";
+import { GMAIL_HISTORICAL_JOB_KEY } from "@/lib/continuum/gmail/types";
+import { snapshotFromCheckpoint } from "@/lib/continuum/gmail/history";
+import { getAuthenticatedGmailHistoryStores } from "@/lib/continuum/gmail/load";
 import { ConciergeShell } from "../components/concierge-shell";
 import { GmailConnectionTestForm } from "../components/gmail-connection-test";
+import { GmailHistoryForm } from "../components/gmail-history";
 
 export const dynamic = "force-dynamic";
 
@@ -12,11 +15,14 @@ export const metadata = {
 };
 
 export default async function ConciergeGmailPage() {
-  const auth = await getAuthenticatedGmailConnectionStore();
+  const auth = await getAuthenticatedGmailHistoryStores();
   let connected = false;
+  let history = snapshotFromCheckpoint(null);
   if (auth.ok) {
-    const row = await auth.store.getFounderConnection();
+    const row = await auth.connections.getFounderConnection();
     connected = Boolean(row && row.status === "connected" && row.refreshToken);
+    const checkpoint = await auth.index.getCheckpoint(GMAIL_HISTORICAL_JOB_KEY);
+    history = snapshotFromCheckpoint(checkpoint);
   }
 
   return (
@@ -33,6 +39,7 @@ export default async function ConciergeGmailPage() {
           Gmail
         </h1>
         <GmailConnectionTestForm connected={connected} />
+        <GmailHistoryForm initial={history} />
       </div>
     </ConciergeShell>
   );
