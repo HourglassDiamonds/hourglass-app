@@ -76,7 +76,42 @@ describe("Gmail activation security", () => {
     assert.match(start, /handleGmailOAuthStart/);
     assert.match(callback, /handleGmailOAuthCallback/);
     assert.match(actions, /"use server"/);
+    assert.match(actions, /testGmailConnection/);
     assert.doesNotMatch(actions, /GOOGLE_REFRESH_TOKEN/);
+    assert.doesNotMatch(actions, /runHistoricalSync/);
+    assert.doesNotMatch(actions, /formData\.get\(/);
+  });
+
+  it("keeps the founder Gmail connection test off public routes and mailbox content", () => {
+    const probe = readFileSync(join(GMAIL_DIR, "connection-test.ts"), "utf8");
+    const page = readFileSync(
+      join(ROOT, "app/executive-dashboard/concierge/gmail/page.tsx"),
+      "utf8",
+    );
+    const ui = readFileSync(
+      join(
+        ROOT,
+        "app/executive-dashboard/concierge/components/gmail-connection-test.tsx",
+      ),
+      "utf8",
+    );
+    const actions = readFileSync(
+      join(ROOT, "app/executive-dashboard/concierge/gmail-actions.ts"),
+      "utf8",
+    );
+    assert.match(probe, /GMAIL_CONNECTION_TEST_MAX_RESULTS = 5/);
+    assert.match(probe, /\(in:inbox OR in:sent\) newer_than:7d/);
+    assert.doesNotMatch(probe, /runHistoricalSync|indexMessage|putCheckpoint/);
+    assert.doesNotMatch(probe, /\.getMessage\(|\.getThread\(/);
+    assert.match(page, /GmailConnectionTestForm/);
+    assert.match(ui, /Test connection/);
+    assert.doesNotMatch(ui, /mailboxEmailHash|ciphertext|client_secret|CLIENT_ID/);
+    assert.doesNotMatch(page, /mailboxEmailHash|ciphertext|emailAddress/);
+    assert.match(actions, /readOnlyGmailConnectionStore/);
+    for (const file of walk(join(ROOT, "app/api"), ".ts")) {
+      const source = readFileSync(file, "utf8");
+      assert.doesNotMatch(source, /runGmailConnectionTest|testGmailConnection/);
+    }
   });
 
   it("documents the restricted gmail.readonly scope only", () => {

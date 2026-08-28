@@ -1,8 +1,18 @@
 "use server";
 
+import { createLiveGmailApi } from "@/lib/continuum/gmail/adapter";
 import { applyDisconnect, applyPause, applyResume } from "@/lib/continuum/gmail/connection";
+import {
+  failedGmailConnectionTest,
+  readOnlyGmailConnectionStore,
+  runGmailConnectionTest,
+  type GmailConnectionTestResult,
+} from "@/lib/continuum/gmail/connection-test";
 import { getAuthenticatedGmailConnectionStore } from "@/lib/continuum/gmail/load";
-import { liveGmailOAuthTokenExchanger } from "@/lib/continuum/gmail/oauth";
+import {
+  liveGmailAccessTokenRefresher,
+  liveGmailOAuthTokenExchanger,
+} from "@/lib/continuum/gmail/oauth";
 import { decryptRefreshToken, loadGmailTokenKek } from "@/lib/continuum/gmail/token-crypto";
 
 export type GmailConnectionControlState =
@@ -51,4 +61,26 @@ export async function disconnectGmailConnection(): Promise<GmailConnectionContro
   } catch {
     return { ok: false, error: "connection-inactive" };
   }
+}
+
+export async function testGmailConnection(
+  _prev: GmailConnectionTestResult | null,
+  _formData: FormData,
+): Promise<GmailConnectionTestResult> {
+  const auth = await getAuthenticatedGmailConnectionStore();
+  if (!auth.ok) {
+    return failedGmailConnectionTest(
+      auth.reason === "unauthorized" ? "unauthorized" : "unavailable",
+    );
+  }
+  const kek = loadGmailTokenKek();
+  if (!kek.ok) return failedGmailConnectionTest("decrypt-failed");
+  return runGmailConnectionTest({
+    founderSessionOk: true,
+    connections: readOnlyGmailConnectionStore(auth.store),
+    decryptRefreshToken: (wrapped) => decryptRefreshToken(wrapped, kek.key),
+    refreshAccessToken: (refreshToken) =>
+      liveGmailAccessTokenRefresher.refreshAccessToken(refreshToken),
+    createApi: (accessToken) => createLiveGmailApi(accessToken),
+  });
 }

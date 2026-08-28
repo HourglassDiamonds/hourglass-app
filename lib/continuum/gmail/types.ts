@@ -9,6 +9,8 @@ export const GMAIL_READONLY_SCOPE =
 
 export const GMAIL_FOUNDER_MAILBOX_SLOT = "founder-v1" as const;
 
+export const CONCIERGE_GMAIL_PATH = "/executive-dashboard/concierge/gmail";
+
 export const GMAIL_HISTORICAL_JOB_KEY = "gmail-historical" as const;
 
 export const GMAIL_SYNC_PAGE_SIZE = 100 as const;
@@ -66,6 +68,7 @@ export type GmailProfile = {
 export type GmailListedMessage = {
   id: string;
   threadId: string;
+  labelIds?: readonly string[];
 };
 
 export type GmailListPage = {

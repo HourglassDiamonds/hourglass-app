@@ -4,6 +4,7 @@ import { InMemoryGmailConnectionStore } from "./connection";
 import {
   createGmailOAuthIntent,
   createGmailOAuthPending,
+  interpretGmailTokenRefreshResponse,
   oauthStatesMatch,
   pkceChallengeS256,
   type GmailOAuthTokenExchanger,
@@ -235,5 +236,25 @@ describe("Continuum Gmail OAuth", () => {
     assert.equal(oauthStatesMatch("abc", "abd"), false);
     assert.equal(oauthStatesMatch("abc", null), false);
     assert.equal(oauthStatesMatch("abc", "abc"), true);
+  });
+
+  it("stops token refresh when Google returns a replacement refresh token", () => {
+    const rotated = interpretGmailTokenRefreshResponse({
+      accessToken: "access-new",
+      returnedRefreshToken: "refresh-new",
+      originalRefreshToken: "refresh-keep",
+    });
+    assert.deepEqual(rotated, { ok: false, error: "refresh-token-rotated" });
+    const ok = interpretGmailTokenRefreshResponse({
+      accessToken: "access-new",
+      returnedRefreshToken: "refresh-keep",
+      originalRefreshToken: "refresh-keep",
+    });
+    assert.deepEqual(ok, { ok: true, accessToken: "access-new" });
+    const missing = interpretGmailTokenRefreshResponse({
+      accessToken: null,
+      originalRefreshToken: "refresh-keep",
+    });
+    assert.deepEqual(missing, { ok: false, error: "token-refresh-failed" });
   });
 });

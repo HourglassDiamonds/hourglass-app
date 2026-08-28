@@ -49,6 +49,20 @@ export type GmailOAuthTokenExchanger = {
   revokeToken(token: string): Promise<void>;
 };
 
+export type GmailAccessTokenRefresh =
+  | { ok: true; accessToken: string }
+  | {
+      ok: false;
+      error:
+        | "token-refresh-failed"
+        | "refresh-token-rotated"
+        | "oauth-not-configured";
+    };
+
+export type GmailAccessTokenRefresher = {
+  refreshAccessToken(refreshToken: string): Promise<GmailAccessTokenRefresh>;
+};
+
 function b64urlJson(value: unknown): string {
   return Buffer.from(JSON.stringify(value), "utf8").toString("base64url");
 }
@@ -229,6 +243,51 @@ function createDedicatedGmailOAuth2Client(): OAuth2Client {
   if (!config.ok) throw new Error(config.error);
   return new OAuth2Client(config.clientId, config.clientSecret, config.redirectUri);
 }
+
+export function interpretGmailTokenRefreshResponse(input: {
+  accessToken?: string | null;
+  returnedRefreshToken?: string | null;
+  originalRefreshToken: string;
+}): GmailAccessTokenRefresh {
+  if (
+    input.returnedRefreshToken &&
+    input.returnedRefreshToken !== input.originalRefreshToken
+  ) {
+    return { ok: false, error: "refresh-token-rotated" };
+  }
+  if (!input.accessToken) {
+    return { ok: false, error: "token-refresh-failed" };
+  }
+  return { ok: true, accessToken: input.accessToken };
+}
+
+export async function refreshGmailAccessToken(
+  refreshToken: string,
+): Promise<GmailAccessTokenRefresh> {
+  const config = getGmailOAuthClientConfig();
+  if (!config.ok) return { ok: false, error: "oauth-not-configured" };
+  if (!refreshToken) return { ok: false, error: "token-refresh-failed" };
+  const client = new OAuth2Client(
+    config.clientId,
+    config.clientSecret,
+    config.redirectUri,
+  );
+  client.setCredentials({ refresh_token: refreshToken });
+  try {
+    const { credentials } = await client.refreshAccessToken();
+    return interpretGmailTokenRefreshResponse({
+      accessToken: credentials.access_token,
+      returnedRefreshToken: credentials.refresh_token,
+      originalRefreshToken: refreshToken,
+    });
+  } catch {
+    return { ok: false, error: "token-refresh-failed" };
+  }
+}
+
+export const liveGmailAccessTokenRefresher: GmailAccessTokenRefresher = {
+  refreshAccessToken: refreshGmailAccessToken,
+};
 
 export const liveGmailOAuthTokenExchanger: GmailOAuthTokenExchanger = {
   async exchangeCode(input) {

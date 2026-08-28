@@ -26,7 +26,12 @@ export type GmailApi = {
 
 export type GmailApiCall =
   | { method: "getProfile" }
-  | { method: "listMessages"; q: string; pageToken: string | null }
+  | {
+      method: "listMessages";
+      q: string;
+      pageToken: string | null;
+      maxResults: number | null;
+    }
   | { method: "getMessage"; messageId: string }
   | { method: "getThread"; threadId: string };
 
@@ -86,6 +91,7 @@ export class MockGmailApi implements GmailApi {
       method: "listMessages",
       q: query.q,
       pageToken,
+      maxResults: query.maxResults ?? null,
     });
     this.maybeThrow("listMessages");
     this.maybeThrow(`listMessages:${pageToken ?? ""}`);
@@ -164,7 +170,9 @@ const GMAIL_API_ROOT = "https://gmail.googleapis.com/gmail/v1/users/me";
 
 /**
  * Live adapter. Constructed only when a real access token is in process memory.
- * This activation task must not invoke it.
+ * Founder OAuth callback and the zero-write connection test may call getProfile
+ * and listMessages. Do not call getMessage, getThread, or attachments.get from
+ * the connection test.
  */
 export function createLiveGmailApi(accessToken: string): GmailApi {
   async function gmailFetch<T>(path: string): Promise<T> {
@@ -186,12 +194,18 @@ export function createLiveGmailApi(accessToken: string): GmailApi {
       params.set("maxResults", String(query.maxResults ?? 100));
       if (query.pageToken) params.set("pageToken", query.pageToken);
       const data = await gmailFetch<{
-        messages?: { id: string; threadId: string }[];
+        messages?: { id: string; threadId: string; labelIds?: string[] }[];
         nextPageToken?: string;
         resultSizeEstimate?: number;
       }>(`/messages?${params.toString()}`);
       return {
-        messages: data.messages ?? [],
+        messages: (data.messages ?? []).map((row) => ({
+          id: row.id,
+          threadId: row.threadId,
+          ...(row.labelIds && row.labelIds.length > 0
+            ? { labelIds: row.labelIds }
+            : {}),
+        })),
         nextPageToken: data.nextPageToken ?? null,
         resultSizeEstimate: data.resultSizeEstimate,
       };
