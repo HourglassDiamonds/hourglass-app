@@ -24,7 +24,7 @@ import {
 } from "./types";
 
 const MESSAGE_COLUMNS =
-  "message_id, thread_id, sent_at, indexed_at, subject, from_email_hash, to_email_hashes, cc_email_hashes, direction, label_ids, has_attachments, source_system";
+  "message_id, thread_id, sent_at, indexed_at, subject, from_email_hash, to_email_hashes, cc_email_hashes, bcc_email_hashes, direction, label_ids, has_attachments, source_system";
 
 const CHECKPOINT_COLUMNS =
   "job_key, status, window_start, window_end, page_token, history_id, cursor_message_id, indexed_count, updated_at, error_code";
@@ -61,6 +61,7 @@ function rowToMessage(row: Record<string, unknown>): GmailIndexedMessage {
     fromEmailHash: row.from_email_hash == null ? null : String(row.from_email_hash),
     toEmailHashes: asStringArray(row.to_email_hashes),
     ccEmailHashes: asStringArray(row.cc_email_hashes),
+    bccEmailHashes: asStringArray(row.bcc_email_hashes),
     direction: row.direction,
     labelIds: asStringArray(row.label_ids),
     hasAttachments: Boolean(row.has_attachments),
@@ -78,6 +79,7 @@ function messageToRow(message: GmailIndexedMessage): Record<string, unknown> {
     from_email_hash: message.fromEmailHash,
     to_email_hashes: [...message.toEmailHashes],
     cc_email_hashes: [...message.ccEmailHashes],
+    bcc_email_hashes: [...message.bccEmailHashes],
     direction: message.direction,
     label_ids: [...message.labelIds],
     has_attachments: message.hasAttachments,
@@ -159,6 +161,7 @@ export class SupabaseGmailIndexStore implements GmailIndexStore {
         from_email_hash: merged.record.fromEmailHash,
         to_email_hashes: [...merged.record.toEmailHashes],
         cc_email_hashes: [...merged.record.ccEmailHashes],
+        bcc_email_hashes: [...merged.record.bccEmailHashes],
         direction: merged.record.direction,
         label_ids: [...merged.record.labelIds],
         has_attachments: merged.record.hasAttachments,

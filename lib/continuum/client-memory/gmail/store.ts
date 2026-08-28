@@ -36,6 +36,7 @@ function cloneMessage(row: GmailIndexedMessage): GmailIndexedMessage {
     ...row,
     toEmailHashes: [...row.toEmailHashes],
     ccEmailHashes: [...row.ccEmailHashes],
+    bccEmailHashes: [...row.bccEmailHashes],
     labelIds: [...row.labelIds],
   };
 }

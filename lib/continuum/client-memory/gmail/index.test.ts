@@ -136,6 +136,12 @@ describe("Protected Gmail source index", () => {
     assert.equal(once.fromEmailHash, twice.fromEmailHash);
     assert.equal(once.fromEmailHash, hashEmail("ada@example.com"));
     assert.deepEqual([...once.toEmailHashes], [hashEmail("ada@example.com")]);
+    assert.deepEqual(
+      gmailParticipantHashesFromAddresses({
+        bccEmails: ["quiet@example.com"],
+      }).bccEmailHashes,
+      [hashEmail("quiet@example.com")],
+    );
     assert.throws(
       () =>
         buildGmailIndexedMessage(

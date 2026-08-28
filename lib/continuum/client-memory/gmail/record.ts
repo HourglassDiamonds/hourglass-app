@@ -86,11 +86,13 @@ export function gmailParticipantHashesFromAddresses(input: {
   fromEmail?: string | null;
   toEmails?: readonly string[];
   ccEmails?: readonly string[];
+  bccEmails?: readonly string[];
 }): GmailParticipantHashes {
   return {
     fromEmailHash: hashEmail(input.fromEmail),
     toEmailHashes: hashesFromAddresses(input.toEmails),
     ccEmailHashes: hashesFromAddresses(input.ccEmails),
+    bccEmailHashes: hashesFromAddresses(input.bccEmails),
   };
 }
 
@@ -109,6 +111,7 @@ export function buildGmailIndexedMessage(
     fromEmail: input.fromEmail,
     toEmails: input.toEmails,
     ccEmails: input.ccEmails,
+    bccEmails: input.bccEmails,
   });
   const subject = input.subject == null ? null : input.subject.trim() || null;
   const labelIds = [
@@ -128,6 +131,7 @@ export function buildGmailIndexedMessage(
     fromEmailHash: participants.fromEmailHash,
     toEmailHashes: participants.toEmailHashes,
     ccEmailHashes: participants.ccEmailHashes,
+    bccEmailHashes: participants.bccEmailHashes,
     direction: input.direction,
     labelIds,
     hasAttachments: Boolean(input.hasAttachments),
@@ -171,6 +175,7 @@ export function mergeIndexedGmailMessage(
     subject: incoming.subject,
     toEmailHashes: incoming.toEmailHashes,
     ccEmailHashes: incoming.ccEmailHashes,
+    bccEmailHashes: incoming.bccEmailHashes,
     direction: incoming.direction,
     labelIds: incoming.labelIds,
     hasAttachments: incoming.hasAttachments,
@@ -183,6 +188,7 @@ export function mergeIndexedGmailMessage(
     next.fromEmailHash === existing.fromEmailHash &&
     sameStringList(next.toEmailHashes, existing.toEmailHashes) &&
     sameStringList(next.ccEmailHashes, existing.ccEmailHashes) &&
+    sameStringList(next.bccEmailHashes, existing.bccEmailHashes) &&
     next.direction === existing.direction &&
     sameStringList(next.labelIds, existing.labelIds) &&
     next.hasAttachments === existing.hasAttachments;
