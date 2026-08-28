@@ -115,7 +115,11 @@ describe("Gmail activation security", () => {
     const fixture = readFileSync(join(GMAIL_DIR, "alea-chedekal-fixture.ts"), "utf8");
     const barrel = readFileSync(join(GMAIL_DIR, "index.ts"), "utf8");
     const server = readFileSync(join(GMAIL_DIR, "server.ts"), "utf8");
-    for (const source of [reconstruction, cad, fixture]) {
+    const containment = readFileSync(
+      join(GMAIL_DIR, "project-book-containment.ts"),
+      "utf8",
+    );
+    for (const source of [reconstruction, cad, fixture, containment]) {
       assert.doesNotMatch(source, /correctProjectSpec|applyProjectSpecCorrection/);
       assert.doesNotMatch(source, /editPersonProfile|createPersonAtomic/);
       assert.doesNotMatch(source, /runExactProjectThreadFetch|listMessages\(/);
@@ -127,6 +131,9 @@ describe("Gmail activation security", () => {
     assert.doesNotMatch(server, /from "\.\/project-reconstruction"/);
     assert.doesNotMatch(barrel, /from "\.\/alea-chedekal-fixture"/);
     assert.doesNotMatch(server, /reconstructProjectBook/);
+    assert.doesNotMatch(barrel, /from "\.\/project-book-containment"/);
+    assert.doesNotMatch(server, /from "\.\/project-book-containment"/);
+    assert.doesNotMatch(server, /routeProjectEvidence/);
   });
 
   it("keeps OAuth routes off mailbox content and token rendering", () => {

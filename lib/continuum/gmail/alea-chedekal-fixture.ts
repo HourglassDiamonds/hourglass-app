@@ -17,10 +17,23 @@ import type { ProjectReconstructionInput } from "./project-reconstruction";
 export const ALEA_CHEDEKAL_FIXTURE_PROJECT_ID =
   "fixture-alea-chedekal-reconstruction";
 
+export const ALEA_CHEDEKAL_FIXTURE_PROJECT_B_ID =
+  "fixture-alea-chedekal-project-b";
+
 export const ALEA_CHEDEKAL_FIXTURE_PERSON_ID =
   "11111111-1111-4111-8111-111111111111";
 
 export const ALEA_CHEDEKAL_FIXTURE_THREAD_ID = "19fixturealeachedek01";
+
+export const ALEA_CHEDEKAL_PROJECT_B_THREAD_ID = "19fixturealeaprojectb1";
+
+export const ALEA_CHEDEKAL_PROJECT_A_CAD = "CAD-8821";
+
+export const ALEA_CHEDEKAL_PROJECT_A_ORDER = "4401";
+
+export const ALEA_CHEDEKAL_PROJECT_B_CAD = "CAD-3308";
+
+export const ALEA_CHEDEKAL_PROJECT_B_ORDER = "9902";
 
 export const ALEA_CHEDEKAL_FIXTURE_EMAIL = "chedekal@example.com";
 
@@ -138,6 +151,33 @@ function indexed(input: {
   };
 }
 
+export function aleaChedekalProjectBProtectedThread(): ProtectedExactThread {
+  return {
+    threadId: ALEA_CHEDEKAL_PROJECT_B_THREAD_ID,
+    messages: [
+      message({
+        messageId: "msg-alea-project-b-necklace",
+        internalDate: "2026-05-18T14:00:00.000Z",
+        direction: "inbound",
+        from: ALEA_CHEDEKAL_FIXTURE_EMAIL,
+        to: [FOUNDER],
+        subject: "Anniversary necklace",
+        plainText:
+          "This is a later separate engagement: anniversary necklace CAD-3308. Order #9902. Best, Alea Chedekal.",
+        attachments: [
+          {
+            attachmentId: "att-necklace-cad",
+            messageId: "msg-alea-project-b-necklace",
+            filename: "anniversary-necklace-cad.pdf",
+            mimeType: "application/pdf",
+            sizeBytes: 3072,
+          },
+        ],
+      }),
+    ],
+  };
+}
+
 export function aleaChedekalIndexedMessages(): GmailIndexedMessage[] {
   const person = ALEA_CHEDEKAL_FIXTURE_EMAIL;
   return [
@@ -179,6 +219,14 @@ export function aleaChedekalIndexedMessages(): GmailIndexedMessage[] {
       sentAt: "2024-04-04T10:00:00.000Z",
       subject: "CAD-9999 other client",
       fromEmail: "other@example.com",
+      toEmail: FOUNDER,
+    }),
+    indexed({
+      messageId: "idx-project-b-anchor",
+      threadId: ALEA_CHEDEKAL_PROJECT_B_THREAD_ID,
+      sentAt: "2026-05-18T14:00:00.000Z",
+      subject: "Anniversary necklace CAD-3308",
+      fromEmail: person,
       toEmail: FOUNDER,
     }),
   ];

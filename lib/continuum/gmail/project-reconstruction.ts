@@ -178,6 +178,10 @@ export const RECONSTRUCTION_MUTATION_BOUNDARY = {
   modifiesGmail: false,
   applyButton: false,
   fetchesRelatedThreads: false,
+  createsProjects: false,
+  mergesProjects: false,
+  deletesProjects: false,
+  fetchesGmail: false,
 } as const;
 
 export type ReconstructionMutationBoundary =
