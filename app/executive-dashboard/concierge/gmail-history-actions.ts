@@ -10,10 +10,7 @@ import { getAuthenticatedGmailHistoryStores } from "@/lib/continuum/gmail/load";
 import { liveGmailAccessTokenRefresher } from "@/lib/continuum/gmail/oauth";
 import { decryptRefreshToken, loadGmailTokenKek } from "@/lib/continuum/gmail/token-crypto";
 
-export async function runGmailHistoryChunkAction(
-  _prev: GmailHistoryChunkResult | null,
-  _formData: FormData,
-): Promise<GmailHistoryChunkResult> {
+async function executeGmailHistoryChunk(): Promise<GmailHistoryChunkResult> {
   const auth = await getAuthenticatedGmailHistoryStores();
   if (!auth.ok) {
     return failedGmailHistoryChunk(
@@ -33,4 +30,15 @@ export async function runGmailHistoryChunkAction(
       liveGmailAccessTokenRefresher.refreshAccessToken(refreshToken),
     createApi: (accessToken) => createLiveGmailApi(accessToken),
   });
+}
+
+export async function runNextGmailHistoryChunk(): Promise<GmailHistoryChunkResult> {
+  return executeGmailHistoryChunk();
+}
+
+export async function runGmailHistoryChunkAction(
+  _prev: GmailHistoryChunkResult | null,
+  _formData: FormData,
+): Promise<GmailHistoryChunkResult> {
+  return executeGmailHistoryChunk();
 }

@@ -104,10 +104,13 @@ describe("Gmail activation security", () => {
     assert.doesNotMatch(actions, /runHistoricalSync/);
     assert.match(page, /GmailHistoryForm/);
     assert.match(ui, /Start backfill/);
+    assert.match(ui, /Finish backfill/);
+    assert.match(ui, /Stop after current chunk/);
+    assert.match(actions, /runNextGmailHistoryChunk/);
     assert.doesNotMatch(ui, /mailboxEmailHash|ciphertext|subject|snippet/);
     for (const file of walk(join(ROOT, "app/api"), ".ts")) {
       const source = readFileSync(file, "utf8");
-      assert.doesNotMatch(source, /runGmailHistoryChunk|runHistoricalSync/);
+      assert.doesNotMatch(source, /runGmailHistoryChunk|runNextGmailHistoryChunk|runHistoricalSync/);
     }
   });
 

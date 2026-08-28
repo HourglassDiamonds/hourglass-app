@@ -366,7 +366,11 @@ describe("Gmail history chunk source boundaries", () => {
       join(ROOT, "app/executive-dashboard/concierge/gmail/page.tsx"),
       "utf8",
     );
-    for (const source of [history, actions, ui, page]) {
+    const continueSource = readFileSync(
+      join(ROOT, "lib/continuum/gmail/history-continue.ts"),
+      "utf8",
+    );
+    for (const source of [history, actions, ui, page, continueSource]) {
       assert.doesNotMatch(source, /console\.(log|info|debug|warn|error)/);
       assert.doesNotMatch(source, /continuum_person_profiles|createPersonAtomic/);
       assert.doesNotMatch(source, /continuum_attention_items/);
@@ -376,7 +380,9 @@ describe("Gmail history chunk source boundaries", () => {
     assert.doesNotMatch(ui, /mailboxEmailHash|ciphertext|client_secret|messageId|threadId/);
     assert.match(ui, /Gmail History/);
     assert.match(ui, /Start backfill/);
+    assert.match(ui, /Finish backfill/);
     assert.match(actions, /"use server"/);
     assert.match(actions, /runGmailHistoryChunk/);
+    assert.match(actions, /runNextGmailHistoryChunk/);
   });
 });
