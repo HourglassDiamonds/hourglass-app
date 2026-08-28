@@ -111,4 +111,47 @@ describe("exact-thread reconstruction evidence contract", () => {
     assert.equal(handoff.currentSpecs.fingerSize, "141");
     assert.equal(handoff.currentSpecs.orderNumber, "140");
   });
+
+  it("does not treat CAD presentation as a job identifier", () => {
+    const thread = protectExactThread(ADJACENCY_THREAD);
+    const presentation = {
+      ...thread,
+      messages: thread.messages.map((row) => ({
+        ...row,
+        subject: "CAD presentation",
+        plainText: "CAD presentation / CAD design / CAD render / CAD revision / CAD update / CAD approval.",
+      })),
+    };
+    const handoff = buildExactThreadReconstructionHandoff({
+      projectId: "proj-cad-words",
+      currentSpecs: ACHEDEKAL_SPECS,
+      thread: presentation,
+    });
+    assert.equal(
+      handoff.candidateEvidence.some((row) => row.kind === "cad_job_number"),
+      false,
+    );
+  });
+
+  it("accepts a realistic CAD/job code from exact-thread text", () => {
+    const thread = protectExactThread(ADJACENCY_THREAD);
+    const coded = {
+      ...thread,
+      messages: thread.messages.map((row) => ({
+        ...row,
+        plainText: "Please review CAD-8821 and keep order 140.",
+      })),
+    };
+    const handoff = buildExactThreadReconstructionHandoff({
+      projectId: "proj-cad-code",
+      currentSpecs: ACHEDEKAL_SPECS,
+      thread: coded,
+    });
+    assert.equal(
+      handoff.candidateEvidence.some(
+        (row) => row.kind === "cad_job_number" && row.proposedValue === "CAD-8821",
+      ),
+      true,
+    );
+  });
 });

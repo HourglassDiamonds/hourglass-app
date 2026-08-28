@@ -106,6 +106,29 @@ describe("Gmail activation security", () => {
     assert.doesNotMatch(exact, /insertObservation|continuum_observations/);
   });
 
+  it("keeps jewelry-aware reconstruction evidence-only with no related-thread fetch", () => {
+    const reconstruction = readFileSync(
+      join(GMAIL_DIR, "project-reconstruction.ts"),
+      "utf8",
+    );
+    const cad = readFileSync(join(GMAIL_DIR, "cad-job-identifier.ts"), "utf8");
+    const fixture = readFileSync(join(GMAIL_DIR, "alea-chedekal-fixture.ts"), "utf8");
+    const barrel = readFileSync(join(GMAIL_DIR, "index.ts"), "utf8");
+    const server = readFileSync(join(GMAIL_DIR, "server.ts"), "utf8");
+    for (const source of [reconstruction, cad, fixture]) {
+      assert.doesNotMatch(source, /correctProjectSpec|applyProjectSpecCorrection/);
+      assert.doesNotMatch(source, /editPersonProfile|createPersonAtomic/);
+      assert.doesNotMatch(source, /runExactProjectThreadFetch|listMessages\(/);
+      assert.doesNotMatch(source, /gmail\.googleapis|users\.messages\.send/);
+      assert.doesNotMatch(source, /\/messages\/[^?\s"'`]+\/attachments\//);
+      assert.match(source, /automaticApply: false|does not write/i);
+    }
+    assert.doesNotMatch(barrel, /from "\.\/project-reconstruction"/);
+    assert.doesNotMatch(server, /from "\.\/project-reconstruction"/);
+    assert.doesNotMatch(barrel, /from "\.\/alea-chedekal-fixture"/);
+    assert.doesNotMatch(server, /reconstructProjectBook/);
+  });
+
   it("keeps OAuth routes off mailbox content and token rendering", () => {
     const start = readFileSync(
       join(ROOT, "app/api/continuum/gmail/oauth/start/route.ts"),

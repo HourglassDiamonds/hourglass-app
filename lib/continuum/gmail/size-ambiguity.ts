@@ -13,7 +13,7 @@ function compact(text: string): string {
   return text.replace(/\s+/g, " ").trim();
 }
 
-export function fingerSizeLanguageIsAmbiguous(
+export function sizeLanguageIsAmbiguous(
   text: string,
   proposedValue: string,
 ): boolean {
@@ -36,4 +36,11 @@ export function fingerSizeLanguageIsAmbiguous(
     ),
   ];
   return patterns.some((pattern) => pattern.test(hay));
+}
+
+export function fingerSizeLanguageIsAmbiguous(
+  text: string,
+  proposedValue: string,
+): boolean {
+  return sizeLanguageIsAmbiguous(text, proposedValue);
 }
