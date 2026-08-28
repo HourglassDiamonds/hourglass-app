@@ -52,7 +52,41 @@ describe("Gmail activation security", () => {
       assert.doesNotMatch(source, /client-memory\/gmail/);
       assert.doesNotMatch(source, /createSupabaseGmailIndexStore/);
       assert.doesNotMatch(source, /InMemoryGmailIndexStore/);
+      assert.doesNotMatch(source, /runExactProjectThreadFetch|protectExactThread/);
     }
+  });
+
+  it("keeps exact project thread fetch server-only, evidence-only, and off public routes", () => {
+    const exact = readFileSync(join(GMAIL_DIR, "exact-thread.ts"), "utf8");
+    const payload = readFileSync(join(GMAIL_DIR, "exact-thread-payload.ts"), "utf8");
+    const evidence = readFileSync(join(GMAIL_DIR, "reconstruction-evidence.ts"), "utf8");
+    const server = readFileSync(join(GMAIL_DIR, "server.ts"), "utf8");
+    const barrel = readFileSync(join(GMAIL_DIR, "index.ts"), "utf8");
+    const actions = readFileSync(
+      join(ROOT, "app/executive-dashboard/concierge/gmail-actions.ts"),
+      "utf8",
+    );
+    const historyActions = readFileSync(
+      join(ROOT, "app/executive-dashboard/concierge/gmail-history-actions.ts"),
+      "utf8",
+    );
+    assert.match(server, /import "server-only"/);
+    assert.match(server, /runExactProjectThreadFetch/);
+    assert.doesNotMatch(barrel, /runExactProjectThreadFetch/);
+    assert.doesNotMatch(barrel, /from "\.\/exact-thread"/);
+    assert.doesNotMatch(barrel, /from "\.\/server"/);
+    assert.match(exact, /coerceGmailThreadId\(pointer\.gmailThreadId\)/);
+    assert.doesNotMatch(exact, /input\.threadId/);
+    assert.doesNotMatch(exact, /listMessages\(/);
+    assert.match(exact, /messages\.list-forbidden-on-exact-thread-path/);
+    assert.doesNotMatch(exact, /correctProjectSpec|applyProjectSpecCorrection/);
+    assert.doesNotMatch(evidence, /correctProjectSpec|applyProjectSpecCorrection/);
+    assert.match(evidence, /automaticApply: false/);
+    assert.doesNotMatch(payload, /\/messages\/[^?\s"'`]+\/attachments\//);
+    assert.doesNotMatch(actions, /runExactProjectThreadFetch/);
+    assert.doesNotMatch(historyActions, /runExactProjectThreadFetch/);
+    assert.doesNotMatch(exact, /putCheckpoint|tryClaimHistoricalChunk|indexMessage/);
+    assert.doesNotMatch(exact, /insertObservation|continuum_observations/);
   });
 
   it("keeps OAuth routes off mailbox content and token rendering", () => {

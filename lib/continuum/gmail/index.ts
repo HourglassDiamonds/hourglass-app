@@ -1,6 +1,7 @@
 /**
  * Continuum Gmail read-only activation public surface.
- * Does not export the Supabase adapter — import that from `./server`.
+ * Does not export the Supabase adapter or exact-thread fetch —
+ * import those from `./server`.
  */
 
 export { GMAIL_READONLY_SCOPE } from "./types";

@@ -171,8 +171,9 @@ const GMAIL_API_ROOT = "https://gmail.googleapis.com/gmail/v1/users/me";
 /**
  * Live adapter. Constructed only when a real access token is in process memory.
  * Founder OAuth callback and the zero-write connection test may call getProfile
- * and listMessages. Do not call getMessage, getThread, or attachments.get from
- * the connection test.
+ * and listMessages. Exact project thread fetch may call getThread for one
+ * already-stored canonical thread id. Do not call attachments.get.
+ * Do not call getMessage, getThread, or attachments.get from the connection test.
  */
 export function createLiveGmailApi(accessToken: string): GmailApi {
   async function gmailFetch<T>(path: string): Promise<T> {
