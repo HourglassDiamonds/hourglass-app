@@ -23,6 +23,27 @@ export const ACHEDEKAL_RECONSTRUCTION_HEADING =
 export const ACHEDEKAL_DISCOVERY_WARNING =
   "Candidate discovery only — metadata index, not opened. No changes will be applied.";
 
+export const ACHEDEKAL_KNOWN_ARTIFACT_PATH =
+  "/executive-dashboard/concierge/project-reconstruction/achedekal/known-artifact" as const;
+
+export const ACHEDEKAL_KNOWN_ARTIFACT_FILENAME = "H017-CBR2000037.jpg" as const;
+
+export const ACHEDEKAL_KNOWN_ARTIFACT_MIME = "image/jpeg" as const;
+
+export const ACHEDEKAL_KNOWN_ARTIFACT_CAD = "CBR2000037" as const;
+
+export const ACHEDEKAL_KNOWN_ARTIFACT_BYTE_CAP = 5 * 1024 * 1024;
+
+export const ACHEDEKAL_KNOWN_ARTIFACT_INDEXED_BYTES = 1_540_698;
+
+export const ACHEDEKAL_KNOWN_ARTIFACT_SIZE_LABEL = "~1.54 MB" as const;
+
+export const ACHEDEKAL_KNOWN_ARTIFACT_CLASSIFICATION =
+  "CAD/render candidate" as const;
+
+export const ACHEDEKAL_KNOWN_ARTIFACT_CLASSIFICATION_BASIS =
+  "filename, MIME, project CAD identifier, and the stored exact project thread — not a visual classification" as const;
+
 export const ACHEDEKAL_RELATED_THREAD_CANDIDATE_LIMIT = 20 as const;
 export const ACHEDEKAL_AMBIGUOUS_THREAD_CANDIDATE_LIMIT = 10 as const;
 export const ACHEDEKAL_UNASSIGNED_THREAD_CANDIDATE_LIMIT = 10 as const;

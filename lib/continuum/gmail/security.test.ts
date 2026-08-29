@@ -40,7 +40,13 @@ describe("Gmail activation security", () => {
       assert.doesNotMatch(source, /insertSourceNote|insertWish|createPersonAtomic/);
       assert.doesNotMatch(source, /GOOGLE_REFRESH_TOKEN|GOOGLE_CLIENT_ID|GOOGLE_CLIENT_SECRET/);
       assert.doesNotMatch(source, /NEXT_PUBLIC_CONTINUUM_GMAIL/);
-      assert.doesNotMatch(source, /\/messages\/[^?\s"'`]+\/attachments\//);
+      const normalized = file.replace(/\\/g, "/");
+      if (normalized.endsWith("/known-artifact-gmail.ts")) {
+        assert.match(source, /\/messages\/\$\{encodeURIComponent\(messageId\)\}\/attachments\//);
+        assert.doesNotMatch(source, /listMessages\(|getMessage\(|getThread\(/);
+      } else {
+        assert.doesNotMatch(source, /\/messages\/[^?\s"'`]+\/attachments\//);
+      }
     }
   });
 
@@ -54,6 +60,7 @@ describe("Gmail activation security", () => {
       assert.doesNotMatch(source, /InMemoryGmailIndexStore/);
       assert.doesNotMatch(source, /runExactProjectThreadFetch|protectExactThread/);
       assert.doesNotMatch(source, /executeAchedekalCandidateDiscovery/);
+      assert.doesNotMatch(source, /executeAchedekalKnownArtifactPreview/);
     }
   });
 

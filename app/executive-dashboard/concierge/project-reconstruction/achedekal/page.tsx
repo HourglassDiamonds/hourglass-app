@@ -13,6 +13,7 @@ import {
 } from "../../components/client-profile-view";
 import { AchedekalReviewForm } from "../../components/achedekal-review-form";
 import { AchedekalRelatedThreadsForm } from "../../components/achedekal-related-threads";
+import { AchedekalKnownArtifactPreview } from "../../components/achedekal-known-artifact";
 
 export const dynamic = "force-dynamic";
 
@@ -79,6 +80,7 @@ export default async function AchedekalEvidenceReviewPage() {
         </p>
         <AchedekalReviewForm specs={specs} />
         <AchedekalRelatedThreadsForm />
+        <AchedekalKnownArtifactPreview />
       </div>
     </ConciergeShell>
   );
