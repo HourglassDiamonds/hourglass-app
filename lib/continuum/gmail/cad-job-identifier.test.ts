@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  candidateHasTypedCadIdentifier,
   classifyCadIdentifierStrength,
   extractCadJobIdentifiers,
   hasBoundedIdentifierToken,
@@ -44,12 +45,27 @@ describe("CAD / job identifier quality", () => {
 
 describe("CAD identifier strength", () => {
   it("classifies structured alphanumeric identifiers as strong", () => {
-    for (const token of ["CBR2000037", "CAD-8821", "J-4491", "CAD-1", "J4491"]) {
+    for (const token of ["CBR2000037", "CAD-8821", "J-4491", "J4491"]) {
       assert.equal(classifyCadIdentifierStrength(token), "strong_structured", token);
       assert.equal(isStrongStructuredCadIdentifier(token), true, token);
     }
     assert.deepEqual(extractCadJobIdentifiers("Please see CBR2000037."), ["CBR2000037"]);
     assert.deepEqual(extractCadJobIdentifiers("J-4491 is ready."), ["J-4491"]);
+  });
+
+  it("classifies short structured CAD/job tokens as weak, not invalid", () => {
+    for (const token of ["CAD-1", "CAD-2", "J-1", "J-12", "A-1"]) {
+      assert.equal(isPlausibleCadJobIdentifier(token), true, token);
+      assert.equal(
+        classifyCadIdentifierStrength(token),
+        "weak_short_structured",
+        token,
+      );
+      assert.equal(isStrongStructuredCadIdentifier(token), false, token);
+    }
+    assert.deepEqual(extractCadJobIdentifiers("CAD-1 for this band"), ["CAD-1"]);
+    assert.deepEqual(extractCadJobIdentifiers("CAD A-1"), ["A-1"]);
+    assert.deepEqual(extractCadJobIdentifiers("job J-12"), ["J-12"]);
   });
 
   it("classifies short numeric CAD tokens as weak, not invalid", () => {
@@ -64,9 +80,24 @@ describe("CAD identifier strength", () => {
     assert.deepEqual(extractCadJobIdentifiers("CAD 555"), ["555"]);
   });
 
-  it("does not treat CAD 141 as a bounded match inside unrelated invoice 141 text", () => {
+  it("does not treat CAD 141 as a typed CAD match inside unrelated invoice 141 text", () => {
     assert.equal(hasBoundedIdentifierToken("Invoice 141 reminder", "141"), true);
     assert.equal(hasBoundedIdentifierToken("Invoice 1410 reminder", "141"), false);
     assert.equal(isStrongStructuredCadIdentifier("141"), false);
+    assert.equal(candidateHasTypedCadIdentifier("Invoice 141 reminder", "141"), false);
+  });
+
+  it("does not let prefix-stripped A-1 match apartment notices", () => {
+    assert.deepEqual(extractCadJobIdentifiers("CAD A-1"), ["A-1"]);
+    assert.equal(classifyCadIdentifierStrength("A-1"), "weak_short_structured");
+    assert.equal(candidateHasTypedCadIdentifier("Apartment A-1 notice", "A-1"), false);
+    assert.equal(candidateHasTypedCadIdentifier("CAD A-1 revision", "A-1"), true);
+  });
+
+  it("keeps exact bounded identity for strong CAD/job tokens", () => {
+    assert.equal(hasBoundedIdentifierToken("CBR2000037 follow-up", "CBR2000037"), true);
+    assert.equal(hasBoundedIdentifierToken("CBR20000370 follow-up", "CBR2000037"), false);
+    assert.equal(hasBoundedIdentifierToken("CAD-88210 follow-up", "CAD-8821"), false);
+    assert.equal(hasBoundedIdentifierToken("J-44910 ready", "J-4491"), false);
   });
 });

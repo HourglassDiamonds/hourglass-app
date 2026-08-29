@@ -8,12 +8,24 @@
 import type { GmailIndexedMessage } from "@/lib/continuum/client-memory/gmail/types";
 import { hashEmail } from "@/lib/continuum/client-memory/hashes";
 import {
+  candidateHasTypedCadIdentifier,
   classifyCadIdentifierStrength,
   extractCadJobIdentifiers,
   hasBoundedIdentifierToken,
   isStrongStructuredCadIdentifier,
 } from "./cad-job-identifier";
-import { extractOrderIdentifiers, isPlausibleOrderIdentifier } from "./order-identifier";
+import {
+  identifierRequiresTypedContext,
+  isWeakIdentifierSpecificity,
+  WEAK_IDENTIFIER_SUPPORT_SCORE,
+} from "./identifier-specificity";
+import {
+  candidateHasTypedOrderIdentifier,
+  classifyOrderIdentifierStrength,
+  extractOrderIdentifiers,
+  isPlausibleOrderIdentifier,
+  isStrongStructuredOrderIdentifier,
+} from "./order-identifier";
 import type {
   ProtectedExactThread,
   ProtectedExactThreadAttachment,
@@ -144,18 +156,23 @@ export type StrongProjectIdentifierKind =
 export type IdentifierSignalStrength =
   | "strong_structured"
   | "weak_numeric"
+  | "weak_short_structured"
   | "supporting";
 
 export type StrongProjectIdentifier = {
   kind: StrongProjectIdentifierKind;
   value: string;
   strength: IdentifierSignalStrength;
+  contextRequired?: boolean;
 };
 
 export type RelatedThreadMatchReasonKind =
   | StrongProjectIdentifierKind
   | "cad_identifier_strong"
   | "cad_identifier_weak_numeric"
+  | "cad_identifier_weak_short_structured"
+  | "order_identifier_weak_numeric"
+  | "order_identifier_weak_short_structured"
   | "vendor_supporting_only"
   | "vendor_only"
   | "internal_address_ignored";
@@ -660,7 +677,10 @@ function collectEvidenceForSpan(
       record({
         kind: "order_number",
         proposedValue: order,
-        confidence: "strong",
+        confidence:
+          classifyOrderIdentifierStrength(order) === "strong_structured"
+            ? "strong"
+            : "weak",
         sourceWording: order,
         messageId,
       }),
@@ -841,11 +861,12 @@ function identifierStrengthFor(
   value: string,
 ): IdentifierSignalStrength {
   if (kind === "cad_job_number") {
-    return classifyCadIdentifierStrength(value) === "strong_structured"
-      ? "strong_structured"
-      : "weak_numeric";
+    return classifyCadIdentifierStrength(value) ?? "supporting";
   }
-  if (kind === "order_number" || kind === "anchor_thread") {
+  if (kind === "order_number") {
+    return classifyOrderIdentifierStrength(value) ?? "supporting";
+  }
+  if (kind === "anchor_thread") {
     return "strong_structured";
   }
   return "supporting";
@@ -873,7 +894,15 @@ export function extractStrongProjectIdentifiers(input: {
     const key = `${kind}:${value.toLowerCase()}`;
     if (seen.has(key)) return;
     seen.add(key);
-    identifiers.push({ kind, value, strength });
+    identifiers.push({
+      kind,
+      value,
+      strength,
+      contextRequired:
+        kind === "cad_job_number" || kind === "order_number"
+          ? identifierRequiresTypedContext(value)
+          : false,
+    });
   };
 
   if (input.currentSpecs.cadJobNumber?.trim()) {
@@ -985,11 +1014,19 @@ export function discoverRelatedThreadCandidates(input: {
   const weakCads = input.identifiers.filter(
     (row) =>
       row.kind === "cad_job_number" &&
-      classifyCadIdentifierStrength(row.value) === "weak_numeric",
+      isWeakIdentifierSpecificity(classifyCadIdentifierStrength(row.value)),
   );
-  const orderIds = input.identifiers.filter(
+  const strongOrders = input.identifiers.filter(
     (row) =>
-      row.kind === "order_number" && isPlausibleOrderIdentifier(row.value),
+      row.kind === "order_number" &&
+      isPlausibleOrderIdentifier(row.value) &&
+      isStrongStructuredOrderIdentifier(row.value),
+  );
+  const weakOrders = input.identifiers.filter(
+    (row) =>
+      row.kind === "order_number" &&
+      isPlausibleOrderIdentifier(row.value) &&
+      isWeakIdentifierSpecificity(classifyOrderIdentifierStrength(row.value)),
   );
   const vendors = input.identifiers
     .filter((row) => row.kind === "vendor")
@@ -1026,17 +1063,22 @@ export function discoverRelatedThreadCandidates(input: {
     }
 
     for (const cad of weakCads) {
-      if (!hasBoundedIdentifierToken(subject, cad.value)) continue;
+      if (!candidateHasTypedCadIdentifier(subject, cad.value)) continue;
+      supportingScore += WEAK_IDENTIFIER_SUPPORT_SCORE;
+      const cadStrength = classifyCadIdentifierStrength(cad.value);
       reasons.push({
-        kind: "cad_identifier_weak_numeric",
+        kind:
+          cadStrength === "weak_short_structured"
+            ? "cad_identifier_weak_short_structured"
+            : "cad_identifier_weak_numeric",
         value: cad.value,
         messageId: row.messageId,
         subject: row.subject,
-        detail: `Numeric CAD/job token ${cad.value} is too weak to discover a related thread by itself.`,
+        detail: `Weak CAD/job identifier ${cad.value} is supporting/review evidence only and cannot establish project identity.`,
       });
     }
 
-    for (const order of orderIds) {
+    for (const order of strongOrders) {
       if (!hasBoundedIdentifierToken(subject, order.value)) continue;
       strongScore += 100;
       reasons.push({
@@ -1045,6 +1087,22 @@ export function discoverRelatedThreadCandidates(input: {
         messageId: row.messageId,
         subject: row.subject,
         detail: `Validated order identifier ${order.value} is strong project identity evidence.`,
+      });
+    }
+
+    for (const order of weakOrders) {
+      if (!candidateHasTypedOrderIdentifier(subject, order.value)) continue;
+      supportingScore += WEAK_IDENTIFIER_SUPPORT_SCORE;
+      const orderStrength = classifyOrderIdentifierStrength(order.value);
+      reasons.push({
+        kind:
+          orderStrength === "weak_short_structured"
+            ? "order_identifier_weak_short_structured"
+            : "order_identifier_weak_numeric",
+        value: order.value,
+        messageId: row.messageId,
+        subject: row.subject,
+        detail: `Weak order identifier ${order.value} is supporting/review evidence only and cannot establish project identity.`,
       });
     }
 
@@ -1061,7 +1119,7 @@ export function discoverRelatedThreadCandidates(input: {
     );
     const dated = dateWindowMatch(row.sentAt, dates);
 
-    if (strongScore > 0) {
+    if (strongScore > 0 || supportingScore > 0) {
       if (vendorHit) {
         supportingScore += 15;
         reasons.push({

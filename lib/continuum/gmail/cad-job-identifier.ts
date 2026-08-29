@@ -1,9 +1,17 @@
 /**
  * CAD / job identifier quality guard.
  * Words like "presentation" after "CAD" are not job identifiers.
- * Short numeric tokens remain extractable but are weak discovery keys.
+ * Short numeric and short structured tokens remain extractable but are
+ * weak discovery keys. Prefix stripping (CAD A-1 → A-1) does not create
+ * a bare global needle.
  * Evidence only — does not write project specs. automaticApply: false.
  */
+
+import {
+  classifyIdentifierSpecificity,
+  identifierTokensMatch,
+  type IdentifierSpecificity,
+} from "./identifier-specificity";
 
 export const CAD_IDENTIFIER_STOPWORDS = [
   "presentation",
@@ -46,7 +54,7 @@ const JOB_PREFIX_PATTERN =
 const J_CODE_PATTERN = /\b(J-\d+[A-Za-z0-9-]*)\b/gi;
 const STRUCTURED_ALNUM_JOB_PATTERN = /\b([A-Z]{2,}\d{3,}[A-Za-z0-9]*)\b/g;
 
-export type CadIdentifierStrength = "strong_structured" | "weak_numeric";
+export type CadIdentifierStrength = IdentifierSpecificity;
 
 function compactToken(value: string): string {
   return value.replace(/^-+/, "").trim();
@@ -66,9 +74,7 @@ export function classifyCadIdentifierStrength(
   value: string,
 ): CadIdentifierStrength | null {
   if (!isPlausibleCadJobIdentifier(value)) return null;
-  const token = compactToken(value);
-  if (/^\d+$/.test(token)) return "weak_numeric";
-  return "strong_structured";
+  return classifyIdentifierSpecificity(compactToken(value));
 }
 
 export function isStrongStructuredCadIdentifier(value: string): boolean {
@@ -81,6 +87,15 @@ export function hasBoundedIdentifierToken(haystack: string, token: string): bool
   const escaped = needle.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   return new RegExp(`(?:^|[^A-Za-z0-9])${escaped}(?:$|[^A-Za-z0-9])`, "i").test(
     haystack,
+  );
+}
+
+export function candidateHasTypedCadIdentifier(
+  text: string,
+  value: string,
+): boolean {
+  return extractCadJobIdentifiers(text).some((cad) =>
+    identifierTokensMatch(cad, value),
   );
 }
 

@@ -1,8 +1,11 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  candidateHasTypedOrderIdentifier,
+  classifyOrderIdentifierStrength,
   extractOrderIdentifiers,
   isPlausibleOrderIdentifier,
+  isStrongStructuredOrderIdentifier,
 } from "./order-identifier";
 
 describe("order identifier extraction", () => {
@@ -42,5 +45,26 @@ describe("order identifier extraction", () => {
     assert.deepEqual(extractOrderIdentifiers("order confirmation"), []);
     assert.deepEqual(extractOrderIdentifiers("invoice update presentation"), []);
     assert.deepEqual(extractOrderIdentifiers("in order to proceed"), []);
+  });
+});
+
+describe("order identifier strength", () => {
+  it("classifies numeric orders as weak and structured orders as strong", () => {
+    assert.equal(classifyOrderIdentifierStrength("555"), "weak_numeric");
+    assert.equal(isStrongStructuredOrderIdentifier("555"), false);
+    assert.equal(classifyOrderIdentifierStrength("AB-555"), "strong_structured");
+    assert.equal(isStrongStructuredOrderIdentifier("AB-555"), true);
+  });
+
+  it("requires typed order context on the candidate side", () => {
+    assert.equal(candidateHasTypedOrderIdentifier("Invoice 555", "555"), false);
+    assert.equal(candidateHasTypedOrderIdentifier("Payment 555", "555"), false);
+    assert.equal(candidateHasTypedOrderIdentifier("Re: 555", "555"), false);
+    assert.equal(candidateHasTypedOrderIdentifier("Job 555", "555"), false);
+    assert.equal(candidateHasTypedOrderIdentifier("555 reminder", "555"), false);
+    assert.equal(candidateHasTypedOrderIdentifier("Invoice AB-555", "555"), false);
+    assert.equal(candidateHasTypedOrderIdentifier("Order #555", "555"), true);
+    assert.equal(candidateHasTypedOrderIdentifier("Order number 555", "555"), true);
+    assert.equal(candidateHasTypedOrderIdentifier("Order: AB-555", "AB-555"), true);
   });
 });

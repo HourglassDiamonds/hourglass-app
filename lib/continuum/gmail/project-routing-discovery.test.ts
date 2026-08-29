@@ -419,7 +419,11 @@ describe("order identifier extraction used by discovery identifiers", () => {
     });
     assert.equal(
       identifiers.some(
-        (row) => row.kind === "order_number" && row.value === "555",
+        (row) =>
+          row.kind === "order_number" &&
+          row.value === "555" &&
+          row.strength === "weak_numeric" &&
+          row.contextRequired === true,
       ),
       true,
     );
@@ -430,5 +434,312 @@ describe("order identifier extraction used by discovery identifiers", () => {
       ),
       false,
     );
+  });
+});
+
+describe("identifier specificity discovery false positives", () => {
+  it("does not give numeric order 555 identity from generic subjects", () => {
+    const subjects = [
+      "Invoice 555",
+      "Payment 555",
+      "Re: 555",
+      "Job 555",
+      "555 reminder",
+      "Invoice AB-555",
+    ];
+    for (const subject of subjects) {
+      const handoff = discover(
+        [
+          {
+            kind: "order_number",
+            value: "555",
+            strength: "weak_numeric",
+            contextRequired: true,
+          },
+        ],
+        [
+          indexed({
+            messageId: `idx-${subject}`,
+            threadId: `19generic555${subject.length}`,
+            subject,
+            fromEmail: PERSON,
+            toEmail: FOUNDER,
+          }),
+        ],
+      );
+      assert.equal(handoff.candidates.length, 0, subject);
+      assert.equal(
+        handoff.candidates.some((row) => row.score >= 100),
+        false,
+        subject,
+      );
+    }
+  });
+
+  it("recognizes typed order context without making 555 strong identity", () => {
+    const handoff = discover(
+      [
+        {
+          kind: "order_number",
+          value: "555",
+          strength: "weak_numeric",
+          contextRequired: true,
+        },
+      ],
+      [
+        indexed({
+          messageId: "idx-order-hash",
+          threadId: "19orderhash55500001",
+          subject: "Order #555",
+          fromEmail: PERSON,
+          toEmail: FOUNDER,
+        }),
+        indexed({
+          messageId: "idx-order-number",
+          threadId: "19ordernumber555001",
+          subject: "Order number 555",
+          fromEmail: PERSON,
+          toEmail: FOUNDER,
+        }),
+      ],
+    );
+    assert.equal(handoff.candidates.length, 0);
+    assert.equal(
+      handoff.candidates.some((row) => row.score >= 100),
+      false,
+    );
+  });
+
+  it("may surface a weak order only as review when supporting context also matches", () => {
+    const handoff = discover(
+      [
+        {
+          kind: "order_number",
+          value: "555",
+          strength: "weak_numeric",
+          contextRequired: true,
+        },
+        {
+          kind: "person_email_hash",
+          value: PERSON_HASH,
+          strength: "supporting",
+        },
+        { kind: "vendor", value: "Vendor North", strength: "supporting" },
+        {
+          kind: "project_date",
+          value: "2024-04-04T10:00:00.000Z",
+          strength: "supporting",
+        },
+      ],
+      [
+        indexed({
+          messageId: "idx-order-review",
+          threadId: "19orderreview555001",
+          subject: "Order #555 Vendor North",
+          fromEmail: PERSON,
+          toEmail: FOUNDER,
+          sentAt: "2024-04-05T10:00:00.000Z",
+        }),
+      ],
+    );
+    const row = handoff.candidates.find(
+      (candidate) => candidate.threadId === "19orderreview555001",
+    );
+    assert.ok(row);
+    assert.equal(row.score >= 100, false);
+    assert.equal(row.strength === "exact" || row.strength === "strong", false);
+    assert.equal(row.requiresFounderReview, true);
+    assert.equal(
+      row.reasons.some((reason) => reason.kind === "order_identifier_weak_numeric"),
+      true,
+    );
+    assert.equal(
+      row.reasons.some((reason) => reason.kind === "vendor_supporting_only"),
+      true,
+    );
+  });
+
+  it("does not treat CAD-1, J-1, J-12, or A-1 as high-confidence needles", () => {
+    for (const token of ["CAD-1", "J-1", "J-12", "A-1"]) {
+      const handoff = discover(
+        [
+          {
+            kind: "cad_job_number",
+            value: token,
+            strength: "weak_short_structured",
+            contextRequired: true,
+          },
+        ],
+        [
+          indexed({
+            messageId: `idx-bare-${token}`,
+            threadId: `19bare${token.replace("-", "")}0001`,
+            subject: `Apartment ${token} notice`,
+            fromEmail: PERSON,
+            toEmail: FOUNDER,
+          }),
+        ],
+      );
+      assert.equal(handoff.candidates.length, 0, token);
+      assert.equal(
+        handoff.candidates.some((row) => row.score >= 100),
+        false,
+        token,
+      );
+    }
+  });
+
+  it("excludes CAD A-1 vs Apartment A-1 and keeps CAD A-1 revision as review-level", () => {
+    const identifiers: StrongProjectIdentifier[] = [
+      {
+        kind: "cad_job_number",
+        value: "A-1",
+        strength: "weak_short_structured",
+        contextRequired: true,
+      },
+    ];
+    const excluded = discover(identifiers, [
+      indexed({
+        messageId: "idx-apt",
+        threadId: "19apartmenta1000001",
+        subject: "Apartment A-1 notice",
+        fromEmail: PERSON,
+        toEmail: FOUNDER,
+      }),
+    ]);
+    assert.equal(excluded.candidates.length, 0);
+
+    const alone = discover(identifiers, [
+      indexed({
+        messageId: "idx-cad-a1",
+        threadId: "19cada1revision00001",
+        subject: "CAD A-1 revision",
+        fromEmail: PERSON,
+        toEmail: FOUNDER,
+      }),
+    ]);
+    assert.equal(alone.candidates.length, 0);
+
+    const supported = discover(
+      [
+        ...identifiers,
+        {
+          kind: "person_email_hash",
+          value: PERSON_HASH,
+          strength: "supporting",
+        },
+        { kind: "vendor", value: "Vendor North", strength: "supporting" },
+        {
+          kind: "project_date",
+          value: "2024-04-04T10:00:00.000Z",
+          strength: "supporting",
+        },
+      ],
+      [
+        indexed({
+          messageId: "idx-cad-a1-supported",
+          threadId: "19cada1supported0001",
+          subject: "CAD A-1 revision Vendor North",
+          fromEmail: PERSON,
+          toEmail: FOUNDER,
+          sentAt: "2024-04-05T10:00:00.000Z",
+        }),
+      ],
+    );
+    const row = supported.candidates.find(
+      (candidate) => candidate.threadId === "19cada1supported0001",
+    );
+    assert.ok(row);
+    assert.equal(row.score >= 100, false);
+    assert.equal(
+      row.reasons.some(
+        (reason) => reason.kind === "cad_identifier_weak_short_structured",
+      ),
+      true,
+    );
+  });
+
+  it("still treats CBR2000037, CAD-8821, and J-4491 as strong identity", () => {
+    for (const token of ["CBR2000037", "CAD-8821", "J-4491"]) {
+      const handoff = discover(
+        [
+          {
+            kind: "cad_job_number",
+            value: token,
+            strength: "strong_structured",
+          },
+        ],
+        [
+          indexed({
+            messageId: `idx-strong-${token}`,
+            threadId: `19strong${token.replace("-", "")}01`,
+            subject: `${token} follow-up`,
+            fromEmail: PERSON,
+            toEmail: FOUNDER,
+          }),
+        ],
+      );
+      const row = handoff.candidates[0];
+      assert.ok(row, token);
+      assert.equal(row.score >= 100, true, token);
+      assert.equal(
+        row.reasons.some((reason) => reason.kind === "cad_identifier_strong"),
+        true,
+        token,
+      );
+    }
+  });
+
+  it("does not match longer superstrings of strong identifiers", () => {
+    const cases = [
+      ["CBR2000037", "CBR20000370 follow-up"],
+      ["CAD-8821", "CAD-88210 follow-up"],
+      ["J-4491", "J-44910 ready"],
+    ] as const;
+    for (const [token, subject] of cases) {
+      const handoff = discover(
+        [
+          {
+            kind: "cad_job_number",
+            value: token,
+            strength: "strong_structured",
+          },
+        ],
+        [
+          indexed({
+            messageId: `idx-super-${token}`,
+            threadId: `19super${token.replace("-", "")}01`,
+            subject,
+            fromEmail: PERSON,
+            toEmail: FOUNDER,
+          }),
+        ],
+      );
+      assert.equal(handoff.candidates.length, 0, subject);
+    }
+  });
+
+  it("keeps vendor as supporting only even beside a weak order", () => {
+    const handoff = discover(
+      [
+        {
+          kind: "order_number",
+          value: "555",
+          strength: "weak_numeric",
+          contextRequired: true,
+        },
+        { kind: "vendor", value: "Vendor North", strength: "supporting" },
+      ],
+      [
+        indexed({
+          messageId: "idx-vendor-weak-order",
+          threadId: "19vendorweakorder001",
+          subject: "Vendor North invoice",
+          fromEmail: PERSON,
+          toEmail: FOUNDER,
+        }),
+      ],
+    );
+    assert.equal(handoff.candidates.length, 0);
   });
 });

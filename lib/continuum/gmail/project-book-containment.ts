@@ -11,7 +11,14 @@ import {
   classifyCadIdentifierStrength,
   extractCadJobIdentifiers,
 } from "./cad-job-identifier";
-import { extractOrderIdentifiers } from "./order-identifier";
+import {
+  isWeakIdentifierSpecificity,
+  WEAK_IDENTIFIER_SUPPORT_SCORE,
+} from "./identifier-specificity";
+import {
+  classifyOrderIdentifierStrength,
+  extractOrderIdentifiers,
+} from "./order-identifier";
 import {
   classifyJewelryItemTypes,
   RECONSTRUCTION_MUTATION_BOUNDARY,
@@ -95,7 +102,10 @@ export const ATTRIBUTION_REASON_KINDS = [
   "exact_cad_job_identifier",
   "cad_identifier_strong",
   "cad_identifier_weak_numeric",
+  "cad_identifier_weak_short_structured",
   "exact_order_identifier",
+  "order_identifier_weak_numeric",
+  "order_identifier_weak_short_structured",
   "exact_project_artifact_reference",
   "bounded_project_date_range",
   "strong_subject_continuity",
@@ -502,23 +512,39 @@ function scoreProject(
         value: cad,
         detail: `Structured CAD/job identifier ${cad} is strong project identity evidence.`,
       });
-    } else if (strength === "weak_numeric") {
+    } else if (isWeakIdentifierSpecificity(strength)) {
+      score += WEAK_IDENTIFIER_SUPPORT_SCORE;
       reasons.push({
-        kind: "cad_identifier_weak_numeric",
+        kind:
+          strength === "weak_short_structured"
+            ? "cad_identifier_weak_short_structured"
+            : "cad_identifier_weak_numeric",
         value: cad,
-        detail: `Numeric CAD/job token ${cad} is too weak to route or discover a project by itself.`,
+        detail: `Weak CAD/job identifier ${cad} is too weak to route or discover a project by itself.`,
       });
     }
   }
 
   for (const order of orders) {
-    if (project.orderNumbers.some((id) => norm(id) === norm(order))) {
+    if (!project.orderNumbers.some((id) => norm(id) === norm(order))) continue;
+    const strength = classifyOrderIdentifierStrength(order);
+    if (strength === "strong_structured") {
       score += 100;
       strongIdentity = true;
       reasons.push({
         kind: "exact_order_identifier",
         value: order,
         detail: `Validated order identifier ${order} belongs to Project ${project.projectId}.`,
+      });
+    } else if (isWeakIdentifierSpecificity(strength)) {
+      score += WEAK_IDENTIFIER_SUPPORT_SCORE;
+      reasons.push({
+        kind:
+          strength === "weak_short_structured"
+            ? "order_identifier_weak_short_structured"
+            : "order_identifier_weak_numeric",
+        value: order,
+        detail: `Weak order identifier ${order} is too weak to route or attach a project by itself.`,
       });
     }
   }
@@ -841,7 +867,9 @@ function shouldProposeNewProject(
       !identifierOwnedByCatalog(cad, books, "cadJobNumbers"),
   );
   const unknownOrder = extractOrderIdentifiers(hay).some(
-    (order) => !identifierOwnedByCatalog(order, books, "orderNumbers"),
+    (order) =>
+      classifyOrderIdentifierStrength(order) === "strong_structured" &&
+      !identifierOwnedByCatalog(order, books, "orderNumbers"),
   );
   if (unknownCad || unknownOrder) return true;
   if (attribution.candidates.length > 0) return false;

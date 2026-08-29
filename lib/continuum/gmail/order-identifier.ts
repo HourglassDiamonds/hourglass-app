@@ -2,8 +2,15 @@
  * Order identifier quality guard.
  * Words such as "order", "invoice", "confirmation" are never identifiers.
  * Does not broaden generic number extraction. Does not add PO unless contracted.
+ * Numeric captures such as 555 remain extractable but are weak discovery keys.
  * Evidence only — does not write project specs. automaticApply: false.
  */
+
+import {
+  classifyIdentifierSpecificity,
+  identifierTokensMatch,
+  type IdentifierSpecificity,
+} from "./identifier-specificity";
 
 export const ORDER_IDENTIFIER_STOPWORDS = [
   "order",
@@ -65,6 +72,19 @@ function pushUnique(into: string[], value: string): void {
   }
 }
 
+export type OrderIdentifierStrength = IdentifierSpecificity;
+
+export function classifyOrderIdentifierStrength(
+  value: string,
+): OrderIdentifierStrength | null {
+  if (!isPlausibleOrderIdentifier(value)) return null;
+  return classifyIdentifierSpecificity(compactToken(value));
+}
+
+export function isStrongStructuredOrderIdentifier(value: string): boolean {
+  return classifyOrderIdentifierStrength(value) === "strong_structured";
+}
+
 export function extractOrderIdentifiers(text: string): string[] {
   const found: string[] = [];
   if (!text.trim()) return found;
@@ -75,4 +95,13 @@ export function extractOrderIdentifiers(text: string): string[] {
   }
 
   return found;
+}
+
+export function candidateHasTypedOrderIdentifier(
+  text: string,
+  value: string,
+): boolean {
+  return extractOrderIdentifiers(text).some((order) =>
+    identifierTokensMatch(order, value),
+  );
 }

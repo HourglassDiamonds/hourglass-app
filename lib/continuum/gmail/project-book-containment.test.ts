@@ -566,7 +566,8 @@ describe("containment mutation source boundary", () => {
   it("does not import canonical writers, Gmail fetch, or CoS writes", () => {
     const source = readFileSync(join(DIR, "project-book-containment.ts"), "utf8");
     const fixture = readFileSync(join(DIR, "alea-chedekal-fixture.ts"), "utf8");
-    for (const text of [source, fixture]) {
+    const specificity = readFileSync(join(DIR, "identifier-specificity.ts"), "utf8");
+    for (const text of [source, fixture, specificity]) {
       assert.doesNotMatch(text, /correctProjectSpec|applyProjectSpecCorrection/);
       assert.doesNotMatch(text, /editPersonProfile|createPersonAtomic|insertEntity\(/);
       assert.doesNotMatch(text, /runExactProjectThreadFetch|getThread\(|listMessages\(/);
@@ -809,7 +810,203 @@ describe("duplicate identifier collisions", () => {
     assertAmbiguous(collideDup([DUP_A, DUP_B], rows));
     assertAmbiguous(collideDup([DUP_B, DUP_A], rows));
   });
+
+  it("does not pick a project for duplicate weak numeric orders", () => {
+    const weakA = book({
+      projectId: PROJECT_A_ID,
+      title: "Weak order A",
+      orderNumbers: ["555"],
+    });
+    const weakB = book({
+      projectId: PROJECT_B_ID,
+      title: "Weak order B",
+      orderNumbers: ["555"],
+    });
+    const rows = [
+      evidence({
+        evidenceId: "dup-weak-order",
+        subject: "Order #555",
+        text: "Order #555 shipped.",
+      }),
+    ];
+    for (const books of [
+      [weakA, weakB],
+      [weakB, weakA],
+    ]) {
+      const result = collideDup(books, rows);
+      const row = result.attributions[0];
+      assert.ok(row);
+      assert.notEqual(row.resolution, "exact_project");
+      assert.equal(row.attachedProjectId, null);
+      assert.equal(row.requiresFounderReview, true);
+      assert.equal(row.resolution, "ambiguous_between_projects");
+    }
+  });
+
+  it("does not pick a project for duplicate weak short CAD identifiers", () => {
+    const weakA = book({
+      projectId: PROJECT_A_ID,
+      title: "Weak CAD A",
+      cadJobNumbers: ["CAD-1"],
+    });
+    const weakB = book({
+      projectId: PROJECT_B_ID,
+      title: "Weak CAD B",
+      cadJobNumbers: ["CAD-1"],
+    });
+    const rows = [
+      evidence({
+        evidenceId: "dup-weak-cad",
+        text: "Please see CAD-1.",
+      }),
+    ];
+    for (const books of [
+      [weakA, weakB],
+      [weakB, weakA],
+    ]) {
+      const result = collideDup(books, rows);
+      const row = result.attributions[0];
+      assert.ok(row);
+      assert.notEqual(row.resolution, "exact_project");
+      assert.equal(row.attachedProjectId, null);
+      assert.equal(row.requiresFounderReview, true);
+      assert.equal(row.resolution, "ambiguous_between_projects");
+    }
+  });
 });
+
+describe("numeric order and short CAD routing false positives", () => {
+  it("does not attach Order #555 as strong identity", () => {
+    const result = routeProjectEvidence({
+      person: PERSON,
+      projectBooks: [
+        book({
+          projectId: PROJECT_A_ID,
+          title: "Numeric order book",
+          orderNumbers: ["555"],
+        }),
+      ],
+      evidence: [
+        evidence({
+          evidenceId: "order-555",
+          subject: "Order #555",
+          text: "Order number 555 is ready.",
+        }),
+      ],
+    });
+    const row = result.attributions[0];
+    assert.ok(row);
+    assert.notEqual(row.resolution, "exact_project");
+    assert.equal(row.attachedProjectId, null);
+    assert.equal(row.score < 80, true);
+    assert.equal(
+      row.reasons.some((reason) => reason.kind === "order_identifier_weak_numeric"),
+      true,
+    );
+    assert.equal(result.possibleNewProjects.length, 0);
+  });
+
+  it("does not treat generic subjects containing 555 as order identity", () => {
+    const books = [
+      book({
+        projectId: PROJECT_A_ID,
+        title: "Numeric order book",
+        orderNumbers: ["555"],
+      }),
+    ];
+    for (const subject of [
+      "Invoice 555",
+      "Payment 555",
+      "Re: 555",
+      "Job 555",
+      "555 reminder",
+      "Invoice AB-555",
+    ]) {
+      const result = routeProjectEvidence({
+        person: PERSON,
+        projectBooks: books,
+        evidence: [
+          evidence({
+            evidenceId: `generic-${subject}`,
+            subject,
+            text: subject,
+          }),
+        ],
+      });
+      assert.notEqual(result.attributions[0]?.resolution, "exact_project", subject);
+      assert.equal(result.attributions[0]?.attachedProjectId, null, subject);
+      assert.equal(
+        result.attributions[0]?.reasons.some(
+          (reason) => reason.kind === "exact_order_identifier",
+        ),
+        false,
+        subject,
+      );
+    }
+  });
+
+  it("does not attach CAD A-1 from an apartment notice", () => {
+    const result = routeProjectEvidence({
+      person: PERSON,
+      projectBooks: [
+        book({
+          projectId: PROJECT_A_ID,
+          title: "Prefix-stripped CAD",
+          cadJobNumbers: ["A-1"],
+        }),
+      ],
+      evidence: [
+        evidence({
+          evidenceId: "apartment-a1",
+          subject: "Apartment A-1 notice",
+          text: "Apartment A-1 notice for an unrelated building.",
+        }),
+      ],
+    });
+    assert.notEqual(result.attributions[0]?.resolution, "exact_project");
+    assert.equal(result.attributions[0]?.attachedProjectId, null);
+    assert.equal(
+      result.attributions[0]?.reasons.some(
+        (reason) =>
+          reason.kind === "exact_cad_job_identifier" ||
+          reason.kind === "cad_identifier_strong",
+      ),
+      false,
+    );
+  });
+
+  it("keeps CAD A-1 revision as weak review context, not exact attachment", () => {
+    const result = routeProjectEvidence({
+      person: PERSON,
+      projectBooks: [
+        book({
+          projectId: PROJECT_A_ID,
+          title: "Prefix-stripped CAD",
+          cadJobNumbers: ["A-1"],
+        }),
+      ],
+      evidence: [
+        evidence({
+          evidenceId: "cad-a1-revision",
+          subject: "CAD A-1 revision",
+          text: "CAD A-1 revision attached.",
+        }),
+      ],
+    });
+    const row = result.attributions[0];
+    assert.ok(row);
+    assert.notEqual(row.resolution, "exact_project");
+    assert.equal(row.attachedProjectId, null);
+    assert.equal(row.score < 80, true);
+    assert.equal(
+      row.reasons.some(
+        (reason) => reason.kind === "cad_identifier_weak_short_structured",
+      ),
+      true,
+    );
+  });
+});
+
 
 describe("itemId project ownership", () => {
   it("accepts a valid same-project itemId", () => {

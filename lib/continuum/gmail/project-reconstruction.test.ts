@@ -431,7 +431,9 @@ describe("reconstruction mutation source boundary", () => {
     const source = readFileSync(join(DIR, "project-reconstruction.ts"), "utf8");
     const fixture = readFileSync(join(DIR, "alea-chedekal-fixture.ts"), "utf8");
     const cad = readFileSync(join(DIR, "cad-job-identifier.ts"), "utf8");
-    for (const text of [source, fixture, cad]) {
+    const order = readFileSync(join(DIR, "order-identifier.ts"), "utf8");
+    const specificity = readFileSync(join(DIR, "identifier-specificity.ts"), "utf8");
+    for (const text of [source, fixture, cad, order, specificity]) {
       assert.doesNotMatch(text, /correctProjectSpec|applyProjectSpecCorrection/);
       assert.doesNotMatch(text, /editPersonProfile|createPersonAtomic|insertEntity\(/);
       assert.doesNotMatch(text, /runExactProjectThreadFetch|getThread\(|listMessages\(/);
