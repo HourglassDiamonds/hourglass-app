@@ -7,11 +7,13 @@
 
 import type { GmailIndexedMessage } from "@/lib/continuum/client-memory/gmail/types";
 import {
+  ACHEDEKAL_AMBIGUOUS_THREAD_CANDIDATE_LIMIT,
   ACHEDEKAL_DISPLAY_NAME,
   ACHEDEKAL_DISCOVERY_WARNING,
   ACHEDEKAL_LIFECYCLE_LABEL,
   ACHEDEKAL_PROJECT_ID,
   ACHEDEKAL_RELATED_THREAD_CANDIDATE_LIMIT,
+  ACHEDEKAL_UNASSIGNED_THREAD_CANDIDATE_LIMIT,
   isPermittedAchedekalProjectId,
 } from "./achedekal-acceptance";
 import type { GmailAttachmentMeta } from "./types";
@@ -25,10 +27,13 @@ import {
 } from "./order-identifier";
 import type { ExistingProjectBook } from "./project-book-containment";
 import {
+  personDiscoverySeedHashes,
+  threadTouchesPersonDiscoverySeed,
+} from "./participant-retrieval-role";
+import {
   discoverRelatedThreadCandidates,
   extractProjectIdentifiersFromIndexedMetadata,
   isDiscardedIndexedMessage,
-  personEmailHashesFromIndexedThread,
   RECONSTRUCTION_MUTATION_BOUNDARY,
   type RelatedThreadCandidate,
   type RelatedThreadMatchReason,
@@ -104,10 +109,14 @@ export type AchedekalDiscoverySuccess = {
   lifecycle: typeof ACHEDEKAL_LIFECYCLE_LABEL;
   warning: typeof ACHEDEKAL_DISCOVERY_WARNING;
   knownThread: AchedekalKnownThreadSummary | null;
+  knownThreadIndexStatus: "indexed" | "empty-index" | "no-stored-thread";
   related: AchedekalDiscoveredThread[];
   ambiguous: AchedekalDiscoveredThread[];
   unassigned: AchedekalDiscoveredThread[];
   candidateLimit: typeof ACHEDEKAL_RELATED_THREAD_CANDIDATE_LIMIT;
+  relatedLimit: typeof ACHEDEKAL_RELATED_THREAD_CANDIDATE_LIMIT;
+  ambiguousLimit: typeof ACHEDEKAL_AMBIGUOUS_THREAD_CANDIDATE_LIMIT;
+  unassignedLimit: typeof ACHEDEKAL_UNASSIGNED_THREAD_CANDIDATE_LIMIT;
   resultsLimited: boolean;
   scannedMessageCount: number;
   hydratedThreadCount: number;
@@ -132,6 +141,7 @@ export type AchedekalDiscoveryProject = {
   centerStone: string | null;
   personId: string | null;
   personEmailHash: string | null;
+  personEmailHashes?: readonly string[];
 };
 
 export type AchedekalDiscoveryCatalog = {
@@ -308,6 +318,31 @@ function attachmentSummary(rows: readonly GmailAttachmentMeta[]): {
   return { attachmentCount: rows.length, attachmentTypes: types };
 }
 
+export const DISCOVERY_ZERO_SCORE_DISPLAY_RULE =
+  "Do not display score-0 insufficient retrieval hits unless they carry meaningful collision or Person-related possible-new-project evidence.";
+
+export function isMeaningfulDiscoveryReviewRow(
+  row: Pick<
+    AchedekalDiscoveredThread,
+    "score" | "strength" | "reviewStatus" | "reasons"
+  >,
+): boolean {
+  const meaningful = row.reasons.some(
+    (reason) =>
+      reason.kind === "spans_multiple_projects" ||
+      reason.kind === "ambiguous_between_projects" ||
+      reason.kind === "possible_new_project" ||
+      reason.kind === "person_related_unassigned",
+  );
+  if (row.reviewStatus === "candidate") {
+    return row.score > 0 && row.strength !== "insufficient";
+  }
+  if (row.score <= 0 || row.strength === "insufficient") {
+    return meaningful;
+  }
+  return true;
+}
+
 function presentKnownThread(
   threadId: string,
   messages: readonly GmailIndexedMessage[],
@@ -455,22 +490,22 @@ export async function executeAchedekalCandidateDiscovery(
     return failedAchedekalDiscovery("index-unavailable");
   }
 
-  const personHashes = [
+  const canonicalPersonHashes = [
     ...new Set(
-      [
-        project.personEmailHash,
-        ...personEmailHashesFromIndexedThread(
-          knownMessages,
-          input.internalEmailHashes,
-        ),
-      ].filter((value): value is string => Boolean(value)),
+      [project.personEmailHash, ...(project.personEmailHashes ?? [])].filter(
+        (value): value is string => Boolean(value),
+      ),
     ),
   ];
+  const seedHashes = personDiscoverySeedHashes({
+    canonicalPersonEmailHashes: canonicalPersonHashes,
+    internalEmailHashes: input.internalEmailHashes,
+  });
   const identifiers = extractProjectIdentifiersFromIndexedMetadata({
     anchorThreadId: anchorThreadId || ACHEDEKAL_PROJECT_ID,
     currentSpecs: specsOf(project),
-    personEmailHash: personHashes[0] ?? null,
-    personEmailHashes: personHashes,
+    personEmailHash: seedHashes[0] ?? null,
+    personEmailHashes: seedHashes,
     indexedMessages: knownMessages,
     internalEmailHashes: input.internalEmailHashes,
   });
@@ -480,7 +515,7 @@ export async function executeAchedekalCandidateDiscovery(
   let personHits: GmailIndexedMessage[] = [];
   try {
     tokenHits = await input.index.listMessagesMatchingSubjectTokens(tokens);
-    for (const hash of personHashes) {
+    for (const hash of seedHashes) {
       const rows = await input.index.listMessagesTouchingEmailHash(hash);
       personHits.push(
         ...rows.filter((row) => subjectHasStrongIdentifier(row.subject)),
@@ -550,16 +585,24 @@ export async function executeAchedekalCandidateDiscovery(
     );
     const attachments = attachmentMap.get(candidate.threadId) ?? [];
     if (otherOwners.length > 0) {
-      const collision: AchedekalDiscoveryReason = {
-        kind: "spans_multiple_projects",
-        value: [ACHEDEKAL_PROJECT_ID, ...otherOwners.map((book) => book.projectId)].join(
-          ",",
-        ),
-        detail:
-          "Ambiguous between Project Books. Requires founder review. Not attached.",
-      };
+      const collision: AchedekalDiscoveryReason[] = [
+        {
+          kind: "spans_multiple_projects",
+          value: [ACHEDEKAL_PROJECT_ID, ...otherOwners.map((book) => book.projectId)].join(
+            ",",
+          ),
+          detail:
+            "Ambiguous between Project Books. Requires founder review. Not attached.",
+        },
+        {
+          kind: "ambiguous_between_projects",
+          value: otherOwners.map((book) => book.projectId).join(","),
+          detail:
+            "Strong identifiers fit more than one Project Book. No first-match wins.",
+        },
+      ];
       ambiguous.push(
-        presentDiscovered(candidate, attachments, "ambiguous", [collision]),
+        presentDiscovered(candidate, attachments, "ambiguous", collision),
       );
       continue;
     }
@@ -576,6 +619,8 @@ export async function executeAchedekalCandidateDiscovery(
     const otherOwners = owners.filter(
       (book) => book.projectId !== ACHEDEKAL_PROJECT_ID,
     );
+    const personRelated = threadTouchesPersonDiscoverySeed(messages, seedHashes);
+    if (otherOwners.length === 0 && !personRelated) continue;
     const attachments = attachmentMap.get(threadId) ?? [];
     if (otherOwners.length > 0) {
       unassigned.push(
@@ -591,13 +636,19 @@ export async function executeAchedekalCandidateDiscovery(
                 "Indexed evidence fits another Project Book. Not attached to this Project Book.",
             },
             {
+              kind: "ambiguous_between_projects",
+              value: otherOwners.map((book) => book.projectId).join(","),
+              detail:
+                "Strong identifiers fit more than one Project Book. No first-match wins.",
+            },
+            {
               kind: "possible_new_project",
               value: threadId,
               detail:
-                "Possible separate engagement for the same Person. automaticCreate is false.",
+                "Possible separate engagement. automaticCreate is false.",
             },
           ],
-          otherOwners.length > 1 ? "ambiguous" : "unassigned",
+          otherOwners.length > 1 || !personRelated ? "ambiguous" : "unassigned",
         ),
       );
       continue;
@@ -608,6 +659,12 @@ export async function executeAchedekalCandidateDiscovery(
         messages,
         attachments,
         [
+          {
+            kind: "person_related_unassigned",
+            value: threadId,
+            detail:
+              "Same Person, different strong project identifier. Not attached to this Project Book.",
+          },
           {
             kind: "possible_new_project",
             value: threadId,
@@ -630,23 +687,37 @@ export async function executeAchedekalCandidateDiscovery(
   );
   unassigned.sort((left, right) => left.threadId.localeCompare(right.threadId));
 
-  const limitedRelated = related.slice(0, ACHEDEKAL_RELATED_THREAD_CANDIDATE_LIMIT);
-  const remainingSlots = Math.max(
+  const displayRelated = related.filter(isMeaningfulDiscoveryReviewRow);
+  const displayAmbiguous = ambiguous.filter(isMeaningfulDiscoveryReviewRow);
+  const displayUnassigned = unassigned.filter(isMeaningfulDiscoveryReviewRow);
+
+  const limitedRelated = displayRelated.slice(
     0,
-    ACHEDEKAL_RELATED_THREAD_CANDIDATE_LIMIT - limitedRelated.length,
+    ACHEDEKAL_RELATED_THREAD_CANDIDATE_LIMIT,
   );
-  const limitedAmbiguous = ambiguous.slice(0, remainingSlots);
-  const leftover = Math.max(0, remainingSlots - limitedAmbiguous.length);
-  const limitedUnassigned = unassigned.slice(0, leftover);
+  const limitedAmbiguous = displayAmbiguous.slice(
+    0,
+    ACHEDEKAL_AMBIGUOUS_THREAD_CANDIDATE_LIMIT,
+  );
+  const limitedUnassigned = displayUnassigned.slice(
+    0,
+    ACHEDEKAL_UNASSIGNED_THREAD_CANDIDATE_LIMIT,
+  );
   const resultsLimited =
-    related.length > limitedRelated.length ||
-    ambiguous.length > limitedAmbiguous.length ||
-    unassigned.length > limitedUnassigned.length;
+    displayRelated.length > limitedRelated.length ||
+    displayAmbiguous.length > limitedAmbiguous.length ||
+    displayUnassigned.length > limitedUnassigned.length;
 
   let knownAttachments: GmailAttachmentMeta[] = [];
   if (anchorThreadId) {
     knownAttachments = attachmentMap.get(anchorThreadId) ?? [];
   }
+
+  const knownThreadIndexStatus = !anchorThreadId
+    ? "no-stored-thread"
+    : knownMessages.length === 0
+      ? "empty-index"
+      : "indexed";
 
   return {
     ok: true,
@@ -654,13 +725,18 @@ export async function executeAchedekalCandidateDiscovery(
     projectName: ACHEDEKAL_DISPLAY_NAME,
     lifecycle: ACHEDEKAL_LIFECYCLE_LABEL,
     warning: ACHEDEKAL_DISCOVERY_WARNING,
-    knownThread: anchorThreadId
-      ? presentKnownThread(anchorThreadId, knownMessages, knownAttachments)
-      : null,
+    knownThread:
+      knownThreadIndexStatus === "indexed"
+        ? presentKnownThread(anchorThreadId, knownMessages, knownAttachments)
+        : null,
+    knownThreadIndexStatus,
     related: limitedRelated,
     ambiguous: limitedAmbiguous,
     unassigned: limitedUnassigned,
     candidateLimit: ACHEDEKAL_RELATED_THREAD_CANDIDATE_LIMIT,
+    relatedLimit: ACHEDEKAL_RELATED_THREAD_CANDIDATE_LIMIT,
+    ambiguousLimit: ACHEDEKAL_AMBIGUOUS_THREAD_CANDIDATE_LIMIT,
+    unassignedLimit: ACHEDEKAL_UNASSIGNED_THREAD_CANDIDATE_LIMIT,
     resultsLimited,
     scannedMessageCount: scanned.length,
     hydratedThreadCount: hydrated.size,

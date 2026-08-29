@@ -69,14 +69,22 @@ export async function findAchedekalRelatedThreads(
           centerStone: history.centerStone,
           personId,
           personEmailHash,
+          personEmailHashes: personEmailHash ? [personEmailHash] : [],
         };
       },
       async listProjectBooks(): Promise<ExistingProjectBook[]> {
-        const listed = await deskAuth.reader.listProjects({ limit: 64 });
+        const listed = await deskAuth.reader.listProjects();
+        const histories = await Promise.all(
+          listed.map((row) =>
+            row.projectId
+              ? memory.getProjectHistory(row.projectId)
+              : Promise.resolve(null),
+          ),
+        );
         const books: ExistingProjectBook[] = [];
-        for (const row of listed) {
-          if (!row.projectId) continue;
-          const history = await memory.getProjectHistory(row.projectId);
+        listed.forEach((row, index) => {
+          if (!row.projectId) return;
+          const history = histories[index];
           books.push({
             projectId: row.projectId,
             personId: row.people[0]?.personId ?? "",
@@ -91,7 +99,7 @@ export async function findAchedekalRelatedThreads(
             subjectTerms: [],
             dateRange: null,
           });
-        }
+        });
         return books;
       },
     },

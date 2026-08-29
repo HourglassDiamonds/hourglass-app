@@ -35,6 +35,7 @@ import {
   ALEA_CHEDEKAL_PROJECT_B_CAD,
   ALEA_CHEDEKAL_PROJECT_B_ORDER,
   ALEA_CHEDEKAL_PROJECT_B_THREAD_ID,
+  ALEA_DISCOVERY_DUAL_PROJECT_THREAD_ID,
   ALEA_DISCOVERY_GENERIC_PERSON_THREAD_ID,
   ALEA_DISCOVERY_INTERNAL_THREAD_ID,
   ALEA_DISCOVERY_MULTI_CAD_THREAD_ID,
@@ -104,6 +105,7 @@ function targetProject(): AchedekalDiscoveryProject {
     centerStone: null,
     personId: ALEA_CHEDEKAL_FIXTURE_PERSON_ID,
     personEmailHash: PERSON_HASH,
+    personEmailHashes: [PERSON_HASH],
   };
 }
 
@@ -210,7 +212,8 @@ describe("Alea candidate related-thread discovery acceptance", () => {
     assert.equal(ok.fetchesGmail, false);
     assert.equal(ok.knownThread?.threadId, ALEA_CHEDEKAL_FIXTURE_THREAD_ID);
     assert.equal(ok.knownThread?.source, "indexed-metadata");
-    assert.equal(ok.knownThread?.messageCount, 3);
+    assert.equal(ok.knownThread?.messageCount, 4);
+    assert.equal(ok.knownThreadIndexStatus, "indexed");
 
     const relatedIds = idsOf(ok.related);
     assert.equal(relatedIds.includes(ALEA_CHEDEKAL_FIXTURE_THREAD_ID), false);
@@ -224,6 +227,7 @@ describe("Alea candidate related-thread discovery acceptance", () => {
     assert.equal(relatedIds.includes(ALEA_DISCOVERY_SPAM_THREAD_ID), false);
     assert.equal(relatedIds.includes(ALEA_DISCOVERY_OTHER_CLIENT_THREAD_ID), false);
     assert.equal(relatedIds.includes(ALEA_CHEDEKAL_PROJECT_B_THREAD_ID), false);
+    assert.equal(relatedIds.includes(ALEA_DISCOVERY_DUAL_PROJECT_THREAD_ID), false);
 
     const cad = ok.related.find(
       (row) => row.threadId === ALEA_DISCOVERY_RELATED_CAD_THREAD_ID,
@@ -278,6 +282,19 @@ describe("Alea candidate related-thread discovery acceptance", () => {
           reason.kind === "possible_new_project" ||
           reason.kind === "spans_multiple_projects",
       ),
+      true,
+    );
+
+    const dual =
+      ok.ambiguous.find((row) => row.threadId === ALEA_DISCOVERY_DUAL_PROJECT_THREAD_ID) ??
+      ok.unassigned.find((row) => row.threadId === ALEA_DISCOVERY_DUAL_PROJECT_THREAD_ID);
+    assert.ok(dual);
+    assert.equal(dual.reviewStatus, "ambiguous");
+    assert.equal(dual.attachedProjectId, null);
+    assert.equal(dual.requiresFounderReview, true);
+    assert.equal(dual.automaticCreate, false);
+    assert.equal(
+      dual.reasons.some((reason) => reason.kind === "ambiguous_between_projects"),
       true,
     );
   });
@@ -373,12 +390,18 @@ describe("Achedekal discovery UI and route stay founder-only and fetch-free", ()
     assert.match(form, /NOT OPENED|Not opened/);
     assert.match(form, /METADATA ONLY|Metadata only/);
     assert.match(form, /FOUNDER REVIEW REQUIRED|Founder review required/);
+    assert.match(form, /No indexed metadata available for the stored project thread/);
+    assert.match(form, /Related limit/);
+    assert.match(form, /Ambiguous/);
+    assert.match(form, /possible new project/i);
     assert.doesNotMatch(form, /Open thread|Read email|Fetch thread|Review Gmail evidence/);
     assert.doesNotMatch(form, /Apply Correction|Open Job|Move Project|Merge Project/);
     assert.doesNotMatch(form, /formData\.get\(/);
     assert.match(actions, /"use server"/);
     assert.match(actions, /executeAchedekalCandidateDiscovery/);
     assert.match(actions, /ACHEDEKAL_PROJECT_ID/);
+    assert.match(actions, /listProjects\(\)/);
+    assert.doesNotMatch(actions, /listProjects\(\{\s*limit:\s*64\s*\}\)/);
     assert.doesNotMatch(actions, /formData\.get\(/);
     assert.doesNotMatch(actions, /createLiveGmailApi|runExactProjectThreadFetch|getThread\(/);
     assert.doesNotMatch(actions, /correctProjectSpec|insertProjectHistory|insertSourceNote/);

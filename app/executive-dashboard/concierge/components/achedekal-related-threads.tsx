@@ -82,16 +82,24 @@ function DiscoveryResult({
       </p>
       {state.resultsLimited ? (
         <p className="text-[13px] leading-relaxed text-[#c4b7aa]">
-          Ranked / limited to top {state.candidateLimit} thread candidates.
+          Ranked / limited independently: related top {state.relatedLimit},
+          ambiguous top {state.ambiguousLimit}, unassigned / possible new
+          project top {state.unassignedLimit}.
         </p>
       ) : (
         <p className="text-[13px] leading-relaxed text-[#c4b7aa]">
-          Ranked thread candidates. Limit {state.candidateLimit}.
+          Ranked independently. Related limit {state.relatedLimit}. Ambiguous
+          limit {state.ambiguousLimit}. Unassigned / possible new project limit{" "}
+          {state.unassignedLimit}. Score-0 vendor noise is not shown.
         </p>
       )}
 
       <ClientMemorySection title="Known project thread">
-        {state.knownThread ? (
+        {state.knownThreadIndexStatus === "empty-index" ? (
+          <p className="text-[15px] leading-relaxed text-[#c4b7aa]">
+            No indexed metadata available for the stored project thread.
+          </p>
+        ) : state.knownThread ? (
           <div className="text-[15px] text-[#d8cfc4]">
             <p className="text-[#efe8de]">{state.knownThread.subject || "—"}</p>
             <MetaLine label="Thread" value={state.knownThread.threadId} />
@@ -110,7 +118,7 @@ function DiscoveryResult({
           </div>
         ) : (
           <p className="text-[15px] leading-relaxed text-[#c4b7aa]">
-            No indexed metadata for the stored exact thread.
+            No stored project thread on this Project Book.
           </p>
         )}
       </ClientMemorySection>
@@ -133,8 +141,13 @@ function DiscoveryResult({
         )}
       </ClientMemorySection>
 
-      {state.ambiguous.length + state.unassigned.length > 0 ? (
-        <ClientMemorySection title="Ambiguous / unassigned">
+      <ClientMemorySection title="Ambiguous / possible new project">
+        {state.ambiguous.length + state.unassigned.length === 0 ? (
+          <p className="text-[15px] leading-relaxed text-[#c4b7aa]">
+            No meaningful ambiguous collisions or Person-related possible new
+            projects in the bounded review set.
+          </p>
+        ) : (
           <ul className="space-y-5">
             {state.ambiguous.map((row, index) => (
               <CandidateCard
@@ -147,12 +160,12 @@ function DiscoveryResult({
               <CandidateCard
                 key={`unassigned:${row.threadId}`}
                 row={row}
-                heading={`Unassigned ${index + 1}`}
+                heading={`Possible new project ${index + 1}`}
               />
             ))}
           </ul>
-        </ClientMemorySection>
-      ) : null}
+        )}
+      </ClientMemorySection>
     </div>
   );
 }

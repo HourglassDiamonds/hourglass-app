@@ -994,6 +994,8 @@ export function personEmailHashesFromIndexedThread(
   messages: readonly GmailIndexedMessage[],
   internalEmailHashes: readonly string[] = [],
 ): string[] {
+  // Collects non-internal participant hashes for inspection only.
+  // Must not seed Person discovery. Use personDiscoverySeedHashes instead.
   const internal = new Set([
     ...internalHourglassEmailHashes(),
     ...internalEmailHashes,

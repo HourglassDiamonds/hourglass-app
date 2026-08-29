@@ -124,6 +124,16 @@ export function aleaChedekalProtectedThread(): ProtectedExactThread {
   };
 }
 
+export const ALEA_DISCOVERY_VENDOR_EMAIL = "workshop@example.com";
+export const ALEA_DISCOVERY_CC_EMAIL = "support-cc@example.com";
+export const ALEA_VENDOR_FLOOD_COUNT = 50;
+export const ALEA_VENDOR_FLOOD_THREAD_PREFIX = "19vendorflood";
+export const ALEA_DISCOVERY_DUAL_PROJECT_THREAD_ID = "19dualprojectcadab01";
+export const ALEA_COLLISION_FAR_CAD = "CAD-9900";
+export const ALEA_COLLISION_FAR_PROJECT_ID =
+  "22222222-2222-4222-8222-222222222222";
+export const ALEA_COLLISION_FAR_THREAD_ID = "19collisionbeyond64aaa";
+
 function indexed(input: {
   messageId: string;
   threadId: string;
@@ -131,6 +141,7 @@ function indexed(input: {
   subject: string;
   fromEmail: string;
   toEmail: string;
+  ccEmails?: readonly string[];
   direction?: GmailIndexedMessage["direction"];
   labelIds?: readonly string[];
   hasAttachments?: boolean;
@@ -145,13 +156,40 @@ function indexed(input: {
     subject: input.subject,
     fromEmailHash,
     toEmailHashes: [toEmailHash],
-    ccEmailHashes: [],
+    ccEmailHashes: (input.ccEmails ?? []).map((email) => hashEmail(email)!),
     bccEmailHashes: [],
     direction: input.direction ?? "unknown",
     labelIds: [...(input.labelIds ?? [])],
     hasAttachments: input.hasAttachments ?? false,
     sourceSystem: GMAIL_SOURCE_SYSTEM,
   };
+}
+
+export function aleaVendorFloodThreadId(index: number): string {
+  return `${ALEA_VENDOR_FLOOD_THREAD_PREFIX}${String(index).padStart(4, "0")}`;
+}
+
+export function aleaVendorFloodCad(index: number): string {
+  return `CAD-${9100 + index}`;
+}
+
+export function aleaVendorNorthFloodIndexedMessages(): GmailIndexedMessage[] {
+  const rows: GmailIndexedMessage[] = [];
+  for (let index = 1; index <= ALEA_VENDOR_FLOOD_COUNT; index += 1) {
+    const cad = aleaVendorFloodCad(index);
+    rows.push(
+      indexed({
+        messageId: `idx-vendor-flood-${index}`,
+        threadId: aleaVendorFloodThreadId(index),
+        sentAt: "2026-04-01T10:00:00.000Z",
+        subject: `Client ${index} ${cad}`,
+        fromEmail: ALEA_DISCOVERY_VENDOR_EMAIL,
+        toEmail: FOUNDER,
+        direction: "inbound",
+      }),
+    );
+  }
+  return rows;
 }
 
 export function aleaChedekalProjectBProtectedThread(): ProtectedExactThread {
@@ -249,7 +287,7 @@ export const ALEA_DISCOVERY_BRACELET_TERM_THREAD_ID = "19relatedbraceletbbbb";
 export function aleaChedekalDiscoveryIndexedMessages(): GmailIndexedMessage[] {
   const person = ALEA_CHEDEKAL_FIXTURE_EMAIL;
   const studio = "studio@hourglass.example";
-  const vendor = "workshop@example.com";
+  const vendor = ALEA_DISCOVERY_VENDOR_EMAIL;
   return [
     indexed({
       messageId: "idx-anchor-1",
@@ -258,7 +296,17 @@ export function aleaChedekalDiscoveryIndexedMessages(): GmailIndexedMessage[] {
       subject: "Loose stones invoice from Vendor North",
       fromEmail: FOUNDER,
       toEmail: person,
+      ccEmails: [ALEA_DISCOVERY_CC_EMAIL],
       direction: "outbound",
+    }),
+    indexed({
+      messageId: "idx-anchor-vendor",
+      threadId: ALEA_CHEDEKAL_FIXTURE_THREAD_ID,
+      sentAt: "2024-03-12T16:00:00.000Z",
+      subject: "RE: HGD - A. Achedekal-CBR2000037",
+      fromEmail: vendor,
+      toEmail: FOUNDER,
+      direction: "inbound",
     }),
     indexed({
       messageId: "idx-anchor-2",
@@ -396,6 +444,25 @@ export function aleaChedekalDiscoveryIndexedMessages(): GmailIndexedMessage[] {
       toEmail: FOUNDER,
       direction: "inbound",
     }),
+    indexed({
+      messageId: "idx-dual-project",
+      threadId: ALEA_DISCOVERY_DUAL_PROJECT_THREAD_ID,
+      sentAt: "2024-04-07T10:00:00.000Z",
+      subject: `${ALEA_CHEDEKAL_PROJECT_A_CAD} and ${ALEA_CHEDEKAL_PROJECT_B_CAD}`,
+      fromEmail: person,
+      toEmail: FOUNDER,
+      direction: "inbound",
+    }),
+    indexed({
+      messageId: "idx-collision-far",
+      threadId: ALEA_COLLISION_FAR_THREAD_ID,
+      sentAt: "2024-04-08T10:00:00.000Z",
+      subject: `${ALEA_CHEDEKAL_PROJECT_A_CAD} ${ALEA_COLLISION_FAR_CAD}`,
+      fromEmail: person,
+      toEmail: FOUNDER,
+      direction: "inbound",
+    }),
+    ...aleaVendorNorthFloodIndexedMessages(),
   ];
 }
 
