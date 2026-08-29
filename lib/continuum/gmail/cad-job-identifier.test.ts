@@ -41,6 +41,46 @@ describe("CAD / job identifier quality", () => {
     assert.equal(isPlausibleCadJobIdentifier("Hourglass"), false);
     assert.deepEqual(extractCadJobIdentifiers("good job everyone"), []);
   });
+
+  it("rejects URL, cid, query, hash, and hex fragments as CAD identifiers", () => {
+    const vendorCad = `Please find the following for Cad: CBR2000037
+Cad presentation
+Click here for video rendering:
+https://example.test/render/DB865C70`;
+    assert.deepEqual(extractCadJobIdentifiers(vendorCad), ["CBR2000037"]);
+    assert.equal(extractCadJobIdentifiers(vendorCad).includes("DB865C70"), false);
+    assert.deepEqual(
+      extractCadJobIdentifiers("CAD presentation"),
+      [],
+    );
+    assert.deepEqual(
+      extractCadJobIdentifiers("https://example.test/render/DB865C70"),
+      [],
+    );
+    assert.deepEqual(
+      extractCadJobIdentifiers("https://example.test/view?id=DB865C70&ref=FACE12AB"),
+      [],
+    );
+    assert.deepEqual(
+      extractCadJobIdentifiers("https://example.test/view#DB865C70"),
+      [],
+    );
+    assert.deepEqual(
+      extractCadJobIdentifiers("cid:image001.jpg@01D8.DB865C70"),
+      [],
+    );
+    assert.deepEqual(
+      extractCadJobIdentifiers("tracking 9f8e7d6c5b4a3210 for this shipment"),
+      [],
+    );
+    assert.deepEqual(
+      extractCadJobIdentifiers("uuid 550e8400-e29b-41d4-a716-446655440000"),
+      [],
+    );
+    assert.deepEqual(extractCadJobIdentifiers("Please see CAD-8821."), ["CAD-8821"]);
+    assert.deepEqual(extractCadJobIdentifiers("job number J-4491"), ["J-4491"]);
+    assert.deepEqual(extractCadJobIdentifiers("Please see CBR2000037."), ["CBR2000037"]);
+  });
 });
 
 describe("CAD identifier strength", () => {

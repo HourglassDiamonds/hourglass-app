@@ -56,6 +56,12 @@ export type AchedekalCurrentSpecRow = {
   value: string;
 };
 
+export type AchedekalEvidenceOccurrence = {
+  messageDate: string | null;
+  sourceRole: string | null;
+  direction: string | null;
+};
+
 export type AchedekalCandidateRow = {
   field: string;
   label: string;
@@ -65,6 +71,8 @@ export type AchedekalCandidateRow = {
   sourceRole: string | null;
   direction: string | null;
   status: "candidate" | "ambiguous";
+  occurrenceCount: number;
+  occurrences: AchedekalEvidenceOccurrence[];
 };
 
 export type AchedekalProposedCorrectionRow = {
@@ -294,6 +302,19 @@ function candidateRow(
   status: "candidate" | "ambiguous",
 ): AchedekalCandidateRow | null {
   if (!item.proposedValue) return null;
+  const occurrenceSources = item.occurrences?.length
+    ? item.occurrences
+    : [{ messageId: item.messageId, source: item.source }];
+  const occurrences: AchedekalEvidenceOccurrence[] = occurrenceSources.map((row) => {
+    const message = row.messageId
+      ? handoff.thread.messages.find((entry) => entry.messageId === row.messageId)
+      : undefined;
+    return {
+      messageDate: message?.internalDate ?? null,
+      sourceRole: sourceRoleOf(row.source),
+      direction: message?.direction ?? null,
+    };
+  });
   const message = item.messageId
     ? handoff.thread.messages.find((row) => row.messageId === item.messageId)
     : undefined;
@@ -302,10 +323,12 @@ function candidateRow(
     label: FIELD_LABELS[item.kind] ?? item.kind,
     candidateValue: item.proposedValue,
     excerpt: evidenceExcerpt(messageHaystack(handoff, item.messageId), item.proposedValue),
-    messageDate: message?.internalDate ?? null,
+    messageDate: message?.internalDate ?? occurrences[0]?.messageDate ?? null,
     sourceRole: sourceRoleOf(item.source),
-    direction: message?.direction ?? null,
+    direction: message?.direction ?? occurrences[0]?.direction ?? null,
     status,
+    occurrenceCount: Math.max(1, occurrences.length),
+    occurrences,
   };
 }
 

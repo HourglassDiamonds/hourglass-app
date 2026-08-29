@@ -1,9 +1,11 @@
 /**
  * CAD / job identifier quality guard.
  * Words like "presentation" after "CAD" are not job identifiers.
- * Short numeric and short structured tokens remain extractable but are
- * weak discovery keys. Prefix stripping (CAD A-1 → A-1) does not create
- * a bare global needle.
+ * URL / cid / query / hash fragments are never CAD identifiers.
+ * Generic hexadecimal tokens are not CAD evidence without typed CAD/job
+ * context. Short numeric and short structured tokens remain extractable
+ * but are weak discovery keys. Prefix stripping (CAD A-1 → A-1) does not
+ * create a bare global needle.
  * Evidence only — does not write project specs. automaticApply: false.
  */
 
@@ -53,11 +55,34 @@ const JOB_PREFIX_PATTERN =
   /\bjob(?:\s*(?:#|number|no\.?))?\s*[:#]?\s*([A-Za-z0-9][A-Za-z0-9-]{1,62})\b/gi;
 const J_CODE_PATTERN = /\b(J-\d+[A-Za-z0-9-]*)\b/gi;
 const STRUCTURED_ALNUM_JOB_PATTERN = /\b([A-Z]{2,}\d{3,}[A-Za-z0-9]*)\b/g;
+const LINK_CONTEXT_PATTERN =
+  /(?:https?:\/\/|www\.|cid:)[^\s<>"')\]]+/gi;
+const UUID_FRAGMENT_PATTERN =
+  /\b[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}\b/gi;
+const QUERY_OR_HASH_PATTERN = /[?#][^\s<>"']+/g;
+const MIN_HEX_FRAGMENT_LENGTH = 6;
 
 export type CadIdentifierStrength = IdentifierSpecificity;
 
 function compactToken(value: string): string {
   return value.replace(/^-+/, "").trim();
+}
+
+export function maskNonCadLinkContexts(text: string): string {
+  return text
+    .replace(LINK_CONTEXT_PATTERN, " ")
+    .replace(UUID_FRAGMENT_PATTERN, " ")
+    .replace(QUERY_OR_HASH_PATTERN, " ");
+}
+
+/**
+ * Untyped hex / content-id style fragments (DB865C70, 8-char hashes).
+ * Typed CAD/job context may still capture these via CAD-/job prefixes.
+ */
+export function isGenericHexadecimalCadFragment(value: string): boolean {
+  const token = compactToken(value).replace(/-/g, "");
+  if (token.length < MIN_HEX_FRAGMENT_LENGTH) return false;
+  return /^[0-9A-Fa-f]+$/.test(token);
 }
 
 export function isPlausibleCadJobIdentifier(value: string): boolean {
@@ -107,34 +132,57 @@ function pushUnique(into: string[], value: string): void {
   }
 }
 
+function pushTyped(into: string[], value: string): void {
+  pushUnique(into, value);
+}
+
+function pushUntypedStructured(into: string[], value: string): void {
+  if (isGenericHexadecimalCadFragment(value)) return;
+  pushUnique(into, value);
+}
+
 export function extractCadJobIdentifiers(text: string): string[] {
   const found: string[] = [];
   if (!text.trim()) return found;
+  const hay = maskNonCadLinkContexts(text);
 
   CAD_CODE_PATTERN.lastIndex = 0;
-  for (const match of text.matchAll(CAD_CODE_PATTERN)) {
-    pushUnique(found, match[1] ?? "");
+  for (const match of hay.matchAll(CAD_CODE_PATTERN)) {
+    pushTyped(found, match[1] ?? "");
   }
 
   CAD_PREFIX_PATTERN.lastIndex = 0;
-  for (const match of text.matchAll(CAD_PREFIX_PATTERN)) {
-    pushUnique(found, match[1] ?? "");
+  for (const match of hay.matchAll(CAD_PREFIX_PATTERN)) {
+    pushTyped(found, match[1] ?? "");
   }
 
   JOB_PREFIX_PATTERN.lastIndex = 0;
-  for (const match of text.matchAll(JOB_PREFIX_PATTERN)) {
-    pushUnique(found, match[1] ?? "");
+  for (const match of hay.matchAll(JOB_PREFIX_PATTERN)) {
+    pushTyped(found, match[1] ?? "");
   }
 
   J_CODE_PATTERN.lastIndex = 0;
-  for (const match of text.matchAll(J_CODE_PATTERN)) {
-    pushUnique(found, match[1] ?? "");
+  for (const match of hay.matchAll(J_CODE_PATTERN)) {
+    pushTyped(found, match[1] ?? "");
   }
 
   STRUCTURED_ALNUM_JOB_PATTERN.lastIndex = 0;
-  for (const match of text.matchAll(STRUCTURED_ALNUM_JOB_PATTERN)) {
-    pushUnique(found, match[1] ?? "");
+  for (const match of hay.matchAll(STRUCTURED_ALNUM_JOB_PATTERN)) {
+    pushUntypedStructured(found, match[1] ?? "");
   }
 
+  return found;
+}
+
+export function supportingKnownCadIdentifiers(
+  text: string,
+  knownIdentifiers: readonly string[],
+): string[] {
+  const found: string[] = [];
+  for (const known of knownIdentifiers) {
+    if (!isStrongStructuredCadIdentifier(known)) continue;
+    if (!hasBoundedIdentifierToken(text, known)) continue;
+    pushUnique(found, known);
+  }
   return found;
 }

@@ -6,7 +6,11 @@
  */
 
 import { validateProjectSpecCorrection } from "@/lib/continuum/client-memory/project-spec/validate";
-import { extractCadJobIdentifiers } from "./cad-job-identifier";
+import {
+  extractCadJobIdentifiers,
+  isStrongStructuredCadIdentifier,
+  supportingKnownCadIdentifiers,
+} from "./cad-job-identifier";
 import { extractOrderIdentifiers } from "./order-identifier";
 import type { ProtectedExactThread, ProtectedExactThreadMessage } from "./exact-thread-payload";
 
@@ -32,12 +36,18 @@ export type ReconstructionEvidenceSource =
   | "mime-attachment"
   | "internal-date";
 
+export type ReconstructionEvidenceOccurrence = {
+  messageId: string | null;
+  source: ReconstructionEvidenceSource;
+};
+
 export type ReconstructionEvidenceItem = {
   kind: ReconstructionEvidenceKind;
   messageId: string | null;
   proposedValue: string | null;
   explicit: boolean;
   source: ReconstructionEvidenceSource;
+  occurrences?: readonly ReconstructionEvidenceOccurrence[];
 };
 
 export type ExactThreadCurrentSpecs = {
@@ -117,8 +127,22 @@ function collectMatches(
   }
 }
 
+function collectCadIdentifiers(
+  text: string,
+  knownCadIdentifiers: readonly string[],
+): string[] {
+  const found = extractCadJobIdentifiers(text);
+  for (const known of supportingKnownCadIdentifiers(text, knownCadIdentifiers)) {
+    if (!found.some((row) => row.toLowerCase() === known.toLowerCase())) {
+      found.push(known);
+    }
+  }
+  return found;
+}
+
 function collectMessageEvidence(
   message: ProtectedExactThreadMessage,
+  knownCadIdentifiers: readonly string[] = [],
 ): ReconstructionEvidenceItem[] {
   const items: ReconstructionEvidenceItem[] = [];
   if (message.internalDate) {
@@ -150,7 +174,7 @@ function collectMessageEvidence(
         source: haystack.source,
       });
     }
-    for (const cadId of extractCadJobIdentifiers(haystack.text)) {
+    for (const cadId of collectCadIdentifiers(haystack.text, knownCadIdentifiers)) {
       items.push({
         kind: "cad_job_number",
         messageId: message.messageId,
@@ -200,10 +224,58 @@ export function proposedFingerSizeCorrection(
   };
 }
 
+export function knownStructuredCadIdentifiersFromSpecs(
+  specs: ExactThreadCurrentSpecs,
+): string[] {
+  const raw = specs.cadJobNumber?.trim();
+  if (!raw) return [];
+  return extractCadJobIdentifiers(raw).filter(isStrongStructuredCadIdentifier);
+}
+
+export function groupCadJobEvidence(
+  items: readonly ReconstructionEvidenceItem[],
+): ReconstructionEvidenceItem[] {
+  const grouped: ReconstructionEvidenceItem[] = [];
+  const cadIndex = new Map<string, number>();
+  for (const item of items) {
+    if (item.kind !== "cad_job_number" || !item.proposedValue) {
+      grouped.push(item);
+      continue;
+    }
+    const key = item.proposedValue.toLowerCase();
+    const occurrence: ReconstructionEvidenceOccurrence = {
+      messageId: item.messageId,
+      source: item.source,
+    };
+    const existingAt = cadIndex.get(key);
+    if (existingAt == null) {
+      cadIndex.set(key, grouped.length);
+      grouped.push({
+        ...item,
+        occurrences: item.occurrences ?? [occurrence],
+      });
+      continue;
+    }
+    const existing = grouped[existingAt]!;
+    const next = [...(existing.occurrences ?? [])];
+    const already = next.some(
+      (row) => row.messageId === occurrence.messageId && row.source === occurrence.source,
+    );
+    if (!already) next.push(occurrence);
+    grouped[existingAt] = { ...existing, occurrences: next };
+  }
+  return grouped;
+}
+
 export function collectExactThreadEvidence(
   thread: ProtectedExactThread,
+  knownCadIdentifiers: readonly string[] = [],
 ): ReconstructionEvidenceItem[] {
-  return thread.messages.flatMap(collectMessageEvidence);
+  return groupCadJobEvidence(
+    thread.messages.flatMap((message) =>
+      collectMessageEvidence(message, knownCadIdentifiers),
+    ),
+  );
 }
 
 export function buildExactThreadReconstructionHandoff(input: {
@@ -211,7 +283,8 @@ export function buildExactThreadReconstructionHandoff(input: {
   currentSpecs: ExactThreadCurrentSpecs;
   thread: ProtectedExactThread;
 }): ExactThreadReconstructionHandoff {
-  const candidateEvidence = collectExactThreadEvidence(input.thread);
+  const knownCad = knownStructuredCadIdentifiersFromSpecs(input.currentSpecs);
+  const candidateEvidence = collectExactThreadEvidence(input.thread, knownCad);
   const fingerSize = proposedFingerSizeCorrection(
     input.currentSpecs.fingerSize,
     candidateEvidence,

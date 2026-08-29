@@ -13,6 +13,7 @@ import {
   extractCadJobIdentifiers,
   hasBoundedIdentifierToken,
   isStrongStructuredCadIdentifier,
+  supportingKnownCadIdentifiers,
 } from "./cad-job-identifier";
 import {
   identifierRequiresTypedContext,
@@ -32,6 +33,7 @@ import type {
   ProtectedExactThreadMessage,
 } from "./exact-thread-payload";
 import type { ExactThreadCurrentSpecs } from "./reconstruction-evidence";
+import { knownStructuredCadIdentifiersFromSpecs } from "./reconstruction-evidence";
 import { sizeLanguageIsAmbiguous } from "./size-ambiguity";
 
 export const JEWELRY_ITEM_TYPES = [
@@ -89,6 +91,11 @@ export const PROJECT_LIFECYCLE_CANDIDATES = [
 export type ProjectLifecycleCandidate =
   (typeof PROJECT_LIFECYCLE_CANDIDATES)[number];
 
+export type ReconstructionEvidenceOccurrenceRecord = {
+  messageId: string | null;
+  sourceWording: string;
+};
+
 export type ReconstructionEvidenceRecord = {
   kind: string;
   proposedValue: string | null;
@@ -98,11 +105,14 @@ export type ReconstructionEvidenceRecord = {
   sourceWording: string;
   messageId: string | null;
   automaticApply: false;
+  occurrences?: ReconstructionEvidenceOccurrenceRecord[];
 };
+
+export type ReconstructedItemType = JewelryItemType | "unknown";
 
 export type ReconstructedItemCandidate = {
   itemId: string;
-  itemType: JewelryItemType;
+  itemType: ReconstructedItemType;
   state: ItemState;
   owned: false | true;
   sizeType: SizeType;
@@ -121,6 +131,7 @@ export type ReconstructedItemCandidate = {
   attachments: readonly ProtectedExactThreadAttachment[];
   timing: ReconstructionEvidenceRecord[];
   sourceWording: string[];
+  designArtifactPresent: boolean;
 };
 
 export type IdentityNameCorrectionEvidence = {
@@ -239,7 +250,7 @@ export type ReconstructionMutationBoundary =
 
 export type ProjectBookReconstructionHandoff = {
   projectId: string;
-  projectShape: "single_item" | "multi_item";
+  projectShape: "single_item" | "multi_item" | "unknown";
   lifecycle: ProjectLifecycleCandidate;
   historicalSafety: {
     remainsHistorical: boolean;
@@ -557,7 +568,8 @@ export function classifyItemState(text: string): ItemState {
     return "completed_sold";
   }
   if (
-    /\b(?:approved|please\s+proceed|in\s+production|at\s+the\s+bench)\b/.test(hay)
+    /\b(?:please\s+proceed|in\s+production|at\s+the\s+bench)\b/.test(hay) ||
+    (/\bapproved\b/.test(hay) && !/\bcad\s+approval\b/.test(hay))
   ) {
     return "approved_in_production";
   }
@@ -572,11 +584,20 @@ export function classifyItemState(text: string): ItemState {
   return "unknown";
 }
 
+export function hasDesignArtifactEvidence(text: string): boolean {
+  if (extractCadJobIdentifiers(text).length > 0) return true;
+  return (
+    /\bcad\s+presentation\b/i.test(text) ||
+    /\bvideo\s+rendering\b/i.test(text) ||
+    /\b(?:cad|design)\s+attached\b/i.test(text)
+  );
+}
+
 function itemOwned(state: ItemState): boolean {
   return state === "completed_sold";
 }
 
-function emptyItem(itemType: JewelryItemType): ReconstructedItemCandidate {
+function emptyItem(itemType: ReconstructedItemType): ReconstructedItemCandidate {
   return {
     itemId: `item-${itemType}`,
     itemType,
@@ -598,6 +619,7 @@ function emptyItem(itemType: JewelryItemType): ReconstructedItemCandidate {
     attachments: [],
     timing: [],
     sourceWording: [],
+    designArtifactPresent: false,
   };
 }
 
@@ -613,6 +635,39 @@ function mergeRecords(
         existing.sourceWording === row.sourceWording,
     );
     if (!exists) into.push(row);
+  }
+}
+
+function mergeIdentifierRecords(
+  into: ReconstructionEvidenceRecord[],
+  incoming: ReconstructionEvidenceRecord[],
+): void {
+  for (const row of incoming) {
+    const key = (row.proposedValue ?? "").toLowerCase();
+    const existing = into.find(
+      (candidate) =>
+        candidate.kind === row.kind &&
+        (candidate.proposedValue ?? "").toLowerCase() === key,
+    );
+    const occurrence = {
+      messageId: row.messageId,
+      sourceWording: row.sourceWording,
+    };
+    if (!existing) {
+      into.push({
+        ...row,
+        occurrences: row.occurrences ?? [occurrence],
+      });
+      continue;
+    }
+    const next = [...(existing.occurrences ?? [])];
+    const already = next.some(
+      (item) =>
+        item.messageId === occurrence.messageId &&
+        item.sourceWording === occurrence.sourceWording,
+    );
+    if (!already) next.push(occurrence);
+    existing.occurrences = next;
   }
 }
 
@@ -657,13 +712,28 @@ function collectStoneMentions(
   return rows;
 }
 
+function collectCadIdsForSpan(
+  text: string,
+  knownCadIdentifiers: readonly string[],
+): string[] {
+  const found = extractCadJobIdentifiers(text);
+  for (const known of supportingKnownCadIdentifiers(text, knownCadIdentifiers)) {
+    if (!found.some((row) => row.toLowerCase() === known.toLowerCase())) {
+      found.push(known);
+    }
+  }
+  return found;
+}
+
 function collectEvidenceForSpan(
   item: ReconstructedItemCandidate,
   text: string,
   message: ProtectedExactThreadMessage,
+  knownCadIdentifiers: readonly string[] = [],
 ): void {
   const messageId = message.messageId;
   item.sourceWording.push(excerpt(text));
+  if (hasDesignArtifactEvidence(text)) item.designArtifactPresent = true;
   mergeRecords(item.metal, collectRegex(text, METAL_EVIDENCE, "metal", messageId));
   mergeRecords(
     item.stoneShape,
@@ -678,7 +748,7 @@ function collectEvidenceForSpan(
     collectRegex(text, STONE_SOURCE_EVIDENCE, "stone_source", messageId),
   );
   mergeRecords(item.stones, collectStoneMentions(text, messageId));
-  mergeRecords(
+  mergeIdentifierRecords(
     item.orderNumbers,
     extractOrderIdentifiers(text).map((order) =>
       record({
@@ -688,7 +758,7 @@ function collectEvidenceForSpan(
           classifyOrderIdentifierStrength(order) === "strong_structured"
             ? "strong"
             : "weak",
-        sourceWording: order,
+        sourceWording: excerpt(text),
         messageId,
       }),
     ),
@@ -715,14 +785,14 @@ function collectEvidenceForSpan(
       messageId,
     ),
   );
-  for (const cadId of extractCadJobIdentifiers(text)) {
+  for (const cadId of collectCadIdsForSpan(text, knownCadIdentifiers)) {
     const cadStrength = classifyCadIdentifierStrength(cadId);
-    mergeRecords(item.cadJobNumbers, [
+    mergeIdentifierRecords(item.cadJobNumbers, [
       record({
         kind: "cad_job_number",
         proposedValue: cadId,
         confidence: cadStrength === "strong_structured" ? "strong" : "weak",
-        sourceWording: cadId,
+        sourceWording: excerpt(text),
         messageId,
       }),
     ]);
@@ -738,7 +808,8 @@ function collectEvidenceForSpan(
       }),
     ]);
   }
-  for (const size of classifySizeEvidence(text, item.itemType)) {
+  const sizeItemType = item.itemType === "unknown" ? null : item.itemType;
+  for (const size of classifySizeEvidence(text, sizeItemType)) {
     if (size.sizeType === "finger_size" && item.itemType !== "ring") continue;
     if (
       (item.itemType === "loose_stones" || item.itemType === "earrings") &&
@@ -1354,8 +1425,9 @@ export function discoverRelatedThreadCandidates(input: {
 export function reconstructProjectBook(
   input: ProjectReconstructionInput,
 ): ProjectBookReconstructionHandoff {
-  const items = new Map<JewelryItemType, ReconstructedItemCandidate>();
-  const ensure = (type: JewelryItemType) => {
+  const items = new Map<ReconstructedItemType, ReconstructedItemCandidate>();
+  const knownCad = knownStructuredCadIdentifiersFromSpecs(input.currentSpecs);
+  const ensure = (type: ReconstructedItemType) => {
     const existing = items.get(type);
     if (existing) return existing;
     const created = emptyItem(type);
@@ -1376,7 +1448,7 @@ export function reconstructProjectBook(
       if (types[0]) inherit = types[0];
       for (const type of active) {
         const item = ensure(type);
-        collectEvidenceForSpan(item, sentence, message);
+        collectEvidenceForSpan(item, sentence, message, knownCad);
         const state = classifyItemState(sentence);
         if (state !== "unknown") item.state = state;
         item.owned = itemOwned(item.state);
@@ -1397,10 +1469,30 @@ export function reconstructProjectBook(
     }
   }
 
+  if (items.size === 0) {
+    const unknown = ensure("unknown");
+    for (const message of input.thread.messages) {
+      if (message.subject?.trim()) {
+        collectEvidenceForSpan(unknown, message.subject, message, knownCad);
+      }
+      if (message.plainText?.trim()) {
+        collectEvidenceForSpan(unknown, message.plainText, message, knownCad);
+      }
+      const extra = message.attachments.filter(
+        (attachment) =>
+          !unknown.attachments.some(
+            (existing) => existing.attachmentId === attachment.attachmentId,
+          ),
+      );
+      unknown.attachments = [...unknown.attachments, ...extra];
+    }
+  }
+
   const reconstructed = [...items.values()].map((item) => {
-    const state = item.state === "unknown"
-      ? classifyItemState(item.sourceWording.join(" "))
-      : item.state;
+    const state =
+      item.state === "unknown"
+        ? classifyItemState(item.sourceWording.join(" "))
+        : item.state;
     return {
       ...item,
       state,
@@ -1420,9 +1512,17 @@ export function reconstructProjectBook(
     personEmailHash: input.existingPerson?.emailHash ?? null,
   });
 
+  const projectShape: ProjectBookReconstructionHandoff["projectShape"] =
+    reconstructed.some((item) => item.itemType !== "unknown") &&
+    reconstructed.filter((item) => item.itemType !== "unknown").length > 1
+      ? "multi_item"
+      : reconstructed.some((item) => item.itemType !== "unknown")
+        ? "single_item"
+        : "unknown";
+
   return {
     projectId: input.projectId,
-    projectShape: reconstructed.length > 1 ? "multi_item" : "single_item",
+    projectShape,
     lifecycle,
     historicalSafety: {
       remainsHistorical: lifecycle === "historical_closed",

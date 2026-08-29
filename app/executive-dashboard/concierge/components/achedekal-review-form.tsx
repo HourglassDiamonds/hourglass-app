@@ -66,11 +66,28 @@ function ReviewResult({ state }: { state: Extract<AchedekalReviewState, { ok: tr
                 <p className="mt-2 text-[13px] leading-relaxed text-[#c4b7aa]">
                   {row.excerpt}
                 </p>
-                <p className="mt-2 text-[12px] text-[#8d8073]">
-                  {[row.messageDate, row.direction, row.sourceRole]
-                    .filter(Boolean)
-                    .join(" · ")}
-                </p>
+                {row.occurrenceCount > 1 ? (
+                  <div className="mt-2">
+                    <p className="text-[12px] text-[#8d8073]">
+                      Occurrences: {row.occurrenceCount}
+                    </p>
+                    <ul className="mt-1 space-y-1 text-[12px] text-[#8d8073]">
+                      {row.occurrences.map((occurrence, occurrenceIndex) => (
+                        <li key={`${row.candidateValue}:${occurrenceIndex}`}>
+                          {[occurrence.messageDate, occurrence.direction, occurrence.sourceRole]
+                            .filter(Boolean)
+                            .join(" · ")}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : (
+                  <p className="mt-2 text-[12px] text-[#8d8073]">
+                    {[row.messageDate, row.direction, row.sourceRole]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </p>
+                )}
               </li>
             ))}
           </ul>
