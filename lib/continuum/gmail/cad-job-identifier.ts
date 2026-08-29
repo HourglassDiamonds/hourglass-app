@@ -1,6 +1,7 @@
 /**
  * CAD / job identifier quality guard.
  * Words like "presentation" after "CAD" are not job identifiers.
+ * Short numeric tokens remain extractable but are weak discovery keys.
  * Evidence only — does not write project specs. automaticApply: false.
  */
 
@@ -42,6 +43,10 @@ const CAD_PREFIX_PATTERN =
   /\bCAD(?:\s*(?:#|number|no\.?))?\s*[:#]?\s*([A-Za-z0-9][A-Za-z0-9-]{1,62})\b/gi;
 const JOB_PREFIX_PATTERN =
   /\bjob(?:\s*(?:#|number|no\.?))?\s*[:#]?\s*([A-Za-z0-9][A-Za-z0-9-]{1,62})\b/gi;
+const J_CODE_PATTERN = /\b(J-\d+[A-Za-z0-9-]*)\b/gi;
+const STRUCTURED_ALNUM_JOB_PATTERN = /\b([A-Z]{2,}\d{3,}[A-Za-z0-9]*)\b/g;
+
+export type CadIdentifierStrength = "strong_structured" | "weak_numeric";
 
 function compactToken(value: string): string {
   return value.replace(/^-+/, "").trim();
@@ -55,6 +60,28 @@ export function isPlausibleCadJobIdentifier(value: string): boolean {
   if (!/\d/.test(token)) return false;
   if (!/^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$/.test(token)) return false;
   return true;
+}
+
+export function classifyCadIdentifierStrength(
+  value: string,
+): CadIdentifierStrength | null {
+  if (!isPlausibleCadJobIdentifier(value)) return null;
+  const token = compactToken(value);
+  if (/^\d+$/.test(token)) return "weak_numeric";
+  return "strong_structured";
+}
+
+export function isStrongStructuredCadIdentifier(value: string): boolean {
+  return classifyCadIdentifierStrength(value) === "strong_structured";
+}
+
+export function hasBoundedIdentifierToken(haystack: string, token: string): boolean {
+  const needle = compactToken(token);
+  if (!needle) return false;
+  const escaped = needle.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`(?:^|[^A-Za-z0-9])${escaped}(?:$|[^A-Za-z0-9])`, "i").test(
+    haystack,
+  );
 }
 
 function pushUnique(into: string[], value: string): void {
@@ -81,6 +108,16 @@ export function extractCadJobIdentifiers(text: string): string[] {
 
   JOB_PREFIX_PATTERN.lastIndex = 0;
   for (const match of text.matchAll(JOB_PREFIX_PATTERN)) {
+    pushUnique(found, match[1] ?? "");
+  }
+
+  J_CODE_PATTERN.lastIndex = 0;
+  for (const match of text.matchAll(J_CODE_PATTERN)) {
+    pushUnique(found, match[1] ?? "");
+  }
+
+  STRUCTURED_ALNUM_JOB_PATTERN.lastIndex = 0;
+  for (const match of text.matchAll(STRUCTURED_ALNUM_JOB_PATTERN)) {
     pushUnique(found, match[1] ?? "");
   }
 

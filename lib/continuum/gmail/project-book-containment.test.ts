@@ -579,3 +579,354 @@ describe("containment mutation source boundary", () => {
     }
   });
 });
+
+describe("weak numeric CAD cannot route", () => {
+  it("rejects CAD 18, CAD 141, CAD 2024, and CAD 555 as standalone exact matches", () => {
+    const books: ExistingProjectBook[] = [
+      book({
+        projectId: PROJECT_A_ID,
+        title: "Numeric CAD book",
+        cadJobNumbers: ["18", "141", "2024", "555"],
+        subjectTerms: ["invoice"],
+      }),
+      book({
+        projectId: PROJECT_B_ID,
+        title: "Unrelated",
+        cadJobNumbers: ["CAD-2204"],
+      }),
+    ];
+    for (const token of ["18", "141", "2024", "555"]) {
+      const result = routeProjectEvidence({
+        person: PERSON,
+        projectBooks: books,
+        evidence: [
+          evidence({
+            evidenceId: `weak-cad-${token}`,
+            subject: `CAD ${token}`,
+            text: `CAD ${token} is in process.`,
+          }),
+        ],
+      });
+      const row = result.attributions[0];
+      assert.ok(row, token);
+      assert.notEqual(row.resolution, "exact_project", token);
+      assert.equal(row.attachedProjectId, null, token);
+      assert.equal(row.requiresFounderReview, true, token);
+      assert.equal(row.score < 80, true, token);
+      assert.equal(
+        row.reasons.some((reason) => reason.kind === "cad_identifier_weak_numeric"),
+        true,
+        token,
+      );
+    }
+  });
+
+  it("does not let CAD 141 attach via an unrelated subject containing 141", () => {
+    const result = routeProjectEvidence({
+      person: PERSON,
+      projectBooks: [
+        book({
+          projectId: PROJECT_A_ID,
+          title: "Numeric CAD book",
+          cadJobNumbers: ["141"],
+        }),
+      ],
+      evidence: [
+        evidence({
+          evidenceId: "invoice-141",
+          subject: "Invoice 141 reminder",
+          text: "Invoice 141 reminder for an unrelated matter.",
+        }),
+      ],
+    });
+    assert.notEqual(result.attributions[0]?.resolution, "exact_project");
+    assert.equal(result.attributions[0]?.attachedProjectId, null);
+  });
+
+  it("still routes a strong structured CAD as exact_project", () => {
+    const result = collide([
+      evidence({
+        evidenceId: "strong-cad",
+        text: "Please see CBR2000037 and CAD-2204.",
+      }),
+    ]);
+    const row = result.attributions[0];
+    assert.equal(row?.resolution, "exact_project");
+    assert.equal(row?.attachedProjectId, PROJECT_B_ID);
+    assert.equal(
+      row?.reasons.some((reason) => reason.kind === "cad_identifier_strong"),
+      true,
+    );
+  });
+});
+
+describe("vendor scoring is never sufficient alone", () => {
+  it("does not attach same vendor on an unrelated project", () => {
+    const result = collide([
+      evidence({
+        evidenceId: "vendor-unrelated",
+        subject: "Vendor North workshop",
+        text: "Checking in from Vendor North.",
+        vendorMentions: ["Vendor North"],
+      }),
+    ]);
+    assert.equal(result.attributions[0]?.resolution, "person_related_unassigned");
+    assert.equal(result.attributions[0]?.attachedProjectId, null);
+    assert.equal(result.attributions[0]?.score < 80, true);
+    assert.equal(
+      result.attributions[0]?.reasons.some((row) => row.kind === "vendor_only"),
+      true,
+    );
+  });
+
+  it("lets strong CAD route while vendor only supports", () => {
+    const result = collide([
+      evidence({
+        evidenceId: "vendor-plus-cad",
+        text: "CAD-2204 from Vendor North.",
+        vendorMentions: ["Vendor North"],
+      }),
+    ]);
+    const row = result.attributions[0];
+    assert.equal(row?.resolution, "exact_project");
+    assert.equal(row?.attachedProjectId, PROJECT_B_ID);
+    assert.equal(
+      row?.reasons.some((reason) => reason.kind === "exact_cad_job_identifier"),
+      true,
+    );
+    assert.equal(
+      row?.reasons.some((reason) => reason.kind === "vendor_supporting_only"),
+      true,
+    );
+    assert.equal(
+      row?.reasons.some((reason) => reason.kind === "vendor_only"),
+      false,
+    );
+  });
+
+  it("rejects same vendor + same Person with no stronger signal", () => {
+    const result = collide([
+      evidence({
+        evidenceId: "vendor-person",
+        subject: "Hello",
+        text: "Hello from the workshop.",
+        vendorMentions: ["Vendor North"],
+      }),
+    ]);
+    assert.equal(result.attributions[0]?.resolution, "person_related_unassigned");
+    assert.equal(result.attributions[0]?.attachedProjectId, null);
+    assert.equal(
+      result.attributions[0]?.reasons.some((row) => row.kind === "person_identity_only"),
+      true,
+    );
+    assert.equal(
+      result.attributions[0]?.reasons.some((row) => row.kind === "vendor_only"),
+      true,
+    );
+  });
+});
+
+describe("duplicate identifier collisions", () => {
+  const DUP_A = book({
+    projectId: PROJECT_A_ID,
+    title: "Dup A",
+    cadJobNumbers: ["CAD-1001"],
+    orderNumbers: ["ORD-5555"],
+    artifactRefs: ["shared-artifact-ref"],
+    items: [{ itemId: "item-ring", itemType: "ring" }],
+  });
+  const DUP_B = book({
+    projectId: PROJECT_B_ID,
+    title: "Dup B",
+    cadJobNumbers: ["CAD-1001"],
+    orderNumbers: ["ORD-5555"],
+    artifactRefs: ["shared-artifact-ref"],
+    items: [{ itemId: "item-bracelet", itemType: "bracelet" }],
+  });
+
+  function collideDup(
+    books: ExistingProjectBook[],
+    rows: ProjectEvidenceCandidate[],
+  ) {
+    return routeProjectEvidence({
+      person: PERSON,
+      projectBooks: books,
+      evidence: rows,
+    });
+  }
+
+  function assertAmbiguous(result: ReturnType<typeof collideDup>) {
+    const row = result.attributions[0];
+    assert.ok(row);
+    assert.equal(row.resolution, "ambiguous_between_projects");
+    assert.equal(row.attachedProjectId, null);
+    assert.equal(row.requiresFounderReview, true);
+    assert.deepEqual(
+      [...row.spanningProjectIds].sort(),
+      [PROJECT_A_ID, PROJECT_B_ID].sort(),
+    );
+  }
+
+  it("treats duplicate CAD as ambiguous regardless of book order", () => {
+    const rows = [
+      evidence({
+        evidenceId: "dup-cad",
+        text: "Please see CAD-1001.",
+      }),
+    ];
+    assertAmbiguous(collideDup([DUP_A, DUP_B], rows));
+    assertAmbiguous(collideDup([DUP_B, DUP_A], rows));
+  });
+
+  it("treats duplicate order as ambiguous regardless of book order", () => {
+    const rows = [
+      evidence({
+        evidenceId: "dup-order",
+        text: "Order #ORD-5555 shipped.",
+      }),
+    ];
+    assertAmbiguous(collideDup([DUP_A, DUP_B], rows));
+    assertAmbiguous(collideDup([DUP_B, DUP_A], rows));
+  });
+
+  it("treats duplicate artifact reference as ambiguous regardless of book order", () => {
+    const rows = [
+      evidence({
+        evidenceId: "dup-artifact",
+        kind: "artifact_metadata",
+        text: "Shared render attached.",
+        artifact: {
+          artifactId: "shared-artifact-ref",
+          itemId: null,
+          sourceMessageId: "msg-dup-artifact",
+          sourceThreadId: "thread-dup-artifact",
+          filename: "shared-render.pdf",
+          artifactType: "cad_render",
+          bytesFetched: false,
+        },
+      }),
+    ];
+    assertAmbiguous(collideDup([DUP_A, DUP_B], rows));
+    assertAmbiguous(collideDup([DUP_B, DUP_A], rows));
+  });
+});
+
+describe("itemId project ownership", () => {
+  it("accepts a valid same-project itemId", () => {
+    const result = collide([
+      evidence({
+        evidenceId: "item-ok",
+        kind: "artifact_metadata",
+        text: "CAD-2204 render attached.",
+        artifact: {
+          artifactId: "att-bracelet-cad",
+          itemId: "item-bracelet",
+          sourceMessageId: "msg-item-ok",
+          sourceThreadId: "thread-project-b",
+          filename: "cad-2204-render.pdf",
+          artifactType: "cad_render",
+          bytesFetched: false,
+        },
+      }),
+    ]);
+    assert.equal(result.attributions[0]?.resolution, "exact_project");
+    assert.equal(result.attributions[0]?.attachedProjectId, PROJECT_B_ID);
+    assert.equal(
+      result.attributions[0]?.reasons.some(
+        (row) => row.kind === "item_id_owned_by_project",
+      ),
+      true,
+    );
+    assert.equal(result.artifacts[0]?.itemId, "item-bracelet");
+    assert.equal(result.artifacts[0]?.projectId, PROJECT_B_ID);
+    assert.equal(result.artifacts[0]?.reviewState, "assigned");
+  });
+
+  it("rejects a foreign itemId across projects without dropping it silently", () => {
+    const result = collide([
+      evidence({
+        evidenceId: "item-foreign",
+        kind: "artifact_metadata",
+        text: "CAD-2204 render attached.",
+        artifact: {
+          artifactId: "att-bracelet-cad",
+          itemId: "item-ring",
+          sourceMessageId: "msg-item-foreign",
+          sourceThreadId: "thread-project-b",
+          filename: "cad-2204-render.pdf",
+          artifactType: "cad_render",
+          bytesFetched: false,
+        },
+      }),
+    ]);
+    const row = result.attributions[0];
+    assert.ok(row);
+    assert.notEqual(row.resolution, "exact_project");
+    assert.equal(row.attachedProjectId, null);
+    assert.equal(row.requiresFounderReview, true);
+    assert.equal(
+      row.reasons.some((reason) => reason.kind === "foreign_item_id"),
+      true,
+    );
+    assert.equal(result.artifacts[0]?.itemId, "item-ring");
+    assert.equal(result.artifacts[0]?.projectId, null);
+    assert.equal(result.artifacts[0]?.reviewState, "needs_review");
+    assert.equal(
+      result.views
+        .find((view) => view.projectId === PROJECT_B_ID)
+        ?.artifacts.some((artifact) => artifact.artifactId === "att-bracelet-cad"),
+      false,
+    );
+  });
+
+  it("rejects an unknown itemId", () => {
+    const result = collide([
+      evidence({
+        evidenceId: "item-unknown",
+        kind: "artifact_metadata",
+        text: "CAD-2204 render attached.",
+        artifact: {
+          artifactId: "att-bracelet-cad",
+          itemId: "item-does-not-exist",
+          sourceMessageId: "msg-item-unknown",
+          sourceThreadId: "thread-project-b",
+          filename: "cad-2204-render.pdf",
+          artifactType: "cad_render",
+          bytesFetched: false,
+        },
+      }),
+    ]);
+    assert.notEqual(result.attributions[0]?.resolution, "exact_project");
+    assert.equal(result.attributions[0]?.attachedProjectId, null);
+    assert.equal(
+      result.attributions[0]?.reasons.some((row) => row.kind === "unknown_item_id"),
+      true,
+    );
+    assert.equal(result.artifacts[0]?.itemId, "item-does-not-exist");
+    assert.equal(result.artifacts[0]?.projectId, null);
+    assert.equal(result.artifacts[0]?.reviewState, "needs_review");
+  });
+
+  it("allows project-level evidence when no itemId is present", () => {
+    const result = collide([
+      evidence({
+        evidenceId: "item-none",
+        kind: "artifact_metadata",
+        text: "CAD-2204 render attached.",
+        artifact: {
+          artifactId: "att-bracelet-cad",
+          itemId: null,
+          sourceMessageId: "msg-item-none",
+          sourceThreadId: "thread-project-b",
+          filename: "cad-2204-render.pdf",
+          artifactType: "cad_render",
+          bytesFetched: false,
+        },
+      }),
+    ]);
+    assert.equal(result.attributions[0]?.resolution, "exact_project");
+    assert.equal(result.attributions[0]?.attachedProjectId, PROJECT_B_ID);
+    assert.equal(result.artifacts[0]?.itemId, null);
+    assert.equal(result.artifacts[0]?.projectId, PROJECT_B_ID);
+  });
+});

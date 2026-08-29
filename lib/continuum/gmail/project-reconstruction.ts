@@ -6,7 +6,14 @@
  */
 
 import type { GmailIndexedMessage } from "@/lib/continuum/client-memory/gmail/types";
-import { extractCadJobIdentifiers } from "./cad-job-identifier";
+import { hashEmail } from "@/lib/continuum/client-memory/hashes";
+import {
+  classifyCadIdentifierStrength,
+  extractCadJobIdentifiers,
+  hasBoundedIdentifierToken,
+  isStrongStructuredCadIdentifier,
+} from "./cad-job-identifier";
+import { extractOrderIdentifiers, isPlausibleOrderIdentifier } from "./order-identifier";
 import type {
   ProtectedExactThread,
   ProtectedExactThreadAttachment,
@@ -134,22 +141,41 @@ export type StrongProjectIdentifierKind =
   | "person_email_hash"
   | "anchor_thread";
 
+export type IdentifierSignalStrength =
+  | "strong_structured"
+  | "weak_numeric"
+  | "supporting";
+
 export type StrongProjectIdentifier = {
   kind: StrongProjectIdentifierKind;
   value: string;
+  strength: IdentifierSignalStrength;
 };
 
+export type RelatedThreadMatchReasonKind =
+  | StrongProjectIdentifierKind
+  | "cad_identifier_strong"
+  | "cad_identifier_weak_numeric"
+  | "vendor_supporting_only"
+  | "vendor_only"
+  | "internal_address_ignored";
+
 export type RelatedThreadMatchReason = {
-  kind: StrongProjectIdentifierKind;
+  kind: RelatedThreadMatchReasonKind;
   value: string;
   messageId: string;
   subject: string | null;
+  detail?: string;
 };
 
 export type RelatedThreadCandidate = {
   threadId: string;
   score: number;
+  strength: "exact" | "strong" | "moderate" | "weak" | "insufficient";
+  reasons: RelatedThreadMatchReason[];
   matchedOn: RelatedThreadMatchReason[];
+  candidateProjectId: string | null;
+  requiresFounderReview: true;
   fetchApproved: false;
 };
 
@@ -229,8 +255,6 @@ export type ProjectReconstructionInput = {
   indexedMessages: readonly GmailIndexedMessage[];
 };
 
-const ORDER_NUMBER_EVIDENCE =
-  /\border(?:\s*(?:#|number|no\.?))?\s*[:#]?\s*([A-Za-z0-9-]{2,64})\b/gi;
 const METAL_EVIDENCE =
   /\b(platinum|palladium|18k\s+white\s+gold|18k\s+yellow\s+gold|18k\s+rose\s+gold|14k\s+white\s+gold|14k\s+yellow\s+gold|14k\s+rose\s+gold|white\s+gold|yellow\s+gold|rose\s+gold)\b/gi;
 const STONE_SHAPE_EVIDENCE =
@@ -632,9 +656,15 @@ function collectEvidenceForSpan(
   mergeRecords(item.stones, collectStoneMentions(text, messageId));
   mergeRecords(
     item.orderNumbers,
-    collectRegex(text, ORDER_NUMBER_EVIDENCE, "order_number", messageId, {
-      confidence: "strong",
-    }),
+    extractOrderIdentifiers(text).map((order) =>
+      record({
+        kind: "order_number",
+        proposedValue: order,
+        confidence: "strong",
+        sourceWording: order,
+        messageId,
+      }),
+    ),
   );
   mergeRecords(
     item.pricingReferences,
@@ -659,11 +689,12 @@ function collectEvidenceForSpan(
     ),
   );
   for (const cadId of extractCadJobIdentifiers(text)) {
+    const cadStrength = classifyCadIdentifierStrength(cadId);
     mergeRecords(item.cadJobNumbers, [
       record({
         kind: "cad_job_number",
         proposedValue: cadId,
-        confidence: "strong",
+        confidence: cadStrength === "strong_structured" ? "strong" : "weak",
         sourceWording: cadId,
         messageId,
       }),
@@ -791,42 +822,85 @@ function subjectTermsFromText(text: string): string[] {
   return [...terms];
 }
 
+export const INTERNAL_HOURGLASS_ADDRESSES = [
+  "founder@hourglass.example",
+  "studio@hourglass.example",
+] as const;
+
+export function internalHourglassEmailHashes(
+  extra: readonly string[] = [],
+): string[] {
+  const hashes = [...INTERNAL_HOURGLASS_ADDRESSES, ...extra]
+    .map((addr) => hashEmail(addr))
+    .filter((value): value is string => Boolean(value));
+  return [...new Set(hashes)];
+}
+
+function identifierStrengthFor(
+  kind: StrongProjectIdentifierKind,
+  value: string,
+): IdentifierSignalStrength {
+  if (kind === "cad_job_number") {
+    return classifyCadIdentifierStrength(value) === "strong_structured"
+      ? "strong_structured"
+      : "weak_numeric";
+  }
+  if (kind === "order_number" || kind === "anchor_thread") {
+    return "strong_structured";
+  }
+  return "supporting";
+}
+
 export function extractStrongProjectIdentifiers(input: {
   thread: ProtectedExactThread;
   currentSpecs: ExactThreadCurrentSpecs;
   personEmailHash: string | null;
+  internalEmailHashes?: readonly string[];
 }): StrongProjectIdentifier[] {
   const identifiers: StrongProjectIdentifier[] = [
-    { kind: "anchor_thread", value: input.thread.threadId },
+    {
+      kind: "anchor_thread",
+      value: input.thread.threadId,
+      strength: "strong_structured",
+    },
   ];
   const seen = new Set<string>();
-  const add = (kind: StrongProjectIdentifierKind, value: string) => {
+  const add = (
+    kind: StrongProjectIdentifierKind,
+    value: string,
+    strength = identifierStrengthFor(kind, value),
+  ) => {
     const key = `${kind}:${value.toLowerCase()}`;
     if (seen.has(key)) return;
     seen.add(key);
-    identifiers.push({ kind, value });
+    identifiers.push({ kind, value, strength });
   };
 
   if (input.currentSpecs.cadJobNumber?.trim()) {
     for (const cad of extractCadJobIdentifiers(input.currentSpecs.cadJobNumber)) {
       add("cad_job_number", cad);
     }
-    if (isFiniteCad(input.currentSpecs.cadJobNumber)) {
-      add("cad_job_number", input.currentSpecs.cadJobNumber.trim());
-    }
+    const raw = input.currentSpecs.cadJobNumber.trim();
+    if (isFiniteCad(raw)) add("cad_job_number", raw);
   }
-  if (input.currentSpecs.orderNumber?.trim()) {
+  if (
+    input.currentSpecs.orderNumber?.trim() &&
+    isPlausibleOrderIdentifier(input.currentSpecs.orderNumber)
+  ) {
     add("order_number", input.currentSpecs.orderNumber.trim());
   }
-  if (input.personEmailHash) add("person_email_hash", input.personEmailHash);
+  const internal = new Set([
+    ...internalHourglassEmailHashes(),
+    ...(input.internalEmailHashes ?? []),
+  ]);
+  if (input.personEmailHash && !internal.has(input.personEmailHash)) {
+    add("person_email_hash", input.personEmailHash);
+  }
 
   for (const message of input.thread.messages) {
     const hay = [message.subject, message.plainText].filter(Boolean).join("\n");
     for (const cad of extractCadJobIdentifiers(hay)) add("cad_job_number", cad);
-    ORDER_NUMBER_EVIDENCE.lastIndex = 0;
-    for (const match of hay.matchAll(ORDER_NUMBER_EVIDENCE)) {
-      if (match[1]) add("order_number", match[1]);
-    }
+    for (const order of extractOrderIdentifiers(hay)) add("order_number", order);
     VENDOR_EVIDENCE.lastIndex = 0;
     for (const match of hay.matchAll(VENDOR_EVIDENCE)) {
       const vendor = match[1]?.trim();
@@ -866,21 +940,60 @@ function indexedTouchesPerson(
   );
 }
 
+const DISCOVERY_CANDIDATE_THRESHOLD = 40;
+
+function discoveryStrength(
+  score: number,
+): RelatedThreadCandidate["strength"] {
+  if (score >= 100) return "exact";
+  if (score >= 80) return "strong";
+  if (score >= 40) return "moderate";
+  if (score >= 15) return "weak";
+  return "insufficient";
+}
+
+function uniqueDiscoveryReasons(
+  reasons: RelatedThreadMatchReason[],
+): RelatedThreadMatchReason[] {
+  const seen = new Set<string>();
+  const rows: RelatedThreadMatchReason[] = [];
+  for (const reason of reasons) {
+    const key = `${reason.kind}:${reason.value.toLowerCase()}:${reason.messageId}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    rows.push(reason);
+  }
+  return rows;
+}
+
 export function discoverRelatedThreadCandidates(input: {
   anchorThreadId: string;
   identifiers: readonly StrongProjectIdentifier[];
   indexedMessages: readonly GmailIndexedMessage[];
+  candidateProjectId?: string | null;
+  internalEmailHashes?: readonly string[];
 }): RelatedThreadDiscoveryHandoff {
   const byThread = new Map<string, RelatedThreadCandidate>();
-  const cadIds = input.identifiers
-    .filter((row) => row.kind === "cad_job_number")
-    .map((row) => row.value.toLowerCase());
-  const orderIds = input.identifiers
-    .filter((row) => row.kind === "order_number")
-    .map((row) => row.value.toLowerCase());
+  const internal = new Set([
+    ...internalHourglassEmailHashes(),
+    ...(input.internalEmailHashes ?? []),
+  ]);
+  const strongCads = input.identifiers.filter(
+    (row) =>
+      row.kind === "cad_job_number" && isStrongStructuredCadIdentifier(row.value),
+  );
+  const weakCads = input.identifiers.filter(
+    (row) =>
+      row.kind === "cad_job_number" &&
+      classifyCadIdentifierStrength(row.value) === "weak_numeric",
+  );
+  const orderIds = input.identifiers.filter(
+    (row) =>
+      row.kind === "order_number" && isPlausibleOrderIdentifier(row.value),
+  );
   const vendors = input.identifiers
     .filter((row) => row.kind === "vendor")
-    .map((row) => row.value.toLowerCase());
+    .map((row) => row.value);
   const terms = input.identifiers
     .filter((row) => row.kind === "subject_term")
     .map((row) => row.value.toLowerCase())
@@ -890,88 +1003,139 @@ export function discoverRelatedThreadCandidates(input: {
     .map((row) => row.value);
   const personHashes = input.identifiers
     .filter((row) => row.kind === "person_email_hash")
-    .map((row) => row.value);
-
-  const addMatch = (
-    row: GmailIndexedMessage,
-    score: number,
-    reason: RelatedThreadMatchReason,
-  ) => {
-    if (row.threadId === input.anchorThreadId) return;
-    const existing = byThread.get(row.threadId) ?? {
-      threadId: row.threadId,
-      score: 0,
-      matchedOn: [],
-      fetchApproved: false as const,
-    };
-    existing.score += score;
-    existing.matchedOn.push(reason);
-    byThread.set(row.threadId, existing);
-  };
+    .map((row) => row.value)
+    .filter((hash) => !internal.has(hash));
 
   for (const row of input.indexedMessages) {
-    const subject = (row.subject ?? "").toLowerCase();
-    for (const cad of cadIds) {
-      if (cad && subject.includes(cad.toLowerCase())) {
-        addMatch(row, 100, {
-          kind: "cad_job_number",
-          value: cad,
-          messageId: row.messageId,
-          subject: row.subject,
-        });
-      }
+    if (row.threadId === input.anchorThreadId) continue;
+    const subject = row.subject ?? "";
+    const reasons: RelatedThreadMatchReason[] = [];
+    let strongScore = 0;
+    let supportingScore = 0;
+
+    for (const cad of strongCads) {
+      if (!hasBoundedIdentifierToken(subject, cad.value)) continue;
+      strongScore += 100;
+      reasons.push({
+        kind: "cad_identifier_strong",
+        value: cad.value,
+        messageId: row.messageId,
+        subject: row.subject,
+        detail: `Structured CAD/job identifier ${cad.value} is strong project identity evidence.`,
+      });
     }
+
+    for (const cad of weakCads) {
+      if (!hasBoundedIdentifierToken(subject, cad.value)) continue;
+      reasons.push({
+        kind: "cad_identifier_weak_numeric",
+        value: cad.value,
+        messageId: row.messageId,
+        subject: row.subject,
+        detail: `Numeric CAD/job token ${cad.value} is too weak to discover a related thread by itself.`,
+      });
+    }
+
     for (const order of orderIds) {
-      if (order && subject.includes(order.toLowerCase())) {
-        addMatch(row, 80, {
-          kind: "order_number",
-          value: order,
-          messageId: row.messageId,
-          subject: row.subject,
-        });
-      }
-    }
-    for (const vendor of vendors) {
-      if (vendor && subject.includes(vendor)) {
-        addMatch(row, 50, {
-          kind: "vendor",
-          value: vendor,
-          messageId: row.messageId,
-          subject: row.subject,
-        });
-      }
-    }
-    const personHit = personHashes.some((hash) => indexedTouchesPerson(row, hash));
-    const termHit = terms.find((term) => subject.includes(term));
-    if (personHit && termHit) {
-      addMatch(row, 40, {
-        kind: "subject_term",
-        value: termHit,
+      if (!hasBoundedIdentifierToken(subject, order.value)) continue;
+      strongScore += 100;
+      reasons.push({
+        kind: "order_number",
+        value: order.value,
         messageId: row.messageId,
         subject: row.subject,
+        detail: `Validated order identifier ${order.value} is strong project identity evidence.`,
       });
     }
-    if (personHit && dateWindowMatch(row.sentAt, dates) && termHit) {
-      addMatch(row, 25, {
-        kind: "project_date",
-        value: row.sentAt,
+
+    const vendorHit = vendors.find((vendor) =>
+      hasBoundedIdentifierToken(subject, vendor),
+    );
+    const personHit = personHashes.some((hash) =>
+      indexedTouchesPerson(row, hash),
+    );
+    const termHit = terms.find(
+      (term) =>
+        hasBoundedIdentifierToken(subject, term) ||
+        subject.toLowerCase().includes(term),
+    );
+    const dated = dateWindowMatch(row.sentAt, dates);
+
+    if (strongScore > 0) {
+      if (vendorHit) {
+        supportingScore += 15;
+        reasons.push({
+          kind: "vendor_supporting_only",
+          value: vendorHit,
+          messageId: row.messageId,
+          subject: row.subject,
+          detail:
+            "Vendor is supporting evidence only and cannot discover a thread by itself.",
+        });
+      }
+      if (termHit) {
+        supportingScore += 12;
+        reasons.push({
+          kind: "subject_term",
+          value: termHit,
+          messageId: row.messageId,
+          subject: row.subject,
+          detail: "Subject continuity is a supporting signal, not project identity.",
+        });
+      }
+      if (dated) {
+        supportingScore += 10;
+        reasons.push({
+          kind: "project_date",
+          value: row.sentAt,
+          messageId: row.messageId,
+          subject: row.subject,
+          detail: "Date proximity is a supporting signal, not project identity.",
+        });
+      }
+      if (personHit) {
+        supportingScore += 5;
+        reasons.push({
+          kind: "person_email_hash",
+          value: personHashes[0] ?? "",
+          messageId: row.messageId,
+          subject: row.subject,
+          detail: "Exact Person email hash is supporting evidence only.",
+        });
+      }
+    } else if (vendorHit) {
+      reasons.push({
+        kind: "vendor_only",
+        value: vendorHit,
         messageId: row.messageId,
         subject: row.subject,
+        detail: "Same vendor is insufficient to discover a related thread.",
       });
     }
-    if (personHit && !termHit) {
-      addMatch(row, 5, {
-        kind: "person_email_hash",
-        value: personHashes[0] ?? "",
-        messageId: row.messageId,
-        subject: row.subject,
+
+    const score = strongScore + supportingScore;
+    if (score < DISCOVERY_CANDIDATE_THRESHOLD) continue;
+
+    const matchedOn = uniqueDiscoveryReasons(reasons);
+    const existing = byThread.get(row.threadId);
+    if (!existing || score > existing.score) {
+      byThread.set(row.threadId, {
+        threadId: row.threadId,
+        score,
+        strength: discoveryStrength(score),
+        reasons: matchedOn,
+        matchedOn,
+        candidateProjectId: input.candidateProjectId ?? null,
+        requiresFounderReview: true,
+        fetchApproved: false,
       });
     }
   }
 
-  const candidates = [...byThread.values()]
-    .filter((row) => row.score >= 40)
-    .sort((left, right) => right.score - left.score || left.threadId.localeCompare(right.threadId));
+  const candidates = [...byThread.values()].sort(
+    (left, right) =>
+      right.score - left.score || left.threadId.localeCompare(right.threadId),
+  );
 
   return {
     anchorThreadId: input.anchorThreadId,
@@ -1071,6 +1235,7 @@ export function reconstructProjectBook(
       anchorThreadId: input.thread.threadId,
       identifiers,
       indexedMessages: input.indexedMessages,
+      candidateProjectId: input.projectId,
     }),
     openJobs: [],
     operationalWork: [],

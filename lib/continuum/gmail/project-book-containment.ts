@@ -7,7 +7,11 @@
  * automaticApply: false.
  */
 
-import { extractCadJobIdentifiers } from "./cad-job-identifier";
+import {
+  classifyCadIdentifierStrength,
+  extractCadJobIdentifiers,
+} from "./cad-job-identifier";
+import { extractOrderIdentifiers } from "./order-identifier";
 import {
   classifyJewelryItemTypes,
   RECONSTRUCTION_MUTATION_BOUNDARY,
@@ -16,6 +20,8 @@ import {
   type ProjectLifecycleCandidate,
   type RelatedThreadCandidate,
 } from "./project-reconstruction";
+
+export { extractOrderIdentifiers } from "./order-identifier";
 
 export const PERSON_LEVEL_MEMORY_KINDS = [
   "canonical_identity_contact",
@@ -87,6 +93,8 @@ export type AttributionStrength = (typeof ATTRIBUTION_STRENGTHS)[number];
 export const ATTRIBUTION_REASON_KINDS = [
   "exact_gmail_thread_anchor",
   "exact_cad_job_identifier",
+  "cad_identifier_strong",
+  "cad_identifier_weak_numeric",
   "exact_order_identifier",
   "exact_project_artifact_reference",
   "bounded_project_date_range",
@@ -94,11 +102,15 @@ export const ATTRIBUTION_REASON_KINDS = [
   "project_vendor_order_context",
   "person_identity_only",
   "vendor_only",
+  "vendor_supporting_only",
   "jewelry_type_only",
   "similar_stones_or_subject",
   "nearby_dates_only",
   "generic_correspondence",
   "spans_multiple_projects",
+  "item_id_owned_by_project",
+  "foreign_item_id",
+  "unknown_item_id",
 ] as const;
 
 export type AttributionReasonKind = (typeof ATTRIBUTION_REASON_KINDS)[number];
@@ -143,9 +155,6 @@ export const CONTAINMENT_MUTATION_BOUNDARY = {
 } as const;
 
 export type ContainmentMutationBoundary = typeof CONTAINMENT_MUTATION_BOUNDARY;
-
-const ORDER_NUMBER_PATTERN =
-  /\border(?:\s*(?:#|number|no\.?))?\s*[:#]?\s*([A-Za-z0-9-]{2,64})\b/gi;
 
 const GENERIC_SUBJECT_TERMS = new Set([
   "re",
@@ -383,19 +392,6 @@ export function mayStoreOnPerson(
   return memoryPlaneForKind(kind) === "person";
 }
 
-export function extractOrderIdentifiers(text: string): string[] {
-  const found: string[] = [];
-  ORDER_NUMBER_PATTERN.lastIndex = 0;
-  for (const match of text.matchAll(ORDER_NUMBER_PATTERN)) {
-    const token = match[1]?.trim();
-    if (!token) continue;
-    if (!found.some((existing) => norm(existing) === norm(token))) {
-      found.push(token);
-    }
-  }
-  return found;
-}
-
 function haystackOf(evidence: ProjectEvidenceCandidate): string {
   return [evidence.subject, evidence.text, evidence.artifact?.filename]
     .filter(Boolean)
@@ -471,6 +467,7 @@ function scoreProject(
   const hay = haystackOf(evidence);
   const reasons: AttributionReason[] = [];
   let score = 0;
+  let strongIdentity = false;
   const cads = extractCadJobIdentifiers(hay);
   const orders = extractOrderIdentifiers(hay);
 
@@ -480,6 +477,7 @@ function scoreProject(
     );
     if (threadHit) {
       score += 100;
+      strongIdentity = true;
       reasons.push({
         kind: "exact_gmail_thread_anchor",
         value: evidence.threadId,
@@ -489,12 +487,26 @@ function scoreProject(
   }
 
   for (const cad of cads) {
-    if (project.cadJobNumbers.some((id) => norm(id) === norm(cad))) {
+    if (!project.cadJobNumbers.some((id) => norm(id) === norm(cad))) continue;
+    const strength = classifyCadIdentifierStrength(cad);
+    if (strength === "strong_structured") {
       score += 100;
+      strongIdentity = true;
       reasons.push({
         kind: "exact_cad_job_identifier",
         value: cad,
         detail: `Validated CAD/job identifier ${cad} belongs to Project ${project.projectId}.`,
+      });
+      reasons.push({
+        kind: "cad_identifier_strong",
+        value: cad,
+        detail: `Structured CAD/job identifier ${cad} is strong project identity evidence.`,
+      });
+    } else if (strength === "weak_numeric") {
+      reasons.push({
+        kind: "cad_identifier_weak_numeric",
+        value: cad,
+        detail: `Numeric CAD/job token ${cad} is too weak to route or discover a project by itself.`,
       });
     }
   }
@@ -502,6 +514,7 @@ function scoreProject(
   for (const order of orders) {
     if (project.orderNumbers.some((id) => norm(id) === norm(order))) {
       score += 100;
+      strongIdentity = true;
       reasons.push({
         kind: "exact_order_identifier",
         value: order,
@@ -520,6 +533,7 @@ function scoreProject(
     );
     if (artifactHit) {
       score += 95;
+      strongIdentity = true;
       reasons.push({
         kind: "exact_project_artifact_reference",
         value: artifact.artifactId,
@@ -539,13 +553,25 @@ function scoreProject(
   const dated = inDateRange(evidence.sentAt, project.dateRange);
   const nearby = nearbyDateOnly(evidence.sentAt, project.dateRange);
 
-  if (vendorHit && orders.length > 0) {
-    score += 30;
+  if (vendorHit && strongIdentity) {
+    score += 15;
     reasons.push({
-      kind: "project_vendor_order_context",
-      value: evidence.vendorMentions[0] ?? "",
-      detail: "Vendor appears with order context; vendor alone is not ownership.",
+      kind: "vendor_supporting_only",
+      value: evidence.vendorMentions.find((vendor) =>
+        project.vendors.some((owned) => norm(owned) === norm(vendor)),
+      ) ?? "",
+      detail: "Vendor is supporting evidence only and cannot route a thread by itself.",
     });
+    const matchedOrder = orders.find((order) =>
+      project.orderNumbers.some((id) => norm(id) === norm(order)),
+    );
+    if (matchedOrder) {
+      reasons.push({
+        kind: "project_vendor_order_context",
+        value: evidence.vendorMentions[0] ?? "",
+        detail: "Vendor appears with order context; vendor alone is not ownership.",
+      });
+    }
   } else if (vendorHit) {
     reasons.push({
       kind: "vendor_only",
@@ -735,6 +761,8 @@ function attributeOne(
     });
   }
 
+  const explained = scored.filter((row) => row.reasons.length > 0);
+
   return {
     evidenceId: evidence.evidenceId,
     resolution: "person_related_unassigned",
@@ -746,7 +774,7 @@ function attributeOne(
     score: plausible[0]?.score ?? 0,
     reasons: uniqueReasons([
       ...personOnlyReasons,
-      ...(plausible[0]?.reasons ?? []),
+      ...explained.flatMap((row) => row.reasons),
     ]),
     requiresFounderReview: true,
     candidates: plausible,
@@ -760,8 +788,12 @@ function artifactRecord(
 ): ArtifactOwnershipRecord | null {
   const artifact = evidence.artifact;
   if (!artifact) return null;
-  const reviewState =
-    attribution.resolution === "exact_project"
+  const itemOwnershipBlocked = attribution.reasons.some(
+    (row) => row.kind === "foreign_item_id" || row.kind === "unknown_item_id",
+  );
+  const reviewState = itemOwnershipBlocked
+    ? "needs_review"
+    : attribution.resolution === "exact_project"
       ? "assigned"
       : attribution.resolution === "unrelated_rejected"
         ? "rejected"
@@ -770,7 +802,7 @@ function artifactRecord(
           : "unassigned";
   return {
     artifactId: artifact.artifactId,
-    projectId: attribution.attachedProjectId,
+    projectId: itemOwnershipBlocked ? null : attribution.attachedProjectId,
     itemId: artifact.itemId,
     sourceMessageId: artifact.sourceMessageId ?? evidence.messageId,
     sourceThreadId: artifact.sourceThreadId ?? evidence.threadId,
@@ -804,7 +836,9 @@ function shouldProposeNewProject(
   if (isGenericCorrespondence(evidence)) return false;
   const hay = haystackOf(evidence);
   const unknownCad = extractCadJobIdentifiers(hay).some(
-    (cad) => !identifierOwnedByCatalog(cad, books, "cadJobNumbers"),
+    (cad) =>
+      classifyCadIdentifierStrength(cad) === "strong_structured" &&
+      !identifierOwnedByCatalog(cad, books, "cadJobNumbers"),
   );
   const unknownOrder = extractOrderIdentifiers(hay).some(
     (order) => !identifierOwnedByCatalog(order, books, "orderNumbers"),
@@ -907,6 +941,97 @@ export function assemblePersonProjectBookList(
   };
 }
 
+function itemOwnerProjectIds(
+  itemId: string,
+  books: readonly ExistingProjectBook[],
+): string[] {
+  return books
+    .filter((book) =>
+      book.items.some((item) => norm(item.itemId) === norm(itemId)),
+    )
+    .map((book) => book.projectId);
+}
+
+function enforceItemOwnership(
+  attribution: ProjectEvidenceAttribution,
+  evidence: ProjectEvidenceCandidate,
+  books: readonly ExistingProjectBook[],
+): ProjectEvidenceAttribution {
+  const itemId = evidence.artifact?.itemId?.trim() || null;
+  if (!itemId) return attribution;
+  if (attribution.resolution === "unrelated_rejected") return attribution;
+
+  const owners = itemOwnerProjectIds(itemId, books);
+  if (owners.length === 0) {
+    return {
+      ...attribution,
+      resolution: "person_related_unassigned",
+      attachedProjectId: null,
+      requiresFounderReview: true,
+      communicationRouting: "unassigned_needs_project_routing",
+      strength:
+        attribution.strength === "exact" || attribution.strength === "strong"
+          ? "moderate"
+          : attribution.strength,
+      reasons: uniqueReasons([
+        ...attribution.reasons,
+        {
+          kind: "unknown_item_id",
+          value: itemId,
+          detail: "Unknown itemId cannot be attributed to a Project Book.",
+        },
+      ]),
+    };
+  }
+
+  const attached = attribution.attachedProjectId;
+  if (attached && owners.includes(attached)) {
+    return {
+      ...attribution,
+      reasons: uniqueReasons([
+        ...attribution.reasons,
+        {
+          kind: "item_id_owned_by_project",
+          value: itemId,
+          detail: `itemId belongs to Project ${attached}.`,
+        },
+      ]),
+    };
+  }
+
+  if (attached && !owners.includes(attached)) {
+    const spanning = [...new Set([attached, ...owners])];
+    return {
+      ...attribution,
+      resolution: "ambiguous_between_projects",
+      candidateProjectId: null,
+      attachedProjectId: null,
+      spanningProjectIds: spanning,
+      duplicatedAcrossProjects: false,
+      requiresFounderReview: true,
+      communicationRouting: "ambiguous_multi_project",
+      strength: "strong",
+      reasons: uniqueReasons([
+        ...attribution.reasons,
+        {
+          kind: "foreign_item_id",
+          value: itemId,
+          detail:
+            "itemId belongs to a different Project Book and cannot be attached here.",
+        },
+        {
+          kind: "spans_multiple_projects",
+          value: spanning.join(","),
+          detail:
+            "Evidence spans multiple Project Books and requires founder review rather than copying it everywhere.",
+        },
+      ]),
+    };
+  }
+
+  return attribution;
+}
+
 export function containIsolatedReconstructedBook(
   handoff: ProjectBookReconstructionHandoff,
   siblingProjectIds: readonly string[],
@@ -969,7 +1094,11 @@ export function routeProjectEvidence(input: {
     (book) => book.personId === input.person.personId,
   );
   const attributions = input.evidence.map((row) =>
-    attributeOne(row, books, input.person.personId),
+    enforceItemOwnership(
+      attributeOne(row, books, input.person.personId),
+      row,
+      books,
+    ),
   );
   const artifacts = input.evidence
     .map((row, index) => artifactRecord(row, attributions[index]!))

@@ -7,6 +7,7 @@
 
 import { validateProjectSpecCorrection } from "@/lib/continuum/client-memory/project-spec/validate";
 import { extractCadJobIdentifiers } from "./cad-job-identifier";
+import { extractOrderIdentifiers } from "./order-identifier";
 import type { ProtectedExactThread, ProtectedExactThreadMessage } from "./exact-thread-payload";
 
 export const RECONSTRUCTION_EVIDENCE_KINDS = [
@@ -73,8 +74,6 @@ const FINGER_SIZE_EVIDENCE = new RegExp(
   `\\b(?:ring|finger)\\s+size\\s*(?:is|=|:)?\\s*(${FINGER_SIZE_TOKEN})\\b`,
   "gi",
 );
-const ORDER_NUMBER_EVIDENCE =
-  /\border(?:\s*(?:#|number|no\.?))?\s*[:#]?\s*([A-Za-z0-9-]{2,64})\b/gi;
 const METAL_EVIDENCE =
   /\b(platinum|palladium|18k\s+white\s+gold|18k\s+yellow\s+gold|18k\s+rose\s+gold|14k\s+white\s+gold|14k\s+yellow\s+gold|14k\s+rose\s+gold|white\s+gold|yellow\s+gold|rose\s+gold)\b/gi;
 const CENTER_STONE_EVIDENCE =
@@ -142,7 +141,15 @@ function collectMessageEvidence(
   }
   for (const haystack of haystacksOf(message)) {
     collectMatches(haystack, "finger_size", FINGER_SIZE_EVIDENCE, message.messageId, items);
-    collectMatches(haystack, "order_number", ORDER_NUMBER_EVIDENCE, message.messageId, items);
+    for (const order of extractOrderIdentifiers(haystack.text)) {
+      items.push({
+        kind: "order_number",
+        messageId: message.messageId,
+        proposedValue: order,
+        explicit: true,
+        source: haystack.source,
+      });
+    }
     for (const cadId of extractCadJobIdentifiers(haystack.text)) {
       items.push({
         kind: "cad_job_number",

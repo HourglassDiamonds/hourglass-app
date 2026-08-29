@@ -325,6 +325,20 @@ describe("jewelry-type-aware project reconstruction", () => {
       handoff.relatedThreads.identifiers.some((row) => row.kind === "anchor_thread"),
       true,
     );
+    const cadCandidate = handoff.relatedThreads.candidates.find(
+      (row) => row.threadId === "19relatedcad8821aaaa",
+    );
+    assert.ok(cadCandidate);
+    assert.equal(typeof cadCandidate.score, "number");
+    assert.equal(cadCandidate.score >= 100, true);
+    assert.equal(cadCandidate.requiresFounderReview, true);
+    assert.equal(cadCandidate.candidateProjectId, handoff.projectId);
+    assert.equal(cadCandidate.reasons.length > 0, true);
+    assert.equal(
+      cadCandidate.reasons.some((row) => row.kind === "cad_identifier_strong"),
+      true,
+    );
+    assert.deepEqual(cadCandidate.reasons, cadCandidate.matchedOn);
   });
 
   it("does not treat earrings as having a jewelry size by default", () => {
