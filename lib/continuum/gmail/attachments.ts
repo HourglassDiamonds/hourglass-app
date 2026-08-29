@@ -7,6 +7,7 @@ import type { GmailAttachmentMeta } from "./types";
 export type GmailAttachmentStore = {
   putAttachment(row: GmailAttachmentMeta): Promise<GmailAttachmentMeta>;
   listByMessage(messageId: string): Promise<GmailAttachmentMeta[]>;
+  listByThread(threadId: string): Promise<GmailAttachmentMeta[]>;
 };
 
 function cloneAttachment(row: GmailAttachmentMeta): GmailAttachmentMeta {
@@ -30,6 +31,13 @@ export class InMemoryGmailAttachmentStore implements GmailAttachmentStore {
     const id = messageId.trim();
     return [...this.rows.values()]
       .filter((row) => row.messageId === id)
+      .map(cloneAttachment);
+  }
+
+  async listByThread(threadId: string): Promise<GmailAttachmentMeta[]> {
+    const id = threadId.trim();
+    return [...this.rows.values()]
+      .filter((row) => row.threadId === id)
       .map(cloneAttachment);
   }
 

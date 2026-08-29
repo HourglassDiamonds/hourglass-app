@@ -46,6 +46,10 @@ function asStringArray(value: unknown): string[] {
   return value.map((item) => String(item));
 }
 
+function escapeIlike(value: string): string {
+  return value.replace(/\\/g, "\\\\").replace(/%/g, "\\%").replace(/_/g, "\\_");
+}
+
 function rowToMessage(row: Record<string, unknown>): GmailIndexedMessage {
   if (!isGmailMessageDirection(row.direction)) {
     throw new Error("gmail-direction-invalid");
@@ -193,6 +197,100 @@ export class SupabaseGmailIndexStore implements GmailIndexStore {
       .order("sent_at", { ascending: true });
     if (error) throw error;
     return (data ?? []).map((row) => rowToMessage(row));
+  }
+
+  async listMessagesMatchingSubjectTokens(
+    tokens: readonly string[],
+  ): Promise<GmailIndexedMessage[]> {
+    const needles = [
+      ...new Set(tokens.map((token) => token.trim()).filter((token) => token.length >= 2)),
+    ].slice(0, 24);
+    if (needles.length === 0) return [];
+    const byId = new Map<string, GmailIndexedMessage>();
+    for (const token of needles) {
+      const rows = await this.listSubjectIlikePages(escapeIlike(token));
+      for (const row of rows) byId.set(row.messageId, row);
+    }
+    return [...byId.values()];
+  }
+
+  async listMessagesTouchingEmailHash(
+    emailHash: string,
+  ): Promise<GmailIndexedMessage[]> {
+    const hash = emailHash.trim();
+    if (!hash) return [];
+    const byId = new Map<string, GmailIndexedMessage>();
+    for (const column of [
+      "from_email_hash",
+      "to_email_hashes",
+      "cc_email_hashes",
+      "bcc_email_hashes",
+    ] as const) {
+      const rows =
+        column === "from_email_hash"
+          ? await this.listColumnEqPages(column, hash)
+          : await this.listArrayContainsPages(column, hash);
+      for (const row of rows) byId.set(row.messageId, row);
+    }
+    return [...byId.values()];
+  }
+
+  private async listSubjectIlikePages(escapedToken: string): Promise<GmailIndexedMessage[]> {
+    return this.pageMessages((from, to) =>
+      this.client
+        .from("continuum_gmail_messages")
+        .select(MESSAGE_COLUMNS)
+        .ilike("subject", `%${escapedToken}%`)
+        .order("sent_at", { ascending: true })
+        .range(from, to),
+    );
+  }
+
+  private async listColumnEqPages(
+    column: "from_email_hash",
+    value: string,
+  ): Promise<GmailIndexedMessage[]> {
+    return this.pageMessages((from, to) =>
+      this.client
+        .from("continuum_gmail_messages")
+        .select(MESSAGE_COLUMNS)
+        .eq(column, value)
+        .order("sent_at", { ascending: true })
+        .range(from, to),
+    );
+  }
+
+  private async listArrayContainsPages(
+    column: "to_email_hashes" | "cc_email_hashes" | "bcc_email_hashes",
+    value: string,
+  ): Promise<GmailIndexedMessage[]> {
+    return this.pageMessages((from, to) =>
+      this.client
+        .from("continuum_gmail_messages")
+        .select(MESSAGE_COLUMNS)
+        .contains(column, [value])
+        .order("sent_at", { ascending: true })
+        .range(from, to),
+    );
+  }
+
+  private async pageMessages(
+    query: (
+      from: number,
+      to: number,
+    ) => PromiseLike<{ data: Record<string, unknown>[] | null; error: { message: string } | null }>,
+  ): Promise<GmailIndexedMessage[]> {
+    const rows: GmailIndexedMessage[] = [];
+    const page = 1000;
+    const cap = 5000;
+    for (let offset = 0; offset < cap; offset += page) {
+      const { data, error } = await query(offset, offset + page - 1);
+      if (error) throw error;
+      const chunk = (data ?? []).map((row) => rowToMessage(row));
+      rows.push(...chunk);
+      if (chunk.length < page) break;
+    }
+    return rows;
   }
 
   async getCheckpoint(

@@ -262,6 +262,7 @@ export async function runGmailHistoryChunk(
       return input.attachments.putAttachment(row);
     },
     listByMessage: (messageId) => input.attachments.listByMessage(messageId),
+    listByThread: (threadId) => input.attachments.listByThread(threadId),
   };
 
   try {

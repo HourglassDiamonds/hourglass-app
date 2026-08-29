@@ -383,6 +383,54 @@ describe("related-thread discovery scoring", () => {
       true,
     );
   });
+
+  it("aggregates one thread without multiplying the same identifier", () => {
+    const handoff = discover(
+      [
+        {
+          kind: "cad_job_number",
+          value: "CBR2000037",
+          strength: "strong_structured",
+        },
+      ],
+      [
+        indexed({
+          messageId: "idx-cbr-1",
+          threadId: "19cbr2000037thread01",
+          subject: "CBR2000037 start",
+          fromEmail: PERSON,
+          toEmail: FOUNDER,
+        }),
+        indexed({
+          messageId: "idx-cbr-2",
+          threadId: "19cbr2000037thread01",
+          subject: "Re: CBR2000037 files",
+          fromEmail: FOUNDER,
+          toEmail: PERSON,
+        }),
+        indexed({
+          messageId: "idx-cbr-3",
+          threadId: "19cbr2000037thread01",
+          subject: "CBR2000037 Vendor North",
+          fromEmail: PERSON,
+          toEmail: FOUNDER,
+        }),
+      ],
+    );
+    const rows = handoff.candidates.filter(
+      (row) => row.threadId === "19cbr2000037thread01",
+    );
+    assert.equal(rows.length, 1);
+    const row = rows[0]!;
+    assert.equal(row.score, 100);
+    assert.equal(row.messageCount, 3);
+    assert.equal(
+      row.reasons.filter((reason) => reason.kind === "cad_identifier_strong").length,
+      3,
+    );
+    assert.equal(row.fetchApproved, false);
+    assert.equal(row.requiresFounderReview, true);
+  });
 });
 
 describe("order identifier extraction used by discovery identifiers", () => {

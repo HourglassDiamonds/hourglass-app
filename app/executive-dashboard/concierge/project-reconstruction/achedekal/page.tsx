@@ -3,6 +3,7 @@ import {
   ACHEDEKAL_DISPLAY_NAME,
   ACHEDEKAL_LIFECYCLE_LABEL,
   ACHEDEKAL_PROJECT_ID,
+  ACHEDEKAL_RECONSTRUCTION_HEADING,
   ACHEDEKAL_REVIEW_WARNING,
 } from "@/lib/continuum/gmail/achedekal-acceptance";
 import { ConciergeShell } from "../../components/concierge-shell";
@@ -11,6 +12,7 @@ import {
   ConciergeUnavailable,
 } from "../../components/client-profile-view";
 import { AchedekalReviewForm } from "../../components/achedekal-review-form";
+import { AchedekalRelatedThreadsForm } from "../../components/achedekal-related-threads";
 
 export const dynamic = "force-dynamic";
 
@@ -67,15 +69,16 @@ export default async function AchedekalEvidenceReviewPage() {
       <ConciergeBackLink />
       <div className="hg-concierge-fade mt-8">
         <h1 className="font-serif text-[1.95rem] font-normal leading-[1.08] tracking-[-0.04em] text-[#efe8de] md:text-[2.15rem]">
-          {ACHEDEKAL_DISPLAY_NAME}
+          {ACHEDEKAL_RECONSTRUCTION_HEADING}
         </h1>
         <p className="mt-4 text-[11px] uppercase tracking-[0.28em] text-[#ad9164]">
           {ACHEDEKAL_LIFECYCLE_LABEL}
         </p>
         <p className="mt-4 max-w-[42ch] text-[15px] leading-relaxed text-[#c4b7aa]">
-          {ACHEDEKAL_REVIEW_WARNING}
+          {ACHEDEKAL_DISPLAY_NAME}. {ACHEDEKAL_REVIEW_WARNING}
         </p>
         <AchedekalReviewForm specs={specs} />
+        <AchedekalRelatedThreadsForm />
       </div>
     </ConciergeShell>
   );

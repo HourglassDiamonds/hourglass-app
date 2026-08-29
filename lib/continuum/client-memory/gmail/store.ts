@@ -28,6 +28,10 @@ export type GmailIndexStore = {
   ): Promise<IndexGmailMessageResult>;
   getMessage(messageId: string): Promise<GmailIndexedMessage | null>;
   listMessagesByThread(threadId: string): Promise<GmailIndexedMessage[]>;
+  listMessagesMatchingSubjectTokens(
+    tokens: readonly string[],
+  ): Promise<GmailIndexedMessage[]>;
+  listMessagesTouchingEmailHash(emailHash: string): Promise<GmailIndexedMessage[]>;
   getCheckpoint(jobKey: GmailCheckpointJobKey): Promise<GmailCheckpoint | null>;
   putCheckpoint(row: GmailCheckpoint): Promise<GmailCheckpoint>;
   tryClaimHistoricalChunk(nowIso: string, leaseMs: number): Promise<boolean>;
@@ -82,6 +86,41 @@ export class InMemoryGmailIndexStore implements GmailIndexStore {
     const id = threadId.trim();
     return [...this.messages.values()]
       .filter((row) => row.threadId === id)
+      .map(cloneMessage);
+  }
+
+  async listMessagesMatchingSubjectTokens(
+    tokens: readonly string[],
+  ): Promise<GmailIndexedMessage[]> {
+    const needles = [
+      ...new Set(
+        tokens
+          .map((token) => token.trim().toLowerCase())
+          .filter((token) => token.length >= 2),
+      ),
+    ].slice(0, 24);
+    if (needles.length === 0) return [];
+    return [...this.messages.values()]
+      .filter((row) => {
+        const subject = (row.subject ?? "").toLowerCase();
+        return needles.some((needle) => subject.includes(needle));
+      })
+      .map(cloneMessage);
+  }
+
+  async listMessagesTouchingEmailHash(
+    emailHash: string,
+  ): Promise<GmailIndexedMessage[]> {
+    const hash = emailHash.trim();
+    if (!hash) return [];
+    return [...this.messages.values()]
+      .filter(
+        (row) =>
+          row.fromEmailHash === hash ||
+          row.toEmailHashes.includes(hash) ||
+          row.ccEmailHashes.includes(hash) ||
+          row.bccEmailHashes.includes(hash),
+      )
       .map(cloneMessage);
   }
 

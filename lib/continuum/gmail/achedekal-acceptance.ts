@@ -17,6 +17,14 @@ export const ACHEDEKAL_REVIEW_PATH =
 export const ACHEDEKAL_REVIEW_WARNING =
   "Evidence review only — no changes will be applied.";
 
+export const ACHEDEKAL_RECONSTRUCTION_HEADING =
+  "Alea / Achedekal project reconstruction";
+
+export const ACHEDEKAL_DISCOVERY_WARNING =
+  "Candidate discovery only — metadata index, not opened. No changes will be applied.";
+
+export const ACHEDEKAL_RELATED_THREAD_CANDIDATE_LIMIT = 20 as const;
+
 export function isPermittedAchedekalProjectId(projectId: string): boolean {
   return projectId.trim() === ACHEDEKAL_PROJECT_ID;
 }

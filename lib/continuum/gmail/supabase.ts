@@ -168,6 +168,16 @@ export class SupabaseGmailAttachmentStore implements GmailAttachmentStore {
     if (error) throw error;
     return (data ?? []).map((row) => rowToAttachment(row));
   }
+
+  async listByThread(threadId: string): Promise<GmailAttachmentMeta[]> {
+    const { data, error } = await this.client
+      .from("continuum_gmail_attachments")
+      .select(ATTACHMENT_COLUMNS)
+      .eq("thread_id", threadId.trim())
+      .order("indexed_at", { ascending: true });
+    if (error) throw error;
+    return (data ?? []).map((row) => rowToAttachment(row));
+  }
 }
 
 export function createSupabaseGmailConnectionStore(

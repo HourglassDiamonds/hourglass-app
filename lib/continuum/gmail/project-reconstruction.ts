@@ -194,6 +194,13 @@ export type RelatedThreadCandidate = {
   candidateProjectId: string | null;
   requiresFounderReview: true;
   fetchApproved: false;
+  earliestDate: string | null;
+  latestDate: string | null;
+  messageCount: number;
+  inboundCount: number;
+  outboundCount: number;
+  representativeSubject: string | null;
+  attachmentHintCount: number;
 };
 
 export type RelatedThreadDiscoveryHandoff = {
@@ -876,6 +883,7 @@ export function extractStrongProjectIdentifiers(input: {
   thread: ProtectedExactThread;
   currentSpecs: ExactThreadCurrentSpecs;
   personEmailHash: string | null;
+  personEmailHashes?: readonly string[];
   internalEmailHashes?: readonly string[];
 }): StrongProjectIdentifier[] {
   const identifiers: StrongProjectIdentifier[] = [
@@ -922,9 +930,14 @@ export function extractStrongProjectIdentifiers(input: {
     ...internalHourglassEmailHashes(),
     ...(input.internalEmailHashes ?? []),
   ]);
-  if (input.personEmailHash && !internal.has(input.personEmailHash)) {
-    add("person_email_hash", input.personEmailHash);
-  }
+  const personHashes = [
+    ...new Set(
+      [input.personEmailHash, ...(input.personEmailHashes ?? [])].filter(
+        (value): value is string => Boolean(value && !internal.has(value)),
+      ),
+    ),
+  ];
+  for (const hash of personHashes) add("person_email_hash", hash);
 
   for (const message of input.thread.messages) {
     const hay = [message.subject, message.plainText].filter(Boolean).join("\n");
@@ -969,6 +982,74 @@ function indexedTouchesPerson(
   );
 }
 
+const DISCARDED_INDEX_LABELS = new Set(["SPAM", "TRASH", "CATEGORY_SPAM"]);
+
+export function isDiscardedIndexedMessage(row: GmailIndexedMessage): boolean {
+  return row.labelIds.some((label) =>
+    DISCARDED_INDEX_LABELS.has(label.trim().toUpperCase()),
+  );
+}
+
+export function personEmailHashesFromIndexedThread(
+  messages: readonly GmailIndexedMessage[],
+  internalEmailHashes: readonly string[] = [],
+): string[] {
+  const internal = new Set([
+    ...internalHourglassEmailHashes(),
+    ...internalEmailHashes,
+  ]);
+  const hashes = new Set<string>();
+  for (const row of messages) {
+    if (row.fromEmailHash && !internal.has(row.fromEmailHash)) {
+      hashes.add(row.fromEmailHash);
+    }
+    for (const hash of [
+      ...row.toEmailHashes,
+      ...row.ccEmailHashes,
+      ...row.bccEmailHashes,
+    ]) {
+      if (hash && !internal.has(hash)) hashes.add(hash);
+    }
+  }
+  return [...hashes];
+}
+
+export function extractProjectIdentifiersFromIndexedMetadata(input: {
+  anchorThreadId: string;
+  currentSpecs: ExactThreadCurrentSpecs;
+  personEmailHash?: string | null;
+  personEmailHashes?: readonly string[];
+  indexedMessages: readonly GmailIndexedMessage[];
+  internalEmailHashes?: readonly string[];
+}): StrongProjectIdentifier[] {
+  const threadMessages = input.indexedMessages.filter(
+    (row) =>
+      row.threadId === input.anchorThreadId && !isDiscardedIndexedMessage(row),
+  );
+  return extractStrongProjectIdentifiers({
+    thread: {
+      threadId: input.anchorThreadId,
+      messages: threadMessages.map((row) => ({
+        messageId: row.messageId,
+        internalDate: row.sentAt,
+        direction: row.direction,
+        from: null,
+        to: [],
+        cc: [],
+        bcc: [],
+        subject: row.subject,
+        plainText: null,
+        mimeParts: [],
+        attachments: [],
+      })),
+    },
+    currentSpecs: input.currentSpecs,
+    personEmailHash: input.personEmailHash ?? null,
+    personEmailHashes: input.personEmailHashes,
+    internalEmailHashes: input.internalEmailHashes,
+  });
+}
+
 const DISCOVERY_CANDIDATE_THRESHOLD = 40;
 
 function discoveryStrength(
@@ -995,6 +1076,61 @@ function uniqueDiscoveryReasons(
   return rows;
 }
 
+function identityKey(value: string): string {
+  return value.trim().toLowerCase();
+}
+
+function summarizeIndexedThread(
+  messages: readonly GmailIndexedMessage[],
+  reasons: readonly RelatedThreadMatchReason[],
+): Pick<
+  RelatedThreadCandidate,
+  | "earliestDate"
+  | "latestDate"
+  | "messageCount"
+  | "inboundCount"
+  | "outboundCount"
+  | "representativeSubject"
+  | "attachmentHintCount"
+> {
+  const dates = messages
+    .map((row) => row.sentAt)
+    .filter(Boolean)
+    .sort();
+  const reasonMessageIds = new Set(reasons.map((row) => row.messageId));
+  const representative =
+    messages.find(
+      (row) =>
+        reasonMessageIds.has(row.messageId) &&
+        (row.subject ?? "").trim() &&
+        !/^\s*(re|fw|fwd)\s*:?\s*$/i.test(row.subject ?? ""),
+    ) ??
+    messages.find((row) => (row.subject ?? "").trim()) ??
+    messages[0];
+  return {
+    earliestDate: dates[0] ?? null,
+    latestDate: dates[dates.length - 1] ?? null,
+    messageCount: messages.length,
+    inboundCount: messages.filter((row) => row.direction === "inbound").length,
+    outboundCount: messages.filter((row) => row.direction === "outbound").length,
+    representativeSubject: representative?.subject ?? null,
+    attachmentHintCount: messages.filter((row) => row.hasAttachments).length,
+  };
+}
+
+function collectThreadMessages(
+  indexedMessages: readonly GmailIndexedMessage[],
+): Map<string, GmailIndexedMessage[]> {
+  const byThread = new Map<string, GmailIndexedMessage[]>();
+  for (const row of indexedMessages) {
+    if (isDiscardedIndexedMessage(row)) continue;
+    const existing = byThread.get(row.threadId);
+    if (existing) existing.push(row);
+    else byThread.set(row.threadId, [row]);
+  }
+  return byThread;
+}
+
 export function discoverRelatedThreadCandidates(input: {
   anchorThreadId: string;
   identifiers: readonly StrongProjectIdentifier[];
@@ -1002,7 +1138,6 @@ export function discoverRelatedThreadCandidates(input: {
   candidateProjectId?: string | null;
   internalEmailHashes?: readonly string[];
 }): RelatedThreadDiscoveryHandoff {
-  const byThread = new Map<string, RelatedThreadCandidate>();
   const internal = new Set([
     ...internalHourglassEmailHashes(),
     ...(input.internalEmailHashes ?? []),
@@ -1043,154 +1178,163 @@ export function discoverRelatedThreadCandidates(input: {
     .map((row) => row.value)
     .filter((hash) => !internal.has(hash));
 
-  for (const row of input.indexedMessages) {
-    if (row.threadId === input.anchorThreadId) continue;
-    const subject = row.subject ?? "";
+  const candidates: RelatedThreadCandidate[] = [];
+
+  for (const [threadId, messages] of collectThreadMessages(input.indexedMessages)) {
+    if (threadId === input.anchorThreadId) continue;
     const reasons: RelatedThreadMatchReason[] = [];
-    let strongScore = 0;
-    let supportingScore = 0;
+    const strongCadHits = new Set<string>();
+    const weakCadHits = new Set<string>();
+    const strongOrderHits = new Set<string>();
+    const weakOrderHits = new Set<string>();
+    let vendorHit: { value: string; row: GmailIndexedMessage } | null = null;
+    let termHit: { value: string; row: GmailIndexedMessage } | null = null;
+    let dated: GmailIndexedMessage | null = null;
+    let personHit: GmailIndexedMessage | null = null;
 
-    for (const cad of strongCads) {
-      if (!hasBoundedIdentifierToken(subject, cad.value)) continue;
-      strongScore += 100;
-      reasons.push({
-        kind: "cad_identifier_strong",
-        value: cad.value,
-        messageId: row.messageId,
-        subject: row.subject,
-        detail: `Structured CAD/job identifier ${cad.value} is strong project identity evidence.`,
-      });
-    }
-
-    for (const cad of weakCads) {
-      if (!candidateHasTypedCadIdentifier(subject, cad.value)) continue;
-      supportingScore += WEAK_IDENTIFIER_SUPPORT_SCORE;
-      const cadStrength = classifyCadIdentifierStrength(cad.value);
-      reasons.push({
-        kind:
-          cadStrength === "weak_short_structured"
-            ? "cad_identifier_weak_short_structured"
-            : "cad_identifier_weak_numeric",
-        value: cad.value,
-        messageId: row.messageId,
-        subject: row.subject,
-        detail: `Weak CAD/job identifier ${cad.value} is supporting/review evidence only and cannot establish project identity.`,
-      });
-    }
-
-    for (const order of strongOrders) {
-      if (!hasBoundedIdentifierToken(subject, order.value)) continue;
-      strongScore += 100;
-      reasons.push({
-        kind: "order_number",
-        value: order.value,
-        messageId: row.messageId,
-        subject: row.subject,
-        detail: `Validated order identifier ${order.value} is strong project identity evidence.`,
-      });
-    }
-
-    for (const order of weakOrders) {
-      if (!candidateHasTypedOrderIdentifier(subject, order.value)) continue;
-      supportingScore += WEAK_IDENTIFIER_SUPPORT_SCORE;
-      const orderStrength = classifyOrderIdentifierStrength(order.value);
-      reasons.push({
-        kind:
-          orderStrength === "weak_short_structured"
-            ? "order_identifier_weak_short_structured"
-            : "order_identifier_weak_numeric",
-        value: order.value,
-        messageId: row.messageId,
-        subject: row.subject,
-        detail: `Weak order identifier ${order.value} is supporting/review evidence only and cannot establish project identity.`,
-      });
-    }
-
-    const vendorHit = vendors.find((vendor) =>
-      hasBoundedIdentifierToken(subject, vendor),
-    );
-    const personHit = personHashes.some((hash) =>
-      indexedTouchesPerson(row, hash),
-    );
-    const termHit = terms.find(
-      (term) =>
-        hasBoundedIdentifierToken(subject, term) ||
-        subject.toLowerCase().includes(term),
-    );
-    const dated = dateWindowMatch(row.sentAt, dates);
-
-    if (strongScore > 0 || supportingScore > 0) {
-      if (vendorHit) {
-        supportingScore += 15;
+    for (const row of messages) {
+      const subject = row.subject ?? "";
+      for (const cad of strongCads) {
+        if (!hasBoundedIdentifierToken(subject, cad.value)) continue;
+        strongCadHits.add(identityKey(cad.value));
         reasons.push({
-          kind: "vendor_supporting_only",
-          value: vendorHit,
+          kind: "cad_identifier_strong",
+          value: cad.value,
           messageId: row.messageId,
           subject: row.subject,
+          detail: `Structured CAD/job identifier ${cad.value} is strong project identity evidence.`,
+        });
+      }
+      for (const cad of weakCads) {
+        if (!candidateHasTypedCadIdentifier(subject, cad.value)) continue;
+        weakCadHits.add(identityKey(cad.value));
+        const cadStrength = classifyCadIdentifierStrength(cad.value);
+        reasons.push({
+          kind:
+            cadStrength === "weak_short_structured"
+              ? "cad_identifier_weak_short_structured"
+              : "cad_identifier_weak_numeric",
+          value: cad.value,
+          messageId: row.messageId,
+          subject: row.subject,
+          detail: `Weak CAD/job identifier ${cad.value} is supporting/review evidence only and cannot establish project identity.`,
+        });
+      }
+      for (const order of strongOrders) {
+        if (!hasBoundedIdentifierToken(subject, order.value)) continue;
+        strongOrderHits.add(identityKey(order.value));
+        reasons.push({
+          kind: "order_number",
+          value: order.value,
+          messageId: row.messageId,
+          subject: row.subject,
+          detail: `Validated order identifier ${order.value} is strong project identity evidence.`,
+        });
+      }
+      for (const order of weakOrders) {
+        if (!candidateHasTypedOrderIdentifier(subject, order.value)) continue;
+        weakOrderHits.add(identityKey(order.value));
+        const orderStrength = classifyOrderIdentifierStrength(order.value);
+        reasons.push({
+          kind:
+            orderStrength === "weak_short_structured"
+              ? "order_identifier_weak_short_structured"
+              : "order_identifier_weak_numeric",
+          value: order.value,
+          messageId: row.messageId,
+          subject: row.subject,
+          detail: `Weak order identifier ${order.value} is supporting/review evidence only and cannot establish project identity.`,
+        });
+      }
+      const vendor = vendors.find((value) =>
+        hasBoundedIdentifierToken(subject, value),
+      );
+      if (vendor && !vendorHit) vendorHit = { value: vendor, row };
+      if (!personHit && personHashes.some((hash) => indexedTouchesPerson(row, hash))) {
+        personHit = row;
+      }
+      const term = terms.find(
+        (value) =>
+          hasBoundedIdentifierToken(subject, value) ||
+          subject.toLowerCase().includes(value),
+      );
+      if (term && !termHit) termHit = { value: term, row };
+      if (!dated && dateWindowMatch(row.sentAt, dates)) dated = row;
+    }
+
+    const identifierHit =
+      strongCadHits.size +
+        weakCadHits.size +
+        strongOrderHits.size +
+        weakOrderHits.size >
+      0;
+    if (identifierHit) {
+      if (vendorHit) {
+        reasons.push({
+          kind: "vendor_supporting_only",
+          value: vendorHit.value,
+          messageId: vendorHit.row.messageId,
+          subject: vendorHit.row.subject,
           detail:
             "Vendor is supporting evidence only and cannot discover a thread by itself.",
         });
       }
       if (termHit) {
-        supportingScore += 12;
         reasons.push({
           kind: "subject_term",
-          value: termHit,
-          messageId: row.messageId,
-          subject: row.subject,
+          value: termHit.value,
+          messageId: termHit.row.messageId,
+          subject: termHit.row.subject,
           detail: "Subject continuity is a supporting signal, not project identity.",
         });
       }
       if (dated) {
-        supportingScore += 10;
         reasons.push({
           kind: "project_date",
-          value: row.sentAt,
-          messageId: row.messageId,
-          subject: row.subject,
+          value: dated.sentAt,
+          messageId: dated.messageId,
+          subject: dated.subject,
           detail: "Date proximity is a supporting signal, not project identity.",
         });
       }
       if (personHit) {
-        supportingScore += 5;
         reasons.push({
           kind: "person_email_hash",
           value: personHashes[0] ?? "",
-          messageId: row.messageId,
-          subject: row.subject,
+          messageId: personHit.messageId,
+          subject: personHit.subject,
           detail: "Exact Person email hash is supporting evidence only.",
         });
       }
-    } else if (vendorHit) {
-      reasons.push({
-        kind: "vendor_only",
-        value: vendorHit,
-        messageId: row.messageId,
-        subject: row.subject,
-        detail: "Same vendor is insufficient to discover a related thread.",
-      });
     }
 
-    const score = strongScore + supportingScore;
+    const score =
+      strongCadHits.size * 100 +
+      strongOrderHits.size * 100 +
+      weakCadHits.size * WEAK_IDENTIFIER_SUPPORT_SCORE +
+      weakOrderHits.size * WEAK_IDENTIFIER_SUPPORT_SCORE +
+      (identifierHit && vendorHit ? 15 : 0) +
+      (identifierHit && termHit ? 12 : 0) +
+      (identifierHit && dated ? 10 : 0) +
+      (identifierHit && personHit ? 5 : 0);
     if (score < DISCOVERY_CANDIDATE_THRESHOLD) continue;
 
     const matchedOn = uniqueDiscoveryReasons(reasons);
-    const existing = byThread.get(row.threadId);
-    if (!existing || score > existing.score) {
-      byThread.set(row.threadId, {
-        threadId: row.threadId,
-        score,
-        strength: discoveryStrength(score),
-        reasons: matchedOn,
-        matchedOn,
-        candidateProjectId: input.candidateProjectId ?? null,
-        requiresFounderReview: true,
-        fetchApproved: false,
-      });
-    }
+    const summary = summarizeIndexedThread(messages, matchedOn);
+    candidates.push({
+      threadId,
+      score,
+      strength: discoveryStrength(score),
+      reasons: matchedOn,
+      matchedOn,
+      candidateProjectId: input.candidateProjectId ?? null,
+      requiresFounderReview: true,
+      fetchApproved: false,
+      ...summary,
+    });
   }
 
-  const candidates = [...byThread.values()].sort(
+  candidates.sort(
     (left, right) =>
       right.score - left.score || left.threadId.localeCompare(right.threadId),
   );

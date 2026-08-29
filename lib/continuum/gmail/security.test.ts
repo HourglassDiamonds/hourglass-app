@@ -53,6 +53,7 @@ describe("Gmail activation security", () => {
       assert.doesNotMatch(source, /createSupabaseGmailIndexStore/);
       assert.doesNotMatch(source, /InMemoryGmailIndexStore/);
       assert.doesNotMatch(source, /runExactProjectThreadFetch|protectExactThread/);
+      assert.doesNotMatch(source, /executeAchedekalCandidateDiscovery/);
     }
   });
 
@@ -119,7 +120,11 @@ describe("Gmail activation security", () => {
       join(GMAIL_DIR, "project-book-containment.ts"),
       "utf8",
     );
-    for (const source of [reconstruction, cad, fixture, containment]) {
+    const discovery = readFileSync(
+      join(GMAIL_DIR, "achedekal-candidate-discovery.ts"),
+      "utf8",
+    );
+    for (const source of [reconstruction, cad, fixture, containment, discovery]) {
       assert.doesNotMatch(source, /correctProjectSpec|applyProjectSpecCorrection/);
       assert.doesNotMatch(source, /editPersonProfile|createPersonAtomic/);
       assert.doesNotMatch(source, /runExactProjectThreadFetch|listMessages\(/);
@@ -134,6 +139,9 @@ describe("Gmail activation security", () => {
     assert.doesNotMatch(barrel, /from "\.\/project-book-containment"/);
     assert.doesNotMatch(server, /from "\.\/project-book-containment"/);
     assert.doesNotMatch(server, /routeProjectEvidence/);
+    assert.doesNotMatch(barrel, /from "\.\/achedekal-candidate-discovery"/);
+    assert.doesNotMatch(server, /from "\.\/achedekal-candidate-discovery"/);
+    assert.doesNotMatch(discovery, /createLiveGmailApi|users\.threads\.get/);
   });
 
   it("keeps OAuth routes off mailbox content and token rendering", () => {

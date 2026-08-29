@@ -131,6 +131,9 @@ function indexed(input: {
   subject: string;
   fromEmail: string;
   toEmail: string;
+  direction?: GmailIndexedMessage["direction"];
+  labelIds?: readonly string[];
+  hasAttachments?: boolean;
 }): GmailIndexedMessage {
   const fromEmailHash = hashEmail(input.fromEmail)!;
   const toEmailHash = hashEmail(input.toEmail)!;
@@ -144,9 +147,9 @@ function indexed(input: {
     toEmailHashes: [toEmailHash],
     ccEmailHashes: [],
     bccEmailHashes: [],
-    direction: "unknown",
-    labelIds: [],
-    hasAttachments: false,
+    direction: input.direction ?? "unknown",
+    labelIds: [...(input.labelIds ?? [])],
+    hasAttachments: input.hasAttachments ?? false,
     sourceSystem: GMAIL_SOURCE_SYSTEM,
   };
 }
@@ -228,6 +231,170 @@ export function aleaChedekalIndexedMessages(): GmailIndexedMessage[] {
       subject: "Anniversary necklace CAD-3308",
       fromEmail: person,
       toEmail: FOUNDER,
+    }),
+  ];
+}
+
+export const ALEA_DISCOVERY_RELATED_CAD_THREAD_ID = "19relatedcad8821aaaa";
+export const ALEA_DISCOVERY_MULTI_CAD_THREAD_ID = "19multicad8821aaaaaa";
+export const ALEA_DISCOVERY_WEAK_SUPPORT_THREAD_ID = "19weaktypedsupport001";
+export const ALEA_DISCOVERY_VENDOR_UNRELATED_THREAD_ID = "19vendorunrelatedjob01";
+export const ALEA_DISCOVERY_WEAK_ORDER_THREAD_ID = "19weakorderonly000001";
+export const ALEA_DISCOVERY_INTERNAL_THREAD_ID = "19internalhourglass01";
+export const ALEA_DISCOVERY_SPAM_THREAD_ID = "19spamcad8821aaaaaa";
+export const ALEA_DISCOVERY_GENERIC_PERSON_THREAD_ID = "19unrelatedhello0001";
+export const ALEA_DISCOVERY_OTHER_CLIENT_THREAD_ID = "19otherclientthread01";
+export const ALEA_DISCOVERY_BRACELET_TERM_THREAD_ID = "19relatedbraceletbbbb";
+
+export function aleaChedekalDiscoveryIndexedMessages(): GmailIndexedMessage[] {
+  const person = ALEA_CHEDEKAL_FIXTURE_EMAIL;
+  const studio = "studio@hourglass.example";
+  const vendor = "workshop@example.com";
+  return [
+    indexed({
+      messageId: "idx-anchor-1",
+      threadId: ALEA_CHEDEKAL_FIXTURE_THREAD_ID,
+      sentAt: "2024-03-12T15:04:00.000Z",
+      subject: "Loose stones invoice from Vendor North",
+      fromEmail: FOUNDER,
+      toEmail: person,
+      direction: "outbound",
+    }),
+    indexed({
+      messageId: "idx-anchor-2",
+      threadId: ALEA_CHEDEKAL_FIXTURE_THREAD_ID,
+      sentAt: "2024-04-02T18:22:00.000Z",
+      subject: "Bracelet concept",
+      fromEmail: person,
+      toEmail: FOUNDER,
+      direction: "inbound",
+    }),
+    indexed({
+      messageId: "idx-anchor-3",
+      threadId: ALEA_CHEDEKAL_FIXTURE_THREAD_ID,
+      sentAt: "2024-04-03T12:00:00.000Z",
+      subject: "CAD presentation CAD-8821",
+      fromEmail: FOUNDER,
+      toEmail: person,
+      direction: "outbound",
+      hasAttachments: true,
+    }),
+    indexed({
+      messageId: "idx-related-cad",
+      threadId: ALEA_DISCOVERY_RELATED_CAD_THREAD_ID,
+      sentAt: "2024-04-04T10:00:00.000Z",
+      subject: "CAD-8821 follow-up",
+      fromEmail: FOUNDER,
+      toEmail: person,
+      direction: "outbound",
+      hasAttachments: true,
+    }),
+    indexed({
+      messageId: "idx-multi-cad-1",
+      threadId: ALEA_DISCOVERY_MULTI_CAD_THREAD_ID,
+      sentAt: "2024-04-06T10:00:00.000Z",
+      subject: "CAD-8821 files",
+      fromEmail: FOUNDER,
+      toEmail: person,
+      direction: "outbound",
+    }),
+    indexed({
+      messageId: "idx-multi-cad-2",
+      threadId: ALEA_DISCOVERY_MULTI_CAD_THREAD_ID,
+      sentAt: "2024-04-06T11:00:00.000Z",
+      subject: "Re: CAD-8821 files",
+      fromEmail: person,
+      toEmail: FOUNDER,
+      direction: "inbound",
+    }),
+    indexed({
+      messageId: "idx-multi-cad-3",
+      threadId: ALEA_DISCOVERY_MULTI_CAD_THREAD_ID,
+      sentAt: "2024-04-06T12:00:00.000Z",
+      subject: "CAD-8821 from Vendor North",
+      fromEmail: vendor,
+      toEmail: FOUNDER,
+      direction: "inbound",
+    }),
+    indexed({
+      messageId: "idx-weak-support",
+      threadId: ALEA_DISCOVERY_WEAK_SUPPORT_THREAD_ID,
+      sentAt: "2024-04-05T10:00:00.000Z",
+      subject: "Order #4401 Vendor North",
+      fromEmail: person,
+      toEmail: FOUNDER,
+      direction: "inbound",
+    }),
+    indexed({
+      messageId: "idx-vendor-unrelated",
+      threadId: ALEA_DISCOVERY_VENDOR_UNRELATED_THREAD_ID,
+      sentAt: "2024-04-04T10:00:00.000Z",
+      subject: "Vendor North job CAD-9999",
+      fromEmail: vendor,
+      toEmail: FOUNDER,
+      direction: "inbound",
+    }),
+    indexed({
+      messageId: "idx-unrelated-person-only",
+      threadId: ALEA_DISCOVERY_GENERIC_PERSON_THREAD_ID,
+      sentAt: "2025-01-01T10:00:00.000Z",
+      subject: "Hello",
+      fromEmail: person,
+      toEmail: FOUNDER,
+      direction: "inbound",
+    }),
+    indexed({
+      messageId: "idx-weak-order-only",
+      threadId: ALEA_DISCOVERY_WEAK_ORDER_THREAD_ID,
+      sentAt: "2024-04-04T10:00:00.000Z",
+      subject: "Invoice 4401",
+      fromEmail: person,
+      toEmail: FOUNDER,
+      direction: "inbound",
+    }),
+    indexed({
+      messageId: "idx-project-b-anchor",
+      threadId: ALEA_CHEDEKAL_PROJECT_B_THREAD_ID,
+      sentAt: "2026-05-18T14:00:00.000Z",
+      subject: "Anniversary necklace CAD-3308",
+      fromEmail: person,
+      toEmail: FOUNDER,
+      direction: "inbound",
+    }),
+    indexed({
+      messageId: "idx-internal-only",
+      threadId: ALEA_DISCOVERY_INTERNAL_THREAD_ID,
+      sentAt: "2024-04-04T10:00:00.000Z",
+      subject: "Hourglass studio checklist",
+      fromEmail: FOUNDER,
+      toEmail: studio,
+      direction: "outbound",
+    }),
+    indexed({
+      messageId: "idx-spam-cad",
+      threadId: ALEA_DISCOVERY_SPAM_THREAD_ID,
+      sentAt: "2024-04-04T10:00:00.000Z",
+      subject: "CAD-8821 spam offer",
+      fromEmail: "spam@example.com",
+      toEmail: FOUNDER,
+      labelIds: ["SPAM"],
+    }),
+    indexed({
+      messageId: "idx-unrelated-other-client",
+      threadId: ALEA_DISCOVERY_OTHER_CLIENT_THREAD_ID,
+      sentAt: "2024-04-04T10:00:00.000Z",
+      subject: "CAD-9999 other client",
+      fromEmail: "other@example.com",
+      toEmail: FOUNDER,
+    }),
+    indexed({
+      messageId: "idx-related-term",
+      threadId: ALEA_DISCOVERY_BRACELET_TERM_THREAD_ID,
+      sentAt: "2024-04-05T10:00:00.000Z",
+      subject: "Champagne bracelet sketch",
+      fromEmail: person,
+      toEmail: FOUNDER,
+      direction: "inbound",
     }),
   ];
 }
