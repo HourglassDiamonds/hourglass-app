@@ -61,6 +61,7 @@ describe("Gmail activation security", () => {
       assert.doesNotMatch(source, /runExactProjectThreadFetch|protectExactThread/);
       assert.doesNotMatch(source, /executeAchedekalCandidateDiscovery/);
       assert.doesNotMatch(source, /executeAchedekalKnownArtifactPreview/);
+      assert.doesNotMatch(source, /executeProjectArtifactHunt/);
     }
   });
 
@@ -131,7 +132,8 @@ describe("Gmail activation security", () => {
       join(GMAIL_DIR, "achedekal-candidate-discovery.ts"),
       "utf8",
     );
-    for (const source of [reconstruction, cad, fixture, containment, discovery]) {
+    const hunt = readFileSync(join(GMAIL_DIR, "artifact-hunt.ts"), "utf8");
+    for (const source of [reconstruction, cad, fixture, containment, discovery, hunt]) {
       assert.doesNotMatch(source, /correctProjectSpec|applyProjectSpecCorrection/);
       assert.doesNotMatch(source, /editPersonProfile|createPersonAtomic/);
       assert.doesNotMatch(source, /runExactProjectThreadFetch|listMessages\(/);
@@ -149,6 +151,9 @@ describe("Gmail activation security", () => {
     assert.doesNotMatch(barrel, /from "\.\/achedekal-candidate-discovery"/);
     assert.doesNotMatch(server, /from "\.\/achedekal-candidate-discovery"/);
     assert.doesNotMatch(discovery, /createLiveGmailApi|users\.threads\.get/);
+    assert.doesNotMatch(barrel, /from "\.\/artifact-hunt"/);
+    assert.doesNotMatch(server, /from "\.\/artifact-hunt"/);
+    assert.doesNotMatch(hunt, /createLiveGmailApi|users\.threads\.get|getAttachment/);
   });
 
   it("keeps founder-reviewed reconstruction proposals evidence-only and fetch-free", () => {
@@ -189,6 +194,48 @@ describe("Gmail activation security", () => {
     assert.doesNotMatch(barrel, /from "\.\/artifact-observation"/);
     assert.doesNotMatch(server, /from "\.\/artifact-observation"/);
     assert.doesNotMatch(ui, /executeAchedekalKnownArtifactPreview|getAttachment/);
+  });
+
+  it("keeps artifact hunt metadata-only with no Gmail fetch or canonical writes", () => {
+    const hunt = readFileSync(join(GMAIL_DIR, "artifact-hunt.ts"), "utf8");
+    const actions = readFileSync(
+      join(ROOT, "app/executive-dashboard/concierge/artifact-hunt-actions.ts"),
+      "utf8",
+    );
+    const ui = readFileSync(
+      join(ROOT, "app/executive-dashboard/concierge/components/artifact-hunt.tsx"),
+      "utf8",
+    );
+    const page = readFileSync(
+      join(
+        ROOT,
+        "app/executive-dashboard/concierge/project-reconstruction/achedekal/page.tsx",
+      ),
+      "utf8",
+    );
+    const barrel = readFileSync(join(GMAIL_DIR, "index.ts"), "utf8");
+    const server = readFileSync(join(GMAIL_DIR, "server.ts"), "utf8");
+    for (const source of [hunt, actions, ui]) {
+      assert.doesNotMatch(source, /correctProjectSpec|applyProjectSpecCorrection/);
+      assert.doesNotMatch(source, /editPersonProfile|createPersonAtomic/);
+      assert.doesNotMatch(source, /runExactProjectThreadFetch|listMessages\(/);
+      assert.doesNotMatch(source, /getAttachment|getThread\(|getMessage\(/);
+      assert.doesNotMatch(source, /gmail\.googleapis|users\.messages\.send/);
+      assert.doesNotMatch(source, /\/messages\/[^?\s"'`]+\/attachments\//);
+      assert.doesNotMatch(source, /refreshAccessToken/);
+      assert.match(source, /automaticAttach: false|Metadata only|does not write/i);
+    }
+    assert.match(hunt, /automaticAttach: false/);
+    assert.match(hunt, /canonical: false/);
+    assert.match(actions, /"use server"/);
+    assert.match(actions, /ACHEDEKAL_PROJECT_ID/);
+    assert.match(actions, /listProjects\(\)/);
+    assert.doesNotMatch(actions, /formData\.get\(/);
+    assert.doesNotMatch(actions, /listProjects\(\{\s*limit:\s*64\s*\}\)/);
+    assert.match(page, /ArtifactHuntForm/);
+    assert.doesNotMatch(barrel, /from "\.\/artifact-hunt"/);
+    assert.doesNotMatch(server, /from "\.\/artifact-hunt"/);
+    assert.doesNotMatch(ui, />Open<|>Preview<|>Download<|>Attach<|>Apply<|>Save<|>Move</);
   });
 
   it("keeps OAuth routes off mailbox content and token rendering", () => {

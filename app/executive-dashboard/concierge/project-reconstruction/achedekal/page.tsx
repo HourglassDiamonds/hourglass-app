@@ -15,6 +15,7 @@ import { AchedekalReviewForm } from "../../components/achedekal-review-form";
 import { AchedekalRelatedThreadsForm } from "../../components/achedekal-related-threads";
 import { AchedekalKnownArtifactPreview } from "../../components/achedekal-known-artifact";
 import { AchedekalReconstructionProposal } from "../../components/achedekal-reconstruction-proposal";
+import { ArtifactHuntForm } from "../../components/artifact-hunt";
 import { presentAchedekalReconstructionProposal } from "@/lib/continuum/gmail/reconstruction-proposal";
 
 export const dynamic = "force-dynamic";
@@ -93,6 +94,7 @@ export default async function AchedekalEvidenceReviewPage() {
         <AchedekalReviewForm specs={specs} />
         <AchedekalRelatedThreadsForm />
         <AchedekalKnownArtifactPreview />
+        <ArtifactHuntForm />
         <AchedekalReconstructionProposal proposal={proposal} />
       </div>
     </ConciergeShell>

@@ -48,6 +48,8 @@ export const ACHEDEKAL_RELATED_THREAD_CANDIDATE_LIMIT = 20 as const;
 export const ACHEDEKAL_AMBIGUOUS_THREAD_CANDIDATE_LIMIT = 10 as const;
 export const ACHEDEKAL_UNASSIGNED_THREAD_CANDIDATE_LIMIT = 10 as const;
 
+export const ACHEDEKAL_ARTIFACT_HUNT_HEADING = "Artifact candidates" as const;
+
 export function isPermittedAchedekalProjectId(projectId: string): boolean {
   return projectId.trim() === ACHEDEKAL_PROJECT_ID;
 }

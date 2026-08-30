@@ -5,7 +5,12 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getSupabaseAdmin } from "@/lib/supabase/client";
-import type { GmailAttachmentStore } from "./attachments";
+import {
+  ATTACHMENT_FILENAME_HIT_CAP,
+  ATTACHMENT_FILENAME_TOKEN_LIMIT,
+  ATTACHMENT_THREAD_ID_BATCH,
+  type GmailAttachmentStore,
+} from "./attachments";
 import type { GmailConnectionStore } from "./connection";
 import {
   GMAIL_FOUNDER_MAILBOX_SLOT,
@@ -178,6 +183,64 @@ export class SupabaseGmailAttachmentStore implements GmailAttachmentStore {
     if (error) throw error;
     return (data ?? []).map((row) => rowToAttachment(row));
   }
+
+  async listByThreadIds(
+    threadIds: readonly string[],
+  ): Promise<GmailAttachmentMeta[]> {
+    const unique = [...new Set(threadIds.map((id) => id.trim()).filter(Boolean))];
+    if (unique.length === 0) return [];
+    const byKey = new Map<string, GmailAttachmentMeta>();
+    for (let offset = 0; offset < unique.length; offset += ATTACHMENT_THREAD_ID_BATCH) {
+      const batch = unique.slice(offset, offset + ATTACHMENT_THREAD_ID_BATCH);
+      const { data, error } = await this.client
+        .from("continuum_gmail_attachments")
+        .select(ATTACHMENT_COLUMNS)
+        .in("thread_id", batch)
+        .order("indexed_at", { ascending: true });
+      if (error) throw error;
+      for (const row of data ?? []) {
+        const mapped = rowToAttachment(row);
+        byKey.set(`${mapped.messageId}\0${mapped.attachmentId}`, mapped);
+      }
+    }
+    return [...byKey.values()];
+  }
+
+  async listByFilenameTokens(
+    tokens: readonly string[],
+  ): Promise<GmailAttachmentMeta[]> {
+    const needles = [
+      ...new Set(
+        tokens.map((token) => token.trim()).filter((token) => token.length >= 2),
+      ),
+    ].slice(0, ATTACHMENT_FILENAME_TOKEN_LIMIT);
+    if (needles.length === 0) return [];
+    const orFilter = needles
+      .map((token) => `filename.ilike.%${escapeIlike(token)}%`)
+      .join(",");
+    const byKey = new Map<string, GmailAttachmentMeta>();
+    const page = 200;
+    for (let offset = 0; offset < ATTACHMENT_FILENAME_HIT_CAP; offset += page) {
+      const { data, error } = await this.client
+        .from("continuum_gmail_attachments")
+        .select(ATTACHMENT_COLUMNS)
+        .or(orFilter)
+        .order("indexed_at", { ascending: true })
+        .range(offset, offset + page - 1);
+      if (error) throw error;
+      const chunk = data ?? [];
+      for (const row of chunk) {
+        const mapped = rowToAttachment(row);
+        byKey.set(`${mapped.messageId}\0${mapped.attachmentId}`, mapped);
+      }
+      if (chunk.length < page) break;
+    }
+    return [...byKey.values()].slice(0, ATTACHMENT_FILENAME_HIT_CAP);
+  }
+}
+
+function escapeIlike(value: string): string {
+  return value.replace(/\\/g, "\\\\").replace(/%/g, "\\%").replace(/_/g, "\\_");
 }
 
 export function createSupabaseGmailConnectionStore(
