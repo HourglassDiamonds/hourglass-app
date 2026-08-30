@@ -74,17 +74,19 @@ export function AchedekalReconstructionProposal({
         </ul>
       </div>
 
-      <div className="mt-8">
-        <p className="text-[11px] uppercase tracking-[0.18em] text-[#ad9164]">
-          {view.storedHeading}
-        </p>
-        <p className="mt-2 text-[12px] leading-relaxed text-[#8d8073]">
-          {view.storedBanner}
-        </p>
-        <div className="mt-4">
-          <FactList rows={view.conflictingStoredData} />
+      {view.conflictingStoredData.length > 0 ? (
+        <div className="mt-8">
+          <p className="text-[11px] uppercase tracking-[0.18em] text-[#ad9164]">
+            {view.storedHeading}
+          </p>
+          <p className="mt-2 text-[12px] leading-relaxed text-[#8d8073]">
+            {view.storedBanner}
+          </p>
+          <div className="mt-4">
+            <FactList rows={view.conflictingStoredData} />
+          </div>
         </div>
-      </div>
+      ) : null}
 
       <p className="mt-8 text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
         {view.noChangesCopy}

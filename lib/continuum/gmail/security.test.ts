@@ -180,6 +180,10 @@ describe("Gmail activation security", () => {
     }
     assert.match(proposal, /automaticApply: false/);
     assert.match(proposal, /proposedCanonicalWrites: \[\]/);
+    assert.doesNotMatch(
+      proposal,
+      /\?\?\s*known\.currentSpecs\.(fingerSize|orderNumber)/,
+    );
     assert.doesNotMatch(barrel, /from "\.\/reconstruction-proposal"/);
     assert.doesNotMatch(server, /from "\.\/reconstruction-proposal"/);
     assert.doesNotMatch(barrel, /from "\.\/artifact-observation"/);

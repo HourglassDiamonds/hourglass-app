@@ -434,9 +434,9 @@ export function presentAchedekalReconstructionProposal(
     textReconstruction,
     currentStored: {
       ...known.currentSpecs,
-      fingerSize: input.currentStored?.fingerSize ?? known.currentSpecs.fingerSize,
-      orderNumber:
-        input.currentStored?.orderNumber ?? known.currentSpecs.orderNumber,
+      // Live Project Desk overlay only. Never substitute fixture 141/140.
+      fingerSize: input.currentStored?.fingerSize ?? null,
+      orderNumber: input.currentStored?.orderNumber ?? null,
     },
     artifactObservation: founderReviewedAchedekalArtifactObservation(),
     founderReportedContext: input.founderReportedContext,

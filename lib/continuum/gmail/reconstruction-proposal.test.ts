@@ -409,8 +409,135 @@ describe("reconstruction proposal mutation boundary", () => {
       view.supportedFacts.find((row) => row.label === "Design artifact")?.value,
       "Founder reviewed",
     );
+    assert.equal(view.conflictingStoredData.length, 0);
     assert.equal(
-      view.conflictingStoredData.find((row) => row.label === "Finger size")?.value,
+      view.conflictingStoredData.some(
+        (row) => row.value === "141" || row.value === "140",
+      ),
+      false,
+    );
+  });
+});
+
+describe("live Project Desk overlay vs fixture current stored data", () => {
+  it("displays live overlay 7 / 999 instead of fixture 141 / 140", () => {
+    const proposal = presentAchedekalReconstructionProposal({
+      currentStored: { fingerSize: "7", orderNumber: "999" },
+    });
+    const finger = proposal.conflictingStoredData.find(
+      (row) => row.field === "finger_size",
+    );
+    const order = proposal.conflictingStoredData.find(
+      (row) => row.field === "order_number",
+    );
+    assert.equal(finger?.storedValue, "7");
+    assert.equal(order?.storedValue, "999");
+    assert.equal(finger?.currentStored, true);
+    assert.equal(finger?.recoveredEvidence, false);
+    assert.equal(order?.recoveredEvidence, false);
+    assert.equal(
+      proposal.conflictingStoredData.some(
+        (row) => row.storedValue === "141" || row.storedValue === "140",
+      ),
+      false,
+    );
+    assert.equal(
+      proposal.supportedFacts.some(
+        (row) => row.value === "141" || row.value === "140",
+      ),
+      false,
+    );
+    const view = reconstructionProposalView(proposal);
+    assert.equal(
+      view.conflictingStoredData.find((row) => row.label === "Finger size")
+        ?.value,
+      "7",
+    );
+    assert.equal(
+      view.conflictingStoredData.find((row) => row.label === "Order")?.value,
+      "999",
+    );
+  });
+
+  it("does not manufacture fixture 141 / 140 when the live overlay is null", () => {
+    const proposal = presentAchedekalReconstructionProposal({
+      currentStored: { fingerSize: null, orderNumber: null },
+    });
+    assert.equal(proposal.conflictingStoredData.length, 0);
+    assert.equal(
+      proposal.conflictingStoredData.some(
+        (row) =>
+          row.storedValue === "141" ||
+          row.storedValue === "140" ||
+          row.field === "finger_size" ||
+          row.field === "order_number",
+      ),
+      false,
+    );
+    assert.equal(
+      proposal.supportedFacts.some(
+        (row) =>
+          row.value === "141" ||
+          row.value === "140" ||
+          row.field === "finger_size" ||
+          row.field === "order_number",
+      ),
+      false,
+    );
+    const view = reconstructionProposalView(proposal);
+    assert.equal(view.conflictingStoredData.length, 0);
+    assert.equal(
+      view.conflictingStoredData.some(
+        (row) => row.value === "141" || row.value === "140",
+      ),
+      false,
+    );
+  });
+
+  it("does not manufacture fixture 141 / 140 when currentStored is omitted", () => {
+    const proposal = presentAchedekalReconstructionProposal();
+    assert.equal(proposal.conflictingStoredData.length, 0);
+    assert.equal(
+      proposal.supportedFacts.some(
+        (row) => row.value === "141" || row.value === "140",
+      ),
+      false,
+    );
+  });
+
+  it("still quarantines genuine live 141 / 140 from Project Desk", () => {
+    const proposal = presentAchedekalReconstructionProposal({
+      currentStored: { fingerSize: "141", orderNumber: "140" },
+    });
+    const finger = proposal.conflictingStoredData.find(
+      (row) => row.field === "finger_size",
+    );
+    const order = proposal.conflictingStoredData.find(
+      (row) => row.field === "order_number",
+    );
+    assert.equal(finger?.storedValue, "141");
+    assert.equal(order?.storedValue, "140");
+    assert.equal(finger?.currentStored, true);
+    assert.equal(finger?.recoveredEvidence, false);
+    assert.equal(finger?.corrected, false);
+    assert.equal(finger?.transformed, false);
+    assert.equal(order?.recoveredEvidence, false);
+    assert.equal(order?.corrected, false);
+    assert.equal(order?.transformed, false);
+    assert.equal(
+      proposal.supportedFacts.some(
+        (row) =>
+          row.value === "141" ||
+          row.value === "140" ||
+          row.field === "finger_size" ||
+          row.field === "order_number",
+      ),
+      false,
+    );
+    const view = reconstructionProposalView(proposal);
+    assert.equal(
+      view.conflictingStoredData.find((row) => row.label === "Finger size")
+        ?.value,
       "141",
     );
     assert.equal(
@@ -443,6 +570,11 @@ describe("reconstruction proposal privacy, UI, and privilege boundary", () => {
     }
     assert.match(proposal, /automaticApply: false/);
     assert.match(proposal, /proposedCanonicalWrites: \[\]/);
+    assert.doesNotMatch(
+      proposal,
+      /\?\?\s*known\.currentSpecs\.(fingerSize|orderNumber)/,
+    );
+    assert.match(ui, /conflictingStoredData\.length > 0/);
     assert.doesNotMatch(proposal, /from "\.\/achedekal-known-artifact"/);
     assert.doesNotMatch(proposal, /from "\.\/known-artifact-gmail"/);
     assert.doesNotMatch(barrel, /from "\.\/reconstruction-proposal"/);
