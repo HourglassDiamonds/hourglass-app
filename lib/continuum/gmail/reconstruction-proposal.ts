@@ -28,6 +28,12 @@ import {
   type SourceNameEvidence,
 } from "./project-reconstruction";
 import type { ExactThreadCurrentSpecs } from "./reconstruction-evidence";
+import {
+  assessStoredFingerSizeEvidence,
+  assessStoredOrderEvidence,
+  type RecoveredProjectMetadataSnippet,
+  type StoredFieldEvidenceAssessment,
+} from "./reconstruction-evidence-support";
 
 export const RECONSTRUCTION_PROPOSAL_STATUS = "review_only" as const;
 
@@ -69,14 +75,23 @@ export type ConflictingStoredDatum = {
   label: "Finger size" | "Order";
   storedValue: string;
   status:
+    | "supported"
+    | "partially_supported"
+    | "conflicting"
     | "unsupported_conflicting_with_item_context"
     | "unsupported";
   currentStored: true;
-  recoveredEvidence: false;
+  recoveredEvidence: boolean;
   deleted: false;
   corrected: false;
   transformed: false;
   reviewNote: string;
+  storedIdentifiers: readonly string[];
+  supportedStoredIdentifiers: readonly string[];
+  additionalRecoveredIdentifiers: readonly string[];
+  canonical: false;
+  automaticApply: false;
+  supportedDoesNotMeanCanonical: true;
 };
 
 export type FounderReportedContextItem = {
@@ -122,6 +137,7 @@ export type ProjectReconstructionProposal = {
   supportedFacts: ReconstructionProposalFact[];
   unresolvedFacts: ReconstructionProposalFact[];
   conflictingStoredData: ConflictingStoredDatum[];
+  storedFieldAssessments: StoredFieldEvidenceAssessment[];
   founderReportedContext: FounderReportedContextItem[];
   proposedCanonicalWrites: [];
   automaticApply: false;
@@ -157,6 +173,7 @@ export type ReconstructionProposalInput = {
   currentStored: ExactThreadCurrentSpecs;
   artifactObservation: ArtifactObservation | null;
   founderReportedContext?: readonly FounderReportedContextItem[];
+  recoveredProjectMetadata?: readonly RecoveredProjectMetadataSnippet[];
 };
 
 const EPISTEMIC_BOUNDARY: ReconstructionProposalEpistemicBoundary = {
@@ -224,48 +241,76 @@ function hasArtifactField(
   return observation?.observations.find((row) => row.field === field);
 }
 
-function quarantineStoredData(
+function presentationStatus(
+  assessment: StoredFieldEvidenceAssessment,
+  itemTypeCandidate: ReconstructedItemType,
+): ConflictingStoredDatum["status"] {
+  if (
+    assessment.field === "finger_size" &&
+    itemTypeCandidate === "bracelet" &&
+    assessment.state !== "supported"
+  ) {
+    return "unsupported_conflicting_with_item_context";
+  }
+  if (assessment.state === "not_assessed") return "unsupported";
+  return assessment.state;
+}
+
+function fromAssessment(
+  assessment: StoredFieldEvidenceAssessment,
+  itemTypeCandidate: ReconstructedItemType,
+): ConflictingStoredDatum {
+  const status = presentationStatus(assessment, itemTypeCandidate);
+  return {
+    field: assessment.field,
+    label: assessment.field === "finger_size" ? "Finger size" : "Order",
+    storedValue: assessment.storedValue,
+    status,
+    currentStored: true,
+    recoveredEvidence: assessment.supportingEvidence.length > 0,
+    deleted: false,
+    corrected: false,
+    transformed: false,
+    reviewNote: assessment.reviewNote,
+    storedIdentifiers: assessment.storedIdentifiers,
+    supportedStoredIdentifiers: assessment.supportedStoredIdentifiers,
+    additionalRecoveredIdentifiers: assessment.additionalRecoveredIdentifiers,
+    canonical: false,
+    automaticApply: false,
+    supportedDoesNotMeanCanonical: true,
+  };
+}
+
+function assessStoredFields(
+  projectId: string,
   currentStored: ExactThreadCurrentSpecs,
   itemTypeCandidate: ReconstructedItemType,
-): ConflictingStoredDatum[] {
-  const rows: ConflictingStoredDatum[] = [];
-  const fingerSize = currentStored.fingerSize?.trim() ?? "";
-  if (fingerSize) {
-    rows.push({
-      field: "finger_size",
-      label: "Finger size",
-      storedValue: fingerSize,
-      status:
-        itemTypeCandidate === "bracelet"
-          ? "unsupported_conflicting_with_item_context"
-          : "unsupported",
-      currentStored: true,
-      recoveredEvidence: false,
-      deleted: false,
-      corrected: false,
-      transformed: false,
-      reviewNote:
-        itemTypeCandidate === "bracelet"
-          ? "Not supported by recovered evidence for this bracelet project."
-          : "Not supported by recovered evidence.",
-    });
-  }
-  const orderNumber = currentStored.orderNumber?.trim() ?? "";
-  if (orderNumber) {
-    rows.push({
-      field: "order_number",
-      label: "Order",
-      storedValue: orderNumber,
-      status: "unsupported",
-      currentStored: true,
-      recoveredEvidence: false,
-      deleted: false,
-      corrected: false,
-      transformed: false,
-      reviewNote: "Not independently supported by recovered evidence.",
-    });
-  }
-  return rows;
+  recovered: readonly RecoveredProjectMetadataSnippet[],
+): {
+  conflictingStoredData: ConflictingStoredDatum[];
+  storedFieldAssessments: StoredFieldEvidenceAssessment[];
+} {
+  const assessments: StoredFieldEvidenceAssessment[] = [];
+  const finger = assessStoredFingerSizeEvidence({
+    targetProjectId: projectId,
+    storedFingerSize: currentStored.fingerSize,
+    itemTypeCandidate,
+    recovered,
+  });
+  if (finger) assessments.push(finger);
+  const order = assessStoredOrderEvidence({
+    targetProjectId: projectId,
+    storedOrder: currentStored.orderNumber,
+    storedCad: currentStored.cadJobNumber,
+    recovered,
+  });
+  if (order) assessments.push(order);
+  return {
+    storedFieldAssessments: assessments,
+    conflictingStoredData: assessments.map((row) =>
+      fromAssessment(row, itemTypeCandidate),
+    ),
+  };
 }
 
 export function buildProjectReconstructionProposal(
@@ -382,15 +427,20 @@ export function buildProjectReconstructionProposal(
     unresolved("project_state", "unknown"),
   ];
 
+  const stored = assessStoredFields(
+    input.textReconstruction.projectId,
+    input.currentStored,
+    itemTypeCandidate,
+    input.recoveredProjectMetadata ?? [],
+  );
+
   return {
     projectId: input.textReconstruction.projectId,
     status: RECONSTRUCTION_PROPOSAL_STATUS,
     supportedFacts,
     unresolvedFacts,
-    conflictingStoredData: quarantineStoredData(
-      input.currentStored,
-      itemTypeCandidate,
-    ),
+    conflictingStoredData: stored.conflictingStoredData,
+    storedFieldAssessments: stored.storedFieldAssessments,
     founderReportedContext: cloneFounderContext(input.founderReportedContext),
     proposedCanonicalWrites: [],
     automaticApply: false,
@@ -463,6 +513,7 @@ export type IndexedProjectReconstructionProposalInput = {
   indexedMessages: readonly GmailIndexedMessage[];
   storedThreadId: string | null;
   thread?: ProtectedExactThread | null;
+  recoveredProjectMetadata?: readonly RecoveredProjectMetadataSnippet[];
 };
 
 export function presentIndexedProjectReconstructionProposal(
@@ -483,6 +534,7 @@ export function presentIndexedProjectReconstructionProposal(
     textReconstruction,
     currentStored: input.currentStored,
     artifactObservation: null,
+    recoveredProjectMetadata: input.recoveredProjectMetadata ?? [],
   });
 }
 
@@ -497,10 +549,11 @@ export type ReconstructionProposalView = {
   supportedHeading: "Supported by recovered evidence";
   unresolvedHeading: "Unresolved";
   storedHeading: "Current stored data needing review";
-  storedBanner: "Current stored data — not supported by recovered evidence";
+  storedBanner: string;
   noChangesCopy: "No project changes have been applied";
   applyButton: false;
   automaticApply: false;
+  supportedDoesNotMeanCanonical: true;
   projectId: string;
   cadIdentifier: string;
   supportedFacts: ReconstructionProposalViewRow[];
@@ -508,6 +561,41 @@ export type ReconstructionProposalView = {
   unresolvedFacts: ReconstructionProposalViewRow[];
   conflictingStoredData: ReconstructionProposalViewRow[];
 };
+
+function storedStatusLabel(
+  status: ConflictingStoredDatum["status"],
+): string {
+  if (status === "supported") return "SUPPORTED BY RECOVERED INDEXED EVIDENCE";
+  if (status === "partially_supported") return "PARTIALLY SUPPORTED";
+  if (status === "conflicting") return "CONFLICTING / MULTIPLE IDENTIFIERS FOUND";
+  return "NOT INDEPENDENTLY SUPPORTED";
+}
+
+function storedBannerFor(rows: readonly ConflictingStoredDatum[]): string {
+  if (rows.length === 0) {
+    return "Current stored data — not supported by recovered evidence";
+  }
+  const states = new Set(rows.map((row) => row.status));
+  const allUnsupported = [...states].every(
+    (status) =>
+      status === "unsupported" ||
+      status === "unsupported_conflicting_with_item_context",
+  );
+  if (allUnsupported) {
+    return "Current stored data — not supported by recovered evidence";
+  }
+  if (states.has("conflicting") || states.has("partially_supported")) {
+    return "Current stored data — recovered evidence requires founder review. Corroboration is not canonical truth.";
+  }
+  if ([...states].every((status) => status === "supported")) {
+    return "Current stored data — independently corroborated by recovered indexed evidence. Corroboration is not canonical truth.";
+  }
+  return "Current stored data — support varies by field. Corroboration is not canonical truth.";
+}
+
+function storedViewNote(row: ConflictingStoredDatum): string {
+  return `${storedStatusLabel(row.status)}. ${row.reviewNote}`;
+}
 
 function itemTypeLabel(type: ReconstructedItemType): string {
   if (type === "unknown") return "Unknown";
@@ -596,10 +684,11 @@ export function reconstructionProposalView(
     supportedHeading: "Supported by recovered evidence",
     unresolvedHeading: "Unresolved",
     storedHeading: "Current stored data needing review",
-    storedBanner: "Current stored data — not supported by recovered evidence",
+    storedBanner: storedBannerFor(proposal.conflictingStoredData),
     noChangesCopy: "No project changes have been applied",
     applyButton: false,
     automaticApply: false,
+    supportedDoesNotMeanCanonical: true,
     projectId: proposal.projectId,
     cadIdentifier: cad,
     supportedFacts,
@@ -614,7 +703,7 @@ export function reconstructionProposalView(
     conflictingStoredData: proposal.conflictingStoredData.map((row) => ({
       label: row.label,
       value: row.storedValue,
-      note: row.reviewNote,
+      note: storedViewNote(row),
     })),
   };
 }

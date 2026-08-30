@@ -9,7 +9,10 @@ import { dirname, join, resolve } from "node:path";
 import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { hashEmail } from "@/lib/continuum/client-memory/hashes";
-import type { GmailIndexedMessage } from "@/lib/continuum/client-memory/gmail/types";
+import {
+  GMAIL_SOURCE_SYSTEM,
+  type GmailIndexedMessage,
+} from "@/lib/continuum/client-memory/gmail/types";
 import { ACHEDEKAL_PROJECT_ID } from "./achedekal-acceptance";
 import {
   executeAchedekalCandidateDiscovery,
@@ -41,6 +44,18 @@ import {
   isWeakOrSuspiciousOrder,
   summarizeCohortProject,
 } from "./cohort-reconstruction-compose";
+import {
+  COHORT_SYNTHESIS_PROJECT_A,
+  COHORT_SYNTHESIS_PROJECT_A_ID,
+  COHORT_SYNTHESIS_PROJECT_B,
+  COHORT_SYNTHESIS_PROJECT_B_ID,
+  COHORT_SYNTHESIS_PROJECT_C,
+  COHORT_SYNTHESIS_PROJECT_C_ID,
+  COHORT_SYNTHESIS_PROJECT_D,
+  COHORT_SYNTHESIS_PROJECT_D_ID,
+  COHORT_SYNTHESIS_PROJECT_E,
+  COHORT_SYNTHESIS_PROJECT_E_ID,
+} from "./cohort-evidence-synthesis-fixtures";
 import { routeProjectEvidence } from "./project-book-containment";
 import {
   reconstructProjectBook,
@@ -534,6 +549,468 @@ describe("cohort compose and stored-data flags", () => {
   });
 });
 
+function synthesisMessage(input: {
+  messageId: string;
+  threadId: string;
+  subject: string;
+  hasAttachments?: boolean;
+}): GmailIndexedMessage {
+  return {
+    messageId: input.messageId,
+    threadId: input.threadId,
+    sentAt: "2024-06-01T00:00:00.000Z",
+    indexedAt: "2026-08-30T00:00:00.000Z",
+    subject: input.subject,
+    fromEmailHash: PERSON_HASH,
+    toEmailHashes: [],
+    ccEmailHashes: [],
+    bccEmailHashes: [],
+    direction: "inbound",
+    labelIds: [],
+    hasAttachments: input.hasAttachments ?? false,
+    sourceSystem: GMAIL_SOURCE_SYSTEM,
+  };
+}
+
+function historyOf(
+  projectId: string,
+  cad: string,
+  order: string,
+  finger: string,
+  threadId: string | null,
+) {
+  return {
+    projectId,
+    cadJobNumber: cad,
+    orderNumber: order,
+    gmailThreadId: threadId,
+    matchJudgment: null,
+    matchJudgmentRaw: null,
+    fingerSize: finger,
+    metal: null,
+    centerStone: null,
+    diamondSupplyNotes: null,
+    sourceSystem: "continuum-reconciliation-v3" as const,
+    createdAt: "2026-01-01T00:00:00.000Z",
+    updatedAt: "2026-01-01T00:00:00.000Z",
+  };
+}
+
+describe("cohort recovered-evidence synthesis compose", () => {
+  it("supports Project A SP13040 from the exact stored-thread subject", async () => {
+    const messages = [
+      synthesisMessage({
+        messageId: "msg-a",
+        threadId: COHORT_SYNTHESIS_PROJECT_A.storedThreadId,
+        subject: COHORT_SYNTHESIS_PROJECT_A.recoveredSubject,
+      }),
+    ];
+    const review = await composeCohortProjectReview({
+      founderSessionOk: true,
+      projectId: COHORT_SYNTHESIS_PROJECT_A_ID,
+      title: "Chicken ring (his)",
+      personCount: 1,
+      existingPerson: PERSON,
+      history: historyOf(
+        COHORT_SYNTHESIS_PROJECT_A_ID,
+        COHORT_SYNTHESIS_PROJECT_A.cad,
+        COHORT_SYNTHESIS_PROJECT_A.order,
+        COHORT_SYNTHESIS_PROJECT_A.fingerSize,
+        COHORT_SYNTHESIS_PROJECT_A.storedThreadId,
+      ),
+      catalog: {
+        getDiscoveryProject: async () => ({
+          projectId: COHORT_SYNTHESIS_PROJECT_A_ID,
+          gmailThreadId: COHORT_SYNTHESIS_PROJECT_A.storedThreadId,
+          cadJobNumber: COHORT_SYNTHESIS_PROJECT_A.cad,
+          orderNumber: COHORT_SYNTHESIS_PROJECT_A.order,
+          fingerSize: COHORT_SYNTHESIS_PROJECT_A.fingerSize,
+          metal: null,
+          centerStone: null,
+          personId: PERSON.personId,
+          personEmailHash: PERSON_HASH,
+          personEmailHashes: [PERSON_HASH],
+        }),
+        getHuntProject: async (id) =>
+          id === COHORT_SYNTHESIS_PROJECT_A_ID
+            ? {
+                projectId: COHORT_SYNTHESIS_PROJECT_A_ID,
+                title: "Chicken ring (his)",
+                gmailThreadId: COHORT_SYNTHESIS_PROJECT_A.storedThreadId,
+                cadJobNumber: COHORT_SYNTHESIS_PROJECT_A.cad,
+                orderNumber: COHORT_SYNTHESIS_PROJECT_A.order,
+                fingerSize: COHORT_SYNTHESIS_PROJECT_A.fingerSize,
+                metal: null,
+                centerStone: null,
+                personId: PERSON.personId,
+                personEmailHash: PERSON_HASH,
+                personEmailHashes: [PERSON_HASH],
+                lifecycle: "unknown",
+              }
+            : null,
+        listProjectBooks: async () => [],
+      },
+      index: indexOf(messages),
+      attachments: new InMemoryGmailAttachmentStore(),
+    });
+    const order = review.proposal.conflictingStoredData.find(
+      (row) => row.field === "order_number",
+    );
+    const finger = review.proposal.conflictingStoredData.find(
+      (row) => row.field === "finger_size",
+    );
+    assert.equal(order?.status, "supported");
+    assert.equal(order?.storedValue, "SP13040");
+    assert.match(review.proposalView.conflictingStoredData.find((row) => row.label === "Order")?.note ?? "", /SUPPORTED BY RECOVERED INDEXED EVIDENCE/);
+    assert.equal(finger?.status, "unsupported");
+    assert.equal(review.proposal.itemTypeCandidate, "unknown");
+    assert.equal(review.automaticApply, false);
+    assert.deepEqual(review.proposedCanonicalWrites, []);
+  });
+
+  it("keeps Project B multi-identifier recovered evidence conflicting", async () => {
+    const messages = [
+      synthesisMessage({
+        messageId: "msg-b-1",
+        threadId: "thread-b-sp6934",
+        subject: COHORT_SYNTHESIS_PROJECT_B.recoveredSubjects[0]!,
+      }),
+      synthesisMessage({
+        messageId: "msg-b-2",
+        threadId: "thread-b-sp12882",
+        subject: COHORT_SYNTHESIS_PROJECT_B.recoveredSubjects[1]!,
+      }),
+      synthesisMessage({
+        messageId: "msg-b-3",
+        threadId: "thread-b-artifact",
+        subject: "Henry files",
+        hasAttachments: true,
+      }),
+    ];
+    const attachments = new InMemoryGmailAttachmentStore();
+    await attachments.putAttachment({
+      attachmentId: "att-b-xlsx",
+      messageId: "msg-b-3",
+      threadId: "thread-b-artifact",
+      filename: COHORT_SYNTHESIS_PROJECT_B.recoveredArtifact,
+      mimeType:
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      sizeBytes: 4096,
+      indexedAt: "2026-08-30T00:00:00.000Z",
+    });
+    const review = await composeCohortProjectReview({
+      founderSessionOk: true,
+      projectId: COHORT_SYNTHESIS_PROJECT_B_ID,
+      title: "Henry",
+      personCount: 1,
+      existingPerson: PERSON,
+      history: historyOf(
+        COHORT_SYNTHESIS_PROJECT_B_ID,
+        COHORT_SYNTHESIS_PROJECT_B.cad,
+        COHORT_SYNTHESIS_PROJECT_B.order,
+        COHORT_SYNTHESIS_PROJECT_B.fingerSize,
+        null,
+      ),
+      catalog: {
+        getDiscoveryProject: async () => ({
+          projectId: COHORT_SYNTHESIS_PROJECT_B_ID,
+          gmailThreadId: null,
+          cadJobNumber: COHORT_SYNTHESIS_PROJECT_B.cad,
+          orderNumber: COHORT_SYNTHESIS_PROJECT_B.order,
+          fingerSize: COHORT_SYNTHESIS_PROJECT_B.fingerSize,
+          metal: null,
+          centerStone: null,
+          personId: PERSON.personId,
+          personEmailHash: PERSON_HASH,
+          personEmailHashes: [PERSON_HASH],
+        }),
+        getHuntProject: async (id) =>
+          id === COHORT_SYNTHESIS_PROJECT_B_ID
+            ? {
+                projectId: COHORT_SYNTHESIS_PROJECT_B_ID,
+                title: "Henry",
+                gmailThreadId: null,
+                cadJobNumber: COHORT_SYNTHESIS_PROJECT_B.cad,
+                orderNumber: COHORT_SYNTHESIS_PROJECT_B.order,
+                fingerSize: COHORT_SYNTHESIS_PROJECT_B.fingerSize,
+                metal: null,
+                centerStone: null,
+                personId: PERSON.personId,
+                personEmailHash: PERSON_HASH,
+                personEmailHashes: [PERSON_HASH],
+                lifecycle: "unknown",
+              }
+            : null,
+        listProjectBooks: async () => [
+          {
+            projectId: COHORT_SYNTHESIS_PROJECT_B_ID,
+            personId: PERSON.personId,
+            title: "Henry",
+            lifecycle: "unknown" as const,
+            items: [],
+            cadJobNumbers: [COHORT_SYNTHESIS_PROJECT_B.cad],
+            orderNumbers: ["SP12318", "SP12882"],
+            gmailThreadIds: [],
+            artifactRefs: [],
+            vendors: [],
+            subjectTerms: [],
+            dateRange: null,
+          },
+        ],
+      },
+      index: indexOf(messages),
+      attachments,
+    });
+    const order = review.proposal.conflictingStoredData.find(
+      (row) => row.field === "order_number",
+    );
+    assert.equal(order?.status, "conflicting");
+    assert.equal(order?.supportedStoredIdentifiers.includes("SP12318"), true);
+    assert.equal(order?.supportedStoredIdentifiers.includes("SP12882"), true);
+    assert.deepEqual(order?.additionalRecoveredIdentifiers, ["SP6934"]);
+    assert.equal(order?.corrected, false);
+    assert.equal(review.proposal.automaticApply, false);
+  });
+
+  it("supports unlinked Project C SP12883 without creating a Person", async () => {
+    const messages = [
+      synthesisMessage({
+        messageId: "msg-c",
+        threadId: COHORT_SYNTHESIS_PROJECT_C.storedThreadId,
+        subject: COHORT_SYNTHESIS_PROJECT_C.recoveredSubject,
+        hasAttachments: true,
+      }),
+    ];
+    const attachments = new InMemoryGmailAttachmentStore();
+    await attachments.putAttachment({
+      attachmentId: "att-c-pdf",
+      messageId: "msg-c",
+      threadId: COHORT_SYNTHESIS_PROJECT_C.storedThreadId,
+      filename: COHORT_SYNTHESIS_PROJECT_C.recoveredArtifact,
+      mimeType: "application/pdf",
+      sizeBytes: 1024,
+      indexedAt: "2026-08-30T00:00:00.000Z",
+    });
+    const review = await composeCohortProjectReview({
+      founderSessionOk: true,
+      projectId: COHORT_SYNTHESIS_PROJECT_C_ID,
+      title: "Kaleb H.",
+      personCount: 0,
+      existingPerson: null,
+      history: historyOf(
+        COHORT_SYNTHESIS_PROJECT_C_ID,
+        COHORT_SYNTHESIS_PROJECT_C.cad,
+        COHORT_SYNTHESIS_PROJECT_C.order,
+        COHORT_SYNTHESIS_PROJECT_C.fingerSize,
+        COHORT_SYNTHESIS_PROJECT_C.storedThreadId,
+      ),
+      catalog: {
+        getDiscoveryProject: async () => ({
+          projectId: COHORT_SYNTHESIS_PROJECT_C_ID,
+          gmailThreadId: COHORT_SYNTHESIS_PROJECT_C.storedThreadId,
+          cadJobNumber: COHORT_SYNTHESIS_PROJECT_C.cad,
+          orderNumber: COHORT_SYNTHESIS_PROJECT_C.order,
+          fingerSize: COHORT_SYNTHESIS_PROJECT_C.fingerSize,
+          metal: null,
+          centerStone: null,
+          personId: null,
+          personEmailHash: null,
+          personEmailHashes: [],
+        }),
+        getHuntProject: async (id) =>
+          id === COHORT_SYNTHESIS_PROJECT_C_ID
+            ? {
+                projectId: COHORT_SYNTHESIS_PROJECT_C_ID,
+                title: "Kaleb H.",
+                gmailThreadId: COHORT_SYNTHESIS_PROJECT_C.storedThreadId,
+                cadJobNumber: COHORT_SYNTHESIS_PROJECT_C.cad,
+                orderNumber: COHORT_SYNTHESIS_PROJECT_C.order,
+                fingerSize: COHORT_SYNTHESIS_PROJECT_C.fingerSize,
+                metal: null,
+                centerStone: null,
+                personId: null,
+                personEmailHash: null,
+                personEmailHashes: [],
+                lifecycle: "unknown",
+              }
+            : null,
+        listProjectBooks: async () => [],
+      },
+      index: indexOf(messages),
+      attachments,
+    });
+    const order = review.proposal.conflictingStoredData.find(
+      (row) => row.field === "order_number",
+    );
+    assert.equal(review.personLinked, false);
+    assert.equal(review.personCount, 0);
+    assert.equal(order?.status, "supported");
+    assert.equal(order?.storedValue, "SP12883");
+    assert.equal(review.automaticApply, false);
+  });
+
+  it("keeps sparse sibling Projects D and E unsupported", async () => {
+    const books = [
+      {
+        projectId: COHORT_SYNTHESIS_PROJECT_D_ID,
+        personId: PERSON.personId,
+        title: "STUART",
+        lifecycle: "unknown" as const,
+        items: [],
+        cadJobNumbers: [COHORT_SYNTHESIS_PROJECT_D.cad],
+        orderNumbers: [COHORT_SYNTHESIS_PROJECT_D.order],
+        gmailThreadIds: [COHORT_SYNTHESIS_PROJECT_D.storedThreadId],
+        artifactRefs: [],
+        vendors: [],
+        subjectTerms: [],
+        dateRange: null,
+      },
+      {
+        projectId: COHORT_SYNTHESIS_PROJECT_E_ID,
+        personId: PERSON.personId,
+        title: "MR-STUART",
+        lifecycle: "unknown" as const,
+        items: [],
+        cadJobNumbers: [COHORT_SYNTHESIS_PROJECT_E.cad],
+        orderNumbers: [COHORT_SYNTHESIS_PROJECT_E.order],
+        gmailThreadIds: [COHORT_SYNTHESIS_PROJECT_E.storedThreadId],
+        artifactRefs: [],
+        vendors: [],
+        subjectTerms: [],
+        dateRange: null,
+      },
+    ];
+    const reviewD = await composeCohortProjectReview({
+      founderSessionOk: true,
+      projectId: COHORT_SYNTHESIS_PROJECT_D_ID,
+      title: "STUART",
+      personCount: 1,
+      existingPerson: PERSON,
+      history: historyOf(
+        COHORT_SYNTHESIS_PROJECT_D_ID,
+        COHORT_SYNTHESIS_PROJECT_D.cad,
+        COHORT_SYNTHESIS_PROJECT_D.order,
+        COHORT_SYNTHESIS_PROJECT_D.fingerSize,
+        COHORT_SYNTHESIS_PROJECT_D.storedThreadId,
+      ),
+      catalog: {
+        getDiscoveryProject: async () => ({
+          projectId: COHORT_SYNTHESIS_PROJECT_D_ID,
+          gmailThreadId: COHORT_SYNTHESIS_PROJECT_D.storedThreadId,
+          cadJobNumber: COHORT_SYNTHESIS_PROJECT_D.cad,
+          orderNumber: COHORT_SYNTHESIS_PROJECT_D.order,
+          fingerSize: COHORT_SYNTHESIS_PROJECT_D.fingerSize,
+          metal: null,
+          centerStone: null,
+          personId: PERSON.personId,
+          personEmailHash: PERSON_HASH,
+          personEmailHashes: [PERSON_HASH],
+        }),
+        getHuntProject: async (id) =>
+          id === COHORT_SYNTHESIS_PROJECT_D_ID
+            ? {
+                projectId: COHORT_SYNTHESIS_PROJECT_D_ID,
+                title: "STUART",
+                gmailThreadId: COHORT_SYNTHESIS_PROJECT_D.storedThreadId,
+                cadJobNumber: COHORT_SYNTHESIS_PROJECT_D.cad,
+                orderNumber: COHORT_SYNTHESIS_PROJECT_D.order,
+                fingerSize: COHORT_SYNTHESIS_PROJECT_D.fingerSize,
+                metal: null,
+                centerStone: null,
+                personId: PERSON.personId,
+                personEmailHash: PERSON_HASH,
+                personEmailHashes: [PERSON_HASH],
+                lifecycle: "unknown",
+              }
+            : null,
+        listProjectBooks: async () => books,
+      },
+      index: indexOf([]),
+      attachments: new InMemoryGmailAttachmentStore(),
+    });
+    const orderD = reviewD.proposal.conflictingStoredData.find(
+      (row) => row.field === "order_number",
+    );
+    const fingerD = reviewD.proposal.conflictingStoredData.find(
+      (row) => row.field === "finger_size",
+    );
+    assert.equal(orderD?.status, "unsupported");
+    assert.equal(orderD?.storedValue, "SP3066");
+    assert.equal(fingerD?.status, "unsupported");
+    assert.equal(reviewD.discovery.ok ? reviewD.discovery.related.length : 0, 0);
+    assert.match(
+      reviewD.proposalView.conflictingStoredData.find((row) => row.label === "Order")
+        ?.note ?? "",
+      /NOT INDEPENDENTLY SUPPORTED/,
+    );
+
+    const reviewE = await composeCohortProjectReview({
+      founderSessionOk: true,
+      projectId: COHORT_SYNTHESIS_PROJECT_E_ID,
+      title: "MR-STUART",
+      personCount: 1,
+      existingPerson: PERSON,
+      history: historyOf(
+        COHORT_SYNTHESIS_PROJECT_E_ID,
+        COHORT_SYNTHESIS_PROJECT_E.cad,
+        COHORT_SYNTHESIS_PROJECT_E.order,
+        COHORT_SYNTHESIS_PROJECT_E.fingerSize,
+        COHORT_SYNTHESIS_PROJECT_E.storedThreadId,
+      ),
+      catalog: {
+        getDiscoveryProject: async () => ({
+          projectId: COHORT_SYNTHESIS_PROJECT_E_ID,
+          gmailThreadId: COHORT_SYNTHESIS_PROJECT_E.storedThreadId,
+          cadJobNumber: COHORT_SYNTHESIS_PROJECT_E.cad,
+          orderNumber: COHORT_SYNTHESIS_PROJECT_E.order,
+          fingerSize: COHORT_SYNTHESIS_PROJECT_E.fingerSize,
+          metal: null,
+          centerStone: null,
+          personId: PERSON.personId,
+          personEmailHash: PERSON_HASH,
+          personEmailHashes: [PERSON_HASH],
+        }),
+        getHuntProject: async (id) =>
+          id === COHORT_SYNTHESIS_PROJECT_E_ID
+            ? {
+                projectId: COHORT_SYNTHESIS_PROJECT_E_ID,
+                title: "MR-STUART",
+                gmailThreadId: COHORT_SYNTHESIS_PROJECT_E.storedThreadId,
+                cadJobNumber: COHORT_SYNTHESIS_PROJECT_E.cad,
+                orderNumber: COHORT_SYNTHESIS_PROJECT_E.order,
+                fingerSize: COHORT_SYNTHESIS_PROJECT_E.fingerSize,
+                metal: null,
+                centerStone: null,
+                personId: PERSON.personId,
+                personEmailHash: PERSON_HASH,
+                personEmailHashes: [PERSON_HASH],
+                lifecycle: "unknown",
+              }
+            : null,
+        listProjectBooks: async () => books,
+      },
+      index: indexOf([]),
+      attachments: new InMemoryGmailAttachmentStore(),
+    });
+    const orderE = reviewE.proposal.conflictingStoredData.find(
+      (row) => row.field === "order_number",
+    );
+    const fingerE = reviewE.proposal.conflictingStoredData.find(
+      (row) => row.field === "finger_size",
+    );
+    assert.equal(orderE?.status, "unsupported");
+    assert.equal(orderE?.storedValue, "SP2976");
+    assert.equal(fingerE?.status, "unsupported");
+    assert.equal(reviewE.discovery.ok ? reviewE.discovery.related.length : 0, 0);
+    assert.equal(
+      reviewE.proposal.conflictingStoredData.some((row) =>
+        /SP3066|C007157/.test(row.storedValue),
+      ),
+      false,
+    );
+  });
+});
+
 describe("cohort reconstruction privacy and mutation boundary", () => {
   it("keeps Cohort 1 routes founder-only, review-only, and off public APIs", () => {
     const sourceOf = (file: string) => readFileSync(join(ROOT, file), "utf8");
@@ -548,10 +1025,15 @@ describe("cohort reconstruction privacy and mutation boundary", () => {
     );
     const engine = sourceOf("lib/continuum/gmail/achedekal-candidate-discovery.ts");
     const compose = sourceOf("lib/continuum/gmail/cohort-reconstruction-compose.ts");
+    const support = sourceOf("lib/continuum/gmail/reconstruction-evidence-support.ts");
+    const proposal = sourceOf("lib/continuum/gmail/reconstruction-proposal.ts");
+    const ui = sourceOf(
+      "app/executive-dashboard/concierge/components/cohort-reconstruction.tsx",
+    );
     const cohort = sourceOf("lib/continuum/gmail/reconstruction-cohort.ts");
     const barrel = sourceOf("lib/continuum/gmail/index.ts");
     const server = sourceOf("lib/continuum/gmail/server.ts");
-    for (const source of [page, detail, actions, compose, cohort]) {
+    for (const source of [page, detail, actions, compose, cohort, support, proposal, ui]) {
       assert.doesNotMatch(source, /correctProjectSpec|applyProjectSpecCorrection/);
       assert.doesNotMatch(source, /editPersonProfile|createPersonAtomic/);
       assert.doesNotMatch(source, /createOpenJob|writeHumanIntake|chief-of-staff|today-5/);

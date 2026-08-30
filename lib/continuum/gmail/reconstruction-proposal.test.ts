@@ -509,6 +509,14 @@ describe("live Project Desk overlay vs fixture current stored data", () => {
     const proposal = presentAchedekalReconstructionProposal({
       currentStored: { fingerSize: "141", orderNumber: "140" },
     });
+    const view = reconstructionProposalView(proposal);
+    assert.match(view.storedBanner, /not supported by recovered evidence/i);
+    assert.match(
+      view.conflictingStoredData.find((row) => row.label === "Order")?.note ?? "",
+      /NOT INDEPENDENTLY SUPPORTED/,
+    );
+    assert.equal(view.supportedDoesNotMeanCanonical, true);
+    assert.equal(proposal.storedFieldAssessments.every((row) => row.canonical === false), true);
     const finger = proposal.conflictingStoredData.find(
       (row) => row.field === "finger_size",
     );
@@ -534,7 +542,6 @@ describe("live Project Desk overlay vs fixture current stored data", () => {
       ),
       false,
     );
-    const view = reconstructionProposalView(proposal);
     assert.equal(
       view.conflictingStoredData.find((row) => row.label === "Finger size")
         ?.value,

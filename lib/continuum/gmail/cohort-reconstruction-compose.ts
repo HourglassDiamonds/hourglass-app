@@ -32,6 +32,10 @@ import {
   type ReconstructionProposalView,
 } from "./reconstruction-proposal";
 import {
+  collectProjectScopedRecoveredSnippets,
+  type RecoveredProjectMetadataSnippet,
+} from "./reconstruction-evidence-support";
+import {
   COHORT_DISCOVERY_HYDRATE_CAP,
   COHORT_IDENTIFIER_TOKEN_LIMIT,
   COHORT_MUTATION_BOUNDARY,
@@ -188,6 +192,58 @@ export type CohortComposeCatalog = {
   listProjectBooks(): Promise<readonly ExistingProjectBook[]>;
 };
 
+export function recoveredMetadataFromCohortReview(input: {
+  projectId: string;
+  storedThreadId: string | null;
+  indexedMessages: readonly GmailIndexedMessage[];
+  discovery: AchedekalDiscoveryState;
+  hunt: ArtifactHuntState;
+}): RecoveredProjectMetadataSnippet[] {
+  const projectId = input.projectId.trim();
+  const storedThreadId = input.storedThreadId?.trim() || null;
+  const storedThreadSubjects: {
+    threadId: string;
+    messageId: string | null;
+    subject: string | null;
+  }[] = input.indexedMessages
+    .filter((row) => storedThreadId != null && row.threadId === storedThreadId)
+    .map((row) => ({
+      threadId: row.threadId,
+      messageId: row.messageId,
+      subject: row.subject,
+    }));
+  if (input.discovery.ok && input.discovery.knownThread?.subject) {
+    storedThreadSubjects.push({
+      threadId: input.discovery.knownThread.threadId,
+      messageId: null,
+      subject: input.discovery.knownThread.subject,
+    });
+  }
+  return collectProjectScopedRecoveredSnippets({
+    targetProjectId: projectId,
+    storedThreadSubjects,
+    candidateThreadSubjects: input.discovery.ok
+      ? input.discovery.related.map((row) => ({
+          threadId: row.threadId,
+          subject: row.subject,
+          attributedProjectId: projectId,
+        }))
+      : [],
+    artifactMetadata: input.hunt.ok
+      ? input.hunt.likely.map((row) => ({
+          filename: row.filename,
+          subject: row.subject,
+          threadId: row.source.threadId,
+          messageId: row.source.messageId,
+          attributedProjectId:
+            row.attachedProjectId ??
+            (row.attribution === "exact_project" ? projectId : null),
+          spanningProjectIds: row.spanningProjectIds,
+        }))
+      : [],
+  });
+}
+
 export async function composeCohortProjectReview(input: {
   founderSessionOk: boolean;
   projectId: string;
@@ -237,12 +293,20 @@ export async function composeCohortProjectReview(input: {
       : Promise.resolve([] as GmailIndexedMessage[]),
   ]);
 
+  const recoveredProjectMetadata = recoveredMetadataFromCohortReview({
+    projectId,
+    storedThreadId,
+    indexedMessages,
+    discovery,
+    hunt,
+  });
   const proposal = presentIndexedProjectReconstructionProposal({
     projectId,
     currentStored: specs,
     existingPerson: input.existingPerson,
     indexedMessages,
     storedThreadId,
+    recoveredProjectMetadata,
   });
 
   const indexedMessageCount = indexedMessages.length;

@@ -110,7 +110,14 @@ export function CohortProjectReviewView({
   }));
   const artifacts = (hunt?.likely ?? []).map((row) => ({
     title: row.filename || "Untitled artifact",
-    detail: `${row.classification.label} · metadata only · not attached`,
+    detail: [
+      row.classification.label,
+      row.evidenceReasons[0]?.detail,
+      "metadata only",
+      "not attached",
+    ]
+      .filter(Boolean)
+      .join(" · "),
   }));
   const ambiguousArtifacts = (hunt?.ambiguous ?? []).map((row) => ({
     title: row.filename || "Untitled artifact",
@@ -121,14 +128,24 @@ export function CohortProjectReviewView({
     <div className="mt-10 space-y-4">
       <ClientMemorySection title="Current stored data">
         <dl className="space-y-3">
-          {review.currentStored.map((row) => (
-            <div key={row.label}>
-              <dt className="text-[11px] uppercase tracking-[0.16em] text-[#8d8073]">
-                {row.label}
-              </dt>
-              <dd className="mt-1 text-[15px] text-[#d8cfc4]">{row.value || "—"}</dd>
-            </div>
-          ))}
+          {review.currentStored.map((row) => {
+            const assessed = review.proposalView.conflictingStoredData.find(
+              (item) => item.label === row.label,
+            );
+            return (
+              <div key={row.label}>
+                <dt className="text-[11px] uppercase tracking-[0.16em] text-[#8d8073]">
+                  {row.label}
+                </dt>
+                <dd className="mt-1 text-[15px] text-[#d8cfc4]">{row.value || "—"}</dd>
+                {assessed?.note ? (
+                  <p className="mt-1 text-[13px] leading-relaxed text-[#c4b7aa]">
+                    {assessed.note}
+                  </p>
+                ) : null}
+              </div>
+            );
+          })}
         </dl>
         <p className="mt-4 text-[13px] leading-relaxed text-[#c4b7aa]">
           Person linkage: {review.personLinked ? "linked" : "not linked"}. Gmail
@@ -137,7 +154,7 @@ export function CohortProjectReviewView({
           {review.suspiciousStored.length > 0
             ? review.suspiciousStored.join(", ")
             : "none"}
-          .
+          . Supported recovered evidence is corroboration only — not canonical.
         </p>
       </ClientMemorySection>
 
