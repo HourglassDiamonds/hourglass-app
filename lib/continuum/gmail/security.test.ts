@@ -151,6 +151,42 @@ describe("Gmail activation security", () => {
     assert.doesNotMatch(discovery, /createLiveGmailApi|users\.threads\.get/);
   });
 
+  it("keeps founder-reviewed reconstruction proposals evidence-only and fetch-free", () => {
+    const proposal = readFileSync(
+      join(GMAIL_DIR, "reconstruction-proposal.ts"),
+      "utf8",
+    );
+    const observation = readFileSync(
+      join(GMAIL_DIR, "artifact-observation.ts"),
+      "utf8",
+    );
+    const ui = readFileSync(
+      join(
+        ROOT,
+        "app/executive-dashboard/concierge/components/achedekal-reconstruction-proposal.tsx",
+      ),
+      "utf8",
+    );
+    const barrel = readFileSync(join(GMAIL_DIR, "index.ts"), "utf8");
+    const server = readFileSync(join(GMAIL_DIR, "server.ts"), "utf8");
+    for (const source of [proposal, observation, ui]) {
+      assert.doesNotMatch(source, /correctProjectSpec|applyProjectSpecCorrection/);
+      assert.doesNotMatch(source, /editPersonProfile|createPersonAtomic/);
+      assert.doesNotMatch(source, /runExactProjectThreadFetch|listMessages\(/);
+      assert.doesNotMatch(source, /getAttachment|getThread\(|getMessage\(/);
+      assert.doesNotMatch(source, /gmail\.googleapis|users\.messages\.send/);
+      assert.doesNotMatch(source, /\/messages\/[^?\s"'`]+\/attachments\//);
+      assert.match(source, /automaticApply: false|does not write/i);
+    }
+    assert.match(proposal, /automaticApply: false/);
+    assert.match(proposal, /proposedCanonicalWrites: \[\]/);
+    assert.doesNotMatch(barrel, /from "\.\/reconstruction-proposal"/);
+    assert.doesNotMatch(server, /from "\.\/reconstruction-proposal"/);
+    assert.doesNotMatch(barrel, /from "\.\/artifact-observation"/);
+    assert.doesNotMatch(server, /from "\.\/artifact-observation"/);
+    assert.doesNotMatch(ui, /executeAchedekalKnownArtifactPreview|getAttachment/);
+  });
+
   it("keeps OAuth routes off mailbox content and token rendering", () => {
     const start = readFileSync(
       join(ROOT, "app/api/continuum/gmail/oauth/start/route.ts"),

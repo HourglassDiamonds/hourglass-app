@@ -14,6 +14,8 @@ import {
 import { AchedekalReviewForm } from "../../components/achedekal-review-form";
 import { AchedekalRelatedThreadsForm } from "../../components/achedekal-related-threads";
 import { AchedekalKnownArtifactPreview } from "../../components/achedekal-known-artifact";
+import { AchedekalReconstructionProposal } from "../../components/achedekal-reconstruction-proposal";
+import { presentAchedekalReconstructionProposal } from "@/lib/continuum/gmail/reconstruction-proposal";
 
 export const dynamic = "force-dynamic";
 
@@ -64,6 +66,16 @@ export default async function AchedekalEvidenceReviewPage() {
     label: row.label,
     value: row.value,
   }));
+  const proposal = presentAchedekalReconstructionProposal({
+    currentStored: {
+      fingerSize:
+        result.desk.specs.find((row) => row.fieldName === "finger_size")
+          ?.value ?? null,
+      orderNumber:
+        result.desk.specs.find((row) => row.fieldName === "order_number")
+          ?.value ?? null,
+    },
+  });
 
   return (
     <ConciergeShell>
@@ -81,6 +93,7 @@ export default async function AchedekalEvidenceReviewPage() {
         <AchedekalReviewForm specs={specs} />
         <AchedekalRelatedThreadsForm />
         <AchedekalKnownArtifactPreview />
+        <AchedekalReconstructionProposal proposal={proposal} />
       </div>
     </ConciergeShell>
   );
