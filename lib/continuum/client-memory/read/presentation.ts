@@ -33,6 +33,17 @@ export function conciergeProjectsPath(): string {
   return CONCIERGE_PROJECTS_PATH;
 }
 
+export const CONCIERGE_COHORT_1_PATH =
+  `${CONCIERGE_HOME_PATH}/project-reconstruction/cohort-1` as const;
+
+export function conciergeCohort1Path(): string {
+  return CONCIERGE_COHORT_1_PATH;
+}
+
+export function conciergeCohort1ProjectPath(projectId: string): string {
+  return `${CONCIERGE_COHORT_1_PATH}/${projectId.trim()}`;
+}
+
 export function conciergeProjectPath(projectId: string): string {
   return `${CONCIERGE_PROJECTS_PATH}/${projectId}`;
 }

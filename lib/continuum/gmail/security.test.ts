@@ -61,6 +61,8 @@ describe("Gmail activation security", () => {
       assert.doesNotMatch(source, /runExactProjectThreadFetch|protectExactThread/);
       assert.doesNotMatch(source, /executeAchedekalCandidateDiscovery/);
       assert.doesNotMatch(source, /executeAchedekalKnownArtifactPreview/);
+      assert.doesNotMatch(source, /executeProjectCandidateDiscovery/);
+      assert.doesNotMatch(source, /executeProjectEvidenceReview/);
       assert.doesNotMatch(source, /executeProjectArtifactHunt/);
     }
   });
@@ -154,6 +156,9 @@ describe("Gmail activation security", () => {
     assert.doesNotMatch(barrel, /from "\.\/artifact-hunt"/);
     assert.doesNotMatch(server, /from "\.\/artifact-hunt"/);
     assert.doesNotMatch(hunt, /createLiveGmailApi|users\.threads\.get|getAttachment/);
+    assert.doesNotMatch(barrel, /from "\.\/reconstruction-cohort"/);
+    assert.doesNotMatch(server, /from "\.\/cohort-reconstruction"/);
+    assert.doesNotMatch(server, /from "\.\/cohort-reconstruction-compose"/);
   });
 
   it("keeps founder-reviewed reconstruction proposals evidence-only and fetch-free", () => {

@@ -11,7 +11,6 @@ import {
   ACHEDEKAL_DISPLAY_NAME,
   ACHEDEKAL_DISCOVERY_WARNING,
   ACHEDEKAL_LIFECYCLE_LABEL,
-  ACHEDEKAL_PROJECT_ID,
   ACHEDEKAL_RELATED_THREAD_CANDIDATE_LIMIT,
   ACHEDEKAL_UNASSIGNED_THREAD_CANDIDATE_LIMIT,
   isPermittedAchedekalProjectId,
@@ -105,8 +104,9 @@ export type AchedekalDiscoveredThread = {
 export type AchedekalDiscoverySuccess = {
   ok: true;
   safeErrorCode: null;
-  projectName: typeof ACHEDEKAL_DISPLAY_NAME;
-  lifecycle: typeof ACHEDEKAL_LIFECYCLE_LABEL;
+  projectId: string;
+  projectName: string;
+  lifecycle: string;
   warning: typeof ACHEDEKAL_DISCOVERY_WARNING;
   knownThread: AchedekalKnownThreadSummary | null;
   knownThreadIndexStatus: "indexed" | "empty-index" | "no-stored-thread";
@@ -172,6 +172,8 @@ export type AchedekalCandidateDiscoveryInput = {
   index: AchedekalDiscoveryIndex;
   attachments: AchedekalDiscoveryAttachments;
   internalEmailHashes?: readonly string[];
+  projectName?: string;
+  lifecycleLabel?: string;
 };
 
 const HYDRATE_THREAD_CAP = 80;
@@ -452,16 +454,17 @@ async function attachmentsForThreads(
   return byThread;
 }
 
-export async function executeAchedekalCandidateDiscovery(
+async function loadDiscoveryProject(
   input: AchedekalCandidateDiscoveryInput,
-): Promise<AchedekalDiscoveryState> {
+  permit: (projectId: string) => boolean,
+): Promise<AchedekalDiscoveryProject | AchedekalDiscoveryFailure> {
   if (!input.founderSessionOk) {
     return failedAchedekalDiscovery("unauthorized");
   }
   if (
     input.requestedProjectId != null &&
     input.requestedProjectId.trim() !== "" &&
-    !isPermittedAchedekalProjectId(input.requestedProjectId)
+    !permit(input.requestedProjectId)
   ) {
     return failedAchedekalDiscovery("project-not-found");
   }
@@ -474,9 +477,58 @@ export async function executeAchedekalCandidateDiscovery(
   } catch {
     return failedAchedekalDiscovery("index-unavailable");
   }
-  if (!project || !isPermittedAchedekalProjectId(project.projectId)) {
+  if (!project || !permit(project.projectId)) {
     return failedAchedekalDiscovery("project-not-found");
   }
+  if (
+    input.requestedProjectId != null &&
+    input.requestedProjectId.trim() !== "" &&
+    input.requestedProjectId.trim() !== project.projectId
+  ) {
+    return failedAchedekalDiscovery("project-not-found");
+  }
+  return project;
+}
+
+export async function executeAchedekalCandidateDiscovery(
+  input: AchedekalCandidateDiscoveryInput,
+): Promise<AchedekalDiscoveryState> {
+  const loaded = await loadDiscoveryProject(input, isPermittedAchedekalProjectId);
+  if ("ok" in loaded && loaded.ok === false) return loaded;
+  return completeIndexedCandidateDiscovery(
+    input,
+    loaded as AchedekalDiscoveryProject,
+    {
+      projectName: ACHEDEKAL_DISPLAY_NAME,
+      lifecycle: ACHEDEKAL_LIFECYCLE_LABEL,
+    },
+  );
+}
+
+const RECONSTRUCTION_REVIEW_LIFECYCLE_LABEL =
+  "Review only — commercial state unknown";
+
+export async function executeProjectCandidateDiscovery(
+  input: AchedekalCandidateDiscoveryInput,
+): Promise<AchedekalDiscoveryState> {
+  const loaded = await loadDiscoveryProject(
+    input,
+    (projectId) => projectId.trim().length > 0,
+  );
+  if ("ok" in loaded && loaded.ok === false) return loaded;
+  const project = loaded as AchedekalDiscoveryProject;
+  return completeIndexedCandidateDiscovery(input, project, {
+    projectName: input.projectName?.trim() || "Project",
+    lifecycle:
+      input.lifecycleLabel?.trim() || RECONSTRUCTION_REVIEW_LIFECYCLE_LABEL,
+  });
+}
+
+async function completeIndexedCandidateDiscovery(
+  input: AchedekalCandidateDiscoveryInput,
+  project: AchedekalDiscoveryProject,
+  presentation: { projectName: string; lifecycle: string },
+): Promise<AchedekalDiscoveryState> {
 
   const anchorThreadId = project.gmailThreadId?.trim() ?? "";
   let knownMessages: GmailIndexedMessage[] = [];
@@ -502,7 +554,7 @@ export async function executeAchedekalCandidateDiscovery(
     internalEmailHashes: input.internalEmailHashes,
   });
   const identifiers = extractProjectIdentifiersFromIndexedMetadata({
-    anchorThreadId: anchorThreadId || ACHEDEKAL_PROJECT_ID,
+    anchorThreadId: anchorThreadId || project.projectId,
     currentSpecs: specsOf(project),
     personEmailHash: seedHashes[0] ?? null,
     personEmailHashes: seedHashes,
@@ -548,7 +600,7 @@ export async function executeAchedekalCandidateDiscovery(
     anchorThreadId,
     identifiers,
     indexedMessages: discoveryMessages,
-    candidateProjectId: ACHEDEKAL_PROJECT_ID,
+    candidateProjectId: project.projectId,
     internalEmailHashes: input.internalEmailHashes,
   });
 
@@ -581,14 +633,14 @@ export async function executeAchedekalCandidateDiscovery(
     const hay = haystackOf(threadMessages);
     const owners = booksOwningStrongIdentity(hay, candidate.threadId, books);
     const otherOwners = owners.filter(
-      (book) => book.projectId !== ACHEDEKAL_PROJECT_ID,
+      (book) => book.projectId !== project.projectId,
     );
     const attachments = attachmentMap.get(candidate.threadId) ?? [];
     if (otherOwners.length > 0) {
       const collision: AchedekalDiscoveryReason[] = [
         {
           kind: "spans_multiple_projects",
-          value: [ACHEDEKAL_PROJECT_ID, ...otherOwners.map((book) => book.projectId)].join(
+          value: [project.projectId, ...otherOwners.map((book) => book.projectId)].join(
             ",",
           ),
           detail:
@@ -614,10 +666,10 @@ export async function executeAchedekalCandidateDiscovery(
     const hay = haystackOf(messages);
     if (!subjectHasStrongIdentifier(hay)) continue;
     const owners = booksOwningStrongIdentity(hay, threadId, books);
-    const targetOwned = owners.some((book) => book.projectId === ACHEDEKAL_PROJECT_ID);
+    const targetOwned = owners.some((book) => book.projectId === project.projectId);
     if (targetOwned) continue;
     const otherOwners = owners.filter(
-      (book) => book.projectId !== ACHEDEKAL_PROJECT_ID,
+      (book) => book.projectId !== project.projectId,
     );
     const personRelated = threadTouchesPersonDiscoverySeed(messages, seedHashes);
     if (otherOwners.length === 0 && !personRelated) continue;
@@ -722,8 +774,9 @@ export async function executeAchedekalCandidateDiscovery(
   return {
     ok: true,
     safeErrorCode: null,
-    projectName: ACHEDEKAL_DISPLAY_NAME,
-    lifecycle: ACHEDEKAL_LIFECYCLE_LABEL,
+    projectId: project.projectId,
+    projectName: presentation.projectName,
+    lifecycle: presentation.lifecycle,
     warning: ACHEDEKAL_DISCOVERY_WARNING,
     knownThread:
       knownThreadIndexStatus === "indexed"

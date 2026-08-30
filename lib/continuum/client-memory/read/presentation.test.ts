@@ -7,6 +7,8 @@ import {
   conciergeHistoryPath,
   conciergeProjectPath,
   conciergeProjectsPath,
+  conciergeCohort1Path,
+  conciergeCohort1ProjectPath,
   conciergeAddNotePickerPath,
   conciergeBirthdayPath,
   conciergeInboxNewPath,
@@ -163,6 +165,14 @@ describe("Concierge presentation", () => {
       "/executive-dashboard/concierge/projects/eb2802bd-e312-471e-8582-8dbd5ad2e04b",
     );
     assert.equal(conciergeProjectsPath(), "/executive-dashboard/concierge/projects");
+    assert.equal(
+      conciergeCohort1Path(),
+      "/executive-dashboard/concierge/project-reconstruction/cohort-1",
+    );
+    assert.equal(
+      conciergeCohort1ProjectPath("eb2802bd-e312-471e-8582-8dbd5ad2e04b"),
+      "/executive-dashboard/concierge/project-reconstruction/cohort-1/eb2802bd-e312-471e-8582-8dbd5ad2e04b",
+    );
     assert.doesNotMatch(
       conciergeProjectsPath(),
       /lifecycle/,

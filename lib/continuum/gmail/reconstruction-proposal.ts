@@ -6,6 +6,7 @@
  * Does not fetch Gmail, attachments, or artifact bytes.
  */
 
+import type { GmailIndexedMessage } from "@/lib/continuum/client-memory/gmail/types";
 import {
   ACHEDEKAL_KNOWN_ARTIFACT_CAD,
   ACHEDEKAL_PROJECT_ID,
@@ -17,11 +18,14 @@ import {
   type ArtifactObservation,
   type ArtifactObservationFact,
 } from "./artifact-observation";
+import type { ProtectedExactThread } from "./exact-thread-payload";
 import {
   reconstructProjectBook,
   RECONSTRUCTION_MUTATION_BOUNDARY,
   type ProjectBookReconstructionHandoff,
   type ReconstructedItemType,
+  type ReconstructionPerson,
+  type SourceNameEvidence,
 } from "./project-reconstruction";
 import type { ExactThreadCurrentSpecs } from "./reconstruction-evidence";
 
@@ -443,6 +447,45 @@ export function presentAchedekalReconstructionProposal(
   });
 }
 
+export function emptyProtectedExactThread(threadId: string): ProtectedExactThread {
+  const id = threadId.trim();
+  return {
+    threadId: id || "no-stored-thread",
+    messages: [],
+  };
+}
+
+export type IndexedProjectReconstructionProposalInput = {
+  projectId: string;
+  currentStored: ExactThreadCurrentSpecs;
+  existingPerson: ReconstructionPerson | null;
+  sourceNameEvidence?: readonly SourceNameEvidence[];
+  indexedMessages: readonly GmailIndexedMessage[];
+  storedThreadId: string | null;
+  thread?: ProtectedExactThread | null;
+};
+
+export function presentIndexedProjectReconstructionProposal(
+  input: IndexedProjectReconstructionProposalInput,
+): ProjectReconstructionProposal {
+  const thread =
+    input.thread ?? emptyProtectedExactThread(input.storedThreadId ?? "");
+  const textReconstruction = reconstructProjectBook({
+    projectId: input.projectId,
+    currentSpecs: input.currentStored,
+    currentLifecycle: "unknown",
+    existingPerson: input.existingPerson,
+    sourceNameEvidence: input.sourceNameEvidence ?? [],
+    thread,
+    indexedMessages: input.indexedMessages,
+  });
+  return buildProjectReconstructionProposal({
+    textReconstruction,
+    currentStored: input.currentStored,
+    artifactObservation: null,
+  });
+}
+
 export type ReconstructionProposalViewRow = {
   label: string;
   value: string;
@@ -458,26 +501,45 @@ export type ReconstructionProposalView = {
   noChangesCopy: "No project changes have been applied";
   applyButton: false;
   automaticApply: false;
-  projectId: typeof ACHEDEKAL_PROJECT_ID;
-  cadIdentifier: typeof ACHEDEKAL_KNOWN_ARTIFACT_CAD;
+  projectId: string;
+  cadIdentifier: string;
   supportedFacts: ReconstructionProposalViewRow[];
   componentDimensions: ReconstructionProposalViewRow[];
   unresolvedFacts: ReconstructionProposalViewRow[];
   conflictingStoredData: ReconstructionProposalViewRow[];
 };
 
+function itemTypeLabel(type: ReconstructedItemType): string {
+  if (type === "unknown") return "Unknown";
+  if (type === "loose_stones") return "Loose stones";
+  return type.charAt(0).toUpperCase() + type.slice(1);
+}
+
+function stoneLayoutLabel(proposal: ProjectReconstructionProposal): string | null {
+  const { quantity, shape, size } = proposal.stoneLayout;
+  if (!quantity || !shape || !size) return null;
+  const shapeLabel = /marquise/i.test(shape) ? "marquise (MQ)" : shape;
+  return `${quantity} × ${shapeLabel}, ${size}`;
+}
+
 export function reconstructionProposalView(
   proposal: ProjectReconstructionProposal,
 ): ReconstructionProposalView {
-  const item =
-    proposal.itemTypeCandidate === "bracelet" ? "Bracelet" : "Unknown";
+  const item = itemTypeLabel(proposal.itemTypeCandidate);
+  const cadFromFacts = proposal.supportedFacts.find(
+    (row) => row.field === "cad_identifier",
+  )?.value;
   const cad =
-    proposal.supportedFacts.find((row) => row.field === "cad_identifier")
-      ?.value ?? ACHEDEKAL_KNOWN_ARTIFACT_CAD;
+    cadFromFacts ||
+    (proposal.projectId === ACHEDEKAL_PROJECT_ID
+      ? ACHEDEKAL_KNOWN_ARTIFACT_CAD
+      : "");
   const supportedFacts: ReconstructionProposalViewRow[] = [
     { label: "Item", value: item },
-    { label: "CAD", value: cad },
   ];
+  if (cad) {
+    supportedFacts.push({ label: "CAD", value: cad });
+  }
   if (proposal.braceletLength) {
     supportedFacts.push({
       label: "Finished length shown",
@@ -488,14 +550,11 @@ export function reconstructionProposalView(
       value: proposal.braceletLength.extenderLengthShown,
     });
   }
-  if (
-    proposal.stoneLayout.quantity &&
-    proposal.stoneLayout.shape &&
-    proposal.stoneLayout.size
-  ) {
+  const layout = stoneLayoutLabel(proposal);
+  if (layout) {
     supportedFacts.push({
       label: "Stone layout",
-      value: `${proposal.stoneLayout.quantity} × marquise (MQ), ${proposal.stoneLayout.size}`,
+      value: layout,
     });
   }
   if (proposal.artifactReviewedByFounder) {
@@ -541,8 +600,8 @@ export function reconstructionProposalView(
     noChangesCopy: "No project changes have been applied",
     applyButton: false,
     automaticApply: false,
-    projectId: ACHEDEKAL_PROJECT_ID,
-    cadIdentifier: ACHEDEKAL_KNOWN_ARTIFACT_CAD,
+    projectId: proposal.projectId,
+    cadIdentifier: cad,
     supportedFacts,
     componentDimensions,
     unresolvedFacts: [

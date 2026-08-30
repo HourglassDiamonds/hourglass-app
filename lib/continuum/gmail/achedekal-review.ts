@@ -103,7 +103,7 @@ export type AchedekalReviewSuccess = {
   ok: true;
   safeErrorCode: null;
   projectName: string;
-  lifecycle: typeof ACHEDEKAL_LIFECYCLE_LABEL;
+  lifecycle: string;
   warning: typeof ACHEDEKAL_REVIEW_WARNING;
   currentSpecs: AchedekalCurrentSpecRow[];
   candidates: AchedekalCandidateRow[];
@@ -345,6 +345,7 @@ function ringSizeStatusOf(
 
 export function presentAchedekalReview(
   handoff: ExactThreadReconstructionHandoff,
+  presentation?: { projectName?: string; lifecycle?: string },
 ): AchedekalReviewSuccess {
   const proposed = applyFingerSizeAmbiguityGuard(handoff);
   const fingerItems = handoff.candidateEvidence.filter(
@@ -379,8 +380,8 @@ export function presentAchedekalReview(
   return {
     ok: true,
     safeErrorCode: null,
-    projectName: ACHEDEKAL_DISPLAY_NAME,
-    lifecycle: ACHEDEKAL_LIFECYCLE_LABEL,
+    projectName: presentation?.projectName?.trim() || ACHEDEKAL_DISPLAY_NAME,
+    lifecycle: presentation?.lifecycle?.trim() || ACHEDEKAL_LIFECYCLE_LABEL,
     warning: ACHEDEKAL_REVIEW_WARNING,
     currentSpecs: currentSpecRows(handoff.currentSpecs),
     candidates,
@@ -409,6 +410,8 @@ export type AchedekalEvidenceReviewInput = ExactProjectThreadFetchInput & {
   requestedProjectId?: string | null;
   requestedThreadId?: string | null;
   requestedQuery?: string | null;
+  projectName?: string;
+  lifecycleLabel?: string;
 };
 
 export async function executeAchedekalEvidenceReview(
@@ -442,13 +445,49 @@ export async function executeAchedekalEvidenceReview(
   return presentExactThreadResult(result);
 }
 
+export async function executeProjectEvidenceReview(
+  input: AchedekalEvidenceReviewInput,
+): Promise<AchedekalReviewState> {
+  if (!input.founderSessionOk) {
+    return failedAchedekalReview("unauthorized");
+  }
+  const projectId = input.projectId.trim();
+  if (!projectId) {
+    return failedAchedekalReview("project-not-found");
+  }
+  if (
+    input.requestedProjectId != null &&
+    input.requestedProjectId.trim() !== "" &&
+    input.requestedProjectId.trim() !== projectId
+  ) {
+    return failedAchedekalReview("project-not-found");
+  }
+  void input.requestedThreadId;
+  void input.requestedQuery;
+
+  const result = await runExactProjectThreadFetch({
+    founderSessionOk: true,
+    projectId,
+    projects: input.projects,
+    connections: input.connections,
+    decryptRefreshToken: input.decryptRefreshToken,
+    refreshAccessToken: input.refreshAccessToken,
+    createApi: input.createApi,
+  });
+  return presentExactThreadResult(result, {
+    projectName: input.projectName,
+    lifecycle: input.lifecycleLabel ?? "Review only — commercial state unknown",
+  });
+}
+
 export function presentExactThreadResult(
   result: ExactProjectThreadFetchResult,
+  presentation?: { projectName?: string; lifecycle?: string },
 ): AchedekalReviewState {
   if (!result.ok) {
     return sanitizeAchedekalReviewFailure(
       failedAchedekalReview(mapExactThreadErrorToAchedekalReview(result.safeErrorCode)),
     );
   }
-  return presentAchedekalReview(result.reconstruction);
+  return presentAchedekalReview(result.reconstruction, presentation);
 }

@@ -10,6 +10,7 @@ import { ConciergeSignOut } from "./concierge-sign-out";
 import { ProjectsHome } from "./projects-home";
 import { QuickCapture } from "./quick-capture";
 import { CONCIERGE_GMAIL_PATH } from "@/lib/continuum/gmail/types";
+import { conciergeCohort1Path } from "@/lib/continuum/client-memory/read/presentation";
 
 export function CommandCenterHome({
   model,
@@ -45,6 +46,12 @@ export function CommandCenterHome({
               className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.24em] text-[#8d8073] outline-none hover:text-[#efe8de] focus-visible:text-[#efe8de]"
             >
               Gmail
+            </Link>
+            <Link
+              href={conciergeCohort1Path()}
+              className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.24em] text-[#8d8073] outline-none hover:text-[#efe8de] focus-visible:text-[#efe8de]"
+            >
+              Reconstruction
             </Link>
             <Link
               href={EXECUTIVE_DASHBOARD_PASSKEYS_PATH}
