@@ -227,6 +227,8 @@ describe("Gmail activation security", () => {
     }
     assert.match(hunt, /automaticAttach: false/);
     assert.match(hunt, /canonical: false/);
+    assert.match(hunt, /collectAuthorizedProjectIdentifiers/);
+    assert.doesNotMatch(hunt, /storedAttachments\.map\(\(row\) => row\.filename\)/);
     assert.match(actions, /"use server"/);
     assert.match(actions, /ACHEDEKAL_PROJECT_ID/);
     assert.match(actions, /listProjects\(\)/);

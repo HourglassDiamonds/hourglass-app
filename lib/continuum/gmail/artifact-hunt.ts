@@ -391,32 +391,64 @@ function uniqueTokens(values: readonly string[]): string[] {
   return out;
 }
 
-export function collectStrongIdentifierTokens(
-  values: readonly (string | null | undefined)[],
-): string[] {
-  const found: string[] = [];
-  for (const raw of values) {
-    if (!raw?.trim()) continue;
-    const hay = raw.trim();
-    for (const cad of extractCadJobIdentifiers(hay)) {
-      if (
-        isStrongStructuredCadIdentifier(cad) ||
-        isStrongStructuredIdentifier(cad)
-      ) {
-        found.push(cad);
-      }
-    }
-    for (const order of extractOrderIdentifiers(hay)) {
-      if (isStrongStructuredOrderIdentifier(order)) found.push(order);
-    }
-    if (
-      isStrongStructuredIdentifier(hay) &&
-      !isGenericHexadecimalCadFragment(hay)
-    ) {
-      found.push(hay);
-    }
+const PROJECT_FIELD_FILENAME_LIKE =
+  /\.(jpe?g|png|gif|webp|bmp|heic|pdf|docx?|xlsx?)$/i;
+const PROJECT_FIELD_SUBJECT_LIKE = /^(re|fw|fwd)\s*:/i;
+
+function projectFieldFilenameStem(hay: string): string | null {
+  if (!PROJECT_FIELD_FILENAME_LIKE.test(hay)) return null;
+  return hay.replace(PROJECT_FIELD_FILENAME_LIKE, "").trim();
+}
+
+function isAuthorizedProjectIdentifier(token: string): boolean {
+  if (!token.trim()) return false;
+  if (/\s/.test(token.trim())) return false;
+  if (PROJECT_FIELD_FILENAME_LIKE.test(token) || PROJECT_FIELD_SUBJECT_LIKE.test(token)) {
+    return false;
   }
-  return uniqueTokens(found);
+  if (isWeakIdentifierSpecificity(classifyIdentifierSpecificity(token))) {
+    return false;
+  }
+  return (
+    isStrongStructuredCadIdentifier(token) ||
+    isStrongStructuredOrderIdentifier(token) ||
+    isStrongStructuredIdentifier(token)
+  );
+}
+
+function authorizedTokensFromProjectField(
+  raw: string | null | undefined,
+): string[] {
+  if (!raw?.trim()) return [];
+  const hay = raw.trim();
+  if (PROJECT_FIELD_SUBJECT_LIKE.test(hay)) return [];
+  const stem = projectFieldFilenameStem(hay);
+  const found: string[] = [];
+  for (const cad of extractCadJobIdentifiers(hay)) {
+    if (stem && norm(cad) === norm(stem)) continue;
+    if (isAuthorizedProjectIdentifier(cad)) found.push(cad);
+  }
+  for (const order of extractOrderIdentifiers(hay)) {
+    if (stem && norm(order) === norm(stem)) continue;
+    if (isAuthorizedProjectIdentifier(order)) found.push(order);
+  }
+  if (stem == null && isAuthorizedProjectIdentifier(hay)) {
+    found.push(hay);
+  }
+  return found;
+}
+
+/**
+ * Hunt search tokens come only from authoritative Project identifier fields.
+ * Candidate filenames and subjects are never a source of new Project identifiers.
+ */
+export function collectAuthorizedProjectIdentifiers(
+  project: Pick<ArtifactHuntProject, "cadJobNumber" | "orderNumber">,
+): string[] {
+  return uniqueTokens([
+    ...authorizedTokensFromProjectField(project.cadJobNumber),
+    ...authorizedTokensFromProjectField(project.orderNumber),
+  ]);
 }
 
 function boundedHits(haystack: string, tokens: readonly string[]): string[] {
@@ -476,6 +508,7 @@ function pushReason(
   value: string,
   detail: string,
 ): void {
+  if (into.some((row) => row.detail === detail)) return;
   const key = `${kind}:${norm(value)}:${detail}`;
   if (into.some((row) => `${row.kind}:${norm(row.value)}:${row.detail}` === key)) {
     return;
@@ -520,17 +553,11 @@ function sortCandidates(
   });
 }
 
-function targetStrongIdentifiers(
-  project: ArtifactHuntProject,
-  storedMessages: readonly GmailIndexedMessage[],
-  storedAttachments: readonly GmailAttachmentMeta[],
-): string[] {
-  return collectStrongIdentifierTokens([
-    project.cadJobNumber,
-    project.orderNumber,
-    ...storedMessages.map((row) => row.subject),
-    ...storedAttachments.map((row) => row.filename),
-  ]);
+function authorizedHuntTokens(project: ArtifactHuntProject): string[] {
+  return collectAuthorizedProjectIdentifiers(project).slice(
+    0,
+    ARTIFACT_HUNT_FILENAME_TOKEN_LIMIT,
+  );
 }
 
 function attributeCandidate(input: {
@@ -628,9 +655,9 @@ function attributeCandidate(input: {
     );
     const owners = identifierOwners(token, input.books);
     if (owners.length === 1 && owners[0] === input.project.projectId) {
-    const cadHit =
-      isStrongStructuredCadIdentifier(token) ||
-      filenameCads.some((cad) => norm(cad) === norm(token));
+      const cadHit =
+        isStrongStructuredCadIdentifier(token) ||
+        filenameCads.some((cad) => norm(cad) === norm(token));
       pushReason(
         reasons,
         cadHit ? "exact_cad_job_identifier" : "exact_order_identifier",
@@ -875,11 +902,7 @@ export async function executeProjectArtifactHunt(
     ].filter((value): value is string => Boolean(value)),
     internalEmailHashes: input.internalEmailHashes,
   });
-  const targetIdentifiers = targetStrongIdentifiers(
-    project,
-    storedMessages,
-    storedAttachments,
-  ).slice(0, ARTIFACT_HUNT_FILENAME_TOKEN_LIMIT);
+  const targetIdentifiers = authorizedHuntTokens(project);
 
   let filenameHits: GmailAttachmentMeta[] = [];
   let subjectHits: GmailIndexedMessage[] = [];

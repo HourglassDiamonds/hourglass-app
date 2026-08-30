@@ -34,6 +34,7 @@ import {
   ARTIFACT_HUNT_EXACT_LIMIT,
   ARTIFACT_HUNT_UNASSIGNED_LIMIT,
   classifyArtifactMetadata,
+  collectAuthorizedProjectIdentifiers,
   executeProjectArtifactHunt,
   failedArtifactHunt,
   sanitizeArtifactHuntFailure,
@@ -69,6 +70,7 @@ class RecordingAttachments extends InMemoryGmailAttachmentStore {
   filenameCalls = 0;
   threadIdCalls = 0;
   threadCalls = 0;
+  filenameTokens: string[][] = [];
 
   async putAttachment(row: GmailAttachmentMeta) {
     this.puts += 1;
@@ -87,8 +89,15 @@ class RecordingAttachments extends InMemoryGmailAttachmentStore {
 
   async listByFilenameTokens(tokens: readonly string[]) {
     this.filenameCalls += 1;
+    this.filenameTokens.push([...tokens]);
     return super.listByFilenameTokens(tokens);
   }
+}
+
+function reasonDetails(
+  row: { evidenceReasons: readonly { detail: string }[] },
+): string[] {
+  return row.evidenceReasons.map((reason) => reason.detail);
 }
 
 function book(input: {
@@ -308,6 +317,87 @@ function aleaKnownRows(): {
   };
 }
 
+describe("authorized Project identifier collection", () => {
+  it("collects only strong Project CAD and order fields", () => {
+    assert.deepEqual(
+      collectAuthorizedProjectIdentifiers({
+        cadJobNumber: "CBR2000037",
+        orderNumber: "140",
+      }),
+      ["CBR2000037"],
+    );
+    assert.deepEqual(
+      collectAuthorizedProjectIdentifiers({
+        cadJobNumber: "CAD-8821",
+        orderNumber: "AB-555",
+      }).sort(),
+      ["AB-555", "CAD-8821"].sort(),
+    );
+    assert.ok(
+      collectAuthorizedProjectIdentifiers({
+        cadJobNumber: "J-4491",
+        orderNumber: null,
+      }).includes("J-4491"),
+    );
+    assert.ok(
+      collectAuthorizedProjectIdentifiers({
+        cadJobNumber: "CR5001024",
+        orderNumber: null,
+      }).includes("CR5001024"),
+    );
+    assert.ok(
+      collectAuthorizedProjectIdentifiers({
+        cadJobNumber: "C025610",
+        orderNumber: null,
+      }).includes("C025610"),
+    );
+    assert.ok(
+      collectAuthorizedProjectIdentifiers({
+        cadJobNumber: "C025885",
+        orderNumber: null,
+      }).includes("C025885"),
+    );
+  });
+
+  it("does not invent identifiers from generic filenames or full subjects", () => {
+    assert.deepEqual(
+      collectAuthorizedProjectIdentifiers({
+        cadJobNumber: "image001.jpg",
+        orderNumber: "RE: HGD x Dylon D.-C025610",
+      }),
+      [],
+    );
+    assert.deepEqual(
+      collectAuthorizedProjectIdentifiers({
+        cadJobNumber: "IMG_1234.jpg",
+        orderNumber: "scan001.pdf",
+      }),
+      [],
+    );
+    assert.deepEqual(
+      collectAuthorizedProjectIdentifiers({
+        cadJobNumber: "DSC_0001.jpg",
+        orderNumber: "document001.pdf",
+      }),
+      [],
+    );
+    assert.deepEqual(
+      collectAuthorizedProjectIdentifiers({
+        cadJobNumber: "attachment001.jpg",
+        orderNumber: "photo001.jpg",
+      }),
+      [],
+    );
+    assert.deepEqual(
+      collectAuthorizedProjectIdentifiers({
+        cadJobNumber: "H017-CBR2000037.jpg",
+        orderNumber: null,
+      }),
+      ["CBR2000037"],
+    );
+  });
+});
+
 describe("artifact hunt classification", () => {
   it("classifies strong CAD filenames with image MIME as metadata CAD/render", () => {
     const row = classifyArtifactMetadata({
@@ -371,6 +461,37 @@ describe("artifact hunt discovery", () => {
     assert.equal(generic.attribution, "exact_project");
     assert.equal(generic.classification.class, "unknown");
     assert.notEqual(generic.classification.class, "cad_render");
+    const cadReasons = reasonDetails(target);
+    assert.equal(new Set(cadReasons).size, cadReasons.length);
+    assert.ok(
+      cadReasons.some((detail) =>
+        detail.includes("stored Gmail thread"),
+      ),
+    );
+    assert.ok(
+      cadReasons.some(
+        (detail) =>
+          detail ===
+          "Filename contains an exact bounded strong Project identifier.",
+      ),
+    );
+    assert.ok(
+      cadReasons.some((detail) => detail.includes("uniquely owned")),
+    );
+    assert.ok(
+      cadReasons.some((detail) =>
+        detail.startsWith("Message subject contains an exact bounded strong Project identifier."),
+      ),
+    );
+    const genericReasons = reasonDetails(generic);
+    assert.equal(new Set(genericReasons).size, genericReasons.length);
+    assert.ok(genericReasons.some((detail) => detail.includes("stored Gmail thread")));
+    assert.equal(
+      genericReasons.includes(
+        "Filename contains an exact bounded strong Project identifier.",
+      ),
+      false,
+    );
   });
 
   it("attributes attachments on the exact stored thread without interpreting content", async () => {
@@ -793,6 +914,216 @@ describe("artifact hunt discovery", () => {
     );
   });
 
+  it("does not let generic image001.jpg filenames become mailbox-wide hunt needles", async () => {
+    const rows = aleaKnownRows();
+    const floodMessages: GmailIndexedMessage[] = [];
+    const floodAttachments: GmailAttachmentMeta[] = [];
+    for (let index = 1; index <= 50; index += 1) {
+      const threadId = `19imageflood${String(index).padStart(8, "0")}`;
+      floodMessages.push(
+        indexed({
+          messageId: `msg-image-flood-${index}`,
+          threadId,
+          subject:
+            index % 5 === 0
+              ? "RE: HGD x Dylon D.-C025610"
+              : `Unrelated job ${index}`,
+          fromHash: VENDOR_HASH,
+        }),
+      );
+      const extras = [
+        "image002.jpg",
+        "IMG_1234.jpg",
+        "DSC_0001.jpg",
+        "scan001.pdf",
+        "document001.pdf",
+        "attachment001.jpg",
+        "photo001.jpg",
+      ] as const;
+      floodAttachments.push(
+        attachment({
+          messageId: `msg-image-flood-${index}`,
+          attachmentId: `att-image-flood-${index}`,
+          threadId,
+          filename: "image001.jpg",
+        }),
+      );
+      if (index <= extras.length) {
+        floodAttachments.push(
+          attachment({
+            messageId: `msg-image-flood-${index}`,
+            attachmentId: `att-generic-extra-${index}`,
+            threadId,
+            filename: extras[index - 1] ?? "image002.jpg",
+          }),
+        );
+      }
+    }
+    floodMessages.push(
+      indexed({
+        messageId: "msg-alea-known-early",
+        threadId: ALEA_KNOWN_THREAD_ID,
+        subject: "RE: HGD - A. Achedekal-CBR2000037",
+        sentAt: "2026-08-06T16:05:02.000Z",
+      }),
+    );
+    floodAttachments.push(
+      attachment({
+        messageId: "msg-alea-known-early",
+        attachmentId: "att-image001-a",
+        threadId: ALEA_KNOWN_THREAD_ID,
+        filename: "image001.jpg",
+      }),
+    );
+    const store = new RecordingAttachments();
+    const { state, attachments } = await hunt({
+      project: aleaProject(),
+      books: aleaBooks(),
+      messages: [...rows.messages, ...floodMessages],
+      attachments: [...rows.attachments, ...floodAttachments],
+      attachmentStore: store,
+    });
+    assert.equal(state.ok, true);
+    if (!state.ok) return;
+    const searched = attachments.filenameTokens.flat();
+    assert.deepEqual(searched, [ALEA_KNOWN_CAD]);
+    assert.equal(
+      searched.some((token) =>
+        /image00|img_1234|dsc_0001|scan001|document001|attachment001|photo001/i.test(
+          token,
+        ),
+      ),
+      false,
+    );
+    const likelyNames = state.likely.map((row) => row.filename);
+    assert.equal(
+      likelyNames.filter((name) => name === ACHEDEKAL_KNOWN_ARTIFACT_FILENAME)
+        .length,
+      1,
+    );
+    const storedGenerics = state.likely.filter(
+      (row) =>
+        row.filename === "image001.jpg" &&
+        row.source.threadId === ALEA_KNOWN_THREAD_ID,
+    );
+    assert.equal(storedGenerics.length, 2);
+    assert.equal(
+      storedGenerics.every((row) => row.classification.class === "unknown"),
+      true,
+    );
+    assert.equal(
+      state.likely.some(
+        (row) =>
+          row.filename === "image001.jpg" &&
+          row.source.threadId !== ALEA_KNOWN_THREAD_ID,
+      ),
+      false,
+    );
+    assert.equal(
+      state.ambiguous.some((row) => row.filename === "image001.jpg"),
+      false,
+    );
+    assert.equal(
+      state.unassigned.some((row) => row.filename === "image001.jpg"),
+      false,
+    );
+    const genericUniverse = [
+      "image002.jpg",
+      "IMG_1234.jpg",
+      "DSC_0001.jpg",
+      "scan001.pdf",
+      "document001.pdf",
+      "attachment001.jpg",
+      "photo001.jpg",
+    ];
+    for (const bucket of [state.likely, state.ambiguous, state.unassigned]) {
+      assert.equal(
+        bucket.some((row) => genericUniverse.includes(row.filename ?? "")),
+        false,
+      );
+    }
+    assert.equal(state.likely.length, 3);
+    assert.equal(state.resultsLimited, false);
+  });
+
+  it("does not turn a full unrelated subject into an Alea search identifier", async () => {
+    const rows = aleaKnownRows();
+    const store = new RecordingAttachments();
+    const { state, attachments } = await hunt({
+      project: aleaProject(),
+      books: aleaBooks(),
+      messages: [
+        ...rows.messages,
+        indexed({
+          messageId: "msg-dylon",
+          threadId: "19dylonunrelated001",
+          subject: "RE: HGD x Dylon D.-C025610",
+          fromHash: VENDOR_HASH,
+        }),
+      ],
+      attachments: [
+        ...rows.attachments,
+        attachment({
+          messageId: "msg-dylon",
+          attachmentId: "att-dylon-c025610",
+          threadId: "19dylonunrelated001",
+          filename: "C025610-render.jpg",
+        }),
+      ],
+      attachmentStore: store,
+    });
+    assert.equal(state.ok, true);
+    if (!state.ok) return;
+    assert.deepEqual(attachments.filenameTokens.flat(), [ALEA_KNOWN_CAD]);
+    assert.equal(
+      attachments.filenameTokens.flat().some((token) => /C025610|Dylon/i.test(token)),
+      false,
+    );
+    assert.equal(
+      state.likely.some((row) => row.filename === "C025610-render.jpg"),
+      false,
+    );
+    assert.equal(
+      state.ambiguous.some((row) => row.filename === "C025610-render.jpg"),
+      false,
+    );
+    assert.equal(
+      state.unassigned.some((row) => row.filename === "C025610-render.jpg"),
+      false,
+    );
+  });
+
+  it("still matches a legitimate Project CAD in a candidate filename", async () => {
+    const { state } = await hunt({
+      project: projectOf({
+        projectId: PROJECT_A_ID,
+        cadJobNumber: "C025610",
+      }),
+      books: [book({ projectId: PROJECT_A_ID, cadJobNumbers: ["C025610"] })],
+      messages: [
+        indexed({
+          messageId: "msg-c025610",
+          threadId: "19legitcad02561001",
+          subject: "Renders",
+        }),
+      ],
+      attachments: [
+        attachment({
+          messageId: "msg-c025610",
+          attachmentId: "att-c025610",
+          threadId: "19legitcad02561001",
+          filename: "C025610-render.jpg",
+        }),
+      ],
+    });
+    assert.equal(state.ok, true);
+    if (!state.ok) return;
+    assert.equal(state.likely.length, 1);
+    assert.equal(state.likely[0]?.filename, "C025610-render.jpg");
+    assert.equal(state.likely[0]?.attribution, "exact_project");
+    assert.equal(state.likely[0]?.classification.class, "cad_render");
+  });
+
   it("keeps duplicate filenames across messages as separate provenance", async () => {
     const { state } = await hunt({
       project: projectOf({
@@ -1076,6 +1407,9 @@ describe("artifact hunt boundaries", () => {
       assert.doesNotMatch(source, /createsOpenJobs:\s*true|writesChiefOfStaff:\s*true/);
     }
     assert.doesNotMatch(engine, /H017-CBR2000037|ACHEDEKAL_PROJECT_ID|df78419e/);
+    assert.match(engine, /collectAuthorizedProjectIdentifiers/);
+    assert.doesNotMatch(engine, /storedAttachments\.map\(\(row\) => row\.filename\)/);
+    assert.doesNotMatch(engine, /storedMessages\.map\(\(row\) => row\.subject\)/);
     assert.match(engine, /automaticAttach: false/);
     assert.match(engine, /canonical: false/);
     assert.match(actions, /listProjects\(\)/);
