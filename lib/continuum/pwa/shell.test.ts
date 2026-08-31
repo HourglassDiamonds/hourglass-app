@@ -71,6 +71,7 @@ describe("Continuum private PWA shell", () => {
 
   it("ships replaceable icon files at the required sizes", () => {
     const files = [
+      ["public/continuum/continuum-app-icon-1024.png", 100_000],
       ["public/continuum/icon-192.png", 8_000],
       ["public/continuum/icon-512.png", 20_000],
       ["public/continuum/icon-maskable-512.png", 16_000],
@@ -85,6 +86,12 @@ describe("Continuum private PWA shell", () => {
     assert.equal(CONTINUUM_ICON_512, "/continuum/icon-512.png");
     assert.equal(CONTINUUM_ICON_MASKABLE_512, "/continuum/icon-maskable-512.png");
     assert.equal(CONTINUUM_APPLE_TOUCH_ICON, "/continuum/apple-touch-icon.png");
+  });
+
+  it("generates Continuum icons from the approved master, not Hourglass placeholders", () => {
+    const generator = read(join("scripts", "generate-continuum-icons.mjs"));
+    assert.match(generator, /continuum-app-icon-1024\.png/);
+    assert.doesNotMatch(generator, /hourglass-logo-gold/);
   });
 
   it("attaches PWA metadata only on the private executive-dashboard layout", () => {
