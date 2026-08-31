@@ -40,6 +40,14 @@ describe("operating-detail validation", () => {
       false,
     );
     assert.equal(
+      validateOperatingDetailCorrection("item_description", "ok").ok,
+      false,
+    );
+    assert.equal(
+      validateOperatingDetailCorrection("requested_service", "ok").ok,
+      false,
+    );
+    assert.equal(
       validateOperatingDetailCorrection("finger_size", "6.5").ok,
       false,
     );

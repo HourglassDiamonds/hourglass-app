@@ -1,73 +1,10 @@
 -- UNAPPLIED. DO NOT RUN AGAINST PRODUCTION from this change.
--- Client Memory Sprint #8 — Custom / Repair Project operating-detail layers.
--- Additive only. continuum_project_profiles remains the ONE current Project record.
--- Optional 1:1 extensions keyed by project_id. Not new Projects. Not Person-scoped.
--- Does not auto-create rows. Does not backfill. Does not infer from title, email,
--- CAD, order, artifact, notes, reconstruction, Person, filename, or keywords.
--- Does not delete subtype rows when Project Kind changes.
--- Existence of a subtype row does not set Project Kind.
--- Does not create lifecycle, Open Jobs, pricing, or workflow stages.
--- Does not add anon/authenticated grants. RLS remains enabled.
--- No dynamic SQL from field values.
-
-create table if not exists public.continuum_project_custom_details (
-  project_id uuid primary key
-    references public.continuum_project_profiles (project_id)
-    on delete restrict,
-  design_brief text,
-  design_requirements text,
-  manufacturing_notes text,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
-
-comment on table public.continuum_project_custom_details is
-  'Optional 1:1 Custom / New Jewelry operating details. Project ID is identity. Dormant if Kind is not custom_new_jewelry. Founder-explicit only. Not a lifecycle.';
-
-alter table public.continuum_project_custom_details enable row level security;
-
-create table if not exists public.continuum_project_repair_details (
-  project_id uuid primary key
-    references public.continuum_project_profiles (project_id)
-    on delete restrict,
-  item_description text,
-  requested_service text,
-  condition_notes text,
-  technical_notes text,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
-
-comment on table public.continuum_project_repair_details is
-  'Optional 1:1 Repair / Service operating details. Project ID is identity. Dormant if Kind is not repair_service. Founder-explicit only. Not a lifecycle.';
-
-alter table public.continuum_project_repair_details enable row level security;
-
--- Explicitly: do not add anon/authenticated RLS policies.
-
-alter table public.continuum_project_history_revisions
-  drop constraint if exists continuum_project_history_revisions_field_name_check;
-
-alter table public.continuum_project_history_revisions
-  add constraint continuum_project_history_revisions_field_name_check
-  check (
-    field_name in (
-      'finger_size',
-      'order_number',
-      'cad_job_number',
-      'metal',
-      'center_stone',
-      'diamond_supply_notes',
-      'project_kind',
-      'custom_design_brief',
-      'custom_design_requirements',
-      'custom_manufacturing_notes',
-      'repair_item_description',
-      'repair_requested_service',
-      'repair_condition_notes',
-      'repair_technical_notes'
-    )
-  );
+-- Sprint #8 follow-up. Smallest CREATE OR REPLACE for the operating-detail RPC.
+-- Removes an illegal NUL-byte probe that raises PostgreSQL 54000
+-- "null character not permitted" and aborts every non-empty Custom/Repair write.
+-- Does not change tables, Kind, CHECK, RLS, grants, or dormant-row semantics.
+-- App validation already rejects control characters including NUL.
+-- PostgreSQL text cannot store NUL bytes.
 
 create or replace function public.continuum_client_memory_correct_project_operating_detail(
   p_project_id uuid,

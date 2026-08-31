@@ -43,6 +43,7 @@ describe("Client Memory custom/repair operating-layer SQL", () => {
     assert.doesNotMatch(sql, /continuum_gmail_messages/);
     assert.doesNotMatch(sql, /continuum_attention_items/);
     assert.doesNotMatch(sql, /continuum_project_operating/);
+    assert.doesNotMatch(sql, /position\s*\(\s*chr\s*\(\s*0\s*\)/);
     assert.doesNotMatch(sql, /continuum_project_open_jobs/);
   });
 
@@ -104,5 +105,27 @@ describe("Client Memory custom/repair operating-layer SQL", () => {
     assert.doesNotMatch(sql, /grant execute on function [^;]+ to anon/i);
     assert.doesNotMatch(sql, /grant execute on function [^;]+ to authenticated/i);
     assert.doesNotMatch(sql, /grant execute on function [^;]+ to public/i);
+  });
+
+  it("ships a production CREATE OR REPLACE that does not probe chr(0)", () => {
+    const patch = readFileSync(
+      resolve(
+        process.cwd(),
+        "lib/supabase/continuum-client-memory-operating-detail-nul-guard.sql",
+      ),
+      "utf8",
+    );
+    assert.match(patch, /UNAPPLIED/);
+    assert.match(patch, /DO NOT RUN AGAINST PRODUCTION/);
+    assert.doesNotMatch(patch, /create table/i);
+    assert.doesNotMatch(patch, /drop table/i);
+    assert.doesNotMatch(patch, /alter table/i);
+    assert.doesNotMatch(patch, /position\s*\(\s*chr\s*\(\s*0\s*\)/);
+    const marker =
+      "create or replace function public.continuum_client_memory_correct_project_operating_detail";
+    const from = sql.indexOf(marker);
+    const patchFrom = patch.indexOf(marker);
+    assert.ok(from >= 0 && patchFrom >= 0);
+    assert.equal(patch.slice(patchFrom), sql.slice(from));
   });
 });

@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { describe, it } from "node:test";
 import { InMemoryClientMemoryStore } from "../store";
 import { createInMemoryClientMemoryProjectSpecWriter } from "../project-spec/writer";
+import { correctProjectOperatingDetail } from "./correct";
 import { CLIENT_MEMORY_SOURCE_SYSTEM } from "../types";
 import { composePersonProjectBooks } from "../project-books/compose";
 import { getProjectDeskFromSnapshot } from "../project-desk/compose";
@@ -657,5 +658,128 @@ describe("Custom / Repair operating layers", () => {
     if (!desk.ok) return;
     assert.equal(desk.desk.operationalStatus.kind, "unknown");
     assert.equal(desk.desk.openJobs.connected, false);
+  });
+
+  it("live STUART path: Repair item_description and requested_service after dormant Custom", async () => {
+    const store = new InMemoryClientMemoryStore();
+    const writer = createInMemoryClientMemoryProjectSpecWriter(store);
+    const seeded = await seedProject(store, { kind: "custom_new_jewelry" });
+    const brief = await writer.correctProjectOperatingDetail({
+      mutationId: randomUUID(),
+      projectId: seeded.projectId,
+      fieldName: "custom_design_brief",
+      newValue: "Sprint 8 test — three-stone engagement ring",
+      actor: ACTOR,
+    });
+    assert.equal(brief.ok, true);
+    const toRepair = await writer.correctProjectKind({
+      mutationId: randomUUID(),
+      projectId: seeded.projectId,
+      newValue: "repair_service",
+      actor: ACTOR,
+    });
+    assert.equal(toRepair.ok, true);
+    assert.equal(
+      (await store.getProjectProfile(seeded.projectId))?.projectKind,
+      "repair_service",
+    );
+    assert.equal(
+      (await store.getProjectCustomDetails(seeded.projectId))?.designBrief,
+      "Sprint 8 test — three-stone engagement ring",
+    );
+
+    const item = await writer.correctProjectOperatingDetail({
+      mutationId: randomUUID(),
+      projectId: seeded.projectId,
+      fieldName: "repair_item_description",
+      newValue: "Platinum three-stone ring",
+      actor: ACTOR,
+    });
+    assert.equal(item.ok, true);
+    const service = await writer.correctProjectOperatingDetail({
+      mutationId: randomUUID(),
+      projectId: seeded.projectId,
+      fieldName: "repair_requested_service",
+      newValue: "Retip prongs",
+      actor: ACTOR,
+    });
+    assert.equal(service.ok, true);
+    const rawName = await writer.correctProjectOperatingDetail({
+      mutationId: randomUUID(),
+      projectId: seeded.projectId,
+      fieldName: "item_description",
+      newValue: "must not write",
+      actor: ACTOR,
+    });
+    assert.equal(rawName.ok, false);
+    if (!rawName.ok) assert.equal(rawName.code, "invalid-field");
+
+    const wrongKind = await writer.correctProjectOperatingDetail({
+      mutationId: randomUUID(),
+      projectId: seeded.projectId,
+      fieldName: "custom_design_brief",
+      newValue: "must not overwrite dormant",
+      actor: ACTOR,
+    });
+    assert.equal(wrongKind.ok, false);
+
+    const repair = await store.getProjectRepairDetails(seeded.projectId);
+    assert.equal(repair?.itemDescription, "Platinum three-stone ring");
+    assert.equal(repair?.requestedService, "Retip prongs");
+    assert.equal(
+      (await store.getProjectCustomDetails(seeded.projectId))?.designBrief,
+      "Sprint 8 test — three-stone engagement ring",
+    );
+    assert.equal(
+      (await store.getProjectProfile(seeded.projectId))?.projectKind,
+      "repair_service",
+    );
+    const revs = store.listProjectHistoryRevisions(seeded.projectId);
+    assert.equal(
+      revs.some((row) => row.fieldName === "custom_design_brief"),
+      true,
+    );
+    assert.equal(
+      revs.some((row) => row.fieldName === "repair_item_description"),
+      true,
+    );
+    assert.equal(
+      revs.some((row) => row.fieldName === "repair_requested_service"),
+      true,
+    );
+    assert.equal(
+      revs.some((row) => row.fieldName === "item_description"),
+      false,
+    );
+  });
+
+  it("maps live PostgreSQL chr(0) 54000 to unavailable without writing", async () => {
+    const store = new InMemoryClientMemoryStore();
+    const seeded = await seedProject(store, { kind: "repair_service" });
+    const result = await correctProjectOperatingDetail(
+      {
+        nowIso: () => NOW,
+        newRevisionId: () => randomUUID(),
+        getEntity: (id) => store.getEntity(id),
+        getProjectProfile: (projectId) => store.getProjectProfile(projectId),
+        getProjectHistory: (projectId) => store.getProjectHistory(projectId),
+        getCustomDetails: (projectId) => store.getProjectCustomDetails(projectId),
+        getRepairDetails: (projectId) => store.getProjectRepairDetails(projectId),
+        applyCorrection: async () => {
+          throw new Error("null character not permitted");
+        },
+      },
+      {
+        mutationId: randomUUID(),
+        projectId: seeded.projectId,
+        fieldName: "repair_item_description",
+        newValue: "Platinum band",
+        actor: ACTOR,
+      },
+    );
+    assert.equal(result.ok, false);
+    if (!result.ok) assert.equal(result.reason, "unavailable");
+    assert.equal(await store.getProjectRepairDetails(seeded.projectId), null);
+    assert.equal(store.listProjectHistoryRevisions(seeded.projectId).length, 0);
   });
 });
