@@ -110,7 +110,6 @@ function NestedSection({
       <summary
         id={`${panelId}-toggle`}
         aria-controls={panelId}
-        aria-expanded="false"
         className="hg-project-book-toggle flex min-h-11 cursor-pointer list-none items-center text-[11px] uppercase tracking-[0.2em] text-[#ad9164] outline-none focus-visible:text-[#efe8de]"
       >
         {PROJECT_BOOK_SECTION_TITLE[section]}
@@ -178,7 +177,6 @@ function ProjectBookCard({
         <summary
           id={toggleId}
           aria-controls={panelId}
-          aria-expanded={expanded}
           aria-label={
             book.cadIdentifier
               ? `Project Book ${book.title}, ${book.cadIdentifier}`

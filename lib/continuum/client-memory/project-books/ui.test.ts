@@ -22,8 +22,10 @@ import {
   PROJECT_BOOK_FOUNDER_REVIEW,
   PROJECT_BOOKS_EMPTY,
   projectBookPanelId,
+  projectBookSectionId,
   projectBookToggleId,
 } from "./presentation";
+import { PERSON_PROJECT_BOOK_SECTIONS } from "./types";
 
 const NOW = "2026-08-22T12:00:00.000Z";
 const PERSON_ID = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
@@ -73,6 +75,71 @@ function bookArticle(html: string, projectId: string): string {
   return html.slice(start, end + "</article>".length);
 }
 
+function htmlIds(html: string): string[] {
+  return [...html.matchAll(/\sid="([^"]+)"/g)].map((match) => match[1]);
+}
+
+function assertUniqueIds(html: string) {
+  const ids = htmlIds(html);
+  const seen = new Set<string>();
+  for (const id of ids) {
+    assert.equal(seen.has(id), false, `duplicate id ${id}`);
+    seen.add(id);
+  }
+}
+
+function nestedSectionIds() {
+  return PERSON_PROJECT_BOOK_SECTIONS.filter((section) => section !== "overview");
+}
+
+function assertNativeProjectDisclosure(
+  article: string,
+  projectId: string,
+  { defaultOpen }: { defaultOpen: boolean },
+) {
+  const toggleId = projectBookToggleId(projectId);
+  const panelId = projectBookPanelId(projectId);
+  const outer = article.match(
+    /<details class="group"( open(?:="")?)?><summary[\s\S]*?<\/summary>/,
+  );
+  assert.ok(outer, "missing outer native details/summary");
+  if (defaultOpen) {
+    assert.match(outer[1] ?? "", /open/);
+  } else {
+    assert.equal(outer[1], undefined);
+  }
+  assert.match(article, /<details class="group"/);
+  assert.match(article, new RegExp(`id="${toggleId}"`));
+  assert.match(article, new RegExp(`aria-controls="${panelId}"`));
+  assert.match(article, new RegExp(`id="${panelId}"`));
+  assert.doesNotMatch(article, /aria-expanded/);
+  assert.doesNotMatch(article, / name=/);
+
+  const nested = nestedSectionIds();
+  assert.equal(nested.length, 7);
+  for (const section of nested) {
+    const sectionId = projectBookSectionId(projectId, section);
+    const nestedDisclosure = article.match(
+      new RegExp(
+        `<details class="group mt-4[^"]*"><summary[^>]*aria-controls="${sectionId}"[\\s\\S]*?</summary>`,
+      ),
+    );
+    assert.ok(nestedDisclosure, `missing nested native disclosure for ${section}`);
+    assert.doesNotMatch(nestedDisclosure[0], / open(?:="")?/);
+    assert.doesNotMatch(nestedDisclosure[0], /aria-expanded/);
+    assert.match(article, new RegExp(`id="${sectionId}"`));
+  }
+
+  const summaries = [...article.matchAll(/<summary[\s\S]*?<\/summary>/g)].map(
+    (match) => match[0],
+  );
+  assert.equal(summaries.length, 8);
+  for (const summary of summaries) {
+    assert.doesNotMatch(summary, /<(?:a|button|input|select|textarea)\b/);
+  }
+  assertUniqueIds(article);
+}
+
 function renderBooks(
   snapshot: ReturnType<typeof emptyReadSnapshot> & Record<string, unknown>,
   recoveredOrderConflicts?: Record<string, readonly string[]>,
@@ -120,14 +187,17 @@ describe("Person Project Books UI", () => {
       ],
     });
     const article = bookArticle(html, STUART_ID);
-    assert.match(article, /<details[^>]*open/);
-    assert.match(article, /aria-expanded="true"/);
-    assert.match(article, new RegExp(projectBookToggleId(STUART_ID)));
-    assert.match(article, new RegExp(projectBookPanelId(STUART_ID)));
+    assertNativeProjectDisclosure(article, STUART_ID, { defaultOpen: true });
     assert.match(article, /C007157/);
     assert.match(article, /SP3066/);
     assert.match(article, /Overview/);
     assert.match(article, /Items &amp; Specs/);
+    assert.match(article, /Communication/);
+    assert.match(article, /Decisions &amp; Approvals/);
+    assert.match(article, /CAD \/ Design/);
+    assert.match(article, /Artifacts/);
+    assert.match(article, /Commercial/);
+    assert.match(article, /History \/ Sources/);
     assert.match(article, /Open Project Desk/);
   });
 
@@ -150,15 +220,10 @@ describe("Person Project Books UI", () => {
     });
     const stuart = bookArticle(html, STUART_ID);
     const mr = bookArticle(html, MR_STUART_ID);
-    assert.doesNotMatch(stuart, /<details[^>]*open/);
-    assert.doesNotMatch(mr, /<details[^>]*open/);
-    assert.match(stuart, /aria-expanded="false"/);
-    assert.match(mr, /aria-expanded="false"/);
-    assert.doesNotMatch(stuart, / name=/);
-    assert.doesNotMatch(mr, / name=/);
-    assert.match(stuart, new RegExp(projectBookToggleId(STUART_ID)));
-    assert.match(mr, new RegExp(projectBookToggleId(MR_STUART_ID)));
+    assertNativeProjectDisclosure(stuart, STUART_ID, { defaultOpen: false });
+    assertNativeProjectDisclosure(mr, MR_STUART_ID, { defaultOpen: false });
     assert.doesNotMatch(html, /Imported or other projects/);
+    assertUniqueIds(`${stuart}${mr}`);
   });
 
   it("D. opening STUART cannot present MR-STUART specs, history, or evidence", () => {
@@ -209,6 +274,8 @@ describe("Person Project Books UI", () => {
     });
     const stuart = bookArticle(html, STUART_ID);
     const mr = bookArticle(html, MR_STUART_ID);
+    assertNativeProjectDisclosure(stuart, STUART_ID, { defaultOpen: false });
+    assertNativeProjectDisclosure(mr, MR_STUART_ID, { defaultOpen: false });
     assert.match(stuart, /C007157/);
     assert.match(stuart, /SP3066/);
     assert.match(stuart, /212/);
@@ -226,6 +293,7 @@ describe("Person Project Books UI", () => {
     assert.doesNotMatch(mr, /SP3066/);
     assert.doesNotMatch(mr, /STUART platinum/);
     assert.doesNotMatch(html, /thread-stuart-secret|thread-mr-secret/);
+    assertUniqueIds(`${stuart}${mr}`);
   });
 
   it("F. keeps two same-title Project Books independent", () => {
@@ -247,6 +315,8 @@ describe("Person Project Books UI", () => {
     });
     const a = bookArticle(html, JESSE_A);
     const b = bookArticle(html, JESSE_B);
+    assertNativeProjectDisclosure(a, JESSE_A, { defaultOpen: false });
+    assertNativeProjectDisclosure(b, JESSE_B, { defaultOpen: false });
     assert.match(a, /Jesse R\./);
     assert.match(b, /Jesse R\./);
     assert.match(a, /C024594/);
@@ -255,6 +325,7 @@ describe("Person Project Books UI", () => {
     assert.match(b, /aria-label="Project Book Jesse R\., C025088"/);
     assert.doesNotMatch(a, /C025088/);
     assert.doesNotMatch(b, /C024594/);
+    assertUniqueIds(`${a}${b}`);
   });
 
   it("G. omits unknown item type instead of inferring from the title", () => {
@@ -379,5 +450,10 @@ describe("Person Project Books UI", () => {
       assert.doesNotMatch(source, /saveProjectLifecycle|insertSourceNote/);
       assert.doesNotMatch(source, /AchedekalReconstruction|CohortReconstruction/);
     }
+    assert.doesNotMatch(ui, /aria-expanded/);
+    assert.doesNotMatch(html, /aria-expanded/);
+    assertNativeProjectDisclosure(bookArticle(html, STUART_ID), STUART_ID, {
+      defaultOpen: true,
+    });
   });
 });
