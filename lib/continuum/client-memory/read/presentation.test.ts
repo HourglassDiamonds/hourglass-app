@@ -14,6 +14,7 @@ import {
   conciergeInboxNewPath,
   conciergeInboxPath,
   conciergeInboxSourcePath,
+  conciergeCorrectProjectKindPath,
   conciergeCorrectProjectSpecPath,
   formatFactValue,
   formatLocation,
@@ -223,6 +224,10 @@ describe("Concierge presentation", () => {
         "finger_size",
       ),
       "/executive-dashboard/concierge/projects/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/correct/finger_size",
+    );
+    assert.equal(
+      conciergeCorrectProjectKindPath("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"),
+      "/executive-dashboard/concierge/projects/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/kind",
     );
     assert.notEqual(
       conciergeAddNotePickerPath(),

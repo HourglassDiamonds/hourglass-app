@@ -6,6 +6,7 @@
 
 import type { EditableProjectSpecField } from "../types";
 import type { SourceNoteSummary } from "../read/types";
+import type { ProjectKind } from "../project-kind";
 
 export const PERSON_PROJECT_BOOK_SECTIONS = [
   "overview",
@@ -40,6 +41,7 @@ export type PersonProjectBookHistoryEntry = Pick<
 
 export type PersonProjectBookOverview = {
   title: string;
+  projectKind: ProjectKind | null;
   cadIdentifier: string | null;
   storedOrderIdentifier: string | null;
   fingerSize: string | null;
@@ -52,6 +54,7 @@ export type PersonProjectBookOverview = {
 export type PersonProjectBook = {
   projectId: string;
   title: string;
+  projectKind: ProjectKind | null;
   cadIdentifier: string | null;
   storedOrderIdentifier: string | null;
   lastMeaningfulAt: string | null;

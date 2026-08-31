@@ -26,6 +26,7 @@ import type { AddManualNoteResult } from "@/lib/continuum/client-memory/write/ty
 import type { MutateNoteResult } from "@/lib/continuum/client-memory/write/mutate-note";
 import { getAuthenticatedClientMemoryProjectSpecWriter } from "@/lib/continuum/client-memory/project-spec/load";
 import type { CorrectProjectSpecResult } from "@/lib/continuum/client-memory/project-spec/correct";
+import type { CorrectProjectKindResult } from "@/lib/continuum/client-memory/project-spec/correct-kind";
 import { getAuthenticatedHumanSourceStore } from "@/lib/continuum/client-memory/human-intake/load";
 import {
   HUMAN_COMMUNICATION_TYPES,
@@ -230,6 +231,52 @@ export async function saveProjectSpecCorrection(
     redirect(`${conciergeProjectPath(projectId)}?saved=spec`);
   }
   return { ok: false, message: humanSpecCorrectionMessage(result) };
+}
+
+export type SaveProjectKindCorrectionState = {
+  ok: false;
+  message: string;
+};
+
+function humanKindCorrectionMessage(result: CorrectProjectKindResult): string {
+  if (result.ok) return "Unable to save the correction.";
+  if (result.reason === "invalid-input" && result.code === "invalid-value") {
+    return "That project kind couldn't be saved.";
+  }
+  if (result.reason === "entity-kind-mismatch" || result.reason === "project-not-found") {
+    return "That project could not be found.";
+  }
+  if (result.reason === "project-history-not-found") {
+    return "This project has no details to correct yet.";
+  }
+  return "Unable to save the correction.";
+}
+
+export async function saveProjectKindCorrection(
+  _prev: SaveProjectKindCorrectionState | null,
+  formData: FormData,
+): Promise<SaveProjectKindCorrectionState> {
+  const auth = await getAuthenticatedClientMemoryProjectSpecWriter();
+  if (!auth.ok) {
+    return {
+      ok: false,
+      message:
+        auth.reason === "unauthorized"
+          ? "Sign in to continue."
+          : "Unable to save the correction.",
+    };
+  }
+  const projectId = String(formData.get("projectId") ?? "").trim();
+  const result = await auth.writer.correctProjectKind({
+    mutationId: String(formData.get("mutationId") ?? "").trim(),
+    projectId,
+    newValue: String(formData.get("newValue") ?? ""),
+    actor: auth.username,
+  });
+  if (result.ok) {
+    redirect(`${conciergeProjectPath(projectId)}?saved=kind`);
+  }
+  return { ok: false, message: humanKindCorrectionMessage(result) };
 }
 
 export async function editConciergeNote(

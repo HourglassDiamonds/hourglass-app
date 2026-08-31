@@ -375,5 +375,83 @@ describe("Person Project Books read model", () => {
     if (!composed.ok) return;
     assert.equal(composed.cockpit.projectBooks.length, 1);
     assert.equal(composed.cockpit.projectBooks[0]?.projectId, STUART_ID);
+    assert.equal(composed.cockpit.projectBooks[0]?.projectKind, null);
+  });
+
+  it("exposes canonical Project Kind independently per Project Book", () => {
+    const { person, snapshotBase } = personSnapshot();
+    const books = composePersonProjectBooks(
+      {
+        ...snapshotBase,
+        relationships: [
+          relationship({ fromEntityId: person.personId, toEntityId: STUART_ID }),
+          relationship({ fromEntityId: person.personId, toEntityId: MR_STUART_ID }),
+        ],
+        projectProfiles: [
+          projectProfile({
+            projectId: STUART_ID,
+            displayTitle: "STUART",
+            projectKind: "repair_service",
+          }),
+          projectProfile({
+            projectId: MR_STUART_ID,
+            displayTitle: "MR-STUART",
+            projectKind: "custom_new_jewelry",
+          }),
+          projectProfile({
+            projectId: UNLINKED_ID,
+            displayTitle: "Chicken ring",
+            projectKind: "other",
+          }),
+        ],
+        projectHistories: [
+          history(STUART_ID),
+          history(MR_STUART_ID),
+          history(UNLINKED_ID),
+        ],
+      },
+      person.personId,
+    );
+    const stuart = books.find((row) => row.projectId === STUART_ID);
+    const mr = books.find((row) => row.projectId === MR_STUART_ID);
+    assert.equal(stuart?.projectKind, "repair_service");
+    assert.equal(mr?.projectKind, "custom_new_jewelry");
+    assert.equal(stuart?.overview.projectKind, "repair_service");
+    assert.equal(mr?.overview.projectKind, "custom_new_jewelry");
+    assert.equal(
+      books.some((row) => row.projectId === UNLINKED_ID),
+      false,
+    );
+  });
+
+  it("does not infer Project Kind from title and treats Other as distinct from unset", () => {
+    const { person, snapshotBase } = personSnapshot();
+    const books = composePersonProjectBooks(
+      {
+        ...snapshotBase,
+        relationships: [
+          relationship({ fromEntityId: person.personId, toEntityId: STUART_ID }),
+          relationship({ fromEntityId: person.personId, toEntityId: JESSE_A }),
+        ],
+        projectProfiles: [
+          projectProfile({
+            projectId: STUART_ID,
+            displayTitle: "Chicken ring repair",
+          }),
+          projectProfile({
+            projectId: JESSE_A,
+            displayTitle: "Jesse R.",
+            projectKind: "other",
+          }),
+        ],
+        projectHistories: [history(STUART_ID), history(JESSE_A)],
+      },
+      person.personId,
+    );
+    const unset = books.find((row) => row.projectId === STUART_ID);
+    const other = books.find((row) => row.projectId === JESSE_A);
+    assert.equal(unset?.projectKind, null);
+    assert.equal(unset?.overview.projectKind, null);
+    assert.equal(other?.projectKind, "other");
   });
 });

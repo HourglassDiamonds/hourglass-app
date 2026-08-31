@@ -23,15 +23,22 @@ import {
   projectBookSourceSignal,
   projectBookToggleId,
 } from "@/lib/continuum/client-memory/project-books/presentation";
+import {
+  PROJECT_KIND_NOT_SET_LABEL,
+  projectKindChipLabel,
+  projectKindLabel,
+} from "@/lib/continuum/client-memory/project-kind";
 import { ClientMemorySection } from "./client-memory-section";
 
 function HeaderMeta({ book }: { book: PersonProjectBook }) {
   const date = book.lastMeaningfulAt ? formatNoteDate(book.lastMeaningfulAt) : null;
   const sources = projectBookSourceSignal(book.sourceCount);
   const email = projectBookEmailSignal(book.indexedEmailOnFile);
+  const kindChip = book.projectKind ? projectKindChipLabel(book.projectKind) : null;
   const chips = [
     book.cadIdentifier,
     book.storedOrderIdentifier,
+    kindChip,
     sources,
     email,
     date,
@@ -42,7 +49,11 @@ function HeaderMeta({ book }: { book: PersonProjectBook }) {
       {chips.map((chip, index) => (
         <li
           key={`${chip}-${index}`}
-          className="max-w-full break-words text-[12px] tracking-[0.02em] text-[#8d8073]"
+          className={
+            chip === kindChip
+              ? "max-w-full break-words text-[10px] uppercase tracking-[0.14em] text-[#ad9164]"
+              : "max-w-full break-words text-[12px] tracking-[0.02em] text-[#8d8073]"
+          }
         >
           {chip}
         </li>
@@ -54,6 +65,12 @@ function HeaderMeta({ book }: { book: PersonProjectBook }) {
 function OverviewFields({ book }: { book: PersonProjectBook }) {
   const rows: Array<{ label: string; value: string }> = [
     { label: "Title", value: book.overview.title },
+    {
+      label: "Project Kind",
+      value: book.overview.projectKind
+        ? projectKindLabel(book.overview.projectKind)
+        : PROJECT_KIND_NOT_SET_LABEL,
+    },
   ];
   if (book.overview.cadIdentifier) {
     rows.push({ label: "CAD", value: book.overview.cadIdentifier });

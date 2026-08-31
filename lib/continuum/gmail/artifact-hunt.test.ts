@@ -1401,7 +1401,7 @@ describe("artifact hunt boundaries", () => {
       assert.doesNotMatch(source, /getAttachment|getThread\(|getMessage\(/);
       assert.doesNotMatch(source, /listMessages\(|users\.messages|users\.threads/);
       assert.doesNotMatch(source, /gmail\.googleapis|refreshAccessToken/);
-      assert.doesNotMatch(source, /correctProjectSpec|applyProjectSpecCorrection/);
+      assert.doesNotMatch(source, /correctProjectSpec|applyProjectSpecCorrection|correctProjectKind|saveProjectKindCorrection/);
       assert.doesNotMatch(source, /editPersonProfile|createPersonAtomic/);
       assert.doesNotMatch(source, /insertObservation|continuum_observations/);
       assert.doesNotMatch(source, /createsOpenJobs:\s*true|writesChiefOfStaff:\s*true/);

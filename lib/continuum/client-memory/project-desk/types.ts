@@ -11,6 +11,7 @@ import type {
   ProjectProfile,
   SourceNote,
 } from "../types";
+import type { ProjectKind } from "../project-kind";
 
 export const PROJECT_DESK_NOTE_LIMIT = 25;
 export const PROJECT_DESK_HOME_LIMIT = 5;
@@ -69,6 +70,7 @@ export type ProjectDeskNote = {
 export type ProjectDeskSummary = {
   projectId: string;
   title: string;
+  projectKind: ProjectKind | null;
   people: ProjectDeskPerson[];
   latestNoteAt: string | null;
   latestNotePreview: string | null;
@@ -79,6 +81,7 @@ export type ProjectDeskSummary = {
 export type ProjectDeskRead = {
   projectId: string;
   title: string;
+  projectKind: ProjectKind | null;
   recordCreatedAt: string;
   people: ProjectDeskPerson[];
   specs: ProjectSpecField[];

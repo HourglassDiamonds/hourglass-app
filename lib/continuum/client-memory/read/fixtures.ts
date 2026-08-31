@@ -77,6 +77,7 @@ export function projectProfile(input: {
   projectId?: string;
   displayTitle: string;
   importRowKey?: string | null;
+  projectKind?: ProjectProfile["projectKind"];
 }): ProjectProfile {
   return {
     projectId: input.projectId ?? randomUUID(),
@@ -86,6 +87,7 @@ export function projectProfile(input: {
     sourceSystem: CLIENT_MEMORY_SOURCE_SYSTEM,
     createdAt: NOW,
     updatedAt: NOW,
+    projectKind: input.projectKind ?? null,
   };
 }
 

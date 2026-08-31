@@ -10,6 +10,7 @@ export {
   createInMemoryClientMemoryProjectSpecWriter,
 } from "./writer";
 export { correctProjectSpec } from "./correct";
+export { correctProjectKind } from "./correct-kind";
 export { validateProjectSpecCorrection } from "./validate";
 export {
   EDITABLE_PROJECT_SPEC_FIELDS,
@@ -17,12 +18,17 @@ export {
   PROJECT_SPEC_FIELD_LABELS,
   currentSpecValue,
   founderCorrectedFieldsOf,
+  projectRevisionFieldLabel,
 } from "./types";
 export type { EditableProjectSpecField, ProjectHistoryRevision } from "./types";
 export type {
   CorrectProjectSpecInput,
   CorrectProjectSpecResult,
 } from "./correct";
+export type {
+  CorrectProjectKindInput,
+  CorrectProjectKindResult,
+} from "./correct-kind";
 export {
   isFounderCorrectedProjectSpecField,
   mergeImportedProjectHistory,

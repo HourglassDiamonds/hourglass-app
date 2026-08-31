@@ -50,7 +50,7 @@ export type ClientRelationshipSummary = Pick<
 
 export type ProjectProfileSummary = Pick<
   ProjectProfile,
-  "projectId" | "displayTitle" | "visibility"
+  "projectId" | "displayTitle" | "visibility" | "projectKind"
 >;
 
 export type ProjectHistorySummary = {

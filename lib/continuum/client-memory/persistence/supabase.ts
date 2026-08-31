@@ -15,6 +15,7 @@ import type {
   IdentityKind,
 } from "../../contracts/types";
 import { assertFactValue, assertPersonRoles, isEditableProjectSpecField } from "../contracts";
+import { projectKindFromUnknown } from "../project-kind";
 import { SOURCE_NOTE_COLUMNS, rowToSourceNote, sourceNoteInsertRow } from "../source-note-row";
 import type { SetCurrentPersonFactResult } from "../facts/write";
 import { planProfileMerge } from "../merge";
@@ -27,6 +28,10 @@ import type {
   ProjectSpecCorrectionApplyInput,
   ProjectSpecCorrectionApplyResult,
 } from "../project-spec/correct";
+import type {
+  ProjectKindCorrectionApplyInput,
+  ProjectKindCorrectionApplyResult,
+} from "../project-spec/correct-kind";
 import type {
   ApplyExistingPersonInput,
   ApplyExistingPersonResult,
@@ -522,6 +527,7 @@ export class SupabaseClientMemoryStore implements ClientMemoryStore {
       sourceSystem: data.source_system,
       createdAt: String(data.created_at),
       updatedAt: String(data.updated_at),
+      projectKind: projectKindFromUnknown(data.project_kind),
     };
   }
 
@@ -545,6 +551,7 @@ export class SupabaseClientMemoryStore implements ClientMemoryStore {
       sourceSystem: data.source_system,
       createdAt: String(data.created_at),
       updatedAt: String(data.updated_at),
+      projectKind: projectKindFromUnknown(data.project_kind),
     };
   }
 
@@ -625,6 +632,79 @@ export class SupabaseClientMemoryStore implements ClientMemoryStore {
     return {
       status,
       history,
+      revisionId:
+        payload && payload.revision_id != null
+          ? String(payload.revision_id)
+          : null,
+    };
+  }
+
+  async applyProjectKindCorrection(
+    input: ProjectKindCorrectionApplyInput,
+  ): Promise<ProjectKindCorrectionApplyResult> {
+    const { data, error } = await this.client.rpc(
+      "continuum_client_memory_correct_project_kind",
+      {
+        p_project_id: input.projectId,
+        p_mutation_id: input.mutationId,
+        p_revision_id: input.revisionId,
+        p_new_value: input.newValue,
+        p_changed_at: input.changedAt,
+        p_changed_by: input.changedBy,
+        p_source_system: PROJECT_SPEC_CORRECTION_SOURCE_SYSTEM,
+      },
+    );
+    if (error) {
+      const message = error.message ?? "";
+      if (message.includes("project-not-found")) throw new Error("project-not-found");
+      if (message.includes("entity-kind-mismatch")) {
+        throw new Error("entity-kind-mismatch");
+      }
+      if (message.includes("project-history-not-found")) {
+        throw new Error("project-history-not-found");
+      }
+      if (message.includes("invalid-value")) throw new Error("invalid-value");
+      throwQuery(error, "correct-project-kind-failed");
+    }
+    const payload =
+      data && typeof data === "object" ? (data as Record<string, unknown>) : null;
+    const status: ProjectKindCorrectionApplyResult["status"] =
+      payload && payload.status === "already-present"
+        ? "already-present"
+        : "updated";
+    const profile =
+      payload && payload.profile && typeof payload.profile === "object"
+        ? {
+            projectId: String(
+              (payload.profile as Record<string, unknown>).project_id,
+            ),
+            displayTitle: String(
+              (payload.profile as Record<string, unknown>).display_title,
+            ),
+            visibility: (payload.profile as Record<string, unknown>)
+              .visibility as ProjectProfile["visibility"],
+            importRowKey:
+              (payload.profile as Record<string, unknown>).import_row_key == null
+                ? null
+                : String(
+                    (payload.profile as Record<string, unknown>).import_row_key,
+                  ),
+            sourceSystem: (payload.profile as Record<string, unknown>)
+              .source_system as ProjectProfile["sourceSystem"],
+            createdAt: String(
+              (payload.profile as Record<string, unknown>).created_at,
+            ),
+            updatedAt: String(
+              (payload.profile as Record<string, unknown>).updated_at,
+            ),
+            projectKind: projectKindFromUnknown(
+              (payload.profile as Record<string, unknown>).project_kind,
+            ),
+          }
+        : input.next;
+    return {
+      status,
+      profile,
       revisionId:
         payload && payload.revision_id != null
           ? String(payload.revision_id)

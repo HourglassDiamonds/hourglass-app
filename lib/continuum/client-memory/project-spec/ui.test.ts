@@ -8,7 +8,7 @@ import { describe, it } from "node:test";
 import { ProjectDeskView } from "../../../../app/executive-dashboard/concierge/components/project-desk-view";
 import { ClientProjectCard } from "../../../../app/executive-dashboard/concierge/components/client-project-card";
 import type { ProjectDeskRead } from "../project-desk/types";
-import { conciergeCorrectProjectSpecPath } from "../read/presentation";
+import { conciergeCorrectProjectKindPath, conciergeCorrectProjectSpecPath } from "../read/presentation";
 
 const PROJECT_ID = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const PERSON_A = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
@@ -17,6 +17,7 @@ function desk(): ProjectDeskRead {
   return {
     projectId: PROJECT_ID,
     title: "Achedekal ring",
+    projectKind: null,
     recordCreatedAt: "2026-08-01T00:00:00.000Z",
     people: [{ personId: PERSON_A, displayName: "A. Achedekal" }],
     specs: [
@@ -66,6 +67,10 @@ describe("Project spec correction UI", () => {
     assert.match(html, /Correction history/);
     assert.match(html, /Show prior values/);
     assert.match(html, /141 → 6\.5/);
+    assert.match(html, /Project Kind/);
+    assert.match(html, /Not set/);
+    assert.match(html, />Set</);
+    assert.match(html, new RegExp(conciergeCorrectProjectKindPath(PROJECT_ID)));
     assert.match(html, /Status unknown/);
     assert.match(html, /Not connected yet/);
     assert.doesNotMatch(html, /Open Jobs connected|Parked|Waiting on Client/);
@@ -116,6 +121,23 @@ describe("Project spec correction UI", () => {
     assert.match(source, /currentSourceLabel/);
     assert.doesNotMatch(source, /autoSave/);
   });
+
+  it("uses a closed Project Kind choice list and explicit submit", () => {
+    const source = readFileSync(
+      join(
+        dirname(fileURLToPath(import.meta.url)),
+        "../../../../app/executive-dashboard/concierge/components/correct-project-kind-form.tsx",
+      ),
+      "utf8",
+    );
+    assert.match(source, /Choose a kind/);
+    assert.match(source, /type="radio"/);
+    assert.match(source, /PROJECT_KINDS/);
+    assert.match(source, /PROJECT_KIND_CLEAR_LABEL/);
+    assert.match(source, /Save correction/);
+    assert.doesNotMatch(source, /autoSave|onMouseEnter|onMouseOver/);
+    assert.doesNotMatch(source, /<textarea|<input type="text"/);
+  });
 });
 
 describe("Project spec correction page wiring", () => {
@@ -127,6 +149,6 @@ describe("Project spec correction page wiring", () => {
       ),
       "utf8",
     );
-    assert.doesNotMatch(publicPage, /correctProjectSpec|Save correction/);
+    assert.doesNotMatch(publicPage, /correctProjectSpec|correctProjectKind|Save correction/);
   });
 });

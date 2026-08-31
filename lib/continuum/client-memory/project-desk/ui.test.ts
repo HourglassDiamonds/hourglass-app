@@ -17,6 +17,7 @@ function summary(overrides: Partial<ProjectDeskSummary> = {}): ProjectDeskSummar
   return {
     projectId: PROJECT_ID,
     title: "Oval ring",
+    projectKind: null,
     people: [{ personId: PERSON_A, displayName: "Ada Lovelace" }],
     latestNoteAt: "2026-08-22T00:00:00.000Z",
     latestNotePreview: "Prefers morning calls.",
@@ -56,6 +57,8 @@ describe("Project Desk UI", () => {
     const html = deskSource();
     assert.match(html, /Status unknown/);
     assert.match(html, /Project Details/);
+    assert.match(html, /Project Kind/);
+    assert.match(html, /conciergeCorrectProjectKindPath/);
     assert.match(html, /conciergeClientPath/);
     assert.match(html, /Not connected yet/);
     assert.match(html, /No project files stored yet/);

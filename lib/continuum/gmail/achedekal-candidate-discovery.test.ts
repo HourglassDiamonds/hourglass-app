@@ -314,7 +314,7 @@ describe("Alea candidate related-thread discovery acceptance", () => {
     assert.doesNotMatch(source, /runExactProjectThreadFetch|getThread\(|listMessages\(/);
     assert.doesNotMatch(source, /users\.messages|users\.threads|gmail\.googleapis/);
     assert.doesNotMatch(source, /\/messages\/[^?\s"'`]+\/attachments\//);
-    assert.doesNotMatch(source, /correctProjectSpec|applyProjectSpecCorrection/);
+    assert.doesNotMatch(source, /correctProjectSpec|applyProjectSpecCorrection|correctProjectKind|saveProjectKindCorrection/);
     assert.doesNotMatch(source, /editPersonProfile|createPersonAtomic|insertEntity\(/);
     assert.doesNotMatch(source, /insertSourceNote|writeHumanIntake|chief-of-staff/);
     assert.doesNotMatch(source, /createOpenJob|today-5|console\.(log|info|debug|warn|error)/);
@@ -404,7 +404,7 @@ describe("Achedekal discovery UI and route stay founder-only and fetch-free", ()
     assert.doesNotMatch(actions, /listProjects\(\{\s*limit:\s*64\s*\}\)/);
     assert.doesNotMatch(actions, /formData\.get\(/);
     assert.doesNotMatch(actions, /createLiveGmailApi|runExactProjectThreadFetch|getThread\(/);
-    assert.doesNotMatch(actions, /correctProjectSpec|insertProjectHistory|insertSourceNote/);
+      assert.doesNotMatch(actions, /correctProjectSpec|correctProjectKind|insertProjectHistory|insertSourceNote/);
     assert.doesNotMatch(actions, /createOpenJob|chief-of-staff|today-5/);
     assert.equal(ACHEDEKAL_RELATED_THREAD_CANDIDATE_LIMIT, 20);
   });

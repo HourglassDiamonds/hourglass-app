@@ -211,4 +211,25 @@ describe("Project Desk compose", () => {
     assert.equal(getProjectDeskFromSnapshot(snapshot(), randomUUID()).ok, false);
     assert.equal(getProjectDeskFromSnapshot(snapshot(), "not-a-uuid").ok, false);
   });
+
+  it("reads canonical Project Kind from the profile without inferring it", () => {
+    const first = profile("STUART");
+    const second = profile("MR-STUART");
+    first.projectKind = "repair_service";
+    second.projectKind = "custom_new_jewelry";
+    const data = snapshot({
+      projectProfiles: [first, second],
+      projectHistories: [history(first.projectId), history(second.projectId)],
+    });
+    const stuart = getProjectDeskFromSnapshot(data, first.projectId);
+    const mr = getProjectDeskFromSnapshot(data, second.projectId);
+    assert.equal(stuart.ok && stuart.desk.projectKind, "repair_service");
+    assert.equal(mr.ok && mr.desk.projectKind, "custom_new_jewelry");
+    const chicken = profile("Chicken ring");
+    const chickenDesk = getProjectDeskFromSnapshot(
+      snapshot({ projectProfiles: [chicken] }),
+      chicken.projectId,
+    );
+    assert.equal(chickenDesk.ok && chickenDesk.desk.projectKind, null);
+  });
 });

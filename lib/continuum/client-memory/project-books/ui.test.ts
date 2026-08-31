@@ -198,6 +198,9 @@ describe("Person Project Books UI", () => {
     assert.match(article, /Artifacts/);
     assert.match(article, /Commercial/);
     assert.match(article, /History \/ Sources/);
+    assert.match(article, /Project Kind/);
+    assert.match(article, /Not set/);
+    assert.doesNotMatch(article, /REPAIR \/ SERVICE|CUSTOM \/ NEW JEWELRY/);
     assert.match(article, /Open Project Desk/);
   });
 
@@ -328,6 +331,58 @@ describe("Person Project Books UI", () => {
     assertUniqueIds(`${a}${b}`);
   });
 
+  it("shows independent Project Kind chips and keeps unset honest", () => {
+    const html = renderBooks({
+      ...emptyReadSnapshot(),
+      profiles: [person()],
+      relationships: [
+        relationship({ fromEntityId: PERSON_ID, toEntityId: STUART_ID }),
+        relationship({ fromEntityId: PERSON_ID, toEntityId: MR_STUART_ID }),
+        relationship({ fromEntityId: PERSON_ID, toEntityId: JESSE_A }),
+        relationship({ fromEntityId: PERSON_ID, toEntityId: JESSE_B }),
+      ],
+      projectProfiles: [
+        projectProfile({
+          projectId: STUART_ID,
+          displayTitle: "STUART",
+          projectKind: "repair_service",
+        }),
+        projectProfile({
+          projectId: MR_STUART_ID,
+          displayTitle: "MR-STUART",
+          projectKind: "custom_new_jewelry",
+        }),
+        projectProfile({
+          projectId: JESSE_A,
+          displayTitle: "Jesse R.",
+          projectKind: "other",
+        }),
+        projectProfile({ projectId: JESSE_B, displayTitle: "Jesse R." }),
+      ],
+      projectHistories: [
+        history(STUART_ID, { cadJobNumber: "C007157" }),
+        history(MR_STUART_ID, { cadJobNumber: "C007040" }),
+        history(JESSE_A, { cadJobNumber: "C024594" }),
+        history(JESSE_B, { cadJobNumber: "C025088" }),
+      ],
+    });
+    const stuart = bookArticle(html, STUART_ID);
+    const mr = bookArticle(html, MR_STUART_ID);
+    const jesseA = bookArticle(html, JESSE_A);
+    const jesseB = bookArticle(html, JESSE_B);
+    assertNativeProjectDisclosure(stuart, STUART_ID, { defaultOpen: false });
+    assertNativeProjectDisclosure(mr, MR_STUART_ID, { defaultOpen: false });
+    assert.match(stuart, /REPAIR \/ SERVICE/);
+    assert.match(mr, /CUSTOM \/ NEW JEWELRY/);
+    assert.match(jesseA, />Other</);
+    assert.match(jesseB, /Not set/);
+    assert.doesNotMatch(stuart, /CUSTOM \/ NEW JEWELRY/);
+    assert.doesNotMatch(mr, /REPAIR \/ SERVICE/);
+    assert.doesNotMatch(jesseA, /Not set/);
+    assert.doesNotMatch(jesseB, />Other</);
+    assert.doesNotMatch(html, /aria-expanded/);
+  });
+
   it("G. omits unknown item type instead of inferring from the title", () => {
     const html = renderBooks({
       ...emptyReadSnapshot(),
@@ -428,7 +483,9 @@ describe("Person Project Books UI", () => {
     assert.doesNotMatch(html, /Open Jobs|Today 5|Chief of Staff/i);
     assert.doesNotMatch(html, /gmail\.googleapis|users\/me\/messages/i);
     assert.doesNotMatch(html, /hydrate cap|query count|debug score/i);
-    assert.doesNotMatch(html, /project_kind|custom vs repair/i);
+    assert.doesNotMatch(html, /custom vs repair/i);
+    assert.match(html, /Project Kind/);
+    assert.match(html, /Not set/);
 
     const ui = readFileSync(
       join(

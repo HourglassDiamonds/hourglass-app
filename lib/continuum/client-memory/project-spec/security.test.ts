@@ -60,8 +60,10 @@ describe("Client Memory project-spec writer security", () => {
       const source = readFileSync(file, "utf8");
       assert.doesNotMatch(source, /client-memory\/project-spec/);
       assert.doesNotMatch(source, /correctProjectSpec/);
+      assert.doesNotMatch(source, /correctProjectKind/);
       assert.doesNotMatch(source, /createSupabaseClientMemoryProjectSpecWriter/);
       assert.doesNotMatch(source, /saveProjectSpecCorrection/);
+      assert.doesNotMatch(source, /saveProjectKindCorrection/);
     }
   });
 
@@ -80,13 +82,13 @@ describe("Client Memory project-spec writer security", () => {
     const cos = readFileSync(join(concierge, "components", "chief-of-staff-today.tsx"), "utf8");
     const plaud = readFileSync(join(concierge, "components", "add-plaud-form.tsx"), "utf8");
     for (const source of [command, ask, cos, plaud]) {
-      assert.doesNotMatch(source, /correctProjectSpec|saveProjectSpecCorrection/);
+      assert.doesNotMatch(source, /correctProjectSpec|correctProjectKind|saveProjectSpecCorrection|saveProjectKindCorrection/);
     }
     const gmail = join(ROOT, "lib", "continuum", "client-memory", "gmail");
     for (const file of walkFiles(gmail, ".ts")) {
       if (file.endsWith(".test.ts")) continue;
       const source = readFileSync(file, "utf8");
-      assert.doesNotMatch(source, /correctProjectSpec|project-spec/);
+      assert.doesNotMatch(source, /correctProjectSpec|correctProjectKind|project-spec/);
     }
   });
 });

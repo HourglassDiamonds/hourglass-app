@@ -15,6 +15,7 @@ import type {
   PersonProjectBookStoredField,
 } from "./types";
 import { CLIENT_MEMORY_PROJECT_BOOK_NOTE_LIMIT } from "./types";
+import { projectKindOf, type ProjectKind } from "../project-kind";
 
 function linkedProjectIds(
   personId: string,
@@ -144,9 +145,11 @@ export function composePersonProjectBooks(
     const lastMeaningfulAt =
       lastNoteAt ?? trimOrNull(project.updatedAt) ?? trimOrNull(project.createdAt);
     const specs = storedSpecs(history);
+    const projectKind: ProjectKind | null = projectKindOf(project);
     const book: PersonProjectBook = {
       projectId: project.projectId,
       title: project.displayTitle,
+      projectKind,
       cadIdentifier,
       storedOrderIdentifier,
       lastMeaningfulAt,
@@ -156,6 +159,7 @@ export function composePersonProjectBooks(
       updatedAt: project.updatedAt,
       overview: {
         title: project.displayTitle,
+        projectKind,
         cadIdentifier,
         storedOrderIdentifier,
         fingerSize,

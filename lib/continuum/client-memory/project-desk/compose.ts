@@ -24,6 +24,7 @@ import {
   sliceAOperationalStatus,
   specFieldsFromHistory,
 } from "./status";
+import { projectKindOf } from "../project-kind";
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -110,6 +111,7 @@ function composeSummary(
   return {
     projectId: profile.projectId,
     title: profile.displayTitle,
+    projectKind: projectKindOf(profile),
     people,
     latestNoteAt: latest?.createdAt ?? null,
     latestNotePreview: latest ? notePreview(latest.noteText) : null,
@@ -161,6 +163,7 @@ export function getProjectDeskFromSnapshot(
   const desk: ProjectDeskRead = {
     projectId: summary.projectId,
     title: summary.title,
+    projectKind: summary.projectKind,
     recordCreatedAt: summary.recordCreatedAt,
     people: summary.people,
     specs: specFieldsFromHistory(history),

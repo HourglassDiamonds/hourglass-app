@@ -451,7 +451,7 @@ describe("Alea retrieval precision", () => {
       assert.doesNotMatch(text, /gmail\.googleapis|createLiveGmailApi/);
       assert.doesNotMatch(text, /\/messages\/[^?\s"'`]+\/attachments\//);
       assert.doesNotMatch(text, /editPersonProfile|createPersonAtomic|insertEntity\(/);
-      assert.doesNotMatch(text, /correctProjectSpec|insertProjectHistory|writeHumanIntake/);
+      assert.doesNotMatch(text, /correctProjectSpec|correctProjectKind|insertProjectHistory|writeHumanIntake/);
       assert.doesNotMatch(text, /createOpenJob|today-5|chief-of-staff/);
     }
     assert.match(source, /automaticApply: false/);

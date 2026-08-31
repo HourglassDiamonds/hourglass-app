@@ -317,7 +317,7 @@ describe("Gmail history automatic continuation", () => {
     for (const source of [continueSource, ui, actions]) {
       assert.doesNotMatch(source, /continuum_person_profiles|createPersonAtomic/);
       assert.doesNotMatch(source, /continuum_attention_items|continuum_human_sources/);
-      assert.doesNotMatch(source, /correctProjectSpec|insertSourceNote/);
+      assert.doesNotMatch(source, /correctProjectSpec|correctProjectKind|insertSourceNote/);
       assert.doesNotMatch(source, /attachments\.get|\/messages\/[^?\s"'`]+\/attachments\//);
       assert.doesNotMatch(source, /console\.(log|info|debug|warn|error)/);
     }

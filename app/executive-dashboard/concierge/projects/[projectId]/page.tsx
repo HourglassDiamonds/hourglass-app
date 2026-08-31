@@ -77,7 +77,7 @@ export default async function ConciergeProjectDeskPage({
       <div className="hg-concierge-fade mt-8">
         <ProjectDeskView
         desk={result.desk}
-        justSavedSpec={query.saved === "spec"}
+        justSavedSpec={query.saved === "spec" || query.saved === "kind"}
       />
       </div>
     </ConciergeShell>

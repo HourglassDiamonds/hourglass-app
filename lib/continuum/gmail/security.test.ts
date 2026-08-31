@@ -90,8 +90,8 @@ describe("Gmail activation security", () => {
     assert.doesNotMatch(exact, /input\.threadId/);
     assert.doesNotMatch(exact, /listMessages\(/);
     assert.match(exact, /messages\.list-forbidden-on-exact-thread-path/);
-    assert.doesNotMatch(exact, /correctProjectSpec|applyProjectSpecCorrection/);
-    assert.doesNotMatch(evidence, /correctProjectSpec|applyProjectSpecCorrection/);
+    assert.doesNotMatch(exact, /correctProjectSpec|applyProjectSpecCorrection|correctProjectKind|saveProjectKindCorrection/);
+    assert.doesNotMatch(evidence, /correctProjectSpec|applyProjectSpecCorrection|correctProjectKind|saveProjectKindCorrection/);
     assert.match(evidence, /automaticApply: false/);
     assert.doesNotMatch(payload, /\/messages\/[^?\s"'`]+\/attachments\//);
     assert.doesNotMatch(actions, /runExactProjectThreadFetch/);
@@ -136,7 +136,7 @@ describe("Gmail activation security", () => {
     );
     const hunt = readFileSync(join(GMAIL_DIR, "artifact-hunt.ts"), "utf8");
     for (const source of [reconstruction, cad, fixture, containment, discovery, hunt]) {
-      assert.doesNotMatch(source, /correctProjectSpec|applyProjectSpecCorrection/);
+      assert.doesNotMatch(source, /correctProjectSpec|applyProjectSpecCorrection|correctProjectKind|saveProjectKindCorrection/);
       assert.doesNotMatch(source, /editPersonProfile|createPersonAtomic/);
       assert.doesNotMatch(source, /runExactProjectThreadFetch|listMessages\(/);
       assert.doesNotMatch(source, /gmail\.googleapis|users\.messages\.send/);
@@ -180,7 +180,7 @@ describe("Gmail activation security", () => {
     const barrel = readFileSync(join(GMAIL_DIR, "index.ts"), "utf8");
     const server = readFileSync(join(GMAIL_DIR, "server.ts"), "utf8");
     for (const source of [proposal, observation, ui]) {
-      assert.doesNotMatch(source, /correctProjectSpec|applyProjectSpecCorrection/);
+      assert.doesNotMatch(source, /correctProjectSpec|applyProjectSpecCorrection|correctProjectKind|saveProjectKindCorrection/);
       assert.doesNotMatch(source, /editPersonProfile|createPersonAtomic/);
       assert.doesNotMatch(source, /runExactProjectThreadFetch|listMessages\(/);
       assert.doesNotMatch(source, /getAttachment|getThread\(|getMessage\(/);
@@ -221,7 +221,7 @@ describe("Gmail activation security", () => {
     const barrel = readFileSync(join(GMAIL_DIR, "index.ts"), "utf8");
     const server = readFileSync(join(GMAIL_DIR, "server.ts"), "utf8");
     for (const source of [hunt, actions, ui]) {
-      assert.doesNotMatch(source, /correctProjectSpec|applyProjectSpecCorrection/);
+      assert.doesNotMatch(source, /correctProjectSpec|applyProjectSpecCorrection|correctProjectKind|saveProjectKindCorrection/);
       assert.doesNotMatch(source, /editPersonProfile|createPersonAtomic/);
       assert.doesNotMatch(source, /runExactProjectThreadFetch|listMessages\(/);
       assert.doesNotMatch(source, /getAttachment|getThread\(|getMessage\(/);

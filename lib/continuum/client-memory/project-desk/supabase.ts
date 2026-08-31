@@ -8,8 +8,9 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getSupabaseAdmin } from "@/lib/supabase/client";
-import { isEditableProjectSpecField } from "../contracts";
+import { isEditableProjectSpecField, isProjectHistoryRevisionField } from "../contracts";
 import { SOURCE_NOTE_COLUMNS, rowToSourceNote } from "../source-note-row";
+import { projectKindFromUnknown } from "../project-kind";
 import type {
   EntityRelationship,
   ProjectHistory,
@@ -48,7 +49,7 @@ async function rows<T>(
 }
 
 const PROJECT_PROFILE_COLUMNS =
-  "project_id, display_title, visibility, import_row_key, source_system, created_at, updated_at";
+  "project_id, display_title, visibility, import_row_key, source_system, created_at, updated_at, project_kind";
 const PROJECT_HISTORY_COLUMNS =
   "project_id, cad_job_number, order_number, gmail_thread_id, match_judgment, match_judgment_raw, finger_size, metal, center_stone, diamond_supply_notes, source_system, created_at, updated_at, founder_corrected_fields";
 const PROJECT_HISTORY_REVISION_COLUMNS =
@@ -66,6 +67,7 @@ function rowToProjectProfile(row: Record<string, unknown>): ProjectProfile {
     sourceSystem: row.source_system as ProjectProfile["sourceSystem"],
     createdAt: String(row.created_at),
     updatedAt: String(row.updated_at),
+    projectKind: projectKindFromUnknown(row.project_kind),
   };
 }
 
@@ -95,7 +97,7 @@ function rowToProjectHistory(row: Record<string, unknown>): ProjectHistory {
 function rowToProjectHistoryRevision(
   row: Record<string, unknown>,
 ): ProjectHistoryRevision | null {
-  if (!isEditableProjectSpecField(row.field_name)) return null;
+  if (!isProjectHistoryRevisionField(row.field_name)) return null;
   return {
     id: String(row.id),
     projectId: String(row.project_id),

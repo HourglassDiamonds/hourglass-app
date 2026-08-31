@@ -151,6 +151,7 @@ export function composePersonProfile(
           projectId: project.projectId,
           displayTitle: project.displayTitle,
           visibility: project.visibility,
+          projectKind: project.projectKind ?? null,
         },
         internalHistory: history ? toHistorySummary(history) : null,
       },

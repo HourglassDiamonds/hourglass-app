@@ -73,7 +73,7 @@ function sourceOf(file: string): string {
 }
 
 const WRITER_PATTERN =
-  /correctProjectSpec|applyProjectSpecCorrection|editPersonProfile|createPersonAtomic|insertProjectHistory|insertSourceNote|insertObservation|insertEvent|createOpenJob|writeHumanIntake|writeChiefOfStaff|today-5|chief-of-staff/;
+  /correctProjectSpec|applyProjectSpecCorrection|correctProjectKind|saveProjectKindCorrection|editPersonProfile|createPersonAtomic|insertProjectHistory|insertSourceNote|insertObservation|insertEvent|createOpenJob|writeHumanIntake|writeChiefOfStaff|today-5|chief-of-staff/;
 
 const GMAIL_FETCH_PATTERN =
   /getAttachment|getThread\(|getMessage\(|listMessages\(|createLiveKnownArtifactGmailApi|executeAchedekalKnownArtifactPreview|runExactProjectThreadFetch|gmail\.googleapis|users\.messages/;

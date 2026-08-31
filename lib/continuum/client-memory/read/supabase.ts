@@ -44,6 +44,7 @@ import type {
 } from "../types";
 import type { BirthdayRead } from "../facts/types";
 import { PERSON_FACT_TYPE_BIRTHDAY } from "../facts/types";
+import { projectKindFromUnknown } from "../project-kind";
 
 function requireClient(client: SupabaseClient | null): SupabaseClient {
   if (!client) throw new Error("supabase-admin-unavailable");
@@ -75,7 +76,7 @@ const NOTE_COLUMNS = SOURCE_NOTE_COLUMNS;
 const REVIEW_COLUMNS =
   "id, status, reason_code, left_person_id, right_person_id, import_row_key, source_system, created_at";
 const PROJECT_PROFILE_COLUMNS =
-  "project_id, display_title, visibility, import_row_key, source_system, created_at, updated_at";
+  "project_id, display_title, visibility, import_row_key, source_system, created_at, updated_at, project_kind";
 const PROJECT_HISTORY_COLUMNS =
   "project_id, cad_job_number, order_number, gmail_thread_id, match_judgment, match_judgment_raw, finger_size, metal, center_stone, diamond_supply_notes, source_system, created_at, updated_at";
 const IDENTITY_COLUMNS = "entity_id, identity_kind, identifier, revoked_at";
@@ -181,6 +182,7 @@ function rowToProjectProfile(row: Record<string, unknown>): ProjectProfile {
     sourceSystem: row.source_system as ProjectProfile["sourceSystem"],
     createdAt: String(row.created_at),
     updatedAt: String(row.updated_at),
+    projectKind: projectKindFromUnknown(row.project_kind),
   };
 }
 

@@ -55,6 +55,10 @@ export function conciergeCorrectProjectSpecPath(
   return `${conciergeProjectPath(projectId)}/correct/${fieldName}`;
 }
 
+export function conciergeCorrectProjectKindPath(projectId: string): string {
+  return `${conciergeProjectPath(projectId)}/kind`;
+}
+
 export function conciergeAddNotePath(personId: string): string {
   return `${conciergeClientPath(personId)}/note/new`;
 }

@@ -10,7 +10,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { getSupabaseAdmin } from "@/lib/supabase/client";
 import type { EntityKind } from "../../contracts/types";
 import { isEditableProjectSpecField } from "../contracts";
-import type { ProjectHistory } from "../types";
+import { projectKindFromUnknown } from "../project-kind";
+import type { ProjectHistory, ProjectProfile } from "../types";
 import { correctProjectSpec } from "./correct";
 import type {
   CorrectProjectSpecDeps,
@@ -18,6 +19,13 @@ import type {
   CorrectProjectSpecResult,
   ProjectSpecCorrectionApplyResult,
 } from "./correct";
+import { correctProjectKind } from "./correct-kind";
+import type {
+  CorrectProjectKindDeps,
+  CorrectProjectKindInput,
+  CorrectProjectKindResult,
+  ProjectKindCorrectionApplyResult,
+} from "./correct-kind";
 import { PROJECT_SPEC_CORRECTION_SOURCE_SYSTEM } from "./types";
 import type { ClientMemoryProjectSpecWriter } from "./writer";
 import type { EditableProjectSpecField } from "./types";
@@ -74,25 +82,42 @@ function rowToProjectHistory(row: Record<string, unknown>): ProjectHistory {
   };
 }
 
+function rowToProjectProfile(row: Record<string, unknown>): ProjectProfile {
+  return {
+    projectId: String(row.project_id),
+    displayTitle: String(row.display_title),
+    visibility: row.visibility as ProjectProfile["visibility"],
+    importRowKey: row.import_row_key == null ? null : String(row.import_row_key),
+    sourceSystem: row.source_system as ProjectProfile["sourceSystem"],
+    createdAt: String(row.created_at),
+    updatedAt: String(row.updated_at),
+    projectKind: projectKindFromUnknown(row.project_kind),
+  };
+}
+
 export class SupabaseClientMemoryProjectSpecWriter
   implements ClientMemoryProjectSpecWriter
 {
   constructor(private readonly client: SupabaseClient) {}
 
+  private async getEntityKind(
+    id: string,
+  ): Promise<{ kind: EntityKind } | null> {
+    const { data, error } = await this.client
+      .from("continuum_entities")
+      .select("kind")
+      .eq("id", id)
+      .maybeSingle();
+    if (error) throw error;
+    if (!data) return null;
+    return { kind: data.kind as EntityKind };
+  }
+
   private correctDeps(): CorrectProjectSpecDeps {
     return {
       nowIso: () => new Date().toISOString(),
       newRevisionId: () => randomUUID(),
-      getEntity: async (id) => {
-        const { data, error } = await this.client
-          .from("continuum_entities")
-          .select("kind")
-          .eq("id", id)
-          .maybeSingle();
-        if (error) throw error;
-        if (!data) return null;
-        return { kind: data.kind as EntityKind };
-      },
+      getEntity: (id) => this.getEntityKind(id),
       getProjectHistory: (projectId) => this.getProjectHistory(projectId),
       applyCorrection: async (input) => {
         const { data, error } = await this.client.rpc(
@@ -133,6 +158,51 @@ export class SupabaseClientMemoryProjectSpecWriter
     };
   }
 
+  private kindDeps(): CorrectProjectKindDeps {
+    return {
+      nowIso: () => new Date().toISOString(),
+      newRevisionId: () => randomUUID(),
+      getEntity: (id) => this.getEntityKind(id),
+      getProjectProfile: (projectId) => this.getProjectProfile(projectId),
+      getProjectHistory: (projectId) => this.getProjectHistory(projectId),
+      applyCorrection: async (input) => {
+        const { data, error } = await this.client.rpc(
+          "continuum_client_memory_correct_project_kind",
+          {
+            p_project_id: input.projectId,
+            p_mutation_id: input.mutationId,
+            p_revision_id: input.revisionId,
+            p_new_value: input.newValue,
+            p_changed_at: input.changedAt,
+            p_changed_by: input.changedBy,
+            p_source_system: PROJECT_SPEC_CORRECTION_SOURCE_SYSTEM,
+          },
+        );
+        if (error) throw mutationReason(error.message ?? "");
+        const payload =
+          data && typeof data === "object"
+            ? (data as Record<string, unknown>)
+            : null;
+        const status: ProjectKindCorrectionApplyResult["status"] =
+          payload && payload.status === "already-present"
+            ? "already-present"
+            : "updated";
+        const profile =
+          payload && payload.profile && typeof payload.profile === "object"
+            ? rowToProjectProfile(payload.profile as Record<string, unknown>)
+            : input.next;
+        return {
+          status,
+          profile,
+          revisionId:
+            payload && payload.revision_id != null
+              ? String(payload.revision_id)
+              : null,
+        };
+      },
+    };
+  }
+
   async getProjectHistory(projectId: string): Promise<ProjectHistory | null> {
     const { data, error } = await this.client
       .from("continuum_project_history")
@@ -144,10 +214,27 @@ export class SupabaseClientMemoryProjectSpecWriter
     return rowToProjectHistory(data as Record<string, unknown>);
   }
 
+  async getProjectProfile(projectId: string): Promise<ProjectProfile | null> {
+    const { data, error } = await this.client
+      .from("continuum_project_profiles")
+      .select("*")
+      .eq("project_id", projectId)
+      .maybeSingle();
+    if (error) throw error;
+    if (!data) return null;
+    return rowToProjectProfile(data as Record<string, unknown>);
+  }
+
   correctProjectSpec(
     input: CorrectProjectSpecInput,
   ): Promise<CorrectProjectSpecResult> {
     return correctProjectSpec(this.correctDeps(), input);
+  }
+
+  correctProjectKind(
+    input: CorrectProjectKindInput,
+  ): Promise<CorrectProjectKindResult> {
+    return correctProjectKind(this.kindDeps(), input);
   }
 }
 

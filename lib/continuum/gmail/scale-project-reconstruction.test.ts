@@ -1034,7 +1034,7 @@ describe("cohort reconstruction privacy and mutation boundary", () => {
     const barrel = sourceOf("lib/continuum/gmail/index.ts");
     const server = sourceOf("lib/continuum/gmail/server.ts");
     for (const source of [page, detail, actions, compose, cohort, support, proposal, ui]) {
-      assert.doesNotMatch(source, /correctProjectSpec|applyProjectSpecCorrection/);
+      assert.doesNotMatch(source, /correctProjectSpec|applyProjectSpecCorrection|correctProjectKind|saveProjectKindCorrection/);
       assert.doesNotMatch(source, /editPersonProfile|createPersonAtomic/);
       assert.doesNotMatch(source, /createOpenJob|writeHumanIntake|chief-of-staff|today-5/);
       assert.doesNotMatch(source, /console\.(log|info|debug|warn|error)/);

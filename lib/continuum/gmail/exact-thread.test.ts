@@ -537,7 +537,7 @@ describe("exact project Gmail thread fetch", () => {
     );
     for (const source of [fetchSource, payloadSource, evidenceSource]) {
       assert.doesNotMatch(source, /console\.(log|info|debug|warn|error)/);
-      assert.doesNotMatch(source, /correctProjectSpec|applyProjectSpecCorrection/);
+      assert.doesNotMatch(source, /correctProjectSpec|applyProjectSpecCorrection|correctProjectKind|saveProjectKindCorrection/);
       assert.doesNotMatch(source, /insertEvent|insertObservation|insertEvidence/);
       assert.doesNotMatch(source, /insertSourceNote|createPersonAtomic|insertWish/);
       assert.doesNotMatch(source, /putCheckpoint|tryClaimHistoricalChunk|indexMessage/);

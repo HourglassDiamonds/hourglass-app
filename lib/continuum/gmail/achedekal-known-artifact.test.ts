@@ -576,7 +576,7 @@ describe("Achedekal known-artifact preview security", () => {
     assert.doesNotMatch(route, /searchParams\.get\(/);
     assert.doesNotMatch(route, /formData\.get\(/);
     assert.doesNotMatch(route, /listMessages|getMessage|getThread\(/);
-    assert.doesNotMatch(route, /correctProjectSpec|insertProjectHistory|insertSourceNote/);
+      assert.doesNotMatch(route, /correctProjectSpec|correctProjectKind|insertProjectHistory|insertSourceNote/);
     assert.doesNotMatch(route, /createOpenJob|chief-of-staff|today-5/);
 
     assert.match(execute, /ACHEDEKAL_PROJECT_ID/);
@@ -584,7 +584,7 @@ describe("Achedekal known-artifact preview security", () => {
     assert.match(execute, /automaticApply: false/);
     assert.doesNotMatch(execute, /listMessages\(|getMessage\(|getThread\(/);
     assert.doesNotMatch(execute, /users\.messages\.send|modify|q:/);
-    assert.doesNotMatch(execute, /correctProjectSpec|insertProjectHistory|writeFile|localStorage/);
+      assert.doesNotMatch(execute, /correctProjectSpec|correctProjectKind|insertProjectHistory|writeFile|localStorage/);
     assert.doesNotMatch(execute, /console\.(log|info|debug|warn|error)/);
     assert.doesNotMatch(execute, /insertSourceNote|writeHumanIntake|createOpenJob|editPersonProfile/);
     assert.doesNotMatch(gmail, /listMessages\(|getMessage\(|getThread\(/);

@@ -471,7 +471,7 @@ describe("deduplication and privacy", () => {
     assert.match(source, /automaticApply: false/);
     assert.doesNotMatch(source, /getAttachment|getThread\(|getMessage\(|listMessages\(/);
     assert.doesNotMatch(source, /gmail\.googleapis|users\.messages|users\.threads/);
-    assert.doesNotMatch(source, /correctProjectSpec|createOpenJob|writeHumanIntake/);
+    assert.doesNotMatch(source, /correctProjectSpec|correctProjectKind|createOpenJob|writeHumanIntake/);
     assert.doesNotMatch(source, /console\.(log|info|debug|warn|error)/);
   });
 });

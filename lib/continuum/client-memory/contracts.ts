@@ -21,6 +21,7 @@ import {
   USAGE_PERMISSIONS,
   type ClientMemoryVisibility,
   type EditableProjectSpecField,
+  type ProjectHistoryRevisionField,
   type FactApprovalStatus,
   type FactStatus,
   type PersonRole,
@@ -89,6 +90,12 @@ export function isEditableProjectSpecField(
     typeof value === "string" &&
     (EDITABLE_PROJECT_SPEC_FIELDS as readonly string[]).includes(value)
   );
+}
+
+export function isProjectHistoryRevisionField(
+  value: unknown,
+): value is ProjectHistoryRevisionField {
+  return isEditableProjectSpecField(value) || value === "project_kind";
 }
 
 export function isRelationshipKind(value: unknown): value is RelationshipKind {

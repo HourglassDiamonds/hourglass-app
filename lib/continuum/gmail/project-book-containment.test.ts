@@ -568,7 +568,7 @@ describe("containment mutation source boundary", () => {
     const fixture = readFileSync(join(DIR, "alea-chedekal-fixture.ts"), "utf8");
     const specificity = readFileSync(join(DIR, "identifier-specificity.ts"), "utf8");
     for (const text of [source, fixture, specificity]) {
-      assert.doesNotMatch(text, /correctProjectSpec|applyProjectSpecCorrection/);
+      assert.doesNotMatch(text, /correctProjectSpec|applyProjectSpecCorrection|correctProjectKind|saveProjectKindCorrection/);
       assert.doesNotMatch(text, /editPersonProfile|createPersonAtomic|insertEntity\(/);
       assert.doesNotMatch(text, /runExactProjectThreadFetch|getThread\(|listMessages\(/);
       assert.doesNotMatch(text, /\/messages\/[^?\s"'`]+\/attachments\//);

@@ -2,6 +2,7 @@ import Link from "next/link";
 import {
   conciergeAddNotePath,
   conciergeClientPath,
+  conciergeCorrectProjectKindPath,
   conciergeCorrectProjectSpecPath,
   formatNoteDate,
   noteContextLabel,
@@ -9,7 +10,10 @@ import {
 } from "@/lib/continuum/client-memory/read/presentation";
 import type { ProjectDeskRead } from "@/lib/continuum/client-memory/project-desk/types";
 import { coverageRows } from "@/lib/continuum/client-memory/project-desk/status";
-import { PROJECT_SPEC_FIELD_LABELS } from "@/lib/continuum/client-memory/project-spec/types";
+import { projectRevisionFieldLabel } from "@/lib/continuum/client-memory/project-spec/types";
+import {
+  projectKindLabel,
+} from "@/lib/continuum/client-memory/project-kind";
 import { ClientMemorySection } from "./client-memory-section";
 
 export function ProjectDeskView({
@@ -75,6 +79,27 @@ export function ProjectDeskView({
         </ClientMemorySection>
       )}
 
+      <ClientMemorySection title="Project Kind">
+        <dl>
+          <div>
+            <dt className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
+              Project Kind
+            </dt>
+            <dd className="mt-1 break-words text-[15px] leading-relaxed text-[#e7ddd2]">
+              {projectKindLabel(desk.projectKind)}
+            </dd>
+            <dd>
+              <Link
+                href={conciergeCorrectProjectKindPath(desk.projectId)}
+                className="mt-1 inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.24em] text-[#8d8073] outline-none hover:text-[#efe8de] focus-visible:text-[#efe8de]"
+              >
+                {desk.projectKind ? "Correct" : "Set"}
+              </Link>
+            </dd>
+          </div>
+        </dl>
+      </ClientMemorySection>
+
       {desk.specs.length > 0 ? (
         <ClientMemorySection title="Project Details">
           <dl className="space-y-3">
@@ -111,7 +136,7 @@ export function ProjectDeskView({
               {desk.specCorrections.map((row) => (
                 <li key={row.id}>
                   <p className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
-                    {PROJECT_SPEC_FIELD_LABELS[row.fieldName]}
+                    {projectRevisionFieldLabel(row.fieldName)}
                   </p>
                   <p className="mt-1 break-words text-[15px] leading-relaxed text-[#e7ddd2]">
                     {row.priorValue ?? "—"} → {row.newValue ?? "—"}

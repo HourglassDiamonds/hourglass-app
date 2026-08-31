@@ -12,6 +12,7 @@ import type {
   ExternalIdentity,
   IdentityKind,
 } from "../contracts/types";
+import type { ProjectKind } from "./project-kind";
 
 export const CLIENT_MEMORY_SCHEMA_VERSION = 2 as const;
 export const CLIENT_MEMORY_ARTIFACT_ID = "continuum-reconciliation-v3" as const;
@@ -325,6 +326,7 @@ export type ProjectProfile = {
   sourceSystem: ContinuumSourceSystem;
   createdAt: string;
   updatedAt: string;
+  projectKind?: ProjectKind | null;
 };
 
 export const EDITABLE_PROJECT_SPEC_FIELDS = [
@@ -356,11 +358,15 @@ export type ProjectHistory = {
   founderCorrectedFields?: EditableProjectSpecField[];
 };
 
+export type ProjectHistoryRevisionField =
+  | EditableProjectSpecField
+  | "project_kind";
+
 export type ProjectHistoryRevision = {
   id: ContinuumId;
   projectId: ContinuumId;
   mutationId: ContinuumId;
-  fieldName: EditableProjectSpecField;
+  fieldName: ProjectHistoryRevisionField;
   priorValue: string | null;
   newValue: string | null;
   sourceSystem: ContinuumSourceSystem;

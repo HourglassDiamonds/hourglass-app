@@ -521,10 +521,10 @@ describe("Achedekal founder-only Gmail evidence review", () => {
     assert.match(actions, /isPermittedAchedekalProjectId/);
     assert.match(actions, /getProjectHistory/);
     assert.doesNotMatch(actions, /formData\.get\(/);
-    assert.doesNotMatch(actions, /correctProjectSpec|applyProjectSpecCorrection/);
+    assert.doesNotMatch(actions, /correctProjectSpec|applyProjectSpecCorrection|correctProjectKind|saveProjectKindCorrection/);
     assert.doesNotMatch(actions, /insertProjectHistory|insertSourceNote|insertObservation/);
     assert.doesNotMatch(actions, /insertEvent|createOpenJob|chief-of-staff|today-5/);
-    assert.doesNotMatch(review, /correctProjectSpec|applyProjectSpecCorrection/);
+    assert.doesNotMatch(review, /correctProjectSpec|applyProjectSpecCorrection|correctProjectKind|saveProjectKindCorrection/);
     assert.doesNotMatch(review, /console\.(log|info|debug|warn|error)/);
     assert.doesNotMatch(review, /gtag|analytics|localStorage/);
     assert.doesNotMatch(review, /\/messages\/[^?\s"'`]+\/attachments\//);

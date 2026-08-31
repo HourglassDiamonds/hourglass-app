@@ -28,6 +28,13 @@ export const PROJECT_SPEC_FIELD_LABELS: Record<EditableProjectSpecField, string>
   diamond_supply_notes: "Supply notes",
 };
 
+export function projectRevisionFieldLabel(
+  fieldName: ProjectHistoryRevision["fieldName"],
+): string {
+  if (fieldName === "project_kind") return "Project Kind";
+  return PROJECT_SPEC_FIELD_LABELS[fieldName];
+}
+
 export const PROJECT_SPEC_HISTORY_KEY: Record<
   EditableProjectSpecField,
   keyof Pick<

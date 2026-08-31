@@ -157,3 +157,29 @@ body:has([data-concierge-shell]) [data-facet-rail] {
 .hg-project-book-toggle:focus-visible {
   box-shadow: 0 0 0 3px rgba(173, 145, 100, 0.22);
 }
+
+.hg-project-kind-choice {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.hg-project-kind-choice label {
+  display: flex;
+  min-height: 2.75rem;
+  align-items: center;
+  gap: 0.75rem;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: #1d1916;
+  padding: 0.65rem 1rem;
+  color: #efe8de;
+}
+
+.hg-project-kind-choice input {
+  accent-color: #ad9164;
+}
+
+.hg-project-kind-choice label:has(input:focus-visible) {
+  box-shadow: 0 0 0 3px rgba(173, 145, 100, 0.22);
+}

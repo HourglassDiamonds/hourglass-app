@@ -36,7 +36,13 @@ import {
   type ProjectSpecCorrectionApplyInput,
   type ProjectSpecCorrectionApplyResult,
 } from "./project-spec/correct";
+import {
+  projectKindRevisionFromApply,
+  type ProjectKindCorrectionApplyInput,
+  type ProjectKindCorrectionApplyResult,
+} from "./project-spec/correct-kind";
 import { currentSpecValue } from "./project-spec/types";
+import { isProjectKind } from "./project-kind";
 import { planProfileMerge, type ProtectedProfileField } from "./merge";
 import type {
   NoteMutationApplyInput,
@@ -198,6 +204,9 @@ export type ClientMemoryStore = {
   applyProjectSpecCorrection(
     input: ProjectSpecCorrectionApplyInput,
   ): Promise<ProjectSpecCorrectionApplyResult>;
+  applyProjectKindCorrection(
+    input: ProjectKindCorrectionApplyInput,
+  ): Promise<ProjectKindCorrectionApplyResult>;
   applyImportedProjectHistory(
     history: ProjectHistory,
   ): Promise<InsertResult<ProjectHistory>>;
@@ -655,7 +664,11 @@ export class InMemoryClientMemoryStore implements ClientMemoryStore {
       }
       this.projectImportKeys.set(key, profile.projectId);
     }
-    this.projects.set(profile.projectId, clone(profile));
+    const projectKind = profile.projectKind ?? null;
+    if (projectKind != null && !isProjectKind(projectKind)) {
+      throw new Error("invalid project kind");
+    }
+    this.projects.set(profile.projectId, clone({ ...profile, projectKind }));
     return { status: "inserted", record: clone(profile) };
   }
 
@@ -737,6 +750,45 @@ export class InMemoryClientMemoryStore implements ClientMemoryStore {
     return {
       status: "updated",
       history: clone(input.next),
+      revisionId: revision.id,
+    };
+  }
+
+  async applyProjectKindCorrection(
+    input: ProjectKindCorrectionApplyInput,
+  ): Promise<ProjectKindCorrectionApplyResult> {
+    const existingMutation = this.projectSpecMutationIds.get(input.mutationId);
+    if (existingMutation) {
+      const revision = this.projectSpecRevisions.get(existingMutation);
+      const profile = revision
+        ? this.projects.get(revision.projectId)
+        : this.projects.get(input.projectId);
+      if (!profile) throw new Error("project-not-found");
+      return {
+        status: "already-present",
+        profile: clone(profile),
+        revisionId: revision?.id ?? null,
+      };
+    }
+    const current = this.projects.get(input.projectId);
+    if (!current) throw new Error("project-not-found");
+    if (!this.histories.get(input.projectId)) {
+      throw new Error("project-history-not-found");
+    }
+    if ((current.projectKind ?? null) === (input.newValue ?? null)) {
+      return {
+        status: "already-present",
+        profile: clone(current),
+        revisionId: null,
+      };
+    }
+    const revision = projectKindRevisionFromApply(input);
+    this.projectSpecRevisions.set(revision.id, clone(revision));
+    this.projectSpecMutationIds.set(input.mutationId, revision.id);
+    this.projects.set(current.projectId, clone(input.next));
+    return {
+      status: "updated",
+      profile: clone(input.next),
       revisionId: revision.id,
     };
   }
