@@ -33,6 +33,16 @@ import type {
   ProjectKindCorrectionApplyResult,
 } from "../project-spec/correct-kind";
 import type {
+  OperatingDetailCorrectionApplyInput,
+  OperatingDetailCorrectionApplyResult,
+} from "../project-operating/correct";
+import {
+  CUSTOM_DETAIL_COLUMNS,
+  REPAIR_DETAIL_COLUMNS,
+  rowToCustomDetails,
+  rowToRepairDetails,
+} from "../project-operating/rows";
+import type {
   ApplyExistingPersonInput,
   ApplyExistingPersonResult,
   ClientMemoryCounts,
@@ -53,6 +63,8 @@ import type {
   PersonProfile,
   ProjectHistory,
   ProjectProfile,
+  ProjectCustomDetails,
+  ProjectRepairDetails,
   SourceNote,
   Wish,
 } from "../types";
@@ -705,6 +717,87 @@ export class SupabaseClientMemoryStore implements ClientMemoryStore {
     return {
       status,
       profile,
+      revisionId:
+        payload && payload.revision_id != null
+          ? String(payload.revision_id)
+          : null,
+    };
+  }
+
+  async getProjectCustomDetails(
+    projectId: string,
+  ): Promise<ProjectCustomDetails | null> {
+    const { data, error } = await this.client
+      .from("continuum_project_custom_details")
+      .select(CUSTOM_DETAIL_COLUMNS)
+      .eq("project_id", projectId)
+      .maybeSingle();
+    if (error) throwQuery(error, "get-project-custom-details-failed");
+    if (!data) return null;
+    return rowToCustomDetails(data as Record<string, unknown>);
+  }
+
+  async getProjectRepairDetails(
+    projectId: string,
+  ): Promise<ProjectRepairDetails | null> {
+    const { data, error } = await this.client
+      .from("continuum_project_repair_details")
+      .select(REPAIR_DETAIL_COLUMNS)
+      .eq("project_id", projectId)
+      .maybeSingle();
+    if (error) throwQuery(error, "get-project-repair-details-failed");
+    if (!data) return null;
+    return rowToRepairDetails(data as Record<string, unknown>);
+  }
+
+  async applyProjectOperatingDetailCorrection(
+    input: OperatingDetailCorrectionApplyInput,
+  ): Promise<OperatingDetailCorrectionApplyResult> {
+    const { data, error } = await this.client.rpc(
+      "continuum_client_memory_correct_project_operating_detail",
+      {
+        p_project_id: input.projectId,
+        p_mutation_id: input.mutationId,
+        p_revision_id: input.revisionId,
+        p_field_name: input.fieldName,
+        p_new_value: input.newValue,
+        p_changed_at: input.changedAt,
+        p_changed_by: input.changedBy,
+        p_source_system: PROJECT_SPEC_CORRECTION_SOURCE_SYSTEM,
+      },
+    );
+    if (error) {
+      const message = error.message ?? "";
+      if (message.includes("project-not-found")) throw new Error("project-not-found");
+      if (message.includes("entity-kind-mismatch")) {
+        throw new Error("entity-kind-mismatch");
+      }
+      if (message.includes("project-history-not-found")) {
+        throw new Error("project-history-not-found");
+      }
+      if (message.includes("wrong-project-kind")) {
+        throw new Error("wrong-project-kind");
+      }
+      if (message.includes("invalid-field")) throw new Error("invalid-field");
+      if (message.includes("invalid-value")) throw new Error("invalid-value");
+      throwQuery(error, "correct-project-operating-detail-failed");
+    }
+    const payload =
+      data && typeof data === "object" ? (data as Record<string, unknown>) : null;
+    const status: OperatingDetailCorrectionApplyResult["status"] =
+      payload && payload.status === "already-present"
+        ? "already-present"
+        : "updated";
+    return {
+      status,
+      customDetails:
+        payload && payload.custom_details && typeof payload.custom_details === "object"
+          ? rowToCustomDetails(payload.custom_details as Record<string, unknown>)
+          : input.nextCustom,
+      repairDetails:
+        payload && payload.repair_details && typeof payload.repair_details === "object"
+          ? rowToRepairDetails(payload.repair_details as Record<string, unknown>)
+          : input.nextRepair,
       revisionId:
         payload && payload.revision_id != null
           ? String(payload.revision_id)

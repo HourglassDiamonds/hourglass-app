@@ -61,9 +61,11 @@ describe("Client Memory project-spec writer security", () => {
       assert.doesNotMatch(source, /client-memory\/project-spec/);
       assert.doesNotMatch(source, /correctProjectSpec/);
       assert.doesNotMatch(source, /correctProjectKind/);
+      assert.doesNotMatch(source, /correctProjectOperatingDetail/);
       assert.doesNotMatch(source, /createSupabaseClientMemoryProjectSpecWriter/);
       assert.doesNotMatch(source, /saveProjectSpecCorrection/);
       assert.doesNotMatch(source, /saveProjectKindCorrection/);
+      assert.doesNotMatch(source, /saveProjectOperatingDetailCorrection/);
     }
   });
 
@@ -82,7 +84,7 @@ describe("Client Memory project-spec writer security", () => {
     const cos = readFileSync(join(concierge, "components", "chief-of-staff-today.tsx"), "utf8");
     const plaud = readFileSync(join(concierge, "components", "add-plaud-form.tsx"), "utf8");
     for (const source of [command, ask, cos, plaud]) {
-      assert.doesNotMatch(source, /correctProjectSpec|correctProjectKind|saveProjectSpecCorrection|saveProjectKindCorrection/);
+      assert.doesNotMatch(source, /correctProjectSpec|correctProjectKind|correctProjectOperatingDetail|saveProjectSpecCorrection|saveProjectKindCorrection|saveProjectOperatingDetailCorrection/);
     }
     const gmail = join(ROOT, "lib", "continuum", "client-memory", "gmail");
     for (const file of walkFiles(gmail, ".ts")) {

@@ -29,6 +29,11 @@ export type {
   CorrectProjectKindInput,
   CorrectProjectKindResult,
 } from "./correct-kind";
+export { correctProjectOperatingDetail } from "../project-operating/correct";
+export type {
+  CorrectOperatingDetailInput,
+  CorrectOperatingDetailResult,
+} from "../project-operating/correct";
 export {
   isFounderCorrectedProjectSpecField,
   mergeImportedProjectHistory,

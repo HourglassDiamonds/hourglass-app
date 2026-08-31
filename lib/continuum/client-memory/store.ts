@@ -41,6 +41,18 @@ import {
   type ProjectKindCorrectionApplyInput,
   type ProjectKindCorrectionApplyResult,
 } from "./project-spec/correct-kind";
+import {
+  operatingDetailRevisionFromApply,
+  type OperatingDetailCorrectionApplyInput,
+  type OperatingDetailCorrectionApplyResult,
+} from "./project-operating/correct";
+import {
+  currentCustomFieldValue,
+  currentRepairFieldValue,
+  isCustomOperatingDetailField,
+  isRepairOperatingDetailField,
+  requiredKindForOperatingField,
+} from "./project-operating/fields";
 import { currentSpecValue } from "./project-spec/types";
 import { isProjectKind } from "./project-kind";
 import { planProfileMerge, type ProtectedProfileField } from "./merge";
@@ -58,9 +70,11 @@ import type {
   PersonFact,
   PersonProfile,
   PersonRole,
+  ProjectCustomDetails,
   ProjectHistory,
   ProjectHistoryRevision,
   ProjectProfile,
+  ProjectRepairDetails,
   SourceNote,
   SourceNoteRevision,
   Wish,
@@ -207,6 +221,11 @@ export type ClientMemoryStore = {
   applyProjectKindCorrection(
     input: ProjectKindCorrectionApplyInput,
   ): Promise<ProjectKindCorrectionApplyResult>;
+  getProjectCustomDetails(projectId: string): Promise<ProjectCustomDetails | null>;
+  getProjectRepairDetails(projectId: string): Promise<ProjectRepairDetails | null>;
+  applyProjectOperatingDetailCorrection(
+    input: OperatingDetailCorrectionApplyInput,
+  ): Promise<OperatingDetailCorrectionApplyResult>;
   applyImportedProjectHistory(
     history: ProjectHistory,
   ): Promise<InsertResult<ProjectHistory>>;
@@ -274,6 +293,8 @@ export class InMemoryClientMemoryStore implements ClientMemoryStore {
   private histories = new Map<string, ProjectHistory>();
   private projectSpecRevisions = new Map<string, ProjectHistoryRevision>();
   private projectSpecMutationIds = new Map<string, string>();
+  private customDetails = new Map<string, ProjectCustomDetails>();
+  private repairDetails = new Map<string, ProjectRepairDetails>();
   private reviews = new Map<string, IdentityReview>();
   private reviewKeys = new Map<string, string>();
   failNextCreateAfter: "entity" | "profile" | "identity" | null = null;
@@ -300,6 +321,8 @@ export class InMemoryClientMemoryStore implements ClientMemoryStore {
     this.histories.clear();
     this.projectSpecRevisions.clear();
     this.projectSpecMutationIds.clear();
+    this.customDetails.clear();
+    this.repairDetails.clear();
     this.reviews.clear();
     this.reviewKeys.clear();
     this.failNextCreateAfter = null;
@@ -789,6 +812,109 @@ export class InMemoryClientMemoryStore implements ClientMemoryStore {
     return {
       status: "updated",
       profile: clone(input.next),
+      revisionId: revision.id,
+    };
+  }
+
+  async getProjectCustomDetails(
+    projectId: string,
+  ): Promise<ProjectCustomDetails | null> {
+    const existing = this.customDetails.get(projectId);
+    return existing ? clone(existing) : null;
+  }
+
+  async getProjectRepairDetails(
+    projectId: string,
+  ): Promise<ProjectRepairDetails | null> {
+    const existing = this.repairDetails.get(projectId);
+    return existing ? clone(existing) : null;
+  }
+
+  listProjectCustomDetails(): ProjectCustomDetails[] {
+    return [...this.customDetails.values()].map((row) => clone(row));
+  }
+
+  listProjectRepairDetails(): ProjectRepairDetails[] {
+    return [...this.repairDetails.values()].map((row) => clone(row));
+  }
+
+  async applyProjectOperatingDetailCorrection(
+    input: OperatingDetailCorrectionApplyInput,
+  ): Promise<OperatingDetailCorrectionApplyResult> {
+    const existingMutation = this.projectSpecMutationIds.get(input.mutationId);
+    if (existingMutation) {
+      const revision = this.projectSpecRevisions.get(existingMutation);
+      const projectId = revision?.projectId ?? input.projectId;
+      return {
+        status: "already-present",
+        customDetails: this.customDetails.get(projectId)
+          ? clone(this.customDetails.get(projectId)!)
+          : null,
+        repairDetails: this.repairDetails.get(projectId)
+          ? clone(this.repairDetails.get(projectId)!)
+          : null,
+        revisionId: revision?.id ?? null,
+      };
+    }
+    const current = this.projects.get(input.projectId);
+    if (!current) throw new Error("project-not-found");
+    if (!this.histories.get(input.projectId)) {
+      throw new Error("project-history-not-found");
+    }
+    const requiredKind = requiredKindForOperatingField(input.fieldName);
+    if ((current.projectKind ?? null) !== requiredKind) {
+      throw new Error("wrong-project-kind");
+    }
+    const priorValue = isCustomOperatingDetailField(input.fieldName)
+      ? currentCustomFieldValue(
+          this.customDetails.get(input.projectId) ?? null,
+          input.fieldName,
+        )
+      : isRepairOperatingDetailField(input.fieldName)
+        ? currentRepairFieldValue(
+            this.repairDetails.get(input.projectId) ?? null,
+            input.fieldName,
+          )
+        : null;
+    if (priorValue === input.newValue) {
+      return {
+        status: "already-present",
+        customDetails: this.customDetails.get(input.projectId)
+          ? clone(this.customDetails.get(input.projectId)!)
+          : null,
+        repairDetails: this.repairDetails.get(input.projectId)
+          ? clone(this.repairDetails.get(input.projectId)!)
+          : null,
+        revisionId: null,
+      };
+    }
+    if (this.failNextProjectSpecMutationAfter === "revision") {
+      this.failNextProjectSpecMutationAfter = null;
+      throw new Error("project-operating-revision-failed");
+    }
+    const revision = operatingDetailRevisionFromApply(input);
+    this.projectSpecRevisions.set(revision.id, clone(revision));
+    this.projectSpecMutationIds.set(input.mutationId, revision.id);
+    if (this.failNextProjectSpecMutationAfter === "update") {
+      this.failNextProjectSpecMutationAfter = null;
+      this.projectSpecRevisions.delete(revision.id);
+      this.projectSpecMutationIds.delete(input.mutationId);
+      throw new Error("project-operating-update-failed");
+    }
+    if (input.nextCustom) {
+      this.customDetails.set(input.projectId, clone(input.nextCustom));
+    }
+    if (input.nextRepair) {
+      this.repairDetails.set(input.projectId, clone(input.nextRepair));
+    }
+    return {
+      status: "updated",
+      customDetails: this.customDetails.get(input.projectId)
+        ? clone(this.customDetails.get(input.projectId)!)
+        : null,
+      repairDetails: this.repairDetails.get(input.projectId)
+        ? clone(this.repairDetails.get(input.projectId)!)
+        : null,
       revisionId: revision.id,
     };
   }

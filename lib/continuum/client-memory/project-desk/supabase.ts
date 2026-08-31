@@ -22,6 +22,7 @@ import {
   getProjectDeskFromSnapshot,
   listProjectsFromSnapshot,
 } from "./compose";
+import { loadActiveOperatingDetails } from "../project-operating/load-details";
 import type { ProjectDeskReader } from "./reader";
 import type {
   ListProjectsFilter,
@@ -198,7 +199,20 @@ export class SupabaseProjectDeskReader implements ProjectDeskReader {
 
   async getProjectDesk(projectId: string): Promise<ProjectDeskGetResult> {
     const snapshot = await loadSnapshot(this.client);
-    return getProjectDeskFromSnapshot(snapshot, projectId);
+    const profile = snapshot.projectProfiles.find(
+      (row) => row.projectId === projectId.trim(),
+    );
+    const details = profile
+      ? await loadActiveOperatingDetails(this.client, [profile])
+      : { customDetails: [], repairDetails: [] };
+    return getProjectDeskFromSnapshot(
+      {
+        ...snapshot,
+        customDetails: details.customDetails,
+        repairDetails: details.repairDetails,
+      },
+      projectId,
+    );
   }
 }
 

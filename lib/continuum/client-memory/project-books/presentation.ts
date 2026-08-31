@@ -29,7 +29,11 @@ export const PROJECT_BOOK_EMPTY = {
   artifacts: "No attached project files yet.",
   commercial: "No stored commercial identifiers yet.",
   history: "No project-specific sources on file.",
+  operatingField: "Not set",
 } as const;
+
+export const PROJECT_BOOK_CUSTOM_DETAILS_TITLE = "Custom Project Details";
+export const PROJECT_BOOK_REPAIR_DETAILS_TITLE = "Repair / Service Details";
 
 export const PROJECT_BOOK_FOUNDER_REVIEW = "Founder review required";
 

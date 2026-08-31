@@ -7,6 +7,7 @@
 import type { EditableProjectSpecField } from "../types";
 import type { SourceNoteSummary } from "../read/types";
 import type { ProjectKind } from "../project-kind";
+import type { ProjectOperatingLayer } from "../project-operating/layer";
 
 export const PERSON_PROJECT_BOOK_SECTIONS = [
   "overview",
@@ -83,6 +84,7 @@ export type PersonProjectBook = {
     storedOrderIdentifier: string | null;
     founderReviewRequired: boolean;
   };
+  operatingLayer: ProjectOperatingLayer;
   history: PersonProjectBookHistoryEntry[];
 };
 

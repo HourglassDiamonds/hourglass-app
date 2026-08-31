@@ -16,6 +16,11 @@ import type {
 } from "./types";
 import { CLIENT_MEMORY_PROJECT_BOOK_NOTE_LIMIT } from "./types";
 import { projectKindOf, type ProjectKind } from "../project-kind";
+import {
+  activeOperatingLayer,
+  customDetailsByProjectId,
+  repairDetailsByProjectId,
+} from "../project-operating/layer";
 
 function linkedProjectIds(
   personId: string,
@@ -125,6 +130,8 @@ export function composePersonProjectBooks(
   if (!profile) return [];
 
   const projectIds = linkedProjectIds(trimmed, snapshot.relationships);
+  const customById = customDetailsByProjectId(snapshot.customDetails);
+  const repairById = repairDetailsByProjectId(snapshot.repairDetails);
   const books: PersonProjectBook[] = projectIds.flatMap((projectId) => {
     const project = snapshot.projectProfiles.find(
       (row) => row.projectId === projectId,
@@ -192,6 +199,11 @@ export function composePersonProjectBooks(
           options.recoveredOrderConflicts,
         ),
       },
+      operatingLayer: activeOperatingLayer({
+        projectKind,
+        customDetails: customById.get(projectId) ?? null,
+        repairDetails: repairById.get(projectId) ?? null,
+      }),
       history: historyEntries,
     };
     return [book];

@@ -11,7 +11,6 @@ import { getSupabaseAdmin } from "@/lib/supabase/client";
 import type { EntityKind } from "../../contracts/types";
 import { isEditableProjectSpecField } from "../contracts";
 import { projectKindFromUnknown } from "../project-kind";
-import type { ProjectHistory, ProjectProfile } from "../types";
 import { correctProjectSpec } from "./correct";
 import type {
   CorrectProjectSpecDeps,
@@ -26,6 +25,25 @@ import type {
   CorrectProjectKindResult,
   ProjectKindCorrectionApplyResult,
 } from "./correct-kind";
+import { correctProjectOperatingDetail } from "../project-operating/correct";
+import type {
+  CorrectOperatingDetailDeps,
+  CorrectOperatingDetailInput,
+  CorrectOperatingDetailResult,
+  OperatingDetailCorrectionApplyResult,
+} from "../project-operating/correct";
+import {
+  CUSTOM_DETAIL_COLUMNS,
+  REPAIR_DETAIL_COLUMNS,
+  rowToCustomDetails,
+  rowToRepairDetails,
+} from "../project-operating/rows";
+import type {
+  ProjectCustomDetails,
+  ProjectHistory,
+  ProjectProfile,
+  ProjectRepairDetails,
+} from "../types";
 import { PROJECT_SPEC_CORRECTION_SOURCE_SYSTEM } from "./types";
 import type { ClientMemoryProjectSpecWriter } from "./writer";
 import type { EditableProjectSpecField } from "./types";
@@ -48,6 +66,7 @@ function mutationReason(message: string): Error {
   }
   if (message.includes("invalid-field")) return new Error("invalid-field");
   if (message.includes("invalid-value")) return new Error("invalid-value");
+  if (message.includes("wrong-project-kind")) return new Error("wrong-project-kind");
   if (message.includes("invalid-input")) return new Error("invalid-input");
   return new Error(message || "correct-project-spec-failed");
 }
@@ -203,6 +222,57 @@ export class SupabaseClientMemoryProjectSpecWriter
     };
   }
 
+  private operatingDeps(): CorrectOperatingDetailDeps {
+    return {
+      nowIso: () => new Date().toISOString(),
+      newRevisionId: () => randomUUID(),
+      getEntity: (id) => this.getEntityKind(id),
+      getProjectProfile: (projectId) => this.getProjectProfile(projectId),
+      getProjectHistory: (projectId) => this.getProjectHistory(projectId),
+      getCustomDetails: (projectId) => this.getProjectCustomDetails(projectId),
+      getRepairDetails: (projectId) => this.getProjectRepairDetails(projectId),
+      applyCorrection: async (input) => {
+        const { data, error } = await this.client.rpc(
+          "continuum_client_memory_correct_project_operating_detail",
+          {
+            p_project_id: input.projectId,
+            p_mutation_id: input.mutationId,
+            p_revision_id: input.revisionId,
+            p_field_name: input.fieldName,
+            p_new_value: input.newValue,
+            p_changed_at: input.changedAt,
+            p_changed_by: input.changedBy,
+            p_source_system: PROJECT_SPEC_CORRECTION_SOURCE_SYSTEM,
+          },
+        );
+        if (error) throw mutationReason(error.message ?? "");
+        const payload =
+          data && typeof data === "object"
+            ? (data as Record<string, unknown>)
+            : null;
+        const status: OperatingDetailCorrectionApplyResult["status"] =
+          payload && payload.status === "already-present"
+            ? "already-present"
+            : "updated";
+        return {
+          status,
+          customDetails:
+            payload && payload.custom_details && typeof payload.custom_details === "object"
+              ? rowToCustomDetails(payload.custom_details as Record<string, unknown>)
+              : input.nextCustom,
+          repairDetails:
+            payload && payload.repair_details && typeof payload.repair_details === "object"
+              ? rowToRepairDetails(payload.repair_details as Record<string, unknown>)
+              : input.nextRepair,
+          revisionId:
+            payload && payload.revision_id != null
+              ? String(payload.revision_id)
+              : null,
+        };
+      },
+    };
+  }
+
   async getProjectHistory(projectId: string): Promise<ProjectHistory | null> {
     const { data, error } = await this.client
       .from("continuum_project_history")
@@ -225,6 +295,32 @@ export class SupabaseClientMemoryProjectSpecWriter
     return rowToProjectProfile(data as Record<string, unknown>);
   }
 
+  async getProjectCustomDetails(
+    projectId: string,
+  ): Promise<ProjectCustomDetails | null> {
+    const { data, error } = await this.client
+      .from("continuum_project_custom_details")
+      .select(CUSTOM_DETAIL_COLUMNS)
+      .eq("project_id", projectId)
+      .maybeSingle();
+    if (error) throw error;
+    if (!data) return null;
+    return rowToCustomDetails(data as Record<string, unknown>);
+  }
+
+  async getProjectRepairDetails(
+    projectId: string,
+  ): Promise<ProjectRepairDetails | null> {
+    const { data, error } = await this.client
+      .from("continuum_project_repair_details")
+      .select(REPAIR_DETAIL_COLUMNS)
+      .eq("project_id", projectId)
+      .maybeSingle();
+    if (error) throw error;
+    if (!data) return null;
+    return rowToRepairDetails(data as Record<string, unknown>);
+  }
+
   correctProjectSpec(
     input: CorrectProjectSpecInput,
   ): Promise<CorrectProjectSpecResult> {
@@ -235,6 +331,12 @@ export class SupabaseClientMemoryProjectSpecWriter
     input: CorrectProjectKindInput,
   ): Promise<CorrectProjectKindResult> {
     return correctProjectKind(this.kindDeps(), input);
+  }
+
+  correctProjectOperatingDetail(
+    input: CorrectOperatingDetailInput,
+  ): Promise<CorrectOperatingDetailResult> {
+    return correctProjectOperatingDetail(this.operatingDeps(), input);
   }
 }
 

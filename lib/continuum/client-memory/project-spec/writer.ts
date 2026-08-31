@@ -17,7 +17,18 @@ import {
   type CorrectProjectKindInput,
   type CorrectProjectKindResult,
 } from "./correct-kind";
-import type { ProjectHistory, ProjectProfile } from "../types";
+import {
+  correctProjectOperatingDetail,
+  type CorrectOperatingDetailDeps,
+  type CorrectOperatingDetailInput,
+  type CorrectOperatingDetailResult,
+} from "../project-operating/correct";
+import type {
+  ProjectCustomDetails,
+  ProjectHistory,
+  ProjectProfile,
+  ProjectRepairDetails,
+} from "../types";
 
 export type ClientMemoryProjectSpecWriter = {
   correctProjectSpec(
@@ -26,8 +37,13 @@ export type ClientMemoryProjectSpecWriter = {
   correctProjectKind(
     input: CorrectProjectKindInput,
   ): Promise<CorrectProjectKindResult>;
+  correctProjectOperatingDetail(
+    input: CorrectOperatingDetailInput,
+  ): Promise<CorrectOperatingDetailResult>;
   getProjectHistory(projectId: string): Promise<ProjectHistory | null>;
   getProjectProfile(projectId: string): Promise<ProjectProfile | null>;
+  getProjectCustomDetails(projectId: string): Promise<ProjectCustomDetails | null>;
+  getProjectRepairDetails(projectId: string): Promise<ProjectRepairDetails | null>;
 };
 
 function correctDeps(store: InMemoryClientMemoryStore): CorrectProjectSpecDeps {
@@ -51,6 +67,22 @@ function kindDeps(store: InMemoryClientMemoryStore): CorrectProjectKindDeps {
   };
 }
 
+function operatingDeps(
+  store: InMemoryClientMemoryStore,
+): CorrectOperatingDetailDeps {
+  return {
+    nowIso: () => new Date().toISOString(),
+    newRevisionId: () => randomUUID(),
+    getEntity: (id) => store.getEntity(id),
+    getProjectProfile: (projectId) => store.getProjectProfile(projectId),
+    getProjectHistory: (projectId) => store.getProjectHistory(projectId),
+    getCustomDetails: (projectId) => store.getProjectCustomDetails(projectId),
+    getRepairDetails: (projectId) => store.getProjectRepairDetails(projectId),
+    applyCorrection: (input) =>
+      store.applyProjectOperatingDetailCorrection(input),
+  };
+}
+
 export class InMemoryClientMemoryProjectSpecWriter
   implements ClientMemoryProjectSpecWriter
 {
@@ -68,12 +100,30 @@ export class InMemoryClientMemoryProjectSpecWriter
     return correctProjectKind(kindDeps(this.store), input);
   }
 
+  correctProjectOperatingDetail(
+    input: CorrectOperatingDetailInput,
+  ): Promise<CorrectOperatingDetailResult> {
+    return correctProjectOperatingDetail(operatingDeps(this.store), input);
+  }
+
   getProjectHistory(projectId: string): Promise<ProjectHistory | null> {
     return this.store.getProjectHistory(projectId);
   }
 
   getProjectProfile(projectId: string): Promise<ProjectProfile | null> {
     return this.store.getProjectProfile(projectId);
+  }
+
+  getProjectCustomDetails(
+    projectId: string,
+  ): Promise<ProjectCustomDetails | null> {
+    return this.store.getProjectCustomDetails(projectId);
+  }
+
+  getProjectRepairDetails(
+    projectId: string,
+  ): Promise<ProjectRepairDetails | null> {
+    return this.store.getProjectRepairDetails(projectId);
   }
 }
 

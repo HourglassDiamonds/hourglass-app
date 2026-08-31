@@ -52,6 +52,7 @@ function desk(): ProjectDeskRead {
       kind: "unknown",
       evidence: "Open jobs, files, and email are not connected yet. Current operating state is unknown.",
     },
+    operatingLayer: { kind: "none" },
     openJobs: { connected: false },
     artifacts: { connected: false },
   };

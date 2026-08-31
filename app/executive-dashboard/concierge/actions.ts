@@ -27,6 +27,7 @@ import type { MutateNoteResult } from "@/lib/continuum/client-memory/write/mutat
 import { getAuthenticatedClientMemoryProjectSpecWriter } from "@/lib/continuum/client-memory/project-spec/load";
 import type { CorrectProjectSpecResult } from "@/lib/continuum/client-memory/project-spec/correct";
 import type { CorrectProjectKindResult } from "@/lib/continuum/client-memory/project-spec/correct-kind";
+import type { CorrectOperatingDetailResult } from "@/lib/continuum/client-memory/project-operating/correct";
 import { getAuthenticatedHumanSourceStore } from "@/lib/continuum/client-memory/human-intake/load";
 import {
   HUMAN_COMMUNICATION_TYPES,
@@ -277,6 +278,61 @@ export async function saveProjectKindCorrection(
     redirect(`${conciergeProjectPath(projectId)}?saved=kind`);
   }
   return { ok: false, message: humanKindCorrectionMessage(result) };
+}
+
+export type SaveProjectOperatingDetailCorrectionState = {
+  ok: false;
+  message: string;
+};
+
+function humanOperatingDetailCorrectionMessage(
+  result: CorrectOperatingDetailResult,
+): string {
+  if (result.ok) return "Unable to save the correction.";
+  if (result.reason === "invalid-input" && result.code === "wrong-project-kind") {
+    return "This Project Kind does not use that operating layer.";
+  }
+  if (result.reason === "invalid-input" && result.code === "invalid-value") {
+    return "That value couldn't be saved.";
+  }
+  if (result.reason === "invalid-input" && result.code === "invalid-field") {
+    return "That detail can't be corrected here.";
+  }
+  if (result.reason === "entity-kind-mismatch" || result.reason === "project-not-found") {
+    return "That project could not be found.";
+  }
+  if (result.reason === "project-history-not-found") {
+    return "This project has no details to correct yet.";
+  }
+  return "Unable to save the correction.";
+}
+
+export async function saveProjectOperatingDetailCorrection(
+  _prev: SaveProjectOperatingDetailCorrectionState | null,
+  formData: FormData,
+): Promise<SaveProjectOperatingDetailCorrectionState> {
+  const auth = await getAuthenticatedClientMemoryProjectSpecWriter();
+  if (!auth.ok) {
+    return {
+      ok: false,
+      message:
+        auth.reason === "unauthorized"
+          ? "Sign in to continue."
+          : "Unable to save the correction.",
+    };
+  }
+  const projectId = String(formData.get("projectId") ?? "").trim();
+  const result = await auth.writer.correctProjectOperatingDetail({
+    mutationId: String(formData.get("mutationId") ?? "").trim(),
+    projectId,
+    fieldName: String(formData.get("fieldName") ?? "").trim(),
+    newValue: String(formData.get("newValue") ?? ""),
+    actor: auth.username,
+  });
+  if (result.ok) {
+    redirect(`${conciergeProjectPath(projectId)}?saved=operating`);
+  }
+  return { ok: false, message: humanOperatingDetailCorrectionMessage(result) };
 }
 
 export async function editConciergeNote(

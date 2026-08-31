@@ -10,6 +10,10 @@ import {
   type ProjectHistory,
   type ProjectHistoryRevision,
 } from "../types";
+import {
+  isOperatingDetailField,
+  OPERATING_DETAIL_FIELD_LABELS,
+} from "../project-operating/fields";
 
 export {
   EDITABLE_PROJECT_SPEC_FIELDS,
@@ -32,6 +36,9 @@ export function projectRevisionFieldLabel(
   fieldName: ProjectHistoryRevision["fieldName"],
 ): string {
   if (fieldName === "project_kind") return "Project Kind";
+  if (isOperatingDetailField(fieldName)) {
+    return OPERATING_DETAIL_FIELD_LABELS[fieldName];
+  }
   return PROJECT_SPEC_FIELD_LABELS[fieldName];
 }
 

@@ -2,6 +2,7 @@ import Link from "next/link";
 import {
   conciergeAddNotePath,
   conciergeClientPath,
+  conciergeCorrectOperatingDetailPath,
   conciergeCorrectProjectKindPath,
   conciergeCorrectProjectSpecPath,
   formatNoteDate,
@@ -14,6 +15,8 @@ import { projectRevisionFieldLabel } from "@/lib/continuum/client-memory/project
 import {
   projectKindLabel,
 } from "@/lib/continuum/client-memory/project-kind";
+import { OPERATING_DETAIL_NOT_SET } from "@/lib/continuum/client-memory/project-operating/fields";
+import type { ProjectOperatingLayer } from "@/lib/continuum/client-memory/project-operating/layer";
 import { ClientMemorySection } from "./client-memory-section";
 
 export function ProjectDeskView({
@@ -99,6 +102,11 @@ export function ProjectDeskView({
           </div>
         </dl>
       </ClientMemorySection>
+
+      <OperatingLayerSection
+        projectId={desk.projectId}
+        layer={desk.operatingLayer}
+      />
 
       {desk.specs.length > 0 ? (
         <ClientMemorySection title="Project Details">
@@ -233,5 +241,39 @@ export function ProjectDeskView({
         </ClientMemorySection>
       ) : null}
     </article>
+  );
+}
+
+function OperatingLayerSection({
+  projectId,
+  layer,
+}: {
+  projectId: string;
+  layer: ProjectOperatingLayer;
+}) {
+  if (layer.kind === "none") return null;
+  return (
+    <ClientMemorySection title={layer.title}>
+      <dl className="space-y-3">
+        {layer.fields.map((row) => (
+          <div key={row.fieldName}>
+            <dt className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
+              {row.label}
+            </dt>
+            <dd className="mt-1 break-words text-[15px] leading-relaxed text-[#e7ddd2]">
+              {row.value?.trim() ? row.value : OPERATING_DETAIL_NOT_SET}
+            </dd>
+            <dd>
+              <Link
+                href={conciergeCorrectOperatingDetailPath(projectId, row.fieldName)}
+                className="mt-1 inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.24em] text-[#8d8073] outline-none hover:text-[#efe8de] focus-visible:text-[#efe8de]"
+              >
+                {row.value?.trim() ? "Correct" : "Set"}
+              </Link>
+            </dd>
+          </div>
+        ))}
+      </dl>
+    </ClientMemorySection>
   );
 }

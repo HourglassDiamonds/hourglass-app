@@ -12,6 +12,11 @@ import type {
   SourceNote,
 } from "../types";
 import type { ProjectKind } from "../project-kind";
+import type { ProjectOperatingLayer } from "../project-operating/layer";
+import type {
+  ProjectCustomDetails,
+  ProjectRepairDetails,
+} from "../types";
 
 export const PROJECT_DESK_NOTE_LIMIT = 25;
 export const PROJECT_DESK_HOME_LIMIT = 5;
@@ -91,6 +96,7 @@ export type ProjectDeskRead = {
   latestNotePreview: string | null;
   coverage: ProjectDeskCoverage;
   operationalStatus: ProjectDeskOperationalStatus;
+  operatingLayer: ProjectOperatingLayer;
   openJobs: { connected: false };
   artifacts: { connected: false };
 };
@@ -99,6 +105,8 @@ export type ProjectDeskSnapshot = {
   projectProfiles: ProjectProfile[];
   projectHistories: ProjectHistory[];
   specRevisions?: ProjectHistoryRevision[];
+  customDetails?: ProjectCustomDetails[];
+  repairDetails?: ProjectRepairDetails[];
   relationships: EntityRelationship[];
   people: Array<{
     personId: string;

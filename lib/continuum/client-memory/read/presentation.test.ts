@@ -16,6 +16,9 @@ import {
   conciergeInboxSourcePath,
   conciergeCorrectProjectKindPath,
   conciergeCorrectProjectSpecPath,
+  conciergeCorrectOperatingDetailPath,
+  conciergeProjectCustomPath,
+  conciergeProjectRepairPath,
   formatFactValue,
   formatLocation,
   historyFields,
@@ -228,6 +231,28 @@ describe("Concierge presentation", () => {
     assert.equal(
       conciergeCorrectProjectKindPath("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"),
       "/executive-dashboard/concierge/projects/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/kind",
+    );
+    assert.equal(
+      conciergeProjectCustomPath("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"),
+      "/executive-dashboard/concierge/projects/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/custom",
+    );
+    assert.equal(
+      conciergeProjectRepairPath("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"),
+      "/executive-dashboard/concierge/projects/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/repair",
+    );
+    assert.equal(
+      conciergeCorrectOperatingDetailPath(
+        "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "custom_design_brief",
+      ),
+      "/executive-dashboard/concierge/projects/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/custom/custom_design_brief",
+    );
+    assert.equal(
+      conciergeCorrectOperatingDetailPath(
+        "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "repair_requested_service",
+      ),
+      "/executive-dashboard/concierge/projects/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/repair/repair_requested_service",
     );
     assert.notEqual(
       conciergeAddNotePickerPath(),

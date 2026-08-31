@@ -59,6 +59,24 @@ export function conciergeCorrectProjectKindPath(projectId: string): string {
   return `${conciergeProjectPath(projectId)}/kind`;
 }
 
+export function conciergeProjectCustomPath(projectId: string): string {
+  return `${conciergeProjectPath(projectId)}/custom`;
+}
+
+export function conciergeProjectRepairPath(projectId: string): string {
+  return `${conciergeProjectPath(projectId)}/repair`;
+}
+
+export function conciergeCorrectOperatingDetailPath(
+  projectId: string,
+  fieldName: string,
+): string {
+  if (fieldName.startsWith("repair_")) {
+    return `${conciergeProjectRepairPath(projectId)}/${fieldName}`;
+  }
+  return `${conciergeProjectCustomPath(projectId)}/${fieldName}`;
+}
+
 export function conciergeAddNotePath(personId: string): string {
   return `${conciergeClientPath(personId)}/note/new`;
 }

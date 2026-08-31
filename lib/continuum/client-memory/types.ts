@@ -358,9 +358,53 @@ export type ProjectHistory = {
   founderCorrectedFields?: EditableProjectSpecField[];
 };
 
+export const CUSTOM_OPERATING_DETAIL_FIELDS = [
+  "custom_design_brief",
+  "custom_design_requirements",
+  "custom_manufacturing_notes",
+] as const;
+
+export const REPAIR_OPERATING_DETAIL_FIELDS = [
+  "repair_item_description",
+  "repair_requested_service",
+  "repair_condition_notes",
+  "repair_technical_notes",
+] as const;
+
+export const OPERATING_DETAIL_FIELDS = [
+  ...CUSTOM_OPERATING_DETAIL_FIELDS,
+  ...REPAIR_OPERATING_DETAIL_FIELDS,
+] as const;
+
+export type CustomOperatingDetailField =
+  (typeof CUSTOM_OPERATING_DETAIL_FIELDS)[number];
+export type RepairOperatingDetailField =
+  (typeof REPAIR_OPERATING_DETAIL_FIELDS)[number];
+export type OperatingDetailField = (typeof OPERATING_DETAIL_FIELDS)[number];
+
+export type ProjectCustomDetails = {
+  projectId: ContinuumId;
+  designBrief: string | null;
+  designRequirements: string | null;
+  manufacturingNotes: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type ProjectRepairDetails = {
+  projectId: ContinuumId;
+  itemDescription: string | null;
+  requestedService: string | null;
+  conditionNotes: string | null;
+  technicalNotes: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type ProjectHistoryRevisionField =
   | EditableProjectSpecField
-  | "project_kind";
+  | "project_kind"
+  | OperatingDetailField;
 
 export type ProjectHistoryRevision = {
   id: ContinuumId;

@@ -25,6 +25,11 @@ import {
   specFieldsFromHistory,
 } from "./status";
 import { projectKindOf } from "../project-kind";
+import {
+  activeOperatingLayer,
+  customDetailsByProjectId,
+  repairDetailsByProjectId,
+} from "../project-operating/layer";
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -160,6 +165,8 @@ export function getProjectDeskFromSnapshot(
   const history =
     snapshot.projectHistories.find((row) => row.projectId === trimmed) ?? null;
   const notes = notesForProject(trimmed, snapshot).slice(0, CLIENT_MEMORY_NOTE_LIMIT);
+  const customById = customDetailsByProjectId(snapshot.customDetails);
+  const repairById = repairDetailsByProjectId(snapshot.repairDetails);
   const desk: ProjectDeskRead = {
     projectId: summary.projectId,
     title: summary.title,
@@ -173,6 +180,11 @@ export function getProjectDeskFromSnapshot(
     latestNotePreview: summary.latestNotePreview,
     coverage: summary.coverage,
     operationalStatus: sliceAOperationalStatus(),
+    operatingLayer: activeOperatingLayer({
+      projectKind: summary.projectKind,
+      customDetails: customById.get(trimmed) ?? null,
+      repairDetails: repairById.get(trimmed) ?? null,
+    }),
     openJobs: { connected: false },
     artifacts: { connected: false },
   };

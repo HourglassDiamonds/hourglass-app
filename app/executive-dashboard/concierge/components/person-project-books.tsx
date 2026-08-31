@@ -11,8 +11,10 @@ import type {
   PersonProjectBookSectionId,
 } from "@/lib/continuum/client-memory/project-books/types";
 import {
+  PROJECT_BOOK_CUSTOM_DETAILS_TITLE,
   PROJECT_BOOK_EMPTY,
   PROJECT_BOOK_FOUNDER_REVIEW,
+  PROJECT_BOOK_REPAIR_DETAILS_TITLE,
   PROJECT_BOOK_SECTION_TITLE,
   PROJECT_BOOKS_EMPTY,
   PROJECT_BOOKS_SECTION_TITLE,
@@ -23,6 +25,7 @@ import {
   projectBookSourceSignal,
   projectBookToggleId,
 } from "@/lib/continuum/client-memory/project-books/presentation";
+import { OPERATING_DETAIL_NOT_SET } from "@/lib/continuum/client-memory/project-operating/fields";
 import {
   PROJECT_KIND_NOT_SET_LABEL,
   projectKindChipLabel,
@@ -109,6 +112,33 @@ function OverviewFields({ book }: { book: PersonProjectBook }) {
         </div>
       ))}
     </dl>
+  );
+}
+
+function OperatingDetails({ book }: { book: PersonProjectBook }) {
+  if (book.operatingLayer.kind === "none") return null;
+  const title =
+    book.operatingLayer.kind === "custom_new_jewelry"
+      ? PROJECT_BOOK_CUSTOM_DETAILS_TITLE
+      : PROJECT_BOOK_REPAIR_DETAILS_TITLE;
+  return (
+    <div className="mt-5">
+      <p className="text-[11px] uppercase tracking-[0.28em] text-[#8d8073]">
+        {title}
+      </p>
+      <dl className="mt-3 space-y-3">
+        {book.operatingLayer.fields.map((row) => (
+          <div key={row.fieldName}>
+            <dt className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
+              {row.label}
+            </dt>
+            <dd className="mt-1 break-words text-[14.5px] leading-relaxed text-[#e7ddd2]">
+              {row.value?.trim() ? row.value : OPERATING_DETAIL_NOT_SET}
+            </dd>
+          </div>
+        ))}
+      </dl>
+    </div>
   );
 }
 
@@ -219,6 +249,7 @@ function ProjectBookCard({
             {PROJECT_BOOK_SECTION_TITLE.overview}
           </p>
           <OverviewFields book={book} />
+          <OperatingDetails book={book} />
           <p className="mt-4">
             <Link
               href={conciergeProjectPath(book.projectId)}

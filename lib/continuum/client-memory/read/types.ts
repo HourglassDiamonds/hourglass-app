@@ -14,6 +14,8 @@ import type {
   ProjectHistory,
   ProjectMatchJudgment,
   ProjectProfile,
+  ProjectCustomDetails,
+  ProjectRepairDetails,
   RelationshipKind,
   RelationshipStatus,
   SourceNote,
@@ -226,6 +228,8 @@ export type ClientMemoryReadSnapshot = {
   reviews: IdentityReview[];
   projectProfiles: ProjectProfile[];
   projectHistories: ProjectHistory[];
+  customDetails?: ProjectCustomDetails[];
+  repairDetails?: ProjectRepairDetails[];
 };
 
 export const CLIENT_MEMORY_FINANCIAL_FIELD_NAMES = [

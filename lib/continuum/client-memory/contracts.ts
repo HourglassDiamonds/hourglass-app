@@ -16,11 +16,13 @@ import {
   RELATIONSHIP_KINDS,
   RELATIONSHIP_STATUSES,
   EDITABLE_PROJECT_SPEC_FIELDS,
+  OPERATING_DETAIL_FIELDS,
   SOURCE_NOTE_CHANGE_KINDS,
   SOURCE_NOTE_LIFECYCLE_STATUSES,
   USAGE_PERMISSIONS,
   type ClientMemoryVisibility,
   type EditableProjectSpecField,
+  type OperatingDetailField,
   type ProjectHistoryRevisionField,
   type FactApprovalStatus,
   type FactStatus,
@@ -92,10 +94,23 @@ export function isEditableProjectSpecField(
   );
 }
 
+export function isOperatingDetailField(
+  value: unknown,
+): value is OperatingDetailField {
+  return (
+    typeof value === "string" &&
+    (OPERATING_DETAIL_FIELDS as readonly string[]).includes(value)
+  );
+}
+
 export function isProjectHistoryRevisionField(
   value: unknown,
 ): value is ProjectHistoryRevisionField {
-  return isEditableProjectSpecField(value) || value === "project_kind";
+  return (
+    isEditableProjectSpecField(value) ||
+    value === "project_kind" ||
+    isOperatingDetailField(value)
+  );
 }
 
 export function isRelationshipKind(value: unknown): value is RelationshipKind {

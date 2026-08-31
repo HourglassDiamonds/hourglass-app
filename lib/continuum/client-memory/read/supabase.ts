@@ -14,6 +14,7 @@ import { searchPeopleFromSnapshot } from "./search";
 import { isCalendarMonth, listCurrentBirthdaysByMonthFromRows } from "./birthdays";
 import type { ClientMemoryReader } from "./reader";
 import { SOURCE_NOTE_COLUMNS, rowToSourceNote } from "../source-note-row";
+import { loadActiveOperatingDetails } from "../project-operating/load-details";
 import {
   CLIENT_MEMORY_COCKPIT_NOTE_LIMIT,
   CLIENT_MEMORY_HISTORY_PAGE_SIZE,
@@ -380,6 +381,11 @@ export class SupabaseClientMemoryReader implements ClientMemoryReader {
     ];
 
     const reviewRows = await loadReviews(this.client, trimmed, importKeys);
+    const projectProfiles = projectProfileRows.map(rowToProjectProfile);
+    const operating = await loadActiveOperatingDetails(
+      this.client,
+      projectProfiles,
+    );
 
     return {
       profiles,
@@ -394,8 +400,10 @@ export class SupabaseClientMemoryReader implements ClientMemoryReader {
       wishes: wishRows.map(rowToWish),
       sourceNotes: noteRows.map(rowToNote),
       reviews: reviewRows.map(rowToReview),
-      projectProfiles: projectProfileRows.map(rowToProjectProfile),
+      projectProfiles,
       projectHistories: projectHistoryRows.map(rowToProjectHistory),
+      customDetails: operating.customDetails,
+      repairDetails: operating.repairDetails,
     };
   }
 
@@ -539,6 +547,11 @@ export class SupabaseClientMemoryReader implements ClientMemoryReader {
         return [mapped.id, mapped] as const;
       }),
     );
+    const projectProfiles = projectProfileRows.map(rowToProjectProfile);
+    const operating = await loadActiveOperatingDetails(
+      this.client,
+      projectProfiles,
+    );
 
     return {
       noteCount,
@@ -555,8 +568,10 @@ export class SupabaseClientMemoryReader implements ClientMemoryReader {
         wishes: wishRows.map(rowToWish),
         sourceNotes: [...sourceNotesById.values()],
         reviews: reviewRows.map(rowToReview),
-        projectProfiles: projectProfileRows.map(rowToProjectProfile),
+        projectProfiles,
         projectHistories: projectHistoryRows.map(rowToProjectHistory),
+        customDetails: operating.customDetails,
+        repairDetails: operating.repairDetails,
       },
     };
   }
