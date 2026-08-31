@@ -20,8 +20,9 @@ import type {
   SourceNoteLifecycleStatus,
   Wish,
 } from "../types";
+import type { PersonProjectBook } from "../project-books/types";
 
-export type { PersonFact };
+export type { PersonFact, PersonProjectBook };
 
 export const CLIENT_MEMORY_SEARCH_LIMIT = 20;
 export const CLIENT_MEMORY_NOTE_LIMIT = 25;
@@ -156,6 +157,7 @@ export type PersonCockpit = {
   };
   relationships: PersonCockpitRelationship[];
   projects: PersonCockpitProject[];
+  projectBooks: PersonProjectBook[];
   wishes: WishSummary[];
   recentManualNotes: SourceNoteSummary[];
   reviews: {

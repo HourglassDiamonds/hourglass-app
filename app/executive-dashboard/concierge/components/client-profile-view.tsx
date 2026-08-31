@@ -11,12 +11,11 @@ import {
   relationshipLabel,
   wishHeadline,
 } from "@/lib/continuum/client-memory/read/presentation";
-import { partitionCockpitProjects } from "@/lib/continuum/client-memory/read/cockpit";
 import type { PersonCockpit } from "@/lib/continuum/client-memory/read/types";
 import { ClientMemorySection } from "./client-memory-section";
 import { ClientNoteList } from "./client-note-list";
 import { ClientProfileHeader } from "./client-profile-header";
-import { ClientProjectCard } from "./client-project-card";
+import { PersonProjectBooksSection } from "./person-project-books";
 
 export function ClientProfileView({
   cockpit,
@@ -66,8 +65,6 @@ export function ClientProfileView({
       project.profile.displayTitle,
     ]),
   );
-  const { preview, remaining } = partitionCockpitProjects(cockpit.projects);
-
   return (
     <article>
       <ClientProfileHeader
@@ -245,36 +242,7 @@ export function ClientProfileView({
         </ClientMemorySection>
       ) : null}
 
-      {cockpit.projects.length > 0 ? (
-        <ClientMemorySection title="Projects">
-          <div className="space-y-3">
-            {preview.map((project) => (
-              <ClientProjectCard
-                key={project.profile.projectId}
-                project={project}
-              />
-            ))}
-          </div>
-          {remaining.length > 0 ? (
-            <details className="group mt-4">
-              <summary className="flex min-h-11 cursor-pointer list-none items-center text-[12px] uppercase tracking-[0.2em] text-[#ad9164] outline-none focus-visible:text-[#efe8de]">
-                <span className="group-open:hidden">
-                  Imported or other projects · {remaining.length}
-                </span>
-                <span className="hidden group-open:inline">Hide imported or other projects</span>
-              </summary>
-              <div className="mt-3 space-y-3">
-                {remaining.map((project) => (
-                  <ClientProjectCard
-                    key={project.profile.projectId}
-                    project={project}
-                  />
-                ))}
-              </div>
-            </details>
-          ) : null}
-        </ClientMemorySection>
-      ) : null}
+      <PersonProjectBooksSection books={cockpit.projectBooks} />
 
       <ClientMemorySection title="History / Sources">
         <p className="max-w-[42ch] text-[15px] leading-relaxed text-[#c4b7aa]">

@@ -28,6 +28,10 @@ import {
   type PersonSourceHistoryQuery,
   type PersonSourceHistoryResult,
 } from "./types";
+import {
+  CLIENT_MEMORY_PROJECT_BOOK_NOTE_LIMIT,
+  CLIENT_MEMORY_PROJECT_BOOK_NOTE_QUERY_CAP,
+} from "../project-books/types";
 import type {
   EntityRelationship,
   IdentityReview,
@@ -453,6 +457,7 @@ export class SupabaseClientMemoryReader implements ClientMemoryReader {
       projectHistoryRows,
       counterpartRows,
       noteRows,
+      projectBookNoteRows,
     ] = await Promise.all([
       projectIds.length > 0
         ? rows<Record<string, unknown>>(
@@ -492,6 +497,23 @@ export class SupabaseClientMemoryReader implements ClientMemoryReader {
           .limit(CLIENT_MEMORY_COCKPIT_NOTE_LIMIT),
         "read-cockpit-notes-failed",
       ),
+      projectIds.length > 0
+        ? rows<Record<string, unknown>>(
+            this.client
+              .from("continuum_source_notes")
+              .select(NOTE_COLUMNS)
+              .in("project_id", projectIds)
+              .in("lifecycle_status", ["kept", "absorbed"])
+              .order("created_at", { ascending: false })
+              .limit(
+                Math.min(
+                  CLIENT_MEMORY_PROJECT_BOOK_NOTE_LIMIT * projectIds.length,
+                  CLIENT_MEMORY_PROJECT_BOOK_NOTE_QUERY_CAP,
+                ),
+              ),
+            "read-project-book-notes-failed",
+          )
+        : Promise.resolve([]),
     ]);
 
     const importKeys = [
@@ -509,6 +531,12 @@ export class SupabaseClientMemoryReader implements ClientMemoryReader {
     const counterpartProfiles = counterpartRows.map((row) =>
       nameOnlyProfile(String(row.person_id), String(row.display_name)),
     );
+    const sourceNotesById = new Map(
+      [...noteRows, ...projectBookNoteRows].map((row) => {
+        const mapped = rowToNote(row);
+        return [mapped.id, mapped] as const;
+      }),
+    );
 
     return {
       noteCount,
@@ -523,7 +551,7 @@ export class SupabaseClientMemoryReader implements ClientMemoryReader {
         relationships,
         facts: factRows.map(rowToFact),
         wishes: wishRows.map(rowToWish),
-        sourceNotes: noteRows.map(rowToNote),
+        sourceNotes: [...sourceNotesById.values()],
         reviews: reviewRows.map(rowToReview),
         projectProfiles: projectProfileRows.map(rowToProjectProfile),
         projectHistories: projectHistoryRows.map(rowToProjectHistory),

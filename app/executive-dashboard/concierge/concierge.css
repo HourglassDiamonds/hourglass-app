@@ -138,3 +138,22 @@ body:has([data-concierge-shell]) [data-facet-rail] {
     gap: 1rem;
   }
 }
+
+.hg-person-project-books {
+  min-width: 0;
+}
+
+.hg-project-book-card {
+  min-width: 0;
+}
+
+.hg-project-book-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.85rem;
+  min-width: 0;
+}
+
+.hg-project-book-toggle:focus-visible {
+  box-shadow: 0 0 0 3px rgba(173, 145, 100, 0.22);
+}

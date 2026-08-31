@@ -126,8 +126,10 @@ describe("Person memory cockpit", () => {
     const html = renderToStaticMarkup(
       createElement(ClientProfileView, { cockpit: composed.cockpit }),
     );
-    assert.match(html, />Projects</);
-    assert.match(html, /Imported or other projects/);
+    assert.match(html, /Project Books/);
+    assert.match(html, /Imported project 1/);
+    assert.match(html, /Imported project 5/);
+    assert.doesNotMatch(html, /Imported or other projects/);
     assert.doesNotMatch(html, />Current</);
     assert.doesNotMatch(html, /Current project/i);
     assert.doesNotMatch(html, /Waiting on Client|Waiting on Hourglass|Open Jobs/i);
@@ -502,6 +504,7 @@ describe("Person cockpit query contract", () => {
       cockpitQuery,
       /\.or\(`person_id\.eq\.\$\{trimmed\},project_id\.in/,
     );
+    assert.match(cockpitQuery, /read-project-book-notes-failed/);
     assert.match(
       cockpitQuery,
       /\.limit\(CLIENT_MEMORY_COCKPIT_NOTE_LIMIT\)/,

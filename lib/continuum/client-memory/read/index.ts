@@ -44,6 +44,7 @@ export type {
   SourceNoteSummary,
   WishSummary,
   ClientMemoryReadSnapshot,
+  PersonProjectBook,
 } from "./types";
 export { searchPeopleFromSnapshot, rankSearchHit, SEARCH_RANK } from "./search";
 export { composePersonProfile } from "./profile";
@@ -52,3 +53,4 @@ export {
   listPersonSourceHistoryFromSnapshot,
   partitionCockpitProjects,
 } from "./cockpit";
+export { composePersonProjectBooks } from "../project-books/compose";

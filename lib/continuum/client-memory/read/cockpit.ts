@@ -5,6 +5,7 @@
 
 import { CLIENT_MEMORY_SOURCE_SYSTEM } from "../types";
 import { PERSON_FACT_TYPE_BIRTHDAY } from "../facts/types";
+import { composePersonProjectBooks } from "../project-books/compose";
 import { relationshipLabel } from "./presentation";
 import {
   CLIENT_MEMORY_COCKPIT_NOTE_LIMIT,
@@ -271,6 +272,7 @@ export function composePersonCockpit(
       trimmed,
     ),
     projects: cockpitProjects(snapshot, projectIds),
+    projectBooks: composePersonProjectBooks(snapshot, trimmed),
     wishes,
     recentManualNotes,
     reviews: {

@@ -58,7 +58,9 @@ describe("Concierge Client Memory UI", () => {
     assert.match(html, /Ada Lovelace/);
     assert.match(html, /Add Note/);
     assert.match(html, /Add birthday/);
-    assert.doesNotMatch(html, /Ring size|On their radar|Projects|Recent notes/i);
+    assert.match(html, /Project Books/);
+    assert.match(html, /No Project Books are linked/);
+    assert.doesNotMatch(html, /Ring size|On their radar|Recent notes/i);
     assert.match(html, /History \/ Sources/);
     assert.doesNotMatch(html, /No facts|coming soon|placeholder/i);
     const saved = renderToStaticMarkup(
