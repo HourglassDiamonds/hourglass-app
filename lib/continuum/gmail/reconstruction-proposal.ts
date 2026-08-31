@@ -567,7 +567,7 @@ function storedStatusLabel(
 ): string {
   if (status === "supported") return "SUPPORTED BY RECOVERED INDEXED EVIDENCE";
   if (status === "partially_supported") return "PARTIALLY SUPPORTED";
-  if (status === "conflicting") return "CONFLICTING / MULTIPLE IDENTIFIERS FOUND";
+  if (status === "conflicting") return "CONFLICTING / MULTIPLE ORDER IDENTIFIERS FOUND";
   return "NOT INDEPENDENTLY SUPPORTED";
 }
 

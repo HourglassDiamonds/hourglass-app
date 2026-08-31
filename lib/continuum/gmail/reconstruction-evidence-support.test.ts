@@ -113,6 +113,57 @@ describe("Project A live-shape acceptance", () => {
       true,
     );
   });
+
+  it("keeps SP12943 as an additional order identifier and does not retype RN tokens as orders", () => {
+    const recovered = collectProjectScopedRecoveredSnippets({
+      targetProjectId: COHORT_SYNTHESIS_PROJECT_A_ID,
+      storedThreadSubjects: [
+        {
+          threadId: COHORT_SYNTHESIS_PROJECT_A.storedThreadId,
+          subject:
+            "RE: HGD - Chicken ring (his)-C010657-SP13040 SP12943 RN04163 RN05883",
+        },
+      ],
+    });
+    const assessment = orderOf(
+      COHORT_SYNTHESIS_PROJECT_A_ID,
+      COHORT_SYNTHESIS_PROJECT_A.order,
+      recovered,
+      COHORT_SYNTHESIS_PROJECT_A.cad,
+    );
+    assert.equal(assessment?.state, "conflicting");
+    assert.deepEqual(assessment?.storedIdentifiers, ["SP13040"]);
+    assert.deepEqual(assessment?.supportedStoredIdentifiers, ["SP13040"]);
+    assert.deepEqual(assessment?.additionalRecoveredIdentifiers, ["SP12943"]);
+    assert.equal(assessment?.additionalRecoveredIdentifiers.includes("RN04163"), false);
+    assert.equal(assessment?.additionalRecoveredIdentifiers.includes("RN05883"), false);
+    assert.equal(assessment?.additionalRecoveredIdentifiers.includes("C010657"), false);
+    assert.equal(assessment?.canonical, false);
+    assert.equal(assessment?.automaticApply, false);
+    assert.match(assessment?.reviewNote ?? "", /Additional recovered order identifier: SP12943/i);
+    assert.match(
+      assessment?.reviewNote ?? "",
+      /not interpreted as order identifiers/i,
+    );
+    assert.doesNotMatch(assessment?.reviewNote ?? "", /RN04163|RN05883/);
+  });
+
+  it("admits a typed Order-context identifier that is not the stored SP family", () => {
+    const assessment = orderOf(
+      COHORT_SYNTHESIS_PROJECT_A_ID,
+      COHORT_SYNTHESIS_PROJECT_A.order,
+      [
+        snippet({
+          projectId: COHORT_SYNTHESIS_PROJECT_A_ID,
+          text: "RE: HGD - Chicken ring (his)-C010657-SP13040 Order: AB-555",
+        }),
+      ],
+      COHORT_SYNTHESIS_PROJECT_A.cad,
+    );
+    assert.equal(assessment?.supportedStoredIdentifiers.includes("SP13040"), true);
+    assert.deepEqual(assessment?.additionalRecoveredIdentifiers, ["AB-555"]);
+    assert.equal(assessment?.state, "conflicting");
+  });
 });
 
 describe("Project B live-shape conflict handling", () => {

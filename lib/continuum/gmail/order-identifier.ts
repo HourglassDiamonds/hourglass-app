@@ -97,6 +97,35 @@ export function extractOrderIdentifiers(text: string): string[] {
   return found;
 }
 
+/**
+ * Leading alphabetic family of a stored/recovered order token (SP13040 → SP).
+ * Derived from the token itself — not a global prefix taxonomy.
+ */
+export function orderIdentifierFamilyPrefix(value: string): string {
+  const match = /^([A-Za-z]+)/.exec(compactToken(value));
+  return match ? match[1]!.toUpperCase() : "";
+}
+
+/**
+ * Untyped strong structured tokens that may be order identifiers in
+ * subjects/filenames. Not CAD extraction. Callers must still restrict by
+ * stored-order family or typed Order-context proof.
+ */
+const STRUCTURED_ORDER_CANDIDATE_PATTERN =
+  /\b([A-Za-z]{2,}\d{3,}[A-Za-z0-9]*)\b/g;
+
+export function extractStructuredOrderCandidates(text: string): string[] {
+  const found: string[] = [];
+  if (!text.trim()) return found;
+  STRUCTURED_ORDER_CANDIDATE_PATTERN.lastIndex = 0;
+  for (const match of text.matchAll(STRUCTURED_ORDER_CANDIDATE_PATTERN)) {
+    const token = compactToken(match[1] ?? "");
+    if (!isStrongStructuredOrderIdentifier(token)) continue;
+    pushUnique(found, token);
+  }
+  return found;
+}
+
 export function candidateHasTypedOrderIdentifier(
   text: string,
   value: string,

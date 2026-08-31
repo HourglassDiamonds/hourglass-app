@@ -4,8 +4,10 @@ import {
   candidateHasTypedOrderIdentifier,
   classifyOrderIdentifierStrength,
   extractOrderIdentifiers,
+  extractStructuredOrderCandidates,
   isPlausibleOrderIdentifier,
   isStrongStructuredOrderIdentifier,
+  orderIdentifierFamilyPrefix,
 } from "./order-identifier";
 
 describe("order identifier extraction", () => {
@@ -66,5 +68,23 @@ describe("order identifier strength", () => {
     assert.equal(candidateHasTypedOrderIdentifier("Order #555", "555"), true);
     assert.equal(candidateHasTypedOrderIdentifier("Order number 555", "555"), true);
     assert.equal(candidateHasTypedOrderIdentifier("Order: AB-555", "AB-555"), true);
+  });
+});
+
+describe("structured order candidates and family prefix", () => {
+  it("extracts SP-family tokens from subjects without treating RN or CAD as orders", () => {
+    const text = "RE: HGD - Chicken ring (his)-C010657-SP13040 SP12943 RN04163 RN05883";
+    assert.equal(
+      extractStructuredOrderCandidates(text).includes("SP13040"),
+      true,
+    );
+    assert.equal(
+      extractStructuredOrderCandidates(text).includes("SP12943"),
+      true,
+    );
+    assert.equal(orderIdentifierFamilyPrefix("SP13040"), "SP");
+    assert.equal(orderIdentifierFamilyPrefix("SP12943"), "SP");
+    assert.equal(orderIdentifierFamilyPrefix("RN04163"), "RN");
+    assert.equal(orderIdentifierFamilyPrefix("C010657"), "C");
   });
 });

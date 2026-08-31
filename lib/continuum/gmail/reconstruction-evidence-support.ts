@@ -20,8 +20,10 @@ import {
 } from "./identifier-specificity";
 import {
   extractOrderIdentifiers,
+  extractStructuredOrderCandidates,
   isPlausibleOrderIdentifier,
   isStrongStructuredOrderIdentifier,
+  orderIdentifierFamilyPrefix,
 } from "./order-identifier";
 import type { ReconstructedItemType } from "./project-reconstruction";
 
@@ -182,14 +184,25 @@ export function extractStoredCadIdentifiers(storedCad: string): string[] {
   return uniqueTokens(found);
 }
 
-export function extractRecoveredStrongIdentifiers(text: string): string[] {
+export function extractRecoveredOrderIdentifiers(
+  text: string,
+  storedOrderIdentifiers: readonly string[] = [],
+): string[] {
   if (!text.trim()) return [];
   const found: string[] = [];
   for (const order of extractOrderIdentifiers(text)) {
     if (isStrongStructuredOrderIdentifier(order)) found.push(order);
   }
-  for (const token of extractCadJobIdentifiers(text)) {
-    if (isStrongCommercialIdentifier(token)) found.push(token);
+  const storedFamilies = new Set(
+    storedOrderIdentifiers
+      .map(orderIdentifierFamilyPrefix)
+      .filter((prefix) => prefix.length > 0),
+  );
+  if (storedFamilies.size > 0) {
+    for (const token of extractStructuredOrderCandidates(text)) {
+      if (!storedFamilies.has(orderIdentifierFamilyPrefix(token))) continue;
+      found.push(token);
+    }
   }
   return uniqueTokens(found);
 }
@@ -406,10 +419,11 @@ function orderReviewNote(input: {
   }
   if (input.state === "conflicting") {
     return [
-      "Conflicting / multiple Project-scoped identifiers require review.",
+      "Conflicting / multiple Project-scoped order identifiers require review.",
       `Stored order identifiers: ${input.storedIdentifiers.join(", ") || "none"}.`,
       `Supported stored identifiers: ${input.supportedStoredIdentifiers.join(", ") || "none"}.`,
-      `Additional recovered identifier: ${input.additionalRecoveredIdentifiers.join(", ") || "none"}.`,
+      `Additional recovered order identifier: ${input.additionalRecoveredIdentifiers.join(", ") || "none"}.`,
+      "Other structured Project references in recovered metadata are not interpreted as order identifiers.",
       "No automatic correction. Founder review is required to interpret revision, reorder, quote, or vendor context.",
       epistemic,
     ].join(" ");
@@ -447,7 +461,10 @@ export function assessStoredOrderEvidence(input: {
         filename: snippet.filename,
       });
     }
-    for (const recoveredId of extractRecoveredStrongIdentifiers(snippet.text)) {
+    for (const recoveredId of extractRecoveredOrderIdentifiers(
+      snippet.text,
+      storedIdentifiers,
+    )) {
       if (tokenInSet(recoveredId, storedIdentifiers)) continue;
       if (tokenInSet(recoveredId, storedCad)) continue;
       if (!tokenInSet(recoveredId, additional)) additional.push(recoveredId);
