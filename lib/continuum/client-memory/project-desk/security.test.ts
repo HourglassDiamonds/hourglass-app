@@ -49,7 +49,7 @@ describe("Project Desk security", () => {
     );
   });
 
-  it("does not query Gmail, CoS, Open Jobs, artifacts, Human Intake, or lifecycle state", () => {
+  it("does not query Gmail, CoS, Open Jobs, artifacts, or Human Intake", () => {
     for (const file of walkFiles(DESK_DIR, ".ts")) {
       if (file.endsWith(".test.ts")) continue;
       const source = readFileSync(file, "utf8");

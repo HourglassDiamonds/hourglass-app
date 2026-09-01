@@ -3,7 +3,7 @@
  * App Router / server entry: import from `./server` (enforces `server-only`).
  * Do not import from client components or public routes.
  * Service-role only. SELECT against existing Client Memory tables.
- * Does not query operating/lifecycle, Gmail, CoS, Open Jobs, or artifacts.
+ * Does not query Gmail, CoS, Open Jobs, or artifacts.
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -23,6 +23,7 @@ import {
   listProjectsFromSnapshot,
 } from "./compose";
 import { loadActiveOperatingDetails } from "../project-operating/load-details";
+import { loadProjectLifecycleForDesk } from "../project-lifecycle/load-states";
 import type { ProjectDeskReader } from "./reader";
 import type {
   ListProjectsFilter,
@@ -205,11 +206,16 @@ export class SupabaseProjectDeskReader implements ProjectDeskReader {
     const details = profile
       ? await loadActiveOperatingDetails(this.client, [profile])
       : { customDetails: [], repairDetails: [] };
+    const lifecycle = profile
+      ? await loadProjectLifecycleForDesk(this.client, profile)
+      : { states: [], events: [] };
     return getProjectDeskFromSnapshot(
       {
         ...snapshot,
         customDetails: details.customDetails,
         repairDetails: details.repairDetails,
+        lifecycleStates: lifecycle.states,
+        lifecycleEvents: lifecycle.events,
       },
       projectId,
     );

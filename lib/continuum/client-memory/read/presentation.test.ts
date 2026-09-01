@@ -15,6 +15,7 @@ import {
   conciergeInboxPath,
   conciergeInboxSourcePath,
   conciergeCorrectProjectKindPath,
+  conciergeCorrectProjectLifecyclePath,
   conciergeCorrectProjectSpecPath,
   conciergeCorrectOperatingDetailPath,
   conciergeProjectCustomPath,
@@ -231,6 +232,10 @@ describe("Concierge presentation", () => {
     assert.equal(
       conciergeCorrectProjectKindPath("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"),
       "/executive-dashboard/concierge/projects/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/kind",
+    );
+    assert.equal(
+      conciergeCorrectProjectLifecyclePath("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"),
+      "/executive-dashboard/concierge/projects/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/lifecycle",
     );
     assert.equal(
       conciergeProjectCustomPath("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"),

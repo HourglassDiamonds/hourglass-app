@@ -47,6 +47,16 @@ import {
   type OperatingDetailCorrectionApplyResult,
 } from "./project-operating/correct";
 import {
+  lifecycleEventFromApply,
+  type ProjectLifecycleMutationApplyInput,
+  type ProjectLifecycleMutationApplyResult,
+} from "./project-lifecycle/set";
+import {
+  isLifecycleKind,
+  isStageAllowedForKind,
+  type LifecycleKind,
+} from "./project-lifecycle";
+import {
   currentCustomFieldValue,
   currentRepairFieldValue,
   isCustomOperatingDetailField,
@@ -73,6 +83,8 @@ import type {
   ProjectCustomDetails,
   ProjectHistory,
   ProjectHistoryRevision,
+  ProjectLifecycleEvent,
+  ProjectLifecycleState,
   ProjectProfile,
   ProjectRepairDetails,
   SourceNote,
@@ -226,6 +238,13 @@ export type ClientMemoryStore = {
   applyProjectOperatingDetailCorrection(
     input: OperatingDetailCorrectionApplyInput,
   ): Promise<OperatingDetailCorrectionApplyResult>;
+  getProjectLifecycleState(
+    projectId: string,
+    projectKind: LifecycleKind,
+  ): Promise<ProjectLifecycleState | null>;
+  applyProjectLifecycleMutation(
+    input: ProjectLifecycleMutationApplyInput,
+  ): Promise<ProjectLifecycleMutationApplyResult>;
   applyImportedProjectHistory(
     history: ProjectHistory,
   ): Promise<InsertResult<ProjectHistory>>;
@@ -274,6 +293,10 @@ function currentFactKey(personId: string, factType: string) {
   return `${personId}\0${factType}`;
 }
 
+function lifecycleStateKey(projectId: string, projectKind: string) {
+  return `${projectId}\0${projectKind}`;
+}
+
 export class InMemoryClientMemoryStore implements ClientMemoryStore {
   private entities = new Map<string, ContinuumEntity>();
   private identitiesById = new Map<string, ExternalIdentity>();
@@ -295,12 +318,16 @@ export class InMemoryClientMemoryStore implements ClientMemoryStore {
   private projectSpecMutationIds = new Map<string, string>();
   private customDetails = new Map<string, ProjectCustomDetails>();
   private repairDetails = new Map<string, ProjectRepairDetails>();
+  private lifecycleStates = new Map<string, ProjectLifecycleState>();
+  private lifecycleEvents = new Map<string, ProjectLifecycleEvent>();
+  private lifecycleMutationIds = new Map<string, string>();
   private reviews = new Map<string, IdentityReview>();
   private reviewKeys = new Map<string, string>();
   failNextCreateAfter: "entity" | "profile" | "identity" | null = null;
   failNextSetCurrentAfterSupersede = false;
   failNextNoteMutationAfter: "revision" | "update" | null = null;
   failNextProjectSpecMutationAfter: "revision" | "update" | null = null;
+  failNextLifecycleMutationAfter: "event" | "state" | null = null;
 
   reset(): void {
     this.entities.clear();
@@ -323,12 +350,16 @@ export class InMemoryClientMemoryStore implements ClientMemoryStore {
     this.projectSpecMutationIds.clear();
     this.customDetails.clear();
     this.repairDetails.clear();
+    this.lifecycleStates.clear();
+    this.lifecycleEvents.clear();
+    this.lifecycleMutationIds.clear();
     this.reviews.clear();
     this.reviewKeys.clear();
     this.failNextCreateAfter = null;
     this.failNextSetCurrentAfterSupersede = false;
     this.failNextNoteMutationAfter = null;
     this.failNextProjectSpecMutationAfter = null;
+    this.failNextLifecycleMutationAfter = null;
   }
 
   async insertEntity(input: {
@@ -916,6 +947,94 @@ export class InMemoryClientMemoryStore implements ClientMemoryStore {
         ? clone(this.repairDetails.get(input.projectId)!)
         : null,
       revisionId: revision.id,
+    };
+  }
+
+  async getProjectLifecycleState(
+    projectId: string,
+    projectKind: LifecycleKind,
+  ): Promise<ProjectLifecycleState | null> {
+    const existing = this.lifecycleStates.get(
+      lifecycleStateKey(projectId, projectKind),
+    );
+    return existing ? clone(existing) : null;
+  }
+
+  listProjectLifecycleStates(): ProjectLifecycleState[] {
+    return [...this.lifecycleStates.values()].map((row) => clone(row));
+  }
+
+  listProjectLifecycleEvents(projectId?: string): ProjectLifecycleEvent[] {
+    return [...this.lifecycleEvents.values()]
+      .filter((row) => (projectId ? row.projectId === projectId : true))
+      .sort((a, b) => {
+        if (a.changedAt === b.changedAt) return b.eventId.localeCompare(a.eventId);
+        return a.changedAt < b.changedAt ? 1 : -1;
+      })
+      .map((row) => clone(row));
+  }
+
+  async applyProjectLifecycleMutation(
+    input: ProjectLifecycleMutationApplyInput,
+  ): Promise<ProjectLifecycleMutationApplyResult> {
+    const existingMutation = this.lifecycleMutationIds.get(input.mutationId);
+    if (existingMutation) {
+      const event = this.lifecycleEvents.get(existingMutation);
+      const state = event
+        ? this.lifecycleStates.get(
+            lifecycleStateKey(event.projectId, event.projectKind),
+          ) ?? null
+        : null;
+      return {
+        status: "already-present",
+        state: state ? clone(state) : null,
+        eventId: event?.eventId ?? null,
+      };
+    }
+    const current = this.projects.get(input.projectId);
+    if (!current) throw new Error("project-not-found");
+    if (!isLifecycleKind(current.projectKind)) {
+      throw new Error("unsupported-project-kind");
+    }
+    if (!isStageAllowedForKind(current.projectKind, input.newStage)) {
+      throw new Error("invalid-value");
+    }
+    const key = lifecycleStateKey(input.projectId, current.projectKind);
+    const existing = this.lifecycleStates.get(key) ?? null;
+    const priorStage = existing?.stage ?? null;
+    if (priorStage === (input.newStage ?? null)) {
+      return {
+        status: "already-present",
+        state: existing ? clone(existing) : null,
+        eventId: null,
+      };
+    }
+    if (this.failNextLifecycleMutationAfter === "event") {
+      this.failNextLifecycleMutationAfter = null;
+      throw new Error("project-lifecycle-event-failed");
+    }
+    const event = lifecycleEventFromApply(input, current.projectKind);
+    this.lifecycleEvents.set(event.eventId, clone(event));
+    this.lifecycleMutationIds.set(input.mutationId, event.eventId);
+    if (this.failNextLifecycleMutationAfter === "state") {
+      this.failNextLifecycleMutationAfter = null;
+      this.lifecycleEvents.delete(event.eventId);
+      this.lifecycleMutationIds.delete(input.mutationId);
+      throw new Error("project-lifecycle-state-failed");
+    }
+    const next: ProjectLifecycleState = {
+      projectId: input.projectId,
+      projectKind: current.projectKind,
+      stage: input.newStage,
+      enteredAt: input.newStage == null ? null : input.changedAt,
+      createdAt: existing?.createdAt ?? input.changedAt,
+      updatedAt: input.changedAt,
+    };
+    this.lifecycleStates.set(key, clone(next));
+    return {
+      status: "updated",
+      state: clone(next),
+      eventId: event.eventId,
     };
   }
 

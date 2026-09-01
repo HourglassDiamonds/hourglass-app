@@ -28,6 +28,7 @@ import { getAuthenticatedClientMemoryProjectSpecWriter } from "@/lib/continuum/c
 import type { CorrectProjectSpecResult } from "@/lib/continuum/client-memory/project-spec/correct";
 import type { CorrectProjectKindResult } from "@/lib/continuum/client-memory/project-spec/correct-kind";
 import type { CorrectOperatingDetailResult } from "@/lib/continuum/client-memory/project-operating/correct";
+import type { SetProjectLifecycleResult } from "@/lib/continuum/client-memory/project-lifecycle/set";
 import { getAuthenticatedHumanSourceStore } from "@/lib/continuum/client-memory/human-intake/load";
 import {
   HUMAN_COMMUNICATION_TYPES,
@@ -333,6 +334,54 @@ export async function saveProjectOperatingDetailCorrection(
     redirect(`${conciergeProjectPath(projectId)}?saved=operating`);
   }
   return { ok: false, message: humanOperatingDetailCorrectionMessage(result) };
+}
+
+export type SaveProjectLifecycleCorrectionState = {
+  ok: false;
+  message: string;
+};
+
+function humanLifecycleCorrectionMessage(
+  result: SetProjectLifecycleResult,
+): string {
+  if (result.ok) return "Unable to save the correction.";
+  if (result.reason === "invalid-input" && result.code === "unsupported-project-kind") {
+    return "This Project Kind does not use a Custom or Repair lifecycle.";
+  }
+  if (result.reason === "invalid-input" && result.code === "invalid-value") {
+    return "That lifecycle stage couldn't be saved.";
+  }
+  if (result.reason === "entity-kind-mismatch" || result.reason === "project-not-found") {
+    return "That project could not be found.";
+  }
+  return "Unable to save the correction.";
+}
+
+export async function saveProjectLifecycleCorrection(
+  _prev: SaveProjectLifecycleCorrectionState | null,
+  formData: FormData,
+): Promise<SaveProjectLifecycleCorrectionState> {
+  const auth = await getAuthenticatedClientMemoryProjectSpecWriter();
+  if (!auth.ok) {
+    return {
+      ok: false,
+      message:
+        auth.reason === "unauthorized"
+          ? "Sign in to continue."
+          : "Unable to save the correction.",
+    };
+  }
+  const projectId = String(formData.get("projectId") ?? "").trim();
+  const result = await auth.writer.setProjectLifecycle({
+    mutationId: String(formData.get("mutationId") ?? "").trim(),
+    projectId,
+    newValue: String(formData.get("newValue") ?? ""),
+    actor: auth.username,
+  });
+  if (result.ok) {
+    redirect(`${conciergeProjectPath(projectId)}?saved=lifecycle`);
+  }
+  return { ok: false, message: humanLifecycleCorrectionMessage(result) };
 }
 
 export async function editConciergeNote(

@@ -21,6 +21,10 @@ import {
   customDetailsByProjectId,
   repairDetailsByProjectId,
 } from "../project-operating/layer";
+import {
+  compactLifecycleView,
+  lifecycleStatesByProjectId,
+} from "../project-lifecycle/view";
 
 function linkedProjectIds(
   personId: string,
@@ -132,6 +136,7 @@ export function composePersonProjectBooks(
   const projectIds = linkedProjectIds(trimmed, snapshot.relationships);
   const customById = customDetailsByProjectId(snapshot.customDetails);
   const repairById = repairDetailsByProjectId(snapshot.repairDetails);
+  const lifecycleById = lifecycleStatesByProjectId(snapshot.lifecycleStates);
   const books: PersonProjectBook[] = projectIds.flatMap((projectId) => {
     const project = snapshot.projectProfiles.find(
       (row) => row.projectId === projectId,
@@ -203,6 +208,10 @@ export function composePersonProjectBooks(
         projectKind,
         customDetails: customById.get(projectId) ?? null,
         repairDetails: repairById.get(projectId) ?? null,
+      }),
+      lifecycle: compactLifecycleView({
+        projectKind,
+        states: lifecycleById.get(projectId) ?? [],
       }),
       history: historyEntries,
     };

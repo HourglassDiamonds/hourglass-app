@@ -8,6 +8,7 @@ import type { EditableProjectSpecField } from "../types";
 import type { SourceNoteSummary } from "../read/types";
 import type { ProjectKind } from "../project-kind";
 import type { ProjectOperatingLayer } from "../project-operating/layer";
+import type { ProjectLifecycleView } from "../project-lifecycle/view";
 
 export const PERSON_PROJECT_BOOK_SECTIONS = [
   "overview",
@@ -85,6 +86,7 @@ export type PersonProjectBook = {
     founderReviewRequired: boolean;
   };
   operatingLayer: ProjectOperatingLayer;
+  lifecycle: ProjectLifecycleView;
   history: PersonProjectBookHistoryEntry[];
 };
 

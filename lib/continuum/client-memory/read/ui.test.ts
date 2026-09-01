@@ -322,7 +322,7 @@ describe("Concierge Client Memory UI", () => {
     assert.match(actions, /restoreConciergeNote/);
     assert.match(actions, /savePlaudHumanSource/);
     assert.match(actions, /getAuthenticatedHumanSourceStore/);
-    assert.doesNotMatch(actions, /saveProjectLifecycle/);
+    assert.match(actions, /saveProjectLifecycleCorrection/);
     assert.doesNotMatch(actions, /from\("continuum_/);
     assert.doesNotMatch(actions, /noteText=/);
     const addNote = readFileSync(

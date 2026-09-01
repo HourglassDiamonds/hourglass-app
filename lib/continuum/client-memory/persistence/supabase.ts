@@ -36,6 +36,15 @@ import type {
   OperatingDetailCorrectionApplyInput,
   OperatingDetailCorrectionApplyResult,
 } from "../project-operating/correct";
+import type {
+  ProjectLifecycleMutationApplyInput,
+  ProjectLifecycleMutationApplyResult,
+} from "../project-lifecycle/set";
+import { isLifecycleKind, type LifecycleKind } from "../project-lifecycle";
+import {
+  LIFECYCLE_STATE_COLUMNS,
+  rowToLifecycleState,
+} from "../project-lifecycle/rows";
 import {
   CUSTOM_DETAIL_COLUMNS,
   REPAIR_DETAIL_COLUMNS,
@@ -64,6 +73,7 @@ import type {
   ProjectHistory,
   ProjectProfile,
   ProjectCustomDetails,
+  ProjectLifecycleState,
   ProjectRepairDetails,
   SourceNote,
   Wish,
@@ -802,6 +812,66 @@ export class SupabaseClientMemoryStore implements ClientMemoryStore {
         payload && payload.revision_id != null
           ? String(payload.revision_id)
           : null,
+    };
+  }
+
+  async getProjectLifecycleState(
+    projectId: string,
+    projectKind: LifecycleKind,
+  ): Promise<ProjectLifecycleState | null> {
+    if (!isLifecycleKind(projectKind)) return null;
+    const { data, error } = await this.client
+      .from("continuum_project_lifecycle_states")
+      .select(LIFECYCLE_STATE_COLUMNS)
+      .eq("project_id", projectId)
+      .eq("project_kind", projectKind)
+      .maybeSingle();
+    if (error) throwQuery(error, "get-project-lifecycle-state-failed");
+    if (!data) return null;
+    return rowToLifecycleState(data as Record<string, unknown>);
+  }
+
+  async applyProjectLifecycleMutation(
+    input: ProjectLifecycleMutationApplyInput,
+  ): Promise<ProjectLifecycleMutationApplyResult> {
+    const { data, error } = await this.client.rpc(
+      "continuum_client_memory_set_project_lifecycle",
+      {
+        p_project_id: input.projectId,
+        p_stage: input.newStage,
+        p_mutation_id: input.mutationId,
+        p_event_id: input.eventId,
+        p_changed_at: input.changedAt,
+        p_changed_by: input.changedBy,
+        p_source_system: PROJECT_SPEC_CORRECTION_SOURCE_SYSTEM,
+      },
+    );
+    if (error) {
+      const message = error.message ?? "";
+      if (message.includes("project-not-found")) throw new Error("project-not-found");
+      if (message.includes("entity-kind-mismatch")) {
+        throw new Error("entity-kind-mismatch");
+      }
+      if (message.includes("unsupported-project-kind")) {
+        throw new Error("unsupported-project-kind");
+      }
+      if (message.includes("invalid-value")) throw new Error("invalid-value");
+      throwQuery(error, "set-project-lifecycle-failed");
+    }
+    const payload =
+      data && typeof data === "object" ? (data as Record<string, unknown>) : null;
+    const status: ProjectLifecycleMutationApplyResult["status"] =
+      payload && payload.status === "already-present"
+        ? "already-present"
+        : "updated";
+    return {
+      status,
+      state:
+        payload && payload.state && typeof payload.state === "object"
+          ? rowToLifecycleState(payload.state as Record<string, unknown>)
+          : null,
+      eventId:
+        payload && payload.event_id != null ? String(payload.event_id) : null,
     };
   }
 

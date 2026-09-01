@@ -16,7 +16,7 @@ function walkSql(dir: string, found: string[] = []): string[] {
 }
 
 describe("Project Desk Slice A schema", () => {
-  it("does not introduce project operating, jobs, artifacts, or lifecycle SQL", () => {
+  it("does not introduce project operating, jobs, or artifacts SQL", () => {
     assert.equal(
       existsSync(
         join(ROOT, "lib/supabase/continuum-client-memory-project-operating.sql"),
@@ -28,10 +28,12 @@ describe("Project Desk Slice A schema", () => {
     for (const file of sqlFiles) {
       const sql = readFileSync(file, "utf8");
       assert.doesNotMatch(sql, /continuum_project_operating/);
-      assert.doesNotMatch(sql, /continuum_client_memory_set_project_lifecycle/);
       assert.doesNotMatch(sql, /continuum_project_jobs/);
       assert.doesNotMatch(sql, /continuum_project_open_jobs/);
       assert.doesNotMatch(sql, /continuum_project_artifacts/);
+      if (!file.endsWith("continuum-client-memory-project-lifecycle.sql")) {
+        assert.doesNotMatch(sql, /continuum_client_memory_set_project_lifecycle/);
+      }
     }
   });
 });

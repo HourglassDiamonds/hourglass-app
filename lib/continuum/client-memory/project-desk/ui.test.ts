@@ -65,14 +65,17 @@ describe("Project Desk UI", () => {
     assert.match(html, /Add a note/);
     assert.match(html, /Correct/);
     assert.match(html, /Correction history/);
-    assert.doesNotMatch(html, /ProjectLifecycleForm|saveProjectLifecycle/);
+    assert.doesNotMatch(html, /ProjectLifecycleForm/);
     assert.doesNotMatch(html, /Waiting on Client|No Current Action|overdue/);
     assert.doesNotMatch(html, /gmail_thread|thread-secret|import_row/);
     assert.doesNotMatch(html, />History</);
-    assert.doesNotMatch(html, /Parked|lifecycle/);
+    assert.doesNotMatch(html, /Parked|saveProjectLifecycle|ProjectLifecycleForm/);
+    assert.match(html, /Lifecycle/);
+    assert.match(html, /conciergeCorrectProjectLifecyclePath/);
+    assert.doesNotMatch(html, /% complete|progress bar|5 of 8/);
   });
 
-  it("renders the project book without lifecycle tabs", () => {
+  it("renders the project book without invented waiting-on lifecycle tabs", () => {
     const empty = renderToStaticMarkup(createElement(ProjectBookView, { projects: [] }));
     assert.match(empty, /Current operating state is unknown/);
     assert.doesNotMatch(empty, /Review unknown|lifecycle=unknown|Parked/);

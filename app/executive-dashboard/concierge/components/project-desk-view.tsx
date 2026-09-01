@@ -4,6 +4,7 @@ import {
   conciergeClientPath,
   conciergeCorrectOperatingDetailPath,
   conciergeCorrectProjectKindPath,
+  conciergeCorrectProjectLifecyclePath,
   conciergeCorrectProjectSpecPath,
   formatNoteDate,
   noteContextLabel,
@@ -17,6 +18,12 @@ import {
 } from "@/lib/continuum/client-memory/project-kind";
 import { OPERATING_DETAIL_NOT_SET } from "@/lib/continuum/client-memory/project-operating/fields";
 import type { ProjectOperatingLayer } from "@/lib/continuum/client-memory/project-operating/layer";
+import {
+  PROJECT_LIFECYCLE_CURRENT_LABEL,
+  PROJECT_LIFECYCLE_HISTORY_TITLE,
+  PROJECT_LIFECYCLE_SECTION_TITLE,
+} from "@/lib/continuum/client-memory/project-lifecycle";
+import type { ProjectLifecycleView } from "@/lib/continuum/client-memory/project-lifecycle/view";
 import { ClientMemorySection } from "./client-memory-section";
 
 export function ProjectDeskView({
@@ -102,6 +109,8 @@ export function ProjectDeskView({
           </div>
         </dl>
       </ClientMemorySection>
+
+      <LifecycleSection projectId={desk.projectId} lifecycle={desk.lifecycle} />
 
       <OperatingLayerSection
         projectId={desk.projectId}
@@ -241,6 +250,74 @@ export function ProjectDeskView({
         </ClientMemorySection>
       ) : null}
     </article>
+  );
+}
+
+function LifecycleSection({
+  projectId,
+  lifecycle,
+}: {
+  projectId: string;
+  lifecycle: ProjectLifecycleView;
+}) {
+  if (lifecycle.kind === "none") return null;
+  return (
+    <ClientMemorySection title={PROJECT_LIFECYCLE_SECTION_TITLE}>
+      <dl>
+        <div>
+          <dt className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
+            Current Stage
+          </dt>
+          <dd className="mt-1 break-words text-[15px] leading-relaxed text-[#e7ddd2]">
+            {lifecycle.label}
+          </dd>
+          <dd>
+            <Link
+              href={conciergeCorrectProjectLifecyclePath(projectId)}
+              className="mt-1 inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.24em] text-[#8d8073] outline-none hover:text-[#efe8de] focus-visible:text-[#efe8de]"
+            >
+              {lifecycle.stage ? "Correct" : "Set"}
+            </Link>
+          </dd>
+        </div>
+      </dl>
+      <ol className="hg-lifecycle-rail mt-5">
+        {lifecycle.stages.map((row) => (
+          <li
+            key={row.stage}
+            aria-current={row.current ? "step" : undefined}
+            className={
+              row.current
+                ? "min-w-0 max-w-full break-words text-[13px] font-medium leading-snug text-[#efe8de]"
+                : "min-w-0 max-w-full break-words text-[13px] leading-snug text-[#8d8073]"
+            }
+          >
+            {row.label}
+            {row.current ? (
+              <span className="ml-1 text-[10px] uppercase tracking-[0.16em] text-[#ad9164]">
+                {PROJECT_LIFECYCLE_CURRENT_LABEL}
+              </span>
+            ) : null}
+          </li>
+        ))}
+      </ol>
+      {lifecycle.history.length > 0 ? (
+        <div className="mt-6">
+          <p className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
+            {PROJECT_LIFECYCLE_HISTORY_TITLE}
+          </p>
+          <ol className="mt-3 space-y-3">
+            {lifecycle.history.map((row) => (
+              <li key={row.eventId} className="min-w-0">
+                <p className="break-words text-[14px] leading-relaxed text-[#e7ddd2]">
+                  {formatNoteDate(row.changedAt)} {row.label}
+                </p>
+              </li>
+            ))}
+          </ol>
+        </div>
+      ) : null}
+    </ClientMemorySection>
   );
 }
 

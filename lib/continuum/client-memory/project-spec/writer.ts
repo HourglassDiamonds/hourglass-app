@@ -23,12 +23,20 @@ import {
   type CorrectOperatingDetailInput,
   type CorrectOperatingDetailResult,
 } from "../project-operating/correct";
+import {
+  setProjectLifecycle,
+  type SetProjectLifecycleDeps,
+  type SetProjectLifecycleInput,
+  type SetProjectLifecycleResult,
+} from "../project-lifecycle/set";
 import type {
   ProjectCustomDetails,
   ProjectHistory,
+  ProjectLifecycleState,
   ProjectProfile,
   ProjectRepairDetails,
 } from "../types";
+import type { LifecycleKind } from "../project-lifecycle";
 
 export type ClientMemoryProjectSpecWriter = {
   correctProjectSpec(
@@ -40,10 +48,17 @@ export type ClientMemoryProjectSpecWriter = {
   correctProjectOperatingDetail(
     input: CorrectOperatingDetailInput,
   ): Promise<CorrectOperatingDetailResult>;
+  setProjectLifecycle(
+    input: SetProjectLifecycleInput,
+  ): Promise<SetProjectLifecycleResult>;
   getProjectHistory(projectId: string): Promise<ProjectHistory | null>;
   getProjectProfile(projectId: string): Promise<ProjectProfile | null>;
   getProjectCustomDetails(projectId: string): Promise<ProjectCustomDetails | null>;
   getProjectRepairDetails(projectId: string): Promise<ProjectRepairDetails | null>;
+  getProjectLifecycleState(
+    projectId: string,
+    projectKind: LifecycleKind,
+  ): Promise<ProjectLifecycleState | null>;
 };
 
 function correctDeps(store: InMemoryClientMemoryStore): CorrectProjectSpecDeps {
@@ -83,6 +98,18 @@ function operatingDeps(
   };
 }
 
+function lifecycleDeps(store: InMemoryClientMemoryStore): SetProjectLifecycleDeps {
+  return {
+    nowIso: () => new Date().toISOString(),
+    newEventId: () => randomUUID(),
+    getEntity: (id) => store.getEntity(id),
+    getProjectProfile: (projectId) => store.getProjectProfile(projectId),
+    getLifecycleState: (projectId, projectKind) =>
+      store.getProjectLifecycleState(projectId, projectKind),
+    applyMutation: (input) => store.applyProjectLifecycleMutation(input),
+  };
+}
+
 export class InMemoryClientMemoryProjectSpecWriter
   implements ClientMemoryProjectSpecWriter
 {
@@ -106,6 +133,12 @@ export class InMemoryClientMemoryProjectSpecWriter
     return correctProjectOperatingDetail(operatingDeps(this.store), input);
   }
 
+  setProjectLifecycle(
+    input: SetProjectLifecycleInput,
+  ): Promise<SetProjectLifecycleResult> {
+    return setProjectLifecycle(lifecycleDeps(this.store), input);
+  }
+
   getProjectHistory(projectId: string): Promise<ProjectHistory | null> {
     return this.store.getProjectHistory(projectId);
   }
@@ -124,6 +157,13 @@ export class InMemoryClientMemoryProjectSpecWriter
     projectId: string,
   ): Promise<ProjectRepairDetails | null> {
     return this.store.getProjectRepairDetails(projectId);
+  }
+
+  getProjectLifecycleState(
+    projectId: string,
+    projectKind: LifecycleKind,
+  ): Promise<ProjectLifecycleState | null> {
+    return this.store.getProjectLifecycleState(projectId, projectKind);
   }
 }
 

@@ -15,6 +15,7 @@ import { isCalendarMonth, listCurrentBirthdaysByMonthFromRows } from "./birthday
 import type { ClientMemoryReader } from "./reader";
 import { SOURCE_NOTE_COLUMNS, rowToSourceNote } from "../source-note-row";
 import { loadActiveOperatingDetails } from "../project-operating/load-details";
+import { loadActiveLifecycleStates } from "../project-lifecycle/load-states";
 import {
   CLIENT_MEMORY_COCKPIT_NOTE_LIMIT,
   CLIENT_MEMORY_HISTORY_PAGE_SIZE,
@@ -386,6 +387,10 @@ export class SupabaseClientMemoryReader implements ClientMemoryReader {
       this.client,
       projectProfiles,
     );
+    const lifecycleStates = await loadActiveLifecycleStates(
+      this.client,
+      projectProfiles,
+    );
 
     return {
       profiles,
@@ -404,6 +409,7 @@ export class SupabaseClientMemoryReader implements ClientMemoryReader {
       projectHistories: projectHistoryRows.map(rowToProjectHistory),
       customDetails: operating.customDetails,
       repairDetails: operating.repairDetails,
+      lifecycleStates,
     };
   }
 
@@ -552,6 +558,10 @@ export class SupabaseClientMemoryReader implements ClientMemoryReader {
       this.client,
       projectProfiles,
     );
+    const lifecycleStates = await loadActiveLifecycleStates(
+      this.client,
+      projectProfiles,
+    );
 
     return {
       noteCount,
@@ -572,6 +582,7 @@ export class SupabaseClientMemoryReader implements ClientMemoryReader {
         projectHistories: projectHistoryRows.map(rowToProjectHistory),
         customDetails: operating.customDetails,
         repairDetails: operating.repairDetails,
+        lifecycleStates,
       },
     };
   }

@@ -17,16 +17,18 @@ import {
 } from "../read/presentation";
 import { activeOperatingLayer } from "./layer";
 import { emptyCustomDetails, emptyRepairDetails } from "./fields";
+import { compactLifecycleView } from "../project-lifecycle/view";
 
 const PROJECT_ID = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const PERSON_A = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "../../../..");
 
 function desk(extra: Partial<ProjectDeskRead> = {}): ProjectDeskRead {
+  const projectKind = extra.projectKind ?? null;
   return {
     projectId: PROJECT_ID,
     title: "Achedekal ring",
-    projectKind: null,
+    projectKind,
     recordCreatedAt: "2026-08-01T00:00:00.000Z",
     people: [{ personId: PERSON_A, displayName: "A. Achedekal" }],
     specs: [
@@ -50,6 +52,7 @@ function desk(extra: Partial<ProjectDeskRead> = {}): ProjectDeskRead {
         "Open jobs, files, and email are not connected yet. Current operating state is unknown.",
     },
     operatingLayer: { kind: "none" },
+    lifecycle: compactLifecycleView({ projectKind }),
     openJobs: { connected: false },
     artifacts: { connected: false },
     ...extra,
@@ -86,6 +89,7 @@ function book(extra: Partial<PersonProjectBook> = {}): PersonProjectBook {
     artifacts: { connected: false, canonicalCount: 0 },
     commercial: { storedOrderIdentifier: null, founderReviewRequired: false },
     operatingLayer: { kind: "none" },
+    lifecycle: compactLifecycleView({ projectKind: extra.projectKind ?? null }),
     history: [],
     ...extra,
   };

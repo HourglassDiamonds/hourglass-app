@@ -231,5 +231,14 @@ describe("Project Desk compose", () => {
       chicken.projectId,
     );
     assert.equal(chickenDesk.ok && chickenDesk.desk.projectKind, null);
+    assert.equal(chickenDesk.ok && chickenDesk.desk.lifecycle.kind, "none");
+    assert.equal(stuart.ok && stuart.desk.lifecycle.kind, "repair_service");
+    assert.equal(
+      stuart.ok && stuart.desk.lifecycle.kind === "repair_service"
+        ? stuart.desk.lifecycle.stage
+        : "missing",
+      null,
+    );
+    assert.equal(mr.ok && mr.desk.lifecycle.kind, "custom_new_jewelry");
   });
 });

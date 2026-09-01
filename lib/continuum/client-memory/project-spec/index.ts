@@ -34,6 +34,11 @@ export type {
   CorrectOperatingDetailInput,
   CorrectOperatingDetailResult,
 } from "../project-operating/correct";
+export { setProjectLifecycle } from "../project-lifecycle/set";
+export type {
+  SetProjectLifecycleInput,
+  SetProjectLifecycleResult,
+} from "../project-lifecycle/set";
 export {
   isFounderCorrectedProjectSpecField,
   mergeImportedProjectHistory,

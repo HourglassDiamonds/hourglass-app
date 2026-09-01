@@ -16,6 +16,7 @@ import type {
   ProjectProfile,
   ProjectCustomDetails,
   ProjectRepairDetails,
+  ProjectLifecycleState,
   RelationshipKind,
   RelationshipStatus,
   SourceNote,
@@ -230,6 +231,7 @@ export type ClientMemoryReadSnapshot = {
   projectHistories: ProjectHistory[];
   customDetails?: ProjectCustomDetails[];
   repairDetails?: ProjectRepairDetails[];
+  lifecycleStates?: ProjectLifecycleState[];
 };
 
 export const CLIENT_MEMORY_FINANCIAL_FIELD_NAMES = [

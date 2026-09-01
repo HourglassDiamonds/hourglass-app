@@ -401,6 +401,27 @@ export type ProjectRepairDetails = {
   updatedAt: string;
 };
 
+export type ProjectLifecycleState = {
+  projectId: ContinuumId;
+  projectKind: "custom_new_jewelry" | "repair_service";
+  stage: string | null;
+  enteredAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type ProjectLifecycleEvent = {
+  eventId: ContinuumId;
+  projectId: ContinuumId;
+  projectKind: "custom_new_jewelry" | "repair_service";
+  priorStage: string | null;
+  newStage: string | null;
+  changedAt: string;
+  changedBy: string;
+  sourceSystem: ContinuumSourceSystem;
+  mutationId: ContinuumId;
+};
+
 export type ProjectHistoryRevisionField =
   | EditableProjectSpecField
   | "project_kind"

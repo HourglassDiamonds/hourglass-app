@@ -30,6 +30,10 @@ import {
   customDetailsByProjectId,
   repairDetailsByProjectId,
 } from "../project-operating/layer";
+import {
+  activeLifecycleView,
+  lifecycleStatesByProjectId,
+} from "../project-lifecycle/view";
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -167,6 +171,7 @@ export function getProjectDeskFromSnapshot(
   const notes = notesForProject(trimmed, snapshot).slice(0, CLIENT_MEMORY_NOTE_LIMIT);
   const customById = customDetailsByProjectId(snapshot.customDetails);
   const repairById = repairDetailsByProjectId(snapshot.repairDetails);
+  const lifecycleById = lifecycleStatesByProjectId(snapshot.lifecycleStates);
   const desk: ProjectDeskRead = {
     projectId: summary.projectId,
     title: summary.title,
@@ -184,6 +189,13 @@ export function getProjectDeskFromSnapshot(
       projectKind: summary.projectKind,
       customDetails: customById.get(trimmed) ?? null,
       repairDetails: repairById.get(trimmed) ?? null,
+    }),
+    lifecycle: activeLifecycleView({
+      projectKind: summary.projectKind,
+      states: lifecycleById.get(trimmed) ?? [],
+      events: (snapshot.lifecycleEvents ?? []).filter(
+        (row) => row.projectId === trimmed,
+      ),
     }),
     openJobs: { connected: false },
     artifacts: { connected: false },

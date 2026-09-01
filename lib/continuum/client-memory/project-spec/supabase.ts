@@ -32,6 +32,18 @@ import type {
   CorrectOperatingDetailResult,
   OperatingDetailCorrectionApplyResult,
 } from "../project-operating/correct";
+import { setProjectLifecycle } from "../project-lifecycle/set";
+import type {
+  ProjectLifecycleMutationApplyResult,
+  SetProjectLifecycleDeps,
+  SetProjectLifecycleInput,
+  SetProjectLifecycleResult,
+} from "../project-lifecycle/set";
+import { isLifecycleKind, type LifecycleKind } from "../project-lifecycle";
+import {
+  LIFECYCLE_STATE_COLUMNS,
+  rowToLifecycleState,
+} from "../project-lifecycle/rows";
 import {
   CUSTOM_DETAIL_COLUMNS,
   REPAIR_DETAIL_COLUMNS,
@@ -41,6 +53,7 @@ import {
 import type {
   ProjectCustomDetails,
   ProjectHistory,
+  ProjectLifecycleState,
   ProjectProfile,
   ProjectRepairDetails,
 } from "../types";
@@ -67,6 +80,9 @@ function mutationReason(message: string): Error {
   if (message.includes("invalid-field")) return new Error("invalid-field");
   if (message.includes("invalid-value")) return new Error("invalid-value");
   if (message.includes("wrong-project-kind")) return new Error("wrong-project-kind");
+  if (message.includes("unsupported-project-kind")) {
+    return new Error("unsupported-project-kind");
+  }
   if (message.includes("invalid-input")) return new Error("invalid-input");
   return new Error(message || "correct-project-spec-failed");
 }
@@ -273,6 +289,51 @@ export class SupabaseClientMemoryProjectSpecWriter
     };
   }
 
+  private lifecycleDeps(): SetProjectLifecycleDeps {
+    return {
+      nowIso: () => new Date().toISOString(),
+      newEventId: () => randomUUID(),
+      getEntity: (id) => this.getEntityKind(id),
+      getProjectProfile: (projectId) => this.getProjectProfile(projectId),
+      getLifecycleState: (projectId, projectKind) =>
+        this.getProjectLifecycleState(projectId, projectKind),
+      applyMutation: async (input) => {
+        const { data, error } = await this.client.rpc(
+          "continuum_client_memory_set_project_lifecycle",
+          {
+            p_project_id: input.projectId,
+            p_stage: input.newStage,
+            p_mutation_id: input.mutationId,
+            p_event_id: input.eventId,
+            p_changed_at: input.changedAt,
+            p_changed_by: input.changedBy,
+            p_source_system: PROJECT_SPEC_CORRECTION_SOURCE_SYSTEM,
+          },
+        );
+        if (error) throw mutationReason(error.message ?? "");
+        const payload =
+          data && typeof data === "object"
+            ? (data as Record<string, unknown>)
+            : null;
+        const status: ProjectLifecycleMutationApplyResult["status"] =
+          payload && payload.status === "already-present"
+            ? "already-present"
+            : "updated";
+        return {
+          status,
+          state:
+            payload && payload.state && typeof payload.state === "object"
+              ? rowToLifecycleState(payload.state as Record<string, unknown>)
+              : null,
+          eventId:
+            payload && payload.event_id != null
+              ? String(payload.event_id)
+              : null,
+        };
+      },
+    };
+  }
+
   async getProjectHistory(projectId: string): Promise<ProjectHistory | null> {
     const { data, error } = await this.client
       .from("continuum_project_history")
@@ -321,6 +382,22 @@ export class SupabaseClientMemoryProjectSpecWriter
     return rowToRepairDetails(data as Record<string, unknown>);
   }
 
+  async getProjectLifecycleState(
+    projectId: string,
+    projectKind: LifecycleKind,
+  ): Promise<ProjectLifecycleState | null> {
+    if (!isLifecycleKind(projectKind)) return null;
+    const { data, error } = await this.client
+      .from("continuum_project_lifecycle_states")
+      .select(LIFECYCLE_STATE_COLUMNS)
+      .eq("project_id", projectId)
+      .eq("project_kind", projectKind)
+      .maybeSingle();
+    if (error) throw error;
+    if (!data) return null;
+    return rowToLifecycleState(data as Record<string, unknown>);
+  }
+
   correctProjectSpec(
     input: CorrectProjectSpecInput,
   ): Promise<CorrectProjectSpecResult> {
@@ -337,6 +414,12 @@ export class SupabaseClientMemoryProjectSpecWriter
     input: CorrectOperatingDetailInput,
   ): Promise<CorrectOperatingDetailResult> {
     return correctProjectOperatingDetail(this.operatingDeps(), input);
+  }
+
+  setProjectLifecycle(
+    input: SetProjectLifecycleInput,
+  ): Promise<SetProjectLifecycleResult> {
+    return setProjectLifecycle(this.lifecycleDeps(), input);
   }
 }
 

@@ -68,13 +68,21 @@ function HeaderMeta({ book }: { book: PersonProjectBook }) {
 function OverviewFields({ book }: { book: PersonProjectBook }) {
   const rows: Array<{ label: string; value: string }> = [
     { label: "Title", value: book.overview.title },
-    {
-      label: "Project Kind",
-      value: book.overview.projectKind
-        ? projectKindLabel(book.overview.projectKind)
-        : PROJECT_KIND_NOT_SET_LABEL,
-    },
   ];
+  if (book.overview.projectKind) {
+    rows.push({
+      label: "Project Kind",
+      value: projectKindLabel(book.overview.projectKind),
+    });
+  } else {
+    rows.push({
+      label: "Project Kind",
+      value: PROJECT_KIND_NOT_SET_LABEL,
+    });
+  }
+  if (book.lifecycle.kind !== "none") {
+    rows.push({ label: "Lifecycle", value: book.lifecycle.label });
+  }
   if (book.overview.cadIdentifier) {
     rows.push({ label: "CAD", value: book.overview.cadIdentifier });
   }

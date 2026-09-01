@@ -183,3 +183,18 @@ body:has([data-concierge-shell]) [data-facet-rail] {
 .hg-project-kind-choice label:has(input:focus-visible) {
   box-shadow: 0 0 0 3px rgba(173, 145, 100, 0.22);
 }
+
+.hg-lifecycle-rail {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.85rem;
+  margin: 0;
+  min-width: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hg-lifecycle-rail li {
+  min-width: 0;
+  max-width: 100%;
+}
