@@ -1,6 +1,7 @@
 /**
  * Slice A derived operational status and coverage.
- * Open Jobs, files, and email are not connected. Never invent waiting-on.
+ * Open Jobs may be connected as canonical rows. Files and email are not.
+ * Never invent waiting-on from notes or job prose.
  */
 
 import type {
@@ -17,25 +18,34 @@ import { EDITABLE_PROJECT_SPEC_FIELDS } from "../types";
 export const SLICE_A_STATUS_EVIDENCE =
   "Open jobs, files, and email are not connected yet. Current operating state is unknown.";
 
+export const JOBS_CONNECTED_STATUS_EVIDENCE =
+  "Files and email are not connected yet. Current operating state is unknown.";
+
 export function projectCoverage(input: {
   peopleCount: number;
   specCount: number;
   noteCount: number;
+  jobs?: ProjectDeskCoverage["jobs"];
 }): ProjectDeskCoverage {
   return {
     people: input.peopleCount > 0 ? "available" : "missing",
     specs: input.specCount > 0 ? "available" : "sparse",
     notes: input.noteCount > 0 ? "available" : "none",
-    jobs: "not-connected",
+    jobs: input.jobs ?? "not-connected",
     files: "not-connected",
     email: "not-connected",
   };
 }
 
-export function sliceAOperationalStatus(): ProjectDeskOperationalStatus {
+export function sliceAOperationalStatus(
+  coverage?: ProjectDeskCoverage,
+): ProjectDeskOperationalStatus {
   return {
     kind: "unknown",
-    evidence: SLICE_A_STATUS_EVIDENCE,
+    evidence:
+      coverage && coverage.jobs !== "not-connected"
+        ? JOBS_CONNECTED_STATUS_EVIDENCE
+        : SLICE_A_STATUS_EVIDENCE,
   };
 }
 
@@ -79,7 +89,15 @@ export function coverageRows(coverage: ProjectDeskCoverage): Array<{
       label: "Notes",
       value: coverage.notes === "available" ? "Present" : "None yet",
     },
-    { label: "Open Jobs", value: "Not connected yet" },
+    {
+      label: "Open Jobs",
+      value:
+        coverage.jobs === "available"
+          ? "Present"
+          : coverage.jobs === "none"
+            ? "None recorded"
+            : "Not connected yet",
+    },
     { label: "Renders", value: "Not connected yet" },
     { label: "Email", value: "Not connected yet" },
   ];

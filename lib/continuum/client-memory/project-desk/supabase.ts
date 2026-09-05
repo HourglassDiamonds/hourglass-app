@@ -3,7 +3,8 @@
  * App Router / server entry: import from `./server` (enforces `server-only`).
  * Do not import from client components or public routes.
  * Service-role only. SELECT against existing Client Memory tables.
- * Does not query Gmail, CoS, Open Jobs, or artifacts.
+ * Open Jobs are read when the unapplied table exists; otherwise disconnected.
+ * Does not query Gmail, CoS, or artifacts.
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -24,6 +25,7 @@ import {
 } from "./compose";
 import { loadActiveOperatingDetails } from "../project-operating/load-details";
 import { loadProjectLifecycleForDesk } from "../project-lifecycle/load-states";
+import { loadProjectJobs } from "../project-jobs/load";
 import type { ProjectDeskReader } from "./reader";
 import type {
   ListProjectsFilter,
@@ -138,6 +140,7 @@ async function loadSnapshot(client: SupabaseClient): Promise<ProjectDeskSnapshot
     relationshipRows,
     noteRows,
     personRows,
+    projectJobs,
   ] = await Promise.all([
     rows<Record<string, unknown>>(
       client.from("continuum_project_profiles").select(PROJECT_PROFILE_COLUMNS),
@@ -172,6 +175,7 @@ async function loadSnapshot(client: SupabaseClient): Promise<ProjectDeskSnapshot
       client.from("continuum_person_profiles").select("person_id, display_name"),
       "read-project-people-failed",
     ),
+    loadProjectJobs(client),
   ]);
 
   return {
@@ -187,6 +191,7 @@ async function loadSnapshot(client: SupabaseClient): Promise<ProjectDeskSnapshot
       displayName: String(row.display_name),
     })),
     sourceNotes: noteRows.map(rowToNote),
+    projectJobs,
   };
 }
 

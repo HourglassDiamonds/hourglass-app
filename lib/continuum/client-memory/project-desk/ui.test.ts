@@ -60,7 +60,7 @@ describe("Project Desk UI", () => {
     assert.match(html, /Project Kind/);
     assert.match(html, /conciergeCorrectProjectKindPath/);
     assert.match(html, /conciergeClientPath/);
-    assert.match(html, /Not connected yet/);
+    assert.match(html, /OPEN_JOBS_NOT_CONNECTED_LABEL|Not connected yet/);
     assert.match(html, /No project files stored yet/);
     assert.match(html, /Add a note/);
     assert.match(html, /Correct/);
@@ -73,6 +73,7 @@ describe("Project Desk UI", () => {
     assert.match(html, /Lifecycle/);
     assert.match(html, /conciergeCorrectProjectLifecyclePath/);
     assert.doesNotMatch(html, /% complete|progress bar|5 of 8/);
+    assert.doesNotMatch(html, /Add Open Job|Resolve job|Snooze job/);
   });
 
   it("renders the project book without invented waiting-on lifecycle tabs", () => {

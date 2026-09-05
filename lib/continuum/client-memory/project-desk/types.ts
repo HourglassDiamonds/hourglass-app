@@ -1,7 +1,7 @@
 /**
  * Project Desk contracts.
  * Read model over existing Client Memory.
- * Derived operational status is not Open Jobs / Gmail / artifacts.
+ * Open Jobs are canonical Project work when connected. Artifacts and Gmail remain disconnected.
  */
 
 import type {
@@ -18,6 +18,7 @@ import type {
 import type { ProjectKind } from "../project-kind";
 import type { ProjectOperatingLayer } from "../project-operating/layer";
 import type { ProjectLifecycleView } from "../project-lifecycle/view";
+import type { ProjectDeskOpenJobs, ProjectJob } from "../project-jobs/types";
 
 export const PROJECT_DESK_NOTE_LIMIT = 25;
 export const PROJECT_DESK_HOME_LIMIT = 5;
@@ -33,7 +34,7 @@ export type ProjectDeskCoverage = {
   people: "available" | "missing";
   specs: "available" | "sparse";
   notes: "available" | "none";
-  jobs: "not-connected";
+  jobs: "not-connected" | "available" | "none";
   files: "not-connected";
   email: "not-connected";
 };
@@ -99,7 +100,7 @@ export type ProjectDeskRead = {
   operationalStatus: ProjectDeskOperationalStatus;
   operatingLayer: ProjectOperatingLayer;
   lifecycle: ProjectLifecycleView;
-  openJobs: { connected: false };
+  openJobs: ProjectDeskOpenJobs;
   artifacts: { connected: false };
 };
 
@@ -117,6 +118,7 @@ export type ProjectDeskSnapshot = {
     displayName: string;
   }>;
   sourceNotes: SourceNote[];
+  projectJobs?: ProjectJob[] | null;
 };
 
 export type ListProjectsFilter = {

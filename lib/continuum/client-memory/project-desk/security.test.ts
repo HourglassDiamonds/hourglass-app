@@ -41,6 +41,7 @@ describe("Project Desk security", () => {
     assert.doesNotMatch(index, /from "\.\/server"/);
     assert.doesNotMatch(index, /from "\.\/writer"/);
     assert.doesNotMatch(index, /from "\.\/lifecycle"/);
+    assert.doesNotMatch(index, /createProjectJob|saveOpenJob/);
     assert.doesNotMatch(parent, /createSupabaseProjectDeskReader/);
     assert.doesNotMatch(parent, /project-desk\/supabase/);
     assert.deepEqual(
@@ -49,7 +50,7 @@ describe("Project Desk security", () => {
     );
   });
 
-  it("does not query Gmail, CoS, Open Jobs, artifacts, or Human Intake", () => {
+  it("does not query Gmail, CoS, artifacts, or Human Intake", () => {
     for (const file of walkFiles(DESK_DIR, ".ts")) {
       if (file.endsWith(".test.ts")) continue;
       const source = readFileSync(file, "utf8");
@@ -57,7 +58,7 @@ describe("Project Desk security", () => {
       assert.doesNotMatch(source, /continuum_gmail_messages|continuum_gmail_checkpoints/);
       assert.doesNotMatch(source, /continuum_attention_items|continuum_attention_briefs/);
       assert.doesNotMatch(source, /composeChiefOfStaffBrief|SpecialistObservation/);
-      assert.doesNotMatch(source, /continuum_project_open_jobs|continuum_project_artifacts|continuum_project_jobs/);
+      assert.doesNotMatch(source, /continuum_project_open_jobs|continuum_project_artifacts/);
       assert.doesNotMatch(source, /human-intake|source-inbox/);
       assert.doesNotMatch(source, /gmail\.googleapis|createBrowserClient/);
       assert.doesNotMatch(source, /Waiting on Client|No Current Action/);

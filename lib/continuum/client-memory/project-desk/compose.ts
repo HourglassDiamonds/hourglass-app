@@ -1,6 +1,7 @@
 /**
  * Compose Project Desk list and detail read models from canonical Client Memory.
- * Does not infer Open Jobs, Gmail state, artifacts, or project lifecycle.
+ * Open Jobs are included only when the snapshot loaded them. Never inferred.
+ * Does not infer Gmail state, artifacts, or waiting-on from notes.
  */
 
 import {
@@ -34,6 +35,10 @@ import {
   activeLifecycleView,
   lifecycleStatesByProjectId,
 } from "../project-lifecycle/view";
+import {
+  jobsCoverageLevel,
+  openJobsReadModel,
+} from "../project-jobs/read";
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -117,6 +122,11 @@ function composeSummary(
   const specs = specFieldsFromHistory(history);
   const notes = notesForProject(profile.projectId, snapshot);
   const latest = notes[0] ?? null;
+  const openJobs = openJobsReadModel(
+    snapshot.projectJobs,
+    profile.projectId,
+    people,
+  );
   return {
     projectId: profile.projectId,
     title: profile.displayTitle,
@@ -128,6 +138,7 @@ function composeSummary(
       peopleCount: people.length,
       specCount: specs.length,
       noteCount: notes.length,
+      jobs: jobsCoverageLevel(openJobs),
     }),
     recordCreatedAt: profile.createdAt,
   };
@@ -184,7 +195,7 @@ export function getProjectDeskFromSnapshot(
     latestNoteAt: summary.latestNoteAt,
     latestNotePreview: summary.latestNotePreview,
     coverage: summary.coverage,
-    operationalStatus: sliceAOperationalStatus(),
+    operationalStatus: sliceAOperationalStatus(summary.coverage),
     operatingLayer: activeOperatingLayer({
       projectKind: summary.projectKind,
       customDetails: customById.get(trimmed) ?? null,
@@ -197,7 +208,7 @@ export function getProjectDeskFromSnapshot(
         (row) => row.projectId === trimmed,
       ),
     }),
-    openJobs: { connected: false },
+    openJobs: openJobsReadModel(snapshot.projectJobs, trimmed, summary.people),
     artifacts: { connected: false },
   };
   return { ok: true, desk };

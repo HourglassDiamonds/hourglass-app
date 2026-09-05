@@ -24,6 +24,17 @@ import {
   PROJECT_LIFECYCLE_SECTION_TITLE,
 } from "@/lib/continuum/client-memory/project-lifecycle";
 import type { ProjectLifecycleView } from "@/lib/continuum/client-memory/project-lifecycle/view";
+import {
+  OPEN_JOB_ACTOR_FIELD_LABEL,
+  OPEN_JOB_DEFERRED_LABEL,
+  OPEN_JOB_SECTION_TITLE,
+  OPEN_JOBS_NONE_LABEL,
+  OPEN_JOBS_NOT_CONNECTED_LABEL,
+  openJobActorLabel,
+  openJobKindLabel,
+  openJobSourceLabel,
+} from "@/lib/continuum/client-memory/project-jobs/present";
+import type { ProjectDeskOpenJobs } from "@/lib/continuum/client-memory/project-jobs/types";
 import { ClientMemorySection } from "./client-memory-section";
 
 export function ProjectDeskView({
@@ -214,9 +225,7 @@ export function ProjectDeskView({
         </ClientMemorySection>
       ) : null}
 
-      <ClientMemorySection title="Open Jobs">
-        <p className="text-[15px] leading-relaxed text-[#c4b7aa]">Not connected yet</p>
-      </ClientMemorySection>
+      <OpenJobsSection jobs={desk.openJobs} />
 
       <ClientMemorySection title="Renders">
         <p className="text-[15px] leading-relaxed text-[#c4b7aa]">
@@ -250,6 +259,68 @@ export function ProjectDeskView({
         </ClientMemorySection>
       ) : null}
     </article>
+  );
+}
+
+function OpenJobsSection({ jobs }: { jobs: ProjectDeskOpenJobs }) {
+  if (!jobs.connected) {
+    return (
+      <ClientMemorySection title={OPEN_JOB_SECTION_TITLE}>
+        <p className="text-[15px] leading-relaxed text-[#c4b7aa]">
+          {OPEN_JOBS_NOT_CONNECTED_LABEL}
+        </p>
+      </ClientMemorySection>
+    );
+  }
+  if (jobs.unresolvedCount === 0) {
+    return (
+      <ClientMemorySection title={OPEN_JOB_SECTION_TITLE}>
+        <p className="text-[15px] leading-relaxed text-[#c4b7aa]">
+          {OPEN_JOBS_NONE_LABEL}
+        </p>
+      </ClientMemorySection>
+    );
+  }
+  return (
+    <ClientMemorySection title={OPEN_JOB_SECTION_TITLE}>
+      <ol className="space-y-5">
+        {jobs.unresolved.map((job) => (
+          <li
+            key={job.jobId}
+            className="border-t border-white/[0.06] pt-5 first:border-t-0 first:pt-0"
+          >
+            <p className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
+              {openJobKindLabel(job.kind)}
+            </p>
+            <p className="mt-1 break-words text-[15px] leading-relaxed text-[#e7ddd2]">
+              {job.subject}
+            </p>
+            {job.detail ? (
+              <p className="mt-2 break-words text-[14px] leading-relaxed text-[#c4b7aa]">
+                {job.detail}
+              </p>
+            ) : null}
+            <p className="mt-2 text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
+              {OPEN_JOB_ACTOR_FIELD_LABEL} · {openJobActorLabel(job.waitingOnActor)}
+              {job.associatedPersonName ? ` · ${job.associatedPersonName}` : ""}
+            </p>
+            {job.state === "snoozed" && job.deferredUntil ? (
+              <p className="mt-1 text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
+                {OPEN_JOB_DEFERRED_LABEL} {formatNoteDate(job.deferredUntil)}
+              </p>
+            ) : null}
+            {job.dueAt ? (
+              <p className="mt-1 text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
+                Due {formatNoteDate(job.dueAt)}
+              </p>
+            ) : null}
+            <p className="mt-1 text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
+              {openJobSourceLabel(job.sourceSystem)} · {formatNoteDate(job.createdAt)}
+            </p>
+          </li>
+        ))}
+      </ol>
+    </ClientMemorySection>
   );
 }
 
