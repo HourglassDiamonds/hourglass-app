@@ -13,7 +13,21 @@ export const CONCIERGE_GMAIL_PATH = "/executive-dashboard/concierge/gmail";
 
 export const GMAIL_HISTORICAL_JOB_KEY = "gmail-historical" as const;
 
+/** Reserved checkpoint job key. Incremental History API sync, not a calendar-day job. */
+export const GMAIL_INCREMENTAL_JOB_KEY = "gmail-memory-daily" as const;
+
 export const GMAIL_SYNC_PAGE_SIZE = 100 as const;
+
+export const GMAIL_INCREMENTAL_HISTORY_PAGE_SIZE = 20 as const;
+
+export const GMAIL_HISTORY_TYPES = [
+  "messageAdded",
+  "messageDeleted",
+  "labelAdded",
+  "labelRemoved",
+] as const;
+
+export type GmailHistoryType = (typeof GMAIL_HISTORY_TYPES)[number];
 
 export const GMAIL_SYNC_MAX_GETS_PER_SEC = 10 as const;
 
@@ -107,6 +121,33 @@ export type GmailApiThread = {
   id: string;
   historyId?: string;
   messages: readonly GmailApiMessage[];
+};
+
+export type GmailHistoryMessageRef = {
+  id: string;
+  threadId: string;
+  labelIds?: readonly string[];
+};
+
+export type GmailHistoryRecord = {
+  id: string;
+  messages?: readonly GmailHistoryMessageRef[];
+  messagesAdded?: readonly { message: GmailHistoryMessageRef }[];
+  messagesDeleted?: readonly { message: GmailHistoryMessageRef }[];
+  labelsAdded?: readonly {
+    message: GmailHistoryMessageRef;
+    labelIds?: readonly string[];
+  }[];
+  labelsRemoved?: readonly {
+    message: GmailHistoryMessageRef;
+    labelIds?: readonly string[];
+  }[];
+};
+
+export type GmailHistoryPage = {
+  history: readonly GmailHistoryRecord[];
+  nextPageToken: string | null;
+  historyId: string;
 };
 
 export const GMAIL_OAUTH_ERROR_CODES = [

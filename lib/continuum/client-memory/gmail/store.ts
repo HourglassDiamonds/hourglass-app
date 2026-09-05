@@ -18,6 +18,7 @@ import {
   type GmailCheckpointJobKey,
   type GmailIndexInput,
   type GmailIndexedMessage,
+  type GmailMessageDirection,
   type IndexGmailMessageResult,
 } from "./types";
 
@@ -27,15 +28,24 @@ export type GmailIndexStore = {
     indexedAt: string,
   ): Promise<IndexGmailMessageResult>;
   getMessage(messageId: string): Promise<GmailIndexedMessage | null>;
+  deleteMessage(
+    messageId: string,
+  ): Promise<"deleted" | "already-absent">;
   listMessagesByThread(threadId: string): Promise<GmailIndexedMessage[]>;
   listMessagesMatchingSubjectTokens(
     tokens: readonly string[],
   ): Promise<GmailIndexedMessage[]>;
   listMessagesTouchingEmailHash(emailHash: string): Promise<GmailIndexedMessage[]>;
+  listLatestByDirection(
+    direction: GmailMessageDirection,
+    limit: number,
+  ): Promise<GmailIndexedMessage[]>;
   getCheckpoint(jobKey: GmailCheckpointJobKey): Promise<GmailCheckpoint | null>;
   putCheckpoint(row: GmailCheckpoint): Promise<GmailCheckpoint>;
   tryClaimHistoricalChunk(nowIso: string, leaseMs: number): Promise<boolean>;
   releaseHistoricalChunk(nowIso: string): Promise<void>;
+  tryClaimIncrementalChunk(nowIso: string, leaseMs: number): Promise<boolean>;
+  releaseIncrementalChunk(nowIso: string): Promise<void>;
 };
 
 function cloneMessage(row: GmailIndexedMessage): GmailIndexedMessage {
@@ -55,7 +65,7 @@ function cloneCheckpoint(row: GmailCheckpoint): GmailCheckpoint {
 export class InMemoryGmailIndexStore implements GmailIndexStore {
   private readonly messages = new Map<string, GmailIndexedMessage>();
   private readonly checkpoints = new Map<GmailCheckpointJobKey, GmailCheckpoint>();
-  private chunkClaimHeld = false;
+  private readonly chunkClaims = new Set<GmailCheckpointJobKey>();
 
   async indexMessage(
     input: GmailIndexInput,
@@ -80,6 +90,15 @@ export class InMemoryGmailIndexStore implements GmailIndexStore {
   async getMessage(messageId: string): Promise<GmailIndexedMessage | null> {
     const existing = this.messages.get(messageId.trim());
     return existing ? cloneMessage(existing) : null;
+  }
+
+  async deleteMessage(
+    messageId: string,
+  ): Promise<"deleted" | "already-absent"> {
+    const id = messageId.trim();
+    if (!this.messages.has(id)) return "already-absent";
+    this.messages.delete(id);
+    return "deleted";
   }
 
   async listMessagesByThread(threadId: string): Promise<GmailIndexedMessage[]> {
@@ -124,6 +143,23 @@ export class InMemoryGmailIndexStore implements GmailIndexStore {
       .map(cloneMessage);
   }
 
+  async listLatestByDirection(
+    direction: GmailMessageDirection,
+    limit: number,
+  ): Promise<GmailIndexedMessage[]> {
+    const cap = Number.isInteger(limit) && limit > 0 ? limit : 0;
+    if (cap === 0) return [];
+    return [...this.messages.values()]
+      .filter((row) => row.direction === direction)
+      .sort((a, b) => {
+        const sent = Date.parse(b.sentAt) - Date.parse(a.sentAt);
+        if (sent !== 0) return sent;
+        return a.messageId < b.messageId ? -1 : a.messageId > b.messageId ? 1 : 0;
+      })
+      .slice(0, cap)
+      .map(cloneMessage);
+  }
+
   async getCheckpoint(
     jobKey: GmailCheckpointJobKey,
   ): Promise<GmailCheckpoint | null> {
@@ -139,18 +175,34 @@ export class InMemoryGmailIndexStore implements GmailIndexStore {
   }
 
   async tryClaimHistoricalChunk(nowIso: string, leaseMs: number): Promise<boolean> {
-    if (this.chunkClaimHeld) return false;
-    const existing = this.checkpoints.get("gmail-historical");
+    return this.tryClaimJob("gmail-historical", nowIso, leaseMs);
+  }
+
+  async releaseHistoricalChunk(_nowIso: string): Promise<void> {
+    this.chunkClaims.delete("gmail-historical");
+  }
+
+  async tryClaimIncrementalChunk(nowIso: string, leaseMs: number): Promise<boolean> {
+    return this.tryClaimJob("gmail-memory-daily", nowIso, leaseMs);
+  }
+
+  async releaseIncrementalChunk(_nowIso: string): Promise<void> {
+    this.chunkClaims.delete("gmail-memory-daily");
+  }
+
+  private async tryClaimJob(
+    jobKey: GmailCheckpointJobKey,
+    nowIso: string,
+    leaseMs: number,
+  ): Promise<boolean> {
+    if (this.chunkClaims.has(jobKey)) return false;
+    const existing = this.checkpoints.get(jobKey);
     if (existing?.errorCode === GMAIL_SYNC_ALREADY_RUNNING) {
       const age = Date.parse(nowIso) - Date.parse(existing.updatedAt);
       if (Number.isFinite(age) && age >= 0 && age < leaseMs) return false;
     }
-    this.chunkClaimHeld = true;
+    this.chunkClaims.add(jobKey);
     return true;
-  }
-
-  async releaseHistoricalChunk(_nowIso: string): Promise<void> {
-    this.chunkClaimHeld = false;
   }
 
   listMessages(): GmailIndexedMessage[] {

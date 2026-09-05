@@ -146,6 +146,9 @@ export function exactThreadOnlyApi(api: GmailApi): GmailApi {
     getMessage: async () => {
       throw new Error("messages.get-forbidden-on-exact-thread-path");
     },
+    listHistory: async () => {
+      throw new Error("history.list-forbidden-on-exact-thread-path");
+    },
     getThread: (threadId) => api.getThread(threadId),
   };
 }

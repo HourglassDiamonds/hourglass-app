@@ -224,6 +224,8 @@ describe("Gmail founder history chunk runner", () => {
       getProfile: () => inner.getProfile(),
       listMessages: (query: Parameters<MockGmailApi["listMessages"]>[0]) =>
         inner.listMessages(query),
+      listHistory: (query: Parameters<MockGmailApi["listHistory"]>[0]) =>
+        inner.listHistory(query),
       getMessage: async (id: string) => {
         waiting = true;
         await gate;

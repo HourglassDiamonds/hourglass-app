@@ -17,6 +17,8 @@ export type {
 export {
   GMAIL_FOUNDER_MAILBOX_SLOT,
   GMAIL_HISTORICAL_JOB_KEY,
+  GMAIL_INCREMENTAL_JOB_KEY,
+  GMAIL_HISTORY_TYPES,
   GMAIL_SYNC_PAGE_SIZE,
 } from "./types";
 export { InMemoryGmailConnectionStore } from "./connection";
@@ -37,3 +39,6 @@ export { correlateExactProjectThread } from "./projects";
 export { resolvePersonCandidate } from "./participants";
 export { assessGmailOAuthProductionReadiness } from "./oauth-readiness";
 export { historicalGmailQuery, runHistoricalSync } from "./sync";
+export { runIncrementalSync, isMailboxIndexedView } from "./incremental-sync";
+export { runGmailIncrementalChunk } from "./incremental";
+export { readGmailCurrentState } from "./current-state";

@@ -124,6 +124,34 @@ describe("Protected Gmail source index", () => {
     assert.equal((await store.getMessage("18abc123def456"))?.threadId, "thread-sarah-1");
   });
 
+  it("deletes indexed mail and returns latest inbound/outbound by sent time", async () => {
+    const store = new InMemoryGmailIndexStore();
+    await store.indexMessage(sampleInput({ messageId: "in-old", direction: "inbound" }), NOW);
+    await store.indexMessage(
+      sampleInput({
+        messageId: "in-new",
+        sentAt: "2026-08-24T18:00:00.000Z",
+        direction: "inbound",
+      }),
+      NOW,
+    );
+    await store.indexMessage(
+      sampleInput({
+        messageId: "out-1",
+        sentAt: "2026-08-24T17:00:00.000Z",
+        direction: "outbound",
+      }),
+      NOW,
+    );
+    const latestIn = await store.listLatestByDirection("inbound", 1);
+    const latestOut = await store.listLatestByDirection("outbound", 1);
+    assert.equal(latestIn[0]?.messageId, "in-new");
+    assert.equal(latestOut[0]?.messageId, "out-1");
+    assert.equal(await store.deleteMessage("in-old"), "deleted");
+    assert.equal(await store.deleteMessage("in-old"), "already-absent");
+    assert.equal(store.listMessages().length, 2);
+  });
+
   it("hashes the same address deterministically and skips invalid emails", () => {
     const once = gmailParticipantHashesFromAddresses({
       fromEmail: "Ada@Example.COM",

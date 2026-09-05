@@ -14,6 +14,7 @@ export type GmailAttachmentStore = {
   listByThread(threadId: string): Promise<GmailAttachmentMeta[]>;
   listByThreadIds(threadIds: readonly string[]): Promise<GmailAttachmentMeta[]>;
   listByFilenameTokens(tokens: readonly string[]): Promise<GmailAttachmentMeta[]>;
+  deleteByMessage(messageId: string): Promise<void>;
 };
 
 function cloneAttachment(row: GmailAttachmentMeta): GmailAttachmentMeta {
@@ -79,6 +80,13 @@ export class InMemoryGmailAttachmentStore implements GmailAttachmentStore {
       if (hits.length >= ATTACHMENT_FILENAME_HIT_CAP) break;
     }
     return hits;
+  }
+
+  async deleteByMessage(messageId: string): Promise<void> {
+    const id = messageId.trim();
+    for (const [key, row] of this.rows) {
+      if (row.messageId === id) this.rows.delete(key);
+    }
   }
 
   listAll(): GmailAttachmentMeta[] {

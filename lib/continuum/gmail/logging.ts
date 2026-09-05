@@ -7,6 +7,8 @@
 export const GMAIL_SAFE_TELEMETRY_EVENTS = [
   "gmail-sync-page-ok",
   "gmail-sync-failed",
+  "gmail-incremental-ok",
+  "gmail-incremental-failed",
   "gmail-oauth-ok",
   "gmail-oauth-failed",
   "gmail-connection",

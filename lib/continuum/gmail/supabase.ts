@@ -237,6 +237,14 @@ export class SupabaseGmailAttachmentStore implements GmailAttachmentStore {
     }
     return [...byKey.values()].slice(0, ATTACHMENT_FILENAME_HIT_CAP);
   }
+
+  async deleteByMessage(messageId: string): Promise<void> {
+    const { error } = await this.client
+      .from("continuum_gmail_attachments")
+      .delete()
+      .eq("message_id", messageId.trim());
+    if (error) throw error;
+  }
 }
 
 function escapeIlike(value: string): string {

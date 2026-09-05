@@ -207,6 +207,9 @@ function boundApi(api: GmailApi): GmailApi {
     getThread: async () => {
       throw new Error("threads.get-forbidden");
     },
+    listHistory: async () => {
+      throw new Error("history.list-forbidden-on-historical-path");
+    },
   };
 }
 
@@ -266,6 +269,7 @@ export async function runGmailHistoryChunk(
     listByThreadIds: (threadIds) => input.attachments.listByThreadIds(threadIds),
     listByFilenameTokens: (tokens) =>
       input.attachments.listByFilenameTokens(tokens),
+    deleteByMessage: (messageId) => input.attachments.deleteByMessage(messageId),
   };
 
   try {

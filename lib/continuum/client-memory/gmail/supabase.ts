@@ -21,6 +21,7 @@ import {
   type GmailCheckpointJobKey,
   type GmailIndexInput,
   type GmailIndexedMessage,
+  type GmailMessageDirection,
   type IndexGmailMessageResult,
 } from "./types";
 
@@ -189,6 +190,19 @@ export class SupabaseGmailIndexStore implements GmailIndexStore {
     return rowToMessage(data);
   }
 
+  async deleteMessage(
+    messageId: string,
+  ): Promise<"deleted" | "already-absent"> {
+    const { data, error } = await this.client
+      .from("continuum_gmail_messages")
+      .delete()
+      .eq("message_id", messageId.trim())
+      .select("message_id")
+      .maybeSingle();
+    if (error) throw error;
+    return data ? "deleted" : "already-absent";
+  }
+
   async listMessagesByThread(threadId: string): Promise<GmailIndexedMessage[]> {
     const { data, error } = await this.client
       .from("continuum_gmail_messages")
@@ -233,6 +247,22 @@ export class SupabaseGmailIndexStore implements GmailIndexStore {
       for (const row of rows) byId.set(row.messageId, row);
     }
     return [...byId.values()];
+  }
+
+  async listLatestByDirection(
+    direction: GmailMessageDirection,
+    limit: number,
+  ): Promise<GmailIndexedMessage[]> {
+    const cap = Number.isInteger(limit) && limit > 0 ? Math.min(limit, 50) : 0;
+    if (cap === 0) return [];
+    const { data, error } = await this.client
+      .from("continuum_gmail_messages")
+      .select(MESSAGE_COLUMNS)
+      .eq("direction", direction)
+      .order("sent_at", { ascending: false })
+      .limit(cap);
+    if (error) throw error;
+    return (data ?? []).map((row) => rowToMessage(row));
   }
 
   private async listSubjectIlikePages(escapedToken: string): Promise<GmailIndexedMessage[]> {
@@ -318,11 +348,31 @@ export class SupabaseGmailIndexStore implements GmailIndexStore {
   }
 
   async tryClaimHistoricalChunk(nowIso: string, leaseMs: number): Promise<boolean> {
-    const existing = await this.getCheckpoint("gmail-historical");
+    return this.tryClaimJob("gmail-historical", nowIso, leaseMs);
+  }
+
+  async releaseHistoricalChunk(nowIso: string): Promise<void> {
+    return this.releaseJob("gmail-historical", nowIso);
+  }
+
+  async tryClaimIncrementalChunk(nowIso: string, leaseMs: number): Promise<boolean> {
+    return this.tryClaimJob("gmail-memory-daily", nowIso, leaseMs);
+  }
+
+  async releaseIncrementalChunk(nowIso: string): Promise<void> {
+    return this.releaseJob("gmail-memory-daily", nowIso);
+  }
+
+  private async tryClaimJob(
+    jobKey: GmailCheckpointJobKey,
+    nowIso: string,
+    leaseMs: number,
+  ): Promise<boolean> {
+    const existing = await this.getCheckpoint(jobKey);
     if (!existing) {
       const { error } = await this.client.from("continuum_gmail_checkpoints").insert(
         checkpointToRow({
-          jobKey: "gmail-historical",
+          jobKey,
           status: "idle",
           windowStart: null,
           windowEnd: null,
@@ -348,7 +398,7 @@ export class SupabaseGmailIndexStore implements GmailIndexStore {
         error_code: GMAIL_SYNC_ALREADY_RUNNING,
         updated_at: nowIso,
       })
-      .eq("job_key", "gmail-historical");
+      .eq("job_key", jobKey);
     if (existing.errorCode === GMAIL_SYNC_ALREADY_RUNNING) {
       query = query
         .eq("error_code", GMAIL_SYNC_ALREADY_RUNNING)
@@ -363,13 +413,16 @@ export class SupabaseGmailIndexStore implements GmailIndexStore {
     return Boolean(data);
   }
 
-  async releaseHistoricalChunk(nowIso: string): Promise<void> {
-    const existing = await this.getCheckpoint("gmail-historical");
+  private async releaseJob(
+    jobKey: GmailCheckpointJobKey,
+    nowIso: string,
+  ): Promise<void> {
+    const existing = await this.getCheckpoint(jobKey);
     if (!existing || existing.errorCode !== GMAIL_SYNC_ALREADY_RUNNING) return;
     const { error } = await this.client
       .from("continuum_gmail_checkpoints")
       .update({ error_code: null, updated_at: nowIso })
-      .eq("job_key", "gmail-historical")
+      .eq("job_key", jobKey)
       .eq("error_code", GMAIL_SYNC_ALREADY_RUNNING);
     if (error) throw error;
   }

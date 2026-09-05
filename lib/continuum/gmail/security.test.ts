@@ -301,7 +301,48 @@ describe("Gmail activation security", () => {
     for (const file of walk(join(ROOT, "app/api"), ".ts")) {
       const source = readFileSync(file, "utf8");
       assert.doesNotMatch(source, /runGmailHistoryChunk|runNextGmailHistoryChunk|runHistoricalSync/);
+      assert.doesNotMatch(
+        source,
+        /runGmailIncrementalChunk|runNextGmailIncrementalChunk|runIncrementalSync/,
+      );
     }
+  });
+
+  it("keeps incremental Gmail current-state private, kill-switched, and off cron", () => {
+    const incremental = readFileSync(join(GMAIL_DIR, "incremental.ts"), "utf8");
+    const sync = readFileSync(join(GMAIL_DIR, "incremental-sync.ts"), "utf8");
+    const actions = readFileSync(
+      join(ROOT, "app/executive-dashboard/concierge/gmail-incremental-actions.ts"),
+      "utf8",
+    );
+    const ui = readFileSync(
+      join(ROOT, "app/executive-dashboard/concierge/components/gmail-incremental.tsx"),
+      "utf8",
+    );
+    const page = readFileSync(
+      join(ROOT, "app/executive-dashboard/concierge/gmail/page.tsx"),
+      "utf8",
+    );
+    const vercel = readFileSync(join(ROOT, "vercel.json"), "utf8");
+    const env = readFileSync(join(GMAIL_DIR, "env.ts"), "utf8");
+    assert.match(incremental, /GMAIL_INCREMENTAL_JOB_KEY/);
+    assert.match(sync, /listHistory/);
+    assert.match(sync, /GMAIL_INCREMENTAL_JOB_KEY/);
+    const types = readFileSync(join(GMAIL_DIR, "types.ts"), "utf8");
+    assert.match(types, /gmail-memory-daily/);
+    assert.match(actions, /"use server"/);
+    assert.match(actions, /isGmailIncrementalSyncEnabled/);
+    assert.match(actions, /runGmailIncrementalChunk/);
+    assert.doesNotMatch(actions, /formData\.get\(/);
+    assert.match(page, /GmailIncrementalForm/);
+    assert.match(ui, /Current mailbox/);
+    assert.match(ui, /Activation required/);
+    assert.doesNotMatch(ui, /mailboxEmailHash|ciphertext|subject|snippet|messageId|threadId/);
+    assert.match(env, /CONTINUUM_GMAIL_INCREMENTAL_SYNC_ENABLED/);
+    assert.doesNotMatch(vercel, /gmail-incremental|gmail-memory-daily|gmail-current-state/);
+    assert.doesNotMatch(sync, /createPersonAtomic|insertSourceNote|continuum_open_jobs/);
+    assert.doesNotMatch(incremental, /createPersonAtomic|insertSourceNote|continuum_attention_items/);
+    assert.doesNotMatch(sync, /project-jobs/);
   });
 
   it("keeps the founder Gmail connection test off public routes and mailbox content", () => {

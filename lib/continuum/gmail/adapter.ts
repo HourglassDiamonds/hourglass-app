@@ -7,9 +7,12 @@
 import type {
   GmailApiMessage,
   GmailApiThread,
+  GmailHistoryPage,
+  GmailHistoryType,
   GmailListPage,
   GmailProfile,
 } from "./types";
+import { GMAIL_HISTORY_TYPES } from "./types";
 
 export type GmailListMessagesQuery = {
   q: string;
@@ -17,9 +20,17 @@ export type GmailListMessagesQuery = {
   maxResults?: number;
 };
 
+export type GmailListHistoryQuery = {
+  startHistoryId: string;
+  pageToken?: string | null;
+  maxResults?: number;
+  historyTypes?: readonly GmailHistoryType[];
+};
+
 export type GmailApi = {
   getProfile(): Promise<GmailProfile>;
   listMessages(query: GmailListMessagesQuery): Promise<GmailListPage>;
+  listHistory(query: GmailListHistoryQuery): Promise<GmailHistoryPage>;
   getMessage(messageId: string): Promise<GmailApiMessage>;
   getThread(threadId: string): Promise<GmailApiThread>;
 };
@@ -32,6 +43,12 @@ export type GmailApiCall =
       pageToken: string | null;
       maxResults: number | null;
     }
+  | {
+      method: "listHistory";
+      startHistoryId: string;
+      pageToken: string | null;
+      maxResults: number | null;
+    }
   | { method: "getMessage"; messageId: string }
   | { method: "getThread"; threadId: string };
 
@@ -39,6 +56,7 @@ export class MockGmailApi implements GmailApi {
   readonly calls: GmailApiCall[] = [];
   private readonly profiles: GmailProfile[] = [];
   private readonly pages = new Map<string, GmailListPage>();
+  private readonly historyPages = new Map<string, GmailHistoryPage>();
   private readonly messages = new Map<string, GmailApiMessage>();
   private readonly threads = new Map<string, GmailApiThread>();
   private defaultPage: GmailListPage = { messages: [], nextPageToken: null };
@@ -53,6 +71,14 @@ export class MockGmailApi implements GmailApi {
   setListPage(pageToken: string | null, page: GmailListPage): void {
     this.pages.set(pageToken ?? "", page);
     if (!pageToken) this.defaultPage = page;
+  }
+
+  setHistoryPage(
+    startHistoryId: string,
+    pageToken: string | null,
+    page: GmailHistoryPage,
+  ): void {
+    this.historyPages.set(historyPageKey(startHistoryId, pageToken), page);
   }
 
   setMessage(message: GmailApiMessage): void {
@@ -83,6 +109,30 @@ export class MockGmailApi implements GmailApi {
     const profile = this.profiles[0];
     if (!profile) throw new Error("gmail-profile-missing");
     return { ...profile };
+  }
+
+  async listHistory(query: GmailListHistoryQuery): Promise<GmailHistoryPage> {
+    const pageToken = query.pageToken ?? null;
+    this.calls.push({
+      method: "listHistory",
+      startHistoryId: query.startHistoryId,
+      pageToken,
+      maxResults: query.maxResults ?? null,
+    });
+    this.maybeThrow("listHistory");
+    this.maybeThrow(`listHistory:${query.startHistoryId}:${pageToken ?? ""}`);
+    const page = this.historyPages.get(
+      historyPageKey(query.startHistoryId, pageToken),
+    );
+    if (!page) {
+      const historyId = this.profiles[0]?.historyId ?? query.startHistoryId;
+      return { history: [], nextPageToken: null, historyId };
+    }
+    return {
+      history: page.history.map((row) => structuredClone(row)),
+      nextPageToken: page.nextPageToken,
+      historyId: String(page.historyId),
+    };
   }
 
   async listMessages(query: GmailListMessagesQuery): Promise<GmailListPage> {
@@ -141,6 +191,14 @@ export class GmailHttpError extends Error {
   }
 }
 
+export function isGmailNotFoundError(error: unknown): boolean {
+  return error instanceof GmailHttpError && error.status === 404;
+}
+
+export function isHistoryTooOldError(error: unknown): boolean {
+  return isGmailNotFoundError(error);
+}
+
 export function isRetryableGmailError(error: unknown): boolean {
   if (!(error instanceof GmailHttpError)) return false;
   if (error.status === 429) return true;
@@ -168,11 +226,34 @@ export function retryDelayMs(
 
 const GMAIL_API_ROOT = "https://gmail.googleapis.com/gmail/v1/users/me";
 
+function historyPageKey(startHistoryId: string, pageToken: string | null): string {
+  return `${startHistoryId}\0${pageToken ?? ""}`;
+}
+
+/**
+ * Gmail historyId is uint64. JSON.parse would lose precision above 2^53-1.
+ * Quote unquoted historyId numbers before parsing so the checkpoint stays exact.
+ */
+export function parseGmailJson(text: string): unknown {
+  if (!text.trim()) return {};
+  const quoted = text.replace(/"(historyId)"\s*:\s*(\d+)/g, '"$1":"$2"');
+  return JSON.parse(quoted);
+}
+
+function asHistoryId(value: unknown, fallback?: string): string {
+  if (typeof value === "string" && value.trim()) return value.trim();
+  if (typeof value === "number" && Number.isFinite(value)) return String(value);
+  if (fallback) return fallback;
+  throw new Error("gmail-history-id-missing");
+}
+
 /**
  * Live adapter. Constructed only when a real access token is in process memory.
  * Founder OAuth callback and the zero-write connection test may call getProfile
  * and listMessages. Exact project thread fetch may call getThread for one
- * already-stored canonical thread id. Do not call attachments.get.
+ * already-stored canonical thread id. Incremental current-state may call
+ * users.history.list plus the same metadata messages.get class as historical
+ * sync. Do not call attachments.get.
  * Do not call getMessage, getThread, or attachments.get from the connection test.
  */
 export function createLiveGmailApi(accessToken: string): GmailApi {
@@ -180,15 +261,25 @@ export function createLiveGmailApi(accessToken: string): GmailApi {
     const response = await fetch(`${GMAIL_API_ROOT}${path}`, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
+    const text = await response.text();
     if (!response.ok) {
       const retryAfter = response.headers.get("Retry-After") ?? undefined;
-      throw new GmailHttpError(response.status, "http", retryAfter);
+      const reason = response.status === 404 ? "notFound" : "http";
+      throw new GmailHttpError(response.status, reason, retryAfter);
     }
-    return (await response.json()) as T;
+    return parseGmailJson(text) as T;
   }
 
   return {
-    getProfile: () => gmailFetch<GmailProfile>("/profile"),
+    getProfile: async () => {
+      const data = await gmailFetch<GmailProfile>("/profile");
+      return {
+        emailAddress: data.emailAddress,
+        ...(data.historyId != null
+          ? { historyId: asHistoryId(data.historyId) }
+          : {}),
+      };
+    },
     listMessages: async (query) => {
       const params = new URLSearchParams();
       params.set("q", query.q);
@@ -209,6 +300,24 @@ export function createLiveGmailApi(accessToken: string): GmailApi {
         })),
         nextPageToken: data.nextPageToken ?? null,
         resultSizeEstimate: data.resultSizeEstimate,
+      };
+    },
+    listHistory: async (query) => {
+      const params = new URLSearchParams();
+      params.set("startHistoryId", query.startHistoryId);
+      params.set("maxResults", String(query.maxResults ?? 100));
+      if (query.pageToken) params.set("pageToken", query.pageToken);
+      const types = query.historyTypes ?? GMAIL_HISTORY_TYPES;
+      for (const type of types) params.append("historyTypes", type);
+      const data = await gmailFetch<{
+        history?: GmailHistoryPage["history"][number][];
+        nextPageToken?: string;
+        historyId?: string;
+      }>(`/history?${params.toString()}`);
+      return {
+        history: data.history ?? [],
+        nextPageToken: data.nextPageToken ?? null,
+        historyId: asHistoryId(data.historyId),
       };
     },
     getMessage: (messageId) =>

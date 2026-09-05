@@ -1,11 +1,18 @@
 import Link from "next/link";
 import { CONCIERGE_HOME_PATH } from "@/lib/continuum/client-memory/read/presentation";
-import { GMAIL_HISTORICAL_JOB_KEY } from "@/lib/continuum/gmail/types";
+import { gmailCurrentStatePublicView, readGmailCurrentState } from "@/lib/continuum/gmail/current-state";
+import { isGmailIncrementalSyncEnabled } from "@/lib/continuum/gmail/env";
 import { snapshotFromCheckpoint } from "@/lib/continuum/gmail/history";
+import { snapshotFromIncrementalCheckpoint } from "@/lib/continuum/gmail/incremental";
 import { getAuthenticatedGmailHistoryStores } from "@/lib/continuum/gmail/load";
+import {
+  GMAIL_HISTORICAL_JOB_KEY,
+  GMAIL_INCREMENTAL_JOB_KEY,
+} from "@/lib/continuum/gmail/types";
 import { ConciergeShell } from "../components/concierge-shell";
 import { GmailConnectionTestForm } from "../components/gmail-connection-test";
 import { GmailHistoryForm } from "../components/gmail-history";
+import { GmailIncrementalForm } from "../components/gmail-incremental";
 
 export const dynamic = "force-dynamic";
 
@@ -18,11 +25,31 @@ export default async function ConciergeGmailPage() {
   const auth = await getAuthenticatedGmailHistoryStores();
   let connected = false;
   let history = snapshotFromCheckpoint(null);
+  let incremental = snapshotFromIncrementalCheckpoint(null);
+  let publicState = {
+    ...gmailCurrentStatePublicView({
+      latestInbound: null,
+      latestOutbound: null,
+      lastSuccessfulSyncAt: null,
+      hasNewerIndexedActivity: false,
+    }),
+    activationEnabled: isGmailIncrementalSyncEnabled(),
+  };
   if (auth.ok) {
     const row = await auth.connections.getFounderConnection();
     connected = Boolean(row && row.status === "connected" && row.refreshToken);
     const checkpoint = await auth.index.getCheckpoint(GMAIL_HISTORICAL_JOB_KEY);
     history = snapshotFromCheckpoint(checkpoint);
+    const incrementalRow = await auth.index.getCheckpoint(GMAIL_INCREMENTAL_JOB_KEY);
+    incremental = snapshotFromIncrementalCheckpoint(incrementalRow);
+    const current = await readGmailCurrentState(
+      auth.index,
+      incrementalRow?.windowEnd ?? incrementalRow?.updatedAt,
+    );
+    publicState = {
+      ...gmailCurrentStatePublicView(current),
+      activationEnabled: isGmailIncrementalSyncEnabled(),
+    };
   }
 
   return (
@@ -40,6 +67,7 @@ export default async function ConciergeGmailPage() {
         </h1>
         <GmailConnectionTestForm connected={connected} />
         <GmailHistoryForm initial={history} />
+        <GmailIncrementalForm initial={incremental} publicState={publicState} />
       </div>
     </ConciergeShell>
   );

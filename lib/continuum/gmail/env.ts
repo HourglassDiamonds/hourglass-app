@@ -20,6 +20,7 @@ export const SERVER_ONLY_CONTINUUM_GMAIL_ENV = [
   "CONTINUUM_GMAIL_CLOUD_PROJECT_ORG_ALIGNED",
   "CONTINUUM_GMAIL_OAUTH_USER_TYPE",
   "CONTINUUM_GMAIL_OAUTH_PUBLISHING_STATUS",
+  "CONTINUUM_GMAIL_INCREMENTAL_SYNC_ENABLED",
 ] as const;
 
 export function getContinuumGmailTokenKek(): string | undefined {
@@ -104,4 +105,12 @@ export function isContinuumGmailOAuthConfigured(): boolean {
       getContinuumGmailOAuthClientSecret() &&
       getContinuumGmailOAuthRedirectUri(),
   );
+}
+
+/**
+ * Kill switch. Default off. Does not register or invoke a cron.
+ */
+export function isGmailIncrementalSyncEnabled(): boolean {
+  const raw = trimmed(process.env.CONTINUUM_GMAIL_INCREMENTAL_SYNC_ENABLED);
+  return raw === "true" || raw === "1";
 }

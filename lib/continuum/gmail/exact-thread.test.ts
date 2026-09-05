@@ -513,6 +513,7 @@ describe("exact project Gmail thread fetch", () => {
     api.setThread(ACHEDEKAL_THREAD);
     const bounded = exactThreadOnlyApi(api);
     await assert.rejects(bounded.listMessages({ q: "in:inbox" }), /messages\.list-forbidden/);
+    await assert.rejects(bounded.listHistory({ startHistoryId: "1" }), /history\.list-forbidden/);
     await assert.rejects(bounded.getMessage("msg-achedekal-1"), /messages\.get-forbidden/);
     await assert.rejects(bounded.getProfile(), /users\.getProfile-forbidden/);
     const thread = await bounded.getThread(ACHEDEKAL_THREAD_ID);
