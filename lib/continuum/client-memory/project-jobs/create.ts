@@ -1,7 +1,7 @@
 /**
- * Internal Open Job create primitive for tests and later founder controls.
+ * Internal Open Job create primitive for tests and founder controls.
  * Does not infer jobs from notes, Lifecycle, Gmail, or operating details.
- * Does not expose Concierge UI. Does not write CoS, Human Intake, or Gmail.
+ * Founder UI lives in dedicated Concierge actions. Does not write CoS, Human Intake, or Gmail.
  */
 
 import type { ClientMemoryEntity, PersonProfile, ProjectProfile } from "../types";

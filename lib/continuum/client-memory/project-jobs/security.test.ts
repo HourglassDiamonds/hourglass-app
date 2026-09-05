@@ -19,7 +19,10 @@ function walkFiles(dir: string, suffix: string, found: string[] = []): string[] 
 
 const WRITE_MARKERS = [
   /createProjectJob/,
+  /mutateOpenJob/,
+  /saveOpenJob/,
   /continuum_project_jobs/,
+  /continuum_project_job_mutations/,
   /InMemoryProjectJobStore/,
 ];
 
@@ -40,6 +43,8 @@ describe("Open Jobs security", () => {
     for (const file of apiFiles) {
       const source = readFileSync(file, "utf8");
       assert.doesNotMatch(source, /createProjectJob/);
+      assert.doesNotMatch(source, /mutateOpenJob/);
+      assert.doesNotMatch(source, /saveOpenJob/);
       assert.doesNotMatch(source, /continuum_project_jobs/);
       assert.doesNotMatch(source, /project-jobs/);
     }
@@ -49,7 +54,7 @@ describe("Open Jobs security", () => {
       join(ROOT, "app/executive-dashboard/concierge/actions.ts"),
       "utf8",
     );
-    assert.doesNotMatch(actions, /createProjectJob|saveOpenJob|continuum_project_jobs/);
+    assert.doesNotMatch(actions, /createProjectJob|saveOpenJob|mutateOpenJob|continuum_project_jobs/);
   });
 
   it("does not create Open Jobs from Lifecycle, operating details, Gmail, Human Intake, or CoS", () => {
@@ -74,6 +79,7 @@ describe("Open Jobs security", () => {
       if (file.endsWith(".test.ts")) continue;
       const source = readFileSync(file, "utf8");
       assert.doesNotMatch(source, /createProjectJob/);
+      assert.doesNotMatch(source, /mutateOpenJob/);
       assert.doesNotMatch(source, /continuum_project_jobs/);
     }
   });
@@ -87,5 +93,36 @@ describe("Open Jobs security", () => {
     );
     assert.match(load, /requireInternalClientMemorySession/);
     assert.doesNotMatch(load, /createProjectJob|saveOpenJob/);
+  });
+
+  it("keeps founder Open Job writes on a dedicated private action module", () => {
+    const denied = requireInternalClientMemorySession(undefined);
+    assert.equal(denied.ok, false);
+    const writerLoad = readFileSync(join(JOBS_DIR, "load-writer.ts"), "utf8");
+    assert.match(writerLoad, /requireInternalClientMemorySession/);
+    assert.match(writerLoad, /unauthorized/);
+    const actions = readFileSync(
+      join(ROOT, "app/executive-dashboard/concierge/project-jobs-actions.ts"),
+      "utf8",
+    );
+    assert.match(actions, /getAuthenticatedProjectJobWriter/);
+    assert.match(actions, /saveOpenJob/);
+    assert.match(actions, /mutateOpenJobAction/);
+    assert.doesNotMatch(actions, /gmail\.googleapis|continuum_gmail_messages/);
+    assert.doesNotMatch(actions, /setProjectLifecycle|ingestHumanIntake|composeChiefOfStaffBrief/);
+    const shared = readFileSync(
+      join(ROOT, "app/executive-dashboard/concierge/actions.ts"),
+      "utf8",
+    );
+    assert.doesNotMatch(shared, /saveOpenJob|mutateOpenJobAction|project-jobs-actions/);
+    for (const relative of [
+      "app/executive-dashboard/concierge/projects/[projectId]/jobs/new/page.tsx",
+      "app/executive-dashboard/concierge/projects/[projectId]/jobs/[jobId]/page.tsx",
+    ]) {
+      const page = readFileSync(join(ROOT, relative), "utf8");
+      assert.match(page, /robots: \{ index: false/);
+      assert.match(page, /getAuthenticatedProjectJobWriter/);
+      assert.doesNotMatch(page, /createBrowserClient/);
+    }
   });
 });

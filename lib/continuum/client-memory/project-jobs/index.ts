@@ -1,7 +1,7 @@
 /**
  * Internal Project Open Jobs surface.
- * App Router code must not import a browser Supabase client.
- * #10 has no founder editing UI.
+ * App Router writer must import the Supabase adapter from `./server`.
+ * Never import from client components or public routes.
  */
 
 export type {
@@ -34,7 +34,11 @@ export type {
   CreateProjectJobInput,
   CreateProjectJobResult,
 } from "./create";
+export { mutateOpenJob } from "./mutate";
+export type { MutateOpenJobInput, MutateOpenJobResult } from "./mutate";
 export { InMemoryProjectJobStore, createInMemoryProjectJobStore } from "./store";
+export { createInMemoryProjectJobWriter } from "./writer";
+export type { ProjectJobWriter } from "./writer";
 export {
   deskJobsFromCanonical,
   disconnectedOpenJobs,
@@ -45,7 +49,9 @@ export {
 export {
   OPEN_JOB_ACTOR_FIELD_LABEL,
   OPEN_JOB_ACTOR_LABELS,
+  OPEN_JOB_ADD_LABEL,
   OPEN_JOB_DEFERRED_LABEL,
+  OPEN_JOB_EDIT_LABEL,
   OPEN_JOB_KIND_LABELS,
   OPEN_JOB_SECTION_TITLE,
   OPEN_JOBS_NONE_LABEL,

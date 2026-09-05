@@ -16,6 +16,8 @@ import {
   conciergeInboxSourcePath,
   conciergeCorrectProjectKindPath,
   conciergeCorrectProjectLifecyclePath,
+  conciergeAddOpenJobPath,
+  conciergeOpenJobPath,
   conciergeCorrectProjectSpecPath,
   conciergeCorrectOperatingDetailPath,
   conciergeProjectCustomPath,
@@ -236,6 +238,17 @@ describe("Concierge presentation", () => {
     assert.equal(
       conciergeCorrectProjectLifecyclePath("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"),
       "/executive-dashboard/concierge/projects/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/lifecycle",
+    );
+    assert.equal(
+      conciergeAddOpenJobPath("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"),
+      "/executive-dashboard/concierge/projects/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/jobs/new",
+    );
+    assert.equal(
+      conciergeOpenJobPath(
+        "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+      ),
+      "/executive-dashboard/concierge/projects/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/jobs/bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
     );
     assert.equal(
       conciergeProjectCustomPath("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"),

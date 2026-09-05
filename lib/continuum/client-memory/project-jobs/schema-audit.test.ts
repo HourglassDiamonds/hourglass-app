@@ -59,6 +59,28 @@ describe("Client Memory project-jobs SQL", () => {
     assert.match(sql, /Snooze is not resolution/);
   });
 
+  it("keeps the mutation log additive, append-only, and service-role only", () => {
+    const mutations = readFileSync(
+      resolve(
+        process.cwd(),
+        "lib/supabase/continuum-client-memory-project-jobs-mutations.sql",
+      ),
+      "utf8",
+    );
+    assert.match(mutations, /UNAPPLIED/);
+    assert.match(mutations, /DO NOT RUN AGAINST PRODUCTION/);
+    assert.match(mutations, /create table if not exists public\.continuum_project_job_mutations/);
+    assert.match(mutations, /grant select, insert on table public\.continuum_project_job_mutations to service_role;/);
+    assert.doesNotMatch(mutations, /grant update/i);
+    assert.doesNotMatch(mutations, /grant delete/i);
+    assert.doesNotMatch(mutations, /drop table/i);
+    assert.doesNotMatch(mutations, /create policy/i);
+    assert.doesNotMatch(mutations, /alter table public\.continuum_project_jobs/i);
+    assert.doesNotMatch(mutations, /continuum_gmail_messages/);
+    assert.doesNotMatch(mutations, /continuum_project_lifecycle/);
+    assert.doesNotMatch(mutations, /continuum_attention_items/);
+  });
+
   it("is service-role only with no public grants", () => {
     assert.match(sql, /revoke all on table public\.continuum_project_jobs from public;/);
     assert.match(sql, /revoke all on table public\.continuum_project_jobs from anon;/);

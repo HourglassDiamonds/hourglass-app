@@ -48,10 +48,15 @@ function desk(extra: Partial<ProjectDeskRead> = {}): ProjectDeskRead {
 }
 
 describe("Open Jobs Project Desk UI", () => {
-  it("shows none, one, and disconnected coverage without founder controls", () => {
+  it("shows none, one, and disconnected coverage with restrained founder controls", () => {
     const none = renderToStaticMarkup(createElement(ProjectDeskView, { desk: desk() }));
     assert.match(none, new RegExp(OPEN_JOBS_NONE_LABEL));
-    assert.doesNotMatch(none, /Add Open Job|Resolve|Snooze|Cancel job/);
+    assert.match(none, /Add open job/);
+    assert.match(
+      none,
+      /\/executive-dashboard\/concierge\/projects\/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa\/jobs\/new/,
+    );
+    assert.doesNotMatch(none, /Resolve|Snooze|Cancel job|Today 5|Chief of Staff/);
     const disconnected = renderToStaticMarkup(
       createElement(ProjectDeskView, {
         desk: desk({
@@ -68,6 +73,7 @@ describe("Open Jobs Project Desk UI", () => {
       }),
     );
     assert.match(disconnected, new RegExp(OPEN_JOBS_NOT_CONNECTED_LABEL));
+    assert.doesNotMatch(disconnected, /Add open job/);
     const html = renderToStaticMarkup(
       createElement(ProjectDeskView, {
         desk: desk({
@@ -106,8 +112,14 @@ describe("Open Jobs Project Desk UI", () => {
     assert.match(html, /Commitment/);
     assert.match(html, /Actor/);
     assert.match(html, /Founder/);
+    assert.match(html, /Add open job/);
+    assert.match(html, /Open job/);
+    assert.match(
+      html,
+      /\/executive-dashboard\/concierge\/projects\/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa\/jobs\/cccccccc-cccc-4ccc-8ccc-cccccccccccc/,
+    );
     assert.doesNotMatch(html, /Waiting on Client/);
     assert.doesNotMatch(html, /secret-thread|gmail_thread/);
-    assert.doesNotMatch(html, /Add Open Job|Resolve job|Snooze/);
+    assert.doesNotMatch(html, /Resolve job|Snooze|kanban|Trello|Jira/);
   });
 });

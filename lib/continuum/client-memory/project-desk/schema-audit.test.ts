@@ -34,7 +34,10 @@ describe("Project Desk Slice A schema", () => {
       const sql = readFileSync(file, "utf8");
       assert.doesNotMatch(sql, /continuum_project_operating/);
       assert.doesNotMatch(sql, /continuum_project_artifacts/);
-      if (!file.endsWith("continuum-client-memory-project-jobs.sql")) {
+      const isJobsSql =
+        file.endsWith("continuum-client-memory-project-jobs.sql") ||
+        file.endsWith("continuum-client-memory-project-jobs-mutations.sql");
+      if (!isJobsSql) {
         assert.doesNotMatch(sql, /continuum_project_jobs/);
         assert.doesNotMatch(sql, /continuum_project_open_jobs/);
       }

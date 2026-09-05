@@ -81,7 +81,8 @@ export default async function ConciergeProjectDeskPage({
           query.saved === "spec" ||
           query.saved === "kind" ||
           query.saved === "operating" ||
-          query.saved === "lifecycle"
+          query.saved === "lifecycle" ||
+          query.saved === "job"
         }
       />
       </div>

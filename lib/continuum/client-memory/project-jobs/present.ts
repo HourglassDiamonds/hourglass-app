@@ -26,6 +26,8 @@ export const OPEN_JOBS_NONE_LABEL = "No open jobs recorded.";
 export const OPEN_JOBS_NOT_CONNECTED_LABEL = "Not connected yet";
 export const OPEN_JOB_ACTOR_FIELD_LABEL = "Actor";
 export const OPEN_JOB_DEFERRED_LABEL = "Deferred";
+export const OPEN_JOB_ADD_LABEL = "Add open job";
+export const OPEN_JOB_EDIT_LABEL = "Open job";
 
 export function openJobKindLabel(kind: OpenJobKind): string {
   return OPEN_JOB_KIND_LABELS[kind];

@@ -63,6 +63,14 @@ export function conciergeCorrectProjectLifecyclePath(projectId: string): string 
   return `${conciergeProjectPath(projectId)}/lifecycle`;
 }
 
+export function conciergeAddOpenJobPath(projectId: string): string {
+  return `${conciergeProjectPath(projectId)}/jobs/new`;
+}
+
+export function conciergeOpenJobPath(projectId: string, jobId: string): string {
+  return `${conciergeProjectPath(projectId)}/jobs/${jobId}`;
+}
+
 export function conciergeProjectCustomPath(projectId: string): string {
   return `${conciergeProjectPath(projectId)}/custom`;
 }

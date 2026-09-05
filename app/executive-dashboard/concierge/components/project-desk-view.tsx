@@ -1,11 +1,13 @@
 import Link from "next/link";
 import {
   conciergeAddNotePath,
+  conciergeAddOpenJobPath,
   conciergeClientPath,
   conciergeCorrectOperatingDetailPath,
   conciergeCorrectProjectKindPath,
   conciergeCorrectProjectLifecyclePath,
   conciergeCorrectProjectSpecPath,
+  conciergeOpenJobPath,
   formatNoteDate,
   noteContextLabel,
   noteSourceLabel,
@@ -26,7 +28,9 @@ import {
 import type { ProjectLifecycleView } from "@/lib/continuum/client-memory/project-lifecycle/view";
 import {
   OPEN_JOB_ACTOR_FIELD_LABEL,
+  OPEN_JOB_ADD_LABEL,
   OPEN_JOB_DEFERRED_LABEL,
+  OPEN_JOB_EDIT_LABEL,
   OPEN_JOB_SECTION_TITLE,
   OPEN_JOBS_NONE_LABEL,
   OPEN_JOBS_NOT_CONNECTED_LABEL,
@@ -225,7 +229,7 @@ export function ProjectDeskView({
         </ClientMemorySection>
       ) : null}
 
-      <OpenJobsSection jobs={desk.openJobs} />
+      <OpenJobsSection projectId={desk.projectId} jobs={desk.openJobs} />
 
       <ClientMemorySection title="Renders">
         <p className="text-[15px] leading-relaxed text-[#c4b7aa]">
@@ -262,7 +266,13 @@ export function ProjectDeskView({
   );
 }
 
-function OpenJobsSection({ jobs }: { jobs: ProjectDeskOpenJobs }) {
+function OpenJobsSection({
+  projectId,
+  jobs,
+}: {
+  projectId: string;
+  jobs: ProjectDeskOpenJobs;
+}) {
   if (!jobs.connected) {
     return (
       <ClientMemorySection title={OPEN_JOB_SECTION_TITLE}>
@@ -272,54 +282,63 @@ function OpenJobsSection({ jobs }: { jobs: ProjectDeskOpenJobs }) {
       </ClientMemorySection>
     );
   }
-  if (jobs.unresolvedCount === 0) {
-    return (
-      <ClientMemorySection title={OPEN_JOB_SECTION_TITLE}>
+  return (
+    <ClientMemorySection title={OPEN_JOB_SECTION_TITLE}>
+      {jobs.unresolvedCount === 0 ? (
         <p className="text-[15px] leading-relaxed text-[#c4b7aa]">
           {OPEN_JOBS_NONE_LABEL}
         </p>
-      </ClientMemorySection>
-    );
-  }
-  return (
-    <ClientMemorySection title={OPEN_JOB_SECTION_TITLE}>
-      <ol className="space-y-5">
-        {jobs.unresolved.map((job) => (
-          <li
-            key={job.jobId}
-            className="border-t border-white/[0.06] pt-5 first:border-t-0 first:pt-0"
-          >
-            <p className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
-              {openJobKindLabel(job.kind)}
-            </p>
-            <p className="mt-1 break-words text-[15px] leading-relaxed text-[#e7ddd2]">
-              {job.subject}
-            </p>
-            {job.detail ? (
-              <p className="mt-2 break-words text-[14px] leading-relaxed text-[#c4b7aa]">
-                {job.detail}
+      ) : (
+        <ol className="space-y-5">
+          {jobs.unresolved.map((job) => (
+            <li
+              key={job.jobId}
+              className="border-t border-white/[0.06] pt-5 first:border-t-0 first:pt-0"
+            >
+              <p className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
+                {openJobKindLabel(job.kind)}
               </p>
-            ) : null}
-            <p className="mt-2 text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
-              {OPEN_JOB_ACTOR_FIELD_LABEL} · {openJobActorLabel(job.waitingOnActor)}
-              {job.associatedPersonName ? ` · ${job.associatedPersonName}` : ""}
-            </p>
-            {job.state === "snoozed" && job.deferredUntil ? (
+              <p className="mt-1 break-words text-[15px] leading-relaxed text-[#e7ddd2]">
+                {job.subject}
+              </p>
+              {job.detail ? (
+                <p className="mt-2 break-words text-[14px] leading-relaxed text-[#c4b7aa]">
+                  {job.detail}
+                </p>
+              ) : null}
+              <p className="mt-2 text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
+                {OPEN_JOB_ACTOR_FIELD_LABEL} · {openJobActorLabel(job.waitingOnActor)}
+                {job.associatedPersonName ? ` · ${job.associatedPersonName}` : ""}
+              </p>
+              {job.state === "snoozed" && job.deferredUntil ? (
+                <p className="mt-1 text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
+                  {OPEN_JOB_DEFERRED_LABEL} {formatNoteDate(job.deferredUntil)}
+                </p>
+              ) : null}
+              {job.dueAt ? (
+                <p className="mt-1 text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
+                  Due {formatNoteDate(job.dueAt)}
+                </p>
+              ) : null}
               <p className="mt-1 text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
-                {OPEN_JOB_DEFERRED_LABEL} {formatNoteDate(job.deferredUntil)}
+                {openJobSourceLabel(job.sourceSystem)} · {formatNoteDate(job.createdAt)}
               </p>
-            ) : null}
-            {job.dueAt ? (
-              <p className="mt-1 text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
-                Due {formatNoteDate(job.dueAt)}
-              </p>
-            ) : null}
-            <p className="mt-1 text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
-              {openJobSourceLabel(job.sourceSystem)} · {formatNoteDate(job.createdAt)}
-            </p>
-          </li>
-        ))}
-      </ol>
+              <Link
+                href={conciergeOpenJobPath(projectId, job.jobId)}
+                className="mt-2 inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.24em] text-[#8d8073] outline-none hover:text-[#efe8de] focus-visible:text-[#efe8de]"
+              >
+                {OPEN_JOB_EDIT_LABEL}
+              </Link>
+            </li>
+          ))}
+        </ol>
+      )}
+      <Link
+        href={conciergeAddOpenJobPath(projectId)}
+        className="mt-4 inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.24em] text-[#8d8073] outline-none hover:text-[#efe8de] focus-visible:text-[#efe8de]"
+      >
+        {OPEN_JOB_ADD_LABEL}
+      </Link>
     </ClientMemorySection>
   );
 }
