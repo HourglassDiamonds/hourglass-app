@@ -3,8 +3,23 @@ import { buildGoogleAuthUrl, Ga4OAuthError } from "@/lib/intelligence/google-oau
 
 export const dynamic = "force-dynamic";
 
-/** Returns Google OAuth consent URL to obtain a refresh token (one-time setup). */
+function isProductionRuntime(): boolean {
+  return (
+    process.env.NODE_ENV === "production" ||
+    process.env.VERCEL_ENV === "production"
+  );
+}
+
+/**
+ * Returns Google OAuth consent URL to obtain a refresh token (local setup).
+ * Disabled when NODE_ENV or VERCEL_ENV is production — use stored
+ * GOOGLE_REFRESH_TOKEN instead. Production responses are generic 404s.
+ */
 export async function GET() {
+  if (isProductionRuntime()) {
+    return NextResponse.json({ ok: false, error: "Not found." }, { status: 404 });
+  }
+
   try {
     const url = buildGoogleAuthUrl();
     return NextResponse.json({

@@ -4,7 +4,10 @@ import {
   type CalibrationReportFields,
 } from "@/lib/calibration-library/types";
 
+/** Developer-only. Never honor DI_INTERPRET_DIAGNOSTICS=1 in production. */
 export function isInterpretDiagnosticsEnabled(): boolean {
+  if (process.env.NODE_ENV === "production") return false;
+  if (process.env.VERCEL_ENV === "production") return false;
   return process.env.DI_INTERPRET_DIAGNOSTICS === "1";
 }
 

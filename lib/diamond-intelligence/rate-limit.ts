@@ -18,7 +18,10 @@ const buckets = new Map<string, RateLimitBucket>();
 const ONE_HOUR_MS = 60 * 60 * 1000;
 const ONE_DAY_MS = 24 * ONE_HOUR_MS;
 
+/** Bypass only outside production — never honor disable flag in production. */
 function isRateLimitDisabled(): boolean {
+  if (process.env.NODE_ENV === "production") return false;
+  if (process.env.VERCEL_ENV === "production") return false;
   return process.env.DI_RATE_LIMIT_DISABLED === "1";
 }
 

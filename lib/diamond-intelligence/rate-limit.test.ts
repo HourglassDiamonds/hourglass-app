@@ -8,6 +8,26 @@ import {
   resetDiamondIntelligenceRateLimits,
 } from "./rate-limit";
 
+function withEnv(
+  values: Record<string, string | undefined>,
+  fn: () => void,
+): void {
+  const previous = new Map<string, string | undefined>();
+  for (const [key, value] of Object.entries(values)) {
+    previous.set(key, process.env[key]);
+    if (value === undefined) delete process.env[key];
+    else process.env[key] = value;
+  }
+  try {
+    fn();
+  } finally {
+    for (const [key, value] of previous) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  }
+}
+
 describe("checkDiamondIntelligenceRateLimit", () => {
   beforeEach(() => {
     resetDiamondIntelligenceRateLimits();
@@ -76,6 +96,80 @@ describe("checkDiamondIntelligenceRateLimit", () => {
     assert.equal(
       checkDiamondIntelligenceRateLimit("10.0.0.5", now).allowed,
       true,
+    );
+  });
+
+  it("ignores DI_RATE_LIMIT_DISABLED=1 when NODE_ENV is production", () => {
+    withEnv(
+      {
+        NODE_ENV: "production",
+        VERCEL_ENV: undefined,
+        DI_RATE_LIMIT_DISABLED: "1",
+      },
+      () => {
+        resetDiamondIntelligenceRateLimits();
+        const now = Date.now();
+        for (let i = 0; i < DI_RATE_LIMIT_BURST_MAX; i += 1) {
+          assert.equal(
+            checkDiamondIntelligenceRateLimit("10.0.0.6", now + i).allowed,
+            true,
+          );
+        }
+        assert.equal(
+          checkDiamondIntelligenceRateLimit(
+            "10.0.0.6",
+            now + DI_RATE_LIMIT_BURST_MAX,
+          ).allowed,
+          false,
+        );
+      },
+    );
+  });
+
+  it("ignores DI_RATE_LIMIT_DISABLED=1 when VERCEL_ENV is production", () => {
+    withEnv(
+      {
+        NODE_ENV: "development",
+        VERCEL_ENV: "production",
+        DI_RATE_LIMIT_DISABLED: "1",
+      },
+      () => {
+        resetDiamondIntelligenceRateLimits();
+        const now = Date.now();
+        for (let i = 0; i < DI_RATE_LIMIT_BURST_MAX; i += 1) {
+          assert.equal(
+            checkDiamondIntelligenceRateLimit("10.0.0.7", now + i).allowed,
+            true,
+          );
+        }
+        assert.equal(
+          checkDiamondIntelligenceRateLimit(
+            "10.0.0.7",
+            now + DI_RATE_LIMIT_BURST_MAX,
+          ).allowed,
+          false,
+        );
+      },
+    );
+  });
+
+  it("honors DI_RATE_LIMIT_DISABLED=1 outside production", () => {
+    withEnv(
+      {
+        NODE_ENV: "development",
+        VERCEL_ENV: undefined,
+        DI_RATE_LIMIT_DISABLED: "1",
+      },
+      () => {
+        resetDiamondIntelligenceRateLimits();
+        const now = Date.now();
+        for (let i = 0; i < DI_RATE_LIMIT_BURST_MAX + 5; i += 1) {
+          assert.equal(
+            checkDiamondIntelligenceRateLimit("10.0.0.8", now + i).allowed,
+            true,
+          );
+        }
+      },
     );
   });
 });
