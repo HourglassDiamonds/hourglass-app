@@ -195,6 +195,7 @@ describe("Project Desk compose", () => {
       /No Current Action|Waiting on|overdue|Needs Review/i,
     );
     assert.equal(otherDesk.desk.openJobs.connected, false);
+    assert.equal(otherDesk.desk.projectWork.connected, false);
     assert.equal(otherDesk.desk.artifacts.connected, false);
     assert.equal(otherDesk.desk.coverage.jobs, "not-connected");
     assert.equal(otherDesk.desk.coverage.email, "not-connected");

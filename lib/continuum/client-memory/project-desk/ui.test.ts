@@ -30,6 +30,7 @@ function summary(overrides: Partial<ProjectDeskSummary> = {}): ProjectDeskSummar
       email: "not-connected",
     },
     recordCreatedAt: "2026-08-01T00:00:00.000Z",
+    projectWork: { connected: false },
     ...overrides,
   };
 }

@@ -46,6 +46,7 @@ function desk(extra: Partial<ProjectDeskRead> = {}): ProjectDeskRead {
     operatingLayer: { kind: "none" },
     lifecycle: compactLifecycleView({ projectKind }),
     openJobs: { connected: false },
+    projectWork: { connected: false },
     artifacts: { connected: false },
     ...extra,
   };

@@ -75,6 +75,7 @@ describe("Open Job read model", () => {
     const desk = getProjectDeskFromSnapshot(
       snapshot({ projectProfiles: [project] }),
       project.projectId,
+      NOW,
     );
     assert.equal(desk.ok, true);
     if (!desk.ok) return;
@@ -87,6 +88,7 @@ describe("Open Job read model", () => {
     const empty = getProjectDeskFromSnapshot(
       snapshot({ projectProfiles: [project], projectJobs: [] }),
       project.projectId,
+      NOW,
     );
     assert.equal(empty.ok && empty.desk.openJobs.connected, true);
     assert.equal(empty.ok && empty.desk.coverage.jobs, "none");
@@ -117,6 +119,7 @@ describe("Open Job read model", () => {
         ],
       }),
       project.projectId,
+      NOW,
     );
     assert.equal(many.ok, true);
     if (!many.ok) return;
@@ -127,6 +130,13 @@ describe("Open Job read model", () => {
       ["Revise CAD", "Need metal confirmation"],
     );
     assert.equal(many.desk.coverage.jobs, "available");
+    assert.equal(many.desk.projectWork.connected, true);
+    if (many.desk.projectWork.connected) {
+      assert.equal(many.desk.projectWork.unresolvedCount, 2);
+      assert.equal(many.desk.projectWork.waitingOn.client, 1);
+      assert.equal(many.desk.projectWork.waitingOn.founder, 1);
+    }
+    assert.equal(many.desk.operationalStatus.kind, "unknown");
     assert.doesNotMatch(
       many.desk.operationalStatus.evidence,
       /Waiting on|No Current Action|overdue/i,
@@ -163,6 +173,7 @@ describe("Open Job read model", () => {
     const desk = getProjectDeskFromSnapshot(
       snapshot({ projectProfiles: [project], projectJobs: jobs }),
       project.projectId,
+      NOW,
     );
     assert.equal(desk.ok, true);
     if (!desk.ok || !desk.desk.openJobs.connected) return;
@@ -216,8 +227,8 @@ describe("Open Job read model", () => {
       ],
       projectJobs: jobs,
     });
-    const deskA = getProjectDeskFromSnapshot(data, first.projectId);
-    const deskB = getProjectDeskFromSnapshot(data, second.projectId);
+    const deskA = getProjectDeskFromSnapshot(data, first.projectId, NOW);
+    const deskB = getProjectDeskFromSnapshot(data, second.projectId, NOW);
     assert.equal(deskA.ok && deskB.ok, true);
     if (!deskA.ok || !deskB.ok) return;
     assert.equal(deskA.desk.openJobs.connected, true);

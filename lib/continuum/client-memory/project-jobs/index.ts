@@ -36,6 +36,8 @@ export type {
 } from "./create";
 export { mutateOpenJob } from "./mutate";
 export type { MutateOpenJobInput, MutateOpenJobResult } from "./mutate";
+export { summarizeProjectWork, disconnectedProjectWork } from "./intelligence";
+export type { ProjectWorkSummary } from "./intelligence";
 export { InMemoryProjectJobStore, createInMemoryProjectJobStore } from "./store";
 export { createInMemoryProjectJobWriter } from "./writer";
 export type { ProjectJobWriter } from "./writer";
@@ -59,4 +61,5 @@ export {
   openJobActorLabel,
   openJobKindLabel,
   openJobSourceLabel,
+  projectWorkFacts,
 } from "./present";

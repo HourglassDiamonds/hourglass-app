@@ -39,6 +39,7 @@ import {
   jobsCoverageLevel,
   openJobsReadModel,
 } from "../project-jobs/read";
+import { summarizeProjectWork } from "../project-jobs/intelligence";
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -114,6 +115,7 @@ function specCorrectionsForProject(
 function composeSummary(
   snapshot: ProjectDeskSnapshot,
   profile: ProjectDeskSnapshot["projectProfiles"][number],
+  nowIso: string,
 ): ProjectDeskSummary {
   const people = linkedPeople(profile.projectId, snapshot);
   const history =
@@ -141,6 +143,11 @@ function composeSummary(
       jobs: jobsCoverageLevel(openJobs),
     }),
     recordCreatedAt: profile.createdAt,
+    projectWork: summarizeProjectWork(
+      snapshot.projectJobs,
+      profile.projectId,
+      nowIso,
+    ),
   };
 }
 
@@ -156,9 +163,10 @@ function sortSummaries(rows: ProjectDeskSummary[]): ProjectDeskSummary[] {
 export function listProjectsFromSnapshot(
   snapshot: ProjectDeskSnapshot,
   filter: ListProjectsFilter = {},
+  nowIso: string = new Date().toISOString(),
 ): ProjectDeskSummary[] {
   const rows = snapshot.projectProfiles.map((profile) =>
-    composeSummary(snapshot, profile),
+    composeSummary(snapshot, profile, nowIso),
   );
   const sorted = sortSummaries(rows);
   if (filter.limit != null && filter.limit >= 0) {
@@ -170,13 +178,14 @@ export function listProjectsFromSnapshot(
 export function getProjectDeskFromSnapshot(
   snapshot: ProjectDeskSnapshot,
   projectId: string,
+  nowIso: string = new Date().toISOString(),
 ): ProjectDeskGetResult {
   const trimmed = projectId.trim();
   if (!trimmed || !UUID_RE.test(trimmed)) return { ok: false, reason: "not-found" };
   const profile = snapshot.projectProfiles.find((row) => row.projectId === trimmed);
   if (!profile) return { ok: false, reason: "not-found" };
 
-  const summary = composeSummary(snapshot, profile);
+  const summary = composeSummary(snapshot, profile, nowIso);
   const history =
     snapshot.projectHistories.find((row) => row.projectId === trimmed) ?? null;
   const notes = notesForProject(trimmed, snapshot).slice(0, CLIENT_MEMORY_NOTE_LIMIT);
@@ -209,6 +218,7 @@ export function getProjectDeskFromSnapshot(
       ),
     }),
     openJobs: openJobsReadModel(snapshot.projectJobs, trimmed, summary.people),
+    projectWork: summary.projectWork,
     artifacts: { connected: false },
   };
   return { ok: true, desk };

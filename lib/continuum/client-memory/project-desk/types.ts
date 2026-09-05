@@ -19,6 +19,7 @@ import type { ProjectKind } from "../project-kind";
 import type { ProjectOperatingLayer } from "../project-operating/layer";
 import type { ProjectLifecycleView } from "../project-lifecycle/view";
 import type { ProjectDeskOpenJobs, ProjectJob } from "../project-jobs/types";
+import type { ProjectWorkSummary } from "../project-jobs/intelligence";
 
 export const PROJECT_DESK_NOTE_LIMIT = 25;
 export const PROJECT_DESK_HOME_LIMIT = 5;
@@ -83,6 +84,7 @@ export type ProjectDeskSummary = {
   latestNotePreview: string | null;
   coverage: ProjectDeskCoverage;
   recordCreatedAt: string;
+  projectWork: ProjectWorkSummary;
 };
 
 export type ProjectDeskRead = {
@@ -101,6 +103,7 @@ export type ProjectDeskRead = {
   operatingLayer: ProjectOperatingLayer;
   lifecycle: ProjectLifecycleView;
   openJobs: ProjectDeskOpenJobs;
+  projectWork: ProjectWorkSummary;
   artifacts: { connected: false };
 };
 

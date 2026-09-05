@@ -42,6 +42,7 @@ function desk(extra: Partial<ProjectDeskRead> = {}): ProjectDeskRead {
     operatingLayer: { kind: "none" },
     lifecycle: compactLifecycleView({ projectKind: null }),
     openJobs: { connected: true, unresolved: [], unresolvedCount: 0 },
+    projectWork: { connected: true, unresolvedCount: 0, activeCount: 0, deferredCount: 0, waitingOn: { founder: 0, hourglass: 0, client: 0, vendor: 0, unknown: 0 }, blocked: false, dueSoonCount: 0, pastDueCount: 0, forgottenRiskCount: 0 },
     artifacts: { connected: false },
     ...extra,
   };
@@ -105,6 +106,23 @@ describe("Open Jobs Project Desk UI", () => {
               },
             ],
           },
+          projectWork: {
+            connected: true,
+            unresolvedCount: 1,
+            activeCount: 1,
+            deferredCount: 0,
+            waitingOn: {
+              founder: 1,
+              hourglass: 0,
+              client: 0,
+              vendor: 0,
+              unknown: 0,
+            },
+            blocked: false,
+            dueSoonCount: 1,
+            pastDueCount: 0,
+            forgottenRiskCount: 0,
+          },
         }),
       }),
     );
@@ -112,6 +130,9 @@ describe("Open Jobs Project Desk UI", () => {
     assert.match(html, /Commitment/);
     assert.match(html, /Actor/);
     assert.match(html, /Founder/);
+    assert.match(html, /1 unresolved/);
+    assert.match(html, /Founder action/);
+    assert.match(html, /Due within 7 days/);
     assert.match(html, /Add open job/);
     assert.match(html, /Open job/);
     assert.match(

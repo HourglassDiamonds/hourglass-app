@@ -55,6 +55,7 @@ function desk(): ProjectDeskRead {
     operatingLayer: { kind: "none" },
     lifecycle: { kind: "none" },
     openJobs: { connected: false },
+    projectWork: { connected: false },
     artifacts: { connected: false },
   };
 }

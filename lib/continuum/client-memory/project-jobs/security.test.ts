@@ -34,6 +34,7 @@ describe("Open Jobs security", () => {
       assert.doesNotMatch(source, /console\.(log|info|debug|warn|error)/);
       assert.doesNotMatch(source, /createBrowserClient/);
       assert.doesNotMatch(source, /gmail\.googleapis/);
+      assert.doesNotMatch(source, /openai|anthropic|generateText|chat\.completions/i);
     }
   });
 

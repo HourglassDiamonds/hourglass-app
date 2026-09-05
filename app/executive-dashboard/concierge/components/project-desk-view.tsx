@@ -37,8 +37,10 @@ import {
   openJobActorLabel,
   openJobKindLabel,
   openJobSourceLabel,
+  projectWorkFacts,
 } from "@/lib/continuum/client-memory/project-jobs/present";
 import type { ProjectDeskOpenJobs } from "@/lib/continuum/client-memory/project-jobs/types";
+import type { ProjectWorkSummary } from "@/lib/continuum/client-memory/project-jobs/intelligence";
 import { ClientMemorySection } from "./client-memory-section";
 
 export function ProjectDeskView({
@@ -229,7 +231,11 @@ export function ProjectDeskView({
         </ClientMemorySection>
       ) : null}
 
-      <OpenJobsSection projectId={desk.projectId} jobs={desk.openJobs} />
+      <OpenJobsSection
+        projectId={desk.projectId}
+        jobs={desk.openJobs}
+        projectWork={desk.projectWork}
+      />
 
       <ClientMemorySection title="Renders">
         <p className="text-[15px] leading-relaxed text-[#c4b7aa]">
@@ -269,9 +275,11 @@ export function ProjectDeskView({
 function OpenJobsSection({
   projectId,
   jobs,
+  projectWork,
 }: {
   projectId: string;
   jobs: ProjectDeskOpenJobs;
+  projectWork: ProjectWorkSummary;
 }) {
   if (!jobs.connected) {
     return (
@@ -289,6 +297,12 @@ function OpenJobsSection({
           {OPEN_JOBS_NONE_LABEL}
         </p>
       ) : (
+        <>
+          {projectWork.connected && projectWork.unresolvedCount > 0 ? (
+            <p className="text-[13px] leading-relaxed text-[#d8cfc4]">
+              {projectWorkFacts(projectWork).join(" · ")}
+            </p>
+          ) : null}
         <ol className="space-y-5">
           {jobs.unresolved.map((job) => (
             <li
@@ -332,6 +346,7 @@ function OpenJobsSection({
             </li>
           ))}
         </ol>
+        </>
       )}
       <Link
         href={conciergeAddOpenJobPath(projectId)}
