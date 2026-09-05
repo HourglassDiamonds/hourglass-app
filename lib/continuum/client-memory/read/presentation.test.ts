@@ -18,6 +18,8 @@ import {
   conciergeCorrectProjectLifecyclePath,
   conciergeAddOpenJobPath,
   conciergeOpenJobPath,
+  conciergeAddProjectArtifactPath,
+  conciergeProjectArtifactFilePath,
   conciergeCorrectProjectSpecPath,
   conciergeCorrectOperatingDetailPath,
   conciergeProjectCustomPath,
@@ -249,6 +251,17 @@ describe("Concierge presentation", () => {
         "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
       ),
       "/executive-dashboard/concierge/projects/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/jobs/bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+    );
+    assert.equal(
+      conciergeAddProjectArtifactPath("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"),
+      "/executive-dashboard/concierge/projects/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/artifacts/new",
+    );
+    assert.equal(
+      conciergeProjectArtifactFilePath(
+        "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+      ),
+      "/executive-dashboard/concierge/projects/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/artifacts/bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb/file",
     );
     assert.equal(
       conciergeProjectCustomPath("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"),

@@ -1,6 +1,6 @@
 /**
  * Slice A derived operational status and coverage.
- * Open Jobs may be connected as canonical rows. Files and email are not.
+ * Open Jobs and Project files may be connected as canonical rows. Email is not.
  * Never invent waiting-on from notes or job prose.
  */
 
@@ -26,27 +26,30 @@ export function projectCoverage(input: {
   specCount: number;
   noteCount: number;
   jobs?: ProjectDeskCoverage["jobs"];
+  files?: ProjectDeskCoverage["files"];
 }): ProjectDeskCoverage {
   return {
     people: input.peopleCount > 0 ? "available" : "missing",
     specs: input.specCount > 0 ? "available" : "sparse",
     notes: input.noteCount > 0 ? "available" : "none",
     jobs: input.jobs ?? "not-connected",
-    files: "not-connected",
+    files: input.files ?? "not-connected",
     email: "not-connected",
   };
 }
 
+export const FILES_CONNECTED_STATUS_EVIDENCE =
+  "Email is not connected yet. Current operating state is unknown.";
+
 export function sliceAOperationalStatus(
   coverage?: ProjectDeskCoverage,
 ): ProjectDeskOperationalStatus {
-  return {
-    kind: "unknown",
-    evidence:
-      coverage && coverage.jobs !== "not-connected"
-        ? JOBS_CONNECTED_STATUS_EVIDENCE
-        : SLICE_A_STATUS_EVIDENCE,
-  };
+  const jobsConnected = coverage != null && coverage.jobs !== "not-connected";
+  const filesConnected = coverage != null && coverage.files !== "not-connected";
+  let evidence = SLICE_A_STATUS_EVIDENCE;
+  if (filesConnected) evidence = FILES_CONNECTED_STATUS_EVIDENCE;
+  else if (jobsConnected) evidence = JOBS_CONNECTED_STATUS_EVIDENCE;
+  return { kind: "unknown", evidence };
 }
 
 export function specFieldsFromHistory(history: {
@@ -98,7 +101,15 @@ export function coverageRows(coverage: ProjectDeskCoverage): Array<{
             ? "None recorded"
             : "Not connected yet",
     },
-    { label: "Renders", value: "Not connected yet" },
+    {
+      label: "Files",
+      value:
+        coverage.files === "available"
+          ? "Present"
+          : coverage.files === "none"
+            ? "None stored"
+            : "Not connected yet",
+    },
     { label: "Email", value: "Not connected yet" },
   ];
 }

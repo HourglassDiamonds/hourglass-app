@@ -198,6 +198,7 @@ describe("Project Desk compose", () => {
     assert.equal(otherDesk.desk.projectWork.connected, false);
     assert.equal(otherDesk.desk.artifacts.connected, false);
     assert.equal(otherDesk.desk.coverage.jobs, "not-connected");
+    assert.equal(otherDesk.desk.coverage.files, "not-connected");
     assert.equal(otherDesk.desk.coverage.email, "not-connected");
     assert.equal(unknownDesk.desk.coverage.people, "missing");
     assert.equal(unknownDesk.desk.coverage.specs, "sparse");

@@ -43,8 +43,6 @@ function desk(extra: Partial<ProjectDeskRead> = {}): ProjectDeskRead {
     lifecycle: compactLifecycleView({ projectKind: null }),
     openJobs: { connected: true, unresolved: [], unresolvedCount: 0 },
     projectWork: { connected: true, unresolvedCount: 0, activeCount: 0, deferredCount: 0, waitingOn: { founder: 0, hourglass: 0, client: 0, vendor: 0, unknown: 0 }, blocked: false, dueSoonCount: 0, pastDueCount: 0, forgottenRiskCount: 0, nextDueAt: null },
-    lifecycleStage: null,
-    lifecycleLabel: null,
     artifacts: { connected: false },
     ...extra,
   };

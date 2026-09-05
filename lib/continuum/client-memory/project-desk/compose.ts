@@ -1,7 +1,8 @@
 /**
  * Compose Project Desk list and detail read models from canonical Client Memory.
  * Open Jobs are included only when the snapshot loaded them. Never inferred.
- * Does not infer Gmail state, artifacts, or waiting-on from notes.
+ * Project Artifacts are included only when the snapshot loaded them. Never inferred.
+ * Does not infer Gmail state or waiting-on from notes.
  */
 
 import {
@@ -41,6 +42,10 @@ import {
   openJobsReadModel,
 } from "../project-jobs/read";
 import { summarizeProjectWork } from "../project-jobs/intelligence";
+import {
+  artifactsCoverageLevel,
+  projectArtifactsReadModel,
+} from "../project-artifacts/read";
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -130,6 +135,10 @@ function composeSummary(
     profile.projectId,
     people,
   );
+  const artifacts = projectArtifactsReadModel(
+    snapshot.projectArtifacts,
+    profile.projectId,
+  );
   const projectKind = projectKindOf(profile);
   const lifecycle = compactLifecycleView({
     projectKind,
@@ -149,6 +158,7 @@ function composeSummary(
       specCount: specs.length,
       noteCount: notes.length,
       jobs: jobsCoverageLevel(openJobs),
+      files: artifactsCoverageLevel(artifacts),
     }),
     recordCreatedAt: profile.createdAt,
     projectWork: summarizeProjectWork(
@@ -229,7 +239,7 @@ export function getProjectDeskFromSnapshot(
     }),
     openJobs: openJobsReadModel(snapshot.projectJobs, trimmed, summary.people),
     projectWork: summary.projectWork,
-    artifacts: { connected: false },
+    artifacts: projectArtifactsReadModel(snapshot.projectArtifacts, trimmed),
   };
   return { ok: true, desk };
 }

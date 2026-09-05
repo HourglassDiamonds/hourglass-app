@@ -71,6 +71,17 @@ export function conciergeOpenJobPath(projectId: string, jobId: string): string {
   return `${conciergeProjectPath(projectId)}/jobs/${jobId}`;
 }
 
+export function conciergeAddProjectArtifactPath(projectId: string): string {
+  return `${conciergeProjectPath(projectId)}/artifacts/new`;
+}
+
+export function conciergeProjectArtifactFilePath(
+  projectId: string,
+  artifactId: string,
+): string {
+  return `${conciergeProjectPath(projectId)}/artifacts/${artifactId}/file`;
+}
+
 export function conciergeProjectCustomPath(projectId: string): string {
   return `${conciergeProjectPath(projectId)}/custom`;
 }

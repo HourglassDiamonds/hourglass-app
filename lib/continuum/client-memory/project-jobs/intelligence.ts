@@ -71,11 +71,6 @@ function isDeferredQuiet(job: ProjectJob, nowMs: number): boolean {
   return until > nowMs;
 }
 
-function isActiveUnresolved(job: ProjectJob, nowMs: number): boolean {
-  if (!isUnresolvedOpenJobState(job.state)) return false;
-  return !isDeferredQuiet(job, nowMs);
-}
-
 function lastTouchMs(job: ProjectJob): number {
   const updated = Date.parse(job.updatedAt);
   if (Number.isFinite(updated)) return updated;

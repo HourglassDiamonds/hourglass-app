@@ -64,7 +64,7 @@ describe("Project Desk UI", () => {
     assert.match(html, /conciergeCorrectProjectKindPath/);
     assert.match(html, /conciergeClientPath/);
     assert.match(html, /OPEN_JOBS_NOT_CONNECTED_LABEL|Not connected yet/);
-    assert.match(html, /No project files stored yet/);
+    assert.match(html, /PROJECT_ARTIFACTS_NONE_LABEL|PROJECT_ARTIFACTS_NOT_CONNECTED_LABEL/);
     assert.match(html, /Add a note/);
     assert.match(html, /Correct/);
     assert.match(html, /Correction history/);

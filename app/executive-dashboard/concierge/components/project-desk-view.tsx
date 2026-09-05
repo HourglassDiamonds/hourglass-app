@@ -2,6 +2,7 @@ import Link from "next/link";
 import {
   conciergeAddNotePath,
   conciergeAddOpenJobPath,
+  conciergeAddProjectArtifactPath,
   conciergeClientPath,
   conciergeCorrectOperatingDetailPath,
   conciergeCorrectProjectKindPath,
@@ -41,6 +42,16 @@ import {
 } from "@/lib/continuum/client-memory/project-jobs/present";
 import type { ProjectDeskOpenJobs } from "@/lib/continuum/client-memory/project-jobs/types";
 import type { ProjectWorkSummary } from "@/lib/continuum/client-memory/project-jobs/intelligence";
+import type { ProjectDeskArtifacts } from "@/lib/continuum/client-memory/project-artifacts/types";
+import {
+  PROJECT_ARTIFACT_ADD_LABEL,
+  PROJECT_ARTIFACT_DELETION_LABEL,
+  PROJECT_ARTIFACT_SECTION_TITLE,
+  PROJECT_ARTIFACTS_NONE_LABEL,
+  PROJECT_ARTIFACTS_NOT_CONNECTED_LABEL,
+  projectArtifactKindLabel,
+  projectArtifactSourceLabel,
+} from "@/lib/continuum/client-memory/project-artifacts/present";
 import { ClientMemorySection } from "./client-memory-section";
 
 export function ProjectDeskView({
@@ -237,11 +248,10 @@ export function ProjectDeskView({
         projectWork={desk.projectWork}
       />
 
-      <ClientMemorySection title="Renders">
-        <p className="text-[15px] leading-relaxed text-[#c4b7aa]">
-          No project files stored yet
-        </p>
-      </ClientMemorySection>
+      <ProjectFilesSection
+        projectId={desk.projectId}
+        artifacts={desk.artifacts}
+      />
 
       {notePeople.length === 1 ? (
         <div className="mt-10">
@@ -353,6 +363,75 @@ function OpenJobsSection({
         className="mt-4 inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.24em] text-[#8d8073] outline-none hover:text-[#efe8de] focus-visible:text-[#efe8de]"
       >
         {OPEN_JOB_ADD_LABEL}
+      </Link>
+    </ClientMemorySection>
+  );
+}
+
+function artifactSizeLabel(byteSize: number): string {
+  if (byteSize >= 1_048_576) {
+    return `${(byteSize / 1_048_576).toFixed(1)} MB`;
+  }
+  return `${Math.max(1, Math.round(byteSize / 1024))} KB`;
+}
+
+function ProjectFilesSection({
+  projectId,
+  artifacts,
+}: {
+  projectId: string;
+  artifacts: ProjectDeskArtifacts;
+}) {
+  if (!artifacts.connected) {
+    return (
+      <ClientMemorySection title={PROJECT_ARTIFACT_SECTION_TITLE}>
+        <p className="text-[15px] leading-relaxed text-[#c4b7aa]">
+          {PROJECT_ARTIFACTS_NOT_CONNECTED_LABEL}
+        </p>
+      </ClientMemorySection>
+    );
+  }
+  return (
+    <ClientMemorySection title={PROJECT_ARTIFACT_SECTION_TITLE}>
+      {artifacts.count === 0 ? (
+        <p className="text-[15px] leading-relaxed text-[#c4b7aa]">
+          {PROJECT_ARTIFACTS_NONE_LABEL}
+        </p>
+      ) : (
+        <ol className="space-y-5">
+          {artifacts.items.map((row) => (
+            <li
+              key={row.artifactId}
+              className="border-t border-white/[0.06] pt-5 first:border-t-0 first:pt-0"
+            >
+              <p className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
+                {projectArtifactKindLabel(row.kind)}
+              </p>
+              <p className="mt-1 break-words text-[15px] leading-relaxed text-[#e7ddd2]">
+                {row.title}
+              </p>
+              <p className="mt-2 text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
+                {row.originalFilename} · {artifactSizeLabel(row.byteSize)} ·{" "}
+                {projectArtifactSourceLabel(row.sourceSystem)}
+              </p>
+              <a
+                href={row.href}
+                className="mt-2 inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.24em] text-[#8d8073] outline-none hover:text-[#efe8de] focus-visible:text-[#efe8de]"
+              >
+                {row.mimeType === "application/pdf" ? "Open file" : "View file"}
+              </a>
+            </li>
+          ))}
+        </ol>
+      )}
+      <p className="mt-4 text-[12px] leading-relaxed text-[#8d8073]">
+        {PROJECT_ARTIFACT_DELETION_LABEL}
+      </p>
+      <Link
+        href={conciergeAddProjectArtifactPath(projectId)}
+        className="mt-2 inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.24em] text-[#8d8073] outline-none hover:text-[#efe8de] focus-visible:text-[#efe8de]"
+      >
+        {PROJECT_ARTIFACT_ADD_LABEL}
       </Link>
     </ClientMemorySection>
   );
