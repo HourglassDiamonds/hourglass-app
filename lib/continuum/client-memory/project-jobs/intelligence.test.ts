@@ -192,6 +192,7 @@ describe("Open Jobs Project Desk intelligence", () => {
     if (!summary.connected) return;
     assert.equal(summary.pastDueCount, 1);
     assert.equal(summary.dueSoonCount, 1);
+    assert.equal(summary.nextDueAt, "2026-09-01T00:00:00.000Z");
     assert.ok(projectWorkFacts(summary).includes("Explicit due date has passed"));
     assert.ok(projectWorkFacts(summary).includes("Due within 7 days"));
     assert.equal(projectWorkFacts(summary).some((row) => /overdue/i.test(row)), false);
@@ -223,6 +224,7 @@ describe("Open Jobs Project Desk intelligence", () => {
     assert.equal(summary.pastDueCount, 0);
     assert.equal(summary.forgottenRiskCount, 0);
     assert.equal(summary.waitingOn.hourglass, 0);
+    assert.equal(summary.nextDueAt, null);
     assert.ok(projectWorkFacts(summary).includes("Deferred only"));
   });
 

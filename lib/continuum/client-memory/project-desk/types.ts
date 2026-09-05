@@ -85,6 +85,8 @@ export type ProjectDeskSummary = {
   coverage: ProjectDeskCoverage;
   recordCreatedAt: string;
   projectWork: ProjectWorkSummary;
+  lifecycleStage: string | null;
+  lifecycleLabel: string | null;
 };
 
 export type ProjectDeskRead = {

@@ -282,6 +282,7 @@ describe("Concierge Client Memory UI", () => {
     const home = readFileSync(join(CONCIERGE_DIR, "page.tsx"), "utf8");
     assert.match(home, /loadContinuumHomeModel/);
     assert.match(home, /loadProjectBookPreview/);
+    assert.match(home, /loadOpenProjectWork/);
     assert.match(home, /CommandCenterHome/);
     assert.match(home, /variant="home"/);
     assert.doesNotMatch(home, /Search your client memory|Search clients/);
@@ -301,6 +302,7 @@ describe("Concierge Client Memory UI", () => {
     );
     assert.match(command, /People/);
     assert.match(command, /ProjectsHome/);
+    assert.match(command, /OpenProjectsHome/);
     assert.match(command, /<ConciergeSearch \/>/);
     assert.doesNotMatch(command, /autoFocus/);
     assert.doesNotMatch(command, /intent=/);
@@ -468,6 +470,7 @@ describe("Concierge Client Memory UI", () => {
     assert.equal(greetingLine(model), "Good afternoon, Justin.");
     assert.match(home, /loadContinuumHomeModel/);
     assert.match(home, /loadProjectBookPreview/);
+    assert.match(home, /loadOpenProjectWork/);
     assert.match(home, /CommandCenterHome/);
     assert.match(command, /greetingLine/);
     assert.match(command, /ChiefOfStaffToday/);

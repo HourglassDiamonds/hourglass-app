@@ -31,6 +31,8 @@ function summary(overrides: Partial<ProjectDeskSummary> = {}): ProjectDeskSummar
     },
     recordCreatedAt: "2026-08-01T00:00:00.000Z",
     projectWork: { connected: false },
+    lifecycleStage: null,
+    lifecycleLabel: null,
     ...overrides,
   };
 }

@@ -46,6 +46,7 @@ export type ProjectWorkSummary =
       dueSoonCount: number;
       pastDueCount: number;
       forgottenRiskCount: number;
+      nextDueAt: string | null;
     };
 
 function emptyWaitingOn(): ProjectWorkWaitingOn {
@@ -107,6 +108,7 @@ export function summarizeProjectWork(
   let dueSoonCount = 0;
   let pastDueCount = 0;
   let forgottenRiskCount = 0;
+  let nextDueAt: string | null = null;
 
   for (const job of unresolved) {
     if (isDeferredQuiet(job, clock)) {
@@ -122,6 +124,11 @@ export function summarizeProjectWork(
       delta != null && delta >= 0 && delta <= OPEN_JOB_DUE_SOON_MS;
     if (pastDue) pastDueCount += 1;
     if (dueSoon) dueSoonCount += 1;
+    if (job.dueAt && delta != null) {
+      if (nextDueAt == null || Date.parse(job.dueAt) < Date.parse(nextDueAt)) {
+        nextDueAt = job.dueAt;
+      }
+    }
     const ours =
       job.waitingOnActor === "founder" || job.waitingOnActor === "hourglass";
     const touched = lastTouchMs(job);
@@ -140,5 +147,6 @@ export function summarizeProjectWork(
     dueSoonCount,
     pastDueCount,
     forgottenRiskCount,
+    nextDueAt,
   };
 }

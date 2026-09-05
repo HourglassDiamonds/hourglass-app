@@ -33,6 +33,7 @@ import {
 } from "../project-operating/layer";
 import {
   activeLifecycleView,
+  compactLifecycleView,
   lifecycleStatesByProjectId,
 } from "../project-lifecycle/view";
 import {
@@ -129,10 +130,17 @@ function composeSummary(
     profile.projectId,
     people,
   );
+  const projectKind = projectKindOf(profile);
+  const lifecycle = compactLifecycleView({
+    projectKind,
+    states:
+      lifecycleStatesByProjectId(snapshot.lifecycleStates).get(profile.projectId) ??
+      [],
+  });
   return {
     projectId: profile.projectId,
     title: profile.displayTitle,
-    projectKind: projectKindOf(profile),
+    projectKind,
     people,
     latestNoteAt: latest?.createdAt ?? null,
     latestNotePreview: latest ? notePreview(latest.noteText) : null,
@@ -148,6 +156,8 @@ function composeSummary(
       profile.projectId,
       nowIso,
     ),
+    lifecycleStage: lifecycle.kind === "none" ? null : lifecycle.stage,
+    lifecycleLabel: lifecycle.kind === "none" ? null : lifecycle.label,
   };
 }
 
