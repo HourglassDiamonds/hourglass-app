@@ -1,5 +1,8 @@
 import assert from "node:assert/strict";
 import { afterEach, beforeEach, describe, it } from "node:test";
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { SITE_URL } from "@/lib/seo/site-metadata";
 import { studioViewEmailedHasPii } from "@/app/diamond-studio/analytics";
 import {
@@ -29,16 +32,16 @@ const TEST_ENV = {
   NODE_ENV: "test",
 } as NodeJS.ProcessEnv;
 
-const JPEG: StudioSnapshotResult = {
-  mimeType: "image/jpeg",
-  width: 1200,
-  height: 1640,
-  buffer: Buffer.from([0xff, 0xd8, 0xff, 0xd9]),
-  variant: "card",
-};
+const JPEG_BYTES = [0xff, 0xd8, 0xff, 0xd9];
 
 async function fakeCompose(): Promise<StudioSnapshotResult> {
-  return JPEG;
+  return {
+    mimeType: "image/jpeg",
+    width: 1200,
+    height: 1640,
+    buffer: Buffer.from(JPEG_BYTES),
+    variant: "card",
+  };
 }
 
 function payload(overrides: Record<string, unknown> = {}) {
@@ -352,5 +355,72 @@ describe("Email This View — privacy and events", () => {
       assert.equal(result.persistence?.durable, false);
     }
     assert.equal(sender.calls.length, 1);
+  });
+});
+
+describe("Email This View — temporary snapshot cleanup", () => {
+  const emailViewDir = dirname(fileURLToPath(import.meta.url));
+
+  it("zeros the composed card buffer after a successful send", async () => {
+    const live = Buffer.from(JPEG_BYTES);
+    const sender = createFakeStudioViewEmailSender();
+    await handleEmailStudioView({
+      rawBody: payload(),
+      ip: "203.0.113.10",
+      deps: {
+        sender,
+        composeCard: async () => ({
+          mimeType: "image/jpeg",
+          width: 1200,
+          height: 1640,
+          buffer: live,
+          variant: "card",
+        }),
+        env: TEST_ENV,
+        continuum: null,
+        persist: async () => ({
+          ok: true,
+          adapter: "memory",
+          durable: false,
+          status: "memory",
+        }),
+      },
+    });
+    assert.equal(sender.calls.length, 1);
+    assert.equal(live.equals(Buffer.alloc(JPEG_BYTES.length, 0)), true);
+  });
+
+  it("zeros the composed card buffer after a failed send", async () => {
+    const live = Buffer.from(JPEG_BYTES);
+    const failSender = createFakeStudioViewEmailSender({ fail: true });
+    const result = await handleEmailStudioView({
+      rawBody: payload(),
+      ip: "203.0.113.11",
+      deps: {
+        sender: failSender,
+        composeCard: async () => ({
+          mimeType: "image/jpeg",
+          width: 1200,
+          height: 1640,
+          buffer: live,
+          variant: "card",
+        }),
+        env: TEST_ENV,
+        continuum: null,
+      },
+    });
+    assert.equal(result.ok, false);
+    assert.equal(live.equals(Buffer.alloc(JPEG_BYTES.length, 0)), true);
+  });
+
+  it("does not upload Email This View images to Cloudinary, Blob, or Supabase storage", () => {
+    const handle = readFileSync(join(emailViewDir, "handle.ts"), "utf8");
+    const send = readFileSync(join(emailViewDir, "send.ts"), "utf8");
+    assert.doesNotMatch(handle, /cloudinary/i);
+    assert.doesNotMatch(handle, /@vercel\/blob/);
+    assert.doesNotMatch(handle, /storage\.from/);
+    assert.match(handle, /releaseStudioSnapshotBuffer/);
+    assert.doesNotMatch(send, /cloudinary/i);
+    assert.doesNotMatch(send, /@vercel\/blob/);
   });
 });

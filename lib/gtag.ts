@@ -33,9 +33,15 @@ export function resetClientAnalyticsForTests(): void {
   lastPageViewPath = null;
 }
 
+/** Stop dispatching after a later decline. Does not claim Google cookies are removed. */
+export function disarmClientAnalytics(): void {
+  clientGaArmed = false;
+  lastPageViewPath = null;
+}
+
 /**
  * Install dataLayer/gtag stub and mark client analytics as allowed to send.
- * Called from the GA loader when server-side enablement is true.
+ * Called from the GA loader when server-side enablement is true and consent is granted.
  */
 export function armClientAnalytics(): void {
   clientGaArmed = true;

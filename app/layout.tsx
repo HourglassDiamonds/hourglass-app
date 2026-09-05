@@ -10,6 +10,7 @@ import "./globals.css";
 import Footer from "./shared-components/Footer";
 import FacetScintillationRail from "./shared-components/motion/FacetScintillationRail";
 import { isClientAnalyticsEnabled } from "@/lib/analytics/client-enabled";
+import AnalyticsConsent from "./shared-components/AnalyticsConsent";
 import GlobalJsonLd from "./shared-components/GlobalJsonLd";
 import GoogleAnalytics from "./shared-components/GoogleAnalytics";
 
@@ -64,6 +65,8 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const analyticsEnabled = isClientAnalyticsEnabled();
+
   return (
     <html
       lang="en"
@@ -76,7 +79,8 @@ export default function RootLayout({
             site header (phone capture, login) have no repeated nav to bypass. */}
         <FacetScintillationRail />
         <GlobalJsonLd />
-        <GoogleAnalytics enabled={isClientAnalyticsEnabled()} />
+        <GoogleAnalytics enabled={analyticsEnabled} />
+        <AnalyticsConsent enabled={analyticsEnabled} />
         <div className="flex min-h-screen flex-col">
           <main id="main-content" tabIndex={-1} className="flex-1">
             {children}

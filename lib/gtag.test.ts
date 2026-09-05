@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import {
   armClientAnalytics,
   configureGaWithoutAutomaticPageViews,
+  disarmClientAnalytics,
   event,
   pageview,
   resetClientAnalyticsForTests,
@@ -109,6 +110,16 @@ describe("gtag pageview ownership", () => {
     const configCalls = calls.filter((call) => call[0] === "config");
     assert.equal(configCalls.length, 0);
   });
+
+  it("disarm prevents further events after a later decline", () => {
+    armClientAnalytics();
+    pageview("/");
+    disarmClientAnalytics();
+    event("generate_lead", { source: "test" });
+    const events = calls.filter((call) => call[0] === "event");
+    assert.equal(events.length, 1);
+    assert.equal(events[0]![1], "page_view");
+  });
 });
 
 describe("GoogleAnalytics loader contract", () => {
@@ -130,9 +141,20 @@ describe("GoogleAnalytics loader contract", () => {
       /isPrivateContinuumPath|startsWith\("\/executive-dashboard"\)/,
     );
     assert.match(source, /if \(isPrivateApp\) return/);
+    assert.match(source, /consentGranted/);
     assert.match(
       source,
-      /loadGa = enabled && Boolean\(measurementId\) && !isPrivateApp/,
+      /loadGa =\s*enabled && consentGranted && Boolean\(measurementId\) && !isPrivateApp/,
+    );
+  });
+
+  it("does not initialize analytics before granted consent", () => {
+    assert.match(source, /readAnalyticsConsent/);
+    assert.match(source, /consent === "granted"/);
+    assert.match(source, /disarmClientAnalytics/);
+    assert.match(
+      source,
+      /if \(!enabled \|\| !measurementId \|\| !consentGranted\)/,
     );
   });
 });

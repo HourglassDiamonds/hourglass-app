@@ -23,6 +23,7 @@ import {
   type StudioViewEmailSender,
   type StudioViewEmailedRecord,
 } from "./types";
+import { releaseStudioSnapshotBuffer } from "./release-snapshot";
 import {
   recordStudioOperationalSignal,
 } from "@/lib/agent-os/diamond-studio/operational";
@@ -152,21 +153,28 @@ export async function handleEmailStudioView(input: {
   }
 
   const sender = input.deps?.sender ?? resendStudioViewEmailSender;
-  const sent = await sender({
-    from,
-    to: validated.email,
-    subject: STUDIO_VIEW_EMAIL_SUBJECT,
-    html: rendered.html,
-    text: rendered.text,
-    attachments: [
-      {
-        filename: snapshotDownloadFilename(validated.configuration, "card"),
-        content: card.buffer,
-        contentType: "image/jpeg",
-        contentId: STUDIO_CARD_CONTENT_ID,
-      },
-    ],
-  });
+  let sent: Awaited<ReturnType<StudioViewEmailSender>>;
+  try {
+    sent = await sender({
+      from,
+      to: validated.email,
+      subject: STUDIO_VIEW_EMAIL_SUBJECT,
+      html: rendered.html,
+      text: rendered.text,
+      attachments: [
+        {
+          filename: snapshotDownloadFilename(validated.configuration, "card"),
+          content: card.buffer,
+          contentType: "image/jpeg",
+          contentId: STUDIO_CARD_CONTENT_ID,
+        },
+      ],
+    });
+  } catch {
+    sent = { ok: false, error: "send_failed" };
+  } finally {
+    releaseStudioSnapshotBuffer(card.buffer);
+  }
 
   if (!sent.ok) {
     return {

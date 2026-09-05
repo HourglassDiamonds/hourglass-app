@@ -55,6 +55,14 @@ const guideHero = readFileSync(
   "utf8",
 );
 const footer = readFileSync(join(root, "shared-components/Footer.tsx"), "utf8");
+const analyticsConsent = readFileSync(
+  join(root, "shared-components/AnalyticsConsent.tsx"),
+  "utf8",
+);
+const googleAnalytics = readFileSync(
+  join(root, "shared-components/GoogleAnalytics.tsx"),
+  "utf8",
+);
 const shareStudio = readFileSync(
   join(root, "diamond-studio/components/ShareStudioView.tsx"),
   "utf8",
@@ -514,6 +522,42 @@ describe("AA-15 branded recovery pages (WCAG 3.3.1 / 4.1.3)", () => {
 describe("AA-16 DI V3 failure cards announce (WCAG 4.1.3)", () => {
   it("unable-to-verify card is an alert", () => {
     assert.match(diUnable, /role="alert"/);
+  });
+});
+
+describe("AA-17 analytics consent (WCAG 2.1.1 / 4.1.2 / 1.4.4)", () => {
+  it("consent banner is a named region with equally weighted choices", () => {
+    assert.match(analyticsConsent, /role="region"/);
+    assert.match(analyticsConsent, /aria-labelledby=\{headingId\}/);
+    assert.match(analyticsConsent, /aria-describedby=\{descriptionId\}/);
+    assert.match(analyticsConsent, /Allow analytics/);
+    assert.match(analyticsConsent, /Decline analytics/);
+    assert.match(analyticsConsent, /href="\/privacy"/);
+    const allowIdx = analyticsConsent.indexOf("Allow analytics");
+    const declineIdx = analyticsConsent.indexOf("Decline analytics");
+    const buttonClassCount = (analyticsConsent.match(/const BUTTON =/g) ?? [])
+      .length;
+    assert.equal(buttonClassCount, 1);
+    assert.ok(allowIdx > -1 && declineIdx > -1);
+  });
+
+  it("consent controls are keyboard-focusable buttons with 44px targets", () => {
+    assert.match(analyticsConsent, /type="button"/);
+    assert.match(analyticsConsent, /min-h-11/);
+    assert.match(analyticsConsent, /focus-visible:ring-2/);
+    assert.match(footer, /requestAnalyticsConsentManager/);
+    assert.match(footer, />[\s\n]*Analytics[\s\n]*</);
+  });
+
+  it("stacks choices on narrow viewports", () => {
+    assert.match(analyticsConsent, /flex-col gap-2 sm:w-auto sm:flex-row/);
+    assert.match(analyticsConsent, /w-full/);
+  });
+
+  it("does not load gtag until consent is granted", () => {
+    assert.match(googleAnalytics, /consentGranted/);
+    assert.match(layout, /AnalyticsConsent enabled=\{analyticsEnabled\}/);
+    assert.match(layout, /GoogleAnalytics enabled=\{analyticsEnabled\}/);
   });
 });
 

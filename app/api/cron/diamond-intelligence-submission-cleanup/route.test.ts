@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { afterEach, beforeEach, describe, it } from "node:test";
+import { readFileSync } from "node:fs";
 import { GET } from "@/app/api/cron/diamond-intelligence-submission-cleanup/route";
 
 const ORIGINAL_ENV = { ...process.env };
@@ -59,5 +60,22 @@ describe("DI submission cleanup cron route auth", () => {
       ),
     );
     assert.equal(response.status, 401);
+  });
+});
+
+describe("DI submission cleanup cron response privacy", () => {
+  it("returns and logs aggregate counts only", () => {
+    const source = readFileSync(
+      new URL("./route.ts", import.meta.url),
+      "utf8",
+    );
+    assert.match(source, /scanned: result.scanned/);
+    assert.match(source, /storageDeleted: result.storageDeleted/);
+    assert.match(source, /rowsDeleted: result.rowsDeleted/);
+    assert.doesNotMatch(source, /file_path/);
+    assert.doesNotMatch(source, /raw_extracted/);
+    assert.doesNotMatch(source, /source_filename/);
+    assert.doesNotMatch(source, /report_number/);
+    assert.match(source, /verifyCronRequest/);
   });
 });

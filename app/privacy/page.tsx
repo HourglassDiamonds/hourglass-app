@@ -33,8 +33,9 @@ export default function PrivacyPage() {
           <p>
             We keep things simple. Information shared through this site is used
             to respond thoughtfully, create the experiences you request, and
-            improve how Hourglass Diamonds serves clients. We do not sell, rent,
-            or distribute personal information.
+            improve how Hourglass Diamonds serves clients. We do not sell or
+            rent your personal information. We share information with service
+            providers only as needed to operate the services described below.
           </p>
 
           <div className="space-y-4">
@@ -79,10 +80,22 @@ export default function PrivacyPage() {
               Analyze Sparkle (Diamond Intelligence) lets you upload a grading
               report as a PDF or image, or provide a supported report or listing
               URL. The system may extract text and grading details through
-              automated processing. Submission files and associated extracted
-              data become eligible for automatic deletion after 30 days.
-              Analyze Sparkle is informational guidance and does not replace the
-              grading laboratory’s official report.
+              automated processing, including optical character recognition.
+              What we keep for that work can include the original file, the
+              source filename, listing or report URLs you provide, extracted
+              text, and related interpretation metadata. Those files and
+              records are stored privately with Supabase and become eligible
+              for automatic deletion after 30 days. A daily cleanup removes
+              expired storage objects and the matching archive rows. Analyze
+              Sparkle is informational guidance and does not replace the
+              grading laboratory’s official report. Hourglass does not use
+              your uploaded reports or photos to train a public AI model.
+            </p>
+            <p>
+              When an optional remote OCR processor is configured, report
+              images may be sent to that processor solely to extract text.
+              We do not control that processor’s own logs, and we do not
+              claim a deletion time there.
             </p>
           </div>
 
@@ -91,17 +104,44 @@ export default function PrivacyPage() {
               Analytics
             </h2>
             <p>
-              We use Google Analytics to understand how the site is used. This
-              may include basic device and browser information, usage patterns,
-              referral information, and interaction data. Google acts as a
-              processor for this analytics data. Where configured, IP addresses
-              are anonymized before analytics processing. Analytics events do
-              not include your name, email, phone number, or the notes you write
-              in consultation forms. A small first-party session record may
-              retain campaign parameters (such as UTM values), the first landing
-              path, referring site hostname, and where you last chose to begin a
-              conversation—so we can respond with useful context. That session
-              record is not used as a mailing list.
+              We use Google Analytics to understand how the public site is
+              used, only after you choose to allow it. If you decline, analytics
+              stays off. Your choice is remembered in this browser. You can
+              change it later from Analytics in the site footer. Allowing
+              analytics may include basic device and browser information, usage
+              patterns, referral information, and interaction data. Google acts
+              as a processor for this analytics data. Where configured, IP
+              addresses are anonymized before analytics processing. Analytics
+              events do not include your name, email, phone number, or the
+              notes you write in consultation forms. A small first-party
+              session record may retain campaign parameters (such as UTM
+              values), the first landing path, referring site hostname, and
+              where you last chose to begin a conversation—so we can respond
+              with useful context. That session record is not used as a mailing
+              list and is separate from Google Analytics. If you later decline
+              analytics, this site stops sending new analytics events. Cookies
+              already set by Google may remain until you clear them in your
+              browser.
+            </p>
+          </div>
+
+          <div className="space-y-4">
+            <h2 className="text-[18px] font-medium leading-[1.35] text-[#1f1d1a]">
+              Email This View
+            </h2>
+            <p>
+              If you use Email This View in Diamond Studio, you share the email
+              address the message should reach and, if you provide it, a first
+              name, together with the configuration you asked us to send. We
+              generate a temporary image of that view so it can be attached to
+              the message. That image is created for delivery and is not kept
+              as a permanent file on our systems after the send attempt
+              finishes, whether it succeeds or fails. The email is sent through
+              Resend. We keep a record of the send — including the email
+              address, the name if provided, and the configuration — so we can
+              recognize a later Concierge conversation from the same person by
+              exact email match. That record is not marketing consent and does
+              not create a sales inquiry.
             </p>
           </div>
 
@@ -110,8 +150,10 @@ export default function PrivacyPage() {
               Video
             </h2>
             <p>
-              On Conversation pages, Mux may process video playback and related
-              technical usage data so stories and films can play reliably.
+              The House film is delivered through Cloudinary so it can play on
+              this site. Conversation films currently play through YouTube after
+              you choose to start them. YouTube may collect viewing data
+              according to Google’s policies once playback begins.
             </p>
           </div>
 
@@ -123,9 +165,12 @@ export default function PrivacyPage() {
               Depending on how you use the site, information may be processed by
               service providers that help us operate, including HubSpot
               (consultation CRM), Supabase (private storage for features such as
-              See It On Your Hand and Analyze Sparkle), Google Analytics, Mux
-              (Conversation video), and Vercel (hosting and delivery of this
-              site).
+              See It On Your Hand and Analyze Sparkle, and Email This View send
+              records), Google Analytics, Resend (email delivery), Cloudinary
+              (The House film), YouTube (Conversation playback after you start
+              a film), and Vercel (hosting and delivery of this site). An
+              optional remote OCR processor may receive Analyze Sparkle report
+              images when that path is enabled.
             </p>
           </div>
 
@@ -197,7 +242,11 @@ export default function PrivacyPage() {
               >
                 justin@hourglassdiamonds.com
               </a>
-              .
+              . Consultation records live in HubSpot. Analyze Sparkle uploads
+              and extracted text live in Supabase until the 30-day cleanup, or
+              sooner if we can process a deletion request. See It On Your Hand
+              photos are already session-limited. Email This View images are
+              not kept as files; send records can be removed on request.
             </p>
           </div>
 

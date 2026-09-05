@@ -1,14 +1,19 @@
 "use client";
 
 import {
+  readAnalyticsConsent,
+  subscribeAnalyticsConsent,
+} from "@/lib/analytics/consent";
+import {
   configureGaWithoutAutomaticPageViews,
+  disarmClientAnalytics,
   pageview,
   resolveGaMeasurementId,
 } from "@/lib/gtag";
 import { captureAttributionFromLocation } from "@/lib/attribution";
 import Script from "next/script";
 import { usePathname, useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useRef } from "react";
+import { Suspense, useEffect, useRef, useSyncExternalStore } from "react";
 
 type GoogleAnalyticsProps = {
   /** Server-computed: production (or explicit GA_CLIENT_ENABLED) with measurement ID. */
@@ -24,8 +29,15 @@ function AnalyticsController({ enabled }: { enabled: boolean }) {
   const searchParams = useSearchParams();
   const measurementId = resolveGaMeasurementId();
   const configuredRef = useRef(false);
+  const consent = useSyncExternalStore(
+    subscribeAnalyticsConsent,
+    readAnalyticsConsent,
+    () => "undecided" as const,
+  );
   const isPrivateApp = isPrivateContinuumPath(pathname);
-  const loadGa = enabled && Boolean(measurementId) && !isPrivateApp;
+  const consentGranted = consent === "granted";
+  const loadGa =
+    enabled && consentGranted && Boolean(measurementId) && !isPrivateApp;
 
   useEffect(() => {
     if (isPrivateApp) return;
@@ -34,7 +46,13 @@ function AnalyticsController({ enabled }: { enabled: boolean }) {
     // Attribution always runs on public routes — first-party sessionStorage, not GA.
     captureAttributionFromLocation(pathname, query);
 
-    if (!enabled || !measurementId) return;
+    if (!enabled || !measurementId || !consentGranted) {
+      if (consent === "denied") {
+        disarmClientAnalytics();
+        configuredRef.current = false;
+      }
+      return;
+    }
 
     if (!configuredRef.current) {
       configureGaWithoutAutomaticPageViews(measurementId);
@@ -42,7 +60,15 @@ function AnalyticsController({ enabled }: { enabled: boolean }) {
     }
 
     pageview(pathname, query);
-  }, [pathname, searchParams, enabled, measurementId, isPrivateApp]);
+  }, [
+    pathname,
+    searchParams,
+    enabled,
+    measurementId,
+    isPrivateApp,
+    consent,
+    consentGranted,
+  ]);
 
   if (!loadGa || !measurementId) return null;
 

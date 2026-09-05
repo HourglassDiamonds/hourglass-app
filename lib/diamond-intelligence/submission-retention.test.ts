@@ -195,6 +195,37 @@ describe("runDiSubmissionCleanup", () => {
       false,
     );
   });
+
+  it("is idempotent when storage is already gone", async () => {
+    let deletes = 0;
+    const deps = {
+      nowMs: Date.parse("2026-07-22T00:00:00.000Z"),
+      listExpired: async () =>
+        deletes === 0
+          ? [
+              {
+                id: "row-once",
+                filePath: "row-once/original.pdf",
+                createdAt: "2026-01-01T00:00:00.000Z",
+              },
+            ]
+          : [],
+      deleteStorageObject: async () => {
+        deletes += 1;
+        return "already_missing" as const;
+      },
+      deleteRow: async () => undefined,
+    };
+
+    const first = await runDiSubmissionCleanup(deps);
+    const second = await runDiSubmissionCleanup(deps);
+
+    assert.equal(first.rowsDeleted, 1);
+    assert.equal(first.alreadyMissing, 1);
+    assert.equal(second.scanned, 0);
+    assert.equal(second.rowsDeleted, 0);
+    assert.equal(second.failed, 0);
+  });
 });
 
 describe("isMissingStorageObjectError", () => {

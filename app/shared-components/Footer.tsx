@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { requestAnalyticsConsentManager } from "@/lib/analytics/consent";
 import ConsultationCtaLink from "./ConsultationCtaLink";
 import { isNavCurrent } from "./nav-current";
 
@@ -122,6 +123,13 @@ export default function Footer() {
             <FooterLink href="/privacy" pathname={pathname} className={LEGAL_LINK}>
               Privacy
             </FooterLink>
+            <button
+              type="button"
+              className={LEGAL_LINK}
+              onClick={() => requestAnalyticsConsentManager()}
+            >
+              Analytics
+            </button>
             <FooterLink href="/terms" pathname={pathname} className={LEGAL_LINK}>
               Terms
             </FooterLink>
