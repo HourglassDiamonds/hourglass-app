@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useState } from "react";
+import React, { useRef } from "react";
 import type { CSSProperties } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -38,18 +38,6 @@ const perspectiveTextScrimMobile: CSSProperties = {
 
 export default function TheHousePageClient() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const [isSoundOn, setIsSoundOn] = useState(false);
-
-  const handleToggleSound = () => {
-    if (!videoRef.current) return;
-
-    const video = videoRef.current;
-    video.muted = !video.muted;
-    setIsSoundOn(!video.muted);
-
-    if (!video.paused) return;
-    video.play();
-  };
 
   const handleReplay = () => {
     if (!videoRef.current) return;
@@ -209,14 +197,6 @@ export default function TheHousePageClient() {
                   className="inline-flex min-h-11 items-center rounded-full border border-white/30 bg-white/70 px-5 text-[10px] uppercase tracking-[0.22em] text-[#3a332c] backdrop-blur-md transition hover:bg-white"
                 >
                   Replay
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleToggleSound}
-                  className="inline-flex min-h-11 items-center rounded-full border border-white/30 bg-white/70 px-5 text-[10px] uppercase tracking-[0.22em] text-[#3a332c] backdrop-blur-md transition hover:bg-white"
-                >
-                  {isSoundOn ? "Mute" : "Sound"}
                 </button>
               </div>
             </div>

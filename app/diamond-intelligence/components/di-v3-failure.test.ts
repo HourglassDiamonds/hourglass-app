@@ -25,6 +25,7 @@ describe("DiV3UnableToVerify failure state", () => {
     assert.match(source, /Upload Another Report/);
     assert.match(source, /justinReviewCta/);
     assert.match(source, /difficultImageRead/);
+    assert.match(source, /role="alert"/);
   });
 
   it("dashboard suppresses duplicate inline upload error when failure card shows", () => {

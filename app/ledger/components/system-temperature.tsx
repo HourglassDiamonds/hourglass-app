@@ -33,7 +33,7 @@ export default function SystemTemperature() {
         </p>
         <h2
           id="ledger-system-temperature-heading"
-          className="mt-3 font-serif text-[1.4rem] font-normal tracking-[-0.02em] text-[#1f1d1a] md:text-[1.55rem]"
+          className="mt-3 scroll-mt-24 font-serif text-[1.4rem] font-normal tracking-[-0.02em] text-[#1f1d1a] md:text-[1.55rem]"
         >
           One reading for system-wide pressure
         </h2>

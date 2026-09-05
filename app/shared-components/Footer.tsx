@@ -1,12 +1,46 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import ConsultationCtaLink from "./ConsultationCtaLink";
+import { isNavCurrent } from "./nav-current";
 
 /* 44px-tall link rows (WCAG 2.5.8 target-size best practice) — the text
    stays small and quiet; the interactive row grows, not the type. */
 const NAV_LINK = "inline-flex min-h-11 items-center hover:text-[#1f1d1a]";
 const LEGAL_LINK = "inline-flex min-h-11 items-center hover:text-[#1f1d1a]";
 
+function footerLinkClass(base: string, current: boolean): string {
+  return current ? `${base} font-medium text-[#1f1d1a]` : base;
+}
+
+function FooterLink({
+  href,
+  pathname,
+  className,
+  children,
+}: {
+  href: string;
+  pathname: string;
+  className: string;
+  children: React.ReactNode;
+}) {
+  const current = isNavCurrent(pathname, href);
+  return (
+    <Link
+      href={href}
+      className={footerLinkClass(className, current)}
+      aria-current={current ? "page" : undefined}
+    >
+      {children}
+    </Link>
+  );
+}
+
 export default function Footer() {
+  const pathname = usePathname() ?? "";
+  const conciergeCurrent = isNavCurrent(pathname, "/concierge");
+
   return (
     <footer className="mt-24 border-t border-hg-line">
       <div className="mx-auto max-w-[1200px] px-6 py-10 md:px-10 md:py-12">
@@ -22,18 +56,19 @@ export default function Footer() {
             aria-label="Footer"
             className="flex flex-wrap items-center gap-x-5 text-[12px] text-[#625b54] md:gap-x-4"
           >
-            <Link href="/the-house" className={NAV_LINK}>The House</Link>
-            <Link href="/our-approach" className={NAV_LINK}>Our Approach</Link>
-            <Link href="/conversations" className={NAV_LINK}>
+            <FooterLink href="/the-house" pathname={pathname} className={NAV_LINK}>The House</FooterLink>
+            <FooterLink href="/our-approach" pathname={pathname} className={NAV_LINK}>Our Approach</FooterLink>
+            <FooterLink href="/conversations" pathname={pathname} className={NAV_LINK}>
               Conversations
-            </Link>
-            <Link href="/engagement-rings" className={NAV_LINK}>Engagement Rings</Link>
-            <Link href="/custom-design" className={NAV_LINK}>Custom Design</Link>
-            <Link href="/diamond-guide" className={NAV_LINK}>Diamond Guide</Link>
-            <Link href="/diamond-studio" className={NAV_LINK}>Diamond Studio</Link>
+            </FooterLink>
+            <FooterLink href="/engagement-rings" pathname={pathname} className={NAV_LINK}>Engagement Rings</FooterLink>
+            <FooterLink href="/custom-design" pathname={pathname} className={NAV_LINK}>Custom Design</FooterLink>
+            <FooterLink href="/diamond-guide" pathname={pathname} className={NAV_LINK}>Diamond Guide</FooterLink>
+            <FooterLink href="/diamond-studio" pathname={pathname} className={NAV_LINK}>Diamond Studio</FooterLink>
             <ConsultationCtaLink
               location="footer:cta"
-              className={NAV_LINK}
+              className={footerLinkClass(NAV_LINK, conciergeCurrent)}
+              aria-current={conciergeCurrent ? "page" : undefined}
             >
               Concierge
             </ConsultationCtaLink>
@@ -51,12 +86,13 @@ export default function Footer() {
               Weekly intelligence on markets, infrastructure, AI, energy, and
               global systems.
             </p>
-            <Link
+            <FooterLink
               href="/ledger"
+              pathname={pathname}
               className="mt-2 inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.26em] text-[#625b54] transition-colors hover:text-[#1f1d1a]"
             >
               Explore the Ledger
-            </Link>
+            </FooterLink>
           </div>
           <div className="max-w-[28rem]">
             <p className="text-[10px] uppercase tracking-[0.32em] text-hg-eyebrow">
@@ -65,12 +101,13 @@ export default function Footer() {
             <p className="mt-3 text-[12px] leading-[1.75] text-[#6d655e]">
               Quiet reflections from clients who trusted the process.
             </p>
-            <Link
+            <FooterLink
               href="/whispered-praise"
+              pathname={pathname}
               className="mt-2 inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.26em] text-[#625b54] transition-colors hover:text-[#1f1d1a]"
             >
               Read Whispered Praise
-            </Link>
+            </FooterLink>
           </div>
         </div>
 
@@ -82,12 +119,12 @@ export default function Footer() {
           </div>
 
           <div className="flex flex-wrap items-center gap-x-5 text-[11px] text-[#6d655e] md:gap-x-4">
-            <Link href="/privacy" className={LEGAL_LINK}>
+            <FooterLink href="/privacy" pathname={pathname} className={LEGAL_LINK}>
               Privacy
-            </Link>
-            <Link href="/terms" className={LEGAL_LINK}>
+            </FooterLink>
+            <FooterLink href="/terms" pathname={pathname} className={LEGAL_LINK}>
               Terms
-            </Link>
+            </FooterLink>
           </div>
 
         </div>

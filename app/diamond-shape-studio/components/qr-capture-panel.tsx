@@ -96,6 +96,7 @@ export function QrCapturePanel({
           rel="noopener"
         >
           Open phone capture link
+          <span className="sr-only"> (opens in a new tab)</span>
         </a>
       ) : null}
       <p className="dss-qr-status">

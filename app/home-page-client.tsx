@@ -155,10 +155,11 @@ function FeaturedRingSection() {
           rel="noopener noreferrer"
           className="block w-full"
         >
+          <span className="sr-only">{title} ring (opens in a new tab)</span>
           <div className={`relative aspect-[3/4] ${HOME_CARD_RADIUS}`}>
             <Image
               src={image}
-              alt={`${title} ring`}
+              alt=""
               fill
               /* Display widths are ~90vw / 46vw / ~30vw / ~16vw, but sources are
                  landscape cropped via object-cover into 3:4 (~56% of width kept).
@@ -184,7 +185,7 @@ function FeaturedRingSection() {
               className="hg-tap transition-colors duration-300 hover:text-[#5e5852]"
             >
               Explore in Motion
-              <span className="sr-only"> — {title}</span>
+              <span className="sr-only"> — {title} (opens in a new tab)</span>
             </a>
           </p>
           {/* Equal meta height only on the dense 6-up desktop row — tablet

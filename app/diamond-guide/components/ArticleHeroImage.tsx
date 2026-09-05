@@ -29,7 +29,7 @@ export default function ArticleHeroImage({ article }: ArticleHeroImageProps) {
         />
       </div>
       {hero.caption ? (
-        <figcaption className="mt-4 px-1 text-center text-[0.86rem] leading-[1.74] text-[#8f867c]">
+        <figcaption className="mt-4 px-1 text-center text-[0.86rem] leading-[1.74] text-hg-muted">
           {hero.caption}
         </figcaption>
       ) : null}

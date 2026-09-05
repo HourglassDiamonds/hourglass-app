@@ -91,6 +91,7 @@
   --color-hg-surface: var(--hg-surface);
   --color-hg-surface-dark: var(--hg-surface-dark);
   --color-hg-ink: var(--hg-ink);
+  --color-hg-muted: var(--hg-muted);
   --color-hg-ink-muted: var(--hg-ink-muted);
   --color-hg-charcoal: var(--hg-charcoal);
   --color-hg-eyebrow: var(--hg-eyebrow);
@@ -131,6 +132,16 @@ body {
    focus rings — always override them. Mouse clicks do not trigger
    :focus-visible, so pointer UX is unchanged. */
 @layer base {
+  html {
+    scroll-padding-top: 6.5rem;
+  }
+
+  @media (min-width: 1024px) {
+    html {
+      scroll-padding-top: 8.75rem;
+    }
+  }
+
   /* Controls (buttons, inputs, sliders) keep a close 2px ring; the outline
      follows the element's own radius (pills stay pill-shaped). */
   :where(button, input, select, textarea, [role="slider"], [role="tab"], [tabindex]):focus-visible {
@@ -161,6 +172,52 @@ body {
    tightly wrapped clusters (use a real `min-h-11` row there instead) —
    the extension would create overlapping hit targets. */
 @layer utilities {
+  /* Skip navigation (WCAG 2.4.1 / 2.4.7). Hidden until :focus / :focus-visible
+     so real Tab reveals it; `.focus()` without focus-visible still matches
+     `:focus`. Explicit clip-path reset is required — Tailwind `sr-only` keeps
+     `clip-path: inset(50%)` even when paired with `focus:not-sr-only`. */
+  .hg-skip-link {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border-width: 0;
+  }
+
+  .hg-skip-link:focus,
+  .hg-skip-link:focus-visible {
+    position: fixed;
+    top: 1rem;
+    left: 1rem;
+    z-index: 100;
+    display: inline-flex;
+    width: auto;
+    height: auto;
+    min-height: 2.75rem;
+    max-width: calc(100vw - 2rem);
+    margin: 0;
+    overflow: visible;
+    clip: auto;
+    clip-path: none;
+    align-items: center;
+    border-radius: 9999px;
+    border: 1px solid var(--hg-line);
+    background: var(--hg-ivory);
+    padding: 0.75rem 1.25rem;
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    color: var(--hg-ink);
+    white-space: nowrap;
+    box-shadow: var(--hg-shadow-lifted);
+    outline: 2px solid var(--hg-focus);
+    outline-offset: 2px;
+  }
+
   .hg-tap {
     position: relative;
     display: inline-block;

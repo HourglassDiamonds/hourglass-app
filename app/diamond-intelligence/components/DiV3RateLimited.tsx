@@ -33,7 +33,7 @@ export default function DiV3RateLimited({
   );
 
   return (
-    <article className={DI_V3_PARTIAL_CARD}>
+    <article className={DI_V3_PARTIAL_CARD} role="alert">
       <div className="mb-8">
         <div className={DI_V3_BRAND}>Hourglass Diamonds</div>
         <div className={`${DI_V3_PRODUCT} mt-3.5`}>Diamond Intelligence</div>

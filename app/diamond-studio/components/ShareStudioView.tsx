@@ -235,16 +235,14 @@ export default function ShareStudioView({
         className="dts-share-view"
         aria-expanded={open}
         aria-controls={menuId}
-        aria-haspopup="menu"
         onClick={() => setOpen((value) => !value)}
       >
         {statusLabel}
       </button>
       {open ? (
-        <div className="dts-share-menu" id={menuId} role="menu">
+        <div className="dts-share-menu" id={menuId}>
           <button
             type="button"
-            role="menuitem"
             className="dts-share-menu-primary"
             disabled={emailSending}
             onClick={() => setEmailPanel((value) => !value)}
@@ -323,7 +321,6 @@ export default function ShareStudioView({
           ) : null}
           <button
             type="button"
-            role="menuitem"
             disabled={status === "working"}
             onClick={() => {
               void shareImage();
@@ -333,7 +330,6 @@ export default function ShareStudioView({
           </button>
           <button
             type="button"
-            role="menuitem"
             disabled={status === "working"}
             onClick={() => {
               void copyStudioLink();

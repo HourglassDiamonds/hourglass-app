@@ -17,7 +17,7 @@ const eyebrowClass =
   "text-[9px] font-normal uppercase tracking-[0.38em] text-[#6d655e]";
 
 const noteClass =
-  "mt-5 max-w-[38rem] text-[0.86rem] leading-[1.74] text-[#8f867c]";
+  "mt-5 max-w-[38rem] text-[0.86rem] leading-[1.74] text-hg-muted";
 
 const bodyCopyClass = "text-[0.94rem] leading-[1.72] text-[#635d56]";
 
@@ -27,7 +27,7 @@ const tableShellClass = `overflow-hidden ${SHELL_RADIUS} border border-[#e0d8cc]
 
 const tableInset = "px-6 md:px-8";
 
-const thClass = `${tableInset} py-5 text-left text-[9px] font-normal uppercase tracking-[0.36em] text-[#a39a8e]`;
+const thClass = `${tableInset} py-5 text-left text-[9px] font-normal uppercase tracking-[0.36em] text-hg-eyebrow`;
 
 const rowDivider = "border-b border-[#ebe4da]/35 last:border-b-0";
 

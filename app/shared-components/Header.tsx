@@ -2,8 +2,10 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import React from "react";
 import ConsultationCtaLink from "./ConsultationCtaLink";
+import { isNavCurrent } from "./nav-current";
 
 const NAV_ITEMS = [
   { href: "/the-house", label: "The House" },
@@ -59,6 +61,7 @@ function BrandMark() {
 }
 
 export default function Header({ currentPage = "" }: HeaderProps) {
+  const pathname = usePathname() ?? "";
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
   const menuButtonRef = React.useRef<HTMLButtonElement>(null);
 
@@ -79,11 +82,11 @@ export default function Header({ currentPage = "" }: HeaderProps) {
     <>
       {/* Skip link lives with the header so activating it lands *after* the
           repeated navigation (WCAG 2.4.1). The header renders inside <main>
-          on every page, so targeting the layout-level <main> cannot bypass it. */}
-      <a
-        href="#hg-page-content"
-        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:inline-flex focus:min-h-11 focus:items-center focus:rounded-full focus:border focus:border-hg-line focus:bg-hg-ivory focus:px-5 focus:py-3 focus:text-[12px] focus:tracking-[0.04em] focus:text-hg-ink focus:shadow-hg-lifted"
-      >
+          on every page, so targeting the layout-level <main> cannot bypass it.
+          `.hg-skip-link` (globals.css) is the sr-only → focus-reveal pattern:
+          Tailwind `sr-only` + `focus:not-sr-only` leaves `clip-path: inset(50%)`
+          in place, so keyboard focus never visually unclips the control. */}
+      <a href="#hg-page-content" className="hg-skip-link">
         Skip to main content
       </a>
       <header className="sticky top-0 z-50 w-full max-w-[100vw] overflow-x-clip overflow-y-visible border-b border-hg-line/55 bg-hg-ivory/88 backdrop-blur-[10px] supports-[backdrop-filter]:bg-hg-ivory/78">
@@ -94,6 +97,7 @@ export default function Header({ currentPage = "" }: HeaderProps) {
           href="/"
           className="flex shrink-0 items-center transition-opacity duration-300 hover:opacity-90 lg:items-end"
           aria-label="Hourglass Diamonds home"
+          aria-current={isNavCurrent(pathname, "/") ? "page" : undefined}
         >
           <BrandMark />
         </Link>
@@ -118,7 +122,8 @@ export default function Header({ currentPage = "" }: HeaderProps) {
         >
           {NAV_ITEMS.map((item) => {
             const key = item.href.replace("/", "");
-            const isActive = currentPage === key;
+            const isActive =
+              currentPage === key || isNavCurrent(pathname, item.href);
             const className = `inline-flex min-h-11 shrink-0 items-end whitespace-nowrap text-[12px] tracking-[0.04em] transition-colors duration-300 lg:text-[13px] ${navLinkClass(
               isActive,
               isFeaturedNav(item.href),
@@ -131,6 +136,7 @@ export default function Header({ currentPage = "" }: HeaderProps) {
                   key={item.href}
                   location="header:nav"
                   className={className}
+                  aria-current={isActive ? "page" : undefined}
                 >
                   {item.label}
                 </ConsultationCtaLink>
@@ -138,7 +144,12 @@ export default function Header({ currentPage = "" }: HeaderProps) {
             }
 
             return (
-              <Link key={item.href} href={item.href} className={className}>
+              <Link
+                key={item.href}
+                href={item.href}
+                className={className}
+                aria-current={isActive ? "page" : undefined}
+              >
                 {item.label}
               </Link>
             );
@@ -160,7 +171,8 @@ export default function Header({ currentPage = "" }: HeaderProps) {
             <ul className="border-t border-hg-line/80">
               {NAV_ITEMS.map((item) => {
                 const key = item.href.replace("/", "");
-                const isActive = currentPage === key;
+                const isActive =
+                  currentPage === key || isNavCurrent(pathname, item.href);
                 const className = `flex min-h-11 items-center px-4 py-3.5 text-[13px] tracking-[0.02em] transition-colors duration-300 focus-visible:rounded-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-hg-focus ${navLinkClass(
                   isActive,
                   isFeaturedNav(item.href),
@@ -174,6 +186,7 @@ export default function Header({ currentPage = "" }: HeaderProps) {
                         location="header:nav"
                         onClick={() => setMobileMenuOpen(false)}
                         className={className}
+                        aria-current={isActive ? "page" : undefined}
                       >
                         {item.label}
                       </ConsultationCtaLink>
@@ -187,6 +200,7 @@ export default function Header({ currentPage = "" }: HeaderProps) {
                       href={item.href}
                       onClick={() => setMobileMenuOpen(false)}
                       className={className}
+                      aria-current={isActive ? "page" : undefined}
                     >
                       {item.label}
                     </Link>

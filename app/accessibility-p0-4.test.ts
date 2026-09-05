@@ -12,6 +12,7 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, it } from "node:test";
+import { isNavCurrent } from "./shared-components/nav-current";
 
 const root = dirname(fileURLToPath(import.meta.url));
 
@@ -41,6 +42,38 @@ const byline = readFileSync(
 );
 const homePage = readFileSync(join(root, "home-page-client.tsx"), "utf8");
 const whispered = readFileSync(join(root, "whispered-praise/page.tsx"), "utf8");
+const shapeSelector = readFileSync(
+  join(root, "diamond-shape-studio/components/shape-selector.tsx"),
+  "utf8",
+);
+const guideBlocks = readFileSync(
+  join(root, "diamond-guide/article-blocks.tsx"),
+  "utf8",
+);
+const guideHero = readFileSync(
+  join(root, "diamond-guide/components/ArticleHeroImage.tsx"),
+  "utf8",
+);
+const footer = readFileSync(join(root, "shared-components/Footer.tsx"), "utf8");
+const shareStudio = readFileSync(
+  join(root, "diamond-studio/components/ShareStudioView.tsx"),
+  "utf8",
+);
+const housePage = readFileSync(
+  join(root, "the-house/the-house-page-client.tsx"),
+  "utf8",
+);
+const notFound = readFileSync(join(root, "not-found.tsx"), "utf8");
+const errorPage = readFileSync(join(root, "error.tsx"), "utf8");
+const globalError = readFileSync(join(root, "global-error.tsx"), "utf8");
+const diUnable = readFileSync(
+  join(root, "diamond-intelligence/components/DiV3UnableToVerify.tsx"),
+  "utf8",
+);
+const ledgerTemp = readFileSync(
+  join(root, "ledger/components/system-temperature.tsx"),
+  "utf8",
+);
 
 /* ── WCAG contrast math ─────────────────────────────────────────────── */
 
@@ -100,6 +133,24 @@ describe("AA-1 skip navigation & landmark structure (WCAG 2.4.1, 1.3.1)", () => 
 
   it("globals suppress the focus ring on skip-link targets only", () => {
     assert.match(globals, /#hg-page-content:focus/);
+  });
+
+  it("skip link unclips and pins above chrome on keyboard focus", () => {
+    assert.match(header, /className="hg-skip-link"/);
+    assert.doesNotMatch(header, /sr-only focus:not-sr-only/);
+    const start = globals.indexOf(".hg-skip-link {");
+    const focusStart = globals.indexOf(".hg-skip-link:focus");
+    assert.ok(start > -1, "hidden skip-link rule missing");
+    assert.ok(focusStart > start, "focus-reveal rule must follow the hidden rule");
+    const hidden = globals.slice(start, focusStart);
+    const revealed = globals.slice(focusStart, focusStart + 900);
+    assert.match(hidden, /clip-path:\s*inset\(50%\)/);
+    assert.match(globals, /\.hg-skip-link:focus-visible/);
+    assert.match(revealed, /clip-path:\s*none/);
+    assert.match(revealed, /position:\s*fixed/);
+    assert.match(revealed, /z-index:\s*100/);
+    assert.match(revealed, /background:\s*var\(--hg-ivory\)/);
+    assert.match(revealed, /color:\s*var\(--hg-ink\)/);
   });
 });
 
@@ -339,7 +390,9 @@ describe("AA-8 guide byline link distinction (WCAG 1.4.1)", () => {
 describe("AA-9 homepage repeated link purpose (WCAG 2.4.4)", () => {
   it("Explore in Motion links carry hidden per-card context", () => {
     assert.ok(
-      homePage.includes('<span className="sr-only"> — {title}</span>'),
+      homePage.includes(
+        '<span className="sr-only"> — {title} (opens in a new tab)</span>',
+      ),
       "hidden card-title context missing from the repeated link",
     );
   });
@@ -358,3 +411,109 @@ describe("Whispered Praise reduced motion (advisory, WCAG 2.3.3 AAA)", () => {
     assert.match(block, /opacity:\s*1/);
   });
 });
+
+describe("AA-10 Shape Studio shape strip (WCAG 4.1.2)", () => {
+  it("is a radiogroup, not a tablist", () => {
+    assert.ok(!shapeSelector.includes('role="tablist"'));
+    assert.ok(!shapeSelector.includes('role="tab"'));
+    assert.match(
+      shapeSelector,
+      /role="radiogroup"\s+aria-label="Diamond shape"/,
+    );
+    assert.match(
+      shapeSelector,
+      /role="radio"\s+aria-checked=\{selected === shapeId\}/,
+    );
+    assert.match(
+      shapeSelector,
+      /tabIndex=\{selected === shapeId \? 0 : -1\}/,
+    );
+  });
+
+  it("arrow keys move selection and focus within the group", () => {
+    for (const key of ["ArrowRight", "ArrowDown", "ArrowLeft", "ArrowUp"]) {
+      assert.ok(shapeSelector.includes(`"${key}"`), `missing ${key}`);
+    }
+    assert.match(shapeSelector, /closest\('\[role="radiogroup"\]'\)/);
+  });
+});
+
+describe("AA-11 Diamond Guide contrast tokens (WCAG 1.4.3)", () => {
+  it("table headers and figure notes use AA brand tokens, not failing literals", () => {
+    assert.doesNotMatch(guideBlocks, /#a39a8e/);
+    assert.doesNotMatch(guideBlocks, /#8f867c/);
+    assert.doesNotMatch(guideHero, /#8f867c/);
+    assert.match(guideBlocks, /text-hg-eyebrow/);
+    assert.match(guideBlocks, /text-hg-muted/);
+    assert.match(guideHero, /text-hg-muted/);
+  });
+});
+
+describe("AA-12 current page and skip-target anchors (WCAG 1.3.1 / 2.4.11)", () => {
+  it("Header and Footer expose aria-current=page", () => {
+    assert.match(header, /aria-current=\{isActive \? "page" : undefined\}/);
+    assert.match(footer, /aria-current=\{current \? "page" : undefined\}/);
+  });
+
+  it("matches nested public paths without treating home as a prefix", () => {
+    assert.equal(isNavCurrent("/diamond-guide/oval", "/diamond-guide"), true);
+    assert.equal(isNavCurrent("/the-house", "/the-house"), true);
+    assert.equal(isNavCurrent("/engagement-rings", "/"), false);
+    assert.equal(isNavCurrent("/", "/"), true);
+  });
+
+  it("sticky header offset uses scroll-padding-top", () => {
+    assert.match(globals, /scroll-padding-top:\s*6\.5rem/);
+  });
+
+  it("Ledger system-temperature heading has scroll-margin", () => {
+    assert.match(ledgerTemp, /id="ledger-system-temperature-heading"/);
+    assert.match(ledgerTemp, /scroll-mt-24/);
+  });
+});
+
+describe("AA-13 Share this view disclosure (WCAG 4.1.2)", () => {
+  it("does not use ARIA menu around the share form", () => {
+    assert.doesNotMatch(shareStudio, /role="menu"/);
+    assert.doesNotMatch(shareStudio, /role="menuitem"/);
+    assert.doesNotMatch(shareStudio, /aria-haspopup="menu"/);
+    assert.match(shareStudio, /aria-expanded=\{open\}/);
+    assert.match(shareStudio, /aria-controls=\{menuId\}/);
+  });
+});
+
+describe("AA-14 new-tab names and House decorative video (WCAG G201 / 1.2.2)", () => {
+  it("homepage and QR new-tab links name the new context", () => {
+    assert.match(homePage, /opens in a new tab/);
+    assert.match(qrPanel, /opens in a new tab/);
+  });
+
+  it("House hero video stays muted without a Sound control", () => {
+    assert.match(housePage, /\bmuted\b/);
+    assert.doesNotMatch(housePage, /handleToggleSound/);
+    assert.doesNotMatch(housePage, />Sound</);
+  });
+});
+
+describe("AA-15 branded recovery pages (WCAG 3.3.1 / 4.1.3)", () => {
+  it("ships not-found, error, and global-error with recovery links", () => {
+    assert.match(notFound, /SiteRecovery/);
+    assert.match(errorPage, /SiteRecovery/);
+    assert.match(globalError, /<html lang="en">/);
+    assert.match(globalError, /SiteRecovery/);
+    const recovery = readFileSync(
+      join(root, "shared-components/SiteRecovery.tsx"),
+      "utf8",
+    );
+    assert.match(recovery, /Return home/);
+    assert.match(recovery, /Concierge/);
+    assert.doesNotMatch(recovery, /<main\b/);
+  });
+});
+
+describe("AA-16 DI V3 failure cards announce (WCAG 4.1.3)", () => {
+  it("unable-to-verify card is an alert", () => {
+    assert.match(diUnable, /role="alert"/);
+  });
+});
+
