@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import {
+  applySecurityHeaders,
+  EXECUTIVE_DASHBOARD_SECURITY_HEADERS,
+} from "@/lib/security/http-headers";
+import {
   getExecutiveDashboardAccessDecision,
   isExecutiveDashboardConciergePath,
   isExecutiveDashboardPasskeyPairPath,
@@ -98,10 +102,8 @@ export function proxy(request: NextRequest) {
 }
 
 function applyExecutiveDashboardHeaders(response: NextResponse): void {
-  response.headers.set("Cache-Control", "private, no-store");
-  response.headers.set("X-Robots-Tag", "noindex, nofollow, noarchive");
-  response.headers.set("X-Frame-Options", "DENY");
-  response.headers.set("Referrer-Policy", "no-referrer");
+  // Keep Referrer-Policy no-referrer and X-Frame-Options DENY on this boundary.
+  applySecurityHeaders(response.headers, EXECUTIVE_DASHBOARD_SECURITY_HEADERS);
 }
 
 export const config = {

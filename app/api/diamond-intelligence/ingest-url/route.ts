@@ -41,7 +41,7 @@ export async function POST(request: Request) {
   }
 
   const clientIp = getDiamondIntelligenceClientIp(request);
-  const rateLimit = checkDiamondIntelligenceRateLimit(clientIp);
+  const rateLimit = await checkDiamondIntelligenceRateLimit(clientIp);
   if (!rateLimit.allowed) {
     return json(
       { ok: false, error: DI_RATE_LIMIT_ERROR, code: "rate_limited" },

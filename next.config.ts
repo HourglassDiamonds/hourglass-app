@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { PUBLIC_SECURITY_HEADERS } from "./lib/security/http-headers";
 
 const pdfjsWorkerIncludes = [
   "./node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs",
@@ -65,6 +66,18 @@ const nextConfig: NextConfig = {
       "./node_modules/@tesseract.js-data/**",
       "./node_modules/tesseract.js/src/worker-script/**",
     ],
+  },
+  async headers() {
+    return [
+      {
+        source: "/",
+        headers: PUBLIC_SECURITY_HEADERS,
+      },
+      {
+        source: "/:path*",
+        headers: PUBLIC_SECURITY_HEADERS,
+      },
+    ];
   },
   async redirects() {
     return [

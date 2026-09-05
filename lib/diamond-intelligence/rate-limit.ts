@@ -1,4 +1,16 @@
-/** Diamond Intelligence upload rate limits — per client IP. */
+/** Diamond Intelligence upload rate limits — durable across serverless instances. */
+
+import { consumeRateLimitWindows } from "@/lib/security/abuse-rate-limit";
+import {
+  getRequestClientIp,
+  missingProductionClientIpResult,
+  resolveAbuseLimiterIdentity,
+} from "@/lib/security/client-ip";
+import {
+  resetMemoryAbuseRateLimitStore,
+  setAbuseRateLimitStoreForTests,
+  type AbuseRateLimitStore,
+} from "@/lib/security/abuse-rate-limit-store";
 
 export const DI_RATE_LIMIT_HOURLY = 10;
 export const DI_RATE_LIMIT_DAILY = 25;
@@ -9,14 +21,18 @@ export const DI_RATE_LIMIT_BURST_WINDOW_MS = 60_000;
 export const DI_RATE_LIMIT_ERROR =
   "Too many reports submitted. Please try again later.";
 
-type RateLimitBucket = {
-  timestamps: number[];
-};
-
-const buckets = new Map<string, RateLimitBucket>();
-
 const ONE_HOUR_MS = 60 * 60 * 1000;
 const ONE_DAY_MS = 24 * ONE_HOUR_MS;
+
+const DI_RATE_LIMIT_WINDOWS = [
+  {
+    name: "burst",
+    limit: DI_RATE_LIMIT_BURST_MAX,
+    windowMs: DI_RATE_LIMIT_BURST_WINDOW_MS,
+  },
+  { name: "hourly", limit: DI_RATE_LIMIT_HOURLY, windowMs: ONE_HOUR_MS },
+  { name: "daily", limit: DI_RATE_LIMIT_DAILY, windowMs: ONE_DAY_MS },
+] as const;
 
 /** Bypass only outside production — never honor disable flag in production. */
 function isRateLimitDisabled(): boolean {
@@ -26,83 +42,37 @@ function isRateLimitDisabled(): boolean {
 }
 
 export function getDiamondIntelligenceClientIp(request: Request): string {
-  const forwarded = request.headers.get("x-forwarded-for");
-  if (forwarded) {
-    const first = forwarded.split(",")[0]?.trim();
-    if (first) return first;
-  }
-  const realIp = request.headers.get("x-real-ip")?.trim();
-  if (realIp) return realIp;
-  return "unknown";
+  return getRequestClientIp(request);
 }
 
 export type DiamondIntelligenceRateLimitResult =
   | { allowed: true }
   | { allowed: false; retryAfterSeconds: number };
 
-function pruneTimestamps(timestamps: number[], now: number): number[] {
-  const cutoff = now - ONE_DAY_MS;
-  return timestamps.filter((t) => t >= cutoff);
-}
-
-/** In-memory per-IP limiter — best-effort on serverless; resets on cold starts. */
-export function checkDiamondIntelligenceRateLimit(
+export async function checkDiamondIntelligenceRateLimit(
   ip: string,
   now = Date.now(),
-): DiamondIntelligenceRateLimitResult {
+  store?: AbuseRateLimitStore,
+): Promise<DiamondIntelligenceRateLimitResult> {
   if (isRateLimitDisabled()) {
     return { allowed: true };
   }
 
-  const key = ip || "unknown";
-  const bucket = buckets.get(key) ?? { timestamps: [] };
-  bucket.timestamps = pruneTimestamps(bucket.timestamps, now);
-
-  const hourAgo = now - ONE_HOUR_MS;
-  const burstAgo = now - DI_RATE_LIMIT_BURST_WINDOW_MS;
-  const inLastHour = bucket.timestamps.filter((t) => t >= hourAgo).length;
-  const inLastDay = bucket.timestamps.length;
-  const inBurst = bucket.timestamps.filter((t) => t >= burstAgo).length;
-
-  if (inBurst >= DI_RATE_LIMIT_BURST_MAX) {
-    const oldestBurst = bucket.timestamps.find((t) => t >= burstAgo) ?? now;
-    return {
-      allowed: false,
-      retryAfterSeconds: Math.max(
-        1,
-        Math.ceil((oldestBurst + DI_RATE_LIMIT_BURST_WINDOW_MS - now) / 1000),
-      ),
-    };
+  const identity = resolveAbuseLimiterIdentity(ip);
+  if (identity === null) {
+    return missingProductionClientIpResult();
   }
-
-  if (inLastHour >= DI_RATE_LIMIT_HOURLY) {
-    const oldestHour = bucket.timestamps.find((t) => t >= hourAgo) ?? now;
-    return {
-      allowed: false,
-      retryAfterSeconds: Math.max(
-        1,
-        Math.ceil((oldestHour + ONE_HOUR_MS - now) / 1000),
-      ),
-    };
-  }
-
-  if (inLastDay >= DI_RATE_LIMIT_DAILY) {
-    const oldestDay = bucket.timestamps[0] ?? now;
-    return {
-      allowed: false,
-      retryAfterSeconds: Math.max(
-        1,
-        Math.ceil((oldestDay + ONE_DAY_MS - now) / 1000),
-      ),
-    };
-  }
-
-  bucket.timestamps.push(now);
-  buckets.set(key, bucket);
-  return { allowed: true };
+  return consumeRateLimitWindows({
+    namespace: "diamond-intelligence",
+    identity,
+    windows: [...DI_RATE_LIMIT_WINDOWS],
+    now,
+    store,
+  });
 }
 
 /** Test helper — clears in-memory state. */
 export function resetDiamondIntelligenceRateLimits(): void {
-  buckets.clear();
+  resetMemoryAbuseRateLimitStore();
+  setAbuseRateLimitStoreForTests(null);
 }

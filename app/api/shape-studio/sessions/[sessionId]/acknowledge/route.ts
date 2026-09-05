@@ -1,3 +1,4 @@
+import { rejectIfShapeStudioRateLimited } from "@/lib/shape-studio/rate-limit";
 import {
   acknowledgeShapeStudioSession,
   isShapeStudioSessionsAvailable,
@@ -20,7 +21,14 @@ const NO_STORE = {
  * Desktop acknowledgement after successful download + local adoption.
  * Idempotent when already consumed. Deletes the capture object.
  */
-export async function POST(_request: Request, context: RouteContext) {
+export async function POST(request: Request, context: RouteContext) {
+  const limited = await rejectIfShapeStudioRateLimited(
+    "acknowledge",
+    request,
+    NO_STORE,
+  );
+  if (limited) return limited;
+
   const { sessionId } = await context.params;
 
   if (!isValidSessionId(sessionId)) {
@@ -55,8 +63,13 @@ export async function POST(_request: Request, context: RouteContext) {
         : message === "Session has no image to acknowledge"
           ? 409
           : 500;
+    if (status === 500) {
+      console.warn("[shape-studio] acknowledge failed");
+    }
+    const publicMessage =
+      status === 500 ? "Unable to acknowledge capture." : message;
     return NextResponse.json(
-      { error: "acknowledge_failed", message },
+      { error: "acknowledge_failed", message: publicMessage },
       { status, headers: NO_STORE },
     );
   }

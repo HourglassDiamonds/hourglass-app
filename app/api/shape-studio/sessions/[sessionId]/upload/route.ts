@@ -3,6 +3,7 @@ import {
   normalizeCaptureMime,
   SHAPE_STUDIO_MAX_IMAGE_BYTES,
 } from "@/lib/shape-studio/validate-image";
+import { rejectIfShapeStudioRateLimited } from "@/lib/shape-studio/rate-limit";
 import {
   isShapeStudioSessionsAvailable,
   isValidSessionId,
@@ -60,6 +61,9 @@ async function normalizeUploadBytes(
 }
 
 export async function POST(request: Request, context: RouteContext) {
+  const limited = await rejectIfShapeStudioRateLimited("upload", request);
+  if (limited) return limited;
+
   const { sessionId } = await context.params;
 
   if (!isValidSessionId(sessionId)) {
@@ -128,6 +132,14 @@ export async function POST(request: Request, context: RouteContext) {
               message === "Session already consumed"
             ? 409
             : 500;
-    return NextResponse.json({ error: "upload_failed", message }, { status });
+    if (status === 500) {
+      console.warn("[shape-studio] capture upload failed");
+    }
+    const publicMessage =
+      status === 500 ? "Unable to upload capture." : message;
+    return NextResponse.json(
+      { error: "upload_failed", message: publicMessage },
+      { status },
+    );
   }
 }
