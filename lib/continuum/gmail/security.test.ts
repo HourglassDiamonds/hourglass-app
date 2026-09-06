@@ -337,7 +337,16 @@ describe("Gmail activation security", () => {
     assert.match(page, /GmailIncrementalForm/);
     assert.match(ui, /Current mailbox/);
     assert.match(ui, /Activation required/);
+    assert.match(ui, /Resume current-state sync/);
+    assert.match(ui, /Stop after current chunk/);
+    assert.match(ui, /createGmailIncrementalContinuation/);
     assert.doesNotMatch(ui, /mailboxEmailHash|ciphertext|subject|snippet|messageId|threadId/);
+    const continueHelper = readFileSync(join(GMAIL_DIR, "incremental-continue.ts"), "utf8");
+    assert.doesNotMatch(
+      continueHelper,
+      /createPersonAtomic|insertSourceNote|continuum_attention_items/,
+    );
+    assert.doesNotMatch(continueHelper, /\/api\/cron\/gmail/);
     assert.match(env, /CONTINUUM_GMAIL_INCREMENTAL_SYNC_ENABLED/);
     assert.doesNotMatch(vercel, /gmail-incremental|gmail-memory-daily|gmail-current-state/);
     assert.doesNotMatch(sync, /createPersonAtomic|insertSourceNote|continuum_open_jobs/);

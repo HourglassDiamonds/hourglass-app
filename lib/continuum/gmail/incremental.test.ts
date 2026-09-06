@@ -262,8 +262,12 @@ describe("Gmail incremental current-state runner", () => {
       join(ROOT, "app/executive-dashboard/concierge/components/gmail-incremental.tsx"),
       "utf8",
     );
+    const continueHelper = readFileSync(
+      join(ROOT, "lib/continuum/gmail/incremental-continue.ts"),
+      "utf8",
+    );
     const vercel = readFileSync(join(ROOT, "vercel.json"), "utf8");
-    for (const source of [incremental, actions, ui]) {
+    for (const source of [incremental, actions, ui, continueHelper]) {
       assert.doesNotMatch(source, /console\.(log|info|debug|warn|error)/);
       assert.doesNotMatch(source, /continuum_person_profiles|createPersonAtomic/);
       assert.doesNotMatch(source, /continuum_attention_items|continuum_human_sources/);
