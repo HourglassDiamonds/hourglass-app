@@ -43,7 +43,7 @@ export function parseWriterIdentityKey(identityKey: string): {
   if (parts.length !== 3) return null;
   const [projectId, sourceSystem, sourceRefPrefix] = parts;
   if (!projectId || !sourceSystem || !sourceRefPrefix) return null;
-  if (/[%_,()]/.test(sourceRefPrefix)) return null;
+  if (/[%(),]/.test(sourceRefPrefix)) return null;
   return { projectId, sourceSystem, sourceRefPrefix };
 }
 
@@ -191,30 +191,18 @@ export class SupabaseProjectArtifactWriter implements ProjectArtifactWriter {
     const parsed = parseWriterIdentityKey(identityKey);
     if (!parsed) return null;
     const prefix = parsed.sourceRefPrefix;
-    const exact = await this.client
+    const listed = await this.client
       .from("continuum_project_artifacts")
       .select(PROJECT_ARTIFACT_COLUMNS)
       .eq("project_id", parsed.projectId)
-      .eq("source_system", parsed.sourceSystem)
-      .eq("source_ref", prefix)
-      .maybeSingle();
-    if (exact.error) throw writeReason(exact.error.message ?? "");
-    const exactMapped = rowToProjectArtifact(
-      (exact.data ?? null) as Record<string, unknown> | null,
-    );
-    if (exactMapped) return exactMapped;
-    const prefixed = await this.client
-      .from("continuum_project_artifacts")
-      .select(PROJECT_ARTIFACT_COLUMNS)
-      .eq("project_id", parsed.projectId)
-      .eq("source_system", parsed.sourceSystem)
-      .like("source_ref", `${prefix}|%`)
-      .limit(1)
-      .maybeSingle();
-    if (prefixed.error) throw writeReason(prefixed.error.message ?? "");
-    return rowToProjectArtifact(
-      (prefixed.data ?? null) as Record<string, unknown> | null,
-    );
+      .eq("source_system", parsed.sourceSystem);
+    if (listed.error) throw writeReason(listed.error.message ?? "");
+    for (const row of listed.data ?? []) {
+      const mapped = rowToProjectArtifact(row as Record<string, unknown>);
+      const raw = (mapped?.sourceRef ?? "").trim();
+      if (raw === prefix || raw.startsWith(`${prefix}|`)) return mapped;
+    }
+    return null;
   }
 
   applyPreparedCreate(

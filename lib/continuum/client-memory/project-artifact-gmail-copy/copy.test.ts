@@ -305,7 +305,7 @@ describe("Gmail attachment copy-in", () => {
     assert.equal(zip.artifacts.listArtifacts().length, 0);
   });
 
-  it("rejects octet-stream unless magic bytes prove an allowed type", async () => {
+  it("rejects octet-stream unless a supported filename and magic bytes prove an allowed type", async () => {
     const unsafe = await harness({ mimeType: "application/octet-stream" });
     unsafe.api.setAttachment(MSG, ATT, {
       data: Buffer.from([0x00, 0x01, 0x02, 0x03]).toString("base64url"),
@@ -322,6 +322,17 @@ describe("Gmail attachment copy-in", () => {
     assert.equal(accepted.ok, true);
     if (!accepted.ok) return;
     assert.equal(accepted.artifact.mimeType, "image/png");
+
+    const exe = await harness({
+      mimeType: "application/octet-stream",
+      filename: "payload.exe",
+    });
+    const blocked = await copyGmailAttachmentToProject(exe.deps, exe.input);
+    assert.equal(blocked.ok, false);
+    if (blocked.ok) return;
+    assert.equal(blocked.reason, "unsupported-mime");
+    assert.equal(exe.createApiCalls.count, 0);
+    assert.deepEqual(exe.api.calls, []);
   });
 
   it("rejects oversized metadata without fetching bytes", async () => {

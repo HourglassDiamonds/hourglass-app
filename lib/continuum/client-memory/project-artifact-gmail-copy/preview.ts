@@ -59,6 +59,6 @@ export function presentGmailCopyPreview(input: {
     sizeBytes: attachment.sizeBytes,
     sentAt: message.sentAt,
     subject: message.subject,
-    mimePreview: previewGmailCopyMime(attachment.mimeType),
+    mimePreview: previewGmailCopyMime(attachment.mimeType, filename),
   };
 }

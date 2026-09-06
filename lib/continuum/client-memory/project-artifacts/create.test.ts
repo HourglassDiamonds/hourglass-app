@@ -163,6 +163,13 @@ describe("Project Artifact create primitive", () => {
     assert.equal(gmail.ok, false);
     if (gmail.ok) return;
     assert.equal(gmail.code, "invalid-source");
+    const longManual = await createProjectArtifact(deps(store, artifacts), {
+      ...input(seeded.projectId, { mutationId: randomUUID() }),
+      sourceRef: "n".repeat(241),
+    });
+    assert.equal(longManual.ok, false);
+    if (longManual.ok) return;
+    assert.equal(longManual.code, "invalid-source");
     assert.equal(artifacts.listArtifacts().length, 0);
   });
 

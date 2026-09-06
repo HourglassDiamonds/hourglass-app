@@ -28,7 +28,13 @@ export type ProjectArtifactSourceSystem =
 
 export const PROJECT_ARTIFACT_TITLE_MAX = 160;
 export const PROJECT_ARTIFACT_FILENAME_MAX = 180;
+/** Non-Gmail source_ref maximum. Production #14 default. */
 export const PROJECT_ARTIFACT_SOURCE_REF_MAX = 240;
+/**
+ * Gmail copy-in source_ref maximum. Additive #15 bound against live #14.
+ * Real Gmail attachment IDs can exceed 400 characters by themselves.
+ */
+export const PROJECT_ARTIFACT_GMAIL_SOURCE_REF_MAX = 2048;
 export const PROJECT_ARTIFACT_CREATED_BY_MAX = 80;
 export const PROJECT_ARTIFACT_MAX_BYTES = 25 * 1024 * 1024;
 

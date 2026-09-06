@@ -2,9 +2,10 @@
  * Gmail copy-in identity packed into #14 source_ref.
  * Unique per destination Project + Gmail message id + attachment id.
  * Does not store email body.
+ * Exact message/attachment IDs are retained; they are never truncated or hashed.
  */
 
-import { PROJECT_ARTIFACT_SOURCE_REF_MAX } from "../project-artifacts/types";
+import { PROJECT_ARTIFACT_GMAIL_SOURCE_REF_MAX } from "../project-artifacts/types";
 
 export const GMAIL_COPY_SOURCE_VERSION = "gm1" as const;
 export const GMAIL_COPY_SOURCE_SYSTEM = "gmail" as const;
@@ -12,7 +13,7 @@ export const GMAIL_COPY_SOURCE_SYSTEM = "gmail" as const;
 const GMAIL_ID_RE = /^[A-Za-z0-9._=-]+$/;
 const MESSAGE_ID_MAX = 64;
 const THREAD_ID_MAX = 64;
-const ATTACHMENT_ID_MAX = 180;
+const ATTACHMENT_ID_MAX = PROJECT_ARTIFACT_GMAIL_SOURCE_REF_MAX;
 const HASH_MAX = 64;
 
 export type GmailCopyProvenance = {
@@ -57,37 +58,34 @@ export function gmailCopyIdentityPrefix(
 export function packGmailCopySourceRef(
   provenance: GmailCopyProvenance,
 ): { ok: true; sourceRef: string } | { ok: false; reason: "identity-too-long" } {
-  const identity = gmailCopyIdentityPrefix(
-    provenance.messageId,
-    provenance.attachmentId,
-  );
-  if (identity.length > PROJECT_ARTIFACT_SOURCE_REF_MAX) {
+  if (
+    !validId(provenance.messageId, MESSAGE_ID_MAX) ||
+    !validId(provenance.attachmentId, ATTACHMENT_ID_MAX)
+  ) {
     return { ok: false, reason: "identity-too-long" };
   }
-  const extras: string[] = [];
-  if (
-    provenance.threadId &&
-    validId(provenance.threadId, THREAD_ID_MAX) &&
-    provenance.threadId !== provenance.messageId
-  ) {
-    extras.push(provenance.threadId);
-  } else if (provenance.threadId && validId(provenance.threadId, THREAD_ID_MAX)) {
-    extras.push(provenance.threadId);
-  }
-  if (provenance.sentAt && /^\d{4}-\d{2}-\d{2}T/.test(provenance.sentAt)) {
-    extras.push(provenance.sentAt);
-  }
-  if (
-    provenance.fromEmailHash &&
-    validId(provenance.fromEmailHash, HASH_MAX)
-  ) {
-    extras.push(provenance.fromEmailHash);
-  }
-  let packed = identity;
-  for (const extra of extras) {
-    const next = `${packed}|${extra}`;
-    if (next.length > PROJECT_ARTIFACT_SOURCE_REF_MAX) break;
-    packed = next;
+  const threadId =
+    provenance.threadId && validId(provenance.threadId, THREAD_ID_MAX)
+      ? provenance.threadId
+      : "";
+  const sentAt =
+    provenance.sentAt && /^\d{4}-\d{2}-\d{2}T/.test(provenance.sentAt)
+      ? provenance.sentAt
+      : "";
+  const fromEmailHash =
+    provenance.fromEmailHash && validId(provenance.fromEmailHash, HASH_MAX)
+      ? provenance.fromEmailHash
+      : "";
+  const packed = [
+    GMAIL_COPY_SOURCE_VERSION,
+    provenance.messageId,
+    provenance.attachmentId,
+    threadId,
+    sentAt,
+    fromEmailHash,
+  ].join("|");
+  if (packed.length > PROJECT_ARTIFACT_GMAIL_SOURCE_REF_MAX) {
+    return { ok: false, reason: "identity-too-long" };
   }
   return { ok: true, sourceRef: packed };
 }

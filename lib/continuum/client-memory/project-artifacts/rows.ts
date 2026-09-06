@@ -33,6 +33,7 @@ export function rowToProjectArtifact(
   );
   const sourceRef = parseArtifactSourceRef(
     row.source_ref == null ? null : String(row.source_ref),
+    String(row.source_system ?? ""),
   );
   const mimeType = String(row.mime_type ?? "").trim().toLowerCase();
   const storageBucket = String(row.storage_bucket ?? "").trim();

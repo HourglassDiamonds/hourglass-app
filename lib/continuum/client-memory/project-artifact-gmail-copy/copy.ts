@@ -18,7 +18,6 @@ import {
   PROJECT_ARTIFACTS_BUCKET,
   PROJECT_ARTIFACT_MAX_BYTES,
   type ProjectArtifact,
-  type ProjectArtifactKind,
 } from "../project-artifacts/types";
 import {
   isProjectArtifactKind,
@@ -32,6 +31,7 @@ import { artifactSourceIdentityKey, projectArtifactObjectPath } from "../project
 import type { CreateProjectArtifactApplyResult } from "../project-artifacts/create";
 import { isProjectArtifactWriteError } from "../project-artifacts/write-error";
 import { GMAIL_COPY_APPROVAL } from "./constants";
+import { mapGmailCopyArtifactKind } from "./kind";
 import { previewGmailCopyMime, resolveGmailCopyMime } from "./mime";
 import {
   GMAIL_COPY_SOURCE_SYSTEM,
@@ -144,7 +144,8 @@ export async function copyGmailAttachmentToProject(
   const messageId = parseGmailCopyId(input.messageId);
   const attachmentId = parseGmailAttachmentId(input.attachmentId);
   if (!messageId || !attachmentId) return failed("invalid-input");
-  if (!isProjectArtifactKind(input.kind)) return failed("invalid-input");
+  const kind = mapGmailCopyArtifactKind(input.kind);
+  if (!kind || !isProjectArtifactKind(kind)) return failed("invalid-input");
   const createdBy = parseArtifactCreatedBy(input.actor);
   if (!createdBy.ok) return failed("invalid-input");
 
@@ -215,7 +216,10 @@ export async function copyGmailAttachmentToProject(
       return failed("oversized");
     }
 
-    const previewMime = previewGmailCopyMime(indexedAttachment.mimeType);
+    const previewMime = previewGmailCopyMime(
+      indexedAttachment.mimeType,
+      filename.filename,
+    );
     if (previewMime === "unsupported-mime") return failed("unsupported-mime");
 
     let connection: GmailConnection | null;
@@ -260,7 +264,11 @@ export async function copyGmailAttachmentToProject(
     const parsedBytes = parseArtifactBytes(bytes);
     if (!parsedBytes.ok) return failed("oversized", true);
 
-    const mime = resolveGmailCopyMime(indexedAttachment.mimeType, parsedBytes.bytes);
+    const mime = resolveGmailCopyMime(
+      indexedAttachment.mimeType,
+      parsedBytes.bytes,
+      filename.filename,
+    );
     if (!mime.ok) return failed("unsupported-mime", true);
 
     const artifactId = deps.newArtifactId();
@@ -274,7 +282,7 @@ export async function copyGmailAttachmentToProject(
     const artifact: ProjectArtifact = {
       artifactId,
       projectId,
-      kind: input.kind as ProjectArtifactKind,
+      kind,
       title: titleParsed.title,
       originalFilename: filename.filename,
       mimeType: mime.mimeType,

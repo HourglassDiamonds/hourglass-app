@@ -7,6 +7,7 @@ import {
   PROJECT_ARTIFACT_FILENAME_MAX,
   PROJECT_ARTIFACT_KINDS,
   PROJECT_ARTIFACT_MAX_BYTES,
+  PROJECT_ARTIFACT_GMAIL_SOURCE_REF_MAX,
   PROJECT_ARTIFACT_SOURCE_REF_MAX,
   PROJECT_ARTIFACT_SOURCE_SYSTEMS,
   PROJECT_ARTIFACT_TITLE_MAX,
@@ -96,12 +97,23 @@ export function parseArtifactCreatedBy(
   return { ok: true, createdBy };
 }
 
+export function projectArtifactSourceRefMax(
+  sourceSystem?: string | null,
+): number {
+  return sourceSystem === "gmail"
+    ? PROJECT_ARTIFACT_GMAIL_SOURCE_REF_MAX
+    : PROJECT_ARTIFACT_SOURCE_REF_MAX;
+}
+
 export function parseArtifactSourceRef(
   value: string | null | undefined,
+  sourceSystem?: string | null,
 ): { ok: true; sourceRef: string | null } | { ok: false } {
   if (value == null || value.trim() === "") return { ok: true, sourceRef: null };
   const sourceRef = value.trim();
-  if (sourceRef.length > PROJECT_ARTIFACT_SOURCE_REF_MAX) return { ok: false };
+  if (sourceRef.length > projectArtifactSourceRefMax(sourceSystem)) {
+    return { ok: false };
+  }
   if (/[\n\r]/.test(sourceRef)) return { ok: false };
   return { ok: true, sourceRef };
 }

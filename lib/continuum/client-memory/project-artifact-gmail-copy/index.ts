@@ -16,6 +16,7 @@ export type {
 } from "./copy";
 export { presentGmailCopyPreview } from "./preview";
 export type { GmailCopyPreview } from "./preview";
+export { mapGmailCopyArtifactKind } from "./kind";
 export {
   gmailCopyIdentityPrefix,
   packGmailCopySourceRef,

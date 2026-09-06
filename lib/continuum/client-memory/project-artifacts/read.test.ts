@@ -165,5 +165,43 @@ describe("Project Artifact read model", () => {
     });
     assert.equal(valid?.sourceRef, "gmail:msg:pointer-only");
     assert.equal(valid?.storagePath, `${PROJECT_A}/${ARTIFACT_A}/file.png`);
+
+    const longGmail = rowToProjectArtifact({
+      artifact_id: ARTIFACT_A,
+      project_id: PROJECT_A,
+      kind: "cad",
+      title: "Pennock CAD",
+      original_filename: "Pennock-CAD-finger-render.JPG",
+      mime_type: "image/jpeg",
+      byte_size: 12,
+      storage_bucket: "continuum-project-artifacts",
+      storage_path: `${PROJECT_A}/${ARTIFACT_A}/file.jpg`,
+      created_at: NOW,
+      created_by: "justin",
+      source_system: "gmail",
+      source_ref: `gm1|19c4f8a2b1e90d3f|${"A".repeat(426)}|19c4f8a2b1e90d40|${NOW}|${"b".repeat(64)}`,
+      created_mutation_id: randomUUID(),
+    });
+    assert.ok(longGmail);
+    assert.ok((longGmail?.sourceRef?.length ?? 0) > 240);
+    assert.ok((longGmail?.sourceRef?.length ?? 0) <= 2048);
+
+    const longManual = rowToProjectArtifact({
+      artifact_id: ARTIFACT_A,
+      project_id: PROJECT_A,
+      kind: "render",
+      title: "Render 1",
+      original_filename: "render.png",
+      mime_type: "image/png",
+      byte_size: 12,
+      storage_bucket: "continuum-project-artifacts",
+      storage_path: `${PROJECT_A}/${ARTIFACT_A}/file.png`,
+      created_at: NOW,
+      created_by: "justin",
+      source_system: "concierge-manual",
+      source_ref: "n".repeat(241),
+      created_mutation_id: randomUUID(),
+    });
+    assert.equal(longManual, null);
   });
 });

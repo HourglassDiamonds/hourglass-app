@@ -1,6 +1,7 @@
 /**
  * Maps Gmail attachment MIME types onto #14 allowed types.
- * Does not guess from filename. octet-stream may use magic-byte validation.
+ * octet-stream is allowed only with a supported filename AND validated magic.
+ * Filename alone is never enough. No executable/archive support.
  */
 
 import { isAllowedArtifactMime } from "../project-artifacts/validate";
@@ -8,6 +9,8 @@ import { isAllowedArtifactMime } from "../project-artifacts/validate";
 const MIME_ALIASES: Record<string, string> = {
   "image/jpg": "image/jpeg",
 };
+
+const SUPPORTED_FILENAME_RE = /\.(jpe?g|png|webp|heic|heif|pdf)$/i;
 
 export type GmailCopyMimeDecision =
   | { ok: true; mimeType: string; usedMagic: boolean }
@@ -17,14 +20,25 @@ function normalizeMime(value: string | null | undefined): string {
   return (value ?? "").trim().toLowerCase();
 }
 
+export function hasSupportedGmailCopyFilename(
+  filename: string | null | undefined,
+): boolean {
+  const name = (filename ?? "").trim();
+  if (!name) return false;
+  return SUPPORTED_FILENAME_RE.test(name);
+}
+
 export function previewGmailCopyMime(
   declaredMime: string | null | undefined,
+  filename?: string | null,
 ): "allowed" | "needs-bytes" | "unsupported-mime" {
   const mime = normalizeMime(declaredMime);
   if (!mime) return "unsupported-mime";
   const aliased = MIME_ALIASES[mime] ?? mime;
   if (isAllowedArtifactMime(aliased)) return "allowed";
-  if (aliased === "application/octet-stream") return "needs-bytes";
+  if (aliased === "application/octet-stream") {
+    return hasSupportedGmailCopyFilename(filename) ? "needs-bytes" : "unsupported-mime";
+  }
   return "unsupported-mime";
 }
 
@@ -73,6 +87,7 @@ function sniffMagic(bytes: Uint8Array): string | null {
 export function resolveGmailCopyMime(
   declaredMime: string | null | undefined,
   bytes: Uint8Array | null,
+  filename?: string | null,
 ): GmailCopyMimeDecision {
   const mime = normalizeMime(declaredMime);
   if (!mime) return { ok: false, reason: "unsupported-mime" };
@@ -81,6 +96,9 @@ export function resolveGmailCopyMime(
     return { ok: true, mimeType: aliased, usedMagic: false };
   }
   if (aliased !== "application/octet-stream") {
+    return { ok: false, reason: "unsupported-mime" };
+  }
+  if (!hasSupportedGmailCopyFilename(filename)) {
     return { ok: false, reason: "unsupported-mime" };
   }
   if (!bytes) return { ok: false, reason: "unsupported-mime" };
