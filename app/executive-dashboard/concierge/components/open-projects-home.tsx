@@ -82,25 +82,34 @@ function CurrentProjectRow({ project }: { project: CurrentProjectCard }) {
   );
 }
 
+function showsExpandedCurrentAction(project: CurrentProjectCard): boolean {
+  return (
+    project.currentAction.source === "ownership" ||
+    project.currentAction.source === "job"
+  );
+}
+
 function CurrentProjectCardBody({ project }: { project: CurrentProjectCard }) {
   return (
     <div className="space-y-5">
-      <section>
-        <p className="text-[11px] uppercase tracking-[0.28em] text-[#8d8073]">
-          {CURRENT_PROJECTS_ACTION_TITLE}
-        </p>
-        <p
-          data-action-source={project.currentAction.source}
-          className="mt-2 break-words font-serif text-[1.05rem] leading-snug tracking-[-0.02em] text-[#efe8de]"
-        >
-          {project.currentAction.label}
-        </p>
-        {project.currentAction.detail ? (
-          <p className="mt-1 break-words text-[14.5px] leading-relaxed text-[#d8cfc4]">
-            {project.currentAction.detail}
+      {showsExpandedCurrentAction(project) ? (
+        <section data-current-action>
+          <p className="text-[11px] uppercase tracking-[0.28em] text-[#8d8073]">
+            {CURRENT_PROJECTS_ACTION_TITLE}
           </p>
-        ) : null}
-      </section>
+          <p
+            data-action-source={project.currentAction.source}
+            className="mt-2 break-words font-serif text-[1.05rem] leading-snug tracking-[-0.02em] text-[#efe8de]"
+          >
+            {project.currentAction.label}
+          </p>
+          {project.currentAction.detail ? (
+            <p className="mt-1 break-words text-[14.5px] leading-relaxed text-[#d8cfc4]">
+              {project.currentAction.detail}
+            </p>
+          ) : null}
+        </section>
+      ) : null}
 
       {project.snapshot.length > 0 ? (
         <section>

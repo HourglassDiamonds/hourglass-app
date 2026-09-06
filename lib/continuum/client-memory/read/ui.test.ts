@@ -281,7 +281,7 @@ describe("Concierge Client Memory UI", () => {
     assert.doesNotMatch(page, /displayName/);
     const home = readFileSync(join(CONCIERGE_DIR, "page.tsx"), "utf8");
     assert.match(home, /loadContinuumHomeModel/);
-    assert.match(home, /loadProjectBookPreview/);
+    assert.doesNotMatch(home, /loadProjectBookPreview/);
     assert.match(home, /loadCurrentProjectCards/);
     assert.match(home, /CommandCenterHome/);
     assert.match(home, /variant="home"/);
@@ -301,7 +301,8 @@ describe("Concierge Client Memory UI", () => {
       "utf8",
     );
     assert.match(command, /People/);
-    assert.match(command, /ProjectsHome/);
+    assert.doesNotMatch(command, /from "\.\/projects-home"/);
+    assert.doesNotMatch(command, /<ProjectsHome/);
     assert.match(command, /OpenProjectsHome/);
     assert.match(command, /<ConciergeSearch \/>/);
     assert.doesNotMatch(command, /autoFocus/);
@@ -469,7 +470,7 @@ describe("Concierge Client Memory UI", () => {
     const capture = renderToStaticMarkup(createElement(QuickCapture));
     assert.equal(greetingLine(model), "Good afternoon, Justin.");
     assert.match(home, /loadContinuumHomeModel/);
-    assert.match(home, /loadProjectBookPreview/);
+    assert.doesNotMatch(home, /loadProjectBookPreview/);
     assert.match(home, /loadCurrentProjectCards/);
     assert.match(home, /CommandCenterHome/);
     assert.match(command, /greetingLine/);
@@ -477,7 +478,9 @@ describe("Concierge Client Memory UI", () => {
     assert.match(command, /AskConciergeShell/);
     assert.match(command, /People/);
     assert.match(command, /QuickCapture/);
-    assert.match(command, /ProjectsHome/);
+    assert.doesNotMatch(command, /from "\.\/projects-home"/);
+    assert.doesNotMatch(command, /<ProjectsHome/);
+    assert.match(command, /OpenProjectsHome/);
     assert.match(cos, /Chief of Staff/);
     assert.match(cos, /Today/);
     assert.match(cos, /Nothing in memory needs your attention yet/);

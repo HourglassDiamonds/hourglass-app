@@ -10,6 +10,7 @@ import { ChiefOfStaffToday } from "../../../../app/executive-dashboard/concierge
 import { composeContinuumHome } from "../../dashboard/compose";
 import type { CurrentProjectCard } from "./card";
 import {
+  CURRENT_PROJECTS_ACTION_TITLE,
   CURRENT_PROJECTS_OPEN_LABEL,
   currentProjectPanelId,
   currentProjectToggleId,
@@ -226,7 +227,10 @@ describe("Current Projects Command Center accordion UI", () => {
     assert.match(cos, /Nothing in memory needs your attention yet/);
     assert.match(command, /ChiefOfStaffToday/);
     assert.match(command, /OpenProjectsHome/);
+    assert.doesNotMatch(command, /from "\.\/projects-home"/);
+    assert.doesNotMatch(command, /<ProjectsHome/);
     assert.match(home, /loadCurrentProjectCards/);
+    assert.doesNotMatch(home, /loadProjectBookPreview/);
     assert.doesNotMatch(command, /composeChiefOfStaffBrief|activateCoS|agent-os/);
     assert.match(work, /Current Projects/);
     assert.doesNotMatch(work, /aria-expanded/);
@@ -235,6 +239,113 @@ describe("Current Projects Command Center accordion UI", () => {
     assert.match(css, /hg-current-project-toggle:focus-visible/);
     assert.match(css, /hg-current-project-status/);
     assert.match(css, /object-fit:\s*contain/);
+    assert.match(css, /overflow-x:\s*hidden/);
+    assert.match(css, /minmax\(0,\s*0\.95fr\)/);
+    assert.doesNotMatch(css, /minmax\(20rem/);
     assert.doesNotMatch(work, /Latest request \/ change/);
+  });
+
+  it("keeps Current Projects as the only Command Center project operating surface", () => {
+    const command = readFileSync(
+      join(CONCIERGE_DIR, "components", "command-center-home.tsx"),
+      "utf8",
+    );
+    const home = readFileSync(join(CONCIERGE_DIR, "page.tsx"), "utf8");
+    const css = readFileSync(join(CONCIERGE_DIR, "concierge.css"), "utf8");
+    assert.match(command, /OpenProjectsHome/);
+    assert.doesNotMatch(command, /from "\.\/projects-home"/);
+    assert.doesNotMatch(command, /<ProjectsHome/);
+    assert.doesNotMatch(command, /Current operating state is unknown/);
+    assert.doesNotMatch(home, /loadProjectBookPreview/);
+    assert.match(home, /loadCurrentProjectCards/);
+    assert.match(command, /People/);
+    assert.match(command, /QuickCapture/);
+    assert.match(command, /conciergeProjectsPath/);
+    assert.match(command, /min-w-0/);
+    assert.match(css, /overflow-x:\s*hidden/);
+    assert.match(css, /minmax\(0,\s*0\.95fr\)/);
+    assert.doesNotMatch(css, /minmax\(20rem/);
+  });
+
+  it("omits expanded Current action when it would only repeat the lifecycle header", () => {
+    const lifecycle = renderToStaticMarkup(
+      createElement(OpenProjectsHome, {
+        projects: [
+          card({
+            title: "C. Binder",
+            collapsedLine: "CAD / DESIGN",
+            collapsedLineKind: "lifecycle",
+            currentAction: {
+              label: "CAD / DESIGN",
+              detail: null,
+              source: "lifecycle",
+            },
+          }),
+        ],
+      }),
+    );
+    assert.match(lifecycle, /C\. Binder/);
+    assert.match(lifecycle, /CAD \/ DESIGN/);
+    assert.doesNotMatch(lifecycle, new RegExp(CURRENT_PROJECTS_ACTION_TITLE));
+    assert.doesNotMatch(lifecycle, /data-current-action/);
+
+    const job = renderToStaticMarkup(
+      createElement(OpenProjectsHome, {
+        projects: [
+          card({
+            title: "J.Pennock",
+            collapsedLine: "YOUR TURN — Confirm engraving",
+            collapsedLineKind: "ownership",
+            currentAction: {
+              label: "YOUR TURN",
+              detail: "Confirm engraving",
+              source: "ownership",
+            },
+          }),
+        ],
+      }),
+    );
+    assert.match(job, new RegExp(CURRENT_PROJECTS_ACTION_TITLE));
+    assert.match(job, /data-current-action/);
+    assert.match(job, /data-action-source="ownership"/);
+    assert.match(job, /Confirm engraving/);
+
+    const unresolvedJob = renderToStaticMarkup(
+      createElement(OpenProjectsHome, {
+        projects: [
+          card({
+            title: "Subject-only Open Job",
+            collapsedLine: "Confirm stone set",
+            collapsedLineKind: "job",
+            currentAction: {
+              label: "Confirm stone set",
+              detail: null,
+              source: "job",
+            },
+          }),
+        ],
+      }),
+    );
+    assert.match(unresolvedJob, new RegExp(CURRENT_PROJECTS_ACTION_TITLE));
+    assert.match(unresolvedJob, /data-action-source="job"/);
+
+    const unrecorded = renderToStaticMarkup(
+      createElement(OpenProjectsHome, {
+        projects: [
+          card({
+            title: "No recorded action",
+            collapsedLine: "Current action not recorded",
+            collapsedLineKind: "unrecorded",
+            currentAction: {
+              label: "Current action not recorded",
+              detail: null,
+              source: "unrecorded",
+            },
+          }),
+        ],
+      }),
+    );
+    assert.match(unrecorded, /Current action not recorded/);
+    assert.doesNotMatch(unrecorded, /data-current-action/);
   });
 });
