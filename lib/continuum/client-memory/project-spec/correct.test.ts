@@ -4,7 +4,7 @@ import { describe, it } from "node:test";
 import { InMemoryClientMemoryStore } from "../store";
 import { createInMemoryClientMemoryProjectSpecWriter } from "./writer";
 import { CLIENT_MEMORY_SOURCE_SYSTEM } from "../types";
-import { currentSpecValue } from "./types";
+import { currentSpecValue, type EditableProjectSpecField } from "./types";
 import { mergeImportedProjectHistory } from "./import-guard";
 import { composePersonCockpit } from "../read/cockpit";
 import { getProjectDeskFromSnapshot } from "../project-desk/compose";
@@ -20,6 +20,11 @@ async function seedProject(
     title?: string;
     fingerSize?: string | null;
     orderNumber?: string | null;
+    cadJobNumber?: string | null;
+    metal?: string | null;
+    centerStone?: string | null;
+    diamondSupplyNotes?: string | null;
+    founderCorrectedFields?: EditableProjectSpecField[];
   } = {},
 ) {
   const person = await store.insertEntity({
@@ -76,15 +81,16 @@ async function seedProject(
   });
   await store.insertProjectHistory({
     projectId: project.record.id,
-    cadJobNumber: "CAD-1",
+    cadJobNumber: extra.cadJobNumber ?? "CAD-1",
     orderNumber: extra.orderNumber ?? "140",
     gmailThreadId: null,
     matchJudgment: "exact",
     matchJudgmentRaw: "Exact",
     fingerSize: extra.fingerSize ?? "141",
-    metal: "platinum",
-    centerStone: null,
-    diamondSupplyNotes: null,
+    metal: extra.metal ?? "platinum",
+    centerStone: extra.centerStone ?? null,
+    diamondSupplyNotes: extra.diamondSupplyNotes ?? null,
+    founderCorrectedFields: extra.founderCorrectedFields,
     sourceSystem: CLIENT_MEMORY_SOURCE_SYSTEM,
     createdAt: NOW,
     updatedAt: NOW,
@@ -469,5 +475,169 @@ describe("project spec correction", () => {
     if (!cockpit.ok) return;
     assert.equal(cockpit.cockpit.projects[0]?.internalHistory?.fingerSize, "6.5");
     assert.equal(cockpit.cockpit.projects[0]?.internalHistory?.orderNumber, "140");
+  });
+});
+
+const ALLOWED_SPEC_WRITES = [
+  { fieldName: "finger_size" as const, newValue: "6.5" },
+  { fieldName: "order_number" as const, newValue: "140-A" },
+  { fieldName: "cad_job_number" as const, newValue: "CAD-99" },
+  { fieldName: "metal" as const, newValue: "18k yellow gold" },
+  { fieldName: "center_stone" as const, newValue: "oval diamond" },
+  { fieldName: "diamond_supply_notes" as const, newValue: "client supplying center" },
+];
+
+describe("project spec founder_corrected_fields append", () => {
+  it("appends each allowed field once without duplicating or touching others", async () => {
+    for (const write of ALLOWED_SPEC_WRITES) {
+      const store = new InMemoryClientMemoryStore();
+      const writer = createInMemoryClientMemoryProjectSpecWriter(store);
+      const preserved: EditableProjectSpecField =
+        write.fieldName === "finger_size" ? "order_number" : "finger_size";
+      const { projectId } = await seedProject(store, {
+        founderCorrectedFields: [preserved],
+        fingerSize: write.fieldName === "finger_size" ? "141" : "6.5",
+      });
+      const before = await store.getProjectHistory(projectId);
+      assert.ok(before);
+      const result = await writer.correctProjectSpec({
+        mutationId: randomUUID(),
+        projectId,
+        fieldName: write.fieldName,
+        newValue: write.newValue,
+        actor: ACTOR,
+      });
+      assert.equal(result.ok, true, write.fieldName);
+      if (!result.ok) return;
+      assert.equal(result.status, "updated");
+      const after = await store.getProjectHistory(projectId);
+      assert.ok(after);
+      assert.equal(currentSpecValue(after, write.fieldName), write.newValue);
+      assert.equal(
+        after.founderCorrectedFields?.filter((field) => field === write.fieldName)
+          .length,
+        1,
+      );
+      assert.equal(after.founderCorrectedFields?.includes(preserved), true);
+      assert.equal(after.gmailThreadId, before.gmailThreadId);
+      assert.equal(after.matchJudgment, before.matchJudgment);
+      assert.equal(after.sourceSystem, before.sourceSystem);
+      if (write.fieldName !== "finger_size") {
+        assert.equal(after.fingerSize, before.fingerSize);
+      }
+      if (write.fieldName !== "order_number") {
+        assert.equal(after.orderNumber, before.orderNumber);
+      }
+      if (write.fieldName !== "cad_job_number") {
+        assert.equal(after.cadJobNumber, before.cadJobNumber);
+      }
+      if (write.fieldName !== "metal") {
+        assert.equal(after.metal, before.metal);
+      }
+      if (write.fieldName !== "center_stone") {
+        assert.equal(after.centerStone, before.centerStone);
+      }
+      if (write.fieldName !== "diamond_supply_notes") {
+        assert.equal(after.diamondSupplyNotes, before.diamondSupplyNotes);
+      }
+    }
+  });
+
+  it("does not duplicate a field on a later correction of the same spec", async () => {
+    const store = new InMemoryClientMemoryStore();
+    const writer = createInMemoryClientMemoryProjectSpecWriter(store);
+    const { projectId } = await seedProject(store);
+    const first = await writer.correctProjectSpec({
+      mutationId: randomUUID(),
+      projectId,
+      fieldName: "cad_job_number",
+      newValue: "CAD-2",
+      actor: ACTOR,
+    });
+    const second = await writer.correctProjectSpec({
+      mutationId: randomUUID(),
+      projectId,
+      fieldName: "cad_job_number",
+      newValue: "CAD-3",
+      actor: ACTOR,
+    });
+    assert.equal(first.ok && second.ok, true);
+    const history = await store.getProjectHistory(projectId);
+    assert.deepEqual(history?.founderCorrectedFields, ["cad_job_number"]);
+    assert.equal(history?.cadJobNumber, "CAD-3");
+    assert.equal(history?.fingerSize, "141");
+    assert.equal(history?.orderNumber, "140");
+  });
+
+  it("replays the same mutation_id as already-present without duplicating the field", async () => {
+    const store = new InMemoryClientMemoryStore();
+    const writer = createInMemoryClientMemoryProjectSpecWriter(store);
+    const { projectId } = await seedProject(store, {
+      founderCorrectedFields: ["metal"],
+    });
+    const mutationId = randomUUID();
+    const first = await writer.correctProjectSpec({
+      mutationId,
+      projectId,
+      fieldName: "cad_job_number",
+      newValue: "CAD-88",
+      actor: ACTOR,
+    });
+    const replay = await writer.correctProjectSpec({
+      mutationId,
+      projectId,
+      fieldName: "cad_job_number",
+      newValue: "CAD-88",
+      actor: ACTOR,
+    });
+    assert.equal(first.ok, true);
+    assert.equal(replay.ok, true);
+    if (!replay.ok) return;
+    assert.equal(replay.status, "already-present");
+    const history = await store.getProjectHistory(projectId);
+    assert.deepEqual(history?.founderCorrectedFields, ["metal", "cad_job_number"]);
+    assert.equal(store.listProjectHistoryRevisions(projectId).length, 1);
+    assert.equal(history?.metal, "platinum");
+  });
+
+  it("still rejects invalid fields and invalid values without writing", async () => {
+    const store = new InMemoryClientMemoryStore();
+    const writer = createInMemoryClientMemoryProjectSpecWriter(store);
+    const { projectId } = await seedProject(store, {
+      founderCorrectedFields: ["order_number"],
+    });
+    const invalidField = await writer.correctProjectSpec({
+      mutationId: randomUUID(),
+      projectId,
+      fieldName: "gmail_thread_id",
+      newValue: "secret",
+      actor: ACTOR,
+    });
+    const emptyValue = await writer.correctProjectSpec({
+      mutationId: randomUUID(),
+      projectId,
+      fieldName: "metal",
+      newValue: "   ",
+      actor: ACTOR,
+    });
+    const implausible = await writer.correctProjectSpec({
+      mutationId: randomUUID(),
+      projectId,
+      fieldName: "finger_size",
+      newValue: "141",
+      actor: ACTOR,
+    });
+    assert.equal(invalidField.ok, false);
+    if (!invalidField.ok) assert.equal(invalidField.code, "invalid-field");
+    assert.equal(emptyValue.ok, false);
+    if (!emptyValue.ok) assert.equal(emptyValue.code, "invalid-value");
+    assert.equal(implausible.ok, false);
+    if (!implausible.ok) assert.equal(implausible.code, "implausible-finger-size");
+    const history = await store.getProjectHistory(projectId);
+    assert.deepEqual(history?.founderCorrectedFields, ["order_number"]);
+    assert.equal(history?.fingerSize, "141");
+    assert.equal(history?.metal, "platinum");
+    assert.equal(history?.gmailThreadId, null);
+    assert.equal(store.listProjectHistoryRevisions(projectId).length, 0);
   });
 });

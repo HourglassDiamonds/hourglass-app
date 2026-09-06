@@ -1,78 +1,11 @@
 -- UNAPPLIED. DO NOT RUN AGAINST PRODUCTION from this change.
--- Client Memory Slice C — project spec correction + revision history.
--- Additive only. continuum_project_history remains the ONE current snapshot.
--- Does not create a second current-project-history table.
--- Does not rewrite imported source evidence.
--- Does not auto-correct values. Does not infer 141 → 14 / 14.1.
--- Does not modify Person facts, Notes, Wishes, Human Intake, Gmail, Digital Card, or CoS.
--- Does not add anon/authenticated grants. RLS remains enabled.
--- No dynamic SQL from field_name.
-
-alter table public.continuum_project_history
-  add column if not exists founder_corrected_fields text[];
-
-update public.continuum_project_history
-set founder_corrected_fields = '{}'::text[]
-where founder_corrected_fields is null;
-
-alter table public.continuum_project_history
-  alter column founder_corrected_fields set default '{}'::text[];
-
-alter table public.continuum_project_history
-  alter column founder_corrected_fields set not null;
-
-alter table public.continuum_project_history
-  drop constraint if exists continuum_project_history_founder_corrected_fields_check;
-
-alter table public.continuum_project_history
-  add constraint continuum_project_history_founder_corrected_fields_check
-  check (
-    founder_corrected_fields <@ array[
-      'finger_size',
-      'order_number',
-      'cad_job_number',
-      'metal',
-      'center_stone',
-      'diamond_supply_notes'
-    ]::text[]
-  );
-
-comment on column public.continuum_project_history.founder_corrected_fields is
-  'Field-level founder authority. Import must not overwrite listed current spec fields.';
-
-create table if not exists public.continuum_project_history_revisions (
-  id uuid primary key,
-  project_id uuid not null references public.continuum_project_history (project_id),
-  mutation_id uuid not null,
-  field_name text not null check (
-    field_name in (
-      'finger_size',
-      'order_number',
-      'cad_job_number',
-      'metal',
-      'center_stone',
-      'diamond_supply_notes'
-    )
-  ),
-  prior_value text,
-  new_value text,
-  source_system text not null,
-  changed_at timestamptz not null,
-  changed_by text not null
-);
-
-create unique index if not exists continuum_project_history_revisions_mutation_uq
-  on public.continuum_project_history_revisions (mutation_id);
-
-create index if not exists continuum_project_history_revisions_project_idx
-  on public.continuum_project_history_revisions (project_id, changed_at desc);
-
-comment on table public.continuum_project_history_revisions is
-  'Protected prior project-spec values. PII plane only. Not a second current snapshot. Not a public API.';
-
-alter table public.continuum_project_history_revisions enable row level security;
-
--- Explicitly: do not add anon/authenticated RLS policies.
+-- Smallest CREATE OR REPLACE for continuum_client_memory_correct_project_spec.
+-- Fixes malformed array literal: "cad_job_number" (and the other five allow-listed
+-- fields) caused by concatenating text[] with a scalar text field name.
+-- Uses array_append so Postgres does not cast the field name as an array literal.
+-- Does not change tables, signature, SECURITY DEFINER, search_path, validation,
+-- mutation_id semantics, revision creation, grants, RLS, or founder_corrected_fields
+-- provenance. CREATE OR REPLACE only. Do not drop the function.
 
 create or replace function public.continuum_client_memory_correct_project_spec(
   p_project_id uuid,
@@ -314,8 +247,3 @@ begin
   );
 end;
 $$;
-
-revoke all on function public.continuum_client_memory_correct_project_spec(uuid, uuid, uuid, text, text, timestamptz, text, text) from public;
-revoke all on function public.continuum_client_memory_correct_project_spec(uuid, uuid, uuid, text, text, timestamptz, text, text) from anon;
-revoke all on function public.continuum_client_memory_correct_project_spec(uuid, uuid, uuid, text, text, timestamptz, text, text) from authenticated;
-grant execute on function public.continuum_client_memory_correct_project_spec(uuid, uuid, uuid, text, text, timestamptz, text, text) to service_role;
