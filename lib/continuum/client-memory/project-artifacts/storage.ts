@@ -26,3 +26,11 @@ export function projectArtifactObjectPath(
 export function isProjectArtifactsBucket(name: string): boolean {
   return name.trim() === PROJECT_ARTIFACTS_BUCKET;
 }
+
+export function artifactSourceIdentityKey(
+  projectId: string,
+  sourceSystem: string,
+  sourceRefPrefix: string,
+): string {
+  return `${projectId.trim()}\0${sourceSystem.trim()}\0${sourceRefPrefix.trim()}`;
+}

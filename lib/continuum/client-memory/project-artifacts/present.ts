@@ -30,5 +30,6 @@ export function projectArtifactSourceLabel(
 ): string {
   if (source === "concierge-manual") return "Manual";
   if (source === "continuum") return "Internal";
+  if (source === "gmail") return "Gmail copy";
   return "Recorded pointer";
 }

@@ -19,6 +19,7 @@ import { PROJECT_ARTIFACTS_BUCKET } from "./types";
 import type { ProjectProfile } from "../types";
 import { projectKindFromUnknown } from "../project-kind";
 import type { ProjectArtifactBytes, ProjectArtifactWriter } from "./writer";
+import { ProjectArtifactWriteError } from "./write-error";
 
 function requireClient(client: SupabaseClient | null): SupabaseClient {
   if (!client) throw new Error("supabase-admin-unavailable");
@@ -31,6 +32,19 @@ function writeReason(message: string): Error {
     return new Error("entity-kind-mismatch");
   }
   return new Error(message || "create-project-artifact-failed");
+}
+
+export function parseWriterIdentityKey(identityKey: string): {
+  projectId: string;
+  sourceSystem: string;
+  sourceRefPrefix: string;
+} | null {
+  const parts = identityKey.trim().split("\0");
+  if (parts.length !== 3) return null;
+  const [projectId, sourceSystem, sourceRefPrefix] = parts;
+  if (!projectId || !sourceSystem || !sourceRefPrefix) return null;
+  if (/[%_,()]/.test(sourceRefPrefix)) return null;
+  return { projectId, sourceSystem, sourceRefPrefix };
 }
 
 export class SupabaseProjectArtifactWriter implements ProjectArtifactWriter {
@@ -110,6 +124,7 @@ export class SupabaseProjectArtifactWriter implements ProjectArtifactWriter {
   private async applyCreate(
     artifact: ProjectArtifact,
     bytes: Uint8Array,
+    identityKey?: string | null,
   ): Promise<CreateProjectArtifactApplyResult> {
     const existingMutation = await this.client
       .from("continuum_project_artifacts")
@@ -122,25 +137,98 @@ export class SupabaseProjectArtifactWriter implements ProjectArtifactWriter {
     );
     if (existing) return { status: "already-present", artifact: existing };
 
+    if (identityKey?.trim()) {
+      const byIdentity = await this.findByIdentityKey(identityKey);
+      if (byIdentity) return { status: "already-present", artifact: byIdentity };
+    }
+
     const uploaded = await this.client.storage
       .from(PROJECT_ARTIFACTS_BUCKET)
       .upload(artifact.storagePath, bytes, {
         contentType: artifact.mimeType,
         upsert: false,
       });
-    if (uploaded.error) throw writeReason(uploaded.error.message);
+    if (uploaded.error) {
+      throw new ProjectArtifactWriteError(
+        "storage",
+        uploaded.error.message || "storage-failed",
+        artifact.storagePath,
+      );
+    }
 
     const inserted = await this.client
       .from("continuum_project_artifacts")
       .insert(projectArtifactToRow(artifact))
       .select(PROJECT_ARTIFACT_COLUMNS)
       .maybeSingle();
-    if (inserted.error) throw writeReason(inserted.error.message);
+    if (inserted.error) {
+      await this.client.storage
+        .from(PROJECT_ARTIFACTS_BUCKET)
+        .remove([artifact.storagePath]);
+      throw new ProjectArtifactWriteError(
+        "db",
+        inserted.error.message || "db-failed",
+        artifact.storagePath,
+      );
+    }
     const mapped = rowToProjectArtifact(
       (inserted.data ?? null) as Record<string, unknown> | null,
     );
-    if (!mapped) throw new Error("unavailable");
+    if (!mapped) {
+      await this.client.storage
+        .from(PROJECT_ARTIFACTS_BUCKET)
+        .remove([artifact.storagePath]);
+      throw new ProjectArtifactWriteError(
+        "db",
+        "unavailable",
+        artifact.storagePath,
+      );
+    }
     return { status: "created", artifact: mapped };
+  }
+
+  async findByIdentityKey(identityKey: string): Promise<ProjectArtifact | null> {
+    const parsed = parseWriterIdentityKey(identityKey);
+    if (!parsed) return null;
+    const prefix = parsed.sourceRefPrefix;
+    const exact = await this.client
+      .from("continuum_project_artifacts")
+      .select(PROJECT_ARTIFACT_COLUMNS)
+      .eq("project_id", parsed.projectId)
+      .eq("source_system", parsed.sourceSystem)
+      .eq("source_ref", prefix)
+      .maybeSingle();
+    if (exact.error) throw writeReason(exact.error.message ?? "");
+    const exactMapped = rowToProjectArtifact(
+      (exact.data ?? null) as Record<string, unknown> | null,
+    );
+    if (exactMapped) return exactMapped;
+    const prefixed = await this.client
+      .from("continuum_project_artifacts")
+      .select(PROJECT_ARTIFACT_COLUMNS)
+      .eq("project_id", parsed.projectId)
+      .eq("source_system", parsed.sourceSystem)
+      .like("source_ref", `${prefix}|%`)
+      .limit(1)
+      .maybeSingle();
+    if (prefixed.error) throw writeReason(prefixed.error.message ?? "");
+    return rowToProjectArtifact(
+      (prefixed.data ?? null) as Record<string, unknown> | null,
+    );
+  }
+
+  applyPreparedCreate(
+    artifact: ProjectArtifact,
+    bytes: Uint8Array,
+    identityKey?: string | null,
+  ): Promise<CreateProjectArtifactApplyResult> {
+    return this.applyCreate(artifact, bytes, identityKey);
+  }
+
+  async removeStoredObject(storagePath: string): Promise<void> {
+    const path = storagePath.trim();
+    if (!path) return;
+    await this.client.storage.from(PROJECT_ARTIFACTS_BUCKET).remove([path]);
   }
 
   createArtifact(

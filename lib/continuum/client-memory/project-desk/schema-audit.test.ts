@@ -42,9 +42,11 @@ describe("Project Desk Slice A schema", () => {
       const isJobsSql =
         file.endsWith("continuum-client-memory-project-jobs.sql") ||
         file.endsWith("continuum-client-memory-project-jobs-mutations.sql");
-      const isArtifactsSql = file.endsWith(
-        "continuum-client-memory-project-artifacts.sql",
-      );
+      const isArtifactsSql =
+        file.endsWith("continuum-client-memory-project-artifacts.sql") ||
+        file.endsWith(
+          "continuum-client-memory-project-artifact-gmail-copy.sql",
+        );
       if (!isArtifactsSql) {
         assert.doesNotMatch(sql, /continuum_project_artifacts/);
       }

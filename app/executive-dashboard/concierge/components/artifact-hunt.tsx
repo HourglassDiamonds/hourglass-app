@@ -1,11 +1,13 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState } from "react";
 import { findAchedekalArtifactCandidates } from "../artifact-hunt-actions";
 import {
   ACHEDEKAL_ARTIFACT_HUNT_HEADING,
   ACHEDEKAL_KNOWN_ARTIFACT_CLASSIFICATION_BASIS,
 } from "@/lib/continuum/gmail/achedekal-acceptance";
+import { conciergeCopyGmailProjectArtifactPath } from "@/lib/continuum/client-memory/read/presentation";
 import type { ArtifactHuntState } from "@/lib/continuum/gmail/artifact-hunt";
 import { ClientMemorySection } from "./client-memory-section";
 
@@ -30,9 +32,11 @@ function MetaLine({ label, value }: { label: string; value: string }) {
 function CandidateCard({
   row,
   heading,
+  projectId,
 }: {
   row: Extract<ArtifactHuntState, { ok: true }>["likely"][number];
   heading: string;
+  projectId: string;
 }) {
   const date = row.sentAt ?? "—";
   const source = row.subject?.trim()
@@ -55,6 +59,15 @@ function CandidateCard({
           <li key={`${reason.kind}:${reason.value}:${index}`}>{reason.detail}</li>
         ))}
       </ul>
+      <Link
+        href={conciergeCopyGmailProjectArtifactPath(projectId, {
+          messageId: row.source.messageId,
+          attachmentId: row.source.attachmentId,
+        })}
+        className="mt-3 inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.24em] text-[#8d8073] outline-none hover:text-[#efe8de] focus-visible:text-[#efe8de]"
+      >
+        Copy to project
+      </Link>
       <p className="mt-3 text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
         Not opened · Metadata only
       </p>
@@ -102,6 +115,7 @@ function HuntResult({
                 key={row.candidateId}
                 row={row}
                 heading={`Candidate ${index + 1}`}
+                projectId={state.projectId}
               />
             ))}
           </ul>
@@ -120,6 +134,7 @@ function HuntResult({
                 key={`ambiguous:${row.candidateId}`}
                 row={row}
                 heading={`Ambiguous ${index + 1}`}
+                projectId={state.projectId}
               />
             ))}
           </ul>
@@ -138,6 +153,7 @@ function HuntResult({
                 key={`unassigned:${row.candidateId}`}
                 row={row}
                 heading={`Unassigned ${index + 1}`}
+                projectId={state.projectId}
               />
             ))}
           </ul>

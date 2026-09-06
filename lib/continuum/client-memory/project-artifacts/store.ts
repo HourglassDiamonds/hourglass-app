@@ -13,12 +13,18 @@ function clone<T>(value: T): T {
 export class InMemoryProjectArtifactStore {
   private artifacts = new Map<string, ProjectArtifact>();
   private mutationIds = new Map<string, string>();
+  private identityKeys = new Map<string, string>();
   private bytes = new Map<string, Uint8Array>();
+  failNextInsert = false;
+  failNextBytes = false;
 
   reset(): void {
     this.artifacts.clear();
     this.mutationIds.clear();
+    this.identityKeys.clear();
     this.bytes.clear();
+    this.failNextInsert = false;
+    this.failNextBytes = false;
   }
 
   listArtifacts(projectId?: string): ProjectArtifact[] {
@@ -41,9 +47,16 @@ export class InMemoryProjectArtifactStore {
     return row ? new Uint8Array(row) : null;
   }
 
+  findByIdentityKey(identityKey: string): ProjectArtifact | null {
+    const artifactId = this.identityKeys.get(identityKey.trim());
+    if (!artifactId) return null;
+    return this.getArtifact(artifactId);
+  }
+
   insertArtifact(
     artifact: ProjectArtifact,
     bytes: Uint8Array,
+    identityKey?: string | null,
   ): CreateProjectArtifactApplyResult {
     const existingMutation = this.mutationIds.get(artifact.createdMutationId);
     if (existingMutation) {
@@ -52,10 +65,34 @@ export class InMemoryProjectArtifactStore {
         return { status: "already-present", artifact: clone(existing) };
       }
     }
+    const key = identityKey?.trim() || "";
+    if (key) {
+      const existingIdentity = this.identityKeys.get(key);
+      if (existingIdentity) {
+        const existing = this.artifacts.get(existingIdentity);
+        if (existing) {
+          return { status: "already-present", artifact: clone(existing) };
+        }
+      }
+    }
+    if (this.failNextBytes) {
+      this.failNextBytes = false;
+      throw new Error("storage-failed");
+    }
+    const storedBytes = new Uint8Array(bytes);
+    this.bytes.set(artifact.artifactId, storedBytes);
+    if (this.failNextInsert) {
+      this.failNextInsert = false;
+      throw new Error("db-failed");
+    }
     this.artifacts.set(artifact.artifactId, clone(artifact));
     this.mutationIds.set(artifact.createdMutationId, artifact.artifactId);
-    this.bytes.set(artifact.artifactId, new Uint8Array(bytes));
+    if (key) this.identityKeys.set(key, artifact.artifactId);
     return { status: "created", artifact: clone(artifact) };
+  }
+
+  removeBytes(artifactId: string): void {
+    this.bytes.delete(artifactId);
   }
 }
 

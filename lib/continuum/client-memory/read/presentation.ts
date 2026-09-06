@@ -75,6 +75,20 @@ export function conciergeAddProjectArtifactPath(projectId: string): string {
   return `${conciergeProjectPath(projectId)}/artifacts/new`;
 }
 
+export function conciergeCopyGmailProjectArtifactPath(
+  projectId: string,
+  query?: { messageId?: string; attachmentId?: string },
+): string {
+  const path = `${conciergeProjectPath(projectId)}/artifacts/copy-from-gmail`;
+  const params = new URLSearchParams();
+  if (query?.messageId?.trim()) params.set("messageId", query.messageId.trim());
+  if (query?.attachmentId?.trim()) {
+    params.set("attachmentId", query.attachmentId.trim());
+  }
+  const encoded = params.toString();
+  return encoded ? `${path}?${encoded}` : path;
+}
+
 export function conciergeProjectArtifactFilePath(
   projectId: string,
   artifactId: string,

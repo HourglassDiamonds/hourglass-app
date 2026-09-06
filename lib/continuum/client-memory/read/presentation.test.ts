@@ -19,6 +19,7 @@ import {
   conciergeAddOpenJobPath,
   conciergeOpenJobPath,
   conciergeAddProjectArtifactPath,
+  conciergeCopyGmailProjectArtifactPath,
   conciergeProjectArtifactFilePath,
   conciergeCorrectProjectSpecPath,
   conciergeCorrectOperatingDetailPath,
@@ -255,6 +256,13 @@ describe("Concierge presentation", () => {
     assert.equal(
       conciergeAddProjectArtifactPath("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"),
       "/executive-dashboard/concierge/projects/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/artifacts/new",
+    );
+    assert.equal(
+      conciergeCopyGmailProjectArtifactPath(
+        "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        { messageId: "msg-1", attachmentId: "att-1" },
+      ),
+      "/executive-dashboard/concierge/projects/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/artifacts/copy-from-gmail?messageId=msg-1&attachmentId=att-1",
     );
     assert.equal(
       conciergeProjectArtifactFilePath(
