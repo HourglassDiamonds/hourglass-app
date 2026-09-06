@@ -180,19 +180,37 @@ body:has([data-concierge-shell]) [data-facet-rail] {
   box-shadow: 0 0 0 3px rgba(173, 145, 100, 0.22);
 }
 
+.hg-current-project-status {
+  letter-spacing: 0.1em;
+  overflow-wrap: anywhere;
+}
+
 .hg-current-project-panel {
   overflow-wrap: anywhere;
 }
 
 .hg-current-project-thumb {
   display: block;
-  width: 100%;
-  max-width: 11rem;
-  max-height: 7.5rem;
-  object-fit: cover;
-  border-radius: 14px;
+  width: auto;
+  height: auto;
+  max-width: 9.5rem;
+  max-height: 6.25rem;
+  object-fit: contain;
+  object-position: left center;
+  border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: #1c1815;
+}
+
+@media (max-width: 360px) {
+  .hg-current-project-status {
+    letter-spacing: 0.04em;
+  }
+
+  .hg-current-project-thumb {
+    max-width: 7.5rem;
+    max-height: 5rem;
+  }
 }
 
 .hg-project-kind-choice {

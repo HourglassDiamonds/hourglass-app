@@ -10,8 +10,6 @@ import { ChiefOfStaffToday } from "../../../../app/executive-dashboard/concierge
 import { composeContinuumHome } from "../../dashboard/compose";
 import type { CurrentProjectCard } from "./card";
 import {
-  CURRENT_PROJECTS_LATEST_REQUEST_EMPTY,
-  CURRENT_PROJECTS_LATEST_REQUEST_TITLE,
   CURRENT_PROJECTS_OPEN_LABEL,
   currentProjectPanelId,
   currentProjectToggleId,
@@ -133,9 +131,18 @@ describe("Current Projects Command Center accordion UI", () => {
     assert.match(html, /data-line-kind="ownership"/);
     assert.match(html, /data-line-kind="lifecycle"/);
     assert.match(html, /CAD \/ DESIGN/);
-    assert.match(html, new RegExp(CURRENT_PROJECTS_LATEST_REQUEST_TITLE));
-    assert.match(html, new RegExp(CURRENT_PROJECTS_LATEST_REQUEST_EMPTY));
+    assert.doesNotMatch(html, /Latest request \/ change/);
+    assert.doesNotMatch(html, /Not recorded yet/);
     assert.doesNotMatch(html, /inferred from Gmail|latest email|thread body/i);
+  });
+
+  it("omits empty Progress chrome and does not reserve Latest request / change", () => {
+    const html = renderToStaticMarkup(
+      createElement(OpenProjectsHome, { projects: [card({ progress: [] })] }),
+    );
+    assert.doesNotMatch(html, />Progress</);
+    assert.doesNotMatch(html, /Latest request \/ change/);
+    assert.doesNotMatch(html, /Not recorded yet/);
   });
 
   it("renders snapshot, files, thumbnail, long names, and private artifact hrefs", () => {
@@ -191,10 +198,14 @@ describe("Current Projects Command Center accordion UI", () => {
     assert.match(html, /Order confirmation/);
     assert.match(html, /Files · 2/);
     assert.match(html, /hg-current-project-thumb/);
+    assert.match(html, /block min-h-11 min-w-0 max-w-full/);
+    assert.match(html, new RegExp(href.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
     assert.match(html, new RegExp(href.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
     assert.doesNotMatch(html, /supabase|storage\/v1|getPublicUrl/i);
     assert.match(html, /min-h-11/);
     assert.match(html, /min-w-0/);
+    assert.match(html, /hg-current-project-status/);
+    assert.doesNotMatch(html, /Latest request \/ change/);
   });
 
   it("keeps Command Center CoS quiet and does not reintroduce aria-expanded", () => {
@@ -222,5 +233,8 @@ describe("Current Projects Command Center accordion UI", () => {
     assert.doesNotMatch(work, /Today 5|Chief of Staff/);
     assert.match(css, /hg-current-projects/);
     assert.match(css, /hg-current-project-toggle:focus-visible/);
+    assert.match(css, /hg-current-project-status/);
+    assert.match(css, /object-fit:\s*contain/);
+    assert.doesNotMatch(work, /Latest request \/ change/);
   });
 });

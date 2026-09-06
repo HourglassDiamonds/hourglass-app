@@ -4,8 +4,6 @@ import {
   CURRENT_PROJECTS_ACTION_TITLE,
   CURRENT_PROJECTS_FILES_TITLE,
   CURRENT_PROJECTS_LATEST_FILE_TITLE,
-  CURRENT_PROJECTS_LATEST_REQUEST_EMPTY,
-  CURRENT_PROJECTS_LATEST_REQUEST_TITLE,
   CURRENT_PROJECTS_OPEN_LABEL,
   CURRENT_PROJECTS_PROGRESS_TITLE,
   CURRENT_PROJECTS_SNAPSHOT_TITLE,
@@ -49,7 +47,7 @@ function CurrentProjectRow({ project }: { project: CurrentProjectCard }) {
   return (
     <article
       data-current-project={project.projectId}
-      className="hg-current-project min-w-0 overflow-hidden"
+      className="hg-current-project min-w-0 overflow-x-hidden"
     >
       <details className="group">
         <summary
@@ -64,7 +62,7 @@ function CurrentProjectRow({ project }: { project: CurrentProjectCard }) {
             </span>
             <span
               data-line-kind={project.collapsedLineKind}
-              className="mt-1 block break-words text-[11px] uppercase leading-relaxed tracking-[0.16em] text-[#8d8073]"
+              className="hg-current-project-status mt-1 block break-words text-[11px] uppercase leading-relaxed text-[#8d8073]"
             >
               {project.collapsedLine}
             </span>
@@ -162,7 +160,7 @@ function CurrentProjectCardBody({ project }: { project: CurrentProjectCard }) {
               <li key={file.artifactId} className="min-w-0">
                 <a
                   href={file.href}
-                  className="inline-flex min-h-11 max-w-full items-center break-words text-[14.5px] leading-relaxed text-[#d8cfc4] outline-none hover:text-[#efe8de] focus-visible:text-[#efe8de]"
+                  className="block min-h-11 min-w-0 max-w-full py-2 break-words text-[14.5px] leading-relaxed text-[#d8cfc4] outline-none hover:text-[#efe8de] focus-visible:text-[#efe8de]"
                 >
                   {file.kindLabel}
                   {file.title !== file.kindLabel ? ` · ${file.title}` : ""}
@@ -173,31 +171,24 @@ function CurrentProjectCardBody({ project }: { project: CurrentProjectCard }) {
         )}
       </section>
 
-      <section>
-        <p className="text-[11px] uppercase tracking-[0.28em] text-[#8d8073]">
-          {CURRENT_PROJECTS_PROGRESS_TITLE}
-        </p>
-        <ul className="mt-2 space-y-1.5">
-          {project.progress.map((row, index) => (
-            <li
-              key={`${row.label}-${row.at ?? "none"}-${index}`}
-              className="break-words text-[14.5px] leading-relaxed text-[#d8cfc4]"
-            >
-              ✓ {row.label}
-              {row.at ? ` · ${formatNoteDate(row.at)}` : ""}
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      <section data-latest-request>
-        <p className="text-[11px] uppercase tracking-[0.28em] text-[#8d8073]">
-          {CURRENT_PROJECTS_LATEST_REQUEST_TITLE}
-        </p>
-        <p className="mt-2 text-[14.5px] leading-relaxed text-[#c4b7aa]">
-          {CURRENT_PROJECTS_LATEST_REQUEST_EMPTY}
-        </p>
-      </section>
+      {project.progress.length > 0 ? (
+        <section>
+          <p className="text-[11px] uppercase tracking-[0.28em] text-[#8d8073]">
+            {CURRENT_PROJECTS_PROGRESS_TITLE}
+          </p>
+          <ul className="mt-2 space-y-1.5">
+            {project.progress.map((row, index) => (
+              <li
+                key={`${row.label}-${row.at ?? "none"}-${index}`}
+                className="break-words text-[14.5px] leading-relaxed text-[#d8cfc4]"
+              >
+                ✓ {row.label}
+                {row.at ? ` · ${formatNoteDate(row.at)}` : ""}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
       <p>
         <Link
