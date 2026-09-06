@@ -4,7 +4,9 @@
  * Do not import from client components or public routes.
  * Service-role only. SELECT against existing Client Memory tables.
  * Open Jobs and Project Artifacts are read when the unapplied tables exist;
- * otherwise disconnected. Does not query Gmail, CoS, Shape Studio, or DI.
+ * otherwise disconnected. List reads current Custom/Repair lifecycle state so
+ * the #13 selector can qualify work without jobs. Does not query Gmail, CoS,
+ * Shape Studio, or DI.
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -24,7 +26,10 @@ import {
   listProjectsFromSnapshot,
 } from "./compose";
 import { loadActiveOperatingDetails } from "../project-operating/load-details";
-import { loadProjectLifecycleForDesk } from "../project-lifecycle/load-states";
+import {
+  loadActiveLifecycleStates,
+  loadProjectLifecycleForDesk,
+} from "../project-lifecycle/load-states";
 import { loadProjectJobs } from "../project-jobs/load";
 import { loadProjectArtifacts } from "../project-artifacts/load";
 import type { ProjectDeskReader } from "./reader";
@@ -204,7 +209,11 @@ export class SupabaseProjectDeskReader implements ProjectDeskReader {
 
   async listProjects(filter?: ListProjectsFilter): Promise<ProjectDeskSummary[]> {
     const snapshot = await loadSnapshot(this.client);
-    return listProjectsFromSnapshot(snapshot, filter);
+    const lifecycleStates = await loadActiveLifecycleStates(
+      this.client,
+      snapshot.projectProfiles,
+    );
+    return listProjectsFromSnapshot({ ...snapshot, lifecycleStates }, filter);
   }
 
   async getProjectDesk(projectId: string): Promise<ProjectDeskGetResult> {

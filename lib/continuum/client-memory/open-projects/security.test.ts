@@ -26,7 +26,7 @@ describe("Open Project work security", () => {
       assert.doesNotMatch(source, /composeChiefOfStaffBrief|presentCommandCenter/);
       assert.doesNotMatch(source, /gmail\.googleapis|continuum_gmail_messages/);
       assert.doesNotMatch(source, /continuum\/dashboard\/compose/);
-      assert.doesNotMatch(source, /saveOpenJob|setProjectLifecycle/);
+      assert.doesNotMatch(source, /saveOpenJob|setProjectLifecycle|createProjectArtifact/);
       assert.doesNotMatch(source, /createBrowserClient/);
     }
     const actions = readFileSync(
@@ -43,7 +43,16 @@ describe("Open Project work security", () => {
       join(ROOT, "app/executive-dashboard/concierge/page.tsx"),
       "utf8",
     );
-    assert.match(page, /loadOpenProjectWork/);
+    const card = readFileSync(join(DIR, "card.ts"), "utf8");
+    const deskSupabase = readFileSync(
+      join(ROOT, "lib/continuum/client-memory/project-desk/supabase.ts"),
+      "utf8",
+    );
+    assert.match(card, /selectOpenProjectWork/);
+    assert.doesNotMatch(card, /gmail\.googleapis|parseEmail|thread body/);
+    assert.match(deskSupabase, /loadActiveLifecycleStates/);
+    assert.match(deskSupabase, /listProjectsFromSnapshot\(\{ \.\.\.snapshot, lifecycleStates \}/);
+    assert.match(page, /loadCurrentProjectCards/);
     assert.match(page, /loadContinuumHomeModel/);
     assert.doesNotMatch(page, /composeChiefOfStaffBrief/);
   });

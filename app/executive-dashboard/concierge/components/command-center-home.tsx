@@ -2,7 +2,7 @@ import Link from "next/link";
 import { greetingLine } from "@/lib/continuum/dashboard/compose";
 import type { ContinuumHomeModel } from "@/lib/continuum/dashboard/types";
 import type { ProjectDeskSummary } from "@/lib/continuum/client-memory/project-desk/types";
-import type { OpenProjectWorkItem } from "@/lib/continuum/client-memory/open-projects/select";
+import type { CurrentProjectCard } from "@/lib/continuum/client-memory/open-projects/card";
 import { EXECUTIVE_DASHBOARD_PASSKEYS_PATH } from "@/lib/executive-dashboard/access";
 import { AskConciergeShell } from "./ask-concierge-shell";
 import { ChiefOfStaffToday } from "./chief-of-staff-today";
@@ -21,7 +21,7 @@ export function CommandCenterHome({
 }: {
   model: ContinuumHomeModel;
   projects: ProjectDeskSummary[];
-  openProjects: OpenProjectWorkItem[];
+  openProjects: CurrentProjectCard[];
 }) {
   return (
     <div data-command-center className="hg-command-grid">
