@@ -31,7 +31,10 @@ alter table public.continuum_project_artifacts
     )
   );
 
--- Unique on identity (first three source_ref fields), not filename.
+-- Unique on destination Project + Gmail message id + attachment id.
+-- Same Gmail message+attachment on two Projects is allowed.
+-- Same Gmail message+attachment on one Project is a duplicate.
+-- Not unique on filename. Not unique on Gmail identity alone.
 create unique index if not exists continuum_project_artifacts_gmail_copy_identity_uq
   on public.continuum_project_artifacts (
     project_id,
@@ -43,7 +46,7 @@ create unique index if not exists continuum_project_artifacts_gmail_copy_identit
     and split_part(source_ref, '|', 1) = 'gm1';
 
 comment on index public.continuum_project_artifacts_gmail_copy_identity_uq is
-  'UNAPPLIED #15 Gmail copy-in identity. Not a mailbox mirror. Not filename dedupe.';
+  'UNAPPLIED #15 Gmail copy-in identity scoped by project_id. Same Gmail attachment may exist on two Projects. Not filename dedupe.';
 
 comment on constraint continuum_project_artifacts_source_ref_check
   on public.continuum_project_artifacts is

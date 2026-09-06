@@ -35,4 +35,25 @@ describe("Gmail copy-in SQL", () => {
     assert.doesNotMatch(sql, /body text/i);
     assert.doesNotMatch(sql, /unique \(original_filename\)/i);
   });
+
+  it("scopes Gmail identity uniqueness to destination Project in SQL", () => {
+    const cols = sql.match(
+      /continuum_project_artifacts_gmail_copy_identity_uq\s+on public\.continuum_project_artifacts\s*\(\s*([\s\S]*?)\s*\)\s*where/i,
+    );
+    assert.ok(cols);
+    const inner = cols[1].replace(/\s+/g, " ").trim();
+    assert.match(inner, /^project_id\s*,/);
+    assert.match(inner, /split_part\(source_ref, '\|', 2\)/);
+    assert.match(inner, /split_part\(source_ref, '\|', 3\)/);
+    assert.doesNotMatch(inner, /^split_part/);
+    assert.match(sql, /Same Gmail message\+attachment on two Projects is allowed/);
+    assert.match(sql, /Same Gmail message\+attachment on one Project is a duplicate/);
+    const uniqueBlocks = [
+      ...sql.matchAll(
+        /create unique index[\s\S]*?\(([\s\S]*?)\)\s*where source_system = 'gmail'/gi,
+      ),
+    ];
+    assert.equal(uniqueBlocks.length, 1);
+    assert.match(uniqueBlocks[0][1], /project_id/);
+  });
 });

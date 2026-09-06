@@ -82,4 +82,33 @@ describe("Gmail copy-in source_ref bounds", () => {
     if (packed.ok) return;
     assert.equal(packed.reason, "identity-too-long");
   });
+
+  it("uses Project + message id + attachment id as the SQL uniqueness tuple", () => {
+    const attachmentId = realAttachmentId(426);
+    const packed = packGmailCopySourceRef({
+      messageId: "19c4f8a2b1e90d3f",
+      attachmentId,
+      threadId: "19c4f8a2b1e90d40",
+      sentAt: SENT_AT,
+      fromEmailHash: HASH,
+    });
+    assert.equal(packed.ok, true);
+    if (!packed.ok) return;
+    const parts = packed.sourceRef.split("|");
+    assert.equal(parts[0], "gm1");
+    const sqlIdentity = (projectId: string) =>
+      `${projectId}|${parts[1]}|${parts[2]}`;
+    const projectA = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+    const projectB = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
+    assert.equal(sqlIdentity(projectA), sqlIdentity(projectA));
+    assert.notEqual(sqlIdentity(projectA), sqlIdentity(projectB));
+    assert.equal(parts[1], "19c4f8a2b1e90d3f");
+    assert.equal(parts[2], attachmentId);
+    const otherAttachment = realAttachmentId(427);
+    assert.notEqual(attachmentId, otherAttachment);
+    assert.notEqual(
+      `${projectA}|${parts[1]}|${attachmentId}`,
+      `${projectA}|${parts[1]}|${otherAttachment}`,
+    );
+  });
 });
