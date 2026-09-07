@@ -15,6 +15,8 @@ export type {
 export {
   ingestHumanIntakeCandidates,
   applyHumanIntakeCandidateLineage,
+  listHumanIntakeCandidatesForSource,
+  humanIntakeSourceRefPrefix,
 } from "./ingest";
 export type { IngestHumanIntakeCandidatesResult } from "./ingest";
 export {

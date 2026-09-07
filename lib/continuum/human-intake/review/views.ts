@@ -3,7 +3,11 @@
  * EvidenceBasis is visible. No hidden reasoning.
  */
 
-import { randomUUID } from "node:crypto";
+import { candidateReviewMutationId } from "@/lib/continuum/candidates/identity";
+import {
+  effectiveCandidatePayload,
+  effectiveCandidateTarget,
+} from "@/lib/continuum/candidates/review";
 import type { ContinuumCandidate } from "@/lib/continuum/candidates/types";
 import type { HumanSource, HumanSourceLink } from "@/lib/continuum/client-memory/human-intake/types";
 import { humanIntakeProposedSummary } from "../candidates/present";
@@ -12,7 +16,6 @@ import {
   previewHumanIntakeCandidateApply,
   type HumanIntakeCandidateReviewView,
 } from "./preview";
-import { effectiveCandidateTarget } from "@/lib/continuum/candidates/review";
 
 export function worldFromSourceLinks(input: {
   links: readonly HumanSourceLink[];
@@ -97,9 +100,9 @@ export function presentHumanIntakeReviewViews(input: {
       preview,
       personName: personId ? input.personNames.get(personId) ?? null : null,
       projectTitle: projectId ? input.projectTitles.get(projectId) ?? null : null,
-      mutationId: randomUUID(),
-      payload: row.payload,
-      proposedTarget: row.proposedTarget,
+      mutationId: candidateReviewMutationId(row),
+      payload: effectiveCandidatePayload(row),
+      proposedTarget: effectiveCandidateTarget(row),
       suggestedPersonId: personId,
       suggestedProjectId: projectId,
     };

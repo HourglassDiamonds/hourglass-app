@@ -38,7 +38,7 @@ function clone(row: ContinuumCandidate): ContinuumCandidate {
   };
 }
 
-function adapterInsert(row: ContinuumCandidate): ContinuumCandidate {
+export function adapterInsert(row: ContinuumCandidate): ContinuumCandidate {
   return clone({
     ...row,
     canonical: false,

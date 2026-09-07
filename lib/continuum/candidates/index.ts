@@ -59,11 +59,22 @@ export type {
   CandidateReasoner,
   CandidateReasonerInput,
 } from "./brain-gate";
-export { InMemoryCandidateStore, persistCandidates } from "./store";
+export { InMemoryCandidateStore, persistCandidates, adapterInsert } from "./store";
+export {
+  CANDIDATE_STORAGE_NOT_ACTIVATED_MESSAGE,
+  CONTINUUM_CANDIDATES_TABLE,
+  candidateStorageStateFromError,
+  probeCandidateStorage,
+} from "./activation";
+export type { CandidateStorageActivation } from "./activation";
+export { candidateToRow, rowToCandidate, preserveReviewOnReplace } from "./rows";
+export type { ContinuumCandidateRow } from "./rows";
+export { SqlMappedCandidateStore } from "./sql-mapped-store";
 export {
   assignCandidateId,
   candidateIdFromIdentity,
   candidateIdentityKey,
+  candidateReviewMutationId,
   clipMatchedText,
   logicalProposalKey,
   proposalKeyOf,

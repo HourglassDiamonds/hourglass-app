@@ -4,9 +4,12 @@
  * Founder review_status is preserved across reprocess and supersession.
  */
 
-import type { CandidateStore, ContinuumCandidate } from "@/lib/continuum/candidates/types";
+import type {
+  CandidateSourceSystem,
+  CandidateStore,
+  ContinuumCandidate,
+} from "@/lib/continuum/candidates/types";
 import { logicalProposalKey } from "@/lib/continuum/candidates/identity";
-import { InMemoryCandidateStore } from "@/lib/continuum/candidates/store";
 import {
   proposeHumanIntakeCandidates,
   type ProposeHumanIntakeCandidatesInput,
@@ -18,6 +21,43 @@ export type IngestHumanIntakeCandidatesResult = ProposeHumanIntakeCandidatesResu
   insertedIds: string[];
   duplicateIds: string[];
 };
+
+export const HUMAN_INTAKE_SOURCE_REF_VERSION_PREFIX = "hi1|" as const;
+
+export function humanIntakeSourceRefPrefix(sourceId: string): string {
+  return `${HUMAN_INTAKE_SOURCE_REF_VERSION_PREFIX}${sourceId.trim()}|`;
+}
+
+type CandidateStoreWithSourceQuery = CandidateStore & {
+  listBySourceRefPrefix(
+    sourceSystem: CandidateSourceSystem,
+    sourceRefPrefix: string,
+  ): Promise<ContinuumCandidate[]>;
+};
+
+function hasSourceRefPrefixQuery(
+  store: CandidateStore,
+): store is CandidateStoreWithSourceQuery {
+  return (
+    typeof (store as CandidateStoreWithSourceQuery).listBySourceRefPrefix ===
+    "function"
+  );
+}
+
+export async function listHumanIntakeCandidatesForSource(
+  store: CandidateStore,
+  sourceId: string,
+): Promise<ContinuumCandidate[]> {
+  const prefix = humanIntakeSourceRefPrefix(sourceId);
+  if (hasSourceRefPrefixQuery(store)) {
+    return store.listBySourceRefPrefix("human-intake", prefix);
+  }
+  return (await store.list()).filter(
+    (row) =>
+      row.sourceSystem === "human-intake" &&
+      sourceIdFromCandidateSourceRef(row.sourceRef) === sourceId,
+  );
+}
 
 function sourceMs(row: ContinuumCandidate): number {
   const ms = Date.parse(row.sourceTimestamp);
@@ -31,11 +71,13 @@ function evidenceState(row: ContinuumCandidate): ContinuumCandidate["candidateSt
 
 export async function applyHumanIntakeCandidateLineage(
   store: CandidateStore,
+  sourceId?: string,
 ): Promise<void> {
-  const rows = await store.list();
+  const rows = sourceId
+    ? await listHumanIntakeCandidatesForSource(store, sourceId)
+    : (await store.list()).filter((row) => row.sourceSystem === "human-intake");
   const groups = new Map<string, ContinuumCandidate[]>();
   for (const row of rows) {
-    if (row.sourceSystem !== "human-intake") continue;
     const key = logicalProposalKey(row);
     const list = groups.get(key) ?? [];
     list.push(row);
@@ -80,16 +122,10 @@ export async function ingestHumanIntakeCandidates(
     if (result.status === "inserted") insertedIds.push(result.record.candidateId);
     else duplicateIds.push(result.record.candidateId);
   }
-  if (store instanceof InMemoryCandidateStore) {
-    await applyHumanIntakeCandidateLineage(store);
-  }
+  await applyHumanIntakeCandidateLineage(store, input.evidence.sourceId);
   return {
     ...proposed,
-    candidates: (await store.list()).filter(
-      (row) =>
-        row.sourceSystem === "human-intake" &&
-        sourceIdFromCandidateSourceRef(row.sourceRef) === input.evidence.sourceId,
-    ),
+    candidates: await listHumanIntakeCandidatesForSource(store, input.evidence.sourceId),
     insertedIds,
     duplicateIds,
   };

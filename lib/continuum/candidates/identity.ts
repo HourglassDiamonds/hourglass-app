@@ -109,6 +109,25 @@ export function assignCandidateId(
   };
 }
 
+export function candidateReviewMutationId(row: ContinuumCandidate): string {
+  const hex = sha256Utf8(
+    JSON.stringify([
+      row.candidateId,
+      row.founderEditedPayload,
+      row.founderEditedTarget,
+      row.payload,
+      row.proposedTarget,
+    ]),
+  );
+  return [
+    hex.slice(0, 8),
+    hex.slice(8, 12),
+    `5${hex.slice(13, 16)}`,
+    `a${hex.slice(17, 20)}`,
+    hex.slice(20, 32),
+  ].join("-");
+}
+
 export function logicalProposalKey(row: ContinuumCandidate): string {
   const target = candidateIdentityKey(row);
   return [

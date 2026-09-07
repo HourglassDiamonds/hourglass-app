@@ -11,6 +11,8 @@ describe("Human intake review security", () => {
   it("applies only through existing writers and never mints Persons or kernel rows", () => {
     const apply = readFileSync(join(DIR, "apply.ts"), "utf8");
     assert.match(apply, /applyFounderReview/);
+    assert.match(apply, /HUMAN_INTAKE_APPROVE_WRITE_ORDER/);
+    assert.match(apply, /writer-committed-review-unpersisted/);
     assert.match(apply, /addManualNote/);
     assert.match(apply, /createProjectJob/);
     assert.match(apply, /correctProjectSpec/);
@@ -33,6 +35,8 @@ describe("Human intake review security", () => {
     );
     assert.match(dedicated, /reviewHumanIntakeCandidate/);
     assert.match(dedicated, /getAuthenticatedProjectJobWriter/);
+    assert.match(dedicated, /getAuthenticatedCandidateStore/);
+    assert.doesNotMatch(dedicated, /InMemoryCandidateStore/);
     assert.doesNotMatch(dedicated, /createBrowserClient/);
     assert.doesNotMatch(dedicated, /node:crypto/);
   });

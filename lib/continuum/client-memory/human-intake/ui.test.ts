@@ -52,6 +52,9 @@ describe("Concierge human-source inbox UI", () => {
     );
     assert.match(detail, /getAuthenticatedHumanSourceStore/);
     assert.match(detail, /HumanSourceDetail|IntakeCandidateReviewList/);
+    assert.match(detail, /getAuthenticatedCandidateStore/);
+    assert.match(detail, /CANDIDATE_STORAGE_NOT_ACTIVATED_MESSAGE/);
+    assert.doesNotMatch(detail, /InMemoryCandidateStore/);
   });
 
   it("lists a short preview and does not dump the full transcript", () => {

@@ -6,8 +6,12 @@ import {
   conciergeInboxPath,
   isPersonIdParam,
 } from "@/lib/continuum/client-memory/read/presentation";
-import { InMemoryCandidateStore } from "@/lib/continuum/candidates/store";
-import { ingestHumanIntakeCandidates } from "@/lib/continuum/human-intake/candidates/ingest";
+import { getAuthenticatedCandidateStore } from "@/lib/continuum/candidates/load";
+import { CANDIDATE_STORAGE_NOT_ACTIVATED_MESSAGE } from "@/lib/continuum/candidates/activation";
+import {
+  ingestHumanIntakeCandidates,
+  listHumanIntakeCandidatesForSource,
+} from "@/lib/continuum/human-intake/candidates/ingest";
 import {
   evidenceFromSource,
   presentHumanIntakeReviewViews,
@@ -80,6 +84,37 @@ export default async function ConciergeInboxSourcePage({
     );
   }
 
+  const candidates = await getAuthenticatedCandidateStore();
+  if (!candidates.ok) {
+    const body =
+      candidates.reason === "not-activated"
+        ? CANDIDATE_STORAGE_NOT_ACTIVATED_MESSAGE
+        : "This surface could not be opened right now.";
+    return (
+      <ConciergeShell>
+        {candidates.reason === "not-activated" ? (
+          <>
+            <Link
+              href={conciergeInboxPath()}
+              className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.24em] text-[#8d8073] outline-none hover:text-[#efe8de] focus-visible:text-[#efe8de]"
+            >
+              ← Inbox
+            </Link>
+            <div className="hg-concierge-fade mt-8">
+              <HumanSourceDetail detail={detail}>
+                <p className="mt-4 text-[15px] leading-relaxed text-[#d8cfc4]">
+                  {CANDIDATE_STORAGE_NOT_ACTIVATED_MESSAGE}
+                </p>
+              </HumanSourceDetail>
+            </div>
+          </>
+        ) : (
+          <ConciergeUnavailable title="Source unavailable." body={body} />
+        )}
+      </ConciergeShell>
+    );
+  }
+
   const specs = await getAuthenticatedClientMemoryProjectSpecWriter();
   const links = await auth.store.listLinks(sourceId);
   const people: HumanIntakePerson[] = [];
@@ -114,10 +149,9 @@ export default async function ConciergeInboxSourcePage({
     }
   }
   const assembled = worldFromSourceLinks({ links, people, projects });
-  const store = new InMemoryCandidateStore();
   const text = (detail.source.rawText ?? detail.source.parsedText ?? "").trim();
   if (text) {
-    await ingestHumanIntakeCandidates(store, {
+    await ingestHumanIntakeCandidates(candidates.store, {
       evidence: evidenceFromSource(
         detail.source,
         assembled.confirmedPersonIds,
@@ -126,8 +160,12 @@ export default async function ConciergeInboxSourcePage({
       world: assembled.world,
     });
   }
+  const persisted = await listHumanIntakeCandidatesForSource(
+    candidates.store,
+    sourceId,
+  );
   const reviews = presentHumanIntakeReviewViews({
-    candidates: await store.list(),
+    candidates: persisted,
     personNames,
     projectTitles,
   });

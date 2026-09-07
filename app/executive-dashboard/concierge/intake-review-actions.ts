@@ -4,15 +4,10 @@ import { getAuthenticatedHumanSourceStore } from "@/lib/continuum/client-memory/
 import { getAuthenticatedClientMemoryNoteWriter } from "@/lib/continuum/client-memory/write/load";
 import { getAuthenticatedClientMemoryProjectSpecWriter } from "@/lib/continuum/client-memory/project-spec/load";
 import { getAuthenticatedProjectJobWriter } from "@/lib/continuum/client-memory/project-jobs/load-writer";
-import { InMemoryCandidateStore } from "@/lib/continuum/candidates/store";
-import { ingestHumanIntakeCandidates } from "@/lib/continuum/human-intake/candidates/ingest";
+import { getAuthenticatedCandidateStore } from "@/lib/continuum/candidates/load";
+import { CANDIDATE_STORAGE_NOT_ACTIVATED_MESSAGE } from "@/lib/continuum/candidates/activation";
 import { reviewHumanIntakeCandidate } from "@/lib/continuum/human-intake/review/apply";
 import type { HumanIntakeCandidateEdits } from "@/lib/continuum/human-intake/review/apply";
-import {
-  evidenceFromSource,
-  worldFromSourceLinks,
-} from "@/lib/continuum/human-intake/review/views";
-import type { HumanIntakePerson, HumanIntakeProject, HumanIntakeWorld } from "@/lib/continuum/human-intake/candidates/types";
 
 export type ReviewIntakeCandidateState = {
   ok: boolean;
@@ -38,44 +33,6 @@ function editsFromForm(formData: FormData): HumanIntakeCandidateEdits {
     waitingOnActor: waitingOnActor || undefined,
     dueAt: dueAt || undefined,
   };
-}
-
-async function worldForSource(
-  sourceId: string,
-  store: Awaited<ReturnType<typeof getAuthenticatedHumanSourceStore>>,
-  specWriter: Awaited<ReturnType<typeof getAuthenticatedClientMemoryProjectSpecWriter>>,
-): Promise<{
-  world: HumanIntakeWorld;
-  confirmedPersonIds: string[];
-  confirmedProjectIds: string[];
-} | null> {
-  if (!store.ok) return null;
-  const links = await store.store.listLinks(sourceId);
-  const people: HumanIntakePerson[] = [];
-  const projects: HumanIntakeProject[] = [];
-  for (const link of links) {
-    if (link.entityKind === "person") {
-      const displayName = await store.store.getPersonName(link.entityId);
-      if (displayName) people.push({ personId: link.entityId, displayName });
-    } else {
-      const title = await store.store.getProjectTitle(link.entityId);
-      const history =
-        specWriter.ok ? await specWriter.writer.getProjectHistory(link.entityId) : null;
-      if (title) {
-        projects.push({
-          projectId: link.entityId,
-          title,
-          cadJobNumber: history?.cadJobNumber ?? null,
-          orderNumber: history?.orderNumber ?? null,
-          fingerSize: history?.fingerSize ?? null,
-          metal: history?.metal ?? null,
-          centerStone: history?.centerStone ?? null,
-          diamondSupplyNotes: history?.diamondSupplyNotes ?? null,
-        });
-      }
-    }
-  }
-  return worldFromSourceLinks({ links, people, projects });
 }
 
 export async function reviewIntakeCandidateAction(
@@ -105,6 +62,18 @@ export async function reviewIntakeCandidateAction(
           : "Unable to review this candidate.",
     };
   }
+  const durable = await getAuthenticatedCandidateStore();
+  if (!durable.ok) {
+    return {
+      ok: false,
+      message:
+        durable.reason === "not-activated"
+          ? CANDIDATE_STORAGE_NOT_ACTIVATED_MESSAGE
+          : durable.reason === "unauthorized"
+            ? "Sign in to continue."
+            : "Unable to review this candidate.",
+    };
+  }
   const notes = await getAuthenticatedClientMemoryNoteWriter();
   const specs = await getAuthenticatedClientMemoryProjectSpecWriter();
   const jobs = await getAuthenticatedProjectJobWriter();
@@ -114,22 +83,11 @@ export async function reviewIntakeCandidateAction(
 
   const source = await sources.store.getSource(sourceId);
   if (!source) return { ok: false, message: "That source could not be found." };
-  const assembled = await worldForSource(sourceId, sources, specs);
-  if (!assembled) return { ok: false, message: "Unable to review this candidate." };
-  const candidates = new InMemoryCandidateStore();
-  await ingestHumanIntakeCandidates(candidates, {
-    evidence: evidenceFromSource(
-      source,
-      assembled.confirmedPersonIds,
-      assembled.confirmedProjectIds,
-    ),
-    world: assembled.world,
-  });
 
   const result = await reviewHumanIntakeCandidate(
     {
       nowIso: () => new Date().toISOString(),
-      candidates,
+      candidates: durable.store,
       getSource: (id) => sources.store.getSource(id),
       listLinks: (id) => sources.store.listLinks(id),
       getPersonName: (id) => sources.store.getPersonName(id),
@@ -160,6 +118,13 @@ export async function reviewIntakeCandidateAction(
     }
     if (result.reason === "unauthorized-state") {
       return { ok: false, message: "That candidate was already approved." };
+    }
+    if (result.code === "writer-committed-review-unpersisted") {
+      return {
+        ok: false,
+        message:
+          "The canonical write succeeded, but Candidate review state did not persist. Retry this approval.",
+      };
     }
     return { ok: false, message: "Unable to review this candidate." };
   }

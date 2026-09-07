@@ -13,6 +13,7 @@ export {
   humanIntakeProposedSummary,
   humanIntakeReviewLabel,
   ingestHumanIntakeCandidates,
+  listHumanIntakeCandidatesForSource,
   looksLikeEmail,
   parseHumanIntakeEvidence,
   presentHumanIntakeCandidate,

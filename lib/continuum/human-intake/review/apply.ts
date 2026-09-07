@@ -32,8 +32,27 @@ import {
   sourceIdOfCandidate,
   type HumanIntakeApplyPreview,
 } from "./preview";
+import { listHumanIntakeCandidatesForSource } from "../candidates/ingest";
 
 export const HUMAN_INTAKE_JOB_SOURCE_REF_PREFIX = "human-intake:" as const;
+
+/**
+ * Explicit approve sequence. Not a generic transactional writer.
+ * 1. Load the durable Candidate.
+ * 2. Preview the effective payload/target.
+ * 3. Run the authorized canonical writer when one exists.
+ * 4. Persist founder approval only after the writer succeeds (or when none is authorized).
+ * 5. Refresh source review status.
+ * If the writer fails, review_status stays unchanged and the UI must not claim a write.
+ * If the writer succeeds and approval persist fails, return writer-committed-review-unpersisted.
+ */
+export const HUMAN_INTAKE_APPROVE_WRITE_ORDER = [
+  "load-durable-candidate",
+  "preview-effective-payload",
+  "canonical-writer-if-supported",
+  "persist-founder-approval",
+  "refresh-source-review-status",
+] as const;
 
 export function humanIntakeJobSourceRef(
   sourceId: string,
@@ -222,14 +241,9 @@ async function refreshSourceReview(
   sourceId: string,
   now: string,
 ): Promise<void> {
-  const pending = (await deps.candidates.list()).some((row) => {
-    return (
-      row.sourceSystem === "human-intake" &&
-      sourceIdOfCandidate(row) === sourceId &&
-      row.reviewStatus === "pending" &&
-      row.candidateState !== "superseded"
-    );
-  });
+  const pending = (await listHumanIntakeCandidatesForSource(deps.candidates, sourceId)).some(
+    (row) => row.reviewStatus === "pending" && row.candidateState !== "superseded",
+  );
   await deps.updateSourceReviewStatus(
     sourceId,
     pending ? "in-review" : "complete",
@@ -406,6 +420,8 @@ export async function reviewHumanIntakeCandidate(
     }
 
     let appliedRecordId: string | null = null;
+    let writerCommitted = false;
+    let writerAlreadyPresent = false;
     if (preview.applyKind === "source_link") {
       const entityKind = overlay.payload.kind === "person_association" ? "person" : "project";
       const entityId = entityKind === "person" ? personId : projectId;
@@ -419,24 +435,8 @@ export async function reviewHumanIntakeCandidate(
         createdAt: now,
       });
       appliedRecordId = entityId;
-      if (link === "already-present") {
-        const approved = await deps.candidates.applyReview(
-          candidateId,
-          { action: "approve", payload: overlay.payload },
-          now,
-        );
-        if (!approved.ok) return { ok: false, reason: "candidate-not-found" };
-        await refreshSourceReview(deps, sourceId, now);
-        return {
-          ok: true,
-          status: "already-present",
-          candidateId,
-          preview,
-          appliedRecordKind: "source_link",
-          appliedRecordId,
-          record: approved.record,
-        };
-      }
+      writerCommitted = true;
+      writerAlreadyPresent = link === "already-present";
     } else if (preview.applyKind === "source_note") {
       if (!personId || overlay.payload.kind !== "note") {
         return { ok: false, reason: "blocked", code: "person-required", preview };
@@ -453,6 +453,8 @@ export async function reviewHumanIntakeCandidate(
         return { ok: false, reason: "unavailable", code: note.reason };
       }
       appliedRecordId = note.noteId;
+      writerCommitted = true;
+      writerAlreadyPresent = note.status === "already-present";
     } else if (preview.applyKind === "project_spec") {
       if (!projectId || overlay.payload.kind !== "structured_spec") {
         return { ok: false, reason: "blocked", code: "project-required", preview };
@@ -468,6 +470,8 @@ export async function reviewHumanIntakeCandidate(
         return { ok: false, reason: "unavailable", code: spec.reason };
       }
       appliedRecordId = spec.revisionId ?? projectId;
+      writerCommitted = true;
+      writerAlreadyPresent = spec.status === "already-present";
     } else if (preview.applyKind === "project_job") {
       if (!projectId || overlay.payload.kind !== "open_job") {
         return { ok: false, reason: "blocked", code: "project-required", preview };
@@ -489,24 +493,8 @@ export async function reviewHumanIntakeCandidate(
         return { ok: false, reason: "unavailable", code: job.reason };
       }
       appliedRecordId = job.job.jobId;
-      if (job.status === "already-present") {
-        const approved = await deps.candidates.applyReview(
-          candidateId,
-          { action: "approve", payload: overlay.payload },
-          now,
-        );
-        if (!approved.ok) return { ok: false, reason: "candidate-not-found" };
-        await refreshSourceReview(deps, sourceId, now);
-        return {
-          ok: true,
-          status: "already-present",
-          candidateId,
-          preview,
-          appliedRecordKind: "project_job",
-          appliedRecordId,
-          record: approved.record,
-        };
-      }
+      writerCommitted = true;
+      writerAlreadyPresent = job.status === "already-present";
     }
 
     const approved = await deps.candidates.applyReview(
@@ -514,11 +502,20 @@ export async function reviewHumanIntakeCandidate(
       { action: "approve", payload: overlay.payload },
       now,
     );
-    if (!approved.ok) return { ok: false, reason: "candidate-not-found" };
+    if (!approved.ok) {
+      return {
+        ok: false,
+        reason: "unavailable",
+        code: writerCommitted
+          ? "writer-committed-review-unpersisted"
+          : "review-persist-failed",
+        preview,
+      };
+    }
     await refreshSourceReview(deps, sourceId, now);
     return {
       ok: true,
-      status: "applied",
+      status: writerAlreadyPresent ? "already-present" : "applied",
       candidateId,
       preview,
       appliedRecordKind: preview.applyKind === "none" ? null : preview.applyKind,
