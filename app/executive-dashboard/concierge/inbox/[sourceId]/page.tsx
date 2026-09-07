@@ -3,17 +3,16 @@ import { getAuthenticatedHumanSourceStore } from "@/lib/continuum/client-memory/
 import { composeSourceDetail } from "@/lib/continuum/client-memory/human-intake";
 import { getAuthenticatedClientMemoryProjectSpecWriter } from "@/lib/continuum/client-memory/project-spec/load";
 import {
+  conciergeInboxNewPath,
   conciergeInboxPath,
+  conciergeInboxRemarkablePath,
   isPersonIdParam,
 } from "@/lib/continuum/client-memory/read/presentation";
 import { getAuthenticatedCandidateStore } from "@/lib/continuum/candidates/load";
 import { CANDIDATE_STORAGE_NOT_ACTIVATED_MESSAGE } from "@/lib/continuum/candidates/activation";
+import { ingestHumanEvidenceCandidates } from "@/lib/continuum/candidates/human-evidence";
+import { listHumanSourceCandidatesForSource } from "@/lib/continuum/human-intake/candidates/ingest";
 import {
-  ingestHumanIntakeCandidates,
-  listHumanIntakeCandidatesForSource,
-} from "@/lib/continuum/human-intake/candidates/ingest";
-import {
-  evidenceFromSource,
   presentHumanIntakeReviewViews,
   worldFromSourceLinks,
 } from "@/lib/continuum/human-intake/review/views";
@@ -150,17 +149,21 @@ export default async function ConciergeInboxSourcePage({
   }
   const assembled = worldFromSourceLinks({ links, people, projects });
   const text = (detail.source.rawText ?? detail.source.parsedText ?? "").trim();
+  const emptyText =
+    !text &&
+    (detail.source.sourceType === "remarkable" ||
+      detail.source.sourceType === "plaud");
   if (text) {
-    await ingestHumanIntakeCandidates(candidates.store, {
-      evidence: evidenceFromSource(
-        detail.source,
-        assembled.confirmedPersonIds,
-        assembled.confirmedProjectIds,
-      ),
+    const confirmedPersonId = assembled.confirmedPersonIds[0] ?? null;
+    const confirmedProjectId = assembled.confirmedProjectIds[0] ?? null;
+    await ingestHumanEvidenceCandidates(candidates.store, {
+      source: detail.source,
       world: assembled.world,
+      personId: confirmedPersonId,
+      projectId: confirmedProjectId,
     });
   }
-  const persisted = await listHumanIntakeCandidatesForSource(
+  const persisted = await listHumanSourceCandidatesForSource(
     candidates.store,
     sourceId,
   );
@@ -180,8 +183,36 @@ export default async function ConciergeInboxSourcePage({
       </Link>
       <div className="hg-concierge-fade mt-8">
         <HumanSourceDetail detail={detail}>
-          <IntakeCandidateReviewList sourceId={sourceId} reviews={reviews} />
+          {emptyText ? (
+            <p className="mt-4 text-[15px] leading-relaxed text-[#d8cfc4]">
+              This export has no associated text. Continuum does not OCR
+              reMarkable files, and it does not invent Candidates from file
+              names or pixels.
+            </p>
+          ) : (
+            <IntakeCandidateReviewList sourceId={sourceId} reviews={reviews} />
+          )}
         </HumanSourceDetail>
+        <div className="mt-10 flex flex-wrap gap-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+          <Link
+            href={conciergeInboxPath()}
+            className="inline-flex min-h-12 items-center text-[11px] uppercase tracking-[0.24em] text-[#efe8de] outline-none hover:text-[#ad9164]"
+          >
+            Done
+          </Link>
+          <Link
+            href={conciergeInboxNewPath()}
+            className="inline-flex min-h-12 items-center text-[11px] uppercase tracking-[0.24em] text-[#8d8073] outline-none hover:text-[#efe8de]"
+          >
+            Another PLAUD
+          </Link>
+          <Link
+            href={conciergeInboxRemarkablePath()}
+            className="inline-flex min-h-12 items-center text-[11px] uppercase tracking-[0.24em] text-[#8d8073] outline-none hover:text-[#efe8de]"
+          >
+            Another reMarkable
+          </Link>
+        </div>
       </div>
     </ConciergeShell>
   );

@@ -45,6 +45,7 @@ describe("Human intake candidate security", () => {
     for (const file of walk(api)) {
       const source = readFileSync(file, "utf8");
       assert.doesNotMatch(source, /proposeHumanIntakeCandidates|ingestHumanIntakeCandidates/);
+      assert.doesNotMatch(source, /ingestHumanEvidenceCandidates|proposeParsedHumanEvidence/);
     }
   });
 });

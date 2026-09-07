@@ -3,6 +3,7 @@ import { getAuthenticatedHumanSourceStore } from "@/lib/continuum/client-memory/
 import { composeInboxViews } from "@/lib/continuum/client-memory/human-intake";
 import {
   conciergeInboxNewPath,
+  conciergeInboxRemarkablePath,
 } from "@/lib/continuum/client-memory/read/presentation";
 import { ConciergeShell } from "../components/concierge-shell";
 import { ConciergeUnavailable } from "../components/client-profile-view";
@@ -47,12 +48,18 @@ export default async function ConciergeInboxPage() {
       <h1 className="font-serif text-[2.15rem] font-normal leading-[1.08] tracking-[-0.04em] text-[#efe8de]">
         Inbox
       </h1>
-      <div className="mt-6">
+      <div className="mt-6 flex flex-wrap gap-4">
         <Link
           href={conciergeInboxNewPath()}
           className="inline-flex min-h-12 items-center text-[11px] uppercase tracking-[0.24em] text-[#efe8de] outline-none hover:text-[#ad9164] focus-visible:text-[#ad9164]"
         >
-          Add PLAUD source
+          Add PLAUD
+        </Link>
+        <Link
+          href={conciergeInboxRemarkablePath()}
+          className="inline-flex min-h-12 items-center text-[11px] uppercase tracking-[0.24em] text-[#8d8073] outline-none hover:text-[#efe8de] focus-visible:text-[#efe8de]"
+        >
+          Add reMarkable
         </Link>
       </div>
       <div className="mt-8">

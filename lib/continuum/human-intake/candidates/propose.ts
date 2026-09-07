@@ -7,6 +7,7 @@
 import {
   CANDIDATE_MUTATION_BOUNDARY,
   CANDIDATE_PARSER_HUMAN_INTAKE_V1,
+  type CandidateSourceSystem,
   type ContinuumCandidate,
   type ContinuumCandidateDraft,
 } from "@/lib/continuum/candidates/types";
@@ -20,6 +21,28 @@ import type {
   HumanIntakeWorld,
   IntakeParseHit,
 } from "./types";
+
+/**
+ * Shared Human Evidence mapping entrypoint.
+ * Adapter stamps sourceSystem / sourceRef. parse.ts never overwrites them.
+ */
+export type HumanEvidenceAdapterSource = Extract<
+  CandidateSourceSystem,
+  "human-intake" | "plaud" | "remarkable"
+>;
+
+export type PackHumanEvidenceLocatorRef = (input: {
+  start: number;
+  end: number;
+}) => { ok: true; sourceRef: string } | { ok: false; reason: "identity-too-long" };
+
+export type ProposeParsedHumanEvidenceInput = {
+  sourceSystem: HumanEvidenceAdapterSource;
+  packSourceRef: PackHumanEvidenceLocatorRef;
+  evidence: HumanIntakeEvidence;
+  world: HumanIntakeWorld;
+  createdAt?: string;
+};
 
 export type ProposeHumanIntakeCandidatesInput = {
   evidence: HumanIntakeEvidence;
@@ -73,16 +96,17 @@ function draftFromHit(
   evidence: HumanIntakeEvidence,
   world: HumanIntakeWorld,
   createdAt: string,
+  sourceSystem: HumanEvidenceAdapterSource,
+  packSourceRef: PackHumanEvidenceLocatorRef,
 ): ContinuumCandidateDraft | null {
-  const packed = packHumanIntakeCandidateSourceRef({
-    sourceId: evidence.sourceId,
+  const packed = packSourceRef({
     start: hit.locator.start,
     end: hit.locator.end,
   });
   if (!packed.ok) return null;
   const sourceTimestamp = evidence.capturedAt?.trim() || createdAt;
   const base = {
-    sourceSystem: "human-intake" as const,
+    sourceSystem,
     sourceRef: packed.sourceRef,
     sourceTimestamp,
     createdAt,
@@ -255,14 +279,21 @@ function draftFromHit(
   };
 }
 
-export function proposeHumanIntakeCandidates(
-  input: ProposeHumanIntakeCandidatesInput,
+export function proposeParsedHumanEvidence(
+  input: ProposeParsedHumanEvidenceInput,
 ): ProposeHumanIntakeCandidatesResult {
   const createdAt = input.createdAt ?? new Date(0).toISOString();
   const seen = new Set<string>();
   const candidates: ContinuumCandidate[] = [];
   for (const hit of parseHumanIntakeEvidence(input.evidence, input.world)) {
-    const draft = draftFromHit(hit, input.evidence, input.world, createdAt);
+    const draft = draftFromHit(
+      hit,
+      input.evidence,
+      input.world,
+      createdAt,
+      input.sourceSystem,
+      input.packSourceRef,
+    );
     if (!draft) continue;
     const row = assignCandidateId(draft);
     if (seen.has(row.candidateId)) continue;
@@ -275,4 +306,21 @@ export function proposeHumanIntakeCandidates(
     liveModelCalls: false,
     parserVersion: CANDIDATE_PARSER_HUMAN_INTAKE_V1,
   };
+}
+
+export function proposeHumanIntakeCandidates(
+  input: ProposeHumanIntakeCandidatesInput,
+): ProposeHumanIntakeCandidatesResult {
+  return proposeParsedHumanEvidence({
+    sourceSystem: "human-intake",
+    packSourceRef: ({ start, end }) =>
+      packHumanIntakeCandidateSourceRef({
+        sourceId: input.evidence.sourceId,
+        start,
+        end,
+      }),
+    evidence: input.evidence,
+    world: input.world,
+    createdAt: input.createdAt,
+  });
 }

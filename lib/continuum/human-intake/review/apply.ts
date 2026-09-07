@@ -32,7 +32,7 @@ import {
   sourceIdOfCandidate,
   type HumanIntakeApplyPreview,
 } from "./preview";
-import { listHumanIntakeCandidatesForSource } from "../candidates/ingest";
+import { listHumanSourceCandidatesForSource } from "../candidates/ingest";
 
 export const HUMAN_INTAKE_JOB_SOURCE_REF_PREFIX = "human-intake:" as const;
 
@@ -241,7 +241,7 @@ async function refreshSourceReview(
   sourceId: string,
   now: string,
 ): Promise<void> {
-  const pending = (await listHumanIntakeCandidatesForSource(deps.candidates, sourceId)).some(
+  const pending = (await listHumanSourceCandidatesForSource(deps.candidates, sourceId)).some(
     (row) => row.reviewStatus === "pending" && row.candidateState !== "superseded",
   );
   await deps.updateSourceReviewStatus(

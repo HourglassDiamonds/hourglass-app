@@ -59,6 +59,7 @@ describe("Human intake security", () => {
       assert.doesNotMatch(source, /human-intake/);
       assert.doesNotMatch(source, /createSupabaseHumanSourceStore/);
       assert.doesNotMatch(source, /savePlaudHumanSource/);
+      assert.doesNotMatch(source, /saveRemarkableHumanSource/);
       assert.doesNotMatch(source, /continuum_human_sources/);
     }
   });

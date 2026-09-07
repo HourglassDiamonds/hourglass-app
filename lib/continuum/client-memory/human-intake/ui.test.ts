@@ -44,8 +44,16 @@ describe("Concierge human-source inbox UI", () => {
     assert.match(inbox, /index:\s*false/);
     assert.match(inbox, /getAuthenticatedHumanSourceStore/);
     const create = readFileSync(join(CONCIERGE_DIR, "inbox", "new", "page.tsx"), "utf8");
-    assert.match(create, /title:\s*"Add PLAUD source"/);
+    assert.match(create, /title:\s*"Post-call PLAUD"/);
     assert.match(create, /AddPlaudForm/);
+    assert.match(inbox, /Add reMarkable/);
+    const remarkable = readFileSync(
+      join(CONCIERGE_DIR, "inbox", "remarkable", "page.tsx"),
+      "utf8",
+    );
+    assert.match(remarkable, /title:\s*"Add reMarkable source"/);
+    assert.match(remarkable, /AddRemarkableForm/);
+    assert.match(remarkable, /does not OCR/);
     const detail = readFileSync(
       join(CONCIERGE_DIR, "inbox", "[sourceId]", "page.tsx"),
       "utf8",
@@ -54,6 +62,9 @@ describe("Concierge human-source inbox UI", () => {
     assert.match(detail, /HumanSourceDetail|IntakeCandidateReviewList/);
     assert.match(detail, /getAuthenticatedCandidateStore/);
     assert.match(detail, /CANDIDATE_STORAGE_NOT_ACTIVATED_MESSAGE/);
+    assert.match(detail, /ingestHumanEvidenceCandidates/);
+    assert.match(detail, /Another PLAUD/);
+    assert.match(detail, /Another reMarkable/);
     assert.doesNotMatch(detail, /InMemoryCandidateStore/);
   });
 
@@ -92,6 +103,7 @@ describe("Concierge human-source inbox UI", () => {
         reviewStatus: "pending",
         contextLayerProposed: "client",
         contextLayerConfirmed: "client",
+        originalFileName: null,
         createdAt: SAMPLE.ingestedAt,
         updatedAt: SAMPLE.ingestedAt,
       },
@@ -104,6 +116,7 @@ describe("Concierge human-source inbox UI", () => {
     );
     assert.match(html, /Reported by Justin/);
     assert.match(html, /did not read the original text conversation/);
+    assert.match(html, /This source is provenance, not memory/);
     assert.match(html, /Pending/);
     assert.match(html, /Candidates/);
     assert.match(html, /not memory until you approve/);
@@ -128,6 +141,15 @@ describe("Concierge human-source inbox UI", () => {
     assert.match(form, /transcriptFile/);
     assert.doesNotMatch(form, /handwritten/);
     assert.doesNotMatch(form, /createBrowserClient/);
+    const remarkableForm = readFileSync(
+      join(CONCIERGE_DIR, "components", "add-remarkable-form.tsx"),
+      "utf8",
+    );
+    assert.match(remarkableForm, /exportFile/);
+    assert.match(remarkableForm, /handwritten/);
+    assert.match(remarkableForm, /associatedText/);
+    assert.doesNotMatch(remarkableForm, /createBrowserClient/);
+    assert.doesNotMatch(remarkableForm, /openai|anthropic|tesseract/i);
     const labels = readFileSync(
       join(ROOT, "lib", "continuum", "client-memory", "human-intake", "labels.ts"),
       "utf8",

@@ -325,6 +325,7 @@ describe("Concierge Client Memory UI", () => {
     assert.match(actions, /trashConciergeNote/);
     assert.match(actions, /restoreConciergeNote/);
     assert.match(actions, /savePlaudHumanSource/);
+    assert.match(actions, /saveRemarkableHumanSource/);
     assert.match(actions, /getAuthenticatedHumanSourceStore/);
     assert.match(actions, /saveProjectLifecycleCorrection/);
     assert.doesNotMatch(actions, /from\("continuum_/);

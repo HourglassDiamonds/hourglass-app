@@ -96,13 +96,17 @@ export function HumanSourceDetail({
             </dd>
           </div>
         ) : null}
-        {source.rawMimeType || source.rawByteSize != null ? (
+        {source.rawMimeType || source.rawByteSize != null || source.originalFileName ? (
           <div>
             <dt className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
               File
             </dt>
             <dd className="mt-1 text-[15px] text-[#d8cfc4]">
-              {[source.rawMimeType, source.rawByteSize != null ? `${source.rawByteSize} bytes` : null]
+              {[
+                source.originalFileName,
+                source.rawMimeType,
+                source.rawByteSize != null ? `${source.rawByteSize} bytes` : null,
+              ]
                 .filter(Boolean)
                 .join(" · ")}
             </dd>
@@ -121,6 +125,10 @@ export function HumanSourceDetail({
         </section>
       ) : null}
 
+      <p className="mt-10 text-[15px] leading-relaxed text-[#9a8e82]">
+        This source is provenance, not memory. Candidates stay pending until
+        founder review.
+      </p>
       <section className="mt-10">
         <h2 className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
           Candidates

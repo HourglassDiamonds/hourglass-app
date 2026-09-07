@@ -134,6 +134,10 @@ export function conciergeInboxNewPath(): string {
   return `${conciergeInboxPath()}/new`;
 }
 
+export function conciergeInboxRemarkablePath(): string {
+  return `${conciergeInboxPath()}/remarkable`;
+}
+
 export function conciergeInboxSourcePath(sourceId: string): string {
   return `${conciergeInboxPath()}/${sourceId}`;
 }

@@ -28,7 +28,7 @@ import {
 } from "./types";
 
 const SOURCE_COLUMNS =
-  "id, source_type, external_source_id, content_sha256, captured_at, ingested_at, raw_storage_path, raw_mime_type, raw_byte_size, raw_text, parsed_text, source_author, reported_communication_type, parser_version, parse_status, review_status, context_layer_proposed, context_layer_confirmed, created_at, updated_at";
+  "id, source_type, external_source_id, content_sha256, captured_at, ingested_at, raw_storage_path, raw_mime_type, raw_byte_size, raw_text, parsed_text, source_author, reported_communication_type, parser_version, parse_status, review_status, context_layer_proposed, context_layer_confirmed, original_filename, created_at, updated_at";
 
 const LINK_COLUMNS =
   "source_id, entity_id, entity_kind, link_status, created_at";
@@ -110,6 +110,7 @@ function rowToSource(row: Record<string, unknown>): HumanSource {
     reviewStatus: row.review_status as HumanSource["reviewStatus"],
     contextLayerProposed: optionalContext(row.context_layer_proposed),
     contextLayerConfirmed: optionalContext(row.context_layer_confirmed),
+    originalFileName: optionalText(row.original_filename),
     createdAt: String(row.created_at),
     updatedAt: String(row.updated_at),
   };
@@ -135,6 +136,7 @@ function sourceToRow(row: HumanSource): Record<string, unknown> {
     review_status: row.reviewStatus,
     context_layer_proposed: row.contextLayerProposed,
     context_layer_confirmed: row.contextLayerConfirmed,
+    original_filename: row.originalFileName,
     created_at: row.createdAt,
     updated_at: row.updatedAt,
   };

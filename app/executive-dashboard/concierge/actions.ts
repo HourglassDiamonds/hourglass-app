@@ -34,10 +34,15 @@ import {
   HUMAN_COMMUNICATION_TYPES,
   HUMAN_SOURCE_FILE_MAX_BYTES,
   PLAUD_SOURCE_TYPE,
+  REMARKABLE_SOURCE_TYPE,
   decodeUtf8Bytes,
   extractPlaudRawText,
   isAllowedPlaudMime,
+  isAllowedRemarkableMime,
   plaudFileKindFromName,
+  remarkableKindFromName,
+  remarkableMimeFromName,
+  sanitizeOriginalFilename,
   type HumanCommunicationType,
   type IngestHumanSourceResult,
 } from "@/lib/continuum/client-memory/human-intake";
@@ -723,6 +728,9 @@ function humanPlaudMessage(result: IngestHumanSourceResult): string {
   if (result.reason === "invalid-input" && result.code === "oversized-file") {
     return "That file is too large.";
   }
+  if (result.reason === "invalid-input" && result.code === "invalid-mime") {
+    return "Use a PDF, PNG, or JPEG export.";
+  }
   if (result.reason === "entity-not-found" || result.reason === "entity-kind-mismatch") {
     return "That person or project could not be used.";
   }
@@ -815,6 +823,81 @@ export async function savePlaudHumanSource(
     reportedCommunicationType: communicationType,
     contextLayerConfirmed: contextLayer,
     contextLayerProposed: contextLayer,
+    personId,
+    projectId,
+  });
+
+  // Source capture only. Candidates are proposed on the source page
+  // through the shared #18 parser and durable #19 review path.
+  // Never call founder review here.
+  if (result.ok) {
+    redirect(conciergeInboxSourcePath(result.sourceId));
+  }
+  return { ok: false, message: humanPlaudMessage(result) };
+}
+
+function capturedAtFromForm(raw: string): string | null {
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  const parsed = Date.parse(trimmed);
+  if (Number.isNaN(parsed)) return null;
+  return new Date(parsed).toISOString();
+}
+
+export async function saveRemarkableHumanSource(
+  _prev: SavePlaudSourceState | null,
+  formData: FormData,
+): Promise<SavePlaudSourceState> {
+  const auth = await getAuthenticatedHumanSourceStore();
+  if (!auth.ok) {
+    return {
+      ok: false,
+      message:
+        auth.reason === "unauthorized"
+          ? "Sign in to continue."
+          : "Unable to save the source.",
+    };
+  }
+
+  const fileValue = formData.get("exportFile");
+  const file = fileValue instanceof File && fileValue.size > 0 ? fileValue : null;
+  if (!file) {
+    return { ok: false, message: "Choose a PDF, PNG, or JPEG export." };
+  }
+  if (file.size > HUMAN_SOURCE_FILE_MAX_BYTES) {
+    return { ok: false, message: "That file is too large." };
+  }
+  const kind = remarkableKindFromName(file.name);
+  const mimeOk = !file.type || isAllowedRemarkableMime(file.type);
+  if (!kind || !mimeOk) {
+    return { ok: false, message: "Use a PDF, PNG, or JPEG export." };
+  }
+  const originalFileName = sanitizeOriginalFilename(file.name);
+  if (!originalFileName) {
+    return { ok: false, message: "Use a PDF, PNG, or JPEG export." };
+  }
+  const associatedText = String(formData.get("associatedText") ?? "");
+  const capturedRaw = String(formData.get("capturedAt") ?? "");
+  const capturedAt = capturedAtFromForm(capturedRaw);
+  if (capturedRaw.trim() && !capturedAt) {
+    return { ok: false, message: "That captured time could not be read." };
+  }
+  const personId = String(formData.get("personId") ?? "").trim() || null;
+  const projectId = String(formData.get("projectId") ?? "").trim() || null;
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  const mimeType = file.type || remarkableMimeFromName(originalFileName) || "application/pdf";
+
+  const result = await auth.store.ingest({
+    sourceType: REMARKABLE_SOURCE_TYPE,
+    rawText: associatedText,
+    rawFile: {
+      bytes,
+      mimeType,
+      fileName: originalFileName,
+    },
+    originalFileName,
+    capturedAt,
+    reportedCommunicationType: "handwritten",
     personId,
     projectId,
   });

@@ -19,6 +19,7 @@ export {
   HUMAN_SOURCE_TEXT_MAX_LENGTH,
   HUMAN_SOURCE_TYPES,
   PLAUD_SOURCE_TYPE,
+  REMARKABLE_SOURCE_TYPE,
 } from "./types";
 export type {
   HumanCommunicationType,
@@ -35,7 +36,7 @@ export type {
   IngestHumanSourceInvalidCode,
   IngestHumanSourceResult,
 } from "./types";
-export { sha256Utf8, isContentSha256 } from "./hash";
+export { sha256Utf8, sha256Bytes, isContentSha256 } from "./hash";
 export {
   assertHumanSourceTextLength,
   canonicalizeHumanSourceText,
@@ -45,6 +46,13 @@ export {
   plaudFileKindFromName,
   PLAUD_FILE_EXTENSIONS,
 } from "./text";
+export {
+  REMARKABLE_FILE_EXTENSIONS,
+  isAllowedRemarkableMime,
+  remarkableKindFromName,
+  remarkableMimeFromName,
+  sanitizeOriginalFilename,
+} from "./remarkable";
 export {
   isFounderReportedProvenance,
   provenanceClassForCommunication,

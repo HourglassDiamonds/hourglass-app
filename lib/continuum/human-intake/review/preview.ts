@@ -10,7 +10,7 @@ import {
 import type { ContinuumCandidate } from "@/lib/continuum/candidates/types";
 import { PROJECT_SPEC_FIELD_LABELS } from "@/lib/continuum/client-memory/project-spec/types";
 import { humanIntakeProposedSummary } from "../candidates/present";
-import { sourceIdFromCandidateSourceRef } from "../candidates/source-ref";
+import { sourceIdFromHumanCandidateSourceRef } from "../candidates/source-ref";
 
 export type HumanIntakeApplyKind =
   | "source_note"
@@ -59,7 +59,7 @@ export type HumanIntakePreviewContext = {
 };
 
 export function sourceIdOfCandidate(row: ContinuumCandidate): string | null {
-  return sourceIdFromCandidateSourceRef(row.sourceRef);
+  return sourceIdFromHumanCandidateSourceRef(row.sourceRef);
 }
 
 export function previewHumanIntakeCandidateApply(

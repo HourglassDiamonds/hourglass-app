@@ -15,6 +15,7 @@ import {
   type ProposeHumanIntakeCandidatesInput,
   type ProposeHumanIntakeCandidatesResult,
 } from "./propose";
+import { listHumanEvidenceCandidatesForSource } from "@/lib/continuum/candidates/human-evidence";
 import { sourceIdFromCandidateSourceRef } from "./source-ref";
 
 export type IngestHumanIntakeCandidatesResult = ProposeHumanIntakeCandidatesResult & {
@@ -57,6 +58,29 @@ export async function listHumanIntakeCandidatesForSource(
       row.sourceSystem === "human-intake" &&
       sourceIdFromCandidateSourceRef(row.sourceRef) === sourceId,
   );
+}
+
+/**
+ * Shared #19 listing: Human Intake, PLAUD, and reMarkable candidates
+ * for one stored Human Source. Does not mix Gmail or Calendar.
+ */
+export async function listHumanSourceCandidatesForSource(
+  store: CandidateStore,
+  sourceId: string,
+): Promise<ContinuumCandidate[]> {
+  const [intake, plaud, remarkable] = await Promise.all([
+    listHumanIntakeCandidatesForSource(store, sourceId),
+    listHumanEvidenceCandidatesForSource(store, "plaud", sourceId),
+    listHumanEvidenceCandidatesForSource(store, "remarkable", sourceId),
+  ]);
+  const seen = new Set<string>();
+  const rows: ContinuumCandidate[] = [];
+  for (const row of [...intake, ...plaud, ...remarkable]) {
+    if (seen.has(row.candidateId)) continue;
+    seen.add(row.candidateId);
+    rows.push(row);
+  }
+  return rows;
 }
 
 function sourceMs(row: ContinuumCandidate): number {

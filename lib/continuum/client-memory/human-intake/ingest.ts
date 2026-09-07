@@ -5,7 +5,8 @@
 
 import { isRelationshipContextLayer } from "../contracts";
 import type { ClientMemoryEntity } from "../types";
-import { sha256Utf8 } from "./hash";
+import { sha256Bytes, sha256Utf8 } from "./hash";
+import { isAllowedRemarkableMime, remarkableKindFromName } from "./remarkable";
 import { humanSourceObjectPath } from "./storage";
 import {
   HUMAN_COMMUNICATION_TYPES,
@@ -112,11 +113,32 @@ export async function ingestHumanSource(
     return { ok: false, reason: "invalid-input", code: "invalid-context" };
   }
 
-  const rawText = canonicalizeHumanSourceText(input.rawText);
-  const length = assertHumanSourceTextLength(rawText);
-  if (length !== "ok") {
-    return { ok: false, reason: "invalid-input", code: length };
+  const file = input.rawFile ?? null;
+  if (file && file.bytes.byteLength > HUMAN_SOURCE_FILE_MAX_BYTES) {
+    return { ok: false, reason: "invalid-input", code: "oversized-file" };
   }
+  if (input.sourceType === "remarkable") {
+    if (!file) {
+      return { ok: false, reason: "invalid-input", code: "invalid-type" };
+    }
+    if (
+      !remarkableKindFromName(file.fileName) ||
+      !isAllowedRemarkableMime(file.mimeType)
+    ) {
+      return { ok: false, reason: "invalid-input", code: "invalid-mime" };
+    }
+  }
+
+  const rawText = canonicalizeHumanSourceText(input.rawText ?? "");
+  const length = assertHumanSourceTextLength(rawText);
+  const allowFileOnly = input.sourceType === "remarkable" && file != null;
+  if (length === "oversized-text") {
+    return { ok: false, reason: "invalid-input", code: "oversized-text" };
+  }
+  if (length === "empty-text" && !allowFileOnly) {
+    return { ok: false, reason: "invalid-input", code: "empty-text" };
+  }
+  const storedText = length === "ok" ? rawText : null;
 
   const capturedAt = normalizeOptionalId(input.capturedAt);
   if (capturedAt && Number.isNaN(Date.parse(capturedAt))) {
@@ -132,12 +154,11 @@ export async function ingestHumanSource(
     return { ok: false, reason: "invalid-input", code: "invalid-id" };
   }
 
-  const file = input.rawFile ?? null;
-  if (file && file.bytes.byteLength > HUMAN_SOURCE_FILE_MAX_BYTES) {
-    return { ok: false, reason: "invalid-input", code: "oversized-file" };
-  }
-
-  const contentSha256 = sha256Utf8(rawText);
+  const contentSha256 = storedText
+    ? sha256Utf8(storedText)
+    : sha256Bytes(file ? file.bytes : new Uint8Array());
+  const originalFileName =
+    file?.fileName?.trim() || input.originalFileName?.trim() || null;
   const externalSourceId = normalizeExternalId(input.externalSourceId);
 
   try {
@@ -201,7 +222,7 @@ export async function ingestHumanSource(
       rawStoragePath,
       rawMimeType: file?.mimeType ?? null,
       rawByteSize: file ? file.bytes.byteLength : null,
-      rawText,
+      rawText: storedText,
       parsedText: null,
       sourceAuthor: HUMAN_SOURCE_AUTHOR_JUSTIN,
       reportedCommunicationType: input.reportedCommunicationType,
@@ -210,6 +231,7 @@ export async function ingestHumanSource(
       reviewStatus: HUMAN_SOURCE_REVIEW_STATUS_PENDING,
       contextLayerProposed: input.contextLayerProposed ?? null,
       contextLayerConfirmed: input.contextLayerConfirmed ?? null,
+      originalFileName,
       createdAt: now,
       updatedAt: now,
     };

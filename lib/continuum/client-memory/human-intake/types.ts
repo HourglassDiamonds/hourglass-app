@@ -66,6 +66,7 @@ export const HUMAN_SOURCE_FILE_MAX_BYTES = 1_048_576;
 export const HUMAN_SOURCE_PREVIEW_MAX_LENGTH = 140;
 
 export const PLAUD_SOURCE_TYPE: HumanSourceType = "plaud";
+export const REMARKABLE_SOURCE_TYPE: HumanSourceType = "remarkable";
 
 export const HUMAN_SOURCE_PARSE_STATUS_STORED: HumanParseStatus = "stored";
 export const HUMAN_SOURCE_REVIEW_STATUS_PENDING: HumanReviewStatus = "pending";
@@ -89,6 +90,7 @@ export type HumanSource = {
   reviewStatus: HumanReviewStatus;
   contextLayerProposed: RelationshipContextLayer | null;
   contextLayerConfirmed: RelationshipContextLayer | null;
+  originalFileName: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -104,13 +106,14 @@ export type HumanSourceLink = {
 export type IngestHumanSourceInput = {
   sourceType: HumanSourceType;
   externalSourceId?: string | null;
-  rawText: string;
+  rawText?: string | null;
   capturedAt?: string | null;
   reportedCommunicationType: HumanCommunicationType;
   contextLayerProposed?: RelationshipContextLayer | null;
   contextLayerConfirmed?: RelationshipContextLayer | null;
   personId?: string | null;
   projectId?: string | null;
+  originalFileName?: string | null;
   rawFile?: {
     bytes: Uint8Array;
     mimeType: string;
@@ -126,7 +129,8 @@ export type IngestHumanSourceInvalidCode =
   | "invalid-type"
   | "invalid-communication"
   | "invalid-context"
-  | "invalid-captured-at";
+  | "invalid-captured-at"
+  | "invalid-mime";
 
 export type IngestHumanSourceResult =
   | {

@@ -13,6 +13,7 @@ import {
   conciergeBirthdayPath,
   conciergeInboxNewPath,
   conciergeInboxPath,
+  conciergeInboxRemarkablePath,
   conciergeInboxSourcePath,
   conciergeCorrectProjectKindPath,
   conciergeCorrectProjectLifecyclePath,
@@ -223,6 +224,10 @@ describe("Concierge presentation", () => {
     );
     assert.equal(conciergeInboxPath(), "/executive-dashboard/concierge/inbox");
     assert.equal(conciergeInboxNewPath(), "/executive-dashboard/concierge/inbox/new");
+    assert.equal(
+      conciergeInboxRemarkablePath(),
+      "/executive-dashboard/concierge/inbox/remarkable",
+    );
     assert.equal(
       conciergeInboxSourcePath("eb2802bd-e312-471e-8582-8dbd5ad2e04b"),
       "/executive-dashboard/concierge/inbox/eb2802bd-e312-471e-8582-8dbd5ad2e04b",

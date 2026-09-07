@@ -84,3 +84,23 @@ export {
   effectiveCandidatePayload,
   effectiveCandidateTarget,
 } from "./review";
+export {
+  ingestHumanEvidenceCandidates,
+  listHumanEvidenceCandidatesForSource,
+  normalizeHumanSourceEvidence,
+  proposeHumanEvidenceCandidates,
+} from "./human-evidence";
+export type {
+  HumanEvidenceSourceSystem,
+  HumanEvidenceTextOrigin,
+  IngestHumanEvidenceResult,
+  NormalizedHumanEvidence,
+  ProposeHumanEvidenceResult,
+} from "./human-evidence";
+export {
+  HUMAN_EVIDENCE_SOURCE_VERSION,
+  humanEvidenceSourceRefPrefix,
+  packHumanEvidenceSourceRef,
+  parseHumanEvidenceSourceRef,
+} from "./human-evidence-source-ref";
+export type { HumanEvidenceSourceRef } from "./human-evidence-source-ref";

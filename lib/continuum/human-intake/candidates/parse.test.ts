@@ -140,6 +140,8 @@ When can we confirm metal?`;
     const source = readFileSync(PARSER, "utf8");
     assert.doesNotMatch(source, /createProjectJob/);
     assert.doesNotMatch(source, /continuum_project_jobs/);
+    assert.doesNotMatch(source, /sourceSystem/);
+    assert.doesNotMatch(source, /sourceRef/);
     const hits = parseHumanIntakeEvidence(
       {
         sourceId: "source",

@@ -4,6 +4,7 @@
  */
 
 import { CANDIDATE_SOURCE_REF_MAX } from "@/lib/continuum/candidates/types";
+import { parseHumanEvidenceSourceRef } from "@/lib/continuum/candidates/human-evidence-source-ref";
 import type { IntakeLocator } from "./types";
 
 export const HUMAN_INTAKE_CANDIDATE_SOURCE_VERSION = "hi1" as const;
@@ -60,4 +61,14 @@ export function parseHumanIntakeCandidateSourceRef(
 
 export function sourceIdFromCandidateSourceRef(sourceRef: string): string | null {
   return parseHumanIntakeCandidateSourceRef(sourceRef)?.sourceId ?? null;
+}
+
+export function sourceIdFromHumanCandidateSourceRef(
+  sourceRef: string,
+): string | null {
+  return (
+    sourceIdFromCandidateSourceRef(sourceRef) ??
+    parseHumanEvidenceSourceRef(sourceRef)?.sourceId ??
+    null
+  );
 }
