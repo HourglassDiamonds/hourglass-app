@@ -9,6 +9,7 @@ import { ConciergeSearch } from "./concierge-search";
 import { ConciergeSignOut } from "./concierge-sign-out";
 import { OpenProjectsHome } from "./open-projects-home";
 import { QuickCapture } from "./quick-capture";
+import { CONCIERGE_CALENDAR_PATH } from "@/lib/continuum/calendar/types";
 import { CONCIERGE_GMAIL_PATH } from "@/lib/continuum/gmail/types";
 import {
   conciergeCohort1Path,
@@ -55,6 +56,12 @@ export function CommandCenterHome({
               className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.24em] text-[#8d8073] outline-none hover:text-[#efe8de] focus-visible:text-[#efe8de]"
             >
               Gmail
+            </Link>
+            <Link
+              href={CONCIERGE_CALENDAR_PATH}
+              className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.24em] text-[#8d8073] outline-none hover:text-[#efe8de] focus-visible:text-[#efe8de]"
+            >
+              Calendar
             </Link>
             <Link
               href={conciergeCohort1Path()}

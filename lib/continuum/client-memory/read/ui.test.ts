@@ -304,6 +304,7 @@ describe("Concierge Client Memory UI", () => {
     assert.doesNotMatch(command, /from "\.\/projects-home"/);
     assert.doesNotMatch(command, /<ProjectsHome/);
     assert.match(command, /OpenProjectsHome/);
+    assert.match(command, /CONCIERGE_CALENDAR_PATH/);
     assert.match(command, /<ConciergeSearch \/>/);
     assert.doesNotMatch(command, /autoFocus/);
     assert.doesNotMatch(command, /intent=/);
