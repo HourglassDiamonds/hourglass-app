@@ -35,7 +35,8 @@ describe("eight-project Gmail candidate dry-run", () => {
         row.proposedTarget.projectId === EIGHT_PROJECT_IDS.pennock,
     );
     assert.ok(platinum);
-    assert.equal(platinum?.status, "conflict_review_required");
+    assert.equal(platinum?.candidateState, "conflict");
+    assert.equal(platinum?.reviewStatus, "pending");
     const supply = dryRun.candidates.find(
       (row) =>
         row.payload.kind === "structured_spec" &&
@@ -43,7 +44,8 @@ describe("eight-project Gmail candidate dry-run", () => {
         /synthetic sapphire/i.test(row.payload.proposedValue),
     );
     assert.ok(supply);
-    assert.equal(supply?.status, "conflict_review_required");
+    assert.equal(supply?.candidateState, "conflict");
+    assert.equal(supply?.reviewStatus, "pending");
   });
 
   it("surfaces Lee / Spiegel refinement, approval, durability, and render request", () => {
@@ -91,7 +93,8 @@ describe("eight-project Gmail candidate dry-run", () => {
         row.payload.proposedValue === "12.5",
     );
     assert.ok(size);
-    assert.equal(size?.status, "conflict_review_required");
+    assert.equal(size?.candidateState, "conflict");
+    assert.equal(size?.reviewStatus, "pending");
     const vendor = dryRun.candidates.find(
       (row) =>
         row.candidateType === "open_job" &&
@@ -122,7 +125,8 @@ describe("eight-project Gmail candidate dry-run", () => {
         row.proposedTarget.projectId === EIGHT_PROJECT_IDS.sarah,
     );
     assert.ok(size);
-    assert.equal(size?.status, "pending");
+    assert.equal(size?.candidateState, "active");
+    assert.equal(size?.reviewStatus, "pending");
     assert.ok(
       dryRun.candidates.some(
         (row) =>

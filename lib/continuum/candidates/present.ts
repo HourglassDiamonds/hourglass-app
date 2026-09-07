@@ -6,7 +6,10 @@
 import {
   CANDIDATE_CONTRACT_VERSION,
   CANDIDATE_MUTATION_BOUNDARY,
-  CANDIDATE_STATUSES,
+  CANDIDATE_REVIEW_ACTIONS,
+  CANDIDATE_REVIEW_STATUSES,
+  CANDIDATE_SOURCE_SYSTEMS,
+  CANDIDATE_STATES,
   CANDIDATE_TYPES,
   type CandidateConsumerContract,
   type ContinuumCandidate,
@@ -15,9 +18,14 @@ import {
 export const CANDIDATE_CONSUMER_CONTRACT: CandidateConsumerContract = {
   contractVersion: CANDIDATE_CONTRACT_VERSION,
   types: CANDIDATE_TYPES,
-  statuses: CANDIDATE_STATUSES,
+  states: CANDIDATE_STATES,
+  reviewStatuses: CANDIDATE_REVIEW_STATUSES,
+  reviewActions: CANDIDATE_REVIEW_ACTIONS,
+  sourceSystems: CANDIDATE_SOURCE_SYSTEMS,
   mutationBoundary: CANDIDATE_MUTATION_BOUNDARY,
   brainGate: "pluggable-later",
+  reviewOwnedBy: "founder-review",
+  stateOwnedBy: "source-adapter-and-lineage",
 };
 
 export type CandidateReadModel = {
@@ -26,7 +34,12 @@ export type CandidateReadModel = {
   sourceRef: string;
   sourceTimestamp: string;
   candidateType: ContinuumCandidate["candidateType"];
-  status: ContinuumCandidate["status"];
+  candidateState: ContinuumCandidate["candidateState"];
+  reviewStatus: ContinuumCandidate["reviewStatus"];
+  lastReviewAction: ContinuumCandidate["lastReviewAction"];
+  founderEditedPayload: ContinuumCandidate["founderEditedPayload"];
+  founderEditedTarget: ContinuumCandidate["founderEditedTarget"];
+  reviewedAt: ContinuumCandidate["reviewedAt"];
   confidence: ContinuumCandidate["confidence"];
   canonical: false;
   automaticApply: false;
@@ -46,7 +59,16 @@ export function presentCandidate(row: ContinuumCandidate): CandidateReadModel {
     sourceRef: row.sourceRef,
     sourceTimestamp: row.sourceTimestamp,
     candidateType: row.candidateType,
-    status: row.status,
+    candidateState: row.candidateState,
+    reviewStatus: row.reviewStatus,
+    lastReviewAction: row.lastReviewAction,
+    founderEditedPayload: row.founderEditedPayload
+      ? { ...row.founderEditedPayload }
+      : null,
+    founderEditedTarget: row.founderEditedTarget
+      ? { ...row.founderEditedTarget }
+      : null,
+    reviewedAt: row.reviewedAt,
     confidence: row.confidence,
     canonical: false,
     automaticApply: false,

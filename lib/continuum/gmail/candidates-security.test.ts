@@ -40,6 +40,11 @@ describe("Gmail Candidate security", () => {
       assert.doesNotMatch(source, /OPENAI|ANTHROPIC|GOOGLE_API_KEY/);
       assert.doesNotMatch(source, /NEXT_PUBLIC_CONTINUUM_GMAIL/);
     }
+    for (const file of walk(CANDIDATE_DIR, ".ts")) {
+      if (file.endsWith(".test.ts")) continue;
+      const source = readFileSync(file, "utf8");
+      assert.doesNotMatch(source, /applyFounderReview|applyReview\(/);
+    }
   });
 
   it("keeps the inspection surface internal and review-free", () => {

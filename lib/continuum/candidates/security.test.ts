@@ -22,6 +22,21 @@ describe("candidate contract security", () => {
   it("exposes the consumer contract for later slices without writers", () => {
     assert.equal(CANDIDATE_CONSUMER_CONTRACT.contractVersion, "continuum-candidates-v1");
     assert.deepEqual([...CANDIDATE_CONSUMER_CONTRACT.types], [...CANDIDATE_TYPES]);
+    assert.deepEqual([...CANDIDATE_CONSUMER_CONTRACT.states], ["active", "conflict", "superseded"]);
+    assert.deepEqual([...CANDIDATE_CONSUMER_CONTRACT.reviewStatuses], [
+      "pending",
+      "approved",
+      "discarded",
+      "deferred",
+    ]);
+    assert.deepEqual([...CANDIDATE_CONSUMER_CONTRACT.reviewActions], [
+      "approve",
+      "edit",
+      "discard",
+      "defer",
+    ]);
+    assert.equal(CANDIDATE_CONSUMER_CONTRACT.reviewOwnedBy, "founder-review");
+    assert.equal(CANDIDATE_CONSUMER_CONTRACT.stateOwnedBy, "source-adapter-and-lineage");
     assert.equal(CANDIDATE_CONSUMER_CONTRACT.brainGate, "pluggable-later");
     assert.equal(CANDIDATE_MUTATION_BOUNDARY.canonical, false);
     assert.equal(CANDIDATE_MUTATION_BOUNDARY.callsSpecWriter, false);

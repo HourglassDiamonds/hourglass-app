@@ -1,6 +1,7 @@
 /**
  * Persist Gmail candidates with identity dedupe and auditable lineage.
  * Newer evidence supersedes stale proposals without deleting them.
+ * Founder review_status is preserved across reprocess and supersession.
  */
 
 import type { CandidateStore, ContinuumCandidate } from "@/lib/continuum/candidates/types";
@@ -22,8 +23,13 @@ function sourceMs(row: ContinuumCandidate): number {
   return Number.isFinite(ms) ? ms : 0;
 }
 
+function evidenceState(row: ContinuumCandidate): ContinuumCandidate["candidateState"] {
+  if (row.candidateState === "conflict") return "conflict";
+  return "active";
+}
+
 export async function applyCandidateLineage(
-  store: InMemoryCandidateStore,
+  store: CandidateStore,
 ): Promise<void> {
   const rows = await store.list();
   const groups = new Map<string, ContinuumCandidate[]>();
@@ -42,14 +48,10 @@ export async function applyCandidateLineage(
     });
     const newest = sorted[sorted.length - 1]!;
     const previous = sorted[sorted.length - 2] ?? null;
+    // Preserve founder review fields on both the current and superseded rows.
     await store.replace({
       ...newest,
-      status:
-        newest.status === "conflict_review_required"
-          ? "conflict_review_required"
-          : newest.status === "superseded"
-            ? "pending"
-            : newest.status,
+      candidateState: evidenceState(newest),
       supersedesCandidateId: previous?.candidateId ?? null,
       supersededByCandidateId: null,
     });
@@ -57,7 +59,7 @@ export async function applyCandidateLineage(
       if (row.candidateId === newest.candidateId) continue;
       await store.replace({
         ...row,
-        status: "superseded",
+        candidateState: "superseded",
         supersededByCandidateId: newest.candidateId,
         supersedesCandidateId: row.supersedesCandidateId,
       });

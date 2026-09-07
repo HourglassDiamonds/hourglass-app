@@ -17,7 +17,13 @@ describe("Continuum Candidate SQL", () => {
     assert.match(sql, /automatic_apply boolean not null default false check \(automatic_apply = false\)/);
     assert.match(sql, /char_length\(source_ref\) <= 2048/);
     assert.match(sql, /structured_spec/);
-    assert.match(sql, /conflict_review_required/);
+    assert.match(sql, /candidate_state in \('active', 'conflict', 'superseded'\)/);
+    assert.match(sql, /review_status in \('pending', 'approved', 'discarded', 'deferred'\)/);
+    assert.match(sql, /last_review_action in \('approve', 'edit', 'discard', 'defer'\)/);
+    assert.match(sql, /founder_edited_payload jsonb/);
+    assert.match(sql, /founder_edited_target jsonb/);
+    assert.match(sql, /human-intake/);
+    assert.match(sql, /google_calendar/);
     assert.equal((sql.match(/enable row level security/g) ?? []).length, 1);
     assert.doesNotMatch(sql, /create policy/i);
     assert.doesNotMatch(sql, /grant .* to anon/i);

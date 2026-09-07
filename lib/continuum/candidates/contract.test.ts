@@ -3,8 +3,11 @@ import { describe, it } from "node:test";
 import {
   CANDIDATE_CONTRACT_VERSION,
   CANDIDATE_MUTATION_BOUNDARY,
+  CANDIDATE_REVIEW_ACTIONS,
+  CANDIDATE_REVIEW_STATUSES,
   CANDIDATE_SOURCE_REF_MAX,
-  CANDIDATE_STATUSES,
+  CANDIDATE_SOURCE_SYSTEMS,
+  CANDIDATE_STATES,
   CANDIDATE_TYPES,
   DETERMINISTIC_CANDIDATE_BRAIN_GATE,
 } from "./index";
@@ -22,10 +25,28 @@ describe("Continuum Candidate contract", () => {
       "date",
       "follow_up",
     ]);
-    assert.deepEqual([...CANDIDATE_STATUSES], [
+    assert.deepEqual([...CANDIDATE_STATES], ["active", "conflict", "superseded"]);
+    assert.deepEqual([...CANDIDATE_REVIEW_STATUSES], [
       "pending",
-      "conflict_review_required",
-      "superseded",
+      "approved",
+      "discarded",
+      "deferred",
+    ]);
+    assert.deepEqual([...CANDIDATE_REVIEW_ACTIONS], [
+      "approve",
+      "edit",
+      "discard",
+      "defer",
+    ]);
+  });
+
+  it("publishes a source-agnostic allow-list for later harvest slices", () => {
+    assert.deepEqual([...CANDIDATE_SOURCE_SYSTEMS], [
+      "gmail",
+      "human-intake",
+      "plaud",
+      "remarkable",
+      "google_calendar",
     ]);
   });
 

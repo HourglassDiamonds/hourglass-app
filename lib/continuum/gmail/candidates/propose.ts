@@ -113,7 +113,7 @@ function draftsFromEvidence(
         ruleIds: personHit.ruleIds,
         matchedText: null,
       },
-      status: "pending",
+      candidateState: "active",
     });
   }
 
@@ -134,7 +134,7 @@ function draftsFromEvidence(
         ruleIds: hit.ruleIds,
         matchedText: hit.token,
       },
-      status: "pending",
+      candidateState: "active",
     });
   }
 
@@ -165,7 +165,7 @@ function draftsFromEvidence(
             : spec.ruleIds,
           matchedText: spec.matchedText,
         },
-        status: spec.conflict ? "conflict_review_required" : "pending",
+        candidateState: spec.conflict ? "conflict" : "active",
       });
     }
   }
@@ -187,7 +187,7 @@ function draftsFromEvidence(
       },
       confidence: primaryProject ? "medium" : "low",
       evidenceBasis: { ruleIds: ctx.ruleIds, matchedText: ctx.matchedText },
-      status: "pending",
+      candidateState: "active",
     });
   }
 
@@ -207,7 +207,7 @@ function draftsFromEvidence(
       },
       confidence: "medium",
       evidenceBasis: { ruleIds: note.ruleIds, matchedText: note.matchedText },
-      status: "pending",
+      candidateState: "active",
     });
   }
 
@@ -232,7 +232,7 @@ function draftsFromEvidence(
       },
       confidence: "medium",
       evidenceBasis: { ruleIds: job.ruleIds, matchedText: job.matchedText },
-      status: "pending",
+      candidateState: "active",
     });
   }
 
@@ -254,7 +254,7 @@ function draftsFromEvidence(
         },
         confidence: date.isoDate ? "medium" : "low",
         evidenceBasis: { ruleIds: date.ruleIds, matchedText: date.matchedText },
-        status: "pending",
+        candidateState: "active",
       });
     } else {
       drafts.push({
@@ -276,7 +276,7 @@ function draftsFromEvidence(
         },
         confidence: date.isoDate ? "high" : "ambiguous",
         evidenceBasis: { ruleIds: date.ruleIds, matchedText: date.matchedText },
-        status: "pending",
+        candidateState: "active",
       });
     }
   }

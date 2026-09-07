@@ -19,7 +19,7 @@ export const GMAIL_CANDIDATE_DEV_HEADING =
   "Gmail candidates — developer inspection" as const;
 
 export const GMAIL_CANDIDATE_DEV_WARNING =
-  "Internal contract inspection only. Not founder review (#19). No canonical writes.";
+  "FIXTURE inspection only — not the real #16B indexed-Gmail acceptance. Internal contract inspection. Not founder review (#19). No canonical writes.";
 
 export type EightProjectCandidateDryRun = {
   mutationBoundary: typeof CANDIDATE_MUTATION_BOUNDARY;

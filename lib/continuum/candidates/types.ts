@@ -2,9 +2,11 @@
  * Canonical Continuum Candidate contract (#17).
  * Candidate ≠ truth. Cross-source: Gmail, Human Intake, PLAUD, reMarkable, Calendar.
  * Does not write Persons, specs, lifecycle, Kind, Open Jobs, or Gmail.
+ *
+ * Option B: evidence lineage (candidate_state) is separate from founder
+ * review_status. Source adapters never own approve/edit/discard/defer.
  */
 
-import type { ContinuumSourceSystem } from "../contracts/types";
 import type { OpenJobActor, OpenJobKind } from "../client-memory/project-jobs/types";
 import type { EditableProjectSpecField } from "../client-memory/project-spec/types";
 import type { RelationshipContextLayer } from "../client-memory/types";
@@ -36,13 +38,57 @@ export const CANDIDATE_CONFIDENCES = [
 
 export type CandidateConfidence = (typeof CANDIDATE_CONFIDENCES)[number];
 
-export const CANDIDATE_STATUSES = [
+/**
+ * Evidence / lineage state. Owned by source adapters + idempotent ingest.
+ * Conflict remains even after founder review.
+ */
+export const CANDIDATE_STATES = ["active", "conflict", "superseded"] as const;
+
+export type CandidateState = (typeof CANDIDATE_STATES)[number];
+
+/**
+ * Founder review lifecycle for #19. Persistable. Not owned by source adapters.
+ * `edit` is an action, not a status: it stores founderEditedPayload /
+ * founderEditedTarget and audit provenance. It does not write canonical state.
+ */
+export const CANDIDATE_REVIEW_STATUSES = [
   "pending",
-  "conflict_review_required",
-  "superseded",
+  "approved",
+  "discarded",
+  "deferred",
 ] as const;
 
-export type CandidateStatus = (typeof CANDIDATE_STATUSES)[number];
+export type CandidateReviewStatus = (typeof CANDIDATE_REVIEW_STATUSES)[number];
+
+export const CANDIDATE_REVIEW_ACTIONS = [
+  "approve",
+  "edit",
+  "discard",
+  "defer",
+] as const;
+
+export type CandidateReviewAction = (typeof CANDIDATE_REVIEW_ACTIONS)[number];
+
+/**
+ * Allow-list for Candidate provenance. Invalid values are not representable
+ * in TypeScript and are rejected by the UNAPPLIED SQL CHECK.
+ * Do not implement Calendar association in #17.
+ */
+export const CANDIDATE_SOURCE_SYSTEMS = [
+  "gmail",
+  "human-intake",
+  "plaud",
+  "remarkable",
+  "google_calendar",
+] as const;
+
+export type CandidateSourceSystem = (typeof CANDIDATE_SOURCE_SYSTEMS)[number];
+
+export function isCandidateSourceSystem(
+  value: string,
+): value is CandidateSourceSystem {
+  return (CANDIDATE_SOURCE_SYSTEMS as readonly string[]).includes(value);
+}
 
 export const CANDIDATE_SOURCE_REF_MAX = 2048;
 
@@ -151,7 +197,7 @@ export type CandidatePayload =
 
 export type ContinuumCandidate = {
   candidateId: string;
-  sourceSystem: ContinuumSourceSystem;
+  sourceSystem: CandidateSourceSystem;
   sourceRef: string;
   sourceTimestamp: string;
   candidateType: CandidateType;
@@ -159,7 +205,12 @@ export type ContinuumCandidate = {
   payload: CandidatePayload;
   confidence: CandidateConfidence;
   evidenceBasis: CandidateEvidenceBasis;
-  status: CandidateStatus;
+  candidateState: CandidateState;
+  reviewStatus: CandidateReviewStatus;
+  lastReviewAction: CandidateReviewAction | null;
+  founderEditedPayload: CandidatePayload | null;
+  founderEditedTarget: ProposedCanonicalTarget | null;
+  reviewedAt: string | null;
   createdAt: string;
   canonical: false;
   automaticApply: false;
@@ -170,7 +221,14 @@ export type ContinuumCandidate = {
 
 export type ContinuumCandidateDraft = Omit<
   ContinuumCandidate,
-  "createdAt" | "supersedesCandidateId" | "supersededByCandidateId"
+  | "createdAt"
+  | "supersedesCandidateId"
+  | "supersededByCandidateId"
+  | "reviewStatus"
+  | "lastReviewAction"
+  | "founderEditedPayload"
+  | "founderEditedTarget"
+  | "reviewedAt"
 > & {
   createdAt?: string;
   supersedesCandidateId?: string | null;
@@ -178,7 +236,7 @@ export type ContinuumCandidateDraft = Omit<
 };
 
 export type CandidateIdentityKey = {
-  sourceSystem: ContinuumSourceSystem;
+  sourceSystem: CandidateSourceSystem;
   sourceRef: string;
   candidateType: CandidateType;
   targetKind: ProposedCanonicalTarget["kind"];
@@ -191,16 +249,41 @@ export type PutCandidateResult =
   | { status: "inserted"; record: ContinuumCandidate }
   | { status: "duplicate"; record: ContinuumCandidate };
 
+export type FounderReviewInput =
+  | { action: "approve"; payload?: CandidatePayload }
+  | {
+      action: "edit";
+      payload: CandidatePayload;
+      proposedTarget?: ProposedCanonicalTarget;
+    }
+  | { action: "discard" }
+  | { action: "defer" };
+
+export type ApplyReviewResult =
+  | { ok: true; record: ContinuumCandidate }
+  | { ok: false; reason: "not-found" };
+
 export type CandidateStore = {
   put(row: ContinuumCandidate): Promise<PutCandidateResult>;
   get(candidateId: string): Promise<ContinuumCandidate | null>;
   list(): Promise<ContinuumCandidate[]>;
+  replace(row: ContinuumCandidate): Promise<ContinuumCandidate>;
+  applyReview(
+    candidateId: string,
+    input: FounderReviewInput,
+    reviewedAt: string,
+  ): Promise<ApplyReviewResult>;
 };
 
 export type CandidateConsumerContract = {
   contractVersion: typeof CANDIDATE_CONTRACT_VERSION;
   types: typeof CANDIDATE_TYPES;
-  statuses: typeof CANDIDATE_STATUSES;
+  states: typeof CANDIDATE_STATES;
+  reviewStatuses: typeof CANDIDATE_REVIEW_STATUSES;
+  reviewActions: typeof CANDIDATE_REVIEW_ACTIONS;
+  sourceSystems: typeof CANDIDATE_SOURCE_SYSTEMS;
   mutationBoundary: CandidateMutationBoundary;
   brainGate: "pluggable-later";
+  reviewOwnedBy: "founder-review";
+  stateOwnedBy: "source-adapter-and-lineage";
 };

@@ -255,7 +255,8 @@ describe("Gmail → Candidate adapter", () => {
         row.payload.fieldName === "finger_size",
     );
     assert.equal(specs.length, 1);
-    assert.equal(specs[0]?.status, "pending");
+    assert.equal(specs[0]?.candidateState, "active");
+    assert.equal(specs[0]?.reviewStatus, "pending");
     if (specs[0]?.payload.kind === "structured_spec") {
       assert.equal(specs[0].payload.proposedValue, "8.5");
       assert.equal(specs[0].payload.currentValue, null);
@@ -292,7 +293,8 @@ describe("Gmail → Candidate adapter", () => {
         row.payload.fieldName === "finger_size",
     );
     assert.equal(specs.length, 1);
-    assert.equal(specs[0]?.status, "conflict_review_required");
+    assert.equal(specs[0]?.candidateState, "conflict");
+    assert.equal(specs[0]?.reviewStatus, "pending");
     if (specs[0]?.payload.kind === "structured_spec") {
       assert.equal(specs[0].payload.proposedValue, "12.5");
       assert.equal(specs[0].payload.currentValue, "12");
@@ -528,9 +530,11 @@ describe("Gmail → Candidate adapter", () => {
     assert.equal(specs.length, 2);
     const older = specs.find((row) => row.sourceTimestamp.startsWith("2025"));
     const newer = specs.find((row) => row.sourceTimestamp.startsWith("2026"));
-    assert.equal(older?.status, "superseded");
+    assert.equal(older?.candidateState, "superseded");
+    assert.equal(older?.reviewStatus, "pending");
     assert.equal(older?.supersededByCandidateId, newer?.candidateId);
-    assert.ok(newer?.status === "pending" || newer?.status === "conflict_review_required");
+    assert.ok(newer?.candidateState === "active" || newer?.candidateState === "conflict");
+    assert.equal(newer?.reviewStatus, "pending");
     assert.equal(newer?.supersedesCandidateId, older?.candidateId);
     assert.equal(newer?.supersededByCandidateId, null);
   });

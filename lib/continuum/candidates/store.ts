@@ -1,14 +1,24 @@
 /**
  * In-memory Candidate store.
- * Duplicate identity is idempotent. Lineage is additive, not destructive.
+ * Duplicate identity is idempotent and preserves founder review.
+ * Lineage is additive, not destructive.
  */
 
+import { applyFounderReview } from "./review";
 import { logicalProposalKey } from "./identity";
 import type {
+  ApplyReviewResult,
   CandidateStore,
   ContinuumCandidate,
+  FounderReviewInput,
   PutCandidateResult,
 } from "./types";
+
+function clonePayload(
+  payload: ContinuumCandidate["payload"],
+): ContinuumCandidate["payload"] {
+  return { ...payload };
+}
 
 function clone(row: ContinuumCandidate): ContinuumCandidate {
   return {
@@ -18,8 +28,28 @@ function clone(row: ContinuumCandidate): ContinuumCandidate {
       matchedText: row.evidenceBasis.matchedText,
     },
     proposedTarget: { ...row.proposedTarget },
-    payload: { ...row.payload },
+    payload: clonePayload(row.payload),
+    founderEditedPayload: row.founderEditedPayload
+      ? clonePayload(row.founderEditedPayload)
+      : null,
+    founderEditedTarget: row.founderEditedTarget
+      ? { ...row.founderEditedTarget }
+      : null,
   };
+}
+
+function adapterInsert(row: ContinuumCandidate): ContinuumCandidate {
+  return clone({
+    ...row,
+    canonical: false,
+    automaticApply: false,
+    candidateState: row.candidateState === "conflict" ? "conflict" : "active",
+    reviewStatus: "pending",
+    lastReviewAction: null,
+    founderEditedPayload: null,
+    founderEditedTarget: null,
+    reviewedAt: null,
+  });
 }
 
 export class InMemoryCandidateStore implements CandidateStore {
@@ -30,7 +60,7 @@ export class InMemoryCandidateStore implements CandidateStore {
     if (existing) {
       return { status: "duplicate", record: clone(existing) };
     }
-    const stored = clone(row);
+    const stored = adapterInsert(row);
     this.rows.set(row.candidateId, stored);
     return { status: "inserted", record: clone(stored) };
   }
@@ -48,6 +78,18 @@ export class InMemoryCandidateStore implements CandidateStore {
     const stored = clone(row);
     this.rows.set(row.candidateId, stored);
     return clone(stored);
+  }
+
+  async applyReview(
+    candidateId: string,
+    input: FounderReviewInput,
+    reviewedAt: string,
+  ): Promise<ApplyReviewResult> {
+    const existing = this.rows.get(candidateId.trim());
+    if (!existing) return { ok: false, reason: "not-found" };
+    const reviewed = applyFounderReview(existing, input, reviewedAt);
+    this.rows.set(reviewed.candidateId, clone(reviewed));
+    return { ok: true, record: clone(reviewed) };
   }
 }
 

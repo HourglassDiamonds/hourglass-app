@@ -47,7 +47,8 @@ export default function GmailCandidatesDevPage() {
               className="border border-[#3a342e] p-4 text-[13px] leading-6 text-[#c6b8a8]"
             >
               <p className="text-[11px] uppercase tracking-[0.14em] text-[#efe8de]">
-                {row.candidateType} · {row.status} · {row.confidence}
+                {row.candidateType} · {row.candidateState} · {row.reviewStatus} ·{" "}
+                {row.confidence}
               </p>
               <p className="mt-1 break-all font-mono text-[11px] text-[#8d8073]">
                 {row.sourceRef}

@@ -98,6 +98,12 @@ export function assignCandidateId(
     createdAt: draft.createdAt ?? draft.sourceTimestamp,
     canonical: false,
     automaticApply: false,
+    candidateState: draft.candidateState === "conflict" ? "conflict" : "active",
+    reviewStatus: "pending",
+    lastReviewAction: null,
+    founderEditedPayload: null,
+    founderEditedTarget: null,
+    reviewedAt: null,
     supersedesCandidateId: draft.supersedesCandidateId ?? null,
     supersededByCandidateId: draft.supersededByCandidateId ?? null,
   };

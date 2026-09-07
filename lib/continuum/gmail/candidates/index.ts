@@ -34,6 +34,22 @@ export {
   GMAIL_CANDIDATE_DEV_WARNING,
 } from "./dry-run";
 export {
+  presentIndexedGmailCandidateDryRun,
+  presentIndexedEightProjectAcceptance,
+  INDEXED_EIGHT_KNOWN_MESSAGE_IDS,
+  INDEXED_EIGHT_KNOWN_MESSAGE_IDS_BY_PROJECT,
+  INDEXED_EIGHT_PROJECT_KEYS,
+  INDEX_ONLY_BODY_DEPENDENT_PARSER_RULES,
+  INDEX_LIMITATION_BODY_TEXT_NOT_AVAILABLE,
+} from "./indexed-dry-run";
+export type {
+  IndexedCandidateDryRunRow,
+  IndexedEightProjectAcceptance,
+  IndexedEightProjectCandidateDryRun,
+  IndexedEightProjectKey,
+  IndexedProjectAcceptanceRow,
+} from "./indexed-dry-run";
+export {
   EIGHT_PROJECT_EVIDENCE,
   EIGHT_PROJECT_IDS,
   EIGHT_PROJECT_WORLD,
