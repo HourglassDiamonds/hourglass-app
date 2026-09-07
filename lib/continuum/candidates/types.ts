@@ -16,6 +16,9 @@ export const CANDIDATE_CONTRACT_VERSION = "continuum-candidates-v1" as const;
 export const CANDIDATE_PARSER_GMAIL_V1 =
   "gmail-candidates-deterministic-v1" as const;
 
+export const CANDIDATE_PARSER_HUMAN_INTAKE_V1 =
+  "human-intake-candidates-deterministic-v1" as const;
+
 export const CANDIDATE_TYPES = [
   "person_association",
   "project_association",

@@ -51,7 +51,7 @@ describe("Concierge human-source inbox UI", () => {
       "utf8",
     );
     assert.match(detail, /getAuthenticatedHumanSourceStore/);
-    assert.match(detail, /Memory extraction is not enabled yet|HumanSourceDetail/);
+    assert.match(detail, /HumanSourceDetail|IntakeCandidateReviewList/);
   });
 
   it("lists a short preview and does not dump the full transcript", () => {
@@ -101,9 +101,10 @@ describe("Concierge human-source inbox UI", () => {
     );
     assert.match(html, /Reported by Justin/);
     assert.match(html, /did not read the original text conversation/);
-    assert.match(html, /Memory extraction is not enabled yet/);
     assert.match(html, /Pending/);
-    assert.match(html, /cathedral lower/);
+    assert.match(html, /Candidates/);
+    assert.match(html, /not memory until you approve/);
+    assert.doesNotMatch(html, /Memory extraction is not enabled yet/);
     assert.doesNotMatch(html, /direct-channel|directly observed/i);
     assert.doesNotMatch(html, /createBrowserClient|getSupabaseAdmin/);
   });
@@ -131,5 +132,12 @@ describe("Concierge human-source inbox UI", () => {
     assert.match(labels, /reported-text/);
     assert.match(labels, /Reported text/);
     assert.equal(conciergeInboxNewPath(), "/executive-dashboard/concierge/inbox/new");
+    const reviewUi = readFileSync(
+      join(CONCIERGE_DIR, "components", "intake-candidate-review.tsx"),
+      "utf8",
+    );
+    assert.doesNotMatch(reviewUi, /node:crypto|createHash|randomUUID/);
+    assert.match(reviewUi, /evidenceRuleIds/);
+    assert.match(reviewUi, /Approve/);
   });
 });

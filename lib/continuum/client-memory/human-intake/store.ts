@@ -22,6 +22,17 @@ export type HumanSourceStore = {
   listLinks(sourceId: string): Promise<HumanSourceLink[]>;
   getPersonName(id: string): Promise<string | null>;
   getProjectTitle(id: string): Promise<string | null>;
+  confirmSourceLink(input: {
+    sourceId: string;
+    entityId: string;
+    entityKind: "person" | "project";
+    createdAt: string;
+  }): Promise<"inserted" | "already-present">;
+  updateSourceReviewStatus(
+    sourceId: string,
+    status: HumanSource["reviewStatus"],
+    updatedAt: string,
+  ): Promise<void>;
 };
 
 export type HumanSourceNameLookup = {
@@ -93,6 +104,46 @@ export class InMemoryHumanSourceStore implements HumanSourceStore {
   async getProjectTitle(id: string): Promise<string | null> {
     if (!this.names.getProjectTitle) return null;
     return this.names.getProjectTitle(id);
+  }
+
+  async confirmSourceLink(input: {
+    sourceId: string;
+    entityId: string;
+    entityKind: "person" | "project";
+    createdAt: string;
+  }): Promise<"inserted" | "already-present"> {
+    const key = linkKey({ sourceId: input.sourceId, entityId: input.entityId });
+    const existing = this.links.get(key);
+    if (existing) {
+      this.links.set(key, {
+        ...existing,
+        linkStatus: "confirmed",
+        entityKind: input.entityKind,
+      });
+      return "already-present";
+    }
+    this.links.set(key, {
+      sourceId: input.sourceId,
+      entityId: input.entityId,
+      entityKind: input.entityKind,
+      linkStatus: "confirmed",
+      createdAt: input.createdAt,
+    });
+    return "inserted";
+  }
+
+  async updateSourceReviewStatus(
+    sourceId: string,
+    status: HumanSource["reviewStatus"],
+    updatedAt: string,
+  ): Promise<void> {
+    const source = this.sources.get(sourceId.trim());
+    if (!source) return;
+    this.sources.set(sourceId.trim(), {
+      ...source,
+      reviewStatus: status,
+      updatedAt,
+    });
   }
 
   listFiles(): HumanSourceFileObject[] {

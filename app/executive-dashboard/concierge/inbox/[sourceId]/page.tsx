@@ -1,13 +1,23 @@
 import Link from "next/link";
 import { getAuthenticatedHumanSourceStore } from "@/lib/continuum/client-memory/human-intake/load";
 import { composeSourceDetail } from "@/lib/continuum/client-memory/human-intake";
+import { getAuthenticatedClientMemoryProjectSpecWriter } from "@/lib/continuum/client-memory/project-spec/load";
 import {
   conciergeInboxPath,
   isPersonIdParam,
 } from "@/lib/continuum/client-memory/read/presentation";
+import { InMemoryCandidateStore } from "@/lib/continuum/candidates/store";
+import { ingestHumanIntakeCandidates } from "@/lib/continuum/human-intake/candidates/ingest";
+import {
+  evidenceFromSource,
+  presentHumanIntakeReviewViews,
+  worldFromSourceLinks,
+} from "@/lib/continuum/human-intake/review/views";
+import type { HumanIntakePerson, HumanIntakeProject } from "@/lib/continuum/human-intake/candidates/types";
 import { ConciergeShell } from "../../components/concierge-shell";
 import { ConciergeUnavailable } from "../../components/client-profile-view";
 import { HumanSourceDetail } from "../../components/human-source-detail";
+import { IntakeCandidateReviewList } from "../../components/intake-candidate-review";
 
 export const dynamic = "force-dynamic";
 
@@ -70,6 +80,58 @@ export default async function ConciergeInboxSourcePage({
     );
   }
 
+  const specs = await getAuthenticatedClientMemoryProjectSpecWriter();
+  const links = await auth.store.listLinks(sourceId);
+  const people: HumanIntakePerson[] = [];
+  const projects: HumanIntakeProject[] = [];
+  const personNames = new Map<string, string>();
+  const projectTitles = new Map<string, string>();
+  for (const link of links) {
+    if (link.entityKind === "person") {
+      const displayName = await auth.store.getPersonName(link.entityId);
+      if (displayName) {
+        people.push({ personId: link.entityId, displayName });
+        personNames.set(link.entityId, displayName);
+      }
+    } else {
+      const title = await auth.store.getProjectTitle(link.entityId);
+      const history = specs.ok
+        ? await specs.writer.getProjectHistory(link.entityId)
+        : null;
+      if (title) {
+        projects.push({
+          projectId: link.entityId,
+          title,
+          cadJobNumber: history?.cadJobNumber ?? null,
+          orderNumber: history?.orderNumber ?? null,
+          fingerSize: history?.fingerSize ?? null,
+          metal: history?.metal ?? null,
+          centerStone: history?.centerStone ?? null,
+          diamondSupplyNotes: history?.diamondSupplyNotes ?? null,
+        });
+        projectTitles.set(link.entityId, title);
+      }
+    }
+  }
+  const assembled = worldFromSourceLinks({ links, people, projects });
+  const store = new InMemoryCandidateStore();
+  const text = (detail.source.rawText ?? detail.source.parsedText ?? "").trim();
+  if (text) {
+    await ingestHumanIntakeCandidates(store, {
+      evidence: evidenceFromSource(
+        detail.source,
+        assembled.confirmedPersonIds,
+        assembled.confirmedProjectIds,
+      ),
+      world: assembled.world,
+    });
+  }
+  const reviews = presentHumanIntakeReviewViews({
+    candidates: await store.list(),
+    personNames,
+    projectTitles,
+  });
+
   return (
     <ConciergeShell>
       <Link
@@ -79,7 +141,9 @@ export default async function ConciergeInboxSourcePage({
         ← Inbox
       </Link>
       <div className="hg-concierge-fade mt-8">
-        <HumanSourceDetail detail={detail} />
+        <HumanSourceDetail detail={detail}>
+          <IntakeCandidateReviewList sourceId={sourceId} reviews={reviews} />
+        </HumanSourceDetail>
       </div>
     </ConciergeShell>
   );

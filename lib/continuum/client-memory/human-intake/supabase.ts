@@ -289,6 +289,58 @@ export class SupabaseHumanSourceStore implements HumanSourceStore {
     const title = data?.display_title;
     return typeof title === "string" && title.trim() ? title.trim() : null;
   }
+
+  async confirmSourceLink(input: {
+    sourceId: string;
+    entityId: string;
+    entityKind: "person" | "project";
+    createdAt: string;
+  }): Promise<"inserted" | "already-present"> {
+    const { data: existing, error: readError } = await this.client
+      .from("continuum_human_source_links")
+      .select(LINK_COLUMNS)
+      .eq("source_id", input.sourceId)
+      .eq("entity_id", input.entityId)
+      .maybeSingle();
+    if (readError) throw readError;
+    if (existing) {
+      const { error } = await this.client
+        .from("continuum_human_source_links")
+        .update({
+          link_status: "confirmed",
+          entity_kind: input.entityKind,
+        })
+        .eq("source_id", input.sourceId)
+        .eq("entity_id", input.entityId);
+      if (error) throw error;
+      return "already-present";
+    }
+    const { error } = await this.client.from("continuum_human_source_links").insert({
+      source_id: input.sourceId,
+      entity_id: input.entityId,
+      entity_kind: input.entityKind,
+      link_status: "confirmed",
+      created_at: input.createdAt,
+    });
+    if (error && isUniqueViolation(error)) return "already-present";
+    if (error) throw error;
+    return "inserted";
+  }
+
+  async updateSourceReviewStatus(
+    sourceId: string,
+    status: HumanSource["reviewStatus"],
+    updatedAt: string,
+  ): Promise<void> {
+    const { error } = await this.client
+      .from("continuum_human_sources")
+      .update({
+        review_status: status,
+        updated_at: updatedAt,
+      })
+      .eq("id", sourceId);
+    if (error) throw error;
+  }
 }
 
 export function createSupabaseHumanSourceStore(

@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import {
   formatNoteDate,
   RELATIONSHIP_CONTEXT_LAYER_LABELS,
@@ -12,8 +13,10 @@ import {
 
 export function HumanSourceDetail({
   detail,
+  children,
 }: {
   detail: HumanSourceDetailModel;
+  children?: ReactNode;
 }) {
   const { source } = detail;
   const context =
@@ -118,9 +121,16 @@ export function HumanSourceDetail({
         </section>
       ) : null}
 
-      <p className="mt-10 text-[15px] leading-relaxed text-[#9a8e82]">
-        Memory extraction is not enabled yet.
-      </p>
+      <section className="mt-10">
+        <h2 className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
+          Candidates
+        </h2>
+        <p className="mt-3 text-[15px] leading-relaxed text-[#9a8e82]">
+          Continuum observed these proposals from the source. They are not
+          memory until you approve. Approving uses only existing writers.
+        </p>
+        {children}
+      </section>
     </article>
   );
 }
