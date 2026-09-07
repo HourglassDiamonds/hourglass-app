@@ -165,9 +165,10 @@ describe("candidate review state", () => {
     if (edited.record.payload.kind === "structured_spec") {
       assert.equal(edited.record.payload.proposedValue, "12.5");
     }
-    assert.equal(effectiveCandidatePayload(edited.record).kind, "structured_spec");
-    if (effectiveCandidatePayload(edited.record).kind === "structured_spec") {
-      assert.equal(effectiveCandidatePayload(edited.record).proposedValue, "12.25");
+    const effective = effectiveCandidatePayload(edited.record);
+    assert.equal(effective.kind, "structured_spec");
+    if (effective.kind === "structured_spec") {
+      assert.equal(effective.proposedValue, "12.25");
     }
     assert.equal(edited.record.founderEditedTarget?.kind, "project_spec");
     assert.equal(effectiveCandidateTarget(edited.record).kind, "project_spec");
