@@ -6,10 +6,18 @@ import { hashEmail } from "@/lib/continuum/client-memory/hashes";
 import { MockGmailApi, GmailHttpError } from "./adapter";
 import { connectFounderMailbox, InMemoryGmailConnectionStore } from "./connection";
 import { encodeGmailBody } from "./exact-thread-fixtures";
-import { runGmailNewProjectIntakeScan } from "./intake-scan";
+import {
+  formatGmailIntakeScanNotice,
+  recentIndexedThreadIds,
+  runGmailNewProjectIntakeScan,
+  summarizeGmailIntakeScan,
+} from "./intake-scan";
 import { encryptRefreshToken } from "./token-crypto";
 import { GMAIL_READONLY_SCOPE, type GmailApiThread } from "./types";
-import { NEW_PROJECT_CONTEXT_TOPIC } from "./candidates/new-project";
+import {
+  NEW_PROJECT_CONTEXT_TOPIC,
+  WAITING_ON_CLIENT_TOPIC,
+} from "./candidates/new-project";
 
 const KEY = Buffer.from("c".repeat(64), "hex");
 const NOW = "2026-09-08T12:00:00.000Z";
@@ -104,6 +112,18 @@ describe("Gmail new-project intake scan", () => {
     assert.equal(result.cursorUnchanged, true);
     assert.equal(result.unreadThreadCount, 0);
     assert.equal(result.threadCount, 1);
+    assert.equal(result.newProjectProposalCount, 1);
+    assert.ok(result.insertedIds.length > 0);
+    assert.doesNotMatch(
+      formatGmailIntakeScanNotice({
+        threadCount: result.threadCount,
+        threadReadCount: result.threadReadCount,
+        unreadThreadCount: result.unreadThreadCount,
+        newProjectProposalCount: result.newProjectProposalCount,
+        otherReviewItemCount: result.otherReviewItemCount,
+      }),
+      /need attention/,
+    );
     const rows = await store.list();
     const serialized = JSON.stringify(rows);
     assert.equal(serialized.includes(NONCE), false);
@@ -310,5 +330,333 @@ describe("Gmail new-project intake scan", () => {
     assert.equal(result.ok, false);
     if (result.ok) return;
     assert.equal(result.safeErrorCode, "candidate-store-unavailable");
+  });
+
+  it("selects newest thread activity instead of the first 30 inbound rows", async () => {
+    const index = new InMemoryGmailIndexStore();
+    for (let i = 0; i < 30; i += 1) {
+      await index.indexMessage(
+        {
+          messageId: `old-in-${String(i).padStart(2, "0")}`,
+          threadId: `old-thread-${String(i).padStart(2, "0")}`,
+          sentAt: new Date(Date.parse("2026-09-03T00:00:00.000Z") + i * 3600000).toISOString(),
+          subject: "Older mail",
+          fromEmail: `old${i}@example.test`,
+          direction: "inbound",
+          hasAttachments: false,
+        },
+        NOW,
+      );
+    }
+    await index.indexMessage(
+      {
+        messageId: "nate-in-recent",
+        threadId: "nate-featured-thread",
+        sentAt: "2026-09-08T15:00:00.000Z",
+        subject: "Re: Featured Ring",
+        fromEmail: "nate.pearl@example.test",
+        direction: "inbound",
+        hasAttachments: false,
+      },
+      NOW,
+    );
+    await index.indexMessage(
+      {
+        messageId: "outbound-only-msg",
+        threadId: "outbound-only-thread",
+        sentAt: "2026-09-08T18:00:00.000Z",
+        subject: "Sent only",
+        fromEmail: "justin@hourglass.example",
+        direction: "outbound",
+        hasAttachments: false,
+      },
+      NOW,
+    );
+    const ids = await recentIndexedThreadIds(index, 30);
+    assert.equal(ids[0], "outbound-only-thread");
+    assert.ok(ids.includes("nate-featured-thread"));
+    assert.equal(ids.includes("old-thread-00"), false);
+    assert.equal(ids.length, 30);
+  });
+
+  it("does not label a global Candidate dump as this scan's new-project findings", () => {
+    assert.equal(
+      formatGmailIntakeScanNotice({
+        threadCount: 30,
+        threadReadCount: 30,
+        unreadThreadCount: 0,
+        newProjectProposalCount: 0,
+        otherReviewItemCount: 329,
+      }),
+      "Scanned 30 indexed threads. No new-project proposals from this scan. 329 other review items.",
+    );
+    assert.equal(
+      formatGmailIntakeScanNotice({
+        threadCount: 30,
+        threadReadCount: 29,
+        unreadThreadCount: 1,
+        newProjectProposalCount: 2,
+        otherReviewItemCount: 4,
+      }),
+      "Scanned 30 indexed threads. 2 new project proposals. 4 other review items. 1 thread could not be read.",
+    );
+    assert.equal(
+      summarizeGmailIntakeScan({
+        threadCount: 30,
+        unreadThreadCount: 0,
+        proposed: [],
+      }).newProjectProposalCount,
+      0,
+    );
+  });
+
+  it("surfaces Nate and Abbey real-shape proposals, keeps unresolved Person, and does not multiply on rescan", async () => {
+    const nateThread = "19natefeatured001";
+    const abbeyThread = "1aabbeynewpiece01";
+    const nateIn = "nate-in-001";
+    const nateOut = "nate-out-001";
+    const abbeyIn = "abbey-in-001";
+    const abbeyOut = "abbey-out-001";
+    const nateNonce = "UNIQUE_BODY_NONCE_NATE_SCAN_777";
+    const abbeyNonce = "UNIQUE_BODY_NONCE_ABBEY_SCAN_888";
+    const index = new InMemoryGmailIndexStore();
+    await index.indexMessage(
+      {
+        messageId: nateIn,
+        threadId: nateThread,
+        sentAt: "2026-09-07T15:00:00.000Z",
+        subject: "Re: Featured Ring",
+        fromEmail: "nate.pearl@example.test",
+        direction: "inbound",
+        hasAttachments: false,
+      },
+      NOW,
+    );
+    await index.indexMessage(
+      {
+        messageId: nateOut,
+        threadId: nateThread,
+        sentAt: "2026-09-07T18:00:00.000Z",
+        subject: "Re: Featured Ring",
+        fromEmail: "justin@hourglass.example",
+        direction: "outbound",
+        hasAttachments: false,
+      },
+      NOW,
+    );
+    await index.indexMessage(
+      {
+        messageId: abbeyIn,
+        threadId: abbeyThread,
+        sentAt: "2026-09-07T16:00:00.000Z",
+        subject: "A new piece",
+        fromEmail: "serinitybloom@gmail.com",
+        direction: "inbound",
+        hasAttachments: false,
+      },
+      NOW,
+    );
+    await index.indexMessage(
+      {
+        messageId: abbeyOut,
+        threadId: abbeyThread,
+        sentAt: "2026-09-07T19:00:00.000Z",
+        subject: "Re: A new piece",
+        fromEmail: "justin@hourglass.example",
+        direction: "outbound",
+        hasAttachments: false,
+      },
+      NOW,
+    );
+    const connections = new InMemoryGmailConnectionStore();
+    await connections.putConnection(
+      connectFounderMailbox({
+        existing: null,
+        mailboxEmailHash: "ab".repeat(32),
+        refreshToken: encryptRefreshToken("refresh-keep", KEY),
+        grantedScope: GMAIL_READONLY_SCOPE,
+        providerTokenType: "Bearer",
+        now: NOW,
+      }),
+    );
+    const api = new MockGmailApi();
+    api.setThread({
+      id: nateThread,
+      messages: [
+        {
+          id: nateIn,
+          threadId: nateThread,
+          labelIds: ["INBOX"],
+          internalDate: String(Date.parse("2026-09-07T15:00:00.000Z")),
+          payload: {
+            mimeType: "text/plain",
+            headers: [
+              { name: "From", value: "Nate <nate.pearl@example.test>" },
+              { name: "Subject", value: "Re: Featured Ring" },
+            ],
+            body: {
+              data: encodeGmailBody(
+                `I'd like to work together again to create another piece. I'd like a necklace/pendant based on the same dagger-draped-in-pearls artwork from the wedding ring. It's a gift for my wife. ${nateNonce}`,
+              ),
+              size: 40,
+            },
+          },
+        },
+        {
+          id: nateOut,
+          threadId: nateThread,
+          labelIds: ["SENT"],
+          internalDate: String(Date.parse("2026-09-07T18:00:00.000Z")),
+          payload: {
+            mimeType: "text/plain",
+            headers: [
+              { name: "From", value: "Justin <justin@hourglass.example>" },
+              { name: "Subject", value: "Re: Featured Ring" },
+            ],
+            body: {
+              data: encodeGmailBody(
+                "Would you like to discuss this on a call, or should I proceed to a first render?",
+              ),
+              size: 40,
+            },
+          },
+        },
+      ],
+    });
+    api.setThread({
+      id: abbeyThread,
+      messages: [
+        {
+          id: abbeyIn,
+          threadId: abbeyThread,
+          labelIds: ["INBOX"],
+          internalDate: String(Date.parse("2026-09-07T16:00:00.000Z")),
+          payload: {
+            mimeType: "text/plain",
+            headers: [
+              { name: "From", value: "Abbey Castillo <serinitybloom@gmail.com>" },
+              { name: "Subject", value: "A new piece" },
+            ],
+            body: {
+              data: encodeGmailBody(
+                `I'm reaching back out to ask about a new piece I'd like designed. Matching marquise dangle/hoop earrings, a pair of marquise lab-grown diamonds approximately 1 ct each, similar quality/brightness, 14k yellow gold, locking/secure back, possible flower detail. ${abbeyNonce}`,
+              ),
+              size: 40,
+            },
+          },
+        },
+        {
+          id: abbeyOut,
+          threadId: abbeyThread,
+          labelIds: ["SENT"],
+          internalDate: String(Date.parse("2026-09-07T19:00:00.000Z")),
+          payload: {
+            mimeType: "text/plain",
+            headers: [
+              { name: "From", value: "Justin <justin@hourglass.example>" },
+              { name: "Subject", value: "Re: A new piece" },
+            ],
+            body: {
+              data: encodeGmailBody(
+                "Would you prefer a plain yellow-gold flower or a diamond center? Also modular huggie vs standard drop construction?",
+              ),
+              size: 40,
+            },
+          },
+        },
+      ],
+    });
+    const store = new InMemoryCandidateStore();
+    const scanInput = {
+      founderSessionOk: true,
+      index,
+      connections,
+      decryptRefreshToken: () => "refresh-keep",
+      refreshAccessToken: async () => ({ ok: true as const, accessToken: "access" }),
+      createApi: () => api,
+      world: {
+        people: [
+          {
+            personId: "abbey-wagner",
+            displayName: "Abbey Wagner",
+            emailHash: hashEmail("abbey.wagner@example.test"),
+            role: "client" as const,
+            projectIds: [],
+          },
+        ],
+        projects: [],
+        internalEmailHashes: [hashEmail("justin@hourglass.example")!],
+      },
+      store,
+      nowIso: NOW,
+    };
+    const first = await runGmailNewProjectIntakeScan(scanInput);
+    assert.equal(first.ok, true);
+    if (!first.ok) return;
+    const selected = await recentIndexedThreadIds(index, 30);
+    assert.ok(selected.includes(nateThread));
+    assert.ok(selected.includes(abbeyThread));
+    assert.equal(first.newProjectProposalCount, 2);
+    assert.equal(first.unreadThreadCount, 0);
+    const rows = await store.list();
+    const serialized = JSON.stringify(rows);
+    assert.equal(serialized.includes(nateNonce), false);
+    assert.equal(serialized.includes(abbeyNonce), false);
+    const titles = rows
+      .filter(
+        (row) =>
+          row.payload.kind === "project_context" &&
+          row.payload.topic === NEW_PROJECT_CONTEXT_TOPIC,
+      )
+      .map((row) => (row.payload.kind === "project_context" ? row.payload.value : ""));
+    assert.ok(titles.includes("Dagger & Pearls Pendant / Necklace"));
+    assert.ok(titles.includes("Matching Marquise Earrings"));
+    assert.equal(
+      rows.some(
+        (row) =>
+          row.payload.kind === "project_context" &&
+          row.payload.topic === WAITING_ON_CLIENT_TOPIC,
+      ),
+      true,
+    );
+    assert.equal(rows.some((row) => row.candidateType === "open_job"), false);
+    assert.equal(
+      rows.some(
+        (row) =>
+          row.proposedTarget.kind === "person" &&
+          row.proposedTarget.personId === "abbey-wagner",
+      ),
+      false,
+    );
+    const abbeyPerson = rows.find(
+      (row) =>
+        row.candidateType === "person_association" &&
+        row.sourceRef.includes(abbeyThread),
+    );
+    if (abbeyPerson?.proposedTarget.kind === "person") {
+      assert.equal(abbeyPerson.proposedTarget.personId, null);
+    }
+    if (abbeyPerson?.payload.kind === "person_association") {
+      assert.notEqual(abbeyPerson.payload.displayName, "Abbey Wagner");
+    }
+    const nateProject = rows.find(
+      (row) =>
+        row.payload.kind === "project_context" &&
+        row.payload.topic === NEW_PROJECT_CONTEXT_TOPIC &&
+        row.payload.value === "Dagger & Pearls Pendant / Necklace",
+    );
+    assert.ok(nateProject);
+    await store.applyReview(nateProject.candidateId, { action: "defer" }, NOW);
+    const second = await runGmailNewProjectIntakeScan(scanInput);
+    assert.equal(second.ok, true);
+    if (!second.ok) return;
+    assert.deepEqual(second.insertedIds, []);
+    assert.equal(second.duplicateIds.length, first.insertedIds.length);
+    assert.equal(second.newProjectProposalCount, first.newProjectProposalCount);
+    assert.equal((await store.list()).length, first.insertedIds.length);
+    const after = await store.get(nateProject!.candidateId);
+    assert.equal(after?.reviewStatus, "deferred");
+    assert.equal(api.calls.some((call) => call.method === "listMessages"), false);
+    assert.equal(api.calls.some((call) => call.method === "listHistory"), false);
   });
 });

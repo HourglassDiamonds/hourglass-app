@@ -2,7 +2,12 @@ import Link from "next/link";
 import { getAuthenticatedCandidateStore } from "@/lib/continuum/candidates/load";
 import { presentGmailNewProjectIntake } from "@/lib/continuum/client-memory/founder-project/intake-present";
 import { loadGmailPersonWorldFromAdmin } from "@/lib/continuum/client-memory/founder-project/gmail-world";
-import { CONCIERGE_GMAIL_PATH } from "@/lib/continuum/gmail/types";
+import { isGmailIndexStale } from "@/lib/continuum/gmail/index-freshness";
+import { snapshotFromIncrementalCheckpoint } from "@/lib/continuum/gmail/incremental";
+import { readGmailCurrentState } from "@/lib/continuum/gmail/current-state";
+import { isGmailIncrementalSyncEnabled } from "@/lib/continuum/gmail/env";
+import { getAuthenticatedGmailHistoryStores } from "@/lib/continuum/gmail/load";
+import { CONCIERGE_GMAIL_PATH, GMAIL_INCREMENTAL_JOB_KEY } from "@/lib/continuum/gmail/types";
 import { ConciergeShell } from "../../components/concierge-shell";
 import { ConciergeUnavailable } from "../../components/client-profile-view";
 import {
@@ -32,6 +37,31 @@ export default async function ConciergeGmailIntakePage() {
   let cards: ReturnType<typeof presentGmailNewProjectIntake> = [];
   let identityAvailable = false;
   let directory: Parameters<typeof presentGmailNewProjectIntake>[1] = [];
+  const nowIso = new Date().toISOString();
+  let freshness = {
+    lastSuccessfulSyncAt: null as string | null,
+    activationEnabled: isGmailIncrementalSyncEnabled(),
+    stale: true,
+    incremental: snapshotFromIncrementalCheckpoint(null),
+  };
+  try {
+    const gmail = await getAuthenticatedGmailHistoryStores();
+    if (gmail.ok) {
+      const current = await readGmailCurrentState(gmail.index);
+      const incrementalRow = await gmail.index.getCheckpoint(GMAIL_INCREMENTAL_JOB_KEY);
+      freshness = {
+        lastSuccessfulSyncAt: current.lastSuccessfulSyncAt,
+        activationEnabled: isGmailIncrementalSyncEnabled(),
+        stale: isGmailIndexStale(current.lastSuccessfulSyncAt, nowIso),
+        incremental: snapshotFromIncrementalCheckpoint(incrementalRow),
+      };
+    }
+  } catch {
+    freshness = {
+      ...freshness,
+      stale: true,
+    };
+  }
   try {
     const loaded = await loadGmailPersonWorldFromAdmin();
     identityAvailable = loaded.peopleAvailable;
@@ -70,7 +100,10 @@ export default async function ConciergeGmailIntakePage() {
           Reads already-indexed Gmail threads transiently. Proposals are not
           Projects until you approve them. Mail bodies are not stored.
         </p>
-        <GmailIntakeScanForm identityAvailable={identityAvailable} />
+        <GmailIntakeScanForm
+          identityAvailable={identityAvailable}
+          freshness={freshness}
+        />
         <GmailNewProjectIntakeList
           cards={cards}
           identityAvailable={identityAvailable}

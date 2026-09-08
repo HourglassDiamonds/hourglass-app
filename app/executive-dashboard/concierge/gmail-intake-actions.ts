@@ -13,10 +13,11 @@ import { CONCIERGE_GMAIL_INTAKE_PATH } from "@/lib/continuum/gmail/types";
 export type ScanGmailIntakeState =
   | {
       ok: true;
-      inserted: number;
       evidenceCount: number;
       threadCount: number;
       unreadThreadCount: number;
+      newProjectProposalCount: number;
+      otherReviewItemCount: number;
       identityAvailable: boolean;
     }
   | { ok: false; message: string }
@@ -84,10 +85,11 @@ export async function scanGmailNewProjectIntake(
     revalidatePath(CONCIERGE_GMAIL_INTAKE_PATH);
     return {
       ok: true,
-      inserted: result.insertedIds.length,
       evidenceCount: result.evidenceCount,
       threadCount: result.threadCount,
       unreadThreadCount: result.unreadThreadCount,
+      newProjectProposalCount: result.newProjectProposalCount,
+      otherReviewItemCount: result.otherReviewItemCount,
       identityAvailable: loaded.peopleAvailable,
     };
   } catch {

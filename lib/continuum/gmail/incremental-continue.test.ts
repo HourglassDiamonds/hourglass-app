@@ -68,6 +68,10 @@ describe("Gmail incremental automatic continuation", () => {
       join(ROOT, "app/executive-dashboard/concierge/components/gmail-incremental.tsx"),
       "utf8",
     );
+    const intakeUi = readFileSync(
+      join(ROOT, "app/executive-dashboard/concierge/components/gmail-new-project-intake.tsx"),
+      "utf8",
+    );
     const sync = readFileSync(join(ROOT, "lib/continuum/gmail/incremental-sync.ts"), "utf8");
     assert.equal(GMAIL_INCREMENTAL_CONTINUE_DELAY_MS, 1000);
     assert.equal(GMAIL_INCREMENTAL_CHUNK_MAX_PAGES, 1);
@@ -82,6 +86,9 @@ describe("Gmail incremental automatic continuation", () => {
     assert.doesNotMatch(actions, /formData\.get\(/);
     assert.doesNotMatch(actions, /maxPages|pageSize|pageToken|historyId/);
     assert.doesNotMatch(ui, /pageToken|maxPages|mailboxEmailHash/);
+    assert.doesNotMatch(intakeUi, /pageToken|maxPages|mailboxEmailHash/);
+    assert.match(intakeUi, /runNextGmailIncrementalChunk/);
+    assert.match(intakeUi, /createGmailIncrementalContinuation/);
     assert.match(ui, /Resume current-state sync/);
     assert.match(ui, /Initialize current-state sync/);
     assert.match(ui, /Stop after current chunk/);

@@ -66,6 +66,9 @@ describe("Founder Project writer security", () => {
       "utf8",
     );
     assert.match(intakeUi, /approveGmailNewProject/);
+    assert.match(intakeUi, /Refresh mail index/);
+    assert.match(intakeUi, /Gmail index last updated/);
+    assert.doesNotMatch(intakeUi, /need attention/);
     assert.doesNotMatch(intakeUi, /createProjectJob\(/);
   });
 
@@ -112,6 +115,8 @@ describe("Founder Project writer security", () => {
     assert.match(intakeUi, /Possible client identity is not currently available/);
     assert.match(createAction, /searchConciergeClients/);
     assert.match(intakePage, /loadGmailPersonWorldFromAdmin/);
+    assert.match(intakePage, /readGmailCurrentState/);
+    assert.match(intakePage, /GMAIL_INCREMENTAL_JOB_KEY/);
     const intakeActions = readFileSync(
       join(ROOT, "app/executive-dashboard/concierge/gmail-intake-actions.ts"),
       "utf8",

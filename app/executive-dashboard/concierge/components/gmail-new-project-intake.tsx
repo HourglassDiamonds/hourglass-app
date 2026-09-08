@@ -1,15 +1,23 @@
 "use client";
 
 import { useActionState, useEffect, useRef, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import {
   approveGmailNewProject,
   confirmGmailIntakePerson,
 } from "../founder-project-actions";
 import { scanGmailNewProjectIntake, type ScanGmailIntakeState } from "../gmail-intake-actions";
+import { runNextGmailIncrementalChunk } from "../gmail-incremental-actions";
 import { searchConciergeClients } from "../actions";
 import type { GmailNewProjectIntakeCard } from "@/lib/continuum/client-memory/founder-project/intake-present";
 import type { ClientSearchResult } from "@/lib/continuum/client-memory/read/types";
 import { CONCIERGE_GMAIL_INTAKE_PATH } from "@/lib/continuum/gmail/types";
+import { createGmailIncrementalContinuation } from "@/lib/continuum/gmail/incremental-continue";
+import type { GmailIncrementalChunkResult } from "@/lib/continuum/gmail/incremental";
+import {
+  formatGmailIndexUpdatedAt,
+} from "@/lib/continuum/gmail/index-freshness";
+import { formatGmailIntakeScanNotice } from "@/lib/continuum/gmail/intake-scan";
 import {
   PROJECT_KIND_LABELS,
   PROJECT_KINDS,
@@ -19,28 +27,125 @@ import {
   CUSTOM_LIFECYCLE_STAGES,
 } from "@/lib/continuum/client-memory/project-lifecycle";
 
+export type GmailIntakeFreshnessProps = {
+  lastSuccessfulSyncAt: string | null;
+  activationEnabled: boolean;
+  stale: boolean;
+  incremental: GmailIncrementalChunkResult;
+};
+
 export function GmailIntakeScanForm({
   identityAvailable,
+  freshness,
 }: {
   identityAvailable: boolean;
+  freshness: GmailIntakeFreshnessProps;
 }) {
+  const router = useRouter();
   const [state, formAction, pending] = useActionState(
     scanGmailNewProjectIntake,
     null as ScanGmailIntakeState,
   );
   const noticeRef = useRef<HTMLParagraphElement>(null);
+  const continuationRef = useRef<ReturnType<
+    typeof createGmailIncrementalContinuation
+  > | null>(null);
+  const incrementalRef = useRef(freshness.incremental);
+  const [refreshing, setRefreshing] = useState(
+    freshness.activationEnabled && freshness.stale,
+  );
+  const [refreshError, setRefreshError] = useState<string | null>(null);
+  useEffect(() => {
+    incrementalRef.current = freshness.incremental;
+  }, [freshness.incremental]);
   useEffect(() => {
     if (state) noticeRef.current?.focus();
   }, [state]);
+  useEffect(() => {
+    const continuation = createGmailIncrementalContinuation({
+      runChunk: () => runNextGmailIncrementalChunk(),
+      initial: incrementalRef.current,
+    });
+    continuationRef.current = continuation;
+    let alive = true;
+    if (freshness.activationEnabled && freshness.stale) {
+      void continuation.start().then((done) => {
+        if (!alive) return;
+        setRefreshing(false);
+        if (done.result.safeErrorCode) {
+          setRefreshError(
+            done.result.safeErrorCode === "sync-disabled"
+              ? "Mail index refresh is not activated."
+              : "Mail index could not be refreshed.",
+          );
+          return;
+        }
+        router.refresh();
+      });
+    }
+    return () => {
+      alive = false;
+      continuation.cancel();
+      if (continuationRef.current === continuation) continuationRef.current = null;
+    };
+  }, [freshness.activationEnabled, freshness.stale, router]);
   const identityDown =
     (state && state.ok && !state.identityAvailable) ||
     (!state && !identityAvailable);
+  const updatedLabel = formatGmailIndexUpdatedAt(freshness.lastSuccessfulSyncAt);
   return (
     <form action={formAction} className="mt-6">
+      <p className="max-w-[46ch] text-[14px] leading-relaxed text-[#c4b7aa]">
+        {updatedLabel
+          ? `Gmail index last updated: ${updatedLabel}`
+          : "Gmail index has not completed a current-state sync."}
+      </p>
+      {freshness.stale ? (
+        <p className="mt-2 max-w-[46ch] text-[14px] leading-relaxed text-[#d2b8a8]">
+          Mail newer than this index will not appear until the index is
+          refreshed.
+        </p>
+      ) : null}
+      {freshness.activationEnabled ? (
+        <button
+          type="button"
+          disabled={refreshing || pending}
+          onClick={() => {
+            const continuation = continuationRef.current;
+            if (!continuation || continuation.isActive() || refreshing) return;
+            setRefreshError(null);
+            setRefreshing(true);
+            void continuation.start().then((done) => {
+              setRefreshing(false);
+              if (done.result.safeErrorCode) {
+                setRefreshError(
+                  done.result.safeErrorCode === "sync-disabled"
+                    ? "Mail index refresh is not activated."
+                    : "Mail index could not be refreshed.",
+                );
+                return;
+              }
+              router.refresh();
+            });
+          }}
+          className="mt-4 min-h-12 rounded-[18px] border border-[#ad9164]/50 bg-transparent px-4 text-[11px] uppercase tracking-[0.22em] text-[#efe8de] outline-none hover:border-[#ad9164] focus-visible:shadow-[0_0_0_3px_rgba(173,145,100,0.22)] disabled:opacity-50"
+        >
+          {refreshing ? "Refreshing mail index…" : "Refresh mail index"}
+        </button>
+      ) : (
+        <p className="mt-2 max-w-[46ch] text-[14px] leading-relaxed text-[#9a8e82]">
+          Mail index refresh is not activated.
+        </p>
+      )}
+      {refreshError ? (
+        <p role="alert" className="mt-3 text-[14px] text-[#d2b8a8]">
+          {refreshError}
+        </p>
+      ) : null}
       <button
         type="submit"
-        disabled={pending}
-        className="min-h-12 rounded-[18px] border border-[#ad9164]/50 bg-[#1d1916] px-4 text-[11px] uppercase tracking-[0.22em] text-[#efe8de] outline-none hover:border-[#ad9164] focus-visible:shadow-[0_0_0_3px_rgba(173,145,100,0.22)] disabled:opacity-50"
+        disabled={pending || refreshing}
+        className="mt-4 min-h-12 rounded-[18px] border border-[#ad9164]/50 bg-[#1d1916] px-4 text-[11px] uppercase tracking-[0.22em] text-[#efe8de] outline-none hover:border-[#ad9164] focus-visible:shadow-[0_0_0_3px_rgba(173,145,100,0.22)] disabled:opacity-50"
       >
         {pending ? "Reading indexed mail…" : "Scan indexed mail"}
       </button>
@@ -60,15 +165,13 @@ export function GmailIntakeScanForm({
           tabIndex={-1}
           className="mt-4 text-[14px] text-[#c4b7aa] outline-none"
         >
-          {`Scanned ${state.threadCount} indexed thread${state.threadCount === 1 ? "" : "s"}.`}
-          {state.inserted > 0
-            ? ` ${state.inserted} need attention.`
-            : " No new project proposals from this scan."}
-          {state.unreadThreadCount > 0
-            ? ` ${state.unreadThreadCount} thread${
-                state.unreadThreadCount === 1 ? "" : "s"
-              } could not be read.`
-            : ""}
+          {formatGmailIntakeScanNotice({
+            threadCount: state.threadCount,
+            threadReadCount: Math.max(0, state.threadCount - state.unreadThreadCount),
+            unreadThreadCount: state.unreadThreadCount,
+            newProjectProposalCount: state.newProjectProposalCount,
+            otherReviewItemCount: state.otherReviewItemCount,
+          })}
         </p>
       ) : null}
       {identityDown ? (

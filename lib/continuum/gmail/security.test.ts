@@ -125,6 +125,30 @@ describe("Gmail activation security", () => {
     assert.match(intakeActions, /loadGmailPersonWorldFromAdmin/);
     assert.doesNotMatch(intakeActions, /Continuum people could not be loaded/);
     assert.doesNotMatch(intakeActions, /createProjectJob|createFounderProject/);
+    assert.doesNotMatch(intakeActions, /insertedIds\.length/);
+    const intakeScan = readFileSync(join(GMAIL_DIR, "intake-scan.ts"), "utf8");
+    assert.match(intakeScan, /newProjectProposalCount/);
+    assert.match(intakeScan, /GMAIL_INTAKE_SELECTION_LOOKBACK/);
+    assert.doesNotMatch(intakeScan, /putCheckpoint|indexMessage|listHistory|runIncrementalSync/);
+    assert.doesNotMatch(intakeScan, /gmail-intake-daily|gmail-intake-sync/);
+    const intakeUi = readFileSync(
+      join(ROOT, "app/executive-dashboard/concierge/components/gmail-new-project-intake.tsx"),
+      "utf8",
+    );
+    assert.match(intakeUi, /Refresh mail index/);
+    assert.match(intakeUi, /Gmail index last updated/);
+    assert.match(intakeUi, /runNextGmailIncrementalChunk/);
+    assert.match(intakeUi, /formatGmailIntakeScanNotice/);
+    assert.doesNotMatch(intakeUi, /need attention/);
+    const intakePage = readFileSync(
+      join(ROOT, "app/executive-dashboard/concierge/gmail/intake/page.tsx"),
+      "utf8",
+    );
+    assert.match(intakePage, /readGmailCurrentState/);
+    assert.match(intakePage, /GMAIL_INCREMENTAL_JOB_KEY/);
+    assert.doesNotMatch(intakePage, /putCheckpoint|indexMessage|users\.messages\.send/);
+    const freshness = readFileSync(join(GMAIL_DIR, "index-freshness.ts"), "utf8");
+    assert.doesNotMatch(freshness, /gmail-intake-daily|runIncrementalSync|listHistory/);
     const indexedEvidence = readFileSync(join(GMAIL_DIR, "indexed-thread-evidence.ts"), "utf8");
     assert.match(indexedEvidence, /exactThreadOnlyApi/);
     assert.doesNotMatch(indexedEvidence, /putCheckpoint|indexMessage|listMessages\(/);
