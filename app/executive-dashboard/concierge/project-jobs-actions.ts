@@ -4,7 +4,12 @@ import { redirect } from "next/navigation";
 import { getAuthenticatedProjectJobWriter } from "@/lib/continuum/client-memory/project-jobs/load-writer";
 import type { CreateProjectJobResult } from "@/lib/continuum/client-memory/project-jobs/create";
 import type { MutateOpenJobResult } from "@/lib/continuum/client-memory/project-jobs/mutate";
-import { conciergeProjectPath } from "@/lib/continuum/client-memory/read/presentation";
+import {
+  CONCIERGE_HOME_PATH,
+  conciergeProjectPath,
+} from "@/lib/continuum/client-memory/read/presentation";
+import { founderManualActionInput } from "@/lib/continuum/client-memory/open-projects/manual-action";
+import type { FounderManualActionInvalidCode } from "@/lib/continuum/client-memory/open-projects/manual-action";
 
 export type SaveOpenJobState = { ok: false; message: string } | null;
 
@@ -82,6 +87,47 @@ export async function saveOpenJob(
   });
   if (result.ok) {
     redirect(`${conciergeProjectPath(projectId)}?saved=job`);
+  }
+  return { ok: false, message: humanCreateMessage(result) };
+}
+
+function humanFounderActionMessage(code: FounderManualActionInvalidCode): string {
+  if (code === "lifecycle-busywork") {
+    return "That is a project state, not an action. Write the next thing you actually need to do.";
+  }
+  if (code === "invalid-subject") return "Add a short action.";
+  if (code === "invalid-due") return "Choose a follow-up date.";
+  return "Choose a project.";
+}
+
+export async function saveFounderAction(
+  _prev: SaveOpenJobState,
+  formData: FormData,
+): Promise<SaveOpenJobState> {
+  const auth = await getAuthenticatedProjectJobWriter();
+  if (!auth.ok) {
+    return {
+      ok: false,
+      message:
+        auth.reason === "unauthorized"
+          ? "Sign in to continue."
+          : "Unable to save the action.",
+    };
+  }
+  const parsed = founderManualActionInput({
+    mutationId: String(formData.get("mutationId") ?? "").trim(),
+    projectId: String(formData.get("projectId") ?? "").trim(),
+    subject: String(formData.get("subject") ?? ""),
+    associatedPersonId: String(formData.get("associatedPersonId") ?? "").trim() || null,
+    dueAt: parseDateInput(String(formData.get("dueAt") ?? "")),
+    actor: auth.username,
+  });
+  if (!parsed.ok) {
+    return { ok: false, message: humanFounderActionMessage(parsed.code) };
+  }
+  const result = await auth.writer.createJob(parsed.input);
+  if (result.ok) {
+    redirect(CONCIERGE_HOME_PATH);
   }
   return { ok: false, message: humanCreateMessage(result) };
 }

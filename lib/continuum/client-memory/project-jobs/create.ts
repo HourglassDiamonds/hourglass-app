@@ -6,6 +6,7 @@
 
 import type { ClientMemoryEntity, PersonProfile, ProjectProfile } from "../types";
 import type { OpenJobActor, OpenJobKind, OpenJobSourceSystem, ProjectJob } from "./types";
+import { findUnresolvedJobByActionIdentity } from "./identity";
 import {
   isOpenJobActor,
   isOpenJobKind,
@@ -76,6 +77,7 @@ export type CreateProjectJobDeps = {
     projectId: string,
     personId: string,
   ) => Promise<boolean>;
+  listUnresolvedJobs: (projectId: string) => Promise<ProjectJob[]>;
   applyCreate: (
     input: CreateProjectJobApplyInput,
   ) => Promise<CreateProjectJobApplyResult>;
@@ -137,6 +139,16 @@ export async function createProjectJob(
         associatedPersonId,
       );
       if (!linked) return invalid("person-not-on-project");
+    }
+
+    const unresolved = await deps.listUnresolvedJobs(projectId);
+    const existingAction = findUnresolvedJobByActionIdentity(
+      unresolved,
+      projectId,
+      subject.subject,
+    );
+    if (existingAction) {
+      return { ok: true, status: "already-present", job: existingAction };
     }
 
     const now = deps.nowIso();

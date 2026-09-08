@@ -11,6 +11,7 @@ import { composeCosOperatingLoop } from "../../chief-of-staff/operating-loop/com
 import type { CurrentProjectCard } from "./card";
 import {
   CURRENT_PROJECTS_ACTION_TITLE,
+  CURRENT_PROJECTS_CREATE_ACTION_LABEL,
   CURRENT_PROJECTS_OPEN_LABEL,
   currentProjectPanelId,
   currentProjectToggleId,
@@ -77,6 +78,11 @@ describe("Current Projects Command Center accordion UI", () => {
     assert.match(one, /IN PRODUCTION/);
     assertNativeDisclosure(one, PROJECT_A);
     assert.match(one, new RegExp(CURRENT_PROJECTS_OPEN_LABEL));
+    assert.match(one, new RegExp(CURRENT_PROJECTS_CREATE_ACTION_LABEL));
+    assert.match(
+      one,
+      /\/executive-dashboard\/concierge\/action\/new\?project=aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/,
+    );
     assert.match(
       one,
       /\/executive-dashboard\/concierge\/projects\/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/,
@@ -262,6 +268,26 @@ describe("Current Projects Command Center accordion UI", () => {
     assert.match(home, /loadCurrentProjectCards/);
     assert.match(command, /People/);
     assert.match(command, /QuickCapture/);
+    const capture = readFileSync(
+      join(CONCIERGE_DIR, "components", "quick-capture.tsx"),
+      "utf8",
+    );
+    assert.match(capture, /conciergeCreateActionPath/);
+    assert.match(capture, /CURRENT_PROJECTS_ADD_ACTION_LABEL/);
+    const form = readFileSync(
+      join(CONCIERGE_DIR, "components", "create-action-form.tsx"),
+      "utf8",
+    );
+    const page = readFileSync(
+      join(CONCIERGE_DIR, "action", "new", "page.tsx"),
+      "utf8",
+    );
+    assert.match(form, /saveFounderAction/);
+    assert.match(form, /name="subject"/);
+    assert.match(form, /name="projectId"/);
+    assert.doesNotMatch(form, /name="kind"|waitingOnActor/);
+    assert.match(page, /getAuthenticatedProjectJobWriter/);
+    assert.match(page, /CreateActionForm/);
     assert.match(command, /conciergeProjectsPath/);
     assert.match(command, /min-w-0/);
     assert.match(css, /overflow-x:\s*hidden/);

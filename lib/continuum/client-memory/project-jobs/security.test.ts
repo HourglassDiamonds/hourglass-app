@@ -108,6 +108,7 @@ describe("Open Jobs security", () => {
     );
     assert.match(actions, /getAuthenticatedProjectJobWriter/);
     assert.match(actions, /saveOpenJob/);
+    assert.match(actions, /saveFounderAction/);
     assert.match(actions, /mutateOpenJobAction/);
     assert.doesNotMatch(actions, /gmail\.googleapis|continuum_gmail_messages/);
     assert.doesNotMatch(actions, /setProjectLifecycle|ingestHumanIntake|composeChiefOfStaffBrief/);
@@ -119,6 +120,7 @@ describe("Open Jobs security", () => {
     for (const relative of [
       "app/executive-dashboard/concierge/projects/[projectId]/jobs/new/page.tsx",
       "app/executive-dashboard/concierge/projects/[projectId]/jobs/[jobId]/page.tsx",
+      "app/executive-dashboard/concierge/action/new/page.tsx",
     ]) {
       const page = readFileSync(join(ROOT, relative), "utf8");
       assert.match(page, /robots: \{ index: false/);

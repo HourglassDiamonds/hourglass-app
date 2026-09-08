@@ -34,6 +34,7 @@ export function createInMemoryProjectJobWriter(
           getPersonProfile: (personId) => memory.getPersonProfile(personId),
           hasActiveClientProjectRelationship: (projectId, personId) =>
             memory.hasActiveClientProjectLink(personId, projectId),
+          listUnresolvedJobs: async (projectId) => jobs.listUnresolvedJobs(projectId),
           applyCreate: (row) => Promise.resolve(jobs.insertJob(row)),
         },
         input,

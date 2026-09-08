@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { CurrentProjectCard } from "@/lib/continuum/client-memory/open-projects/card";
 import {
   CURRENT_PROJECTS_ACTION_TITLE,
+  CURRENT_PROJECTS_CREATE_ACTION_LABEL,
   CURRENT_PROJECTS_FILES_TITLE,
   CURRENT_PROJECTS_LATEST_FILE_TITLE,
   CURRENT_PROJECTS_OPEN_LABEL,
@@ -12,7 +13,7 @@ import {
   currentProjectPanelId,
   currentProjectToggleId,
 } from "@/lib/continuum/client-memory/open-projects/present";
-import { formatNoteDate } from "@/lib/continuum/client-memory/read/presentation";
+import { conciergeCreateActionPath, formatNoteDate } from "@/lib/continuum/client-memory/read/presentation";
 
 export function OpenProjectsHome({
   projects,
@@ -199,6 +200,14 @@ function CurrentProjectCardBody({ project }: { project: CurrentProjectCard }) {
         </section>
       ) : null}
 
+      <p>
+        <Link
+          href={conciergeCreateActionPath(project.projectId)}
+          className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.24em] text-[#ad9164] outline-none hover:text-[#efe8de] focus-visible:text-[#efe8de] focus-visible:shadow-[0_0_0_3px_rgba(173,145,100,0.22)]"
+        >
+          {CURRENT_PROJECTS_CREATE_ACTION_LABEL}
+        </Link>
+      </p>
       <p>
         <Link
           href={project.href}

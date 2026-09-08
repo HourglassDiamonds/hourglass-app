@@ -67,6 +67,13 @@ export function conciergeAddOpenJobPath(projectId: string): string {
   return `${conciergeProjectPath(projectId)}/jobs/new`;
 }
 
+export function conciergeCreateActionPath(projectId?: string): string {
+  const base = `${CONCIERGE_HOME_PATH}/action/new`;
+  const id = projectId?.trim();
+  if (!id) return base;
+  return `${base}?project=${encodeURIComponent(id)}`;
+}
+
 export function conciergeOpenJobPath(projectId: string, jobId: string): string {
   return `${conciergeProjectPath(projectId)}/jobs/${jobId}`;
 }

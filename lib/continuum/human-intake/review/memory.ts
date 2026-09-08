@@ -43,6 +43,7 @@ export function createMemoryHumanIntakeReviewDeps(input: {
           getPersonProfile: (personId) => input.memory.getPersonProfile(personId),
           hasActiveClientProjectRelationship: (projectId, personId) =>
             input.memory.hasActiveClientProjectLink(personId, projectId),
+          listUnresolvedJobs: async (projectId) => input.jobs.listUnresolvedJobs(projectId),
           applyCreate: async (job) => input.jobs.insertJob(job),
         },
         payload,

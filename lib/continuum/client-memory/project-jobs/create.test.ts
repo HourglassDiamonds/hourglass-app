@@ -90,6 +90,7 @@ function deps(
     getPersonProfile: (personId) => store.getPersonProfile(personId),
     hasActiveClientProjectRelationship: (projectId, personId) =>
       store.hasActiveClientProjectLink(personId, projectId),
+    listUnresolvedJobs: async (projectId) => jobs.listUnresolvedJobs(projectId),
     applyCreate: (input) => Promise.resolve(jobs.insertJob(input)),
   };
 }
@@ -271,5 +272,86 @@ describe("Open Job create primitive", () => {
     assert.equal(first.ok && first.status, "created");
     assert.equal(second.ok && second.status, "already-present");
     assert.equal(jobs.listJobs().length, 1);
+  });
+
+  it("dedupes the same unresolved action on a Project across mutation ids", async () => {
+    const store = new InMemoryClientMemoryStore();
+    const jobs = new InMemoryProjectJobStore();
+    const seeded = await seedProject(store);
+    const first = await createProjectJob(deps(store, jobs), {
+      mutationId: randomUUID(),
+      projectId: seeded.projectId,
+      kind: "required_action",
+      subject: "Send CAD",
+      waitingOnActor: "founder",
+      actor: ACTOR,
+    });
+    const second = await createProjectJob(deps(store, jobs), {
+      mutationId: randomUUID(),
+      projectId: seeded.projectId,
+      kind: "request",
+      subject: "  send   cad ",
+      waitingOnActor: "hourglass",
+      actor: ACTOR,
+    });
+    assert.equal(first.ok && first.status, "created");
+    assert.equal(second.ok && second.status, "already-present");
+    assert.equal(jobs.listJobs(seeded.projectId).length, 1);
+    if (first.ok && second.ok) {
+      assert.equal(second.job.jobId, first.job.jobId);
+    }
+  });
+
+  it("allows the same subject on a different Project and after resolution", async () => {
+    const store = new InMemoryClientMemoryStore();
+    const jobs = new InMemoryProjectJobStore();
+    const firstProject = await seedProject(store, { title: "One" });
+    const secondProject = await seedProject(store, {
+      title: "Two",
+      personId: firstProject.personId,
+    });
+    const created = await createProjectJob(deps(store, jobs), {
+      mutationId: randomUUID(),
+      projectId: firstProject.projectId,
+      kind: "required_action",
+      subject: "Follow up",
+      waitingOnActor: "founder",
+      actor: ACTOR,
+    });
+    assert.equal(created.ok && created.status, "created");
+    const other = await createProjectJob(deps(store, jobs), {
+      mutationId: randomUUID(),
+      projectId: secondProject.projectId,
+      kind: "required_action",
+      subject: "Follow up",
+      waitingOnActor: "founder",
+      actor: ACTOR,
+    });
+    assert.equal(other.ok && other.status, "created");
+    if (!created.ok) return;
+    jobs.applyMutation({
+      mutationId: randomUUID(),
+      action: "resolve",
+      prior: created.job,
+      next: {
+        ...created.job,
+        state: "resolved",
+        resolvedAt: NOW,
+        updatedAt: NOW,
+        deferredUntil: null,
+      },
+      changedAt: NOW,
+      changedBy: ACTOR,
+    });
+    const again = await createProjectJob(deps(store, jobs), {
+      mutationId: randomUUID(),
+      projectId: firstProject.projectId,
+      kind: "required_action",
+      subject: "Follow up",
+      waitingOnActor: "founder",
+      actor: ACTOR,
+    });
+    assert.equal(again.ok && again.status, "created");
+    assert.equal(jobs.listJobs().length, 3);
   });
 });

@@ -14,6 +14,8 @@ export const CURRENT_PROJECTS_LATEST_REQUEST_EMPTY = "Not recorded yet";
 export const CURRENT_PROJECTS_OWNERSHIP_YOUR_TURN = "YOUR TURN";
 export const CURRENT_PROJECTS_OWNERSHIP_CLIENT = "WAITING ON CLIENT";
 export const CURRENT_PROJECTS_OWNERSHIP_SHOP = "WAITING ON SHOP";
+export const CURRENT_PROJECTS_CREATE_ACTION_LABEL = "Create action";
+export const CURRENT_PROJECTS_ADD_ACTION_LABEL = "Add action";
 
 export function currentProjectToggleId(projectId: string): string {
   return `current-project-${projectId}-toggle`;

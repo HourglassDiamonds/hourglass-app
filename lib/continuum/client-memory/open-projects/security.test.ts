@@ -27,6 +27,7 @@ describe("Open Project work security", () => {
       assert.doesNotMatch(source, /gmail\.googleapis|continuum_gmail_messages/);
       assert.doesNotMatch(source, /continuum\/dashboard\/compose/);
       assert.doesNotMatch(source, /saveOpenJob|setProjectLifecycle|createProjectArtifact/);
+      assert.doesNotMatch(source, /createProjectJob\(/);
       assert.doesNotMatch(source, /createBrowserClient/);
     }
     const actions = readFileSync(

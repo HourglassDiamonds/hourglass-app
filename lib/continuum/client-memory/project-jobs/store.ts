@@ -47,6 +47,12 @@ export class InMemoryProjectJobStore {
     return this.getJob(mutation.jobId);
   }
 
+  listUnresolvedJobs(projectId: string): ProjectJob[] {
+    return this.listJobs(projectId).filter(
+      (row) => row.state === "open" || row.state === "snoozed",
+    );
+  }
+
   insertJob(job: ProjectJob): CreateProjectJobApplyResult {
     const existingMutation = this.mutationIds.get(job.createdMutationId);
     if (existingMutation) {

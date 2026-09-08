@@ -141,8 +141,21 @@ export class SupabaseProjectJobWriter implements ProjectJobWriter {
       .select(PROJECT_JOB_COLUMNS)
       .eq("job_id", jobId)
       .maybeSingle();
-    if (error) throw writeReason(error.message ?? "");
+    if (error) throw writeReason(error.message);
     return rowToProjectJob((data ?? null) as Record<string, unknown> | null);
+  }
+
+  private async listUnresolvedJobs(projectId: string): Promise<ProjectJob[]> {
+    const { data, error } = await this.client
+      .from("continuum_project_jobs")
+      .select(PROJECT_JOB_COLUMNS)
+      .eq("project_id", projectId)
+      .in("state", ["open", "snoozed"]);
+    if (error) throw writeReason(error.message);
+    return (data ?? []).flatMap((row) => {
+      const mapped = rowToProjectJob(row as Record<string, unknown>);
+      return mapped ? [mapped] : [];
+    });
   }
 
   private async findJobByMutationId(mutationId: string): Promise<ProjectJob | null> {
@@ -277,6 +290,7 @@ export class SupabaseProjectJobWriter implements ProjectJobWriter {
         getPersonProfile: (personId) => this.getPersonProfile(personId),
         hasActiveClientProjectRelationship: (projectId, personId) =>
           this.hasActiveClientProjectRelationship(projectId, personId),
+        listUnresolvedJobs: (projectId) => this.listUnresolvedJobs(projectId),
         applyCreate: (job) => this.applyCreate(job),
       },
       input,

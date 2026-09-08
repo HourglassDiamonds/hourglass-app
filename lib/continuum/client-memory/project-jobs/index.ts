@@ -34,6 +34,11 @@ export type {
   CreateProjectJobInput,
   CreateProjectJobResult,
 } from "./create";
+export {
+  findUnresolvedJobByActionIdentity,
+  jobsShareActionIdentity,
+  openJobActionIdentityKey,
+} from "./identity";
 export { mutateOpenJob } from "./mutate";
 export type { MutateOpenJobInput, MutateOpenJobResult } from "./mutate";
 export { summarizeProjectWork, disconnectedProjectWork } from "./intelligence";
