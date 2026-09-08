@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
-import { MockGmailApi } from "./adapter";
+import { GmailHttpError, MockGmailApi } from "./adapter";
 import { exactThreadOnlyApi } from "./exact-thread";
 import { encodeGmailBody } from "./exact-thread-fixtures";
 import { runIndexedThreadEvidenceFetch } from "./indexed-thread-evidence";
@@ -109,6 +109,7 @@ describe("indexed thread evidence reader", () => {
     assert.equal(result.plaintextPersisted, false);
     assert.equal(result.gmailMutation, false);
     assert.equal(result.cursorUnchanged, true);
+    assert.deepEqual(result.unreadThreads, []);
     assert.equal(result.evidence[0]?.plaintext?.includes("create another piece"), true);
     const stored = await index.getMessage(MESSAGE);
     assert.equal("plaintext" in (stored ?? {}), false);
@@ -140,5 +141,130 @@ describe("indexed thread evidence reader", () => {
       "utf8",
     );
     assert.doesNotMatch(page, /runIndexedThreadEvidenceFetch/);
+  });
+
+  it("isolates a Gmail 404 thread and continues the rest of the scan", async () => {
+    const missing = "19missingthread001";
+    const index = new InMemoryGmailIndexStore();
+    await index.indexMessage(
+      {
+        messageId: MESSAGE,
+        threadId: THREAD,
+        sentAt: "2026-09-07T15:00:00.000Z",
+        subject: "Another piece",
+        fromEmail: "nate.pearl@example.test",
+        direction: "inbound",
+        hasAttachments: false,
+      },
+      NOW,
+    );
+    await index.indexMessage(
+      {
+        messageId: "19missingmsg0001",
+        threadId: missing,
+        sentAt: "2026-09-07T16:00:00.000Z",
+        subject: "Gone",
+        fromEmail: "other@example.test",
+        direction: "inbound",
+        hasAttachments: false,
+      },
+      NOW,
+    );
+    const connections = new InMemoryGmailConnectionStore();
+    await connections.putConnection(
+      connectFounderMailbox({
+        existing: null,
+        mailboxEmailHash: "ab".repeat(32),
+        refreshToken: encryptRefreshToken("refresh-keep", KEY),
+        grantedScope: GMAIL_READONLY_SCOPE,
+        providerTokenType: "Bearer",
+        now: NOW,
+      }),
+    );
+    const api = new MockGmailApi();
+    api.setThread(thread());
+    api.errors.set(`getThread:${missing}`, new GmailHttpError(404, "notFound"));
+    const result = await runIndexedThreadEvidenceFetch({
+      founderSessionOk: true,
+      threadIds: [THREAD, missing],
+      index,
+      connections,
+      decryptRefreshToken: () => "refresh-keep",
+      refreshAccessToken: async () => ({ ok: true, accessToken: "access" }),
+      createApi: () => api,
+    });
+    assert.equal(result.ok, true);
+    if (!result.ok) return;
+    assert.equal(result.evidence.length, 1);
+    assert.equal(result.evidence[0]?.indexed.threadId, THREAD);
+    assert.equal(result.unreadThreads.length, 1);
+    assert.equal(result.unreadThreads[0]?.threadId, missing);
+    assert.equal(result.unreadThreads[0]?.safeErrorCode, "thread-not-found");
+    assert.equal(result.plaintextPersisted, false);
+  });
+
+  it("isolates a malformed MIME thread and continues the rest of the scan", async () => {
+    const malformed = "19malformedthread01";
+    const index = new InMemoryGmailIndexStore();
+    await index.indexMessage(
+      {
+        messageId: MESSAGE,
+        threadId: THREAD,
+        sentAt: "2026-09-07T15:00:00.000Z",
+        subject: "Another piece",
+        fromEmail: "nate.pearl@example.test",
+        direction: "inbound",
+        hasAttachments: false,
+      },
+      NOW,
+    );
+    await index.indexMessage(
+      {
+        messageId: "19malformedmsg0001",
+        threadId: malformed,
+        sentAt: "2026-09-07T16:00:00.000Z",
+        subject: "Broken",
+        fromEmail: "other@example.test",
+        direction: "inbound",
+        hasAttachments: false,
+      },
+      NOW,
+    );
+    const connections = new InMemoryGmailConnectionStore();
+    await connections.putConnection(
+      connectFounderMailbox({
+        existing: null,
+        mailboxEmailHash: "ab".repeat(32),
+        refreshToken: encryptRefreshToken("refresh-keep", KEY),
+        grantedScope: GMAIL_READONLY_SCOPE,
+        providerTokenType: "Bearer",
+        now: NOW,
+      }),
+    );
+    const api = new MockGmailApi();
+    api.setThread(thread());
+    api.setThread({
+      id: malformed,
+      messages: undefined as unknown as GmailApiThread["messages"],
+    });
+    const result = await runIndexedThreadEvidenceFetch({
+      founderSessionOk: true,
+      threadIds: [THREAD, malformed],
+      index,
+      connections,
+      decryptRefreshToken: () => "refresh-keep",
+      refreshAccessToken: async () => ({ ok: true, accessToken: "access" }),
+      createApi: () => api,
+    });
+    assert.equal(result.ok, true);
+    if (!result.ok) return;
+    assert.equal(result.evidence.length, 1);
+    assert.equal(result.unreadThreads.length, 1);
+    assert.equal(result.unreadThreads[0]?.threadId, malformed);
+    assert.equal(result.unreadThreads[0]?.safeErrorCode, "thread-fetch-failed");
+    assert.equal(
+      JSON.stringify(result).includes("UNIQUE_BODY"),
+      false,
+    );
   });
 });

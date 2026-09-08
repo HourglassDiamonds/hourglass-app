@@ -126,6 +126,7 @@ describe("Gmail activation security", () => {
     const indexedEvidence = readFileSync(join(GMAIL_DIR, "indexed-thread-evidence.ts"), "utf8");
     assert.match(indexedEvidence, /exactThreadOnlyApi/);
     assert.doesNotMatch(indexedEvidence, /putCheckpoint|indexMessage|listMessages\(/);
+    assert.match(indexedEvidence, /unreadThreads/);
     assert.doesNotMatch(exact, /putCheckpoint|tryClaimHistoricalChunk|indexMessage/);
     assert.doesNotMatch(exact, /insertObservation|continuum_observations/);
   });

@@ -52,9 +52,15 @@ export function GmailIntakeScanForm() {
           tabIndex={-1}
           className="mt-4 text-[14px] text-[#c4b7aa] outline-none"
         >
-          {state.inserted === 0
-            ? "No new project proposals from this scan."
-            : `${state.inserted} new proposal${state.inserted === 1 ? "" : "s"} ready for review.`}
+          {`Scanned ${state.threadCount} indexed thread${state.threadCount === 1 ? "" : "s"}.`}
+          {state.inserted > 0
+            ? ` ${state.inserted} need attention.`
+            : " No new project proposals from this scan."}
+          {state.unreadThreadCount > 0
+            ? ` ${state.unreadThreadCount} thread${
+                state.unreadThreadCount === 1 ? "" : "s"
+              } could not be read.`
+            : ""}
         </p>
       ) : null}
     </form>

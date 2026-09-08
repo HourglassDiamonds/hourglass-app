@@ -68,4 +68,24 @@ describe("Founder Project writer security", () => {
     assert.match(intakeUi, /approveGmailNewProject/);
     assert.doesNotMatch(intakeUi, /createProjectJob\(/);
   });
+
+  it("does not export non-async values from founder-project or Gmail intake server actions", () => {
+    const founderActions = readFileSync(
+      join(ROOT, "app/executive-dashboard/concierge/founder-project-actions.ts"),
+      "utf8",
+    );
+    const intakeActions = readFileSync(
+      join(ROOT, "app/executive-dashboard/concierge/gmail-intake-actions.ts"),
+      "utf8",
+    );
+    for (const source of [founderActions, intakeActions]) {
+      assert.match(source, /"use server"/);
+      assert.doesNotMatch(source, /^export \{/m);
+      assert.doesNotMatch(source, /^export const \w+ =/m);
+      assert.doesNotMatch(source, /^export function /m);
+      assert.doesNotMatch(source, /NEW_PROJECT_CONTEXT_TOPIC/);
+    }
+    assert.match(founderActions, /export async function saveFounderIntake/);
+    assert.match(intakeActions, /export async function scanGmailNewProjectIntake/);
+  });
 });

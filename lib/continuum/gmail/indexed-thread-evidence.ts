@@ -49,10 +49,16 @@ export type IndexedThreadEvidenceFailure = {
   safeErrorCode: IndexedThreadEvidenceErrorCode;
 };
 
+export type IndexedThreadItemFailure = {
+  threadId: string;
+  safeErrorCode: IndexedThreadEvidenceErrorCode;
+};
+
 export type IndexedThreadEvidenceSuccess = {
   ok: true;
   safeErrorCode: null;
   evidence: GmailCandidateEvidence[];
+  unreadThreads: IndexedThreadItemFailure[];
   plaintextPersisted: false;
   gmailMutation: false;
   cursorUnchanged: true;
@@ -131,27 +137,36 @@ export async function runIndexedThreadEvidenceFetch(
 
   const api = exactThreadOnlyApi(input.createApi(refreshed.accessToken));
   const evidence: GmailCandidateEvidence[] = [];
-  try {
-    for (const threadId of threadIds) {
-      let indexed: GmailIndexedMessage[];
-      try {
-        indexed = await input.index.listMessagesByThread(threadId);
-      } catch {
-        return failed("unavailable");
-      }
-      if (indexed.length === 0) continue;
-      const raw = await api.getThread(threadId);
-      if (!raw?.id || raw.id !== threadId) return failed("thread-fetch-failed");
-      evidence.push(...evidenceFromProtected(indexed, protectExactThread(raw)));
+  const unreadThreads: IndexedThreadItemFailure[] = [];
+  for (const threadId of threadIds) {
+    let indexed: GmailIndexedMessage[];
+    try {
+      indexed = await input.index.listMessagesByThread(threadId);
+    } catch {
+      unreadThreads.push({ threadId, safeErrorCode: "unavailable" });
+      continue;
     }
-  } catch (error) {
-    return failed(threadFetchErrorCode(error));
+    if (indexed.length === 0) continue;
+    try {
+      const raw = await api.getThread(threadId);
+      if (!raw?.id || raw.id !== threadId || !Array.isArray(raw.messages)) {
+        unreadThreads.push({ threadId, safeErrorCode: "thread-fetch-failed" });
+        continue;
+      }
+      evidence.push(...evidenceFromProtected(indexed, protectExactThread(raw)));
+    } catch (error) {
+      unreadThreads.push({
+        threadId,
+        safeErrorCode: threadFetchErrorCode(error),
+      });
+    }
   }
 
   return {
     ok: true,
     safeErrorCode: null,
     evidence,
+    unreadThreads,
     plaintextPersisted: false,
     gmailMutation: false,
     cursorUnchanged: true,

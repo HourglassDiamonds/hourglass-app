@@ -20,7 +20,6 @@ import { CONCIERGE_GMAIL_INTAKE_PATH } from "@/lib/continuum/gmail/types";
 import { revalidatePath } from "next/cache";
 import type { CreateProjectJobResult } from "@/lib/continuum/client-memory/project-jobs/create";
 import type { CreateFounderProjectResult } from "@/lib/continuum/client-memory/founder-project/create";
-import { NEW_PROJECT_CONTEXT_TOPIC } from "@/lib/continuum/gmail/candidates/new-project";
 
 export type SaveFounderIntakeState = { ok: false; message: string } | null;
 
@@ -283,5 +282,3 @@ export async function confirmGmailIntakePerson(
   }
   return { ok: false, message: "Unable to confirm that Person." };
 }
-
-export { NEW_PROJECT_CONTEXT_TOPIC };

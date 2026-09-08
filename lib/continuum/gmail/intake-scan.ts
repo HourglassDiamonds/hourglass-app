@@ -26,6 +26,8 @@ export type GmailIntakeScanSuccess = {
   insertedIds: string[];
   duplicateIds: string[];
   threadCount: number;
+  threadReadCount: number;
+  unreadThreadCount: number;
   evidenceCount: number;
   plaintextPersisted: false;
   gmailMutation: false;
@@ -70,6 +72,20 @@ export async function runGmailNewProjectIntakeScan(input: {
   const threadIds =
     input.threadIds ??
     (await recentIndexedThreadIds(input.index, GMAIL_INTAKE_MAX_THREADS));
+  if (threadIds.length === 0) {
+    return {
+      ok: true,
+      insertedIds: [],
+      duplicateIds: [],
+      threadCount: 0,
+      threadReadCount: 0,
+      unreadThreadCount: 0,
+      evidenceCount: 0,
+      plaintextPersisted: false,
+      gmailMutation: false,
+      cursorUnchanged: true,
+    };
+  }
   const fetched = await runIndexedThreadEvidenceFetch({
     founderSessionOk: input.founderSessionOk,
     threadIds,
@@ -82,16 +98,23 @@ export async function runGmailNewProjectIntakeScan(input: {
   if (!fetched.ok) {
     return { ok: false, safeErrorCode: fetched.safeErrorCode };
   }
-  const ingested = await ingestGmailCandidates(input.store, {
-    evidence: fetched.evidence,
-    world: input.world,
-    createdAt: input.nowIso,
-  });
+  let ingested;
+  try {
+    ingested = await ingestGmailCandidates(input.store, {
+      evidence: fetched.evidence,
+      world: input.world,
+      createdAt: input.nowIso,
+    });
+  } catch {
+    return { ok: false, safeErrorCode: "candidate-store-unavailable" };
+  }
   return {
     ok: true,
     insertedIds: ingested.insertedIds,
     duplicateIds: ingested.duplicateIds,
     threadCount: threadIds.length,
+    threadReadCount: threadIds.length - fetched.unreadThreads.length,
+    unreadThreadCount: fetched.unreadThreads.length,
     evidenceCount: fetched.evidence.length,
     plaintextPersisted: false,
     gmailMutation: false,
