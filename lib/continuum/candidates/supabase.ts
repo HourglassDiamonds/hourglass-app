@@ -12,6 +12,7 @@ import {
   CONTINUUM_CANDIDATES_TABLE,
   candidateStorageStateFromError,
 } from "./activation";
+import { collectPagedRows } from "./page";
 import {
   candidateToRow,
   preserveReviewOnReplace,
@@ -70,26 +71,34 @@ export class SupabaseCandidateStore implements CandidateStore {
   }
 
   async list(): Promise<ContinuumCandidate[]> {
-    const { data, error } = await this.client
-      .from(CONTINUUM_CANDIDATES_TABLE)
-      .select(COLUMNS)
-      .order("created_at", { ascending: true });
-    throwIfStorageError(error);
-    return (data ?? []).map((row) => rowToCandidate(row as Record<string, unknown>));
+    const rows = await collectPagedRows(async (from, to) => {
+      const { data, error } = await this.client
+        .from(CONTINUUM_CANDIDATES_TABLE)
+        .select(COLUMNS)
+        .order("created_at", { ascending: true })
+        .range(from, to);
+      throwIfStorageError(error);
+      return (data ?? []) as Record<string, unknown>[];
+    });
+    return rows.map((row) => rowToCandidate(row));
   }
 
   async listBySourceRefPrefix(
     sourceSystem: CandidateSourceSystem,
     sourceRefPrefix: string,
   ): Promise<ContinuumCandidate[]> {
-    const { data, error } = await this.client
-      .from(CONTINUUM_CANDIDATES_TABLE)
-      .select(COLUMNS)
-      .eq("source_system", sourceSystem)
-      .like("source_ref", `${sourceRefPrefix}%`)
-      .order("created_at", { ascending: true });
-    throwIfStorageError(error);
-    return (data ?? []).map((row) => rowToCandidate(row as Record<string, unknown>));
+    const rows = await collectPagedRows(async (from, to) => {
+      const { data, error } = await this.client
+        .from(CONTINUUM_CANDIDATES_TABLE)
+        .select(COLUMNS)
+        .eq("source_system", sourceSystem)
+        .like("source_ref", `${sourceRefPrefix}%`)
+        .order("created_at", { ascending: true })
+        .range(from, to);
+      throwIfStorageError(error);
+      return (data ?? []) as Record<string, unknown>[];
+    });
+    return rows.map((row) => rowToCandidate(row));
   }
 
   async replace(row: ContinuumCandidate): Promise<ContinuumCandidate> {

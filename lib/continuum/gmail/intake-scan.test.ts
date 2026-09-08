@@ -1,12 +1,15 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import { CANDIDATE_PARSER_GMAIL_V1, type ContinuumCandidate } from "@/lib/continuum/candidates/types";
 import { InMemoryCandidateStore } from "@/lib/continuum/candidates/store";
+import { packGmailCandidateSourceRef } from "./candidates/source-ref";
 import { InMemoryGmailIndexStore } from "@/lib/continuum/client-memory/gmail/store";
 import { hashEmail } from "@/lib/continuum/client-memory/hashes";
 import { MockGmailApi, GmailHttpError } from "./adapter";
 import { connectFounderMailbox, InMemoryGmailConnectionStore } from "./connection";
 import { encodeGmailBody } from "./exact-thread-fixtures";
 import {
+  classifyGmailIntakeAttention,
   formatGmailIntakeScanNotice,
   recentIndexedThreadIds,
   runGmailNewProjectIntakeScan,
@@ -120,9 +123,11 @@ describe("Gmail new-project intake scan", () => {
         threadReadCount: result.threadReadCount,
         unreadThreadCount: result.unreadThreadCount,
         newProjectProposalCount: result.newProjectProposalCount,
-        otherReviewItemCount: result.otherReviewItemCount,
+        actionReviewCount: result.actionReviewCount,
+        relationshipUpdateCount: result.relationshipUpdateCount,
+        backgroundObservationCount: result.backgroundObservationCount,
       }),
-      /need attention/,
+      /need attention|other review item/i,
     );
     const rows = await store.list();
     const serialized = JSON.stringify(rows);
@@ -386,19 +391,23 @@ describe("Gmail new-project intake scan", () => {
         threadReadCount: 30,
         unreadThreadCount: 0,
         newProjectProposalCount: 0,
-        otherReviewItemCount: 329,
+        actionReviewCount: 0,
+        relationshipUpdateCount: 0,
+        backgroundObservationCount: 329,
       }),
-      "Scanned 30 indexed threads. No new-project proposals from this scan. 329 other review items.",
+      "Scanned 30 indexed threads. No new-project proposals from this scan. 329 background observations processed.",
     );
     assert.equal(
       formatGmailIntakeScanNotice({
         threadCount: 30,
         threadReadCount: 29,
         unreadThreadCount: 1,
-        newProjectProposalCount: 2,
-        otherReviewItemCount: 4,
+        newProjectProposalCount: 1,
+        actionReviewCount: 2,
+        relationshipUpdateCount: 3,
+        backgroundObservationCount: 754,
       }),
-      "Scanned 30 indexed threads. 2 new project proposals. 4 other review items. 1 thread could not be read.",
+      "Scanned 30 indexed threads. 1 new project detected. 2 actions need review. 3 relationship updates. 754 background observations processed. 1 thread could not be read.",
     );
     assert.equal(
       summarizeGmailIntakeScan({
@@ -408,6 +417,132 @@ describe("Gmail new-project intake scan", () => {
       }).newProjectProposalCount,
       0,
     );
+  });
+
+  it("counts founder attention narrowly and rolls subordinate evidence into background", () => {
+    const packedProject = packGmailCandidateSourceRef({
+      threadId: "t-new",
+      messageId: "m-new",
+    });
+    const packedOther = packGmailCandidateSourceRef({
+      threadId: "t-other",
+      messageId: "m-other",
+    });
+    assert.equal(packedProject.ok, true);
+    assert.equal(packedOther.ok, true);
+    if (!packedProject.ok || !packedOther.ok) return;
+    function row(
+      input: Pick<ContinuumCandidate, "candidateId" | "candidateType" | "payload"> &
+        Partial<ContinuumCandidate>,
+    ): ContinuumCandidate {
+      return {
+        sourceSystem: "gmail",
+        sourceRef: packedProject.sourceRef,
+        sourceTimestamp: NOW,
+        proposedTarget: { kind: "none" },
+        confidence: "medium",
+        evidenceBasis: { ruleIds: [], matchedText: null },
+        candidateState: "active",
+        reviewStatus: "pending",
+        lastReviewAction: null,
+        founderEditedPayload: null,
+        founderEditedTarget: null,
+        reviewedAt: null,
+        createdAt: NOW,
+        canonical: false,
+        automaticApply: false,
+        parserVersion: CANDIDATE_PARSER_GMAIL_V1,
+        supersedesCandidateId: null,
+        supersededByCandidateId: null,
+        ...input,
+      };
+    }
+    const newProject = row({
+      candidateId: "np",
+      candidateType: "project_context",
+      payload: {
+        kind: "project_context",
+        topic: NEW_PROJECT_CONTEXT_TOPIC,
+        value: "Matching Marquise Earrings",
+      },
+    });
+    const spec = row({
+      candidateId: "spec",
+      candidateType: "structured_spec",
+      payload: {
+        kind: "structured_spec",
+        fieldName: "metal",
+        proposedValue: "14k yellow gold",
+        currentValue: null,
+        conflict: false,
+      },
+    });
+    const date = row({
+      candidateId: "date",
+      candidateType: "date",
+      payload: {
+        kind: "date",
+        raw: "next week",
+        isoDate: null,
+        precision: "unresolved",
+        role: "mentioned",
+        sourceTimestamp: NOW,
+        resolutionCalendar: null,
+      },
+    });
+    const personOnThread = row({
+      candidateId: "person-new",
+      candidateType: "person_association",
+      payload: {
+        kind: "person_association",
+        displayName: "Abbey Castillo",
+        emailHash: hashEmail("serinitybloom@gmail.com"),
+        mintPerson: false,
+        mergePersons: false,
+      },
+    });
+    const standaloneJob = row({
+      candidateId: "job",
+      candidateType: "open_job",
+      sourceRef: packedOther.sourceRef,
+      payload: {
+        kind: "open_job",
+        jobKind: "request",
+        subject: "Reply to vendor",
+        detail: null,
+        waitingOnActor: "founder",
+        dueAt: null,
+        createJob: false,
+      },
+    });
+    const standalonePerson = row({
+      candidateId: "person-other",
+      candidateType: "person_association",
+      sourceRef: packedOther.sourceRef,
+      payload: {
+        kind: "person_association",
+        displayName: "Vendor",
+        emailHash: hashEmail("vendor@example.test"),
+        mintPerson: false,
+        mergePersons: false,
+      },
+    });
+    const threads = new Set(["t-new"]);
+    assert.equal(classifyGmailIntakeAttention(newProject, threads), "new_project");
+    assert.equal(classifyGmailIntakeAttention(spec, threads), "background");
+    assert.equal(classifyGmailIntakeAttention(date, threads), "background");
+    assert.equal(classifyGmailIntakeAttention(personOnThread, threads), "background");
+    assert.equal(classifyGmailIntakeAttention(standaloneJob, threads), "action");
+    assert.equal(classifyGmailIntakeAttention(standalonePerson, threads), "relationship");
+    const summary = summarizeGmailIntakeScan({
+      threadCount: 30,
+      unreadThreadCount: 0,
+      proposed: [newProject, spec, date, personOnThread, standaloneJob, standalonePerson],
+    });
+    assert.equal(summary.newProjectProposalCount, 1);
+    assert.equal(summary.actionReviewCount, 1);
+    assert.equal(summary.relationshipUpdateCount, 1);
+    assert.equal(summary.backgroundObservationCount, 3);
   });
 
   it("surfaces Nate and Abbey real-shape proposals, keeps unresolved Person, and does not multiply on rescan", async () => {
@@ -598,6 +733,9 @@ describe("Gmail new-project intake scan", () => {
     assert.ok(selected.includes(abbeyThread));
     assert.equal(first.newProjectProposalCount, 2);
     assert.equal(first.unreadThreadCount, 0);
+    assert.equal(typeof first.backgroundObservationCount, "number");
+    assert.ok(first.backgroundObservationCount > 0);
+    assert.equal(first.actionReviewCount, 0);
     const rows = await store.list();
     const serialized = JSON.stringify(rows);
     assert.equal(serialized.includes(nateNonce), false);
@@ -616,6 +754,22 @@ describe("Gmail new-project intake scan", () => {
         (row) =>
           row.payload.kind === "project_context" &&
           row.payload.topic === WAITING_ON_CLIENT_TOPIC,
+      ),
+      true,
+    );
+    const waitingValues = rows
+      .filter(
+        (row) =>
+          row.payload.kind === "project_context" &&
+          row.payload.topic === WAITING_ON_CLIENT_TOPIC,
+      )
+      .map((row) =>
+        row.payload.kind === "project_context" ? row.payload.value : "",
+      );
+    assert.ok(waitingValues.every((value) => value.length < 80));
+    assert.equal(
+      waitingValues.every((value) =>
+        value === "call or first render" || value === "design question",
       ),
       true,
     );

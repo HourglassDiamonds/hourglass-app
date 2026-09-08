@@ -1,6 +1,10 @@
 import Link from "next/link";
 import { getAuthenticatedCandidateStore } from "@/lib/continuum/candidates/load";
-import { presentGmailNewProjectIntake } from "@/lib/continuum/client-memory/founder-project/intake-present";
+import {
+  latestGmailIntakeTurns,
+  newProjectThreadIds,
+  presentGmailNewProjectIntake,
+} from "@/lib/continuum/client-memory/founder-project/intake-present";
 import { loadGmailPersonWorldFromAdmin } from "@/lib/continuum/client-memory/founder-project/gmail-world";
 import { isGmailIndexStale } from "@/lib/continuum/gmail/index-freshness";
 import { snapshotFromIncrementalCheckpoint } from "@/lib/continuum/gmail/incremental";
@@ -8,6 +12,7 @@ import { readGmailCurrentState } from "@/lib/continuum/gmail/current-state";
 import { isGmailIncrementalSyncEnabled } from "@/lib/continuum/gmail/env";
 import { getAuthenticatedGmailHistoryStores } from "@/lib/continuum/gmail/load";
 import { CONCIERGE_GMAIL_PATH, GMAIL_INCREMENTAL_JOB_KEY } from "@/lib/continuum/gmail/types";
+import type { GmailIndexedMessage } from "@/lib/continuum/client-memory/gmail/types";
 import { ConciergeShell } from "../../components/concierge-shell";
 import { ConciergeUnavailable } from "../../components/client-profile-view";
 import {
@@ -38,6 +43,9 @@ export default async function ConciergeGmailIntakePage() {
   let identityAvailable = false;
   let directory: Parameters<typeof presentGmailNewProjectIntake>[1] = [];
   const nowIso = new Date().toISOString();
+  let indexForTurns: {
+    listMessagesByThread(threadId: string): Promise<GmailIndexedMessage[]>;
+  } | null = null;
   let freshness = {
     lastSuccessfulSyncAt: null as string | null,
     activationEnabled: isGmailIncrementalSyncEnabled(),
@@ -47,6 +55,7 @@ export default async function ConciergeGmailIntakePage() {
   try {
     const gmail = await getAuthenticatedGmailHistoryStores();
     if (gmail.ok) {
+      indexForTurns = gmail.index;
       const current = await readGmailCurrentState(gmail.index);
       const incrementalRow = await gmail.index.getCheckpoint(GMAIL_INCREMENTAL_JOB_KEY);
       freshness = {
@@ -71,7 +80,11 @@ export default async function ConciergeGmailIntakePage() {
     directory = [];
   }
   try {
-    cards = presentGmailNewProjectIntake(await auth.store.list(), directory);
+    const rows = await auth.store.list();
+    const turns = indexForTurns
+      ? await latestGmailIntakeTurns(indexForTurns, newProjectThreadIds(rows))
+      : [];
+    cards = presentGmailNewProjectIntake(rows, directory, turns);
   } catch {
     return (
       <ConciergeShell>

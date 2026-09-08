@@ -253,9 +253,9 @@ describe("explicit new-project Gmail proposals", () => {
         row.payload.topic === WAITING_ON_CLIENT_TOPIC,
     );
     assert.ok(waiting);
-    assert.match(
+    assert.equal(
       waiting && waiting.payload.kind === "project_context" ? waiting.payload.value : "",
-      /call|render/i,
+      "call or first render",
     );
     assert.equal(
       proposed.candidates.some((row) => row.candidateType === "open_job"),
@@ -383,13 +383,69 @@ describe("explicit new-project Gmail proposals", () => {
         row.payload.topic === WAITING_ON_CLIENT_TOPIC,
     );
     assert.ok(waiting);
-    assert.match(
+    assert.equal(
       waiting && waiting.payload.kind === "project_context" ? waiting.payload.value : "",
-      /flower|huggie|drop/i,
+      "design question",
     );
+    assert.equal(waiting?.evidenceBasis.matchedText, "design question");
     assert.equal(
       proposed.candidates.some((row) => row.candidateType === "open_job"),
       false,
+    );
+  });
+
+  it("does not keep waiting_on_client when Abbey's latest turn is inbound after Justin's questions", () => {
+    const proposed = proposeGmailCandidates({
+      createdAt: NOW,
+      world: {
+        people: [],
+        projects: [],
+        internalEmailHashes: [hashEmail("justin@hourglass.example")!],
+      },
+      evidence: [
+        evidence({
+          messageId: "m-abbey-in",
+          threadId: "t-abbey-later",
+          sentAt: "2026-09-08T00:35:03.000Z",
+          fromEmail: ABBEY_CASTILLO_EMAIL,
+          direction: "inbound",
+          plaintext: ABBEY_INBOUND,
+        }),
+        evidence({
+          messageId: "m-abbey-out",
+          threadId: "t-abbey-later",
+          sentAt: "2026-09-08T15:17:57.000Z",
+          fromEmail: "justin@hourglass.example",
+          direction: "outbound",
+          plaintext: ABBEY_OUTBOUND,
+        }),
+        evidence({
+          messageId: "m-abbey-later",
+          threadId: "t-abbey-later",
+          sentAt: "2026-09-08T19:41:25.000Z",
+          fromEmail: ABBEY_CASTILLO_EMAIL,
+          direction: "inbound",
+          plaintext:
+            "I'd prefer the flower detail and the locking back. Happy to answer the rest whenever you are ready.",
+        }),
+      ],
+    });
+    assert.equal(
+      proposed.candidates.some(
+        (row) =>
+          row.payload.kind === "project_context" &&
+          row.payload.topic === WAITING_ON_CLIENT_TOPIC,
+      ),
+      false,
+    );
+    const neu = proposed.candidates.find(
+      (row) =>
+        row.payload.kind === "project_context" &&
+        row.payload.topic === NEW_PROJECT_CONTEXT_TOPIC,
+    );
+    assert.equal(
+      neu?.payload.kind === "project_context" && neu.payload.value,
+      "Matching Marquise Earrings",
     );
   });
 

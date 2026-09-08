@@ -115,10 +115,29 @@ export function reconcileThreadCandidates(input: {
     }
     const inbound = [...rows]
       .filter((row) => row.indexed.direction === "inbound")
-      .sort((a, b) => sentMs(a.indexed.sentAt) - sentMs(b.indexed.sentAt))[0];
-    if (!inbound) continue;
-    const outbound = laterOutboundExists(rows, threadId, inbound.indexed.sentAt);
-    if (!outbound) continue;
+      .sort((a, b) => sentMs(a.indexed.sentAt) - sentMs(b.indexed.sentAt));
+    const outboundQuestions = [...rows]
+      .filter((row) => row.indexed.direction === "outbound")
+      .sort((a, b) => sentMs(a.indexed.sentAt) - sentMs(b.indexed.sentAt))
+      .filter((row) =>
+        Boolean(
+          extractWaitingOnClient(
+            haystackOf(row.indexed.subject, row.plaintext ?? null),
+          ),
+        ),
+      );
+    const latest = [...rows].sort(
+      (a, b) => sentMs(a.indexed.sentAt) - sentMs(b.indexed.sentAt),
+    )[rows.length - 1];
+    const outbound = outboundQuestions[outboundQuestions.length - 1] ?? null;
+    if (!inbound.length || !outbound) continue;
+    if (
+      latest &&
+      latest.indexed.direction === "inbound" &&
+      sentMs(latest.indexed.sentAt) > sentMs(outbound.indexed.sentAt)
+    ) {
+      continue;
+    }
     const waiting = extractWaitingOnClient(
       haystackOf(outbound.indexed.subject, outbound.plaintext ?? null),
     );

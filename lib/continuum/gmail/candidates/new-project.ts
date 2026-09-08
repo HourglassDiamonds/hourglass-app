@@ -156,10 +156,11 @@ export function extractWaitingOnClient(text: string): ContextProposal | null {
     /\?/.test(hay) ||
     /\b(?:or|would you|let me know|prefer|rather)\b/i.test(hay);
   if (!choice) return null;
+  const callOrRender = /\bcall\b/i.test(hay) && /\brender\b/i.test(hay);
   return {
     topic: WAITING_ON_CLIENT_TOPIC,
-    value: clipMatchedText(hay, 200),
-    matchedText: clipMatchedText(hay),
+    value: callOrRender ? "call or first render" : "design question",
+    matchedText: callOrRender ? "call or first render" : "design question",
     ruleIds: ["outgoing_waiting_on_client"],
   };
 }

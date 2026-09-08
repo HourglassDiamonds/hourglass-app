@@ -128,6 +128,8 @@ describe("Gmail activation security", () => {
     assert.doesNotMatch(intakeActions, /insertedIds\.length/);
     const intakeScan = readFileSync(join(GMAIL_DIR, "intake-scan.ts"), "utf8");
     assert.match(intakeScan, /newProjectProposalCount/);
+    assert.match(intakeScan, /backgroundObservationCount/);
+    assert.doesNotMatch(intakeScan, /otherReviewItemCount/);
     assert.match(intakeScan, /GMAIL_INTAKE_SELECTION_LOOKBACK/);
     assert.doesNotMatch(intakeScan, /putCheckpoint|indexMessage|listHistory|runIncrementalSync/);
     assert.doesNotMatch(intakeScan, /gmail-intake-daily|gmail-intake-sync/);
@@ -138,6 +140,9 @@ describe("Gmail activation security", () => {
     assert.match(intakeUi, /Refresh mail index|gmailIntakeRefreshButtonLabel/);
     assert.match(intakeUi, /runNextGmailIncrementalChunk/);
     assert.match(intakeUi, /formatGmailIntakeScanNotice/);
+    assert.match(intakeUi, /currentStateSummary/);
+    assert.doesNotMatch(intakeUi, /Proposed current state — waiting on client/);
+    assert.doesNotMatch(intakeUi, /other review item/);
     assert.match(intakeUi, /refreshMailIndex/);
     assert.doesNotMatch(intakeUi, /need attention/);
     assert.doesNotMatch(intakeUi, /runHistoricalSync|gmail-intake-daily/);
@@ -150,6 +155,7 @@ describe("Gmail activation security", () => {
       join(ROOT, "app/executive-dashboard/concierge/gmail/intake/page.tsx"),
       "utf8",
     );
+    assert.match(intakePage, /latestGmailIntakeTurns/);
     assert.match(intakePage, /readGmailCurrentState/);
     assert.match(intakePage, /GMAIL_INCREMENTAL_JOB_KEY/);
     assert.doesNotMatch(intakePage, /putCheckpoint|indexMessage|users\.messages\.send/);

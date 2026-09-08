@@ -17,7 +17,9 @@ export type ScanGmailIntakeState =
       threadCount: number;
       unreadThreadCount: number;
       newProjectProposalCount: number;
-      otherReviewItemCount: number;
+      actionReviewCount: number;
+      relationshipUpdateCount: number;
+      backgroundObservationCount: number;
       identityAvailable: boolean;
     }
   | { ok: false; message: string }
@@ -89,7 +91,9 @@ export async function scanGmailNewProjectIntake(
       threadCount: result.threadCount,
       unreadThreadCount: result.unreadThreadCount,
       newProjectProposalCount: result.newProjectProposalCount,
-      otherReviewItemCount: result.otherReviewItemCount,
+      actionReviewCount: result.actionReviewCount,
+      relationshipUpdateCount: result.relationshipUpdateCount,
+      backgroundObservationCount: result.backgroundObservationCount,
       identityAvailable: loaded.peopleAvailable,
     };
   } catch {

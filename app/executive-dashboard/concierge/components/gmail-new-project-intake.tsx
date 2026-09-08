@@ -187,7 +187,9 @@ export function GmailIntakeScanForm({
             threadReadCount: Math.max(0, state.threadCount - state.unreadThreadCount),
             unreadThreadCount: state.unreadThreadCount,
             newProjectProposalCount: state.newProjectProposalCount,
-            otherReviewItemCount: state.otherReviewItemCount,
+            actionReviewCount: state.actionReviewCount,
+            relationshipUpdateCount: state.relationshipUpdateCount,
+            backgroundObservationCount: state.backgroundObservationCount,
           })}
         </p>
       ) : null}
@@ -283,33 +285,62 @@ function GmailNewProjectCard({
           <p className="text-[14px] text-[#d2b8a8]">Identity needs confirmation.</p>
         </div>
       )}
-      {card.giftContext ? (
-        <p className="text-[14px] text-[#b7aa9c]">Context: {card.giftContext}</p>
+      {card.giftContext || card.designBasis ? (
+        <div className="space-y-1">
+          <p className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
+            Context
+          </p>
+          {card.giftContext ? (
+            <p className="text-[14px] text-[#b7aa9c]">{card.giftContext}</p>
+          ) : null}
+          {card.designBasis ? (
+            <p className="text-[14px] text-[#b7aa9c]">{card.designBasis}</p>
+          ) : null}
+        </div>
       ) : null}
-      {card.designBasis ? (
-        <p className="text-[14px] text-[#b7aa9c]">Basis: {card.designBasis}</p>
+      {card.proposedSpecs.length > 0 || card.structuredSpecs.length > 0 ? (
+        <div className="space-y-1">
+          <p className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
+            Design context
+          </p>
+          <ul className="text-[14px] text-[#b7aa9c]">
+            {card.proposedSpecs.map((spec) => (
+              <li key={spec}>{spec}</li>
+            ))}
+            {card.structuredSpecs.map((spec) => (
+              <li key={`${spec.fieldName}:${spec.proposedValue}`}>
+                {spec.fieldName.replaceAll("_", " ")}: {spec.proposedValue}
+              </li>
+            ))}
+          </ul>
+        </div>
       ) : null}
-      {card.proposedSpecs.length > 0 ? (
-        <ul className="text-[14px] text-[#b7aa9c]">
-          {card.proposedSpecs.map((spec) => (
-            <li key={spec}>{spec}</li>
-          ))}
-        </ul>
-      ) : null}
-      {card.structuredSpecs.map((spec) => (
-        <p key={spec.fieldName} className="text-[14px] text-[#b7aa9c]">
-          {spec.fieldName.replaceAll("_", " ")}: {spec.proposedValue}
-        </p>
-      ))}
-      {card.attachmentFilenames.length > 0 ? (
-        <p className="text-[13px] text-[#8d8073]">
-          Attachments (filenames only): {card.attachmentFilenames.join(", ")}
-        </p>
-      ) : null}
-      {card.waitingOnClient ? (
+      {card.currentStateSummary ? (
         <p className="text-[14px] leading-relaxed text-[#c4b7aa]">
-          Proposed current state — waiting on client: {card.waitingOnClient}
+          Current state: {card.currentStateSummary}
         </p>
+      ) : null}
+      {card.attachmentFilenames.length > 0 || card.supportingObservationCount > 0 ? (
+        <details className="text-[13px] text-[#8d8073]">
+          <summary className="cursor-pointer text-[11px] uppercase tracking-[0.18em]">
+            Review evidence
+          </summary>
+          <div className="mt-2 space-y-1">
+            {card.attachmentFilenames.length > 0 ? (
+              <p>
+                {card.attachmentFilenames.length} attachment
+                {card.attachmentFilenames.length === 1 ? "" : "s"}:{" "}
+                {card.attachmentFilenames.join(", ")}
+              </p>
+            ) : null}
+            {card.supportingObservationCount > 0 ? (
+              <p>
+                {card.supportingObservationCount} supporting observation
+                {card.supportingObservationCount === 1 ? "" : "s"}
+              </p>
+            ) : null}
+          </div>
+        </details>
       ) : null}
       {identityAvailable && card.identityConfirmed ? (
         <GmailNewProjectApproveForm card={card} />

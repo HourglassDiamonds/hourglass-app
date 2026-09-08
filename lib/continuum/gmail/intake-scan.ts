@@ -29,7 +29,9 @@ export type GmailIntakeScanSummary = {
   threadReadCount: number;
   unreadThreadCount: number;
   newProjectProposalCount: number;
-  otherReviewItemCount: number;
+  actionReviewCount: number;
+  relationshipUpdateCount: number;
+  backgroundObservationCount: number;
 };
 
 export type GmailIntakeScanSuccess = {
@@ -41,7 +43,9 @@ export type GmailIntakeScanSuccess = {
   unreadThreadCount: number;
   evidenceCount: number;
   newProjectProposalCount: number;
-  otherReviewItemCount: number;
+  actionReviewCount: number;
+  relationshipUpdateCount: number;
+  backgroundObservationCount: number;
   plaintextPersisted: false;
   gmailMutation: false;
   cursorUnchanged: true;
@@ -92,6 +96,20 @@ export async function recentIndexedThreadIds(
     .map(([threadId]) => threadId);
 }
 
+export function classifyGmailIntakeAttention(
+  row: ContinuumCandidate,
+  newProjectThreadIds: ReadonlySet<string>,
+): "new_project" | "action" | "relationship" | "background" {
+  const threadId = parseGmailCandidateSourceRef(row.sourceRef)?.threadId ?? null;
+  const onNewProject = Boolean(threadId && newProjectThreadIds.has(threadId));
+  if (isNewProjectContextPayload(row.payload)) return "new_project";
+  if (row.candidateState === "conflict") return "action";
+  if (onNewProject) return "background";
+  if (row.candidateType === "open_job") return "action";
+  if (row.candidateType === "person_association") return "relationship";
+  return "background";
+}
+
 export function summarizeGmailIntakeScan(input: {
   threadCount: number;
   unreadThreadCount: number;
@@ -105,21 +123,30 @@ export function summarizeGmailIntakeScan(input: {
     ? input.threadCount
     : 0;
   const newProjectThreads = new Set<string>();
-  let otherReviewItemCount = 0;
   for (const row of input.proposed) {
     if (isNewProjectContextPayload(row.payload)) {
       const threadId = parseGmailCandidateSourceRef(row.sourceRef)?.threadId;
       if (threadId) newProjectThreads.add(threadId);
-      continue;
     }
-    otherReviewItemCount += 1;
+  }
+  let actionReviewCount = 0;
+  let relationshipUpdateCount = 0;
+  let backgroundObservationCount = 0;
+  for (const row of input.proposed) {
+    const bucket = classifyGmailIntakeAttention(row, newProjectThreads);
+    if (bucket === "new_project") continue;
+    if (bucket === "action") actionReviewCount += 1;
+    else if (bucket === "relationship") relationshipUpdateCount += 1;
+    else backgroundObservationCount += 1;
   }
   return {
     threadCount,
     threadReadCount: Math.max(0, threadCount - unread),
     unreadThreadCount: unread,
     newProjectProposalCount: newProjectThreads.size,
-    otherReviewItemCount,
+    actionReviewCount,
+    relationshipUpdateCount,
+    backgroundObservationCount,
   };
 }
 
@@ -129,15 +156,27 @@ export function formatGmailIntakeScanNotice(summary: GmailIntakeScanSummary): st
   }.`;
   const projects =
     summary.newProjectProposalCount > 0
-      ? ` ${summary.newProjectProposalCount} new project proposal${
+      ? ` ${summary.newProjectProposalCount} new project${
           summary.newProjectProposalCount === 1 ? "" : "s"
-        }.`
+        } detected.`
       : " No new-project proposals from this scan.";
-  const others =
-    summary.otherReviewItemCount > 0
-      ? ` ${summary.otherReviewItemCount} other review item${
-          summary.otherReviewItemCount === 1 ? "" : "s"
+  const actions =
+    summary.actionReviewCount > 0
+      ? ` ${summary.actionReviewCount} action${
+          summary.actionReviewCount === 1 ? "" : "s"
+        } need review.`
+      : "";
+  const relationships =
+    summary.relationshipUpdateCount > 0
+      ? ` ${summary.relationshipUpdateCount} relationship update${
+          summary.relationshipUpdateCount === 1 ? "" : "s"
         }.`
+      : "";
+  const background =
+    summary.backgroundObservationCount > 0
+      ? ` ${summary.backgroundObservationCount} background observation${
+          summary.backgroundObservationCount === 1 ? "" : "s"
+        } processed.`
       : "";
   const unread =
     summary.unreadThreadCount > 0
@@ -145,7 +184,7 @@ export function formatGmailIntakeScanNotice(summary: GmailIntakeScanSummary): st
           summary.unreadThreadCount === 1 ? "" : "s"
         } could not be read.`
       : "";
-  return `${threads}${projects}${others}${unread}`;
+  return `${threads}${projects}${actions}${relationships}${background}${unread}`;
 }
 
 function emptyScanSuccess(): GmailIntakeScanSuccess {
@@ -158,7 +197,9 @@ function emptyScanSuccess(): GmailIntakeScanSuccess {
     unreadThreadCount: 0,
     evidenceCount: 0,
     newProjectProposalCount: 0,
-    otherReviewItemCount: 0,
+    actionReviewCount: 0,
+    relationshipUpdateCount: 0,
+    backgroundObservationCount: 0,
     plaintextPersisted: false,
     gmailMutation: false,
     cursorUnchanged: true,
@@ -221,7 +262,9 @@ export async function runGmailNewProjectIntakeScan(input: {
     unreadThreadCount: summary.unreadThreadCount,
     evidenceCount: fetched.evidence.length,
     newProjectProposalCount: summary.newProjectProposalCount,
-    otherReviewItemCount: summary.otherReviewItemCount,
+    actionReviewCount: summary.actionReviewCount,
+    relationshipUpdateCount: summary.relationshipUpdateCount,
+    backgroundObservationCount: summary.backgroundObservationCount,
     plaintextPersisted: false,
     gmailMutation: false,
     cursorUnchanged: true,
