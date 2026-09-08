@@ -268,6 +268,7 @@ describe("Current Projects Command Center accordion UI", () => {
     assert.doesNotMatch(command, /Current operating state is unknown/);
     assert.doesNotMatch(home, /loadProjectBookPreview/);
     assert.match(home, /loadCurrentProjectCards/);
+    assert.match(home, /fetchCache = "force-no-store"/);
     assert.match(command, /People/);
     assert.match(command, /QuickCapture/);
     const capture = readFileSync(

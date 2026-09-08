@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import type { ProjectDeskSummary } from "../project-desk/types";
-import { selectOpenProjectWork } from "./select";
+import { selectOpenProjectWork, currentProjectExclusionPredicate } from "./select";
 import type { ProjectWorkSummary } from "../project-jobs/intelligence";
 
 const PROJECT_A = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
@@ -160,6 +160,59 @@ describe("Open Project work selection", () => {
       }),
     ]);
     assert.equal(rows.length, 0);
+  });
+
+  it("includes official CAD lifecycle without jobs and excludes Gmail waiting_on_client", () => {
+    const rows = selectOpenProjectWork([
+      summary({
+        projectId: PROJECT_A,
+        title: "Dagger & Pearls Pendant / Necklace",
+        projectKind: "custom_new_jewelry",
+        lifecycleStage: "cad",
+        lifecycleLabel: "CAD",
+      }),
+      summary({
+        projectId: PROJECT_B,
+        title: "Matching Marquise Earrings",
+        projectKind: "custom_new_jewelry",
+        lifecycleStage: "waiting_on_client",
+        lifecycleLabel: "Waiting on client",
+      }),
+      summary({
+        projectId: PROJECT_C,
+        title: "Client approval earrings",
+        projectKind: "custom_new_jewelry",
+        lifecycleStage: "client_approval",
+        lifecycleLabel: "Client Approval",
+      }),
+    ]);
+    assert.deepEqual(
+      rows.map((row) => row.title),
+      ["Client approval earrings", "Dagger & Pearls Pendant / Necklace"],
+    );
+    assert.equal(rows.find((row) => row.title.includes("Dagger"))?.lifecycleStage, "cad");
+    assert.equal(
+      JSON.stringify(rows).includes("waiting_on_client"),
+      false,
+    );
+    assert.equal(
+      currentProjectExclusionPredicate({
+        projectKind: "custom_new_jewelry",
+        lifecycleStage: "cad",
+        jobsConnected: true,
+        unresolvedCount: 0,
+      }),
+      null,
+    );
+    assert.equal(
+      currentProjectExclusionPredicate({
+        projectKind: "custom_new_jewelry",
+        lifecycleStage: "waiting_on_client",
+        jobsConnected: true,
+        unresolvedCount: 0,
+      }),
+      "isStageAllowedForKind(projectKind, lifecycleStage) === false",
+    );
   });
 
   it("keeps people scoped to the Project and does not mix Agent OS or CoS fields", () => {

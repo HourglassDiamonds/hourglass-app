@@ -54,6 +54,9 @@ describe("Founder Project writer security", () => {
     );
     assert.match(actions, /getAuthenticatedFounderProjectWriter/);
     assert.match(actions, /saveFounderIntake/);
+    assert.match(actions, /revalidatePath\(CONCIERGE_HOME_PATH\)/);
+    assert.match(actions, /revalidateAfterFounderProject/);
+    assert.match(actions, /redirect\(CONCIERGE_HOME_PATH\)/);
     assert.doesNotMatch(actions, /gmail\.googleapis|users\.messages\.send/);
     const intakePage = readFileSync(
       join(ROOT, "app/executive-dashboard/concierge/gmail/intake/page.tsx"),

@@ -6,6 +6,8 @@ import { reviewProposedActionFromForm } from "./intake-review-actions";
 import { CommandCenterHome } from "./components/command-center-home";
 import { ConciergeShell } from "./components/concierge-shell";
 
+export const fetchCache = "force-no-store";
+
 export default async function ConciergeHomePage() {
   const model = loadContinuumHomeModel();
   const openProjects = await loadCurrentProjectCards();

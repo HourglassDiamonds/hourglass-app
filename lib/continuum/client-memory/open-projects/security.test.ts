@@ -54,6 +54,7 @@ describe("Open Project work security", () => {
     assert.match(deskSupabase, /loadActiveLifecycleStates/);
     assert.match(deskSupabase, /listProjectsFromSnapshot\(\{ \.\.\.snapshot, lifecycleStates \}/);
     assert.match(page, /loadCurrentProjectCards/);
+    assert.match(page, /fetchCache = "force-no-store"/);
     assert.match(page, /loadContinuumHomeModel/);
     assert.match(page, /loadCosOperatingLoop/);
     assert.doesNotMatch(page, /composeChiefOfStaffBrief/);

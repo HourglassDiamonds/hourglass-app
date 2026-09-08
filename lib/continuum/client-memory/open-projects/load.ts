@@ -31,8 +31,12 @@ export async function loadCurrentProjectCards(): Promise<CurrentProjectCard[]> {
     const desks = new Map<string, ProjectDeskRead>();
     const loaded = await Promise.all(
       selected.map(async (item) => {
-        const result = await auth.reader.getProjectDesk(item.projectId);
-        return result.ok ? result.desk : null;
+        try {
+          const result = await auth.reader.getProjectDesk(item.projectId);
+          return result.ok ? result.desk : null;
+        } catch {
+          return null;
+        }
       }),
     );
     for (const desk of loaded) {

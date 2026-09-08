@@ -13,7 +13,9 @@ import { proposeGmailCandidates } from "../../gmail/candidates/propose";
 import { hashEmail } from "../hashes";
 import { GMAIL_SOURCE_SYSTEM } from "../gmail/types";
 import { selectOpenProjectWork } from "../open-projects/select";
+import { composeCurrentProjectCards } from "../open-projects/card";
 import type { ProjectDeskSummary } from "../project-desk/types";
+import type { ProjectWorkSummary } from "../project-jobs/intelligence";
 import { composeCosOperatingLoop } from "../../chief-of-staff/operating-loop/compose";
 
 const NOW = "2026-09-08T16:00:00.000Z";
@@ -554,5 +556,255 @@ describe("Founder-approved Gmail new-project Candidate", () => {
       },
     });
     assert.equal(applied.ok, true);
+  });
+});
+
+function emptyWork(): Extract<ProjectWorkSummary, { connected: true }> {
+  return {
+    connected: true,
+    unresolvedCount: 0,
+    activeCount: 0,
+    deferredCount: 0,
+    waitingOn: { founder: 0, hourglass: 0, client: 0, vendor: 0, unknown: 0 },
+    blocked: false,
+    dueSoonCount: 0,
+    pastDueCount: 0,
+    forgottenRiskCount: 0,
+    nextDueAt: null,
+  };
+}
+
+function currentSummary(input: {
+  projectId: string;
+  title: string;
+  personId: string;
+  personName: string;
+  lifecycleStage: string;
+  unresolvedCount?: number;
+}): ProjectDeskSummary {
+  const unresolved = input.unresolvedCount ?? 0;
+  return {
+    projectId: input.projectId,
+    title: input.title,
+    projectKind: "custom_new_jewelry",
+    people: [{ personId: input.personId, displayName: input.personName }],
+    latestNoteAt: null,
+    latestNotePreview: null,
+    coverage: {
+      people: "available",
+      specs: "sparse",
+      notes: "none",
+      jobs: unresolved > 0 ? "available" : "none",
+      files: "none",
+      email: "not-connected",
+    },
+    recordCreatedAt: NOW,
+    projectWork:
+      unresolved > 0
+        ? { ...emptyWork(), unresolvedCount: unresolved, activeCount: unresolved }
+        : emptyWork(),
+    lifecycleStage: input.lifecycleStage,
+    lifecycleLabel: "CAD",
+  };
+}
+
+describe("Gmail-created Projects hydrate Current Projects", () => {
+  it("creates Nate without an Open Job and keeps him eligible after reload", async () => {
+    const memory = new InMemoryClientMemoryStore();
+    const jobs = new InMemoryProjectJobStore();
+    const writer = createInMemoryFounderProjectWriter(memory, jobs, () => NOW);
+    const candidates = new InMemoryCandidateStore();
+    const personId = await seedPerson(memory, "Nathan Pearl", NATE_EMAIL);
+    const proposed = proposeGmailCandidates({
+      createdAt: NOW,
+      world: {
+        people: [
+          {
+            personId,
+            displayName: "Nathan Pearl",
+            emailHash: hashEmail(NATE_EMAIL),
+            role: "client",
+            projectIds: [],
+          },
+        ],
+        projects: [],
+        internalEmailHashes: [],
+      },
+      evidence: [
+        inboundEvidence({
+          messageId: "m-nate-cad",
+          threadId: "t-nate-cad",
+          fromEmail: NATE_EMAIL,
+          plaintext:
+            "I'd like to work together again to create another piece. A dagger and pearls necklace.",
+        }),
+      ],
+    });
+    for (const row of proposed.candidates) await candidates.put(row);
+    const cards = presentGmailNewProjectIntake(await candidates.list(), [
+      { personId, displayName: "Nathan Pearl", email: NATE_EMAIL },
+    ]);
+    const confirmed = await confirmGmailPersonAssociation({
+      store: candidates,
+      personExists: async (id) => Boolean(await memory.getPersonProfile(id)),
+      body: {
+        candidateId: cards[0]!.personAssociationCandidateId!,
+        personId,
+        actor: "justin",
+      },
+      nowIso: NOW,
+    });
+    assert.equal(confirmed.ok, true);
+    const mutationId = randomUUID();
+    const applied = await applyGmailNewProjectCandidate({
+      store: candidates,
+      writer,
+      body: {
+        candidateId: cards[0]!.candidateId,
+        personId,
+        title: "Dagger & Pearls Pendant / Necklace",
+        projectKind: "custom_new_jewelry",
+        lifecycleStage: "cad",
+        actor: "justin",
+        mutationId,
+      },
+    });
+    assert.equal(applied.ok, true);
+    if (!applied.ok) return;
+    assert.equal(applied.create.job, null);
+    const state = await memory.getProjectLifecycleState(
+      applied.projectId,
+      "custom_new_jewelry",
+    );
+    assert.equal(state?.stage, "cad");
+    const summary = currentSummary({
+      projectId: applied.projectId,
+      title: applied.create.title,
+      personId,
+      personName: "Nathan Pearl",
+      lifecycleStage: "cad",
+    });
+    const firstView = composeCurrentProjectCards([summary], new Map());
+    const reload = composeCurrentProjectCards([summary], new Map());
+    assert.equal(firstView.length, 1);
+    assert.equal(reload.length, 1);
+    assert.equal(reload[0]?.title, "Dagger & Pearls Pendant / Necklace");
+    const retry = await applyGmailNewProjectCandidate({
+      store: candidates,
+      writer,
+      body: {
+        candidateId: cards[0]!.candidateId,
+        personId,
+        title: "Dagger & Pearls Pendant / Necklace",
+        projectKind: "custom_new_jewelry",
+        lifecycleStage: "cad",
+        actor: "justin",
+        mutationId,
+      },
+    });
+    assert.equal(retry.ok, false);
+    if (!retry.ok) assert.equal(retry.reason, "already-reviewed");
+    const linked = await writer.listActiveClientProjects(personId);
+    assert.equal(linked.length, 1);
+    const reviewed = await candidates.get(cards[0]!.candidateId);
+    assert.equal(reviewed?.reviewStatus, "approved");
+  });
+
+  it("creates Abbey with an optional first Open Job and keeps identity gated", async () => {
+    const memory = new InMemoryClientMemoryStore();
+    const jobs = new InMemoryProjectJobStore();
+    const writer = createInMemoryFounderProjectWriter(memory, jobs, () => NOW);
+    const candidates = new InMemoryCandidateStore();
+    const personId = await seedPerson(memory, "Abbey Castillo", CASTILLO_EMAIL);
+    const proposed = proposeGmailCandidates({
+      createdAt: NOW,
+      world: {
+        people: [
+          {
+            personId,
+            displayName: "Abbey Castillo",
+            emailHash: hashEmail(CASTILLO_EMAIL),
+            role: "client",
+            projectIds: [],
+          },
+        ],
+        projects: [],
+        internalEmailHashes: [],
+      },
+      evidence: [
+        inboundEvidence({
+          messageId: "m-abbey-cad",
+          threadId: "t-abbey-cad",
+          fromEmail: CASTILLO_EMAIL,
+          plaintext:
+            "I'm reaching back out to ask about a new piece I'd like designed. Matching marquise earrings.",
+        }),
+      ],
+    });
+    for (const row of proposed.candidates) await candidates.put(row);
+    const before = presentGmailNewProjectIntake(await candidates.list(), [
+      { personId, displayName: "Abbey Castillo", email: CASTILLO_EMAIL },
+    ]);
+    const blocked = await applyGmailNewProjectCandidate({
+      store: candidates,
+      writer,
+      body: {
+        candidateId: before[0]!.candidateId,
+        personId,
+        title: "Matching Marquise Earrings",
+        projectKind: "custom_new_jewelry",
+        lifecycleStage: "cad",
+        actor: "justin",
+        mutationId: randomUUID(),
+      },
+    });
+    assert.equal(blocked.ok, false);
+    if (!blocked.ok) assert.equal(blocked.reason, "identity-unconfirmed");
+    const confirmed = await confirmGmailPersonAssociation({
+      store: candidates,
+      personExists: async (id) => Boolean(await memory.getPersonProfile(id)),
+      body: {
+        candidateId: before[0]!.personAssociationCandidateId!,
+        personId,
+        actor: "justin",
+      },
+      nowIso: NOW,
+    });
+    assert.equal(confirmed.ok, true);
+    const after = presentGmailNewProjectIntake(await candidates.list(), [
+      { personId, displayName: "Abbey Castillo", email: CASTILLO_EMAIL },
+    ]);
+    const applied = await applyGmailNewProjectCandidate({
+      store: candidates,
+      writer,
+      body: {
+        candidateId: after[0]!.candidateId,
+        personId,
+        title: "Matching Marquise Earrings",
+        projectKind: "custom_new_jewelry",
+        lifecycleStage: "cad",
+        subject: "Confirm flower vs diamond center",
+        actor: "justin",
+        mutationId: randomUUID(),
+      },
+    });
+    assert.equal(applied.ok, true);
+    if (!applied.ok) return;
+    assert.equal(applied.create.job?.ok, true);
+    const current = selectOpenProjectWork([
+      currentSummary({
+        projectId: applied.projectId,
+        title: applied.create.title,
+        personId,
+        personName: "Abbey Castillo",
+        lifecycleStage: "cad",
+        unresolvedCount: 1,
+      }),
+    ]);
+    assert.equal(current.length, 1);
+    assert.equal(current[0]?.lifecycleStage, "cad");
+    assert.equal(JSON.stringify(current).includes("waiting_on_client"), false);
+    const pending = await candidates.get(after[0]!.candidateId);
+    assert.equal(pending?.reviewStatus, "approved");
   });
 });

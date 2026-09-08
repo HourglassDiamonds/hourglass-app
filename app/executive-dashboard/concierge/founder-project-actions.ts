@@ -14,7 +14,10 @@ import {
 } from "@/lib/continuum/client-memory/founder-project/duplicate";
 import { applyGmailNewProjectCandidate } from "@/lib/continuum/client-memory/founder-project/apply-candidate";
 import { confirmGmailPersonAssociation } from "@/lib/continuum/client-memory/founder-project/identity-gate";
-import { CONCIERGE_HOME_PATH } from "@/lib/continuum/client-memory/read/presentation";
+import {
+  CONCIERGE_HOME_PATH,
+  CONCIERGE_PROJECTS_PATH,
+} from "@/lib/continuum/client-memory/read/presentation";
 import { getAuthenticatedClientMemoryReader } from "@/lib/continuum/client-memory/read/load";
 import { CONCIERGE_GMAIL_INTAKE_PATH } from "@/lib/continuum/gmail/types";
 import { revalidatePath } from "next/cache";
@@ -42,6 +45,12 @@ function humanJobMessage(result: CreateProjectJobResult): string {
     return "That project could not be found.";
   }
   return "Unable to save the action.";
+}
+
+function revalidateAfterFounderProject() {
+  revalidatePath(CONCIERGE_HOME_PATH);
+  revalidatePath(CONCIERGE_PROJECTS_PATH);
+  revalidatePath(CONCIERGE_GMAIL_INTAKE_PATH);
 }
 
 function humanCreateMessage(result: CreateFounderProjectResult): string {
@@ -127,6 +136,7 @@ export async function saveFounderIntake(
       actor: projectAuth.username,
     });
     if (result.ok) {
+      revalidateAfterFounderProject();
       redirect(CONCIERGE_HOME_PATH);
     }
     return { ok: false, message: humanCreateMessage(result) };
@@ -179,6 +189,7 @@ export async function saveFounderIntake(
   }
   const result = await jobAuth.writer.createJob(parsed.input);
   if (result.ok) {
+    revalidateAfterFounderProject();
     redirect(CONCIERGE_HOME_PATH);
   }
   return { ok: false, message: humanJobMessage(result) };
@@ -217,6 +228,7 @@ export async function approveGmailNewProject(
     },
   });
   if (result.ok) {
+    revalidateAfterFounderProject();
     redirect(CONCIERGE_HOME_PATH);
   }
   if (result.reason === "not-new-project") {

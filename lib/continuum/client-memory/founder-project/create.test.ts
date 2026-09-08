@@ -4,7 +4,9 @@ import { describe, it } from "node:test";
 import { InMemoryClientMemoryStore } from "../store";
 import { CLIENT_MEMORY_SOURCE_SYSTEM } from "../types";
 import { InMemoryProjectJobStore } from "../project-jobs/store";
-import { createInMemoryFounderProjectWriter } from "./writer";
+import { createInMemoryFounderProjectWriter, founderProjectDeps } from "./writer";
+import { createFounderProject } from "./create";
+import { createInMemoryProjectJobWriter } from "../project-jobs/writer";
 import { selectOpenProjectWork } from "../open-projects/select";
 import type { ProjectDeskSummary } from "../project-desk/types";
 import { composeCosOperatingLoop } from "../../chief-of-staff/operating-loop/compose";
@@ -288,5 +290,130 @@ describe("Founder-created Project", () => {
       ),
       true,
     );
+  });
+
+  it("rejects Gmail waiting_on_client as a persisted lifecycle enum", async () => {
+    const memory = new InMemoryClientMemoryStore();
+    const jobs = new InMemoryProjectJobStore();
+    const writer = createInMemoryFounderProjectWriter(memory, jobs, () => NOW);
+    const personId = await seedPerson(memory, { displayName: "Nathan Pearl" });
+    const created = await writer.createProject({
+      mutationId: randomUUID(),
+      title: "Dagger & Pearls Pendant / Necklace",
+      personId,
+      projectKind: "custom_new_jewelry",
+      lifecycleStage: "waiting_on_client",
+      actor: ACTOR,
+    });
+    assert.equal(created.ok, false);
+    if (!created.ok) assert.equal(created.code, "invalid-lifecycle");
+  });
+
+  it("fails visibly without a lifecycle stage, profile, or Person link", async () => {
+    const memory = new InMemoryClientMemoryStore();
+    const jobs = new InMemoryProjectJobStore();
+    const writer = createInMemoryFounderProjectWriter(memory, jobs, () => NOW);
+    const personId = await seedPerson(memory, { displayName: "Abbey Castillo" });
+    const missingStage = await writer.createProject({
+      mutationId: randomUUID(),
+      title: "Matching Marquise Earrings",
+      personId,
+      projectKind: "custom_new_jewelry",
+      actor: ACTOR,
+    });
+    assert.equal(missingStage.ok, false);
+    if (!missingStage.ok) assert.equal(missingStage.code, "lifecycle-required");
+
+    const jobWriter = createInMemoryProjectJobWriter(memory, jobs, () => NOW);
+    const deps = founderProjectDeps(memory, jobWriter, () => NOW);
+    const missingLink = await createFounderProject(
+      {
+        ...deps,
+        insertRelationship: async () => {
+          throw new Error("link-failed");
+        },
+      },
+      {
+        mutationId: randomUUID(),
+        title: "Matching Marquise Earrings",
+        personId,
+        projectKind: "custom_new_jewelry",
+        lifecycleStage: "cad",
+        actor: ACTOR,
+      },
+    );
+    assert.equal(missingLink.ok, false);
+    if (!missingLink.ok) assert.equal(missingLink.reason, "unavailable");
+  });
+
+  it("does not report success when lifecycle write fails, then completes on retry", async () => {
+    const memory = new InMemoryClientMemoryStore();
+    const jobs = new InMemoryProjectJobStore();
+    const jobWriter = createInMemoryProjectJobWriter(memory, jobs, () => NOW);
+    const deps = founderProjectDeps(memory, jobWriter, () => NOW);
+    const personId = await seedPerson(memory, { displayName: "Nathan Pearl" });
+    const mutationId = randomUUID();
+    let failLifecycle = true;
+    const wrapped = {
+      ...deps,
+      setProjectLifecycle: async (
+        input: Parameters<typeof deps.setProjectLifecycle>[0],
+      ) => {
+        if (failLifecycle) {
+          failLifecycle = false;
+          return { ok: false as const, reason: "unavailable" as const };
+        }
+        return deps.setProjectLifecycle(input);
+      },
+    };
+    const first = await createFounderProject(wrapped, {
+      mutationId,
+      title: "Dagger & Pearls Pendant / Necklace",
+      personId,
+      projectKind: "custom_new_jewelry",
+      lifecycleStage: "cad",
+      actor: ACTOR,
+    });
+    assert.equal(first.ok, false);
+    if (!first.ok) assert.equal(first.reason, "unavailable");
+    const counts = await memory.inspectCounts();
+    assert.equal(counts.projects, 1);
+    const linked = await deps.listActiveClientProjects(personId);
+    assert.equal(linked.length, 1);
+    const before = await memory.getProjectLifecycleState(
+      linked[0]!.projectId,
+      "custom_new_jewelry",
+    );
+    assert.equal(before, null);
+
+    const retry = await createFounderProject(wrapped, {
+      mutationId,
+      title: "Dagger & Pearls Pendant / Necklace",
+      personId,
+      projectKind: "custom_new_jewelry",
+      lifecycleStage: "cad",
+      actor: ACTOR,
+    });
+    assert.equal(retry.ok, true);
+    if (!retry.ok) return;
+    assert.equal(retry.status, "already-present");
+    assert.equal(retry.projectId, linked[0]?.projectId);
+    const state = await memory.getProjectLifecycleState(
+      retry.projectId,
+      "custom_new_jewelry",
+    );
+    assert.equal(state?.stage, "cad");
+    const current = selectOpenProjectWork([
+      deskSummary({
+        projectId: retry.projectId,
+        title: retry.title,
+        personId,
+        personName: "Nathan Pearl",
+        projectKind: "custom_new_jewelry",
+        lifecycleStage: "cad",
+        unresolvedCount: 0,
+      }),
+    ]);
+    assert.equal(current.length, 1);
   });
 });

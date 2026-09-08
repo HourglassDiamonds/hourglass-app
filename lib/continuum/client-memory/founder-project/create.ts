@@ -145,6 +145,102 @@ function emptyHistory(projectId: string, now: string): ProjectHistory {
   };
 }
 
+async function completeFounderProjectCanonicalWrites(
+  deps: CreateFounderProjectDeps,
+  input: {
+    projectId: string;
+    title: string;
+    personId: string;
+    projectKind: ProjectKind;
+    lifecycleStage: ProjectLifecycleStage | null;
+    actor: string;
+    mutationId: string;
+    subjectRaw: string;
+    dueAt?: string | null;
+    now: string;
+    status: "created" | "already-present";
+  },
+): Promise<CreateFounderProjectResult> {
+  await deps.insertProjectHistory(emptyHistory(input.projectId, input.now));
+  await deps.insertRelationship({
+    id: deps.newRelationshipId(),
+    fromEntityId: input.personId,
+    toEntityId: input.projectId,
+    kind: "client-project",
+    status: "active",
+    sourceSystem: FOUNDER_PROJECT_SOURCE_SYSTEM,
+    createdAt: input.now,
+    createdBy: input.actor,
+  });
+
+  const kindResult = await deps.correctProjectKind({
+    mutationId: randomUUID(),
+    projectId: input.projectId,
+    newValue: input.projectKind,
+    actor: input.actor,
+  });
+  if (!kindResult.ok) {
+    return { ok: false, reason: "unavailable" };
+  }
+
+  if (lifecycleStageRequired(input.projectKind) && !input.lifecycleStage) {
+    return { ok: false, reason: "invalid-input", code: "lifecycle-required" };
+  }
+  if (input.lifecycleStage) {
+    const life = await deps.setProjectLifecycle({
+      mutationId: randomUUID(),
+      projectId: input.projectId,
+      newValue: input.lifecycleStage,
+      actor: input.actor,
+    });
+    if (!life.ok) {
+      return { ok: false, reason: "unavailable" };
+    }
+  }
+
+  let job: CreateProjectJobResult | null = null;
+  if (input.subjectRaw) {
+    const parsedAction = founderManualActionInput({
+      mutationId: input.mutationId,
+      projectId: input.projectId,
+      subject: input.subjectRaw,
+      associatedPersonId: input.personId,
+      dueAt: input.dueAt,
+      actor: input.actor,
+    });
+    if (!parsedAction.ok) {
+      return { ok: false, reason: "invalid-input", code: "invalid-title" };
+    }
+    job = await deps.createProjectJob(parsedAction.input);
+    if (!job.ok) {
+      return { ok: false, reason: "unavailable" };
+    }
+  }
+
+  const profile = await deps.getProjectProfile(input.projectId);
+  if (!profile || profile.projectId !== input.projectId) {
+    return { ok: false, reason: "unavailable" };
+  }
+  const linked = await deps.listActiveClientProjects(input.personId);
+  if (!linked.some((row) => row.projectId === input.projectId)) {
+    return { ok: false, reason: "unavailable" };
+  }
+
+  return {
+    ok: true,
+    status: input.status,
+    projectId: input.projectId,
+    title: input.title,
+    projectKind: input.projectKind,
+    lifecycleStage: input.lifecycleStage,
+    job,
+  };
+}
+
+function lifecycleStageRequired(kind: ProjectKind): boolean {
+  return isLifecycleKind(kind);
+}
+
 export async function createFounderProject(
   deps: CreateFounderProjectDeps,
   input: CreateFounderProjectInput,
@@ -208,16 +304,21 @@ export async function createFounderProject(
       sourceSystem: FOUNDER_PROJECT_SOURCE_SYSTEM,
       importRowKey,
     });
+    const now = deps.nowIso();
     if (existingByKey) {
-      return {
-        ok: true,
-        status: "already-present",
+      return await completeFounderProjectCanonicalWrites(deps, {
         projectId: existingByKey.projectId,
         title: existingByKey.displayTitle,
-        projectKind: existingByKey.projectKind ?? projectKind,
+        personId,
+        projectKind,
         lifecycleStage,
-        job: null,
-      };
+        actor,
+        mutationId,
+        subjectRaw,
+        dueAt: input.dueAt,
+        now,
+        status: "already-present",
+      });
     }
 
     const linked = await deps.listActiveClientProjects(personId);
@@ -232,7 +333,6 @@ export async function createFounderProject(
       };
     }
 
-    const now = deps.nowIso();
     const inserted = await deps.insertEntity({
       kind: "project",
       createdAt: now,
@@ -248,68 +348,19 @@ export async function createFounderProject(
       createdAt: now,
       updatedAt: now,
     });
-    await deps.insertProjectHistory(emptyHistory(projectId, now));
-    await deps.insertRelationship({
-      id: deps.newRelationshipId(),
-      fromEntityId: personId,
-      toEntityId: projectId,
-      kind: "client-project",
-      status: "active",
-      sourceSystem: FOUNDER_PROJECT_SOURCE_SYSTEM,
-      createdAt: now,
-      createdBy: actor,
-    });
-
-    const kindResult = await deps.correctProjectKind({
-      mutationId: randomUUID(),
-      projectId,
-      newValue: projectKind,
-      actor,
-    });
-    if (!kindResult.ok) {
-      return { ok: false, reason: "unavailable" };
-    }
-
-    if (lifecycleStage) {
-      const life = await deps.setProjectLifecycle({
-        mutationId: randomUUID(),
-        projectId,
-        newValue: lifecycleStage,
-        actor,
-      });
-      if (!life.ok) {
-        return { ok: false, reason: "unavailable" };
-      }
-    }
-
-    let job: CreateProjectJobResult | null = null;
-    if (subjectRaw) {
-      const parsedAction = founderManualActionInput({
-        mutationId,
-        projectId,
-        subject: subjectRaw,
-        associatedPersonId: personId,
-        dueAt: input.dueAt,
-        actor,
-      });
-      if (!parsedAction.ok) {
-        return { ok: false, reason: "invalid-input", code: "invalid-title" };
-      }
-      job = await deps.createProjectJob(parsedAction.input);
-      if (!job.ok) {
-        return { ok: false, reason: "unavailable" };
-      }
-    }
-
-    return {
-      ok: true,
-      status: inserted.status === "already-present" ? "already-present" : "created",
+    return await completeFounderProjectCanonicalWrites(deps, {
       projectId,
       title: parsedTitle.title,
+      personId,
       projectKind,
       lifecycleStage,
-      job,
-    };
+      actor,
+      mutationId,
+      subjectRaw,
+      dueAt: input.dueAt,
+      now,
+      status: inserted.status === "already-present" ? "already-present" : "created",
+    });
   } catch {
     return { ok: false, reason: "unavailable" };
   }

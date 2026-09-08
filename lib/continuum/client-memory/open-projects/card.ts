@@ -257,13 +257,47 @@ export function composeCurrentProjectCard(
   };
 }
 
+export function composeCurrentProjectCardFromWork(
+  work: OpenProjectWorkItem,
+): CurrentProjectCard {
+  const lifecycleLine = lifecycleScanLabel({
+    projectKind: null,
+    stage: work.lifecycleStage,
+    fallbackLabel: work.lifecycleLabel,
+  });
+  const collapsedLine = lifecycleLine ?? CURRENT_PROJECTS_ACTION_UNRECORDED;
+  const collapsedLineKind: CurrentProjectLineKind = lifecycleLine
+    ? "lifecycle"
+    : "unrecorded";
+  return {
+    projectId: work.projectId,
+    title: work.title,
+    href: work.href,
+    collapsedLine,
+    collapsedLineKind,
+    currentAction: {
+      label: collapsedLine,
+      detail: null,
+      source: collapsedLineKind,
+    },
+    currentJobId: null,
+    snapshot: [],
+    latestFile: null,
+    files: [],
+    fileCount: 0,
+    progress: [{ label: CURRENT_PROJECTS_CREATED_LABEL, at: null }],
+  };
+}
+
 export function composeCurrentProjectCards(
   summaries: readonly ProjectDeskSummary[],
   desks: ReadonlyMap<string, ProjectDeskRead>,
 ): CurrentProjectCard[] {
-  return selectOpenProjectWork(summaries).flatMap((work) => {
+  return selectOpenProjectWork(summaries).map((work) => {
     const desk = desks.get(work.projectId);
-    if (!desk || desk.projectId !== work.projectId) return [];
-    return [composeCurrentProjectCard(work, desk)];
+    if (desk && desk.projectId === work.projectId) {
+      return composeCurrentProjectCard(work, desk);
+    }
+    return composeCurrentProjectCardFromWork(work);
   });
 }

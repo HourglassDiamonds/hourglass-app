@@ -244,6 +244,19 @@ describe("Current Projects accordion read model", () => {
     assert.equal(cards.length, 0);
   });
 
+  it("still lists a selector-eligible Project when the detail desk is missing", () => {
+    const row = summary({
+      projectId: PROJECT_A,
+      title: "Dagger & Pearls Pendant / Necklace",
+      lifecycleStage: "cad",
+      lifecycleLabel: "CAD",
+    });
+    const cards = composeCurrentProjectCards([row], new Map());
+    assert.equal(cards.length, 1);
+    assert.equal(cards[0]?.projectId, PROJECT_A);
+    assert.equal(cards[0]?.collapsedLineKind, "lifecycle");
+  });
+
   it("lets an unresolved Open Job take precedence over lifecycle display", () => {
     const row = summary({
       projectId: PROJECT_A,

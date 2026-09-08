@@ -37,6 +37,33 @@ export function isExplicitActiveLifecycle(input: {
   return isStageAllowedForKind(input.projectKind, input.lifecycleStage);
 }
 
+export function currentProjectExclusionPredicate(input: {
+  projectKind: ProjectKind | null;
+  lifecycleStage: string | null;
+  jobsConnected: boolean;
+  unresolvedCount: number;
+}): string | null {
+  const unresolved = input.jobsConnected && input.unresolvedCount > 0;
+  const lifecycle = isExplicitActiveLifecycle({
+    projectKind: input.projectKind,
+    lifecycleStage: input.lifecycleStage,
+  });
+  if (unresolved || lifecycle) return null;
+  if (!isLifecycleKind(input.projectKind)) {
+    return "isLifecycleKind(projectKind) === false AND unresolved Open Jobs === 0";
+  }
+  if (!input.lifecycleStage) {
+    return "isExplicitActiveLifecycle: lifecycleStage is null";
+  }
+  if (input.lifecycleStage === "completed") {
+    return "lifecycleStage === completed";
+  }
+  if (!isStageAllowedForKind(input.projectKind, input.lifecycleStage)) {
+    return "isStageAllowedForKind(projectKind, lifecycleStage) === false";
+  }
+  return "not selected";
+}
+
 export function selectOpenProjectWork(
   summaries: readonly ProjectDeskSummary[],
 ): OpenProjectWorkItem[] {
