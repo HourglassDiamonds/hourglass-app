@@ -14,15 +14,35 @@ import { hashEmail } from "@/lib/continuum/client-memory/hashes";
 import {
   ATTACHMENT_FILENAME_TOPIC,
   DESIGN_BASIS_TOPIC,
+  EXPLICIT_NEW_PROJECT_RULE,
   GIFT_CONTEXT_TOPIC,
   NEW_PROJECT_CONTEXT_TOPIC,
   PROPOSED_SPEC_TOPIC,
+  REACTIVATED_COMMERCIAL_WORK_RULE,
+  TRANSACTIONAL_CUSTOMER_NOTICE_RULE,
   WAITING_ON_CLIENT_TOPIC,
 } from "@/lib/continuum/gmail/candidates/new-project";
 import type { GmailIndexedMessage } from "@/lib/continuum/client-memory/gmail/types";
 import type { GmailIntakePersonDirectoryRow } from "./gmail-world";
 
 export type GmailIntakeCurrentStateKind = "waiting_on_client" | "founder_turn";
+
+export type GmailIntakeWorkStatus =
+  | "new_project"
+  | "opportunity_reactivated"
+  | "payment_received";
+
+export type GmailIntakePersonRoleKind =
+  | "original_inquiry"
+  | "current_correspondent"
+  | "mentioned";
+
+export type GmailIntakePersonRole = {
+  displayName: string | null;
+  email: string | null;
+  personId: string | null;
+  role: GmailIntakePersonRoleKind;
+};
 
 export type GmailIntakeThreadTurn = {
   threadId: string;
@@ -45,6 +65,10 @@ export type GmailNewProjectIntakeCard = {
   possiblePersonId: string | null;
   possiblePersonName: string | null;
   possiblePersonEmail: string | null;
+  people: GmailIntakePersonRole[];
+  workStatus: GmailIntakeWorkStatus;
+  whySurfaced: string;
+  canonicalProjectFound: boolean;
   waitingOnClient: string | null;
   currentStateKind: GmailIntakeCurrentStateKind | null;
   currentStateSummary: string | null;
@@ -78,6 +102,85 @@ function directoryMatchForHash(
   return matched.length === 1 ? matched[0]! : null;
 }
 
+function workStatusOf(row: ContinuumCandidate): GmailIntakeWorkStatus {
+  const rules = row.evidenceBasis.ruleIds;
+  if (rules.includes(TRANSACTIONAL_CUSTOMER_NOTICE_RULE)) return "payment_received";
+  if (rules.includes(REACTIVATED_COMMERCIAL_WORK_RULE)) return "opportunity_reactivated";
+  if (rules.includes(EXPLICIT_NEW_PROJECT_RULE)) return "new_project";
+  return "new_project";
+}
+
+export function whySurfacedForStatus(
+  status: GmailIntakeWorkStatus,
+  canonicalProjectFound = false,
+): string {
+  if (status === "payment_received") {
+    return canonicalProjectFound
+      ? "A payment or invoice notice names a customer with related jewelry mail already on a Project."
+      : "A payment or invoice notice names a customer with related jewelry mail and no canonical Project.";
+  }
+  if (status === "opportunity_reactivated") {
+    return "A correspondent is asking about price, timeline, or next steps on prior jewelry discussion.";
+  }
+  return "The thread contains an explicit new custom-piece request.";
+}
+
+function peopleForThread(
+  list: readonly ContinuumCandidate[],
+  directory: readonly GmailIntakePersonDirectoryRow[],
+): GmailIntakePersonRole[] {
+  const people = list
+    .filter(
+      (row) =>
+        row.candidateType === "person_association" &&
+        row.candidateState !== "superseded",
+    )
+    .sort((a, b) => sentMs(a.sourceTimestamp) - sentMs(b.sourceTimestamp));
+  const seen = new Set<string>();
+  const roles: GmailIntakePersonRole[] = [];
+  for (const row of people) {
+    const payload = effectiveCandidatePayload(row);
+    const target = effectiveCandidateTarget(row);
+    const emailHash =
+      payload?.kind === "person_association" ? payload.emailHash : null;
+    const key = `${target?.kind === "person" ? target.personId : ""}:${emailHash ?? ""}:${payload?.kind === "person_association" ? payload.displayName : ""}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const confirmed =
+      target?.kind === "person" &&
+      target.personId &&
+      (row.reviewStatus === "approved" ||
+        isStrongGmailIdentityRule(row.evidenceBasis.ruleIds))
+        ? target.personId
+        : null;
+    const possible = directoryMatchForHash(emailHash, directory);
+    const confirmedDirectory = confirmed
+      ? directory.find((entry) => entry.personId === confirmed) ?? null
+      : null;
+    roles.push({
+      displayName:
+        confirmedDirectory?.displayName ??
+        (payload?.kind === "person_association" ? payload.displayName : null) ??
+        possible?.displayName ??
+        null,
+      email: confirmedDirectory?.email ?? possible?.email ?? null,
+      personId: confirmed,
+      role: "mentioned",
+    });
+  }
+  return roles.map((person, roleIndex) => ({
+    ...person,
+    role:
+      roles.length === 1
+        ? "current_correspondent"
+        : roleIndex === 0
+          ? "original_inquiry"
+          : roleIndex === roles.length - 1
+            ? "current_correspondent"
+            : "mentioned",
+  }));
+}
+
 function pickPersonAssociation(
   list: readonly ContinuumCandidate[],
 ): ContinuumCandidate | null {
@@ -93,16 +196,19 @@ function pickPersonAssociation(
       isStrongGmailIdentityRule(row.evidenceBasis.ruleIds),
   );
   if (strong) return strong;
-  return (
-    people.find(
-      (row) => row.reviewStatus === "pending" && row.candidateState !== "superseded",
-    ) ?? null
+  const pending = people.filter(
+    (row) => row.reviewStatus === "pending" && row.candidateState !== "superseded",
   );
+  if (pending.length === 0) return null;
+  return [...pending].sort(
+    (a, b) => sentMs(b.sourceTimestamp) - sentMs(a.sourceTimestamp),
+  )[0]!;
 }
 
 const GENERIC_NEW_PROJECT_TITLES = new Set([
   "Custom Earrings",
   "Custom Necklace / Pendant",
+  "Custom Engagement Ring",
   "New custom piece",
 ]);
 
@@ -378,6 +484,14 @@ export function presentGmailNewProjectIntake(
       if (row.candidateType === "person_association") return false;
       return true;
     }).length;
+    const workStatus = workStatusOf(preferred.candidate);
+    const canonicalProjectFound = list.some(
+      (row) =>
+        row.candidateType === "project_association" &&
+        row.candidateState !== "superseded" &&
+        row.evidenceBasis.ruleIds.includes("exact_gmail_thread"),
+    );
+    const people = peopleForThread(list, directory);
     cards.push({
       candidateId: preferred.candidate.candidateId,
       threadId,
@@ -398,6 +512,10 @@ export function presentGmailNewProjectIntake(
           : possible?.displayName ??
             (personPayload?.kind === "person_association" ? personPayload.displayName : null),
       possiblePersonEmail: confirmedPersonId ? null : possible?.email ?? null,
+      people,
+      workStatus,
+      whySurfaced: whySurfacedForStatus(workStatus, canonicalProjectFound),
+      canonicalProjectFound,
       waitingOnClient: state.waitingOnClient,
       currentStateKind: state.kind,
       currentStateSummary: state.summary,

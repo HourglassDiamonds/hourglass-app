@@ -6,10 +6,17 @@
 
 import type { CandidateStore, ContinuumCandidate } from "@/lib/continuum/candidates/types";
 import type { GmailIndexStore } from "@/lib/continuum/client-memory/gmail/store";
+import { hashEmail } from "@/lib/continuum/client-memory/hashes";
 import { ingestGmailCandidates } from "./candidates/ingest";
-import { isNewProjectContextPayload } from "./candidates/new-project";
+import {
+  extractCustomerEmails,
+  hasJewelryWorkContext,
+  isNewProjectContextPayload,
+  looksTransactionalCustomerNotice,
+} from "./candidates/new-project";
+import { haystackOf } from "./candidates/parse";
 import { parseGmailCandidateSourceRef } from "./candidates/source-ref";
-import type { GmailCandidateWorld } from "./candidates/types";
+import type { GmailCandidateEvidence, GmailCandidateWorld } from "./candidates/types";
 import type { GmailConnectionStore } from "./connection";
 import { runIndexedThreadEvidenceFetch } from "./indexed-thread-evidence";
 import type { GmailApi } from "./adapter";
@@ -18,6 +25,7 @@ import type { GmailTokenCiphertext } from "./types";
 
 export const GMAIL_INTAKE_MAX_THREADS = 30 as const;
 export const GMAIL_INTAKE_SELECTION_LOOKBACK = 50 as const;
+export const GMAIL_INTAKE_RELATED_THREAD_CAP = 8 as const;
 
 export type GmailIntakeScanFailure = {
   ok: false;
@@ -94,6 +102,36 @@ export async function recentIndexedThreadIds(
     })
     .slice(0, limit)
     .map(([threadId]) => threadId);
+}
+
+export async function relatedCommercialThreadIds(
+  index: Pick<GmailIndexStore, "listMessagesTouchingEmailHash">,
+  evidence: readonly GmailCandidateEvidence[],
+  already: ReadonlySet<string>,
+): Promise<string[]> {
+  const extra = new Set<string>();
+  for (const row of evidence) {
+    const hay = haystackOf(row.indexed.subject, row.plaintext ?? null);
+    if (!looksTransactionalCustomerNotice(hay)) continue;
+    for (const email of extractCustomerEmails(hay)) {
+      const hash = hashEmail(email);
+      if (!hash) continue;
+      let related;
+      try {
+        related = await index.listMessagesTouchingEmailHash(hash);
+      } catch {
+        continue;
+      }
+      for (const msg of related) {
+        const threadId = msg.threadId.trim();
+        if (!threadId || already.has(threadId) || extra.has(threadId)) continue;
+        if (!hasJewelryWorkContext(msg.subject ?? "")) continue;
+        extra.add(threadId);
+        if (extra.size >= GMAIL_INTAKE_RELATED_THREAD_CAP) return [...extra];
+      }
+    }
+  }
+  return [...extra];
 }
 
 export function classifyGmailIntakeAttention(
@@ -236,10 +274,32 @@ export async function runGmailNewProjectIntakeScan(input: {
   if (!fetched.ok) {
     return { ok: false, safeErrorCode: fetched.safeErrorCode };
   }
+  let evidence = fetched.evidence;
+  const unreadThreads = [...fetched.unreadThreads];
+  const relatedIds = await relatedCommercialThreadIds(
+    input.index,
+    fetched.evidence,
+    new Set(threadIds),
+  );
+  if (relatedIds.length > 0) {
+    const related = await runIndexedThreadEvidenceFetch({
+      founderSessionOk: input.founderSessionOk,
+      threadIds: relatedIds,
+      index: input.index,
+      connections: input.connections,
+      decryptRefreshToken: input.decryptRefreshToken,
+      refreshAccessToken: input.refreshAccessToken,
+      createApi: input.createApi,
+    });
+    if (related.ok) {
+      evidence = [...evidence, ...related.evidence];
+      unreadThreads.push(...related.unreadThreads);
+    }
+  }
   let ingested;
   try {
     ingested = await ingestGmailCandidates(input.store, {
-      evidence: fetched.evidence,
+      evidence,
       world: input.world,
       createdAt: input.nowIso,
     });
@@ -250,7 +310,7 @@ export async function runGmailNewProjectIntakeScan(input: {
   const proposed = ingested.candidates.filter((row) => scannedIds.has(row.candidateId));
   const summary = summarizeGmailIntakeScan({
     threadCount: threadIds.length,
-    unreadThreadCount: fetched.unreadThreads.length,
+    unreadThreadCount: unreadThreads.length,
     proposed,
   });
   return {
@@ -260,7 +320,7 @@ export async function runGmailNewProjectIntakeScan(input: {
     threadCount: summary.threadCount,
     threadReadCount: summary.threadReadCount,
     unreadThreadCount: summary.unreadThreadCount,
-    evidenceCount: fetched.evidence.length,
+    evidenceCount: evidence.length,
     newProjectProposalCount: summary.newProjectProposalCount,
     actionReviewCount: summary.actionReviewCount,
     relationshipUpdateCount: summary.relationshipUpdateCount,

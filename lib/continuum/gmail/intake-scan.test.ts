@@ -12,6 +12,7 @@ import {
   classifyGmailIntakeAttention,
   formatGmailIntakeScanNotice,
   recentIndexedThreadIds,
+  relatedCommercialThreadIds,
   runGmailNewProjectIntakeScan,
   summarizeGmailIntakeScan,
 } from "./intake-scan";
@@ -19,6 +20,7 @@ import { encryptRefreshToken } from "./token-crypto";
 import { GMAIL_READONLY_SCOPE, type GmailApiThread } from "./types";
 import {
   NEW_PROJECT_CONTEXT_TOPIC,
+  TRANSACTIONAL_CUSTOMER_NOTICE_RULE,
   WAITING_ON_CLIENT_TOPIC,
 } from "./candidates/new-project";
 
@@ -812,5 +814,149 @@ describe("Gmail new-project intake scan", () => {
     assert.equal(after?.reviewStatus, "deferred");
     assert.equal(api.calls.some((call) => call.method === "listMessages"), false);
     assert.equal(api.calls.some((call) => call.method === "listHistory"), false);
+  });
+
+  it("fetches related jewelry threads for a transactional notice without counting them as scanned", async () => {
+    const payThread = "19paythread000001";
+    const ringThread = "19ringthread00001";
+    const payMessage = "19paymsg000000001";
+    const ringMessage = "19ringmsg00000001";
+    const ringNonce = "UNIQUE_BODY_NONCE_RING_222";
+    const index = new InMemoryGmailIndexStore();
+    await index.indexMessage(
+      {
+        messageId: payMessage,
+        threadId: payThread,
+        sentAt: "2026-09-08T18:00:00.000Z",
+        subject: "Payment received Invoice 1215",
+        fromEmail: "notifications@intuit.com",
+        direction: "inbound",
+        hasAttachments: false,
+      },
+      NOW,
+    );
+    await index.indexMessage(
+      {
+        messageId: ringMessage,
+        threadId: ringThread,
+        sentAt: "2026-08-10T15:00:00.000Z",
+        subject: "Engagement Ring",
+        fromEmail: "morgan.ellis@example.test",
+        direction: "inbound",
+        hasAttachments: false,
+      },
+      NOW,
+    );
+    const connections = new InMemoryGmailConnectionStore();
+    await connections.putConnection(
+      connectFounderMailbox({
+        existing: null,
+        mailboxEmailHash: "ab".repeat(32),
+        refreshToken: encryptRefreshToken("refresh-keep", KEY),
+        grantedScope: GMAIL_READONLY_SCOPE,
+        providerTokenType: "Bearer",
+        now: NOW,
+      }),
+    );
+    const api = new MockGmailApi();
+    api.setThread({
+      id: payThread,
+      messages: [
+        {
+          id: payMessage,
+          threadId: payThread,
+          labelIds: ["INBOX"],
+          internalDate: String(Date.parse("2026-09-08T18:00:00.000Z")),
+          payload: {
+            mimeType: "text/plain",
+            headers: [
+              { name: "From", value: "QuickBooks <notifications@intuit.com>" },
+              { name: "Subject", value: "Payment received Invoice 1215" },
+            ],
+            body: {
+              data: encodeGmailBody(
+                "Invoice #1215-(Morgan Ellis)\nCustomer: Morgan Ellis\nAmount: $3,183.90\nPayment received\nmorgan.ellis@example.test",
+              ),
+              size: 40,
+            },
+          },
+        },
+      ],
+    });
+    api.setThread({
+      id: ringThread,
+      messages: [
+        {
+          id: ringMessage,
+          threadId: ringThread,
+          labelIds: ["INBOX"],
+          internalDate: String(Date.parse("2026-08-10T15:00:00.000Z")),
+          payload: {
+            mimeType: "text/plain",
+            headers: [
+              { name: "From", value: "Morgan <morgan.ellis@example.test>" },
+              { name: "Subject", value: "Engagement Ring" },
+            ],
+            body: {
+              data: encodeGmailBody(
+                `I'm planning to propose and wanted to talk about an engagement ring. ${ringNonce}`,
+              ),
+              size: 40,
+            },
+          },
+        },
+      ],
+    });
+    const store = new InMemoryCandidateStore();
+    const result = await runGmailNewProjectIntakeScan({
+      founderSessionOk: true,
+      index,
+      connections,
+      decryptRefreshToken: () => "refresh-keep",
+      refreshAccessToken: async () => ({ ok: true, accessToken: "access" }),
+      createApi: () => api,
+      world: { people: [], projects: [], internalEmailHashes: [] },
+      store,
+      nowIso: NOW,
+      threadIds: [payThread],
+    });
+    assert.equal(result.ok, true);
+    if (!result.ok) return;
+    assert.equal(result.threadCount, 1);
+    assert.equal(result.gmailMutation, false);
+    assert.equal(api.calls.some((call) => call.method === "listMessages"), false);
+    assert.equal(
+      api.calls.some((call) => call.method === "getThread" && call.threadId === payThread),
+      true,
+    );
+    assert.equal(
+      api.calls.some((call) => call.method === "getThread" && call.threadId === ringThread),
+      true,
+    );
+    const rows = await store.list();
+    assert.equal(JSON.stringify(rows).includes(ringNonce), false);
+    assert.equal(
+      rows.some(
+        (row) =>
+          row.payload.kind === "project_context" &&
+          row.payload.topic === NEW_PROJECT_CONTEXT_TOPIC &&
+          row.evidenceBasis.ruleIds.includes(TRANSACTIONAL_CUSTOMER_NOTICE_RULE),
+      ),
+      true,
+    );
+    const related = await relatedCommercialThreadIds(
+      index,
+      [
+        {
+          indexed: (await index.getMessage(payMessage))!,
+          plaintext:
+            "Invoice #1215-(Morgan Ellis)\nCustomer: Morgan Ellis\nPayment received\nmorgan.ellis@example.test",
+          fromEmailHash: hashEmail("notifications@intuit.com"),
+          attachments: [],
+        },
+      ],
+      new Set([payThread]),
+    );
+    assert.deepEqual(related, [ringThread]);
   });
 });

@@ -7,7 +7,7 @@ import { CANDIDATE_PARSER_GMAIL_V1, type ContinuumCandidate } from "@/lib/contin
 import { hashEmail } from "@/lib/continuum/client-memory/hashes";
 import { GMAIL_SOURCE_SYSTEM } from "@/lib/continuum/client-memory/gmail/types";
 import { proposeGmailCandidates } from "@/lib/continuum/gmail/candidates/propose";
-import { WAITING_ON_CLIENT_TOPIC } from "@/lib/continuum/gmail/candidates/new-project";
+import { TRANSACTIONAL_CUSTOMER_NOTICE_RULE, WAITING_ON_CLIENT_TOPIC } from "@/lib/continuum/gmail/candidates/new-project";
 import { packGmailCandidateSourceRef } from "@/lib/continuum/gmail/candidates/source-ref";
 import {
   intakeCurrentState,
@@ -28,8 +28,10 @@ function evidence(input: {
   threadId: string;
   sentAt: string;
   fromEmail: string;
+  toEmails?: readonly string[];
   direction: "inbound" | "outbound";
   plaintext: string;
+  subject?: string;
   filenames?: readonly string[];
 }) {
   const fromEmailHash = hashEmail(input.fromEmail);
@@ -39,9 +41,11 @@ function evidence(input: {
       threadId: input.threadId,
       sentAt: input.sentAt,
       indexedAt: NOW,
-      subject: "A new piece",
+      subject: input.subject ?? "A new piece",
       fromEmailHash,
-      toEmailHashes: [],
+      toEmailHashes: (input.toEmails ?? [])
+        .map((email) => hashEmail(email))
+        .filter((row): row is string => Boolean(row)),
       ccEmailHashes: [],
       bccEmailHashes: [],
       direction: input.direction,
@@ -326,7 +330,7 @@ describe("Gmail new-project intake presentation", () => {
     assert.equal(cards[0]?.title, "Matching Marquise Earrings");
   });
 
-  it("does not fixture-code Thomas or Bailey in founder synthesis", () => {
+  it("does not fixture-code Thomas, Bailey, Lucas, or Kinnin in founder synthesis", () => {
     const dir = dirname(fileURLToPath(import.meta.url));
     const files = [
       join(dir, "intake-present.ts"),
@@ -335,7 +339,194 @@ describe("Gmail new-project intake presentation", () => {
       join(dir, "../../gmail/intake-scan.ts"),
     ];
     for (const file of files) {
-      assert.doesNotMatch(readFileSync(file, "utf8"), /Thomas|Bailey/);
+      assert.doesNotMatch(readFileSync(file, "utf8"), /Thomas|Bailey|Lucas|Kinnin/);
     }
+  });
+
+  it("presents reactivated work as one piece with two People and founder turn", () => {
+    const proposed = proposeGmailCandidates({
+      createdAt: NOW,
+      world: { people: [], projects: [], internalEmailHashes: [] },
+      evidence: [
+        evidence({
+          messageId: "orig-in",
+          threadId: "t-reactivate",
+          sentAt: "2026-07-27T15:00:00.000Z",
+          fromEmail: "jordan.reed@example.test",
+          direction: "inbound",
+          subject: "Custom necklace",
+          plaintext:
+            "I've been working with you on a necklace. Lab grown, white gold.",
+        }),
+        evidence({
+          messageId: "founder-out",
+          threadId: "t-reactivate",
+          sentAt: "2026-07-28T15:00:00.000Z",
+          fromEmail: "justin@hourglass.example",
+          direction: "outbound",
+          subject: "Re: Custom necklace",
+          plaintext: "Happy to keep going — I'll send a first look when ready.",
+        }),
+        evidence({
+          messageId: "later-in",
+          threadId: "t-reactivate",
+          sentAt: NOW,
+          fromEmail: "alex.reed@example.test",
+          direction: "inbound",
+          subject: "Re: Custom necklace",
+          plaintext:
+            "Can you send the price and timeline? What are the next steps? I'm available for a call.",
+        }),
+      ],
+    });
+    const cards = presentGmailNewProjectIntake(
+      proposed.candidates,
+      [
+        {
+          personId: "jordan",
+          displayName: "Jordan Reed",
+          email: "jordan.reed@example.test",
+        },
+        {
+          personId: "alex",
+          displayName: "Alex Reed",
+          email: "alex.reed@example.test",
+        },
+      ],
+      [
+        {
+          threadId: "t-reactivate",
+          latestSentAt: NOW,
+          latestDirection: "inbound",
+          latestMessageId: "later-in",
+          latestOutboundAt: "2026-07-28T15:00:00.000Z",
+          latestOutboundMessageId: "founder-out",
+        },
+      ],
+    );
+    assert.equal(cards.length, 1);
+    assert.equal(cards[0]?.workStatus, "opportunity_reactivated");
+    assert.equal(cards[0]?.canonicalProjectFound, false);
+    assert.equal(cards[0]?.currentStateKind, "founder_turn");
+    assert.equal(cards[0]?.people.length, 2);
+    assert.equal(cards[0]?.people[0]?.role, "original_inquiry");
+    assert.equal(cards[0]?.people[0]?.displayName, "Jordan Reed");
+    assert.equal(cards[0]?.people[1]?.role, "current_correspondent");
+    assert.equal(cards[0]?.people[1]?.displayName, "Alex Reed");
+    assert.equal(cards[0]?.possiblePersonName, "Alex Reed");
+    assert.doesNotMatch(cards[0]?.whySurfaced ?? "", /Can you send the price/);
+    assert.equal(cards[0]?.identityConfirmed, false);
+  });
+
+  it("presents a payment notice as founder attention without minting from payment alone", () => {
+    const proposed = proposeGmailCandidates({
+      createdAt: NOW,
+      world: { people: [], projects: [], internalEmailHashes: [] },
+      evidence: [
+        evidence({
+          messageId: "pay",
+          threadId: "t-pay",
+          sentAt: NOW,
+          fromEmail: "notifications@intuit.com",
+          direction: "inbound",
+          subject: "Payment received Invoice 1215",
+          plaintext:
+            "Invoice #1215-(Morgan Ellis)\nCustomer: Morgan Ellis\nAmount: $3,183.90\nPayment received\nmorgan.ellis@example.test",
+        }),
+        evidence({
+          messageId: "ring",
+          threadId: "t-ring",
+          sentAt: "2026-08-10T15:00:00.000Z",
+          fromEmail: "morgan.ellis@example.test",
+          direction: "inbound",
+          subject: "Engagement Ring",
+          plaintext:
+            "I'm planning to propose and wanted to talk about an engagement ring.",
+        }),
+      ],
+    });
+    const cards = presentGmailNewProjectIntake(proposed.candidates, [
+      {
+        personId: "morgan",
+        displayName: "Morgan Ellis",
+        email: "morgan.ellis@example.test",
+      },
+    ]);
+    const payment = cards.find((row) => row.workStatus === "payment_received");
+    assert.ok(payment);
+    assert.equal(payment?.canonicalProjectFound, false);
+    assert.equal(payment?.title, "Custom Engagement Ring");
+    assert.ok(
+      payment?.whySurfaced.includes("no canonical Project"),
+    );
+    assert.equal(
+      proposed.candidates.some(
+        (row) =>
+          row.payload.kind === "project_context" &&
+          row.payload.topic === "new_project" &&
+          row.evidenceBasis.ruleIds.includes(TRANSACTIONAL_CUSTOMER_NOTICE_RULE),
+      ),
+      true,
+    );
+  });
+
+  it("does not offer a second Project when related jewelry mail already has an exact thread Project", () => {
+    const ringThread = "abcdef0123456789";
+    const proposed = proposeGmailCandidates({
+      createdAt: NOW,
+      world: {
+        people: [],
+        projects: [
+          {
+            projectId: "existing-ring",
+            title: "Custom Engagement Ring",
+            gmailThreadId: ringThread,
+            cadJobNumber: null,
+            orderNumber: null,
+            fingerSize: null,
+            metal: null,
+            centerStone: null,
+            diamondSupplyNotes: null,
+            personIds: [],
+            founderApprovedCurrent: true,
+          },
+        ],
+        internalEmailHashes: [],
+      },
+      evidence: [
+        evidence({
+          messageId: "pay-linked",
+          threadId: "fedcba9876543210",
+          sentAt: NOW,
+          fromEmail: "notifications@intuit.com",
+          direction: "inbound",
+          subject: "Payment received Invoice 1215",
+          plaintext:
+            "Invoice #1215-(Morgan Ellis)\nCustomer: Morgan Ellis\nAmount: $3,183.90\nPayment received\nmorgan.ellis@example.test",
+        }),
+        evidence({
+          messageId: "ring-linked",
+          threadId: ringThread,
+          sentAt: "2026-08-10T15:00:00.000Z",
+          fromEmail: "morgan.ellis@example.test",
+          direction: "inbound",
+          subject: "Engagement Ring",
+          plaintext:
+            "I'm planning to propose and wanted to talk about an engagement ring.",
+        }),
+      ],
+    });
+    const cards = presentGmailNewProjectIntake(proposed.candidates, [
+      {
+        personId: "morgan",
+        displayName: "Morgan Ellis",
+        email: "morgan.ellis@example.test",
+      },
+    ]);
+    const payment = cards.find((row) => row.workStatus === "payment_received");
+    assert.ok(payment);
+    assert.equal(payment?.canonicalProjectFound, true);
+    assert.equal(payment?.identityConfirmed, false);
+    assert.match(payment?.whySurfaced ?? "", /already on a Project/);
   });
 });

@@ -11,6 +11,9 @@ import {
   looksExplicitNewProjectRequest,
   NEW_PROJECT_CONTEXT_TOPIC,
   PROPOSED_SPEC_TOPIC,
+  REACTIVATED_COMMERCIAL_WORK_RULE,
+  RELATED_CUSTOMER_JEWELRY_THREAD_RULE,
+  TRANSACTIONAL_CUSTOMER_NOTICE_RULE,
   WAITING_ON_CLIENT_TOPIC,
 } from "./new-project";
 import type {
@@ -38,6 +41,7 @@ function indexed(input: {
   sentAt: string;
   subject?: string;
   fromEmail?: string;
+  toEmails?: readonly string[];
   direction: GmailIndexedMessage["direction"];
   hasAttachments?: boolean;
 }): GmailIndexedMessage {
@@ -48,7 +52,9 @@ function indexed(input: {
     indexedAt: NOW,
     subject: input.subject ?? null,
     fromEmailHash: hashEmail(input.fromEmail ?? null),
-    toEmailHashes: [],
+    toEmailHashes: (input.toEmails ?? [])
+      .map((email) => hashEmail(email))
+      .filter((row): row is string => Boolean(row)),
     ccEmailHashes: [],
     bccEmailHashes: [],
     direction: input.direction,
@@ -95,11 +101,12 @@ function project(input: {
   projectId: string;
   title: string;
   personIds: readonly string[];
+  gmailThreadId?: string | null;
 }): GmailCandidateProject {
   return {
     projectId: input.projectId,
     title: input.title,
-    gmailThreadId: null,
+    gmailThreadId: input.gmailThreadId ?? null,
     cadJobNumber: null,
     orderNumber: null,
     fingerSize: null,
@@ -745,4 +752,278 @@ describe("explicit new-project Gmail proposals", () => {
       personHit?.evidenceBasis.ruleIds.includes("founder_confirmed_gmail_source_link"),
     );
   });
+
+  it("surfaces reactivated commercial work when a later correspondent asks price and timeline", () => {
+    const proposed = proposeGmailCandidates({
+      createdAt: NOW,
+      world: { people: [], projects: [], internalEmailHashes: [] },
+      evidence: [
+        evidence({
+          messageId: "m-orig",
+          threadId: "t-reactivate",
+          sentAt: "2026-07-27T15:00:00.000Z",
+          fromEmail: "jordan.reed@example.test",
+          direction: "inbound",
+          subject: "Custom necklace",
+          plaintext:
+            "I've been working with you on a necklace. Lab grown, white gold.",
+        }),
+        evidence({
+          messageId: "m-later",
+          threadId: "t-reactivate",
+          sentAt: NOW,
+          fromEmail: "alex.reed@example.test",
+          direction: "inbound",
+          subject: "Re: Custom necklace",
+          plaintext:
+            "Can you send the price and timeline? What are the next steps? I'm available for a call.",
+        }),
+      ],
+    });
+    const neu = proposed.candidates.find(
+      (row) =>
+        row.payload.kind === "project_context" &&
+        row.payload.topic === NEW_PROJECT_CONTEXT_TOPIC,
+    );
+    assert.ok(neu);
+    assert.ok(neu?.evidenceBasis.ruleIds.includes(REACTIVATED_COMMERCIAL_WORK_RULE));
+    const people = proposed.candidates.filter(
+      (row) => row.candidateType === "person_association",
+    );
+    assert.equal(people.length, 2);
+    const hashes = new Set(
+      people.flatMap((row) =>
+        row.payload.kind === "person_association" && row.payload.emailHash
+          ? [row.payload.emailHash]
+          : [],
+      ),
+    );
+    assert.equal(hashes.has(hashEmail("jordan.reed@example.test")!), true);
+    assert.equal(hashes.has(hashEmail("alex.reed@example.test")!), true);
+  });
+
+  it("does not attach a later correspondent's new work to an older Person-linked Project", () => {
+    const original = person({
+      personId: "jordan-person",
+      displayName: "Jordan Reed",
+      email: "jordan.reed@example.test",
+      projectIds: ["old-necklace"],
+    });
+    const proposed = proposeGmailCandidates({
+      createdAt: NOW,
+      world: {
+        people: [original],
+        projects: [
+          project({
+            projectId: "old-necklace",
+            title: "Older necklace",
+            personIds: [original.personId],
+          }),
+        ],
+        internalEmailHashes: [],
+        founderConfirmedEmailIdentities: [
+          {
+            emailHash: hashEmail("jordan.reed@example.test")!,
+            personId: original.personId,
+          },
+        ],
+      },
+      evidence: [
+        evidence({
+          messageId: "m-orig-2",
+          threadId: "t-reactivate-2",
+          sentAt: "2026-07-27T15:00:00.000Z",
+          fromEmail: "jordan.reed@example.test",
+          direction: "inbound",
+          subject: "Custom necklace",
+          plaintext: "I've been working with you on a necklace.",
+        }),
+        evidence({
+          messageId: "m-later-2",
+          threadId: "t-reactivate-2",
+          sentAt: NOW,
+          fromEmail: "alex.reed@example.test",
+          direction: "inbound",
+          subject: "Re: Custom necklace",
+          plaintext:
+            "I'd like to work together again to create another piece. What's the price and timeline?",
+        }),
+      ],
+    });
+    const neu = proposed.candidates.find(
+      (row) =>
+        row.payload.kind === "project_context" &&
+        row.payload.topic === NEW_PROJECT_CONTEXT_TOPIC,
+    );
+    assert.ok(neu);
+    if (neu?.proposedTarget.kind === "project") {
+      assert.equal(neu.proposedTarget.projectId, null);
+    }
+  });
+
+  it("does not mint a Project from a transactional notice without related jewelry mail", () => {
+    const proposed = proposeGmailCandidates({
+      createdAt: NOW,
+      world: { people: [], projects: [], internalEmailHashes: [] },
+      evidence: [
+        evidence({
+          messageId: "m-pay-only",
+          threadId: "t-pay-only",
+          sentAt: NOW,
+          fromEmail: "notifications@intuit.com",
+          direction: "inbound",
+          subject: "Payment received Invoice 1215",
+          plaintext:
+            "Invoice #1215-(Morgan Ellis)\nCustomer: Morgan Ellis\nAmount: $3,183.90\nPayment received\nmorgan.ellis@example.test",
+        }),
+      ],
+    });
+    assert.equal(
+      proposed.candidates.some(
+        (row) =>
+          row.payload.kind === "project_context" &&
+          row.payload.topic === NEW_PROJECT_CONTEXT_TOPIC,
+      ),
+      false,
+    );
+    const people = proposed.candidates.filter(
+      (row) => row.candidateType === "person_association",
+    );
+    assert.equal(people.length, 1);
+    if (people[0]?.payload.kind === "person_association") {
+      assert.equal(people[0].payload.emailHash, hashEmail("morgan.ellis@example.test"));
+      assert.equal(people[0].payload.displayName, "Morgan Ellis");
+    }
+    assert.equal(
+      people.some(
+        (row) =>
+          row.payload.kind === "person_association" &&
+          row.payload.emailHash === hashEmail("notifications@intuit.com"),
+      ),
+      false,
+    );
+  });
+
+  it("reconciles a transactional customer notice to related jewelry mail across threads", () => {
+    const proposed = proposeGmailCandidates({
+      createdAt: NOW,
+      world: { people: [], projects: [], internalEmailHashes: [] },
+      evidence: [
+        evidence({
+          messageId: "m-pay",
+          threadId: "t-pay",
+          sentAt: NOW,
+          fromEmail: "notifications@intuit.com",
+          direction: "inbound",
+          subject: "Payment received Invoice 1215",
+          plaintext:
+            "Invoice #1215-(Morgan Ellis)\nCustomer: Morgan Ellis\nAmount: $3,183.90\nPayment received\nmorgan.ellis@example.test",
+        }),
+        evidence({
+          messageId: "m-ring",
+          threadId: "t-ring",
+          sentAt: "2026-08-10T15:00:00.000Z",
+          fromEmail: "morgan.ellis@example.test",
+          direction: "inbound",
+          subject: "Engagement Ring",
+          plaintext:
+            "I'm planning to propose and wanted to talk about an engagement ring.",
+        }),
+        evidence({
+          messageId: "m-recap",
+          threadId: "t-recap",
+          sentAt: "2026-08-17T15:00:00.000Z",
+          fromEmail: "justin@hourglass.example",
+          toEmails: ["morgan.ellis@example.test"],
+          direction: "outbound",
+          subject: "HGD x Eng Ring",
+          plaintext: "Recap of the engagement ring design and next steps.",
+        }),
+      ],
+    });
+    const payment = proposed.candidates.find(
+      (row) =>
+        row.payload.kind === "project_context" &&
+        row.payload.topic === NEW_PROJECT_CONTEXT_TOPIC &&
+        row.evidenceBasis.ruleIds.includes(TRANSACTIONAL_CUSTOMER_NOTICE_RULE),
+    );
+    assert.ok(payment);
+    if (payment?.payload.kind === "project_context") {
+      assert.equal(payment.payload.value, "Custom Engagement Ring");
+    }
+  });
+
+  it("links a transactional notice to an existing exact-thread Project instead of proposing a duplicate", () => {
+    const ringThread = "abcdef0123456789";
+    const existing = project({
+      projectId: "existing-ring",
+      title: "Custom Engagement Ring",
+      personIds: [],
+      gmailThreadId: ringThread,
+    });
+    const proposed = proposeGmailCandidates({
+      createdAt: NOW,
+      world: { people: [], projects: [existing], internalEmailHashes: [] },
+      evidence: [
+        evidence({
+          messageId: "m-pay-linked",
+          threadId: "fedcba9876543210",
+          sentAt: NOW,
+          fromEmail: "notifications@intuit.com",
+          direction: "inbound",
+          subject: "Payment received Invoice 1215",
+          plaintext:
+            "Invoice #1215-(Morgan Ellis)\nCustomer: Morgan Ellis\nAmount: $3,183.90\nPayment received\nmorgan.ellis@example.test",
+        }),
+        evidence({
+          messageId: "m-ring-linked",
+          threadId: ringThread,
+          sentAt: "2026-08-10T15:00:00.000Z",
+          fromEmail: "morgan.ellis@example.test",
+          direction: "inbound",
+          subject: "Engagement Ring",
+          plaintext:
+            "I'm planning to propose and wanted to talk about an engagement ring.",
+        }),
+      ],
+    });
+    const payment = proposed.candidates.find(
+      (row) =>
+        row.payload.kind === "project_context" &&
+        row.payload.topic === NEW_PROJECT_CONTEXT_TOPIC &&
+        row.evidenceBasis.ruleIds.includes(TRANSACTIONAL_CUSTOMER_NOTICE_RULE),
+    );
+    assert.ok(payment);
+    assert.equal(payment?.automaticApply, false);
+    if (payment?.proposedTarget.kind === "project") {
+      assert.equal(payment.proposedTarget.projectId, null);
+    }
+    const linked = proposed.candidates.find(
+      (row) =>
+        row.candidateType === "project_association" &&
+        row.evidenceBasis.ruleIds.includes(RELATED_CUSTOMER_JEWELRY_THREAD_RULE),
+    );
+    assert.ok(linked);
+    if (linked?.proposedTarget.kind === "project") {
+      assert.equal(linked.proposedTarget.projectId, existing.projectId);
+    }
+    assert.equal(
+      proposed.candidates.filter(
+        (row) =>
+          row.payload.kind === "project_context" &&
+          row.payload.topic === NEW_PROJECT_CONTEXT_TOPIC,
+      ).length,
+      1,
+    );
+    const personHit = proposed.candidates.find(
+      (row) =>
+        row.candidateType === "person_association" &&
+        row.payload.kind === "person_association" &&
+        row.payload.emailHash === hashEmail("morgan.ellis@example.test"),
+    );
+    if (personHit?.proposedTarget.kind === "person") {
+      assert.equal(personHit.proposedTarget.personId, null);
+    }
+  });
 });
+

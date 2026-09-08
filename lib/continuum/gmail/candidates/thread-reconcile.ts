@@ -7,11 +7,21 @@
 import type { ContinuumCandidate, ContinuumCandidateDraft } from "@/lib/continuum/candidates/types";
 import { parseGmailCandidateSourceRef } from "./source-ref";
 import {
+  extractCustomerEmails,
   extractWaitingOnClient,
+  hasJewelryWorkContext,
+  looksConsequentialBuyerIntent,
+  looksProposalCommitmentIntent,
+  looksTransactionalCustomerNotice,
   NEW_PROJECT_CONTEXT_TOPIC,
+  proposeNewProjectTitle,
+  REACTIVATED_COMMERCIAL_WORK_RULE,
+  RELATED_CUSTOMER_JEWELRY_THREAD_RULE,
+  TRANSACTIONAL_CUSTOMER_NOTICE_RULE,
   WAITING_ON_CLIENT_TOPIC,
 } from "./new-project";
 import type { GmailCandidateEvidence } from "./types";
+import { hashEmail } from "@/lib/continuum/client-memory/hashes";
 import { assignCandidateId } from "@/lib/continuum/candidates/identity";
 import { CANDIDATE_PARSER_GMAIL_V1 } from "@/lib/continuum/candidates/types";
 import { GMAIL_SOURCE_SYSTEM } from "@/lib/continuum/client-memory/gmail/types";
@@ -54,6 +64,61 @@ export function threadHasNewProject(
       row.payload.kind === "project_context" &&
       row.payload.topic === NEW_PROJECT_CONTEXT_TOPIC,
   );
+}
+
+export function threadHasExactProjectAssociation(
+  drafts: readonly ContinuumCandidateDraft[],
+  threadId: string,
+): boolean {
+  return drafts.some(
+    (row) =>
+      threadIdOf(row) === threadId &&
+      row.candidateType === "project_association" &&
+      row.evidenceBasis.ruleIds.includes("exact_gmail_thread"),
+  );
+}
+
+function threadHaystack(rows: readonly GmailCandidateEvidence[]): string {
+  return rows
+    .map((row) => haystackOf(row.indexed.subject, row.plaintext ?? null))
+    .join("\n");
+}
+
+function commercialWorkDraft(input: {
+  evidence: GmailCandidateEvidence;
+  createdAt: string;
+  title: string;
+  ruleIds: readonly string[];
+  matchedText: string;
+}): ContinuumCandidateDraft | null {
+  const packed = packGmailCandidateSourceRef({
+    threadId: input.evidence.indexed.threadId,
+    messageId: input.evidence.indexed.messageId,
+  });
+  if (!packed.ok) return null;
+  return {
+    candidateId: "",
+    sourceSystem: GMAIL_SOURCE_SYSTEM,
+    sourceRef: packed.sourceRef,
+    sourceTimestamp: input.evidence.indexed.sentAt,
+    createdAt: input.createdAt,
+    canonical: false,
+    automaticApply: false,
+    parserVersion: CANDIDATE_PARSER_GMAIL_V1,
+    candidateType: "project_context",
+    proposedTarget: { kind: "project", projectId: null },
+    payload: {
+      kind: "project_context",
+      topic: NEW_PROJECT_CONTEXT_TOPIC,
+      value: input.title,
+    },
+    confidence: "medium",
+    evidenceBasis: {
+      ruleIds: input.ruleIds,
+      matchedText: input.matchedText,
+    },
+    candidateState: "active",
+  };
 }
 
 export function reconcileThreadCandidates(input: {
@@ -172,6 +237,142 @@ export function reconcileThreadCandidates(input: {
       },
       candidateState: "active",
     });
+  }
+
+  const jewelryThreadIds = new Set<string>();
+  const transactionalByThread = new Map<string, GmailCandidateEvidence[]>();
+  for (const [threadId, rows] of byThread) {
+    const hay = threadHaystack(rows);
+    if (hasJewelryWorkContext(hay) && !looksTransactionalCustomerNotice(hay)) {
+      jewelryThreadIds.add(threadId);
+    }
+    if (looksTransactionalCustomerNotice(hay)) {
+      transactionalByThread.set(threadId, rows);
+    }
+  }
+
+  for (const [threadId, rows] of byThread) {
+    if (threadHasNewProject(kept, threadId) || threadHasNewProject(input.drafts, threadId)) {
+      continue;
+    }
+    if (threadHasExactProjectAssociation(kept, threadId)) continue;
+    const inbound = [...rows]
+      .filter((row) => row.indexed.direction === "inbound")
+      .sort((a, b) => sentMs(a.indexed.sentAt) - sentMs(b.indexed.sentAt));
+    if (inbound.length === 0) continue;
+    const hay = threadHaystack(rows);
+    const intent = [...inbound]
+      .reverse()
+      .find((row) => {
+        const text = haystackOf(row.indexed.subject, row.plaintext ?? null);
+        return (
+          looksConsequentialBuyerIntent(text) ||
+          looksProposalCommitmentIntent(text)
+        );
+      });
+    if (intent && hasJewelryWorkContext(hay)) {
+      const draft = commercialWorkDraft({
+        evidence: intent,
+        createdAt: input.createdAt,
+        title: proposeNewProjectTitle(hay),
+        ruleIds: [REACTIVATED_COMMERCIAL_WORK_RULE],
+        matchedText: "price, timeline, or next steps",
+      });
+      if (draft) extra.push(draft);
+      continue;
+    }
+    const transactional = transactionalByThread.get(threadId);
+    if (!transactional) continue;
+    const customerHashes = new Set(
+      extractCustomerEmails(hay)
+        .map((email) => hashEmail(email))
+        .filter((row): row is string => Boolean(row)),
+    );
+    if (customerHashes.size === 0) continue;
+    const relatedJewelry = [...jewelryThreadIds].some((otherId) => {
+      if (otherId === threadId) return false;
+      const other = byThread.get(otherId) ?? [];
+      return other.some((row) => {
+        const hashes = [
+          row.fromEmailHash ?? row.indexed.fromEmailHash,
+          ...row.indexed.toEmailHashes,
+          ...row.indexed.ccEmailHashes,
+        ];
+        return hashes.some((hash) => Boolean(hash && customerHashes.has(hash)));
+      });
+    });
+    if (!relatedJewelry) continue;
+    const notice = [...inbound].reverse()[0]!;
+    const relatedHay = [...jewelryThreadIds]
+      .flatMap((id) => byThread.get(id) ?? [])
+      .map((row) => haystackOf(row.indexed.subject, row.plaintext ?? null))
+      .join("\n");
+    const relatedExact = [...jewelryThreadIds]
+      .filter((otherId) => otherId !== threadId)
+      .flatMap((otherId) =>
+        [...input.drafts, ...kept].filter(
+          (row) =>
+            threadIdOf(row) === otherId &&
+            row.candidateType === "project_association" &&
+            row.evidenceBasis.ruleIds.includes("exact_gmail_thread") &&
+            row.proposedTarget.kind === "project" &&
+            Boolean(row.proposedTarget.projectId),
+        ),
+      );
+    const linkedProject =
+      relatedExact[0]?.proposedTarget.kind === "project"
+        ? relatedExact[0]
+        : null;
+    const draft = commercialWorkDraft({
+      evidence: notice,
+      createdAt: input.createdAt,
+      title: proposeNewProjectTitle(`${relatedHay}\n${hay}`),
+      ruleIds: [TRANSACTIONAL_CUSTOMER_NOTICE_RULE],
+      matchedText: linkedProject
+        ? "payment received; related jewelry work; canonical Project found"
+        : "payment received; related jewelry work; no canonical Project",
+    });
+    if (draft) extra.push(draft);
+    if (
+      linkedProject &&
+      linkedProject.proposedTarget.kind === "project" &&
+      linkedProject.proposedTarget.projectId &&
+      linkedProject.payload.kind === "project_association"
+    ) {
+      const packed = packGmailCandidateSourceRef({
+        threadId,
+        messageId: notice.indexed.messageId,
+      });
+      if (packed.ok) {
+        extra.push({
+          candidateId: "",
+          sourceSystem: GMAIL_SOURCE_SYSTEM,
+          sourceRef: packed.sourceRef,
+          sourceTimestamp: notice.indexed.sentAt,
+          createdAt: input.createdAt,
+          canonical: false,
+          automaticApply: false,
+          parserVersion: CANDIDATE_PARSER_GMAIL_V1,
+          candidateType: "project_association",
+          proposedTarget: {
+            kind: "project",
+            projectId: linkedProject.proposedTarget.projectId,
+          },
+          payload: {
+            kind: "project_association",
+            title: linkedProject.payload.title,
+            token: linkedProject.payload.token,
+            match: "exact",
+          },
+          confidence: "high",
+          evidenceBasis: {
+            ruleIds: ["exact_gmail_thread", RELATED_CUSTOMER_JEWELRY_THREAD_RULE],
+            matchedText: linkedProject.payload.token,
+          },
+          candidateState: "active",
+        });
+      }
+    }
   }
 
   return [...kept, ...extra];

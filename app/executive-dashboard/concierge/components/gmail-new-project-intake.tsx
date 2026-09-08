@@ -238,6 +238,18 @@ export function GmailNewProjectIntakeList({
   );
 }
 
+function workStatusHeadline(status: GmailNewProjectIntakeCard["workStatus"]): string {
+  if (status === "payment_received") return "Payment received";
+  if (status === "opportunity_reactivated") return "Opportunity reactivated";
+  return "New project detected";
+}
+
+function personRoleLabel(role: GmailNewProjectIntakeCard["people"][number]["role"]): string {
+  if (role === "original_inquiry") return "Original inquiry";
+  if (role === "current_correspondent") return "Current correspondent";
+  return "Mentioned";
+}
+
 function GmailNewProjectCard({
   card,
   identityAvailable,
@@ -248,9 +260,23 @@ function GmailNewProjectCard({
   return (
     <div className="space-y-4">
       <p className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
-        New project detected
+        {workStatusHeadline(card.workStatus)}
       </p>
       <p className="font-serif text-[1.45rem] text-[#efe8de]">{card.title}</p>
+      {card.people.length > 0 ? (
+        <ul className="space-y-1">
+          {card.people.map((person, index) => (
+            <li
+              key={`${person.role}:${person.email ?? person.displayName ?? index}`}
+              className="text-[15px] text-[#c4b7aa]"
+            >
+              {personRoleLabel(person.role)}
+              {person.displayName ? `: ${person.displayName}` : ""}
+              {person.email ? ` · ${person.email}` : ""}
+            </li>
+          ))}
+        </ul>
+      ) : null}
       {!identityAvailable ? (
         <div className="space-y-3">
           <p className="text-[15px] text-[#d2b8a8]">
@@ -269,10 +295,12 @@ function GmailNewProjectCard({
           </div>
         </div>
       ) : card.identityConfirmed ? (
-        <p className="text-[15px] text-[#c4b7aa]">
-          {card.personName}
-          {card.personEmail ? ` · ${card.personEmail}` : ""}
-        </p>
+        card.people.length === 0 ? (
+          <p className="text-[15px] text-[#c4b7aa]">
+            {card.personName}
+            {card.personEmail ? ` · ${card.personEmail}` : ""}
+          </p>
+        ) : null
       ) : (
         <div className="space-y-1">
           <p className="text-[15px] text-[#c4b7aa]">
@@ -285,6 +313,10 @@ function GmailNewProjectCard({
           <p className="text-[14px] text-[#d2b8a8]">Identity needs confirmation.</p>
         </div>
       )}
+      <p className="text-[14px] leading-relaxed text-[#c4b7aa]">
+        Canonical Project: {card.canonicalProjectFound ? "already linked" : "none found"}
+      </p>
+      <p className="text-[14px] leading-relaxed text-[#c4b7aa]">{card.whySurfaced}</p>
       {card.giftContext || card.designBasis ? (
         <div className="space-y-1">
           <p className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
@@ -342,7 +374,12 @@ function GmailNewProjectCard({
           </div>
         </details>
       ) : null}
-      {identityAvailable && card.identityConfirmed ? (
+      {card.canonicalProjectFound ? (
+        <p className="text-[14px] leading-relaxed text-[#c4b7aa]">
+          Payment or related work already has a Project. Review state or create
+          an action — this does not mint another Project.
+        </p>
+      ) : identityAvailable && card.identityConfirmed ? (
         <GmailNewProjectApproveForm card={card} />
       ) : identityAvailable ? (
         <GmailConfirmPersonForm card={card} />

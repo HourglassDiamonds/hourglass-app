@@ -13,9 +13,21 @@ export const ATTACHMENT_FILENAME_TOPIC = "attachment_filename" as const;
 export const PROPOSED_SPEC_TOPIC = "proposed_spec" as const;
 
 export const EXPLICIT_NEW_PROJECT_RULE = "explicit_new_project_request" as const;
+export const REACTIVATED_COMMERCIAL_WORK_RULE =
+  "reactivated_commercial_work" as const;
+export const TRANSACTIONAL_CUSTOMER_NOTICE_RULE =
+  "transactional_customer_notice" as const;
+export const RELATED_CUSTOMER_JEWELRY_THREAD_RULE =
+  "related_customer_jewelry_thread" as const;
 
 const REJECT =
   /\b(repair|resize|tracking number|unsubscribe|newsletter|looks great|looks awesome|please proceed|status update|still waiting on the same)\b/i;
+
+const JEWELRY_WORK =
+  /\b(?:necklace|pendant|earrings?|bracelet|rings?|engagement)\b/i;
+
+const TRANSACTIONAL_SENDER_SKIP =
+  /intuit\.com|quickbooks|qbo\.intuit|noreply|no-reply|notifications@/i;
 
 const EXPLICIT_NEW_PROJECT = [
   /i(?:'d| would) like to work together again to create another (?:piece|necklace|pendant|ring|earrings?)/i,
@@ -48,6 +60,78 @@ export function looksExplicitNewProjectRequest(text: string): boolean {
   return true;
 }
 
+function rejectedCommercialNoise(text: string): boolean {
+  return (
+    REJECT.test(text) &&
+    !/\b(?:another piece|new piece|another necklace|another pendant)\b/i.test(text)
+  );
+}
+
+export function hasJewelryWorkContext(text: string): boolean {
+  return JEWELRY_WORK.test(text);
+}
+
+export function looksConsequentialBuyerIntent(text: string): boolean {
+  const hay = text.trim();
+  if (!hay || rejectedCommercialNoise(hay)) return false;
+  const price = /\b(?:price|quote|cost|how much)\b/i.test(hay);
+  const timing = /\b(?:timeline|lead time|next steps?)\b/i.test(hay);
+  const callAvail =
+    /\b(?:available|free)\b[\s\S]{0,80}\bcall\b/i.test(hay) ||
+    /\bcall\b[\s\S]{0,60}\b(?:available|work|anytime)\b/i.test(hay);
+  const priorWork =
+    /\b(?:been|has been|have been)\s+working with\b/i.test(hay) ||
+    /\bworking with\b[\s\S]{0,80}\b(?:on a|about a|on the)\b/i.test(hay);
+  if (price && timing) return true;
+  if (priorWork && (price || timing || callAvail)) return true;
+  if (callAvail && timing) return true;
+  return false;
+}
+
+export function looksProposalCommitmentIntent(text: string): boolean {
+  const hay = text.trim();
+  if (!hay || rejectedCommercialNoise(hay)) return false;
+  return (
+    /\b(?:planning to propose|going to propose|want to propose)\b/i.test(hay) &&
+    /\bengagement\b/i.test(hay)
+  );
+}
+
+export function looksTransactionalCustomerNotice(text: string): boolean {
+  const hay = text.trim();
+  if (!hay || rejectedCommercialNoise(hay)) return false;
+  const invoice = /\binvoice\b/i.test(hay);
+  const payment = /\bpayment received\b/i.test(hay);
+  const customer = /\bcustomer\s*:/i.test(hay);
+  return invoice && (payment || customer);
+}
+
+export function extractCustomerEmails(text: string): string[] {
+  const matches = text.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi) ?? [];
+  return [
+    ...new Set(
+      matches
+        .map((row) => row.trim().toLowerCase())
+        .filter((row) => row && !TRANSACTIONAL_SENDER_SKIP.test(row)),
+    ),
+  ];
+}
+
+export function extractCustomerLabel(text: string): string | null {
+  const match = text.match(
+    /\bcustomer\s*:\s*([A-Za-z][A-Za-z'’.\-]+(?:[ \t]+[A-Za-z][A-Za-z'’.\-]+){0,3})/i,
+  );
+  const label = match?.[1]?.replace(/\s+/g, " ").trim() ?? "";
+  return label || null;
+}
+
+export function looksCommercialWorkProposal(text: string): boolean {
+  if (looksExplicitNewProjectRequest(text)) return true;
+  if (rejectedCommercialNoise(text)) return false;
+  if (!hasJewelryWorkContext(text)) return false;
+  return looksConsequentialBuyerIntent(text) || looksProposalCommitmentIntent(text);
+}
+
 export function proposeNewProjectTitle(text: string): string {
   const hay = text.toLowerCase();
   const daggerPearl =
@@ -55,25 +139,39 @@ export function proposeNewProjectTitle(text: string): string {
   const necklace = /\bnecklace\b/.test(hay) || /\bpendant\b/.test(hay);
   const earrings = /\bearrings?\b/.test(hay);
   const marquise = /\bmarquise\b/.test(hay);
+  const engagementRing = /\bengagement\b/.test(hay) && /\bring/.test(hay);
   if (daggerPearl && necklace) return "Dagger & Pearls Pendant / Necklace";
   if (marquise && earrings) return "Matching Marquise Earrings";
   if (earrings) return "Custom Earrings";
+  if (engagementRing) return "Custom Engagement Ring";
   if (necklace) return "Custom Necklace / Pendant";
   return "New custom piece";
 }
 
 export function extractNewProject(text: string): NewProjectHit[] {
-  if (!looksExplicitNewProjectRequest(text)) return [];
-  const matched =
-    EXPLICIT_NEW_PROJECT.map((pattern) => {
-      const re = new RegExp(pattern.source, pattern.flags);
-      return re.exec(text)?.[0] ?? null;
-    }).find((row) => row) ?? text.slice(0, 80);
+  if (looksExplicitNewProjectRequest(text)) {
+    const matched =
+      EXPLICIT_NEW_PROJECT.map((pattern) => {
+        const re = new RegExp(pattern.source, pattern.flags);
+        return re.exec(text)?.[0] ?? null;
+      }).find((row) => row) ?? text.slice(0, 80);
+    return [
+      {
+        title: proposeNewProjectTitle(text),
+        matchedText: clipMatchedText(matched),
+        ruleIds: [EXPLICIT_NEW_PROJECT_RULE],
+      },
+    ];
+  }
+  if (!looksCommercialWorkProposal(text)) return [];
+  const matched = looksConsequentialBuyerIntent(text)
+    ? "price, timeline, or next steps"
+    : "proposal commitment";
   return [
     {
       title: proposeNewProjectTitle(text),
       matchedText: clipMatchedText(matched),
-      ruleIds: [EXPLICIT_NEW_PROJECT_RULE],
+      ruleIds: [REACTIVATED_COMMERCIAL_WORK_RULE],
     },
   ];
 }

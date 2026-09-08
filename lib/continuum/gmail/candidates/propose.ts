@@ -11,6 +11,7 @@ import {
   type ContinuumCandidateDraft,
 } from "@/lib/continuum/candidates/types";
 import { GMAIL_SOURCE_SYSTEM } from "@/lib/continuum/client-memory/gmail/types";
+import { hashEmail } from "@/lib/continuum/client-memory/hashes";
 import { resolvePersonHit, resolveProjectHits } from "./associate";
 import {
   extractDates,
@@ -22,8 +23,11 @@ import {
 } from "./parse";
 import {
   ATTACHMENT_FILENAME_TOPIC,
+  extractCustomerEmails,
+  extractCustomerLabel,
   extractNewProject,
   extractNewProjectContexts,
+  looksTransactionalCustomerNotice,
   NEW_PROJECT_CONTEXT_TOPIC,
 } from "./new-project";
 import { packGmailCandidateSourceRef } from "./source-ref";
@@ -102,7 +106,13 @@ function draftsFromEvidence(
     parserVersion: CANDIDATE_PARSER_GMAIL_V1,
   };
 
-  if (!personHit.internal && personHit.emailHash) {
+  const transactional = looksTransactionalCustomerNotice(haystack);
+  if (
+    !personHit.internal &&
+    personHit.emailHash &&
+    !transactional &&
+    evidence.indexed.direction === "inbound"
+  ) {
     drafts.push({
       ...base,
       candidateId: "",
@@ -132,6 +142,55 @@ function draftsFromEvidence(
       },
       candidateState: "active",
     });
+  }
+
+  if (transactional) {
+    const customerLabel = extractCustomerLabel(haystack);
+    const seenHashes = new Set<string>();
+    for (const email of extractCustomerEmails(haystack)) {
+      const emailHash = hashEmail(email);
+      if (!emailHash || seenHashes.has(emailHash)) continue;
+      seenHashes.add(emailHash);
+      const customerHit = resolvePersonHit({
+        fromEmailHash: emailHash,
+        threadId: evidence.indexed.threadId,
+        people: world.people,
+        internalEmailHashes: world.internalEmailHashes,
+        confirmedParticipantMappings: world.confirmedParticipantMappings,
+        confirmedSourceLinks: world.confirmedSourceLinks,
+        founderConfirmedEmailIdentities: world.founderConfirmedEmailIdentities,
+      });
+      if (customerHit.internal) continue;
+      drafts.push({
+        ...base,
+        candidateId: "",
+        candidateType: "person_association",
+        proposedTarget: {
+          kind: "person",
+          personId: customerHit.person?.personId ?? null,
+        },
+        payload: {
+          kind: "person_association",
+          displayName:
+            customerHit.person?.displayName ??
+            customerHit.possiblePerson?.displayName ??
+            customerLabel,
+          emailHash,
+          mintPerson: false,
+          mergePersons: false,
+        },
+        confidence: customerHit.person
+          ? "high"
+          : customerHit.possiblePerson
+            ? "medium"
+            : "low",
+        evidenceBasis: {
+          ruleIds: customerHit.ruleIds,
+          matchedText: customerLabel,
+        },
+        candidateState: "active",
+      });
+    }
   }
 
   for (const hit of projectHits) {
@@ -188,23 +247,13 @@ function draftsFromEvidence(
   }
 
   const primaryProject = projectHits.length === 1 ? projectHits[0]!.project : null;
+  const exactThreadProject = projectHits.some(
+    (hit) =>
+      hit.match === "exact" && hit.ruleIds.includes("exact_gmail_thread"),
+  );
 
-  for (const hit of newProjectHits) {
-    drafts.push({
-      ...base,
-      candidateId: "",
-      candidateType: "project_context",
-      proposedTarget: { kind: "project", projectId: null },
-      payload: {
-        kind: "project_context",
-        topic: NEW_PROJECT_CONTEXT_TOPIC,
-        value: hit.title,
-      },
-      confidence: personHit.person ? "high" : "medium",
-      evidenceBasis: { ruleIds: hit.ruleIds, matchedText: hit.matchedText },
-      candidateState: "active",
-    });
-    for (const ctx of extractNewProjectContexts(haystack)) {
+  if (!exactThreadProject) {
+    for (const hit of newProjectHits) {
       drafts.push({
         ...base,
         candidateId: "",
@@ -212,34 +261,50 @@ function draftsFromEvidence(
         proposedTarget: { kind: "project", projectId: null },
         payload: {
           kind: "project_context",
-          topic: ctx.topic,
-          value: ctx.value,
+          topic: NEW_PROJECT_CONTEXT_TOPIC,
+          value: hit.title,
         },
-        confidence: "medium",
-        evidenceBasis: { ruleIds: ctx.ruleIds, matchedText: ctx.matchedText },
+        confidence: personHit.person ? "high" : "medium",
+        evidenceBasis: { ruleIds: hit.ruleIds, matchedText: hit.matchedText },
         candidateState: "active",
       });
-    }
-    for (const attachment of evidence.attachments ?? []) {
-      const filename = attachment.filename?.trim();
-      if (!filename) continue;
-      drafts.push({
-        ...base,
-        candidateId: "",
-        candidateType: "project_context",
-        proposedTarget: { kind: "project", projectId: null },
-        payload: {
-          kind: "project_context",
-          topic: ATTACHMENT_FILENAME_TOPIC,
-          value: filename,
-        },
-        confidence: "high",
-        evidenceBasis: {
-          ruleIds: ["attachment_filename_only"],
-          matchedText: filename.slice(0, 80),
-        },
-        candidateState: "active",
-      });
+      for (const ctx of extractNewProjectContexts(haystack)) {
+        drafts.push({
+          ...base,
+          candidateId: "",
+          candidateType: "project_context",
+          proposedTarget: { kind: "project", projectId: null },
+          payload: {
+            kind: "project_context",
+            topic: ctx.topic,
+            value: ctx.value,
+          },
+          confidence: "medium",
+          evidenceBasis: { ruleIds: ctx.ruleIds, matchedText: ctx.matchedText },
+          candidateState: "active",
+        });
+      }
+      for (const attachment of evidence.attachments ?? []) {
+        const filename = attachment.filename?.trim();
+        if (!filename) continue;
+        drafts.push({
+          ...base,
+          candidateId: "",
+          candidateType: "project_context",
+          proposedTarget: { kind: "project", projectId: null },
+          payload: {
+            kind: "project_context",
+            topic: ATTACHMENT_FILENAME_TOPIC,
+            value: filename,
+          },
+          confidence: "high",
+          evidenceBasis: {
+            ruleIds: ["attachment_filename_only"],
+            matchedText: filename.slice(0, 80),
+          },
+          candidateState: "active",
+        });
+      }
     }
   }
 
