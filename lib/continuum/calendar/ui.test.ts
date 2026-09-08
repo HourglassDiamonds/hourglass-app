@@ -66,6 +66,8 @@ describe("Calendar founder UI", () => {
     assert.doesNotMatch(ui, /Sarah|Dylan|prep for|follow up/i);
     assert.match(page, /loadCalendarFounderSurface/);
     assert.match(page, /force-dynamic/);
+    assert.match(page, /IntakeCandidateReviewList/);
+    assert.match(page, /Association review/);
     assert.equal(CONCIERGE_CALENDAR_PATH, "/executive-dashboard/concierge/calendar");
     assert.match(home, /Calendar/);
     assert.match(home, /CONCIERGE_CALENDAR_PATH/);

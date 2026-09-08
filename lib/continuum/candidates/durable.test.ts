@@ -3,7 +3,7 @@ import { describe, it } from "node:test";
 import { assignCandidateId } from "./identity";
 import { effectiveCandidatePayload, effectiveCandidateTarget } from "./review";
 import { SqlMappedCandidateStore } from "./sql-mapped-store";
-import { CANDIDATE_PARSER_HUMAN_INTAKE_V1 } from "./types";
+import { CANDIDATE_PARSER_GOOGLE_CALENDAR_V1, CANDIDATE_PARSER_HUMAN_INTAKE_V1 } from "./types";
 
 const NOW = "2026-08-25T17:00:00.000Z";
 const LATER = "2026-08-26T17:00:00.000Z";
@@ -105,5 +105,39 @@ describe("durable CandidateStore SQL-shaped persistence", () => {
     assert.equal(history?.candidateState, "superseded");
     assert.equal(history?.reviewStatus, "discarded");
     assert.equal(history?.supersededByCandidateId, newer.candidateId);
+  });
+
+  it("persists google_calendar association Candidates without duplicating on reload", async () => {
+    const store = new SqlMappedCandidateStore();
+    const row = assignCandidateId({
+      sourceSystem: "google_calendar",
+      sourceRef: "cal1|primary|evt-durable",
+      sourceTimestamp: NOW,
+      createdAt: NOW,
+      candidateId: "",
+      candidateType: "project_association",
+      proposedTarget: { kind: "project", projectId: "proj-ada" },
+      payload: {
+        kind: "project_association",
+        title: "Ada ring",
+        token: "CR5001024",
+        match: "exact",
+      },
+      confidence: "high",
+      evidenceBasis: { ruleIds: ["exact_cad_job"], matchedText: "CR5001024" },
+      candidateState: "active",
+      canonical: false,
+      automaticApply: false,
+      parserVersion: CANDIDATE_PARSER_GOOGLE_CALENDAR_V1,
+    });
+    await store.put(row);
+    await store.applyReview(row.candidateId, { action: "approve" }, NOW);
+    const reloaded = SqlMappedCandidateStore.fromRows(store.exportRows());
+    const second = await reloaded.put(row);
+    assert.equal(second.status, "duplicate");
+    assert.equal(second.record.reviewStatus, "approved");
+    assert.equal(second.record.sourceSystem, "google_calendar");
+    assert.equal(second.record.canonical, false);
+    assert.equal((await reloaded.list()).length, 1);
   });
 });

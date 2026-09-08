@@ -8,6 +8,11 @@ import { getAuthenticatedCandidateStore } from "@/lib/continuum/candidates/load"
 import { CANDIDATE_STORAGE_NOT_ACTIVATED_MESSAGE } from "@/lib/continuum/candidates/activation";
 import { reviewHumanIntakeCandidate } from "@/lib/continuum/human-intake/review/apply";
 import type { HumanIntakeCandidateEdits } from "@/lib/continuum/human-intake/review/apply";
+import { reviewCalendarAssociationCandidate } from "@/lib/continuum/calendar/association/apply";
+import {
+  getAuthenticatedCalendarAssociationWriter,
+  loadCalendarAssociationWorld,
+} from "@/lib/continuum/calendar/association/load";
 
 export type ReviewIntakeCandidateState = {
   ok: boolean;
@@ -52,16 +57,6 @@ export async function reviewIntakeCandidateAction(
     return { ok: false, message: "Choose a review action." };
   }
 
-  const sources = await getAuthenticatedHumanSourceStore();
-  if (!sources.ok) {
-    return {
-      ok: false,
-      message:
-        sources.reason === "unauthorized"
-          ? "Sign in to continue."
-          : "Unable to review this candidate.",
-    };
-  }
   const durable = await getAuthenticatedCandidateStore();
   if (!durable.ok) {
     return {
@@ -72,6 +67,90 @@ export async function reviewIntakeCandidateAction(
           : durable.reason === "unauthorized"
             ? "Sign in to continue."
             : "Unable to review this candidate.",
+    };
+  }
+
+  const existing = await durable.store.get(candidateId);
+  if (existing?.sourceSystem === "google_calendar") {
+    const writerAuth = await getAuthenticatedCalendarAssociationWriter();
+    if (!writerAuth.ok) {
+      return {
+        ok: false,
+        message:
+          writerAuth.reason === "unauthorized"
+            ? "Sign in to continue."
+            : "Unable to review this candidate.",
+      };
+    }
+    const world = await loadCalendarAssociationWorld(writerAuth.writer);
+    const personNames = new Map(
+      world.people.map((row) => [row.personId, row.displayName]),
+    );
+    const projectTitles = new Map(
+      world.projects.map((row) => [row.projectId, row.title]),
+    );
+    const edits = editsFromForm(formData);
+    const result = await reviewCalendarAssociationCandidate(
+      {
+        nowIso: () => new Date().toISOString(),
+        candidates: durable.store,
+        writer: writerAuth.writer,
+        getPersonName: async (id) => personNames.get(id) ?? null,
+        getProjectTitle: async (id) => projectTitles.get(id) ?? null,
+      },
+      {
+        candidateId,
+        action,
+        actor: writerAuth.username,
+        mutationId,
+        edits: {
+          personId: edits.personId,
+          projectId: edits.projectId,
+        },
+      },
+    );
+    if (!result.ok) {
+      if (result.reason === "blocked") {
+        return {
+          ok: false,
+          message: result.preview?.summary ?? "This candidate cannot be applied yet.",
+        };
+      }
+      if (result.reason === "unauthorized-state") {
+        return { ok: false, message: "That candidate was already approved." };
+      }
+      if (result.code === "writer-committed-review-unpersisted") {
+        return {
+          ok: false,
+          message:
+            "The canonical write succeeded, but Candidate review state did not persist. Retry this approval.",
+        };
+      }
+      return { ok: false, message: "Unable to review this candidate." };
+    }
+    if (result.status === "discarded") {
+      return { ok: true, message: "Discarded. No canonical memory was written." };
+    }
+    if (result.status === "deferred") {
+      return { ok: true, message: "Saved for later. No canonical memory was written." };
+    }
+    if (result.status === "edited") {
+      return {
+        ok: true,
+        message: "Edit saved. Continuum has not written canonical memory.",
+      };
+    }
+    return { ok: true, message: result.preview.summary };
+  }
+
+  const sources = await getAuthenticatedHumanSourceStore();
+  if (!sources.ok) {
+    return {
+      ok: false,
+      message:
+        sources.reason === "unauthorized"
+          ? "Sign in to continue."
+          : "Unable to review this candidate.",
     };
   }
   const notes = await getAuthenticatedClientMemoryNoteWriter();

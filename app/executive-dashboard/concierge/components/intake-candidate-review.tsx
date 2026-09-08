@@ -64,6 +64,7 @@ function IntakeCandidateReviewForm({
   return (
     <form action={formAction} className="space-y-4">
       <input type="hidden" name="sourceId" value={sourceId} />
+      <input type="hidden" name="sourceSystem" value={review.sourceSystem} />
       <input type="hidden" name="candidateId" value={review.candidateId} />
       <input type="hidden" name="mutationId" value={review.mutationId} />
       {review.suggestedPersonId && !editing ? (
