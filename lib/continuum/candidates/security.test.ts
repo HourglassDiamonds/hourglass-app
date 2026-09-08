@@ -64,4 +64,11 @@ describe("candidate contract security", () => {
       assert.doesNotMatch(source, /InMemoryCandidateStore/);
     }
   });
+
+  it("pages durable Candidate list reads instead of one unpaginated select", () => {
+    const source = readFileSync(join(DIR, "supabase.ts"), "utf8");
+    assert.match(source, /collectPagedRows/);
+    assert.match(source, /\.range\(from, to\)/);
+    assert.doesNotMatch(source, /async list\(\)[\s\S]*?\.select\(COLUMNS\)\s*;/);
+  });
 });

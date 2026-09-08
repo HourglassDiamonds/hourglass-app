@@ -11,11 +11,15 @@ export async function collectPagedRows<T>(
   cap = CANDIDATE_LIST_MAX_ROWS,
 ): Promise<T[]> {
   const size = Number.isInteger(pageSize) && pageSize > 0 ? pageSize : CANDIDATE_LIST_PAGE_SIZE;
+  const limit = Number.isInteger(cap) && cap > 0 ? cap : CANDIDATE_LIST_MAX_ROWS;
   const rows: T[] = [];
-  for (let offset = 0; offset < cap; offset += size) {
-    const chunk = await fetchPage(offset, offset + size - 1);
+  for (let offset = 0; offset < limit; offset += size) {
+    const to = Math.min(offset + size - 1, limit - 1);
+    const requested = to - offset + 1;
+    const chunk = await fetchPage(offset, to);
     rows.push(...chunk);
-    if (chunk.length < size) break;
+    if (chunk.length < requested) break;
+    if (rows.length >= limit) break;
   }
-  return rows;
+  return rows.slice(0, limit);
 }

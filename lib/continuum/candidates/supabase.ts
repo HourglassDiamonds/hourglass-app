@@ -76,6 +76,7 @@ export class SupabaseCandidateStore implements CandidateStore {
         .from(CONTINUUM_CANDIDATES_TABLE)
         .select(COLUMNS)
         .order("created_at", { ascending: true })
+        .order("candidate_id", { ascending: true })
         .range(from, to);
       throwIfStorageError(error);
       return (data ?? []) as Record<string, unknown>[];
@@ -94,6 +95,7 @@ export class SupabaseCandidateStore implements CandidateStore {
         .eq("source_system", sourceSystem)
         .like("source_ref", `${sourceRefPrefix}%`)
         .order("created_at", { ascending: true })
+        .order("candidate_id", { ascending: true })
         .range(from, to);
       throwIfStorageError(error);
       return (data ?? []) as Record<string, unknown>[];
