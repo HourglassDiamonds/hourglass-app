@@ -215,7 +215,7 @@ export class SupabaseClientMemoryReader implements ClientMemoryReader {
     query: string,
     options?: { limit?: number },
   ): Promise<ClientSearchResult[]> {
-    const [profileRows, relationshipRows] = await Promise.all([
+    const [profileRows, relationshipRows, projectRows] = await Promise.all([
       rows<Record<string, unknown>>(
         this.client.from("continuum_person_profiles").select(PROFILE_COLUMNS),
         "read-person-profiles-failed",
@@ -228,11 +228,18 @@ export class SupabaseClientMemoryReader implements ClientMemoryReader {
           .eq("status", "active"),
         "read-relationships-failed",
       ),
+      rows<Record<string, unknown>>(
+        this.client
+          .from("continuum_project_profiles")
+          .select(PROJECT_PROFILE_COLUMNS),
+        "read-project-profiles-failed",
+      ),
     ]);
     return searchPeopleFromSnapshot(
       {
         profiles: profileRows.map(rowToSearchProfile),
         relationships: relationshipRows.map(rowToRelationship),
+        projectProfiles: projectRows.map(rowToProjectProfile),
       },
       query,
       options?.limit ?? CLIENT_MEMORY_SEARCH_LIMIT,

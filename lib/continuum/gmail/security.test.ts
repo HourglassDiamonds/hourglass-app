@@ -59,6 +59,7 @@ describe("Gmail activation security", () => {
       assert.doesNotMatch(source, /createSupabaseGmailIndexStore/);
       assert.doesNotMatch(source, /InMemoryGmailIndexStore/);
       assert.doesNotMatch(source, /runExactProjectThreadFetch|protectExactThread/);
+      assert.doesNotMatch(source, /runIndexedThreadEvidenceFetch|runGmailNewProjectIntakeScan/);
       assert.doesNotMatch(source, /executeAchedekalCandidateDiscovery/);
       assert.doesNotMatch(source, /executeAchedekalKnownArtifactPreview/);
       assert.doesNotMatch(source, /executeProjectCandidateDiscovery/);
@@ -113,6 +114,18 @@ describe("Gmail activation security", () => {
     assert.match(achedekalActions, /ACHEDEKAL_PROJECT_ID/);
     assert.doesNotMatch(achedekalActions, /formData\.get\(/);
     assert.doesNotMatch(achedekalPage, /runExactProjectThreadFetch|getThread\(/);
+    assert.match(server, /runIndexedThreadEvidenceFetch/);
+    assert.doesNotMatch(barrel, /runIndexedThreadEvidenceFetch/);
+    assert.doesNotMatch(actions, /runIndexedThreadEvidenceFetch|runGmailNewProjectIntakeScan/);
+    const intakeActions = readFileSync(
+      join(ROOT, "app/executive-dashboard/concierge/gmail-intake-actions.ts"),
+      "utf8",
+    );
+    assert.match(intakeActions, /runGmailNewProjectIntakeScan/);
+    assert.doesNotMatch(intakeActions, /createProjectJob|createFounderProject/);
+    const indexedEvidence = readFileSync(join(GMAIL_DIR, "indexed-thread-evidence.ts"), "utf8");
+    assert.match(indexedEvidence, /exactThreadOnlyApi/);
+    assert.doesNotMatch(indexedEvidence, /putCheckpoint|indexMessage|listMessages\(/);
     assert.doesNotMatch(exact, /putCheckpoint|tryClaimHistoricalChunk|indexMessage/);
     assert.doesNotMatch(exact, /insertObservation|continuum_observations/);
   });

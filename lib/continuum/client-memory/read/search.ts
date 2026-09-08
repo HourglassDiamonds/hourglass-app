@@ -9,6 +9,7 @@ import {
   type ClientMemoryReadSnapshot,
   type ClientSearchResult,
 } from "./types";
+import { personRelationshipContext } from "./relationship-context";
 
 export const SEARCH_RANK = {
   exactEmail: 0,
@@ -34,6 +35,32 @@ function linkedProjectCounts(
     counts.set(row.fromEntityId, (counts.get(row.fromEntityId) ?? 0) + 1);
   }
   return counts;
+}
+
+function linkedProjectsByPerson(
+  relationships: ClientMemoryReadSnapshot["relationships"],
+  projectProfiles: ClientMemoryReadSnapshot["projectProfiles"] | undefined,
+): Map<string, Array<{ title: string; projectKind: ClientMemoryReadSnapshot["projectProfiles"][number]["projectKind"] }>> {
+  const profiles = new Map(
+    (projectProfiles ?? []).map((row) => [row.projectId, row]),
+  );
+  const byPerson = new Map<
+    string,
+    Array<{ title: string; projectKind: ClientMemoryReadSnapshot["projectProfiles"][number]["projectKind"] }>
+  >();
+  for (const row of relationships) {
+    if (row.kind !== "client-project" || row.status !== "active") continue;
+    const profile = profiles.get(row.toEntityId) ?? profiles.get(row.fromEntityId);
+    if (!profile) continue;
+    const personId = profiles.has(row.toEntityId) ? row.fromEntityId : row.toEntityId;
+    const list = byPerson.get(personId) ?? [];
+    list.push({
+      title: profile.displayTitle,
+      projectKind: profile.projectKind ?? null,
+    });
+    byPerson.set(personId, list);
+  }
+  return byPerson;
 }
 
 function nameRank(profile: SearchableProfile, queryFolded: string): number | null {
@@ -93,7 +120,9 @@ export function rankSearchHit(
 }
 
 export function searchPeopleFromSnapshot(
-  snapshot: Pick<ClientMemoryReadSnapshot, "profiles" | "relationships">,
+  snapshot: Pick<ClientMemoryReadSnapshot, "profiles" | "relationships"> & {
+    projectProfiles?: ClientMemoryReadSnapshot["projectProfiles"];
+  },
   query: string,
   limit = CLIENT_MEMORY_SEARCH_LIMIT,
 ): ClientSearchResult[] {
@@ -101,6 +130,10 @@ export function searchPeopleFromSnapshot(
   if (!trimmed) return [];
   const capped = Math.min(Math.max(1, limit), CLIENT_MEMORY_SEARCH_LIMIT);
   const projectCounts = linkedProjectCounts(snapshot.relationships);
+  const linked = linkedProjectsByPerson(
+    snapshot.relationships,
+    snapshot.projectProfiles,
+  );
   const ranked = snapshot.profiles
     .map((profile) => {
       const rank = rankSearchHit(profile, trimmed);
@@ -116,13 +149,23 @@ export function searchPeopleFromSnapshot(
     })
     .slice(0, capped);
 
-  return ranked.map(({ profile }) => ({
-    personId: profile.personId,
-    displayName: profile.displayName,
-    organizationName: profile.organizationName,
-    email: profile.email,
-    phone: profile.phone,
-    roles: profile.roles,
-    linkedProjectCount: projectCounts.get(profile.personId) ?? 0,
-  }));
+  return ranked.map(({ profile }) => {
+    const projects = linked.get(profile.personId) ?? [];
+    return {
+      personId: profile.personId,
+      displayName: profile.displayName,
+      organizationName: profile.organizationName,
+      email: profile.email,
+      phone: profile.phone,
+      roles: profile.roles,
+      linkedProjectCount: projectCounts.get(profile.personId) ?? 0,
+      relationshipContext: personRelationshipContext({
+        roles: profile.roles,
+        projects: projects.map((row) => ({
+          title: row.title,
+          projectKind: row.projectKind ?? null,
+        })),
+      }),
+    };
+  });
 }

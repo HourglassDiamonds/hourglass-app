@@ -44,6 +44,7 @@ export type ClientSearchResult = {
   phone: string | null;
   roles: PersonRole[];
   linkedProjectCount: number;
+  relationshipContext: string | null;
 };
 
 export type ClientRelationshipSummary = Pick<

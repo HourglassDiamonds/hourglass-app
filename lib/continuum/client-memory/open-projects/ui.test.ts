@@ -284,9 +284,10 @@ describe("Current Projects Command Center accordion UI", () => {
       join(CONCIERGE_DIR, "action", "new", "page.tsx"),
       "utf8",
     );
-    assert.match(form, /saveFounderAction/);
+    assert.match(form, /saveFounderIntake/);
     assert.match(form, /name="subject"/);
     assert.match(form, /name="projectId"/);
+    assert.match(form, /Search Continuum people/);
     assert.doesNotMatch(form, /name="kind"|waitingOnActor/);
     assert.match(page, /getAuthenticatedProjectJobWriter/);
     assert.match(page, /CreateActionForm/);

@@ -3,7 +3,7 @@ import { describe, it } from "node:test";
 import { createInMemoryClientMemoryReader } from "./reader";
 import { SEARCH_RANK, rankSearchHit } from "./search";
 import { CLIENT_MEMORY_SEARCH_LIMIT } from "./types";
-import { emptyReadSnapshot, personProfile, relationship } from "./fixtures";
+import { emptyReadSnapshot, personProfile, relationship, projectProfile } from "./fixtures";
 
 describe("Client Memory search", () => {
   it("ranks exact normalized email above a display-name contains hit", async () => {
@@ -138,6 +138,49 @@ describe("Client Memory search", () => {
     });
     const results = await reader.searchPeople("Ada Lovelace");
     assert.equal(results[0]?.linkedProjectCount, 2);
+  });
+
+  it("disambiguates two Abbeys by Continuum email and project context, not Gmail display names", async () => {
+    const castillo = personProfile({
+      displayName: "Abbey Castillo",
+      email: "serinitybloom@gmail.com",
+      givenName: "Abbey",
+      familyName: "Castillo",
+    });
+    const wagner = personProfile({
+      displayName: "Abbey Wagner",
+      email: "abbey.wagner@example.test",
+      givenName: "Abbey",
+      familyName: "Wagner",
+    });
+    const engagement = projectProfile({
+      displayTitle: "Castillo engagement ring",
+      projectKind: "custom_new_jewelry",
+    });
+    const repair = projectProfile({
+      displayTitle: "Wagner watch repair",
+      projectKind: "repair_service",
+    });
+    const reader = createInMemoryClientMemoryReader({
+      ...emptyReadSnapshot(),
+      profiles: [wagner, castillo],
+      relationships: [
+        relationship({ fromEntityId: castillo.personId, toEntityId: engagement.projectId }),
+        relationship({ fromEntityId: wagner.personId, toEntityId: repair.projectId }),
+      ],
+      projectProfiles: [engagement, repair],
+    });
+    const results = await reader.searchPeople("Abbey");
+    assert.equal(results.length, 2);
+    const foundCastillo = results.find((row) => row.personId === castillo.personId);
+    const foundWagner = results.find((row) => row.personId === wagner.personId);
+    assert.equal(foundCastillo?.email, "serinitybloom@gmail.com");
+    assert.equal(foundCastillo?.relationshipContext, "Prior engagement-ring client");
+    assert.equal(foundWagner?.email, "abbey.wagner@example.test");
+    assert.equal(foundWagner?.relationshipContext, "Prior repair client");
+    const byEmail = await reader.searchPeople("serinitybloom@gmail.com");
+    assert.equal(byEmail.length, 1);
+    assert.equal(byEmail[0]?.personId, castillo.personId);
   });
 
   it("exposes no write methods", async () => {

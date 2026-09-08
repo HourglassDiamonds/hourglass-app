@@ -69,8 +69,14 @@ export default async function ConciergeGmailPage() {
         <GmailHistoryForm initial={history} />
         <GmailIncrementalForm initial={incremental} publicState={publicState} />
         <Link
-          href="/executive-dashboard/concierge/gmail/candidates"
+          href="/executive-dashboard/concierge/gmail/intake"
           className="mt-8 inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.14em] text-[#8d8073] outline-none hover:text-[#efe8de] focus-visible:text-[#efe8de]"
+        >
+          New project intake
+        </Link>
+        <Link
+          href="/executive-dashboard/concierge/gmail/candidates"
+          className="mt-4 inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.14em] text-[#8d8073] outline-none hover:text-[#efe8de] focus-visible:text-[#efe8de]"
         >
           Candidate contract (dev)
         </Link>

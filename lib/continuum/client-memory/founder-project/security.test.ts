@@ -1,0 +1,71 @@
+import assert from "node:assert/strict";
+import { readdirSync, readFileSync } from "node:fs";
+import { dirname, join, resolve } from "node:path";
+import { describe, it } from "node:test";
+import { fileURLToPath } from "node:url";
+import { requireInternalClientMemorySession } from "../read/access";
+
+const DIR = dirname(fileURLToPath(import.meta.url));
+const ROOT = resolve(DIR, "../../../..");
+
+function walk(dir: string, suffix: string, found: string[] = []): string[] {
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const path = join(dir, entry.name);
+    if (entry.isDirectory()) walk(path, suffix, found);
+    else if (entry.name.endsWith(suffix)) found.push(path);
+  }
+  return found;
+}
+
+describe("Founder Project writer security", () => {
+  it("does not log or use a browser Supabase client", () => {
+    for (const file of walk(DIR, ".ts")) {
+      if (file.endsWith(".test.ts")) continue;
+      const source = readFileSync(file, "utf8");
+      assert.doesNotMatch(source, /console\.(log|info|debug|warn|error)/);
+      assert.doesNotMatch(source, /createBrowserClient/);
+      assert.doesNotMatch(source, /gmail\.googleapis|users\.messages\.send/);
+    }
+  });
+
+  it("does not attach founder Project writes to public API or Gmail adapters", () => {
+    for (const file of walk(join(ROOT, "app/api"), ".ts")) {
+      const source = readFileSync(file, "utf8");
+      assert.doesNotMatch(source, /createFounderProject|createSupabaseFounderProjectWriter/);
+      assert.doesNotMatch(source, /founder-project/);
+    }
+    const gmailCandidates = join(ROOT, "lib/continuum/gmail/candidates");
+    for (const file of walk(gmailCandidates, ".ts")) {
+      if (file.endsWith(".test.ts")) continue;
+      const source = readFileSync(file, "utf8");
+      assert.doesNotMatch(source, /createFounderProject|createProjectJob/);
+    }
+  });
+
+  it("fails closed without an internal founder session", () => {
+    const denied = requireInternalClientMemorySession(undefined);
+    assert.equal(denied.ok, false);
+    const load = readFileSync(join(DIR, "load-writer.ts"), "utf8");
+    assert.match(load, /requireInternalClientMemorySession/);
+    assert.match(load, /unauthorized/);
+    const actions = readFileSync(
+      join(ROOT, "app/executive-dashboard/concierge/founder-project-actions.ts"),
+      "utf8",
+    );
+    assert.match(actions, /getAuthenticatedFounderProjectWriter/);
+    assert.match(actions, /saveFounderIntake/);
+    assert.doesNotMatch(actions, /gmail\.googleapis|users\.messages\.send/);
+    const intakePage = readFileSync(
+      join(ROOT, "app/executive-dashboard/concierge/gmail/intake/page.tsx"),
+      "utf8",
+    );
+    assert.match(intakePage, /robots: \{ index: false/);
+    assert.doesNotMatch(intakePage, /putCheckpoint|indexMessage|users\.messages\.send/);
+    const intakeUi = readFileSync(
+      join(ROOT, "app/executive-dashboard/concierge/components/gmail-new-project-intake.tsx"),
+      "utf8",
+    );
+    assert.match(intakeUi, /approveGmailNewProject/);
+    assert.doesNotMatch(intakeUi, /createProjectJob\(/);
+  });
+});

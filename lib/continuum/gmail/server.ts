@@ -30,3 +30,8 @@ export {
 export type { ExactThreadReconstructionHandoff } from "./reconstruction-evidence";
 export { protectExactThread } from "./exact-thread-payload";
 export type { ProtectedExactThread } from "./exact-thread-payload";
+export { runIndexedThreadEvidenceFetch } from "./indexed-thread-evidence";
+export type {
+  IndexedThreadEvidenceInput,
+  IndexedThreadEvidenceResult,
+} from "./indexed-thread-evidence";

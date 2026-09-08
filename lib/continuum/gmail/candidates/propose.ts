@@ -10,7 +10,6 @@ import {
   type ContinuumCandidate,
   type ContinuumCandidateDraft,
 } from "@/lib/continuum/candidates/types";
-import { assignCandidateId } from "@/lib/continuum/candidates/identity";
 import { GMAIL_SOURCE_SYSTEM } from "@/lib/continuum/client-memory/gmail/types";
 import { resolvePersonHit, resolveProjectHits } from "./associate";
 import {
@@ -21,7 +20,17 @@ import {
   extractStructuredSpecs,
   haystackOf,
 } from "./parse";
+import {
+  ATTACHMENT_FILENAME_TOPIC,
+  extractNewProject,
+  extractNewProjectContexts,
+  NEW_PROJECT_CONTEXT_TOPIC,
+} from "./new-project";
 import { packGmailCandidateSourceRef } from "./source-ref";
+import {
+  assignReconciledCandidates,
+  reconcileThreadCandidates,
+} from "./thread-reconcile";
 import type {
   GmailCandidateEvidence,
   GmailCandidatePerson,
@@ -70,10 +79,11 @@ function draftsFromEvidence(
     people: world.people,
     internalEmailHashes: world.internalEmailHashes,
   });
+  const newProjectHits = extractNewProject(haystack);
   const projectHits = resolveProjectHits({
     threadId: evidence.indexed.threadId,
     haystack,
-    person: personHit.person,
+    person: newProjectHits.length > 0 ? null : personHit.person,
     projects: world.projects,
   });
 
@@ -171,6 +181,61 @@ function draftsFromEvidence(
   }
 
   const primaryProject = projectHits.length === 1 ? projectHits[0]!.project : null;
+
+  for (const hit of newProjectHits) {
+    drafts.push({
+      ...base,
+      candidateId: "",
+      candidateType: "project_context",
+      proposedTarget: { kind: "project", projectId: null },
+      payload: {
+        kind: "project_context",
+        topic: NEW_PROJECT_CONTEXT_TOPIC,
+        value: hit.title,
+      },
+      confidence: personHit.person ? "high" : "medium",
+      evidenceBasis: { ruleIds: hit.ruleIds, matchedText: hit.matchedText },
+      candidateState: "active",
+    });
+    for (const ctx of extractNewProjectContexts(haystack)) {
+      drafts.push({
+        ...base,
+        candidateId: "",
+        candidateType: "project_context",
+        proposedTarget: { kind: "project", projectId: null },
+        payload: {
+          kind: "project_context",
+          topic: ctx.topic,
+          value: ctx.value,
+        },
+        confidence: "medium",
+        evidenceBasis: { ruleIds: ctx.ruleIds, matchedText: ctx.matchedText },
+        candidateState: "active",
+      });
+    }
+    for (const attachment of evidence.attachments ?? []) {
+      const filename = attachment.filename?.trim();
+      if (!filename) continue;
+      drafts.push({
+        ...base,
+        candidateId: "",
+        candidateType: "project_context",
+        proposedTarget: { kind: "project", projectId: null },
+        payload: {
+          kind: "project_context",
+          topic: ATTACHMENT_FILENAME_TOPIC,
+          value: filename,
+        },
+        confidence: "high",
+        evidenceBasis: {
+          ruleIds: ["attachment_filename_only"],
+          matchedText: filename.slice(0, 80),
+        },
+        candidateState: "active",
+      });
+    }
+  }
+
   for (const ctx of extractProjectContext(haystack)) {
     drafts.push({
       ...base,
@@ -288,18 +353,17 @@ export function proposeGmailCandidates(
   input: ProposeGmailCandidatesInput,
 ): ProposeGmailCandidatesResult {
   const createdAt = input.createdAt ?? new Date(0).toISOString();
-  const seen = new Set<string>();
-  const candidates: ContinuumCandidate[] = [];
+  const drafts: ContinuumCandidateDraft[] = [];
   for (const evidence of input.evidence) {
-    for (const draft of draftsFromEvidence(evidence, input.world, createdAt)) {
-      const row = assignCandidateId(draft);
-      if (seen.has(row.candidateId)) continue;
-      seen.add(row.candidateId);
-      candidates.push(row);
-    }
+    drafts.push(...draftsFromEvidence(evidence, input.world, createdAt));
   }
+  const reconciled = reconcileThreadCandidates({
+    drafts,
+    evidence: input.evidence,
+    createdAt,
+  });
   return {
-    candidates,
+    candidates: assignReconciledCandidates(reconciled),
     mutationBoundary: CANDIDATE_MUTATION_BOUNDARY,
     liveModelCalls: false,
     parserVersion: CANDIDATE_PARSER_GMAIL_V1,

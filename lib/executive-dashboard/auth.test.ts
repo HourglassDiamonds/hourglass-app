@@ -307,14 +307,17 @@ describe("executive dashboard auth", () => {
 
   it("applies private no-store and noindex semantics", () => {
     const proxy = readFileSync(join(ROOT, "proxy.ts"), "utf8");
+    const headers = readFileSync(join(ROOT, "lib", "security", "http-headers.ts"), "utf8");
     const layout = readFileSync(
       join(ROOT, "app", "executive-dashboard", "layout.tsx"),
       "utf8",
     );
-    assert.match(proxy, /Cache-Control/);
-    assert.match(proxy, /private, no-store/);
-    assert.match(proxy, /X-Robots-Tag/);
-    assert.match(proxy, /noindex/);
+    assert.match(proxy, /applySecurityHeaders/);
+    assert.match(proxy, /EXECUTIVE_DASHBOARD_SECURITY_HEADERS/);
+    assert.match(headers, /Cache-Control/);
+    assert.match(headers, /private, no-store/);
+    assert.match(headers, /X-Robots-Tag/);
+    assert.match(headers, /noindex/);
     assert.match(layout, /robots/);
     assert.match(layout, /force-dynamic/);
   });

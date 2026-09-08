@@ -10,6 +10,8 @@ export const GMAIL_READONLY_SCOPE =
 export const GMAIL_FOUNDER_MAILBOX_SLOT = "founder-v1" as const;
 
 export const CONCIERGE_GMAIL_PATH = "/executive-dashboard/concierge/gmail";
+export const CONCIERGE_GMAIL_INTAKE_PATH =
+  "/executive-dashboard/concierge/gmail/intake";
 
 export const GMAIL_HISTORICAL_JOB_KEY = "gmail-historical" as const;
 

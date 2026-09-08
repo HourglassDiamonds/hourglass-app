@@ -1,0 +1,216 @@
+"use server";
+
+import { redirect } from "next/navigation";
+import { getAuthenticatedFounderProjectWriter } from "@/lib/continuum/client-memory/founder-project/load-writer";
+import { getAuthenticatedProjectJobWriter } from "@/lib/continuum/client-memory/project-jobs/load-writer";
+import { getAuthenticatedProjectDeskReader } from "@/lib/continuum/client-memory/project-desk/load";
+import { getAuthenticatedCandidateStore } from "@/lib/continuum/candidates/load";
+import { founderManualActionInput } from "@/lib/continuum/client-memory/open-projects/manual-action";
+import { personProjectsForAction, type PersonActionProject } from "@/lib/continuum/client-memory/founder-project/person-projects";
+import {
+  warnDuplicateFounderAction,
+  warnDuplicateNewProject,
+} from "@/lib/continuum/client-memory/founder-project/duplicate";
+import { applyGmailNewProjectCandidate } from "@/lib/continuum/client-memory/founder-project/apply-candidate";
+import { CONCIERGE_HOME_PATH } from "@/lib/continuum/client-memory/read/presentation";
+import type { CreateProjectJobResult } from "@/lib/continuum/client-memory/project-jobs/create";
+import type { CreateFounderProjectResult } from "@/lib/continuum/client-memory/founder-project/create";
+import { NEW_PROJECT_CONTEXT_TOPIC } from "@/lib/continuum/gmail/candidates/new-project";
+
+export type SaveFounderIntakeState = { ok: false; message: string } | null;
+
+function parseDateInput(value: string): string | null {
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+    return `${trimmed}T00:00:00.000Z`;
+  }
+  return trimmed;
+}
+
+function humanJobMessage(result: CreateProjectJobResult): string {
+  if (result.ok) return "Unable to save the action.";
+  if (result.code === "invalid-subject") return "Add a short action.";
+  if (result.code === "person-not-on-project") {
+    return "That person is not linked to this project.";
+  }
+  if (result.reason === "project-not-found" || result.reason === "entity-kind-mismatch") {
+    return "That project could not be found.";
+  }
+  return "Unable to save the action.";
+}
+
+function humanCreateMessage(result: CreateFounderProjectResult): string {
+  if (result.ok) return "Unable to create the project.";
+  if (result.reason === "duplicate-project") {
+    return result.message ?? "That project already exists for this person.";
+  }
+  if (result.code === "invalid-title") return "Add a project title.";
+  if (result.code === "invalid-kind") return "Choose a project kind.";
+  if (result.code === "lifecycle-required" || result.code === "invalid-lifecycle") {
+    return "Choose a lifecycle stage.";
+  }
+  if (result.reason === "person-not-found") return "Choose a person.";
+  return "Unable to create the project.";
+}
+
+export async function loadPersonProjectsForAction(
+  personId: string,
+): Promise<{ ok: true; projects: PersonActionProject[] } | { ok: false }> {
+  const auth = await getAuthenticatedProjectDeskReader();
+  if (!auth.ok) return { ok: false };
+  try {
+    const summaries = await auth.reader.listProjects();
+    return { ok: true, projects: personProjectsForAction(summaries, personId) };
+  } catch {
+    return { ok: false };
+  }
+}
+
+export async function saveFounderIntake(
+  _prev: SaveFounderIntakeState,
+  formData: FormData,
+): Promise<SaveFounderIntakeState> {
+  const intent = String(formData.get("intent") ?? "").trim();
+  const mutationId = String(formData.get("mutationId") ?? "").trim();
+  const personId = String(formData.get("associatedPersonId") ?? "").trim() || null;
+  const subject = String(formData.get("subject") ?? "");
+  const dueAt = parseDateInput(String(formData.get("dueAt") ?? ""));
+
+  if (intent === "new-project") {
+    const projectAuth = await getAuthenticatedFounderProjectWriter();
+    if (!projectAuth.ok) {
+      return {
+        ok: false,
+        message:
+          projectAuth.reason === "unauthorized"
+            ? "Sign in to continue."
+            : "Unable to create the project.",
+      };
+    }
+    if (!personId) return { ok: false, message: "Choose a person." };
+    const linked = await projectAuth.writer.listActiveClientProjects(personId);
+    const candidateAuth = await getAuthenticatedCandidateStore();
+    const pending =
+      candidateAuth.ok ? (await candidateAuth.store.list()).filter((row) => row.reviewStatus === "pending") : [];
+    const duplicate = warnDuplicateNewProject({
+      title: String(formData.get("title") ?? ""),
+      personId,
+      existing: linked,
+      pendingCandidates: pending,
+    });
+    if (duplicate && String(formData.get("confirmDuplicate") ?? "") !== "1") {
+      return { ok: false, message: duplicate.message };
+    }
+    const result = await projectAuth.writer.createProject({
+      mutationId,
+      title: String(formData.get("title") ?? ""),
+      personId,
+      projectKind: String(formData.get("projectKind") ?? "").trim(),
+      lifecycleStage: String(formData.get("lifecycleStage") ?? "").trim() || null,
+      subject: subject.trim() || null,
+      dueAt,
+      actor: projectAuth.username,
+    });
+    if (result.ok) {
+      redirect(CONCIERGE_HOME_PATH);
+    }
+    return { ok: false, message: humanCreateMessage(result) };
+  }
+
+  const jobAuth = await getAuthenticatedProjectJobWriter();
+  if (!jobAuth.ok) {
+    return {
+      ok: false,
+      message:
+        jobAuth.reason === "unauthorized"
+          ? "Sign in to continue."
+          : "Unable to save the action.",
+    };
+  }
+  const projectId = String(formData.get("projectId") ?? "").trim();
+  if (!projectId) {
+    return { ok: false, message: "Choose an existing project or create a new project." };
+  }
+  const candidateAuth = await getAuthenticatedCandidateStore();
+  const pending =
+    candidateAuth.ok ? (await candidateAuth.store.list()).filter((row) => row.reviewStatus === "pending") : [];
+  const duplicate = warnDuplicateFounderAction({
+    subject,
+    projectId,
+    pendingCandidates: pending,
+  });
+  if (duplicate && String(formData.get("confirmDuplicate") ?? "") !== "1") {
+    return { ok: false, message: duplicate.message };
+  }
+  const parsed = founderManualActionInput({
+    mutationId,
+    projectId,
+    subject,
+    associatedPersonId: personId,
+    dueAt,
+    actor: jobAuth.username,
+  });
+  if (!parsed.ok) {
+    if (parsed.code === "lifecycle-busywork") {
+      return {
+        ok: false,
+        message:
+          "That is a project state, not an action. Write the next thing you actually need to do.",
+      };
+    }
+    if (parsed.code === "invalid-subject") return { ok: false, message: "Add a short action." };
+    if (parsed.code === "invalid-due") return { ok: false, message: "Choose a follow-up date." };
+    return { ok: false, message: "Choose a project." };
+  }
+  const result = await jobAuth.writer.createJob(parsed.input);
+  if (result.ok) {
+    redirect(CONCIERGE_HOME_PATH);
+  }
+  return { ok: false, message: humanJobMessage(result) };
+}
+
+export type ApproveNewProjectState = { ok: false; message: string } | null;
+
+export async function approveGmailNewProject(
+  _prev: ApproveNewProjectState,
+  formData: FormData,
+): Promise<ApproveNewProjectState> {
+  const [candidates, writer] = await Promise.all([
+    getAuthenticatedCandidateStore(),
+    getAuthenticatedFounderProjectWriter(),
+  ]);
+  if (!candidates.ok || !writer.ok) {
+    return {
+      ok: false,
+      message: "Sign in to continue.",
+    };
+  }
+  const result = await applyGmailNewProjectCandidate({
+    store: candidates.store,
+    writer: writer.writer,
+    body: {
+      candidateId: String(formData.get("candidateId") ?? "").trim(),
+      personId: String(formData.get("personId") ?? "").trim(),
+      title: String(formData.get("title") ?? ""),
+      projectKind: String(formData.get("projectKind") ?? "").trim(),
+      lifecycleStage: String(formData.get("lifecycleStage") ?? "").trim() || null,
+      subject: String(formData.get("subject") ?? "").trim() || null,
+      dueAt: parseDateInput(String(formData.get("dueAt") ?? "")),
+      actor: writer.username,
+      mutationId: String(formData.get("mutationId") ?? "").trim(),
+    },
+  });
+  if (result.ok) {
+    redirect(CONCIERGE_HOME_PATH);
+  }
+  if (result.reason === "not-new-project") {
+    return { ok: false, message: "That proposal is not a new project." };
+  }
+  if (result.create && !result.create.ok) {
+    return { ok: false, message: humanCreateMessage(result.create) };
+  }
+  return { ok: false, message: "Unable to create the project." };
+}
+
+export { NEW_PROJECT_CONTEXT_TOPIC };

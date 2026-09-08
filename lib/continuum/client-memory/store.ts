@@ -679,6 +679,10 @@ export class InMemoryClientMemoryStore implements ClientMemoryStore {
     return false;
   }
 
+  listRelationships(): EntityRelationship[] {
+    return [...this.relationships.values()].map((row) => clone(row));
+  }
+
   listSourceNotes(): SourceNote[] {
     return [...this.notes.values()].map((row) => clone(row));
   }

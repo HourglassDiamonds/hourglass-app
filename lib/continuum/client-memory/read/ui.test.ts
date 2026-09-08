@@ -220,6 +220,7 @@ describe("Concierge Client Memory UI", () => {
           phone: "3055550100",
           roles: ["client"],
           linkedProjectCount: 2,
+          relationshipContext: "Prior custom jewelry client",
         },
       }),
     );
@@ -238,6 +239,7 @@ describe("Concierge Client Memory UI", () => {
           phone: "3055550100",
           roles: ["client"],
           linkedProjectCount: 2,
+          relationshipContext: "Prior custom jewelry client",
         },
         href: conciergeAddNotePath("11111111-1111-4111-8111-111111111111"),
       }),
