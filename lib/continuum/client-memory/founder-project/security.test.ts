@@ -87,5 +87,36 @@ describe("Founder Project writer security", () => {
     }
     assert.match(founderActions, /export async function saveFounderIntake/);
     assert.match(intakeActions, /export async function scanGmailNewProjectIntake/);
+    assert.match(intakeActions, /loadGmailPersonWorldFromAdmin/);
+    assert.doesNotMatch(intakeActions, /Continuum people could not be loaded/);
+  });
+
+  it("loads Gmail intake People from the canonical history table and does not fork search", () => {
+    const world = readFileSync(join(DIR, "gmail-world.ts"), "utf8");
+    const intakeUi = readFileSync(
+      join(ROOT, "app/executive-dashboard/concierge/components/gmail-new-project-intake.tsx"),
+      "utf8",
+    );
+    const createAction = readFileSync(
+      join(ROOT, "app/executive-dashboard/concierge/components/create-action-form.tsx"),
+      "utf8",
+    );
+    const intakePage = readFileSync(
+      join(ROOT, "app/executive-dashboard/concierge/gmail/intake/page.tsx"),
+      "utf8",
+    );
+    assert.match(world, /continuum_project_history/);
+    assert.doesNotMatch(world, /continuum_project_histories/);
+    assert.match(intakeUi, /searchConciergeClients/);
+    assert.match(intakeUi, /Retry identity/);
+    assert.match(intakeUi, /Possible client identity is not currently available/);
+    assert.match(createAction, /searchConciergeClients/);
+    assert.match(intakePage, /loadGmailPersonWorldFromAdmin/);
+    const intakeActions = readFileSync(
+      join(ROOT, "app/executive-dashboard/concierge/gmail-intake-actions.ts"),
+      "utf8",
+    );
+    assert.doesNotMatch(intakeActions, /createPersonAtomic/);
+    assert.doesNotMatch(intakeActions, /createFounderProject/);
   });
 });

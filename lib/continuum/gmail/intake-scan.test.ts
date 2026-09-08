@@ -120,6 +120,68 @@ describe("Gmail new-project intake scan", () => {
     assert.equal(api.calls.some((call) => call.method === "listMessages"), false);
   });
 
+  it("extracts Nate's new-project evidence when the Person world is empty", async () => {
+    const index = new InMemoryGmailIndexStore();
+    await index.indexMessage(
+      {
+        messageId: MESSAGE,
+        threadId: THREAD,
+        sentAt: "2026-09-07T15:00:00.000Z",
+        subject: "Another piece",
+        fromEmail: "nate.pearl@example.test",
+        direction: "inbound",
+        hasAttachments: false,
+      },
+      NOW,
+    );
+    const connections = new InMemoryGmailConnectionStore();
+    await connections.putConnection(
+      connectFounderMailbox({
+        existing: null,
+        mailboxEmailHash: "ab".repeat(32),
+        refreshToken: encryptRefreshToken("refresh-keep", KEY),
+        grantedScope: GMAIL_READONLY_SCOPE,
+        providerTokenType: "Bearer",
+        now: NOW,
+      }),
+    );
+    const api = new MockGmailApi();
+    api.setThread(thread());
+    const store = new InMemoryCandidateStore();
+    const result = await runGmailNewProjectIntakeScan({
+      founderSessionOk: true,
+      index,
+      connections,
+      decryptRefreshToken: () => "refresh-keep",
+      refreshAccessToken: async () => ({ ok: true, accessToken: "access" }),
+      createApi: () => api,
+      world: { people: [], projects: [], internalEmailHashes: [] },
+      store,
+      nowIso: NOW,
+    });
+    assert.equal(result.ok, true);
+    if (!result.ok) return;
+    const rows = await store.list();
+    assert.equal(
+      rows.some(
+        (row) =>
+          row.payload.kind === "project_context" &&
+          row.payload.topic === NEW_PROJECT_CONTEXT_TOPIC,
+      ),
+      true,
+    );
+    assert.equal(
+      rows.some(
+        (row) =>
+          row.candidateType === "person_association" &&
+          row.proposedTarget.kind === "person" &&
+          row.proposedTarget.personId === null,
+      ),
+      true,
+    );
+    assert.equal(JSON.stringify(rows).includes(NONCE), false);
+  });
+
   it("continues the scan when one indexed thread 404s and does not persist the nonce", async () => {
     const missing = "19intake404thread";
     const index = new InMemoryGmailIndexStore();

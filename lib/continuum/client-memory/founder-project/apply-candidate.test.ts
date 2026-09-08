@@ -485,4 +485,74 @@ describe("Founder-approved Gmail new-project Candidate", () => {
     });
     assert.equal(created.ok, true);
   });
+
+  it("preserves unresolved Nate evidence when People are unavailable, then unlocks after confirmation", async () => {
+    const memory = new InMemoryClientMemoryStore();
+    const jobs = new InMemoryProjectJobStore();
+    const writer = createInMemoryFounderProjectWriter(memory, jobs, () => NOW);
+    const candidates = new InMemoryCandidateStore();
+    const proposed = proposeGmailCandidates({
+      createdAt: NOW,
+      world: { people: [], projects: [], internalEmailHashes: [] },
+      evidence: [
+        inboundEvidence({
+          messageId: "m-nate-unresolved",
+          threadId: "t-nate-unresolved",
+          fromEmail: NATE_EMAIL,
+          plaintext:
+            "I'd like to work together again to create another piece. A dagger and pearls necklace.",
+        }),
+      ],
+    });
+    for (const row of proposed.candidates) {
+      await candidates.put(row);
+    }
+    const emptyCards = presentGmailNewProjectIntake(await candidates.list(), []);
+    assert.equal(emptyCards[0]?.title, "Dagger & Pearls Pendant / Necklace");
+    assert.equal(emptyCards[0]?.identityConfirmed, false);
+    assert.equal(emptyCards[0]?.personId, null);
+    const blocked = await applyGmailNewProjectCandidate({
+      store: candidates,
+      writer,
+      body: {
+        candidateId: emptyCards[0]!.candidateId,
+        personId: "",
+        title: emptyCards[0]!.title,
+        projectKind: "custom_new_jewelry",
+        actor: "justin",
+        mutationId: randomUUID(),
+      },
+    });
+    assert.equal(blocked.ok, false);
+    if (!blocked.ok) assert.equal(blocked.reason, "identity-unconfirmed");
+    const personId = await seedPerson(memory, "Nathan Pearl", NATE_EMAIL);
+    const laterCards = presentGmailNewProjectIntake(await candidates.list(), [
+      { personId, displayName: "Nathan Pearl", email: NATE_EMAIL },
+    ]);
+    const confirmed = await confirmGmailPersonAssociation({
+      store: candidates,
+      personExists: async (id) => Boolean(await memory.getPersonProfile(id)),
+      body: {
+        candidateId: laterCards[0]!.personAssociationCandidateId!,
+        personId,
+        actor: "justin",
+      },
+      nowIso: NOW,
+    });
+    assert.equal(confirmed.ok, true);
+    const applied = await applyGmailNewProjectCandidate({
+      store: candidates,
+      writer,
+      body: {
+        candidateId: laterCards[0]!.candidateId,
+        personId,
+        title: laterCards[0]!.title,
+        projectKind: "custom_new_jewelry",
+        lifecycleStage: "discovery",
+        actor: "justin",
+        mutationId: randomUUID(),
+      },
+    });
+    assert.equal(applied.ok, true);
+  });
 });

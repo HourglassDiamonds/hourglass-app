@@ -9,6 +9,7 @@ import { scanGmailNewProjectIntake, type ScanGmailIntakeState } from "../gmail-i
 import { searchConciergeClients } from "../actions";
 import type { GmailNewProjectIntakeCard } from "@/lib/continuum/client-memory/founder-project/intake-present";
 import type { ClientSearchResult } from "@/lib/continuum/client-memory/read/types";
+import { CONCIERGE_GMAIL_INTAKE_PATH } from "@/lib/continuum/gmail/types";
 import {
   PROJECT_KIND_LABELS,
   PROJECT_KINDS,
@@ -18,7 +19,11 @@ import {
   CUSTOM_LIFECYCLE_STAGES,
 } from "@/lib/continuum/client-memory/project-lifecycle";
 
-export function GmailIntakeScanForm() {
+export function GmailIntakeScanForm({
+  identityAvailable,
+}: {
+  identityAvailable: boolean;
+}) {
   const [state, formAction, pending] = useActionState(
     scanGmailNewProjectIntake,
     null as ScanGmailIntakeState,
@@ -27,6 +32,9 @@ export function GmailIntakeScanForm() {
   useEffect(() => {
     if (state) noticeRef.current?.focus();
   }, [state]);
+  const identityDown =
+    (state && state.ok && !state.identityAvailable) ||
+    (!state && !identityAvailable);
   return (
     <form action={formAction} className="mt-6">
       <button
@@ -63,14 +71,31 @@ export function GmailIntakeScanForm() {
             : ""}
         </p>
       ) : null}
+      {identityDown ? (
+        <div className="mt-4 space-y-3">
+          <p role="alert" className="max-w-[46ch] text-[14px] text-[#d2b8a8]">
+            Possible client identity is not currently available. Gmail evidence can
+            still be reviewed. Project creation stays locked until identity
+            resolution is restored.
+          </p>
+          <a
+            href={CONCIERGE_GMAIL_INTAKE_PATH}
+            className="inline-flex min-h-12 items-center rounded-[18px] border border-[#ad9164]/50 bg-[#1d1916] px-4 text-[11px] uppercase tracking-[0.22em] text-[#efe8de] outline-none hover:border-[#ad9164]"
+          >
+            Retry identity
+          </a>
+        </div>
+      ) : null}
     </form>
   );
 }
 
 export function GmailNewProjectIntakeList({
   cards,
+  identityAvailable,
 }: {
   cards: GmailNewProjectIntakeCard[];
+  identityAvailable: boolean;
 }) {
   if (cards.length === 0) {
     return (
@@ -84,21 +109,44 @@ export function GmailNewProjectIntakeList({
     <ul className="mt-8 divide-y divide-white/[0.06]">
       {cards.map((card) => (
         <li key={card.candidateId} className="py-8">
-          <GmailNewProjectCard card={card} />
+          <GmailNewProjectCard card={card} identityAvailable={identityAvailable} />
         </li>
       ))}
     </ul>
   );
 }
 
-function GmailNewProjectCard({ card }: { card: GmailNewProjectIntakeCard }) {
+function GmailNewProjectCard({
+  card,
+  identityAvailable,
+}: {
+  card: GmailNewProjectIntakeCard;
+  identityAvailable: boolean;
+}) {
   return (
     <div className="space-y-4">
       <p className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
         New project detected
       </p>
       <p className="font-serif text-[1.45rem] text-[#efe8de]">{card.title}</p>
-      {card.identityConfirmed ? (
+      {!identityAvailable ? (
+        <div className="space-y-3">
+          <p className="text-[15px] text-[#d2b8a8]">
+            Possible client identity is not currently available.
+          </p>
+          <div className="flex flex-wrap gap-3">
+            <a
+              href={CONCIERGE_GMAIL_INTAKE_PATH}
+              className="inline-flex min-h-12 items-center rounded-[18px] border border-[#ad9164]/50 bg-[#1d1916] px-4 text-[11px] uppercase tracking-[0.22em] text-[#efe8de] outline-none hover:border-[#ad9164]"
+            >
+              Retry identity
+            </a>
+            <span className="inline-flex min-h-12 items-center text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
+              Review evidence
+            </span>
+          </div>
+        </div>
+      ) : card.identityConfirmed ? (
         <p className="text-[15px] text-[#c4b7aa]">
           {card.personName}
           {card.personEmail ? ` · ${card.personEmail}` : ""}
@@ -143,11 +191,11 @@ function GmailNewProjectCard({ card }: { card: GmailNewProjectIntakeCard }) {
           Proposed current state — waiting on client: {card.waitingOnClient}
         </p>
       ) : null}
-      {card.identityConfirmed ? (
+      {identityAvailable && card.identityConfirmed ? (
         <GmailNewProjectApproveForm card={card} />
-      ) : (
+      ) : identityAvailable ? (
         <GmailConfirmPersonForm card={card} />
-      )}
+      ) : null}
     </div>
   );
 }

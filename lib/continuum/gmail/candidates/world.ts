@@ -26,14 +26,25 @@ export type CandidateWorldInput = {
 export function buildGmailCandidateWorld(
   input: CandidateWorldInput,
 ): GmailCandidateWorld {
+  const people = input.people.filter(
+    (person) => person.personId.trim() && person.displayName.trim(),
+  );
+  const projects = input.projects.filter(
+    (project) => project.projectId.trim() && project.displayTitle.trim(),
+  );
+  const knownPeople = new Set(people.map((person) => person.personId));
+  const knownProjects = new Set(projects.map((project) => project.projectId));
   const projectIdsByPerson = new Map<string, string[]>();
   const personIdsByProject = new Map<string, string[]>();
   for (const row of input.relationships) {
     if (row.kind !== "client-project" || row.status !== "active") continue;
-    const personId = input.people.some((person) => person.personId === row.fromEntityId)
-      ? row.fromEntityId
-      : row.toEntityId;
-    const projectId = personId === row.fromEntityId ? row.toEntityId : row.fromEntityId;
+    const from = row.fromEntityId;
+    const to = row.toEntityId;
+    const personToProject = knownPeople.has(from) && knownProjects.has(to);
+    const projectToPerson = knownProjects.has(from) && knownPeople.has(to);
+    if (!personToProject && !projectToPerson) continue;
+    const personId = personToProject ? from : to;
+    const projectId = personToProject ? to : from;
     const personProjects = projectIdsByPerson.get(personId) ?? [];
     personProjects.push(projectId);
     projectIdsByPerson.set(personId, personProjects);
@@ -41,15 +52,19 @@ export function buildGmailCandidateWorld(
     projectPeople.push(personId);
     personIdsByProject.set(projectId, projectPeople);
   }
-  const historyByProject = new Map(input.histories.map((row) => [row.projectId, row]));
-  const people: GmailCandidatePerson[] = input.people.map((person) => ({
+  const historyByProject = new Map(
+    input.histories
+      .filter((row) => knownProjects.has(row.projectId))
+      .map((row) => [row.projectId, row]),
+  );
+  const mappedPeople: GmailCandidatePerson[] = people.map((person) => ({
     personId: person.personId,
     displayName: person.displayName,
     emailHash: hashEmail(person.email),
     role: person.roles[0] ?? null,
     projectIds: projectIdsByPerson.get(person.personId) ?? [],
   }));
-  const projects: GmailCandidateProject[] = input.projects.map((project) => {
+  const mappedProjects: GmailCandidateProject[] = projects.map((project) => {
     const history = historyByProject.get(project.projectId);
     return {
       projectId: project.projectId,
@@ -66,8 +81,8 @@ export function buildGmailCandidateWorld(
     };
   });
   return {
-    people,
-    projects,
+    people: mappedPeople,
+    projects: mappedProjects,
     internalEmailHashes: (input.internalEmails ?? [])
       .map((email) => hashEmail(email))
       .filter((row): row is string => Boolean(row)),

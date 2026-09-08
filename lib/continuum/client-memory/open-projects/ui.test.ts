@@ -288,6 +288,7 @@ describe("Current Projects Command Center accordion UI", () => {
     assert.match(form, /name="subject"/);
     assert.match(form, /name="projectId"/);
     assert.match(form, /Search Continuum people/);
+    assert.match(form, /searchConciergeClients/);
     assert.doesNotMatch(form, /name="kind"|waitingOnActor/);
     assert.match(page, /getAuthenticatedProjectJobWriter/);
     assert.match(page, /CreateActionForm/);

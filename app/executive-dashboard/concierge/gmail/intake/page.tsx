@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { getAuthenticatedCandidateStore } from "@/lib/continuum/candidates/load";
 import { presentGmailNewProjectIntake } from "@/lib/continuum/client-memory/founder-project/intake-present";
-import { loadGmailIntakePersonDirectoryFromAdmin } from "@/lib/continuum/client-memory/founder-project/gmail-world";
+import { loadGmailPersonWorldFromAdmin } from "@/lib/continuum/client-memory/founder-project/gmail-world";
 import { CONCIERGE_GMAIL_PATH } from "@/lib/continuum/gmail/types";
 import { ConciergeShell } from "../../components/concierge-shell";
 import { ConciergeUnavailable } from "../../components/client-profile-view";
@@ -30,13 +30,17 @@ export default async function ConciergeGmailIntakePage() {
     );
   }
   let cards: ReturnType<typeof presentGmailNewProjectIntake> = [];
+  let identityAvailable = false;
+  let directory: Parameters<typeof presentGmailNewProjectIntake>[1] = [];
   try {
-    let directory: Awaited<ReturnType<typeof loadGmailIntakePersonDirectoryFromAdmin>> = [];
-    try {
-      directory = await loadGmailIntakePersonDirectoryFromAdmin();
-    } catch {
-      directory = [];
-    }
+    const loaded = await loadGmailPersonWorldFromAdmin();
+    identityAvailable = loaded.peopleAvailable;
+    directory = loaded.directory;
+  } catch {
+    identityAvailable = false;
+    directory = [];
+  }
+  try {
     cards = presentGmailNewProjectIntake(await auth.store.list(), directory);
   } catch {
     return (
@@ -66,8 +70,11 @@ export default async function ConciergeGmailIntakePage() {
           Reads already-indexed Gmail threads transiently. Proposals are not
           Projects until you approve them. Mail bodies are not stored.
         </p>
-        <GmailIntakeScanForm />
-        <GmailNewProjectIntakeList cards={cards} />
+        <GmailIntakeScanForm identityAvailable={identityAvailable} />
+        <GmailNewProjectIntakeList
+          cards={cards}
+          identityAvailable={identityAvailable}
+        />
       </div>
     </ConciergeShell>
   );

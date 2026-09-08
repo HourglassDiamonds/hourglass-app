@@ -122,6 +122,8 @@ describe("Gmail activation security", () => {
       "utf8",
     );
     assert.match(intakeActions, /runGmailNewProjectIntakeScan/);
+    assert.match(intakeActions, /loadGmailPersonWorldFromAdmin/);
+    assert.doesNotMatch(intakeActions, /Continuum people could not be loaded/);
     assert.doesNotMatch(intakeActions, /createProjectJob|createFounderProject/);
     const indexedEvidence = readFileSync(join(GMAIL_DIR, "indexed-thread-evidence.ts"), "utf8");
     assert.match(indexedEvidence, /exactThreadOnlyApi/);

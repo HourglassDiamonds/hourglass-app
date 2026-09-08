@@ -7,7 +7,7 @@ import { liveGmailAccessTokenRefresher } from "@/lib/continuum/gmail/oauth";
 import { decryptRefreshToken, loadGmailTokenKek } from "@/lib/continuum/gmail/token-crypto";
 import { runGmailNewProjectIntakeScan } from "@/lib/continuum/gmail/intake-scan";
 import { getAuthenticatedCandidateStore } from "@/lib/continuum/candidates/load";
-import { loadGmailCandidateWorldFromAdmin } from "@/lib/continuum/client-memory/founder-project/gmail-world";
+import { loadGmailPersonWorldFromAdmin } from "@/lib/continuum/client-memory/founder-project/gmail-world";
 import { CONCIERGE_GMAIL_INTAKE_PATH } from "@/lib/continuum/gmail/types";
 
 export type ScanGmailIntakeState =
@@ -17,6 +17,7 @@ export type ScanGmailIntakeState =
       evidenceCount: number;
       threadCount: number;
       unreadThreadCount: number;
+      identityAvailable: boolean;
     }
   | { ok: false; message: string }
   | null;
@@ -50,14 +51,9 @@ export async function scanGmailNewProjectIntake(
     const kek = loadGmailTokenKek();
     if (!kek.ok) return { ok: false, message: "Gmail token custody is unavailable." };
     const connection = await gmail.connections.getFounderConnection();
-    let world;
-    try {
-      world = await loadGmailCandidateWorldFromAdmin(
-        connection?.mailboxEmailHash ? [connection.mailboxEmailHash] : [],
-      );
-    } catch {
-      return { ok: false, message: "Continuum people could not be loaded." };
-    }
+    const loaded = await loadGmailPersonWorldFromAdmin(
+      connection?.mailboxEmailHash ? [connection.mailboxEmailHash] : [],
+    );
     const result = await runGmailNewProjectIntakeScan({
       founderSessionOk: true,
       index: gmail.index,
@@ -66,7 +62,7 @@ export async function scanGmailNewProjectIntake(
       refreshAccessToken: (refreshToken) =>
         liveGmailAccessTokenRefresher.refreshAccessToken(refreshToken),
       createApi: (accessToken) => createLiveGmailApi(accessToken),
-      world,
+      world: loaded.world,
       store: candidates.store,
       nowIso: new Date().toISOString(),
     });
@@ -92,6 +88,7 @@ export async function scanGmailNewProjectIntake(
       evidenceCount: result.evidenceCount,
       threadCount: result.threadCount,
       unreadThreadCount: result.unreadThreadCount,
+      identityAvailable: loaded.peopleAvailable,
     };
   } catch {
     return { ok: false, message: "Gmail evidence could not be read." };
