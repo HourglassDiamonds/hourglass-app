@@ -14,12 +14,14 @@ import { isNewProjectContextPayload } from "@/lib/continuum/gmail/candidates/new
 import {
   type CreateFounderProjectInput,
   type CreateFounderProjectResult,
+  foldProjectTitle,
 } from "./create";
 import {
   warnPossibleExistingProject,
 } from "./duplicate";
 import { confirmedPersonFromThread } from "./identity-gate";
 import type { FounderProjectWriter } from "./writer";
+import { parseProjectKindInput } from "../project-kind";
 
 export type ApplyNewProjectCandidateInput = {
   candidateId: string;
@@ -103,24 +105,56 @@ export async function applyGmailNewProjectCandidate(input: {
     lifecycleStage: input.body.lifecycleStage,
     subject: input.body.subject,
     dueAt: input.body.dueAt,
+    gmailThreadId: threadId,
     actor: input.body.actor,
   };
-  const create = await input.writer.createProject(createInput);
+  let create = await input.writer.createProject(createInput);
+  if (!create.ok && create.reason === "duplicate-project" && create.existingProjectId) {
+    const requested = foldProjectTitle(title);
+    const existingTitle = foldProjectTitle(create.existingTitle ?? "");
+    const kindParsed = parseProjectKindInput(input.body.projectKind);
+    if (
+      requested &&
+      requested === existingTitle &&
+      kindParsed.ok &&
+      kindParsed.kind
+    ) {
+      create = {
+        ok: true,
+        status: "already-present",
+        projectId: create.existingProjectId,
+        title: create.existingTitle ?? title,
+        projectKind: kindParsed.kind,
+        lifecycleStage: null,
+        job: null,
+      };
+    }
+  }
   if (!create.ok) {
     return { ok: false, reason: "create-failed", create };
   }
 
-  const reviewed = await input.store.applyReview(
+  const now = new Date().toISOString();
+  const edited = await input.store.applyReview(
     candidate.candidateId,
     {
-      action: "approve",
+      action: "edit",
       payload: {
         kind: "project_context",
         topic: payload.topic,
         value: create.title,
       },
+      proposedTarget: { kind: "project", projectId: create.projectId },
     },
-    new Date().toISOString(),
+    now,
+  );
+  if (!edited.ok) {
+    return { ok: false, reason: "review-unpersisted", create };
+  }
+  const reviewed = await input.store.applyReview(
+    candidate.candidateId,
+    { action: "approve" },
+    now,
   );
   if (!reviewed.ok) {
     return { ok: false, reason: "review-unpersisted", create };

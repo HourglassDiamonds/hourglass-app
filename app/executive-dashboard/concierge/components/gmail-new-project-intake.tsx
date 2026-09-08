@@ -12,6 +12,7 @@ import { searchConciergeClients } from "../actions";
 import type { GmailNewProjectIntakeCard } from "@/lib/continuum/client-memory/founder-project/intake-present";
 import type { ClientSearchResult } from "@/lib/continuum/client-memory/read/types";
 import { CONCIERGE_GMAIL_INTAKE_PATH } from "@/lib/continuum/gmail/types";
+import { conciergeProjectPath } from "@/lib/continuum/client-memory/read/presentation";
 import { createGmailIncrementalContinuation } from "@/lib/continuum/gmail/incremental-continue";
 import type { GmailIncrementalChunkResult } from "@/lib/continuum/gmail/incremental";
 import {
@@ -238,9 +239,12 @@ export function GmailNewProjectIntakeList({
   );
 }
 
-function workStatusHeadline(status: GmailNewProjectIntakeCard["workStatus"]): string {
-  if (status === "payment_received") return "Payment received";
-  if (status === "opportunity_reactivated") return "Opportunity reactivated";
+function workStatusHeadline(card: GmailNewProjectIntakeCard): string {
+  if (card.presentation === "current_project" || card.canonicalProjectFound) {
+    return "Current project";
+  }
+  if (card.workStatus === "payment_received") return "Payment received";
+  if (card.workStatus === "opportunity_reactivated") return "Opportunity reactivated";
   return "New project detected";
 }
 
@@ -260,9 +264,17 @@ function GmailNewProjectCard({
   return (
     <div className="space-y-4">
       <p className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
-        {workStatusHeadline(card.workStatus)}
+        {workStatusHeadline(card)}
       </p>
       <p className="font-serif text-[1.45rem] text-[#efe8de]">{card.title}</p>
+      {card.presentation === "current_project" && card.personName ? (
+        <p className="text-[15px] text-[#c4b7aa]">{card.personName}</p>
+      ) : null}
+      {card.presentation === "current_project" && card.lifecycleLabel ? (
+        <p className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
+          {card.lifecycleLabel}
+        </p>
+      ) : null}
       {card.people.length > 0 ? (
         <ul className="space-y-1">
           {card.people.map((person, index) => (
@@ -313,10 +325,18 @@ function GmailNewProjectCard({
           <p className="text-[14px] text-[#d2b8a8]">Identity needs confirmation.</p>
         </div>
       )}
-      <p className="text-[14px] leading-relaxed text-[#c4b7aa]">
-        Canonical Project: {card.canonicalProjectFound ? "already linked" : "none found"}
-      </p>
-      <p className="text-[14px] leading-relaxed text-[#c4b7aa]">{card.whySurfaced}</p>
+      {card.presentation === "current_project" ? (
+        <p className="text-[14px] leading-relaxed text-[#c4b7aa]">
+          Latest Gmail state: {card.currentStateSummary ?? card.whySurfaced}
+        </p>
+      ) : (
+        <>
+          <p className="text-[14px] leading-relaxed text-[#c4b7aa]">
+            Canonical Project: {card.canonicalProjectFound ? "already linked" : "none found"}
+          </p>
+          <p className="text-[14px] leading-relaxed text-[#c4b7aa]">{card.whySurfaced}</p>
+        </>
+      )}
       {card.giftContext || card.designBasis ? (
         <div className="space-y-1">
           <p className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
@@ -347,12 +367,14 @@ function GmailNewProjectCard({
           </ul>
         </div>
       ) : null}
-      {card.currentStateSummary ? (
+      {card.currentStateSummary && card.presentation !== "current_project" ? (
         <p className="text-[14px] leading-relaxed text-[#c4b7aa]">
           Current state: {card.currentStateSummary}
         </p>
       ) : null}
-      {card.attachmentFilenames.length > 0 || card.supportingObservationCount > 0 ? (
+      {card.attachmentFilenames.length > 0 ||
+      card.supportingObservationCount > 0 ||
+      card.presentation === "current_project" ? (
         <details className="text-[13px] text-[#8d8073]">
           <summary className="cursor-pointer text-[11px] uppercase tracking-[0.18em]">
             Review evidence
@@ -370,15 +392,28 @@ function GmailNewProjectCard({
                 {card.supportingObservationCount} supporting observation
                 {card.supportingObservationCount === 1 ? "" : "s"}
               </p>
-            ) : null}
+            ) : (
+              <p>Underlying Gmail Candidate evidence is retained.</p>
+            )}
           </div>
         </details>
       ) : null}
-      {card.canonicalProjectFound ? (
-        <p className="text-[14px] leading-relaxed text-[#c4b7aa]">
-          Payment or related work already has a Project. Review state or create
-          an action — this does not mint another Project.
-        </p>
+      {card.canonicalProjectFound || card.presentation === "current_project" ? (
+        <div className="flex flex-wrap gap-3">
+          {card.canonicalProjectId ? (
+            <a
+              href={conciergeProjectPath(card.canonicalProjectId)}
+              className="inline-flex min-h-12 items-center rounded-[18px] border border-[#ad9164]/50 bg-[#1d1916] px-4 text-[11px] uppercase tracking-[0.22em] text-[#efe8de] outline-none hover:border-[#ad9164]"
+            >
+              Open project
+            </a>
+          ) : (
+            <p className="text-[14px] leading-relaxed text-[#c4b7aa]">
+              Payment or related work already has a Project. Review state or create
+              an action — this does not mint another Project.
+            </p>
+          )}
+        </div>
       ) : identityAvailable && card.identityConfirmed ? (
         <GmailNewProjectApproveForm card={card} />
       ) : identityAvailable ? (

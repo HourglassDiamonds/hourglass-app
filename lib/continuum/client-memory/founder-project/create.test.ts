@@ -166,6 +166,29 @@ describe("Founder-created Project", () => {
     assert.equal(loop.top5.length, 0);
   });
 
+  it("stores a canonical Gmail thread id when creating from Gmail intake", async () => {
+    const memory = new InMemoryClientMemoryStore();
+    const jobs = new InMemoryProjectJobStore();
+    const writer = createInMemoryFounderProjectWriter(memory, jobs, () => NOW);
+    const personId = await seedPerson(memory, {
+      displayName: "Nathan Pearl",
+      email: "nate@example.test",
+    });
+    const created = await writer.createProject({
+      mutationId: randomUUID(),
+      title: "Dagger & Pearls Pendant / Necklace",
+      personId,
+      projectKind: "custom_new_jewelry",
+      lifecycleStage: "cad",
+      gmailThreadId: "19a854e42f90344f",
+      actor: ACTOR,
+    });
+    assert.equal(created.ok, true);
+    if (!created.ok) return;
+    const history = await memory.getProjectHistory(created.projectId);
+    assert.equal(history?.gmailThreadId, "19a854e42f90344f");
+  });
+
   it("creates an Open Job only when the founder enters an action", async () => {
     const memory = new InMemoryClientMemoryStore();
     const jobs = new InMemoryProjectJobStore();

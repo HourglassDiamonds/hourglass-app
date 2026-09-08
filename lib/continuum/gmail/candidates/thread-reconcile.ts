@@ -125,6 +125,7 @@ export function reconcileThreadCandidates(input: {
   drafts: ContinuumCandidateDraft[];
   evidence: readonly GmailCandidateEvidence[];
   createdAt: string;
+  linkedGmailThreadIds?: readonly string[];
 }): ContinuumCandidateDraft[] {
   const byThread = new Map<string, GmailCandidateEvidence[]>();
   for (const row of input.evidence) {
@@ -251,7 +252,10 @@ export function reconcileThreadCandidates(input: {
     }
   }
 
+  const linkedThreads = new Set(input.linkedGmailThreadIds ?? []);
+
   for (const [threadId, rows] of byThread) {
+    if (linkedThreads.has(threadId)) continue;
     if (threadHasNewProject(kept, threadId) || threadHasNewProject(input.drafts, threadId)) {
       continue;
     }

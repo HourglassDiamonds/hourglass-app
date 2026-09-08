@@ -20,6 +20,13 @@ export const TRANSACTIONAL_CUSTOMER_NOTICE_RULE =
 export const RELATED_CUSTOMER_JEWELRY_THREAD_RULE =
   "related_customer_jewelry_thread" as const;
 
+export const GENERIC_NEW_PROJECT_TITLES = new Set([
+  "Custom Earrings",
+  "Custom Necklace / Pendant",
+  "Custom Engagement Ring",
+  "New custom piece",
+]);
+
 const REJECT =
   /\b(repair|resize|tracking number|unsubscribe|newsletter|looks great|looks awesome|please proceed|status update|still waiting on the same)\b/i;
 

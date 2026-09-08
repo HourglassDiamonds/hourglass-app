@@ -8,6 +8,7 @@ import type { CandidateStore, ContinuumCandidate } from "@/lib/continuum/candida
 import type { GmailIndexStore } from "@/lib/continuum/client-memory/gmail/store";
 import { hashEmail } from "@/lib/continuum/client-memory/hashes";
 import { ingestGmailCandidates } from "./candidates/ingest";
+import { knownGmailProjectThreadIds } from "@/lib/continuum/client-memory/founder-project/gmail-project-link";
 import {
   extractCustomerEmails,
   hasJewelryWorkContext,
@@ -296,11 +297,23 @@ export async function runGmailNewProjectIntakeScan(input: {
       unreadThreads.push(...related.unreadThreads);
     }
   }
+  let linkedGmailThreadIds: string[] = [];
+  try {
+    linkedGmailThreadIds = knownGmailProjectThreadIds(
+      await input.store.list(),
+      input.world.projects,
+    );
+  } catch {
+    linkedGmailThreadIds = [];
+  }
   let ingested;
   try {
     ingested = await ingestGmailCandidates(input.store, {
       evidence,
-      world: input.world,
+      world: {
+        ...input.world,
+        linkedGmailThreadIds,
+      },
       createdAt: input.nowIso,
     });
   } catch {

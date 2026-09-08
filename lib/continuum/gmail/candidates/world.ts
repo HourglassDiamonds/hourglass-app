@@ -78,6 +78,7 @@ export function buildGmailCandidateWorld(
       diamondSupplyNotes: history?.diamondSupplyNotes ?? null,
       personIds: personIdsByProject.get(project.projectId) ?? [],
       founderApprovedCurrent: true,
+      projectKind: project.projectKind ?? null,
     };
   });
   return {

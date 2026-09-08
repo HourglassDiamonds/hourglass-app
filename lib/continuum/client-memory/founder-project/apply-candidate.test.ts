@@ -17,6 +17,7 @@ import { composeCurrentProjectCards } from "../open-projects/card";
 import type { ProjectDeskSummary } from "../project-desk/types";
 import type { ProjectWorkSummary } from "../project-jobs/intelligence";
 import { composeCosOperatingLoop } from "../../chief-of-staff/operating-loop/compose";
+import { effectiveCandidateTarget } from "@/lib/continuum/candidates/review";
 
 const NOW = "2026-09-08T16:00:00.000Z";
 const NATE_EMAIL = "nate@example.test";
@@ -234,6 +235,39 @@ describe("Founder-approved Gmail new-project Candidate", () => {
     assert.equal(loop.top5.length, 0);
     const reviewed = await candidates.get(afterConfirm[0]!.candidateId);
     assert.equal(reviewed?.reviewStatus, "approved");
+    const target = effectiveCandidateTarget(reviewed!);
+    assert.equal(target.kind, "project");
+    if (target.kind === "project") {
+      assert.equal(target.projectId, applied.projectId);
+    }
+    const afterCards = presentGmailNewProjectIntake(
+      await candidates.list(),
+      [{ personId, displayName: "Nathan Pearl", email: NATE_EMAIL }],
+      [],
+      [
+        {
+          projectId: applied.projectId,
+          title: applied.create.title,
+          gmailThreadId: null,
+          cadJobNumber: null,
+          orderNumber: null,
+          fingerSize: null,
+          metal: null,
+          centerStone: null,
+          diamondSupplyNotes: null,
+          personIds: [personId],
+          founderApprovedCurrent: true,
+          projectKind: "custom_new_jewelry",
+          lifecycleStage: "discovery",
+        },
+      ],
+    );
+    assert.equal(afterCards.length, 1);
+    assert.equal(afterCards[0]?.presentation, "current_project");
+    assert.equal(afterCards[0]?.canonicalProjectId, applied.projectId);
+    assert.equal(afterCards[0]?.canonicalProjectFound, true);
+    assert.equal(afterCards[0]?.lifecycleStage, "discovery");
+    assert.equal(afterCards[0]?.lifecycleLabel, "Discovery");
   });
 
   it("lets a confirmed mapping target the proposal without minting a Person", async () => {

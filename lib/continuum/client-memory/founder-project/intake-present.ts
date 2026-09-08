@@ -15,6 +15,7 @@ import {
   ATTACHMENT_FILENAME_TOPIC,
   DESIGN_BASIS_TOPIC,
   EXPLICIT_NEW_PROJECT_RULE,
+  GENERIC_NEW_PROJECT_TITLES,
   GIFT_CONTEXT_TOPIC,
   NEW_PROJECT_CONTEXT_TOPIC,
   PROPOSED_SPEC_TOPIC,
@@ -22,8 +23,18 @@ import {
   TRANSACTIONAL_CUSTOMER_NOTICE_RULE,
   WAITING_ON_CLIENT_TOPIC,
 } from "@/lib/continuum/gmail/candidates/new-project";
+import type { GmailCandidateProject } from "@/lib/continuum/gmail/candidates/types";
 import type { GmailIndexedMessage } from "@/lib/continuum/client-memory/gmail/types";
+import {
+  CUSTOM_LIFECYCLE_STAGE_LABELS,
+  REPAIR_LIFECYCLE_STAGE_LABELS,
+} from "@/lib/continuum/client-memory/project-lifecycle";
 import type { GmailIntakePersonDirectoryRow } from "./gmail-world";
+import {
+  canonicalProjectForGmailThread,
+  knownGmailProjectThreadIds,
+} from "./gmail-project-link";
+import { confirmedPersonFromThread } from "./identity-gate";
 
 export type GmailIntakeCurrentStateKind = "waiting_on_client" | "founder_turn";
 
@@ -78,6 +89,11 @@ export type GmailNewProjectIntakeCard = {
   structuredSpecs: Array<{ fieldName: string; proposedValue: string }>;
   attachmentFilenames: string[];
   supportingObservationCount: number;
+  canonicalProjectId: string | null;
+  canonicalProjectKind: string | null;
+  lifecycleStage: string | null;
+  lifecycleLabel: string | null;
+  presentation: "proposal" | "current_project";
 };
 
 function threadIdOf(row: ContinuumCandidate): string | null {
@@ -205,13 +221,6 @@ function pickPersonAssociation(
   )[0]!;
 }
 
-const GENERIC_NEW_PROJECT_TITLES = new Set([
-  "Custom Earrings",
-  "Custom Necklace / Pendant",
-  "Custom Engagement Ring",
-  "New custom piece",
-]);
-
 export function preferredNewProjectTitle(
   rows: readonly ContinuumCandidate[],
 ): { candidate: ContinuumCandidate; title: string } | null {
@@ -322,18 +331,21 @@ export function intakeCurrentState(input: {
 
 export function newProjectThreadIds(
   rows: readonly ContinuumCandidate[],
+  projects: readonly GmailCandidateProject[] = [],
 ): string[] {
   const ids = new Set<string>();
   for (const row of rows) {
     if (
-      row.reviewStatus === "pending" &&
-      row.candidateState !== "superseded" &&
       row.payload.kind === "project_context" &&
-      row.payload.topic === NEW_PROJECT_CONTEXT_TOPIC
+      row.payload.topic === NEW_PROJECT_CONTEXT_TOPIC &&
+      row.reviewStatus !== "discarded"
     ) {
       const threadId = threadIdOf(row);
       if (threadId) ids.add(threadId);
     }
+  }
+  for (const threadId of knownGmailProjectThreadIds(rows, projects)) {
+    ids.add(threadId);
   }
   return [...ids];
 }
@@ -370,28 +382,174 @@ export async function latestGmailIntakeTurns(
   return out;
 }
 
+function noisyStructuredSpec(spec: { fieldName: string; proposedValue: string }): boolean {
+  const value = spec.proposedValue.trim();
+  if (!value) return true;
+  if (
+    spec.fieldName === "diamond_supply_notes" &&
+    /\b(to|from|subject|cc|bcc)\s*:/i.test(value)
+  ) {
+    return true;
+  }
+  return false;
+}
+
+function lifecycleLabelOf(
+  stage: string | null,
+  projectKind: string | null,
+): string | null {
+  if (!stage) return null;
+  if (projectKind === "custom_new_jewelry" && stage in CUSTOM_LIFECYCLE_STAGE_LABELS) {
+    return CUSTOM_LIFECYCLE_STAGE_LABELS[stage as keyof typeof CUSTOM_LIFECYCLE_STAGE_LABELS];
+  }
+  if (projectKind === "repair_service" && stage in REPAIR_LIFECYCLE_STAGE_LABELS) {
+    return REPAIR_LIFECYCLE_STAGE_LABELS[stage as keyof typeof REPAIR_LIFECYCLE_STAGE_LABELS];
+  }
+  return stage;
+}
+
+function exactAssociationProjectId(list: readonly ContinuumCandidate[]): string | null {
+  const ids = [
+    ...new Set(
+      list.flatMap((row) => {
+        if (row.candidateType !== "project_association") return [];
+        if (row.candidateState === "superseded") return [];
+        if (!row.evidenceBasis.ruleIds.includes("exact_gmail_thread")) return [];
+        const target = effectiveCandidateTarget(row);
+        if (target.kind !== "project" || !target.projectId) return [];
+        return [target.projectId];
+      }),
+    ),
+  ];
+  return ids.length === 1 ? ids[0]! : null;
+}
+
+function personHintForThread(
+  rows: readonly ContinuumCandidate[],
+  threadId: string,
+  directory: readonly GmailIntakePersonDirectoryRow[],
+): string | null {
+  const confirmed = confirmedPersonFromThread(rows, threadId);
+  if (confirmed) return confirmed.personId;
+  const list = rows.filter((row) => threadIdOf(row) === threadId);
+  const person = pickPersonAssociation(list);
+  const payload = person ? effectiveCandidatePayload(person) : null;
+  const emailHash =
+    payload?.kind === "person_association" ? payload.emailHash : null;
+  return directoryMatchForHash(emailHash, directory)?.personId ?? null;
+}
+
+function approvedNewProjectOnThread(
+  list: readonly ContinuumCandidate[],
+): ContinuumCandidate | null {
+  const approved = list.filter(
+    (row) =>
+      row.reviewStatus === "approved" &&
+      row.payload.kind === "project_context" &&
+      row.payload.topic === NEW_PROJECT_CONTEXT_TOPIC,
+  );
+  if (approved.length === 0) return null;
+  return [...approved].sort(
+    (a, b) => sentMs(b.sourceTimestamp) - sentMs(a.sourceTimestamp),
+  )[0]!;
+}
+
+function mergeIntakeCards(
+  current: GmailNewProjectIntakeCard,
+  incoming: GmailNewProjectIntakeCard,
+): GmailNewProjectIntakeCard {
+  const people = [...current.people];
+  const seen = new Set(
+    people.map((row) => `${row.personId ?? ""}:${row.email ?? ""}:${row.displayName ?? ""}`),
+  );
+  for (const person of incoming.people) {
+    const key = `${person.personId ?? ""}:${person.email ?? ""}:${person.displayName ?? ""}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    people.push(person);
+  }
+  const workStatus =
+    current.workStatus === "payment_received" || incoming.workStatus === "payment_received"
+      ? "payment_received"
+      : current.workStatus === "opportunity_reactivated" ||
+          incoming.workStatus === "opportunity_reactivated"
+        ? "opportunity_reactivated"
+        : current.workStatus;
+  const specific =
+    !GENERIC_NEW_PROJECT_TITLES.has(current.title) ? current : incoming;
+  return {
+    ...specific,
+    people,
+    workStatus,
+    whySurfaced: whySurfacedForStatus(workStatus, specific.canonicalProjectFound),
+    supportingObservationCount:
+      current.supportingObservationCount + incoming.supportingObservationCount,
+    proposedSpecs: [...new Set([...current.proposedSpecs, ...incoming.proposedSpecs])],
+    structuredSpecs: [
+      ...new Map(
+        [...current.structuredSpecs, ...incoming.structuredSpecs].map((row) => [
+          `${row.fieldName}:${row.proposedValue}`,
+          row,
+        ]),
+      ).values(),
+    ],
+    attachmentFilenames: [
+      ...new Set([...current.attachmentFilenames, ...incoming.attachmentFilenames]),
+    ],
+    identityConfirmed: current.identityConfirmed || incoming.identityConfirmed,
+    personId: current.personId ?? incoming.personId,
+    personName: current.personName ?? incoming.personName,
+    personEmail: current.personEmail ?? incoming.personEmail,
+  };
+}
+
 export function presentGmailNewProjectIntake(
   rows: readonly ContinuumCandidate[],
   directory: readonly GmailIntakePersonDirectoryRow[] = [],
   turns: readonly GmailIntakeThreadTurn[] = [],
+  projects: readonly GmailCandidateProject[] = [],
 ): GmailNewProjectIntakeCard[] {
   const turnByThread = new Map(turns.map((row) => [row.threadId, row]));
-  const pendingNew = rows.filter(
-    (row) =>
-      row.reviewStatus === "pending" &&
-      row.candidateState !== "superseded" &&
-      row.payload.kind === "project_context" &&
-      row.payload.topic === NEW_PROJECT_CONTEXT_TOPIC,
-  );
+  const threadIds = newProjectThreadIds(rows, projects);
   const cards: GmailNewProjectIntakeCard[] = [];
-  const seenThreads = new Set<string>();
-  for (const neu of pendingNew) {
-    const threadId = threadIdOf(neu);
-    if (!threadId || seenThreads.has(threadId)) continue;
-    seenThreads.add(threadId);
+  for (const threadId of threadIds) {
     const list = rows.filter((row) => threadIdOf(row) === threadId);
     const preferred = preferredNewProjectTitle(list);
-    if (!preferred) continue;
+    const approved = approvedNewProjectOnThread(list);
+    const personHint = personHintForThread(rows, threadId, directory);
+    const linked = canonicalProjectForGmailThread({
+      threadId,
+      candidates: rows,
+      projects,
+      personIdHint: personHint,
+      allowUnscopedExactTitle: true,
+    });
+    const associationId = exactAssociationProjectId(list);
+    const associatedProject = associationId
+      ? projects.find((row) => row.projectId === associationId) ?? null
+      : null;
+    const canonical =
+      linked ??
+      (associatedProject
+        ? {
+            projectId: associatedProject.projectId,
+            title: associatedProject.title,
+            projectKind: associatedProject.projectKind ?? null,
+            lifecycleStage: associatedProject.lifecycleStage ?? null,
+            link: "exact_gmail_thread" as const,
+          }
+        : associationId
+          ? {
+              projectId: associationId,
+              title: preferred?.title ?? "Current project",
+              projectKind: null,
+              lifecycleStage: null,
+              link: "exact_gmail_thread" as const,
+            }
+          : null);
+    if (!canonical && !preferred) continue;
+    const anchor = preferred?.candidate ?? approved;
+    if (!anchor) continue;
     const person = pickPersonAssociation(list);
     const personTarget = person ? effectiveCandidateTarget(person) : null;
     const personPayload = person ? effectiveCandidatePayload(person) : null;
@@ -405,8 +563,15 @@ export function presentGmailNewProjectIntake(
     const emailHash =
       personPayload?.kind === "person_association" ? personPayload.emailHash : null;
     const possible = directoryMatchForHash(emailHash, directory);
-    const confirmedDirectory = confirmedPersonId
-      ? directory.find((row) => row.personId === confirmedPersonId) ?? null
+    const projectPersonId =
+      canonical && canonical.projectId
+        ? projects.find((row) => row.projectId === canonical.projectId)?.personIds
+        : null;
+    const uniqueProjectPersonId =
+      projectPersonId && projectPersonId.length === 1 ? projectPersonId[0]! : null;
+    const displayPersonId = confirmedPersonId ?? (canonical ? uniqueProjectPersonId : null);
+    const confirmedDirectory = displayPersonId
+      ? directory.find((row) => row.personId === displayPersonId) ?? null
       : null;
     const clientName =
       confirmedDirectory?.displayName ??
@@ -460,6 +625,7 @@ export function presentGmailNewProjectIntake(
     );
     const uniqueStructured = new Map<string, { fieldName: string; proposedValue: string }>();
     for (const spec of structuredSpecs) {
+      if (noisyStructuredSpec(spec)) continue;
       uniqueStructured.set(`${spec.fieldName}:${spec.proposedValue}`, spec);
     }
     const attachmentFilenames = [
@@ -480,38 +646,34 @@ export function presentGmailNewProjectIntake(
       clientName,
     });
     const supportingObservationCount = list.filter((row) => {
-      if (row.candidateId === preferred.candidate.candidateId) return false;
+      if (row.candidateId === anchor.candidateId) return false;
       if (row.candidateType === "person_association") return false;
       return true;
     }).length;
-    const workStatus = workStatusOf(preferred.candidate);
-    const canonicalProjectFound = list.some(
-      (row) =>
-        row.candidateType === "project_association" &&
-        row.candidateState !== "superseded" &&
-        row.evidenceBasis.ruleIds.includes("exact_gmail_thread"),
-    );
+    const workStatus = workStatusOf(anchor);
+    const canonicalProjectFound = Boolean(canonical);
+    const presentation = canonical ? "current_project" : "proposal";
     const people = peopleForThread(list, directory);
     cards.push({
-      candidateId: preferred.candidate.candidateId,
+      candidateId: anchor.candidateId,
       threadId,
-      title: preferred.title,
-      personId: confirmedPersonId,
+      title: canonical?.title ?? preferred?.title ?? "",
+      personId: displayPersonId,
       personName:
         confirmedDirectory?.displayName ??
         (personPayload?.kind === "person_association" && confirmedPersonId
           ? personPayload.displayName
           : null),
       personEmail: confirmedDirectory?.email ?? null,
-      identityConfirmed: Boolean(confirmedPersonId),
+      identityConfirmed: Boolean(confirmedPersonId || (canonical && displayPersonId)),
       personAssociationCandidateId: person?.candidateId ?? null,
-      possiblePersonId: confirmedPersonId ? null : possible?.personId ?? null,
+      possiblePersonId: displayPersonId ? null : possible?.personId ?? null,
       possiblePersonName:
-        confirmedPersonId
+        displayPersonId
           ? null
           : possible?.displayName ??
             (personPayload?.kind === "person_association" ? personPayload.displayName : null),
-      possiblePersonEmail: confirmedPersonId ? null : possible?.email ?? null,
+      possiblePersonEmail: displayPersonId ? null : possible?.email ?? null,
       people,
       workStatus,
       whySurfaced: whySurfacedForStatus(workStatus, canonicalProjectFound),
@@ -525,7 +687,23 @@ export function presentGmailNewProjectIntake(
       structuredSpecs: [...uniqueStructured.values()],
       attachmentFilenames,
       supportingObservationCount,
+      canonicalProjectId: canonical?.projectId ?? null,
+      canonicalProjectKind: canonical?.projectKind ?? null,
+      lifecycleStage: canonical?.lifecycleStage ?? null,
+      lifecycleLabel: lifecycleLabelOf(
+        canonical?.lifecycleStage ?? null,
+        canonical?.projectKind ?? null,
+      ),
+      presentation,
     });
   }
-  return cards.sort((a, b) => a.title.localeCompare(b.title, "en", { sensitivity: "base" }));
+  const merged = new Map<string, GmailNewProjectIntakeCard>();
+  for (const card of cards) {
+    const key = card.canonicalProjectId ?? `thread:${card.threadId}`;
+    const existing = merged.get(key);
+    merged.set(key, existing ? mergeIntakeCards(existing, card) : card);
+  }
+  return [...merged.values()].sort((a, b) =>
+    a.title.localeCompare(b.title, "en", { sensitivity: "base" }),
+  );
 }

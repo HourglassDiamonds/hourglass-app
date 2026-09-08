@@ -71,20 +71,26 @@ export default async function ConciergeGmailIntakePage() {
       stale: true,
     };
   }
+  let projects: Parameters<typeof presentGmailNewProjectIntake>[3] = [];
   try {
     const loaded = await loadGmailPersonWorldFromAdmin();
     identityAvailable = loaded.peopleAvailable;
     directory = loaded.directory;
+    projects = loaded.world.projects;
   } catch {
     identityAvailable = false;
     directory = [];
+    projects = [];
   }
   try {
     const rows = await auth.store.list();
     const turns = indexForTurns
-      ? await latestGmailIntakeTurns(indexForTurns, newProjectThreadIds(rows))
+      ? await latestGmailIntakeTurns(
+          indexForTurns,
+          newProjectThreadIds(rows, projects),
+        )
       : [];
-    cards = presentGmailNewProjectIntake(rows, directory, turns);
+    cards = presentGmailNewProjectIntake(rows, directory, turns, projects);
   } catch {
     return (
       <ConciergeShell>

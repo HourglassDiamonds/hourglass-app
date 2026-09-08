@@ -251,8 +251,11 @@ function draftsFromEvidence(
     (hit) =>
       hit.match === "exact" && hit.ruleIds.includes("exact_gmail_thread"),
   );
+  const linkedThread = (world.linkedGmailThreadIds ?? []).includes(
+    evidence.indexed.threadId,
+  );
 
-  if (!exactThreadProject) {
+  if (!exactThreadProject && !linkedThread) {
     for (const hit of newProjectHits) {
       drafts.push({
         ...base,
@@ -436,6 +439,7 @@ export function proposeGmailCandidates(
     drafts,
     evidence: input.evidence,
     createdAt,
+    linkedGmailThreadIds: input.world.linkedGmailThreadIds,
   });
   return {
     candidates: assignReconciledCandidates(reconciled),

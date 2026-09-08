@@ -287,7 +287,7 @@ export async function loadGmailPersonWorld(
   client: SupabaseClient,
   internalEmailHashes: readonly string[] = [],
 ): Promise<GmailPersonWorldLoad> {
-  const [people, projects, histories, relationships, mappings, identities] =
+  const [people, projects, histories, relationships, mappings, identities, lifecycles] =
     await Promise.all([
       readRows(
         client
@@ -326,7 +326,18 @@ export async function loadGmailPersonWorld(
           .eq("source_system", "concierge-manual")
           .is("revoked_at", null),
       ),
+      readRows(
+        client
+          .from("continuum_project_lifecycle_states")
+          .select("project_id, stage"),
+      ),
     ]);
+  const stageByProject = new Map<string, string>();
+  for (const row of lifecycles.ok ? lifecycles.rows : []) {
+    const projectId = String(row.project_id ?? row.projectId ?? "").trim();
+    const stage = String(row.stage ?? "").trim();
+    if (projectId && stage) stageByProject.set(projectId, stage);
+  }
   const world = candidateWorldFromRows({
     people: people.rows,
     projects: projects.ok ? projects.rows : [],
@@ -337,7 +348,13 @@ export async function loadGmailPersonWorld(
     founderConfirmedEmailIdentities: identities.ok ? identities.rows : [],
   });
   return {
-    world,
+    world: {
+      ...world,
+      projects: world.projects.map((project) => ({
+        ...project,
+        lifecycleStage: stageByProject.get(project.projectId) ?? null,
+      })),
+    },
     directory: intakeDirectoryFromPersonRows(people.rows),
     peopleAvailable: people.ok,
   };

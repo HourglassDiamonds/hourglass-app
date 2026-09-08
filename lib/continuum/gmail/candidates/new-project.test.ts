@@ -1025,5 +1025,37 @@ describe("explicit new-project Gmail proposals", () => {
       assert.equal(personHit.proposedTarget.personId, null);
     }
   });
+
+  it("does not emit a new-project proposal for a thread already linked to a canonical Project", () => {
+    const threadId = "19a854e42f90344f";
+    const proposed = proposeGmailCandidates({
+      createdAt: NOW,
+      world: {
+        people: [],
+        projects: [],
+        internalEmailHashes: [],
+        linkedGmailThreadIds: [threadId],
+      },
+      evidence: [
+        evidence({
+          messageId: "m-again",
+          threadId,
+          sentAt: NOW,
+          fromEmail: "alex.reed@example.test",
+          direction: "inbound",
+          plaintext:
+            "I'd like to work together again to create another piece. A dagger and pearls necklace.",
+        }),
+      ],
+    });
+    assert.equal(
+      proposed.candidates.some(
+        (row) =>
+          row.payload.kind === "project_context" &&
+          row.payload.topic === NEW_PROJECT_CONTEXT_TOPIC,
+      ),
+      false,
+    );
+  });
 });
 

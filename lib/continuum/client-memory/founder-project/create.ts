@@ -18,6 +18,7 @@ import {
 import type { CreateProjectJobInput, CreateProjectJobResult } from "../project-jobs/create";
 import { founderManualActionInput } from "../open-projects/manual-action";
 import { isOpenJobUuid, parseOpenJobSubject, parseOptionalIso } from "../project-jobs/validate";
+import { coerceGmailThreadId } from "@/lib/continuum/client-memory/gmail";
 import type { ClientMemoryEntity, EntityRelationship, InsertResult, PersonProfile, ProjectHistory, ProjectProfile } from "../types";
 import { DEFAULT_VISIBILITY } from "../types";
 import type { CorrectProjectKindInput, CorrectProjectKindResult } from "../project-spec/correct-kind";
@@ -41,6 +42,7 @@ export type CreateFounderProjectInput = {
   lifecycleStage?: string | null;
   subject?: string | null;
   dueAt?: string | null;
+  gmailThreadId?: string | null;
   actor: string;
 };
 
@@ -127,12 +129,17 @@ export function findDuplicateLinkedProject(
   return existing.find((row) => foldProjectTitle(row.title) === folded) ?? null;
 }
 
-function emptyHistory(projectId: string, now: string): ProjectHistory {
+function emptyHistory(
+  projectId: string,
+  now: string,
+  gmailThreadId: string | null,
+): ProjectHistory {
+  const coerced = coerceGmailThreadId(gmailThreadId);
   return {
     projectId,
     cadJobNumber: null,
     orderNumber: null,
-    gmailThreadId: null,
+    gmailThreadId: coerced.status === "canonical" ? coerced.value : null,
     matchJudgment: null,
     matchJudgmentRaw: null,
     fingerSize: null,
@@ -157,11 +164,14 @@ async function completeFounderProjectCanonicalWrites(
     mutationId: string;
     subjectRaw: string;
     dueAt?: string | null;
+    gmailThreadId: string | null;
     now: string;
     status: "created" | "already-present";
   },
 ): Promise<CreateFounderProjectResult> {
-  await deps.insertProjectHistory(emptyHistory(input.projectId, input.now));
+  await deps.insertProjectHistory(
+    emptyHistory(input.projectId, input.now, input.gmailThreadId),
+  );
   await deps.insertRelationship({
     id: deps.newRelationshipId(),
     fromEntityId: input.personId,
@@ -316,6 +326,7 @@ export async function createFounderProject(
         mutationId,
         subjectRaw,
         dueAt: input.dueAt,
+        gmailThreadId: input.gmailThreadId ?? null,
         now,
         status: "already-present",
       });
@@ -358,6 +369,7 @@ export async function createFounderProject(
       mutationId,
       subjectRaw,
       dueAt: input.dueAt,
+      gmailThreadId: input.gmailThreadId ?? null,
       now,
       status: inserted.status === "already-present" ? "already-present" : "created",
     });

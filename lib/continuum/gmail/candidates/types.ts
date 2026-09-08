@@ -29,6 +29,8 @@ export type GmailCandidateProject = {
   diamondSupplyNotes: string | null;
   personIds: readonly string[];
   founderApprovedCurrent: boolean;
+  projectKind?: string | null;
+  lifecycleStage?: string | null;
 };
 
 export type GmailConfirmedPersonMapping = {
@@ -48,6 +50,7 @@ export type GmailCandidateWorld = {
   confirmedParticipantMappings?: readonly GmailConfirmedPersonMapping[];
   confirmedSourceLinks?: readonly GmailConfirmedSourceLink[];
   founderConfirmedEmailIdentities?: readonly GmailConfirmedPersonMapping[];
+  linkedGmailThreadIds?: readonly string[];
 };
 
 export type GmailCandidateEvidence = {
