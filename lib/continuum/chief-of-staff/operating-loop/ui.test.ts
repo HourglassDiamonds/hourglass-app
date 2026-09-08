@@ -33,6 +33,7 @@ function card(): CurrentProjectCard {
       detail: "Send CAD",
       source: "ownership",
     },
+    currentJobId: null,
     snapshot: [],
     latestFile: null,
     files: [],
@@ -63,6 +64,11 @@ describe("CoS operating loop Command Center UI", () => {
     assert.match(html, /overflow-x-hidden/);
     assert.match(html, /break-words/);
     assert.match(html, /Open project/);
+    assert.match(html, />Edit<\/a>/);
+    assert.match(
+      html,
+      /\/executive-dashboard\/concierge\/action\/cccccccc-cccc-4ccc-8ccc-ccccccccccc0\/edit/,
+    );
     assert.match(html, /current-project-aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa-toggle/);
     assert.doesNotMatch(html, /score|percent|%/i);
     assert.doesNotMatch(html, /chain of thought|hidden reasoning/i);
@@ -125,6 +131,62 @@ describe("CoS operating loop Command Center UI", () => {
     assert.match(html, /Confirmation only/);
     assert.match(html, /Items that seem amiss/);
     assert.match(html, /Past due, with no evidence of action/);
+  });
+
+  it("renders Proposed actions and the founder Edit form without UUID fields", () => {
+    const loop = composeCosOperatingLoop({
+      jobs: [],
+      candidates: [
+        fixtureCandidate({
+          candidateId: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
+          sourceSystem: "human-intake",
+          sourceRef: "he1|ffffffff-ffff-4fff-8fff-ffffffffffff",
+          candidateType: "open_job",
+          proposedTarget: {
+            kind: "open_job",
+            projectId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          },
+          payload: {
+            kind: "open_job",
+            jobKind: "commitment",
+            subject: "I'll send the CAD tomorrow.",
+            detail: "I'll send the CAD tomorrow.",
+            waitingOnActor: "founder",
+            dueAt: null,
+            createJob: false,
+          },
+          evidenceBasis: {
+            ruleIds: ["explicit_founder_commitment"],
+            matchedText: "I'll send the CAD tomorrow.",
+          },
+        }),
+      ],
+      projects: fixtureProjects(),
+      nowIso: COS_LOOP_NOW,
+      newMutationId: () => "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+    });
+    const html = renderToStaticMarkup(createElement(ChiefOfStaffToday, { loop }));
+    assert.match(html, /Proposed actions/);
+    assert.match(html, /send the CAD tomorrow/);
+    assert.match(html, /Add to actions/);
+    assert.match(html, /Dismiss/);
+    assert.match(html, /Review/);
+    const editForm = readFileSync(
+      join(CONCIERGE_DIR, "components", "edit-action-form.tsx"),
+      "utf8",
+    );
+    assert.match(editForm, /type="date"/);
+    assert.match(editForm, /Save/);
+    assert.match(editForm, /Cancel/);
+    assert.match(editForm, /min-h-12/);
+    assert.doesNotMatch(editForm, /UUID|jobId field|Project ID/i);
+    assert.match(editForm, /saveFounderEditAction/);
+    const page = readFileSync(
+      join(CONCIERGE_DIR, "action", "[jobId]", "edit", "page.tsx"),
+      "utf8",
+    );
+    assert.match(page, /robots: \{ index: false/);
+    assert.match(page, /EditActionForm/);
   });
 
   it("keeps Current Projects accordion as the only project operating surface", () => {

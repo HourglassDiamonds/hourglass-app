@@ -4,7 +4,7 @@
  * Does not mint People, change Kind/lifecycle, or infer jobs from status.
  */
 
-import { isOpenJobUuid, parseOptionalIso, parseOpenJobSubject } from "../project-jobs/validate";
+import { isOpenJobUuid, parseOptionalDue, parseOpenJobSubject } from "../project-jobs/validate";
 import type { CreateProjectJobInput } from "../project-jobs/create";
 import { isLifecycleBusyworkLabel } from "./hydrate";
 
@@ -48,7 +48,7 @@ export function founderManualActionInput(
   if (associatedPersonId && !isOpenJobUuid(associatedPersonId)) {
     return { ok: false, code: "invalid-id" };
   }
-  const dueAt = parseOptionalIso(raw.dueAt);
+  const dueAt = parseOptionalDue(raw.dueAt);
   if (!dueAt.ok) return { ok: false, code: "invalid-due" };
 
   return {

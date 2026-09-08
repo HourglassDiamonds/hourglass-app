@@ -14,7 +14,7 @@ describe("Founder manual action entry", () => {
       projectId: PROJECT,
       subject: "Call Travis about the shank",
       associatedPersonId: PERSON,
-      dueAt: "2026-09-12T00:00:00.000Z",
+      dueAt: "2026-09-12",
       actor: "justin",
     });
     assert.equal(parsed.ok, true);
@@ -23,7 +23,7 @@ describe("Founder manual action entry", () => {
     assert.equal(parsed.input.waitingOnActor, "founder");
     assert.equal(parsed.input.sourceSystem, "concierge-manual");
     assert.equal(parsed.input.associatedPersonId, PERSON);
-    assert.equal(parsed.input.dueAt, "2026-09-12T00:00:00.000Z");
+    assert.equal(parsed.input.dueAt, "2026-09-12");
   });
 
   it("rejects lifecycle and waiting-state busywork as the action text", () => {

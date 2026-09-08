@@ -136,6 +136,12 @@ describe("Open Jobs Project Desk UI", () => {
     assert.match(html, /Due within 7 days/);
     assert.match(html, /Add open job/);
     assert.match(html, /Open job/);
+    assert.match(html, /Edit action/);
+    assert.match(
+      html,
+      /\/executive-dashboard\/concierge\/action\/cccccccc-cccc-4ccc-8ccc-cccccccccccc\/edit/,
+    );
+    assert.match(html, /Due Sep 12/);
     assert.match(
       html,
       /\/executive-dashboard\/concierge\/projects\/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa\/jobs\/cccccccc-cccc-4ccc-8ccc-cccccccccccc/,

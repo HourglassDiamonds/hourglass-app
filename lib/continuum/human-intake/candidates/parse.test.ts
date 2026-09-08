@@ -56,6 +56,11 @@ When can we confirm metal?`;
       (row) => row.kind === "open_job" && row.jobKind === "commitment",
     );
     assert.ok(commitment);
+    assert.ok(
+      hits.some(
+        (row) => row.kind === "open_job" && row.ruleIds.includes("explicit_follow_up"),
+      ),
+    );
     const person = hits.find((row) => row.kind === "person_association");
     assert.equal(person?.kind === "person_association" && person.personId, PERSON_ID);
     const project = hits.find(
@@ -152,6 +157,44 @@ When can we confirm metal?`;
     const jobs = hits.filter((row) => row.kind === "open_job");
     assert.equal(jobs.length, 1);
     assert.equal(jobs[0]?.kind === "open_job" && jobs[0].jobKind, "commitment");
+    const followHits = parseHumanIntakeEvidence(
+      {
+        sourceId: SOURCE_ID,
+        text: "Follow up with Sarah next Tuesday.",
+        capturedAt: "2026-03-01T12:00:00.000Z",
+        confirmedProjectIds: [PROJECT_ID],
+      },
+      world,
+    );
+    const followJob = followHits.find(
+      (row) => row.kind === "open_job" && row.ruleIds.includes("explicit_follow_up"),
+    );
+    assert.ok(followJob);
+    const vendorHits = parseHumanIntakeEvidence(
+      {
+        sourceId: SOURCE_ID,
+        text: "We'll have it Friday.",
+        capturedAt: "2026-03-01T12:00:00.000Z",
+        confirmedProjectIds: [PROJECT_ID],
+      },
+      world,
+    );
+    const vendor = vendorHits.find(
+      (row) => row.kind === "open_job" && row.ruleIds.includes("explicit_vendor_commitment"),
+    );
+    assert.ok(vendor);
+    const lifecycleOnly = parseHumanIntakeEvidence(
+      {
+        sourceId: SOURCE_ID,
+        text: "IN PRODUCTION. WAITING FOR CLIENT APPROVAL.",
+        capturedAt: "2026-03-01T12:00:00.000Z",
+      },
+      world,
+    );
+    assert.equal(
+      lifecycleOnly.some((row) => row.kind === "open_job"),
+      false,
+    );
     const proposed = proposeHumanIntakeCandidates({
       evidence: { sourceId: SOURCE_ID, text: "I'll get the revision tomorrow." },
       world: { people: [], projects: [] },

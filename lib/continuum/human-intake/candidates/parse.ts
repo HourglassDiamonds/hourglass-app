@@ -299,6 +299,31 @@ function extractClientRequests(
   });
 }
 
+function extractVendorCommitments(
+  evidence: HumanIntakeEvidence,
+  out: IntakeParseHit[],
+): void {
+  const pattern =
+    /\b(?:we(?:'ll| will) have (?:it|them)|we(?:'ll| will) have the)\b[^.!?\n]{0,160}/gi;
+  eachMatch(evidence.text, pattern, (match) => {
+    const quote = match[0].trim();
+    const start = match.index ?? 0;
+    out.push({
+      kind: "open_job",
+      locator: locatorFor(evidence.text, start, start + match[0].length),
+      jobKind: "blocked_issue",
+      subject: clipMatchedText(quote, 160),
+      detail: quote.slice(0, 2000),
+      waitingOnActor: "vendor",
+      dueAt: null,
+      personId: evidence.confirmedPersonIds?.[0] ?? null,
+      projectId: evidence.confirmedProjectIds?.[0] ?? null,
+      confidence: "medium",
+      ruleIds: ["explicit_vendor_commitment"],
+    });
+  });
+}
+
 function extractQuestions(
   evidence: HumanIntakeEvidence,
   out: IntakeParseHit[],
@@ -336,6 +361,19 @@ function extractFollowUps(
       kind: "follow_up",
       locator: locatorFor(evidence.text, start, start + match[0].length),
       text: clipMatchedText(quote, 280),
+      dueAt: null,
+      personId: evidence.confirmedPersonIds?.[0] ?? null,
+      projectId: evidence.confirmedProjectIds?.[0] ?? null,
+      confidence: "medium",
+      ruleIds: ["explicit_follow_up"],
+    });
+    out.push({
+      kind: "open_job",
+      locator: locatorFor(evidence.text, start, start + match[0].length),
+      jobKind: "required_action",
+      subject: clipMatchedText(quote, 160),
+      detail: quote.slice(0, 2000),
+      waitingOnActor: "founder",
       dueAt: null,
       personId: evidence.confirmedPersonIds?.[0] ?? null,
       projectId: evidence.confirmedProjectIds?.[0] ?? null,
@@ -460,6 +498,7 @@ export function parseHumanIntakeEvidence(
   extractCadAndOrder(input, world, hits);
   extractCommitments(input, hits);
   extractClientRequests(input, hits);
+  extractVendorCommitments(input, hits);
   extractQuestions(input, hits);
   extractFollowUps(input, hits);
   extractPreferenceNotes(input, hits);

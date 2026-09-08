@@ -85,6 +85,21 @@ export type CosTop5Item = {
   completable: boolean;
   writer: CosCompletionWriter | null;
   mutationId: string;
+  editHref: string;
+};
+
+export type CosProposedAction = {
+  id: string;
+  candidateId: string;
+  sourceId: string | null;
+  headline: string;
+  sourceLabel: string;
+  sourceHref: string;
+  projectId: string | null;
+  projectTitle: string | null;
+  canAddToActions: boolean;
+  canDismiss: boolean;
+  mutationId: string;
 };
 
 export type CosRecapKind =
@@ -136,6 +151,7 @@ export type CosOperatingLoopView = {
   remainingCount: number;
   recap: CosRecapItem[];
   anomalies: CosAnomalyItem[];
+  proposedActions: CosProposedAction[];
 };
 
 export type CosProjectContext = {

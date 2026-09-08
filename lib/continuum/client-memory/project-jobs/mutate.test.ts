@@ -363,4 +363,58 @@ describe("Open Job founder controls", () => {
     assert.equal(second.job.state, "resolved");
     assert.equal(jobs.listMutations(created.job.jobId).map((row) => row.action).join(","), "create,resolve");
   });
+
+  it("updates subject and due date without resolving or recreating the job", async () => {
+    const memory = new InMemoryClientMemoryStore();
+    const jobs = new InMemoryProjectJobStore();
+    const writer = createInMemoryProjectJobWriter(memory, jobs, () => NOW);
+    const seeded = await seedProject(memory);
+    const created = await writer.createJob({
+      mutationId: randomUUID(),
+      projectId: seeded.projectId,
+      kind: "required_action",
+      subject: "Send CAD",
+      waitingOnActor: "founder",
+      actor: ACTOR,
+      dueAt: "2026-09-08",
+    });
+    assert.equal(created.ok, true);
+    if (!created.ok) return;
+    const jobId = created.job.jobId;
+    const mutationId = randomUUID();
+    const first = await writer.mutateJob({
+      mutationId,
+      projectId: seeded.projectId,
+      jobId,
+      action: "update",
+      actor: ACTOR,
+      subject: "Send revised CAD",
+      dueAt: "2026-09-12",
+    });
+    const replay = await writer.mutateJob({
+      mutationId,
+      projectId: seeded.projectId,
+      jobId,
+      action: "update",
+      actor: ACTOR,
+      subject: "Send a different CAD",
+      dueAt: "2026-09-01",
+    });
+    assert.equal(first.ok && first.status, "updated");
+    assert.equal(replay.ok && replay.status, "already-present");
+    if (!first.ok || !replay.ok) return;
+    assert.equal(first.job.jobId, jobId);
+    assert.equal(first.job.subject, "Send revised CAD");
+    assert.equal(first.job.dueAt, "2026-09-12");
+    assert.equal(first.job.state, "open");
+    assert.equal(first.job.resolvedAt, null);
+    assert.equal(replay.job.subject, "Send revised CAD");
+    assert.equal(replay.job.dueAt, "2026-09-12");
+    assert.equal(jobs.listJobs().length, 1);
+    assert.equal(jobs.getJob(jobId)?.jobId, jobId);
+    assert.equal(
+      jobs.listMutations(jobId).map((row) => row.action).join(","),
+      "create,update",
+    );
+  });
 });

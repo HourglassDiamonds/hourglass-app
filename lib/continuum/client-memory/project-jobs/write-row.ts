@@ -3,6 +3,13 @@
  */
 
 import type { ProjectJob } from "./types";
+import { encodeDateOnlyForTimestamptz, parseDateOnly } from "@/lib/continuum/date-only";
+
+function persistDue(value: string | null): string | null {
+  if (!value) return null;
+  const date = parseDateOnly(value);
+  return date ? encodeDateOnlyForTimestamptz(date) : value;
+}
 
 export function projectJobToRow(job: ProjectJob): Record<string, unknown> {
   return {
@@ -14,7 +21,7 @@ export function projectJobToRow(job: ProjectJob): Record<string, unknown> {
     waiting_on_actor: job.waitingOnActor,
     associated_person_id: job.associatedPersonId,
     state: job.state,
-    due_at: job.dueAt,
+    due_at: persistDue(job.dueAt),
     deferred_until: job.deferredUntil,
     resolved_at: job.resolvedAt,
     cancelled_at: job.cancelledAt,

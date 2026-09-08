@@ -19,6 +19,7 @@ import {
   conciergeCorrectProjectLifecyclePath,
   conciergeAddOpenJobPath,
   conciergeCreateActionPath,
+  conciergeEditActionPath,
   conciergeOpenJobPath,
   conciergeAddProjectArtifactPath,
   conciergeCopyGmailProjectArtifactPath,
@@ -259,6 +260,13 @@ describe("Concierge presentation", () => {
     assert.equal(
       conciergeCreateActionPath("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"),
       "/executive-dashboard/concierge/action/new?project=aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+    );
+    assert.equal(
+      conciergeEditActionPath(
+        "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+      ),
+      "/executive-dashboard/concierge/action/bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb/edit?project=aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
     );
     assert.equal(
       conciergeOpenJobPath(

@@ -37,6 +37,7 @@ function card(extra: Partial<CurrentProjectCard> = {}): CurrentProjectCard {
       detail: null,
       source: "lifecycle",
     },
+    currentJobId: null,
     snapshot: [],
     latestFile: null,
     files: [],

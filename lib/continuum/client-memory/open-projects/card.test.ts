@@ -269,6 +269,7 @@ describe("Current Projects accordion read model", () => {
     assert.equal(composed.collapsedLineKind, "ownership");
     assert.equal(composed.currentAction.label, "YOUR TURN");
     assert.equal(composed.currentAction.detail, "Confirm engraving");
+    assert.equal(composed.currentJobId, JOB_A);
     assert.doesNotMatch(composed.collapsedLine, /IN PRODUCTION/);
   });
 

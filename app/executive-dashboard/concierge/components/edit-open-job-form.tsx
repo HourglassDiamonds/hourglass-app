@@ -7,16 +7,15 @@ import {
   type SaveOpenJobState,
 } from "../project-jobs-actions";
 import { conciergeProjectPath } from "@/lib/continuum/client-memory/read/presentation";
-import { OPEN_JOB_ACTORS } from "@/lib/continuum/client-memory/project-jobs/types";
+import { OPEN_JOB_ACTORS, type ProjectJob } from "@/lib/continuum/client-memory/project-jobs/types";
 import {
   OPEN_JOB_ACTOR_LABELS,
   OPEN_JOB_KIND_LABELS,
 } from "@/lib/continuum/client-memory/project-jobs/present";
-import type { ProjectJob } from "@/lib/continuum/client-memory/project-jobs/types";
+import { parseDateOnly } from "@/lib/continuum/date-only";
 
 function dateValue(iso: string | null): string {
-  if (!iso) return "";
-  return iso.slice(0, 10);
+  return parseDateOnly(iso) ?? "";
 }
 
 export function EditOpenJobForm({

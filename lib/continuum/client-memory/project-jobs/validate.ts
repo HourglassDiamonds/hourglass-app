@@ -2,6 +2,7 @@
  * Bounded Open Job parsing. No inference from prose, notes, or Gmail bodies.
  */
 
+import { parseOptionalDateOnly } from "@/lib/continuum/date-only";
 import {
   OPEN_JOB_ACTORS,
   OPEN_JOB_CREATED_BY_MAX,
@@ -119,6 +120,12 @@ export function parseOptionalIso(
   if (!trimmed) return { ok: true, value: null };
   if (!ISO_RE.test(trimmed)) return { ok: false };
   return { ok: true, value: trimmed };
+}
+
+export function parseOptionalDue(
+  value: string | null | undefined,
+): { ok: true; value: string | null } | { ok: false } {
+  return parseOptionalDateOnly(value);
 }
 
 export function stateTimestampsValid(input: {

@@ -10,16 +10,21 @@ import {
 } from "@/lib/continuum/client-memory/read/presentation";
 import { founderManualActionInput } from "@/lib/continuum/client-memory/open-projects/manual-action";
 import type { FounderManualActionInvalidCode } from "@/lib/continuum/client-memory/open-projects/manual-action";
+import { encodeDateOnlyForTimestamptz, parseDateOnly } from "@/lib/continuum/date-only";
 
 export type SaveOpenJobState = { ok: false; message: string } | null;
 
 function parseDateInput(value: string): string | null {
   const trimmed = value.trim();
   if (!trimmed) return null;
-  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
-    return `${trimmed}T00:00:00.000Z`;
-  }
   return trimmed;
+}
+
+function parseDeferInput(value: string): string | null {
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  const date = parseDateOnly(trimmed);
+  return date ? encodeDateOnlyForTimestamptz(date) : trimmed;
 }
 
 function humanCreateMessage(result: CreateProjectJobResult): string {
@@ -155,7 +160,7 @@ export async function mutateOpenJobAction(
     jobId: String(formData.get("jobId") ?? "").trim(),
     action: String(formData.get("action") ?? "").trim(),
     actor: auth.username,
-    deferredUntil: parseDateInput(String(formData.get("deferredUntil") ?? "")),
+    deferredUntil: parseDeferInput(String(formData.get("deferredUntil") ?? "")),
     subject: String(formData.get("subject") ?? ""),
     detail: String(formData.get("detail") ?? ""),
     waitingOnActor: String(formData.get("waitingOnActor") ?? "").trim(),
@@ -166,6 +171,41 @@ export async function mutateOpenJobAction(
   });
   if (result.ok) {
     redirect(`${conciergeProjectPath(projectId)}?saved=job`);
+  }
+  return { ok: false, message: humanMutateMessage(result) };
+}
+
+export async function saveFounderEditAction(
+  _prev: SaveOpenJobState,
+  formData: FormData,
+): Promise<SaveOpenJobState> {
+  const auth = await getAuthenticatedProjectJobWriter();
+  if (!auth.ok) {
+    return {
+      ok: false,
+      message:
+        auth.reason === "unauthorized"
+          ? "Sign in to continue."
+          : "Unable to save the action.",
+    };
+  }
+  const projectId = String(formData.get("projectId") ?? "").trim();
+  const associatedRaw = String(formData.get("associatedPersonId") ?? "");
+  const dueRaw = String(formData.get("dueAt") ?? "");
+  const result = await auth.writer.mutateJob({
+    mutationId: String(formData.get("mutationId") ?? "").trim(),
+    projectId,
+    jobId: String(formData.get("jobId") ?? "").trim(),
+    action: "update",
+    actor: auth.username,
+    subject: String(formData.get("subject") ?? ""),
+    associatedPersonId: associatedRaw.trim() || null,
+    clearAssociatedPerson: associatedRaw.trim() === "",
+    dueAt: parseDateInput(dueRaw),
+    clearDueAt: dueRaw.trim() === "",
+  });
+  if (result.ok) {
+    redirect(CONCIERGE_HOME_PATH);
   }
   return { ok: false, message: humanMutateMessage(result) };
 }

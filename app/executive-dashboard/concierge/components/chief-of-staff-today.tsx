@@ -5,16 +5,20 @@ import {
   COS_RECAP_TITLE,
   COS_TOP5_TITLE,
 } from "@/lib/continuum/chief-of-staff/operating-loop/present";
+import { COS_PROPOSED_ACTIONS_TITLE } from "@/lib/continuum/chief-of-staff/operating-loop/propose-actions";
 import { CosCompleteControl, CosRecapConfirm } from "./cos-complete-control";
+import { CosProposedActionRow } from "./cos-proposed-actions";
 
 type CompleteAction = (formData: FormData) => void | Promise<void>;
 
 export function ChiefOfStaffToday({
   loop,
   completeAction,
+  reviewAction,
 }: {
   loop: CosOperatingLoopView;
   completeAction?: CompleteAction;
+  reviewAction?: CompleteAction;
 }) {
   return (
     <section data-cos-operating-loop={loop.status} className="min-w-0 overflow-x-hidden">
@@ -57,12 +61,18 @@ export function ChiefOfStaffToday({
                 <p className="mt-2 break-words text-[14px] leading-relaxed text-[#9a8e82]">
                   {item.why}
                 </p>
-                <p className="mt-2">
+                <p className="mt-2 flex min-w-0 flex-wrap gap-x-5">
                   <Link
                     href={item.accordionHref}
                     className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.2em] text-[#ad9164] outline-none hover:text-[#efe8de] focus-visible:text-[#efe8de]"
                   >
                     Open project
+                  </Link>
+                  <Link
+                    href={item.editHref}
+                    className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.2em] text-[#ad9164] outline-none hover:text-[#efe8de] focus-visible:text-[#efe8de]"
+                  >
+                    Edit
                   </Link>
                 </p>
               </div>
@@ -70,6 +80,18 @@ export function ChiefOfStaffToday({
           ))}
         </ol>
       )}
+      {loop.proposedActions.length > 0 ? (
+        <div data-cos-proposed-actions className="mt-10 min-w-0 overflow-x-hidden">
+          <h3 className="text-[11px] uppercase tracking-[0.28em] text-[#8d8073]">
+            {COS_PROPOSED_ACTIONS_TITLE}
+          </h3>
+          <ul className="mt-4 space-y-5">
+            {loop.proposedActions.map((item) => (
+              <CosProposedActionRow key={item.id} item={item} action={reviewAction} />
+            ))}
+          </ul>
+        </div>
+      ) : null}
       {loop.anomalies.length > 0 ? (
         <div data-cos-anomalies className="hg-cos-anomaly mt-10">
           <h3 className="text-[11px] uppercase tracking-[0.28em] text-[#8d8073]">

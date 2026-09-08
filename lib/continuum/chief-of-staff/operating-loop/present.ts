@@ -4,6 +4,7 @@
  */
 
 import { CONTINUUM_FOUNDER_TIME_ZONE } from "@/lib/continuum/dashboard/compose";
+import { formatDueTiming } from "@/lib/continuum/date-only";
 import {
   CURRENT_PROJECTS_OWNERSHIP_CLIENT,
   CURRENT_PROJECTS_OWNERSHIP_SHOP,
@@ -12,6 +13,7 @@ import {
 } from "@/lib/continuum/client-memory/open-projects/present";
 import {
   CONCIERGE_HOME_PATH,
+  conciergeEditActionPath,
   conciergeOpenJobPath,
 } from "@/lib/continuum/client-memory/read/presentation";
 import type { OpenJobActor } from "@/lib/continuum/client-memory/project-jobs/types";
@@ -52,19 +54,7 @@ export function ownershipLabel(actor: OpenJobActor): string {
 }
 
 export function formatDueDay(iso: string, nowIso: string): string {
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return "Due date recorded";
-  const formatter = new Intl.DateTimeFormat("en-US", {
-    timeZone: CONTINUUM_FOUNDER_TIME_ZONE,
-    month: "short",
-    day: "numeric",
-  });
-  const due = Date.parse(iso);
-  const now = Date.parse(nowIso);
-  if (Number.isFinite(due) && Number.isFinite(now) && due < now) {
-    return `Past due · ${formatter.format(date)}`;
-  }
-  return `Due ${formatter.format(date)}`;
+  return formatDueTiming(iso, nowIso, CONTINUUM_FOUNDER_TIME_ZONE);
 }
 
 export function timingLabel(dueAt: string | null, nowIso: string): string {
@@ -102,6 +92,7 @@ export function presentTop5Item(
     why: whyLabel(item),
     accordionHref: `${CONCIERGE_HOME_PATH}#${currentProjectToggleId(item.projectId)}`,
     jobHref: conciergeOpenJobPath(item.projectId, item.id),
+    editHref: conciergeEditActionPath(item.projectId, item.id),
     completable: writer != null,
     writer,
     mutationId,

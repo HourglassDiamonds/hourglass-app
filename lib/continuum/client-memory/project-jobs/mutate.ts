@@ -12,6 +12,7 @@ import {
   parseOpenJobCreatedBy,
   parseOpenJobDetail,
   parseOpenJobSubject,
+  parseOptionalDue,
   parseOptionalIso,
   stateTimestampsValid,
 } from "./validate";
@@ -270,7 +271,7 @@ export async function mutateOpenJob(
       if (input.clearDueAt) {
         dueAt = null;
       } else if (input.dueAt != null && input.dueAt !== "") {
-        const parsed = parseOptionalIso(input.dueAt);
+        const parsed = parseOptionalDue(input.dueAt);
         if (!parsed.ok) return invalid("invalid-due");
         dueAt = parsed.value;
       }

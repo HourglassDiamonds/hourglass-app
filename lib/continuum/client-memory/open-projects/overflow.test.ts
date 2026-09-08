@@ -40,6 +40,7 @@ function card(
       detail: null,
       source: "lifecycle",
     },
+    currentJobId: null,
     snapshot: [],
     latestFile: null,
     files: [],

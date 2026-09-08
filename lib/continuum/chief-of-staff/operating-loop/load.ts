@@ -34,6 +34,7 @@ function disconnectedLoop(): CosOperatingLoopView {
     remainingCount: 0,
     recap: [],
     anomalies: [],
+    proposedActions: [],
   };
 }
 

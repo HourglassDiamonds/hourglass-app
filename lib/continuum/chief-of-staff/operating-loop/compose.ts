@@ -11,6 +11,7 @@ import type { ProjectJob } from "@/lib/continuum/client-memory/project-jobs/type
 import { collectCanonicalActionables, selectTopRanked } from "./collect";
 import { detectAnomalies, proposeRecapItems, recapJobIds } from "./reconcile";
 import { DETERMINISTIC_ACTIONABLE_RANKER } from "./rank";
+import { proposeExplicitActions } from "./propose-actions";
 import {
   COS_ACTIVE_HEADING,
   COS_CAUGHT_UP_DETAIL,
@@ -68,6 +69,7 @@ export function composeCosOperatingLoop(
       remainingCount: 0,
       recap: [],
       anomalies: [],
+      proposedActions: [],
     };
   }
 
@@ -91,6 +93,12 @@ export function composeCosOperatingLoop(
     nowIso: input.nowIso,
     projects,
   });
+  const proposedActions = proposeExplicitActions({
+    jobs: input.jobs,
+    candidates,
+    projects,
+    newMutationId,
+  });
 
   if (top.length === 0) {
     return {
@@ -102,6 +110,7 @@ export function composeCosOperatingLoop(
       remainingCount: 0,
       recap,
       anomalies,
+      proposedActions,
     };
   }
 
@@ -114,6 +123,7 @@ export function composeCosOperatingLoop(
     remainingCount: Math.max(0, ranked.length - top.length),
     recap,
     anomalies,
+    proposedActions,
   };
 }
 

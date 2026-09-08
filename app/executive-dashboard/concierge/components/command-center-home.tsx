@@ -24,11 +24,13 @@ export function CommandCenterHome({
   openProjects,
   operatingLoop,
   completeAction,
+  reviewAction,
 }: {
   model: ContinuumHomeModel;
   openProjects: CurrentProjectCard[];
   operatingLoop: CosOperatingLoopView;
   completeAction?: CompleteAction;
+  reviewAction?: CompleteAction;
 }) {
   return (
     <div data-command-center className="hg-command-grid">
@@ -36,7 +38,11 @@ export function CommandCenterHome({
         <h1 className="font-serif text-[2.05rem] font-normal leading-[1.08] tracking-[-0.045em] text-[#efe8de] md:text-[2.45rem]">
           {greetingLine(model)}
         </h1>
-        <ChiefOfStaffToday loop={operatingLoop} completeAction={completeAction} />
+        <ChiefOfStaffToday
+          loop={operatingLoop}
+          completeAction={completeAction}
+          reviewAction={reviewAction}
+        />
         <AskConciergeShell />
       </div>
       <div className="flex min-w-0 flex-col gap-9 lg:gap-10">

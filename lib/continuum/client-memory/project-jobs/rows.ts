@@ -15,6 +15,7 @@ import {
   parseOpenJobSubject,
   stateTimestampsValid,
 } from "./validate";
+import { decodeStoredDue } from "@/lib/continuum/date-only";
 
 function timestampOrNull(value: unknown): string | null {
   if (value == null) return null;
@@ -45,7 +46,7 @@ export function rowToProjectJob(
   const createdBy = parseOpenJobCreatedBy(
     row.created_by == null ? null : String(row.created_by),
   );
-  const dueAt = timestampOrNull(row.due_at);
+  const dueAt = decodeStoredDue(timestampOrNull(row.due_at));
   const deferredUntil = timestampOrNull(row.deferred_until);
   const resolvedAt = timestampOrNull(row.resolved_at);
   const cancelledAt = timestampOrNull(row.cancelled_at);

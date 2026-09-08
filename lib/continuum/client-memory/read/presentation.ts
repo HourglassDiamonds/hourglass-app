@@ -74,6 +74,10 @@ export function conciergeCreateActionPath(projectId?: string): string {
   return `${base}?project=${encodeURIComponent(id)}`;
 }
 
+export function conciergeEditActionPath(projectId: string, jobId: string): string {
+  return `${CONCIERGE_HOME_PATH}/action/${encodeURIComponent(jobId)}/edit?project=${encodeURIComponent(projectId)}`;
+}
+
 export function conciergeOpenJobPath(projectId: string, jobId: string): string {
   return `${conciergeProjectPath(projectId)}/jobs/${jobId}`;
 }

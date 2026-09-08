@@ -23,6 +23,7 @@ const INFERENCE_FILES = [
   "present.ts",
   "rank.ts",
   "reconcile.ts",
+  "propose-actions.ts",
   "load.ts",
   "types.ts",
   "fixtures.ts",
@@ -73,9 +74,24 @@ describe("CoS operating loop security", () => {
     assert.match(action, /getAuthenticatedProjectJobWriter/);
     assert.match(action, /completeFounderActionable/);
     assert.doesNotMatch(action, /applyReview|setProjectLifecycle|gmail\.googleapis/);
+    assert.doesNotMatch(action, /reviewIntakeCandidateAction|createProjectJob/);
     assert.doesNotMatch(shared, /completeTop5OpenJobAction|completeFounderActionable/);
     assert.match(page, /loadCosOperatingLoop/);
     assert.match(page, /completeTop5OpenJobAction/);
+    assert.doesNotMatch(page, /composeChiefOfStaffBrief|runChiefOfStaffShadow/);
+    const proposedUi = readFileSync(
+      join(ROOT, "app/executive-dashboard/concierge/components/cos-proposed-actions.tsx"),
+      "utf8",
+    );
+    assert.match(proposedUi, /Add to actions/);
+    assert.doesNotMatch(proposedUi, /createProjectJob|mutateJob|applyReview/);
+    const today = readFileSync(
+      join(ROOT, "app/executive-dashboard/concierge/components/chief-of-staff-today.tsx"),
+      "utf8",
+    );
+    assert.match(today, /item\.editHref/);
+    assert.match(today, /CosProposedActionRow/);
+    assert.match(page, /reviewProposedActionFromForm/);
     assert.doesNotMatch(page, /composeChiefOfStaffBrief|runChiefOfStaffShadow/);
     for (const file of walkFiles(join(ROOT, "app/api"), ".ts")) {
       const source = readFileSync(file, "utf8");

@@ -17,6 +17,7 @@ import {
   lifecycleStageLabel,
   type LifecycleKind,
 } from "../project-lifecycle";
+import { parseDateOnly } from "@/lib/continuum/date-only";
 import { selectOpenProjectWork, type OpenProjectWorkItem } from "./select";
 import {
   CURRENT_PROJECTS_ACTION_UNRECORDED,
@@ -62,6 +63,7 @@ export type CurrentProjectCard = {
     detail: string | null;
     source: CurrentProjectLineKind;
   };
+  currentJobId: string | null;
   snapshot: ProjectSpecField[];
   latestFile: CurrentProjectFile | null;
   files: CurrentProjectFile[];
@@ -96,10 +98,8 @@ function isQuietSnooze(job: ProjectDeskOpenJob): boolean {
   return job.state === "snoozed";
 }
 
-function dueMs(job: ProjectDeskOpenJob): number | null {
-  if (!job.dueAt) return null;
-  const parsed = Date.parse(job.dueAt);
-  return Number.isFinite(parsed) ? parsed : null;
+function dueDate(job: ProjectDeskOpenJob): string | null {
+  return parseDateOnly(job.dueAt);
 }
 
 export function pickCurrentOpenJob(
@@ -109,9 +109,9 @@ export function pickCurrentOpenJob(
   const active = jobs.filter((job) => !isQuietSnooze(job));
   const pool = active.length > 0 ? active : jobs;
   const dated = pool
-    .map((job) => ({ job, due: dueMs(job) }))
-    .filter((row): row is { job: ProjectDeskOpenJob; due: number } => row.due != null)
-    .sort((a, b) => a.due - b.due);
+    .map((job) => ({ job, due: dueDate(job) }))
+    .filter((row): row is { job: ProjectDeskOpenJob; due: string } => row.due != null)
+    .sort((a, b) => (a.due < b.due ? -1 : a.due > b.due ? 1 : 0));
   if (dated[0]) return dated[0].job;
   return pool[0] ?? null;
 }
@@ -248,6 +248,7 @@ export function composeCurrentProjectCard(
       detail: actionDetail,
       source: collapsedLineKind,
     },
+    currentJobId: currentJob?.jobId ?? null,
     snapshot: desk.specs,
     latestFile: latest ? toFile(latest) : null,
     files,

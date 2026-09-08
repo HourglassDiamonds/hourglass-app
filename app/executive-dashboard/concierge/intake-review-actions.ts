@@ -218,3 +218,7 @@ export async function reviewIntakeCandidateAction(
   }
   return { ok: true, message: result.preview.summary };
 }
+
+export async function reviewProposedActionFromForm(formData: FormData): Promise<void> {
+  await reviewIntakeCandidateAction(null, formData);
+}

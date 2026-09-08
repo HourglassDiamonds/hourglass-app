@@ -36,7 +36,7 @@ const FOUNDER_COMMITMENT =
 const CLIENT_REQUEST =
   /\b(?:can you|could you|please) (?:send|make|revise|update|do)[^.!?\n]{0,160}/gi;
 const VENDOR_WAIT =
-  /\bwe(?:'ll| will) send\b[^.!?\n]{0,160}|\bwhen ready\b[^.!?\n]{0,80}/gi;
+  /\bwe(?:'ll| will) (?:send|have it|have them)\b[^.!?\n]{0,160}|\bwhen ready\b[^.!?\n]{0,80}/gi;
 const FOLLOW_UP =
   /\b(?:follow[- ]up|circle back|check back)(?:\s+in\s+two weeks)?\b[^.!?\n]{0,120}/gi;
 const RELATIVE_TOMORROW = /\btomorrow\b/gi;
@@ -283,7 +283,7 @@ export function extractNotes(text: string): NoteHit[] {
 }
 
 export type JobHit = {
-  jobKind: "commitment" | "request" | "blocked_issue";
+  jobKind: "commitment" | "request" | "blocked_issue" | "required_action";
   waitingOnActor: "founder" | "vendor";
   subject: string;
   matchedText: string;
@@ -329,6 +329,15 @@ export function extractOpenJobs(
       });
     }
   }
+  eachMatch(text, FOLLOW_UP, (match) => {
+    hits.push({
+      jobKind: "required_action",
+      waitingOnActor: "founder",
+      subject: clipMatchedText(match[0], 160),
+      matchedText: clipMatchedText(match[0]),
+      ruleIds: ["explicit_follow_up"],
+    });
+  });
   return hits;
 }
 

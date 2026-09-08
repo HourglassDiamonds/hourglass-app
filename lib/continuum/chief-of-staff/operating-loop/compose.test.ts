@@ -224,6 +224,72 @@ describe("CoS operating loop Top 5", () => {
     assert.equal(caught.status, "caught-up");
   });
 
+  it("keeps Sep 8 due today on Sep 8 and not past due on Sep 7", () => {
+    const jobs = [
+      job({
+        jobId: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+        subject: "Send CAD",
+        dueAt: "2026-09-08",
+      }),
+    ];
+    const seventh = composeCosOperatingLoop({
+      jobs,
+      projects: projects(),
+      nowIso: "2026-09-07T16:00:00.000Z",
+    });
+    const eighth = composeCosOperatingLoop({
+      jobs,
+      projects: projects(),
+      nowIso: "2026-09-08T16:00:00.000Z",
+    });
+    const ninth = composeCosOperatingLoop({
+      jobs,
+      projects: projects(),
+      nowIso: "2026-09-09T16:00:00.000Z",
+    });
+    assert.equal(seventh.top5[0]?.timing, "DUE TOMORROW · SEP 8");
+    assert.doesNotMatch(seventh.top5[0]?.timing ?? "", /PAST DUE/);
+    assert.equal(eighth.top5[0]?.timing, "DUE TODAY · SEP 8");
+    assert.equal(ninth.top5[0]?.timing, "PAST DUE · SEP 8");
+  });
+
+  it("re-ranks after a due-date edit without duplicating the job id", () => {
+    const clientWait = job({
+      jobId: "aa000000-cccc-4ccc-8ccc-cccccccccccc",
+      subject: "Waiting on Sarah",
+      waitingOnActor: "client",
+      dueAt: "2026-09-01",
+      createdAt: "2026-08-01T12:00:00.000Z",
+    });
+    const founder = job({
+      jobId: "bb000000-cccc-4ccc-8ccc-cccccccccccc",
+      subject: "Send CAD",
+      dueAt: "2026-09-20",
+    });
+    const before = composeCosOperatingLoop({
+      jobs: [clientWait, founder],
+      projects: projects(),
+      nowIso: COS_LOOP_NOW,
+    });
+    const after = composeCosOperatingLoop({
+      jobs: [
+        clientWait,
+        job({
+          jobId: "bb000000-cccc-4ccc-8ccc-cccccccccccc",
+          subject: "Send CAD",
+          dueAt: "2026-09-01",
+        }),
+      ],
+      projects: projects(),
+      nowIso: COS_LOOP_NOW,
+    });
+    assert.equal(before.top5[0]?.id, "aa000000-cccc-4ccc-8ccc-cccccccccccc");
+    assert.equal(after.top5[0]?.id, "bb000000-cccc-4ccc-8ccc-cccccccccccc");
+    assert.equal(after.top5.length, 2);
+    assert.equal(new Set(after.top5.map((row) => row.id)).size, 2);
+    assert.equal(after.top5[0]?.editHref.includes("bb000000-cccc-4ccc-8ccc-cccccccccccc"), true);
+  });
+
   it("selectTopRanked never exceeds the limit and skips excluded ids", () => {
     const ranked = [1, 2, 3, 4, 5, 6].map((value) => ({ id: String(value) }));
     assert.deepEqual(

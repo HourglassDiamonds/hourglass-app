@@ -17,6 +17,7 @@ import type {
   MutateOpenJobInput,
   MutateOpenJobResult,
 } from "./mutate";
+import { encodeDateOnlyForTimestamptz, parseDateOnly } from "@/lib/continuum/date-only";
 import { PROJECT_JOB_COLUMNS, rowToProjectJob } from "./rows";
 import { projectJobToRow } from "./write-row";
 import type { ProjectJob } from "./types";
@@ -36,6 +37,12 @@ function writeReason(message: string): Error {
     return new Error("entity-kind-mismatch");
   }
   return new Error(message || "mutate-project-job-failed");
+}
+
+function persistDue(value: string | null): string | null {
+  if (!value) return null;
+  const date = parseDateOnly(value);
+  return date ? encodeDateOnlyForTimestamptz(date) : value;
 }
 
 export class SupabaseProjectJobWriter implements ProjectJobWriter {
@@ -248,7 +255,7 @@ export class SupabaseProjectJobWriter implements ProjectJobWriter {
         waiting_on_actor: input.next.waitingOnActor,
         associated_person_id: input.next.associatedPersonId,
         state: input.next.state,
-        due_at: input.next.dueAt,
+        due_at: persistDue(input.next.dueAt),
         deferred_until: input.next.deferredUntil,
         resolved_at: input.next.resolvedAt,
         cancelled_at: input.next.cancelledAt,

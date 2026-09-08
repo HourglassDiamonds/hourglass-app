@@ -8,11 +8,14 @@ import {
   conciergeCorrectProjectKindPath,
   conciergeCorrectProjectLifecyclePath,
   conciergeCorrectProjectSpecPath,
+  conciergeEditActionPath,
   conciergeOpenJobPath,
   formatNoteDate,
   noteContextLabel,
   noteSourceLabel,
 } from "@/lib/continuum/client-memory/read/presentation";
+import { formatDateOnlyShort } from "@/lib/continuum/date-only";
+import { CURRENT_PROJECTS_EDIT_ACTION_LABEL } from "@/lib/continuum/client-memory/open-projects/present";
 import type { ProjectDeskRead } from "@/lib/continuum/client-memory/project-desk/types";
 import { coverageRows } from "@/lib/continuum/client-memory/project-desk/status";
 import { projectRevisionFieldLabel } from "@/lib/continuum/client-memory/project-spec/types";
@@ -341,18 +344,26 @@ function OpenJobsSection({
               ) : null}
               {job.dueAt ? (
                 <p className="mt-1 text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
-                  Due {formatNoteDate(job.dueAt)}
+                  Due {formatDateOnlyShort(job.dueAt)}
                 </p>
               ) : null}
               <p className="mt-1 text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
                 {openJobSourceLabel(job.sourceSystem)} · {formatNoteDate(job.createdAt)}
               </p>
-              <Link
-                href={conciergeOpenJobPath(projectId, job.jobId)}
-                className="mt-2 inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.24em] text-[#8d8073] outline-none hover:text-[#efe8de] focus-visible:text-[#efe8de]"
-              >
-                {OPEN_JOB_EDIT_LABEL}
-              </Link>
+              <p className="mt-2 flex min-w-0 flex-wrap gap-x-5">
+                <Link
+                  href={conciergeEditActionPath(projectId, job.jobId)}
+                  className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.24em] text-[#ad9164] outline-none hover:text-[#efe8de] focus-visible:text-[#efe8de]"
+                >
+                  {CURRENT_PROJECTS_EDIT_ACTION_LABEL}
+                </Link>
+                <Link
+                  href={conciergeOpenJobPath(projectId, job.jobId)}
+                  className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.24em] text-[#8d8073] outline-none hover:text-[#efe8de] focus-visible:text-[#efe8de]"
+                >
+                  {OPEN_JOB_EDIT_LABEL}
+                </Link>
+              </p>
             </li>
           ))}
         </ol>

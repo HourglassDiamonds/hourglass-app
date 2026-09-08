@@ -37,6 +37,7 @@ function card(extra: Partial<CurrentProjectCard> = {}): CurrentProjectCard {
       detail: null,
       source: "lifecycle",
     },
+    currentJobId: null,
     snapshot: [],
     latestFile: null,
     files: [],
@@ -113,12 +114,13 @@ describe("Current Projects Command Center accordion UI", () => {
             title: "J.Pennock",
             collapsedLine: "YOUR TURN — Confirm engraving",
             collapsedLineKind: "ownership",
-            currentAction: {
-              label: "YOUR TURN",
-              detail: "Confirm engraving",
-              source: "ownership",
-            },
-          }),
+    currentAction: {
+      label: "YOUR TURN",
+      detail: "Confirm engraving",
+      source: "ownership",
+    },
+    currentJobId: PROJECT_A,
+  }),
           card({
             projectId: PROJECT_B,
             title: "Lee / Spiegel",
@@ -329,6 +331,7 @@ describe("Current Projects Command Center accordion UI", () => {
               detail: "Confirm engraving",
               source: "ownership",
             },
+            currentJobId: PROJECT_A,
           }),
         ],
       }),
@@ -337,6 +340,8 @@ describe("Current Projects Command Center accordion UI", () => {
     assert.match(job, /data-current-action/);
     assert.match(job, /data-action-source="ownership"/);
     assert.match(job, /Confirm engraving/);
+    assert.match(job, /Edit action/);
+    assert.match(job, /\/executive-dashboard\/concierge\/action\/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa\/edit/);
 
     const unresolvedJob = renderToStaticMarkup(
       createElement(OpenProjectsHome, {

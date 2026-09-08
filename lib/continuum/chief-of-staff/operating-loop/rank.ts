@@ -5,9 +5,9 @@
  * Model: cos-operating-loop-rank-v1
  *
  * Factors (internal scores; never shown as numbers to the founder):
- * - overdue — explicit dueAt is earlier than now
+ * - overdue — explicit due date is before the founder/business calendar day
  * - explicit_due — a due date exists
- * - due_soon — due within 7 days (not already overdue)
+ * - due_soon — due today or within 7 calendar days (not already overdue)
  * - founder_action — waiting on the founder (next required founder action)
  * - hourglass_action — waiting on Hourglass
  * - client_owed — client-originated work waiting on founder
@@ -23,7 +23,12 @@
  * Stability: score desc, dueAt asc (missing last), createdAt asc, id asc.
  */
 
-import { OPEN_JOB_DUE_SOON_MS, OPEN_JOB_STALE_MS } from "@/lib/continuum/client-memory/project-jobs/intelligence";
+import { OPEN_JOB_STALE_MS } from "@/lib/continuum/client-memory/project-jobs/intelligence";
+import {
+  isDueSoonDate,
+  isPastDueDate,
+  parseDateOnly,
+} from "@/lib/continuum/date-only";
 import type {
   ActionableRanker,
   ActionableWork,
@@ -74,16 +79,15 @@ function parseMs(iso: string | null): number | null {
   return Number.isFinite(ms) ? ms : null;
 }
 
-function collectFactors(item: ActionableWork, nowMs: number): RankingFactorHit[] {
+function collectFactors(item: ActionableWork, nowIso: string, nowMs: number): RankingFactorHit[] {
   const hits: RankingFactorHit[] = [];
   const fire = (id: RankingFactorId) => {
     hits.push({ id, label: RANKING_FACTOR_LABELS[id] });
   };
 
-  const dueMs = parseMs(item.dueAt);
-  if (dueMs != null && dueMs < nowMs) fire("overdue");
+  if (isPastDueDate(item.dueAt, nowIso)) fire("overdue");
   if (item.dueAt) fire("explicit_due");
-  if (dueMs != null && dueMs >= nowMs && dueMs - nowMs <= OPEN_JOB_DUE_SOON_MS) {
+  if (isDueSoonDate(item.dueAt, nowIso)) {
     fire("due_soon");
   }
 
@@ -134,9 +138,9 @@ function scoreOf(item: ActionableWork, factors: RankingFactorHit[], nowMs: numbe
 
 function compareRanked(a: RankedActionable, b: RankedActionable): number {
   if (a.score !== b.score) return b.score - a.score;
-  const aDue = parseMs(a.dueAt);
-  const bDue = parseMs(b.dueAt);
-  if (aDue != null && bDue != null && aDue !== bDue) return aDue - bDue;
+  const aDue = parseDateOnly(a.dueAt);
+  const bDue = parseDateOnly(b.dueAt);
+  if (aDue != null && bDue != null && aDue !== bDue) return aDue < bDue ? -1 : 1;
   if (aDue != null && bDue == null) return -1;
   if (aDue == null && bDue != null) return 1;
   if (a.createdAt !== b.createdAt) return a.createdAt < b.createdAt ? -1 : 1;
@@ -150,7 +154,7 @@ export function rankActionableWork(
   const nowMs = Date.parse(nowIso);
   const clock = Number.isFinite(nowMs) ? nowMs : 0;
   const ranked: RankedActionable[] = items.map((item) => {
-    const factors = collectFactors(item, clock);
+    const factors = collectFactors(item, nowIso, clock);
     return {
       ...item,
       rankingModelId: COS_RANKING_MODEL_ID,

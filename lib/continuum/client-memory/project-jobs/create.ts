@@ -15,7 +15,7 @@ import {
   parseOpenJobDetail,
   parseOpenJobSourceRef,
   parseOpenJobSubject,
-  parseOptionalIso,
+  parseOptionalDue,
 } from "./validate";
 
 const MANUAL_SOURCE: OpenJobSourceSystem = "concierge-manual";
@@ -106,7 +106,7 @@ export async function createProjectJob(
   if (!detail.ok) return invalid("invalid-detail");
   const createdBy = parseOpenJobCreatedBy(input.actor);
   if (!createdBy.ok) return invalid("invalid-id");
-  const dueAt = parseOptionalIso(input.dueAt);
+  const dueAt = parseOptionalDue(input.dueAt);
   if (!dueAt.ok) return invalid("invalid-due");
   const sourceRef = parseOpenJobSourceRef(input.sourceRef);
   if (!sourceRef.ok) return invalid("invalid-source");

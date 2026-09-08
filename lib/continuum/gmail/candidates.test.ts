@@ -335,6 +335,32 @@ describe("Gmail → Candidate adapter", () => {
     );
   });
 
+  it("turns explicit follow-up language into an Open Job candidate without auto-creating it", () => {
+    const founderHash = hashEmail("founder@hourglass.test");
+    const proposed = proposeGmailCandidates({
+      createdAt: NOW,
+      world: world([], [], founderHash ? [founderHash] : []),
+      evidence: [
+        evidence({
+          messageId: "m-follow",
+          threadId: "t-follow",
+          sentAt: "2026-03-14T18:22:00.000Z",
+          fromEmail: "founder@hourglass.test",
+          direction: "outbound",
+          plaintext: "Please follow up with Sarah next Tuesday.",
+        }),
+      ],
+    });
+    const jobs = proposed.candidates.filter((row) => row.candidateType === "open_job");
+    assert.ok(jobs.some((row) => row.evidenceBasis.ruleIds.includes("explicit_follow_up")));
+    assert.equal(
+      jobs.every(
+        (row) => row.payload.kind === "open_job" && row.payload.createJob === false,
+      ),
+      true,
+    );
+  });
+
   it("captures vendor waiting language as an external dependency candidate", () => {
     const vendor = person({
       personId: "person-vendor",

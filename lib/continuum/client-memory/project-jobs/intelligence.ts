@@ -14,9 +14,10 @@
  *    from subject, detail, or Person display names.
  * 6. Blocked means at least one active job whose kind is blocked_issue.
  *    Vendor-waiting without that kind is not blocked.
- * 7. Past due means an active job with an explicit dueAt earlier than now.
- *    Never inferred. The word is "past due", not an SLA health score.
- * 8. Due soon means an active job with now <= dueAt <= now + 7 days.
+ * 7. Past due means an active job with an explicit due date before the
+ *    founder/business calendar day. Never inferred from UTC midnight.
+ *    The word is "past due", not an SLA health score.
+ * 8. Due soon means an active job due today or within 7 calendar days.
  *    A past-due job is not also due-soon.
  * 9. Forgotten-risk is conservative. A job can be old without being a problem.
  *    Only founder or Hourglass active jobs qualify, and only when they are
@@ -28,6 +29,7 @@
 
 import { isUnresolvedOpenJobState } from "./validate";
 import type { OpenJobActor, ProjectJob } from "./types";
+import { isDueSoonDate, isPastDueDate, parseDateOnly } from "@/lib/continuum/date-only";
 
 export const OPEN_JOB_DUE_SOON_MS = 7 * 24 * 60 * 60 * 1000;
 export const OPEN_JOB_STALE_MS = 14 * 24 * 60 * 60 * 1000;
@@ -78,11 +80,12 @@ function lastTouchMs(job: ProjectJob): number {
   return Number.isFinite(created) ? created : Number.NaN;
 }
 
-function dueDelta(job: ProjectJob, nowMs: number): number | null {
-  if (!job.dueAt) return null;
-  const due = Date.parse(job.dueAt);
-  if (!Number.isFinite(due)) return null;
-  return due - nowMs;
+function nextDueDate(current: string | null, candidate: string): string {
+  const currentDate = parseDateOnly(current);
+  const nextDate = parseDateOnly(candidate);
+  if (!nextDate) return current ?? candidate;
+  if (!currentDate) return candidate;
+  return nextDate < currentDate ? candidate : (current as string);
 }
 
 export function summarizeProjectWork(
@@ -113,16 +116,12 @@ export function summarizeProjectWork(
     activeCount += 1;
     waitingOn[job.waitingOnActor] += 1;
     if (job.kind === "blocked_issue") blocked = true;
-    const delta = dueDelta(job, clock);
-    const pastDue = delta != null && delta < 0;
-    const dueSoon =
-      delta != null && delta >= 0 && delta <= OPEN_JOB_DUE_SOON_MS;
+    const pastDue = isPastDueDate(job.dueAt, nowIso);
+    const dueSoon = isDueSoonDate(job.dueAt, nowIso);
     if (pastDue) pastDueCount += 1;
     if (dueSoon) dueSoonCount += 1;
-    if (job.dueAt && delta != null) {
-      if (nextDueAt == null || Date.parse(job.dueAt) < Date.parse(nextDueAt)) {
-        nextDueAt = job.dueAt;
-      }
+    if (job.dueAt) {
+      nextDueAt = nextDueDate(nextDueAt, job.dueAt);
     }
     const ours =
       job.waitingOnActor === "founder" || job.waitingOnActor === "hourglass";
