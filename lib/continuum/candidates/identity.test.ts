@@ -8,7 +8,11 @@ import {
 import { CANDIDATE_CONTRACT_VERSION, type ContinuumCandidateDraft } from "./types";
 
 function draft(
-  input: Pick<ContinuumCandidateDraft, "sourceRef" | "proposedTarget" | "payload">,
+  input: Pick<
+    ContinuumCandidateDraft,
+    "sourceRef" | "proposedTarget" | "payload"
+  > &
+    Partial<Pick<ContinuumCandidateDraft, "sourceSystem">>,
 ): ContinuumCandidateDraft {
   return {
     candidateId: "",
@@ -85,5 +89,38 @@ describe("candidate identity", () => {
       ),
     );
     assert.notEqual(left, right);
+  });
+
+  it("does not collide Calendar cal1 refs with Gmail gc1 refs", () => {
+    const calendar = candidateIdFromIdentity(
+      candidateIdentityKey(
+        draft({
+          sourceSystem: "google_calendar",
+          sourceRef: "cal1|primary|evt-1",
+          proposedTarget: { kind: "project", projectId: "p1" },
+          payload: {
+            kind: "project_association",
+            title: "One",
+            token: "CR5001024",
+            match: "exact",
+          },
+        }),
+      ),
+    );
+    const gmail = candidateIdFromIdentity(
+      candidateIdentityKey(
+        draft({
+          sourceRef: "gc1|primary|evt-1",
+          proposedTarget: { kind: "project", projectId: "p1" },
+          payload: {
+            kind: "project_association",
+            title: "One",
+            token: "CR5001024",
+            match: "exact",
+          },
+        }),
+      ),
+    );
+    assert.notEqual(calendar, gmail);
   });
 });

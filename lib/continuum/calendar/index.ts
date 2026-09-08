@@ -31,3 +31,8 @@ export { toCalendarAssociationHandoff } from "./handoff";
 export type { CalendarAssociationHandoff } from "./handoff";
 export { readCalendarContext } from "./context";
 export { toCalendarFounderContextView } from "./presentation";
+export {
+  analyzeCalendarEventAssociation,
+  ingestCalendarAssociationCandidates,
+  proposeCalendarAssociationCandidates,
+} from "./association";
