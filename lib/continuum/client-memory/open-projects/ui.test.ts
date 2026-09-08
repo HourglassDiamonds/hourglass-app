@@ -7,7 +7,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, it } from "node:test";
 import { OpenProjectsHome } from "../../../../app/executive-dashboard/concierge/components/open-projects-home";
 import { ChiefOfStaffToday } from "../../../../app/executive-dashboard/concierge/components/chief-of-staff-today";
-import { composeContinuumHome } from "../../dashboard/compose";
+import { composeCosOperatingLoop } from "../../chief-of-staff/operating-loop/compose";
 import type { CurrentProjectCard } from "./card";
 import {
   CURRENT_PROJECTS_ACTION_TITLE,
@@ -210,11 +210,12 @@ describe("Current Projects Command Center accordion UI", () => {
   });
 
   it("keeps Command Center CoS quiet and does not reintroduce aria-expanded", () => {
-    const model = composeContinuumHome({
-      now: new Date("2026-08-24T18:00:00.000Z"),
+    const loop = composeCosOperatingLoop({
+      jobs: [],
+      nowIso: "2026-08-24T18:00:00.000Z",
     });
     const cos = renderToStaticMarkup(
-      createElement(ChiefOfStaffToday, { chiefOfStaff: model.chiefOfStaff }),
+      createElement(ChiefOfStaffToday, { loop }),
     );
     const command = readFileSync(
       join(CONCIERGE_DIR, "components", "command-center-home.tsx"),
@@ -224,12 +225,13 @@ describe("Current Projects Command Center accordion UI", () => {
     const css = readFileSync(join(CONCIERGE_DIR, "concierge.css"), "utf8");
     const work = renderToStaticMarkup(createElement(OpenProjectsHome, { projects: [card()] }));
     assert.match(cos, /Chief of Staff/);
-    assert.match(cos, /Nothing in memory needs your attention yet/);
+    assert.match(cos, /caught up/);
     assert.match(command, /ChiefOfStaffToday/);
     assert.match(command, /OpenProjectsHome/);
     assert.doesNotMatch(command, /from "\.\/projects-home"/);
     assert.doesNotMatch(command, /<ProjectsHome/);
     assert.match(home, /loadCurrentProjectCards/);
+    assert.match(home, /loadCosOperatingLoop/);
     assert.doesNotMatch(home, /loadProjectBookPreview/);
     assert.doesNotMatch(command, /composeChiefOfStaffBrief|activateCoS|agent-os/);
     assert.match(work, /Current Projects/);

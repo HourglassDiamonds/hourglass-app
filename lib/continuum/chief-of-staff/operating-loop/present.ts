@@ -1,0 +1,109 @@
+/**
+ * Founder-facing copy for the CoS operating loop.
+ * No scores, percentages, or hidden chain-of-thought.
+ */
+
+import { CONTINUUM_FOUNDER_TIME_ZONE } from "@/lib/continuum/dashboard/compose";
+import {
+  CURRENT_PROJECTS_OWNERSHIP_CLIENT,
+  CURRENT_PROJECTS_OWNERSHIP_SHOP,
+  CURRENT_PROJECTS_OWNERSHIP_YOUR_TURN,
+  currentProjectToggleId,
+} from "@/lib/continuum/client-memory/open-projects/present";
+import {
+  CONCIERGE_HOME_PATH,
+  conciergeOpenJobPath,
+} from "@/lib/continuum/client-memory/read/presentation";
+import type { OpenJobActor } from "@/lib/continuum/client-memory/project-jobs/types";
+import { completionWriterFor } from "./complete";
+import type { CosTop5Item, RankedActionable } from "./types";
+
+const WHY_ORDER = [
+  "overdue",
+  "blocked",
+  "founder_action",
+  "client_owed",
+  "founder_commitment",
+  "hourglass_action",
+  "due_soon",
+  "aging",
+  "active_project",
+  "vendor_waiting",
+  "client_waiting",
+] as const;
+
+export const COS_CAUGHT_UP_HEADING = "You're caught up.";
+export const COS_CAUGHT_UP_DETAIL =
+  "When new work is recorded, the next actions will appear here.";
+export const COS_DISCONNECTED_HEADING = "Open Jobs are not connected yet.";
+export const COS_DISCONNECTED_DETAIL =
+  "Current Projects can still open. Top 5 waits on canonical Open Jobs.";
+export const COS_ACTIVE_HEADING = "Today";
+export const COS_ANOMALY_TITLE = "Items that seem amiss";
+export const COS_RECAP_TITLE = "End of day";
+export const COS_TOP5_TITLE = "Top 5";
+
+export function ownershipLabel(actor: OpenJobActor): string {
+  if (actor === "founder") return CURRENT_PROJECTS_OWNERSHIP_YOUR_TURN;
+  if (actor === "client") return CURRENT_PROJECTS_OWNERSHIP_CLIENT;
+  if (actor === "vendor") return CURRENT_PROJECTS_OWNERSHIP_SHOP;
+  if (actor === "hourglass") return "Hourglass";
+  return "Unassigned";
+}
+
+export function formatDueDay(iso: string, nowIso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "Due date recorded";
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    timeZone: CONTINUUM_FOUNDER_TIME_ZONE,
+    month: "short",
+    day: "numeric",
+  });
+  const due = Date.parse(iso);
+  const now = Date.parse(nowIso);
+  if (Number.isFinite(due) && Number.isFinite(now) && due < now) {
+    return `Past due · ${formatter.format(date)}`;
+  }
+  return `Due ${formatter.format(date)}`;
+}
+
+export function timingLabel(dueAt: string | null, nowIso: string): string {
+  if (!dueAt) return "No due date";
+  return formatDueDay(dueAt, nowIso);
+}
+
+export function whyLabel(item: RankedActionable): string {
+  const byId = new Map(item.factors.map((row) => [row.id, row.label]));
+  const phrases: string[] = [];
+  for (const id of WHY_ORDER) {
+    const label = byId.get(id);
+    if (label) phrases.push(label);
+    if (phrases.length >= 2) break;
+  }
+  if (phrases.length === 0) return "Recorded Open Job";
+  return phrases.join(" · ");
+}
+
+export function presentTop5Item(
+  item: RankedActionable,
+  nowIso: string,
+  mutationId: string,
+): CosTop5Item {
+  const writer = completionWriterFor(item.sourceType);
+  return {
+    id: item.id,
+    sourceType: item.sourceType,
+    action: item.action,
+    clientLabel: item.personName,
+    projectTitle: item.projectTitle,
+    projectId: item.projectId,
+    ownership: ownershipLabel(item.waitingOnActor),
+    timing: timingLabel(item.dueAt, nowIso),
+    why: whyLabel(item),
+    accordionHref: `${CONCIERGE_HOME_PATH}#${currentProjectToggleId(item.projectId)}`,
+    jobHref: conciergeOpenJobPath(item.projectId, item.id),
+    completable: writer != null,
+    writer,
+    mutationId,
+  };
+}
