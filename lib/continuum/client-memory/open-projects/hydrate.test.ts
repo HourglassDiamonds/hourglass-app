@@ -43,6 +43,11 @@ function card(extra: Partial<CurrentProjectCard> = {}): CurrentProjectCard {
     files: [],
     fileCount: 0,
     progress: [],
+    lifecycleStage: "production",
+    founderOwnedUnresolved: false,
+    actionDueAt: null,
+    waitingSince: null,
+    updatedAt: null,
     ...extra,
   };
 }

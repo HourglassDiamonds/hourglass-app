@@ -46,6 +46,11 @@ function card(
     files: [],
     fileCount: 0,
     progress: [],
+    lifecycleStage: "cad",
+    founderOwnedUnresolved: false,
+    actionDueAt: null,
+    waitingSince: null,
+    updatedAt: null,
     ...extra,
   };
 }

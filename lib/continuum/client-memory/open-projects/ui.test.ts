@@ -13,6 +13,7 @@ import {
   CURRENT_PROJECTS_ACTION_TITLE,
   CURRENT_PROJECTS_CREATE_ACTION_LABEL,
   CURRENT_PROJECTS_OPEN_LABEL,
+  currentProjectGroupToggleId,
   currentProjectPanelId,
   currentProjectToggleId,
 } from "./present";
@@ -43,6 +44,11 @@ function card(extra: Partial<CurrentProjectCard> = {}): CurrentProjectCard {
     files: [],
     fileCount: 0,
     progress: [{ label: "Project created", at: "2026-08-01T00:00:00.000Z" }],
+    lifecycleStage: "production",
+    founderOwnedUnresolved: false,
+    actionDueAt: null,
+    waitingSince: null,
+    updatedAt: null,
     ...extra,
   };
 }
@@ -383,5 +389,109 @@ describe("Current Projects Command Center accordion UI", () => {
     );
     assert.match(unrecorded, /Current action not recorded/);
     assert.doesNotMatch(unrecorded, /data-current-action/);
+  });
+
+  it("renders collapsible operating groups with counts, 44px toggles, and no empty headings", () => {
+    const nowIso = "2026-09-08T18:00:00.000Z";
+    const html = renderToStaticMarkup(
+      createElement(OpenProjectsHome, {
+        nowIso,
+        viewport: "mobile",
+        projects: [
+          card({
+            title: "Chicken ring (his) / Travis",
+            collapsedLine: "YOUR TURN — Touch base with Yvonne",
+            collapsedLineKind: "ownership",
+            currentAction: {
+              label: "YOUR TURN",
+              detail: "Touch base with Yvonne",
+              source: "ownership",
+            },
+            currentJobId: PROJECT_A,
+            lifecycleStage: "cad",
+            founderOwnedUnresolved: true,
+          }),
+          card({
+            projectId: PROJECT_B,
+            title: "C. Binder",
+            href: `/executive-dashboard/concierge/projects/${PROJECT_B}`,
+            collapsedLine: "CAD / DESIGN",
+            collapsedLineKind: "lifecycle",
+            currentAction: {
+              label: "CAD / DESIGN",
+              detail: null,
+              source: "lifecycle",
+            },
+            lifecycleStage: "cad",
+          }),
+          card({
+            projectId: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+            title: "J. Pennock",
+            href: "/executive-dashboard/concierge/projects/cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+            collapsedLine: "IN PRODUCTION",
+            collapsedLineKind: "lifecycle",
+            currentAction: {
+              label: "IN PRODUCTION",
+              detail: null,
+              source: "lifecycle",
+            },
+            lifecycleStage: "production",
+          }),
+        ],
+      }),
+    );
+    assert.match(html, /YOUR TURN · 1/);
+    assert.match(html, /CAD \/ DESIGN · 1/);
+    assert.match(html, /IN PRODUCTION · 1/);
+    assert.doesNotMatch(html, /WAITING ON SHOP/);
+    assert.doesNotMatch(html, /OTHER ACTIVE/);
+    assert.doesNotMatch(html, / · 0/);
+    assert.match(html, /data-operating-group="your_turn"/);
+    assert.match(html, /data-operating-viewport="mobile"/);
+    assert.match(html, /hg-current-project-group-toggle flex min-h-11/);
+    assert.match(html, /hg-current-project-groups/);
+    assert.match(html, /overflow-x-hidden/);
+    assertNativeDisclosure(html, PROJECT_A);
+    assertNativeDisclosure(html, PROJECT_B);
+    assert.match(html, new RegExp(CURRENT_PROJECTS_CREATE_ACTION_LABEL));
+    assert.match(html, /Edit action/);
+
+    const yourTurnToggle = currentProjectGroupToggleId("your_turn");
+    const yourTurnDetails = html.match(
+      new RegExp(`<details class="hg-current-project-group-details"[^>]*>\\s*<summary[^>]*id="${yourTurnToggle}"`),
+    );
+    assert.ok(yourTurnDetails);
+    assert.match(yourTurnDetails[0], / open/);
+
+    const productionToggle = currentProjectGroupToggleId("in_production");
+    const productionDetails = html.match(
+      new RegExp(
+        `<details class="hg-current-project-group-details"(?: open(?:="")?)?[^>]*>\\s*<summary[^>]*id="${productionToggle}"`,
+      ),
+    );
+    assert.ok(productionDetails);
+    assert.doesNotMatch(productionDetails[0], / open(?:="")?/);
+  });
+
+  it("expands IN PRODUCTION on a short desktop list and keeps counts when collapsed", () => {
+    const html = renderToStaticMarkup(
+      createElement(OpenProjectsHome, {
+        nowIso: "2026-09-08T18:00:00.000Z",
+        viewport: "desktop",
+        projects: [
+          card({
+            title: "J. Pennock",
+            lifecycleStage: "production",
+          }),
+        ],
+      }),
+    );
+    assert.match(html, /IN PRODUCTION · 1/);
+    const productionToggle = currentProjectGroupToggleId("in_production");
+    const productionDetails = html.match(
+      new RegExp(`<details class="hg-current-project-group-details"[^>]*>\\s*<summary[^>]*id="${productionToggle}"`),
+    );
+    assert.ok(productionDetails);
+    assert.match(productionDetails[0], / open/);
   });
 });

@@ -25,3 +25,11 @@ export function currentProjectToggleId(projectId: string): string {
 export function currentProjectPanelId(projectId: string): string {
   return `current-project-${projectId}-panel`;
 }
+
+export function currentProjectGroupToggleId(groupId: string): string {
+  return `current-projects-group-${groupId}-toggle`;
+}
+
+export function currentProjectGroupPanelId(groupId: string): string {
+  return `current-projects-group-${groupId}-panel`;
+}

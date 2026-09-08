@@ -39,6 +39,11 @@ function card(): CurrentProjectCard {
     files: [],
     fileCount: 0,
     progress: [],
+    lifecycleStage: "cad",
+    founderOwnedUnresolved: true,
+    actionDueAt: null,
+    waitingSince: null,
+    updatedAt: null,
   };
 }
 

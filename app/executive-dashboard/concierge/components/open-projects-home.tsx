@@ -1,5 +1,13 @@
+"use client";
+
+import { useSyncExternalStore } from "react";
 import Link from "next/link";
 import type { CurrentProjectCard } from "@/lib/continuum/client-memory/open-projects/card";
+import {
+  groupCurrentProjects,
+  type CurrentProjectOperatingGroup,
+  type CurrentProjectOperatingViewport,
+} from "@/lib/continuum/client-memory/open-projects/operating-groups";
 import {
   CURRENT_PROJECTS_ACTION_TITLE,
   CURRENT_PROJECTS_CREATE_ACTION_LABEL,
@@ -16,13 +24,44 @@ import {
 } from "@/lib/continuum/client-memory/open-projects/present";
 import { conciergeCreateActionPath, conciergeEditActionPath, formatNoteDate } from "@/lib/continuum/client-memory/read/presentation";
 
+const DESKTOP_QUERY = "(min-width: 768px)";
+
+function subscribeViewport(onStoreChange: () => void) {
+  const mq = window.matchMedia(DESKTOP_QUERY);
+  mq.addEventListener("change", onStoreChange);
+  return () => mq.removeEventListener("change", onStoreChange);
+}
+
+function desktopViewport(): CurrentProjectOperatingViewport {
+  return window.matchMedia(DESKTOP_QUERY).matches ? "desktop" : "mobile";
+}
+
+function serverViewport(): CurrentProjectOperatingViewport {
+  return "mobile";
+}
+
 export function OpenProjectsHome({
   projects,
+  viewport,
+  nowIso,
 }: {
   projects: CurrentProjectCard[];
+  viewport?: CurrentProjectOperatingViewport;
+  nowIso?: string;
 }) {
+  const detected = useSyncExternalStore(
+    subscribeViewport,
+    desktopViewport,
+    serverViewport,
+  );
+  const layout = viewport ?? detected;
+  const groups = groupCurrentProjects(projects, {
+    nowIso: nowIso ?? new Date().toISOString(),
+    viewport: layout,
+  });
+
   return (
-    <section data-current-projects>
+    <section data-current-projects data-operating-viewport={layout}>
       <h2 className="text-[11px] uppercase tracking-[0.28em] text-[#8d8073]">
         {OPEN_PROJECT_WORK_TITLE}
       </h2>
@@ -31,14 +70,50 @@ export function OpenProjectsHome({
           {OPEN_PROJECT_WORK_NONE_LABEL}
         </p>
       ) : (
-        <ul className="hg-current-projects mt-4">
-          {projects.map((project) => (
+        <ul className="hg-current-project-groups mt-4">
+          {groups.map((group) => (
+            <li key={group.id} className="min-w-0">
+              <CurrentProjectGroup group={group} />
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+function CurrentProjectGroup({ group }: { group: CurrentProjectOperatingGroup }) {
+  return (
+    <section
+      data-operating-group={group.id}
+      data-operating-group-count={group.count}
+      className="hg-current-project-group min-w-0 overflow-x-hidden"
+    >
+      <details className="hg-current-project-group-details" {...(group.defaultOpen ? { open: true } : {})}>
+        <summary
+          id={group.toggleId}
+          aria-controls={group.panelId}
+          aria-label={`${group.heading}`}
+          className="hg-current-project-group-toggle flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 py-3 outline-none"
+        >
+          <span className="min-w-0 break-words text-[11px] uppercase tracking-[0.28em] text-[#8d8073]">
+            {group.heading}
+          </span>
+          <span className="hg-group-open shrink-0 text-[11px] uppercase tracking-[0.2em] text-[#ad9164]">
+            Open
+          </span>
+          <span className="hg-group-close shrink-0 text-[11px] uppercase tracking-[0.2em] text-[#ad9164]">
+            Close
+          </span>
+        </summary>
+        <ul id={group.panelId} className="hg-current-projects min-w-0">
+          {group.projects.map((project) => (
             <li key={project.projectId} className="min-w-0">
               <CurrentProjectRow project={project} />
             </li>
           ))}
         </ul>
-      )}
+      </details>
     </section>
   );
 }

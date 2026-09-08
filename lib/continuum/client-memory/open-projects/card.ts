@@ -20,6 +20,10 @@ import {
 import { parseDateOnly } from "@/lib/continuum/date-only";
 import { selectOpenProjectWork, type OpenProjectWorkItem } from "./select";
 import {
+  founderActionDueAt,
+  hasFounderOwnedOpenJob,
+} from "./operating-groups";
+import {
   CURRENT_PROJECTS_ACTION_UNRECORDED,
   CURRENT_PROJECTS_CREATED_LABEL,
   CURRENT_PROJECTS_OWNERSHIP_CLIENT,
@@ -69,6 +73,11 @@ export type CurrentProjectCard = {
   files: CurrentProjectFile[];
   fileCount: number;
   progress: CurrentProjectProgressEntry[];
+  lifecycleStage: string | null;
+  founderOwnedUnresolved: boolean;
+  actionDueAt: string | null;
+  waitingSince: string | null;
+  updatedAt: string | null;
 };
 
 const THUMBNAIL_MIME = new Set(["image/jpeg", "image/png", "image/webp"]);
@@ -176,6 +185,28 @@ function progressFromDesk(desk: ProjectDeskRead): CurrentProjectProgressEntry[] 
   return rows;
 }
 
+function lifecycleTimestamps(
+  desk: ProjectDeskRead,
+  stage: string | null,
+): { waitingSince: string | null; updatedAt: string | null } {
+  if (desk.lifecycle.kind === "none") {
+    return { waitingSince: desk.recordCreatedAt, updatedAt: desk.recordCreatedAt };
+  }
+  const chronological = [...desk.lifecycle.history].sort((a, b) => {
+    if (a.changedAt === b.changedAt) return a.eventId.localeCompare(b.eventId);
+    return a.changedAt < b.changedAt ? -1 : 1;
+  });
+  const updatedAt = chronological.length
+    ? chronological[chronological.length - 1]?.changedAt ?? desk.recordCreatedAt
+    : desk.recordCreatedAt;
+  let waitingSince: string | null = desk.recordCreatedAt;
+  if (stage) {
+    const entered = [...chronological].reverse().find((event) => event.newStage === stage);
+    waitingSince = entered?.changedAt ?? desk.recordCreatedAt;
+  }
+  return { waitingSince, updatedAt };
+}
+
 function collapsedFromJob(job: ProjectDeskOpenJob): {
   line: string;
   kind: CurrentProjectLineKind;
@@ -209,11 +240,18 @@ export function composeCurrentProjectCard(
       ? desk.openJobs.unresolved
       : [];
   const currentJob = pickCurrentOpenJob(unresolved);
+  const lifecycleStage =
+    desk.lifecycle.kind === "none" ? work.lifecycleStage : desk.lifecycle.stage;
   const lifecycleLine = lifecycleScanLabel({
     projectKind: desk.projectKind,
-    stage: desk.lifecycle.kind === "none" ? work.lifecycleStage : desk.lifecycle.stage,
+    stage: lifecycleStage,
     fallbackLabel: work.lifecycleLabel,
   });
+  const timestamps = lifecycleTimestamps(desk, lifecycleStage);
+  const founderOwnedUnresolved = hasFounderOwnedOpenJob(unresolved);
+  const actionDueAt = founderOwnedUnresolved
+    ? founderActionDueAt(unresolved)
+    : parseDateOnly(currentJob?.dueAt);
 
   let collapsedLine = CURRENT_PROJECTS_ACTION_UNRECORDED;
   let collapsedLineKind: CurrentProjectLineKind = "unrecorded";
@@ -254,6 +292,11 @@ export function composeCurrentProjectCard(
     files,
     fileCount: files.length,
     progress: progressFromDesk(desk),
+    lifecycleStage,
+    founderOwnedUnresolved,
+    actionDueAt,
+    waitingSince: timestamps.waitingSince,
+    updatedAt: timestamps.updatedAt,
   };
 }
 

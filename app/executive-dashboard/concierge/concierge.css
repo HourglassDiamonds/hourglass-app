@@ -161,6 +161,41 @@ body:has([data-concierge-shell]) [data-facet-rail] {
   box-shadow: 0 0 0 3px rgba(173, 145, 100, 0.22);
 }
 
+.hg-current-project-groups {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow-x: hidden;
+}
+
+.hg-current-project-group {
+  min-width: 0;
+  overflow-x: hidden;
+}
+
+.hg-current-project-group-toggle {
+  min-height: 2.75rem;
+}
+
+.hg-current-project-group-toggle:focus-visible {
+  box-shadow: 0 0 0 3px rgba(173, 145, 100, 0.22);
+}
+
+.hg-current-project-group-toggle .hg-group-close {
+  display: none;
+}
+
+.hg-current-project-group details[open] > .hg-current-project-group-toggle .hg-group-open {
+  display: none;
+}
+
+.hg-current-project-group details[open] > .hg-current-project-group-toggle .hg-group-close {
+  display: inline;
+}
+
 .hg-current-projects {
   display: flex;
   flex-direction: column;
