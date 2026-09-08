@@ -177,7 +177,8 @@ describe("Current Projects Open Job hydration", () => {
     assert.equal(first.remainingCount, 1);
     assert.equal(new Set(first.top5.map((row) => row.id)).size, 5);
 
-    const completedId = first.top5[0]!.id;
+    const sixth = created[5]!.jobId;
+    const completedId = first.top5.find((row) => row.id !== sixth)!.id;
     const completed = await completeFounderActionable(seeded.writer, {
       sourceType: "open_job",
       jobId: completedId,
@@ -194,7 +195,6 @@ describe("Current Projects Open Job hydration", () => {
     });
     assert.equal(next.top5.length, 5);
     assert.equal(next.top5.some((row) => row.id === completedId), false);
-    const sixth = created[5]!.jobId;
     assert.equal(next.top5.some((row) => row.id === sixth), true);
 
     let remaining = seeded.jobs.listJobs();
