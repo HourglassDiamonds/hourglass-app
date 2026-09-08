@@ -17,6 +17,12 @@ import type { GmailIncrementalChunkResult } from "@/lib/continuum/gmail/incremen
 import {
   formatGmailIndexUpdatedAt,
 } from "@/lib/continuum/gmail/index-freshness";
+import {
+  formatGmailIntakeRefreshProgress,
+  gmailIntakeFreshnessHeadline,
+  gmailIntakeRefreshButtonLabel,
+  outcomeAfterGmailIntakeRefresh,
+} from "@/lib/continuum/gmail/intake-refresh";
 import { formatGmailIntakeScanNotice } from "@/lib/continuum/gmail/intake-scan";
 import {
   PROJECT_KIND_LABELS,
@@ -51,10 +57,11 @@ export function GmailIntakeScanForm({
     typeof createGmailIncrementalContinuation
   > | null>(null);
   const incrementalRef = useRef(freshness.incremental);
-  const [refreshing, setRefreshing] = useState(
-    freshness.activationEnabled && freshness.stale,
-  );
+  const clickGuardRef = useRef(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [refreshError, setRefreshError] = useState<string | null>(null);
+  const [chunksThisSession, setChunksThisSession] = useState(0);
+  const [optimisticUpdatedAt, setOptimisticUpdatedAt] = useState<string | null>(null);
   useEffect(() => {
     incrementalRef.current = freshness.incremental;
   }, [freshness.incremental]);
@@ -67,40 +74,64 @@ export function GmailIntakeScanForm({
       initial: incrementalRef.current,
     });
     continuationRef.current = continuation;
-    let alive = true;
-    if (freshness.activationEnabled && freshness.stale) {
-      void continuation.start().then((done) => {
-        if (!alive) return;
-        setRefreshing(false);
-        if (done.result.safeErrorCode) {
-          setRefreshError(
-            done.result.safeErrorCode === "sync-disabled"
-              ? "Mail index refresh is not activated."
-              : "Mail index could not be refreshed.",
-          );
-          return;
-        }
-        router.refresh();
-      });
-    }
     return () => {
-      alive = false;
       continuation.cancel();
       if (continuationRef.current === continuation) continuationRef.current = null;
     };
-  }, [freshness.activationEnabled, freshness.stale, router]);
+  }, []);
+  async function refreshMailIndex() {
+    const continuation = continuationRef.current;
+    if (!continuation) return;
+    if (!freshness.activationEnabled) {
+      setRefreshing(false);
+      setRefreshError("Gmail index refresh is not activated.");
+      return;
+    }
+    if (clickGuardRef.current || continuation.isActive() || refreshing) {
+      setRefreshError("Refresh already in progress");
+      return;
+    }
+    clickGuardRef.current = true;
+    setRefreshError(null);
+    setRefreshing(true);
+    setChunksThisSession(0);
+    try {
+      const done = await continuation.start((progress) => {
+        setChunksThisSession(progress.chunksThisSession);
+      });
+      const outcome = outcomeAfterGmailIntakeRefresh({
+        enabled: freshness.activationEnabled,
+        stopReason: done.stopReason,
+        result: done.result,
+      });
+      setRefreshError(outcome.message);
+      if (outcome.phase === "current") {
+        setOptimisticUpdatedAt(new Date().toISOString());
+        router.refresh();
+      }
+    } catch {
+      setRefreshError("Refresh failed — retry");
+    } finally {
+      clickGuardRef.current = false;
+      setRefreshing(false);
+    }
+  }
   const identityDown =
     (state && state.ok && !state.identityAvailable) ||
     (!state && !identityAvailable);
-  const updatedLabel = formatGmailIndexUpdatedAt(freshness.lastSuccessfulSyncAt);
+  const lastUpdatedAt = optimisticUpdatedAt ?? freshness.lastSuccessfulSyncAt;
+  const updatedLabel = formatGmailIndexUpdatedAt(lastUpdatedAt);
+  const indexCurrent = Boolean(optimisticUpdatedAt) || !freshness.stale;
+  const progressLabel = formatGmailIntakeRefreshProgress(chunksThisSession);
   return (
     <form action={formAction} className="mt-6">
       <p className="max-w-[46ch] text-[14px] leading-relaxed text-[#c4b7aa]">
-        {updatedLabel
-          ? `Gmail index last updated: ${updatedLabel}`
-          : "Gmail index has not completed a current-state sync."}
+        {gmailIntakeFreshnessHeadline({
+          current: indexCurrent,
+          updatedLabel,
+        })}
       </p>
-      {freshness.stale ? (
+      {freshness.stale && !refreshing && !optimisticUpdatedAt ? (
         <p className="mt-2 max-w-[46ch] text-[14px] leading-relaxed text-[#d2b8a8]">
           Mail newer than this index will not appear until the index is
           refreshed.
@@ -110,33 +141,19 @@ export function GmailIntakeScanForm({
         <button
           type="button"
           disabled={refreshing || pending}
-          onClick={() => {
-            const continuation = continuationRef.current;
-            if (!continuation || continuation.isActive() || refreshing) return;
-            setRefreshError(null);
-            setRefreshing(true);
-            void continuation.start().then((done) => {
-              setRefreshing(false);
-              if (done.result.safeErrorCode) {
-                setRefreshError(
-                  done.result.safeErrorCode === "sync-disabled"
-                    ? "Mail index refresh is not activated."
-                    : "Mail index could not be refreshed.",
-                );
-                return;
-              }
-              router.refresh();
-            });
-          }}
+          onClick={() => void refreshMailIndex()}
           className="mt-4 min-h-12 rounded-[18px] border border-[#ad9164]/50 bg-transparent px-4 text-[11px] uppercase tracking-[0.22em] text-[#efe8de] outline-none hover:border-[#ad9164] focus-visible:shadow-[0_0_0_3px_rgba(173,145,100,0.22)] disabled:opacity-50"
         >
-          {refreshing ? "Refreshing mail index…" : "Refresh mail index"}
+          {gmailIntakeRefreshButtonLabel(refreshing)}
         </button>
       ) : (
         <p className="mt-2 max-w-[46ch] text-[14px] leading-relaxed text-[#9a8e82]">
-          Mail index refresh is not activated.
+          Gmail index refresh is not activated.
         </p>
       )}
+      {refreshing && progressLabel ? (
+        <p className="mt-3 text-[14px] text-[#c4b7aa]">{progressLabel}</p>
+      ) : null}
       {refreshError ? (
         <p role="alert" className="mt-3 text-[14px] text-[#d2b8a8]">
           {refreshError}

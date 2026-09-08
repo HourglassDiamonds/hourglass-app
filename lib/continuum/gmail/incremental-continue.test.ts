@@ -89,6 +89,27 @@ describe("Gmail incremental automatic continuation", () => {
     assert.doesNotMatch(intakeUi, /pageToken|maxPages|mailboxEmailHash/);
     assert.match(intakeUi, /runNextGmailIncrementalChunk/);
     assert.match(intakeUi, /createGmailIncrementalContinuation/);
+    assert.match(intakeUi, /refreshMailIndex/);
+    assert.match(intakeUi, /gmailIntakeRefreshButtonLabel/);
+    assert.match(intakeUi, /formatGmailIntakeRefreshProgress/);
+    assert.doesNotMatch(intakeUi, /freshness\.activationEnabled && freshness\.stale/);
+    assert.doesNotMatch(intakeUi, /\[freshness\.activationEnabled, freshness\.stale, router\]/);
+    const intakeEffect =
+      intakeUi.match(/useEffect\(\(\) => \{\s*const continuation = createGmailIncrementalContinuation[\s\S]*?\}, \[\]\);/)?.[0] ??
+      "";
+    assert.match(intakeEffect, /continuation\.cancel\(\)/);
+    assert.doesNotMatch(intakeEffect, /\.start\(/);
+    const refreshSource = readFileSync(
+      join(ROOT, "lib/continuum/gmail/intake-refresh.ts"),
+      "utf8",
+    );
+    assert.match(refreshSource, /Gmail index refresh is not activated/);
+    assert.match(refreshSource, /Refresh already in progress/);
+    assert.match(refreshSource, /Refresh failed — retry/);
+    assert.doesNotMatch(actions, /revalidatePath/);
+    assert.doesNotMatch(intakeUi, /runHistoricalSync|gmail-historical|gmail-intake-daily/);
+    assert.match(intakeUi, /disabled=\{pending \|\| refreshing\}/);
+    assert.match(intakeUi, /finally \{[\s\S]*setRefreshing\(false\)/);
     assert.match(ui, /Resume current-state sync/);
     assert.match(ui, /Initialize current-state sync/);
     assert.match(ui, /Stop after current chunk/);

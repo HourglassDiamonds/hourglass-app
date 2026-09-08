@@ -135,11 +135,17 @@ describe("Gmail activation security", () => {
       join(ROOT, "app/executive-dashboard/concierge/components/gmail-new-project-intake.tsx"),
       "utf8",
     );
-    assert.match(intakeUi, /Refresh mail index/);
-    assert.match(intakeUi, /Gmail index last updated/);
+    assert.match(intakeUi, /Refresh mail index|gmailIntakeRefreshButtonLabel/);
     assert.match(intakeUi, /runNextGmailIncrementalChunk/);
     assert.match(intakeUi, /formatGmailIntakeScanNotice/);
+    assert.match(intakeUi, /refreshMailIndex/);
     assert.doesNotMatch(intakeUi, /need attention/);
+    assert.doesNotMatch(intakeUi, /runHistoricalSync|gmail-intake-daily/);
+    const intakeRefresh = readFileSync(join(GMAIL_DIR, "intake-refresh.ts"), "utf8");
+    assert.match(intakeRefresh, /Gmail index last updated/);
+    assert.match(intakeRefresh, /Gmail index refresh is not activated/);
+    assert.match(intakeRefresh, /Refresh failed — retry/);
+    assert.doesNotMatch(intakeRefresh, /history_id|historyId|mailboxEmailHash/);
     const intakePage = readFileSync(
       join(ROOT, "app/executive-dashboard/concierge/gmail/intake/page.tsx"),
       "utf8",

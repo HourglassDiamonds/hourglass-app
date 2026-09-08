@@ -66,8 +66,8 @@ describe("Founder Project writer security", () => {
       "utf8",
     );
     assert.match(intakeUi, /approveGmailNewProject/);
-    assert.match(intakeUi, /Refresh mail index/);
-    assert.match(intakeUi, /Gmail index last updated/);
+    assert.match(intakeUi, /gmailIntakeRefreshButtonLabel|Refresh mail index/);
+    assert.match(intakeUi, /gmailIntakeFreshnessHeadline|Gmail index last updated/);
     assert.doesNotMatch(intakeUi, /need attention/);
     assert.doesNotMatch(intakeUi, /createProjectJob\(/);
   });
