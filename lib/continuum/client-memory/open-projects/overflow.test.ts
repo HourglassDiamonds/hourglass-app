@@ -71,6 +71,7 @@ describe("Current Projects Command Center overflow", () => {
     assert.doesNotMatch(home, /loadProjectBookPreview/);
     assert.doesNotMatch(home, /projects=\{projects\}/);
     assert.match(home, /loadCurrentProjectCards/);
+    assert.match(home, /loadCosOperatingLoop/);
     assert.match(home, /openProjects=\{openProjects\}/);
     assert.match(command, /People/);
     assert.match(command, /QuickCapture/);

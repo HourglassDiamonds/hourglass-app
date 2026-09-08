@@ -2,6 +2,7 @@ import Link from "next/link";
 import { greetingLine } from "@/lib/continuum/dashboard/compose";
 import type { ContinuumHomeModel } from "@/lib/continuum/dashboard/types";
 import type { CurrentProjectCard } from "@/lib/continuum/client-memory/open-projects/card";
+import type { CosOperatingLoopView } from "@/lib/continuum/chief-of-staff/operating-loop/types";
 import { EXECUTIVE_DASHBOARD_PASSKEYS_PATH } from "@/lib/executive-dashboard/access";
 import { AskConciergeShell } from "./ask-concierge-shell";
 import { ChiefOfStaffToday } from "./chief-of-staff-today";
@@ -16,12 +17,18 @@ import {
   conciergeProjectsPath,
 } from "@/lib/continuum/client-memory/read/presentation";
 
+type CompleteAction = (formData: FormData) => void | Promise<void>;
+
 export function CommandCenterHome({
   model,
   openProjects,
+  operatingLoop,
+  completeAction,
 }: {
   model: ContinuumHomeModel;
   openProjects: CurrentProjectCard[];
+  operatingLoop: CosOperatingLoopView;
+  completeAction?: CompleteAction;
 }) {
   return (
     <div data-command-center className="hg-command-grid">
@@ -29,7 +36,7 @@ export function CommandCenterHome({
         <h1 className="font-serif text-[2.05rem] font-normal leading-[1.08] tracking-[-0.045em] text-[#efe8de] md:text-[2.45rem]">
           {greetingLine(model)}
         </h1>
-        <ChiefOfStaffToday chiefOfStaff={model.chiefOfStaff} />
+        <ChiefOfStaffToday loop={operatingLoop} completeAction={completeAction} />
         <AskConciergeShell />
       </div>
       <div className="flex min-w-0 flex-col gap-9 lg:gap-10">

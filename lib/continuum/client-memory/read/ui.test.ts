@@ -24,6 +24,7 @@ import { AskConciergeAnswerView } from "../../../../app/executive-dashboard/conc
 import { ChiefOfStaffToday } from "../../../../app/executive-dashboard/concierge/components/chief-of-staff-today";
 import { QuickCapture } from "../../../../app/executive-dashboard/concierge/components/quick-capture";
 import { composeContinuumHome, greetingLine } from "../../dashboard/compose";
+import { composeCosOperatingLoop } from "../../chief-of-staff/operating-loop/compose";
 import {
   conciergeAddNotePath,
   conciergeAddNotePickerPath,
@@ -466,14 +467,19 @@ describe("Concierge Client Memory UI", () => {
       "utf8",
     );
     const home = readFileSync(join(CONCIERGE_DIR, "page.tsx"), "utf8");
+    const loop = composeCosOperatingLoop({
+      jobs: [],
+      nowIso: "2026-08-24T18:00:00.000Z",
+    });
     const cos = renderToStaticMarkup(
-      createElement(ChiefOfStaffToday, { chiefOfStaff: model.chiefOfStaff }),
+      createElement(ChiefOfStaffToday, { loop }),
     );
     const capture = renderToStaticMarkup(createElement(QuickCapture));
     assert.equal(greetingLine(model), "Good afternoon, Justin.");
     assert.match(home, /loadContinuumHomeModel/);
     assert.doesNotMatch(home, /loadProjectBookPreview/);
     assert.match(home, /loadCurrentProjectCards/);
+    assert.match(home, /loadCosOperatingLoop/);
     assert.match(home, /CommandCenterHome/);
     assert.match(command, /greetingLine/);
     assert.match(command, /ChiefOfStaffToday/);
@@ -484,8 +490,7 @@ describe("Concierge Client Memory UI", () => {
     assert.doesNotMatch(command, /<ProjectsHome/);
     assert.match(command, /OpenProjectsHome/);
     assert.match(cos, /Chief of Staff/);
-    assert.match(cos, /Today/);
-    assert.match(cos, /Nothing in memory needs your attention yet/);
+    assert.match(cos, /caught up/);
     assert.doesNotMatch(cos, /coming soon|warming up|learning/i);
     assert.doesNotMatch(cos, /follow-up overdue|sentiment|SLA overdue/i);
     assert.match(capture, /Quick Capture/);
