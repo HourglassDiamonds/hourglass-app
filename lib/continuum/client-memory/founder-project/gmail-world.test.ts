@@ -57,5 +57,7 @@ describe("Gmail candidate world from Continuum identity", () => {
     assert.notEqual(castillo?.emailHash, wagner?.emailHash);
     assert.deepEqual(castillo?.projectIds, ["engagement"]);
     assert.deepEqual(wagner?.projectIds, ["repair"]);
+    assert.deepEqual(world.confirmedParticipantMappings, []);
+    assert.deepEqual(world.founderConfirmedEmailIdentities, []);
   });
 });

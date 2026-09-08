@@ -76,8 +76,12 @@ function draftsFromEvidence(
   const haystack = haystackOf(evidence.indexed.subject, evidence.plaintext ?? null);
   const personHit = resolvePersonHit({
     fromEmailHash: evidence.fromEmailHash ?? evidence.indexed.fromEmailHash,
+    threadId: evidence.indexed.threadId,
     people: world.people,
     internalEmailHashes: world.internalEmailHashes,
+    confirmedParticipantMappings: world.confirmedParticipantMappings,
+    confirmedSourceLinks: world.confirmedSourceLinks,
+    founderConfirmedEmailIdentities: world.founderConfirmedEmailIdentities,
   });
   const newProjectHits = extractNewProject(haystack);
   const projectHits = resolveProjectHits({
@@ -109,7 +113,8 @@ function draftsFromEvidence(
       },
       payload: {
         kind: "person_association",
-        displayName: personHit.person?.displayName ?? null,
+        displayName:
+          personHit.person?.displayName ?? personHit.possiblePerson?.displayName ?? null,
         emailHash: personHit.emailHash,
         mintPerson: false,
         mergePersons: false,
@@ -118,7 +123,9 @@ function draftsFromEvidence(
         ? "ambiguous"
         : personHit.person
           ? "high"
-          : "low",
+          : personHit.possiblePerson
+            ? "medium"
+            : "low",
       evidenceBasis: {
         ruleIds: personHit.ruleIds,
         matchedText: null,
@@ -276,7 +283,10 @@ function draftsFromEvidence(
     });
   }
 
-  const role = senderRole(personHit.person, evidence.indexed.direction);
+  const role = senderRole(
+    personHit.person ?? personHit.possiblePerson,
+    evidence.indexed.direction,
+  );
   for (const job of extractOpenJobs(haystack, evidence.indexed.direction, role)) {
     drafts.push({
       ...base,

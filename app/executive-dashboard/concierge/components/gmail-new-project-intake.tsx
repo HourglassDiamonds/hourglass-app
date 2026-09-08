@@ -1,9 +1,14 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState } from "react";
-import { approveGmailNewProject } from "../founder-project-actions";
+import { useActionState, useEffect, useRef, useState, useTransition } from "react";
+import {
+  approveGmailNewProject,
+  confirmGmailIntakePerson,
+} from "../founder-project-actions";
 import { scanGmailNewProjectIntake, type ScanGmailIntakeState } from "../gmail-intake-actions";
+import { searchConciergeClients } from "../actions";
 import type { GmailNewProjectIntakeCard } from "@/lib/continuum/client-memory/founder-project/intake-present";
+import type { ClientSearchResult } from "@/lib/continuum/client-memory/read/types";
 import {
   PROJECT_KIND_LABELS,
   PROJECT_KINDS,
@@ -73,42 +78,36 @@ export function GmailNewProjectIntakeList({
     <ul className="mt-8 divide-y divide-white/[0.06]">
       {cards.map((card) => (
         <li key={card.candidateId} className="py-8">
-          <GmailNewProjectApproveForm card={card} />
+          <GmailNewProjectCard card={card} />
         </li>
       ))}
     </ul>
   );
 }
 
-function GmailNewProjectApproveForm({ card }: { card: GmailNewProjectIntakeCard }) {
-  const [state, formAction, pending] = useActionState(approveGmailNewProject, null);
-  const [mutationId] = useState(() => crypto.randomUUID());
-  const errorRef = useRef<HTMLParagraphElement>(null);
-  useEffect(() => {
-    if (state?.message) errorRef.current?.focus();
-  }, [state?.message]);
+function GmailNewProjectCard({ card }: { card: GmailNewProjectIntakeCard }) {
   return (
-    <form action={formAction} className="space-y-4">
-      <input type="hidden" name="candidateId" value={card.candidateId} />
-      <input type="hidden" name="mutationId" value={mutationId} />
-      {card.personId ? (
-        <input type="hidden" name="personId" value={card.personId} />
-      ) : null}
-
+    <div className="space-y-4">
       <p className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
-        New project proposal
+        New project detected
       </p>
       <p className="font-serif text-[1.45rem] text-[#efe8de]">{card.title}</p>
-      {card.personName ? (
+      {card.identityConfirmed ? (
         <p className="text-[15px] text-[#c4b7aa]">
           {card.personName}
-          {card.personId ? "" : " — Continuum identity unresolved"}
+          {card.personEmail ? ` · ${card.personEmail}` : ""}
         </p>
       ) : (
-        <p className="text-[14px] text-[#d2b8a8]">
-          Person could not be resolved from Continuum identity. Do not approve
-          from display name. Use Create Action after searching People.
-        </p>
+        <div className="space-y-1">
+          <p className="text-[15px] text-[#c4b7aa]">
+            Possible client:
+            {card.possiblePersonName ? ` ${card.possiblePersonName}` : " unresolved"}
+          </p>
+          {card.possiblePersonEmail ? (
+            <p className="text-[14px] text-[#b7aa9c]">{card.possiblePersonEmail}</p>
+          ) : null}
+          <p className="text-[14px] text-[#d2b8a8]">Identity needs confirmation.</p>
+        </div>
       )}
       {card.giftContext ? (
         <p className="text-[14px] text-[#b7aa9c]">Context: {card.giftContext}</p>
@@ -137,6 +136,156 @@ function GmailNewProjectApproveForm({ card }: { card: GmailNewProjectIntakeCard 
         <p className="text-[14px] leading-relaxed text-[#c4b7aa]">
           Proposed current state — waiting on client: {card.waitingOnClient}
         </p>
+      ) : null}
+      {card.identityConfirmed ? (
+        <GmailNewProjectApproveForm card={card} />
+      ) : (
+        <GmailConfirmPersonForm card={card} />
+      )}
+    </div>
+  );
+}
+
+function GmailConfirmPersonForm({ card }: { card: GmailNewProjectIntakeCard }) {
+  const [state, formAction, pending] = useActionState(confirmGmailIntakePerson, null);
+  const [query, setQuery] = useState("");
+  const [picked, setPicked] = useState<{
+    personId: string;
+    displayName: string;
+    email: string | null;
+  } | null>(
+    card.possiblePersonId
+      ? {
+          personId: card.possiblePersonId,
+          displayName: card.possiblePersonName ?? "Possible client",
+          email: card.possiblePersonEmail,
+        }
+      : null,
+  );
+  const [results, setPersonResults] = useState<ClientSearchResult[] | null>(null);
+  const [searching, startSearch] = useTransition();
+  const errorRef = useRef<HTMLParagraphElement>(null);
+  const requestIdRef = useRef(0);
+  useEffect(() => {
+    if (state?.message) errorRef.current?.focus();
+  }, [state?.message]);
+  useEffect(() => {
+    const trimmed = query.trim();
+    if (!trimmed || picked) {
+      requestIdRef.current += 1;
+      return;
+    }
+    const handle = window.setTimeout(() => {
+      const requestId = ++requestIdRef.current;
+      setPersonResults(null);
+      startSearch(async () => {
+        const result = await searchConciergeClients(trimmed);
+        if (requestId !== requestIdRef.current) return;
+        setPersonResults(result.ok ? result.results : []);
+      });
+    }, 180);
+    return () => window.clearTimeout(handle);
+  }, [query, picked]);
+  if (!card.personAssociationCandidateId) {
+    return (
+      <p className="text-[14px] text-[#d2b8a8]">
+        Person association is missing. Use Create Action after searching People.
+      </p>
+    );
+  }
+  return (
+    <form action={formAction} className="space-y-4">
+      <input
+        type="hidden"
+        name="personAssociationCandidateId"
+        value={card.personAssociationCandidateId}
+      />
+      {picked ? <input type="hidden" name="personId" value={picked.personId} /> : null}
+      {!picked ? (
+        <label className="block">
+          <span className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
+            Search Continuum People
+          </span>
+          <input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Name or email"
+            className="mt-2 w-full min-h-12 rounded-[18px] border border-white/10 bg-[#1d1916] px-4 text-[15px] text-[#efe8de] outline-none"
+          />
+        </label>
+      ) : (
+        <p className="text-[14px] text-[#c4b7aa]">
+          Confirm {picked.displayName}
+          {picked.email ? ` · ${picked.email}` : ""}
+        </p>
+      )}
+      {!picked && results && results.length > 0 ? (
+        <ul className="space-y-2">
+          {results.map((row) => (
+            <li key={row.personId}>
+              <button
+                type="button"
+                onClick={() => {
+                  setPicked({
+                    personId: row.personId,
+                    displayName: row.displayName,
+                    email: row.email,
+                  });
+                  setQuery("");
+                  setPersonResults(null);
+                }}
+                className="w-full rounded-[14px] border border-white/10 px-4 py-3 text-left text-[14px] text-[#efe8de]"
+              >
+                {row.displayName}
+                {row.email ? ` · ${row.email}` : ""}
+                {row.relationshipContext ? ` · ${row.relationshipContext}` : ""}
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+      {!picked && searching ? (
+        <p className="text-[13px] text-[#8d8073]">Searching People…</p>
+      ) : null}
+      {state?.message ? (
+        <p
+          ref={errorRef}
+          tabIndex={-1}
+          role="alert"
+          className="text-[14px] text-[#d2b8a8] outline-none"
+        >
+          {state.message}
+        </p>
+      ) : null}
+      <div className="flex flex-wrap gap-3">
+        <button
+          type="submit"
+          disabled={pending || !picked}
+          className="min-h-12 rounded-[18px] border border-[#ad9164]/50 bg-[#1d1916] px-4 text-[11px] uppercase tracking-[0.22em] text-[#efe8de] outline-none hover:border-[#ad9164] disabled:opacity-50"
+        >
+          {pending ? "Confirming…" : "Confirm person"}
+        </button>
+        <span className="inline-flex min-h-12 items-center text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
+          Review
+        </span>
+      </div>
+    </form>
+  );
+}
+
+function GmailNewProjectApproveForm({ card }: { card: GmailNewProjectIntakeCard }) {
+  const [state, formAction, pending] = useActionState(approveGmailNewProject, null);
+  const [mutationId] = useState(() => crypto.randomUUID());
+  const errorRef = useRef<HTMLParagraphElement>(null);
+  useEffect(() => {
+    if (state?.message) errorRef.current?.focus();
+  }, [state?.message]);
+  return (
+    <form action={formAction} className="space-y-4">
+      <input type="hidden" name="candidateId" value={card.candidateId} />
+      <input type="hidden" name="mutationId" value={mutationId} />
+      {card.personId ? (
+        <input type="hidden" name="personId" value={card.personId} />
       ) : null}
 
       <label className="block">
@@ -209,9 +358,15 @@ function GmailNewProjectApproveForm({ card }: { card: GmailNewProjectIntakeCard 
           {state.message}
         </p>
       ) : null}
+      {state?.message && /possible existing project/i.test(state.message) ? (
+        <label className="flex items-start gap-3 text-[14px] text-[#c4b7aa]">
+          <input type="checkbox" name="confirmPossibleExisting" value="1" className="mt-1" />
+          Create another Project anyway
+        </label>
+      ) : null}
       <button
         type="submit"
-        disabled={pending || !card.personId}
+        disabled={pending || !card.identityConfirmed}
         className="min-h-12 rounded-[18px] border border-[#ad9164]/50 bg-[#1d1916] px-4 text-[11px] uppercase tracking-[0.22em] text-[#efe8de] outline-none hover:border-[#ad9164] disabled:opacity-50"
       >
         {pending ? "Creating…" : "Create project"}

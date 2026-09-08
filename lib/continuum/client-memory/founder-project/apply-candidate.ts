@@ -1,6 +1,7 @@
 /**
  * Founder-approved apply of a Gmail new-project Candidate.
  * Candidate review is persisted only after the canonical writer succeeds.
+ * Requires a confirmed Person target. Does not mint People.
  */
 
 import { effectiveCandidatePayload } from "@/lib/continuum/candidates/review";
@@ -14,6 +15,10 @@ import {
   type CreateFounderProjectInput,
   type CreateFounderProjectResult,
 } from "./create";
+import {
+  warnPossibleExistingProject,
+} from "./duplicate";
+import { confirmedPersonFromThread } from "./identity-gate";
 import type { FounderProjectWriter } from "./writer";
 
 export type ApplyNewProjectCandidateInput = {
@@ -26,6 +31,7 @@ export type ApplyNewProjectCandidateInput = {
   dueAt?: string | null;
   actor: string;
   mutationId: string;
+  confirmPossibleExisting?: boolean;
 };
 
 export type ApplyNewProjectCandidateResult =
@@ -41,31 +47,14 @@ export type ApplyNewProjectCandidateResult =
         | "not-found"
         | "not-new-project"
         | "already-reviewed"
+        | "identity-unconfirmed"
+        | "person-mismatch"
+        | "possible-existing"
         | "create-failed"
         | "review-unpersisted";
       create?: CreateFounderProjectResult;
+      existingTitle?: string;
     };
-
-function personFromThread(
-  rows: readonly ContinuumCandidate[],
-  threadId: string,
-): string | null {
-  const ids = [
-    ...new Set(
-      rows.flatMap((row) => {
-        if (row.candidateType !== "person_association") return [];
-        if (row.proposedTarget.kind !== "person" || !row.proposedTarget.personId) {
-          return [];
-        }
-        if (parseGmailCandidateSourceRef(row.sourceRef)?.threadId !== threadId) {
-          return [];
-        }
-        return [row.proposedTarget.personId];
-      }),
-    ),
-  ];
-  return ids.length === 1 ? ids[0]! : null;
-}
 
 export async function applyGmailNewProjectCandidate(input: {
   store: CandidateStore;
@@ -83,17 +72,33 @@ export async function applyGmailNewProjectCandidate(input: {
   }
   const threadId = parseGmailCandidateSourceRef(candidate.sourceRef)?.threadId ?? null;
   const rows = await input.store.list();
-  const resolvedPerson =
-    input.body.personId.trim() ||
-    (threadId ? personFromThread(rows, threadId) : null);
-  if (!resolvedPerson) {
-    return { ok: false, reason: "create-failed" };
+  const confirmed = threadId ? confirmedPersonFromThread(rows, threadId) : null;
+  if (!confirmed) {
+    return { ok: false, reason: "identity-unconfirmed" };
+  }
+  const requested = input.body.personId.trim();
+  if (requested && requested !== confirmed.personId) {
+    return { ok: false, reason: "person-mismatch" };
+  }
+
+  const title = input.body.title.trim() || payload.value;
+  const existing = await input.writer.listActiveClientProjects(confirmed.personId);
+  const possible = warnPossibleExistingProject({
+    title,
+    existing,
+  });
+  if (possible && !input.body.confirmPossibleExisting) {
+    return {
+      ok: false,
+      reason: "possible-existing",
+      existingTitle: possible.title,
+    };
   }
 
   const createInput: CreateFounderProjectInput = {
     mutationId: input.body.mutationId,
-    title: input.body.title.trim() || payload.value,
-    personId: resolvedPerson,
+    title,
+    personId: confirmed.personId,
     projectKind: input.body.projectKind,
     lifecycleStage: input.body.lifecycleStage,
     subject: input.body.subject,

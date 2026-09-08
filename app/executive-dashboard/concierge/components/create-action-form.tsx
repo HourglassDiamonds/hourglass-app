@@ -423,13 +423,22 @@ export function CreateActionForm({
           {state.message}
         </p>
       ) : null}
-      {state?.message &&
-      /already proposed|already exists/i.test(state.message) ? (
-        <label className="mt-4 flex items-start gap-3 text-[14px] text-[#c4b7aa]">
-          <input type="checkbox" name="confirmDuplicate" value="1" className="mt-1" />
-          Create anyway
-        </label>
-      ) : null}
+          {state?.message &&
+          /already proposed|possible existing project/i.test(state.message) ? (
+            <label className="mt-4 flex items-start gap-3 text-[14px] text-[#c4b7aa]">
+              <input
+                type="checkbox"
+                name={
+                  /possible existing project/i.test(state.message)
+                    ? "confirmPossibleExisting"
+                    : "confirmDuplicate"
+                }
+                value="1"
+                className="mt-1"
+              />
+              Create anyway
+            </label>
+          ) : null}
 
       <div className="hg-concierge-savebar sticky bottom-0 z-10 mt-8 -mx-5 flex gap-3 bg-[#14110f] px-5 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
         <button

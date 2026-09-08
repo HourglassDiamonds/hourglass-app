@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getAuthenticatedCandidateStore } from "@/lib/continuum/candidates/load";
 import { presentGmailNewProjectIntake } from "@/lib/continuum/client-memory/founder-project/intake-present";
+import { loadGmailIntakePersonDirectoryFromAdmin } from "@/lib/continuum/client-memory/founder-project/gmail-world";
 import { CONCIERGE_GMAIL_PATH } from "@/lib/continuum/gmail/types";
 import { ConciergeShell } from "../../components/concierge-shell";
 import { ConciergeUnavailable } from "../../components/client-profile-view";
@@ -30,7 +31,13 @@ export default async function ConciergeGmailIntakePage() {
   }
   let cards: ReturnType<typeof presentGmailNewProjectIntake> = [];
   try {
-    cards = presentGmailNewProjectIntake(await auth.store.list());
+    let directory: Awaited<ReturnType<typeof loadGmailIntakePersonDirectoryFromAdmin>> = [];
+    try {
+      directory = await loadGmailIntakePersonDirectoryFromAdmin();
+    } catch {
+      directory = [];
+    }
+    cards = presentGmailNewProjectIntake(await auth.store.list(), directory);
   } catch {
     return (
       <ConciergeShell>

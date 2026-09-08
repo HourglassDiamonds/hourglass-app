@@ -191,7 +191,20 @@ describe("explicit new-project Gmail proposals", () => {
     const personHit = proposed.candidates.find(
       (row) => row.candidateType === "person_association",
     );
-    assert.equal(personHit?.proposedTarget.kind === "person" && personHit.proposedTarget.personId, nate.personId);
+    assert.equal(personHit?.canonical, false);
+    assert.equal(personHit?.automaticApply, false);
+    assert.equal(personHit?.proposedTarget.kind, "person");
+    if (personHit?.proposedTarget.kind === "person") {
+      assert.equal(personHit.proposedTarget.personId, null);
+    }
+    assert.ok(
+      personHit?.evidenceBasis.ruleIds.includes("email_hash_supporting_not_identity"),
+    );
+    if (personHit?.payload.kind === "person_association") {
+      assert.equal(personHit.payload.displayName, "Nathan Pearl");
+      assert.equal(personHit.payload.mintPerson, false);
+      assert.equal(personHit.payload.mergePersons, false);
+    }
     assert.equal(
       proposed.candidates.some(
         (row) =>
@@ -306,10 +319,20 @@ describe("explicit new-project Gmail proposals", () => {
     const personHit = proposed.candidates.find(
       (row) => row.candidateType === "person_association",
     );
-    assert.equal(
-      personHit?.proposedTarget.kind === "person" && personHit.proposedTarget.personId,
-      castillo.personId,
+    assert.equal(personHit?.canonical, false);
+    assert.equal(personHit?.automaticApply, false);
+    assert.equal(personHit?.proposedTarget.kind, "person");
+    if (personHit?.proposedTarget.kind === "person") {
+      assert.equal(personHit.proposedTarget.personId, null);
+    }
+    assert.ok(
+      personHit?.evidenceBasis.ruleIds.includes("email_hash_supporting_not_identity"),
     );
+    if (personHit?.payload.kind === "person_association") {
+      assert.equal(personHit.payload.displayName, "Abbey Castillo");
+      assert.equal(personHit.payload.mintPerson, false);
+      assert.equal(personHit.payload.mergePersons, false);
+    }
     assert.equal(
       proposed.candidates.some(
         (row) =>
@@ -449,6 +472,221 @@ describe("explicit new-project Gmail proposals", () => {
           row.payload.topic === WAITING_ON_CLIENT_TOPIC,
       ),
       true,
+    );
+  });
+
+  it("does not treat a display-name exact match as Person identity", () => {
+    const castillo = person({
+      personId: "abbey-castillo",
+      displayName: "Abbey Castillo",
+      email: ABBEY_CASTILLO_EMAIL,
+      projectIds: [],
+    });
+    const proposed = proposeGmailCandidates({
+      createdAt: NOW,
+      world: {
+        people: [castillo],
+        projects: [],
+        internalEmailHashes: [],
+      },
+      evidence: [
+        evidence({
+          messageId: "m-name",
+          threadId: "t-name",
+          sentAt: NOW,
+          fromEmail: "unknown.sender@example.test",
+          direction: "inbound",
+          plaintext: `Hello, this is Abbey Castillo. ${ABBEY_INBOUND}`,
+        }),
+      ],
+    });
+    const personHit = proposed.candidates.find(
+      (row) => row.candidateType === "person_association",
+    );
+    assert.equal(personHit?.proposedTarget.kind, "person");
+    if (personHit?.proposedTarget.kind === "person") {
+      assert.equal(personHit.proposedTarget.personId, null);
+    }
+    if (personHit?.payload.kind === "person_association") {
+      assert.equal(personHit.payload.displayName, null);
+    }
+    assert.equal(
+      proposed.candidates.some(
+        (row) =>
+          row.payload.kind === "project_context" &&
+          row.payload.topic === NEW_PROJECT_CONTEXT_TOPIC,
+      ),
+      true,
+    );
+  });
+
+  it("does not bind Abbey Wagner from a similar name when the hash is Castillo", () => {
+    const castillo = person({
+      personId: "abbey-castillo",
+      displayName: "Abbey Castillo",
+      email: ABBEY_CASTILLO_EMAIL,
+      projectIds: [],
+    });
+    const wagner = person({
+      personId: "abbey-wagner",
+      displayName: "Abbey Wagner",
+      email: ABBEY_WAGNER_EMAIL,
+      projectIds: [],
+    });
+    const proposed = proposeGmailCandidates({
+      createdAt: NOW,
+      world: {
+        people: [castillo, wagner],
+        projects: [],
+        internalEmailHashes: [],
+      },
+      evidence: [
+        evidence({
+          messageId: "m-similar",
+          threadId: "t-similar",
+          sentAt: NOW,
+          fromEmail: ABBEY_CASTILLO_EMAIL,
+          direction: "inbound",
+          plaintext: `Hi, it's Abbey. ${ABBEY_INBOUND}`,
+        }),
+      ],
+    });
+    assert.equal(
+      proposed.candidates.some(
+        (row) =>
+          row.proposedTarget.kind === "person" &&
+          row.proposedTarget.personId === wagner.personId,
+      ),
+      false,
+    );
+    const personHit = proposed.candidates.find(
+      (row) => row.candidateType === "person_association",
+    );
+    if (personHit?.proposedTarget.kind === "person") {
+      assert.equal(personHit.proposedTarget.personId, null);
+    }
+    if (personHit?.payload.kind === "person_association") {
+      assert.equal(personHit.payload.displayName, "Abbey Castillo");
+      assert.notEqual(personHit.payload.displayName, "Abbey Wagner");
+    }
+  });
+
+  it("targets a Person when a founder-confirmed participant mapping already exists", () => {
+    const nate = person({
+      personId: "nate-person",
+      displayName: "Nathan Pearl",
+      email: NATE_EMAIL,
+      projectIds: [],
+    });
+    const proposed = proposeGmailCandidates({
+      createdAt: NOW,
+      world: {
+        people: [nate],
+        projects: [],
+        internalEmailHashes: [],
+        confirmedParticipantMappings: [
+          { emailHash: hashEmail(NATE_EMAIL)!, personId: nate.personId },
+        ],
+      },
+      evidence: [
+        evidence({
+          messageId: "m-mapped",
+          threadId: "t-mapped",
+          sentAt: NOW,
+          fromEmail: NATE_EMAIL,
+          direction: "inbound",
+          plaintext: NATE_INBOUND,
+        }),
+      ],
+    });
+    const personHit = proposed.candidates.find(
+      (row) => row.candidateType === "person_association",
+    );
+    assert.equal(personHit?.proposedTarget.kind, "person");
+    if (personHit?.proposedTarget.kind === "person") {
+      assert.equal(personHit.proposedTarget.personId, nate.personId);
+    }
+    assert.ok(
+      personHit?.evidenceBasis.ruleIds.includes("founder_confirmed_participant_mapping"),
+    );
+  });
+
+  it("targets a Person when a founder-confirmed address identity already exists", () => {
+    const castillo = person({
+      personId: "abbey-castillo",
+      displayName: "Abbey Castillo",
+      email: ABBEY_CASTILLO_EMAIL,
+      projectIds: [],
+    });
+    const proposed = proposeGmailCandidates({
+      createdAt: NOW,
+      world: {
+        people: [castillo],
+        projects: [],
+        internalEmailHashes: [],
+        founderConfirmedEmailIdentities: [
+          {
+            emailHash: hashEmail(ABBEY_CASTILLO_EMAIL)!,
+            personId: castillo.personId,
+          },
+        ],
+      },
+      evidence: [
+        evidence({
+          messageId: "m-id",
+          threadId: "t-id",
+          sentAt: NOW,
+          fromEmail: ABBEY_CASTILLO_EMAIL,
+          direction: "inbound",
+          plaintext: ABBEY_INBOUND,
+        }),
+      ],
+    });
+    const personHit = proposed.candidates.find(
+      (row) => row.candidateType === "person_association",
+    );
+    if (personHit?.proposedTarget.kind === "person") {
+      assert.equal(personHit.proposedTarget.personId, castillo.personId);
+    }
+    assert.ok(
+      personHit?.evidenceBasis.ruleIds.includes("founder_confirmed_address_identity"),
+    );
+  });
+
+  it("targets a Person from a confirmed Gmail source link", () => {
+    const nate = person({
+      personId: "nate-person",
+      displayName: "Nathan Pearl",
+      email: NATE_EMAIL,
+      projectIds: [],
+    });
+    const proposed = proposeGmailCandidates({
+      createdAt: NOW,
+      world: {
+        people: [nate],
+        projects: [],
+        internalEmailHashes: [],
+        confirmedSourceLinks: [{ threadId: "t-link", personId: nate.personId }],
+      },
+      evidence: [
+        evidence({
+          messageId: "m-link",
+          threadId: "t-link",
+          sentAt: NOW,
+          fromEmail: NATE_EMAIL,
+          direction: "inbound",
+          plaintext: NATE_INBOUND,
+        }),
+      ],
+    });
+    const personHit = proposed.candidates.find(
+      (row) => row.candidateType === "person_association",
+    );
+    if (personHit?.proposedTarget.kind === "person") {
+      assert.equal(personHit.proposedTarget.personId, nate.personId);
+    }
+    assert.ok(
+      personHit?.evidenceBasis.ruleIds.includes("founder_confirmed_gmail_source_link"),
     );
   });
 });

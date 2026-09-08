@@ -1,6 +1,6 @@
 /**
  * Map canonical Continuum People/Projects into the Gmail candidate world.
- * Email hash identity only. Never Gmail display-name matching.
+ * Profile email hashes are supporting evidence only. Never display-name matching.
  */
 
 import { hashEmail } from "@/lib/continuum/client-memory/hashes";
@@ -18,6 +18,9 @@ export type CandidateWorldInput = {
   histories: readonly ProjectHistory[];
   relationships: readonly EntityRelationship[];
   internalEmails?: readonly (string | null)[];
+  confirmedParticipantMappings?: GmailCandidateWorld["confirmedParticipantMappings"];
+  confirmedSourceLinks?: GmailCandidateWorld["confirmedSourceLinks"];
+  founderConfirmedEmailIdentities?: GmailCandidateWorld["founderConfirmedEmailIdentities"];
 };
 
 export function buildGmailCandidateWorld(
@@ -68,5 +71,8 @@ export function buildGmailCandidateWorld(
     internalEmailHashes: (input.internalEmails ?? [])
       .map((email) => hashEmail(email))
       .filter((row): row is string => Boolean(row)),
+    confirmedParticipantMappings: input.confirmedParticipantMappings ?? [],
+    confirmedSourceLinks: input.confirmedSourceLinks ?? [],
+    founderConfirmedEmailIdentities: input.founderConfirmedEmailIdentities ?? [],
   };
 }

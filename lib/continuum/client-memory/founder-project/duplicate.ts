@@ -16,12 +16,62 @@ import {
 } from "./create";
 
 export type DuplicateNewProjectWarning = {
-  kind: "existing-project" | "pending-candidate";
+  kind: "existing-project" | "pending-candidate" | "possible-existing";
   title: string;
   projectId: string | null;
   candidateId: string | null;
   message: string;
 };
+
+const TITLE_STOP_WORDS = new Set([
+  "the",
+  "and",
+  "for",
+  "with",
+  "from",
+  "this",
+  "that",
+  "custom",
+  "project",
+  "piece",
+]);
+
+export function distinctiveProjectTitleTokens(title: string): Set<string> {
+  const tokens = foldProjectTitle(title)
+    .split(/[^a-z0-9]+/)
+    .filter((token) => token.length >= 4 && !TITLE_STOP_WORDS.has(token));
+  return new Set(tokens);
+}
+
+export function warnPossibleExistingProject(input: {
+  title: string;
+  existing: readonly FounderLinkedProject[];
+}): DuplicateNewProjectWarning | null {
+  if (findDuplicateLinkedProject(input.title, input.existing)) return null;
+  const incoming = distinctiveProjectTitleTokens(input.title);
+  if (incoming.size === 0) return null;
+  const foldedIncoming = foldProjectTitle(input.title);
+  for (const row of input.existing) {
+    const foldedExisting = foldProjectTitle(row.title);
+    if (!foldedExisting || foldedExisting === foldedIncoming) continue;
+    const existingTokens = distinctiveProjectTitleTokens(row.title);
+    let overlap = 0;
+    for (const token of incoming) {
+      if (existingTokens.has(token)) overlap += 1;
+    }
+    const contained =
+      foldedIncoming.includes(foldedExisting) || foldedExisting.includes(foldedIncoming);
+    if (overlap < 2 && !contained) continue;
+    return {
+      kind: "possible-existing",
+      title: row.title,
+      projectId: row.projectId,
+      candidateId: null,
+      message: `Possible existing project: ${row.title}`,
+    };
+  }
+  return null;
+}
 
 export function warnDuplicateNewProject(input: {
   title: string;

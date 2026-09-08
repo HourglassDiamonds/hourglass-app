@@ -31,10 +31,23 @@ export type GmailCandidateProject = {
   founderApprovedCurrent: boolean;
 };
 
+export type GmailConfirmedPersonMapping = {
+  emailHash: string;
+  personId: string;
+};
+
+export type GmailConfirmedSourceLink = {
+  threadId: string;
+  personId: string;
+};
+
 export type GmailCandidateWorld = {
   people: readonly GmailCandidatePerson[];
   projects: readonly GmailCandidateProject[];
   internalEmailHashes: readonly string[];
+  confirmedParticipantMappings?: readonly GmailConfirmedPersonMapping[];
+  confirmedSourceLinks?: readonly GmailConfirmedSourceLink[];
+  founderConfirmedEmailIdentities?: readonly GmailConfirmedPersonMapping[];
 };
 
 export type GmailCandidateEvidence = {

@@ -95,8 +95,19 @@ function world(
   people: readonly GmailCandidatePerson[],
   projects: readonly GmailCandidateProject[],
   internal: readonly string[] = [],
+  identity: Pick<
+    GmailCandidateWorld,
+    | "confirmedParticipantMappings"
+    | "confirmedSourceLinks"
+    | "founderConfirmedEmailIdentities"
+  > = {},
 ): GmailCandidateWorld {
-  return { people, projects, internalEmailHashes: internal };
+  return {
+    people,
+    projects,
+    internalEmailHashes: internal,
+    ...identity,
+  };
 }
 
 describe("Gmail → Candidate adapter", () => {
@@ -163,6 +174,15 @@ describe("Gmail → Candidate adapter", () => {
             personIds: ["person-ada"],
           }),
         ],
+        [],
+        {
+          confirmedParticipantMappings: [
+            {
+              emailHash: hashEmail("ada@client.test")!,
+              personId: "person-ada",
+            },
+          ],
+        },
       ),
       evidence: [
         evidence({
@@ -190,6 +210,53 @@ describe("Gmail → Candidate adapter", () => {
         (row) =>
           row.payload.kind === "project_association" && row.payload.match === "ambiguous",
       ),
+    );
+  });
+
+  it("does not attach person-linked Projects from a raw email hash", () => {
+    const ada = person({
+      personId: "person-ada",
+      displayName: "Ada",
+      emailHash: hashEmail("ada@client.test"),
+      projectIds: ["proj-a", "proj-b"],
+    });
+    const proposed = proposeGmailCandidates({
+      createdAt: NOW,
+      world: world(
+        [ada],
+        [
+          project({
+            projectId: "proj-a",
+            title: "Ada ring",
+            personIds: ["person-ada"],
+          }),
+          project({
+            projectId: "proj-b",
+            title: "Ada band",
+            personIds: ["person-ada"],
+          }),
+        ],
+      ),
+      evidence: [
+        evidence({
+          messageId: "m-hash-only",
+          threadId: "t-hash-only",
+          sentAt: "2026-04-01T12:00:00.000Z",
+          fromEmail: "ada@client.test",
+          plaintext: "Checking in on the ring.",
+        }),
+      ],
+    });
+    const personHit = proposed.candidates.find(
+      (row) => row.candidateType === "person_association",
+    );
+    assert.equal(personHit?.proposedTarget.kind, "person");
+    if (personHit?.proposedTarget.kind === "person") {
+      assert.equal(personHit.proposedTarget.personId, null);
+    }
+    assert.equal(
+      proposed.candidates.some((row) => row.candidateType === "project_association"),
+      false,
     );
   });
 
