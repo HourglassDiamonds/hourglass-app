@@ -63,7 +63,29 @@ export type FounderAttentionContext = {
   nowIso: string;
   top5Ids?: ReadonlySet<string>;
   currentProjectIds?: ReadonlySet<string>;
+  specByProject?: ReadonlyMap<string, ReadonlyMap<string, string>>;
+  lifecycleByProject?: ReadonlyMap<string, string | null>;
 };
+
+const STUDIO_LABELS = new Set(["hourglass", "studio", "the studio", "the house"]);
+
+export function isStudioOrVendorLabel(name: string | null | undefined): boolean {
+  if (!name) return false;
+  const normalized = name.trim().toLowerCase();
+  if (!normalized) return false;
+  if (STUDIO_LABELS.has(normalized)) return true;
+  return /\bhourglass diamonds\b/.test(normalized);
+}
+
+export function confirmedPersonId(row: ContinuumCandidate): string | null {
+  const edited = row.founderEditedTarget;
+  if (edited?.kind === "person" && edited.personId) return edited.personId;
+  const target = row.proposedTarget;
+  if (target.kind !== "person" || !target.personId) return null;
+  if (row.reviewStatus === "approved") return target.personId;
+  if (row.confidence === "high") return target.personId;
+  return null;
+}
 
 const STOP = new Set([
   "this",
@@ -425,14 +447,12 @@ export function isExplicitNewProject(row: ContinuumCandidate): boolean {
 
 export function isClientDesignAnswer(row: ContinuumCandidate): boolean {
   const payload = payloadOf(row);
-  if (payload.kind === "project_context") {
-    return (
-      payload.topic === "design_refinement" ||
-      payload.topic === "cad_revision" ||
-      payload.topic === "proposed_spec"
-    );
-  }
-  return payload.kind === "note" && hasCommercialPayload(row);
+  if (payload.kind !== "project_context") return false;
+  return (
+    payload.topic === "design_refinement" ||
+    payload.topic === "cad_revision" ||
+    payload.topic === "proposed_spec"
+  );
 }
 
 function evidenceAgeMs(row: ContinuumCandidate, ctx: FounderAttentionContext): number | null {
@@ -477,6 +497,99 @@ function isDesignChange(row: ContinuumCandidate): boolean {
 export function specConflicts(row: ContinuumCandidate): boolean {
   const payload = payloadOf(row);
   return payload.kind === "structured_spec" && payload.conflict === true;
+}
+
+function expandSpecTokens(value: string): string[] {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .split(/\s+/)
+    .filter(Boolean)
+    .flatMap((token) => {
+      if (token === "yg") return ["yellow", "gold"];
+      if (token === "wg") return ["white", "gold"];
+      if (token === "rg") return ["rose", "gold"];
+      if (token === "pt") return ["platinum"];
+      if (token === "twotone" || token === "two") return [];
+      return [token];
+    });
+}
+
+function specTextCompatible(proposed: string, canonical: string): boolean {
+  const left = proposed.trim().toLowerCase();
+  const right = canonical.trim().toLowerCase();
+  if (!left || !right) return false;
+  if (left === right) return true;
+  if (right.includes(left) || left.includes(right)) return true;
+  const proposedTokens = new Set(expandSpecTokens(proposed).filter((token) => token.length >= 3));
+  const canonicalTokens = new Set(expandSpecTokens(canonical));
+  if (proposedTokens.size === 0) return false;
+  return [...proposedTokens].every((token) => canonicalTokens.has(token));
+}
+
+function supplyNotesCompatible(proposed: string, canonical: string): boolean {
+  if (specTextCompatible(proposed, canonical)) return true;
+  const topics = ["lab", "grown", "mounting", "vlora", "center", "diamond", "dias"] as const;
+  const hits = (value: string) =>
+    topics.filter((topic) => value.toLowerCase().includes(topic));
+  const overlap = hits(proposed).filter((topic) => hits(canonical).includes(topic));
+  return overlap.length >= 2;
+}
+
+export function specValuesMateriallyDisagree(
+  fieldName: string,
+  proposed: string,
+  canonical: string | null | undefined,
+): boolean {
+  const current = (canonical ?? "").trim();
+  if (!current) return false;
+  if (fieldName === "diamond_supply_notes") {
+    return !supplyNotesCompatible(proposed, current);
+  }
+  return !specTextCompatible(proposed, current);
+}
+
+function canonicalSpecFor(
+  row: ContinuumCandidate,
+  ctx: FounderAttentionContext,
+): string | null {
+  const payload = payloadOf(row);
+  if (payload.kind !== "structured_spec") return null;
+  const projectId = candidateProjectId(row);
+  const live = projectId ? ctx.specByProject?.get(projectId)?.get(payload.fieldName) : null;
+  if (live && live.trim()) return live;
+  return payload.currentValue;
+}
+
+function projectLifecycleOf(
+  row: ContinuumCandidate,
+  ctx: FounderAttentionContext,
+): string | null {
+  const projectId = candidateProjectId(row);
+  if (!projectId) return null;
+  return ctx.lifecycleByProject?.get(projectId) ?? null;
+}
+
+function isProductionLifecycle(stage: string | null | undefined): boolean {
+  return stage === "production" || stage === "in_production";
+}
+
+export function isActionableSpecConflict(
+  row: ContinuumCandidate,
+  ctx: FounderAttentionContext,
+): boolean {
+  if (row.candidateState !== "conflict" && !specConflicts(row)) return false;
+  const payload = payloadOf(row);
+  if (payload.kind !== "structured_spec") return row.candidateState === "conflict";
+  const canonical = canonicalSpecFor(row, ctx);
+  if (!specValuesMateriallyDisagree(payload.fieldName, payload.proposedValue, canonical)) {
+    return false;
+  }
+  const lifecycle = projectLifecycleOf(row, ctx);
+  if (isProductionLifecycle(lifecycle) && payload.fieldName === "cad_job_number") {
+    return false;
+  }
+  return true;
 }
 
 export function isSubordinateType(row: ContinuumCandidate): boolean {
@@ -603,6 +716,10 @@ export function classifyCandidateAttention(
   }
 
   if (row.candidateState === "conflict" || specConflicts(row)) {
+    if (!isActionableSpecConflict(row, ctx)) {
+      factors.push("canonical_mismatch", "already_represented");
+      return { lane: "background", score: 0, factors, candidateId: row.candidateId };
+    }
     factors.push("canonical_mismatch");
     score += 90;
     if (alreadyRepresentedByJob(row, ctx)) factors.push("already_represented");

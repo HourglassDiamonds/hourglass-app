@@ -151,6 +151,7 @@ function composeSummary(
     title: profile.displayTitle,
     projectKind,
     people,
+    specs,
     latestNoteAt: latest?.createdAt ?? null,
     latestNotePreview: latest ? notePreview(latest.noteText) : null,
     coverage: projectCoverage({

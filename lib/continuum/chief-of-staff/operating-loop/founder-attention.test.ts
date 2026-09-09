@@ -319,7 +319,7 @@ describe("CoS founder-attention classification", () => {
       surface.needsYourDecision[0]?.headline ?? "",
       /answered the design question/,
     );
-    assert.match(surface.needsYourDecision[0]?.detail ?? "", /2 specs/);
+    assert.equal(surface.needsYourDecision[0]?.detail, null);
     assert.equal(surface.needsYourDecision[0]?.candidateIds.includes("spec-metal"), true);
     assert.equal(surface.needsYourDecision[0]?.candidateIds.includes("spec-size"), true);
   });

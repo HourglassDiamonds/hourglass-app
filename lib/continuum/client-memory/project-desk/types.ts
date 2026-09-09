@@ -81,6 +81,7 @@ export type ProjectDeskSummary = {
   title: string;
   projectKind: ProjectKind | null;
   people: ProjectDeskPerson[];
+  specs?: ProjectSpecField[];
   latestNoteAt: string | null;
   latestNotePreview: string | null;
   coverage: ProjectDeskCoverage;

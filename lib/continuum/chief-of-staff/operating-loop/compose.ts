@@ -46,6 +46,8 @@ export function projectContextFromSummaries(
       personName: row.people[0]?.displayName ?? null,
       people: row.people,
       isCurrent: current.has(row.projectId),
+      lifecycleStage: row.lifecycleStage,
+      specs: row.specs,
     });
   }
   return map;

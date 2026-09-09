@@ -176,10 +176,23 @@ export type CosOperatingLoopView = {
   proposedActions: CosProposedAction[];
 };
 
+export type CosProjectPerson = {
+  personId: string;
+  displayName: string;
+  role?: string | null;
+};
+
+export type CosProjectSpec = {
+  fieldName: string;
+  value: string;
+};
+
 export type CosProjectContext = {
   projectId: string;
   title: string;
   personName: string | null;
-  people?: ReadonlyArray<{ personId: string; displayName: string }>;
+  people?: ReadonlyArray<CosProjectPerson>;
   isCurrent: boolean;
+  lifecycleStage?: string | null;
+  specs?: ReadonlyArray<CosProjectSpec>;
 };
