@@ -3,227 +3,204 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, it } from "node:test";
-import { calculateRepairQuote, defaultGoldSensitive } from "./calculate";
-import { UNVERIFIED_HISTORICAL_CONTEXT } from "./types";
-import type { RepairQuoteCalculationInput } from "./types";
+import { calculateRepairQuote } from "./calculate";
+import { GELLER_BLUE_BOOK } from "./contract";
+import {
+  formatUsdEighthCents,
+  hourglassQuoteEighthCents,
+  loadedLaborEighthCents,
+} from "./money";
+import {
+  lookupVerifiedSku,
+  VERIFIED_14KT_GOLD_BAND,
+} from "./source";
+import type { RepairQuoteCalculationInput, RepairQuoteLineInput } from "./types";
 
-const NOW = "2026-09-09";
 const ENGINE_SRC = readFileSync(
   join(dirname(fileURLToPath(import.meta.url)), "calculate.ts"),
   "utf8",
 );
+const MONEY_SRC = readFileSync(
+  join(dirname(fileURLToPath(import.meta.url)), "money.ts"),
+  "utf8",
+);
 
-function base(
-  extra: Partial<RepairQuoteCalculationInput> = {},
-): RepairQuoteCalculationInput {
+function skuLine(
+  sku: string,
+  extra: Partial<RepairQuoteLineInput> = {},
+): RepairQuoteLineInput {
+  const verified = lookupVerifiedSku(sku);
+  assert.ok(verified);
   return {
-    repairType: "sizing",
-    metalFamily: "gold_14k",
-    sourceEditionLabel: "Founder-transcribed Blue Book line",
-    sourcePriceSemantics: "shop_cost",
-    gold: {
-      usdCentsPerTroyOz: 440_000,
-      asOfDate: NOW,
-      source: "founder_manual",
-      baselineUsdCentsPerTroyOz: 300_000,
-    },
-    markupRatioPermyriad: 25_000,
-    lines: [
-      {
-        sourceLineRef: "SZ-14K-UP",
-        sourceLineLabel: "Size 14K ring up one half size",
-        sourceAmountCents: 12_000,
-        goldSensitive: true,
-        goldWeightKind: "alloy_dwt",
-        goldWeightMillidwt: 2_500,
-      },
-    ],
-    quoteDate: NOW,
+    sku: verified.sku,
+    taskDescription: verified.taskDescription,
+    amounts: { ...verified.amounts },
+    metalBand: verified.metalBand,
+    hasExplicitMetalQuantity: verified.hasExplicitMetalQuantity,
+    inventedMetalQuantity: false,
+    expressSelected: false,
+    costBasis: "geller_cost_columns",
     ...extra,
   };
 }
 
-describe("Blue Book repair quote calculator", () => {
-  it("does not read unverified historical gold or markup as live defaults", () => {
-    assert.equal(UNVERIFIED_HISTORICAL_CONTEXT.status, "unverified_not_live_default");
-    assert.doesNotMatch(ENGINE_SRC, /2850/);
-    assert.doesNotMatch(ENGINE_SRC, /2\.5/);
-    assert.doesNotMatch(ENGINE_SRC, /UNVERIFIED_HISTORICAL_CONTEXT/);
-    const missing = calculateRepairQuote(
-      base({
-        gold: {
-          usdCentsPerTroyOz: 440_000,
-          asOfDate: NOW,
-          source: "founder_manual",
-          baselineUsdCentsPerTroyOz: null,
+function skuInput(
+  sku: string,
+  extra: Partial<RepairQuoteCalculationInput> = {},
+): RepairQuoteCalculationInput {
+  const verified = lookupVerifiedSku(sku);
+  assert.ok(verified);
+  return {
+    repairType: verified.repairType,
+    metalFamily: verified.metalFamily,
+    line: skuLine(sku),
+    ...extra,
+  };
+}
+
+describe("Blue Book 2.5x cost calculator", () => {
+  it("quotes SKU 1000 at $50 from Cost Labor, not Geller retail", () => {
+    const result = calculateRepairQuote(skuInput("1000"));
+    assert.equal(result.ok, true);
+    if (!result.ok) return;
+    const calc = result.calculation;
+    assert.equal(calc.sourceAmounts.priceLaborCents, 6_000);
+    assert.equal(calc.sourceAmounts.costLaborCents, 1_600);
+    assert.equal(calc.loadedLaborEighthCents, loadedLaborEighthCents(1_600));
+    assert.equal(formatUsdEighthCents(calc.loadedLaborEighthCents), "$20");
+    assert.equal(calc.rawComputedQuoteEighthCents, 40_000);
+    assert.equal(formatUsdEighthCents(calc.rawComputedQuoteEighthCents), "$50");
+    assert.equal(calc.hourglassQuoteEighthCents, 40_000);
+    const retailAsCost = hourglassQuoteEighthCents({
+      costLaborCents: 6_000,
+      costPartsCents: 0,
+      costOtherCents: 0,
+    });
+    assert.notEqual(calc.rawComputedQuoteEighthCents, retailAsCost);
+  });
+
+  it("quotes SKU 1008 at $93.125 from loaded labor plus Cost Parts", () => {
+    const result = calculateRepairQuote(skuInput("1008"));
+    assert.equal(result.ok, true);
+    if (!result.ok) return;
+    const calc = result.calculation;
+    assert.equal(calc.sourceAmounts.priceLaborCents, 7_900);
+    assert.equal(calc.sourceAmounts.pricePartsCents, 3_300);
+    assert.equal(calc.sourceAmounts.costLaborCents, 2_100);
+    assert.equal(calc.sourceAmounts.costPartsCents, 1_100);
+    assert.equal(formatUsdEighthCents(calc.loadedLaborEighthCents), "$26.25");
+    assert.equal(calc.fullyLoadedDirectCostEighthCents, 29_800);
+    assert.equal(calc.rawComputedQuoteEighthCents, 74_500);
+    assert.equal(formatUsdEighthCents(calc.rawComputedQuoteEighthCents), "$93.125");
+  });
+
+  it("never uses bold retail as cost and applies 2.5x once", () => {
+    const inflatedRetail = calculateRepairQuote(
+      skuInput("1000", {
+        line: skuLine("1000", {
+          amounts: {
+            ...lookupVerifiedSku("1000")!.amounts,
+            priceLaborCents: 9_999_00,
+          },
+        }),
+      }),
+    );
+    assert.equal(inflatedRetail.ok, true);
+    if (!inflatedRetail.ok) return;
+    assert.equal(inflatedRetail.calculation.rawComputedQuoteEighthCents, 40_000);
+
+    const retailBasis = calculateRepairQuote(
+      skuInput("1000", {
+        line: skuLine("1000", { costBasis: "geller_price_columns" }),
+      }),
+    );
+    assert.equal(retailBasis.ok, false);
+    if (!retailBasis.ok) assert.equal(retailBasis.code, "retail-used-as-cost");
+
+    const sku1008 = calculateRepairQuote(skuInput("1008"));
+    assert.equal(sku1008.ok, true);
+    if (!sku1008.ok) return;
+    const loaded = sku1008.calculation.fullyLoadedDirectCostEighthCents;
+    const once = Math.round((loaded * 5) / 2);
+    const doubled = Math.round((once * 5) / 2);
+    assert.equal(sku1008.calculation.rawComputedQuoteEighthCents, once);
+    assert.notEqual(sku1008.calculation.rawComputedQuoteEighthCents, doubled);
+    assert.doesNotMatch(ENGINE_SRC, /priceLaborCents\s*[*]/);
+    assert.doesNotMatch(MONEY_SRC, /priceLaborCents|pricePartsCents/);
+  });
+
+  it("uses source Cost Parts for metal bands and refuses invented dwt", () => {
+    const metal = calculateRepairQuote({
+      repairType: "fourteen_k_operation",
+      metalFamily: "gold_14k",
+      line: {
+        sku: "14KT-DWT-2850",
+        taskDescription: VERIFIED_14KT_GOLD_BAND.label,
+        amounts: {
+          priceLaborCents: 0,
+          pricePartsCents: VERIFIED_14KT_GOLD_BAND.pricePartsCents,
+          priceOtherCents: 0,
+          costLaborCents: 0,
+          costPartsCents: VERIFIED_14KT_GOLD_BAND.costPartsCents,
+          costOtherCents: 0,
         },
+        metalBand: VERIFIED_14KT_GOLD_BAND,
+        hasExplicitMetalQuantity: true,
+        inventedMetalQuantity: false,
+        expressSelected: false,
+        costBasis: "geller_cost_columns",
+      },
+    });
+    assert.equal(metal.ok, true);
+    if (!metal.ok) return;
+    assert.equal(metal.calculation.partsCostEighthCents, 9_200 * 8);
+    assert.equal(
+      metal.calculation.rawComputedQuoteEighthCents,
+      hourglassQuoteEighthCents({
+        costLaborCents: 0,
+        costPartsCents: 9_200,
+        costOtherCents: 0,
       }),
     );
-    assert.equal(missing.ok, false);
-    if (!missing.ok) assert.equal(missing.code, "missing-gold-baseline");
-    const noMarkup = calculateRepairQuote(base({ markupRatioPermyriad: null }));
-    assert.equal(noMarkup.ok, false);
-    if (!noMarkup.ok) assert.equal(noMarkup.code, "missing-markup");
+    const retailParts = hourglassQuoteEighthCents({
+      costLaborCents: 0,
+      costPartsCents: 27_600,
+      costOtherCents: 0,
+    });
+    assert.notEqual(metal.calculation.rawComputedQuoteEighthCents, retailParts);
+
+    const invented = calculateRepairQuote(
+      skuInput("1000", {
+        line: skuLine("1000", { inventedMetalQuantity: true }),
+      }),
+    );
+    assert.equal(invented.ok, false);
+    if (!invented.ok) assert.equal(invented.code, "invented-metal-quantity");
+    assert.equal(lookupVerifiedSku("1000")?.hasExplicitMetalQuantity, false);
+    assert.doesNotMatch(ENGINE_SRC, /millidwt|alloy_dwt|fine_dwt/);
   });
 
-  it("adjusts gold-sensitive sizing and leaves laser labor unchanged", () => {
-    const sizing = calculateRepairQuote(base());
-    assert.equal(sizing.ok, true);
-    if (!sizing.ok) return;
-    const fine = Math.round((2500 * 14) / 24);
-    const expectedDelta = Math.round(((440_000 - 300_000) * fine) / 20_000);
-    assert.equal(sizing.calculation.lines[0]?.metalDeltaCents, expectedDelta);
-    assert.equal(
-      sizing.calculation.adjustedSourceTotalCents,
-      12_000 + expectedDelta,
-    );
-    assert.equal(
-      sizing.calculation.hourglassQuoteCents,
-      Math.round((12_000 + expectedDelta) * 2.5),
-    );
-
-    const laser = calculateRepairQuote(
-      base({
-        repairType: "laser_work",
-        lines: [
-          {
-            sourceLineRef: "LSR-SHANK",
-            sourceLineLabel: "Laser weld shank",
-            sourceAmountCents: 8_500,
-            goldSensitive: false,
-          },
-        ],
+  it("preserves Geller edition, burden, markup, and does not auto-apply Express", () => {
+    const result = calculateRepairQuote(skuInput("1008"));
+    assert.equal(result.ok, true);
+    if (!result.ok) return;
+    const calc = result.calculation;
+    assert.equal(calc.sourceFamily, "geller_blue_book");
+    assert.equal(calc.sourceVersion, GELLER_BLUE_BOOK.version);
+    assert.equal(calc.sourceRelease, GELLER_BLUE_BOOK.release);
+    assert.equal(calc.sourceEditionLabel, GELLER_BLUE_BOOK.editionLabel);
+    assert.equal(calc.sourceSku, "1008");
+    assert.equal(calc.laborBurdenNumerator, 5);
+    assert.equal(calc.laborBurdenDenominator, 4);
+    assert.equal(calc.hourglassMarkupNumerator, 5);
+    assert.equal(calc.hourglassMarkupDenominator, 2);
+    assert.equal(calc.expressSelected, false);
+    const express = calculateRepairQuote(
+      skuInput("1000", {
+        line: skuLine("1000", { expressSelected: true }),
       }),
     );
-    assert.equal(laser.ok, true);
-    if (!laser.ok) return;
-    assert.equal(laser.calculation.metalDeltaTotalCents, 0);
-    assert.equal(laser.calculation.adjustedSourceTotalCents, 8_500);
-    const laserHigherGold = calculateRepairQuote(
-      base({
-        repairType: "laser_work",
-        gold: {
-          usdCentsPerTroyOz: 999_999,
-          asOfDate: NOW,
-          source: "founder_manual",
-          baselineUsdCentsPerTroyOz: 300_000,
-        },
-        lines: [
-          {
-            sourceLineRef: "LSR-SHANK",
-            sourceLineLabel: "Laser weld shank",
-            sourceAmountCents: 8_500,
-            goldSensitive: false,
-          },
-        ],
-      }),
-    );
-    assert.equal(laserHigherGold.ok, true);
-    if (!laserHigherGold.ok) return;
-    assert.equal(
-      laserHigherGold.calculation.hourglassQuoteCents,
-      laser.calculation.hourglassQuoteCents,
-    );
-  });
-
-  it("blocks extra markup on suggested retail and platinum gold flags", () => {
-    const retail = calculateRepairQuote(
-      base({
-        sourcePriceSemantics: "suggested_retail",
-        markupRatioPermyriad: 25_000,
-      }),
-    );
-    assert.equal(retail.ok, false);
-    if (!retail.ok) assert.equal(retail.code, "double-markup-blocked");
-    const retailOk = calculateRepairQuote(
-      base({
-        sourcePriceSemantics: "suggested_retail",
-        markupRatioPermyriad: 10_000,
-      }),
-    );
-    assert.equal(retailOk.ok, true);
-    if (!retailOk.ok) return;
-    assert.equal(
-      retailOk.calculation.hourglassQuoteCents,
-      retailOk.calculation.adjustedSourceTotalCents,
-    );
-
-    const platinumGold = calculateRepairQuote(
-      base({
-        repairType: "platinum_labor",
-        metalFamily: "platinum",
-        lines: [
-          {
-            sourceLineRef: "PT-HEAD",
-            sourceLineLabel: "Platinum head labor",
-            sourceAmountCents: 22_000,
-            goldSensitive: true,
-            goldWeightKind: "fine_dwt",
-            goldWeightMillidwt: 1000,
-          },
-        ],
-      }),
-    );
-    assert.equal(platinumGold.ok, false);
-    if (!platinumGold.ok) assert.equal(platinumGold.code, "platinum-is-not-gold");
-  });
-
-  it("blocks double material adjustment and warns on stale gold", () => {
-    const doubled = calculateRepairQuote(
-      base({
-        lines: [
-          {
-            sourceLineRef: "SZ-14K-UP",
-            sourceLineLabel: "Size 14K ring up one half size",
-            sourceAmountCents: 12_000,
-            goldSensitive: true,
-            goldWeightKind: "alloy_dwt",
-            goldWeightMillidwt: 2_500,
-            manualMetalDeltaCents: 4_000,
-          },
-        ],
-      }),
-    );
-    assert.equal(doubled.ok, false);
-    if (!doubled.ok) assert.equal(doubled.code, "double-material-adjustment");
-
-    const stale = calculateRepairQuote(
-      base({
-        gold: {
-          usdCentsPerTroyOz: 440_000,
-          asOfDate: "2026-09-01",
-          source: "founder_manual",
-          baselineUsdCentsPerTroyOz: 300_000,
-        },
-        quoteDate: NOW,
-      }),
-    );
-    assert.equal(stale.ok, true);
-    if (!stale.ok) return;
-    assert.deepEqual(stale.calculation.warnings, ["stale-gold"]);
-  });
-
-  it("is deterministic and uses metal-dependent gold defaults", () => {
-    const first = calculateRepairQuote(base());
-    const second = calculateRepairQuote(base());
-    assert.deepEqual(first, second);
-    assert.equal(defaultGoldSensitive({ repairType: "sizing", metalFamily: "gold_14k" }), true);
-    assert.equal(defaultGoldSensitive({ repairType: "sizing", metalFamily: "platinum" }), false);
-    assert.equal(defaultGoldSensitive({ repairType: "laser_work", metalFamily: "gold_14k" }), false);
-    assert.equal(
-      defaultGoldSensitive({ repairType: "head_prong_replacement", metalFamily: "gold_14k" }),
-      true,
-    );
-  });
-
-  it("fails closed without source semantics or a transcribed book line", () => {
-    const noSemantics = calculateRepairQuote(
-      base({ sourcePriceSemantics: "" as never }),
-    );
-    assert.equal(noSemantics.ok, false);
-    if (!noSemantics.ok) assert.equal(noSemantics.code, "missing-source-semantics");
-    const noLines = calculateRepairQuote(base({ lines: [] }));
-    assert.equal(noLines.ok, false);
-    if (!noLines.ok) assert.equal(noLines.code, "missing-lines");
+    assert.equal(express.ok, false);
+    if (!express.ok) assert.equal(express.code, "express-not-enabled");
   });
 });

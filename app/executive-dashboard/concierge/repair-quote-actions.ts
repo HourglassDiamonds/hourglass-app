@@ -2,14 +2,12 @@
 
 import { redirect } from "next/navigation";
 import { getAuthenticatedRepairQuoteWriter } from "@/lib/continuum/repair-quoting/load-writer";
-import { defaultGoldSensitive } from "@/lib/continuum/repair-quoting/calculate";
 import { lineFromForm } from "@/lib/continuum/repair-quoting/create";
 import type { CreateRepairQuoteResult } from "@/lib/continuum/repair-quoting/create";
 import type { MutateRepairQuoteResult } from "@/lib/continuum/repair-quoting/mutate";
 import {
-  parseMarkupRatioPermyriad,
+  parseOptionalUsdCents,
   parseUsdCentsField,
-  parseWeightMillidwt,
 } from "@/lib/continuum/repair-quoting/validate";
 import {
   conciergeRepairQuotePath,
@@ -21,17 +19,14 @@ export type SaveRepairQuoteState = { ok: false; message: string } | null;
 
 function humanCreateMessage(result: CreateRepairQuoteResult): string {
   if (result.ok) return "Unable to save the repair quote.";
-  if (result.code === "missing-source-semantics") {
-    return "Choose whether the book number is shop cost or suggested retail.";
+  if (result.code === "retail-used-as-cost") {
+    return "Geller Price columns are retail. Hourglass quotes from Cost columns only.";
   }
-  if (result.code === "double-markup-blocked") {
-    return "Suggested retail cannot take extra markup.";
+  if (result.code === "express-not-enabled") {
+    return "Express is source context only. Hourglass does not apply it yet.";
   }
-  if (result.code === "missing-gold-baseline" || result.code === "missing-gold-weight") {
-    return "Gold-sensitive work needs a dated gold input, baseline, and weight.";
-  }
-  if (result.code === "platinum-is-not-gold") {
-    return "Platinum does not adjust with gold. Use a manual metal delta if needed.";
+  if (result.code === "invented-metal-quantity") {
+    return "Do not invent metal quantity. Use the sourced task cost, or a source dwt.";
   }
   if (result.code === "project-not-repair") {
     return "Repair quotes are only for Repair / Service projects.";
@@ -70,44 +65,32 @@ export async function saveRepairQuote(
   const projectId = String(formData.get("projectId") ?? "").trim();
   const repairType = String(formData.get("repairType") ?? "").trim() as RepairQuoteType;
   const metalFamily = String(formData.get("metalFamily") ?? "").trim() as RepairMetalFamily;
-  const goldSensitiveField = String(formData.get("goldSensitive") ?? "").trim();
-  const goldSensitive =
-    goldSensitiveField === "yes"
-      ? true
-      : goldSensitiveField === "no"
-        ? false
-        : defaultGoldSensitive({ repairType, metalFamily });
+  const costBasis = String(formData.get("costBasis") ?? "").trim();
   const result = await auth.writer.createQuote({
     mutationId: String(formData.get("mutationId") ?? "").trim(),
     projectId,
     repairType,
     metalFamily,
     associatedPersonId: String(formData.get("associatedPersonId") ?? "").trim() || null,
-    sourceEditionLabel: String(formData.get("sourceEditionLabel") ?? ""),
-    sourcePriceSemantics: String(formData.get("sourcePriceSemantics") ?? "").trim(),
-    goldUsdCentsPerTroyOz: parseUsdCentsField(String(formData.get("goldUsd") ?? "")) ?? 0,
-    goldAsOfDate: String(formData.get("goldAsOfDate") ?? "").trim(),
-    goldInputSource: "founder_manual",
-    goldBaselineUsdCentsPerTroyOz: parseUsdCentsField(
-      String(formData.get("goldBaselineUsd") ?? ""),
-    ),
-    markupRatioPermyriad: parseMarkupRatioPermyriad(
-      String(formData.get("markupMultiple") ?? ""),
-    ),
-    lines: [
-      lineFromForm({
-        sourceLineRef: String(formData.get("sourceLineRef") ?? ""),
-        sourceLineLabel: String(formData.get("sourceLineLabel") ?? ""),
-        sourceAmountCents: parseUsdCentsField(String(formData.get("sourceAmount") ?? "")) ?? 0,
-        goldSensitive,
-        goldWeightKind: String(formData.get("goldWeightKind") ?? "").trim() || null,
-        goldWeightMillidwt: parseWeightMillidwt(String(formData.get("goldWeightDwt") ?? "")),
-        manualMetalDeltaCents: parseUsdCentsField(
-          String(formData.get("manualMetalDelta") ?? ""),
-        ),
-      }),
-    ],
-    overrideAmountCents: parseUsdCentsField(String(formData.get("overrideAmount") ?? "")),
+    line: lineFromForm({
+      sku: String(formData.get("sourceSku") ?? ""),
+      taskDescription: String(formData.get("taskDescription") ?? ""),
+      amounts: {
+        priceLaborCents: parseUsdCentsField(String(formData.get("priceLabor") ?? "")) ?? 0,
+        pricePartsCents: parseUsdCentsField(String(formData.get("priceParts") ?? "")) ?? 0,
+        priceOtherCents: parseUsdCentsField(String(formData.get("priceOther") ?? "")) ?? 0,
+        costLaborCents: parseUsdCentsField(String(formData.get("costLabor") ?? "")) ?? 0,
+        costPartsCents: parseUsdCentsField(String(formData.get("costParts") ?? "")) ?? 0,
+        costOtherCents: parseUsdCentsField(String(formData.get("costOther") ?? "")) ?? 0,
+      },
+      inventedMetalQuantity: String(formData.get("inventedMetalQuantity") ?? "") === "yes",
+      expressSelected: String(formData.get("expressSelected") ?? "") === "yes",
+      costBasis:
+        costBasis === "geller_price_columns"
+          ? "geller_price_columns"
+          : "geller_cost_columns",
+    }),
+    overrideAmountCents: parseOptionalUsdCents(String(formData.get("overrideAmount") ?? "")),
     overrideReason: String(formData.get("overrideReason") ?? "").trim() || null,
     actor: auth.username,
   });
@@ -161,7 +144,7 @@ export async function overrideSavedRepairQuote(
   }
   const projectId = String(formData.get("projectId") ?? "").trim();
   const quoteId = String(formData.get("quoteId") ?? "").trim();
-  const amountCents = parseUsdCentsField(String(formData.get("overrideAmount") ?? ""));
+  const amountCents = parseOptionalUsdCents(String(formData.get("overrideAmount") ?? ""));
   if (amountCents == null) {
     return { ok: false, message: "Add an override amount and reason." };
   }

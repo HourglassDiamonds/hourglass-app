@@ -62,8 +62,8 @@ export class InMemoryRepairQuoteStore {
       action: "create",
       priorState: null,
       newState: quote.state,
-      priorHourglassQuoteCents: null,
-      newHourglassQuoteCents: quote.calculation.hourglassQuoteCents,
+      priorHourglassQuoteEighthCents: null,
+      newHourglassQuoteEighthCents: quote.calculation.hourglassQuoteEighthCents,
       changedAt: quote.createdAt,
       changedBy: quote.createdBy,
     });

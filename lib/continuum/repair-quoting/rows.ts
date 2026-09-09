@@ -5,20 +5,16 @@
 
 import type { RepairQuote, RepairQuoteCalculation, RepairQuoteLineResult, RepairQuoteManualOverride } from "./types";
 import {
-  isGoldInputSource,
-  isGoldWeightKind,
   isRepairMetalFamily,
   isRepairQuoteState,
   isRepairQuoteType,
   isRepairQuoteUuid,
-  isSourcePriceSemantics,
   parseCreatedBy,
-  parseSourceEdition,
 } from "./validate";
-import { parseDateOnly } from "@/lib/continuum/date-only";
+import { GELLER_BLUE_BOOK } from "./contract";
 
 export const REPAIR_QUOTE_COLUMNS =
-  "quote_id, project_id, quote_number, state, repair_type, metal_family, associated_person_id, source_edition_label, source_price_semantics, gold_usd_cents_per_oz, gold_as_of_date, gold_input_source, gold_baseline_usd_cents_per_oz, markup_ratio_permyriad, lines, calculation, override, issued_at, issued_by, voided_at, voided_by, created_at, updated_at, created_by, created_mutation_id, issued_mutation_id";
+  "quote_id, project_id, quote_number, state, repair_type, metal_family, associated_person_id, source_edition_label, source_sku, line, calculation, override, issued_at, issued_by, voided_at, voided_by, created_at, updated_at, created_by, created_mutation_id, issued_mutation_id";
 
 function text(value: unknown): string | null {
   if (value == null) return null;
@@ -32,50 +28,86 @@ function intOrNull(value: unknown): number | null {
   return Number.isInteger(n) ? n : null;
 }
 
-function parseLines(value: unknown): RepairQuoteLineResult[] | null {
-  if (!Array.isArray(value) || value.length === 0) return null;
-  const lines: RepairQuoteLineResult[] = [];
-  for (const row of value) {
-    if (!row || typeof row !== "object") return null;
-    const rec = row as Record<string, unknown>;
-    const sourceAmountCents = intOrNull(rec.sourceAmountCents);
-    const metalDeltaCents = intOrNull(rec.metalDeltaCents);
-    const adjustedSourceCents = intOrNull(rec.adjustedSourceCents);
-    if (
-      typeof rec.sourceLineRef !== "string" ||
-      typeof rec.sourceLineLabel !== "string" ||
-      sourceAmountCents == null ||
-      metalDeltaCents == null ||
-      adjustedSourceCents == null ||
-      typeof rec.goldSensitive !== "boolean"
-    ) {
-      return null;
-    }
-    const kind = rec.goldWeightKind == null ? null : rec.goldWeightKind;
-    if (kind != null && !isGoldWeightKind(kind)) return null;
-    lines.push({
-      sourceLineRef: rec.sourceLineRef,
-      sourceLineLabel: rec.sourceLineLabel,
-      sourceAmountCents,
-      goldSensitive: rec.goldSensitive,
-      goldWeightKind: kind,
-      goldWeightMillidwt: intOrNull(rec.goldWeightMillidwt),
-      fineGoldMillidwt: intOrNull(rec.fineGoldMillidwt),
-      metalDeltaCents,
-      adjustedSourceCents,
-    });
+function parseAmounts(value: unknown): RepairQuoteLineResult["amounts"] | null {
+  if (!value || typeof value !== "object") return null;
+  const rec = value as Record<string, unknown>;
+  const priceLaborCents = intOrNull(rec.priceLaborCents);
+  const pricePartsCents = intOrNull(rec.pricePartsCents);
+  const priceOtherCents = intOrNull(rec.priceOtherCents);
+  const costLaborCents = intOrNull(rec.costLaborCents);
+  const costPartsCents = intOrNull(rec.costPartsCents);
+  const costOtherCents = intOrNull(rec.costOtherCents);
+  if (
+    priceLaborCents == null ||
+    pricePartsCents == null ||
+    priceOtherCents == null ||
+    costLaborCents == null ||
+    costPartsCents == null ||
+    costOtherCents == null
+  ) {
+    return null;
   }
-  return lines;
+  return {
+    priceLaborCents,
+    pricePartsCents,
+    priceOtherCents,
+    costLaborCents,
+    costPartsCents,
+    costOtherCents,
+  };
+}
+
+function parseLine(value: unknown): RepairQuoteLineResult | null {
+  if (!value || typeof value !== "object") return null;
+  const rec = value as Record<string, unknown>;
+  const sku = text(rec.sku);
+  const taskDescription = text(rec.taskDescription);
+  const amounts = parseAmounts(rec.amounts);
+  const loadedLaborEighthCents = intOrNull(rec.loadedLaborEighthCents);
+  const partsCostEighthCents = intOrNull(rec.partsCostEighthCents);
+  const otherCostEighthCents = intOrNull(rec.otherCostEighthCents);
+  const fullyLoadedDirectCostEighthCents = intOrNull(
+    rec.fullyLoadedDirectCostEighthCents,
+  );
+  if (
+    !sku ||
+    !taskDescription ||
+    !amounts ||
+    loadedLaborEighthCents == null ||
+    partsCostEighthCents == null ||
+    otherCostEighthCents == null ||
+    fullyLoadedDirectCostEighthCents == null
+  ) {
+    return null;
+  }
+  return {
+    sku,
+    taskDescription,
+    amounts,
+    metalBand:
+      rec.metalBand && typeof rec.metalBand === "object"
+        ? (rec.metalBand as RepairQuoteLineResult["metalBand"])
+        : null,
+    hasExplicitMetalQuantity: rec.hasExplicitMetalQuantity === true,
+    loadedLaborEighthCents,
+    partsCostEighthCents,
+    otherCostEighthCents,
+    fullyLoadedDirectCostEighthCents,
+  };
 }
 
 function parseCalculation(value: unknown): RepairQuoteCalculation | null {
   if (!value || typeof value !== "object") return null;
   const rec = value as RepairQuoteCalculation;
-  if (rec.sourceFamily !== "founder_transcribed_blue_book") return null;
-  if (!isSourcePriceSemantics(rec.sourcePriceSemantics)) return null;
-  if (!Array.isArray(rec.lines) || !Number.isInteger(rec.hourglassQuoteCents)) {
-    return null;
-  }
+  if (rec.sourceFamily !== "geller_blue_book") return null;
+  if (rec.sourceVersion !== GELLER_BLUE_BOOK.version) return null;
+  if (rec.sourceRelease !== GELLER_BLUE_BOOK.release) return null;
+  if (rec.sourceEditionLabel !== GELLER_BLUE_BOOK.editionLabel) return null;
+  if (rec.laborBurdenNumerator !== 5 || rec.laborBurdenDenominator !== 4) return null;
+  if (rec.hourglassMarkupNumerator !== 5 || rec.hourglassMarkupDenominator !== 2) return null;
+  if (rec.expressSelected !== false) return null;
+  if (!Number.isInteger(rec.rawComputedQuoteEighthCents)) return null;
+  if (!Number.isInteger(rec.hourglassQuoteEighthCents)) return null;
   return rec;
 }
 
@@ -103,29 +135,25 @@ export function rowToRepairQuote(
   if (!isRepairQuoteType(row.repair_type)) return null;
   if (!isRepairMetalFamily(row.metal_family)) return null;
   if (!isRepairQuoteState(row.state)) return null;
-  if (!isSourcePriceSemantics(row.source_price_semantics)) return null;
-  if (!isGoldInputSource(row.gold_input_source)) return null;
-  const sourceEdition = parseSourceEdition(text(row.source_edition_label));
   const createdBy = parseCreatedBy(text(row.created_by));
-  const goldAsOfDate = parseDateOnly(text(row.gold_as_of_date));
   const createdAt = text(row.created_at);
   const updatedAt = text(row.updated_at);
   const createdMutationId = text(row.created_mutation_id);
   const quoteNumber = intOrNull(row.quote_number);
-  const goldUsdCentsPerTroyOz = intOrNull(row.gold_usd_cents_per_oz);
-  const lines = parseLines(row.lines);
+  const line = parseLine(row.line);
   const calculation = parseCalculation(row.calculation);
+  const sourceSku = text(row.source_sku);
+  const sourceEditionLabel = text(row.source_edition_label);
   if (
-    !sourceEdition ||
     !createdBy ||
-    !goldAsOfDate ||
     !createdAt ||
     !updatedAt ||
     !createdMutationId ||
     quoteNumber == null ||
-    goldUsdCentsPerTroyOz == null ||
-    !lines ||
-    !calculation
+    !line ||
+    !calculation ||
+    !sourceSku ||
+    !sourceEditionLabel
   ) {
     return null;
   }
@@ -138,14 +166,9 @@ export function rowToRepairQuote(
     repairType: row.repair_type,
     metalFamily: row.metal_family,
     associatedPersonId: associated,
-    sourceEditionLabel: sourceEdition,
-    sourcePriceSemantics: row.source_price_semantics,
-    goldUsdCentsPerTroyOz,
-    goldAsOfDate,
-    goldInputSource: row.gold_input_source,
-    goldBaselineUsdCentsPerTroyOz: intOrNull(row.gold_baseline_usd_cents_per_oz),
-    markupRatioPermyriad: intOrNull(row.markup_ratio_permyriad),
-    lines,
+    sourceEditionLabel,
+    sourceSku,
+    line,
     calculation,
     override: parseOverride(row.override),
     issuedAt: text(row.issued_at),
@@ -170,13 +193,8 @@ export function repairQuoteToRow(quote: RepairQuote): Record<string, unknown> {
     metal_family: quote.metalFamily,
     associated_person_id: quote.associatedPersonId,
     source_edition_label: quote.sourceEditionLabel,
-    source_price_semantics: quote.sourcePriceSemantics,
-    gold_usd_cents_per_oz: quote.goldUsdCentsPerTroyOz,
-    gold_as_of_date: quote.goldAsOfDate,
-    gold_input_source: quote.goldInputSource,
-    gold_baseline_usd_cents_per_oz: quote.goldBaselineUsdCentsPerTroyOz,
-    markup_ratio_permyriad: quote.markupRatioPermyriad,
-    lines: quote.lines,
+    source_sku: quote.sourceSku,
+    line: quote.line,
     calculation: quote.calculation,
     override: quote.override,
     issued_at: quote.issuedAt,
@@ -198,8 +216,8 @@ export function repairQuoteMutationToRow(input: {
   action: string;
   priorState: string | null;
   newState: string;
-  priorHourglassQuoteCents: number | null;
-  newHourglassQuoteCents: number | null;
+  priorHourglassQuoteEighthCents: number | null;
+  newHourglassQuoteEighthCents: number | null;
   changedAt: string;
   changedBy: string;
 }): Record<string, unknown> {
@@ -210,8 +228,8 @@ export function repairQuoteMutationToRow(input: {
     action: input.action,
     prior_state: input.priorState,
     new_state: input.newState,
-    prior_hourglass_quote_cents: input.priorHourglassQuoteCents,
-    new_hourglass_quote_cents: input.newHourglassQuoteCents,
+    prior_hourglass_quote_eighth_cents: input.priorHourglassQuoteEighthCents,
+    new_hourglass_quote_eighth_cents: input.newHourglassQuoteEighthCents,
     changed_at: input.changedAt,
     changed_by: input.changedBy,
   };

@@ -1,9 +1,12 @@
 -- UNAPPLIED. DO NOT RUN AGAINST PRODUCTION from this change.
 -- Continuum Blue Book repair quoting V1.
 -- Additive only. continuum_project_profiles remains the ONE current Project record.
--- Stores founder-transcribed Blue Book lines plus fail-closed gold/markup math.
--- Does NOT ship a Geller/Edge price catalog. Does NOT invent repair prices.
--- Historical gold/markup hints are not defaults and must not be backfilled.
+-- Source: Geller Blue Book Version 5.0 Release 6.50
+-- Structured export pointer: RepairTaskSKUs.2026-08-26-17-29-10(1).xlsx
+-- Bold Price columns = Geller retail. Cost columns = Hourglass cost basis.
+-- Hourglass formula: 2.5 × (Cost Labor × 1.25 + Cost Parts + Cost Other), applied once.
+-- Does NOT ship a Geller/Edge price catalog. Does NOT invent repair prices or dwt.
+-- Does NOT treat Geller retail as cost. Does NOT mark up Geller retail.
 -- Project-linked only. Repair / Service Kind required at write time.
 -- Issued quotes are immutable; mutations are append-only.
 -- No anon/authenticated grants. RLS remains enabled. No dynamic SQL.
@@ -22,13 +25,8 @@ create table if not exists public.continuum_repair_quotes (
     references public.continuum_person_profiles (person_id)
     on delete restrict,
   source_edition_label text not null,
-  source_price_semantics text not null,
-  gold_usd_cents_per_oz integer not null,
-  gold_as_of_date date not null,
-  gold_input_source text not null,
-  gold_baseline_usd_cents_per_oz integer,
-  markup_ratio_permyriad integer,
-  lines jsonb not null,
+  source_sku text not null,
+  line jsonb not null,
   calculation jsonb not null,
   override jsonb,
   issued_at timestamptz,
@@ -61,32 +59,23 @@ create table if not exists public.continuum_repair_quotes (
       'platinum',
       'other'
     )),
-  constraint continuum_repair_quotes_semantics_check
-    check (source_price_semantics in ('shop_cost', 'suggested_retail')),
-  constraint continuum_repair_quotes_gold_source_check
-    check (gold_input_source in ('founder_manual')),
   constraint continuum_repair_quotes_source_edition_check
     check (
-      char_length(btrim(source_edition_label)) between 1 and 120
-      and source_edition_label !~ E'[\\n\\r]'
+      source_edition_label = 'Geller Blue Book Version 5.0 Release 6.50'
     ),
-  constraint continuum_repair_quotes_gold_cents_check
-    check (gold_usd_cents_per_oz > 0),
-  constraint continuum_repair_quotes_baseline_check
+  constraint continuum_repair_quotes_source_sku_check
     check (
-      gold_baseline_usd_cents_per_oz is null
-      or gold_baseline_usd_cents_per_oz > 0
+      char_length(btrim(source_sku)) between 1 and 40
+      and source_sku !~ E'[\\n\\r]'
     ),
-  constraint continuum_repair_quotes_markup_check
+  constraint continuum_repair_quotes_cost_basis_check
     check (
-      markup_ratio_permyriad is null
-      or markup_ratio_permyriad >= 10000
-    ),
-  constraint continuum_repair_quotes_retail_no_extra_markup
-    check (
-      source_price_semantics <> 'suggested_retail'
-      or markup_ratio_permyriad is null
-      or markup_ratio_permyriad = 10000
+      calculation ? 'sourceAmounts'
+      and (calculation->>'laborBurdenNumerator') = '5'
+      and (calculation->>'laborBurdenDenominator') = '4'
+      and (calculation->>'hourglassMarkupNumerator') = '5'
+      and (calculation->>'hourglassMarkupDenominator') = '2'
+      and (calculation->>'expressSelected') = 'false'
     ),
   constraint continuum_repair_quotes_issued_lock
     check (
@@ -101,7 +90,7 @@ create table if not exists public.continuum_repair_quotes (
 );
 
 comment on table public.continuum_repair_quotes is
-  'Founder-transcribed Blue Book repair quotes. Not a price catalog. Issued rows are immutable snapshots of source, gold, markup, and Hourglass quote.';
+  'Geller Blue Book Version 5.0 Release 6.50 repair quotes. Cost columns are the Hourglass basis. Issued rows are immutable snapshots of source Price/Cost, 1.25 labor burden, 2.5x cost markup, raw computed quote, override, and final quote.';
 
 alter table public.continuum_repair_quotes enable row level security;
 
@@ -116,8 +105,8 @@ create table if not exists public.continuum_repair_quote_mutations (
   action text not null,
   prior_state text,
   new_state text not null,
-  prior_hourglass_quote_cents integer,
-  new_hourglass_quote_cents integer,
+  prior_hourglass_quote_eighth_cents integer,
+  new_hourglass_quote_eighth_cents integer,
   changed_at timestamptz not null,
   changed_by text not null,
   constraint continuum_repair_quote_mutations_action_check

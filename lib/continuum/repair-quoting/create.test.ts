@@ -4,12 +4,13 @@ import { describe, it } from "node:test";
 import { InMemoryClientMemoryStore } from "@/lib/continuum/client-memory/store";
 import { CLIENT_MEMORY_SOURCE_SYSTEM } from "@/lib/continuum/client-memory/types";
 import type { ProjectKind } from "@/lib/continuum/client-memory/project-kind";
+import { GELLER_BLUE_BOOK } from "./contract";
 import { createRepairQuote, type CreateRepairQuoteDeps } from "./create";
+import { lookupVerifiedSku } from "./source";
 import { InMemoryRepairQuoteStore } from "./store";
 import type { RepairQuoteLineInput } from "./types";
 
 const NOW = "2026-09-09T16:00:00.000Z";
-const QUOTE_DATE = "2026-09-09";
 const ACTOR = "justin";
 
 async function seedProject(
@@ -79,7 +80,7 @@ function deps(
   return {
     nowIso: () => NOW,
     newQuoteId: () => randomUUID(),
-    quoteDate: () => QUOTE_DATE,
+    quoteDate: () => "2026-09-09",
     getEntity: (id) => store.getEntity(id),
     getProjectProfile: (projectId) => store.getProjectProfile(projectId),
     getPersonProfile: (personId) => store.getPersonProfile(personId),
@@ -91,17 +92,19 @@ function deps(
   };
 }
 
-function sizingLine(): RepairQuoteLineInput[] {
-  return [
-    {
-      sourceLineRef: "SZ-14K-UP",
-      sourceLineLabel: "Size 14K ring up one half size",
-      sourceAmountCents: 12_000,
-      goldSensitive: true,
-      goldWeightKind: "alloy_dwt",
-      goldWeightMillidwt: 2_500,
-    },
-  ];
+function verifiedLine(sku: string): RepairQuoteLineInput {
+  const verified = lookupVerifiedSku(sku);
+  assert.ok(verified);
+  return {
+    sku: verified.sku,
+    taskDescription: verified.taskDescription,
+    amounts: verified.amounts,
+    metalBand: verified.metalBand,
+    hasExplicitMetalQuantity: verified.hasExplicitMetalQuantity,
+    inventedMetalQuantity: false,
+    expressSelected: false,
+    costBasis: "geller_cost_columns",
+  };
 }
 
 describe("Repair quote create", () => {
@@ -115,14 +118,7 @@ describe("Repair quote create", () => {
       repairType: "sizing",
       metalFamily: "gold_14k",
       associatedPersonId: personId,
-      sourceEditionLabel: "Founder-transcribed Blue Book line",
-      sourcePriceSemantics: "shop_cost",
-      goldUsdCentsPerTroyOz: 440_000,
-      goldAsOfDate: QUOTE_DATE,
-      goldInputSource: "founder_manual",
-      goldBaselineUsdCentsPerTroyOz: 300_000,
-      markupRatioPermyriad: 25_000,
-      lines: sizingLine(),
+      line: verifiedLine("1000"),
       actor: ACTOR,
     });
     assert.equal(result.ok, true);
@@ -132,9 +128,12 @@ describe("Repair quote create", () => {
     assert.equal(result.quote.state, "draft");
     assert.equal(result.quote.quoteNumber, 1);
     assert.equal(result.quote.createdBy, ACTOR);
+    assert.equal(result.quote.sourceEditionLabel, GELLER_BLUE_BOOK.editionLabel);
+    assert.equal(result.quote.sourceSku, "1000");
+    assert.equal(result.quote.calculation.rawComputedQuoteEighthCents, 40_000);
   });
 
-  it("refuses custom jewelry projects and missing source semantics", async () => {
+  it("refuses custom jewelry projects and retail-as-cost", async () => {
     const store = new InMemoryClientMemoryStore();
     const quotes = new InMemoryRepairQuoteStore();
     const custom = await seedProject(store, { kind: "custom_new_jewelry" });
@@ -143,14 +142,7 @@ describe("Repair quote create", () => {
       projectId: custom.projectId,
       repairType: "sizing",
       metalFamily: "gold_14k",
-      sourceEditionLabel: "Founder-transcribed Blue Book line",
-      sourcePriceSemantics: "shop_cost",
-      goldUsdCentsPerTroyOz: 440_000,
-      goldAsOfDate: QUOTE_DATE,
-      goldInputSource: "founder_manual",
-      goldBaselineUsdCentsPerTroyOz: 300_000,
-      markupRatioPermyriad: 25_000,
-      lines: sizingLine(),
+      line: verifiedLine("1000"),
       actor: ACTOR,
     });
     assert.equal(customResult.ok, false);
@@ -158,23 +150,16 @@ describe("Repair quote create", () => {
     assert.equal(customResult.code, "project-not-repair");
 
     const repair = await seedProject(store);
-    const missing = await createRepairQuote(deps(store, quotes), {
+    const retail = await createRepairQuote(deps(store, quotes), {
       mutationId: randomUUID(),
       projectId: repair.projectId,
       repairType: "sizing",
       metalFamily: "gold_14k",
-      sourceEditionLabel: "Founder-transcribed Blue Book line",
-      sourcePriceSemantics: "",
-      goldUsdCentsPerTroyOz: 440_000,
-      goldAsOfDate: QUOTE_DATE,
-      goldInputSource: "founder_manual",
-      goldBaselineUsdCentsPerTroyOz: 300_000,
-      markupRatioPermyriad: 25_000,
-      lines: sizingLine(),
+      line: { ...verifiedLine("1000"), costBasis: "geller_price_columns" },
       actor: ACTOR,
     });
-    assert.equal(missing.ok, false);
-    if (!missing.ok) assert.equal(missing.code, "missing-source-semantics");
+    assert.equal(retail.ok, false);
+    if (!retail.ok) assert.equal(retail.code, "retail-used-as-cost");
   });
 
   it("is idempotent on mutation id", async () => {
@@ -185,23 +170,9 @@ describe("Repair quote create", () => {
     const input = {
       mutationId,
       projectId,
-      repairType: "laser_work" as const,
+      repairType: "sizing" as const,
       metalFamily: "gold_14k" as const,
-      sourceEditionLabel: "Founder-transcribed Blue Book line",
-      sourcePriceSemantics: "shop_cost",
-      goldUsdCentsPerTroyOz: 440_000,
-      goldAsOfDate: QUOTE_DATE,
-      goldInputSource: "founder_manual",
-      goldBaselineUsdCentsPerTroyOz: null,
-      markupRatioPermyriad: 25_000,
-      lines: [
-        {
-          sourceLineRef: "LSR-1",
-          sourceLineLabel: "Laser weld",
-          sourceAmountCents: 8_500,
-          goldSensitive: false,
-        },
-      ],
+      line: verifiedLine("1008"),
       actor: ACTOR,
     };
     const first = await createRepairQuote(deps(store, quotes), input);
@@ -212,5 +183,6 @@ describe("Repair quote create", () => {
     assert.equal(second.status, "already-present");
     assert.equal(first.quote.quoteId, second.quote.quoteId);
     assert.equal(quotes.listQuotes(projectId).length, 1);
+    assert.equal(first.quote.calculation.rawComputedQuoteEighthCents, 74_500);
   });
 });

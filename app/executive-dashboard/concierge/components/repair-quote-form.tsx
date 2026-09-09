@@ -10,14 +10,20 @@ import { conciergeRepairQuotesPath } from "@/lib/continuum/client-memory/read/pr
 import {
   REPAIR_METAL_FAMILIES,
   REPAIR_QUOTE_TYPES,
-  SOURCE_PRICE_SEMANTICS,
 } from "@/lib/continuum/repair-quoting/types";
 import {
+  HOURGLASS_MARKUP_LABEL,
+  LABOR_BURDEN_LABEL,
   REPAIR_METAL_LABELS,
   REPAIR_QUOTE_TYPE_LABELS,
-  SOURCE_SEMANTICS_LABELS,
 } from "@/lib/continuum/repair-quoting/present";
-import { defaultGoldSensitive } from "@/lib/continuum/repair-quoting/calculate";
+import { GELLER_BLUE_BOOK } from "@/lib/continuum/repair-quoting/contract";
+import { lookupVerifiedSku } from "@/lib/continuum/repair-quoting/source";
+import { formatUsdCents } from "@/lib/continuum/repair-quoting/money";
+
+function centsField(cents: number): string {
+  return cents === 0 ? "" : formatUsdCents(cents).replace("$", "");
+}
 
 export function RepairQuoteForm({
   projectId,
@@ -32,29 +38,55 @@ export function RepairQuoteForm({
 }) {
   const typeId = useId();
   const metalId = useId();
-  const semanticsId = useId();
   const [repairType, setRepairType] = useState<(typeof REPAIR_QUOTE_TYPES)[number]>("sizing");
   const [metalFamily, setMetalFamily] =
     useState<(typeof REPAIR_METAL_FAMILIES)[number]>("gold_14k");
-  const [semantics, setSemantics] = useState<string>("");
+  const [sku, setSku] = useState("");
+  const [taskDescription, setTaskDescription] = useState("");
+  const [priceLabor, setPriceLabor] = useState("");
+  const [priceParts, setPriceParts] = useState("");
+  const [priceOther, setPriceOther] = useState("");
+  const [costLabor, setCostLabor] = useState("");
+  const [costParts, setCostParts] = useState("");
+  const [costOther, setCostOther] = useState("");
   const [state, formAction, pending] = useActionState(
     saveRepairQuote,
     null as SaveRepairQuoteState,
   );
   const errorRef = useRef<HTMLParagraphElement>(null);
-  const goldDefault = defaultGoldSensitive({ repairType, metalFamily });
 
   useEffect(() => {
     if (state?.message) errorRef.current?.focus();
   }, [state?.message]);
 
+  function applySku(nextSku: string) {
+    setSku(nextSku);
+    const verified = lookupVerifiedSku(nextSku);
+    if (!verified) return;
+    setRepairType(verified.repairType);
+    setMetalFamily(verified.metalFamily);
+    setTaskDescription(verified.taskDescription);
+    setPriceLabor(centsField(verified.amounts.priceLaborCents));
+    setPriceParts(centsField(verified.amounts.pricePartsCents));
+    setPriceOther(centsField(verified.amounts.priceOtherCents));
+    setCostLabor(centsField(verified.amounts.costLaborCents));
+    setCostParts(centsField(verified.amounts.costPartsCents));
+    setCostOther(centsField(verified.amounts.costOtherCents));
+  }
+
   return (
     <form action={formAction} className="flex min-h-[70vh] flex-col" noValidate>
       <input type="hidden" name="projectId" value={projectId} />
       <input type="hidden" name="mutationId" value={mutationId} />
+      <input type="hidden" name="costBasis" value="geller_cost_columns" />
       <p className="text-[15px] leading-relaxed text-[#c4b7aa]">{projectTitle}</p>
       <p className="mt-2 text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
-        Founder quote · not a public calculator
+        Founder quote · {GELLER_BLUE_BOOK.editionLabel}
+      </p>
+      <p className="mt-3 text-[15px] leading-relaxed text-[#c4b7aa]">
+        Hourglass uses Cost columns × {LABOR_BURDEN_LABEL} labor burden, then{" "}
+        {HOURGLASS_MARKUP_LABEL}× that loaded cost. Geller Price columns are retail
+        provenance only.
       </p>
 
       <fieldset className="mt-8" aria-describedby={typeId}>
@@ -128,186 +160,135 @@ export function RepairQuoteForm({
 
       <label className="mt-8 block">
         <span className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
-          Blue Book / source edition
+          Source SKU
         </span>
         <input
-          name="sourceEditionLabel"
+          name="sourceSku"
           required
-          maxLength={120}
-          placeholder="Edition and version as printed"
-          className="mt-2 w-full min-h-12 rounded-[18px] border border-white/10 bg-[#1d1916] px-4 text-[15px] text-[#efe8de] outline-none focus-visible:shadow-[0_0_0_3px_rgba(173,145,100,0.22)]"
-        />
-      </label>
-
-      <fieldset className="mt-8" aria-describedby={semanticsId}>
-        <legend
-          id={semanticsId}
-          className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]"
-        >
-          Book number means
-        </legend>
-        <div className="hg-project-kind-choice mt-3">
-          {SOURCE_PRICE_SEMANTICS.map((value) => (
-            <label key={value}>
-              <input
-                type="radio"
-                name="sourcePriceSemantics"
-                value={value}
-                checked={semantics === value}
-                onChange={() => setSemantics(value)}
-              />
-              <span className="min-w-0 break-words text-[15px] leading-relaxed">
-                {SOURCE_SEMANTICS_LABELS[value]}
-              </span>
-            </label>
-          ))}
-        </div>
-      </fieldset>
-
-      <label className="mt-8 block">
-        <span className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
-          Source line
-        </span>
-        <input
-          name="sourceLineRef"
-          required
-          maxLength={80}
-          placeholder="Book code / page line"
+          maxLength={40}
+          value={sku}
+          onChange={(event) => applySku(event.target.value)}
+          placeholder="Geller task SKU"
           className="mt-2 w-full min-h-12 rounded-[18px] border border-white/10 bg-[#1d1916] px-4 text-[15px] text-[#efe8de] outline-none focus-visible:shadow-[0_0_0_3px_rgba(173,145,100,0.22)]"
         />
       </label>
       <label className="mt-6 block">
         <span className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
-          Source description
+          Source task
         </span>
         <input
-          name="sourceLineLabel"
+          name="taskDescription"
           required
-          maxLength={160}
+          maxLength={240}
+          value={taskDescription}
+          onChange={(event) => setTaskDescription(event.target.value)}
           className="mt-2 w-full min-h-12 rounded-[18px] border border-white/10 bg-[#1d1916] px-4 text-[15px] text-[#efe8de] outline-none focus-visible:shadow-[0_0_0_3px_rgba(173,145,100,0.22)]"
         />
       </label>
-      <label className="mt-6 block">
+
+      <p className="mt-8 text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
+        Geller Price — retail provenance
+      </p>
+      <label className="mt-4 block">
         <span className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
-          Source amount
+          Price Labor
         </span>
         <input
-          name="sourceAmount"
-          required
+          name="priceLabor"
           inputMode="decimal"
+          value={priceLabor}
+          onChange={(event) => setPriceLabor(event.target.value)}
+          placeholder="0.00"
+          className="mt-2 w-full min-h-12 rounded-[18px] border border-white/10 bg-[#1d1916] px-4 text-[15px] text-[#efe8de] outline-none focus-visible:shadow-[0_0_0_3px_rgba(173,145,100,0.22)]"
+        />
+      </label>
+      <label className="mt-4 block">
+        <span className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
+          Price Parts
+        </span>
+        <input
+          name="priceParts"
+          inputMode="decimal"
+          value={priceParts}
+          onChange={(event) => setPriceParts(event.target.value)}
+          placeholder="0.00"
+          className="mt-2 w-full min-h-12 rounded-[18px] border border-white/10 bg-[#1d1916] px-4 text-[15px] text-[#efe8de] outline-none focus-visible:shadow-[0_0_0_3px_rgba(173,145,100,0.22)]"
+        />
+      </label>
+      <label className="mt-4 block">
+        <span className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
+          Price Other
+        </span>
+        <input
+          name="priceOther"
+          inputMode="decimal"
+          value={priceOther}
+          onChange={(event) => setPriceOther(event.target.value)}
           placeholder="0.00"
           className="mt-2 w-full min-h-12 rounded-[18px] border border-white/10 bg-[#1d1916] px-4 text-[15px] text-[#efe8de] outline-none focus-visible:shadow-[0_0_0_3px_rgba(173,145,100,0.22)]"
         />
       </label>
 
+      <p className="mt-8 text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
+        Geller Cost — Hourglass basis
+      </p>
+      <label className="mt-4 block">
+        <span className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
+          Cost Labor
+        </span>
+        <input
+          name="costLabor"
+          inputMode="decimal"
+          value={costLabor}
+          onChange={(event) => setCostLabor(event.target.value)}
+          placeholder="0.00"
+          className="mt-2 w-full min-h-12 rounded-[18px] border border-white/10 bg-[#1d1916] px-4 text-[15px] text-[#efe8de] outline-none focus-visible:shadow-[0_0_0_3px_rgba(173,145,100,0.22)]"
+        />
+      </label>
+      <label className="mt-4 block">
+        <span className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
+          Cost Parts
+        </span>
+        <input
+          name="costParts"
+          inputMode="decimal"
+          value={costParts}
+          onChange={(event) => setCostParts(event.target.value)}
+          placeholder="0.00"
+          className="mt-2 w-full min-h-12 rounded-[18px] border border-white/10 bg-[#1d1916] px-4 text-[15px] text-[#efe8de] outline-none focus-visible:shadow-[0_0_0_3px_rgba(173,145,100,0.22)]"
+        />
+      </label>
+      <label className="mt-4 block">
+        <span className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
+          Cost Other
+        </span>
+        <input
+          name="costOther"
+          inputMode="decimal"
+          value={costOther}
+          onChange={(event) => setCostOther(event.target.value)}
+          placeholder="0.00"
+          className="mt-2 w-full min-h-12 rounded-[18px] border border-white/10 bg-[#1d1916] px-4 text-[15px] text-[#efe8de] outline-none focus-visible:shadow-[0_0_0_3px_rgba(173,145,100,0.22)]"
+        />
+      </label>
+
+      <p className="mt-8 text-[15px] leading-relaxed text-[#c4b7aa]">
+        Labor burden {LABOR_BURDEN_LABEL}× and Hourglass markup {HOURGLASS_MARKUP_LABEL}×
+        cost are locked. Rounding, minimum charge, Express, and platinum dynamic
+        material remain unresolved.
+      </p>
+
       <fieldset className="mt-8">
         <legend className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
-          Gold-sensitive
+          Geller Express
         </legend>
-        <div className="hg-project-kind-choice mt-3" key={`${repairType}-${metalFamily}`}>
-          <label>
-            <input type="radio" name="goldSensitive" value="yes" defaultChecked={goldDefault} />
-            <span className="text-[15px] leading-relaxed">Yes — metal adjusts with gold</span>
-          </label>
-          <label>
-            <input type="radio" name="goldSensitive" value="no" defaultChecked={!goldDefault} />
-            <span className="text-[15px] leading-relaxed">No — labor / non-gold</span>
-          </label>
-        </div>
-      </fieldset>
-
-      <label className="mt-6 block">
-        <span className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
-          Gold weight (dwt)
-        </span>
-        <input
-          name="goldWeightDwt"
-          inputMode="decimal"
-          placeholder={goldDefault ? "Required for gold-sensitive work" : "If metal is added"}
-          className="mt-2 w-full min-h-12 rounded-[18px] border border-white/10 bg-[#1d1916] px-4 text-[15px] text-[#efe8de] outline-none focus-visible:shadow-[0_0_0_3px_rgba(173,145,100,0.22)]"
-        />
-      </label>
-      <label className="mt-6 block">
-        <span className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
-          Weight kind
-        </span>
-        <select
-          name="goldWeightKind"
-          defaultValue="alloy_dwt"
-          className="mt-2 w-full min-h-12 rounded-[18px] border border-white/10 bg-[#1d1916] px-4 text-[15px] text-[#efe8de] outline-none"
-        >
-          <option value="alloy_dwt">Alloy dwt</option>
-          <option value="fine_dwt">Fine gold dwt</option>
-        </select>
-      </label>
-
-      <label className="mt-6 block">
-        <span className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
-          Current gold / oz
-        </span>
-        <input
-          name="goldUsd"
-          required
-          inputMode="decimal"
-          placeholder="Founder-dated gold, not a live feed"
-          className="mt-2 w-full min-h-12 rounded-[18px] border border-white/10 bg-[#1d1916] px-4 text-[15px] text-[#efe8de] outline-none focus-visible:shadow-[0_0_0_3px_rgba(173,145,100,0.22)]"
-        />
-      </label>
-      <label className="mt-6 block">
-        <span className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
-          Gold as of
-        </span>
-        <input
-          type="date"
-          name="goldAsOfDate"
-          required
-          className="mt-2 w-full min-h-12 rounded-[18px] border border-white/10 bg-[#1d1916] px-4 text-[15px] text-[#efe8de] outline-none"
-        />
-      </label>
-      <label className="mt-6 block">
-        <span className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
-          Book gold baseline / oz
-        </span>
-        <input
-          name="goldBaselineUsd"
-          inputMode="decimal"
-          placeholder="Required when metal is gold-sensitive"
-          className="mt-2 w-full min-h-12 rounded-[18px] border border-white/10 bg-[#1d1916] px-4 text-[15px] text-[#efe8de] outline-none focus-visible:shadow-[0_0_0_3px_rgba(173,145,100,0.22)]"
-        />
-      </label>
-      <label className="mt-6 block">
-        <span className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
-          Manual metal delta
-        </span>
-        <input
-          name="manualMetalDelta"
-          inputMode="decimal"
-          placeholder="Platinum or non-gold metal only"
-          className="mt-2 w-full min-h-12 rounded-[18px] border border-white/10 bg-[#1d1916] px-4 text-[15px] text-[#efe8de] outline-none focus-visible:shadow-[0_0_0_3px_rgba(173,145,100,0.22)]"
-        />
-      </label>
-
-      {semantics === "shop_cost" ? (
-        <label className="mt-8 block">
-          <span className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
-            Hourglass markup
+        <label className="mt-3 flex min-h-11 items-start gap-3">
+          <input type="checkbox" name="expressSelected" value="yes" className="mt-1" />
+          <span className="text-[15px] leading-relaxed text-[#c4b7aa]">
+            Apply Express. Hourglass does not enable this yet; selecting it fails closed.
           </span>
-          <input
-            name="markupMultiple"
-            inputMode="decimal"
-            placeholder="e.g. 2.5 — required for shop cost"
-            className="mt-2 w-full min-h-12 rounded-[18px] border border-white/10 bg-[#1d1916] px-4 text-[15px] text-[#efe8de] outline-none focus-visible:shadow-[0_0_0_3px_rgba(173,145,100,0.22)]"
-          />
         </label>
-      ) : semantics === "suggested_retail" ? (
-        <p className="mt-8 text-[15px] leading-relaxed text-[#c4b7aa]">
-          Suggested retail is not marked up again.
-        </p>
-      ) : (
-        <p className="mt-8 text-[15px] leading-relaxed text-[#c4b7aa]">
-          Choose shop cost or suggested retail before quoting.
-        </p>
-      )}
+      </fieldset>
 
       <label className="mt-8 block">
         <span className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
@@ -316,7 +297,7 @@ export function RepairQuoteForm({
         <input
           name="overrideAmount"
           inputMode="decimal"
-          placeholder="Optional Hourglass quote"
+          placeholder="Optional issued amount"
           className="mt-2 w-full min-h-12 rounded-[18px] border border-white/10 bg-[#1d1916] px-4 text-[15px] text-[#efe8de] outline-none focus-visible:shadow-[0_0_0_3px_rgba(173,145,100,0.22)]"
         />
       </label>

@@ -1,15 +1,13 @@
 import Link from "next/link";
-import { formatUsdCents } from "@/lib/continuum/repair-quoting/money";
+import { formatUsdCents, formatUsdEighthCents } from "@/lib/continuum/repair-quoting/money";
 import {
+  hourglassMarkupLabel,
+  laborBurdenLabel,
   REPAIR_QUOTE_ADD_LABEL,
   REPAIR_QUOTE_SECTION_TITLE,
   REPAIR_QUOTE_STATE_LABELS,
   REPAIR_QUOTES_NONE_LABEL,
   REPAIR_QUOTES_NOT_CONNECTED_LABEL,
-  SOURCE_SEMANTICS_LABELS,
-  STALE_GOLD_WARNING,
-  goldWeightLabel,
-  markupMultipleLabel,
   repairMetalLabel,
   repairQuoteAmountLabel,
   repairQuoteDisplayTitle,
@@ -21,7 +19,6 @@ import {
   conciergeRepairQuotePath,
   conciergeRepairQuotesPath,
 } from "@/lib/continuum/client-memory/read/presentation";
-import { formatDateOnlyShort } from "@/lib/continuum/date-only";
 
 export function RepairQuotesSection({
   projectId,
@@ -85,7 +82,7 @@ export function RepairQuoteDetail({
   projectTitle: string;
   personName: string | null;
 }) {
-  const stale = quote.calculation.warnings.includes("stale-gold");
+  const calc = quote.calculation;
   return (
     <article>
       <p className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
@@ -99,63 +96,33 @@ export function RepairQuoteDetail({
         <p className="mt-1 text-[15px] leading-relaxed text-[#c4b7aa]">{personName}</p>
       ) : null}
 
-      {stale ? (
-        <p role="status" className="mt-6 text-[14px] leading-relaxed text-[#d2b8a8]">
-          {STALE_GOLD_WARNING}
-        </p>
-      ) : null}
-
       <dl className="mt-8 space-y-4">
         <Row label="Repair type" value={repairQuoteTypeLabel(quote.repairType)} />
         <Row label="Metal" value={repairMetalLabel(quote.metalFamily)} />
         <Row label="Source edition" value={quote.sourceEditionLabel} />
+        <Row label="Source SKU" value={quote.sourceSku} />
+        <Row label="Source task" value={calc.sourceTaskDescription} />
+        <Row label="Price Labor" value={formatUsdCents(calc.sourceAmounts.priceLaborCents)} />
+        <Row label="Price Parts" value={formatUsdCents(calc.sourceAmounts.pricePartsCents)} />
+        <Row label="Price Other" value={formatUsdCents(calc.sourceAmounts.priceOtherCents)} />
+        <Row label="Cost Labor" value={formatUsdCents(calc.sourceAmounts.costLaborCents)} />
+        <Row label="Cost Parts" value={formatUsdCents(calc.sourceAmounts.costPartsCents)} />
+        <Row label="Cost Other" value={formatUsdCents(calc.sourceAmounts.costOtherCents)} />
         <Row
-          label="Book number means"
-          value={SOURCE_SEMANTICS_LABELS[quote.sourcePriceSemantics]}
+          label="Loaded labor"
+          value={formatUsdEighthCents(calc.loadedLaborEighthCents)}
         />
-        {quote.lines.map((line) => (
-          <div key={line.sourceLineRef}>
-            <Row label="Source line" value={`${line.sourceLineRef} · ${line.sourceLineLabel}`} />
-            <Row label="Source amount" value={formatUsdCents(line.sourceAmountCents)} />
-            <Row
-              label="Metal delta"
-              value={formatUsdCents(line.metalDeltaCents)}
-            />
-            <Row
-              label="Adjusted source"
-              value={formatUsdCents(line.adjustedSourceCents)}
-            />
-          </div>
-        ))}
+        <Row label="Labor burden" value={laborBurdenLabel()} />
+        <Row label="Hourglass markup" value={hourglassMarkupLabel()} />
+        {calc.metalBand ? <Row label="Metal / gold band" value={calc.metalBand.label} /> : null}
         <Row
-          label="Gold"
-          value={`${formatUsdCents(quote.goldUsdCentsPerTroyOz)} / oz · ${formatDateOnlyShort(quote.goldAsOfDate)} · founder manual`}
-        />
-        {quote.goldBaselineUsdCentsPerTroyOz != null ? (
-          <Row
-            label="Book gold baseline"
-            value={`${formatUsdCents(quote.goldBaselineUsdCentsPerTroyOz)} / oz`}
-          />
-        ) : null}
-        {goldWeightLabel(quote) ? (
-          <Row label="Gold weight" value={goldWeightLabel(quote) ?? ""} />
-        ) : null}
-        <Row
-          label="Markup"
-          value={
-            quote.sourcePriceSemantics === "suggested_retail"
-              ? "None — source is suggested retail"
-              : markupMultipleLabel(quote.markupRatioPermyriad)
-          }
-        />
-        <Row
-          label="Computed Hourglass quote"
-          value={formatUsdCents(quote.calculation.computedHourglassQuoteCents)}
+          label="Raw computed quote"
+          value={formatUsdEighthCents(calc.rawComputedQuoteEighthCents)}
         />
         {quote.override ? (
           <>
             <Row
-              label="Manual override"
+              label="Founder override"
               value={formatUsdCents(quote.override.amountCents)}
             />
             <Row
@@ -165,6 +132,7 @@ export function RepairQuoteDetail({
           </>
         ) : null}
         <Row label="Hourglass quote" value={repairQuoteAmountLabel(quote)} />
+        {quote.issuedAt ? <Row label="Issued" value={quote.issuedAt} /> : null}
       </dl>
       <p className="mt-8">
         <Link

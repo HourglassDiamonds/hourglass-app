@@ -9,58 +9,64 @@ import { activeOperatingLayer } from "@/lib/continuum/client-memory/project-oper
 import {
   REPAIR_QUOTE_ADD_LABEL,
   REPAIR_QUOTES_NONE_LABEL,
-  STALE_GOLD_WARNING,
   repairQuoteDisplayTitle,
 } from "./present";
+import { GELLER_BLUE_BOOK } from "./contract";
+import { lookupVerifiedSku } from "./source";
 import type { RepairQuote } from "./types";
 
 const PROJECT_ID = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const QUOTE_ID = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
 
 function quote(extra: Partial<RepairQuote> = {}): RepairQuote {
+  const verified = lookupVerifiedSku("1000");
+  assert.ok(verified);
+  const loadedLaborEighthCents = 16_000;
+  const rawComputedQuoteEighthCents = 40_000;
+  const line = {
+    sku: verified.sku,
+    taskDescription: verified.taskDescription,
+    amounts: verified.amounts,
+    metalBand: verified.metalBand,
+    hasExplicitMetalQuantity: verified.hasExplicitMetalQuantity,
+    loadedLaborEighthCents,
+    partsCostEighthCents: 0,
+    otherCostEighthCents: 0,
+    fullyLoadedDirectCostEighthCents: loadedLaborEighthCents,
+  };
   return {
     quoteId: QUOTE_ID,
     projectId: PROJECT_ID,
     quoteNumber: 3,
     state: "draft",
-    repairType: "sizing",
-    metalFamily: "gold_14k",
+    repairType: verified.repairType,
+    metalFamily: verified.metalFamily,
     associatedPersonId: null,
-    sourceEditionLabel: "Founder-transcribed Blue Book line",
-    sourcePriceSemantics: "shop_cost",
-    goldUsdCentsPerTroyOz: 440_000,
-    goldAsOfDate: "2026-09-09",
-    goldInputSource: "founder_manual",
-    goldBaselineUsdCentsPerTroyOz: 300_000,
-    markupRatioPermyriad: 25_000,
-    lines: [
-      {
-        sourceLineRef: "SZ-14K-UP",
-        sourceLineLabel: "Size 14K ring up one half size",
-        sourceAmountCents: 12_000,
-        goldSensitive: true,
-        goldWeightKind: "alloy_dwt",
-        goldWeightMillidwt: 2_500,
-        fineGoldMillidwt: 1458,
-        metalDeltaCents: 10_206,
-        adjustedSourceCents: 22_206,
-      },
-    ],
+    sourceEditionLabel: GELLER_BLUE_BOOK.editionLabel,
+    sourceSku: verified.sku,
+    line,
     calculation: {
-      sourceFamily: "founder_transcribed_blue_book",
-      sourceEditionLabel: "Founder-transcribed Blue Book line",
-      sourcePriceSemantics: "shop_cost",
-      goldUsdCentsPerTroyOz: 440_000,
-      goldAsOfDate: "2026-09-09",
-      goldInputSource: "founder_manual",
-      goldBaselineUsdCentsPerTroyOz: 300_000,
-      markupRatioPermyriad: 25_000,
-      lines: [],
-      sourceAmountTotalCents: 12_000,
-      metalDeltaTotalCents: 10_206,
-      adjustedSourceTotalCents: 22_206,
-      computedHourglassQuoteCents: 55_515,
-      hourglassQuoteCents: 55_515,
+      sourceFamily: "geller_blue_book",
+      sourceVersion: "5.0",
+      sourceRelease: "6.50",
+      sourceEditionLabel: GELLER_BLUE_BOOK.editionLabel,
+      sourceSku: verified.sku,
+      sourceTaskDescription: verified.taskDescription,
+      sourceAmounts: verified.amounts,
+      laborBurdenNumerator: 5,
+      laborBurdenDenominator: 4,
+      hourglassMarkupNumerator: 5,
+      hourglassMarkupDenominator: 2,
+      metalBand: null,
+      expressSelected: false,
+      line,
+      loadedLaborEighthCents,
+      partsCostEighthCents: 0,
+      otherCostEighthCents: 0,
+      fullyLoadedDirectCostEighthCents: loadedLaborEighthCents,
+      rawComputedQuoteEighthCents,
+      computedHourglassQuoteEighthCents: rawComputedQuoteEighthCents,
+      hourglassQuoteEighthCents: rawComputedQuoteEighthCents,
       overrideApplied: false,
       warnings: [],
     },
@@ -79,7 +85,7 @@ function quote(extra: Partial<RepairQuote> = {}): RepairQuote {
 }
 
 describe("Repair quote UI", () => {
-  it("lists quotes by number and type, not raw UUIDs", () => {
+  it("lists quotes by number and SKU, not raw UUIDs", () => {
     const html = renderToStaticMarkup(
       createElement(RepairQuotesSection, {
         projectId: PROJECT_ID,
@@ -87,7 +93,7 @@ describe("Repair quote UI", () => {
         connected: true,
       }),
     );
-    assert.match(html, /Quote 3 · Sizing/);
+    assert.match(html, /Quote 3 · SKU 1000/);
     assert.match(html, new RegExp(REPAIR_QUOTE_ADD_LABEL));
     assert.doesNotMatch(html, /Quote ID|quoteId/);
     const empty = renderToStaticMarkup(
@@ -100,29 +106,27 @@ describe("Repair quote UI", () => {
     assert.match(empty, new RegExp(REPAIR_QUOTES_NONE_LABEL));
   });
 
-  it("distinguishes shop cost, gold, markup, and Hourglass quote", () => {
+  it("distinguishes Geller retail, Cost columns, burden, and Hourglass quote", () => {
     const html = renderToStaticMarkup(
       createElement(RepairQuoteDetail, {
-        quote: quote({
-          calculation: {
-            ...quote().calculation,
-            warnings: ["stale-gold"],
-          },
-        }),
+        quote: quote(),
         projectTitle: "Wagner repair",
         personName: "Ada Lovelace",
       }),
     );
     assert.match(html, /Ada Lovelace/);
     assert.match(html, /Wagner repair/);
-    assert.match(html, /Shop cost/);
-    assert.match(html, /Source amount/);
-    assert.match(html, /Metal delta/);
-    assert.match(html, /Hourglass quote/);
-    assert.match(html, /2\.5×/);
-    assert.match(html, new RegExp(STALE_GOLD_WARNING));
+    assert.match(html, /Geller Blue Book Version 5\.0 Release 6\.50/);
+    assert.match(html, /Price Labor/);
+    assert.match(html, /Cost Labor/);
+    assert.match(html, /Loaded labor/);
+    assert.match(html, /1\.25×/);
+    assert.match(html, /2\.5× cost/);
+    assert.match(html, /Raw computed quote/);
+    assert.match(html, /\$50/);
+    assert.doesNotMatch(html, /Shop cost|Metal delta|Gold weight/);
     assert.doesNotMatch(html, new RegExp(QUOTE_ID));
-    assert.equal(repairQuoteDisplayTitle(quote()), "Quote 3 · Sizing");
+    assert.equal(repairQuoteDisplayTitle(quote()), "Quote 3 · SKU 1000");
   });
 
   it("exposes repair quotes from the Repair operating layer, not a public calculator", () => {

@@ -12,9 +12,11 @@ import {
 } from "./mutate";
 import { InMemoryRepairQuoteStore } from "./store";
 import { calculateRepairQuote } from "./calculate";
+import { GELLER_BLUE_BOOK } from "./contract";
+import { lookupVerifiedSku } from "./source";
+import { formatUsdEighthCents } from "./money";
 
 const NOW = "2026-09-09T16:00:00.000Z";
-const QUOTE_DATE = "2026-09-09";
 
 async function seedRepairProject(store: InMemoryClientMemoryStore) {
   const person = await store.insertEntity({
@@ -73,11 +75,13 @@ async function createDraft(
   quotes: InMemoryRepairQuoteStore,
 ) {
   const { projectId } = await seedRepairProject(store);
+  const verified = lookupVerifiedSku("1000");
+  assert.ok(verified);
   const created = await createRepairQuote(
     {
       nowIso: () => NOW,
       newQuoteId: () => randomUUID(),
-      quoteDate: () => QUOTE_DATE,
+      quoteDate: () => "2026-09-09",
       getEntity: (id) => store.getEntity(id),
       getProjectProfile: (projectId) => store.getProjectProfile(projectId),
       getPersonProfile: (personId) => store.getPersonProfile(personId),
@@ -90,25 +94,18 @@ async function createDraft(
     {
       mutationId: randomUUID(),
       projectId,
-      repairType: "sizing",
-      metalFamily: "gold_14k",
-      sourceEditionLabel: "Founder-transcribed Blue Book line",
-      sourcePriceSemantics: "shop_cost",
-      goldUsdCentsPerTroyOz: 440_000,
-      goldAsOfDate: QUOTE_DATE,
-      goldInputSource: "founder_manual",
-      goldBaselineUsdCentsPerTroyOz: 300_000,
-      markupRatioPermyriad: 25_000,
-      lines: [
-        {
-          sourceLineRef: "SZ-14K-UP",
-          sourceLineLabel: "Size 14K ring up one half size",
-          sourceAmountCents: 12_000,
-          goldSensitive: true,
-          goldWeightKind: "alloy_dwt",
-          goldWeightMillidwt: 2_500,
-        },
-      ],
+      repairType: verified.repairType,
+      metalFamily: verified.metalFamily,
+      line: {
+        sku: verified.sku,
+        taskDescription: verified.taskDescription,
+        amounts: verified.amounts,
+        metalBand: verified.metalBand,
+        hasExplicitMetalQuantity: verified.hasExplicitMetalQuantity,
+        inventedMetalQuantity: false,
+        expressSelected: false,
+        costBasis: "geller_cost_columns",
+      },
       actor: "justin",
     },
   );
@@ -131,7 +128,7 @@ describe("Repair quote issue, override, and history", () => {
     const store = new InMemoryClientMemoryStore();
     const quotes = new InMemoryRepairQuoteStore();
     const { projectId, quote } = await createDraft(store, quotes);
-    const computed = quote.calculation.computedHourglassQuoteCents;
+    const computed = quote.calculation.computedHourglassQuoteEighthCents;
     const result = await overrideRepairQuote(mutateDeps(quotes), {
       mutationId: randomUUID(),
       projectId,
@@ -142,14 +139,15 @@ describe("Repair quote issue, override, and history", () => {
     });
     assert.equal(result.ok, true);
     if (!result.ok) return;
-    assert.equal(result.quote.calculation.hourglassQuoteCents, 48_000);
-    assert.equal(result.quote.calculation.computedHourglassQuoteCents, computed);
+    assert.equal(result.quote.calculation.hourglassQuoteEighthCents, 48_000 * 8);
+    assert.equal(result.quote.calculation.computedHourglassQuoteEighthCents, computed);
+    assert.equal(result.quote.calculation.rawComputedQuoteEighthCents, 40_000);
     assert.equal(result.quote.override?.reason, "Founder quoted verbally at the bench");
     assert.equal(result.quote.override?.overriddenBy, "justin");
     assert.equal(result.quote.calculation.overrideApplied, true);
   });
 
-  it("freezes issued quotes and refuses silent repricing", async () => {
+  it("freezes issued snapshots of source, factors, and raw quote", async () => {
     const store = new InMemoryClientMemoryStore();
     const quotes = new InMemoryRepairQuoteStore();
     const { projectId, quote } = await createDraft(store, quotes);
@@ -162,7 +160,18 @@ describe("Repair quote issue, override, and history", () => {
     assert.equal(issued.ok, true);
     if (!issued.ok) return;
     assert.equal(issued.quote.state, "issued");
-    const frozen = issued.quote.calculation.hourglassQuoteCents;
+    assert.equal(issued.quote.issuedAt, "2026-09-09T17:00:00.000Z");
+    const snapshot = issued.quote.calculation;
+    assert.equal(snapshot.sourceVersion, GELLER_BLUE_BOOK.version);
+    assert.equal(snapshot.sourceRelease, GELLER_BLUE_BOOK.release);
+    assert.equal(snapshot.sourceSku, "1000");
+    assert.equal(snapshot.sourceTaskDescription, lookupVerifiedSku("1000")?.taskDescription);
+    assert.equal(snapshot.sourceAmounts.priceLaborCents, 6_000);
+    assert.equal(snapshot.sourceAmounts.costLaborCents, 1_600);
+    assert.equal(snapshot.laborBurdenNumerator / snapshot.laborBurdenDenominator, 1.25);
+    assert.equal(snapshot.hourglassMarkupNumerator / snapshot.hourglassMarkupDenominator, 2.5);
+    assert.equal(formatUsdEighthCents(snapshot.rawComputedQuoteEighthCents), "$50");
+    const frozen = snapshot.hourglassQuoteEighthCents;
     const again = await issueRepairQuote(mutateDeps(quotes), {
       mutationId: randomUUID(),
       projectId,
@@ -183,33 +192,24 @@ describe("Repair quote issue, override, and history", () => {
     assert.equal(override.ok, false);
     if (!override.ok) assert.equal(override.code, "issued-quote-immutable");
     const stored = quotes.getQuote(quote.quoteId);
-    assert.equal(stored?.calculation.hourglassQuoteCents, frozen);
+    assert.equal(stored?.calculation.hourglassQuoteEighthCents, frozen);
     const laterMath = calculateRepairQuote({
-      repairType: quote.repairType,
-      metalFamily: quote.metalFamily,
-      sourceEditionLabel: quote.sourceEditionLabel,
-      sourcePriceSemantics: quote.sourcePriceSemantics,
-      gold: {
-        usdCentsPerTroyOz: 999_000,
-        asOfDate: QUOTE_DATE,
-        source: "founder_manual",
-        baselineUsdCentsPerTroyOz: 300_000,
+      repairType: "sizing",
+      metalFamily: "gold_14k",
+      line: {
+        sku: lookupVerifiedSku("1008")!.sku,
+        taskDescription: lookupVerifiedSku("1008")!.taskDescription,
+        amounts: lookupVerifiedSku("1008")!.amounts,
+        inventedMetalQuantity: false,
+        expressSelected: false,
+        costBasis: "geller_cost_columns",
       },
-      markupRatioPermyriad: 25_000,
-      lines: quote.lines.map((line) => ({
-        sourceLineRef: line.sourceLineRef,
-        sourceLineLabel: line.sourceLineLabel,
-        sourceAmountCents: line.sourceAmountCents,
-        goldSensitive: line.goldSensitive,
-        goldWeightKind: line.goldWeightKind,
-        goldWeightMillidwt: line.goldWeightMillidwt,
-      })),
-      quoteDate: QUOTE_DATE,
     });
     assert.equal(laterMath.ok, true);
     if (!laterMath.ok) return;
-    assert.notEqual(laterMath.calculation.hourglassQuoteCents, frozen);
-    assert.equal(stored?.goldUsdCentsPerTroyOz, 440_000);
+    assert.notEqual(laterMath.calculation.hourglassQuoteEighthCents, frozen);
+    assert.equal(stored?.calculation.sourceSku, "1000");
+    assert.equal(stored?.calculation.rawComputedQuoteEighthCents, 40_000);
   });
 
   it("keeps voided issued quotes in history", async () => {
@@ -234,8 +234,8 @@ describe("Repair quote issue, override, and history", () => {
     if (!voided.ok) return;
     assert.equal(voided.quote.state, "voided");
     assert.equal(
-      voided.quote.calculation.hourglassQuoteCents,
-      issued.quote.calculation.hourglassQuoteCents,
+      voided.quote.calculation.hourglassQuoteEighthCents,
+      issued.quote.calculation.hourglassQuoteEighthCents,
     );
     const history = quotes.listMutations(quote.quoteId);
     assert.equal(history.some((row) => row.action === "issue"), true);

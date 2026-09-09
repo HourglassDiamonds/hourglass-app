@@ -1,30 +1,26 @@
 /**
- * Create a project-linked repair quote draft.
+ * Create a project-linked repair quote draft from Geller Cost columns.
  * Does not infer prices from operating details, notes, or Gmail.
  */
 
 import type { ClientMemoryEntity, PersonProfile, ProjectProfile } from "@/lib/continuum/client-memory/types";
+import { GELLER_BLUE_BOOK } from "./contract";
 import { calculateRepairQuote } from "./calculate";
 import {
-  isGoldInputSource,
-  isGoldWeightKind,
   isRepairMetalFamily,
   isRepairQuoteType,
   isRepairQuoteUuid,
-  isSourcePriceSemantics,
   parseCreatedBy,
   parseOverrideReason,
-  parseRequiredDate,
-  parseSourceEdition,
-  parseSourceLineLabel,
-  parseSourceLineRef,
+  parseSku,
+  parseTaskDescription,
 } from "./validate";
 import type {
-  GoldWeightKind,
   RepairQuote,
   RepairQuoteInvalidCode,
   RepairQuoteLineInput,
 } from "./types";
+import type { GellerSourceAmounts } from "./source";
 
 export type CreateRepairQuoteInput = {
   mutationId: string;
@@ -32,14 +28,7 @@ export type CreateRepairQuoteInput = {
   repairType: string;
   metalFamily: string;
   associatedPersonId?: string | null;
-  sourceEditionLabel: string;
-  sourcePriceSemantics: string;
-  goldUsdCentsPerTroyOz: number;
-  goldAsOfDate: string;
-  goldInputSource: string;
-  goldBaselineUsdCentsPerTroyOz: number | null;
-  markupRatioPermyriad: number | null;
-  lines: RepairQuoteLineInput[];
+  line: RepairQuoteLineInput;
   overrideAmountCents?: number | null;
   overrideReason?: string | null;
   actor: string;
@@ -84,48 +73,20 @@ export async function createRepairQuote(
   }
   if (!isRepairQuoteType(input.repairType)) return invalid("invalid-repair-type");
   if (!isRepairMetalFamily(input.metalFamily)) return invalid("invalid-metal");
-  const sourceEdition = parseSourceEdition(input.sourceEditionLabel);
-  if (!sourceEdition) return invalid("invalid-source-edition");
-  if (!input.sourcePriceSemantics?.trim()) return invalid("missing-source-semantics");
-  if (!isSourcePriceSemantics(input.sourcePriceSemantics)) {
-    return invalid("invalid-source-semantics");
-  }
-  if (!isGoldInputSource(input.goldInputSource)) return invalid("invalid-gold-input");
-  const goldAsOfDate = parseRequiredDate(input.goldAsOfDate);
-  if (!goldAsOfDate) return invalid("invalid-gold-input");
   const createdBy = parseCreatedBy(input.actor);
   if (!createdBy) return invalid("invalid-id");
   const associatedPersonId = input.associatedPersonId?.trim() || null;
   if (associatedPersonId && !isRepairQuoteUuid(associatedPersonId)) {
     return invalid("invalid-id");
   }
-  if (!Array.isArray(input.lines) || input.lines.length === 0) {
-    return invalid("missing-lines");
-  }
-  for (const line of input.lines) {
-    if (!parseSourceLineRef(line.sourceLineRef) || !parseSourceLineLabel(line.sourceLineLabel)) {
-      return invalid("invalid-source-line");
-    }
-    if (line.goldSensitive && line.goldWeightKind && !isGoldWeightKind(line.goldWeightKind)) {
-      return invalid("invalid-gold-weight");
-    }
+  if (!parseSku(input.line?.sku) || !parseTaskDescription(input.line?.taskDescription)) {
+    return invalid("invalid-source-line");
   }
 
-  const quoteDate = deps.quoteDate();
   const calculated = calculateRepairQuote({
     repairType: input.repairType,
     metalFamily: input.metalFamily,
-    sourceEditionLabel: sourceEdition,
-    sourcePriceSemantics: input.sourcePriceSemantics,
-    gold: {
-      usdCentsPerTroyOz: input.goldUsdCentsPerTroyOz,
-      asOfDate: goldAsOfDate,
-      source: input.goldInputSource,
-      baselineUsdCentsPerTroyOz: input.goldBaselineUsdCentsPerTroyOz,
-    },
-    markupRatioPermyriad: input.markupRatioPermyriad,
-    lines: input.lines,
-    quoteDate,
+    line: input.line,
     overrideAmountCents: input.overrideAmountCents ?? null,
     overrideReason: input.overrideReason ?? null,
   });
@@ -176,14 +137,9 @@ export async function createRepairQuote(
       repairType: input.repairType,
       metalFamily: input.metalFamily,
       associatedPersonId,
-      sourceEditionLabel: sourceEdition,
-      sourcePriceSemantics: input.sourcePriceSemantics,
-      goldUsdCentsPerTroyOz: input.goldUsdCentsPerTroyOz,
-      goldAsOfDate,
-      goldInputSource: input.goldInputSource,
-      goldBaselineUsdCentsPerTroyOz: input.goldBaselineUsdCentsPerTroyOz,
-      markupRatioPermyriad: calculated.calculation.markupRatioPermyriad,
-      lines: calculated.calculation.lines,
+      sourceEditionLabel: GELLER_BLUE_BOOK.editionLabel,
+      sourceSku: calculated.calculation.sourceSku,
+      line: calculated.calculation.line,
       calculation: calculated.calculation,
       override,
       issuedAt: null,
@@ -211,21 +167,21 @@ export async function createRepairQuote(
 }
 
 export function lineFromForm(input: {
-  sourceLineRef: string;
-  sourceLineLabel: string;
-  sourceAmountCents: number;
-  goldSensitive: boolean;
-  goldWeightKind?: string | null;
-  goldWeightMillidwt?: number | null;
-  manualMetalDeltaCents?: number | null;
+  sku: string;
+  taskDescription: string;
+  amounts: GellerSourceAmounts;
+  inventedMetalQuantity?: boolean;
+  expressSelected?: boolean;
+  costBasis?: RepairQuoteLineInput["costBasis"];
 }): RepairQuoteLineInput {
   return {
-    sourceLineRef: input.sourceLineRef,
-    sourceLineLabel: input.sourceLineLabel,
-    sourceAmountCents: input.sourceAmountCents,
-    goldSensitive: input.goldSensitive,
-    goldWeightKind: (input.goldWeightKind as GoldWeightKind | null) ?? null,
-    goldWeightMillidwt: input.goldWeightMillidwt ?? null,
-    manualMetalDeltaCents: input.manualMetalDeltaCents ?? null,
+    sku: input.sku,
+    taskDescription: input.taskDescription,
+    amounts: input.amounts,
+    metalBand: null,
+    hasExplicitMetalQuantity: false,
+    inventedMetalQuantity: input.inventedMetalQuantity === true,
+    expressSelected: input.expressSelected === true,
+    costBasis: input.costBasis ?? "geller_cost_columns",
   };
 }

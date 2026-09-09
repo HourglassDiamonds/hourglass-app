@@ -1,39 +1,16 @@
 /**
- * Blue Book repair quoting — source/rule contract (V1).
+ * Blue Book repair quoting — founder-confirmed source/rule contract (V1).
  *
- * There is no Geller/Edge catalog in this repo. V1 never invents book prices.
- * Founder transcribes a source line and declares what that number means.
- *
- * Historical founder discussion (UNVERIFIED, not live defaults):
- * Geller / Blue Book, Edge / Blue Book v5.0 r6.5, gold baseline ~$2,850,
- * markup context ~2.5x. See UNVERIFIED_HISTORICAL_CONTEXT. The engine must
- * not read those values unless the founder supplies them on this quote.
- *
- * Fail closed when source semantics, gold-sensitive weight, dated gold,
- * or markup rules are missing or contradictory.
+ * Geller Blue Book Version 5.0 Release 6.50.
+ * Bold Price columns = retail. Cost columns = Hourglass cost basis.
+ * loadedLabor = Cost Labor × 1.25; Hourglass = 2.5 × (loaded labor + cost parts + cost other).
+ * Do not mark up Geller retail. Do not invent dwt when the task has no metal quantity.
  */
 
-export const UNVERIFIED_HISTORICAL_CONTEXT = {
-  status: "unverified_not_live_default",
-  sourceFamilyHint: "geller_blue_book",
-  softwareHint: "edge",
-  editionHint: "v5.0 r6.5",
-  goldBaselineUsdPerOzHint: 2850,
-  markupMultipleHint: 2.5,
-} as const;
+import type { GellerMetalBand, GellerSourceAmounts } from "./source";
+import { GELLER_BLUE_BOOK, GELLER_COST_BASIS } from "./contract";
 
-export const REPAIR_QUOTE_SOURCE_FAMILY = "founder_transcribed_blue_book" as const;
-
-export const SOURCE_PRICE_SEMANTICS = [
-  "shop_cost",
-  "suggested_retail",
-] as const;
-
-export type SourcePriceSemantics = (typeof SOURCE_PRICE_SEMANTICS)[number];
-
-export const GOLD_INPUT_SOURCES = ["founder_manual"] as const;
-
-export type GoldInputSource = (typeof GOLD_INPUT_SOURCES)[number];
+export const REPAIR_QUOTE_SOURCE_FAMILY = "geller_blue_book" as const;
 
 export const REPAIR_QUOTE_TYPES = [
   "sizing",
@@ -56,10 +33,6 @@ export const REPAIR_METAL_FAMILIES = [
 
 export type RepairMetalFamily = (typeof REPAIR_METAL_FAMILIES)[number];
 
-export const GOLD_WEIGHT_KINDS = ["fine_dwt", "alloy_dwt"] as const;
-
-export type GoldWeightKind = (typeof GOLD_WEIGHT_KINDS)[number];
-
 export const REPAIR_QUOTE_STATES = ["draft", "issued", "voided"] as const;
 
 export type RepairQuoteState = (typeof REPAIR_QUOTE_STATES)[number];
@@ -75,101 +48,72 @@ export const REPAIR_QUOTE_MUTATION_ACTIONS = [
 export type RepairQuoteMutationAction =
   (typeof REPAIR_QUOTE_MUTATION_ACTIONS)[number];
 
-export const GOLD_STALE_AFTER_DAYS = 1;
-export const TROY_OZ_TO_DWT = 20;
-export const MARKUP_PERMYRIAD_ONE = 10_000;
+export const SOURCE_SKU_MAX = 40;
+export const SOURCE_LINE_LABEL_MAX = 240;
 export const SOURCE_EDITION_MAX = 120;
-export const SOURCE_LINE_REF_MAX = 80;
-export const SOURCE_LINE_LABEL_MAX = 160;
 export const OVERRIDE_REASON_MAX = 240;
 export const CREATED_BY_MAX = 80;
 
-export const GOLD_KARAT_BY_METAL: Record<
-  RepairMetalFamily,
-  10 | 14 | 18 | null
-> = {
-  gold_10k: 10,
-  gold_14k: 14,
-  gold_18k: 18,
-  platinum: null,
-  other: null,
-};
+export const EIGHTH_CENTS_PER_DOLLAR = 800;
 
-/**
- * Default gold-sensitivity policy. Founder may override, but platinum cannot
- * be marked gold-sensitive. Laser and reset default to labor-only.
- */
-export const REPAIR_TYPE_GOLD_POLICY: Record<
-  RepairQuoteType,
-  "gold_sensitive" | "not_gold_sensitive" | "metal_dependent"
-> = {
-  sizing: "metal_dependent",
-  head_prong_replacement: "metal_dependent",
-  laser_work: "not_gold_sensitive",
-  stone_reset: "not_gold_sensitive",
-  platinum_labor: "not_gold_sensitive",
-  fourteen_k_operation: "gold_sensitive",
-};
+export type RepairQuoteCostBasis = typeof GELLER_COST_BASIS;
 
 export type RepairQuoteLineInput = {
-  sourceLineRef: string;
-  sourceLineLabel: string;
-  sourceAmountCents: number;
-  goldSensitive: boolean;
-  goldWeightKind?: GoldWeightKind | null;
-  goldWeightMillidwt?: number | null;
-  manualMetalDeltaCents?: number | null;
-};
-
-export type RepairQuoteGoldInput = {
-  usdCentsPerTroyOz: number;
-  asOfDate: string;
-  source: GoldInputSource;
-  baselineUsdCentsPerTroyOz: number | null;
+  sku: string;
+  taskDescription: string;
+  amounts: GellerSourceAmounts;
+  metalBand?: GellerMetalBand | null;
+  hasExplicitMetalQuantity?: boolean;
+  inventedMetalQuantity?: boolean;
+  expressSelected?: boolean;
+  /** Forbidden: passing Geller Price columns as the cost basis. */
+  costBasis?: RepairQuoteCostBasis | "geller_price_columns";
 };
 
 export type RepairQuoteCalculationInput = {
   repairType: RepairQuoteType;
   metalFamily: RepairMetalFamily;
-  sourceEditionLabel: string;
-  sourcePriceSemantics: SourcePriceSemantics;
-  gold: RepairQuoteGoldInput;
-  markupRatioPermyriad: number | null;
-  lines: RepairQuoteLineInput[];
-  quoteDate: string;
+  line: RepairQuoteLineInput;
   overrideAmountCents?: number | null;
   overrideReason?: string | null;
 };
 
 export type RepairQuoteLineResult = {
-  sourceLineRef: string;
-  sourceLineLabel: string;
-  sourceAmountCents: number;
-  goldSensitive: boolean;
-  goldWeightKind: GoldWeightKind | null;
-  goldWeightMillidwt: number | null;
-  fineGoldMillidwt: number | null;
-  metalDeltaCents: number;
-  adjustedSourceCents: number;
+  sku: string;
+  taskDescription: string;
+  amounts: GellerSourceAmounts;
+  metalBand: GellerMetalBand | null;
+  hasExplicitMetalQuantity: boolean;
+  loadedLaborEighthCents: number;
+  partsCostEighthCents: number;
+  otherCostEighthCents: number;
+  fullyLoadedDirectCostEighthCents: number;
 };
 
-export type RepairQuoteWarning = "stale-gold";
+export type RepairQuoteWarning = never;
 
 export type RepairQuoteCalculation = {
   sourceFamily: typeof REPAIR_QUOTE_SOURCE_FAMILY;
+  sourceVersion: typeof GELLER_BLUE_BOOK.version;
+  sourceRelease: typeof GELLER_BLUE_BOOK.release;
   sourceEditionLabel: string;
-  sourcePriceSemantics: SourcePriceSemantics;
-  goldUsdCentsPerTroyOz: number;
-  goldAsOfDate: string;
-  goldInputSource: GoldInputSource;
-  goldBaselineUsdCentsPerTroyOz: number | null;
-  markupRatioPermyriad: number | null;
-  lines: RepairQuoteLineResult[];
-  sourceAmountTotalCents: number;
-  metalDeltaTotalCents: number;
-  adjustedSourceTotalCents: number;
-  computedHourglassQuoteCents: number;
-  hourglassQuoteCents: number;
+  sourceSku: string;
+  sourceTaskDescription: string;
+  sourceAmounts: GellerSourceAmounts;
+  laborBurdenNumerator: 5;
+  laborBurdenDenominator: 4;
+  hourglassMarkupNumerator: 5;
+  hourglassMarkupDenominator: 2;
+  metalBand: GellerMetalBand | null;
+  expressSelected: false;
+  line: RepairQuoteLineResult;
+  loadedLaborEighthCents: number;
+  partsCostEighthCents: number;
+  otherCostEighthCents: number;
+  fullyLoadedDirectCostEighthCents: number;
+  rawComputedQuoteEighthCents: number;
+  computedHourglassQuoteEighthCents: number;
+  hourglassQuoteEighthCents: number;
   overrideApplied: boolean;
   warnings: RepairQuoteWarning[];
 };
@@ -190,13 +134,8 @@ export type RepairQuote = {
   metalFamily: RepairMetalFamily;
   associatedPersonId: string | null;
   sourceEditionLabel: string;
-  sourcePriceSemantics: SourcePriceSemantics;
-  goldUsdCentsPerTroyOz: number;
-  goldAsOfDate: string;
-  goldInputSource: GoldInputSource;
-  goldBaselineUsdCentsPerTroyOz: number | null;
-  markupRatioPermyriad: number | null;
-  lines: RepairQuoteLineResult[];
+  sourceSku: string;
+  line: RepairQuoteLineResult;
   calculation: RepairQuoteCalculation;
   override: RepairQuoteManualOverride | null;
   issuedAt: string | null;
@@ -217,8 +156,8 @@ export type RepairQuoteMutationRecord = {
   action: RepairQuoteMutationAction;
   priorState: RepairQuoteState | null;
   newState: RepairQuoteState;
-  priorHourglassQuoteCents: number | null;
-  newHourglassQuoteCents: number | null;
+  priorHourglassQuoteEighthCents: number | null;
+  newHourglassQuoteEighthCents: number | null;
   changedAt: string;
   changedBy: string;
 };
@@ -243,25 +182,17 @@ export type RepairQuoteInvalidCode =
   | "invalid-repair-type"
   | "invalid-metal"
   | "invalid-source-edition"
-  | "missing-source-semantics"
-  | "invalid-source-semantics"
   | "invalid-source-line"
   | "invalid-source-amount"
   | "missing-lines"
-  | "invalid-gold-input"
-  | "missing-gold-baseline"
-  | "missing-gold-weight"
-  | "invalid-gold-weight"
-  | "platinum-is-not-gold"
-  | "double-material-adjustment"
+  | "retail-used-as-cost"
+  | "invented-metal-quantity"
+  | "express-not-enabled"
   | "double-markup-blocked"
-  | "missing-markup"
-  | "invalid-markup"
   | "invalid-override"
   | "issued-quote-immutable"
   | "voided-quote-immutable"
   | "not-draft"
   | "wrong-project"
   | "project-not-repair"
-  | "person-not-on-project"
-  | "historical-default-blocked";
+  | "person-not-on-project";
