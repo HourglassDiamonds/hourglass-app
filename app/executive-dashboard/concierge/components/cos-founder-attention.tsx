@@ -28,6 +28,10 @@ export function CosFounderAttentionRow({
           <p className="mt-1 break-words text-[14px] leading-relaxed text-[#9a8e82]">
             {item.detail}
           </p>
+        ) : item.candidateIds.length > 1 ? (
+          <p className="mt-1 break-words text-[14px] leading-relaxed text-[#9a8e82]">
+            {item.candidateIds.length} supporting notes on file.
+          </p>
         ) : null}
         {item.proposedAction ? (
           <ul className="mt-2">

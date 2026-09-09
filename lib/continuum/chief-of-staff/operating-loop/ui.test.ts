@@ -169,7 +169,7 @@ describe("CoS operating loop Command Center UI", () => {
             createJob: false,
           },
           evidenceBasis: {
-            ruleIds: ["explicit_client_request"],
+            ruleIds: ["unread"],
             matchedText: "Can you send the CAD again",
           },
         }),
@@ -180,6 +180,7 @@ describe("CoS operating loop Command Center UI", () => {
     const html = renderToStaticMarkup(createElement(ChiefOfStaffToday, { loop }));
     assert.match(html, /Something seems off/);
     assert.match(html, /newer evidence disagrees/);
+    assert.doesNotMatch(html, /Needs your decision/);
   });
 
   it("renders Needs your decision and the founder Edit form without UUID fields", () => {

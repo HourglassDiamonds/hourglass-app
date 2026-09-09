@@ -24,7 +24,10 @@ export type FounderAttentionLane = (typeof FOUNDER_ATTENTION_LANES)[number];
 
 export const COS_DECISION_TARGET = 3 as const;
 export const COS_SIGNAL_TARGET = 3 as const;
+export const COS_ANOMALY_TARGET = 2 as const;
 export const COS_ORDINARY_VISIBLE_TARGET = 8 as const;
+export const FOUNDER_ATTENTION_NOVELTY_MS = 7 * 86_400_000;
+export const EXPLICIT_NEW_PROJECT_RULE = "explicit_new_project_request";
 
 export const FOUNDER_ATTENTION_FACTOR_IDS = [
   "source_type",
@@ -59,6 +62,7 @@ export type FounderAttentionContext = {
   jobs: readonly ProjectJob[];
   nowIso: string;
   top5Ids?: ReadonlySet<string>;
+  currentProjectIds?: ReadonlySet<string>;
 };
 
 const STOP = new Set([
@@ -339,10 +343,29 @@ function isSignatureLike(row: ContinuumCandidate): boolean {
   return domainHits(tokens, VALEDICTION) > 0;
 }
 
+export function isTechnicianVisit(row: ContinuumCandidate): boolean {
+  const hay = candidateHaystack(row);
+  return (
+    /\btechnician\b/i.test(hay) &&
+    /\b(arrive|arrives|arrival|on-?site|pets?|age of 18)\b/i.test(hay)
+  );
+}
+
 function isOperationalLogistics(row: ContinuumCandidate): boolean {
+  if (isTechnicianVisit(row)) return true;
   if (hasCommercialPayload(row)) return false;
   const tokens = contentTokens(candidateHaystack(row));
   return domainHits(tokens, OPERATIONAL) >= 2;
+}
+
+function isCalendarFollowUp(row: ContinuumCandidate): boolean {
+  const hay = candidateHaystack(row);
+  return (
+    /\bfollow up w\/ /i.test(hay) &&
+    /\b(?:mon|tue|wed|thu|fri|sat|sun|january|february|march|april|june|july|august|september|october|november|december|\d{1,2}:\d{2}\s*(?:am|pm))\b/i.test(
+      hay,
+    )
+  );
 }
 
 function objectAfterCommitmentVerb(text: string): string[] {
@@ -384,7 +407,7 @@ export function commitmentIsComplete(row: ContinuumCandidate): boolean {
         ? payload.text
         : candidateText(row);
   const objects = objectAfterCommitmentVerb(text);
-  const commercialObject = objects.some((token) => COMMERCIAL.has(token) || token.length >= 4);
+  const commercialObject = objects.some((token) => COMMERCIAL.has(token));
   if (hasRule(row, "explicit_follow_up")) {
     return hasNamedActor(text) && (hasDateSignal(row) || commercialObject);
   }
@@ -394,6 +417,38 @@ export function commitmentIsComplete(row: ContinuumCandidate): boolean {
 export function isNewProject(row: ContinuumCandidate): boolean {
   const payload = payloadOf(row);
   return payload.kind === "project_context" && payload.topic === "new_project";
+}
+
+export function isExplicitNewProject(row: ContinuumCandidate): boolean {
+  return isNewProject(row) && hasRule(row, EXPLICIT_NEW_PROJECT_RULE);
+}
+
+export function isClientDesignAnswer(row: ContinuumCandidate): boolean {
+  const payload = payloadOf(row);
+  if (payload.kind === "project_context") {
+    return (
+      payload.topic === "design_refinement" ||
+      payload.topic === "cad_revision" ||
+      payload.topic === "proposed_spec"
+    );
+  }
+  return payload.kind === "note" && hasCommercialPayload(row);
+}
+
+function evidenceAgeMs(row: ContinuumCandidate, ctx: FounderAttentionContext): number | null {
+  const then = Date.parse(row.sourceTimestamp);
+  const now = Date.parse(ctx.nowIso);
+  if (!Number.isFinite(then) || !Number.isFinite(now)) return null;
+  return now - then;
+}
+
+export function isHistoricalRediscovery(
+  row: ContinuumCandidate,
+  ctx: FounderAttentionContext,
+  windowMs = FOUNDER_ATTENTION_NOVELTY_MS,
+): boolean {
+  const age = evidenceAgeMs(row, ctx);
+  return age != null && age > windowMs;
 }
 
 export function isPaymentStateChange(row: ContinuumCandidate): boolean {
@@ -439,6 +494,10 @@ export function waitingOnFounder(row: ContinuumCandidate): boolean {
   return payload.kind === "open_job" && payload.waitingOnActor === "founder";
 }
 
+function tokenOverlap(left: readonly string[], right: ReadonlySet<string>): boolean {
+  return left.some((token) => right.has(token));
+}
+
 function alreadyRepresentedByJob(
   row: ContinuumCandidate,
   ctx: FounderAttentionContext,
@@ -450,11 +509,11 @@ function alreadyRepresentedByJob(
   return ctx.jobs.some((job) => {
     if (!isUnresolvedOpenJobState(job.state)) return false;
     if (projectId && job.projectId !== projectId) return false;
-    if (ctx.top5Ids?.has(job.jobId)) {
-      const jobTokens = tokensOf(job.subject);
-      return jobTokens.some((token) => tokens.has(token));
-    }
-    return false;
+    if (!projectId && !ctx.top5Ids?.has(job.jobId)) return false;
+    const jobTokens = tokensOf(job.subject);
+    if (!tokenOverlap(jobTokens, tokens)) return false;
+    if (ctx.top5Ids?.has(job.jobId)) return true;
+    return projectId != null;
   });
 }
 
@@ -473,11 +532,33 @@ function sourceWeight(row: ContinuumCandidate): number {
   return 0;
 }
 
-export function groupingKey(row: ContinuumCandidate): string {
-  const projectId = candidateProjectId(row);
-  if (projectId) return `project:${projectId}`;
+export function sourceThreadId(row: ContinuumCandidate): string | null {
   const parts = row.sourceRef.split("|");
-  if (parts[0] === "gc1" && parts[1]) return `thread:${parts[1]}`;
+  return parts[0] === "gc1" && parts[1] ? parts[1] : null;
+}
+
+export function projectByThreadFromCandidates(
+  rows: readonly ContinuumCandidate[],
+): Map<string, string> {
+  const map = new Map<string, string>();
+  for (const row of rows) {
+    const projectId = candidateProjectId(row);
+    const threadId = sourceThreadId(row);
+    if (projectId && threadId && !map.has(threadId)) map.set(threadId, projectId);
+  }
+  return map;
+}
+
+export function groupingKey(
+  row: ContinuumCandidate,
+  projectByThread?: ReadonlyMap<string, string>,
+): string {
+  const threadId = sourceThreadId(row);
+  const projectId =
+    candidateProjectId(row) ?? (threadId ? (projectByThread?.get(threadId) ?? null) : null);
+  if (projectId) return `project:${projectId}`;
+  if (threadId) return `thread:${threadId}`;
+  const parts = row.sourceRef.split("|");
   if (parts[0] === "he1" && parts[1]) return `human:${parts[1]}`;
   return `candidate:${row.candidateId}`;
 }
@@ -508,39 +589,63 @@ export function classifyCandidateAttention(
     score += confidence;
   }
 
-  if (row.candidateState === "conflict" || specConflicts(row)) {
-    factors.push("canonical_mismatch");
-    score += 90;
-    return { lane: "decision", score, factors, candidateId: row.candidateId };
+  if (isTechnicianVisit(row) || isOperationalLogistics(row)) {
+    factors.push("operational_logistics");
+    return { lane: "background", score: 0, factors, candidateId: row.candidateId };
   }
-
   if (isChannelMetaSpeechAct(row)) {
     factors.push("channel_meta");
     return { lane: "background", score: 0, factors, candidateId: row.candidateId };
   }
-  if (isSignatureLike(row)) {
-    factors.push("signature");
-    return { lane: "background", score: 0, factors, candidateId: row.candidateId };
-  }
-  if (isOperationalLogistics(row)) {
-    factors.push("operational_logistics");
+  if (isSignatureLike(row) || isCalendarFollowUp(row)) {
+    factors.push(isCalendarFollowUp(row) ? "channel_meta" : "signature");
     return { lane: "background", score: 0, factors, candidateId: row.candidateId };
   }
 
-  if (isNewProject(row)) {
-    factors.push("project_state_change", "novelty");
-    score += 100;
-    return { lane: "decision", score, factors, candidateId: row.candidateId };
-  }
-  if (isPaymentStateChange(row)) {
-    factors.push("project_state_change");
+  if (row.candidateState === "conflict" || specConflicts(row)) {
+    factors.push("canonical_mismatch");
     score += 90;
+    if (alreadyRepresentedByJob(row, ctx)) factors.push("already_represented");
     return { lane: "decision", score, factors, candidateId: row.candidateId };
   }
-  if (isApproval(row)) {
-    factors.push("commercial_relevance", "ownership_founder");
-    score += 95;
+
+  if (isPaymentStateChange(row)) {
+    factors.push("project_state_change", "novelty");
+    score += 90;
+    return { lane: "signal", score, factors, candidateId: row.candidateId };
+  }
+
+  if (isNewProject(row)) {
+    if (candidateProjectId(row)) {
+      factors.push("already_represented");
+      return { lane: "background", score: 0, factors, candidateId: row.candidateId };
+    }
+    if (!isExplicitNewProject(row) || isHistoricalRediscovery(row, ctx)) {
+      factors.push(isHistoricalRediscovery(row, ctx) ? "already_represented" : "subordinate_evidence");
+      return { lane: "background", score: 0, factors, candidateId: row.candidateId };
+    }
+    factors.push("project_state_change", "novelty");
+    score += 60;
     return { lane: "decision", score, factors, candidateId: row.candidateId };
+  }
+
+  if (
+    (row.confidence === "low" || row.confidence === "ambiguous") &&
+    !isApproval(row) &&
+    !isClientDesignAnswer(row)
+  ) {
+    factors.push("confidence");
+    return { lane: "background", score: 0, factors, candidateId: row.candidateId };
+  }
+
+  if (isApproval(row)) {
+    factors.push("commercial_relevance", "project_state_change");
+    score += 70;
+    if (alreadyRepresentedByJob(row, ctx) || isHistoricalRediscovery(row, ctx, FOUNDER_ATTENTION_NOVELTY_MS * 2)) {
+      factors.push("already_represented");
+      return { lane: "background", score: 0, factors, candidateId: row.candidateId };
+    }
+    return { lane: "signal", score, factors, candidateId: row.candidateId };
   }
 
   if (ruleIdsOf(row).some((id) => COMMITMENT_RULES.has(id)) || row.candidateType === "open_job") {
@@ -556,10 +661,13 @@ export function classifyCandidateAttention(
     }
   }
 
-  if (isDesignChange(row)) {
+  if (isClientDesignAnswer(row) || isDesignChange(row)) {
     factors.push("commercial_relevance");
-    score += isSubordinateType(row) ? 38 : 70;
-    if (isSubordinateType(row)) factors.push("subordinate_evidence");
+    if (isSubordinateType(row)) {
+      factors.push("subordinate_evidence");
+      return { lane: "background", score, factors, candidateId: row.candidateId };
+    }
+    score += 70;
   }
 
   if (row.candidateType === "follow_up") {
@@ -573,9 +681,7 @@ export function classifyCandidateAttention(
 
   if (alreadyRepresentedByJob(row, ctx)) {
     factors.push("already_represented");
-    if (score < CRITICAL_SCORE) {
-      return { lane: "background", score: 0, factors, candidateId: row.candidateId };
-    }
+    return { lane: "background", score: 0, factors, candidateId: row.candidateId };
   }
 
   const payload = payloadOf(row);
@@ -584,20 +690,18 @@ export function classifyCandidateAttention(
     score += 16;
   }
 
-  if (isSubordinateType(row) && score < DECISION_SCORE) {
+  if (isSubordinateType(row)) {
     factors.push("subordinate_evidence");
-    return {
-      lane: score >= SIGNAL_SCORE ? "signal" : "background",
-      score,
-      factors,
-      candidateId: row.candidateId,
-    };
+    return { lane: "background", score, factors, candidateId: row.candidateId };
   }
 
+  if (score >= DECISION_SCORE && (waitingOnFounder(row) || isClientDesignAnswer(row))) {
+    return { lane: "decision", score, factors, candidateId: row.candidateId };
+  }
   if (score >= DECISION_SCORE) {
     return { lane: "decision", score, factors, candidateId: row.candidateId };
   }
-  if (score >= SIGNAL_SCORE && hasCommercialPayload(row)) {
+  if (score >= SIGNAL_SCORE && hasCommercialPayload(row) && !isHistoricalRediscovery(row, ctx)) {
     return { lane: "signal", score, factors, candidateId: row.candidateId };
   }
   if (score >= SIGNAL_SCORE && waitingOnFounder(row) && commitmentIsComplete(row)) {
