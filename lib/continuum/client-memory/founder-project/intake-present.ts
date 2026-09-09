@@ -18,6 +18,7 @@ import {
   GENERIC_NEW_PROJECT_TITLES,
   GIFT_CONTEXT_TOPIC,
   NEW_PROJECT_CONTEXT_TOPIC,
+  PAYMENT_RECEIVED_GENERIC_TITLE,
   PROPOSED_SPEC_TOPIC,
   REACTIVATED_COMMERCIAL_WORK_RULE,
   TRANSACTIONAL_CUSTOMER_NOTICE_RULE,
@@ -80,6 +81,7 @@ export type GmailNewProjectIntakeCard = {
   workStatus: GmailIntakeWorkStatus;
   whySurfaced: string;
   canonicalProjectFound: boolean;
+  relatedWorkDetermined: boolean;
   waitingOnClient: string | null;
   currentStateKind: GmailIntakeCurrentStateKind | null;
   currentStateSummary: string | null;
@@ -144,11 +146,14 @@ function workStatusOf(row: ContinuumCandidate): GmailIntakeWorkStatus {
 export function whySurfacedForStatus(
   status: GmailIntakeWorkStatus,
   canonicalProjectFound = false,
-  extras?: { receivedAmount?: string | null },
+  extras?: { receivedAmount?: string | null; relatedWorkDetermined?: boolean },
 ): string {
   if (status === "payment_received") {
     const amount = extras?.receivedAmount?.trim() ?? "";
     const prefix = amount ? `${amount} received. ` : "";
+    if (extras?.relatedWorkDetermined === false) {
+      return `${prefix}Related Project could not be determined`;
+    }
     return canonicalProjectFound
       ? `${prefix}A payment or invoice notice names a customer with related jewelry mail already on a Project.`
       : `${prefix}A payment or invoice notice names a customer with related jewelry mail and no canonical Project.`;
@@ -259,7 +264,13 @@ export function preferredNewProjectTitle(
   const transactional = news.filter((row) =>
     row.evidenceBasis.ruleIds.includes(TRANSACTIONAL_CUSTOMER_NOTICE_RULE),
   );
-  const pool = transactional.length > 0 ? transactional : news;
+  const latestTransactional = transactional.length
+    ? Math.max(...transactional.map((row) => sentMs(row.createdAt)))
+    : 0;
+  const pool =
+    transactional.length > 0
+      ? transactional.filter((row) => sentMs(row.createdAt) === latestTransactional)
+      : news;
   const ranked = [...pool].sort((a, b) => {
     const created = sentMs(b.createdAt) - sentMs(a.createdAt);
     if (created !== 0) return created;
@@ -509,10 +520,17 @@ function mergeIntakeCards(
         : current.workStatus;
   const specific =
     !GENERIC_NEW_PROJECT_TITLES.has(current.title) ? current : incoming;
+  const relatedWorkDetermined =
+    workStatus === "payment_received"
+      ? current.workStatus === "payment_received"
+        ? current.relatedWorkDetermined
+        : incoming.relatedWorkDetermined
+      : true;
   return {
     ...specific,
     people,
     workStatus,
+    relatedWorkDetermined,
     whySurfaced:
       workStatus === "payment_received"
         ? current.workStatus === "payment_received"
@@ -694,13 +712,17 @@ export function presentGmailNewProjectIntake(
       return true;
     }).length;
     const workStatus = workStatusOf(anchor);
+    const title = canonical?.title ?? preferred?.title ?? "";
+    const relatedWorkDetermined =
+      workStatus !== "payment_received" ||
+      (Boolean(title) && title !== PAYMENT_RECEIVED_GENERIC_TITLE);
     const canonicalProjectFound = Boolean(canonical);
     const presentation = canonical ? "current_project" : "proposal";
     const people = peopleForThread(list, directory);
     cards.push({
       candidateId: anchor.candidateId,
       threadId,
-      title: canonical?.title ?? preferred?.title ?? "",
+      title,
       personId: displayPersonId,
       personName:
         confirmedDirectory?.displayName ??
@@ -721,8 +743,10 @@ export function presentGmailNewProjectIntake(
       workStatus,
       whySurfaced: whySurfacedForStatus(workStatus, canonicalProjectFound, {
         receivedAmount: receivedAmountFromCandidates(list),
+        relatedWorkDetermined,
       }),
       canonicalProjectFound,
+      relatedWorkDetermined,
       waitingOnClient: state.waitingOnClient,
       currentStateKind: state.kind,
       currentStateSummary: state.summary,

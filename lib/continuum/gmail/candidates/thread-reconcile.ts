@@ -7,7 +7,6 @@
 import type { ContinuumCandidate, ContinuumCandidateDraft } from "@/lib/continuum/candidates/types";
 import { parseGmailCandidateSourceRef } from "./source-ref";
 import {
-  extractCustomerEmails,
   extractPaymentReceivedAmount,
   extractWaitingOnClient,
   hasJewelryWorkContext,
@@ -15,14 +14,15 @@ import {
   looksProposalCommitmentIntent,
   looksTransactionalCustomerNotice,
   NEW_PROJECT_CONTEXT_TOPIC,
+  PAYMENT_RECEIVED_GENERIC_TITLE,
   proposeNewProjectTitle,
   REACTIVATED_COMMERCIAL_WORK_RULE,
   RELATED_CUSTOMER_JEWELRY_THREAD_RULE,
+  supportedCustomerEmailHashes,
   TRANSACTIONAL_CUSTOMER_NOTICE_RULE,
   WAITING_ON_CLIENT_TOPIC,
 } from "./new-project";
 import type { GmailCandidateEvidence } from "./types";
-import { hashEmail } from "@/lib/continuum/client-memory/hashes";
 import { assignCandidateId } from "@/lib/continuum/candidates/identity";
 import { CANDIDATE_PARSER_GMAIL_V1 } from "@/lib/continuum/candidates/types";
 import { GMAIL_SOURCE_SYSTEM } from "@/lib/continuum/client-memory/gmail/types";
@@ -136,12 +136,33 @@ function commercialWorkDraft(input: {
   };
 }
 
+function uniqueCustomerScopedWorkTitle(
+  threadIds: readonly string[],
+  byThread: ReadonlyMap<string, GmailCandidateEvidence[]>,
+): string | null {
+  const titles = [
+    ...new Set(
+      threadIds.flatMap((id) => {
+        const hay = threadHaystack(byThread.get(id) ?? []);
+        if (!hasJewelryWorkContext(hay)) return [];
+        const title = proposeNewProjectTitle(hay);
+        if (!title || title === "New custom piece" || title === PAYMENT_RECEIVED_GENERIC_TITLE) {
+          return [];
+        }
+        return [title];
+      }),
+    ),
+  ];
+  return titles.length === 1 ? titles[0]! : null;
+}
+
 export function reconcileThreadCandidates(input: {
   drafts: ContinuumCandidateDraft[];
   evidence: readonly GmailCandidateEvidence[];
   createdAt: string;
   linkedGmailThreadIds?: readonly string[];
   supportingThreadIds?: readonly string[];
+  internalEmailHashes?: readonly string[];
 }): ContinuumCandidateDraft[] {
   const byThread = new Map<string, GmailCandidateEvidence[]>();
   for (const row of input.evidence) {
@@ -270,6 +291,7 @@ export function reconcileThreadCandidates(input: {
 
   const linkedThreads = new Set(input.linkedGmailThreadIds ?? []);
   const supportingThreads = new Set(input.supportingThreadIds ?? []);
+  const skipHashes = new Set(input.internalEmailHashes ?? []);
 
   for (const [threadId, rows] of byThread) {
     if (linkedThreads.has(threadId)) continue;
@@ -305,46 +327,55 @@ export function reconcileThreadCandidates(input: {
     }
     const transactional = transactionalByThread.get(threadId);
     if (!transactional) continue;
-    const customerHashes = new Set(
-      extractCustomerEmails(hay)
-        .map((email) => hashEmail(email))
-        .filter((row): row is string => Boolean(row)),
-    );
-    if (customerHashes.size === 0) continue;
-    const customerJewelryIds = [...jewelryThreadIds].filter((otherId) => {
-      if (otherId === threadId) return false;
-      return threadTouchesCustomer(byThread.get(otherId) ?? [], customerHashes);
-    });
-    if (customerJewelryIds.length === 0) continue;
+    const customerHashList = supportedCustomerEmailHashes(hay, skipHashes);
+    const customerHashes = new Set(customerHashList);
+    const customerJewelryIds =
+      customerHashList.length === 1
+        ? [...jewelryThreadIds].filter((otherId) => {
+            if (otherId === threadId) return false;
+            return threadTouchesCustomer(byThread.get(otherId) ?? [], customerHashes);
+          })
+        : [];
+    const workTitle = uniqueCustomerScopedWorkTitle(customerJewelryIds, byThread);
     const notice = [...inbound].reverse()[0]!;
-    const relatedHay = customerJewelryIds
-      .flatMap((id) => byThread.get(id) ?? [])
-      .map((row) => haystackOf(row.indexed.subject, row.plaintext ?? null))
-      .join("\n");
-    const relatedExact = customerJewelryIds.flatMap((otherId) =>
-      [...input.drafts, ...kept].filter(
-        (row) =>
-          threadIdOf(row) === otherId &&
-          row.candidateType === "project_association" &&
-          row.evidenceBasis.ruleIds.includes("exact_gmail_thread") &&
-          row.proposedTarget.kind === "project" &&
-          Boolean(row.proposedTarget.projectId),
+    const relatedExact = workTitle
+      ? customerJewelryIds.flatMap((otherId) =>
+          [...input.drafts, ...kept].filter(
+            (row) =>
+              threadIdOf(row) === otherId &&
+              row.candidateType === "project_association" &&
+              row.evidenceBasis.ruleIds.includes("exact_gmail_thread") &&
+              row.proposedTarget.kind === "project" &&
+              Boolean(row.proposedTarget.projectId),
+          ),
+        )
+      : [];
+    const uniqueExactIds = [
+      ...new Set(
+        relatedExact.flatMap((row) =>
+          row.proposedTarget.kind === "project" && row.proposedTarget.projectId
+            ? [row.proposedTarget.projectId]
+            : [],
+        ),
       ),
-    );
+    ];
     const linkedProject =
-      relatedExact[0]?.proposedTarget.kind === "project"
+      workTitle && uniqueExactIds.length === 1 && relatedExact[0]
         ? relatedExact[0]
         : null;
     const amount = extractPaymentReceivedAmount(hay);
     const amountPrefix = amount ? `${amount} received; ` : "";
+    const matchedText = workTitle
+      ? linkedProject
+        ? `${amountPrefix}payment received; related jewelry work; canonical Project found`
+        : `${amountPrefix}payment received; related jewelry work; no canonical Project`
+      : `${amountPrefix}payment received; related work undetermined`;
     const draft = commercialWorkDraft({
       evidence: notice,
       createdAt: input.createdAt,
-      title: proposeNewProjectTitle(`${relatedHay}\n${hay}`),
+      title: workTitle ?? PAYMENT_RECEIVED_GENERIC_TITLE,
       ruleIds: [TRANSACTIONAL_CUSTOMER_NOTICE_RULE],
-      matchedText: linkedProject
-        ? `${amountPrefix}payment received; related jewelry work; canonical Project found`
-        : `${amountPrefix}payment received; related jewelry work; no canonical Project`,
+      matchedText,
     });
     if (draft) extra.push(draft);
     if (

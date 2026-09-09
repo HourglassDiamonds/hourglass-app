@@ -12,6 +12,7 @@ import {
   GIFT_CONTEXT_TOPIC,
   looksExplicitNewProjectRequest,
   NEW_PROJECT_CONTEXT_TOPIC,
+  PAYMENT_RECEIVED_GENERIC_TITLE,
   PROPOSED_SPEC_TOPIC,
   REACTIVATED_COMMERCIAL_WORK_RULE,
   RELATED_CUSTOMER_JEWELRY_THREAD_RULE,
@@ -29,6 +30,10 @@ const NOW = "2026-09-08T12:00:00.000Z";
 const NATE_EMAIL = "nate.pearl@example.test";
 const ABBEY_CASTILLO_EMAIL = "serinitybloom@gmail.com";
 const ABBEY_WAGNER_EMAIL = "abbey.wagner@example.test";
+const FOUNDER_EMAIL = "justin@hourglass.example";
+const CUSTOMER_A_EMAIL = "morgan.ellis@example.test";
+const CUSTOMER_B_EMAIL = "casey.brooks@example.test";
+const TENNIS_EMAIL = "riley.stone@example.test";
 const NATE_BODY_NONCE = "UNIQUE_BODY_NONCE_NATE_98765";
 const ABBEY_BODY_NONCE = "UNIQUE_BODY_NONCE_ABBEY_54321";
 
@@ -880,14 +885,20 @@ describe("explicit new-project Gmail proposals", () => {
         }),
       ],
     });
-    assert.equal(
-      proposed.candidates.some(
-        (row) =>
-          row.payload.kind === "project_context" &&
-          row.payload.topic === NEW_PROJECT_CONTEXT_TOPIC,
-      ),
-      false,
+    const payment = proposed.candidates.find(
+      (row) =>
+        row.payload.kind === "project_context" &&
+        row.payload.topic === NEW_PROJECT_CONTEXT_TOPIC &&
+        row.evidenceBasis.ruleIds.includes(TRANSACTIONAL_CUSTOMER_NOTICE_RULE),
     );
+    assert.ok(payment);
+    if (payment?.payload.kind === "project_context") {
+      assert.equal(payment.payload.value, PAYMENT_RECEIVED_GENERIC_TITLE);
+    }
+    assert.equal(payment?.automaticApply, false);
+    if (payment?.proposedTarget.kind === "project") {
+      assert.equal(payment.proposedTarget.projectId, null);
+    }
     const people = proposed.candidates.filter(
       (row) => row.candidateType === "person_association",
     );
@@ -927,14 +938,19 @@ describe("explicit new-project Gmail proposals", () => {
       proposed.candidates.some((row) => row.candidateType === "person_association"),
       false,
     );
-    assert.equal(
-      proposed.candidates.some(
-        (row) =>
-          row.payload.kind === "project_context" &&
-          row.payload.topic === NEW_PROJECT_CONTEXT_TOPIC,
-      ),
-      false,
+    const payment = proposed.candidates.find(
+      (row) =>
+        row.payload.kind === "project_context" &&
+        row.payload.topic === NEW_PROJECT_CONTEXT_TOPIC &&
+        row.evidenceBasis.ruleIds.includes(TRANSACTIONAL_CUSTOMER_NOTICE_RULE),
     );
+    assert.ok(payment);
+    if (payment?.payload.kind === "project_context") {
+      assert.equal(payment.payload.value, PAYMENT_RECEIVED_GENERIC_TITLE);
+    }
+    if (payment?.proposedTarget.kind === "project") {
+      assert.equal(payment.proposedTarget.projectId, null);
+    }
   });
 
   it("does not join related jewelry mail from a name-only transactional notice", () => {
@@ -967,8 +983,18 @@ describe("explicit new-project Gmail proposals", () => {
       proposed.candidates.some((row) =>
         row.evidenceBasis.ruleIds.includes(TRANSACTIONAL_CUSTOMER_NOTICE_RULE),
       ),
-      false,
+      true,
     );
+    const payment = proposed.candidates.find(
+      (row) =>
+        row.payload.kind === "project_context" &&
+        row.payload.topic === NEW_PROJECT_CONTEXT_TOPIC &&
+        row.evidenceBasis.ruleIds.includes(TRANSACTIONAL_CUSTOMER_NOTICE_RULE),
+    );
+    if (payment?.payload.kind === "project_context") {
+      assert.equal(payment.payload.value, PAYMENT_RECEIVED_GENERIC_TITLE);
+      assert.notEqual(payment.payload.value, "Custom Engagement Ring");
+    }
   });
 
   it("reconciles a transactional customer notice to related jewelry mail across threads", () => {
@@ -1276,6 +1302,443 @@ describe("explicit new-project Gmail proposals", () => {
       ),
       false,
     );
+  });
+
+  function paymentNotice(input: {
+    messageId: string;
+    threadId: string;
+    customerEmail?: string;
+    extraEmails?: readonly string[];
+  }) {
+    const extras = (input.extraEmails ?? []).join("\n");
+    return evidence({
+      messageId: input.messageId,
+      threadId: input.threadId,
+      sentAt: NOW,
+      fromEmail: "notifications@intuit.com",
+      direction: "inbound",
+      subject: "Payment received Invoice 1215",
+      plaintext: `Invoice #1215-(Morgan Ellis)\nCustomer: Morgan Ellis\nAmount: $3,183.90\nPayment received\n${input.customerEmail ?? CUSTOMER_A_EMAIL}${extras ? `\n${extras}` : ""}`,
+    });
+  }
+
+  it("titles a customer payment only from that customer's historical engagement-ring thread", () => {
+    const proposed = proposeGmailCandidates({
+      createdAt: NOW,
+      world: {
+        people: [],
+        projects: [],
+        internalEmailHashes: [hashEmail(FOUNDER_EMAIL)!],
+      },
+      evidence: [
+        paymentNotice({
+          messageId: "m-pay-a",
+          threadId: "t-pay-a",
+          extraEmails: [FOUNDER_EMAIL],
+        }),
+        evidence({
+          messageId: "m-ring-a",
+          threadId: "t-ring-a",
+          sentAt: "2026-08-10T15:00:00.000Z",
+          fromEmail: CUSTOMER_A_EMAIL,
+          direction: "inbound",
+          subject: "Engagement Ring",
+          plaintext:
+            "I'm planning to propose and wanted to talk about an engagement ring.",
+        }),
+        evidence({
+          messageId: "m-abbey-scope",
+          threadId: "t-abbey-scope",
+          sentAt: "2026-09-07T16:00:00.000Z",
+          fromEmail: ABBEY_CASTILLO_EMAIL,
+          toEmails: [FOUNDER_EMAIL],
+          direction: "inbound",
+          subject: "A new piece",
+          plaintext: ABBEY_INBOUND,
+        }),
+      ],
+    });
+    const payment = proposed.candidates.find(
+      (row) =>
+        row.payload.kind === "project_context" &&
+        row.payload.topic === NEW_PROJECT_CONTEXT_TOPIC &&
+        row.evidenceBasis.ruleIds.includes(TRANSACTIONAL_CUSTOMER_NOTICE_RULE),
+    );
+    assert.ok(payment);
+    if (payment?.payload.kind === "project_context") {
+      assert.equal(payment.payload.value, "Custom Engagement Ring");
+      assert.notEqual(payment.payload.value, "Matching Marquise Earrings");
+    }
+    assert.equal(
+      proposed.candidates.some(
+        (row) =>
+          row.sourceRef.includes("t-pay-a") &&
+          row.payload.kind === "project_context" &&
+          row.payload.value === "Matching Marquise Earrings",
+      ),
+      false,
+    );
+  });
+
+  it("never lets another customer's marquise-earrings work enter a payment card in the same CandidateStore", () => {
+    const proposed = proposeGmailCandidates({
+      createdAt: NOW,
+      world: {
+        people: [],
+        projects: [],
+        internalEmailHashes: [hashEmail(FOUNDER_EMAIL)!],
+      },
+      evidence: [
+        paymentNotice({
+          messageId: "m-pay-store",
+          threadId: "t-pay-store",
+          extraEmails: [FOUNDER_EMAIL],
+        }),
+        evidence({
+          messageId: "m-ring-store",
+          threadId: "t-ring-store",
+          sentAt: "2026-08-10T15:00:00.000Z",
+          fromEmail: CUSTOMER_A_EMAIL,
+          direction: "inbound",
+          subject: "Engagement Ring",
+          plaintext:
+            "I'm planning to propose and wanted to talk about an engagement ring.",
+        }),
+        evidence({
+          messageId: "m-abbey-store",
+          threadId: "1a07e70c9a7538be",
+          sentAt: "2026-09-07T16:00:00.000Z",
+          fromEmail: ABBEY_CASTILLO_EMAIL,
+          toEmails: [FOUNDER_EMAIL],
+          direction: "inbound",
+          subject: "A new piece",
+          plaintext: ABBEY_INBOUND,
+        }),
+      ],
+    });
+    const payment = proposed.candidates.find((row) =>
+      row.evidenceBasis.ruleIds.includes(TRANSACTIONAL_CUSTOMER_NOTICE_RULE),
+    );
+    assert.ok(payment);
+    if (payment?.payload.kind === "project_context") {
+      assert.equal(payment.payload.value, "Custom Engagement Ring");
+    }
+    const abbey = proposed.candidates.find(
+      (row) =>
+        row.sourceRef.includes("1a07e70c9a7538be") &&
+        row.payload.kind === "project_context" &&
+        row.payload.topic === NEW_PROJECT_CONTEXT_TOPIC,
+    );
+    assert.ok(abbey);
+    if (abbey?.payload.kind === "project_context") {
+      assert.equal(abbey.payload.value, "Matching Marquise Earrings");
+    }
+    assert.notEqual(payment?.candidateId, abbey?.candidateId);
+  });
+
+  it("keeps two customers with the same generic Custom Engagement Ring title isolated", () => {
+    const proposed = proposeGmailCandidates({
+      createdAt: NOW,
+      world: { people: [], projects: [], internalEmailHashes: [] },
+      evidence: [
+        paymentNotice({
+          messageId: "m-pay-a2",
+          threadId: "t-pay-a2",
+        }),
+        evidence({
+          messageId: "m-ring-a2",
+          threadId: "t-ring-a2",
+          sentAt: "2026-08-10T15:00:00.000Z",
+          fromEmail: CUSTOMER_A_EMAIL,
+          direction: "inbound",
+          subject: "Engagement Ring",
+          plaintext:
+            "I'm planning to propose and wanted to talk about an engagement ring.",
+        }),
+        evidence({
+          messageId: "m-pay-b2",
+          threadId: "t-pay-b2",
+          sentAt: NOW,
+          fromEmail: "notifications@intuit.com",
+          direction: "inbound",
+          subject: "Payment received Invoice 1216",
+          plaintext:
+            "Invoice #1216-(Casey Brooks)\nCustomer: Casey Brooks\nAmount: $2,100.00\nPayment received\ncasey.brooks@example.test",
+        }),
+        evidence({
+          messageId: "m-ring-b2",
+          threadId: "t-ring-b2",
+          sentAt: "2026-08-11T15:00:00.000Z",
+          fromEmail: CUSTOMER_B_EMAIL,
+          direction: "inbound",
+          subject: "Engagement Ring",
+          plaintext:
+            "I'm planning to propose and wanted to talk about an engagement ring.",
+        }),
+      ],
+    });
+    const payments = proposed.candidates.filter(
+      (row) =>
+        row.payload.kind === "project_context" &&
+        row.evidenceBasis.ruleIds.includes(TRANSACTIONAL_CUSTOMER_NOTICE_RULE),
+    );
+    assert.equal(payments.length, 2);
+    assert.equal(
+      payments.every(
+        (row) =>
+          row.payload.kind === "project_context" &&
+          row.payload.value === "Custom Engagement Ring",
+      ),
+      true,
+    );
+    const payA = payments.find((row) => row.sourceRef.includes("t-pay-a2"));
+    const payB = payments.find((row) => row.sourceRef.includes("t-pay-b2"));
+    assert.ok(payA && payB);
+    assert.notEqual(payA?.candidateId, payB?.candidateId);
+    assert.equal(
+      proposed.candidates.some(
+        (row) =>
+          row.candidateType === "person_association" &&
+          row.sourceRef.includes("t-pay-a2") &&
+          row.payload.kind === "person_association" &&
+          row.payload.emailHash === hashEmail(CUSTOMER_B_EMAIL),
+      ),
+      false,
+    );
+    assert.equal(
+      proposed.candidates.some(
+        (row) =>
+          row.candidateType === "person_association" &&
+          row.sourceRef.includes("t-pay-b2") &&
+          row.payload.kind === "person_association" &&
+          row.payload.emailHash === hashEmail(CUSTOMER_A_EMAIL),
+      ),
+      false,
+    );
+  });
+
+  it("fails closed on work association when customer scope is ambiguous", () => {
+    const proposed = proposeGmailCandidates({
+      createdAt: NOW,
+      world: { people: [], projects: [], internalEmailHashes: [] },
+      evidence: [
+        paymentNotice({
+          messageId: "m-pay-amb",
+          threadId: "t-pay-amb",
+          extraEmails: [CUSTOMER_B_EMAIL],
+        }),
+        evidence({
+          messageId: "m-ring-amb",
+          threadId: "t-ring-amb",
+          sentAt: "2026-08-10T15:00:00.000Z",
+          fromEmail: CUSTOMER_A_EMAIL,
+          direction: "inbound",
+          subject: "Engagement Ring",
+          plaintext:
+            "I'm planning to propose and wanted to talk about an engagement ring.",
+        }),
+        evidence({
+          messageId: "m-abbey-amb",
+          threadId: "t-abbey-amb",
+          sentAt: "2026-09-07T16:00:00.000Z",
+          fromEmail: ABBEY_CASTILLO_EMAIL,
+          direction: "inbound",
+          subject: "A new piece",
+          plaintext: ABBEY_INBOUND,
+        }),
+      ],
+    });
+    const payment = proposed.candidates.find((row) =>
+      row.evidenceBasis.ruleIds.includes(TRANSACTIONAL_CUSTOMER_NOTICE_RULE),
+    );
+    assert.ok(payment);
+    if (payment?.payload.kind === "project_context") {
+      assert.equal(payment.payload.value, PAYMENT_RECEIVED_GENERIC_TITLE);
+    }
+    assert.match(payment?.evidenceBasis.matchedText ?? "", /related work undetermined/);
+    if (payment?.proposedTarget.kind === "project") {
+      assert.equal(payment.proposedTarget.projectId, null);
+    }
+  });
+
+  it("keeps Nate dagger work and tennis-necklace mail off another customer's payment card", () => {
+    const proposed = proposeGmailCandidates({
+      createdAt: NOW,
+      world: {
+        people: [],
+        projects: [],
+        internalEmailHashes: [hashEmail(FOUNDER_EMAIL)!],
+      },
+      evidence: [
+        paymentNotice({
+          messageId: "m-pay-iso",
+          threadId: "t-pay-iso",
+          extraEmails: [FOUNDER_EMAIL],
+        }),
+        evidence({
+          messageId: "m-ring-iso",
+          threadId: "t-ring-iso",
+          sentAt: "2026-08-10T15:00:00.000Z",
+          fromEmail: CUSTOMER_A_EMAIL,
+          direction: "inbound",
+          subject: "Engagement Ring",
+          plaintext:
+            "I'm planning to propose and wanted to talk about an engagement ring.",
+        }),
+        evidence({
+          messageId: "m-nate-iso",
+          threadId: "19a854e42f90344f",
+          sentAt: "2026-09-07T15:00:00.000Z",
+          fromEmail: NATE_EMAIL,
+          toEmails: [FOUNDER_EMAIL],
+          direction: "inbound",
+          subject: "Featured Ring",
+          plaintext: NATE_INBOUND,
+        }),
+        evidence({
+          messageId: "m-tennis-iso",
+          threadId: "19fa457632bf7b31",
+          sentAt: "2026-09-08T18:00:00.000Z",
+          fromEmail: TENNIS_EMAIL,
+          toEmails: [FOUNDER_EMAIL],
+          direction: "inbound",
+          subject: "Lab grown Diamond Tennis Necklace",
+          plaintext:
+            "I've been working with you on a tennis necklace. What's the price and timeline?",
+        }),
+      ],
+    });
+    const payment = proposed.candidates.find((row) =>
+      row.evidenceBasis.ruleIds.includes(TRANSACTIONAL_CUSTOMER_NOTICE_RULE),
+    );
+    assert.ok(payment);
+    if (payment?.payload.kind === "project_context") {
+      assert.equal(payment.payload.value, "Custom Engagement Ring");
+      assert.notEqual(payment.payload.value, "Dagger & Pearls Pendant / Necklace");
+      assert.notEqual(payment.payload.value, "Custom Necklace / Pendant");
+    }
+    assert.equal(payment?.sourceRef.includes("t-pay-iso"), true);
+    assert.equal(
+      proposed.candidates.some(
+        (row) =>
+          row.sourceRef.includes("t-pay-iso") &&
+          row.payload.kind === "project_context" &&
+          row.payload.value === "Dagger & Pearls Pendant / Necklace",
+      ),
+      false,
+    );
+  });
+
+  it("does not copy another customer's canonical Project onto a payment notice", () => {
+    const abbeyProject = project({
+      projectId: "abbey-earrings",
+      title: "Matching Marquise Earrings",
+      personIds: ["abbey"],
+      gmailThreadId: "1a07e70c9a7538be",
+    });
+    const proposed = proposeGmailCandidates({
+      createdAt: NOW,
+      world: {
+        people: [],
+        projects: [abbeyProject],
+        internalEmailHashes: [hashEmail(FOUNDER_EMAIL)!],
+      },
+      evidence: [
+        paymentNotice({
+          messageId: "m-pay-canon",
+          threadId: "t-pay-canon",
+          extraEmails: [FOUNDER_EMAIL],
+        }),
+        evidence({
+          messageId: "m-ring-canon",
+          threadId: "t-ring-canon",
+          sentAt: "2026-08-10T15:00:00.000Z",
+          fromEmail: CUSTOMER_A_EMAIL,
+          direction: "inbound",
+          subject: "Engagement Ring",
+          plaintext:
+            "I'm planning to propose and wanted to talk about an engagement ring.",
+        }),
+        evidence({
+          messageId: "m-abbey-canon",
+          threadId: "1a07e70c9a7538be",
+          sentAt: "2026-09-07T16:00:00.000Z",
+          fromEmail: ABBEY_CASTILLO_EMAIL,
+          toEmails: [FOUNDER_EMAIL],
+          direction: "inbound",
+          subject: "A new piece",
+          plaintext: ABBEY_INBOUND,
+        }),
+      ],
+    });
+    const payment = proposed.candidates.find((row) =>
+      row.evidenceBasis.ruleIds.includes(TRANSACTIONAL_CUSTOMER_NOTICE_RULE),
+    );
+    if (payment?.payload.kind === "project_context") {
+      assert.equal(payment.payload.value, "Custom Engagement Ring");
+    }
+    assert.equal(
+      proposed.candidates.some(
+        (row) =>
+          row.candidateType === "project_association" &&
+          row.sourceRef.includes("t-pay-canon") &&
+          row.proposedTarget.kind === "project" &&
+          row.proposedTarget.projectId === abbeyProject.projectId,
+      ),
+      false,
+    );
+  });
+
+  it("repeats a customer-scoped payment scan with the same candidate identity", () => {
+    const input = {
+      createdAt: NOW,
+      world: {
+        people: [],
+        projects: [],
+        internalEmailHashes: [hashEmail(FOUNDER_EMAIL)!],
+      },
+      evidence: [
+        paymentNotice({
+          messageId: "m-pay-idemp",
+          threadId: "t-pay-idemp",
+          extraEmails: [FOUNDER_EMAIL],
+        }),
+        evidence({
+          messageId: "m-ring-idemp",
+          threadId: "t-ring-idemp",
+          sentAt: "2026-08-10T15:00:00.000Z",
+          fromEmail: CUSTOMER_A_EMAIL,
+          direction: "inbound",
+          subject: "Engagement Ring",
+          plaintext:
+            "I'm planning to propose and wanted to talk about an engagement ring.",
+        }),
+        evidence({
+          messageId: "m-abbey-idemp",
+          threadId: "t-abbey-idemp",
+          sentAt: "2026-09-07T16:00:00.000Z",
+          fromEmail: ABBEY_CASTILLO_EMAIL,
+          toEmails: [FOUNDER_EMAIL],
+          direction: "inbound",
+          subject: "A new piece",
+          plaintext: ABBEY_INBOUND,
+        }),
+      ],
+    };
+    const first = proposeGmailCandidates(input);
+    const second = proposeGmailCandidates(input);
+    assert.deepEqual(
+      first.candidates.map((row) => row.candidateId).sort(),
+      second.candidates.map((row) => row.candidateId).sort(),
+    );
+    const payment = first.candidates.find((row) =>
+      row.evidenceBasis.ruleIds.includes(TRANSACTIONAL_CUSTOMER_NOTICE_RULE),
+    );
+    if (payment?.payload.kind === "project_context") {
+      assert.equal(payment.payload.value, "Custom Engagement Ring");
+    }
+    assert.equal(JSON.stringify(first.candidates).includes(ABBEY_BODY_NONCE), false);
+    assert.equal(JSON.stringify(first.candidates).includes(NATE_BODY_NONCE), false);
   });
 });
 

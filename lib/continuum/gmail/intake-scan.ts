@@ -6,14 +6,13 @@
 
 import type { CandidateStore, ContinuumCandidate } from "@/lib/continuum/candidates/types";
 import type { GmailIndexStore } from "@/lib/continuum/client-memory/gmail/store";
-import { hashEmail } from "@/lib/continuum/client-memory/hashes";
 import { ingestGmailCandidates } from "./candidates/ingest";
 import { knownGmailProjectThreadIds } from "@/lib/continuum/client-memory/founder-project/gmail-project-link";
 import {
-  extractCustomerEmails,
   hasJewelryWorkContext,
   isNewProjectContextPayload,
   looksTransactionalCustomerNotice,
+  supportedCustomerEmailHashes,
 } from "./candidates/new-project";
 import { haystackOf } from "./candidates/parse";
 import { parseGmailCandidateSourceRef } from "./candidates/source-ref";
@@ -115,22 +114,21 @@ export async function relatedCommercialThreadIds(
   for (const row of evidence) {
     const hay = haystackOf(row.indexed.subject, row.plaintext ?? null);
     if (!looksTransactionalCustomerNotice(hay)) continue;
-    for (const email of extractCustomerEmails(hay)) {
-      const hash = hashEmail(email);
-      if (!hash || skipEmailHashes.has(hash)) continue;
-      let related;
-      try {
-        related = await index.listMessagesTouchingEmailHash(hash);
-      } catch {
-        continue;
-      }
-      for (const msg of related) {
-        const threadId = msg.threadId.trim();
-        if (!threadId || already.has(threadId) || extra.has(threadId)) continue;
-        if (!hasJewelryWorkContext(msg.subject ?? "")) continue;
-        extra.add(threadId);
-        if (extra.size >= GMAIL_INTAKE_RELATED_THREAD_CAP) return [...extra];
-      }
+    const hashes = supportedCustomerEmailHashes(hay, skipEmailHashes);
+    if (hashes.length !== 1) continue;
+    const hash = hashes[0]!;
+    let related;
+    try {
+      related = await index.listMessagesTouchingEmailHash(hash);
+    } catch {
+      continue;
+    }
+    for (const msg of related) {
+      const threadId = msg.threadId.trim();
+      if (!threadId || already.has(threadId) || extra.has(threadId)) continue;
+      if (!hasJewelryWorkContext(msg.subject ?? "")) continue;
+      extra.add(threadId);
+      if (extra.size >= GMAIL_INTAKE_RELATED_THREAD_CAP) return [...extra];
     }
   }
   return [...extra];

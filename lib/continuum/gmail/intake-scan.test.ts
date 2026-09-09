@@ -1062,4 +1062,62 @@ describe("Gmail new-project intake scan", () => {
     assert.deepEqual(related, [ringThread]);
     assert.equal(related.includes(cadThread), false);
   });
+
+  it("does not fetch related jewelry when supported customer scope is not unique", async () => {
+    const payThread = "19payambiguous0001";
+    const payMessage = "19payambiguousmsg01";
+    const ringThread = "19ringambiguous0001";
+    const abbeyThread = "1a07e70c9a7538be";
+    const index = new InMemoryGmailIndexStore();
+    await index.indexMessage(
+      {
+        messageId: payMessage,
+        threadId: payThread,
+        sentAt: "2026-09-08T18:00:00.000Z",
+        subject: "Payment received Invoice 1215",
+        fromEmail: "notifications@intuit.com",
+        direction: "inbound",
+        hasAttachments: false,
+      },
+      NOW,
+    );
+    await index.indexMessage(
+      {
+        messageId: "19ringambiguousmsg1",
+        threadId: ringThread,
+        sentAt: "2026-08-10T15:00:00.000Z",
+        subject: "Engagement Ring",
+        fromEmail: "morgan.ellis@example.test",
+        direction: "inbound",
+        hasAttachments: false,
+      },
+      NOW,
+    );
+    await index.indexMessage(
+      {
+        messageId: "1aabbeyearrings001",
+        threadId: abbeyThread,
+        sentAt: "2026-09-07T16:00:00.000Z",
+        subject: "Matching marquise earrings",
+        fromEmail: "serinitybloom@gmail.com",
+        direction: "inbound",
+        hasAttachments: false,
+      },
+      NOW,
+    );
+    const related = await relatedCommercialThreadIds(
+      index,
+      [
+        {
+          indexed: (await index.getMessage(payMessage))!,
+          plaintext:
+            "Invoice #1215-(Morgan Ellis)\nCustomer: Morgan Ellis\nPayment received\nmorgan.ellis@example.test\ncasey.brooks@example.test",
+          fromEmailHash: hashEmail("notifications@intuit.com"),
+          attachments: [],
+        },
+      ],
+      new Set([payThread]),
+    );
+    assert.deepEqual(related, []);
+  });
 });

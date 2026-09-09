@@ -10,6 +10,7 @@ import { scanGmailNewProjectIntake, type ScanGmailIntakeState } from "../gmail-i
 import { runNextGmailIncrementalChunk } from "../gmail-incremental-actions";
 import { searchConciergeClients } from "../actions";
 import type { GmailNewProjectIntakeCard } from "@/lib/continuum/client-memory/founder-project/intake-present";
+import { PAYMENT_RECEIVED_GENERIC_TITLE } from "@/lib/continuum/gmail/candidates/new-project";
 import type { ClientSearchResult } from "@/lib/continuum/client-memory/read/types";
 import { CONCIERGE_GMAIL_INTAKE_PATH } from "@/lib/continuum/gmail/types";
 import { conciergeProjectPath } from "@/lib/continuum/client-memory/read/presentation";
@@ -266,7 +267,13 @@ function GmailNewProjectCard({
       <p className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
         {workStatusHeadline(card)}
       </p>
-      <p className="font-serif text-[1.45rem] text-[#efe8de]">{card.title}</p>
+      {card.title &&
+      !(
+        card.workStatus === "payment_received" &&
+        card.title === PAYMENT_RECEIVED_GENERIC_TITLE
+      ) ? (
+        <p className="font-serif text-[1.45rem] text-[#efe8de]">{card.title}</p>
+      ) : null}
       {card.presentation === "current_project" && card.personName ? (
         <p className="text-[15px] text-[#c4b7aa]">{card.personName}</p>
       ) : null}
@@ -374,7 +381,8 @@ function GmailNewProjectCard({
       ) : null}
       {card.attachmentFilenames.length > 0 ||
       card.supportingObservationCount > 0 ||
-      card.presentation === "current_project" ? (
+      card.presentation === "current_project" ||
+      card.workStatus === "payment_received" ? (
         <details className="text-[13px] text-[#8d8073]">
           <summary className="cursor-pointer text-[11px] uppercase tracking-[0.18em]">
             Review evidence

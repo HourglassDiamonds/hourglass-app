@@ -7,7 +7,7 @@ import { CANDIDATE_PARSER_GMAIL_V1, type ContinuumCandidate } from "@/lib/contin
 import { hashEmail } from "@/lib/continuum/client-memory/hashes";
 import { GMAIL_SOURCE_SYSTEM } from "@/lib/continuum/client-memory/gmail/types";
 import { proposeGmailCandidates } from "@/lib/continuum/gmail/candidates/propose";
-import { TRANSACTIONAL_CUSTOMER_NOTICE_RULE, WAITING_ON_CLIENT_TOPIC } from "@/lib/continuum/gmail/candidates/new-project";
+import { PAYMENT_RECEIVED_GENERIC_TITLE, TRANSACTIONAL_CUSTOMER_NOTICE_RULE, WAITING_ON_CLIENT_TOPIC } from "@/lib/continuum/gmail/candidates/new-project";
 import { packGmailCandidateSourceRef } from "@/lib/continuum/gmail/candidates/source-ref";
 import {
   intakeCurrentState,
@@ -700,5 +700,139 @@ describe("Gmail new-project intake presentation", () => {
     assert.equal(cards[0]?.workStatus, "payment_received");
     assert.equal(cards[0]?.title, "Custom Engagement Ring");
     assert.equal(cards[0]?.canonicalProjectFound, false);
+  });
+
+  it("fails closed on the founder card when related work cannot be uniquely tied", () => {
+    const proposed = proposeGmailCandidates({
+      createdAt: NOW,
+      world: { people: [], projects: [], internalEmailHashes: [] },
+      evidence: [
+        evidence({
+          messageId: "pay-closed",
+          threadId: "t-pay-closed",
+          sentAt: NOW,
+          fromEmail: "notifications@intuit.com",
+          direction: "inbound",
+          subject: "Payment received Invoice 1215",
+          plaintext:
+            "Invoice #1215-(Morgan Ellis)\nCustomer: Morgan Ellis\nAmount: $3,183.90\nPayment received\nmorgan.ellis@example.test\ncasey.brooks@example.test",
+        }),
+        evidence({
+          messageId: "ring-closed",
+          threadId: "t-ring-closed",
+          sentAt: "2026-08-10T15:00:00.000Z",
+          fromEmail: "morgan.ellis@example.test",
+          direction: "inbound",
+          subject: "Engagement Ring",
+          plaintext:
+            "I'm planning to propose and wanted to talk about an engagement ring.",
+        }),
+        evidence({
+          messageId: "abbey-closed",
+          threadId: "1a07e70c9a7538be",
+          sentAt: "2026-09-07T16:00:00.000Z",
+          fromEmail: CASTILLO_EMAIL,
+          direction: "inbound",
+          subject: "A new piece",
+          plaintext:
+            "I'm reaching back out to ask about a new piece I'd like designed. Matching marquise dangle/hoop earrings.",
+        }),
+      ],
+    });
+    const cards = presentGmailNewProjectIntake(proposed.candidates, [
+      {
+        personId: "morgan",
+        displayName: "Morgan Ellis",
+        email: "morgan.ellis@example.test",
+      },
+    ]);
+    const payment = cards.find((row) => row.workStatus === "payment_received");
+    assert.ok(payment);
+    assert.equal(payment?.title, PAYMENT_RECEIVED_GENERIC_TITLE);
+    assert.equal(payment?.relatedWorkDetermined, false);
+    assert.equal(payment?.canonicalProjectFound, false);
+    assert.match(payment?.whySurfaced ?? "", /\$3,183\.90 received/);
+    assert.match(payment?.whySurfaced ?? "", /Related Project could not be determined/);
+    assert.notEqual(payment?.title, "Matching Marquise Earrings");
+  });
+
+  it("ignores a stale marquise transactional title once a later customer-scoped title exists", () => {
+    const proposed = proposeGmailCandidates({
+      createdAt: NOW,
+      world: {
+        people: [],
+        projects: [],
+        internalEmailHashes: [hashEmail("justin@hourglass.example")!],
+      },
+      evidence: [
+        evidence({
+          messageId: "pay-latest",
+          threadId: "t-pay-latest",
+          sentAt: NOW,
+          fromEmail: "notifications@intuit.com",
+          direction: "inbound",
+          subject: "Payment received Invoice 1215",
+          plaintext:
+            "Invoice #1215-(Morgan Ellis)\nCustomer: Morgan Ellis\nAmount: $3,183.90\nPayment received\nmorgan.ellis@example.test\njustin@hourglass.example",
+        }),
+        evidence({
+          messageId: "ring-latest",
+          threadId: "t-ring-latest",
+          sentAt: "2026-08-10T15:00:00.000Z",
+          fromEmail: "morgan.ellis@example.test",
+          direction: "inbound",
+          subject: "Engagement Ring",
+          plaintext:
+            "I'm planning to propose and wanted to talk about an engagement ring.",
+        }),
+      ],
+    });
+    const payment = proposed.candidates.find(
+      (row) =>
+        row.evidenceBasis.ruleIds.includes(TRANSACTIONAL_CUSTOMER_NOTICE_RULE) &&
+        row.payload.kind === "project_context",
+    );
+    assert.ok(payment);
+    if (payment?.payload.kind !== "project_context") return;
+    const stale = {
+      ...payment,
+      candidateId: "stale-marquise",
+      createdAt: "2026-09-09T11:20:11.000Z",
+      payload: {
+        ...payment.payload,
+        value: "Matching Marquise Earrings",
+      },
+    };
+    const fresh = {
+      ...payment,
+      candidateId: "fresh-scoped",
+      createdAt: "2026-09-09T12:00:00.000Z",
+      payload: {
+        ...payment.payload,
+        value: "Custom Engagement Ring",
+      },
+    };
+    const preferred = preferredNewProjectTitle([stale, fresh]);
+    assert.equal(preferred?.title, "Custom Engagement Ring");
+    const cards = presentGmailNewProjectIntake([stale, fresh], [
+      {
+        personId: "morgan",
+        displayName: "Morgan Ellis",
+        email: "morgan.ellis@example.test",
+      },
+    ]);
+    assert.equal(cards[0]?.title, "Custom Engagement Ring");
+    assert.equal(cards[0]?.relatedWorkDetermined, true);
+  });
+
+  it("does not put fail-closed copy or customer names in synthesis source", () => {
+    const dir = dirname(fileURLToPath(import.meta.url));
+    const ui = readFileSync(
+      join(dir, "../../../../app/executive-dashboard/concierge/components/gmail-new-project-intake.tsx"),
+      "utf8",
+    );
+    assert.match(ui, /PAYMENT_RECEIVED_GENERIC_TITLE/);
+    assert.match(ui, /workStatus === "payment_received"/);
+    assert.doesNotMatch(ui, /Thomas|Bailey|Lucas|Kinnin/);
   });
 });

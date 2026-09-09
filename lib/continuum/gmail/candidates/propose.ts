@@ -447,6 +447,7 @@ export function proposeGmailCandidates(
     createdAt,
     linkedGmailThreadIds: input.world.linkedGmailThreadIds,
     supportingThreadIds: [...supportingThreadIds],
+    internalEmailHashes: input.world.internalEmailHashes,
   });
   return {
     candidates: assignReconciledCandidates(reconciled),

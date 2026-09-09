@@ -4,6 +4,7 @@
  */
 
 import { clipMatchedText } from "@/lib/continuum/candidates/identity";
+import { hashEmail } from "@/lib/continuum/client-memory/hashes";
 
 export const NEW_PROJECT_CONTEXT_TOPIC = "new_project" as const;
 export const WAITING_ON_CLIENT_TOPIC = "waiting_on_client" as const;
@@ -20,11 +21,14 @@ export const TRANSACTIONAL_CUSTOMER_NOTICE_RULE =
 export const RELATED_CUSTOMER_JEWELRY_THREAD_RULE =
   "related_customer_jewelry_thread" as const;
 
+export const PAYMENT_RECEIVED_GENERIC_TITLE = "Payment received" as const;
+
 export const GENERIC_NEW_PROJECT_TITLES = new Set([
   "Custom Earrings",
   "Custom Necklace / Pendant",
   "Custom Engagement Ring",
   "New custom piece",
+  PAYMENT_RECEIVED_GENERIC_TITLE,
 ]);
 
 const REJECT =
@@ -122,6 +126,19 @@ export function extractCustomerEmails(text: string): string[] {
         .filter((row) => row && !TRANSACTIONAL_SENDER_SKIP.test(row)),
     ),
   ];
+}
+
+export function supportedCustomerEmailHashes(
+  text: string,
+  skipHashes: ReadonlySet<string> = new Set(),
+): string[] {
+  const hashes = new Set<string>();
+  for (const email of extractCustomerEmails(text)) {
+    const hash = hashEmail(email);
+    if (!hash || skipHashes.has(hash)) continue;
+    hashes.add(hash);
+  }
+  return [...hashes];
 }
 
 export function extractCustomerLabel(text: string): string | null {
