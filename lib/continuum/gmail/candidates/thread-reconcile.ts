@@ -8,6 +8,7 @@ import type { ContinuumCandidate, ContinuumCandidateDraft } from "@/lib/continuu
 import { parseGmailCandidateSourceRef } from "./source-ref";
 import {
   extractCustomerEmails,
+  extractPaymentReceivedAmount,
   extractWaitingOnClient,
   hasJewelryWorkContext,
   looksConsequentialBuyerIntent,
@@ -84,6 +85,20 @@ function threadHaystack(rows: readonly GmailCandidateEvidence[]): string {
     .join("\n");
 }
 
+function threadTouchesCustomer(
+  rows: readonly GmailCandidateEvidence[],
+  customerHashes: ReadonlySet<string>,
+): boolean {
+  return rows.some((row) => {
+    const hashes = [
+      row.fromEmailHash ?? row.indexed.fromEmailHash,
+      ...row.indexed.toEmailHashes,
+      ...row.indexed.ccEmailHashes,
+    ];
+    return hashes.some((hash) => Boolean(hash && customerHashes.has(hash)));
+  });
+}
+
 function commercialWorkDraft(input: {
   evidence: GmailCandidateEvidence;
   createdAt: string;
@@ -126,6 +141,7 @@ export function reconcileThreadCandidates(input: {
   evidence: readonly GmailCandidateEvidence[];
   createdAt: string;
   linkedGmailThreadIds?: readonly string[];
+  supportingThreadIds?: readonly string[];
 }): ContinuumCandidateDraft[] {
   const byThread = new Map<string, GmailCandidateEvidence[]>();
   for (const row of input.evidence) {
@@ -253,9 +269,11 @@ export function reconcileThreadCandidates(input: {
   }
 
   const linkedThreads = new Set(input.linkedGmailThreadIds ?? []);
+  const supportingThreads = new Set(input.supportingThreadIds ?? []);
 
   for (const [threadId, rows] of byThread) {
     if (linkedThreads.has(threadId)) continue;
+    if (supportingThreads.has(threadId)) continue;
     if (threadHasNewProject(kept, threadId) || threadHasNewProject(input.drafts, threadId)) {
       continue;
     }
@@ -293,48 +311,40 @@ export function reconcileThreadCandidates(input: {
         .filter((row): row is string => Boolean(row)),
     );
     if (customerHashes.size === 0) continue;
-    const relatedJewelry = [...jewelryThreadIds].some((otherId) => {
+    const customerJewelryIds = [...jewelryThreadIds].filter((otherId) => {
       if (otherId === threadId) return false;
-      const other = byThread.get(otherId) ?? [];
-      return other.some((row) => {
-        const hashes = [
-          row.fromEmailHash ?? row.indexed.fromEmailHash,
-          ...row.indexed.toEmailHashes,
-          ...row.indexed.ccEmailHashes,
-        ];
-        return hashes.some((hash) => Boolean(hash && customerHashes.has(hash)));
-      });
+      return threadTouchesCustomer(byThread.get(otherId) ?? [], customerHashes);
     });
-    if (!relatedJewelry) continue;
+    if (customerJewelryIds.length === 0) continue;
     const notice = [...inbound].reverse()[0]!;
-    const relatedHay = [...jewelryThreadIds]
+    const relatedHay = customerJewelryIds
       .flatMap((id) => byThread.get(id) ?? [])
       .map((row) => haystackOf(row.indexed.subject, row.plaintext ?? null))
       .join("\n");
-    const relatedExact = [...jewelryThreadIds]
-      .filter((otherId) => otherId !== threadId)
-      .flatMap((otherId) =>
-        [...input.drafts, ...kept].filter(
-          (row) =>
-            threadIdOf(row) === otherId &&
-            row.candidateType === "project_association" &&
-            row.evidenceBasis.ruleIds.includes("exact_gmail_thread") &&
-            row.proposedTarget.kind === "project" &&
-            Boolean(row.proposedTarget.projectId),
-        ),
-      );
+    const relatedExact = customerJewelryIds.flatMap((otherId) =>
+      [...input.drafts, ...kept].filter(
+        (row) =>
+          threadIdOf(row) === otherId &&
+          row.candidateType === "project_association" &&
+          row.evidenceBasis.ruleIds.includes("exact_gmail_thread") &&
+          row.proposedTarget.kind === "project" &&
+          Boolean(row.proposedTarget.projectId),
+      ),
+    );
     const linkedProject =
       relatedExact[0]?.proposedTarget.kind === "project"
         ? relatedExact[0]
         : null;
+    const amount = extractPaymentReceivedAmount(hay);
+    const amountPrefix = amount ? `${amount} received; ` : "";
     const draft = commercialWorkDraft({
       evidence: notice,
       createdAt: input.createdAt,
       title: proposeNewProjectTitle(`${relatedHay}\n${hay}`),
       ruleIds: [TRANSACTIONAL_CUSTOMER_NOTICE_RULE],
       matchedText: linkedProject
-        ? "payment received; related jewelry work; canonical Project found"
-        : "payment received; related jewelry work; no canonical Project",
+        ? `${amountPrefix}payment received; related jewelry work; canonical Project found`
+        : `${amountPrefix}payment received; related jewelry work; no canonical Project`,
     });
     if (draft) extra.push(draft);
     if (

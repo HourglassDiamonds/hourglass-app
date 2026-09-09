@@ -118,6 +118,21 @@ function directoryMatchForHash(
   return matched.length === 1 ? matched[0]! : null;
 }
 
+function receivedAmountFromCandidates(
+  list: readonly ContinuumCandidate[],
+): string | null {
+  for (const row of list) {
+    if (!row.evidenceBasis.ruleIds.includes(TRANSACTIONAL_CUSTOMER_NOTICE_RULE)) {
+      continue;
+    }
+    const match = (row.evidenceBasis.matchedText ?? "").match(
+      /\$[\d,]+(?:\.\d{2})?/,
+    );
+    if (match) return match[0];
+  }
+  return null;
+}
+
 function workStatusOf(row: ContinuumCandidate): GmailIntakeWorkStatus {
   const rules = row.evidenceBasis.ruleIds;
   if (rules.includes(TRANSACTIONAL_CUSTOMER_NOTICE_RULE)) return "payment_received";
@@ -129,11 +144,14 @@ function workStatusOf(row: ContinuumCandidate): GmailIntakeWorkStatus {
 export function whySurfacedForStatus(
   status: GmailIntakeWorkStatus,
   canonicalProjectFound = false,
+  extras?: { receivedAmount?: string | null },
 ): string {
   if (status === "payment_received") {
+    const amount = extras?.receivedAmount?.trim() ?? "";
+    const prefix = amount ? `${amount} received. ` : "";
     return canonicalProjectFound
-      ? "A payment or invoice notice names a customer with related jewelry mail already on a Project."
-      : "A payment or invoice notice names a customer with related jewelry mail and no canonical Project.";
+      ? `${prefix}A payment or invoice notice names a customer with related jewelry mail already on a Project.`
+      : `${prefix}A payment or invoice notice names a customer with related jewelry mail and no canonical Project.`;
   }
   if (status === "opportunity_reactivated") {
     return "A correspondent is asking about price, timeline, or next steps on prior jewelry discussion.";
@@ -216,9 +234,15 @@ function pickPersonAssociation(
     (row) => row.reviewStatus === "pending" && row.candidateState !== "superseded",
   );
   if (pending.length === 0) return null;
-  return [...pending].sort(
-    (a, b) => sentMs(b.sourceTimestamp) - sentMs(a.sourceTimestamp),
-  )[0]!;
+  return [...pending].sort((a, b) => {
+    const sent = sentMs(b.sourceTimestamp) - sentMs(a.sourceTimestamp);
+    if (sent !== 0) return sent;
+    const aName =
+      a.payload.kind === "person_association" ? (a.payload.displayName ?? "") : "";
+    const bName =
+      b.payload.kind === "person_association" ? (b.payload.displayName ?? "") : "";
+    return bName.length - aName.length;
+  })[0]!;
 }
 
 export function preferredNewProjectTitle(
@@ -232,12 +256,20 @@ export function preferredNewProjectTitle(
       row.payload.topic === NEW_PROJECT_CONTEXT_TOPIC,
   );
   if (news.length === 0) return null;
-  const ranked = [...news].sort((a, b) => {
+  const transactional = news.filter((row) =>
+    row.evidenceBasis.ruleIds.includes(TRANSACTIONAL_CUSTOMER_NOTICE_RULE),
+  );
+  const pool = transactional.length > 0 ? transactional : news;
+  const ranked = [...pool].sort((a, b) => {
+    const created = sentMs(b.createdAt) - sentMs(a.createdAt);
+    if (created !== 0) return created;
     const aTitle = a.payload.kind === "project_context" ? a.payload.value : "";
     const bTitle = b.payload.kind === "project_context" ? b.payload.value : "";
     const aGeneric = GENERIC_NEW_PROJECT_TITLES.has(aTitle) ? 1 : 0;
     const bGeneric = GENERIC_NEW_PROJECT_TITLES.has(bTitle) ? 1 : 0;
-    if (aGeneric !== bGeneric) return aGeneric - bGeneric;
+    if (aGeneric !== bGeneric) {
+      return transactional.length > 0 ? bGeneric - aGeneric : aGeneric - bGeneric;
+    }
     return sentMs(b.sourceTimestamp) - sentMs(a.sourceTimestamp);
   });
   const winner = ranked[0]!;
@@ -481,7 +513,12 @@ function mergeIntakeCards(
     ...specific,
     people,
     workStatus,
-    whySurfaced: whySurfacedForStatus(workStatus, specific.canonicalProjectFound),
+    whySurfaced:
+      workStatus === "payment_received"
+        ? current.workStatus === "payment_received"
+          ? current.whySurfaced
+          : incoming.whySurfaced
+        : whySurfacedForStatus(workStatus, specific.canonicalProjectFound),
     supportingObservationCount:
       current.supportingObservationCount + incoming.supportingObservationCount,
     proposedSpecs: [...new Set([...current.proposedSpecs, ...incoming.proposedSpecs])],
@@ -517,12 +554,18 @@ export function presentGmailNewProjectIntake(
     const preferred = preferredNewProjectTitle(list);
     const approved = approvedNewProjectOnThread(list);
     const personHint = personHintForThread(rows, threadId, directory);
+    const paymentNotice = list.some(
+      (row) =>
+        row.reviewStatus === "pending" &&
+        row.candidateState !== "superseded" &&
+        row.evidenceBasis.ruleIds.includes(TRANSACTIONAL_CUSTOMER_NOTICE_RULE),
+    );
     const linked = canonicalProjectForGmailThread({
       threadId,
       candidates: rows,
       projects,
       personIdHint: personHint,
-      allowUnscopedExactTitle: true,
+      allowUnscopedExactTitle: !paymentNotice,
     });
     const associationId = exactAssociationProjectId(list);
     const associatedProject = associationId
@@ -676,7 +719,9 @@ export function presentGmailNewProjectIntake(
       possiblePersonEmail: displayPersonId ? null : possible?.email ?? null,
       people,
       workStatus,
-      whySurfaced: whySurfacedForStatus(workStatus, canonicalProjectFound),
+      whySurfaced: whySurfacedForStatus(workStatus, canonicalProjectFound, {
+        receivedAmount: receivedAmountFromCandidates(list),
+      }),
       canonicalProjectFound,
       waitingOnClient: state.waitingOnClient,
       currentStateKind: state.kind,

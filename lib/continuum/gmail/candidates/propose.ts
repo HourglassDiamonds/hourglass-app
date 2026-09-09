@@ -45,6 +45,7 @@ export type ProposeGmailCandidatesInput = {
   evidence: readonly GmailCandidateEvidence[];
   world: GmailCandidateWorld;
   createdAt?: string;
+  supportingThreadIds?: readonly string[];
 };
 
 export type ProposeGmailCandidatesResult = {
@@ -68,6 +69,7 @@ function draftsFromEvidence(
   evidence: GmailCandidateEvidence,
   world: GmailCandidateWorld,
   createdAt: string,
+  supportingThreadIds: ReadonlySet<string>,
 ): ContinuumCandidateDraft[] {
   const packed = packGmailCandidateSourceRef({
     threadId: evidence.indexed.threadId,
@@ -255,7 +257,8 @@ function draftsFromEvidence(
     evidence.indexed.threadId,
   );
 
-  if (!exactThreadProject && !linkedThread) {
+  const supporting = supportingThreadIds.has(evidence.indexed.threadId);
+  if (!exactThreadProject && !linkedThread && !supporting) {
     for (const hit of newProjectHits) {
       drafts.push({
         ...base,
@@ -431,15 +434,19 @@ export function proposeGmailCandidates(
   input: ProposeGmailCandidatesInput,
 ): ProposeGmailCandidatesResult {
   const createdAt = input.createdAt ?? new Date(0).toISOString();
+  const supportingThreadIds = new Set(input.supportingThreadIds ?? []);
   const drafts: ContinuumCandidateDraft[] = [];
   for (const evidence of input.evidence) {
-    drafts.push(...draftsFromEvidence(evidence, input.world, createdAt));
+    drafts.push(
+      ...draftsFromEvidence(evidence, input.world, createdAt, supportingThreadIds),
+    );
   }
   const reconciled = reconcileThreadCandidates({
     drafts,
     evidence: input.evidence,
     createdAt,
     linkedGmailThreadIds: input.world.linkedGmailThreadIds,
+    supportingThreadIds: [...supportingThreadIds],
   });
   return {
     candidates: assignReconciledCandidates(reconciled),

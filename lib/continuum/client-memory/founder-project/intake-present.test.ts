@@ -457,6 +457,7 @@ describe("Gmail new-project intake presentation", () => {
     assert.ok(payment);
     assert.equal(payment?.canonicalProjectFound, false);
     assert.equal(payment?.title, "Custom Engagement Ring");
+    assert.match(payment?.whySurfaced ?? "", /\$3,183\.90 received/);
     assert.ok(
       payment?.whySurfaced.includes("no canonical Project"),
     );
@@ -529,5 +530,175 @@ describe("Gmail new-project intake presentation", () => {
     assert.equal(payment?.canonicalProjectFound, true);
     assert.equal(payment?.identityConfirmed, false);
     assert.match(payment?.whySurfaced ?? "", /already on a Project/);
+  });
+
+  it("does not attach a payment notice to another person's Project by unscoped title", () => {
+    const proposed = proposeGmailCandidates({
+      createdAt: NOW,
+      world: { people: [], projects: [], internalEmailHashes: [] },
+      evidence: [
+        evidence({
+          messageId: "pay-unscoped",
+          threadId: "t-pay-unscoped",
+          sentAt: NOW,
+          fromEmail: "notifications@intuit.com",
+          direction: "inbound",
+          subject: "Payment received Invoice 1215",
+          plaintext:
+            "Invoice #1215-(Morgan Ellis)\nCustomer: Morgan Ellis\nAmount: $3,183.90\nPayment received\nmorgan.ellis@example.test",
+        }),
+        evidence({
+          messageId: "ring-unscoped",
+          threadId: "t-ring-unscoped",
+          sentAt: "2026-08-10T15:00:00.000Z",
+          fromEmail: "morgan.ellis@example.test",
+          direction: "inbound",
+          subject: "Engagement Ring",
+          plaintext:
+            "I'm planning to propose and wanted to talk about an engagement ring.",
+        }),
+      ],
+    });
+    const stale = proposed.candidates.map((row) =>
+      row.evidenceBasis.ruleIds.includes(TRANSACTIONAL_CUSTOMER_NOTICE_RULE) &&
+      row.payload.kind === "project_context"
+        ? {
+            ...row,
+            payload: {
+              ...row.payload,
+              value: "Dagger & Pearls Pendant / Necklace",
+            },
+          }
+        : row,
+    );
+    const cards = presentGmailNewProjectIntake(
+      stale,
+      [
+        {
+          personId: "morgan",
+          displayName: "Morgan Ellis",
+          email: "morgan.ellis@example.test",
+        },
+      ],
+      [],
+      [
+        {
+          projectId: "nate-dagger",
+          title: "Dagger & Pearls Pendant / Necklace",
+          gmailThreadId: "19a854e42f90344f",
+          cadJobNumber: null,
+          orderNumber: null,
+          fingerSize: null,
+          metal: null,
+          centerStone: null,
+          diamondSupplyNotes: null,
+          personIds: ["nate"],
+          founderApprovedCurrent: true,
+        },
+      ],
+    );
+    const payment = cards.find((row) => row.workStatus === "payment_received");
+    assert.ok(payment);
+    assert.equal(payment?.canonicalProjectFound, false);
+    assert.equal(payment?.canonicalProjectId, null);
+    assert.equal(payment?.presentation, "proposal");
+  });
+
+  it("prefers a later transactional title over a stale specific title on the same thread", () => {
+    const proposed = proposeGmailCandidates({
+      createdAt: NOW,
+      world: { people: [], projects: [], internalEmailHashes: [] },
+      evidence: [
+        evidence({
+          messageId: "pay-stale",
+          threadId: "t-pay-stale",
+          sentAt: NOW,
+          fromEmail: "notifications@intuit.com",
+          direction: "inbound",
+          subject: "Payment received Invoice 1215",
+          plaintext:
+            "Invoice #1215-(Morgan Ellis)\nCustomer: Morgan Ellis\nAmount: $3,183.90\nPayment received\nmorgan.ellis@example.test",
+        }),
+        evidence({
+          messageId: "ring-stale",
+          threadId: "t-ring-stale",
+          sentAt: "2026-08-10T15:00:00.000Z",
+          fromEmail: "morgan.ellis@example.test",
+          direction: "inbound",
+          subject: "Engagement Ring",
+          plaintext:
+            "I'm planning to propose and wanted to talk about an engagement ring.",
+        }),
+      ],
+    });
+    const payment = proposed.candidates.find(
+      (row) =>
+        row.evidenceBasis.ruleIds.includes(TRANSACTIONAL_CUSTOMER_NOTICE_RULE) &&
+        row.payload.kind === "project_context",
+    );
+    assert.ok(payment);
+    if (payment?.payload.kind !== "project_context") return;
+    const stale = {
+      ...payment,
+      candidateId: "stale-dagger",
+      createdAt: "2026-09-09T01:06:00.000Z",
+      payload: {
+        ...payment.payload,
+        value: "Dagger & Pearls Pendant / Necklace",
+      },
+    };
+    const fresh = {
+      ...payment,
+      candidateId: "fresh-ring",
+      createdAt: "2026-09-09T02:00:00.000Z",
+      payload: {
+        ...payment.payload,
+        value: "Custom Engagement Ring",
+      },
+    };
+    const preferred = preferredNewProjectTitle([stale, fresh]);
+    assert.equal(preferred?.title, "Custom Engagement Ring");
+    assert.equal(preferred?.candidate.candidateId, "fresh-ring");
+  });
+
+  it("keeps supporting related jewelry off its own Opportunity card", () => {
+    const proposed = proposeGmailCandidates({
+      createdAt: NOW,
+      world: { people: [], projects: [], internalEmailHashes: [] },
+      supportingThreadIds: ["t-ring-card"],
+      evidence: [
+        evidence({
+          messageId: "pay-one-card",
+          threadId: "t-pay-one-card",
+          sentAt: NOW,
+          fromEmail: "notifications@intuit.com",
+          direction: "inbound",
+          subject: "Payment received Invoice 1215",
+          plaintext:
+            "Invoice #1215-(Morgan Ellis)\nCustomer: Morgan Ellis\nAmount: $3,183.90\nPayment received\nmorgan.ellis@example.test",
+        }),
+        evidence({
+          messageId: "ring-one-card",
+          threadId: "t-ring-card",
+          sentAt: "2026-08-10T15:00:00.000Z",
+          fromEmail: "morgan.ellis@example.test",
+          direction: "inbound",
+          subject: "Engagement Ring",
+          plaintext:
+            "I'm planning to propose and wanted to talk about an engagement ring.",
+        }),
+      ],
+    });
+    const cards = presentGmailNewProjectIntake(proposed.candidates, [
+      {
+        personId: "morgan",
+        displayName: "Morgan Ellis",
+        email: "morgan.ellis@example.test",
+      },
+    ]);
+    assert.equal(cards.length, 1);
+    assert.equal(cards[0]?.workStatus, "payment_received");
+    assert.equal(cards[0]?.title, "Custom Engagement Ring");
+    assert.equal(cards[0]?.canonicalProjectFound, false);
   });
 });

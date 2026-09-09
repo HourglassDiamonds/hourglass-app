@@ -7,6 +7,8 @@ import { proposeGmailCandidates } from "./propose";
 import {
   ATTACHMENT_FILENAME_TOPIC,
   DESIGN_BASIS_TOPIC,
+  extractCustomerLabel,
+  extractPaymentReceivedAmount,
   GIFT_CONTEXT_TOPIC,
   looksExplicitNewProjectRequest,
   NEW_PROJECT_CONTEXT_TOPIC,
@@ -1089,6 +1091,159 @@ describe("explicit new-project Gmail proposals", () => {
     if (personHit?.proposedTarget.kind === "person") {
       assert.equal(personHit.proposedTarget.personId, null);
     }
+  });
+
+  it("reads a supporting display name from an invoice parenthetical without a Customer label", () => {
+    assert.equal(
+      extractCustomerLabel("Payment received: Invoice #1215-(Morgan Ellis)"),
+      "Morgan Ellis",
+    );
+    assert.equal(extractPaymentReceivedAmount("Amount: $3,183.90"), "$3,183.90");
+    const proposed = proposeGmailCandidates({
+      createdAt: NOW,
+      world: { people: [], projects: [], internalEmailHashes: [] },
+      evidence: [
+        evidence({
+          messageId: "m-pay-parens",
+          threadId: "t-pay-parens",
+          sentAt: NOW,
+          fromEmail: "notifications@intuit.com",
+          direction: "inbound",
+          subject: "Payment received: Invoice #1215-(Morgan Ellis)",
+          plaintext:
+            "Invoice #1215 Amount $3,183.90 Payment received\nmorgan.ellis@example.test",
+        }),
+      ],
+    });
+    const people = proposed.candidates.filter(
+      (row) => row.candidateType === "person_association",
+    );
+    assert.equal(people.length, 1);
+    if (people[0]?.payload.kind === "person_association") {
+      assert.equal(people[0].payload.emailHash, hashEmail("morgan.ellis@example.test"));
+      assert.equal(people[0].payload.displayName, "Morgan Ellis");
+      assert.equal(people[0].payload.mintPerson, false);
+    }
+  });
+
+  it("does not title a customer payment from unrelated jewelry in the same scan batch", () => {
+    const proposed = proposeGmailCandidates({
+      createdAt: NOW,
+      world: { people: [], projects: [], internalEmailHashes: [] },
+      evidence: [
+        evidence({
+          messageId: "m-pay-scope",
+          threadId: "t-pay-scope",
+          sentAt: NOW,
+          fromEmail: "notifications@intuit.com",
+          direction: "inbound",
+          subject: "Payment received Invoice 1215",
+          plaintext:
+            "Invoice #1215-(Morgan Ellis)\nCustomer: Morgan Ellis\nAmount: $3,183.90\nPayment received\nmorgan.ellis@example.test",
+        }),
+        evidence({
+          messageId: "m-ring-scope",
+          threadId: "t-ring-scope",
+          sentAt: "2026-08-10T15:00:00.000Z",
+          fromEmail: "morgan.ellis@example.test",
+          direction: "inbound",
+          subject: "Engagement Ring",
+          plaintext:
+            "I'm planning to propose and wanted to talk about an engagement ring.",
+        }),
+        evidence({
+          messageId: "m-nate-scope",
+          threadId: "t-nate-scope",
+          sentAt: "2026-09-07T15:00:00.000Z",
+          fromEmail: NATE_EMAIL,
+          direction: "inbound",
+          subject: "Another piece",
+          plaintext: NATE_INBOUND,
+        }),
+      ],
+    });
+    const payment = proposed.candidates.find(
+      (row) =>
+        row.payload.kind === "project_context" &&
+        row.payload.topic === NEW_PROJECT_CONTEXT_TOPIC &&
+        row.evidenceBasis.ruleIds.includes(TRANSACTIONAL_CUSTOMER_NOTICE_RULE),
+    );
+    assert.ok(payment);
+    if (payment?.payload.kind === "project_context") {
+      assert.equal(payment.payload.value, "Custom Engagement Ring");
+      assert.notEqual(payment.payload.value, "Dagger & Pearls Pendant / Necklace");
+    }
+    assert.match(payment?.evidenceBasis.matchedText ?? "", /\$3,183\.90 received/);
+    const nate = proposed.candidates.find(
+      (row) =>
+        row.payload.kind === "project_context" &&
+        row.payload.topic === NEW_PROJECT_CONTEXT_TOPIC &&
+        row.payload.value === "Dagger & Pearls Pendant / Necklace",
+    );
+    assert.ok(nate);
+    assert.notEqual(nate?.candidateId, payment?.candidateId);
+  });
+
+  it("does not emit an independent new-project draft from supporting related jewelry threads", () => {
+    const proposed = proposeGmailCandidates({
+      createdAt: NOW,
+      world: { people: [], projects: [], internalEmailHashes: [] },
+      supportingThreadIds: ["t-ring-support", "t-recap-support"],
+      evidence: [
+        evidence({
+          messageId: "m-pay-support",
+          threadId: "t-pay-support",
+          sentAt: NOW,
+          fromEmail: "notifications@intuit.com",
+          direction: "inbound",
+          subject: "Payment received Invoice 1215",
+          plaintext:
+            "Invoice #1215-(Morgan Ellis)\nCustomer: Morgan Ellis\nAmount: $3,183.90\nPayment received\nmorgan.ellis@example.test",
+        }),
+        evidence({
+          messageId: "m-ring-support",
+          threadId: "t-ring-support",
+          sentAt: "2026-08-10T15:00:00.000Z",
+          fromEmail: "morgan.ellis@example.test",
+          direction: "inbound",
+          subject: "Engagement Ring",
+          plaintext:
+            "I'm planning to propose and wanted to talk about an engagement ring.",
+        }),
+        evidence({
+          messageId: "m-recap-support",
+          threadId: "t-recap-support",
+          sentAt: "2026-08-17T15:00:00.000Z",
+          fromEmail: "justin@hourglass.example",
+          toEmails: ["morgan.ellis@example.test"],
+          direction: "outbound",
+          subject: "HGD x Eng Ring",
+          plaintext: "Recap of the engagement ring design and next steps.",
+        }),
+      ],
+    });
+    const news = proposed.candidates.filter(
+      (row) =>
+        row.payload.kind === "project_context" &&
+        row.payload.topic === NEW_PROJECT_CONTEXT_TOPIC,
+    );
+    assert.equal(news.length, 1);
+    assert.equal(
+      news[0]?.evidenceBasis.ruleIds.includes(TRANSACTIONAL_CUSTOMER_NOTICE_RULE),
+      true,
+    );
+    if (news[0]?.payload.kind === "project_context") {
+      assert.equal(news[0].payload.value, "Custom Engagement Ring");
+    }
+    assert.equal(
+      proposed.candidates.some(
+        (row) =>
+          row.candidateType === "person_association" &&
+          row.payload.kind === "person_association" &&
+          row.payload.emailHash === hashEmail("morgan.ellis@example.test"),
+      ),
+      true,
+    );
   });
 
   it("does not emit a new-project proposal for a thread already linked to a canonical Project", () => {

@@ -109,6 +109,7 @@ export async function relatedCommercialThreadIds(
   index: Pick<GmailIndexStore, "listMessagesTouchingEmailHash">,
   evidence: readonly GmailCandidateEvidence[],
   already: ReadonlySet<string>,
+  skipEmailHashes: ReadonlySet<string> = new Set(),
 ): Promise<string[]> {
   const extra = new Set<string>();
   for (const row of evidence) {
@@ -116,7 +117,7 @@ export async function relatedCommercialThreadIds(
     if (!looksTransactionalCustomerNotice(hay)) continue;
     for (const email of extractCustomerEmails(hay)) {
       const hash = hashEmail(email);
-      if (!hash) continue;
+      if (!hash || skipEmailHashes.has(hash)) continue;
       let related;
       try {
         related = await index.listMessagesTouchingEmailHash(hash);
@@ -281,7 +282,9 @@ export async function runGmailNewProjectIntakeScan(input: {
     input.index,
     fetched.evidence,
     new Set(threadIds),
+    new Set(input.world.internalEmailHashes),
   );
+  const supportingThreadIds: string[] = [];
   if (relatedIds.length > 0) {
     const related = await runIndexedThreadEvidenceFetch({
       founderSessionOk: input.founderSessionOk,
@@ -295,6 +298,7 @@ export async function runGmailNewProjectIntakeScan(input: {
     if (related.ok) {
       evidence = [...evidence, ...related.evidence];
       unreadThreads.push(...related.unreadThreads);
+      supportingThreadIds.push(...relatedIds);
     }
   }
   let linkedGmailThreadIds: string[] = [];
@@ -315,6 +319,7 @@ export async function runGmailNewProjectIntakeScan(input: {
         linkedGmailThreadIds,
       },
       createdAt: input.nowIso,
+      supportingThreadIds,
     });
   } catch {
     return { ok: false, safeErrorCode: "candidate-store-unavailable" };

@@ -944,6 +944,14 @@ describe("Gmail new-project intake scan", () => {
       ),
       true,
     );
+    assert.equal(
+      rows.filter(
+        (row) =>
+          row.payload.kind === "project_context" &&
+          row.payload.topic === NEW_PROJECT_CONTEXT_TOPIC,
+      ).length,
+      1,
+    );
     const related = await relatedCommercialThreadIds(
       index,
       [
@@ -991,5 +999,67 @@ describe("Gmail new-project intake scan", () => {
     );
     const selected = await recentIndexedThreadIds(index, 30);
     assert.equal(selected[0], payThread);
+  });
+
+  it("does not fan related jewelry lookup through an internal mailbox hash", async () => {
+    const payThread = "19payinternal00001";
+    const payMessage = "19payinternalmsg001";
+    const ringThread = "19ringcustomer0001";
+    const cadThread = "19cadinternal00001";
+    const founder = "justin@hourglass.example";
+    const index = new InMemoryGmailIndexStore();
+    await index.indexMessage(
+      {
+        messageId: payMessage,
+        threadId: payThread,
+        sentAt: "2026-09-08T18:00:00.000Z",
+        subject: "Payment received Invoice 1215",
+        fromEmail: "notifications@intuit.com",
+        direction: "inbound",
+        hasAttachments: false,
+      },
+      NOW,
+    );
+    await index.indexMessage(
+      {
+        messageId: "19ringcustomermsg01",
+        threadId: ringThread,
+        sentAt: "2026-08-10T15:00:00.000Z",
+        subject: "Engagement Ring",
+        fromEmail: "morgan.ellis@example.test",
+        direction: "inbound",
+        hasAttachments: false,
+      },
+      NOW,
+    );
+    await index.indexMessage(
+      {
+        messageId: "19cadinternalmsg001",
+        threadId: cadThread,
+        sentAt: "2024-06-01T15:00:00.000Z",
+        subject: "Re: CAD - Split render of both rings",
+        fromEmail: founder,
+        toEmails: ["studio@hourglass.example"],
+        direction: "outbound",
+        hasAttachments: false,
+      },
+      NOW,
+    );
+    const related = await relatedCommercialThreadIds(
+      index,
+      [
+        {
+          indexed: (await index.getMessage(payMessage))!,
+          plaintext:
+            `Invoice #1215-(Morgan Ellis)\nCustomer: Morgan Ellis\nPayment received\nmorgan.ellis@example.test\n${founder}`,
+          fromEmailHash: hashEmail("notifications@intuit.com"),
+          attachments: [],
+        },
+      ],
+      new Set([payThread]),
+      new Set([hashEmail(founder)!]),
+    );
+    assert.deepEqual(related, [ringThread]);
+    assert.equal(related.includes(cadThread), false);
   });
 });

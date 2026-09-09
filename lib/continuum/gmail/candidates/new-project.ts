@@ -125,11 +125,21 @@ export function extractCustomerEmails(text: string): string[] {
 }
 
 export function extractCustomerLabel(text: string): string | null {
-  const match = text.match(
+  const labeled = text.match(
     /\bcustomer\s*:\s*([A-Za-z][A-Za-z'’.\-]+(?:[ \t]+[A-Za-z][A-Za-z'’.\-]+){0,3})/i,
   );
-  const label = match?.[1]?.replace(/\s+/g, " ").trim() ?? "";
-  return label || null;
+  const fromLabel = labeled?.[1]?.replace(/\s+/g, " ").trim() ?? "";
+  if (fromLabel) return fromLabel;
+  const invoiced = text.match(
+    /\binvoice\s*#?\s*\d+[^\n]{0,40}\(([A-Za-z][A-Za-z'’.\-]+(?:[ \t]+[A-Za-z][A-Za-z'’.\-]+){0,3})\)/i,
+  );
+  const fromInvoice = invoiced?.[1]?.replace(/\s+/g, " ").trim() ?? "";
+  return fromInvoice || null;
+}
+
+export function extractPaymentReceivedAmount(text: string): string | null {
+  const match = text.match(/\$\s*(\d{1,3}(?:,\d{3})*(?:\.\d{2})|\d+\.\d{2})/);
+  return match?.[1] ? `$${match[1]}` : null;
 }
 
 export function looksCommercialWorkProposal(text: string): boolean {
