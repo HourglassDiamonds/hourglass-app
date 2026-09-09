@@ -108,6 +108,16 @@ function parseLine(value: unknown): RepairQuoteLineResult | null {
       rec.metalSensitive && typeof rec.metalSensitive === "object"
         ? (rec.metalSensitive as RepairQuoteLineResult["metalSensitive"])
         : null,
+    metalSemantics:
+      rec.metalSemantics === "embedded_parts" ||
+      rec.metalSemantics === "per_dwt_14k" ||
+      rec.metalSemantics === "per_unit_metal"
+        ? rec.metalSemantics
+        : "labor_only",
+    metalInclusion:
+      rec.metalInclusion === "additional" || rec.metalInclusion === "replaced_source_parts"
+        ? rec.metalInclusion
+        : "none",
   };
 }
 

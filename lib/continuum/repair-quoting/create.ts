@@ -5,6 +5,7 @@
 
 import type { ClientMemoryEntity, PersonProfile, ProjectProfile } from "@/lib/continuum/client-memory/types";
 import { GELLER_BLUE_BOOK } from "./contract";
+import { lookupCatalogSku } from "./catalog";
 import { calculateRepairQuote } from "./calculate";
 import {
   isRepairMetalFamily,
@@ -83,10 +84,21 @@ export async function createRepairQuote(
     return invalid("invalid-source-line");
   }
 
+  const catalog = lookupCatalogSku(input.line.sku);
+  if (!catalog) return invalid("invalid-source-line");
+  const line = {
+    ...input.line,
+    sku: catalog.sku,
+    taskDescription: catalog.taskDescription,
+    amounts: catalog.amounts,
+    metalSemantics: catalog.metalSemantics,
+    metalBand: input.line.metalBand ?? null,
+  };
+
   const calculated = calculateRepairQuote({
     repairType: input.repairType,
     metalFamily: input.metalFamily,
-    line: input.line,
+    line,
     overrideAmountCents: input.overrideAmountCents ?? null,
     overrideReason: input.overrideReason ?? null,
   });
@@ -174,12 +186,14 @@ export function lineFromForm(input: {
   expressSelected?: boolean;
   goldUsdPerOz?: number | null;
   millidwt?: number | null;
+  metalSemantics?: RepairQuoteLineInput["metalSemantics"];
   costBasis?: RepairQuoteLineInput["costBasis"];
 }): RepairQuoteLineInput {
+  const catalog = lookupCatalogSku(input.sku);
   return {
     sku: input.sku,
-    taskDescription: input.taskDescription,
-    amounts: input.amounts,
+    taskDescription: catalog?.taskDescription ?? input.taskDescription,
+    amounts: catalog?.amounts ?? input.amounts,
     metalBand: null,
     hasExplicitMetalQuantity: input.millidwt != null && input.millidwt > 0,
     inventedMetalQuantity: input.inventedMetalQuantity === true,
@@ -190,6 +204,7 @@ export function lineFromForm(input: {
       input.goldUsdPerOz != null && input.millidwt != null
         ? { goldUsdPerOz: input.goldUsdPerOz, millidwt: input.millidwt }
         : null,
+    metalSemantics: catalog?.metalSemantics ?? input.metalSemantics ?? null,
     costBasis: input.costBasis ?? "geller_cost_columns",
   };
 }

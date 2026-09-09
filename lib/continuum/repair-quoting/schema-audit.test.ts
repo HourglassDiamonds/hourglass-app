@@ -13,7 +13,7 @@ describe("Repair quote SQL", () => {
     assert.match(sql, /UNAPPLIED/);
     assert.match(sql, /DO NOT RUN AGAINST PRODUCTION/);
     assert.match(sql, /continuum_project_profiles remains the ONE current Project record/);
-    assert.match(sql, /Does NOT ship a Geller\/Edge price catalog/);
+    assert.match(sql, /Does NOT create a live Geller\/Edge price catalog table/);
     assert.match(sql, /Geller Blue Book Version 5\.0 Release 6\.50/);
     assert.match(sql, /create table if not exists public\.continuum_repair_quotes/);
     assert.match(sql, /create table if not exists public\.continuum_repair_quote_mutations/);
@@ -22,6 +22,8 @@ describe("Repair quote SQL", () => {
     assert.match(sql, /metalPricing/);
     assert.match(sql, /hourglassMarkupNumerator/);
     assert.match(sql, /prior_hourglass_quote_eighth_cents/);
+    assert.match(sql, /continuum_repair_quotes_protect_issued/);
+    assert.match(sql, /issued-quote-immutable/);
     assert.doesNotMatch(sql, /drop table/i);
     assert.doesNotMatch(sql, /create policy/i);
     assert.doesNotMatch(sql, /execute format/i);

@@ -18,6 +18,7 @@ function skuLine(
     amounts: verified.amounts,
     metalBand: verified.metalBand,
     hasExplicitMetalQuantity: verified.hasExplicitMetalQuantity,
+    metalSemantics: verified.metalSemantics,
     inventedMetalQuantity: false,
     expressSelected: false,
     costBasis: "geller_cost_columns",

@@ -66,6 +66,21 @@ export function metalPricingLabel(
   return "None — task cost snapshot";
 }
 
+export function metalInclusionLabel(
+  kind: RepairQuote["calculation"]["metalInclusion"] | undefined,
+): string | null {
+  if (kind === "replaced_source_parts") {
+    return "14K metal replaces source Cost Parts. Not stacked.";
+  }
+  if (kind === "additional") {
+    return "Additional 14K metal on a labor-only source line.";
+  }
+  return null;
+}
+
+export const SOURCE_LABOR_LABEL = "SOURCE LABOR";
+export const SOURCE_PARTS_LABEL = "SOURCE PARTS";
+export const ADDITIONAL_METAL_LABEL = "ADDITIONAL METAL";
 export const SOURCE_COST_LABEL = "SOURCE COST";
 export const LOADED_COST_LABEL = "LOADED COST";
 export const RAW_QUOTE_LABEL = "2.5X HOURGLASS RAW";

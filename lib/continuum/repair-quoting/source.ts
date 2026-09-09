@@ -1,10 +1,12 @@
 /**
- * Verified Geller SKU snapshots from the founder-supplied export.
- * The full spreadsheet was not in the workspace; these rows are founder-verified.
- * Do not invent additional catalog prices.
+ * Geller source snapshots. SKU lookup reads the generated catalog.
+ * VERIFIED_14KT_GOLD_BAND remains the founder-checked per-dwt example.
  */
 
 import { GELLER_BLUE_BOOK } from "./contract";
+import { lookupCatalogSku } from "./catalog";
+import type { MetalSemanticsKind } from "./metal-semantics";
+import type { RepairMetalFamily, RepairQuoteType } from "./types";
 
 export type GellerSourceAmounts = {
   priceLaborCents: number;
@@ -28,48 +30,12 @@ export type GellerMetalBand = {
 export type VerifiedGellerSku = {
   sku: string;
   taskDescription: string;
-  repairType: "sizing" | "head_prong_replacement" | "laser_work" | "stone_reset" | "platinum_labor" | "fourteen_k_operation";
-  metalFamily: "gold_10k" | "gold_14k" | "gold_18k" | "platinum" | "other";
+  repairType: RepairQuoteType;
+  metalFamily: RepairMetalFamily;
   amounts: GellerSourceAmounts;
   metalBand: GellerMetalBand | null;
   hasExplicitMetalQuantity: boolean;
-};
-
-export const VERIFIED_GELLER_SKUS: Record<string, VerifiedGellerSku> = {
-  "1000": {
-    sku: "1000",
-    taskDescription:
-      "Sizing, 14kt yellow gold, Narrow Ring <3mm, 0–4 stones, Smaller, Torch",
-    repairType: "sizing",
-    metalFamily: "gold_14k",
-    amounts: {
-      priceLaborCents: 6_000,
-      pricePartsCents: 0,
-      priceOtherCents: 0,
-      costLaborCents: 1_600,
-      costPartsCents: 0,
-      costOtherCents: 0,
-    },
-    metalBand: null,
-    hasExplicitMetalQuantity: false,
-  },
-  "1008": {
-    sku: "1008",
-    taskDescription:
-      "Sizing, 14kt yellow gold, Narrow Ring <3mm, 0–4 stones, Larger, Torch",
-    repairType: "sizing",
-    metalFamily: "gold_14k",
-    amounts: {
-      priceLaborCents: 7_900,
-      pricePartsCents: 3_300,
-      priceOtherCents: 0,
-      costLaborCents: 2_100,
-      costPartsCents: 1_100,
-      costOtherCents: 0,
-    },
-    metalBand: null,
-    hasExplicitMetalQuantity: false,
-  },
+  metalSemantics: MetalSemanticsKind;
 };
 
 export const VERIFIED_14KT_GOLD_BAND: GellerMetalBand = {
@@ -83,8 +49,18 @@ export const VERIFIED_14KT_GOLD_BAND: GellerMetalBand = {
 };
 
 export function lookupVerifiedSku(sku: string): VerifiedGellerSku | null {
-  const key = sku.trim();
-  return VERIFIED_GELLER_SKUS[key] ?? null;
+  const row = lookupCatalogSku(sku);
+  if (!row) return null;
+  return {
+    sku: row.sku,
+    taskDescription: row.taskDescription,
+    repairType: row.inferredRepairType,
+    metalFamily: row.inferredMetalFamily,
+    amounts: row.amounts,
+    metalBand: null,
+    hasExplicitMetalQuantity: row.metalSemantics === "per_dwt_14k",
+    metalSemantics: row.metalSemantics,
+  };
 }
 
 export function sourceExportPointer(): string {

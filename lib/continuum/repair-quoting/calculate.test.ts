@@ -37,6 +37,7 @@ function skuLine(
     amounts: { ...verified.amounts },
     metalBand: verified.metalBand,
     hasExplicitMetalQuantity: verified.hasExplicitMetalQuantity,
+    metalSemantics: verified.metalSemantics,
     inventedMetalQuantity: false,
     expressSelected: false,
     costBasis: "geller_cost_columns",
@@ -70,7 +71,9 @@ describe("Blue Book 2.5x cost calculator", () => {
     assert.equal(formatUsdEighthCents(calc.loadedLaborEighthCents), "$20");
     assert.equal(calc.rawComputedQuoteEighthCents, 40_000);
     assert.equal(formatUsdEighthCents(calc.rawComputedQuoteEighthCents), "$50");
-    assert.equal(calc.hourglassQuoteEighthCents, 40_000);
+    assert.equal(calc.explanation.sourceLaborEighthCents, 12_800);
+    assert.equal(calc.explanation.sourcePartsEighthCents, 0);
+    assert.equal(calc.explanation.additionalMetalEighthCents, 0);
     const retailAsCost = hourglassQuoteEighthCents({
       costLaborCents: 6_000,
       costPartsCents: 0,
@@ -94,6 +97,9 @@ describe("Blue Book 2.5x cost calculator", () => {
     assert.equal(formatUsdEighthCents(calc.rawComputedQuoteEighthCents), "$93.125");
     assert.equal(formatUsdEighthCents(calc.roundedComputedQuoteEighthCents), "$95");
     assert.equal(calc.hourglassQuoteEighthCents, calc.roundedComputedQuoteEighthCents);
+    assert.equal(calc.metalSemantics, "embedded_parts");
+    assert.equal(calc.metalInclusion, "none");
+    assert.equal(calc.explanation.additionalMetalEighthCents, 0);
   });
 
   it("never uses bold retail as cost and applies 2.5x once", () => {
@@ -204,5 +210,65 @@ describe("Blue Book 2.5x cost calculator", () => {
     );
     assert.equal(express.ok, false);
     if (!express.ok) assert.equal(express.code, "express-not-enabled");
+  });
+
+  it("replaces per-dwt source Cost Parts instead of stacking metal", () => {
+    const row = lookupVerifiedSku("100047");
+    assert.ok(row);
+    assert.equal(row.metalSemantics, "per_dwt_14k");
+    const asPublished = calculateRepairQuote({
+      repairType: row.repairType,
+      metalFamily: row.metalFamily,
+      line: {
+        sku: row.sku,
+        taskDescription: row.taskDescription,
+        amounts: row.amounts,
+        metalSemantics: row.metalSemantics,
+        inventedMetalQuantity: false,
+        expressSelected: false,
+        costBasis: "geller_cost_columns",
+      },
+    });
+    assert.equal(asPublished.ok, true);
+    if (!asPublished.ok) return;
+    assert.equal(asPublished.calculation.sourceAmounts.costPartsCents, 9_200);
+    assert.equal(asPublished.calculation.metalInclusion, "none");
+    const replaced = calculateRepairQuote({
+      repairType: row.repairType,
+      metalFamily: row.metalFamily,
+      line: {
+        sku: row.sku,
+        taskDescription: row.taskDescription,
+        amounts: row.amounts,
+        metalSemantics: row.metalSemantics,
+        goldUsdPerOz: 6250,
+        millidwt: 1000,
+        metalSensitive: { goldUsdPerOz: 6250, millidwt: 1000 },
+        inventedMetalQuantity: false,
+        expressSelected: false,
+        costBasis: "geller_cost_columns",
+      },
+    });
+    assert.equal(replaced.ok, true);
+    if (!replaced.ok) return;
+    assert.equal(replaced.calculation.metalInclusion, "replaced_source_parts");
+    assert.equal(replaced.calculation.sourceAmounts.costPartsCents, 9_200);
+    assert.notEqual(replaced.calculation.metalCostEighthCents, 9_200 * 8);
+    assert.equal(
+      replaced.calculation.rawComputedQuoteEighthCents,
+      hourglassQuoteEighthCents({
+        costLaborCents: row.amounts.costLaborCents,
+        costPartsCents: replaced.calculation.metalCostEighthCents / 8,
+        costOtherCents: 0,
+      }),
+    );
+    assert.notEqual(
+      replaced.calculation.rawComputedQuoteEighthCents,
+      hourglassQuoteEighthCents({
+        costLaborCents: row.amounts.costLaborCents,
+        costPartsCents: 9_200 + replaced.calculation.metalCostEighthCents / 8,
+        costOtherCents: 0,
+      }),
+    );
   });
 });

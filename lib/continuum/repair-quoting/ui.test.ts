@@ -14,7 +14,7 @@ import {
 } from "./present";
 import { GELLER_BLUE_BOOK } from "./contract";
 import { lookupVerifiedSku } from "./source";
-import type { RepairQuote } from "./types";
+import type { RepairQuote, RepairQuoteLineResult } from "./types";
 
 const PROJECT_ID = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const QUOTE_ID = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
@@ -24,7 +24,7 @@ function quote(extra: Partial<RepairQuote> = {}): RepairQuote {
   assert.ok(verified);
   const loadedLaborEighthCents = 16_000;
   const rawComputedQuoteEighthCents = 40_000;
-  const line = {
+  const line: RepairQuoteLineResult = {
     sku: verified.sku,
     taskDescription: verified.taskDescription,
     amounts: verified.amounts,
@@ -33,14 +33,16 @@ function quote(extra: Partial<RepairQuote> = {}): RepairQuote {
     loadedLaborEighthCents,
     partsCostEighthCents: 0,
     otherCostEighthCents: 0,
-      fullyLoadedDirectCostEighthCents: loadedLaborEighthCents,
-      metalCostEighthCents: 0,
-      metalPricing: "none",
-      millidwt: null,
-      goldUsdPerOz: null,
-      publishedMetalBand: null,
-      metalSensitive: null,
-    };
+    fullyLoadedDirectCostEighthCents: loadedLaborEighthCents,
+    metalCostEighthCents: 0,
+    metalPricing: "none",
+    millidwt: null,
+    goldUsdPerOz: null,
+    publishedMetalBand: null,
+    metalSensitive: null,
+    metalSemantics: "labor_only",
+    metalInclusion: "none",
+  };
   return {
     quoteId: QUOTE_ID,
     projectId: PROJECT_ID,
@@ -71,6 +73,16 @@ function quote(extra: Partial<RepairQuote> = {}): RepairQuote {
       goldUsdPerOz: null,
       metalCostEighthCents: 0,
       metalExtrapolation: null,
+      metalSemantics: "labor_only",
+      metalInclusion: "none",
+      explanation: {
+        sourceLaborEighthCents: 12_800,
+        sourcePartsEighthCents: 0,
+        additionalMetalEighthCents: 0,
+        loadedCostEighthCents: loadedLaborEighthCents,
+        rawQuoteEighthCents: rawComputedQuoteEighthCents,
+        roundedQuoteEighthCents: rawComputedQuoteEighthCents,
+      },
       expressSelected: false,
       line,
       loadedLaborEighthCents,
@@ -132,6 +144,8 @@ describe("Repair quote UI", () => {
     assert.match(html, /Wagner repair/);
     assert.match(html, /Geller Blue Book Version 5\.0 Release 6\.50/);
     assert.match(html, /Price Labor/);
+    assert.match(html, /SOURCE LABOR/);
+    assert.match(html, /SOURCE PARTS/);
     assert.match(html, /SOURCE COST/);
     assert.match(html, /LOADED COST/);
     assert.match(html, /2\.5X HOURGLASS RAW/);
@@ -157,7 +171,7 @@ describe("Repair quote UI", () => {
         layer,
       }),
     );
-    assert.match(html, /Repair quotes/);
+    assert.match(html, /Search Geller|Repair quotes/);
     assert.match(
       html,
       /\/executive-dashboard\/concierge\/projects\/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa\/repair\/quotes/,

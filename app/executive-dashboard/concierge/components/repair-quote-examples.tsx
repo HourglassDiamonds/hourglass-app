@@ -1,10 +1,13 @@
 import {
+  ADDITIONAL_METAL_LABEL,
   FINAL_QUOTE_LABEL,
   LOADED_COST_LABEL,
   metalPricingLabel,
   RAW_QUOTE_LABEL,
   ROUNDED_QUOTE_LABEL,
   SOURCE_COST_LABEL,
+  SOURCE_LABOR_LABEL,
+  SOURCE_PARTS_LABEL,
 } from "@/lib/continuum/repair-quoting/present";
 import { founderQuoteExamples } from "@/lib/continuum/repair-quoting/examples";
 import { formatUsdCents, formatUsdEighthCents } from "@/lib/continuum/repair-quoting/money";
@@ -24,6 +27,26 @@ export function RepairQuotePolicyExamples() {
             <p className="mt-2 text-[15px] leading-relaxed text-[#c4b7aa]">{example.body}</p>
             {example.result.ok ? (
               <dl className="mt-4 space-y-2">
+                <Row
+                  label={SOURCE_LABOR_LABEL}
+                  value={formatUsdEighthCents(
+                    example.result.calculation.explanation.sourceLaborEighthCents,
+                  )}
+                />
+                <Row
+                  label={SOURCE_PARTS_LABEL}
+                  value={formatUsdEighthCents(
+                    example.result.calculation.explanation.sourcePartsEighthCents,
+                  )}
+                />
+                {example.result.calculation.explanation.additionalMetalEighthCents > 0 ? (
+                  <Row
+                    label={ADDITIONAL_METAL_LABEL}
+                    value={formatUsdEighthCents(
+                      example.result.calculation.explanation.additionalMetalEighthCents,
+                    )}
+                  />
+                ) : null}
                 <Row
                   label={SOURCE_COST_LABEL}
                   value={`Labor ${formatUsdCents(example.result.calculation.sourceAmounts.costLaborCents)} · Parts ${formatUsdCents(example.result.calculation.sourceAmounts.costPartsCents)} · Other ${formatUsdCents(example.result.calculation.sourceAmounts.costOtherCents)}`}

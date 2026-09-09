@@ -3,7 +3,9 @@ import { formatUsdCents, formatUsdEighthCents } from "@/lib/continuum/repair-quo
 import {
   hourglassMarkupLabel,
   laborBurdenLabel,
+  metalInclusionLabel,
   metalPricingLabel,
+  ADDITIONAL_METAL_LABEL,
   FINAL_QUOTE_LABEL,
   LOADED_COST_LABEL,
   RAW_QUOTE_LABEL,
@@ -14,6 +16,8 @@ import {
   REPAIR_QUOTES_NOT_CONNECTED_LABEL,
   ROUNDED_QUOTE_LABEL,
   SOURCE_COST_LABEL,
+  SOURCE_LABOR_LABEL,
+  SOURCE_PARTS_LABEL,
   repairMetalLabel,
   repairQuoteAmountLabel,
   repairQuoteDisplayTitle,
@@ -112,6 +116,29 @@ export function RepairQuoteDetail({
         <Row label="Price Parts" value={formatUsdCents(calc.sourceAmounts.pricePartsCents)} />
         <Row label="Price Other" value={formatUsdCents(calc.sourceAmounts.priceOtherCents)} />
         <Row label={SOURCE_COST_LABEL} value={`Labor ${formatUsdCents(calc.sourceAmounts.costLaborCents)} · Parts ${formatUsdCents(calc.sourceAmounts.costPartsCents)} · Other ${formatUsdCents(calc.sourceAmounts.costOtherCents)}`} />
+        <Row
+          label={SOURCE_LABOR_LABEL}
+          value={formatUsdEighthCents(
+            calc.explanation?.sourceLaborEighthCents ?? calc.loadedLaborEighthCents,
+          )}
+        />
+        <Row
+          label={SOURCE_PARTS_LABEL}
+          value={formatUsdEighthCents(
+            calc.explanation?.sourcePartsEighthCents ?? calc.partsCostEighthCents,
+          )}
+        />
+        {metalInclusionLabel(calc.metalInclusion) ? (
+          <Row label="Metal inclusion" value={metalInclusionLabel(calc.metalInclusion) ?? ""} />
+        ) : null}
+        {(calc.explanation?.additionalMetalEighthCents ?? calc.metalCostEighthCents) > 0 ? (
+          <Row
+            label={ADDITIONAL_METAL_LABEL}
+            value={formatUsdEighthCents(
+              calc.explanation?.additionalMetalEighthCents ?? calc.metalCostEighthCents,
+            )}
+          />
+        ) : null}
         <Row
           label={LOADED_COST_LABEL}
           value={formatUsdEighthCents(calc.fullyLoadedDirectCostEighthCents)}

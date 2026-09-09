@@ -10,7 +10,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "generate:continuum-icons": "node scripts/generate-continuum-icons.mjs",
+    "generate:geller-repair-catalog": "npx tsx scripts/generate-geller-repair-catalog.ts",
     "generate:diamond-studio-og": "node scripts/generate-diamond-studio-og.mjs",
     "generate:diamond-intelligence-og": "node scripts/generate-diamond-intelligence-og.mjs",
     "generate:homepage-og": "node scripts/generate-homepage-og.mjs",

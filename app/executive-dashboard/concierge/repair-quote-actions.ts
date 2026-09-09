@@ -1,6 +1,10 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { searchGellerCatalog } from "@/lib/continuum/repair-quoting/catalog";
+import { requireInternalClientMemorySession } from "@/lib/continuum/client-memory/read/access";
+import { cookies } from "next/headers";
+import { EXECUTIVE_DASHBOARD_SESSION_COOKIE } from "@/lib/executive-dashboard/session";
 import { getAuthenticatedRepairQuoteWriter } from "@/lib/continuum/repair-quoting/load-writer";
 import { lineFromForm } from "@/lib/continuum/repair-quoting/create";
 import type { CreateRepairQuoteResult } from "@/lib/continuum/repair-quoting/create";
@@ -33,8 +37,11 @@ function humanCreateMessage(result: CreateRepairQuoteResult): string {
   if (result.code === "platinum-dynamic-blocked") {
     return "Platinum has no synthetic dynamic model in V1.";
   }
-  if (result.code === "fourteen-k-metal-only") {
+    if (result.code === "fourteen-k-metal-only") {
     return "Dynamic metal uses published 14K Geller bands only.";
+  }
+  if (result.code === "metal-overlay-blocked") {
+    return "This Geller line already includes Cost Parts. Hourglass will not add another metal overlay.";
   }
   if (result.code === "project-not-repair") {
     return "Repair quotes are only for Repair / Service projects.";
@@ -197,4 +204,15 @@ export async function voidSavedRepairQuote(
     redirect(`${conciergeRepairQuotesPath(projectId)}?saved=voided`);
   }
   return { ok: false, message: humanMutateMessage(result) };
+}
+
+export async function searchGellerLines(query: string) {
+  const jar = await cookies();
+  const session = requireInternalClientMemorySession(
+    jar.get(EXECUTIVE_DASHBOARD_SESSION_COOKIE)?.value,
+  );
+  if (!session.ok) {
+    return { query, unique: false, exactSku: false, hits: [] };
+  }
+  return searchGellerCatalog(query);
 }

@@ -25,6 +25,7 @@ function skuLine(sku: string, extra: Partial<RepairQuoteLineInput> = {}): Repair
     amounts: { ...verified.amounts },
     metalBand: verified.metalBand,
     hasExplicitMetalQuantity: verified.hasExplicitMetalQuantity,
+    metalSemantics: verified.metalSemantics,
     inventedMetalQuantity: false,
     expressSelected: false,
     costBasis: "geller_cost_columns",
@@ -118,7 +119,7 @@ describe("14K source band vs extrapolated metal", () => {
     assert.deepEqual(again.calculation, six.calculation);
   });
 
-  it("leaves fixed non-metal parts unchanged unless metal-sensitive", () => {
+  it("refuses a gold overlay on SKU 1008 because Cost Parts already includes metal", () => {
     const verified = lookupVerifiedSku("1008");
     assert.ok(verified);
     const withMetal = calculateRepairQuote({
@@ -135,16 +136,14 @@ describe("14K source band vs extrapolated metal", () => {
       metalFamily: "gold_14k",
       line: skuLine("1008"),
     });
-    assert.equal(withMetal.ok, true);
+    assert.equal(withMetal.ok, false);
+    if (!withMetal.ok) assert.equal(withMetal.code, "metal-overlay-blocked");
     assert.equal(without.ok, true);
-    if (!withMetal.ok || !without.ok) return;
-    assert.equal(withMetal.calculation.sourceAmounts.costPartsCents, 1_100);
+    if (!without.ok) return;
     assert.equal(without.calculation.sourceAmounts.costPartsCents, 1_100);
-    assert.equal(withMetal.calculation.loadedLaborEighthCents, without.calculation.loadedLaborEighthCents);
-    assert.equal(
-      withMetal.calculation.metalCostEighthCents,
-      without.calculation.metalCostEighthCents + 9_200 * 8,
-    );
+    assert.equal(without.calculation.metalInclusion, "none");
+    assert.equal(without.calculation.metalCostEighthCents, 0);
+    assert.equal(formatUsdEighthCents(without.calculation.rawComputedQuoteEighthCents), "$93.125");
   });
 
   it("fails closed without supported dwt and keeps raw arithmetic plus $5 rounding", () => {

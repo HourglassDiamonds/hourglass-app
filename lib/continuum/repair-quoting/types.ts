@@ -15,6 +15,7 @@ import type {
   MetalSensitiveInput,
 } from "./gold-14k";
 import type { Published14kGoldBand } from "./gold-bands";
+import type { MetalSemanticsKind } from "./metal-semantics";
 
 export const REPAIR_QUOTE_SOURCE_FAMILY = "geller_blue_book" as const;
 
@@ -75,8 +76,20 @@ export type RepairQuoteLineInput = {
   metalSensitive?: MetalSensitiveInput | null;
   goldUsdPerOz?: number | null;
   millidwt?: number | null;
+  metalSemantics?: MetalSemanticsKind | null;
   /** Forbidden: passing Geller Price columns as the cost basis. */
   costBasis?: RepairQuoteCostBasis | "geller_price_columns";
+};
+
+export type MetalInclusionKind = "none" | "additional" | "replaced_source_parts";
+
+export type RepairQuoteExplanation = {
+  sourceLaborEighthCents: number;
+  sourcePartsEighthCents: number;
+  additionalMetalEighthCents: number;
+  loadedCostEighthCents: number;
+  rawQuoteEighthCents: number;
+  roundedQuoteEighthCents: number;
 };
 
 export type RepairQuoteCalculationInput = {
@@ -103,6 +116,8 @@ export type RepairQuoteLineResult = {
   goldUsdPerOz: number | null;
   publishedMetalBand: Published14kGoldBand | null;
   metalSensitive: MetalSensitiveInput | null;
+  metalSemantics: MetalSemanticsKind;
+  metalInclusion: MetalInclusionKind;
 };
 
 export type RepairQuoteWarning = never;
@@ -126,6 +141,9 @@ export type RepairQuoteCalculation = {
   goldUsdPerOz: number | null;
   metalCostEighthCents: number;
   metalExtrapolation: MetalExtrapolationSnapshot | null;
+  metalSemantics: MetalSemanticsKind;
+  metalInclusion: MetalInclusionKind;
+  explanation: RepairQuoteExplanation;
   expressSelected: false;
   line: RepairQuoteLineResult;
   loadedLaborEighthCents: number;
@@ -213,6 +231,7 @@ export type RepairQuoteInvalidCode =
   | "source-metal-band-missing"
   | "platinum-dynamic-blocked"
   | "fourteen-k-metal-only"
+  | "metal-overlay-blocked"
   | "express-not-enabled"
   | "double-markup-blocked"
   | "invalid-override"

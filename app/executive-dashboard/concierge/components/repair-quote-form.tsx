@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useEffect, useId, useRef, useState } from "react";
+import { useActionState, useEffect, useId, useRef, useState, useTransition } from "react";
 import {
   saveRepairQuote,
+  searchGellerLines,
   type SaveRepairQuoteState,
 } from "../repair-quote-actions";
 import { conciergeRepairQuotesPath } from "@/lib/continuum/client-memory/read/presentation";
@@ -12,17 +13,31 @@ import {
   REPAIR_QUOTE_TYPES,
 } from "@/lib/continuum/repair-quoting/types";
 import {
+  ADDITIONAL_METAL_LABEL,
   HOURGLASS_MARKUP_LABEL,
   LABOR_BURDEN_LABEL,
+  LOADED_COST_LABEL,
+  RAW_QUOTE_LABEL,
   REPAIR_METAL_LABELS,
   REPAIR_QUOTE_TYPE_LABELS,
+  ROUNDED_QUOTE_LABEL,
+  SOURCE_LABOR_LABEL,
+  SOURCE_PARTS_LABEL,
+  metalInclusionLabel,
 } from "@/lib/continuum/repair-quoting/present";
 import { GELLER_BLUE_BOOK } from "@/lib/continuum/repair-quoting/contract";
-import { lookupVerifiedSku } from "@/lib/continuum/repair-quoting/source";
-import { formatUsdCents } from "@/lib/continuum/repair-quoting/money";
+import { calculateRepairQuote } from "@/lib/continuum/repair-quoting/calculate";
+import {
+  allowsAdditional14kMetal,
+  blocksDynamicMetalOverlay,
+  replacesSourcePartsWith14kMetal,
+} from "@/lib/continuum/repair-quoting/metal-semantics";
+import { formatUsdCents, formatUsdEighthCents } from "@/lib/continuum/repair-quoting/money";
+import { parseDwtToMillidwt, parseGoldUsdPerOz } from "@/lib/continuum/repair-quoting/validate";
+import type { GellerSearchHit } from "@/lib/continuum/repair-quoting/catalog";
 
 function centsField(cents: number): string {
-  return cents === 0 ? "" : formatUsdCents(cents).replace("$", "");
+  return formatUsdCents(cents).replace("$", "");
 }
 
 export function RepairQuoteForm({
@@ -41,14 +56,13 @@ export function RepairQuoteForm({
   const [repairType, setRepairType] = useState<(typeof REPAIR_QUOTE_TYPES)[number]>("sizing");
   const [metalFamily, setMetalFamily] =
     useState<(typeof REPAIR_METAL_FAMILIES)[number]>("gold_14k");
-  const [sku, setSku] = useState("");
-  const [taskDescription, setTaskDescription] = useState("");
-  const [priceLabor, setPriceLabor] = useState("");
-  const [priceParts, setPriceParts] = useState("");
-  const [priceOther, setPriceOther] = useState("");
-  const [costLabor, setCostLabor] = useState("");
-  const [costParts, setCostParts] = useState("");
-  const [costOther, setCostOther] = useState("");
+  const [query, setQuery] = useState("");
+  const [hits, setHits] = useState<GellerSearchHit[]>([]);
+  const [unique, setUnique] = useState(false);
+  const [selected, setSelected] = useState<GellerSearchHit | null>(null);
+  const [goldSpot, setGoldSpot] = useState("");
+  const [metalDwt, setMetalDwt] = useState("");
+  const [searching, startSearch] = useTransition();
   const [state, formAction, pending] = useActionState(
     saveRepairQuote,
     null as SaveRepairQuoteState,
@@ -59,35 +73,153 @@ export function RepairQuoteForm({
     if (state?.message) errorRef.current?.focus();
   }, [state?.message]);
 
-  function applySku(nextSku: string) {
-    setSku(nextSku);
-    const verified = lookupVerifiedSku(nextSku);
-    if (!verified) return;
-    setRepairType(verified.repairType);
-    setMetalFamily(verified.metalFamily);
-    setTaskDescription(verified.taskDescription);
-    setPriceLabor(centsField(verified.amounts.priceLaborCents));
-    setPriceParts(centsField(verified.amounts.pricePartsCents));
-    setPriceOther(centsField(verified.amounts.priceOtherCents));
-    setCostLabor(centsField(verified.amounts.costLaborCents));
-    setCostParts(centsField(verified.amounts.costPartsCents));
-    setCostOther(centsField(verified.amounts.costOtherCents));
+  function runSearch(nextQuery: string) {
+    startSearch(async () => {
+      const result = await searchGellerLines(nextQuery);
+      setHits(result.hits);
+      setUnique(result.unique);
+    });
   }
+
+  function selectHit(hit: GellerSearchHit) {
+    setSelected(hit);
+    setRepairType(hit.inferredRepairType);
+    setMetalFamily(hit.inferredMetalFamily);
+    setHits([]);
+    setQuery(hit.sku);
+  }
+
+  const metalFieldsVisible =
+    selected != null &&
+    (allowsAdditional14kMetal(selected.metalSemantics) ||
+      replacesSourcePartsWith14kMetal(selected.metalSemantics));
+  const overlayBlocked =
+    selected != null && blocksDynamicMetalOverlay(selected.metalSemantics);
+
+  const preview =
+    selected == null
+      ? null
+      : calculateRepairQuote({
+          repairType,
+          metalFamily,
+          line: {
+            sku: selected.sku,
+            taskDescription: selected.taskDescription,
+            amounts: selected.amounts,
+            metalSemantics: selected.metalSemantics,
+            inventedMetalQuantity: false,
+            expressSelected: false,
+            goldUsdPerOz: parseGoldUsdPerOz(goldSpot),
+            millidwt: parseDwtToMillidwt(metalDwt),
+            metalSensitive:
+              parseGoldUsdPerOz(goldSpot) != null && parseDwtToMillidwt(metalDwt) != null
+                ? {
+                    goldUsdPerOz: parseGoldUsdPerOz(goldSpot)!,
+                    millidwt: parseDwtToMillidwt(metalDwt)!,
+                  }
+                : null,
+            costBasis: "geller_cost_columns",
+          },
+        });
 
   return (
     <form action={formAction} className="flex min-h-[70vh] flex-col" noValidate>
       <input type="hidden" name="projectId" value={projectId} />
       <input type="hidden" name="mutationId" value={mutationId} />
       <input type="hidden" name="costBasis" value="geller_cost_columns" />
+      <input type="hidden" name="sourceSku" value={selected?.sku ?? ""} />
+      <input type="hidden" name="taskDescription" value={selected?.taskDescription ?? ""} />
+      <input type="hidden" name="priceLabor" value={selected ? centsField(selected.amounts.priceLaborCents) : ""} />
+      <input type="hidden" name="priceParts" value={selected ? centsField(selected.amounts.pricePartsCents) : ""} />
+      <input type="hidden" name="priceOther" value={selected ? centsField(selected.amounts.priceOtherCents) : ""} />
+      <input type="hidden" name="costLabor" value={selected ? centsField(selected.amounts.costLaborCents) : ""} />
+      <input type="hidden" name="costParts" value={selected ? centsField(selected.amounts.costPartsCents) : ""} />
+      <input type="hidden" name="costOther" value={selected ? centsField(selected.amounts.costOtherCents) : ""} />
       <p className="text-[15px] leading-relaxed text-[#c4b7aa]">{projectTitle}</p>
       <p className="mt-2 text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
         Founder quote · {GELLER_BLUE_BOOK.editionLabel}
       </p>
       <p className="mt-3 text-[15px] leading-relaxed text-[#c4b7aa]">
-        Hourglass uses Cost columns × {LABOR_BURDEN_LABEL} labor burden, then{" "}
-        {HOURGLASS_MARKUP_LABEL}× that loaded cost. Geller Price columns are retail
-        provenance only.
+        Search the Geller source catalog, choose the intended line, then inspect Cost
+        columns × {LABOR_BURDEN_LABEL} labor burden and {HOURGLASS_MARKUP_LABEL}× loaded
+        cost. Hourglass never silently picks an ambiguous line.
       </p>
+
+      <label className="mt-8 block">
+        <span className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
+          Search Geller
+        </span>
+        <input
+          value={query}
+          onChange={(event) => {
+            const next = event.target.value;
+            setQuery(next);
+            setSelected(null);
+            if (next.trim().length >= 2) runSearch(next);
+            else setHits([]);
+          }}
+          placeholder='14k yellow size up 1 narrow 0-4 stones'
+          className="mt-2 w-full min-h-12 rounded-[18px] border border-white/10 bg-[#1d1916] px-4 text-[15px] text-[#efe8de] outline-none focus-visible:shadow-[0_0_0_3px_rgba(173,145,100,0.22)]"
+        />
+      </label>
+      {searching ? (
+        <p className="mt-2 text-[13px] text-[#8d8073]">Searching source lines…</p>
+      ) : null}
+      {hits.length > 0 ? (
+        <div className="mt-3">
+          <p className="text-[13px] leading-relaxed text-[#c4b7aa]">
+            {unique
+              ? "One source line matches. Select it to continue."
+              : "Multiple source lines match. Choose the intended Geller line."}
+          </p>
+          <ul className="mt-3 space-y-2">
+            {hits.map((hit) => (
+              <li key={hit.sku}>
+                <button
+                  type="button"
+                  onClick={() => selectHit(hit)}
+                  className="w-full rounded-[18px] border border-white/10 bg-[#1d1916] px-4 py-3 text-left text-[15px] text-[#efe8de] outline-none hover:border-[#ad9164]/50 focus-visible:shadow-[0_0_0_3px_rgba(173,145,100,0.22)]"
+                >
+                  <span className="block font-serif text-[1.05rem]">SKU {hit.sku}</span>
+                  <span className="mt-1 block text-[13px] text-[#c4b7aa]">
+                    {hit.taskDescription}
+                  </span>
+                  <span className="mt-1 block text-[12px] text-[#8d8073]">
+                    Cost Labor {formatUsdCents(hit.amounts.costLaborCents)} · Cost Parts{" "}
+                    {formatUsdCents(hit.amounts.costPartsCents)} · {GELLER_BLUE_BOOK.editionLabel}
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
+      {selected ? (
+        <section className="mt-8 rounded-[18px] border border-white/10 px-4 py-4">
+          <p className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
+            Selected source line
+          </p>
+          <p className="mt-2 font-serif text-[1.2rem] text-[#efe8de]">SKU {selected.sku}</p>
+          <p className="mt-1 text-[15px] leading-relaxed text-[#c4b7aa]">
+            {selected.taskDescription}
+          </p>
+          <p className="mt-2 text-[13px] text-[#8d8073]">{GELLER_BLUE_BOOK.editionLabel}</p>
+          <dl className="mt-4 space-y-2">
+            <PreviewRow label="Price Labor" value={formatUsdCents(selected.amounts.priceLaborCents)} />
+            <PreviewRow label="Price Parts" value={formatUsdCents(selected.amounts.pricePartsCents)} />
+            <PreviewRow label="Price Other" value={formatUsdCents(selected.amounts.priceOtherCents)} />
+            <PreviewRow label="Cost Labor" value={formatUsdCents(selected.amounts.costLaborCents)} />
+            <PreviewRow label="Cost Parts" value={formatUsdCents(selected.amounts.costPartsCents)} />
+            <PreviewRow label="Cost Other" value={formatUsdCents(selected.amounts.costOtherCents)} />
+          </dl>
+        </section>
+      ) : (
+        <p className="mt-6 text-[15px] leading-relaxed text-[#c4b7aa]">
+          Choose a Geller source line before saving. Amounts come from the catalog, not
+          free typing.
+        </p>
+      )}
 
       <fieldset className="mt-8" aria-describedby={typeId}>
         <legend
@@ -149,6 +281,7 @@ export function RepairQuoteForm({
             className="mt-2 w-full min-h-12 rounded-[18px] border border-white/10 bg-[#1d1916] px-4 text-[15px] text-[#efe8de] outline-none"
             defaultValue={people[0]?.personId ?? ""}
           >
+            <option value="">No person linked</option>
             {people.map((person) => (
               <option key={person.personId} value={person.personId}>
                 {person.displayName}
@@ -158,148 +291,97 @@ export function RepairQuoteForm({
         </label>
       ) : null}
 
-      <label className="mt-8 block">
-        <span className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
-          Source SKU
-        </span>
-        <input
-          name="sourceSku"
-          required
-          maxLength={40}
-          value={sku}
-          onChange={(event) => applySku(event.target.value)}
-          placeholder="Geller task SKU"
-          className="mt-2 w-full min-h-12 rounded-[18px] border border-white/10 bg-[#1d1916] px-4 text-[15px] text-[#efe8de] outline-none focus-visible:shadow-[0_0_0_3px_rgba(173,145,100,0.22)]"
-        />
-      </label>
-      <label className="mt-6 block">
-        <span className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
-          Source task
-        </span>
-        <input
-          name="taskDescription"
-          required
-          maxLength={240}
-          value={taskDescription}
-          onChange={(event) => setTaskDescription(event.target.value)}
-          className="mt-2 w-full min-h-12 rounded-[18px] border border-white/10 bg-[#1d1916] px-4 text-[15px] text-[#efe8de] outline-none focus-visible:shadow-[0_0_0_3px_rgba(173,145,100,0.22)]"
-        />
-      </label>
+      {overlayBlocked ? (
+        <p className="mt-8 text-[15px] leading-relaxed text-[#c4b7aa]">
+          Source Cost Parts already includes the metal/parts for this operation. V1
+          will not add a gold + dwt overlay.
+        </p>
+      ) : null}
 
-      <p className="mt-8 text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
-        Geller Price — retail provenance
-      </p>
-      <label className="mt-4 block">
-        <span className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
-          Price Labor
-        </span>
-        <input
-          name="priceLabor"
-          inputMode="decimal"
-          value={priceLabor}
-          onChange={(event) => setPriceLabor(event.target.value)}
-          placeholder="0.00"
-          className="mt-2 w-full min-h-12 rounded-[18px] border border-white/10 bg-[#1d1916] px-4 text-[15px] text-[#efe8de] outline-none focus-visible:shadow-[0_0_0_3px_rgba(173,145,100,0.22)]"
-        />
-      </label>
-      <label className="mt-4 block">
-        <span className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
-          Price Parts
-        </span>
-        <input
-          name="priceParts"
-          inputMode="decimal"
-          value={priceParts}
-          onChange={(event) => setPriceParts(event.target.value)}
-          placeholder="0.00"
-          className="mt-2 w-full min-h-12 rounded-[18px] border border-white/10 bg-[#1d1916] px-4 text-[15px] text-[#efe8de] outline-none focus-visible:shadow-[0_0_0_3px_rgba(173,145,100,0.22)]"
-        />
-      </label>
-      <label className="mt-4 block">
-        <span className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
-          Price Other
-        </span>
-        <input
-          name="priceOther"
-          inputMode="decimal"
-          value={priceOther}
-          onChange={(event) => setPriceOther(event.target.value)}
-          placeholder="0.00"
-          className="mt-2 w-full min-h-12 rounded-[18px] border border-white/10 bg-[#1d1916] px-4 text-[15px] text-[#efe8de] outline-none focus-visible:shadow-[0_0_0_3px_rgba(173,145,100,0.22)]"
-        />
-      </label>
+      {metalFieldsVisible ? (
+        <>
+          <label className="mt-8 block">
+            <span className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
+              Gold spot / oz
+            </span>
+            <input
+              name="goldUsdPerOz"
+              inputMode="decimal"
+              value={goldSpot}
+              onChange={(event) => setGoldSpot(event.target.value)}
+              placeholder="Optional. Published 14K band, or extrapolate above $4,049"
+              className="mt-2 w-full min-h-12 rounded-[18px] border border-white/10 bg-[#1d1916] px-4 text-[15px] text-[#efe8de] outline-none focus-visible:shadow-[0_0_0_3px_rgba(173,145,100,0.22)]"
+            />
+          </label>
+          <label className="mt-4 block">
+            <span className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
+              14K metal quantity (dwt)
+            </span>
+            <input
+              name="metalDwt"
+              inputMode="decimal"
+              value={metalDwt}
+              onChange={(event) => setMetalDwt(event.target.value)}
+              placeholder="Required with gold spot. Never invent weight."
+              className="mt-2 w-full min-h-12 rounded-[18px] border border-white/10 bg-[#1d1916] px-4 text-[15px] text-[#efe8de] outline-none focus-visible:shadow-[0_0_0_3px_rgba(173,145,100,0.22)]"
+            />
+          </label>
+        </>
+      ) : null}
 
-      <p className="mt-8 text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
-        Geller Cost — Hourglass basis
-      </p>
-      <label className="mt-4 block">
-        <span className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
-          Cost Labor
-        </span>
-        <input
-          name="costLabor"
-          inputMode="decimal"
-          value={costLabor}
-          onChange={(event) => setCostLabor(event.target.value)}
-          placeholder="0.00"
-          className="mt-2 w-full min-h-12 rounded-[18px] border border-white/10 bg-[#1d1916] px-4 text-[15px] text-[#efe8de] outline-none focus-visible:shadow-[0_0_0_3px_rgba(173,145,100,0.22)]"
-        />
-      </label>
-      <label className="mt-4 block">
-        <span className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
-          Cost Parts
-        </span>
-        <input
-          name="costParts"
-          inputMode="decimal"
-          value={costParts}
-          onChange={(event) => setCostParts(event.target.value)}
-          placeholder="0.00"
-          className="mt-2 w-full min-h-12 rounded-[18px] border border-white/10 bg-[#1d1916] px-4 text-[15px] text-[#efe8de] outline-none focus-visible:shadow-[0_0_0_3px_rgba(173,145,100,0.22)]"
-        />
-      </label>
-      <label className="mt-4 block">
-        <span className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
-          Cost Other
-        </span>
-        <input
-          name="costOther"
-          inputMode="decimal"
-          value={costOther}
-          onChange={(event) => setCostOther(event.target.value)}
-          placeholder="0.00"
-          className="mt-2 w-full min-h-12 rounded-[18px] border border-white/10 bg-[#1d1916] px-4 text-[15px] text-[#efe8de] outline-none focus-visible:shadow-[0_0_0_3px_rgba(173,145,100,0.22)]"
-        />
-      </label>
+      {preview?.ok ? (
+        <section className="mt-8">
+          <p className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
+            Calculation
+          </p>
+          <dl className="mt-4 space-y-2">
+            <PreviewRow
+              label={SOURCE_LABOR_LABEL}
+              value={formatUsdEighthCents(preview.calculation.explanation.sourceLaborEighthCents)}
+            />
+            <PreviewRow
+              label={SOURCE_PARTS_LABEL}
+              value={formatUsdEighthCents(preview.calculation.explanation.sourcePartsEighthCents)}
+            />
+            {metalInclusionLabel(preview.calculation.metalInclusion) ? (
+              <PreviewRow
+                label="Metal inclusion"
+                value={metalInclusionLabel(preview.calculation.metalInclusion) ?? ""}
+              />
+            ) : null}
+            {preview.calculation.explanation.additionalMetalEighthCents > 0 ? (
+              <PreviewRow
+                label={ADDITIONAL_METAL_LABEL}
+                value={formatUsdEighthCents(
+                  preview.calculation.explanation.additionalMetalEighthCents,
+                )}
+              />
+            ) : null}
+            <PreviewRow
+              label={LOADED_COST_LABEL}
+              value={formatUsdEighthCents(preview.calculation.explanation.loadedCostEighthCents)}
+            />
+            <PreviewRow
+              label={RAW_QUOTE_LABEL}
+              value={formatUsdEighthCents(preview.calculation.explanation.rawQuoteEighthCents)}
+            />
+            <PreviewRow
+              label={ROUNDED_QUOTE_LABEL}
+              value={formatUsdEighthCents(preview.calculation.explanation.roundedQuoteEighthCents)}
+            />
+          </dl>
+        </section>
+      ) : preview && !preview.ok ? (
+        <p className="mt-8 text-[15px] leading-relaxed text-[#d2b8a8]">
+          Fail closed: {preview.code}
+        </p>
+      ) : null}
 
       <p className="mt-8 text-[15px] leading-relaxed text-[#c4b7aa]">
         Labor burden {LABOR_BURDEN_LABEL}× and Hourglass markup {HOURGLASS_MARKUP_LABEL}×
         cost are locked. V1 rounds the raw quote to nearest $5. No minimum repair
         charge. Express is not enabled. Platinum has no synthetic dynamic model.
       </p>
-
-      <label className="mt-8 block">
-        <span className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
-          Gold spot / oz
-        </span>
-        <input
-          name="goldUsdPerOz"
-          inputMode="decimal"
-          placeholder="Optional. Published 14K band, or extrapolate above $4,049"
-          className="mt-2 w-full min-h-12 rounded-[18px] border border-white/10 bg-[#1d1916] px-4 text-[15px] text-[#efe8de] outline-none focus-visible:shadow-[0_0_0_3px_rgba(173,145,100,0.22)]"
-        />
-      </label>
-      <label className="mt-4 block">
-        <span className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
-          14K metal quantity (dwt)
-        </span>
-        <input
-          name="metalDwt"
-          inputMode="decimal"
-          placeholder="Required with gold spot. Never invent weight."
-          className="mt-2 w-full min-h-12 rounded-[18px] border border-white/10 bg-[#1d1916] px-4 text-[15px] text-[#efe8de] outline-none focus-visible:shadow-[0_0_0_3px_rgba(173,145,100,0.22)]"
-        />
-      </label>
 
       <fieldset className="mt-8">
         <legend className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
@@ -349,7 +431,7 @@ export function RepairQuoteForm({
       <div className="hg-concierge-savebar sticky bottom-0 z-10 mt-8 -mx-5 flex gap-3 bg-[#14110f] px-5 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
         <button
           type="submit"
-          disabled={pending}
+          disabled={pending || !selected || (preview != null && !preview.ok)}
           className="min-h-12 flex-1 rounded-[18px] border border-[#ad9164]/50 bg-[#1d1916] px-4 text-[11px] uppercase tracking-[0.22em] text-[#efe8de] outline-none hover:border-[#ad9164] focus-visible:shadow-[0_0_0_3px_rgba(173,145,100,0.22)] disabled:opacity-50"
         >
           {pending ? "Saving…" : "Save draft quote"}
@@ -362,5 +444,14 @@ export function RepairQuoteForm({
         </Link>
       </div>
     </form>
+  );
+}
+
+function PreviewRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <dt className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">{label}</dt>
+      <dd className="mt-1 text-[15px] leading-relaxed text-[#e7ddd2]">{value}</dd>
+    </div>
   );
 }

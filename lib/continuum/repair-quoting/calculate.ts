@@ -1,7 +1,8 @@
 /**
  * Fail-closed Hourglass repair quote calculator.
  * Uses Geller Cost columns only. Never marks up bold retail.
- * Formula: 2.5 × (Cost Labor × 1.25 + Cost Parts + Cost Other + metal).
+ * Formula: 2.5 × (Cost Labor × 1.25 + formula parts + Cost Other).
+ * Formula parts are source Cost Parts, or replaced 14K per-dwt metal, never both.
  * V1 then rounds the raw quote to nearest $5 without mutating source cost.
  */
 
@@ -10,6 +11,13 @@ import {
   GELLER_COST_BASIS,
 } from "./contract";
 import { resolve14kMetalCost } from "./gold-14k";
+import {
+  blocksDynamicMetalOverlay,
+  inferMetalSemantics,
+  isMetalSemanticsKind,
+  replacesSourcePartsWith14kMetal,
+  type MetalSemanticsKind,
+} from "./metal-semantics";
 import {
   centsToEighthCents,
   hourglassQuoteEighthCents,
@@ -23,6 +31,7 @@ import {
   REPAIR_QUOTE_TYPES,
   SOURCE_LINE_LABEL_MAX,
   SOURCE_SKU_MAX,
+  type MetalInclusionKind,
   type RepairQuoteCalculateResult,
   type RepairQuoteCalculationInput,
   type RepairQuoteInvalidCode,
@@ -41,6 +50,19 @@ function trimmed(value: string | null | undefined, max: number): string | null {
   const next = value?.trim() ?? "";
   if (!next || next.length > max || /[\u0000\n\r]/.test(next)) return null;
   return next;
+}
+
+function resolveSemantics(
+  taskDescription: string,
+  costPartsCents: number,
+  requested: MetalSemanticsKind | null | undefined,
+): MetalSemanticsKind {
+  const inferred = inferMetalSemantics({ taskDescription, costPartsCents });
+  if (!requested || !isMetalSemanticsKind(requested)) return inferred;
+  if (requested === "labor_only" && costPartsCents > 0 && inferred !== "per_dwt_14k") {
+    return inferred;
+  }
+  return requested;
 }
 
 export function calculateRepairQuote(
@@ -76,28 +98,65 @@ export function calculateRepairQuote(
     return fail("invalid-source-amount");
   }
 
-  const metalResolved = resolve14kMetalCost({
-    metalFamily: input.metalFamily,
-    metalSensitive: line.metalSensitive,
-    goldUsdPerOz: line.goldUsdPerOz,
-    millidwt: line.millidwt,
-  });
-  if (!metalResolved.ok) return fail(metalResolved.code);
-  const metal = metalResolved.result;
-  const metalCostCents = metal.metalCostCents;
-  const totalCostPartsCents = amounts.costPartsCents + metalCostCents;
-  if (amounts.costLaborCents + totalCostPartsCents + amounts.costOtherCents <= 0) {
+  const metalSemantics = resolveSemantics(
+    taskDescription,
+    amounts.costPartsCents,
+    line.metalSemantics,
+  );
+  const gold =
+    line.metalSensitive?.goldUsdPerOz ?? line.goldUsdPerOz ?? null;
+  const millidwt = line.metalSensitive?.millidwt ?? line.millidwt ?? null;
+  const wantsDynamicMetal = gold != null || millidwt != null;
+
+  let metalInclusion: MetalInclusionKind = "none";
+  let metalCostCents = 0;
+  let formulaPartsCents = amounts.costPartsCents;
+  let metalPricing: RepairQuoteLineResult["metalPricing"] = "none";
+  let sourceBand = null;
+  let extrapolation = null;
+  let resolvedGold: number | null = null;
+  let resolvedMillidwt: number | null = null;
+
+  if (wantsDynamicMetal) {
+    if (blocksDynamicMetalOverlay(metalSemantics)) {
+      return fail("metal-overlay-blocked");
+    }
+    const metalResolved = resolve14kMetalCost({
+      metalFamily: input.metalFamily,
+      metalSensitive: line.metalSensitive,
+      goldUsdPerOz: line.goldUsdPerOz,
+      millidwt: line.millidwt,
+    });
+    if (!metalResolved.ok) return fail(metalResolved.code);
+    const metal = metalResolved.result;
+    metalCostCents = metal.metalCostCents;
+    metalPricing = metal.pricing;
+    sourceBand = metal.sourceBand;
+    extrapolation = metal.extrapolation;
+    resolvedGold = metal.goldUsdPerOz;
+    resolvedMillidwt = metal.millidwt;
+    if (replacesSourcePartsWith14kMetal(metalSemantics)) {
+      metalInclusion = "replaced_source_parts";
+      formulaPartsCents = metalCostCents;
+    } else {
+      metalInclusion = "additional";
+      formulaPartsCents = amounts.costPartsCents + metalCostCents;
+    }
+  }
+
+  if (amounts.costLaborCents + formulaPartsCents + amounts.costOtherCents <= 0) {
     return fail("invalid-source-amount");
   }
 
   const loadedLabor = loadedLaborEighthCents(amounts.costLaborCents);
-  const partsCost = centsToEighthCents(totalCostPartsCents);
+  const sourceParts = centsToEighthCents(amounts.costPartsCents);
   const otherCost = centsToEighthCents(amounts.costOtherCents);
   const metalCost = centsToEighthCents(metalCostCents);
-  const fullyLoaded = loadedLabor + partsCost + otherCost;
+  const formulaParts = centsToEighthCents(formulaPartsCents);
+  const fullyLoaded = loadedLabor + formulaParts + otherCost;
   const rawComputed = hourglassQuoteEighthCents({
     costLaborCents: amounts.costLaborCents,
-    costPartsCents: totalCostPartsCents,
+    costPartsCents: formulaPartsCents,
     costOtherCents: amounts.costOtherCents,
   });
   const roundedComputed = roundToNearestFiveDollarsEighthCents(rawComputed);
@@ -117,20 +176,22 @@ export function calculateRepairQuote(
     amounts,
     metalBand: line.metalBand ?? null,
     hasExplicitMetalQuantity:
-      line.hasExplicitMetalQuantity === true || metal.millidwt != null,
+      line.hasExplicitMetalQuantity === true || resolvedMillidwt != null,
     loadedLaborEighthCents: loadedLabor,
-    partsCostEighthCents: partsCost,
+    partsCostEighthCents: sourceParts,
     otherCostEighthCents: otherCost,
     metalCostEighthCents: metalCost,
     fullyLoadedDirectCostEighthCents: fullyLoaded,
-    metalPricing: metal.pricing,
-    millidwt: metal.millidwt,
-    goldUsdPerOz: metal.goldUsdPerOz,
-    publishedMetalBand: metal.sourceBand,
+    metalPricing,
+    millidwt: resolvedMillidwt,
+    goldUsdPerOz: resolvedGold,
+    publishedMetalBand: sourceBand,
     metalSensitive:
-      metal.millidwt != null && metal.goldUsdPerOz != null
-        ? { goldUsdPerOz: metal.goldUsdPerOz, millidwt: metal.millidwt }
+      resolvedMillidwt != null && resolvedGold != null
+        ? { goldUsdPerOz: resolvedGold, millidwt: resolvedMillidwt }
         : null,
+    metalSemantics,
+    metalInclusion,
   };
 
   return {
@@ -148,16 +209,26 @@ export function calculateRepairQuote(
       hourglassMarkupNumerator: 5,
       hourglassMarkupDenominator: 2,
       metalBand: line.metalBand ?? null,
-      metalPricing: metal.pricing,
-      publishedMetalBand: metal.sourceBand,
-      millidwt: metal.millidwt,
-      goldUsdPerOz: metal.goldUsdPerOz,
+      metalPricing,
+      publishedMetalBand: sourceBand,
+      millidwt: resolvedMillidwt,
+      goldUsdPerOz: resolvedGold,
       metalCostEighthCents: metalCost,
-      metalExtrapolation: metal.extrapolation,
+      metalExtrapolation: extrapolation,
+      metalSemantics,
+      metalInclusion,
+      explanation: {
+        sourceLaborEighthCents: centsToEighthCents(amounts.costLaborCents),
+        sourcePartsEighthCents: sourceParts,
+        additionalMetalEighthCents: metalCost,
+        loadedCostEighthCents: fullyLoaded,
+        rawQuoteEighthCents: rawComputed,
+        roundedQuoteEighthCents: roundedComputed,
+      },
       expressSelected: false,
       line: resultLine,
       loadedLaborEighthCents: loadedLabor,
-      partsCostEighthCents: partsCost,
+      partsCostEighthCents: sourceParts,
       otherCostEighthCents: otherCost,
       fullyLoadedDirectCostEighthCents: fullyLoaded,
       rawComputedQuoteEighthCents: rawComputed,

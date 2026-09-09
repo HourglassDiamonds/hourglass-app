@@ -5,6 +5,7 @@
 
 import type { RepairQuote, RepairQuoteMutationRecord } from "./types";
 import type { ApplyRepairQuoteMutationResult } from "./mutate";
+import { issuedQuoteUpdateAllowed } from "./issued-lock";
 
 function clone<T>(value: T): T {
   return structuredClone(value);
@@ -78,6 +79,10 @@ export class InMemoryRepairQuoteStore {
     if (existingMutation) {
       const existing = this.quotes.get(existingMutation);
       if (existing) return { status: "already-present", quote: clone(existing) };
+    }
+    const prior = this.quotes.get(input.next.quoteId);
+    if (prior && !issuedQuoteUpdateAllowed(prior, input.next)) {
+      throw new Error("issued-quote-immutable");
     }
     this.quotes.set(input.next.quoteId, clone(input.next));
     this.mutationIds.set(input.mutation.mutationId, input.next.quoteId);

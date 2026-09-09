@@ -2,13 +2,15 @@
 -- Continuum Blue Book repair quoting V1.
 -- Additive only. continuum_project_profiles remains the ONE current Project record.
 -- Source: Geller Blue Book Version 5.0 Release 6.50
--- Structured export pointer: RepairTaskSKUs.2026-08-26-17-29-10(1).xlsx
+-- Structured export pointer: RepairTaskSKUs.2026-08-26-17-29-10.xlsx
 -- Bold Price columns = Geller retail. Cost columns = Hourglass cost basis.
 -- Hourglass formula: 2.5 × (Cost Labor × 1.25 + Cost Parts + Cost Other), applied once.
 -- V1 then rounds the raw quote to nearest $5. No minimum repair charge.
 -- Dynamic 14K metal: exact published Cost Parts band inside range; OLS extrapolation only above $4,049/oz when dwt is sourced.
+-- Cost Parts on ordinary task SKUs is embedded and is never stacked with a per-dwt overlay.
 -- Express is not enabled. No synthetic platinum model.
--- Does NOT ship a Geller/Edge price catalog. Does NOT invent repair prices or dwt.
+-- Does NOT create a live Geller/Edge price catalog table. Catalog is a checked-in source artifact.
+-- Does NOT invent repair prices or dwt.
 -- Does NOT treat Geller retail as cost. Does NOT mark up Geller retail.
 -- Project-linked only. Repair / Service Kind required at write time.
 -- Issued quotes are immutable; mutations are append-only.
@@ -125,3 +127,49 @@ alter table public.continuum_repair_quote_mutations enable row level security;
 
 grant select, insert, update on table public.continuum_repair_quotes to service_role;
 grant select, insert on table public.continuum_repair_quote_mutations to service_role;
+
+create or replace function public.continuum_repair_quotes_protect_issued()
+returns trigger
+language plpgsql
+as $$
+begin
+  if tg_op = 'DELETE' then
+    raise exception 'issued-quote-immutable';
+  end if;
+  if old.state = 'voided' then
+    raise exception 'voided-quote-immutable';
+  end if;
+  if old.state = 'issued' then
+    if new.state is distinct from 'voided'
+      or new.voided_at is null
+      or new.voided_by is null
+      or new.calculation is distinct from old.calculation
+      or new.line is distinct from old.line
+      or new.override is distinct from old.override
+      or new.source_sku is distinct from old.source_sku
+      or new.source_edition_label is distinct from old.source_edition_label
+      or new.repair_type is distinct from old.repair_type
+      or new.metal_family is distinct from old.metal_family
+      or new.quote_number is distinct from old.quote_number
+      or new.project_id is distinct from old.project_id
+      or new.associated_person_id is distinct from old.associated_person_id
+      or new.issued_at is distinct from old.issued_at
+      or new.issued_by is distinct from old.issued_by
+      or new.issued_mutation_id is distinct from old.issued_mutation_id
+      or new.created_at is distinct from old.created_at
+      or new.created_by is distinct from old.created_by
+      or new.created_mutation_id is distinct from old.created_mutation_id
+      or new.quote_id is distinct from old.quote_id
+    then
+      raise exception 'issued-quote-immutable';
+    end if;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists continuum_repair_quotes_protect_issued on public.continuum_repair_quotes;
+create trigger continuum_repair_quotes_protect_issued
+before update or delete on public.continuum_repair_quotes
+for each row
+execute function public.continuum_repair_quotes_protect_issued();

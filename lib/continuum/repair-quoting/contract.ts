@@ -8,7 +8,7 @@ export const GELLER_BLUE_BOOK = {
   version: "5.0",
   release: "6.50",
   editionLabel: "Geller Blue Book Version 5.0 Release 6.50",
-  exportFile: "RepairTaskSKUs.2026-08-26-17-29-10(1).xlsx",
+  exportFile: "RepairTaskSKUs.2026-08-26-17-29-10.xlsx",
 } as const;
 
 export const GELLER_RETAIL_MEANING = "bold_retail_selling_price" as const;

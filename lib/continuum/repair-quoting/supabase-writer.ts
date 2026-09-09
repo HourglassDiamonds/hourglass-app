@@ -13,6 +13,7 @@ import type { PersonProfile, ProjectProfile } from "@/lib/continuum/client-memor
 import { projectKindFromUnknown } from "@/lib/continuum/client-memory/project-kind";
 import { createRepairQuote } from "./create";
 import type { CreateRepairQuoteInput, CreateRepairQuoteResult } from "./create";
+import { issuedQuoteUpdateAllowed } from "./issued-lock";
 import {
   issueRepairQuote,
   overrideRepairQuote,
@@ -205,6 +206,10 @@ export class SupabaseRepairQuoteWriter implements RepairQuoteWriter {
   private async applyMutation(input: ApplyRepairQuoteMutationInput) {
     const existing = await this.findByMutationId(input.mutation.mutationId);
     if (existing) return { status: "already-present" as const, quote: existing };
+    const prior = await this.loadQuote(input.next.quoteId);
+    if (prior && !issuedQuoteUpdateAllowed(prior, input.next)) {
+      throw writeReason("issued-quote-immutable");
+    }
     const updated = await this.client
       .from("continuum_repair_quotes")
       .update(repairQuoteToRow(input.next))

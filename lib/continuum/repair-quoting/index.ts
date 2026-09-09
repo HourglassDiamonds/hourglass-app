@@ -13,3 +13,4 @@ export { issueRepairQuote, overrideRepairQuote, voidRepairQuote } from "./mutate
 export { InMemoryRepairQuoteStore } from "./store";
 export { createInMemoryRepairQuoteWriter } from "./writer";
 export { lookupVerifiedSku, VERIFIED_14KT_GOLD_BAND } from "./source";
+export { searchGellerCatalog, lookupCatalogSku } from "./catalog";
