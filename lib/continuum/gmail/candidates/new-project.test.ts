@@ -904,6 +904,71 @@ describe("explicit new-project Gmail proposals", () => {
     );
   });
 
+  it("does not mint canonical identity from a name-only transactional customer label", () => {
+    const proposed = proposeGmailCandidates({
+      createdAt: NOW,
+      world: { people: [], projects: [], internalEmailHashes: [] },
+      evidence: [
+        evidence({
+          messageId: "m-pay-name",
+          threadId: "t-pay-name",
+          sentAt: NOW,
+          fromEmail: "notifications@intuit.com",
+          direction: "inbound",
+          subject: "Payment received Invoice 1215",
+          plaintext:
+            "Invoice #1215-(Morgan Ellis)\nCustomer: Morgan Ellis\nAmount: $3,183.90\nPayment received",
+        }),
+      ],
+    });
+    assert.equal(
+      proposed.candidates.some((row) => row.candidateType === "person_association"),
+      false,
+    );
+    assert.equal(
+      proposed.candidates.some(
+        (row) =>
+          row.payload.kind === "project_context" &&
+          row.payload.topic === NEW_PROJECT_CONTEXT_TOPIC,
+      ),
+      false,
+    );
+  });
+
+  it("does not join related jewelry mail from a name-only transactional notice", () => {
+    const proposed = proposeGmailCandidates({
+      createdAt: NOW,
+      world: { people: [], projects: [], internalEmailHashes: [] },
+      evidence: [
+        evidence({
+          messageId: "m-pay-name-join",
+          threadId: "t-pay-name-join",
+          sentAt: NOW,
+          fromEmail: "notifications@intuit.com",
+          direction: "inbound",
+          subject: "Payment received Invoice 1215",
+          plaintext:
+            "Invoice #1215-(Morgan Ellis)\nCustomer: Morgan Ellis\nAmount: $3,183.90\nPayment received",
+        }),
+        evidence({
+          messageId: "m-ring-name-join",
+          threadId: "t-ring-name-join",
+          sentAt: "2026-08-10T15:00:00.000Z",
+          fromEmail: "morgan.ellis@example.test",
+          direction: "inbound",
+          subject: "Engagement Ring",
+          plaintext: "Following up on the engagement ring sketches.",
+        }),
+      ],
+    });
+    assert.equal(
+      proposed.candidates.some((row) =>
+        row.evidenceBasis.ruleIds.includes(TRANSACTIONAL_CUSTOMER_NOTICE_RULE),
+      ),
+      false,
+    );
+  });
+
   it("reconciles a transactional customer notice to related jewelry mail across threads", () => {
     const proposed = proposeGmailCandidates({
       createdAt: NOW,

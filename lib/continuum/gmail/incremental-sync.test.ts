@@ -26,6 +26,8 @@ import {
   isMailboxIndexedView,
   parsePendingHistoryCursor,
   runIncrementalSync,
+  shouldIndexFetchedMessage,
+  GMAIL_TRANSACTIONAL_NOTICE_CATCHUP_QUERY,
 } from "./incremental-sync";
 import { extractAttachmentMetadata, sentAtFromInternalDate } from "./payload";
 import { encryptRefreshToken } from "./token-crypto";
@@ -119,6 +121,31 @@ describe("Gmail incremental History API sync", () => {
     assert.equal(isMailboxIndexedView(["SENT"]), true);
     assert.equal(isMailboxIndexedView(["INBOX", "TRASH"]), false);
     assert.equal(isMailboxIndexedView(["SPAM"]), false);
+    assert.equal(isMailboxIndexedView(["CATEGORY_UPDATES"]), false);
+    assert.equal(
+      shouldIndexFetchedMessage({
+        id: "pay",
+        threadId: "thread-pay",
+        labelIds: ["CATEGORY_UPDATES"],
+        payload: {
+          headers: [
+            { name: "Subject", value: "Payment received: Invoice #1215-(Morgan Ellis)" },
+          ],
+        },
+      }),
+      true,
+    );
+    assert.equal(
+      shouldIndexFetchedMessage({
+        id: "news",
+        threadId: "thread-news",
+        labelIds: ["CATEGORY_UPDATES"],
+        payload: {
+          headers: [{ name: "Subject", value: "Weekly jewelry recap" }],
+        },
+      }),
+      false,
+    );
   });
 
   it("blocks until historical backfill is completed", async () => {
@@ -222,10 +249,12 @@ describe("Gmail incremental History API sync", () => {
     assert.equal(JSON.stringify(row).includes("SHOULD-NOT-PERSIST"), false);
     assert.equal(JSON.stringify(row).includes("client@example.com"), false);
     assert.equal((await index.getCheckpoint(GMAIL_INCREMENTAL_JOB_KEY))?.historyId, HISTORY_NEXT);
-    assert.equal(
-      api.calls.filter((call) => call.method === "listMessages").length,
-      beforeCalls,
-    );
+    const listCalls = api.calls.filter((call) => call.method === "listMessages");
+    assert.equal(listCalls.length, beforeCalls + 1);
+    const overlap = listCalls[listCalls.length - 1];
+    assert.ok(overlap && overlap.method === "listMessages");
+    assert.equal(overlap.q, GMAIL_TRANSACTIONAL_NOTICE_CATCHUP_QUERY);
+    assert.doesNotMatch(overlap.q, /in:inbox OR in:sent/);
   });
 
   it("indexes a new sent/outbound message from history", async () => {
@@ -801,6 +830,260 @@ describe("Gmail incremental History API sync", () => {
     assert.equal(state.latestOutbound?.direction, "outbound");
     assert.equal(state.hasNewerIndexedActivity, true);
     assert.equal("subject" in state.latestInbound!, false);
+  });
+
+  const PAYMENT_NOTICE = {
+    id: "msg-pay-updates",
+    threadId: "thread-pay-updates",
+    labelIds: ["CATEGORY_UPDATES", "UNREAD"],
+    internalDate: "1724607200000",
+    snippet: "Invoice #1215 Amount $3,183.90 Payment received Customer: Morgan Ellis",
+    payload: {
+      headers: [
+        { name: "From", value: "QuickBooks <notifications@intuit.com>" },
+        { name: "To", value: FIXTURE_FOUNDER_EMAIL },
+        { name: "Subject", value: "Payment received: Invoice #1215-(Morgan Ellis)" },
+      ],
+    },
+  };
+
+  it("fetches history additions even when history labels are missing", async () => {
+    const { api, index, attachments, connections } = await seed();
+    await runIncrementalSync({
+      api,
+      index,
+      attachments,
+      connections,
+      founderMailboxHash: FOUNDER_HASH,
+      clock,
+    });
+    api.setHistoryPage(HISTORY_START, null, {
+      history: [
+        {
+          id: "101",
+          messagesAdded: [
+            {
+              message: {
+                id: NEW_INBOUND.id,
+                threadId: NEW_INBOUND.threadId,
+              },
+            },
+          ],
+        },
+      ],
+      nextPageToken: null,
+      historyId: HISTORY_NEXT,
+    });
+    const result = await runIncrementalSync({
+      api,
+      index,
+      attachments,
+      connections,
+      founderMailboxHash: FOUNDER_HASH,
+      clock,
+    });
+    assert.equal(result.status, "completed");
+    assert.equal(await index.getMessage(NEW_INBOUND.id) !== null, true);
+    assert.equal(
+      api.calls.some((call) => call.method === "getMessage" && call.messageId === NEW_INBOUND.id),
+      true,
+    );
+  });
+
+  it("indexes a skip-inbox transactional payment notice from history", async () => {
+    const { api, index, attachments, connections } = await seed();
+    api.setMessage(PAYMENT_NOTICE);
+    await runIncrementalSync({
+      api,
+      index,
+      attachments,
+      connections,
+      founderMailboxHash: FOUNDER_HASH,
+      clock,
+    });
+    api.setHistoryPage(HISTORY_START, null, {
+      history: [
+        {
+          id: "101",
+          messagesAdded: [
+            {
+              message: {
+                id: PAYMENT_NOTICE.id,
+                threadId: PAYMENT_NOTICE.threadId,
+                labelIds: ["CATEGORY_UPDATES"],
+              },
+            },
+          ],
+        },
+      ],
+      nextPageToken: null,
+      historyId: HISTORY_NEXT,
+    });
+    const result = await runIncrementalSync({
+      api,
+      index,
+      attachments,
+      connections,
+      founderMailboxHash: FOUNDER_HASH,
+      clock,
+    });
+    assert.equal(result.status, "completed");
+    const row = await index.getMessage(PAYMENT_NOTICE.id);
+    assert.equal(row?.threadId, PAYMENT_NOTICE.threadId);
+    assert.equal(row?.direction, "inbound");
+    assert.equal(row?.subject, "Payment received: Invoice #1215-(Morgan Ellis)");
+    assert.equal("body" in (row ?? {}), false);
+    assert.equal(JSON.stringify(row).includes("3,183.90"), false);
+  });
+
+  it("does not index skip-inbox Updates mail that is not a transactional notice", async () => {
+    const { api, index, attachments, connections } = await seed();
+    const newsletter = {
+      id: "msg-news-updates",
+      threadId: "thread-news-updates",
+      labelIds: ["CATEGORY_UPDATES"],
+      internalDate: "1724607200000",
+      payload: {
+        headers: [
+          { name: "From", value: "promo@example.com" },
+          { name: "To", value: FIXTURE_FOUNDER_EMAIL },
+          { name: "Subject", value: "Weekly jewelry recap" },
+        ],
+      },
+    };
+    api.setMessage(newsletter);
+    await runIncrementalSync({
+      api,
+      index,
+      attachments,
+      connections,
+      founderMailboxHash: FOUNDER_HASH,
+      clock,
+    });
+    api.setHistoryPage(HISTORY_START, null, {
+      history: [
+        {
+          id: "101",
+          messagesAdded: [
+            {
+              message: {
+                id: newsletter.id,
+                threadId: newsletter.threadId,
+                labelIds: ["CATEGORY_UPDATES"],
+              },
+            },
+          ],
+        },
+      ],
+      nextPageToken: null,
+      historyId: HISTORY_NEXT,
+    });
+    await runIncrementalSync({
+      api,
+      index,
+      attachments,
+      connections,
+      founderMailboxHash: FOUNDER_HASH,
+      clock,
+    });
+    assert.equal(await index.getMessage(newsletter.id), null);
+  });
+
+  it("heals a transactional notice that history already advanced past", async () => {
+    const { api, index, attachments, connections } = await seed();
+    api.setMessage(PAYMENT_NOTICE);
+    await runIncrementalSync({
+      api,
+      index,
+      attachments,
+      connections,
+      founderMailboxHash: FOUNDER_HASH,
+      clock,
+    });
+    api.setHistoryPage(HISTORY_START, null, {
+      history: [],
+      nextPageToken: null,
+      historyId: HISTORY_NEXT,
+    });
+    api.setListPage(null, {
+      messages: [{ id: PAYMENT_NOTICE.id, threadId: PAYMENT_NOTICE.threadId }],
+      nextPageToken: null,
+    });
+    const result = await runIncrementalSync({
+      api,
+      index,
+      attachments,
+      connections,
+      founderMailboxHash: FOUNDER_HASH,
+      clock,
+    });
+    assert.equal(result.status, "completed");
+    assert.equal(result.insertedCount, 1);
+    assert.equal(await index.getMessage(PAYMENT_NOTICE.id) !== null, true);
+    const overlap = [...api.calls]
+      .reverse()
+      .find((call) => call.method === "listMessages");
+    assert.ok(overlap && overlap.method === "listMessages");
+    assert.equal(overlap.q, GMAIL_TRANSACTIONAL_NOTICE_CATCHUP_QUERY);
+  });
+
+  it("keeps a transactional notice after it leaves Inbox", async () => {
+    const { api, index, attachments, connections } = await seed();
+    const inboxPayment = { ...PAYMENT_NOTICE, labelIds: ["INBOX", "CATEGORY_UPDATES"] };
+    api.setMessage(inboxPayment);
+    await index.indexMessage(
+      {
+        messageId: inboxPayment.id,
+        threadId: inboxPayment.threadId,
+        sentAt: sentAtFromInternalDate(inboxPayment),
+        fromEmail: "notifications@intuit.com",
+        toEmails: [FIXTURE_FOUNDER_EMAIL],
+        direction: "inbound",
+        subject: "Payment received: Invoice #1215-(Morgan Ellis)",
+        labelIds: ["INBOX", "CATEGORY_UPDATES"],
+        hasAttachments: false,
+      },
+      NOW.toISOString(),
+    );
+    await runIncrementalSync({
+      api,
+      index,
+      attachments,
+      connections,
+      founderMailboxHash: FOUNDER_HASH,
+      clock,
+    });
+    api.setMessage(PAYMENT_NOTICE);
+    api.setHistoryPage(HISTORY_START, null, {
+      history: [
+        {
+          id: "104",
+          labelsRemoved: [
+            {
+              message: {
+                id: PAYMENT_NOTICE.id,
+                threadId: PAYMENT_NOTICE.threadId,
+                labelIds: ["CATEGORY_UPDATES"],
+              },
+              labelIds: ["INBOX"],
+            },
+          ],
+        },
+      ],
+      nextPageToken: null,
+      historyId: HISTORY_NEXT,
+    });
+    await runIncrementalSync({
+      api,
+      index,
+      attachments,
+      connections,
+      founderMailboxHash: FOUNDER_HASH,
+      clock,
+    });
+    const row = await index.getMessage(PAYMENT_NOTICE.id);
+    assert.equal(row !== null, true);
+    assert.deepEqual([...(row?.labelIds ?? [])], ["CATEGORY_UPDATES", "UNREAD"]);
   });
 });
 

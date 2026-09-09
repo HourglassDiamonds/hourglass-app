@@ -26,6 +26,7 @@ import {
   parseGmailSubject,
   sentAtFromInternalDate,
 } from "./payload";
+import { looksTransactionalCustomerNotice } from "./candidates/new-project";
 import { defaultSyncClock, historicalGmailQuery, type SyncClock } from "./sync";
 import {
   GMAIL_HISTORICAL_JOB_KEY,
@@ -41,6 +42,9 @@ import {
 export const GMAIL_INCREMENTAL_CHUNK_MAX_PAGES = 1 as const;
 export const HISTORY_TOO_OLD = "history-too-old" as const;
 export const HISTORICAL_INCOMPLETE = "historical-incomplete" as const;
+export const GMAIL_TRANSACTIONAL_NOTICE_CATCHUP_MAX_RESULTS = 20 as const;
+export const GMAIL_TRANSACTIONAL_NOTICE_CATCHUP_QUERY =
+  '(invoice ("payment received" OR customer)) -in:spam -in:trash newer_than:7d';
 
 /**
  * Catch-up holds a captured profile historyId in cursorMessageId until every
@@ -154,6 +158,22 @@ export function isMailboxIndexedView(labelIds: readonly string[] | undefined): b
   return labels.has("INBOX") || labels.has("SENT");
 }
 
+export function transactionalIndexHaystack(message: GmailApiMessage): string {
+  return [parseGmailSubject(message) ?? "", message.snippet ?? ""].join("\n");
+}
+
+/**
+ * Inbox/Sent stay the default mailbox view. System transactional notices
+ * (invoice + payment received / customer) are also kept so skip-inbox
+ * Updates mail can still enter intake. Spam/trash never indexes.
+ */
+export function shouldIndexFetchedMessage(message: GmailApiMessage): boolean {
+  const labels = new Set((message.labelIds ?? []).map((label) => label.trim().toUpperCase()));
+  if (labels.has("TRASH") || labels.has("SPAM")) return false;
+  if (isMailboxIndexedView(message.labelIds)) return true;
+  return looksTransactionalCustomerNotice(transactionalIndexHaystack(message));
+}
+
 function needsCatchUp(row: GmailCheckpoint): boolean {
   if (parsePendingHistoryCursor(row.cursorMessageId)) return true;
   if (row.errorCode === HISTORY_TOO_OLD) return true;
@@ -161,9 +181,9 @@ function needsCatchUp(row: GmailCheckpoint): boolean {
 }
 
 /**
- * Index represents currently observed Inbox/Sent metadata for the founder
- * mailbox, not a Gmail replica. Spam/trash is dropped. Deleted source mail
- * is removed from the index (no tombstone column).
+ * Index represents currently observed Inbox/Sent metadata plus system
+ * transactional notices. Not a Gmail replica. Spam/trash is dropped.
+ * Deleted source mail is removed from the index (no tombstone column).
  */
 export function catchUpAfterDate(historical: GmailCheckpoint | null, now: Date): Date {
   if (historical?.updatedAt) {
@@ -192,12 +212,18 @@ async function persistFetchedMessage(
   message: GmailApiMessage,
   nowIso: string,
 ): Promise<"inserted" | "updated" | "already-present" | "dropped"> {
-  if (!isMailboxIndexedView(message.labelIds)) {
+  if (!shouldIndexFetchedMessage(message)) {
     await dropFromIndex(deps.index, deps.attachments, message.id);
     return "dropped";
   }
   const addresses = parseGmailAddresses(message);
   const sentAt = sentAtFromInternalDate(message);
+  const classified = gmailMessageDirection({
+    labelIds: message.labelIds ?? [],
+    fromEmail: addresses.fromEmail,
+    founderMailboxHash: deps.founderMailboxHash,
+  });
+  const direction = classified === "unknown" ? "inbound" : classified;
   const indexed = await deps.index.indexMessage(
     {
       messageId: message.id,
@@ -208,11 +234,7 @@ async function persistFetchedMessage(
       toEmails: addresses.toEmails,
       ccEmails: addresses.ccEmails,
       bccEmails: addresses.bccEmails,
-      direction: gmailMessageDirection({
-        labelIds: message.labelIds ?? [],
-        fromEmail: addresses.fromEmail,
-        founderMailboxHash: deps.founderMailboxHash,
-      }),
+      direction,
       labelIds: [...(message.labelIds ?? [])],
       hasAttachments: extractAttachmentMetadata(message, nowIso).length > 0,
     },
@@ -256,6 +278,44 @@ async function fetchAndPersist(
   }
 }
 
+async function persistTransactionalNoticeOverlap(
+  deps: IncrementalSyncDeps,
+  clock: SyncClock,
+  maxRetries: number,
+  minInterval: number,
+  gate: FetchGate,
+  counts: PageCounts,
+  indexedCount: { value: number },
+): Promise<void> {
+  const page = await withRetry(clock, maxRetries, () =>
+    deps.api.listMessages({
+      q: GMAIL_TRANSACTIONAL_NOTICE_CATCHUP_QUERY,
+      maxResults: GMAIL_TRANSACTIONAL_NOTICE_CATCHUP_MAX_RESULTS,
+    }),
+  );
+  const nowIso = clock.now().toISOString();
+  for (const listed of page.messages) {
+    const status = await fetchAndPersist(
+      deps,
+      clock,
+      maxRetries,
+      minInterval,
+      gate,
+      listed.id,
+      nowIso,
+    );
+    if (status === "inserted") {
+      counts.inserted += 1;
+      indexedCount.value += 1;
+    } else if (status === "updated") {
+      counts.labelUpdates += 1;
+    } else if (status === "dropped") {
+      counts.deleted += 1;
+      indexedCount.value = Math.max(0, indexedCount.value - 1);
+    }
+  }
+}
+
 function refsFrom(
   rec: GmailHistoryRecord,
   key: "messagesAdded" | "messagesDeleted" | "labelsAdded" | "labelsRemoved",
@@ -279,14 +339,6 @@ async function applyHistoryRecord(
 
   for (const added of refsFrom(rec, "messagesAdded")) {
     cursor = added.id;
-    if (!isMailboxIndexedView(added.labelIds)) {
-      const dropped = await dropFromIndex(deps.index, deps.attachments, added.id);
-      if (dropped === "deleted") {
-        counts.deleted += 1;
-        indexedCount.value = Math.max(0, indexedCount.value - 1);
-      }
-      continue;
-    }
     const status = await fetchAndPersist(
       deps,
       clock,
@@ -309,15 +361,6 @@ async function applyHistoryRecord(
 
   for (const changed of [...refsFrom(rec, "labelsAdded"), ...refsFrom(rec, "labelsRemoved")]) {
     cursor = changed.id;
-    const inView = isMailboxIndexedView(changed.labelIds);
-    if (!inView) {
-      const dropped = await dropFromIndex(deps.index, deps.attachments, changed.id);
-      if (dropped === "deleted") {
-        counts.deleted += 1;
-        indexedCount.value = Math.max(0, indexedCount.value - 1);
-      }
-      continue;
-    }
     const status = await fetchAndPersist(
       deps,
       clock,
@@ -521,6 +564,18 @@ async function runCatchUpList(
         errorCode: recovery ? HISTORY_TOO_OLD : null,
       };
     }
+
+    const overlapIndexed = { value: indexedCount };
+    await persistTransactionalNoticeOverlap(
+      deps,
+      clock,
+      maxRetries,
+      minInterval,
+      gate,
+      counts,
+      overlapIndexed,
+    );
+    indexedCount = overlapIndexed.value;
 
     await deps.index.putCheckpoint({
       jobKey: GMAIL_INCREMENTAL_JOB_KEY,
@@ -867,6 +922,18 @@ export async function runIncrementalSync(
     }
 
     const completed = !pageToken;
+    if (completed) {
+      await persistTransactionalNoticeOverlap(
+        deps,
+        clock,
+        maxRetries,
+        minInterval,
+        gate,
+        counts,
+        indexed,
+      );
+      indexedCount = indexed.value;
+    }
     await deps.index.putCheckpoint({
       jobKey: GMAIL_INCREMENTAL_JOB_KEY,
       status: completed ? "completed" : "running",

@@ -959,4 +959,37 @@ describe("Gmail new-project intake scan", () => {
     );
     assert.deepEqual(related, [ringThread]);
   });
+
+  it("selects a skip-inbox transactional payment notice into the scan window", async () => {
+    const payThread = "19payupdates00001";
+    const payMessage = "19payupdatesmsg001";
+    const index = new InMemoryGmailIndexStore();
+    await index.indexMessage(
+      {
+        messageId: payMessage,
+        threadId: payThread,
+        sentAt: "2026-09-08T21:07:00.000Z",
+        subject: "Payment received: Invoice #1215-(Morgan Ellis)",
+        fromEmail: "notifications@intuit.com",
+        direction: "inbound",
+        labelIds: ["CATEGORY_UPDATES"],
+        hasAttachments: false,
+      },
+      NOW,
+    );
+    await index.indexMessage(
+      {
+        messageId: "older-in",
+        threadId: "19olderthread00001",
+        sentAt: "2026-09-08T08:00:00.000Z",
+        subject: "Older inbound",
+        fromEmail: "other@example.test",
+        direction: "inbound",
+        hasAttachments: false,
+      },
+      NOW,
+    );
+    const selected = await recentIndexedThreadIds(index, 30);
+    assert.equal(selected[0], payThread);
+  });
 });

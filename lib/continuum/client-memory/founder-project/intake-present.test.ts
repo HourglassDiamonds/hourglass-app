@@ -337,6 +337,7 @@ describe("Gmail new-project intake presentation", () => {
       join(dir, "../../gmail/candidates/new-project.ts"),
       join(dir, "../../gmail/candidates/thread-reconcile.ts"),
       join(dir, "../../gmail/intake-scan.ts"),
+      join(dir, "../../gmail/incremental-sync.ts"),
     ];
     for (const file of files) {
       assert.doesNotMatch(readFileSync(file, "utf8"), /Thomas|Bailey|Lucas|Kinnin/);

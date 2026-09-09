@@ -39,6 +39,6 @@ export { correlateExactProjectThread } from "./projects";
 export { resolvePersonCandidate } from "./participants";
 export { assessGmailOAuthProductionReadiness } from "./oauth-readiness";
 export { historicalGmailQuery, runHistoricalSync } from "./sync";
-export { runIncrementalSync, isMailboxIndexedView } from "./incremental-sync";
+export { runIncrementalSync, isMailboxIndexedView, shouldIndexFetchedMessage } from "./incremental-sync";
 export { runGmailIncrementalChunk } from "./incremental";
 export { readGmailCurrentState } from "./current-state";
