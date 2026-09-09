@@ -8,6 +8,11 @@ import { createInMemoryFounderProjectWriter, founderProjectDeps } from "./writer
 import { createFounderProject } from "./create";
 import { createInMemoryProjectJobWriter } from "../project-jobs/writer";
 import { selectOpenProjectWork } from "../open-projects/select";
+import { composeCurrentProjectCards } from "../open-projects/card";
+import {
+  groupCurrentProjects,
+  operatingGroupForProject,
+} from "../open-projects/operating-groups";
 import type { ProjectDeskSummary } from "../project-desk/types";
 import { composeCosOperatingLoop } from "../../chief-of-staff/operating-loop/compose";
 import { warnDuplicateNewProject } from "./duplicate";
@@ -15,6 +20,7 @@ import { proposeGmailCandidates } from "../../gmail/candidates/propose";
 import { hashEmail } from "../hashes";
 import { NEW_PROJECT_CONTEXT_TOPIC } from "../../gmail/candidates/new-project";
 import { GMAIL_SOURCE_SYSTEM } from "../gmail/types";
+import { createInMemoryClientMemoryPersonWriter } from "../person/writer";
 
 const NOW = "2026-09-08T16:00:00.000Z";
 const ACTOR = "justin";
@@ -438,5 +444,258 @@ describe("Founder-created Project", () => {
       }),
     ]);
     assert.equal(current.length, 1);
+  });
+
+  it("puts a founder-authorized production Project in IN PRODUCTION without an Open Job", async () => {
+    const memory = new InMemoryClientMemoryStore();
+    const jobs = new InMemoryProjectJobStore();
+    const people = createInMemoryClientMemoryPersonWriter(memory);
+    const writer = createInMemoryFounderProjectWriter(memory, jobs, () => NOW);
+    const firstPerson = await people.addManualClient({
+      submissionId: randomUUID(),
+      givenName: "Morgan",
+      familyName: "Ellis",
+      email: "morgan.ellis@example.test",
+    });
+    assert.equal(firstPerson.status, "created");
+    if (firstPerson.status !== "created") return;
+    const againPerson = await people.addManualClient({
+      submissionId: randomUUID(),
+      givenName: "Morgan",
+      familyName: "Ellis",
+      email: "morgan.ellis@example.test",
+    });
+    assert.deepEqual(againPerson, {
+      status: "existing-person",
+      personId: firstPerson.personId,
+    });
+    const nateId = await seedPerson(memory, {
+      displayName: "Nathan Pearl",
+      email: "nate@example.test",
+    });
+    const abbeyId = await seedPerson(memory, { displayName: "Abbey Castillo" });
+    const pennockPerson = await seedPerson(memory, { displayName: "J. Pennock" });
+    const nate = await writer.createProject({
+      mutationId: randomUUID(),
+      title: "Dagger & Pearls Pendant / Necklace",
+      personId: nateId,
+      projectKind: "custom_new_jewelry",
+      lifecycleStage: "cad",
+      actor: ACTOR,
+    });
+    const abbey = await writer.createProject({
+      mutationId: randomUUID(),
+      title: "Matching Marquise Earrings",
+      personId: abbeyId,
+      projectKind: "custom_new_jewelry",
+      lifecycleStage: "cad",
+      actor: ACTOR,
+    });
+    const pennock = await writer.createProject({
+      mutationId: randomUUID(),
+      title: "J. Pennock",
+      personId: pennockPerson,
+      projectKind: "custom_new_jewelry",
+      lifecycleStage: "production",
+      actor: ACTOR,
+    });
+    assert.equal(nate.ok && abbey.ok && pennock.ok, true);
+    if (!nate.ok || !abbey.ok || !pennock.ok) return;
+
+    const created = await writer.createProject({
+      mutationId: randomUUID(),
+      title: "Morgan Ellis — Engagement Ring",
+      personId: firstPerson.personId,
+      projectKind: "custom_new_jewelry",
+      lifecycleStage: "production",
+      gmailThreadId: "fedcba9876543210",
+      actor: ACTOR,
+    });
+    assert.equal(created.ok, true);
+    if (!created.ok) return;
+    assert.equal(created.status, "created");
+    assert.equal(created.job, null);
+    assert.equal(created.projectKind, "custom_new_jewelry");
+    assert.equal(created.lifecycleStage, "production");
+    const duplicate = await writer.createProject({
+      mutationId: randomUUID(),
+      title: "Morgan Ellis — Engagement Ring",
+      personId: firstPerson.personId,
+      projectKind: "custom_new_jewelry",
+      lifecycleStage: "production",
+      actor: ACTOR,
+    });
+    assert.equal(duplicate.ok, false);
+    if (!duplicate.ok) {
+      assert.equal(duplicate.reason, "duplicate-project");
+      assert.equal(duplicate.existingProjectId, created.projectId);
+    }
+
+    const profile = await memory.getProjectProfile(created.projectId);
+    const history = await memory.getProjectHistory(created.projectId);
+    const state = await memory.getProjectLifecycleState(
+      created.projectId,
+      "custom_new_jewelry",
+    );
+    const events = memory.listProjectLifecycleEvents(created.projectId);
+    assert.equal(profile?.projectKind, "custom_new_jewelry");
+    assert.equal(history?.gmailThreadId, "fedcba9876543210");
+    assert.equal(state?.stage, "production");
+    assert.equal(events.some((row) => row.newStage === "production"), true);
+    assert.equal(jobs.listJobs().length, 0);
+
+    const vendorMail = proposeGmailCandidates({
+      createdAt: NOW,
+      world: {
+        people: [],
+        projects: [
+          {
+            projectId: created.projectId,
+            title: created.title,
+            gmailThreadId: "1111222233334444",
+            cadJobNumber: "CR5000971",
+            orderNumber: null,
+            fingerSize: null,
+            metal: null,
+            centerStone: null,
+            diamondSupplyNotes: null,
+            personIds: [firstPerson.personId],
+            founderApprovedCurrent: true,
+            projectKind: "custom_new_jewelry",
+            lifecycleStage: "cad",
+          },
+        ],
+        internalEmailHashes: [],
+      },
+      evidence: [
+        {
+          indexed: {
+            messageId: "m-vendor-forward",
+            threadId: "1111222233334444",
+            sentAt: NOW,
+            indexedAt: NOW,
+            subject: "HGD - moving forward",
+            fromEmailHash: hashEmail("vendor@example.test"),
+            toEmailHashes: [],
+            ccEmailHashes: [],
+            bccEmailHashes: [],
+            direction: "outbound",
+            labelIds: ["SENT"],
+            hasAttachments: false,
+            sourceSystem: GMAIL_SOURCE_SYSTEM,
+          },
+          plaintext:
+            "Moving forward with the original version. The center stone is being sent today.",
+          fromEmailHash: hashEmail("justin@example.test"),
+        },
+      ],
+    });
+    assert.equal(
+      vendorMail.candidates.some(
+        (row) =>
+          row.payload.kind === "project_context" &&
+          row.payload.topic === NEW_PROJECT_CONTEXT_TOPIC,
+      ),
+      false,
+    );
+    assert.equal(
+      (await memory.getProjectLifecycleState(created.projectId, "custom_new_jewelry"))
+        ?.stage,
+      "production",
+    );
+    assert.equal(jobs.listJobs().length, 0);
+
+    const summaries = [
+      deskSummary({
+        projectId: nate.projectId,
+        title: nate.title,
+        personId: nateId,
+        personName: "Nathan Pearl",
+        projectKind: "custom_new_jewelry",
+        lifecycleStage: "cad",
+        unresolvedCount: 0,
+      }),
+      deskSummary({
+        projectId: abbey.projectId,
+        title: abbey.title,
+        personId: abbeyId,
+        personName: "Abbey Castillo",
+        projectKind: "custom_new_jewelry",
+        lifecycleStage: "cad",
+        unresolvedCount: 0,
+      }),
+      deskSummary({
+        projectId: pennock.projectId,
+        title: pennock.title,
+        personId: pennockPerson,
+        personName: "J. Pennock",
+        projectKind: "custom_new_jewelry",
+        lifecycleStage: "production",
+        unresolvedCount: 0,
+      }),
+      deskSummary({
+        projectId: created.projectId,
+        title: created.title,
+        personId: firstPerson.personId,
+        personName: "Morgan Ellis",
+        projectKind: "custom_new_jewelry",
+        lifecycleStage: "production",
+        unresolvedCount: 0,
+      }),
+    ];
+    const current = selectOpenProjectWork(summaries);
+    assert.deepEqual(
+      current.map((row) => row.title),
+      [
+        "Dagger & Pearls Pendant / Necklace",
+        "J. Pennock",
+        "Matching Marquise Earrings",
+        "Morgan Ellis — Engagement Ring",
+      ],
+    );
+    const cards = composeCurrentProjectCards(summaries, new Map());
+    assert.equal(
+      operatingGroupForProject(cards.find((row) => row.projectId === created.projectId)!),
+      "in_production",
+    );
+    assert.equal(
+      operatingGroupForProject(cards.find((row) => row.projectId === pennock.projectId)!),
+      "in_production",
+    );
+    assert.equal(
+      operatingGroupForProject(cards.find((row) => row.projectId === nate.projectId)!),
+      "cad_design",
+    );
+    assert.equal(
+      operatingGroupForProject(cards.find((row) => row.projectId === abbey.projectId)!),
+      "cad_design",
+    );
+    const grouped = groupCurrentProjects(cards, { nowIso: NOW, viewport: "desktop" });
+    assert.deepEqual(
+      grouped.find((group) => group.id === "in_production")?.projects.map((row) => row.title),
+      ["J. Pennock", "Morgan Ellis — Engagement Ring"],
+    );
+    assert.equal(grouped.some((group) => group.id === "your_turn"), false);
+    const loop = composeCosOperatingLoop({
+      nowIso: NOW,
+      jobs: jobs.listJobs(),
+      projects: new Map(
+        current.map((row) => [
+          row.projectId,
+          {
+            projectId: row.projectId,
+            title: row.title,
+            personName: row.people[0]?.displayName ?? row.title,
+            isCurrent: true,
+          },
+        ]),
+      ),
+      candidates: [],
+      newMutationId: () => randomUUID(),
+    });
+    assert.equal(loop.top5.length, 0);
+    const counts = await memory.inspectCounts();
+    assert.equal(counts.persons, 4);
+    assert.equal(counts.projects, 4);
   });
 });

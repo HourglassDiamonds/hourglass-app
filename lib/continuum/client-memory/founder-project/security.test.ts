@@ -39,6 +39,7 @@ describe("Founder Project writer security", () => {
       if (file.endsWith(".test.ts")) continue;
       const source = readFileSync(file, "utf8");
       assert.doesNotMatch(source, /createFounderProject|createProjectJob/);
+      assert.doesNotMatch(source, /setProjectLifecycle|createPersonAtomic/);
     }
   });
 

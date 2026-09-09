@@ -512,6 +512,30 @@ describe("Current Projects operating groups", () => {
     assert.doesNotMatch(source, /gmail|Gmail|intake-candidate|identity-gate/);
   });
 
+  it("places a second production Project beside J. Pennock without name-specific grouping", () => {
+    const pennock = cardFor(PROJECT_D, "J. Pennock", "production");
+    const ring = cardFor(PROJECT_A, "Client — Engagement Ring", "production");
+    const nate = cardFor(PROJECT_B, "Dagger & Pearls Pendant / Necklace", "cad");
+    const abbey = cardFor(PROJECT_C, "Matching Marquise Earrings", "cad");
+    const grouped = groupCurrentProjects([pennock, ring, nate, abbey], {
+      nowIso: NOW,
+      viewport: "desktop",
+    });
+    assert.equal(operatingGroupForProject(pennock), "in_production");
+    assert.equal(operatingGroupForProject(ring), "in_production");
+    assert.deepEqual(titlesIn(grouped, "in_production"), [
+      "Client — Engagement Ring",
+      "J. Pennock",
+    ]);
+    assert.deepEqual(titlesIn(grouped, "cad_design"), [
+      "Dagger & Pearls Pendant / Necklace",
+      "Matching Marquise Earrings",
+    ]);
+    assert.equal(grouped.some((group) => group.id === "your_turn"), false);
+    const source = readFileSync(join(DIR, "operating-groups.ts"), "utf8");
+    assert.doesNotMatch(source, /Lucas|Kinnin|kinnin|Pennock|Nate|Abbey/);
+  });
+
   it("groups Gmail-hydrated Current Projects before desks load", () => {
     const cards = composeCurrentProjectCards(
       [

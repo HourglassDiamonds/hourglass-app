@@ -595,4 +595,154 @@ describe("Gmail ↔ canonical Project reconciliation", () => {
     const counts = await memory.inspectCounts();
     assert.equal(counts.projects, 1);
   });
+
+  it("reconciles a payment notice to an existing production Project instead of a second create", async () => {
+    const memory = new InMemoryClientMemoryStore();
+    const jobs = new InMemoryProjectJobStore();
+    const writer = createInMemoryFounderProjectWriter(memory, jobs, () => NOW);
+    const store = new InMemoryCandidateStore();
+    const personId = await seedPerson(memory, "Morgan Ellis", "morgan.ellis@example.test");
+    const nateId = await seedPerson(memory, "Alex Reed", NATE_EMAIL);
+    const abbeyId = await seedPerson(memory, "Jordan Reed", ABBEY_EMAIL);
+    const nate = await writer.createProject({
+      mutationId: randomUUID(),
+      title: "Dagger & Pearls Pendant / Necklace",
+      personId: nateId,
+      projectKind: "custom_new_jewelry",
+      lifecycleStage: "cad",
+      gmailThreadId: NATE_THREAD,
+      actor: "justin",
+    });
+    const abbey = await writer.createProject({
+      mutationId: randomUUID(),
+      title: "Matching Marquise Earrings",
+      personId: abbeyId,
+      projectKind: "custom_new_jewelry",
+      lifecycleStage: "cad",
+      gmailThreadId: ABBEY_THREAD,
+      actor: "justin",
+    });
+    assert.equal(nate.ok && abbey.ok, true);
+    if (!nate.ok || !abbey.ok) return;
+    const payThread = "fedcba9876543210";
+    const created = await writer.createProject({
+      mutationId: randomUUID(),
+      title: "Morgan Ellis — Engagement Ring",
+      personId,
+      projectKind: "custom_new_jewelry",
+      lifecycleStage: "production",
+      gmailThreadId: payThread,
+      actor: "justin",
+    });
+    assert.equal(created.ok, true);
+    if (!created.ok) return;
+    const project = gmailProject({
+      projectId: created.projectId,
+      title: created.title,
+      personIds: [personId],
+      gmailThreadId: payThread,
+      lifecycleStage: "production",
+    });
+    const nateProject = gmailProject({
+      projectId: nate.projectId,
+      title: nate.title,
+      personIds: [nateId],
+      gmailThreadId: NATE_THREAD,
+      lifecycleStage: "cad",
+    });
+    const abbeyProject = gmailProject({
+      projectId: abbey.projectId,
+      title: abbey.title,
+      personIds: [abbeyId],
+      gmailThreadId: ABBEY_THREAD,
+      lifecycleStage: "cad",
+    });
+    const world = {
+      people: [
+        {
+          personId,
+          displayName: "Morgan Ellis",
+          emailHash: hashEmail("morgan.ellis@example.test"),
+          role: "client" as const,
+          projectIds: [created.projectId],
+        },
+      ],
+      projects: [project, nateProject, abbeyProject],
+      internalEmailHashes: [],
+    };
+    const first = await ingestGmailCandidates(store, {
+      createdAt: NOW,
+      world: {
+        people: world.people,
+        projects: [],
+        internalEmailHashes: [],
+      },
+      evidence: [
+        inboundEvidence({
+          messageId: "m-pay",
+          threadId: payThread,
+          fromEmail: "notifications@intuit.com",
+          subject: "Payment received Invoice 1215",
+          plaintext:
+            "Invoice #1215-(Morgan Ellis)\nCustomer: Morgan Ellis\nAmount: $3,183.90\nPayment received\nmorgan.ellis@example.test",
+        }),
+      ],
+    });
+    const linked = knownGmailProjectThreadIds(first.candidates, world.projects);
+    assert.equal(linked.includes(payThread), true);
+    const cards = presentGmailNewProjectIntake(
+      first.candidates,
+      [{ personId, displayName: "Morgan Ellis", email: "morgan.ellis@example.test" }],
+      [],
+      world.projects,
+    );
+    const payment = cards.find((row) => row.workStatus === "payment_received") ?? cards[0];
+    assert.equal(payment?.presentation, "current_project");
+    assert.equal(payment?.canonicalProjectId, created.projectId);
+    assert.equal(payment?.canonicalProjectFound, true);
+    assert.equal(payment?.title, "Morgan Ellis — Engagement Ring");
+    assert.equal(payment?.lifecycleStage, "production");
+    assert.equal(payment?.lifecycleLabel, "Production");
+    assert.equal(jobs.listJobs().length, 0);
+
+    const second = await ingestGmailCandidates(store, {
+      createdAt: "2026-09-08T22:00:00.000Z",
+      world: {
+        ...world,
+        linkedGmailThreadIds: linked,
+      },
+      evidence: [
+        inboundEvidence({
+          messageId: "m-pay-later",
+          threadId: payThread,
+          fromEmail: "notifications@intuit.com",
+          sentAt: "2026-09-08T22:00:00.000Z",
+          subject: "Payment received Invoice 1215",
+          plaintext:
+            "Invoice #1215-(Morgan Ellis)\nCustomer: Morgan Ellis\nAmount: $3,183.90\nPayment received\nmorgan.ellis@example.test",
+        }),
+      ],
+    });
+    assert.equal(
+      second.candidates.some(
+        (row) =>
+          row.reviewStatus === "pending" &&
+          row.payload.kind === "project_context" &&
+          row.payload.topic === NEW_PROJECT_CONTEXT_TOPIC &&
+          row.sourceRef.includes("m-pay-later"),
+      ),
+      false,
+    );
+    assert.equal(
+      (await memory.getProjectLifecycleState(nate.projectId, "custom_new_jewelry"))?.stage,
+      "cad",
+    );
+    assert.equal(
+      (await memory.getProjectLifecycleState(abbey.projectId, "custom_new_jewelry"))?.stage,
+      "cad",
+    );
+    const counts = await memory.inspectCounts();
+    assert.equal(counts.projects, 3);
+    assert.equal(counts.persons, 3);
+  });
 });
