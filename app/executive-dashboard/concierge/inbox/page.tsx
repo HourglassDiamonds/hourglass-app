@@ -5,6 +5,7 @@ import {
   conciergeInboxNewPath,
   conciergeInboxRemarkablePath,
 } from "@/lib/continuum/client-memory/read/presentation";
+import { ConciergeBackLink } from "../components/concierge-back-link";
 import { ConciergeShell } from "../components/concierge-shell";
 import { ConciergeUnavailable } from "../components/client-profile-view";
 import { InboxSourceList } from "../components/inbox-source-list";
@@ -45,7 +46,8 @@ export default async function ConciergeInboxPage() {
 
   return (
     <ConciergeShell>
-      <h1 className="font-serif text-[2.15rem] font-normal leading-[1.08] tracking-[-0.04em] text-[#efe8de]">
+      <ConciergeBackLink />
+      <h1 className="mt-8 font-serif text-[2.15rem] font-normal leading-[1.08] tracking-[-0.04em] text-[#efe8de]">
         Inbox
       </h1>
       <div className="mt-6 flex flex-wrap gap-4">

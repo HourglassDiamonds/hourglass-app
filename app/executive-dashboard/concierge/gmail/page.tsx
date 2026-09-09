@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { CONCIERGE_HOME_PATH } from "@/lib/continuum/client-memory/read/presentation";
+import { ConciergeBackLink } from "../components/concierge-back-link";
+import { ConciergeShell } from "../components/concierge-shell";
 import { gmailCurrentStatePublicView, readGmailCurrentState } from "@/lib/continuum/gmail/current-state";
 import { isGmailIncrementalSyncEnabled } from "@/lib/continuum/gmail/env";
 import { snapshotFromCheckpoint } from "@/lib/continuum/gmail/history";
@@ -9,7 +10,6 @@ import {
   GMAIL_HISTORICAL_JOB_KEY,
   GMAIL_INCREMENTAL_JOB_KEY,
 } from "@/lib/continuum/gmail/types";
-import { ConciergeShell } from "../components/concierge-shell";
 import { GmailConnectionTestForm } from "../components/gmail-connection-test";
 import { GmailHistoryForm } from "../components/gmail-history";
 import { GmailIncrementalForm } from "../components/gmail-incremental";
@@ -54,13 +54,7 @@ export default async function ConciergeGmailPage() {
 
   return (
     <ConciergeShell>
-      <Link
-        href={CONCIERGE_HOME_PATH}
-        aria-label="Back to Continuum"
-        className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.14em] text-[#8d8073] outline-none hover:text-[#efe8de] focus-visible:text-[#efe8de]"
-      >
-        ← Continuum
-      </Link>
+      <ConciergeBackLink />
       <div className="hg-concierge-fade mt-6">
         <h1 className="font-serif text-[1.95rem] font-normal leading-[1.08] tracking-[-0.04em] text-[#efe8de] md:text-[2.15rem]">
           Gmail

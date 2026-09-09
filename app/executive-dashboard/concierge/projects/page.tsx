@@ -1,10 +1,9 @@
 import { getAuthenticatedProjectDeskReader } from "@/lib/continuum/client-memory/project-desk/load";
+import { loadCurrentProjectCards } from "@/lib/continuum/client-memory/open-projects/load";
+import { selectOpenProjectWork } from "@/lib/continuum/client-memory/open-projects/select";
 import { ConciergeShell } from "../components/concierge-shell";
-import {
-  ConciergeBackLink,
-  ConciergeUnavailable,
-} from "../components/client-profile-view";
-import { ProjectBookView } from "../components/project-book-view";
+import { ConciergeUnavailable } from "../components/client-profile-view";
+import { ProjectsOperatingHome } from "../components/projects-operating-home";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +12,14 @@ export const metadata = {
   robots: { index: false, follow: false, nocache: true, noarchive: true },
 };
 
-export default async function ConciergeProjectsPage() {
+export default async function ConciergeProjectsPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ view?: string }>;
+}) {
+  const query = searchParams ? await searchParams : {};
+  const view = query.view === "past" ? "past" : "active";
+
   const auth = await getAuthenticatedProjectDeskReader();
   if (!auth.ok) {
     return (
@@ -26,9 +32,13 @@ export default async function ConciergeProjectsPage() {
     );
   }
 
-  let projects: Awaited<ReturnType<typeof auth.reader.listProjects>>;
+  let past: Awaited<ReturnType<typeof auth.reader.listProjects>> = [];
   try {
-    projects = await auth.reader.listProjects();
+    const summaries = await auth.reader.listProjects();
+    const activeIds = new Set(
+      selectOpenProjectWork(summaries).map((row) => row.projectId),
+    );
+    past = summaries.filter((row) => !activeIds.has(row.projectId));
   } catch {
     return (
       <ConciergeShell variant="book">
@@ -40,12 +50,11 @@ export default async function ConciergeProjectsPage() {
     );
   }
 
+  const active = view === "active" ? await loadCurrentProjectCards() : [];
+
   return (
     <ConciergeShell variant="book">
-      <ConciergeBackLink />
-      <div className="hg-concierge-fade mt-8">
-        <ProjectBookView projects={projects} />
-      </div>
+      <ProjectsOperatingHome active={active} past={past} view={view} />
     </ConciergeShell>
   );
 }

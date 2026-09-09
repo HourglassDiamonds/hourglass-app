@@ -285,7 +285,7 @@ describe("Concierge Client Memory UI", () => {
     const home = readFileSync(join(CONCIERGE_DIR, "page.tsx"), "utf8");
     assert.match(home, /loadContinuumHomeModel/);
     assert.doesNotMatch(home, /loadProjectBookPreview/);
-    assert.match(home, /loadCurrentProjectCards/);
+    assert.doesNotMatch(home, /loadCurrentProjectCards/);
     assert.match(home, /CommandCenterHome/);
     assert.match(home, /variant="home"/);
     assert.doesNotMatch(home, /Search your client memory|Search clients/);
@@ -303,14 +303,13 @@ describe("Concierge Client Memory UI", () => {
       join(CONCIERGE_DIR, "components", "command-center-home.tsx"),
       "utf8",
     );
-    assert.match(command, /People/);
+    assert.doesNotMatch(command, /People/);
     assert.doesNotMatch(command, /from "\.\/projects-home"/);
     assert.doesNotMatch(command, /<ProjectsHome/);
-    assert.match(command, /OpenProjectsHome/);
-    assert.match(command, /CONCIERGE_CALENDAR_PATH/);
-    assert.match(command, /<ConciergeSearch \/>/);
-    assert.doesNotMatch(command, /autoFocus/);
-    assert.doesNotMatch(command, /intent=/);
+    assert.doesNotMatch(command, /OpenProjectsHome/);
+    assert.doesNotMatch(command, /CONCIERGE_CALENDAR_PATH/);
+    assert.doesNotMatch(command, /<ConciergeSearch/);
+    assert.match(command, /ChiefOfStaffToday/);
     const actions = readFileSync(join(CONCIERGE_DIR, "actions.ts"), "utf8");
     assert.match(actions, /getAuthenticatedClientMemoryReader/);
     assert.match(actions, /askConcierge/);
@@ -460,7 +459,7 @@ describe("Concierge Client Memory UI", () => {
     assert.doesNotMatch(editForm, /roles|source_system|created_by/);
   });
 
-  it("renders an honest command center without fake intelligence", () => {
+  it("renders an honest Today surface without fake intelligence", () => {
     const model = composeContinuumHome({
       now: new Date("2026-08-24T18:00:00.000Z"),
     });
@@ -469,6 +468,10 @@ describe("Concierge Client Memory UI", () => {
       "utf8",
     );
     const home = readFileSync(join(CONCIERGE_DIR, "page.tsx"), "utf8");
+    const askHome = readFileSync(
+      join(CONCIERGE_DIR, "components", "concierge-ask-home.tsx"),
+      "utf8",
+    );
     const loop = composeCosOperatingLoop({
       jobs: [],
       nowIso: "2026-08-24T18:00:00.000Z",
@@ -480,21 +483,23 @@ describe("Concierge Client Memory UI", () => {
     assert.equal(greetingLine(model), "Good afternoon, Justin.");
     assert.match(home, /loadContinuumHomeModel/);
     assert.doesNotMatch(home, /loadProjectBookPreview/);
-    assert.match(home, /loadCurrentProjectCards/);
+    assert.doesNotMatch(home, /loadCurrentProjectCards/);
     assert.match(home, /loadCosOperatingLoop/);
     assert.match(home, /CommandCenterHome/);
     assert.match(command, /greetingLine/);
     assert.match(command, /ChiefOfStaffToday/);
-    assert.match(command, /AskConciergeShell/);
-    assert.match(command, /People/);
-    assert.match(command, /QuickCapture/);
+    assert.doesNotMatch(command, /AskConciergeShell/);
+    assert.doesNotMatch(command, /People/);
+    assert.doesNotMatch(command, /QuickCapture/);
     assert.doesNotMatch(command, /from "\.\/projects-home"/);
     assert.doesNotMatch(command, /<ProjectsHome/);
-    assert.match(command, /OpenProjectsHome/);
-    assert.match(cos, /Chief of Staff/);
+    assert.doesNotMatch(command, /OpenProjectsHome/);
+    assert.doesNotMatch(cos, /Chief of Staff/);
     assert.match(cos, /caught up/);
     assert.doesNotMatch(cos, /coming soon|warming up|learning/i);
     assert.doesNotMatch(cos, /follow-up overdue|sentiment|SLA overdue/i);
+    assert.match(askHome, /AskConciergeShell/);
+    assert.match(askHome, /QuickCapture/);
     assert.match(capture, /Quick Capture/);
     assert.match(capture, /Add Note/);
     assert.match(capture, /Add Client/);
@@ -671,6 +676,6 @@ describe("Concierge Client Memory UI", () => {
       join(CONCIERGE_DIR, "note", "new", "page.tsx"),
       "utf8",
     );
-    assert.match(picker, /CONCIERGE_HOME_PATH/);
+    assert.match(picker, /ConciergeBackLink/);
   });
 });

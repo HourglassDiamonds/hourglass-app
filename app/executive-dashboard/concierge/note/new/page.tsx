@@ -1,5 +1,4 @@
-import Link from "next/link";
-import { CONCIERGE_HOME_PATH } from "@/lib/continuum/client-memory/read/presentation";
+import { ConciergeBackLink } from "../../components/concierge-back-link";
 import { ConciergeSearch } from "../../components/concierge-search";
 import { ConciergeShell } from "../../components/concierge-shell";
 
@@ -13,13 +12,7 @@ export const metadata = {
 export default function ConciergeAddNotePickerPage() {
   return (
     <ConciergeShell variant="document">
-      <Link
-        href={CONCIERGE_HOME_PATH}
-        aria-label="Back to Continuum"
-        className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.24em] text-[#8d8073] outline-none hover:text-[#efe8de] focus-visible:text-[#efe8de]"
-      >
-        ← Continuum
-      </Link>
+      <ConciergeBackLink />
       <div className="hg-concierge-fade mt-8">
         <h1 className="font-serif text-[2.15rem] font-normal leading-[1.08] tracking-[-0.04em] text-[#efe8de]">
           Add Note

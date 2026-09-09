@@ -1,5 +1,5 @@
-import Link from "next/link";
-import { CONCIERGE_HOME_PATH } from "@/lib/continuum/client-memory/read/presentation";
+import { ConciergeBackLink } from "../components/concierge-back-link";
+import { ConciergeShell } from "../components/concierge-shell";
 import { isContinuumCalendarOAuthConfigured } from "@/lib/continuum/calendar/env";
 import { loadCalendarFounderSurface } from "@/lib/continuum/calendar/load";
 import { toCalendarFounderContextView } from "@/lib/continuum/calendar/presentation";
@@ -14,7 +14,6 @@ import {
   getAuthenticatedCalendarAssociationWriter,
   loadCalendarAssociationWorld,
 } from "@/lib/continuum/calendar/association/load";
-import { ConciergeShell } from "../components/concierge-shell";
 import { CalendarConnectionControls } from "../components/calendar-connection";
 import { CalendarContextSurface } from "../components/calendar-context";
 import { IntakeCandidateReviewList } from "../components/intake-candidate-review";
@@ -71,13 +70,7 @@ export default async function ConciergeCalendarPage() {
 
   return (
     <ConciergeShell>
-      <Link
-        href={CONCIERGE_HOME_PATH}
-        aria-label="Back to Continuum"
-        className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.14em] text-[#8d8073] outline-none hover:text-[#efe8de] focus-visible:text-[#efe8de]"
-      >
-        ← Continuum
-      </Link>
+      <ConciergeBackLink />
       <div className="hg-concierge-fade mt-6">
         <h1 className="font-serif text-[1.95rem] font-normal leading-[1.08] tracking-[-0.04em] text-[#efe8de] md:text-[2.15rem]">
           Calendar

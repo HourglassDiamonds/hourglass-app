@@ -61,6 +61,10 @@ describe("Calendar founder UI", () => {
       join(ROOT, "app/executive-dashboard/concierge/components/command-center-home.tsx"),
       "utf8",
     );
+    const nav = readFileSync(
+      join(ROOT, "app/executive-dashboard/concierge/components/concierge-operating-nav.tsx"),
+      "utf8",
+    );
     assert.match(ui, /Coming up/);
     assert.match(ui, /Recently/);
     assert.doesNotMatch(ui, /Sarah|Dylan|prep for|follow up/i);
@@ -69,8 +73,8 @@ describe("Calendar founder UI", () => {
     assert.match(page, /IntakeCandidateReviewList/);
     assert.match(page, /Association review/);
     assert.equal(CONCIERGE_CALENDAR_PATH, "/executive-dashboard/concierge/calendar");
-    assert.match(home, /Calendar/);
-    assert.match(home, /CONCIERGE_CALENDAR_PATH/);
+    assert.match(nav, /CONCIERGE_CALENDAR_PATH|OPERATING_TOOL_LINKS/);
+    assert.doesNotMatch(home, /CONCIERGE_CALENDAR_PATH/);
     assert.doesNotMatch(home, /OpenProjectsHome[\s\S]*Calendar context/);
   });
 

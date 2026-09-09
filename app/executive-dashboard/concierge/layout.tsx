@@ -1,15 +1,28 @@
 import type { ReactNode } from "react";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { Inter, Newsreader } from "next/font/google";
 import { EXECUTIVE_DASHBOARD_LOGIN_PATH } from "@/lib/executive-dashboard/access";
 import { EXECUTIVE_DASHBOARD_SESSION_COOKIE } from "@/lib/executive-dashboard/session";
 import { requireInternalClientMemorySession } from "@/lib/continuum/client-memory/read/access";
 import "./concierge.css";
 
+const continuumSans = Inter({
+  subsets: ["latin"],
+  variable: "--font-continuum-sans",
+  display: "swap",
+});
+
+const continuumSerif = Newsreader({
+  subsets: ["latin"],
+  variable: "--font-continuum-serif",
+  display: "swap",
+});
+
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Concierge",
+  title: "Continuum",
   robots: { index: false, follow: false, nocache: true, noarchive: true },
 };
 
@@ -26,5 +39,9 @@ export default async function ConciergeLayout({
     redirect(EXECUTIVE_DASHBOARD_LOGIN_PATH);
   }
 
-  return children;
+  return (
+    <div className={`${continuumSans.variable} ${continuumSerif.variable}`}>
+      {children}
+    </div>
+  );
 }

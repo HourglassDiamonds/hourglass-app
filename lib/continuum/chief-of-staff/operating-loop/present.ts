@@ -12,7 +12,7 @@ import {
   currentProjectToggleId,
 } from "@/lib/continuum/client-memory/open-projects/present";
 import {
-  CONCIERGE_HOME_PATH,
+  CONCIERGE_PROJECTS_PATH,
   conciergeEditActionPath,
   conciergeOpenJobPath,
 } from "@/lib/continuum/client-memory/read/presentation";
@@ -39,13 +39,15 @@ export const COS_CAUGHT_UP_DETAIL =
   "When new work is recorded, the next actions will appear here.";
 export const COS_DISCONNECTED_HEADING = "Open Jobs are not connected yet.";
 export const COS_DISCONNECTED_DETAIL =
-  "Current Projects can still open. Top 5 waits on canonical Open Jobs.";
+  "Current Projects can still open. Today's queue waits on canonical Open Jobs.";
 export const COS_ACTIVE_HEADING = "Today";
 export const COS_ANOMALY_TITLE = "Something seems off";
 export const COS_RECAP_TITLE = "End of day";
+/** Internal ranking label. Not founder-facing on Today. */
 export const COS_TOP5_TITLE = "Top 5";
 export const COS_DECISION_TITLE = "Needs your decision";
 export const COS_WORTH_KNOWING_TITLE = "Worth knowing";
+/** Internal moderator label. Not founder-facing on Today. */
 export const COS_BRIEF_TITLE = "Concierge Brief";
 export const COS_WATCHING_TITLE = "Already handled / Watching";
 export const COS_FALLBACK_ATTENTION_TITLE = "Earlier attention view";
@@ -95,7 +97,7 @@ export function presentTop5Item(
     ownership: ownershipLabel(item.waitingOnActor),
     timing: timingLabel(item.dueAt, nowIso),
     why: whyLabel(item),
-    accordionHref: `${CONCIERGE_HOME_PATH}#${currentProjectToggleId(item.projectId)}`,
+    accordionHref: `${CONCIERGE_PROJECTS_PATH}#${currentProjectToggleId(item.projectId)}`,
     jobHref: conciergeOpenJobPath(item.projectId, item.id),
     editHref: conciergeEditActionPath(item.projectId, item.id),
     completable: writer != null,

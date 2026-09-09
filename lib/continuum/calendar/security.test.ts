@@ -123,6 +123,13 @@ describe("Calendar activation security", () => {
       ),
       "utf8",
     );
+    const nav = readFileSync(
+      join(
+        ROOT,
+        "app/executive-dashboard/concierge/components/concierge-operating-nav.tsx",
+      ),
+      "utf8",
+    );
     assert.match(page, /robots: \{ index: false/);
     assert.match(page, /force-dynamic/);
     assert.match(page, /Calendar consent required|CalendarConnectionControls/);
@@ -131,7 +138,8 @@ describe("Calendar activation security", () => {
     assert.doesNotMatch(ui, /this belongs to|prep for|follow up after/i);
     assert.doesNotMatch(ui, /description/);
     assert.doesNotMatch(page, /OpenProjectsHome|Current Projects/);
-    assert.match(home, /CONCIERGE_CALENDAR_PATH/);
+    assert.match(nav, /OPERATING_TOOL_LINKS/);
+    assert.doesNotMatch(home, /CONCIERGE_CALENDAR_PATH/);
     assert.doesNotMatch(home, /data-open-projects-home[\s\S]*Calendar/);
   });
 

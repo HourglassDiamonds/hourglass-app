@@ -24,6 +24,21 @@ import { PERSON_FACT_TYPE_BIRTHDAY } from "@/lib/continuum/client-memory/facts/t
 
 export const CONCIERGE_HOME_PATH = "/executive-dashboard/concierge";
 export const CONCIERGE_PROJECTS_PATH = `${CONCIERGE_HOME_PATH}/projects`;
+export const CONCIERGE_CLIENTS_PATH = `${CONCIERGE_HOME_PATH}/clients`;
+export const CONCIERGE_REPAIRS_PATH = `${CONCIERGE_HOME_PATH}/repairs`;
+export const CONCIERGE_ASK_PATH = `${CONCIERGE_HOME_PATH}/ask`;
+
+export function conciergeClientsPath(): string {
+  return CONCIERGE_CLIENTS_PATH;
+}
+
+export function conciergeRepairsPath(): string {
+  return CONCIERGE_REPAIRS_PATH;
+}
+
+export function conciergeAskPath(): string {
+  return CONCIERGE_ASK_PATH;
+}
 
 export function conciergeClientPath(personId: string): string {
   return `${CONCIERGE_HOME_PATH}/client/${personId}`;

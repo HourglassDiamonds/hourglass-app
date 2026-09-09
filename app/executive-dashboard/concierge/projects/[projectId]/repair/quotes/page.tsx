@@ -3,9 +3,9 @@ import { getAuthenticatedProjectDeskReader } from "@/lib/continuum/client-memory
 import { getAuthenticatedRepairQuoteReader } from "@/lib/continuum/repair-quoting/load";
 import {
   conciergeProjectPath,
-  conciergeProjectRepairPath,
   isProjectIdParam,
 } from "@/lib/continuum/client-memory/read/presentation";
+import { ConciergeBackLink } from "../../../../components/concierge-back-link";
 import { ConciergeShell } from "../../../../components/concierge-shell";
 import { ConciergeUnavailable } from "../../../../components/client-profile-view";
 import { RepairQuotesSection } from "../../../../components/repair-quote-view";
@@ -78,13 +78,7 @@ export default async function ConciergeRepairQuotesPage({
 
   return (
     <ConciergeShell>
-      <Link
-        href={conciergeProjectRepairPath(projectId)}
-        aria-label={`Back to Repair / Service for ${desk.desk.title}`}
-        className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.24em] text-[#8d8073] outline-none hover:text-[#efe8de] focus-visible:text-[#efe8de]"
-      >
-        ← Repair / Service
-      </Link>
+      <ConciergeBackLink />
       <div className="hg-concierge-fade mt-8">
         <h1 className="font-serif text-[2.15rem] font-normal leading-[1.08] tracking-[-0.04em] text-[#efe8de]">
           Repair quotes

@@ -16,6 +16,9 @@ import { ClientMemorySection } from "./client-memory-section";
 import { ClientNoteList } from "./client-note-list";
 import { ClientProfileHeader } from "./client-profile-header";
 import { PersonProjectBooksSection } from "./person-project-books";
+import { ConciergeBackLink } from "./concierge-back-link";
+
+export { ConciergeBackLink };
 
 export function ClientProfileView({
   cockpit,
@@ -271,17 +274,6 @@ export function ClientProfileView({
   );
 }
 
-export function ConciergeBackLink() {
-  return (
-    <Link
-      href="/executive-dashboard/concierge"
-      aria-label="Back to Continuum"
-      className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.24em] text-[#8d8073] outline-none hover:text-[#efe8de] focus-visible:text-[#efe8de]"
-    >
-      ← Continuum
-    </Link>
-  );
-}
 
 export function ConciergeUnavailable({
   title,

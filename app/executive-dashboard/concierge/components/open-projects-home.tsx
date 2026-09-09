@@ -44,10 +44,12 @@ export function OpenProjectsHome({
   projects,
   viewport,
   nowIso,
+  heading = OPEN_PROJECT_WORK_TITLE,
 }: {
   projects: CurrentProjectCard[];
   viewport?: CurrentProjectOperatingViewport;
   nowIso?: string;
+  heading?: string | null;
 }) {
   const detected = useSyncExternalStore(
     subscribeViewport,
@@ -62,15 +64,17 @@ export function OpenProjectsHome({
 
   return (
     <section data-current-projects data-operating-viewport={layout}>
-      <h2 className="text-[11px] uppercase tracking-[0.28em] text-[#8d8073]">
-        {OPEN_PROJECT_WORK_TITLE}
-      </h2>
+      {heading ? (
+        <h2 className="text-[11px] uppercase tracking-[0.28em] text-[#8d8073]">
+          {heading}
+        </h2>
+      ) : null}
       {projects.length === 0 ? (
-        <p className="mt-4 max-w-[34ch] text-[15px] leading-relaxed text-[#c4b7aa]">
+        <p className={`${heading ? "mt-4" : ""} max-w-[34ch] text-[15px] leading-relaxed text-[#c4b7aa]`}>
           {OPEN_PROJECT_WORK_NONE_LABEL}
         </p>
       ) : (
-        <ul className="hg-current-project-groups mt-4">
+        <ul className={`hg-current-project-groups ${heading ? "mt-4" : ""}`}>
           {groups.map((group) => (
             <li key={group.id} className="min-w-0">
               <CurrentProjectGroup group={group} />

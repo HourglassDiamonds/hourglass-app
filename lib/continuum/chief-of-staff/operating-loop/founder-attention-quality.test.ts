@@ -458,7 +458,7 @@ describe("CoS founder-attention attribution and conflict quality", () => {
     assert.equal(surface.needsYourDecision[0]?.title, "Unassigned");
   });
 
-  it("hides spec counts from the founder row and leaves Review as the evidence path", () => {
+  it("hides spec counts from the founder row and leaves Evidence as the muted evidence path", () => {
     const view = composeCosOperatingLoop({
       jobs: [],
       candidates: [
@@ -485,6 +485,7 @@ describe("CoS founder-attention attribution and conflict quality", () => {
     const html = renderToStaticMarkup(createElement(ChiefOfStaffToday, { loop: view }));
     assert.doesNotMatch(html, /specs captured/);
     assert.doesNotMatch(html, /supporting notes on file/);
-    assert.match(html, /Review|Gmail evidence/);
+    assert.match(html, />Evidence<\/summary>/);
+    assert.match(html, /hg-cos-evidence/);
   });
 });

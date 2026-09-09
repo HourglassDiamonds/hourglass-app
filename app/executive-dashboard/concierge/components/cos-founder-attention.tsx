@@ -5,6 +5,39 @@ import { CosProposedActionRow } from "./cos-proposed-actions";
 
 type FormAction = (formData: FormData) => void | Promise<void>;
 
+export function CosFounderAttentionControls({
+  item,
+  completeAction,
+  reviewAction,
+}: {
+  item: CosFounderAttentionItem;
+  completeAction?: FormAction;
+  reviewAction?: FormAction;
+}) {
+  return (
+    <>
+      {item.recap ? <CosRecapConfirm item={item.recap} action={completeAction} /> : null}
+      {item.proposedAction ? (
+        <ul className="mt-2">
+          <CosProposedActionRow item={item.proposedAction} action={reviewAction} compact />
+        </ul>
+      ) : item.sourceHref ? (
+        <Link
+          href={item.sourceHref}
+          className="mt-1 inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.2em] text-[#ad9164] outline-none hover:text-[#efe8de]"
+        >
+          {item.sourceLabel ?? "Review"}
+        </Link>
+      ) : null}
+      {item.recap && !item.recap.completable ? (
+        <p className="mt-1 text-[13px] leading-relaxed text-[#8d8073]">
+          Confirmation only — I will not mark this complete.
+        </p>
+      ) : null}
+    </>
+  );
+}
+
 export function CosFounderAttentionRow({
   item,
   completeAction,
@@ -16,7 +49,6 @@ export function CosFounderAttentionRow({
 }) {
   return (
     <li className="hg-cos-item" data-cos-attention-lane={item.lane}>
-      {item.recap ? <CosRecapConfirm item={item.recap} action={completeAction} /> : null}
       <div className="min-w-0 overflow-x-hidden">
         <p className="break-words text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
           {item.title}
@@ -29,23 +61,11 @@ export function CosFounderAttentionRow({
             {item.detail}
           </p>
         ) : null}
-        {item.proposedAction ? (
-          <ul className="mt-2">
-            <CosProposedActionRow item={item.proposedAction} action={reviewAction} compact />
-          </ul>
-        ) : item.sourceHref ? (
-          <Link
-            href={item.sourceHref}
-            className="mt-1 inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.2em] text-[#ad9164] outline-none hover:text-[#efe8de]"
-          >
-            {item.sourceLabel ?? "Review"}
-          </Link>
-        ) : null}
-        {item.recap && !item.recap.completable ? (
-          <p className="mt-1 text-[13px] leading-relaxed text-[#8d8073]">
-            Confirmation only — I will not mark this complete.
-          </p>
-        ) : null}
+        <CosFounderAttentionControls
+          item={item}
+          completeAction={completeAction}
+          reviewAction={reviewAction}
+        />
       </div>
     </li>
   );

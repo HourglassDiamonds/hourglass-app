@@ -506,8 +506,8 @@ describe("CoS founder-attention classification", () => {
     assert.ok(visible >= 1 && visible <= 8);
     assert.equal(view.top5.length, 1);
     const html = renderToStaticMarkup(createElement(ChiefOfStaffToday, { loop: view }));
-    assert.match(html, /Top 5/);
-    assert.match(html, /Concierge Brief|Needs your decision/);
+    assert.match(html, /Up next/i);
+    assert.doesNotMatch(html, /Concierge Brief|Recommended:/);
     assert.doesNotMatch(html, /Please do not reply directly to this email/);
     assert.doesNotMatch(html, /Proposed actions/);
     const css = readFileSync(

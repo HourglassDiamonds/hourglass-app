@@ -48,7 +48,7 @@ function card(): CurrentProjectCard {
 }
 
 describe("CoS operating loop Command Center UI", () => {
-  it("renders Top 5 with 44px checkboxes and no horizontal overflow classes", () => {
+  it("renders Up next with 44px checkboxes and no horizontal overflow classes", () => {
     const jobs = Array.from({ length: 3 }, (_, index) =>
       fixtureJob({
         jobId: `cccccccc-cccc-4ccc-8ccc-ccccccccccc${index}`,
@@ -63,7 +63,8 @@ describe("CoS operating loop Command Center UI", () => {
     });
     const html = renderToStaticMarkup(createElement(ChiefOfStaffToday, { loop }));
     assert.match(html, /data-cos-operating-loop="active"/);
-    assert.match(html, /Top 5/);
+    assert.match(html, /Up next/i);
+    assert.doesNotMatch(html, /Concierge Brief|Recommended:|>Top 5</);
     assert.equal([...html.matchAll(/hg-cos-check/g)].length, 3);
     assert.match(html, /min-w-0/);
     assert.match(html, /overflow-x-hidden/);
@@ -132,9 +133,9 @@ describe("CoS operating loop Command Center UI", () => {
       nowIso: COS_LOOP_NOW,
     });
     const html = renderToStaticMarkup(createElement(ChiefOfStaffToday, { loop }));
-    assert.match(html, /Needs your decision/);
     assert.match(html, /actually sent/);
     assert.match(html, /Confirmation only/);
+    assert.doesNotMatch(html, /Needs your decision/);
     assert.doesNotMatch(html, /End of day/);
     assert.doesNotMatch(html, /Proposed actions/);
   });
@@ -178,8 +179,8 @@ describe("CoS operating loop Command Center UI", () => {
       nowIso: COS_LOOP_NOW,
     });
     const html = renderToStaticMarkup(createElement(ChiefOfStaffToday, { loop }));
-    assert.match(html, /Something seems off/);
     assert.match(html, /newer evidence disagrees/);
+    assert.doesNotMatch(html, /Something seems off/);
     assert.doesNotMatch(html, /Needs your decision/);
   });
 
@@ -216,13 +217,15 @@ describe("CoS operating loop Command Center UI", () => {
       newMutationId: () => "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
     });
     const html = renderToStaticMarkup(createElement(ChiefOfStaffToday, { loop }));
-    assert.match(html, /Concierge Brief/);
-    assert.match(html, /Needs your decision|Add to Top 5/);
+    assert.match(html, /Up next/i);
+    assert.doesNotMatch(html, /Concierge Brief/);
+    assert.doesNotMatch(html, /Add to Today/);
     assert.match(html, /send the CAD tomorrow/);
-    assert.match(html, /Add to Top 5|Add to actions/);
+    assert.doesNotMatch(html, /Add to Top 5/);
     assert.match(html, /Dismiss/);
     assert.match(html, /Review/);
     assert.doesNotMatch(html, /Proposed actions/);
+    assert.doesNotMatch(html, /caught up/);
     const editForm = readFileSync(
       join(CONCIERGE_DIR, "components", "edit-action-form.tsx"),
       "utf8",
@@ -241,7 +244,7 @@ describe("CoS operating loop Command Center UI", () => {
     assert.match(page, /EditActionForm/);
   });
 
-  it("keeps Current Projects accordion as the only project operating surface", () => {
+  it("keeps Current Projects accordion as the Projects destination operating surface", () => {
     const work = renderToStaticMarkup(
       createElement(OpenProjectsHome, { projects: [card()] }),
     );
@@ -252,12 +255,14 @@ describe("CoS operating loop Command Center UI", () => {
       "utf8",
     );
     const home = readFileSync(join(CONCIERGE_DIR, "page.tsx"), "utf8");
-    assert.match(command, /OpenProjectsHome/);
+    const projects = readFileSync(join(CONCIERGE_DIR, "projects", "page.tsx"), "utf8");
+    assert.doesNotMatch(command, /OpenProjectsHome/);
     assert.match(command, /operatingLoop/);
     assert.match(command, /completeAction/);
     assert.doesNotMatch(command, /from "\.\/projects-home"/);
     assert.match(home, /completeTop5OpenJobAction/);
     assert.match(home, /loadCosOperatingLoop/);
-    assert.match(home, /loadCurrentProjectCards/);
+    assert.doesNotMatch(home, /loadCurrentProjectCards/);
+    assert.match(projects, /loadCurrentProjectCards/);
   });
 });

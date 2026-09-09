@@ -92,11 +92,11 @@ describe("CoS operating loop security", () => {
       join(ROOT, "app/executive-dashboard/concierge/components/chief-of-staff-today.tsx"),
       "utf8",
     );
-    assert.match(today, /item\.editHref/);
-    assert.match(today, /CosFounderAttentionRow/);
-    assert.match(today, /needsYourDecision/);
-    assert.match(today, /CosConciergeBrief/);
-    assert.match(today, /loop\.brief/);
+    assert.match(today, /item\.job\.editHref/);
+    assert.match(today, /CosFounderAttentionControls/);
+    assert.match(today, /composeTodayDocket/);
+    assert.match(today, /CosBriefActions/);
+    assert.match(today, /CosWatchingList/);
     assert.doesNotMatch(today, /COS_PROPOSED_ACTIONS_TITLE|Proposed actions/);
     assert.match(page, /reviewProposedActionFromForm/);
     assert.doesNotMatch(page, /composeChiefOfStaffBrief|runChiefOfStaffShadow/);

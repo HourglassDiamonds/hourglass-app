@@ -223,7 +223,7 @@ describe("Current Projects Command Center accordion UI", () => {
     assert.doesNotMatch(html, /Latest request \/ change/);
   });
 
-  it("keeps Command Center CoS quiet and does not reintroduce aria-expanded", () => {
+  it("keeps Today CoS quiet and does not reintroduce aria-expanded", () => {
     const loop = composeCosOperatingLoop({
       jobs: [],
       nowIso: "2026-08-24T18:00:00.000Z",
@@ -236,16 +236,18 @@ describe("Current Projects Command Center accordion UI", () => {
       "utf8",
     );
     const home = readFileSync(join(CONCIERGE_DIR, "page.tsx"), "utf8");
+    const projects = readFileSync(join(CONCIERGE_DIR, "projects", "page.tsx"), "utf8");
     const css = readFileSync(join(CONCIERGE_DIR, "concierge.css"), "utf8");
     const work = renderToStaticMarkup(createElement(OpenProjectsHome, { projects: [card()] }));
-    assert.match(cos, /Chief of Staff/);
+    assert.doesNotMatch(cos, /Chief of Staff/);
     assert.match(cos, /caught up/);
     assert.match(command, /ChiefOfStaffToday/);
-    assert.match(command, /OpenProjectsHome/);
+    assert.doesNotMatch(command, /OpenProjectsHome/);
     assert.doesNotMatch(command, /from "\.\/projects-home"/);
     assert.doesNotMatch(command, /<ProjectsHome/);
-    assert.match(home, /loadCurrentProjectCards/);
+    assert.doesNotMatch(home, /loadCurrentProjectCards/);
     assert.match(home, /loadCosOperatingLoop/);
+    assert.match(projects, /loadCurrentProjectCards/);
     assert.doesNotMatch(home, /loadProjectBookPreview/);
     assert.doesNotMatch(command, /composeChiefOfStaffBrief|activateCoS|agent-os/);
     assert.match(work, /Current Projects/);
@@ -256,27 +258,29 @@ describe("Current Projects Command Center accordion UI", () => {
     assert.match(css, /hg-current-project-status/);
     assert.match(css, /object-fit:\s*contain/);
     assert.match(css, /overflow-x:\s*hidden/);
-    assert.match(css, /minmax\(0,\s*0\.95fr\)/);
     assert.doesNotMatch(css, /minmax\(20rem/);
     assert.doesNotMatch(work, /Latest request \/ change/);
   });
 
-  it("keeps Current Projects as the only Command Center project operating surface", () => {
+  it("keeps Current Projects as the Projects destination operating surface", () => {
     const command = readFileSync(
       join(CONCIERGE_DIR, "components", "command-center-home.tsx"),
       "utf8",
     );
     const home = readFileSync(join(CONCIERGE_DIR, "page.tsx"), "utf8");
+    const projects = readFileSync(join(CONCIERGE_DIR, "projects", "page.tsx"), "utf8");
     const css = readFileSync(join(CONCIERGE_DIR, "concierge.css"), "utf8");
-    assert.match(command, /OpenProjectsHome/);
+    assert.doesNotMatch(command, /OpenProjectsHome/);
     assert.doesNotMatch(command, /from "\.\/projects-home"/);
     assert.doesNotMatch(command, /<ProjectsHome/);
     assert.doesNotMatch(command, /Current operating state is unknown/);
     assert.doesNotMatch(home, /loadProjectBookPreview/);
-    assert.match(home, /loadCurrentProjectCards/);
+    assert.doesNotMatch(home, /loadCurrentProjectCards/);
     assert.match(home, /fetchCache = "force-no-store"/);
-    assert.match(command, /People/);
-    assert.match(command, /QuickCapture/);
+    assert.match(projects, /loadCurrentProjectCards/);
+    assert.match(projects, /OpenProjectsHome|ProjectsOperatingHome/);
+    assert.doesNotMatch(command, /People/);
+    assert.doesNotMatch(command, /QuickCapture/);
     const capture = readFileSync(
       join(CONCIERGE_DIR, "components", "quick-capture.tsx"),
       "utf8",
@@ -299,10 +303,8 @@ describe("Current Projects Command Center accordion UI", () => {
     assert.doesNotMatch(form, /name="kind"|waitingOnActor/);
     assert.match(page, /getAuthenticatedProjectJobWriter/);
     assert.match(page, /CreateActionForm/);
-    assert.match(command, /conciergeProjectsPath/);
-    assert.match(command, /min-w-0/);
+    assert.doesNotMatch(command, /conciergeProjectsPath/);
     assert.match(css, /overflow-x:\s*hidden/);
-    assert.match(css, /minmax\(0,\s*0\.95fr\)/);
     assert.doesNotMatch(css, /minmax\(20rem/);
   });
 

@@ -7,6 +7,9 @@ import {
   conciergeHistoryPath,
   conciergeProjectPath,
   conciergeProjectsPath,
+  conciergeClientsPath,
+  conciergeRepairsPath,
+  conciergeAskPath,
   conciergeCohort1Path,
   conciergeCohort1ProjectPath,
   conciergeAddNotePickerPath,
@@ -181,6 +184,9 @@ describe("Concierge presentation", () => {
       "/executive-dashboard/concierge/projects/eb2802bd-e312-471e-8582-8dbd5ad2e04b",
     );
     assert.equal(conciergeProjectsPath(), "/executive-dashboard/concierge/projects");
+    assert.equal(conciergeClientsPath(), "/executive-dashboard/concierge/clients");
+    assert.equal(conciergeRepairsPath(), "/executive-dashboard/concierge/repairs");
+    assert.equal(conciergeAskPath(), "/executive-dashboard/concierge/ask");
     assert.equal(
       conciergeCohort1Path(),
       "/executive-dashboard/concierge/project-reconstruction/cohort-1",

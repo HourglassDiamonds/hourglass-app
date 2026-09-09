@@ -1781,7 +1781,7 @@ describe("Concierge Executive Moderator V1", () => {
     assert.match(abbey.brief[0]?.personLabel ?? "", /Abbey Castillo/i);
   });
 
-  it("renders Concierge Brief above collapsed fallback attention and keeps Top 5 first", () => {
+  it("renders Brief and Open Job items in one Up next docket without product labels", () => {
     const view = loopOf({
       jobs: [
         fixtureJob({
@@ -1810,25 +1810,19 @@ describe("Concierge Executive Moderator V1", () => {
       nowIso: COS_LOOP_NOW,
     });
     const html = renderToStaticMarkup(createElement(ChiefOfStaffToday, { loop: view }));
-    assert.match(html, /Top 5/);
-    assert.match(html, /Concierge Brief/);
-    assert.match(html, /Review evidence/);
+    assert.match(html, /Up next/i);
+    assert.doesNotMatch(html, /Concierge Brief|Recommended:|>Top 5</);
+    assert.doesNotMatch(html, /Earlier attention view/);
+    assert.match(html, /Evidence/);
     assert.match(html, /Open email/);
-    const briefHtml = html.slice(
-      html.indexOf("data-cos-brief"),
-      html.includes("data-cos-fallback-attention")
-        ? html.indexOf("data-cos-fallback-attention")
-        : html.length,
-    );
-    assert.doesNotMatch(
-      briefHtml.replace(/href="[^"]*"/g, 'href=""'),
-      /aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/,
-    );
-    const top5At = html.indexOf("Top 5");
-    const briefAt = html.indexOf("Concierge Brief");
-    assert.ok(top5At >= 0 && briefAt > top5At);
-    const fallbackAt = html.indexOf("Earlier attention view");
-    if (fallbackAt >= 0) assert.ok(fallbackAt > briefAt);
+    const briefChunks = html.split("data-cos-brief-item").slice(1);
+    for (const chunk of briefChunks) {
+      const row = chunk.split("data-cos-docket-item")[0] ?? chunk;
+      assert.doesNotMatch(
+        row.replace(/href="[^"]*"/g, 'href=""'),
+        /aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/,
+      );
+    }
     const css = readFileSync(
       join(DIR, "../../../../app/executive-dashboard/concierge/concierge.css"),
       "utf8",

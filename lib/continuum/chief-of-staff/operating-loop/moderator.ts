@@ -35,7 +35,7 @@ import {
   CONCIERGE_GMAIL_INTAKE_PATH,
 } from "@/lib/continuum/gmail/types";
 import {
-  CONCIERGE_HOME_PATH,
+  CONCIERGE_PROJECTS_PATH,
   conciergeCreateActionPath,
   conciergeProjectPath,
 } from "@/lib/continuum/client-memory/read/presentation";
@@ -505,7 +505,7 @@ function openJobLabelFor(
 }
 
 function projectHref(projectId: string, isCurrent: boolean): string {
-  if (isCurrent) return `${CONCIERGE_HOME_PATH}#${currentProjectToggleId(projectId)}`;
+  if (isCurrent) return `${CONCIERGE_PROJECTS_PATH}#${currentProjectToggleId(projectId)}`;
   return conciergeProjectPath(projectId);
 }
 

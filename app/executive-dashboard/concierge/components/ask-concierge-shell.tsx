@@ -49,7 +49,7 @@ export function AskConciergeShell() {
             autoCorrect="off"
             spellCheck={false}
             enterKeyHint="go"
-            placeholder="Ask anything about your relationships…"
+            placeholder="Who has a birthday in November?"
             className="min-h-14 w-full rounded-[22px] border border-white/[0.08] bg-[#1d1916] px-5 text-[17px] text-[#efe8de] outline-none placeholder:text-[#7d7268] focus-visible:border-[#ad9164]/70 focus-visible:shadow-[0_0_0_3px_rgba(173,145,100,0.22)]"
           />
           <button

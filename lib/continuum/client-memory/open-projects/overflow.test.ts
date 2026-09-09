@@ -55,20 +55,21 @@ function card(
   };
 }
 
-describe("Current Projects Command Center overflow", () => {
-  it("does not keep a competing Projects or Open Projects operating list on Command Center", () => {
+describe("Current Projects operating overflow", () => {
+  it("does not keep a competing Projects list on Today", () => {
     const command = readFileSync(
       join(CONCIERGE_DIR, "components", "command-center-home.tsx"),
       "utf8",
     );
     const home = readFileSync(join(CONCIERGE_DIR, "page.tsx"), "utf8");
+    const projects = readFileSync(join(CONCIERGE_DIR, "projects", "page.tsx"), "utf8");
     const css = readFileSync(join(CONCIERGE_DIR, "concierge.css"), "utf8");
     const shell = readFileSync(
       join(CONCIERGE_DIR, "components", "concierge-shell.tsx"),
       "utf8",
     );
 
-    assert.match(command, /OpenProjectsHome/);
+    assert.doesNotMatch(command, /OpenProjectsHome/);
     assert.match(command, /data-command-center/);
     assert.doesNotMatch(command, /from "\.\/projects-home"/);
     assert.doesNotMatch(command, /<ProjectsHome/);
@@ -76,15 +77,15 @@ describe("Current Projects Command Center overflow", () => {
     assert.doesNotMatch(command, />Open Projects</);
     assert.doesNotMatch(home, /loadProjectBookPreview/);
     assert.doesNotMatch(home, /projects=\{projects\}/);
-    assert.match(home, /loadCurrentProjectCards/);
+    assert.doesNotMatch(home, /loadCurrentProjectCards/);
     assert.match(home, /loadCosOperatingLoop/);
-    assert.match(home, /openProjects=\{openProjects\}/);
-    assert.match(command, /People/);
-    assert.match(command, /QuickCapture/);
+    assert.match(projects, /loadCurrentProjectCards/);
+    assert.doesNotMatch(command, /People/);
+    assert.doesNotMatch(command, /QuickCapture/);
     assert.match(css, /width:\s*100%/);
     assert.match(css, /min-width:\s*0/);
     assert.match(css, /overflow-x:\s*hidden/);
-    assert.match(css, /minmax\(0,\s*1\.7fr\) minmax\(0,\s*0\.95fr\)/);
+    assert.doesNotMatch(css, /minmax\(0,\s*1\.7fr\) minmax\(0,\s*0\.95fr\)/);
     assert.doesNotMatch(css, /minmax\(20rem/);
     assert.match(shell, /overflow-x-hidden/);
     assert.match(shell, /md:max-w-\[75rem\]/);

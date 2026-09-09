@@ -41,6 +41,10 @@ describe("Open Project work security", () => {
     );
     assert.doesNotMatch(dashboard, /selectOpenProjectWork|open-projects|projectWork/);
     const page = readFileSync(
+      join(ROOT, "app/executive-dashboard/concierge/projects/page.tsx"),
+      "utf8",
+    );
+    const home = readFileSync(
       join(ROOT, "app/executive-dashboard/concierge/page.tsx"),
       "utf8",
     );
@@ -54,9 +58,10 @@ describe("Open Project work security", () => {
     assert.match(deskSupabase, /loadActiveLifecycleStates/);
     assert.match(deskSupabase, /listProjectsFromSnapshot\(\{ \.\.\.snapshot, lifecycleStates \}/);
     assert.match(page, /loadCurrentProjectCards/);
-    assert.match(page, /fetchCache = "force-no-store"/);
-    assert.match(page, /loadContinuumHomeModel/);
-    assert.match(page, /loadCosOperatingLoop/);
+    assert.match(home, /fetchCache = "force-no-store"/);
+    assert.match(home, /loadContinuumHomeModel/);
+    assert.match(home, /loadCosOperatingLoop/);
+    assert.doesNotMatch(home, /loadCurrentProjectCards/);
     assert.doesNotMatch(page, /composeChiefOfStaffBrief/);
   });
 });
