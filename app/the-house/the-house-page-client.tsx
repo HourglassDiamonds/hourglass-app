@@ -108,7 +108,6 @@ export default function TheHousePageClient() {
     video.muted = nextMuted;
     const nextSoundOn = !nextMuted;
     setIsSoundOn(nextSoundOn);
-    if (nextSoundOn) setCaptionsOn(true);
 
     if (!video.paused) return;
     video.play();

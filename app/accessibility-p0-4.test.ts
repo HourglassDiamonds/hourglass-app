@@ -515,6 +515,20 @@ describe("AA-14 new-tab names and House video audio control (WCAG G201 / 1.2.2 /
     assert.match(housePage, /a-closer-look\.en\.vtt/);
     assert.match(housePage, /Show captions/);
     assert.match(housePage, /Hide captions/);
+    assert.match(housePage, /const \[captionsOn, setCaptionsOn\] = useState\(false\)/);
+    assert.match(housePage, /handleToggleCaptions/);
+    assert.match(housePage, /setCaptionsOn\(\(on\) => !on\)/);
+    assert.doesNotMatch(housePage, /if \(nextSoundOn\) setCaptionsOn\(true\)/);
+    const soundToggle = housePage.match(
+      /const handleToggleSound = \(\) => \{[\s\S]*?\n  \};/,
+    )?.[0];
+    assert.ok(soundToggle, "handleToggleSound missing");
+    assert.doesNotMatch(soundToggle, /setCaptionsOn/);
+    const replay = housePage.match(
+      /const handleReplay = \(\) => \{[\s\S]*?\n  \};/,
+    )?.[0];
+    assert.ok(replay, "handleReplay missing");
+    assert.doesNotMatch(replay, /setCaptionsOn|setIsSoundOn/);
   });
 });
 
