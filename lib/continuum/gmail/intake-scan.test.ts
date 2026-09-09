@@ -397,7 +397,19 @@ describe("Gmail new-project intake scan", () => {
         relationshipUpdateCount: 0,
         backgroundObservationCount: 329,
       }),
-      "Scanned 30 indexed threads. No new-project proposals from this scan. 329 background observations processed.",
+      "Scanned 30 recent threads.",
+    );
+    assert.doesNotMatch(
+      formatGmailIntakeScanNotice({
+        threadCount: 30,
+        threadReadCount: 30,
+        unreadThreadCount: 0,
+        newProjectProposalCount: 0,
+        actionReviewCount: 0,
+        relationshipUpdateCount: 0,
+        backgroundObservationCount: 1046,
+      }),
+      /1046|background observation|relationship update|actions need review/i,
     );
     assert.equal(
       formatGmailIntakeScanNotice({
@@ -409,7 +421,7 @@ describe("Gmail new-project intake scan", () => {
         relationshipUpdateCount: 3,
         backgroundObservationCount: 754,
       }),
-      "Scanned 30 indexed threads. 1 new project detected. 2 actions need review. 3 relationship updates. 754 background observations processed. 1 thread could not be read.",
+      "Scanned 30 recent threads. 3 decisions need you. 3 meaningful updates. 1 thread could not be read.",
     );
     assert.equal(
       summarizeGmailIntakeScan({
@@ -433,13 +445,15 @@ describe("Gmail new-project intake scan", () => {
     assert.equal(packedProject.ok, true);
     assert.equal(packedOther.ok, true);
     if (!packedProject.ok || !packedOther.ok) return;
+    const projectSourceRef = packedProject.sourceRef;
+    const otherSourceRef = packedOther.sourceRef;
     function row(
       input: Pick<ContinuumCandidate, "candidateId" | "candidateType" | "payload"> &
         Partial<ContinuumCandidate>,
     ): ContinuumCandidate {
       return {
         sourceSystem: "gmail",
-        sourceRef: packedProject.sourceRef,
+        sourceRef: projectSourceRef,
         sourceTimestamp: NOW,
         proposedTarget: { kind: "none" },
         confidence: "medium",
@@ -506,21 +520,25 @@ describe("Gmail new-project intake scan", () => {
     const standaloneJob = row({
       candidateId: "job",
       candidateType: "open_job",
-      sourceRef: packedOther.sourceRef,
+      sourceRef: otherSourceRef,
       payload: {
         kind: "open_job",
         jobKind: "request",
-        subject: "Reply to vendor",
+        subject: "Can you send the CAD revision?",
         detail: null,
         waitingOnActor: "founder",
         dueAt: null,
         createJob: false,
       },
+      evidenceBasis: {
+        ruleIds: ["explicit_client_request"],
+        matchedText: "Can you send the CAD revision?",
+      },
     });
     const standalonePerson = row({
       candidateId: "person-other",
       candidateType: "person_association",
-      sourceRef: packedOther.sourceRef,
+      sourceRef: otherSourceRef,
       payload: {
         kind: "person_association",
         displayName: "Vendor",
@@ -535,7 +553,7 @@ describe("Gmail new-project intake scan", () => {
     assert.equal(classifyGmailIntakeAttention(date, threads), "background");
     assert.equal(classifyGmailIntakeAttention(personOnThread, threads), "background");
     assert.equal(classifyGmailIntakeAttention(standaloneJob, threads), "action");
-    assert.equal(classifyGmailIntakeAttention(standalonePerson, threads), "relationship");
+    assert.equal(classifyGmailIntakeAttention(standalonePerson, threads), "background");
     const summary = summarizeGmailIntakeScan({
       threadCount: 30,
       unreadThreadCount: 0,
@@ -543,8 +561,8 @@ describe("Gmail new-project intake scan", () => {
     });
     assert.equal(summary.newProjectProposalCount, 1);
     assert.equal(summary.actionReviewCount, 1);
-    assert.equal(summary.relationshipUpdateCount, 1);
-    assert.equal(summary.backgroundObservationCount, 3);
+    assert.equal(summary.relationshipUpdateCount, 0);
+    assert.equal(summary.backgroundObservationCount, 4);
   });
 
   it("surfaces Nate and Abbey real-shape proposals, keeps unresolved Person, and does not multiply on rescan", async () => {

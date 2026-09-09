@@ -87,7 +87,8 @@ describe("CoS operating loop Command Center UI", () => {
     const html = renderToStaticMarkup(createElement(ChiefOfStaffToday, { loop }));
     assert.match(html, /caught up/);
     assert.doesNotMatch(html, /data-cos-anomalies/);
-    assert.doesNotMatch(html, /Items that seem amiss/);
+    assert.doesNotMatch(html, /Something seems off/);
+    assert.doesNotMatch(html, /Needs your decision/);
     assert.doesNotMatch(html, /hg-cos-check/);
   });
 
@@ -126,14 +127,57 @@ describe("CoS operating loop Command Center UI", () => {
       nowIso: COS_LOOP_NOW,
     });
     const html = renderToStaticMarkup(createElement(ChiefOfStaffToday, { loop }));
-    assert.match(html, /End of day/);
+    assert.match(html, /Needs your decision/);
     assert.match(html, /actually sent/);
     assert.match(html, /Confirmation only/);
-    assert.match(html, /Items that seem amiss/);
-    assert.match(html, /Past due, with no evidence of action/);
+    assert.doesNotMatch(html, /End of day/);
+    assert.doesNotMatch(html, /Proposed actions/);
   });
 
-  it("renders Proposed actions and the founder Edit form without UUID fields", () => {
+  it("renders a consequential anomaly without promoting ordinary lag", () => {
+    const loop = composeCosOperatingLoop({
+      jobs: [
+        fixtureJob({
+          jobId: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+          subject: "Send CAD",
+          state: "resolved",
+          resolvedAt: "2026-09-05T12:00:00.000Z",
+          updatedAt: "2026-09-05T12:00:00.000Z",
+        }),
+      ],
+      candidates: [
+        fixtureCandidate({
+          candidateId: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
+          sourceTimestamp: "2026-09-07T12:00:00.000Z",
+          candidateType: "open_job",
+          proposedTarget: {
+            kind: "open_job",
+            projectId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          },
+          payload: {
+            kind: "open_job",
+            jobKind: "request",
+            subject: "Can you send the CAD again",
+            detail: null,
+            waitingOnActor: "founder",
+            dueAt: null,
+            createJob: false,
+          },
+          evidenceBasis: {
+            ruleIds: ["explicit_client_request"],
+            matchedText: "Can you send the CAD again",
+          },
+        }),
+      ],
+      projects: fixtureProjects(),
+      nowIso: COS_LOOP_NOW,
+    });
+    const html = renderToStaticMarkup(createElement(ChiefOfStaffToday, { loop }));
+    assert.match(html, /Something seems off/);
+    assert.match(html, /newer evidence disagrees/);
+  });
+
+  it("renders Needs your decision and the founder Edit form without UUID fields", () => {
     const loop = composeCosOperatingLoop({
       jobs: [],
       candidates: [
@@ -166,11 +210,12 @@ describe("CoS operating loop Command Center UI", () => {
       newMutationId: () => "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
     });
     const html = renderToStaticMarkup(createElement(ChiefOfStaffToday, { loop }));
-    assert.match(html, /Proposed actions/);
+    assert.match(html, /Needs your decision/);
     assert.match(html, /send the CAD tomorrow/);
     assert.match(html, /Add to actions/);
     assert.match(html, /Dismiss/);
     assert.match(html, /Review/);
+    assert.doesNotMatch(html, /Proposed actions/);
     const editForm = readFileSync(
       join(CONCIERGE_DIR, "components", "edit-action-form.tsx"),
       "utf8",

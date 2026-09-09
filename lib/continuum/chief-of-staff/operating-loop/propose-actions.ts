@@ -12,6 +12,7 @@ import {
 import { isUnresolvedOpenJobState } from "@/lib/continuum/client-memory/project-jobs/validate";
 import type { ProjectJob } from "@/lib/continuum/client-memory/project-jobs/types";
 import { sourceHrefFor, sourceLabelFor } from "./evidence";
+import { isFounderAttentionWorthy } from "./founder-attention";
 import type { CosProjectContext, CosProposedAction } from "./types";
 
 export const COS_PROPOSED_ACTIONS_TITLE = "Proposed actions";
@@ -87,12 +88,19 @@ export function proposeExplicitActions(input: {
   candidates: readonly ContinuumCandidate[];
   projects: ReadonlyMap<string, CosProjectContext>;
   newMutationId: () => string;
+  nowIso?: string;
 }): CosProposedAction[] {
   const items: CosProposedAction[] = [];
   const seen = new Set<string>();
+  const ctx = {
+    jobs: input.jobs,
+    projects: input.projects,
+    nowIso: input.nowIso ?? new Date().toISOString(),
+  };
 
   for (const row of input.candidates) {
     if (!isExplicitActionCandidate(row)) continue;
+    if (!isFounderAttentionWorthy(row, ctx)) continue;
     const subject = payloadSubject(row);
     if (!subject) continue;
     const projectId = payloadProjectId(row);

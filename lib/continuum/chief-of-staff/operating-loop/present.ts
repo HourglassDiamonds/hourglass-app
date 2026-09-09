@@ -41,9 +41,11 @@ export const COS_DISCONNECTED_HEADING = "Open Jobs are not connected yet.";
 export const COS_DISCONNECTED_DETAIL =
   "Current Projects can still open. Top 5 waits on canonical Open Jobs.";
 export const COS_ACTIVE_HEADING = "Today";
-export const COS_ANOMALY_TITLE = "Items that seem amiss";
+export const COS_ANOMALY_TITLE = "Something seems off";
 export const COS_RECAP_TITLE = "End of day";
 export const COS_TOP5_TITLE = "Top 5";
+export const COS_DECISION_TITLE = "Needs your decision";
+export const COS_WORTH_KNOWING_TITLE = "Worth knowing";
 
 export function ownershipLabel(actor: OpenJobActor): string {
   if (actor === "founder") return CURRENT_PROJECTS_OWNERSHIP_YOUR_TURN;

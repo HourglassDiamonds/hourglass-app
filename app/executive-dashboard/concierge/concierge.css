@@ -303,3 +303,28 @@ body:has([data-concierge-shell]) [data-facet-rail] {
   border-top: 1px solid rgba(255, 255, 255, 0.06);
   padding-top: 0.15rem;
 }
+
+.hg-cos-attention {
+  min-width: 0;
+  overflow-x: hidden;
+}
+
+.hg-cos-attention ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (max-width: 767px) {
+  .hg-cos-top5 {
+    gap: 1.1rem;
+  }
+
+  .hg-cos-attention {
+    margin-top: 1.75rem;
+  }
+
+  .hg-cos-attention ul {
+    gap: 1rem;
+  }
+}

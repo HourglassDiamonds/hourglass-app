@@ -130,9 +130,16 @@ describe("Gmail activation security", () => {
     assert.match(intakeScan, /newProjectProposalCount/);
     assert.match(intakeScan, /backgroundObservationCount/);
     assert.doesNotMatch(intakeScan, /otherReviewItemCount/);
+    assert.doesNotMatch(intakeScan, /chief-of-staff\/operating-loop/);
+    assert.match(intakeScan, /candidates\/founder-attention/);
     assert.match(intakeScan, /GMAIL_INTAKE_SELECTION_LOOKBACK/);
     assert.doesNotMatch(intakeScan, /putCheckpoint|indexMessage|listHistory|runIncrementalSync/);
     assert.doesNotMatch(intakeScan, /gmail-intake-daily|gmail-intake-sync/);
+    for (const file of walk(join(GMAIL_DIR, "candidates"), ".ts")) {
+      if (file.endsWith(".test.ts")) continue;
+      const source = readFileSync(file, "utf8");
+      assert.doesNotMatch(source, /founder-attention/);
+    }
     const intakeUi = readFileSync(
       join(ROOT, "app/executive-dashboard/concierge/components/gmail-new-project-intake.tsx"),
       "utf8",

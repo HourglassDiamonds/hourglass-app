@@ -24,6 +24,7 @@ const INFERENCE_FILES = [
   "rank.ts",
   "reconcile.ts",
   "propose-actions.ts",
+  "founder-attention.ts",
   "load.ts",
   "types.ts",
   "fixtures.ts",
@@ -90,7 +91,9 @@ describe("CoS operating loop security", () => {
       "utf8",
     );
     assert.match(today, /item\.editHref/);
-    assert.match(today, /CosProposedActionRow/);
+    assert.match(today, /CosFounderAttentionRow/);
+    assert.match(today, /needsYourDecision/);
+    assert.doesNotMatch(today, /COS_PROPOSED_ACTIONS_TITLE|Proposed actions/);
     assert.match(page, /reviewProposedActionFromForm/);
     assert.doesNotMatch(page, /composeChiefOfStaffBrief|runChiefOfStaffShadow/);
     for (const file of walkFiles(join(ROOT, "app/api"), ".ts")) {

@@ -140,6 +140,26 @@ export type CosAnomalyItem = {
   projectId: string | null;
 };
 
+export {
+  FOUNDER_ATTENTION_LANES,
+  type FounderAttentionLane,
+} from "@/lib/continuum/candidates/founder-attention";
+
+export type CosFounderAttentionItem = {
+  id: string;
+  lane: "decision" | "signal";
+  title: string;
+  headline: string;
+  detail: string | null;
+  projectId: string | null;
+  projectTitle: string | null;
+  sourceLabel: string | null;
+  sourceHref: string | null;
+  candidateIds: readonly string[];
+  recap: CosRecapItem | null;
+  proposedAction: CosProposedAction | null;
+};
+
 export type CosOperatingLoopStatus = "caught-up" | "active" | "disconnected";
 
 export type CosOperatingLoopView = {
@@ -149,6 +169,8 @@ export type CosOperatingLoopView = {
   quietDetail: string | null;
   top5: CosTop5Item[];
   remainingCount: number;
+  needsYourDecision: CosFounderAttentionItem[];
+  worthKnowing: CosFounderAttentionItem[];
   recap: CosRecapItem[];
   anomalies: CosAnomalyItem[];
   proposedActions: CosProposedAction[];

@@ -15,6 +15,7 @@ import {
   supportedCustomerEmailHashes,
 } from "./candidates/new-project";
 import { haystackOf } from "./candidates/parse";
+import { classifyCandidateAttention } from "@/lib/continuum/candidates/founder-attention";
 import { parseGmailCandidateSourceRef } from "./candidates/source-ref";
 import type { GmailCandidateEvidence, GmailCandidateWorld } from "./candidates/types";
 import type { GmailConnectionStore } from "./connection";
@@ -143,8 +144,12 @@ export function classifyGmailIntakeAttention(
   if (isNewProjectContextPayload(row.payload)) return "new_project";
   if (row.candidateState === "conflict") return "action";
   if (onNewProject) return "background";
-  if (row.candidateType === "open_job") return "action";
-  if (row.candidateType === "person_association") return "relationship";
+  const lane = classifyCandidateAttention(row, {
+    jobs: [],
+    nowIso: row.sourceTimestamp || row.createdAt,
+  }).lane;
+  if (lane === "decision") return "action";
+  if (lane === "signal") return "relationship";
   return "background";
 }
 
@@ -189,32 +194,19 @@ export function summarizeGmailIntakeScan(input: {
 }
 
 export function formatGmailIntakeScanNotice(summary: GmailIntakeScanSummary): string {
-  const threads = `Scanned ${summary.threadCount} indexed thread${
+  const threads = `Scanned ${summary.threadCount} recent thread${
     summary.threadCount === 1 ? "" : "s"
   }.`;
-  const projects =
-    summary.newProjectProposalCount > 0
-      ? ` ${summary.newProjectProposalCount} new project${
-          summary.newProjectProposalCount === 1 ? "" : "s"
-        } detected.`
-      : " No new-project proposals from this scan.";
-  const actions =
-    summary.actionReviewCount > 0
-      ? ` ${summary.actionReviewCount} action${
-          summary.actionReviewCount === 1 ? "" : "s"
-        } need review.`
+  const decisions = summary.newProjectProposalCount + summary.actionReviewCount;
+  const decisionPart =
+    decisions > 0
+      ? ` ${decisions} decision${decisions === 1 ? "" : "s"} need you.`
       : "";
-  const relationships =
+  const updates =
     summary.relationshipUpdateCount > 0
-      ? ` ${summary.relationshipUpdateCount} relationship update${
+      ? ` ${summary.relationshipUpdateCount} meaningful update${
           summary.relationshipUpdateCount === 1 ? "" : "s"
         }.`
-      : "";
-  const background =
-    summary.backgroundObservationCount > 0
-      ? ` ${summary.backgroundObservationCount} background observation${
-          summary.backgroundObservationCount === 1 ? "" : "s"
-        } processed.`
       : "";
   const unread =
     summary.unreadThreadCount > 0
@@ -222,7 +214,7 @@ export function formatGmailIntakeScanNotice(summary: GmailIntakeScanSummary): st
           summary.unreadThreadCount === 1 ? "" : "s"
         } could not be read.`
       : "";
-  return `${threads}${projects}${actions}${relationships}${background}${unread}`;
+  return `${threads}${decisionPart}${updates}${unread}`;
 }
 
 function emptyScanSuccess(): GmailIntakeScanSuccess {

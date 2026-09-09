@@ -65,6 +65,15 @@ describe("candidate contract security", () => {
     }
   });
 
+  it("keeps founder-attention classification free of CoS UI, Gmail ingest, and React", () => {
+    const source = readFileSync(join(DIR, "founder-attention.ts"), "utf8");
+    assert.match(source, /cos-founder-attention-v1/);
+    assert.doesNotMatch(source, /chief-of-staff/);
+    assert.doesNotMatch(source, /continuum\/gmail/);
+    assert.doesNotMatch(source, /from ["']react["']/);
+    assert.doesNotMatch(source, /createProjectJob|collectCanonicalActionables/);
+  });
+
   it("pages durable Candidate list reads instead of one unpaginated select", () => {
     const source = readFileSync(join(DIR, "supabase.ts"), "utf8");
     assert.match(source, /collectPagedRows/);

@@ -6,18 +6,24 @@ type ReviewAction = (formData: FormData) => void | Promise<void>;
 export function CosProposedActionRow({
   item,
   action,
+  compact = false,
 }: {
   item: CosProposedAction;
   action?: ReviewAction;
+  compact?: boolean;
 }) {
   return (
     <li className="min-w-0 overflow-x-hidden">
-      <p className="break-words text-[15px] leading-relaxed text-[#efe8de]">
-        {item.headline}
-      </p>
-      <p className="mt-1 break-words text-[13px] leading-relaxed text-[#9a8e82]">
-        {item.projectTitle ? `${item.sourceLabel} · ${item.projectTitle}` : item.sourceLabel}
-      </p>
+      {compact ? null : (
+        <>
+          <p className="break-words text-[15px] leading-relaxed text-[#efe8de]">
+            {item.headline}
+          </p>
+          <p className="mt-1 break-words text-[13px] leading-relaxed text-[#9a8e82]">
+            {item.projectTitle ? `${item.sourceLabel} · ${item.projectTitle}` : item.sourceLabel}
+          </p>
+        </>
+      )}
       <div className="mt-2 flex min-w-0 flex-wrap gap-x-5">
         {item.canAddToActions && item.sourceId && item.projectId ? (
           <form action={action}>

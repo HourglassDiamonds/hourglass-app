@@ -2,12 +2,12 @@ import Link from "next/link";
 import type { CosOperatingLoopView } from "@/lib/continuum/chief-of-staff/operating-loop/types";
 import {
   COS_ANOMALY_TITLE,
-  COS_RECAP_TITLE,
+  COS_DECISION_TITLE,
   COS_TOP5_TITLE,
+  COS_WORTH_KNOWING_TITLE,
 } from "@/lib/continuum/chief-of-staff/operating-loop/present";
-import { COS_PROPOSED_ACTIONS_TITLE } from "@/lib/continuum/chief-of-staff/operating-loop/propose-actions";
-import { CosCompleteControl, CosRecapConfirm } from "./cos-complete-control";
-import { CosProposedActionRow } from "./cos-proposed-actions";
+import { CosCompleteControl } from "./cos-complete-control";
+import { CosFounderAttentionRow } from "./cos-founder-attention";
 
 type CompleteAction = (formData: FormData) => void | Promise<void>;
 
@@ -80,14 +80,36 @@ export function ChiefOfStaffToday({
           ))}
         </ol>
       )}
-      {loop.proposedActions.length > 0 ? (
-        <div data-cos-proposed-actions className="mt-10 min-w-0 overflow-x-hidden">
+      {loop.needsYourDecision.length > 0 ? (
+        <div data-cos-needs-decision className="hg-cos-attention mt-10 min-w-0 overflow-x-hidden">
           <h3 className="text-[11px] uppercase tracking-[0.28em] text-[#8d8073]">
-            {COS_PROPOSED_ACTIONS_TITLE}
+            {COS_DECISION_TITLE}
           </h3>
           <ul className="mt-4 space-y-5">
-            {loop.proposedActions.map((item) => (
-              <CosProposedActionRow key={item.id} item={item} action={reviewAction} />
+            {loop.needsYourDecision.map((item) => (
+              <CosFounderAttentionRow
+                key={item.id}
+                item={item}
+                completeAction={completeAction}
+                reviewAction={reviewAction}
+              />
+            ))}
+          </ul>
+        </div>
+      ) : null}
+      {loop.worthKnowing.length > 0 ? (
+        <div data-cos-worth-knowing className="hg-cos-attention mt-10 min-w-0 overflow-x-hidden">
+          <h3 className="text-[11px] uppercase tracking-[0.28em] text-[#8d8073]">
+            {COS_WORTH_KNOWING_TITLE}
+          </h3>
+          <ul className="mt-4 space-y-5">
+            {loop.worthKnowing.map((item) => (
+              <CosFounderAttentionRow
+                key={item.id}
+                item={item}
+                completeAction={completeAction}
+                reviewAction={reviewAction}
+              />
             ))}
           </ul>
         </div>
@@ -114,36 +136,6 @@ export function ChiefOfStaffToday({
                     {item.sourceLabel ?? "Source"}
                   </Link>
                 ) : null}
-              </li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
-      {loop.recap.length > 0 ? (
-        <div data-cos-recap className="mt-10 min-w-0">
-          <h3 className="text-[11px] uppercase tracking-[0.28em] text-[#8d8073]">
-            {COS_RECAP_TITLE}
-          </h3>
-          <ul className="mt-4 space-y-5">
-            {loop.recap.map((item) => (
-              <li key={item.id} className="hg-cos-item">
-                <CosRecapConfirm item={item} action={completeAction} />
-                <div className="min-w-0 overflow-x-hidden">
-                  <p className="break-words text-[15px] leading-relaxed text-[#efe8de]">
-                    {item.question}
-                  </p>
-                  <Link
-                    href={item.sourceHref}
-                    className="mt-1 inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.2em] text-[#ad9164] outline-none hover:text-[#efe8de]"
-                  >
-                    {item.sourceLabel}
-                  </Link>
-                  {!item.completable ? (
-                    <p className="mt-1 text-[13px] leading-relaxed text-[#8d8073]">
-                      Confirmation only — I will not mark this complete.
-                    </p>
-                  ) : null}
-                </div>
               </li>
             ))}
           </ul>

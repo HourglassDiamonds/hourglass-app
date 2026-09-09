@@ -9,6 +9,7 @@ import type { ProjectDeskSummary } from "@/lib/continuum/client-memory/project-d
 import { selectOpenProjectWork } from "@/lib/continuum/client-memory/open-projects/select";
 import type { ProjectJob } from "@/lib/continuum/client-memory/project-jobs/types";
 import { collectCanonicalActionables, selectTopRanked } from "./collect";
+import { composeFounderAttentionSurface } from "./founder-attention";
 import { detectAnomalies, proposeRecapItems, recapJobIds } from "./reconcile";
 import { DETERMINISTIC_ACTIONABLE_RANKER } from "./rank";
 import { proposeExplicitActions } from "./propose-actions";
@@ -67,6 +68,8 @@ export function composeCosOperatingLoop(
       quietDetail: COS_DISCONNECTED_DETAIL,
       top5: [],
       remainingCount: 0,
+      needsYourDecision: [],
+      worthKnowing: [],
       recap: [],
       anomalies: [],
       proposedActions: [],
@@ -98,6 +101,18 @@ export function composeCosOperatingLoop(
     candidates,
     projects,
     newMutationId,
+    nowIso: input.nowIso,
+  });
+  const top5 = top.map((item) => presentTop5Item(item, input.nowIso, newMutationId()));
+  const attention = composeFounderAttentionSurface({
+    candidates,
+    jobs: input.jobs,
+    projects,
+    nowIso: input.nowIso,
+    top5Ids: new Set(top5.map((item) => item.id)),
+    recap,
+    proposedActions,
+    anomalies,
   });
 
   if (top.length === 0) {
@@ -108,8 +123,10 @@ export function composeCosOperatingLoop(
       quietDetail: COS_CAUGHT_UP_DETAIL,
       top5: [],
       remainingCount: 0,
+      needsYourDecision: attention.needsYourDecision,
+      worthKnowing: attention.worthKnowing,
       recap,
-      anomalies,
+      anomalies: attention.anomalies,
       proposedActions,
     };
   }
@@ -119,10 +136,12 @@ export function composeCosOperatingLoop(
     status: "active",
     heading: COS_ACTIVE_HEADING,
     quietDetail: null,
-    top5: top.map((item) => presentTop5Item(item, input.nowIso, newMutationId())),
+    top5,
     remainingCount: Math.max(0, ranked.length - top.length),
+    needsYourDecision: attention.needsYourDecision,
+    worthKnowing: attention.worthKnowing,
     recap,
-    anomalies,
+    anomalies: attention.anomalies,
     proposedActions,
   };
 }
