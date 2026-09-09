@@ -1,4 +1,8 @@
--- UNAPPLIED. DO NOT RUN AGAINST PRODUCTION from this change.
+-- APPLIED TO PRODUCTION 2026-09-09. Historical record. Do not re-run against production.
+-- Production migration: 20260909190009 continuum_repair_quotes_v1
+-- Privilege hardening applied immediately afterward:
+--   20260909190044 continuum_repair_quotes_v1_privilege_hardening
+-- Companion record: lib/supabase/continuum-repair-quotes-privilege-hardening.sql
 -- Continuum Blue Book repair quoting V1.
 -- Additive only. continuum_project_profiles remains the ONE current Project record.
 -- Source: Geller Blue Book Version 5.0 Release 6.50
@@ -14,6 +18,7 @@
 -- Does NOT treat Geller retail as cost. Does NOT mark up Geller retail.
 -- Project-linked only. Repair / Service Kind required at write time.
 -- Issued quotes are immutable; mutations are append-only.
+-- No catalog table. RLS enabled. Service-role-only application access.
 -- No anon/authenticated grants. RLS remains enabled. No dynamic SQL.
 -- No public pricing calculator. No Gmail bodies, notes, or operating-detail inference.
 

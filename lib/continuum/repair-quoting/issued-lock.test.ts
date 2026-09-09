@@ -156,12 +156,13 @@ describe("Issued quote SQL/app immutability", () => {
     assert.equal(issuedQuoteUpdateAllowed(quote, mutated), false);
   });
 
-  it("keeps the unapplied SQL trigger from rewriting issued calculations", () => {
+  it("keeps the applied SQL trigger from rewriting issued calculations", () => {
     const sql = readFileSync(
       resolve(process.cwd(), "lib/supabase/continuum-repair-quotes.sql"),
       "utf8",
     );
-    assert.match(sql, /UNAPPLIED/);
+    assert.match(sql, /APPLIED TO PRODUCTION 2026-09-09/);
+    assert.doesNotMatch(sql, /UNAPPLIED/);
     assert.match(sql, /continuum_repair_quotes_protect_issued/);
     assert.match(sql, /new\.calculation is distinct from old\.calculation/);
     assert.match(sql, /raise exception 'issued-quote-immutable'/);

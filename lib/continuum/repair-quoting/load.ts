@@ -1,6 +1,6 @@
 /**
  * Server-only founder repair-quote reader.
- * Quotes stay disconnected when the unapplied SQL has not been run.
+ * Quotes stay disconnected if the live Repair Quotes relation is missing.
  */
 
 import { cookies } from "next/headers";
