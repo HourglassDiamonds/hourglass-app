@@ -46,6 +46,9 @@ export const COS_RECAP_TITLE = "End of day";
 export const COS_TOP5_TITLE = "Top 5";
 export const COS_DECISION_TITLE = "Needs your decision";
 export const COS_WORTH_KNOWING_TITLE = "Worth knowing";
+export const COS_BRIEF_TITLE = "Concierge Brief";
+export const COS_WATCHING_TITLE = "Already handled / Watching";
+export const COS_FALLBACK_ATTENTION_TITLE = "Earlier attention view";
 
 export function ownershipLabel(actor: OpenJobActor): string {
   if (actor === "founder") return CURRENT_PROJECTS_OWNERSHIP_YOUR_TURN;

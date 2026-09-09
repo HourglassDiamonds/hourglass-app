@@ -25,6 +25,7 @@ const INFERENCE_FILES = [
   "reconcile.ts",
   "propose-actions.ts",
   "founder-attention.ts",
+  "moderator.ts",
   "load.ts",
   "types.ts",
   "fixtures.ts",
@@ -93,6 +94,8 @@ describe("CoS operating loop security", () => {
     assert.match(today, /item\.editHref/);
     assert.match(today, /CosFounderAttentionRow/);
     assert.match(today, /needsYourDecision/);
+    assert.match(today, /CosConciergeBrief/);
+    assert.match(today, /loop\.brief/);
     assert.doesNotMatch(today, /COS_PROPOSED_ACTIONS_TITLE|Proposed actions/);
     assert.match(page, /reviewProposedActionFromForm/);
     assert.doesNotMatch(page, /composeChiefOfStaffBrief|runChiefOfStaffShadow/);

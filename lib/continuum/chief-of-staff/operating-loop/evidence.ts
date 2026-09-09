@@ -5,6 +5,7 @@
 
 import type { ContinuumCandidate } from "@/lib/continuum/candidates/types";
 import { parseHumanEvidenceSourceRef } from "@/lib/continuum/candidates/human-evidence-source-ref";
+import { parseGmailCandidateSourceRef } from "@/lib/continuum/gmail/candidates/source-ref";
 import {
   conciergeInboxPath,
   conciergeInboxSourcePath,
@@ -148,6 +149,20 @@ export function looksOpenWork(row: ContinuumCandidate): boolean {
   return /\b(can you|could you|please send|please revise|still waiting|not yet)\b/i.test(
     candidateHaystack(row),
   );
+}
+
+const GMAIL_THREAD_ID = /^[0-9a-f]{10,}$/i;
+const GMAIL_WEB_THREAD = "https://mail.google.com/mail/u/0/#all/";
+
+export function isSafeGmailThreadId(threadId: string): boolean {
+  return GMAIL_THREAD_ID.test(threadId.trim());
+}
+
+export function gmailThreadHrefFor(row: ContinuumCandidate): string | null {
+  if (row.sourceSystem !== "gmail") return null;
+  const parsed = parseGmailCandidateSourceRef(row.sourceRef);
+  if (!parsed || !isSafeGmailThreadId(parsed.threadId)) return null;
+  return `${GMAIL_WEB_THREAD}${encodeURIComponent(parsed.threadId)}`;
 }
 
 export function sourceHrefFor(row: ContinuumCandidate): string {

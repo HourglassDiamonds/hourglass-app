@@ -32,6 +32,8 @@ function disconnectedLoop(): CosOperatingLoopView {
     quietDetail: COS_DISCONNECTED_DETAIL,
     top5: [],
     remainingCount: 0,
+    brief: [],
+    watching: [],
     recap: [],
     anomalies: [],
     proposedActions: [],

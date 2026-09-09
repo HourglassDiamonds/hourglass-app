@@ -10,6 +10,7 @@ import { selectOpenProjectWork } from "@/lib/continuum/client-memory/open-projec
 import type { ProjectJob } from "@/lib/continuum/client-memory/project-jobs/types";
 import { collectCanonicalActionables, selectTopRanked } from "./collect";
 import { composeFounderAttentionSurface } from "./founder-attention";
+import { composeConciergeBrief } from "./moderator";
 import { detectAnomalies, proposeRecapItems, recapJobIds } from "./reconcile";
 import { DETERMINISTIC_ACTIONABLE_RANKER } from "./rank";
 import { proposeExplicitActions } from "./propose-actions";
@@ -70,6 +71,8 @@ export function composeCosOperatingLoop(
       quietDetail: COS_DISCONNECTED_DETAIL,
       top5: [],
       remainingCount: 0,
+      brief: [],
+      watching: [],
       needsYourDecision: [],
       worthKnowing: [],
       recap: [],
@@ -116,6 +119,14 @@ export function composeCosOperatingLoop(
     proposedActions,
     anomalies,
   });
+  const moderated = composeConciergeBrief({
+    candidates,
+    jobs: input.jobs,
+    projects,
+    nowIso: input.nowIso,
+    top5,
+    proposedActions,
+  });
 
   if (top.length === 0) {
     return {
@@ -125,6 +136,8 @@ export function composeCosOperatingLoop(
       quietDetail: COS_CAUGHT_UP_DETAIL,
       top5: [],
       remainingCount: 0,
+      brief: moderated.brief,
+      watching: moderated.watching,
       needsYourDecision: attention.needsYourDecision,
       worthKnowing: attention.worthKnowing,
       recap,
@@ -140,6 +153,8 @@ export function composeCosOperatingLoop(
     quietDetail: null,
     top5,
     remainingCount: Math.max(0, ranked.length - top.length),
+    brief: moderated.brief,
+    watching: moderated.watching,
     needsYourDecision: attention.needsYourDecision,
     worthKnowing: attention.worthKnowing,
     recap,

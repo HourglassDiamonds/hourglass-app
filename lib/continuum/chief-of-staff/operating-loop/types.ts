@@ -160,6 +160,78 @@ export type CosFounderAttentionItem = {
   proposedAction: CosProposedAction | null;
 };
 
+export const COS_MODERATOR_MODEL_ID = "cos-executive-moderator-v1" as const;
+
+export const COS_BRIEF_LIMIT = 5 as const;
+
+export const BRIEF_RANK_CLASSES = [
+  "deadline_risk",
+  "founder_commitment",
+  "production_blocker",
+  "client_reply",
+  "state_transition",
+  "new_opportunity",
+  "follow_up",
+  "informational",
+] as const;
+
+export type CosBriefRankClass = (typeof BRIEF_RANK_CLASSES)[number];
+
+export const BRIEF_ACTION_KINDS = [
+  "open_project",
+  "open_email",
+  "add_to_top5",
+  "confirm_person",
+  "create_project",
+  "review_evidence",
+] as const;
+
+export type CosBriefActionKind = (typeof BRIEF_ACTION_KINDS)[number];
+
+export type CosBriefSpeaker = "founder" | "client" | "vendor" | "system";
+
+export type CosBriefAction = {
+  kind: CosBriefActionKind;
+  label: string;
+  href: string | null;
+};
+
+export type CosEvidenceBeat = {
+  at: string;
+  label: string;
+  summary: string;
+  speaker: CosBriefSpeaker;
+  sourceHref: string | null;
+  candidateId: string;
+};
+
+export type CosBriefItem = {
+  id: string;
+  rank: number;
+  rankClass: CosBriefRankClass;
+  personLabel: string | null;
+  projectTitle: string | null;
+  projectId: string | null;
+  headline: string;
+  explanation: string;
+  recommended: string;
+  stateLabel: string | null;
+  urgencyLabel: string | null;
+  actions: readonly CosBriefAction[];
+  evidence: readonly CosEvidenceBeat[];
+  openJobLabel: string | null;
+  projectStateLabel: string | null;
+  candidateIds: readonly string[];
+  proposedAction: CosProposedAction | null;
+};
+
+export type CosWatchingItem = {
+  id: string;
+  title: string;
+  detail: string;
+  projectId: string | null;
+};
+
 export type CosOperatingLoopStatus = "caught-up" | "active" | "disconnected";
 
 export type CosOperatingLoopView = {
@@ -169,6 +241,8 @@ export type CosOperatingLoopView = {
   quietDetail: string | null;
   top5: CosTop5Item[];
   remainingCount: number;
+  brief: CosBriefItem[];
+  watching: CosWatchingItem[];
   needsYourDecision: CosFounderAttentionItem[];
   worthKnowing: CosFounderAttentionItem[];
   recap: CosRecapItem[];

@@ -3,10 +3,12 @@ import type { CosOperatingLoopView } from "@/lib/continuum/chief-of-staff/operat
 import {
   COS_ANOMALY_TITLE,
   COS_DECISION_TITLE,
+  COS_FALLBACK_ATTENTION_TITLE,
   COS_TOP5_TITLE,
   COS_WORTH_KNOWING_TITLE,
 } from "@/lib/continuum/chief-of-staff/operating-loop/present";
 import { CosCompleteControl } from "./cos-complete-control";
+import { CosConciergeBrief } from "./cos-concierge-brief";
 import { CosFounderAttentionRow } from "./cos-founder-attention";
 
 type CompleteAction = (formData: FormData) => void | Promise<void>;
@@ -80,66 +82,80 @@ export function ChiefOfStaffToday({
           ))}
         </ol>
       )}
-      {loop.needsYourDecision.length > 0 ? (
-        <div data-cos-needs-decision className="hg-cos-attention mt-10 min-w-0 overflow-x-hidden">
-          <h3 className="text-[11px] uppercase tracking-[0.28em] text-[#8d8073]">
-            {COS_DECISION_TITLE}
-          </h3>
-          <ul className="mt-4 space-y-5">
-            {loop.needsYourDecision.map((item) => (
-              <CosFounderAttentionRow
-                key={item.id}
-                item={item}
-                completeAction={completeAction}
-                reviewAction={reviewAction}
-              />
-            ))}
-          </ul>
-        </div>
-      ) : null}
-      {loop.worthKnowing.length > 0 ? (
-        <div data-cos-worth-knowing className="hg-cos-attention mt-10 min-w-0 overflow-x-hidden">
-          <h3 className="text-[11px] uppercase tracking-[0.28em] text-[#8d8073]">
-            {COS_WORTH_KNOWING_TITLE}
-          </h3>
-          <ul className="mt-4 space-y-5">
-            {loop.worthKnowing.map((item) => (
-              <CosFounderAttentionRow
-                key={item.id}
-                item={item}
-                completeAction={completeAction}
-                reviewAction={reviewAction}
-              />
-            ))}
-          </ul>
-        </div>
-      ) : null}
-      {loop.anomalies.length > 0 ? (
-        <div data-cos-anomalies className="hg-cos-anomaly mt-10">
-          <h3 className="text-[11px] uppercase tracking-[0.28em] text-[#8d8073]">
-            {COS_ANOMALY_TITLE}
-          </h3>
-          <ul className="mt-4 space-y-4">
-            {loop.anomalies.map((item) => (
-              <li key={item.id} className="min-w-0">
-                <p className="break-words text-[15px] leading-relaxed text-[#efe8de]">
-                  {item.headline}
-                </p>
-                <p className="mt-1 break-words text-[14px] leading-relaxed text-[#9a8e82]">
-                  {item.detail}
-                </p>
-                {item.sourceHref ? (
-                  <Link
-                    href={item.sourceHref}
-                    className="mt-1 inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.2em] text-[#ad9164] outline-none hover:text-[#efe8de]"
-                  >
-                    {item.sourceLabel ?? "Source"}
-                  </Link>
-                ) : null}
-              </li>
-            ))}
-          </ul>
-        </div>
+      <CosConciergeBrief
+        items={loop.brief}
+        watching={loop.watching}
+      />
+      {loop.needsYourDecision.length > 0 || loop.worthKnowing.length > 0 || loop.anomalies.length > 0 ? (
+        <details
+          data-cos-fallback-attention
+          className="hg-cos-fallback mt-8 min-w-0 overflow-x-hidden"
+        >
+          <summary className="inline-flex min-h-11 cursor-pointer items-center text-[11px] uppercase tracking-[0.22em] text-[#6f675f] outline-none hover:text-[#8d8073]">
+            {COS_FALLBACK_ATTENTION_TITLE}
+          </summary>
+          {loop.needsYourDecision.length > 0 ? (
+            <div data-cos-needs-decision className="hg-cos-attention mt-4 min-w-0 overflow-x-hidden">
+              <h3 className="text-[11px] uppercase tracking-[0.28em] text-[#8d8073]">
+                {COS_DECISION_TITLE}
+              </h3>
+              <ul className="mt-4 space-y-5">
+                {loop.needsYourDecision.map((item) => (
+                  <CosFounderAttentionRow
+                    key={item.id}
+                    item={item}
+                    completeAction={completeAction}
+                    reviewAction={reviewAction}
+                  />
+                ))}
+              </ul>
+            </div>
+          ) : null}
+          {loop.worthKnowing.length > 0 ? (
+            <div data-cos-worth-knowing className="hg-cos-attention mt-6 min-w-0 overflow-x-hidden">
+              <h3 className="text-[11px] uppercase tracking-[0.28em] text-[#8d8073]">
+                {COS_WORTH_KNOWING_TITLE}
+              </h3>
+              <ul className="mt-4 space-y-5">
+                {loop.worthKnowing.map((item) => (
+                  <CosFounderAttentionRow
+                    key={item.id}
+                    item={item}
+                    completeAction={completeAction}
+                    reviewAction={reviewAction}
+                  />
+                ))}
+              </ul>
+            </div>
+          ) : null}
+          {loop.anomalies.length > 0 ? (
+            <div data-cos-anomalies className="hg-cos-anomaly mt-6">
+              <h3 className="text-[11px] uppercase tracking-[0.28em] text-[#8d8073]">
+                {COS_ANOMALY_TITLE}
+              </h3>
+              <ul className="mt-4 space-y-4">
+                {loop.anomalies.map((item) => (
+                  <li key={item.id} className="min-w-0">
+                    <p className="break-words text-[15px] leading-relaxed text-[#efe8de]">
+                      {item.headline}
+                    </p>
+                    <p className="mt-1 break-words text-[14px] leading-relaxed text-[#9a8e82]">
+                      {item.detail}
+                    </p>
+                    {item.sourceHref ? (
+                      <Link
+                        href={item.sourceHref}
+                        className="mt-1 inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.2em] text-[#ad9164] outline-none hover:text-[#efe8de]"
+                      >
+                        {item.sourceLabel ?? "Source"}
+                      </Link>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+        </details>
       ) : null}
     </section>
   );

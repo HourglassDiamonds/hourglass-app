@@ -350,6 +350,35 @@ body:has([data-concierge-shell]) [data-facet-rail] {
   list-style: none;
 }
 
+.hg-cos-brief {
+  min-width: 0;
+  overflow-x: hidden;
+}
+
+.hg-cos-brief ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hg-cos-watching,
+.hg-cos-fallback,
+.hg-cos-evidence {
+  min-width: 0;
+}
+
+.hg-cos-watching summary,
+.hg-cos-fallback summary,
+.hg-cos-evidence summary {
+  list-style: none;
+}
+
+.hg-cos-watching summary::-webkit-details-marker,
+.hg-cos-fallback summary::-webkit-details-marker,
+.hg-cos-evidence summary::-webkit-details-marker {
+  display: none;
+}
+
 @media (max-width: 767px) {
   .hg-cos-top5 {
     gap: 1.1rem;
@@ -361,5 +390,24 @@ body:has([data-concierge-shell]) [data-facet-rail] {
 
   .hg-cos-attention ul {
     gap: 1rem;
+  }
+
+  .hg-cos-brief {
+    margin-top: 1.6rem;
+  }
+
+  .hg-cos-brief-item {
+    padding-bottom: 0.15rem;
+  }
+
+  .hg-cos-brief-explanation {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .hg-cos-brief-details {
+    margin-top: 0.15rem;
   }
 }
