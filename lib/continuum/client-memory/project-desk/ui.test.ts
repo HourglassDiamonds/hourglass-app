@@ -84,8 +84,11 @@ describe("Project Desk UI", () => {
     assert.match(empty, /Current operating state is unknown/);
     assert.doesNotMatch(empty, /Review unknown|lifecycle=unknown|Parked/);
     const html = renderToStaticMarkup(
-      createElement(ProjectBookView, { projects: [summary()] }),
+      createElement(ProjectBookView, { projects: [summary({ gmailThreadId: "thread-secret" })] }),
     );
+    assert.match(html, /Oval ring/);
+    assert.match(html, /Ada Lovelace/);
+    assert.doesNotMatch(html, /thread-secret|gmail_thread/);
     assert.match(html, /Oval ring/);
     assert.match(html, /Ada Lovelace/);
     assert.match(html, new RegExp(conciergeProjectPath(PROJECT_ID)));

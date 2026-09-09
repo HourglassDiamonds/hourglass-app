@@ -269,4 +269,5 @@ export type CosProjectContext = {
   isCurrent: boolean;
   lifecycleStage?: string | null;
   specs?: ReadonlyArray<CosProjectSpec>;
+  gmailThreadId?: string | null;
 };

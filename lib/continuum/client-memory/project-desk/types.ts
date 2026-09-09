@@ -89,6 +89,7 @@ export type ProjectDeskSummary = {
   projectWork: ProjectWorkSummary;
   lifecycleStage: string | null;
   lifecycleLabel: string | null;
+  gmailThreadId?: string | null;
 };
 
 export type ProjectDeskRead = {

@@ -895,7 +895,7 @@ describe("Concierge Executive Moderator V1", () => {
 
   it("cannot mutate canonical state", () => {
     const source = readFileSync(join(DIR, "moderator.ts"), "utf8");
-    assert.doesNotMatch(source, /mutateJob|setProjectLifecycle|createProjectJob|mergePerson/);
+    assert.doesNotMatch(source, /mutateJob|setProjectLifecycle|createProjectJob|mergePerson|mintPerson/);
     assert.doesNotMatch(source, /applyReview|gmail\.googleapis|sendMail|users\.messages\.send/);
     assert.match(source, /Presentation only/);
   });
@@ -1253,6 +1253,532 @@ describe("Concierge Executive Moderator V1", () => {
       result.brief[0]?.actions.some((action) => action.kind === "create_project"),
       false,
     );
+  });
+
+  const VENDOR_THREAD = "1a00abcdeffedcba";
+  const PROJECT_SIBLING = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
+
+  function vendorProjects(extra: Partial<CosProjectContext> = {}): Map<string, CosProjectContext> {
+    const base = productionProjects();
+    const row = base.get(COS_LOOP_PROJECT_A)!;
+    base.set(COS_LOOP_PROJECT_A, {
+      ...row,
+      gmailThreadId: VENDOR_THREAD,
+      ...extra,
+    });
+    return base;
+  }
+
+  function vendorEvidence(input: {
+    candidateId: string;
+    sourceTimestamp: string;
+    text: string;
+    ruleIds?: readonly string[];
+    person?: boolean;
+  }): ContinuumCandidate[] {
+    const rows: ContinuumCandidate[] = [];
+    if (input.person) {
+      rows.push(
+        fixtureCandidate({
+          candidateId: `${input.candidateId}-person`,
+          sourceRef: `gc1|${VENDOR_THREAD}|person`,
+          sourceSystem: "gmail",
+          proposedTarget: { kind: "person", personId: PERSON_VENDOR },
+          candidateType: "person_association",
+          reviewStatus: "pending",
+          confidence: "low",
+          payload: {
+            kind: "person_association",
+            displayName: "Mara",
+            emailHash: "vendor",
+            mintPerson: false,
+            mergePersons: false,
+          },
+          evidenceBasis: { ruleIds: ["email_hash_supporting_not_identity"], matchedText: "Mara" },
+        }),
+      );
+    }
+    rows.push(
+      fixtureCandidate({
+        candidateId: input.candidateId,
+        sourceRef: `gc1|${VENDOR_THREAD}|${input.candidateId}`,
+        sourceSystem: "gmail",
+        sourceTimestamp: input.sourceTimestamp,
+        proposedTarget: { kind: "project", projectId: null },
+        candidateType: "follow_up",
+        payload: {
+          kind: "follow_up",
+          text: input.text,
+          dueAt: null,
+          sourceTimestamp: input.sourceTimestamp,
+        },
+        evidenceBasis: {
+          ruleIds: input.ruleIds ?? ["explicit_founder_commitment"],
+          matchedText: input.text,
+        },
+      }),
+    );
+    return rows;
+  }
+
+  it("attributes a vendor thread already associated to one Production Project", () => {
+    const result = briefOf({
+      candidates: vendorEvidence({
+        candidateId: "sent-shop",
+        sourceTimestamp: "2026-09-03T15:00:00.000Z",
+        text: "Sending the family sapphire to the shop.",
+        person: true,
+      }),
+      jobs: [],
+      projects: vendorProjects(),
+      nowIso: COS_LOOP_NOW,
+      top5: [],
+    });
+    assert.equal(result.brief.length, 1);
+    assert.equal(result.brief[0]?.projectId, COS_LOOP_PROJECT_A);
+    assert.match(result.brief[0]?.personLabel ?? "", /Client Hale/i);
+    assert.match(result.brief[0]?.projectTitle ?? "", /Hale band/i);
+    assert.doesNotMatch(result.brief[0]?.personLabel ?? "", /Unassigned|Mara|Hourglass/i);
+    assert.match(result.brief[0]?.headline ?? "", /shop status/i);
+    assert.equal(
+      result.brief[0]?.actions.some((action) => action.kind === "confirm_person"),
+      false,
+    );
+    assert.equal(
+      result.brief[0]?.actions.some((action) => action.kind === "create_project"),
+      false,
+    );
+  });
+
+  it("inherits a vendor CAD thread onto the unique Production Project with a stored Gmail thread", () => {
+    const siblingThread = "1a0aaabbbcccddd1";
+    const projects = vendorProjects({
+      gmailThreadId: siblingThread,
+      specs: [
+        { fieldName: "finger_size", value: "12.5" },
+        { fieldName: "metal", value: "Platinum" },
+      ],
+    });
+    projects.set(PROJECT_C, {
+      projectId: PROJECT_C,
+      title: "Stored CAD family",
+      personName: "Other Client",
+      people: [{ personId: PERSON_ROWE, displayName: "Other Client", role: "client" }],
+      isCurrent: true,
+      lifecycleStage: "cad",
+      specs: [{ fieldName: "cad_job_number", value: "CR5001024" }],
+    });
+    const result = briefOf({
+      candidates: [
+        ...vendorEvidence({
+          candidateId: "shop-cad",
+          sourceTimestamp: "2026-09-03T15:00:00.000Z",
+          text: "Shop status for the platinum band.",
+          person: true,
+        }),
+        fixtureCandidate({
+          candidateId: "shop-cad-id",
+          sourceRef: `gc1|${VENDOR_THREAD}|cad`,
+          sourceSystem: "gmail",
+          sourceTimestamp: "2026-09-03T16:00:00.000Z",
+          proposedTarget: { kind: "project", projectId: null },
+          candidateType: "structured_spec",
+          payload: {
+            kind: "structured_spec",
+            fieldName: "cad_job_number",
+            proposedValue: "CR5000971",
+            currentValue: null,
+            conflict: false,
+          },
+          evidenceBasis: { ruleIds: ["exact_cad_job"], matchedText: "CR5000971" },
+        }),
+      ],
+      jobs: [],
+      projects,
+      nowIso: COS_LOOP_NOW,
+      top5: [],
+    });
+    assert.equal(result.brief[0]?.projectId, COS_LOOP_PROJECT_A);
+    assert.match(result.brief[0]?.personLabel ?? "", /Client Hale/i);
+    assert.match(result.brief[0]?.projectTitle ?? "", /Hale band/i);
+    assert.equal(
+      result.brief[0]?.actions.some((action) => action.kind === "confirm_person"),
+      false,
+    );
+    assert.equal(
+      result.brief[0]?.actions.some((action) => action.kind === "create_project"),
+      false,
+    );
+  });
+
+  it("puts handled vendor CAD on Watching instead of Unassigned", () => {
+    const projects = vendorProjects({
+      gmailThreadId: "1a0aaabbbcccddd1",
+      specs: [{ fieldName: "metal", value: "Platinum" }],
+    });
+    projects.set(PROJECT_C, {
+      projectId: PROJECT_C,
+      title: "Stored CAD family",
+      personName: "Other Client",
+      people: [{ personId: PERSON_ROWE, displayName: "Other Client", role: "client" }],
+      isCurrent: true,
+      lifecycleStage: "cad",
+      specs: [{ fieldName: "cad_job_number", value: "CR5001024" }],
+    });
+    const result = briefOf({
+      candidates: [
+        fixtureCandidate({
+          candidateId: "handled-cad",
+          sourceRef: `gc1|${VENDOR_THREAD}|cad`,
+          sourceSystem: "gmail",
+          sourceTimestamp: "2026-09-03T16:00:00.000Z",
+          proposedTarget: { kind: "project", projectId: null },
+          candidateType: "structured_spec",
+          payload: {
+            kind: "structured_spec",
+            fieldName: "cad_job_number",
+            proposedValue: "CR5000971",
+            currentValue: null,
+            conflict: false,
+          },
+          evidenceBasis: { ruleIds: ["exact_cad_job"], matchedText: "CR5000971" },
+        }),
+      ],
+      jobs: [],
+      projects,
+      nowIso: COS_LOOP_NOW,
+      top5: [],
+    });
+    assert.equal(result.brief.length, 0);
+    assert.equal(result.watching[0]?.projectId, COS_LOOP_PROJECT_A);
+    assert.match(result.watching[0]?.title ?? "", /Hale band/i);
+    assert.equal(
+      result.brief.some((row) => row.personLabel == null && row.headline === "Your turn"),
+      false,
+    );
+  });
+
+  it("fails closed when unmatched vendor CAD could belong to more than one Production Project", () => {
+    const projects = vendorProjects({
+      gmailThreadId: "1a0aaabbbcccddd1",
+      specs: [{ fieldName: "metal", value: "Platinum" }],
+    });
+    projects.set(PROJECT_SIBLING, {
+      projectId: PROJECT_SIBLING,
+      title: "Other band",
+      personName: "Other Client",
+      people: [{ personId: PERSON_ROWE, displayName: "Other Client", role: "client" }],
+      isCurrent: true,
+      lifecycleStage: "production",
+      gmailThreadId: "1a0aaabbbcccddd2",
+      specs: [{ fieldName: "metal", value: "Platinum" }],
+    });
+    const result = briefOf({
+      candidates: [
+        fixtureCandidate({
+          candidateId: "ambiguous-cad",
+          sourceRef: `gc1|${VENDOR_THREAD}|cad`,
+          sourceSystem: "gmail",
+          sourceTimestamp: "2026-09-03T16:00:00.000Z",
+          proposedTarget: { kind: "project", projectId: null },
+          candidateType: "structured_spec",
+          payload: {
+            kind: "structured_spec",
+            fieldName: "cad_job_number",
+            proposedValue: "CR5000971",
+            currentValue: null,
+            conflict: false,
+          },
+          evidenceBasis: { ruleIds: ["exact_cad_job"], matchedText: "CR5000971" },
+        }),
+      ],
+      jobs: [],
+      projects,
+      nowIso: COS_LOOP_NOW,
+      top5: [],
+    });
+    const surfaced = result.brief[0];
+    if (surfaced) {
+      assert.equal(surfaced.projectId, null);
+      assert.equal(surfaced.personLabel, null);
+    }
+    assert.equal(
+      result.brief.some((row) => row.projectId === COS_LOOP_PROJECT_A || row.projectId === PROJECT_SIBLING),
+      false,
+    );
+  });
+
+  it("does not inherit unmatched vendor CAD onto a CAD-stage Project", () => {
+    const result = briefOf({
+      candidates: [
+        fixtureCandidate({
+          candidateId: "cad-stage-id",
+          sourceRef: `gc1|${VENDOR_THREAD}|cad`,
+          sourceSystem: "gmail",
+          sourceTimestamp: "2026-09-03T16:00:00.000Z",
+          proposedTarget: { kind: "project", projectId: null },
+          candidateType: "structured_spec",
+          payload: {
+            kind: "structured_spec",
+            fieldName: "cad_job_number",
+            proposedValue: "CR5000971",
+            currentValue: null,
+            conflict: false,
+          },
+          evidenceBasis: { ruleIds: ["exact_cad_job"], matchedText: "CR5000971" },
+        }),
+      ],
+      jobs: [],
+      projects: new Map([
+        [
+          COS_LOOP_PROJECT_B,
+          {
+            projectId: COS_LOOP_PROJECT_B,
+            title: "Matching Marquise Earrings",
+            personName: "Abbey Castillo",
+            people: [{ personId: PERSON_ABBEY, displayName: "Abbey Castillo", role: "client" }],
+            isCurrent: true,
+            lifecycleStage: "cad",
+            gmailThreadId: "1a0aaabbbcccddd1",
+          },
+        ],
+      ]),
+      nowIso: COS_LOOP_NOW,
+      top5: [],
+    });
+    const surfaced = result.brief[0];
+    if (surfaced) {
+      assert.equal(surfaced.projectId, null);
+      assert.notEqual(surfaced.projectId, COS_LOOP_PROJECT_B);
+    }
+    assert.equal(
+      result.brief.some((row) => row.projectId === COS_LOOP_PROJECT_B),
+      false,
+    );
+  });
+
+  it("attributes a vendor thread uniquely identified by stored CAD evidence", () => {
+    const result = briefOf({
+      candidates: vendorEvidence({
+        candidateId: "cad-shop",
+        sourceTimestamp: "2026-09-03T15:00:00.000Z",
+        text: "Sending the family sapphire for CR5000971.",
+        person: true,
+      }),
+      jobs: [],
+      projects: vendorProjects({
+        gmailThreadId: null,
+        specs: [
+          { fieldName: "cad_job_number", value: "CR5000971" },
+          { fieldName: "metal", value: "Platinum" },
+        ],
+      }),
+      nowIso: COS_LOOP_NOW,
+      top5: [],
+    });
+    assert.equal(result.brief[0]?.projectId, COS_LOOP_PROJECT_A);
+    assert.match(result.brief[0]?.personLabel ?? "", /Client Hale/i);
+    assert.equal(
+      result.brief[0]?.actions.some((action) => action.kind === "confirm_person"),
+      false,
+    );
+  });
+
+  it("keeps a vendor thread Unassigned when no supported Project relationship exists", () => {
+    const result = briefOf({
+      candidates: vendorEvidence({
+        candidateId: "loose-shop",
+        sourceTimestamp: "2026-09-03T15:00:00.000Z",
+        text: "Sending the family sapphire to the shop.",
+        person: true,
+      }),
+      jobs: [],
+      projects: productionProjects(),
+      nowIso: COS_LOOP_NOW,
+      top5: [],
+    });
+    const item = [...result.brief, ...result.watching].find((row) =>
+      JSON.stringify(row).includes("loose-shop"),
+    );
+    const surfaced = result.brief[0];
+    if (surfaced) {
+      assert.equal(surfaced.projectId, null);
+      assert.equal(surfaced.personLabel, null);
+      assert.equal(
+        surfaced.actions.some((action) => action.kind === "confirm_person"),
+        true,
+      );
+    }
+    assert.equal(item?.projectId ?? surfaced?.projectId ?? null, null);
+  });
+
+  it("fails closed when one vendor thread matches multiple Production Projects", () => {
+    const projects = vendorProjects();
+    projects.set(PROJECT_SIBLING, {
+      projectId: PROJECT_SIBLING,
+      title: "Other band",
+      personName: "Other Client",
+      people: [{ personId: PERSON_ROWE, displayName: "Other Client", role: "client" }],
+      isCurrent: true,
+      lifecycleStage: "production",
+      gmailThreadId: VENDOR_THREAD,
+    });
+    const result = briefOf({
+      candidates: vendorEvidence({
+        candidateId: "ambiguous-shop",
+        sourceTimestamp: "2026-09-03T15:00:00.000Z",
+        text: "Sending the family sapphire to the shop.",
+        person: true,
+      }),
+      jobs: [],
+      projects,
+      nowIso: COS_LOOP_NOW,
+      top5: [],
+    });
+    const surfaced = result.brief[0];
+    if (surfaced) {
+      assert.equal(surfaced.projectId, null);
+      assert.equal(surfaced.personLabel, null);
+    }
+    assert.equal(
+      result.brief.some((row) => row.projectId === COS_LOOP_PROJECT_A || row.projectId === PROJECT_SIBLING),
+      false,
+    );
+  });
+
+  it("does not recommend Create Project when vendor payment is already on a Production Project", () => {
+    const result = briefOf({
+      candidates: [
+        ...vendorEvidence({
+          candidateId: "paid",
+          sourceTimestamp: "2026-09-04T12:00:00.000Z",
+          text: "Payment received for invoice 8821",
+          ruleIds: ["transactional_customer_notice"],
+          person: true,
+        }),
+        fixtureCandidate({
+          candidateId: "vendor-ack",
+          sourceRef: `gc1|${VENDOR_THREAD}|ack`,
+          sourceSystem: "gmail",
+          sourceTimestamp: "2026-09-05T12:00:00.000Z",
+          proposedTarget: { kind: "project", projectId: null },
+          candidateType: "note",
+          payload: {
+            kind: "note",
+            text: "Received the center, we'll start production.",
+            contextLayer: null,
+          },
+          evidenceBasis: {
+            ruleIds: ["explicit_vendor_commitment"],
+            matchedText: "Received the center, we'll start production.",
+          },
+        }),
+      ],
+      jobs: [],
+      projects: vendorProjects(),
+      nowIso: COS_LOOP_NOW,
+      top5: [],
+    });
+    assert.equal(
+      result.brief.some((item) => item.actions.some((action) => action.kind === "create_project")),
+      false,
+    );
+    assert.equal(result.watching[0]?.projectId ?? result.brief[0]?.projectId, COS_LOOP_PROJECT_A);
+    assert.doesNotMatch(JSON.stringify(result), /Create project/i);
+  });
+
+  it("never mints or merges a Person from supported vendor Project context", () => {
+    const attribution = readFileSync(join(DIR, "attribution.ts"), "utf8");
+    assert.doesNotMatch(attribution, /mintPerson\s*:\s*true|mergePersons\s*:\s*true|mergePerson\(/);
+    assert.match(attribution, /Does not mint Persons/);
+    const result = briefOf({
+      candidates: vendorEvidence({
+        candidateId: "sent-shop",
+        sourceTimestamp: "2026-09-03T15:00:00.000Z",
+        text: "Sending the family sapphire to the shop.",
+        person: true,
+      }),
+      jobs: [],
+      projects: vendorProjects(),
+      nowIso: COS_LOOP_NOW,
+      top5: [],
+    });
+    assert.equal(result.brief[0]?.personLabel, "Client Hale");
+    assert.doesNotMatch(result.brief[0]?.personLabel ?? "", /Mara/);
+  });
+
+  it("does not regress J.Pennock, Abbey, Chicken Ring, or Top 5 suppression", () => {
+    const pennock = briefOf({
+      candidates: [
+        specRow({
+          candidateId: "cad-old",
+          fieldName: "cad_job_number",
+          proposedValue: "RN04163",
+          currentValue: "C010657",
+        }),
+      ],
+      jobs: [],
+      projects: pennockProjects(),
+      nowIso: COS_LOOP_NOW,
+      top5: [],
+    });
+    assert.equal(pennock.brief.length, 0);
+    const chicken = loopOf({
+      jobs: [
+        fixtureJob({
+          jobId: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+          subject: "Touch base with Yvonne about bee engraving and date engraving",
+        }),
+      ],
+      candidates: [],
+      projects: chickenProjects(),
+      nowIso: COS_LOOP_NOW,
+    });
+    assert.equal(chicken.top5.length, 1);
+    assert.equal(chicken.top5[0]?.projectId, COS_LOOP_PROJECT_A);
+    const abbey = briefOf({
+      candidates: [
+        fixtureCandidate({
+          candidateId: "abbey-person",
+          sourceRef: "gc1|earring-thread|msg-1",
+          sourceSystem: "gmail",
+          proposedTarget: { kind: "person", personId: PERSON_ABBEY },
+          candidateType: "person_association",
+          reviewStatus: "approved",
+          payload: {
+            kind: "person_association",
+            displayName: "Abbey Castillo",
+            emailHash: "abc",
+            mintPerson: false,
+            mergePersons: false,
+          },
+          evidenceBasis: { ruleIds: ["confirmed_person"], matchedText: "Abbey Castillo" },
+        }),
+        fixtureCandidate({
+          candidateId: "abbey-answer",
+          sourceRef: "gc1|earring-thread|msg-2",
+          sourceSystem: "gmail",
+          sourceTimestamp: "2026-09-06T12:00:00.000Z",
+          proposedTarget: { kind: "project", projectId: null },
+          candidateType: "project_context",
+          payload: {
+            kind: "project_context",
+            topic: "proposed_spec",
+            value: "1 carat each",
+          },
+          evidenceBasis: {
+            ruleIds: ["explicit_proposed_spec_carat"],
+            matchedText: "1 carat each",
+          },
+        }),
+      ],
+      jobs: [],
+      projects: abbeyProjects(),
+      nowIso: COS_LOOP_NOW,
+      top5: [],
+    });
+    assert.equal(abbey.brief[0]?.projectTitle, "Matching Marquise Earrings");
+    assert.match(abbey.brief[0]?.personLabel ?? "", /Abbey Castillo/i);
   });
 
   it("renders Concierge Brief above collapsed fallback attention and keeps Top 5 first", () => {

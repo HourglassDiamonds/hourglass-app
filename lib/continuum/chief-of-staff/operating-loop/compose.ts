@@ -78,6 +78,7 @@ export function projectContextFromSummaries(
       isCurrent: current.has(row.projectId),
       lifecycleStage: row.lifecycleStage,
       specs: row.specs,
+      gmailThreadId: row.gmailThreadId ?? null,
     });
   }
   return map;

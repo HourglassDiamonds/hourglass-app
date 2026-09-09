@@ -27,8 +27,6 @@ import {
   isStudioOrVendorLabel,
   isTechnicianVisit,
   payloadOf,
-  projectByThreadFromCandidates,
-  sourceThreadId,
   type FounderAttentionContext,
 } from "@/lib/continuum/candidates/founder-attention";
 import { isUnresolvedOpenJobState } from "@/lib/continuum/client-memory/project-jobs/validate";
@@ -42,6 +40,14 @@ import {
   conciergeProjectPath,
 } from "@/lib/continuum/client-memory/read/presentation";
 import { currentProjectToggleId } from "@/lib/continuum/client-memory/open-projects/present";
+import {
+  pickClientPerson,
+  projectBySupportedAssociation,
+  projectIdsByThread,
+  resolveProjectAttribution,
+  vendorSourcedThread,
+  type SupportedThreadProject,
+} from "./attribution";
 import { gmailThreadHrefFor } from "./evidence";
 import type {
   CosAnomalyItem,
@@ -52,7 +58,6 @@ import type {
   CosEvidenceBeat,
   CosFounderAttentionItem,
   CosProjectContext,
-  CosProjectPerson,
   CosProposedAction,
   CosTop5Item,
   CosWatchingItem,
@@ -209,25 +214,6 @@ function titlesOverlap(personName: string, projectTitle: string): boolean {
   return [...person].some((token) => title.has(token));
 }
 
-function pickClientPerson(
-  project: CosProjectContext | null,
-): CosProjectPerson | null {
-  if (!project) return null;
-  const pool = (project.people ?? []).filter((person) => {
-    if (isStudioOrVendorLabel(person.displayName)) return false;
-    if (person.role === "vendor-contact") return false;
-    return true;
-  });
-  if (pool.length === 0) return null;
-  if (pool.length === 1) return pool[0] ?? null;
-  const title = new Set(nameTokens(project.title));
-  const matched = pool.filter((person) =>
-    nameTokens(person.displayName).some((token) => title.has(token)),
-  );
-  if (matched.length === 1) return matched[0] ?? null;
-  return null;
-}
-
 function pickVendorName(project: CosProjectContext | null): string {
   const vendor = project?.people?.find(
     (person) =>
@@ -235,17 +221,6 @@ function pickVendorName(project: CosProjectContext | null): string {
       !isStudioOrVendorLabel(person.displayName),
   );
   return vendor?.displayName?.trim() || "the shop";
-}
-
-function personNameById(
-  personId: string,
-  projects: ReadonlyMap<string, CosProjectContext>,
-): string | null {
-  for (const project of projects.values()) {
-    const match = project.people?.find((row) => row.personId === personId);
-    if (match && !isStudioOrVendorLabel(match.displayName)) return match.displayName;
-  }
-  return null;
 }
 
 function displayTitle(personName: string | null, projectTitle: string | null): string {
@@ -311,7 +286,10 @@ function isBoilerplate(row: ContinuumCandidate): boolean {
   return false;
 }
 
-function speakerOf(row: ContinuumCandidate): CosBriefSpeaker {
+function speakerOf(
+  row: ContinuumCandidate,
+  fallback: CosBriefSpeaker = "client",
+): CosBriefSpeaker {
   if (hasRule(row, "explicit_founder_commitment") || FOUNDER_OUTBOUND.test(haystack(row))) {
     return "founder";
   }
@@ -345,10 +323,14 @@ function speakerOf(row: ContinuumCandidate): CosBriefSpeaker {
     return FOUNDER_OUTBOUND.test(payload.subject) ? "founder" : "client";
   }
   if (VENDOR_ACK.test(haystack(row))) return "vendor";
-  return "client";
+  return fallback;
 }
 
-function beatKind(row: ContinuumCandidate, ctx: FounderAttentionContext): BeatKind {
+function beatKind(
+  row: ContinuumCandidate,
+  ctx: FounderAttentionContext,
+  fallback: CosBriefSpeaker = "client",
+): BeatKind {
   if (isBoilerplate(row)) return "boilerplate";
   if (
     row.candidateType === "person_association" ||
@@ -365,7 +347,7 @@ function beatKind(row: ContinuumCandidate, ctx: FounderAttentionContext): BeatKi
   if (isClientDesignAnswer(row)) return "client_reply";
   if (payload.kind === "date" && payload.role === "deadline") return "deadline";
   if (DEADLINE_SIGNAL.test(haystack(row))) return "deadline";
-  const speaker = speakerOf(row);
+  const speaker = speakerOf(row, fallback);
   if (speaker === "vendor" && VENDOR_ACK.test(haystack(row))) return "vendor_ack";
   if (speaker === "founder") {
     if (
@@ -406,8 +388,9 @@ function toBeat(
   ctx: FounderAttentionContext,
   personName: string | null,
   vendorName: string,
+  fallback: CosBriefSpeaker = "client",
 ): InternalBeat {
-  const speaker = speakerOf(row);
+  const speaker = speakerOf(row, fallback);
   const other = counterpart(speaker, personName, vendorName);
   const from = speakerLabel(speaker, personName, vendorName);
   const label = other ? `${formatEvidenceDay(row.sourceTimestamp)} · ${from} → ${other}` : `${formatEvidenceDay(row.sourceTimestamp)} · ${from}`;
@@ -418,85 +401,10 @@ function toBeat(
     speaker,
     sourceHref: gmailThreadHrefFor(row),
     candidateId: row.candidateId,
-    kind: beatKind(row, ctx),
+    kind: beatKind(row, ctx, fallback),
     timestamp: row.sourceTimestamp,
     historical: isHistoricalRediscovery(row, ctx),
     superseded: row.candidateState === "superseded" || row.reviewStatus === "discarded",
-  };
-}
-
-function projectBySupportedAssociation(
-  rows: readonly ContinuumCandidate[],
-  projects: ReadonlyMap<string, CosProjectContext>,
-): Map<string, string> {
-  const map = projectByThreadFromCandidates(rows);
-  const personToProjects = new Map<string, Set<string>>();
-  for (const project of projects.values()) {
-    for (const person of project.people ?? []) {
-      if (isStudioOrVendorLabel(person.displayName)) continue;
-      const set = personToProjects.get(person.personId) ?? new Set();
-      set.add(project.projectId);
-      personToProjects.set(person.personId, set);
-    }
-  }
-  const uniquePersonProject = new Map<string, string>();
-  for (const [personId, ids] of personToProjects) {
-    if (ids.size === 1) uniquePersonProject.set(personId, [...ids][0]!);
-  }
-  const threadPersons = new Map<string, Set<string>>();
-  for (const row of rows) {
-    const threadId = sourceThreadId(row);
-    const personId = confirmedPersonId(row);
-    if (!threadId || !personId) continue;
-    const set = threadPersons.get(threadId) ?? new Set();
-    set.add(personId);
-    threadPersons.set(threadId, set);
-  }
-  for (const [threadId, persons] of threadPersons) {
-    if (map.has(threadId)) continue;
-    if (persons.size !== 1) continue;
-    const projectId = uniquePersonProject.get([...persons][0]!);
-    if (projectId) map.set(threadId, projectId);
-  }
-  return map;
-}
-
-function resolveAttribution(
-  evidence: readonly ContinuumCandidate[],
-  projectId: string | null,
-  projects: ReadonlyMap<string, CosProjectContext>,
-): {
-  projectId: string | null;
-  projectTitle: string | null;
-  personName: string | null;
-} {
-  const project = projectId ? (projects.get(projectId) ?? null) : null;
-  const client = pickClientPerson(project);
-  let personName = client?.displayName ?? null;
-  if (!personName) {
-    const personIds = [
-      ...new Set(evidence.map(confirmedPersonId).filter((id): id is string => Boolean(id))),
-    ];
-    if (personIds.length === 1) {
-      personName = personNameById(personIds[0]!, projects);
-    }
-  }
-  if (!personName) {
-    for (const row of evidence) {
-      const payload = payloadOf(row);
-      if (payload.kind === "person_association" && payload.displayName) {
-        if (!isStudioOrVendorLabel(payload.displayName)) {
-          personName = payload.displayName;
-          break;
-        }
-      }
-    }
-  }
-  if (personName && isStudioOrVendorLabel(personName)) personName = null;
-  return {
-    projectId,
-    projectTitle: project?.title ?? (projectId ? "Project" : null),
-    personName,
   };
 }
 
@@ -720,6 +628,7 @@ function classifySituation(input: {
   jobs: readonly ProjectJob[];
   top5: readonly CosTop5Item[];
   proposedActions: readonly CosProposedAction[];
+  association: ReadonlyMap<string, SupportedThreadProject>;
   nowMs: number;
 }): RankedSituation | null {
   const groupedProjectId = input.key.startsWith("project:")
@@ -729,26 +638,70 @@ function classifySituation(input: {
     groupedProjectId ??
     input.rows.map(candidateProjectId).find((id): id is string => Boolean(id)) ??
     null;
-  const attribution = resolveAttribution(input.rows, projectId, input.projects);
+  const attribution = resolveProjectAttribution(input.rows, projectId, input.projects);
   const project = attribution.projectId
     ? (input.projects.get(attribution.projectId) ?? null)
     : null;
   const vendorName = pickVendorName(project);
   const person = attribution.personName;
   const title = displayTitle(person, attribution.projectTitle);
+  const client = pickClientPerson(project);
+  const clientConfirmed = Boolean(
+    client &&
+      input.rows.some((row) => confirmedPersonId(row) === client.personId),
+  );
+  const fallbackSpeaker: CosBriefSpeaker =
+    vendorSourcedThread(input.association, input.rows) && !clientConfirmed
+      ? "vendor"
+      : "client";
   const usable = input.rows.filter(
     (row) => row.candidateState !== "superseded" && row.reviewStatus !== "discarded",
   );
   const sorted = [...usable].sort(
     (a, b) => parseMs(a.sourceTimestamp) - parseMs(b.sourceTimestamp),
   );
-  const beats = sorted.map((row) => toBeat(row, input.ctx, person, vendorName));
+  const beats = sorted.map((row) =>
+    toBeat(row, input.ctx, person, vendorName, fallbackSpeaker),
+  );
+  const production = isProductionStage(project?.lifecycleStage);
+  const vendorHandled =
+    Boolean(attribution.projectId) &&
+    production &&
+    vendorSourcedThread(input.association, input.rows);
   const meaningful = latestMeaningful(beats);
-  if (!meaningful) return null;
+  if (!meaningful) {
+    if (!vendorHandled || usable.length === 0) return null;
+    const latestMs = Math.max(0, ...usable.map((row) => parseMs(row.sourceTimestamp)));
+    return {
+      id: `brief:${input.key}`,
+      disposition: "watching",
+      rankClass: "state_transition",
+      urgency: 0,
+      confidence: confidenceOf(usable),
+      novelty: noveltyOf(latestMs, input.nowMs),
+      latestMs,
+      personName: person,
+      projectId: attribution.projectId,
+      projectTitle: attribution.projectTitle,
+      isCurrent: project?.isCurrent ?? false,
+      headline: "already in production",
+      explanation:
+        "Shop evidence is already tied to this production Project. No founder action is required.",
+      recommended: "No new action unless you want a status check.",
+      stateLabel: projectStateLabel(project?.lifecycleStage),
+      urgencyLabel: null,
+      watchingTitle: title,
+      watchingDetail: "Shop evidence is already on this production Project.",
+      beats: [],
+      candidateIds: input.rows.map((row) => row.candidateId),
+      openJobLabel: openJobLabelFor(attribution.projectId, input.jobs),
+      projectStateLabel: projectStateLabel(project?.lifecycleStage),
+      proposedAction: null,
+    };
+  }
 
   const conflicts = materialSpecConflicts(usable, input.ctx);
   const spec = specCopy(conflicts);
-  const production = isProductionStage(project?.lifecycleStage);
   const founderSentToShop = beats.some(
     (beat) =>
       !beat.superseded &&
@@ -772,7 +725,7 @@ function classifySituation(input: {
   const missingVendorAck = production && founderSentToShop && !vendorAckAfterSend;
   const payment = beats.some((beat) => !beat.superseded && beat.kind === "payment");
   const deadlineHits = usable.filter(
-    (row) => beatKind(row, input.ctx) === "deadline",
+    (row) => beatKind(row, input.ctx, fallbackSpeaker) === "deadline",
   );
   const deadlineUrg = deadlineUrgency(deadlineHits, input.nowMs);
   const historical = beats.filter((beat) => beat.historical && !beat.superseded);
@@ -843,7 +796,35 @@ function classifySituation(input: {
     reactivation ||
     usable.some(hasCommercialPayload) ||
     usable.some((row) => isActionableSpecConflict(row, input.ctx));
-  if (!commercial) return null;
+  if (!commercial) {
+    if (!vendorHandled) return null;
+    return {
+      id: `brief:${input.key}`,
+      disposition: "watching",
+      rankClass: "state_transition",
+      urgency: 0,
+      confidence: confidenceOf(usable),
+      novelty: noveltyOf(parseMs(meaningful.timestamp), input.nowMs),
+      latestMs: parseMs(meaningful.timestamp),
+      personName: person,
+      projectId: attribution.projectId,
+      projectTitle: attribution.projectTitle,
+      isCurrent: project?.isCurrent ?? false,
+      headline: "already in production",
+      explanation:
+        "Shop evidence is already tied to this production Project. No founder action is required.",
+      recommended: "No new action unless you want a status check.",
+      stateLabel: projectStateLabel(project?.lifecycleStage),
+      urgencyLabel: null,
+      watchingTitle: title,
+      watchingDetail: "Shop evidence is already on this production Project.",
+      beats: visibleBeats(beats, false),
+      candidateIds: input.rows.map((row) => row.candidateId),
+      openJobLabel: openJobLabelFor(attribution.projectId, input.jobs),
+      projectStateLabel: projectStateLabel(project?.lifecycleStage),
+      proposedAction: null,
+    };
+  }
 
   let rankClass: CosBriefRankClass = "informational";
   let headline = title;
@@ -947,6 +928,10 @@ function classifySituation(input: {
     recommended = "Wait on the shop.";
     watchingTitle = title;
     watchingDetail = "Awaiting the shop. Project is already in production.";
+  } else if (vendorHandled) {
+    disposition = "watching";
+    watchingTitle = title;
+    watchingDetail = "Shop evidence is already on this production Project.";
   } else {
     disposition = "suppress";
   }
@@ -1089,9 +1074,10 @@ export function composeConciergeBrief(input: ComposeConciergeBriefInput): {
     lifecycleByProject,
   };
   const association = projectBySupportedAssociation(input.candidates, input.projects);
+  const projectByThread = projectIdsByThread(association);
   const groups = new Map<string, ContinuumCandidate[]>();
   for (const row of input.candidates) {
-    const key = groupingKey(row, association);
+    const key = groupingKey(row, projectByThread);
     const list = groups.get(key) ?? [];
     list.push(row);
     groups.set(key, list);
@@ -1107,6 +1093,7 @@ export function composeConciergeBrief(input: ComposeConciergeBriefInput): {
       jobs: input.jobs,
       top5: input.top5,
       proposedActions: input.proposedActions ?? [],
+      association,
       nowMs,
     });
     if (situation) situations.push(situation);

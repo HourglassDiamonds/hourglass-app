@@ -169,6 +169,7 @@ function composeSummary(
     ),
     lifecycleStage: lifecycle.kind === "none" ? null : lifecycle.stage,
     lifecycleLabel: lifecycle.kind === "none" ? null : lifecycle.label,
+    gmailThreadId: history?.gmailThreadId ?? null,
   };
 }
 

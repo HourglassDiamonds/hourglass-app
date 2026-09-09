@@ -26,6 +26,7 @@ const INFERENCE_FILES = [
   "propose-actions.ts",
   "founder-attention.ts",
   "moderator.ts",
+  "attribution.ts",
   "load.ts",
   "types.ts",
   "fixtures.ts",
@@ -50,7 +51,7 @@ describe("CoS operating loop security", () => {
     for (const name of INFERENCE_FILES) {
       const source = readFileSync(join(DIR, name), "utf8");
       assert.doesNotMatch(source, /mutateJob|mutateOpenJob|completeFounderActionable/);
-      assert.doesNotMatch(source, /setProjectLifecycle|correctProjectKind|mergePerson/);
+      assert.doesNotMatch(source, /setProjectLifecycle|correctProjectKind|mergePerson|mintPerson/);
       assert.doesNotMatch(source, /composeChiefOfStaffBrief|runChiefOfStaffShadow/);
     }
     const complete = readFileSync(join(DIR, "complete.ts"), "utf8");

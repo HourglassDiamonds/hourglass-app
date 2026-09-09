@@ -25,21 +25,22 @@ import {
   isExplicitNewProject,
   isPaymentStateChange,
   payloadOf,
-  projectByThreadFromCandidates,
-  sourceThreadId,
   waitingOnFounder,
-  confirmedPersonId,
   isActionableSpecConflict,
   isStudioOrVendorLabel,
   type FounderAttentionContext as ClassifyContext,
   type FounderAttentionJudgment,
 } from "@/lib/continuum/candidates/founder-attention";
+import {
+  projectBySupportedAssociation,
+  projectIdsByThread,
+  resolveProjectAttribution,
+} from "./attribution";
 import { sourceHrefFor, sourceLabelFor } from "./evidence";
 import type {
   CosAnomalyItem,
   CosFounderAttentionItem,
   CosProjectContext,
-  CosProjectPerson,
   CosProposedAction,
   CosRecapItem,
 } from "./types";
@@ -91,25 +92,6 @@ function titlesOverlap(personName: string, projectTitle: string): boolean {
   return [...person].some((token) => title.has(token));
 }
 
-function pickClientPerson(
-  project: CosProjectContext | null,
-): CosProjectPerson | null {
-  if (!project) return null;
-  const pool = (project.people ?? []).filter((person) => {
-    if (isStudioOrVendorLabel(person.displayName)) return false;
-    if (person.role === "vendor-contact") return false;
-    return true;
-  });
-  if (pool.length === 0) return null;
-  if (pool.length === 1) return pool[0] ?? null;
-  const title = new Set(nameTokens(project.title));
-  const matched = pool.filter((person) =>
-    nameTokens(person.displayName).some((token) => title.has(token)),
-  );
-  if (matched.length === 1) return matched[0] ?? null;
-  return null;
-}
-
 function displayTitle(personName: string | null, projectTitle: string | null): string {
   const person = personName?.trim() || null;
   const project = projectTitle?.trim() || null;
@@ -126,53 +108,6 @@ function displayTitle(personName: string | null, projectTitle: string | null): s
   return person || project || UNASSIGNED_TITLE;
 }
 
-function projectBySupportedAssociation(
-  rows: readonly ContinuumCandidate[],
-  projects: ReadonlyMap<string, CosProjectContext>,
-): Map<string, string> {
-  const map = projectByThreadFromCandidates(rows);
-  const personToProjects = new Map<string, Set<string>>();
-  for (const project of projects.values()) {
-    for (const person of project.people ?? []) {
-      if (isStudioOrVendorLabel(person.displayName)) continue;
-      const set = personToProjects.get(person.personId) ?? new Set();
-      set.add(project.projectId);
-      personToProjects.set(person.personId, set);
-    }
-  }
-  const uniquePersonProject = new Map<string, string>();
-  for (const [personId, ids] of personToProjects) {
-    if (ids.size === 1) uniquePersonProject.set(personId, [...ids][0]!);
-  }
-  const threadPersons = new Map<string, Set<string>>();
-  for (const row of rows) {
-    const threadId = sourceThreadId(row);
-    const personId = confirmedPersonId(row);
-    if (!threadId || !personId) continue;
-    const set = threadPersons.get(threadId) ?? new Set();
-    set.add(personId);
-    threadPersons.set(threadId, set);
-  }
-  for (const [threadId, persons] of threadPersons) {
-    if (map.has(threadId)) continue;
-    if (persons.size !== 1) continue;
-    const projectId = uniquePersonProject.get([...persons][0]!);
-    if (projectId) map.set(threadId, projectId);
-  }
-  return map;
-}
-
-function personNameById(
-  personId: string,
-  projects: ReadonlyMap<string, CosProjectContext>,
-): string | null {
-  for (const project of projects.values()) {
-    const match = project.people?.find((row) => row.personId === personId);
-    if (match && !isStudioOrVendorLabel(match.displayName)) return match.displayName;
-  }
-  return null;
-}
-
 function resolveAttribution(
   evidence: readonly ContinuumCandidate[],
   projectId: string | null,
@@ -183,24 +118,10 @@ function resolveAttribution(
   personName: string | null;
   title: string;
 } {
-  const project = projectId ? (projects.get(projectId) ?? null) : null;
-  const client = pickClientPerson(project);
-  let personName = client?.displayName ?? null;
-  if (!personName) {
-    const personIds = [
-      ...new Set(evidence.map(confirmedPersonId).filter((id): id is string => Boolean(id))),
-    ];
-    if (personIds.length === 1) {
-      personName = personNameById(personIds[0]!, projects);
-    }
-  }
-  if (personName && isStudioOrVendorLabel(personName)) personName = null;
-  const projectTitle = project?.title ?? (projectId ? "Project" : null);
+  const base = resolveProjectAttribution(evidence, projectId, projects);
   return {
-    projectId,
-    projectTitle,
-    personName,
-    title: displayTitle(personName, projectTitle),
+    ...base,
+    title: displayTitle(base.personName, base.projectTitle),
   };
 }
 
@@ -539,7 +460,9 @@ export function composeFounderAttentionSurface(input: {
     specByProject,
     lifecycleByProject,
   };
-  const projectByAssociation = projectBySupportedAssociation(input.candidates, input.projects);
+  const projectByAssociation = projectIdsByThread(
+    projectBySupportedAssociation(input.candidates, input.projects),
+  );
   const judgments = new Map<string, FounderAttentionJudgment>();
   const groups = new Map<string, ContinuumCandidate[]>();
 

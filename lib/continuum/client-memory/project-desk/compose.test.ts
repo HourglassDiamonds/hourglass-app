@@ -143,6 +143,8 @@ describe("Project Desk compose", () => {
     );
     assert.doesNotMatch(JSON.stringify(desk.desk.specs), /thread-secret|gmail/i);
     assert.equal(desk.desk.coverage.specs, "available");
+    const listed = listProjectsFromSnapshot(data);
+    assert.equal(listed[0]?.gmailThreadId, "thread-secret");
   });
 
   it("returns notes newest first and treats missing notes as none", () => {
