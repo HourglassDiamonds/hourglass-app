@@ -274,9 +274,32 @@ export function RepairQuoteForm({
 
       <p className="mt-8 text-[15px] leading-relaxed text-[#c4b7aa]">
         Labor burden {LABOR_BURDEN_LABEL}× and Hourglass markup {HOURGLASS_MARKUP_LABEL}×
-        cost are locked. Rounding, minimum charge, Express, and platinum dynamic
-        material remain unresolved.
+        cost are locked. V1 rounds the raw quote to nearest $5. No minimum repair
+        charge. Express is not enabled. Platinum has no synthetic dynamic model.
       </p>
+
+      <label className="mt-8 block">
+        <span className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
+          Gold spot / oz
+        </span>
+        <input
+          name="goldUsdPerOz"
+          inputMode="decimal"
+          placeholder="Optional. Published 14K band, or extrapolate above $4,049"
+          className="mt-2 w-full min-h-12 rounded-[18px] border border-white/10 bg-[#1d1916] px-4 text-[15px] text-[#efe8de] outline-none focus-visible:shadow-[0_0_0_3px_rgba(173,145,100,0.22)]"
+        />
+      </label>
+      <label className="mt-4 block">
+        <span className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
+          14K metal quantity (dwt)
+        </span>
+        <input
+          name="metalDwt"
+          inputMode="decimal"
+          placeholder="Required with gold spot. Never invent weight."
+          className="mt-2 w-full min-h-12 rounded-[18px] border border-white/10 bg-[#1d1916] px-4 text-[15px] text-[#efe8de] outline-none focus-visible:shadow-[0_0_0_3px_rgba(173,145,100,0.22)]"
+        />
+      </label>
 
       <fieldset className="mt-8">
         <legend className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">

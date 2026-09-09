@@ -5,6 +5,9 @@
 -- Structured export pointer: RepairTaskSKUs.2026-08-26-17-29-10(1).xlsx
 -- Bold Price columns = Geller retail. Cost columns = Hourglass cost basis.
 -- Hourglass formula: 2.5 × (Cost Labor × 1.25 + Cost Parts + Cost Other), applied once.
+-- V1 then rounds the raw quote to nearest $5. No minimum repair charge.
+-- Dynamic 14K metal: exact published Cost Parts band inside range; OLS extrapolation only above $4,049/oz when dwt is sourced.
+-- Express is not enabled. No synthetic platinum model.
 -- Does NOT ship a Geller/Edge price catalog. Does NOT invent repair prices or dwt.
 -- Does NOT treat Geller retail as cost. Does NOT mark up Geller retail.
 -- Project-linked only. Repair / Service Kind required at write time.
@@ -76,6 +79,8 @@ create table if not exists public.continuum_repair_quotes (
       and (calculation->>'hourglassMarkupNumerator') = '5'
       and (calculation->>'hourglassMarkupDenominator') = '2'
       and (calculation->>'expressSelected') = 'false'
+      and (calculation->>'metalPricing') in ('none', 'source_band', 'extrapolated')
+      and calculation ? 'roundedComputedQuoteEighthCents'
     ),
   constraint continuum_repair_quotes_issued_lock
     check (

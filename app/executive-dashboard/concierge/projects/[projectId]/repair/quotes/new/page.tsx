@@ -10,6 +10,7 @@ import {
 import { ConciergeShell } from "../../../../../components/concierge-shell";
 import { ConciergeUnavailable } from "../../../../../components/client-profile-view";
 import { RepairQuoteForm } from "../../../../../components/repair-quote-form";
+import { RepairQuotePolicyExamples } from "../../../../../components/repair-quote-examples";
 
 export const dynamic = "force-dynamic";
 
@@ -115,6 +116,7 @@ export default async function ConciergeNewRepairQuotePage({
             mutationId={randomUUID()}
             people={desk.desk.people}
           />
+          <RepairQuotePolicyExamples />
         </div>
       </div>
     </ConciergeShell>

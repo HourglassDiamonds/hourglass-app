@@ -93,6 +93,21 @@ function parseLine(value: unknown): RepairQuoteLineResult | null {
     partsCostEighthCents,
     otherCostEighthCents,
     fullyLoadedDirectCostEighthCents,
+    metalCostEighthCents: intOrNull(rec.metalCostEighthCents) ?? 0,
+    metalPricing:
+      rec.metalPricing === "source_band" || rec.metalPricing === "extrapolated"
+        ? rec.metalPricing
+        : "none",
+    millidwt: intOrNull(rec.millidwt),
+    goldUsdPerOz: intOrNull(rec.goldUsdPerOz),
+    publishedMetalBand:
+      rec.publishedMetalBand && typeof rec.publishedMetalBand === "object"
+        ? (rec.publishedMetalBand as RepairQuoteLineResult["publishedMetalBand"])
+        : null,
+    metalSensitive:
+      rec.metalSensitive && typeof rec.metalSensitive === "object"
+        ? (rec.metalSensitive as RepairQuoteLineResult["metalSensitive"])
+        : null,
   };
 }
 
@@ -107,7 +122,15 @@ function parseCalculation(value: unknown): RepairQuoteCalculation | null {
   if (rec.hourglassMarkupNumerator !== 5 || rec.hourglassMarkupDenominator !== 2) return null;
   if (rec.expressSelected !== false) return null;
   if (!Number.isInteger(rec.rawComputedQuoteEighthCents)) return null;
+  if (!Number.isInteger(rec.roundedComputedQuoteEighthCents)) return null;
   if (!Number.isInteger(rec.hourglassQuoteEighthCents)) return null;
+  if (
+    rec.metalPricing !== "none" &&
+    rec.metalPricing !== "source_band" &&
+    rec.metalPricing !== "extrapolated"
+  ) {
+    return null;
+  }
   return rec;
 }
 

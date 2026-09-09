@@ -3,11 +3,17 @@ import { formatUsdCents, formatUsdEighthCents } from "@/lib/continuum/repair-quo
 import {
   hourglassMarkupLabel,
   laborBurdenLabel,
+  metalPricingLabel,
+  FINAL_QUOTE_LABEL,
+  LOADED_COST_LABEL,
+  RAW_QUOTE_LABEL,
   REPAIR_QUOTE_ADD_LABEL,
   REPAIR_QUOTE_SECTION_TITLE,
   REPAIR_QUOTE_STATE_LABELS,
   REPAIR_QUOTES_NONE_LABEL,
   REPAIR_QUOTES_NOT_CONNECTED_LABEL,
+  ROUNDED_QUOTE_LABEL,
+  SOURCE_COST_LABEL,
   repairMetalLabel,
   repairQuoteAmountLabel,
   repairQuoteDisplayTitle,
@@ -105,9 +111,11 @@ export function RepairQuoteDetail({
         <Row label="Price Labor" value={formatUsdCents(calc.sourceAmounts.priceLaborCents)} />
         <Row label="Price Parts" value={formatUsdCents(calc.sourceAmounts.pricePartsCents)} />
         <Row label="Price Other" value={formatUsdCents(calc.sourceAmounts.priceOtherCents)} />
-        <Row label="Cost Labor" value={formatUsdCents(calc.sourceAmounts.costLaborCents)} />
-        <Row label="Cost Parts" value={formatUsdCents(calc.sourceAmounts.costPartsCents)} />
-        <Row label="Cost Other" value={formatUsdCents(calc.sourceAmounts.costOtherCents)} />
+        <Row label={SOURCE_COST_LABEL} value={`Labor ${formatUsdCents(calc.sourceAmounts.costLaborCents)} · Parts ${formatUsdCents(calc.sourceAmounts.costPartsCents)} · Other ${formatUsdCents(calc.sourceAmounts.costOtherCents)}`} />
+        <Row
+          label={LOADED_COST_LABEL}
+          value={formatUsdEighthCents(calc.fullyLoadedDirectCostEighthCents)}
+        />
         <Row
           label="Loaded labor"
           value={formatUsdEighthCents(calc.loadedLaborEighthCents)}
@@ -115,9 +123,26 @@ export function RepairQuoteDetail({
         <Row label="Labor burden" value={laborBurdenLabel()} />
         <Row label="Hourglass markup" value={hourglassMarkupLabel()} />
         {calc.metalBand ? <Row label="Metal / gold band" value={calc.metalBand.label} /> : null}
+        <Row label="Metal pricing" value={metalPricingLabel(calc.metalPricing)} />
+        {calc.publishedMetalBand ? (
+          <Row
+            label="Published 14K band"
+            value={`$${calc.publishedMetalBand.goldUsdPerOzMin}–$${calc.publishedMetalBand.goldUsdPerOzMax}/oz · Cost ${formatUsdCents(calc.publishedMetalBand.costPartsCents)}/dwt`}
+          />
+        ) : null}
+        {calc.metalExtrapolation ? (
+          <Row
+            label={calc.metalExtrapolation.label}
+            value={calc.metalExtrapolation.explanation}
+          />
+        ) : null}
         <Row
-          label="Raw computed quote"
+          label={RAW_QUOTE_LABEL}
           value={formatUsdEighthCents(calc.rawComputedQuoteEighthCents)}
+        />
+        <Row
+          label={ROUNDED_QUOTE_LABEL}
+          value={formatUsdEighthCents(calc.roundedComputedQuoteEighthCents)}
         />
         {quote.override ? (
           <>
@@ -131,7 +156,7 @@ export function RepairQuoteDetail({
             />
           </>
         ) : null}
-        <Row label="Hourglass quote" value={repairQuoteAmountLabel(quote)} />
+        <Row label={FINAL_QUOTE_LABEL} value={repairQuoteAmountLabel(quote)} />
         {quote.issuedAt ? <Row label="Issued" value={quote.issuedAt} /> : null}
       </dl>
       <p className="mt-8">

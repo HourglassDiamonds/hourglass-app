@@ -172,6 +172,8 @@ export function lineFromForm(input: {
   amounts: GellerSourceAmounts;
   inventedMetalQuantity?: boolean;
   expressSelected?: boolean;
+  goldUsdPerOz?: number | null;
+  millidwt?: number | null;
   costBasis?: RepairQuoteLineInput["costBasis"];
 }): RepairQuoteLineInput {
   return {
@@ -179,9 +181,15 @@ export function lineFromForm(input: {
     taskDescription: input.taskDescription,
     amounts: input.amounts,
     metalBand: null,
-    hasExplicitMetalQuantity: false,
+    hasExplicitMetalQuantity: input.millidwt != null && input.millidwt > 0,
     inventedMetalQuantity: input.inventedMetalQuantity === true,
     expressSelected: input.expressSelected === true,
+    goldUsdPerOz: input.goldUsdPerOz ?? null,
+    millidwt: input.millidwt ?? null,
+    metalSensitive:
+      input.goldUsdPerOz != null && input.millidwt != null
+        ? { goldUsdPerOz: input.goldUsdPerOz, millidwt: input.millidwt }
+        : null,
     costBasis: input.costBasis ?? "geller_cost_columns",
   };
 }

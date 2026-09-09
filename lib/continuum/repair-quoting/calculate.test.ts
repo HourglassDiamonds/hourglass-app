@@ -92,6 +92,8 @@ describe("Blue Book 2.5x cost calculator", () => {
     assert.equal(calc.fullyLoadedDirectCostEighthCents, 29_800);
     assert.equal(calc.rawComputedQuoteEighthCents, 74_500);
     assert.equal(formatUsdEighthCents(calc.rawComputedQuoteEighthCents), "$93.125");
+    assert.equal(formatUsdEighthCents(calc.roundedComputedQuoteEighthCents), "$95");
+    assert.equal(calc.hourglassQuoteEighthCents, calc.roundedComputedQuoteEighthCents);
   });
 
   it("never uses bold retail as cost and applies 2.5x once", () => {
@@ -177,7 +179,7 @@ describe("Blue Book 2.5x cost calculator", () => {
     assert.equal(invented.ok, false);
     if (!invented.ok) assert.equal(invented.code, "invented-metal-quantity");
     assert.equal(lookupVerifiedSku("1000")?.hasExplicitMetalQuantity, false);
-    assert.doesNotMatch(ENGINE_SRC, /millidwt|alloy_dwt|fine_dwt/);
+    assert.doesNotMatch(ENGINE_SRC, /alloy_dwt|fine_dwt/);
   });
 
   it("preserves Geller edition, burden, markup, and does not auto-apply Express", () => {

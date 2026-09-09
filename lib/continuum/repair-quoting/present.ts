@@ -55,8 +55,22 @@ export function repairQuoteDisplayTitle(quote: RepairQuote): string {
 
 export function repairQuoteAmountLabel(quote: RepairQuote): string {
   if (quote.override) return formatUsdCents(quote.override.amountCents);
-  return formatUsdEighthCents(quote.calculation.hourglassQuoteEighthCents);
+  return formatUsdEighthCents(quote.calculation.roundedComputedQuoteEighthCents);
 }
+
+export function metalPricingLabel(
+  kind: RepairQuote["calculation"]["metalPricing"],
+): string {
+  if (kind === "source_band") return "SOURCE BAND";
+  if (kind === "extrapolated") return "EXTRAPOLATED";
+  return "None — task cost snapshot";
+}
+
+export const SOURCE_COST_LABEL = "SOURCE COST";
+export const LOADED_COST_LABEL = "LOADED COST";
+export const RAW_QUOTE_LABEL = "2.5X HOURGLASS RAW";
+export const ROUNDED_QUOTE_LABEL = "ROUNDED QUOTE";
+export const FINAL_QUOTE_LABEL = "FINAL FOUNDER QUOTE";
 
 export function laborBurdenLabel(): string {
   return `${LABOR_BURDEN_LABEL}×`;

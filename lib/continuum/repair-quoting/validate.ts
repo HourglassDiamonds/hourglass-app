@@ -74,3 +74,29 @@ export function parseOptionalUsdCents(raw: string | null | undefined): number | 
   if (!trimmed) return null;
   return parseUsdToCents(trimmed);
 }
+
+export function parseGoldUsdPerOz(raw: string | null | undefined): number | null {
+  const trimmed = raw?.trim() ?? "";
+  if (!trimmed) return null;
+  const cents = parseUsdToCents(trimmed);
+  if (cents == null || cents % 100 !== 0) return null;
+  const usd = cents / 100;
+  if (!Number.isInteger(usd) || usd <= 0 || usd > 99_999) return null;
+  return usd;
+}
+
+const MILLIDWT_RE = /^([0-9]{1,6})(?:\.([0-9]{1,3}))?$/;
+
+export function parseDwtToMillidwt(raw: string | null | undefined): number | null {
+  const trimmed = raw?.trim() ?? "";
+  if (!trimmed) return null;
+  const match = MILLIDWT_RE.exec(trimmed);
+  if (!match) return null;
+  const whole = Number(match[1]);
+  const frac = (match[2] ?? "").padEnd(3, "0");
+  const millidwt = whole * 1000 + Number(frac || "0");
+  if (!Number.isInteger(millidwt) || millidwt <= 0 || millidwt > 9_999_999) {
+    return null;
+  }
+  return millidwt;
+}

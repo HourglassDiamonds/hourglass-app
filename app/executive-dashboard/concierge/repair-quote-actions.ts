@@ -6,6 +6,8 @@ import { lineFromForm } from "@/lib/continuum/repair-quoting/create";
 import type { CreateRepairQuoteResult } from "@/lib/continuum/repair-quoting/create";
 import type { MutateRepairQuoteResult } from "@/lib/continuum/repair-quoting/mutate";
 import {
+  parseDwtToMillidwt,
+  parseGoldUsdPerOz,
   parseOptionalUsdCents,
   parseUsdCentsField,
 } from "@/lib/continuum/repair-quoting/validate";
@@ -25,8 +27,14 @@ function humanCreateMessage(result: CreateRepairQuoteResult): string {
   if (result.code === "express-not-enabled") {
     return "Express is source context only. Hourglass does not apply it yet.";
   }
-  if (result.code === "invented-metal-quantity") {
+  if (result.code === "invented-metal-quantity" || result.code === "missing-metal-quantity") {
     return "Do not invent metal quantity. Use the sourced task cost, or a source dwt.";
+  }
+  if (result.code === "platinum-dynamic-blocked") {
+    return "Platinum has no synthetic dynamic model in V1.";
+  }
+  if (result.code === "fourteen-k-metal-only") {
+    return "Dynamic metal uses published 14K Geller bands only.";
   }
   if (result.code === "project-not-repair") {
     return "Repair quotes are only for Repair / Service projects.";
@@ -85,6 +93,8 @@ export async function saveRepairQuote(
       },
       inventedMetalQuantity: String(formData.get("inventedMetalQuantity") ?? "") === "yes",
       expressSelected: String(formData.get("expressSelected") ?? "") === "yes",
+      goldUsdPerOz: parseGoldUsdPerOz(String(formData.get("goldUsdPerOz") ?? "")),
+      millidwt: parseDwtToMillidwt(String(formData.get("metalDwt") ?? "")),
       costBasis:
         costBasis === "geller_price_columns"
           ? "geller_price_columns"

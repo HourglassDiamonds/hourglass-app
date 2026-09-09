@@ -9,6 +9,12 @@
 
 import type { GellerMetalBand, GellerSourceAmounts } from "./source";
 import { GELLER_BLUE_BOOK, GELLER_COST_BASIS } from "./contract";
+import type {
+  MetalExtrapolationSnapshot,
+  MetalPricingKind,
+  MetalSensitiveInput,
+} from "./gold-14k";
+import type { Published14kGoldBand } from "./gold-bands";
 
 export const REPAIR_QUOTE_SOURCE_FAMILY = "geller_blue_book" as const;
 
@@ -66,6 +72,9 @@ export type RepairQuoteLineInput = {
   hasExplicitMetalQuantity?: boolean;
   inventedMetalQuantity?: boolean;
   expressSelected?: boolean;
+  metalSensitive?: MetalSensitiveInput | null;
+  goldUsdPerOz?: number | null;
+  millidwt?: number | null;
   /** Forbidden: passing Geller Price columns as the cost basis. */
   costBasis?: RepairQuoteCostBasis | "geller_price_columns";
 };
@@ -87,7 +96,13 @@ export type RepairQuoteLineResult = {
   loadedLaborEighthCents: number;
   partsCostEighthCents: number;
   otherCostEighthCents: number;
+  metalCostEighthCents: number;
   fullyLoadedDirectCostEighthCents: number;
+  metalPricing: MetalPricingKind;
+  millidwt: number | null;
+  goldUsdPerOz: number | null;
+  publishedMetalBand: Published14kGoldBand | null;
+  metalSensitive: MetalSensitiveInput | null;
 };
 
 export type RepairQuoteWarning = never;
@@ -105,6 +120,12 @@ export type RepairQuoteCalculation = {
   hourglassMarkupNumerator: 5;
   hourglassMarkupDenominator: 2;
   metalBand: GellerMetalBand | null;
+  metalPricing: MetalPricingKind;
+  publishedMetalBand: Published14kGoldBand | null;
+  millidwt: number | null;
+  goldUsdPerOz: number | null;
+  metalCostEighthCents: number;
+  metalExtrapolation: MetalExtrapolationSnapshot | null;
   expressSelected: false;
   line: RepairQuoteLineResult;
   loadedLaborEighthCents: number;
@@ -112,6 +133,7 @@ export type RepairQuoteCalculation = {
   otherCostEighthCents: number;
   fullyLoadedDirectCostEighthCents: number;
   rawComputedQuoteEighthCents: number;
+  roundedComputedQuoteEighthCents: number;
   computedHourglassQuoteEighthCents: number;
   hourglassQuoteEighthCents: number;
   overrideApplied: boolean;
@@ -187,6 +209,10 @@ export type RepairQuoteInvalidCode =
   | "missing-lines"
   | "retail-used-as-cost"
   | "invented-metal-quantity"
+  | "missing-metal-quantity"
+  | "source-metal-band-missing"
+  | "platinum-dynamic-blocked"
+  | "fourteen-k-metal-only"
   | "express-not-enabled"
   | "double-markup-blocked"
   | "invalid-override"

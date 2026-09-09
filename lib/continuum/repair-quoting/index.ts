@@ -4,7 +4,7 @@ export {
   GELLER_RETAIL_MEANING,
   HOURGLASS_MARKUP_LABEL,
   LABOR_BURDEN_LABEL,
-  UNRESOLVED_FOUNDER_POLICY,
+  V1_FOUNDER_POLICY,
 } from "./contract";
 export { REPAIR_QUOTE_TYPES, REPAIR_METAL_FAMILIES } from "./types";
 export { calculateRepairQuote } from "./calculate";

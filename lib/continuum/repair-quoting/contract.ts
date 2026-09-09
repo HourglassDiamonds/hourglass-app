@@ -25,11 +25,11 @@ export const HOURGLASS_MARKUP_DENOMINATOR = 2;
 export const LABOR_BURDEN_LABEL = "1.25";
 export const HOURGLASS_MARKUP_LABEL = "2.5";
 
-export const UNRESOLVED_FOUNDER_POLICY = {
-  rounding: "unresolved",
-  minimumRepairCharge: "unresolved",
-  expressHourglassRule: "unresolved",
-  platinumDynamicMaterial: "unresolved",
+export const V1_FOUNDER_POLICY = {
+  rounding: "nearest_5_dollars",
+  minimumRepairCharge: "none",
+  expressHourglassRule: "not_enabled",
+  platinumDynamicMaterial: "not_enabled",
 } as const;
 
 export function gellerEditionLabel(): string {

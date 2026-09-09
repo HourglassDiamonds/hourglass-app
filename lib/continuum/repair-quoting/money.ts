@@ -1,6 +1,7 @@
 /**
  * Integer money helpers. Source costs are cents. Raw Hourglass quotes use
- * eighth-cents so $93.125 is exact. No rounding policy is applied.
+ * eighth-cents so $93.125 is exact. V1 rounds the raw quote to nearest $5
+ * without mutating source cost.
  */
 
 import { EIGHTH_CENTS_PER_DOLLAR } from "./types";
@@ -80,5 +81,21 @@ export function isMoneyPattern(raw: string): boolean {
 
 export function overrideCentsToEighthCents(cents: number): number {
   return centsToEighthCents(cents);
+}
+
+const FIVE_DOLLARS_EIGHTH_CENTS = 4_000;
+
+/** Nearest $5. Exact halfway rounds away from the lower $5 (half up). */
+export function roundToNearestFiveDollarsEighthCents(
+  eighthCents: number,
+): number {
+  if (!Number.isInteger(eighthCents) || eighthCents < 0) {
+    throw new Error("invalid-money");
+  }
+  const remainder = eighthCents % FIVE_DOLLARS_EIGHTH_CENTS;
+  if (remainder * 2 < FIVE_DOLLARS_EIGHTH_CENTS) {
+    return eighthCents - remainder;
+  }
+  return eighthCents - remainder + FIVE_DOLLARS_EIGHTH_CENTS;
 }
 

@@ -18,7 +18,8 @@ describe("Repair quote SQL", () => {
     assert.match(sql, /create table if not exists public\.continuum_repair_quotes/);
     assert.match(sql, /create table if not exists public\.continuum_repair_quote_mutations/);
     assert.match(sql, /source_sku text not null/);
-    assert.match(sql, /laborBurdenNumerator/);
+    assert.match(sql, /roundedComputedQuoteEighthCents/);
+    assert.match(sql, /metalPricing/);
     assert.match(sql, /hourglassMarkupNumerator/);
     assert.match(sql, /prior_hourglass_quote_eighth_cents/);
     assert.doesNotMatch(sql, /drop table/i);

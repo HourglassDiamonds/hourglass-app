@@ -3,6 +3,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, it } from "node:test";
 import { RepairQuoteDetail, RepairQuotesSection } from "../../../app/executive-dashboard/concierge/components/repair-quote-view";
+import { RepairQuotePolicyExamples } from "../../../app/executive-dashboard/concierge/components/repair-quote-examples";
 import { OperatingLayerOverview } from "../../../app/executive-dashboard/concierge/components/operating-layer-page";
 import { emptyRepairDetails } from "@/lib/continuum/client-memory/project-operating/fields";
 import { activeOperatingLayer } from "@/lib/continuum/client-memory/project-operating/layer";
@@ -32,8 +33,14 @@ function quote(extra: Partial<RepairQuote> = {}): RepairQuote {
     loadedLaborEighthCents,
     partsCostEighthCents: 0,
     otherCostEighthCents: 0,
-    fullyLoadedDirectCostEighthCents: loadedLaborEighthCents,
-  };
+      fullyLoadedDirectCostEighthCents: loadedLaborEighthCents,
+      metalCostEighthCents: 0,
+      metalPricing: "none",
+      millidwt: null,
+      goldUsdPerOz: null,
+      publishedMetalBand: null,
+      metalSensitive: null,
+    };
   return {
     quoteId: QUOTE_ID,
     projectId: PROJECT_ID,
@@ -58,6 +65,12 @@ function quote(extra: Partial<RepairQuote> = {}): RepairQuote {
       hourglassMarkupNumerator: 5,
       hourglassMarkupDenominator: 2,
       metalBand: null,
+      metalPricing: "none",
+      publishedMetalBand: null,
+      millidwt: null,
+      goldUsdPerOz: null,
+      metalCostEighthCents: 0,
+      metalExtrapolation: null,
       expressSelected: false,
       line,
       loadedLaborEighthCents,
@@ -65,6 +78,7 @@ function quote(extra: Partial<RepairQuote> = {}): RepairQuote {
       otherCostEighthCents: 0,
       fullyLoadedDirectCostEighthCents: loadedLaborEighthCents,
       rawComputedQuoteEighthCents,
+      roundedComputedQuoteEighthCents: rawComputedQuoteEighthCents,
       computedHourglassQuoteEighthCents: rawComputedQuoteEighthCents,
       hourglassQuoteEighthCents: rawComputedQuoteEighthCents,
       overrideApplied: false,
@@ -118,11 +132,11 @@ describe("Repair quote UI", () => {
     assert.match(html, /Wagner repair/);
     assert.match(html, /Geller Blue Book Version 5\.0 Release 6\.50/);
     assert.match(html, /Price Labor/);
-    assert.match(html, /Cost Labor/);
-    assert.match(html, /Loaded labor/);
-    assert.match(html, /1\.25×/);
-    assert.match(html, /2\.5× cost/);
-    assert.match(html, /Raw computed quote/);
+    assert.match(html, /SOURCE COST/);
+    assert.match(html, /LOADED COST/);
+    assert.match(html, /2\.5X HOURGLASS RAW/);
+    assert.match(html, /ROUNDED QUOTE/);
+    assert.match(html, /FINAL FOUNDER QUOTE/);
     assert.match(html, /\$50/);
     assert.doesNotMatch(html, /Shop cost|Metal delta|Gold weight/);
     assert.doesNotMatch(html, new RegExp(QUOTE_ID));
@@ -149,5 +163,17 @@ describe("Repair quote UI", () => {
       /\/executive-dashboard\/concierge\/projects\/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa\/repair\/quotes/,
     );
     assert.doesNotMatch(html, /public calculator|customer quote widget/i);
+  });
+
+  it("renders founder V1 examples without a public calculator", () => {
+    const html = renderToStaticMarkup(createElement(RepairQuotePolicyExamples));
+    assert.match(html, /A\. Normal Geller-range repair/);
+    assert.match(html, /B\. Gold-sensitive repair above Geller range/);
+    assert.match(html, /C\. Labor-only repair/);
+    assert.match(html, /D\. Missing-weight case that fails closed/);
+    assert.match(html, /E\. Founder manual override/);
+    assert.match(html, /EXTRAPOLATED BEYOND GELLER PUBLISHED RANGE/);
+    assert.match(html, /missing-metal-quantity/);
+    assert.doesNotMatch(html, /customer quote widget/i);
   });
 });
