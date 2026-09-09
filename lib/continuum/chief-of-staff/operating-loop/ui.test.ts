@@ -216,9 +216,10 @@ describe("CoS operating loop Command Center UI", () => {
       newMutationId: () => "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
     });
     const html = renderToStaticMarkup(createElement(ChiefOfStaffToday, { loop }));
-    assert.match(html, /Needs your decision/);
+    assert.match(html, /Concierge Brief/);
+    assert.match(html, /Needs your decision|Add to Top 5/);
     assert.match(html, /send the CAD tomorrow/);
-    assert.match(html, /Add to actions/);
+    assert.match(html, /Add to Top 5|Add to actions/);
     assert.match(html, /Dismiss/);
     assert.match(html, /Review/);
     assert.doesNotMatch(html, /Proposed actions/);

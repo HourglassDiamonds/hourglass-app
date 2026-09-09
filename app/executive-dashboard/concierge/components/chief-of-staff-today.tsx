@@ -10,6 +10,7 @@ import {
 import { CosCompleteControl } from "./cos-complete-control";
 import { CosConciergeBrief } from "./cos-concierge-brief";
 import { CosFounderAttentionRow } from "./cos-founder-attention";
+import { uncoveredFallbackAttention } from "@/lib/continuum/chief-of-staff/operating-loop/moderator";
 
 type CompleteAction = (formData: FormData) => void | Promise<void>;
 
@@ -22,6 +23,7 @@ export function ChiefOfStaffToday({
   completeAction?: CompleteAction;
   reviewAction?: CompleteAction;
 }) {
+  const fallback = uncoveredFallbackAttention(loop);
   return (
     <section data-cos-operating-loop={loop.status} className="min-w-0 overflow-x-hidden">
       <h2 className="text-[11px] uppercase tracking-[0.28em] text-[#8d8073]">
@@ -86,7 +88,7 @@ export function ChiefOfStaffToday({
         items={loop.brief}
         watching={loop.watching}
       />
-      {loop.needsYourDecision.length > 0 || loop.worthKnowing.length > 0 || loop.anomalies.length > 0 ? (
+      {fallback.needsYourDecision.length > 0 || fallback.worthKnowing.length > 0 || fallback.anomalies.length > 0 ? (
         <details
           data-cos-fallback-attention
           className="hg-cos-fallback mt-8 min-w-0 overflow-x-hidden"
@@ -94,13 +96,13 @@ export function ChiefOfStaffToday({
           <summary className="inline-flex min-h-11 cursor-pointer items-center text-[11px] uppercase tracking-[0.22em] text-[#6f675f] outline-none hover:text-[#8d8073]">
             {COS_FALLBACK_ATTENTION_TITLE}
           </summary>
-          {loop.needsYourDecision.length > 0 ? (
+          {fallback.needsYourDecision.length > 0 ? (
             <div data-cos-needs-decision className="hg-cos-attention mt-4 min-w-0 overflow-x-hidden">
               <h3 className="text-[11px] uppercase tracking-[0.28em] text-[#8d8073]">
                 {COS_DECISION_TITLE}
               </h3>
               <ul className="mt-4 space-y-5">
-                {loop.needsYourDecision.map((item) => (
+                {fallback.needsYourDecision.map((item) => (
                   <CosFounderAttentionRow
                     key={item.id}
                     item={item}
@@ -111,13 +113,13 @@ export function ChiefOfStaffToday({
               </ul>
             </div>
           ) : null}
-          {loop.worthKnowing.length > 0 ? (
+          {fallback.worthKnowing.length > 0 ? (
             <div data-cos-worth-knowing className="hg-cos-attention mt-6 min-w-0 overflow-x-hidden">
               <h3 className="text-[11px] uppercase tracking-[0.28em] text-[#8d8073]">
                 {COS_WORTH_KNOWING_TITLE}
               </h3>
               <ul className="mt-4 space-y-5">
-                {loop.worthKnowing.map((item) => (
+                {fallback.worthKnowing.map((item) => (
                   <CosFounderAttentionRow
                     key={item.id}
                     item={item}
@@ -128,13 +130,13 @@ export function ChiefOfStaffToday({
               </ul>
             </div>
           ) : null}
-          {loop.anomalies.length > 0 ? (
+          {fallback.anomalies.length > 0 ? (
             <div data-cos-anomalies className="hg-cos-anomaly mt-6">
               <h3 className="text-[11px] uppercase tracking-[0.28em] text-[#8d8073]">
                 {COS_ANOMALY_TITLE}
               </h3>
               <ul className="mt-4 space-y-4">
-                {loop.anomalies.map((item) => (
+                {fallback.anomalies.map((item) => (
                   <li key={item.id} className="min-w-0">
                     <p className="break-words text-[15px] leading-relaxed text-[#efe8de]">
                       {item.headline}

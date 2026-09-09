@@ -60,10 +60,10 @@ function EvidenceDrawer({ item }: { item: CosBriefItem }) {
           ))}
         </ol>
         <p className="mt-3 break-words text-[12px] uppercase tracking-[0.14em] text-[#8d8073]">
-          Project: {item.projectStateLabel ?? "None"}
+          Project · {item.projectStateLabel ?? "None"}
         </p>
         <p className="mt-1 break-words text-[12px] uppercase tracking-[0.14em] text-[#8d8073]">
-          Open Job: {item.openJobLabel ?? "None"}
+          Open Job · {item.openJobLabel ?? "None"}
         </p>
       </div>
     </details>

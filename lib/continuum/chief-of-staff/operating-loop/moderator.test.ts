@@ -13,6 +13,7 @@ import {
   COS_LOOP_NOW,
   COS_LOOP_PERSON_A,
   COS_LOOP_PROJECT_A,
+  COS_LOOP_PROJECT_B,
   fixtureCandidate,
   fixtureJob,
   fixtureProjects,
@@ -23,7 +24,11 @@ import type { CosProjectContext } from "./types";
 const DIR = dirname(fileURLToPath(import.meta.url));
 const PERSON_VENDOR = "22222222-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
 const PERSON_ROWE = "55555555-eeee-4eee-8eee-eeeeeeeeeeee";
+const PERSON_ABBEY = "33333333-cccc-4ccc-8ccc-cccccccccccc";
+const PERSON_JOSEPH = "44444444-dddd-4ddd-8ddd-dddddddddddd";
+const PERSON_VOSS = "66666666-ffff-4fff-8fff-ffffffffffff";
 const PROJECT_C = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
+const PROJECT_VOSS = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee";
 const GMAIL_THREAD = "18c9f0a1b2c3d4e5";
 const GMAIL_THREAD_B = "18d0a2b3c4d5e6f7";
 
@@ -45,6 +50,114 @@ function productionProjects(): Map<string, CosProjectContext> {
           { fieldName: "finger_size", value: "12.5" },
           { fieldName: "metal", value: "Platinum" },
         ],
+      },
+    ],
+  ]);
+}
+
+function specRow(input: {
+  candidateId: string;
+  fieldName: "metal" | "finger_size" | "cad_job_number" | "diamond_supply_notes";
+  proposedValue: string;
+  currentValue: string;
+}): ContinuumCandidate {
+  return row({
+    candidateId: input.candidateId,
+    sourceRef: `gc1|thread-${input.candidateId}|msg`,
+    candidateType: "structured_spec",
+    proposedTarget: {
+      kind: "project_spec",
+      projectId: COS_LOOP_PROJECT_A,
+      fieldName: input.fieldName,
+    },
+    payload: {
+      kind: "structured_spec",
+      fieldName: input.fieldName,
+      proposedValue: input.proposedValue,
+      currentValue: input.currentValue,
+      conflict: true,
+    },
+    candidateState: "conflict",
+    evidenceBasis: {
+      ruleIds: ["spec_conflict_review_required"],
+      matchedText: input.proposedValue,
+    },
+  });
+}
+
+function chickenProjects(): Map<string, CosProjectContext> {
+  return new Map([
+    [
+      COS_LOOP_PROJECT_A,
+      {
+        projectId: COS_LOOP_PROJECT_A,
+        title: "Chicken ring (his) / Travis",
+        personName: "Travis Morse",
+        people: [
+          { personId: PERSON_VENDOR, displayName: "Pamela" },
+          { personId: COS_LOOP_PERSON_A, displayName: "Travis Morse", role: "client" },
+        ],
+        isCurrent: true,
+        lifecycleStage: "production",
+        specs: [
+          { fieldName: "cad_job_number", value: "C010657" },
+          { fieldName: "metal", value: "14K two-tone: YG rails / WG center" },
+          { fieldName: "finger_size", value: "12.5" },
+        ],
+      },
+    ],
+  ]);
+}
+
+function pennockProjects(): Map<string, CosProjectContext> {
+  return new Map([
+    [
+      COS_LOOP_PROJECT_A,
+      {
+        projectId: COS_LOOP_PROJECT_A,
+        title: "J.Pennock",
+        personName: "John Pennock",
+        people: [
+          { personId: PERSON_VENDOR, displayName: "Jocelyn", role: "client" },
+          { personId: PERSON_JOSEPH, displayName: "John Pennock", role: "client" },
+        ],
+        isCurrent: true,
+        lifecycleStage: "production",
+        specs: [
+          { fieldName: "cad_job_number", value: "C010657" },
+          { fieldName: "diamond_supply_notes", value: "Vlora lab-grown on mounting" },
+        ],
+      },
+    ],
+  ]);
+}
+
+function vossProjects(): Map<string, CosProjectContext> {
+  return new Map([
+    [
+      PROJECT_VOSS,
+      {
+        projectId: PROJECT_VOSS,
+        title: "Client Voss — Engagement Ring",
+        personName: "Client Voss",
+        people: [{ personId: PERSON_VOSS, displayName: "Client Voss", role: "client" }],
+        isCurrent: true,
+        lifecycleStage: "production",
+      },
+    ],
+  ]);
+}
+
+function abbeyProjects(): Map<string, CosProjectContext> {
+  return new Map([
+    [
+      COS_LOOP_PROJECT_B,
+      {
+        projectId: COS_LOOP_PROJECT_B,
+        title: "Matching Marquise Earrings",
+        personName: "Abbey Castillo",
+        people: [{ personId: PERSON_ABBEY, displayName: "Abbey Castillo", role: "client" }],
+        isCurrent: true,
       },
     ],
   ]);
@@ -137,7 +250,7 @@ describe("Concierge Executive Moderator V1", () => {
       top5: [],
     });
     assert.equal(before.brief.length, 1);
-    assert.match(before.brief[0]?.recommended ?? "", /Follow up/i);
+    assert.match(before.brief[0]?.recommended ?? "", /Confirm status with the shop/i);
     const after = briefOf({
       candidates: [
         sent,
@@ -434,6 +547,10 @@ describe("Concierge Executive Moderator V1", () => {
     assert.equal(quiet.brief.length, 0);
     assert.equal(quiet.watching.length, 1);
     assert.match(quiet.watching[0]?.detail ?? "", /already in production/i);
+    assert.equal(
+      quiet.brief.some((item) => item.actions.some((action) => action.kind === "create_project")),
+      false,
+    );
 
     const withDeadline = briefOf({
       candidates: [
@@ -494,7 +611,7 @@ describe("Concierge Executive Moderator V1", () => {
     });
     assert.equal(result.brief.length, 1);
     assert.equal(result.brief[0]?.rankClass, "production_blocker");
-    assert.match(result.brief[0]?.recommended ?? "", /Mara/i);
+    assert.match(result.brief[0]?.recommended ?? "", /Confirm status with the shop/i);
   });
 
   it("adjudicates superseded specs down to one material discrepancy", () => {
@@ -887,6 +1004,257 @@ describe("Concierge Executive Moderator V1", () => {
     assert.ok(first.brief[0]!.id < first.brief[1]!.id);
   });
 
+  it("recommends a shop-status check for quiet production without creating reminder state", () => {
+    const result = briefOf({
+      candidates: [
+        row({
+          candidateId: "sent-old",
+          sourceTimestamp: "2026-08-01T15:00:00.000Z",
+          candidateType: "follow_up",
+          payload: {
+            kind: "follow_up",
+            text: "Sending the family sapphire to the shop.",
+            dueAt: null,
+            sourceTimestamp: "2026-08-01T15:00:00.000Z",
+          },
+          evidenceBasis: {
+            ruleIds: ["explicit_founder_commitment"],
+            matchedText: "Sending the family sapphire to the shop.",
+          },
+        }),
+        row({
+          candidateId: "ack-old",
+          sourceTimestamp: "2026-08-02T12:00:00.000Z",
+          candidateType: "note",
+          payload: {
+            kind: "note",
+            text: "Received the center, we'll start production.",
+            contextLayer: null,
+          },
+          evidenceBasis: {
+            ruleIds: ["explicit_vendor_commitment"],
+            matchedText: "Received the center, we'll start production.",
+          },
+        }),
+      ],
+      jobs: [],
+      projects: productionProjects(),
+      nowIso: COS_LOOP_NOW,
+      top5: [],
+    });
+    assert.equal(result.brief.length, 1);
+    assert.match(result.brief[0]?.headline ?? "", /shop status/i);
+    assert.match(result.brief[0]?.explanation ?? "", /will not create a reminder/i);
+    assert.equal(
+      result.brief[0]?.actions.some((action) => action.kind === "add_to_top5"),
+      true,
+    );
+  });
+
+  it("does not duplicate a Top 5 engraving action in the Brief", () => {
+    const view = loopOf({
+      jobs: [
+        fixtureJob({
+          jobId: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+          subject: "Touch base with Yvonne about bee engraving and date engraving",
+        }),
+      ],
+      candidates: [
+        specRow({
+          candidateId: "cad-old",
+          fieldName: "cad_job_number",
+          proposedValue: "RN04163",
+          currentValue: "C010657",
+        }),
+        specRow({
+          candidateId: "metal-part",
+          fieldName: "metal",
+          proposedValue: "white gold",
+          currentValue: "14K two-tone: YG rails / WG center",
+        }),
+      ],
+      projects: chickenProjects(),
+      nowIso: COS_LOOP_NOW,
+    });
+    assert.equal(view.top5.length, 1);
+    assert.equal(view.brief.length, 0);
+    assert.doesNotMatch(JSON.stringify(view.brief), /specs captured|Spec conflict/i);
+  });
+
+  it("keeps a genuine finger-size conflict distinct from a Top 5 engraving action", () => {
+    const view = loopOf({
+      jobs: [
+        fixtureJob({
+          jobId: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+          subject: "Touch base with Yvonne about bee engraving and date engraving",
+        }),
+      ],
+      candidates: [
+        specRow({
+          candidateId: "size-now",
+          fieldName: "finger_size",
+          proposedValue: "11",
+          currentValue: "12.5",
+        }),
+      ],
+      projects: chickenProjects(),
+      nowIso: COS_LOOP_NOW,
+    });
+    assert.equal(view.top5.length, 1);
+    assert.equal(view.brief.length, 1);
+    assert.match(view.brief[0]?.headline ?? "", /finger size/i);
+    assert.doesNotMatch(view.brief[0]?.headline ?? "", /engraving/i);
+    assert.match(view.brief[0]?.recommended ?? "", /finger size/i);
+  });
+
+  it("does not turn production CAD and historical spec chatter into a 26-spec decision", () => {
+    const result = briefOf({
+      candidates: [
+        specRow({
+          candidateId: "cad-old",
+          fieldName: "cad_job_number",
+          proposedValue: "RN04163",
+          currentValue: "C010657",
+        }),
+        specRow({
+          candidateId: "supply-old",
+          fieldName: "diamond_supply_notes",
+          proposedValue: "lab grown dias on mounting",
+          currentValue: "Vlora lab-grown on mounting",
+        }),
+      ],
+      jobs: [],
+      projects: pennockProjects(),
+      nowIso: COS_LOOP_NOW,
+      top5: [],
+    });
+    assert.equal(result.brief.length, 0);
+    assert.doesNotMatch(JSON.stringify(result), /26 specs|specs captured|Spec conflict/i);
+  });
+
+  it("does not recommend Create Project once a unique Production Project already exists", () => {
+    const thread = "18vossvossvoss01";
+    const result = briefOf({
+      candidates: [
+        fixtureCandidate({
+          candidateId: "voss-person",
+          sourceRef: `gc1|${thread}|person`,
+          sourceSystem: "gmail",
+          proposedTarget: { kind: "person", personId: PERSON_VOSS },
+          candidateType: "person_association",
+          reviewStatus: "approved",
+          payload: {
+            kind: "person_association",
+            displayName: "Client Voss",
+            emailHash: "voss",
+            mintPerson: false,
+            mergePersons: false,
+          },
+          evidenceBasis: { ruleIds: ["confirmed_person"], matchedText: "Client Voss" },
+        }),
+        fixtureCandidate({
+          candidateId: "voss-paid",
+          sourceRef: `gc1|${thread}|paid`,
+          sourceSystem: "gmail",
+          sourceTimestamp: "2026-09-04T12:00:00.000Z",
+          proposedTarget: { kind: "none" },
+          candidateType: "project_context",
+          payload: {
+            kind: "project_context",
+            topic: "payment",
+            value: "Payment received for invoice 8821",
+          },
+          evidenceBasis: {
+            ruleIds: ["transactional_customer_notice"],
+            matchedText: "Payment received for invoice 8821",
+          },
+        }),
+        fixtureCandidate({
+          candidateId: "voss-vendor",
+          sourceRef: `gc1|${thread}|vendor`,
+          sourceSystem: "gmail",
+          sourceTimestamp: "2026-09-05T12:00:00.000Z",
+          proposedTarget: { kind: "none" },
+          candidateType: "note",
+          payload: {
+            kind: "note",
+            text: "Received the center, we'll start production.",
+            contextLayer: null,
+          },
+          evidenceBasis: {
+            ruleIds: ["explicit_vendor_commitment"],
+            matchedText: "Received the center, we'll start production.",
+          },
+        }),
+      ],
+      jobs: [],
+      projects: vossProjects(),
+      nowIso: COS_LOOP_NOW,
+      top5: [],
+    });
+    assert.equal(result.brief.length, 0);
+    assert.equal(result.watching.length, 1);
+    assert.match(result.watching[0]?.detail ?? "", /already in production/i);
+    assert.equal(
+      result.brief.some((item) => item.actions.some((action) => action.kind === "create_project")),
+      false,
+    );
+    assert.match(result.watching[0]?.title ?? "", /Client Voss/i);
+  });
+
+  it("attributes a client design answer to that Person's unique Project", () => {
+    const result = briefOf({
+      candidates: [
+        fixtureCandidate({
+          candidateId: "abbey-person",
+          sourceRef: "gc1|earring-thread|msg-1",
+          sourceSystem: "gmail",
+          proposedTarget: { kind: "person", personId: PERSON_ABBEY },
+          candidateType: "person_association",
+          reviewStatus: "approved",
+          payload: {
+            kind: "person_association",
+            displayName: "Abbey Castillo",
+            emailHash: "abc",
+            mintPerson: false,
+            mergePersons: false,
+          },
+          evidenceBasis: { ruleIds: ["confirmed_person"], matchedText: "Abbey Castillo" },
+        }),
+        fixtureCandidate({
+          candidateId: "abbey-answer",
+          sourceRef: "gc1|earring-thread|msg-2",
+          sourceSystem: "gmail",
+          sourceTimestamp: "2026-09-06T12:00:00.000Z",
+          proposedTarget: { kind: "project", projectId: null },
+          candidateType: "project_context",
+          payload: {
+            kind: "project_context",
+            topic: "proposed_spec",
+            value: "1 carat each",
+          },
+          evidenceBasis: {
+            ruleIds: ["explicit_proposed_spec_carat"],
+            matchedText: "1 carat each",
+          },
+        }),
+      ],
+      jobs: [],
+      projects: abbeyProjects(),
+      nowIso: COS_LOOP_NOW,
+      top5: [],
+    });
+    assert.equal(result.brief.length, 1);
+    assert.equal(result.brief[0]?.projectTitle, "Matching Marquise Earrings");
+    assert.match(result.brief[0]?.personLabel ?? "", /Abbey Castillo/i);
+    assert.doesNotMatch(result.brief[0]?.personLabel ?? "", /Hourglass/i);
+    assert.doesNotMatch(result.brief[0]?.projectTitle ?? "", /Hourglass/i);
+    assert.equal(
+      result.brief[0]?.actions.some((action) => action.kind === "create_project"),
+      false,
+    );
+  });
+
   it("renders Concierge Brief above collapsed fallback attention and keeps Top 5 first", () => {
     const view = loopOf({
       jobs: [
@@ -920,10 +1288,11 @@ describe("Concierge Executive Moderator V1", () => {
     assert.match(html, /Concierge Brief/);
     assert.match(html, /Review evidence/);
     assert.match(html, /Open email/);
-    assert.match(html, /Earlier attention view/);
     const briefHtml = html.slice(
       html.indexOf("data-cos-brief"),
-      html.indexOf("data-cos-fallback-attention"),
+      html.includes("data-cos-fallback-attention")
+        ? html.indexOf("data-cos-fallback-attention")
+        : html.length,
     );
     assert.doesNotMatch(
       briefHtml.replace(/href="[^"]*"/g, 'href=""'),
@@ -931,9 +1300,9 @@ describe("Concierge Executive Moderator V1", () => {
     );
     const top5At = html.indexOf("Top 5");
     const briefAt = html.indexOf("Concierge Brief");
-    const fallbackAt = html.indexOf("Earlier attention view");
     assert.ok(top5At >= 0 && briefAt > top5At);
-    assert.ok(fallbackAt > briefAt);
+    const fallbackAt = html.indexOf("Earlier attention view");
+    if (fallbackAt >= 0) assert.ok(fallbackAt > briefAt);
     const css = readFileSync(
       join(DIR, "../../../../app/executive-dashboard/concierge/concierge.css"),
       "utf8",

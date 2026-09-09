@@ -8,6 +8,7 @@ import type { ContinuumCandidate } from "@/lib/continuum/candidates/types";
 import type { ProjectDeskSummary } from "@/lib/continuum/client-memory/project-desk/types";
 import { selectOpenProjectWork } from "@/lib/continuum/client-memory/open-projects/select";
 import type { ProjectJob } from "@/lib/continuum/client-memory/project-jobs/types";
+import { isStudioOrVendorLabel } from "@/lib/continuum/candidates/founder-attention";
 import { collectCanonicalActionables, selectTopRanked } from "./collect";
 import { composeFounderAttentionSurface } from "./founder-attention";
 import { composeConciergeBrief } from "./moderator";
@@ -35,6 +36,34 @@ export type ComposeCosOperatingLoopInput = {
   newMutationId?: () => string;
 };
 
+function clientDisplayName(
+  title: string,
+  people: readonly { displayName: string; role?: string | null }[],
+): string | null {
+  const pool = people.filter((person) => {
+    if (isStudioOrVendorLabel(person.displayName)) return false;
+    if (person.role === "vendor-contact") return false;
+    return true;
+  });
+  if (pool.length === 0) return null;
+  const titleTokens = new Set(
+    title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, " ")
+      .split(/\s+/)
+      .filter((token) => token.length >= 4),
+  );
+  const matched = pool.filter((person) =>
+    person.displayName
+      .toLowerCase()
+      .split(/[^a-z0-9]+/)
+      .some((token) => token.length >= 4 && titleTokens.has(token)),
+  );
+  if (matched.length === 1) return matched[0]?.displayName ?? null;
+  if (pool.length === 1) return pool[0]?.displayName ?? null;
+  return null;
+}
+
 export function projectContextFromSummaries(
   summaries: readonly ProjectDeskSummary[],
 ): Map<string, CosProjectContext> {
@@ -44,7 +73,7 @@ export function projectContextFromSummaries(
     map.set(row.projectId, {
       projectId: row.projectId,
       title: row.title,
-      personName: row.people[0]?.displayName ?? null,
+      personName: clientDisplayName(row.title, row.people),
       people: row.people,
       isCurrent: current.has(row.projectId),
       lifecycleStage: row.lifecycleStage,

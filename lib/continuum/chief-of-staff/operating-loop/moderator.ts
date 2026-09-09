@@ -44,11 +44,13 @@ import {
 import { currentProjectToggleId } from "@/lib/continuum/client-memory/open-projects/present";
 import { gmailThreadHrefFor } from "./evidence";
 import type {
+  CosAnomalyItem,
   CosBriefAction,
   CosBriefItem,
   CosBriefRankClass,
   CosBriefSpeaker,
   CosEvidenceBeat,
+  CosFounderAttentionItem,
   CosProjectContext,
   CosProjectPerson,
   CosProposedAction,
@@ -85,6 +87,7 @@ const SPEC_FIELD_LABELS: Record<string, string> = {
 
 const BLOCKED_RULES = new Set(["lifecycle", "unread", "email_age"]);
 
+const PRODUCTION_STATUS_MS = 21 * 86_400_000;
 const PRODUCTION_STAGES = new Set([
   "production",
   "in_production",
@@ -347,12 +350,19 @@ function speakerOf(row: ContinuumCandidate): CosBriefSpeaker {
 
 function beatKind(row: ContinuumCandidate, ctx: FounderAttentionContext): BeatKind {
   if (isBoilerplate(row)) return "boilerplate";
+  if (
+    row.candidateType === "person_association" ||
+    row.candidateType === "project_association"
+  ) {
+    return "other";
+  }
   if (isActionableSpecConflict(row, ctx)) return "spec_conflict";
+  const payload = payloadOf(row);
+  if (payload.kind === "structured_spec") return "other";
   if (isPaymentStateChange(row)) return "payment";
   if (isExplicitNewProject(row)) return "new_project";
   if (isApproval(row)) return "client_approval";
   if (isClientDesignAnswer(row)) return "client_reply";
-  const payload = payloadOf(row);
   if (payload.kind === "date" && payload.role === "deadline") return "deadline";
   if (DEADLINE_SIGNAL.test(haystack(row))) return "deadline";
   const speaker = speakerOf(row);
@@ -627,7 +637,9 @@ function deadlineUrgency(rows: readonly ContinuumCandidate[], nowMs: number): nu
 }
 
 function latestMeaningful(beats: readonly InternalBeat[]): InternalBeat | null {
-  const usable = beats.filter((beat) => !beat.superseded && beat.kind !== "boilerplate");
+  const usable = beats.filter(
+    (beat) => !beat.superseded && beat.kind !== "boilerplate" && beat.kind !== "other",
+  );
   if (usable.length === 0) return null;
   return usable[usable.length - 1] ?? null;
 }
@@ -785,11 +797,17 @@ function classifySituation(input: {
       (CLIENT_QUESTION_ASK.test(beat.summary) || FOUNDER_QUESTION.test(beat.summary)),
   );
   const yourTurn =
+    meaningful.speaker === "client" &&
+    !meaningful.historical &&
     (meaningful.kind === "client_reply" ||
       meaningful.kind === "client_request" ||
-      meaningful.kind === "client_approval") &&
-    founderAsked &&
-    meaningful.speaker === "client";
+      meaningful.kind === "client_approval");
+  const quietProductionAge =
+    production &&
+    !missingVendorAck &&
+    deadlineUrg === 0 &&
+    (vendorAckAfterSend || founderSentToShop) &&
+    input.nowMs - parseMs(meaningful.timestamp) >= PRODUCTION_STATUS_MS;
   const founderCommitment =
     meaningful.kind === "commitment" &&
     meaningful.speaker === "founder" &&
@@ -817,6 +835,7 @@ function classifySituation(input: {
   const commercial =
     spec != null ||
     missingVendorAck ||
+    quietProductionAge ||
     payment ||
     yourTurn ||
     founderCommitment ||
@@ -865,12 +884,14 @@ function classifySituation(input: {
     rankClass = "production_blocker";
     headline = "confirm shop status";
     explanation = `You moved this into production${founderSentToShop ? " and sent material or instructions to the shop" : ""}, but I do not see a later vendor confirmation that the work was received or acknowledged.`;
-    recommended = `Follow up with ${vendorName} today.`;
+    recommended = "Confirm status with the shop.";
     urgency = 1;
   } else if (yourTurn) {
     rankClass = "client_reply";
-    headline = `Your turn`;
-    explanation = `${person || "The client"} answered after your last question. The latest meaningful turn is theirs.`;
+    headline = "Your turn";
+    explanation = founderAsked
+      ? `${person || "The client"} answered after your last question. The latest meaningful turn is theirs.`
+      : `${person || "The client"} answered a design question. The latest meaningful turn is theirs.`;
     recommended = "Send the recap / next step.";
     urgency = 1;
   } else if (newWork) {
@@ -893,6 +914,13 @@ function classifySituation(input: {
     headline = clip(meaningful.summary, 72);
     explanation = `You committed to this, and it is not already on Top 5.`;
     recommended = "Do it, or add it to Top 5.";
+    urgency = 1;
+  } else if (quietProductionAge) {
+    rankClass = "follow_up";
+    headline = "confirm shop status";
+    explanation =
+      "This is already in production, and I do not see a recent shop update. Confirming status is useful; I will not create a reminder Open Job.";
+    recommended = "Confirm status with the shop.";
     urgency = 1;
   } else if (payment && production && vendorAckAfterSend) {
     rankClass = "state_transition";
@@ -1102,5 +1130,45 @@ export function composeConciergeBrief(input: ComposeConciergeBriefInput): {
   return {
     brief: briefSource.map((row, index) => presentBrief(row, index + 1)),
     watching,
+  };
+}
+
+function coveredByBrief(
+  projectId: string | null,
+  candidateIds: readonly string[],
+  brief: readonly CosBriefItem[],
+  watching: readonly CosWatchingItem[],
+): boolean {
+  if (projectId) {
+    if (brief.some((row) => row.projectId === projectId)) return true;
+    if (watching.some((row) => row.projectId === projectId)) return true;
+  }
+  const ids = new Set(candidateIds);
+  if (ids.size === 0) return false;
+  return brief.some((row) => row.candidateIds.some((id) => ids.has(id)));
+}
+
+export function uncoveredFallbackAttention(input: {
+  brief: readonly CosBriefItem[];
+  watching: readonly CosWatchingItem[];
+  needsYourDecision: readonly CosFounderAttentionItem[];
+  worthKnowing: readonly CosFounderAttentionItem[];
+  anomalies: readonly CosAnomalyItem[];
+}): {
+  needsYourDecision: readonly CosFounderAttentionItem[];
+  worthKnowing: readonly CosFounderAttentionItem[];
+  anomalies: readonly CosAnomalyItem[];
+} {
+  return {
+    needsYourDecision: input.needsYourDecision.filter(
+      (row) =>
+        Boolean(row.recap) ||
+        Boolean(row.proposedAction) ||
+        !coveredByBrief(row.projectId, row.candidateIds, input.brief, input.watching),
+    ),
+    worthKnowing: input.worthKnowing.filter(
+      (row) => !coveredByBrief(row.projectId, row.candidateIds, input.brief, input.watching),
+    ),
+    anomalies: input.anomalies,
   };
 }
