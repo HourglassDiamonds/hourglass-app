@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -36,8 +36,87 @@ const perspectiveTextScrimMobile: CSSProperties = {
     "radial-gradient(ellipse 108% 58% at 50% 50%, rgba(239,232,222,0.82) 0%, rgba(239,232,222,0.74) 16%, rgba(239,232,222,0.58) 34%, rgba(239,232,222,0.4) 48%, rgba(239,232,222,0.24) 62%, rgba(239,232,222,0.1) 76%, rgba(239,232,222,0.03) 88%, transparent 96%)",
 };
 
+const HOUSE_VIDEO_CONTROL =
+  "inline-flex min-h-11 min-w-11 items-center justify-center rounded-full border border-white/30 bg-white/70 text-[#3a332c] backdrop-blur-md transition hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-hg-focus";
+
+function HouseVideoSoundIcon({ soundOn }: { soundOn: boolean }) {
+  if (soundOn) {
+    return (
+      <svg
+        aria-hidden="true"
+        viewBox="0 0 24 24"
+        className="h-5 w-5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M11 5 6.5 8.5H3v7h3.5L11 19V5Z" />
+        <path d="M15.2 8.8a4.2 4.2 0 0 1 0 6.4" />
+        <path d="M17.6 6.5a7 7 0 0 1 0 11" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      className="h-5 w-5"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M11 5 6.5 8.5H3v7h3.5L11 19V5Z" />
+      <path d="m16 9 5 6M21 9l-5 6" />
+    </svg>
+  );
+}
+
 export default function TheHousePageClient() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const [isSoundOn, setIsSoundOn] = useState(false);
+  const [captionsOn, setCaptionsOn] = useState(false);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const applyCaptionMode = () => {
+      for (const track of video.textTracks) {
+        if (track.kind === "captions" || track.kind === "subtitles") {
+          track.mode = captionsOn ? "showing" : "hidden";
+        }
+      }
+    };
+
+    applyCaptionMode();
+    video.textTracks.addEventListener("addtrack", applyCaptionMode);
+    return () => {
+      video.textTracks.removeEventListener("addtrack", applyCaptionMode);
+    };
+  }, [captionsOn]);
+
+  const handleToggleSound = () => {
+    if (!videoRef.current) return;
+
+    const video = videoRef.current;
+    const nextMuted = !video.muted;
+    video.muted = nextMuted;
+    const nextSoundOn = !nextMuted;
+    setIsSoundOn(nextSoundOn);
+    if (nextSoundOn) setCaptionsOn(true);
+
+    if (!video.paused) return;
+    video.play();
+  };
+
+  const handleToggleCaptions = () => {
+    setCaptionsOn((on) => !on);
+  };
 
   const handleReplay = () => {
     if (!videoRef.current) return;
@@ -64,6 +143,15 @@ export default function TheHousePageClient() {
 
   return (
     <div className="min-h-screen bg-[#efe8de] text-[#1c1b1a]">
+      <style>{`
+        .house-closer-look-video::cue {
+          color: #f4eee6;
+          background-color: rgba(28, 26, 24, 0.62);
+          font-family: Georgia, "Times New Roman", Times, serif;
+          font-size: 0.95rem;
+          line-height: 1.35;
+        }
+      `}</style>
       <div className="mx-auto max-w-[1200px] px-6 md:px-10">
         <Header currentPage="the-house" />
 
@@ -178,19 +266,45 @@ export default function TheHousePageClient() {
               <video
                 ref={videoRef}
                 autoPlay
-                muted
+                muted={!isSoundOn}
                 loop
                 playsInline
                 preload="metadata"
-                className="absolute inset-0 h-full w-full object-cover"
+                className="house-closer-look-video absolute inset-0 h-full w-full object-cover"
               >
                 <source
                   src="https://res.cloudinary.com/dorddtbvq/video/upload/q_auto/f_auto/v1777515354/The-House-Hero-Video_gpvbue.mp4"
                   type="video/mp4"
                 />
+                <track
+                  kind="captions"
+                  src="/the-house/a-closer-look.en.vtt"
+                  srcLang="en"
+                  label="English"
+                />
               </video>
 
-              <div className="absolute bottom-5 right-5 flex gap-2">
+              <button
+                type="button"
+                onClick={handleToggleSound}
+                aria-label={isSoundOn ? "Mute video" : "Unmute video"}
+                className={`absolute bottom-5 left-5 z-10 ${HOUSE_VIDEO_CONTROL}`}
+              >
+                <HouseVideoSoundIcon soundOn={isSoundOn} />
+              </button>
+
+              <div className="absolute bottom-5 right-5 z-10 flex gap-2">
+                <button
+                  type="button"
+                  onClick={handleToggleCaptions}
+                  aria-pressed={captionsOn}
+                  aria-label={captionsOn ? "Hide captions" : "Show captions"}
+                  className={`${HOUSE_VIDEO_CONTROL} ${captionsOn ? "bg-white" : ""}`}
+                >
+                  <span aria-hidden className="text-[10px] font-medium tracking-[0.12em]">
+                    CC
+                  </span>
+                </button>
                 <button
                   type="button"
                   onClick={handleReplay}

@@ -490,16 +490,49 @@ describe("AA-13 Share this view disclosure (WCAG 4.1.2)", () => {
   });
 });
 
-describe("AA-14 new-tab names and House decorative video (WCAG G201 / 1.2.2)", () => {
+describe("AA-14 new-tab names and House video audio control (WCAG G201 / 1.2.2 / 1.4.2)", () => {
   it("homepage and QR new-tab links name the new context", () => {
     assert.match(homePage, /opens in a new tab/);
     assert.match(qrPanel, /opens in a new tab/);
   });
 
-  it("House hero video stays muted without a Sound control", () => {
-    assert.match(housePage, /\bmuted\b/);
-    assert.doesNotMatch(housePage, /handleToggleSound/);
+  it("House hero video starts muted with accessible mute and captions", () => {
+    assert.match(housePage, /muted=\{!isSoundOn\}/);
+    assert.match(housePage, /handleToggleSound/);
+    assert.match(housePage, /video\.muted = nextMuted/);
+    assert.match(
+      housePage,
+      /aria-label=\{isSoundOn \? "Mute video" : "Unmute video"\}/,
+    );
+    assert.match(housePage, /absolute bottom-5 left-5/);
+    assert.match(housePage, /min-h-11 min-w-11/);
+    assert.match(housePage, /<button\s+type="button"/);
     assert.doesNotMatch(housePage, />Sound</);
+    assert.match(housePage, /handleReplay/);
+    assert.match(housePage, />\s*Replay\s*</);
+    assert.match(housePage, /kind="captions"/);
+    assert.match(housePage, /srcLang="en"/);
+    assert.match(housePage, /a-closer-look\.en\.vtt/);
+    assert.match(housePage, /Show captions/);
+    assert.match(housePage, /Hide captions/);
+  });
+});
+
+describe("AA-14 House caption track content (WCAG 1.2.2)", () => {
+  const houseCaptions = readFileSync(
+    join(root, "../public/the-house/a-closer-look.en.vtt"),
+    "utf8",
+  );
+
+  it("ships an English WebVTT track covering speech and closing music", () => {
+    assert.match(houseCaptions, /^WEBVTT/m);
+    assert.match(houseCaptions, /Hourglass Diamonds/);
+    assert.match(houseCaptions, /Donald Haack/);
+    assert.match(houseCaptions, /British Guiana/);
+    assert.match(houseCaptions, /Kaieteur Falls/);
+    assert.match(houseCaptions, /\[Music\]/);
+    assert.match(houseCaptions, /line:1/);
+    assert.doesNotMatch(houseCaptions, /\[Ambient sound\]/);
   });
 });
 
