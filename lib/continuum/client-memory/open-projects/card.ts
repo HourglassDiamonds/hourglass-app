@@ -329,6 +329,11 @@ export function composeCurrentProjectCardFromWork(
     files: [],
     fileCount: 0,
     progress: [{ label: CURRENT_PROJECTS_CREATED_LABEL, at: null }],
+    lifecycleStage: work.lifecycleStage,
+    founderOwnedUnresolved: false,
+    actionDueAt: null,
+    waitingSince: null,
+    updatedAt: null,
   };
 }
 

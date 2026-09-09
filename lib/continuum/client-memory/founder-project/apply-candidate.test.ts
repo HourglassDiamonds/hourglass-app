@@ -14,6 +14,7 @@ import { hashEmail } from "../hashes";
 import { GMAIL_SOURCE_SYSTEM } from "../gmail/types";
 import { selectOpenProjectWork } from "../open-projects/select";
 import { composeCurrentProjectCards } from "../open-projects/card";
+import { operatingGroupForProject } from "../open-projects/operating-groups";
 import type { ProjectDeskSummary } from "../project-desk/types";
 import type { ProjectWorkSummary } from "../project-jobs/intelligence";
 import { composeCosOperatingLoop } from "../../chief-of-staff/operating-loop/compose";
@@ -723,6 +724,9 @@ describe("Gmail-created Projects hydrate Current Projects", () => {
     assert.equal(firstView.length, 1);
     assert.equal(reload.length, 1);
     assert.equal(reload[0]?.title, "Dagger & Pearls Pendant / Necklace");
+    assert.equal(reload[0]?.lifecycleStage, "cad");
+    assert.equal(reload[0]?.founderOwnedUnresolved, false);
+    assert.equal(operatingGroupForProject(reload[0]!), "cad_design");
     const retry = await applyGmailNewProjectCandidate({
       store: candidates,
       writer,
@@ -838,6 +842,22 @@ describe("Gmail-created Projects hydrate Current Projects", () => {
     assert.equal(current.length, 1);
     assert.equal(current[0]?.lifecycleStage, "cad");
     assert.equal(JSON.stringify(current).includes("waiting_on_client"), false);
+    const cards = composeCurrentProjectCards(
+      [
+        currentSummary({
+          projectId: applied.projectId,
+          title: applied.create.title,
+          personId,
+          personName: "Abbey Castillo",
+          lifecycleStage: "cad",
+          unresolvedCount: 1,
+        }),
+      ],
+      new Map(),
+    );
+    assert.equal(cards.length, 1);
+    assert.equal(cards[0]?.founderOwnedUnresolved, false);
+    assert.equal(operatingGroupForProject(cards[0]!), "cad_design");
     const pending = await candidates.get(after[0]!.candidateId);
     assert.equal(pending?.reviewStatus, "approved");
   });

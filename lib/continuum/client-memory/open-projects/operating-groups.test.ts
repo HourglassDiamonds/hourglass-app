@@ -494,19 +494,70 @@ describe("Current Projects operating groups", () => {
     assert.equal(allGroupedProjectIds(grouped).length, 8);
   });
 
-  it("uses the same grouping path for email-created founder Projects", () => {
-    const abbey = cardFor(PROJECT_A, "Abbey earrings", "waiting_on_client");
-    const nathan = cardFor(PROJECT_B, "Nathan pendant", "client_approval");
-    const grouped = groupCurrentProjects([abbey, nathan], {
+  it("places Gmail-created Nate and Abbey in CAD / DESIGN without Gmail-specific grouping", () => {
+    const nate = cardFor(PROJECT_A, "Dagger & Pearls Pendant / Necklace", "cad");
+    const abbey = cardFor(PROJECT_B, "Matching Marquise Earrings", "cad");
+    const grouped = groupCurrentProjects([nate, abbey], {
       nowIso: NOW,
       viewport: "desktop",
     });
-    assert.deepEqual(titlesIn(grouped, "waiting_for_client"), [
-      "Abbey earrings",
-      "Nathan pendant",
+    assert.equal(operatingGroupForProject(nate), "cad_design");
+    assert.equal(operatingGroupForProject(abbey), "cad_design");
+    assert.deepEqual(titlesIn(grouped, "cad_design"), [
+      "Dagger & Pearls Pendant / Necklace",
+      "Matching Marquise Earrings",
     ]);
+    assert.equal(grouped.some((group) => group.id === "your_turn"), false);
     const source = readFileSync(join(DIR, "operating-groups.ts"), "utf8");
     assert.doesNotMatch(source, /gmail|Gmail|intake-candidate|identity-gate/);
+  });
+
+  it("groups Gmail-hydrated Current Projects before desks load", () => {
+    const cards = composeCurrentProjectCards(
+      [
+        summary({
+          projectId: PROJECT_A,
+          title: "Dagger & Pearls Pendant / Necklace",
+          lifecycleStage: "cad",
+          lifecycleLabel: "CAD",
+        }),
+        summary({
+          projectId: PROJECT_B,
+          title: "Matching Marquise Earrings",
+          lifecycleStage: "cad",
+          lifecycleLabel: "CAD",
+        }),
+      ],
+      new Map(),
+    );
+    assert.equal(cards.length, 2);
+    assert.equal(cards.every((row) => row.founderOwnedUnresolved === false), true);
+    const grouped = groupCurrentProjects(cards, { nowIso: NOW, viewport: "mobile" });
+    assert.deepEqual(titlesIn(grouped, "cad_design"), [
+      "Dagger & Pearls Pendant / Necklace",
+      "Matching Marquise Earrings",
+    ]);
+  });
+
+  it("promotes Abbey into YOUR TURN only after a founder-owned Open Job exists", () => {
+    const withoutJob = cardFor(PROJECT_B, "Matching Marquise Earrings", "cad");
+    const withJob = cardFor(PROJECT_B, "Matching Marquise Earrings", "cad", {
+      openJobs: {
+        connected: true,
+        unresolvedCount: 1,
+        unresolved: [
+          job({
+            jobId: JOB_A,
+            subject: "Confirm flower vs diamond center",
+            waitingOnActor: "founder",
+          }),
+        ],
+      },
+    });
+    assert.equal(operatingGroupForProject(withoutJob), "cad_design");
+    assert.equal(operatingGroupForProject(withJob), "your_turn");
+    const afterResolve = cardFor(PROJECT_B, "Matching Marquise Earrings", "cad");
+    assert.equal(operatingGroupForProject(afterResolve), "cad_design");
   });
 
   it("does not alter Top 5 ranking or import the CoS ranker", () => {

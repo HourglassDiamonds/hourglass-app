@@ -255,6 +255,8 @@ describe("Current Projects accordion read model", () => {
     assert.equal(cards.length, 1);
     assert.equal(cards[0]?.projectId, PROJECT_A);
     assert.equal(cards[0]?.collapsedLineKind, "lifecycle");
+    assert.equal(cards[0]?.lifecycleStage, "cad");
+    assert.equal(cards[0]?.founderOwnedUnresolved, false);
   });
 
   it("lets an unresolved Open Job take precedence over lifecycle display", () => {
