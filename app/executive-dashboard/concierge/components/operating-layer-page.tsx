@@ -2,6 +2,7 @@ import Link from "next/link";
 import {
   conciergeCorrectOperatingDetailPath,
   conciergeProjectPath,
+  conciergeRepairQuotesPath,
 } from "@/lib/continuum/client-memory/read/presentation";
 import { projectKindLabel, type ProjectKind } from "@/lib/continuum/client-memory/project-kind";
 import { OPERATING_DETAIL_NOT_SET } from "@/lib/continuum/client-memory/project-operating/fields";
@@ -90,6 +91,16 @@ export function OperatingLayerOverview({
           </div>
         ))}
       </dl>
+      {layer.kind === "repair_service" ? (
+        <p className="mt-8">
+          <Link
+            href={conciergeRepairQuotesPath(projectId)}
+            className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.24em] text-[#8d8073] outline-none hover:text-[#efe8de] focus-visible:text-[#efe8de]"
+          >
+            Repair quotes
+          </Link>
+        </p>
+      ) : null}
     </div>
   );
 }

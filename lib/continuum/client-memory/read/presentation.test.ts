@@ -28,6 +28,9 @@ import {
   conciergeCorrectOperatingDetailPath,
   conciergeProjectCustomPath,
   conciergeProjectRepairPath,
+  conciergeRepairQuotesPath,
+  conciergeNewRepairQuotePath,
+  conciergeRepairQuotePath,
   formatFactValue,
   formatLocation,
   historyFields,
@@ -300,6 +303,21 @@ describe("Concierge presentation", () => {
     assert.equal(
       conciergeProjectRepairPath("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"),
       "/executive-dashboard/concierge/projects/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/repair",
+    );
+    assert.equal(
+      conciergeRepairQuotesPath("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"),
+      "/executive-dashboard/concierge/projects/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/repair/quotes",
+    );
+    assert.equal(
+      conciergeNewRepairQuotePath("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"),
+      "/executive-dashboard/concierge/projects/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/repair/quotes/new",
+    );
+    assert.equal(
+      conciergeRepairQuotePath(
+        "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+      ),
+      "/executive-dashboard/concierge/projects/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/repair/quotes/bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
     );
     assert.equal(
       conciergeCorrectOperatingDetailPath(

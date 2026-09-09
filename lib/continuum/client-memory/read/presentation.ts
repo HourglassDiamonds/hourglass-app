@@ -115,6 +115,21 @@ export function conciergeProjectRepairPath(projectId: string): string {
   return `${conciergeProjectPath(projectId)}/repair`;
 }
 
+export function conciergeRepairQuotesPath(projectId: string): string {
+  return `${conciergeProjectRepairPath(projectId)}/quotes`;
+}
+
+export function conciergeNewRepairQuotePath(projectId: string): string {
+  return `${conciergeRepairQuotesPath(projectId)}/new`;
+}
+
+export function conciergeRepairQuotePath(
+  projectId: string,
+  quoteId: string,
+): string {
+  return `${conciergeRepairQuotesPath(projectId)}/${quoteId}`;
+}
+
 export function conciergeCorrectOperatingDetailPath(
   projectId: string,
   fieldName: string,
