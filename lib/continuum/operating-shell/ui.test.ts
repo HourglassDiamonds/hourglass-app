@@ -65,6 +65,8 @@ describe("Founder Operating UX V1 shell", () => {
     assert.match(nav, /hidden/);
     assert.match(nav, /md:block/);
     assert.match(nav, /md:hidden/);
+    assert.match(nav, /grid grid-cols-5/);
+    assert.doesNotMatch(nav, /grid-cols-6|grid-cols-4/);
     assert.doesNotMatch(nav, /hamburger|sidebar|drawer/i);
     assert.equal(OPERATING_DESTINATIONS.length, 5);
     assert.match(css, /--font-continuum-sans/);

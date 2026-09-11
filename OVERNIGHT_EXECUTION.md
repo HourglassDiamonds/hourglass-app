@@ -31,8 +31,8 @@ origin/main MUST remain: `65aea302ac845c592f5859dbd057ef3452d59573`
 | 2 Email-driven Project / Action hydration | DONE | 08078f6 |
 | 3 Retain supporting Gmail provenance | DONE | ffd2272 |
 | 4 Historical Gmail reconstruction foundation | DONE | 5f5c414 |
-| 5 Master Sprint → Today unused capacity | DONE | pending commit |
-| 6 Operating QA / regression | TODO | |
+| 5 Master Sprint → Today unused capacity | DONE | `1c62cac` feat: hydrate master sprint docket slots |
+| 6 Operating QA / regression | DONE | pending commit |
 
 ## Lane 1 — Near-real-time Gmail pipeline
 
@@ -288,3 +288,56 @@ Approved Master Sprint items now fill unused UP NEXT slots after live client/wor
 ### Next lane
 
 Lane 6 — operating QA / regression.
+
+## Lane 6 — Operating QA / regression
+
+Status: DONE
+
+### What changed
+
+Encoded the founder operating regression as a durable harness. No Phase 1A/1B UX redesign.
+
+Verified by existing + new tests:
+
+- Today: max 3 UP NEXT, rolling replenishment, wrapping actions, Confirm Person, snooze, complete/disregard, +N queued, Watching, Evidence, Open Project, Open Email fail-closed for generated Brief
+- Projects / Clients / Repairs / Concierge destination wiring intact
+- Mobile nav: exactly five `grid-cols-5` tabs, overflow-x-hidden, no sixth destination
+- Master Sprint unused-capacity fill stays on the same Today queue
+
+Live authenticated browser QA was not run: no founder session and no running local server. Static render + source contracts cover the checklist.
+
+### Files changed
+
+- `lib/continuum/operating-shell/overnight-qa.test.ts`
+- `lib/continuum/operating-shell/ui.test.ts`
+- `OVERNIGHT_EXECUTION.md`
+
+### Tests run
+
+- Targeted operating-shell / docket / founder-actions / Open Email / Projects / PWA tests: 67 pass, 0 fail
+- `npx eslint` on Lane 6 files: pass
+- `npm run test:continuum`: 1688 pass, 0 fail
+- `npm run build`: pass
+
+### Architectural decisions
+
+- QA is regression-only. Do not restyle accepted Phase 1A/1B chrome.
+- Live session QA remains a founder-side check after deploy.
+
+### Blockers
+
+- Authenticated 390px device pass still needs a founder session on a running app.
+- Production Gmail freshness still needs kill switch + deploy.
+- Historical reconstruction still needs a founder-approved bounded run.
+
+### Next lane
+
+Queue complete. Do not merge to main. Do not deploy. Resume from this manifest.
+
+## Morning handoff
+
+- Baseline: Phase 1B `e29c383`. origin/main remains `65aea302ac845c592f5859dbd057ef3452d59573`.
+- Branch: `continuum/founder-operating-ux-v1`
+- Lanes 1–6 DONE.
+- Checkpoints: `00eebd5` `08078f6` `ffd2272` `5f5c414` `1c62cac` plus Lane 6 commit.
+- Recommended next: founder review of the feature branch, then approve kill-switch/cron deploy and any persistence/OAuth work. Never merge overnight.
