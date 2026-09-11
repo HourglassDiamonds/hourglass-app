@@ -405,6 +405,49 @@ describe("Today founder contextual actions", () => {
     assert.doesNotMatch(html, /approved_value=|latest_candidate=|candidate state|approved vs candidate/i);
   });
 
+  it("offers Complete and Disregard for Master Sprint items without snooze or CAD verbs", () => {
+    const docket = composeTodayDocket(loop({
+      masterSprint: [{
+        id: "sprint-a",
+        title: "Approved CAD follow-up",
+        action: "Advance the approved CAD follow-up",
+        why: "Canonical approved sprint item.",
+      }],
+    }));
+    const item = docket.items[0]!;
+    assert.equal(item.origin, "master_sprint");
+    const controls = selectFounderControls(item);
+    assert.equal(controls.family, "generic");
+    assert.deepEqual(
+      controls.actions.map((row) => row.verb),
+      ["complete"],
+    );
+    assert.deepEqual(
+      controls.fallback.map((row) => row.verb),
+      ["disregard"],
+    );
+    assert.equal(controls.actions.some((row) => row.needsSnooze), false);
+    assert.equal(controls.fallback.some((row) => row.needsSnooze), false);
+    assert.equal(controls.completableJob, false);
+    const html = renderToStaticMarkup(
+      createElement(ChiefOfStaffToday, {
+        loop: loop({
+          masterSprint: [{
+            id: "sprint-a",
+            title: "Approved CAD follow-up",
+            action: "Advance the approved CAD follow-up",
+            why: "Canonical approved sprint item.",
+          }],
+        }),
+      }),
+    );
+    assert.match(html, /Complete/);
+    assert.match(html, /Disregard/);
+    assert.doesNotMatch(html, />Snooze</);
+    assert.doesNotMatch(html, />Approve</);
+    assert.doesNotMatch(html, /Request changes/);
+  });
+
   it("encodes snooze presets on founder local calendar days", () => {
     const now = "2026-09-09T20:15:00.000Z";
     assert.equal(snoozeUntilForPreset("tomorrow", now), "2026-09-10T00:00:00.000Z");

@@ -470,6 +470,117 @@ describe("Today founder disposition", () => {
     assert.equal(world.jobs.getJob(topId)?.state, "snoozed");
   });
 
+  it("persists Master Sprint complete and disregard on the canonical backlog", async () => {
+    const { InMemoryPersistenceAdapter } = await import(
+      "@/lib/agent-os/persistence/adapters/memory"
+    );
+    const { markRecommendationTerminal } = await import(
+      "@/lib/agent-os/persistence/mark-terminal"
+    );
+    const {
+      CURRENT_OPERATING_BACKLOG,
+      hydrateOperatingBacklogFromPersistence,
+      operatingBacklogRecommendationId,
+    } = await import("@/lib/agent-os/operating-backlog");
+    const { selectMasterSprintCapacityItems } = await import("./master-sprint");
+
+    const item = {
+      id: "sprint-capacity-test",
+      kind: "sprint-priority" as const,
+      title: "Approved sprint capacity test",
+      action: "Advance the approved sprint capacity test",
+      why: "Canonical approved sprint item.",
+      expectedOutcome: "Done.",
+      status: "active" as const,
+      urgency: "high" as const,
+      rank: 1,
+      surfacePolicy: "founder-now" as const,
+    };
+    const backlog = {
+      ...CURRENT_OPERATING_BACKLOG,
+      masterSprint: {
+        ...CURRENT_OPERATING_BACKLOG.masterSprint,
+        items: [item, ...CURRENT_OPERATING_BACKLOG.masterSprint.items],
+      },
+    };
+    assert.equal(
+      selectMasterSprintCapacityItems(backlog).some((row) => row.id === item.id),
+      true,
+    );
+
+    const store = new InMemoryPersistenceAdapter({ modeScope: "fixture" });
+    const completed = await disposeDocketItem(
+      {
+        nowIso: () => NOW,
+        markSprintTerminal: async ({ itemId, status }) => {
+          await markRecommendationTerminal(store, {
+            recommendationId: operatingBacklogRecommendationId(itemId),
+            status,
+            source: "founder-confirmed",
+          });
+          return { ok: true };
+        },
+      },
+      {
+        verb: "complete",
+        origin: "master_sprint",
+        itemId: item.id,
+        projectId: null,
+        jobId: null,
+        candidateIds: [],
+        mutationId: randomUUID(),
+        actor: ACTOR,
+      },
+    );
+    assert.equal(completed.ok, true);
+    const afterComplete = hydrateOperatingBacklogFromPersistence(
+      backlog,
+      (await store.load()).recommendations,
+    );
+    assert.equal(
+      selectMasterSprintCapacityItems(afterComplete.backlog).some(
+        (row) => row.id === item.id,
+      ),
+      false,
+    );
+
+    const missing = await disposeDocketItem(
+      { nowIso: () => NOW },
+      {
+        verb: "complete",
+        origin: "master_sprint",
+        itemId: item.id,
+        projectId: null,
+        jobId: null,
+        candidateIds: [],
+        mutationId: randomUUID(),
+        actor: ACTOR,
+      },
+    );
+    assert.equal(missing.ok, false);
+    if (!missing.ok) assert.equal(missing.reason, "unavailable");
+
+    const snoozed = await disposeDocketItem(
+      {
+        nowIso: () => NOW,
+        markSprintTerminal: async () => ({ ok: true }),
+      },
+      {
+        verb: "snooze",
+        origin: "master_sprint",
+        itemId: item.id,
+        projectId: null,
+        jobId: null,
+        candidateIds: [],
+        mutationId: randomUUID(),
+        actor: ACTOR,
+        snoozeUntil: "2026-09-12T00:00:00.000Z",
+      },
+    );
+    assert.equal(snoozed.ok, false);
+    if (!snoozed.ok) assert.equal(snoozed.reason, "unsupported-mutation");
+  });
+
   it("does not treat a fixture job helper as live seed", () => {
     const job = fixtureJob({
       jobId: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",

@@ -34,6 +34,7 @@ export type ComposeCosOperatingLoopInput = {
   nowIso: string;
   ranker?: ActionableRanker;
   newMutationId?: () => string;
+  masterSprint?: CosOperatingLoopView["masterSprint"];
 };
 
 function clientDisplayName(
@@ -93,6 +94,8 @@ export function composeCosOperatingLoop(
     input.projects ?? projectContextFromSummaries(input.summaries ?? []);
   const candidates = input.candidates ?? [];
 
+  const masterSprint = input.masterSprint ?? [];
+
   if (input.jobs == null) {
     return {
       contractVersion: COS_OPERATING_LOOP_CONTRACT_VERSION,
@@ -108,6 +111,7 @@ export function composeCosOperatingLoop(
       recap: [],
       anomalies: [],
       proposedActions: [],
+      masterSprint,
     };
   }
 
@@ -173,6 +177,7 @@ export function composeCosOperatingLoop(
       recap,
       anomalies: attention.anomalies,
       proposedActions,
+      masterSprint,
     };
   }
 
@@ -190,6 +195,7 @@ export function composeCosOperatingLoop(
     recap,
     anomalies: attention.anomalies,
     proposedActions,
+    masterSprint,
   };
 }
 

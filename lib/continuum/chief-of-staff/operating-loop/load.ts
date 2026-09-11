@@ -15,13 +15,20 @@ import { getAuthenticatedProjectDeskReader } from "@/lib/continuum/client-memory
 import { getAuthenticatedCandidateStore } from "@/lib/continuum/candidates/load";
 import type { ContinuumCandidate } from "@/lib/continuum/candidates/types";
 import { tagStoredGeneratedOperatingMailCandidates } from "@/lib/continuum/gmail/candidates/tag-stored-generated-load";
+import {
+  CURRENT_OPERATING_BACKLOG,
+  hydrateOperatingBacklogFromPersistence,
+} from "@/lib/agent-os/operating-backlog";
+import { resolvePersistenceAdapter } from "@/lib/agent-os/persistence/resolve";
 import { composeCosOperatingLoop } from "./compose";
+import { selectMasterSprintCapacityItems } from "./master-sprint";
 import {
   COS_DISCONNECTED_DETAIL,
   COS_DISCONNECTED_HEADING,
 } from "./present";
 import {
   COS_OPERATING_LOOP_CONTRACT_VERSION,
+  type CosMasterSprintItem,
   type CosOperatingLoopView,
 } from "./types";
 
@@ -40,7 +47,25 @@ function disconnectedLoop(): CosOperatingLoopView {
     proposedActions: [],
     needsYourDecision: [],
     worthKnowing: [],
+    masterSprint: [],
   };
+}
+
+async function loadMasterSprintCapacity(): Promise<readonly CosMasterSprintItem[]> {
+  let backlog = CURRENT_OPERATING_BACKLOG;
+  try {
+    const resolved = resolvePersistenceAdapter({ mode: "live" });
+    if (resolved.store.liveEligible && resolved.store.isDurable) {
+      const prior = await resolved.store.load();
+      backlog = hydrateOperatingBacklogFromPersistence(
+        CURRENT_OPERATING_BACKLOG,
+        prior.recommendations,
+      ).backlog;
+    }
+  } catch {
+    backlog = CURRENT_OPERATING_BACKLOG;
+  }
+  return selectMasterSprintCapacityItems(backlog);
 }
 
 export async function loadCosOperatingLoop(
@@ -65,11 +90,13 @@ export async function loadCosOperatingLoop(
       client,
       listed,
     );
+    const masterSprint = await loadMasterSprintCapacity();
     return composeCosOperatingLoop({
       jobs,
       summaries,
       candidates,
       nowIso: now.toISOString(),
+      masterSprint,
     });
   } catch {
     return disconnectedLoop();

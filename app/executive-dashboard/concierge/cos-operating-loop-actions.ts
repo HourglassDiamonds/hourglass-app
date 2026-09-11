@@ -3,6 +3,9 @@
 import { randomUUID } from "node:crypto";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { operatingBacklogRecommendationId } from "@/lib/agent-os/operating-backlog";
+import { markRecommendationTerminal } from "@/lib/agent-os/persistence/mark-terminal";
+import { resolvePersistenceAdapter } from "@/lib/agent-os/persistence/resolve";
 import { getAuthenticatedProjectJobWriter } from "@/lib/continuum/client-memory/project-jobs/load-writer";
 import { getAuthenticatedClientMemoryProjectSpecWriter } from "@/lib/continuum/client-memory/project-spec/load";
 import { getAuthenticatedCandidateStore } from "@/lib/continuum/candidates/load";
@@ -93,6 +96,22 @@ export async function disposeTodayDocketItemAction(formData: FormData) {
       correctProjectSpec: specs.ok
         ? (input) => specs.writer.correctProjectSpec(input)
         : undefined,
+      markSprintTerminal: async ({ itemId, status }) => {
+        try {
+          const resolved = resolvePersistenceAdapter({ mode: "live" });
+          if (!resolved.store.liveEligible || !resolved.store.isDurable) {
+            return { ok: false, reason: "unavailable" };
+          }
+          await markRecommendationTerminal(resolved.store, {
+            recommendationId: operatingBacklogRecommendationId(itemId),
+            status,
+            source: "founder-confirmed",
+          });
+          return { ok: true };
+        } catch {
+          return { ok: false, reason: "unavailable" };
+        }
+      },
     },
     {
       verb: verbRaw,

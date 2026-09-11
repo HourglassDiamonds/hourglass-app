@@ -30,8 +30,8 @@ origin/main MUST remain: `65aea302ac845c592f5859dbd057ef3452d59573`
 | 1 Near-real-time Gmail pipeline | DONE | `00eebd5` feat: add near-real-time gmail intake |
 | 2 Email-driven Project / Action hydration | DONE | 08078f6 |
 | 3 Retain supporting Gmail provenance | DONE | ffd2272 |
-| 4 Historical Gmail reconstruction foundation | DONE | pending commit |
-| 5 Master Sprint → Today unused capacity | TODO | |
+| 4 Historical Gmail reconstruction foundation | DONE | 5f5c414 |
+| 5 Master Sprint → Today unused capacity | DONE | pending commit |
 | 6 Operating QA / regression | TODO | |
 
 ## Lane 1 — Near-real-time Gmail pipeline
@@ -234,3 +234,57 @@ Bounded, resumable reconstruction over already-indexed Gmail threads. Proves the
 ### Next lane
 
 Lane 5 — Master Sprint → Today unused capacity.
+
+## Lane 5 — Master Sprint → Today unused capacity
+
+Status: DONE
+
+### What changed
+
+Approved Master Sprint items now fill unused UP NEXT slots after live client/work. Client work always preempts. Extra sprint items stay off the queue and do not inflate `+N queued`.
+
+- Empty live work uses founder copy: `Client work is clear. Continuing with the sprint.`
+- Completing a sprint item persists through Agent OS recommendation lifecycle.
+- The next eligible sprint item replenishes when a slot opens.
+- No separate Sprint dashboard. No invented sprint work.
+
+### Files changed
+
+- `lib/continuum/chief-of-staff/operating-loop/types.ts`
+- `lib/continuum/chief-of-staff/operating-loop/master-sprint.ts`
+- `lib/continuum/chief-of-staff/operating-loop/master-sprint.test.ts`
+- `lib/continuum/chief-of-staff/operating-loop/docket.ts`
+- `lib/continuum/chief-of-staff/operating-loop/docket.test.ts`
+- `lib/continuum/chief-of-staff/operating-loop/compose.ts`
+- `lib/continuum/chief-of-staff/operating-loop/load.ts`
+- `lib/continuum/chief-of-staff/operating-loop/founder-actions.ts`
+- `lib/continuum/chief-of-staff/operating-loop/founder-actions.test.ts`
+- `lib/continuum/chief-of-staff/operating-loop/disposition.ts`
+- `lib/continuum/chief-of-staff/operating-loop/disposition.test.ts`
+- `lib/continuum/chief-of-staff/operating-loop/security.test.ts`
+- `app/executive-dashboard/concierge/cos-operating-loop-actions.ts`
+- `OVERNIGHT_EXECUTION.md`
+
+### Tests run
+
+- Targeted docket / master-sprint / founder-actions / disposition / security tests: 35 pass, 0 fail
+- `npx eslint` on Lane 5 files: pass
+- `npm run test:continuum`: 1683 pass, 0 fail
+- `npm run build`: pass (Next TypeScript included)
+
+### Architectural decisions
+
+- Canonical source remains `CURRENT_OPERATING_BACKLOG`. Adapter is `selectMasterSprintCapacityItems` using existing `founderFocusEligible`.
+- Load hydrates terminal lifecycle from durable Agent OS persistence when live/durable; otherwise fail closed to the static backlog.
+- Sprint completion writes only through `markRecommendationTerminal` (`operating-backlog:<itemId>`), not a second task store.
+- Current static backlog has no active founder-now items, so production Today will not show sprint until something is promoted. Tests inject eligible items.
+- Sprint Complete / Disregard only. No snooze path overnight.
+
+### Blockers
+
+- Sprint completion persistence requires configured live Agent OS durable persistence. Unconfigured production fails closed (`unsupported-mutation` / unavailable).
+- No founder-now items currently on the static sprint, so unused-capacity fill is proven in tests and waits on promotion in production.
+
+### Next lane
+
+Lane 6 — operating QA / regression.

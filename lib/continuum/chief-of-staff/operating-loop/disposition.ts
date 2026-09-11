@@ -54,6 +54,12 @@ export type DisposeDocketItemResult =
         | "invalid-state";
     };
 
+export type MarkSprintTerminalInput = {
+  itemId: string;
+  status: "completed" | "dismissed";
+  actor: string;
+};
+
 export type DisposeDocketItemDeps = {
   nowIso: () => string;
   candidates?: CandidateStore | null;
@@ -61,6 +67,9 @@ export type DisposeDocketItemDeps = {
   correctProjectSpec?: (
     input: CorrectProjectSpecInput,
   ) => Promise<CorrectProjectSpecResult>;
+  markSprintTerminal?: (
+    input: MarkSprintTerminalInput,
+  ) => Promise<{ ok: true } | { ok: false; reason: "unavailable" }>;
 };
 
 function uniqueIds(ids: readonly string[]): string[] {
@@ -225,6 +234,34 @@ export async function disposeDocketItem(
   const until = input.snoozeUntil?.trim() || null;
 
   try {
+    if (input.origin === "master_sprint") {
+      const completing =
+        input.verb === "complete" ||
+        input.verb === "approve" ||
+        input.verb === "responded" ||
+        input.verb === "resolved";
+      const dismissing = input.verb === "disregard";
+      if (!completing && !dismissing) {
+        return { ok: false, reason: "unsupported-mutation" };
+      }
+      if (!input.itemId.trim()) return { ok: false, reason: "invalid-input" };
+      if (!deps.markSprintTerminal) return { ok: false, reason: "unavailable" };
+      const marked = await deps.markSprintTerminal({
+        itemId: input.itemId,
+        status: completing ? "completed" : "dismissed",
+        actor,
+      });
+      if (!marked.ok) return { ok: false, reason: "unavailable" };
+      return {
+        ok: true,
+        verb: input.verb,
+        resolvedAt: now,
+        mutatedSpec: false,
+        reviewedCandidateIds: [],
+        jobAction: null,
+      };
+    }
+
     if (input.verb === "keep_canonical") {
       if (!deps.candidates) return { ok: false, reason: "unavailable" };
       const rows = await loadCandidates(deps.candidates, candidateIds);

@@ -28,6 +28,7 @@ const INFERENCE_FILES = [
   "founder-actions.ts",
   "quiet.ts",
   "docket.ts",
+  "master-sprint.ts",
   "email-source.ts",
   "moderator.ts",
   "attribution.ts",

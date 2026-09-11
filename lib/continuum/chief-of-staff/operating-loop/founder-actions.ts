@@ -345,6 +345,36 @@ export function selectFounderControls(item: CosFounderActionSource): CosFounderC
     item.job?.completable && item.job.writer === "open_job.resolve",
   );
 
+  if (item.origin === "master_sprint") {
+    return {
+      family: "generic",
+      actions: [
+        {
+          verb: "complete",
+          label: "Complete",
+          emphasis: "primary",
+          needsSnooze: false,
+        },
+      ],
+      fallback: [
+        {
+          verb: "disregard",
+          label: "Disregard",
+          emphasis: "secondary",
+          needsSnooze: false,
+        },
+      ],
+      specConflict: null,
+      evidence,
+      confirmPerson: null,
+      openProjectHref: openProjectHrefFor(item),
+      openEmail: emails.length === 1 ? emails[0]! : null,
+      emailSources: emails,
+      editHref: null,
+      completableJob: false,
+    };
+  }
+
   let family: CosActionFamily = "generic";
   let actions: CosFounderActionView[] = [];
 

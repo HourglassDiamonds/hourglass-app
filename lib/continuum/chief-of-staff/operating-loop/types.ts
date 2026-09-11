@@ -253,6 +253,13 @@ export type CosWatchingItem = {
   projectId: string | null;
 };
 
+export type CosMasterSprintItem = {
+  id: string;
+  title: string;
+  action: string;
+  why: string;
+};
+
 export type CosOperatingLoopStatus = "caught-up" | "active" | "disconnected";
 
 export type CosOperatingLoopView = {
@@ -269,6 +276,7 @@ export type CosOperatingLoopView = {
   recap: CosRecapItem[];
   anomalies: CosAnomalyItem[];
   proposedActions: CosProposedAction[];
+  masterSprint?: readonly CosMasterSprintItem[];
 };
 
 export type CosProjectPerson = {

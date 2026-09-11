@@ -1,7 +1,7 @@
 /**
  * Founder-facing Today docket. Presentation only.
  * Does not rerank Open Jobs, Brief, or Candidates.
- * Master Sprint items must use this same grammar when they land later.
+ * Master Sprint fills unused Up next slots with the same grammar.
  */
 
 import { uncoveredFallbackAttention } from "./moderator";
@@ -9,6 +9,7 @@ import {
   COS_CAUGHT_UP_DETAIL,
   COS_CAUGHT_UP_HEADING,
 } from "./present";
+import { COS_SPRINT_CLEAR_COPY } from "./master-sprint";
 import type {
   CosAnomalyItem,
   CosBriefItem,
@@ -251,14 +252,37 @@ function coverKeysFor(item: {
 }
 
 /**
- * Reserved slot for later Master Sprint fallback.
- * Keep empty in Phase 1A so those items can enter this same numbered queue.
+ * Master Sprint fallback into unused Up next capacity.
+ * Client/work always occupies slots first. Extra sprint items stay off the queue.
  */
 export function masterSprintDocketItems(
   loop: CosOperatingLoopView,
+  unusedSlots = COS_DOCKET_VISIBLE_LIMIT,
 ): CosDocketItemView[] {
-  void loop;
-  return [];
+  const liveClear = unusedSlots >= COS_DOCKET_VISIBLE_LIMIT;
+  const seeds = loop.masterSprint ?? [];
+  const cap = Math.max(0, unusedSlots);
+  if (cap === 0) return [];
+  return seeds.slice(0, cap).map((item) => {
+    const briefing = presentDocketBriefing({
+      subject: item.title,
+      headline: item.action,
+      context: liveClear ? COS_SPRINT_CLEAR_COPY : item.why,
+      origin: "master_sprint",
+    });
+    return {
+      id: item.id,
+      lane: "master_sprint" as const,
+      origin: "master_sprint" as const,
+      subject: item.title,
+      headline: briefing.headline,
+      context: briefing.context,
+      job: null,
+      brief: null,
+      decision: null,
+      anomaly: null,
+    };
+  });
 }
 
 export function composeTodayDocket(loop: CosOperatingLoopView): CosTodayDocketView {
@@ -382,13 +406,13 @@ export function composeTodayDocket(loop: CosOperatingLoopView): CosTodayDocketVi
     mark(keys);
   }
 
-  const queue = [...liveWork, ...masterSprintDocketItems(loop)];
+  const unused = Math.max(0, COS_DOCKET_VISIBLE_LIMIT - liveWork.length);
+  const sprint = masterSprintDocketItems(loop, unused);
+  const queue = [...liveWork, ...sprint];
   const items = queue.slice(0, COS_DOCKET_VISIBLE_LIMIT);
-  // Count only founder-facing docket items beyond the visible three.
-  // Do not add Top 5 remainingCount — that is ranker-window leftover, not this queue.
-  const queuedCount = Math.max(0, queue.length - items.length);
+  const queuedCount = Math.max(0, liveWork.length - COS_DOCKET_VISIBLE_LIMIT);
   const showDisconnected = loop.status === "disconnected";
-  const showCaughtUp = !showDisconnected && queue.length === 0;
+  const showCaughtUp = !showDisconnected && liveWork.length === 0 && sprint.length === 0;
 
   return {
     title: COS_DOCKET_TITLE,
