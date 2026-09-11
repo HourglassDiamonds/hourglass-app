@@ -6,11 +6,14 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { getSupabaseEnv } from "@/lib/intelligence/env";
 import { assertNoPrefixedServerSecrets } from "@/lib/intelligence/validate-env";
+import { assertContinuumPreviewIsolation } from "@/lib/continuum/runtime-env";
 
 let admin: SupabaseClient | null = null;
 
 export function getSupabaseAdmin(): SupabaseClient | null {
-  assertNoPrefixedServerSecrets();  if (admin) return admin;
+  assertNoPrefixedServerSecrets();
+  assertContinuumPreviewIsolation();
+  if (admin) return admin;
   const env = getSupabaseEnv();
   if (!env) return null;
   admin = createClient(env.supabaseUrl, env.supabaseServiceRoleKey, {

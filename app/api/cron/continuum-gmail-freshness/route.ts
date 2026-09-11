@@ -10,6 +10,7 @@ import { NextResponse } from "next/server";
 import { verifyCronRequest } from "@/lib/intelligence/cron-auth";
 import { executeLiveGmailFreshnessCycle } from "@/lib/continuum/gmail/freshness-run";
 import { sanitizeGmailFreshnessCycleResult } from "@/lib/continuum/gmail/freshness-cycle";
+import { continuumEnvLogLabel } from "@/lib/continuum/runtime-env";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -39,6 +40,8 @@ export async function GET(request: Request) {
   }
 
   try {
+    const envLabel = continuumEnvLogLabel();
+    console.info("[continuum-gmail-freshness]", envLabel);
     const result = sanitizeGmailFreshnessCycleResult(
       await executeLiveGmailFreshnessCycle({
         founderSessionOk: false,
@@ -52,6 +55,7 @@ export async function GET(request: Request) {
     return json(
       {
         ok,
+        env: envLabel,
         enabled: result.safeErrorCode !== "sync-disabled",
         chunksRun: result.chunksRun,
         indexedThisCycle: result.indexedThisCycle,

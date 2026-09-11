@@ -4,6 +4,8 @@
  * Never NEXT_PUBLIC_*.
  */
 
+import { isGmailIncrementalAllowedInCurrentEnv } from "@/lib/continuum/runtime-env";
+
 function trimmed(value: string | undefined): string | undefined {
   const v = value?.trim();
   return v ? v : undefined;
@@ -114,5 +116,6 @@ export function isContinuumGmailOAuthConfigured(): boolean {
  */
 export function isGmailIncrementalSyncEnabled(): boolean {
   const raw = trimmed(process.env.CONTINUUM_GMAIL_INCREMENTAL_SYNC_ENABLED);
-  return raw === "true" || raw === "1";
+  if (raw !== "true" && raw !== "1") return false;
+  return isGmailIncrementalAllowedInCurrentEnv();
 }

@@ -411,6 +411,7 @@ describe("Gmail activation security", () => {
     );
     assert.doesNotMatch(continueHelper, /\/api\/cron\/gmail/);
     assert.match(env, /CONTINUUM_GMAIL_INCREMENTAL_SYNC_ENABLED/);
+    assert.match(env, /isGmailIncrementalAllowedInCurrentEnv/);
     assert.doesNotMatch(vercel, /gmail-incremental|gmail-memory-daily|gmail-current-state/);
     assert.doesNotMatch(sync, /createPersonAtomic|insertSourceNote|continuum_open_jobs/);
     assert.doesNotMatch(incremental, /createPersonAtomic|insertSourceNote|continuum_attention_items/);
@@ -432,6 +433,7 @@ describe("Gmail activation security", () => {
     assert.match(vercel, /\/api\/cron\/continuum-gmail-freshness/);
     assert.match(vercel, /\/api\/cron\/concierge-sla/);
     assert.match(route, /verifyCronRequest/);
+    assert.match(route, /continuumEnvLogLabel/);
     assert.doesNotMatch(route, /runGmailIncrementalChunk|runIncrementalSync/);
     assert.doesNotMatch(route, /runGmailNewProjectIntakeScan|ingestGmailCandidates/);
     assert.doesNotMatch(route, /createSupabaseGmailIndexStore|client-memory\/gmail/);

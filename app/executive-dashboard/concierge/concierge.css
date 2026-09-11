@@ -2,6 +2,19 @@
   font-family: var(--font-continuum-sans), ui-sans-serif, system-ui, sans-serif;
 }
 
+.hg-continuum-env-badge {
+  margin: 0;
+  padding: 0.35rem 0.75rem;
+  border-bottom: 1px solid rgba(173, 145, 100, 0.28);
+  background: #1b1714;
+  color: #ad9164;
+  font-family: var(--font-continuum-sans), ui-sans-serif, system-ui, sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  text-align: center;
+}
+
 [data-concierge-shell] .font-serif {
   font-family: var(--font-continuum-serif), ui-serif, Georgia, "Times New Roman", serif;
 }

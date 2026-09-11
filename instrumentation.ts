@@ -7,6 +7,10 @@ export async function register() {
     const { validateIntelligenceEnvOnStartup } = await import(
       "./lib/intelligence/validate-env"
     );
+    const { validateContinuumRuntimeEnvOnStartup } = await import(
+      "./lib/continuum/runtime-env"
+    );
     validateIntelligenceEnvOnStartup();
+    validateContinuumRuntimeEnvOnStartup();
   }
 }

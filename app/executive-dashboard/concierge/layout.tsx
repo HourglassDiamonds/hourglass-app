@@ -5,6 +5,7 @@ import { Inter, Newsreader } from "next/font/google";
 import { EXECUTIVE_DASHBOARD_LOGIN_PATH } from "@/lib/executive-dashboard/access";
 import { EXECUTIVE_DASHBOARD_SESSION_COOKIE } from "@/lib/executive-dashboard/session";
 import { requireInternalClientMemorySession } from "@/lib/continuum/client-memory/read/access";
+import { ContinuumEnvBadge } from "./components/continuum-env-badge";
 import "./concierge.css";
 
 const continuumSans = Inter({
@@ -41,6 +42,7 @@ export default async function ConciergeLayout({
 
   return (
     <div className={`${continuumSans.variable} ${continuumSerif.variable}`}>
+      <ContinuumEnvBadge />
       {children}
     </div>
   );

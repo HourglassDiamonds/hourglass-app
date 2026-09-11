@@ -55,6 +55,9 @@ describe("Founder Operating UX V1 shell", () => {
     const shell = read(join("components", "concierge-shell.tsx"));
     const nav = read(join("components", "concierge-operating-nav.tsx"));
     const css = read("concierge.css");
+    const layout = read("layout.tsx");
+    assert.match(layout, /ContinuumEnvBadge/);
+    assert.match(css, /hg-continuum-env-badge/);
     assert.match(shell, /ConciergeOperatingNav/);
     assert.match(shell, /data-operating-shell/);
     assert.match(shell, /pb-\[calc\(5\.75rem\+env\(safe-area-inset-bottom\)\)\]/);
