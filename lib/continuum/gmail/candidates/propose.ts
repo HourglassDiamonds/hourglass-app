@@ -252,7 +252,11 @@ function draftsFromEvidence(
     }
   }
 
-  const primaryProject = projectHits.length === 1 ? projectHits[0]!.project : null;
+  const uniqueProjectIds = new Set(
+    projectHits.map((hit) => hit.project.projectId),
+  );
+  const primaryProject =
+    uniqueProjectIds.size === 1 ? projectHits[0]!.project : null;
   const exactThreadProject = projectHits.some(
     (hit) =>
       hit.match === "exact" && hit.ruleIds.includes("exact_gmail_thread"),

@@ -34,7 +34,17 @@ const DURABILITY = /\bdurability\b[^.!\n]{0,120}/gi;
 const FOUNDER_COMMITMENT =
   /\bI(?:'ll| will) (?:send|do|follow up|call|email)[^.!?\n]{0,160}/gi;
 const CLIENT_REQUEST =
-  /\b(?:can you|could you|please) (?:send|make|revise|update|do)[^.!?\n]{0,160}/gi;
+  /\b(?:can you|could you|please) (?:send|make|revise|update|do|change|confirm|fix)[^.!?\n]{0,160}/gi;
+const CAD_FEEDBACK =
+  /\b(?:the )?(?:CAD|render|design) (?:looks|is|seems) (?:off|wrong|thin|thick|small|big|too\b[^.!?\n]{0,40})|\bplease (?:revise|change|update) (?:the )?(?:CAD|render|design)\b|\bCAD feedback\b/gi;
+const CHANGE_REQUEST =
+  /\b(?:i(?:'d| would) like to change|please change|can we change|change request)\b[^.!?\n]{0,160}/gi;
+const PRODUCTION_QUESTION =
+  /\b(?:when will (?:it|this) be (?:ready|done|finished)|is it in production|production (?:status|delay)|still in the shop)\b[^.!?\n]{0,120}/gi;
+const SHOP_BLOCKER =
+  /\b(?:waiting on (?:the )?(?:caster|shop|vendor|setter)|casting (?:is )?delayed|shop is behind|vendor (?:is )?behind)\b[^.!?\n]{0,160}/gi;
+const DELIVERY_PAYMENT =
+  /\b(?:payment (?:issue|failed|outstanding|not received)|hasn(?:'t|ot) (?:been )?delivered|delivery (?:issue|delay|problem)|never received (?:the )?(?:payment|package|ring))\b[^.!?\n]{0,160}/gi;
 const VENDOR_WAIT =
   /\bwe(?:'ll| will) (?:send|have it|have them)\b[^.!?\n]{0,160}|\bwhen ready\b[^.!?\n]{0,80}/gi;
 const FOLLOW_UP =
@@ -296,9 +306,16 @@ export function extractOpenJobs(
   role: "client" | "vendor-contact" | "founder" | "unknown",
 ): JobHit[] {
   const hits: JobHit[] = [];
+  const seen = new Set<string>();
+  const push = (hit: JobHit) => {
+    const key = hit.matchedText.trim().toLowerCase();
+    if (!key || seen.has(key)) return;
+    seen.add(key);
+    hits.push(hit);
+  };
   if (direction === "outbound" || role === "founder") {
     eachMatch(text, FOUNDER_COMMITMENT, (match) => {
-      hits.push({
+      push({
         jobKind: "commitment",
         waitingOnActor: "founder",
         subject: clipMatchedText(match[0], 160),
@@ -308,8 +325,53 @@ export function extractOpenJobs(
     });
   }
   if (direction === "inbound" && role !== "founder") {
+    eachMatch(text, CAD_FEEDBACK, (match) => {
+      push({
+        jobKind: "request",
+        waitingOnActor: "founder",
+        subject: clipMatchedText(match[0], 160),
+        matchedText: clipMatchedText(match[0]),
+        ruleIds: ["explicit_cad_feedback"],
+      });
+    });
+    eachMatch(text, CHANGE_REQUEST, (match) => {
+      push({
+        jobKind: "request",
+        waitingOnActor: "founder",
+        subject: clipMatchedText(match[0], 160),
+        matchedText: clipMatchedText(match[0]),
+        ruleIds: ["explicit_change_request"],
+      });
+    });
+    eachMatch(text, PRODUCTION_QUESTION, (match) => {
+      push({
+        jobKind: "required_action",
+        waitingOnActor: "founder",
+        subject: clipMatchedText(match[0], 160),
+        matchedText: clipMatchedText(match[0]),
+        ruleIds: ["explicit_production_question"],
+      });
+    });
+    eachMatch(text, SHOP_BLOCKER, (match) => {
+      push({
+        jobKind: "blocked_issue",
+        waitingOnActor: "vendor",
+        subject: clipMatchedText(match[0], 160),
+        matchedText: clipMatchedText(match[0]),
+        ruleIds: ["explicit_shop_blocker"],
+      });
+    });
+    eachMatch(text, DELIVERY_PAYMENT, (match) => {
+      push({
+        jobKind: "blocked_issue",
+        waitingOnActor: "founder",
+        subject: clipMatchedText(match[0], 160),
+        matchedText: clipMatchedText(match[0]),
+        ruleIds: ["explicit_delivery_payment_issue"],
+      });
+    });
     eachMatch(text, CLIENT_REQUEST, (match) => {
-      hits.push({
+      push({
         jobKind: "request",
         waitingOnActor: "founder",
         subject: clipMatchedText(match[0], 160),
@@ -319,7 +381,7 @@ export function extractOpenJobs(
     });
     if (role === "vendor-contact") {
       eachMatch(text, VENDOR_WAIT, (match) => {
-        hits.push({
+        push({
           jobKind: "blocked_issue",
           waitingOnActor: "vendor",
           subject: clipMatchedText(match[0], 160),
@@ -330,7 +392,7 @@ export function extractOpenJobs(
     }
   }
   eachMatch(text, FOLLOW_UP, (match) => {
-    hits.push({
+    push({
       jobKind: "required_action",
       waitingOnActor: "founder",
       subject: clipMatchedText(match[0], 160),

@@ -46,6 +46,8 @@ const EXPLICIT_NEW_PROJECT = [
   /create another piece/i,
   /new piece i(?:'d| would) like designed/i,
   /i(?:'d| would) like (?:to )?(?:create|commission|design|make) (?:a |another )?(?:new )?(?:necklace|pendant|earrings?|bracelet|piece)/i,
+  /(?:can you|could you) design (?:a |another )?(?:new )?(?:necklace|pendant|earrings?|bracelet|ring|piece)/i,
+  /new design request/i,
   /(?:a pair of|matching) .{0,80}earrings/i,
   /based on the same .{0,80}(?:artwork|painting|design|ring)/i,
 ] as const;

@@ -497,6 +497,39 @@ describe("explicit new-project Gmail proposals", () => {
     }
   });
 
+  it("proposes a new Project from an explicit new design request without minting it", () => {
+    assert.equal(
+      looksExplicitNewProjectRequest("Can you design a new necklace for my wife?"),
+      true,
+    );
+    const proposed = proposeGmailCandidates({
+      createdAt: NOW,
+      world: { people: [], projects: [], internalEmailHashes: [] },
+      evidence: [
+        evidence({
+          messageId: "m-design-req",
+          threadId: "t-design-req",
+          sentAt: NOW,
+          direction: "inbound",
+          fromEmail: NATE_EMAIL,
+          plaintext: "Can you design a new necklace for my wife?",
+        }),
+      ],
+    });
+    assert.equal(
+      proposed.candidates.some(
+        (row) =>
+          row.payload.kind === "project_context" &&
+          row.payload.topic === NEW_PROJECT_CONTEXT_TOPIC,
+      ),
+      true,
+    );
+    assert.equal(
+      proposed.candidates.some((row) => row.automaticApply),
+      false,
+    );
+  });
+
   it("drops a stale reply request after the founder already answered with a client choice", () => {
     const nate = person({
       personId: "nate-person",

@@ -721,4 +721,179 @@ describe("Gmail → Candidate adapter", () => {
       ),
     );
   });
+
+  it("attaches CAD feedback and change requests to a known Project without minting work", () => {
+    const client = person({
+      personId: "person-lee",
+      displayName: "Lee",
+      emailHash: hashEmail("lee@client.test"),
+      role: "client",
+      projectIds: ["proj-lee"],
+    });
+    const known = project({
+      projectId: "proj-lee",
+      title: "Lee / Spiegel",
+      gmailThreadId: "aaaaaaaaaa",
+      personIds: ["person-lee"],
+      founderApprovedCurrent: true,
+    });
+    const proposed = proposeGmailCandidates({
+      createdAt: NOW,
+      world: world([client], [known]),
+      evidence: [
+        evidence({
+          messageId: "m-cad-fb",
+          threadId: "aaaaaaaaaa",
+          sentAt: NOW,
+          fromEmail: "lee@client.test",
+          plaintext: "The CAD is too thin. Please revise the CAD. I'd like to change the prongs.",
+        }),
+      ],
+    });
+    const jobs = proposed.candidates.filter((row) => row.candidateType === "open_job");
+    assert.ok(jobs.length >= 1);
+    assert.equal(
+      jobs.every(
+        (row) =>
+          row.payload.kind === "open_job" &&
+          row.payload.createJob === false &&
+          row.proposedTarget.kind === "open_job" &&
+          row.proposedTarget.projectId === "proj-lee",
+      ),
+      true,
+    );
+    assert.ok(jobs.some((row) => row.evidenceBasis.ruleIds.includes("explicit_cad_feedback")));
+    assert.ok(jobs.some((row) => row.evidenceBasis.ruleIds.includes("explicit_change_request")));
+    assert.equal(
+      proposed.candidates.some(
+        (row) =>
+          row.payload.kind === "project_context" &&
+          row.payload.topic === "new_project",
+      ),
+      false,
+    );
+  });
+
+  it("keeps shop, production, and payment issues as review candidates, not new Projects", () => {
+    const client = person({
+      personId: "person-pat",
+      displayName: "Pat",
+      emailHash: hashEmail("pat@client.test"),
+      role: "client",
+      projectIds: ["proj-pat"],
+    });
+    const known = project({
+      projectId: "proj-pat",
+      title: "Pat ring",
+      gmailThreadId: "bbbbbbbbbb",
+      personIds: ["person-pat"],
+    });
+    const cases = [
+      {
+        plaintext: "Waiting on the caster. Shop is behind.",
+        rule: "explicit_shop_blocker",
+        jobKind: "blocked_issue",
+      },
+      {
+        plaintext: "When will it be ready? Is it in production?",
+        rule: "explicit_production_question",
+        jobKind: "required_action",
+      },
+      {
+        plaintext: "There is a payment issue and it hasn't been delivered.",
+        rule: "explicit_delivery_payment_issue",
+        jobKind: "blocked_issue",
+      },
+    ] as const;
+    for (const row of cases) {
+      const proposed = proposeGmailCandidates({
+        createdAt: NOW,
+        world: world([client], [known]),
+        evidence: [
+          evidence({
+            messageId: `m-${row.rule}`,
+            threadId: "bbbbbbbbbb",
+            sentAt: NOW,
+            fromEmail: "pat@client.test",
+            plaintext: row.plaintext,
+          }),
+        ],
+      });
+      const jobs = proposed.candidates.filter((item) => item.candidateType === "open_job");
+      assert.ok(
+        jobs.some((item) => item.evidenceBasis.ruleIds.includes(row.rule)),
+        row.rule,
+      );
+      assert.equal(
+        jobs.every(
+          (item) =>
+            item.payload.kind === "open_job" &&
+            item.payload.createJob === false &&
+            item.payload.jobKind === row.jobKind &&
+            item.proposedTarget.kind === "open_job" &&
+            item.proposedTarget.projectId === "proj-pat",
+        ),
+        true,
+        row.rule,
+      );
+      assert.equal(
+        proposed.candidates.some(
+          (item) =>
+            item.payload.kind === "project_context" &&
+            item.payload.topic === "new_project",
+        ),
+        false,
+        row.plaintext,
+      );
+    }
+  });
+
+  it("leaves an action unattached when Project identity is ambiguous", () => {
+    const proposed = proposeGmailCandidates({
+      createdAt: NOW,
+      world: world(
+        [
+          person({
+            personId: "person-two",
+            displayName: "Two Projects",
+            emailHash: hashEmail("two@client.test"),
+            projectIds: ["proj-a", "proj-b"],
+          }),
+        ],
+        [
+          project({
+            projectId: "proj-a",
+            title: "First ring",
+            personIds: ["person-two"],
+          }),
+          project({
+            projectId: "proj-b",
+            title: "Second ring",
+            personIds: ["person-two"],
+          }),
+        ],
+      ),
+      evidence: [
+        evidence({
+          messageId: "m-amb",
+          threadId: "thread-unknown",
+          sentAt: NOW,
+          fromEmail: "two@client.test",
+          plaintext: "Please change the finger size before production.",
+        }),
+      ],
+    });
+    const jobs = proposed.candidates.filter((row) => row.candidateType === "open_job");
+    assert.ok(jobs.length >= 1);
+    assert.equal(
+      jobs.every(
+        (row) =>
+          row.proposedTarget.kind === "open_job" &&
+          row.proposedTarget.projectId == null &&
+          row.payload.kind === "open_job" &&
+          row.payload.createJob === false,
+      ),
+      true,
+    );
+  });
 });

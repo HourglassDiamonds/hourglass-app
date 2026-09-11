@@ -27,8 +27,8 @@ origin/main MUST remain: `65aea302ac845c592f5859dbd057ef3452d59573`
 
 | Lane | Status | Checkpoint |
 |------|--------|------------|
-| 1 Near-real-time Gmail pipeline | DONE | pending commit |
-| 2 Email-driven Project / Action hydration | TODO | |
+| 1 Near-real-time Gmail pipeline | DONE | `00eebd5` feat: add near-real-time gmail intake |
+| 2 Email-driven Project / Action hydration | DONE | pending commit |
 | 3 Retain supporting Gmail provenance | TODO | |
 | 4 Historical Gmail reconstruction foundation | TODO | |
 | 5 Master Sprint → Today unused capacity | TODO | |
@@ -90,4 +90,48 @@ Reuse existing incremental History API sync + new-project intake scan as one fre
 
 ### Next lane
 
-Lane 2 — email-driven Project / Action hydration, using the existing Candidate / Moderator / Founder Review architecture. Do not invent a parallel CRM.
+Lane 3 — retain supporting Gmail provenance for generated Morning Brief items.
+
+## Lane 2 — Email-driven Project / Action hydration
+
+Status: DONE
+
+### What changed
+
+Extend existing Gmail candidate extractors so high-value client/vendor mail proposes review candidates instead of depending on manual Add Action.
+
+- Explicit new design requests can propose a new Project candidate.
+- CAD feedback, change requests, production questions, shop blockers, and delivery/payment issues become Open Job candidates.
+- Known exact-thread Projects receive the attached action. Ambiguous identity stays unattached for Confirm Project.
+- `createJob` remains false. No People/Projects/Open Jobs are minted automatically.
+
+### Files changed
+
+- `lib/continuum/gmail/candidates/parse.ts`
+- `lib/continuum/gmail/candidates/propose.ts`
+- `lib/continuum/gmail/candidates/new-project.ts`
+- `lib/continuum/gmail/candidates/indexed-dry-run.ts`
+- `lib/continuum/gmail/candidates.test.ts`
+- `lib/continuum/gmail/candidates/new-project.test.ts`
+- `OVERNIGHT_EXECUTION.md`
+
+### Tests run
+
+- Targeted Gmail candidate / new-project / intake / security tests: pass
+- `npx eslint` on Lane 2 files: pass
+- `npm run test:continuum`: 1662 pass, 0 fail
+- `npm run build`: pass
+
+### Architectural decisions
+
+- Reuse CandidateStore + founder review. Do not auto-create jobs from extraction.
+- Attach actions only when exactly one Project is identified.
+- Weak repair/status/approval language still does not mint a new Project.
+
+### Blockers
+
+None.
+
+### Next lane
+
+Lane 3 — retain supporting Gmail provenance.
