@@ -9,6 +9,7 @@ import {
   confirmedPersonId,
   hasRule,
   isStudioOrVendorLabel,
+  payloadOf,
   projectByThreadFromCandidates,
   sourceThreadId,
 } from "@/lib/continuum/candidates/founder-attention";
@@ -320,6 +321,21 @@ function personNameById(
   return null;
 }
 
+function personNameFromAssociation(
+  evidence: readonly ContinuumCandidate[],
+  personId: string,
+): string | null {
+  for (const row of evidence) {
+    if (confirmedPersonId(row) !== personId) continue;
+    const payload = payloadOf(row);
+    if (payload.kind === "person_association") {
+      const name = payload.displayName?.trim() ?? "";
+      if (name && !isStudioOrVendorLabel(name)) return name;
+    }
+  }
+  return null;
+}
+
 export function resolveProjectAttribution(
   evidence: readonly ContinuumCandidate[],
   projectId: string | null,
@@ -337,7 +353,9 @@ export function resolveProjectAttribution(
       ...new Set(evidence.map(confirmedPersonId).filter((id): id is string => Boolean(id))),
     ];
     if (personIds.length === 1) {
-      personName = personNameById(personIds[0]!, projects);
+      personName =
+        personNameById(personIds[0]!, projects) ??
+        personNameFromAssociation(evidence, personIds[0]!);
     }
   }
   if (personName && isStudioOrVendorLabel(personName)) personName = null;

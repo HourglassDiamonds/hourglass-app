@@ -9,10 +9,9 @@ import {
   CURRENT_PROJECTS_OWNERSHIP_CLIENT,
   CURRENT_PROJECTS_OWNERSHIP_SHOP,
   CURRENT_PROJECTS_OWNERSHIP_YOUR_TURN,
-  currentProjectToggleId,
+  currentProjectFocusHref,
 } from "@/lib/continuum/client-memory/open-projects/present";
 import {
-  CONCIERGE_PROJECTS_PATH,
   conciergeEditActionPath,
   conciergeOpenJobPath,
 } from "@/lib/continuum/client-memory/read/presentation";
@@ -97,7 +96,7 @@ export function presentTop5Item(
     ownership: ownershipLabel(item.waitingOnActor),
     timing: timingLabel(item.dueAt, nowIso),
     why: whyLabel(item),
-    accordionHref: `${CONCIERGE_PROJECTS_PATH}#${currentProjectToggleId(item.projectId)}`,
+    accordionHref: currentProjectFocusHref(item.projectId),
     jobHref: conciergeOpenJobPath(item.projectId, item.id),
     editHref: conciergeEditActionPath(item.projectId, item.id),
     completable: writer != null,

@@ -47,6 +47,7 @@ export type GmailCandidateWorld = {
   people: readonly GmailCandidatePerson[];
   projects: readonly GmailCandidateProject[];
   internalEmailHashes: readonly string[];
+  generatedEmailHashes?: readonly string[];
   confirmedParticipantMappings?: readonly GmailConfirmedPersonMapping[];
   confirmedSourceLinks?: readonly GmailConfirmedSourceLink[];
   founderConfirmedEmailIdentities?: readonly GmailConfirmedPersonMapping[];

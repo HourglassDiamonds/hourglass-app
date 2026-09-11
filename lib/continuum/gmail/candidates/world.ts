@@ -4,6 +4,7 @@
  */
 
 import { hashEmail } from "@/lib/continuum/client-memory/hashes";
+import { generatedOperatingMailHashesFrom } from "./generated-source";
 import type { PersonProfile, ProjectHistory, ProjectProfile } from "@/lib/continuum/client-memory/types";
 import type { EntityRelationship } from "@/lib/continuum/client-memory/types";
 import type {
@@ -18,6 +19,7 @@ export type CandidateWorldInput = {
   histories: readonly ProjectHistory[];
   relationships: readonly EntityRelationship[];
   internalEmails?: readonly (string | null)[];
+  generatedEmails?: readonly (string | null)[];
   confirmedParticipantMappings?: GmailCandidateWorld["confirmedParticipantMappings"];
   confirmedSourceLinks?: GmailCandidateWorld["confirmedSourceLinks"];
   founderConfirmedEmailIdentities?: GmailCandidateWorld["founderConfirmedEmailIdentities"];
@@ -87,6 +89,7 @@ export function buildGmailCandidateWorld(
     internalEmailHashes: (input.internalEmails ?? [])
       .map((email) => hashEmail(email))
       .filter((row): row is string => Boolean(row)),
+    generatedEmailHashes: generatedOperatingMailHashesFrom(input.generatedEmails ?? []),
     confirmedParticipantMappings: input.confirmedParticipantMappings ?? [],
     confirmedSourceLinks: input.confirmedSourceLinks ?? [],
     founderConfirmedEmailIdentities: input.founderConfirmedEmailIdentities ?? [],

@@ -30,6 +30,10 @@ import {
   looksTransactionalCustomerNotice,
   NEW_PROJECT_CONTEXT_TOPIC,
 } from "./new-project";
+import {
+  isGeneratedFounderOperatingMail,
+  withGeneratedFounderOperatingBriefRule,
+} from "./generated-source";
 import { packGmailCandidateSourceRef } from "./source-ref";
 import {
   assignReconciledCandidates,
@@ -427,7 +431,18 @@ function draftsFromEvidence(
     }
   }
 
-  return drafts;
+  const generated = isGeneratedFounderOperatingMail(
+    evidence.fromEmailHash ?? evidence.indexed.fromEmailHash,
+    world.generatedEmailHashes,
+  );
+  if (!generated) return drafts;
+  return drafts.map((draft) => ({
+    ...draft,
+    evidenceBasis: {
+      ...draft.evidenceBasis,
+      ruleIds: withGeneratedFounderOperatingBriefRule(draft.evidenceBasis.ruleIds, true),
+    },
+  }));
 }
 
 export function proposeGmailCandidates(

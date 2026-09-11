@@ -263,7 +263,7 @@ export type FounderReviewInput =
       proposedTarget?: ProposedCanonicalTarget;
     }
   | { action: "discard" }
-  | { action: "defer" };
+  | { action: "defer"; until?: string | null };
 
 export type ApplyReviewResult =
   | { ok: true; record: ContinuumCandidate }

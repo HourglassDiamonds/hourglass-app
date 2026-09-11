@@ -12,6 +12,7 @@ import { readGmailCurrentState } from "@/lib/continuum/gmail/current-state";
 import { isGmailIncrementalSyncEnabled } from "@/lib/continuum/gmail/env";
 import { getAuthenticatedGmailHistoryStores } from "@/lib/continuum/gmail/load";
 import { CONCIERGE_GMAIL_PATH, GMAIL_INCREMENTAL_JOB_KEY } from "@/lib/continuum/gmail/types";
+import { CONCIERGE_HOME_PATH } from "@/lib/continuum/client-memory/read/presentation";
 import type { GmailIndexedMessage } from "@/lib/continuum/client-memory/gmail/types";
 import { ConciergeShell } from "../../components/concierge-shell";
 import { ConciergeUnavailable } from "../../components/client-profile-view";
@@ -27,7 +28,15 @@ export const metadata = {
   robots: { index: false, follow: false, nocache: true, noarchive: true },
 };
 
-export default async function ConciergeGmailIntakePage() {
+export default async function ConciergeGmailIntakePage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ personAssociation?: string; returnTo?: string }>;
+}) {
+  const query = searchParams ? await searchParams : {};
+  const returnTo =
+    query.returnTo === CONCIERGE_HOME_PATH ? CONCIERGE_HOME_PATH : undefined;
+  const focusPersonAssociationCandidateId = query.personAssociation?.trim() || undefined;
   const auth = await getAuthenticatedCandidateStore();
   if (!auth.ok) {
     return (
@@ -126,6 +135,8 @@ export default async function ConciergeGmailIntakePage() {
         <GmailNewProjectIntakeList
           cards={cards}
           identityAvailable={identityAvailable}
+          returnTo={returnTo}
+          focusPersonAssociationCandidateId={focusPersonAssociationCandidateId}
         />
       </div>
     </ConciergeShell>

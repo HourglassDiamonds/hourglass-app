@@ -12,6 +12,7 @@ import {
 import type {
   CosAnomalyItem,
   CosBriefItem,
+  CosDocketOrigin,
   CosFounderAttentionItem,
   CosOperatingLoopView,
   CosTop5Item,
@@ -23,13 +24,7 @@ export const COS_DOCKET_VISIBLE_LIMIT = 3;
 
 export type CosDocketLane = "live_work" | "master_sprint";
 
-export type CosDocketOrigin =
-  | "brief"
-  | "open_job"
-  | "decision"
-  | "anomaly"
-  | "signal"
-  | "master_sprint";
+export type { CosDocketOrigin };
 
 export type CosDocketItemView = {
   id: string;
@@ -115,6 +110,21 @@ function rewriteSpecBriefing(
     const label = labeled[1]!.trim().toLowerCase();
     const approved = labeled[2]!.trim();
     const latest = labeled[3]!.trim();
+    const action = /finger size/i.test(label)
+      ? "Confirm the finger size before this moves forward."
+      : `Confirm the ${label} before this moves forward.`;
+    return {
+      headline: action,
+      context: `The project says ${approved}, but the latest evidence says ${latest}. I'd verify the current ${label} before production.`,
+    };
+  }
+  const between = context.match(
+    /(?:spec conflict:\s*)?([A-Za-z][A-Za-z ]+?) differs between approved (.+?) and latest evidence (.+?)(?:\.|$)/i,
+  );
+  if (between) {
+    const label = between[1]!.trim().toLowerCase();
+    const approved = between[2]!.trim();
+    const latest = between[3]!.trim();
     const action = /finger size/i.test(label)
       ? "Confirm the finger size before this moves forward."
       : `Confirm the ${label} before this moves forward.`;
@@ -374,8 +384,9 @@ export function composeTodayDocket(loop: CosOperatingLoopView): CosTodayDocketVi
 
   const queue = [...liveWork, ...masterSprintDocketItems(loop)];
   const items = queue.slice(0, COS_DOCKET_VISIBLE_LIMIT);
-  const queuedCount =
-    Math.max(0, queue.length - items.length) + loop.remainingCount;
+  // Count only founder-facing docket items beyond the visible three.
+  // Do not add Top 5 remainingCount — that is ranker-window leftover, not this queue.
+  const queuedCount = Math.max(0, queue.length - items.length);
   const showDisconnected = loop.status === "disconnected";
   const showCaughtUp = !showDisconnected && queue.length === 0;
 

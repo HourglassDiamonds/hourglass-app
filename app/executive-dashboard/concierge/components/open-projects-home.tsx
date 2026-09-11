@@ -1,6 +1,6 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 import Link from "next/link";
 import type { CurrentProjectCard } from "@/lib/continuum/client-memory/open-projects/card";
 import {
@@ -17,6 +17,7 @@ import {
   CURRENT_PROJECTS_OPEN_LABEL,
   CURRENT_PROJECTS_PROGRESS_TITLE,
   CURRENT_PROJECTS_SNAPSHOT_TITLE,
+  CURRENT_PROJECT_FOCUS_QUERY,
   OPEN_PROJECT_WORK_NONE_LABEL,
   OPEN_PROJECT_WORK_TITLE,
   currentProjectPanelId,
@@ -24,7 +25,38 @@ import {
 } from "@/lib/continuum/client-memory/open-projects/present";
 import { conciergeCreateActionPath, conciergeEditActionPath, formatNoteDate } from "@/lib/continuum/client-memory/read/presentation";
 
+const PROJECT_ID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const DESKTOP_QUERY = "(min-width: 768px)";
+
+function focusOpenProject() {
+  const params = new URLSearchParams(window.location.search);
+  const fromQuery = params.get(CURRENT_PROJECT_FOCUS_QUERY)?.trim() ?? "";
+  const hash = window.location.hash.replace(/^#/, "").trim();
+  const toggleId =
+    PROJECT_ID_RE.test(fromQuery) ? currentProjectToggleId(fromQuery) : hash;
+  if (!toggleId.startsWith("current-project-") || !toggleId.endsWith("-toggle")) {
+    return;
+  }
+  const summary = document.getElementById(toggleId);
+  if (!(summary instanceof HTMLElement)) return;
+  let node: HTMLElement | null = summary;
+  while (node) {
+    if (node instanceof HTMLDetailsElement) node.open = true;
+    node = node.parentElement;
+  }
+  summary.scrollIntoView({ block: "center" });
+  summary.focus({ preventScroll: true });
+}
+
+function OpenProjectFocus() {
+  useEffect(() => {
+    focusOpenProject();
+    window.addEventListener("hashchange", focusOpenProject);
+    return () => window.removeEventListener("hashchange", focusOpenProject);
+  }, []);
+  return null;
+}
 
 function subscribeViewport(onStoreChange: () => void) {
   const mq = window.matchMedia(DESKTOP_QUERY);
@@ -64,6 +96,7 @@ export function OpenProjectsHome({
 
   return (
     <section data-current-projects data-operating-viewport={layout}>
+      <OpenProjectFocus />
       {heading ? (
         <h2 className="text-[11px] uppercase tracking-[0.28em] text-[#8d8073]">
           {heading}

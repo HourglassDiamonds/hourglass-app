@@ -1,15 +1,13 @@
-import Link from "next/link";
 import type { CosOperatingLoopView } from "@/lib/continuum/chief-of-staff/operating-loop/types";
 import {
   composeTodayDocket,
   cosQueuedLabel,
   type CosDocketItemView,
 } from "@/lib/continuum/chief-of-staff/operating-loop/docket";
+import { selectFounderControls } from "@/lib/continuum/chief-of-staff/operating-loop/founder-actions";
 import { CosCompleteControl } from "./cos-complete-control";
-import {
-  CosBriefActions,
-  CosWatchingList,
-} from "./cos-concierge-brief";
+import { CosDocketActions } from "./cos-docket-actions";
+import { CosWatchingList } from "./cos-concierge-brief";
 import { CosFounderAttentionControls } from "./cos-founder-attention";
 
 type CompleteAction = (formData: FormData) => void | Promise<void>;
@@ -19,12 +17,19 @@ function DocketItem({
   index,
   completeAction,
   reviewAction,
+  disposeAction,
 }: {
   item: CosDocketItemView;
   index: number;
   completeAction?: CompleteAction;
   reviewAction?: CompleteAction;
+  disposeAction?: CompleteAction;
 }) {
+  const controls = selectFounderControls(item);
+  const showCheck =
+    Boolean(item.job) &&
+    controls.completableJob &&
+    (controls.family === "open_job" || controls.family === "generic");
   return (
     <li
       data-cos-docket-item={index}
@@ -36,7 +41,7 @@ function DocketItem({
       data-cos-anomalies={item.origin === "anomaly" ? "" : undefined}
       className="hg-cos-item hg-cos-docket-item min-w-0 overflow-x-hidden"
     >
-      {item.job ? <CosCompleteControl item={item.job} action={completeAction} /> : null}
+      {showCheck && item.job ? <CosCompleteControl item={item.job} action={completeAction} /> : null}
       <div className="min-w-0 overflow-x-hidden">
         <p className="break-words text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
           {index} · {item.subject}
@@ -49,37 +54,13 @@ function DocketItem({
             {item.context}
           </p>
         ) : null}
-        {item.job ? (
-          <p className="mt-2 flex min-w-0 flex-wrap gap-x-5">
-            <Link
-              href={item.job.accordionHref}
-              className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.2em] text-[#ad9164] outline-none hover:text-[#efe8de] focus-visible:text-[#efe8de]"
-            >
-              Open project
-            </Link>
-            <Link
-              href={item.job.editHref}
-              className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.2em] text-[#ad9164] outline-none hover:text-[#efe8de] focus-visible:text-[#efe8de]"
-            >
-              Edit
-            </Link>
-          </p>
-        ) : null}
-        {item.brief ? <CosBriefActions item={item.brief} /> : null}
+        <CosDocketActions item={item} disposeAction={disposeAction} />
         {item.decision ? (
           <CosFounderAttentionControls
             item={item.decision}
             completeAction={completeAction}
             reviewAction={reviewAction}
           />
-        ) : null}
-        {item.anomaly?.sourceHref ? (
-          <Link
-            href={item.anomaly.sourceHref}
-            className="mt-1 inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.2em] text-[#ad9164] outline-none hover:text-[#efe8de]"
-          >
-            {item.anomaly.sourceLabel ?? "Source"}
-          </Link>
         ) : null}
       </div>
     </li>
@@ -90,10 +71,12 @@ export function ChiefOfStaffToday({
   loop,
   completeAction,
   reviewAction,
+  disposeAction,
 }: {
   loop: CosOperatingLoopView;
   completeAction?: CompleteAction;
   reviewAction?: CompleteAction;
+  disposeAction?: CompleteAction;
 }) {
   const docket = composeTodayDocket(loop);
   const hasBrief = docket.items.some((item) => item.origin === "brief");
@@ -141,6 +124,7 @@ export function ChiefOfStaffToday({
                 index={index + 1}
                 completeAction={completeAction}
                 reviewAction={reviewAction}
+                disposeAction={disposeAction}
               />
             ))}
           </ol>

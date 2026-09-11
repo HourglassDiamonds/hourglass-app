@@ -10,11 +10,13 @@ export function CommandCenterHome({
   operatingLoop,
   completeAction,
   reviewAction,
+  disposeAction,
 }: {
   model: ContinuumHomeModel;
   operatingLoop: CosOperatingLoopView;
   completeAction?: CompleteAction;
   reviewAction?: CompleteAction;
+  disposeAction?: CompleteAction;
 }) {
   return (
     <div data-command-center data-today-home className="hg-today">
@@ -25,6 +27,7 @@ export function CommandCenterHome({
         loop={operatingLoop}
         completeAction={completeAction}
         reviewAction={reviewAction}
+        disposeAction={disposeAction}
       />
     </div>
   );

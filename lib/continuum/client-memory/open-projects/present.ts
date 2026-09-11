@@ -1,3 +1,5 @@
+import { CONCIERGE_PROJECTS_PATH } from "@/lib/continuum/client-memory/read/presentation";
+
 export const OPEN_PROJECT_WORK_TITLE = "Current Projects";
 export const OPEN_PROJECT_WORK_NONE_LABEL = "No current projects.";
 export const OPEN_PROJECT_NEXT_DUE_LABEL = "Next due";
@@ -20,6 +22,13 @@ export const CURRENT_PROJECTS_ADD_ACTION_LABEL = "Add action";
 
 export function currentProjectToggleId(projectId: string): string {
   return `current-project-${projectId}-toggle`;
+}
+
+export const CURRENT_PROJECT_FOCUS_QUERY = "project";
+
+export function currentProjectFocusHref(projectId: string): string {
+  const id = projectId.trim();
+  return `${CONCIERGE_PROJECTS_PATH}?${CURRENT_PROJECT_FOCUS_QUERY}=${encodeURIComponent(id)}#${currentProjectToggleId(id)}`;
 }
 
 export function currentProjectPanelId(projectId: string): string {

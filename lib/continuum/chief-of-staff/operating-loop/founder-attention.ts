@@ -36,7 +36,9 @@ import {
   projectIdsByThread,
   resolveProjectAttribution,
 } from "./attribution";
-import { sourceHrefFor, sourceLabelFor } from "./evidence";
+import { gmailEvidenceHrefFor, sourceHrefFor, sourceLabelFor } from "./evidence";
+import { specConflictFromCandidates } from "./founder-actions";
+import { isCandidateQuietForToday } from "./quiet";
 import type {
   CosAnomalyItem,
   CosFounderAttentionItem,
@@ -313,6 +315,7 @@ function stripRank(item: RankedAttention): CosFounderAttentionItem {
     candidateIds: item.candidateIds,
     recap: item.recap,
     proposedAction: item.proposedAction,
+    specConflict: item.specConflict,
   };
 }
 
@@ -371,6 +374,24 @@ function toAttentionItem(input: {
       input.evidence.some((candidate) => candidate.candidateId === row.candidateId),
     ) ?? null;
   const conflict = input.visible.some((row) => isActionableSpecConflict(row, input.ctx));
+  const specConflict = (() => {
+    if (!conflict) return null;
+    const row = input.visible.find((item) => isActionableSpecConflict(item, input.ctx));
+    if (!row) return null;
+    const payload = payloadOf(row);
+    if (payload.kind !== "structured_spec") return null;
+    const projectId = candidateProjectId(row);
+    const live = projectId
+      ? input.ctx.specByProject?.get(projectId)?.get(payload.fieldName) ?? null
+      : null;
+    return specConflictFromCandidates({
+      fieldName: payload.fieldName,
+      canonicalValue: live ?? payload.currentValue,
+      proposedValue: payload.proposedValue,
+      candidateId: row.candidateId,
+      projectId: projectId ?? attribution.projectId,
+    });
+  })();
   const distinctDecision =
     conflict ||
     input.visible.some(isClientDesignAnswer) ||
@@ -385,10 +406,11 @@ function toAttentionItem(input: {
     projectId: attribution.projectId,
     projectTitle: attribution.projectTitle,
     sourceLabel: sourceLabelFor(primary),
-    sourceHref: sourceHrefFor(primary),
+    sourceHref: gmailEvidenceHrefFor(primary) ?? sourceHrefFor(primary),
     candidateIds: input.evidence.map((row) => row.candidateId),
     recap: null,
     proposedAction: proposed,
+    specConflict,
     score: synthesis.score,
     criticalOverflow: synthesis.criticalOverflow,
   };
@@ -470,6 +492,7 @@ export function composeFounderAttentionSurface(input: {
     const judgment = classifyCandidateAttention(row, ctx);
     judgments.set(row.candidateId, judgment);
     if (row.candidateState === "superseded" || row.reviewStatus === "discarded") continue;
+    if (isCandidateQuietForToday(row, input.nowIso)) continue;
     const key = groupingKey(row, projectByAssociation);
     const list = groups.get(key) ?? [];
     list.push(row);
@@ -528,6 +551,7 @@ export function composeFounderAttentionSurface(input: {
         candidateIds: [],
         recap: row,
         proposedAction: null,
+        specConflict: null,
         score: row.kind === "likely-complete" ? 92 : 80,
         criticalOverflow: false,
       },

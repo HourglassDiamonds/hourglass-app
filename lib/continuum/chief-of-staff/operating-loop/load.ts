@@ -1,7 +1,7 @@
 /**
  * Server-only CoS operating-loop loader.
  * Reads Open Jobs, Project Desk titles, and Candidates.
- * Does not write. Does not call Gmail. Does not activate shadow CoS briefs.
+ * Does not write. Does not call the Gmail API. Does not activate shadow CoS briefs.
  */
 
 import "server-only";
@@ -14,6 +14,7 @@ import { loadProjectJobs } from "@/lib/continuum/client-memory/project-jobs/load
 import { getAuthenticatedProjectDeskReader } from "@/lib/continuum/client-memory/project-desk/load";
 import { getAuthenticatedCandidateStore } from "@/lib/continuum/candidates/load";
 import type { ContinuumCandidate } from "@/lib/continuum/candidates/types";
+import { tagStoredGeneratedOperatingMailCandidates } from "@/lib/continuum/gmail/candidates/tag-stored-generated-load";
 import { composeCosOperatingLoop } from "./compose";
 import {
   COS_DISCONNECTED_DETAIL,
@@ -57,9 +58,13 @@ export async function loadCosOperatingLoop(
     const desk = await getAuthenticatedProjectDeskReader();
     const summaries = desk.ok ? await desk.reader.listProjects() : [];
     const store = await getAuthenticatedCandidateStore();
-    const candidates: ContinuumCandidate[] = store.ok
+    const listed: ContinuumCandidate[] = store.ok
       ? await store.store.list()
       : [];
+    const candidates = await tagStoredGeneratedOperatingMailCandidates(
+      client,
+      listed,
+    );
     return composeCosOperatingLoop({
       jobs,
       summaries,

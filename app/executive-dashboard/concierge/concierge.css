@@ -397,10 +397,40 @@ body:has([data-concierge-shell]) [data-facet-rail] {
   list-style: none;
 }
 
+.hg-cos-founder-actions {
+  min-width: 0;
+}
+
+.hg-cos-founder-actions > div {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 1.25rem;
+  row-gap: 0.15rem;
+}
+
+.hg-cos-founder-actions form {
+  display: inline-flex;
+  margin: 0;
+}
+
 .hg-cos-watching,
 .hg-cos-fallback,
-.hg-cos-evidence {
+.hg-cos-evidence,
+.hg-cos-snooze,
+.hg-cos-email-sources {
   min-width: 0;
+}
+
+.hg-cos-snooze summary,
+.hg-cos-email-sources summary {
+  list-style: none;
+  cursor: pointer;
+}
+
+.hg-cos-snooze summary::-webkit-details-marker,
+.hg-cos-email-sources summary::-webkit-details-marker {
+  display: none;
 }
 
 .hg-cos-watching summary,

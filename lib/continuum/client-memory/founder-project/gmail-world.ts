@@ -19,6 +19,7 @@ import type {
   GmailConfirmedPersonMapping,
   GmailConfirmedSourceLink,
 } from "@/lib/continuum/gmail/candidates/types";
+import { generatedOperatingMailHashesFromEnv } from "@/lib/continuum/gmail/candidates/generated-source";
 import { normalizeEmail } from "../hashes";
 import { projectKindFromUnknown } from "../project-kind";
 import {
@@ -69,6 +70,10 @@ export type GmailPersonWorldLoad = {
   peopleAvailable: boolean;
 };
 
+function cadenceGeneratedEmailHashes(): readonly string[] {
+  return generatedOperatingMailHashesFromEnv();
+}
+
 export function emptyGmailCandidateWorld(
   internalEmailHashes: readonly string[] = [],
 ): GmailCandidateWorld {
@@ -76,6 +81,7 @@ export function emptyGmailCandidateWorld(
     people: [],
     projects: [],
     internalEmailHashes,
+    generatedEmailHashes: cadenceGeneratedEmailHashes(),
     confirmedParticipantMappings: [],
     confirmedSourceLinks: [],
     founderConfirmedEmailIdentities: [],
@@ -259,6 +265,7 @@ export function candidateWorldFromRows(input: {
   return {
     ...world,
     internalEmailHashes: input.internalEmailHashes ?? [],
+    generatedEmailHashes: cadenceGeneratedEmailHashes(),
   };
 }
 

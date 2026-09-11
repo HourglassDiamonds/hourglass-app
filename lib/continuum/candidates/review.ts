@@ -11,6 +11,32 @@ import type {
   ProposedCanonicalTarget,
 } from "./types";
 
+const DEFERRED_UNTIL_KEY = "deferredUntil" as const;
+
+type TargetWithSnooze = ProposedCanonicalTarget & {
+  [DEFERRED_UNTIL_KEY]?: string;
+};
+
+export function deferredUntilOf(row: ContinuumCandidate): string | null {
+  const target = row.founderEditedTarget as TargetWithSnooze | null;
+  const until = target?.[DEFERRED_UNTIL_KEY];
+  return typeof until === "string" && until.trim() ? until.trim() : null;
+}
+
+export function withDeferredUntil(
+  target: ProposedCanonicalTarget | null | undefined,
+  until: string | null | undefined,
+): ProposedCanonicalTarget {
+  const base: TargetWithSnooze = { ...(target ?? { kind: "none" }) };
+  const trimmed = until?.trim() ?? "";
+  if (!trimmed) {
+    delete base[DEFERRED_UNTIL_KEY];
+    return base;
+  }
+  base[DEFERRED_UNTIL_KEY] = trimmed;
+  return base;
+}
+
 export function applyFounderReview(
   row: ContinuumCandidate,
   input: FounderReviewInput,
@@ -49,12 +75,17 @@ export function applyFounderReview(
       reviewedAt: at,
     };
   }
+  const until =
+    input.action === "defer" ? input.until?.trim() || null : null;
   return {
     ...row,
     canonical: false,
     automaticApply: false,
     reviewStatus: "deferred",
     lastReviewAction: "defer",
+    founderEditedTarget: until
+      ? withDeferredUntil(row.founderEditedTarget ?? row.proposedTarget, until)
+      : row.founderEditedTarget,
     reviewedAt: at,
   };
 }

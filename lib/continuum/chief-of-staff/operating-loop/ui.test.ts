@@ -76,12 +76,14 @@ describe("CoS operating loop Command Center UI", () => {
       /\/executive-dashboard\/concierge\/action\/cccccccc-cccc-4ccc-8ccc-ccccccccccc0\/edit/,
     );
     assert.match(html, /current-project-aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa-toggle/);
+    assert.match(html, /\?project=aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/);
     assert.doesNotMatch(html, /score|percent|%/i);
     assert.doesNotMatch(html, /chain of thought|hidden reasoning/i);
     const css = readFileSync(join(CONCIERGE_DIR, "concierge.css"), "utf8");
     assert.match(css, /\.hg-cos-check[\s\S]*min-width:\s*2\.75rem/);
     assert.match(css, /\.hg-cos-check[\s\S]*min-height:\s*2\.75rem/);
     assert.match(css, /\.hg-cos-top5[\s\S]*overflow-x:\s*hidden/);
+    assert.match(css, /\.hg-cos-founder-actions > div[\s\S]*column-gap:\s*1\.25rem/);
   });
 
   it("shows a quiet caught-up state and omits the anomaly section when nothing is wrong", () => {

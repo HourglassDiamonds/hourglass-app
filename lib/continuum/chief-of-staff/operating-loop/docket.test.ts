@@ -50,6 +50,14 @@ function briefItem(extra: Partial<CosBriefItem> = {}): CosBriefItem {
     projectStateLabel: null,
     candidateIds: ["cand-1"],
     proposedAction: null,
+    specConflict: {
+      fieldName: "finger_size",
+      fieldLabel: "Finger size",
+      canonicalValue: "12.5",
+      proposedValue: "11",
+      candidateId: "cand-1",
+      canMutate: true,
+    },
     ...extra,
   };
 }
@@ -110,7 +118,7 @@ describe("Today Chief of Staff docket", () => {
       remainingCount: 2,
     }));
     assert.equal(docket.items.every((item) => item.lane === "live_work"), true);
-    assert.equal(docket.queuedCount, 2);
+    assert.equal(docket.queuedCount, 0);
     assert.equal(cosQueuedLabel(2), "+2 queued");
     assert.equal(cosWatchingCountLabel(3), "Watching · 3");
   });
@@ -168,7 +176,7 @@ describe("Today Chief of Staff docket", () => {
           brief: [briefItem({
             actions: [
               { kind: "add_to_top5", label: "Add to Top 5", href: "/executive-dashboard/concierge/action/new?project=bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb" },
-              { kind: "open_email", label: "Open email", href: "https://mail.google.com" },
+              { kind: "open_email", label: "Open email", href: "https://mail.google.com/mail/u/0/#all/abc123def0" },
             ],
           })],
           top5: [jobItem()],
@@ -183,8 +191,12 @@ describe("Today Chief of Staff docket", () => {
     assert.match(html, /The project says 12\.5, but the latest evidence says 11/);
     assert.doesNotMatch(html, /differs: approved|meaningful turn|superseded/i);
     assert.doesNotMatch(html, /Review evidence/);
+    assert.match(html, /Keep 12\.5/);
+    assert.match(html, /Update to 11/);
+    assert.match(html, /Need to verify/);
+    assert.match(html, /<div[^>]*data-cos-founder-family="spec_conflict"/);
     assert.match(html, /2 · Lee/);
-    assert.match(html, /\+4 queued/);
+    assert.doesNotMatch(html, /\+\d+ queued/);
     assert.match(html, /Watching · 1/);
     assert.doesNotMatch(html, /Add to Today/);
     assert.doesNotMatch(html, /Concierge Brief/);
@@ -233,7 +245,7 @@ describe("Today Chief of Staff docket", () => {
     }));
     assert.equal(COS_DOCKET_VISIBLE_LIMIT, 3);
     assert.equal(docket.items.length, 3);
-    assert.equal(docket.queuedCount, 5);
+    assert.equal(docket.queuedCount, 2);
     const html = renderToStaticMarkup(
       createElement(ChiefOfStaffToday, {
         loop: loopOf({
@@ -247,11 +259,44 @@ describe("Today Chief of Staff docket", () => {
     assert.match(html, /1 · Person 0/);
     assert.match(html, /3 · Person 2/);
     assert.doesNotMatch(html, /4 · Person 3/);
-    assert.match(html, /\+5 queued/);
+    assert.match(html, /\+2 queued/);
+    assert.doesNotMatch(html, /\+5 queued/);
     assert.match(html, /Watching · 1/);
-    const queuedAt = html.indexOf("+5 queued");
+    const queuedAt = html.indexOf("+2 queued");
     const watchingAt = html.indexOf("Watching · 1");
     assert.ok(queuedAt >= 0 && watchingAt > queuedAt);
+  });
+
+  it("does not count Top 5 remainingCount as founder-facing queued work", () => {
+    const docket = composeTodayDocket(loopOf({
+      status: "active",
+      brief: [briefItem()],
+      remainingCount: 5,
+    }));
+    assert.equal(docket.items.length, 1);
+    assert.equal(docket.queuedCount, 0);
+  });
+
+  it("counts +N from docket overflow only, including after one visible item is resolved", () => {
+    const briefs = Array.from({ length: 5 }, (_, index) =>
+      briefItem({
+        id: `brief-${index}`,
+        rank: index + 1,
+        personLabel: `Person ${index}`,
+        projectTitle: `Project ${index}`,
+        projectId: `bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb${index}`,
+        candidateIds: [`cand-${index}`],
+      }),
+    );
+    const before = composeTodayDocket(loopOf({ status: "active", brief: briefs, remainingCount: 5 }));
+    assert.equal(before.queuedCount, 2);
+    const after = composeTodayDocket(loopOf({
+      status: "active",
+      brief: briefs.slice(1),
+      remainingCount: 5,
+    }));
+    assert.equal(after.items.length, 3);
+    assert.equal(after.queuedCount, 1);
   });
 
   it("keeps compose ranking untouched while still surfacing Brief in the docket", () => {

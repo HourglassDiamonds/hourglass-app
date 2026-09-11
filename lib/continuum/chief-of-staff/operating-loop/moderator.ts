@@ -6,6 +6,7 @@
  * Model: cos-executive-moderator-v1
  */
 
+import { GENERATED_FOUNDER_OPERATING_BRIEF_RULE } from "@/lib/continuum/gmail/candidates/generated-source";
 import {
   CONTINUUM_FOUNDER_DISPLAY_NAME,
   CONTINUUM_FOUNDER_TIME_ZONE,
@@ -35,11 +36,10 @@ import {
   CONCIERGE_GMAIL_INTAKE_PATH,
 } from "@/lib/continuum/gmail/types";
 import {
-  CONCIERGE_PROJECTS_PATH,
   conciergeCreateActionPath,
   conciergeProjectPath,
 } from "@/lib/continuum/client-memory/read/presentation";
-import { currentProjectToggleId } from "@/lib/continuum/client-memory/open-projects/present";
+import { currentProjectFocusHref } from "@/lib/continuum/client-memory/open-projects/present";
 import {
   pickClientPerson,
   projectBySupportedAssociation,
@@ -48,7 +48,10 @@ import {
   vendorSourcedThread,
   type SupportedThreadProject,
 } from "./attribution";
-import { gmailThreadHrefFor } from "./evidence";
+import { gmailEvidenceHrefFor } from "./evidence";
+import { selectOpenEmailSources } from "./email-source";
+import { specConflictFromCandidates } from "./founder-actions";
+import { isCandidateQuietForToday } from "./quiet";
 import type {
   CosAnomalyItem,
   CosBriefAction,
@@ -59,6 +62,7 @@ import type {
   CosFounderAttentionItem,
   CosProjectContext,
   CosProposedAction,
+  CosSpecConflictView,
   CosTop5Item,
   CosWatchingItem,
 } from "./types";
@@ -190,6 +194,8 @@ type RankedSituation = {
   openJobLabel: string | null;
   projectStateLabel: string | null;
   proposedAction: CosProposedAction | null;
+  specConflict?: CosSpecConflictView | null;
+  personAssociationCandidateId?: string | null;
 };
 
 function nameTokens(value: string): string[] {
@@ -399,8 +405,9 @@ function toBeat(
     label,
     summary: clip(row.evidenceBasis.matchedText || candidateText(row)),
     speaker,
-    sourceHref: gmailThreadHrefFor(row),
+    sourceHref: gmailEvidenceHrefFor(row),
     candidateId: row.candidateId,
+    generatedSource: hasRule(row, GENERATED_FOUNDER_OPERATING_BRIEF_RULE) || undefined,
     kind: beatKind(row, ctx, fallback),
     timestamp: row.sourceTimestamp,
     historical: isHistoricalRediscovery(row, ctx),
@@ -505,7 +512,7 @@ function openJobLabelFor(
 }
 
 function projectHref(projectId: string, isCurrent: boolean): string {
-  if (isCurrent) return `${CONCIERGE_PROJECTS_PATH}#${currentProjectToggleId(projectId)}`;
+  if (isCurrent) return currentProjectFocusHref(projectId);
   return conciergeProjectPath(projectId);
 }
 
@@ -570,6 +577,7 @@ function visibleBeats(
       speaker: beat.speaker,
       sourceHref: beat.sourceHref,
       candidateId: beat.candidateId,
+      generatedSource: beat.generatedSource === true ? true : undefined,
     }));
 }
 
@@ -580,6 +588,7 @@ function actionsFor(input: {
   gmailHref: string | null;
   createProject: boolean;
   addToTop5: boolean;
+  personAssociationCandidateId: string | null;
 }): CosBriefAction[] {
   const actions: CosBriefAction[] = [];
   if (input.projectId) {
@@ -604,10 +613,13 @@ function actionsFor(input: {
     });
   }
   if (!input.personName) {
+    const href = input.personAssociationCandidateId
+      ? `${CONCIERGE_GMAIL_INTAKE_PATH}?personAssociation=${encodeURIComponent(input.personAssociationCandidateId)}`
+      : CONCIERGE_GMAIL_INTAKE_PATH;
     actions.push({
       kind: "confirm_person",
       label: "Confirm person",
-      href: CONCIERGE_GMAIL_INTAKE_PATH,
+      href,
     });
   }
   if (input.createProject) {
@@ -618,6 +630,19 @@ function actionsFor(input: {
     });
   }
   return actions;
+}
+
+function pendingPersonAssociationCandidateId(
+  rows: readonly ContinuumCandidate[],
+): string | null {
+  return (
+    rows.find(
+      (row) =>
+        row.candidateType === "person_association" &&
+        row.reviewStatus === "pending" &&
+        row.candidateState !== "superseded",
+    )?.candidateId ?? null
+  );
 }
 
 function classifySituation(input: {
@@ -655,7 +680,7 @@ function classifySituation(input: {
       ? "vendor"
       : "client";
   const usable = input.rows.filter(
-    (row) => row.candidateState !== "superseded" && row.reviewStatus !== "discarded",
+    (row) => !isCandidateQuietForToday(row, input.ctx.nowIso),
   );
   const sorted = [...usable].sort(
     (a, b) => parseMs(a.sourceTimestamp) - parseMs(b.sourceTimestamp),
@@ -697,11 +722,28 @@ function classifySituation(input: {
       openJobLabel: openJobLabelFor(attribution.projectId, input.jobs),
       projectStateLabel: projectStateLabel(project?.lifecycleStage),
       proposedAction: null,
+      personAssociationCandidateId: pendingPersonAssociationCandidateId(input.rows),
     };
   }
 
   const conflicts = materialSpecConflicts(usable, input.ctx);
   const spec = specCopy(conflicts);
+  const specConflict = (() => {
+    if (conflicts.length !== 1) return null;
+    const row = conflicts[0]!;
+    const candidate = usable.find((item) => {
+      const payload = payloadOf(item);
+      return payload.kind === "structured_spec" && payload.fieldName === row.fieldName;
+    });
+    if (!candidate || !row.canonical) return null;
+    return specConflictFromCandidates({
+      fieldName: row.fieldName,
+      canonicalValue: row.canonical,
+      proposedValue: row.proposed,
+      candidateId: candidate.candidateId,
+      projectId: attribution.projectId,
+    });
+  })();
   const founderSentToShop = beats.some(
     (beat) =>
       !beat.superseded &&
@@ -823,6 +865,7 @@ function classifySituation(input: {
       openJobLabel: openJobLabelFor(attribution.projectId, input.jobs),
       projectStateLabel: projectStateLabel(project?.lifecycleStage),
       proposedAction: null,
+      personAssociationCandidateId: pendingPersonAssociationCandidateId(input.rows),
     };
   }
 
@@ -985,6 +1028,8 @@ function classifySituation(input: {
     openJobLabel: openJobLabelFor(attribution.projectId, input.jobs),
     projectStateLabel: projectStateLabel(project?.lifecycleStage),
     proposedAction: proposed,
+    specConflict,
+    personAssociationCandidateId: pendingPersonAssociationCandidateId(input.rows),
   };
 }
 
@@ -998,14 +1043,23 @@ function compareSituations(a: RankedSituation, b: RankedSituation): number {
   return a.id.localeCompare(b.id);
 }
 
-function presentBrief(item: RankedSituation, rank: number): CosBriefItem {
-  const gmailHref =
-    item.beats.map((beat) => beat.sourceHref).find((href): href is string => Boolean(href)) ??
-    null;
-  const project = item.projectId;
-  const createProject = !project && item.rankClass === "new_opportunity";
+function presentBrief(
+  item: RankedSituation,
+  rank: number,
+  projects: ReadonlyMap<string, CosProjectContext>,
+): CosBriefItem {
+  const projectContext = item.projectId ? projects.get(item.projectId) : undefined;
+  const canonicalGmailThreadId = projectContext?.gmailThreadId?.trim() || null;
+  const emailSources = selectOpenEmailSources({
+    beats: item.beats,
+    specCandidateId: item.specConflict?.candidateId ?? null,
+    canonicalThreadId: canonicalGmailThreadId,
+  });
+  const gmailHref = emailSources.length === 1 ? emailSources[0]!.href : null;
+  const projectId = item.projectId;
+  const createProject = !projectId && item.rankClass === "new_opportunity";
   const addToTop5 =
-    Boolean(project) &&
+    Boolean(projectId) &&
     (item.rankClass === "founder_commitment" ||
       item.rankClass === "production_blocker" ||
       item.rankClass === "deadline_risk" ||
@@ -1018,6 +1072,7 @@ function presentBrief(item: RankedSituation, rank: number): CosBriefItem {
     personLabel: item.personName,
     projectTitle: item.projectTitle,
     projectId: item.projectId,
+    canonicalGmailThreadId,
     headline: item.headline,
     explanation: item.explanation,
     recommended: item.recommended,
@@ -1030,12 +1085,14 @@ function presentBrief(item: RankedSituation, rank: number): CosBriefItem {
       gmailHref,
       createProject,
       addToTop5,
+      personAssociationCandidateId: item.personAssociationCandidateId ?? null,
     }),
     evidence: item.beats,
     openJobLabel: item.openJobLabel,
     projectStateLabel: item.projectStateLabel,
     candidateIds: item.candidateIds,
     proposedAction: item.proposedAction,
+    specConflict: item.specConflict ?? null,
   };
 }
 
@@ -1115,7 +1172,7 @@ export function composeConciergeBrief(input: ComposeConciergeBriefInput): {
     }));
 
   return {
-    brief: briefSource.map((row, index) => presentBrief(row, index + 1)),
+    brief: briefSource.map((row, index) => presentBrief(row, index + 1, input.projects)),
     watching,
   };
 }

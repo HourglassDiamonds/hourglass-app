@@ -145,6 +145,15 @@ export {
   type FounderAttentionLane,
 } from "@/lib/continuum/candidates/founder-attention";
 
+export type CosSpecConflictView = {
+  fieldName: string;
+  fieldLabel: string;
+  canonicalValue: string;
+  proposedValue: string;
+  candidateId: string;
+  canMutate: boolean;
+};
+
 export type CosFounderAttentionItem = {
   id: string;
   lane: "decision" | "signal";
@@ -158,6 +167,7 @@ export type CosFounderAttentionItem = {
   candidateIds: readonly string[];
   recap: CosRecapItem | null;
   proposedAction: CosProposedAction | null;
+  specConflict: CosSpecConflictView | null;
 };
 
 export const COS_MODERATOR_MODEL_ID = "cos-executive-moderator-v1" as const;
@@ -203,6 +213,7 @@ export type CosEvidenceBeat = {
   speaker: CosBriefSpeaker;
   sourceHref: string | null;
   candidateId: string;
+  generatedSource?: boolean;
 };
 
 export type CosBriefItem = {
@@ -212,6 +223,7 @@ export type CosBriefItem = {
   personLabel: string | null;
   projectTitle: string | null;
   projectId: string | null;
+  canonicalGmailThreadId?: string | null;
   headline: string;
   explanation: string;
   recommended: string;
@@ -223,7 +235,16 @@ export type CosBriefItem = {
   projectStateLabel: string | null;
   candidateIds: readonly string[];
   proposedAction: CosProposedAction | null;
+  specConflict: CosSpecConflictView | null;
 };
+
+export type CosDocketOrigin =
+  | "brief"
+  | "open_job"
+  | "decision"
+  | "anomaly"
+  | "signal"
+  | "master_sprint";
 
 export type CosWatchingItem = {
   id: string;

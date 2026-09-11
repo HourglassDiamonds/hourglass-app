@@ -667,4 +667,58 @@ describe("Gmail → Candidate adapter", () => {
       assert.ok(packed.sourceRef.startsWith("gc1|"));
     }
   });
+
+  it("tags generated operating-mail senders by hash, not subject text", () => {
+    const cadence = hashEmail("cadence@hourglass.test")!;
+    const chelsea = project({
+      projectId: "proj-chelsea",
+      title: "Chelsea",
+      cadJobNumber: "CR5001024",
+      gmailThreadId: "18c9f0a1b2c3d4e5",
+    });
+    const generated = proposeGmailCandidates({
+      createdAt: NOW,
+      world: {
+        ...world([], [chelsea]),
+        generatedEmailHashes: [cadence],
+      },
+      evidence: [
+        evidence({
+          messageId: "19fff00011122233",
+          threadId: "19abcdef01234567",
+          sentAt: "2026-09-09T12:00:00.000Z",
+          fromEmail: "cadence@hourglass.test",
+          subject: "Hourglass Morning Brief · September 9, 2026",
+          plaintext: "Travis Morse chicken ring finger size 11 CAD CR5001024",
+        }),
+      ],
+    });
+    assert.ok(generated.candidates.length > 0);
+    assert.ok(
+      generated.candidates.every((row) =>
+        row.evidenceBasis.ruleIds.includes("generated_founder_operating_brief"),
+      ),
+    );
+
+    const client = proposeGmailCandidates({
+      createdAt: NOW,
+      world: world([], [chelsea]),
+      evidence: [
+        evidence({
+          messageId: "18aaa111bbb22233",
+          threadId: "18c9f0a1b2c3d4e5",
+          sentAt: "2026-09-08T15:00:00.000Z",
+          fromEmail: "travis@client.test",
+          subject: "Hourglass Morning Brief · September 9, 2026",
+          plaintext: "finger size 11 CAD CR5001024",
+        }),
+      ],
+    });
+    assert.ok(client.candidates.length > 0);
+    assert.ok(
+      client.candidates.every(
+        (row) => !row.evidenceBasis.ruleIds.includes("generated_founder_operating_brief"),
+      ),
+    );
+  });
 });

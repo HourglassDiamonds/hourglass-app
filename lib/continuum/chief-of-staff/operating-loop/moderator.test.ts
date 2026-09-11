@@ -7,7 +7,9 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, it } from "node:test";
 import type { ContinuumCandidate } from "@/lib/continuum/candidates/types";
 import { ChiefOfStaffToday } from "../../../../app/executive-dashboard/concierge/components/chief-of-staff-today";
+import { GENERATED_FOUNDER_OPERATING_BRIEF_RULE } from "@/lib/continuum/gmail/candidates/generated-source";
 import { composeCosOperatingLoop } from "./compose";
+import { selectFounderControls } from "./founder-actions";
 import { gmailThreadHrefFor } from "./evidence";
 import {
   COS_LOOP_NOW,
@@ -20,6 +22,8 @@ import {
 } from "./fixtures";
 import { composeConciergeBrief } from "./moderator";
 import type { CosProjectContext } from "./types";
+import { InMemoryCandidateStore } from "@/lib/continuum/candidates/store";
+import { confirmGmailPersonAssociation } from "@/lib/continuum/client-memory/founder-project/identity-gate";
 
 const DIR = dirname(fileURLToPath(import.meta.url));
 const PERSON_VENDOR = "22222222-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
@@ -1819,7 +1823,9 @@ describe("Concierge Executive Moderator V1", () => {
     for (const chunk of briefChunks) {
       const row = chunk.split("data-cos-docket-item")[0] ?? chunk;
       assert.doesNotMatch(
-        row.replace(/href="[^"]*"/g, 'href=""'),
+        row
+          .replace(/href="[^"]*"/g, 'href=""')
+          .replace(/<input[^>]*type="hidden"[^>]*\/?>/g, ""),
         /aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/,
       );
     }
@@ -1828,5 +1834,171 @@ describe("Concierge Executive Moderator V1", () => {
       "utf8",
     );
     assert.match(css, /hg-cos-brief-explanation[\s\S]*-webkit-line-clamp:\s*3/);
+  });
+
+  it("recomputes unassigned replies after canonical person association review", async () => {
+    const thread = "thread-unassigned-reply";
+    const reply = fixtureCandidate({
+      candidateId: "unassigned-reply",
+      sourceRef: `gc1|${thread}|msg-reply`,
+      sourceSystem: "gmail",
+      sourceTimestamp: "2026-09-07T18:00:00.000Z",
+      proposedTarget: { kind: "none" },
+      candidateType: "project_context",
+      payload: {
+        kind: "project_context",
+        topic: "design_refinement",
+        value: "Let's go with that design",
+      },
+      evidenceBasis: {
+        ruleIds: ["explicit_client_approval"],
+        matchedText: "Let's go with that design",
+      },
+    });
+    const association = fixtureCandidate({
+      candidateId: "unassigned-person",
+      sourceRef: `gc1|${thread}|msg-person`,
+      sourceSystem: "gmail",
+      sourceTimestamp: "2026-09-07T17:00:00.000Z",
+      proposedTarget: { kind: "person", personId: null },
+      candidateType: "person_association",
+      confidence: "medium",
+      payload: {
+        kind: "person_association",
+        displayName: "Lee",
+        emailHash: "lee",
+        mintPerson: false,
+        mergePersons: false,
+      },
+      evidenceBasis: { ruleIds: ["gmail_from_email"], matchedText: "Lee" },
+    });
+    const before = briefOf({
+      candidates: [reply, association],
+      jobs: [],
+      projects: new Map(),
+      nowIso: COS_LOOP_NOW,
+      top5: [],
+    });
+    assert.equal(before.brief[0]?.personLabel, null);
+    const confirm = before.brief[0]?.actions.find((action) => action.kind === "confirm_person");
+    assert.equal(confirm?.kind, "confirm_person");
+    assert.match(confirm?.href ?? "", /personAssociation=unassigned-person/);
+
+    const store = new InMemoryCandidateStore();
+    await store.replace(reply);
+    await store.replace(association);
+    const confirmed = await confirmGmailPersonAssociation({
+      store,
+      personExists: async (personId) => personId === COS_LOOP_PERSON_A,
+      body: {
+        candidateId: "unassigned-person",
+        personId: COS_LOOP_PERSON_A,
+        actor: "justin",
+      },
+      nowIso: COS_LOOP_NOW,
+    });
+    assert.equal(confirmed.ok, true);
+    const saved = await store.get("unassigned-person");
+    assert.equal(saved?.reviewStatus, "approved");
+
+    const after = briefOf({
+      candidates: await store.list(),
+      jobs: [],
+      projects: new Map(),
+      nowIso: COS_LOOP_NOW,
+      top5: [],
+    });
+    assert.equal(after.brief[0]?.personLabel, "Lee");
+    assert.equal(
+      after.brief[0]?.actions.some((action) => action.kind === "confirm_person"),
+      false,
+    );
+    assert.match(after.brief[0]?.recommended ?? "", /recap/i);
+  });
+
+  it("opens the client Gmail thread instead of a generated operating brief restating the same spec", () => {
+    const clientThread = GMAIL_THREAD;
+    const briefThread = "19abcdef01234567";
+    const clientHref = `https://mail.google.com/mail/u/0/#all/${clientThread}/aaa111bbb2`;
+    const briefHref = `https://mail.google.com/mail/u/0/#all/${briefThread}/ccc222ddd3`;
+    const projects = productionProjects();
+    const current = projects.get(COS_LOOP_PROJECT_A)!;
+    projects.set(COS_LOOP_PROJECT_A, { ...current, gmailThreadId: clientThread });
+    const result = briefOf({
+      candidates: [
+        row({
+          candidateId: "cand-client",
+          sourceTimestamp: "2026-09-08T15:00:00.000Z",
+          sourceRef: `gc1|${clientThread}|aaa111bbb2`,
+          candidateType: "structured_spec",
+          candidateState: "conflict",
+          proposedTarget: {
+            kind: "project_spec",
+            projectId: COS_LOOP_PROJECT_A,
+            fieldName: "finger_size",
+          },
+          payload: {
+            kind: "structured_spec",
+            fieldName: "finger_size",
+            proposedValue: "11",
+            currentValue: "12.5",
+            conflict: true,
+          },
+          evidenceBasis: {
+            ruleIds: ["spec_conflict_review_required", "explicit_client_request"],
+            matchedText: "finger size 11",
+          },
+        }),
+        row({
+          candidateId: "cand-brief",
+          sourceTimestamp: "2026-09-09T12:00:00.000Z",
+          sourceRef: `gc1|${briefThread}|ccc222ddd3`,
+          candidateType: "structured_spec",
+          candidateState: "conflict",
+          proposedTarget: {
+            kind: "project_spec",
+            projectId: COS_LOOP_PROJECT_A,
+            fieldName: "finger_size",
+          },
+          payload: {
+            kind: "structured_spec",
+            fieldName: "finger_size",
+            proposedValue: "11",
+            currentValue: "12.5",
+            conflict: true,
+          },
+          evidenceBasis: {
+            ruleIds: [
+              "spec_conflict_review_required",
+              GENERATED_FOUNDER_OPERATING_BRIEF_RULE,
+            ],
+            matchedText: "finger size 11",
+          },
+        }),
+      ],
+      jobs: [],
+      projects,
+      nowIso: COS_LOOP_NOW,
+      top5: [],
+    });
+    assert.equal(result.brief.length, 1);
+    assert.equal(result.brief[0]?.canonicalGmailThreadId, clientThread);
+    const openEmail = result.brief[0]?.actions.find((action) => action.kind === "open_email");
+    assert.equal(openEmail?.href, clientHref);
+    assert.notEqual(openEmail?.href, briefHref);
+    const generatedBeat = result.brief[0]?.evidence.find((beat) => beat.candidateId === "cand-brief");
+    assert.equal(generatedBeat?.generatedSource, true);
+    const controls = selectFounderControls({
+      origin: "brief",
+      subject: "Client Hale / Hale band",
+      headline: result.brief[0]?.recommended ?? "",
+      context: result.brief[0]?.explanation ?? null,
+      job: null,
+      brief: result.brief[0]!,
+      decision: null,
+      anomaly: null,
+    });
+    assert.equal(controls.openEmail?.href, clientHref);
+    assert.equal(controls.emailSources.some((row) => row.href === briefHref), false);
   });
 });

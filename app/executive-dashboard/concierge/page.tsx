@@ -1,6 +1,6 @@
 import { loadCosOperatingLoop } from "@/lib/continuum/chief-of-staff/operating-loop/load";
 import { loadContinuumHomeModel } from "@/lib/continuum/dashboard/server";
-import { completeTop5OpenJobAction } from "./cos-operating-loop-actions";
+import { completeTop5OpenJobAction, disposeTodayDocketItemAction } from "./cos-operating-loop-actions";
 import { reviewProposedActionFromForm } from "./intake-review-actions";
 import { CommandCenterHome } from "./components/command-center-home";
 import { ConciergeShell } from "./components/concierge-shell";
@@ -17,6 +17,7 @@ export default async function ConciergeHomePage() {
         operatingLoop={operatingLoop}
         completeAction={completeTop5OpenJobAction}
         reviewAction={reviewProposedActionFromForm}
+        disposeAction={disposeTodayDocketItemAction}
       />
     </ConciergeShell>
   );

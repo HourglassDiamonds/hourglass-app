@@ -25,12 +25,18 @@ const INFERENCE_FILES = [
   "reconcile.ts",
   "propose-actions.ts",
   "founder-attention.ts",
+  "founder-actions.ts",
+  "quiet.ts",
+  "docket.ts",
+  "email-source.ts",
   "moderator.ts",
   "attribution.ts",
   "load.ts",
   "types.ts",
   "fixtures.ts",
 ];
+
+const WRITER_FILES = new Set(["complete.ts", "disposition.ts"]);
 
 describe("CoS operating loop security", () => {
   it("does not create a second task store or duplicate Open Jobs table", () => {
@@ -40,7 +46,9 @@ describe("CoS operating loop security", () => {
       assert.doesNotMatch(source, /create table/i);
       assert.doesNotMatch(source, /continuum_cos_tasks|continuum_top5|continuum_commitments/);
       assert.doesNotMatch(source, /createProjectJob/);
-      assert.doesNotMatch(source, /applyReview|reviewStatus:\s*"approved"/);
+      if (!WRITER_FILES.has(file.split(/[/\\]/).pop() ?? "")) {
+        assert.doesNotMatch(source, /applyReview|reviewStatus:\s*"approved"/);
+      }
       assert.doesNotMatch(source, /console\.(log|info|debug|warn|error)/);
       assert.doesNotMatch(source, /openai|anthropic|generateText/i);
       assert.doesNotMatch(source, /gmail\.googleapis|createBrowserClient/);
@@ -59,6 +67,10 @@ describe("CoS operating loop security", () => {
     assert.match(complete, /writer\.mutateJob/);
     assert.match(complete, /unsupported-writer/);
     assert.doesNotMatch(complete, /applyReview/);
+    const disposition = readFileSync(join(DIR, "disposition.ts"), "utf8");
+    assert.match(disposition, /applyReview/);
+    assert.match(disposition, /correctProjectSpec/);
+    assert.doesNotMatch(disposition, /createProjectJob|mintPerson|mergePerson/);
   });
 
   it("keeps Command Center writes on a dedicated founder action", () => {
@@ -76,7 +88,8 @@ describe("CoS operating loop security", () => {
     );
     assert.match(action, /getAuthenticatedProjectJobWriter/);
     assert.match(action, /completeFounderActionable/);
-    assert.doesNotMatch(action, /applyReview|setProjectLifecycle|gmail\.googleapis/);
+    assert.match(action, /disposeDocketItem/);
+    assert.doesNotMatch(action, /setProjectLifecycle|gmail\.googleapis/);
     assert.doesNotMatch(action, /reviewIntakeCandidateAction|createProjectJob/);
     assert.doesNotMatch(shared, /completeTop5OpenJobAction|completeFounderActionable/);
     assert.match(page, /loadCosOperatingLoop/);
@@ -92,10 +105,8 @@ describe("CoS operating loop security", () => {
       join(ROOT, "app/executive-dashboard/concierge/components/chief-of-staff-today.tsx"),
       "utf8",
     );
-    assert.match(today, /item\.job\.editHref/);
-    assert.match(today, /CosFounderAttentionControls/);
     assert.match(today, /composeTodayDocket/);
-    assert.match(today, /CosBriefActions/);
+    assert.match(today, /CosDocketActions/);
     assert.match(today, /CosWatchingList/);
     assert.doesNotMatch(today, /COS_PROPOSED_ACTIONS_TITLE|Proposed actions/);
     assert.match(page, /reviewProposedActionFromForm/);

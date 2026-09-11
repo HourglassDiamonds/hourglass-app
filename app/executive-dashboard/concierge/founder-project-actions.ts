@@ -284,6 +284,11 @@ export async function confirmGmailIntakePerson(
   });
   if (result.ok) {
     revalidatePath(CONCIERGE_GMAIL_INTAKE_PATH);
+    revalidatePath(CONCIERGE_HOME_PATH);
+    const returnTo = String(formData.get("returnTo") ?? "").trim();
+    if (returnTo === CONCIERGE_HOME_PATH) {
+      redirect(CONCIERGE_HOME_PATH);
+    }
     return null;
   }
   if (result.reason === "person-not-found") {

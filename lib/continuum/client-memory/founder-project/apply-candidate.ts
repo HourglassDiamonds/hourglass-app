@@ -9,6 +9,7 @@ import type {
   CandidateStore,
   ContinuumCandidate,
 } from "@/lib/continuum/candidates/types";
+import { candidateHasGeneratedOperatingMailRule } from "@/lib/continuum/gmail/candidates/generated-source";
 import { parseGmailCandidateSourceRef } from "@/lib/continuum/gmail/candidates/source-ref";
 import { isNewProjectContextPayload } from "@/lib/continuum/gmail/candidates/new-project";
 import {
@@ -72,9 +73,15 @@ export async function applyGmailNewProjectCandidate(input: {
   if (!isNewProjectContextPayload(payload) || payload.kind !== "project_context") {
     return { ok: false, reason: "not-new-project" };
   }
-  const threadId = parseGmailCandidateSourceRef(candidate.sourceRef)?.threadId ?? null;
+  const parsedSource = parseGmailCandidateSourceRef(candidate.sourceRef);
+  const sourceThreadId = parsedSource?.threadId ?? null;
+  const generatedOperatingMail = candidateHasGeneratedOperatingMailRule(
+    candidate.evidenceBasis.ruleIds,
+  );
   const rows = await input.store.list();
-  const confirmed = threadId ? confirmedPersonFromThread(rows, threadId) : null;
+  const confirmed = sourceThreadId
+    ? confirmedPersonFromThread(rows, sourceThreadId)
+    : null;
   if (!confirmed) {
     return { ok: false, reason: "identity-unconfirmed" };
   }
@@ -105,7 +112,7 @@ export async function applyGmailNewProjectCandidate(input: {
     lifecycleStage: input.body.lifecycleStage,
     subject: input.body.subject,
     dueAt: input.body.dueAt,
-    gmailThreadId: threadId,
+    gmailThreadId: generatedOperatingMail ? null : sourceThreadId,
     actor: input.body.actor,
   };
   let create = await input.writer.createProject(createInput);

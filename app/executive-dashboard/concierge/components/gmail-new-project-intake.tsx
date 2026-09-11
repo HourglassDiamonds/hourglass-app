@@ -13,7 +13,10 @@ import type { GmailNewProjectIntakeCard } from "@/lib/continuum/client-memory/fo
 import { PAYMENT_RECEIVED_GENERIC_TITLE } from "@/lib/continuum/gmail/candidates/new-project";
 import type { ClientSearchResult } from "@/lib/continuum/client-memory/read/types";
 import { CONCIERGE_GMAIL_INTAKE_PATH } from "@/lib/continuum/gmail/types";
-import { conciergeProjectPath } from "@/lib/continuum/client-memory/read/presentation";
+import {
+  CONCIERGE_HOME_PATH,
+  conciergeProjectPath,
+} from "@/lib/continuum/client-memory/read/presentation";
 import { createGmailIncrementalContinuation } from "@/lib/continuum/gmail/incremental-continue";
 import type { GmailIncrementalChunkResult } from "@/lib/continuum/gmail/incremental";
 import {
@@ -217,9 +220,13 @@ export function GmailIntakeScanForm({
 export function GmailNewProjectIntakeList({
   cards,
   identityAvailable,
+  returnTo,
+  focusPersonAssociationCandidateId,
 }: {
   cards: GmailNewProjectIntakeCard[];
   identityAvailable: boolean;
+  returnTo?: string;
+  focusPersonAssociationCandidateId?: string;
 }) {
   if (cards.length === 0) {
     return (
@@ -229,11 +236,23 @@ export function GmailNewProjectIntakeList({
       </p>
     );
   }
+  const ordered = [...cards].sort((left, right) => {
+    if (!focusPersonAssociationCandidateId) return 0;
+    const leftMatch =
+      left.personAssociationCandidateId === focusPersonAssociationCandidateId ? 0 : 1;
+    const rightMatch =
+      right.personAssociationCandidateId === focusPersonAssociationCandidateId ? 0 : 1;
+    return leftMatch - rightMatch;
+  });
   return (
     <ul className="mt-8 divide-y divide-white/[0.06]">
-      {cards.map((card) => (
+      {ordered.map((card) => (
         <li key={card.candidateId} className="py-8">
-          <GmailNewProjectCard card={card} identityAvailable={identityAvailable} />
+          <GmailNewProjectCard
+            card={card}
+            identityAvailable={identityAvailable}
+            returnTo={returnTo}
+          />
         </li>
       ))}
     </ul>
@@ -258,9 +277,11 @@ function personRoleLabel(role: GmailNewProjectIntakeCard["people"][number]["role
 function GmailNewProjectCard({
   card,
   identityAvailable,
+  returnTo,
 }: {
   card: GmailNewProjectIntakeCard;
   identityAvailable: boolean;
+  returnTo?: string;
 }) {
   return (
     <div className="space-y-4">
@@ -425,13 +446,19 @@ function GmailNewProjectCard({
       ) : identityAvailable && card.identityConfirmed ? (
         <GmailNewProjectApproveForm card={card} />
       ) : identityAvailable ? (
-        <GmailConfirmPersonForm card={card} />
+        <GmailConfirmPersonForm card={card} returnTo={returnTo} />
       ) : null}
     </div>
   );
 }
 
-function GmailConfirmPersonForm({ card }: { card: GmailNewProjectIntakeCard }) {
+function GmailConfirmPersonForm({
+  card,
+  returnTo,
+}: {
+  card: GmailNewProjectIntakeCard;
+  returnTo?: string;
+}) {
   const [state, formAction, pending] = useActionState(confirmGmailIntakePerson, null);
   const [query, setQuery] = useState("");
   const [picked, setPicked] = useState<{
@@ -485,6 +512,9 @@ function GmailConfirmPersonForm({ card }: { card: GmailNewProjectIntakeCard }) {
         name="personAssociationCandidateId"
         value={card.personAssociationCandidateId}
       />
+      {returnTo === CONCIERGE_HOME_PATH ? (
+        <input type="hidden" name="returnTo" value={CONCIERGE_HOME_PATH} />
+      ) : null}
       {picked ? <input type="hidden" name="personId" value={picked.personId} /> : null}
       {!picked ? (
         <label className="block">

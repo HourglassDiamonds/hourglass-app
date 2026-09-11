@@ -16,6 +16,7 @@ import {
   currentProjectGroupToggleId,
   currentProjectPanelId,
   currentProjectToggleId,
+  currentProjectFocusHref,
 } from "./present";
 import { conciergeProjectArtifactFilePath } from "../read/presentation";
 
@@ -495,5 +496,20 @@ describe("Current Projects Command Center accordion UI", () => {
     );
     assert.ok(productionDetails);
     assert.match(productionDetails[0], / open/);
+  });
+
+  it("targets Open project by canonical project id in the URL", () => {
+    const href = currentProjectFocusHref(PROJECT_A);
+    assert.match(href, /\?project=aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/);
+    assert.match(href, /#current-project-aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa-toggle$/);
+    assert.doesNotMatch(href, /Oval ring|Travis Morse/);
+    const source = readFileSync(
+      join(CONCIERGE_DIR, "components/open-projects-home.tsx"),
+      "utf8",
+    );
+    assert.match(source, /CURRENT_PROJECT_FOCUS_QUERY/);
+    assert.match(source, /HTMLDetailsElement[\s\S]*open = true/);
+    assert.match(source, /scrollIntoView/);
+    assert.match(source, /summary\.focus/);
   });
 });

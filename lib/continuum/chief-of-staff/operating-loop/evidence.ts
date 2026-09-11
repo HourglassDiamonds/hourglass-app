@@ -158,11 +158,37 @@ export function isSafeGmailThreadId(threadId: string): boolean {
   return GMAIL_THREAD_ID.test(threadId.trim());
 }
 
+export function parseGmailWebHref(
+  href: string,
+): { threadId: string; messageId: string | null } | null {
+  const trimmed = href.trim();
+  if (!trimmed.startsWith(GMAIL_WEB_THREAD)) return null;
+  const rest = trimmed.slice(GMAIL_WEB_THREAD.length);
+  const [rawThread, rawMessage] = rest.split("/");
+  const threadId = decodeURIComponent(rawThread ?? "").trim();
+  if (!isSafeGmailThreadId(threadId)) return null;
+  const messageId = decodeURIComponent(rawMessage ?? "").trim();
+  return {
+    threadId,
+    messageId: isSafeGmailThreadId(messageId) ? messageId : null,
+  };
+}
+
 export function gmailThreadHrefFor(row: ContinuumCandidate): string | null {
   if (row.sourceSystem !== "gmail") return null;
   const parsed = parseGmailCandidateSourceRef(row.sourceRef);
   if (!parsed || !isSafeGmailThreadId(parsed.threadId)) return null;
   return `${GMAIL_WEB_THREAD}${encodeURIComponent(parsed.threadId)}`;
+}
+
+export function gmailEvidenceHrefFor(row: ContinuumCandidate): string | null {
+  if (row.sourceSystem !== "gmail") return null;
+  const parsed = parseGmailCandidateSourceRef(row.sourceRef);
+  if (!parsed || !isSafeGmailThreadId(parsed.threadId)) return null;
+  if (isSafeGmailThreadId(parsed.messageId)) {
+    return `${GMAIL_WEB_THREAD}${encodeURIComponent(parsed.threadId)}/${encodeURIComponent(parsed.messageId)}`;
+  }
+  return gmailThreadHrefFor(row);
 }
 
 export function sourceHrefFor(row: ContinuumCandidate): string {

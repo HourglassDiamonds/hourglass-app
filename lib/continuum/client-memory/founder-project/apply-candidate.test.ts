@@ -861,4 +861,82 @@ describe("Gmail-created Projects hydrate Current Projects", () => {
     const pending = await candidates.get(after[0]!.candidateId);
     assert.equal(pending?.reviewStatus, "approved");
   });
+
+  it("does not write generated operating mail as project.gmailThreadId", async () => {
+    const memory = new InMemoryClientMemoryStore();
+    const jobs = new InMemoryProjectJobStore();
+    const writer = createInMemoryFounderProjectWriter(memory, jobs, () => NOW);
+    const candidates = new InMemoryCandidateStore();
+    const personId = await seedPerson(memory, "Nathan Pearl", NATE_EMAIL);
+    const cadence = "cadence@hourglass.test";
+    const threadId = "1a085d41ae9efcf6";
+    const proposed = proposeGmailCandidates({
+      createdAt: NOW,
+      world: {
+        people: [
+          {
+            personId,
+            displayName: "Nathan Pearl",
+            emailHash: hashEmail(NATE_EMAIL),
+            role: "client",
+            projectIds: [],
+          },
+        ],
+        projects: [],
+        internalEmailHashes: [],
+        generatedEmailHashes: [hashEmail(cadence)!],
+      },
+      evidence: [
+        inboundEvidence({
+          messageId: threadId,
+          threadId,
+          fromEmail: cadence,
+          plaintext:
+            "I'd like to work together again to create another piece. A dagger and pearls necklace.",
+        }),
+      ],
+    });
+    for (const row of proposed.candidates) {
+      await candidates.put(row);
+    }
+    assert.ok(
+      proposed.candidates.every((row) =>
+        row.evidenceBasis.ruleIds.includes("generated_founder_operating_brief"),
+      ),
+    );
+    const cards = presentGmailNewProjectIntake(await candidates.list(), [
+      { personId, displayName: "Nathan Pearl", email: NATE_EMAIL },
+    ]);
+    const confirmed = await confirmGmailPersonAssociation({
+      store: candidates,
+      personExists: async (id) => Boolean(await memory.getPersonProfile(id)),
+      body: {
+        candidateId: cards[0]!.personAssociationCandidateId!,
+        personId,
+        actor: "justin",
+      },
+      nowIso: NOW,
+    });
+    assert.equal(confirmed.ok, true);
+    const afterConfirm = presentGmailNewProjectIntake(await candidates.list(), [
+      { personId, displayName: "Nathan Pearl", email: NATE_EMAIL },
+    ]);
+    const applied = await applyGmailNewProjectCandidate({
+      store: candidates,
+      writer,
+      body: {
+        candidateId: afterConfirm[0]!.candidateId,
+        personId,
+        title: afterConfirm[0]!.title,
+        projectKind: "custom_new_jewelry",
+        lifecycleStage: "discovery",
+        actor: "justin",
+        mutationId: randomUUID(),
+      },
+    });
+    assert.equal(applied.ok, true);
+    if (!applied.ok) return;
+    const history = await memory.getProjectHistory(applied.projectId);
+    assert.equal(history?.gmailThreadId, null);
+  });
 });
