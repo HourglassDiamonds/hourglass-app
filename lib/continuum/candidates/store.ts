@@ -26,6 +26,9 @@ function clone(row: ContinuumCandidate): ContinuumCandidate {
     evidenceBasis: {
       ruleIds: [...row.evidenceBasis.ruleIds],
       matchedText: row.evidenceBasis.matchedText,
+      supportingSourceRefs: row.evidenceBasis.supportingSourceRefs?.length
+        ? [...row.evidenceBasis.supportingSourceRefs]
+        : undefined,
     },
     proposedTarget: { ...row.proposedTarget },
     payload: clonePayload(row.payload),

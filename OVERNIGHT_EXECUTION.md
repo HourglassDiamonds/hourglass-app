@@ -28,8 +28,8 @@ origin/main MUST remain: `65aea302ac845c592f5859dbd057ef3452d59573`
 | Lane | Status | Checkpoint |
 |------|--------|------------|
 | 1 Near-real-time Gmail pipeline | DONE | `00eebd5` feat: add near-real-time gmail intake |
-| 2 Email-driven Project / Action hydration | DONE | pending commit |
-| 3 Retain supporting Gmail provenance | TODO | |
+| 2 Email-driven Project / Action hydration | DONE | 08078f6 |
+| 3 Retain supporting Gmail provenance | DONE | pending commit |
 | 4 Historical Gmail reconstruction foundation | TODO | |
 | 5 Master Sprint → Today unused capacity | TODO | |
 | 6 Operating QA / regression | TODO | |
@@ -134,4 +134,59 @@ None.
 
 ### Next lane
 
-Lane 3 — retain supporting Gmail provenance.
+Lane 4 — historical Gmail reconstruction foundation.
+
+## Lane 3 — Retain supporting Gmail provenance
+
+Status: DONE
+
+### What changed
+
+Generated Morning Brief candidates keep their Brief `sourceRef` as synthesized evidence and now retain observed real Gmail `supportingSourceRefs` from ingested threads that restate the same work.
+
+- Open Email uses those real Gmail sourceRefs, never the Brief thread.
+- Brief-only items still fail closed.
+- Ambiguous restatements that match two different Projects stay unattached.
+- Generated operating mail no longer supersedes real Gmail lineage.
+- Supporting refs persist on `evidence_basis` JSON with no SQL migration.
+
+### Files changed
+
+- `lib/continuum/candidates/types.ts`
+- `lib/continuum/candidates/rows.ts`
+- `lib/continuum/candidates/store.ts`
+- `lib/continuum/candidates/present.ts`
+- `lib/continuum/candidates/durable.test.ts`
+- `lib/continuum/gmail/candidates/supporting-source.ts`
+- `lib/continuum/gmail/candidates/supporting-source.test.ts`
+- `lib/continuum/gmail/candidates/ingest.ts`
+- `lib/continuum/gmail/candidates/propose.ts`
+- `lib/continuum/gmail/candidates/tag-stored-generated.ts`
+- `lib/continuum/gmail/candidates/tag-stored-generated.test.ts`
+- `lib/continuum/gmail/candidates.test.ts`
+- `lib/continuum/chief-of-staff/operating-loop/evidence.ts`
+- `lib/continuum/chief-of-staff/operating-loop/moderator.ts`
+- `lib/continuum/chief-of-staff/operating-loop/open-email-live-regression.test.ts`
+- `OVERNIGHT_EXECUTION.md`
+
+### Tests run
+
+- Targeted provenance / Open Email / ingest / durable tests: pass
+- `npx eslint` on Lane 3 files: pass
+- `npm run test:continuum`: 1670 pass, 0 fail
+- `npm run build`: pass
+
+### Architectural decisions
+
+- Do not guess supporting threads. Copy only observed real Gmail `gc1` sourceRefs that share the same work fingerprint.
+- Keep generated Brief `sourceRef` in place. Add supporting refs instead of replacing it.
+- Read-time tagging backfills supporting refs for already-stored Brief candidates.
+- JSON `evidence_basis` extension only. No schema migration.
+
+### Blockers
+
+None.
+
+### Next lane
+
+Lane 4 — historical Gmail reconstruction foundation.

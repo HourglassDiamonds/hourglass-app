@@ -73,4 +73,31 @@ describe("Stored generated-operating-mail tagging", () => {
       false,
     );
   });
+
+  it("attaches observed client sourceRefs when tagging a stored Brief restatement", () => {
+    const tagged = withIndexedGeneratedOperatingMail(
+      [
+        storedBriefCandidate(),
+        {
+          ...storedBriefCandidate(),
+          candidateId: "client-follow",
+          sourceRef: `gc1|1a04a565e20ee5f5|1a082e6c4dcb5849`,
+          sourceTimestamp: "2026-09-08T15:00:00.000Z",
+          proposedTarget: {
+            kind: "project",
+            projectId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          },
+        },
+      ],
+      new Map([
+        [BRIEF_MSG, CADENCE],
+        ["1a082e6c4dcb5849", CLIENT],
+      ]),
+      [CADENCE],
+    );
+    assert.deepEqual(tagged[0]?.evidenceBasis.supportingSourceRefs, [
+      "gc1|1a04a565e20ee5f5|1a082e6c4dcb5849",
+    ]);
+    assert.equal(tagged[0]?.sourceRef, `gc1|${BRIEF_THREAD}|${BRIEF_MSG}`);
+  });
 });

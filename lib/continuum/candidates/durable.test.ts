@@ -140,4 +140,26 @@ describe("durable CandidateStore SQL-shaped persistence", () => {
     assert.equal(second.record.canonical, false);
     assert.equal((await reloaded.list()).length, 1);
   });
+
+  it("round-trips observed supporting Gmail sourceRefs on evidence_basis", async () => {
+    const store = new SqlMappedCandidateStore();
+    const row = assignCandidateId({
+      ...specCandidate(),
+      candidateId: "",
+      sourceSystem: "gmail",
+      sourceRef: "gc1|1a085d41ae9efcf6|1a085d41ae9efcf6",
+      evidenceBasis: {
+        ruleIds: ["explicit_follow_up", "generated_founder_operating_brief"],
+        matchedText: "follow-up window",
+        supportingSourceRefs: ["gc1|1a04a565e20ee5f5|1a082e6c4dcb5849"],
+      },
+    });
+    await store.put(row);
+    const reloaded = SqlMappedCandidateStore.fromRows(store.exportRows());
+    const restored = await reloaded.get(row.candidateId);
+    assert.deepEqual(restored?.evidenceBasis.supportingSourceRefs, [
+      "gc1|1a04a565e20ee5f5|1a082e6c4dcb5849",
+    ]);
+    assert.equal(restored?.sourceRef, "gc1|1a085d41ae9efcf6|1a085d41ae9efcf6");
+  });
 });

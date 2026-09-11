@@ -722,6 +722,65 @@ describe("Gmail → Candidate adapter", () => {
     );
   });
 
+  it("does not let generated Morning Brief supersede ingested client Gmail", async () => {
+    const store = new InMemoryCandidateStore();
+    const cadence = hashEmail("cadence@hourglass.test")!;
+    const chelsea = project({
+      projectId: "proj-chelsea",
+      title: "Chelsea",
+      cadJobNumber: "CR5001024",
+      gmailThreadId: "aaaaaaaaaa",
+      fingerSize: "12.5",
+    });
+    await ingestGmailCandidates(store, {
+      createdAt: NOW,
+      world: world([], [chelsea]),
+      evidence: [
+        evidence({
+          messageId: "bbbbbbbbbb",
+          threadId: "aaaaaaaaaa",
+          sentAt: "2026-09-08T15:00:00.000Z",
+          fromEmail: "travis@client.test",
+          plaintext: "finger size 11 CAD CR5001024",
+        }),
+      ],
+    });
+    await ingestGmailCandidates(store, {
+      createdAt: NOW,
+      world: {
+        ...world([], [chelsea]),
+        generatedEmailHashes: [cadence],
+      },
+      evidence: [
+        evidence({
+          messageId: "19fff00011122233",
+          threadId: "19abcdef01234567",
+          sentAt: "2026-09-09T12:00:00.000Z",
+          fromEmail: "cadence@hourglass.test",
+          subject: "Hourglass Morning Brief · September 9, 2026",
+          plaintext: "Travis Morse chicken ring finger size 11 CAD CR5001024",
+        }),
+      ],
+    });
+    const specs = (await store.list()).filter(
+      (row) =>
+        row.payload.kind === "structured_spec" && row.payload.fieldName === "finger_size",
+    );
+    const client = specs.find((row) => row.sourceRef.includes("aaaaaaaaaa"));
+    const brief = specs.find((row) => row.sourceRef.includes("19abcdef01234567"));
+    assert.ok(client);
+    assert.ok(brief);
+    assert.notEqual(client.candidateState, "superseded");
+    assert.ok(
+      brief.evidenceBasis.ruleIds.includes("generated_founder_operating_brief"),
+    );
+    assert.ok(
+      brief.evidenceBasis.supportingSourceRefs?.some((ref) =>
+        ref.includes("aaaaaaaaaa"),
+      ),
+    );
+  });
+
   it("attaches CAD feedback and change requests to a known Project without minting work", () => {
     const client = person({
       personId: "person-lee",

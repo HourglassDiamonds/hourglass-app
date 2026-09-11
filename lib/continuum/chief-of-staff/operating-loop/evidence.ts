@@ -174,6 +174,15 @@ export function parseGmailWebHref(
   };
 }
 
+export function gmailEvidenceHrefFromSourceRef(sourceRef: string): string | null {
+  const parsed = parseGmailCandidateSourceRef(sourceRef);
+  if (!parsed || !isSafeGmailThreadId(parsed.threadId)) return null;
+  if (isSafeGmailThreadId(parsed.messageId)) {
+    return `${GMAIL_WEB_THREAD}${encodeURIComponent(parsed.threadId)}/${encodeURIComponent(parsed.messageId)}`;
+  }
+  return `${GMAIL_WEB_THREAD}${encodeURIComponent(parsed.threadId)}`;
+}
+
 export function gmailThreadHrefFor(row: ContinuumCandidate): string | null {
   if (row.sourceSystem !== "gmail") return null;
   const parsed = parseGmailCandidateSourceRef(row.sourceRef);
@@ -183,12 +192,7 @@ export function gmailThreadHrefFor(row: ContinuumCandidate): string | null {
 
 export function gmailEvidenceHrefFor(row: ContinuumCandidate): string | null {
   if (row.sourceSystem !== "gmail") return null;
-  const parsed = parseGmailCandidateSourceRef(row.sourceRef);
-  if (!parsed || !isSafeGmailThreadId(parsed.threadId)) return null;
-  if (isSafeGmailThreadId(parsed.messageId)) {
-    return `${GMAIL_WEB_THREAD}${encodeURIComponent(parsed.threadId)}/${encodeURIComponent(parsed.messageId)}`;
-  }
-  return gmailThreadHrefFor(row);
+  return gmailEvidenceHrefFromSourceRef(row.sourceRef);
 }
 
 export function sourceHrefFor(row: ContinuumCandidate): string {

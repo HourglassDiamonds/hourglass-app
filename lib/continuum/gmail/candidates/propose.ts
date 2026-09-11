@@ -35,6 +35,7 @@ import {
   withGeneratedFounderOperatingBriefRule,
 } from "./generated-source";
 import { packGmailCandidateSourceRef } from "./source-ref";
+import { attachObservedSupportingGmailProvenance } from "./supporting-source";
 import {
   assignReconciledCandidates,
   reconcileThreadCandidates,
@@ -469,7 +470,9 @@ export function proposeGmailCandidates(
     internalEmailHashes: input.world.internalEmailHashes,
   });
   return {
-    candidates: assignReconciledCandidates(reconciled),
+    candidates: attachObservedSupportingGmailProvenance(
+      assignReconciledCandidates(reconciled),
+    ),
     mutationBoundary: CANDIDATE_MUTATION_BOUNDARY,
     liveModelCalls: false,
     parserVersion: CANDIDATE_PARSER_GMAIL_V1,

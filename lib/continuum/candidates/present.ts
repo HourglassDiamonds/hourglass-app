@@ -77,6 +77,9 @@ export function presentCandidate(row: ContinuumCandidate): CandidateReadModel {
     evidenceBasis: {
       ruleIds: [...row.evidenceBasis.ruleIds],
       matchedText: row.evidenceBasis.matchedText,
+      supportingSourceRefs: row.evidenceBasis.supportingSourceRefs?.length
+        ? [...row.evidenceBasis.supportingSourceRefs]
+        : undefined,
     },
     parserVersion: row.parserVersion,
     createdAt: row.createdAt,

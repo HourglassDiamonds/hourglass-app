@@ -116,6 +116,11 @@ export type CandidateMutationBoundary = typeof CANDIDATE_MUTATION_BOUNDARY;
 export type CandidateEvidenceBasis = {
   ruleIds: readonly string[];
   matchedText: string | null;
+  /**
+   * Observed real Gmail sourceRefs that support a generated operating-mail
+   * restatement. Never guessed. Generated Brief sourceRef stays on sourceRef.
+   */
+  supportingSourceRefs?: readonly string[];
 };
 
 export type ProposedCanonicalTarget =

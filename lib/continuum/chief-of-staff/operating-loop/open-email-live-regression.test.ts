@@ -138,6 +138,79 @@ describe("Open Email live stored-state regression", () => {
     );
   });
 
+  it("opens ingested client Gmail when an Unassigned Brief restates that follow-up", () => {
+    const stored: ContinuumCandidate[] = [
+      ...liveUntaggedBriefCandidates(),
+      fixtureCandidate({
+        candidateId: "cand-client-follow",
+        sourceSystem: "gmail",
+        sourceRef: `gc1|${CLIENT_THREAD}|${CLIENT_MSG}`,
+        sourceTimestamp: "2026-09-08T15:00:00.000Z",
+        proposedTarget: {
+          kind: "project",
+          projectId: COS_LOOP_PROJECT_A,
+        },
+        candidateType: "follow_up",
+        payload: {
+          kind: "follow_up",
+          text: "follow-up window",
+          dueAt: null,
+          sourceTimestamp: "2026-09-08T15:00:00.000Z",
+        },
+        evidenceBasis: {
+          ruleIds: ["explicit_follow_up"],
+          matchedText: "follow-up window",
+        },
+      }),
+    ];
+    const tagged = withIndexedGeneratedOperatingMail(
+      stored,
+      new Map([
+        [LIVE_BRIEF_MSG, CADENCE_HASH],
+        [CLIENT_MSG, CLIENT_HASH],
+      ]),
+      [CADENCE_HASH],
+    );
+    const briefFollowUp = tagged.find(
+      (row) => row.candidateId === stored[0]?.candidateId,
+    );
+    assert.deepEqual(briefFollowUp?.evidenceBasis.supportingSourceRefs, [
+      `gc1|${CLIENT_THREAD}|${CLIENT_MSG}`,
+    ]);
+    assert.equal(briefFollowUp?.sourceRef, `gc1|${LIVE_BRIEF_THREAD}|${LIVE_BRIEF_MSG}`);
+
+    const moderated = composeConciergeBrief({
+      candidates: tagged,
+      jobs: [],
+      projects: new Map(),
+      nowIso: COS_LOOP_NOW,
+      top5: [],
+    });
+    const docket = composeTodayDocket({
+      contractVersion: COS_OPERATING_LOOP_CONTRACT_VERSION,
+      status: "active",
+      heading: "Up next",
+      quietDetail: null,
+      top5: [],
+      remainingCount: 0,
+      brief: moderated.brief,
+      watching: moderated.watching,
+      recap: [],
+      anomalies: [],
+      proposedActions: [],
+      needsYourDecision: [],
+      worthKnowing: [],
+    });
+    const unassigned = docket.items.find((item) => item.subject === "Unassigned");
+    assert.ok(unassigned);
+    const controls = selectFounderControls(unassigned);
+    assert.equal(controls.openEmail?.href, CLIENT_HREF);
+    assert.equal(controls.emailSources.some((row) => row.href === LIVE_BRIEF_HREF), false);
+    assert.ok(
+      (unassigned.brief?.evidence ?? []).some((beat) => beat.sourceHref === LIVE_BRIEF_HREF),
+    );
+  });
+
   it("selects the surviving client sourceRef when project.gmailThreadId is the Brief thread", () => {
     const stored: ContinuumCandidate[] = [
       fixtureCandidate({

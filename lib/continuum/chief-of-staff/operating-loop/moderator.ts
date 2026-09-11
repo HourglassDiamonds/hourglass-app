@@ -48,7 +48,7 @@ import {
   vendorSourcedThread,
   type SupportedThreadProject,
 } from "./attribution";
-import { gmailEvidenceHrefFor } from "./evidence";
+import { gmailEvidenceHrefFor, gmailEvidenceHrefFromSourceRef } from "./evidence";
 import { selectOpenEmailSources } from "./email-source";
 import { specConflictFromCandidates } from "./founder-actions";
 import { isCandidateQuietForToday } from "./quiet";
@@ -389,6 +389,33 @@ function speakerLabel(speaker: CosBriefSpeaker, personName: string | null, vendo
   return personName || "the client";
 }
 
+function beatsFor(
+  row: ContinuumCandidate,
+  ctx: FounderAttentionContext,
+  personName: string | null,
+  vendorName: string,
+  fallback: CosBriefSpeaker = "client",
+): InternalBeat[] {
+  const primary = toBeat(row, ctx, personName, vendorName, fallback);
+  const supporting = row.evidenceBasis.supportingSourceRefs ?? [];
+  if (supporting.length === 0) return [primary];
+  const extra: InternalBeat[] = [];
+  const seen = new Set<string>();
+  if (primary.sourceHref) seen.add(primary.sourceHref);
+  for (const sourceRef of supporting) {
+    const sourceHref = gmailEvidenceHrefFromSourceRef(sourceRef);
+    if (!sourceHref || seen.has(sourceHref)) continue;
+    seen.add(sourceHref);
+    extra.push({
+      ...primary,
+      label: `${primary.at} · Source email`,
+      sourceHref,
+      generatedSource: undefined,
+    });
+  }
+  return extra.length > 0 ? [primary, ...extra] : [primary];
+}
+
 function toBeat(
   row: ContinuumCandidate,
   ctx: FounderAttentionContext,
@@ -685,8 +712,8 @@ function classifySituation(input: {
   const sorted = [...usable].sort(
     (a, b) => parseMs(a.sourceTimestamp) - parseMs(b.sourceTimestamp),
   );
-  const beats = sorted.map((row) =>
-    toBeat(row, input.ctx, person, vendorName, fallbackSpeaker),
+  const beats = sorted.flatMap((row) =>
+    beatsFor(row, input.ctx, person, vendorName, fallbackSpeaker),
   );
   const production = isProductionStage(project?.lifecycleStage);
   const vendorHandled =

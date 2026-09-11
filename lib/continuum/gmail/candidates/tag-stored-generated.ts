@@ -10,31 +10,38 @@ import {
   withGeneratedFounderOperatingBriefRule,
 } from "./generated-source";
 import { parseGmailCandidateSourceRef } from "./source-ref";
+import { attachObservedSupportingGmailProvenance } from "./supporting-source";
 
 export function withIndexedGeneratedOperatingMail(
   candidates: readonly ContinuumCandidate[],
   fromEmailHashByMessageId: ReadonlyMap<string, string | null | undefined>,
   generatedEmailHashes: readonly string[],
 ): ContinuumCandidate[] {
-  if (generatedEmailHashes.length === 0) return [...candidates];
-  return candidates.map((row) => {
-    const parsed = parseGmailCandidateSourceRef(row.sourceRef);
-    if (!parsed) return row;
-    const fromHash =
-      fromEmailHashByMessageId.get(parsed.messageId) ??
-      fromEmailHashByMessageId.get(parsed.messageId.toLowerCase()) ??
-      null;
-    const generated = isGeneratedFounderOperatingMail(fromHash, generatedEmailHashes);
-    if (!generated) return row;
-    return {
-      ...row,
-      evidenceBasis: {
-        ...row.evidenceBasis,
-        ruleIds: withGeneratedFounderOperatingBriefRule(
-          row.evidenceBasis.ruleIds,
-          true,
-        ),
-      },
-    };
-  });
+  const tagged =
+    generatedEmailHashes.length === 0
+      ? [...candidates]
+      : candidates.map((row) => {
+          const parsed = parseGmailCandidateSourceRef(row.sourceRef);
+          if (!parsed) return row;
+          const fromHash =
+            fromEmailHashByMessageId.get(parsed.messageId) ??
+            fromEmailHashByMessageId.get(parsed.messageId.toLowerCase()) ??
+            null;
+          const generated = isGeneratedFounderOperatingMail(
+            fromHash,
+            generatedEmailHashes,
+          );
+          if (!generated) return row;
+          return {
+            ...row,
+            evidenceBasis: {
+              ...row.evidenceBasis,
+              ruleIds: withGeneratedFounderOperatingBriefRule(
+                row.evidenceBasis.ruleIds,
+                true,
+              ),
+            },
+          };
+        });
+  return attachObservedSupportingGmailProvenance(tagged);
 }

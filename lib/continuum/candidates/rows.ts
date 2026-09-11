@@ -7,6 +7,7 @@ import {
   CANDIDATE_CONFIDENCES,
   CANDIDATE_REVIEW_ACTIONS,
   CANDIDATE_REVIEW_STATUSES,
+  CANDIDATE_SOURCE_REF_MAX,
   CANDIDATE_SOURCE_SYSTEMS,
   CANDIDATE_STATES,
   CANDIDATE_TYPES,
@@ -63,6 +64,24 @@ function asOptionalIso(value: unknown): string | null {
   return value;
 }
 
+function supportingSourceRefsOf(raw: unknown): string[] | undefined {
+  if (!Array.isArray(raw)) return undefined;
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const item of raw) {
+    if (typeof item !== "string") continue;
+    const trimmed = item.trim();
+    if (!trimmed.startsWith("gc1|")) continue;
+    if (trimmed.length > CANDIDATE_SOURCE_REF_MAX) continue;
+    const parts = trimmed.split("|");
+    if (parts.length < 3 || !parts[1]?.trim() || !parts[2]?.trim()) continue;
+    if (seen.has(trimmed)) continue;
+    seen.add(trimmed);
+    out.push(trimmed);
+  }
+  return out.length > 0 ? out : undefined;
+}
+
 export function candidateToRow(row: ContinuumCandidate): ContinuumCandidateRow {
   return {
     candidate_id: row.candidateId,
@@ -76,6 +95,9 @@ export function candidateToRow(row: ContinuumCandidate): ContinuumCandidateRow {
     evidence_basis: {
       ruleIds: [...row.evidenceBasis.ruleIds],
       matchedText: row.evidenceBasis.matchedText,
+      supportingSourceRefs: row.evidenceBasis.supportingSourceRefs?.length
+        ? [...row.evidenceBasis.supportingSourceRefs]
+        : undefined,
     },
     candidate_state: row.candidateState,
     review_status: row.reviewStatus,
@@ -132,6 +154,7 @@ export function rowToCandidate(row: Record<string, unknown>): ContinuumCandidate
     evidenceBasis: {
       ruleIds: [...evidence.ruleIds],
       matchedText: evidence.matchedText ?? null,
+      supportingSourceRefs: supportingSourceRefsOf(evidence.supportingSourceRefs),
     },
     candidateState: row.candidate_state as CandidateState,
     reviewStatus: row.review_status as CandidateReviewStatus,
