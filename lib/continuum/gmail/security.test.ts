@@ -364,6 +364,10 @@ describe("Gmail activation security", () => {
         source,
         /runGmailIncrementalChunk|runNextGmailIncrementalChunk|runIncrementalSync/,
       );
+      assert.doesNotMatch(
+        source,
+        /runHistoricalGmailReconstructionChunk|executeHistoricalGmailReconstructionChunk/,
+      );
     }
   });
 

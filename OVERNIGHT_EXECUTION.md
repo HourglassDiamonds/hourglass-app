@@ -29,8 +29,8 @@ origin/main MUST remain: `65aea302ac845c592f5859dbd057ef3452d59573`
 |------|--------|------------|
 | 1 Near-real-time Gmail pipeline | DONE | `00eebd5` feat: add near-real-time gmail intake |
 | 2 Email-driven Project / Action hydration | DONE | 08078f6 |
-| 3 Retain supporting Gmail provenance | DONE | pending commit |
-| 4 Historical Gmail reconstruction foundation | TODO | |
+| 3 Retain supporting Gmail provenance | DONE | ffd2272 |
+| 4 Historical Gmail reconstruction foundation | DONE | pending commit |
 | 5 Master Sprint → Today unused capacity | TODO | |
 | 6 Operating QA / regression | TODO | |
 
@@ -189,4 +189,48 @@ None.
 
 ### Next lane
 
-Lane 4 — historical Gmail reconstruction foundation.
+Lane 5 — Master Sprint → Today unused capacity.
+
+## Lane 4 — Historical Gmail reconstruction foundation
+
+Status: DONE
+
+### What changed
+
+Bounded, resumable reconstruction over already-indexed Gmail threads. Proves the framework on a sample of at most 50 messages per direction and 5 threads per chunk.
+
+- Idempotent Candidate ingest. No People/Projects minted.
+- Opaque `gr1` cursor. Safe interrupt/restart.
+- Persists cursor on `gmail-historical.historyId` only after index backfill is completed. Does not add a SQL job key.
+- No cron. No whole-mailbox migration. No public API.
+
+### Files changed
+
+- `lib/continuum/gmail/historical-reconstruction.ts`
+- `lib/continuum/gmail/historical-reconstruction.test.ts`
+- `lib/continuum/gmail/historical-reconstruction-run.ts`
+- `lib/continuum/gmail/security.test.ts`
+- `OVERNIGHT_EXECUTION.md`
+
+### Tests run
+
+- Targeted historical reconstruction / Gmail security tests: pass
+- `npx eslint` on Lane 4 files: pass
+- `npm run test:continuum`: 1677 pass, 0 fail
+- `npm run build`: pass
+
+### Architectural decisions
+
+- Reuse indexed metadata + existing evidence fetch + CandidateStore. No second CRM.
+- Sample is newest-N per direction, then oldest-thread-first within that sample. Full oldest-first mailbox walk needs a dedicated index query later.
+- Do not store the cursor in `pageToken` (that would regress historical backfill completion).
+
+### Blockers
+
+- Whole-mailbox oldest-first reconstruction is not enabled overnight.
+- No founder UI/action yet. Live runner exists (`historical-reconstruction-run.ts`) but is not wired to cron or Today chrome.
+- Cursor persistence requires a completed `gmail-historical` index checkpoint.
+
+### Next lane
+
+Lane 5 — Master Sprint → Today unused capacity.
