@@ -32,7 +32,7 @@ origin/main MUST remain: `65aea302ac845c592f5859dbd057ef3452d59573`
 | 3 Retain supporting Gmail provenance | DONE | ffd2272 |
 | 4 Historical Gmail reconstruction foundation | DONE | 5f5c414 |
 | 5 Master Sprint → Today unused capacity | DONE | `1c62cac` feat: hydrate master sprint docket slots |
-| 6 Operating QA / regression | DONE | pending commit |
+| 6 Operating QA / regression | DONE | `ca791b2` test: add founder operating overnight regression |
 
 ## Lane 1 — Near-real-time Gmail pipeline
 
@@ -339,5 +339,5 @@ Queue complete. Do not merge to main. Do not deploy. Resume from this manifest.
 - Baseline: Phase 1B `e29c383`. origin/main remains `65aea302ac845c592f5859dbd057ef3452d59573`.
 - Branch: `continuum/founder-operating-ux-v1`
 - Lanes 1–6 DONE.
-- Checkpoints: `00eebd5` `08078f6` `ffd2272` `5f5c414` `1c62cac` plus Lane 6 commit.
+- Checkpoints: `00eebd5` `08078f6` `ffd2272` `5f5c414` `1c62cac` `ca791b2`.
 - Recommended next: founder review of the feature branch, then approve kill-switch/cron deploy and any persistence/OAuth work. Never merge overnight.
