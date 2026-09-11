@@ -4,6 +4,7 @@ import { completeTop5OpenJobAction, disposeTodayDocketItemAction } from "./cos-o
 import { reviewProposedActionFromForm } from "./intake-review-actions";
 import { CommandCenterHome } from "./components/command-center-home";
 import { ConciergeShell } from "./components/concierge-shell";
+import { GmailOperatingFreshness } from "./components/gmail-operating-freshness";
 
 export const fetchCache = "force-no-store";
 
@@ -12,6 +13,7 @@ export default async function ConciergeHomePage() {
   const operatingLoop = await loadCosOperatingLoop();
   return (
     <ConciergeShell variant="home">
+      <GmailOperatingFreshness />
       <CommandCenterHome
         model={model}
         operatingLoop={operatingLoop}

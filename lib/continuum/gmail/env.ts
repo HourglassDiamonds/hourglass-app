@@ -108,7 +108,9 @@ export function isContinuumGmailOAuthConfigured(): boolean {
 }
 
 /**
- * Kill switch. Default off. Does not register or invoke a cron.
+ * Kill switch. Default off. Durable operating freshness and the founder
+ * incremental runner both no-op unless this is true. Auth is still required
+ * (founder session or CRON_SECRET). Does not bypass OAuth or weaken scopes.
  */
 export function isGmailIncrementalSyncEnabled(): boolean {
   const raw = trimmed(process.env.CONTINUUM_GMAIL_INCREMENTAL_SYNC_ENABLED);

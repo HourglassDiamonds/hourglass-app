@@ -62,6 +62,48 @@ describe("indexed thread evidence reader", () => {
     assert.equal(result.safeErrorCode, "unauthorized");
   });
 
+  it("allows secret-protected evidence reads without a founder browser session", async () => {
+    const index = new InMemoryGmailIndexStore();
+    await index.indexMessage(
+      {
+        messageId: MESSAGE,
+        threadId: THREAD,
+        sentAt: "2026-09-07T15:00:00.000Z",
+        subject: "Another piece",
+        fromEmail: "nate.pearl@example.test",
+        direction: "inbound",
+        hasAttachments: false,
+      },
+      NOW,
+    );
+    const connections = new InMemoryGmailConnectionStore();
+    await connections.putConnection(
+      connectFounderMailbox({
+        existing: null,
+        mailboxEmailHash: "ab".repeat(32),
+        refreshToken: encryptRefreshToken("refresh-secret", KEY),
+        grantedScope: GMAIL_READONLY_SCOPE,
+        providerTokenType: "Bearer",
+        now: NOW,
+      }),
+    );
+    const api = new MockGmailApi();
+    api.setThread(thread());
+    const result = await runIndexedThreadEvidenceFetch({
+      founderSessionOk: false,
+      secretProtectedOk: true,
+      threadIds: [THREAD],
+      index,
+      connections,
+      decryptRefreshToken: () => "refresh-secret",
+      refreshAccessToken: async () => ({ ok: true, accessToken: "access" }),
+      createApi: () => api,
+    });
+    assert.equal(result.ok, true);
+    if (!result.ok) return;
+    assert.equal(result.evidence.length > 0, true);
+  });
+
   it("reads plaintext transiently for an already-indexed thread without persisting the body", async () => {
     const index = new InMemoryGmailIndexStore();
     await index.indexMessage(

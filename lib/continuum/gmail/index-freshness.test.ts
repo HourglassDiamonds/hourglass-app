@@ -12,6 +12,14 @@ describe("Gmail index freshness", () => {
     assert.equal(isGmailIndexStale("", now), true);
     assert.equal(isGmailIndexStale("2026-09-06T13:48:42.125Z", now), true);
     assert.equal(isGmailIndexStale("2026-09-08T18:00:00.000Z", now), false);
+    assert.equal(
+      isGmailIndexStale("2026-09-08T19:26:30.000Z", now, 60_000),
+      false,
+    );
+    assert.equal(
+      isGmailIndexStale("2026-09-08T19:25:00.000Z", now, 60_000),
+      true,
+    );
   });
 
   it("formats the last successful sync for the founder timezone", () => {

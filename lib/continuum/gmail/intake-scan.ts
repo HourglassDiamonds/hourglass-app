@@ -1,7 +1,8 @@
 /**
- * Founder-triggered Gmail new-project intake scan.
+ * Gmail new-project intake scan.
  * Uses already-indexed thread identities + a transient read-only body fetch.
  * Ingests Candidates only. Does not persist mailbox bodies or write Projects.
+ * Founder session or secret-protected caller required.
  */
 
 import type { CandidateStore, ContinuumCandidate } from "@/lib/continuum/candidates/types";
@@ -238,6 +239,7 @@ function emptyScanSuccess(): GmailIntakeScanSuccess {
 
 export async function runGmailNewProjectIntakeScan(input: {
   founderSessionOk: boolean;
+  secretProtectedOk?: boolean;
   index: GmailIndexStore;
   connections: GmailConnectionStore;
   decryptRefreshToken: (wrapped: GmailTokenCiphertext) => string;
@@ -248,6 +250,9 @@ export async function runGmailNewProjectIntakeScan(input: {
   nowIso: string;
   threadIds?: readonly string[];
 }): Promise<GmailIntakeScanResult> {
+  if (!input.founderSessionOk && !input.secretProtectedOk) {
+    return { ok: false, safeErrorCode: "unauthorized" };
+  }
   const threadIds =
     input.threadIds ??
     (await recentIndexedThreadIds(input.index, GMAIL_INTAKE_MAX_THREADS));
@@ -256,6 +261,7 @@ export async function runGmailNewProjectIntakeScan(input: {
   }
   const fetched = await runIndexedThreadEvidenceFetch({
     founderSessionOk: input.founderSessionOk,
+    secretProtectedOk: input.secretProtectedOk,
     threadIds,
     index: input.index,
     connections: input.connections,
@@ -278,6 +284,7 @@ export async function runGmailNewProjectIntakeScan(input: {
   if (relatedIds.length > 0) {
     const related = await runIndexedThreadEvidenceFetch({
       founderSessionOk: input.founderSessionOk,
+      secretProtectedOk: input.secretProtectedOk,
       threadIds: relatedIds,
       index: input.index,
       connections: input.connections,

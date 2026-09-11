@@ -413,6 +413,32 @@ describe("Gmail activation security", () => {
     assert.doesNotMatch(sync, /project-jobs/);
   });
 
+  it("keeps durable Gmail freshness secret-protected, kill-switched, and PII-free", () => {
+    const route = readFileSync(
+      join(ROOT, "app/api/cron/continuum-gmail-freshness/route.ts"),
+      "utf8",
+    );
+    const vercel = readFileSync(join(ROOT, "vercel.json"), "utf8");
+    const cycle = readFileSync(join(GMAIL_DIR, "freshness-cycle.ts"), "utf8");
+    const run = readFileSync(join(GMAIL_DIR, "freshness-run.ts"), "utf8");
+    const ui = readFileSync(
+      join(ROOT, "app/executive-dashboard/concierge/components/gmail-operating-freshness.tsx"),
+      "utf8",
+    );
+    assert.match(vercel, /\/api\/cron\/continuum-gmail-freshness/);
+    assert.match(vercel, /\/api\/cron\/concierge-sla/);
+    assert.match(route, /verifyCronRequest/);
+    assert.doesNotMatch(route, /runGmailIncrementalChunk|runIncrementalSync/);
+    assert.doesNotMatch(route, /runGmailNewProjectIntakeScan|ingestGmailCandidates/);
+    assert.doesNotMatch(route, /createSupabaseGmailIndexStore|client-memory\/gmail/);
+    assert.doesNotMatch(route, /subject|snippet|threadId|messageId|ciphertext/);
+    assert.doesNotMatch(route, /users\.watch|pubsub/i);
+    assert.match(cycle, /secretProtectedOk/);
+    assert.match(run, /isGmailIncrementalSyncEnabled/);
+    assert.match(ui, /refreshGmailOperatingFreshness/);
+    assert.doesNotMatch(ui, /Refresh mail index|Scan Gmail/);
+  });
+
   it("keeps the founder Gmail connection test off public routes and mailbox content", () => {
     const probe = readFileSync(join(GMAIL_DIR, "connection-test.ts"), "utf8");
     const page = readFileSync(

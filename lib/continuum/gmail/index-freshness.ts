@@ -4,6 +4,9 @@
  */
 
 export const GMAIL_INDEX_STALE_AFTER_MS = 4 * 60 * 60 * 1000;
+export const GMAIL_OPERATING_FRESHNESS_AFTER_MS = 60 * 1000;
+export const GMAIL_OPERATING_FRESHNESS_POLL_MS =
+  GMAIL_OPERATING_FRESHNESS_AFTER_MS;
 export const GMAIL_INDEX_FOUNDER_TIME_ZONE = "America/New_York" as const;
 
 export function isGmailIndexStale(

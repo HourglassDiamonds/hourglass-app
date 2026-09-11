@@ -36,6 +36,7 @@ export type IndexedThreadEvidenceLookup = {
 
 export type IndexedThreadEvidenceInput = {
   founderSessionOk: boolean;
+  secretProtectedOk?: boolean;
   threadIds: readonly string[];
   index: IndexedThreadEvidenceLookup;
   connections: GmailConnectionStore;
@@ -105,7 +106,9 @@ function evidenceFromProtected(
 export async function runIndexedThreadEvidenceFetch(
   input: IndexedThreadEvidenceInput,
 ): Promise<IndexedThreadEvidenceResult> {
-  if (!input.founderSessionOk) return failed("unauthorized");
+  if (!input.founderSessionOk && !input.secretProtectedOk) {
+    return failed("unauthorized");
+  }
   const threadIds = [
     ...new Set(input.threadIds.map((row) => row.trim()).filter(Boolean)),
   ];
