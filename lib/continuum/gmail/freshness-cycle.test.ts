@@ -156,7 +156,7 @@ describe("Gmail operating freshness cycle", () => {
       index: new InMemoryGmailIndexStore(),
       attachments: new InMemoryGmailAttachmentStore(),
       decryptRefreshToken: () => "refresh-fresh",
-      refreshAccessToken: async () => ({ ok: true, accessToken: "access" }),
+      refreshAccessToken: async () => ({ ok: true as const, accessToken: "access" }),
       createApi: () => readyApi(),
       world: emptyWorld(),
       store: new InMemoryCandidateStore(),
@@ -177,7 +177,7 @@ describe("Gmail operating freshness cycle", () => {
       index: new InMemoryGmailIndexStore(),
       attachments: new InMemoryGmailAttachmentStore(),
       decryptRefreshToken: () => "refresh-fresh",
-      refreshAccessToken: async () => ({ ok: true, accessToken: "access" }),
+      refreshAccessToken: async () => ({ ok: true as const, accessToken: "access" }),
       createApi: () => api,
       world: emptyWorld(),
       store: new InMemoryCandidateStore(),
@@ -202,7 +202,7 @@ describe("Gmail operating freshness cycle", () => {
       index,
       attachments: new InMemoryGmailAttachmentStore(),
       decryptRefreshToken: () => "refresh-fresh",
-      refreshAccessToken: async () => ({ ok: true, accessToken: "access" }),
+      refreshAccessToken: async () => ({ ok: true as const, accessToken: "access" }),
       createApi: () => api,
       world: emptyWorld(),
       store,
@@ -321,6 +321,11 @@ describe("Gmail operating freshness cycle", () => {
     assert.doesNotMatch(run, /console\.(log|info|debug|warn|error)/);
     assert.match(actions, /"use server"/);
     assert.match(actions, /getAuthenticatedGmailHistoryStores/);
+    assert.match(actions, /executeLiveGmailFreshnessCycle/);
+    assert.match(actions, /type GmailFreshnessCycleResult/);
+    assert.doesNotMatch(actions, /export type \{ GmailFreshnessCycleResult \}/);
+    assert.doesNotMatch(actions, /export \{[^}]*GmailFreshnessCycleResult/);
+    assert.doesNotMatch(actions, /\bcatch\b/);
     assert.match(ui, /return null/);
     assert.match(home, /GmailOperatingFreshness/);
     assert.doesNotMatch(incrementalUi, /continuum-gmail-freshness/);

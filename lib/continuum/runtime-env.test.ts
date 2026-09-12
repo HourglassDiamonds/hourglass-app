@@ -236,6 +236,35 @@ describe("Continuum runtime isolation", () => {
     assert.match(cron, /continuumEnvLogLabel/);
     assert.match(layout, /ContinuumEnvBadge/);
     assert.match(example, /CONTINUUM_ENV=preview/);
+    assert.match(example, /\.env\.continuum-preview\.local/);
     assert.equal(isPreviewLikeRuntime({ vercelEnv: "preview" }), true);
+    const isolationAssert = readFileSync(
+      join(ROOT, "scripts/continuum-preview-isolation-assert.ts"),
+      "utf8",
+    );
+    const launcher = readFileSync(
+      join(ROOT, "scripts/continuum-preview-dev.mjs"),
+      "utf8",
+    );
+    assert.match(isolationAssert, /\.env\.continuum-preview\.local/);
+    assert.match(isolationAssert, /override: true/);
+    assert.match(isolationAssert, /previewRef/);
+    assert.match(isolationAssert, /gmailIncrementalSyncEnabled/);
+    assert.match(isolationAssert, /loadIncrementalFlagFromSandboxOnly/);
+    assert.match(launcher, /hrmpzplffuhhvbtxxhnt/);
+    assert.match(launcher, /bnafadfgrrriblppeubp/);
+    assert.match(launcher, /NEVER_INHERIT/);
+    assert.match(launcher, /delete process\.env\.CONTINUUM_GMAIL_INCREMENTAL_SYNC_ENABLED/);
+    assert.match(launcher, /CONTINUUM_GMAIL_INCREMENTAL_SYNC_ENABLED/);
+    assert.doesNotMatch(
+      launcher,
+      /must stay unset for this local sandbox/,
+    );
+    assert.match(
+      launcher,
+      /must be true, 1, or unset/,
+    );
+    assert.doesNotMatch(launcher, /console\.(log|info|error|warn)\([^)]*SERVICE_ROLE/);
+    assert.doesNotMatch(launcher, /console\.(log|info|error|warn)\([^)]*TOKEN_KEK/);
   });
 });

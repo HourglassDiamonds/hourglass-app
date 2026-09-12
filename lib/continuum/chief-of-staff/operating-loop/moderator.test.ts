@@ -679,6 +679,64 @@ describe("Concierge Executive Moderator V1", () => {
     assert.doesNotMatch(result.brief[0]?.explanation ?? "", /24 spec|25 spec|specs captured/i);
   });
 
+  it("treats finger size 6 vs 6.5 as a material conflict, not a substring match", () => {
+    const projects = fixtureProjects();
+    const current = projects.get(COS_LOOP_PROJECT_A)!;
+    projects.set(COS_LOOP_PROJECT_A, {
+      ...current,
+      specs: [{ fieldName: "finger_size", value: "6.5" }],
+    });
+    const result = briefOf({
+      candidates: [
+        specRow({
+          candidateId: "size-6-vs-65",
+          fieldName: "finger_size",
+          proposedValue: "6",
+          currentValue: "6.5",
+        }),
+      ],
+      jobs: [],
+      projects,
+      nowIso: COS_LOOP_NOW,
+      top5: [],
+    });
+    assert.equal(result.brief.length, 1);
+    assert.equal(result.brief[0]?.specConflict?.canonicalValue, "6.5");
+    assert.equal(result.brief[0]?.specConflict?.proposedValue, "6");
+    const controls = selectFounderControls({
+      origin: "brief",
+      subject: "Test Client Alpha",
+      headline: result.brief[0]?.recommended ?? "",
+      context: result.brief[0]?.explanation ?? null,
+      job: null,
+      brief: result.brief[0]!,
+      decision: null,
+      anomaly: null,
+    });
+    assert.equal(controls.family, "spec_conflict");
+    assert.deepEqual(
+      controls.actions.map((action) => action.label),
+      ["Keep 6.5", "Update to 6", "Need to verify"],
+    );
+    assert.equal(
+      controls.evidence?.facts.find((fact) => fact.label === "Project record")?.value,
+      "6.5",
+    );
+    assert.equal(
+      controls.evidence?.facts.find((fact) => fact.label === "Latest client evidence")
+        ?.value,
+      "6",
+    );
+    assert.equal(
+      controls.actions.some((action) => action.verb === "complete"),
+      false,
+    );
+    assert.equal(
+      controls.fallback.some((action) => action.label === "Complete" || action.label === "Disregard"),
+      false,
+    );
+  });
+
   it("suppresses a fully handled thread into Already handled / Watching", () => {
     const result = briefOf({
       candidates: [

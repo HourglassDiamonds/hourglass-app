@@ -7,6 +7,7 @@ import {
   interpretGmailTokenRefreshResponse,
   oauthStatesMatch,
   pkceChallengeS256,
+  safeGmailOAuthTokenError,
   type GmailOAuthTokenExchanger,
 } from "./oauth";
 import { handleGmailOAuthCallback, handleGmailOAuthStart } from "./handlers";
@@ -181,6 +182,35 @@ describe("Continuum Gmail OAuth", () => {
     assert.equal(await store.getFounderConnection(), null);
   });
 
+  it("redirects invalid_client without retaining a connection", async () => {
+    oauthEnv();
+    const pending = createGmailOAuthPending(SECRET);
+    const store = new InMemoryGmailConnectionStore();
+    const exchanger = mockExchanger({
+      async exchangeCode() {
+        throw new Error("invalid_client");
+      },
+    });
+    const result = await handleGmailOAuthCallback({
+      url: new URL(
+        `http://localhost:3000/api/continuum/gmail/oauth/callback?code=auth-code&state=${pending.pending.state}`,
+      ),
+      pendingCookie: pending.token,
+      signingSecret: SECRET,
+      exchanger,
+      fetchProfile: async () => ({ emailAddress: FOUNDER }),
+      connections: store,
+      founderRedirect: "/executive-dashboard/concierge",
+      tokenKek: KEK,
+      founderEmail: FOUNDER,
+    });
+    assert.equal(result.status, "redirect");
+    if (result.status === "redirect") {
+      assert.match(result.url, /gmail=invalid_client/);
+    }
+    assert.equal(await store.getFounderConnection(), null);
+  });
+
   it("marks the connection revoked on invalid_grant", async () => {
     oauthEnv();
     const pending = createGmailOAuthPending(SECRET);
@@ -230,6 +260,31 @@ describe("Continuum Gmail OAuth", () => {
     assert.equal(connection?.status, "revoked");
     assert.equal(connection?.refreshToken, null);
     assert.equal(connection?.statusErrorCode, "invalid_grant");
+  });
+
+  it("maps Google token errors to safe codes without leaking descriptions", () => {
+    assert.equal(
+      safeGmailOAuthTokenError({
+        response: { data: { error: "invalid_client", error_description: "secret" } },
+      }),
+      "invalid_client",
+    );
+    assert.equal(
+      safeGmailOAuthTokenError({
+        response: { data: { error: "redirect_uri_mismatch" } },
+      }),
+      "redirect_uri_mismatch",
+    );
+    assert.equal(
+      safeGmailOAuthTokenError(new Error("token-exchange-failed")),
+      "token-exchange-failed",
+    );
+    const serialized = JSON.stringify(
+      safeGmailOAuthTokenError({
+        response: { data: { error: "invalid_client", error_description: "secret" } },
+      }),
+    );
+    assert.equal(serialized.includes("secret"), false);
   });
 
   it("does not treat unequal OAuth states as matching", () => {

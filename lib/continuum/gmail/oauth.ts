@@ -292,25 +292,64 @@ export const liveGmailAccessTokenRefresher: GmailAccessTokenRefresher = {
 export const liveGmailOAuthTokenExchanger: GmailOAuthTokenExchanger = {
   async exchangeCode(input) {
     const client = createDedicatedGmailOAuth2Client();
-    const { tokens } = await client.getToken({
-      code: input.code,
-      codeVerifier: input.codeVerifier,
-    });
-    if (!tokens.refresh_token) {
-      throw new Error("token-exchange-failed");
+    try {
+      const { tokens } = await client.getToken({
+        code: input.code,
+        codeVerifier: input.codeVerifier,
+      });
+      if (!tokens.refresh_token) {
+        throw new Error("token-exchange-failed");
+      }
+      return {
+        refreshToken: tokens.refresh_token,
+        accessToken: tokens.access_token ?? null,
+        tokenType: tokens.token_type ?? "Bearer",
+        scope: tokens.scope ?? GMAIL_READONLY_SCOPE,
+      };
+    } catch (error) {
+      throw new Error(safeGmailOAuthTokenError(error));
     }
-    return {
-      refreshToken: tokens.refresh_token,
-      accessToken: tokens.access_token ?? null,
-      tokenType: tokens.token_type ?? "Bearer",
-      scope: tokens.scope ?? GMAIL_READONLY_SCOPE,
-    };
   },
   async revokeToken(token) {
     const client = createDedicatedGmailOAuth2Client();
     await client.revokeToken(token);
   },
 };
+
+const GOOGLE_TOKEN_SAFE_ERRORS = [
+  "invalid_client",
+  "redirect_uri_mismatch",
+  "invalid_grant",
+] as const;
+
+function googleTokenErrorCode(error: unknown): string | null {
+  if (!error || typeof error !== "object") return null;
+  const response = "response" in error ? error.response : null;
+  if (!response || typeof response !== "object") return null;
+  const data = "data" in response ? response.data : null;
+  if (!data || typeof data !== "object") return null;
+  const code = "error" in data ? data.error : null;
+  return typeof code === "string" ? code : null;
+}
+
+export function safeGmailOAuthTokenError(error: unknown): string {
+  const code = googleTokenErrorCode(error);
+  if (
+    code &&
+    (GOOGLE_TOKEN_SAFE_ERRORS as readonly string[]).includes(code)
+  ) {
+    return code;
+  }
+  if (error instanceof Error) {
+    if (error.message === "token-exchange-failed") return "token-exchange-failed";
+    if (error.message.includes("invalid_grant")) return "invalid_grant";
+    if (error.message.includes("invalid_client")) return "invalid_client";
+    if (error.message.includes("redirect_uri_mismatch")) {
+      return "redirect_uri_mismatch";
+    }
+  }
+  return "token-exchange-failed";
+}
 
 export function oauthStatesMatch(expected: string, actual: string | null): boolean {
   if (!actual) return false;

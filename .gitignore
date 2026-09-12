@@ -71,6 +71,10 @@ tmp/agent-os/
 tmp-weekly-brief-preview/
 tmp-weekly-brief-replay/
 
+# local Continuum Preview / agent work artifacts (never commit)
+tmp/
+.env.continuum-preview.local
+
 # OCR worker local runtime artifacts (do not commit)
 ocr-worker/node_modules/
 ocr-worker/eng.traineddata

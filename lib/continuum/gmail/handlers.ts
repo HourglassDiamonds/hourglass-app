@@ -18,6 +18,7 @@ import {
   oauthStatesMatch,
   parseGmailOAuthIntent,
   parseGmailOAuthPending,
+  safeGmailOAuthTokenError,
   type GmailOAuthTokenExchanger,
 } from "./oauth";
 import { GMAIL_READONLY_SCOPE } from "./types";
@@ -133,8 +134,8 @@ export async function handleGmailOAuthCallback(input: {
       codeVerifier: pending.codeVerifier,
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "token-exchange-failed";
-    if (message === "invalid_grant" || message.includes("invalid_grant")) {
+    const message = safeGmailOAuthTokenError(error);
+    if (message === "invalid_grant") {
       await applyInvalidGrant(input.connections, new Date(nowMs).toISOString());
       return {
         status: "redirect",
@@ -144,7 +145,7 @@ export async function handleGmailOAuthCallback(input: {
     }
     return {
       status: "redirect",
-      url: withGmailQuery(input.founderRedirect, "token-exchange-failed"),
+      url: withGmailQuery(input.founderRedirect, message),
       clearCookies: true,
     };
   }

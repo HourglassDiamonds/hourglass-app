@@ -56,16 +56,26 @@ export function GmailConnectionTestForm({ connected }: { connected: boolean }) {
   );
 
   return (
-    <form action={formAction} className="mt-8">
+    <div className="mt-8">
       <p className="text-[15px] text-[#efe8de]">{statusLine(connected)}</p>
-      <button
-        type="submit"
-        disabled={pending}
-        className="mt-6 inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.24em] text-[#efe8de] outline-none hover:text-[#ad9164] focus-visible:text-[#ad9164] focus-visible:shadow-[0_0_0_3px_rgba(173,145,100,0.22)] disabled:text-[#8d8073]"
-      >
-        {pending ? "Testing…" : "Test connection"}
-      </button>
-      {state ? <ResultLines result={state} /> : null}
-    </form>
+      {connected ? null : (
+        <a
+          href="/executive-dashboard/concierge/gmail/oauth/start"
+          className="mt-6 inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.24em] text-[#efe8de] outline-none hover:text-[#ad9164] focus-visible:text-[#ad9164] focus-visible:shadow-[0_0_0_3px_rgba(173,145,100,0.22)]"
+        >
+          Connect Gmail
+        </a>
+      )}
+      <form action={formAction} className={connected ? "mt-6" : "mt-4"}>
+        <button
+          type="submit"
+          disabled={pending}
+          className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.24em] text-[#efe8de] outline-none hover:text-[#ad9164] focus-visible:text-[#ad9164] focus-visible:shadow-[0_0_0_3px_rgba(173,145,100,0.22)] disabled:text-[#8d8073]"
+        >
+          {pending ? "Testing…" : "Test connection"}
+        </button>
+        {state ? <ResultLines result={state} /> : null}
+      </form>
+    </div>
   );
 }

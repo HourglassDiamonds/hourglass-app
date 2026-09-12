@@ -164,6 +164,8 @@ export const GMAIL_OAUTH_ERROR_CODES = [
   "token-exchange-failed",
   "token-revoke-failed",
   "invalid_grant",
+  "invalid_client",
+  "redirect_uri_mismatch",
   "connection-inactive",
   "founder-slot-occupied",
 ] as const;

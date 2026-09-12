@@ -515,11 +515,21 @@ function expandSpecTokens(value: string): string[] {
     });
 }
 
+function isNumericSpecValue(value: string): boolean {
+  return /^-?\d+(?:\.\d+)?$/.test(value.trim());
+}
+
 function specTextCompatible(proposed: string, canonical: string): boolean {
   const left = proposed.trim().toLowerCase();
   const right = canonical.trim().toLowerCase();
   if (!left || !right) return false;
   if (left === right) return true;
+  if (isNumericSpecValue(left) && isNumericSpecValue(right)) {
+    return Number(left) === Number(right);
+  }
+  if (isNumericSpecValue(left) || isNumericSpecValue(right)) {
+    return false;
+  }
   if (right.includes(left) || left.includes(right)) return true;
   const proposedTokens = new Set(expandSpecTokens(proposed).filter((token) => token.length >= 3));
   const canonicalTokens = new Set(expandSpecTokens(canonical));

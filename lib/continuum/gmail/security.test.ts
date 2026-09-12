@@ -468,6 +468,8 @@ describe("Gmail activation security", () => {
     assert.doesNotMatch(probe, /\.getMessage\(|\.getThread\(/);
     assert.match(page, /GmailConnectionTestForm/);
     assert.match(ui, /Test connection/);
+    assert.match(ui, /Connect Gmail/);
+    assert.match(ui, /\/executive-dashboard\/concierge\/gmail\/oauth\/start/);
     assert.doesNotMatch(ui, /mailboxEmailHash|ciphertext|client_secret|CLIENT_ID/);
     assert.doesNotMatch(page, /mailboxEmailHash|ciphertext|emailAddress/);
     assert.match(actions, /readOnlyGmailConnectionStore/);

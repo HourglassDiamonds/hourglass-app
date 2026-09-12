@@ -3,9 +3,10 @@
  * Presentation only. Does not guess. Never prefers synthesized operating mail.
  *
  * Authority:
- * 1. Direct real Gmail source provenance on the item
- * 2. Project-level conversation hint, only when that thread is among those real sources
- * 3. Generated operating mail — never an Open Email destination
+ * 1. Spec-conflict candidate thread, when that candidate has a real Gmail source
+ * 2. Direct real Gmail source provenance on the item
+ * 3. Project-level conversation hint, only when that thread is among those real sources
+ * 4. Generated operating mail — never an Open Email destination
  */
 
 import { GENERATED_FOUNDER_OPERATING_BRIEF_RULE } from "@/lib/continuum/gmail/candidates/generated-source";
@@ -135,6 +136,14 @@ export function selectOpenEmailSources(
   if (parsed.length > 0 && real.length === 0) return [];
 
   if (real.length > 0) {
+    if (specCandidateId) {
+      const specHits = real.filter((row) => row.candidateId === specCandidateId);
+      if (specHits.length > 0) {
+        const threadId = specHits[0]!.threadId;
+        const onThread = real.filter((row) => row.threadId === threadId);
+        return uniqueByHref([bestOnThread(onThread, specCandidateId)]);
+      }
+    }
     const hintIsReal =
       projectHint != null && real.some((row) => row.threadId === projectHint);
     const inScope = hintIsReal

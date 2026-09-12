@@ -4,6 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:continuum-preview": "node scripts/continuum-preview-dev.mjs",
+    "assert:continuum-preview": "node scripts/continuum-preview-dev.mjs --assert-only",
     "dev:lan": "next dev -H 0.0.0.0",
     "dev:https": "next dev -H 0.0.0.0 --experimental-https --experimental-https-cert ./.cert/cert.pem --experimental-https-key ./.cert/key.pem",
     "certs:lan": "node scripts/generate-shape-studio-https-certs.mjs",

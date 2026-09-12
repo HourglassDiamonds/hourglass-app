@@ -137,6 +137,22 @@ describe("Open Email provenance", () => {
     assert.deepEqual(after, []);
   });
 
+  it("collapses Open Email to the spec-conflict thread when a project has multiple real client emails", () => {
+    const conflictHref = `https://mail.google.com/mail/u/0/#all/${OTHER_THREAD}/eee444fff5`;
+    const sources = selectOpenEmailSources({
+      specCandidateId: "cand-size",
+      beats: [
+        beat({ candidateId: "cand-cad" }),
+        beat({
+          candidateId: "cand-size",
+          sourceHref: conflictHref,
+          summary: "finger size is 6",
+        }),
+      ],
+    });
+    assert.deepEqual(sources.map((row) => row.href), [conflictHref]);
+  });
+
   it("exposes a restrained chooser only when multiple real threads remain", () => {
     const sources = selectOpenEmailSources({
       beats: [
