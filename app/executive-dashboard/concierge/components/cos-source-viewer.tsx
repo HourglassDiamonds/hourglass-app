@@ -244,7 +244,7 @@ export function CosViewEmailControl({
                 </>
               ) : null}
             </div>
-            <footer className="hg-cos-source-viewer-foot">
+            <div className="hg-cos-source-viewer-foot">
               <a
                 href={activeHref}
                 target="_blank"
@@ -254,7 +254,7 @@ export function CosViewEmailControl({
               >
                 {OPEN_IN_GMAIL_LABEL}
               </a>
-            </footer>
+            </div>
           </div>
         </div>
       ) : null}
