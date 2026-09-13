@@ -188,6 +188,10 @@ describe("Concierge presentation", () => {
     assert.equal(conciergeRepairsPath(), "/executive-dashboard/concierge/repairs");
     assert.equal(conciergeAskPath(), "/executive-dashboard/concierge/ask");
     assert.equal(
+      conciergeAskPath({ mode: "design" }),
+      "/executive-dashboard/concierge/ask?mode=design",
+    );
+    assert.equal(
       conciergeCohort1Path(),
       "/executive-dashboard/concierge/project-reconstruction/cohort-1",
     );

@@ -1,8 +1,9 @@
 import type { ReactNode } from "react";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { Inter, Newsreader } from "next/font/google";
-import { EXECUTIVE_DASHBOARD_LOGIN_PATH } from "@/lib/executive-dashboard/access";
+import { EXECUTIVE_DASHBOARD_PATHNAME_HEADER } from "@/lib/executive-dashboard/access";
+import { founderLoginPathWithNext } from "@/lib/continuum/operating-shell/login-destination";
 import { EXECUTIVE_DASHBOARD_SESSION_COOKIE } from "@/lib/executive-dashboard/session";
 import { requireInternalClientMemorySession } from "@/lib/continuum/client-memory/read/access";
 import { ContinuumEnvBadge } from "./components/continuum-env-badge";
@@ -37,7 +38,9 @@ export default async function ConciergeLayout({
     jar.get(EXECUTIVE_DASHBOARD_SESSION_COOKIE)?.value,
   );
   if (!session.ok) {
-    redirect(EXECUTIVE_DASHBOARD_LOGIN_PATH);
+    const headerList = await headers();
+    const pathname = headerList.get(EXECUTIVE_DASHBOARD_PATHNAME_HEADER);
+    redirect(founderLoginPathWithNext(pathname));
   }
 
   return (

@@ -37,6 +37,10 @@
   overflow-x: hidden;
 }
 
+.hg-mobile-home {
+  padding-bottom: 0.5rem;
+}
+
 .hg-destination-switch {
   display: flex;
   flex-wrap: wrap;

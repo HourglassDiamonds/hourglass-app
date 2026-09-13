@@ -23,10 +23,20 @@ import { formatBirthday, parseBirthdayValue } from "@/lib/continuum/client-memor
 import { PERSON_FACT_TYPE_BIRTHDAY } from "@/lib/continuum/client-memory/facts/types";
 
 export const CONCIERGE_HOME_PATH = "/executive-dashboard/concierge";
+export const CONCIERGE_HUB_PATH = `${CONCIERGE_HOME_PATH}/home`;
 export const CONCIERGE_PROJECTS_PATH = `${CONCIERGE_HOME_PATH}/projects`;
 export const CONCIERGE_CLIENTS_PATH = `${CONCIERGE_HOME_PATH}/clients`;
 export const CONCIERGE_REPAIRS_PATH = `${CONCIERGE_HOME_PATH}/repairs`;
 export const CONCIERGE_ASK_PATH = `${CONCIERGE_HOME_PATH}/ask`;
+export const CONCIERGE_PERSONAL_PATH = `${CONCIERGE_HOME_PATH}/personal`;
+
+export const CONCIERGE_ASK_MODES = [
+  "conversation",
+  "brain-dump",
+  "design",
+] as const;
+
+export type ConciergeAskMode = (typeof CONCIERGE_ASK_MODES)[number];
 
 export function conciergeClientsPath(): string {
   return CONCIERGE_CLIENTS_PATH;
@@ -36,8 +46,27 @@ export function conciergeRepairsPath(): string {
   return CONCIERGE_REPAIRS_PATH;
 }
 
-export function conciergeAskPath(): string {
-  return CONCIERGE_ASK_PATH;
+export function conciergeHubPath(): string {
+  return CONCIERGE_HUB_PATH;
+}
+
+export function conciergePersonalPath(): string {
+  return CONCIERGE_PERSONAL_PATH;
+}
+
+export function conciergeAskPath(query?: {
+  mode?: ConciergeAskMode;
+  q?: string;
+}): string {
+  if (!query) return CONCIERGE_ASK_PATH;
+  const params = new URLSearchParams();
+  if (query.mode && query.mode !== "conversation") {
+    params.set("mode", query.mode);
+  }
+  const asked = query.q?.trim();
+  if (asked) params.set("q", asked);
+  const encoded = params.toString();
+  return encoded ? `${CONCIERGE_ASK_PATH}?${encoded}` : CONCIERGE_ASK_PATH;
 }
 
 export function conciergeClientPath(personId: string): string {

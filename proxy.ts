@@ -5,6 +5,12 @@ import {
   EXECUTIVE_DASHBOARD_SECURITY_HEADERS,
 } from "@/lib/security/http-headers";
 import {
+  assignFounderLoginDestination,
+  founderLoginPathWithNext,
+  FOUNDER_LOGIN_NEXT_QUERY,
+  safeFounderLoginDestination,
+} from "@/lib/continuum/operating-shell/login-destination";
+import {
   getExecutiveDashboardAccessDecision,
   isExecutiveDashboardConciergePath,
   isExecutiveDashboardPasskeyPairPath,
@@ -12,7 +18,6 @@ import {
   isExecutiveDashboardPublicAuthPath,
   isExecutiveDashboardSecurityPath,
   readExecutiveDashboardSession,
-  EXECUTIVE_DASHBOARD_CONCIERGE_PATH,
   EXECUTIVE_DASHBOARD_LOGIN_PATH,
   EXECUTIVE_DASHBOARD_PATHNAME_HEADER,
   EXECUTIVE_DASHBOARD_PRODUCTION_NOT_FOUND_REWRITE_PATH,
@@ -55,20 +60,27 @@ export function proxy(request: NextRequest) {
   if (isLogin || isConcierge || isSecurity) {
     const session = readExecutiveDashboardSession(cookieValue);
     if (!session.ok && !isLogin) {
+      const requested = `${pathname}${request.nextUrl.search}`;
       const loginUrl = request.nextUrl.clone();
-      loginUrl.pathname = EXECUTIVE_DASHBOARD_LOGIN_PATH;
-      loginUrl.search = "";
+      assignFounderLoginDestination(
+        loginUrl,
+        founderLoginPathWithNext(requested),
+      );
       const redirectResponse = NextResponse.redirect(loginUrl);
       applyExecutiveDashboardHeaders(redirectResponse);
       return redirectResponse;
     }
     if (session.ok && isLogin) {
-      const nextUrl = request.nextUrl.clone();
-      nextUrl.pathname = EXECUTIVE_DASHBOARD_CONCIERGE_PATH;
-      nextUrl.search = "";
-      const redirectResponse = NextResponse.redirect(nextUrl);
-      applyExecutiveDashboardHeaders(redirectResponse);
-      return redirectResponse;
+      const requested = safeFounderLoginDestination(
+        request.nextUrl.searchParams.get(FOUNDER_LOGIN_NEXT_QUERY),
+      );
+      if (requested) {
+        const nextUrl = request.nextUrl.clone();
+        assignFounderLoginDestination(nextUrl, requested);
+        const redirectResponse = NextResponse.redirect(nextUrl);
+        applyExecutiveDashboardHeaders(redirectResponse);
+        return redirectResponse;
+      }
     }
     const response = NextResponse.next({
       request: { headers: requestHeaders },

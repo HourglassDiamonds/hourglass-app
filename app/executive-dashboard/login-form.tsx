@@ -5,10 +5,17 @@ import {
   loginExecutiveDashboard,
   type ExecutiveDashboardLoginState,
 } from "./actions";
+import { CONTINUUM_DESKTOP_MEDIA_QUERY } from "@/lib/continuum/operating-shell/login-destination";
 
 const initialState: ExecutiveDashboardLoginState = {};
 
-export function ExecutiveDashboardLoginForm() {
+function founderViewport(): "mobile" | "desktop" {
+  return window.matchMedia(CONTINUUM_DESKTOP_MEDIA_QUERY).matches
+    ? "desktop"
+    : "mobile";
+}
+
+export function ExecutiveDashboardLoginForm({ next }: { next: string }) {
   const [state, formAction, pending] = useActionState(
     loginExecutiveDashboard,
     initialState,
@@ -22,7 +29,19 @@ export function ExecutiveDashboardLoginForm() {
   }, [state.error]);
 
   return (
-    <form action={formAction} className="space-y-5" noValidate>
+    <form
+      action={formAction}
+      className="space-y-5"
+      noValidate
+      onSubmit={(event) => {
+        const viewport = event.currentTarget.elements.namedItem("viewport");
+        if (viewport instanceof HTMLInputElement) {
+          viewport.value = founderViewport();
+        }
+      }}
+    >
+      <input type="hidden" name="next" value={next} />
+      <input type="hidden" name="viewport" value="mobile" />
       <div>
         <label
           htmlFor="executive-dashboard-username"

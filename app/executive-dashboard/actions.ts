@@ -6,8 +6,8 @@ import {
   EXECUTIVE_DASHBOARD_AUTH_UNAVAILABLE_ERROR,
   EXECUTIVE_DASHBOARD_GENERIC_AUTH_ERROR,
   EXECUTIVE_DASHBOARD_LOGIN_PATH,
-  executiveDashboardPostLoginPath,
 } from "@/lib/executive-dashboard/access";
+import { resolveFounderLoginDestination } from "@/lib/continuum/operating-shell/login-destination";
 import { getExecutiveDashboardAuthConfig } from "@/lib/executive-dashboard/env";
 import {
   checkExecutiveDashboardLoginRateLimit,
@@ -66,7 +66,12 @@ export async function loginExecutiveDashboard(
 
   await issueExecutiveDashboardSession(config.username, config.sessionSecret);
 
-  redirect(executiveDashboardPostLoginPath());
+  redirect(
+    resolveFounderLoginDestination({
+      next: String(formData.get("next") ?? ""),
+      viewport: String(formData.get("viewport") ?? ""),
+    }),
+  );
 }
 
 export async function logoutExecutiveDashboard(): Promise<void> {

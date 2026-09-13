@@ -6,11 +6,12 @@ import {
   beginPasskeyAuthentication,
   completePasskeyAuthentication,
 } from "./passkey-actions";
+import { CONTINUUM_DESKTOP_MEDIA_QUERY } from "@/lib/continuum/operating-shell/login-destination";
 
 const PASSKEY_AUTH_ERROR =
   "Unable to verify passkey. Try again or use your password.";
 
-export function PasskeyLoginButton() {
+export function PasskeyLoginButton({ next }: { next: string }) {
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const errorRef = useRef<HTMLParagraphElement>(null);
@@ -31,7 +32,12 @@ export function PasskeyLoginButton() {
       const assertion = await startAuthentication({
         optionsJSON: begin.options,
       });
-      const done = await completePasskeyAuthentication(assertion);
+      const done = await completePasskeyAuthentication(assertion, {
+        next,
+        viewport: window.matchMedia(CONTINUUM_DESKTOP_MEDIA_QUERY).matches
+          ? "desktop"
+          : "mobile",
+      });
       if (done && !done.ok) {
         setError(done.error);
       }

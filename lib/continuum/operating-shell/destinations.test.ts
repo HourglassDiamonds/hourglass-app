@@ -4,6 +4,8 @@ import {
   CONCIERGE_ASK_PATH,
   CONCIERGE_CLIENTS_PATH,
   CONCIERGE_HOME_PATH,
+  CONCIERGE_HUB_PATH,
+  CONCIERGE_PERSONAL_PATH,
   CONCIERGE_PROJECTS_PATH,
   CONCIERGE_REPAIRS_PATH,
   OPERATING_DESTINATIONS,
@@ -32,6 +34,8 @@ describe("Founder operating destinations", () => {
       ],
     );
     assert.equal(CONCIERGE_HOME_PATH, "/executive-dashboard/concierge");
+    assert.equal(CONCIERGE_HUB_PATH, "/executive-dashboard/concierge/home");
+    assert.equal(CONCIERGE_PERSONAL_PATH, "/executive-dashboard/concierge/personal");
   });
 
   it("keeps Gmail Inbox Calendar Reconstruction Passkeys and Digital Card as secondary tools", () => {
@@ -47,6 +51,8 @@ describe("Founder operating destinations", () => {
 
   it("selects destinations without treating tools as primary", () => {
     assert.equal(operatingDestinationForPath(CONCIERGE_HOME_PATH), "today");
+    assert.equal(operatingDestinationForPath(CONCIERGE_HUB_PATH), null);
+    assert.equal(operatingDestinationForPath(CONCIERGE_PERSONAL_PATH), null);
     assert.equal(operatingDestinationForPath(`${CONCIERGE_HOME_PATH}/`), "today");
     assert.equal(
       operatingDestinationForPath(`${CONCIERGE_PROJECTS_PATH}/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa`),
@@ -76,6 +82,8 @@ describe("Founder operating destinations", () => {
 
   it("uses wide shells on destination homes and narrow shells on nested documents", () => {
     assert.equal(operatingShellVariantForPath(CONCIERGE_HOME_PATH), "home");
+    assert.equal(operatingShellVariantForPath(CONCIERGE_HUB_PATH), "home");
+    assert.equal(operatingShellVariantForPath(CONCIERGE_PERSONAL_PATH), "home");
     assert.equal(operatingShellVariantForPath(CONCIERGE_PROJECTS_PATH), "home");
     assert.equal(
       operatingShellVariantForPath(
@@ -105,6 +113,14 @@ describe("Founder operating destinations", () => {
       ),
       { href: CONCIERGE_REPAIRS_PATH, label: "Repairs" },
     );
+    assert.deepEqual(destinationBackForPath(CONCIERGE_HUB_PATH), {
+      href: CONCIERGE_HUB_PATH,
+      label: "Home",
+    });
+    assert.deepEqual(destinationBackForPath(CONCIERGE_PERSONAL_PATH), {
+      href: CONCIERGE_HUB_PATH,
+      label: "Home",
+    });
     assert.deepEqual(destinationBackForPath(`${CONCIERGE_HOME_PATH}/gmail`), {
       href: CONCIERGE_HOME_PATH,
       label: "Today",

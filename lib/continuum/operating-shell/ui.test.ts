@@ -6,6 +6,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, it } from "node:test";
 import { CommandCenterHome } from "../../../app/executive-dashboard/concierge/components/command-center-home";
+import { MobileHomeHub } from "../../../app/executive-dashboard/concierge/components/mobile-home-hub";
 import { ProjectsOperatingHome } from "../../../app/executive-dashboard/concierge/components/projects-operating-home";
 import { RepairsHome } from "../../../app/executive-dashboard/concierge/components/repairs-home";
 import { composeContinuumHome } from "../dashboard/compose";
@@ -187,5 +188,49 @@ describe("Founder Operating UX V1 shell", () => {
     assert.match(ask, /Who has a birthday in November/);
     assert.doesNotMatch(ask, /Ask anything about your relationships/);
     assert.equal(CONCIERGE_ASK_PATH, "/executive-dashboard/concierge/ask");
+  });
+
+  it("adds a mobile Home hub without moving Today off its canonical URL", () => {
+    const hubPage = read(join("home", "page.tsx"));
+    const hub = read(join("components", "mobile-home-hub.tsx"));
+    const nav = read(join("components", "concierge-operating-nav.tsx"));
+    const personal = read(join("personal", "page.tsx"));
+    const today = read("page.tsx");
+    const html = renderToStaticMarkup(
+      createElement(MobileHomeHub, {
+        model: composeContinuumHome({
+          now: new Date("2026-08-24T18:00:00.000Z"),
+        }),
+        glance: [
+          { id: "your_turn", count: 3, label: "Your turn" },
+          { id: "repair_active", count: 1, label: "Repair active" },
+        ],
+      }),
+    );
+    assert.match(hub, /data-mobile-home/);
+    assert.match(hubPage, /MobileHomeHub/);
+    assert.match(hubPage, /composeHomeGlance/);
+    assert.doesNotMatch(hubPage, /GmailOperatingFreshness/);
+    assert.doesNotMatch(hubPage, /completeTop5OpenJobAction|disposeTodayDocketItemAction/);
+    assert.match(today, /CommandCenterHome/);
+    assert.match(today, /loadCosOperatingLoop/);
+    assert.match(nav, /CONCIERGE_HUB_PATH/);
+    assert.match(nav, /grid grid-cols-5/);
+    assert.doesNotMatch(nav, /grid-cols-6/);
+    assert.match(personal, /This book is not open yet/);
+    assert.match(html, /Good afternoon, Justin/);
+    assert.match(html, />Today</);
+    assert.match(html, /What needs your attention/);
+    assert.match(html, />Projects</);
+    assert.match(html, />Repairs</);
+    assert.match(html, />Clients</);
+    assert.match(html, />Personal</);
+    assert.match(html, /Ask a question/);
+    assert.match(html, /Brain Dump/);
+    assert.match(html, /Conversation/);
+    assert.match(html, /Design Mode/);
+    assert.match(html, /3/);
+    assert.match(html, /Your turn/);
+    assert.doesNotMatch(html, /Sol AI|Add Repair|Gmail viewer/);
   });
 });

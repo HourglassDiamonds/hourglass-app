@@ -4,8 +4,8 @@ import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import {
   EXECUTIVE_DASHBOARD_PASSKEY_AUTH_ERROR,
-  executiveDashboardPostLoginPath,
 } from "@/lib/executive-dashboard/access";
+import { resolveFounderLoginDestination } from "@/lib/continuum/operating-shell/login-destination";
 import { issueExecutiveDashboardSession } from "@/lib/executive-dashboard/issue-session";
 import {
   clearExecutiveDashboardLoginFailures,
@@ -104,6 +104,7 @@ export async function beginPasskeyAuthentication(): Promise<PasskeyAuthBeginStat
 
 export async function completePasskeyAuthentication(
   response: unknown,
+  routing?: { next?: string | null; viewport?: string | null },
 ): Promise<PasskeyAuthCompleteState> {
   const ip = await clientIp();
   if (!checkPasskeyVerifyRateLimit(ip)) {
@@ -148,5 +149,10 @@ export async function completePasskeyAuthentication(
   clearExecutiveDashboardLoginFailures(ip);
   await issueExecutiveDashboardSession(runtime.username, runtime.secret);
   logPasskeyOperation({ op: "auth.verify", ok: true, reason: "ok" });
-  redirect(executiveDashboardPostLoginPath());
+  redirect(
+    resolveFounderLoginDestination({
+      next: routing?.next,
+      viewport: routing?.viewport,
+    }),
+  );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState, useTransition, type FormEvent } from "react";
+import { useEffect, useId, useState, useTransition, type FormEvent } from "react";
 import { askConcierge } from "../actions";
 import { AskConciergeAnswerView } from "./ask-concierge-answer";
 import {
@@ -13,11 +13,27 @@ const EXAMPLES = [
   "Birthdays next month",
 ] as const;
 
-export function AskConciergeShell() {
+export function AskConciergeShell({
+  initialQuery = "",
+  placeholder,
+}: {
+  initialQuery?: string;
+  placeholder?: string;
+} = {}) {
   const inputId = useId();
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(initialQuery);
   const [answer, setAnswer] = useState<AskConciergeAnswer | null>(null);
   const [pending, startTransition] = useTransition();
+  const resolvedPlaceholder = placeholder ?? EXAMPLES[0];
+
+  useEffect(() => {
+    const trimmed = initialQuery.trim();
+    if (!trimmed) return;
+    startTransition(async () => {
+      const next = await askConcierge(trimmed);
+      setAnswer(next);
+    });
+  }, [initialQuery]);
 
   function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -49,7 +65,7 @@ export function AskConciergeShell() {
             autoCorrect="off"
             spellCheck={false}
             enterKeyHint="go"
-            placeholder="Who has a birthday in November?"
+            placeholder={resolvedPlaceholder}
             className="min-h-14 w-full rounded-[22px] border border-white/[0.08] bg-[#1d1916] px-5 text-[17px] text-[#efe8de] outline-none placeholder:text-[#7d7268] focus-visible:border-[#ad9164]/70 focus-visible:shadow-[0_0_0_3px_rgba(173,145,100,0.22)]"
           />
           <button

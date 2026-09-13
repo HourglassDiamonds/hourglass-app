@@ -52,7 +52,7 @@ describe("Continuum private PWA shell", () => {
     assert.equal(manifestJson.display, CONTINUUM_DISPLAY);
     assert.equal(manifestJson.background_color, CONTINUUM_BACKGROUND_COLOR);
     assert.equal(manifestJson.theme_color, CONTINUUM_THEME_COLOR);
-    assert.equal(CONTINUUM_START_URL, "/executive-dashboard/concierge");
+    assert.equal(CONTINUUM_START_URL, "/executive-dashboard/concierge/home");
     assert.equal(CONTINUUM_SCOPE, "/executive-dashboard/");
     assert.equal(CONTINUUM_DISPLAY, "standalone");
     assert.deepEqual(manifestJson, expected);
@@ -71,6 +71,7 @@ describe("Continuum private PWA shell", () => {
 
   it("ships replaceable icon files at the required sizes", () => {
     const files = [
+      ["public/continuum/continuum-mark-founder.png", 100_000],
       ["public/continuum/continuum-app-icon-1024.png", 100_000],
       ["public/continuum/icon-192.png", 8_000],
       ["public/continuum/icon-512.png", 20_000],
@@ -90,6 +91,7 @@ describe("Continuum private PWA shell", () => {
 
   it("generates Continuum icons from the approved master, not Hourglass placeholders", () => {
     const generator = read(join("scripts", "generate-continuum-icons.mjs"));
+    assert.match(generator, /continuum-mark-founder\.png/);
     assert.match(generator, /continuum-app-icon-1024\.png/);
     assert.doesNotMatch(generator, /hourglass-logo-gold/);
   });

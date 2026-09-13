@@ -5,11 +5,14 @@ import { usePathname } from "next/navigation";
 import { CONTINUUM_APP_NAME } from "@/lib/continuum/pwa/config";
 import {
   CONCIERGE_HOME_PATH,
+  CONCIERGE_HUB_PATH,
   OPERATING_DESTINATIONS,
   OPERATING_TOOL_LINKS,
+  normalizeConciergePath,
   operatingDestinationForPath,
 } from "@/lib/continuum/operating-shell/destinations";
 import { ConciergeSignOut } from "./concierge-sign-out";
+import { ContinuumMark } from "./continuum-mark";
 
 const navLinkClass =
   "inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.22em] outline-none transition-colors duration-200";
@@ -47,6 +50,7 @@ function ToolsMenu() {
 export function ConciergeOperatingNav() {
   const pathname = usePathname() ?? CONCIERGE_HOME_PATH;
   const selected = operatingDestinationForPath(pathname);
+  const onHub = normalizeConciergePath(pathname) === CONCIERGE_HUB_PATH;
 
   return (
     <>
@@ -57,8 +61,9 @@ export function ConciergeOperatingNav() {
         <div className="mx-auto flex w-full max-w-[75rem] items-center gap-8 px-8 py-2">
           <Link
             href={CONCIERGE_HOME_PATH}
-            className="shrink-0 font-serif text-[1.05rem] tracking-[0.08em] text-[#efe8de] outline-none hover:text-[#ad9164] focus-visible:text-[#ad9164]"
+            className="inline-flex shrink-0 items-center gap-2.5 font-serif text-[1.05rem] tracking-[0.08em] text-[#efe8de] outline-none hover:text-[#ad9164] focus-visible:text-[#ad9164]"
           >
+            <ContinuumMark size={28} decorative />
             {CONTINUUM_APP_NAME}
           </Link>
           <nav aria-label="Continuum" className="flex min-w-0 flex-1 items-center gap-6">
@@ -84,14 +89,19 @@ export function ConciergeOperatingNav() {
 
       <header
         data-operating-nav="mobile-top"
-        className="sticky top-0 z-30 flex items-center justify-between gap-4 border-b border-white/[0.08] bg-[#14110f]/95 px-5 pt-[max(0.55rem,env(safe-area-inset-top))] pb-1 backdrop-blur-[8px] md:hidden"
+        className={`sticky top-0 z-30 flex items-center gap-4 border-b border-white/[0.08] bg-[#14110f]/95 px-5 pt-[max(0.55rem,env(safe-area-inset-top))] pb-1 backdrop-blur-[8px] md:hidden ${
+          onHub ? "justify-end" : "justify-between"
+        }`}
       >
-        <Link
-          href={CONCIERGE_HOME_PATH}
-          className="inline-flex min-h-11 items-center font-serif text-[1.02rem] tracking-[0.08em] text-[#efe8de] outline-none"
-        >
-          {CONTINUUM_APP_NAME}
-        </Link>
+        {onHub ? null : (
+          <Link
+            href={CONCIERGE_HUB_PATH}
+            aria-label="Continuum Home"
+            className="inline-flex min-h-11 items-center outline-none"
+          >
+            <ContinuumMark size={28} />
+          </Link>
+        )}
         <ToolsMenu />
       </header>
 

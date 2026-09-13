@@ -2,11 +2,11 @@ import type { ReactNode } from "react";
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import {
-  EXECUTIVE_DASHBOARD_LOGIN_PATH,
   EXECUTIVE_DASHBOARD_PATHNAME_HEADER,
   isExecutiveDashboardPasskeyPairPath,
   readExecutiveDashboardSession,
 } from "@/lib/executive-dashboard/access";
+import { founderLoginPathWithNext } from "@/lib/continuum/operating-shell/login-destination";
 import { EXECUTIVE_DASHBOARD_SESSION_COOKIE } from "@/lib/executive-dashboard/session";
 
 export const dynamic = "force-dynamic";
@@ -32,7 +32,7 @@ export default async function ExecutiveDashboardSecurityLayout({
     jar.get(EXECUTIVE_DASHBOARD_SESSION_COOKIE)?.value,
   );
   if (!session.ok) {
-    redirect(EXECUTIVE_DASHBOARD_LOGIN_PATH);
+    redirect(founderLoginPathWithNext(pathname || null));
   }
 
   return children;

@@ -6,7 +6,7 @@
 export const CONTINUUM_APP_NAME = "Continuum";
 export const CONTINUUM_APP_SHORT_NAME = "Continuum";
 export const CONTINUUM_DESCRIPTION = "Private relationship memory";
-export const CONTINUUM_START_URL = "/executive-dashboard/concierge";
+export const CONTINUUM_START_URL = "/executive-dashboard/concierge/home";
 export const CONTINUUM_SCOPE = "/executive-dashboard/";
 export const CONTINUUM_DISPLAY = "standalone" as const;
 export const CONTINUUM_THEME_COLOR = "#14110f";

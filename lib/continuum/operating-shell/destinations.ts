@@ -11,6 +11,8 @@ import {
   CONCIERGE_CLIENTS_PATH,
   CONCIERGE_COHORT_1_PATH,
   CONCIERGE_HOME_PATH,
+  CONCIERGE_HUB_PATH,
+  CONCIERGE_PERSONAL_PATH,
   CONCIERGE_PROJECTS_PATH,
   CONCIERGE_REPAIRS_PATH,
   conciergeInboxPath,
@@ -21,6 +23,8 @@ export {
   CONCIERGE_ASK_PATH,
   CONCIERGE_CLIENTS_PATH,
   CONCIERGE_HOME_PATH,
+  CONCIERGE_HUB_PATH,
+  CONCIERGE_PERSONAL_PATH,
   CONCIERGE_PROJECTS_PATH,
   CONCIERGE_REPAIRS_PATH,
 };
@@ -82,10 +86,12 @@ export function isOperatingDestinationHome(pathname: string): boolean {
   const path = normalizeConciergePath(pathname);
   return (
     path === CONCIERGE_HOME_PATH ||
+    path === CONCIERGE_HUB_PATH ||
     path === CONCIERGE_PROJECTS_PATH ||
     path === CONCIERGE_CLIENTS_PATH ||
     path === CONCIERGE_REPAIRS_PATH ||
-    path === CONCIERGE_ASK_PATH
+    path === CONCIERGE_ASK_PATH ||
+    path === CONCIERGE_PERSONAL_PATH
   );
 }
 
@@ -94,6 +100,9 @@ export function operatingDestinationForPath(
 ): OperatingDestinationId | null {
   const path = normalizeConciergePath(pathname);
   if (path === CONCIERGE_HOME_PATH) return "today";
+  if (path === CONCIERGE_HUB_PATH || path === CONCIERGE_PERSONAL_PATH) {
+    return null;
+  }
   if (path === CONCIERGE_ASK_PATH || path.startsWith(`${CONCIERGE_ASK_PATH}/`)) {
     return "concierge";
   }
@@ -131,6 +140,9 @@ export function operatingShellVariantForPath(
 
 export function destinationBackForPath(pathname: string): DestinationBackLink {
   const path = normalizeConciergePath(pathname);
+  if (path === CONCIERGE_HUB_PATH || path === CONCIERGE_PERSONAL_PATH) {
+    return { href: CONCIERGE_HUB_PATH, label: "Home" };
+  }
   if (isOperatingDestinationHome(path)) {
     return { href: CONCIERGE_HOME_PATH, label: "Today" };
   }

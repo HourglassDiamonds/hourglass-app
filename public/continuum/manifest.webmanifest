@@ -2,7 +2,7 @@
   "name": "Continuum",
   "short_name": "Continuum",
   "description": "Private relationship memory",
-  "start_url": "/executive-dashboard/concierge",
+  "start_url": "/executive-dashboard/concierge/home",
   "scope": "/executive-dashboard/",
   "display": "standalone",
   "background_color": "#14110f",
