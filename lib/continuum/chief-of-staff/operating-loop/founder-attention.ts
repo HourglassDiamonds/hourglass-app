@@ -6,6 +6,7 @@
  * Model: cos-founder-attention-v1
  */
 
+import { isExactStructuredSpecGmailSource, structuredSpecSourceProvenanceOf } from "@/lib/continuum/candidates/spec-provenance";
 import type { ContinuumCandidate } from "@/lib/continuum/candidates/types";
 import type { ProjectJob } from "@/lib/continuum/client-memory/project-jobs/types";
 import {
@@ -395,6 +396,7 @@ function toAttentionItem(input: {
     );
     const candidate = (real.length > 0 ? real : matches).at(-1) ?? row;
     const generated = hasRule(candidate, GENERATED_FOUNDER_OPERATING_BRIEF_RULE);
+    const exact = isExactStructuredSpecGmailSource(candidate);
     const projectId = candidateProjectId(candidate);
     const live = projectId
       ? input.ctx.specByProject?.get(projectId)?.get(payload.fieldName) ?? null
@@ -405,8 +407,9 @@ function toAttentionItem(input: {
       proposedValue: payload.proposedValue,
       candidateId: candidate.candidateId,
       projectId: projectId ?? attribution.projectId,
-      sourceHref: generated ? null : gmailEvidenceHrefFor(candidate),
+      sourceHref: exact ? gmailEvidenceHrefFor(candidate) : null,
       sourceGenerated: generated,
+      sourceProvenance: structuredSpecSourceProvenanceOf(candidate),
     });
   })();
   const distinctDecision =

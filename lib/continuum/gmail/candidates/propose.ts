@@ -35,6 +35,7 @@ import {
   withGeneratedFounderOperatingBriefRule,
 } from "./generated-source";
 import { packGmailCandidateSourceRef } from "./source-ref";
+import { attachStructuredSpecProvenance } from "./spec-provenance";
 import { attachObservedSupportingGmailProvenance } from "./supporting-source";
 import {
   assignReconciledCandidates,
@@ -471,7 +472,9 @@ export function proposeGmailCandidates(
   });
   return {
     candidates: attachObservedSupportingGmailProvenance(
-      assignReconciledCandidates(reconciled),
+      assignReconciledCandidates(
+        attachStructuredSpecProvenance(reconciled, input.evidence),
+      ),
     ),
     mutationBoundary: CANDIDATE_MUTATION_BOUNDARY,
     liveModelCalls: false,

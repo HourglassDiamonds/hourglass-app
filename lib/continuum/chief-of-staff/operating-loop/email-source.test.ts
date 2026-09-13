@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { GENERATED_FOUNDER_OPERATING_BRIEF_RULE } from "@/lib/continuum/gmail/candidates/generated-source";
-import { selectOpenEmailSources } from "./email-source";
+import { selectOpenEmailSources, selectRelatedEmailSources } from "./email-source";
 import { parseGmailWebHref } from "./evidence";
 import type { CosEvidenceBeat } from "./types";
 
@@ -236,5 +236,24 @@ describe("Open Email provenance", () => {
       ],
     });
     assert.deepEqual(sources, []);
+  });
+
+  it("lists supporting Gmail as related email without making it the View email source", () => {
+    const vendorHref = `https://mail.google.com/mail/u/0/#all/${OTHER_THREAD}/eee444fff5`;
+    const related = selectRelatedEmailSources({
+      conflictMode: true,
+      conflictSourceHref: null,
+      specCandidateId: "cand-size",
+      beats: [
+        beat({ candidateId: "cand-vendor", sourceHref: vendorHref, speaker: "vendor" }),
+        beat({
+          candidateId: "cand-brief",
+          sourceHref: BRIEF_HREF,
+          generatedSource: true,
+        }),
+      ],
+    });
+    assert.deepEqual(related.map((row) => row.href), [vendorHref]);
+    assert.equal(related.some((row) => row.href === BRIEF_HREF), false);
   });
 });

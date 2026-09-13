@@ -3,6 +3,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import {
   OPEN_IN_GMAIL_LABEL,
+  RELATED_EMAIL_LABEL,
   VIEW_EMAIL_LABEL,
   presentEvidenceOnlySourceViewer,
   type CosSourceViewerRequest,
@@ -211,6 +212,14 @@ export function CosViewEmailControl({
                   ))}
                 </div>
               ) : null}
+              {request.provenanceLabel ? (
+                <p
+                  data-cos-source-provenance=""
+                  className="mb-4 break-words text-[13px] text-[#c4b7aa]"
+                >
+                  {request.provenanceLabel}
+                </p>
+              ) : null}
               {person || project ? (
                 <p className="mb-4 break-words text-[13px] text-[#9a8e82]">
                   {[person, project].filter(Boolean).join(" · ")}
@@ -249,6 +258,24 @@ export function CosViewEmailControl({
                         <p key={beat.candidateId} className="mt-2 break-words text-[13px] text-[#9a8e82]">
                           {beat.label}: {beat.summary}
                         </p>
+                      ))}
+                    </section>
+                  ) : null}
+                  {(request.relatedSources ?? []).length > 0 ? (
+                    <section data-cos-related-email="" className="mt-6 border-t border-white/[0.06] pt-4">
+                      <p className="text-[11px] uppercase tracking-[0.2em] text-[#6f675f]">
+                        {RELATED_EMAIL_LABEL}
+                      </p>
+                      {(request.relatedSources ?? []).map((source) => (
+                        <a
+                          key={source.href}
+                          href={source.href}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="mt-2 inline-flex min-h-11 items-center break-words text-[13px] text-[#ad9164] outline-none hover:text-[#efe8de]"
+                        >
+                          {source.label}
+                        </a>
                       ))}
                     </section>
                   ) : null}

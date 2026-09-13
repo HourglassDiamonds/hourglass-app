@@ -4,6 +4,7 @@
  * Ranking never writes canonical truth.
  */
 
+import type { StructuredSpecSourceProvenance } from "@/lib/continuum/candidates/types";
 import type { OpenJobActor, OpenJobKind, ProjectJob } from "@/lib/continuum/client-memory/project-jobs/types";
 
 export const COS_OPERATING_LOOP_CONTRACT_VERSION = "cos-operating-loop-v1" as const;
@@ -155,6 +156,8 @@ export type CosSpecConflictView = {
   /** Exact Gmail href of the candidate that produced proposedValue. Never generated mail. */
   sourceHref?: string | null;
   sourceGenerated?: boolean;
+  /** EXACT is the only class eligible as the primary View email source. */
+  sourceProvenance?: StructuredSpecSourceProvenance | null;
 };
 
 export type CosFounderAttentionItem = {

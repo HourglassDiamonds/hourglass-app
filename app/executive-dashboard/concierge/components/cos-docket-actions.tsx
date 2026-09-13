@@ -6,7 +6,7 @@ import {
   selectFounderControls,
   type CosFounderActionView,
 } from "@/lib/continuum/chief-of-staff/operating-loop/founder-actions";
-import { composeSourceViewerRequest } from "@/lib/continuum/chief-of-staff/operating-loop/email-viewer";
+import { composeSourceViewerRequest, RELATED_EMAIL_LABEL } from "@/lib/continuum/chief-of-staff/operating-loop/email-viewer";
 import { CosViewEmailControl } from "./cos-source-viewer";
 
 type DisposeAction = (formData: FormData) => void | Promise<void>;
@@ -113,7 +113,12 @@ export function CosDocketActions({
     return true;
   });
   const evidence = controls.evidence;
-  const viewerRequest = composeSourceViewerRequest(item, controls.emailSources, evidence);
+  const viewerRequest = composeSourceViewerRequest(
+    item,
+    controls.emailSources,
+    evidence,
+    controls.relatedEmailSources,
+  );
   return (
     <div className="hg-cos-founder-actions mt-2 min-w-0">
       {controls.actions.length > 0 || visibleFallback.length > 0 ? (
@@ -162,6 +167,18 @@ export function CosDocketActions({
             request={viewerRequest}
           />
         ) : null}
+        {controls.relatedEmailSources.map((source) => (
+          <a
+            key={source.href}
+            href={source.href}
+            target="_blank"
+            rel="noreferrer"
+            data-cos-related-email=""
+            className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.2em] text-[#8d8073] outline-none hover:text-[#ad9164] focus-visible:text-[#efe8de]"
+          >
+            {RELATED_EMAIL_LABEL}
+          </a>
+        ))}
         {item.job ? (
           <Link
             href={item.job.editHref}

@@ -89,6 +89,7 @@ describe("CoS operating loop Command Center UI", () => {
     const actions = readFileSync(join(CONCIERGE_DIR, "components", "cos-docket-actions.tsx"), "utf8");
     assert.match(viewer, /VIEW_EMAIL_LABEL/);
     assert.match(viewer, /OPEN_IN_GMAIL_LABEL/);
+    assert.match(viewer, /RELATED_EMAIL_LABEL/);
     assert.doesNotMatch(viewer, /<footer/);
     assert.match(viewer, /hg-cos-source-viewer-foot/);
     assert.doesNotMatch(actions, />Open email</);

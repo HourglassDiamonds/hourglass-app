@@ -62,6 +62,8 @@ export type GmailCandidateEvidence = {
     attachmentId: string;
     filename: string | null;
   }[];
+  /** Multi-message reconstructed context. Never eligible as EXACT. */
+  reconstructed?: boolean;
 };
 
 export function evidenceFromIndexed(indexed: GmailIndexedMessage): GmailCandidateEvidence {

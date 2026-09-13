@@ -65,6 +65,9 @@ function brief(extra: Partial<CosBriefItem> = {}): CosBriefItem {
       proposedValue: "11",
       candidateId: "cand-1",
       canMutate: true,
+      sourceHref: "https://mail.google.com/mail/u/0/#all/abc123def0/aaa111bbb2",
+      sourceGenerated: false,
+      sourceProvenance: "EXACT",
     },
     ...extra,
   };

@@ -10,6 +10,7 @@ import {
   CANDIDATE_STATES,
   CANDIDATE_TYPES,
   DETERMINISTIC_CANDIDATE_BRAIN_GATE,
+  STRUCTURED_SPEC_SOURCE_PROVENANCES,
 } from "./index";
 
 describe("Continuum Candidate contract", () => {
@@ -47,6 +48,12 @@ describe("Continuum Candidate contract", () => {
       "plaud",
       "remarkable",
       "google_calendar",
+    ]);
+    assert.deepEqual([...STRUCTURED_SPEC_SOURCE_PROVENANCES], [
+      "EXACT",
+      "THREAD_SUPPORT",
+      "DERIVED",
+      "UNKNOWN",
     ]);
   });
 

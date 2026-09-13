@@ -161,12 +161,32 @@ export type NotePayload = {
   contextLayer: RelationshipContextLayer | null;
 };
 
+/**
+ * Provenance of a structured_spec proposed value relative to Gmail evidence.
+ * Additive JSONB field. Missing on legacy rows.
+ * EXACT is the only class eligible as the primary View email source.
+ */
+export const STRUCTURED_SPEC_SOURCE_PROVENANCES = [
+  "EXACT",
+  "THREAD_SUPPORT",
+  "DERIVED",
+  "UNKNOWN",
+] as const;
+
+export type StructuredSpecSourceProvenance =
+  (typeof STRUCTURED_SPEC_SOURCE_PROVENANCES)[number];
+
 export type StructuredSpecPayload = {
   kind: "structured_spec";
   fieldName: EditableProjectSpecField;
   proposedValue: string;
   currentValue: string | null;
   conflict: boolean;
+  /**
+   * Whether proposedValue can be traced to this candidate's sourceRef.
+   * Optional for backward compatibility with legacy rows.
+   */
+  sourceProvenance?: StructuredSpecSourceProvenance;
 };
 
 export type OpenJobPayload = {

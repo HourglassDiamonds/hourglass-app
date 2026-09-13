@@ -9,7 +9,7 @@ import { PROJECT_SPEC_FIELD_LABELS } from "@/lib/continuum/client-memory/project
 import { currentProjectFocusHref } from "@/lib/continuum/client-memory/open-projects/present";
 import { CONCIERGE_HOME_PATH } from "@/lib/continuum/client-memory/read/presentation";
 import { CONCIERGE_GMAIL_INTAKE_PATH } from "@/lib/continuum/gmail/types";
-import { selectOpenEmailSources } from "./email-source";
+import { selectOpenEmailSources, selectRelatedEmailSources } from "./email-source";
 import {
   addCalendarDays,
   civilDateInZone,
@@ -121,6 +121,7 @@ export type CosFounderControlsView = {
   openProjectHref: string | null;
   openEmail: CosEmailSourceView | null;
   emailSources: CosEmailSourceView[];
+  relatedEmailSources: CosEmailSourceView[];
   editHref: string | null;
   completableJob: boolean;
 };
@@ -205,6 +206,20 @@ function confirmPersonView(item: CosFounderActionSource): CosConfirmPersonView {
     href,
     candidateId: personAssociationCandidateIdFromHref(href),
   };
+}
+
+function relatedEmailSourcesFor(
+  item: CosFounderActionSource,
+  exact: readonly CosEmailSourceView[],
+): CosEmailSourceView[] {
+  if (!item.brief?.specConflict) return [];
+  return selectRelatedEmailSources({
+    beats: item.brief.evidence,
+    specCandidateId: item.brief.specConflict.candidateId,
+    conflictMode: true,
+    conflictSourceHref: item.brief.specConflict.sourceHref ?? null,
+    canonicalThreadId: item.brief.canonicalGmailThreadId ?? null,
+  }).filter((row) => !exact.some((exactRow) => exactRow.href === row.href));
 }
 
 function emailSourcesFor(item: CosFounderActionSource): CosEmailSourceView[] {
@@ -343,6 +358,7 @@ function fallbackFor(
 export function selectFounderControls(item: CosFounderActionSource): CosFounderControlsView {
   const conflict = specConflictOf(item);
   const emails = emailSourcesFor(item);
+  const relatedEmails = relatedEmailSourcesFor(item, emails);
   const evidence = presentFounderEvidence(item);
   const completableJob = Boolean(
     item.job?.completable && item.job.writer === "open_job.resolve",
@@ -373,6 +389,7 @@ export function selectFounderControls(item: CosFounderActionSource): CosFounderC
       openProjectHref: openProjectHrefFor(item),
       openEmail: emails.length === 1 ? emails[0]! : null,
       emailSources: emails,
+      relatedEmailSources: relatedEmails,
       editHref: null,
       completableJob: false,
     };
@@ -454,6 +471,7 @@ export function selectFounderControls(item: CosFounderActionSource): CosFounderC
     openProjectHref: openProjectHrefFor(item),
     openEmail: emails.length === 1 ? emails[0]! : null,
     emailSources: emails,
+    relatedEmailSources: relatedEmails,
     editHref: item.job?.editHref ?? null,
     completableJob,
   };
@@ -496,6 +514,7 @@ export function specConflictFromCandidates(input: {
   projectId: string | null;
   sourceHref?: string | null;
   sourceGenerated?: boolean;
+  sourceProvenance?: CosSpecConflictView["sourceProvenance"];
 }): CosSpecConflictView | null {
   const canonical = input.canonicalValue?.trim() ?? "";
   const proposed = input.proposedValue.trim();
@@ -509,6 +528,7 @@ export function specConflictFromCandidates(input: {
     canMutate: false,
     sourceHref: input.sourceGenerated ? null : (input.sourceHref ?? null),
     sourceGenerated: input.sourceGenerated === true,
+    sourceProvenance: input.sourceProvenance ?? null,
   };
   view.canMutate = canMutateSpecConflict(view, input.projectId);
   return view;

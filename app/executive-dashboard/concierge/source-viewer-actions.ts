@@ -97,6 +97,13 @@ function viewerRequest(
       .filter((fact) => fact.label && fact.value),
     beats: input?.beats ?? [],
     provenanceLimited: input?.provenanceLimited === true,
+    provenanceLabel: founderSafeText(input?.provenanceLabel) ?? null,
+    relatedSources: (input?.relatedSources ?? [])
+      .map((source) => ({
+        href: source.href.trim(),
+        label: founderSafeText(source.label) ?? "Related email",
+      }))
+      .filter((source) => source.href.length > 0),
   };
 }
 

@@ -11,6 +11,7 @@ import {
   CONTINUUM_FOUNDER_DISPLAY_NAME,
   CONTINUUM_FOUNDER_TIME_ZONE,
 } from "@/lib/continuum/dashboard/compose";
+import { isExactStructuredSpecGmailSource, structuredSpecSourceProvenanceOf } from "@/lib/continuum/candidates/spec-provenance";
 import type { ContinuumCandidate } from "@/lib/continuum/candidates/types";
 import {
   candidateProjectId,
@@ -773,14 +774,16 @@ function classifySituation(input: {
     const candidate = (real.length > 0 ? real : matches).at(-1) ?? null;
     if (!candidate || !row.canonical) return null;
     const generated = hasRule(candidate, GENERATED_FOUNDER_OPERATING_BRIEF_RULE);
+    const exact = isExactStructuredSpecGmailSource(candidate);
     return specConflictFromCandidates({
       fieldName: row.fieldName,
       canonicalValue: row.canonical,
       proposedValue: row.proposed,
       candidateId: candidate.candidateId,
       projectId: attribution.projectId,
-      sourceHref: generated ? null : gmailEvidenceHrefFor(candidate),
+      sourceHref: exact ? gmailEvidenceHrefFor(candidate) : null,
       sourceGenerated: generated,
+      sourceProvenance: structuredSpecSourceProvenanceOf(candidate),
     });
   })();
   const founderSentToShop = beats.some(

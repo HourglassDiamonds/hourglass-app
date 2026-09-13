@@ -23,6 +23,8 @@ import {
   VIEW_EMAIL_LABEL,
   OPEN_IN_GMAIL_LABEL,
   CONFLICT_SOURCE_UNAVAILABLE_COPY,
+  SOURCE_MESSAGE_UNVERIFIED_LABEL,
+  RELATED_EMAIL_LABEL,
   type SourceViewerMessageInput,
 } from "./email-viewer";
 import { presentFounderEvidence, selectFounderControls } from "./founder-actions";
@@ -471,6 +473,8 @@ describe("in-app email viewer presentation", () => {
     assert.equal(request?.provenanceLimited, true);
     assert.equal(request?.sources.length, 0);
     assert.match(request?.why ?? "", new RegExp(CONFLICT_SOURCE_UNAVAILABLE_COPY));
+    assert.match(request?.why ?? "", new RegExp(SOURCE_MESSAGE_UNVERIFIED_LABEL));
+    assert.equal(request?.provenanceLabel, SOURCE_MESSAGE_UNVERIFIED_LABEL);
     const view = presentEvidenceOnlySourceViewer(request!);
     assert.equal(view.gmailHref, "");
     assert.equal(view.sourceRef, null);
@@ -481,5 +485,55 @@ describe("in-app email viewer presentation", () => {
     assert.match(html, new RegExp(VIEW_EMAIL_LABEL));
     assert.match(html, /data-cos-source-limited/);
     assert.doesNotMatch(html, /data-cos-gmail-href="https:\/\/mail\.google\.com\/mail\/u\/0\/#all\/abc123def0/);
+  });
+
+  it("does not open a shipping Gmail as View email when provenance is not EXACT", () => {
+    const vendorHref = `https://mail.google.com/mail/u/0/#all/${OTHER_THREAD}/eee444fff5`;
+    const itemBrief = brief({
+      canonicalGmailThreadId: OTHER_THREAD,
+      specConflict: {
+        fieldName: "finger_size",
+        fieldLabel: "Finger size",
+        canonicalValue: "12.5",
+        proposedValue: "11",
+        candidateId: "cand-size",
+        canMutate: true,
+        sourceHref: null,
+        sourceGenerated: false,
+        sourceProvenance: "THREAD_SUPPORT",
+      },
+      evidence: [
+        beat({
+          candidateId: "cand-size",
+          sourceHref: vendorHref,
+          summary: "finger size 11",
+        }),
+        beat({
+          candidateId: "cand-ship",
+          sourceHref: vendorHref,
+          speaker: "vendor",
+          summary: "FedEx shipping update",
+        }),
+      ],
+    });
+    const item = composeTodayDocket(loop({ brief: [itemBrief] })).items[0]!;
+    const controls = selectFounderControls(item);
+    assert.equal(controls.openEmail, null);
+    assert.equal(controls.emailSources.length, 0);
+    assert.equal(controls.relatedEmailSources.some((row) => row.href === vendorHref), true);
+    const request = composeSourceViewerRequest(
+      item,
+      controls.emailSources,
+      presentFounderEvidence(item),
+      controls.relatedEmailSources,
+    );
+    assert.equal(request?.provenanceLimited, true);
+    assert.equal(request?.sources.length, 0);
+    assert.match(request?.why ?? "", new RegExp(SOURCE_MESSAGE_UNVERIFIED_LABEL));
+    assert.equal(RELATED_EMAIL_LABEL, "Related email");
+    const html = renderToStaticMarkup(createElement(ChiefOfStaffToday, { loop: loop({ brief: [itemBrief] }) }));
+    assert.match(html, new RegExp(VIEW_EMAIL_LABEL));
+    assert.match(html, /data-cos-source-limited/);
+    assert.doesNotMatch(html, /data-cos-gmail-href="https:\/\/mail\.google\.com\/mail\/u\/0\/#all\/111222333a\/eee444fff5"/);
   });
 });

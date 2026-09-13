@@ -328,6 +328,7 @@ describe("Gmail → Candidate adapter", () => {
       assert.equal(specs[0].payload.proposedValue, "8.5");
       assert.equal(specs[0].payload.currentValue, null);
       assert.equal(specs[0].payload.conflict, false);
+      assert.equal(specs[0].payload.sourceProvenance, "EXACT");
     }
   });
 
@@ -366,6 +367,7 @@ describe("Gmail → Candidate adapter", () => {
       assert.equal(specs[0].payload.proposedValue, "12.5");
       assert.equal(specs[0].payload.currentValue, "12");
       assert.equal(specs[0].payload.conflict, true);
+      assert.equal(specs[0].payload.sourceProvenance, "EXACT");
     }
     assert.ok(
       specs[0]?.evidenceBasis.ruleIds.includes("spec_conflict_review_required"),

@@ -16,6 +16,7 @@ export {
   CANDIDATE_SOURCE_SYSTEMS,
   CANDIDATE_STATES,
   CANDIDATE_TYPES,
+  STRUCTURED_SPEC_SOURCE_PROVENANCES,
   isCandidateSourceSystem,
 } from "./types";
 export type {
@@ -44,7 +45,14 @@ export type {
   ProposedCanonicalTarget,
   PutCandidateResult,
   StructuredSpecPayload,
+  StructuredSpecSourceProvenance,
 } from "./types";
+export {
+  isExactStructuredSpecGmailSource,
+  isStructuredSpecSourceProvenance,
+  structuredSpecSourceProvenanceOf,
+  withStructuredSpecProvenance,
+} from "./spec-provenance";
 export {
   CANDIDATE_CONSUMER_CONTRACT,
   presentCandidate,

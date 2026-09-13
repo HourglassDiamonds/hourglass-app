@@ -180,6 +180,7 @@ function draftFromHit(
         proposedValue: validated.value,
         currentValue: current,
         conflict,
+        sourceProvenance: "EXACT",
       },
       confidence: conflict ? "ambiguous" : hit.confidence,
       evidenceBasis: {

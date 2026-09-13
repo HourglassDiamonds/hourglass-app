@@ -3,13 +3,14 @@
  * Presentation only. Does not guess. Never prefers synthesized operating mail.
  *
  * Authority:
- * 1. Exact structured-spec conflict candidate Gmail sourceRef / sourceHref
- * 2. Exact candidate/evidence Gmail source for that same conflict
+ * 1. Exact structured-spec conflict Gmail sourceHref, and only when provenance is EXACT
+ * 2. Exact candidate/evidence Gmail source for non-conflict items
  * 3. Supporting real Gmail, only when this is not a spec-conflict card
  * 4. Generated operating mail — never an Open Email destination
  *
- * Spec-conflict cards never fall through to latest Person/Project mail or
- * project.gmailThreadId. If the conflict has no real Gmail source, return [].
+ * Spec-conflict cards never fall through to latest Person/Project mail,
+ * project.gmailThreadId, or a supporting beat. If the conflict has no
+ * exact Gmail source, return [].
  */
 
 import { GENERATED_FOUNDER_OPERATING_BRIEF_RULE } from "@/lib/continuum/gmail/candidates/generated-source";
@@ -103,6 +104,24 @@ function uniqueByHref(rows: readonly CosOpenEmailSource[]): CosOpenEmailSource[]
   return out;
 }
 
+export function selectRelatedEmailSources(
+  input: SelectOpenEmailSourcesInput,
+): CosOpenEmailSource[] {
+  const parsed: ParsedEmailSource[] = [];
+  for (const [index, beat] of input.beats.entries()) {
+    const source = parseBeatSource(beat, index);
+    if (source) parsed.push(source);
+  }
+  const real = parsed.filter((row) => !row.generated);
+  const exact = exactConflictSource(input.conflictSourceHref, parsed);
+  const exclude = new Set(exact ? [exact.href] : []);
+  return uniqueByHref(
+    real
+      .filter((row) => !exclude.has(row.href))
+      .map((row) => ({ href: row.href, label: row.label })),
+  );
+}
+
 function pickRealSources(
   real: readonly ParsedEmailSource[],
   specCandidateId: string | null,
@@ -155,15 +174,6 @@ export function selectOpenEmailSources(
   if (conflictMode) {
     const exact = exactConflictSource(input.conflictSourceHref, parsed);
     if (exact) return uniqueByHref([exact]);
-    if (parsed.length > 0 && real.length === 0) return [];
-    const specHits = specCandidateId
-      ? real.filter((row) => row.candidateId === specCandidateId)
-      : [];
-    if (specHits.length > 0) {
-      return uniqueByHref([
-        { href: specHits[0]!.href, label: specHits[0]!.label },
-      ]);
-    }
     return [];
   }
 

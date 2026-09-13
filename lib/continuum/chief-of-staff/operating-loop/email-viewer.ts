@@ -13,8 +13,11 @@ import type { CosEvidenceBeat } from "./types";
 
 export const VIEW_EMAIL_LABEL = "View email" as const;
 export const OPEN_IN_GMAIL_LABEL = "Open in Gmail" as const;
+export const RELATED_EMAIL_LABEL = "Related email" as const;
+export const SOURCE_MESSAGE_UNVERIFIED_LABEL =
+  "Source message could not be verified" as const;
 export const CONFLICT_SOURCE_UNAVAILABLE_COPY =
-  "Continuum does not have the original Gmail message for this proposed value. Showing indexed evidence instead of another project email.";
+  "Continuum could not verify the original Gmail message for this proposed value. Showing indexed evidence instead of another project email.";
 export const EMAIL_CARD_EXCERPT_MAX = 160;
 export const VIEWER_CONTEXT_EXCERPT_MAX = 280;
 export const VIEWER_NEARBY_MESSAGES = 2;
@@ -35,12 +38,14 @@ export type CosEmailCardView = {
 
 export type CosSourceViewerRequest = {
   sources: CosOpenEmailSource[];
+  relatedSources?: CosOpenEmailSource[];
   personLabel: string | null;
   projectTitle: string | null;
   why: string | null;
   facts: readonly { label: string; value: string }[];
   beats: readonly CosEvidenceBeat[];
   provenanceLimited?: boolean;
+  provenanceLabel?: string | null;
 };
 
 export type CosSourceViewerAttachment = {
@@ -199,30 +204,50 @@ export function composeSourceViewerRequest(
     facts: readonly { label: string; value: string }[];
     beats: readonly CosEvidenceBeat[];
   } | null,
+  relatedSources: readonly CosOpenEmailSource[] = [],
 ): CosSourceViewerRequest | null {
   const conflict = item.brief?.specConflict ?? item.decision?.specConflict ?? null;
   const generatedConflict = conflict?.sourceGenerated === true;
+  const related = relatedSources.map((source) => ({
+    href: source.href,
+    label: source.label,
+  }));
+  const unverified =
+    Boolean(conflict) &&
+    !generatedConflict &&
+    (conflict?.sourceProvenance != null
+      ? conflict.sourceProvenance !== "EXACT"
+      : sources.length === 0);
   if (sources.length === 0) {
     if (!conflict || generatedConflict) return null;
     return {
       sources: [],
+      relatedSources: related,
       provenanceLimited: true,
+      provenanceLabel: SOURCE_MESSAGE_UNVERIFIED_LABEL,
       personLabel: founderSafeText(item.brief?.personLabel ?? item.job?.clientLabel) ??
         founderSafeText(item.subject !== "Unassigned" ? item.subject.split("/")[0] : null),
       projectTitle:
         founderSafeText(item.brief?.projectTitle ?? item.job?.projectTitle) ?? null,
-      why: [CONFLICT_SOURCE_UNAVAILABLE_COPY, evidence?.why].filter(Boolean).join(" "),
+      why: [SOURCE_MESSAGE_UNVERIFIED_LABEL, CONFLICT_SOURCE_UNAVAILABLE_COPY, evidence?.why]
+        .filter(Boolean)
+        .join(" "),
       facts: evidence?.facts ?? [],
       beats: evidence?.beats ?? [],
     };
   }
   return {
     sources: sources.map((source) => ({ href: source.href, label: source.label })),
+    relatedSources: related,
+    provenanceLimited: unverified,
+    provenanceLabel: unverified ? SOURCE_MESSAGE_UNVERIFIED_LABEL : null,
     personLabel: founderSafeText(item.brief?.personLabel ?? item.job?.clientLabel) ??
       founderSafeText(item.subject !== "Unassigned" ? item.subject.split("/")[0] : null),
     projectTitle:
       founderSafeText(item.brief?.projectTitle ?? item.job?.projectTitle) ?? null,
-    why: evidence?.why ?? null,
+    why: unverified
+      ? [SOURCE_MESSAGE_UNVERIFIED_LABEL, evidence?.why].filter(Boolean).join(" ")
+      : evidence?.why ?? null,
     facts: evidence?.facts ?? [],
     beats: evidence?.beats ?? [],
   };
