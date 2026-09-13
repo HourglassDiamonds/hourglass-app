@@ -10,6 +10,7 @@ import {
   COS_CAUGHT_UP_HEADING,
 } from "./present";
 import { COS_SPRINT_CLEAR_COPY } from "./master-sprint";
+import { presentUnassignedHeadline } from "./email-viewer";
 import type {
   CosAnomalyItem,
   CosBriefItem,
@@ -84,6 +85,7 @@ export function cosWatchingCountLabel(count: number): string {
 
 export function founderFacingBriefActionLabel(kind: string, label: string): string {
   if (kind === "add_to_top5") return "Add to Today";
+  if (kind === "open_email") return "View email";
   return label;
 }
 
@@ -302,12 +304,21 @@ export function composeTodayDocket(loop: CosOperatingLoopView): CosTodayDocketVi
       context: item.explanation,
       origin: "brief",
     });
+    const headline =
+      subject === UNASSIGNED_SUBJECT
+        ? presentUnassignedHeadline(
+            briefing.headline,
+            item.evidence
+              .filter((beat) => beat.generatedSource !== true)
+              .map((beat) => beat.summary),
+          )
+        : briefing.headline;
     liveWork.push({
       id: item.id,
       lane: "live_work",
       origin: "brief",
       subject,
-      headline: briefing.headline,
+      headline,
       context: briefing.context,
       job: null,
       brief: item,

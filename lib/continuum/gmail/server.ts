@@ -35,3 +35,8 @@ export type {
   IndexedThreadEvidenceInput,
   IndexedThreadEvidenceResult,
 } from "./indexed-thread-evidence";
+export { runSourceViewerFetch } from "./source-viewer";
+export type {
+  SourceViewerFetchInput,
+  SourceViewerFetchResult,
+} from "./source-viewer";

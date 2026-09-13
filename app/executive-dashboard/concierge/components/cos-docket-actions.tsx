@@ -6,6 +6,8 @@ import {
   selectFounderControls,
   type CosFounderActionView,
 } from "@/lib/continuum/chief-of-staff/operating-loop/founder-actions";
+import { composeSourceViewerRequest } from "@/lib/continuum/chief-of-staff/operating-loop/email-viewer";
+import { CosViewEmailControl } from "./cos-source-viewer";
 
 type DisposeAction = (formData: FormData) => void | Promise<void>;
 
@@ -111,6 +113,7 @@ export function CosDocketActions({
     return true;
   });
   const evidence = controls.evidence;
+  const viewerRequest = composeSourceViewerRequest(item, controls.emailSources, evidence);
   return (
     <div className="hg-cos-founder-actions mt-2 min-w-0">
       {controls.actions.length > 0 || visibleFallback.length > 0 ? (
@@ -153,34 +156,11 @@ export function CosDocketActions({
             Open project
           </Link>
         ) : null}
-        {controls.openEmail ? (
-          <Link
-            href={controls.openEmail.href}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.2em] text-[#ad9164] outline-none hover:text-[#efe8de] focus-visible:text-[#efe8de]"
-          >
-            Open email
-          </Link>
-        ) : controls.emailSources.length > 1 ? (
-          <details className="hg-cos-email-sources inline min-w-0 align-middle">
-            <summary className="inline-flex min-h-11 cursor-pointer items-center text-[11px] uppercase tracking-[0.2em] text-[#ad9164] outline-none hover:text-[#efe8de]">
-              Open email
-            </summary>
-            <span className="mt-1 flex min-w-0 flex-col">
-              {controls.emailSources.map((source) => (
-                <Link
-                  key={source.href}
-                  href={source.href}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.2em] text-[#ad9164] outline-none hover:text-[#efe8de]"
-                >
-                  {source.label}
-                </Link>
-              ))}
-            </span>
-          </details>
+        {viewerRequest ? (
+          <CosViewEmailControl
+            sources={viewerRequest.sources}
+            request={viewerRequest}
+          />
         ) : null}
         {item.job ? (
           <Link
@@ -214,18 +194,7 @@ export function CosDocketActions({
                   {evidence.beats.map((beat) => (
                     <li key={beat.candidateId} className="min-w-0">
                       <p className="break-words text-[13px] leading-relaxed text-[#c4b7aa]">
-                        {beat.sourceHref ? (
-                          <Link
-                            href={beat.sourceHref}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="text-[#ad9164] outline-none hover:text-[#efe8de]"
-                          >
-                            {beat.label}
-                          </Link>
-                        ) : (
-                          beat.label
-                        )}
+                        {beat.label}
                       </p>
                       <p className="break-words text-[13px] leading-relaxed text-[#9a8e82]">
                         {beat.summary}

@@ -185,9 +185,11 @@ describe("Today founder contextual actions", () => {
     const html = renderToStaticMarkup(
       createElement(ChiefOfStaffToday, { loop: loop({ brief: [item] }) }),
     );
-    assert.match(html, /Open email/);
+    assert.match(html, /View email/);
     assert.match(html, /abc123def0\/aaa111bbb2/);
     assert.match(html, /Evidence/);
+    assert.doesNotMatch(html, />Open email</);
+    assert.doesNotMatch(html, /Reply|Archive|Mark unread|Send</);
   });
 
   it("hides Open Email when no real Gmail source can be identified", () => {
@@ -220,6 +222,7 @@ describe("Today founder contextual actions", () => {
       createElement(ChiefOfStaffToday, { loop: loop({ brief: [item] }) }),
     );
     assert.doesNotMatch(html, />Open email</);
+    assert.doesNotMatch(html, /View email/);
     assert.match(html, /Evidence/);
   });
 
@@ -371,7 +374,7 @@ describe("Today founder contextual actions", () => {
     assert.match(html, /Confirm person/);
     assert.match(html, /Snooze/);
     assert.doesNotMatch(html, />Responded</);
-    assert.match(html, /Open email/);
+    assert.match(html, /View email/);
     assert.match(html, /Evidence/);
   });
 

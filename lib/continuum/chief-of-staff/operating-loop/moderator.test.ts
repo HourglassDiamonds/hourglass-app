@@ -1876,7 +1876,7 @@ describe("Concierge Executive Moderator V1", () => {
     assert.doesNotMatch(html, /Concierge Brief|Recommended:|>Top 5</);
     assert.doesNotMatch(html, /Earlier attention view/);
     assert.match(html, /Evidence/);
-    assert.match(html, /Open email/);
+    assert.match(html, /View email/);
     const briefChunks = html.split("data-cos-brief-item").slice(1);
     for (const chunk of briefChunks) {
       const row = chunk.split("data-cos-docket-item")[0] ?? chunk;

@@ -12,6 +12,31 @@ export type ParsedGmailAddresses = {
   bccEmails: string[];
 };
 
+export type ParsedGmailFrom = {
+  email: string | null;
+  displayName: string | null;
+};
+
+export function parseGmailFromHeader(raw: string | null): ParsedGmailFrom {
+  const trimmed = raw?.trim() ?? "";
+  if (!trimmed) return { email: null, displayName: null };
+  const angled = trimmed.match(/^(.*?)\s*<([^<>]+)>\s*$/);
+  if (angled) {
+    const email = angled[2]?.trim() || null;
+    const displayName = angled[1]
+      ?.replace(/^["']|["']$/g, "")
+      .replace(/\s+/g, " ")
+      .trim() || null;
+    return { email, displayName };
+  }
+  if (trimmed.includes("@")) return { email: trimmed, displayName: null };
+  return { email: null, displayName: trimmed };
+}
+
+export function parseGmailFrom(message: GmailApiMessage): ParsedGmailFrom {
+  return parseGmailFromHeader(headerValue(message, "From"));
+}
+
 function headerValue(
   message: GmailApiMessage,
   name: string,

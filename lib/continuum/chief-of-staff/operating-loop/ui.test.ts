@@ -84,6 +84,12 @@ describe("CoS operating loop Command Center UI", () => {
     assert.match(css, /\.hg-cos-check[\s\S]*min-height:\s*2\.75rem/);
     assert.match(css, /\.hg-cos-top5[\s\S]*overflow-x:\s*hidden/);
     assert.match(css, /\.hg-cos-founder-actions > div[\s\S]*column-gap:\s*1\.25rem/);
+    assert.match(css, /\.hg-cos-source-viewer-panel/);
+    const viewer = readFileSync(join(CONCIERGE_DIR, "components", "cos-source-viewer.tsx"), "utf8");
+    const actions = readFileSync(join(CONCIERGE_DIR, "components", "cos-docket-actions.tsx"), "utf8");
+    assert.match(viewer, /VIEW_EMAIL_LABEL/);
+    assert.match(viewer, /OPEN_IN_GMAIL_LABEL/);
+    assert.doesNotMatch(actions, />Open email</);
   });
 
   it("shows a quiet caught-up state and omits the anomaly section when nothing is wrong", () => {

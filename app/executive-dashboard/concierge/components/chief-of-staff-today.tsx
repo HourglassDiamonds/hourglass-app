@@ -5,10 +5,12 @@ import {
   type CosDocketItemView,
 } from "@/lib/continuum/chief-of-staff/operating-loop/docket";
 import { selectFounderControls } from "@/lib/continuum/chief-of-staff/operating-loop/founder-actions";
+import { composeEmailCard } from "@/lib/continuum/chief-of-staff/operating-loop/email-viewer";
 import { CosCompleteControl } from "./cos-complete-control";
 import { CosDocketActions } from "./cos-docket-actions";
 import { CosWatchingList } from "./cos-concierge-brief";
 import { CosFounderAttentionControls } from "./cos-founder-attention";
+import { CosUnassignedIdentity } from "./cos-unassigned-identity";
 
 type CompleteAction = (formData: FormData) => void | Promise<void>;
 
@@ -26,6 +28,7 @@ function DocketItem({
   disposeAction?: CompleteAction;
 }) {
   const controls = selectFounderControls(item);
+  const emailCard = composeEmailCard(item, controls.emailSources);
   const showCheck =
     Boolean(item.job) &&
     controls.completableJob &&
@@ -49,7 +52,8 @@ function DocketItem({
         <p className="mt-2 break-words font-serif text-[1.25rem] leading-[1.18] tracking-[-0.03em] text-[#efe8de]">
           {item.headline}
         </p>
-        {item.context ? (
+        {emailCard ? <CosUnassignedIdentity card={emailCard} /> : null}
+        {item.context && !emailCard?.excerpt ? (
           <p className="hg-cos-brief-explanation hg-cos-docket-context mt-2 break-words text-[14px] leading-relaxed text-[#c4b7aa]">
             {item.context}
           </p>
