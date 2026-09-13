@@ -4,6 +4,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import {
   OPEN_IN_GMAIL_LABEL,
   VIEW_EMAIL_LABEL,
+  presentEvidenceOnlySourceViewer,
   type CosSourceViewerRequest,
   type CosSourceViewerView,
 } from "@/lib/continuum/chief-of-staff/operating-loop/email-viewer";
@@ -95,7 +96,15 @@ export function CosViewEmailControl({
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (!open || !activeHref) return;
+    if (!open) return;
+    if (!activeHref) {
+      if (requestRef.current.provenanceLimited) {
+        setLoading(false);
+        setError(null);
+        setView(presentEvidenceOnlySourceViewer(requestRef.current));
+      }
+      return;
+    }
     let cancelled = false;
     setLoading(true);
     setError(null);
@@ -136,19 +145,21 @@ export function CosViewEmailControl({
     };
   }, [open]);
 
-  if (sources.length === 0) return null;
+  if (sources.length === 0 && !request.provenanceLimited) return null;
   const active = view;
   const person = active?.personLabel ?? request.personLabel;
   const project = active?.projectTitle ?? request.projectTitle;
+  const primaryHref = sources[0]?.href ?? "";
 
   return (
     <>
       <button
         type="button"
         data-cos-view-email=""
-        data-cos-gmail-href={sources[0]?.href ?? ""}
+        data-cos-gmail-href={primaryHref}
+        data-cos-source-limited={request.provenanceLimited ? "" : undefined}
         onClick={() => {
-          setActiveHref(sources[0]!.href);
+          setActiveHref(primaryHref);
           setOpen(true);
         }}
         className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.2em] text-[#ad9164] outline-none hover:text-[#efe8de] focus-visible:text-[#efe8de]"
@@ -245,15 +256,21 @@ export function CosViewEmailControl({
               ) : null}
             </div>
             <div className="hg-cos-source-viewer-foot">
-              <a
-                href={activeHref}
-                target="_blank"
-                rel="noreferrer"
-                data-cos-open-in-gmail=""
-                className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.2em] text-[#8d8073] outline-none hover:text-[#ad9164]"
-              >
-                {OPEN_IN_GMAIL_LABEL}
-              </a>
+              {activeHref ? (
+                <a
+                  href={activeHref}
+                  target="_blank"
+                  rel="noreferrer"
+                  data-cos-open-in-gmail=""
+                  className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.2em] text-[#8d8073] outline-none hover:text-[#ad9164]"
+                >
+                  {OPEN_IN_GMAIL_LABEL}
+                </a>
+              ) : (
+                <p className="text-[11px] uppercase tracking-[0.2em] text-[#6f675f]">
+                  No Gmail source
+                </p>
+              )}
             </div>
           </div>
         </div>

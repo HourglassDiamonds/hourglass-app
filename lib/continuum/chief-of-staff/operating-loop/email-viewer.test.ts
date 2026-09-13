@@ -13,6 +13,7 @@ import {
   founderSafeText,
   mergeEmailCardPreview,
   presentIndexedSourceViewer,
+  presentEvidenceOnlySourceViewer,
   presentSourceViewer,
   presentUnassignedHeadline,
   sourceRefFromHref,
@@ -21,6 +22,7 @@ import {
   usefulSenderName,
   VIEW_EMAIL_LABEL,
   OPEN_IN_GMAIL_LABEL,
+  CONFLICT_SOURCE_UNAVAILABLE_COPY,
   type SourceViewerMessageInput,
 } from "./email-viewer";
 import { presentFounderEvidence, selectFounderControls } from "./founder-actions";
@@ -90,6 +92,8 @@ function brief(extra: Partial<CosBriefItem> = {}): CosBriefItem {
       proposedValue: "11",
       candidateId: "cand-1",
       canMutate: true,
+      sourceHref: CLIENT_HREF,
+      sourceGenerated: false,
     },
     ...extra,
   };
@@ -240,6 +244,8 @@ describe("in-app email viewer presentation", () => {
         proposedValue: "11",
         candidateId: "cand-conflict",
         canMutate: true,
+        sourceHref: conflictHref,
+        sourceGenerated: false,
       },
       evidence: [
         beat({ candidateId: "cand-other", sourceHref: CLIENT_HREF }),
@@ -253,6 +259,8 @@ describe("in-app email viewer presentation", () => {
     const sources = selectOpenEmailSources({
       beats: itemBrief.evidence,
       specCandidateId: "cand-conflict",
+      conflictMode: true,
+      conflictSourceHref: conflictHref,
       canonicalThreadId: CLIENT_THREAD,
       fallbackHref: CLIENT_HREF,
     });
@@ -306,6 +314,16 @@ describe("in-app email viewer presentation", () => {
 
   it("hides the viewer for generated-only evidence", () => {
     const itemBrief = brief({
+      specConflict: {
+        fieldName: "finger_size",
+        fieldLabel: "Finger size",
+        canonicalValue: "12.5",
+        proposedValue: "11",
+        candidateId: "cand-brief",
+        canMutate: true,
+        sourceHref: null,
+        sourceGenerated: true,
+      },
       actions: [{ kind: "open_email", label: "Open email", href: BRIEF_HREF }],
       evidence: [beat({
         candidateId: "cand-brief",
@@ -385,5 +403,83 @@ describe("in-app email viewer presentation", () => {
     assert.equal(view?.focused.snippetFallback, true);
     assert.equal(view?.focused.body, "Size is 11");
     assert.equal(view?.readOnly, true);
+  });
+
+  it("does not let sibling Person/Project Gmail displace the conflict source", () => {
+    const conflictHref = `https://mail.google.com/mail/u/0/#all/${OTHER_THREAD}/eee444fff5`;
+    const vendorHref = CLIENT_HREF;
+    const itemBrief = brief({
+      canonicalGmailThreadId: CLIENT_THREAD,
+      specConflict: {
+        fieldName: "finger_size",
+        fieldLabel: "Finger size",
+        canonicalValue: "12.5",
+        proposedValue: "11",
+        candidateId: "cand-conflict",
+        canMutate: true,
+        sourceHref: conflictHref,
+        sourceGenerated: false,
+      },
+      evidence: [
+        beat({ candidateId: "cand-vendor", sourceHref: vendorHref, speaker: "vendor" }),
+        beat({
+          candidateId: "cand-conflict",
+          sourceHref: conflictHref,
+          summary: "Size is actually 11",
+        }),
+      ],
+    });
+    const item = composeTodayDocket(loop({ brief: [itemBrief] })).items[0]!;
+    const controls = selectFounderControls(item);
+    assert.equal(controls.openEmail?.href, conflictHref);
+    assert.equal(controls.emailSources.some((row) => row.href === vendorHref), false);
+    const html = renderToStaticMarkup(createElement(ChiefOfStaffToday, { loop: loop({ brief: [itemBrief] }) }));
+    assert.match(html, new RegExp(VIEW_EMAIL_LABEL));
+    assert.match(html, /111222333a\/eee444fff5/);
+    assert.doesNotMatch(html, /data-cos-gmail-href="https:\/\/mail\.google\.com\/mail\/u\/0\/#all\/abc123def0\/aaa111bbb2"/);
+  });
+
+  it("falls back to indexed evidence when the exact conflict Gmail source is unavailable", () => {
+    const vendorHref = CLIENT_HREF;
+    const itemBrief = brief({
+      canonicalGmailThreadId: CLIENT_THREAD,
+      specConflict: {
+        fieldName: "finger_size",
+        fieldLabel: "Finger size",
+        canonicalValue: "12.5",
+        proposedValue: "11",
+        candidateId: "cand-conflict",
+        canMutate: true,
+        sourceHref: null,
+        sourceGenerated: false,
+      },
+      evidence: [
+        beat({ candidateId: "cand-vendor", sourceHref: vendorHref, speaker: "vendor" }),
+        beat({
+          candidateId: "cand-conflict",
+          sourceHref: null,
+          summary: "finger size 11",
+        }),
+      ],
+    });
+    const item = composeTodayDocket(loop({ brief: [itemBrief] })).items[0]!;
+    const controls = selectFounderControls(item);
+    assert.equal(controls.emailSources.length, 0);
+    assert.equal(controls.openEmail, null);
+    const request = composeSourceViewerRequest(item, controls.emailSources, presentFounderEvidence(item));
+    assert.ok(request);
+    assert.equal(request?.provenanceLimited, true);
+    assert.equal(request?.sources.length, 0);
+    assert.match(request?.why ?? "", new RegExp(CONFLICT_SOURCE_UNAVAILABLE_COPY));
+    const view = presentEvidenceOnlySourceViewer(request!);
+    assert.equal(view.gmailHref, "");
+    assert.equal(view.sourceRef, null);
+    assert.equal(view.focused.subject, "Indexed evidence");
+    assert.match(view.why ?? "", /original Gmail message/);
+    assert.match(view.facts[0]?.value ?? "", /12\.5/);
+    const html = renderToStaticMarkup(createElement(ChiefOfStaffToday, { loop: loop({ brief: [itemBrief] }) }));
+    assert.match(html, new RegExp(VIEW_EMAIL_LABEL));
+    assert.match(html, /data-cos-source-limited/);
+    assert.doesNotMatch(html, /data-cos-gmail-href="https:\/\/mail\.google\.com\/mail\/u\/0\/#all\/abc123def0/);
   });
 });

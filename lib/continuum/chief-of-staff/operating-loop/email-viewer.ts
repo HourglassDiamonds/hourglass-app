@@ -13,6 +13,8 @@ import type { CosEvidenceBeat } from "./types";
 
 export const VIEW_EMAIL_LABEL = "View email" as const;
 export const OPEN_IN_GMAIL_LABEL = "Open in Gmail" as const;
+export const CONFLICT_SOURCE_UNAVAILABLE_COPY =
+  "Continuum does not have the original Gmail message for this proposed value. Showing indexed evidence instead of another project email.";
 export const EMAIL_CARD_EXCERPT_MAX = 160;
 export const VIEWER_CONTEXT_EXCERPT_MAX = 280;
 export const VIEWER_NEARBY_MESSAGES = 2;
@@ -38,6 +40,7 @@ export type CosSourceViewerRequest = {
   why: string | null;
   facts: readonly { label: string; value: string }[];
   beats: readonly CosEvidenceBeat[];
+  provenanceLimited?: boolean;
 };
 
 export type CosSourceViewerAttachment = {
@@ -197,7 +200,22 @@ export function composeSourceViewerRequest(
     beats: readonly CosEvidenceBeat[];
   } | null,
 ): CosSourceViewerRequest | null {
-  if (sources.length === 0) return null;
+  const conflict = item.brief?.specConflict ?? item.decision?.specConflict ?? null;
+  const generatedConflict = conflict?.sourceGenerated === true;
+  if (sources.length === 0) {
+    if (!conflict || generatedConflict) return null;
+    return {
+      sources: [],
+      provenanceLimited: true,
+      personLabel: founderSafeText(item.brief?.personLabel ?? item.job?.clientLabel) ??
+        founderSafeText(item.subject !== "Unassigned" ? item.subject.split("/")[0] : null),
+      projectTitle:
+        founderSafeText(item.brief?.projectTitle ?? item.job?.projectTitle) ?? null,
+      why: [CONFLICT_SOURCE_UNAVAILABLE_COPY, evidence?.why].filter(Boolean).join(" "),
+      facts: evidence?.facts ?? [],
+      beats: evidence?.beats ?? [],
+    };
+  }
   return {
     sources: sources.map((source) => ({ href: source.href, label: source.label })),
     personLabel: founderSafeText(item.brief?.personLabel ?? item.job?.clientLabel) ??
@@ -372,6 +390,39 @@ export function presentIndexedSourceViewer(input: {
       to: [],
       cc: [],
       subject: founderSafeText(input.indexedSubject),
+      sentAtLabel: null,
+      body: excerpt,
+      snippetFallback: true,
+      attachments: [],
+    },
+    earlier: [],
+    later: [],
+    hiddenEarlierCount: 0,
+    readOnly: true,
+  };
+}
+
+export function presentEvidenceOnlySourceViewer(
+  request: CosSourceViewerRequest,
+): CosSourceViewerView {
+  const excerpt = latestUsefulExcerpt(request.beats, VIEWER_CONTEXT_EXCERPT_MAX);
+  return {
+    threadId: "",
+    gmailHref: "",
+    sourceRef: null,
+    personLabel: request.personLabel,
+    projectTitle: request.projectTitle,
+    why: request.why,
+    facts: request.facts,
+    beats: request.beats,
+    focused: {
+      messageId: "indexed-evidence",
+      focused: true,
+      fromDisplayName: null,
+      fromEmail: null,
+      to: [],
+      cc: [],
+      subject: "Indexed evidence",
       sentAtLabel: null,
       body: excerpt,
       snippetFallback: true,

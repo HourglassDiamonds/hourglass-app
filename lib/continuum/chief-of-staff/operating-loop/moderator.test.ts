@@ -2059,4 +2059,168 @@ describe("Concierge Executive Moderator V1", () => {
     assert.equal(controls.openEmail?.href, clientHref);
     assert.equal(controls.emailSources.some((row) => row.href === briefHref), false);
   });
+
+  it("keeps View email on the finger-size evidence thread when later vendor mail fills the card", () => {
+    const sizeThread = "19aabbccddeeff01";
+    const sizeMsg = "1a08c4df80601111";
+    const vendorThread = "19ffcce49298efeb";
+    const vendorMsg = "1a08c4df80609947";
+    const sizeHref = `https://mail.google.com/mail/u/0/#all/${sizeThread}/${sizeMsg}`;
+    const vendorHref = `https://mail.google.com/mail/u/0/#all/${vendorThread}/${vendorMsg}`;
+    const projects = chickenProjects();
+    const current = projects.get(COS_LOOP_PROJECT_A)!;
+    projects.set(COS_LOOP_PROJECT_A, { ...current, gmailThreadId: vendorThread });
+    const vendors = Array.from({ length: 8 }, (_, index) =>
+      row({
+        candidateId: `vendor-ship-${index}`,
+        sourceTimestamp: `2026-09-1${index}T12:00:00.000Z`,
+        sourceRef: `gc1|${vendorThread}|${vendorMsg.slice(0, -1)}${index}`,
+        candidateType: "project_context",
+        payload: {
+          kind: "project_context",
+          topic: "production_status",
+          value: "Chicken ring shipping update",
+        },
+        evidenceBasis: {
+          ruleIds: ["explicit_vendor_status"],
+          matchedText: "RE: HGD - Chicken ring shipping",
+        },
+      }),
+    );
+    const result = briefOf({
+      candidates: [
+        row({
+          candidateId: "size-11",
+          sourceTimestamp: "2026-09-08T15:00:00.000Z",
+          sourceRef: `gc1|${sizeThread}|${sizeMsg}`,
+          candidateType: "structured_spec",
+          candidateState: "conflict",
+          proposedTarget: {
+            kind: "project_spec",
+            projectId: COS_LOOP_PROJECT_A,
+            fieldName: "finger_size",
+          },
+          payload: {
+            kind: "structured_spec",
+            fieldName: "finger_size",
+            proposedValue: "11",
+            currentValue: "12.5",
+            conflict: true,
+          },
+          evidenceBasis: {
+            ruleIds: ["spec_conflict_review_required", "explicit_client_request"],
+            matchedText: "finger size 11",
+          },
+        }),
+        ...vendors,
+      ],
+      jobs: [],
+      projects,
+      nowIso: COS_LOOP_NOW,
+      top5: [],
+    });
+    assert.equal(result.brief.length, 1);
+    assert.equal(result.brief[0]?.specConflict?.proposedValue, "11");
+    assert.equal(result.brief[0]?.specConflict?.canonicalValue, "12.5");
+    assert.equal(result.brief[0]?.specConflict?.sourceHref, sizeHref);
+    assert.equal(result.brief[0]?.canonicalGmailThreadId, vendorThread);
+    const openEmail = result.brief[0]?.actions.find((action) => action.kind === "open_email");
+    assert.equal(openEmail?.href, sizeHref);
+    assert.notEqual(openEmail?.href, vendorHref);
+    const controls = selectFounderControls({
+      origin: "brief",
+      subject: "Travis Morse / Chicken ring",
+      headline: result.brief[0]?.recommended ?? "",
+      context: result.brief[0]?.explanation ?? null,
+      job: null,
+      brief: result.brief[0]!,
+      decision: null,
+      anomaly: null,
+    });
+    assert.equal(controls.family, "spec_conflict");
+    assert.equal(controls.openEmail?.href, sizeHref);
+    assert.equal(controls.emailSources.some((row) => row.href === vendorHref), false);
+    assert.deepEqual(
+      controls.actions.map((action) => action.label),
+      ["Keep 12.5", "Update to 11", "Need to verify"],
+    );
+  });
+
+  it("does not open a sibling project thread when the finger-size candidate has no Gmail sourceRef", () => {
+    const vendorThread = "19ffcce49298efeb";
+    const vendorMsg = "1a08c4df80609947";
+    const vendorHref = `https://mail.google.com/mail/u/0/#all/${vendorThread}/${vendorMsg}`;
+    const projects = chickenProjects();
+    const current = projects.get(COS_LOOP_PROJECT_A)!;
+    projects.set(COS_LOOP_PROJECT_A, { ...current, gmailThreadId: vendorThread });
+    const result = briefOf({
+      candidates: [
+        row({
+          candidateId: "size-11-human",
+          sourceTimestamp: "2026-09-08T15:00:00.000Z",
+          sourceSystem: "human-intake",
+          sourceRef: "he1|ffffffff-ffff-4fff-8fff-ffffffffffff",
+          candidateType: "structured_spec",
+          candidateState: "conflict",
+          proposedTarget: {
+            kind: "project_spec",
+            projectId: COS_LOOP_PROJECT_A,
+            fieldName: "finger_size",
+          },
+          payload: {
+            kind: "structured_spec",
+            fieldName: "finger_size",
+            proposedValue: "11",
+            currentValue: "12.5",
+            conflict: true,
+          },
+          evidenceBasis: {
+            ruleIds: ["spec_conflict_review_required"],
+            matchedText: "finger size 11",
+          },
+        }),
+        row({
+          candidateId: "vendor-ship",
+          sourceTimestamp: "2026-09-10T12:00:00.000Z",
+          sourceRef: `gc1|${vendorThread}|${vendorMsg}`,
+          candidateType: "project_context",
+          payload: {
+            kind: "project_context",
+            topic: "production_status",
+            value: "Chicken ring shipping update",
+          },
+          evidenceBasis: {
+            ruleIds: ["explicit_vendor_status"],
+            matchedText: "RE: HGD - Chicken ring shipping",
+          },
+        }),
+      ],
+      jobs: [],
+      projects,
+      nowIso: COS_LOOP_NOW,
+      top5: [],
+    });
+    assert.equal(result.brief[0]?.specConflict?.proposedValue, "11");
+    assert.equal(result.brief[0]?.specConflict?.sourceHref, null);
+    assert.equal(result.brief[0]?.specConflict?.sourceGenerated, false);
+    const openEmail = result.brief[0]?.actions.find((action) => action.kind === "open_email");
+    assert.equal(openEmail, undefined);
+    const controls = selectFounderControls({
+      origin: "brief",
+      subject: "Travis Morse / Chicken ring",
+      headline: result.brief[0]?.recommended ?? "",
+      context: result.brief[0]?.explanation ?? null,
+      job: null,
+      brief: result.brief[0]!,
+      decision: null,
+      anomaly: null,
+    });
+    assert.equal(controls.emailSources.length, 0);
+    assert.equal(controls.openEmail, null);
+    assert.equal(controls.emailSources.some((row) => row.href === vendorHref), false);
+    assert.deepEqual(
+      controls.actions.map((action) => action.label),
+      ["Keep 12.5", "Update to 11", "Need to verify"],
+    );
+  });
 });

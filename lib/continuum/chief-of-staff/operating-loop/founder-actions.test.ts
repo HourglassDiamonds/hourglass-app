@@ -143,8 +143,10 @@ describe("Today founder contextual actions", () => {
         fieldLabel: "Finger size",
         canonicalValue: "12.5",
         proposedValue: "11",
-        candidateId: "cand-brief",
+        candidateId: "cand-1",
         canMutate: true,
+        sourceHref: clientHref,
+        sourceGenerated: false,
       },
       actions: [
         {
@@ -196,6 +198,16 @@ describe("Today founder contextual actions", () => {
     const briefHref = "https://mail.google.com/mail/u/0/#all/fed098cba1/ccc222ddd3";
     const item = brief({
       canonicalGmailThreadId: "abc123def0",
+      specConflict: {
+        fieldName: "finger_size",
+        fieldLabel: "Finger size",
+        canonicalValue: "12.5",
+        proposedValue: "11",
+        candidateId: "cand-brief",
+        canMutate: true,
+        sourceHref: null,
+        sourceGenerated: true,
+      },
       actions: [
         {
           kind: "open_email",
@@ -236,8 +248,10 @@ describe("Today founder contextual actions", () => {
         fieldLabel: "Finger size",
         canonicalValue: "12.5",
         proposedValue: "11",
-        candidateId: "cand-brief",
+        candidateId: "cand-1",
         canMutate: true,
+        sourceHref: clientHref,
+        sourceGenerated: false,
       },
       actions: [
         {

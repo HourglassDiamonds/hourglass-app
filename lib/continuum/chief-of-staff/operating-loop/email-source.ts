@@ -3,10 +3,13 @@
  * Presentation only. Does not guess. Never prefers synthesized operating mail.
  *
  * Authority:
- * 1. Spec-conflict candidate thread, when that candidate has a real Gmail source
- * 2. Direct real Gmail source provenance on the item
- * 3. Project-level conversation hint, only when that thread is among those real sources
+ * 1. Exact structured-spec conflict candidate Gmail sourceRef / sourceHref
+ * 2. Exact candidate/evidence Gmail source for that same conflict
+ * 3. Supporting real Gmail, only when this is not a spec-conflict card
  * 4. Generated operating mail — never an Open Email destination
+ *
+ * Spec-conflict cards never fall through to latest Person/Project mail or
+ * project.gmailThreadId. If the conflict has no real Gmail source, return [].
  */
 
 import { GENERATED_FOUNDER_OPERATING_BRIEF_RULE } from "@/lib/continuum/gmail/candidates/generated-source";
@@ -25,6 +28,10 @@ export type SelectOpenEmailSourcesInput = {
   specCandidateId?: string | null;
   canonicalThreadId?: string | null;
   fallbackHref?: string | null;
+  /** When true, only the conflict's own Gmail source is eligible. */
+  conflictMode?: boolean;
+  /** Exact Gmail href of the proposed-value candidate. Independent of sliced beats. */
+  conflictSourceHref?: string | null;
 };
 
 type ParsedEmailSource = CosOpenEmailSource & {
@@ -117,6 +124,16 @@ function pickRealSources(
   );
 }
 
+function exactConflictSource(
+  href: string | null | undefined,
+  parsed: readonly ParsedEmailSource[],
+): CosOpenEmailSource | null {
+  const trimmed = href?.trim() ?? "";
+  if (!trimmed) return null;
+  if (parsed.some((row) => row.href === trimmed && row.generated)) return null;
+  return parseFallback(trimmed);
+}
+
 /**
  * Pick the Gmail source(s) that directly support the docket item.
  * Fail closed when the only available Gmail hrefs are synthesized operating mail.
@@ -125,6 +142,7 @@ export function selectOpenEmailSources(
   input: SelectOpenEmailSourcesInput,
 ): CosOpenEmailSource[] {
   const specCandidateId = input.specCandidateId?.trim() || null;
+  const conflictMode = input.conflictMode === true;
   const projectHint = canonicalThread(input.canonicalThreadId);
   const parsed: ParsedEmailSource[] = [];
   for (const [index, beat] of input.beats.entries()) {
@@ -133,6 +151,22 @@ export function selectOpenEmailSources(
   }
 
   const real = parsed.filter((row) => !row.generated);
+
+  if (conflictMode) {
+    const exact = exactConflictSource(input.conflictSourceHref, parsed);
+    if (exact) return uniqueByHref([exact]);
+    if (parsed.length > 0 && real.length === 0) return [];
+    const specHits = specCandidateId
+      ? real.filter((row) => row.candidateId === specCandidateId)
+      : [];
+    if (specHits.length > 0) {
+      return uniqueByHref([
+        { href: specHits[0]!.href, label: specHits[0]!.label },
+      ]);
+    }
+    return [];
+  }
+
   if (parsed.length > 0 && real.length === 0) return [];
 
   if (real.length > 0) {

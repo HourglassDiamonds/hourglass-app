@@ -210,9 +210,12 @@ function confirmPersonView(item: CosFounderActionSource): CosConfirmPersonView {
 function emailSourcesFor(item: CosFounderActionSource): CosEmailSourceView[] {
   if (item.brief) {
     const action = item.brief.actions.find((row) => row.kind === "open_email" && row.href);
+    const conflict = item.brief.specConflict;
     return selectOpenEmailSources({
       beats: item.brief.evidence,
-      specCandidateId: item.brief.specConflict?.candidateId ?? null,
+      specCandidateId: conflict?.candidateId ?? null,
+      conflictMode: Boolean(conflict),
+      conflictSourceHref: conflict?.sourceHref ?? null,
       canonicalThreadId: item.brief.canonicalGmailThreadId ?? null,
       fallbackHref: action?.href ?? null,
     });
@@ -491,6 +494,8 @@ export function specConflictFromCandidates(input: {
   proposedValue: string;
   candidateId: string;
   projectId: string | null;
+  sourceHref?: string | null;
+  sourceGenerated?: boolean;
 }): CosSpecConflictView | null {
   const canonical = input.canonicalValue?.trim() ?? "";
   const proposed = input.proposedValue.trim();
@@ -502,6 +507,8 @@ export function specConflictFromCandidates(input: {
     proposedValue: proposed,
     candidateId: input.candidateId,
     canMutate: false,
+    sourceHref: input.sourceGenerated ? null : (input.sourceHref ?? null),
+    sourceGenerated: input.sourceGenerated === true,
   };
   view.canMutate = canMutateSpecConflict(view, input.projectId);
   return view;

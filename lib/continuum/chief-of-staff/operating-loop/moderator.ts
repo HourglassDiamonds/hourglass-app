@@ -758,17 +758,29 @@ function classifySituation(input: {
   const specConflict = (() => {
     if (conflicts.length !== 1) return null;
     const row = conflicts[0]!;
-    const candidate = usable.find((item) => {
+    const matches = sorted.filter((item) => {
+      if (!isActionableSpecConflict(item, input.ctx)) return false;
       const payload = payloadOf(item);
-      return payload.kind === "structured_spec" && payload.fieldName === row.fieldName;
+      return (
+        payload.kind === "structured_spec" &&
+        payload.fieldName === row.fieldName &&
+        payload.proposedValue === row.proposed
+      );
     });
+    const real = matches.filter(
+      (item) => !hasRule(item, GENERATED_FOUNDER_OPERATING_BRIEF_RULE),
+    );
+    const candidate = (real.length > 0 ? real : matches).at(-1) ?? null;
     if (!candidate || !row.canonical) return null;
+    const generated = hasRule(candidate, GENERATED_FOUNDER_OPERATING_BRIEF_RULE);
     return specConflictFromCandidates({
       fieldName: row.fieldName,
       canonicalValue: row.canonical,
       proposedValue: row.proposed,
       candidateId: candidate.candidateId,
       projectId: attribution.projectId,
+      sourceHref: generated ? null : gmailEvidenceHrefFor(candidate),
+      sourceGenerated: generated,
     });
   })();
   const founderSentToShop = beats.some(
@@ -1080,6 +1092,8 @@ function presentBrief(
   const emailSources = selectOpenEmailSources({
     beats: item.beats,
     specCandidateId: item.specConflict?.candidateId ?? null,
+    conflictMode: Boolean(item.specConflict),
+    conflictSourceHref: item.specConflict?.sourceHref ?? null,
     canonicalThreadId: canonicalGmailThreadId,
   });
   const gmailHref = emailSources.length === 1 ? emailSources[0]!.href : null;

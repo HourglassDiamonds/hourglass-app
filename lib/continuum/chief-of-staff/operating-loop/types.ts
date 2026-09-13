@@ -152,6 +152,9 @@ export type CosSpecConflictView = {
   proposedValue: string;
   candidateId: string;
   canMutate: boolean;
+  /** Exact Gmail href of the candidate that produced proposedValue. Never generated mail. */
+  sourceHref?: string | null;
+  sourceGenerated?: boolean;
 };
 
 export type CosFounderAttentionItem = {

@@ -36,6 +36,7 @@ import {
   projectIdsByThread,
   resolveProjectAttribution,
 } from "./attribution";
+import { GENERATED_FOUNDER_OPERATING_BRIEF_RULE } from "@/lib/continuum/gmail/candidates/generated-source";
 import { gmailEvidenceHrefFor, sourceHrefFor, sourceLabelFor } from "./evidence";
 import { specConflictFromCandidates } from "./founder-actions";
 import { isCandidateQuietForToday } from "./quiet";
@@ -380,7 +381,21 @@ function toAttentionItem(input: {
     if (!row) return null;
     const payload = payloadOf(row);
     if (payload.kind !== "structured_spec") return null;
-    const projectId = candidateProjectId(row);
+    const matches = input.visible.filter((item) => {
+      if (!isActionableSpecConflict(item, input.ctx)) return false;
+      const next = payloadOf(item);
+      return (
+        next.kind === "structured_spec" &&
+        next.fieldName === payload.fieldName &&
+        next.proposedValue === payload.proposedValue
+      );
+    });
+    const real = matches.filter(
+      (item) => !hasRule(item, GENERATED_FOUNDER_OPERATING_BRIEF_RULE),
+    );
+    const candidate = (real.length > 0 ? real : matches).at(-1) ?? row;
+    const generated = hasRule(candidate, GENERATED_FOUNDER_OPERATING_BRIEF_RULE);
+    const projectId = candidateProjectId(candidate);
     const live = projectId
       ? input.ctx.specByProject?.get(projectId)?.get(payload.fieldName) ?? null
       : null;
@@ -388,8 +403,10 @@ function toAttentionItem(input: {
       fieldName: payload.fieldName,
       canonicalValue: live ?? payload.currentValue,
       proposedValue: payload.proposedValue,
-      candidateId: row.candidateId,
+      candidateId: candidate.candidateId,
       projectId: projectId ?? attribution.projectId,
+      sourceHref: generated ? null : gmailEvidenceHrefFor(candidate),
+      sourceGenerated: generated,
     });
   })();
   const distinctDecision =

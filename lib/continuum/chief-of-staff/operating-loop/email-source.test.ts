@@ -171,4 +171,70 @@ describe("Open Email provenance", () => {
       [OTHER_HREF, CLIENT_HREF].sort(),
     );
   });
+
+  it("opens the exact conflict sourceHref even when that beat is missing from evidence", () => {
+    const conflictHref = `https://mail.google.com/mail/u/0/#all/${OTHER_THREAD}/eee444fff5`;
+    const sources = selectOpenEmailSources({
+      conflictMode: true,
+      conflictSourceHref: conflictHref,
+      specCandidateId: "cand-size",
+      canonicalThreadId: CLIENT_THREAD,
+      fallbackHref: CLIENT_HREF,
+      beats: [
+        beat({ candidateId: "cand-vendor", sourceHref: CLIENT_HREF, speaker: "vendor" }),
+        beat({ candidateId: "cand-other", sourceHref: OTHER_HREF }),
+      ],
+    });
+    assert.deepEqual(sources.map((row) => row.href), [conflictHref]);
+  });
+
+  it("does not let other Person/Project threads displace a spec-conflict source", () => {
+    const conflictHref = `https://mail.google.com/mail/u/0/#all/${OTHER_THREAD}/eee444fff5`;
+    const sources = selectOpenEmailSources({
+      conflictMode: true,
+      conflictSourceHref: conflictHref,
+      specCandidateId: "cand-size",
+      canonicalThreadId: CLIENT_THREAD,
+      beats: [
+        beat({ candidateId: "cand-size", sourceHref: conflictHref, summary: "finger size is 11" }),
+        beat({ candidateId: "cand-vendor", sourceHref: CLIENT_HREF, speaker: "vendor" }),
+      ],
+    });
+    assert.deepEqual(sources.map((row) => row.href), [conflictHref]);
+    assert.equal(sources.some((row) => row.href === CLIENT_HREF), false);
+  });
+
+  it("fails closed when the spec-conflict Gmail source is unavailable", () => {
+    const sources = selectOpenEmailSources({
+      conflictMode: true,
+      conflictSourceHref: null,
+      specCandidateId: "cand-size",
+      canonicalThreadId: CLIENT_THREAD,
+      fallbackHref: CLIENT_HREF,
+      beats: [
+        beat({ candidateId: "cand-vendor", sourceHref: CLIENT_HREF, speaker: "vendor" }),
+        beat({ candidateId: "cand-other", sourceHref: OTHER_HREF }),
+      ],
+    });
+    assert.deepEqual(sources, []);
+  });
+
+  it("never uses generated operating mail as a spec-conflict View email source", () => {
+    const sources = selectOpenEmailSources({
+      conflictMode: true,
+      conflictSourceHref: BRIEF_HREF,
+      specCandidateId: "cand-brief",
+      canonicalThreadId: CLIENT_THREAD,
+      fallbackHref: CLIENT_HREF,
+      beats: [
+        beat({
+          candidateId: "cand-brief",
+          sourceHref: BRIEF_HREF,
+          generatedSource: true,
+        }),
+        beat({ candidateId: "cand-vendor", sourceHref: CLIENT_HREF, speaker: "vendor" }),
+      ],
+    });
+    assert.deepEqual(sources, []);
+  });
 });

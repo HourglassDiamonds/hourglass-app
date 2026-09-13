@@ -96,6 +96,7 @@ function viewerRequest(
       }))
       .filter((fact) => fact.label && fact.value),
     beats: input?.beats ?? [],
+    provenanceLimited: input?.provenanceLimited === true,
   };
 }
 
