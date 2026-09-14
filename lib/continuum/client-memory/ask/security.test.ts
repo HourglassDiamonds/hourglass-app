@@ -35,14 +35,15 @@ describe("Ask Concierge security", () => {
     const ask = readFileSync(join(CONCIERGE_DIR, "components", "ask-concierge-shell.tsx"), "utf8");
     const askAnswer = readFileSync(join(CONCIERGE_DIR, "components", "ask-concierge-answer.tsx"), "utf8");
     const actions = readFileSync(join(CONCIERGE_DIR, "actions.ts"), "utf8");
+    const askActions = readFileSync(join(CONCIERGE_DIR, "ask-actions.ts"), "utf8");
     assert.match(ask, /askConcierge/);
     assert.doesNotMatch(ask, /listCurrentBirthdaysByMonth|createSupabaseClientMemoryReader|getSupabaseAdmin/);
     assert.doesNotMatch(ask, /fetch\(|\/api\/|localStorage|sessionStorage|gtag/);
     assert.doesNotMatch(askAnswer, /listCurrentBirthdaysByMonth|createSupabaseClientMemoryReader|getSupabaseAdmin/);
     assert.match(askAnswer, /conciergeClientPath/);
-    assert.match(actions, /askConcierge/);
-    assert.match(actions, /getAuthenticatedClientMemoryReader/);
-    assert.match(actions, /answerAskConciergeQuery/);
+    assert.match(askActions, /askConcierge/);
+    assert.match(askActions, /getAuthenticatedClientMemoryReader/);
+    assert.match(askActions, /answerAskConciergeQuery/);
     assert.doesNotMatch(actions, /console\.(log|info|debug|warn|error)/);
     assert.doesNotMatch(actions, /from\("continuum_/);
     const apiFiles = walkFiles(join(ROOT, "app/api"), ".ts");

@@ -176,7 +176,7 @@ describe("Founder Operating UX V1 shell", () => {
     );
   });
 
-  it("moves Ask Concierge and Quick Capture to /ask without inventing conversation", () => {
+  it("moves Ask Concierge and Quick Capture to /ask and keeps mode routing", () => {
     const page = read(join("ask", "page.tsx"));
     const home = read(join("components", "concierge-ask-home.tsx"));
     const ask = read(join("components", "ask-concierge-shell.tsx"));
@@ -186,7 +186,9 @@ describe("Founder Operating UX V1 shell", () => {
     assert.match(home, /QuickCapture/);
     assert.match(home, /ASK_UNSUPPORTED_DETAIL/);
     assert.match(ask, /Who has a birthday in November/);
+    assert.match(ask, /mode/);
     assert.doesNotMatch(ask, /Ask anything about your relationships/);
+    assert.doesNotMatch(ask, /telemetry|promptTokens|chain-of-thought/i);
     assert.equal(CONCIERGE_ASK_PATH, "/executive-dashboard/concierge/ask");
   });
 

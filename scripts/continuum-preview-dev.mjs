@@ -35,6 +35,21 @@ const NEVER_INHERIT = new Set([
   "VERCEL_OIDC_TOKEN",
 ]);
 
+const SANDBOX_TEMPLATE_KEYS = new Set([
+  "CONTINUUM_ENV",
+  "CONTINUUM_PREVIEW_SUPABASE_PROJECT_REF",
+  "CONTINUUM_PRODUCTION_SUPABASE_PROJECT_REF",
+  "SUPABASE_URL",
+  "SUPABASE_SERVICE_ROLE_KEY",
+  "CONTINUUM_GMAIL_FOUNDER_EMAIL",
+  "CONTINUUM_GMAIL_TOKEN_KEK",
+  "EXECUTIVE_DASHBOARD_SESSION_SECRET",
+  "CONTINUUM_GMAIL_OAUTH_CLIENT_ID",
+  "CONTINUUM_GMAIL_OAUTH_CLIENT_SECRET",
+  "CONTINUUM_GMAIL_OAUTH_REDIRECT_URI",
+  "CONTINUUM_GMAIL_INCREMENTAL_SYNC_ENABLED",
+]);
+
 function parseEnvFile(relativePath) {
   const path = resolve(process.cwd(), relativePath);
   if (!existsSync(path)) return {};
@@ -152,7 +167,17 @@ CONTINUUM_GMAIL_OAUTH_CLIENT_ID=${next.CONTINUUM_GMAIL_OAUTH_CLIENT_ID ?? ""}
 CONTINUUM_GMAIL_OAUTH_CLIENT_SECRET=${next.CONTINUUM_GMAIL_OAUTH_CLIENT_SECRET ?? ""}
 CONTINUUM_GMAIL_OAUTH_REDIRECT_URI=${LOCAL_GMAIL_REDIRECT}
 ${incrementalBlock}`;
-  writeFileSync(path, body, { encoding: "utf8", flag: "w" });
+  const extra = [];
+  for (const [key, value] of Object.entries(existing)) {
+    if (SANDBOX_TEMPLATE_KEYS.has(key)) continue;
+    if (!envPresent(value)) continue;
+    if (/astra/i.test(key) || /astra/i.test(String(value))) continue;
+    extra.push(`${key}=${value}`);
+  }
+  const extraBlock = extra.length
+    ? `\n# Preserved local-only keys (gitignored). Do not commit.\n${extra.join("\n")}\n`
+    : `\n# Optional Preview-only Concierge Sol. Never commit. Never use NEXT_PUBLIC_.\n# OPENAI_API_KEY=\n`;
+  writeFileSync(path, `${body}${extraBlock}`, { encoding: "utf8", flag: "w" });
   return { created, generated };
 }
 

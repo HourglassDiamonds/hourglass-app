@@ -1,55 +1,106 @@
 "use client";
 
 import { useEffect, useId, useState, useTransition, type FormEvent } from "react";
-import { askConcierge } from "../actions";
-import { AskConciergeAnswerView } from "./ask-concierge-answer";
+import { askConcierge } from "../ask-actions";
+import { AskConciergeAnswerView, type AskAnswer } from "./ask-concierge-answer";
 import {
   ASK_PENDING_MESSAGE,
-  type AskConciergeAnswer,
 } from "@/lib/continuum/client-memory/ask/types";
+import type { ConciergeAskMode } from "@/lib/continuum/client-memory/read/presentation";
+import type { ConciergeSolHistoryTurn } from "@/lib/continuum/concierge-sol/types";
+import { CONCIERGE_SOL_PENDING_MESSAGE } from "@/lib/continuum/concierge-sol/types";
 
 const EXAMPLES = [
   "Who has a birthday in November?",
   "Birthdays next month",
 ] as const;
 
+type Turn = {
+  role: ConciergeSolHistoryTurn["role"];
+  text: string;
+  answer: AskAnswer | null;
+};
+
 export function AskConciergeShell({
   initialQuery = "",
   placeholder,
+  mode = "conversation",
 }: {
   initialQuery?: string;
   placeholder?: string;
+  mode?: ConciergeAskMode;
 } = {}) {
   const inputId = useId();
   const [query, setQuery] = useState(initialQuery);
-  const [answer, setAnswer] = useState<AskConciergeAnswer | null>(null);
+  const [turns, setTurns] = useState<Turn[]>([]);
   const [pending, startTransition] = useTransition();
   const resolvedPlaceholder = placeholder ?? EXAMPLES[0];
 
   useEffect(() => {
     const trimmed = initialQuery.trim();
     if (!trimmed) return;
-    startTransition(async () => {
-      const next = await askConcierge(trimmed);
-      setAnswer(next);
-    });
+    submit(trimmed, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- auto-ask from Home hub q=
   }, [initialQuery]);
+
+  function historyFrom(rows: Turn[]): ConciergeSolHistoryTurn[] {
+    const history: ConciergeSolHistoryTurn[] = [];
+    for (const row of rows) {
+      if (row.role === "founder") {
+        history.push({ role: "founder", text: row.text });
+        continue;
+      }
+      if (row.answer && row.answer.kind === "conversation") {
+        history.push({ role: "concierge", text: row.answer.text });
+      }
+    }
+    return history;
+  }
+
+  function submit(trimmed: string, prior: Turn[]) {
+    startTransition(async () => {
+      const next = await askConcierge({
+        query: trimmed,
+        mode,
+        history: historyFrom(prior),
+      });
+      setTurns([
+        ...prior,
+        { role: "founder", text: trimmed, answer: null },
+        { role: "concierge", text: "", answer: next },
+      ]);
+    });
+  }
 
   function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const trimmed = query.trim();
     if (!trimmed) return;
-    startTransition(async () => {
-      const next = await askConcierge(trimmed);
-      setAnswer(next);
-    });
+    submit(trimmed, turns);
+    setQuery("");
   }
 
+  const last = [...turns].reverse().find((row) => row.answer);
+  const earlier = turns.filter((row) => row.role === "founder" || row.answer);
+
   return (
-    <section>
+    <section data-ask-mode={mode} className="hg-concierge-sol">
       <h2 className="text-[11px] uppercase tracking-[0.28em] text-[#8d8073]">
-        Ask Concierge
+        {mode === "brain-dump" ? "Brain Dump" : mode === "design" ? "Design Mode" : "Ask Concierge"}
       </h2>
+      {earlier.length > 0 ? (
+        <ol className="hg-concierge-sol-thread mt-4 flex flex-col gap-3" data-concierge-sol-thread="">
+          {earlier.map((row, index) => (
+            <li key={`${row.role}-${index}`} data-concierge-sol-turn={row.role}>
+              {row.role === "founder" ? (
+                <p className="text-[13px] leading-snug text-[#8d8073]">{row.text}</p>
+              ) : row.answer ? (
+                <AskConciergeAnswerView answer={row.answer} />
+              ) : null}
+            </li>
+          ))}
+        </ol>
+      ) : null}
       <form className="mt-4" onSubmit={onSubmit} noValidate>
         <label htmlFor={inputId} className="sr-only">
           Ask Concierge
@@ -78,17 +129,15 @@ export function AskConciergeShell({
       </form>
       {pending ? (
         <p className="mt-4 text-[14px] leading-relaxed text-[#c4b7aa]" role="status">
-          {ASK_PENDING_MESSAGE}
+          {mode === "conversation" ? CONCIERGE_SOL_PENDING_MESSAGE : ASK_PENDING_MESSAGE}
         </p>
-      ) : answer ? (
-        <AskConciergeAnswerView answer={answer} />
-      ) : (
+      ) : last?.answer || earlier.length > 0 ? null : mode === "conversation" ? (
         <p className="mt-4 text-[12px] leading-relaxed text-[#7d7268]">
           {EXAMPLES[0]}
           <br />
           {EXAMPLES[1]}
         </p>
-      )}
+      ) : null}
     </section>
   );
 }

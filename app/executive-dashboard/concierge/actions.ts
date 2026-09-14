@@ -1,8 +1,6 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { answerAskConciergeQuery } from "@/lib/continuum/client-memory/ask/query";
-import type { AskConciergeAnswer } from "@/lib/continuum/client-memory/ask/types";
 import { getAuthenticatedClientMemoryReader } from "@/lib/continuum/client-memory/read/load";
 import {
   conciergeClientPath,
@@ -62,12 +60,6 @@ export async function searchConciergeClients(
   } catch {
     return { ok: false, reason: "unavailable" };
   }
-}
-
-export async function askConcierge(query: string): Promise<AskConciergeAnswer> {
-  const auth = await getAuthenticatedClientMemoryReader();
-  if (!auth.ok) return { kind: "error" };
-  return answerAskConciergeQuery(auth.reader, query);
 }
 
 export type SaveManualNoteState = {

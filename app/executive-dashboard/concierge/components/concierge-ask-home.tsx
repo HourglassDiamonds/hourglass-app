@@ -9,11 +9,11 @@ const MODE_COPY: Record<
 > = {
   conversation: {
     title: "Concierge",
-    detail: "A quiet place to ask Continuum, then capture what should be remembered.",
+    detail: "Ask Continuum about people, projects, repairs, and what needs you today.",
   },
   "brain-dump": {
     title: "Brain Dump",
-    detail: "Get it out of your head. Capture first.",
+    detail: "Get it out of your head. Continuum will classify it — nothing is saved until you capture it.",
   },
   design: {
     title: "Design Mode",
@@ -33,7 +33,7 @@ export function ConciergeAskHome({
   const captureFirst = mode === "brain-dump";
 
   return (
-    <div data-concierge-ask className="hg-concierge-fade flex min-w-0 flex-col gap-12">
+    <div data-concierge-ask data-ask-mode={mode} className="hg-concierge-fade flex min-w-0 flex-col gap-12">
       <div>
         <h1 className="font-serif text-[2.15rem] font-normal leading-[1.08] tracking-[-0.045em] text-[#efe8de]">
           {copy.title}
@@ -55,12 +55,17 @@ export function ConciergeAskHome({
             <AskConciergeShell
               initialQuery={initialQuery}
               placeholder={copy.placeholder}
+              mode={mode}
             />
           </div>
         )}
       </div>
       {captureFirst ? (
-        <AskConciergeShell initialQuery={initialQuery} placeholder={copy.placeholder} />
+        <AskConciergeShell
+          initialQuery={initialQuery}
+          placeholder={copy.placeholder}
+          mode={mode}
+        />
       ) : (
         <QuickCapture />
       )}

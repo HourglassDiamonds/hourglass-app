@@ -311,8 +311,9 @@ describe("Concierge Client Memory UI", () => {
     assert.doesNotMatch(command, /<ConciergeSearch/);
     assert.match(command, /ChiefOfStaffToday/);
     const actions = readFileSync(join(CONCIERGE_DIR, "actions.ts"), "utf8");
+    const askActions = readFileSync(join(CONCIERGE_DIR, "ask-actions.ts"), "utf8");
     assert.match(actions, /getAuthenticatedClientMemoryReader/);
-    assert.match(actions, /askConcierge/);
+    assert.match(askActions, /askConcierge/);
     assert.match(actions, /getAuthenticatedClientMemoryNoteWriter/);
     assert.match(actions, /getAuthenticatedClientMemoryFactWriter/);
     assert.match(actions, /getAuthenticatedClientMemoryPersonWriter/);
@@ -521,6 +522,7 @@ describe("Concierge Client Memory UI", () => {
       "utf8",
     );
     const actions = readFileSync(join(CONCIERGE_DIR, "actions.ts"), "utf8");
+    const askActions = readFileSync(join(CONCIERGE_DIR, "ask-actions.ts"), "utf8");
     assert.match(ask, /askConcierge/);
     assert.match(ask, /preventDefault/);
     assert.match(ask, /useTransition/);
@@ -531,9 +533,9 @@ describe("Concierge Client Memory UI", () => {
     assert.doesNotMatch(ask, /getAuthenticatedClientMemoryReader|listCurrentBirthdaysByMonth/);
     assert.doesNotMatch(answerView, /listCurrentBirthdaysByMonth|getAuthenticatedClientMemoryReader/);
     assert.doesNotMatch(ask, /How many birthdays are coming up|Who should I follow up with|What do I know about Sarah/);
-    assert.match(actions, /askConcierge/);
-    assert.match(actions, /getAuthenticatedClientMemoryReader/);
-    assert.match(actions, /answerAskConciergeQuery/);
+    assert.match(askActions, /askConcierge/);
+    assert.match(askActions, /getAuthenticatedClientMemoryReader/);
+    assert.match(askActions, /answerAskConciergeQuery/);
     assert.doesNotMatch(actions, /console\.(log|info|debug|warn|error)/);
     assert.match(ask, /Who has a birthday in November/);
     assert.match(ask, /Birthdays next month/);

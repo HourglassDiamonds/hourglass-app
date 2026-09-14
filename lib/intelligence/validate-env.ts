@@ -48,6 +48,7 @@ export const SERVER_ONLY_APP_ENV = [
   "CONTINUUM_ENV",
   "CONTINUUM_PRODUCTION_SUPABASE_PROJECT_REF",
   "CONTINUUM_PREVIEW_SUPABASE_PROJECT_REF",
+  "OPENAI_API_KEY",
 ] as const;
 
 /** Safe to expose in the browser. */

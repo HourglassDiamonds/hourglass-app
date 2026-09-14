@@ -547,6 +547,33 @@ body:has([data-concierge-shell]) [data-facet-rail] {
   padding-top: 0.35rem;
 }
 
+.hg-concierge-sol-thread {
+  min-width: 0;
+}
+
+.hg-concierge-sol-thread [data-concierge-sol-turn="founder"] {
+  padding-top: 0.15rem;
+}
+
+.hg-concierge-sol-thread .hg-concierge-sol-answer {
+  margin-top: 0.25rem;
+}
+
+.hg-concierge-sol-answer p {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 390px) {
+  .hg-concierge-sol-thread {
+    gap: 0.65rem;
+  }
+
+  .hg-concierge-sol-answer p {
+    font-size: 15px;
+    line-height: 1.45;
+  }
+}
+
 @media (min-width: 768px) {
   .hg-cos-source-viewer-panel {
     width: min(28rem, 100%);

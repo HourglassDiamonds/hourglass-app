@@ -10,7 +10,8 @@ export const ASK_CONCIERGE_QUERY_MAX_LENGTH = 400;
 export const ASK_UNSUPPORTED_MESSAGE =
   "I can't answer that from structured memory yet." as const;
 
-export const ASK_UNSUPPORTED_DETAIL = "Birthday lookups are connected first." as const;
+export const ASK_UNSUPPORTED_DETAIL =
+  "Continuum answers from its own records and tools." as const;
 
 export const ASK_ERROR_MESSAGE =
   "I couldn't read relationship memory just now." as const;

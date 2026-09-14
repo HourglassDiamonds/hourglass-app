@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { CosViewEmailControl } from "./cos-source-viewer";
 import {
   ASK_ERROR_MESSAGE,
   ASK_UNSUPPORTED_DETAIL,
@@ -8,8 +9,14 @@ import {
   type AskConciergeAnswer,
 } from "@/lib/continuum/client-memory/ask/types";
 import { conciergeClientPath } from "@/lib/continuum/client-memory/read/presentation";
+import type { ConciergeSolAnswer } from "@/lib/continuum/concierge-sol/types";
 
-export function AskConciergeAnswerView({ answer }: { answer: AskConciergeAnswer }) {
+export type AskAnswer = AskConciergeAnswer | ConciergeSolAnswer;
+
+export function AskConciergeAnswerView({ answer }: { answer: AskAnswer }) {
+  if (answer.kind === "conversation") {
+    return <ConversationAnswer answer={answer} />;
+  }
   if (answer.kind === "error") {
     return (
       <p className="mt-4 text-[14px] leading-relaxed text-[#c4b7aa]" role="status">
@@ -52,6 +59,91 @@ export function AskConciergeAnswerView({ answer }: { answer: AskConciergeAnswer 
             </li>
           ))}
         </ul>
+      ) : null}
+    </div>
+  );
+}
+
+function ConversationAnswer({ answer }: { answer: ConciergeSolAnswer }) {
+  const emailActions = answer.actions.filter((row) => row.kind === "view-email");
+  const linkActions = answer.actions.filter((row) => row.kind !== "view-email");
+  return (
+    <div className="hg-concierge-sol-answer mt-4" data-concierge-sol-answer="" data-ask-mode={answer.mode}>
+      <p
+        className="whitespace-pre-wrap text-[15px] leading-relaxed text-[#d8cfc4]"
+        role="status"
+      >
+        {answer.text}
+      </p>
+      {answer.brainDump ? (
+        <dl className="mt-4 grid gap-2 text-[13px] leading-relaxed text-[#b7aa9c]" data-brain-dump="">
+          {answer.brainDump.personContext ? (
+            <div>
+              <dt className="text-[10px] uppercase tracking-[0.22em] text-[#8d8073]">Person</dt>
+              <dd>{answer.brainDump.personContext}</dd>
+            </div>
+          ) : null}
+          {answer.brainDump.projectContext ? (
+            <div>
+              <dt className="text-[10px] uppercase tracking-[0.22em] text-[#8d8073]">Project</dt>
+              <dd>{answer.brainDump.projectContext}</dd>
+            </div>
+          ) : null}
+          {answer.brainDump.action ? (
+            <div>
+              <dt className="text-[10px] uppercase tracking-[0.22em] text-[#8d8073]">Action</dt>
+              <dd>{answer.brainDump.action}</dd>
+            </div>
+          ) : null}
+          {answer.brainDump.personalItem ? (
+            <div>
+              <dt className="text-[10px] uppercase tracking-[0.22em] text-[#8d8073]">Personal</dt>
+              <dd>{answer.brainDump.personalItem}</dd>
+            </div>
+          ) : null}
+          {answer.brainDump.note ? (
+            <div>
+              <dt className="text-[10px] uppercase tracking-[0.22em] text-[#8d8073]">Note</dt>
+              <dd>{answer.brainDump.note}</dd>
+            </div>
+          ) : null}
+          {answer.brainDump.followUp ? (
+            <div>
+              <dt className="text-[10px] uppercase tracking-[0.22em] text-[#8d8073]">Follow-up</dt>
+              <dd>{answer.brainDump.followUp}</dd>
+            </div>
+          ) : null}
+          <p className="mt-1 text-[12px] text-[#7d7268]">Nothing has been saved.</p>
+        </dl>
+      ) : null}
+      {linkActions.length > 0 || emailActions.length > 0 ? (
+        <div className="mt-4 flex flex-col items-start gap-2">
+          {linkActions.map((action) => (
+            <Link
+              key={action.href}
+              href={action.href}
+              className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.2em] text-[#ad9164] outline-none hover:text-[#efe8de] focus-visible:text-[#efe8de]"
+            >
+              {action.label}
+            </Link>
+          ))}
+          {emailActions.map((action) => (
+            <CosViewEmailControl
+              key={action.href}
+              sources={[{ href: action.href, label: action.label }]}
+              request={{
+                sources: [{ href: action.href, label: action.label }],
+                personLabel: null,
+                projectTitle: null,
+                why: null,
+                facts: [],
+                beats: [],
+                provenanceLimited: action.provenanceLimited === true,
+                provenanceLabel: action.provenanceLabel ?? null,
+              }}
+            />
+          ))}
+        </div>
       ) : null}
     </div>
   );
