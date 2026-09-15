@@ -95,3 +95,80 @@ export async function consumeRateLimitWindows(input: {
 
   return { allowed: true };
 }
+
+export async function checkRateLimitWindows(input: {
+  namespace: string;
+  identity: string;
+  windows: RateLimitWindow[];
+  now?: number;
+  store?: AbuseRateLimitStore;
+}): Promise<AbuseRateLimitResult> {
+  const now = input.now ?? Date.now();
+  const store = input.store ?? resolveAbuseRateLimitStore();
+  let deniedRetryAfter: number | null = null;
+
+  for (const window of input.windows) {
+    const windowStartEpochMs = Math.floor(now / window.windowMs) * window.windowMs;
+    const bucketKey = hashAbuseBucketKey({
+      namespace: input.namespace,
+      windowName: window.name,
+      identity: input.identity,
+    });
+
+    let result;
+    try {
+      if (!store.check) {
+        return {
+          allowed: false,
+          retryAfterSeconds: STORE_FAILURE_RETRY_SECONDS,
+        };
+      }
+      result = await store.check({
+        bucketKey,
+        windowStartEpochMs,
+        windowMs: window.windowMs,
+        limit: window.limit,
+        nowEpochMs: now,
+      });
+    } catch {
+      console.warn("[abuse-rate-limit] store failure");
+      return {
+        allowed: false,
+        retryAfterSeconds: STORE_FAILURE_RETRY_SECONDS,
+      };
+    }
+
+    if (!result.allowed && deniedRetryAfter === null) {
+      deniedRetryAfter = Math.max(1, result.retryAfterSeconds);
+    }
+  }
+
+  if (deniedRetryAfter !== null) {
+    return { allowed: false, retryAfterSeconds: deniedRetryAfter };
+  }
+
+  return { allowed: true };
+}
+
+export async function clearRateLimitWindows(input: {
+  namespace: string;
+  identity: string;
+  windows: RateLimitWindow[];
+  store?: AbuseRateLimitStore;
+}): Promise<void> {
+  const store = input.store ?? resolveAbuseRateLimitStore();
+  if (!store.clearBucket) return;
+
+  for (const window of input.windows) {
+    const bucketKey = hashAbuseBucketKey({
+      namespace: input.namespace,
+      windowName: window.name,
+      identity: input.identity,
+    });
+    try {
+      await store.clearBucket(bucketKey);
+    } catch {
+      console.warn("[abuse-rate-limit] store failure");
+    }
+  }
+}

@@ -16,6 +16,15 @@ function asPositiveInt(value: number | string, fallback: number): number {
   return Math.max(0, Math.trunc(n));
 }
 
+function mapRpcRow(row: RpcRow): AbuseRateLimitConsumeResult {
+  const allowed = row.allowed === true;
+  return {
+    allowed,
+    retryAfterSeconds: Math.max(1, asPositiveInt(row.retry_after_seconds, 30)),
+    hitCount: asPositiveInt(row.hit_count, 0),
+  };
+}
+
 export function createSupabaseAbuseRateLimitStore(
   admin: SupabaseClient,
 ): AbuseRateLimitStore {
@@ -38,12 +47,35 @@ export function createSupabaseAbuseRateLimitStore(
         throw new Error("rate-limit-rpc-empty");
       }
 
-      const allowed = row.allowed === true;
-      return {
-        allowed,
-        retryAfterSeconds: Math.max(1, asPositiveInt(row.retry_after_seconds, 30)),
-        hitCount: asPositiveInt(row.hit_count, 0),
-      };
+      return mapRpcRow(row);
+    },
+    async check(input): Promise<AbuseRateLimitConsumeResult> {
+      const { data, error } = await admin.rpc("check_abuse_rate_limit", {
+        p_bucket_key: input.bucketKey,
+        p_window_start_epoch_ms: input.windowStartEpochMs,
+        p_window_ms: input.windowMs,
+        p_limit: input.limit,
+        p_now_epoch_ms: input.nowEpochMs,
+      });
+
+      if (error) {
+        throw new Error("rate-limit-rpc-failed");
+      }
+
+      const row = Array.isArray(data) ? (data[0] as RpcRow | undefined) : (data as RpcRow | null);
+      if (!row) {
+        throw new Error("rate-limit-rpc-empty");
+      }
+
+      return mapRpcRow(row);
+    },
+    async clearBucket(bucketKey): Promise<void> {
+      const { error } = await admin.rpc("clear_abuse_rate_limit", {
+        p_bucket_key: bucketKey,
+      });
+      if (error) {
+        throw new Error("rate-limit-rpc-failed");
+      }
     },
   };
 }

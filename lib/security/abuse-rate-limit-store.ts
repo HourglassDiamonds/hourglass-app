@@ -16,6 +16,10 @@ export type AbuseRateLimitStore = {
   consume(
     input: AbuseRateLimitConsumeInput,
   ): Promise<AbuseRateLimitConsumeResult>;
+  check?(
+    input: AbuseRateLimitConsumeInput,
+  ): Promise<AbuseRateLimitConsumeResult>;
+  clearBucket?(bucketKey: string): Promise<void>;
   debugBucketKeys?: () => string[];
   debugLiveRowCount?: () => number;
   clear?: () => void;
@@ -89,6 +93,37 @@ export function createMemoryAbuseRateLimitStore(): AbuseRateLimitStore {
         };
       });
     },
+    check(input) {
+      return queue.enqueue(() => {
+        const expiresAtMs = input.windowStartEpochMs + input.windowMs;
+        const current = buckets.get(input.bucketKey);
+        const sameWindow =
+          current !== undefined &&
+          current.windowStartEpochMs === input.windowStartEpochMs &&
+          input.nowEpochMs < current.expiresAtMs;
+        const hitCount = sameWindow ? current.count : 0;
+        if (hitCount >= input.limit) {
+          return {
+            allowed: false,
+            retryAfterSeconds: Math.max(
+              1,
+              Math.ceil((expiresAtMs - input.nowEpochMs) / 1000),
+            ),
+            hitCount,
+          };
+        }
+        return {
+          allowed: true,
+          retryAfterSeconds: 0,
+          hitCount,
+        };
+      });
+    },
+    clearBucket(bucketKey) {
+      return queue.enqueue(() => {
+        buckets.delete(bucketKey);
+      });
+    },
     debugBucketKeys() {
       return [...buckets.keys()];
     },
@@ -108,6 +143,16 @@ export const failClosedAbuseRateLimitStore: AbuseRateLimitStore = {
       retryAfterSeconds: 30,
       hitCount: 0,
     };
+  },
+  async check() {
+    return {
+      allowed: false,
+      retryAfterSeconds: 30,
+      hitCount: 0,
+    };
+  },
+  async clearBucket() {
+    return;
   },
 };
 

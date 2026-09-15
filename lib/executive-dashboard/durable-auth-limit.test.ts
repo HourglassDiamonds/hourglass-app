@@ -21,6 +21,7 @@ import {
 } from "./durable-auth-limit";
 import {
   checkExecutiveDashboardLoginRateLimit,
+  clearExecutiveDashboardLoginFailures,
   EXEC_AUTH_RATE_LIMIT_MAX,
   EXEC_AUTH_RATE_LIMIT_WINDOW_MS,
   getExecutiveDashboardAuthClientIp,
@@ -31,6 +32,7 @@ import {
   checkPasskeyChallengeIssueRateLimit,
   checkPasskeyPairingClaimRateLimit,
   checkPasskeyVerifyRateLimit,
+  clearPasskeyVerifyFailures,
   PASSKEY_CHALLENGE_ISSUE_MAX,
   PASSKEY_PAIRING_CLAIM_MAX,
   PASSKEY_RATE_LIMIT_WINDOW_MS,
@@ -87,15 +89,29 @@ async function withEnv(
 function createTrackingStore(): {
   store: AbuseRateLimitStore;
   consumes: AbuseRateLimitConsumeInput[];
+  checks: AbuseRateLimitConsumeInput[];
+  cleared: string[];
 } {
   const inner = createMemoryAbuseRateLimitStore();
   const consumes: AbuseRateLimitConsumeInput[] = [];
+  const checks: AbuseRateLimitConsumeInput[] = [];
+  const cleared: string[] = [];
   return {
     consumes,
+    checks,
+    cleared,
     store: {
       async consume(input) {
         consumes.push({ ...input });
         return inner.consume(input);
+      },
+      async check(input) {
+        checks.push({ ...input });
+        return inner.check!(input);
+      },
+      async clearBucket(bucketKey) {
+        cleared.push(bucketKey);
+        await inner.clearBucket!(bucketKey);
       },
       debugBucketKeys: () => inner.debugBucketKeys?.() ?? [],
       clear: () => inner.clear?.(),
@@ -110,101 +126,83 @@ describe("Preview durable founder-auth rate limiting", () => {
     resetPasskeyRateLimits();
   });
 
-  it("A/B: Preview password failures persist in the durable store across a fresh in-memory Map", async () => {
-    const { store, consumes } = createTrackingStore();
+  it("A/B/C/D/P: Preview password is failure-only, enforces five strikes, and clears on success", async () => {
+    const { store, consumes, checks } = createTrackingStore();
     await withEnv({ ...PREVIEW_ISOLATED_ENV }, async () => {
       assert.equal(isDurableFounderAuthRateLimitEnabled(), true);
       const ip = "203.0.113.40";
+      const now = Date.now();
+
+      assert.equal(
+        (await checkExecutiveDashboardLoginRateLimit(ip, now, store)).allowed,
+        true,
+      );
+      await clearExecutiveDashboardLoginFailures(ip, store);
+      assert.equal(consumes.length, 0, "A: successful login consumes zero strikes");
+
       for (let i = 0; i < EXEC_AUTH_RATE_LIMIT_MAX; i += 1) {
         assert.equal(
-          (await checkExecutiveDashboardLoginRateLimit(ip, Date.now(), store))
-            .allowed,
+          (await checkExecutiveDashboardLoginRateLimit(ip, now, store)).allowed,
           true,
         );
-        await recordExecutiveDashboardLoginFailure(ip);
+        await recordExecutiveDashboardLoginFailure(ip, now, store);
       }
+      assert.equal(consumes.length, EXEC_AUTH_RATE_LIMIT_MAX, "B: one strike per failure");
       assert.equal(
-        (await checkExecutiveDashboardLoginRateLimit(ip, Date.now(), store))
-          .allowed,
+        (await checkExecutiveDashboardLoginRateLimit(ip, now, store)).allowed,
         false,
+        "C: five failures enforce the threshold",
       );
-      assert.equal(consumes.length, EXEC_AUTH_RATE_LIMIT_MAX + 1);
+      assert.equal(consumes.length, EXEC_AUTH_RATE_LIMIT_MAX);
 
       resetExecutiveDashboardLoginRateLimits();
-      const afterFreshMap = await checkExecutiveDashboardLoginRateLimit(
-        ip,
-        Date.now(),
-        store,
-      );
-      assert.equal(afterFreshMap.allowed, false);
-    });
-  });
-
-  it("C/M: Production and non-Preview keep in-memory behavior and never call the durable store", async () => {
-    const { store, consumes } = createTrackingStore();
-    const ip = "198.51.100.40";
-
-    await withEnv({ ...PRODUCTION_ENV }, async () => {
-      assert.equal(isDurableFounderAuthRateLimitEnabled(), false);
-      for (let i = 0; i < EXEC_AUTH_RATE_LIMIT_MAX; i += 1) {
-        assert.equal(
-          (await checkExecutiveDashboardLoginRateLimit(ip, Date.now(), store))
-            .allowed,
-          true,
-        );
-        await recordExecutiveDashboardLoginFailure(ip);
-      }
       assert.equal(
-        (await checkExecutiveDashboardLoginRateLimit(ip, Date.now(), store))
-          .allowed,
+        (await checkExecutiveDashboardLoginRateLimit(ip, now, store)).allowed,
         false,
+        "P: fresh in-memory Map does not reset durable failures",
       );
-      assert.equal(await checkPasskeyChallengeIssueRateLimit(ip, Date.now(), store), true);
-      assert.equal(await checkPasskeyVerifyRateLimit(ip, Date.now(), store), true);
-      assert.equal(await checkPasskeyPairingClaimRateLimit(ip, Date.now(), store), true);
-      assert.equal(consumes.length, 0);
+
+      await clearExecutiveDashboardLoginFailures(ip, store);
+      assert.equal(
+        (await checkExecutiveDashboardLoginRateLimit(ip, now, store)).allowed,
+        true,
+        "D: success clears prior failure state",
+      );
+      assert.ok(checks.length >= 1);
     });
-
-    resetExecutiveDashboardLoginRateLimits();
-    resetPasskeyRateLimits();
-
-    await withEnv(
-      {
-        ...PREVIEW_ISOLATED_ENV,
-        CONTINUUM_ENV: "preview",
-        SUPABASE_URL: PRODUCTION_URL,
-      },
-      async () => {
-        assert.equal(isDurableFounderAuthRateLimitEnabled(), false);
-        assert.equal(
-          (await checkExecutiveDashboardLoginRateLimit(ip, Date.now(), store))
-            .allowed,
-          true,
-        );
-        assert.equal(consumes.length, 0);
-      },
-    );
-
-    resetExecutiveDashboardLoginRateLimits();
-    resetPasskeyRateLimits();
-
-    await withEnv(
-      {
-        CONTINUUM_ENV: undefined,
-        VERCEL_ENV: "preview",
-        SUPABASE_URL: PREVIEW_URL,
-        CONTINUUM_PREVIEW_SUPABASE_PROJECT_REF,
-        CONTINUUM_PRODUCTION_SUPABASE_PROJECT_REF,
-      },
-      async () => {
-        assert.equal(isDurableFounderAuthRateLimitEnabled(), false);
-        await checkExecutiveDashboardLoginRateLimit(ip, Date.now(), store);
-        assert.equal(consumes.length, 0);
-      },
-    );
   });
 
-  it("D: Preview passkey challenge issuance uses the durable store", async () => {
+  it("E/F/G: Preview passkey verify is failure-only and clears on success", async () => {
+    const { store, consumes } = createTrackingStore();
+    await withEnv({ ...PREVIEW_ISOLATED_ENV }, async () => {
+      const ip = "203.0.113.42";
+      const now = Date.now();
+
+      assert.equal(await checkPasskeyVerifyRateLimit(ip, now, store), true);
+      await clearPasskeyVerifyFailures(ip, store);
+      assert.equal(consumes.length, 0, "E: successful verify consumes zero strikes");
+
+      for (let i = 0; i < PASSKEY_VERIFY_FAILURE_MAX; i += 1) {
+        assert.equal(await checkPasskeyVerifyRateLimit(ip, now, store), true);
+        await recordPasskeyVerifyFailure(ip, now, store);
+      }
+      assert.equal(consumes.length, PASSKEY_VERIFY_FAILURE_MAX, "F: one strike per failure");
+      assert.equal(await checkPasskeyVerifyRateLimit(ip, now, store), false);
+
+      resetPasskeyRateLimits();
+      assert.equal(await checkPasskeyVerifyRateLimit(ip, now, store), false);
+
+      await clearPasskeyVerifyFailures(ip, store);
+      assert.equal(
+        await checkPasskeyVerifyRateLimit(ip, now, store),
+        true,
+        "G: success clears prior verify-failure state",
+      );
+      assert.equal(consumes.length, PASSKEY_VERIFY_FAILURE_MAX);
+    });
+  });
+
+  it("H: Preview passkey challenge issuance still consumes each request", async () => {
     const { store, consumes } = createTrackingStore();
     await withEnv({ ...PREVIEW_ISOLATED_ENV }, async () => {
       const ip = "203.0.113.41";
@@ -219,37 +217,11 @@ describe("Preview durable founder-auth rate limiting", () => {
         false,
       );
       assert.equal(consumes.length, PASSKEY_CHALLENGE_ISSUE_MAX + 1);
-      assert.ok(
-        consumes.every((row) => /^[a-f0-9]{64}$/.test(row.bucketKey)),
-      );
+      assert.ok(consumes.every((row) => /^[a-f0-9]{64}$/.test(row.bucketKey)));
     });
   });
 
-  it("E: Preview passkey verification uses the durable store for the verify namespace", async () => {
-    const { store, consumes } = createTrackingStore();
-    await withEnv({ ...PREVIEW_ISOLATED_ENV }, async () => {
-      const ip = "203.0.113.42";
-      for (let i = 0; i < PASSKEY_VERIFY_FAILURE_MAX; i += 1) {
-        assert.equal(
-          await checkPasskeyVerifyRateLimit(ip, Date.now(), store),
-          true,
-        );
-        await recordPasskeyVerifyFailure(ip);
-      }
-      assert.equal(
-        await checkPasskeyVerifyRateLimit(ip, Date.now(), store),
-        false,
-      );
-      assert.equal(consumes.length, PASSKEY_VERIFY_FAILURE_MAX + 1);
-      resetPasskeyRateLimits();
-      assert.equal(
-        await checkPasskeyVerifyRateLimit(ip, Date.now(), store),
-        false,
-      );
-    });
-  });
-
-  it("F: Preview pairing claim is durable-limited; Production pairing claim stays unlimited", async () => {
+  it("I: Preview pairing claim still consumes each request; Production stays unlimited", async () => {
     const { store, consumes } = createTrackingStore();
     await withEnv({ ...PREVIEW_ISOLATED_ENV }, async () => {
       const ip = "203.0.113.43";
@@ -282,7 +254,180 @@ describe("Preview durable founder-auth rate limiting", () => {
     });
   });
 
-  it("G: pairing claim limiter is surrounding-only and does not weaken token/CAS/session protections", () => {
+  it("J: Production never calls durable check/consume/clear", async () => {
+    const { store, consumes, checks, cleared } = createTrackingStore();
+    const ip = "198.51.100.40";
+
+    await withEnv({ ...PRODUCTION_ENV }, async () => {
+      assert.equal(isDurableFounderAuthRateLimitEnabled(), false);
+      for (let i = 0; i < EXEC_AUTH_RATE_LIMIT_MAX; i += 1) {
+        assert.equal(
+          (await checkExecutiveDashboardLoginRateLimit(ip, Date.now(), store))
+            .allowed,
+          true,
+        );
+        await recordExecutiveDashboardLoginFailure(ip, Date.now(), store);
+      }
+      assert.equal(
+        (await checkExecutiveDashboardLoginRateLimit(ip, Date.now(), store))
+          .allowed,
+        false,
+      );
+      await clearExecutiveDashboardLoginFailures(ip, store);
+      assert.equal(await checkPasskeyChallengeIssueRateLimit(ip, Date.now(), store), true);
+      assert.equal(await checkPasskeyVerifyRateLimit(ip, Date.now(), store), true);
+      await recordPasskeyVerifyFailure(ip, Date.now(), store);
+      await clearPasskeyVerifyFailures(ip, store);
+      assert.equal(await checkPasskeyPairingClaimRateLimit(ip, Date.now(), store), true);
+      assert.equal(consumes.length, 0);
+      assert.equal(checks.length, 0);
+      assert.equal(cleared.length, 0);
+    });
+  });
+
+  it("K: Preview durable helper failure fails closed without leaking DB details", async () => {
+    const leak = "relation public.abuse_rate_limits does not exist";
+    const store: AbuseRateLimitStore = {
+      async consume() {
+        throw new Error(leak);
+      },
+      async check() {
+        throw new Error(leak);
+      },
+      async clearBucket() {
+        throw new Error(leak);
+      },
+    };
+    await withEnv({ ...PREVIEW_ISOLATED_ENV }, async () => {
+      const result = await checkExecutiveDashboardLoginRateLimit(
+        "203.0.113.45",
+        Date.now(),
+        store,
+      );
+      assert.equal(result.allowed, false);
+      if (!result.allowed) {
+        assert.equal(result.retryAfterSeconds, 30);
+      }
+      assert.equal(JSON.stringify(result).includes(leak), false);
+      assert.equal("error" in result, false);
+      await recordExecutiveDashboardLoginFailure("203.0.113.45", Date.now(), store);
+      await clearExecutiveDashboardLoginFailures("203.0.113.45", store);
+    });
+  });
+
+  it("L/M: raw identity is never sent to the store; clear receives only a 64-hex bucket key", async () => {
+    const { store, consumes, checks, cleared } = createTrackingStore();
+    const username = "founder@hourglass.example";
+    const email = "founder@hourglass.example";
+    const password = "hunter2-not-a-real-secret";
+    const token = "pairing-token-raw-value";
+    const credentialId = "cred-id-aabbcc";
+    await withEnv({ ...PREVIEW_ISOLATED_ENV }, async () => {
+      const ip = getExecutiveDashboardAuthClientIp(
+        new Headers({ "x-forwarded-for": "203.0.113.44" }),
+      );
+      assert.equal(ip, "203.0.113.44");
+      await checkExecutiveDashboardLoginRateLimit(ip, Date.now(), store);
+      await recordExecutiveDashboardLoginFailure(ip, Date.now(), store);
+      await clearExecutiveDashboardLoginFailures(ip, store);
+    });
+    const expected = hashAbuseBucketKey({
+      namespace: FOUNDER_AUTH_RATE_LIMIT_NAMESPACES.password,
+      windowName: FOUNDER_AUTH_RATE_LIMIT_WINDOW_NAME,
+      identity: "203.0.113.44",
+    });
+    assert.equal(checks.length, 1);
+    assert.equal(consumes.length, 1);
+    assert.equal(cleared.length, 1);
+    for (const key of [
+      checks[0]?.bucketKey,
+      consumes[0]?.bucketKey,
+      cleared[0],
+    ]) {
+      assert.equal(key, expected);
+      assert.match(key ?? "", /^[a-f0-9]{64}$/);
+      for (const material of [
+        "203.0.113.44",
+        username,
+        email,
+        password,
+        token,
+        credentialId,
+      ]) {
+        assert.equal((key ?? "").includes(material), false);
+      }
+    }
+    assert.equal(EXEC_AUTH_RATE_LIMIT_WINDOW_MS, PASSKEY_RATE_LIMIT_WINDOW_MS);
+  });
+
+  it("N: namespaces cannot collide across founder-auth endpoints", async () => {
+    const { store, consumes } = createTrackingStore();
+    await withEnv({ ...PREVIEW_ISOLATED_ENV }, async () => {
+      const ip = "203.0.113.46";
+      const now = Date.now();
+      for (let i = 0; i < EXEC_AUTH_RATE_LIMIT_MAX; i += 1) {
+        assert.equal(
+          (await checkExecutiveDashboardLoginRateLimit(ip, now, store)).allowed,
+          true,
+        );
+        await recordExecutiveDashboardLoginFailure(ip, now, store);
+      }
+      assert.equal(
+        (await checkExecutiveDashboardLoginRateLimit(ip, now, store)).allowed,
+        false,
+      );
+      assert.equal(await checkPasskeyChallengeIssueRateLimit(ip, now, store), true);
+      assert.equal(await checkPasskeyVerifyRateLimit(ip, now, store), true);
+      assert.equal(await checkPasskeyPairingClaimRateLimit(ip, now, store), true);
+      assert.equal(consumes.length, EXEC_AUTH_RATE_LIMIT_MAX + 2);
+
+      const keys = [
+        FOUNDER_AUTH_RATE_LIMIT_NAMESPACES.password,
+        FOUNDER_AUTH_RATE_LIMIT_NAMESPACES.passkeyIssue,
+        FOUNDER_AUTH_RATE_LIMIT_NAMESPACES.passkeyVerify,
+        FOUNDER_AUTH_RATE_LIMIT_NAMESPACES.pairingClaim,
+      ].map((namespace) =>
+        hashAbuseBucketKey({
+          namespace,
+          windowName: FOUNDER_AUTH_RATE_LIMIT_WINDOW_NAME,
+          identity: ip,
+        }),
+      );
+      assert.equal(new Set(keys).size, 4);
+    });
+  });
+
+  it("missing trusted Vercel IP fails closed on Preview durable without a shared unknown bucket", async () => {
+    const { store, consumes, checks, cleared } = createTrackingStore();
+    await withEnv(
+      { ...PREVIEW_ISOLATED_ENV, VERCEL: "1", VERCEL_ENV: "preview" },
+      async () => {
+        const ip = getExecutiveDashboardAuthClientIp(new Headers());
+        assert.equal(ip, "");
+        const denied = await checkExecutiveDashboardLoginRateLimit(
+          ip,
+          Date.now(),
+          store,
+        );
+        assert.equal(denied.allowed, false);
+        if (!denied.allowed) {
+          assert.equal(denied.retryAfterSeconds, 30);
+        }
+        await recordExecutiveDashboardLoginFailure(ip, Date.now(), store);
+        await clearExecutiveDashboardLoginFailures(ip, store);
+        assert.equal(consumes.length, 0);
+        assert.equal(checks.length, 0);
+        assert.equal(cleared.length, 0);
+        assert.equal(
+          await checkPasskeyPairingClaimRateLimit(ip, Date.now(), store),
+          false,
+        );
+        assert.equal(consumes.length, 0);
+      },
+    );
+  });
+
+  it("pairing claim limiter is surrounding-only and does not weaken token/CAS/session protections", () => {
     const claimAction = readFileSync(
       join(ROOT, "app/executive-dashboard/security/passkeys/pair/actions.ts"),
       "utf8",
@@ -309,143 +454,7 @@ describe("Preview durable founder-auth rate limiting", () => {
     assert.match(config, /PASSKEY_PAIRING_TTL_MS = 5 \* 60 \* 1000/);
   });
 
-  it("H/L: durable buckets hash the hardened client-IP identity only", async () => {
-    const { store, consumes } = createTrackingStore();
-    const username = "founder@hourglass.example";
-    const email = "founder@hourglass.example";
-    const password = "hunter2-not-a-real-secret";
-    const token = "pairing-token-raw-value";
-    const credentialId = "cred-id-aabbcc";
-    await withEnv({ ...PREVIEW_ISOLATED_ENV }, async () => {
-      const ip = getExecutiveDashboardAuthClientIp(
-        new Headers({ "x-forwarded-for": "203.0.113.44" }),
-      );
-      assert.equal(ip, "203.0.113.44");
-      await checkExecutiveDashboardLoginRateLimit(ip, Date.now(), store);
-    });
-    assert.equal(consumes.length, 1);
-    const bucketKey = consumes[0]?.bucketKey ?? "";
-    assert.match(bucketKey, /^[a-f0-9]{64}$/);
-    assert.equal(
-      bucketKey,
-      hashAbuseBucketKey({
-        namespace: FOUNDER_AUTH_RATE_LIMIT_NAMESPACES.password,
-        windowName: FOUNDER_AUTH_RATE_LIMIT_WINDOW_NAME,
-        identity: "203.0.113.44",
-      }),
-    );
-    for (const material of [
-      "203.0.113.44",
-      username,
-      email,
-      password,
-      token,
-      credentialId,
-    ]) {
-      assert.equal(bucketKey.includes(material), false);
-    }
-    assert.equal(EXEC_AUTH_RATE_LIMIT_WINDOW_MS, PASSKEY_RATE_LIMIT_WINDOW_MS);
-  });
-
-  it("I: missing trusted Vercel IP fails closed on Preview durable without a shared unknown bucket", async () => {
-    const { store, consumes } = createTrackingStore();
-    await withEnv(
-      { ...PREVIEW_ISOLATED_ENV, VERCEL: "1", VERCEL_ENV: "preview" },
-      async () => {
-        const ip = getExecutiveDashboardAuthClientIp(new Headers());
-        assert.equal(ip, "");
-        const denied = await checkExecutiveDashboardLoginRateLimit(
-          ip,
-          Date.now(),
-          store,
-        );
-        assert.equal(denied.allowed, false);
-        if (!denied.allowed) {
-          assert.equal(denied.retryAfterSeconds, 30);
-        }
-        assert.equal(consumes.length, 0);
-        assert.equal(
-          await checkPasskeyPairingClaimRateLimit(ip, Date.now(), store),
-          false,
-        );
-        assert.equal(consumes.length, 0);
-      },
-    );
-  });
-
-  it("J: Preview durable-store errors fail closed without leaking DB details", async () => {
-    const leak = "relation public.abuse_rate_limits does not exist";
-    const store: AbuseRateLimitStore = {
-      async consume() {
-        throw new Error(leak);
-      },
-    };
-    await withEnv({ ...PREVIEW_ISOLATED_ENV }, async () => {
-      const result = await checkExecutiveDashboardLoginRateLimit(
-        "203.0.113.45",
-        Date.now(),
-        store,
-      );
-      assert.equal(result.allowed, false);
-      if (!result.allowed) {
-        assert.equal(result.retryAfterSeconds, 30);
-      }
-      assert.equal(JSON.stringify(result).includes(leak), false);
-      assert.equal("error" in result, false);
-    });
-  });
-
-  it("K: namespaces cannot collide across founder-auth endpoints", async () => {
-    const { store } = createTrackingStore();
-    await withEnv({ ...PREVIEW_ISOLATED_ENV }, async () => {
-      const ip = "203.0.113.46";
-      for (let i = 0; i < EXEC_AUTH_RATE_LIMIT_MAX; i += 1) {
-        assert.equal(
-          (await checkExecutiveDashboardLoginRateLimit(ip, Date.now(), store))
-            .allowed,
-          true,
-        );
-      }
-      assert.equal(
-        (await checkExecutiveDashboardLoginRateLimit(ip, Date.now(), store))
-          .allowed,
-        false,
-      );
-      assert.equal(
-        await checkPasskeyChallengeIssueRateLimit(ip, Date.now(), store),
-        true,
-      );
-      assert.equal(await checkPasskeyVerifyRateLimit(ip, Date.now(), store), true);
-      assert.equal(
-        await checkPasskeyPairingClaimRateLimit(ip, Date.now(), store),
-        true,
-      );
-
-      const passwordKey = hashAbuseBucketKey({
-        namespace: FOUNDER_AUTH_RATE_LIMIT_NAMESPACES.password,
-        windowName: FOUNDER_AUTH_RATE_LIMIT_WINDOW_NAME,
-        identity: ip,
-      });
-      const issueKey = hashAbuseBucketKey({
-        namespace: FOUNDER_AUTH_RATE_LIMIT_NAMESPACES.passkeyIssue,
-        windowName: FOUNDER_AUTH_RATE_LIMIT_WINDOW_NAME,
-        identity: ip,
-      });
-      const verifyKey = hashAbuseBucketKey({
-        namespace: FOUNDER_AUTH_RATE_LIMIT_NAMESPACES.passkeyVerify,
-        windowName: FOUNDER_AUTH_RATE_LIMIT_WINDOW_NAME,
-        identity: ip,
-      });
-      const claimKey = hashAbuseBucketKey({
-        namespace: FOUNDER_AUTH_RATE_LIMIT_NAMESPACES.pairingClaim,
-        windowName: FOUNDER_AUTH_RATE_LIMIT_WINDOW_NAME,
-        identity: ip,
-      });
-      assert.equal(new Set([passwordKey, issueKey, verifyKey, claimKey]).size, 4);
-    });
-  });
-
-  it("reuses consumeRateLimitWindows and does not add a second limiter framework", () => {
+  it("reuses the existing hashed limiter windows instead of a second framework", () => {
     const durable = readFileSync(
       join(ROOT, "lib/executive-dashboard/durable-auth-limit.ts"),
       "utf8",
@@ -459,14 +468,15 @@ describe("Preview durable founder-auth rate limiting", () => {
       "utf8",
     );
     assert.match(durable, /consumeRateLimitWindows/);
+    assert.match(durable, /checkRateLimitWindows/);
+    assert.match(durable, /clearRateLimitWindows/);
     assert.match(durable, /parseContinuumEnv\(\) !== "preview"/);
     assert.match(durable, /preview-isolated/);
-    assert.match(durable, /CONTINUUM_PREVIEW_SUPABASE_PROJECT_REF/);
-    assert.match(durable, /CONTINUUM_PRODUCTION_SUPABASE_PROJECT_REF/);
-    assert.doesNotMatch(durable, /create table|consume_abuse_rate_limit/);
-    assert.match(password, /FOUNDER_AUTH_RATE_LIMIT_NAMESPACES\.password/);
+    assert.match(password, /checkFounderAuthRateLimit/);
+    assert.match(password, /consumeFounderAuthRateLimit/);
+    assert.match(password, /clearFounderAuthRateLimit/);
+    assert.match(passkeys, /checkFounderAuthRateLimit/);
     assert.match(passkeys, /FOUNDER_AUTH_RATE_LIMIT_NAMESPACES\.passkeyIssue/);
-    assert.match(passkeys, /FOUNDER_AUTH_RATE_LIMIT_NAMESPACES\.passkeyVerify/);
     assert.match(passkeys, /FOUNDER_AUTH_RATE_LIMIT_NAMESPACES\.pairingClaim/);
     assert.equal(
       FOUNDER_AUTH_RATE_LIMIT_NAMESPACES.password,

@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  checkRateLimitWindows,
+  clearRateLimitWindows,
   consumeRateLimitWindows,
 } from "./abuse-rate-limit";
 import {
@@ -185,5 +187,103 @@ describe("durable abuse rate limit primitive", () => {
       1,
       "expired other-identity rows are swept; current key is reused not duplicated",
     );
+  });
+
+  it("peeks without incrementing and clears only the hashed bucket", async () => {
+    const store = createMemoryAbuseRateLimitStore();
+    const windows = [{ name: "burst", limit: 2, windowMs: 60_000 }];
+    const now = Date.now();
+    const identity = "203.0.113.91";
+
+    assert.equal(
+      (
+        await checkRateLimitWindows({
+          namespace: "peek",
+          identity,
+          windows,
+          now,
+          store,
+        })
+      ).allowed,
+      true,
+    );
+    assert.equal(store.debugLiveRowCount?.(), 0);
+
+    await consumeRateLimitWindows({
+      namespace: "peek",
+      identity,
+      windows,
+      now,
+      store,
+    });
+    await consumeRateLimitWindows({
+      namespace: "peek",
+      identity,
+      windows,
+      now,
+      store,
+    });
+    assert.equal(
+      (
+        await checkRateLimitWindows({
+          namespace: "peek",
+          identity,
+          windows,
+          now,
+          store,
+        })
+      ).allowed,
+      false,
+    );
+
+    await clearRateLimitWindows({
+      namespace: "peek",
+      identity,
+      windows,
+      store,
+    });
+    assert.equal(
+      (
+        await checkRateLimitWindows({
+          namespace: "peek",
+          identity,
+          windows,
+          now,
+          store,
+        })
+      ).allowed,
+      true,
+    );
+  });
+
+  it("maps supabase check and clear RPCs without sending raw identity", async () => {
+    const calls: { fn: string; args: Record<string, unknown> }[] = [];
+    const store = createSupabaseAbuseRateLimitStore({
+      rpc: async (fn: string, args: Record<string, unknown>) => {
+        calls.push({ fn, args });
+        if (fn === "clear_abuse_rate_limit") {
+          return { data: null, error: null };
+        }
+        return {
+          data: [{ allowed: true, retry_after_seconds: 0, hit_count: 0 }],
+          error: null,
+        };
+      },
+    } as never);
+
+    await store.check({
+      bucketKey: "b".repeat(64),
+      windowStartEpochMs: 0,
+      windowMs: 60_000,
+      limit: 5,
+      nowEpochMs: 1,
+    });
+    await store.clearBucket("c".repeat(64));
+
+    assert.equal(calls[0]?.fn, "check_abuse_rate_limit");
+    assert.equal(calls[0]?.args.p_bucket_key, "b".repeat(64));
+    assert.equal(calls[1]?.fn, "clear_abuse_rate_limit");
+    assert.equal(calls[1]?.args.p_bucket_key, "c".repeat(64));
+    assert.match(String(calls[1]?.args.p_bucket_key), /^[a-f0-9]{64}$/);
   });
 });

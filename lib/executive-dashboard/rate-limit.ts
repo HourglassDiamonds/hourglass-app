@@ -2,6 +2,8 @@ import { getRequestClientIp } from "@/lib/security/client-ip";
 import type { AbuseRateLimitStore } from "@/lib/security/abuse-rate-limit-store";
 import { isExecutiveDashboardAuthRateLimitDisabled } from "./env";
 import {
+  checkFounderAuthRateLimit,
+  clearFounderAuthRateLimit,
   consumeFounderAuthRateLimit,
   FOUNDER_AUTH_RATE_LIMIT_NAMESPACES,
   FOUNDER_AUTH_RATE_LIMIT_WINDOW_NAME,
@@ -83,6 +85,16 @@ function checkExecutiveDashboardLoginRateLimitMemory(
   return { allowed: true };
 }
 
+function passwordWindows() {
+  return [
+    {
+      name: FOUNDER_AUTH_RATE_LIMIT_WINDOW_NAME,
+      limit: EXEC_AUTH_RATE_LIMIT_MAX,
+      windowMs: EXEC_AUTH_RATE_LIMIT_WINDOW_MS,
+    },
+  ];
+}
+
 export async function checkExecutiveDashboardLoginRateLimit(
   ip: string,
   now = Date.now(),
@@ -93,16 +105,10 @@ export async function checkExecutiveDashboardLoginRateLimit(
   }
 
   if (isDurableFounderAuthRateLimitEnabled()) {
-    return consumeFounderAuthRateLimit({
+    return checkFounderAuthRateLimit({
       namespace: FOUNDER_AUTH_RATE_LIMIT_NAMESPACES.password,
       ip,
-      windows: [
-        {
-          name: FOUNDER_AUTH_RATE_LIMIT_WINDOW_NAME,
-          limit: EXEC_AUTH_RATE_LIMIT_MAX,
-          windowMs: EXEC_AUTH_RATE_LIMIT_WINDOW_MS,
-        },
-      ],
+      windows: passwordWindows(),
       now,
       store,
     });
@@ -114,10 +120,20 @@ export async function checkExecutiveDashboardLoginRateLimit(
 export async function recordExecutiveDashboardLoginFailure(
   ip: string,
   now = Date.now(),
+  store?: AbuseRateLimitStore,
 ): Promise<void> {
   if (isExecutiveDashboardAuthRateLimitDisabled()) return;
-  // Preview durable checks already consume the increment-only RPC.
-  if (isDurableFounderAuthRateLimitEnabled()) return;
+
+  if (isDurableFounderAuthRateLimitEnabled()) {
+    await consumeFounderAuthRateLimit({
+      namespace: FOUNDER_AUTH_RATE_LIMIT_NAMESPACES.password,
+      ip,
+      windows: passwordWindows(),
+      now,
+      store,
+    });
+    return;
+  }
 
   const key = ip || "unknown";
   const bucket = buckets.get(key) ?? { failures: [] };
@@ -132,8 +148,19 @@ export async function recordExecutiveDashboardLoginFailure(
   buckets.set(key, bucket);
 }
 
-export async function clearExecutiveDashboardLoginFailures(ip: string): Promise<void> {
-  if (isDurableFounderAuthRateLimitEnabled()) return;
+export async function clearExecutiveDashboardLoginFailures(
+  ip: string,
+  store?: AbuseRateLimitStore,
+): Promise<void> {
+  if (isDurableFounderAuthRateLimitEnabled()) {
+    await clearFounderAuthRateLimit({
+      namespace: FOUNDER_AUTH_RATE_LIMIT_NAMESPACES.password,
+      ip,
+      windows: passwordWindows(),
+      store,
+    });
+    return;
+  }
   buckets.delete(ip || "unknown");
 }
 

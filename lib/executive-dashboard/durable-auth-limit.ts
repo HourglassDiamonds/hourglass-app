@@ -1,16 +1,18 @@
 /**
  * Preview-only durable founder-auth abuse limiting.
  *
- * Reuses consumeRateLimitWindows / hashed bucket keys. Production and every
- * non-isolated runtime keep the existing in-memory limiter and must never
- * invoke the SQL store in this pass.
+ * Reuses consumeRateLimitWindows / checkRateLimitWindows / clearRateLimitWindows
+ * and hashed bucket keys. Production and every non-isolated runtime keep the
+ * existing in-memory limiter and must never invoke the SQL store in this pass.
  *
- * The RPC is increment-only (no peek, no clear). Preview therefore consumes
- * on the surrounding check so enforcement survives a fresh in-memory Map.
- * Success cannot refund a slot without a schema change.
+ * Password and passkey verify are failure-only: peek on check, consume on
+ * failure, clear on success. Challenge issue and pairing claim remain
+ * consume-per-request.
  */
 
 import {
+  checkRateLimitWindows,
+  clearRateLimitWindows,
   consumeRateLimitWindows,
   type AbuseRateLimitResult,
   type RateLimitWindow,
@@ -95,18 +97,23 @@ function resolveDurableFounderAuthStore(): AbuseRateLimitStore {
   return failClosedAbuseRateLimitStore;
 }
 
-export async function consumeFounderAuthRateLimit(input: {
+function resolveFounderAuthIdentity(ip: string): string | null {
+  if (!ip.trim()) return null;
+  return resolveAbuseLimiterIdentity(ip);
+}
+
+type FounderAuthLimitInput = {
   namespace: FounderAuthRateLimitNamespace;
   ip: string;
   windows: RateLimitWindow[];
   now?: number;
   store?: AbuseRateLimitStore;
-}): Promise<AbuseRateLimitResult> {
-  if (!input.ip.trim()) {
-    return missingProductionClientIpResult();
-  }
+};
 
-  const identity = resolveAbuseLimiterIdentity(input.ip);
+export async function consumeFounderAuthRateLimit(
+  input: FounderAuthLimitInput,
+): Promise<AbuseRateLimitResult> {
+  const identity = resolveFounderAuthIdentity(input.ip);
   if (identity === null) {
     return missingProductionClientIpResult();
   }
@@ -116,6 +123,37 @@ export async function consumeFounderAuthRateLimit(input: {
     identity,
     windows: input.windows,
     now: input.now,
+    store: input.store ?? resolveDurableFounderAuthStore(),
+  });
+}
+
+export async function checkFounderAuthRateLimit(
+  input: FounderAuthLimitInput,
+): Promise<AbuseRateLimitResult> {
+  const identity = resolveFounderAuthIdentity(input.ip);
+  if (identity === null) {
+    return missingProductionClientIpResult();
+  }
+
+  return checkRateLimitWindows({
+    namespace: input.namespace,
+    identity,
+    windows: input.windows,
+    now: input.now,
+    store: input.store ?? resolveDurableFounderAuthStore(),
+  });
+}
+
+export async function clearFounderAuthRateLimit(
+  input: FounderAuthLimitInput,
+): Promise<void> {
+  const identity = resolveFounderAuthIdentity(input.ip);
+  if (identity === null) return;
+
+  await clearRateLimitWindows({
+    namespace: input.namespace,
+    identity,
+    windows: input.windows,
     store: input.store ?? resolveDurableFounderAuthStore(),
   });
 }

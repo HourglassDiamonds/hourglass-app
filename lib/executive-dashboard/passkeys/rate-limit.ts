@@ -1,5 +1,7 @@
 import type { AbuseRateLimitStore } from "@/lib/security/abuse-rate-limit-store";
 import {
+  checkFounderAuthRateLimit,
+  clearFounderAuthRateLimit,
   consumeFounderAuthRateLimit,
   FOUNDER_AUTH_RATE_LIMIT_NAMESPACES,
   FOUNDER_AUTH_RATE_LIMIT_WINDOW_NAME,
@@ -53,10 +55,19 @@ function take(
   return true;
 }
 
+function previewPasskeyWindows(limit: number) {
+  return [
+    {
+      name: FOUNDER_AUTH_RATE_LIMIT_WINDOW_NAME,
+      limit,
+      windowMs: PASSKEY_RATE_LIMIT_WINDOW_MS,
+    },
+  ];
+}
+
 async function consumePreviewPasskeyLimit(
   namespace:
     | typeof FOUNDER_AUTH_RATE_LIMIT_NAMESPACES.passkeyIssue
-    | typeof FOUNDER_AUTH_RATE_LIMIT_NAMESPACES.passkeyVerify
     | typeof FOUNDER_AUTH_RATE_LIMIT_NAMESPACES.pairingClaim,
   ip: string,
   limit: number,
@@ -66,13 +77,7 @@ async function consumePreviewPasskeyLimit(
   const result = await consumeFounderAuthRateLimit({
     namespace,
     ip,
-    windows: [
-      {
-        name: FOUNDER_AUTH_RATE_LIMIT_WINDOW_NAME,
-        limit,
-        windowMs: PASSKEY_RATE_LIMIT_WINDOW_MS,
-      },
-    ],
+    windows: previewPasskeyWindows(limit),
     now,
     store,
   });
@@ -110,13 +115,14 @@ export async function checkPasskeyVerifyRateLimit(
 ): Promise<boolean> {
   if (isExecutiveDashboardAuthRateLimitDisabled()) return true;
   if (isDurableFounderAuthRateLimitEnabled()) {
-    return consumePreviewPasskeyLimit(
-      FOUNDER_AUTH_RATE_LIMIT_NAMESPACES.passkeyVerify,
+    const result = await checkFounderAuthRateLimit({
+      namespace: FOUNDER_AUTH_RATE_LIMIT_NAMESPACES.passkeyVerify,
       ip,
-      PASSKEY_VERIFY_FAILURE_MAX,
+      windows: previewPasskeyWindows(PASSKEY_VERIFY_FAILURE_MAX),
       now,
       store,
-    );
+    });
+    return result.allowed;
   }
   return take(verifyBuckets, ip, PASSKEY_VERIFY_FAILURE_MAX, now, false);
 }
@@ -124,14 +130,35 @@ export async function checkPasskeyVerifyRateLimit(
 export async function recordPasskeyVerifyFailure(
   ip: string,
   now = Date.now(),
+  store?: AbuseRateLimitStore,
 ): Promise<void> {
   if (isExecutiveDashboardAuthRateLimitDisabled()) return;
-  if (isDurableFounderAuthRateLimitEnabled()) return;
+  if (isDurableFounderAuthRateLimitEnabled()) {
+    await consumeFounderAuthRateLimit({
+      namespace: FOUNDER_AUTH_RATE_LIMIT_NAMESPACES.passkeyVerify,
+      ip,
+      windows: previewPasskeyWindows(PASSKEY_VERIFY_FAILURE_MAX),
+      now,
+      store,
+    });
+    return;
+  }
   take(verifyBuckets, ip, PASSKEY_VERIFY_FAILURE_MAX, now, true);
 }
 
-export async function clearPasskeyVerifyFailures(ip: string): Promise<void> {
-  if (isDurableFounderAuthRateLimitEnabled()) return;
+export async function clearPasskeyVerifyFailures(
+  ip: string,
+  store?: AbuseRateLimitStore,
+): Promise<void> {
+  if (isDurableFounderAuthRateLimitEnabled()) {
+    await clearFounderAuthRateLimit({
+      namespace: FOUNDER_AUTH_RATE_LIMIT_NAMESPACES.passkeyVerify,
+      ip,
+      windows: previewPasskeyWindows(PASSKEY_VERIFY_FAILURE_MAX),
+      store,
+    });
+    return;
+  }
   verifyBuckets.delete(ip || "unknown");
 }
 
