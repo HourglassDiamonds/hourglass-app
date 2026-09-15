@@ -117,5 +117,34 @@ describe("Client Memory schema activation SQL", () => {
     assert.match(sql, /revoke all on function public.continuum_client_memory_create_person/i);
     assert.match(sql, /continuum_client_memory_apply_existing_person/);
     assert.equal((sql.match(/enable row level security/g) ?? []).length, 10);
+    for (const table of [
+      "continuum_person_profiles",
+      "continuum_relationships",
+      "continuum_person_facts",
+      "continuum_source_notes",
+      "continuum_wishes",
+      "continuum_project_profiles",
+      "continuum_project_history",
+      "continuum_identity_reviews",
+      "continuum_fact_evidence",
+      "continuum_wish_evidence",
+    ]) {
+      assert.match(
+        sql,
+        new RegExp(`revoke all on table public\\.${table} from public;`),
+      );
+      assert.match(
+        sql,
+        new RegExp(`revoke all on table public\\.${table} from anon;`),
+      );
+      assert.match(
+        sql,
+        new RegExp(`revoke all on table public\\.${table} from authenticated;`),
+      );
+      assert.match(
+        sql,
+        new RegExp(`grant all on table public\\.${table} to service_role;`),
+      );
+    }
   });
 });

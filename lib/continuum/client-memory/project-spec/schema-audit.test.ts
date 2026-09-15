@@ -74,6 +74,22 @@ describe("Client Memory correct-project-spec SQL", () => {
     assert.doesNotMatch(sql, /execute 'select/i);
     assert.doesNotMatch(sql, /drop table/i);
     assert.doesNotMatch(sql, /create policy/i);
+    assert.match(
+      sql,
+      /revoke all on table public\.continuum_project_history_revisions from public;/,
+    );
+    assert.match(
+      sql,
+      /revoke all on table public\.continuum_project_history_revisions from anon;/,
+    );
+    assert.match(
+      sql,
+      /revoke all on table public\.continuum_project_history_revisions from authenticated;/,
+    );
+    assert.match(
+      sql,
+      /grant all on table public\.continuum_project_history_revisions to service_role;/,
+    );
     assert.doesNotMatch(sql, /continuum_human_sources/);
     assert.doesNotMatch(sql, /continuum_gmail_messages/);
     assert.doesNotMatch(sql, /continuum_attention_items/);

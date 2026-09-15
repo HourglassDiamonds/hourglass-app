@@ -43,6 +43,22 @@ describe("Client Memory source-note lifecycle SQL", () => {
     assert.doesNotMatch(sql, /create policy/i);
     assert.doesNotMatch(sql, /grant .* to anon/i);
     assert.doesNotMatch(sql, /grant .* to authenticated/i);
+    assert.match(
+      sql,
+      /revoke all on table public\.continuum_source_note_revisions from public;/,
+    );
+    assert.match(
+      sql,
+      /revoke all on table public\.continuum_source_note_revisions from anon;/,
+    );
+    assert.match(
+      sql,
+      /revoke all on table public\.continuum_source_note_revisions from authenticated;/,
+    );
+    assert.match(
+      sql,
+      /grant all on table public\.continuum_source_note_revisions to service_role;/,
+    );
     assert.doesNotMatch(sql, /continuum_human_sources/);
     assert.doesNotMatch(sql, /continuum_gmail_messages/);
     assert.doesNotMatch(sql, /continuum_attention_items/);

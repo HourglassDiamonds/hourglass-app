@@ -74,6 +74,13 @@ alter table public.continuum_project_history_revisions enable row level security
 
 -- Explicitly: do not add anon/authenticated RLS policies.
 
+-- Explicit privilege contract (additive, repeatable). No policies.
+-- Preview/Production application remains separately founder-approved.
+revoke all on table public.continuum_project_history_revisions from public;
+revoke all on table public.continuum_project_history_revisions from anon;
+revoke all on table public.continuum_project_history_revisions from authenticated;
+grant all on table public.continuum_project_history_revisions to service_role;
+
 create or replace function public.continuum_client_memory_correct_project_spec(
   p_project_id uuid,
   p_mutation_id uuid,

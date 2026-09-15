@@ -114,3 +114,10 @@ alter table public.continuum_source_note_revisions enable row level security;
 
 -- Explicitly: do not add anon/authenticated RLS policies.
 -- Unique index continuum_source_notes_import_field_uq is unchanged.
+
+-- Explicit privilege contract (additive, repeatable). No policies.
+-- Preview/Production application remains separately founder-approved.
+revoke all on table public.continuum_source_note_revisions from public;
+revoke all on table public.continuum_source_note_revisions from anon;
+revoke all on table public.continuum_source_note_revisions from authenticated;
+grant all on table public.continuum_source_note_revisions to service_role;

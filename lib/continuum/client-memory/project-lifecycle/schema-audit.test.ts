@@ -26,6 +26,38 @@ describe("Client Memory project-lifecycle SQL", () => {
     assert.match(sql, /enable row level security/);
     assert.doesNotMatch(sql, /drop table/i);
     assert.doesNotMatch(sql, /create policy/i);
+    assert.match(
+      sql,
+      /revoke all on table public\.continuum_project_lifecycle_states from public;/,
+    );
+    assert.match(
+      sql,
+      /revoke all on table public\.continuum_project_lifecycle_states from anon;/,
+    );
+    assert.match(
+      sql,
+      /revoke all on table public\.continuum_project_lifecycle_states from authenticated;/,
+    );
+    assert.match(
+      sql,
+      /grant all on table public\.continuum_project_lifecycle_states to service_role;/,
+    );
+    assert.match(
+      sql,
+      /revoke all on table public\.continuum_project_lifecycle_events from public;/,
+    );
+    assert.match(
+      sql,
+      /revoke all on table public\.continuum_project_lifecycle_events from anon;/,
+    );
+    assert.match(
+      sql,
+      /revoke all on table public\.continuum_project_lifecycle_events from authenticated;/,
+    );
+    assert.match(
+      sql,
+      /grant all on table public\.continuum_project_lifecycle_events to service_role;/,
+    );
     assert.doesNotMatch(sql, /execute format/i);
     assert.doesNotMatch(sql, /insert into public\.continuum_project_lifecycle_states[\s\S]*select project_id from/i);
     assert.doesNotMatch(sql, /continuum_person_profiles/);

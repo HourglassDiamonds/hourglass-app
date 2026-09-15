@@ -206,3 +206,40 @@ alter table continuum_exceptions enable row level security;
 
 -- Explicitly: do not add anon/authenticated RLS policies.
 -- Service role bypasses RLS; that is the only intended access path.
+
+-- Explicit privilege contract (additive, repeatable). No policies.
+-- Preview/Production application remains separately founder-approved.
+revoke all on table public.continuum_entities from public;
+revoke all on table public.continuum_entities from anon;
+revoke all on table public.continuum_entities from authenticated;
+grant all on table public.continuum_entities to service_role;
+
+revoke all on table public.continuum_external_identities from public;
+revoke all on table public.continuum_external_identities from anon;
+revoke all on table public.continuum_external_identities from authenticated;
+grant all on table public.continuum_external_identities to service_role;
+
+revoke all on table public.continuum_events from public;
+revoke all on table public.continuum_events from anon;
+revoke all on table public.continuum_events from authenticated;
+grant all on table public.continuum_events to service_role;
+
+revoke all on table public.continuum_evidence from public;
+revoke all on table public.continuum_evidence from anon;
+revoke all on table public.continuum_evidence from authenticated;
+grant all on table public.continuum_evidence to service_role;
+
+revoke all on table public.continuum_observations from public;
+revoke all on table public.continuum_observations from anon;
+revoke all on table public.continuum_observations from authenticated;
+grant all on table public.continuum_observations to service_role;
+
+revoke all on table public.continuum_observation_evidence from public;
+revoke all on table public.continuum_observation_evidence from anon;
+revoke all on table public.continuum_observation_evidence from authenticated;
+grant all on table public.continuum_observation_evidence to service_role;
+
+revoke all on table public.continuum_exceptions from public;
+revoke all on table public.continuum_exceptions from anon;
+revoke all on table public.continuum_exceptions from authenticated;
+grant all on table public.continuum_exceptions to service_role;

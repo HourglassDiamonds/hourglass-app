@@ -320,6 +320,58 @@ alter table continuum_wish_evidence enable row level security;
 
 -- Explicitly: do not add anon/authenticated RLS policies.
 
+-- Explicit privilege contract (additive, repeatable). No policies.
+-- Preview/Production application remains separately founder-approved.
+revoke all on table public.continuum_person_profiles from public;
+revoke all on table public.continuum_person_profiles from anon;
+revoke all on table public.continuum_person_profiles from authenticated;
+grant all on table public.continuum_person_profiles to service_role;
+
+revoke all on table public.continuum_relationships from public;
+revoke all on table public.continuum_relationships from anon;
+revoke all on table public.continuum_relationships from authenticated;
+grant all on table public.continuum_relationships to service_role;
+
+revoke all on table public.continuum_person_facts from public;
+revoke all on table public.continuum_person_facts from anon;
+revoke all on table public.continuum_person_facts from authenticated;
+grant all on table public.continuum_person_facts to service_role;
+
+revoke all on table public.continuum_source_notes from public;
+revoke all on table public.continuum_source_notes from anon;
+revoke all on table public.continuum_source_notes from authenticated;
+grant all on table public.continuum_source_notes to service_role;
+
+revoke all on table public.continuum_wishes from public;
+revoke all on table public.continuum_wishes from anon;
+revoke all on table public.continuum_wishes from authenticated;
+grant all on table public.continuum_wishes to service_role;
+
+revoke all on table public.continuum_project_profiles from public;
+revoke all on table public.continuum_project_profiles from anon;
+revoke all on table public.continuum_project_profiles from authenticated;
+grant all on table public.continuum_project_profiles to service_role;
+
+revoke all on table public.continuum_project_history from public;
+revoke all on table public.continuum_project_history from anon;
+revoke all on table public.continuum_project_history from authenticated;
+grant all on table public.continuum_project_history to service_role;
+
+revoke all on table public.continuum_identity_reviews from public;
+revoke all on table public.continuum_identity_reviews from anon;
+revoke all on table public.continuum_identity_reviews from authenticated;
+grant all on table public.continuum_identity_reviews to service_role;
+
+revoke all on table public.continuum_fact_evidence from public;
+revoke all on table public.continuum_fact_evidence from anon;
+revoke all on table public.continuum_fact_evidence from authenticated;
+grant all on table public.continuum_fact_evidence to service_role;
+
+revoke all on table public.continuum_wish_evidence from public;
+revoke all on table public.continuum_wish_evidence from anon;
+revoke all on table public.continuum_wish_evidence from authenticated;
+grant all on table public.continuum_wish_evidence to service_role;
+
 -- ---------------------------------------------------------------------------
 -- Atomic Person create (single Postgres function = one transaction)
 -- ---------------------------------------------------------------------------

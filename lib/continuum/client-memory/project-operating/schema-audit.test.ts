@@ -35,6 +35,38 @@ describe("Client Memory custom/repair operating-layer SQL", () => {
     assert.match(sql, /updated_at timestamptz not null default now\(\)/);
     assert.doesNotMatch(sql, /drop table/i);
     assert.doesNotMatch(sql, /create policy/i);
+    assert.match(
+      sql,
+      /revoke all on table public\.continuum_project_custom_details from public;/,
+    );
+    assert.match(
+      sql,
+      /revoke all on table public\.continuum_project_custom_details from anon;/,
+    );
+    assert.match(
+      sql,
+      /revoke all on table public\.continuum_project_custom_details from authenticated;/,
+    );
+    assert.match(
+      sql,
+      /grant all on table public\.continuum_project_custom_details to service_role;/,
+    );
+    assert.match(
+      sql,
+      /revoke all on table public\.continuum_project_repair_details from public;/,
+    );
+    assert.match(
+      sql,
+      /revoke all on table public\.continuum_project_repair_details from anon;/,
+    );
+    assert.match(
+      sql,
+      /revoke all on table public\.continuum_project_repair_details from authenticated;/,
+    );
+    assert.match(
+      sql,
+      /grant all on table public\.continuum_project_repair_details to service_role;/,
+    );
     assert.doesNotMatch(sql, /execute format/i);
     assert.doesNotMatch(sql, /insert into public\.continuum_project_custom_details[\s\S]*select project_id from/i);
     assert.doesNotMatch(sql, /insert into public\.continuum_project_repair_details[\s\S]*select project_id from/i);

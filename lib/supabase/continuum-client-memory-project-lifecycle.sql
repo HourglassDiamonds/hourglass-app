@@ -153,6 +153,18 @@ alter table public.continuum_project_lifecycle_events enable row level security;
 
 -- Explicitly: do not add anon/authenticated RLS policies.
 
+-- Explicit privilege contract (additive, repeatable). No policies.
+-- Preview/Production application remains separately founder-approved.
+revoke all on table public.continuum_project_lifecycle_states from public;
+revoke all on table public.continuum_project_lifecycle_states from anon;
+revoke all on table public.continuum_project_lifecycle_states from authenticated;
+grant all on table public.continuum_project_lifecycle_states to service_role;
+
+revoke all on table public.continuum_project_lifecycle_events from public;
+revoke all on table public.continuum_project_lifecycle_events from anon;
+revoke all on table public.continuum_project_lifecycle_events from authenticated;
+grant all on table public.continuum_project_lifecycle_events to service_role;
+
 create or replace function public.continuum_client_memory_set_project_lifecycle(
   p_project_id uuid,
   p_stage text,

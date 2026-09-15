@@ -234,6 +234,34 @@ describe("Continuum contracts", () => {
     assert.match(sql, /create table if not exists continuum_exceptions/);
     assert.equal((sql.match(/enable row level security/g) ?? []).length, 7);
     assert.doesNotMatch(sql, /create policy/i);
+    assert.doesNotMatch(sql, /^\s*grant\b[^;]*\bto\s+anon\b/im);
+    assert.doesNotMatch(sql, /^\s*grant\b[^;]*\bto\s+authenticated\b/im);
+    for (const table of [
+      "continuum_entities",
+      "continuum_external_identities",
+      "continuum_events",
+      "continuum_evidence",
+      "continuum_observations",
+      "continuum_observation_evidence",
+      "continuum_exceptions",
+    ]) {
+      assert.match(
+        sql,
+        new RegExp(`revoke all on table public\\.${table} from public;`),
+      );
+      assert.match(
+        sql,
+        new RegExp(`revoke all on table public\\.${table} from anon;`),
+      );
+      assert.match(
+        sql,
+        new RegExp(`revoke all on table public\\.${table} from authenticated;`),
+      );
+      assert.match(
+        sql,
+        new RegExp(`grant all on table public\\.${table} to service_role;`),
+      );
+    }
     assert.match(sql, /PHASE 1B\.1: DO NOT APPLY TO PRODUCTION/);
   });
 });

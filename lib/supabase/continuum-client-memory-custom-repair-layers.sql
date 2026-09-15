@@ -45,6 +45,18 @@ alter table public.continuum_project_repair_details enable row level security;
 
 -- Explicitly: do not add anon/authenticated RLS policies.
 
+-- Explicit privilege contract (additive, repeatable). No policies.
+-- Preview/Production application remains separately founder-approved.
+revoke all on table public.continuum_project_custom_details from public;
+revoke all on table public.continuum_project_custom_details from anon;
+revoke all on table public.continuum_project_custom_details from authenticated;
+grant all on table public.continuum_project_custom_details to service_role;
+
+revoke all on table public.continuum_project_repair_details from public;
+revoke all on table public.continuum_project_repair_details from anon;
+revoke all on table public.continuum_project_repair_details from authenticated;
+grant all on table public.continuum_project_repair_details to service_role;
+
 alter table public.continuum_project_history_revisions
   drop constraint if exists continuum_project_history_revisions_field_name_check;
 
