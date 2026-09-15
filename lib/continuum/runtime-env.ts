@@ -5,7 +5,7 @@
  * Never log secrets, service-role keys, tokens, or mailbox content.
  */
 
-import { getSupabaseUrl } from "@/lib/intelligence/env";
+import { getSupabaseServiceRoleKey, getSupabaseUrl } from "@/lib/intelligence/env";
 
 export const CONTINUUM_RUNTIME_ENVS = ["production", "preview", "local"] as const;
 export type ContinuumRuntimeEnv = (typeof CONTINUUM_RUNTIME_ENVS)[number];
@@ -17,6 +17,17 @@ export type ContinuumRuntimeEnv = (typeof CONTINUUM_RUNTIME_ENVS)[number];
  */
 export const CONTINUUM_PRODUCTION_SUPABASE_PROJECT_REF =
   "bnafadfgrrriblppeubp" as const;
+
+/**
+ * Continuum Preview Supabase project ref. Not a secret. Preview isolation
+ * is proven from this identity plus SUPABASE_URL, never from JWT claims.
+ */
+export const CONTINUUM_PREVIEW_SUPABASE_PROJECT_REF =
+  "hrmpzplffuhhvbtxxhnt" as const;
+
+const PRIVILEGED_SECRET_PREFIX = "sb_secret_";
+const PUBLISHABLE_CLIENT_PREFIX = "sb_publishable_";
+const LEGACY_JWT_SHAPED_PREFIX = "eyJ";
 
 export const SERVER_ONLY_CONTINUUM_RUNTIME_ENV = [
   "CONTINUUM_ENV",
@@ -96,6 +107,31 @@ export function isProductionSupabaseUrl(
 ): boolean {
   const ref = supabaseProjectRefFromUrl(url);
   return Boolean(ref && ref === productionRef);
+}
+
+/**
+ * Opaque privileged-server credential check. Never decodes JWT claims.
+ * Isolation is proven from env identity + SUPABASE_URL, not from the key.
+ */
+export function isPrivilegedSupabaseServerCredential(
+  raw: string | undefined,
+): boolean {
+  const key = trimmed(raw);
+  if (!key) return false;
+  if (key.startsWith(PUBLISHABLE_CLIENT_PREFIX)) return false;
+  if (
+    key.startsWith(PRIVILEGED_SECRET_PREFIX) &&
+    key.length > PRIVILEGED_SECRET_PREFIX.length
+  ) {
+    return true;
+  }
+  if (
+    key.startsWith(LEGACY_JWT_SHAPED_PREFIX) &&
+    key.length > LEGACY_JWT_SHAPED_PREFIX.length
+  ) {
+    return true;
+  }
+  return false;
 }
 
 export function resolveContinuumIsolationState(input?: {
@@ -184,19 +220,48 @@ export function assertContinuumPreviewIsolation(input?: {
   supabaseUrl?: string;
   productionRef?: string;
   previewRef?: string;
+  serviceRoleKey?: string;
 }): void {
   const continuum = parseContinuumEnv(input?.continuumEnv ?? process.env.CONTINUUM_ENV);
   if (continuum !== "preview") return;
 
   const url = input?.supabaseUrl ?? getSupabaseUrl();
-  const productionRef = productionSupabaseProjectRef(
+  const productionRef = trimmed(
     input?.productionRef ?? process.env.CONTINUUM_PRODUCTION_SUPABASE_PROJECT_REF,
-  );
+  )?.toLowerCase();
   const previewRef = previewSupabaseProjectRef(
     input?.previewRef ?? process.env.CONTINUUM_PREVIEW_SUPABASE_PROJECT_REF,
   );
   const currentRef = supabaseProjectRefFromUrl(url);
+  const serviceRoleKey = trimmed(
+    input?.serviceRoleKey ?? getSupabaseServiceRoleKey(),
+  );
 
+  if (!previewRef) {
+    throw new Error(
+      "[continuum:isolation] CONTINUUM_ENV=preview requires CONTINUUM_PREVIEW_SUPABASE_PROJECT_REF.",
+    );
+  }
+  if (!productionRef) {
+    throw new Error(
+      "[continuum:isolation] CONTINUUM_ENV=preview requires CONTINUUM_PRODUCTION_SUPABASE_PROJECT_REF.",
+    );
+  }
+  if (previewRef === productionRef) {
+    throw new Error(
+      "[continuum:isolation] Preview and Production Supabase project refs must not be the same.",
+    );
+  }
+  if (previewRef !== CONTINUUM_PREVIEW_SUPABASE_PROJECT_REF) {
+    throw new Error(
+      "[continuum:isolation] CONTINUUM_PREVIEW_SUPABASE_PROJECT_REF must be the Continuum Preview project.",
+    );
+  }
+  if (productionRef !== CONTINUUM_PRODUCTION_SUPABASE_PROJECT_REF) {
+    throw new Error(
+      "[continuum:isolation] CONTINUUM_PRODUCTION_SUPABASE_PROJECT_REF must be the Continuum Production project.",
+    );
+  }
   if (!url) {
     throw new Error(
       "[continuum:isolation] CONTINUUM_ENV=preview requires SUPABASE_URL.",
@@ -212,14 +277,24 @@ export function assertContinuumPreviewIsolation(input?: {
       "[continuum:isolation] Preview must not use the Production Supabase project.",
     );
   }
-  if (!previewRef) {
-    throw new Error(
-      "[continuum:isolation] CONTINUUM_ENV=preview requires CONTINUUM_PREVIEW_SUPABASE_PROJECT_REF.",
-    );
-  }
   if (currentRef !== previewRef) {
     throw new Error(
       "[continuum:isolation] Preview SUPABASE_URL does not match CONTINUUM_PREVIEW_SUPABASE_PROJECT_REF.",
+    );
+  }
+  if (!serviceRoleKey) {
+    throw new Error(
+      "[continuum:isolation] CONTINUUM_ENV=preview requires a privileged Supabase server credential.",
+    );
+  }
+  if (serviceRoleKey.startsWith(PUBLISHABLE_CLIENT_PREFIX)) {
+    throw new Error(
+      "[continuum:isolation] Preview privileged credential must not be a publishable client key.",
+    );
+  }
+  if (!isPrivilegedSupabaseServerCredential(serviceRoleKey)) {
+    throw new Error(
+      "[continuum:isolation] Preview privileged credential must be a server secret.",
     );
   }
 }

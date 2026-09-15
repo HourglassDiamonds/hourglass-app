@@ -84,15 +84,16 @@ function applyMap(map, { inherit = false } = {}) {
   }
 }
 
-function decodeJwtPayload(token) {
-  const parts = token.split(".");
-  if (parts.length < 2) return null;
-  try {
-    const json = Buffer.from(parts[1], "base64url").toString("utf8");
-    return JSON.parse(json);
-  } catch {
-    return null;
+function isPrivilegedSupabaseServerCredential(key) {
+  if (!key) return false;
+  if (key.startsWith("sb_publishable_")) return false;
+  if (key.startsWith("sb_secret_") && key.length > "sb_secret_".length) {
+    return true;
   }
+  if (key.startsWith("eyJ") && key.length > 3) {
+    return true;
+  }
+  return false;
 }
 
 function supabaseHostRef(url) {
@@ -152,8 +153,8 @@ CONTINUUM_PREVIEW_SUPABASE_PROJECT_REF=${PREVIEW_REF}
 CONTINUUM_PRODUCTION_SUPABASE_PROJECT_REF=${PRODUCTION_REF}
 SUPABASE_URL=https://${PREVIEW_REF}.supabase.co
 
-# Paste the Preview service_role key from the Supabase dashboard for ${PREVIEW_REF}.
-# Settings → API → service_role. Do not use Production. Do not paste into Cursor chat.
+# Paste the Preview privileged server secret for ${PREVIEW_REF} (sb_secret_ or legacy service_role).
+# Settings → API. Do not use Production. Do not paste into Cursor chat. Do not use a publishable key.
 SUPABASE_SERVICE_ROLE_KEY=${next.SUPABASE_SERVICE_ROLE_KEY ?? ""}
 
 CONTINUUM_GMAIL_FOUNDER_EMAIL=${SANDBOX_MAILBOX}
@@ -236,41 +237,31 @@ function assertSandboxServiceRole() {
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
   if (!envPresent(key)) {
     console.error(`
-BLOCK: Preview service-role key is not set.
+BLOCK: Preview privileged server credential is not set.
 
 Obtain it locally (do not paste into Cursor chat):
 1. Open Supabase → Continuum Preview → Settings → API
    https://supabase.com/dashboard/project/${PREVIEW_REF}/settings/api
-2. Copy the service_role secret for project ${PREVIEW_REF} only.
+2. Copy the privileged secret for project ${PREVIEW_REF} only.
 3. Paste it into ${SANDBOX_ENV_PATH} as SUPABASE_SERVICE_ROLE_KEY=
 4. Re-run: npm run assert:continuum-preview
 
 Do not use the Production project ${PRODUCTION_REF}.
-Do not reuse a Production service-role key.
+Do not reuse a Production privileged credential.
+Do not use a publishable/anon client key.
 `);
     process.exit(2);
   }
 
-  const payload = decodeJwtPayload(key);
-  const ref = typeof payload?.ref === "string" ? payload.ref.toLowerCase() : null;
-  const role = typeof payload?.role === "string" ? payload.role : null;
-  if (!ref || !role) {
+  if (key.startsWith("sb_publishable_")) {
     fail(
-      "[continuum-preview] SUPABASE_SERVICE_ROLE_KEY is not a recognizable Supabase JWT. No value printed.",
+      "[continuum-preview] Privileged credential must not be a publishable client key. No value printed.",
     );
   }
-  if (ref === PRODUCTION_REF) {
+  if (!isPrivilegedSupabaseServerCredential(key)) {
     fail(
-      "[continuum-preview] Refusing to start: service-role key belongs to Production.",
+      "[continuum-preview] Privileged credential must be a server secret. No value printed.",
     );
-  }
-  if (ref !== PREVIEW_REF) {
-    fail(
-      "[continuum-preview] service-role key project ref does not match the Preview sandbox.",
-    );
-  }
-  if (role !== "service_role") {
-    fail("[continuum-preview] Key role is not service_role.");
   }
 }
 
@@ -350,18 +341,10 @@ if (ensured.generated.length) {
 
 loadRuntimeEnv();
 assertIsolatedPreview();
+assertSandboxServiceRole();
 await runIsolationAssert();
 
 reportOauthReadiness();
-const hasServiceRole = envPresent(process.env.SUPABASE_SERVICE_ROLE_KEY);
-if (assertOnly && !hasServiceRole) {
-  console.info(
-    "[continuum-preview] isolation assertion passed. Service-role key still required before starting the app.",
-  );
-  process.exit(0);
-}
-
-assertSandboxServiceRole();
 if (assertOnly) {
   console.info("[continuum-preview] sandbox runtime env is complete.");
   process.exit(0);

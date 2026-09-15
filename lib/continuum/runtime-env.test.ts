@@ -4,6 +4,7 @@ import { dirname, join } from "node:path";
 import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import {
+  CONTINUUM_PREVIEW_SUPABASE_PROJECT_REF,
   CONTINUUM_PRODUCTION_SUPABASE_PROJECT_REF,
   SERVER_ONLY_CONTINUUM_RUNTIME_ENV,
   assertContinuumPreviewIsolation,
@@ -11,6 +12,7 @@ import {
   continuumEnvLogLabel,
   isGmailIncrementalAllowedInCurrentEnv,
   isPreviewLikeRuntime,
+  isPrivilegedSupabaseServerCredential,
   isProductionSupabaseUrl,
   parseContinuumEnv,
   resolveContinuumIsolationState,
@@ -21,6 +23,40 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "../..");
 const PROD_URL = `https://${CONTINUUM_PRODUCTION_SUPABASE_PROJECT_REF}.supabase.co`;
 const PREVIEW_REF = "continuumpreviewxxxx";
 const PREVIEW_URL = `https://${PREVIEW_REF}.supabase.co`;
+const CANONICAL_PREVIEW_URL = `https://${CONTINUUM_PREVIEW_SUPABASE_PROJECT_REF}.supabase.co`;
+const FAKE_SECRET = "sb_secret_test_preview_credential_not_real";
+const FAKE_LEGACY = "eyJtest_legacy_preview_credential_not_a_real_jwt";
+const FAKE_PUBLISHABLE = "sb_publishable_test_not_a_privileged_key";
+
+function previewIsolationInput(
+  overrides: {
+    continuumEnv?: string;
+    vercelEnv?: string;
+    supabaseUrl?: string;
+    productionRef?: string;
+    previewRef?: string;
+    serviceRoleKey?: string;
+  } = {},
+) {
+  return {
+    continuumEnv: "preview",
+    supabaseUrl: CANONICAL_PREVIEW_URL,
+    previewRef: CONTINUUM_PREVIEW_SUPABASE_PROJECT_REF,
+    productionRef: CONTINUUM_PRODUCTION_SUPABASE_PROJECT_REF,
+    serviceRoleKey: FAKE_SECRET,
+    ...overrides,
+  };
+}
+
+function assertErrorDoesNotRevealSecret(
+  error: unknown,
+  secret: string,
+): void {
+  assert.ok(error instanceof Error);
+  assert.doesNotMatch(error.message, new RegExp(secret.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  assert.doesNotMatch(error.message, /sb_secret_[A-Za-z0-9_]+/);
+  assert.doesNotMatch(error.message, /sb_publishable_[A-Za-z0-9_]+/);
+}
 
 const ENV_KEYS = [
   "CONTINUUM_ENV",
@@ -95,28 +131,18 @@ describe("Continuum runtime isolation", () => {
 
   it("fails closed when CONTINUUM_ENV=preview still points at Production", () => {
     assert.throws(
-      () =>
-        assertContinuumPreviewIsolation({
-          continuumEnv: "preview",
-          supabaseUrl: PROD_URL,
-          previewRef: PREVIEW_REF,
-        }),
+      () => assertContinuumPreviewIsolation(previewIsolationInput({ supabaseUrl: PROD_URL })),
       /must not use the Production Supabase project/,
     );
     assert.throws(
       () =>
-        assertContinuumPreviewIsolation({
-          continuumEnv: "preview",
-          supabaseUrl: PREVIEW_URL,
-        }),
+        assertContinuumPreviewIsolation(
+          previewIsolationInput({ previewRef: "" }),
+        ),
       /CONTINUUM_PREVIEW_SUPABASE_PROJECT_REF/,
     );
     assert.doesNotThrow(() =>
-      assertContinuumPreviewIsolation({
-        continuumEnv: "preview",
-        supabaseUrl: PREVIEW_URL,
-        previewRef: PREVIEW_REF,
-      }),
+      assertContinuumPreviewIsolation(previewIsolationInput()),
     );
     assert.doesNotThrow(() =>
       assertContinuumPreviewIsolation({
@@ -266,5 +292,182 @@ describe("Continuum runtime isolation", () => {
     );
     assert.doesNotMatch(launcher, /console\.(log|info|error|warn)\([^)]*SERVICE_ROLE/);
     assert.doesNotMatch(launcher, /console\.(log|info|error|warn)\([^)]*TOKEN_KEK/);
+    assert.doesNotMatch(launcher, /decodeJwtPayload|JSON\.parse\(json\)|base64url/);
+    assert.doesNotMatch(launcher, /recognizable Supabase JWT|payload\?\.ref|role !== "service_role"/);
+    assert.doesNotMatch(source, /decodeJwt|jwt\.decode|payload\.ref/);
+    assert.doesNotMatch(isolationAssert, /decodeJwt|JSON\.parse\([^)]*base64/);
+    assert.match(source, /isPrivilegedSupabaseServerCredential/);
+    assert.match(source, /sb_secret_/);
+    assert.match(source, /sb_publishable_/);
+    assert.match(launcher, /sb_secret_/);
+    assert.match(launcher, /sb_publishable_/);
+    assert.match(isolationAssert, /privilegedCredentialPresent/);
+    assert.match(isolationAssert, /loadPrivilegedCredentialFromSandboxOnly/);
+    assert.match(isolationAssert, /assertContinuumPreviewIsolation/);
+    assert.doesNotMatch(
+      isolationAssert,
+      /console\.(info|error|warn)\([^)]*getSupabaseServiceRoleKey\(\)/,
+    );
+  });
+});
+
+describe("Continuum Preview privileged credential isolation", () => {
+  it("treats sb_secret_ as an opaque privileged credential and rejects publishable keys", () => {
+    assert.equal(isPrivilegedSupabaseServerCredential(FAKE_SECRET), true);
+    assert.equal(isPrivilegedSupabaseServerCredential(FAKE_LEGACY), true);
+    assert.equal(isPrivilegedSupabaseServerCredential(FAKE_PUBLISHABLE), false);
+    assert.equal(isPrivilegedSupabaseServerCredential(""), false);
+    assert.equal(isPrivilegedSupabaseServerCredential("sb_secret_"), false);
+    assert.equal(isPrivilegedSupabaseServerCredential("not-a-secret"), false);
+  });
+
+  it("passes Preview isolation with a fake sb_secret_ credential", () => {
+    assert.doesNotThrow(() =>
+      assertContinuumPreviewIsolation(previewIsolationInput()),
+    );
+  });
+
+  it("retains opaque legacy-shaped credentials without JWT decoding", () => {
+    assert.doesNotThrow(() =>
+      assertContinuumPreviewIsolation(
+        previewIsolationInput({ serviceRoleKey: FAKE_LEGACY }),
+      ),
+    );
+  });
+
+  it("fails closed when Preview still points at the Production URL", () => {
+    try {
+      assertContinuumPreviewIsolation(
+        previewIsolationInput({ supabaseUrl: PROD_URL }),
+      );
+      assert.fail("expected Production URL to fail closed");
+    } catch (error) {
+      assert.ok(error instanceof Error);
+      assert.match(error.message, /must not use the Production Supabase project/);
+      assertErrorDoesNotRevealSecret(error, FAKE_SECRET);
+    }
+  });
+
+  it("fails closed when Preview and Production refs are the same", () => {
+    try {
+      assertContinuumPreviewIsolation(
+        previewIsolationInput({
+          previewRef: CONTINUUM_PREVIEW_SUPABASE_PROJECT_REF,
+          productionRef: CONTINUUM_PREVIEW_SUPABASE_PROJECT_REF,
+        }),
+      );
+      assert.fail("expected equal refs to fail closed");
+    } catch (error) {
+      assert.ok(error instanceof Error);
+      assert.match(error.message, /must not be the same/);
+      assertErrorDoesNotRevealSecret(error, FAKE_SECRET);
+    }
+  });
+
+  it("fails closed when the Preview ref is missing", () => {
+    assert.throws(
+      () =>
+        assertContinuumPreviewIsolation(
+          previewIsolationInput({ previewRef: "" }),
+        ),
+      /CONTINUUM_PREVIEW_SUPABASE_PROJECT_REF/,
+    );
+  });
+
+  it("fails closed when the Production ref is missing", () => {
+    assert.throws(
+      () =>
+        assertContinuumPreviewIsolation(
+          previewIsolationInput({ productionRef: "" }),
+        ),
+      /CONTINUUM_PRODUCTION_SUPABASE_PROJECT_REF/,
+    );
+  });
+
+  it("fails closed when the privileged credential is missing", () => {
+    try {
+      assertContinuumPreviewIsolation(
+        previewIsolationInput({ serviceRoleKey: "" }),
+      );
+      assert.fail("expected missing privileged credential to fail closed");
+    } catch (error) {
+      assert.ok(error instanceof Error);
+      assert.match(error.message, /privileged Supabase server credential/);
+      assertErrorDoesNotRevealSecret(error, FAKE_SECRET);
+    }
+  });
+
+  it("fails closed when a publishable client key is used as the privileged credential", () => {
+    try {
+      assertContinuumPreviewIsolation(
+        previewIsolationInput({ serviceRoleKey: FAKE_PUBLISHABLE }),
+      );
+      assert.fail("expected publishable key to fail closed");
+    } catch (error) {
+      assert.ok(error instanceof Error);
+      assert.match(error.message, /must not be a publishable client key/);
+      assertErrorDoesNotRevealSecret(error, FAKE_PUBLISHABLE);
+    }
+  });
+
+  it("rejects a URL that only contains the Preview ref as a substring", () => {
+    assert.throws(
+      () =>
+        assertContinuumPreviewIsolation(
+          previewIsolationInput({
+            supabaseUrl: `https://example.invalid/?next=${CANONICAL_PREVIEW_URL}`,
+          }),
+        ),
+      /requires a Supabase project URL/,
+    );
+  });
+
+  it("stays inert when CONTINUUM_ENV is not preview", () => {
+    assert.doesNotThrow(() =>
+      assertContinuumPreviewIsolation({
+        continuumEnv: "production",
+        supabaseUrl: PROD_URL,
+        serviceRoleKey: FAKE_PUBLISHABLE,
+      }),
+    );
+    assert.doesNotThrow(() =>
+      assertContinuumPreviewIsolation({
+        continuumEnv: "unset",
+        supabaseUrl: PROD_URL,
+        serviceRoleKey: "",
+      }),
+    );
+  });
+
+  it("does not put the privileged credential into diagnostic labels", () => {
+    const priorKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const prior = snapshotEnv();
+    try {
+      process.env.CONTINUUM_ENV = "preview";
+      process.env.SUPABASE_URL = CANONICAL_PREVIEW_URL;
+      process.env.CONTINUUM_PREVIEW_SUPABASE_PROJECT_REF =
+        CONTINUUM_PREVIEW_SUPABASE_PROJECT_REF;
+      process.env.CONTINUUM_PRODUCTION_SUPABASE_PROJECT_REF =
+        CONTINUUM_PRODUCTION_SUPABASE_PROJECT_REF;
+      process.env.SUPABASE_SERVICE_ROLE_KEY = FAKE_SECRET;
+      const label = continuumEnvLogLabel();
+      assert.match(label, /continuum_env=preview/);
+      assert.doesNotMatch(label, /sb_secret_test_preview_credential_not_real/);
+      assert.doesNotMatch(label, /service_role|eyJ|sk_|sb_secret/i);
+    } finally {
+      restoreEnv(prior);
+      if (priorKey === undefined) delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+      else process.env.SUPABASE_SERVICE_ROLE_KEY = priorKey;
+    }
+  });
+
+  it("does not require JWT parsing in Preview isolation source", () => {
+    const source = readFileSync(join(ROOT, "lib/continuum/runtime-env.ts"), "utf8");
+    const launcher = readFileSync(
+      join(ROOT, "scripts/continuum-preview-dev.mjs"),
+      "utf8",
+    );
+    assert.doesNotMatch(source, /split\("\."\)|base64url|payload\?\.role/);
+    assert.doesNotMatch(launcher, /decodeJwtPayload|parts\[1\]|payload\?\.ref/);
   });
 });
