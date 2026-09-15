@@ -17,6 +17,8 @@ import {
 } from "./env";
 import { isGa4OAuthConfigured } from "./google-oauth";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
+import { SERVER_ONLY_CONTINUUM_CALENDAR_ENV } from "@/lib/continuum/calendar/env";
+import { SERVER_ONLY_CONTINUUM_GMAIL_ENV } from "@/lib/continuum/gmail/env";
 
 /** Must NEVER use a NEXT_PUBLIC_ prefix. */
 export const SERVER_ONLY_INTELLIGENCE_ENV = [
@@ -125,6 +127,8 @@ export function assertNoPrefixedServerSecrets(): void {
   const forbiddenPrefixes = [
     ...SERVER_ONLY_INTELLIGENCE_ENV,
     ...SERVER_ONLY_APP_ENV,
+    ...SERVER_ONLY_CONTINUUM_GMAIL_ENV,
+    ...SERVER_ONLY_CONTINUUM_CALENDAR_ENV,
     "GOOGLE_OAUTH_REDIRECT_URI",
   ];
 
