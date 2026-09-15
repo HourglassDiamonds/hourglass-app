@@ -1,3 +1,4 @@
+import { getRequestClientIp } from "@/lib/security/client-ip";
 import { isExecutiveDashboardAuthRateLimitDisabled } from "./env";
 
 /**
@@ -18,17 +19,33 @@ function prune(failures: number[], now: number): number[] {
   return failures.filter((t) => t >= cutoff);
 }
 
+const AUTH_CLIENT_IP_HEADER_NAMES = [
+  "x-vercel-forwarded-for",
+  "x-forwarded-for",
+  "x-real-ip",
+] as const;
+
+/**
+ * Founder-auth rate-limit identity. Delegates to the shared hardened
+ * `getRequestClientIp` parser — do not reimplement forwarding-header trust.
+ */
 export function getExecutiveDashboardAuthClientIp(
   headersList: Headers | { get(name: string): string | null },
 ): string {
-  const forwarded = headersList.get("x-forwarded-for");
-  if (forwarded) {
-    const first = forwarded.split(",")[0]?.trim();
-    if (first) return first.slice(0, 80);
+  return getRequestClientIp(requestFromAuthHeaders(headersList));
+}
+
+function requestFromAuthHeaders(
+  headersList: Headers | { get(name: string): string | null },
+): Request {
+  const headers = new Headers();
+  for (const name of AUTH_CLIENT_IP_HEADER_NAMES) {
+    const value = headersList.get(name);
+    if (value) headers.set(name, value);
   }
-  const realIp = headersList.get("x-real-ip")?.trim();
-  if (realIp) return realIp.slice(0, 80);
-  return "unknown";
+  return new Request("https://hourglass.local/executive-dashboard/auth", {
+    headers,
+  });
 }
 
 export type ExecAuthRateLimitResult =
