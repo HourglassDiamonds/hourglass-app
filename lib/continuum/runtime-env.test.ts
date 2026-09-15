@@ -280,7 +280,23 @@ describe("Continuum runtime isolation", () => {
     assert.match(launcher, /hrmpzplffuhhvbtxxhnt/);
     assert.match(launcher, /bnafadfgrrriblppeubp/);
     assert.match(launcher, /NEVER_INHERIT/);
+    assert.match(launcher, /PREVIEW_OWNED_AUTH_KEYS/);
+    assert.match(launcher, /EXECUTIVE_DASHBOARD_USERNAME/);
+    assert.match(launcher, /EXECUTIVE_DASHBOARD_PASSWORD_HASH/);
+    assert.match(launcher, /applyPreviewOwnedAuthFromSandbox/);
+    assert.match(launcher, /assertSandboxDashboardAuth/);
+    assert.match(launcher, /continuum-preview-pin-auth\.cjs/);
+    assert.match(launcher, /--require/);
+    const pinAuth = readFileSync(
+      join(ROOT, "scripts/continuum-preview-pin-auth.cjs"),
+      "utf8",
+    );
+    assert.match(pinAuth, /EXECUTIVE_DASHBOARD_USERNAME/);
+    assert.match(pinAuth, /EXECUTIVE_DASHBOARD_PASSWORD_HASH/);
+    assert.match(pinAuth, /\.env\.development\.local/);
+    assert.doesNotMatch(pinAuth, /console\.(log|info|error|warn)/);
     assert.match(launcher, /delete process\.env\.CONTINUUM_GMAIL_INCREMENTAL_SYNC_ENABLED/);
+    assert.match(launcher, /for \(const key of PREVIEW_OWNED_AUTH_KEYS\) delete process\.env\[key\]/);
     assert.match(launcher, /CONTINUUM_GMAIL_INCREMENTAL_SYNC_ENABLED/);
     assert.doesNotMatch(
       launcher,
@@ -292,6 +308,7 @@ describe("Continuum runtime isolation", () => {
     );
     assert.doesNotMatch(launcher, /console\.(log|info|error|warn)\([^)]*SERVICE_ROLE/);
     assert.doesNotMatch(launcher, /console\.(log|info|error|warn)\([^)]*TOKEN_KEK/);
+    assert.doesNotMatch(launcher, /console\.(log|info|error|warn)\([^)]*PASSWORD_HASH/);
     assert.doesNotMatch(launcher, /decodeJwtPayload|JSON\.parse\(json\)|base64url/);
     assert.doesNotMatch(launcher, /recognizable Supabase JWT|payload\?\.ref|role !== "service_role"/);
     assert.doesNotMatch(source, /decodeJwt|jwt\.decode|payload\.ref/);

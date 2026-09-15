@@ -18,6 +18,11 @@ const SANDBOX_MAILBOX = "hourglass.continuum.test@gmail.com";
 const LOCAL_GMAIL_REDIRECT =
   "http://localhost:3000/api/continuum/gmail/oauth/callback";
 
+const PREVIEW_OWNED_AUTH_KEYS = [
+  "EXECUTIVE_DASHBOARD_USERNAME",
+  "EXECUTIVE_DASHBOARD_PASSWORD_HASH",
+];
+
 const NEVER_INHERIT = new Set([
   "SUPABASE_URL",
   "SUPABASE_SERVICE_ROLE_KEY",
@@ -28,6 +33,7 @@ const NEVER_INHERIT = new Set([
   "CONTINUUM_PRODUCTION_SUPABASE_PROJECT_REF",
   "CONTINUUM_GMAIL_INCREMENTAL_SYNC_ENABLED",
   "EXECUTIVE_DASHBOARD_SESSION_SECRET",
+  ...PREVIEW_OWNED_AUTH_KEYS,
   "VERCEL",
   "VERCEL_ENV",
   "VERCEL_URL",
@@ -44,6 +50,7 @@ const SANDBOX_TEMPLATE_KEYS = new Set([
   "CONTINUUM_GMAIL_FOUNDER_EMAIL",
   "CONTINUUM_GMAIL_TOKEN_KEK",
   "EXECUTIVE_DASHBOARD_SESSION_SECRET",
+  ...PREVIEW_OWNED_AUTH_KEYS,
   "CONTINUUM_GMAIL_OAUTH_CLIENT_ID",
   "CONTINUUM_GMAIL_OAUTH_CLIENT_SECRET",
   "CONTINUUM_GMAIL_OAUTH_REDIRECT_URI",
@@ -161,6 +168,10 @@ CONTINUUM_GMAIL_FOUNDER_EMAIL=${SANDBOX_MAILBOX}
 CONTINUUM_GMAIL_TOKEN_KEK=${next.CONTINUUM_GMAIL_TOKEN_KEK}
 EXECUTIVE_DASHBOARD_SESSION_SECRET=${next.EXECUTIVE_DASHBOARD_SESSION_SECRET}
 
+# Preview-only founder login. Never inherit from .env.development.local / .env.local.
+EXECUTIVE_DASHBOARD_USERNAME=${next.EXECUTIVE_DASHBOARD_USERNAME ?? ""}
+EXECUTIVE_DASHBOARD_PASSWORD_HASH=${next.EXECUTIVE_DASHBOARD_PASSWORD_HASH ?? ""}
+
 # Reuse the existing Continuum Gmail OAuth client. Do not change Production redirect URIs.
 # Localhost callback is already the documented redirect:
 # ${LOCAL_GMAIL_REDIRECT}
@@ -187,11 +198,37 @@ function fail(message) {
   process.exit(1);
 }
 
+function applyPreviewOwnedAuthFromSandbox() {
+  const sandbox = parseEnvFile(SANDBOX_ENV_PATH);
+  for (const key of PREVIEW_OWNED_AUTH_KEYS) {
+    delete process.env[key];
+    const value = sandbox[key];
+    if (envPresent(value)) process.env[key] = value;
+  }
+}
+
 function loadRuntimeEnv() {
   delete process.env.CONTINUUM_GMAIL_INCREMENTAL_SYNC_ENABLED;
+  for (const key of PREVIEW_OWNED_AUTH_KEYS) delete process.env[key];
   applyMap(parseEnvFile(".env.local"), { inherit: true });
   applyMap(parseEnvFile(".env.development.local"), { inherit: true });
   applyMap(parseEnvFile(SANDBOX_ENV_PATH), { inherit: false });
+  applyPreviewOwnedAuthFromSandbox();
+}
+
+function assertSandboxDashboardAuth() {
+  const username = process.env.EXECUTIVE_DASHBOARD_USERNAME?.trim();
+  const passwordHash = process.env.EXECUTIVE_DASHBOARD_PASSWORD_HASH?.trim();
+  if (!envPresent(username) || !envPresent(passwordHash)) {
+    fail(
+      `[continuum-preview] Preview login must be set in ${SANDBOX_ENV_PATH} as EXECUTIVE_DASHBOARD_USERNAME and EXECUTIVE_DASHBOARD_PASSWORD_HASH. Do not inherit .env.development.local. No value printed.`,
+    );
+  }
+  if (!passwordHash.startsWith("scrypt$")) {
+    fail(
+      "[continuum-preview] EXECUTIVE_DASHBOARD_PASSWORD_HASH must be the repo scrypt format. No value printed.",
+    );
+  }
 }
 
 function assertIsolatedPreview() {
@@ -279,6 +316,12 @@ function reportOauthReadiness() {
         gmailOAuthRedirectLocalhost: redirect === LOCAL_GMAIL_REDIRECT,
         sandboxKekPresent: kek,
         founderMailboxConfigured: founder === SANDBOX_MAILBOX,
+        previewDashboardUsernamePresent: envPresent(
+          process.env.EXECUTIVE_DASHBOARD_USERNAME,
+        ),
+        previewDashboardPasswordHashPresent: envPresent(
+          process.env.EXECUTIVE_DASHBOARD_PASSWORD_HASH,
+        ),
       },
       null,
       2,
@@ -318,11 +361,16 @@ function runIsolationAssert() {
 
 function startNextDev() {
   const nextBin = resolve(process.cwd(), "node_modules/next/dist/bin/next");
-  const child = spawn(process.execPath, [nextBin, "dev"], {
-    stdio: "inherit",
-    env: process.env,
-    cwd: process.cwd(),
-  });
+  const pinAuth = resolve(process.cwd(), "scripts/continuum-preview-pin-auth.cjs");
+  const child = spawn(
+    process.execPath,
+    ["--require", pinAuth, nextBin, "dev"],
+    {
+      stdio: "inherit",
+      env: process.env,
+      cwd: process.cwd(),
+    },
+  );
   child.on("exit", (code) => {
     process.exit(code ?? 0);
   });
@@ -342,6 +390,7 @@ if (ensured.generated.length) {
 loadRuntimeEnv();
 assertIsolatedPreview();
 assertSandboxServiceRole();
+assertSandboxDashboardAuth();
 await runIsolationAssert();
 
 reportOauthReadiness();
