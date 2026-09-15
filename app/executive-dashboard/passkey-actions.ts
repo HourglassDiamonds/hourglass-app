@@ -67,7 +67,7 @@ async function readAndClearChallengeCookie(): Promise<string | undefined> {
 
 export async function beginPasskeyAuthentication(): Promise<PasskeyAuthBeginState> {
   const ip = await clientIp();
-  if (!checkPasskeyChallengeIssueRateLimit(ip)) {
+  if (!(await checkPasskeyChallengeIssueRateLimit(ip))) {
     logPasskeyOperation({
       op: "auth.challenge",
       ok: false,
@@ -107,7 +107,7 @@ export async function completePasskeyAuthentication(
   routing?: { next?: string | null; viewport?: string | null },
 ): Promise<PasskeyAuthCompleteState> {
   const ip = await clientIp();
-  if (!checkPasskeyVerifyRateLimit(ip)) {
+  if (!(await checkPasskeyVerifyRateLimit(ip))) {
     logPasskeyOperation({
       op: "auth.verify",
       ok: false,
@@ -120,7 +120,7 @@ export async function completePasskeyAuthentication(
   const runtime = getFounderPasskeyRuntime();
   const challengeToken = await readAndClearChallengeCookie();
   if (!runtime.ok) {
-    recordPasskeyVerifyFailure(ip);
+    await recordPasskeyVerifyFailure(ip);
     logPasskeyOperation({
       op: "auth.verify",
       ok: false,
@@ -135,7 +135,7 @@ export async function completePasskeyAuthentication(
     response,
   });
   if (!result.ok) {
-    recordPasskeyVerifyFailure(ip);
+    await recordPasskeyVerifyFailure(ip);
     logPasskeyOperation({
       op: "auth.verify",
       ok: false,
@@ -145,8 +145,8 @@ export async function completePasskeyAuthentication(
     return { ok: false, error: EXECUTIVE_DASHBOARD_PASSKEY_AUTH_ERROR };
   }
 
-  clearPasskeyVerifyFailures(ip);
-  clearExecutiveDashboardLoginFailures(ip);
+  await clearPasskeyVerifyFailures(ip);
+  await clearExecutiveDashboardLoginFailures(ip);
   await issueExecutiveDashboardSession(runtime.username, runtime.secret);
   logPasskeyOperation({ op: "auth.verify", ok: true, reason: "ok" });
   redirect(

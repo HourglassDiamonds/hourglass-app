@@ -38,7 +38,7 @@ export async function loginExecutiveDashboard(
   const headerList = await headers();
   const ip = getExecutiveDashboardAuthClientIp(headerList);
 
-  const rate = checkExecutiveDashboardLoginRateLimit(ip);
+  const rate = await checkExecutiveDashboardLoginRateLimit(ip);
   if (!rate.allowed) {
     await delayExecutiveDashboardAuthFailure();
     return { error: EXECUTIVE_DASHBOARD_GENERIC_AUTH_ERROR };
@@ -57,12 +57,12 @@ export async function loginExecutiveDashboard(
   const passOk = verifyExecutiveDashboardPassword(password, config.passwordHash);
 
   if (!userOk || !passOk) {
-    recordExecutiveDashboardLoginFailure(ip);
+    await recordExecutiveDashboardLoginFailure(ip);
     await delayExecutiveDashboardAuthFailure();
     return { error: EXECUTIVE_DASHBOARD_GENERIC_AUTH_ERROR };
   }
 
-  clearExecutiveDashboardLoginFailures(ip);
+  await clearExecutiveDashboardLoginFailures(ip);
 
   await issueExecutiveDashboardSession(config.username, config.sessionSecret);
 

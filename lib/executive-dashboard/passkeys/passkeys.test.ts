@@ -85,6 +85,26 @@ function withEnv(
   }
 }
 
+async function withEnvAsync(
+  values: Record<string, string | undefined>,
+  fn: () => Promise<void>,
+): Promise<void> {
+  const previous = new Map<string, string | undefined>();
+  for (const [key, value] of Object.entries(values)) {
+    previous.set(key, process.env[key]);
+    if (value === undefined) delete process.env[key];
+    else process.env[key] = value;
+  }
+  try {
+    await fn();
+  } finally {
+    for (const [key, value] of previous) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  }
+}
+
 type TestAttestation = RegistrationResponseJSON & {
   testOrigin?: string;
   testRpId?: string;
@@ -603,27 +623,31 @@ describe("founder passkeys", () => {
     });
   });
 
-  it("keeps password fallback and does not share the password failure counter", () => {
-    withEnv(
+  it("keeps password fallback and does not share the password failure counter", async () => {
+    await withEnvAsync(
       {
         NODE_ENV: "development",
+        CONTINUUM_ENV: "local",
         EXECUTIVE_DASHBOARD_AUTH_RATE_LIMIT_DISABLED: undefined,
       },
-      () => {
+      async () => {
         const ip = "203.0.113.80";
         for (let i = 0; i < EXEC_AUTH_RATE_LIMIT_MAX; i += 1) {
-          recordExecutiveDashboardLoginFailure(ip);
+          await recordExecutiveDashboardLoginFailure(ip);
         }
-        assert.equal(checkExecutiveDashboardLoginRateLimit(ip).allowed, false);
-        assert.equal(checkPasskeyChallengeIssueRateLimit(ip), true);
-        assert.equal(checkPasskeyVerifyRateLimit(ip), true);
+        assert.equal(
+          (await checkExecutiveDashboardLoginRateLimit(ip)).allowed,
+          false,
+        );
+        assert.equal(await checkPasskeyChallengeIssueRateLimit(ip), true);
+        assert.equal(await checkPasskeyVerifyRateLimit(ip), true);
 
         for (let i = 0; i < PASSKEY_VERIFY_FAILURE_MAX; i += 1) {
-          recordPasskeyVerifyFailure("198.51.100.9");
+          await recordPasskeyVerifyFailure("198.51.100.9");
         }
-        assert.equal(checkPasskeyVerifyRateLimit("198.51.100.9"), false);
+        assert.equal(await checkPasskeyVerifyRateLimit("198.51.100.9"), false);
         assert.equal(
-          checkExecutiveDashboardLoginRateLimit("198.51.100.9").allowed,
+          (await checkExecutiveDashboardLoginRateLimit("198.51.100.9")).allowed,
           true,
         );
         assert.ok(PASSKEY_CHALLENGE_ISSUE_MAX > EXEC_AUTH_RATE_LIMIT_MAX);

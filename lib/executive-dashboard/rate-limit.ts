@@ -1,8 +1,16 @@
 import { getRequestClientIp } from "@/lib/security/client-ip";
+import type { AbuseRateLimitStore } from "@/lib/security/abuse-rate-limit-store";
 import { isExecutiveDashboardAuthRateLimitDisabled } from "./env";
+import {
+  consumeFounderAuthRateLimit,
+  FOUNDER_AUTH_RATE_LIMIT_NAMESPACES,
+  FOUNDER_AUTH_RATE_LIMIT_WINDOW_NAME,
+  isDurableFounderAuthRateLimitEnabled,
+} from "./durable-auth-limit";
 
 /**
  * Bounded login abuse defense — best-effort in-memory on serverless.
+ * Isolated Continuum Preview uses the durable hashed limiter instead.
  * Minor first-layer only; not a substitute for Vercel WAF / Deployment Protection.
  */
 export const EXEC_AUTH_RATE_LIMIT_MAX = 5;
@@ -52,14 +60,10 @@ export type ExecAuthRateLimitResult =
   | { allowed: true }
   | { allowed: false; retryAfterSeconds: number };
 
-export function checkExecutiveDashboardLoginRateLimit(
+function checkExecutiveDashboardLoginRateLimitMemory(
   ip: string,
-  now = Date.now(),
+  now: number,
 ): ExecAuthRateLimitResult {
-  if (isExecutiveDashboardAuthRateLimitDisabled()) {
-    return { allowed: true };
-  }
-
   const key = ip || "unknown";
   const bucket = buckets.get(key) ?? { failures: [] };
   bucket.failures = prune(bucket.failures, now);
@@ -79,11 +83,41 @@ export function checkExecutiveDashboardLoginRateLimit(
   return { allowed: true };
 }
 
-export function recordExecutiveDashboardLoginFailure(
+export async function checkExecutiveDashboardLoginRateLimit(
   ip: string,
   now = Date.now(),
-): void {
+  store?: AbuseRateLimitStore,
+): Promise<ExecAuthRateLimitResult> {
+  if (isExecutiveDashboardAuthRateLimitDisabled()) {
+    return { allowed: true };
+  }
+
+  if (isDurableFounderAuthRateLimitEnabled()) {
+    return consumeFounderAuthRateLimit({
+      namespace: FOUNDER_AUTH_RATE_LIMIT_NAMESPACES.password,
+      ip,
+      windows: [
+        {
+          name: FOUNDER_AUTH_RATE_LIMIT_WINDOW_NAME,
+          limit: EXEC_AUTH_RATE_LIMIT_MAX,
+          windowMs: EXEC_AUTH_RATE_LIMIT_WINDOW_MS,
+        },
+      ],
+      now,
+      store,
+    });
+  }
+
+  return checkExecutiveDashboardLoginRateLimitMemory(ip, now);
+}
+
+export async function recordExecutiveDashboardLoginFailure(
+  ip: string,
+  now = Date.now(),
+): Promise<void> {
   if (isExecutiveDashboardAuthRateLimitDisabled()) return;
+  // Preview durable checks already consume the increment-only RPC.
+  if (isDurableFounderAuthRateLimitEnabled()) return;
 
   const key = ip || "unknown";
   const bucket = buckets.get(key) ?? { failures: [] };
@@ -98,7 +132,8 @@ export function recordExecutiveDashboardLoginFailure(
   buckets.set(key, bucket);
 }
 
-export function clearExecutiveDashboardLoginFailures(ip: string): void {
+export async function clearExecutiveDashboardLoginFailures(ip: string): Promise<void> {
+  if (isDurableFounderAuthRateLimitEnabled()) return;
   buckets.delete(ip || "unknown");
 }
 

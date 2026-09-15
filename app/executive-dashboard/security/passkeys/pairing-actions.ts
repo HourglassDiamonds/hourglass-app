@@ -52,7 +52,7 @@ export async function createIphonePairingAction(): Promise<CreateIphonePairingSt
   }
 
   const ip = await clientIp();
-  if (!checkPasskeyChallengeIssueRateLimit(ip)) {
+  if (!(await checkPasskeyChallengeIssueRateLimit(ip))) {
     logPasskeyOperation({
       op: "pair.create",
       ok: false,

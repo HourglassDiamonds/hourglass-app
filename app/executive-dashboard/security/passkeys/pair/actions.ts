@@ -31,6 +31,7 @@ import {
 } from "@/lib/executive-dashboard/passkeys/pairing-token";
 import {
   checkPasskeyChallengeIssueRateLimit,
+  checkPasskeyPairingClaimRateLimit,
   checkPasskeyVerifyRateLimit,
   delayPasskeyFailure,
   recordPasskeyVerifyFailure,
@@ -109,6 +110,16 @@ export async function claimIphonePairingFromTokenAction(
     return { ok: false, error: EXECUTIVE_DASHBOARD_PASSKEY_PAIR_ERROR };
   }
   const headerList = await headers();
+  const ip = getExecutiveDashboardAuthClientIp(headerList);
+  if (!(await checkPasskeyPairingClaimRateLimit(ip))) {
+    logPasskeyOperation({
+      op: "pair.claim",
+      ok: false,
+      reason: "rate-limited",
+    });
+    await delayPasskeyFailure();
+    return { ok: false, error: EXECUTIVE_DASHBOARD_PASSKEY_PAIR_ERROR };
+  }
   const result = await claimIphonePairing(runtime, {
     rawToken,
     userAgent: headerList.get("user-agent"),
@@ -147,7 +158,7 @@ export async function readPhonePairingAction(): Promise<PhonePairingViewState> {
 
 export async function beginIphonePairingRegistrationAction(): Promise<PhonePairingBeginState> {
   const ip = await clientIp();
-  if (!checkPasskeyChallengeIssueRateLimit(ip)) {
+  if (!(await checkPasskeyChallengeIssueRateLimit(ip))) {
     logPasskeyOperation({
       op: "pair.reg.challenge",
       ok: false,
@@ -186,7 +197,7 @@ export async function completeIphonePairingRegistrationAction(
   response: unknown,
 ): Promise<PhonePairingCompleteState> {
   const ip = await clientIp();
-  if (!checkPasskeyVerifyRateLimit(ip)) {
+  if (!(await checkPasskeyVerifyRateLimit(ip))) {
     logPasskeyOperation({
       op: "pair.reg.verify",
       ok: false,
@@ -199,7 +210,7 @@ export async function completeIphonePairingRegistrationAction(
   const runtime = getFounderPasskeyPairingRuntime();
   const challengeToken = await readAndClearChallengeCookie();
   if (!runtime.ok) {
-    recordPasskeyVerifyFailure(ip);
+    await recordPasskeyVerifyFailure(ip);
     return { ok: false, error: EXECUTIVE_DASHBOARD_PASSKEY_PAIR_ERROR };
   }
 
@@ -210,7 +221,7 @@ export async function completeIphonePairingRegistrationAction(
     label: "iPhone",
   });
   if (!result.ok) {
-    recordPasskeyVerifyFailure(ip);
+    await recordPasskeyVerifyFailure(ip);
     logPasskeyOperation({
       op: "pair.reg.verify",
       ok: false,

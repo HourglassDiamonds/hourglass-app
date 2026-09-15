@@ -1,11 +1,20 @@
+import type { AbuseRateLimitStore } from "@/lib/security/abuse-rate-limit-store";
+import {
+  consumeFounderAuthRateLimit,
+  FOUNDER_AUTH_RATE_LIMIT_NAMESPACES,
+  FOUNDER_AUTH_RATE_LIMIT_WINDOW_NAME,
+  isDurableFounderAuthRateLimitEnabled,
+} from "../durable-auth-limit";
 import { isExecutiveDashboardAuthRateLimitDisabled } from "../env";
 
 /**
  * Passkey challenge/verify limiter — separate maps from password failures
  * so password brute force does not block Face ID/passkey.
+ * Isolated Continuum Preview uses the durable hashed limiter instead.
  */
 export const PASSKEY_CHALLENGE_ISSUE_MAX = 20;
 export const PASSKEY_VERIFY_FAILURE_MAX = 10;
+export const PASSKEY_PAIRING_CLAIM_MAX = 20;
 export const PASSKEY_RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
 export const PASSKEY_FAILURE_DELAY_MS = 300;
 
@@ -44,10 +53,47 @@ function take(
   return true;
 }
 
-export function checkPasskeyChallengeIssueRateLimit(
+async function consumePreviewPasskeyLimit(
+  namespace:
+    | typeof FOUNDER_AUTH_RATE_LIMIT_NAMESPACES.passkeyIssue
+    | typeof FOUNDER_AUTH_RATE_LIMIT_NAMESPACES.passkeyVerify
+    | typeof FOUNDER_AUTH_RATE_LIMIT_NAMESPACES.pairingClaim,
+  ip: string,
+  limit: number,
+  now: number,
+  store?: AbuseRateLimitStore,
+): Promise<boolean> {
+  const result = await consumeFounderAuthRateLimit({
+    namespace,
+    ip,
+    windows: [
+      {
+        name: FOUNDER_AUTH_RATE_LIMIT_WINDOW_NAME,
+        limit,
+        windowMs: PASSKEY_RATE_LIMIT_WINDOW_MS,
+      },
+    ],
+    now,
+    store,
+  });
+  return result.allowed;
+}
+
+export async function checkPasskeyChallengeIssueRateLimit(
   ip: string,
   now = Date.now(),
-): boolean {
+  store?: AbuseRateLimitStore,
+): Promise<boolean> {
+  if (isExecutiveDashboardAuthRateLimitDisabled()) return true;
+  if (isDurableFounderAuthRateLimitEnabled()) {
+    return consumePreviewPasskeyLimit(
+      FOUNDER_AUTH_RATE_LIMIT_NAMESPACES.passkeyIssue,
+      ip,
+      PASSKEY_CHALLENGE_ISSUE_MAX,
+      now,
+      store,
+    );
+  }
   return take(
     issueBuckets,
     ip,
@@ -57,22 +103,56 @@ export function checkPasskeyChallengeIssueRateLimit(
   );
 }
 
-export function checkPasskeyVerifyRateLimit(
+export async function checkPasskeyVerifyRateLimit(
   ip: string,
   now = Date.now(),
-): boolean {
+  store?: AbuseRateLimitStore,
+): Promise<boolean> {
+  if (isExecutiveDashboardAuthRateLimitDisabled()) return true;
+  if (isDurableFounderAuthRateLimitEnabled()) {
+    return consumePreviewPasskeyLimit(
+      FOUNDER_AUTH_RATE_LIMIT_NAMESPACES.passkeyVerify,
+      ip,
+      PASSKEY_VERIFY_FAILURE_MAX,
+      now,
+      store,
+    );
+  }
   return take(verifyBuckets, ip, PASSKEY_VERIFY_FAILURE_MAX, now, false);
 }
 
-export function recordPasskeyVerifyFailure(
+export async function recordPasskeyVerifyFailure(
   ip: string,
   now = Date.now(),
-): void {
+): Promise<void> {
+  if (isExecutiveDashboardAuthRateLimitDisabled()) return;
+  if (isDurableFounderAuthRateLimitEnabled()) return;
   take(verifyBuckets, ip, PASSKEY_VERIFY_FAILURE_MAX, now, true);
 }
 
-export function clearPasskeyVerifyFailures(ip: string): void {
+export async function clearPasskeyVerifyFailures(ip: string): Promise<void> {
+  if (isDurableFounderAuthRateLimitEnabled()) return;
   verifyBuckets.delete(ip || "unknown");
+}
+
+/**
+ * Preview-only durable limiter for public pairing claim. Production and
+ * non-isolated runtimes stay unlimited — this path previously had no limiter.
+ */
+export async function checkPasskeyPairingClaimRateLimit(
+  ip: string,
+  now = Date.now(),
+  store?: AbuseRateLimitStore,
+): Promise<boolean> {
+  if (isExecutiveDashboardAuthRateLimitDisabled()) return true;
+  if (!isDurableFounderAuthRateLimitEnabled()) return true;
+  return consumePreviewPasskeyLimit(
+    FOUNDER_AUTH_RATE_LIMIT_NAMESPACES.pairingClaim,
+    ip,
+    PASSKEY_PAIRING_CLAIM_MAX,
+    now,
+    store,
+  );
 }
 
 export function resetPasskeyRateLimits(): void {

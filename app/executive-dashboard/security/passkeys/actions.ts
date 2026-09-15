@@ -78,7 +78,7 @@ export async function beginPasskeyRegistration(): Promise<PasskeyEnrollBeginStat
   }
 
   const ip = await clientIp();
-  if (!checkPasskeyChallengeIssueRateLimit(ip)) {
+  if (!(await checkPasskeyChallengeIssueRateLimit(ip))) {
     logPasskeyOperation({
       op: "reg.challenge",
       ok: false,
@@ -122,7 +122,7 @@ export async function completePasskeyRegistration(
 ): Promise<PasskeyEnrollCompleteState> {
   const session = await readFounderPasskeySession();
   const ip = await clientIp();
-  if (!checkPasskeyVerifyRateLimit(ip)) {
+  if (!(await checkPasskeyVerifyRateLimit(ip))) {
     logPasskeyOperation({
       op: "reg.verify",
       ok: false,
@@ -134,7 +134,7 @@ export async function completePasskeyRegistration(
 
   const challengeToken = await readAndClearChallengeCookie();
   if (!session.ok) {
-    recordPasskeyVerifyFailure(ip);
+    await recordPasskeyVerifyFailure(ip);
     logPasskeyOperation({
       op: "reg.verify",
       ok: false,
@@ -145,7 +145,7 @@ export async function completePasskeyRegistration(
 
   const runtime = getFounderPasskeyRuntime();
   if (!runtime.ok) {
-    recordPasskeyVerifyFailure(ip);
+    await recordPasskeyVerifyFailure(ip);
     logPasskeyOperation({
       op: "reg.verify",
       ok: false,
@@ -162,7 +162,7 @@ export async function completePasskeyRegistration(
     label,
   });
   if (!result.ok) {
-    recordPasskeyVerifyFailure(ip);
+    await recordPasskeyVerifyFailure(ip);
     logPasskeyOperation({
       op: "reg.verify",
       ok: false,

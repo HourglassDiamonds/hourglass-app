@@ -156,6 +156,7 @@ describe("getExecutiveDashboardAuthClientIp delegates to getRequestClientIp", ()
       claim.indexOf("export async function claimIphonePairingFromTokenAction"),
       claim.indexOf("export async function readPhonePairingAction"),
     );
-    assert.doesNotMatch(claimFn, /clientIp\(|getExecutiveDashboardAuthClientIp/);
+    assert.match(claimFn, /getExecutiveDashboardAuthClientIp/);
+    assert.match(claimFn, /checkPasskeyPairingClaimRateLimit/);
   });
 });

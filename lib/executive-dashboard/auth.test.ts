@@ -62,6 +62,26 @@ function withEnv(
   }
 }
 
+async function withEnvAsync(
+  values: Record<string, string | undefined>,
+  fn: () => Promise<void>,
+): Promise<void> {
+  const previous = new Map<string, string | undefined>();
+  for (const [key, value] of Object.entries(values)) {
+    previous.set(key, process.env[key]);
+    if (value === undefined) delete process.env[key];
+    else process.env[key] = value;
+  }
+  try {
+    await fn();
+  } finally {
+    for (const [key, value] of previous) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  }
+}
+
 describe("executive dashboard auth", () => {
   const username = "founder";
   const password = "correct-horse-test-only";
@@ -398,19 +418,23 @@ describe("executive dashboard auth", () => {
     assert.match(protectedLayout, /getExecutiveDashboardAccessDecision/);
   });
 
-  it("bounds repeated login failures in memory", () => {
-    withEnv(
+  it("bounds repeated login failures in memory", async () => {
+    await withEnvAsync(
       {
         NODE_ENV: "development",
+        CONTINUUM_ENV: "local",
         EXECUTIVE_DASHBOARD_AUTH_RATE_LIMIT_DISABLED: undefined,
       },
-      () => {
+      async () => {
         const ip = "203.0.113.50";
         for (let i = 0; i < EXEC_AUTH_RATE_LIMIT_MAX; i += 1) {
-          assert.equal(checkExecutiveDashboardLoginRateLimit(ip).allowed, true);
-          recordExecutiveDashboardLoginFailure(ip);
+          assert.equal(
+            (await checkExecutiveDashboardLoginRateLimit(ip)).allowed,
+            true,
+          );
+          await recordExecutiveDashboardLoginFailure(ip);
         }
-        const blocked = checkExecutiveDashboardLoginRateLimit(ip);
+        const blocked = await checkExecutiveDashboardLoginRateLimit(ip);
         assert.equal(blocked.allowed, false);
       },
     );

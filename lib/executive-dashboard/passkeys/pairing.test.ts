@@ -520,9 +520,18 @@ describe("iphone passkey pairing", () => {
       "app/executive-dashboard/security/passkeys/pairing-actions.ts",
     );
     assert.match(pairActions, /claimIphonePairingFromTokenAction/);
+    assert.match(pairActions, /checkPasskeyPairingClaimRateLimit/);
+    assert.match(pairActions, /getExecutiveDashboardAuthClientIp/);
     assert.match(pairActions, /issueExecutiveDashboardSession/);
     assert.match(pairActions, /completeIphonePairingRegistration/);
     assert.doesNotMatch(pairActions, /searchParams/);
+    const pairingCore = read("lib/executive-dashboard/passkeys/pairing.ts");
+    assert.doesNotMatch(pairingCore, /checkPasskeyPairingClaimRateLimit/);
+    assert.match(pairingCore, /hashPairingToken/);
+    assert.match(pairingCore, /deps\.pairings\.claim/);
+    const pairingConfig = read("lib/executive-dashboard/passkeys/config.ts");
+    assert.match(pairingConfig, /PASSKEY_PAIRING_TOKEN_BYTES = 32/);
+    assert.match(pairingConfig, /PASSKEY_PAIRING_TTL_MS = 5 \* 60 \* 1000/);
     const pairPage = read("app/executive-dashboard/security/passkeys/pair/page.tsx");
     assert.doesNotMatch(pairPage, /searchParams|\?t=/);
     assert.match(
