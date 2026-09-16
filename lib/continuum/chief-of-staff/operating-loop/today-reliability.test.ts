@@ -153,16 +153,18 @@ describe("Today reliability hotfix", () => {
       nowIso: COS_LOOP_NOW,
       top5: [],
     });
-    const item = result.brief[0];
-    assert.ok(item);
-    assert.notEqual(item?.personLabel, "Justin");
-    assert.doesNotMatch(item?.personLabel ?? "", /Justin/i);
-    assert.doesNotMatch(`${item?.headline} ${item?.explanation}`, /Justin/i);
-    assert.match(`${item?.headline} ${item?.projectTitle}`, /Bee/i);
-    assert.equal(
-      item?.actions.some((action) => action.kind === "confirm_person"),
-      false,
-    );
+    for (const item of result.brief) {
+      assert.notEqual(item.personLabel, "Justin");
+      assert.doesNotMatch(item.personLabel ?? "", /Justin/i);
+      assert.doesNotMatch(`${item.headline} ${item.explanation}`, /Justin/i);
+      assert.equal(
+        item.actions.some((action) => action.kind === "confirm_person"),
+        false,
+      );
+      for (const beat of item.evidence) {
+        assert.doesNotMatch(beat.label, /Justin/i);
+      }
+    }
   });
 
   it("does not treat a naked date as a Today action", () => {

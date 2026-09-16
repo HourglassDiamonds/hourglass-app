@@ -240,7 +240,7 @@ export async function disposeDocketItem(
         input.verb === "approve" ||
         input.verb === "responded" ||
         input.verb === "resolved";
-      const dismissing = input.verb === "disregard";
+      const dismissing = input.verb === "disregard" || input.verb === "dismiss";
       if (!completing && !dismissing) {
         return { ok: false, reason: "unsupported-mutation" };
       }
@@ -413,7 +413,7 @@ export async function disposeDocketItem(
       };
     }
 
-    if (input.verb === "disregard") {
+    if (input.verb === "disregard" || input.verb === "dismiss") {
       if (input.origin === "open_job" && input.jobId && input.projectId && deps.jobs) {
         return cancelJob(deps.jobs, input);
       }
@@ -423,9 +423,14 @@ export async function disposeDocketItem(
       const rows = await loadCandidates(deps.candidates, candidateIds);
       const existing = rows.map((row) => row.candidateId);
       if (existing.length === 0) return { ok: false, reason: "candidate-not-found" };
+      const work = rows.filter(
+        (row) =>
+          row.candidateType !== "person_association" &&
+          row.candidateType !== "project_association",
+      );
       const reviewed = await reviewCandidates(
         deps.candidates,
-        existing,
+        (work.length > 0 ? work : rows).map((row) => row.candidateId),
         { action: "discard" },
         now,
       );

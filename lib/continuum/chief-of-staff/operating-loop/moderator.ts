@@ -28,11 +28,15 @@ import {
   isExplicitNewProject,
   isFounderIdentityName,
   isHistoricalRediscovery,
+  isNakedDateText,
   isPaymentStateChange,
+  isPlatformOrSystemName,
   isStudioOrVendorLabel,
   isTechnicianVisit,
   isVendorOrganizationLabel,
+  looksLikeHumanPersonName,
   payloadOf,
+  classifyTodayCommunication,
   type FounderAttentionContext,
 } from "@/lib/continuum/candidates/founder-attention";
 import { isUnresolvedOpenJobState } from "@/lib/continuum/client-memory/project-jobs/validate";
@@ -387,8 +391,8 @@ function counterpart(
   const client = isClientPersonLabel(personName) ? personName : null;
   const vendor = vendorName !== "the shop" ? vendorName : null;
   if (speaker === "founder") return vendor || client;
-  if (speaker === "client") return CONTINUUM_FOUNDER_DISPLAY_NAME;
-  if (speaker === "vendor") return CONTINUUM_FOUNDER_DISPLAY_NAME;
+  // Founder identity is never the external Person/counterpart on his own thread.
+  if (speaker === "client") return vendor;
   return null;
 }
 
@@ -573,7 +577,9 @@ function deadlineUrgency(rows: readonly ContinuumCandidate[], nowMs: number): nu
     const payload = payloadOf(row);
     const iso =
       payload.kind === "date"
-        ? payload.isoDate
+        ? dateHasActionableObligation(row)
+          ? payload.isoDate
+          : null
         : payload.kind === "open_job" || payload.kind === "follow_up"
           ? payload.dueAt
           : null;
@@ -680,6 +686,9 @@ function pendingPersonAssociationCandidateId(
       const payload = payloadOf(row);
       if (payload.kind === "person_association") {
         if (isFounderIdentityName(payload.displayName)) return false;
+        if (isPlatformOrSystemName(payload.displayName)) return false;
+        if (isVendorOrganizationLabel(payload.displayName)) return false;
+        if (!looksLikeHumanPersonName(payload.displayName)) return false;
       }
       return true;
     })?.candidateId ?? null
@@ -716,10 +725,22 @@ function classifySituation(input: {
     client &&
       input.rows.some((row) => confirmedPersonId(row) === client.personId),
   );
+  const communication = classifyTodayCommunication({
+    candidates: input.rows,
+    people: (project?.people ?? []).map((row) => ({
+      displayName: row.displayName,
+      roles: row.role ? [row.role] : [],
+    })),
+  });
   const fallbackSpeaker: CosBriefSpeaker =
-    vendorSourcedThread(input.association, input.rows) && !clientConfirmed
+    communication === "vendor" ||
+    (vendorSourcedThread(input.association, input.rows) && !clientConfirmed)
       ? "vendor"
-      : "client";
+      : communication === "platform"
+        ? "system"
+        : communication === "founder"
+          ? "founder"
+          : "client";
   const usable = input.rows.filter(
     (row) => !isCandidateQuietForToday(row, input.ctx.nowIso),
   );
@@ -837,6 +858,9 @@ function classifySituation(input: {
         beat.kind === "commitment",
     );
   const newWork =
+    communication !== "vendor" &&
+    communication !== "platform" &&
+    communication !== "founder" &&
     !attribution.projectId &&
     current.some((beat) => beat.kind === "new_project" || beat.kind === "client_request");
   const founderAsked = beats.some(
@@ -847,6 +871,9 @@ function classifySituation(input: {
       (CLIENT_QUESTION_ASK.test(beat.summary) || FOUNDER_QUESTION.test(beat.summary)),
   );
   const yourTurn =
+    communication !== "vendor" &&
+    communication !== "platform" &&
+    communication !== "founder" &&
     meaningful.speaker === "client" &&
     !meaningful.historical &&
     (meaningful.kind === "client_reply" ||
@@ -1034,6 +1061,13 @@ function classifySituation(input: {
     disposition = "suppress";
   }
 
+  if (isNakedDateText(headline) || isNakedDateText(recommended)) {
+    disposition = "suppress";
+  }
+  if (disposition === "brief" && communication === "platform") {
+    disposition = "suppress";
+  }
+
   if (
     disposition === "brief" &&
     representedByTop5(
@@ -1191,6 +1225,7 @@ export function composeConciergeBrief(input: ComposeConciergeBriefInput): {
   const projectByThread = projectIdsByThread(association);
   const groups = new Map<string, ContinuumCandidate[]>();
   for (const row of input.candidates) {
+    if (isCandidateQuietForToday(row, input.nowIso)) continue;
     const key = groupingKey(row, projectByThread);
     const list = groups.get(key) ?? [];
     list.push(row);

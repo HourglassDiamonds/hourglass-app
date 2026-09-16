@@ -5,6 +5,7 @@
  */
 
 import { CONTINUUM_FOUNDER_TIME_ZONE } from "@/lib/continuum/dashboard/compose";
+import { isNakedDateText } from "@/lib/continuum/candidates/founder-attention";
 import { parseGmailFromHeader } from "@/lib/continuum/gmail/payload";
 import { parseGmailWebHref } from "./evidence";
 import type { CosOpenEmailSource } from "./email-source";
@@ -141,6 +142,7 @@ export function presentUnassignedHeadline(
   const current = headline.trim();
   if (!GENERIC_HEADLINE.test(current)) return current;
   for (const summary of evidenceSummaries) {
+    if (isNakedDateText(summary)) continue;
     const useful = clipFounderText(summary, 88);
     if (useful && useful.length >= 12 && !/isn't attached to a person/i.test(useful)) {
       return finishImperative(useful.replace(/…$/, ""));

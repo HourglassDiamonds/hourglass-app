@@ -120,7 +120,7 @@ describe("Today founder contextual actions", () => {
     assert.equal(controls.family, "spec_conflict");
     assert.deepEqual(
       controls.actions.map((row) => row.verb),
-      ["keep_canonical", "adopt_evidence", "need_to_verify"],
+      ["keep_canonical", "adopt_evidence", "need_to_verify", "dismiss"],
     );
     assert.equal(controls.actions[0]?.label, "Keep 12.5");
     assert.equal(controls.actions[1]?.label, "Update to 11");
@@ -317,7 +317,7 @@ describe("Today founder contextual actions", () => {
       })],
     })).items[0]!);
     assert.equal(reply.family, "client_response");
-    assert.deepEqual(reply.actions.map((row) => row.verb), ["responded", "snooze"]);
+    assert.deepEqual(reply.actions.map((row) => row.verb), ["responded", "snooze", "dismiss"]);
 
     const cad = selectFounderControls(composeTodayDocket(loop({
       brief: [brief({
@@ -328,7 +328,7 @@ describe("Today founder contextual actions", () => {
       })],
     })).items[0]!);
     assert.equal(cad.family, "cad_decision");
-    assert.deepEqual(cad.actions.map((row) => row.verb), ["approve", "request_changes"]);
+    assert.deepEqual(cad.actions.map((row) => row.verb), ["approve", "request_changes", "dismiss"]);
 
     const vendor = selectFounderControls(composeTodayDocket(loop({
       brief: [brief({
@@ -340,13 +340,13 @@ describe("Today founder contextual actions", () => {
       })],
     })).items[0]!);
     assert.equal(vendor.family, "vendor_blocker");
-    assert.deepEqual(vendor.actions.map((row) => row.verb), ["resolved", "follow_up"]);
+    assert.deepEqual(vendor.actions.map((row) => row.verb), ["resolved", "follow_up", "dismiss"]);
 
     const openJob = selectFounderControls(composeTodayDocket(loop({
       top5: [job()],
     })).items[0]!);
     assert.equal(openJob.family, "open_job");
-    assert.deepEqual(openJob.fallback.map((row) => row.verb), ["complete", "snooze", "disregard"]);
+    assert.deepEqual(openJob.fallback.map((row) => row.verb), ["complete", "snooze", "dismiss"]);
   });
 
   it("uses Confirm person / Snooze for unassigned replies, not Responded", () => {
@@ -381,7 +381,7 @@ describe("Today founder contextual actions", () => {
     assert.match(controls.confirmPerson?.href ?? "", /\/executive-dashboard\/concierge\/gmail\/intake/);
     assert.match(controls.confirmPerson?.href ?? "", /personAssociation=assoc-1/);
     assert.match(controls.confirmPerson?.href ?? "", /returnTo=%2Fexecutive-dashboard%2Fconcierge/);
-    assert.deepEqual(controls.actions.map((row) => row.verb), ["snooze"]);
+    assert.deepEqual(controls.actions.map((row) => row.verb), ["snooze", "dismiss"]);
     assert.equal(controls.fallback.length, 0);
 
     const html = renderToStaticMarkup(
@@ -390,6 +390,7 @@ describe("Today founder contextual actions", () => {
     assert.match(html, /data-cos-founder-family="person_association"/);
     assert.match(html, /Confirm person/);
     assert.match(html, /Snooze/);
+    assert.match(html, /Dismiss from Today/);
     assert.doesNotMatch(html, />Responded</);
     assert.match(html, /View email/);
     assert.match(html, /Evidence/);
@@ -444,7 +445,7 @@ describe("Today founder contextual actions", () => {
     );
     assert.deepEqual(
       controls.fallback.map((row) => row.verb),
-      ["disregard"],
+      ["dismiss"],
     );
     assert.equal(controls.actions.some((row) => row.needsSnooze), false);
     assert.equal(controls.fallback.some((row) => row.needsSnooze), false);
@@ -462,7 +463,8 @@ describe("Today founder contextual actions", () => {
       }),
     );
     assert.match(html, /Complete/);
-    assert.match(html, /Disregard/);
+    assert.match(html, /Dismiss from Today/);
+    assert.doesNotMatch(html, /Disregard/);
     assert.doesNotMatch(html, />Snooze</);
     assert.doesNotMatch(html, />Approve</);
     assert.doesNotMatch(html, /Request changes/);

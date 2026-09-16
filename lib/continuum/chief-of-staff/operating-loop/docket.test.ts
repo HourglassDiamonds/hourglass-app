@@ -162,7 +162,7 @@ describe("Today Chief of Staff docket", () => {
       })],
     }));
     assert.equal(docket.items[0]?.subject, "Unassigned");
-    assert.equal(docket.items[0]?.headline, "Identify the client, then send the recap.");
+    assert.equal(docket.items[0]?.headline, "Identify who this is from.");
     assert.match(
       docket.items[0]?.context ?? "",
       /isn't attached to a person yet/i,

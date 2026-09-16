@@ -160,9 +160,9 @@ function rewriteReplyBriefing(
   if (!reply) return null;
   if (unassigned) {
     return {
-      headline: "Identify the client, then send the recap.",
+      headline: "Identify who this is from.",
       context:
-        "A client replied to a design question, but this conversation isn't attached to a person yet. Confirm who it belongs to, then send the next step.",
+        "This conversation isn't attached to a person yet. Confirm who it belongs to before the next step.",
     };
   }
   const who = firstName(subject);
@@ -217,9 +217,9 @@ export function presentDocketBriefing(input: {
 
   if (unassigned && /recap|next step/i.test(rawHeadline)) {
     return {
-      headline: "Identify the client, then send the recap.",
+      headline: "Identify who this is from.",
       context:
-        "A client replied to a design question, but this conversation isn't attached to a person yet. Confirm who it belongs to, then send the next step.",
+        "This conversation isn't attached to a person yet. Confirm who it belongs to before the next step.",
     };
   }
 

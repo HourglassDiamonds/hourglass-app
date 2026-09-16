@@ -48,6 +48,7 @@ export const COS_FOUNDER_VERBS = [
   "follow_up",
   "complete",
   "snooze",
+  "dismiss",
   "disregard",
 ] as const;
 
@@ -87,6 +88,8 @@ export type CosFounderActionView = {
   label: string;
   emphasis: "primary" | "secondary";
   needsSnooze: boolean;
+  ariaLabel?: string;
+  icon?: "dismiss";
 };
 
 export type CosEmailSourceView = {
@@ -327,6 +330,24 @@ export function presentFounderEvidence(item: CosFounderActionSource): CosFounder
   };
 }
 
+function dismissAction(): CosFounderActionView {
+  return {
+    verb: "dismiss",
+    label: "×",
+    emphasis: "secondary",
+    needsSnooze: false,
+    ariaLabel: "Dismiss from Today",
+    icon: "dismiss",
+  };
+}
+
+function withDismiss(actions: CosFounderActionView[]): CosFounderActionView[] {
+  if (actions.some((row) => row.verb === "dismiss" || row.verb === "disregard")) {
+    return actions;
+  }
+  return [...actions, dismissAction()];
+}
+
 function fallbackFor(
   item: CosFounderActionSource,
   family: CosActionFamily,
@@ -351,13 +372,7 @@ function fallbackFor(
     emphasis: "secondary",
     needsSnooze: true,
   });
-  actions.push({
-    verb: "disregard",
-    label: "Disregard",
-    emphasis: "secondary",
-    needsSnooze: false,
-  });
-  return actions;
+  return withDismiss(actions);
 }
 
 export function selectFounderControls(item: CosFounderActionSource): CosFounderControlsView {
@@ -380,14 +395,7 @@ export function selectFounderControls(item: CosFounderActionSource): CosFounderC
           needsSnooze: false,
         },
       ],
-      fallback: [
-        {
-          verb: "disregard",
-          label: "Disregard",
-          emphasis: "secondary",
-          needsSnooze: false,
-        },
-      ],
+      fallback: [dismissAction()],
       specConflict: null,
       evidence,
       confirmPerson: null,
@@ -406,7 +414,7 @@ export function selectFounderControls(item: CosFounderActionSource): CosFounderC
   if (conflict) {
     family = "spec_conflict";
     const mutable = canMutateSpecConflict(conflict, item.brief?.projectId ?? item.job?.projectId ?? item.decision?.projectId);
-    actions = [
+    actions = withDismiss([
       {
         verb: "keep_canonical",
         label: `Keep ${conflict.canonicalValue}`,
@@ -429,15 +437,15 @@ export function selectFounderControls(item: CosFounderActionSource): CosFounderC
         emphasis: "secondary",
         needsSnooze: true,
       },
-    ];
+    ]);
   } else if (needsPersonConfirm(item)) {
     family = "person_association";
-    actions = [
+    actions = withDismiss([
       { verb: "snooze", label: "Snooze", emphasis: "secondary", needsSnooze: true },
-    ];
+    ]);
   } else if (isCadDecision(item)) {
     family = "cad_decision";
-    actions = [
+    actions = withDismiss([
       { verb: "approve", label: "Approve", emphasis: "primary", needsSnooze: false },
       {
         verb: "request_changes",
@@ -445,19 +453,19 @@ export function selectFounderControls(item: CosFounderActionSource): CosFounderC
         emphasis: "secondary",
         needsSnooze: true,
       },
-    ];
+    ]);
   } else if (isClientResponse(item) && !completableJob) {
     family = "client_response";
-    actions = [
+    actions = withDismiss([
       { verb: "responded", label: "Responded", emphasis: "primary", needsSnooze: false },
       { verb: "snooze", label: "Snooze", emphasis: "secondary", needsSnooze: true },
-    ];
+    ]);
   } else if (isVendorBlocker(item)) {
     family = "vendor_blocker";
-    actions = [
+    actions = withDismiss([
       { verb: "resolved", label: "Resolved", emphasis: "primary", needsSnooze: false },
       { verb: "follow_up", label: "Follow up", emphasis: "secondary", needsSnooze: true },
-    ];
+    ]);
   } else if (completableJob) {
     family = "open_job";
   }

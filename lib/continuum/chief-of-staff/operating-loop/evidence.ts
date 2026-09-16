@@ -11,10 +11,17 @@ import {
   conciergeInboxSourcePath,
 } from "@/lib/continuum/client-memory/read/presentation";
 
+import type { ProjectJob } from "@/lib/continuum/client-memory/project-jobs/types";
+import {
+  isClientDesignAnswer,
+  isApproval,
+  isPlatformOrSystemName,
+  payloadOf,
+} from "@/lib/continuum/candidates/founder-attention";
+
 const GMAIL_CANDIDATES_HREF =
   "/executive-dashboard/concierge/gmail/candidates" as const;
 const CALENDAR_HREF = "/executive-dashboard/concierge/calendar" as const;
-import type { ProjectJob } from "@/lib/continuum/client-memory/project-jobs/types";
 
 const STOP = new Set([
   "this",
@@ -127,11 +134,16 @@ export function looksAmbiguousReply(row: ContinuumCandidate, job: ProjectJob): b
 }
 
 export function looksClientResponse(row: ContinuumCandidate): boolean {
+  if (!isUsableEvidence(row)) return false;
+  const payload = payloadOf(row);
+  if (payload.kind === "person_association" && isPlatformOrSystemName(payload.displayName)) {
+    return false;
+  }
+  if (isClientDesignAnswer(row) || isApproval(row)) return true;
   if (row.sourceSystem !== "gmail") {
     return row.payload.kind === "note" || row.payload.kind === "follow_up";
   }
   if (row.payload.kind === "open_job" && row.payload.jobKind === "request") return true;
-  if (row.payload.kind === "project_context") return true;
   return looksComplete(row);
 }
 

@@ -716,7 +716,7 @@ describe("Concierge Executive Moderator V1", () => {
     assert.equal(controls.family, "spec_conflict");
     assert.deepEqual(
       controls.actions.map((action) => action.label),
-      ["Keep 6.5", "Update to 6", "Need to verify"],
+      ["Keep 6.5", "Update to 6", "Need to verify", "×"],
     );
     assert.equal(
       controls.evidence?.facts.find((fact) => fact.label === "Project record")?.value,
@@ -2142,7 +2142,7 @@ describe("Concierge Executive Moderator V1", () => {
     assert.equal(controls.emailSources.some((row) => row.href === vendorHref), false);
     assert.deepEqual(
       controls.actions.map((action) => action.label),
-      ["Keep 12.5", "Update to 11", "Need to verify"],
+      ["Keep 12.5", "Update to 11", "Need to verify", "×"],
     );
   });
 
@@ -2220,7 +2220,7 @@ describe("Concierge Executive Moderator V1", () => {
     assert.equal(controls.emailSources.some((row) => row.href === vendorHref), false);
     assert.deepEqual(
       controls.actions.map((action) => action.label),
-      ["Keep 12.5", "Update to 11", "Need to verify"],
+      ["Keep 12.5", "Update to 11", "Need to verify", "×"],
     );
   });
 
@@ -2282,7 +2282,7 @@ describe("Concierge Executive Moderator V1", () => {
     assert.equal(controls.emailSources.some((row) => row.href === vendorHref), false);
     assert.deepEqual(
       controls.actions.map((action) => action.label),
-      ["Keep 12.5", "Update to 11", "Need to verify"],
+      ["Keep 12.5", "Update to 11", "Need to verify", "×"],
     );
   });
 });

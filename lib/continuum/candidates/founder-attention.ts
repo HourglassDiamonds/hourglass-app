@@ -77,19 +77,47 @@ export function isStudioOrVendorLabel(name: string | null | undefined): boolean 
   return /\bhourglass diamonds\b/.test(normalized);
 }
 
-const FOUNDER_IDENTITY_NAMES = new Set(["justin", "justin smith"]);
+function normalizedIdentity(name: string): string {
+  return name.trim().toLowerCase().replace(/\s+/g, " ");
+}
 
 export function isFounderIdentityName(name: string | null | undefined): boolean {
   if (!name) return false;
-  return FOUNDER_IDENTITY_NAMES.has(name.trim().toLowerCase());
+  const normalized = normalizedIdentity(name);
+  if (!normalized) return false;
+  if (normalized === "justin" || normalized === "justin smith") return true;
+  return (
+    normalized.startsWith("justin smith ") ||
+    normalized.startsWith("justin smith,")
+  );
 }
 
 export function isVendorOrganizationLabel(name: string | null | undefined): boolean {
   if (!name) return false;
-  const normalized = name.trim().toLowerCase();
+  const normalized = normalizedIdentity(name);
   if (!normalized) return false;
   if (isStudioOrVendorLabel(normalized)) return true;
-  return /\b(engraving|jewelers?|workshop|atelier|the shop)\b/.test(normalized);
+  if (/\b(engraving|jewelers?|workshop|atelier|the shop)\b/.test(normalized)) {
+    return true;
+  }
+  if (/(?:prints?|stampings?|castings?)$/.test(normalized)) return true;
+  return /\b(support|helpdesk)\b/.test(normalized);
+}
+
+export function isPlatformOrSystemName(name: string | null | undefined): boolean {
+  if (!name) return false;
+  const normalized = normalizedIdentity(name);
+  if (!normalized) return false;
+  if (
+    /\b(noreply|no-reply|notifications?|mailer|newsletter|digest|mailer-daemon|postmaster|product updates?)\b/.test(
+      normalized,
+    )
+  ) {
+    return true;
+  }
+  if (/\b(inc|llc|ltd|gmbh|corp)\.?\b/.test(normalized)) return true;
+  const tokens = normalized.split(" ");
+  return tokens.length === 1 && normalized.length >= 6 && /(?:base|cloud|hq)$/.test(normalized);
 }
 
 export function isVendorPerson(person: {
@@ -104,12 +132,59 @@ export function isVendorPerson(person: {
   return isVendorOrganizationLabel(person.organizationName);
 }
 
+export function looksLikeHumanPersonName(name: string | null | undefined): boolean {
+  if (!name?.trim()) return false;
+  if (isFounderIdentityName(name)) return false;
+  if (isStudioOrVendorLabel(name)) return false;
+  if (isVendorOrganizationLabel(name)) return false;
+  if (isPlatformOrSystemName(name)) return false;
+  const tokens = name.trim().split(/\s+/);
+  if (tokens.length < 1 || tokens.length > 4) return false;
+  return tokens.every((token) => /^[A-Za-z][A-Za-z'’.\-]*$/.test(token));
+}
+
 export function isClientPersonLabel(name: string | null | undefined): boolean {
   if (!name?.trim()) return false;
   if (isFounderIdentityName(name)) return false;
   if (isStudioOrVendorLabel(name)) return false;
   if (isVendorOrganizationLabel(name)) return false;
-  return true;
+  if (isPlatformOrSystemName(name)) return false;
+  return looksLikeHumanPersonName(name);
+}
+
+export const TODAY_COMMUNICATION_CLASSES = [
+  "client",
+  "vendor",
+  "platform",
+  "founder",
+  "unknown",
+] as const;
+
+export type TodayCommunicationClass = (typeof TODAY_COMMUNICATION_CLASSES)[number];
+
+export type TodayIdentitySignal = {
+  displayName: string;
+  roles?: readonly string[] | null;
+  organizationName?: string | null;
+};
+
+const PLATFORM_CONTENT =
+  /\b(unsubscribe|manage preferences|view in browser|security alert|password reset|sign[- ]in alert|magic link|product (?:update|news)|changelog|release notes|weekly digest|what's new)\b/i;
+
+const VENDOR_RULES = new Set([
+  "explicit_vendor_waiting",
+  "explicit_vendor_commitment",
+  "explicit_shop_blocker",
+  "vendor_shop_update",
+]);
+
+export function isNakedDateText(text: string | null | undefined): boolean {
+  const trimmed = text?.replace(/\s+/g, " ").trim().replace(/[.:]+$/, "") ?? "";
+  if (!trimmed) return false;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return true;
+  return /^(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}(?:,\s*\d{4})?$/i.test(
+    trimmed,
+  );
 }
 
 export function confirmedPersonId(row: ContinuumCandidate): string | null {
@@ -356,6 +431,49 @@ export function hasRule(row: ContinuumCandidate, id: string): boolean {
   return ruleIdsOf(row).includes(id);
 }
 
+export function hasVendorRule(row: ContinuumCandidate): boolean {
+  return ruleIdsOf(row).some((id) => VENDOR_RULES.has(id));
+}
+
+export function isPlatformSystemEvidence(row: ContinuumCandidate): boolean {
+  const payload = payloadOf(row);
+  if (payload.kind === "person_association" && isPlatformOrSystemName(payload.displayName)) {
+    return true;
+  }
+  const hay = candidateHaystack(row);
+  if (!PLATFORM_CONTENT.test(hay)) return false;
+  return !hasCommercialPayload(row);
+}
+
+export function classifyTodayCommunication(input: {
+  candidates: readonly ContinuumCandidate[];
+  people?: readonly TodayIdentitySignal[];
+}): TodayCommunicationClass {
+  const names: TodayIdentitySignal[] = [...(input.people ?? [])];
+  for (const row of input.candidates) {
+    const payload = payloadOf(row);
+    if (payload.kind === "person_association" && payload.displayName) {
+      names.push({ displayName: payload.displayName, roles: null });
+    }
+  }
+  const hay = input.candidates.map((row) => candidateHaystack(row)).join("\n");
+  const client = names.some(
+    (person) => isClientPersonLabel(person.displayName) && !isVendorPerson(person),
+  );
+  const vendor =
+    names.some((person) => isVendorPerson(person)) ||
+    input.candidates.some((row) => hasVendorRule(row));
+  const platformName = names.some((person) => isPlatformOrSystemName(person.displayName));
+  const platformContent = PLATFORM_CONTENT.test(hay);
+  const commercial = input.candidates.some((row) => hasCommercialPayload(row));
+  if (client) return "client";
+  if (platformName || (platformContent && !commercial)) return "platform";
+  if (vendor) return "vendor";
+  if (names.some((person) => isFounderIdentityName(person.displayName))) return "founder";
+  if (platformContent) return "platform";
+  return "unknown";
+}
+
 function contentTokens(text: string): string[] {
   return tokensOf(text).filter((token) => !FUNCTION_WORDS.has(token));
 }
@@ -495,6 +613,8 @@ export function isExplicitNewProject(row: ContinuumCandidate): boolean {
 }
 
 export function isClientDesignAnswer(row: ContinuumCandidate): boolean {
+  if (isPlatformSystemEvidence(row)) return false;
+  if (hasVendorRule(row)) return false;
   const payload = payloadOf(row);
   if (payload.kind !== "project_context") return false;
   return (
