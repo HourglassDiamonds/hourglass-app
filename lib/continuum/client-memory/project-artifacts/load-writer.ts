@@ -14,7 +14,7 @@ export type AuthenticatedProjectArtifactWriter =
 
 export async function getAuthenticatedProjectArtifactWriter(): Promise<AuthenticatedProjectArtifactWriter> {
   const jar = await cookies();
-  const session = requireInternalClientMemorySession(
+  const session = await requireInternalClientMemorySession(
     jar.get(EXECUTIVE_DASHBOARD_SESSION_COOKIE)?.value,
   );
   if (!session.ok) {

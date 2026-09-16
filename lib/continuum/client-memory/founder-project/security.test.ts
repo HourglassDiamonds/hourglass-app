@@ -43,8 +43,8 @@ describe("Founder Project writer security", () => {
     }
   });
 
-  it("fails closed without an internal founder session", () => {
-    const denied = requireInternalClientMemorySession(undefined);
+  it("fails closed without an internal founder session", async () => {
+    const denied = await requireInternalClientMemorySession(undefined);
     assert.equal(denied.ok, false);
     const load = readFileSync(join(DIR, "load-writer.ts"), "utf8");
     assert.match(load, /requireInternalClientMemorySession/);

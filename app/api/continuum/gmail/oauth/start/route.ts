@@ -26,7 +26,7 @@ export async function GET() {
   if (!config.ok) return fail("unauthorized", 401);
 
   const jar = await cookies();
-  const session = readExecutiveDashboardSession(
+  const session = await readExecutiveDashboardSession(
     jar.get(EXECUTIVE_DASHBOARD_SESSION_COOKIE)?.value,
   );
   const result = handleGmailOAuthStart({

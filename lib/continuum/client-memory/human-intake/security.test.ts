@@ -64,8 +64,8 @@ describe("Human intake security", () => {
     }
   });
 
-  it("requires a founder session and keeps the private bucket private", () => {
-    const denied = requireInternalClientMemorySession(undefined);
+  it("requires a founder session and keeps the private bucket private", async () => {
+    const denied = await requireInternalClientMemorySession(undefined);
     assert.equal(denied.ok, false);
     const load = readFileSync(join(INTAKE_DIR, "load.ts"), "utf8");
     assert.match(load, /requireInternalClientMemorySession/);

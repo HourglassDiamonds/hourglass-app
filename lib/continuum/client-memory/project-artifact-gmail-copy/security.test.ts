@@ -52,7 +52,7 @@ describe("Gmail copy-in security", () => {
     assert.doesNotMatch(copy, /users\.messages\.send|users\.messages\.modify|drafts\.|trash/);
   });
 
-  it("does not attach copy-in to public API, public Concierge, or shared actions", () => {
+  it("does not attach copy-in to public API, public Concierge, or shared actions", async () => {
     const apiFiles = walkFiles(join(ROOT, "app/api"), ".ts");
     assert.ok(apiFiles.length > 0);
     for (const file of apiFiles) {
@@ -68,7 +68,7 @@ describe("Gmail copy-in security", () => {
       "utf8",
     );
     assert.doesNotMatch(shared, /copyGmailProjectArtifact|project-artifact-gmail-copy-actions/);
-    const denied = requireInternalClientMemorySession(undefined);
+    const denied = await requireInternalClientMemorySession(undefined);
     assert.equal(denied.ok, false);
   });
 

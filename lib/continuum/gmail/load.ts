@@ -18,7 +18,7 @@ export type AuthenticatedGmailConnectionStore =
 
 export async function getAuthenticatedGmailConnectionStore(): Promise<AuthenticatedGmailConnectionStore> {
   const jar = await cookies();
-  const session = requireInternalClientMemorySession(
+  const session = await requireInternalClientMemorySession(
     jar.get(EXECUTIVE_DASHBOARD_SESSION_COOKIE)?.value,
   );
   if (!session.ok) {
@@ -47,7 +47,7 @@ export type AuthenticatedGmailHistoryStores =
 
 export async function getAuthenticatedGmailHistoryStores(): Promise<AuthenticatedGmailHistoryStores> {
   const jar = await cookies();
-  const session = requireInternalClientMemorySession(
+  const session = await requireInternalClientMemorySession(
     jar.get(EXECUTIVE_DASHBOARD_SESSION_COOKIE)?.value,
   );
   if (!session.ok) {

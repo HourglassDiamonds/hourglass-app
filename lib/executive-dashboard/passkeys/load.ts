@@ -23,7 +23,7 @@ export async function readFounderPasskeySession(): Promise<
 > {
   const jar = await cookies();
   const token = jar.get(EXECUTIVE_DASHBOARD_SESSION_COOKIE)?.value;
-  const session = readExecutiveDashboardSession(token);
+  const session = await readExecutiveDashboardSession(token);
   if (!session.ok) return { ok: false, reason: session.reason };
   if (!token) return { ok: false, reason: "missing-session" };
   return { ok: true, username: session.username, token };

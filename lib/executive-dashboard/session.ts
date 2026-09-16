@@ -1,14 +1,18 @@
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 
 export const EXECUTIVE_DASHBOARD_SESSION_COOKIE = "hgd_ed_session";
 export const EXECUTIVE_DASHBOARD_SESSION_MAX_AGE_SEC = 60 * 60 * 12; // 12 hours
 export const EXECUTIVE_DASHBOARD_SESSION_PATH = "/executive-dashboard";
+export const FOUNDER_SESSION_ID_BYTES = 32;
+/** 32-byte random id as unpadded base64url (43 characters). */
+export const FOUNDER_SESSION_ID_PATTERN = /^[A-Za-z0-9_-]{43}$/;
 
 export type ExecutiveDashboardSessionPayload = {
   v: 1;
   u: string;
   iat: number;
   exp: number;
+  sid?: string;
 };
 
 function b64urlJson(value: unknown): string {
@@ -26,11 +30,16 @@ function signaturesMatch(a: string, b: string): boolean {
   return timingSafeEqual(left, right);
 }
 
+export function createFounderSessionId(): string {
+  return randomBytes(FOUNDER_SESSION_ID_BYTES).toString("base64url");
+}
+
 export function createExecutiveDashboardSessionToken(
   username: string,
   secret: string,
   nowMs = Date.now(),
   maxAgeSec = EXECUTIVE_DASHBOARD_SESSION_MAX_AGE_SEC,
+  sessionId: string = createFounderSessionId(),
 ): string {
   const iat = Math.floor(nowMs / 1000);
   const payload: ExecutiveDashboardSessionPayload = {
@@ -38,6 +47,7 @@ export function createExecutiveDashboardSessionToken(
     u: username,
     iat,
     exp: iat + maxAgeSec,
+    sid: sessionId,
   };
   const body = b64urlJson(payload);
   const sig = hmacSign(body, secret);
@@ -73,6 +83,14 @@ export function verifyExecutiveDashboardSessionToken(
     return null;
   }
   if (payload.u !== expectedUsername) return null;
+  if (payload.sid !== undefined) {
+    if (
+      typeof payload.sid !== "string" ||
+      !FOUNDER_SESSION_ID_PATTERN.test(payload.sid)
+    ) {
+      return null;
+    }
+  }
 
   const nowSec = Math.floor(nowMs / 1000);
   if (payload.exp <= nowSec) return null;
@@ -105,6 +123,7 @@ export function buildExecutiveDashboardSessionCookie(
   username: string,
   secret: string,
   nowMs = Date.now(),
+  sessionId: string = createFounderSessionId(),
 ): {
   name: string;
   value: string;
@@ -112,7 +131,13 @@ export function buildExecutiveDashboardSessionCookie(
 } {
   return {
     name: EXECUTIVE_DASHBOARD_SESSION_COOKIE,
-    value: createExecutiveDashboardSessionToken(username, secret, nowMs),
+    value: createExecutiveDashboardSessionToken(
+      username,
+      secret,
+      nowMs,
+      EXECUTIVE_DASHBOARD_SESSION_MAX_AGE_SEC,
+      sessionId,
+    ),
     options: executiveDashboardSessionCookieOptions(
       shouldUseSecureExecutiveDashboardCookie(),
     ),

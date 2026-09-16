@@ -147,7 +147,19 @@ export async function completePasskeyAuthentication(
 
   await clearPasskeyVerifyFailures(ip);
   await clearExecutiveDashboardLoginFailures(ip);
-  await issueExecutiveDashboardSession(runtime.username, runtime.secret);
+  const issued = await issueExecutiveDashboardSession(
+    runtime.username,
+    runtime.secret,
+  );
+  if (!issued.ok) {
+    logPasskeyOperation({
+      op: "auth.verify",
+      ok: false,
+      reason: "session-unavailable",
+    });
+    await delayPasskeyFailure();
+    return { ok: false, error: EXECUTIVE_DASHBOARD_PASSKEY_AUTH_ERROR };
+  }
   logPasskeyOperation({ op: "auth.verify", ok: true, reason: "ok" });
   redirect(
     resolveFounderLoginDestination({

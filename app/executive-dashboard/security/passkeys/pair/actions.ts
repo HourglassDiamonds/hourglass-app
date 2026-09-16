@@ -236,7 +236,19 @@ export async function completeIphonePairingRegistrationAction(
     ok: true,
     reason: "ok",
   });
-  await issueExecutiveDashboardSession(runtime.username, runtime.secret);
+  const issued = await issueExecutiveDashboardSession(
+    runtime.username,
+    runtime.secret,
+  );
+  if (!issued.ok) {
+    logPasskeyOperation({
+      op: "pair.reg.verify",
+      ok: false,
+      reason: "session-unavailable",
+    });
+    await delayPasskeyFailure();
+    return { ok: false, error: EXECUTIVE_DASHBOARD_PASSKEY_ENROLL_ERROR };
+  }
   await clearPairingCookie();
   redirect(EXECUTIVE_DASHBOARD_CONCIERGE_PATH);
 }

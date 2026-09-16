@@ -28,7 +28,7 @@ export default async function ExecutiveDashboardSecurityLayout({
   }
 
   const jar = await cookies();
-  const session = readExecutiveDashboardSession(
+  const session = await readExecutiveDashboardSession(
     jar.get(EXECUTIVE_DASHBOARD_SESSION_COOKIE)?.value,
   );
   if (!session.ok) {

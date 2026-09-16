@@ -25,7 +25,7 @@ export type AuthenticatedCalendarConnectionStore =
 
 export async function getAuthenticatedCalendarConnectionStore(): Promise<AuthenticatedCalendarConnectionStore> {
   const jar = await cookies();
-  const session = requireInternalClientMemorySession(
+  const session = await requireInternalClientMemorySession(
     jar.get(EXECUTIVE_DASHBOARD_SESSION_COOKIE)?.value,
   );
   if (!session.ok) {

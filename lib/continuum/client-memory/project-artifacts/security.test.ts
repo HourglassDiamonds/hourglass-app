@@ -96,8 +96,8 @@ describe("Project Artifacts security", () => {
     assert.doesNotMatch(create, /getAttachment|users\.messages/);
   });
 
-  it("keeps founder Project Artifact writes on a dedicated private action module and file route", () => {
-    const denied = requireInternalClientMemorySession(undefined);
+  it("keeps founder Project Artifact writes on a dedicated private action module and file route", async () => {
+    const denied = await requireInternalClientMemorySession(undefined);
     assert.equal(denied.ok, false);
     const writerLoad = readFileSync(join(ARTIFACTS_DIR, "load-writer.ts"), "utf8");
     assert.match(writerLoad, /requireInternalClientMemorySession/);

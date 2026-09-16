@@ -2,6 +2,7 @@ import {
   getExecutiveDashboardAuthConfig,
   isExecutiveDashboardPublicProduction,
 } from "./env";
+import { confirmDurableFounderSession } from "./founder-sessions";
 import { verifyExecutiveDashboardSessionToken } from "./session";
 
 export const EXECUTIVE_DASHBOARD_LOGIN_PATH = "/executive-dashboard/login";
@@ -89,12 +90,13 @@ export function executiveDashboardPostLoginPath(): string {
 
 /**
  * Authoritative session check — fail closed when config is missing or
- * the cookie is absent/invalid/expired/tampered.
+ * the cookie is absent/invalid/expired/tampered. Isolated Preview also
+ * requires a durable, non-revoked session row. Production stays stateless.
  */
-export function readExecutiveDashboardSession(
+export async function readExecutiveDashboardSession(
   cookieValue: string | undefined | null,
   nowMs = Date.now(),
-): { ok: true; username: string } | { ok: false; reason: string } {
+): Promise<{ ok: true; username: string } | { ok: false; reason: string }> {
   const config = getExecutiveDashboardAuthConfig();
   if (!config.ok) {
     return { ok: false, reason: "missing-config" };
@@ -111,6 +113,10 @@ export function readExecutiveDashboardSession(
   if (!payload) {
     return { ok: false, reason: "invalid-session" };
   }
+  const durable = await confirmDurableFounderSession(payload.sid, nowMs);
+  if (!durable.ok) {
+    return { ok: false, reason: "invalid-session" };
+  }
   return { ok: true, username: payload.u };
 }
 
@@ -118,17 +124,18 @@ export function readExecutiveDashboardSession(
  * Option B: Vercel production always denies (caller should notFound()).
  * Non-production requires a valid session before dashboard data loads.
  */
-export function getExecutiveDashboardAccessDecision(options: {
+export async function getExecutiveDashboardAccessDecision(options: {
   cookieValue?: string | null;
   nowMs?: number;
-}):
+}): Promise<
   | { status: "hidden" }
   | { status: "unauthenticated"; reason: string }
-  | { status: "authenticated"; username: string } {
+  | { status: "authenticated"; username: string }
+> {
   if (isExecutiveDashboardPublicProduction()) {
     return { status: "hidden" };
   }
-  const session = readExecutiveDashboardSession(
+  const session = await readExecutiveDashboardSession(
     options.cookieValue,
     options.nowMs,
   );

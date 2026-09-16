@@ -18,7 +18,7 @@ export type AuthenticatedDigitalCardAccess =
 
 export async function getAuthenticatedDigitalCardAccess(): Promise<AuthenticatedDigitalCardAccess> {
   const jar = await cookies();
-  const session = requireInternalClientMemorySession(
+  const session = await requireInternalClientMemorySession(
     jar.get(EXECUTIVE_DASHBOARD_SESSION_COOKIE)?.value,
   );
   if (!session.ok) {

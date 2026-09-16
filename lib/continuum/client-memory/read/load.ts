@@ -15,7 +15,7 @@ export type AuthenticatedReader =
 
 export async function getAuthenticatedClientMemoryReader(): Promise<AuthenticatedReader> {
   const jar = await cookies();
-  const session = requireInternalClientMemorySession(
+  const session = await requireInternalClientMemorySession(
     jar.get(EXECUTIVE_DASHBOARD_SESSION_COOKIE)?.value,
   );
   if (!session.ok) {

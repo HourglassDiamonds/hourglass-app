@@ -15,7 +15,7 @@ export type AuthenticatedHumanSourceStore =
 
 export async function getAuthenticatedHumanSourceStore(): Promise<AuthenticatedHumanSourceStore> {
   const jar = await cookies();
-  const session = requireInternalClientMemorySession(
+  const session = await requireInternalClientMemorySession(
     jar.get(EXECUTIVE_DASHBOARD_SESSION_COOKIE)?.value,
   );
   if (!session.ok) {

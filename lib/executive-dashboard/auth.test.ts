@@ -97,16 +97,16 @@ describe("executive dashboard auth", () => {
     resetExecutiveDashboardLoginRateLimits();
   });
 
-  it("denies unauthenticated dashboard access outside production", () => {
-    withEnv(
+  it("denies unauthenticated dashboard access outside production", async () => {
+    await withEnvAsync(
       {
         VERCEL_ENV: "preview",
         EXECUTIVE_DASHBOARD_USERNAME: username,
         EXECUTIVE_DASHBOARD_PASSWORD_HASH: passwordHash,
         EXECUTIVE_DASHBOARD_SESSION_SECRET: sessionSecret,
       },
-      () => {
-        const decision = getExecutiveDashboardAccessDecision({
+      async () => {
+        const decision = await getExecutiveDashboardAccessDecision({
           cookieValue: undefined,
         });
         assert.equal(decision.status, "unauthenticated");
@@ -114,20 +114,20 @@ describe("executive dashboard auth", () => {
     );
   });
 
-  it("allows access with a valid signed session", () => {
-    withEnv(
+  it("allows access with a valid signed session", async () => {
+    await withEnvAsync(
       {
         VERCEL_ENV: "preview",
         EXECUTIVE_DASHBOARD_USERNAME: username,
         EXECUTIVE_DASHBOARD_PASSWORD_HASH: passwordHash,
         EXECUTIVE_DASHBOARD_SESSION_SECRET: sessionSecret,
       },
-      () => {
+      async () => {
         const token = createExecutiveDashboardSessionToken(
           username,
           sessionSecret,
         );
-        const decision = getExecutiveDashboardAccessDecision({
+        const decision = await getExecutiveDashboardAccessDecision({
           cookieValue: token,
         });
         assert.equal(decision.status, "authenticated");
@@ -148,18 +148,18 @@ describe("executive dashboard auth", () => {
     assert.equal(usernamesMatch(username, username), true);
   });
 
-  it("fails closed when auth environment variables are missing", () => {
-    withEnv(
+  it("fails closed when auth environment variables are missing", async () => {
+    await withEnvAsync(
       {
         VERCEL_ENV: "preview",
         EXECUTIVE_DASHBOARD_USERNAME: undefined,
         EXECUTIVE_DASHBOARD_PASSWORD_HASH: undefined,
         EXECUTIVE_DASHBOARD_SESSION_SECRET: undefined,
       },
-      () => {
+      async () => {
         const config = getExecutiveDashboardAuthConfig();
         assert.equal(config.ok, false);
-        const decision = getExecutiveDashboardAccessDecision({
+        const decision = await getExecutiveDashboardAccessDecision({
           cookieValue: "anything",
         });
         assert.equal(decision.status, "unauthenticated");
@@ -252,6 +252,11 @@ describe("executive dashboard auth", () => {
     assert.match(actions, /maxAge:\s*0/);
     assert.match(actions, /issueExecutiveDashboardSession/);
     assert.match(actions, /logoutExecutiveDashboard/);
+    assert.match(actions, /revokeDurableFounderSession/);
+    assert.match(actions, /verifyExecutiveDashboardSessionToken/);
+    const revokeIdx = actions.indexOf("revokeDurableFounderSession");
+    const clearIdx = actions.indexOf("maxAge: 0");
+    assert.ok(revokeIdx >= 0 && clearIdx > revokeIdx);
     assert.match(actions, /EXECUTIVE_DASHBOARD_SESSION_COOKIE/);
     assert.equal(EXECUTIVE_DASHBOARD_SESSION_COOKIE, "hgd_ed_session");
   });
@@ -342,21 +347,21 @@ describe("executive dashboard auth", () => {
     assert.match(layout, /force-dynamic/);
   });
 
-  it("hides the dashboard on Vercel production (Option B)", () => {
-    withEnv(
+  it("hides the dashboard on Vercel production (Option B)", async () => {
+    await withEnvAsync(
       {
         VERCEL_ENV: "production",
         EXECUTIVE_DASHBOARD_USERNAME: username,
         EXECUTIVE_DASHBOARD_PASSWORD_HASH: passwordHash,
         EXECUTIVE_DASHBOARD_SESSION_SECRET: sessionSecret,
       },
-      () => {
+      async () => {
         assert.equal(isExecutiveDashboardPublicProduction(), true);
         const token = createExecutiveDashboardSessionToken(
           username,
           sessionSecret,
         );
-        const decision = getExecutiveDashboardAccessDecision({
+        const decision = await getExecutiveDashboardAccessDecision({
           cookieValue: token,
         });
         assert.equal(decision.status, "hidden");

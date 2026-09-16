@@ -19,11 +19,11 @@ export const CLIENT_MEMORY_CONCIERGE_AUTH_GATE = {
   productionUi: "session-gated",
 } as const;
 
-export function requireInternalClientMemorySession(
+export async function requireInternalClientMemorySession(
   cookieValue: string | undefined | null,
   nowMs = Date.now(),
-): { ok: true; username: string } | { ok: false; reason: string } {
-  const session = readExecutiveDashboardSession(cookieValue, nowMs);
+): Promise<{ ok: true; username: string } | { ok: false; reason: string }> {
+  const session = await readExecutiveDashboardSession(cookieValue, nowMs);
   if (!session.ok) return { ok: false, reason: session.reason };
   return { ok: true, username: session.username };
 }

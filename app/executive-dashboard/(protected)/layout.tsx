@@ -18,7 +18,7 @@ export default async function ExecutiveDashboardProtectedLayout({
   children: ReactNode;
 }) {
   const jar = await cookies();
-  const decision = getExecutiveDashboardAccessDecision({
+  const decision = await getExecutiveDashboardAccessDecision({
     cookieValue: jar.get(EXECUTIVE_DASHBOARD_SESSION_COOKIE)?.value,
   });
 

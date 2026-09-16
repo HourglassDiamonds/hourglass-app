@@ -76,8 +76,8 @@ describe("Repair quote security", () => {
     }
   });
 
-  it("fails closed without an internal founder session", () => {
-    const denied = requireInternalClientMemorySession(undefined);
+  it("fails closed without an internal founder session", async () => {
+    const denied = await requireInternalClientMemorySession(undefined);
     assert.equal(denied.ok, false);
     const load = readFileSync(join(QUOTE_DIR, "load.ts"), "utf8");
     const writer = readFileSync(join(QUOTE_DIR, "load-writer.ts"), "utf8");

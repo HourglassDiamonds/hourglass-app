@@ -15,7 +15,7 @@ export type AuthenticatedFactWriter =
 
 export async function getAuthenticatedClientMemoryFactWriter(): Promise<AuthenticatedFactWriter> {
   const jar = await cookies();
-  const session = requireInternalClientMemorySession(
+  const session = await requireInternalClientMemorySession(
     jar.get(EXECUTIVE_DASHBOARD_SESSION_COOKIE)?.value,
   );
   if (!session.ok) {

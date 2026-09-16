@@ -67,8 +67,8 @@ describe("Project Lifecycle security and isolation", () => {
     assert.doesNotMatch(publicConcierge, /project-lifecycle|saveProjectLifecycle/);
   });
 
-  it("requires founder authentication and does not log values", () => {
-    const denied = requireInternalClientMemorySession(undefined);
+  it("requires founder authentication and does not log values", async () => {
+    const denied = await requireInternalClientMemorySession(undefined);
     assert.equal(denied.ok, false);
     for (const file of walkFiles(LIFE_DIR, ".ts")) {
       if (file.endsWith(".test.ts")) continue;

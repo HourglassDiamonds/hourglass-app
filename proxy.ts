@@ -33,7 +33,7 @@ import { EXECUTIVE_DASHBOARD_SESSION_COOKIE } from "@/lib/executive-dashboard/se
  * neutral 404 before the App Router loads. Login, Concierge, and founder
  * security/passkeys stay session-gated so Continuum can run on a phone.
  */
-export function proxy(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   if (!isExecutiveDashboardPath(pathname)) {
@@ -58,7 +58,7 @@ export function proxy(request: NextRequest) {
   }
 
   if (isLogin || isConcierge || isSecurity) {
-    const session = readExecutiveDashboardSession(cookieValue);
+    const session = await readExecutiveDashboardSession(cookieValue);
     if (!session.ok && !isLogin) {
       const requested = `${pathname}${request.nextUrl.search}`;
       const loginUrl = request.nextUrl.clone();
@@ -89,7 +89,7 @@ export function proxy(request: NextRequest) {
     return response;
   }
 
-  const decision = getExecutiveDashboardAccessDecision({ cookieValue });
+  const decision = await getExecutiveDashboardAccessDecision({ cookieValue });
 
   if (decision.status === "hidden") {
     // Fail closed at the proxy boundary: do not enter the metrics dashboard.

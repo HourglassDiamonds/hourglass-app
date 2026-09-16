@@ -16,7 +16,7 @@ import { EXECUTIVE_DASHBOARD_SESSION_COOKIE } from "./session";
  */
 export async function loadAuthenticatedExecutiveDashboardPayload(): Promise<ExecutiveDashboardPayload> {
   const jar = await cookies();
-  const decision = getExecutiveDashboardAccessDecision({
+  const decision = await getExecutiveDashboardAccessDecision({
     cookieValue: jar.get(EXECUTIVE_DASHBOARD_SESSION_COOKIE)?.value,
   });
 

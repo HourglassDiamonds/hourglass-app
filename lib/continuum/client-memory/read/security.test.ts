@@ -62,8 +62,8 @@ describe("Client Memory reader security", () => {
     }
   });
 
-  it("fails closed without an internal founder session", () => {
-    const denied = requireInternalClientMemorySession(undefined);
+  it("fails closed without an internal founder session", async () => {
+    const denied = await requireInternalClientMemorySession(undefined);
     assert.equal(denied.ok, false);
     if (!denied.ok) {
       assert.equal(denied.reason === "missing-config" || denied.reason === "missing-session", true);

@@ -85,8 +85,8 @@ describe("Open Jobs security", () => {
     }
   });
 
-  it("fails closed without an internal founder session on Project Desk load", () => {
-    const denied = requireInternalClientMemorySession(undefined);
+  it("fails closed without an internal founder session on Project Desk load", async () => {
+    const denied = await requireInternalClientMemorySession(undefined);
     assert.equal(denied.ok, false);
     const load = readFileSync(
       join(ROOT, "lib/continuum/client-memory/project-desk/load.ts"),
@@ -96,8 +96,8 @@ describe("Open Jobs security", () => {
     assert.doesNotMatch(load, /createProjectJob|saveOpenJob/);
   });
 
-  it("keeps founder Open Job writes on a dedicated private action module", () => {
-    const denied = requireInternalClientMemorySession(undefined);
+  it("keeps founder Open Job writes on a dedicated private action module", async () => {
+    const denied = await requireInternalClientMemorySession(undefined);
     assert.equal(denied.ok, false);
     const writerLoad = readFileSync(join(JOBS_DIR, "load-writer.ts"), "utf8");
     assert.match(writerLoad, /requireInternalClientMemorySession/);

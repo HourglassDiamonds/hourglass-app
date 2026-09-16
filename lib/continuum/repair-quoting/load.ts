@@ -17,7 +17,7 @@ export type AuthenticatedRepairQuoteReader =
 
 export async function getAuthenticatedRepairQuoteReader(): Promise<AuthenticatedRepairQuoteReader> {
   const jar = await cookies();
-  const session = requireInternalClientMemorySession(
+  const session = await requireInternalClientMemorySession(
     jar.get(EXECUTIVE_DASHBOARD_SESSION_COOKIE)?.value,
   );
   if (!session.ok) return { ok: false, reason: "unauthorized" };
