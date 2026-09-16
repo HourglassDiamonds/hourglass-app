@@ -19,6 +19,10 @@ export function personRelationshipContext(input: {
     .map((row) => row.title)
     .join(" ")
     .toLowerCase();
+  if (input.roles.includes("vendor-contact")) return "Vendor";
+  if (input.roles.includes("business-contact") && !input.roles.includes("client")) {
+    return "Vendor contact";
+  }
   if (/\bengagement\b/.test(hay)) return "Prior engagement-ring client";
   if (/\bwedding\b/.test(hay) && /\bring/.test(hay)) {
     return "Prior custom wedding-ring client";

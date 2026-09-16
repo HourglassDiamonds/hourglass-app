@@ -170,6 +170,7 @@ export function detectAnomalies(input: {
           sourceHref: sourceHrefFor(contradict),
           jobId: job.jobId,
           projectId: job.projectId,
+          candidateIds: [contradict.candidateId],
         });
       }
       continue;
@@ -230,6 +231,7 @@ export function detectAnomalies(input: {
           sourceHref: sourceHrefFor(response),
           jobId: job.jobId,
           projectId: job.projectId,
+          candidateIds: [response.candidateId],
         });
       }
     }
@@ -249,6 +251,7 @@ export function detectAnomalies(input: {
           sourceHref: sourceHrefFor(vendor),
           jobId: job.jobId,
           projectId: job.projectId,
+          candidateIds: [vendor.candidateId],
         });
       }
     }

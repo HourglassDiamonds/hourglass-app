@@ -49,6 +49,8 @@ export type ProjectDeskOperationalStatus = {
 export type ProjectDeskPerson = {
   personId: string;
   displayName: string;
+  roles?: readonly string[];
+  organizationName?: string | null;
 };
 
 export type ProjectSpecField = {
@@ -124,6 +126,8 @@ export type ProjectDeskSnapshot = {
   people: Array<{
     personId: string;
     displayName: string;
+    roles?: readonly string[];
+    organizationName?: string | null;
   }>;
   sourceNotes: SourceNote[];
   projectJobs?: ProjectJob[] | null;

@@ -13,7 +13,7 @@ import {
   warnPossibleExistingProject,
 } from "@/lib/continuum/client-memory/founder-project/duplicate";
 import { applyGmailNewProjectCandidate } from "@/lib/continuum/client-memory/founder-project/apply-candidate";
-import { confirmGmailPersonAssociation } from "@/lib/continuum/client-memory/founder-project/identity-gate";
+import { confirmGmailPersonAssociation, dismissGmailPersonAssociation } from "@/lib/continuum/client-memory/founder-project/identity-gate";
 import {
   CONCIERGE_HOME_PATH,
   CONCIERGE_PROJECTS_PATH,
@@ -298,4 +298,28 @@ export async function confirmGmailIntakePerson(
     return { ok: false, message: "That identity was already reviewed." };
   }
   return { ok: false, message: "Unable to confirm that Person." };
+}
+
+export async function dismissGmailIntakePerson(
+  _prev: ConfirmGmailPersonState,
+  formData: FormData,
+): Promise<ConfirmGmailPersonState> {
+  const candidates = await getAuthenticatedCandidateStore();
+  if (!candidates.ok) {
+    return { ok: false, message: "Sign in to continue." };
+  }
+  const result = await dismissGmailPersonAssociation({
+    store: candidates.store,
+    candidateId: String(formData.get("personAssociationCandidateId") ?? "").trim(),
+  });
+  if (result.ok) {
+    revalidatePath(CONCIERGE_GMAIL_INTAKE_PATH);
+    revalidatePath(CONCIERGE_HOME_PATH);
+    const returnTo = String(formData.get("returnTo") ?? "").trim();
+    if (returnTo === CONCIERGE_HOME_PATH) {
+      redirect(CONCIERGE_HOME_PATH);
+    }
+    return null;
+  }
+  return { ok: false, message: "Unable to dismiss that identity." };
 }

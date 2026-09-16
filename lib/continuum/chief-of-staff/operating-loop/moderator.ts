@@ -17,17 +17,21 @@ import {
   candidateProjectId,
   candidateText,
   confirmedPersonId,
+  dateHasActionableObligation,
   groupingKey,
   hasCommercialPayload,
   hasRule,
   isActionableSpecConflict,
   isApproval,
   isClientDesignAnswer,
+  isClientPersonLabel,
   isExplicitNewProject,
+  isFounderIdentityName,
   isHistoricalRediscovery,
   isPaymentStateChange,
   isStudioOrVendorLabel,
   isTechnicianVisit,
+  isVendorOrganizationLabel,
   payloadOf,
   type FounderAttentionContext,
 } from "@/lib/continuum/candidates/founder-attention";
@@ -224,14 +228,15 @@ function titlesOverlap(personName: string, projectTitle: string): boolean {
 function pickVendorName(project: CosProjectContext | null): string {
   const vendor = project?.people?.find(
     (person) =>
-      person.role === "vendor-contact" &&
-      !isStudioOrVendorLabel(person.displayName),
+      (person.role === "vendor-contact" || isVendorOrganizationLabel(person.displayName)) &&
+      !isFounderIdentityName(person.displayName),
   );
   return vendor?.displayName?.trim() || "the shop";
 }
 
 function displayTitle(personName: string | null, projectTitle: string | null): string {
-  const person = personName?.trim() || null;
+  const trimmedPerson = personName?.trim() || null;
+  const person = isClientPersonLabel(trimmedPerson) ? trimmedPerson : null;
   const project = projectTitle?.trim() || null;
   if (person && isStudioOrVendorLabel(person)) {
     return project && !isStudioOrVendorLabel(project) ? project : "this work";
@@ -352,7 +357,9 @@ function beatKind(
   if (isExplicitNewProject(row)) return "new_project";
   if (isApproval(row)) return "client_approval";
   if (isClientDesignAnswer(row)) return "client_reply";
-  if (payload.kind === "date" && payload.role === "deadline") return "deadline";
+  if (payload.kind === "date") {
+    return dateHasActionableObligation(row) ? "deadline" : "other";
+  }
   if (DEADLINE_SIGNAL.test(haystack(row))) return "deadline";
   const speaker = speakerOf(row, fallback);
   if (speaker === "vendor" && VENDOR_ACK.test(haystack(row))) return "vendor_ack";
@@ -377,7 +384,9 @@ function counterpart(
   personName: string | null,
   vendorName: string,
 ): string | null {
-  if (speaker === "founder") return vendorName !== "the shop" || personName ? vendorName : personName;
+  const client = isClientPersonLabel(personName) ? personName : null;
+  const vendor = vendorName !== "the shop" ? vendorName : null;
+  if (speaker === "founder") return vendor || client;
   if (speaker === "client") return CONTINUUM_FOUNDER_DISPLAY_NAME;
   if (speaker === "vendor") return CONTINUUM_FOUNDER_DISPLAY_NAME;
   return null;
@@ -387,7 +396,7 @@ function speakerLabel(speaker: CosBriefSpeaker, personName: string | null, vendo
   if (speaker === "founder") return CONTINUUM_FOUNDER_DISPLAY_NAME;
   if (speaker === "vendor") return vendorName;
   if (speaker === "system") return "Payment";
-  return personName || "the client";
+  return (isClientPersonLabel(personName) ? personName : null) || "the client";
 }
 
 function beatsFor(
@@ -640,7 +649,7 @@ function actionsFor(input: {
       href: conciergeCreateActionPath(input.projectId),
     });
   }
-  if (!input.personName) {
+  if (!input.personName && (input.personAssociationCandidateId || !input.projectId)) {
     const href = input.personAssociationCandidateId
       ? `${CONCIERGE_GMAIL_INTAKE_PATH}?personAssociation=${encodeURIComponent(input.personAssociationCandidateId)}`
       : CONCIERGE_GMAIL_INTAKE_PATH;
@@ -664,12 +673,16 @@ function pendingPersonAssociationCandidateId(
   rows: readonly ContinuumCandidate[],
 ): string | null {
   return (
-    rows.find(
-      (row) =>
-        row.candidateType === "person_association" &&
-        row.reviewStatus === "pending" &&
-        row.candidateState !== "superseded",
-    )?.candidateId ?? null
+    rows.find((row) => {
+      if (row.candidateType !== "person_association") return false;
+      if (row.reviewStatus !== "pending") return false;
+      if (row.candidateState === "superseded") return false;
+      const payload = payloadOf(row);
+      if (payload.kind === "person_association") {
+        if (isFounderIdentityName(payload.displayName)) return false;
+      }
+      return true;
+    })?.candidateId ?? null
   );
 }
 
@@ -696,7 +709,7 @@ function classifySituation(input: {
     ? (input.projects.get(attribution.projectId) ?? null)
     : null;
   const vendorName = pickVendorName(project);
-  const person = attribution.personName;
+  const person = isClientPersonLabel(attribution.personName) ? attribution.personName : null;
   const title = displayTitle(person, attribution.projectTitle);
   const client = pickClientPerson(project);
   const clientConfirmed = Boolean(

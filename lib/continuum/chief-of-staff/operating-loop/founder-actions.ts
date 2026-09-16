@@ -196,7 +196,12 @@ function withTodayReturn(href: string): string {
 function needsPersonConfirm(item: CosFounderActionSource): boolean {
   if (specConflictOf(item)) return false;
   if (confirmPersonAction(item)) return true;
-  return Boolean(item.brief && !item.brief.personLabel && isClientResponse(item));
+  return Boolean(
+    item.brief &&
+      !item.brief.personLabel &&
+      !item.brief.projectId &&
+      isClientResponse(item),
+  );
 }
 
 function confirmPersonView(item: CosFounderActionSource): CosConfirmPersonView {

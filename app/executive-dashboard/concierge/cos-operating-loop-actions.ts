@@ -12,6 +12,7 @@ import { getAuthenticatedCandidateStore } from "@/lib/continuum/candidates/load"
 import { CONCIERGE_HOME_PATH } from "@/lib/continuum/client-memory/read/presentation";
 import { completeFounderActionable } from "@/lib/continuum/chief-of-staff/operating-loop/complete";
 import { disposeDocketItem } from "@/lib/continuum/chief-of-staff/operating-loop/disposition";
+import { logFounderMutation } from "@/lib/continuum/founder-mutation-log";
 import {
   isFounderVerb,
   isSnoozePreset,
@@ -51,6 +52,7 @@ function isDocketOrigin(value: string): value is CosDocketOrigin {
 }
 
 export async function completeTop5OpenJobAction(formData: FormData) {
+  const started = Date.now();
   const auth = await getAuthenticatedProjectJobWriter();
   if (!auth.ok) {
     throw new Error(humanMessage(undefined, auth.reason === "unauthorized"));
@@ -62,18 +64,31 @@ export async function completeTop5OpenJobAction(formData: FormData) {
     mutationId: String(formData.get("mutationId") ?? "").trim(),
     actor: auth.username,
   });
-  if (result.ok) {
-    revalidatePath(CONCIERGE_HOME_PATH);
-    redirect(CONCIERGE_HOME_PATH);
-  }
-  throw new Error(humanMessage(result.reason, false));
+  logFounderMutation({
+    verb: "complete",
+    origin: "open_job",
+    ok: result.ok,
+    reason: result.ok ? undefined : result.reason,
+    ms: Date.now() - started,
+  });
+  revalidatePath(CONCIERGE_HOME_PATH);
+  redirect(CONCIERGE_HOME_PATH);
 }
 
 export async function disposeTodayDocketItemAction(formData: FormData) {
+  const started = Date.now();
   const verbRaw = String(formData.get("verb") ?? "").trim();
   const originRaw = String(formData.get("origin") ?? "").trim();
   if (!isFounderVerb(verbRaw) || !isDocketOrigin(originRaw)) {
-    throw new Error(humanMessage("invalid-input", false));
+    logFounderMutation({
+      verb: verbRaw || "unknown",
+      origin: originRaw || "unknown",
+      ok: false,
+      reason: "invalid-input",
+      ms: Date.now() - started,
+    });
+    revalidatePath(CONCIERGE_HOME_PATH);
+    redirect(CONCIERGE_HOME_PATH);
   }
   const presetRaw = String(formData.get("snoozePreset") ?? "").trim();
   const chosenDate = String(formData.get("snoozeDate") ?? "").trim();
@@ -131,9 +146,13 @@ export async function disposeTodayDocketItemAction(formData: FormData) {
       snoozeUntil,
     },
   );
-  if (result.ok) {
-    revalidatePath(CONCIERGE_HOME_PATH);
-    redirect(CONCIERGE_HOME_PATH);
-  }
-  throw new Error(humanMessage(result.reason, false));
+  logFounderMutation({
+    verb: verbRaw,
+    origin: originRaw,
+    ok: result.ok,
+    reason: result.ok ? undefined : result.reason,
+    ms: Date.now() - started,
+  });
+  revalidatePath(CONCIERGE_HOME_PATH);
+  redirect(CONCIERGE_HOME_PATH);
 }

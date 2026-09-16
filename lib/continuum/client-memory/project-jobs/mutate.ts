@@ -140,6 +140,9 @@ export function applyOpenJobStateChange(
     dueAt?: string | null;
   },
 ): { ok: true; next: ProjectJob } | { ok: false; code: MutateOpenJobInvalidCode } {
+  if (isTerminal(prior.state) && input.action === "resolve" && prior.state === "resolved") {
+    return { ok: true, next: prior };
+  }
   if (isTerminal(prior.state) && input.action !== "update") {
     return { ok: false, code: "invalid-state" };
   }

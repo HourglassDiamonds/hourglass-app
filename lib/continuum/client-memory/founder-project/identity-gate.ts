@@ -11,6 +11,7 @@ import type {
   CandidateStore,
   ContinuumCandidate,
 } from "@/lib/continuum/candidates/types";
+import { isFounderIdentityName, payloadOf } from "@/lib/continuum/candidates/founder-attention";
 import { isStrongGmailIdentityRule } from "@/lib/continuum/gmail/candidates/associate";
 import { parseGmailCandidateSourceRef } from "@/lib/continuum/gmail/candidates/source-ref";
 
@@ -73,6 +74,10 @@ export function pendingPersonAssociationOnThread(
     if (row.candidateType !== "person_association") return false;
     if (row.reviewStatus !== "pending") return false;
     if (row.candidateState === "superseded") return false;
+    const payload = payloadOf(row);
+    if (payload.kind === "person_association" && isFounderIdentityName(payload.displayName)) {
+      return false;
+    }
     return threadIdOf(row) === threadId;
   });
   return pending[0] ?? null;
@@ -143,4 +148,33 @@ export async function confirmGmailPersonAssociation(input: {
   if (!approved.ok) return { ok: false, reason: "review-unpersisted" };
   void input.body.actor;
   return { ok: true, candidate: approved.record, personId };
+}
+
+export type DismissGmailPersonResult =
+  | { ok: true; candidateId: string }
+  | {
+      ok: false;
+      reason: "not-found" | "not-person-association" | "review-unpersisted";
+    };
+
+export async function dismissGmailPersonAssociation(input: {
+  store: CandidateStore;
+  candidateId: string;
+  nowIso?: string;
+}): Promise<DismissGmailPersonResult> {
+  const candidate = await input.store.get(input.candidateId);
+  if (!candidate) return { ok: false, reason: "not-found" };
+  if (candidate.candidateType !== "person_association") {
+    return { ok: false, reason: "not-person-association" };
+  }
+  if (candidate.reviewStatus !== "pending") {
+    return { ok: true, candidateId: candidate.candidateId };
+  }
+  const discarded = await input.store.applyReview(
+    candidate.candidateId,
+    { action: "discard" },
+    input.nowIso ?? new Date().toISOString(),
+  );
+  if (!discarded.ok) return { ok: false, reason: "review-unpersisted" };
+  return { ok: true, candidateId: candidate.candidateId };
 }

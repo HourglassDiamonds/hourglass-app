@@ -36,6 +36,7 @@ import {
   knownGmailProjectThreadIds,
 } from "./gmail-project-link";
 import { confirmedPersonFromThread } from "./identity-gate";
+import { isFounderIdentityName } from "@/lib/continuum/candidates/founder-attention";
 
 export type GmailIntakeCurrentStateKind = "waiting_on_client" | "founder_turn";
 
@@ -223,7 +224,12 @@ function peopleForThread(
 function pickPersonAssociation(
   list: readonly ContinuumCandidate[],
 ): ContinuumCandidate | null {
-  const people = list.filter((row) => row.candidateType === "person_association");
+  const people = list.filter((row) => {
+    if (row.candidateType !== "person_association") return false;
+    const name =
+      row.payload.kind === "person_association" ? row.payload.displayName : null;
+    return !isFounderIdentityName(name);
+  });
   const approved = people.find(
     (row) => row.reviewStatus === "approved" && row.candidateState !== "superseded",
   );

@@ -179,7 +179,7 @@ async function loadSnapshot(client: SupabaseClient): Promise<ProjectDeskSnapshot
       "read-project-notes-failed",
     ),
     rows<Record<string, unknown>>(
-      client.from("continuum_person_profiles").select("person_id, display_name"),
+      client.from("continuum_person_profiles").select("person_id, display_name, roles, organization_name"),
       "read-project-people-failed",
     ),
     loadProjectJobs(client),
@@ -197,6 +197,8 @@ async function loadSnapshot(client: SupabaseClient): Promise<ProjectDeskSnapshot
     people: personRows.map((row) => ({
       personId: String(row.person_id),
       displayName: String(row.display_name),
+      roles: Array.isArray(row.roles) ? row.roles.map((role) => String(role)) : [],
+      organizationName: row.organization_name == null ? null : String(row.organization_name),
     })),
     sourceNotes: noteRows.map(rowToNote),
     projectJobs,

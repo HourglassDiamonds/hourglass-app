@@ -139,6 +139,7 @@ export type CosAnomalyItem = {
   sourceHref: string | null;
   jobId: string | null;
   projectId: string | null;
+  candidateIds?: readonly string[];
 };
 
 export {

@@ -77,6 +77,41 @@ export function isStudioOrVendorLabel(name: string | null | undefined): boolean 
   return /\bhourglass diamonds\b/.test(normalized);
 }
 
+const FOUNDER_IDENTITY_NAMES = new Set(["justin", "justin smith"]);
+
+export function isFounderIdentityName(name: string | null | undefined): boolean {
+  if (!name) return false;
+  return FOUNDER_IDENTITY_NAMES.has(name.trim().toLowerCase());
+}
+
+export function isVendorOrganizationLabel(name: string | null | undefined): boolean {
+  if (!name) return false;
+  const normalized = name.trim().toLowerCase();
+  if (!normalized) return false;
+  if (isStudioOrVendorLabel(normalized)) return true;
+  return /\b(engraving|jewelers?|workshop|atelier|the shop)\b/.test(normalized);
+}
+
+export function isVendorPerson(person: {
+  displayName: string;
+  roles?: readonly string[] | null;
+  organizationName?: string | null;
+}): boolean {
+  const roles = person.roles ?? [];
+  if (roles.includes("vendor-contact")) return true;
+  if (roles.includes("business-contact") && !roles.includes("client")) return true;
+  if (isVendorOrganizationLabel(person.displayName)) return true;
+  return isVendorOrganizationLabel(person.organizationName);
+}
+
+export function isClientPersonLabel(name: string | null | undefined): boolean {
+  if (!name?.trim()) return false;
+  if (isFounderIdentityName(name)) return false;
+  if (isStudioOrVendorLabel(name)) return false;
+  if (isVendorOrganizationLabel(name)) return false;
+  return true;
+}
+
 export function confirmedPersonId(row: ContinuumCandidate): string | null {
   const edited = row.founderEditedTarget;
   if (edited?.kind === "person" && edited.personId) return edited.personId;
@@ -329,6 +364,20 @@ function domainHits(tokens: readonly string[], domain: ReadonlySet<string>): num
   return tokens.filter((token) => domain.has(token)).length;
 }
 
+const DATE_OBLIGATION =
+  /\b(deadline|travel|needed by|need(?:s)? it by|before (?:the )?(?:trip|wedding|flight)|due|deliver(?:y|ed)? by|ready by|approves? .{0,80} by|(?:will|must|should)\s+\w[\w\s]{0,60}\bby)\b/i;
+
+export function dateHasActionableObligation(row: ContinuumCandidate): boolean {
+  const payload = payloadOf(row);
+  if (payload.kind !== "date") return false;
+  const matched = `${row.evidenceBasis.matchedText ?? ""} ${payload.raw}`.trim();
+  if (!DATE_OBLIGATION.test(matched)) return false;
+  return (
+    hasNamedActor(matched) ||
+    /\b(need(?:s)?|send|deliver|finish|finish(?:ed)?|ready|approves?)\b/i.test(matched)
+  );
+}
+
 export function hasCommercialPayload(row: ContinuumCandidate): boolean {
   const payload = payloadOf(row);
   if (payload.kind === "structured_spec") return true;
@@ -343,7 +392,7 @@ export function hasCommercialPayload(row: ContinuumCandidate): boolean {
       payload.topic === "design_basis"
     );
   }
-  if (payload.kind === "date" && payload.role === "deadline") return true;
+  if (payload.kind === "date") return dateHasActionableObligation(row);
   const hay = candidateHaystack(row);
   return domainHits(tokensOf(hay), COMMERCIAL) > 0;
 }

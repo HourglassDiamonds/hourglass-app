@@ -64,7 +64,12 @@ function linkedPeople(
   const people = unique.flatMap((personId) => {
     const person = snapshot.people.find((row) => row.personId === personId);
     if (!person) return [];
-    return [{ personId: person.personId, displayName: person.displayName }];
+    return [{
+      personId: person.personId,
+      displayName: person.displayName,
+      roles: person.roles,
+      organizationName: person.organizationName ?? null,
+    }];
   });
   return people.sort((a, b) =>
     a.displayName.localeCompare(b.displayName, "en", { sensitivity: "base" }),

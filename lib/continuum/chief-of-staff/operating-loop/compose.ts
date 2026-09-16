@@ -8,7 +8,7 @@ import type { ContinuumCandidate } from "@/lib/continuum/candidates/types";
 import type { ProjectDeskSummary } from "@/lib/continuum/client-memory/project-desk/types";
 import { selectOpenProjectWork } from "@/lib/continuum/client-memory/open-projects/select";
 import type { ProjectJob } from "@/lib/continuum/client-memory/project-jobs/types";
-import { isStudioOrVendorLabel } from "@/lib/continuum/candidates/founder-attention";
+import { isClientPersonLabel } from "@/lib/continuum/candidates/founder-attention";
 import { collectCanonicalActionables, selectTopRanked } from "./collect";
 import { composeFounderAttentionSurface } from "./founder-attention";
 import { composeConciergeBrief } from "./moderator";
@@ -42,7 +42,7 @@ function clientDisplayName(
   people: readonly { displayName: string; role?: string | null }[],
 ): string | null {
   const pool = people.filter((person) => {
-    if (isStudioOrVendorLabel(person.displayName)) return false;
+    if (!isClientPersonLabel(person.displayName)) return false;
     if (person.role === "vendor-contact") return false;
     return true;
   });
@@ -71,11 +71,18 @@ export function projectContextFromSummaries(
   const current = new Set(selectOpenProjectWork(summaries).map((row) => row.projectId));
   const map = new Map<string, CosProjectContext>();
   for (const row of summaries) {
+    const people = row.people.map((person) => ({
+      personId: person.personId,
+      displayName: person.displayName,
+      role: person.roles?.includes("vendor-contact")
+        ? "vendor-contact"
+        : person.roles?.[0] ?? null,
+    }));
     map.set(row.projectId, {
       projectId: row.projectId,
       title: row.title,
-      personName: clientDisplayName(row.title, row.people),
-      people: row.people,
+      personName: clientDisplayName(row.title, people),
+      people,
       isCurrent: current.has(row.projectId),
       lifecycleStage: row.lifecycleStage,
       specs: row.specs,

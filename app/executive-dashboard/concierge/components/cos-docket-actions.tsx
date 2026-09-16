@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { useFormStatus } from "react-dom";
 import type { CosDocketItemView } from "@/lib/continuum/chief-of-staff/operating-loop/docket";
 import {
   SNOOZE_PRESET_LABELS,
@@ -11,6 +14,32 @@ import { CosViewEmailControl } from "./cos-source-viewer";
 
 type DisposeAction = (formData: FormData) => void | Promise<void>;
 
+function PendingSubmit({
+  label,
+  pendingLabel,
+  className,
+  verb,
+}: {
+  label: string;
+  pendingLabel: string;
+  className: string;
+  verb?: string;
+}) {
+  const { pending } = useFormStatus();
+  return (
+    <button
+      type="submit"
+      disabled={pending}
+      aria-busy={pending}
+      className={`${className} disabled:opacity-50`}
+      data-cos-founder-verb={verb}
+      data-cos-action-pending={pending ? "true" : undefined}
+    >
+      {pending ? pendingLabel : label}
+    </button>
+  );
+}
+
 function HiddenFields({
   item,
   verb,
@@ -22,6 +51,7 @@ function HiddenFields({
   const candidateIds = [
     ...(item.brief?.candidateIds ?? []),
     ...(item.decision?.candidateIds ?? []),
+    ...(item.anomaly?.candidateIds ?? []),
     ...(controls.specConflict?.candidateId ? [controls.specConflict.candidateId] : []),
   ];
   return (
@@ -30,7 +60,7 @@ function HiddenFields({
       <input type="hidden" name="origin" value={item.origin} />
       <input type="hidden" name="itemId" value={item.id} />
       <input type="hidden" name="projectId" value={item.job?.projectId ?? item.brief?.projectId ?? item.decision?.projectId ?? item.anomaly?.projectId ?? ""} />
-      <input type="hidden" name="jobId" value={item.job?.id ?? item.decision?.recap?.jobId ?? ""} />
+      <input type="hidden" name="jobId" value={item.job?.id ?? item.decision?.recap?.jobId ?? item.anomaly?.jobId ?? ""} />
       <input type="hidden" name="candidateIds" value={[...new Set(candidateIds)].join(",")} />
       <input type="hidden" name="specFieldName" value={controls.specConflict?.fieldName ?? ""} />
       <input type="hidden" name="specProposedValue" value={controls.specConflict?.proposedValue ?? ""} />
@@ -60,9 +90,12 @@ function ActionButton({
             <form action={disposeAction} key={preset}>
               <HiddenFields item={item} verb={action.verb} />
               <input type="hidden" name="snoozePreset" value={preset} />
-              <button type="submit" className={className}>
-                {SNOOZE_PRESET_LABELS[preset]}
-              </button>
+              <PendingSubmit
+                label={SNOOZE_PRESET_LABELS[preset]}
+                pendingLabel="Saving…"
+                className={className}
+                verb={action.verb}
+              />
             </form>
           ))}
           <form action={disposeAction} className="flex min-w-0 flex-wrap items-center gap-x-3">
@@ -77,9 +110,7 @@ function ActionButton({
                 className="ml-3 bg-transparent text-[#efe8de] outline-none"
               />
             </label>
-            <button type="submit" className={className}>
-              Save
-            </button>
+            <PendingSubmit label="Save" pendingLabel="Saving…" className={className} />
           </form>
         </div>
       </details>
@@ -88,9 +119,12 @@ function ActionButton({
   return (
     <form action={disposeAction} className="inline">
       <HiddenFields item={item} verb={action.verb} />
-      <button type="submit" className={className} data-cos-founder-verb={action.verb}>
-        {action.label}
-      </button>
+      <PendingSubmit
+        label={action.label}
+        pendingLabel="Saving…"
+        className={className}
+        verb={action.verb}
+      />
     </form>
   );
 }

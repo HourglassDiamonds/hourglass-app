@@ -8,7 +8,7 @@ import {
   candidateText,
   confirmedPersonId,
   hasRule,
-  isStudioOrVendorLabel,
+  isClientPersonLabel,
   payloadOf,
   projectByThreadFromCandidates,
   sourceThreadId,
@@ -58,7 +58,7 @@ function uniquePersonProjectIds(
   const personToProjects = new Map<string, Set<string>>();
   for (const project of projects.values()) {
     for (const person of project.people ?? []) {
-      if (isStudioOrVendorLabel(person.displayName)) continue;
+      if (!isClientPersonLabel(person.displayName)) continue;
       if (person.role === "vendor-contact") continue;
       const set = personToProjects.get(person.personId) ?? new Set();
       set.add(project.projectId);
@@ -286,7 +286,7 @@ export function pickClientPerson(
 ): CosProjectPerson | null {
   if (!project) return null;
   const pool = (project.people ?? []).filter((person) => {
-    if (isStudioOrVendorLabel(person.displayName)) return false;
+    if (!isClientPersonLabel(person.displayName)) return false;
     if (person.role === "vendor-contact") return false;
     return true;
   });
@@ -316,7 +316,9 @@ function personNameById(
 ): string | null {
   for (const project of projects.values()) {
     const match = project.people?.find((row) => row.personId === personId);
-    if (match && !isStudioOrVendorLabel(match.displayName)) return match.displayName;
+    if (match && isClientPersonLabel(match.displayName) && match.role !== "vendor-contact") {
+      return match.displayName;
+    }
   }
   return null;
 }
@@ -330,7 +332,7 @@ function personNameFromAssociation(
     const payload = payloadOf(row);
     if (payload.kind === "person_association") {
       const name = payload.displayName?.trim() ?? "";
-      if (name && !isStudioOrVendorLabel(name)) return name;
+      if (isClientPersonLabel(name)) return name;
     }
   }
   return null;
@@ -358,7 +360,7 @@ export function resolveProjectAttribution(
         personNameFromAssociation(evidence, personIds[0]!);
     }
   }
-  if (personName && isStudioOrVendorLabel(personName)) personName = null;
+  if (personName && !isClientPersonLabel(personName)) personName = null;
   return {
     projectId,
     projectTitle: project?.title ?? (projectId ? "Project" : null),

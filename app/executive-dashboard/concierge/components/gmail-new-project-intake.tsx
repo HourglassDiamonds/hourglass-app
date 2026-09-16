@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   approveGmailNewProject,
   confirmGmailIntakePerson,
+  dismissGmailIntakePerson,
 } from "../founder-project-actions";
 import { scanGmailNewProjectIntake, type ScanGmailIntakeState } from "../gmail-intake-actions";
 import { runNextGmailIncrementalChunk } from "../gmail-incremental-actions";
@@ -460,6 +461,10 @@ function GmailConfirmPersonForm({
   returnTo?: string;
 }) {
   const [state, formAction, pending] = useActionState(confirmGmailIntakePerson, null);
+  const [dismissState, dismissAction, dismissing] = useActionState(
+    dismissGmailIntakePerson,
+    null,
+  );
   const [query, setQuery] = useState("");
   const [picked, setPicked] = useState<{
     personId: string;
@@ -469,7 +474,7 @@ function GmailConfirmPersonForm({
     card.possiblePersonId
       ? {
           personId: card.possiblePersonId,
-          displayName: card.possiblePersonName ?? "Possible client",
+          displayName: card.possiblePersonName ?? "Possible person",
           email: card.possiblePersonEmail,
         }
       : null,
@@ -479,8 +484,8 @@ function GmailConfirmPersonForm({
   const errorRef = useRef<HTMLParagraphElement>(null);
   const requestIdRef = useRef(0);
   useEffect(() => {
-    if (state?.message) errorRef.current?.focus();
-  }, [state?.message]);
+    if (state?.message || dismissState?.message) errorRef.current?.focus();
+  }, [state?.message, dismissState?.message]);
   useEffect(() => {
     const trimmed = query.trim();
     if (!trimmed || picked) {
@@ -562,28 +567,44 @@ function GmailConfirmPersonForm({
       {!picked && searching ? (
         <p className="text-[13px] text-[#8d8073]">Searching People…</p>
       ) : null}
-      {state?.message ? (
+      {state?.message || dismissState?.message ? (
         <p
           ref={errorRef}
           tabIndex={-1}
           role="alert"
           className="text-[14px] text-[#d2b8a8] outline-none"
         >
-          {state.message}
+          {state?.message ?? dismissState?.message}
         </p>
       ) : null}
       <div className="flex flex-wrap gap-3">
         <button
           type="submit"
-          disabled={pending || !picked}
+          disabled={pending || dismissing || !picked}
           className="min-h-12 rounded-[18px] border border-[#ad9164]/50 bg-[#1d1916] px-4 text-[11px] uppercase tracking-[0.22em] text-[#efe8de] outline-none hover:border-[#ad9164] disabled:opacity-50"
         >
-          {pending ? "Confirming…" : "Confirm person"}
+          {pending ? "Linking…" : "Link client"}
         </button>
-        <span className="inline-flex min-h-12 items-center text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
-          Review
-        </span>
+        <button
+          type="submit"
+          disabled={pending || dismissing || !picked}
+          className="min-h-12 rounded-[18px] border border-white/10 bg-transparent px-4 text-[11px] uppercase tracking-[0.22em] text-[#efe8de] outline-none hover:border-[#ad9164] disabled:opacity-50"
+        >
+          Link vendor
+        </button>
+        <button
+          type="submit"
+          formAction={dismissAction}
+          disabled={pending || dismissing}
+          aria-label="Dismiss"
+          className="inline-flex min-h-12 min-w-12 items-center justify-center rounded-[18px] border border-white/10 text-[16px] text-[#8d8073] outline-none hover:text-[#efe8de] disabled:opacity-50"
+        >
+          {dismissing ? "…" : "×"}
+        </button>
       </div>
+      <p className="text-[12px] leading-relaxed text-[#8d8073]">
+        Linking confirms the person. A vendor role is not stored yet.
+      </p>
     </form>
   );
 }

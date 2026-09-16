@@ -417,4 +417,39 @@ describe("Open Job founder controls", () => {
       "create,update",
     );
   });
+
+  it("treats a second resolve of an already-resolved job as success", async () => {
+    const memory = new InMemoryClientMemoryStore();
+    const jobs = new InMemoryProjectJobStore();
+    const writer = createInMemoryProjectJobWriter(memory, jobs, () => NOW);
+    const seeded = await seedProject(memory);
+    const created = await writer.createJob({
+      mutationId: randomUUID(),
+      projectId: seeded.projectId,
+      kind: "question",
+      subject: "Waiting on Sarah",
+      waitingOnActor: "client",
+      actor: ACTOR,
+    });
+    assert.equal(created.ok, true);
+    if (!created.ok) return;
+    const first = await writer.mutateJob({
+      mutationId: randomUUID(),
+      projectId: seeded.projectId,
+      jobId: created.job.jobId,
+      action: "resolve",
+      actor: ACTOR,
+    });
+    const second = await writer.mutateJob({
+      mutationId: randomUUID(),
+      projectId: seeded.projectId,
+      jobId: created.job.jobId,
+      action: "resolve",
+      actor: ACTOR,
+    });
+    assert.equal(first.ok, true);
+    assert.equal(second.ok, true);
+    if (!second.ok) return;
+    assert.equal(second.job.state, "resolved");
+  });
 });

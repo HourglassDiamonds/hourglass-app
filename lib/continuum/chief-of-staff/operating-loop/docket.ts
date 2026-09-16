@@ -393,7 +393,11 @@ export function composeTodayDocket(loop: CosOperatingLoopView): CosTodayDocketVi
   }
 
   for (const item of fallback.anomalies) {
-    const keys = coverKeysFor({ id: item.id, projectId: item.projectId });
+    const keys = coverKeysFor({
+      id: item.id,
+      projectId: item.projectId,
+      candidateIds: item.candidateIds,
+    });
     if (isCovered(keys)) continue;
     const subject = docketSubject(null, item.sourceLabel);
     const briefing = presentDocketBriefing({
