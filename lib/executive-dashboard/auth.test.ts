@@ -379,9 +379,13 @@ describe("executive dashboard auth", () => {
       join(ROOT, "lib", "executive-dashboard", "access.ts"),
       "utf8",
     );
+    const paths = readFileSync(
+      join(ROOT, "lib", "executive-dashboard", "paths.ts"),
+      "utf8",
+    );
     assert.match(access, /EXECUTIVE_DASHBOARD_PRODUCTION_NOT_FOUND_REWRITE_PATH/);
     assert.match(
-      access,
+      paths,
       new RegExp(
         EXECUTIVE_DASHBOARD_PRODUCTION_NOT_FOUND_REWRITE_PATH.replace(
           /[.*+?^${}()|[\]\\]/g,

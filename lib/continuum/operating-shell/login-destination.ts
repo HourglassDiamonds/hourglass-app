@@ -13,7 +13,7 @@ import {
   isExecutiveDashboardPasskeyPairPath,
   isExecutiveDashboardPublicAuthPath,
   isExecutiveDashboardSecurityPath,
-} from "@/lib/executive-dashboard/access";
+} from "@/lib/executive-dashboard/paths";
 
 export const CONTINUUM_DESKTOP_MEDIA_QUERY = "(min-width: 768px)";
 

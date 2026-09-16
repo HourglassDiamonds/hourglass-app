@@ -56,11 +56,13 @@ export function isDurableFounderSessionStoreEnabled(): boolean {
   const currentRef = supabaseProjectRefFromUrl();
   const previewRef = previewSupabaseProjectRef();
   const productionRef = productionSupabaseProjectRef();
+  const previewCanon: string = CONTINUUM_PREVIEW_SUPABASE_PROJECT_REF;
+  const productionCanon: string = CONTINUUM_PRODUCTION_SUPABASE_PROJECT_REF;
 
-  if (currentRef !== CONTINUUM_PREVIEW_SUPABASE_PROJECT_REF) return false;
-  if (previewRef !== CONTINUUM_PREVIEW_SUPABASE_PROJECT_REF) return false;
-  if (productionRef !== CONTINUUM_PRODUCTION_SUPABASE_PROJECT_REF) return false;
-  if (currentRef === CONTINUUM_PRODUCTION_SUPABASE_PROJECT_REF) return false;
+  if (currentRef !== previewCanon) return false;
+  if (previewRef !== previewCanon) return false;
+  if (productionRef !== productionCanon) return false;
+  if (currentRef === productionCanon) return false;
   if (previewRef === productionRef) return false;
   return true;
 }

@@ -122,4 +122,9 @@ describe("assertNoPrefixedServerSecrets Continuum Gmail/Calendar", () => {
     );
     assert.ok(SERVER_ONLY_APP_ENV.includes("EXECUTIVE_DASHBOARD_SESSION_SECRET"));
   });
+
+  it("does not import google-auth-library through intelligence env hygiene", () => {
+    const source = readFileSync(join(DIR, "validate-env.ts"), "utf8");
+    assert.doesNotMatch(source, /google-oauth|google-auth-library/);
+  });
 });

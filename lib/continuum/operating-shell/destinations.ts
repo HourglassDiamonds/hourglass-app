@@ -17,7 +17,7 @@ import {
   CONCIERGE_REPAIRS_PATH,
   conciergeInboxPath,
 } from "@/lib/continuum/client-memory/read/presentation";
-import { EXECUTIVE_DASHBOARD_PASSKEYS_PATH } from "@/lib/executive-dashboard/access";
+import { EXECUTIVE_DASHBOARD_PASSKEYS_PATH } from "@/lib/executive-dashboard/paths";
 
 export {
   CONCIERGE_ASK_PATH,

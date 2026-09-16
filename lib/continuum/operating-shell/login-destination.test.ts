@@ -157,4 +157,17 @@ describe("Founder login destination", () => {
     assert.match(conciergeLayout, /founderLoginPathWithNext/);
     assert.match(securityLayout, /founderLoginPathWithNext/);
   });
+
+  it("does not import founder session or Google auth into client login modules", () => {
+    const source = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), "login-destination.ts"),
+      "utf8",
+    );
+    assert.match(source, /executive-dashboard\/paths/);
+    assert.doesNotMatch(source, /executive-dashboard\/access/);
+    assert.doesNotMatch(
+      source,
+      /founder-sessions|google-oauth|google-auth-library/,
+    );
+  });
 });

@@ -1,4 +1,7 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, it } from "node:test";
 import {
   CONCIERGE_ASK_PATH,
@@ -15,6 +18,8 @@ import {
   operatingDestinationForPath,
   operatingShellVariantForPath,
 } from "./destinations";
+
+const DIR = dirname(fileURLToPath(import.meta.url));
 
 describe("Founder operating destinations", () => {
   it("exposes exactly five primary destinations", () => {
@@ -129,5 +134,15 @@ describe("Founder operating destinations", () => {
       href: CONCIERGE_ASK_PATH,
       label: "Concierge",
     });
+  });
+
+  it("does not import founder session or Google auth into the client nav graph", () => {
+    const destinations = readFileSync(join(DIR, "destinations.ts"), "utf8");
+    assert.match(destinations, /executive-dashboard\/paths/);
+    assert.doesNotMatch(destinations, /executive-dashboard\/access/);
+    assert.doesNotMatch(
+      destinations,
+      /founder-sessions|google-oauth|google-auth-library/,
+    );
   });
 });

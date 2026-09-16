@@ -15,7 +15,6 @@ import {
   getSupabaseServiceRoleKey,
   getSupabaseUrl,
 } from "./env";
-import { isGa4OAuthConfigured } from "./google-oauth";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
 import { SERVER_ONLY_CONTINUUM_CALENDAR_ENV } from "@/lib/continuum/calendar/env";
 import { SERVER_ONLY_CONTINUUM_GMAIL_ENV } from "@/lib/continuum/gmail/env";
@@ -71,9 +70,13 @@ function missingGa4OAuthVars(): string[] {
   return missing;
 }
 
+function isGa4OAuthEnvConfigured(): boolean {
+  return missingGa4OAuthVars().length === 0;
+}
+
 function missingIntelligenceVars(): string[] {
   const missing: string[] = [];
-  if (!isGa4OAuthConfigured()) {
+  if (!isGa4OAuthEnvConfigured()) {
     missing.push(...missingGa4OAuthVars());
   }
   if (!isSupabaseConfigured()) {
@@ -95,7 +98,7 @@ export function validateIntelligenceEnvOnStartup(): void {
   assertNoPrefixedServerSecrets();
 
   const missing = missingIntelligenceVars();
-  const ga4Ready = isGa4OAuthConfigured();
+  const ga4Ready = isGa4OAuthEnvConfigured();
   const supabaseReady = isSupabaseConfigured();
 
   if (!ga4Ready && !supabaseReady) {
