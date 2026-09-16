@@ -22,80 +22,80 @@ export const ISM_READING = {
 } as const;
 
 export const ISM_SUMMARY =
-  "The main divergence this week is between official Hormuz crude-flow claims and independently trackable shipping and flow estimates. Tracked physical vessel traffic remains extremely depressed even as some official statements describe significantly recovered oil volumes. Refined-product shortages in Asia are a clearer transmitted consequence than the headline dispute over exact crude volumes. Treasury buybacks can be framed as liquidity support or as evidence of fiscal/dollar concern. The AI narrative now contains both rapid capability progress and an actual developer-imposed security slowdown. Confidence stays Moderate. Information Signal adds no degrees.";
+  "Physical energy-market and rates evidence is more cross-confirmed than in August: Brent is in a $100+ regime, Hormuz commodity traffic printed four vessels, Saudi Arabia’s principal Hormuz-bypass route is disrupted, and the U.S. 10-year crossed 5% on September 15. Trajectory, duration, and policy response remain uncertain — pipeline repair estimates span very soon to eight weeks, Hormuz talks stalled, the 10-year retreated just below 5% on the morning of September 16, and the September 15–16 Fed decision had not been published at cutoff. Gold is falling while geopolitical risk is high, which is a real disconfirmation. AI coverage mixes agent-containment incidents with lab safety-coordination. Confidence stays Moderate. Information Signal adds no degrees.";
 
 export const ISM_SIGNAL_GRID = [
   {
     title: "Consensus",
-    body: "Hormuz remains extremely constrained on independently trackable shipping prints; Brent is above $92; long-duration fiscal pressure remains active; European water-to-power effects and the OpenAI containment event are physical/operational, not merely narrative.",
+    body: "Hormuz remains extremely constrained on independently trackable shipping; Saudi Arabia’s principal Hormuz-bypass route is disrupted; Brent is above $100; the 10-year crossed 5% on September 15; credit and equities are still functioning.",
   },
   {
     title: "Divergence",
-    body: "Official Hormuz crude-flow recovery claims versus independently trackable vessel traffic that remains extremely depressed. Treasury buybacks framed as liquidity support versus fiscal/dollar concern. AI coverage mixing rapid capability progress with a developer-imposed security slowdown.",
+    body: "Repair-timeline claims for the Saudi pipeline range from very soon to about eight weeks. Analyst $120/$130 oil paths are scenarios, not a settled market fact. AI coverage mixes additional agent-breakout reporting with proposed slowdowns and safety coordination. Gold is falling despite elevated geopolitical risk.",
   },
   {
     title: "Underweighted",
-    body: "Asian refined-product shortages as a clearer transmitted consequence than the headline fight over exact crude volumes — and the fact that Information Signal still sets confidence only.",
+    body: "Diesel-refining disruption and the disruption of Saudi Arabia’s principal Hormuz-bypass route as a distinct transmission step — and the fact that Information Signal still sets confidence only.",
   },
 ] as const;
 
 export const ISM_SOURCE_STACK = [
   {
     title: "Institutional",
-    body: "Emphasizes expired talks, maritime-security incidents, and measured language on any successor diplomatic path — with little agreement on Hormuz control status or Oman’s continuing role.",
+    body: "Emphasizes stalled Hormuz talks, Houthi strikes, Texas data-center water enforcement, EIA record electricity demand, and a nearly fully priced September Fed hike — with little agreement on how long the Saudi pipeline outage lasts.",
   },
   {
     title: "Market",
-    body: "Emphasizes Brent above $90, long-duration Treasury and G10 yield repricing, softer near-term hike odds, and still-functioning credit — linking energy pressure to term premia more tightly than to funding stress.",
+    body: "Emphasizes $100+ oil, the 10-year’s September 15 print above 5%, diesel futures sharply higher, still-functioning credit, and resilient earnings — linking energy pressure to term premia more tightly than to funding stress.",
   },
   {
     title: "Infrastructure",
-    body: "Emphasizes PJM large-load adequacy, European river/nuclear/hydro constraints, and operator adaptation rather than expired July emergency-order windows or event-infrastructure load.",
+    body: "Emphasizes EIA record load, Texas power/water gating of data centers, and operator adaptation rather than grid collapse.",
   },
   {
     title: "Mainstream",
-    body: "Emphasizes corridor deadlock, oil above $90, and bond-market headlines — often compressing physical prints, control claims, and rate moves into a single crisis frame.",
+    body: "Emphasizes $100+ oil, bond-market headlines, and AI-safety drama — often compressing energy disruption, rates, and frontier-lab statements into a single crisis frame.",
   },
 ] as const;
 
 export const ISM_NARRATIVE_MAP = [
   {
     title: "Domestic Framing",
-    body: "Emphasizes consumer prices, borrowing costs, and energy bills. Tends to underweight vessel-tracking evidence and the difference between long-duration repricing and a credit crisis.",
+    body: "Emphasizes gasoline, diesel, borrowing costs, and the September Fed meeting. Tends to underweight vessel-tracking evidence and the difference between very-high rates pressure and a credit crisis.",
   },
   {
     title: "Political Framing",
-    body: "Emphasizes control of the strait, blame for the expired window, and escalation language. Tends to underweight slow-moving physical transit data and still-functioning credit markets.",
+    body: "Emphasizes stalled Hormuz talks, Houthi strikes, and blame for the pipeline attack. Tends to underweight still-functioning credit markets and gold’s decline as a disconfirmation.",
   },
   {
     title: "Market Framing",
-    body: "Emphasizes $90+ oil, 30-year and 10-year yields, and G10 duration. Tends to underweight that strategic intent and diplomatic path remain less clear than the prints.",
+    body: "Emphasizes $108 oil, the 10-year at 5%, and hike odds. Tends to underweight that pipeline duration and diplomatic path remain less clear than the prints.",
   },
   {
     title: "Infrastructure Framing",
-    body: "Emphasizes PJM adequacy actions and European water-constrained power and freight. Tends to underweight near-term headline compression around Hormuz control claims.",
+    body: "Emphasizes Texas data-center water/power enforcement and EIA record demand. Tends to underweight that those are adaptation gates, not grid failure.",
   },
 ] as const;
 
 export const ISM_NARRATIVE_SHIFT =
-  "Physical evidence strengthened while official narratives diverged further. Independently trackable Hormuz traffic remains extremely depressed despite claims of recovered crude volumes. Asian refined-product shortages are a clearer transmitted consequence than the headline volume dispute. Treasury buybacks can be read as liquidity support or fiscal/dollar concern. AI coverage now contains both rapid capability progress and a developer-imposed security slowdown. Density remains high; confidence stays Moderate; Information Signal adds no degrees.";
+  "Physical energy and rates evidence converged further while duration and policy path stayed uncertain. Independently trackable Hormuz traffic, $100+ oil, Yanbu loadings, and the 10-year’s September 15 print above 5% now tell one physical story. Gold’s decline and resilient equities are the main disconfirmations of a simple crisis frame. Density remains high; confidence stays Moderate; Information Signal adds no degrees.";
 
 export const ISM_WHAT_TO_WATCH = [
   {
     title: "Physical-print alignment",
-    body: "Whether independently trackable Hormuz transits, Brent, and long yields continue to tell one physical story.",
+    body: "Whether independently trackable Hormuz transits, Brent, diesel, and long yields continue to tell one physical story.",
   },
   {
-    title: "Intent versus control claims",
-    body: "Whether Hormuz-control language, Oman’s role, and escalation intentions become independently verifiable — or remain a competing headline layer.",
-  },
-  {
-    title: "Diplomatic successor path",
-    body: "Whether a new scheduled framework appears after the expired window, distinct from unrecovered-flow claims.",
+    title: "Pipeline duration versus scenario talk",
+    body: "Whether repair timelines converge, or whether $120/$130 oil scenarios are treated as forecasts rather than labeled as scenarios.",
   },
   {
     title: "Rates-story composition",
-    body: "Whether coverage treats long-duration repricing as an interaction among energy, fiscal issuance, and AI-capital demand rather than a monocausal oil-to-yields pipeline.",
+    body: "Whether coverage treats the 10-year’s move through 5% as an interaction among energy, core inflation, fiscal issuance, and AI-capital demand rather than a monocausal oil-to-yields pipeline.",
+  },
+  {
+    title: "AI-governance versus AI-panic",
+    body: "Whether lab safety-coordination and Microsoft’s human-control draft are reported as adaptation, or compressed into unconstrained-capability theater.",
   },
 ] as const;
 
@@ -121,15 +121,15 @@ export const ISM_WHAT_WOULD_CHANGE = [
 export const ISM_FOOTER_NOTE =
   "Narrative analysis and framing comparison — observational, without speculation or certainty claims. Information Signal informs confidence in the System Temperature reading; it does not raise the temperature itself.";
 
-export const ISM_CURRENT_STATE = "High-attention / Uneven clarity";
+export const ISM_CURRENT_STATE = "High-attention / Physical evidence converging";
 
 export const ISM_CURRENT_DIRECTION =
-  "Physical evidence strengthening / Official narratives diverging further";
+  "Energy and rates prints clearer / Duration and policy path still uncertain";
 
 export const ISM_HUB_STATUS = ISM_CURRENT_STATE;
 
 export const ISM_HUB_DESCRIPTION =
-  "High-attention / Uneven clarity — official Hormuz flow claims diverge from trackable shipping, while Treasury and AI narratives split further.";
+  "High-attention / Physical evidence converging — $100+ oil, disruption of Saudi Arabia’s principal Hormuz-bypass route, and a 10-year that crossed 5% are cross-confirmed, while duration and policy path remain uncertain.";
 
 /** Append-only public series. Future reviews push a new snapshot. */
 export const ISM_SERIES: LedgerMonitorSeries = {
@@ -241,9 +241,9 @@ export const ISM_SERIES: LedgerMonitorSeries = {
     },
     {
       reviewDate: "August 24, 2026",
-      evidenceCutoff: LEDGER_EVIDENCE_CUTOFF,
-      currentState: ISM_CURRENT_STATE,
-      currentDirection: ISM_CURRENT_DIRECTION,
+      evidenceCutoff: "August 24, 2026",
+      currentState: "High-attention / Uneven clarity",
+      currentDirection: "Physical evidence strengthening / Official narratives diverging further",
       previousState: "High-attention / Uneven clarity",
       materialChangeSummary:
         "Major divergence between official Hormuz crude-flow claims and independently trackable shipping/flow estimates; tracked vessel traffic remains extremely depressed. Asian refined-product shortages are a clearer transmitted consequence than the headline crude-volume dispute. Treasury buybacks can be framed as liquidity support or fiscal/dollar concern. AI narrative now contains both rapid capability progress and a developer-imposed security slowdown. Confidence stays Moderate; Information Signal adds no degrees.",
@@ -274,6 +274,52 @@ export const ISM_SERIES: LedgerMonitorSeries = {
           url: "https://openai.com/index/pacing-model-development-cyber-capabilities/",
           supports:
             "AI narrative now containing both rapid capability progress and an actual developer-imposed security slowdown after the Hugging Face incident and Astra cyber-threshold review",
+        },
+      ],
+    },
+    {
+      reviewDate: "September 16, 2026",
+      evidenceCutoff: LEDGER_EVIDENCE_CUTOFF,
+      currentState: ISM_CURRENT_STATE,
+      currentDirection: ISM_CURRENT_DIRECTION,
+      previousState: "High-attention / Uneven clarity",
+      materialChangeSummary:
+        "Physical energy-market and rates evidence is now more cross-confirmed than on August 24: Brent in a $100+ regime, Hormuz commodity traffic at four vessels, Saudi Arabia’s principal Hormuz-bypass route disrupted, and the U.S. 10-year crossed 5% on September 15. Duration, repair timeline, and the September 15–16 Fed outcome remain uncertain. Gold’s decline is a material disconfirmation. Confidence stays Moderate; Information Signal adds no degrees.",
+      methodologyVersion: LEDGER_METHODOLOGY_VERSION,
+      sources: [
+        {
+          institution: "Reuters",
+          title:
+            "Oil jumps nearly $3 as Saudi export halt, Libya outages stoke supply fears",
+          date: "September 15, 2026",
+          url: "https://www.reuters.com/business/energy/oil-prices-rise-saudi-pipeline-outage-fresh-attacks-raise-supply-concerns-2026-09-15/",
+          supports:
+            "Independently trackable $100+ oil, Yanbu loading suspension, Hormuz traffic at four vessels, and diesel-refinery disruption as a clearer physical story than diplomatic intent",
+        },
+        {
+          institution: "Reuters",
+          title:
+            "Bond selloff drives US benchmark beyond 5%; stocks rattled",
+          date: "September 15, 2026",
+          url: "https://www.reuters.com/world/asia-pacific/bond-selloff-drives-us-benchmark-beyond-5-stocks-rattled-2026-09-15/",
+          supports:
+            "10-year yield crossed 5% on September 15 as a cross-confirmed market fact beside still-unsettled pipeline duration and Fed outcome",
+        },
+        {
+          institution: "Reuters",
+          title: "Stocks wobble but no sign of panic as yields surge",
+          date: "September 15, 2026",
+          url: "https://www.reuters.com/business/finance/stocks-wobble-no-sign-panic-yields-surge-2026-09-15/",
+          supports:
+            "Equity and earnings resilience as disconfirmation of a financial-crisis narrative despite the rates move",
+        },
+        {
+          institution: "Reuters / Kitco",
+          title: "Gold eases on stronger US rate hike odds",
+          date: "September 15, 2026",
+          url: "http://www.kitco.com/news/off-the-wire/2026-09-15/gold-eases-stronger-us-rate-hike-odds",
+          supports:
+            "Spot gold near the lowest since early August while geopolitical risk is high — a material disconfirmation of a simple safe-haven frame",
         },
       ],
     },

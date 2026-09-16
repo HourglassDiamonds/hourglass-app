@@ -23,13 +23,13 @@ export const GWS_INTRO =
 export const GWS_CURRENT_STATE = "High water stress / Multi-system transmission";
 
 export const GWS_CURRENT_DIRECTION =
-  "Worsening / Policy transmission broadening";
+  "Uneven — Colorado still severe / Texas industrial-use enforcement";
 
 export const GWS_SUMMARY =
-  "Water stress is high and transmitting into multiple systems, but the map is highly uneven. Europe retains high seasonal stress with confirmed power, freight, and agricultural transmission. Colorado River conditions are now a material change since August 18: federal 2027–2028 Lower Basin allocation reductions of about 1.25 million acre-feet a year, with potential for deeper later cuts; Lake Powell and Lake Mead at record-low conditions; Powell approaching the minimum elevation needed for Glen Canyon Dam hydropower. The Tigris–Euphrates system remains materially improved and structurally vulnerable. Gulf desalination is a strategic vulnerability, not a current regional drinking-water collapse. India is watch / elevated seasonal risk. Water remains qualitative and receives no System Temperature weight.";
+  "Water stress is high and transmitting into multiple systems, but the map remains highly uneven. Colorado River conditions stay severe: Lake Powell around 22% full and Lake Mead around 26% as of the September 8 Reclamation weekly, with total system storage near 31%; Upper Basin officials agreed on September 15 to continue Flaming Gorge emergency releases to protect Powell. That is adaptation inside structural shortage, not recovery. Texas is now enforcing data-center water reporting — industrial-use transmission, not a statewide municipal collapse. Europe retains high seasonal stress with previously confirmed power, freight, and agricultural transmission. Tigris–Euphrates remains materially improved and structurally vulnerable. FAO’s August Food Price Index at 133.3 is a cross-system food/agriculture signal, not a new water temperature weight. Water remains qualitative and receives no System Temperature weight.";
 
 export const GWS_WEEKLY_SIGNAL =
-  "Colorado River allocation policy is the material change since August 18. Europe continues to carry high seasonal stress with confirmed power/freight/agricultural transmission. Tigris–Euphrates remains a hydrologic improvement inside structural vulnerability. Water is an evidence layer, not a sixth temperature weight.";
+  "Colorado remains a severe structural shortage with emergency releases continuing. Texas data-center water enforcement is the new industrial-use print. Do not ratchet the whole water monitor because one region stays severe. Tigris–Euphrates remains the hydrologic counter-signal. Water is an evidence layer, not a sixth temperature weight.";
 
 export const GWS_CATEGORIES = [
   {
@@ -45,17 +45,17 @@ export const GWS_CATEGORIES = [
   {
     name: "Municipal / Drinking Water",
     level: "Selective restrictions",
-    body: "Some European municipal and agricultural restrictions are materially relevant. Gulf drinking-water systems are not in confirmed regional collapse; the live issue is strategic desalination exposure if power facilities are hit.",
+    body: "Some European municipal and agricultural restrictions are materially relevant. Texas is compelling industrial water reporting from data centers. Gulf drinking-water systems are not in confirmed regional collapse; the live issue is strategic desalination exposure if power facilities are hit.",
   },
   {
     name: "Agriculture & Food",
     level: "Seasonal / regional",
-    body: "European agricultural water limits are part of the current seasonal transmission. Improving Iraqi marsh and irrigation conditions sit beside that European pressure. India remains a forecast-sensitive watch, not a confirmed crop-system failure.",
+    body: "European agricultural water limits remain part of seasonal transmission. FAO’s August Food Price Index rose to 133.3, with weather, Middle East conflict, and Black Sea logistics among pressures — a cross-system food signal, not a standalone water degree. Improving Iraqi marsh and irrigation conditions sit beside that pressure. India remains a forecast-sensitive watch, not a confirmed crop-system failure.",
   },
   {
     name: "Energy / Industrial Transmission",
     level: "Confirmed in Europe",
-    body: "Low Danube cooling water has affected Romanian nuclear output; hydro weakness and nuclear-cooling effects appear elsewhere in Europe; Rhine/Danube freight is constrained.",
+    body: "Texas data-center water reporting is now an enforcement issue. Low Danube cooling water has affected Romanian nuclear output; hydro weakness and nuclear-cooling effects appear elsewhere in Europe; Rhine/Danube freight is constrained. Colorado hydropower risk at Glen Canyon remains relevant.",
   },
   {
     name: "Policy / Security",
@@ -77,7 +77,7 @@ export const GWS_REGIONS = [
     level: "Severe structural stress / Confirmed allocation response",
     direction: "Worsening / policy transmission",
     transmission: "Water / hydropower / allocations",
-    body: "Federal 2027–2028 Lower Basin allocation reductions of about 1.25 million acre-feet a year, with potential for materially deeper later cuts. Lake Powell and Lake Mead are at record-low conditions, and Powell is approaching the minimum elevation needed for Glen Canyon Dam hydropower operation. This is confirmed allocation-policy transmission, not merely continuation of known drought.",
+    body: "Federal 2027–2028 Lower Basin allocation reductions of about 1.25 million acre-feet a year remain in force. As of the September 8 Reclamation weekly, Lake Powell was about 22% full (elevation about 3,517.6 feet) and Lake Mead about 26% (about 1,038.9 feet), with total system storage near 31%. Upper Basin officials agreed September 15 to continue Flaming Gorge emergency releases to protect Powell. This is confirmed structural shortage plus emergency adaptation, not recovery.",
   },
   {
     name: "Tigris / Euphrates",
@@ -116,8 +116,12 @@ export const GWS_WHAT_WATCHING = [
     body: "Whether the 2026 hydrologic improvement holds through the dry season, distinct from unchanged upstream dependence.",
   },
   {
-    title: "Colorado allocation follow-through",
-    body: "Whether 2027–2028 Lower Basin cuts of about 1.25 million acre-feet a year hold, deepen later, or are accompanied by hydropower constraint at Glen Canyon.",
+    title: "Colorado allocation follow-through and Powell protection",
+    body: "Whether 2027–2028 Lower Basin cuts hold, whether Flaming Gorge emergency releases keep Powell above critical hydropower elevations, and whether later cuts deepen.",
+  },
+  {
+    title: "Texas data-center water compliance",
+    body: "Whether reporting enforcement produces usable industrial-use data and interconnection discipline, or whether noncompliance and load growth outrun the gate.",
   },
   {
     title: "India monsoon realization",
@@ -199,9 +203,9 @@ export const GWS_SERIES: LedgerMonitorSeries = {
     },
     {
       reviewDate: "August 24, 2026",
-      evidenceCutoff: LEDGER_EVIDENCE_CUTOFF,
-      currentState: GWS_CURRENT_STATE,
-      currentDirection: GWS_CURRENT_DIRECTION,
+      evidenceCutoff: "August 24, 2026",
+      currentState: "High water stress / Multi-system transmission",
+      currentDirection: "Worsening / Policy transmission broadening",
       previousState: "High water stress / Multi-system transmission",
       materialChangeSummary:
         "Colorado River is now a material change since August 18: federal 2027–2028 Lower Basin allocation reductions of about 1.25 million acre-feet a year, with potential for deeper later cuts; Lake Powell and Lake Mead at record-low conditions; Powell approaching the minimum elevation needed for Glen Canyon Dam hydropower. Europe retains high seasonal stress with confirmed power/freight/agricultural transmission. Tigris/Euphrates remains materially improved / structurally vulnerable. Gulf desalination remains a strategic vulnerability, not a regional tap collapse. India remains watch/elevated seasonal risk. Water stays qualitative with no System Temperature weight.",
@@ -239,6 +243,60 @@ export const GWS_SERIES: LedgerMonitorSeries = {
           url: "https://www.bbc.com/news/articles/cqlxpq5q799o",
           supports:
             "European high seasonal water stress continuing to transmit into nuclear cooling, hydro, and Rhine freight; operators adapting",
+        },
+      ],
+    },
+    {
+      reviewDate: "September 16, 2026",
+      evidenceCutoff: LEDGER_EVIDENCE_CUTOFF,
+      currentState: GWS_CURRENT_STATE,
+      currentDirection: GWS_CURRENT_DIRECTION,
+      previousState: "High water stress / Multi-system transmission",
+      materialChangeSummary:
+        "Colorado remains a severe structural shortage: Reclamation’s September 8 weekly showed Powell about 22% full and Mead about 26%, with system storage near 31%. Upper Basin officials agreed September 15 to continue Flaming Gorge emergency releases to protect Powell. Texas is enforcing data-center water reporting — industrial-use transmission, not a municipal collapse. FAO August Food Price Index 133.3 is a cross-system food signal. Tigris–Euphrates remains the hydrologic counter-signal. Water stays qualitative with no System Temperature weight.",
+      methodologyVersion: LEDGER_METHODOLOGY_VERSION,
+      sources: [
+        {
+          institution: "U.S. Bureau of Reclamation",
+          title: "Lower Colorado Weekly Hydrologic Update",
+          date: "September 8, 2026 (reviewed September 16, 2026)",
+          url: "https://www.usbr.gov/lc/region/g4000/weekly.pdf",
+          supports:
+            "Lake Powell about 22% full at elevation 3,517.58 feet; Lake Mead about 26% at 1,038.93 feet; Colorado River total system contents about 31% of capacity",
+        },
+        {
+          institution: "The Colorado Sun",
+          title:
+            "Colorado River officials agree to more emergency water for Powell",
+          date: "September 15, 2026",
+          url: "https://coloradosun.com/2026/09/15/colorado-river-emergency-release-flaming-gorge-lake-powell/",
+          supports:
+            "Upper Basin officials agreed to continue Flaming Gorge emergency releases through April to protect Lake Powell — adaptation inside structural shortage, not recovery",
+        },
+        {
+          institution: "Reuters",
+          title: "Texas moves to penalize data centers for water violations",
+          date: "September 14, 2026 (reviewed September 16, 2026)",
+          url: "https://www.reuters.com/legal/litigation/texas-moves-penalize-data-centers-water-violations-2026-09-14/",
+          supports:
+            "Texas industrial-use water reporting enforcement for data centers; not a statewide municipal tap collapse",
+        },
+        {
+          institution: "FAO",
+          title: "Supply concerns drive FAO Food Price Index higher in August",
+          date: "September 4, 2026 (reviewed September 16, 2026)",
+          url: "https://www.fao.org/newsroom/detail/supply-concerns-drive-fao-food-price-index-higher/en",
+          supports:
+            "FAO Food Price Index 133.3 in August as a cross-system food/agriculture signal, not a sixth System Temperature weight",
+        },
+        {
+          institution: "Reuters",
+          title:
+            "World food prices at highest since 2022 as supply risks mount, FAO says",
+          date: "September 4, 2026 (reviewed September 16, 2026)",
+          url: "https://www.reuters.com/world/europe/world-food-prices-highest-since-2022-supply-risks-mount-fao-says-2026-09-04/",
+          supports:
+            "FAO index up from 130.8 in July, with weather, Middle East conflict, and Black Sea logistics among pressures",
         },
       ],
     },

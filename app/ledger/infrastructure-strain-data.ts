@@ -24,23 +24,23 @@ export const ISI_INTRO =
   "A weekly reading of the physical constraints beneath digital, economic, and industrial acceleration: power, transmission, transformers, data centers, water, skilled labor, semiconductors, and logistics. The purpose is not to predict failure. It is to track a capacity expansion race — where capital deploys quickly, buildout timing stays uneven, and flexibility narrows beneath functioning systems.";
 
 export const ISI_SUMMARY =
-  "Public infrastructure strain remains high and multi-regional, with active adaptation. New PJM H1 evidence confirms structural grid strain: transmission congestion costs about $6B (+43%), real-time wholesale power cost about $29.4B versus $20.4B, average wholesale about $72.54/MWh versus $51.75, and 500-kV operating-limit incidents materially higher. Data-center and other large-load growth remains part of structural demand pressure. Romania's Cernavoda remains shut because of historically low Danube water, with emergency measures to raise river levels; Hungary's Paks shows successful engineering adaptation and planned recovery. July emergency-order and World Cup language are not live drivers. Systems function; there is no synchronized grid failure.";
+  "Public infrastructure strain remains high and multi-regional, with active adaptation. EIA’s September 9 STEO forecasts record U.S. electricity sales of 4,135 billion kWh in 2026 and 4,211 billion kWh in 2027, driven in significant part by data-center development and manufacturing. Texas is enforcing data-center water reporting and had paused new data-center grid connections pending a power/water audit — gating load, not a grid failure. EIA lowered its West South Central sales path after that pause. Previously scored PJM congestion and European water-to-power effects remain in the picture. Energy shipping and refining constraints are counted on Global Pressure rather than added again here. Systems function; there is no synchronized grid failure.";
 
 export const ISI_WEEKLY_SIGNAL =
-  "The live U.S. evidence is now H1 congestion and wholesale-cost confirmation of structural grid strain, not expired July emergency orders. In Europe, Cernavoda remains shut on low Danube water while Paks demonstrates engineering adaptation. The interpretation contains both strain and adaptation. Internal System Temperature infrastructure holds high / partial.";
+  "The live U.S. evidence is now EIA record-demand confirmation plus Texas power/water gating of data centers. That is active adaptation under high strain, not expired July emergency orders and not a failing grid. Internal System Temperature infrastructure holds high / partial.";
 
 export const ISI_CATEGORIES = [
   {
     name: "Grid & Transmission",
     score: 87,
     state: "High",
-    body: "PJM H1 congestion costs about $6B (+43%) and wholesale power costs are materially higher, with 500-kV operating-limit incidents up sharply. Large-load growth remains a structural demand driver. European operators continue compensating through imports, alternate generation, and river engineering. Systems function; spare flexibility is narrower.",
+    body: "EIA forecasts record U.S. electricity sales in 2026 and 2027. Texas paused new data-center grid connections pending an audit and is enforcing water reporting. Previously scored PJM congestion remains structural. European operators continue compensating through imports, alternate generation, and river engineering. Systems function; spare flexibility is narrower.",
   },
   {
     name: "Data-Center Load",
     score: 90,
     state: "High",
-    body: "Large-load / data-center adaptation is now an explicit reliability problem: bring-your-own-capacity, registry, and proposed curtailment pathways for non-firm new loads.",
+    body: "Large-load / data-center adaptation is now an explicit reliability and resource problem: Texas interconnection pause and water-reporting enforcement sit beside previously identified bring-your-own-capacity, registry, and curtailment pathways. EIA still sees data centers as a significant driver of record national demand.",
   },
   {
     name: "Transformer Supply",
@@ -64,7 +64,7 @@ export const ISI_CATEGORIES = [
     name: "Water & Cooling",
     score: 82,
     state: "High",
-    body: "European river-level constraints are transmitting into nuclear cooling, hydro output, freight, and some municipal / agricultural restrictions. This is multi-regional operational strain, not a continental water-system collapse. Improving basins are tracked on the Water monitor.",
+    body: "Texas data-center water reporting is now an enforcement issue alongside European river-level constraints that transmit into nuclear cooling, hydro output, freight, and some municipal / agricultural restrictions. This is multi-regional operational strain, not a continental water-system collapse. Improving basins are tracked on the Water monitor.",
   },
 ] as const;
 
@@ -85,20 +85,20 @@ export const ISI_BENCHMARKS = [
 
 export const ISI_WHAT_WATCHING = [
   {
+    title: "Texas power/water gating",
+    body: "Whether the data-center interconnection pause and water-reporting enforcement remain adaptation gates, or whether load is re-admitted faster than supply and water plans can absorb.",
+  },
+  {
+    title: "EIA demand path versus Texas pause",
+    body: "Whether national record-demand forecasts hold even after EIA lowered the West South Central path, or whether other regions offset the Texas gate.",
+  },
+  {
     title: "PJM reliability actions",
     body: "Whether the 6,831 MW shortfall, reliability-backstop auction, and IRAS / large-load path advance, face challenge, or are revised.",
   },
   {
     title: "European river recovery or deterioration",
     body: "Whether Danube and Rhine levels, nuclear cooling, hydro output, and freight constraints ease seasonally or deepen.",
-  },
-  {
-    title: "Nuclear / hydro restoration",
-    body: "Whether affected units return as cooling water recovers, or whether output remains derated.",
-  },
-  {
-    title: "Bring-your-own-capacity contracting",
-    body: "Whether new data-center projects secure generation or demand-response arrangements fast enough to retain firmer service.",
   },
   {
     title: "Transformer manufacturing",
@@ -324,7 +324,7 @@ export const ISI_SERIES: LedgerMonitorSeries = {
     },
     {
       reviewDate: "August 24, 2026",
-      evidenceCutoff: LEDGER_EVIDENCE_CUTOFF,
+      evidenceCutoff: "August 24, 2026",
       currentState: "High infrastructure strain",
       currentDirection: "Active adaptation / Multi-regional constraints",
       previousState: "High infrastructure strain / Active adaptation",
@@ -355,6 +355,43 @@ export const ISI_SERIES: LedgerMonitorSeries = {
           url: "https://eutoday.net/romania-emergency-river-engineering-cernavoda-cooling/",
           supports:
             "Emergency measures to raise Danube levels for Cernavodă cooling; both reactors still shut as of the review window",
+        },
+      ],
+    },
+    {
+      reviewDate: "September 16, 2026",
+      evidenceCutoff: LEDGER_EVIDENCE_CUTOFF,
+      currentState: "High infrastructure strain",
+      currentDirection: "Active adaptation / Power-water co-constraint tightening",
+      previousState: "High infrastructure strain",
+      materialChangeSummary:
+        "Public state remains high strain with active adaptation. EIA’s September 9 STEO forecasts record U.S. electricity sales in 2026 and 2027, with data centers a significant driver; the Texas interconnection pause lowered the West South Central path. Texas is now enforcing data-center water reporting alongside the earlier grid-connection halt. That is load-gating under strain, not grid failure. Energy shipping/refining is counted on Global Pressure. Internal System Temperature infrastructure holds high / partial.",
+      methodologyVersion: LEDGER_METHODOLOGY_VERSION,
+      sources: [
+        {
+          institution: "U.S. Energy Information Administration",
+          title: "Short-Term Energy Outlook — September 2026",
+          date: "September 9, 2026 (reviewed September 16, 2026)",
+          url: "https://www.eia.gov/outlooks/steo/",
+          supports:
+            "Record U.S. electricity sales of 4,135 billion kWh in 2026 and 4,211 billion kWh in 2027; data-center and manufacturing demand; West South Central path lowered after the Texas data-center connection pause",
+        },
+        {
+          institution: "Reuters",
+          title: "Texas moves to penalize data centers for water violations",
+          date: "September 14, 2026 (reviewed September 16, 2026)",
+          url: "https://www.reuters.com/legal/litigation/texas-moves-penalize-data-centers-water-violations-2026-09-14/",
+          supports:
+            "Texas directed penalties for data-center water-reporting failures and had halted new data-center grid connections pending a power/water review",
+        },
+        {
+          institution: "Office of the Texas Governor",
+          title:
+            "Governor Abbott Directs TWDB To Penalize Data Center Reporting Failures",
+          date: "September 14, 2026 (reviewed September 16, 2026)",
+          url: "https://gov.texas.gov/news/post/governor-abbott-directs-twdb-to-penalize-data-center-reporting-failures",
+          supports:
+            "First-party directive to impose legal consequences for data-center water-survey noncompliance and to partner with ERCOT on the interconnection audit",
         },
       ],
     },

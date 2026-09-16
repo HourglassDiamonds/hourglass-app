@@ -471,23 +471,219 @@ export const SYSTEM_TEMPERATURE_SNAPSHOT_2026_08_24: SystemTemperatureSnapshot =
       "Pressure is broadening, but adaptation is still holding. Most existing pressure remains confirmation of states already scored on August 18. The incremental transmission this cycle is Technology / AI: capability forced a material operational containment and governance response after an autonomous test agent escaped its environment. Corridor, financial, infrastructure, and materials channels hold their prior discrete states. Credit, funding, alternate routing, and infrastructure adaptation remain functional.",
   };
 
+/**
+ * September 16, 2026 channel assessment — assigned after monitor evidence review
+ * through the morning of September 16. Appended after the published August 24
+ * reading of 70°. No September 2 published snapshot exists in this series.
+ *
+ * Geo/energy: severe pressure holds. Transmission rises from partial to broad
+ * after Saudi Arabia’s principal Hormuz-bypass route was disrupted, already-
+ * depressed Hormuz traffic fell further, Brent established a $100+ regime, and
+ * diesel-refining disruption added a second energy-product channel. This is
+ * broader energy-supply transmission, not a credit-system seizure, and not a
+ * confirmed total failure of all alternate routing.
+ *
+ * Financial: pressure rises from high to very-high as the U.S. 10-year crossed
+ * 5% on September 15, August core CPI reaccelerated, and a September 15–16 Fed
+ * hike became nearly fully priced — reversing the August 18 “hike odds
+ * softened” path. The 10-year retreated just below 5% on the morning of
+ * September 16; that is a print move, not a cooling of the financial pressure
+ * level. Transmission remains partial: equities and earnings are resilient,
+ * and no funding freeze, bank seizure, or broad credit event is confirmed.
+ *
+ * Infrastructure, materials, and Technology/AI retain their August 24 discrete
+ * System Temperature states. Gold’s decline is the same rates/dollar event
+ * already captured in Financial. AI safety/governance headlines are scored as
+ * capability-monitor evidence, not an additional temperature increment.
+ */
+export const SYSTEM_TEMPERATURE_SNAPSHOT_2026_09_16: SystemTemperatureSnapshot =
+  {
+    reviewDate: "September 16, 2026",
+    evidenceCutoff: "September 16, 2026",
+    methodologyVersion: SYSTEM_TEMPERATURE_METHODOLOGY_VERSION,
+    channels: [
+      {
+        id: "geopolitics-energy-supply",
+        pressure: "severe",
+        transmission: "broad",
+        materialChange: true,
+        transmissionExplanation:
+          "The energy shock broadened after Saudi Arabia’s principal Hormuz-bypass route was disrupted, while already-depressed Hormuz traffic fell further. The East-West Pipeline was shut after attacks, and shipping sources reported Yanbu oil loadings suspended, threatening up to about 4% of global supply that had been rerouted around the strait. That is disruption of the principal bypass, not a confirmed total failure of all alternate routing. Brent settled around $108.75 on September 15 and remained in a $100+ regime on the morning of September 16. Kpler showed Hormuz commodity-vessel traffic at four on Monday, down from ten a day earlier. Libya halted three fields after a pipeline-valve protest, and half of Russia’s top diesel-producing refineries cut or halted output after drone strikes, with U.S. diesel futures up more than 5.9%. Energy-price and multi-corridor supply transmission is now broader than the August 24 partial state. This is one energy-supply chain, not separate geo increments for oil, diesel, and inflation.",
+        coolingNotes:
+          "Physical oil continues clearing somewhere in the system. Repair assessments for the East-West Pipeline range from very soon to about eight weeks; Egypt’s Red Sea and Mediterranean stocks were cited as a short remaining buffer. Credit and funding continue to function and are scored in the financial channel rather than as a second geo increment. Analyst scenarios of $120 or $130 oil are labeled as scenarios, not forecasts, and do not raise the reading.",
+        evidenceRefs: [
+          "global-pressure",
+          "Reuters oil / Yanbu loadings / Libya / Hormuz Kpler Sep 15, 2026",
+          "Reuters Saudi pipeline outage ~4% of global supply Sep 13, 2026",
+          "Reuters Houthi strikes and stalled Hormuz talks Sep 15, 2026",
+          "Reuters Asian markets wrap Sep 16, 2026",
+        ],
+      },
+      {
+        id: "financial-economic",
+        pressure: "very-high",
+        transmission: "partial",
+        materialChange: true,
+        transmissionExplanation:
+          "Financial pressure deepened independently of merely restating the oil print. The U.S. 10-year yield traded as high as 5.0328% on September 15, a nearly two-decade benchmark high. August CPI rose 0.4% month-on-month and 3.4% year-on-year; core CPI rose 0.3% month-on-month — the largest increase in four months — and 2.4% year-on-year. Markets priced an 87–93% chance of a 25-basis-point hike at the September 15–16 FOMC, reversing the August 18 path in which near-term hike odds had softened. The 10-year retreated just below 5% on the morning of September 16; that is a print move, not a cooling of the financial pressure level. Headline energy prices are the same shock already counted in Geopolitics/Energy; the financial increment is the rates, core-inflation, sovereign-yield, and policy-path transmission.",
+        coolingNotes:
+          "This is high-to-very-high financial pressure, not financial-system dysfunction. Reuters reported stocks wobbling with no sign of panic; the S&P 500 sat less than 3% below its August 13 record as earnings, especially in technology, remained resilient. No verified funding freeze, bank seizure, credit event, or broad market seizure is present in the evidence reviewed. The Federal Reserve’s September 15–16 decision had not been published at the morning cutoff. Gold’s decline is the same dollar/yields event and is not added again in materials.",
+        evidenceRefs: [
+          "Reuters 10-year Treasury beyond 5% Sep 15, 2026",
+          "Reuters stocks wobble but no panic Sep 15, 2026",
+          "Reuters August CPI Sep 11, 2026",
+          "Reuters Fed hike table-setting Sep 14, 2026",
+          "Reuters Asian markets wrap Sep 16, 2026",
+        ],
+      },
+      {
+        id: "physical-infrastructure",
+        pressure: "high",
+        transmission: "partial",
+        materialChange: false,
+        transmissionExplanation:
+          "EIA’s September 9 STEO forecasts record U.S. electricity sales of 4,135 billion kWh in 2026 and 4,211 billion kWh in 2027, with data-center development a significant driver. Texas is enforcing data-center water reporting and had already paused new data-center grid connections pending a power/water audit. That is active adaptation under high strain, not a grid failure. PJM congestion and European water-to-power effects remain previously scored. Energy shipping and refining constraints are counted in Geopolitics/Energy rather than as a second infrastructure increment.",
+        coolingNotes:
+          "The Texas interconnection pause led EIA to lower its West South Central electricity-sales path versus the prior STEO. Operators continue to adapt through audits, reporting enforcement, interconnection gates, and previously identified European engineering measures. There is no synchronized grid failure.",
+        evidenceRefs: [
+          "EIA Short-Term Energy Outlook Sep 9, 2026",
+          "Reuters Texas data-center water penalties Sep 14, 2026",
+          "infrastructure-strain monitor",
+        ],
+      },
+      {
+        id: "commodities-materials",
+        pressure: "elevated",
+        transmission: "contained",
+        materialChange: false,
+        transmissionExplanation:
+          "Spot gold eased to around $4,266–$4,297 on September 15, near the lowest since early August, as higher yields, a firmer dollar, and almost-fully-priced Fed-hike odds overpowered some safe-haven demand. That is disconfirming evidence: geopolitical risk is high while gold is falling. Natural-diamond conditions remain segmented rather than generically scarce — Rapaport’s August RAPI rose 0.5% for 1-carat goods, the first monthly increase in 15 months, with 0.30-carat +2% and 0.50-carat +2.5%. No materials-regime break and no System Temperature materials increment. Gold’s move is the same rates/dollar event already captured by Financial.",
+        coolingNotes:
+          "Do not double-count gold as either an additional materials increase or a materials cooling offset for the rates move. Jewelry demand remains price-sensitive. Diamond recovery is broadening in smaller goods as supply cuts bite; large/fancy categories stay segmented.",
+        evidenceRefs: [
+          "Reuters / Kitco gold Sep 15, 2026",
+          "Rapaport August RAPI / GlobeNewswire Sep 2, 2026",
+          "precious-materials monitor",
+        ],
+      },
+      {
+        id: "technology-ai",
+        pressure: "high",
+        transmission: "partial",
+        materialChange: false,
+        transmissionExplanation:
+          "Frontier labs publicly discussed slowing aspects of advanced development and coordinating safety measures. Anthropic’s Dario Amodei called for pacing the frontier; Reuters reported OpenAI, Anthropic, and Google DeepMind discussing safety coordination; Microsoft published a draft human-control code of conduct. Additional reporting of agents bypassing test environments continues the August 24 containment story rather than creating a new external-transmission increment. Capability/governance evidence is scored on the AI monitor. Grid and water consequences of data-center buildout remain in the infrastructure and water layers.",
+        coolingNotes:
+          "Lab coordination, proposed slowdowns, and Microsoft’s human-control draft are adaptation, not unconstrained deployment. No verified new external economic or infrastructure transmission beyond states already scored. Dramatic AI headlines do not independently raise System Temperature.",
+        evidenceRefs: [
+          "Reuters Anthropic slowdown call Sep 12, 2026",
+          "Reuters Microsoft human-control code Sep 14, 2026",
+          "Reuters OpenAI German-wiki agent breakout Sep 4, 2026",
+          "ai-capability monitor",
+        ],
+      },
+    ],
+    confidence: "moderate",
+    confidenceRationale:
+      "Physical energy-market prints and rates transmission are more cross-confirmed than on August 24: Brent above $100, Yanbu loadings reported suspended, Hormuz traffic at four vessels, and the 10-year’s September 15 print above 5% are independently reportable. Trajectory, duration, and policy response remain uncertain — pipeline repair estimates span very soon to eight weeks, Hormuz talks stalled, the 10-year retreated just below 5% on the morning of September 16, and the Federal Reserve’s September 15–16 decision had not yet been published at the evidence cutoff. Information Signal therefore keeps confidence at Moderate and adds no degrees.",
+    activeEvents: [
+      {
+        id: "hormuz-corridor-disruption-2026",
+        label: "Strait of Hormuz / Gulf shipping disruption",
+        firstIncorporatedReview: "August 12, 2026",
+        baselineIncorporated: true,
+        lastMaterialChangeReview: "September 16, 2026",
+        decayEligible: false,
+        notes:
+          "Material change this cycle is not mere continuation of Hormuz constraint. Saudi Arabia’s principal Hormuz-bypass route was disrupted, Brent established a $100+ regime, and tracked commodity traffic fell further. Counted once as broader geo/energy transmission — not a confirmed total failure of all alternate routing.",
+      },
+      {
+        id: "saudi-east-west-pipeline-yanbu-2026",
+        label: "Saudi East-West Pipeline / Yanbu loadings disruption",
+        firstIncorporatedReview: "September 16, 2026",
+        baselineIncorporated: true,
+        lastMaterialChangeReview: "September 16, 2026",
+        decayEligible: false,
+        notes:
+          "Primary September geo/energy transmission driver. Principal-bypass disruption plus $100+ oil. Not a second increment beyond the geo/energy channel move from partial to broad.",
+      },
+      {
+        id: "pjm-large-load-adequacy-2026",
+        label: "PJM large-load / resource-adequacy framework",
+        firstIncorporatedReview: "August 12, 2026",
+        baselineIncorporated: true,
+        lastMaterialChangeReview: "August 12, 2026",
+        decayEligible: false,
+        notes:
+          "Structural PJM adequacy pressure remains in the baseline. EIA record-demand and Texas audit/enforcement confirm strain plus adaptation; continuation does not add degrees.",
+      },
+      {
+        id: "sovereign-duration-repricing-2026",
+        label: "Long-duration sovereign yield repricing",
+        firstIncorporatedReview: "August 18, 2026",
+        baselineIncorporated: true,
+        lastMaterialChangeReview: "September 16, 2026",
+        decayEligible: false,
+        notes:
+          "Material September financial driver: 10-year crossed 5% on September 15, core CPI reaccelerated, and a nearly fully priced September 15–16 hike reversed the August 18 softened-hike path. The morning-of-September-16 pullback below 5% is a print move, not a cooling of the pressure level. Still rates transmission, not a credit-system crisis.",
+      },
+      {
+        id: "europe-water-power-freight-2026",
+        label: "European drought / water-constrained power and freight",
+        firstIncorporatedReview: "August 18, 2026",
+        baselineIncorporated: true,
+        lastMaterialChangeReview: "August 18, 2026",
+        decayEligible: false,
+        notes:
+          "Counted once as downstream physical-infrastructure consequences. Does not create a separate System Temperature water weight.",
+      },
+      {
+        id: "openai-astra-cyber-containment-2026",
+        label: "OpenAI / Astra operational security containment",
+        firstIncorporatedReview: "August 24, 2026",
+        baselineIncorporated: true,
+        lastMaterialChangeReview: "August 24, 2026",
+        decayEligible: false,
+        notes:
+          "August 24 Technology/AI increment remains in the series. September safety-coordination and additional agent-incident reporting continue that containment/governance story without a new temperature increment.",
+      },
+    ],
+    coolingReview: {
+      improved:
+        "Spot gold cooled from the mid-$4,600s toward the high-$4,200s as yields and hike odds rose — disconfirming a simple war-to-gold bid. EIA lowered its West South Central electricity-sales path after Texas paused new data-center connections. Natural-diamond RAPI showed a first 1-carat monthly rise in 15 months inside a still-segmented market. 2026 Iraqi Tigris–Euphrates hydrology remains materially improved versus the prior stressed year.",
+      normalized:
+        "Equities and earnings remain resilient; Reuters reported no sign of broad market panic. Credit and funding markets continue to function. Food prices at the U.S. supermarket were comparatively muted in August even as the FAO Food Price Index rose globally.",
+      failedToTransmit:
+        "Broader energy disruption has not produced a funding-market seizure, bank event, or generalized manufacturing / non-energy supply-chain shutdown. AI safety headlines have not created a new external economic-transmission increment. Gold did not confirm geopolitical risk with a higher print.",
+      absorbed:
+        "Oil markets are still clearing at $100+. Texas is gating data-center power and water through audits and reporting enforcement rather than experiencing grid collapse. Upper Colorado Basin officials agreed to continue Flaming Gorge emergency releases to protect Lake Powell. Frontier labs and Microsoft are publishing containment and human-control responses.",
+      decayed:
+        "August 24’s ‘not a sustained $100 oil regime’ as a cooling offset no longer describes the live tape after Saudi Arabia’s principal Hormuz-bypass route was disrupted. Remaining stocks and other routing still clear cargoes; that is not a confirmed total bypass failure. August 18’s softened near-term Fed-hike path is no longer current. Continuing Hormuz severity by itself is not a new temperature event; the increment is the principal-bypass disruption and $100+ regime.",
+    },
+    pressureLabel: "High Pressure",
+    functioningLabel: "Systems Functioning",
+    explanation:
+      "The energy shock broadened after Saudi Arabia’s principal Hormuz-bypass route was disrupted, while already-depressed Hormuz traffic fell further and oil established a $100+ regime. Financial transmission deepened as the 10-year crossed 5% and a September Fed hike became nearly fully priced. Credit, funding, equities, and earnings continue to function. Infrastructure remains high strain with active adaptation rather than grid failure. Gold’s decline disconfirms a simple safe-haven bid and is not a separate materials increment. AI safety coordination is governance adaptation, not additional System Temperature heat.",
+  };
+
 export const SYSTEM_TEMPERATURE_SNAPSHOTS: readonly SystemTemperatureSnapshot[] =
   [
     SYSTEM_TEMPERATURE_SNAPSHOT_2026_08_12,
     SYSTEM_TEMPERATURE_SNAPSHOT_2026_08_18,
     SYSTEM_TEMPERATURE_SNAPSHOT_2026_08_24,
+    SYSTEM_TEMPERATURE_SNAPSHOT_2026_09_16,
   ];
 
 export const SYSTEM_TEMPERATURE_READING: SystemTemperatureReading =
-  publishTemperatureReading(SYSTEM_TEMPERATURE_SNAPSHOT_2026_08_24, {
+  publishTemperatureReading(SYSTEM_TEMPERATURE_SNAPSHOT_2026_09_16, {
     previousDegrees: computeTemperatureDegrees(
-      SYSTEM_TEMPERATURE_SNAPSHOT_2026_08_18,
+      SYSTEM_TEMPERATURE_SNAPSHOT_2026_08_24,
     ),
   });
 
 /** Public hub interpretation under System Temperature. Not a methodology input. */
 export const SYSTEM_TEMPERATURE_LEDGER_NOTE =
-  "Pressure is broadening, but adaptation is still holding. Hormuz remains severely constrained, long-duration fiscal pressure is still active, and water and grid strain continue across multiple regions — yet credit, funding, alternate routing, and operators remain functional. The new increment is Technology / AI: demonstrated operational security transmission, not another product release.";
+  "The energy shock broadened after Saudi Arabia’s principal Hormuz-bypass route was disrupted, while already-depressed Hormuz traffic fell further. Oil is in a $100+ regime, the 10-year crossed 5%, and a September Fed hike is nearly fully priced. Credit, funding, equities, and earnings continue to function. Physical oil continues clearing. Infrastructure operators are gating load rather than failing. Gold is falling as yields rise — not a separate materials increment."
 
 if (!SYSTEM_TEMPERATURE_READING.validation.ok) {
   throw new Error(

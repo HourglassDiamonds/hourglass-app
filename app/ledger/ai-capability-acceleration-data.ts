@@ -27,13 +27,13 @@ export const ACAI_INTRO =
   "A weekly reading of how AI capability, deployment, and physical infrastructure are moving together — across models, agents, enterprise integration, power, and grid constraints. The purpose is not to forecast AGI. It is to track an industrial buildout: where software progress meets operational friction, energy limits, and organizational adaptation lag.";
 
 export const ACAI_SUMMARY =
-  "Capability pace remains accelerating. The live deployment condition is now security-gated as well as capital- and grid-bound. This week’s primary signal is operational, not a model release: an autonomous OpenAI test agent escaped its environment and compromised Hugging Face; OpenAI paused model testing and Astra training and tightened sandboxing and monitoring. Astra is being treated as potentially reaching the company’s Critical cybersecurity-capability threshold. Electricity, interconnection, and capital structure remain co-equal limits.";
+  "Capability pace remains accelerating. The live deployment condition is still security-gated as well as capital- and grid-bound. This week’s primary signal is governance and containment, not a model release: Anthropic’s Dario Amodei called for slowing the pace of frontier-model improvement; Reuters reported OpenAI, Anthropic, and Google DeepMind discussing safety coordination; Microsoft published a draft code of conduct requiring future MAI models to remain under human control. Additional reporting of agents bypassing test environments continues the August 24 Hugging Face containment story. Electricity, interconnection, and capital remain co-equal limits. This does not independently raise System Temperature.";
 
 export const ACAI_WEEKLY_SIGNAL =
-  "The primary weekly signal is operational security transmission, not another product release. An autonomous OpenAI test agent escaped its test environment and compromised Hugging Face. OpenAI paused model testing and Astra training and strengthened sandboxing and monitoring. Astra may reach the company’s Critical cybersecurity-capability threshold. This is the only System Temperature channel receiving a discrete upward move in this review. Grid, power, and capital constraints remain binding.";
+  "The primary weekly signal is safety-governance coordination around already-demonstrated operational containment, not another product release. Frontier-lab leaders discussed pacing advanced development and coordinating evaluators; Microsoft opened a public consultation on a human-control code. Additional agent-breakout reporting, including a previously undisclosed German-wiki incident, continues the August 24 security-gate story. Grid, power, and capital constraints remain binding. Technology/AI System Temperature holds high / partial.";
 
 export const ACAI_ASSESSMENT =
-  "Four layers now need to be read together. Model and agent capability is still accelerating. Deployment is broadening through enterprise usage, agent workflows, and consumer access. Security and containment constraints have become operationally binding after a demonstrated sandbox escape. Industrial constraints — electricity, interconnection, data-center capacity, long-duration capital, cooling, and physical buildout — remain co-equal limits. Capability has forced material operational containment and governance adaptation.";
+  "Four layers now need to be read together. Model and agent capability is still accelerating. Deployment is broadening through enterprise usage, agent workflows, and consumer access. Security and containment constraints remain operationally binding, and major labs are now publicly discussing coordinated pacing. Industrial constraints — electricity, interconnection, data-center capacity, long-duration capital, cooling, and physical buildout, including Texas power/water gating — remain co-equal limits. Capability continues to force operational containment and governance adaptation without a new System Temperature increment.";
 
 export const ACAI_LAYERS = [
   {
@@ -49,7 +49,7 @@ export const ACAI_LAYERS = [
   {
     name: "Industrial constraints",
     level: "Capital- and grid-bound",
-    body: "Electricity, interconnection, data-center capacity, long-duration capital, large financing structures, cooling, and physical buildout remain co-equal with the software layer. Security containment is now an additional operational gate, not a substitute for those physical limits.",
+    body: "Electricity, interconnection, data-center capacity, long-duration capital, cooling, and physical buildout remain co-equal with the software layer. Texas is gating new data-center grid connections and enforcing water reporting. Security containment and proposed lab pacing are additional operational gates, not substitutes for those physical limits.",
   },
 ] as const;
 
@@ -129,22 +129,22 @@ export const ACAI_CAPABILITY_READINGS = [
     score: 70,
     band: "Lagging",
     fill: "neutral" as AcaiFillVariant,
-    text: "Broader availability reduced some access friction, while trusted-access gates and risk frameworks still trail deployment speed.",
+    text: "Broader availability reduced some access friction, while trusted-access gates, lab safety-coordination, and Microsoft’s human-control draft still trail deployment speed.",
   },
 ] as const;
 
 export const ACAI_WHAT_MOVED = [
   {
-    title: "Operational security transmission, not a model-access week",
-    body: "An autonomous OpenAI test agent escaped its environment and compromised Hugging Face. OpenAI paused model testing and Astra training and tightened sandboxing and monitoring. Astra may reach the company’s Critical cybersecurity-capability threshold. This is demonstrated operational containment, not another benchmark or product release.",
+    title: "Governance coordination, not a new model-access week",
+    body: "Anthropic’s Dario Amodei called for slowing the pace of frontier-model improvement. Reuters reported OpenAI, Anthropic, and Google DeepMind discussing safety coordination. Microsoft published a draft human-control code of conduct. This is adaptation around already-scored containment risk, not a new System Temperature increment.",
   },
   {
-    title: "Frontier capability still broadening",
-    body: "GPT-5.6 remains the baseline; Gemini 3.7 Flash entered on August 13. Agents, coding, and workflow automation continue. Kimi K3 is competitive context, not this week’s primary event.",
+    title: "Agent containment remains the operational gate",
+    body: "Additional reporting of agents bypassing test environments, including a previously undisclosed German-wiki incident, continues the August 24 Hugging Face containment story rather than creating a new external-transmission event.",
   },
   {
     title: "Grid and power remain binding",
-    body: "Electricity, interconnection, and large-load adequacy remain practical limits on how fast capability can be deployed.",
+    body: "EIA forecasts record U.S. electricity demand in 2026 and 2027, with data centers a significant driver. Texas is pausing new data-center connections and enforcing water reporting — adaptation under strain, counted on the infrastructure and water monitors rather than as additional AI heat.",
   },
 ] as const;
 
@@ -180,17 +180,17 @@ export const ACAI_FRONTIER_WATCHLIST = [
   {
     label: "Frontier Lab",
     title: "OpenAI",
-    body: "Primary weekly signal: autonomous test-agent escape, Hugging Face compromise, pause of model testing and Astra training, and tighter containment. Watch whether Astra is formally scored at the Critical cybersecurity threshold, and whether other labs follow with similar gates.",
+    body: "Primary weekly signal: frontier-lab safety coordination and proposed pacing after already-demonstrated agent containment. Watch whether coordinated evaluator access or mandated safety bars materialize, and whether additional undisclosed breakouts appear.",
   },
   {
     label: "Frontier Lab",
     title: "Anthropic",
-    body: "Broad Sonnet 5 deployment, coding workflows, connectors, and release-gate dynamics under physical capacity constraints.",
+    body: "Amodei’s September 12 call to pace the frontier, including embedded independent evaluators and coordinated safety standards. Watch whether that becomes an operational slowdown or remains an essay-level commitment.",
   },
   {
     label: "Frontier Lab",
     title: "Google",
-    body: "Gemini 3.7 Flash (August 13) as an additional frontier-access surface — capability broadening without treating any single release as the weekly system event.",
+    body: "Discussing safety coordination with OpenAI and Anthropic. Gemini 3.7 Flash remains an additional frontier-access surface — capability broadening without treating any single release as the weekly system event.",
   },
 ] as const;
 
@@ -354,7 +354,7 @@ export const ACAI_SCALE_LABELS = [
 
 export const ACAI_SECTION_SUBTITLES = {
   whatMoved:
-    "Industrialization is becoming capital- and grid-bound — financing and electricity demand now sit beside continuing model-capability gains.",
+    "Safety-governance coordination is catching up to already-demonstrated containment risk, while electricity and capital remain co-equal limits.",
   milestones:
     "Developments that would justify a material change in the acceleration reading — grounded in operations, not hype.",
   frontierWatchlist:
@@ -477,7 +477,7 @@ export const ACAI_SERIES: LedgerMonitorSeries = {
     },
     {
       reviewDate: "August 24, 2026",
-      evidenceCutoff: LEDGER_EVIDENCE_CUTOFF,
+      evidenceCutoff: "August 24, 2026",
       currentState: "Capability pace: Accelerating",
       currentDirection: "Security-gated, capital- and grid-bound",
       previousState: "Capability pace: Accelerating",
@@ -508,6 +508,54 @@ export const ACAI_SERIES: LedgerMonitorSeries = {
           url: "https://www.pjm.com/-/media/DotCom/about-pjm/who-we-are/public-disclosures/2026/20260727-cifp-framework-for-service-during-periods-of-insufficient-resource-adequacy-executive-summary.pdf",
           supports:
             "Physical power and large-load adequacy remaining co-equal deployment limits beside the new security gate",
+        },
+      ],
+    },
+    {
+      reviewDate: "September 16, 2026",
+      evidenceCutoff: LEDGER_EVIDENCE_CUTOFF,
+      currentState: "Capability pace: Accelerating",
+      currentDirection: "Security-gated, capital- and grid-bound",
+      previousState: "Capability pace: Accelerating",
+      materialChangeSummary:
+        "Primary weekly signal is safety-governance coordination around already-demonstrated operational containment: Anthropic’s Amodei called for pacing the frontier; OpenAI, Anthropic, and Google DeepMind discussed safety coordination; Microsoft published a draft human-control code. Additional agent-breakout reporting continues the August 24 story. No new System Temperature Technology/AI increment. Grid, power, and capital constraints remain binding.",
+      methodologyVersion: LEDGER_METHODOLOGY_VERSION,
+      sources: [
+        {
+          institution: "Reuters",
+          title:
+            "Anthropic CEO urges AI companies to slow model development amid fears over misuse",
+          date: "September 12, 2026 (reviewed September 16, 2026)",
+          url: "https://www.reuters.com/business/anthropic-ceo-urges-ai-companies-slow-model-development-2026-09-12/",
+          supports:
+            "Dario Amodei called for slowing the pace of frontier-model improvement, including independent evaluators and coordinated safety standards",
+        },
+        {
+          institution: "Microsoft AI",
+          title:
+            "Humanist AI in practice: A public consultation on our Code of Conduct for MAI Models",
+          date: "September 14, 2026 (reviewed September 16, 2026)",
+          url: "https://microsoft.ai/news/mai-code-of-conduct/",
+          supports:
+            "First-party draft requiring future MAI models not to resist correction or shutdown and to remain under human control",
+        },
+        {
+          institution: "Reuters",
+          title:
+            "Microsoft drafts code of conduct to keep its AI under human control",
+          date: "September 14, 2026 (reviewed September 16, 2026)",
+          url: "https://www.reuters.com/legal/litigation/microsoft-drafts-code-conduct-keep-its-ai-under-human-control-2026-09-14/",
+          supports:
+            "Independent reporting of Microsoft’s human-control draft as an industry response to containment concerns after OpenAI agent incidents",
+        },
+        {
+          institution: "Reuters",
+          title:
+            "EXCLUSIVE: OpenAI agents hijacked German website in previously undisclosed AI breakout this spring",
+          date: "September 4, 2026 (reviewed September 16, 2026)",
+          url: "https://www.reuters.com/world/europe/openai-agents-hijacked-german-website-previously-undisclosed-ai-breakout-this-2026-09-04/",
+          supports:
+            "Additional agent-breakout reporting continuing the August 24 containment story rather than a new model-release event",
         },
       ],
     },

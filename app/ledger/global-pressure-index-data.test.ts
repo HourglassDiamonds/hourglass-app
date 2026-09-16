@@ -41,7 +41,7 @@ describe("Global Pressure Index weighted reading (archived numerical series)", (
     assert.equal(gpi.displayTitle, GPM_DISPLAY_TITLE);
     assert.equal(
       gpi.status,
-      "Very high external pressure / Cross-system transmission emerging",
+      "Very high external pressure / Broader energy transmission",
     );
     assert.equal(gpi.updatedLabel, "");
     assert.doesNotMatch(gpi.updatedLabel, /updated weekly/i);
@@ -55,11 +55,11 @@ describe("Global Pressure Monitor interim copy", () => {
   it("states qualitative status without a published temperature", () => {
     assert.equal(
       GPM_CURRENT_STATE,
-      "Very high external pressure / Cross-system transmission emerging",
+      "Very high external pressure / Broader energy transmission",
     );
     assert.equal(
       GPM_CURRENT_DIRECTION,
-      "Escalating corridor coercion / Adaptation still limiting broader failure",
+      "Energy disruption broadening / Adaptation still limiting systemic failure",
     );
     assert.match(GPM_LEAD, /credit|function/i);
     assert.match(GPM_LEAD, /130/);
@@ -67,8 +67,9 @@ describe("Global Pressure Monitor interim copy", () => {
     assert.doesNotMatch(GPM_INTRO, /System Temperature/i);
     assert.doesNotMatch(GPM_INTRO, /interim|methodology revision/i);
     assert.match(GPM_METHODOLOGY_NOTICE, /System Temperature/);
-    assert.match(GPM_WHAT_CHANGED, /August 18 review/i);
+    assert.match(GPM_WHAT_CHANGED, /August 24 review/i);
     assert.equal(GPM_SNAPSHOT.evidenceCutoff, LEDGER_EVIDENCE_CUTOFF);
+    assert.equal(GPM_SNAPSHOT.reviewDate, "September 16, 2026");
     assert.ok(
       GPM_SNAPSHOT.sources.some((source) =>
         source.institution.includes("Reuters") || source.institution === "The National",
@@ -79,5 +80,27 @@ describe("Global Pressure Monitor interim copy", () => {
         source.institution.includes("Energy Information Administration"),
       ),
     );
+  });
+
+  it("appends September 16 after preserved August snapshots", async () => {
+    const { GPM_SERIES } = await import("./global-pressure-monitor-data");
+    assert.equal(GPM_SERIES.snapshots.length, 5);
+    assert.equal(GPM_SERIES.snapshots[0]?.reviewDate, "August 3, 2026");
+    assert.equal(GPM_SERIES.snapshots[1]?.reviewDate, "August 12, 2026");
+    assert.equal(GPM_SERIES.snapshots[2]?.reviewDate, "August 18, 2026");
+    assert.equal(GPM_SERIES.snapshots[3]?.reviewDate, "August 24, 2026");
+    assert.equal(GPM_SERIES.snapshots[4]?.reviewDate, "September 16, 2026");
+    assert.equal(GPM_SERIES.snapshots[3]?.evidenceCutoff, "August 24, 2026");
+  });
+
+  it("requires authoritative source cards on the current snapshot", () => {
+    assert.ok(GPM_SNAPSHOT.sources.length >= 3);
+    for (const source of GPM_SNAPSHOT.sources) {
+      assert.ok(source.institution.trim());
+      assert.ok(source.title.trim());
+      assert.ok(source.date.trim());
+      assert.ok(source.supports.trim());
+    }
+    assert.ok(GPM_SNAPSHOT.sources.every((source) => source.url));
   });
 });

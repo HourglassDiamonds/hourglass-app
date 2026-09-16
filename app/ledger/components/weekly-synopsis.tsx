@@ -1,19 +1,19 @@
 export const WEEKLY_SYNOPSIS = {
   eyebrow: "Weekly Synopsis",
   headline:
-    "Pressure is broadening, but adaptation is still holding.",
+    "Energy disruption broadens as financial transmission deepens.",
   blocks: [
     {
       title: "What changed",
-      body: "Evidence reviewed through August 24, 2026. Hormuz remains severely constrained. Brent is now above $92 but has not established a sustained $100 regime. Long-duration sovereign and fiscal pressure remains active. Treasury expanded long-bond buybacks, relieving some yield pressure while shifting concern toward the dollar/fiscal-confidence channel. PJM congestion confirms structural grid strain. European water stress continues to affect power and freight. Colorado River stress has produced material allocation-policy action. AI capability has produced a new operational containment/security event. Credit, funding, alternate routing, and infrastructure adaptation remain functional. System Temperature is 70°, High, Systems Functioning, Confidence Moderate — +1° from the August 18 production reading of 69°.",
+      body: "Evidence reviewed through September 16, 2026. The energy shock broadened after Saudi Arabia’s principal Hormuz-bypass route was disrupted, while already-depressed Hormuz traffic fell further. Brent established a $100+ regime around $108. Hormuz commodity traffic printed four vessels. The U.S. 10-year crossed 5% on September 15 and a September 15–16 Fed hike became nearly fully priced; the 10-year retreated just below 5% on the morning of September 16 without reversing that financial pressure. EIA forecasts record electricity demand; Texas is gating data-center power and water. Gold fell toward the high-$4,200s. Credit, funding, equities, and earnings continue to function. Physical oil continues clearing. System Temperature is 74°, High, Systems Functioning, Confidence Moderate — +4° from the August 24 published reading of 70°.",
     },
     {
       title: "Why temperature rose — and why not more",
-      body: "Most existing pressure remains confirmation of states already scored on August 18. Geo/energy, financial, and infrastructure retain their existing discrete System Temperature states. The incremental transmission this cycle is Technology / AI: demonstrated operational security transmission after an autonomous test agent escaped its environment. Continuing Hormuz severity, continuing water/grid stress, and gold’s move with the same Treasury/dollar event do not add further degrees.",
+      body: "Geo/energy moved from severe/partial to severe/broad after Saudi Arabia’s principal Hormuz-bypass route was disrupted and oil established a $100+ regime. Financial pressure moved from high/partial to very-high/partial as the 10-year crossed 5% and hike odds reversed the August 18 path. Infrastructure, materials, and Technology/AI hold their August 24 discrete states. What kept the reading from moving higher: functioning credit and funding, resilient equities and earnings, physical oil still clearing, Texas load-gating rather than grid failure, and gold’s decline as a rates disconfirmation rather than a materials increment.",
     },
     {
       title: "What to watch next",
-      body: "Whether Brent holds above $92 and approaches a sustained $100 regime. Independently trackable Hormuz transit versus official recovered-flow claims. Durability of Treasury long-bond buybacks as liquidity support versus fiscal/dollar concern. PJM congestion and Danube nuclear-cooling adaptation. Colorado allocation follow-through and Glen Canyon hydropower elevation. Whether Astra is formally scored at OpenAI’s Critical cybersecurity threshold, and whether other labs impose similar gates.",
+      body: "Whether the principal East-West Pipeline / Yanbu route resumes on a days-to-weeks timeline. Independently trackable Hormuz transit versus a deeper single-digit print. Whether the 10-year holds near 5% after the September Fed decision. Texas data-center water/power compliance versus re-admission of load. Colorado Powell protection via Flaming Gorge releases. Whether lab safety-coordination becomes an operational slowdown or remains a statement.",
     },
   ],
 } as const;

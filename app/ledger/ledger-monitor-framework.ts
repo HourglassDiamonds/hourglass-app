@@ -9,7 +9,7 @@
 export const LEDGER_METHODOLOGY_VERSION = "qualitative-v1";
 
 /** Shared evidence cutoff for the current public review cycle. */
-export const LEDGER_EVIDENCE_CUTOFF = "August 24, 2026";
+export const LEDGER_EVIDENCE_CUTOFF = "September 16, 2026";
 
 export const LEDGER_EVIDENCE_CUTOFF_LABEL = `Evidence reviewed through ${LEDGER_EVIDENCE_CUTOFF}`;
 

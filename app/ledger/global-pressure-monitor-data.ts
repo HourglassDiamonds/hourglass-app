@@ -19,7 +19,7 @@ export const GPM_SEO_DESCRIPTION =
   "Hourglass Ledger Global Pressure Monitor — qualitative status of external threat pressure and systemic transmission.";
 
 export const GPM_HUB_DESCRIPTION =
-  "Very high external pressure / Cross-system transmission emerging — energy transmission is material, while broad systemic financial transmission is not confirmed and adaptation still limits broader failure.";
+  "Very high external pressure / Broader energy transmission — Saudi Arabia’s principal Hormuz-bypass route is disrupted and oil is in a $100+ regime, while credit, funding, and equities continue to function.";
 
 export const GPM_KICKER = "The Ledger Intelligence System";
 
@@ -29,40 +29,40 @@ export const GPM_INTRO =
 export const GPM_CURRENT_STATE_LABEL = "Current State";
 
 export const GPM_CURRENT_STATE =
-  "Very high external pressure / Cross-system transmission emerging";
+  "Very high external pressure / Broader energy transmission";
 
 export const GPM_CURRENT_DIRECTION_LABEL = "Current Direction";
 
 export const GPM_CURRENT_DIRECTION =
-  "Escalating corridor coercion / Adaptation still limiting broader failure";
+  "Energy disruption broadening / Adaptation still limiting systemic failure";
 
 export const GPM_LEAD =
-  "Hormuz remains severely constrained. Tracked commodity-vessel crossings stayed below 20 over the weekend, versus roughly 130–140 daily before the conflict, and UKMTO AIS traffic is still about 90% below pre-conflict levels. Iran has blacklisted 45 tankers, warning of fines, detention or cargo confiscation, and new U.S. sanctions pressure entered the cycle. Brent traded around $92–93 during the August 24 review — above $92, but not a sustained $100 regime. Alternative routing remains functional. Energy-price transmission is material; credit and funding markets continue to function, and broad systemic financial transmission is not confirmed.";
+  "The energy shock broadened after Saudi Arabia’s principal Hormuz-bypass route was disrupted, while already-depressed Hormuz traffic fell further. The East-West Pipeline was shut after attacks, and shipping sources reported oil loadings at Yanbu suspended. That is disruption of the principal bypass, not a confirmed total failure of all alternate routing. Kpler showed Hormuz commodity-vessel traffic at four on Monday, versus roughly 130–140 daily before the conflict. Brent settled around $108.75 on September 15 and remained in a $100+ regime on the morning of September 16. Libya halted three fields after a pipeline-valve protest. Half of Russia’s top diesel-producing refineries cut or halted output after drone strikes. Credit, funding, and equities continue to function; this is broader energy-supply transmission, not a confirmed financial-system seizure.";
 
 export const GPM_WHAT_CHANGED =
-  "Since the August 18 review, independently trackable Hormuz traffic remained extremely depressed, with fewer than 20 tracked commodity-vessel crossings over the weekend and UKMTO AIS still about 90% below pre-conflict levels. Iran blacklisted 45 tankers and threatened fines, detention or cargo confiscation. New U.S. sanctions pressure entered the tape, and Brent moved from the ~$90–91 band into approximately $92–93 without establishing a sustained $100 regime. Alternative routing, credit and funding continue to function. Energy transmission is material; broad systemic financial transmission is still not confirmed. The Geo/Energy discrete state is unchanged.";
+  "Since the August 24 review, Saudi Arabia’s principal Hormuz-bypass route was disrupted. The East-West Pipeline shutdown and reported Yanbu loading suspension moved oil from the August 24 ~$92–93 band into a $100+ regime (Brent around $108). Already-depressed Hormuz commodity traffic fell further, to four vessels on Monday from ten a day earlier. Libya field shutdowns and Russian diesel-refinery damage added supply pressure in the same energy channel. Houthi strikes continued and Hormuz talks stalled. Credit and funding still function. Physical oil continues clearing. Energy-supply transmission is now broader than the prior partial state. Analyst $120/$130 oil paths are scenarios, not forecasts.";
 
 export const GPM_THREAT_PANEL = {
   title: "Threat Pressure",
   level: "Very High",
   listLabel: "Drivers",
   items: [
-    "Weekend commodity-vessel Hormuz crossings still below 20 vs ~130–140 daily pre-conflict",
-    "UKMTO AIS traffic still about 90% below pre-conflict levels",
-    "Iran blacklisting 45 tankers, with threats of fines, detention or cargo confiscation",
-    "New U.S. sanctions pressure; Brent around $92–93, not a sustained $100 regime",
+    "East-West Pipeline shut; Yanbu loadings reported suspended — principal Hormuz-bypass route disrupted",
+    "Hormuz commodity-vessel traffic at four on Monday vs ~130–140 daily pre-conflict",
+    "Brent around $108 — a $100+ regime still in place on the morning of September 16",
+    "Libya field shutdowns and Russian diesel-refinery outages in the same energy-supply channel",
   ],
 } as const;
 
 export const GPM_TRANSMISSION_PANEL = {
   title: "System Transmission",
-  level: "Partial (energy) / Emerging (financial path)",
+  level: "Broad (energy supply) / Partial (financial path)",
   listLabel: "Evidence",
   items: [
-    "Energy-price transmission is material at Brent around $92–93",
-    "Broad systemic financial transmission is not confirmed; credit and funding continue to function",
-    "Alternative Gulf crude-routing remains functional",
-    "No verified broad non-energy supply-chain or funding-market seizure in the evidence reviewed",
+    "Energy-price transmission is now in a $100+ oil regime, with diesel futures sharply higher",
+    "Multi-corridor supply pressure: Hormuz, Red Sea/Yanbu, Libya, and Russian refining",
+    "Credit, funding, and equities continue to function; no confirmed financial-system seizure",
+    "Pipeline repair estimates range from very soon to about eight weeks; physical oil continues clearing",
   ],
 } as const;
 
@@ -72,16 +72,16 @@ export const GPM_WATCHING_TITLE = "What We're Watching";
 
 export const GPM_WATCHING_BLOCKS = [
   {
+    title: "East-West Pipeline / Yanbu restoration",
+    body: "Whether the principal East-West Pipeline / Yanbu route resumes on a days-to-weeks timeline, or whether a multi-week outage keeps the $100+ oil regime in place. Analyst $120/$130 paths are scenarios, not forecasts.",
+  },
+  {
     title: "Hormuz transit vs continued restriction",
-    body: "Whether independently trackable transit recovers from extreme single-digit prints, or whether restriction deepens further.",
+    body: "Whether independently trackable commodity-vessel traffic recovers from single-digit prints, or whether restriction deepens from the four-vessel Monday print.",
   },
   {
-    title: "Diplomatic path after the expired window",
-    body: "Whether a new scheduled negotiating framework appears — distinct from contested control claims or unrecovered flow statements.",
-  },
-  {
-    title: "Oil regime durability",
-    body: "Whether Brent holds above $92 and approaches $100, versus a return toward the prior $90 band. A higher print alone is not a new geo temperature increment.",
+    title: "Diesel and refining durability",
+    body: "Whether Russian diesel-refinery outages and U.S. diesel-price spikes fade, or whether a broader middle-distillate shortage transmits further into freight and inflation.",
   },
   {
     title: "Credit, stress & volatility confirmation",
@@ -89,7 +89,7 @@ export const GPM_WATCHING_BLOCKS = [
   },
   {
     title: "Supply-chain transmission beyond energy",
-    body: "Whether disruption spreads from energy shipping into manufacturing, freight, and final-goods availability. That transmission is not confirmed in the current evidence.",
+    body: "Whether disruption spreads from energy shipping and refining into manufacturing, freight, and final-goods availability. That broader non-energy shutdown is not confirmed in the current evidence.",
   },
 ] as const;
 
@@ -240,11 +240,13 @@ export const GPM_SERIES: LedgerMonitorSeries = {
     },
     {
       reviewDate: "August 24, 2026",
-      evidenceCutoff: LEDGER_EVIDENCE_CUTOFF,
-      currentState: GPM_CURRENT_STATE,
-      currentDirection: GPM_CURRENT_DIRECTION,
+      evidenceCutoff: "August 24, 2026",
+      currentState: "Very high external pressure / Cross-system transmission emerging",
+      currentDirection:
+        "Escalating corridor coercion / Adaptation still limiting broader failure",
       previousState: "Very high external pressure / Cross-system transmission emerging",
-      materialChangeSummary: GPM_WHAT_CHANGED,
+      materialChangeSummary:
+        "Since the August 18 review, independently trackable Hormuz traffic remained extremely depressed, with fewer than 20 tracked commodity-vessel crossings over the weekend and UKMTO AIS still about 90% below pre-conflict levels. Iran blacklisted 45 tankers and threatened fines, detention or cargo confiscation. New U.S. sanctions pressure entered the tape, and Brent moved from the ~$90–91 band into approximately $92–93 without establishing a sustained $100 regime. Alternative routing, credit and funding continue to function. Energy transmission is material; broad systemic financial transmission is still not confirmed. The Geo/Energy discrete state is unchanged.",
       methodologyVersion: LEDGER_METHODOLOGY_VERSION,
       sources: [
         {
@@ -280,6 +282,68 @@ export const GPM_SERIES: LedgerMonitorSeries = {
           url: "https://www.eia.gov/outlooks/steo/",
           supports:
             "Prolonged Middle East flow/production recovery risk under continued Hormuz-linked disruption",
+        },
+      ],
+    },
+    {
+      reviewDate: "September 16, 2026",
+      evidenceCutoff: LEDGER_EVIDENCE_CUTOFF,
+      currentState: GPM_CURRENT_STATE,
+      currentDirection: GPM_CURRENT_DIRECTION,
+      previousState: "Very high external pressure / Cross-system transmission emerging",
+      materialChangeSummary: GPM_WHAT_CHANGED,
+      methodologyVersion: LEDGER_METHODOLOGY_VERSION,
+      sources: [
+        {
+          institution: "Reuters",
+          title:
+            "Oil jumps nearly $3 as Saudi export halt, Libya outages stoke supply fears",
+          date: "September 15, 2026",
+          url: "https://www.reuters.com/business/energy/oil-prices-rise-saudi-pipeline-outage-fresh-attacks-raise-supply-concerns-2026-09-15/",
+          supports:
+            "Brent around $108.49 and WTI around $104.68; Yanbu loadings reported suspended; Libya three-field shutdown; Hormuz commodity traffic at four vessels Monday; Russian diesel-refinery cuts; diesel futures up more than 5.9%",
+        },
+        {
+          institution: "Reuters",
+          title: "Saudi pipeline outage threatens loss of 4% of global oil supply",
+          date: "September 13, 2026 (reviewed September 16, 2026)",
+          url: "https://www.reuters.com/business/energy/saudi-pipeline-outage-threatens-loss-4-global-oil-supply-2026-09-13/",
+          supports:
+            "East-West Pipeline shutdown threatening up to about 4% of global supply previously rerouted to Yanbu; Yanbu stocks cited as covering five to seven days",
+        },
+        {
+          institution: "Reuters",
+          title:
+            "Houthis strike Saudi targets anew as talks over Strait of Hormuz stall",
+          date: "September 15, 2026",
+          url: "https://www.reuters.com/world/middle-east/houthis-strike-saudi-targets-anew-talks-over-strait-hormuz-stall-2026-09-15/",
+          supports:
+            "Renewed Houthi strikes and postponed Gulf-Iran discussions while the East-West Pipeline remained offline",
+        },
+        {
+          institution: "Reuters",
+          title:
+            "Bond selloff drives US benchmark beyond 5%; stocks rattled",
+          date: "September 15, 2026",
+          url: "https://www.reuters.com/world/asia-pacific/bond-selloff-drives-us-benchmark-beyond-5-stocks-rattled-2026-09-15/",
+          supports:
+            "U.S. 10-year yield as high as 5.0328%; sovereign-yield pressure as financial-path context, not a confirmed credit seizure",
+        },
+        {
+          institution: "U.S. Energy Information Administration",
+          title: "Short-Term Energy Outlook — September 2026",
+          date: "September 9, 2026 (reviewed September 16, 2026)",
+          url: "https://www.eia.gov/outlooks/steo/",
+          supports:
+            "Prolonged Middle East flow/production recovery risk and elevated distillate/diesel outlook under continued disruption",
+        },
+        {
+          institution: "Reuters",
+          title: "Global markets wrap",
+          date: "September 16, 2026",
+          url: "https://www.reuters.com/world/china/global-markets-wrapup-1-2026-09-16/",
+          supports:
+            "Morning-of-September-16 confirmation: oil remained in a $100+ regime while the U.S. 10-year retreated just below 5% — a print move, not a cooling of energy or financial pressure levels",
         },
       ],
     },

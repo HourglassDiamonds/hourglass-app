@@ -47,25 +47,25 @@ export const PMI_RECENT_READINGS = [
 ] as const;
 
 export const PMI_CROSS_SYSTEM_BRIDGE =
-  "Material markets remain connected to broader macro and reserve-asset conditions — but jewelry sourcing follows its own segmented logic beneath the geopolitical layer. Gold is not a simple war-to-price story this week.";
+  "Material markets remain connected to broader macro and reserve-asset conditions — but jewelry sourcing follows its own segmented logic beneath the geopolitical layer. Gold is not a simple war-to-price story this week; it is falling as yields and hike odds rise.";
 
 export const PMI_CROSS_SYSTEM_PRESSURE = [
-  "Gold remains around $4,650 on August 24 — highest since mid-May, with more than a 5% gain in the prior week — as a weaker dollar and concern surrounding Treasury long-bond buybacks / fiscal confidence supported the bid. Jewelry demand remains price-sensitive. This is the same monetary/fiscal event already captured in the Financial System Temperature channel, not a separate materials increment.",
+  "Spot gold eased to around $4,266–$4,297 on September 15, near the lowest since early August, as higher Treasury yields, a firmer dollar, and almost-fully-priced Fed-hike odds overpowered some safe-haven demand. Jewelry demand remains price-sensitive. This is the same rates/dollar event already captured in the Financial System Temperature channel, not a separate materials increment — and it is disconfirming, because geopolitical risk is high while gold is falling.",
   "World Gold Council Q2 2026 data show official-sector purchases of 289t, supporting the structural reserve-demand read beneath near-term price action.",
-  "Natural-diamond markets remain segmented rather than broadly recovered or collapsed. De Beers H1 realized price was $105/ct, down 32%. Larger/higher-quality natural goods were comparatively resilient; smaller/lower-value natural goods remain pressured by synthetic lab-grown competition. Global finished diamond jewelry sales were broadly stable year-on-year, with better U.S. independent-jeweler signals and continued mainland-China weakness.",
+  "Natural-diamond markets remain segmented rather than broadly recovered or collapsed. Rapaport’s August RAPI rose 0.5% for 1-carat goods — the first monthly increase in about 15 months — with 0.30-carat +2% and 0.50-carat +2.5% as supply cuts bite; 3-carat slipped 0.4%. De Beers H1 realized price was $105/ct, down 32%. Larger/higher-quality natural goods remain comparatively resilient; commercial goods stay price-sensitive. This is not a generic diamond shortage.",
   "Lab-grown continues to track wholesale compression, commodity economics, manufacturing scale, adoption, and retailer margin structure.",
 ] as const;
 
 export const PMI_WHAT_MOVED = [
   "No materials-regime change this week — strategically firm and highly segmented remains the posture.",
-  "Gold around ~$4,650 reflects weaker-dollar and fiscal-confidence sensitivity around Treasury long-bond buybacks, not a monocausal war bid. Do not double-count this as a materials System Temperature increment.",
-  "Natural diamonds should be read as segmented (premium versus commercial, supply discipline, producer economics) rather than as broadly scarce.",
+  "Gold around ~$4,270–$4,300 is rate-sensitive cooling, not a monocausal war bid. Do not double-count this as a materials System Temperature increment.",
+  "Natural diamonds should be read as segmented: August RAPI showed a first 1-carat monthly rise in 15 months and stronger smalls, not generic scarcity.",
 ] as const;
 
 export const PMI_WHAT_TO_WATCH = [
-  "Whether gold holds around the $4,650 area as dollar and fiscal-confidence signals compete with official-sector demand.",
+  "Whether gold holds the high-$4,200s or recovers toward $4,400+ if hike odds or yields reverse.",
   "Whether official-sector accumulation remains a multi-quarter support after the strong Q2 rebound.",
-  "Whether higher-value natural goods continue to diverge from commercial / lower-value ranges.",
+  "Whether the August 1-carat RAPI rise broadens, or whether commercial goods stall again.",
   "Producer economics, supply discipline, and rough / polished dynamics — not a generic scarcity headline.",
   "Lab-grown wholesale compression, manufacturing scale, adoption, and retailer margin structure.",
   "Sourcing discipline in a segmented market — provenance and selective inventory over reactive accumulation.",
@@ -181,7 +181,7 @@ export const PMI_SERIES: LedgerMonitorSeries = {
     },
     {
       reviewDate: "August 24, 2026",
-      evidenceCutoff: LEDGER_EVIDENCE_CUTOFF,
+      evidenceCutoff: "August 24, 2026",
       currentState: "Strategically firm / Highly segmented",
       currentDirection: "Highly segmented",
       previousState: "Strategically firm / Highly segmented",
@@ -213,6 +213,42 @@ export const PMI_SERIES: LedgerMonitorSeries = {
           url: "https://www.debeersgroup.com/news-insights/latest-group-news/2026/interim-financial-results-for-2026",
           supports:
             "H1 realized price $105/ct, down 32%; segmented natural market with larger/higher-quality goods comparatively resilient and smaller/lower-value goods pressured by lab-grown competition",
+        },
+      ],
+    },
+    {
+      reviewDate: "September 16, 2026",
+      evidenceCutoff: LEDGER_EVIDENCE_CUTOFF,
+      currentState: "Strategically firm / Highly segmented",
+      currentDirection: "Rate-sensitive gold cooling / Diamonds still segmented",
+      previousState: "Strategically firm / Highly segmented",
+      materialChangeSummary:
+        "No materials-regime change and no System Temperature materials increment. Spot gold around $4,266–$4,297 on September 15 — near the lowest since early August — as yields, the dollar, and hike odds overpowered some safe-haven demand. That is disconfirming while geopolitical risk is high. Rapaport August RAPI: 1-carat +0.5% (first monthly rise in 15 months), 0.30-carat +2%, 0.50-carat +2.5%; 3-carat −0.4%. The gold/rates/dollar event is already captured in Financial.",
+      methodologyVersion: LEDGER_METHODOLOGY_VERSION,
+      sources: [
+        {
+          institution: "Reuters / Kitco",
+          title: "Gold eases on stronger US rate hike odds",
+          date: "September 15, 2026",
+          url: "http://www.kitco.com/news/off-the-wire/2026-09-15/gold-eases-stronger-us-rate-hike-odds",
+          supports:
+            "Spot gold around $4,266 on September 15, near the lowest since August 7, as hike odds, a firmer dollar, and higher long-end yields pressured bullion",
+        },
+        {
+          institution: "Rapaport USA / GlobeNewswire",
+          title: "Diamond Price Recovery Broadens Further in August",
+          date: "September 2, 2026 (reviewed September 16, 2026)",
+          url: "https://lifestyle.pspl.com/story/829646/diamond-price-recovery-broadens-further-in-august/",
+          supports:
+            "August RAPI +0.5% for 1-carat (first monthly increase in 15 months); 0.30-carat +2%; 0.50-carat +2.5%; 3-carat −0.4%; recovery broadening as supply cuts bite, not a generic shortage",
+        },
+        {
+          institution: "De Beers Group",
+          title: "Interim financial results for 2026",
+          date: "H1 2026 results (reviewed September 16, 2026)",
+          url: "https://www.debeersgroup.com/news-insights/latest-group-news/2026/interim-financial-results-for-2026",
+          supports:
+            "Producer-economics context remaining segmented: H1 realized $105/ct, down 32%, with commercial goods still pressured by lab-grown competition",
         },
       ],
     },

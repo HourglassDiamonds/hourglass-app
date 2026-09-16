@@ -28,8 +28,8 @@ const INTRO =
 const MATERIAL_STATES = [
   {
     name: "Gold",
-    level: "Monetary demand strengthening / Fiscal-confidence sensitivity rising",
-    body: "Spot gold is around ~$4,650 on August 24 — highest since mid-May, with more than a 5% gain in the prior week — as a weaker dollar and concern surrounding Treasury long-bond buybacks / fiscal confidence supported the bid. Jewelry demand remains price-sensitive. This is the same monetary/fiscal event already captured in the Financial System Temperature channel, not a separate materials increment.",
+    level: "Rate-sensitive cooling / Fiscal-confidence bid fading",
+    body: "Spot gold eased to around $4,266–$4,297 on September 15, near the lowest since early August, as higher yields, a firmer dollar, and almost-fully-priced Fed-hike odds overpowered some safe-haven demand. Jewelry demand remains price-sensitive. This is the same rates/dollar event already captured in the Financial System Temperature channel, not a separate materials increment — and it disconfirms a simple war-to-gold bid.",
   },
   {
     name: "Silver",
@@ -44,12 +44,12 @@ const MATERIAL_STATES = [
   {
     name: "Premium Natural Diamonds",
     level: "Selectively firm",
-    body: "Higher-value / better goods remain relatively firmer in key sizes and cuts. Supply discipline and producer economics matter; this is not generic natural-diamond scarcity.",
+    body: "Higher-value / better goods remain relatively firmer in key sizes and cuts. Rapaport’s August 1-carat RAPI rose 0.5%, the first monthly increase in about 15 months. Supply discipline and producer economics matter; this is not generic natural-diamond scarcity.",
   },
   {
     name: "Commercial Natural Diamonds",
     level: "Price-sensitive",
-    body: "Commercial / lower-value goods remain price-sensitive as buyers discriminate more carefully across grades and sizes. Rough / polished dynamics stay segmented from the premium complex.",
+    body: "Commercial / lower-value goods remain price-sensitive as buyers discriminate more carefully across grades and sizes. August RAPI showed stronger smalls (0.30-carat +2%, 0.50-carat +2.5%) as supply cuts bite — a segmented rebound, not a shortage.",
   },
   {
     name: "Lab-Grown Diamonds",
