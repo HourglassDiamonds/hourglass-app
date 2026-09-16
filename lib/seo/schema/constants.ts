@@ -23,6 +23,8 @@ export const ORGANIZATION_DESCRIPTION =
   "Charlotte-based personal jeweler serving clients nationwide—private gemologist-led guidance for custom engagement rings and fine jewelry.";
 
 export const PERSON_JOB_TITLE = "Graduate Gemologist";
+export const PERSON_DESCRIPTION =
+  "Founder of Hourglass Diamonds, Graduate Gemologist, and author of the Diamond Guide educational library.";
 
 /** Canonical public Charlotte office NAP (founder-approved). Single source for schema + Concierge. */
 export const BUSINESS_STREET_ADDRESS = "15720 Brixham Hill Ave";

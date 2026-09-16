@@ -33,6 +33,7 @@ import {
   ORGANIZATION_DESCRIPTION,
   ORGANIZATION_ID,
   ORGANIZATION_NAME,
+  PERSON_DESCRIPTION,
   PERSON_ID,
   PERSON_JOB_TITLE,
   PERSON_NAME,
@@ -61,8 +62,7 @@ function personNode(): JsonLdValue {
     "@id": PERSON_ID,
     name: PERSON_NAME,
     jobTitle: PERSON_JOB_TITLE,
-    description:
-      "Founder of Hourglass Diamonds and author of the Diamond Guide educational library.",
+    description: PERSON_DESCRIPTION,
     worksFor: { "@id": ORGANIZATION_ID },
   };
 }

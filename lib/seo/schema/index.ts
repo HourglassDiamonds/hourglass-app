@@ -38,4 +38,9 @@ export {
   buildGlobalSiteJsonLd,
   globalEntityGraph,
 } from "./entities";
+export {
+  buildHousePageJsonLd,
+  houseAboutPageNode,
+  houseCloserLookVideoObject,
+} from "./house";
 export { jsonLdGraph, serializeJsonLd } from "./json-ld";

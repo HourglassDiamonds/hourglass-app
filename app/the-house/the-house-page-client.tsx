@@ -9,6 +9,11 @@ import CTAGlimmer from "../shared-components/motion/CTAGlimmer";
 import EditorialImageMotion from "../shared-components/motion/EditorialImageMotion";
 import RevealOnScroll from "../shared-components/motion/RevealOnScroll";
 import ConsultationCtaLink from "../shared-components/ConsultationCtaLink";
+import {
+  HOUSE_CLOSER_LOOK_CAPTION_SRC,
+  HOUSE_CLOSER_LOOK_VIDEO_SRC,
+} from "@/lib/the-house/media";
+import { HOUSE_INTRO_PARAGRAPHS } from "@/lib/the-house/heritage-copy";
 
 const PERSPECTIVE_MAP = "/the-house/rupanuni-map-hero.png";
 
@@ -220,21 +225,14 @@ export default function TheHousePageClient() {
             </h1>
 
             <div className="mx-auto mt-6 max-w-[44rem] text-[1rem] leading-[1.9] text-[#615a53]">
-              <p>
-                That perspective was shaped inside the traditional system: sourcing
-                diamonds, evaluating gemstones, and seeing how decisions are made
-                at the highest levels of the trade. As a Graduate Gemologist,
-                Justin served as Lead GG for North America at one of the world’s
-                leading firms, and later as Global Head of Sales for another,
-                developing a clear sense of what truly matters and what doesn’t.
-              </p>
+              {HOUSE_INTRO_PARAGRAPHS.map((paragraph, index) => (
+                <p key={paragraph} className={index === 0 ? undefined : "mt-5"}>
+                  {paragraph}
+                </p>
+              ))}
 
               <p className="mt-5">
-                Hourglass was built around that clarity, with trusted sourcing
-                relationships and manufacturing across multiple continents chosen
-                for their specific strengths, so each step is handled where it can
-                be done best and the final piece feels considered from start to
-                finish. For a deeper look at what gemological training means in
+                For a deeper look at what gemological training means in
                 practice, read{" "}
                 <Link
                   href="/diamond-guide/why-work-with-a-graduate-gemologist"
@@ -272,12 +270,12 @@ export default function TheHousePageClient() {
                 className="house-closer-look-video absolute inset-0 h-full w-full object-cover"
               >
                 <source
-                  src="https://res.cloudinary.com/dorddtbvq/video/upload/q_auto/f_auto/v1777515354/The-House-Hero-Video_gpvbue.mp4"
+                  src={HOUSE_CLOSER_LOOK_VIDEO_SRC}
                   type="video/mp4"
                 />
                 <track
                   kind="captions"
-                  src="/the-house/a-closer-look.en.vtt"
+                  src={HOUSE_CLOSER_LOOK_CAPTION_SRC}
                   srcLang="en"
                   label="English"
                 />

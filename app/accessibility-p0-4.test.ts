@@ -71,6 +71,10 @@ const housePage = readFileSync(
   join(root, "the-house/the-house-page-client.tsx"),
   "utf8",
 );
+const houseMedia = readFileSync(
+  join(root, "../lib/the-house/media.ts"),
+  "utf8",
+);
 const notFound = readFileSync(join(root, "not-found.tsx"), "utf8");
 const errorPage = readFileSync(join(root, "error.tsx"), "utf8");
 const globalError = readFileSync(join(root, "global-error.tsx"), "utf8");
@@ -512,7 +516,8 @@ describe("AA-14 new-tab names and House video audio control (WCAG G201 / 1.2.2 /
     assert.match(housePage, />\s*Replay\s*</);
     assert.match(housePage, /kind="captions"/);
     assert.match(housePage, /srcLang="en"/);
-    assert.match(housePage, /a-closer-look\.en\.vtt/);
+    assert.match(housePage, /HOUSE_CLOSER_LOOK_CAPTION_SRC/);
+    assert.match(houseMedia, /a-closer-look\.en\.vtt/);
     assert.match(housePage, /Show captions/);
     assert.match(housePage, /Hide captions/);
     assert.match(housePage, /const \[captionsOn, setCaptionsOn\] = useState\(false\)/);
