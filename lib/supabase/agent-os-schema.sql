@@ -92,3 +92,15 @@ alter table agent_os_delivery_claims enable row level security;
 
 -- Explicitly: do not add anon/authenticated RLS policies.
 -- Service role bypasses RLS; that is the only intended access path.
+
+-- Explicit privilege contract (additive, repeatable). No policies.
+-- Preview/Production application remains separately founder-approved.
+revoke all on table public.agent_os_persisted_state from public;
+revoke all on table public.agent_os_persisted_state from anon;
+revoke all on table public.agent_os_persisted_state from authenticated;
+grant all on table public.agent_os_persisted_state to service_role;
+
+revoke all on table public.agent_os_delivery_claims from public;
+revoke all on table public.agent_os_delivery_claims from anon;
+revoke all on table public.agent_os_delivery_claims from authenticated;
+grant all on table public.agent_os_delivery_claims to service_role;

@@ -640,6 +640,31 @@ describe("schema repeatability and constraints", () => {
     assert.equal(/\bcreate\s+policy\b/i.test(sql), false);
     assert.equal(/\brecipient_email\b/i.test(sql), false);
     assert.equal(/\bapi_key\b/i.test(sql), false);
+    assert.doesNotMatch(sql, /tenant_id/);
+    assert.doesNotMatch(sql, /disable row level security/i);
+    assert.doesNotMatch(sql, /^\s*grant\b[^;]*\bto\s+anon\b/im);
+    assert.doesNotMatch(sql, /^\s*grant\b[^;]*\bto\s+authenticated\b/im);
+    for (const table of [
+      "agent_os_persisted_state",
+      "agent_os_delivery_claims",
+    ]) {
+      assert.match(
+        sql,
+        new RegExp(`revoke all on table public\\.${table} from public;`),
+      );
+      assert.match(
+        sql,
+        new RegExp(`revoke all on table public\\.${table} from anon;`),
+      );
+      assert.match(
+        sql,
+        new RegExp(`revoke all on table public\\.${table} from authenticated;`),
+      );
+      assert.match(
+        sql,
+        new RegExp(`grant all on table public\\.${table} to service_role;`),
+      );
+    }
   });
 
   it("documents lease constant", () => {

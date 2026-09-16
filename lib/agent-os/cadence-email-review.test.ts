@@ -56,6 +56,28 @@ describe("production durable adapter selection", () => {
     assert.match(sql, /agent_os_delivery_claims/);
     assert.match(sql, /idempotency_key text primary key/);
     assert.match(sql, /Never stores secrets/i);
+    assert.doesNotMatch(sql, /create policy/i);
+    for (const table of [
+      "agent_os_persisted_state",
+      "agent_os_delivery_claims",
+    ]) {
+      assert.match(
+        sql,
+        new RegExp(`revoke all on table public\\.${table} from public;`),
+      );
+      assert.match(
+        sql,
+        new RegExp(`revoke all on table public\\.${table} from anon;`),
+      );
+      assert.match(
+        sql,
+        new RegExp(`revoke all on table public\\.${table} from authenticated;`),
+      );
+      assert.match(
+        sql,
+        new RegExp(`grant all on table public\\.${table} to service_role;`),
+      );
+    }
   });
 
   it("live resolve prefers supabase adapter id when explicitly requested without env → unconfigured", () => {
