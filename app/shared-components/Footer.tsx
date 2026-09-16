@@ -59,9 +59,6 @@ export default function Footer() {
           >
             <FooterLink href="/the-house" pathname={pathname} className={NAV_LINK}>The House</FooterLink>
             <FooterLink href="/our-approach" pathname={pathname} className={NAV_LINK}>Our Approach</FooterLink>
-            <FooterLink href="/conversations" pathname={pathname} className={NAV_LINK}>
-              Conversations
-            </FooterLink>
             <FooterLink href="/engagement-rings" pathname={pathname} className={NAV_LINK}>Engagement Rings</FooterLink>
             <FooterLink href="/custom-design" pathname={pathname} className={NAV_LINK}>Custom Design</FooterLink>
             <FooterLink href="/diamond-guide" pathname={pathname} className={NAV_LINK}>Diamond Guide</FooterLink>

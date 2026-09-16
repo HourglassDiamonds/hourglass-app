@@ -3,7 +3,7 @@ import type { ConversationEpisode } from "@/lib/conversations/episodes";
 import {
   episodeHasPlayableVideo,
   episodePath,
-  isConversationsHubPublic,
+  isConversationsPubliclyDiscoverable,
 } from "@/lib/conversations/episodes";
 import {
   DEFAULT_OG_IMAGE,
@@ -24,8 +24,8 @@ export function conversationsHubMetadata(): Metadata {
     openGraphTitle: "Conversations | Hourglass Diamonds",
   });
 
-  // Do not index the hub until at least one episode is published.
-  if (!isConversationsHubPublic()) {
+  // Do not index the hub until the public experience is live.
+  if (!isConversationsPubliclyDiscoverable()) {
     return {
       ...base,
       robots: {

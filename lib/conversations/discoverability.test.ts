@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, it } from "node:test";
+import { CONVERSATIONS_PUBLIC_DISCOVERY_ENABLED } from "./public-discovery";
 
 const root = process.cwd();
 
@@ -9,30 +10,25 @@ function readSource(relativePath: string): string {
   return readFileSync(join(root, relativePath), "utf8");
 }
 
-describe("Conversations discoverability — footer only", () => {
-  it("includes a Conversations footer link to /conversations", () => {
-    const footer = readSource("app/shared-components/Footer.tsx");
-    assert.match(
-      footer,
-      /href=["']\/conversations["'][\s\S]*?>\s*Conversations\s*</,
-    );
-    const matches = footer.match(/href=["']\/conversations["']/g) ?? [];
-    assert.equal(matches.length, 1);
-
-    // Positioned after Our Approach in the brand/editorial footer group.
-    const ourApproachIdx = footer.indexOf('href="/our-approach"');
-    const conversationsIdx = footer.indexOf('href="/conversations"');
-    const engagementIdx = footer.indexOf('href="/engagement-rings"');
-    assert.ok(ourApproachIdx > 0);
-    assert.ok(conversationsIdx > ourApproachIdx);
-    assert.ok(engagementIdx > conversationsIdx);
+describe("Conversations discoverability — temporarily retired", () => {
+  it("keeps the public discovery flag off pending Case Studies", () => {
+    assert.equal(CONVERSATIONS_PUBLIC_DISCOVERY_ENABLED, false);
   });
 
-  it("keeps Conversations out of the primary Header navigation", () => {
+  it("removes Conversations from the public footer", () => {
+    const footer = readSource("app/shared-components/Footer.tsx");
+    assert.equal(footer.includes("/conversations"), false);
+    assert.equal(footer.includes("Conversations"), false);
+    assert.match(footer, /href=["']\/our-approach["']/);
+    assert.match(footer, /href=["']\/engagement-rings["']/);
+  });
+
+  it("keeps Conversations out of the primary Header and mobile navigation", () => {
     const header = readSource("app/shared-components/Header.tsx");
     assert.equal(header.includes("/conversations"), false);
     assert.equal(/label:\s*["']Conversations["']/.test(header), false);
     assert.match(header, /const NAV_ITEMS = \[/);
+    assert.match(header, /aria-label=["']Mobile navigation["']/);
   });
 
   it("does not mount a Conversations feature on the homepage", () => {
@@ -49,6 +45,26 @@ describe("Conversations discoverability — footer only", () => {
       homePage.slice(ringsIdx, praiseIdx).includes("Conversation"),
       false,
     );
+  });
+
+  it("temporarily redirects /conversations to /the-house", () => {
+    const config = readSource("next.config.ts");
+    assert.match(
+      config,
+      /source:\s*["']\/conversations["'][\s\S]*?destination:\s*["']\/the-house["'][\s\S]*?permanent:\s*false/,
+    );
+    assert.match(
+      config,
+      /source:\s*["']\/conversations\/:path\*["'][\s\S]*?destination:\s*["']\/the-house["'][\s\S]*?permanent:\s*false/,
+    );
+
+    const hub = readSource("app/conversations/page.tsx");
+    assert.match(hub, /redirect\(["']\/the-house["']\)/);
+    assert.match(hub, /ConversationsHubClient/);
+
+    const episode = readSource("app/conversations/[slug]/page.tsx");
+    assert.match(episode, /redirect\(["']\/the-house["']\)/);
+    assert.match(episode, /EpisodePageClient/);
   });
 
   it("preserves episode Concierge attribution without disturbing Agent OS cron", () => {

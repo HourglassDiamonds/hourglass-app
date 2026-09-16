@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import JsonLd from "@/app/shared-components/JsonLd";
 import {
   episodeIsPubliclyEligible,
@@ -7,6 +7,7 @@ import {
   isProductionRuntime,
   resolveEpisodeForRequest,
 } from "@/lib/conversations/episodes";
+import { CONVERSATIONS_PUBLIC_DISCOVERY_ENABLED } from "@/lib/conversations/public-discovery";
 import {
   conversationEpisodeMetadata,
   conversationUnavailableMetadata,
@@ -23,6 +24,10 @@ type EpisodePageProps = {
 export async function generateMetadata({
   params,
 }: EpisodePageProps): Promise<Metadata> {
+  if (!CONVERSATIONS_PUBLIC_DISCOVERY_ENABLED) {
+    return conversationUnavailableMetadata();
+  }
+
   const { slug } = await params;
   const episode = getEpisodeBySlug(slug);
   if (!episode) {
@@ -47,6 +52,10 @@ export async function generateMetadata({
 export default async function ConversationEpisodePage({
   params,
 }: EpisodePageProps) {
+  if (!CONVERSATIONS_PUBLIC_DISCOVERY_ENABLED) {
+    redirect("/the-house");
+  }
+
   const { slug } = await params;
   const episode = resolveEpisodeForRequest(slug);
 

@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { CONVERSATIONS_PUBLIC_DISCOVERY_ENABLED } from "./lib/conversations/public-discovery";
 import { PUBLIC_SECURITY_HEADERS } from "./lib/security/http-headers";
 
 const pdfjsWorkerIncludes = [
@@ -80,13 +81,36 @@ const nextConfig: NextConfig = {
     ];
   },
   async redirects() {
-    return [
+    const redirects: Array<{
+      source: string;
+      destination: string;
+      permanent: boolean;
+    }> = [
       {
         source: "/diamond-tech-suite",
         destination: "/diamond-studio",
         permanent: true,
       },
     ];
+
+    // Temporary: Conversations is retired pending Case Studies. 307 so
+    // the route can later be restored without implying permanent removal.
+    if (!CONVERSATIONS_PUBLIC_DISCOVERY_ENABLED) {
+      redirects.push(
+        {
+          source: "/conversations",
+          destination: "/the-house",
+          permanent: false,
+        },
+        {
+          source: "/conversations/:path*",
+          destination: "/the-house",
+          permanent: false,
+        },
+      );
+    }
+
+    return redirects;
   },
 };
 

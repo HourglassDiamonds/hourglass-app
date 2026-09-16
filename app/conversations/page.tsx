@@ -1,10 +1,11 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import JsonLd from "@/app/shared-components/JsonLd";
 import {
   getListableEpisodes,
   isConversationsHubPublic,
   isProductionRuntime,
 } from "@/lib/conversations/episodes";
+import { CONVERSATIONS_PUBLIC_DISCOVERY_ENABLED } from "@/lib/conversations/public-discovery";
 import { conversationsHubMetadata } from "@/lib/seo/conversations-metadata";
 import { buildConversationsHubJsonLd } from "@/lib/seo/schema/conversations";
 import ConversationsHubClient from "./conversations-hub-client";
@@ -12,6 +13,12 @@ import ConversationsHubClient from "./conversations-hub-client";
 export const metadata = conversationsHubMetadata();
 
 export default function ConversationsHubPage() {
+  // Temporary public retirement pending Case Studies. Keep the hub
+  // implementation below so the route can be restored later.
+  if (!CONVERSATIONS_PUBLIC_DISCOVERY_ENABLED) {
+    redirect("/the-house");
+  }
+
   // Production: hub stays unavailable until a published episode exists.
   if (isProductionRuntime() && !isConversationsHubPublic()) {
     notFound();

@@ -4,7 +4,7 @@ import { LEDGER_INDEXES } from "@/app/ledger/ledger-data";
 import {
   episodePath,
   getPublishedEpisodes,
-  isConversationsHubPublic,
+  isConversationsPubliclyDiscoverable,
 } from "@/lib/conversations/episodes";
 import { DIAMOND_GUIDE_CATEGORIES } from "@/lib/seo/diamond-guide-metadata";
 import { SITE_URL } from "@/lib/seo/site-metadata";
@@ -30,8 +30,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${SITE_URL}/continuum`, priority: 0.4, lastModified },
   ];
 
-  // Hub and episodes enter the sitemap only after published inventory exists.
-  if (isConversationsHubPublic()) {
+  // Hub and episodes enter the sitemap only while the public experience is live.
+  if (isConversationsPubliclyDiscoverable()) {
     corePages.push({
       url: `${SITE_URL}/conversations`,
       priority: 0.8,
@@ -68,15 +68,16 @@ export default function sitemap(): MetadataRoute.Sitemap {
     lastModified,
   }));
 
-  const conversationPages: MetadataRoute.Sitemap = getPublishedEpisodes().map(
-    (episode) => ({
-      url: `${SITE_URL}${episodePath(episode.slug)}`,
-      priority: 0.75,
-      lastModified: episode.publishedAt
-        ? new Date(episode.publishedAt)
-        : lastModified,
-    }),
-  );
+  const conversationPages: MetadataRoute.Sitemap =
+    isConversationsPubliclyDiscoverable()
+      ? getPublishedEpisodes().map((episode) => ({
+          url: `${SITE_URL}${episodePath(episode.slug)}`,
+          priority: 0.75,
+          lastModified: episode.publishedAt
+            ? new Date(episode.publishedAt)
+            : lastModified,
+        }))
+      : [];
 
   return [
     ...corePages,

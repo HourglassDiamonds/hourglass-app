@@ -12,7 +12,6 @@ import {
 } from "@/lib/seo/schema/conversations";
 import { serializeJsonLd } from "@/lib/seo/schema/json-ld";
 import sitemap from "@/app/sitemap";
-import { SITE_URL } from "@/lib/seo/site-metadata";
 
 function graphTypes(data: unknown): string[] {
   if (
@@ -101,16 +100,13 @@ describe("conversation SEO and schema", () => {
     assert.equal(serializeJsonLd(payload).includes("<"), false);
   });
 
-  it("includes the published conversation hub and episode in the sitemap", () => {
+  it("omits the retired conversation hub and episode from the sitemap", () => {
     const entries = sitemap();
     const conversationUrls = entries
       .map((entry) => entry.url)
       .filter((url) => url.includes("/conversations"));
 
     assert.equal(getPublishedEpisodes().length, 1);
-    assert.ok(conversationUrls.includes(`${SITE_URL}/conversations`));
-    assert.ok(
-      conversationUrls.includes(`${SITE_URL}/conversations/why-we-re-here`),
-    );
+    assert.equal(conversationUrls.length, 0);
   });
 });

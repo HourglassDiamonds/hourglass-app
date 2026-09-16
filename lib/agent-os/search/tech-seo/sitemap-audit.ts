@@ -7,7 +7,7 @@ import { LEDGER_INDEXES } from "@/app/ledger/ledger-data";
 import {
   episodePath,
   getPublishedEpisodes,
-  isConversationsHubPublic,
+  isConversationsPubliclyDiscoverable,
 } from "@/lib/conversations/episodes";
 import { DIAMOND_GUIDE_CATEGORIES } from "@/lib/seo/diamond-guide-metadata";
 import { SITE_URL } from "@/lib/seo/site-metadata";
@@ -60,7 +60,7 @@ export function reconstructSitemapPaths(): {
   ];
   for (const p of core) paths.add(p);
 
-  if (isConversationsHubPublic()) {
+  if (isConversationsPubliclyDiscoverable()) {
     paths.add("/conversations");
   }
 
@@ -77,8 +77,10 @@ export function reconstructSitemapPaths(): {
     paths.add(`/diamond-guide/${article.slug}`);
   }
 
-  for (const episode of getPublishedEpisodes()) {
-    paths.add(episodePath(episode.slug));
+  if (isConversationsPubliclyDiscoverable()) {
+    for (const episode of getPublishedEpisodes()) {
+      paths.add(episodePath(episode.slug));
+    }
   }
 
   return { paths: [...paths].sort(), sources };

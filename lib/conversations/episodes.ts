@@ -5,6 +5,7 @@
  * Operator guide: docs/conversations-publishing.md
  */
 
+import { CONVERSATIONS_PUBLIC_DISCOVERY_ENABLED } from "./public-discovery";
 import {
   buildYouTubeThumbnailUrl,
   isValidYouTubeVideoId,
@@ -225,6 +226,13 @@ export function hasPublishedConversations(): boolean {
 /** True when the hub should be publicly available (published inventory exists). */
 export function isConversationsHubPublic(): boolean {
   return hasPublishedConversations();
+}
+
+/** True when Conversations should appear in nav, sitemap, and live routes. */
+export function isConversationsPubliclyDiscoverable(): boolean {
+  return (
+    CONVERSATIONS_PUBLIC_DISCOVERY_ENABLED && hasPublishedConversations()
+  );
 }
 
 export function episodePath(slug: string): string {
