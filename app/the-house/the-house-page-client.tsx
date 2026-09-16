@@ -13,7 +13,10 @@ import {
   HOUSE_CLOSER_LOOK_CAPTION_SRC,
   HOUSE_CLOSER_LOOK_VIDEO_SRC,
 } from "@/lib/the-house/media";
-import { HOUSE_INTRO_PARAGRAPHS } from "@/lib/the-house/heritage-copy";
+import {
+  HOUSE_INTRO_HEADING,
+  HOUSE_INTRO_PARAGRAPHS,
+} from "@/lib/the-house/heritage-copy";
 
 const PERSPECTIVE_MAP = "/the-house/rupanuni-map-hero.png";
 
@@ -218,10 +221,10 @@ export default function TheHousePageClient() {
             </div>
 
             <h1
-              className="mx-auto mt-4 max-w-[24ch] text-[2rem] font-light leading-[1.08] tracking-[-0.015em] text-[#1f1d1a] md:text-[2.45rem]"
+              className="mx-auto mt-4 max-w-[22rem] text-[2rem] font-light leading-[1.08] tracking-[-0.015em] text-[#1f1d1a] md:max-w-[28rem] md:text-[2.45rem]"
               style={{ textWrap: "balance" }}
             >
-              A perspective shaped over time.
+              {HOUSE_INTRO_HEADING}
             </h1>
 
             <div className="mx-auto mt-6 max-w-[44rem] text-[1rem] leading-[1.9] text-[#615a53]">

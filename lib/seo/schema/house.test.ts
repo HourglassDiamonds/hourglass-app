@@ -83,23 +83,31 @@ describe("House heritage copy", () => {
   );
 
   it("surfaces Charlotte heritage without implying corporate succession", () => {
+    assert.match(housePage, /HOUSE_INTRO_HEADING/);
     assert.match(housePage, /HOUSE_INTRO_PARAGRAPHS/);
-    assert.match(heritageCopy, /Charlotte's personal jeweler/);
-    assert.match(heritageCopy, /We don't sell inventory/);
-    assert.match(heritageCopy, /We sell discernment/);
-    assert.match(heritageCopy, /Donald Haack/);
-    assert.match(heritageCopy, /British Guiana/);
-    assert.match(heritageCopy, /Rupununi/);
-    assert.match(heritageCopy, /approximately thirteen years/);
-    assert.match(heritageCopy, /Lead Graduate Gemologist/);
+    assert.match(
+      heritageCopy,
+      /A Charlotte jewelry history, carried forward differently\./,
+    );
+    assert.match(heritageCopy, /grandson of Charlotte jeweler Donald Haack/);
+    assert.match(heritageCopy, /spent 13 years working within the family business/);
+    assert.match(heritageCopy, /Lead Graduate Gemologist for North America/);
     assert.match(heritageCopy, /Global Head of Sales/);
-    assert.match(heritageCopy, /The tradition is inherited/);
-    assert.match(heritageCopy, /The business model is not/);
+    assert.match(
+      heritageCopy,
+      /The result is not a continuation of another jewelry company/,
+    );
+    assert.doesNotMatch(heritageCopy, /British Guiana/);
+    assert.doesNotMatch(heritageCopy, /Rupununi/);
+    assert.doesNotMatch(heritageCopy, /We don't sell inventory/);
+    assert.doesNotMatch(heritageCopy, /We sell discernment/);
     assert.doesNotMatch(heritageCopy, /acquired Donald Haack/i);
     assert.doesNotMatch(heritageCopy, /renamed/i);
+    assert.doesNotMatch(heritageCopy, /inherited ownership/i);
     assert.doesNotMatch(heritageCopy, /inherited the business/i);
     assert.doesNotMatch(heritageCopy, /parent company/i);
     assert.doesNotMatch(heritageCopy, /successor to Donald/i);
+    assert.doesNotMatch(heritageCopy, /current affiliation/i);
   });
 });
 
