@@ -119,6 +119,9 @@ describe("Today Chief of Staff docket", () => {
     assert.equal(docketSubject("Travis Morse", "Chicken ring (his) / Travis"), "Travis Morse");
     assert.equal(docketSubject("Lee", "Lee / Spiegel"), "Lee");
     assert.equal(docketSubject(null, "Matching earrings"), "Matching earrings");
+    assert.equal(docketSubject(null, null, "Bee Engraving"), "Bee Engraving");
+    assert.equal(docketSubject(null, "Project", "Bee Engraving"), "Bee Engraving");
+    assert.equal(docketSubject(null, "HGD x Bee Engraving", "Bee Engraving"), "Bee Engraving");
   });
 
   it("keeps Master Sprint on the same grammar with an empty Phase 1A slot", () => {

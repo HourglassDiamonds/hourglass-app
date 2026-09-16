@@ -36,8 +36,10 @@ import {
   isVendorOrganizationLabel,
   looksLikeHumanPersonName,
   payloadOf,
+  pickTodayVendorContext,
   classifyTodayCommunication,
   type FounderAttentionContext,
+  type TodayCommunicationClass,
 } from "@/lib/continuum/candidates/founder-attention";
 import { isUnresolvedOpenJobState } from "@/lib/continuum/client-memory/project-jobs/validate";
 import type { ProjectJob } from "@/lib/continuum/client-memory/project-jobs/types";
@@ -188,6 +190,8 @@ type RankedSituation = {
   novelty: number;
   latestMs: number;
   personName: string | null;
+  organizationLabel: string | null;
+  communication: TodayCommunicationClass;
   projectId: string | null;
   projectTitle: string | null;
   isCurrent: boolean;
@@ -206,6 +210,43 @@ type RankedSituation = {
   specConflict?: CosSpecConflictView | null;
   personAssociationCandidateId?: string | null;
 };
+
+function identityPeopleFor(
+  project: CosProjectContext | null,
+  rows: readonly ContinuumCandidate[],
+  projects: ReadonlyMap<string, CosProjectContext>,
+): { displayName: string; roles: string[]; organizationName: string | null }[] {
+  const people: {
+    displayName: string;
+    roles: string[];
+    organizationName: string | null;
+  }[] = (project?.people ?? []).map((row) => ({
+    displayName: row.displayName,
+    roles: row.role ? [row.role] : [],
+    organizationName: row.organizationName ?? null,
+  }));
+  const seen = new Set(people.map((row) => `${row.displayName}:${row.roles.join(",")}`));
+  const personIds = new Set<string>();
+  for (const row of rows) {
+    const target = row.founderEditedTarget ?? row.proposedTarget;
+    if (target.kind === "person" && target.personId) personIds.add(target.personId);
+  }
+  for (const personId of personIds) {
+    for (const candidate of projects.values()) {
+      const match = candidate.people?.find((row) => row.personId === personId);
+      if (!match) continue;
+      const key = `${match.displayName}:${match.role ?? ""}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      people.push({
+        displayName: match.displayName,
+        roles: match.role ? [match.role] : [],
+        organizationName: match.organizationName ?? null,
+      });
+    }
+  }
+  return people;
+}
 
 function nameTokens(value: string): string[] {
   return value
@@ -238,19 +279,33 @@ function pickVendorName(project: CosProjectContext | null): string {
   return vendor?.displayName?.trim() || "the shop";
 }
 
-function displayTitle(personName: string | null, projectTitle: string | null): string {
+function isGenericProjectTitle(title: string | null | undefined): boolean {
+  const value = title?.trim() ?? "";
+  return !value || /^project$/i.test(value);
+}
+
+function displayTitle(
+  personName: string | null,
+  projectTitle: string | null,
+  organizationLabel?: string | null,
+): string {
   const trimmedPerson = personName?.trim() || null;
   const person = isClientPersonLabel(trimmedPerson) ? trimmedPerson : null;
-  const project = projectTitle?.trim() || null;
+  const project = isGenericProjectTitle(projectTitle) ? null : projectTitle?.trim() || null;
+  const organization = organizationLabel?.trim() || null;
   if (person && isStudioOrVendorLabel(person)) {
-    return project && !isStudioOrVendorLabel(project) ? project : "this work";
+    return project && !isStudioOrVendorLabel(project)
+      ? project
+      : organization ?? "this work";
   }
-  if (project && isStudioOrVendorLabel(project)) return person ?? "this work";
+  if (project && isStudioOrVendorLabel(project)) {
+    return person ?? organization ?? "this work";
+  }
   if (person && project) {
     if (project.startsWith(person) || titlesOverlap(person, project)) return project;
     return `${person} — ${project}`;
   }
-  return person || project || "this work";
+  return person || project || organization || "this work";
 }
 
 function projectStateLabel(stage: string | null | undefined): string | null {
@@ -318,7 +373,9 @@ function speakerOf(
   }
   if (
     hasRule(row, "explicit_vendor_waiting") ||
-    hasRule(row, "explicit_vendor_commitment")
+    hasRule(row, "explicit_vendor_commitment") ||
+    hasRule(row, "explicit_shop_blocker") ||
+    hasRule(row, "vendor_shop_update")
   ) {
     return "vendor";
   }
@@ -366,7 +423,10 @@ function beatKind(
   }
   if (DEADLINE_SIGNAL.test(haystack(row))) return "deadline";
   const speaker = speakerOf(row, fallback);
-  if (speaker === "vendor" && VENDOR_ACK.test(haystack(row))) return "vendor_ack";
+  if (speaker === "vendor") {
+    if (VENDOR_ACK.test(haystack(row))) return "vendor_ack";
+    return "commitment";
+  }
   if (speaker === "founder") {
     if (
       hasRule(row, "explicit_founder_commitment") ||
@@ -632,6 +692,8 @@ function actionsFor(input: {
   createProject: boolean;
   addToTop5: boolean;
   personAssociationCandidateId: string | null;
+  communication: TodayCommunicationClass;
+  organizationLabel: string | null;
 }): CosBriefAction[] {
   const actions: CosBriefAction[] = [];
   if (input.projectId) {
@@ -655,7 +717,12 @@ function actionsFor(input: {
       href: conciergeCreateActionPath(input.projectId),
     });
   }
-  if (!input.personName && (input.personAssociationCandidateId || !input.projectId)) {
+  const clientIdentityGap =
+    (input.communication === "client" || input.communication === "unknown") &&
+    !input.personName &&
+    !input.organizationLabel &&
+    (input.personAssociationCandidateId || !input.projectId);
+  if (clientIdentityGap) {
     const href = input.personAssociationCandidateId
       ? `${CONCIERGE_GMAIL_INTAKE_PATH}?personAssociation=${encodeURIComponent(input.personAssociationCandidateId)}`
       : CONCIERGE_GMAIL_INTAKE_PATH;
@@ -719,19 +786,21 @@ function classifySituation(input: {
     : null;
   const vendorName = pickVendorName(project);
   const person = isClientPersonLabel(attribution.personName) ? attribution.personName : null;
-  const title = displayTitle(person, attribution.projectTitle);
+  const identityPeople = identityPeopleFor(project, input.rows, input.projects);
+  const communication = classifyTodayCommunication({
+    candidates: input.rows,
+    people: identityPeople,
+  });
+  const organizationLabel = pickTodayVendorContext({
+    candidates: input.rows,
+    people: identityPeople,
+  });
+  const title = displayTitle(person, attribution.projectTitle, organizationLabel);
   const client = pickClientPerson(project);
   const clientConfirmed = Boolean(
     client &&
       input.rows.some((row) => confirmedPersonId(row) === client.personId),
   );
-  const communication = classifyTodayCommunication({
-    candidates: input.rows,
-    people: (project?.people ?? []).map((row) => ({
-      displayName: row.displayName,
-      roles: row.role ? [row.role] : [],
-    })),
-  });
   const fallbackSpeaker: CosBriefSpeaker =
     communication === "vendor" ||
     (vendorSourcedThread(input.association, input.rows) && !clientConfirmed)
@@ -768,6 +837,8 @@ function classifySituation(input: {
       novelty: noveltyOf(latestMs, input.nowMs),
       latestMs,
       personName: person,
+      organizationLabel,
+      communication,
       projectId: attribution.projectId,
       projectTitle: attribution.projectTitle,
       isCurrent: project?.isCurrent ?? false,
@@ -931,6 +1002,8 @@ function classifySituation(input: {
       novelty: noveltyOf(parseMs(meaningful.timestamp), input.nowMs),
       latestMs: parseMs(meaningful.timestamp),
       personName: person,
+      organizationLabel,
+      communication,
       projectId: attribution.projectId,
       projectTitle: attribution.projectTitle,
       isCurrent: project?.isCurrent ?? false,
@@ -1057,6 +1130,12 @@ function classifySituation(input: {
     disposition = "watching";
     watchingTitle = title;
     watchingDetail = "Shop evidence is already on this production Project.";
+  } else if (communication === "vendor" && !person) {
+    rankClass = "follow_up";
+    headline = "shop update";
+    explanation = clip(meaningful.summary, 220);
+    recommended = "Review the latest shop turn.";
+    urgency = 0;
   } else {
     disposition = "suppress";
   }
@@ -1102,6 +1181,8 @@ function classifySituation(input: {
     novelty: noveltyOf(latestMs, input.nowMs),
     latestMs,
     personName: person,
+    organizationLabel,
+    communication,
     projectId: attribution.projectId,
     projectTitle: attribution.projectTitle,
     isCurrent: project?.isCurrent ?? false,
@@ -1161,6 +1242,7 @@ function presentBrief(
     rank,
     rankClass: item.rankClass,
     personLabel: item.personName,
+    organizationLabel: item.organizationLabel,
     projectTitle: item.projectTitle,
     projectId: item.projectId,
     canonicalGmailThreadId,
@@ -1177,6 +1259,8 @@ function presentBrief(
       createProject,
       addToTop5,
       personAssociationCandidateId: item.personAssociationCandidateId ?? null,
+      communication: item.communication,
+      organizationLabel: item.organizationLabel,
     }),
     evidence: item.beats,
     openJobLabel: item.openJobLabel,

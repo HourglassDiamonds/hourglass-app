@@ -92,6 +92,11 @@ export function isFounderIdentityName(name: string | null | undefined): boolean 
   );
 }
 
+const VENDOR_ORG_PHRASE =
+  /\b([A-Za-z][A-Za-z0-9'&.\-]*(?:\s+[A-Za-z][A-Za-z0-9'&.\-]*){0,3}\s+(?:Engraving|Jewelers?|Jewellery|Jewelry|Workshop|Atelier))\b/i;
+const VENDOR_PRINTS_PHRASE =
+  /\b([A-Za-z][A-Za-z0-9'&.\-]*(?:prints?|stampings?|castings?))\b/i;
+
 export function isVendorOrganizationLabel(name: string | null | undefined): boolean {
   if (!name) return false;
   const normalized = normalizedIdentity(name);
@@ -102,6 +107,103 @@ export function isVendorOrganizationLabel(name: string | null | undefined): bool
   }
   if (/(?:prints?|stampings?|castings?)$/.test(normalized)) return true;
   return /\b(support|helpdesk)\b/.test(normalized);
+}
+
+function collapseIdentityText(value: string): string {
+  return value.replace(/\s+/g, " ").trim();
+}
+
+export function vendorOrganizationFromIdentityText(
+  text: string | null | undefined,
+): string | null {
+  if (!text) return null;
+  const stripped = collapseIdentityText(text).replace(/^(?:re|fw|fwd):\s*/i, "");
+  if (!stripped) return null;
+  const phrase = stripped.match(VENDOR_ORG_PHRASE)?.[1]?.trim() ?? null;
+  if (phrase && isVendorOrganizationLabel(phrase)) return collapseIdentityText(phrase);
+  const prints = stripped.match(VENDOR_PRINTS_PHRASE)?.[1]?.trim() ?? null;
+  if (prints && isVendorOrganizationLabel(prints) && prints.length <= 40) {
+    return collapseIdentityText(prints);
+  }
+  if (
+    stripped.length <= 60 &&
+    isVendorOrganizationLabel(stripped) &&
+    !/\b(the shop)\b/i.test(stripped) &&
+    !/\b(ticket|unsubscribe|in progress|answered)\b/i.test(stripped)
+  ) {
+    return collapseIdentityText(stripped);
+  }
+  return null;
+}
+
+export function pickTodayVendorContext(input: {
+  candidates?: readonly ContinuumCandidate[];
+  people?: readonly TodayIdentitySignal[];
+}): string | null {
+  const people: TodayIdentitySignal[] = [...(input.people ?? [])];
+  for (const row of input.candidates ?? []) {
+    const payload = payloadOf(row);
+    if (payload.kind === "person_association" && payload.displayName) {
+      people.push({
+        displayName: payload.displayName,
+        roles: null,
+        organizationName: null,
+      });
+    }
+  }
+  const contacts = people.filter((person) => {
+    if (isFounderIdentityName(person.displayName)) return false;
+    if (isPlatformOrSystemName(person.displayName)) return false;
+    const roles = person.roles ?? [];
+    return roles.includes("vendor-contact") && looksLikeHumanPersonName(person.displayName);
+  });
+  if (contacts.length === 1) {
+    const name = contacts[0]?.displayName.trim() ?? "";
+    if (name) return name;
+  }
+  const orgs = people.flatMap((person) => {
+    if (isFounderIdentityName(person.displayName)) return [];
+    if (isPlatformOrSystemName(person.displayName)) return [];
+    if (isVendorOrganizationLabel(person.displayName)) {
+      return [collapseIdentityText(person.displayName)];
+    }
+    const organization = person.organizationName?.trim() ?? "";
+    if (organization && isVendorOrganizationLabel(organization)) {
+      return [collapseIdentityText(organization)];
+    }
+    if (
+      (person.roles ?? []).includes("vendor-contact") &&
+      organization &&
+      !isFounderIdentityName(organization) &&
+      !isPlatformOrSystemName(organization)
+    ) {
+      return [collapseIdentityText(organization)];
+    }
+    const extracted = vendorOrganizationFromIdentityText(person.displayName);
+    return extracted ? [extracted] : [];
+  });
+  const uniqueOrgs = [...new Set(orgs)];
+  if (uniqueOrgs.length === 1) return uniqueOrgs[0]!;
+  for (const row of input.candidates ?? []) {
+    const payload = payloadOf(row);
+    if (payload.kind !== "project_context") continue;
+    const fromValue = vendorOrganizationFromIdentityText(payload.value);
+    if (fromValue) return fromValue;
+  }
+  const vendorThread =
+    uniqueOrgs.length > 0 ||
+    people.some((person) => isVendorPerson(person)) ||
+    (input.candidates ?? []).some((row) => hasVendorRule(row));
+  if (vendorThread) {
+    const humans = people.filter(
+      (person) =>
+        looksLikeHumanPersonName(person.displayName) &&
+        !isFounderIdentityName(person.displayName),
+    );
+    const uniqueHumans = [...new Set(humans.map((person) => person.displayName.trim()))];
+    if (uniqueHumans.length === 1) return uniqueHumans[0]!;
+  }
+  return uniqueOrgs[0] ?? null;
 }
 
 export function isPlatformOrSystemName(name: string | null | undefined): boolean {
@@ -453,22 +555,42 @@ export function classifyTodayCommunication(input: {
   for (const row of input.candidates) {
     const payload = payloadOf(row);
     if (payload.kind === "person_association" && payload.displayName) {
-      names.push({ displayName: payload.displayName, roles: null });
+      names.push({
+        displayName: payload.displayName,
+        roles: null,
+      });
     }
   }
   const hay = input.candidates.map((row) => candidateHaystack(row)).join("\n");
-  const client = names.some(
+  const storedClient = names.some(
+    (person) =>
+      (person.roles ?? []).includes("client") &&
+      isClientPersonLabel(person.displayName) &&
+      !isVendorPerson(person),
+  );
+  const pendingHumanClient = names.some(
     (person) => isClientPersonLabel(person.displayName) && !isVendorPerson(person),
   );
-  const vendor =
-    names.some((person) => isVendorPerson(person)) ||
-    input.candidates.some((row) => hasVendorRule(row));
+  const vendorFromSubject = input.candidates.some((row) => {
+    const payload = payloadOf(row);
+    if (payload.kind !== "project_context") return false;
+    return vendorOrganizationFromIdentityText(payload.value) != null;
+  });
+  const vendorOnThread =
+    input.candidates.some((row) => {
+      const payload = payloadOf(row);
+      if (payload.kind !== "person_association" || !payload.displayName) return false;
+      return isVendorPerson({ displayName: payload.displayName, roles: null });
+    }) ||
+    input.candidates.some((row) => hasVendorRule(row)) ||
+    vendorFromSubject;
   const platformName = names.some((person) => isPlatformOrSystemName(person.displayName));
   const platformContent = PLATFORM_CONTENT.test(hay);
   const commercial = input.candidates.some((row) => hasCommercialPayload(row));
-  if (client) return "client";
+  if (vendorOnThread && !storedClient) return "vendor";
+  if (storedClient || (pendingHumanClient && !vendorOnThread)) return "client";
   if (platformName || (platformContent && !commercial)) return "platform";
-  if (vendor) return "vendor";
+  if (vendorOnThread) return "vendor";
   if (names.some((person) => isFounderIdentityName(person.displayName))) return "founder";
   if (platformContent) return "platform";
   return "unknown";

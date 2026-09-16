@@ -9,6 +9,7 @@ import { PROJECT_SPEC_FIELD_LABELS } from "@/lib/continuum/client-memory/project
 import { currentProjectFocusHref } from "@/lib/continuum/client-memory/open-projects/present";
 import { CONCIERGE_HOME_PATH } from "@/lib/continuum/client-memory/read/presentation";
 import { CONCIERGE_GMAIL_INTAKE_PATH } from "@/lib/continuum/gmail/types";
+import { isVendorOrganizationLabel } from "@/lib/continuum/candidates/founder-attention";
 import { selectOpenEmailSources, selectRelatedEmailSources } from "./email-source";
 import {
   addCalendarDays,
@@ -198,6 +199,8 @@ function withTodayReturn(href: string): string {
 
 function needsPersonConfirm(item: CosFounderActionSource): boolean {
   if (specConflictOf(item)) return false;
+  if (item.brief?.organizationLabel) return false;
+  if (isVendorOrganizationLabel(item.subject)) return false;
   if (confirmPersonAction(item)) return true;
   return Boolean(
     item.brief &&

@@ -145,6 +145,16 @@ describe("Today live cleanup", () => {
       docket.items.some((item) => /Justin/i.test(`${item.subject} ${item.headline} ${item.context ?? ""} ${item.brief?.personLabel ?? ""}`)),
       false,
     );
+    const bee = docket.items.find((item) =>
+      /Bee Engraving/i.test(`${item.subject} ${item.brief?.organizationLabel ?? ""} ${item.brief?.projectTitle ?? ""}`),
+    );
+    if (bee) {
+      assert.notEqual(bee.subject, "Unassigned");
+      assert.match(bee.subject, /Bee Engraving/i);
+      const controls = selectFounderControls(bee);
+      assert.equal(controls.confirmPerson, null);
+      assert.equal(controls.family === "person_association", false);
+    }
     for (const item of docket.items) {
       for (const beat of item.brief?.evidence ?? []) {
         assert.doesNotMatch(beat.label, /Justin/i);
@@ -213,6 +223,7 @@ describe("Today live cleanup", () => {
       candidateId: "stamp-person",
       sourceRef: `gc1|${STAMP_THREAD}|stamp-person`,
       candidateType: "person_association",
+      proposedTarget: { kind: "none" },
       payload: {
         kind: "person_association",
         displayName: "Stamprints",
@@ -250,12 +261,18 @@ describe("Today live cleanup", () => {
       .map((item) => `${item.headline} ${item.context ?? ""} ${item.subject}`)
       .join("\n");
     assert.doesNotMatch(hay, /Identify the client/i);
+    assert.notEqual(docket.items[0]?.subject, "Unassigned");
+    assert.match(docket.items[0]?.subject ?? "", /Stamprints/i);
     assert.equal(
       docket.items.some((item) =>
         item.brief?.actions.some((action) => action.kind === "confirm_person"),
       ),
       false,
     );
+    const stampCard = docket.items[0];
+    if (stampCard) {
+      assert.equal(selectFounderControls(stampCard).confirmPerson, null);
+    }
   });
 
   it("D/E. Dismiss removes the card, survives recomposition, and keeps source evidence", async () => {
@@ -352,5 +369,197 @@ describe("Today live cleanup", () => {
     const next = todayOf(await store.list());
     assert.ok(next.items.some((item) => item.brief?.candidateIds.includes(later.candidateId)));
     assert.equal(COS_DOCKET_VISIBLE_LIMIT, 3);
+  });
+
+  it("known vendor organization with unknown contact is not Unassigned or Confirm Person", () => {
+    const assoc = fixtureCandidate({
+      candidateId: "bee-org",
+      sourceRef: `gc1|${BEE_THREAD}|bee-org`,
+      candidateType: "person_association",
+      proposedTarget: { kind: "none" },
+      payload: {
+        kind: "person_association",
+        displayName: "Bee Engraving",
+        emailHash: "bee",
+        mintPerson: false,
+        mergePersons: false,
+      },
+      evidenceBasis: {
+        ruleIds: ["gmail_participant"],
+        matchedText: "Bee Engraving",
+      },
+    });
+    const update = fixtureCandidate({
+      candidateId: "bee-update",
+      sourceRef: `gc1|${BEE_THREAD}|bee-update`,
+      sourceTimestamp: "2026-09-06T15:00:00.000Z",
+      proposedTarget: { kind: "none" },
+      candidateType: "project_context",
+      payload: {
+        kind: "project_context",
+        topic: "design_refinement",
+        value: "Re: HGD x Bee Engraving",
+      },
+      evidenceBasis: {
+        ruleIds: ["vendor_shop_update"],
+        matchedText: "Bee can start the engraving Monday.",
+      },
+    });
+    assert.equal(
+      classifyTodayCommunication({ candidates: [assoc, update] }),
+      "vendor",
+    );
+    const docket = todayOf([assoc, update]);
+    const card = docket.items[0];
+    assert.ok(card);
+    assert.equal(card?.subject, "Bee Engraving");
+    assert.notEqual(card?.subject, "Unassigned");
+    assert.equal(card?.brief?.personLabel ?? null, null);
+    assert.equal(card?.brief?.organizationLabel, "Bee Engraving");
+    assert.equal(
+      card?.brief?.actions.some((action) => action.kind === "confirm_person") ?? false,
+      false,
+    );
+    const controls = selectFounderControls(card!);
+    assert.equal(controls.confirmPerson, null);
+    const html = renderToStaticMarkup(
+      createElement(ChiefOfStaffToday, {
+        loop: composeCosOperatingLoop({
+          jobs: [],
+          candidates: [assoc, update],
+          nowIso: COS_LOOP_NOW,
+        }),
+      }),
+    );
+    assert.doesNotMatch(html, /Confirm person/);
+    assert.doesNotMatch(html, />Unassigned</);
+    assert.match(html, /Bee Engraving/);
+    assert.match(html, /Dismiss from Today/);
+  });
+
+  it("known vendor contact is shown and is not client intake", () => {
+    const personId = "88888888-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
+    const projects = new Map<string, CosProjectContext>([
+      [
+        COS_LOOP_PROJECT_A,
+        {
+          projectId: COS_LOOP_PROJECT_A,
+          title: "Vlora melee",
+          personName: null,
+          people: [
+            {
+              personId: personId,
+              displayName: "Niurka Lulo",
+              role: "vendor-contact",
+              organizationName: "Vlora",
+            },
+          ],
+          isCurrent: true,
+          gmailThreadId: "vloraThread001",
+        },
+      ],
+    ]);
+    const assoc = fixtureCandidate({
+      candidateId: "niurka-assoc",
+      sourceRef: "gc1|vloraThread001|niurka-assoc",
+      candidateType: "person_association",
+      proposedTarget: { kind: "person", personId },
+      payload: {
+        kind: "person_association",
+        displayName: "Niurka Lulo",
+        emailHash: "niurka",
+        mintPerson: false,
+        mergePersons: false,
+      },
+      evidenceBasis: {
+        ruleIds: ["gmail_participant"],
+        matchedText: "Niurka Lulo",
+      },
+    });
+    const update = fixtureCandidate({
+      candidateId: "niurka-update",
+      sourceRef: "gc1|vloraThread001|niurka-update",
+      sourceTimestamp: "2026-09-06T15:00:00.000Z",
+      proposedTarget: { kind: "project", projectId: COS_LOOP_PROJECT_A },
+      candidateType: "project_context",
+      payload: {
+        kind: "project_context",
+        topic: "design_refinement",
+        value: "Stones are ready to ship.",
+      },
+      evidenceBasis: {
+        ruleIds: ["vendor_shop_update"],
+        matchedText: "We'll send tracking when ready.",
+      },
+    });
+    const docket = todayOf([assoc, update], projects);
+    const card = docket.items.find((item) => item.brief?.projectId === COS_LOOP_PROJECT_A) ?? docket.items[0];
+    assert.ok(card);
+    assert.match(card?.subject ?? "", /Niurka Lulo/i);
+    assert.notEqual(card?.subject, "Unassigned");
+    assert.equal(card?.brief?.personLabel ?? null, null);
+    assert.equal(
+      card?.brief?.actions.some((action) => action.kind === "confirm_person") ?? false,
+      false,
+    );
+    const controls = selectFounderControls(card!);
+    assert.equal(controls.confirmPerson, null);
+  });
+
+  it("genuine unknown client Person still offers Confirm Person", () => {
+    const assoc = fixtureCandidate({
+      candidateId: "alex-unknown",
+      sourceRef: "gc1|alexthread02|alex-unknown",
+      candidateType: "person_association",
+      payload: {
+        kind: "person_association",
+        displayName: "Alex Hale",
+        emailHash: "alex2",
+        mintPerson: false,
+        mergePersons: false,
+      },
+      evidenceBasis: {
+        ruleIds: ["gmail_participant"],
+        matchedText: "Alex Hale",
+      },
+    });
+    const reply = fixtureCandidate({
+      candidateId: "alex-unknown-reply",
+      sourceRef: "gc1|alexthread02|alex-unknown-reply",
+      proposedTarget: { kind: "none" },
+      payload: {
+        kind: "project_context",
+        topic: "cad_revision",
+        value: "Can we thin the band?",
+      },
+      evidenceBasis: {
+        ruleIds: ["explicit_cad_revision"],
+        matchedText: "Can we thin the band on the CAD revision?",
+      },
+    });
+    assert.equal(
+      classifyTodayCommunication({ candidates: [assoc, reply] }),
+      "client",
+    );
+    const docket = todayOf([assoc, reply]);
+    const card = docket.items[0];
+    assert.ok(card);
+    assert.equal(
+      card?.brief?.actions.some((action) => action.kind === "confirm_person"),
+      true,
+    );
+    const controls = selectFounderControls(card!);
+    assert.ok(controls.confirmPerson);
+    const html = renderToStaticMarkup(
+      createElement(ChiefOfStaffToday, {
+        loop: composeCosOperatingLoop({
+          jobs: [],
+          candidates: [assoc, reply],
+          nowIso: COS_LOOP_NOW,
+        }),
+      }),
+    );
+    assert.match(html, /Confirm person/);
+    assert.match(html, /Dismiss from Today/);
   });
 });

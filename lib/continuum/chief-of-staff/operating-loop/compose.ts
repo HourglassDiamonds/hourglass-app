@@ -77,6 +77,7 @@ export function projectContextFromSummaries(
       role: person.roles?.includes("vendor-contact")
         ? "vendor-contact"
         : person.roles?.[0] ?? null,
+      organizationName: person.organizationName ?? null,
     }));
     map.set(row.projectId, {
       projectId: row.projectId,

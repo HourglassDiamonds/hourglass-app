@@ -228,6 +228,7 @@ export type CosBriefItem = {
   rank: number;
   rankClass: CosBriefRankClass;
   personLabel: string | null;
+  organizationLabel?: string | null;
   projectTitle: string | null;
   projectId: string | null;
   canonicalGmailThreadId?: string | null;
@@ -290,6 +291,7 @@ export type CosProjectPerson = {
   personId: string;
   displayName: string;
   role?: string | null;
+  organizationName?: string | null;
 };
 
 export type CosProjectSpec = {

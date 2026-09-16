@@ -58,9 +58,12 @@ export type CosTodayDocketView = {
 export function docketSubject(
   person: string | null | undefined,
   project: string | null | undefined,
+  organization?: string | null | undefined,
 ): string {
   const who = person?.trim() ?? "";
-  const what = project?.trim() ?? "";
+  const rawProject = project?.trim() ?? "";
+  const what = !rawProject || /^project$/i.test(rawProject) ? "" : rawProject;
+  const org = organization?.trim() ?? "";
   if (who && what) {
     if (who === what) return who;
     const hay = what.toLowerCase();
@@ -72,7 +75,13 @@ export function docketSubject(
     if (tokens.some((token) => hay.includes(token))) return who;
     return `${who} / ${what}`;
   }
-  return who || what || "Unassigned";
+  if (org && what) {
+    if (org === what) return org;
+    const hay = what.toLowerCase();
+    if (hay.includes(org.toLowerCase())) return org;
+    return `${org} / ${what}`;
+  }
+  return who || what || org || "Unassigned";
 }
 
 export function cosQueuedLabel(count: number): string {
@@ -297,7 +306,7 @@ export function composeTodayDocket(loop: CosOperatingLoopView): CosTodayDocketVi
   const isCovered = (keys: readonly string[]) => keys.some((key) => covered.has(key));
 
   for (const item of loop.brief) {
-    const subject = docketSubject(item.personLabel, item.projectTitle);
+    const subject = docketSubject(item.personLabel, item.projectTitle, item.organizationLabel);
     const briefing = presentDocketBriefing({
       subject,
       headline: item.recommended,

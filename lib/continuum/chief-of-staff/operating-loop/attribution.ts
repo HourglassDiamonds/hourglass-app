@@ -310,10 +310,22 @@ export function pickClientPerson(
   return null;
 }
 
+function isVendorContactPersonId(
+  personId: string,
+  projects: ReadonlyMap<string, CosProjectContext>,
+): boolean {
+  for (const project of projects.values()) {
+    const match = project.people?.find((row) => row.personId === personId);
+    if (match?.role === "vendor-contact") return true;
+  }
+  return false;
+}
+
 function personNameById(
   personId: string,
   projects: ReadonlyMap<string, CosProjectContext>,
 ): string | null {
+  if (isVendorContactPersonId(personId, projects)) return null;
   for (const project of projects.values()) {
     const match = project.people?.find((row) => row.personId === personId);
     if (match && isClientPersonLabel(match.displayName) && match.role !== "vendor-contact") {
@@ -355,9 +367,12 @@ export function resolveProjectAttribution(
       ...new Set(evidence.map(confirmedPersonId).filter((id): id is string => Boolean(id))),
     ];
     if (personIds.length === 1) {
-      personName =
-        personNameById(personIds[0]!, projects) ??
-        personNameFromAssociation(evidence, personIds[0]!);
+      const personId = personIds[0]!;
+      if (!isVendorContactPersonId(personId, projects)) {
+        personName =
+          personNameById(personId, projects) ??
+          personNameFromAssociation(evidence, personId);
+      }
     }
   }
   if (personName && !isClientPersonLabel(personName)) personName = null;

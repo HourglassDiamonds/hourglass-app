@@ -1646,12 +1646,13 @@ describe("Concierge Executive Moderator V1", () => {
     );
   });
 
-  it("keeps a vendor thread Unassigned when no supported Project relationship exists", () => {
+  it("keeps a vendor thread in vendor context when no supported Project relationship exists", () => {
     const result = briefOf({
       candidates: vendorEvidence({
         candidateId: "loose-shop",
         sourceTimestamp: "2026-09-03T15:00:00.000Z",
         text: "Sending the family sapphire to the shop.",
+        ruleIds: ["vendor_shop_update"],
         person: true,
       }),
       jobs: [],
@@ -1666,9 +1667,10 @@ describe("Concierge Executive Moderator V1", () => {
     if (surfaced) {
       assert.equal(surfaced.projectId, null);
       assert.equal(surfaced.personLabel, null);
+      assert.equal(surfaced.organizationLabel, "Mara");
       assert.equal(
         surfaced.actions.some((action) => action.kind === "confirm_person"),
-        true,
+        false,
       );
     }
     assert.equal(item?.projectId ?? surfaced?.projectId ?? null, null);

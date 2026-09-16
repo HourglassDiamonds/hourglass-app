@@ -29,6 +29,7 @@ import {
   waitingOnFounder,
   isActionableSpecConflict,
   isStudioOrVendorLabel,
+  pickTodayVendorContext,
   type FounderAttentionContext as ClassifyContext,
   type FounderAttentionJudgment,
 } from "@/lib/continuum/candidates/founder-attention";
@@ -96,20 +97,30 @@ function titlesOverlap(personName: string, projectTitle: string): boolean {
   return [...person].some((token) => title.has(token));
 }
 
-function displayTitle(personName: string | null, projectTitle: string | null): string {
+function displayTitle(
+  personName: string | null,
+  projectTitle: string | null,
+  organizationLabel?: string | null,
+): string {
   const person = personName?.trim() || null;
-  const project = projectTitle?.trim() || null;
+  const project =
+    !projectTitle?.trim() || /^project$/i.test(projectTitle.trim())
+      ? null
+      : projectTitle.trim();
+  const organization = organizationLabel?.trim() || null;
   if (person && isStudioOrVendorLabel(person)) {
-    return project && !isStudioOrVendorLabel(project) ? project : UNASSIGNED_TITLE;
+    return project && !isStudioOrVendorLabel(project)
+      ? project
+      : organization ?? UNASSIGNED_TITLE;
   }
   if (project && isStudioOrVendorLabel(project)) {
-    return person ?? UNASSIGNED_TITLE;
+    return person ?? organization ?? UNASSIGNED_TITLE;
   }
   if (person && project) {
     if (project.startsWith(person) || titlesOverlap(person, project)) return project;
     return `${person} — ${project}`;
   }
-  return person || project || UNASSIGNED_TITLE;
+  return person || project || organization || UNASSIGNED_TITLE;
 }
 
 function resolveAttribution(
@@ -123,9 +134,17 @@ function resolveAttribution(
   title: string;
 } {
   const base = resolveProjectAttribution(evidence, projectId, projects);
+  const organization = pickTodayVendorContext({
+    candidates: evidence,
+    people: (projectId ? projects.get(projectId)?.people : null)?.map((row) => ({
+      displayName: row.displayName,
+      roles: row.role ? [row.role] : [],
+      organizationName: row.organizationName ?? null,
+    })),
+  });
   return {
     ...base,
-    title: displayTitle(base.personName, base.projectTitle),
+    title: displayTitle(base.personName, base.projectTitle, organization),
   };
 }
 
