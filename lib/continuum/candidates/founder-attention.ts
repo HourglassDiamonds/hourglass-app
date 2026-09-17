@@ -13,6 +13,7 @@ import { isUnresolvedOpenJobState } from "@/lib/continuum/client-memory/project-
 import { isPastDueDate } from "@/lib/continuum/date-only";
 import {
   collectExactGmailIds,
+  exactGmailIdsFromCandidate,
   exactGmailIdsFromPointer,
 } from "@/lib/continuum/candidates/exact-gmail-ids";
 
@@ -596,8 +597,12 @@ export function collectTodayEmailHashes(input: {
     if (payload.kind === "person_association") add(payload.emailHash);
   }
   add(hashStoredPersonEmail(input.thread?.fromEmail ?? null));
-  for (const message of input.thread?.messages ?? []) {
-    add(message.fromEmailHash);
+  const messages = input.thread?.messages ?? [];
+  const inbound = messages.filter((row) => row.direction === "inbound");
+  const unknown = messages.filter((row) => row.direction === "unknown");
+  for (const message of inbound) add(message.fromEmailHash);
+  if (inbound.length === 0) {
+    for (const message of unknown) add(message.fromEmailHash);
   }
   return hashes;
 }
@@ -771,6 +776,9 @@ const VENDOR_RULES = new Set([
   "vendor_shop_update",
 ]);
 
+const NAKED_SPEC_SNIPPET =
+  /^(?:\d+\s+)?(?:marquise|oval|round|emerald|pear|cushion|princess|radiant|prong|prongs)$/i;
+
 export function isNakedDateText(text: string | null | undefined): boolean {
   const trimmed = text?.replace(/\s+/g, " ").trim().replace(/[.:]+$/, "") ?? "";
   if (!trimmed) return false;
@@ -778,6 +786,13 @@ export function isNakedDateText(text: string | null | undefined): boolean {
   return /^(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2}(?:,\s*\d{4})?$/i.test(
     trimmed,
   );
+}
+
+export function isNakedContextSnippet(text: string | null | undefined): boolean {
+  const trimmed = text?.replace(/\s+/g, " ").trim().replace(/[.:]+$/, "") ?? "";
+  if (!trimmed) return false;
+  if (isNakedDateText(trimmed)) return true;
+  return NAKED_SPEC_SNIPPET.test(trimmed);
 }
 
 export function confirmedPersonId(row: ContinuumCandidate): string | null {
@@ -1509,7 +1524,8 @@ export function groupingKey(
   row: ContinuumCandidate,
   projectByThread?: ReadonlyMap<string, string>,
 ): string {
-  const threadId = sourceThreadId(row);
+  const ids = exactGmailIdsFromCandidate(row);
+  const threadId = sourceThreadId(row) ?? ids.threadIds[0] ?? null;
   const projectId =
     candidateProjectId(row) ?? (threadId ? (projectByThread?.get(threadId) ?? null) : null);
   if (projectId) return `project:${projectId}`;

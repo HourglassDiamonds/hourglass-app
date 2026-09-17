@@ -32,6 +32,7 @@ const INFERENCE_FILES = [
   "email-source.ts",
   "moderator.ts",
   "thread-truth.ts",
+  "group-truth.ts",
   "attribution.ts",
   "load.ts",
   "types.ts",

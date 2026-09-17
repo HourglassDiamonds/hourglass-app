@@ -232,6 +232,7 @@ export type CosBriefItem = {
   projectTitle: string | null;
   projectId: string | null;
   canonicalGmailThreadId?: string | null;
+  recoveredGmailThreadId?: string | null;
   headline: string;
   explanation: string;
   recommended: string;

@@ -33,6 +33,7 @@ import {
   type FounderAttentionContext as ClassifyContext,
   type FounderAttentionJudgment,
   type TodayGmailThreadContext,
+  type TodayKnownPerson,
 } from "@/lib/continuum/candidates/founder-attention";
 import {
   projectBySupportedAssociation,
@@ -43,10 +44,11 @@ import { GENERATED_FOUNDER_OPERATING_BRIEF_RULE } from "@/lib/continuum/gmail/ca
 import { gmailEvidenceHrefFor, sourceHrefFor, sourceLabelFor } from "./evidence";
 import { specConflictFromCandidates } from "./founder-actions";
 import { isCandidateQuietForToday } from "./quiet";
+import { resolveTodayGroupTruth } from "./group-truth";
 import {
+  indexedThreadForGroup,
   isStaleInboundReplyCandidate,
   reconcileGroupTruthState,
-  threadIdForGroup,
 } from "./thread-truth";
 import type {
   CosAnomalyItem,
@@ -500,6 +502,9 @@ export function composeFounderAttentionSurface(input: {
   proposedActions: readonly CosProposedAction[];
   anomalies: readonly CosAnomalyItem[];
   threadContext?: ReadonlyMap<string, TodayGmailThreadContext>;
+  knownPeople?: readonly TodayKnownPerson[];
+  vendorDirectory?: readonly string[];
+  evidenceTexts?: readonly string[];
 }): {
   needsYourDecision: CosFounderAttentionItem[];
   worthKnowing: CosFounderAttentionItem[];
@@ -550,11 +555,20 @@ export function composeFounderAttentionSurface(input: {
   for (const [key, rows] of groups) {
     const visible = rows.filter((row) => visibleLane(judgments.get(row.candidateId)));
     if (visible.length === 0) continue;
-    const threadId = threadIdForGroup(key, rows, input.threadContext);
-    const thread = threadId ? (input.threadContext?.get(threadId) ?? null) : null;
+    const thread = indexedThreadForGroup(key, rows, input.threadContext);
     const groupedProjectId = key.startsWith("project:")
       ? key.slice("project:".length)
       : rows.map(candidateProjectId).find((id): id is string => Boolean(id)) ?? null;
+    const group = resolveTodayGroupTruth({
+      key,
+      rows,
+      threadContext: input.threadContext,
+      project: groupedProjectId ? (input.projects.get(groupedProjectId) ?? null) : null,
+      jobs: input.jobs,
+      knownPeople: input.knownPeople,
+      vendorDirectory: input.vendorDirectory,
+      evidenceTexts: input.evidenceTexts,
+    });
     const truth = reconcileGroupTruthState({
       key,
       rows,
@@ -562,15 +576,17 @@ export function composeFounderAttentionSurface(input: {
       project: groupedProjectId ? (input.projects.get(groupedProjectId) ?? null) : null,
       jobs: input.jobs,
     });
-    const visibleAfterTruth = truth.staleInboundSatisfied
+    const visibleAfterTruth = group.staleInboundSatisfied
       ? visible.filter((row) => !isStaleInboundReplyCandidate(row, truth, thread))
       : visible;
     if (
-      truth.staleInboundSatisfied &&
-      !truth.remainingCommitment &&
-      visibleAfterTruth.every(
-        (row) => !isPaymentStateChange(row) && !isActionableSpecConflict(row, ctx),
-      )
+      ((group.staleInboundSatisfied ||
+        group.noFounderAction ||
+        (group.sourceClass === "vendor" && Boolean(group.waitingState))) &&
+        !group.remainingFounderCommitment &&
+        visibleAfterTruth.every(
+          (row) => !isPaymentStateChange(row) && !isActionableSpecConflict(row, ctx),
+        ))
     ) {
       continue;
     }

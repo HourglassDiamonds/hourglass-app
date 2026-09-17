@@ -169,6 +169,9 @@ export function composeCosOperatingLoop(
     proposedActions,
     anomalies,
     threadContext: input.threadContext,
+    knownPeople: input.knownPeople,
+    vendorDirectory: input.vendorDirectory,
+    evidenceTexts: input.evidenceTexts,
   });
   const moderated = composeConciergeBrief({
     candidates,

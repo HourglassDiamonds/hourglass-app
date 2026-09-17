@@ -29,6 +29,7 @@ import {
   isFounderIdentityName,
   isHistoricalRediscovery,
   isNakedDateText,
+  isNakedContextSnippet,
   isPaymentStateChange,
   isPlatformOrSystemName,
   isStudioOrVendorLabel,
@@ -36,14 +37,10 @@ import {
   isVendorOrganizationLabel,
   looksLikeHumanPersonName,
   payloadOf,
-  classifyTodayCommunication,
-  collectTodayEmailHashes,
   collectTodayVendorEvidence,
   isActionableSystemAlert,
   isGeneratedTodayNoise,
   isNonActionableSystemMail,
-  resolveTodayIdentity,
-  resolveUniqueKnownPerson,
   type FounderAttentionContext,
   type TodayCommunicationClass,
   type TodayGmailThreadContext,
@@ -71,9 +68,9 @@ import { gmailEvidenceHrefFor, gmailEvidenceHrefFromSourceRef } from "./evidence
 import { selectOpenEmailSources } from "./email-source";
 import { specConflictFromCandidates } from "./founder-actions";
 import { isCandidateQuietForToday } from "./quiet";
+import { resolveTodayGroupTruth } from "./group-truth";
 import {
   indexedThreadForGroup,
-  reconcileGroupTruthState,
   threadIdForGroup,
   type ThreadWaitingKind,
 } from "./thread-truth";
@@ -224,6 +221,7 @@ type RankedSituation = {
   specConflict?: CosSpecConflictView | null;
   personAssociationCandidateId?: string | null;
   groupedThreadId?: string | null;
+  recoveredGmailThreadId?: string | null;
 };
 
 function identityPeopleFor(
@@ -893,17 +891,7 @@ function classifySituation(input: {
   const vendorName = pickVendorName(project);
   const groupedThreadId = situationThreadId(input.key, input.rows, input.threadContext);
   const thread = indexedThreadForGroup(input.key, input.rows, input.threadContext);
-  const knownHit = resolveUniqueKnownPerson({
-    emailHashes: collectTodayEmailHashes({ candidates: input.rows, thread }),
-    knownPeople: input.knownPeople,
-  });
-  const knownPerson = knownHit && knownHit !== "ambiguous" ? knownHit : null;
-  const identityPeople = identityPeopleFor(
-    project,
-    input.rows,
-    input.projects,
-    knownPerson,
-  );
+  const identityPeople = identityPeopleFor(project, input.rows, input.projects, null);
   if (
     isGeneratedTodayNoise({
       candidates: input.rows,
@@ -924,30 +912,25 @@ function classifySituation(input: {
   const vendorDirectory = [
     ...new Set([...(input.vendorDirectory ?? []), ...localEvidence.directory]),
   ];
-  const resolved = resolveTodayIdentity({
-    emailHashes: collectTodayEmailHashes({ candidates: input.rows, thread }),
+  const group = resolveTodayGroupTruth({
+    key: input.key,
+    rows: input.rows,
+    threadContext: input.threadContext,
+    project,
+    jobs: input.jobs,
     knownPeople: input.knownPeople,
-    candidates: input.rows,
-    people: identityPeople,
-    thread,
     vendorDirectory,
     evidenceTexts: localEvidence.evidenceTexts,
+    people: identityPeople,
   });
   const person =
     (isClientPersonLabel(attribution.personName) ? attribution.personName : null) ||
-    resolved.personLabel;
-  const organizationLabel = resolved.organizationLabel;
-  let communication = classifyTodayCommunication({
-    candidates: input.rows,
-    people: identityPeople,
-    thread,
-    vendorDirectory,
-    evidenceTexts: localEvidence.evidenceTexts,
-    knownPeople: input.knownPeople,
-  });
-  if (!person && resolved.kind === "vendor") communication = "vendor";
-  else if (!person && resolved.kind === "person") communication = "client";
-  else if (resolved.kind === "person") communication = "client";
+    (group.sourceClass === "vendor" ? null : group.personLabel);
+  const organizationLabel = group.organizationLabel;
+  let communication = group.sourceClass;
+  if (!person && group.identityKind === "vendor") communication = "vendor";
+  else if (!person && group.identityKind === "person") communication = "client";
+  else if (group.identityKind === "person") communication = "client";
   if (
     isActionableSystemAlert({ candidates: input.rows, thread }) &&
     !person &&
@@ -1016,6 +999,7 @@ function classifySituation(input: {
       projectStateLabel: projectStateLabel(project?.lifecycleStage),
       proposedAction: null,
       personAssociationCandidateId: pendingPersonAssociationCandidateId(input.rows),
+      recoveredGmailThreadId: group.gmailThreadId,
     };
   }
 
@@ -1088,20 +1072,13 @@ function classifySituation(input: {
         beat.kind === "new_project" ||
         beat.kind === "commitment",
     );
-  const truth = reconcileGroupTruthState({
-    key: input.key,
-    rows: usable,
-    threadContext: input.threadContext,
-    project,
-    jobs: input.jobs,
-  });
-  const remaining = truth.remainingCommitment;
+  const remaining = group.remainingFounderCommitment;
   const newWork =
     communication !== "vendor" &&
     communication !== "platform" &&
     communication !== "founder" &&
     !attribution.projectId &&
-    !truth.staleInboundSatisfied &&
+    !group.staleInboundSatisfied &&
     current.some((beat) => beat.kind === "new_project" || beat.kind === "client_request");
   const founderAsked = beats.some(
     (beat) =>
@@ -1114,7 +1091,7 @@ function classifySituation(input: {
     communication !== "vendor" &&
     communication !== "platform" &&
     communication !== "founder" &&
-    !truth.staleInboundSatisfied &&
+    !group.staleInboundSatisfied &&
     meaningful.speaker === "client" &&
     !meaningful.historical &&
     (meaningful.kind === "client_reply" ||
@@ -1137,7 +1114,7 @@ function classifySituation(input: {
           tokenOverlap(job.subject, meaningful.summary),
       ));
   const handledByFounder =
-    (truth.staleInboundSatisfied && !remaining) ||
+    (group.staleInboundSatisfied && !remaining) ||
     (meaningful.speaker === "founder" &&
       beats.some(
         (beat) =>
@@ -1161,7 +1138,9 @@ function classifySituation(input: {
     founderCommitment ||
     newWork ||
     reactivation ||
-    truth.staleInboundSatisfied ||
+    group.staleInboundSatisfied ||
+    Boolean(group.waitingState) ||
+    group.noFounderAction ||
     isActionableSystemAlert({ candidates: usable, thread }) ||
     usable.some(hasCommercialPayload) ||
     usable.some((row) => isActionableSpecConflict(row, input.ctx));
@@ -1195,6 +1174,7 @@ function classifySituation(input: {
       projectStateLabel: projectStateLabel(project?.lifecycleStage),
       proposedAction: null,
       personAssociationCandidateId: pendingPersonAssociationCandidateId(input.rows),
+      recoveredGmailThreadId: group.gmailThreadId,
     };
   }
 
@@ -1245,8 +1225,8 @@ function classifySituation(input: {
     explanation = remaining.explanation;
     recommended = remaining.recommended;
     urgency = 1;
-  } else if (truth.staleInboundSatisfied) {
-    const wait = waitingCopy(truth.waiting, person);
+  } else if (group.staleInboundSatisfied) {
+    const wait = waitingCopy(group.waitingState, person);
     disposition = "watching";
     rankClass = "informational";
     headline = wait.headline;
@@ -1255,6 +1235,21 @@ function classifySituation(input: {
     watchingTitle = title;
     watchingDetail = wait.watchingDetail;
     urgency = 0;
+  } else if (
+    communication === "vendor" &&
+    (group.waitingState === "cad" || group.waitingState === "shop")
+  ) {
+    const wait = waitingCopy(group.waitingState, person);
+    disposition = "watching";
+    rankClass = "informational";
+    headline = wait.headline;
+    explanation = wait.explanation;
+    recommended = wait.recommended;
+    watchingTitle = title;
+    watchingDetail = wait.watchingDetail;
+    urgency = 0;
+  } else if (communication === "vendor" && group.noFounderAction) {
+    disposition = "suppress";
   } else if (yourTurn) {
     rankClass = "client_reply";
     headline = "Your turn";
@@ -1272,7 +1267,7 @@ function classifySituation(input: {
     recommended =
       "Send the recap / next step and create the Project if moving forward.";
     urgency = 1;
-  } else if (reactivation && attribution.projectId && !truth.staleInboundSatisfied) {
+  } else if (reactivation && attribution.projectId && !group.staleInboundSatisfied) {
     rankClass = "follow_up";
     headline = "work is active again";
     explanation = `Older exploratory notes were quiet. Latest evidence is current again and needs a next step.`;
@@ -1336,8 +1331,8 @@ function classifySituation(input: {
     disposition = "suppress";
   }
 
-  if (isNakedDateText(headline) || isNakedDateText(recommended)) {
-    disposition = "suppress";
+  if (isNakedDateText(headline) || isNakedDateText(recommended) || isNakedContextSnippet(headline)) {
+    if (!remaining) disposition = "suppress";
   }
   if (disposition === "brief" && communication === "platform") {
     if (!isActionableSystemAlert({ candidates: usable, thread })) {
@@ -1399,6 +1394,7 @@ function classifySituation(input: {
     specConflict,
     personAssociationCandidateId: pendingPersonAssociationCandidateId(input.rows),
     groupedThreadId,
+    recoveredGmailThreadId: group.gmailThreadId,
   };
 }
 
@@ -1445,6 +1441,7 @@ function presentBrief(
     projectTitle: item.projectTitle,
     projectId: item.projectId,
     canonicalGmailThreadId,
+    recoveredGmailThreadId: item.recoveredGmailThreadId ?? item.groupedThreadId ?? null,
     headline: item.headline,
     explanation: item.explanation,
     recommended: item.recommended,

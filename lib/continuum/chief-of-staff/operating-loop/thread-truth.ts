@@ -16,10 +16,7 @@ import {
 } from "@/lib/continuum/candidates/founder-attention";
 import { isUnresolvedOpenJobState } from "@/lib/continuum/client-memory/project-jobs/validate";
 import type { ProjectJob } from "@/lib/continuum/client-memory/project-jobs/types";
-import {
-  collectExactGmailIds,
-  exactGmailIdsFromCandidate,
-} from "@/lib/continuum/candidates/exact-gmail-ids";
+import { collectExactGmailIds } from "@/lib/continuum/candidates/exact-gmail-ids";
 import type { CosProjectContext } from "./types";
 
 export type ThreadWaitingKind = "client" | "shop" | "cad" | "production";
@@ -375,52 +372,6 @@ export function indexedThreadForGroup(
   return mergeIndexedThreads(threads);
 }
 
-function rowBelongsToThread(
-  row: ContinuumCandidate,
-  threadId: string,
-  thread: TodayGmailThreadContext | null,
-): boolean {
-  const ids = exactGmailIdsFromCandidate(row);
-  if (ids.threadIds.includes(threadId)) return true;
-  if ((thread?.messages ?? []).some((item) => ids.messageIds.includes(item.messageId))) {
-    return true;
-  }
-  return false;
-}
-
-function mergeThreadTruths(truths: readonly ThreadTruthState[]): ThreadTruthState {
-  const withInbound = truths.filter((row) => row.latestInboundAt);
-  const staleInboundSatisfied =
-    withInbound.length > 0
-      ? withInbound.every((row) => row.staleInboundSatisfied)
-      : truths.every((row) => row.staleInboundSatisfied);
-  const remainingCommitment =
-    truths.find((row) => row.remainingCommitment)?.remainingCommitment ?? null;
-  const latestInboundAt =
-    withInbound
-      .map((row) => row.latestInboundAt)
-      .sort((a, b) => parseMs(a) - parseMs(b))
-      .at(-1) ?? null;
-  const latestOutboundAt =
-    truths
-      .map((row) => row.latestOutboundAt)
-      .filter((row): row is string => Boolean(row))
-      .sort((a, b) => parseMs(a) - parseMs(b))
-      .at(-1) ?? null;
-  return {
-    latestInboundAt,
-    latestOutboundAt,
-    founderRepliedAfterInbound: staleInboundSatisfied,
-    clientRepliedAfterOutbound: truths.some((row) => row.clientRepliedAfterOutbound),
-    staleInboundSatisfied,
-    remainingCommitment,
-    waiting:
-      staleInboundSatisfied && !remainingCommitment
-        ? (truths.find((row) => row.waiting)?.waiting ?? "client")
-        : null,
-  };
-}
-
 export function reconcileGroupTruthState(input: {
   key: string;
   rows: readonly ContinuumCandidate[];
@@ -428,24 +379,10 @@ export function reconcileGroupTruthState(input: {
   project?: CosProjectContext | null;
   jobs?: readonly ProjectJob[] | null;
 }): ThreadTruthState {
-  const threadIds = gmailThreadIdsForGroup(input.key, input.rows, input.threadContext);
-  if (threadIds.length <= 1) {
-    return reconcileThreadTruthState({
-      rows: input.rows,
-      thread: indexedThreadForGroup(input.key, input.rows, input.threadContext),
-      project: input.project,
-      jobs: input.jobs,
-    });
-  }
-  const truths = threadIds.map((threadId) => {
-    const thread = input.threadContext?.get(threadId) ?? null;
-    const rows = input.rows.filter((row) => rowBelongsToThread(row, threadId, thread));
-    return reconcileThreadTruthState({
-      rows,
-      thread,
-      project: input.project,
-      jobs: input.jobs,
-    });
+  return reconcileThreadTruthState({
+    rows: input.rows,
+    thread: indexedThreadForGroup(input.key, input.rows, input.threadContext),
+    project: input.project,
+    jobs: input.jobs,
   });
-  return mergeThreadTruths(truths);
 }

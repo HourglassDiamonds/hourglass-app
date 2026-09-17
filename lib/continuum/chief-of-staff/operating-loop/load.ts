@@ -4,7 +4,8 @@
  * thread subjects plus message timestamps/direction/labels for Today identity
  * and thread truth-state. Recovers exact thread chronology from persisted
  * thread ids, then message ids. May fetch live From metadata for Unassigned
- * cards only. Does not write. Does not activate shadow CoS briefs.
+ * cards only, using recovered Gmail thread ids. Does not write. Does not
+ * activate shadow CoS briefs.
  */
 
 import "server-only";
@@ -46,14 +47,23 @@ import {
 
 function unassignedLiveIdentityThreadIds(loop: CosOperatingLoopView): string[] {
   const ids = new Set<string>();
+  const add = (value: string | null | undefined) => {
+    const id = value?.trim() ?? "";
+    if (id) ids.add(id);
+  };
   for (const item of composeTodayDocket(loop).items) {
     if (item.subject !== "Unassigned") continue;
-    const canonical = item.brief?.canonicalGmailThreadId?.trim();
-    if (canonical) ids.add(canonical);
+    add(item.brief?.recoveredGmailThreadId);
+    add(item.brief?.canonicalGmailThreadId);
     for (const beat of item.brief?.evidence ?? []) {
       if (beat.generatedSource === true) continue;
       const parsed = parseGmailWebHref(beat.sourceHref ?? "");
-      if (parsed?.threadId) ids.add(parsed.threadId);
+      if (parsed?.threadId) add(parsed.threadId);
+    }
+    for (const action of item.brief?.actions ?? []) {
+      if (action.kind !== "open_email") continue;
+      const parsed = parseGmailWebHref(action.href ?? "");
+      if (parsed?.threadId) add(parsed.threadId);
     }
   }
   return [...ids];
