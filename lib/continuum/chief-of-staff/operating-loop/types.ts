@@ -245,6 +245,10 @@ export type CosBriefItem = {
   candidateIds: readonly string[];
   proposedAction: CosProposedAction | null;
   specConflict: CosSpecConflictView | null;
+  sourceClass?: string | null;
+  staleInboundSatisfied?: boolean;
+  noFounderAction?: boolean;
+  waitingState?: string | null;
 };
 
 export type CosDocketOrigin =
@@ -260,6 +264,7 @@ export type CosWatchingItem = {
   title: string;
   detail: string;
   projectId: string | null;
+  candidateIds?: readonly string[];
 };
 
 export type CosMasterSprintItem = {

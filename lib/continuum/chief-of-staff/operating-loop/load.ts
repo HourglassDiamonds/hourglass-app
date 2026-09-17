@@ -3,9 +3,9 @@
  * Reads Open Jobs, Project Desk titles, Candidates, and indexed Gmail
  * thread subjects plus message timestamps/direction/labels for Today identity
  * and thread truth-state. Recovers exact thread chronology from persisted
- * thread ids, then message ids. May fetch live From metadata for Unassigned
- * cards only, using recovered Gmail thread ids. Does not write. Does not
- * activate shadow CoS briefs.
+ * thread ids, then message ids. May fetch live From metadata for identity-
+ * unresolved Gmail cards, using recovered Gmail thread ids. Does not write.
+ * Does not activate shadow CoS briefs.
  */
 
 import "server-only";
@@ -51,20 +51,31 @@ function unassignedLiveIdentityThreadIds(loop: CosOperatingLoopView): string[] {
     const id = value?.trim() ?? "";
     if (id) ids.add(id);
   };
+  const addHref = (href: string | null | undefined) => {
+    const parsed = parseGmailWebHref(href ?? "");
+    if (parsed?.threadId) add(parsed.threadId);
+  };
   for (const item of composeTodayDocket(loop).items) {
-    if (item.subject !== "Unassigned") continue;
+    const unresolved =
+      item.subject === "Unassigned" ||
+      (!item.brief?.personLabel && !item.brief?.organizationLabel);
+    if (!unresolved && item.subject !== "Unassigned") continue;
     add(item.brief?.recoveredGmailThreadId);
     add(item.brief?.canonicalGmailThreadId);
     for (const beat of item.brief?.evidence ?? []) {
       if (beat.generatedSource === true) continue;
-      const parsed = parseGmailWebHref(beat.sourceHref ?? "");
-      if (parsed?.threadId) add(parsed.threadId);
+      addHref(beat.sourceHref);
     }
     for (const action of item.brief?.actions ?? []) {
       if (action.kind !== "open_email") continue;
-      const parsed = parseGmailWebHref(action.href ?? "");
-      if (parsed?.threadId) add(parsed.threadId);
+      addHref(action.href);
     }
+    addHref(item.decision?.sourceHref);
+  }
+  for (const brief of loop.brief) {
+    if (brief.personLabel || brief.organizationLabel) continue;
+    add(brief.recoveredGmailThreadId);
+    add(brief.canonicalGmailThreadId);
   }
   return [...ids];
 }

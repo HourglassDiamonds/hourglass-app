@@ -39,8 +39,12 @@ import {
   payloadOf,
   collectTodayVendorEvidence,
   isActionableSystemAlert,
+  isCurrentOperationalSystemMail,
+  isExpiredOperationalSystemMail,
+  isFooterOrTemplateNoise,
   isGeneratedTodayNoise,
   isNonActionableSystemMail,
+  stripFooterTemplateNoise,
   type FounderAttentionContext,
   type TodayCommunicationClass,
   type TodayGmailThreadContext,
@@ -131,7 +135,7 @@ const SHOP_SENT =
 const VENDOR_ACK =
   /\b(received|got (?:it|the)|acknowledged|confirmed|in production|we(?:'|’)ll start|started|on the bench)\b/i;
 const FOUNDER_OUTBOUND =
-  /\b(i(?:'|’)ll send|i am sending|i(?:'|’)m sending|moving forward|please proceed|just sent)\b/i;
+  /\b(here is the updated|let me know what you think|i(?:'|’)ll send|i am sending|i(?:'|’)m sending|moving forward|please proceed|just sent)\b/i;
 const CLIENT_QUESTION_ASK =
   /\b(can you|could you|what(?:'|’)s next|next steps?|price|timing|eta)\b/i;
 const FOUNDER_QUESTION =
@@ -139,7 +143,7 @@ const FOUNDER_QUESTION =
 const DEADLINE_SIGNAL =
   /\b(deadline|travel|needed by|need(?:s)? it by|before (?:the )?(?:trip|wedding|flight))\b/i;
 const CHANNEL_META =
-  /\b(unsubscribe|noreply|notification|mailbox|newsletter|signature)\b/i;
+  /\b(unsubscribe|noreply|notification|mailbox|newsletter|signature|email subscriptions?|manage (?:email )?preferences|view as webpage|privacy policy)\b/i;
 
 const STOP = new Set([
   "this",
@@ -222,6 +226,10 @@ type RankedSituation = {
   personAssociationCandidateId?: string | null;
   groupedThreadId?: string | null;
   recoveredGmailThreadId?: string | null;
+  staleInboundSatisfied?: boolean;
+  noFounderAction?: boolean;
+  waitingState?: ThreadWaitingKind | null;
+  sourceClass?: TodayCommunicationClass;
 };
 
 function identityPeopleFor(
@@ -378,10 +386,10 @@ function waitingCopy(
     };
   }
   return {
-    headline: "already answered",
-    explanation: `${person || "The client"} replied and you already answered.`,
-    recommended: "No action needed.",
-    watchingDetail: `${person || "The client"} replied and you already answered.`,
+    headline: "waiting on client",
+    explanation: "You already replied. Current dependency is the client.",
+    recommended: "Wait on the client.",
+    watchingDetail: "Waiting on the client.",
   };
 }
 
@@ -407,7 +415,7 @@ function formatEvidenceDay(iso: string): string {
 }
 
 function clip(text: string, max = 140): string {
-  const clean = text.replace(/\s+/g, " ").trim();
+  const clean = stripFooterTemplateNoise(text).replace(/\s+/g, " ").trim();
   if (clean.length <= max) return clean;
   return `${clean.slice(0, max - 1).trimEnd()}…`;
 }
@@ -416,6 +424,7 @@ function isBoilerplate(row: ContinuumCandidate): boolean {
   if (row.evidenceBasis.ruleIds.some((id) => BLOCKED_RULES.has(id))) return true;
   if (isTechnicianVisit(row)) return true;
   const hay = haystack(row);
+  if (isFooterOrTemplateNoise(hay) && !hasCommercialPayload(row)) return true;
   if (CHANNEL_META.test(hay) && !hasCommercialPayload(row)) return true;
   const tokens = contentTokens(hay);
   if (tokens.length <= 3 && /\b(thanks|thank you|regards|best)\b/i.test(hay)) {
@@ -785,9 +794,12 @@ function actionsFor(input: {
     });
   }
   const clientIdentityGap =
-    (input.communication === "client" || input.communication === "unknown") &&
+    input.communication !== "vendor" &&
+    input.communication !== "platform" &&
+    input.communication !== "founder" &&
     !input.personName &&
     !input.organizationLabel &&
+    (input.communication === "client" || input.communication === "unknown") &&
     (input.personAssociationCandidateId || !input.projectId);
   if (clientIdentityGap) {
     const href = input.personAssociationCandidateId
@@ -871,25 +883,27 @@ function classifySituation(input: {
   top5: readonly CosTop5Item[];
   proposedActions: readonly CosProposedAction[];
   association: ReadonlyMap<string, SupportedThreadProject>;
+  projectByThread?: ReadonlyMap<string, string>;
   nowMs: number;
   threadContext?: ReadonlyMap<string, TodayGmailThreadContext>;
   vendorDirectory?: readonly string[];
   evidenceTexts?: readonly string[];
   knownPeople?: readonly TodayKnownPerson[];
 }): RankedSituation | null {
+  const groupedThreadId = situationThreadId(input.key, input.rows, input.threadContext);
   const groupedProjectId = input.key.startsWith("project:")
     ? input.key.slice("project:".length)
     : null;
   const projectId =
     groupedProjectId ??
     input.rows.map(candidateProjectId).find((id): id is string => Boolean(id)) ??
+    (groupedThreadId ? (input.projectByThread?.get(groupedThreadId) ?? null) : null) ??
     null;
   const attribution = resolveProjectAttribution(input.rows, projectId, input.projects);
   const project = attribution.projectId
     ? (input.projects.get(attribution.projectId) ?? null)
     : null;
   const vendorName = pickVendorName(project);
-  const groupedThreadId = situationThreadId(input.key, input.rows, input.threadContext);
   const thread = indexedThreadForGroup(input.key, input.rows, input.threadContext);
   const identityPeople = identityPeopleFor(project, input.rows, input.projects, null);
   if (
@@ -901,6 +915,12 @@ function classifySituation(input: {
     isNonActionableSystemMail({
       candidates: input.rows,
       thread,
+      nowIso: input.ctx.nowIso,
+    }) ||
+    isExpiredOperationalSystemMail({
+      candidates: input.rows,
+      thread,
+      nowIso: input.ctx.nowIso,
     })
   ) {
     return null;
@@ -922,6 +942,7 @@ function classifySituation(input: {
     vendorDirectory,
     evidenceTexts: localEvidence.evidenceTexts,
     people: identityPeople,
+    nowIso: input.ctx.nowIso,
   });
   const person =
     (isClientPersonLabel(attribution.personName) ? attribution.personName : null) ||
@@ -1072,6 +1093,11 @@ function classifySituation(input: {
         beat.kind === "new_project" ||
         beat.kind === "commitment",
     );
+  const currentOperational = isCurrentOperationalSystemMail({
+    candidates: input.rows,
+    thread,
+    nowIso: input.ctx.nowIso,
+  });
   const remaining = group.remainingFounderCommitment;
   const newWork =
     communication !== "vendor" &&
@@ -1079,6 +1105,7 @@ function classifySituation(input: {
     communication !== "founder" &&
     !attribution.projectId &&
     !group.staleInboundSatisfied &&
+    !group.noFounderAction &&
     current.some((beat) => beat.kind === "new_project" || beat.kind === "client_request");
   const founderAsked = beats.some(
     (beat) =>
@@ -1092,6 +1119,7 @@ function classifySituation(input: {
     communication !== "platform" &&
     communication !== "founder" &&
     !group.staleInboundSatisfied &&
+    !group.noFounderAction &&
     meaningful.speaker === "client" &&
     !meaningful.historical &&
     (meaningful.kind === "client_reply" ||
@@ -1141,6 +1169,7 @@ function classifySituation(input: {
     group.staleInboundSatisfied ||
     Boolean(group.waitingState) ||
     group.noFounderAction ||
+    currentOperational ||
     isActionableSystemAlert({ candidates: usable, thread }) ||
     usable.some(hasCommercialPayload) ||
     usable.some((row) => isActionableSpecConflict(row, input.ctx));
@@ -1250,6 +1279,16 @@ function classifySituation(input: {
     urgency = 0;
   } else if (communication === "vendor" && group.noFounderAction) {
     disposition = "suppress";
+  } else if (group.noFounderAction) {
+    const wait = waitingCopy(group.waitingState, person);
+    disposition = "watching";
+    rankClass = "informational";
+    headline = wait.headline;
+    explanation = wait.explanation;
+    recommended = wait.recommended;
+    watchingTitle = title;
+    watchingDetail = wait.watchingDetail;
+    urgency = 0;
   } else if (yourTurn) {
     rankClass = "client_reply";
     headline = "Your turn";
@@ -1321,12 +1360,14 @@ function classifySituation(input: {
     explanation = clip(meaningful.summary, 220);
     recommended = "Review the latest shop turn.";
     urgency = 0;
-  } else if (isActionableSystemAlert({ candidates: usable, thread })) {
+  } else if (isActionableSystemAlert({ candidates: usable, thread }) || currentOperational) {
     rankClass = "follow_up";
-    headline = clip(meaningful.summary, 72);
-    explanation = clip(meaningful.summary, 220);
-    recommended = "Review this alert.";
-    urgency = 1;
+    headline = clip(thread?.subject || meaningful.summary, 72);
+    explanation = clip(meaningful.summary, 220) || clip(thread?.subject ?? "", 220);
+    recommended = currentOperational
+      ? "Review this while the window is still open."
+      : "Review this alert.";
+    urgency = currentOperational ? 0 : 1;
   } else {
     disposition = "suppress";
   }
@@ -1335,7 +1376,10 @@ function classifySituation(input: {
     if (!remaining) disposition = "suppress";
   }
   if (disposition === "brief" && communication === "platform") {
-    if (!isActionableSystemAlert({ candidates: usable, thread })) {
+    if (
+      !isActionableSystemAlert({ candidates: usable, thread }) &&
+      !currentOperational
+    ) {
       disposition = "suppress";
     }
   }
@@ -1395,6 +1439,10 @@ function classifySituation(input: {
     personAssociationCandidateId: pendingPersonAssociationCandidateId(input.rows),
     groupedThreadId,
     recoveredGmailThreadId: group.gmailThreadId,
+    staleInboundSatisfied: group.staleInboundSatisfied,
+    noFounderAction: group.noFounderAction,
+    waitingState: group.waitingState,
+    sourceClass: group.sourceClass,
   };
 }
 
@@ -1464,6 +1512,10 @@ function presentBrief(
     candidateIds: item.candidateIds,
     proposedAction: item.proposedAction,
     specConflict: item.specConflict ?? null,
+    sourceClass: item.sourceClass ?? item.communication,
+    staleInboundSatisfied: item.staleInboundSatisfied ?? false,
+    noFounderAction: item.noFounderAction ?? false,
+    waitingState: item.waitingState ?? null,
   };
 }
 
@@ -1534,6 +1586,7 @@ export function composeConciergeBrief(input: ComposeConciergeBriefInput): {
       top5: input.top5,
       proposedActions: input.proposedActions ?? [],
       association,
+      projectByThread,
       nowMs,
       threadContext: input.threadContext,
       vendorDirectory,
@@ -1556,6 +1609,7 @@ export function composeConciergeBrief(input: ComposeConciergeBriefInput): {
       title: row.watchingTitle,
       detail: row.watchingDetail,
       projectId: row.projectId,
+      candidateIds: row.candidateIds,
     }));
 
   return {
@@ -1576,7 +1630,8 @@ function coveredByBrief(
   }
   const ids = new Set(candidateIds);
   if (ids.size === 0) return false;
-  return brief.some((row) => row.candidateIds.some((id) => ids.has(id)));
+  if (brief.some((row) => row.candidateIds.some((id) => ids.has(id)))) return true;
+  return watching.some((row) => (row.candidateIds ?? []).some((id) => ids.has(id)));
 }
 
 export function uncoveredFallbackAttention(input: {

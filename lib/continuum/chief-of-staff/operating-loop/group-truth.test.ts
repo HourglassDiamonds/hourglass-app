@@ -6,7 +6,7 @@ import { groupingKey } from "@/lib/continuum/candidates/founder-attention";
 import { composeCosOperatingLoop } from "./compose";
 import { composeTodayDocket } from "./docket";
 import { selectFounderControls } from "./founder-actions";
-import { fixtureCandidate } from "./fixtures";
+import { fixtureCandidate, COS_LOOP_PROJECT_A } from "./fixtures";
 import { resolveTodayGroupTruth } from "./group-truth";
 import type { CosProjectContext } from "./types";
 import type { TodayGmailThreadContext } from "@/lib/continuum/candidates/founder-attention";
@@ -27,6 +27,13 @@ const SARAH_VENDOR_IN = "sarah-vendor-in-1a0881b53067a9e6";
 const JEN_THREAD = "19fc9f4c3d36dbed";
 const JEN_IN = "jen-in-19fc9f4c3d36dbed";
 const JEN_OUT = "jen-out-19fc9f4c3d36dbed";
+const JEN_EMAIL = "jen.spiegel@example.test";
+const JEN_HASH = hashEmail(JEN_EMAIL)!;
+const GRANT_THREAD = "1a03a3004b69ec27";
+const GRANT_ASK = "grant-ask-1a03a3004b69ec27";
+const GRANT_WILL = "grant-will-1a03a3004b69ec27";
+const GRANT_STL = "grant-stl-1a03a3004b69ec27";
+const DELTA_THREAD = "delta-checkin-expired";
 
 function gmailRow(
   extra: Partial<ContinuumCandidate> & Pick<ContinuumCandidate, "candidateId">,
@@ -664,5 +671,411 @@ describe("Today Gmail group truth", () => {
     assert.ok(card);
     assert.equal(selectFounderControls(card!).confirmPerson, null);
     assert.notEqual(card?.subject, "Unassigned");
+  });
+
+  it("Jen: unknown-direction indexed outbound still satisfies stale inbound", () => {
+    const candidates = jenCandidates();
+    const threadContext = new Map([
+      [
+        JEN_THREAD,
+        {
+          subject: "Re: Cornflower Blue - Yogo Sapphire - Lee",
+          fromDisplayName: "Jen Spiegel",
+          fromEmail: JEN_EMAIL,
+          messages: [
+            {
+              messageId: JEN_IN,
+              sentAt: "2026-09-15T16:00:00.000Z",
+              direction: "inbound" as const,
+              fromEmailHash: JEN_HASH,
+            },
+            {
+              messageId: JEN_OUT,
+              sentAt: "2026-09-16T18:30:00.000Z",
+              direction: "unknown" as const,
+              fromEmailHash: FOUNDER_HASH,
+            },
+          ],
+        },
+      ],
+    ]);
+    const truth = resolveTodayGroupTruth({
+      key: groupingKey(candidates[0]!),
+      rows: candidates,
+      threadContext,
+      knownPeople: niurkaPeople(),
+    });
+    assert.equal(truth.staleInboundSatisfied, true);
+    assert.equal(truth.waitingState, "client");
+    assert.equal(truth.noFounderAction, true);
+    const { docket, loop } = todayOf(candidates, { threadContext, knownPeople: niurkaPeople() });
+    assert.equal(
+      docket.items.some((item) => /recap|next step|Responded/i.test(`${item.headline} ${item.subject}`)),
+      false,
+    );
+    assert.equal(
+      docket.items.some((item) => selectFounderControls(item).actions.some((row) => row.verb === "responded")),
+      false,
+    );
+    assert.ok(loop.watching.some((row) => /waiting on the client/i.test(row.detail)));
+  });
+
+  it("Jen: a later inbound on another project thread does not revive recap", () => {
+    const jen = jenCandidates().map((row) => ({
+      ...row,
+      proposedTarget: { kind: "project" as const, projectId: COS_LOOP_PROJECT_A },
+    }));
+    const staleAgain = gmailRow({
+      candidateId: "jen-older-ask",
+      sourceRef: `gc1|${JEN_THREAD}|${JEN_IN}`,
+      sourceTimestamp: "2026-09-14T16:00:00.000Z",
+      candidateType: "project_context",
+      proposedTarget: { kind: "project", projectId: COS_LOOP_PROJECT_A },
+      payload: {
+        kind: "project_context",
+        topic: "design_refinement",
+        value: "Could we also try a split shank?",
+      },
+      evidenceBasis: {
+        ruleIds: ["explicit_design_refinement", "explicit_client_request"],
+        matchedText: "Could we also try a split shank?",
+        supportingSourceRefs: [`gc1|${JEN_THREAD}|${JEN_IN}`],
+      },
+    });
+    const threadContext = new Map([[JEN_THREAD, jenThread()]]);
+    const rows = [...jen, staleAgain];
+    const truth = resolveTodayGroupTruth({
+      key: groupingKey(rows[0]!),
+      rows,
+      threadContext,
+    });
+    assert.equal(truth.staleInboundSatisfied, true);
+    assert.equal(truth.waitingState, "client");
+    const { docket } = todayOf(rows, {
+      threadContext,
+      projects: new Map([
+        [
+          COS_LOOP_PROJECT_A,
+          {
+            projectId: COS_LOOP_PROJECT_A,
+            title: "Cornflower Blue",
+            personName: "Jen Spiegel",
+            people: [{ personId: "jen", displayName: "Jen Spiegel", role: "client" }],
+            isCurrent: true,
+            specs: [],
+            gmailThreadId: JEN_THREAD,
+          },
+        ],
+      ]),
+    });
+    assert.equal(
+      docket.items.some((item) => /recap|Your turn/i.test(`${item.headline} ${item.brief?.headline ?? ""}`)),
+      false,
+    );
+    assert.equal(
+      docket.items.some((item) => selectFounderControls(item).actions.some((row) => row.verb === "responded")),
+      false,
+    );
+  });
+
+  it("Niurka / F.Grant: latest STL delivery is Vlora, not Confirm Person or Up next", () => {
+    const candidates = [
+      gmailRow({
+        candidateId: "grant-assoc",
+        sourceRef: `gc1|${GRANT_THREAD}|${GRANT_STL}`,
+        sourceTimestamp: "2026-08-26T15:00:00.000Z",
+        candidateType: "person_association",
+        proposedTarget: { kind: "person", personId: null },
+        payload: {
+          kind: "person_association",
+          displayName: "Niurka Lulo",
+          emailHash: NIURKA_HASH,
+          mintPerson: false,
+          mergePersons: false,
+        },
+        evidenceBasis: {
+          ruleIds: ["unresolved_email_hash"],
+          matchedText: "Niurka Lulo",
+        },
+      }),
+      gmailRow({
+        candidateId: "grant-date",
+        sourceRef: `gc1|${GRANT_THREAD}|${GRANT_ASK}`,
+        sourceTimestamp: "2026-08-26T15:00:00.000Z",
+        candidateType: "note",
+        payload: {
+          kind: "date",
+          raw: "Aug 26, 2026",
+          isoDate: "2026-08-26",
+          precision: "day",
+          role: "mentioned",
+          sourceTimestamp: "2026-08-26T15:00:00.000Z",
+          resolutionCalendar: "source-timestamp-utc-date",
+        },
+        evidenceBasis: {
+          ruleIds: ["extracted_date"],
+          matchedText: "Aug 26, 2026",
+        },
+      }),
+      gmailRow({
+        candidateId: "grant-ask",
+        sourceRef: `gc1|${GRANT_THREAD}|${GRANT_ASK}`,
+        sourceTimestamp: "2026-08-26T15:10:00.000Z",
+        candidateType: "open_job",
+        payload: {
+          kind: "open_job",
+          jobKind: "request",
+          subject: "Can you send me the STL files for these please?",
+          detail: null,
+          waitingOnActor: "vendor",
+          dueAt: null,
+          createJob: false,
+        },
+        evidenceBasis: {
+          ruleIds: ["explicit_founder_commitment"],
+          matchedText: "Can you send me the STL files for these please?",
+        },
+      }),
+      gmailRow({
+        candidateId: "grant-will",
+        sourceRef: `gc1|${GRANT_THREAD}|${GRANT_WILL}`,
+        sourceTimestamp: "2026-08-26T16:00:00.000Z",
+        candidateType: "open_job",
+        payload: {
+          kind: "open_job",
+          jobKind: "commitment",
+          subject: "I will send the STL files",
+          detail: null,
+          waitingOnActor: "vendor",
+          dueAt: null,
+          createJob: false,
+        },
+        evidenceBasis: {
+          ruleIds: ["explicit_vendor_commitment"],
+          matchedText: "I will send the STL files",
+        },
+      }),
+      gmailRow({
+        candidateId: "grant-stl",
+        sourceRef: `gc1|${GRANT_THREAD}|${GRANT_STL}`,
+        sourceTimestamp: "2026-09-04T14:00:00.000Z",
+        candidateType: "open_job",
+        payload: {
+          kind: "open_job",
+          jobKind: "commitment",
+          subject: "STL File C025885 Band 1-2",
+          detail: null,
+          waitingOnActor: "vendor",
+          dueAt: null,
+          createJob: false,
+        },
+        evidenceBasis: {
+          ruleIds: ["explicit_vendor_commitment"],
+          matchedText: "STL File C025885 Band 1-2\nSTL File C025885 Band 3",
+        },
+      }),
+    ];
+    const threadContext = new Map([
+      [
+        GRANT_THREAD,
+        {
+          subject: "RE: HGD x F.Grant-C025885",
+          fromDisplayName: "Niurka Lulo",
+          fromEmail: NIURKA_EMAIL,
+          messages: [
+            {
+              messageId: GRANT_ASK,
+              sentAt: "2026-08-26T15:10:00.000Z",
+              direction: "outbound" as const,
+              fromEmailHash: FOUNDER_HASH,
+            },
+            {
+              messageId: GRANT_WILL,
+              sentAt: "2026-08-26T16:00:00.000Z",
+              direction: "inbound" as const,
+              fromEmailHash: NIURKA_HASH,
+            },
+            {
+              messageId: GRANT_STL,
+              sentAt: "2026-09-04T14:00:00.000Z",
+              direction: "inbound" as const,
+              fromEmailHash: NIURKA_HASH,
+            },
+          ],
+        },
+      ],
+    ]);
+    const truth = resolveTodayGroupTruth({
+      key: groupingKey(candidates[0]!),
+      rows: candidates,
+      threadContext,
+      knownPeople: niurkaPeople(),
+      vendorDirectory: ["Vlora"],
+    });
+    assert.equal(truth.gmailThreadId, GRANT_THREAD);
+    assert.equal(truth.organizationLabel, "Vlora");
+    assert.equal(truth.sourceClass, "vendor");
+    assert.equal(truth.noFounderAction, true);
+    assert.equal(truth.remainingFounderCommitment, null);
+    const { docket, loop } = todayOf(candidates, {
+      threadContext,
+      knownPeople: niurkaPeople(),
+      vendorDirectory: ["Vlora"],
+    });
+    assert.equal(
+      docket.items.some((item) => /Unassigned|Confirm Person|F\.Grant/i.test(`${item.subject} ${item.headline}`)),
+      false,
+    );
+    assert.equal(
+      docket.items.some((item) => selectFounderControls(item).confirmPerson != null),
+      false,
+    );
+    assert.equal(
+      loop.brief.some((row) => row.actions.some((action) => action.kind === "confirm_person")),
+      false,
+    );
+    assert.equal(
+      docket.items.some((item) => /Aug 26/i.test(`${item.headline} ${item.context ?? ""}`)),
+      false,
+    );
+  });
+
+  it("Delta: expired flight check-in leaves Today and ignores footer subscriptions", () => {
+    const footer = "please update your email subscriptions on your";
+    const candidates = [
+      gmailRow({
+        candidateId: "delta-assoc",
+        sourceRef: `gc1|${DELTA_THREAD}|delta-msg`,
+        sourceTimestamp: "2026-09-11T14:00:00.000Z",
+        candidateType: "person_association",
+        proposedTarget: { kind: "person", personId: null },
+        payload: {
+          kind: "person_association",
+          displayName: "Delta Air Lines",
+          emailHash: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          mintPerson: false,
+          mergePersons: false,
+        },
+        evidenceBasis: {
+          ruleIds: ["unresolved_email_hash"],
+          matchedText: "Delta Air Lines",
+        },
+      }),
+      gmailRow({
+        candidateId: "delta-checkin",
+        sourceRef: `gc1|${DELTA_THREAD}|delta-msg`,
+        sourceTimestamp: "2026-09-11T14:00:00.000Z",
+        candidateType: "open_job",
+        payload: {
+          kind: "open_job",
+          jobKind: "request",
+          subject: "It's Time To Check In For Your Flight",
+          detail: footer,
+          waitingOnActor: "founder",
+          dueAt: null,
+          createJob: false,
+        },
+        evidenceBasis: {
+          ruleIds: ["explicit_follow_up"],
+          matchedText: `It's Time To Check In For Your Flight Saturday Sept 12. ${footer}`,
+        },
+      }),
+    ];
+    const thread = {
+      subject: "It's Time To Check In For Your Flight",
+      fromDisplayName: "Delta Air Lines",
+      fromEmail: "DeltaAirLines@t.delta.com",
+      messages: [
+        {
+          messageId: "delta-msg",
+          sentAt: "2026-09-11T14:00:00.000Z",
+          direction: "inbound" as const,
+          labelIds: ["CATEGORY_UPDATES"],
+        },
+      ],
+    };
+    const threadContext = new Map([[DELTA_THREAD, thread]]);
+    const expired = resolveTodayGroupTruth({
+      key: groupingKey(candidates[0]!),
+      rows: candidates,
+      threadContext,
+      nowIso: NOW,
+    });
+    assert.equal(expired.sourceClass, "platform");
+    const { docket, loop } = todayOf(candidates, { threadContext });
+    assert.equal(docket.items.length, 0);
+    assert.equal(loop.brief.length, 0);
+    assert.equal(
+      docket.items.some((item) => selectFounderControls(item).confirmPerson != null),
+      false,
+    );
+    assert.doesNotMatch(
+      [...docket.items.map((item) => item.headline), ...loop.brief.map((row) => row.headline)].join("\n"),
+      /email subscriptions/i,
+    );
+  });
+
+  it("current flight check-in can still surface without Confirm Person", () => {
+    const candidates = [
+      gmailRow({
+        candidateId: "delta-now-assoc",
+        sourceRef: "gc1|delta-current|delta-now-msg",
+        sourceTimestamp: "2026-09-16T14:00:00.000Z",
+        candidateType: "person_association",
+        proposedTarget: { kind: "person", personId: null },
+        payload: {
+          kind: "person_association",
+          displayName: "Delta Air Lines",
+          emailHash: "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          mintPerson: false,
+          mergePersons: false,
+        },
+        evidenceBasis: {
+          ruleIds: ["unresolved_email_hash"],
+          matchedText: "Delta Air Lines",
+        },
+      }),
+      gmailRow({
+        candidateId: "delta-now-checkin",
+        sourceRef: "gc1|delta-current|delta-now-msg",
+        sourceTimestamp: "2026-09-16T14:00:00.000Z",
+        candidateType: "open_job",
+        payload: {
+          kind: "open_job",
+          jobKind: "request",
+          subject: "It's Time To Check In For Your Flight",
+          detail: null,
+          waitingOnActor: "founder",
+          dueAt: null,
+          createJob: false,
+        },
+        evidenceBasis: {
+          ruleIds: ["explicit_follow_up"],
+          matchedText: "It's Time To Check In For Your Flight Thursday Sept 17.",
+        },
+      }),
+    ];
+    const threadContext = new Map([
+      [
+        "delta-current",
+        {
+          subject: "It's Time To Check In For Your Flight",
+          fromDisplayName: "Delta Air Lines",
+          fromEmail: "DeltaAirLines@t.delta.com",
+          messages: [
+            {
+              messageId: "delta-now-msg",
+              sentAt: "2026-09-16T14:00:00.000Z",
+              direction: "inbound" as const,
+              labelIds: ["CATEGORY_UPDATES"],
+            },
+          ],
+        },
+      ],
+    ]);
+    const { docket } = todayOf(candidates, { threadContext });
+    assert.ok(docket.items.length > 0);
+    assert.equal(selectFounderControls(docket.items[0]!).confirmPerson, null);
+    assert.doesNotMatch(docket.items[0]?.headline ?? "", /email subscriptions/i);
   });
 });

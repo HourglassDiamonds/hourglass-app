@@ -10,6 +10,7 @@ import {
   candidateText,
   classifyTodayCommunication,
   collectTodayEmailHashes,
+  collectTodayFounderEmailHashes,
   isClientPersonLabel,
   resolveTodayIdentity,
   type TodayCommunicationClass,
@@ -24,6 +25,7 @@ import type { ProjectJob } from "@/lib/continuum/client-memory/project-jobs/type
 import {
   candidateDirection,
   gmailThreadIdsForGroup,
+  indexedMessagesWithInferredDirection,
   indexedThreadForGroup,
   reconcileGroupTruthState,
   type RemainingFounderCommitment,
@@ -122,12 +124,18 @@ export function resolveTodayGroupTruth(input: {
   vendorDirectory?: readonly string[];
   evidenceTexts?: readonly string[];
   people?: readonly TodayIdentitySignal[];
+  nowIso?: string;
 }): TodayGroupTruth {
   const threadIds = gmailThreadIdsForGroup(input.key, input.rows, input.threadContext);
   const thread = indexedThreadForGroup(input.key, input.rows, input.threadContext);
   const collected = collectExactGmailIds(input.rows);
-  const latestInbound = latestIndexed(thread?.messages, "inbound");
-  const latestOutbound = latestIndexed(thread?.messages, "outbound");
+  const founderEmailHashes = collectTodayFounderEmailHashes(input.knownPeople);
+  const inferredMessages = indexedMessagesWithInferredDirection(
+    thread?.messages,
+    new Set(founderEmailHashes),
+  );
+  const latestInbound = latestIndexed(inferredMessages, "inbound");
+  const latestOutbound = latestIndexed(inferredMessages, "outbound");
   const externalSenderHash =
     latestInbound?.fromEmailHash?.trim() ||
     collectTodayExternalEmailHashes({ candidates: input.rows, thread })[0] ||
@@ -152,6 +160,7 @@ export function resolveTodayGroupTruth(input: {
     vendorDirectory: input.vendorDirectory,
     evidenceTexts: input.evidenceTexts,
     knownPeople: input.knownPeople,
+    nowIso: input.nowIso,
   });
   const storedClient = (input.people ?? []).some(
     (person) =>
@@ -173,6 +182,7 @@ export function resolveTodayGroupTruth(input: {
     threadContext: input.threadContext,
     project: input.project,
     jobs: input.jobs,
+    founderEmailHashes,
   });
   const inboundText = inboundHaystack(input.rows, thread, chronology.latestInboundAt);
   const forthcoming = VENDOR_FORTHCOMING.test(inboundText);

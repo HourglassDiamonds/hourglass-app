@@ -10,7 +10,12 @@ import type { ContinuumCandidate } from "@/lib/continuum/candidates/types";
 import { hashStoredPersonEmail } from "@/lib/continuum/client-memory/hashes";
 import type { ProjectJob } from "@/lib/continuum/client-memory/project-jobs/types";
 import { isUnresolvedOpenJobState } from "@/lib/continuum/client-memory/project-jobs/validate";
-import { isPastDueDate } from "@/lib/continuum/date-only";
+import {
+  addCalendarDays,
+  civilDateInZone,
+  dateOnlyFromParts,
+  isPastDueDate,
+} from "@/lib/continuum/date-only";
 import {
   collectExactGmailIds,
   exactGmailIdsFromCandidate,
@@ -506,6 +511,7 @@ export function isPlatformOrSystemName(name: string | null | undefined): boolean
   ) {
     return true;
   }
+  if (/\b(air lines?|airlines?|airways)\b/.test(normalized)) return true;
   if (/\b(inc|llc|ltd|gmbh|corp)\.?\b/.test(normalized)) return true;
   const tokens = normalized.split(" ");
   return tokens.length === 1 && normalized.length >= 6 && /(?:base|cloud|hq)$/.test(normalized);
@@ -562,6 +568,12 @@ export type TodayIdentitySignal = {
 const PLATFORM_CONTENT =
   /\b(unsubscribe|manage preferences|view in browser|security alert|password reset|sign[- ]in alert|magic link|product (?:update|news)|changelog|release notes|weekly digest|what's new)\b/i;
 
+export const FOOTER_TEMPLATE_NOISE =
+  /\b(unsubscribe|manage (?:email )?preferences|view (?:in browser|as (?:a )?webpage)|privacy policy|email subscriptions?|update your (?:email )?subscriptions?|opt[- ]out|manage (?:your )?subscription)\b/i;
+
+const OPERATIONAL_SYSTEM_ACTION =
+  /\b(?:check[- ]?in(?:\s+for(?:\s+your)?\s+flight)?|boarding (?:pass|time)|gate change|appointment reminder|pickup (?:by|window|reminder)|reservation reminder)\b/i;
+
 const GENERATED_OPERATING_BRIEF_RULE = "generated_founder_operating_brief";
 const GENERATED_OPERATING_BRIEF_SUBJECT =
   /^(?:(?:re|fw|fwd):\s*)*hourglass morning brief\b/i;
@@ -577,6 +589,21 @@ export function isGeneratedFounderOperatingBriefSubject(
 function normalizedEmailHash(value: string | null | undefined): string | null {
   const hash = value?.trim().toLowerCase() ?? "";
   return EMAIL_HASH_RE.test(hash) ? hash : null;
+}
+
+export function collectTodayFounderEmailHashes(
+  knownPeople?: readonly TodayKnownPerson[],
+): string[] {
+  const hashes: string[] = [];
+  const seen = new Set<string>();
+  for (const person of knownPeople ?? []) {
+    if (!isFounderIdentityName(person.displayName)) continue;
+    const hash = normalizedEmailHash(person.emailHash);
+    if (!hash || seen.has(hash)) continue;
+    seen.add(hash);
+    hashes.push(hash);
+  }
+  return hashes;
 }
 
 export function collectTodayEmailHashes(input: {
@@ -734,11 +761,146 @@ export function isActionableSystemAlert(input: {
   return ACTIONABLE_SYSTEM_MAIL.test(systemMailHaystack(input));
 }
 
-export function isNonActionableSystemMail(input: {
+export function isFooterOrTemplateNoise(text: string | null | undefined): boolean {
+  return FOOTER_TEMPLATE_NOISE.test(text ?? "");
+}
+
+export function stripFooterTemplateNoise(text: string): string {
+  return text
+    .split(/\n+/)
+    .filter((line) => !isFooterOrTemplateNoise(line))
+    .join("\n")
+    .replace(FOOTER_TEMPLATE_NOISE, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+const MONTH_NAME_TO_NUMBER: Record<string, number> = {
+  jan: 1,
+  january: 1,
+  feb: 2,
+  february: 2,
+  mar: 3,
+  march: 3,
+  apr: 4,
+  april: 4,
+  may: 5,
+  jun: 6,
+  june: 6,
+  jul: 7,
+  july: 7,
+  aug: 8,
+  august: 8,
+  sep: 9,
+  sept: 9,
+  september: 9,
+  oct: 10,
+  october: 10,
+  nov: 11,
+  november: 11,
+  dec: 12,
+  december: 12,
+};
+
+const OPERATIONAL_EVENT_DATE =
+  /\b(?:(?:mon(?:day)?|tue(?:s(?:day)?)?|wed(?:nesday)?|thu(?:rs(?:day)?)?|fri(?:day)?|sat(?:urday)?|sun(?:day)?)\s*,?\s*)?(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sept?(?:ember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\.?\s+(\d{1,2})(?:st|nd|rd|th)?(?:,?\s*((?:19|20)\d{2}))?\b/i;
+
+function operationalHaystack(input: {
+  candidates?: readonly ContinuumCandidate[];
+  thread?: TodayGmailThreadContext | null;
+}): string {
+  return stripFooterTemplateNoise(systemMailHaystack(input));
+}
+
+export function isOperationalSystemMail(input: {
   candidates?: readonly ContinuumCandidate[];
   thread?: TodayGmailThreadContext | null;
 }): boolean {
   if (isActionableSystemAlert(input)) return false;
+  const hay = operationalHaystack(input);
+  const subject = input.thread?.subject ?? "";
+  if (!OPERATIONAL_SYSTEM_ACTION.test(hay) && !OPERATIONAL_SYSTEM_ACTION.test(subject)) {
+    return false;
+  }
+  const labels = threadLabelIds(input.thread);
+  const bulkLabel = labels.some((label) => BULK_GMAIL_LABELS.has(label));
+  const platformSender =
+    isPlatformOrSystemName(input.thread?.fromDisplayName) ||
+    isPlatformOrSystemName(emailLocalPart(input.thread?.fromEmail ?? null));
+  return bulkLabel || platformSender || OPERATIONAL_SYSTEM_ACTION.test(subject);
+}
+
+export function operationalSystemEventDate(input: {
+  candidates?: readonly ContinuumCandidate[];
+  thread?: TodayGmailThreadContext | null;
+}): string | null {
+  const hay = operationalHaystack(input);
+  const subject = stripFooterTemplateNoise(input.thread?.subject ?? "");
+  const sentAt =
+    input.thread?.messages
+      ?.map((row) => row.sentAt)
+      .sort((a, b) => Date.parse(a) - Date.parse(b))[0] ??
+    input.candidates?.map((row) => row.sourceTimestamp).sort()[0] ??
+    null;
+  const sentDate = sentAt ? civilDateInZone(sentAt) : null;
+  const yearFallback = sentDate ? Number(sentDate.slice(0, 4)) : null;
+  const match = OPERATIONAL_EVENT_DATE.exec(`${subject}\n${hay}`);
+  if (!match) return null;
+  const month = MONTH_NAME_TO_NUMBER[match[1]!.toLowerCase()] ?? null;
+  const day = Number(match[2]);
+  const year = match[3] ? Number(match[3]) : yearFallback;
+  if (!month || !Number.isInteger(day) || !year) return null;
+  return dateOnlyFromParts(year, month, day);
+}
+
+function operationalGraceDays(input: {
+  candidates?: readonly ContinuumCandidate[];
+  thread?: TodayGmailThreadContext | null;
+}): number {
+  const hay = `${input.thread?.subject ?? ""}\n${operationalHaystack(input)}`;
+  if (/\bcheck[- ]?in\b/i.test(hay)) return 2;
+  return 1;
+}
+
+export function isExpiredOperationalSystemMail(input: {
+  candidates?: readonly ContinuumCandidate[];
+  thread?: TodayGmailThreadContext | null;
+  nowIso?: string;
+}): boolean {
+  if (!isOperationalSystemMail(input)) return false;
+  const nowIso = input.nowIso?.trim();
+  if (!nowIso) return false;
+  const eventDate = operationalSystemEventDate(input);
+  if (eventDate) return isPastDueDate(eventDate, nowIso);
+  const sentAt =
+    input.thread?.messages
+      ?.map((row) => row.sentAt)
+      .sort((a, b) => Date.parse(a) - Date.parse(b))[0] ??
+    input.candidates?.map((row) => row.sourceTimestamp).sort()[0] ??
+    null;
+  const sentDate = sentAt ? civilDateInZone(sentAt) : null;
+  if (!sentDate) return false;
+  const expiry = addCalendarDays(sentDate, operationalGraceDays(input));
+  return expiry ? isPastDueDate(expiry, nowIso) : false;
+}
+
+export function isCurrentOperationalSystemMail(input: {
+  candidates?: readonly ContinuumCandidate[];
+  thread?: TodayGmailThreadContext | null;
+  nowIso?: string;
+}): boolean {
+  if (!isOperationalSystemMail(input)) return false;
+  return !isExpiredOperationalSystemMail(input);
+}
+
+export function isNonActionableSystemMail(input: {
+  candidates?: readonly ContinuumCandidate[];
+  thread?: TodayGmailThreadContext | null;
+  nowIso?: string;
+}): boolean {
+  if (isActionableSystemAlert(input)) return false;
+  if (isCurrentOperationalSystemMail(input)) return false;
+  if (isExpiredOperationalSystemMail(input)) return true;
   const hay = systemMailHaystack(input);
   const subject = input.thread?.subject ?? "";
   const labels = threadLabelIds(input.thread);
@@ -937,6 +1099,10 @@ const CHANNEL_META = new Set([
   "signature",
   "mailto",
   "noreply",
+  "subscriptions",
+  "subscription",
+  "preferences",
+  "privacy",
 ]);
 
 const VALEDICTION = new Set([
@@ -1060,6 +1226,7 @@ export function classifyTodayCommunication(input: {
   vendorDirectory?: readonly string[];
   evidenceTexts?: readonly string[];
   knownPeople?: readonly TodayKnownPerson[];
+  nowIso?: string;
 }): TodayCommunicationClass {
   if (
     isGeneratedTodayNoise({
@@ -1072,6 +1239,11 @@ export function classifyTodayCommunication(input: {
   }
   if (
     isNonActionableSystemMail({
+      candidates: input.candidates,
+      thread: input.thread,
+      nowIso: input.nowIso,
+    }) ||
+    isOperationalSystemMail({
       candidates: input.candidates,
       thread: input.thread,
     })
@@ -1150,6 +1322,7 @@ export function dateHasActionableObligation(row: ContinuumCandidate): boolean {
   if (payload.kind !== "date") return false;
   const matched = `${row.evidenceBasis.matchedText ?? ""} ${payload.raw}`.trim();
   if (isNakedDateText(payload.raw) && !DATE_OBLIGATION.test(matched)) return false;
+  if (isFooterOrTemplateNoise(matched)) return false;
   if (NEWSLETTER_SUBJECT.test(matched) || PLATFORM_CONTENT.test(matched)) {
     if (!DATE_OBLIGATION.test(matched)) return false;
   }
@@ -1276,9 +1449,13 @@ export function isExplicitNewProject(row: ContinuumCandidate): boolean {
   return isNewProject(row) && hasRule(row, EXPLICIT_NEW_PROJECT_RULE);
 }
 
+const FOUNDER_OUTBOUND_CONTENT =
+  /\b(here is the updated|let me know what you think|i(?:'|’)ll send|i am sending|i(?:'|’)m sending|moving forward|please proceed|just sent)\b/i;
+
 export function isClientDesignAnswer(row: ContinuumCandidate): boolean {
   if (isPlatformSystemEvidence(row)) return false;
   if (hasVendorRule(row)) return false;
+  if (FOUNDER_OUTBOUND_CONTENT.test(candidateHaystack(row))) return false;
   const payload = payloadOf(row);
   if (payload.kind !== "project_context") return false;
   return (

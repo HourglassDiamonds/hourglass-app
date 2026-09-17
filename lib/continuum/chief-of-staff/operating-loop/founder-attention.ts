@@ -30,6 +30,9 @@ import {
   isActionableSpecConflict,
   isStudioOrVendorLabel,
   pickTodayVendorContext,
+  isActionableSystemAlert,
+  isCurrentOperationalSystemMail,
+  isExpiredOperationalSystemMail,
   type FounderAttentionContext as ClassifyContext,
   type FounderAttentionJudgment,
   type TodayGmailThreadContext,
@@ -556,9 +559,26 @@ export function composeFounderAttentionSurface(input: {
     const visible = rows.filter((row) => visibleLane(judgments.get(row.candidateId)));
     if (visible.length === 0) continue;
     const thread = indexedThreadForGroup(key, rows, input.threadContext);
+    if (
+      isExpiredOperationalSystemMail({
+        candidates: rows,
+        thread,
+        nowIso: input.nowIso,
+      })
+    ) {
+      continue;
+    }
+    const currentOperational = isCurrentOperationalSystemMail({
+      candidates: rows,
+      thread,
+      nowIso: input.nowIso,
+    });
+    const threadIdForProject = key.startsWith("thread:") ? key.slice("thread:".length) : null;
     const groupedProjectId = key.startsWith("project:")
       ? key.slice("project:".length)
-      : rows.map(candidateProjectId).find((id): id is string => Boolean(id)) ?? null;
+      : rows.map(candidateProjectId).find((id): id is string => Boolean(id)) ??
+        (threadIdForProject ? (projectByAssociation.get(threadIdForProject) ?? null) : null) ??
+        null;
     const group = resolveTodayGroupTruth({
       key,
       rows,
@@ -568,6 +588,7 @@ export function composeFounderAttentionSurface(input: {
       knownPeople: input.knownPeople,
       vendorDirectory: input.vendorDirectory,
       evidenceTexts: input.evidenceTexts,
+      nowIso: input.nowIso,
     });
     const truth = reconcileGroupTruthState({
       key,
@@ -590,6 +611,14 @@ export function composeFounderAttentionSurface(input: {
     ) {
       continue;
     }
+    if (
+      group.sourceClass === "platform" &&
+      !currentOperational &&
+      !isActionableSystemAlert({ candidates: rows, thread }) &&
+      !group.remainingFounderCommitment
+    ) {
+      continue;
+    }
     const unscopedGmail =
       visibleAfterTruth.every(
         (row) =>
@@ -601,11 +630,15 @@ export function composeFounderAttentionSurface(input: {
       !visibleAfterTruth.some(isPaymentStateChange) &&
       !visibleAfterTruth.some(isClientDesignAnswer) &&
       !visibleAfterTruth.some((row) => isActionableSpecConflict(row, ctx));
-    if (unscopedGmail) continue;
+    if (unscopedGmail && !currentOperational && !isActionableSystemAlert({ candidates: rows, thread })) {
+      continue;
+    }
     if (
       !visibleAfterTruth.some(hasCommercialPayload) &&
       !visibleAfterTruth.some(isPaymentStateChange) &&
-      !visibleAfterTruth.some((row) => isActionableSpecConflict(row, ctx))
+      !visibleAfterTruth.some((row) => isActionableSpecConflict(row, ctx)) &&
+      !currentOperational &&
+      !isActionableSystemAlert({ candidates: rows, thread })
     ) {
       continue;
     }

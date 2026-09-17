@@ -57,7 +57,7 @@ const CAD_WAIT =
 const SHOP_WAIT =
   /\b(?:waiting on (?:the )?shop|in (?:the )?shop|on the bench)\b/i;
 const FOUNDER_OUTBOUND_HINT =
-  /\b(i(?:'|’)ll send|i am sending|i(?:'|’)m sending|moving forward|please proceed|just sent|i(?:'|’)ll get|i(?:'|’)ll check|i(?:'|’)ll show|i(?:'|’)ll keep you posted)\b/i;
+  /\b(here is the updated|let me know what you think|i(?:'|’)ll send|i am sending|i(?:'|’)m sending|moving forward|please proceed|just sent|i(?:'|’)ll get|i(?:'|’)ll check|i(?:'|’)ll show|i(?:'|’)ll keep you posted)\b/i;
 
 function parseMs(iso: string | null | undefined): number {
   if (!iso) return 0;
@@ -69,14 +69,76 @@ function haystackOf(row: ContinuumCandidate): string {
   return `${candidateText(row)} ${row.evidenceBasis.matchedText ?? ""}`.trim();
 }
 
+function founderHashesFromThread(
+  thread: TodayGmailThreadContext | null | undefined,
+  extra?: ReadonlySet<string> | readonly string[] | null,
+): Set<string> {
+  const hashes = new Set<string>();
+  const add = (value: string | null | undefined) => {
+    const hash = value?.trim().toLowerCase() ?? "";
+    if (hash) hashes.add(hash);
+  };
+  for (const message of thread?.messages ?? []) {
+    if (message.direction === "outbound") add(message.fromEmailHash);
+  }
+  if (extra) {
+    for (const hash of extra) add(hash);
+  }
+  return hashes;
+}
+
+export function inferIndexedMessageDirection(
+  message: TodayGmailIndexedMessage,
+  founderHashes?: ReadonlySet<string> | null,
+  inboundHash?: string | null,
+): "inbound" | "outbound" | "unknown" {
+  if (message.direction === "inbound" || message.direction === "outbound") {
+    return message.direction;
+  }
+  const hash = message.fromEmailHash?.trim().toLowerCase() || null;
+  if (hash && founderHashes?.has(hash)) return "outbound";
+  if (hash && inboundHash && hash === inboundHash) return "inbound";
+  if (hash && inboundHash && hash !== inboundHash) return "outbound";
+  if (hash) return "inbound";
+  return "unknown";
+}
+
+export function indexedMessagesWithInferredDirection(
+  messages: readonly TodayGmailIndexedMessage[] | undefined,
+  founderHashes?: ReadonlySet<string> | null,
+): TodayGmailIndexedMessage[] {
+  if (!messages?.length) return [];
+  const inboundHash =
+    [...messages]
+      .filter((row) => row.direction === "inbound")
+      .sort((a, b) => parseMs(a.sentAt) - parseMs(b.sentAt))
+      .at(-1)
+      ?.fromEmailHash?.trim()
+      .toLowerCase() ?? null;
+  return messages.map((message) => {
+    const direction = inferIndexedMessageDirection(message, founderHashes, inboundHash);
+    return direction === message.direction ? message : { ...message, direction };
+  });
+}
+
 export function candidateDirection(
   row: ContinuumCandidate,
   thread?: TodayGmailThreadContext | null,
+  founderHashes?: ReadonlySet<string> | null,
 ): "inbound" | "outbound" | "unknown" {
   const messageId = sourceMessageId(row);
+  const hashes = founderHashesFromThread(thread, founderHashes);
   const indexed = thread?.messages?.find((item) => item.messageId === messageId);
-  if (indexed?.direction === "inbound" || indexed?.direction === "outbound") {
-    return indexed.direction;
+  if (indexed) {
+    const inboundHash =
+      [...(thread?.messages ?? [])]
+        .filter((item) => item.direction === "inbound")
+        .sort((a, b) => parseMs(a.sentAt) - parseMs(b.sentAt))
+        .at(-1)
+        ?.fromEmailHash?.trim()
+        .toLowerCase() ?? null;
+    const inferred = inferIndexedMessageDirection(indexed, hashes, inboundHash);
+    if (inferred === "inbound" || inferred === "outbound") return inferred;
   }
   if (hasRule(row, "explicit_founder_commitment") || FOUNDER_OUTBOUND_HINT.test(haystackOf(row))) {
     return "outbound";
@@ -264,10 +326,13 @@ export function reconcileThreadTruthState(input: {
   thread?: TodayGmailThreadContext | null;
   project?: CosProjectContext | null;
   jobs?: readonly ProjectJob[] | null;
+  founderEmailHashes?: ReadonlySet<string> | readonly string[] | null;
 }): ThreadTruthState {
-  const thread = input.thread ?? null;
-  const indexedInbound = latestIndexed(thread?.messages, "inbound");
-  const indexedOutbound = latestIndexed(thread?.messages, "outbound");
+  const hashes = founderHashesFromThread(input.thread, input.founderEmailHashes);
+  const messages = indexedMessagesWithInferredDirection(input.thread?.messages, hashes);
+  const thread = input.thread ? { ...input.thread, messages } : null;
+  const indexedInbound = latestIndexed(messages, "inbound");
+  const indexedOutbound = latestIndexed(messages, "outbound");
   const latestInboundAt =
     indexedInbound?.sentAt ?? latestCandidateStamp(input.rows, thread, "inbound");
   const latestOutboundAt =
@@ -322,7 +387,16 @@ export function gmailThreadIdsForGroup(
     seen.add(id);
     ids.push(id);
   };
-  if (key.startsWith("thread:")) add(key.slice("thread:".length));
+  if (key.startsWith("thread:")) {
+    add(key.slice("thread:".length));
+    return ids;
+  }
+  const latestRow = [...rows].sort(
+    (a, b) => parseMs(a.sourceTimestamp) - parseMs(b.sourceTimestamp),
+  ).at(-1);
+  if (latestRow) {
+    for (const threadId of collectExactGmailIds([latestRow]).threadIds) add(threadId);
+  }
   const collected = collectExactGmailIds(rows);
   for (const threadId of collected.threadIds) add(threadId);
   const messageIds = new Set(collected.messageIds);
@@ -336,40 +410,21 @@ export function gmailThreadIdsForGroup(
   return ids;
 }
 
-function mergeIndexedThreads(
-  threads: readonly TodayGmailThreadContext[],
-): TodayGmailThreadContext | null {
-  if (threads.length === 0) return null;
-  if (threads.length === 1) return threads[0]!;
-  const messages = [...threads.flatMap((thread) => thread.messages ?? [])].sort(
-    (a, b) => parseMs(a.sentAt) - parseMs(b.sentAt),
-  );
-  const latestInbound = [...messages].reverse().find((row) => row.direction === "inbound");
-  const identity =
-    threads.find((thread) =>
-      (thread.messages ?? []).some((row) => row.messageId === latestInbound?.messageId),
-    ) ??
-    threads.find((thread) => thread.fromEmail || thread.fromDisplayName) ??
-    threads[0]!;
-  return {
-    subject: identity.subject ?? threads.find((thread) => thread.subject)?.subject ?? null,
-    fromDisplayName: identity.fromDisplayName ?? null,
-    fromEmail: identity.fromEmail ?? null,
-    liveIdentityLoaded: threads.some((thread) => thread.liveIdentityLoaded === true),
-    messages,
-  };
-}
-
 export function indexedThreadForGroup(
   key: string,
   rows: readonly ContinuumCandidate[],
   threadContext?: ReadonlyMap<string, TodayGmailThreadContext> | null,
 ): TodayGmailThreadContext | null {
   const threadIds = gmailThreadIdsForGroup(key, rows, threadContext);
-  const threads = threadIds
-    .map((id) => threadContext?.get(id) ?? null)
-    .filter((row): row is TodayGmailThreadContext => Boolean(row));
-  return mergeIndexedThreads(threads);
+  if (threadIds.length === 0) return null;
+  const primary = threadContext?.get(threadIds[0]!) ?? null;
+  if (key.startsWith("thread:") || threadIds.length === 1) return primary;
+  const latestRow = [...rows].sort(
+    (a, b) => parseMs(a.sourceTimestamp) - parseMs(b.sourceTimestamp),
+  ).at(-1);
+  const latestIds = latestRow ? collectExactGmailIds([latestRow]) : { threadIds: [] as string[] };
+  const latestThreadId = latestIds.threadIds[0] ?? threadIds[0]!;
+  return threadContext?.get(latestThreadId) ?? primary;
 }
 
 export function reconcileGroupTruthState(input: {
@@ -378,11 +433,13 @@ export function reconcileGroupTruthState(input: {
   threadContext?: ReadonlyMap<string, TodayGmailThreadContext> | null;
   project?: CosProjectContext | null;
   jobs?: readonly ProjectJob[] | null;
+  founderEmailHashes?: ReadonlySet<string> | readonly string[] | null;
 }): ThreadTruthState {
   return reconcileThreadTruthState({
     rows: input.rows,
     thread: indexedThreadForGroup(input.key, input.rows, input.threadContext),
     project: input.project,
     jobs: input.jobs,
+    founderEmailHashes: input.founderEmailHashes,
   });
 }

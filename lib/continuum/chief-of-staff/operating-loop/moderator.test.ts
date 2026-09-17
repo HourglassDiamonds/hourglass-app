@@ -782,7 +782,7 @@ describe("Concierge Executive Moderator V1", () => {
     });
     assert.equal(result.brief.length, 0);
     assert.equal(result.watching.length, 1);
-    assert.match(result.watching[0]?.detail ?? "", /already answered/i);
+    assert.match(result.watching[0]?.detail ?? "", /waiting on the client|already answered/i);
   });
 
   it("ignores system boilerplate", () => {

@@ -211,17 +211,21 @@ export function presentDocketBriefing(input: {
   headline: string;
   context: string | null;
   origin: CosDocketOrigin;
+  staleInboundSatisfied?: boolean;
+  noFounderAction?: boolean;
 }): { headline: string; context: string | null } {
   const unassigned = !input.subject || input.subject === UNASSIGNED_SUBJECT;
   const rawHeadline = input.headline.trim();
   const rawContext = input.context?.trim() || "";
+  const truthLocked = Boolean(input.staleInboundSatisfied || input.noFounderAction);
 
   const spec = rawContext ? rewriteSpecBriefing(rawHeadline, rawContext) : null;
   if (spec) return spec;
 
-  const reply = rawContext
-    ? rewriteReplyBriefing(rawHeadline, rawContext, input.subject, unassigned)
-    : null;
+  const reply =
+    !truthLocked && rawContext
+      ? rewriteReplyBriefing(rawHeadline, rawContext, input.subject, unassigned)
+      : null;
   if (reply) return reply;
 
   if (unassigned && /recap|next step/i.test(rawHeadline)) {
@@ -312,6 +316,8 @@ export function composeTodayDocket(loop: CosOperatingLoopView): CosTodayDocketVi
       headline: item.recommended,
       context: item.explanation,
       origin: "brief",
+      staleInboundSatisfied: item.staleInboundSatisfied,
+      noFounderAction: item.noFounderAction,
     });
     const headline =
       subject === UNASSIGNED_SUBJECT

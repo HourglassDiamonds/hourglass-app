@@ -165,6 +165,8 @@ function isCadDecision(item: CosFounderActionSource): boolean {
 }
 
 function isClientResponse(item: CosFounderActionSource): boolean {
+  if (item.brief?.staleInboundSatisfied || item.brief?.noFounderAction) return false;
+  if (item.brief?.waitingState) return false;
   if (item.brief?.rankClass === "client_reply") return true;
   if (item.anomaly?.kind === "client-responded") return true;
   if (item.decision && /answered the design question|Your turn/i.test(item.headline)) {
@@ -200,6 +202,9 @@ function withTodayReturn(href: string): string {
 function needsPersonConfirm(item: CosFounderActionSource): boolean {
   if (specConflictOf(item)) return false;
   if (item.brief?.organizationLabel) return false;
+  if (item.brief?.sourceClass === "vendor" || item.brief?.sourceClass === "platform") {
+    return false;
+  }
   if (isVendorOrganizationLabel(item.subject)) return false;
   if (confirmPersonAction(item)) return true;
   return Boolean(
