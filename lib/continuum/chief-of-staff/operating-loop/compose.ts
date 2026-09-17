@@ -11,6 +11,7 @@ import type { ProjectJob } from "@/lib/continuum/client-memory/project-jobs/type
 import {
   isClientPersonLabel,
   type TodayGmailThreadContext,
+  type TodayKnownPerson,
 } from "@/lib/continuum/candidates/founder-attention";
 import { collectCanonicalActionables, selectTopRanked } from "./collect";
 import { composeFounderAttentionSurface } from "./founder-attention";
@@ -41,6 +42,7 @@ export type ComposeCosOperatingLoopInput = {
   threadContext?: ReadonlyMap<string, TodayGmailThreadContext>;
   vendorDirectory?: readonly string[];
   evidenceTexts?: readonly string[];
+  knownPeople?: readonly TodayKnownPerson[];
 };
 
 function clientDisplayName(
@@ -177,6 +179,7 @@ export function composeCosOperatingLoop(
     threadContext: input.threadContext,
     vendorDirectory: input.vendorDirectory,
     evidenceTexts: input.evidenceTexts,
+    knownPeople: input.knownPeople,
   });
 
   if (top.length === 0) {

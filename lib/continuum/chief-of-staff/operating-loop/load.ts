@@ -22,6 +22,7 @@ import {
   mergeTodayThreadContext,
 } from "@/lib/continuum/gmail/today-thread-context";
 import type { TodayGmailThreadContext } from "@/lib/continuum/candidates/founder-attention";
+import { loadTodayKnownEmailPeople } from "@/lib/continuum/client-memory/today-known-people";
 import {
   CURRENT_OPERATING_BACKLOG,
   hydrateOperatingBacklogFromPersistence,
@@ -116,6 +117,7 @@ export async function loadCosOperatingLoop(
     );
     const masterSprint = await loadMasterSprintCapacity();
     const indexedContext = await loadIndexedTodayThreadContext(candidates);
+    const knownPeople = await loadTodayKnownEmailPeople();
     const composeInput = {
       jobs,
       summaries,
@@ -123,6 +125,7 @@ export async function loadCosOperatingLoop(
       nowIso: now.toISOString(),
       masterSprint,
       threadContext: indexedContext,
+      knownPeople,
     };
     let loop = composeCosOperatingLoop(composeInput);
     const unassignedThreads = unassignedLiveIdentityThreadIds(loop);

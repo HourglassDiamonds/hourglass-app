@@ -38,11 +38,15 @@ import {
   payloadOf,
   pickTodayVendorContext,
   classifyTodayCommunication,
+  collectTodayEmailHashes,
   collectTodayVendorEvidence,
+  isGeneratedTodayNoise,
+  resolveUniqueKnownPerson,
   sourceThreadId,
   type FounderAttentionContext,
   type TodayCommunicationClass,
   type TodayGmailThreadContext,
+  type TodayKnownPerson,
 } from "@/lib/continuum/candidates/founder-attention";
 import { isUnresolvedOpenJobState } from "@/lib/continuum/client-memory/project-jobs/validate";
 import type { ProjectJob } from "@/lib/continuum/client-memory/project-jobs/types";
@@ -219,6 +223,7 @@ function identityPeopleFor(
   project: CosProjectContext | null,
   rows: readonly ContinuumCandidate[],
   projects: ReadonlyMap<string, CosProjectContext>,
+  knownPerson?: TodayKnownPerson | null,
 ): { displayName: string; roles: string[]; organizationName: string | null }[] {
   const people: {
     displayName: string;
@@ -246,6 +251,17 @@ function identityPeopleFor(
         displayName: match.displayName,
         roles: match.role ? [match.role] : [],
         organizationName: match.organizationName ?? null,
+      });
+    }
+  }
+  if (knownPerson?.displayName.trim()) {
+    const key = `${knownPerson.displayName}:${(knownPerson.roles ?? []).join(",")}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      people.push({
+        displayName: knownPerson.displayName,
+        roles: [...(knownPerson.roles ?? [])],
+        organizationName: knownPerson.organizationName ?? null,
       });
     }
   }
@@ -754,6 +770,7 @@ function pendingPersonAssociationCandidateId(
       if (row.candidateType !== "person_association") return false;
       if (row.reviewStatus !== "pending") return false;
       if (row.candidateState === "superseded") return false;
+      if (hasRule(row, GENERATED_FOUNDER_OPERATING_BRIEF_RULE)) return false;
       const payload = payloadOf(row);
       if (payload.kind === "person_association") {
         if (isFounderIdentityName(payload.displayName)) return false;
@@ -811,6 +828,7 @@ function classifySituation(input: {
   threadContext?: ReadonlyMap<string, TodayGmailThreadContext>;
   vendorDirectory?: readonly string[];
   evidenceTexts?: readonly string[];
+  knownPeople?: readonly TodayKnownPerson[];
 }): RankedSituation | null {
   const groupedProjectId = input.key.startsWith("project:")
     ? input.key.slice("project:".length)
@@ -824,12 +842,35 @@ function classifySituation(input: {
     ? (input.projects.get(attribution.projectId) ?? null)
     : null;
   const vendorName = pickVendorName(project);
-  const person = isClientPersonLabel(attribution.personName) ? attribution.personName : null;
-  const identityPeople = identityPeopleFor(project, input.rows, input.projects);
   const groupedThreadId = situationThreadId(input.key, input.rows);
   const thread = groupedThreadId
     ? (input.threadContext?.get(groupedThreadId) ?? null)
     : null;
+  const knownHit = resolveUniqueKnownPerson({
+    emailHashes: collectTodayEmailHashes({ candidates: input.rows, thread }),
+    knownPeople: input.knownPeople,
+  });
+  const knownPerson = knownHit && knownHit !== "ambiguous" ? knownHit : null;
+  const identityPeople = identityPeopleFor(
+    project,
+    input.rows,
+    input.projects,
+    knownPerson,
+  );
+  const person =
+    (isClientPersonLabel(attribution.personName) ? attribution.personName : null) ||
+    (knownPerson && isClientPersonLabel(knownPerson.displayName)
+      ? knownPerson.displayName
+      : null);
+  if (
+    isGeneratedTodayNoise({
+      candidates: input.rows,
+      thread,
+      knownPeople: input.knownPeople,
+    })
+  ) {
+    return null;
+  }
   const localEvidence = collectTodayVendorEvidence({
     people: identityPeople,
     evidenceTexts: input.evidenceTexts,
@@ -843,6 +884,7 @@ function classifySituation(input: {
     thread,
     vendorDirectory,
     evidenceTexts: localEvidence.evidenceTexts,
+    knownPeople: input.knownPeople,
   });
   const organizationLabel = pickTodayVendorContext({
     candidates: input.rows,
@@ -1338,6 +1380,7 @@ export type ComposeConciergeBriefInput = {
   threadContext?: ReadonlyMap<string, TodayGmailThreadContext>;
   vendorDirectory?: readonly string[];
   evidenceTexts?: readonly string[];
+  knownPeople?: readonly TodayKnownPerson[];
 };
 
 export function composeConciergeBrief(input: ComposeConciergeBriefInput): {
@@ -1398,6 +1441,7 @@ export function composeConciergeBrief(input: ComposeConciergeBriefInput): {
       threadContext: input.threadContext,
       vendorDirectory,
       evidenceTexts,
+      knownPeople: input.knownPeople,
     });
     if (situation) situations.push(situation);
   }

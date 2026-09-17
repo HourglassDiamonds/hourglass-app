@@ -10,6 +10,7 @@ import { hashEmail } from "@/lib/continuum/client-memory/hashes";
 import { GENERATED_FOUNDER_OPERATING_BRIEF_RULE } from "@/lib/continuum/gmail/candidates/generated-source";
 import { withIndexedGeneratedOperatingMail } from "@/lib/continuum/gmail/candidates/tag-stored-generated";
 import type { ContinuumCandidate } from "@/lib/continuum/candidates/types";
+import { composeCosOperatingLoop } from "./compose";
 import { composeConciergeBrief } from "./moderator";
 import { composeTodayDocket } from "./docket";
 import { selectFounderControls } from "./founder-actions";
@@ -103,7 +104,7 @@ function controlsFor(candidates: readonly ContinuumCandidate[], projects = new M
 }
 
 describe("Open Email live stored-state regression", () => {
-  it("hides Open Email for the Unassigned Morning Brief item after sender-hash tagging", () => {
+  it("drops tagged Morning Brief threads from Today client intake", () => {
     const stored = liveUntaggedBriefCandidates();
     assert.equal(
       stored.every((row) => !row.evidenceBasis.ruleIds.includes(GENERATED_FOUNDER_OPERATING_BRIEF_RULE)),
@@ -127,13 +128,24 @@ describe("Open Email live stored-state regression", () => {
       true,
     );
 
-    const after = controlsFor(tagged);
-    assert.equal(after.item.subject, "Unassigned");
-    assert.equal(after.controls.openEmail, null);
-    assert.equal(after.controls.emailSources.length, 0);
-    assert.ok((after.brief?.evidence.length ?? 0) > 0);
+    const afterLoop = composeTodayDocket(
+      composeCosOperatingLoop({
+        jobs: [],
+        candidates: tagged,
+        nowIso: COS_LOOP_NOW,
+      }),
+    );
+    assert.equal(afterLoop.items.length, 0);
+    const afterBrief = composeConciergeBrief({
+      candidates: tagged,
+      jobs: [],
+      projects: new Map(),
+      nowIso: COS_LOOP_NOW,
+      top5: [],
+    });
+    assert.equal(afterBrief.brief.length, 0);
     assert.equal(
-      after.brief?.actions.some((action) => action.kind === "open_email"),
+      afterBrief.brief.some((row) => row.actions.some((action) => action.kind === "open_email")),
       false,
     );
   });
@@ -206,8 +218,14 @@ describe("Open Email live stored-state regression", () => {
     const controls = selectFounderControls(unassigned);
     assert.equal(controls.openEmail?.href, CLIENT_HREF);
     assert.equal(controls.emailSources.some((row) => row.href === LIVE_BRIEF_HREF), false);
-    assert.ok(
-      (unassigned.brief?.evidence ?? []).some((beat) => beat.sourceHref === LIVE_BRIEF_HREF),
+    assert.equal(controls.confirmPerson, null);
+    assert.equal(
+      docket.items.some((item) =>
+        (item.brief?.actions ?? []).some(
+          (action) => action.kind === "open_email" && action.href === LIVE_BRIEF_HREF,
+        ),
+      ),
+      false,
     );
   });
 

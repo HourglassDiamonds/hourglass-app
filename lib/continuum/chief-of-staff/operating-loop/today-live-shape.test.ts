@@ -4,10 +4,15 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import {
   classifyTodayCommunication,
+  isGeneratedFounderOperatingBriefSubject,
+  isGeneratedTodayNoise,
   pickTodayVendorContext,
+  resolveUniqueKnownPerson,
   vendorOrganizationFromGmailContext,
   vendorOrganizationFromIdentityText,
 } from "@/lib/continuum/candidates/founder-attention";
+import { hashEmail } from "@/lib/continuum/client-memory/hashes";
+import { GENERATED_FOUNDER_OPERATING_BRIEF_RULE } from "@/lib/continuum/gmail/candidates/generated-source";
 import type { ContinuumCandidate } from "@/lib/continuum/candidates/types";
 import { ChiefOfStaffToday } from "../../../../app/executive-dashboard/concierge/components/chief-of-staff-today";
 import { composeCosOperatingLoop } from "./compose";
@@ -32,11 +37,17 @@ const LEE_OUTBOUND = "1a0ac6ad45444062";
 const LEE_INBOUND = "1a0ac812e84639d5";
 const LEE_HREF = `https://mail.google.com/mail/u/0/#all/${LEE_THREAD}/${LEE_OUTBOUND}`;
 const FOUNDER_EMAIL = "justin@hourglassdiamonds.com";
+const TIM_LEE_EMAIL = "timlee591@gmail.com";
+const TIM_LEE_HASH = hashEmail(TIM_LEE_EMAIL)!;
+const TIM_LEE_ID = "b1505a55-7296-4084-9574-7a4b327cb565";
+const BRIEF_THREAD = "1a085d41ae9efcf6";
+const BRIEF_MSG = "1a085d41ae9efcf6";
 
 function livePersonAssociation(
   candidateId: string,
   threadId: string,
   messageId: string,
+  emailHash = "unresolved-hash",
 ): ContinuumCandidate {
   return fixtureCandidate({
     candidateId,
@@ -47,7 +58,7 @@ function livePersonAssociation(
     payload: {
       kind: "person_association",
       displayName: null,
-      emailHash: "unresolved-hash",
+      emailHash,
       mintPerson: false,
       mergePersons: false,
     },
@@ -94,10 +105,16 @@ function liveOpenJob(
 function todayOf(
   candidates: ContinuumCandidate[],
   options?: {
-    threadContext?: Map<string, { subject?: string | null; fromDisplayName?: string | null; fromEmail?: string | null }>;
+    threadContext?: Map<string, {
+      subject?: string | null;
+      fromDisplayName?: string | null;
+      fromEmail?: string | null;
+      liveIdentityLoaded?: boolean;
+    }>;
     vendorDirectory?: readonly string[];
     evidenceTexts?: readonly string[];
     projects?: Map<string, CosProjectContext>;
+    knownPeople?: Parameters<typeof composeCosOperatingLoop>[0]["knownPeople"];
   },
 ) {
   return composeTodayDocket(
@@ -109,6 +126,7 @@ function todayOf(
       threadContext: options?.threadContext,
       vendorDirectory: options?.vendorDirectory,
       evidenceTexts: options?.evidenceTexts,
+      knownPeople: options?.knownPeople,
     }),
   );
 }
@@ -419,5 +437,218 @@ describe("Today live-shape Gmail identity", () => {
       }),
       null,
     );
+  });
+
+  it("internally generated Morning Brief does not become Today client intake", () => {
+    const assoc = livePersonAssociation("brief-assoc", BRIEF_THREAD, BRIEF_MSG);
+    const job = liveOpenJob("brief-job", BRIEF_THREAD, BRIEF_MSG, {
+      subject: "follow-up window",
+      matchedText: "follow-up window",
+      ruleIds: ["explicit_follow_up", GENERATED_FOUNDER_OPERATING_BRIEF_RULE],
+    });
+    assert.equal(
+      isGeneratedFounderOperatingBriefSubject("Hourglass Morning Brief · September 4, 2026"),
+      true,
+    );
+    assert.equal(
+      isGeneratedTodayNoise({
+        candidates: [assoc, job],
+      }),
+      true,
+    );
+    assert.equal(
+      isGeneratedTodayNoise({
+        candidates: [assoc, job],
+        thread: { subject: "Hourglass Morning Brief · September 4, 2026" },
+      }),
+      true,
+    );
+    const tagged = todayOf([assoc, job], {
+      threadContext: new Map([
+        [BRIEF_THREAD, { subject: "Hourglass Morning Brief · September 4, 2026" }],
+      ]),
+    });
+    assert.equal(
+      tagged.items.some((item) => /Morning Brief|Unassigned|Confirm person/i.test(
+        `${item.subject} ${item.headline} ${item.context ?? ""}`,
+      )),
+      false,
+    );
+    const untaggedInternal = todayOf(
+      [
+        livePersonAssociation("brief-untagged", BRIEF_THREAD, BRIEF_MSG),
+        liveOpenJob("brief-untagged-job", BRIEF_THREAD, BRIEF_MSG, {
+          subject: "follow-up window",
+          matchedText: "follow-up window",
+          ruleIds: ["explicit_follow_up"],
+        }),
+      ],
+      {
+        threadContext: new Map([
+          [
+            BRIEF_THREAD,
+            {
+              subject: "Hourglass Morning Brief · September 4, 2026",
+              liveIdentityLoaded: true,
+            },
+          ],
+        ]),
+      },
+    );
+    assert.equal(untaggedInternal.items.length, 0);
+    const indexedSubjectOnly = todayOf(
+      [
+        livePersonAssociation("brief-indexed", BRIEF_THREAD, BRIEF_MSG),
+        liveOpenJob("brief-indexed-job", BRIEF_THREAD, BRIEF_MSG, {
+          subject: "follow-up window",
+          matchedText: "follow-up window",
+          ruleIds: ["explicit_follow_up"],
+        }),
+      ],
+      {
+        threadContext: new Map([
+          [BRIEF_THREAD, { subject: "Hourglass Morning Brief · September 4, 2026" }],
+        ]),
+      },
+    );
+    assert.equal(indexedSubjectOnly.items.length, 0);
+  });
+
+  it("exact unique Tim Lee email hash resolves the existing Person without a Project", () => {
+    const assoc = livePersonAssociation("lee-assoc", LEE_THREAD, LEE_INBOUND, TIM_LEE_HASH);
+    const job = liveOpenJob("lee-job", LEE_THREAD, LEE_OUTBOUND, {
+      subject: "circle back on the CAD",
+      matchedText: "circle back on the CAD",
+      ruleIds: ["explicit_follow_up"],
+    });
+    const knownPeople = [
+      {
+        personId: TIM_LEE_ID,
+        displayName: "Tim Lee",
+        roles: ["client"] as const,
+        emailHash: TIM_LEE_HASH,
+      },
+    ];
+    const timLeeProject = new Map<string, CosProjectContext>([
+      [
+        "da1cb824-7e73-4b67-9ca0-68ab15839ecd",
+        {
+          projectId: "da1cb824-7e73-4b67-9ca0-68ab15839ecd",
+          title: "Lee / Spiegel",
+          personName: "Tim Lee",
+          people: [
+            {
+              personId: TIM_LEE_ID,
+              displayName: "Tim Lee",
+              role: "client",
+            },
+          ],
+          isCurrent: true,
+          gmailThreadId: null,
+        },
+      ],
+    ]);
+    assert.equal(
+      resolveUniqueKnownPerson({
+        emailHashes: [TIM_LEE_HASH],
+        knownPeople,
+      })?.personId,
+      TIM_LEE_ID,
+    );
+    const docket = todayOf([assoc, job], {
+      threadContext: new Map([
+        [
+          LEE_THREAD,
+          {
+            subject: "Re: Cornflower Blue - Yogo Sapphire - Lee",
+            fromDisplayName: "Tim Lee",
+            fromEmail: TIM_LEE_EMAIL,
+          },
+        ],
+      ]),
+      projects: timLeeProject,
+      knownPeople,
+    });
+    const card = docket.items[0];
+    assert.ok(card);
+    assert.equal(card?.subject, "Tim Lee");
+    assert.notEqual(card?.subject, "Unassigned");
+    assert.equal(card?.brief?.personLabel, "Tim Lee");
+    assert.equal(card?.brief?.projectId ?? null, null);
+    assert.equal(selectFounderControls(card!).confirmPerson, null);
+  });
+
+  it("ambiguous email hash keeps Confirm Person review", () => {
+    const assoc = livePersonAssociation("amb-assoc", LEE_THREAD, LEE_INBOUND, TIM_LEE_HASH);
+    const job = liveOpenJob("amb-job", LEE_THREAD, LEE_OUTBOUND, {
+      subject: "circle back on the CAD",
+      matchedText: "circle back on the CAD",
+      ruleIds: ["explicit_follow_up"],
+    });
+    const docket = todayOf([assoc, job], {
+      threadContext: new Map([
+        [LEE_THREAD, { subject: "Re: Cornflower Blue - Yogo Sapphire - Lee", fromEmail: TIM_LEE_EMAIL }],
+      ]),
+      knownPeople: [
+        {
+          personId: TIM_LEE_ID,
+          displayName: "Tim Lee",
+          roles: ["client"],
+          emailHash: TIM_LEE_HASH,
+        },
+        {
+          personId: "cccccccccccccccccccccccccccccccccccc",
+          displayName: "Timothy Other",
+          roles: ["client"],
+          emailHash: TIM_LEE_HASH,
+        },
+      ],
+    });
+    assert.equal(resolveUniqueKnownPerson({
+      emailHashes: [TIM_LEE_HASH],
+      knownPeople: [
+        { personId: TIM_LEE_ID, displayName: "Tim Lee", emailHash: TIM_LEE_HASH },
+        { personId: "cccccccccccccccccccccccccccccccccccc", displayName: "Timothy Other", emailHash: TIM_LEE_HASH },
+      ],
+    }), "ambiguous");
+    const card = docket.items[0];
+    assert.ok(card);
+    assert.equal(card?.subject, "Unassigned");
+    assert.ok(selectFounderControls(card!).confirmPerson);
+    assert.equal(card?.brief?.projectId ?? null, null);
+  });
+
+  it("unknown external email keeps Confirm Person", () => {
+    const unknownHash = hashEmail("unknown.client@gmail.com")!;
+    const assoc = livePersonAssociation("unk-assoc", LEE_THREAD, LEE_INBOUND, unknownHash);
+    const job = liveOpenJob("unk-job", LEE_THREAD, LEE_OUTBOUND, {
+      subject: "circle back on the CAD",
+      matchedText: "circle back on the CAD",
+      ruleIds: ["explicit_follow_up"],
+    });
+    const docket = todayOf([assoc, job], {
+      threadContext: new Map([
+        [
+          LEE_THREAD,
+          {
+            subject: "Re: Cornflower Blue - Yogo Sapphire - Lee",
+            fromEmail: "unknown.client@gmail.com",
+          },
+        ],
+      ]),
+      knownPeople: [
+        {
+          personId: TIM_LEE_ID,
+          displayName: "Tim Lee",
+          roles: ["client"],
+          emailHash: TIM_LEE_HASH,
+        },
+      ],
+    });
+    const card = docket.items[0];
+    assert.ok(card);
+    assert.equal(card?.subject, "Unassigned");
+    assert.ok(selectFounderControls(card!).confirmPerson);
+    assert.equal(card?.brief?.projectId ?? null, null);
   });
 });

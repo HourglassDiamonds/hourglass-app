@@ -74,6 +74,8 @@ export function mergeTodayThreadContext(
       subject: next.subject ?? prior.subject ?? null,
       fromDisplayName: next.fromDisplayName ?? prior.fromDisplayName ?? null,
       fromEmail: next.fromEmail ?? prior.fromEmail ?? null,
+      liveIdentityLoaded:
+        next.liveIdentityLoaded === true || prior.liveIdentityLoaded === true,
     });
   }
   return merged;
@@ -132,5 +134,6 @@ export async function loadLiveExternalThreadIdentity(
     subject: fetched.indexedSubject,
     fromDisplayName,
     fromEmail,
+    liveIdentityLoaded: true,
   };
 }

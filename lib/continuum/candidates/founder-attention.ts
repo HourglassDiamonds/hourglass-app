@@ -7,6 +7,7 @@
  */
 
 import type { ContinuumCandidate } from "@/lib/continuum/candidates/types";
+import { hashEmail } from "@/lib/continuum/client-memory/hashes";
 import type { ProjectJob } from "@/lib/continuum/client-memory/project-jobs/types";
 import { isUnresolvedOpenJobState } from "@/lib/continuum/client-memory/project-jobs/validate";
 import { isPastDueDate } from "@/lib/continuum/date-only";
@@ -144,6 +145,15 @@ export type TodayGmailThreadContext = {
   subject?: string | null;
   fromDisplayName?: string | null;
   fromEmail?: string | null;
+  liveIdentityLoaded?: boolean;
+};
+
+export type TodayKnownPerson = {
+  personId: string;
+  displayName: string;
+  roles?: readonly string[] | null;
+  organizationName?: string | null;
+  emailHash: string;
 };
 
 const CONSUMER_MAIL_DOMAINS = new Set([
@@ -416,6 +426,119 @@ export type TodayIdentitySignal = {
 
 const PLATFORM_CONTENT =
   /\b(unsubscribe|manage preferences|view in browser|security alert|password reset|sign[- ]in alert|magic link|product (?:update|news)|changelog|release notes|weekly digest|what's new)\b/i;
+
+const GENERATED_OPERATING_BRIEF_RULE = "generated_founder_operating_brief";
+const GENERATED_OPERATING_BRIEF_SUBJECT =
+  /^(?:(?:re|fw|fwd):\s*)*hourglass morning brief\b/i;
+const EMAIL_HASH_RE = /^[a-f0-9]{64}$/;
+
+export function isGeneratedFounderOperatingBriefSubject(
+  subject: string | null | undefined,
+): boolean {
+  const stripped = collapseIdentityText(subject ?? "");
+  return stripped.length > 0 && GENERATED_OPERATING_BRIEF_SUBJECT.test(stripped);
+}
+
+function normalizedEmailHash(value: string | null | undefined): string | null {
+  const hash = value?.trim().toLowerCase() ?? "";
+  return EMAIL_HASH_RE.test(hash) ? hash : null;
+}
+
+export function collectTodayEmailHashes(input: {
+  candidates?: readonly ContinuumCandidate[];
+  thread?: TodayGmailThreadContext | null;
+}): string[] {
+  const hashes: string[] = [];
+  const seen = new Set<string>();
+  const add = (value: string | null | undefined) => {
+    const hash = normalizedEmailHash(value);
+    if (!hash || seen.has(hash)) return;
+    seen.add(hash);
+    hashes.push(hash);
+  };
+  for (const row of input.candidates ?? []) {
+    if (hasRule(row, GENERATED_OPERATING_BRIEF_RULE)) continue;
+    const payload = payloadOf(row);
+    if (payload.kind === "person_association") add(payload.emailHash);
+  }
+  add(hashEmail(input.thread?.fromEmail ?? null));
+  return hashes;
+}
+
+export function resolveUniqueKnownPerson(input: {
+  emailHashes: readonly string[];
+  knownPeople?: readonly TodayKnownPerson[];
+}): TodayKnownPerson | "ambiguous" | null {
+  const wanted = [
+    ...new Set(
+      input.emailHashes
+        .map((row) => normalizedEmailHash(row))
+        .filter((row): row is string => Boolean(row)),
+    ),
+  ];
+  if (wanted.length === 0) return null;
+  const people = input.knownPeople ?? [];
+  const hits: TodayKnownPerson[] = [];
+  const seenPerson = new Set<string>();
+  for (const hash of wanted) {
+    const matches = people.filter(
+      (person) => normalizedEmailHash(person.emailHash) === hash,
+    );
+    const uniqueIds = [...new Set(matches.map((person) => person.personId.trim()))].filter(
+      Boolean,
+    );
+    if (uniqueIds.length > 1) return "ambiguous";
+    const person = matches[0];
+    if (!person || uniqueIds.length !== 1) continue;
+    if (seenPerson.has(person.personId)) continue;
+    seenPerson.add(person.personId);
+    hits.push(person);
+  }
+  if (hits.length === 0) return null;
+  if (hits.length > 1) return "ambiguous";
+  return hits[0]!;
+}
+
+function isInternalGeneratedFrom(thread?: TodayGmailThreadContext | null): boolean {
+  if (isFounderIdentityName(thread?.fromDisplayName)) return true;
+  if (isStudioOrVendorLabel(thread?.fromDisplayName)) return true;
+  if (isPlatformOrSystemName(thread?.fromDisplayName)) return true;
+  const domain = emailDomain(thread?.fromEmail ?? null);
+  if (domain && isStudioMailboxDomain(domain)) return true;
+  return false;
+}
+
+export function isGeneratedTodayNoise(input: {
+  candidates: readonly ContinuumCandidate[];
+  thread?: TodayGmailThreadContext | null;
+  knownPeople?: readonly TodayKnownPerson[];
+}): boolean {
+  const generated = input.candidates.filter((row) =>
+    hasRule(row, GENERATED_OPERATING_BRIEF_RULE),
+  );
+  const externalObligation = input.candidates.some((row) => {
+    if (hasRule(row, GENERATED_OPERATING_BRIEF_RULE)) return false;
+    return row.candidateType !== "person_association";
+  });
+  if (generated.length > 0 && !externalObligation) return true;
+  if (generated.length > 0) return false;
+  if (!isGeneratedFounderOperatingBriefSubject(input.thread?.subject ?? null)) {
+    return false;
+  }
+  const hashes = collectTodayEmailHashes(input);
+  const known = resolveUniqueKnownPerson({
+    emailHashes: hashes,
+    knownPeople: input.knownPeople,
+  });
+  if (known) return false;
+  if (isInternalGeneratedFrom(input.thread)) return true;
+  if (input.thread?.liveIdentityLoaded === true) {
+    const from =
+      input.thread.fromEmail?.trim() || input.thread.fromDisplayName?.trim() || "";
+    return from.length === 0;
+  }
+  return !input.thread?.fromEmail?.trim() && hashes.length === 0;
+}
 
 const VENDOR_RULES = new Set([
   "explicit_vendor_waiting",
@@ -697,7 +820,17 @@ export function classifyTodayCommunication(input: {
   thread?: TodayGmailThreadContext | null;
   vendorDirectory?: readonly string[];
   evidenceTexts?: readonly string[];
+  knownPeople?: readonly TodayKnownPerson[];
 }): TodayCommunicationClass {
+  if (
+    isGeneratedTodayNoise({
+      candidates: input.candidates,
+      thread: input.thread,
+      knownPeople: input.knownPeople,
+    })
+  ) {
+    return "platform";
+  }
   const names: TodayIdentitySignal[] = [...(input.people ?? [])];
   for (const row of input.candidates) {
     const payload = payloadOf(row);
