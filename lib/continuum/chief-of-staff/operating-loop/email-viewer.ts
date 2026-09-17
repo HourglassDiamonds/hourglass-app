@@ -5,7 +5,10 @@
  */
 
 import { CONTINUUM_FOUNDER_TIME_ZONE } from "@/lib/continuum/dashboard/compose";
-import { isNakedDateText } from "@/lib/continuum/candidates/founder-attention";
+import {
+  isFounderIdentityName,
+  isNakedDateText,
+} from "@/lib/continuum/candidates/founder-attention";
 import { parseGmailFromHeader } from "@/lib/continuum/gmail/payload";
 import { parseGmailWebHref } from "./evidence";
 import type { CosOpenEmailSource } from "./email-source";
@@ -100,18 +103,85 @@ export function clipFounderText(value: string | null | undefined, max: number): 
   return `${sliced || text.slice(0, max - 1)}…`;
 }
 
-export function usefulSenderName(value: string | null | undefined): string | null {
+export function usefulSenderName(
+  value: string | null | undefined,
+): string | null {
   const text = founderSafeText(value);
   if (!text || GENERIC_SENDER.test(text)) return null;
   if (text.includes("@") && !/\s/.test(text)) return null;
   return text;
 }
 
-export function usefulSenderEmail(value: string | null | undefined): string | null {
+export function usefulSenderEmail(
+  value: string | null | undefined,
+): string | null {
   const text = founderSafeText(value);
   if (!text || !text.includes("@")) return null;
   if (HASH_LIKE.test(text)) return null;
   return text;
+}
+
+function isStudioMailbox(email: string): boolean {
+  const domain = email.split("@")[1]?.trim().toLowerCase() ?? "";
+  return (
+    domain === "hourglassdiamonds.com" || domain.endsWith(".hourglassdiamonds.com")
+  );
+}
+
+function isInternalSender(
+  displayName: string | null | undefined,
+  email: string | null | undefined,
+  internalEmails: readonly string[] = [],
+): boolean {
+  if (isFounderIdentityName(displayName)) return true;
+  const address = founderSafeText(email);
+  if (!address || !address.includes("@")) return false;
+  if (isStudioMailbox(address)) return true;
+  const key = normalizeAddress(address);
+  return internalEmails.some((row) => normalizeAddress(row) === key);
+}
+
+function usefulExternalSenderName(
+  value: string | null | undefined,
+  internalEmails: readonly string[] = [],
+): string | null {
+  const text = usefulSenderName(value);
+  if (!text) return null;
+  if (isInternalSender(text, text.includes("@") ? text : null, internalEmails)) {
+    return null;
+  }
+  return text;
+}
+
+function usefulExternalSenderEmail(
+  value: string | null | undefined,
+  internalEmails: readonly string[] = [],
+): string | null {
+  const text = usefulSenderEmail(value);
+  if (!text) return null;
+  if (isInternalSender(null, text, internalEmails)) return null;
+  return text;
+}
+
+export function pickExternalSenderPreview(
+  view: Pick<CosSourceViewerView, "focused" | "earlier" | "later">,
+  internalEmails: readonly string[] = [],
+): Pick<CosEmailCardView, "senderDisplayName" | "senderEmail"> {
+  const messages = [view.focused, ...[...view.earlier].reverse(), ...view.later];
+  for (const message of messages) {
+    if (isInternalSender(message.fromDisplayName, message.fromEmail, internalEmails)) {
+      continue;
+    }
+    const senderDisplayName = usefulExternalSenderName(
+      message.fromDisplayName,
+      internalEmails,
+    );
+    const senderEmail = usefulExternalSenderEmail(message.fromEmail, internalEmails);
+    if (senderDisplayName || senderEmail) {
+      return { senderDisplayName, senderEmail };
+    }
+  }
+  return { senderDisplayName: null, senderEmail: null };
 }
 
 export function parseSenderFromRaw(raw: string | null | undefined): {
@@ -190,8 +260,8 @@ export function mergeEmailCardPreview(
 ): CosEmailCardView {
   return {
     senderDisplayName:
-      usefulSenderName(preview.senderDisplayName) ?? card.senderDisplayName,
-    senderEmail: usefulSenderEmail(preview.senderEmail) ?? card.senderEmail,
+      usefulExternalSenderName(preview.senderDisplayName) ?? card.senderDisplayName,
+    senderEmail: usefulExternalSenderEmail(preview.senderEmail) ?? card.senderEmail,
     subject: founderSafeText(preview.subject) ?? card.subject,
     excerpt: card.excerpt ?? clipFounderText(preview.excerpt, EMAIL_CARD_EXCERPT_MAX),
     hydrateHref: card.hydrateHref,
@@ -462,10 +532,14 @@ export function presentEvidenceOnlySourceViewer(
   };
 }
 
-export function sourceViewerPreviewFromView(view: CosSourceViewerView): CosEmailCardView {
+export function sourceViewerPreviewFromView(
+  view: CosSourceViewerView,
+  internalEmails: readonly string[] = [],
+): CosEmailCardView {
+  const sender = pickExternalSenderPreview(view, internalEmails);
   return {
-    senderDisplayName: view.focused.fromDisplayName,
-    senderEmail: view.focused.fromEmail,
+    senderDisplayName: sender.senderDisplayName,
+    senderEmail: sender.senderEmail,
     subject: view.focused.subject,
     excerpt: clipFounderText(view.focused.body, EMAIL_CARD_EXCERPT_MAX),
     hydrateHref: view.gmailHref,

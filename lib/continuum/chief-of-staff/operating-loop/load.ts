@@ -1,7 +1,8 @@
 /**
  * Server-only CoS operating-loop loader.
- * Reads Open Jobs, Project Desk titles, and Candidates.
- * Does not write. Does not call the Gmail API. Does not activate shadow CoS briefs.
+ * Reads Open Jobs, Project Desk titles, Candidates, and indexed Gmail
+ * thread subjects for Today identity. May fetch live From metadata for
+ * Unassigned cards only. Does not write. Does not activate shadow CoS briefs.
  */
 
 import "server-only";
@@ -16,11 +17,19 @@ import { getAuthenticatedCandidateStore } from "@/lib/continuum/candidates/load"
 import type { ContinuumCandidate } from "@/lib/continuum/candidates/types";
 import { tagStoredGeneratedOperatingMailCandidates } from "@/lib/continuum/gmail/candidates/tag-stored-generated-load";
 import {
+  loadIndexedTodayThreadContext,
+  loadLiveExternalThreadIdentity,
+  mergeTodayThreadContext,
+} from "@/lib/continuum/gmail/today-thread-context";
+import type { TodayGmailThreadContext } from "@/lib/continuum/candidates/founder-attention";
+import {
   CURRENT_OPERATING_BACKLOG,
   hydrateOperatingBacklogFromPersistence,
 } from "@/lib/agent-os/operating-backlog";
 import { resolvePersistenceAdapter } from "@/lib/agent-os/persistence/resolve";
 import { composeCosOperatingLoop } from "./compose";
+import { composeTodayDocket } from "./docket";
+import { parseGmailWebHref } from "./evidence";
 import { selectMasterSprintCapacityItems } from "./master-sprint";
 import {
   COS_DISCONNECTED_DETAIL,
@@ -31,6 +40,21 @@ import {
   type CosMasterSprintItem,
   type CosOperatingLoopView,
 } from "./types";
+
+function unassignedLiveIdentityThreadIds(loop: CosOperatingLoopView): string[] {
+  const ids = new Set<string>();
+  for (const item of composeTodayDocket(loop).items) {
+    if (item.subject !== "Unassigned") continue;
+    const canonical = item.brief?.canonicalGmailThreadId?.trim();
+    if (canonical) ids.add(canonical);
+    for (const beat of item.brief?.evidence ?? []) {
+      if (beat.generatedSource === true) continue;
+      const parsed = parseGmailWebHref(beat.sourceHref ?? "");
+      if (parsed?.threadId) ids.add(parsed.threadId);
+    }
+  }
+  return [...ids];
+}
 
 function disconnectedLoop(): CosOperatingLoopView {
   return {
@@ -91,13 +115,31 @@ export async function loadCosOperatingLoop(
       listed,
     );
     const masterSprint = await loadMasterSprintCapacity();
-    return composeCosOperatingLoop({
+    const indexedContext = await loadIndexedTodayThreadContext(candidates);
+    const composeInput = {
       jobs,
       summaries,
       candidates,
       nowIso: now.toISOString(),
       masterSprint,
-    });
+      threadContext: indexedContext,
+    };
+    let loop = composeCosOperatingLoop(composeInput);
+    const unassignedThreads = unassignedLiveIdentityThreadIds(loop);
+    if (unassignedThreads.length > 0) {
+      const live = new Map<string, TodayGmailThreadContext>();
+      for (const threadId of unassignedThreads) {
+        const identity = await loadLiveExternalThreadIdentity(threadId);
+        if (identity) live.set(threadId, identity);
+      }
+      if (live.size > 0) {
+        loop = composeCosOperatingLoop({
+          ...composeInput,
+          threadContext: mergeTodayThreadContext(indexedContext, live),
+        });
+      }
+    }
+    return loop;
   } catch {
     return disconnectedLoop();
   }

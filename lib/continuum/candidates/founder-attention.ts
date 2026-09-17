@@ -92,10 +92,13 @@ export function isFounderIdentityName(name: string | null | undefined): boolean 
   );
 }
 
-const VENDOR_ORG_PHRASE =
-  /\b([A-Za-z][A-Za-z0-9'&.\-]*(?:\s+[A-Za-z][A-Za-z0-9'&.\-]*){0,3}\s+(?:Engraving|Jewelers?|Jewellery|Jewelry|Workshop|Atelier))\b/i;
+const VENDOR_ORG_TOKEN = "[A-Za-z][A-Za-z0-9'&.\\-]{1,}";
+const VENDOR_ORG_PHRASE = new RegExp(
+  `\\b(${VENDOR_ORG_TOKEN}(?:\\s+${VENDOR_ORG_TOKEN}){0,2}\\s+(?:Engraving|Jewelers?|Jewellery|Jewelry|Workshop|Atelier))\\b`,
+  "i",
+);
 const VENDOR_PRINTS_PHRASE =
-  /\b([A-Za-z][A-Za-z0-9'&.\-]*(?:prints?|stampings?|castings?))\b/i;
+  /\b([A-Za-z][A-Za-z0-9'&.\-]{1,}(?:prints?|stampings?|castings?))\b/i;
 
 export function isVendorOrganizationLabel(name: string | null | undefined): boolean {
   if (!name) return false;
@@ -129,6 +132,7 @@ export function vendorOrganizationFromIdentityText(
     stripped.length <= 60 &&
     isVendorOrganizationLabel(stripped) &&
     !/\b(the shop)\b/i.test(stripped) &&
+    !/\bx\b/i.test(stripped) &&
     !/\b(ticket|unsubscribe|in progress|answered)\b/i.test(stripped)
   ) {
     return collapseIdentityText(stripped);
@@ -136,9 +140,136 @@ export function vendorOrganizationFromIdentityText(
   return null;
 }
 
+export type TodayGmailThreadContext = {
+  subject?: string | null;
+  fromDisplayName?: string | null;
+  fromEmail?: string | null;
+};
+
+const CONSUMER_MAIL_DOMAINS = new Set([
+  "gmail.com",
+  "googlemail.com",
+  "yahoo.com",
+  "ymail.com",
+  "outlook.com",
+  "hotmail.com",
+  "live.com",
+  "msn.com",
+  "icloud.com",
+  "me.com",
+  "mac.com",
+  "aol.com",
+  "proton.me",
+  "protonmail.com",
+  "gmx.com",
+  "mail.com",
+]);
+
+function emailDomain(email: string | null | undefined): string | null {
+  const trimmed = email?.trim().toLowerCase() ?? "";
+  const at = trimmed.lastIndexOf("@");
+  if (at <= 0 || at === trimmed.length - 1) return null;
+  return trimmed.slice(at + 1);
+}
+
+function isStudioMailboxDomain(domain: string): boolean {
+  return domain === "hourglassdiamonds.com" || domain.endsWith(".hourglassdiamonds.com");
+}
+
+function domainRegistrableLabel(domain: string): string | null {
+  const parts = domain.split(".").filter(Boolean);
+  if (parts.length < 2) return null;
+  const label = parts[parts.length - 2]?.trim() ?? "";
+  return label.length >= 3 ? label : null;
+}
+
+function titleCaseOrg(label: string): string {
+  return `${label.charAt(0).toUpperCase()}${label.slice(1).toLowerCase()}`;
+}
+
+function orgKey(value: string): string {
+  return normalizedIdentity(value);
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+export function collectTodayVendorEvidence(input: {
+  people?: readonly TodayIdentitySignal[];
+  evidenceTexts?: readonly string[];
+}): { directory: string[]; evidenceTexts: string[] } {
+  const directory: string[] = [];
+  const evidenceTexts: string[] = [...(input.evidenceTexts ?? [])];
+  for (const person of input.people ?? []) {
+    const organization = person.organizationName?.trim() ?? "";
+    if (organization) {
+      evidenceTexts.push(organization);
+      const roles = person.roles ?? [];
+      if (
+        roles.includes("vendor-contact") ||
+        roles.includes("business-contact") ||
+        isVendorOrganizationLabel(organization)
+      ) {
+        directory.push(collapseIdentityText(organization));
+      }
+    }
+    if (isVendorOrganizationLabel(person.displayName)) {
+      directory.push(collapseIdentityText(person.displayName));
+    }
+  }
+  return {
+    directory: [...new Set(directory.filter(Boolean))],
+    evidenceTexts: [...new Set(evidenceTexts.map((row) => row.trim()).filter(Boolean))],
+  };
+}
+
+export function vendorOrganizationFromGmailContext(input: {
+  thread?: TodayGmailThreadContext | null;
+  vendorDirectory?: readonly string[];
+  evidenceTexts?: readonly string[];
+}): string | null {
+  const fromSubject = vendorOrganizationFromIdentityText(input.thread?.subject ?? null);
+  if (fromSubject) return fromSubject;
+  const fromName = vendorOrganizationFromIdentityText(input.thread?.fromDisplayName ?? null);
+  if (fromName) return fromName;
+  if (isVendorOrganizationLabel(input.thread?.fromDisplayName)) {
+    return collapseIdentityText(input.thread!.fromDisplayName!);
+  }
+  const directory = (input.vendorDirectory ?? [])
+    .map((row) => collapseIdentityText(row))
+    .filter(Boolean);
+  const display = collapseIdentityText(input.thread?.fromDisplayName ?? "");
+  if (display) {
+    const displayHit = directory.find(
+      (org) => orgKey(display) === orgKey(org) || orgKey(display).includes(orgKey(org)),
+    );
+    if (displayHit) return displayHit;
+  }
+  const domain = emailDomain(input.thread?.fromEmail ?? null);
+  if (!domain || CONSUMER_MAIL_DOMAINS.has(domain) || isStudioMailboxDomain(domain)) {
+    return null;
+  }
+  const label = domainRegistrableLabel(domain);
+  if (!label) return null;
+  const labelKey = orgKey(label);
+  const directoryHit = directory.find((org) => {
+    const key = orgKey(org);
+    return key === labelKey || key.includes(labelKey) || labelKey.includes(key);
+  });
+  if (directoryHit) return directoryHit;
+  const evidence = (input.evidenceTexts ?? []).join("\n");
+  if (!evidence) return null;
+  if (!new RegExp(`\\b${escapeRegExp(label)}\\b`, "i").test(evidence)) return null;
+  return titleCaseOrg(label);
+}
+
 export function pickTodayVendorContext(input: {
   candidates?: readonly ContinuumCandidate[];
   people?: readonly TodayIdentitySignal[];
+  thread?: TodayGmailThreadContext | null;
+  vendorDirectory?: readonly string[];
+  evidenceTexts?: readonly string[];
 }): string | null {
   const people: TodayIdentitySignal[] = [...(input.people ?? [])];
   for (const row of input.candidates ?? []) {
@@ -161,6 +292,13 @@ export function pickTodayVendorContext(input: {
     const name = contacts[0]?.displayName.trim() ?? "";
     if (name) return name;
   }
+  const collected = collectTodayVendorEvidence({
+    people,
+    evidenceTexts: input.evidenceTexts,
+  });
+  const directory = [
+    ...new Set([...(input.vendorDirectory ?? []), ...collected.directory]),
+  ];
   const orgs = people.flatMap((person) => {
     if (isFounderIdentityName(person.displayName)) return [];
     if (isPlatformOrSystemName(person.displayName)) return [];
@@ -190,6 +328,12 @@ export function pickTodayVendorContext(input: {
     const fromValue = vendorOrganizationFromIdentityText(payload.value);
     if (fromValue) return fromValue;
   }
+  const fromGmail = vendorOrganizationFromGmailContext({
+    thread: input.thread,
+    vendorDirectory: directory,
+    evidenceTexts: collected.evidenceTexts,
+  });
+  if (fromGmail) return fromGmail;
   const vendorThread =
     uniqueOrgs.length > 0 ||
     people.some((person) => isVendorPerson(person)) ||
@@ -550,6 +694,9 @@ export function isPlatformSystemEvidence(row: ContinuumCandidate): boolean {
 export function classifyTodayCommunication(input: {
   candidates: readonly ContinuumCandidate[];
   people?: readonly TodayIdentitySignal[];
+  thread?: TodayGmailThreadContext | null;
+  vendorDirectory?: readonly string[];
+  evidenceTexts?: readonly string[];
 }): TodayCommunicationClass {
   const names: TodayIdentitySignal[] = [...(input.people ?? [])];
   for (const row of input.candidates) {
@@ -576,6 +723,12 @@ export function classifyTodayCommunication(input: {
     if (payload.kind !== "project_context") return false;
     return vendorOrganizationFromIdentityText(payload.value) != null;
   });
+  const vendorFromGmail =
+    vendorOrganizationFromGmailContext({
+      thread: input.thread,
+      vendorDirectory: input.vendorDirectory,
+      evidenceTexts: input.evidenceTexts,
+    }) != null;
   const vendorOnThread =
     input.candidates.some((row) => {
       const payload = payloadOf(row);
@@ -583,7 +736,8 @@ export function classifyTodayCommunication(input: {
       return isVendorPerson({ displayName: payload.displayName, roles: null });
     }) ||
     input.candidates.some((row) => hasVendorRule(row)) ||
-    vendorFromSubject;
+    vendorFromSubject ||
+    vendorFromGmail;
   const platformName = names.some((person) => isPlatformOrSystemName(person.displayName));
   const platformContent = PLATFORM_CONTENT.test(hay);
   const commercial = input.candidates.some((row) => hasCommercialPayload(row));

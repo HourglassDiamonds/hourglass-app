@@ -179,7 +179,7 @@ export async function loadSourceViewerPreviewAction(input: {
       internalEmails: internalEmails(),
     });
     if (view) {
-      const preview = sourceViewerPreviewFromView(view);
+      const preview = sourceViewerPreviewFromView(view, internalEmails());
       return {
         ok: true,
         safeErrorCode: null,

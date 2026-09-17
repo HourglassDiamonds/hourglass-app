@@ -38,8 +38,11 @@ import {
   payloadOf,
   pickTodayVendorContext,
   classifyTodayCommunication,
+  collectTodayVendorEvidence,
+  sourceThreadId,
   type FounderAttentionContext,
   type TodayCommunicationClass,
+  type TodayGmailThreadContext,
 } from "@/lib/continuum/candidates/founder-attention";
 import { isUnresolvedOpenJobState } from "@/lib/continuum/client-memory/project-jobs/validate";
 import type { ProjectJob } from "@/lib/continuum/client-memory/project-jobs/types";
@@ -209,6 +212,7 @@ type RankedSituation = {
   proposedAction: CosProposedAction | null;
   specConflict?: CosSpecConflictView | null;
   personAssociationCandidateId?: string | null;
+  groupedThreadId?: string | null;
 };
 
 function identityPeopleFor(
@@ -762,6 +766,38 @@ function pendingPersonAssociationCandidateId(
   );
 }
 
+function situationThreadId(
+  key: string,
+  rows: readonly ContinuumCandidate[],
+): string | null {
+  if (key.startsWith("thread:")) return key.slice("thread:".length);
+  return rows.map(sourceThreadId).find((id): id is string => Boolean(id)) ?? null;
+}
+
+function vendorEvidenceFromProjects(
+  projects: ReadonlyMap<string, CosProjectContext>,
+): { directory: string[]; evidenceTexts: string[] } {
+  const people: { displayName: string; roles: string[]; organizationName: string | null }[] = [];
+  const evidenceTexts: string[] = [];
+  for (const project of projects.values()) {
+    const title = project.title?.trim() ?? "";
+    if (title) evidenceTexts.push(title);
+    for (const person of project.people ?? []) {
+      people.push({
+        displayName: person.displayName,
+        roles: person.role ? [person.role] : [],
+        organizationName: person.organizationName ?? null,
+      });
+    }
+    for (const spec of project.specs ?? []) {
+      if (spec.fieldName === "diamond_supply_notes" && spec.value.trim()) {
+        evidenceTexts.push(spec.value);
+      }
+    }
+  }
+  return collectTodayVendorEvidence({ people, evidenceTexts });
+}
+
 function classifySituation(input: {
   key: string;
   rows: readonly ContinuumCandidate[];
@@ -772,6 +808,9 @@ function classifySituation(input: {
   proposedActions: readonly CosProposedAction[];
   association: ReadonlyMap<string, SupportedThreadProject>;
   nowMs: number;
+  threadContext?: ReadonlyMap<string, TodayGmailThreadContext>;
+  vendorDirectory?: readonly string[];
+  evidenceTexts?: readonly string[];
 }): RankedSituation | null {
   const groupedProjectId = input.key.startsWith("project:")
     ? input.key.slice("project:".length)
@@ -787,13 +826,30 @@ function classifySituation(input: {
   const vendorName = pickVendorName(project);
   const person = isClientPersonLabel(attribution.personName) ? attribution.personName : null;
   const identityPeople = identityPeopleFor(project, input.rows, input.projects);
+  const groupedThreadId = situationThreadId(input.key, input.rows);
+  const thread = groupedThreadId
+    ? (input.threadContext?.get(groupedThreadId) ?? null)
+    : null;
+  const localEvidence = collectTodayVendorEvidence({
+    people: identityPeople,
+    evidenceTexts: input.evidenceTexts,
+  });
+  const vendorDirectory = [
+    ...new Set([...(input.vendorDirectory ?? []), ...localEvidence.directory]),
+  ];
   const communication = classifyTodayCommunication({
     candidates: input.rows,
     people: identityPeople,
+    thread,
+    vendorDirectory,
+    evidenceTexts: localEvidence.evidenceTexts,
   });
   const organizationLabel = pickTodayVendorContext({
     candidates: input.rows,
     people: identityPeople,
+    thread,
+    vendorDirectory,
+    evidenceTexts: localEvidence.evidenceTexts,
   });
   const title = displayTitle(person, attribution.projectTitle, organizationLabel);
   const client = pickClientPerson(project);
@@ -1200,6 +1256,7 @@ function classifySituation(input: {
     proposedAction: proposed,
     specConflict,
     personAssociationCandidateId: pendingPersonAssociationCandidateId(input.rows),
+    groupedThreadId,
   };
 }
 
@@ -1278,6 +1335,9 @@ export type ComposeConciergeBriefInput = {
   nowIso: string;
   top5: readonly CosTop5Item[];
   proposedActions?: readonly CosProposedAction[];
+  threadContext?: ReadonlyMap<string, TodayGmailThreadContext>;
+  vendorDirectory?: readonly string[];
+  evidenceTexts?: readonly string[];
 };
 
 export function composeConciergeBrief(input: ComposeConciergeBriefInput): {
@@ -1307,6 +1367,13 @@ export function composeConciergeBrief(input: ComposeConciergeBriefInput): {
   };
   const association = projectBySupportedAssociation(input.candidates, input.projects);
   const projectByThread = projectIdsByThread(association);
+  const projectVendor = vendorEvidenceFromProjects(input.projects);
+  const vendorDirectory = [
+    ...new Set([...(input.vendorDirectory ?? []), ...projectVendor.directory]),
+  ];
+  const evidenceTexts = [
+    ...new Set([...(input.evidenceTexts ?? []), ...projectVendor.evidenceTexts]),
+  ];
   const groups = new Map<string, ContinuumCandidate[]>();
   for (const row of input.candidates) {
     if (isCandidateQuietForToday(row, input.nowIso)) continue;
@@ -1328,6 +1395,9 @@ export function composeConciergeBrief(input: ComposeConciergeBriefInput): {
       proposedActions: input.proposedActions ?? [],
       association,
       nowMs,
+      threadContext: input.threadContext,
+      vendorDirectory,
+      evidenceTexts,
     });
     if (situation) situations.push(situation);
   }

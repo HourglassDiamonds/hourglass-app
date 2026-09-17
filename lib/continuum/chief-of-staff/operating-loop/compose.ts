@@ -8,7 +8,10 @@ import type { ContinuumCandidate } from "@/lib/continuum/candidates/types";
 import type { ProjectDeskSummary } from "@/lib/continuum/client-memory/project-desk/types";
 import { selectOpenProjectWork } from "@/lib/continuum/client-memory/open-projects/select";
 import type { ProjectJob } from "@/lib/continuum/client-memory/project-jobs/types";
-import { isClientPersonLabel } from "@/lib/continuum/candidates/founder-attention";
+import {
+  isClientPersonLabel,
+  type TodayGmailThreadContext,
+} from "@/lib/continuum/candidates/founder-attention";
 import { collectCanonicalActionables, selectTopRanked } from "./collect";
 import { composeFounderAttentionSurface } from "./founder-attention";
 import { composeConciergeBrief } from "./moderator";
@@ -35,6 +38,9 @@ export type ComposeCosOperatingLoopInput = {
   ranker?: ActionableRanker;
   newMutationId?: () => string;
   masterSprint?: CosOperatingLoopView["masterSprint"];
+  threadContext?: ReadonlyMap<string, TodayGmailThreadContext>;
+  vendorDirectory?: readonly string[];
+  evidenceTexts?: readonly string[];
 };
 
 function clientDisplayName(
@@ -168,6 +174,9 @@ export function composeCosOperatingLoop(
     nowIso: input.nowIso,
     top5,
     proposedActions,
+    threadContext: input.threadContext,
+    vendorDirectory: input.vendorDirectory,
+    evidenceTexts: input.evidenceTexts,
   });
 
   if (top.length === 0) {
