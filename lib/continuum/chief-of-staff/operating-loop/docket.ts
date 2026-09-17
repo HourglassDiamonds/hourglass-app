@@ -11,6 +11,10 @@ import {
 } from "./present";
 import { COS_SPRINT_CLEAR_COPY } from "./master-sprint";
 import { presentUnassignedHeadline } from "./email-viewer";
+import {
+  isMeaningfulTodayActionText,
+  isNoiseOnlyCandidateText,
+} from "@/lib/continuum/candidates/founder-attention";
 import type {
   CosAnomalyItem,
   CosBriefItem,
@@ -266,6 +270,45 @@ function coverKeysFor(item: {
   return keys;
 }
 
+export function isActionableTodayDocketItem(item: CosDocketItemView): boolean {
+  if (item.origin === "master_sprint") return true;
+  if (isNoiseOnlyCandidateText(item.headline)) return false;
+  if (item.origin === "open_job") return true;
+  const evidence = item.brief?.evidence ?? [];
+  const evidenceTexts = evidence.map((beat) => beat.summary);
+  const noiseEvidenceOnly =
+    evidence.length > 0 && evidenceTexts.every((text) => isNoiseOnlyCandidateText(text));
+  if (
+    noiseEvidenceOnly &&
+    (/Identify who this is from/i.test(item.headline) || /recap|next step/i.test(item.headline))
+  ) {
+    return false;
+  }
+  if (item.brief?.staleInboundSatisfied && /recap|next step/i.test(item.headline)) {
+    return false;
+  }
+  if (item.brief?.noFounderAction && /recap|next step|Identify who this is from/i.test(item.headline)) {
+    return false;
+  }
+  if (item.origin === "decision") {
+    if (item.decision?.recap) return true;
+    if (/recap|answered the design|Your turn/i.test(`${item.headline} ${item.context ?? ""}`)) {
+      return false;
+    }
+  }
+  if (/Identify who this is from/i.test(item.headline)) {
+    const supportedReply = /answered a design question|latest meaningful turn|asked for|confirm the next step|isn't attached to a person/i.test(
+      item.brief?.explanation ?? "",
+    );
+    const recovered = Boolean(
+      item.brief?.recoveredGmailThreadId || item.brief?.canonicalGmailThreadId,
+    );
+    const confirm = item.brief?.actions.some((action) => action.kind === "confirm_person") ?? false;
+    return Boolean(confirm || recovered || supportedReply || !noiseEvidenceOnly);
+  }
+  return Boolean(item.brief || item.job || isMeaningfulTodayActionText(item.headline));
+}
+
 /**
  * Master Sprint fallback into unused Up next capacity.
  * Client/work always occupies slots first. Extra sprint items stay off the queue.
@@ -436,13 +479,14 @@ export function composeTodayDocket(loop: CosOperatingLoopView): CosTodayDocketVi
     mark(keys);
   }
 
-  const unused = Math.max(0, COS_DOCKET_VISIBLE_LIMIT - liveWork.length);
+  const actionableLive = liveWork.filter(isActionableTodayDocketItem);
+  const unused = Math.max(0, COS_DOCKET_VISIBLE_LIMIT - actionableLive.length);
   const sprint = masterSprintDocketItems(loop, unused);
-  const queue = [...liveWork, ...sprint];
+  const queue = [...actionableLive, ...sprint];
   const items = queue.slice(0, COS_DOCKET_VISIBLE_LIMIT);
-  const queuedCount = Math.max(0, liveWork.length - COS_DOCKET_VISIBLE_LIMIT);
+  const queuedCount = Math.max(0, actionableLive.length - COS_DOCKET_VISIBLE_LIMIT);
   const showDisconnected = loop.status === "disconnected";
-  const showCaughtUp = !showDisconnected && liveWork.length === 0 && sprint.length === 0;
+  const showCaughtUp = !showDisconnected && actionableLive.length === 0 && sprint.length === 0;
 
   return {
     title: COS_DOCKET_TITLE,

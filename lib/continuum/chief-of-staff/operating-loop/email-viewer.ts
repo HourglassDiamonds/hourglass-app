@@ -9,6 +9,7 @@ import {
   isFounderIdentityName,
   isFooterOrTemplateNoise,
   isNakedDateText,
+  isNoiseOnlyCandidateText,
 } from "@/lib/continuum/candidates/founder-attention";
 import { parseGmailFromHeader } from "@/lib/continuum/gmail/payload";
 import { parseGmailWebHref } from "./evidence";
@@ -215,6 +216,7 @@ export function presentUnassignedHeadline(
   for (const summary of evidenceSummaries) {
     if (isNakedDateText(summary)) continue;
     if (isFooterOrTemplateNoise(summary)) continue;
+    if (isNoiseOnlyCandidateText(summary)) continue;
     const useful = clipFounderText(summary, 88);
     if (useful && useful.length >= 12 && !/isn't attached to a person/i.test(useful)) {
       return finishImperative(useful.replace(/…$/, ""));
@@ -230,6 +232,7 @@ function latestUsefulExcerpt(
   for (const beat of [...beats].reverse()) {
     if (beat.generatedSource) continue;
     if (isFooterOrTemplateNoise(beat.summary)) continue;
+    if (isNoiseOnlyCandidateText(beat.summary)) continue;
     const excerpt = clipFounderText(beat.summary, max);
     if (excerpt) return excerpt;
   }

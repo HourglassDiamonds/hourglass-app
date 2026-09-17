@@ -957,6 +957,192 @@ export function isNakedContextSnippet(text: string | null | undefined): boolean 
   return NAKED_SPEC_SNIPPET.test(trimmed);
 }
 
+const GENERIC_IMAGE_FILENAME =
+  /^(?:image\d*|img[-_]?\d*|unnamed|untitled|photo|picture|inline[-_]?image|attachment)(?:[-_.\s]?\d*)?\.(?:jpe?g|png|gif|webp|bmp|tiff?|svg|heic)$/i;
+const SOLE_ATTACHMENT_FILENAME =
+  /^(?:[\w.-]+\.(?:jpe?g|png|gif|webp|bmp|tiff?|svg|heic|pdf|ai|psd|stl|zip|docx?|xlsx?))$/i;
+const MIME_OR_CID_ARTIFACT =
+  /^(?:cid:|<cid:|content-id:|image\/(?:jpeg|png|gif|webp)|[0-9a-f]{8,}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}\.(?:jpe?g|png))$/i;
+const QUOTED_HEADER_DATE =
+  /^on\s+(?:mon(?:day)?|tue(?:s(?:day)?)?|wed(?:nesday)?|thu(?:rs(?:day)?)?|fri(?:day)?|sat(?:urday)?|sun(?:day)?)?,?\s*(?:january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{1,2}(?:,\s*\d{4})?(?:\s+at\b.*)?$/i;
+const SIGNATURE_ONLY =
+  /^(?:best regards|kind regards|warm regards|best|regards|sincerely|thanks|thank you|cheers|sent from my (?:iphone|ipad|android)|employee photo|staff photo|company logo)$/i;
+const PHONE_OR_ADDRESS_ONLY =
+  /^(?:\+?1[-.\s]?)?(?:\(?\d{3}\)?[-.\s]?)\d{3}[-.\s]?\d{4}$|^\d{3,5}\s+\w+(?:\s+\w+){0,3}\s+(?:st|street|ave|avenue|rd|road|blvd|ln|lane|dr|drive)\.?$/i;
+const TODAY_ACTION_VERB =
+  /\b(?:send|review|reply|respond|confirm|approve|check(?:-?in)?|pick up|call|email|follow up|schedule|pay|book|verify|update|share|ask|handle|create|finish|deliver|ship|order|choose|look(?:\s+at)?|let .+ know|identify who|do this now)\b/i;
+
+function foldTodayActionText(text: string | null | undefined): string {
+  return text?.replace(/\s+/g, " ").trim().replace(/[.:]+$/, "") ?? "";
+}
+
+export function isNoiseOnlyCandidateText(text: string | null | undefined): boolean {
+  const trimmed = foldTodayActionText(text);
+  if (!trimmed) return true;
+  const withoutTopic = trimmed.replace(/^(?:attachment_filename|date|note|project_context)\s+/i, "").trim();
+  const candidate = withoutTopic || trimmed;
+  if (isNakedDateText(candidate) || isNakedDateText(trimmed)) return true;
+  if (isNakedContextSnippet(candidate)) return true;
+  if (isFooterOrTemplateNoise(candidate) || isFooterOrTemplateNoise(trimmed)) return true;
+  if (QUOTED_HEADER_DATE.test(candidate)) return true;
+  if (GENERIC_IMAGE_FILENAME.test(candidate)) return true;
+  if (SOLE_ATTACHMENT_FILENAME.test(candidate)) return true;
+  if (MIME_OR_CID_ARTIFACT.test(candidate)) return true;
+  if (SIGNATURE_ONLY.test(candidate)) return true;
+  if (PHONE_OR_ADDRESS_ONLY.test(candidate)) return true;
+  return false;
+}
+
+export function isMeaningfulTodayActionText(text: string | null | undefined): boolean {
+  const trimmed = foldTodayActionText(text);
+  if (!trimmed) return false;
+  if (isNoiseOnlyCandidateText(trimmed)) return false;
+  if (TODAY_ACTION_VERB.test(trimmed) || /\?/.test(trimmed)) return true;
+  const words = trimmed.split(/\s+/).filter((word) => /[a-zA-Z]{3,}/.test(word));
+  return words.length >= 4;
+}
+
+export function candidateActionText(row: ContinuumCandidate): string {
+  const payload = payloadOf(row);
+  if (payload.kind === "project_context") return payload.value;
+  if (payload.kind === "date") return payload.raw;
+  if (payload.kind === "follow_up" || payload.kind === "note") return payload.text;
+  if (payload.kind === "open_job") return payload.subject;
+  return row.evidenceBasis.matchedText ?? candidateText(row);
+}
+
+export function isNoiseOnlyCandidate(row: ContinuumCandidate): boolean {
+  const payload = payloadOf(row);
+  if (payload.kind === "project_context" && payload.topic === "attachment_filename") {
+    return !dateHasActionableObligation(row) && !isMeaningfulTodayActionText(payload.value);
+  }
+  const texts = [candidateActionText(row), row.evidenceBasis.matchedText ?? ""];
+  const hasMeaningful = texts.some((text) => isMeaningfulTodayActionText(text));
+  if (hasMeaningful) return false;
+  if (payload.kind === "date") return !dateHasActionableObligation(row);
+  return texts.some((text) => text && isNoiseOnlyCandidateText(text));
+}
+
+export type TodayActionabilityInput = {
+  currentFounderObligation: boolean;
+  trustworthySource: boolean;
+  actionText: string | null | undefined;
+  hasMeaningfulEvidence?: boolean;
+  noFounderAction?: boolean;
+  staleInboundSatisfied?: boolean;
+  expired?: boolean;
+  noiseOnly?: boolean;
+};
+
+export function isActionableToday(input: TodayActionabilityInput): boolean {
+  if (input.expired) return false;
+  if (input.noiseOnly) return false;
+  if (input.noFounderAction) return false;
+  if (input.staleInboundSatisfied) return false;
+  if (!input.trustworthySource) return false;
+  if (!input.currentFounderObligation) return false;
+  return input.hasMeaningfulEvidence === true || isMeaningfulTodayActionText(input.actionText);
+}
+
+export function gmailThreadByMessageId(
+  threadContext?: ReadonlyMap<string, TodayGmailThreadContext> | null,
+): Map<string, string> {
+  const map = new Map<string, string>();
+  if (!threadContext) return map;
+  for (const [threadId, thread] of threadContext) {
+    for (const message of thread.messages ?? []) {
+      const messageId = message.messageId?.trim() ?? "";
+      if (messageId && !map.has(messageId)) map.set(messageId, threadId);
+    }
+  }
+  return map;
+}
+
+export function recoveredGmailThreadId(
+  row: ContinuumCandidate,
+  threadByMessageId?: ReadonlyMap<string, string> | null,
+): string | null {
+  const ids = exactGmailIdsFromCandidate(row);
+  if (ids.threadIds[0]) return ids.threadIds[0]!;
+  for (const messageId of ids.messageIds) {
+    const mapped = threadByMessageId?.get(messageId);
+    if (mapped) return mapped;
+  }
+  return sourceThreadId(row);
+}
+
+export function hasTrustworthyTodaySource(
+  rows: readonly ContinuumCandidate[],
+  threadByMessageId?: ReadonlyMap<string, string> | null,
+): boolean {
+  if (rows.some((row) => row.sourceSystem !== "gmail")) return true;
+  return rows.some((row) => Boolean(recoveredGmailThreadId(row, threadByMessageId)));
+}
+
+export function collapseTodayCandidateGroups(
+  groups: Map<string, ContinuumCandidate[]>,
+  threadByMessageId?: ReadonlyMap<string, string> | null,
+): Map<string, ContinuumCandidate[]> {
+  const entries = [...groups.entries()].map(([key, rows]) => {
+    const threads = new Set<string>();
+    if (key.startsWith("thread:")) threads.add(key.slice("thread:".length));
+    for (const row of rows) {
+      const threadId = recoveredGmailThreadId(row, threadByMessageId);
+      if (threadId) threads.add(threadId);
+    }
+    return { key, rows, threads: [...threads] };
+  });
+  const parent = entries.map((_, index) => index);
+  const find = (index: number): number => {
+    const current = parent[index]!;
+    if (current === index) return index;
+    parent[index] = find(current);
+    return parent[index]!;
+  };
+  const byThread = new Map<string, number>();
+  for (let index = 0; index < entries.length; index++) {
+    for (const threadId of entries[index]!.threads) {
+      const prior = byThread.get(threadId);
+      if (prior == null) {
+        byThread.set(threadId, index);
+        continue;
+      }
+      const left = find(prior);
+      const right = find(index);
+      if (left !== right) parent[right] = left;
+    }
+  }
+  const rankKey = (key: string): number => {
+    if (key.startsWith("project:")) return 0;
+    if (key.startsWith("thread:")) return 1;
+    return 2;
+  };
+  const mergedRows = new Map<number, ContinuumCandidate[]>();
+  const mergedKey = new Map<number, string>();
+  for (let index = 0; index < entries.length; index++) {
+    const root = find(index);
+    const entry = entries[index]!;
+    const list = mergedRows.get(root) ?? [];
+    list.push(...entry.rows);
+    mergedRows.set(root, list);
+    const current = mergedKey.get(root);
+    if (!current || rankKey(entry.key) < rankKey(current)) mergedKey.set(root, entry.key);
+  }
+  const out = new Map<string, ContinuumCandidate[]>();
+  for (const [root, rows] of mergedRows) {
+    const key = mergedKey.get(root)!;
+    const existing = out.get(key) ?? [];
+    const seen = new Set(existing.map((row) => row.candidateId));
+    for (const row of rows) {
+      if (seen.has(row.candidateId)) continue;
+      seen.add(row.candidateId);
+      existing.push(row);
+    }
+    out.set(key, existing);
+  }
+  return out;
+}
+
 export function confirmedPersonId(row: ContinuumCandidate): string | null {
   const edited = row.founderEditedTarget;
   if (edited?.kind === "person" && edited.personId) return edited.personId;
@@ -1700,9 +1886,9 @@ export function projectByThreadFromCandidates(
 export function groupingKey(
   row: ContinuumCandidate,
   projectByThread?: ReadonlyMap<string, string>,
+  threadByMessageId?: ReadonlyMap<string, string>,
 ): string {
-  const ids = exactGmailIdsFromCandidate(row);
-  const threadId = sourceThreadId(row) ?? ids.threadIds[0] ?? null;
+  const threadId = recoveredGmailThreadId(row, threadByMessageId);
   const projectId =
     candidateProjectId(row) ?? (threadId ? (projectByThread?.get(threadId) ?? null) : null);
   if (projectId) return `project:${projectId}`;
@@ -1724,6 +1910,9 @@ export function classifyCandidateAttention(
   }
   if (ruleIdsOf(row).some((id) => BLOCKED_RULES.has(id))) {
     return { lane: "background", score: 0, factors: ["already_represented"], candidateId: row.candidateId };
+  }
+  if (isNoiseOnlyCandidate(row) && !waitingOnFounder(row) && !dateHasActionableObligation(row)) {
+    return { lane: "background", score: 0, factors: ["subordinate_evidence"], candidateId: row.candidateId };
   }
 
   const source = sourceWeight(row);

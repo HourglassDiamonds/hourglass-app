@@ -18,18 +18,25 @@ import {
   candidateText,
   confirmedPersonId,
   dateHasActionableObligation,
+  collapseTodayCandidateGroups,
   groupingKey,
+  gmailThreadByMessageId,
   hasCommercialPayload,
   hasRule,
+  hasTrustworthyTodaySource,
   isActionableSpecConflict,
+  isActionableToday,
   isApproval,
+  candidateActionText,
   isClientDesignAnswer,
   isClientPersonLabel,
   isExplicitNewProject,
   isFounderIdentityName,
   isHistoricalRediscovery,
+  isMeaningfulTodayActionText,
   isNakedDateText,
   isNakedContextSnippet,
+  isNoiseOnlyCandidate,
   isPaymentStateChange,
   isPlatformOrSystemName,
   isStudioOrVendorLabel,
@@ -423,6 +430,7 @@ function clip(text: string, max = 140): string {
 function isBoilerplate(row: ContinuumCandidate): boolean {
   if (row.evidenceBasis.ruleIds.some((id) => BLOCKED_RULES.has(id))) return true;
   if (isTechnicianVisit(row)) return true;
+  if (isNoiseOnlyCandidate(row) && !hasCommercialPayload(row)) return true;
   const hay = haystack(row);
   if (isFooterOrTemplateNoise(hay) && !hasCommercialPayload(row)) return true;
   if (CHANNEL_META.test(hay) && !hasCommercialPayload(row)) return true;
@@ -497,6 +505,7 @@ function beatKind(
   if (payload.kind === "date") {
     return dateHasActionableObligation(row) ? "deadline" : "other";
   }
+  if (isNoiseOnlyCandidate(row)) return "other";
   if (DEADLINE_SIGNAL.test(haystack(row))) return "deadline";
   const speaker = speakerOf(row, fallback);
   if (speaker === "vendor") {
@@ -765,11 +774,13 @@ function actionsFor(input: {
   isCurrent: boolean;
   personName: string | null;
   gmailHref: string | null;
+  recoveredGmailThreadId: string | null;
   createProject: boolean;
   addToTop5: boolean;
   personAssociationCandidateId: string | null;
   communication: TodayCommunicationClass;
   organizationLabel: string | null;
+  currentFounderObligation: boolean;
 }): CosBriefAction[] {
   const actions: CosBriefAction[] = [];
   if (input.projectId) {
@@ -793,7 +804,12 @@ function actionsFor(input: {
       href: conciergeCreateActionPath(input.projectId),
     });
   }
+  const recoverableHumanCommunication = Boolean(
+    input.gmailHref || input.recoveredGmailThreadId,
+  );
   const clientIdentityGap =
+    input.currentFounderObligation &&
+    recoverableHumanCommunication &&
     input.communication !== "vendor" &&
     input.communication !== "platform" &&
     input.communication !== "founder" &&
@@ -1254,7 +1270,7 @@ function classifySituation(input: {
     explanation = remaining.explanation;
     recommended = remaining.recommended;
     urgency = 1;
-  } else if (group.staleInboundSatisfied) {
+  } else if (group.staleInboundSatisfied && !quietProductionAge) {
     const wait = waitingCopy(group.waitingState, person);
     disposition = "watching";
     rankClass = "informational";
@@ -1266,7 +1282,8 @@ function classifySituation(input: {
     urgency = 0;
   } else if (
     communication === "vendor" &&
-    (group.waitingState === "cad" || group.waitingState === "shop")
+    (group.waitingState === "cad" || group.waitingState === "shop") &&
+    !quietProductionAge
   ) {
     const wait = waitingCopy(group.waitingState, person);
     disposition = "watching";
@@ -1277,9 +1294,9 @@ function classifySituation(input: {
     watchingTitle = title;
     watchingDetail = wait.watchingDetail;
     urgency = 0;
-  } else if (communication === "vendor" && group.noFounderAction) {
+  } else if (communication === "vendor" && group.noFounderAction && !quietProductionAge) {
     disposition = "suppress";
-  } else if (group.noFounderAction) {
+  } else if (group.noFounderAction && !quietProductionAge) {
     const wait = waitingCopy(group.waitingState, person);
     disposition = "watching";
     rankClass = "informational";
@@ -1396,6 +1413,60 @@ function classifySituation(input: {
     disposition = "suppress";
   }
 
+  if (disposition === "brief") {
+    const threadByMessageId = gmailThreadByMessageId(input.threadContext);
+    const actionText = remaining?.recommended ?? recommended ?? meaningful.summary;
+    const hasMeaningfulEvidence =
+      spec != null ||
+      Boolean(remaining) ||
+      rankClass === "production_blocker" ||
+      rankClass === "deadline_risk" ||
+      usable.some(
+        (row) =>
+          isMeaningfulTodayActionText(candidateActionText(row)) ||
+          isMeaningfulTodayActionText(row.evidenceBasis.matchedText) ||
+          isActionableSpecConflict(row, input.ctx) ||
+          isApproval(row) ||
+          isClientDesignAnswer(row) ||
+          row.candidateType === "open_job" ||
+          row.candidateType === "follow_up" ||
+          hasRule(row, "explicit_follow_up") ||
+          hasRule(row, "explicit_founder_commitment") ||
+          hasRule(row, "explicit_client_request") ||
+          hasRule(row, "explicit_client_approval"),
+      );
+    const noiseOnly =
+      !spec &&
+      !remaining &&
+      usable.every(
+        (row) =>
+          isNoiseOnlyCandidate(row) ||
+          row.candidateType === "person_association" ||
+          row.candidateType === "project_association",
+      );
+    const actionable = isActionableToday({
+      currentFounderObligation: !noiseOnly && (hasMeaningfulEvidence || rankClass !== "informational"),
+      trustworthySource: hasTrustworthyTodaySource(input.rows, threadByMessageId),
+      actionText,
+      hasMeaningfulEvidence,
+      noiseOnly,
+    });
+    if (!actionable) {
+      if (group.waitingState || group.staleInboundSatisfied || group.noFounderAction) {
+        disposition = "watching";
+        watchingTitle = title;
+        watchingDetail =
+          group.waitingState === "client"
+            ? "Waiting on the client."
+            : group.waitingState === "cad" || group.waitingState === "shop"
+              ? "Awaiting the shop."
+              : "No founder action on the current turn.";
+      } else {
+        disposition = "suppress";
+      }
+    }
+  }
+
   const proposed =
     input.proposedActions.find((row) =>
       input.rows.some((candidate) => candidate.candidateId === row.candidateId),
@@ -1500,11 +1571,21 @@ function presentBrief(
       isCurrent: item.isCurrent,
       personName: item.personName,
       gmailHref,
+      recoveredGmailThreadId: item.recoveredGmailThreadId ?? item.groupedThreadId ?? null,
       createProject,
       addToTop5,
       personAssociationCandidateId: item.personAssociationCandidateId ?? null,
       communication: item.communication,
       organizationLabel: item.organizationLabel,
+      currentFounderObligation:
+        !item.staleInboundSatisfied &&
+        !item.noFounderAction &&
+        (item.rankClass === "client_reply" ||
+          item.rankClass === "new_opportunity" ||
+          item.rankClass === "founder_commitment" ||
+          item.rankClass === "deadline_risk" ||
+          item.rankClass === "production_blocker" ||
+          item.rankClass === "follow_up"),
     }),
     evidence: item.beats,
     openJobLabel: item.openJobLabel,
@@ -1559,6 +1640,7 @@ export function composeConciergeBrief(input: ComposeConciergeBriefInput): {
   };
   const association = projectBySupportedAssociation(input.candidates, input.projects);
   const projectByThread = projectIdsByThread(association);
+  const threadByMessageId = gmailThreadByMessageId(input.threadContext);
   const projectVendor = vendorEvidenceFromProjects(input.projects);
   const vendorDirectory = [
     ...new Set([...(input.vendorDirectory ?? []), ...projectVendor.directory]),
@@ -1569,14 +1651,15 @@ export function composeConciergeBrief(input: ComposeConciergeBriefInput): {
   const groups = new Map<string, ContinuumCandidate[]>();
   for (const row of input.candidates) {
     if (isCandidateQuietForToday(row, input.nowIso)) continue;
-    const key = groupingKey(row, projectByThread);
+    const key = groupingKey(row, projectByThread, threadByMessageId);
     const list = groups.get(key) ?? [];
     list.push(row);
     groups.set(key, list);
   }
+  const collapsed = collapseTodayCandidateGroups(groups, threadByMessageId);
   const nowMs = parseMs(input.nowIso);
   const situations: RankedSituation[] = [];
-  for (const [key, rows] of groups) {
+  for (const [key, rows] of collapsed) {
     const situation = classifySituation({
       key,
       rows,

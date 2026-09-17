@@ -18,12 +18,16 @@ import {
   candidateText,
   classifyCandidateAttention,
   commitmentIsComplete,
+  collapseTodayCandidateGroups,
   groupingKey,
+  gmailThreadByMessageId,
   hasCommercialPayload,
   hasRule,
+  hasTrustworthyTodaySource,
   isApproval,
   isClientDesignAnswer,
   isExplicitNewProject,
+  isNoiseOnlyCandidate,
   isPaymentStateChange,
   payloadOf,
   waitingOnFounder,
@@ -539,6 +543,7 @@ export function composeFounderAttentionSurface(input: {
   const projectByAssociation = projectIdsByThread(
     projectBySupportedAssociation(input.candidates, input.projects),
   );
+  const threadByMessageId = gmailThreadByMessageId(input.threadContext);
   const judgments = new Map<string, FounderAttentionJudgment>();
   const groups = new Map<string, ContinuumCandidate[]>();
 
@@ -547,7 +552,7 @@ export function composeFounderAttentionSurface(input: {
     judgments.set(row.candidateId, judgment);
     if (row.candidateState === "superseded" || row.reviewStatus === "discarded") continue;
     if (isCandidateQuietForToday(row, input.nowIso)) continue;
-    const key = groupingKey(row, projectByAssociation);
+    const key = groupingKey(row, projectByAssociation, threadByMessageId);
     const list = groups.get(key) ?? [];
     list.push(row);
     groups.set(key, list);
@@ -555,7 +560,7 @@ export function composeFounderAttentionSurface(input: {
 
   const rolled: RankedAttention[] = [];
 
-  for (const [key, rows] of groups) {
+  for (const [key, rows] of collapseTodayCandidateGroups(groups, threadByMessageId)) {
     const visible = rows.filter((row) => visibleLane(judgments.get(row.candidateId)));
     if (visible.length === 0) continue;
     const thread = indexedThreadForGroup(key, rows, input.threadContext);
@@ -631,6 +636,23 @@ export function composeFounderAttentionSurface(input: {
       !visibleAfterTruth.some(isClientDesignAnswer) &&
       !visibleAfterTruth.some((row) => isActionableSpecConflict(row, ctx));
     if (unscopedGmail && !currentOperational && !isActionableSystemAlert({ candidates: rows, thread })) {
+      continue;
+    }
+    if (
+      !hasTrustworthyTodaySource(rows, threadByMessageId) &&
+      !currentOperational &&
+      !isActionableSystemAlert({ candidates: rows, thread }) &&
+      !group.remainingFounderCommitment
+    ) {
+      continue;
+    }
+    if (
+      visibleAfterTruth.length > 0 &&
+      visibleAfterTruth.every(isNoiseOnlyCandidate) &&
+      !group.remainingFounderCommitment &&
+      !currentOperational &&
+      !isActionableSystemAlert({ candidates: rows, thread })
+    ) {
       continue;
     }
     if (

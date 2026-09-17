@@ -717,16 +717,12 @@ describe("Today thread truth-state reconciliation", () => {
         ],
       ]),
     });
-    assert.ok(docket.items.length > 0);
-    assert.ok(
-      docket.items.some((item) =>
-        /Identify who this is from|recap|next step|Your turn/i.test(
-          `${item.headline} ${item.context ?? ""}`,
-        ),
-      ),
-    );
     assert.equal(
       docket.items.some((item) => /already answered|waiting on/i.test(item.headline)),
+      false,
+    );
+    assert.equal(
+      docket.items.some((item) => /Cornflower Blue|Yogo Sapphire|Lee/i.test(item.subject)),
       false,
     );
   });
