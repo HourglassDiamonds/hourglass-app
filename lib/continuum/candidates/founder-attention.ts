@@ -141,11 +141,18 @@ export function vendorOrganizationFromIdentityText(
   return null;
 }
 
+export type TodayGmailIndexedMessage = {
+  messageId: string;
+  sentAt: string;
+  direction: "inbound" | "outbound" | "unknown";
+};
+
 export type TodayGmailThreadContext = {
   subject?: string | null;
   fromDisplayName?: string | null;
   fromEmail?: string | null;
   liveIdentityLoaded?: boolean;
+  messages?: readonly TodayGmailIndexedMessage[];
 };
 
 export type TodayKnownPerson = {
@@ -1335,6 +1342,23 @@ function sourceWeight(row: ContinuumCandidate): number {
 export function sourceThreadId(row: ContinuumCandidate): string | null {
   const parts = row.sourceRef.split("|");
   return parts[0] === "gc1" && parts[1] ? parts[1] : null;
+}
+
+export function sourceMessageId(row: ContinuumCandidate): string | null {
+  const parts = row.sourceRef.split("|");
+  return parts[0] === "gc1" && parts[2] ? parts[2] : null;
+}
+
+export function candidateGmailThreadIds(
+  candidates: readonly ContinuumCandidate[],
+): string[] {
+  return [
+    ...new Set(
+      candidates
+        .map((row) => sourceThreadId(row))
+        .filter((id): id is string => Boolean(id)),
+    ),
+  ];
 }
 
 export function projectByThreadFromCandidates(

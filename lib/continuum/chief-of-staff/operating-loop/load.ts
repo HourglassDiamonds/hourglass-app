@@ -1,8 +1,9 @@
 /**
  * Server-only CoS operating-loop loader.
  * Reads Open Jobs, Project Desk titles, Candidates, and indexed Gmail
- * thread subjects for Today identity. May fetch live From metadata for
- * Unassigned cards only. Does not write. Does not activate shadow CoS briefs.
+ * thread subjects plus message timestamps/direction for Today identity
+ * and thread truth-state. May fetch live From metadata for Unassigned
+ * cards only. Does not write. Does not activate shadow CoS briefs.
  */
 
 import "server-only";

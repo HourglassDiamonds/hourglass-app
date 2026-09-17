@@ -32,7 +32,7 @@ const CLIENT_APPROVAL =
 const DESIGN_REFINEMENT = /\b(?:CAD|design)\s+refinement\b/gi;
 const DURABILITY = /\bdurability\b[^.!\n]{0,120}/gi;
 const FOUNDER_COMMITMENT =
-  /\bI(?:'ll| will) (?:send|do|follow up|call|email)[^.!?\n]{0,160}/gi;
+  /\bI(?:'ll| will) (?:send|get|show|check|look(?:\s+into)?|do|follow up|call|email|keep you posted)[^.!?\n]{0,160}/gi;
 const CLIENT_REQUEST =
   /\b(?:can you|could you|please) (?:send|make|revise|update|do|change|confirm|fix)[^.!?\n]{0,160}/gi;
 const CAD_FEEDBACK =

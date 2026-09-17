@@ -168,6 +168,7 @@ export function composeCosOperatingLoop(
     recap,
     proposedActions,
     anomalies,
+    threadContext: input.threadContext,
   });
   const moderated = composeConciergeBrief({
     candidates,

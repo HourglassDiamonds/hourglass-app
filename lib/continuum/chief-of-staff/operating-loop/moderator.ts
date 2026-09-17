@@ -70,6 +70,10 @@ import { gmailEvidenceHrefFor, gmailEvidenceHrefFromSourceRef } from "./evidence
 import { selectOpenEmailSources } from "./email-source";
 import { specConflictFromCandidates } from "./founder-actions";
 import { isCandidateQuietForToday } from "./quiet";
+import {
+  reconcileThreadTruthState,
+  type ThreadWaitingKind,
+} from "./thread-truth";
 import type {
   CosAnomalyItem,
   CosBriefAction,
@@ -336,6 +340,48 @@ function projectStateLabel(stage: string | null | undefined): string | null {
   if (stage === "client_approval") return "Client approval";
   if (stage === "discovery") return "Discovery";
   return stage.replaceAll("_", " ");
+}
+
+function waitingCopy(
+  waiting: ThreadWaitingKind | null,
+  person: string | null,
+): {
+  headline: string;
+  explanation: string;
+  recommended: string;
+  watchingDetail: string;
+} {
+  if (waiting === "cad") {
+    return {
+      headline: "awaiting the shop",
+      explanation: "You already replied. Current dependency is the updated CAD.",
+      recommended: "Wait on the shop.",
+      watchingDetail: "Waiting on updated CAD.",
+    };
+  }
+  if (waiting === "shop") {
+    return {
+      headline: "awaiting the shop",
+      explanation: "You already replied. Current dependency is the shop.",
+      recommended: "Wait on the shop.",
+      watchingDetail: "Waiting on the shop.",
+    };
+  }
+  if (waiting === "production") {
+    return {
+      headline: "already in production",
+      explanation:
+        "You already replied. This is in production; follow-up can wait until the shop is closer.",
+      recommended: "No action needed.",
+      watchingDetail: "In production. Waiting on the shop.",
+    };
+  }
+  return {
+    headline: "already answered",
+    explanation: `${person || "The client"} replied and you already answered.`,
+    recommended: "No action needed.",
+    watchingDetail: `${person || "The client"} replied and you already answered.`,
+  };
 }
 
 function isProductionStage(stage: string | null | undefined): boolean {
@@ -1030,11 +1076,19 @@ function classifySituation(input: {
         beat.kind === "new_project" ||
         beat.kind === "commitment",
     );
+  const truth = reconcileThreadTruthState({
+    rows: usable,
+    thread,
+    project,
+    jobs: input.jobs,
+  });
+  const remaining = truth.remainingCommitment;
   const newWork =
     communication !== "vendor" &&
     communication !== "platform" &&
     communication !== "founder" &&
     !attribution.projectId &&
+    !truth.staleInboundSatisfied &&
     current.some((beat) => beat.kind === "new_project" || beat.kind === "client_request");
   const founderAsked = beats.some(
     (beat) =>
@@ -1047,6 +1101,7 @@ function classifySituation(input: {
     communication !== "vendor" &&
     communication !== "platform" &&
     communication !== "founder" &&
+    !truth.staleInboundSatisfied &&
     meaningful.speaker === "client" &&
     !meaningful.historical &&
     (meaningful.kind === "client_reply" ||
@@ -1059,22 +1114,24 @@ function classifySituation(input: {
     (vendorAckAfterSend || founderSentToShop) &&
     input.nowMs - parseMs(meaningful.timestamp) >= PRODUCTION_STATUS_MS;
   const founderCommitment =
-    meaningful.kind === "commitment" &&
-    meaningful.speaker === "founder" &&
-    !input.jobs.some(
-      (job) =>
-        job.projectId === attribution.projectId &&
-        isUnresolvedOpenJobState(job.state) &&
-        tokenOverlap(job.subject, meaningful.summary),
-    );
+    Boolean(remaining) ||
+    (meaningful.kind === "commitment" &&
+      meaningful.speaker === "founder" &&
+      !input.jobs.some(
+        (job) =>
+          job.projectId === attribution.projectId &&
+          isUnresolvedOpenJobState(job.state) &&
+          tokenOverlap(job.subject, meaningful.summary),
+      ));
   const handledByFounder =
-    meaningful.speaker === "founder" &&
-    beats.some(
-      (beat) =>
-        !beat.superseded &&
-        beat.speaker === "client" &&
-        parseMs(beat.timestamp) < parseMs(meaningful.timestamp),
-    );
+    (truth.staleInboundSatisfied && !remaining) ||
+    (meaningful.speaker === "founder" &&
+      beats.some(
+        (beat) =>
+          !beat.superseded &&
+          beat.speaker === "client" &&
+          parseMs(beat.timestamp) < parseMs(meaningful.timestamp),
+      ));
   const awaitingVendor =
     production && vendorAckAfterSend && !missingVendorAck && deadlineUrg === 0;
   const allBoilerplate = beats.every(
@@ -1091,6 +1148,7 @@ function classifySituation(input: {
     founderCommitment ||
     newWork ||
     reactivation ||
+    truth.staleInboundSatisfied ||
     usable.some(hasCommercialPayload) ||
     usable.some((row) => isActionableSpecConflict(row, input.ctx));
   if (!commercial) {
@@ -1167,6 +1225,22 @@ function classifySituation(input: {
     explanation = `You moved this into production${founderSentToShop ? " and sent material or instructions to the shop" : ""}, but I do not see a later vendor confirmation that the work was received or acknowledged.`;
     recommended = "Confirm status with the shop.";
     urgency = 1;
+  } else if (remaining) {
+    rankClass = "founder_commitment";
+    headline = remaining.headline;
+    explanation = remaining.explanation;
+    recommended = remaining.recommended;
+    urgency = 1;
+  } else if (truth.staleInboundSatisfied) {
+    const wait = waitingCopy(truth.waiting, person);
+    disposition = "watching";
+    rankClass = "informational";
+    headline = wait.headline;
+    explanation = wait.explanation;
+    recommended = wait.recommended;
+    watchingTitle = title;
+    watchingDetail = wait.watchingDetail;
+    urgency = 0;
   } else if (yourTurn) {
     rankClass = "client_reply";
     headline = "Your turn";
@@ -1184,7 +1258,7 @@ function classifySituation(input: {
     recommended =
       "Send the recap / next step and create the Project if moving forward.";
     urgency = 1;
-  } else if (reactivation && attribution.projectId) {
+  } else if (reactivation && attribution.projectId && !truth.staleInboundSatisfied) {
     rankClass = "follow_up";
     headline = "work is active again";
     explanation = `Older exploratory notes were quiet. Latest evidence is current again and needs a next step.`;

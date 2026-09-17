@@ -7,9 +7,11 @@
 import "server-only";
 
 import {
+  candidateGmailThreadIds,
   candidateProjectId,
   isFounderIdentityName,
   sourceThreadId,
+  type TodayGmailIndexedMessage,
   type TodayGmailThreadContext,
 } from "@/lib/continuum/candidates/founder-attention";
 import type { ContinuumCandidate } from "@/lib/continuum/candidates/types";
@@ -22,6 +24,13 @@ import { parseGmailFromHeader } from "./payload";
 import { executeLiveSourceViewerFetch } from "./source-viewer-run";
 
 const THREAD_QUERY_CHUNK = 40;
+const MESSAGES_PER_THREAD = 80;
+
+function indexedDirection(value: unknown): TodayGmailIndexedMessage["direction"] {
+  if (value === "outbound") return "outbound";
+  if (value === "inbound") return "inbound";
+  return "unknown";
+}
 
 function internalEmails(): string[] {
   const founder = getContinuumGmailFounderEmail();
@@ -76,6 +85,10 @@ export function mergeTodayThreadContext(
       fromEmail: next.fromEmail ?? prior.fromEmail ?? null,
       liveIdentityLoaded:
         next.liveIdentityLoaded === true || prior.liveIdentityLoaded === true,
+      messages:
+        next.messages && next.messages.length > 0
+          ? next.messages
+          : prior.messages,
     });
   }
   return merged;
@@ -84,7 +97,7 @@ export function mergeTodayThreadContext(
 export async function loadIndexedTodayThreadContext(
   candidates: readonly ContinuumCandidate[],
 ): Promise<Map<string, TodayGmailThreadContext>> {
-  const threadIds = ungroupedGmailThreadIds(candidates);
+  const threadIds = candidateGmailThreadIds(candidates);
   const out = new Map<string, TodayGmailThreadContext>();
   if (threadIds.length === 0) return out;
   const client = getSupabaseAdmin();
@@ -93,15 +106,34 @@ export async function loadIndexedTodayThreadContext(
     const chunk = threadIds.slice(index, index + THREAD_QUERY_CHUNK);
     const { data, error } = await client
       .from("continuum_gmail_messages")
-      .select("thread_id, sent_at, subject")
+      .select("thread_id, message_id, sent_at, direction, subject")
       .in("thread_id", chunk)
       .order("sent_at", { ascending: false });
     if (error || !data) continue;
     for (const row of data) {
       const threadId = String(row.thread_id ?? "").trim();
-      if (!threadId || out.has(threadId)) continue;
+      if (!threadId) continue;
+      const existing = out.get(threadId) ?? {};
+      const messages = [...(existing.messages ?? [])];
+      if (messages.length < MESSAGES_PER_THREAD) {
+        const messageId = String(row.message_id ?? "").trim();
+        const sentAt = String(row.sent_at ?? "").trim();
+        if (messageId && sentAt) {
+          messages.push({
+            messageId,
+            sentAt,
+            direction: indexedDirection(row.direction),
+          });
+        }
+      }
       out.set(threadId, {
-        subject: row.subject == null ? null : String(row.subject),
+        subject:
+          existing.subject ??
+          (row.subject == null ? null : String(row.subject)),
+        fromDisplayName: existing.fromDisplayName ?? null,
+        fromEmail: existing.fromEmail ?? null,
+        liveIdentityLoaded: existing.liveIdentityLoaded,
+        messages,
       });
     }
   }

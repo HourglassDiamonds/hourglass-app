@@ -32,6 +32,7 @@ import {
   pickTodayVendorContext,
   type FounderAttentionContext as ClassifyContext,
   type FounderAttentionJudgment,
+  type TodayGmailThreadContext,
 } from "@/lib/continuum/candidates/founder-attention";
 import {
   projectBySupportedAssociation,
@@ -42,6 +43,11 @@ import { GENERATED_FOUNDER_OPERATING_BRIEF_RULE } from "@/lib/continuum/gmail/ca
 import { gmailEvidenceHrefFor, sourceHrefFor, sourceLabelFor } from "./evidence";
 import { specConflictFromCandidates } from "./founder-actions";
 import { isCandidateQuietForToday } from "./quiet";
+import {
+  isStaleInboundReplyCandidate,
+  reconcileThreadTruthState,
+  threadIdForGroup,
+} from "./thread-truth";
 import type {
   CosAnomalyItem,
   CosFounderAttentionItem,
@@ -493,6 +499,7 @@ export function composeFounderAttentionSurface(input: {
   recap: readonly CosRecapItem[];
   proposedActions: readonly CosProposedAction[];
   anomalies: readonly CosAnomalyItem[];
+  threadContext?: ReadonlyMap<string, TodayGmailThreadContext>;
 }): {
   needsYourDecision: CosFounderAttentionItem[];
   worthKnowing: CosFounderAttentionItem[];
@@ -543,28 +550,51 @@ export function composeFounderAttentionSurface(input: {
   for (const [key, rows] of groups) {
     const visible = rows.filter((row) => visibleLane(judgments.get(row.candidateId)));
     if (visible.length === 0) continue;
+    const threadId = threadIdForGroup(key, rows);
+    const thread = threadId ? (input.threadContext?.get(threadId) ?? null) : null;
+    const groupedProjectId = key.startsWith("project:")
+      ? key.slice("project:".length)
+      : rows.map(candidateProjectId).find((id): id is string => Boolean(id)) ?? null;
+    const truth = reconcileThreadTruthState({
+      rows,
+      thread,
+      project: groupedProjectId ? (input.projects.get(groupedProjectId) ?? null) : null,
+      jobs: input.jobs,
+    });
+    const visibleAfterTruth = truth.staleInboundSatisfied
+      ? visible.filter((row) => !isStaleInboundReplyCandidate(row, truth, thread))
+      : visible;
+    if (
+      truth.staleInboundSatisfied &&
+      !truth.remainingCommitment &&
+      visibleAfterTruth.every(
+        (row) => !isPaymentStateChange(row) && !isActionableSpecConflict(row, ctx),
+      )
+    ) {
+      continue;
+    }
     const unscopedGmail =
-      visible.every(
+      visibleAfterTruth.every(
         (row) =>
           row.sourceSystem === "gmail" &&
           !candidateProjectId(row) &&
           (row.candidateType === "open_job" || row.candidateType === "follow_up"),
       ) &&
-      !visible.some(isExplicitNewProject) &&
-      !visible.some(isPaymentStateChange) &&
-      !visible.some(isClientDesignAnswer) &&
-      !visible.some((row) => isActionableSpecConflict(row, ctx));
+      !visibleAfterTruth.some(isExplicitNewProject) &&
+      !visibleAfterTruth.some(isPaymentStateChange) &&
+      !visibleAfterTruth.some(isClientDesignAnswer) &&
+      !visibleAfterTruth.some((row) => isActionableSpecConflict(row, ctx));
     if (unscopedGmail) continue;
     if (
-      !visible.some(hasCommercialPayload) &&
-      !visible.some(isPaymentStateChange) &&
-      !visible.some((row) => isActionableSpecConflict(row, ctx))
+      !visibleAfterTruth.some(hasCommercialPayload) &&
+      !visibleAfterTruth.some(isPaymentStateChange) &&
+      !visibleAfterTruth.some((row) => isActionableSpecConflict(row, ctx))
     ) {
       continue;
     }
     const item = toAttentionItem({
       id: `attention:${key}`,
-      visible,
+      visible: visibleAfterTruth.length > 0 ? visibleAfterTruth : visible,
       evidence: rows,
       judgments,
       ctx,
