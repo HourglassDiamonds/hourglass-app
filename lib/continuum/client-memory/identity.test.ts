@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { randomUUID } from "node:crypto";
-import { hashEmail, hashPhone, peopleImportRowKey } from "./hashes";
+import { hashEmail, hashPhone, hashStoredPersonEmail, peopleImportRowKey } from "./hashes";
 import { resolvePersonIdentity } from "./identity";
 import {
   InMemoryClientMemoryStore,
@@ -211,5 +211,14 @@ describe("Client Memory identity resolver", () => {
     assert.equal(result.status, "matched");
     assert.equal(result.personId, personId);
     assert.equal(result.matchedBy, "hubspot_contact_id");
+  });
+});
+
+describe("stored Person email hashing", () => {
+  it("hashes wrapped From-header emails the same as plaintext", () => {
+    const plain = hashEmail("timlee591@gmail.com");
+    assert.equal(hashStoredPersonEmail("timlee591@gmail.com"), plain);
+    assert.equal(hashStoredPersonEmail("Tim Lee <timlee591@gmail.com>"), plain);
+    assert.equal(hashStoredPersonEmail(plain), plain);
   });
 });

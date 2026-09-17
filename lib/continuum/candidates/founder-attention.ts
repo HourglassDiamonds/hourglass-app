@@ -7,7 +7,7 @@
  */
 
 import type { ContinuumCandidate } from "@/lib/continuum/candidates/types";
-import { hashEmail } from "@/lib/continuum/client-memory/hashes";
+import { hashStoredPersonEmail } from "@/lib/continuum/client-memory/hashes";
 import type { ProjectJob } from "@/lib/continuum/client-memory/project-jobs/types";
 import { isUnresolvedOpenJobState } from "@/lib/continuum/client-memory/project-jobs/validate";
 import { isPastDueDate } from "@/lib/continuum/date-only";
@@ -193,16 +193,8 @@ function domainRegistrableLabel(domain: string): string | null {
   return label.length >= 3 ? label : null;
 }
 
-function titleCaseOrg(label: string): string {
-  return `${label.charAt(0).toUpperCase()}${label.slice(1).toLowerCase()}`;
-}
-
 function orgKey(value: string): string {
   return normalizedIdentity(value);
-}
-
-function escapeRegExp(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 export function collectTodayVendorEvidence(input: {
@@ -234,6 +226,37 @@ export function collectTodayVendorEvidence(input: {
   };
 }
 
+function vendorOrgFromDomainEvidence(
+  label: string,
+  directory: readonly string[],
+  evidenceTexts: readonly string[],
+): string | null {
+  const labelKey = orgKey(label);
+  if (!labelKey) return null;
+  const directoryHit = directory.find((org) => {
+    const key = orgKey(org);
+    if (!key) return false;
+    if (key === labelKey || labelKey.startsWith(key)) return true;
+    const first = key.split(" ")[0] ?? "";
+    return first.length >= 4 && (first === labelKey || labelKey.startsWith(first));
+  });
+  if (directoryHit) return directoryHit;
+  const tokens = [
+    ...new Set(
+      evidenceTexts
+        .join("\n")
+        .split(/[^A-Za-z0-9]+/)
+        .map((token) => token.trim())
+        .filter((token) => token.length >= 4),
+    ),
+  ];
+  const prefixHits = tokens.filter((token) => labelKey.startsWith(orgKey(token)));
+  const unique = [...new Set(prefixHits.map((token) => orgKey(token)))];
+  if (unique.length !== 1) return null;
+  const matched = prefixHits.find((token) => orgKey(token) === unique[0]) ?? null;
+  return matched ? collapseIdentityText(matched) : null;
+}
+
 export function vendorOrganizationFromGmailContext(input: {
   thread?: TodayGmailThreadContext | null;
   vendorDirectory?: readonly string[];
@@ -262,16 +285,7 @@ export function vendorOrganizationFromGmailContext(input: {
   }
   const label = domainRegistrableLabel(domain);
   if (!label) return null;
-  const labelKey = orgKey(label);
-  const directoryHit = directory.find((org) => {
-    const key = orgKey(org);
-    return key === labelKey || key.includes(labelKey) || labelKey.includes(key);
-  });
-  if (directoryHit) return directoryHit;
-  const evidence = (input.evidenceTexts ?? []).join("\n");
-  if (!evidence) return null;
-  if (!new RegExp(`\\b${escapeRegExp(label)}\\b`, "i").test(evidence)) return null;
-  return titleCaseOrg(label);
+  return vendorOrgFromDomainEvidence(label, directory, input.evidenceTexts ?? []);
 }
 
 export function pickTodayVendorContext(input: {
@@ -358,6 +372,91 @@ export function pickTodayVendorContext(input: {
     if (uniqueHumans.length === 1) return uniqueHumans[0]!;
   }
   return uniqueOrgs[0] ?? null;
+}
+
+export type TodayResolvedIdentity = {
+  kind: "person" | "vendor" | "ambiguous" | "unresolved";
+  personId: string | null;
+  personLabel: string | null;
+  organizationLabel: string | null;
+};
+
+export function resolveTodayIdentity(input: {
+  emailHashes?: readonly string[];
+  knownPeople?: readonly TodayKnownPerson[];
+  candidates?: readonly ContinuumCandidate[];
+  people?: readonly TodayIdentitySignal[];
+  thread?: TodayGmailThreadContext | null;
+  vendorDirectory?: readonly string[];
+  evidenceTexts?: readonly string[];
+}): TodayResolvedIdentity {
+  const known = resolveUniqueKnownPerson({
+    emailHashes: input.emailHashes ?? collectTodayEmailHashes(input),
+    knownPeople: input.knownPeople,
+  });
+  const gmailVendor = vendorOrganizationFromGmailContext({
+    thread: input.thread,
+    vendorDirectory: input.vendorDirectory,
+    evidenceTexts: input.evidenceTexts,
+  });
+  const pickedVendor = pickTodayVendorContext({
+    candidates: input.candidates,
+    people: input.people,
+    thread: input.thread,
+    vendorDirectory: input.vendorDirectory,
+    evidenceTexts: input.evidenceTexts,
+  });
+  const vendorLabel =
+    gmailVendor ||
+    (pickedVendor &&
+    (isVendorOrganizationLabel(pickedVendor) || !looksLikeHumanPersonName(pickedVendor))
+      ? pickedVendor
+      : null);
+  if (vendorLabel) {
+    return {
+      kind: "vendor",
+      personId: null,
+      personLabel: null,
+      organizationLabel: vendorLabel,
+    };
+  }
+  if (known === "ambiguous") {
+    return {
+      kind: "ambiguous",
+      personId: null,
+      personLabel: null,
+      organizationLabel: null,
+    };
+  }
+  const knownVendor =
+    Boolean(known) &&
+    isVendorPerson({
+      displayName: known!.displayName,
+      roles: known!.roles,
+      organizationName: known!.organizationName,
+    });
+  if (known && isClientPersonLabel(known.displayName) && !knownVendor) {
+    return {
+      kind: "person",
+      personId: known.personId,
+      personLabel: known.displayName,
+      organizationLabel: null,
+    };
+  }
+  if (pickedVendor) {
+    return {
+      kind: "vendor",
+      personId: null,
+      personLabel: null,
+      organizationLabel: pickedVendor,
+    };
+  }
+  return {
+    kind: "unresolved",
+    personId: null,
+    personLabel: null,
+    organizationLabel: null,
+  };
 }
 
 export function isPlatformOrSystemName(name: string | null | undefined): boolean {
@@ -461,7 +560,7 @@ export function collectTodayEmailHashes(input: {
     const payload = payloadOf(row);
     if (payload.kind === "person_association") add(payload.emailHash);
   }
-  add(hashEmail(input.thread?.fromEmail ?? null));
+  add(hashStoredPersonEmail(input.thread?.fromEmail ?? null));
   return hashes;
 }
 

@@ -2,16 +2,17 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+import { hashEmail } from "@/lib/continuum/client-memory/hashes";
 import {
   classifyTodayCommunication,
   isGeneratedFounderOperatingBriefSubject,
   isGeneratedTodayNoise,
   pickTodayVendorContext,
+  resolveTodayIdentity,
   resolveUniqueKnownPerson,
   vendorOrganizationFromGmailContext,
   vendorOrganizationFromIdentityText,
 } from "@/lib/continuum/candidates/founder-attention";
-import { hashEmail } from "@/lib/continuum/client-memory/hashes";
 import { GENERATED_FOUNDER_OPERATING_BRIEF_RULE } from "@/lib/continuum/gmail/candidates/generated-source";
 import type { ContinuumCandidate } from "@/lib/continuum/candidates/types";
 import { ChiefOfStaffToday } from "../../../../app/executive-dashboard/concierge/components/chief-of-staff-today";
@@ -575,7 +576,55 @@ describe("Today live-shape Gmail identity", () => {
     assert.notEqual(card?.subject, "Unassigned");
     assert.equal(card?.brief?.personLabel, "Tim Lee");
     assert.equal(card?.brief?.projectId ?? null, null);
+    assert.notEqual(card?.headline, "Identify who this is from.");
+    assert.equal(
+      card?.brief?.actions.some((action) => action.kind === "confirm_person") ?? false,
+      false,
+    );
     assert.equal(selectFounderControls(card!).confirmPerson, null);
+    assert.equal(
+      resolveTodayIdentity({
+        emailHashes: [TIM_LEE_HASH],
+        knownPeople,
+        thread: { fromEmail: TIM_LEE_EMAIL },
+      }).personLabel,
+      "Tim Lee",
+    );
+  });
+
+  it("live From email hash alone assigns Tim Lee without Confirm Person or a Project", () => {
+    const assoc = livePersonAssociation("lee-from-only", LEE_THREAD, LEE_INBOUND);
+    const job = liveOpenJob("lee-from-only-job", LEE_THREAD, LEE_OUTBOUND, {
+      subject: "circle back on the CAD",
+      matchedText: "circle back on the CAD",
+      ruleIds: ["explicit_follow_up"],
+    });
+    const docket = todayOf([assoc, job], {
+      threadContext: new Map([
+        [
+          LEE_THREAD,
+          {
+            subject: "Re: Cornflower Blue - Yogo Sapphire - Lee",
+            fromDisplayName: "Tim Lee",
+            fromEmail: TIM_LEE_EMAIL,
+          },
+        ],
+      ]),
+      knownPeople: [
+        {
+          personId: TIM_LEE_ID,
+          displayName: "Tim Lee",
+          roles: ["client"],
+          emailHash: TIM_LEE_HASH,
+        },
+      ],
+    });
+    const card = docket.items[0];
+    assert.ok(card);
+    assert.equal(card?.subject, "Tim Lee");
+    assert.notEqual(card?.headline, "Identify who this is from.");
+    assert.equal(selectFounderControls(card!).confirmPerson, null);
+    assert.equal(card?.brief?.projectId ?? null, null);
   });
 
   it("ambiguous email hash keeps Confirm Person review", () => {
@@ -644,6 +693,98 @@ describe("Today live-shape Gmail identity", () => {
           emailHash: TIM_LEE_HASH,
         },
       ],
+    });
+    const card = docket.items[0];
+    assert.ok(card);
+    assert.equal(card?.subject, "Unassigned");
+    assert.ok(selectFounderControls(card!).confirmPerson);
+    assert.equal(card?.brief?.projectId ?? null, null);
+  });
+
+  it("vlorajewelry.com uses durable Vlora evidence without minting a Person", () => {
+    const assoc = livePersonAssociation("niurka-jewelry-assoc", VLORA_THREAD, "1a0a1f153add83b4");
+    const job = liveOpenJob("niurka-jewelry-job", VLORA_THREAD, "1a0a1f153add83b4", {
+      subject: "Can you send me the stl file for this one as well",
+      matchedText: "Can you send me the stl file for this one as well",
+      ruleIds: ["explicit_client_request"],
+      jobKind: "request",
+    });
+    const thread = {
+      subject: "RE: HGD - Question (3 stone)",
+      fromDisplayName: "Niurka Lulo",
+      fromEmail: "niurka@vlorajewelry.com",
+    };
+    assert.equal(
+      vendorOrganizationFromGmailContext({
+        thread,
+        evidenceTexts: ["Vlora lab-grown on mounting"],
+      }),
+      "Vlora",
+    );
+    assert.equal(
+      vendorOrganizationFromGmailContext({
+        thread,
+      }),
+      null,
+    );
+    const docket = todayOf([assoc, job], {
+      threadContext: new Map([[VLORA_THREAD, thread]]),
+      projects: new Map([
+        [
+          "unrelated-mounting",
+          {
+            projectId: "unrelated-mounting",
+            title: "Unrelated mounting",
+            personName: "Client Hale",
+            people: [],
+            isCurrent: true,
+            specs: [
+              {
+                fieldName: "diamond_supply_notes",
+                value: "Vlora lab-grown on mounting",
+              },
+            ],
+            gmailThreadId: "other-thread-not-this-one",
+          },
+        ],
+      ]),
+    });
+    const card = docket.items[0];
+    assert.ok(card);
+    assert.equal(card?.subject, "Vlora");
+    assert.notEqual(card?.subject, "Unassigned");
+    assert.equal(card?.brief?.personLabel ?? null, null);
+    assert.equal(card?.brief?.organizationLabel, "Vlora");
+    assert.equal(card?.brief?.projectId ?? null, null);
+    assert.equal(selectFounderControls(card!).confirmPerson, null);
+    assert.equal(
+      resolveTodayIdentity({
+        thread,
+        evidenceTexts: ["Vlora lab-grown on mounting"],
+      }).kind,
+      "vendor",
+    );
+  });
+
+  it("vlorajewelry.com without durable vendor evidence stays Confirm Person", () => {
+    const assoc = livePersonAssociation("niurka-bare-assoc", VLORA_THREAD, "1a0a1f153add83b4");
+    const job = liveOpenJob("niurka-bare-job", VLORA_THREAD, "1a0a1f153add83b4", {
+      subject: "Can you send me the stl file for this one as well",
+      matchedText: "Can you send me the stl file for this one as well",
+      ruleIds: ["explicit_client_request"],
+      jobKind: "request",
+    });
+    const docket = todayOf([assoc, job], {
+      threadContext: new Map([
+        [
+          VLORA_THREAD,
+          {
+            subject: "RE: HGD - Question (3 stone)",
+            fromDisplayName: "Niurka Lulo",
+            fromEmail: "niurka@vlorajewelry.com",
+          },
+        ],
+      ]),
     });
     const card = docket.items[0];
     assert.ok(card);

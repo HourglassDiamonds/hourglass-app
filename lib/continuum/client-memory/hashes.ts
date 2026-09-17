@@ -62,6 +62,29 @@ export function hashEmail(raw: string | null | undefined): string | null {
   return hashIdentityMaterial("email", normalized);
 }
 
+const EMAIL_HASH_RE = /^[a-f0-9]{64}$/;
+
+function emailFromStoredValue(raw: string | null | undefined): string | null {
+  const trimmed = raw?.trim() ?? "";
+  if (!trimmed) return null;
+  const angled = trimmed.match(/<([^<>]+)>/);
+  if (angled?.[1]) return angled[1].trim();
+  return trimmed;
+}
+
+/**
+ * Hash a stored Person email. Accepts plaintext, From-header wrappers,
+ * or an already-stored 64-hex email hash. Never mints an identity.
+ */
+export function hashStoredPersonEmail(raw: string | null | undefined): string | null {
+  const extracted = emailFromStoredValue(raw);
+  if (!extracted) return null;
+  const hashed = hashEmail(extracted);
+  if (hashed) return hashed;
+  const existing = extracted.trim().toLowerCase();
+  return EMAIL_HASH_RE.test(existing) ? existing : null;
+}
+
 export function hashPhone(raw: string | null | undefined): string | null {
   const normalized = normalizePhone(raw);
   if (!normalized) return null;

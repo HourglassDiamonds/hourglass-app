@@ -36,11 +36,11 @@ import {
   isVendorOrganizationLabel,
   looksLikeHumanPersonName,
   payloadOf,
-  pickTodayVendorContext,
   classifyTodayCommunication,
   collectTodayEmailHashes,
   collectTodayVendorEvidence,
   isGeneratedTodayNoise,
+  resolveTodayIdentity,
   resolveUniqueKnownPerson,
   sourceThreadId,
   type FounderAttentionContext,
@@ -857,11 +857,6 @@ function classifySituation(input: {
     input.projects,
     knownPerson,
   );
-  const person =
-    (isClientPersonLabel(attribution.personName) ? attribution.personName : null) ||
-    (knownPerson && isClientPersonLabel(knownPerson.displayName)
-      ? knownPerson.displayName
-      : null);
   if (
     isGeneratedTodayNoise({
       candidates: input.rows,
@@ -878,7 +873,20 @@ function classifySituation(input: {
   const vendorDirectory = [
     ...new Set([...(input.vendorDirectory ?? []), ...localEvidence.directory]),
   ];
-  const communication = classifyTodayCommunication({
+  const resolved = resolveTodayIdentity({
+    emailHashes: collectTodayEmailHashes({ candidates: input.rows, thread }),
+    knownPeople: input.knownPeople,
+    candidates: input.rows,
+    people: identityPeople,
+    thread,
+    vendorDirectory,
+    evidenceTexts: localEvidence.evidenceTexts,
+  });
+  const person =
+    (isClientPersonLabel(attribution.personName) ? attribution.personName : null) ||
+    resolved.personLabel;
+  const organizationLabel = resolved.organizationLabel;
+  let communication = classifyTodayCommunication({
     candidates: input.rows,
     people: identityPeople,
     thread,
@@ -886,13 +894,9 @@ function classifySituation(input: {
     evidenceTexts: localEvidence.evidenceTexts,
     knownPeople: input.knownPeople,
   });
-  const organizationLabel = pickTodayVendorContext({
-    candidates: input.rows,
-    people: identityPeople,
-    thread,
-    vendorDirectory,
-    evidenceTexts: localEvidence.evidenceTexts,
-  });
+  if (!person && resolved.kind === "vendor") communication = "vendor";
+  else if (!person && resolved.kind === "person") communication = "client";
+  else if (resolved.kind === "person") communication = "client";
   const title = displayTitle(person, attribution.projectTitle, organizationLabel);
   const client = pickClientPerson(project);
   const clientConfirmed = Boolean(

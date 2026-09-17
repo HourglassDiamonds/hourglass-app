@@ -6,7 +6,7 @@
 import "server-only";
 
 import type { TodayKnownPerson } from "@/lib/continuum/candidates/founder-attention";
-import { hashEmail } from "@/lib/continuum/client-memory/hashes";
+import { hashStoredPersonEmail } from "@/lib/continuum/client-memory/hashes";
 import { getSupabaseAdmin } from "@/lib/supabase/client";
 
 const EMAIL_HASH_RE = /^[a-f0-9]{64}$/;
@@ -30,7 +30,7 @@ export async function loadTodayKnownEmailPeople(): Promise<TodayKnownPerson[]> {
         .eq("identity_kind", "email_hash")
         .is("revoked_at", null),
     ]);
-    if (profiles.error || identities.error) return [];
+    if (profiles.error) return [];
     const people = new Map<
       string,
       Omit<TodayKnownPerson, "emailHash"> & { hashes: Set<string> }
@@ -40,7 +40,9 @@ export async function loadTodayKnownEmailPeople(): Promise<TodayKnownPerson[]> {
       const displayName = String(row.display_name ?? "").trim();
       if (!personId || !displayName) continue;
       const hashes = new Set<string>();
-      const fromEmail = hashEmail(row.email == null ? null : String(row.email));
+      const fromEmail = hashStoredPersonEmail(
+        row.email == null ? null : String(row.email),
+      );
       if (fromEmail) hashes.add(fromEmail);
       people.set(personId, {
         personId,
@@ -51,7 +53,7 @@ export async function loadTodayKnownEmailPeople(): Promise<TodayKnownPerson[]> {
         hashes,
       });
     }
-    for (const row of identities.data ?? []) {
+    for (const row of identities.error ? [] : identities.data ?? []) {
       const personId = String(row.entity_id ?? "").trim();
       const hash = normalizedHash(row.identifier == null ? null : String(row.identifier));
       if (!personId || !hash) continue;
