@@ -11,6 +11,10 @@ import { hashStoredPersonEmail } from "@/lib/continuum/client-memory/hashes";
 import type { ProjectJob } from "@/lib/continuum/client-memory/project-jobs/types";
 import { isUnresolvedOpenJobState } from "@/lib/continuum/client-memory/project-jobs/validate";
 import { isPastDueDate } from "@/lib/continuum/date-only";
+import {
+  collectExactGmailIds,
+  exactGmailIdsFromPointer,
+} from "@/lib/continuum/candidates/exact-gmail-ids";
 
 export const FOUNDER_ATTENTION_MODEL_ID = "cos-founder-attention-v1" as const;
 
@@ -145,6 +149,8 @@ export type TodayGmailIndexedMessage = {
   messageId: string;
   sentAt: string;
   direction: "inbound" | "outbound" | "unknown";
+  labelIds?: readonly string[];
+  fromEmailHash?: string | null;
 };
 
 export type TodayGmailThreadContext = {
@@ -233,6 +239,14 @@ export function collectTodayVendorEvidence(input: {
   };
 }
 
+function compatiblePrefixFamily(unique: readonly string[]): string | null {
+  if (unique.length === 0) return null;
+  if (unique.length === 1) return unique[0]!;
+  const longest = [...unique].sort((a, b) => b.length - a.length)[0]!;
+  if (!unique.every((key) => longest.startsWith(key))) return null;
+  return [...unique].sort((a, b) => a.length - b.length)[0]!;
+}
+
 function vendorOrgFromDomainEvidence(
   label: string,
   directory: readonly string[],
@@ -259,8 +273,9 @@ function vendorOrgFromDomainEvidence(
   ];
   const prefixHits = tokens.filter((token) => labelKey.startsWith(orgKey(token)));
   const unique = [...new Set(prefixHits.map((token) => orgKey(token)))];
-  if (unique.length !== 1) return null;
-  const matched = prefixHits.find((token) => orgKey(token) === unique[0]) ?? null;
+  const family = compatiblePrefixFamily(unique);
+  if (!family) return null;
+  const matched = prefixHits.find((token) => orgKey(token) === family) ?? null;
   return matched ? collapseIdentityText(matched) : null;
 }
 
@@ -450,6 +465,19 @@ export function resolveTodayIdentity(input: {
       organizationLabel: null,
     };
   }
+  if (knownVendor) {
+    const organization =
+      known!.organizationName?.trim() ||
+      (isVendorOrganizationLabel(known!.displayName) ? known!.displayName.trim() : "");
+    if (organization) {
+      return {
+        kind: "vendor",
+        personId: null,
+        personLabel: null,
+        organizationLabel: collapseIdentityText(organization),
+      };
+    }
+  }
   if (pickedVendor) {
     return {
       kind: "vendor",
@@ -568,6 +596,9 @@ export function collectTodayEmailHashes(input: {
     if (payload.kind === "person_association") add(payload.emailHash);
   }
   add(hashStoredPersonEmail(input.thread?.fromEmail ?? null));
+  for (const message of input.thread?.messages ?? []) {
+    add(message.fromEmailHash);
+  }
   return hashes;
 }
 
@@ -644,6 +675,93 @@ export function isGeneratedTodayNoise(input: {
     return from.length === 0;
   }
   return !input.thread?.fromEmail?.trim() && hashes.length === 0;
+}
+
+const ACTIONABLE_SYSTEM_MAIL =
+  /\b(failed payment|payment failed|payment declined|account (?:is )?compromis|security (?:alert|warning|notice)|unauthorized(?:ly)?|suspicious sign[- ]in|deployment failed|service outage|major outage|shipment exception|undeliverable package)\b/i;
+const NEWSLETTER_LOCAL_PART =
+  /^(welcome|hello|hi|news|newsletter|noreply|no-reply|no_reply|donotreply|do-not-reply|notifications?|notify|mailer|updates?|digest|info|marketing|product|team)$/i;
+const NEWSLETTER_SUBJECT =
+  /\b(?:what'?s new|product (?:update|news)|release notes|changelog|weekly digest|monthly (?:update|digest)|newsletter)\b/i;
+const NEWSLETTER_PERIODICAL_SUBJECT =
+  /\bupdate\b.+\b(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\b|\b(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\b.+\bupdate\b/i;
+const BULK_GMAIL_LABELS = new Set(["CATEGORY_UPDATES", "CATEGORY_PROMOTIONS"]);
+
+function emailLocalPart(email: string | null | undefined): string | null {
+  const trimmed = email?.trim().toLowerCase() ?? "";
+  const at = trimmed.indexOf("@");
+  if (at <= 0) return null;
+  return trimmed.slice(0, at);
+}
+
+function threadLabelIds(thread?: TodayGmailThreadContext | null): string[] {
+  const ids: string[] = [];
+  const seen = new Set<string>();
+  for (const message of thread?.messages ?? []) {
+    for (const label of message.labelIds ?? []) {
+      const value = label.trim();
+      if (!value || seen.has(value)) continue;
+      seen.add(value);
+      ids.push(value);
+    }
+  }
+  return ids;
+}
+
+function systemMailHaystack(input: {
+  candidates?: readonly ContinuumCandidate[];
+  thread?: TodayGmailThreadContext | null;
+}): string {
+  return [
+    input.thread?.subject ?? "",
+    input.thread?.fromDisplayName ?? "",
+    input.thread?.fromEmail ?? "",
+    ...(input.candidates ?? []).map((row) => candidateHaystack(row)),
+  ]
+    .join("\n")
+    .trim();
+}
+
+export function isActionableSystemAlert(input: {
+  candidates?: readonly ContinuumCandidate[];
+  thread?: TodayGmailThreadContext | null;
+}): boolean {
+  return ACTIONABLE_SYSTEM_MAIL.test(systemMailHaystack(input));
+}
+
+export function isNonActionableSystemMail(input: {
+  candidates?: readonly ContinuumCandidate[];
+  thread?: TodayGmailThreadContext | null;
+}): boolean {
+  if (isActionableSystemAlert(input)) return false;
+  const hay = systemMailHaystack(input);
+  const subject = input.thread?.subject ?? "";
+  const labels = threadLabelIds(input.thread);
+  const bulkLabel = labels.some((label) => BULK_GMAIL_LABELS.has(label));
+  const local = emailLocalPart(input.thread?.fromEmail ?? null);
+  const newsletterSender =
+    NEWSLETTER_LOCAL_PART.test(local ?? "") ||
+    isPlatformOrSystemName(input.thread?.fromDisplayName) ||
+    isPlatformOrSystemName(local);
+  const newsletterSubject =
+    NEWSLETTER_SUBJECT.test(subject) || NEWSLETTER_PERIODICAL_SUBJECT.test(subject);
+  const platformContent = PLATFORM_CONTENT.test(hay);
+  if (bulkLabel && (newsletterSender || newsletterSubject || platformContent)) {
+    return true;
+  }
+  if (newsletterSender && (newsletterSubject || platformContent || bulkLabel)) {
+    return true;
+  }
+  if (newsletterSubject && (newsletterSender || bulkLabel || platformContent)) {
+    return true;
+  }
+  if (
+    platformContent &&
+    !input.candidates?.some((row) => hasCommercialPayload(row) && !isPlatformSystemEvidence(row))
+  ) {
+    return Boolean(newsletterSender || bulkLabel || isPlatformOrSystemName(input.thread?.fromDisplayName));
+  }
+  return false;
 }
 
 const VENDOR_RULES = new Set([
@@ -937,6 +1055,14 @@ export function classifyTodayCommunication(input: {
   ) {
     return "platform";
   }
+  if (
+    isNonActionableSystemMail({
+      candidates: input.candidates,
+      thread: input.thread,
+    })
+  ) {
+    return "platform";
+  }
   const names: TodayIdentitySignal[] = [...(input.people ?? [])];
   for (const row of input.candidates) {
     const payload = payloadOf(row);
@@ -977,11 +1103,15 @@ export function classifyTodayCommunication(input: {
     input.candidates.some((row) => hasVendorRule(row)) ||
     vendorFromSubject ||
     vendorFromGmail;
-  const platformName = names.some((person) => isPlatformOrSystemName(person.displayName));
+  const platformName =
+    names.some((person) => isPlatformOrSystemName(person.displayName)) ||
+    isPlatformOrSystemName(input.thread?.fromDisplayName) ||
+    isPlatformOrSystemName(emailLocalPart(input.thread?.fromEmail ?? null));
   const platformContent = PLATFORM_CONTENT.test(hay);
   const commercial = input.candidates.some((row) => hasCommercialPayload(row));
   if (vendorOnThread && !storedClient) return "vendor";
   if (storedClient || (pendingHumanClient && !vendorOnThread)) return "client";
+  if (isActionableSystemAlert(input)) return "platform";
   if (platformName || (platformContent && !commercial)) return "platform";
   if (vendorOnThread) return "vendor";
   if (names.some((person) => isFounderIdentityName(person.displayName))) return "founder";
@@ -1004,6 +1134,10 @@ export function dateHasActionableObligation(row: ContinuumCandidate): boolean {
   const payload = payloadOf(row);
   if (payload.kind !== "date") return false;
   const matched = `${row.evidenceBasis.matchedText ?? ""} ${payload.raw}`.trim();
+  if (isNakedDateText(payload.raw) && !DATE_OBLIGATION.test(matched)) return false;
+  if (NEWSLETTER_SUBJECT.test(matched) || PLATFORM_CONTENT.test(matched)) {
+    if (!DATE_OBLIGATION.test(matched)) return false;
+  }
   if (!DATE_OBLIGATION.test(matched)) return false;
   return (
     hasNamedActor(matched) ||
@@ -1340,25 +1474,23 @@ function sourceWeight(row: ContinuumCandidate): number {
 }
 
 export function sourceThreadId(row: ContinuumCandidate): string | null {
-  const parts = row.sourceRef.split("|");
-  return parts[0] === "gc1" && parts[1] ? parts[1] : null;
+  return exactGmailIdsFromPointer(row.sourceRef).threadId;
 }
 
 export function sourceMessageId(row: ContinuumCandidate): string | null {
-  const parts = row.sourceRef.split("|");
-  return parts[0] === "gc1" && parts[2] ? parts[2] : null;
+  return exactGmailIdsFromPointer(row.sourceRef).messageId;
 }
 
 export function candidateGmailThreadIds(
   candidates: readonly ContinuumCandidate[],
 ): string[] {
-  return [
-    ...new Set(
-      candidates
-        .map((row) => sourceThreadId(row))
-        .filter((id): id is string => Boolean(id)),
-    ),
-  ];
+  return collectExactGmailIds(candidates).threadIds;
+}
+
+export function candidateGmailMessageIds(
+  candidates: readonly ContinuumCandidate[],
+): string[] {
+  return collectExactGmailIds(candidates).messageIds;
 }
 
 export function projectByThreadFromCandidates(

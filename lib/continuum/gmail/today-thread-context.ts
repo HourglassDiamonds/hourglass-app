@@ -1,13 +1,13 @@
 /**
  * Read-only Today Gmail identity context.
- * Joins indexed subjects (and optional live From metadata) without writing
- * Person/Project state. Does not mint, merge, or link.
+ * Joins indexed subjects, labels, hashes, and optional live From metadata
+ * without writing Person/Project state. Recovers thread chronology from
+ * exact persisted thread ids, then exact message ids. Does not mint, merge, or link.
  */
 
 import "server-only";
 
 import {
-  candidateGmailThreadIds,
   candidateProjectId,
   isFounderIdentityName,
   sourceThreadId,
@@ -15,6 +15,7 @@ import {
   type TodayGmailThreadContext,
 } from "@/lib/continuum/candidates/founder-attention";
 import type { ContinuumCandidate } from "@/lib/continuum/candidates/types";
+import { collectExactGmailIds } from "@/lib/continuum/candidates/exact-gmail-ids";
 import { getSupabaseAdmin } from "@/lib/supabase/client";
 import {
   getContinuumGmailFounderEmail,
@@ -25,11 +26,21 @@ import { executeLiveSourceViewerFetch } from "./source-viewer-run";
 
 const THREAD_QUERY_CHUNK = 40;
 const MESSAGES_PER_THREAD = 80;
+const INDEX_SELECT =
+  "thread_id, message_id, sent_at, direction, subject, label_ids, from_email_hash";
 
 function indexedDirection(value: unknown): TodayGmailIndexedMessage["direction"] {
   if (value === "outbound") return "outbound";
   if (value === "inbound") return "inbound";
   return "unknown";
+}
+
+function asLabelIds(value: unknown): string[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const labels = value
+    .map((row) => String(row ?? "").trim())
+    .filter(Boolean);
+  return labels.length > 0 ? labels : undefined;
 }
 
 function internalEmails(): string[] {
@@ -94,48 +105,95 @@ export function mergeTodayThreadContext(
   return merged;
 }
 
+function ingestIndexedRows(
+  out: Map<string, TodayGmailThreadContext>,
+  data: readonly Record<string, unknown>[],
+): string[] {
+  const threadIds: string[] = [];
+  const seen = new Set<string>();
+  for (const row of data) {
+    const threadId = String(row.thread_id ?? "").trim();
+    if (!threadId) continue;
+    if (!seen.has(threadId)) {
+      seen.add(threadId);
+      threadIds.push(threadId);
+    }
+    const existing = out.get(threadId) ?? {};
+    const messages = [...(existing.messages ?? [])];
+    if (messages.length < MESSAGES_PER_THREAD) {
+      const messageId = String(row.message_id ?? "").trim();
+      const sentAt = String(row.sent_at ?? "").trim();
+      if (messageId && sentAt && !messages.some((item) => item.messageId === messageId)) {
+        messages.push({
+          messageId,
+          sentAt,
+          direction: indexedDirection(row.direction),
+          labelIds: asLabelIds(row.label_ids),
+          fromEmailHash:
+            row.from_email_hash == null ? null : String(row.from_email_hash),
+        });
+      }
+    }
+    out.set(threadId, {
+      subject:
+        existing.subject ??
+        (row.subject == null ? null : String(row.subject)),
+      fromDisplayName: existing.fromDisplayName ?? null,
+      fromEmail: existing.fromEmail ?? null,
+      liveIdentityLoaded: existing.liveIdentityLoaded,
+      messages,
+    });
+  }
+  return threadIds;
+}
+
 export async function loadIndexedTodayThreadContext(
   candidates: readonly ContinuumCandidate[],
 ): Promise<Map<string, TodayGmailThreadContext>> {
-  const threadIds = candidateGmailThreadIds(candidates);
+  const ids = collectExactGmailIds(candidates);
   const out = new Map<string, TodayGmailThreadContext>();
-  if (threadIds.length === 0) return out;
+  if (ids.threadIds.length === 0 && ids.messageIds.length === 0) return out;
   const client = getSupabaseAdmin();
   if (!client) return out;
-  for (let index = 0; index < threadIds.length; index += THREAD_QUERY_CHUNK) {
-    const chunk = threadIds.slice(index, index + THREAD_QUERY_CHUNK);
+
+  const loadThreads = async (threadIds: readonly string[]) => {
+    for (let index = 0; index < threadIds.length; index += THREAD_QUERY_CHUNK) {
+      const chunk = threadIds.slice(index, index + THREAD_QUERY_CHUNK);
+      const { data, error } = await client
+        .from("continuum_gmail_messages")
+        .select(INDEX_SELECT)
+        .in("thread_id", chunk)
+        .order("sent_at", { ascending: false });
+      if (error || !data) continue;
+      ingestIndexedRows(out, data as Record<string, unknown>[]);
+    }
+  };
+
+  await loadThreads(ids.threadIds);
+
+  const seenMessageIds = new Set(
+    [...out.values()].flatMap((thread) =>
+      (thread.messages ?? []).map((row) => row.messageId),
+    ),
+  );
+  const orphanMessageIds = ids.messageIds.filter((id) => !seenMessageIds.has(id));
+  const recoveredThreadIds: string[] = [];
+  const seenRecovered = new Set(out.keys());
+  for (let index = 0; index < orphanMessageIds.length; index += THREAD_QUERY_CHUNK) {
+    const chunk = orphanMessageIds.slice(index, index + THREAD_QUERY_CHUNK);
     const { data, error } = await client
       .from("continuum_gmail_messages")
-      .select("thread_id, message_id, sent_at, direction, subject")
-      .in("thread_id", chunk)
-      .order("sent_at", { ascending: false });
+      .select(INDEX_SELECT)
+      .in("message_id", chunk);
     if (error || !data) continue;
-    for (const row of data) {
-      const threadId = String(row.thread_id ?? "").trim();
-      if (!threadId) continue;
-      const existing = out.get(threadId) ?? {};
-      const messages = [...(existing.messages ?? [])];
-      if (messages.length < MESSAGES_PER_THREAD) {
-        const messageId = String(row.message_id ?? "").trim();
-        const sentAt = String(row.sent_at ?? "").trim();
-        if (messageId && sentAt) {
-          messages.push({
-            messageId,
-            sentAt,
-            direction: indexedDirection(row.direction),
-          });
-        }
-      }
-      out.set(threadId, {
-        subject:
-          existing.subject ??
-          (row.subject == null ? null : String(row.subject)),
-        fromDisplayName: existing.fromDisplayName ?? null,
-        fromEmail: existing.fromEmail ?? null,
-        liveIdentityLoaded: existing.liveIdentityLoaded,
-        messages,
-      });
+    for (const threadId of ingestIndexedRows(out, data as Record<string, unknown>[])) {
+      if (seenRecovered.has(threadId)) continue;
+      seenRecovered.add(threadId);
+      recoveredThreadIds.push(threadId);
     }
+  }
+  if (recoveredThreadIds.length > 0) {
+    await loadThreads(recoveredThreadIds);
   }
   return out;
 }

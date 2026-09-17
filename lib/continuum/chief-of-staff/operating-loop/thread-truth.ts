@@ -11,12 +11,15 @@ import {
   isClientDesignAnswer,
   payloadOf,
   sourceMessageId,
-  sourceThreadId,
   type TodayGmailIndexedMessage,
   type TodayGmailThreadContext,
 } from "@/lib/continuum/candidates/founder-attention";
 import { isUnresolvedOpenJobState } from "@/lib/continuum/client-memory/project-jobs/validate";
 import type { ProjectJob } from "@/lib/continuum/client-memory/project-jobs/types";
+import {
+  collectExactGmailIds,
+  exactGmailIdsFromCandidate,
+} from "@/lib/continuum/candidates/exact-gmail-ids";
 import type { CosProjectContext } from "./types";
 
 export type ThreadWaitingKind = "client" | "shop" | "cad" | "production";
@@ -187,13 +190,14 @@ function waitingFromText(
 ): ThreadWaitingKind | null {
   if (CAD_WAIT.test(text)) return "cad";
   if (SHOP_WAIT.test(text)) return "shop";
-  if (DEFERRED_PRODUCTION.test(text)) return "production";
-  const stage = project?.lifecycleStage ?? null;
-  if (stage === "cad" || stage === "design") return "cad";
-  if (stage && PRODUCTION_STAGES.has(stage)) return "production";
   if (/\?/.test(text) || /\b(?:or|would you|let me know|prefer|rather)\b/i.test(text)) {
     return "client";
   }
+  if (DEFERRED_PRODUCTION.test(text)) return "production";
+  if (!text.trim()) return "client";
+  const stage = project?.lifecycleStage ?? null;
+  if (stage === "cad" || stage === "design") return "cad";
+  if (stage && PRODUCTION_STAGES.has(stage)) return "production";
   return "client";
 }
 
@@ -303,7 +307,145 @@ export function reconcileThreadTruthState(input: {
 export function threadIdForGroup(
   key: string,
   rows: readonly ContinuumCandidate[],
+  threadContext?: ReadonlyMap<string, TodayGmailThreadContext> | null,
 ): string | null {
-  if (key.startsWith("thread:")) return key.slice("thread:".length);
-  return rows.map(sourceThreadId).find((id): id is string => Boolean(id)) ?? null;
+  return gmailThreadIdsForGroup(key, rows, threadContext)[0] ?? null;
+}
+
+export function gmailThreadIdsForGroup(
+  key: string,
+  rows: readonly ContinuumCandidate[],
+  threadContext?: ReadonlyMap<string, TodayGmailThreadContext> | null,
+): string[] {
+  const ids: string[] = [];
+  const seen = new Set<string>();
+  const add = (value: string | null | undefined) => {
+    const id = value?.trim() ?? "";
+    if (!id || seen.has(id)) return;
+    seen.add(id);
+    ids.push(id);
+  };
+  if (key.startsWith("thread:")) add(key.slice("thread:".length));
+  const collected = collectExactGmailIds(rows);
+  for (const threadId of collected.threadIds) add(threadId);
+  const messageIds = new Set(collected.messageIds);
+  if (threadContext && messageIds.size > 0) {
+    for (const [threadId, thread] of threadContext) {
+      if ((thread.messages ?? []).some((row) => messageIds.has(row.messageId))) {
+        add(threadId);
+      }
+    }
+  }
+  return ids;
+}
+
+function mergeIndexedThreads(
+  threads: readonly TodayGmailThreadContext[],
+): TodayGmailThreadContext | null {
+  if (threads.length === 0) return null;
+  if (threads.length === 1) return threads[0]!;
+  const messages = [...threads.flatMap((thread) => thread.messages ?? [])].sort(
+    (a, b) => parseMs(a.sentAt) - parseMs(b.sentAt),
+  );
+  const latestInbound = [...messages].reverse().find((row) => row.direction === "inbound");
+  const identity =
+    threads.find((thread) =>
+      (thread.messages ?? []).some((row) => row.messageId === latestInbound?.messageId),
+    ) ??
+    threads.find((thread) => thread.fromEmail || thread.fromDisplayName) ??
+    threads[0]!;
+  return {
+    subject: identity.subject ?? threads.find((thread) => thread.subject)?.subject ?? null,
+    fromDisplayName: identity.fromDisplayName ?? null,
+    fromEmail: identity.fromEmail ?? null,
+    liveIdentityLoaded: threads.some((thread) => thread.liveIdentityLoaded === true),
+    messages,
+  };
+}
+
+export function indexedThreadForGroup(
+  key: string,
+  rows: readonly ContinuumCandidate[],
+  threadContext?: ReadonlyMap<string, TodayGmailThreadContext> | null,
+): TodayGmailThreadContext | null {
+  const threadIds = gmailThreadIdsForGroup(key, rows, threadContext);
+  const threads = threadIds
+    .map((id) => threadContext?.get(id) ?? null)
+    .filter((row): row is TodayGmailThreadContext => Boolean(row));
+  return mergeIndexedThreads(threads);
+}
+
+function rowBelongsToThread(
+  row: ContinuumCandidate,
+  threadId: string,
+  thread: TodayGmailThreadContext | null,
+): boolean {
+  const ids = exactGmailIdsFromCandidate(row);
+  if (ids.threadIds.includes(threadId)) return true;
+  if ((thread?.messages ?? []).some((item) => ids.messageIds.includes(item.messageId))) {
+    return true;
+  }
+  return false;
+}
+
+function mergeThreadTruths(truths: readonly ThreadTruthState[]): ThreadTruthState {
+  const withInbound = truths.filter((row) => row.latestInboundAt);
+  const staleInboundSatisfied =
+    withInbound.length > 0
+      ? withInbound.every((row) => row.staleInboundSatisfied)
+      : truths.every((row) => row.staleInboundSatisfied);
+  const remainingCommitment =
+    truths.find((row) => row.remainingCommitment)?.remainingCommitment ?? null;
+  const latestInboundAt =
+    withInbound
+      .map((row) => row.latestInboundAt)
+      .sort((a, b) => parseMs(a) - parseMs(b))
+      .at(-1) ?? null;
+  const latestOutboundAt =
+    truths
+      .map((row) => row.latestOutboundAt)
+      .filter((row): row is string => Boolean(row))
+      .sort((a, b) => parseMs(a) - parseMs(b))
+      .at(-1) ?? null;
+  return {
+    latestInboundAt,
+    latestOutboundAt,
+    founderRepliedAfterInbound: staleInboundSatisfied,
+    clientRepliedAfterOutbound: truths.some((row) => row.clientRepliedAfterOutbound),
+    staleInboundSatisfied,
+    remainingCommitment,
+    waiting:
+      staleInboundSatisfied && !remainingCommitment
+        ? (truths.find((row) => row.waiting)?.waiting ?? "client")
+        : null,
+  };
+}
+
+export function reconcileGroupTruthState(input: {
+  key: string;
+  rows: readonly ContinuumCandidate[];
+  threadContext?: ReadonlyMap<string, TodayGmailThreadContext> | null;
+  project?: CosProjectContext | null;
+  jobs?: readonly ProjectJob[] | null;
+}): ThreadTruthState {
+  const threadIds = gmailThreadIdsForGroup(input.key, input.rows, input.threadContext);
+  if (threadIds.length <= 1) {
+    return reconcileThreadTruthState({
+      rows: input.rows,
+      thread: indexedThreadForGroup(input.key, input.rows, input.threadContext),
+      project: input.project,
+      jobs: input.jobs,
+    });
+  }
+  const truths = threadIds.map((threadId) => {
+    const thread = input.threadContext?.get(threadId) ?? null;
+    const rows = input.rows.filter((row) => rowBelongsToThread(row, threadId, thread));
+    return reconcileThreadTruthState({
+      rows,
+      thread,
+      project: input.project,
+      jobs: input.jobs,
+    });
+  });
+  return mergeThreadTruths(truths);
 }

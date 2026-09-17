@@ -45,7 +45,7 @@ import { specConflictFromCandidates } from "./founder-actions";
 import { isCandidateQuietForToday } from "./quiet";
 import {
   isStaleInboundReplyCandidate,
-  reconcileThreadTruthState,
+  reconcileGroupTruthState,
   threadIdForGroup,
 } from "./thread-truth";
 import type {
@@ -550,14 +550,15 @@ export function composeFounderAttentionSurface(input: {
   for (const [key, rows] of groups) {
     const visible = rows.filter((row) => visibleLane(judgments.get(row.candidateId)));
     if (visible.length === 0) continue;
-    const threadId = threadIdForGroup(key, rows);
+    const threadId = threadIdForGroup(key, rows, input.threadContext);
     const thread = threadId ? (input.threadContext?.get(threadId) ?? null) : null;
     const groupedProjectId = key.startsWith("project:")
       ? key.slice("project:".length)
       : rows.map(candidateProjectId).find((id): id is string => Boolean(id)) ?? null;
-    const truth = reconcileThreadTruthState({
+    const truth = reconcileGroupTruthState({
+      key,
       rows,
-      thread,
+      threadContext: input.threadContext,
       project: groupedProjectId ? (input.projects.get(groupedProjectId) ?? null) : null,
       jobs: input.jobs,
     });

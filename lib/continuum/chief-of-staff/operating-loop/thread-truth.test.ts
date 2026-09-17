@@ -609,4 +609,125 @@ describe("Today thread truth-state reconciliation", () => {
     assert.equal(truth.remainingCommitment, null);
     assert.equal(truth.waiting, "production");
   });
+
+  it("Jen: later founder outbound satisfies a stale rounded-claw inbound without an outbound candidate", () => {
+    const jenThread = "1a0c9d8e7f6a5432";
+    const jenIn = "1a0c9d8e7f6a1111";
+    const jenOut = "1a0c9d8e7f6a2222";
+    const inboundAt = "2026-09-15T16:00:00.000Z";
+    const outboundAt = "2026-09-16T18:30:00.000Z";
+    const inboundText =
+      "I like the rounded prongs more than the claw, but I think that I may like a rounded claw best for this design. Could we try that? Otherwise, I have no changes.";
+    const candidates = [
+      gmailRow({
+        candidateId: "jen-assoc",
+        sourceRef: `gc1||${jenIn}`,
+        sourceTimestamp: inboundAt,
+        candidateType: "person_association",
+        proposedTarget: { kind: "person", personId: null },
+        payload: {
+          kind: "person_association",
+          displayName: "Jen Spiegel",
+          emailHash: null,
+          mintPerson: false,
+          mergePersons: false,
+        },
+        evidenceBasis: {
+          ruleIds: ["gmail_participant"],
+          matchedText: "Jen Spiegel",
+        },
+      }),
+      gmailRow({
+        candidateId: "jen-claw",
+        sourceRef: `gc1||${jenIn}`,
+        sourceTimestamp: inboundAt,
+        candidateType: "project_context",
+        proposedTarget: { kind: "none" },
+        payload: {
+          kind: "project_context",
+          topic: "design_refinement",
+          value: inboundText,
+        },
+        evidenceBasis: {
+          ruleIds: ["explicit_design_refinement", "explicit_client_request"],
+          matchedText: inboundText,
+        },
+      }),
+    ];
+    const threadContext = new Map([
+      [
+        jenThread,
+        {
+          subject: "Re: Cornflower Blue - Yogo Sapphire - Lee",
+          fromDisplayName: "Jen Spiegel",
+          fromEmail: "jen.spiegel@example.test",
+          messages: [
+            { messageId: jenIn, sentAt: inboundAt, direction: "inbound" as const },
+            { messageId: jenOut, sentAt: outboundAt, direction: "outbound" as const },
+          ],
+        },
+      ],
+    ]);
+    const { docket, loop } = todayOf(candidates, { threadContext });
+    assert.equal(
+      docket.items.some((item) => /recap|next step/i.test(item.headline)),
+      false,
+    );
+    assert.equal(
+      docket.items.some((item) => /Jen Spiegel/i.test(item.subject)),
+      false,
+    );
+    assert.ok(loop.watching.length > 0);
+  });
+
+  it("does not invent a thread association from subject or surname", () => {
+    const inboundText = "Could we try rounded claw for this design?";
+    const candidates = [
+      gmailRow({
+        candidateId: "jen-unjoined",
+        sourceRef: "gc1||not-a-real-message",
+        sourceTimestamp: "2026-09-15T16:00:00.000Z",
+        candidateType: "project_context",
+        proposedTarget: { kind: "none" },
+        payload: {
+          kind: "project_context",
+          topic: "design_refinement",
+          value: inboundText,
+        },
+        evidenceBasis: {
+          ruleIds: ["explicit_design_refinement"],
+          matchedText: inboundText,
+        },
+      }),
+    ];
+    const { docket } = todayOf(candidates, {
+      threadContext: new Map([
+        [
+          "1a0c9d8e7f6a5432",
+          {
+            subject: "Re: Cornflower Blue - Yogo Sapphire - Lee",
+            messages: [
+              {
+                messageId: "1a0c9d8e7f6a2222",
+                sentAt: "2026-09-16T18:30:00.000Z",
+                direction: "outbound",
+              },
+            ],
+          },
+        ],
+      ]),
+    });
+    assert.ok(docket.items.length > 0);
+    assert.ok(
+      docket.items.some((item) =>
+        /Identify who this is from|recap|next step|Your turn/i.test(
+          `${item.headline} ${item.context ?? ""}`,
+        ),
+      ),
+    );
+    assert.equal(
+      docket.items.some((item) => /already answered|waiting on/i.test(item.headline)),
+      false,
+    );
+  });
 });

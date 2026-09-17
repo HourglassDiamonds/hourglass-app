@@ -39,10 +39,11 @@ import {
   classifyTodayCommunication,
   collectTodayEmailHashes,
   collectTodayVendorEvidence,
+  isActionableSystemAlert,
   isGeneratedTodayNoise,
+  isNonActionableSystemMail,
   resolveTodayIdentity,
   resolveUniqueKnownPerson,
-  sourceThreadId,
   type FounderAttentionContext,
   type TodayCommunicationClass,
   type TodayGmailThreadContext,
@@ -71,7 +72,9 @@ import { selectOpenEmailSources } from "./email-source";
 import { specConflictFromCandidates } from "./founder-actions";
 import { isCandidateQuietForToday } from "./quiet";
 import {
-  reconcileThreadTruthState,
+  indexedThreadForGroup,
+  reconcileGroupTruthState,
+  threadIdForGroup,
   type ThreadWaitingKind,
 } from "./thread-truth";
 import type {
@@ -832,9 +835,9 @@ function pendingPersonAssociationCandidateId(
 function situationThreadId(
   key: string,
   rows: readonly ContinuumCandidate[],
+  threadContext?: ReadonlyMap<string, TodayGmailThreadContext>,
 ): string | null {
-  if (key.startsWith("thread:")) return key.slice("thread:".length);
-  return rows.map(sourceThreadId).find((id): id is string => Boolean(id)) ?? null;
+  return threadIdForGroup(key, rows, threadContext);
 }
 
 function vendorEvidenceFromProjects(
@@ -888,10 +891,8 @@ function classifySituation(input: {
     ? (input.projects.get(attribution.projectId) ?? null)
     : null;
   const vendorName = pickVendorName(project);
-  const groupedThreadId = situationThreadId(input.key, input.rows);
-  const thread = groupedThreadId
-    ? (input.threadContext?.get(groupedThreadId) ?? null)
-    : null;
+  const groupedThreadId = situationThreadId(input.key, input.rows, input.threadContext);
+  const thread = indexedThreadForGroup(input.key, input.rows, input.threadContext);
   const knownHit = resolveUniqueKnownPerson({
     emailHashes: collectTodayEmailHashes({ candidates: input.rows, thread }),
     knownPeople: input.knownPeople,
@@ -908,6 +909,10 @@ function classifySituation(input: {
       candidates: input.rows,
       thread,
       knownPeople: input.knownPeople,
+    }) ||
+    isNonActionableSystemMail({
+      candidates: input.rows,
+      thread,
     })
   ) {
     return null;
@@ -943,6 +948,13 @@ function classifySituation(input: {
   if (!person && resolved.kind === "vendor") communication = "vendor";
   else if (!person && resolved.kind === "person") communication = "client";
   else if (resolved.kind === "person") communication = "client";
+  if (
+    isActionableSystemAlert({ candidates: input.rows, thread }) &&
+    !person &&
+    !organizationLabel
+  ) {
+    communication = "platform";
+  }
   const title = displayTitle(person, attribution.projectTitle, organizationLabel);
   const client = pickClientPerson(project);
   const clientConfirmed = Boolean(
@@ -1076,9 +1088,10 @@ function classifySituation(input: {
         beat.kind === "new_project" ||
         beat.kind === "commitment",
     );
-  const truth = reconcileThreadTruthState({
+  const truth = reconcileGroupTruthState({
+    key: input.key,
     rows: usable,
-    thread,
+    threadContext: input.threadContext,
     project,
     jobs: input.jobs,
   });
@@ -1149,6 +1162,7 @@ function classifySituation(input: {
     newWork ||
     reactivation ||
     truth.staleInboundSatisfied ||
+    isActionableSystemAlert({ candidates: usable, thread }) ||
     usable.some(hasCommercialPayload) ||
     usable.some((row) => isActionableSpecConflict(row, input.ctx));
   if (!commercial) {
@@ -1312,6 +1326,12 @@ function classifySituation(input: {
     explanation = clip(meaningful.summary, 220);
     recommended = "Review the latest shop turn.";
     urgency = 0;
+  } else if (isActionableSystemAlert({ candidates: usable, thread })) {
+    rankClass = "follow_up";
+    headline = clip(meaningful.summary, 72);
+    explanation = clip(meaningful.summary, 220);
+    recommended = "Review this alert.";
+    urgency = 1;
   } else {
     disposition = "suppress";
   }
@@ -1320,7 +1340,9 @@ function classifySituation(input: {
     disposition = "suppress";
   }
   if (disposition === "brief" && communication === "platform") {
-    disposition = "suppress";
+    if (!isActionableSystemAlert({ candidates: usable, thread })) {
+      disposition = "suppress";
+    }
   }
 
   if (

@@ -5,13 +5,17 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { hashEmail } from "@/lib/continuum/client-memory/hashes";
 import {
   classifyTodayCommunication,
+  dateHasActionableObligation,
+  isActionableSystemAlert,
   isGeneratedFounderOperatingBriefSubject,
   isGeneratedTodayNoise,
+  isNonActionableSystemMail,
   pickTodayVendorContext,
   resolveTodayIdentity,
   resolveUniqueKnownPerson,
   vendorOrganizationFromGmailContext,
   vendorOrganizationFromIdentityText,
+  type TodayGmailThreadContext,
 } from "@/lib/continuum/candidates/founder-attention";
 import { GENERATED_FOUNDER_OPERATING_BRIEF_RULE } from "@/lib/continuum/gmail/candidates/generated-source";
 import type { ContinuumCandidate } from "@/lib/continuum/candidates/types";
@@ -106,12 +110,7 @@ function liveOpenJob(
 function todayOf(
   candidates: ContinuumCandidate[],
   options?: {
-    threadContext?: Map<string, {
-      subject?: string | null;
-      fromDisplayName?: string | null;
-      fromEmail?: string | null;
-      liveIdentityLoaded?: boolean;
-    }>;
+    threadContext?: Map<string, TodayGmailThreadContext>;
     vendorDirectory?: readonly string[];
     evidenceTexts?: readonly string[];
     projects?: Map<string, CosProjectContext>;
@@ -791,5 +790,169 @@ describe("Today live-shape Gmail identity", () => {
     assert.equal(card?.subject, "Unassigned");
     assert.ok(selectFounderControls(card!).confirmPerson);
     assert.equal(card?.brief?.projectId ?? null, null);
+  });
+
+  it("vlorajewelry.com uses indexed vendor-contact hash and durable org evidence", () => {
+    const niurkaHash = hashEmail("niurka@vlorajewelry.com")!;
+    const assoc = livePersonAssociation(
+      "niurka-hash-assoc",
+      VLORA_THREAD,
+      "1a0a1f153add83b4",
+      niurkaHash,
+    );
+    const job = liveOpenJob("niurka-hash-job", VLORA_THREAD, "1a0a1f153add83b4", {
+      subject: "Here are the STL files for F.Grant-C025885",
+      matchedText: "Here are the STL files for F.Grant-C025885",
+      ruleIds: ["explicit_vendor_commitment"],
+      jobKind: "commitment",
+    });
+    const thread = {
+      subject: "RE: HGD x F.Grant-C025885",
+      fromDisplayName: null,
+      fromEmail: null,
+      messages: [
+        {
+          messageId: "1a0a1f153add83b4",
+          sentAt: "2026-09-06T15:00:00.000Z",
+          direction: "inbound" as const,
+          fromEmailHash: niurkaHash,
+        },
+      ],
+    };
+    const docket = todayOf([assoc, job], {
+      threadContext: new Map([[VLORA_THREAD, thread]]),
+      knownPeople: [
+        {
+          personId: "niurka-vendor-contact",
+          displayName: "Niurka Lulo",
+          roles: ["vendor-contact"],
+          organizationName: "Vlora",
+          emailHash: niurkaHash,
+        },
+      ],
+    });
+    const card = docket.items[0];
+    assert.ok(card);
+    assert.equal(card?.subject, "Vlora");
+    assert.notEqual(card?.subject, "Unassigned");
+    assert.equal(card?.brief?.personLabel ?? null, null);
+    assert.equal(selectFounderControls(card!).confirmPerson, null);
+    assert.equal(card?.brief?.projectId ?? null, null);
+  });
+
+  it("vlorajewelry.com keeps Vlora when evidence has compatible prefix tokens", () => {
+    assert.equal(
+      vendorOrganizationFromGmailContext({
+        thread: {
+          subject: "RE: HGD x F.Grant-C025885",
+          fromEmail: "niurka@vlorajewelry.com",
+        },
+        evidenceTexts: ["Vlora lab-grown", "VloraJewelry CAD files on the mounting"],
+      }),
+      "Vlora",
+    );
+  });
+
+  it("platform newsletter mail with CATEGORY_UPDATES does not become Today or Confirm Person", () => {
+    const assoc = livePersonAssociation(
+      "newsletter-assoc",
+      "1a0d0e1f2a3b4c5d",
+      "1a0d0e1f2a3b4c5e",
+    );
+    const dated = fixtureCandidate({
+      candidateId: "newsletter-date",
+      sourceRef: "gc1|1a0d0e1f2a3b4c5d|1a0d0e1f2a3b4c5e",
+      sourceTimestamp: "2026-09-07T12:00:00.000Z",
+      candidateType: "date",
+      proposedTarget: { kind: "none" },
+      payload: {
+        kind: "date",
+        raw: "October 3",
+        isoDate: "2026-10-03",
+        precision: "day",
+        role: "mentioned",
+        sourceTimestamp: "2026-09-07T12:00:00.000Z",
+        resolutionCalendar: "source-timestamp-utc-date",
+      },
+      evidenceBasis: {
+        ruleIds: ["explicit_date"],
+        matchedText: "Join us October 3 for the next product update",
+      },
+    });
+    const thread = {
+      subject: "Supa Update Sep 2026",
+      fromDisplayName: null,
+      fromEmail: "welcome@supabase.com",
+      messages: [
+        {
+          messageId: "1a0d0e1f2a3b4c5e",
+          sentAt: "2026-09-07T12:00:00.000Z",
+          direction: "inbound" as const,
+          labelIds: ["INBOX", "CATEGORY_UPDATES"],
+        },
+      ],
+    };
+    assert.equal(dateHasActionableObligation(dated), false);
+    assert.equal(
+      isNonActionableSystemMail({ candidates: [assoc, dated], thread }),
+      true,
+    );
+    assert.equal(
+      classifyTodayCommunication({ candidates: [assoc, dated], thread }),
+      "platform",
+    );
+    const docket = todayOf([assoc, dated], {
+      threadContext: new Map([["1a0d0e1f2a3b4c5d", thread]]),
+    });
+    assert.equal(docket.items.length, 0);
+    assert.equal(
+      docket.items.some((item) =>
+        item.brief?.actions.some((action) => action.kind === "confirm_person"),
+      ),
+      false,
+    );
+    assert.doesNotMatch(
+      docket.items.map((item) => item.headline).join("\n"),
+      /October 3/,
+    );
+  });
+
+  it("actionable security or payment alerts can still surface without identity intake", () => {
+    const assoc = livePersonAssociation(
+      "alert-assoc",
+      "1a0e1f2a3b4c5d6e",
+      "1a0e1f2a3b4c5d6f",
+    );
+    const job = liveOpenJob("alert-job", "1a0e1f2a3b4c5d6e", "1a0e1f2a3b4c5d6f", {
+      subject: "Security alert: unauthorized sign-in",
+      matchedText: "Security alert: unauthorized sign-in on your account",
+      ruleIds: ["explicit_follow_up"],
+      jobKind: "request",
+    });
+    const thread = {
+      subject: "Security alert: unauthorized sign-in",
+      fromEmail: "noreply@accounts.google.com",
+      messages: [
+        {
+          messageId: "1a0e1f2a3b4c5d6f",
+          sentAt: "2026-09-07T12:00:00.000Z",
+          direction: "inbound" as const,
+          labelIds: ["INBOX", "CATEGORY_UPDATES"],
+        },
+      ],
+    };
+    assert.equal(
+      isActionableSystemAlert({ candidates: [assoc, job], thread }),
+      true,
+    );
+    assert.equal(
+      isNonActionableSystemMail({ candidates: [assoc, job], thread }),
+      false,
+    );
+    const docket = todayOf([assoc, job], {
+      threadContext: new Map([["1a0e1f2a3b4c5d6e", thread]]),
+    });
+    assert.ok(docket.items.length > 0);
+    assert.equal(selectFounderControls(docket.items[0]!).confirmPerson, null);
   });
 });
