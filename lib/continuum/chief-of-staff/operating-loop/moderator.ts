@@ -80,6 +80,7 @@ import { selectOpenEmailSources } from "./email-source";
 import { specConflictFromCandidates } from "./founder-actions";
 import { isCandidateQuietForToday } from "./quiet";
 import { resolveTodayGroupTruth } from "./group-truth";
+import { extractInboundObligation } from "./inbound-obligation";
 import {
   indexedThreadForGroup,
   threadIdForGroup,
@@ -1307,12 +1308,21 @@ function classifySituation(input: {
     watchingDetail = wait.watchingDetail;
     urgency = 0;
   } else if (yourTurn) {
+    const latestInboundHay = usable
+      .filter((row) => parseMs(row.sourceTimestamp) === parseMs(meaningful.timestamp))
+      .map((row) => haystack(row))
+      .join("\n");
+    const obligation =
+      extractInboundObligation(meaningful.summary, person) ??
+      extractInboundObligation(latestInboundHay, person);
     rankClass = "client_reply";
-    headline = "Your turn";
-    explanation = founderAsked
-      ? `${person || "The client"} answered after your last question. The latest meaningful turn is theirs.`
-      : `${person || "The client"} answered a design question. The latest meaningful turn is theirs.`;
-    recommended = "Send the recap / next step.";
+    headline = obligation?.headline ?? "Your turn";
+    explanation =
+      obligation?.explanation ??
+      (founderAsked
+        ? `${person || "The client"} answered after your last question. The latest meaningful turn is theirs.`
+        : `${person || "The client"} answered a design question. The latest meaningful turn is theirs.`);
+    recommended = obligation?.headline ?? "Send the recap / next step.";
     urgency = 1;
   } else if (newWork) {
     rankClass = "new_opportunity";

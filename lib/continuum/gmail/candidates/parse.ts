@@ -7,7 +7,8 @@ import { FINGER_SIZE_PATTERN } from "@/lib/continuum/client-memory/project-spec/
 import { validateProjectSpecCorrection } from "@/lib/continuum/client-memory/project-spec/validate";
 import { clipMatchedText } from "@/lib/continuum/candidates/identity";
 import type { EditableProjectSpecField } from "@/lib/continuum/client-memory/project-spec/types";
-import { extractCadJobIdentifiers, isStrongStructuredCadIdentifier } from "../cad-job-identifier";
+import { isStrongStructuredCadIdentifier } from "../cad-job-identifier";
+import { extractTypedIdentifiers } from "../identifier-role";
 import { extractOrderIdentifiers } from "../order-identifier";
 import { specFieldValue, type GmailCandidateProject } from "./types";
 
@@ -228,9 +229,10 @@ export function extractStructuredSpecs(
       ["explicit_supply_notes"],
     );
   });
-  for (const cad of extractCadJobIdentifiers(text)) {
-    if (!isStrongStructuredCadIdentifier(cad)) continue;
-    push("cad_job_number", cad, cad, ["exact_cad_job"]);
+  for (const hit of extractTypedIdentifiers(text)) {
+    if (hit.role !== "cadId") continue;
+    if (!isStrongStructuredCadIdentifier(hit.value)) continue;
+    push("cad_job_number", hit.value, hit.value, ["exact_cad_job"]);
   }
   for (const order of extractOrderIdentifiers(text)) {
     push("order_number", order, order, ["exact_order_number"]);
@@ -271,6 +273,20 @@ export function extractProjectContext(text: string): ContextHit[] {
       ruleIds: ["explicit_design_refinement"],
     });
   });
+  for (const hit of extractTypedIdentifiers(text)) {
+    if (hit.role === "cadId" || hit.role === "vendorOrderId") continue;
+    hits.push({
+      topic:
+        hit.role === "repairJobId"
+          ? "repair_job_id"
+          : hit.role === "productionJobId"
+            ? "production_job_id"
+            : "workshop_job_id",
+      value: hit.value,
+      matchedText: clipMatchedText(hit.value),
+      ruleIds: [`exact_${hit.role}`],
+    });
+  }
   return hits;
 }
 

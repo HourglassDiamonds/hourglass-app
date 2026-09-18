@@ -111,6 +111,7 @@ function specCandidate(
       proposedValue: "11",
       currentValue: "12.5",
       conflict: true,
+      sourceProvenance: "EXACT",
     },
     evidenceBasis: {
       ruleIds: ["spec_conflict_review_required"],
@@ -271,6 +272,7 @@ describe("Today founder disposition", () => {
         proposedValue: "7",
         currentValue: "6",
         conflict: true,
+        sourceProvenance: "EXACT",
       },
     });
     await store.replace(first);

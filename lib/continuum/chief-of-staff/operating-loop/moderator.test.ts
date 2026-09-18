@@ -64,6 +64,7 @@ function specRow(input: {
   fieldName: "metal" | "finger_size" | "cad_job_number" | "diamond_supply_notes";
   proposedValue: string;
   currentValue: string;
+  sourceProvenance?: "EXACT" | "UNKNOWN" | "DERIVED" | "THREAD_SUPPORT";
 }): ContinuumCandidate {
   return row({
     candidateId: input.candidateId,
@@ -80,11 +81,18 @@ function specRow(input: {
       proposedValue: input.proposedValue,
       currentValue: input.currentValue,
       conflict: true,
+      sourceProvenance: input.sourceProvenance,
     },
     candidateState: "conflict",
     evidenceBasis: {
-      ruleIds: ["spec_conflict_review_required"],
-      matchedText: input.proposedValue,
+      ruleIds:
+        input.fieldName === "finger_size"
+          ? ["spec_conflict_review_required", "explicit_finger_size"]
+          : ["spec_conflict_review_required"],
+      matchedText:
+        input.fieldName === "finger_size"
+          ? `finger size ${input.proposedValue}`
+          : input.proposedValue,
     },
   });
 }
@@ -662,6 +670,7 @@ describe("Concierge Executive Moderator V1", () => {
             proposedValue: "11",
             currentValue: "12.5",
             conflict: true,
+            sourceProvenance: "EXACT",
           },
           evidenceBasis: {
             ruleIds: ["spec_conflict_review_required"],
@@ -693,6 +702,7 @@ describe("Concierge Executive Moderator V1", () => {
           fieldName: "finger_size",
           proposedValue: "6",
           currentValue: "6.5",
+          sourceProvenance: "EXACT",
         }),
       ],
       jobs: [],
@@ -1157,6 +1167,7 @@ describe("Concierge Executive Moderator V1", () => {
           fieldName: "finger_size",
           proposedValue: "11",
           currentValue: "12.5",
+          sourceProvenance: "EXACT",
         }),
       ],
       projects: chickenProjects(),
@@ -2003,6 +2014,7 @@ describe("Concierge Executive Moderator V1", () => {
             proposedValue: "11",
             currentValue: "12.5",
             conflict: true,
+            sourceProvenance: "EXACT",
           },
           evidenceBasis: {
             ruleIds: ["spec_conflict_review_required", "explicit_client_request"],
@@ -2108,6 +2120,7 @@ describe("Concierge Executive Moderator V1", () => {
             proposedValue: "11",
             currentValue: "12.5",
             conflict: true,
+            sourceProvenance: "EXACT",
           },
           evidenceBasis: {
             ruleIds: ["spec_conflict_review_required", "explicit_client_request"],
@@ -2175,6 +2188,7 @@ describe("Concierge Executive Moderator V1", () => {
             proposedValue: "11",
             currentValue: "12.5",
             conflict: true,
+            sourceProvenance: "EXACT",
           },
           evidenceBasis: {
             ruleIds: ["spec_conflict_review_required"],
@@ -2226,10 +2240,9 @@ describe("Concierge Executive Moderator V1", () => {
     );
   });
 
-  it("does not treat a non-exact shipping sourceRef as the finger-size View email", () => {
+  it("does not surface UNKNOWN shipping finger-size as a Today conflict", () => {
     const vendorThread = "19ffcce49298efeb";
     const vendorMsg = "1a08c4df80609947";
-    const vendorHref = `https://mail.google.com/mail/u/0/#all/${vendorThread}/${vendorMsg}`;
     const projects = chickenProjects();
     const current = projects.get(COS_LOOP_PROJECT_A)!;
     projects.set(COS_LOOP_PROJECT_A, { ...current, gmailThreadId: vendorThread });
@@ -2265,26 +2278,10 @@ describe("Concierge Executive Moderator V1", () => {
       nowIso: COS_LOOP_NOW,
       top5: [],
     });
-    assert.equal(result.brief[0]?.specConflict?.proposedValue, "11");
-    assert.equal(result.brief[0]?.specConflict?.sourceHref, null);
-    assert.equal(result.brief[0]?.specConflict?.sourceProvenance, "UNKNOWN");
-    const openEmail = result.brief[0]?.actions.find((action) => action.kind === "open_email");
-    assert.equal(openEmail, undefined);
-    const controls = selectFounderControls({
-      origin: "brief",
-      subject: "Travis Morse / Chicken ring",
-      headline: result.brief[0]?.recommended ?? "",
-      context: result.brief[0]?.explanation ?? null,
-      job: null,
-      brief: result.brief[0]!,
-      decision: null,
-      anomaly: null,
-    });
-    assert.equal(controls.openEmail, null);
-    assert.equal(controls.emailSources.some((row) => row.href === vendorHref), false);
-    assert.deepEqual(
-      controls.actions.map((action) => action.label),
-      ["Keep 12.5", "Update to 11", "Need to verify", "×"],
+    assert.equal(result.brief.some((item) => item.specConflict?.proposedValue === "11"), false);
+    assert.equal(
+      result.brief.some((item) => /Update to 11|Keep 12\.5/i.test(item.recommended ?? "")),
+      false,
     );
   });
 });

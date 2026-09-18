@@ -21,6 +21,8 @@ import {
   exactGmailIdsFromCandidate,
   exactGmailIdsFromPointer,
 } from "@/lib/continuum/candidates/exact-gmail-ids";
+import { isStructuredSpecSourceProvenance } from "@/lib/continuum/candidates/spec-provenance";
+import { classifyIdentifierRole } from "@/lib/continuum/candidates/identifier-role";
 
 export const FOUNDER_ATTENTION_MODEL_ID = "cos-founder-attention-v1" as const;
 
@@ -1755,6 +1757,51 @@ export function specValuesMateriallyDisagree(
   return !specTextCompatible(proposed, current);
 }
 
+function stampedSpecProvenance(
+  row: ContinuumCandidate,
+): string | null {
+  const payload = payloadOf(row);
+  if (payload.kind !== "structured_spec") return null;
+  return isStructuredSpecSourceProvenance(payload.sourceProvenance)
+    ? payload.sourceProvenance
+    : null;
+}
+
+function isExplicitFingerSizeChallenge(row: ContinuumCandidate): boolean {
+  if (hasRule(row, "generated_founder_operating_brief")) return false;
+  const hay = candidateHaystack(row);
+  if (/\b(?:other ring|attachment|\.jpe?g|\.pdf|image\d{3})\b/i.test(hay)) return false;
+  return (
+    hasRule(row, "explicit_finger_size") ||
+    hasRule(row, "explicit_fractional_size") ||
+    /\b(?:finger|ring)\s+size\b/i.test(hay) ||
+    /\b(?:actually make it|change (?:the )?size to|make it|i(?:'|’)m an?)\s*(?:a\s+)?(?:[1-9]|[12]\d|30)(?:\.\d+)?\b/i.test(
+      hay,
+    )
+  );
+}
+
+function specEvidenceCanChallengeCanonical(
+  row: ContinuumCandidate,
+  fieldName: string,
+  canonical: string,
+): boolean {
+  const payload = payloadOf(row);
+  if (payload.kind !== "structured_spec") return true;
+  if (fieldName === "cad_job_number" || fieldName === "order_number") {
+    const hay = candidateHaystack(row);
+    const proposedRole = classifyIdentifierRole(payload.proposedValue, hay);
+    const canonicalRole = classifyIdentifierRole(canonical, hay);
+    return proposedRole === canonicalRole;
+  }
+  if (fieldName === "finger_size") {
+    return (
+      stampedSpecProvenance(row) === "EXACT" && isExplicitFingerSizeChallenge(row)
+    );
+  }
+  return true;
+}
+
 function canonicalSpecFor(
   row: ContinuumCandidate,
   ctx: FounderAttentionContext,
@@ -1791,6 +1838,12 @@ export function isActionableSpecConflict(
   if (!specValuesMateriallyDisagree(payload.fieldName, payload.proposedValue, canonical)) {
     return false;
   }
+  if (
+    canonical &&
+    !specEvidenceCanChallengeCanonical(row, payload.fieldName, canonical)
+  ) {
+    return false;
+  }
   const lifecycle = projectLifecycleOf(row, ctx);
   if (isProductionLifecycle(lifecycle) && payload.fieldName === "cad_job_number") {
     return false;
@@ -1800,6 +1853,15 @@ export function isActionableSpecConflict(
 
 export function isSubordinateType(row: ContinuumCandidate): boolean {
   if (specConflicts(row) || row.candidateState === "conflict") return false;
+  const payload = payloadOf(row);
+  if (
+    payload.kind === "project_context" &&
+    (payload.topic === "workshop_job_id" ||
+      payload.topic === "production_job_id" ||
+      payload.topic === "repair_job_id")
+  ) {
+    return true;
+  }
   return (
     row.candidateType === "structured_spec" ||
     row.candidateType === "date" ||

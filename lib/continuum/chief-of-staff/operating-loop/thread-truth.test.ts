@@ -462,7 +462,7 @@ describe("Today thread truth-state reconciliation", () => {
     });
     const card = docket.items[0];
     assert.ok(card);
-    assert.match(card?.headline ?? "", /recap|next step/i);
+    assert.match(card?.headline ?? "", /chain options|recap|next step/i);
   });
 
   it("founder reply with no new commitment becomes a waiting state", () => {

@@ -249,6 +249,7 @@ describe("Open Email live stored-state regression", () => {
           proposedValue: "11",
           currentValue: "12.5",
           conflict: true,
+          sourceProvenance: "EXACT",
         },
         evidenceBasis: {
           ruleIds: ["spec_conflict_review_required", "explicit_client_request"],

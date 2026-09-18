@@ -178,6 +178,12 @@ function rewriteReplyBriefing(
         "This conversation isn't attached to a person yet. Confirm who it belongs to before the next step.",
     };
   }
+  if (!/recap|your turn/i.test(headline)) {
+    return {
+      headline: finishImperative(headline),
+      context: softenGeneratedPhrasing(context) || context,
+    };
+  }
   const who = firstName(subject);
   return {
     headline: "Send the recap and next step.",
