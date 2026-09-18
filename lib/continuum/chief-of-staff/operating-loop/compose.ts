@@ -10,6 +10,7 @@ import { selectOpenProjectWork } from "@/lib/continuum/client-memory/open-projec
 import type { ProjectJob } from "@/lib/continuum/client-memory/project-jobs/types";
 import {
   isClientPersonLabel,
+  collectTodayFounderEmailHashes,
   type TodayGmailThreadContext,
   type TodayKnownPerson,
 } from "@/lib/continuum/candidates/founder-attention";
@@ -36,6 +37,18 @@ function lifecycleByProjectFrom(
   const map = new Map<string, string | null>();
   for (const [projectId, project] of projects) {
     map.set(projectId, project.lifecycleStage ?? null);
+  }
+  return map;
+}
+
+function lifecycleByGmailThreadFrom(
+  projects: ReadonlyMap<string, CosProjectContext>,
+): Map<string, string | null> {
+  const map = new Map<string, string | null>();
+  for (const project of projects.values()) {
+    const threadId = project.gmailThreadId?.trim() ?? "";
+    if (!threadId) continue;
+    map.set(threadId, project.lifecycleStage ?? null);
   }
   return map;
 }
@@ -122,6 +135,13 @@ export function composeCosOperatingLoop(
 
   const masterSprint = input.masterSprint ?? [];
   const lifecycleByProject = lifecycleByProjectFrom(projects);
+  const lifecycleByGmailThread = lifecycleByGmailThreadFrom(projects);
+  const founderEmailHashes = collectTodayFounderEmailHashes(input.knownPeople);
+  const liveTruth = {
+    lifecycleByGmailThread,
+    threadContext: input.threadContext,
+    founderEmailHashes,
+  };
 
   if (input.jobs == null) {
     return {
@@ -140,6 +160,7 @@ export function composeCosOperatingLoop(
       proposedActions: [],
       masterSprint,
       lifecycleByProject,
+      ...liveTruth,
     };
   }
 
@@ -215,6 +236,7 @@ export function composeCosOperatingLoop(
       proposedActions,
       masterSprint,
       lifecycleByProject,
+      ...liveTruth,
     };
   }
 
@@ -234,6 +256,7 @@ export function composeCosOperatingLoop(
     proposedActions,
     masterSprint,
     lifecycleByProject,
+    ...liveTruth,
   };
 }
 

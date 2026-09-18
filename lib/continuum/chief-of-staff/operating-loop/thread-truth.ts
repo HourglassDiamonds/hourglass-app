@@ -108,15 +108,29 @@ export function indexedMessagesWithInferredDirection(
   founderHashes?: ReadonlySet<string> | null,
 ): TodayGmailIndexedMessage[] {
   if (!messages?.length) return [];
+  const founders = new Set(
+    [...(founderHashes ?? [])].map((value) => value.trim().toLowerCase()).filter(Boolean),
+  );
+  const withFounder = messages.map((message) => {
+    if (message.direction === "inbound" || message.direction === "outbound") return message;
+    const hash = message.fromEmailHash?.trim().toLowerCase() || null;
+    if (hash && founders.has(hash)) return { ...message, direction: "outbound" as const };
+    return message;
+  });
   const inboundHash =
-    [...messages]
+    [...withFounder]
       .filter((row) => row.direction === "inbound")
       .sort((a, b) => parseMs(a.sentAt) - parseMs(b.sentAt))
       .at(-1)
       ?.fromEmailHash?.trim()
-      .toLowerCase() ?? null;
-  return messages.map((message) => {
-    const direction = inferIndexedMessageDirection(message, founderHashes, inboundHash);
+      .toLowerCase() ??
+    [...withFounder]
+      .map((row) => row.fromEmailHash?.trim().toLowerCase() ?? "")
+      .filter((hash): hash is string => hash.length > 0 && !founders.has(hash))
+      .at(-1) ??
+    null;
+  return withFounder.map((message) => {
+    const direction = inferIndexedMessageDirection(message, founders, inboundHash);
     return direction === message.direction ? message : { ...message, direction };
   });
 }
@@ -333,10 +347,13 @@ export function reconcileThreadTruthState(input: {
   const thread = input.thread ? { ...input.thread, messages } : null;
   const indexedInbound = latestIndexed(messages, "inbound");
   const indexedOutbound = latestIndexed(messages, "outbound");
-  const latestInboundAt =
-    indexedInbound?.sentAt ?? latestCandidateStamp(input.rows, thread, "inbound");
-  const latestOutboundAt =
-    indexedOutbound?.sentAt ?? latestCandidateStamp(input.rows, thread, "outbound");
+  const hasIndexedChronology = messages.length > 0;
+  const latestInboundAt = hasIndexedChronology
+    ? indexedInbound?.sentAt ?? null
+    : latestCandidateStamp(input.rows, thread, "inbound");
+  const latestOutboundAt = hasIndexedChronology
+    ? indexedOutbound?.sentAt ?? null
+    : latestCandidateStamp(input.rows, thread, "outbound");
   const inboundMs = parseMs(latestInboundAt);
   const outboundMs = parseMs(latestOutboundAt);
   const founderRepliedAfterInbound =

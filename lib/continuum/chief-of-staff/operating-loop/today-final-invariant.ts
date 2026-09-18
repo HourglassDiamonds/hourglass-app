@@ -1,7 +1,7 @@
 /**
  * Common final Today invariant. Historical persisted claims are revalidated
- * against current lifecycle, group truth, and type-safe conflict rules
- * immediately before Up Next ranking/render. Read-model only.
+ * against current lifecycle, recovered Gmail chronology, and type-safe
+ * conflict rules immediately before Up Next ranking/render. Read-model only.
  */
 
 import {
@@ -12,6 +12,14 @@ import {
   lifecycleAllowsHistoricalSpec,
   todayLifecycleClass,
 } from "@/lib/continuum/candidates/today-lifecycle";
+import {
+  isActionableSystemAlert,
+  isNonActionableSystemMail,
+  isPromotionalSenderInfrastructure,
+  isRecoverableExternalHumanSender,
+  type TodayGmailThreadContext,
+} from "@/lib/continuum/candidates/founder-attention";
+import { reconcileThreadTruthState } from "./thread-truth";
 import type {
   CosAnomalyItem,
   CosBriefItem,
@@ -34,6 +42,9 @@ export type TodayInvariantItem = {
 
 export type TodayFinalInvariantContext = {
   lifecycleByProject?: ReadonlyMap<string, string | null> | null;
+  lifecycleByGmailThread?: ReadonlyMap<string, string | null> | null;
+  threadContext?: ReadonlyMap<string, TodayGmailThreadContext> | null;
+  founderEmailHashes?: readonly string[] | null;
 };
 
 function projectIdOf(item: TodayInvariantItem): string | null {
@@ -46,14 +57,27 @@ function projectIdOf(item: TodayInvariantItem): string | null {
   );
 }
 
+function recoveredThreadIdOf(item: TodayInvariantItem): string | null {
+  return (
+    item.brief?.canonicalGmailThreadId?.trim() ||
+    item.brief?.recoveredGmailThreadId?.trim() ||
+    null
+  );
+}
+
 function lifecycleOf(
   item: TodayInvariantItem,
   ctx: TodayFinalInvariantContext,
 ): string | null {
   if (item.brief?.lifecycleStage) return item.brief.lifecycleStage;
   const projectId = projectIdOf(item);
-  if (!projectId) return null;
-  return ctx.lifecycleByProject?.get(projectId) ?? null;
+  if (projectId) {
+    const fromProject = ctx.lifecycleByProject?.get(projectId);
+    if (fromProject) return fromProject;
+  }
+  const threadId = recoveredThreadIdOf(item);
+  if (threadId) return ctx.lifecycleByGmailThread?.get(threadId) ?? null;
+  return null;
 }
 
 function specOf(item: TodayInvariantItem): CosSpecConflictView | null {
@@ -62,6 +86,38 @@ function specOf(item: TodayInvariantItem): CosSpecConflictView | null {
 
 function haystackOf(item: TodayInvariantItem): string {
   return `${item.headline} ${item.context ?? ""} ${item.brief?.explanation ?? ""} ${item.brief?.recommended ?? ""}`;
+}
+
+function recoveredThreadOf(
+  item: TodayInvariantItem,
+  ctx: TodayFinalInvariantContext,
+): TodayGmailThreadContext | null {
+  const threadId = recoveredThreadIdOf(item);
+  if (!threadId) return null;
+  return ctx.threadContext?.get(threadId) ?? null;
+}
+
+function recoveredChronology(
+  item: TodayInvariantItem,
+  ctx: TodayFinalInvariantContext,
+) {
+  const thread = recoveredThreadOf(item, ctx);
+  if (!thread?.messages?.length) return null;
+  return reconcileThreadTruthState({
+    rows: [],
+    thread,
+    founderEmailHashes: ctx.founderEmailHashes,
+  });
+}
+
+function isRecapOrDesignReply(item: TodayInvariantItem, hay: string): boolean {
+  return (
+    isDesignStageActionText(hay) ||
+    /identify who this is from/i.test(item.headline) ||
+    /send the recap|your turn|answered a design question|latest meaningful turn is theirs/i.test(
+      hay,
+    )
+  );
 }
 
 function persistedSpecStillCurrent(
@@ -92,6 +148,39 @@ function waitingSuppressesAction(item: TodayInvariantItem, hay: string): boolean
   return false;
 }
 
+function promotionalIdentityFailsClosed(
+  item: TodayInvariantItem,
+  ctx: TodayFinalInvariantContext,
+): boolean {
+  const thread = recoveredThreadOf(item, ctx);
+  const hay = haystackOf(item);
+  if (isActionableSystemAlert({ thread })) return false;
+  if (
+    isPromotionalSenderInfrastructure({
+      fromEmail: thread?.fromEmail,
+      fromDisplayName: thread?.fromDisplayName,
+      haystack: hay,
+    })
+  ) {
+    return true;
+  }
+  if (
+    isNonActionableSystemMail({
+      thread,
+    })
+  ) {
+    return true;
+  }
+  const confirm = item.brief?.actions.some((action) => action.kind === "confirm_person") ?? false;
+  const identityGap =
+    confirm || /identify who this is from/i.test(item.headline);
+  if (!identityGap) return false;
+  if (thread?.liveIdentityLoaded === true) {
+    return !isRecoverableExternalHumanSender({ thread, haystack: hay });
+  }
+  return false;
+}
+
 /**
  * Every Up Next lane must prove a current founder-owned obligation.
  * Persisted briefs, jobs, anomalies, and decisions that fail this contract
@@ -107,6 +196,10 @@ export function isCurrentTodayDocketItem(
   const life = todayLifecycleClass(stage);
   const hay = haystackOf(item);
   const spec = specOf(item);
+  const chronology = recoveredChronology(item, ctx);
+  const recapLike = isRecapOrDesignReply(item, hay);
+
+  if (promotionalIdentityFailsClosed(item, ctx)) return false;
 
   if (life === "queued") return false;
 
@@ -124,8 +217,22 @@ export function isCurrentTodayDocketItem(
 
   if (waitingSuppressesAction(item, hay)) return false;
 
+  if (chronology?.staleInboundSatisfied && recapLike && !chronology.remainingCommitment) {
+    return false;
+  }
+  if (
+    chronology &&
+    recapLike &&
+    !chronology.clientRepliedAfterOutbound &&
+    chronology.latestOutboundAt &&
+    !chronology.remainingCommitment
+  ) {
+    return false;
+  }
+
   if (life === "production") {
     if (isDesignStageActionText(hay) && !isProductionExceptionText(hay)) return false;
+    if (recapLike && !isProductionExceptionText(hay)) return false;
     if (item.origin === "decision" && item.decision?.recap) return false;
     if (item.origin === "anomaly" && isDesignStageActionText(hay)) return false;
   }
@@ -134,7 +241,7 @@ export function isCurrentTodayDocketItem(
     if (item.origin === "decision" && item.decision?.recap) return false;
     if (
       /send the recap/i.test(item.headline) &&
-      (item.brief?.noFounderAction || item.brief?.waitingState)
+      (item.brief?.noFounderAction || item.brief?.waitingState || chronology?.staleInboundSatisfied)
     ) {
       return false;
     }
@@ -155,11 +262,20 @@ export function isCurrentTodayDocketItem(
 
 export function filterCurrentTodayDocketItems<T extends TodayInvariantItem>(
   items: readonly T[],
-  loop: Pick<CosOperatingLoopView, "lifecycleByProject">,
+  loop: Pick<
+    CosOperatingLoopView,
+    | "lifecycleByProject"
+    | "lifecycleByGmailThread"
+    | "threadContext"
+    | "founderEmailHashes"
+  >,
 ): T[] {
   return items.filter((item) =>
     isCurrentTodayDocketItem(item, {
       lifecycleByProject: loop.lifecycleByProject,
+      lifecycleByGmailThread: loop.lifecycleByGmailThread,
+      threadContext: loop.threadContext,
+      founderEmailHashes: loop.founderEmailHashes,
     }),
   );
 }

@@ -16,6 +16,7 @@ import {
 } from "@/lib/continuum/candidates/founder-attention";
 import type { ContinuumCandidate } from "@/lib/continuum/candidates/types";
 import { collectExactGmailIds } from "@/lib/continuum/candidates/exact-gmail-ids";
+import { hashEmail } from "@/lib/continuum/client-memory/hashes";
 import { getSupabaseAdmin } from "@/lib/supabase/client";
 import {
   getContinuumGmailFounderEmail,
@@ -29,10 +30,26 @@ const MESSAGES_PER_THREAD = 80;
 const INDEX_SELECT =
   "thread_id, message_id, sent_at, direction, subject, label_ids, from_email_hash";
 
-function indexedDirection(value: unknown): TodayGmailIndexedMessage["direction"] {
+function indexedDirection(
+  value: unknown,
+  fromEmailHash?: string | null,
+  founderHashes?: ReadonlySet<string>,
+): TodayGmailIndexedMessage["direction"] {
   if (value === "outbound") return "outbound";
   if (value === "inbound") return "inbound";
+  const hash = fromEmailHash?.trim().toLowerCase() ?? "";
+  if (hash && founderHashes?.has(hash)) return "outbound";
+  if (hash) return "inbound";
   return "unknown";
+}
+
+function founderEmailHashes(): Set<string> {
+  const hashes = new Set<string>();
+  for (const email of internalEmails()) {
+    const hash = hashEmail(email)?.trim().toLowerCase() ?? "";
+    if (hash) hashes.add(hash);
+  }
+  return hashes;
 }
 
 function asLabelIds(value: unknown): string[] | undefined {
@@ -108,6 +125,7 @@ export function mergeTodayThreadContext(
 function ingestIndexedRows(
   out: Map<string, TodayGmailThreadContext>,
   data: readonly Record<string, unknown>[],
+  founderHashes?: ReadonlySet<string>,
 ): string[] {
   const threadIds: string[] = [];
   const seen = new Set<string>();
@@ -124,13 +142,14 @@ function ingestIndexedRows(
       const messageId = String(row.message_id ?? "").trim();
       const sentAt = String(row.sent_at ?? "").trim();
       if (messageId && sentAt && !messages.some((item) => item.messageId === messageId)) {
+        const fromEmailHash =
+          row.from_email_hash == null ? null : String(row.from_email_hash);
         messages.push({
           messageId,
           sentAt,
-          direction: indexedDirection(row.direction),
+          direction: indexedDirection(row.direction, fromEmailHash, founderHashes),
           labelIds: asLabelIds(row.label_ids),
-          fromEmailHash:
-            row.from_email_hash == null ? null : String(row.from_email_hash),
+          fromEmailHash,
         });
       }
     }
@@ -156,6 +175,7 @@ export async function loadIndexedTodayThreadContext(
   const client = getSupabaseAdmin();
   if (!client) return out;
 
+  const founderHashes = founderEmailHashes();
   const loadThreads = async (threadIds: readonly string[]) => {
     for (let index = 0; index < threadIds.length; index += THREAD_QUERY_CHUNK) {
       const chunk = threadIds.slice(index, index + THREAD_QUERY_CHUNK);
@@ -165,7 +185,7 @@ export async function loadIndexedTodayThreadContext(
         .in("thread_id", chunk)
         .order("sent_at", { ascending: false });
       if (error || !data) continue;
-      ingestIndexedRows(out, data as Record<string, unknown>[]);
+      ingestIndexedRows(out, data as Record<string, unknown>[], founderHashes);
     }
   };
 
@@ -186,7 +206,11 @@ export async function loadIndexedTodayThreadContext(
       .select(INDEX_SELECT)
       .in("message_id", chunk);
     if (error || !data) continue;
-    for (const threadId of ingestIndexedRows(out, data as Record<string, unknown>[])) {
+    for (const threadId of ingestIndexedRows(
+      out,
+      data as Record<string, unknown>[],
+      founderHashes,
+    )) {
       if (seenRecovered.has(threadId)) continue;
       seenRecovered.add(threadId);
       recoveredThreadIds.push(threadId);

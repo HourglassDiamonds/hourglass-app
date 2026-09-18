@@ -543,6 +543,7 @@ export function composeFounderAttentionSurface(input: {
   };
   const projectByAssociation = projectIdsByThread(
     projectBySupportedAssociation(input.candidates, input.projects),
+    input.projects,
   );
   const threadByMessageId = gmailThreadByMessageId(input.threadContext);
   const judgments = new Map<string, FounderAttentionJudgment>();

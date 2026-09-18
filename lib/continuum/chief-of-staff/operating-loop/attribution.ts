@@ -263,10 +263,25 @@ export function projectBySupportedAssociation(
 
 export function projectIdsByThread(
   association: ReadonlyMap<string, SupportedThreadProject>,
+  projects?: ReadonlyMap<string, CosProjectContext> | null,
 ): Map<string, string> {
-  return new Map(
+  const map = new Map(
     [...association].map(([threadId, row]) => [threadId, row.projectId]),
   );
+  const claimed = new Map<string, string[]>();
+  for (const project of projects?.values() ?? []) {
+    const threadId = project.gmailThreadId?.trim() ?? "";
+    if (!threadId) continue;
+    const list = claimed.get(threadId) ?? [];
+    list.push(project.projectId);
+    claimed.set(threadId, list);
+  }
+  for (const [threadId, projectIds] of claimed) {
+    if (map.has(threadId)) continue;
+    if (projectIds.length !== 1) continue;
+    map.set(threadId, projectIds[0]!);
+  }
+  return map;
 }
 
 export function vendorSourcedThread(

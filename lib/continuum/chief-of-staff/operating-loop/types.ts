@@ -5,6 +5,7 @@
  */
 
 import type { StructuredSpecSourceProvenance } from "@/lib/continuum/candidates/types";
+import type { TodayGmailThreadContext } from "@/lib/continuum/candidates/founder-attention";
 import type { OpenJobActor, OpenJobKind, ProjectJob } from "@/lib/continuum/client-memory/project-jobs/types";
 
 export const COS_OPERATING_LOOP_CONTRACT_VERSION = "cos-operating-loop-v1" as const;
@@ -293,6 +294,9 @@ export type CosOperatingLoopView = {
   proposedActions: CosProposedAction[];
   masterSprint?: readonly CosMasterSprintItem[];
   lifecycleByProject?: ReadonlyMap<string, string | null>;
+  lifecycleByGmailThread?: ReadonlyMap<string, string | null>;
+  threadContext?: ReadonlyMap<string, TodayGmailThreadContext>;
+  founderEmailHashes?: readonly string[];
 };
 
 export type CosProjectPerson = {

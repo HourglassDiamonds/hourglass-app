@@ -209,6 +209,97 @@ function emailDomain(email: string | null | undefined): string | null {
   return trimmed.slice(at + 1);
 }
 
+const PROMOTIONAL_ESP_DOMAINS = [
+  "ccsend.com",
+  "constantcontact.com",
+  "mailchimp.com",
+  "list-manage.com",
+  "campaign-archive.com",
+  "sendgrid.net",
+  "amazonses.com",
+  "mailgun.org",
+  "sparkpostmail.com",
+  "exacttarget.com",
+  "klaviyo.com",
+  "hubspotemail.net",
+  "mailerlite.com",
+  "convertkit.com",
+] as const;
+
+const PROMOTIONAL_SENDER_MARK =
+  /\b(?:via\s+(?:constant contact|mailchimp|klaviyo|hubspot)|constant contact)\b/i;
+const PROMOTIONAL_ESP_HOST =
+  /\b[\w.-]+\.(?:ccsend|constantcontact|list-manage|campaign-archive|mailchimp|sendgrid|amazonses|mailgun|sparkpostmail|exacttarget|klaviyo|hubspotemail|mailerlite|convertkit)\.[\w.-]+\b/i;
+const MATERIAL_OR_PRODUCT_NOUNS = new Set([
+  "platinum",
+  "gold",
+  "white",
+  "yellow",
+  "rose",
+  "palladium",
+  "silver",
+  "diamond",
+  "diamonds",
+  "emerald",
+  "sapphire",
+  "ruby",
+  "ring",
+  "rings",
+  "pendant",
+  "necklace",
+  "bracelet",
+  "earring",
+  "earrings",
+  "band",
+  "setting",
+  "prong",
+  "prongs",
+  "cad",
+  "render",
+  "metal",
+]);
+
+function isPromotionalEspDomain(domain: string | null | undefined): boolean {
+  if (!domain) return false;
+  return PROMOTIONAL_ESP_DOMAINS.some(
+    (esp) => domain === esp || domain.endsWith(`.${esp}`),
+  );
+}
+
+export function isPromotionalSenderInfrastructure(input: {
+  fromEmail?: string | null;
+  fromDisplayName?: string | null;
+  haystack?: string | null;
+}): boolean {
+  if (isPromotionalEspDomain(emailDomain(input.fromEmail ?? null))) return true;
+  const hay = `${input.fromEmail ?? ""} ${input.fromDisplayName ?? ""} ${input.haystack ?? ""}`;
+  return PROMOTIONAL_SENDER_MARK.test(hay) || PROMOTIONAL_ESP_HOST.test(hay);
+}
+
+export function isRecoverableExternalHumanSender(input: {
+  thread?: TodayGmailThreadContext | null;
+  haystack?: string | null;
+}): boolean {
+  if (
+    isPromotionalSenderInfrastructure({
+      fromEmail: input.thread?.fromEmail,
+      fromDisplayName: input.thread?.fromDisplayName,
+      haystack: input.haystack,
+    })
+  ) {
+    return false;
+  }
+  if (isPlatformOrSystemName(input.thread?.fromDisplayName)) return false;
+  const local = emailLocalPart(input.thread?.fromEmail ?? null);
+  if (isPlatformOrSystemName(local)) return false;
+  const name = input.thread?.fromDisplayName?.trim() ?? "";
+  if (looksLikeHumanPersonName(name)) return true;
+  const email = input.thread?.fromEmail?.trim() ?? "";
+  if (!email) return false;
+  if (isPromotionalEspDomain(emailDomain(email))) return false;
+  return true;
+}
+
 function isStudioMailboxDomain(domain: string): boolean {
   return domain === "hourglassdiamonds.com" || domain.endsWith(".hourglassdiamonds.com");
 }
@@ -545,6 +636,12 @@ export function looksLikeHumanPersonName(name: string | null | undefined): boole
   if (isPlatformOrSystemName(name)) return false;
   const tokens = name.trim().split(/\s+/);
   if (tokens.length < 1 || tokens.length > 4) return false;
+  if (
+    tokens.length === 1 &&
+    MATERIAL_OR_PRODUCT_NOUNS.has(tokens[0]!.toLowerCase().replace(/[^a-z]/g, ""))
+  ) {
+    return false;
+  }
   return tokens.every((token) => /^[A-Za-z][A-Za-z'’.\-]*$/.test(token));
 }
 
@@ -910,6 +1007,15 @@ export function isNonActionableSystemMail(input: {
   if (isCurrentOperationalSystemMail(input)) return false;
   if (isExpiredOperationalSystemMail(input)) return true;
   const hay = systemMailHaystack(input);
+  if (
+    isPromotionalSenderInfrastructure({
+      fromEmail: input.thread?.fromEmail,
+      fromDisplayName: input.thread?.fromDisplayName,
+      haystack: hay,
+    })
+  ) {
+    return true;
+  }
   const subject = input.thread?.subject ?? "";
   const labels = threadLabelIds(input.thread);
   const bulkLabel = labels.some((label) => BULK_GMAIL_LABELS.has(label));

@@ -972,7 +972,9 @@ function classifySituation(input: {
   const organizationLabel = group.organizationLabel;
   let communication = group.sourceClass;
   if (!person && group.identityKind === "vendor") communication = "vendor";
-  else if (!person && group.identityKind === "person") communication = "client";
+  else if (group.sourceClass === "vendor" || group.sourceClass === "platform") {
+    communication = group.sourceClass;
+  } else if (!person && group.identityKind === "person") communication = "client";
   else if (group.identityKind === "person") communication = "client";
   if (
     isActionableSystemAlert({ candidates: input.rows, thread }) &&
@@ -1726,7 +1728,7 @@ export function composeConciergeBrief(input: ComposeConciergeBriefInput): {
     lifecycleByProject,
   };
   const association = projectBySupportedAssociation(input.candidates, input.projects);
-  const projectByThread = projectIdsByThread(association);
+  const projectByThread = projectIdsByThread(association, input.projects);
   const threadByMessageId = gmailThreadByMessageId(input.threadContext);
   const projectVendor = vendorEvidenceFromProjects(input.projects);
   const vendorDirectory = [
