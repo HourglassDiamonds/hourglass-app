@@ -91,7 +91,7 @@ function specRow(input: {
           : ["spec_conflict_review_required"],
       matchedText:
         input.fieldName === "finger_size"
-          ? `finger size ${input.proposedValue}`
+          ? `actually make it ${input.proposedValue}`
           : input.proposedValue,
     },
   });
@@ -358,9 +358,9 @@ describe("Concierge Executive Moderator V1", () => {
       nowIso: COS_LOOP_NOW,
       top5: [],
     });
-    assert.equal(result.brief.length, 1);
-    assert.match(result.brief[0]?.headline ?? "", /Your turn/i);
-    assert.doesNotMatch(result.brief[0]?.explanation ?? "", /already answered/i);
+    assert.equal(result.brief.length, 0);
+    assert.ok(result.watching.length >= 1);
+    assert.match(result.watching[0]?.detail ?? "", /production|shop/i);
   });
 
   it("does not treat historical evidence as current", () => {
@@ -673,13 +673,18 @@ describe("Concierge Executive Moderator V1", () => {
             sourceProvenance: "EXACT",
           },
           evidenceBasis: {
-            ruleIds: ["spec_conflict_review_required"],
-            matchedText: "finger size 11",
+            ruleIds: ["spec_conflict_review_required", "explicit_finger_size"],
+            matchedText: "actually make it 11",
           },
         }),
       ],
       jobs: [],
-      projects: productionProjects(),
+      projects: (() => {
+        const projects = productionProjects();
+        const current = projects.get(COS_LOOP_PROJECT_A)!;
+        projects.set(COS_LOOP_PROJECT_A, { ...current, lifecycleStage: "design" });
+        return projects;
+      })(),
       nowIso: COS_LOOP_NOW,
       top5: [],
     });
@@ -1170,7 +1175,12 @@ describe("Concierge Executive Moderator V1", () => {
           sourceProvenance: "EXACT",
         }),
       ],
-      projects: chickenProjects(),
+      projects: (() => {
+        const projects = chickenProjects();
+        const current = projects.get(COS_LOOP_PROJECT_A)!;
+        projects.set(COS_LOOP_PROJECT_A, { ...current, lifecycleStage: "design" });
+        return projects;
+      })(),
       nowIso: COS_LOOP_NOW,
     });
     assert.equal(view.top5.length, 1);
@@ -1994,7 +2004,11 @@ describe("Concierge Executive Moderator V1", () => {
     const briefHref = `https://mail.google.com/mail/u/0/#all/${briefThread}/ccc222ddd3`;
     const projects = productionProjects();
     const current = projects.get(COS_LOOP_PROJECT_A)!;
-    projects.set(COS_LOOP_PROJECT_A, { ...current, gmailThreadId: clientThread });
+    projects.set(COS_LOOP_PROJECT_A, {
+      ...current,
+      gmailThreadId: clientThread,
+      lifecycleStage: "design",
+    });
     const result = briefOf({
       candidates: [
         row({
@@ -2018,7 +2032,7 @@ describe("Concierge Executive Moderator V1", () => {
           },
           evidenceBasis: {
             ruleIds: ["spec_conflict_review_required", "explicit_client_request"],
-            matchedText: "finger size 11",
+            matchedText: "actually make it 11",
           },
         }),
         row({
@@ -2044,7 +2058,7 @@ describe("Concierge Executive Moderator V1", () => {
               "spec_conflict_review_required",
               GENERATED_FOUNDER_OPERATING_BRIEF_RULE,
             ],
-            matchedText: "finger size 11",
+            matchedText: "actually make it 11",
           },
         }),
       ],
@@ -2083,7 +2097,11 @@ describe("Concierge Executive Moderator V1", () => {
     const vendorHref = `https://mail.google.com/mail/u/0/#all/${vendorThread}/${vendorMsg}`;
     const projects = chickenProjects();
     const current = projects.get(COS_LOOP_PROJECT_A)!;
-    projects.set(COS_LOOP_PROJECT_A, { ...current, gmailThreadId: vendorThread });
+    projects.set(COS_LOOP_PROJECT_A, {
+      ...current,
+      gmailThreadId: vendorThread,
+      lifecycleStage: "design",
+    });
     const vendors = Array.from({ length: 8 }, (_, index) =>
       row({
         candidateId: `vendor-ship-${index}`,
@@ -2124,7 +2142,7 @@ describe("Concierge Executive Moderator V1", () => {
           },
           evidenceBasis: {
             ruleIds: ["spec_conflict_review_required", "explicit_client_request"],
-            matchedText: "finger size 11",
+            matchedText: "actually make it 11",
           },
         }),
         ...vendors,
@@ -2167,7 +2185,11 @@ describe("Concierge Executive Moderator V1", () => {
     const vendorHref = `https://mail.google.com/mail/u/0/#all/${vendorThread}/${vendorMsg}`;
     const projects = chickenProjects();
     const current = projects.get(COS_LOOP_PROJECT_A)!;
-    projects.set(COS_LOOP_PROJECT_A, { ...current, gmailThreadId: vendorThread });
+    projects.set(COS_LOOP_PROJECT_A, {
+      ...current,
+      gmailThreadId: vendorThread,
+      lifecycleStage: "design",
+    });
     const result = briefOf({
       candidates: [
         row({
@@ -2192,7 +2214,7 @@ describe("Concierge Executive Moderator V1", () => {
           },
           evidenceBasis: {
             ruleIds: ["spec_conflict_review_required"],
-            matchedText: "finger size 11",
+            matchedText: "actually make it 11",
           },
         }),
         row({
@@ -2269,7 +2291,7 @@ describe("Concierge Executive Moderator V1", () => {
           },
           evidenceBasis: {
             ruleIds: ["spec_conflict_review_required"],
-            matchedText: "finger size 11",
+            matchedText: "actually make it 11",
           },
         }),
       ],

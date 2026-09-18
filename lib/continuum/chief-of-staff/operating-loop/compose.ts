@@ -30,6 +30,16 @@ import {
 import type { ActionableRanker, CosOperatingLoopView, CosProjectContext } from "./types";
 import { COS_OPERATING_LOOP_CONTRACT_VERSION, COS_TOP_5_LIMIT } from "./types";
 
+function lifecycleByProjectFrom(
+  projects: ReadonlyMap<string, CosProjectContext>,
+): Map<string, string | null> {
+  const map = new Map<string, string | null>();
+  for (const [projectId, project] of projects) {
+    map.set(projectId, project.lifecycleStage ?? null);
+  }
+  return map;
+}
+
 export type ComposeCosOperatingLoopInput = {
   jobs: readonly ProjectJob[] | null;
   summaries?: readonly ProjectDeskSummary[];
@@ -111,6 +121,7 @@ export function composeCosOperatingLoop(
   const candidates = input.candidates ?? [];
 
   const masterSprint = input.masterSprint ?? [];
+  const lifecycleByProject = lifecycleByProjectFrom(projects);
 
   if (input.jobs == null) {
     return {
@@ -128,6 +139,7 @@ export function composeCosOperatingLoop(
       anomalies: [],
       proposedActions: [],
       masterSprint,
+      lifecycleByProject,
     };
   }
 
@@ -202,6 +214,7 @@ export function composeCosOperatingLoop(
       anomalies: attention.anomalies,
       proposedActions,
       masterSprint,
+      lifecycleByProject,
     };
   }
 
@@ -220,6 +233,7 @@ export function composeCosOperatingLoop(
     anomalies: attention.anomalies,
     proposedActions,
     masterSprint,
+    lifecycleByProject,
   };
 }
 

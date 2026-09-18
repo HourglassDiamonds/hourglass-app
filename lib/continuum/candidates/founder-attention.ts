@@ -23,6 +23,12 @@ import {
 } from "@/lib/continuum/candidates/exact-gmail-ids";
 import { isStructuredSpecSourceProvenance } from "@/lib/continuum/candidates/spec-provenance";
 import { classifyIdentifierRole } from "@/lib/continuum/candidates/identifier-role";
+import {
+  isDesignStageSpecField,
+  isPersonBoundFingerSizeText,
+  isTerminalTodayLifecycle,
+  todayLifecycleClass,
+} from "@/lib/continuum/candidates/today-lifecycle";
 
 export const FOUNDER_ATTENTION_MODEL_ID = "cos-founder-attention-v1" as const;
 
@@ -1771,14 +1777,7 @@ function isExplicitFingerSizeChallenge(row: ContinuumCandidate): boolean {
   if (hasRule(row, "generated_founder_operating_brief")) return false;
   const hay = candidateHaystack(row);
   if (/\b(?:other ring|attachment|\.jpe?g|\.pdf|image\d{3})\b/i.test(hay)) return false;
-  return (
-    hasRule(row, "explicit_finger_size") ||
-    hasRule(row, "explicit_fractional_size") ||
-    /\b(?:finger|ring)\s+size\b/i.test(hay) ||
-    /\b(?:actually make it|change (?:the )?size to|make it|i(?:'|’)m an?)\s*(?:a\s+)?(?:[1-9]|[12]\d|30)(?:\.\d+)?\b/i.test(
-      hay,
-    )
-  );
+  return isPersonBoundFingerSizeText(hay);
 }
 
 function specEvidenceCanChallengeCanonical(
@@ -1824,7 +1823,7 @@ function projectLifecycleOf(
 }
 
 function isProductionLifecycle(stage: string | null | undefined): boolean {
-  return stage === "production" || stage === "in_production";
+  return todayLifecycleClass(stage) === "production";
 }
 
 export function isActionableSpecConflict(
@@ -1834,6 +1833,11 @@ export function isActionableSpecConflict(
   if (row.candidateState !== "conflict" && !specConflicts(row)) return false;
   const payload = payloadOf(row);
   if (payload.kind !== "structured_spec") return row.candidateState === "conflict";
+  const lifecycle = projectLifecycleOf(row, ctx);
+  if (isTerminalTodayLifecycle(lifecycle)) return false;
+  if (isProductionLifecycle(lifecycle) && isDesignStageSpecField(payload.fieldName)) {
+    return false;
+  }
   const canonical = canonicalSpecFor(row, ctx);
   if (!specValuesMateriallyDisagree(payload.fieldName, payload.proposedValue, canonical)) {
     return false;
@@ -1842,10 +1846,6 @@ export function isActionableSpecConflict(
     canonical &&
     !specEvidenceCanChallengeCanonical(row, payload.fieldName, canonical)
   ) {
-    return false;
-  }
-  const lifecycle = projectLifecycleOf(row, ctx);
-  if (isProductionLifecycle(lifecycle) && payload.fieldName === "cad_job_number") {
     return false;
   }
   return true;

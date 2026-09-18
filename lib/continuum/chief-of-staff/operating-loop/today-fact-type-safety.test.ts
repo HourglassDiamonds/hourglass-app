@@ -78,7 +78,7 @@ function travisProject(): Map<string, CosProjectContext> {
           { personId: TRAVIS_PERSON, displayName: "Travis Morse", role: "client" },
         ],
         isCurrent: true,
-        lifecycleStage: "production",
+        lifecycleStage: "design",
         specs: [{ fieldName: "finger_size", value: "12.5" }],
         gmailThreadId: TRAVIS_SHIP_THREAD,
       },

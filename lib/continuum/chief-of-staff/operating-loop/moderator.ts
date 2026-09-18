@@ -77,6 +77,11 @@ import {
 } from "./attribution";
 import { gmailEvidenceHrefFor, gmailEvidenceHrefFromSourceRef } from "./evidence";
 import { selectOpenEmailSources } from "./email-source";
+import {
+  isPostCompletionObligationText,
+  isProductionExceptionText,
+  todayLifecycleClass,
+} from "@/lib/continuum/candidates/today-lifecycle";
 import { specConflictFromCandidates } from "./founder-actions";
 import { isCandidateQuietForToday } from "./quiet";
 import { resolveTodayGroupTruth } from "./group-truth";
@@ -1234,12 +1239,83 @@ function classifySituation(input: {
   const stateLabel = projectStateLabel(project?.lifecycleStage);
   let urgencyLabel: string | null = null;
   let urgency = 0;
+  const life = todayLifecycleClass(project?.lifecycleStage);
+  const exceptionHay = `${meaningful.summary} ${usable.map(haystack).join("\n")}`;
+  const productionException =
+    missingVendorAck ||
+    deadlineUrg > 0 ||
+    Boolean(remaining) ||
+    isProductionExceptionText(exceptionHay);
+  const shopAsk =
+    isProductionExceptionText(exceptionHay) &&
+    !missingVendorAck &&
+    deadlineUrg === 0 &&
+    !remaining;
+  const postCompletion = isPostCompletionObligationText(exceptionHay);
+  const liveSpec = life === "terminal" || (life === "production" && !productionException)
+    ? null
+    : spec;
+  const waitingLocked =
+    !remaining &&
+    !productionException &&
+    (group.noFounderAction ||
+      group.staleInboundSatisfied ||
+      group.waitingState === "cad" ||
+      group.waitingState === "shop" ||
+      group.waitingState === "production");
 
-  if (spec) {
+  if (life === "terminal" && !postCompletion && !remaining) {
+    return null;
+  }
+
+  if (life === "terminal" && postCompletion) {
+    const obligation = extractInboundObligation(exceptionHay, person);
     rankClass = "founder_commitment";
-    headline = spec.headline;
-    explanation = spec.explanation;
-    recommended = spec.recommended;
+    headline = obligation?.headline ?? "Handle the new request.";
+    explanation = obligation?.explanation ?? clip(meaningful.summary, 220);
+    recommended = obligation?.headline ?? "Handle the new request.";
+    urgency = 1;
+  } else if (shopAsk) {
+    rankClass = "production_blocker";
+    headline = "shop needs a decision";
+    explanation = clip(meaningful.summary, 220);
+    recommended = "Respond to the shop.";
+    urgency = 1;
+  } else if (
+    life === "production" &&
+    !productionException &&
+    !quietProductionAge &&
+    !remaining &&
+    !payment &&
+    (yourTurn || Boolean(spec))
+  ) {
+    const wait = waitingCopy("production", person);
+    disposition = "watching";
+    rankClass = "informational";
+    headline = wait.headline;
+    explanation = wait.explanation;
+    recommended = wait.recommended;
+    watchingTitle = title;
+    watchingDetail = wait.watchingDetail;
+    urgency = 0;
+  } else if (waitingLocked) {
+    const wait = waitingCopy(
+      group.waitingState ?? (life === "production" ? "production" : "client"),
+      person,
+    );
+    disposition = "watching";
+    rankClass = "informational";
+    headline = wait.headline;
+    explanation = wait.explanation;
+    recommended = wait.recommended;
+    watchingTitle = title;
+    watchingDetail = wait.watchingDetail;
+    urgency = 0;
+  } else if (liveSpec) {
+    rankClass = "founder_commitment";
+    headline = liveSpec.headline;
+    explanation = liveSpec.explanation;
+    recommended = liveSpec.recommended;
     urgency = 1;
   } else if (missingVendorAck && deadlineUrg > 0) {
     rankClass = "deadline_risk";
@@ -1516,7 +1592,7 @@ function classifySituation(input: {
     openJobLabel: openJobLabelFor(attribution.projectId, input.jobs),
     projectStateLabel: projectStateLabel(project?.lifecycleStage),
     proposedAction: proposed,
-    specConflict,
+    specConflict: disposition === "brief" && liveSpec ? specConflict : null,
     personAssociationCandidateId: pendingPersonAssociationCandidateId(input.rows),
     groupedThreadId,
     recoveredGmailThreadId: group.gmailThreadId,
@@ -1607,6 +1683,7 @@ function presentBrief(
     staleInboundSatisfied: item.staleInboundSatisfied ?? false,
     noFounderAction: item.noFounderAction ?? false,
     waitingState: item.waitingState ?? null,
+    lifecycleStage: projectContext?.lifecycleStage ?? null,
   };
 }
 

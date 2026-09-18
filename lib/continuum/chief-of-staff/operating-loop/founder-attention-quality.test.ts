@@ -101,7 +101,12 @@ describe("CoS founder-attention attribution and conflict quality", () => {
         }),
       ],
       jobs: [],
-      projects: pennockProjects(),
+      projects: (() => {
+        const projects = pennockProjects();
+        const current = projects.get(COS_LOOP_PROJECT_A)!;
+        projects.set(COS_LOOP_PROJECT_A, { ...current, lifecycleStage: "design" });
+        return projects;
+      })(),
       nowIso: COS_LOOP_NOW,
       top5Ids: new Set(),
       recap: [],
@@ -341,7 +346,12 @@ describe("CoS founder-attention attribution and conflict quality", () => {
     const surface = composeFounderAttentionSurface({
       candidates: rows,
       jobs: [],
-      projects: pennockProjects(),
+      projects: (() => {
+        const projects = pennockProjects();
+        const current = projects.get(COS_LOOP_PROJECT_A)!;
+        projects.set(COS_LOOP_PROJECT_A, { ...current, lifecycleStage: "design" });
+        return projects;
+      })(),
       nowIso: COS_LOOP_NOW,
       top5Ids: new Set(),
       recap: [],

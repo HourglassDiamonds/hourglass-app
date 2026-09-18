@@ -253,7 +253,7 @@ describe("Open Email live stored-state regression", () => {
         },
         evidenceBasis: {
           ruleIds: ["spec_conflict_review_required", "explicit_client_request"],
-          matchedText: "finger size 11",
+          matchedText: "actually make it 11",
         },
       }),
       fixtureCandidate({
@@ -277,7 +277,7 @@ describe("Open Email live stored-state regression", () => {
         },
         evidenceBasis: {
           ruleIds: ["spec_conflict_review_required", "explicit_client_request"],
-          matchedText: "finger size 11",
+          matchedText: "actually make it 11",
         },
       }),
     ];
@@ -298,7 +298,7 @@ describe("Open Email live stored-state regression", () => {
           personName: "Jen Spiegel",
           people: [{ personId: COS_LOOP_PERSON_A, displayName: "Jen Spiegel", role: "client" }],
           isCurrent: true,
-          lifecycleStage: "production",
+          lifecycleStage: "design",
           gmailThreadId: LIVE_BRIEF_THREAD,
           specs: [
             { fieldName: "finger_size", value: "12.5" },

@@ -32,6 +32,7 @@ function brief(extra: Partial<CosBriefItem> = {}): CosBriefItem {
     recommended: "Confirm the current finger size.",
     stateLabel: null,
     urgencyLabel: null,
+    lifecycleStage: "design",
     actions: [
       {
         kind: "open_project",
@@ -150,6 +151,7 @@ describe("Today founder contextual actions", () => {
         canMutate: true,
         sourceHref: clientHref,
         sourceGenerated: false,
+        sourceProvenance: "EXACT",
       },
       actions: [
         {
@@ -210,6 +212,7 @@ describe("Today founder contextual actions", () => {
         canMutate: true,
         sourceHref: null,
         sourceGenerated: true,
+        sourceProvenance: "EXACT",
       },
       actions: [
         {
@@ -255,6 +258,7 @@ describe("Today founder contextual actions", () => {
         canMutate: true,
         sourceHref: clientHref,
         sourceGenerated: false,
+        sourceProvenance: "EXACT",
       },
       actions: [
         {
@@ -298,6 +302,7 @@ describe("Today founder contextual actions", () => {
           proposedValue: "fourteen",
           candidateId: "cand-1",
           canMutate: false,
+          sourceProvenance: "EXACT",
         },
       })],
     }));

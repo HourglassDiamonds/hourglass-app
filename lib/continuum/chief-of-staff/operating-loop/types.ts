@@ -249,6 +249,7 @@ export type CosBriefItem = {
   staleInboundSatisfied?: boolean;
   noFounderAction?: boolean;
   waitingState?: string | null;
+  lifecycleStage?: string | null;
 };
 
 export type CosDocketOrigin =
@@ -291,6 +292,7 @@ export type CosOperatingLoopView = {
   anomalies: CosAnomalyItem[];
   proposedActions: CosProposedAction[];
   masterSprint?: readonly CosMasterSprintItem[];
+  lifecycleByProject?: ReadonlyMap<string, string | null>;
 };
 
 export type CosProjectPerson = {

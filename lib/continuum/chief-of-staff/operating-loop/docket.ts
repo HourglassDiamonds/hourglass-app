@@ -15,6 +15,7 @@ import {
   isMeaningfulTodayActionText,
   isNoiseOnlyCandidateText,
 } from "@/lib/continuum/candidates/founder-attention";
+import { filterCurrentTodayDocketItems } from "./today-final-invariant";
 import type {
   CosAnomalyItem,
   CosBriefItem,
@@ -485,7 +486,10 @@ export function composeTodayDocket(loop: CosOperatingLoopView): CosTodayDocketVi
     mark(keys);
   }
 
-  const actionableLive = liveWork.filter(isActionableTodayDocketItem);
+  const actionableLive = filterCurrentTodayDocketItems(
+    liveWork.filter(isActionableTodayDocketItem),
+    loop,
+  );
   const unused = Math.max(0, COS_DOCKET_VISIBLE_LIMIT - actionableLive.length);
   const sprint = masterSprintDocketItems(loop, unused);
   const queue = [...actionableLive, ...sprint];

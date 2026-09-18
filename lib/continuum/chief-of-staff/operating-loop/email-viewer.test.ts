@@ -24,7 +24,6 @@ import {
   OPEN_IN_GMAIL_LABEL,
   CONFLICT_SOURCE_UNAVAILABLE_COPY,
   SOURCE_MESSAGE_UNVERIFIED_LABEL,
-  RELATED_EMAIL_LABEL,
   type SourceViewerMessageInput,
 } from "./email-viewer";
 import { presentFounderEvidence, selectFounderControls } from "./founder-actions";
@@ -70,6 +69,7 @@ function brief(extra: Partial<CosBriefItem> = {}): CosBriefItem {
     recommended: "Confirm the current finger size.",
     stateLabel: null,
     urgencyLabel: null,
+    lifecycleStage: "design",
     actions: [
       {
         kind: "open_project",
@@ -96,6 +96,7 @@ function brief(extra: Partial<CosBriefItem> = {}): CosBriefItem {
       canMutate: true,
       sourceHref: CLIENT_HREF,
       sourceGenerated: false,
+      sourceProvenance: "EXACT",
     },
     ...extra,
   };
@@ -248,6 +249,7 @@ describe("in-app email viewer presentation", () => {
         canMutate: true,
         sourceHref: conflictHref,
         sourceGenerated: false,
+        sourceProvenance: "EXACT",
       },
       evidence: [
         beat({ candidateId: "cand-other", sourceHref: CLIENT_HREF }),
@@ -325,6 +327,7 @@ describe("in-app email viewer presentation", () => {
         canMutate: true,
         sourceHref: null,
         sourceGenerated: true,
+        sourceProvenance: "EXACT",
       },
       actions: [{ kind: "open_email", label: "Open email", href: BRIEF_HREF }],
       evidence: [beat({
@@ -421,6 +424,7 @@ describe("in-app email viewer presentation", () => {
         canMutate: true,
         sourceHref: conflictHref,
         sourceGenerated: false,
+        sourceProvenance: "EXACT",
       },
       evidence: [
         beat({ candidateId: "cand-vendor", sourceHref: vendorHref, speaker: "vendor" }),
@@ -454,6 +458,7 @@ describe("in-app email viewer presentation", () => {
         canMutate: true,
         sourceHref: null,
         sourceGenerated: false,
+        sourceProvenance: "EXACT",
       },
       evidence: [
         beat({ candidateId: "cand-vendor", sourceHref: vendorHref, speaker: "vendor" }),
@@ -516,24 +521,10 @@ describe("in-app email viewer presentation", () => {
         }),
       ],
     });
-    const item = composeTodayDocket(loop({ brief: [itemBrief] })).items[0]!;
-    const controls = selectFounderControls(item);
-    assert.equal(controls.openEmail, null);
-    assert.equal(controls.emailSources.length, 0);
-    assert.equal(controls.relatedEmailSources.some((row) => row.href === vendorHref), true);
-    const request = composeSourceViewerRequest(
-      item,
-      controls.emailSources,
-      presentFounderEvidence(item),
-      controls.relatedEmailSources,
-    );
-    assert.equal(request?.provenanceLimited, true);
-    assert.equal(request?.sources.length, 0);
-    assert.match(request?.why ?? "", new RegExp(SOURCE_MESSAGE_UNVERIFIED_LABEL));
-    assert.equal(RELATED_EMAIL_LABEL, "Related email");
+    const docket = composeTodayDocket(loop({ brief: [itemBrief] }));
+    assert.equal(docket.items.length, 0);
     const html = renderToStaticMarkup(createElement(ChiefOfStaffToday, { loop: loop({ brief: [itemBrief] }) }));
-    assert.match(html, new RegExp(VIEW_EMAIL_LABEL));
-    assert.match(html, /data-cos-source-limited/);
+    assert.doesNotMatch(html, /Confirm the finger size/);
     assert.doesNotMatch(html, /data-cos-gmail-href="https:\/\/mail\.google\.com\/mail\/u\/0\/#all\/111222333a\/eee444fff5"/);
   });
 });

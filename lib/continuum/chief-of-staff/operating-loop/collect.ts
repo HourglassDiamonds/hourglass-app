@@ -5,6 +5,7 @@
 
 import { isUnresolvedOpenJobState } from "@/lib/continuum/client-memory/project-jobs/validate";
 import type { ProjectJob } from "@/lib/continuum/client-memory/project-jobs/types";
+import { isTerminalTodayLifecycle } from "@/lib/continuum/candidates/today-lifecycle";
 import type { ActionableWork, CosProjectContext } from "./types";
 
 function isDeferredQuiet(job: ProjectJob, nowMs: number): boolean {
@@ -32,6 +33,12 @@ export function collectCanonicalActionables(input: {
     if (seen.has(job.jobId)) continue;
     seen.add(job.jobId);
     const project = input.projects.get(job.projectId);
+    if (isTerminalTodayLifecycle(project?.lifecycleStage)) {
+      const hay = `${job.subject} ${job.detail ?? ""}`;
+      if (!/\b(repair|resize|service|follow[- ]up|payment|invoice)\b/i.test(hay)) {
+        continue;
+      }
+    }
     const associatedName = job.associatedPersonId
       ? (project?.people?.find((row) => row.personId === job.associatedPersonId)
           ?.displayName ?? null)

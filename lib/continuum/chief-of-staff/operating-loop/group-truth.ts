@@ -173,7 +173,11 @@ export function resolveTodayGroupTruth(input: {
     sourceClass !== "platform"
   ) {
     sourceClass = "vendor";
-  } else if (identity.kind === "person" && isClientPersonLabel(identity.personLabel)) {
+  } else if (
+    identity.kind === "person" &&
+    isClientPersonLabel(identity.personLabel) &&
+    sourceClass !== "vendor"
+  ) {
     sourceClass = "client";
   }
   const chronology = reconcileGroupTruthState({

@@ -35,15 +35,15 @@ import { COS_SPRINT_CLEAR_COPY } from "./master-sprint";
 
 function briefItem(extra: Partial<CosBriefItem> = {}): CosBriefItem {
   return {
-    id: "brief-travis",
+    id: "brief-live",
     rank: 1,
-    rankClass: "deadline_risk",
+    rankClass: "client_reply",
     personLabel: "Travis Morse",
     projectTitle: "Chicken ring",
     projectId: COS_LOOP_PROJECT_A,
-    headline: "Finger size still disagrees",
-    explanation: "Finger size differs: approved 12.5 vs latest evidence 11. Older spec notes were superseded.",
-    recommended: "Confirm the current finger size.",
+    headline: "Send chain options.",
+    explanation: "They asked for chain options and pricing.",
+    recommended: "Send chain options and pricing.",
     stateLabel: null,
     urgencyLabel: null,
     actions: [],
@@ -52,16 +52,30 @@ function briefItem(extra: Partial<CosBriefItem> = {}): CosBriefItem {
     projectStateLabel: null,
     candidateIds: ["cand-1"],
     proposedAction: null,
+    specConflict: null,
+    ...extra,
+  };
+}
+
+function specBriefItem(extra: Partial<CosBriefItem> = {}): CosBriefItem {
+  return briefItem({
+    id: "brief-size",
+    rankClass: "founder_commitment",
+    headline: "Finger size still disagrees",
+    explanation: "Finger size differs: approved 6.5 vs latest evidence 7. Older spec notes were superseded.",
+    recommended: "Confirm the current finger size.",
+    lifecycleStage: "design",
     specConflict: {
       fieldName: "finger_size",
       fieldLabel: "Finger size",
-      canonicalValue: "12.5",
-      proposedValue: "11",
+      canonicalValue: "6.5",
+      proposedValue: "7",
       candidateId: "cand-1",
       canMutate: true,
+      sourceProvenance: "EXACT",
     },
     ...extra,
-  };
+  });
 }
 
 function jobItem(extra: Partial<CosTop5Item> = {}): CosTop5Item {
@@ -145,11 +159,11 @@ describe("Today Chief of Staff docket", () => {
     }));
     assert.equal(docket.showCaughtUp, false);
     assert.equal(docket.items.length, 1);
-    assert.equal(docket.items[0]?.headline, "Confirm the finger size before this moves forward.");
+    assert.equal(docket.items[0]?.headline, "Send chain options and pricing.");
     assert.equal(docket.items[0]?.subject, "Travis Morse / Chicken ring");
     assert.equal(
       docket.items[0]?.context,
-      "The project says 12.5, but the latest evidence says 11. I'd verify the current finger size before production.",
+      "They asked for chain options and pricing.",
     );
     assert.equal(docket.title, COS_DOCKET_TITLE);
   });
@@ -187,7 +201,7 @@ describe("Today Chief of Staff docket", () => {
       createElement(ChiefOfStaffToday, {
         loop: loopOf({
           status: "active",
-          brief: [briefItem({
+          brief: [specBriefItem({
             actions: [
               { kind: "add_to_top5", label: "Add to Top 5", href: "/executive-dashboard/concierge/action/new?project=bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb" },
               { kind: "open_email", label: "Open email", href: "https://mail.google.com/mail/u/0/#all/abc123def0" },
@@ -202,11 +216,11 @@ describe("Today Chief of Staff docket", () => {
     assert.match(html, /Up next/i);
     assert.match(html, /1 · Travis Morse \/ Chicken ring/i);
     assert.match(html, /Confirm the finger size before this moves forward/);
-    assert.match(html, /The project says 12\.5, but the latest evidence says 11/);
+    assert.match(html, /The project says 6\.5, but the latest evidence says 7/);
     assert.doesNotMatch(html, /differs: approved|meaningful turn|superseded/i);
     assert.doesNotMatch(html, /Review evidence/);
-    assert.match(html, /Keep 12\.5/);
-    assert.match(html, /Update to 11/);
+    assert.match(html, /Keep 6\.5/);
+    assert.match(html, /Update to 7/);
     assert.match(html, /Need to verify/);
     assert.match(html, /<div[^>]*data-cos-founder-family="spec_conflict"/);
     assert.match(html, /2 · Lee/);

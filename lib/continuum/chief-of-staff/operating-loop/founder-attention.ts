@@ -57,6 +57,7 @@ import {
   isStaleInboundReplyCandidate,
   reconcileGroupTruthState,
 } from "./thread-truth";
+import { isTerminalTodayLifecycle, todayLifecycleClass } from "@/lib/continuum/candidates/today-lifecycle";
 import type {
   CosAnomalyItem,
   CosFounderAttentionItem,
@@ -605,6 +606,12 @@ export function composeFounderAttentionSurface(input: {
     const visibleAfterTruth = group.staleInboundSatisfied
       ? visible.filter((row) => !isStaleInboundReplyCandidate(row, truth, thread))
       : visible;
+    const stage = groupedProjectId
+      ? (input.projects.get(groupedProjectId)?.lifecycleStage ?? null)
+      : null;
+    if (isTerminalTodayLifecycle(stage) && !group.remainingFounderCommitment) {
+      continue;
+    }
     if (
       ((group.staleInboundSatisfied ||
         group.noFounderAction ||
@@ -677,6 +684,9 @@ export function composeFounderAttentionSurface(input: {
   }
 
   const recapItems: RankedAttention[] = input.recap.flatMap((row) => {
+    const stage = row.projectId ? (input.projects.get(row.projectId)?.lifecycleStage ?? null) : null;
+    const life = todayLifecycleClass(stage);
+    if (life === "terminal" || life === "production" || life === "cad") return [];
     const attribution = resolveAttribution([], row.projectId, input.projects);
     return [
       {
