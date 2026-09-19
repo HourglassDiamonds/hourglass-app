@@ -35,7 +35,10 @@ import {
   withGeneratedFounderOperatingBriefRule,
 } from "./generated-source";
 import { packGmailCandidateSourceRef } from "./source-ref";
-import { attachStructuredSpecProvenance } from "./spec-provenance";
+import {
+  attachStructuredSpecProvenance,
+  authorOwnedHaystack,
+} from "./spec-provenance";
 import { attachObservedSupportingGmailProvenance } from "./supporting-source";
 import {
   assignReconciledCandidates,
@@ -86,6 +89,10 @@ function draftsFromEvidence(
   const sourceRef = packed.sourceRef;
   const sourceTimestamp = evidence.indexed.sentAt;
   const haystack = haystackOf(evidence.indexed.subject, evidence.plaintext ?? null);
+  const ownHaystack = authorOwnedHaystack(
+    evidence.indexed.subject,
+    evidence.plaintext ?? null,
+  );
   const personHit = resolvePersonHit({
     fromEmailHash: evidence.fromEmailHash ?? evidence.indexed.fromEmailHash,
     threadId: evidence.indexed.threadId,
@@ -368,7 +375,7 @@ function draftsFromEvidence(
     personHit.person ?? personHit.possiblePerson,
     evidence.indexed.direction,
   );
-  for (const job of extractOpenJobs(haystack, evidence.indexed.direction, role)) {
+  for (const job of extractOpenJobs(ownHaystack, evidence.indexed.direction, role)) {
     drafts.push({
       ...base,
       candidateId: "",
@@ -392,7 +399,7 @@ function draftsFromEvidence(
     });
   }
 
-  for (const date of extractDates(haystack, sourceTimestamp)) {
+  for (const date of extractDates(ownHaystack, sourceTimestamp)) {
     if (date.followUp) {
       drafts.push({
         ...base,

@@ -43,6 +43,7 @@ import {
   type TodayKnownPerson,
 } from "@/lib/continuum/candidates/founder-attention";
 import {
+  associatedGmailThreadsByProject,
   projectBySupportedAssociation,
   projectIdsByThread,
   resolveProjectAttribution,
@@ -541,8 +542,17 @@ export function composeFounderAttentionSurface(input: {
     specByProject,
     lifecycleByProject,
   };
+  const association = projectBySupportedAssociation(
+    input.candidates,
+    input.projects,
+    input.threadContext,
+  );
   const projectByAssociation = projectIdsByThread(
-    projectBySupportedAssociation(input.candidates, input.projects),
+    association,
+    input.projects,
+  );
+  const associatedByProject = associatedGmailThreadsByProject(
+    association,
     input.projects,
   );
   const threadByMessageId = gmailThreadByMessageId(input.threadContext);
@@ -596,6 +606,9 @@ export function composeFounderAttentionSurface(input: {
       vendorDirectory: input.vendorDirectory,
       evidenceTexts: input.evidenceTexts,
       nowIso: input.nowIso,
+      associatedThreadIds: groupedProjectId
+        ? (associatedByProject.get(groupedProjectId) ?? null)
+        : null,
     });
     const truth = reconcileGroupTruthState({
       key,
@@ -603,6 +616,9 @@ export function composeFounderAttentionSurface(input: {
       threadContext: input.threadContext,
       project: groupedProjectId ? (input.projects.get(groupedProjectId) ?? null) : null,
       jobs: input.jobs,
+      associatedThreadIds: groupedProjectId
+        ? (associatedByProject.get(groupedProjectId) ?? null)
+        : null,
     });
     const visibleAfterTruth = group.staleInboundSatisfied
       ? visible.filter((row) => !isStaleInboundReplyCandidate(row, truth, thread))

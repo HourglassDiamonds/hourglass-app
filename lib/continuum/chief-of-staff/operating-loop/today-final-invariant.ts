@@ -19,7 +19,7 @@ import {
   isRecoverableExternalHumanSender,
   type TodayGmailThreadContext,
 } from "@/lib/continuum/candidates/founder-attention";
-import { reconcileThreadTruthState } from "./thread-truth";
+import { reconcileGroupTruthState } from "./thread-truth";
 import type {
   CosAnomalyItem,
   CosBriefItem,
@@ -43,6 +43,7 @@ export type TodayInvariantItem = {
 export type TodayFinalInvariantContext = {
   lifecycleByProject?: ReadonlyMap<string, string | null> | null;
   lifecycleByGmailThread?: ReadonlyMap<string, string | null> | null;
+  associatedGmailThreadsByProject?: ReadonlyMap<string, readonly string[]> | null;
   threadContext?: ReadonlyMap<string, TodayGmailThreadContext> | null;
   founderEmailHashes?: readonly string[] | null;
 };
@@ -102,11 +103,18 @@ function recoveredChronology(
   ctx: TodayFinalInvariantContext,
 ) {
   const thread = recoveredThreadOf(item, ctx);
-  if (!thread?.messages?.length) return null;
-  return reconcileThreadTruthState({
+  const threadId = recoveredThreadIdOf(item);
+  const projectId = projectIdOf(item);
+  const associated = projectId
+    ? (ctx.associatedGmailThreadsByProject?.get(projectId) ?? null)
+    : null;
+  if (!thread?.messages?.length && !associated?.length) return null;
+  return reconcileGroupTruthState({
+    key: threadId ? `thread:${threadId}` : projectId ? `project:${projectId}` : "thread:",
     rows: [],
-    thread,
+    threadContext: ctx.threadContext,
     founderEmailHashes: ctx.founderEmailHashes,
+    associatedThreadIds: associated,
   });
 }
 
@@ -266,6 +274,7 @@ export function filterCurrentTodayDocketItems<T extends TodayInvariantItem>(
     CosOperatingLoopView,
     | "lifecycleByProject"
     | "lifecycleByGmailThread"
+    | "associatedGmailThreadsByProject"
     | "threadContext"
     | "founderEmailHashes"
   >,
@@ -274,6 +283,7 @@ export function filterCurrentTodayDocketItems<T extends TodayInvariantItem>(
     isCurrentTodayDocketItem(item, {
       lifecycleByProject: loop.lifecycleByProject,
       lifecycleByGmailThread: loop.lifecycleByGmailThread,
+      associatedGmailThreadsByProject: loop.associatedGmailThreadsByProject,
       threadContext: loop.threadContext,
       founderEmailHashes: loop.founderEmailHashes,
     }),

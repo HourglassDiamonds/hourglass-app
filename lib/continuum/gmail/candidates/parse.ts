@@ -310,7 +310,7 @@ export function extractNotes(text: string): NoteHit[] {
 
 export type JobHit = {
   jobKind: "commitment" | "request" | "blocked_issue" | "required_action";
-  waitingOnActor: "founder" | "vendor";
+  waitingOnActor: "founder" | "vendor" | "client";
   subject: string;
   matchedText: string;
   ruleIds: readonly string[];
@@ -337,6 +337,16 @@ export function extractOpenJobs(
         subject: clipMatchedText(match[0], 160),
         matchedText: clipMatchedText(match[0]),
         ruleIds: ["explicit_founder_commitment"],
+      });
+    });
+  } else if (direction === "inbound") {
+    eachMatch(text, FOUNDER_COMMITMENT, (match) => {
+      push({
+        jobKind: "commitment",
+        waitingOnActor: role === "vendor-contact" ? "vendor" : "client",
+        subject: clipMatchedText(match[0], 160),
+        matchedText: clipMatchedText(match[0]),
+        ruleIds: ["explicit_external_commitment"],
       });
     });
   }

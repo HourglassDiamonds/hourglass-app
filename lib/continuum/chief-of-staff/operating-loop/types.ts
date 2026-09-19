@@ -295,6 +295,7 @@ export type CosOperatingLoopView = {
   masterSprint?: readonly CosMasterSprintItem[];
   lifecycleByProject?: ReadonlyMap<string, string | null>;
   lifecycleByGmailThread?: ReadonlyMap<string, string | null>;
+  associatedGmailThreadsByProject?: ReadonlyMap<string, readonly string[]>;
   threadContext?: ReadonlyMap<string, TodayGmailThreadContext>;
   founderEmailHashes?: readonly string[];
 };

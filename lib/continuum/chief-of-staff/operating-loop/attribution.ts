@@ -12,6 +12,7 @@ import {
   payloadOf,
   projectByThreadFromCandidates,
   sourceThreadId,
+  type TodayGmailThreadContext,
 } from "@/lib/continuum/candidates/founder-attention";
 import { coerceGmailThreadId } from "@/lib/continuum/client-memory/gmail";
 import {
@@ -201,6 +202,7 @@ function setUnique(
 export function projectBySupportedAssociation(
   rows: readonly ContinuumCandidate[],
   projects: ReadonlyMap<string, CosProjectContext>,
+  threadContext?: ReadonlyMap<string, TodayGmailThreadContext> | null,
 ): Map<string, SupportedThreadProject> {
   const map = new Map<string, SupportedThreadProject>();
   const explicit = projectByThreadFromCandidates(rows);
@@ -215,6 +217,7 @@ export function projectBySupportedAssociation(
   const threadIds = new Set(
     rows.map(sourceThreadId).filter((id): id is string => Boolean(id)),
   );
+  for (const threadId of threadContext?.keys() ?? []) threadIds.add(threadId);
   for (const threadId of threadIds) {
     if (map.has(threadId)) continue;
     const coerced = coerceGmailThreadId(threadId);
@@ -243,7 +246,11 @@ export function projectBySupportedAssociation(
 
   for (const threadId of threadIds) {
     if (map.has(threadId)) continue;
-    const ids = identifierProjectIds(threadHaystack(rows, threadId), projects);
+    const hay = [
+      threadHaystack(rows, threadId),
+      threadContext?.get(threadId)?.subject ?? "",
+    ].join("\n");
+    const ids = identifierProjectIds(hay, projects);
     setUnique(map, threadId, ids, "identifier");
   }
 
@@ -259,6 +266,29 @@ export function projectBySupportedAssociation(
   }
 
   return map;
+}
+
+export function associatedGmailThreadsByProject(
+  association: ReadonlyMap<string, SupportedThreadProject>,
+  projects: ReadonlyMap<string, CosProjectContext>,
+): Map<string, string[]> {
+  const map = new Map<string, Set<string>>();
+  const add = (projectId: string, threadId: string | null | undefined) => {
+    const id = threadId?.trim() ?? "";
+    if (!projectId || !id) return;
+    const set = map.get(projectId) ?? new Set();
+    set.add(id);
+    map.set(projectId, set);
+  };
+  for (const project of projects.values()) {
+    add(project.projectId, project.gmailThreadId);
+  }
+  for (const [threadId, row] of association) {
+    add(row.projectId, threadId);
+  }
+  return new Map(
+    [...map].map(([projectId, threadIds]) => [projectId, [...threadIds]]),
+  );
 }
 
 export function projectIdsByThread(

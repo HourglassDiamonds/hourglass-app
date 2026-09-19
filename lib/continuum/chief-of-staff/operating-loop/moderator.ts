@@ -68,6 +68,7 @@ import {
 } from "@/lib/continuum/client-memory/read/presentation";
 import { currentProjectFocusHref } from "@/lib/continuum/client-memory/open-projects/present";
 import {
+  associatedGmailThreadsByProject,
   pickClientPerson,
   projectBySupportedAssociation,
   projectIdsByThread,
@@ -83,10 +84,12 @@ import {
   todayLifecycleClass,
 } from "@/lib/continuum/candidates/today-lifecycle";
 import { specConflictFromCandidates } from "./founder-actions";
+import { authorOwnedText } from "@/lib/continuum/gmail/candidates/spec-provenance";
 import { isCandidateQuietForToday } from "./quiet";
 import { resolveTodayGroupTruth } from "./group-truth";
 import { extractInboundObligation } from "./inbound-obligation";
 import {
+  candidateDirection,
   indexedThreadForGroup,
   threadIdForGroup,
   type ThreadWaitingKind,
@@ -450,14 +453,21 @@ function isBoilerplate(row: ContinuumCandidate): boolean {
 function speakerOf(
   row: ContinuumCandidate,
   fallback: CosBriefSpeaker = "client",
+  thread?: TodayGmailThreadContext | null,
 ): CosBriefSpeaker {
-  if (hasRule(row, "explicit_founder_commitment") || FOUNDER_OUTBOUND.test(haystack(row))) {
+  const direction = candidateDirection(row, thread);
+  if (direction === "outbound") return "founder";
+  const own = authorOwnedText(haystack(row));
+  if (hasRule(row, "explicit_external_commitment")) {
+    return "client";
+  }
+  if (hasRule(row, "explicit_founder_commitment") || FOUNDER_OUTBOUND.test(own)) {
     return "founder";
   }
-  if (FOUNDER_QUESTION.test(haystack(row)) && hasRule(row, "explicit_follow_up")) {
+  if (FOUNDER_QUESTION.test(own) && hasRule(row, "explicit_follow_up")) {
     return "founder";
   }
-  if (FOUNDER_QUESTION.test(haystack(row)) && payloadOf(row).kind === "open_job") {
+  if (FOUNDER_QUESTION.test(own) && payloadOf(row).kind === "open_job") {
     const payload = payloadOf(row);
     if (payload.kind === "open_job" && payload.waitingOnActor === "client") return "founder";
   }
@@ -493,6 +503,7 @@ function beatKind(
   row: ContinuumCandidate,
   ctx: FounderAttentionContext,
   fallback: CosBriefSpeaker = "client",
+  thread?: TodayGmailThreadContext | null,
 ): BeatKind {
   if (isBoilerplate(row)) return "boilerplate";
   if (
@@ -513,7 +524,7 @@ function beatKind(
   }
   if (isNoiseOnlyCandidate(row)) return "other";
   if (DEADLINE_SIGNAL.test(haystack(row))) return "deadline";
-  const speaker = speakerOf(row, fallback);
+  const speaker = speakerOf(row, fallback, thread);
   if (speaker === "vendor") {
     if (VENDOR_ACK.test(haystack(row))) return "vendor_ack";
     return "commitment";
@@ -560,8 +571,9 @@ function beatsFor(
   personName: string | null,
   vendorName: string,
   fallback: CosBriefSpeaker = "client",
+  thread?: TodayGmailThreadContext | null,
 ): InternalBeat[] {
-  const primary = toBeat(row, ctx, personName, vendorName, fallback);
+  const primary = toBeat(row, ctx, personName, vendorName, fallback, thread);
   const supporting = row.evidenceBasis.supportingSourceRefs ?? [];
   if (supporting.length === 0) return [primary];
   const extra: InternalBeat[] = [];
@@ -587,8 +599,9 @@ function toBeat(
   personName: string | null,
   vendorName: string,
   fallback: CosBriefSpeaker = "client",
+  thread?: TodayGmailThreadContext | null,
 ): InternalBeat {
-  const speaker = speakerOf(row, fallback);
+  const speaker = speakerOf(row, fallback, thread);
   const other = counterpart(speaker, personName, vendorName);
   const from = speakerLabel(speaker, personName, vendorName);
   const label = other ? `${formatEvidenceDay(row.sourceTimestamp)} · ${from} → ${other}` : `${formatEvidenceDay(row.sourceTimestamp)} · ${from}`;
@@ -600,7 +613,7 @@ function toBeat(
     sourceHref: gmailEvidenceHrefFor(row),
     candidateId: row.candidateId,
     generatedSource: hasRule(row, GENERATED_FOUNDER_OPERATING_BRIEF_RULE) || undefined,
-    kind: beatKind(row, ctx, fallback),
+    kind: beatKind(row, ctx, fallback, thread),
     timestamp: row.sourceTimestamp,
     historical: isHistoricalRediscovery(row, ctx),
     superseded: row.candidateState === "superseded" || row.reviewStatus === "discarded",
@@ -911,6 +924,7 @@ function classifySituation(input: {
   vendorDirectory?: readonly string[];
   evidenceTexts?: readonly string[];
   knownPeople?: readonly TodayKnownPerson[];
+  associatedByProject?: ReadonlyMap<string, readonly string[]>;
 }): RankedSituation | null {
   const groupedThreadId = situationThreadId(input.key, input.rows, input.threadContext);
   const groupedProjectId = input.key.startsWith("project:")
@@ -965,6 +979,9 @@ function classifySituation(input: {
     evidenceTexts: localEvidence.evidenceTexts,
     people: identityPeople,
     nowIso: input.ctx.nowIso,
+    associatedThreadIds: attribution.projectId
+      ? (input.associatedByProject?.get(attribution.projectId) ?? null)
+      : null,
   });
   const person =
     (isClientPersonLabel(attribution.personName) ? attribution.personName : null) ||
@@ -1005,7 +1022,7 @@ function classifySituation(input: {
     (a, b) => parseMs(a.sourceTimestamp) - parseMs(b.sourceTimestamp),
   );
   const beats = sorted.flatMap((row) =>
-    beatsFor(row, input.ctx, person, vendorName, fallbackSpeaker),
+    beatsFor(row, input.ctx, person, vendorName, fallbackSpeaker, thread),
   );
   const production = isProductionStage(project?.lifecycleStage);
   const vendorHandled =
@@ -1103,7 +1120,7 @@ function classifySituation(input: {
   const missingVendorAck = production && founderSentToShop && !vendorAckAfterSend;
   const payment = beats.some((beat) => !beat.superseded && beat.kind === "payment");
   const deadlineHits = usable.filter(
-    (row) => beatKind(row, input.ctx, fallbackSpeaker) === "deadline",
+    (row) => beatKind(row, input.ctx, fallbackSpeaker, thread) === "deadline",
   );
   const deadlineUrg = deadlineUrgency(deadlineHits, input.nowMs);
   const historical = beats.filter((beat) => beat.historical && !beat.superseded);
@@ -1157,7 +1174,8 @@ function classifySituation(input: {
     input.nowMs - parseMs(meaningful.timestamp) >= PRODUCTION_STATUS_MS;
   const founderCommitment =
     Boolean(remaining) ||
-    (meaningful.kind === "commitment" &&
+    (!group.declinedCurrentBeat &&
+      meaningful.kind === "commitment" &&
       meaningful.speaker === "founder" &&
       !input.jobs.some(
         (job) =>
@@ -1180,6 +1198,13 @@ function classifySituation(input: {
     (beat) => beat.kind === "boilerplate" || beat.superseded,
   );
   if (allBoilerplate) return null;
+  if (
+    group.declinedCurrentBeat &&
+    !remaining &&
+    !attribution.projectId
+  ) {
+    return null;
+  }
 
   const commercial =
     spec != null ||
@@ -1727,8 +1752,16 @@ export function composeConciergeBrief(input: ComposeConciergeBriefInput): {
     specByProject,
     lifecycleByProject,
   };
-  const association = projectBySupportedAssociation(input.candidates, input.projects);
+  const association = projectBySupportedAssociation(
+    input.candidates,
+    input.projects,
+    input.threadContext,
+  );
   const projectByThread = projectIdsByThread(association, input.projects);
+  const associatedByProject = associatedGmailThreadsByProject(
+    association,
+    input.projects,
+  );
   const threadByMessageId = gmailThreadByMessageId(input.threadContext);
   const projectVendor = vendorEvidenceFromProjects(input.projects);
   const vendorDirectory = [
@@ -1764,6 +1797,7 @@ export function composeConciergeBrief(input: ComposeConciergeBriefInput): {
       vendorDirectory,
       evidenceTexts,
       knownPeople: input.knownPeople,
+      associatedByProject,
     });
     if (situation) situations.push(situation);
   }

@@ -28,6 +28,7 @@ import { CANDIDATE_PARSER_GMAIL_V1 } from "@/lib/continuum/candidates/types";
 import { GMAIL_SOURCE_SYSTEM } from "@/lib/continuum/client-memory/gmail/types";
 import { packGmailCandidateSourceRef } from "./source-ref";
 import { haystackOf } from "./parse";
+import { authorOwnedHaystack } from "./spec-provenance";
 
 function threadIdOf(row: Pick<ContinuumCandidateDraft, "sourceRef">): string | null {
   return parseGmailCandidateSourceRef(row.sourceRef)?.threadId ?? null;
@@ -204,7 +205,7 @@ export function reconcileThreadCandidates(input: {
       outbound
     ) {
       const waiting = extractWaitingOnClient(
-        haystackOf(outbound.indexed.subject, outbound.plaintext ?? null),
+        authorOwnedHaystack(outbound.indexed.subject, outbound.plaintext ?? null),
       );
       if (waiting) continue;
     }
@@ -225,7 +226,7 @@ export function reconcileThreadCandidates(input: {
       .filter((row) =>
         Boolean(
           extractWaitingOnClient(
-            haystackOf(row.indexed.subject, row.plaintext ?? null),
+            authorOwnedHaystack(row.indexed.subject, row.plaintext ?? null),
           ),
         ),
       );
@@ -242,7 +243,7 @@ export function reconcileThreadCandidates(input: {
       continue;
     }
     const waiting = extractWaitingOnClient(
-      haystackOf(outbound.indexed.subject, outbound.plaintext ?? null),
+      authorOwnedHaystack(outbound.indexed.subject, outbound.plaintext ?? null),
     );
     if (!waiting) continue;
     const packed = packGmailCandidateSourceRef({

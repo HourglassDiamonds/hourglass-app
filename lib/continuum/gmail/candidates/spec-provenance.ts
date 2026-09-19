@@ -26,6 +26,17 @@ const FORWARDED = /^Begin forwarded message:\s*$/i;
 const OUTLOOK_FROM = /^From:\s.+/i;
 const OUTLOOK_SENT = /^(?:Sent|Date):\s.+/i;
 
+export function authorOwnedText(plaintext: string | null | undefined): string {
+  return splitOwnAndQuotedText(plaintext).own;
+}
+
+export function authorOwnedHaystack(
+  subject: string | null,
+  plaintext: string | null,
+): string {
+  return haystackOf(subject, splitOwnAndQuotedText(plaintext).own || null);
+}
+
 export function splitOwnAndQuotedText(plaintext: string | null | undefined): {
   own: string;
   quoted: string;

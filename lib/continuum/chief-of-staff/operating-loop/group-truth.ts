@@ -52,6 +52,7 @@ export type TodayGroupTruth = {
   identityKind: TodayResolvedIdentity["kind"];
   staleInboundSatisfied: boolean;
   remainingFounderCommitment: RemainingFounderCommitment | null;
+  declinedCurrentBeat: boolean;
   waitingState: ThreadWaitingKind | null;
   noFounderAction: boolean;
 };
@@ -125,6 +126,7 @@ export function resolveTodayGroupTruth(input: {
   evidenceTexts?: readonly string[];
   people?: readonly TodayIdentitySignal[];
   nowIso?: string;
+  associatedThreadIds?: readonly string[] | null;
 }): TodayGroupTruth {
   const threadIds = gmailThreadIdsForGroup(input.key, input.rows, input.threadContext);
   const thread = indexedThreadForGroup(input.key, input.rows, input.threadContext);
@@ -187,6 +189,7 @@ export function resolveTodayGroupTruth(input: {
     project: input.project,
     jobs: input.jobs,
     founderEmailHashes,
+    associatedThreadIds: input.associatedThreadIds,
   });
   const inboundText = inboundHaystack(input.rows, thread, chronology.latestInboundAt);
   const forthcoming = VENDOR_FORTHCOMING.test(inboundText);
@@ -220,6 +223,7 @@ export function resolveTodayGroupTruth(input: {
     identityKind: identity.kind,
     staleInboundSatisfied: chronology.staleInboundSatisfied,
     remainingFounderCommitment: chronology.remainingCommitment,
+    declinedCurrentBeat: chronology.declinedCurrentBeat,
     waitingState,
     noFounderAction,
   };

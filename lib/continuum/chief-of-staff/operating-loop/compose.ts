@@ -21,6 +21,10 @@ import { detectAnomalies, proposeRecapItems, recapJobIds } from "./reconcile";
 import { DETERMINISTIC_ACTIONABLE_RANKER } from "./rank";
 import { proposeExplicitActions } from "./propose-actions";
 import {
+  associatedGmailThreadsByProject,
+  projectBySupportedAssociation,
+} from "./attribution";
+import {
   COS_ACTIVE_HEADING,
   COS_CAUGHT_UP_DETAIL,
   COS_CAUGHT_UP_HEADING,
@@ -49,6 +53,20 @@ function lifecycleByGmailThreadFrom(
     const threadId = project.gmailThreadId?.trim() ?? "";
     if (!threadId) continue;
     map.set(threadId, project.lifecycleStage ?? null);
+  }
+  return map;
+}
+
+function lifecycleByAssociatedGmailThreads(
+  projects: ReadonlyMap<string, CosProjectContext>,
+  associatedThreads: ReadonlyMap<string, readonly string[]>,
+): Map<string, string | null> {
+  const map = lifecycleByGmailThreadFrom(projects);
+  for (const [projectId, threadIds] of associatedThreads) {
+    const stage = projects.get(projectId)?.lifecycleStage ?? null;
+    for (const threadId of threadIds) {
+      if (!map.has(threadId)) map.set(threadId, stage);
+    }
   }
   return map;
 }
@@ -135,10 +153,23 @@ export function composeCosOperatingLoop(
 
   const masterSprint = input.masterSprint ?? [];
   const lifecycleByProject = lifecycleByProjectFrom(projects);
-  const lifecycleByGmailThread = lifecycleByGmailThreadFrom(projects);
+  const association = projectBySupportedAssociation(
+    candidates,
+    projects,
+    input.threadContext,
+  );
+  const associatedGmailThreads = associatedGmailThreadsByProject(
+    association,
+    projects,
+  );
+  const lifecycleByGmailThread = lifecycleByAssociatedGmailThreads(
+    projects,
+    associatedGmailThreads,
+  );
   const founderEmailHashes = collectTodayFounderEmailHashes(input.knownPeople);
   const liveTruth = {
     lifecycleByGmailThread,
+    associatedGmailThreadsByProject: associatedGmailThreads,
     threadContext: input.threadContext,
     founderEmailHashes,
   };

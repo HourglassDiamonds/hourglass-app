@@ -11,12 +11,14 @@ import {
   isClientDesignAnswer,
   payloadOf,
   sourceMessageId,
+  stripFooterTemplateNoise,
   type TodayGmailIndexedMessage,
   type TodayGmailThreadContext,
 } from "@/lib/continuum/candidates/founder-attention";
 import { isUnresolvedOpenJobState } from "@/lib/continuum/client-memory/project-jobs/validate";
 import type { ProjectJob } from "@/lib/continuum/client-memory/project-jobs/types";
 import { collectExactGmailIds } from "@/lib/continuum/candidates/exact-gmail-ids";
+import { authorOwnedText } from "@/lib/continuum/gmail/candidates/spec-provenance";
 import type { CosProjectContext } from "./types";
 
 export type ThreadWaitingKind = "client" | "shop" | "cad" | "production";
@@ -35,6 +37,7 @@ export type ThreadTruthState = {
   clientRepliedAfterOutbound: boolean;
   staleInboundSatisfied: boolean;
   remainingCommitment: RemainingFounderCommitment | null;
+  declinedCurrentBeat: boolean;
   waiting: ThreadWaitingKind | null;
 };
 
@@ -58,6 +61,8 @@ const SHOP_WAIT =
   /\b(?:waiting on (?:the )?shop|in (?:the )?shop|on the bench)\b/i;
 const FOUNDER_OUTBOUND_HINT =
   /\b(here is the updated|let me know what you think|i(?:'|’)ll send|i am sending|i(?:'|’)m sending|moving forward|please proceed|just sent|i(?:'|’)ll get|i(?:'|’)ll check|i(?:'|’)ll show|i(?:'|’)ll keep you posted)\b/i;
+const DECLINE_PROPOSAL =
+  /^(?:no[,.]?\s+(?:thank you|thanks)\.?|no thanks\.?|not interested\.?|please (?:do not|don't) (?:send|contact|email|call)\b.*|i(?:'m| am) not interested\.?|we(?:'re| are) not interested\.?|i(?:'?ll| will) pass(?: for now)?\.?|thanks[,.]? but no(?: thanks)?\.?)$/i;
 
 function parseMs(iso: string | null | undefined): number {
   if (!iso) return 0;
@@ -67,6 +72,46 @@ function parseMs(iso: string | null | undefined): number {
 
 function haystackOf(row: ContinuumCandidate): string {
   return `${candidateText(row)} ${row.evidenceBasis.matchedText ?? ""}`.trim();
+}
+
+function authorOwnedHaystackOf(row: ContinuumCandidate): string {
+  return stripFooterTemplateNoise(authorOwnedText(haystackOf(row)));
+}
+
+function commitmentSpans(text: string): string[] {
+  const spans: string[] = [];
+  for (const match of text.matchAll(new RegExp(IMMEDIATE_COMMITMENT.source, "gi"))) {
+    const span = (match[0] ?? "").replace(/\s+/g, " ").trim().toLowerCase();
+    if (span) spans.push(span);
+  }
+  return spans;
+}
+
+function sameCommitmentSpan(left: string, right: string): boolean {
+  const a = commitmentSpans(left);
+  const b = commitmentSpans(right);
+  if (a.length === 0 || b.length === 0) return false;
+  return a.some((one) =>
+    b.some((two) => one === two || one.includes(two) || two.includes(one)),
+  );
+}
+
+function isDeclineOfPrecedingProposal(text: string): boolean {
+  const cleaned = stripFooterTemplateNoise(text).replace(/\s+/g, " ").trim();
+  if (!cleaned || cleaned.length > 240) return false;
+  if (isImmediateCommitmentText(cleaned)) return false;
+  const decline =
+    /(?:^|[.!?]\s+)?(?:no[,.]?\s+(?:thank you|thanks)|no thanks|not interested|please (?:do not|don't) (?:send|contact|email|call)\b.*|i(?:'m| am) not interested|we(?:'re| are) not interested|i(?:'?ll| will) pass(?: for now)?|thanks[,.]? but no(?: thanks)?)\.?$/i;
+  if (!decline.test(cleaned) && !DECLINE_PROPOSAL.test(cleaned)) return false;
+  const leftover = cleaned
+    .replace(
+      /\b(?:no[,.]?\s+(?:thank you|thanks)|no thanks|not interested|i(?:'m| am) not interested|we(?:'re| are) not interested|i(?:'?ll| will) pass(?: for now)?|thanks[,.]? but no(?: thanks)?)\.?/gi,
+      " ",
+    )
+    .replace(/\s+/g, " ")
+    .trim();
+  const leftoverWords = leftover.split(/\s+/).filter((word) => word.length > 2);
+  return leftoverWords.length <= 6;
 }
 
 function founderHashesFromThread(
@@ -154,7 +199,10 @@ export function candidateDirection(
     const inferred = inferIndexedMessageDirection(indexed, hashes, inboundHash);
     if (inferred === "inbound" || inferred === "outbound") return inferred;
   }
-  if (hasRule(row, "explicit_founder_commitment") || FOUNDER_OUTBOUND_HINT.test(haystackOf(row))) {
+  if (
+    hasRule(row, "explicit_founder_commitment") ||
+    FOUNDER_OUTBOUND_HINT.test(authorOwnedHaystackOf(row))
+  ) {
     return "outbound";
   }
   if (
@@ -242,19 +290,51 @@ function clipCommitment(text: string, max = 72): string {
   return `${finished.slice(0, max - 1).trimEnd()}…`;
 }
 
-function outboundHaystack(
+function outboundOwnText(
   rows: readonly ContinuumCandidate[],
   thread: TodayGmailThreadContext | null | undefined,
   latestOutboundAt: string | null,
+  latestOutboundMessageId: string | null,
 ): string {
   const outboundMs = parseMs(latestOutboundAt);
   return rows
     .filter((row) => {
-      if (candidateDirection(row, thread) === "outbound") return true;
-      return outboundMs > 0 && parseMs(row.sourceTimestamp) >= outboundMs;
+      if (candidateDirection(row, thread) !== "outbound") return false;
+      const messageId = sourceMessageId(row);
+      if (latestOutboundMessageId && messageId) {
+        return messageId === latestOutboundMessageId;
+      }
+      if (outboundMs > 0) return parseMs(row.sourceTimestamp) >= outboundMs;
+      return true;
     })
-    .map(haystackOf)
+    .map(authorOwnedHaystackOf)
     .join("\n");
+}
+
+function inboundOwnText(
+  rows: readonly ContinuumCandidate[],
+  thread: TodayGmailThreadContext | null | undefined,
+): string {
+  return rows
+    .filter((row) => candidateDirection(row, thread) === "inbound")
+    .map(authorOwnedHaystackOf)
+    .join("\n");
+}
+
+function founderOwnsCommitment(outboundOwn: string, inboundOwn: string): boolean {
+  if (!isImmediateCommitmentText(outboundOwn)) return false;
+  return !sameCommitmentSpan(outboundOwn, inboundOwn);
+}
+
+function hasUnresolvedCanonicalObligation(
+  jobs: readonly ProjectJob[] | null | undefined,
+  project: CosProjectContext | null | undefined,
+): boolean {
+  if (!project?.projectId || !jobs?.length) return false;
+  return jobs.some(
+    (job) =>
+      job.projectId === project.projectId && isUnresolvedOpenJobState(job.state),
+  );
 }
 
 function waitingFromText(
@@ -362,12 +442,24 @@ export function reconcileThreadTruthState(input: {
     inboundMs > 0 && outboundMs > 0 && inboundMs > outboundMs;
   const staleInboundSatisfied =
     founderRepliedAfterInbound && !clientRepliedAfterOutbound;
-  const outboundText = outboundHaystack(input.rows, thread, latestOutboundAt);
-  const extracted = staleInboundSatisfied
-    ? commitmentFromText(outboundText)
-    : null;
+  const outboundText = outboundOwnText(
+    input.rows,
+    thread,
+    latestOutboundAt,
+    indexedOutbound?.messageId ?? null,
+  );
+  const inboundText = inboundOwnText(input.rows, thread);
+  const extracted =
+    staleInboundSatisfied && founderOwnsCommitment(outboundText, inboundText)
+      ? commitmentFromText(outboundText)
+      : null;
   const remainingCommitment =
     extracted && !representedByOpenJob(extracted, input.jobs) ? extracted : null;
+  const declinedCurrentBeat =
+    staleInboundSatisfied &&
+    !remainingCommitment &&
+    isDeclineOfPrecedingProposal(outboundText) &&
+    !hasUnresolvedCanonicalObligation(input.jobs, input.project);
   const waiting =
     staleInboundSatisfied && !remainingCommitment
       ? waitingFromText(outboundText, input.project)
@@ -379,6 +471,7 @@ export function reconcileThreadTruthState(input: {
     clientRepliedAfterOutbound,
     staleInboundSatisfied,
     remainingCommitment,
+    declinedCurrentBeat,
     waiting,
   };
 }
@@ -444,6 +537,31 @@ export function indexedThreadForGroup(
   return threadContext?.get(latestThreadId) ?? primary;
 }
 
+function rowsForThread(
+  rows: readonly ContinuumCandidate[],
+  threadId: string,
+  threadContext?: ReadonlyMap<string, TodayGmailThreadContext> | null,
+): ContinuumCandidate[] {
+  const messageIds = new Set(
+    (threadContext?.get(threadId)?.messages ?? []).map((row) => row.messageId),
+  );
+  return rows.filter((row) => {
+    const ids = collectExactGmailIds([row]).threadIds;
+    if (ids.includes(threadId)) return true;
+    const messageId = sourceMessageId(row);
+    return Boolean(messageId && messageIds.has(messageId));
+  });
+}
+
+function laterAssociatedOutboundSatisfies(
+  inboundAt: string | null,
+  truths: readonly ThreadTruthState[],
+): boolean {
+  const inboundMs = parseMs(inboundAt);
+  if (inboundMs <= 0) return false;
+  return truths.some((truth) => parseMs(truth.latestOutboundAt) > inboundMs);
+}
+
 export function reconcileGroupTruthState(input: {
   key: string;
   rows: readonly ContinuumCandidate[];
@@ -451,12 +569,82 @@ export function reconcileGroupTruthState(input: {
   project?: CosProjectContext | null;
   jobs?: readonly ProjectJob[] | null;
   founderEmailHashes?: ReadonlySet<string> | readonly string[] | null;
+  associatedThreadIds?: readonly string[] | null;
 }): ThreadTruthState {
-  return reconcileThreadTruthState({
+  const memberThreadIds = gmailThreadIdsForGroup(
+    input.key,
+    input.rows,
+    input.threadContext,
+  );
+  const associatedIds = [
+    ...new Set(
+      [...memberThreadIds, ...(input.associatedThreadIds ?? [])].filter(Boolean),
+    ),
+  ];
+  const primary = reconcileThreadTruthState({
     rows: input.rows,
     thread: indexedThreadForGroup(input.key, input.rows, input.threadContext),
     project: input.project,
     jobs: input.jobs,
     founderEmailHashes: input.founderEmailHashes,
   });
+  if (associatedIds.length <= 1) return primary;
+
+  const perThread = associatedIds.map((threadId) =>
+    reconcileThreadTruthState({
+      rows: rowsForThread(input.rows, threadId, input.threadContext),
+      thread: input.threadContext?.get(threadId) ?? null,
+      project: input.project,
+      jobs: input.jobs,
+      founderEmailHashes: input.founderEmailHashes,
+    }),
+  );
+  const recapSourceThreads = [
+    ...new Set(
+      input.rows
+        .filter(isInboundReplyObligation)
+        .flatMap((row) => collectExactGmailIds([row]).threadIds),
+    ),
+  ];
+  const recapStillOpen =
+    recapSourceThreads.length > 0 &&
+    recapSourceThreads.some((threadId) => {
+      const index = associatedIds.indexOf(threadId);
+      const truth = index >= 0 ? perThread[index]! : primary;
+      if (truth.staleInboundSatisfied) return false;
+      if (!truth.latestInboundAt) return false;
+      return !laterAssociatedOutboundSatisfies(truth.latestInboundAt, perThread);
+    });
+  const staleInboundSatisfied =
+    recapSourceThreads.length > 0
+      ? !recapStillOpen
+      : primary.staleInboundSatisfied ||
+        laterAssociatedOutboundSatisfies(primary.latestInboundAt, perThread);
+  const latestOutbound = [...perThread].sort(
+    (a, b) => parseMs(a.latestOutboundAt) - parseMs(b.latestOutboundAt),
+  ).at(-1);
+  const remainingCommitment = staleInboundSatisfied
+    ? (latestOutbound?.remainingCommitment ?? primary.remainingCommitment)
+    : primary.remainingCommitment;
+  const declinedCurrentBeat =
+    staleInboundSatisfied &&
+    (latestOutbound?.declinedCurrentBeat || primary.declinedCurrentBeat) &&
+    !remainingCommitment;
+  const waiting =
+    staleInboundSatisfied && !remainingCommitment
+      ? (latestOutbound?.waiting ?? primary.waiting)
+      : null;
+  const latestInbound = [...perThread].sort(
+    (a, b) => parseMs(a.latestInboundAt) - parseMs(b.latestInboundAt),
+  ).at(-1);
+  return {
+    latestInboundAt: latestInbound?.latestInboundAt ?? primary.latestInboundAt,
+    latestOutboundAt: latestOutbound?.latestOutboundAt ?? primary.latestOutboundAt,
+    founderRepliedAfterInbound: staleInboundSatisfied,
+    clientRepliedAfterOutbound: !staleInboundSatisfied && recapStillOpen,
+    staleInboundSatisfied,
+    remainingCommitment,
+    declinedCurrentBeat,
+    waiting,
+  };
 }
