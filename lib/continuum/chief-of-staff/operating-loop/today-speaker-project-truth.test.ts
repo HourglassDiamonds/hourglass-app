@@ -16,6 +16,7 @@ import { composeCosOperatingLoop } from "./compose";
 import { composeTodayDocket } from "./docket";
 import { fixtureCandidate } from "./fixtures";
 import { reconcileThreadTruthState } from "./thread-truth";
+import { selectFounderControls } from "./founder-actions";
 import type { CosProjectContext } from "./types";
 
 const NOW = "2026-09-19T16:00:00.000Z";
@@ -772,5 +773,324 @@ describe("Today speaker authorship + cross-thread project truth", () => {
     );
     assert.ok(docket.items.length > 0);
     assert.doesNotMatch(docketHay(docket), /No thank you/i);
+  });
+
+  it("D2: persisted match-only I'll send on SENT is not a founder-owned Inventory card", () => {
+    const inboundText = "I'll send the free signup link.";
+    const { docket, loop } = todayOf(
+      [
+        gmailRow({
+          candidateId: "lisa-match-only",
+          sourceRef: `gc1|${LISA_THREAD}|lisa-out`,
+          sourceTimestamp: "2026-09-19T11:40:01.000Z",
+          candidateType: "open_job",
+          payload: {
+            kind: "open_job",
+            jobKind: "commitment",
+            subject: inboundText,
+            detail: inboundText,
+            waitingOnActor: "founder",
+            dueAt: null,
+            createJob: false,
+          },
+          evidenceBasis: {
+            ruleIds: ["explicit_founder_commitment"],
+            matchedText: inboundText,
+          },
+        }),
+      ],
+      {
+        threadContext: new Map([
+          [
+            LISA_THREAD,
+            {
+              subject: "INVENTORY PLANNING FOR HOURGLASS DIAMONDS",
+              fromDisplayName: "Lisa",
+              fromEmail: "lisa@vendor.test",
+              messages: [
+                {
+                  messageId: "lisa-in",
+                  sentAt: "2026-09-18T22:42:23.000Z",
+                  direction: "inbound",
+                },
+                {
+                  messageId: "lisa-out",
+                  sentAt: "2026-09-19T11:40:01.000Z",
+                  direction: "outbound",
+                  fromEmailHash: FOUNDER_HASH,
+                },
+              ],
+            },
+          ],
+        ]),
+      },
+    );
+    const truth = reconcileThreadTruthState({
+      rows: [
+        gmailRow({
+          candidateId: "lisa-match-only",
+          sourceRef: `gc1|${LISA_THREAD}|lisa-out`,
+          sourceTimestamp: "2026-09-19T11:40:01.000Z",
+          candidateType: "open_job",
+          payload: {
+            kind: "open_job",
+            jobKind: "commitment",
+            subject: inboundText,
+            detail: inboundText,
+            waitingOnActor: "founder",
+            dueAt: null,
+            createJob: false,
+          },
+          evidenceBasis: {
+            ruleIds: ["explicit_founder_commitment"],
+            matchedText: inboundText,
+          },
+        }),
+      ],
+      thread: {
+        messages: [
+          {
+            messageId: "lisa-in",
+            sentAt: "2026-09-18T22:42:23.000Z",
+            direction: "inbound",
+          },
+          {
+            messageId: "lisa-out",
+            sentAt: "2026-09-19T11:40:01.000Z",
+            direction: "outbound",
+            fromEmailHash: FOUNDER_HASH,
+          },
+        ],
+      },
+    });
+    assert.equal(truth.remainingCommitment, null);
+    assert.equal(docket.items.length, 0);
+    assert.equal(loop.brief.length, 0);
+    assert.doesNotMatch(docketHay(docket), /signup link|You already replied|INVENTORY/i);
+  });
+
+  it("K: quoted C021479-RN07247 does not bind to current Abbey C026137 or Confirm Person", () => {
+    const niurkaHash = hashEmail("niurka@vlorajewelry.com")!;
+    const abbeyThread = "1a08760c6837bb32";
+    const abbeyProject = "abbey-earrings-c026137";
+    const engagementProject = "abbey-engagement-c021479";
+    const quoted = [
+      "On Tue, founder wrote:",
+      "Previously we made engagement (C021479-RN07247) for her.",
+      "She'd like to copy the leaf style prong from her engagement.",
+    ].join("\n");
+    const proposed = proposeGmailCandidates({
+      createdAt: NOW,
+      world: {
+        people: [],
+        projects: [
+          {
+            projectId: abbeyProject,
+            title: "Abbey earrings",
+            gmailThreadId: abbeyThread,
+            cadJobNumber: "C026137",
+            orderNumber: null,
+            fingerSize: null,
+            metal: null,
+            centerStone: null,
+            diamondSupplyNotes: null,
+            personIds: [],
+            founderApprovedCurrent: true,
+          },
+          {
+            projectId: engagementProject,
+            title: "Abbey engagement",
+            gmailThreadId: null,
+            cadJobNumber: "C021479",
+            orderNumber: null,
+            fingerSize: null,
+            metal: null,
+            centerStone: null,
+            diamondSupplyNotes: null,
+            personIds: [],
+            founderApprovedCurrent: true,
+          },
+        ],
+        internalEmailHashes: [FOUNDER_HASH],
+      },
+      evidence: [
+        evidence({
+          messageId: "niurka-stl",
+          threadId: abbeyThread,
+          sentAt: "2026-09-17T15:00:00.000Z",
+          direction: "inbound",
+          fromEmail: "niurka@vlorajewelry.com",
+          subject: "RE: HGD x Abbey-C026137",
+          plaintext: [
+            "Here is the C026137 Mod 1 STL.",
+            "",
+            quoted,
+          ].join("\n"),
+        }),
+      ],
+    });
+    assert.equal(
+      proposed.candidates.some(
+        (row) =>
+          row.candidateType === "project_context" &&
+          row.payload.kind === "project_context" &&
+          row.payload.topic === "workshop_job_id" &&
+          row.payload.value === "RN07247" &&
+          row.proposedTarget.kind === "project" &&
+          row.proposedTarget.projectId === abbeyProject,
+      ),
+      false,
+    );
+    assert.ok(
+      proposed.candidates.some(
+        (row) =>
+          row.candidateType === "project_context" &&
+          row.payload.kind === "project_context" &&
+          row.payload.topic === "historical_workshop_job_id" &&
+          row.payload.value === "RN07247" &&
+          row.proposedTarget.kind === "none",
+      ),
+    );
+    assert.ok(
+      proposed.candidates.some(
+        (row) =>
+          row.candidateType === "project_context" &&
+          row.payload.kind === "project_context" &&
+          row.payload.topic === "historical_cad_job_number" &&
+          row.payload.value === "C021479" &&
+          row.proposedTarget.kind === "none",
+      ),
+    );
+    const { docket, loop } = todayOf(
+      [
+        gmailRow({
+          candidateId: "niurka-assoc",
+          sourceRef: `gc1|${abbeyThread}|niurka-stl`,
+          sourceTimestamp: "2026-09-17T15:00:00.000Z",
+          candidateType: "person_association",
+          proposedTarget: { kind: "person", personId: null },
+          payload: {
+            kind: "person_association",
+            displayName: "Niurka Lulo",
+            emailHash: niurkaHash,
+            mintPerson: false,
+            mergePersons: false,
+          },
+          evidenceBasis: {
+            ruleIds: ["gmail_participant"],
+            matchedText: "Niurka Lulo",
+          },
+        }),
+        gmailRow({
+          candidateId: "niurka-rn-quoted",
+          sourceRef: `gc1|${abbeyThread}|niurka-stl`,
+          sourceTimestamp: "2026-09-17T15:00:00.000Z",
+          candidateType: "project_context",
+          proposedTarget: { kind: "project", projectId: abbeyProject },
+          payload: {
+            kind: "project_context",
+            topic: "workshop_job_id",
+            value: "RN07247",
+          },
+          evidenceBasis: {
+            ruleIds: ["exact_workshopJobId"],
+            matchedText: "RN07247",
+          },
+        }),
+        gmailRow({
+          candidateId: "niurka-stl",
+          sourceRef: `gc1|${abbeyThread}|niurka-stl`,
+          sourceTimestamp: "2026-09-17T15:00:00.000Z",
+          candidateType: "open_job",
+          payload: {
+            kind: "open_job",
+            jobKind: "commitment",
+            subject: "Here is the C026137 Mod 1 STL",
+            detail: null,
+            waitingOnActor: "vendor",
+            dueAt: null,
+            createJob: false,
+          },
+          evidenceBasis: {
+            ruleIds: ["explicit_vendor_commitment"],
+            matchedText: "Here is the C026137 Mod 1 STL.",
+          },
+        }),
+      ],
+      {
+        projects: new Map([
+          [
+            abbeyProject,
+            {
+              projectId: abbeyProject,
+              title: "Abbey earrings",
+              personName: "Abbey",
+              people: [],
+              isCurrent: true,
+              lifecycleStage: "cad",
+              specs: [{ fieldName: "cad_job_number", value: "C026137" }],
+              gmailThreadId: abbeyThread,
+            },
+          ],
+          [
+            engagementProject,
+            {
+              projectId: engagementProject,
+              title: "Abbey engagement",
+              personName: "Abbey",
+              people: [],
+              isCurrent: true,
+              lifecycleStage: "complete",
+              specs: [{ fieldName: "cad_job_number", value: "C021479" }],
+              gmailThreadId: null,
+            },
+          ],
+        ]),
+        threadContext: new Map([
+          [
+            abbeyThread,
+            {
+              subject: "RE: HGD x Abbey-C026137",
+              fromDisplayName: "Niurka Lulo",
+              fromEmail: "niurka@vlorajewelry.com",
+              messages: [
+                {
+                  messageId: "founder-ask",
+                  sentAt: "2026-09-16T18:00:00.000Z",
+                  direction: "outbound",
+                  fromEmailHash: FOUNDER_HASH,
+                },
+                {
+                  messageId: "niurka-stl",
+                  sentAt: "2026-09-17T15:00:00.000Z",
+                  direction: "inbound",
+                  fromEmailHash: niurkaHash,
+                },
+                {
+                  messageId: "founder-abbey",
+                  sentAt: "2026-09-17T18:00:00.000Z",
+                  direction: "outbound",
+                  fromEmailHash: FOUNDER_HASH,
+                },
+              ],
+            },
+          ],
+        ]),
+      },
+    );
+    assert.equal(
+      docket.items.some((item) => selectFounderControls(item).confirmPerson != null),
+      false,
+    );
+    assert.equal(
+      loop.brief.some((row) => row.actions.some((action) => action.kind === "confirm_person")),
+      false,
+    );
+    assert.doesNotMatch(docketHay(docket), /Identify who this is from|Unassigned/i);
+    assert.doesNotMatch(docketHay(docket), /RN07247/);
+    const abbeyCard = docket.items.find((item) => /Abbey/i.test(item.subject));
+    if (abbeyCard) {
+      assert.doesNotMatch(`${abbeyCard.headline} ${abbeyCard.context ?? ""}`, /RN07247/);
+    }
   });
 });

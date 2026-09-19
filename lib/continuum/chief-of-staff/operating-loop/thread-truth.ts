@@ -61,6 +61,8 @@ const SHOP_WAIT =
   /\b(?:waiting on (?:the )?shop|in (?:the )?shop|on the bench)\b/i;
 const FOUNDER_OUTBOUND_HINT =
   /\b(here is the updated|let me know what you think|i(?:'|’)ll send|i am sending|i(?:'|’)m sending|moving forward|please proceed|just sent|i(?:'|’)ll get|i(?:'|’)ll check|i(?:'|’)ll show|i(?:'|’)ll keep you posted)\b/i;
+const CLIENT_ASK =
+  /\b(?:can you|could you|please) (?:send|make|revise|update|do|change|confirm|fix|show|get)\b/i;
 const DECLINE_PROPOSAL =
   /^(?:no[,.]?\s+(?:thank you|thanks)\.?|no thanks\.?|not interested\.?|please (?:do not|don't) (?:send|contact|email|call)\b.*|i(?:'m| am) not interested\.?|we(?:'re| are) not interested\.?|i(?:'?ll| will) pass(?: for now)?\.?|thanks[,.]? but no(?: thanks)?\.?)$/i;
 
@@ -323,7 +325,27 @@ function inboundOwnText(
 
 function founderOwnsCommitment(outboundOwn: string, inboundOwn: string): boolean {
   if (!isImmediateCommitmentText(outboundOwn)) return false;
-  return !sameCommitmentSpan(outboundOwn, inboundOwn);
+  if (sameCommitmentSpan(outboundOwn, inboundOwn)) return false;
+  if (isImmediateCommitmentText(inboundOwn) && isMatchOnlyCommitment(outboundOwn)) {
+    return false;
+  }
+  if (isMatchOnlyCommitment(outboundOwn) && !CLIENT_ASK.test(inboundOwn)) {
+    return false;
+  }
+  return true;
+}
+
+function isMatchOnlyCommitment(text: string): boolean {
+  const cleaned = stripFooterTemplateNoise(text).replace(/\s+/g, " ").trim();
+  if (!cleaned) return false;
+  const spans = commitmentSpans(cleaned);
+  if (spans.length === 0) return false;
+  let leftover = cleaned.toLowerCase();
+  for (const span of spans) {
+    leftover = leftover.replace(span, " ");
+  }
+  const words = leftover.replace(/\s+/g, " ").trim().split(/\s+/).filter((word) => word.length > 2);
+  return words.length <= 2;
 }
 
 function hasUnresolvedCanonicalObligation(

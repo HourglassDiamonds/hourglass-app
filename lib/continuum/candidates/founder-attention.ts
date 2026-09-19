@@ -352,6 +352,10 @@ function compatiblePrefixFamily(unique: readonly string[]): string | null {
   return [...unique].sort((a, b) => a.length - b.length)[0]!;
 }
 
+function domainLooksLikeVendorContext(label: string): boolean {
+  return /jewel|workshop|atelier|engrav|casting|stamping|gemlab/.test(orgKey(label));
+}
+
 function vendorOrgFromDomainEvidence(
   label: string,
   directory: readonly string[],
@@ -379,9 +383,11 @@ function vendorOrgFromDomainEvidence(
   const prefixHits = tokens.filter((token) => labelKey.startsWith(orgKey(token)));
   const unique = [...new Set(prefixHits.map((token) => orgKey(token)))];
   const family = compatiblePrefixFamily(unique);
-  if (!family) return null;
+  if (!family) {
+    return domainLooksLikeVendorContext(label) ? collapseIdentityText(label) : null;
+  }
   const matched = prefixHits.find((token) => orgKey(token) === family) ?? null;
-  return matched ? collapseIdentityText(matched) : null;
+  return matched ? collapseIdentityText(matched) : collapseIdentityText(label);
 }
 
 export function vendorOrganizationFromGmailContext(input: {
@@ -1894,6 +1900,7 @@ function specEvidenceCanChallengeCanonical(
   const payload = payloadOf(row);
   if (payload.kind !== "structured_spec") return true;
   if (fieldName === "cad_job_number" || fieldName === "order_number") {
+    if (stampedSpecProvenance(row) !== "EXACT") return false;
     const hay = candidateHaystack(row);
     const proposedRole = classifyIdentifierRole(payload.proposedValue, hay);
     const canonicalRole = classifyIdentifierRole(canonical, hay);
@@ -1962,9 +1969,9 @@ export function isSubordinateType(row: ContinuumCandidate): boolean {
   const payload = payloadOf(row);
   if (
     payload.kind === "project_context" &&
-    (payload.topic === "workshop_job_id" ||
-      payload.topic === "production_job_id" ||
-      payload.topic === "repair_job_id")
+    /(?:cad_job_number|repair_job_id|production_job_id|vendor_order_id|workshop_job_id)$/.test(
+      payload.topic,
+    )
   ) {
     return true;
   }

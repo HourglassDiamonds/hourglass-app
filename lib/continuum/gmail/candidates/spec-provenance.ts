@@ -30,6 +30,10 @@ export function authorOwnedText(plaintext: string | null | undefined): string {
   return splitOwnAndQuotedText(plaintext).own;
 }
 
+export function quotedText(plaintext: string | null | undefined): string {
+  return splitOwnAndQuotedText(plaintext).quoted;
+}
+
 export function authorOwnedHaystack(
   subject: string | null,
   plaintext: string | null,

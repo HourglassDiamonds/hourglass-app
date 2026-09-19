@@ -21,6 +21,7 @@ import {
   extractStructuredSpecs,
   haystackOf,
 } from "./parse";
+import { historicalQuotedIdentifiers } from "../identifier-role";
 import {
   ATTACHMENT_FILENAME_TOPIC,
   extractCustomerEmails,
@@ -38,6 +39,7 @@ import { packGmailCandidateSourceRef } from "./source-ref";
 import {
   attachStructuredSpecProvenance,
   authorOwnedHaystack,
+  quotedText,
 } from "./spec-provenance";
 import { attachObservedSupportingGmailProvenance } from "./supporting-source";
 import {
@@ -102,10 +104,10 @@ function draftsFromEvidence(
     confirmedSourceLinks: world.confirmedSourceLinks,
     founderConfirmedEmailIdentities: world.founderConfirmedEmailIdentities,
   });
-  const newProjectHits = extractNewProject(haystack);
+  const newProjectHits = extractNewProject(ownHaystack);
   const projectHits = resolveProjectHits({
     threadId: evidence.indexed.threadId,
-    haystack,
+    haystack: ownHaystack,
     person: newProjectHits.length > 0 ? null : personHit.person,
     projects: world.projects,
   });
@@ -232,7 +234,14 @@ function draftsFromEvidence(
   const specProjects =
     projectHits.length > 0 ? projectHits.map((row) => row.project) : [null];
   for (const project of specProjects) {
-    for (const spec of extractStructuredSpecs(haystack, project)) {
+    for (const spec of [
+      ...extractStructuredSpecs(haystack, project).filter(
+        (hit) => hit.fieldName !== "cad_job_number" && hit.fieldName !== "order_number",
+      ),
+      ...extractStructuredSpecs(ownHaystack, project).filter(
+        (hit) => hit.fieldName === "cad_job_number" || hit.fieldName === "order_number",
+      ),
+    ]) {
       drafts.push({
         ...base,
         candidateId: "",
@@ -331,7 +340,7 @@ function draftsFromEvidence(
     }
   }
 
-  for (const ctx of extractProjectContext(haystack)) {
+  for (const ctx of extractProjectContext(ownHaystack)) {
     drafts.push({
       ...base,
       candidateId: "",
@@ -347,6 +356,39 @@ function draftsFromEvidence(
       },
       confidence: primaryProject ? "medium" : "low",
       evidenceBasis: { ruleIds: ctx.ruleIds, matchedText: ctx.matchedText },
+      candidateState: "active",
+    });
+  }
+
+  for (const hit of historicalQuotedIdentifiers(
+    ownHaystack,
+    quotedText(evidence.plaintext ?? null),
+  )) {
+    const topic =
+      hit.role === "cadId"
+        ? "historical_cad_job_number"
+        : hit.role === "repairJobId"
+          ? "historical_repair_job_id"
+          : hit.role === "productionJobId"
+            ? "historical_production_job_id"
+            : hit.role === "vendorOrderId"
+              ? "historical_vendor_order_id"
+              : "historical_workshop_job_id";
+    drafts.push({
+      ...base,
+      candidateId: "",
+      candidateType: "project_context",
+      proposedTarget: { kind: "none" },
+      payload: {
+        kind: "project_context",
+        topic,
+        value: hit.value,
+      },
+      confidence: "low",
+      evidenceBasis: {
+        ruleIds: ["historical_quoted_identifier", `exact_${hit.role}`],
+        matchedText: hit.value,
+      },
       candidateState: "active",
     });
   }

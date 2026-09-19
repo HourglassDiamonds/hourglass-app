@@ -20,6 +20,8 @@ import {
   hasBoundedIdentifierToken,
   isStrongStructuredCadIdentifier,
 } from "@/lib/continuum/gmail/cad-job-identifier";
+import { identifierBindsToCurrentProject } from "@/lib/continuum/gmail/identifier-role";
+import { authorOwnedText } from "@/lib/continuum/gmail/candidates/spec-provenance";
 import { identifierTokensMatch } from "@/lib/continuum/gmail/identifier-specificity";
 import { isStrongStructuredOrderIdentifier } from "@/lib/continuum/gmail/order-identifier";
 import { correlateExactProjectThread } from "@/lib/continuum/gmail/projects";
@@ -41,16 +43,6 @@ export type SupportedThreadProject = {
 
 function evidenceHaystack(row: ContinuumCandidate): string {
   return `${candidateText(row)} ${row.evidenceBasis.matchedText ?? ""}`;
-}
-
-function threadHaystack(
-  rows: readonly ContinuumCandidate[],
-  threadId: string,
-): string {
-  return rows
-    .filter((row) => sourceThreadId(row) === threadId)
-    .map(evidenceHaystack)
-    .join("\n");
 }
 
 function uniquePersonProjectIds(
@@ -165,15 +157,21 @@ function unmatchedVendorCadProjectId(
 }
 
 function identifierProjectIds(
-  hay: string,
+  subject: string,
+  spans: readonly string[],
   projects: ReadonlyMap<string, CosProjectContext>,
 ): string[] {
+  const hay = [subject, ...spans].join("\n");
   if (!hay.trim()) return [];
   const hits = new Set<string>();
   for (const project of projects.values()) {
     for (const spec of project.specs ?? []) {
       const value = spec.value.trim();
       if (!value) continue;
+      const current =
+        identifierBindsToCurrentProject(value, { subject }) ||
+        spans.some((span) => identifierBindsToCurrentProject(value, { ownText: span }));
+      if (!current) continue;
       if (spec.fieldName === "cad_job_number") {
         if (!isStrongStructuredCadIdentifier(value)) continue;
         if (hasBoundedIdentifierToken(hay, value)) hits.add(project.projectId);
@@ -246,11 +244,11 @@ export function projectBySupportedAssociation(
 
   for (const threadId of threadIds) {
     if (map.has(threadId)) continue;
-    const hay = [
-      threadHaystack(rows, threadId),
-      threadContext?.get(threadId)?.subject ?? "",
-    ].join("\n");
-    const ids = identifierProjectIds(hay, projects);
+    const subject = threadContext?.get(threadId)?.subject ?? "";
+    const spans = rows
+      .filter((row) => sourceThreadId(row) === threadId)
+      .map((row) => authorOwnedText(row.evidenceBasis.matchedText ?? ""));
+    const ids = identifierProjectIds(subject, spans, projects);
     setUnique(map, threadId, ids, "identifier");
   }
 

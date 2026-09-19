@@ -724,7 +724,7 @@ describe("Today live-shape Gmail identity", () => {
       vendorOrganizationFromGmailContext({
         thread,
       }),
-      null,
+      "vlorajewelry",
     );
     const docket = todayOf([assoc, job], {
       threadContext: new Map([[VLORA_THREAD, thread]]),
@@ -765,7 +765,7 @@ describe("Today live-shape Gmail identity", () => {
     );
   });
 
-  it("vlorajewelry.com without durable vendor evidence stays Confirm Person", () => {
+  it("vlorajewelry.com without durable vendor evidence is vendor context, not Confirm Person", () => {
     const assoc = livePersonAssociation("niurka-bare-assoc", VLORA_THREAD, "1a0a1f153add83b4");
     const job = liveOpenJob("niurka-bare-job", VLORA_THREAD, "1a0a1f153add83b4", {
       subject: "Can you send me the stl file for this one as well",
@@ -787,8 +787,10 @@ describe("Today live-shape Gmail identity", () => {
     });
     const card = docket.items[0];
     assert.ok(card);
-    assert.equal(card?.subject, "Unassigned");
-    assert.ok(selectFounderControls(card!).confirmPerson);
+    assert.notEqual(card?.subject, "Unassigned");
+    assert.equal(selectFounderControls(card!).confirmPerson, null);
+    assert.equal(card?.brief?.personLabel ?? null, null);
+    assert.ok(card?.brief?.organizationLabel);
     assert.equal(card?.brief?.projectId ?? null, null);
   });
 

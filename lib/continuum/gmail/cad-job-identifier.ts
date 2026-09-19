@@ -11,6 +11,7 @@
 
 import {
   classifyIdentifierSpecificity,
+  countIdentifierDigits,
   identifierTokensMatch,
   type IdentifierSpecificity,
 } from "./identifier-specificity";
@@ -55,6 +56,8 @@ const JOB_PREFIX_PATTERN =
   /\bjob(?:\s*(?:#|number|no\.?))?\s*[:#]?\s*([A-Za-z0-9][A-Za-z0-9-]{1,62})\b/gi;
 const J_CODE_PATTERN = /\b(J-\d+[A-Za-z0-9-]*)\b/gi;
 const STRUCTURED_ALNUM_JOB_PATTERN = /\b([A-Z]{2,}\d{3,}[A-Za-z0-9]*)\b/g;
+const COMPOUND_STRUCTURED_JOB_PATTERN =
+  /\b([A-Z]{1,}\d{3,}(?:-[A-Z]{1,}\d{3,})+)\b/g;
 const LINK_CONTEXT_PATTERN =
   /(?:https?:\/\/|www\.|cid:)[^\s<>"')\]]+/gi;
 const UUID_FRAGMENT_PATTERN =
@@ -82,6 +85,7 @@ export function maskNonCadLinkContexts(text: string): string {
 export function isGenericHexadecimalCadFragment(value: string): boolean {
   const token = compactToken(value).replace(/-/g, "");
   if (token.length < MIN_HEX_FRAGMENT_LENGTH) return false;
+  if (/^[A-Za-z]{1,3}\d+$/.test(token)) return false;
   return /^[0-9A-Fa-f]+$/.test(token);
 }
 
@@ -169,6 +173,16 @@ export function extractCadJobIdentifiers(text: string): string[] {
   STRUCTURED_ALNUM_JOB_PATTERN.lastIndex = 0;
   for (const match of hay.matchAll(STRUCTURED_ALNUM_JOB_PATTERN)) {
     pushUntypedStructured(found, match[1] ?? "");
+  }
+
+  COMPOUND_STRUCTURED_JOB_PATTERN.lastIndex = 0;
+  for (const match of hay.matchAll(COMPOUND_STRUCTURED_JOB_PATTERN)) {
+    for (const part of (match[1] ?? "").split("-")) {
+      const family = /^[A-Za-z]+/.exec(part)?.[0] ?? "";
+      if (family.length < 2 && countIdentifierDigits(part) < 5) continue;
+      if (!isStrongStructuredCadIdentifier(part)) continue;
+      pushUntypedStructured(found, part);
+    }
   }
 
   return found;

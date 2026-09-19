@@ -5,8 +5,11 @@ import type { GmailCandidateProject } from "./candidates/types";
 import {
   classifyIdentifierRole,
   extractTypedIdentifiers,
+  historicalQuotedIdentifiers,
+  identifierBindsToCurrentProject,
   identifierRolesAreSameField,
 } from "./identifier-role";
+import { authorOwnedHaystack, quotedText } from "./candidates/spec-provenance";
 
 const JEN_VENDOR_TEXT = [
   "RE: HGD x Tim/Jenn-C025964-RN08318",
@@ -83,5 +86,62 @@ describe("typed identifier roles", () => {
           hit.conflict === true,
       ),
     );
+  });
+
+  it("quoted historical identifiers stay unbound from the current project surface", () => {
+    const subject = "RE: HGD x Abbey-C026137";
+    const own =
+      "Can you send me the STL for Abbey-C026137 so I can print it and check size?";
+    const quoted = [
+      "Previously we made engagement (C021479-RN07247) for her.",
+      "She'd like to copy the leaf style prong from her engagement.",
+    ].join("\n");
+    const ownHay = authorOwnedHaystack(subject, own);
+    const historical = historicalQuotedIdentifiers(ownHay, quoted);
+    assert.equal(
+      extractProjectContext(ownHay).some(
+        (hit) => hit.topic === "workshop_job_id" && hit.value === "RN07247",
+      ),
+      false,
+    );
+    assert.ok(
+      historical.some(
+        (hit) => hit.role === "cadId" && hit.value === "C021479",
+      ),
+    );
+    assert.ok(
+      historical.some(
+        (hit) => hit.role === "workshopJobId" && hit.value === "RN07247",
+      ),
+    );
+    assert.equal(
+      historical.some((hit) => hit.value === "C026137"),
+      false,
+    );
+    assert.equal(
+      identifierBindsToCurrentProject("C026137", { subject }),
+      true,
+    );
+    assert.equal(
+      identifierBindsToCurrentProject("RN07247", { subject, ownText: own }),
+      false,
+    );
+    assert.equal(
+      identifierBindsToCurrentProject("C021479", { subject, ownText: own }),
+      false,
+    );
+    assert.equal(
+      identifierBindsToCurrentProject("RN08318", {
+        subject: "RE: HGD x Tim/Jenn-C025964-RN08318",
+      }),
+      true,
+    );
+    assert.equal(
+      identifierBindsToCurrentProject("RN08318", {
+        ownText: "We're sending your stone to our workshop via job RN08318.",
+      }),
+      true,
+    );
+    assert.equal(quotedText(`> ${quoted}`).includes("C021479"), true);
   });
 });
