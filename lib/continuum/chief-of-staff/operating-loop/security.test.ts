@@ -28,6 +28,8 @@ const INFERENCE_FILES = [
   "founder-actions.ts",
   "quiet.ts",
   "docket.ts",
+  "docket-present.ts",
+  "today-docket-boundary.ts",
   "today-final-invariant.ts",
   "master-sprint.ts",
   "email-source.ts",

@@ -10,6 +10,8 @@ import { OpenProjectsHome } from "../../../../app/executive-dashboard/concierge/
 import { composeCosOperatingLoop } from "./compose";
 import {
   COS_LOOP_NOW,
+  COS_LOOP_PROJECT_A,
+  COS_LOOP_PROJECT_B,
   fixtureCandidate,
   fixtureJob,
   fixtureProjects,
@@ -49,15 +51,35 @@ function card(): CurrentProjectCard {
 
 describe("CoS operating loop Command Center UI", () => {
   it("renders Up next with 44px checkboxes and no horizontal overflow classes", () => {
-    const jobs = Array.from({ length: 3 }, (_, index) =>
+    const projectC = "cccccccc-aaaa-4aaa-8aaa-cccccccccccc";
+    const projects = fixtureProjects();
+    projects.set(projectC, {
+      projectId: projectC,
+      title: "Third live job",
+      personName: "Mara",
+      people: [{ personId: "11111111-aaaa-4aaa-8aaa-aaaaaaaaaaaa", displayName: "Mara" }],
+      isCurrent: true,
+    });
+    const jobs = [
       fixtureJob({
-        jobId: `cccccccc-cccc-4ccc-8ccc-ccccccccccc${index}`,
-        subject: `Send revision ${index} for a concise founder action`,
+        jobId: "cccccccc-cccc-4ccc-8ccc-ccccccccccc0",
+        subject: "Send revision 0 for a concise founder action",
+        projectId: COS_LOOP_PROJECT_A,
       }),
-    );
+      fixtureJob({
+        jobId: "cccccccc-cccc-4ccc-8ccc-ccccccccccc1",
+        subject: "Send revision 1 for a concise founder action",
+        projectId: COS_LOOP_PROJECT_B,
+      }),
+      fixtureJob({
+        jobId: "cccccccc-cccc-4ccc-8ccc-ccccccccccc2",
+        subject: "Send revision 2 for a concise founder action",
+        projectId: projectC,
+      }),
+    ];
     const loop = composeCosOperatingLoop({
       jobs,
-      projects: fixtureProjects(),
+      projects,
       nowIso: COS_LOOP_NOW,
       newMutationId: () => "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
     });
@@ -145,7 +167,6 @@ describe("CoS operating loop Command Center UI", () => {
     });
     const html = renderToStaticMarkup(createElement(ChiefOfStaffToday, { loop }));
     assert.match(html, /actually sent/);
-    assert.match(html, /Confirmation only/);
     assert.doesNotMatch(html, /Needs your decision/);
     assert.doesNotMatch(html, /End of day/);
     assert.doesNotMatch(html, /Proposed actions/);

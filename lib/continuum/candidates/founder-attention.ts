@@ -290,6 +290,7 @@ export function isRecoverableExternalHumanSender(input: {
     return false;
   }
   if (isPlatformOrSystemName(input.thread?.fromDisplayName)) return false;
+  if (isSupplierOrSystemMailbox(input.thread?.fromEmail)) return false;
   const local = emailLocalPart(input.thread?.fromEmail ?? null);
   if (isPlatformOrSystemName(local)) return false;
   const name = input.thread?.fromDisplayName?.trim() ?? "";
@@ -824,6 +825,16 @@ const ACTIONABLE_SYSTEM_MAIL =
   /\b(failed payment|payment failed|payment declined|account (?:is )?compromis|security (?:alert|warning|notice)|unauthorized(?:ly)?|suspicious sign[- ]in|deployment failed|service outage|major outage|shipment exception|undeliverable package)\b/i;
 const NEWSLETTER_LOCAL_PART =
   /^(welcome|hello|hi|news|newsletter|noreply|no-reply|no_reply|donotreply|do-not-reply|notifications?|notify|mailer|updates?|digest|info|marketing|product|team)$/i;
+const SUPPLIER_OR_SYSTEM_LOCAL =
+  /^(supply|orders?|billing|accounts|catalog|vendor|wholesale|sales|support|helpdesk|noreply|no-reply|no_reply|donotreply|do-not-reply|notifications?|mailer)$/i;
+
+export function isSupplierOrSystemMailbox(email: string | null | undefined): boolean {
+  const local = emailLocalPart(email);
+  if (!local) return false;
+  if (SUPPLIER_OR_SYSTEM_LOCAL.test(local)) return true;
+  if (NEWSLETTER_LOCAL_PART.test(local)) return true;
+  return isPlatformOrSystemName(local);
+}
 const NEWSLETTER_SUBJECT =
   /\b(?:what'?s new|product (?:update|news)|release notes|changelog|weekly digest|monthly (?:update|digest)|newsletter)\b/i;
 const NEWSLETTER_PERIODICAL_SUBJECT =
@@ -1012,6 +1023,13 @@ export function isNonActionableSystemMail(input: {
   if (isActionableSystemAlert(input)) return false;
   if (isCurrentOperationalSystemMail(input)) return false;
   if (isExpiredOperationalSystemMail(input)) return true;
+  if (
+    isSupplierOrSystemMailbox(input.thread?.fromEmail) &&
+    !isActionableSystemAlert(input) &&
+    !isCurrentOperationalSystemMail(input)
+  ) {
+    return true;
+  }
   const hay = systemMailHaystack(input);
   if (
     isPromotionalSenderInfrastructure({

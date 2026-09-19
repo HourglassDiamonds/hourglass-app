@@ -236,6 +236,7 @@ export type CosBriefItem = {
   projectId: string | null;
   canonicalGmailThreadId?: string | null;
   recoveredGmailThreadId?: string | null;
+  threadSubject?: string | null;
   headline: string;
   explanation: string;
   recommended: string;
@@ -264,6 +265,23 @@ export type CosDocketOrigin =
   | "anomaly"
   | "signal"
   | "master_sprint";
+
+export type CosDocketLane = "live_work" | "master_sprint";
+
+export type CosDocketItemView = {
+  id: string;
+  lane: CosDocketLane;
+  origin: CosDocketOrigin;
+  subject: string;
+  headline: string;
+  context: string | null;
+  job: CosTop5Item | null;
+  brief: CosBriefItem | null;
+  decision: CosFounderAttentionItem | null;
+  anomaly: CosAnomalyItem | null;
+  briefing?: TodayRenderedBriefing | null;
+  briefingPacket?: TodayBriefingPacket | null;
+};
 
 export type CosWatchingItem = {
   id: string;

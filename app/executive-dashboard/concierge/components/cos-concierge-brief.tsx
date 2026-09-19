@@ -79,10 +79,7 @@ export function CosWatchingList({
       </h2>
       <ul className="hg-cos-docket mt-5">
         {watching.map((item) => {
-          const briefing =
-            item.briefingPacket?.briefingKind && item.briefingPacket.briefingKind !== "generic"
-              ? item.briefing
-              : null;
+          const briefing = item.briefing;
           const name = briefing
             ? [briefing.displayName, briefing.projectName]
                 .filter((row, index, all) => row && all.indexOf(row) === index)

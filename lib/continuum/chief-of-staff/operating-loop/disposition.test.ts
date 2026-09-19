@@ -411,7 +411,7 @@ describe("Today founder disposition", () => {
         nowIso: NOW,
       }),
     );
-    assert.equal(before.items.length, 3);
+    assert.equal(before.items.length, 1);
     const queuedBefore = before.queuedCount;
     const topId = before.items[0]!.id;
     const snoozed = await disposeDocketItem(
@@ -440,7 +440,7 @@ describe("Today founder disposition", () => {
       }),
     );
     assert.equal(afterSnooze.items.some((item) => item.id === topId), false);
-    assert.equal(afterSnooze.items.length, 3);
+    assert.equal(afterSnooze.items.length, 1);
     assert.ok(afterSnooze.queuedCount <= queuedBefore);
     const nextId = afterSnooze.items[0]!.id;
     const completed = await disposeDocketItem(

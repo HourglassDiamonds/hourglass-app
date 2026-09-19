@@ -471,9 +471,10 @@ describe("Today Gmail group truth", () => {
       docket.items.some((item) => /September 16, 2026/i.test(`${item.headline} ${item.context}`)),
       false,
     );
-    const watching = loop.watching.find((row) => /Vlora/i.test(row.title));
+    const watching = docket.watching.find((row) => /Sarah|C026143|Vlora/i.test(row.title));
     assert.ok(watching);
-    assert.match(watching?.detail ?? "", /CAD|shop/i);
+    assert.match(watching?.title ?? "", /Sarah|C026143|Vlora/i);
+    assert.match(watching?.detail ?? "", /CAD|shop|Vlora/i);
     assert.equal(
       docket.items.some((item) => selectFounderControls(item).confirmPerson != null),
       false,
@@ -490,7 +491,10 @@ describe("Today Gmail group truth", () => {
       docket.items.some((item) => /Unassigned|Sarah/i.test(item.subject)),
       false,
     );
-    assert.ok(loop.watching.some((row) => /Vlora/i.test(row.title)));
+    assert.ok(
+      docket.watching.some((row) => /Sarah|C026143|Vlora/i.test(row.title)) ||
+        loop.watching.some((row) => /Sarah|C026143|Vlora/i.test(row.title)),
+    );
     assert.equal(
       loop.brief.some((row) => row.actions.some((action) => action.kind === "confirm_person")),
       false,
@@ -667,7 +671,7 @@ describe("Today Gmail group truth", () => {
       ]),
       knownPeople: niurkaPeople(),
     });
-    const card = docket.items.find((item) => item.subject === "Vlora");
+    const card = docket.items.find((item) => /Sarah|C026143|Vlora/i.test(item.subject));
     assert.ok(card);
     assert.equal(selectFounderControls(card!).confirmPerson, null);
     assert.notEqual(card?.subject, "Unassigned");

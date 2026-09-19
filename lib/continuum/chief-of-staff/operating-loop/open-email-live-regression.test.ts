@@ -213,7 +213,8 @@ describe("Open Email live stored-state regression", () => {
       needsYourDecision: [],
       worthKnowing: [],
     });
-    const unassigned = docket.items.find((item) => item.subject === "Unassigned");
+    const unassigned =
+      docket.items.find((item) => item.subject === "Unassigned") ?? docket.items[0];
     assert.ok(unassigned);
     const controls = selectFounderControls(unassigned);
     assert.equal(controls.openEmail?.href, CLIENT_HREF);

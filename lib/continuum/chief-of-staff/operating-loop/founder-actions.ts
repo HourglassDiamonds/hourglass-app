@@ -205,6 +205,11 @@ function needsPersonConfirm(item: CosFounderActionSource): boolean {
   if (item.brief?.sourceClass === "vendor" || item.brief?.sourceClass === "platform") {
     return false;
   }
+  if (item.brief?.briefingPacket?.entityType === "vendor") return false;
+  if (item.brief?.briefingPacket?.organizationLabel) return false;
+  if (item.brief?.briefingPacket?.ballHolder && item.brief.briefingPacket.ballHolder !== "founder") {
+    return false;
+  }
   if (isVendorOrganizationLabel(item.subject)) return false;
   if (confirmPersonAction(item)) return true;
   return Boolean(

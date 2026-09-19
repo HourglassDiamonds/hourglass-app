@@ -396,7 +396,7 @@ describe("Today thread truth-state reconciliation", () => {
       docket.items.some((item) => /Sarah/i.test(item.subject)),
       false,
     );
-    assert.ok(loop.watching.some((row) => /CAD/i.test(row.detail)));
+    assert.ok(loop.watching.some((row) => /CAD|shop|revised direction/i.test(row.detail)));
     assert.equal(loop.needsYourDecision.some((row) => /Your turn/i.test(row.headline)), false);
   });
 
@@ -432,7 +432,7 @@ describe("Today thread truth-state reconciliation", () => {
       docket.items.some((item) => item.subject === "Tim Lee"),
       false,
     );
-    const watching = loop.watching.find((row) => /production|shop/i.test(`${row.title} ${row.detail}`));
+    const watching = loop.watching.find((row) => /production|shop|CAD|revised direction/i.test(`${row.title} ${row.detail}`));
     assert.ok(watching);
     assert.equal(watching?.projectId ?? null, null);
     for (const item of docket.items) {

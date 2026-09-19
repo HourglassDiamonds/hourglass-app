@@ -96,6 +96,7 @@ import {
   type ThreadWaitingKind,
 } from "./thread-truth";
 import {
+  clientLabelFromHgdSubject,
   composeTodayBriefingPacket,
   type ComposeTodayBriefingPacketInput,
   type TodayBriefingPacket,
@@ -389,13 +390,17 @@ function projectStateLabel(stage: string | null | undefined): string | null {
 function waitingCopy(
   waiting: ThreadWaitingKind | null,
   person: string | null,
+  communication?: TodayCommunicationClass | string | null,
 ): {
   headline: string;
   explanation: string;
   recommended: string;
   watchingDetail: string;
 } {
-  if (waiting === "cad") {
+  const kind =
+    waiting ??
+    (communication === "vendor" ? "shop" : "client");
+  if (kind === "cad") {
     return {
       headline: "awaiting the shop",
       explanation: "You already replied. Current dependency is the updated CAD.",
@@ -403,7 +408,7 @@ function waitingCopy(
       watchingDetail: "Waiting on updated CAD.",
     };
   }
-  if (waiting === "shop") {
+  if (kind === "shop") {
     return {
       headline: "awaiting the shop",
       explanation: "You already replied. Current dependency is the shop.",
@@ -411,7 +416,7 @@ function waitingCopy(
       watchingDetail: "Waiting on the shop.",
     };
   }
-  if (waiting === "production") {
+  if (kind === "production") {
     return {
       headline: "already in production",
       explanation:
@@ -663,7 +668,15 @@ function toBeat(
   return {
     at: formatEvidenceDay(row.sourceTimestamp),
     label,
-    summary: clip(row.evidenceBasis.matchedText || candidateText(row)),
+    summary: clip(
+      speaker === "founder"
+        ? authorOwnedText(row.evidenceBasis.matchedText || candidateText(row)) ||
+            authorOwnedText(candidateText(row)) ||
+            "You already wrote."
+        : authorOwnedText(row.evidenceBasis.matchedText || candidateText(row)) ||
+            row.evidenceBasis.matchedText ||
+            candidateText(row),
+    ),
     speaker,
     sourceHref: gmailEvidenceHrefFor(row),
     candidateId: row.candidateId,
@@ -854,6 +867,7 @@ function actionsFor(input: {
   personAssociationCandidateId: string | null;
   communication: TodayCommunicationClass;
   organizationLabel: string | null;
+  identityKind?: string | null;
   currentFounderObligation: boolean;
 }): CosBriefAction[] {
   const actions: CosBriefAction[] = [];
@@ -887,6 +901,7 @@ function actionsFor(input: {
     input.communication !== "vendor" &&
     input.communication !== "platform" &&
     input.communication !== "founder" &&
+    input.identityKind !== "vendor" &&
     !input.personName &&
     !input.organizationLabel &&
     (input.communication === "client" || input.communication === "unknown") &&
@@ -1255,8 +1270,7 @@ function classifySituation(input: {
   if (allBoilerplate) return null;
   if (
     group.declinedCurrentBeat &&
-    !remaining &&
-    !attribution.projectId
+    !remaining
   ) {
     return null;
   }
@@ -1382,8 +1396,9 @@ function classifySituation(input: {
     urgency = 0;
   } else if (waitingLocked) {
     const wait = waitingCopy(
-      group.waitingState ?? (life === "production" ? "production" : "client"),
+      group.waitingState ?? (life === "production" ? "production" : null),
       person,
+      communication,
     );
     disposition = "watching";
     rankClass = "informational";
@@ -1430,7 +1445,7 @@ function classifySituation(input: {
     recommended = remaining.recommended;
     urgency = 1;
   } else if (group.staleInboundSatisfied && !quietProductionAge) {
-    const wait = waitingCopy(group.waitingState, person);
+    const wait = waitingCopy(group.waitingState, person, communication);
     disposition = "watching";
     rankClass = "informational";
     headline = wait.headline;
@@ -1444,7 +1459,7 @@ function classifySituation(input: {
     (group.waitingState === "cad" || group.waitingState === "shop") &&
     !quietProductionAge
   ) {
-    const wait = waitingCopy(group.waitingState, person);
+    const wait = waitingCopy(group.waitingState, person, communication);
     disposition = "watching";
     rankClass = "informational";
     headline = wait.headline;
@@ -1456,7 +1471,7 @@ function classifySituation(input: {
   } else if (communication === "vendor" && group.noFounderAction && !quietProductionAge) {
     disposition = "suppress";
   } else if (group.noFounderAction && !quietProductionAge) {
-    const wait = waitingCopy(group.waitingState, person);
+    const wait = waitingCopy(group.waitingState, person, communication);
     disposition = "watching";
     rankClass = "informational";
     headline = wait.headline;
@@ -1736,17 +1751,35 @@ function briefingInputFromSituation(item: RankedSituation): ComposeTodayBriefing
 
 function withBriefingDisposition(item: RankedSituation): RankedSituation {
   const packet = composeTodayBriefingPacket(briefingInputFromSituation(item));
-  if (!packet) return { ...item, briefingPacket: null };
+  if (!packet) {
+    if (item.declinedCurrentBeat) {
+      return { ...item, disposition: "suppress", briefingPacket: null };
+    }
+    return { ...item, briefingPacket: null };
+  }
   if (
     packet.ballHolder === "founder" &&
-    packet.briefingKind === "founder_print_check" &&
-    (packet.candidateNextAction || packet.unresolvedFounderObligation) &&
+    (packet.briefingKind === "founder_print_check" ||
+      packet.unresolvedFounderObligation ||
+      packet.candidateNextAction) &&
     item.disposition !== "brief"
   ) {
     return {
       ...item,
       disposition: "brief",
-      rankClass: "founder_commitment",
+      rankClass:
+        packet.briefingKind === "founder_print_check" ? "founder_commitment" : item.rankClass,
+      briefingPacket: packet,
+    };
+  }
+  if (
+    packet.ballHolder === "vendor_shop" ||
+    packet.ballHolder === "client" ||
+    packet.ballHolder === "scheduled_future"
+  ) {
+    return {
+      ...item,
+      disposition: "watching",
       briefingPacket: packet,
     };
   }
@@ -1756,10 +1789,15 @@ function withBriefingDisposition(item: RankedSituation): RankedSituation {
 function presentWatching(item: RankedSituation): CosWatchingItem {
   const packet = item.briefingPacket ?? composeTodayBriefingPacket(briefingInputFromSituation(item));
   const briefing = packet ? renderDeterministicBriefing(packet) : null;
+  const title = briefing
+    ? [briefing.displayName, briefing.projectName]
+        .filter((row, index, all) => row && all.indexOf(row) === index)
+        .join(" / ")
+    : item.watchingTitle;
   return {
     id: item.id,
-    title: item.watchingTitle,
-    detail: item.watchingDetail,
+    title,
+    detail: briefing?.stand ?? item.watchingDetail,
     projectId: item.projectId,
     candidateIds: item.candidateIds,
     briefingPacket: packet,
@@ -1812,6 +1850,7 @@ function presentBrief(
     projectId: item.projectId,
     canonicalGmailThreadId,
     recoveredGmailThreadId: item.recoveredGmailThreadId ?? item.groupedThreadId ?? null,
+    threadSubject: item.threadSubject ?? null,
     headline: item.headline,
     explanation: item.explanation,
     recommended: item.recommended,
@@ -1828,6 +1867,7 @@ function presentBrief(
       personAssociationCandidateId: item.personAssociationCandidateId ?? null,
       communication: item.communication,
       organizationLabel: item.organizationLabel,
+      identityKind: item.identityKind ?? null,
       currentFounderObligation:
         !item.staleInboundSatisfied &&
         !item.noFounderAction &&
@@ -1852,6 +1892,113 @@ function presentBrief(
     briefingPacket: packet,
     briefing,
   };
+}
+
+function situationCad(item: RankedSituation): string | null {
+  const fromSubject = clientLabelFromHgdSubject(item.threadSubject)?.cadId;
+  if (fromSubject) return fromSubject.toUpperCase();
+  const fromPacket = item.briefingPacket?.identifiers.find(
+    (row) => row.current && /^C\d{5,}/i.test(row.value),
+  )?.value;
+  return fromPacket?.toUpperCase() ?? null;
+}
+
+function situationClientName(item: RankedSituation): string | null {
+  const fromSubject = clientLabelFromHgdSubject(item.threadSubject)?.name;
+  const hint = fromSubject || item.personName || item.briefingPacket?.displayName;
+  if (!hint || isVendorOrganizationLabel(hint) || isStudioOrVendorLabel(hint)) return null;
+  return hint.trim().split(/\s+/)[0]?.toLowerCase() ?? null;
+}
+
+function situationKeys(item: RankedSituation): string[] {
+  const keys: string[] = [];
+  if (item.projectId) keys.push(`project:${item.projectId}`);
+  const cad = situationCad(item);
+  if (cad) keys.push(`cad:${cad}`);
+  if (item.recoveredGmailThreadId) keys.push(`thread:${item.recoveredGmailThreadId}`);
+  if (item.groupedThreadId) keys.push(`thread:${item.groupedThreadId}`);
+  for (const id of item.candidateIds) keys.push(`candidate:${id}`);
+  return keys;
+}
+
+function strongerSituation(a: RankedSituation, b: RankedSituation): RankedSituation {
+  const score = (item: RankedSituation): number => {
+    const packet = item.briefingPacket;
+    if (packet?.briefingKind === "founder_print_check") return 80;
+    if (packet?.ballHolder === "founder" && packet.unresolvedFounderObligation) return 70;
+    if (packet?.briefingKind === "vendor_cad_wait") return 60;
+    if (packet?.ballHolder === "vendor_shop") return 50;
+    if (item.disposition === "brief") return 15;
+    return 10;
+  };
+  return score(a) >= score(b) ? a : b;
+}
+
+function mergeSituationPair(a: RankedSituation, b: RankedSituation): RankedSituation {
+  const primary = strongerSituation(a, b);
+  const secondary = primary === a ? b : a;
+  const client =
+    clientLabelFromHgdSubject(primary.threadSubject ?? secondary.threadSubject)?.name ||
+    primary.personName ||
+    secondary.personName;
+  return {
+    ...primary,
+    personName: client && !isVendorOrganizationLabel(client) ? client : primary.personName,
+    projectId: primary.projectId || secondary.projectId,
+    projectTitle: primary.projectTitle || secondary.projectTitle,
+    candidateIds: [...new Set([...primary.candidateIds, ...secondary.candidateIds])],
+    beats: [...primary.beats, ...secondary.beats],
+    threadSubject: primary.threadSubject || secondary.threadSubject,
+    recoveredGmailThreadId: primary.recoveredGmailThreadId || secondary.recoveredGmailThreadId,
+    waitingState: primary.waitingState || secondary.waitingState,
+    vendorContactName: primary.vendorContactName || secondary.vendorContactName,
+    organizationLabel: primary.organizationLabel || secondary.organizationLabel,
+    founderOwnTexts: [...(primary.founderOwnTexts ?? []), ...(secondary.founderOwnTexts ?? [])],
+    vendorOwnTexts: [...(primary.vendorOwnTexts ?? []), ...(secondary.vendorOwnTexts ?? [])],
+    quotedTexts: [...(primary.quotedTexts ?? []), ...(secondary.quotedTexts ?? [])],
+    sourceRefs: [...(primary.sourceRefs ?? []), ...(secondary.sourceRefs ?? [])],
+  };
+}
+
+function mergeRankedSituations(items: readonly RankedSituation[]): RankedSituation[] {
+  const list = [...items];
+  const parent = list.map((_, index) => index);
+  const find = (index: number): number => {
+    const current = parent[index]!;
+    if (current === index) return index;
+    parent[index] = find(current);
+    return parent[index]!;
+  };
+  const union = (left: number, right: number) => {
+    const a = find(left);
+    const b = find(right);
+    if (a !== b) parent[b] = a;
+  };
+  const byKey = new Map<string, number>();
+  for (let index = 0; index < list.length; index++) {
+    for (const key of situationKeys(list[index]!)) {
+      const prior = byKey.get(key);
+      if (prior == null) byKey.set(key, index);
+      else union(prior, index);
+    }
+  }
+  for (let i = 0; i < list.length; i++) {
+    for (let j = i + 1; j < list.length; j++) {
+      const cadA = situationCad(list[i]!);
+      const cadB = situationCad(list[j]!);
+      const nameA = situationClientName(list[i]!);
+      const nameB = situationClientName(list[j]!);
+      if (cadA && cadB && cadA === cadB) union(i, j);
+      else if ((cadA || cadB) && nameA && nameB && nameA === nameB) union(i, j);
+    }
+  }
+  const grouped = new Map<number, RankedSituation>();
+  for (let index = 0; index < list.length; index++) {
+    const root = find(index);
+    const current = grouped.get(root);
+    grouped.set(root, current ? mergeSituationPair(current, list[index]!) : list[index]!);
+  }
+  return [...grouped.values()];
 }
 
 export type ComposeConciergeBriefInput = {
@@ -1942,11 +2089,13 @@ export function composeConciergeBrief(input: ComposeConciergeBriefInput): {
     if (situation) situations.push(withBriefingDisposition(situation));
   }
 
-  const briefSource = situations
+  const merged = mergeRankedSituations(situations).map(withBriefingDisposition);
+
+  const briefSource = merged
     .filter((row) => row.disposition === "brief")
     .sort(compareSituations)
     .slice(0, COS_BRIEF_LIMIT);
-  const watching = situations
+  const watching = merged
     .filter((row) => row.disposition === "watching")
     .sort(compareSituations)
     .slice(0, COS_BRIEF_LIMIT)

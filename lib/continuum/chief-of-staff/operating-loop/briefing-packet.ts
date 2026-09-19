@@ -142,7 +142,7 @@ export function historicalIdentifierValues(
 export function composeTodayBriefingPacket(
   input: ComposeTodayBriefingPacketInput,
 ): TodayBriefingPacket | null {
-  if (input.declinedCurrentBeat && !input.remainingFounderCommitment) {
+  if (input.declinedCurrentBeat) {
     return null;
   }
 
@@ -153,10 +153,18 @@ export function composeTodayBriefingPacket(
 
   const founderOwn = (input.founderOwnTexts ?? []).join("\n");
   const vendorOwn = (input.vendorOwnTexts ?? []).join("\n");
+  const founderHay = [
+    founderOwn,
+    ...input.evidence.filter((beat) => beat.speaker === "founder").map((beat) => beat.summary),
+  ].join("\n");
+  const vendorHay = [
+    vendorOwn,
+    ...input.evidence.filter((beat) => beat.speaker === "vendor").map((beat) => beat.summary),
+  ].join("\n");
   const evidenceHay = input.evidence.map((beat) => beat.summary).join("\n");
-  const printPlan = STATED_PRINT_CHECK.test(founderOwn) || STATED_PRINT_CHECK.test(evidenceHay);
-  const stlDelivered = STL_DELIVERED.test(vendorOwn) || STL_DELIVERED.test(evidenceHay);
-  const cadForthcoming = CAD_FORTHCOMING.test(vendorOwn) || CAD_FORTHCOMING.test(evidenceHay);
+  const printPlan = STATED_PRINT_CHECK.test(founderOwn) || STATED_PRINT_CHECK.test(founderHay);
+  const stlDelivered = STL_DELIVERED.test(vendorOwn) || STL_DELIVERED.test(vendorHay);
+  const cadForthcoming = CAD_FORTHCOMING.test(vendorOwn) || CAD_FORTHCOMING.test(vendorHay);
   const completion = COMPLETION_CLAIM.test(founderOwn) || COMPLETION_CLAIM.test(vendorOwn);
   const lifecycle = provenLifecycle(input.lifecycle);
   const external = latestEvent(input.evidence, (speaker) => speaker !== "founder");
@@ -267,9 +275,11 @@ function displayNameOf(
   input: ComposeTodayBriefingPacketInput,
   fromSubject: { name: string; cadId: string | null } | null,
 ): string | null {
+  if (fromSubject && !/^\d/.test(fromSubject.name) && !VENDOR_ORG_NAME.test(fromSubject.name)) {
+    return firstName(fromSubject.name);
+  }
   const hint = input.displayNameHint?.trim() || null;
-  if (hint && !VENDOR_ORG_NAME.test(hint)) return firstName(hint);
-  if (fromSubject && !/^\d/.test(fromSubject.name)) return firstName(fromSubject.name);
+  if (hint && !VENDOR_ORG_NAME.test(hint) && !/^unassigned$/i.test(hint)) return hint;
   const org = input.organizationLabel?.trim() || null;
   if (org) return org;
   const project = input.projectName?.trim() || null;
@@ -303,6 +313,7 @@ function entityTypeOf(
   if (fromSubject && !VENDOR_ORG_NAME.test(fromSubject.name)) return "client";
   if (input.identityKind === "vendor" && !fromSubject) return "vendor";
   if (input.communication === "vendor" && !input.displayNameHint) return "vendor";
+  if (/^unassigned$/i.test(input.displayNameHint ?? "")) return "unknown";
   if (input.displayNameHint) return "client";
   if (input.projectId || input.projectName) return "project";
   return "unknown";

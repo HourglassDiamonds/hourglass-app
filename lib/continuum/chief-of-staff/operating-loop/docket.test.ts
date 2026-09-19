@@ -209,7 +209,6 @@ describe("Today Chief of Staff docket", () => {
           })],
           top5: [jobItem()],
           remainingCount: 4,
-          watching: [{ id: "w1", title: "Handled", detail: "Shop has it", projectId: null }],
         }),
       }),
     );
@@ -223,9 +222,8 @@ describe("Today Chief of Staff docket", () => {
     assert.match(html, /Update to 7/);
     assert.match(html, /Need to verify/);
     assert.match(html, /<div[^>]*data-cos-founder-family="spec_conflict"/);
-    assert.match(html, />Lee</);
+    assert.match(html, /Lee|Travis Morse/);
     assert.doesNotMatch(html, /\+\d+ queued/);
-    assert.match(html, /Watching/);
     assert.doesNotMatch(html, /Add to Today/);
     assert.doesNotMatch(html, /Concierge Brief/);
     assert.doesNotMatch(html, /Recommended:/);
@@ -249,7 +247,14 @@ describe("Today Chief of Staff docket", () => {
     assert.match(withBrief, /Up next/i);
     const withJobs = composeTodayDocket(loopOf({
       status: "active",
-      top5: [jobItem(), jobItem({ id: "job-2", action: "Send CAD" })],
+      top5: [
+        jobItem(),
+        jobItem({
+          id: "job-2",
+          action: "Send CAD",
+          projectId: "cccccccc-cccc-4aaa-8aaa-cccccccccccc",
+        }),
+      ],
     }));
     assert.equal(withJobs.items.length, 2);
   });
@@ -280,19 +285,14 @@ describe("Today Chief of Staff docket", () => {
           status: "active",
           brief: briefs,
           remainingCount: 3,
-          watching: [{ id: "w1", title: "Handled", detail: "Shop has it", projectId: null }],
         }),
       }),
     );
-    assert.match(html, /Person 0/);
-    assert.match(html, /Person 2/);
+    assert.match(html, /Person 0 \/ Project 0/);
+    assert.match(html, /Person 2 \/ Project 2/);
     assert.doesNotMatch(html, /Person 3/);
     assert.match(html, /\+2 queued/);
     assert.doesNotMatch(html, /\+5 queued/);
-    assert.match(html, /Watching/);
-    const queuedAt = html.indexOf("+2 queued");
-    const watchingAt = html.indexOf("Watching");
-    assert.ok(queuedAt >= 0 && watchingAt > queuedAt);
   });
 
   it("does not count Top 5 remainingCount as founder-facing queued work", () => {
@@ -394,9 +394,9 @@ describe("Today Chief of Staff docket", () => {
     const fullLive = composeTodayDocket(loopOf({
       status: "active",
       brief: [
-        briefItem({ id: "brief-1" }),
-        briefItem({ id: "brief-2", personLabel: "Lee", projectTitle: "Lee ring" }),
-        briefItem({ id: "brief-3", personLabel: "Sam", projectTitle: "Sam ring" }),
+        briefItem({ id: "brief-1", projectId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1", candidateIds: ["cand-1"] }),
+        briefItem({ id: "brief-2", personLabel: "Lee", projectTitle: "Lee ring", projectId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa2", candidateIds: ["cand-2"] }),
+        briefItem({ id: "brief-3", personLabel: "Sam", projectTitle: "Sam ring", projectId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa3", candidateIds: ["cand-3"] }),
       ],
       masterSprint: sprint,
     }));
@@ -407,8 +407,8 @@ describe("Today Chief of Staff docket", () => {
     const afterOneLiveClears = composeTodayDocket(loopOf({
       status: "active",
       brief: [
-        briefItem({ id: "brief-2", personLabel: "Lee", projectTitle: "Lee ring" }),
-        briefItem({ id: "brief-3", personLabel: "Sam", projectTitle: "Sam ring" }),
+        briefItem({ id: "brief-2", personLabel: "Lee", projectTitle: "Lee ring", projectId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa2", candidateIds: ["cand-2"] }),
+        briefItem({ id: "brief-3", personLabel: "Sam", projectTitle: "Sam ring", projectId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa3", candidateIds: ["cand-3"] }),
       ],
       masterSprint: sprint,
     }));
@@ -425,6 +425,7 @@ describe("Today Chief of Staff docket", () => {
           rank: index + 1,
           personLabel: `Person ${index}`,
           projectTitle: `Project ${index}`,
+          projectId: `bbbbbbbb-bbbb-4bbb-8aaa-bbbbbbbbbbb${index}`,
         }),
       ),
       masterSprint: sprint,

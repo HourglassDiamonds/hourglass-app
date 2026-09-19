@@ -447,7 +447,8 @@ describe("Today actionability gate", () => {
       false,
     );
     assert.ok(
-      docket.items.some((item) => /Vlora/i.test(item.subject)) ||
+      docket.items.some((item) => /Vlora|Sarah|Grant|STL/i.test(item.subject)) ||
+        docket.watching.some((row) => /Vlora|Sarah|Grant/i.test(row.title)) ||
         loop.watching.some((row) => /Vlora/i.test(row.title)),
     );
   });

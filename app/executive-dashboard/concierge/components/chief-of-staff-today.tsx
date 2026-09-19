@@ -80,7 +80,7 @@ function DocketItem({
     controls.completableJob &&
     (controls.family === "open_job" || controls.family === "generic");
   const briefing = item.briefing;
-  const packet = item.brief?.briefingPacket ?? null;
+  const packet = item.briefingPacket ?? item.brief?.briefingPacket ?? null;
   return (
     <li
       data-cos-docket-item={index}

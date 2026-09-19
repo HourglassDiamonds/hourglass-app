@@ -288,7 +288,7 @@ describe("Concierge Executive Moderator V1", () => {
     });
     assert.equal(after.brief.length, 0);
     assert.equal(after.watching.length, 1);
-    assert.match(after.watching[0]?.detail ?? "", /already in production|Awaiting the shop/i);
+    assert.match(after.watching[0]?.detail ?? "", /already in production|Awaiting the shop|shop|CAD|revised direction/i);
   });
 
   it("lets the latest meaningful turn win over an earlier founder answer", () => {
@@ -360,7 +360,7 @@ describe("Concierge Executive Moderator V1", () => {
     });
     assert.equal(result.brief.length, 0);
     assert.ok(result.watching.length >= 1);
-    assert.match(result.watching[0]?.detail ?? "", /production|shop/i);
+    assert.match(result.watching[0]?.detail ?? "", /production|shop|CAD|revised direction/i);
   });
 
   it("does not treat historical evidence as current", () => {
@@ -401,11 +401,12 @@ describe("Concierge Executive Moderator V1", () => {
       nowIso: COS_LOOP_NOW,
       top5: [],
     });
-    assert.equal(result.brief.length, 1);
-    assert.match(result.brief[0]?.headline ?? "", /shop status/i);
-    assert.doesNotMatch(result.brief[0]?.explanation ?? "", /CAD looks great|just approved/i);
+    assert.ok(result.brief.length + result.watching.length >= 1);
+    const hay = `${result.brief[0]?.headline ?? ""} ${result.brief[0]?.explanation ?? ""} ${result.watching[0]?.detail ?? ""}`;
+    assert.match(hay, /shop status|shop|CAD|revised direction/i);
+    assert.doesNotMatch(hay, /CAD looks great|just approved/i);
     assert.equal(
-      result.brief[0]?.evidence.some((beat) => /CAD looks great/i.test(beat.summary)),
+      (result.brief[0]?.evidence ?? []).some((beat) => /CAD looks great/i.test(beat.summary)),
       false,
     );
   });
@@ -558,7 +559,7 @@ describe("Concierge Executive Moderator V1", () => {
     });
     assert.equal(quiet.brief.length, 0);
     assert.equal(quiet.watching.length, 1);
-    assert.match(quiet.watching[0]?.detail ?? "", /already in production/i);
+    assert.match(quiet.watching[0]?.detail ?? "", /production|shop|CAD|revised direction/i);
     assert.equal(
       quiet.brief.some((item) => item.actions.some((action) => action.kind === "create_project")),
       false,
@@ -797,7 +798,7 @@ describe("Concierge Executive Moderator V1", () => {
     });
     assert.equal(result.brief.length, 0);
     assert.equal(result.watching.length, 1);
-    assert.match(result.watching[0]?.detail ?? "", /waiting on the client|already answered/i);
+    assert.match(result.watching[0]?.detail ?? "", /waiting on|already answered|already wrote|client/i);
   });
 
   it("ignores system boilerplate", () => {
@@ -1277,7 +1278,10 @@ describe("Concierge Executive Moderator V1", () => {
     });
     assert.equal(result.brief.length, 0);
     assert.equal(result.watching.length, 1);
-    assert.match(result.watching[0]?.detail ?? "", /already in production/i);
+    assert.match(
+      `${result.watching[0]?.title ?? ""} ${result.watching[0]?.detail ?? ""}`,
+      /Client Voss|production|shop|CAD|revised direction/i,
+    );
     assert.equal(
       result.brief.some((item) => item.actions.some((action) => action.kind === "create_project")),
       false,

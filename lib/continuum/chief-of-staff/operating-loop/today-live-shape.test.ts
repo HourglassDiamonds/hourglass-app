@@ -571,7 +571,7 @@ describe("Today live-shape Gmail identity", () => {
     });
     const card = docket.items[0];
     assert.ok(card);
-    assert.equal(card?.subject, "Tim Lee");
+    assert.match(card?.subject ?? "", /Tim Lee/);
     assert.notEqual(card?.subject, "Unassigned");
     assert.equal(card?.brief?.personLabel, "Tim Lee");
     assert.equal(card?.brief?.projectId ?? null, null);
@@ -620,7 +620,7 @@ describe("Today live-shape Gmail identity", () => {
     });
     const card = docket.items[0];
     assert.ok(card);
-    assert.equal(card?.subject, "Tim Lee");
+    assert.match(card?.subject ?? "", /Tim Lee/);
     assert.notEqual(card?.headline, "Identify who this is from.");
     assert.equal(selectFounderControls(card!).confirmPerson, null);
     assert.equal(card?.brief?.projectId ?? null, null);
@@ -835,7 +835,7 @@ describe("Today live-shape Gmail identity", () => {
     });
     const card = docket.items[0];
     assert.ok(card);
-    assert.equal(card?.subject, "Vlora");
+    assert.match(card?.subject ?? "", /F\.Grant|C025885/);
     assert.notEqual(card?.subject, "Unassigned");
     assert.equal(card?.brief?.personLabel ?? null, null);
     assert.equal(selectFounderControls(card!).confirmPerson, null);

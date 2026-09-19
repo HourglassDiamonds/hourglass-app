@@ -104,6 +104,9 @@ export function sanitizeRendered(
   const banned = [
     /\bresponded\b/i,
     /\bconfirm person\b/i,
+    /shop evidence is already (?:tied to|on) this production Project/gi,
+    /canonical Project is already in production/gi,
+    /I will not create a reminder Open Job/gi,
     ...historicalIdentifierValues(packet.identifiers).map(
       (value) => new RegExp(`\\b${escapeReg(value)}\\b`, "i"),
     ),
