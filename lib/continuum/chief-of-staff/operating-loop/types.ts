@@ -7,6 +7,8 @@
 import type { StructuredSpecSourceProvenance } from "@/lib/continuum/candidates/types";
 import type { TodayGmailThreadContext } from "@/lib/continuum/candidates/founder-attention";
 import type { OpenJobActor, OpenJobKind, ProjectJob } from "@/lib/continuum/client-memory/project-jobs/types";
+import type { TodayBriefingPacket } from "./briefing-packet";
+import type { TodayRenderedBriefing } from "./briefing-copy";
 
 export const COS_OPERATING_LOOP_CONTRACT_VERSION = "cos-operating-loop-v1" as const;
 
@@ -251,6 +253,8 @@ export type CosBriefItem = {
   noFounderAction?: boolean;
   waitingState?: string | null;
   lifecycleStage?: string | null;
+  briefingPacket?: TodayBriefingPacket | null;
+  briefing?: TodayRenderedBriefing | null;
 };
 
 export type CosDocketOrigin =
@@ -267,6 +271,8 @@ export type CosWatchingItem = {
   detail: string;
   projectId: string | null;
   candidateIds?: readonly string[];
+  briefingPacket?: TodayBriefingPacket | null;
+  briefing?: TodayRenderedBriefing | null;
 };
 
 export type CosMasterSprintItem = {

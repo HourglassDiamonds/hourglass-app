@@ -214,7 +214,7 @@ describe("Today Chief of Staff docket", () => {
       }),
     );
     assert.match(html, /Up next/i);
-    assert.match(html, /1 · Travis Morse \/ Chicken ring/i);
+    assert.match(html, /Travis Morse \/ Chicken ring/i);
     assert.match(html, /Confirm the finger size before this moves forward/);
     assert.match(html, /The project says 6\.5, but the latest evidence says 7/);
     assert.doesNotMatch(html, /differs: approved|meaningful turn|superseded/i);
@@ -223,9 +223,9 @@ describe("Today Chief of Staff docket", () => {
     assert.match(html, /Update to 7/);
     assert.match(html, /Need to verify/);
     assert.match(html, /<div[^>]*data-cos-founder-family="spec_conflict"/);
-    assert.match(html, /2 · Lee/);
+    assert.match(html, />Lee</);
     assert.doesNotMatch(html, /\+\d+ queued/);
-    assert.match(html, /Watching · 1/);
+    assert.match(html, /Watching/);
     assert.doesNotMatch(html, /Add to Today/);
     assert.doesNotMatch(html, /Concierge Brief/);
     assert.doesNotMatch(html, /Recommended:/);
@@ -284,14 +284,14 @@ describe("Today Chief of Staff docket", () => {
         }),
       }),
     );
-    assert.match(html, /1 · Person 0/);
-    assert.match(html, /3 · Person 2/);
-    assert.doesNotMatch(html, /4 · Person 3/);
+    assert.match(html, /Person 0/);
+    assert.match(html, /Person 2/);
+    assert.doesNotMatch(html, /Person 3/);
     assert.match(html, /\+2 queued/);
     assert.doesNotMatch(html, /\+5 queued/);
-    assert.match(html, /Watching · 1/);
+    assert.match(html, /Watching/);
     const queuedAt = html.indexOf("+2 queued");
-    const watchingAt = html.indexOf("Watching · 1");
+    const watchingAt = html.indexOf("Watching");
     assert.ok(queuedAt >= 0 && watchingAt > queuedAt);
   });
 

@@ -2,6 +2,7 @@ import { greetingLine } from "@/lib/continuum/dashboard/compose";
 import type { ContinuumHomeModel } from "@/lib/continuum/dashboard/types";
 import type { CosOperatingLoopView } from "@/lib/continuum/chief-of-staff/operating-loop/types";
 import { ChiefOfStaffToday } from "./chief-of-staff-today";
+import type { TodayAskAction } from "./cos-ask-concierge";
 
 type CompleteAction = (formData: FormData) => void | Promise<void>;
 
@@ -11,12 +12,14 @@ export function CommandCenterHome({
   completeAction,
   reviewAction,
   disposeAction,
+  askAction,
 }: {
   model: ContinuumHomeModel;
   operatingLoop: CosOperatingLoopView;
   completeAction?: CompleteAction;
   reviewAction?: CompleteAction;
   disposeAction?: CompleteAction;
+  askAction?: TodayAskAction;
 }) {
   return (
     <div data-command-center data-today-home className="hg-today">
@@ -28,6 +31,7 @@ export function CommandCenterHome({
         completeAction={completeAction}
         reviewAction={reviewAction}
         disposeAction={disposeAction}
+        askAction={askAction}
       />
     </div>
   );

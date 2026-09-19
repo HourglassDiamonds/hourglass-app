@@ -344,6 +344,38 @@ body:has([data-concierge-shell]) [data-facet-rail] {
   max-width: 100%;
 }
 
+.hg-cos-ask {
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding-top: 0.65rem;
+}
+
+.hg-cos-ask-input {
+  font-family: var(--font-continuum-sans), ui-sans-serif, system-ui, sans-serif;
+  border-bottom: 1px solid rgba(173, 145, 100, 0.28);
+}
+
+.hg-cos-ask-input:focus-visible {
+  border-bottom-color: rgba(173, 145, 100, 0.7);
+}
+
+.hg-cos-briefing-kicker {
+  min-width: 0;
+}
+
+.hg-cos-briefing-next {
+  min-width: 0;
+}
+
+.hg-cos-docket-item {
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.hg-cos-docket-item:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
 .hg-cos-docket,
 .hg-cos-top5 {
   display: flex;

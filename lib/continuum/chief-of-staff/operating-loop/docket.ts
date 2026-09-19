@@ -25,6 +25,7 @@ import type {
   CosTop5Item,
   CosWatchingItem,
 } from "./types";
+import type { TodayRenderedBriefing } from "./briefing-copy";
 
 export const COS_DOCKET_TITLE = "Up next";
 export const COS_DOCKET_VISIBLE_LIMIT = 3;
@@ -44,6 +45,7 @@ export type CosDocketItemView = {
   brief: CosBriefItem | null;
   decision: CosFounderAttentionItem | null;
   anomaly: CosAnomalyItem | null;
+  briefing?: TodayRenderedBriefing | null;
 };
 
 export type CosTodayDocketView = {
@@ -217,6 +219,22 @@ function presentJobContext(why: string): string {
   return softenGeneratedPhrasing(why.replace(/\s*·\s*/g, ", "));
 }
 
+export function isExecutiveBriefing(
+  briefing: TodayRenderedBriefing | null | undefined,
+  packet?: { briefingKind?: string } | null,
+): briefing is TodayRenderedBriefing {
+  if (!briefing) return false;
+  if (packet?.briefingKind === "generic") return false;
+  if (
+    packet?.briefingKind === "founder_print_check" ||
+    packet?.briefingKind === "vendor_cad_wait" ||
+    packet?.briefingKind === "client_wait"
+  ) {
+    return true;
+  }
+  return false;
+}
+
 export function presentDocketBriefing(input: {
   subject: string;
   headline: string;
@@ -278,6 +296,14 @@ function coverKeysFor(item: {
 }
 
 export function isActionableTodayDocketItem(item: CosDocketItemView): boolean {
+  if (
+    item.origin === "brief" &&
+    item.briefing &&
+    (item.briefing.stateChip === "WAITING ON SHOP" ||
+      item.briefing.stateChip === "WAITING ON CLIENT")
+  ) {
+    return false;
+  }
   if (item.origin === "master_sprint") return true;
   if (isNoiseOnlyCandidateText(item.headline)) return false;
   if (item.origin === "open_job") return true;
@@ -346,6 +372,7 @@ export function masterSprintDocketItems(
       brief: null,
       decision: null,
       anomaly: null,
+      briefing: null,
     };
   });
 }
@@ -360,11 +387,16 @@ export function composeTodayDocket(loop: CosOperatingLoopView): CosTodayDocketVi
   const isCovered = (keys: readonly string[]) => keys.some((key) => covered.has(key));
 
   for (const item of loop.brief) {
-    const subject = docketSubject(item.personLabel, item.projectTitle, item.organizationLabel);
+    const executive = isExecutiveBriefing(item.briefing, item.briefingPacket) ? item.briefing : null;
+    const subject = executive
+      ? executive.projectName && executive.projectName !== executive.displayName
+        ? `${executive.displayName} / ${executive.projectName}`
+        : executive.displayName
+      : docketSubject(item.personLabel, item.projectTitle, item.organizationLabel);
     const briefing = presentDocketBriefing({
       subject,
-      headline: item.recommended,
-      context: item.explanation,
+      headline: executive?.headline ?? item.recommended,
+      context: executive?.stand ?? item.explanation,
       origin: "brief",
       staleInboundSatisfied: item.staleInboundSatisfied,
       noFounderAction: item.noFounderAction,
@@ -377,18 +409,19 @@ export function composeTodayDocket(loop: CosOperatingLoopView): CosTodayDocketVi
               .filter((beat) => beat.generatedSource !== true)
               .map((beat) => beat.summary),
           )
-        : briefing.headline;
+        : executive?.headline ?? briefing.headline;
     liveWork.push({
       id: item.id,
       lane: "live_work",
       origin: "brief",
       subject,
       headline,
-      context: briefing.context,
+      context: executive?.stand ?? briefing.context,
       job: null,
       brief: item,
       decision: null,
       anomaly: null,
+      briefing: executive,
     });
     mark(coverKeysFor({
       id: item.id,
@@ -421,6 +454,7 @@ export function composeTodayDocket(loop: CosOperatingLoopView): CosTodayDocketVi
       brief: null,
       decision: null,
       anomaly: null,
+      briefing: null,
     });
     mark([`id:${item.id}`]);
   }
@@ -453,6 +487,7 @@ export function composeTodayDocket(loop: CosOperatingLoopView): CosTodayDocketVi
       brief: null,
       decision: item,
       anomaly: null,
+      briefing: null,
     });
     mark(keys);
   }
@@ -482,6 +517,7 @@ export function composeTodayDocket(loop: CosOperatingLoopView): CosTodayDocketVi
       brief: null,
       decision: null,
       anomaly: item,
+      briefing: null,
     });
     mark(keys);
   }

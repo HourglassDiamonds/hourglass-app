@@ -6,13 +6,57 @@ import {
 } from "@/lib/continuum/chief-of-staff/operating-loop/docket";
 import { selectFounderControls } from "@/lib/continuum/chief-of-staff/operating-loop/founder-actions";
 import { composeEmailCard } from "@/lib/continuum/chief-of-staff/operating-loop/email-viewer";
+import type { TodayRenderedBriefing } from "@/lib/continuum/chief-of-staff/operating-loop/briefing-copy";
 import { CosCompleteControl } from "./cos-complete-control";
 import { CosDocketActions } from "./cos-docket-actions";
 import { CosWatchingList } from "./cos-concierge-brief";
 import { CosFounderAttentionControls } from "./cos-founder-attention";
 import { CosUnassignedIdentity } from "./cos-unassigned-identity";
+import { CosAskConcierge, type TodayAskAction } from "./cos-ask-concierge";
 
 type CompleteAction = (formData: FormData) => void | Promise<void>;
+
+function BriefingHeader({
+  name,
+  chip,
+}: {
+  name: string;
+  chip: string | null;
+}) {
+  return (
+    <div className="hg-cos-briefing-kicker flex min-w-0 flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+      <p className="min-w-0 break-words font-serif text-[1.05rem] leading-snug tracking-[-0.02em] text-[#efe8de]">
+        {name}
+      </p>
+      {chip ? (
+        <p className="shrink-0 text-[10px] uppercase tracking-[0.18em] text-[#ad9164]">
+          {chip}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+function BriefingBody({ briefing }: { briefing: TodayRenderedBriefing }) {
+  return (
+    <>
+      <p className="mt-2 break-words font-serif text-[1.28rem] leading-[1.2] tracking-[-0.03em] text-[#efe8de]">
+        {briefing.headline}
+      </p>
+      <p className="hg-cos-brief-explanation hg-cos-docket-context mt-2 break-words text-[14px] leading-relaxed text-[#c4b7aa]">
+        {briefing.stand}
+      </p>
+      <div className="hg-cos-briefing-next mt-3 min-w-0">
+        <p className="text-[10px] uppercase tracking-[0.18em] text-[#8d8073]">
+          {briefing.nextLabel}
+        </p>
+        <p className="mt-1 break-words text-[14px] leading-relaxed text-[#d8cfc4]">
+          {briefing.nextBody}
+        </p>
+      </div>
+    </>
+  );
+}
 
 function DocketItem({
   item,
@@ -20,12 +64,14 @@ function DocketItem({
   completeAction,
   reviewAction,
   disposeAction,
+  askAction,
 }: {
   item: CosDocketItemView;
   index: number;
   completeAction?: CompleteAction;
   reviewAction?: CompleteAction;
   disposeAction?: CompleteAction;
+  askAction?: TodayAskAction;
 }) {
   const controls = selectFounderControls(item);
   const emailCard = composeEmailCard(item, controls.emailSources);
@@ -33,6 +79,8 @@ function DocketItem({
     Boolean(item.job) &&
     controls.completableJob &&
     (controls.family === "open_job" || controls.family === "generic");
+  const briefing = item.briefing;
+  const packet = item.brief?.briefingPacket ?? null;
   return (
     <li
       data-cos-docket-item={index}
@@ -42,22 +90,31 @@ function DocketItem({
       data-cos-brief-class={item.brief?.rankClass}
       data-cos-attention-lane={item.decision?.lane}
       data-cos-anomalies={item.origin === "anomaly" ? "" : undefined}
+      data-cos-ball={briefing ? item.brief?.briefingPacket?.ballHolder : undefined}
       className="hg-cos-item hg-cos-docket-item min-w-0 overflow-x-hidden"
     >
       {showCheck && item.job ? <CosCompleteControl item={item.job} action={completeAction} /> : null}
       <div className="min-w-0 overflow-x-hidden">
-        <p className="break-words text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
-          {index} · {item.subject}
-        </p>
-        <p className="mt-2 break-words font-serif text-[1.25rem] leading-[1.18] tracking-[-0.03em] text-[#efe8de]">
-          {item.headline}
-        </p>
-        {emailCard ? <CosUnassignedIdentity card={emailCard} /> : null}
-        {item.context && !emailCard?.excerpt ? (
-          <p className="hg-cos-brief-explanation hg-cos-docket-context mt-2 break-words text-[14px] leading-relaxed text-[#c4b7aa]">
-            {item.context}
-          </p>
-        ) : null}
+        <BriefingHeader
+          name={briefing ? [briefing.displayName, briefing.projectName].filter((row, i, all) => row && all.indexOf(row) === i).join(" / ") : item.subject}
+          chip={briefing?.stateChip ?? (item.origin === "open_job" ? "YOUR MOVE" : null)}
+        />
+        {briefing ? (
+          <BriefingBody briefing={briefing} />
+        ) : (
+          <>
+            <p className="mt-2 break-words font-serif text-[1.25rem] leading-[1.18] tracking-[-0.03em] text-[#efe8de]">
+              {item.headline}
+            </p>
+            {emailCard ? <CosUnassignedIdentity card={emailCard} /> : null}
+            {item.context && !emailCard?.excerpt ? (
+              <p className="hg-cos-brief-explanation hg-cos-docket-context mt-2 break-words text-[14px] leading-relaxed text-[#c4b7aa]">
+                {item.context}
+              </p>
+            ) : null}
+          </>
+        )}
+        {packet ? <CosAskConcierge packet={packet} askAction={askAction} /> : null}
         <CosDocketActions item={item} disposeAction={disposeAction} />
         {item.decision ? (
           <CosFounderAttentionControls
@@ -76,11 +133,13 @@ export function ChiefOfStaffToday({
   completeAction,
   reviewAction,
   disposeAction,
+  askAction,
 }: {
   loop: CosOperatingLoopView;
   completeAction?: CompleteAction;
   reviewAction?: CompleteAction;
   disposeAction?: CompleteAction;
+  askAction?: TodayAskAction;
 }) {
   const docket = composeTodayDocket(loop);
   const hasBrief = docket.items.some((item) => item.origin === "brief");
@@ -129,6 +188,7 @@ export function ChiefOfStaffToday({
                 completeAction={completeAction}
                 reviewAction={reviewAction}
                 disposeAction={disposeAction}
+                askAction={askAction}
               />
             ))}
           </ol>
@@ -142,7 +202,7 @@ export function ChiefOfStaffToday({
           ) : null}
         </>
       )}
-      <CosWatchingList watching={docket.watching} />
+      <CosWatchingList watching={docket.watching} askAction={askAction} />
     </section>
   );
 }

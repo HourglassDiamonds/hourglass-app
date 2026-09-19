@@ -84,7 +84,7 @@ import {
   todayLifecycleClass,
 } from "@/lib/continuum/candidates/today-lifecycle";
 import { specConflictFromCandidates } from "./founder-actions";
-import { authorOwnedText } from "@/lib/continuum/gmail/candidates/spec-provenance";
+import { authorOwnedText, quotedText } from "@/lib/continuum/gmail/candidates/spec-provenance";
 import { isCandidateQuietForToday } from "./quiet";
 import { resolveTodayGroupTruth } from "./group-truth";
 import { extractInboundObligation } from "./inbound-obligation";
@@ -92,8 +92,15 @@ import {
   candidateDirection,
   indexedThreadForGroup,
   threadIdForGroup,
+  type RemainingFounderCommitment,
   type ThreadWaitingKind,
 } from "./thread-truth";
+import {
+  composeTodayBriefingPacket,
+  type ComposeTodayBriefingPacketInput,
+  type TodayBriefingPacket,
+} from "./briefing-packet";
+import { renderDeterministicBriefing } from "./briefing-copy";
 import type {
   CosAnomalyItem,
   CosBriefAction,
@@ -246,6 +253,18 @@ type RankedSituation = {
   noFounderAction?: boolean;
   waitingState?: ThreadWaitingKind | null;
   sourceClass?: TodayCommunicationClass;
+  threadSubject?: string | null;
+  personId?: string | null;
+  identityKind?: string | null;
+  lifecycleStage?: string | null;
+  remainingFounderCommitment?: RemainingFounderCommitment | null;
+  declinedCurrentBeat?: boolean;
+  vendorContactName?: string | null;
+  founderOwnTexts?: readonly string[];
+  vendorOwnTexts?: readonly string[];
+  quotedTexts?: readonly string[];
+  sourceRefs?: readonly string[];
+  briefingPacket?: TodayBriefingPacket | null;
 };
 
 function identityPeopleFor(
@@ -415,6 +434,42 @@ function isProductionStage(stage: string | null | undefined): boolean {
 
 function haystack(row: ContinuumCandidate): string {
   return `${candidateText(row)} ${row.evidenceBasis.matchedText ?? ""}`;
+}
+
+function briefingTextsFor(
+  rows: readonly ContinuumCandidate[],
+  thread: TodayGmailThreadContext | null | undefined,
+  communication: TodayCommunicationClass,
+): {
+  founderOwnTexts: string[];
+  vendorOwnTexts: string[];
+  quotedTexts: string[];
+  sourceRefs: string[];
+} {
+  const founderOwnTexts: string[] = [];
+  const vendorOwnTexts: string[] = [];
+  const quotedTexts: string[] = [];
+  const sourceRefs: string[] = [];
+  for (const row of rows) {
+    const hay = haystack(row);
+    const own = authorOwnedText(hay);
+    const quoted = quotedText(hay);
+    if (quoted) quotedTexts.push(quoted);
+    if (row.sourceRef) sourceRefs.push(row.sourceRef);
+    const direction = candidateDirection(row, thread);
+    if (direction === "outbound") founderOwnTexts.push(own);
+    else if (communication === "vendor" || direction === "inbound") vendorOwnTexts.push(own);
+  }
+  return { founderOwnTexts, vendorOwnTexts, quotedTexts, sourceRefs };
+}
+
+function vendorContactFirstName(
+  people: readonly { displayName: string; roles: string[] }[],
+): string | null {
+  const row = people.find((person) => person.roles.includes("vendor-contact"));
+  const name = row?.displayName.trim() || "";
+  if (!name) return null;
+  return name.split(/\s+/)[0] ?? null;
 }
 
 function parseMs(iso: string): number {
@@ -1592,6 +1647,7 @@ function classifySituation(input: {
       spec == null &&
       !yourTurn,
   );
+  const briefingTexts = briefingTextsFor(usable, thread, communication);
 
   return {
     id: `brief:${input.key}`,
@@ -1627,6 +1683,17 @@ function classifySituation(input: {
     noFounderAction: group.noFounderAction,
     waitingState: group.waitingState,
     sourceClass: group.sourceClass,
+    threadSubject: thread?.subject ?? null,
+    personId: group.personId,
+    identityKind: group.identityKind,
+    lifecycleStage: project?.lifecycleStage ?? null,
+    remainingFounderCommitment: remaining,
+    declinedCurrentBeat: group.declinedCurrentBeat,
+    vendorContactName: vendorContactFirstName(identityPeople),
+    founderOwnTexts: briefingTexts.founderOwnTexts,
+    vendorOwnTexts: briefingTexts.vendorOwnTexts,
+    quotedTexts: briefingTexts.quotedTexts,
+    sourceRefs: briefingTexts.sourceRefs,
   };
 }
 
@@ -1638,6 +1705,66 @@ function compareSituations(a: RankedSituation, b: RankedSituation): number {
   if (b.novelty !== a.novelty) return b.novelty - a.novelty;
   if (b.latestMs !== a.latestMs) return b.latestMs - a.latestMs;
   return a.id.localeCompare(b.id);
+}
+
+function briefingInputFromSituation(item: RankedSituation): ComposeTodayBriefingPacketInput {
+  return {
+    itemId: item.id,
+    displayNameHint: item.personName,
+    organizationLabel: item.organizationLabel,
+    vendorContactName: item.vendorContactName ?? null,
+    communication: item.communication,
+    identityKind: item.identityKind ?? null,
+    projectName: item.projectTitle,
+    projectId: item.projectId,
+    personId: item.personId ?? null,
+    threadSubject: item.threadSubject ?? null,
+    lifecycle: item.lifecycleStage ?? null,
+    remainingFounderCommitment: item.remainingFounderCommitment ?? null,
+    waitingState: item.waitingState ?? null,
+    noFounderAction: item.noFounderAction ?? false,
+    staleInboundSatisfied: item.staleInboundSatisfied ?? false,
+    declinedCurrentBeat: item.declinedCurrentBeat ?? false,
+    openJobProven: Boolean(item.openJobLabel),
+    evidence: item.beats,
+    founderOwnTexts: item.founderOwnTexts ?? [],
+    vendorOwnTexts: item.vendorOwnTexts ?? [],
+    quotedTexts: item.quotedTexts ?? [],
+    sourceRefs: item.sourceRefs ?? [],
+  };
+}
+
+function withBriefingDisposition(item: RankedSituation): RankedSituation {
+  const packet = composeTodayBriefingPacket(briefingInputFromSituation(item));
+  if (!packet) return { ...item, briefingPacket: null };
+  if (
+    packet.ballHolder === "founder" &&
+    packet.briefingKind === "founder_print_check" &&
+    (packet.candidateNextAction || packet.unresolvedFounderObligation) &&
+    item.disposition !== "brief"
+  ) {
+    return {
+      ...item,
+      disposition: "brief",
+      rankClass: "founder_commitment",
+      briefingPacket: packet,
+    };
+  }
+  return { ...item, briefingPacket: packet };
+}
+
+function presentWatching(item: RankedSituation): CosWatchingItem {
+  const packet = item.briefingPacket ?? composeTodayBriefingPacket(briefingInputFromSituation(item));
+  const briefing = packet ? renderDeterministicBriefing(packet) : null;
+  return {
+    id: item.id,
+    title: item.watchingTitle,
+    detail: item.watchingDetail,
+    projectId: item.projectId,
+    candidateIds: item.candidateIds,
+    briefingPacket: packet,
+    briefing,
+  };
 }
 
 function presentBrief(
@@ -1664,6 +1791,17 @@ function presentBrief(
       item.rankClass === "deadline_risk" ||
       item.rankClass === "client_reply" ||
       item.rankClass === "follow_up");
+  const packet = item.briefingPacket ?? composeTodayBriefingPacket(briefingInputFromSituation(item));
+  const briefing =
+    packet &&
+    !item.specConflict &&
+    (packet.ballHolder === "founder" ||
+      packet.ballHolder === "vendor_shop" ||
+      packet.ballHolder === "client")
+      ? renderDeterministicBriefing(packet)
+      : packet
+        ? renderDeterministicBriefing(packet)
+        : null;
   return {
     id: item.id,
     rank,
@@ -1711,6 +1849,8 @@ function presentBrief(
     noFounderAction: item.noFounderAction ?? false,
     waitingState: item.waitingState ?? null,
     lifecycleStage: projectContext?.lifecycleStage ?? null,
+    briefingPacket: packet,
+    briefing,
   };
 }
 
@@ -1799,7 +1939,7 @@ export function composeConciergeBrief(input: ComposeConciergeBriefInput): {
       knownPeople: input.knownPeople,
       associatedByProject,
     });
-    if (situation) situations.push(situation);
+    if (situation) situations.push(withBriefingDisposition(situation));
   }
 
   const briefSource = situations
@@ -1810,13 +1950,7 @@ export function composeConciergeBrief(input: ComposeConciergeBriefInput): {
     .filter((row) => row.disposition === "watching")
     .sort(compareSituations)
     .slice(0, COS_BRIEF_LIMIT)
-    .map((row) => ({
-      id: row.id,
-      title: row.watchingTitle,
-      detail: row.watchingDetail,
-      projectId: row.projectId,
-      candidateIds: row.candidateIds,
-    }));
+    .map((row) => presentWatching(row));
 
   return {
     brief: briefSource.map((row, index) => presentBrief(row, index + 1, input.projects)),

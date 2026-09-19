@@ -167,8 +167,14 @@ export function CosDocketActions({
   disposeAction?: DisposeAction;
 }) {
   const controls = selectFounderControls(item);
+  const hideResponded = Boolean(item.briefing);
+  const visibleActions = controls.actions.filter((action) => {
+    if (hideResponded && action.verb === "responded") return false;
+    return true;
+  });
   const visibleFallback = controls.fallback.filter((action) => {
     if (action.verb === "complete" && controls.completableJob) return false;
+    if (hideResponded && action.verb === "responded") return false;
     return true;
   });
   const evidence = controls.evidence;
@@ -180,7 +186,7 @@ export function CosDocketActions({
   );
   return (
     <div className="hg-cos-founder-actions mt-2 min-w-0">
-      {controls.actions.length > 0 || visibleFallback.length > 0 ? (
+      {visibleActions.length > 0 || visibleFallback.length > 0 ? (
         <div className="flex min-w-0 flex-wrap items-center gap-x-5" data-cos-founder-family={controls.family}>
           {controls.confirmPerson ? (
             <Link
@@ -191,7 +197,7 @@ export function CosDocketActions({
               Confirm person
             </Link>
           ) : null}
-          {controls.actions.map((action) => (
+          {visibleActions.map((action) => (
             <ActionButton
               key={action.verb}
               action={action}
