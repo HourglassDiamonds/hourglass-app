@@ -10,7 +10,10 @@ import {
   isRecoverableExternalHumanSender,
   isStudioOrVendorLabel,
   isSupplierOrSystemMailbox,
+  isTransactionalNoReplyMail,
   isVendorOrganizationLabel,
+  looksLikeHumanPersonName,
+  isActionableSystemAlert,
 } from "@/lib/continuum/candidates/founder-attention";
 import { authorOwnedText } from "@/lib/continuum/gmail/candidates/spec-provenance";
 import { extractTypedIdentifiers } from "@/lib/continuum/gmail/identifier-role";
@@ -21,8 +24,20 @@ import {
 import {
   clientLabelFromHgdSubject,
   composeTodayBriefingPacket,
+  isIdentityCleanupText,
+  isIdentifierOnlyProse,
+  packetHasUnresolvedVendorCommitment,
+  remainingIsPrintCheck,
   type TodayBriefingPacket,
 } from "./briefing-packet";
+import {
+  isCurrentClientTurnText,
+  isCurrentFounderOwnedObligationText,
+  isCurrentInboundAskText,
+  isGenericFallbackObligationText,
+  isRelationshipPromiseText,
+} from "./obligation-currentness";
+import { isImmediateCommitmentText } from "./thread-truth";
 import {
   renderDeterministicBriefing,
   sanitizeRendered,
@@ -126,21 +141,131 @@ function threadSubjectOf(
   return loop.threadContext.get(threadId)?.subject ?? null;
 }
 
+function recoverableSenderName(
+  item: CosBriefItem,
+  loop?: CosOperatingLoopView,
+): string | null {
+  const threadId = item.recoveredGmailThreadId ?? item.canonicalGmailThreadId ?? null;
+  const thread = threadId && loop?.threadContext ? loop.threadContext.get(threadId) ?? null : null;
+  const name = thread?.fromDisplayName?.trim() || null;
+  if (!name || name === UNASSIGNED) return null;
+  if (isVendorOrganizationLabel(name) || isStudioOrVendorLabel(name)) return null;
+  if (isSupplierOrSystemMailbox(thread?.fromEmail)) return null;
+  const tokens = name.split(/\s+/).filter(Boolean);
+  if (tokens.length < 2) return null;
+  if (!looksLikeHumanPersonName(name) && !isClientPersonLabel(name)) return null;
+  return name;
+}
+
+function overlayRecoverableSender(
+  packet: TodayBriefingPacket | null,
+  sender: string | null,
+): TodayBriefingPacket | null {
+  if (!packet || !sender) return packet;
+  if (packet.entityType === "vendor") return packet;
+  if (packet.displayName !== UNASSIGNED && packet.entityType !== "unknown") return packet;
+  return { ...packet, displayName: sender, entityType: "client" };
+}
+
+function remainingFromRecommended(
+  item: Pick<CosBriefItem, "recommended" | "explanation" | "noFounderAction" | "waitingState">,
+): RemainingFounderCommitmentInput | null {
+  if (item.noFounderAction || item.waitingState) return null;
+  const recommended = item.recommended.trim();
+  if (!recommended) return null;
+  if (isIdentityCleanupText(recommended)) return null;
+  if (isGenericFallbackObligationText(recommended)) return null;
+  if (/^wait on (?:the )?(?:shop|client|vendor)/i.test(recommended)) return null;
+  if (!isCurrentFounderOwnedObligationText(recommended)) return null;
+  return {
+    matchedText: recommended,
+    headline: recommended,
+    explanation: item.explanation,
+    recommended,
+  };
+}
+
+type RemainingFounderCommitmentInput = {
+  matchedText: string;
+  headline: string;
+  explanation: string;
+  recommended: string;
+};
+
+function remainingFromEvidence(
+  item: Pick<CosBriefItem, "recommended" | "explanation" | "evidence">,
+): RemainingFounderCommitmentInput | null {
+  for (const beat of item.evidence) {
+    if (beat.generatedSource) continue;
+    if (isIdentityCleanupText(beat.summary) || isIdentifierOnlyProse(beat.summary)) continue;
+    if (isGenericFallbackObligationText(beat.summary)) continue;
+    if (beat.speaker === "founder") {
+      if (!isImmediateCommitmentText(beat.summary) && !isCurrentInboundAskText(beat.summary)) {
+        continue;
+      }
+    } else if (!isCurrentClientTurnText(beat.summary)) {
+      continue;
+    }
+    const recommended = isGenericFallbackObligationText(item.recommended)
+      ? beat.summary
+      : item.recommended || beat.summary;
+    return {
+      matchedText: beat.summary,
+      headline: recommended,
+      explanation: item.explanation,
+      recommended,
+    };
+  }
+  return null;
+}
+
 export function equivalentPacketFromBrief(
   item: CosBriefItem,
   loop?: CosOperatingLoopView,
 ): TodayBriefingPacket | null {
   const threadSubject = threadSubjectOf(item, loop);
+  const threadId = item.recoveredGmailThreadId ?? item.canonicalGmailThreadId ?? null;
+  const thread = threadId && loop?.threadContext ? loop.threadContext.get(threadId) ?? null : null;
+  const sender = recoverableSenderName(item, loop);
+  let remaining = remainingFromRecommended(item) ?? remainingFromEvidence(item);
+  if (
+    (isSupplierOrSystemMailbox(thread?.fromEmail) ||
+      isTransactionalNoReplyMail({
+        subject: threadSubject ?? thread?.subject,
+        fromEmail: thread?.fromEmail,
+        fromDisplayName: thread?.fromDisplayName,
+        texts: [item.recommended, item.explanation],
+      })) &&
+    !isActionableSystemAlert({ thread })
+  ) {
+    remaining = null;
+  }
+  const hint =
+    item.personLabel ||
+    item.organizationLabel ||
+    item.projectTitle ||
+    sender ||
+    UNASSIGNED;
+  const founderOwnedRemaining = Boolean(remaining && /I(?:'ll| will)\b/i.test(remaining.matchedText));
+  const inboundAskRemaining = Boolean(
+    remaining &&
+      isCurrentClientTurnText(remaining.matchedText) &&
+      !isImmediateCommitmentText(remaining.matchedText),
+  );
   if (item.briefingPacket) {
     if (
-      item.briefingPacket.ballHolder === "unknown" &&
-      !item.noFounderAction &&
-      !item.waitingState &&
-      item.recommended.trim()
+      remaining &&
+      (inboundAskRemaining ||
+        (item.briefingPacket.briefingKind !== "vendor_cad_wait" &&
+          ((item.briefingPacket.ballHolder === "unknown" &&
+            !item.noFounderAction &&
+            !item.waitingState) ||
+            founderOwnedRemaining)))
     ) {
-      return composeTodayBriefingPacket({
+      return overlayRecoverableSender(
+        composeTodayBriefingPacket({
         itemId: item.id,
-        displayNameHint: item.personLabel || item.organizationLabel || item.projectTitle || UNASSIGNED,
+        displayNameHint: hint,
         organizationLabel: item.organizationLabel ?? null,
         communication: item.sourceClass ?? null,
         projectName: item.projectTitle,
@@ -148,12 +273,7 @@ export function equivalentPacketFromBrief(
         personId: item.briefingPacket.personId,
         threadSubject,
         lifecycle: item.lifecycleStage ?? null,
-        remainingFounderCommitment: {
-          matchedText: item.recommended,
-          headline: item.recommended,
-          explanation: item.explanation,
-          recommended: item.recommended,
-        },
+        remainingFounderCommitment: remaining,
         waitingState: item.waitingState ?? null,
         noFounderAction: false,
         staleInboundSatisfied: item.staleInboundSatisfied ?? false,
@@ -164,14 +284,16 @@ export function equivalentPacketFromBrief(
         vendorOwnTexts: item.evidence
           .filter((beat) => beat.speaker === "vendor")
           .map((beat) => authorOwnedText(beat.summary)),
-      }) ?? item.briefingPacket;
+      }) ?? item.briefingPacket,
+        sender,
+      );
     }
-    return item.briefingPacket;
+    return overlayRecoverableSender(item.briefingPacket, sender);
   }
-  const waiting = item.noFounderAction || Boolean(item.waitingState);
-  return composeTodayBriefingPacket({
+  return overlayRecoverableSender(
+    composeTodayBriefingPacket({
     itemId: item.id,
-    displayNameHint: item.personLabel || item.organizationLabel || item.projectTitle || UNASSIGNED,
+    displayNameHint: hint,
     organizationLabel: item.organizationLabel ?? null,
     communication: item.sourceClass ?? null,
     projectName: item.projectTitle,
@@ -179,14 +301,7 @@ export function equivalentPacketFromBrief(
     personId: null,
     threadSubject,
     lifecycle: item.lifecycleStage ?? null,
-    remainingFounderCommitment: waiting
-      ? null
-      : {
-          matchedText: item.recommended,
-          headline: item.recommended,
-          explanation: item.explanation,
-          recommended: item.recommended,
-        },
+    remainingFounderCommitment: remaining,
     waitingState: item.waitingState ?? null,
     noFounderAction: item.noFounderAction ?? false,
     staleInboundSatisfied: item.staleInboundSatisfied ?? false,
@@ -197,7 +312,9 @@ export function equivalentPacketFromBrief(
     vendorOwnTexts: item.evidence
       .filter((beat) => beat.speaker === "vendor")
       .map((beat) => authorOwnedText(beat.summary)),
-  });
+  }),
+    sender,
+  );
 }
 
 export function equivalentPacketFromJob(item: CosTop5Item, loop: CosOperatingLoopView): TodayBriefingPacket | null {
@@ -214,14 +331,15 @@ export function equivalentPacketFromJob(item: CosTop5Item, loop: CosOperatingLoo
     personId: null,
     threadSubject: null,
     lifecycle,
-    remainingFounderCommitment: /YOUR TURN|founder/i.test(item.ownership)
-      ? {
-          matchedText: item.action,
-          headline: item.action,
-          explanation: item.why,
-          recommended: item.action,
-        }
-      : null,
+    remainingFounderCommitment:
+      /YOUR TURN|founder/i.test(item.ownership) && isCurrentFounderOwnedObligationText(item.action)
+        ? {
+            matchedText: item.action,
+            headline: item.action,
+            explanation: item.why,
+            recommended: item.action,
+          }
+        : null,
     waitingState,
     noFounderAction: !/YOUR TURN|founder/i.test(item.ownership),
     staleInboundSatisfied: false,
@@ -305,14 +423,63 @@ export function isStaleLifecycleOnly(
   return true;
 }
 
+export function hasRealFounderOwnedObligation(packet: TodayBriefingPacket | null | undefined): boolean {
+  if (!packet) return false;
+  if (packet.briefingKind === "founder_print_check") return true;
+  if (packet.ballHolder !== "founder") return false;
+  const text = packet.unresolvedFounderObligation ?? packet.candidateNextAction ?? "";
+  if (!text || isIdentityCleanupText(text)) return false;
+  if (isGenericFallbackObligationText(text)) return false;
+  if (isRelationshipPromiseText(text) && !isImmediateCommitmentText(text)) return false;
+  return (
+    isCurrentFounderOwnedObligationText(text) ||
+    isCurrentClientTurnText(text) ||
+    remainingIsPrintCheck({
+      matchedText: text,
+      headline: text,
+      explanation: text,
+      recommended: text,
+    })
+  );
+}
+
+function identityIsNecessaryToExecute(seed: TodayDocketSeed, packet: TodayBriefingPacket): boolean {
+  if (packet.personId) return false;
+  if (packet.entityType === "vendor" || packet.entityType === "project") return false;
+  if (clientLabelFromHgdSubject(seed.threadSubject)) return false;
+  if (seed.brief?.personLabel && isClientPersonLabel(seed.brief.personLabel)) return false;
+  const name = packet.displayName.trim();
+  if (name && name !== UNASSIGNED && (isClientPersonLabel(name) || looksLikeHumanPersonName(name))) {
+    return false;
+  }
+  return packet.entityType === "unknown" || name === UNASSIGNED || !name;
+}
+
+function isIdentityCleanupOnly(seed: TodayDocketSeed, packet: TodayBriefingPacket): boolean {
+  if (hasRealFounderOwnedObligation(packet)) return false;
+  if (packet.briefingKind === "vendor_cad_wait" || packet.ballHolder === "vendor_shop") return false;
+  if (packet.ballHolder === "client" && (packet.projectId || currentCadOf(seed))) return false;
+  const hay = `${seed.headline} ${seed.context ?? ""} ${packet.unresolvedFounderObligation ?? ""} ${packet.candidateNextAction ?? ""}`;
+  if (isIdentityCleanupText(hay)) return true;
+  if (
+    packet.entityType === "unknown" &&
+    packet.ballHolder === "founder" &&
+    !packet.projectId &&
+    !currentCadOf(seed)
+  ) {
+    return true;
+  }
+  return false;
+}
+
 export function allowConfirmPerson(
   seed: TodayDocketSeed,
   loop: CosOperatingLoopView,
 ): boolean {
   const packet = seed.packet;
   if (!packet) return false;
-  if (packet.ballHolder !== "founder") return false;
-  if (!packet.unresolvedFounderObligation && !packet.candidateNextAction) return false;
+  if (!hasRealFounderOwnedObligation(packet)) return false;
+  if (!identityIsNecessaryToExecute(seed, packet)) return false;
   if (packet.entityType === "vendor") return false;
   if (packet.personId) return false;
   if (seed.brief?.sourceClass === "vendor" || seed.brief?.sourceClass === "platform") {
@@ -324,6 +491,14 @@ export function allowConfirmPerson(
   const threadId = seed.threadId;
   const thread = threadId ? loop.threadContext?.get(threadId) ?? null : null;
   if (isSupplierOrSystemMailbox(thread?.fromEmail)) return false;
+  if (isTransactionalNoReplyMail({
+    subject: seed.threadSubject ?? thread?.subject,
+    fromEmail: thread?.fromEmail,
+    fromDisplayName: thread?.fromDisplayName,
+    texts: [seed.headline, seed.context, packet.unresolvedFounderObligation],
+  })) {
+    return false;
+  }
   if (thread && !isRecoverableExternalHumanSender({ thread })) return false;
   const hgd = clientLabelFromHgdSubject(seed.threadSubject ?? thread?.subject);
   if (hgd) return false;
@@ -557,20 +732,43 @@ function keepSeed(seed: TodayDocketSeed, loop: CosOperatingLoopView): boolean {
   if (!seed.brief && !seed.job && !seed.decision && !seed.anomaly) {
     if (!seed.candidateIds.length && !seed.projectId && !currentCadOf(seed)) return false;
   }
+  const thread = seed.threadId ? loop.threadContext?.get(seed.threadId) ?? null : null;
+  const systemAlert = isActionableSystemAlert({ thread });
   if (
     packet.ballHolder === "unknown" &&
     !packet.unresolvedFounderObligation &&
-    packet.briefingKind === "generic"
+    packet.briefingKind === "generic" &&
+    !systemAlert
   ) {
     return false;
   }
-  const thread = seed.threadId ? loop.threadContext?.get(seed.threadId) ?? null : null;
+  const threadHay = [
+    seed.headline,
+    seed.context,
+    packet.unresolvedFounderObligation,
+    packet.candidateNextAction,
+    ...(seed.brief?.evidence.map((beat) => beat.summary) ?? []),
+  ];
   if (
-    isSupplierOrSystemMailbox(thread?.fromEmail) &&
-    !packet.unresolvedFounderObligation
+    !systemAlert &&
+    isTransactionalNoReplyMail({
+      subject: seed.threadSubject ?? thread?.subject,
+      fromEmail: thread?.fromEmail,
+      fromDisplayName: thread?.fromDisplayName,
+      texts: threadHay,
+    })
   ) {
     return false;
   }
+  if (
+    !systemAlert &&
+    isSupplierOrSystemMailbox(thread?.fromEmail) &&
+    !hasRealFounderOwnedObligation(packet)
+  ) {
+    return false;
+  }
+  if (isIdentityCleanupOnly(seed, packet)) return false;
+  if (seed.origin === "anomaly" && !hasRealFounderOwnedObligation(packet)) return false;
   if (quotedInboundCannotBeFounderState(packet) && packet.ballHolder !== "founder") {
     return false;
   }
@@ -583,20 +781,32 @@ function keepSeed(seed: TodayDocketSeed, loop: CosOperatingLoopView): boolean {
   return true;
 }
 
+function seedScore(seed: TodayDocketSeed): number {
+  const packet = seed.packet;
+  if (!packet) return 0;
+  if (packet.briefingKind === "founder_print_check") return 80;
+  if (
+    hasRealFounderOwnedObligation(packet) &&
+    remainingIsPrintCheck({
+      matchedText: packet.unresolvedFounderObligation ?? "",
+      headline: packet.unresolvedFounderObligation ?? "",
+      explanation: "",
+      recommended: packet.candidateNextAction ?? "",
+    })
+  ) {
+    return 80;
+  }
+  if (packet.briefingKind === "vendor_cad_wait") return 60;
+  if (packet.ballHolder === "vendor_shop") return 50;
+  if (hasRealFounderOwnedObligation(packet)) return 45;
+  if (packet.ballHolder === "client") return 30;
+  if (seed.origin === "brief") return 20;
+  return 10;
+}
+
 function strongerSeed(a: TodayDocketSeed, b: TodayDocketSeed): TodayDocketSeed {
-  const score = (seed: TodayDocketSeed): number => {
-    const packet = seed.packet;
-    if (!packet) return 0;
-    if (packet.briefingKind === "founder_print_check") return 80;
-    if (packet.ballHolder === "founder" && packet.unresolvedFounderObligation) return 70;
-    if (packet.briefingKind === "vendor_cad_wait") return 60;
-    if (packet.ballHolder === "vendor_shop") return 50;
-    if (packet.ballHolder === "client") return 30;
-    if (seed.origin === "brief") return 20;
-    return 10;
-  };
-  const left = score(a);
-  const right = score(b);
+  const left = seedScore(a);
+  const right = seedScore(b);
   if (left !== right) return left >= right ? a : b;
   const cadA = Boolean(currentCadOf(a));
   const cadB = Boolean(currentCadOf(b));
@@ -617,16 +827,45 @@ function mergeSeeds(left: TodayDocketSeed, right: TodayDocketSeed): TodayDocketS
         ? secondary.packet.displayName
         : primary.packet?.displayName);
   let packet = primary.packet;
-  if (packet && clientName && isVendorOrganizationLabel(packet.displayName)) {
-    packet = { ...packet, displayName: clientName, entityType: "client" };
-  }
+  const vendorPacket =
+    packetHasUnresolvedVendorCommitment(secondary.packet) && !packetHasUnresolvedVendorCommitment(packet)
+      ? secondary.packet
+      : packetHasUnresolvedVendorCommitment(packet)
+        ? packet
+        : null;
   if (
+    vendorPacket &&
+    packet &&
+    packet.briefingKind !== "founder_print_check" &&
+    !remainingIsPrintCheck({
+      matchedText: packet.unresolvedFounderObligation ?? "",
+      headline: packet.unresolvedFounderObligation ?? "",
+      explanation: "",
+      recommended: packet.candidateNextAction ?? "",
+    })
+  ) {
+    packet = {
+      ...vendorPacket,
+      displayName:
+        clientName && !isVendorOrganizationLabel(clientName) ? clientName : vendorPacket.displayName,
+      entityType:
+        clientName && !isVendorOrganizationLabel(clientName) ? "client" : vendorPacket.entityType,
+    };
+  } else if (
     packet &&
     secondary.packet?.briefingKind === "vendor_cad_wait" &&
     packet.briefingKind !== "founder_print_check" &&
-    !(packet.ballHolder === "founder" && packet.unresolvedFounderObligation)
+    !remainingIsPrintCheck({
+      matchedText: packet.unresolvedFounderObligation ?? "",
+      headline: packet.unresolvedFounderObligation ?? "",
+      explanation: "",
+      recommended: packet.candidateNextAction ?? "",
+    })
   ) {
     packet = secondary.packet;
+  }
+  if (packet && clientName && isVendorOrganizationLabel(packet.displayName)) {
+    packet = { ...packet, displayName: clientName, entityType: "client" };
   }
   const briefing = packet ? renderDeterministicBriefing(packet) : primary.briefing;
   const recapHeadline =
@@ -700,10 +939,11 @@ export function dedupeTodaySeeds(seeds: readonly TodayDocketSeed[]): TodayDocket
 function laneOf(seed: TodayDocketSeed): "up_next" | "watching" {
   const packet = seed.packet;
   if (!packet) return "watching";
-  if (packet.briefingKind === "founder_print_check") return "up_next";
-  if (packet.ballHolder === "founder" && (packet.unresolvedFounderObligation || packet.candidateNextAction)) {
-    return "up_next";
+  if (isIdentityCleanupText(seed.headline) && !hasRealFounderOwnedObligation(packet)) {
+    return "watching";
   }
+  if (packet.briefingKind === "founder_print_check") return "up_next";
+  if (hasRealFounderOwnedObligation(packet)) return "up_next";
   return "watching";
 }
 
@@ -818,6 +1058,7 @@ export function finalizeTodayDocket(loop: CosOperatingLoopView): {
     if (laneOf(seed) === "up_next") upNextSeeds.push(seed);
     else watchingSeeds.push(seed);
   }
+  upNextSeeds.sort((left, right) => seedScore(right) - seedScore(left));
   const upNext = filterCurrentTodayDocketItems(
     upNextSeeds.map((seed) => toDocketItem(seed, loop)),
     loop,
@@ -835,4 +1076,58 @@ export function finalizeTodayDocket(loop: CosOperatingLoopView): {
     .filter((item) => item.briefingPacket != null)
     .filter((item) => !DIAGNOSTIC_COPY.test(item.detail));
   return { upNext, watching };
+}
+
+function whySeedSurvived(seed: TodayDocketSeed): string {
+  const packet = seed.packet;
+  if (!packet) return "no packet";
+  if (packet.briefingKind === "founder_print_check") return "founder print/check obligation";
+  if (hasRealFounderOwnedObligation(packet)) return "founder-owned current action";
+  if (packetHasUnresolvedVendorCommitment(packet)) return "unresolved vendor commitment";
+  if (packet.ballHolder === "client") return "client holds the current turn";
+  if (seed.origin === "open_job") return "recorded open job";
+  return "current work loop";
+}
+
+export type TodayDocketRankRow = {
+  displayName: string;
+  projectOrCad: string | null;
+  lane: "up_next" | "queued" | "watching";
+  rank: number;
+  ballHolder: string | null;
+  founderObligation: string | null;
+  whySurvived: string;
+  groupKey: string;
+};
+
+export function inspectFinalizedTodayDocket(
+  loop: CosOperatingLoopView,
+  visibleLimit = 3,
+): TodayDocketRankRow[] {
+  const kept = dedupeTodaySeeds(collectSeeds(loop).filter((seed) => keepSeed(seed, loop)));
+  const upNextSeeds = kept
+    .filter((seed) => laneOf(seed) === "up_next")
+    .sort((left, right) => seedScore(right) - seedScore(left));
+  const watchingSeeds = kept.filter((seed) => laneOf(seed) !== "up_next");
+  const rowOf = (seed: TodayDocketSeed, lane: TodayDocketRankRow["lane"], rank: number): TodayDocketRankRow => {
+    const packet = seed.packet;
+    return {
+      displayName: packet?.displayName ?? seed.subject,
+      projectOrCad: packet?.projectName ?? currentCadOf(seed),
+      lane,
+      rank,
+      ballHolder: packet?.ballHolder ?? null,
+      founderObligation: packet?.unresolvedFounderObligation ?? packet?.candidateNextAction ?? null,
+      whySurvived: whySeedSurvived(seed),
+      groupKey: todayGroupKeysFor(seed)[0] ?? seed.id,
+    };
+  };
+  return [
+    ...upNextSeeds.map((seed, index) =>
+      rowOf(seed, index < visibleLimit ? "up_next" : "queued", index + 1),
+    ),
+    ...watchingSeeds.map((seed, index) =>
+      rowOf(seed, "watching", upNextSeeds.length + index + 1),
+    ),
+  ];
 }

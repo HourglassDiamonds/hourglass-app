@@ -79,9 +79,8 @@ function rewriteReplyBriefing(
   if (!reply) return null;
   if (unassigned) {
     return {
-      headline: "Identify who this is from.",
-      context:
-        "This conversation isn't attached to a person yet. Confirm who it belongs to before the next step.",
+      headline: finishImperative(headline),
+      context: softenGeneratedPhrasing(context) || context,
     };
   }
   if (!/recap|your turn/i.test(headline)) {
@@ -188,14 +187,6 @@ export function presentDocketBriefing(input: {
       ? rewriteReplyBriefing(rawHeadline, rawContext, input.subject, unassigned)
       : null;
   if (reply) return reply;
-
-  if (unassigned && /recap|next step/i.test(rawHeadline)) {
-    return {
-      headline: "Identify who this is from.",
-      context:
-        "This conversation isn't attached to a person yet. Confirm who it belongs to before the next step.",
-    };
-  }
 
   let headline = finishImperative(
     softenGeneratedPhrasing(rawHeadline)

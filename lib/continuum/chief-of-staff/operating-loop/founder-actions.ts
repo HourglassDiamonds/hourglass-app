@@ -9,8 +9,9 @@ import { PROJECT_SPEC_FIELD_LABELS } from "@/lib/continuum/client-memory/project
 import { currentProjectFocusHref } from "@/lib/continuum/client-memory/open-projects/present";
 import { CONCIERGE_HOME_PATH } from "@/lib/continuum/client-memory/read/presentation";
 import { CONCIERGE_GMAIL_INTAKE_PATH } from "@/lib/continuum/gmail/types";
-import { isVendorOrganizationLabel } from "@/lib/continuum/candidates/founder-attention";
+import { isVendorOrganizationLabel, looksLikeHumanPersonName } from "@/lib/continuum/candidates/founder-attention";
 import { selectOpenEmailSources, selectRelatedEmailSources } from "./email-source";
+import type { TodayBriefingPacket } from "./briefing-packet";
 import {
   addCalendarDays,
   civilDateInZone,
@@ -82,6 +83,7 @@ export type CosFounderActionSource = {
   brief: CosBriefItem | null;
   decision: CosFounderAttentionItem | null;
   anomaly: CosAnomalyItem | null;
+  briefingPacket?: TodayBriefingPacket | null;
 };
 
 export type CosFounderActionView = {
@@ -205,9 +207,17 @@ function needsPersonConfirm(item: CosFounderActionSource): boolean {
   if (item.brief?.sourceClass === "vendor" || item.brief?.sourceClass === "platform") {
     return false;
   }
-  if (item.brief?.briefingPacket?.entityType === "vendor") return false;
-  if (item.brief?.briefingPacket?.organizationLabel) return false;
-  if (item.brief?.briefingPacket?.ballHolder && item.brief.briefingPacket.ballHolder !== "founder") {
+  const packet = item.briefingPacket ?? item.brief?.briefingPacket ?? null;
+  if (packet?.entityType === "vendor") return false;
+  if (packet?.organizationLabel) return false;
+  if (packet?.ballHolder && packet.ballHolder !== "founder") return false;
+  if (packet?.personId) return false;
+  const workingName = packet?.displayName?.trim() || item.brief?.personLabel?.trim() || item.subject.trim();
+  if (
+    workingName &&
+    workingName !== "Unassigned" &&
+    (looksLikeHumanPersonName(workingName) || item.brief?.personLabel)
+  ) {
     return false;
   }
   if (isVendorOrganizationLabel(item.subject)) return false;

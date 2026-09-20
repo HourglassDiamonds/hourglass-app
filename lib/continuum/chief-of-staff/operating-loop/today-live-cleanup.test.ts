@@ -546,10 +546,10 @@ describe("Today live cleanup", () => {
     assert.ok(card);
     assert.equal(
       card?.brief?.actions.some((action) => action.kind === "confirm_person"),
-      true,
+      false,
     );
     const controls = selectFounderControls(card!);
-    assert.ok(controls.confirmPerson);
+    assert.equal(controls.confirmPerson, null);
     const html = renderToStaticMarkup(
       createElement(ChiefOfStaffToday, {
         loop: composeCosOperatingLoop({
@@ -559,7 +559,7 @@ describe("Today live cleanup", () => {
         }),
       }),
     );
-    assert.match(html, /Confirm person/);
+    assert.doesNotMatch(html, /Confirm person/);
     assert.match(html, /Dismiss from Today/);
   });
 });

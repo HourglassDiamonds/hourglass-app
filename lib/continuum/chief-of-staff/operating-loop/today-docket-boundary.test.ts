@@ -7,7 +7,8 @@ import type { ContinuumCandidate } from "@/lib/continuum/candidates/types";
 import type { TodayGmailThreadContext } from "@/lib/continuum/candidates/founder-attention";
 import { ChiefOfStaffToday } from "../../../../app/executive-dashboard/concierge/components/chief-of-staff-today";
 import { composeCosOperatingLoop } from "./compose";
-import { composeTodayDocket } from "./docket";
+import { composeTodayDocket, isActionableTodayDocketItem } from "./docket";
+import { inspectFinalizedTodayDocket, hasRealFounderOwnedObligation } from "./today-docket-boundary";
 import { selectFounderControls } from "./founder-actions";
 import { fixtureCandidate, fixtureJob, COS_LOOP_PROJECT_A } from "./fixtures";
 import type { CosProjectContext } from "./types";
@@ -711,5 +712,714 @@ describe("Today one authoritative docket boundary", () => {
     assert.doesNotMatch(`${packet?.displayName} ${docketHay(docket)}`, /RN07247|C021479/);
     const up = docket.items.find((item) => /Abbey|C026137/i.test(item.subject));
     assert.ok(up, "unresolved founder print/check should compete for Up Next");
+  });
+});
+
+function abbeyPrintCandidates(): ContinuumCandidate[] {
+  return [
+    gmailRow({
+      candidateId: "abbey-stl",
+      sourceRef: `gc1|${ABBEY_THREAD}|abbey-stl`,
+      sourceTimestamp: "2026-09-15T18:00:00.000Z",
+      candidateType: "open_job",
+      payload: {
+        kind: "open_job",
+        jobKind: "request",
+        subject: "Mod 1 STL attached",
+        detail: "Here is the C026137 Mod 1 STL.",
+        waitingOnActor: "founder",
+        dueAt: null,
+        createJob: false,
+      },
+      evidenceBasis: {
+        ruleIds: ["explicit_vendor_waiting"],
+        matchedText: "Here is the C026137 Mod 1 STL.",
+      },
+    }),
+    gmailRow({
+      candidateId: "abbey-print",
+      sourceRef: `gc1|${ABBEY_THREAD}|abbey-print`,
+      sourceTimestamp: "2026-09-15T18:30:00.000Z",
+      candidateType: "project_context",
+      payload: {
+        kind: "project_context",
+        topic: "design_refinement",
+        value: "I'll print the model to check the huggie proportions before moving forward.",
+      },
+      evidenceBasis: {
+        ruleIds: ["explicit_founder_commitment"],
+        matchedText: "I'll print the model to check the huggie proportions before moving forward.",
+      },
+    }),
+  ];
+}
+
+function abbeyThreads(): Map<string, TodayGmailThreadContext> {
+  return new Map([
+    [
+      ABBEY_THREAD,
+      {
+        subject: "RE: HGD x Abbey-C026137",
+        fromDisplayName: "Niurka Lulo",
+        fromEmail: NIURKA_EMAIL,
+        messages: [
+          {
+            messageId: "abbey-stl",
+            sentAt: "2026-09-15T18:00:00.000Z",
+            direction: "inbound",
+            fromEmailHash: NIURKA_HASH,
+          },
+          {
+            messageId: "abbey-print",
+            sentAt: "2026-09-15T18:30:00.000Z",
+            direction: "outbound",
+            fromEmailHash: FOUNDER_HASH,
+          },
+        ],
+      },
+    ],
+  ]);
+}
+
+function sarahClientWaitOverrideCandidates(): ContinuumCandidate[] {
+  return [
+    ...sarahDuplicateCandidates(),
+    gmailRow({
+      candidateId: "sarah-client-out",
+      sourceRef: `gc1|${SARAH_CLIENT_THREAD}|sarah-client-out`,
+      sourceTimestamp: "2026-09-16T16:00:00.000Z",
+      candidateType: "project_context",
+      payload: {
+        kind: "project_context",
+        topic: "design_refinement",
+        value: "C026143",
+      },
+      evidenceBasis: {
+        ruleIds: ["explicit_design_refinement"],
+        matchedText: "C026143",
+      },
+    }),
+  ];
+}
+
+function sarahClientWaitThreads(): Map<string, TodayGmailThreadContext> {
+  const threads = sarahThreads();
+  const client = threads.get(SARAH_CLIENT_THREAD)!;
+  threads.set(SARAH_CLIENT_THREAD, {
+    ...client,
+    messages: [
+      ...client.messages,
+      {
+        messageId: "sarah-client-out",
+        sentAt: "2026-09-16T16:00:00.000Z",
+        direction: "outbound",
+        fromEmailHash: FOUNDER_HASH,
+      },
+    ],
+  });
+  return threads;
+}
+
+function founderJob(projectId: string, subject: string) {
+  return fixtureJob({
+    jobId: `${projectId}-job`,
+    projectId,
+    subject,
+    waitingOnActor: "founder",
+    kind: "required_action",
+  });
+}
+
+describe("Today actionability gate and ball-holder precedence", () => {
+  it("A unresolved identity without founder obligation creates no Today item", () => {
+    const { docket } = todayOf(
+      [
+        gmailRow({
+          candidateId: "alex-assoc",
+          sourceRef: "gc1|alex-thread|alex-in",
+          sourceTimestamp: "2026-09-18T12:00:00.000Z",
+          candidateType: "person_association",
+          proposedTarget: { kind: "person", personId: null },
+          payload: {
+            kind: "person_association",
+            displayName: "Alex Rivera",
+            emailHash: hashEmail("alex@example.test"),
+            mintPerson: false,
+            mergePersons: false,
+          },
+          evidenceBasis: { ruleIds: ["unresolved_email_hash"], matchedText: "Alex Rivera" },
+        }),
+      ],
+      {
+        threadContext: new Map([
+          [
+            "alex-thread",
+            {
+              subject: "Introduction",
+              fromDisplayName: "Alex Rivera",
+              fromEmail: "alex@example.test",
+              messages: [
+                {
+                  messageId: "alex-in",
+                  sentAt: "2026-09-18T12:00:00.000Z",
+                  direction: "inbound",
+                },
+              ],
+            },
+          ],
+        ]),
+        knownPeople: [],
+      },
+    );
+    assert.equal(
+      docket.items.some((item) => /Alex|Identify who this is from/i.test(`${item.subject} ${item.headline}`)),
+      false,
+    );
+    assert.equal(
+      docket.watching.some((row) => /Alex|Identify who this is from/i.test(`${row.title} ${row.detail}`)),
+      false,
+    );
+  });
+
+  it("B supplier/system message without founder obligation creates no Today item", () => {
+    const { docket } = todayOf(
+      [
+        gmailRow({
+          candidateId: "nivoda-assoc",
+          sourceRef: "gc1|nivoda-thread|nivoda-in",
+          sourceTimestamp: "2026-09-18T12:00:00.000Z",
+          candidateType: "person_association",
+          proposedTarget: { kind: "person", personId: null },
+          payload: {
+            kind: "person_association",
+            displayName: "Nivoda",
+            emailHash: hashEmail(NIVODA_EMAIL),
+            mintPerson: false,
+            mergePersons: false,
+          },
+          evidenceBasis: { ruleIds: ["unresolved_email_hash"], matchedText: "Nivoda" },
+        }),
+        gmailRow({
+          candidateId: "nivoda-note",
+          sourceRef: "gc1|nivoda-thread|nivoda-in",
+          sourceTimestamp: "2026-09-18T12:00:00.000Z",
+          candidateType: "note",
+          payload: { kind: "note", text: "1 item is sold out", contextLayer: null },
+          evidenceBasis: { ruleIds: ["gmail_participant"], matchedText: "Nivoda - 1 item is sold out" },
+        }),
+      ],
+      {
+        threadContext: new Map([
+          [
+            "nivoda-thread",
+            {
+              subject: "Nivoda - 1 item is sold out",
+              fromDisplayName: "Nivoda",
+              fromEmail: NIVODA_EMAIL,
+              messages: [
+                {
+                  messageId: "nivoda-in",
+                  sentAt: "2026-09-18T12:00:00.000Z",
+                  direction: "inbound",
+                },
+              ],
+            },
+          ],
+        ]),
+        knownPeople: [],
+        vendorDirectory: [],
+      },
+    );
+    assert.equal(
+      docket.items.some((item) => /Nivoda|supply@|sold out|Identify who/i.test(`${item.subject} ${item.headline}`)),
+      false,
+    );
+    assert.equal(
+      docket.watching.some((row) => /Nivoda|sold out/i.test(`${row.title} ${row.detail}`)),
+      false,
+    );
+  });
+
+  it("C transactional/no-reply message creates no Today item", () => {
+    const fadedEmail = "admin@shop-welcome.test";
+    const { docket } = todayOf(
+      [
+        gmailRow({
+          candidateId: "welcome-assoc",
+          sourceRef: "gc1|welcome-thread|welcome-in",
+          sourceTimestamp: "2026-09-18T12:00:00.000Z",
+          candidateType: "person_association",
+          proposedTarget: { kind: "person", personId: null },
+          payload: {
+            kind: "person_association",
+            displayName: "Welcome",
+            emailHash: hashEmail(fadedEmail),
+            mintPerson: false,
+            mergePersons: false,
+          },
+          evidenceBasis: { ruleIds: ["unresolved_email_hash"], matchedText: "Welcome" },
+        }),
+        gmailRow({
+          candidateId: "welcome-note",
+          sourceRef: "gc1|welcome-thread|welcome-in",
+          sourceTimestamp: "2026-09-18T12:00:00.000Z",
+          candidateType: "note",
+          payload: {
+            kind: "note",
+            text: "Welcome. Please do not reply to this email.",
+            contextLayer: null,
+          },
+          evidenceBasis: {
+            ruleIds: ["gmail_participant"],
+            matchedText: "Welcome. Please do not reply to this email.",
+          },
+        }),
+      ],
+      {
+        threadContext: new Map([
+          [
+            "welcome-thread",
+            {
+              subject: "Welcome",
+              fromDisplayName: "getfadedwithangie",
+              fromEmail: fadedEmail,
+              messages: [
+                {
+                  messageId: "welcome-in",
+                  sentAt: "2026-09-18T12:00:00.000Z",
+                  direction: "inbound",
+                },
+              ],
+            },
+          ],
+        ]),
+        knownPeople: [],
+      },
+    );
+    assert.equal(
+      docket.items.some((item) => /Welcome|getfaded|Identify who|do not reply/i.test(`${item.subject} ${item.headline} ${item.context ?? ""}`)),
+      false,
+    );
+    assert.equal(
+      docket.watching.some((row) => /Welcome|getfaded|do not reply/i.test(`${row.title} ${row.detail}`)),
+      false,
+    );
+  });
+
+  it("D legitimate founder obligation requiring identity allows Confirm Person", () => {
+    const { docket } = todayOf(
+      [
+        gmailRow({
+          candidateId: "unassigned-reply",
+          sourceRef: "gc1|unassigned-thread|unassigned-in",
+          sourceTimestamp: "2026-09-18T15:00:00.000Z",
+          candidateType: "open_job",
+          payload: {
+            kind: "open_job",
+            jobKind: "request",
+            subject: "design reply",
+            detail: "I like the updated gallery. What do you think we should do next?",
+            waitingOnActor: "founder",
+            dueAt: null,
+            createJob: false,
+          },
+          evidenceBasis: {
+            ruleIds: ["explicit_cad_feedback", "explicit_client_request"],
+            matchedText: "I like the updated gallery. What do you think we should do next?",
+          },
+        }),
+      ],
+      {
+        threadContext: new Map([
+          [
+            "unassigned-thread",
+            {
+              subject: "Design thoughts",
+              fromDisplayName: null,
+              fromEmail: "guest.sender@example.test",
+              messages: [
+                {
+                  messageId: "unassigned-in",
+                  sentAt: "2026-09-18T15:00:00.000Z",
+                  direction: "inbound",
+                },
+              ],
+            },
+          ],
+        ]),
+        knownPeople: [],
+      },
+    );
+    assert.equal(docket.items.length > 0, true);
+    assert.doesNotMatch(docket.items[0]?.headline ?? "", /Identify who this is from/i);
+    assert.equal(selectFounderControls(docket.items[0]!).confirmPerson != null, true);
+  });
+
+  it("E legitimate founder obligation not requiring identity briefs the obligation, not Confirm Person", () => {
+    const { docket } = todayOf(
+      [
+        gmailRow({
+          candidateId: "aurora-assoc",
+          sourceRef: "gc1|aurora-thread|aurora-in",
+          sourceTimestamp: "2026-09-18T14:00:00.000Z",
+          candidateType: "person_association",
+          proposedTarget: { kind: "person", personId: null },
+          payload: {
+            kind: "person_association",
+            displayName: "Aurora Underwood",
+            emailHash: hashEmail("aurora@acivmatrix.com"),
+            mintPerson: false,
+            mergePersons: false,
+          },
+          evidenceBasis: { ruleIds: ["unresolved_email_hash"], matchedText: "Aurora Underwood" },
+        }),
+        gmailRow({
+          candidateId: "aurora-follow",
+          sourceRef: "gc1|aurora-thread|aurora-in",
+          sourceTimestamp: "2026-09-18T14:00:00.000Z",
+          candidateType: "open_job",
+          payload: {
+            kind: "open_job",
+            jobKind: "request",
+            subject: "walk-ins this month",
+            detail: "Can you follow up with me about walk-ins this month?",
+            waitingOnActor: "founder",
+            dueAt: null,
+            createJob: false,
+          },
+          evidenceBasis: {
+            ruleIds: ["explicit_client_request", "explicit_follow_up"],
+            matchedText: "Can you follow up with me about walk-ins this month?",
+          },
+        }),
+      ],
+      {
+        threadContext: new Map([
+          [
+            "aurora-thread",
+            {
+              subject: "walk-ins this month",
+              fromDisplayName: "Aurora Underwood",
+              fromEmail: "aurora@acivmatrix.com",
+              messages: [
+                {
+                  messageId: "aurora-in",
+                  sentAt: "2026-09-18T14:00:00.000Z",
+                  direction: "inbound",
+                },
+              ],
+            },
+          ],
+        ]),
+        knownPeople: [],
+      },
+    );
+    const card = docket.items.find((item) => /Aurora|walk-ins|follow up/i.test(`${item.subject} ${item.headline}`));
+    assert.ok(card, `expected Aurora follow-up in Up Next, got ${docket.items.map((item) => item.subject).join("|")}`);
+    assert.doesNotMatch(card?.headline ?? "", /Identify who this is from/i);
+    assert.doesNotMatch(card?.briefingPacket?.unresolvedFounderObligation ?? "", /Send the recap/i);
+    assert.match(
+      card?.briefingPacket?.unresolvedFounderObligation ?? card?.headline ?? "",
+      /follow up with me about walk-ins/i,
+    );
+    assert.match(card?.subject ?? "", /Aurora/i);
+    assert.equal(selectFounderControls(card!).confirmPerson, null);
+  });
+
+  it("E2 fragment follow-up-with-you is not a current founder obligation", () => {
+    const { docket } = todayOf(
+      [
+        gmailRow({
+          candidateId: "aurora-assoc",
+          sourceRef: "gc1|aurora-thread|aurora-in",
+          sourceTimestamp: "2026-09-18T14:00:00.000Z",
+          candidateType: "person_association",
+          proposedTarget: { kind: "person", personId: null },
+          payload: {
+            kind: "person_association",
+            displayName: "Aurora U",
+            emailHash: hashEmail("aurora@acivmatrix.com"),
+            mintPerson: false,
+            mergePersons: false,
+          },
+          evidenceBasis: { ruleIds: ["unresolved_email_hash"], matchedText: "Aurora U" },
+        }),
+        gmailRow({
+          candidateId: "aurora-note",
+          sourceRef: "gc1|aurora-thread|aurora-in",
+          sourceTimestamp: "2026-09-18T14:00:00.000Z",
+          candidateType: "note",
+          payload: {
+            kind: "note",
+            text: "walk-ins this month / follow up with you",
+            contextLayer: null,
+          },
+          evidenceBasis: {
+            ruleIds: ["gmail_participant"],
+            matchedText: "walk-ins this month / follow up with you",
+          },
+        }),
+      ],
+      {
+        threadContext: new Map([
+          [
+            "aurora-thread",
+            {
+              subject: "walk-ins this month",
+              fromDisplayName: "Aurora U",
+              fromEmail: "aurora@acivmatrix.com",
+              messages: [
+                {
+                  messageId: "aurora-in",
+                  sentAt: "2026-09-18T14:00:00.000Z",
+                  direction: "inbound",
+                },
+              ],
+            },
+          ],
+        ]),
+        knownPeople: [],
+      },
+    );
+    assert.equal(
+      docket.items.some((item) => /Aurora|walk-ins|follow up|recap/i.test(`${item.subject} ${item.headline}`)),
+      false,
+    );
+  });
+
+  it("F vendor commitment survives project/client grouping as vendor_shop", () => {
+    const { docket } = todayOf(sarahDuplicateCandidates(), { threadContext: sarahThreads() });
+    const watching = docket.watching.find((row) => /Sarah|C026143/i.test(row.title));
+    assert.ok(watching);
+    assert.equal(watching.briefingPacket?.ballHolder, "vendor_shop");
+    assert.equal(watching.briefing?.stateChip, "WAITING ON SHOP");
+  });
+
+  it("G generic outbound→client wait cannot override unresolved vendor commitment", () => {
+    const { docket } = todayOf(sarahClientWaitOverrideCandidates(), {
+      threadContext: sarahClientWaitThreads(),
+    });
+    const watching = docket.watching.find((row) => /Sarah|C026143/i.test(row.title));
+    assert.ok(watching, `expected Sarah watching, up=${docket.items.map((item) => item.subject).join("|")} watching=${docket.watching.map((row) => row.title).join("|")}`);
+    assert.equal(watching.briefingPacket?.ballHolder, "vendor_shop");
+    assert.equal(watching.briefing?.stateChip, "WAITING ON SHOP");
+    assert.doesNotMatch(`${watching.detail} ${watching.briefing?.stand ?? ""}`, /Sarah has the next turn/i);
+  });
+
+  it("H identifiers never become standalone briefing prose", () => {
+    const { docket } = todayOf(sarahClientWaitOverrideCandidates(), {
+      threadContext: sarahClientWaitThreads(),
+    });
+    const hay = docketHay(docket);
+    assert.doesNotMatch(hay, /You already wrote\.\s*C026143/i);
+    const watching = docket.watching.find((row) => /Sarah|C026143/i.test(row.title));
+    assert.ok(watching);
+    assert.match(watching.title, /C026143/);
+    assert.doesNotMatch(`${watching.detail} ${watching.briefing?.stand ?? ""} ${watching.briefing?.headline ?? ""}`, /^C026143\.?$/m);
+  });
+
+  it("I all Up Next cards have a non-null founder-owned current action", () => {
+    const { docket } = todayOf([...abbeyPrintCandidates(), ...sarahDuplicateCandidates()], {
+      threadContext: new Map([...abbeyThreads(), ...sarahThreads()]),
+    });
+    assert.equal(docket.items.length > 0, true);
+    for (const item of docket.items) {
+      if (item.origin === "master_sprint") continue;
+      assert.equal(isActionableTodayDocketItem(item), true, item.subject);
+      assert.equal(hasRealFounderOwnedObligation(item.briefingPacket), true, item.headline);
+      assert.ok(item.briefingPacket?.unresolvedFounderObligation || item.briefingPacket?.candidateNextAction);
+    }
+  });
+
+  it("J hidden queued cards obey the same actionability rules as the visible top 3", () => {
+    const jobs = [
+      founderJob("proj-one", "Send chain options and pricing."),
+      founderJob("proj-two", "Call the setter about the next wax."),
+      founderJob("proj-three", "Email the client the size update."),
+      founderJob("proj-four", "Share the CAD recap with the client."),
+    ];
+    const projects = new Map(
+      jobs.map((job, index) => [
+        job.projectId,
+        {
+          projectId: job.projectId,
+          title: `Work ${index + 1}`,
+          personName: `Client ${index + 1}`,
+          people: [{ personId: `person-${index + 1}`, displayName: `Client ${index + 1}`, role: "client" as const }],
+          isCurrent: true,
+        },
+      ]),
+    );
+    const { loop, docket } = todayOf(
+      [
+        gmailRow({
+          candidateId: "nivoda-noise",
+          sourceRef: "gc1|nivoda-thread|nivoda-in",
+          sourceTimestamp: "2026-09-18T12:00:00.000Z",
+          candidateType: "note",
+          payload: { kind: "note", text: "1 item is sold out", contextLayer: null },
+          evidenceBasis: { ruleIds: ["gmail_participant"], matchedText: "1 item is sold out" },
+        }),
+      ],
+      {
+        jobs,
+        projects,
+        threadContext: new Map([
+          [
+            "nivoda-thread",
+            {
+              subject: "Nivoda - 1 item is sold out",
+              fromDisplayName: "Nivoda",
+              fromEmail: NIVODA_EMAIL,
+              messages: [
+                { messageId: "nivoda-in", sentAt: "2026-09-18T12:00:00.000Z", direction: "inbound" },
+              ],
+            },
+          ],
+        ]),
+        knownPeople: [],
+      },
+    );
+    const ranked = inspectFinalizedTodayDocket(loop);
+    const queued = ranked.filter((row) => row.lane === "queued");
+    assert.equal(docket.queuedCount > 0, true);
+    assert.equal(queued.length, docket.queuedCount);
+    for (const row of queued) {
+      assert.equal(row.ballHolder, "founder");
+      assert.ok(row.founderObligation);
+      assert.doesNotMatch(row.displayName, /Nivoda|Identify who/i);
+    }
+    assert.equal(
+      ranked.some((row) => /Nivoda|sold out/i.test(`${row.displayName} ${row.founderObligation ?? ""}`)),
+      false,
+    );
+  });
+
+  it("K Abbey disposition remains evidence-driven", () => {
+    const { docket } = todayOf([...abbeyPrintCandidates(), ...sarahDuplicateCandidates()], {
+      threadContext: new Map([...abbeyThreads(), ...sarahThreads()]),
+    });
+    const abbey = [...docket.items, ...docket.watching].find((row) =>
+      /Abbey|C026137/i.test("subject" in row ? `${row.subject} ${row.headline}` : `${row.title} ${row.detail}`),
+    );
+    assert.ok(abbey);
+    assert.equal(abbey.briefingPacket?.ballHolder, "founder");
+    const up = docket.items.find((item) => /Abbey|C026137/i.test(item.subject));
+    assert.ok(up);
+  });
+
+  it("complete ranked docket includes hidden queued items", () => {
+    const { loop, docket } = todayOf(
+      [
+        ...abbeyPrintCandidates(),
+        ...sarahClientWaitOverrideCandidates(),
+        gmailRow({
+          candidateId: "nivoda-note",
+          sourceRef: "gc1|nivoda-thread|nivoda-in",
+          sourceTimestamp: "2026-09-18T12:00:00.000Z",
+          candidateType: "note",
+          payload: { kind: "note", text: "1 item is sold out", contextLayer: null },
+          evidenceBasis: { ruleIds: ["gmail_participant"], matchedText: "Nivoda - 1 item is sold out" },
+        }),
+        gmailRow({
+          candidateId: "welcome-note",
+          sourceRef: "gc1|welcome-thread|welcome-in",
+          sourceTimestamp: "2026-09-18T12:05:00.000Z",
+          candidateType: "note",
+          payload: {
+            kind: "note",
+            text: "Welcome. Please do not reply to this email.",
+            contextLayer: null,
+          },
+          evidenceBasis: {
+            ruleIds: ["gmail_participant"],
+            matchedText: "Welcome. Please do not reply to this email.",
+          },
+        }),
+        gmailRow({
+          candidateId: "aurora-follow",
+          sourceRef: "gc1|aurora-thread|aurora-in",
+          sourceTimestamp: "2026-09-18T14:00:00.000Z",
+          candidateType: "open_job",
+          payload: {
+            kind: "open_job",
+            jobKind: "request",
+            subject: "walk-ins this month",
+            detail: "Can you follow up with me about walk-ins this month?",
+            waitingOnActor: "founder",
+            dueAt: null,
+            createJob: false,
+          },
+          evidenceBasis: {
+            ruleIds: ["explicit_client_request", "explicit_follow_up"],
+            matchedText: "Can you follow up with me about walk-ins this month?",
+          },
+        }),
+      ],
+      {
+        threadContext: new Map([
+          ...abbeyThreads(),
+          ...sarahClientWaitThreads(),
+          [
+            "nivoda-thread",
+            {
+              subject: "Nivoda - 1 item is sold out",
+              fromDisplayName: "Nivoda",
+              fromEmail: NIVODA_EMAIL,
+              messages: [
+                { messageId: "nivoda-in", sentAt: "2026-09-18T12:00:00.000Z", direction: "inbound" },
+              ],
+            },
+          ],
+          [
+            "welcome-thread",
+            {
+              subject: "Welcome",
+              fromDisplayName: "getfadedwithangie",
+              fromEmail: "admin@shop-welcome.test",
+              messages: [
+                { messageId: "welcome-in", sentAt: "2026-09-18T12:05:00.000Z", direction: "inbound" },
+              ],
+            },
+          ],
+          [
+            "aurora-thread",
+            {
+              subject: "walk-ins this month",
+              fromDisplayName: "Aurora Underwood",
+              fromEmail: "aurora@acivmatrix.com",
+              messages: [
+                { messageId: "aurora-in", sentAt: "2026-09-18T14:00:00.000Z", direction: "inbound" },
+              ],
+            },
+          ],
+        ]),
+        jobs: [
+          founderJob("proj-one", "Send chain options and pricing."),
+          founderJob("proj-two", "Call the setter about the next wax."),
+          founderJob("proj-three", "Email the client the size update."),
+        ],
+        projects: new Map([
+          ["proj-one", { projectId: "proj-one", title: "Chain options", personName: "Overflow One", people: [{ personId: "overflow-one-person", displayName: "Overflow One", role: "client" as const }], isCurrent: true }],
+          ["proj-two", { projectId: "proj-two", title: "Setter wax", personName: "Overflow Two", people: [{ personId: "overflow-two-person", displayName: "Overflow Two", role: "client" as const }], isCurrent: true }],
+          ["proj-three", { projectId: "proj-three", title: "Size update", personName: "Overflow Three", people: [{ personId: "overflow-three-person", displayName: "Overflow Three", role: "client" as const }], isCurrent: true }],
+        ]),
+      },
+    );
+    const ranked = inspectFinalizedTodayDocket(loop);
+    assert.equal(ranked.length >= 2, true);
+    assert.equal(ranked.some((row) => /Nivoda/i.test(row.displayName)), false);
+    assert.equal(ranked.some((row) => /getfaded|Welcome/i.test(row.displayName)), false);
+    const abbey = ranked.find((row) => /Abbey|C026137/i.test(`${row.displayName} ${row.projectOrCad ?? ""}`));
+    assert.ok(abbey, `Abbey missing from ${JSON.stringify(ranked)}`);
+    const sarah = ranked.find((row) => /Sarah|C026143/i.test(`${row.displayName} ${row.projectOrCad ?? ""}`));
+    assert.ok(sarah);
+    assert.equal(sarah.ballHolder, "vendor_shop");
+    assert.equal(sarah.lane, "watching");
+    for (const row of ranked.filter((item) => item.lane === "up_next" || item.lane === "queued")) {
+      assert.equal(row.ballHolder, "founder");
+      assert.ok(row.founderObligation);
+    }
+    assert.equal(docket.watching.some((row) => /Sarah/i.test(row.title)), true);
   });
 });

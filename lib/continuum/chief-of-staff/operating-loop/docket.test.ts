@@ -168,21 +168,27 @@ describe("Today Chief of Staff docket", () => {
     assert.equal(docket.title, COS_DOCKET_TITLE);
   });
 
-  it("briefs unassigned replies as an identity-first next action", () => {
+  it("briefs unassigned replies as the founder obligation, with Confirm Person secondary", () => {
     const docket = composeTodayDocket(loopOf({
       brief: [briefItem({
         id: "brief-unassigned",
         personLabel: null,
         projectTitle: null,
-        recommended: "Send the recap / next step.",
-        explanation: "The client answered a design question. The latest meaningful turn is theirs.",
+        recommended: "Can you confirm the next step for this design?",
+        explanation: "The client asked to confirm the next step.",
+        actions: [{
+          kind: "confirm_person",
+          label: "Confirm person",
+          href: "/executive-dashboard/concierge/gmail",
+        }],
       })],
     }));
     assert.equal(docket.items[0]?.subject, "Unassigned");
-    assert.equal(docket.items[0]?.headline, "Identify who this is from.");
-    assert.match(
-      docket.items[0]?.context ?? "",
-      /isn't attached to a person yet/i,
+    assert.match(docket.items[0]?.headline ?? "", /confirm the next step/i);
+    assert.doesNotMatch(docket.items[0]?.headline ?? "", /Identify who this is from/i);
+    assert.equal(
+      docket.items[0]?.brief?.actions.some((action) => action.kind === "confirm_person") ?? false,
+      true,
     );
   });
 
@@ -267,7 +273,7 @@ describe("Today Chief of Staff docket", () => {
         personLabel: `Person ${index}`,
         projectTitle: `Project ${index}`,
         projectId: `bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb${index}`,
-        recommended: `Do action ${index}`,
+        recommended: `Send the next update ${index}.`,
         candidateIds: [`cand-${index}`],
       }),
     );

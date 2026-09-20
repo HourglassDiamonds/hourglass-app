@@ -4,7 +4,11 @@
  */
 
 import type { TodayBallHolder, TodayBriefingPacket } from "./briefing-packet";
-import { currentIdentifierValues, historicalIdentifierValues } from "./briefing-packet";
+import {
+  currentIdentifierValues,
+  historicalIdentifierValues,
+  isIdentifierOnlyProse,
+} from "./briefing-packet";
 
 export type TodayBriefingStateChip =
   | "YOUR MOVE"
@@ -62,7 +66,7 @@ export function renderDeterministicBriefing(
       stand: shopStand(packet),
       nextKind: "nothing_from_you",
       nextLabel: "Nothing from you right now",
-      nextBody: packet.candidateNextAction ?? "Review the CAD when it comes back.",
+      nextBody: packet.candidateNextAction ?? "Review the new CAD when it arrives.",
       source: "deterministic",
     }, packet);
   }
@@ -72,10 +76,7 @@ export function renderDeterministicBriefing(
       projectName: packet.projectName,
       stateChip: chip,
       headline: `${who} has the next turn.`,
-      stand:
-        packet.latestMeaningfulFounderAction?.summary
-          ? `You already wrote. ${packet.latestMeaningfulFounderAction.summary}`
-          : `You already wrote. Waiting on ${who}.`,
+      stand: clientStand(packet, who),
       nextKind: "waiting_on",
       nextLabel: "Waiting on",
       nextBody: who,
@@ -139,8 +140,8 @@ function founderStand(
   who: string,
   cad: string | undefined,
 ): string {
-  const external = packet.latestMeaningfulExternalEvent?.summary;
-  const founder = packet.latestMeaningfulFounderAction?.summary;
+  const external = usableProse(packet.latestMeaningfulExternalEvent?.summary);
+  const founder = usableProse(packet.latestMeaningfulFounderAction?.summary);
   if (external && founder) {
     const cadBit = cad && !external.includes(cad) ? ` (${cad})` : "";
     return `${sentence(`${external}${cadBit}`)} ${sentence(founder)}`.replace(/\s{2,}/g, " ").trim();
@@ -150,9 +151,15 @@ function founderStand(
   return `A founder move is still open with ${who}.`;
 }
 
+function clientStand(packet: TodayBriefingPacket, who: string): string {
+  const founder = usableProse(packet.latestMeaningfulFounderAction?.summary);
+  if (founder) return `You already wrote. ${sentence(founder)}`;
+  return `You already wrote. Waiting on ${who}.`;
+}
+
 function shopHeadline(packet: TodayBriefingPacket): string {
   const org = packet.organizationLabel || "the shop";
-  if (packet.latestMeaningfulFounderAction) {
+  if (usableProse(packet.latestMeaningfulFounderAction?.summary)) {
     return `You already sent the revised direction to ${org}.`;
   }
   return `Updated CAD is with ${org}.`;
@@ -161,12 +168,22 @@ function shopHeadline(packet: TodayBriefingPacket): string {
 function shopStand(packet: TodayBriefingPacket): string {
   const who = packet.vendorContactName || "The shop";
   const verb = packet.vendorContactName ? "she'll" : "they'll";
-  const external = packet.latestMeaningfulExternalEvent?.summary;
+  const org = packet.organizationLabel;
+  const external = usableProse(packet.latestMeaningfulExternalEvent?.summary);
+  if (org && packet.vendorContactName && (packet.briefingKind === "vendor_cad_wait" || (external && /CAD/i.test(external)))) {
+    return `Your revised direction is with ${org}. ${who} said ${verb} send the updated CAD when it's ready.`;
+  }
   if (external && /CAD/i.test(external)) {
     return `You already sent the revised direction. ${who} has the changes and said ${verb} send the updated CAD when it's ready.`;
   }
   if (external) return `You already sent the revised direction. ${sentence(external)}`;
   return "You already replied. Current dependency is the shop.";
+}
+
+function usableProse(text: string | null | undefined): string | null {
+  const trimmed = text?.replace(/\s+/g, " ").trim() ?? "";
+  if (!trimmed || isIdentifierOnlyProse(trimmed)) return null;
+  return trimmed;
 }
 
 function sentence(text: string): string {

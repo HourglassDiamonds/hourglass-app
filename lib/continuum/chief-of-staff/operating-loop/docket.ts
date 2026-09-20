@@ -8,6 +8,7 @@ import {
   isMeaningfulTodayActionText,
   isNoiseOnlyCandidateText,
 } from "@/lib/continuum/candidates/founder-attention";
+import { isCurrentFounderOwnedObligationText } from "./obligation-currentness";
 import { COS_SPRINT_CLEAR_COPY } from "./master-sprint";
 import {
   COS_CAUGHT_UP_DETAIL,
@@ -18,7 +19,8 @@ import {
   isExecutiveBriefing,
   presentDocketBriefing,
 } from "./docket-present";
-import { finalizeTodayDocket } from "./today-docket-boundary";
+import { isIdentityCleanupText } from "./briefing-packet";
+import { finalizeTodayDocket, hasRealFounderOwnedObligation } from "./today-docket-boundary";
 import type {
   CosDocketItemView,
   CosDocketLane,
@@ -77,7 +79,13 @@ export function isActionableTodayDocketItem(item: CosDocketItemView): boolean {
   }
   if (item.origin === "master_sprint") return true;
   if (isNoiseOnlyCandidateText(item.headline)) return false;
-  if (item.origin === "open_job") return true;
+  if (isIdentityCleanupText(item.headline) && !hasRealFounderOwnedObligation(item.briefingPacket)) {
+    return false;
+  }
+  if (item.origin === "open_job") {
+    if (item.briefingPacket) return hasRealFounderOwnedObligation(item.briefingPacket);
+    return isCurrentFounderOwnedObligationText(item.headline);
+  }
   const evidence = item.brief?.evidence ?? [];
   const evidenceTexts = evidence.map((beat) => beat.summary);
   const noiseEvidenceOnly =
@@ -100,15 +108,11 @@ export function isActionableTodayDocketItem(item: CosDocketItemView): boolean {
       return false;
     }
   }
-  if (/Identify who this is from/i.test(item.headline)) {
-    const supportedReply = /answered a design question|latest meaningful turn|asked for|confirm the next step|isn't attached to a person/i.test(
-      item.brief?.explanation ?? "",
-    );
-    const recovered = Boolean(
-      item.brief?.recoveredGmailThreadId || item.brief?.canonicalGmailThreadId,
-    );
-    const confirm = item.brief?.actions.some((action) => action.kind === "confirm_person") ?? false;
-    return Boolean(confirm || recovered || supportedReply || !noiseEvidenceOnly);
+  if (item.briefingPacket) {
+    if (item.briefingPacket.ballHolder === "founder") {
+      return hasRealFounderOwnedObligation(item.briefingPacket);
+    }
+    return false;
   }
   return Boolean(item.brief || item.job || isMeaningfulTodayActionText(item.headline));
 }

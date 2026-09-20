@@ -722,9 +722,15 @@ describe("Today speaker authorship + cross-thread project truth", () => {
     );
     assert.equal(
       docket.items.some((item) =>
-        item.brief?.actions.some((action) => action.kind === "confirm_person"),
+        /Alex|custom ring|next step/i.test(`${item.subject} ${item.headline}`),
       ),
       true,
+    );
+    assert.equal(
+      docket.items.some((item) =>
+        item.brief?.actions.some((action) => action.kind === "confirm_person"),
+      ),
+      false,
     );
   });
 

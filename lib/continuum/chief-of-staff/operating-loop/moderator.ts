@@ -89,6 +89,10 @@ import { isCandidateQuietForToday } from "./quiet";
 import { resolveTodayGroupTruth } from "./group-truth";
 import { extractInboundObligation } from "./inbound-obligation";
 import {
+  isCurrentFounderOwnedObligationText,
+  isGenericFallbackObligationText,
+} from "./obligation-currentness";
+import {
   candidateDirection,
   indexedThreadForGroup,
   threadIdForGroup,
@@ -98,6 +102,9 @@ import {
 import {
   clientLabelFromHgdSubject,
   composeTodayBriefingPacket,
+  remainingIsPrintCheck,
+  strongerWaitingState,
+  textHasVendorCadCommitment,
   type ComposeTodayBriefingPacketInput,
   type TodayBriefingPacket,
 } from "./briefing-packet";
@@ -1572,6 +1579,16 @@ function classifySituation(input: {
     disposition = "suppress";
   }
 
+  if (
+    disposition === "brief" &&
+    isGenericFallbackObligationText(recommended) &&
+    !remaining &&
+    !yourTurn &&
+    !isCurrentFounderOwnedObligationText(meaningful.summary)
+  ) {
+    disposition = "suppress";
+  }
+
   if (isNakedDateText(headline) || isNakedDateText(recommended) || isNakedContextSnippet(headline)) {
     if (!remaining) disposition = "suppress";
   }
@@ -1925,9 +1942,10 @@ function strongerSituation(a: RankedSituation, b: RankedSituation): RankedSituat
   const score = (item: RankedSituation): number => {
     const packet = item.briefingPacket;
     if (packet?.briefingKind === "founder_print_check") return 80;
-    if (packet?.ballHolder === "founder" && packet.unresolvedFounderObligation) return 70;
+    if (remainingIsPrintCheck(item.remainingFounderCommitment)) return 80;
     if (packet?.briefingKind === "vendor_cad_wait") return 60;
     if (packet?.ballHolder === "vendor_shop") return 50;
+    if (packet?.ballHolder === "founder" && packet.unresolvedFounderObligation) return 45;
     if (item.disposition === "brief") return 15;
     return 10;
   };
@@ -1941,6 +1959,19 @@ function mergeSituationPair(a: RankedSituation, b: RankedSituation): RankedSitua
     clientLabelFromHgdSubject(primary.threadSubject ?? secondary.threadSubject)?.name ||
     primary.personName ||
     secondary.personName;
+  const vendorOwnTexts = [...(primary.vendorOwnTexts ?? []), ...(secondary.vendorOwnTexts ?? [])];
+  const waitingState = strongerWaitingState(primary.waitingState, secondary.waitingState);
+  const vendorCommitted =
+    textHasVendorCadCommitment(vendorOwnTexts.join("\n")) ||
+    waitingState === "cad" ||
+    waitingState === "shop" ||
+    waitingState === "production";
+  const remaining =
+    vendorCommitted &&
+    !remainingIsPrintCheck(primary.remainingFounderCommitment) &&
+    !remainingIsPrintCheck(secondary.remainingFounderCommitment)
+      ? null
+      : primary.remainingFounderCommitment ?? secondary.remainingFounderCommitment;
   return {
     ...primary,
     personName: client && !isVendorOrganizationLabel(client) ? client : primary.personName,
@@ -1950,11 +1981,12 @@ function mergeSituationPair(a: RankedSituation, b: RankedSituation): RankedSitua
     beats: [...primary.beats, ...secondary.beats],
     threadSubject: primary.threadSubject || secondary.threadSubject,
     recoveredGmailThreadId: primary.recoveredGmailThreadId || secondary.recoveredGmailThreadId,
-    waitingState: primary.waitingState || secondary.waitingState,
+    waitingState,
+    remainingFounderCommitment: remaining,
     vendorContactName: primary.vendorContactName || secondary.vendorContactName,
     organizationLabel: primary.organizationLabel || secondary.organizationLabel,
     founderOwnTexts: [...(primary.founderOwnTexts ?? []), ...(secondary.founderOwnTexts ?? [])],
-    vendorOwnTexts: [...(primary.vendorOwnTexts ?? []), ...(secondary.vendorOwnTexts ?? [])],
+    vendorOwnTexts,
     quotedTexts: [...(primary.quotedTexts ?? []), ...(secondary.quotedTexts ?? [])],
     sourceRefs: [...(primary.sourceRefs ?? []), ...(secondary.sourceRefs ?? [])],
   };

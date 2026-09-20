@@ -1069,6 +1069,27 @@ export function isNonActionableSystemMail(input: {
   return false;
 }
 
+const NO_REPLY_INSTRUCTION =
+  /\b(?:please\s+)?do not reply(?:\s+(?:directly\s+)?to this (?:email|message|thread))?|\bno[- ]reply\b|\bthis (?:is an? )?(?:automated|automatic) (?:message|email|notification)\b/i;
+const WELCOME_OR_TRANSACTIONAL_SUBJECT =
+  /^(?:(?:re|fw|fwd):\s*)?(?:welcome(?:\s+to\b)?|your (?:account|order|receipt|invoice)|password (?:reset|changed)|verify your (?:email|account))\b/i;
+
+export function isTransactionalNoReplyMail(input: {
+  subject?: string | null;
+  fromEmail?: string | null;
+  fromDisplayName?: string | null;
+  texts?: readonly (string | null | undefined)[];
+}): boolean {
+  const hay = [input.subject, input.fromDisplayName, ...(input.texts ?? [])]
+    .filter((row): row is string => Boolean(row && row.trim()))
+    .join("\n");
+  if (NO_REPLY_INSTRUCTION.test(hay)) return true;
+  if (WELCOME_OR_TRANSACTIONAL_SUBJECT.test(input.subject ?? "") && isSupplierOrSystemMailbox(input.fromEmail)) {
+    return true;
+  }
+  return false;
+}
+
 const VENDOR_RULES = new Set([
   "explicit_vendor_waiting",
   "explicit_vendor_commitment",

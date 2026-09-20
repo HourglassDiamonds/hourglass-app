@@ -246,7 +246,7 @@ function latestCandidateStamp(
   return stamps.at(-1) ?? null;
 }
 
-function isImmediateCommitmentText(text: string): boolean {
+export function isImmediateCommitmentText(text: string): boolean {
   const hay = text.trim();
   if (!hay) return false;
   if (DEFERRED_PRODUCTION.test(hay) && !/\b(?:send|get|show|check)\b/i.test(hay)) {

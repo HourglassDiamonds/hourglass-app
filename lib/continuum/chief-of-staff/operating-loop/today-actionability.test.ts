@@ -364,10 +364,11 @@ describe("Today actionability gate", () => {
       ]),
     });
     const card = docket.items.find((item) =>
-      item.brief?.actions.some((action) => action.kind === "confirm_person"),
+      /Alex|confirm the next step|design/i.test(`${item.subject} ${item.headline}`),
     );
     assert.ok(card);
-    assert.equal(selectFounderControls(card!).confirmPerson != null, true);
+    assert.doesNotMatch(card?.headline ?? "", /Identify who this is from/i);
+    assert.equal(selectFounderControls(card!).confirmPerson, null);
   });
 
   it("VENDOR: recoverable Vlora request is vendor context, not Confirm Person", () => {

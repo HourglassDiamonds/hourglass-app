@@ -316,9 +316,9 @@ describe("Today founder contextual actions", () => {
       brief: [brief({
         specConflict: null,
         rankClass: "client_reply",
-        explanation: "Lee replied to the latest design question.",
-        recommended: "Send the recap and next step.",
-        headline: "Send the recap and next step.",
+        explanation: "Lee asked to confirm the next step.",
+        recommended: "Can you confirm the next step for this design?",
+        headline: "Can you confirm the next step for this design?",
       })],
     })).items[0]!);
     assert.equal(reply.family, "client_response");

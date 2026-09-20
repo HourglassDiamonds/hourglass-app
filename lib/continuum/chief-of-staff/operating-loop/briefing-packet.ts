@@ -109,7 +109,63 @@ const STL_DELIVERED =
 const STATED_PRINT_CHECK =
   /\bI(?:'ll| will| am going to| planned to)?\s*(?:print|check|show|look at)[^.!?\n]{0,180}|\b(?:print(?:ing)?|check(?:ing)?)\s+(?:the\s+)?(?:updated\s+)?(?:model|stl|earring|huggie|size|proportion)/i;
 const CAD_FORTHCOMING =
-  /\b(?:updated CAD|CAD as soon as|I(?:'ll| will) send (?:you )?(?:the )?(?:updated )?(?:CAD|STL|file)|send (?:you )?(?:the )?updated CAD)\b/i;
+  /\b(?:updated CAD|CAD as soon as|CAD when it(?:'s| is) ready|(?:I|we|she|they)(?:'ll| will) send (?:you )?(?:the )?(?:updated )?(?:CAD|STL|file)|send (?:you )?(?:the )?updated CAD)\b/i;
+
+export function textHasVendorCadCommitment(text: string | null | undefined): boolean {
+  return CAD_FORTHCOMING.test(text ?? "");
+}
+
+export function isIdentifierOnlyProse(text: string | null | undefined): boolean {
+  const trimmed = text?.replace(/\s+/g, " ").trim().replace(/[.:]+$/, "") ?? "";
+  if (!trimmed) return true;
+  return /^(?:C\d{5,}(?:-[A-Z0-9]+)?|[A-Z]{1,4}\d{4,}(?:-[A-Z0-9]+)?)$/i.test(trimmed);
+}
+
+export function isIdentityCleanupText(text: string | null | undefined): boolean {
+  return /identify who this is from|confirm who (?:this|it) (?:is|belongs)|isn't attached to a person|confirm person/i.test(
+    text ?? "",
+  );
+}
+
+export function strongerWaitingState(
+  left: ThreadWaitingKind | string | null | undefined,
+  right: ThreadWaitingKind | string | null | undefined,
+): ThreadWaitingKind | null {
+  const asKind = (value: string | null | undefined): ThreadWaitingKind | null => {
+    if (value === "cad" || value === "shop" || value === "production" || value === "client") {
+      return value;
+    }
+    return null;
+  };
+  const leftKind = asKind(left);
+  const rightKind = asKind(right);
+  const rank = (value: ThreadWaitingKind | null): number => {
+    if (value === "cad" || value === "shop" || value === "production") return 3;
+    if (value === "client") return 1;
+    return 0;
+  };
+  if (rank(leftKind) > rank(rightKind)) return leftKind;
+  if (rank(rightKind) > rank(leftKind)) return rightKind;
+  return leftKind ?? rightKind;
+}
+
+export function packetHasUnresolvedVendorCommitment(
+  packet: TodayBriefingPacket | null | undefined,
+): boolean {
+  if (!packet) return false;
+  return (
+    packet.ballHolder === "vendor_shop" ||
+    packet.briefingKind === "vendor_cad_wait" ||
+    Boolean(packet.externalCommitment)
+  );
+}
+
+export function remainingIsPrintCheck(
+  remaining: RemainingFounderCommitment | null | undefined,
+): boolean {
+  const hay = `${remaining?.matchedText ?? ""} ${remaining?.recommended ?? ""}`;
+  return STATED_PRINT_CHECK.test(hay);
+}
 const COMPLETION_CLAIM =
   /\b(?:already printed|printing (?:is|was) done|approved|in production|job is complete|canonical open job)\b/i;
 const VENDOR_ORG_NAME = /\b(?:vlora|workshop|atelier|engrav)/i;
@@ -161,14 +217,24 @@ export function composeTodayBriefingPacket(
     vendorOwn,
     ...input.evidence.filter((beat) => beat.speaker === "vendor").map((beat) => beat.summary),
   ].join("\n");
+  const nonFounderHay = [
+    vendorOwn,
+    ...input.evidence.filter((beat) => beat.speaker !== "founder").map((beat) => beat.summary),
+  ].join("\n");
   const evidenceHay = input.evidence.map((beat) => beat.summary).join("\n");
   const printPlan = STATED_PRINT_CHECK.test(founderOwn) || STATED_PRINT_CHECK.test(founderHay);
   const stlDelivered = STL_DELIVERED.test(vendorOwn) || STL_DELIVERED.test(vendorHay);
-  const cadForthcoming = CAD_FORTHCOMING.test(vendorOwn) || CAD_FORTHCOMING.test(vendorHay);
+  const cadForthcoming =
+    CAD_FORTHCOMING.test(vendorOwn) ||
+    CAD_FORTHCOMING.test(vendorHay) ||
+    CAD_FORTHCOMING.test(nonFounderHay);
   const completion = COMPLETION_CLAIM.test(founderOwn) || COMPLETION_CLAIM.test(vendorOwn);
   const lifecycle = provenLifecycle(input.lifecycle);
   const external = latestEvent(input.evidence, (speaker) => speaker !== "founder");
-  const founderAction = latestEvent(input.evidence, (speaker) => speaker === "founder");
+  const founderAction = latestEvent(
+    input.evidence.filter((beat) => !isIdentifierOnlyProse(beat.summary)),
+    (speaker) => speaker === "founder",
+  );
   const remaining = input.remainingFounderCommitment;
   const currentIds = currentIdentifierValues(identifiers);
   const historicalIds = historicalIdentifierValues(identifiers);
@@ -183,6 +249,7 @@ export function composeTodayBriefingPacket(
     waitingState: input.waitingState,
     noFounderAction: input.noFounderAction,
     staleInboundSatisfied: input.staleInboundSatisfied,
+    communication: input.communication,
   });
 
   const unresolvedFounderObligation = remaining
@@ -347,20 +414,25 @@ function ballHolderOf(input: {
   waitingState: ThreadWaitingKind | string | null;
   noFounderAction: boolean;
   staleInboundSatisfied: boolean;
+  communication?: string | null;
 }): TodayBallHolder {
   if (input.remaining) return "founder";
   if (input.printPlan && input.stlDelivered && !input.completion) return "founder";
   if (input.printPlan && !input.completion && !input.cadForthcoming) return "founder";
-  if (
+  const shopWait =
     input.waitingState === "cad" ||
     input.waitingState === "shop" ||
     input.waitingState === "production" ||
-    input.cadForthcoming
-  ) {
+    input.cadForthcoming;
+  if (shopWait) return "vendor_shop";
+  if (input.communication === "vendor" && (input.noFounderAction || input.staleInboundSatisfied)) {
     return "vendor_shop";
   }
   if (input.waitingState === "client") return "client";
-  if (input.staleInboundSatisfied && input.noFounderAction) return "client";
+  if (input.staleInboundSatisfied && input.noFounderAction) {
+    if (input.communication === "vendor") return "vendor_shop";
+    return "client";
+  }
   if (input.noFounderAction) return "vendor_shop";
   return "unknown";
 }
@@ -374,7 +446,7 @@ function nextActionOf(input: {
   displayName: string;
 }): string | null {
   if (input.ballHolder !== "founder") {
-    if (input.cadForthcoming) return `Review the CAD when it comes back.`;
+    if (input.cadForthcoming) return `Review the new CAD when it arrives.`;
     return null;
   }
   if (input.remaining) return input.remaining.recommended;
@@ -478,7 +550,9 @@ function stlLine(vendorOwn: string, evidenceHay: string): string | null {
 
 function cadForthcomingLine(vendorOwn: string, evidenceHay: string): string | null {
   const hay = `${vendorOwn}\n${evidenceHay}`;
-  const match = hay.match(/[^.!?\n]*(?:updated CAD|I'll send you the updated CAD)[^.!?\n]*/i);
+  const match = hay.match(
+    /[^.!?\n]*(?:updated CAD|(?:I|we|she|they)(?:'ll| will) send (?:you )?(?:the )?(?:updated )?(?:CAD|STL|file)|CAD when it(?:'s| is) ready)[^.!?\n]*/i,
+  );
   return match ? match[0]!.replace(/\s+/g, " ").trim() : null;
 }
 
