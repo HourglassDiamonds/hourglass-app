@@ -2125,12 +2125,10 @@ export function composeConciergeBrief(input: ComposeConciergeBriefInput): {
 
   const briefSource = merged
     .filter((row) => row.disposition === "brief")
-    .sort(compareSituations)
-    .slice(0, COS_BRIEF_LIMIT);
+    .sort(compareSituations);
   const watching = merged
     .filter((row) => row.disposition === "watching")
     .sort(compareSituations)
-    .slice(0, COS_BRIEF_LIMIT)
     .map((row) => presentWatching(row));
 
   return {

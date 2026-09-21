@@ -1,6 +1,7 @@
 import { greetingLine } from "@/lib/continuum/dashboard/compose";
 import type { ContinuumHomeModel } from "@/lib/continuum/dashboard/types";
 import type { CosOperatingLoopView } from "@/lib/continuum/chief-of-staff/operating-loop/types";
+import { composeTodayDocket } from "@/lib/continuum/chief-of-staff/operating-loop/docket";
 import { ChiefOfStaffToday } from "./chief-of-staff-today";
 import type { TodayAskAction } from "./cos-ask-concierge";
 
@@ -27,7 +28,7 @@ export function CommandCenterHome({
         {greetingLine(model)}
       </h1>
       <ChiefOfStaffToday
-        loop={operatingLoop}
+        docket={composeTodayDocket(operatingLoop)}
         completeAction={completeAction}
         reviewAction={reviewAction}
         disposeAction={disposeAction}

@@ -17,6 +17,7 @@ import {
 } from "@/lib/continuum/candidates/founder-attention";
 import { authorOwnedText } from "@/lib/continuum/gmail/candidates/spec-provenance";
 import { extractTypedIdentifiers } from "@/lib/continuum/gmail/identifier-role";
+import { parseGmailWebHref } from "./evidence";
 import {
   isPostCompletionObligationText,
   todayLifecycleClass,
@@ -31,7 +32,6 @@ import {
   type TodayBriefingPacket,
 } from "./briefing-packet";
 import {
-  isCurrentClientTurnText,
   isCurrentFounderOwnedObligationText,
   isCurrentInboundAskText,
   isGenericFallbackObligationText,
@@ -63,6 +63,7 @@ import type {
   CosTop5Item,
   CosWatchingItem,
 } from "./types";
+import { TODAY_DOCKET_VERSION } from "./types";
 
 const UNASSIGNED = "Unassigned";
 const DIAGNOSTIC_COPY =
@@ -87,15 +88,35 @@ export type TodayDocketSeed = {
   declined: boolean;
 };
 
-export function todayGroupKeysFor(seed: TodayDocketSeed): string[] {
+function strongWorkIdentityKeys(seed: TodayDocketSeed): string[] {
   const keys: string[] = [];
   if (seed.projectId) keys.push(`project:${seed.projectId}`);
   const cad = currentCadOf(seed);
   if (cad) keys.push(`cad:${cad.toUpperCase()}`);
   if (seed.threadId) keys.push(`thread:${seed.threadId}`);
+  for (const threadId of threadIdsFromRefs(seed.packet?.sourceRefs, seed.threadId)) {
+    keys.push(`thread:${threadId}`);
+  }
+  return keys;
+}
+
+function hasStrongWorkIdentity(seed: TodayDocketSeed): boolean {
+  return strongWorkIdentityKeys(seed).length > 0;
+}
+
+export function todayGroupKeysFor(seed: TodayDocketSeed): string[] {
+  const keys = strongWorkIdentityKeys(seed);
+  for (const id of seed.candidateIds) {
+    const trimmed = id.trim();
+    if (trimmed) keys.push(`candidate:${trimmed}`);
+  }
   for (const ref of seed.packet?.sourceRefs ?? []) {
     const trimmed = ref.trim();
     if (trimmed) keys.push(`ref:${trimmed}`);
+  }
+  const personId = seed.packet?.personId?.trim() ?? "";
+  if (personId && !hasStrongWorkIdentity(seed)) {
+    keys.push(`person:${personId}`);
   }
   return keys;
 }
@@ -167,6 +188,13 @@ function overlayRecoverableSender(
   return { ...packet, displayName: sender, entityType: "client" };
 }
 
+type RemainingFounderCommitmentInput = {
+  matchedText: string;
+  headline: string;
+  explanation: string;
+  recommended: string;
+};
+
 function remainingFromRecommended(
   item: Pick<CosBriefItem, "recommended" | "explanation" | "noFounderAction" | "waitingState">,
 ): RemainingFounderCommitmentInput | null {
@@ -185,12 +213,37 @@ function remainingFromRecommended(
   };
 }
 
-type RemainingFounderCommitmentInput = {
-  matchedText: string;
-  headline: string;
-  explanation: string;
-  recommended: string;
-};
+function remainingFromParallelHeadline(text: string | null | undefined): RemainingFounderCommitmentInput | null {
+  const recommended = text?.trim() ?? "";
+  if (!recommended) return null;
+  if (isIdentityCleanupText(recommended)) return null;
+  if (isGenericFallbackObligationText(recommended)) return null;
+  if (!isCurrentFounderOwnedObligationText(recommended)) return null;
+  return {
+    matchedText: recommended,
+    headline: recommended,
+    explanation: recommended,
+    recommended,
+  };
+}
+
+function threadIdFromHref(href: string | null | undefined): string | null {
+  if (!href) return null;
+  return parseGmailWebHref(href)?.threadId ?? null;
+}
+
+function threadIdsFromRefs(
+  refs: readonly string[] | null | undefined,
+  fallback?: string | null,
+): string[] {
+  const ids = new Set<string>();
+  if (fallback?.trim()) ids.add(fallback.trim());
+  for (const ref of refs ?? []) {
+    const id = threadIdFromHref(ref);
+    if (id) ids.add(id);
+  }
+  return [...ids];
+}
 
 function remainingFromEvidence(
   item: Pick<CosBriefItem, "recommended" | "explanation" | "evidence">,
@@ -203,7 +256,12 @@ function remainingFromEvidence(
       if (!isImmediateCommitmentText(beat.summary) && !isCurrentInboundAskText(beat.summary)) {
         continue;
       }
-    } else if (!isCurrentClientTurnText(beat.summary)) {
+    } else if (beat.speaker === "vendor" || beat.speaker === "system") {
+      if (!isCurrentInboundAskText(beat.summary)) continue;
+    } else if (
+      !isCurrentInboundAskText(beat.summary) &&
+      !isCurrentFounderOwnedObligationText(beat.summary)
+    ) {
       continue;
     }
     const recommended = isGenericFallbackObligationText(item.recommended)
@@ -249,7 +307,7 @@ export function equivalentPacketFromBrief(
   const founderOwnedRemaining = Boolean(remaining && /I(?:'ll| will)\b/i.test(remaining.matchedText));
   const inboundAskRemaining = Boolean(
     remaining &&
-      isCurrentClientTurnText(remaining.matchedText) &&
+      isCurrentInboundAskText(remaining.matchedText) &&
       !isImmediateCommitmentText(remaining.matchedText),
   );
   if (item.briefingPacket) {
@@ -433,7 +491,7 @@ export function hasRealFounderOwnedObligation(packet: TodayBriefingPacket | null
   if (isRelationshipPromiseText(text) && !isImmediateCommitmentText(text)) return false;
   return (
     isCurrentFounderOwnedObligationText(text) ||
-    isCurrentClientTurnText(text) ||
+    isCurrentInboundAskText(text) ||
     remainingIsPrintCheck({
       matchedText: text,
       headline: text,
@@ -543,6 +601,7 @@ function seedFromBrief(item: CosBriefItem, loop: CosOperatingLoopView): TodayDoc
 function seedFromWatching(item: CosWatchingItem): TodayDocketSeed {
   const packet = equivalentPacketFromWatching(item);
   const briefing = packet ? renderDeterministicBriefing(packet) : item.briefing ?? null;
+  const threadId = threadIdsFromRefs(packet?.sourceRefs)[0] ?? null;
   return {
     id: item.id,
     origin: "brief",
@@ -557,8 +616,8 @@ function seedFromWatching(item: CosWatchingItem): TodayDocketSeed {
     briefing,
     projectId: item.projectId,
     candidateIds: item.candidateIds ?? [],
-    threadId: null,
-    threadSubject: null,
+    threadId,
+    threadSubject: packet?.projectName ?? null,
     declined: packet == null,
   };
 }
@@ -587,6 +646,9 @@ function seedFromJob(item: CosTop5Item, loop: CosOperatingLoopView): TodayDocket
 }
 
 function seedFromDecision(item: CosFounderAttentionItem): TodayDocketSeed {
+  const threadSubject = item.sourceLabel;
+  const threadId = threadIdFromHref(item.sourceHref);
+  const remaining = remainingFromParallelHeadline(item.headline);
   const packet = composeTodayBriefingPacket({
     itemId: item.id,
     displayNameHint: item.title || item.projectTitle || UNASSIGNED,
@@ -595,18 +657,14 @@ function seedFromDecision(item: CosFounderAttentionItem): TodayDocketSeed {
     projectName: item.projectTitle,
     projectId: item.projectId,
     personId: null,
-    threadSubject: null,
+    threadSubject,
     lifecycle: null,
-    remainingFounderCommitment: {
-      matchedText: item.headline,
-      headline: item.headline,
-      explanation: item.detail ?? item.headline,
-      recommended: item.headline,
-    },
+    remainingFounderCommitment: remaining,
     waitingState: null,
     noFounderAction: false,
     staleInboundSatisfied: false,
     evidence: [],
+    sourceRefs: item.sourceHref ? [item.sourceHref] : [],
   });
   return {
     id: item.id,
@@ -622,13 +680,14 @@ function seedFromDecision(item: CosFounderAttentionItem): TodayDocketSeed {
     briefing: packet ? renderDeterministicBriefing(packet) : null,
     projectId: item.projectId,
     candidateIds: item.candidateIds,
-    threadId: null,
-    threadSubject: null,
+    threadId,
+    threadSubject,
     declined: false,
   };
 }
 
 function seedFromRecap(item: CosRecapItem): TodayDocketSeed {
+  const remaining = remainingFromParallelHeadline(item.question);
   const packet = composeTodayBriefingPacket({
     itemId: item.id,
     displayNameHint: item.projectTitle || item.sourceLabel || UNASSIGNED,
@@ -637,18 +696,14 @@ function seedFromRecap(item: CosRecapItem): TodayDocketSeed {
     projectName: item.projectTitle,
     projectId: item.projectId,
     personId: null,
-    threadSubject: null,
+    threadSubject: item.sourceLabel,
     lifecycle: null,
-    remainingFounderCommitment: {
-      matchedText: item.question,
-      headline: item.question,
-      explanation: item.question,
-      recommended: item.question,
-    },
+    remainingFounderCommitment: remaining,
     waitingState: null,
     noFounderAction: false,
     staleInboundSatisfied: false,
     evidence: [],
+    sourceRefs: item.sourceHref ? [item.sourceHref] : [],
   });
   return {
     id: item.id,
@@ -664,13 +719,14 @@ function seedFromRecap(item: CosRecapItem): TodayDocketSeed {
     briefing: packet ? renderDeterministicBriefing(packet) : null,
     projectId: item.projectId,
     candidateIds: [],
-    threadId: null,
-    threadSubject: null,
+    threadId: threadIdFromHref(item.sourceHref),
+    threadSubject: item.sourceLabel,
     declined: false,
   };
 }
 
 function seedFromAnomaly(item: CosAnomalyItem): TodayDocketSeed {
+  const remaining = remainingFromParallelHeadline(item.headline);
   const packet = composeTodayBriefingPacket({
     itemId: item.id,
     displayNameHint: item.sourceLabel || UNASSIGNED,
@@ -679,18 +735,14 @@ function seedFromAnomaly(item: CosAnomalyItem): TodayDocketSeed {
     projectName: null,
     projectId: item.projectId,
     personId: null,
-    threadSubject: null,
+    threadSubject: item.sourceLabel,
     lifecycle: null,
-    remainingFounderCommitment: {
-      matchedText: item.headline,
-      headline: item.headline,
-      explanation: item.detail,
-      recommended: item.headline,
-    },
+    remainingFounderCommitment: remaining,
     waitingState: null,
     noFounderAction: false,
     staleInboundSatisfied: false,
     evidence: [],
+    sourceRefs: item.sourceHref ? [item.sourceHref] : [],
   });
   return {
     id: item.id,
@@ -706,8 +758,8 @@ function seedFromAnomaly(item: CosAnomalyItem): TodayDocketSeed {
     briefing: packet ? renderDeterministicBriefing(packet) : null,
     projectId: item.projectId,
     candidateIds: item.candidateIds ?? [],
-    threadId: null,
-    threadSubject: null,
+    threadId: threadIdFromHref(item.sourceHref),
+    threadSubject: item.sourceLabel,
     declined: false,
   };
 }
@@ -884,12 +936,21 @@ function mergeSeeds(left: TodayDocketSeed, right: TodayDocketSeed): TodayDocketS
     threadSubject: primary.threadSubject || secondary.threadSubject,
     brief: primary.brief ?? secondary.brief,
     job: primary.job ?? secondary.job,
-    decision: primary.decision ?? secondary.decision,
-    anomaly: primary.anomaly ?? secondary.anomaly,
+    decision: primary.origin === "decision" ? (primary.decision ?? secondary.decision) : null,
+    anomaly: primary.origin === "anomaly" ? (primary.anomaly ?? secondary.anomaly) : null,
   };
 }
 
+function strongWorkIdentitiesConflict(a: TodayDocketSeed, b: TodayDocketSeed): boolean {
+  if (a.projectId && b.projectId && a.projectId !== b.projectId) return true;
+  const cadA = currentCadOf(a);
+  const cadB = currentCadOf(b);
+  if (cadA && cadB && cadA !== cadB) return true;
+  return false;
+}
+
 function sameClientCadPair(a: TodayDocketSeed, b: TodayDocketSeed): boolean {
+  if (strongWorkIdentitiesConflict(a, b)) return false;
   const cadA = currentCadOf(a);
   const cadB = currentCadOf(b);
   if (cadA && cadB) return cadA === cadB;
@@ -919,7 +980,7 @@ export function dedupeTodaySeeds(seeds: readonly TodayDocketSeed[]): TodayDocket
     for (const key of todayGroupKeysFor(list[index]!)) {
       const prior = indexByKey.get(key);
       if (prior == null) indexByKey.set(key, index);
-      else union(prior, index);
+      else if (!strongWorkIdentitiesConflict(list[prior]!, list[index]!)) union(prior, index);
     }
   }
   for (let i = 0; i < list.length; i++) {
@@ -1020,6 +1081,7 @@ function toDocketItem(seed: TodayDocketSeed, loop: CosOperatingLoopView): CosDoc
     anomaly: seed.anomaly,
     briefing: useCosOverlay ? briefing : null,
     briefingPacket: packet,
+    todayDocketVersion: TODAY_DOCKET_VERSION,
   };
 }
 
@@ -1044,6 +1106,7 @@ function toWatchingItem(seed: TodayDocketSeed): CosWatchingItem {
     candidateIds: seed.candidateIds,
     briefingPacket: packet,
     briefing,
+    todayDocketVersion: TODAY_DOCKET_VERSION,
   };
 }
 

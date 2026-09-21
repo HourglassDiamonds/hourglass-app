@@ -71,38 +71,6 @@ function liveUntaggedBriefCandidates(): ContinuumCandidate[] {
   ];
 }
 
-function controlsFor(candidates: readonly ContinuumCandidate[], projects = new Map<string, CosProjectContext>()) {
-  const moderated = composeConciergeBrief({
-    candidates,
-    jobs: [],
-    projects,
-    nowIso: COS_LOOP_NOW,
-    top5: [],
-  });
-  const docket = composeTodayDocket({
-    contractVersion: COS_OPERATING_LOOP_CONTRACT_VERSION,
-    status: "active",
-    heading: "Up next",
-    quietDetail: null,
-    top5: [],
-    remainingCount: 0,
-    brief: moderated.brief,
-    watching: moderated.watching,
-    recap: [],
-    anomalies: [],
-    proposedActions: [],
-    needsYourDecision: [],
-    worthKnowing: [],
-  });
-  const item = docket.items[0];
-  assert.ok(item);
-  return {
-    item,
-    brief: moderated.brief[0],
-    controls: selectFounderControls(item),
-  };
-}
-
 describe("Open Email live stored-state regression", () => {
   it("drops tagged Morning Brief threads from Today client intake", () => {
     const stored = liveUntaggedBriefCandidates();
@@ -111,12 +79,19 @@ describe("Open Email live stored-state regression", () => {
       true,
     );
 
-    const before = controlsFor(stored);
-    assert.equal(before.item.subject, "Unassigned");
-    assert.equal(before.brief?.projectId ?? null, null);
-    assert.equal(before.brief?.canonicalGmailThreadId ?? null, null);
-    assert.equal(before.controls.openEmail?.href, LIVE_BRIEF_HREF);
-    assert.ok((before.brief?.evidence.length ?? 0) > 0);
+    const beforeLoop = composeTodayDocket(
+      composeCosOperatingLoop({
+        jobs: [],
+        candidates: stored,
+        nowIso: COS_LOOP_NOW,
+      }),
+    );
+    assert.equal(
+      beforeLoop.items.some((item) =>
+        (item.brief?.actions ?? []).some((action) => action.href === LIVE_BRIEF_HREF),
+      ),
+      false,
+    );
 
     const tagged = withIndexedGeneratedOperatingMail(
       stored,
@@ -172,6 +147,30 @@ describe("Open Email live stored-state regression", () => {
         evidenceBasis: {
           ruleIds: ["explicit_follow_up"],
           matchedText: "follow-up window",
+        },
+      }),
+      fixtureCandidate({
+        candidateId: "cand-client-ask",
+        sourceSystem: "gmail",
+        sourceRef: `gc1|${CLIENT_THREAD}|${CLIENT_MSG}`,
+        sourceTimestamp: "2026-09-08T15:00:00.000Z",
+        proposedTarget: {
+          kind: "project",
+          projectId: COS_LOOP_PROJECT_A,
+        },
+        candidateType: "open_job",
+        payload: {
+          kind: "open_job",
+          jobKind: "request",
+          subject: "size recap",
+          detail: "Can you send the size recap when you have it?",
+          waitingOnActor: "founder",
+          dueAt: null,
+          createJob: false,
+        },
+        evidenceBasis: {
+          ruleIds: ["explicit_client_request"],
+          matchedText: "Can you send the size recap when you have it?",
         },
       }),
     ];

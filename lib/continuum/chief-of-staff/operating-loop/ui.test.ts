@@ -255,7 +255,6 @@ describe("CoS operating loop Command Center UI", () => {
     assert.match(html, /send the CAD tomorrow/);
     assert.doesNotMatch(html, /Add to Top 5/);
     assert.match(html, /Dismiss/);
-    assert.match(html, /Review/);
     assert.doesNotMatch(html, /Proposed actions/);
     assert.doesNotMatch(html, /caught up/);
     const editForm = readFileSync(

@@ -27,10 +27,13 @@ import type {
   CosDocketOrigin,
   CosOperatingLoopView,
   CosWatchingItem,
+  TodayDocketVersion,
 } from "./types";
+import { TODAY_DOCKET_VERSION } from "./types";
 
 export const COS_DOCKET_TITLE = "Up next";
 export const COS_DOCKET_VISIBLE_LIMIT = 3;
+export { TODAY_DOCKET_VERSION };
 
 export type { CosDocketLane, CosDocketOrigin, CosDocketItemView };
 
@@ -41,6 +44,7 @@ export {
 };
 
 export type CosTodayDocketView = {
+  todayDocketVersion: TodayDocketVersion;
   title: typeof COS_DOCKET_TITLE;
   items: CosDocketItemView[];
   queuedCount: number;
@@ -103,7 +107,7 @@ export function isActionableTodayDocketItem(item: CosDocketItemView): boolean {
     return false;
   }
   if (item.origin === "decision") {
-    if (item.decision?.recap) return true;
+    if (item.decision?.recap) return hasRealFounderOwnedObligation(item.briefingPacket);
     if (/recap|answered the design|Your turn/i.test(`${item.headline} ${item.context ?? ""}`)) {
       return false;
     }
@@ -148,8 +152,51 @@ export function masterSprintDocketItems(
       decision: null,
       anomaly: null,
       briefing: null,
+      todayDocketVersion: TODAY_DOCKET_VERSION,
     };
   });
+}
+
+export function isAuthoritativeTodayCard(
+  item: Pick<CosDocketItemView, "origin" | "todayDocketVersion" | "briefingPacket">,
+): boolean {
+  if (item.todayDocketVersion !== TODAY_DOCKET_VERSION) return false;
+  if (item.origin === "master_sprint") return true;
+  return item.briefingPacket != null;
+}
+
+export function isAuthoritativeWatchingCard(
+  item: Pick<CosWatchingItem, "todayDocketVersion" | "briefingPacket">,
+): boolean {
+  return item.todayDocketVersion === TODAY_DOCKET_VERSION && item.briefingPacket != null;
+}
+
+export function authoritativeTodayDocket(docket: CosTodayDocketView): CosTodayDocketView {
+  if (docket.todayDocketVersion !== TODAY_DOCKET_VERSION) {
+    return {
+      todayDocketVersion: TODAY_DOCKET_VERSION,
+      title: COS_DOCKET_TITLE,
+      items: [],
+      queuedCount: 0,
+      watchingCount: 0,
+      watching: [],
+      showCaughtUp: !docket.showDisconnected,
+      showDisconnected: docket.showDisconnected,
+      caughtUpHeading: COS_CAUGHT_UP_HEADING,
+      caughtUpDetail: COS_CAUGHT_UP_DETAIL,
+      disconnectedHeading: docket.disconnectedHeading,
+      disconnectedDetail: docket.disconnectedDetail,
+    };
+  }
+  const items = docket.items.filter(isAuthoritativeTodayCard);
+  const watching = docket.watching.filter(isAuthoritativeWatchingCard);
+  return {
+    ...docket,
+    items,
+    watching,
+    watchingCount: watching.length,
+    showCaughtUp: !docket.showDisconnected && items.length === 0,
+  };
 }
 
 export function composeTodayDocket(loop: CosOperatingLoopView): CosTodayDocketView {
@@ -163,7 +210,8 @@ export function composeTodayDocket(loop: CosOperatingLoopView): CosTodayDocketVi
   const showDisconnected = loop.status === "disconnected";
   const showCaughtUp = !showDisconnected && actionableLive.length === 0 && sprint.length === 0;
 
-  return {
+  return authoritativeTodayDocket({
+    todayDocketVersion: TODAY_DOCKET_VERSION,
     title: COS_DOCKET_TITLE,
     items,
     queuedCount,
@@ -175,5 +223,5 @@ export function composeTodayDocket(loop: CosOperatingLoopView): CosTodayDocketVi
     caughtUpDetail: COS_CAUGHT_UP_DETAIL,
     disconnectedHeading: showDisconnected ? loop.heading : null,
     disconnectedDetail: showDisconnected ? loop.quietDetail : null,
-  };
+  });
 }

@@ -1,8 +1,12 @@
 import type { CosOperatingLoopView } from "@/lib/continuum/chief-of-staff/operating-loop/types";
 import {
+  authoritativeTodayDocket,
   composeTodayDocket,
+  COS_DOCKET_TITLE,
   cosQueuedLabel,
+  TODAY_DOCKET_VERSION,
   type CosDocketItemView,
+  type CosTodayDocketView,
 } from "@/lib/continuum/chief-of-staff/operating-loop/docket";
 import { selectFounderControls } from "@/lib/continuum/chief-of-staff/operating-loop/founder-actions";
 import { composeEmailCard } from "@/lib/continuum/chief-of-staff/operating-loop/email-viewer";
@@ -130,22 +134,41 @@ function DocketItem({
 
 export function ChiefOfStaffToday({
   loop,
+  docket: incomingDocket,
   completeAction,
   reviewAction,
   disposeAction,
   askAction,
 }: {
-  loop: CosOperatingLoopView;
+  loop?: CosOperatingLoopView;
+  docket?: CosTodayDocketView;
   completeAction?: CompleteAction;
   reviewAction?: CompleteAction;
   disposeAction?: CompleteAction;
   askAction?: TodayAskAction;
 }) {
-  const docket = composeTodayDocket(loop);
+  const docket = authoritativeTodayDocket(
+    incomingDocket ?? (loop ? composeTodayDocket(loop) : {
+      todayDocketVersion: TODAY_DOCKET_VERSION,
+      title: COS_DOCKET_TITLE,
+      items: [],
+      queuedCount: 0,
+      watchingCount: 0,
+      watching: [],
+      showCaughtUp: true,
+      showDisconnected: false,
+      caughtUpHeading: "",
+      caughtUpDetail: null,
+      disconnectedHeading: null,
+      disconnectedDetail: null,
+    }),
+  );
   const hasBrief = docket.items.some((item) => item.origin === "brief");
+  const loopStatus = loop?.status
+    ?? (docket.showDisconnected ? "disconnected" : docket.showCaughtUp ? "caught-up" : "active");
   return (
     <section
-      data-cos-operating-loop={loop.status}
+      data-cos-operating-loop={loopStatus}
       data-cos-docket=""
       data-cos-brief={hasBrief ? "" : undefined}
       className="min-w-0 overflow-x-hidden"

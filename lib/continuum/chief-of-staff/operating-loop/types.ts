@@ -268,6 +268,9 @@ export type CosDocketOrigin =
 
 export type CosDocketLane = "live_work" | "master_sprint";
 
+export const TODAY_DOCKET_VERSION = "authoritative_v1" as const;
+export type TodayDocketVersion = typeof TODAY_DOCKET_VERSION;
+
 export type CosDocketItemView = {
   id: string;
   lane: CosDocketLane;
@@ -281,6 +284,7 @@ export type CosDocketItemView = {
   anomaly: CosAnomalyItem | null;
   briefing?: TodayRenderedBriefing | null;
   briefingPacket?: TodayBriefingPacket | null;
+  todayDocketVersion?: TodayDocketVersion;
 };
 
 export type CosWatchingItem = {
@@ -291,6 +295,7 @@ export type CosWatchingItem = {
   candidateIds?: readonly string[];
   briefingPacket?: TodayBriefingPacket | null;
   briefing?: TodayRenderedBriefing | null;
+  todayDocketVersion?: TodayDocketVersion;
 };
 
 export type CosMasterSprintItem = {
