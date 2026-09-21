@@ -90,6 +90,7 @@ import { resolveTodayGroupTruth } from "./group-truth";
 import { extractInboundObligation } from "./inbound-obligation";
 import {
   isCurrentFounderOwnedObligationText,
+  isCurrentInboundAskText,
   isGenericFallbackObligationText,
 } from "./obligation-currentness";
 import {
@@ -1774,11 +1775,22 @@ function withBriefingDisposition(item: RankedSituation): RankedSituation {
     }
     return { ...item, briefingPacket: null };
   }
+  if (item.specConflict) {
+    return {
+      ...item,
+      disposition: "brief",
+      briefingPacket: {
+        ...packet,
+        ballHolder: "founder",
+        unresolvedFounderObligation:
+          packet.unresolvedFounderObligation ?? `Confirm the ${item.specConflict.fieldLabel}.`,
+      },
+    };
+  }
   if (
     packet.ballHolder === "founder" &&
     (packet.briefingKind === "founder_print_check" ||
-      packet.unresolvedFounderObligation ||
-      packet.candidateNextAction) &&
+      (isCurrentInboundAskText(packet.unresolvedFounderObligation) && packet.briefingKind !== "vendor_cad_wait")) &&
     item.disposition !== "brief"
   ) {
     return {
@@ -1790,9 +1802,10 @@ function withBriefingDisposition(item: RankedSituation): RankedSituation {
     };
   }
   if (
-    packet.ballHolder === "vendor_shop" ||
-    packet.ballHolder === "client" ||
-    packet.ballHolder === "scheduled_future"
+    (packet.ballHolder === "vendor_shop" ||
+      packet.ballHolder === "client" ||
+      packet.ballHolder === "scheduled_future") &&
+    item.disposition !== "brief"
   ) {
     return {
       ...item,
@@ -2020,6 +2033,10 @@ function mergeRankedSituations(items: readonly RankedSituation[]): RankedSituati
       const cadB = situationCad(list[j]!);
       const nameA = situationClientName(list[i]!);
       const nameB = situationClientName(list[j]!);
+      if (list[i]!.projectId && list[j]!.projectId && list[i]!.projectId !== list[j]!.projectId) {
+        continue;
+      }
+      if (cadA && cadB && cadA !== cadB) continue;
       if (cadA && cadB && cadA === cadB) union(i, j);
       else if ((cadA || cadB) && nameA && nameB && nameA === nameB) union(i, j);
     }

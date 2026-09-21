@@ -14,7 +14,7 @@ import {
 import { isImmediateCommitmentText } from "./thread-truth";
 
 const GENERIC_FALLBACK_OBLIGATION =
-  /send the recap(?:\s*\/\s*|\s+and\s+)next step|do this now\.?$|do it, or add it to top 5|^your turn\.?$/i;
+  /send the recap(?:\s*\/\s*|\s+and\s+)next step|do this now\.?$|do it, or add it to top 5|^your turn\.?$|review the latest shop (?:turn|update)/i;
 const RELATIONSHIP_PROMISE =
   /\b(?:keep you posted|as we get (?:a little )?closer|give an exact|i(?:'ll| will) get back)\b/i;
 const CONCRETE_PROMISE_DELIVERABLE = /\b(?:send|get|show|check|video|chain|pricing|availability)\b/i;

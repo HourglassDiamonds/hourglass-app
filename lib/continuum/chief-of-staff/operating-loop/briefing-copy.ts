@@ -9,6 +9,7 @@ import {
   historicalIdentifierValues,
   isIdentifierOnlyProse,
 } from "./briefing-packet";
+import { isUnsafeBriefingFragment } from "./work-loop-state";
 
 export type TodayBriefingStateChip =
   | "YOUR MOVE"
@@ -140,49 +141,49 @@ function founderStand(
   who: string,
   cad: string | undefined,
 ): string {
-  const external = usableProse(packet.latestMeaningfulExternalEvent?.summary);
-  const founder = usableProse(packet.latestMeaningfulFounderAction?.summary);
-  if (external && founder) {
-    const cadBit = cad && !external.includes(cad) ? ` (${cad})` : "";
-    return `${sentence(`${external}${cadBit}`)} ${sentence(founder)}`.replace(/\s{2,}/g, " ").trim();
+  if (packet.briefingKind === "founder_print_check") {
+    const cadBit = cad ? ` ${cad}` : "";
+    return `The shop delivered the${cadBit} model. Print/check it, then update ${who}.`.replace(/\s{2,}/g, " ");
   }
-  if (external) return sentence(external);
-  if (founder) return `You told ${who} you'd handle the next check. ${sentence(founder)}`;
+  if (packet.unresolvedFounderObligation && !isUnsafeBriefingFragment(packet.unresolvedFounderObligation)) {
+    return `A founder move is still open with ${who}.`;
+  }
+  const external = usableProse(packet.latestMeaningfulExternalEvent?.summary);
+  if (external && /CAD|STL|print|check the model/i.test(external)) {
+    return sentence(external);
+  }
   return `A founder move is still open with ${who}.`;
 }
 
-function clientStand(packet: TodayBriefingPacket, who: string): string {
-  const founder = usableProse(packet.latestMeaningfulFounderAction?.summary);
-  if (founder) return `You already wrote. ${sentence(founder)}`;
+function clientStand(_packet: TodayBriefingPacket, who: string): string {
   return `You already wrote. Waiting on ${who}.`;
 }
 
 function shopHeadline(packet: TodayBriefingPacket): string {
   const org = packet.organizationLabel || "the shop";
-  if (usableProse(packet.latestMeaningfulFounderAction?.summary)) {
-    return `You already sent the revised direction to ${org}.`;
+  if (packet.briefingKind === "vendor_cad_wait" || /CAD|STL/i.test(packet.nextExpectedEvent ?? "")) {
+    return `Updated CAD is pending from ${org}.`;
   }
-  return `Updated CAD is with ${org}.`;
+  return `Current dependency is ${org}.`;
 }
 
 function shopStand(packet: TodayBriefingPacket): string {
   const who = packet.vendorContactName || "The shop";
   const verb = packet.vendorContactName ? "she'll" : "they'll";
-  const org = packet.organizationLabel;
-  const external = usableProse(packet.latestMeaningfulExternalEvent?.summary);
-  if (org && packet.vendorContactName && (packet.briefingKind === "vendor_cad_wait" || (external && /CAD/i.test(external)))) {
-    return `Your revised direction is with ${org}. ${who} said ${verb} send the updated CAD when it's ready.`;
+  const org = packet.organizationLabel || "the shop";
+  if (packet.briefingKind === "vendor_cad_wait" || /CAD|STL/i.test(packet.nextExpectedEvent ?? "")) {
+    if (packet.vendorContactName) {
+      return `${who} said ${verb} send the updated CAD when it's ready.`;
+    }
+    return `Updated CAD/STL is pending from ${org}. Nothing from you until it arrives.`;
   }
-  if (external && /CAD/i.test(external)) {
-    return `You already sent the revised direction. ${who} has the changes and said ${verb} send the updated CAD when it's ready.`;
-  }
-  if (external) return `You already sent the revised direction. ${sentence(external)}`;
-  return "You already replied. Current dependency is the shop.";
+  return `Current dependency is ${org}. Nothing from you until they turn.`;
 }
 
 function usableProse(text: string | null | undefined): string | null {
   const trimmed = text?.replace(/\s+/g, " ").trim() ?? "";
   if (!trimmed || isIdentifierOnlyProse(trimmed)) return null;
+  if (isUnsafeBriefingFragment(trimmed)) return null;
   return trimmed;
 }
 

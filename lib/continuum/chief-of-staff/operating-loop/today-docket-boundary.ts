@@ -29,9 +29,16 @@ import {
   isIdentifierOnlyProse,
   packetHasUnresolvedVendorCommitment,
   remainingIsPrintCheck,
+  strongerWaitingState,
   type TodayBriefingPacket,
 } from "./briefing-packet";
 import {
+  isInternalQaCopy,
+  isShopReviewFallbackText,
+  isUnsafeBriefingFragment,
+} from "./work-loop-state";
+import {
+  isAmbiguousFollowUpFragment,
   isCurrentFounderOwnedObligationText,
   isCurrentInboundAskText,
   isGenericFallbackObligationText,
@@ -57,6 +64,7 @@ import type {
   CosBriefAction,
   CosBriefItem,
   CosDocketItemView,
+  CosEvidenceBeat,
   CosFounderAttentionItem,
   CosOperatingLoopView,
   CosRecapItem,
@@ -121,14 +129,28 @@ export function todayGroupKeysFor(seed: TodayDocketSeed): string[] {
   return keys;
 }
 
-export function currentCadOf(seed: Pick<TodayDocketSeed, "packet" | "threadSubject" | "headline" | "context" | "subject">): string | null {
+export function currentCadOf(seed: Pick<TodayDocketSeed, "packet" | "threadSubject" | "headline" | "context" | "subject" | "brief">): string | null {
   const fromPacket = seed.packet?.identifiers.find(
     (row) => row.current && /^C\d{5,}/i.test(row.value),
   )?.value;
   if (fromPacket) return fromPacket.toUpperCase();
   const fromSubject = clientLabelFromHgdSubject(seed.threadSubject)?.cadId;
   if (fromSubject) return fromSubject.toUpperCase();
-  const hay = `${seed.threadSubject ?? ""} ${seed.subject} ${seed.headline} ${seed.context ?? ""}`;
+  const evidenceHay = (seed.brief?.evidence ?? [])
+    .map((beat) => beat.summary)
+    .join(" ");
+  const hay = [
+    seed.threadSubject ?? "",
+    seed.subject,
+    seed.headline,
+    seed.context ?? "",
+    seed.packet?.projectName ?? "",
+    seed.packet?.unresolvedFounderObligation ?? "",
+    seed.packet?.externalCommitment ?? "",
+    seed.packet?.latestMeaningfulFounderAction?.summary ?? "",
+    seed.packet?.latestMeaningfulExternalEvent?.summary ?? "",
+    evidenceHay,
+  ].join(" ");
   const hit = extractTypedIdentifiers(hay).find((row) => /^C\d{5,}/i.test(row.value));
   return hit?.value.toUpperCase() ?? null;
 }
@@ -440,6 +462,7 @@ export function isClosedBeatPacket(packet: TodayBriefingPacket | null, declined:
 
 export function isContextlessVendorCard(packet: TodayBriefingPacket): boolean {
   if (packet.ballHolder === "founder") return false;
+  if (packet.ballHolder === "vendor_shop") return false;
   if (packet.briefingKind === "vendor_cad_wait") return false;
   if (packet.projectId) return false;
   if (packet.identifiers.some((row) => row.current)) return false;
@@ -464,7 +487,6 @@ export function isStaleLifecycleOnly(
   if (packet.unresolvedFounderObligation) return false;
   if (packet.briefingKind === "founder_print_check") return false;
   if (packet.briefingKind === "vendor_cad_wait") return false;
-  if (seed.brief?.waitingState) return false;
   if (packet.externalCommitment) return false;
   const stage =
     packet.lifecycle ??
@@ -792,7 +814,7 @@ function keepSeed(seed: TodayDocketSeed, loop: CosOperatingLoopView): boolean {
     packet.briefingKind === "generic" &&
     !systemAlert
   ) {
-    return false;
+    if (!seed.brief && !seed.job && !currentCadOf(seed) && !seed.projectId) return false;
   }
   const threadHay = [
     seed.headline,
@@ -821,6 +843,8 @@ function keepSeed(seed: TodayDocketSeed, loop: CosOperatingLoopView): boolean {
   }
   if (isIdentityCleanupOnly(seed, packet)) return false;
   if (seed.origin === "anomaly" && !hasRealFounderOwnedObligation(packet)) return false;
+  if (isInternalQaCopy(`${seed.headline} ${seed.subject} ${seed.context ?? ""}`)) return false;
+  if (isInternalQaCopy(packet.displayName) || isInternalQaCopy(seed.threadSubject)) return false;
   if (quotedInboundCannotBeFounderState(packet) && packet.ballHolder !== "founder") {
     return false;
   }
@@ -868,72 +892,226 @@ function strongerSeed(a: TodayDocketSeed, b: TodayDocketSeed): TodayDocketSeed {
   return a;
 }
 
-function mergeSeeds(left: TodayDocketSeed, right: TodayDocketSeed): TodayDocketSeed {
+function evidenceFromSeed(seed: TodayDocketSeed): CosEvidenceBeat[] {
+  if (seed.brief?.evidence.length) return [...seed.brief.evidence];
+  const rows: CosEvidenceBeat[] = [];
+  const founder = seed.packet?.latestMeaningfulFounderAction;
+  if (founder) {
+    rows.push({
+      at: founder.at ?? "",
+      label: "You",
+      summary: founder.summary,
+      speaker: "founder",
+      sourceHref: founder.sourceRef,
+      candidateId: seed.id,
+    });
+  }
+  const external = seed.packet?.latestMeaningfulExternalEvent;
+  if (external) {
+    rows.push({
+      at: external.at ?? "",
+      label: external.speaker === "vendor" ? "Shop" : "Client",
+      summary: external.summary,
+      speaker: external.speaker,
+      sourceHref: external.sourceRef,
+      candidateId: seed.id,
+    });
+  }
+  return rows;
+}
+
+function uniqueBeats(beats: readonly CosEvidenceBeat[]): CosEvidenceBeat[] {
+  const seen = new Set<string>();
+  const rows: CosEvidenceBeat[] = [];
+  for (const beat of beats) {
+    const key = `${beat.at}|${beat.speaker}|${beat.summary}|${beat.sourceHref ?? ""}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    rows.push(beat);
+  }
+  return rows;
+}
+
+function remainingFromSeed(seed: TodayDocketSeed): RemainingFounderCommitmentInput | null {
+  const fromPacket = seed.packet?.unresolvedFounderObligation;
+  const founderLane = seed.packet?.ballHolder === "founder" || seed.packet?.ballHolder === "unknown";
+  const fromBrief =
+    founderLane && seed.brief && !seed.brief.noFounderAction
+      ? seed.brief.recommended || seed.brief.headline
+      : null;
+  const fromJob = founderLane ? seed.job?.action ?? null : null;
+  const text = fromPacket || fromBrief || fromJob;
+  if (!text) return null;
+  if (isShopReviewFallbackText(text) || isInternalQaCopy(text) || isGenericFallbackObligationText(text)) {
+    return null;
+  }
+  if (isUnsafeBriefingFragment(text) || isAmbiguousFollowUpFragment(text)) return null;
+  return {
+    matchedText: fromPacket || text,
+    headline: text,
+    explanation: seed.context ?? text,
+    recommended: seed.packet?.candidateNextAction ?? fromBrief ?? text,
+  };
+}
+
+function overlayClientIdentity(
+  packet: TodayBriefingPacket | null,
+  seeds: readonly TodayDocketSeed[],
+  loop?: CosOperatingLoopView,
+): TodayBriefingPacket | null {
+  if (!packet) return packet;
+  const cad =
+    seeds.map((seed) => currentCadOf(seed)).find((value): value is string => Boolean(value)) ??
+    packet.identifiers.find((row) => row.current && /^C\d{5,}/i.test(row.value))?.value.toUpperCase() ??
+    null;
+  const labels: { name: string; cadId: string | null }[] = [];
+  for (const seed of seeds) {
+    const hgd = clientLabelFromHgdSubject(seed.threadSubject);
+    if (hgd) labels.push(hgd);
+  }
+  if (loop?.threadContext && cad) {
+    for (const thread of loop.threadContext.values()) {
+      const hgd = clientLabelFromHgdSubject(thread.subject);
+      if (hgd?.cadId?.toUpperCase() === cad) labels.push(hgd);
+    }
+  }
+  if (loop?.threadContext && packet.projectId) {
+    for (const threadId of loop.associatedGmailThreadsByProject?.get(packet.projectId) ?? []) {
+      const hgd = clientLabelFromHgdSubject(loop.threadContext.get(threadId)?.subject);
+      if (hgd) labels.push(hgd);
+    }
+  }
+  const match =
+    labels.find((row) => cad && row.cadId?.toUpperCase() === cad) ??
+    labels.find((row) => row.name && !isVendorOrganizationLabel(row.name));
+  if (!match) return packet;
+  const name = match.name.trim();
+  if (!name || isVendorOrganizationLabel(name)) return packet;
+  const cadId = match.cadId ?? cad;
+  const identifiers = packet.identifiers.some(
+    (row) => row.current && cadId && row.value.toUpperCase() === cadId,
+  )
+    ? packet.identifiers
+    : cadId
+      ? [...packet.identifiers, { value: cadId, role: "cadId" as const, current: true }]
+      : packet.identifiers;
+  return {
+    ...packet,
+    displayName: name,
+    entityType: "client",
+    projectName: cadId ?? packet.projectName,
+    identifiers,
+  };
+}
+
+function recomposeMergedPacket(left: TodayDocketSeed, right: TodayDocketSeed): TodayBriefingPacket | null {
   const primary = strongerSeed(left, right);
   const secondary = primary === left ? right : left;
-  const clientName =
-    clientLabelFromHgdSubject(primary.threadSubject ?? secondary.threadSubject)?.name ||
+  const evidence = uniqueBeats([...evidenceFromSeed(left), ...evidenceFromSeed(right)]);
+  const hgd =
+    clientLabelFromHgdSubject(primary.threadSubject) ??
+    clientLabelFromHgdSubject(secondary.threadSubject);
+  const displayHint =
+    hgd?.name ||
     (primary.packet && !isVendorOrganizationLabel(primary.packet.displayName)
       ? primary.packet.displayName
       : secondary.packet && !isVendorOrganizationLabel(secondary.packet.displayName)
         ? secondary.packet.displayName
-        : primary.packet?.displayName);
-  let packet = primary.packet;
-  const vendorPacket =
-    packetHasUnresolvedVendorCommitment(secondary.packet) && !packetHasUnresolvedVendorCommitment(packet)
-      ? secondary.packet
-      : packetHasUnresolvedVendorCommitment(packet)
-        ? packet
-        : null;
-  if (
-    vendorPacket &&
-    packet &&
-    packet.briefingKind !== "founder_print_check" &&
-    !remainingIsPrintCheck({
-      matchedText: packet.unresolvedFounderObligation ?? "",
-      headline: packet.unresolvedFounderObligation ?? "",
-      explanation: "",
-      recommended: packet.candidateNextAction ?? "",
+        : primary.packet?.displayName ?? primary.subject);
+  const remaining = remainingFromSeed(primary) ?? remainingFromSeed(secondary);
+  const packet = composeTodayBriefingPacket({
+    itemId: primary.id,
+    displayNameHint: displayHint,
+    organizationLabel:
+      primary.packet?.organizationLabel ?? secondary.packet?.organizationLabel ?? null,
+    vendorContactName:
+      primary.packet?.vendorContactName ?? secondary.packet?.vendorContactName ?? null,
+    communication:
+      primary.brief?.sourceClass ?? secondary.brief?.sourceClass ??
+      (packetHasUnresolvedVendorCommitment(primary.packet) || packetHasUnresolvedVendorCommitment(secondary.packet)
+        ? "vendor"
+        : null),
+    projectName: hgd?.cadId ?? primary.packet?.projectName ?? secondary.packet?.projectName ?? null,
+    projectId: primary.projectId || secondary.projectId,
+    personId: primary.packet?.personId ?? secondary.packet?.personId ?? null,
+    threadSubject: hgd
+      ? `RE: HGD x ${hgd.name}${hgd.cadId ? `-${hgd.cadId}` : ""}`
+      : primary.threadSubject || secondary.threadSubject,
+    lifecycle: primary.packet?.lifecycle ?? secondary.packet?.lifecycle ?? null,
+    remainingFounderCommitment: remaining && remainingIsPrintCheck({
+      matchedText: remaining.matchedText,
+      headline: remaining.headline,
+      explanation: remaining.explanation,
+      recommended: remaining.recommended,
     })
-  ) {
-    packet = {
-      ...vendorPacket,
-      displayName:
-        clientName && !isVendorOrganizationLabel(clientName) ? clientName : vendorPacket.displayName,
-      entityType:
-        clientName && !isVendorOrganizationLabel(clientName) ? "client" : vendorPacket.entityType,
-    };
-  } else if (
-    packet &&
-    secondary.packet?.briefingKind === "vendor_cad_wait" &&
-    packet.briefingKind !== "founder_print_check" &&
-    !remainingIsPrintCheck({
-      matchedText: packet.unresolvedFounderObligation ?? "",
-      headline: packet.unresolvedFounderObligation ?? "",
-      explanation: "",
-      recommended: packet.candidateNextAction ?? "",
-    })
-  ) {
-    packet = secondary.packet;
-  }
-  if (packet && clientName && isVendorOrganizationLabel(packet.displayName)) {
-    packet = { ...packet, displayName: clientName, entityType: "client" };
-  }
-  const briefing = packet ? renderDeterministicBriefing(packet) : primary.briefing;
+      ? {
+          matchedText: remaining.matchedText,
+          headline: remaining.headline,
+          explanation: remaining.explanation,
+          recommended: remaining.recommended,
+        }
+      : remaining && isCurrentFounderOwnedObligationText(remaining.matchedText)
+        ? {
+            matchedText: remaining.matchedText,
+            headline: remaining.headline,
+            explanation: remaining.explanation,
+            recommended: remaining.recommended,
+          }
+        : null,
+    waitingState: strongerWaitingState(
+      primary.brief?.waitingState ??
+        (primary.packet?.briefingKind === "vendor_cad_wait"
+          ? "cad"
+          : primary.packet?.briefingKind === "client_wait"
+            ? "client"
+            : null),
+      secondary.brief?.waitingState ??
+        (secondary.packet?.briefingKind === "vendor_cad_wait"
+          ? "cad"
+          : secondary.packet?.briefingKind === "client_wait"
+            ? "client"
+            : null),
+    ),
+    noFounderAction:
+      (primary.brief?.noFounderAction ?? primary.packet?.ballHolder !== "founder") &&
+      (secondary.brief?.noFounderAction ?? secondary.packet?.ballHolder !== "founder"),
+    staleInboundSatisfied:
+      Boolean(primary.brief?.staleInboundSatisfied || secondary.brief?.staleInboundSatisfied),
+    evidence,
+    founderOwnTexts: evidence.filter((beat) => beat.speaker === "founder").map((beat) => authorOwnedText(beat.summary)),
+    vendorOwnTexts: evidence.filter((beat) => beat.speaker === "vendor").map((beat) => authorOwnedText(beat.summary)),
+    sourceRefs: [...new Set([...primary.packet?.sourceRefs ?? [], ...secondary.packet?.sourceRefs ?? []])],
+  });
+  return overlayClientIdentity(packet, [left, right]);
+}
+
+function mergeSeeds(left: TodayDocketSeed, right: TodayDocketSeed): TodayDocketSeed {
+  const primary = strongerSeed(left, right);
+  const secondary = primary === left ? right : left;
+  const packet = recomposeMergedPacket(left, right) ?? primary.packet;
+  const identified = overlayClientIdentity(packet, [left, right]);
+  const hgd =
+    clientLabelFromHgdSubject(primary.threadSubject) ??
+    clientLabelFromHgdSubject(secondary.threadSubject);
+  const briefing = identified ? renderDeterministicBriefing(identified) : primary.briefing;
   const recapHeadline =
     /actually sent|can't tell whether this was/i.test(secondary.headline)
       ? secondary.headline
-      : primary.headline;
+      : /actually sent|can't tell whether this was/i.test(primary.headline)
+        ? primary.headline
+        : primary.headline;
   return {
     ...primary,
-    packet,
+    packet: identified,
     briefing,
     headline: recapHeadline,
     context: recapHeadline !== primary.headline ? secondary.context ?? primary.context : primary.context,
     projectId: primary.projectId || secondary.projectId,
     candidateIds: [...new Set([...primary.candidateIds, ...secondary.candidateIds])],
     threadId: primary.threadId || secondary.threadId,
-    threadSubject: primary.threadSubject || secondary.threadSubject,
+    threadSubject: hgd
+      ? `RE: HGD x ${hgd.name}${hgd.cadId ? `-${hgd.cadId}` : ""}`
+      : primary.threadSubject || secondary.threadSubject,
     brief: primary.brief ?? secondary.brief,
     job: primary.job ?? secondary.job,
     decision: primary.origin === "decision" ? (primary.decision ?? secondary.decision) : null,
@@ -955,6 +1133,17 @@ function sameClientCadPair(a: TodayDocketSeed, b: TodayDocketSeed): boolean {
   const cadB = currentCadOf(b);
   if (cadA && cadB) return cadA === cadB;
   if (!cadA && !cadB) return false;
+  const vendorLike = (seed: TodayDocketSeed): boolean =>
+    seed.packet?.entityType === "vendor" ||
+    seed.packet?.ballHolder === "vendor_shop" ||
+    seed.packet?.briefingKind === "vendor_cad_wait" ||
+    seed.brief?.sourceClass === "vendor" ||
+    seed.brief?.waitingState === "cad" ||
+    seed.brief?.waitingState === "shop" ||
+    seed.brief?.waitingState === "production" ||
+    Boolean(seed.packet?.organizationLabel && isVendorOrganizationLabel(seed.packet.organizationLabel)) ||
+    isVendorOrganizationLabel(seed.subject);
+  if (vendorLike(a) === vendorLike(b)) return false;
   const nameA = clientFirstNameOf(a);
   const nameB = clientFirstNameOf(b);
   if (!nameA || !nameB || nameA !== nameB) return false;
@@ -1003,8 +1192,13 @@ function laneOf(seed: TodayDocketSeed): "up_next" | "watching" {
   if (isIdentityCleanupText(seed.headline) && !hasRealFounderOwnedObligation(packet)) {
     return "watching";
   }
+  if (packet.ballHolder === "vendor_shop" || packet.ballHolder === "client" || packet.ballHolder === "scheduled_future") {
+    return "watching";
+  }
   if (packet.briefingKind === "founder_print_check") return "up_next";
   if (hasRealFounderOwnedObligation(packet)) return "up_next";
+  if (seed.brief?.specConflict) return "up_next";
+  if (seed.job && (packet.ballHolder === "founder" || packet.ballHolder === "unknown")) return "up_next";
   return "watching";
 }
 
@@ -1114,7 +1308,15 @@ export function finalizeTodayDocket(loop: CosOperatingLoopView): {
   upNext: CosDocketItemView[];
   watching: CosWatchingItem[];
 } {
-  const kept = dedupeTodaySeeds(collectSeeds(loop).filter((seed) => keepSeed(seed, loop)));
+  const kept = dedupeTodaySeeds(collectSeeds(loop).filter((seed) => keepSeed(seed, loop))).map((seed) => {
+    const packet = overlayClientIdentity(seed.packet, [seed], loop);
+    if (!packet) return seed;
+    return {
+      ...seed,
+      packet,
+      briefing: renderDeterministicBriefing(packet),
+    };
+  });
   const upNextSeeds: TodayDocketSeed[] = [];
   const watchingSeeds: TodayDocketSeed[] = [];
   for (const seed of kept) {
@@ -1137,7 +1339,9 @@ export function finalizeTodayDocket(loop: CosOperatingLoopView): {
   const watching = watchingSeeds
     .map(toWatchingItem)
     .filter((item) => item.briefingPacket != null)
-    .filter((item) => !DIAGNOSTIC_COPY.test(item.detail));
+    .filter((item) => !DIAGNOSTIC_COPY.test(item.detail))
+    .filter((item) => !isInternalQaCopy(`${item.title} ${item.detail}`))
+    .filter((item) => item.title.trim().toLowerCase() !== "this work");
   return { upNext, watching };
 }
 

@@ -138,7 +138,7 @@ describe("Today Chief of Staff briefing layer", () => {
     assert.equal(packet!.ballHolder, "vendor_shop");
     const briefing = renderDeterministicBriefing(packet!);
     assert.equal(briefing.stateChip, "WAITING ON SHOP");
-    assert.match(briefing.stand, /revised direction/i);
+    assert.match(briefing.stand, /updated CAD/i);
     assert.match(briefing.nextLabel, /Nothing from you/i);
     assert.doesNotMatch(`${briefing.headline} ${briefing.stand}`, /Responded|Confirm Person/i);
     assert.doesNotMatch(briefing.stand, /September 16, 2026/);

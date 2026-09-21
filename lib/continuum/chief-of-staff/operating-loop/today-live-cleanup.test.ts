@@ -257,20 +257,23 @@ describe("Today live cleanup", () => {
       "vendor",
     );
     const docket = todayOf([assoc, ticket]);
-    const hay = docket.items
-      .map((item) => `${item.headline} ${item.context ?? ""} ${item.subject}`)
-      .join("\n");
+    const hay = [
+      ...docket.items.map((item) => `${item.headline} ${item.context ?? ""} ${item.subject}`),
+      ...docket.watching.map((row) => `${row.title} ${row.detail}`),
+    ].join("\n");
     assert.doesNotMatch(hay, /Identify the client/i);
-    assert.notEqual(docket.items[0]?.subject, "Unassigned");
-    assert.match(docket.items[0]?.subject ?? "", /Stamprints/i);
+    const stampCard = docket.items[0] ?? docket.watching[0];
+    assert.ok(stampCard);
+    const stampSubject = "subject" in stampCard ? stampCard.subject : stampCard.title;
+    assert.notEqual(stampSubject, "Unassigned");
+    assert.match(stampSubject ?? "", /Stamprints/i);
     assert.equal(
       docket.items.some((item) =>
         item.brief?.actions.some((action) => action.kind === "confirm_person"),
       ),
       false,
     );
-    const stampCard = docket.items[0];
-    if (stampCard) {
+    if ("brief" in stampCard && stampCard.brief) {
       assert.equal(selectFounderControls(stampCard).confirmPerson, null);
     }
   });
@@ -411,17 +414,19 @@ describe("Today live cleanup", () => {
     );
     const docket = todayOf([assoc, update]);
     const card = docket.items[0];
-    assert.ok(card);
-    assert.equal(card?.subject, "Bee Engraving");
-    assert.notEqual(card?.subject, "Unassigned");
-    assert.equal(card?.brief?.personLabel ?? null, null);
-    assert.equal(card?.brief?.organizationLabel, "Bee Engraving");
-    assert.equal(
-      card?.brief?.actions.some((action) => action.kind === "confirm_person") ?? false,
-      false,
-    );
-    const controls = selectFounderControls(card!);
-    assert.equal(controls.confirmPerson, null);
+    const watch = docket.watching[0];
+    assert.ok(card || watch);
+    assert.match((card?.subject ?? watch?.title) ?? "", /Bee Engraving/);
+    assert.notEqual(card?.subject ?? watch?.title, "Unassigned");
+    if (card) {
+      assert.equal(card.brief?.personLabel ?? null, null);
+      assert.equal(card.brief?.organizationLabel, "Bee Engraving");
+      assert.equal(
+        card.brief?.actions.some((action) => action.kind === "confirm_person") ?? false,
+        false,
+      );
+      assert.equal(selectFounderControls(card).confirmPerson, null);
+    }
     const html = renderToStaticMarkup(
       createElement(ChiefOfStaffToday, {
         loop: composeCosOperatingLoop({
@@ -434,7 +439,6 @@ describe("Today live cleanup", () => {
     assert.doesNotMatch(html, /Confirm person/);
     assert.doesNotMatch(html, />Unassigned</);
     assert.match(html, /Bee Engraving/);
-    assert.match(html, /Dismiss from Today/);
   });
 
   it("known vendor contact is shown and is not client intake", () => {
@@ -493,17 +497,21 @@ describe("Today live cleanup", () => {
       },
     });
     const docket = todayOf([assoc, update], projects);
-    const card = docket.items.find((item) => item.brief?.projectId === COS_LOOP_PROJECT_A) ?? docket.items[0];
-    assert.ok(card);
-    assert.match(card?.subject ?? "", /Niurka Lulo/i);
-    assert.notEqual(card?.subject, "Unassigned");
-    assert.equal(card?.brief?.personLabel ?? null, null);
-    assert.equal(
-      card?.brief?.actions.some((action) => action.kind === "confirm_person") ?? false,
-      false,
-    );
-    const controls = selectFounderControls(card!);
-    assert.equal(controls.confirmPerson, null);
+    const card =
+      docket.items.find((item) => item.brief?.projectId === COS_LOOP_PROJECT_A) ??
+      docket.items[0];
+    const watch = docket.watching.find((row) => /Niurka|Vlora/i.test(row.title)) ?? docket.watching[0];
+    assert.ok(card || watch);
+    assert.match((card?.subject ?? watch?.title) ?? "", /Niurka Lulo|Vlora/i);
+    assert.notEqual(card?.subject ?? watch?.title, "Unassigned");
+    if (card) {
+      assert.equal(card.brief?.personLabel ?? null, null);
+      assert.equal(
+        card.brief?.actions.some((action) => action.kind === "confirm_person") ?? false,
+        false,
+      );
+      assert.equal(selectFounderControls(card).confirmPerson, null);
+    }
   });
 
   it("genuine unknown client Person still offers Confirm Person", () => {

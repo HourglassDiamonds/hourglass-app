@@ -11,6 +11,7 @@ import {
 } from "@/lib/continuum/gmail/identifier-role";
 import type { RemainingFounderCommitment, ThreadWaitingKind } from "./thread-truth";
 import type { CosEvidenceBeat } from "./types";
+import { isInternalQaCopy, isShopReviewFallbackText, reduceWorkLoop } from "./work-loop-state";
 
 export const TODAY_BRIEFING_KINDS = [
   "founder_print_check",
@@ -235,49 +236,76 @@ export function composeTodayBriefingPacket(
     input.evidence.filter((beat) => !isIdentifierOnlyProse(beat.summary)),
     (speaker) => speaker === "founder",
   );
-  const remaining = input.remainingFounderCommitment;
+  const remainingRaw = input.remainingFounderCommitment;
+  const remaining =
+    remainingRaw &&
+    !isShopReviewFallbackText(remainingRaw.matchedText) &&
+    !isShopReviewFallbackText(remainingRaw.recommended) &&
+    !isInternalQaCopy(remainingRaw.matchedText) &&
+    !isInternalQaCopy(remainingRaw.recommended)
+      ? remainingRaw
+      : null;
   const currentIds = currentIdentifierValues(identifiers);
   const historicalIds = historicalIdentifierValues(identifiers);
   const cadLabel = currentIds.find((value) => /^C\d{5,}/i.test(value)) ?? fromSubject?.cadId ?? null;
-
-  const ballHolder = ballHolderOf({
+  const reduced = reduceWorkLoop({
+    evidence: input.evidence,
+    founderOwnTexts: input.founderOwnTexts,
+    vendorOwnTexts: input.vendorOwnTexts,
     remaining,
-    printPlan,
-    stlDelivered,
-    completion,
-    cadForthcoming,
     waitingState: input.waitingState,
-    noFounderAction: input.noFounderAction,
-    staleInboundSatisfied: input.staleInboundSatisfied,
     communication: input.communication,
+    noFounderAction: input.noFounderAction,
   });
+  const ballHolder =
+    reduced.ballHolder !== "unknown"
+      ? reduced.ballHolder
+      : ballHolderOf({
+          remaining,
+          printPlan,
+          stlDelivered,
+          completion,
+          cadForthcoming,
+          waitingState: input.waitingState,
+          noFounderAction: input.noFounderAction,
+          staleInboundSatisfied: input.staleInboundSatisfied,
+          communication: input.communication,
+        });
 
-  const unresolvedFounderObligation = remaining
-    ? remaining.matchedText
-    : printPlan && !completion
-      ? clip(statedPlanLine(founderOwn, evidenceHay), 180) || null
+  const unresolvedFounderObligation =
+    ballHolder === "founder"
+      ? remaining
+        ? remaining.matchedText
+        : printPlan && !completion
+          ? clip(statedPlanLine(founderOwn, evidenceHay), 180) || null
+          : null
       : null;
   const candidateNextAction = nextActionOf({
     ballHolder,
-    remaining,
+    remaining: ballHolder === "founder" ? remaining : null,
     printPlan,
     stlDelivered,
     cadForthcoming,
     displayName,
   });
-  const externalCommitment = cadForthcoming
-    ? clip(cadForthcomingLine(vendorOwn, evidenceHay), 180) || null
-    : external && /send|CAD|STL/i.test(external.summary)
-      ? clip(external.summary, 180) || null
+  const externalCommitment =
+    ballHolder === "vendor_shop"
+      ? cadForthcoming
+        ? clip(cadForthcomingLine(vendorOwn, evidenceHay), 180) || null
+        : reduced.latestExternalText
+          ? clip(reduced.latestExternalText, 180)
+          : external && /send|CAD|STL/i.test(external.summary)
+            ? clip(external.summary, 180) || null
+            : null
       : null;
-  const nextExpectedEvent =
-    ballHolder === "vendor_shop" && cadForthcoming
+  const nextExpectedEvent = reduced.nextExpectedEvent
+    ?? (ballHolder === "vendor_shop" && cadForthcoming
       ? "Updated CAD from the shop"
       : ballHolder === "founder" && printPlan
         ? "Founder print/check, then client size update"
         : ballHolder === "client"
           ? "Client reply"
-          : null;
+          : null);
 
   const entityType = entityTypeOf(input, fromSubject);
   const mustNotState = mustNotStateOf({
@@ -292,12 +320,15 @@ export function composeTodayBriefingPacket(
     itemId: input.itemId,
     displayName,
     entityType,
-    briefingKind: briefingKindOf({
-      ballHolder,
-      printPlan,
-      stlDelivered,
-      cadForthcoming,
-    }),
+    briefingKind:
+      reduced.ballHolder !== "unknown"
+        ? reduced.briefingKind
+        : briefingKindOf({
+            ballHolder,
+            printPlan,
+            stlDelivered,
+            cadForthcoming,
+          }),
     projectName: projectNameOf(input, cadLabel, displayName),
     projectId: input.projectId,
     personId: input.personId,
@@ -566,6 +597,7 @@ function composeIdentifiers(
   const currentHits = [
     ...extractTypedIdentifiers(subject),
     ...extractTypedIdentifiers(own),
+    ...extractTypedIdentifiers(input.evidence.map((beat) => beat.summary).join("\n")),
   ];
   const historical = historicalQuotedIdentifiers(own, quoted);
   const seen = new Set<string>();

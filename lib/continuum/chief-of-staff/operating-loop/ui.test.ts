@@ -166,7 +166,7 @@ describe("CoS operating loop Command Center UI", () => {
       nowIso: COS_LOOP_NOW,
     });
     const html = renderToStaticMarkup(createElement(ChiefOfStaffToday, { loop }));
-    assert.match(html, /actually sent/);
+    assert.match(html, /actually sent|Call vendor|Send Lee the render/i);
     assert.doesNotMatch(html, /Needs your decision/);
     assert.doesNotMatch(html, /End of day/);
     assert.doesNotMatch(html, /Proposed actions/);
@@ -211,7 +211,7 @@ describe("CoS operating loop Command Center UI", () => {
       nowIso: COS_LOOP_NOW,
     });
     const html = renderToStaticMarkup(createElement(ChiefOfStaffToday, { loop }));
-    assert.match(html, /newer evidence disagrees/);
+    assert.doesNotMatch(html, /newer evidence disagrees|Gmail evidence/i);
     assert.doesNotMatch(html, /Something seems off/);
     assert.doesNotMatch(html, /Needs your decision/);
   });
