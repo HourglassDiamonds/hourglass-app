@@ -224,6 +224,7 @@ export type CosEvidenceBeat = {
   sourceHref: string | null;
   candidateId: string;
   generatedSource?: boolean;
+  timestamp?: string | null;
 };
 
 export type CosBriefItem = {

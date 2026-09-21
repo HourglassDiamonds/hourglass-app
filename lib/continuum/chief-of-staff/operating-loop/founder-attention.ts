@@ -564,7 +564,7 @@ export function composeFounderAttentionSurface(input: {
     judgments.set(row.candidateId, judgment);
     if (row.candidateState === "superseded" || row.reviewStatus === "discarded") continue;
     if (isCandidateQuietForToday(row, input.nowIso)) continue;
-    const key = groupingKey(row, projectByAssociation, threadByMessageId);
+    const key = groupingKey(row, projectByAssociation, threadByMessageId, input.threadContext);
     const list = groups.get(key) ?? [];
     list.push(row);
     groups.set(key, list);
@@ -572,7 +572,11 @@ export function composeFounderAttentionSurface(input: {
 
   const rolled: RankedAttention[] = [];
 
-  for (const [key, rows] of collapseTodayCandidateGroups(groups, threadByMessageId)) {
+  for (const [key, rows] of collapseTodayCandidateGroups(
+    groups,
+    threadByMessageId,
+    input.threadContext,
+  )) {
     const visible = rows.filter((row) => visibleLane(judgments.get(row.candidateId)));
     if (visible.length === 0) continue;
     const thread = indexedThreadForGroup(key, rows, input.threadContext);

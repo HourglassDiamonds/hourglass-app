@@ -9,6 +9,11 @@ import {
   historicalQuotedIdentifiers,
   identifierBindsToCurrentProject,
 } from "@/lib/continuum/gmail/identifier-role";
+import {
+  parseHgdClientLabel,
+  currentCadTokensFromIdentityHay,
+  clientLabelFromIdentityHay,
+} from "@/lib/continuum/gmail/work-loop-identity";
 import type { RemainingFounderCommitment, ThreadWaitingKind } from "./thread-truth";
 import type { CosEvidenceBeat } from "./types";
 import { isInternalQaCopy, isShopReviewFallbackText, reduceWorkLoop } from "./work-loop-state";
@@ -101,10 +106,9 @@ export type ComposeTodayBriefingPacketInput = {
   vendorOwnTexts?: readonly string[];
   quotedTexts?: readonly string[];
   sourceRefs?: readonly string[];
+  attachmentNames?: readonly string[];
 };
 
-const HGD_CLIENT =
-  /\bHGD\s*x\s+([A-Za-z][A-Za-z.']{1,40}(?:\/[A-Za-z][A-Za-z.']{1,40})?)(?:-(C\d{5,}))?/i;
 const STL_DELIVERED =
   /\b(?:mod\s*\d+\s+)?stl\b.{0,80}\b(?:attached|delivered|sent|here|ready)\b|\b(?:attached|delivered|sent|here|ready).{0,80}\b(?:mod\s*\d+\s+)?stl\b/i;
 const STATED_PRINT_CHECK =
@@ -175,13 +179,9 @@ export function clientLabelFromHgdSubject(subject: string | null | undefined): {
   name: string;
   cadId: string | null;
 } | null {
-  const match = HGD_CLIENT.exec(subject ?? "");
-  if (!match) return null;
-  const name = (match[1] ?? "").replace(/\s+/g, " ").trim();
-  const cadId = match[2]?.toUpperCase() ?? null;
-  if (!name || !cadId) return null;
-  if (VENDOR_ORG_NAME.test(name)) return { name: cadId, cadId };
-  return { name, cadId };
+  const parsed = parseHgdClientLabel(subject);
+  if (!parsed) return null;
+  return { name: parsed.name, cadId: parsed.cadId };
 }
 
 export function currentIdentifierValues(
@@ -203,7 +203,9 @@ export function composeTodayBriefingPacket(
     return null;
   }
 
-  const fromSubject = clientLabelFromHgdSubject(input.threadSubject);
+  const fromSubject =
+    clientLabelFromHgdSubject(input.threadSubject) ??
+    clientLabelFromIdentityHay(input.attachmentNames ?? []);
   const identifiers = composeIdentifiers(input, fromSubject?.cadId ?? null);
   const displayName = displayNameOf(input, fromSubject);
   if (!displayName) return null;
@@ -464,7 +466,7 @@ function ballHolderOf(input: {
     if (input.communication === "vendor") return "vendor_shop";
     return "client";
   }
-  if (input.noFounderAction) return "vendor_shop";
+  if (input.noFounderAction && input.communication === "vendor") return "vendor_shop";
   return "unknown";
 }
 
@@ -598,6 +600,7 @@ function composeIdentifiers(
     ...extractTypedIdentifiers(subject),
     ...extractTypedIdentifiers(own),
     ...extractTypedIdentifiers(input.evidence.map((beat) => beat.summary).join("\n")),
+    ...extractTypedIdentifiers((input.attachmentNames ?? []).join("\n")),
   ];
   const historical = historicalQuotedIdentifiers(own, quoted);
   const seen = new Set<string>();
@@ -612,10 +615,17 @@ function composeIdentifiers(
     const hit = extractTypedIdentifiers(subjectCad)[0];
     push(subjectCad, hit?.role ?? "cadId", true);
   }
+  for (const cad of currentCadTokensFromIdentityHay([
+    subject,
+    ...(input.attachmentNames ?? []),
+  ])) {
+    push(cad, "cadId", true);
+  }
   for (const hit of currentHits) {
     const current = identifierBindsToCurrentProject(hit.value, {
       subject,
       ownText: own,
+      attachmentNames: input.attachmentNames,
     });
     push(hit.value, hit.role, current || hit.value.toUpperCase() === subjectCad);
   }

@@ -131,7 +131,7 @@ function sarahThreads(): Map<string, TodayGmailThreadContext> {
     [
       SARAH_CLIENT_THREAD,
       {
-        subject: "RE: HGD x Sarah CAD",
+        subject: "RE: HGD x Sarah-C026143",
         fromDisplayName: "Sarah Leishman",
         fromEmail: "sarah@example.test",
         messages: [
@@ -180,8 +180,8 @@ describe("Today one authoritative docket boundary", () => {
     const { docket } = todayOf(sarahDuplicateCandidates(), { threadContext: sarahThreads() });
     const up = docket.items.filter((item) => /Sarah/i.test(`${item.subject} ${item.headline}`));
     const watching = docket.watching.filter((row) => /Sarah/i.test(`${row.title} ${row.detail}`));
-    assert.equal(up.length + watching.length <= 1, true);
-    assert.equal(up.length, 0);
+    assert.equal(up.length + watching.length <= 1, true, docketHay(docket));
+    assert.equal(up.length, 0, docketHay(docket));
   });
 
   it("B: Sarah C026143 resolves vendor_shop / WAITING ON SHOP", () => {

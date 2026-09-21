@@ -12,6 +12,10 @@ import {
   CONTINUUM_FOUNDER_TIME_ZONE,
 } from "@/lib/continuum/dashboard/compose";
 import { isExactStructuredSpecGmailSource, structuredSpecSourceProvenanceOf } from "@/lib/continuum/candidates/spec-provenance";
+import {
+  clientLabelFromIdentityHay,
+  currentCadTokensFromIdentityHay,
+} from "@/lib/continuum/gmail/work-loop-identity";
 import type { ContinuumCandidate } from "@/lib/continuum/candidates/types";
 import {
   candidateProjectId,
@@ -44,6 +48,9 @@ import {
   isVendorOrganizationLabel,
   looksLikeHumanPersonName,
   payloadOf,
+  recoveredGmailThreadId,
+  sourceMessageId,
+  sourceThreadId,
   collectTodayVendorEvidence,
   isActionableSystemAlert,
   isCurrentOperationalSystemMail,
@@ -95,6 +102,7 @@ import {
 } from "./obligation-currentness";
 import {
   candidateDirection,
+  gmailThreadIdsForGroup,
   indexedThreadForGroup,
   threadIdForGroup,
   type RemainingFounderCommitment,
@@ -273,6 +281,7 @@ type RankedSituation = {
   vendorOwnTexts?: readonly string[];
   quotedTexts?: readonly string[];
   sourceRefs?: readonly string[];
+  attachmentNames?: readonly string[];
   briefingPacket?: TodayBriefingPacket | null;
 };
 
@@ -449,10 +458,31 @@ function haystack(row: ContinuumCandidate): string {
   return `${candidateText(row)} ${row.evidenceBasis.matchedText ?? ""}`;
 }
 
+function threadContextForRow(
+  row: ContinuumCandidate,
+  threadContext?: ReadonlyMap<string, TodayGmailThreadContext> | null,
+  fallback?: TodayGmailThreadContext | null,
+): TodayGmailThreadContext | null {
+  const threadId = recoveredGmailThreadId(row) ?? sourceThreadId(row);
+  if (threadId && threadContext?.has(threadId)) {
+    return threadContext.get(threadId) ?? null;
+  }
+  const messageId = sourceMessageId(row);
+  if (messageId && threadContext) {
+    for (const thread of threadContext.values()) {
+      if ((thread.messages ?? []).some((item) => item.messageId === messageId)) {
+        return thread;
+      }
+    }
+  }
+  return fallback ?? null;
+}
+
 function briefingTextsFor(
   rows: readonly ContinuumCandidate[],
   thread: TodayGmailThreadContext | null | undefined,
   communication: TodayCommunicationClass,
+  threadContext?: ReadonlyMap<string, TodayGmailThreadContext> | null,
 ): {
   founderOwnTexts: string[];
   vendorOwnTexts: string[];
@@ -469,9 +499,13 @@ function briefingTextsFor(
     const quoted = quotedText(hay);
     if (quoted) quotedTexts.push(quoted);
     if (row.sourceRef) sourceRefs.push(row.sourceRef);
-    const direction = candidateDirection(row, thread);
-    if (direction === "outbound") founderOwnTexts.push(own);
-    else if (communication === "vendor" || direction === "inbound") vendorOwnTexts.push(own);
+    const rowThread = threadContextForRow(row, threadContext, thread);
+    const direction = candidateDirection(row, rowThread);
+    const speaker = speakerOf(row, communication === "vendor" ? "vendor" : "client", rowThread);
+    if (direction === "outbound" || speaker === "founder") founderOwnTexts.push(own);
+    else if (speaker === "vendor" || (communication === "vendor" && direction === "inbound")) {
+      vendorOwnTexts.push(own);
+    }
   }
   return { founderOwnTexts, vendorOwnTexts, quotedTexts, sourceRefs };
 }
@@ -861,6 +895,7 @@ function visibleBeats(
       sourceHref: beat.sourceHref,
       candidateId: beat.candidateId,
       generatedSource: beat.generatedSource === true ? true : undefined,
+      timestamp: beat.timestamp,
     }));
 }
 
@@ -1019,6 +1054,30 @@ function classifySituation(input: {
     : null;
   const vendorName = pickVendorName(project);
   const thread = indexedThreadForGroup(input.key, input.rows, input.threadContext);
+  const associatedThreadIds = gmailThreadIdsForGroup(
+    input.key,
+    input.rows,
+    input.threadContext,
+  );
+  const attachmentNames = [
+    ...new Set(
+      associatedThreadIds.flatMap(
+        (threadId) => input.threadContext?.get(threadId)?.attachmentFilenames ?? [],
+      ),
+    ),
+  ];
+  const associatedSubjects = associatedThreadIds.map(
+    (threadId) => input.threadContext?.get(threadId)?.subject ?? null,
+  );
+  const identityLabel = clientLabelFromIdentityHay([
+    thread?.subject,
+    ...associatedSubjects,
+    ...attachmentNames,
+  ]);
+  const identityThreadSubject =
+    associatedSubjects.find((subject) => clientLabelFromHgdSubject(subject)) ??
+    thread?.subject ??
+    null;
   const identityPeople = identityPeopleFor(project, input.rows, input.projects, null);
   if (
     isGeneratedTodayNoise({
@@ -1062,8 +1121,13 @@ function classifySituation(input: {
       : null,
   });
   const person =
-    (isClientPersonLabel(attribution.personName) ? attribution.personName : null) ||
-    (group.sourceClass === "vendor" ? null : group.personLabel);
+    (identityLabel && !isVendorOrganizationLabel(identityLabel.name)
+      ? identityLabel.name
+      : null) ||
+    (group.sourceClass === "vendor"
+      ? null
+      : (isClientPersonLabel(attribution.personName) ? attribution.personName : null) ||
+        group.personLabel);
   const organizationLabel = group.organizationLabel;
   let communication = group.sourceClass;
   if (!person && group.identityKind === "vendor") communication = "vendor";
@@ -1100,7 +1164,14 @@ function classifySituation(input: {
     (a, b) => parseMs(a.sourceTimestamp) - parseMs(b.sourceTimestamp),
   );
   const beats = sorted.flatMap((row) =>
-    beatsFor(row, input.ctx, person, vendorName, fallbackSpeaker, thread),
+    beatsFor(
+      row,
+      input.ctx,
+      person,
+      vendorName,
+      fallbackSpeaker,
+      threadContextForRow(row, input.threadContext, thread),
+    ),
   );
   const production = isProductionStage(project?.lifecycleStage);
   const vendorHandled =
@@ -1680,7 +1751,7 @@ function classifySituation(input: {
       spec == null &&
       !yourTurn,
   );
-  const briefingTexts = briefingTextsFor(usable, thread, communication);
+  const briefingTexts = briefingTextsFor(usable, thread, communication, input.threadContext);
 
   return {
     id: `brief:${input.key}`,
@@ -1716,7 +1787,7 @@ function classifySituation(input: {
     noFounderAction: group.noFounderAction,
     waitingState: group.waitingState,
     sourceClass: group.sourceClass,
-    threadSubject: thread?.subject ?? null,
+    threadSubject: identityThreadSubject,
     personId: group.personId,
     identityKind: group.identityKind,
     lifecycleStage: project?.lifecycleStage ?? null,
@@ -1727,6 +1798,7 @@ function classifySituation(input: {
     vendorOwnTexts: briefingTexts.vendorOwnTexts,
     quotedTexts: briefingTexts.quotedTexts,
     sourceRefs: briefingTexts.sourceRefs,
+    attachmentNames,
   };
 }
 
@@ -1764,6 +1836,7 @@ function briefingInputFromSituation(item: RankedSituation): ComposeTodayBriefing
     vendorOwnTexts: item.vendorOwnTexts ?? [],
     quotedTexts: item.quotedTexts ?? [],
     sourceRefs: item.sourceRefs ?? [],
+    attachmentNames: item.attachmentNames ?? [],
   };
 }
 
@@ -1925,6 +1998,11 @@ function presentBrief(
 }
 
 function situationCad(item: RankedSituation): string | null {
+  const fromIdentity = currentCadTokensFromIdentityHay([
+    item.threadSubject,
+    ...(item.attachmentNames ?? []),
+  ]);
+  if (fromIdentity[0]) return fromIdentity[0];
   const fromSubject = clientLabelFromHgdSubject(item.threadSubject)?.cadId;
   if (fromSubject) return fromSubject.toUpperCase();
   const fromPacket = item.briefingPacket?.identifiers.find(
@@ -1934,8 +2012,15 @@ function situationCad(item: RankedSituation): string | null {
 }
 
 function situationClientName(item: RankedSituation): string | null {
-  const fromSubject = clientLabelFromHgdSubject(item.threadSubject)?.name;
-  const hint = fromSubject || item.personName || item.briefingPacket?.displayName;
+  const fromIdentity = clientLabelFromIdentityHay([
+    item.threadSubject,
+    ...(item.attachmentNames ?? []),
+  ]);
+  const hint =
+    fromIdentity?.name ||
+    clientLabelFromHgdSubject(item.threadSubject)?.name ||
+    item.personName ||
+    item.briefingPacket?.displayName;
   if (!hint || isVendorOrganizationLabel(hint) || isStudioOrVendorLabel(hint)) return null;
   return hint.trim().split(/\s+/)[0]?.toLowerCase() ?? null;
 }
@@ -1969,6 +2054,12 @@ function mergeSituationPair(a: RankedSituation, b: RankedSituation): RankedSitua
   const primary = strongerSituation(a, b);
   const secondary = primary === a ? b : a;
   const client =
+    clientLabelFromIdentityHay([
+      primary.threadSubject,
+      secondary.threadSubject,
+      ...(primary.attachmentNames ?? []),
+      ...(secondary.attachmentNames ?? []),
+    ])?.name ||
     clientLabelFromHgdSubject(primary.threadSubject ?? secondary.threadSubject)?.name ||
     primary.personName ||
     secondary.personName;
@@ -2002,6 +2093,7 @@ function mergeSituationPair(a: RankedSituation, b: RankedSituation): RankedSitua
     vendorOwnTexts,
     quotedTexts: [...(primary.quotedTexts ?? []), ...(secondary.quotedTexts ?? [])],
     sourceRefs: [...(primary.sourceRefs ?? []), ...(secondary.sourceRefs ?? [])],
+    attachmentNames: [...new Set([...(primary.attachmentNames ?? []), ...(secondary.attachmentNames ?? [])])],
   };
 }
 
@@ -2109,12 +2201,16 @@ export function composeConciergeBrief(input: ComposeConciergeBriefInput): {
   const groups = new Map<string, ContinuumCandidate[]>();
   for (const row of input.candidates) {
     if (isCandidateQuietForToday(row, input.nowIso)) continue;
-    const key = groupingKey(row, projectByThread, threadByMessageId);
+    const key = groupingKey(row, projectByThread, threadByMessageId, input.threadContext);
     const list = groups.get(key) ?? [];
     list.push(row);
     groups.set(key, list);
   }
-  const collapsed = collapseTodayCandidateGroups(groups, threadByMessageId);
+  const collapsed = collapseTodayCandidateGroups(
+    groups,
+    threadByMessageId,
+    input.threadContext,
+  );
   const nowMs = parseMs(input.nowIso);
   const situations: RankedSituation[] = [];
   for (const [key, rows] of collapsed) {

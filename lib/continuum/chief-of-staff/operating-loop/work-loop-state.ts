@@ -126,10 +126,8 @@ export function reduceWorkLoop(input: ReduceWorkLoopInput): ReducedWorkLoopState
   for (const event of events) {
     if (event.satisfies === "vendor_shop") {
       vendorOpen = false;
-      if (founderPending) {
-        founderOpen = true;
-        clientOpen = false;
-      }
+      founderOpen = true;
+      clientOpen = false;
     }
     if (event.satisfies === "founder") founderOpen = false;
     if (event.satisfies === "client") clientOpen = false;
@@ -158,7 +156,12 @@ export function reduceWorkLoop(input: ReduceWorkLoopInput): ReducedWorkLoopState
     clientOpen = false;
   }
 
-  const cadWait = unresolvedCadWait(events, vendorOpen, input.waitingState);
+  const cadWait = unresolvedCadWait(events, input.waitingState);
+  if (cadWait) {
+    vendorOpen = true;
+    founderOpen = false;
+    clientOpen = false;
+  }
   applyRemaining(input, {
     vendorOpen: () => vendorOpen,
     setVendorOpen: (value) => {
@@ -231,10 +234,8 @@ function remainingIsUsable(text: string): boolean {
 
 function unresolvedCadWait(
   events: readonly WorkLoopEvent[],
-  vendorOpen: boolean,
   waitingState: ThreadWaitingKind | string | null | undefined,
 ): boolean {
-  if (!vendorOpen) return false;
   let cad = waitingState === "cad";
   for (const event of events) {
     if (event.eventType === "founder_asks_vendor" || event.eventType === "vendor_promises_delivery") {
@@ -266,6 +267,12 @@ function applyRemaining(
     }
     return;
   }
+  if (classified.opens === "vendor_shop") {
+    state.setVendorOpen(true);
+    state.setFounderOpen(false);
+    state.setClientOpen(false);
+    return;
+  }
   if (state.cadWait) return;
   state.setFounderOpen(true);
   state.setVendorOpen(false);
@@ -280,8 +287,8 @@ export function eventsFromInput(input: ReduceWorkLoopInput): WorkLoopEvent[] {
     const actor = actorOf(beat.speaker);
     const classified = classifyEvent(text, actor);
     events.push({
-      timestamp: beat.at || null,
-      sortMs: eventMs(beat.at, index++),
+      timestamp: beat.timestamp || beat.at || null,
+      sortMs: eventMs(beat.timestamp || beat.at, index++),
       actor,
       eventType: classified.eventType,
       opens: classified.opens,

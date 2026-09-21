@@ -17,6 +17,11 @@ import {
 } from "@/lib/continuum/candidates/founder-attention";
 import { authorOwnedText } from "@/lib/continuum/gmail/candidates/spec-provenance";
 import { extractTypedIdentifiers } from "@/lib/continuum/gmail/identifier-role";
+import {
+  canonicalWorkLoopId,
+  clientLabelFromIdentityHay,
+  currentCadTokensFromIdentityHay,
+} from "@/lib/continuum/gmail/work-loop-identity";
 import { parseGmailWebHref } from "./evidence";
 import {
   isPostCompletionObligationText,
@@ -98,8 +103,15 @@ export type TodayDocketSeed = {
 
 function strongWorkIdentityKeys(seed: TodayDocketSeed): string[] {
   const keys: string[] = [];
-  if (seed.projectId) keys.push(`project:${seed.projectId}`);
   const cad = currentCadOf(seed);
+  const canonical = canonicalWorkLoopId({
+    projectId: seed.projectId,
+    cadId: cad,
+    threadId: seed.threadId,
+    fallbackId: seed.id,
+  });
+  if (!canonical.startsWith("seed:")) keys.push(canonical);
+  if (seed.projectId) keys.push(`project:${seed.projectId}`);
   if (cad) keys.push(`cad:${cad.toUpperCase()}`);
   if (seed.threadId) keys.push(`thread:${seed.threadId}`);
   for (const threadId of threadIdsFromRefs(seed.packet?.sourceRefs, seed.threadId)) {
@@ -130,6 +142,14 @@ export function todayGroupKeysFor(seed: TodayDocketSeed): string[] {
 }
 
 export function currentCadOf(seed: Pick<TodayDocketSeed, "packet" | "threadSubject" | "headline" | "context" | "subject" | "brief">): string | null {
+  const identity = currentCadTokensFromIdentityHay([
+    seed.threadSubject,
+    seed.subject,
+    seed.headline,
+    seed.context,
+    ...(seed.brief?.evidence ?? []).map((beat) => beat.summary),
+  ]);
+  if (identity[0]) return identity[0];
   const fromPacket = seed.packet?.identifiers.find(
     (row) => row.current && /^C\d{5,}/i.test(row.value),
   )?.value;
@@ -156,7 +176,9 @@ export function currentCadOf(seed: Pick<TodayDocketSeed, "packet" | "threadSubje
 }
 
 export function clientFirstNameOf(seed: TodayDocketSeed): string | null {
-  const fromSubject = clientLabelFromHgdSubject(seed.threadSubject)?.name;
+  const fromSubject =
+    clientLabelFromHgdSubject(seed.threadSubject)?.name ||
+    clientLabelFromIdentityHay([seed.threadSubject, seed.subject, seed.headline])?.name;
   const hint =
     fromSubject ||
     seed.packet?.displayName ||
@@ -268,8 +290,16 @@ function threadIdsFromRefs(
 }
 
 function remainingFromEvidence(
-  item: Pick<CosBriefItem, "recommended" | "explanation" | "evidence">,
+  item: Pick<
+    CosBriefItem,
+    "recommended" | "explanation" | "evidence" | "waitingState" | "briefingPacket"
+  >,
 ): RemainingFounderCommitmentInput | null {
+  const vendorWait =
+    item.waitingState === "cad" ||
+    item.waitingState === "shop" ||
+    item.waitingState === "production" ||
+    packetHasUnresolvedVendorCommitment(item.briefingPacket);
   for (const beat of item.evidence) {
     if (beat.generatedSource) continue;
     if (isIdentityCleanupText(beat.summary) || isIdentifierOnlyProse(beat.summary)) continue;
@@ -283,6 +313,18 @@ function remainingFromEvidence(
     } else if (
       !isCurrentInboundAskText(beat.summary) &&
       !isCurrentFounderOwnedObligationText(beat.summary)
+    ) {
+      continue;
+    }
+    if (
+      vendorWait &&
+      beat.speaker === "client" &&
+      !remainingIsPrintCheck({
+        matchedText: beat.summary,
+        headline: beat.summary,
+        explanation: beat.summary,
+        recommended: beat.summary,
+      })
     ) {
       continue;
     }
@@ -307,6 +349,7 @@ export function equivalentPacketFromBrief(
   const threadId = item.recoveredGmailThreadId ?? item.canonicalGmailThreadId ?? null;
   const thread = threadId && loop?.threadContext ? loop.threadContext.get(threadId) ?? null : null;
   const sender = recoverableSenderName(item, loop);
+  const attachmentNames = thread?.attachmentFilenames ?? [];
   let remaining = remainingFromRecommended(item) ?? remainingFromEvidence(item);
   if (
     (isSupplierOrSystemMailbox(thread?.fromEmail) ||
@@ -333,6 +376,16 @@ export function equivalentPacketFromBrief(
       !isImmediateCommitmentText(remaining.matchedText),
   );
   if (item.briefingPacket) {
+    if (
+      remaining &&
+      inboundAskRemaining &&
+      (item.briefingPacket.briefingKind === "vendor_cad_wait" ||
+        item.waitingState === "cad" ||
+        item.waitingState === "shop" ||
+        item.waitingState === "production")
+    ) {
+      return overlayRecoverableSender(item.briefingPacket, sender);
+    }
     if (
       remaining &&
       (inboundAskRemaining ||
@@ -364,6 +417,7 @@ export function equivalentPacketFromBrief(
         vendorOwnTexts: item.evidence
           .filter((beat) => beat.speaker === "vendor")
           .map((beat) => authorOwnedText(beat.summary)),
+        attachmentNames,
       }) ?? item.briefingPacket,
         sender,
       );
@@ -392,6 +446,7 @@ export function equivalentPacketFromBrief(
     vendorOwnTexts: item.evidence
       .filter((beat) => beat.speaker === "vendor")
       .map((beat) => authorOwnedText(beat.summary)),
+    attachmentNames,
   }),
     sender,
   );
@@ -814,7 +869,7 @@ function keepSeed(seed: TodayDocketSeed, loop: CosOperatingLoopView): boolean {
     packet.briefingKind === "generic" &&
     !systemAlert
   ) {
-    if (!seed.brief && !seed.job && !currentCadOf(seed) && !seed.projectId) return false;
+    return false;
   }
   const threadHay = [
     seed.headline,
@@ -963,15 +1018,23 @@ function overlayClientIdentity(
   const cad =
     seeds.map((seed) => currentCadOf(seed)).find((value): value is string => Boolean(value)) ??
     packet.identifiers.find((row) => row.current && /^C\d{5,}/i.test(row.value))?.value.toUpperCase() ??
+    currentCadTokensFromIdentityHay([
+      packet.projectName,
+      ...seeds.flatMap((seed) => [seed.threadSubject, seed.subject, seed.headline]),
+    ])[0] ??
     null;
   const labels: { name: string; cadId: string | null }[] = [];
   for (const seed of seeds) {
-    const hgd = clientLabelFromHgdSubject(seed.threadSubject);
+    const hgd =
+      clientLabelFromHgdSubject(seed.threadSubject) ??
+      clientLabelFromIdentityHay([seed.threadSubject, seed.subject, seed.headline]);
     if (hgd) labels.push(hgd);
   }
   if (loop?.threadContext && cad) {
     for (const thread of loop.threadContext.values()) {
-      const hgd = clientLabelFromHgdSubject(thread.subject);
+      const hgd =
+        clientLabelFromHgdSubject(thread.subject) ??
+        clientLabelFromIdentityHay([thread.subject, ...(thread.attachmentFilenames ?? [])]);
       if (hgd?.cadId?.toUpperCase() === cad) labels.push(hgd);
     }
   }
@@ -1010,7 +1073,15 @@ function recomposeMergedPacket(left: TodayDocketSeed, right: TodayDocketSeed): T
   const evidence = uniqueBeats([...evidenceFromSeed(left), ...evidenceFromSeed(right)]);
   const hgd =
     clientLabelFromHgdSubject(primary.threadSubject) ??
-    clientLabelFromHgdSubject(secondary.threadSubject);
+    clientLabelFromHgdSubject(secondary.threadSubject) ??
+    clientLabelFromIdentityHay([
+      primary.threadSubject,
+      secondary.threadSubject,
+      primary.subject,
+      secondary.subject,
+      primary.headline,
+      secondary.headline,
+    ]);
   const displayHint =
     hgd?.name ||
     (primary.packet && !isVendorOrganizationLabel(primary.packet.displayName)
@@ -1092,7 +1163,16 @@ function mergeSeeds(left: TodayDocketSeed, right: TodayDocketSeed): TodayDocketS
   const identified = overlayClientIdentity(packet, [left, right]);
   const hgd =
     clientLabelFromHgdSubject(primary.threadSubject) ??
-    clientLabelFromHgdSubject(secondary.threadSubject);
+    clientLabelFromHgdSubject(secondary.threadSubject) ??
+    clientLabelFromIdentityHay([
+      primary.threadSubject,
+      secondary.threadSubject,
+      primary.subject,
+      secondary.subject,
+      primary.headline,
+      secondary.headline,
+      identified?.projectName,
+    ]);
   const briefing = identified ? renderDeterministicBriefing(identified) : primary.briefing;
   const recapHeadline =
     /actually sent|can't tell whether this was/i.test(secondary.headline)

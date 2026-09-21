@@ -117,6 +117,12 @@ export function mergeTodayThreadContext(
         next.messages && next.messages.length > 0
           ? next.messages
           : prior.messages,
+      attachmentFilenames: [
+        ...new Set([
+          ...(prior.attachmentFilenames ?? []),
+          ...(next.attachmentFilenames ?? []),
+        ]),
+      ],
     });
   }
   return merged;
@@ -161,6 +167,7 @@ function ingestIndexedRows(
       fromEmail: existing.fromEmail ?? null,
       liveIdentityLoaded: existing.liveIdentityLoaded,
       messages,
+      attachmentFilenames: existing.attachmentFilenames,
     });
   }
   return threadIds;
@@ -219,7 +226,43 @@ export async function loadIndexedTodayThreadContext(
   if (recoveredThreadIds.length > 0) {
     await loadThreads(recoveredThreadIds);
   }
+  await loadIndexedAttachmentFilenames(client, out);
   return out;
+}
+
+async function loadIndexedAttachmentFilenames(
+  client: NonNullable<ReturnType<typeof getSupabaseAdmin>>,
+  out: Map<string, TodayGmailThreadContext>,
+): Promise<void> {
+  const threadIds = [...out.keys()];
+  if (threadIds.length === 0) return;
+  for (let index = 0; index < threadIds.length; index += THREAD_QUERY_CHUNK) {
+    const chunk = threadIds.slice(index, index + THREAD_QUERY_CHUNK);
+    const { data, error } = await client
+      .from("continuum_gmail_attachments")
+      .select("thread_id, filename")
+      .in("thread_id", chunk);
+    if (error || !data) continue;
+    const byThread = new Map<string, string[]>();
+    for (const row of data as Record<string, unknown>[]) {
+      const threadId = String(row.thread_id ?? "").trim();
+      const filename = String(row.filename ?? "").trim();
+      if (!threadId || !filename) continue;
+      const list = byThread.get(threadId) ?? [];
+      if (!list.includes(filename)) list.push(filename);
+      byThread.set(threadId, list);
+    }
+    for (const [threadId, filenames] of byThread) {
+      const existing = out.get(threadId);
+      if (!existing) continue;
+      out.set(threadId, {
+        ...existing,
+        attachmentFilenames: [
+          ...new Set([...(existing.attachmentFilenames ?? []), ...filenames]),
+        ],
+      });
+    }
+  }
 }
 
 export async function loadLiveExternalThreadIdentity(

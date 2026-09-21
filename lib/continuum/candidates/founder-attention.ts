@@ -29,6 +29,7 @@ import {
   isTerminalTodayLifecycle,
   todayLifecycleClass,
 } from "@/lib/continuum/candidates/today-lifecycle";
+import { currentCadTokensFromIdentityHay } from "@/lib/continuum/candidates/work-loop-identity";
 
 export const FOUNDER_ATTENTION_MODEL_ID = "cos-founder-attention-v1" as const;
 
@@ -173,6 +174,7 @@ export type TodayGmailThreadContext = {
   fromEmail?: string | null;
   liveIdentityLoaded?: boolean;
   messages?: readonly TodayGmailIndexedMessage[];
+  attachmentFilenames?: readonly string[];
 };
 
 export type TodayKnownPerson = {
@@ -328,9 +330,10 @@ export function collectTodayVendorEvidence(input: {
       evidenceTexts.push(organization);
       const roles = person.roles ?? [];
       if (
-        roles.includes("vendor-contact") ||
-        roles.includes("business-contact") ||
-        isVendorOrganizationLabel(organization)
+        (roles.includes("vendor-contact") ||
+          roles.includes("business-contact") ||
+          isVendorOrganizationLabel(organization)) &&
+        !isStudioOrVendorLabel(organization)
       ) {
         directory.push(collapseIdentityText(organization));
       }
@@ -372,6 +375,7 @@ function vendorOrgFromDomainEvidence(
     return first.length >= 4 && (first === labelKey || labelKey.startsWith(first));
   });
   if (directoryHit) return directoryHit;
+  if (!domainLooksLikeVendorContext(label)) return null;
   const tokens = [
     ...new Set(
       evidenceTexts
@@ -384,9 +388,7 @@ function vendorOrgFromDomainEvidence(
   const prefixHits = tokens.filter((token) => labelKey.startsWith(orgKey(token)));
   const unique = [...new Set(prefixHits.map((token) => orgKey(token)))];
   const family = compatiblePrefixFamily(unique);
-  if (!family) {
-    return domainLooksLikeVendorContext(label) ? collapseIdentityText(label) : null;
-  }
+  if (!family) return collapseIdentityText(label);
   const matched = prefixHits.find((token) => orgKey(token) === family) ?? null;
   return matched ? collapseIdentityText(matched) : collapseIdentityText(label);
 }
@@ -628,9 +630,17 @@ export function isVendorPerson(person: {
   roles?: readonly string[] | null;
   organizationName?: string | null;
 }): boolean {
+  if (
+    isStudioOrVendorLabel(person.displayName) ||
+    isStudioOrVendorLabel(person.organizationName)
+  ) {
+    return false;
+  }
   const roles = person.roles ?? [];
   if (roles.includes("vendor-contact")) return true;
-  if (roles.includes("business-contact") && !roles.includes("client")) return true;
+  if (roles.includes("business-contact") && !roles.includes("client")) {
+    return isVendorOrganizationLabel(person.organizationName);
+  }
   if (isVendorOrganizationLabel(person.displayName)) return true;
   return isVendorOrganizationLabel(person.organizationName);
 }
@@ -1241,6 +1251,7 @@ export function hasTrustworthyTodaySource(
 export function collapseTodayCandidateGroups(
   groups: Map<string, ContinuumCandidate[]>,
   threadByMessageId?: ReadonlyMap<string, string> | null,
+  threadContext?: ReadonlyMap<string, TodayGmailThreadContext> | null,
 ): Map<string, ContinuumCandidate[]> {
   const entries = [...groups.entries()].map(([key, rows]) => {
     const threads = new Set<string>();
@@ -1249,7 +1260,20 @@ export function collapseTodayCandidateGroups(
       const threadId = recoveredGmailThreadId(row, threadByMessageId);
       if (threadId) threads.add(threadId);
     }
-    return { key, rows, threads: [...threads] };
+    const identityHay: string[] = [];
+    for (const threadId of threads) {
+      const thread = threadContext?.get(threadId);
+      if (thread?.subject) identityHay.push(thread.subject);
+      for (const filename of thread?.attachmentFilenames ?? []) identityHay.push(filename);
+    }
+    for (const row of rows) {
+      identityHay.push(candidateText(row));
+      if (row.evidenceBasis.matchedText) identityHay.push(row.evidenceBasis.matchedText);
+    }
+    const hayCads = currentCadTokensFromIdentityHay(identityHay);
+    const fromKey = key.startsWith("cad:") ? key.slice("cad:".length).toUpperCase() : "";
+    const cads = fromKey ? [fromKey] : hayCads;
+    return { key, rows, threads: [...threads], cads };
   });
   const parent = entries.map((_, index) => index);
   const find = (index: number): number => {
@@ -1271,10 +1295,25 @@ export function collapseTodayCandidateGroups(
       if (left !== right) parent[right] = left;
     }
   }
+  const byCad = new Map<string, number>();
+  for (let index = 0; index < entries.length; index++) {
+    const cads = entries[index]!.cads;
+    if (cads.length !== 1) continue;
+    const cad = cads[0]!;
+    const prior = byCad.get(cad);
+    if (prior == null) {
+      byCad.set(cad, index);
+      continue;
+    }
+    const left = find(prior);
+    const right = find(index);
+    if (left !== right) parent[right] = left;
+  }
   const rankKey = (key: string): number => {
     if (key.startsWith("project:")) return 0;
-    if (key.startsWith("thread:")) return 1;
-    return 2;
+    if (key.startsWith("cad:")) return 1;
+    if (key.startsWith("thread:")) return 2;
+    return 3;
   };
   const mergedRows = new Map<number, ContinuumCandidate[]>();
   const mergedKey = new Map<number, string>();
@@ -2101,11 +2140,20 @@ export function groupingKey(
   row: ContinuumCandidate,
   projectByThread?: ReadonlyMap<string, string>,
   threadByMessageId?: ReadonlyMap<string, string>,
+  threadContext?: ReadonlyMap<string, TodayGmailThreadContext> | null,
 ): string {
   const threadId = recoveredGmailThreadId(row, threadByMessageId);
   const projectId =
     candidateProjectId(row) ?? (threadId ? (projectByThread?.get(threadId) ?? null) : null);
   if (projectId) return `project:${projectId}`;
+  const thread = threadId ? threadContext?.get(threadId) ?? null : null;
+  const identityCads = currentCadTokensFromIdentityHay([
+    candidateText(row),
+    row.evidenceBasis.matchedText,
+    thread?.subject,
+    ...(thread?.attachmentFilenames ?? []),
+  ]);
+  if (identityCads.length === 1) return `cad:${identityCads[0]}`;
   if (threadId) return `thread:${threadId}`;
   const parts = row.sourceRef.split("|");
   if (parts[0] === "he1" && parts[1]) return `human:${parts[1]}`;

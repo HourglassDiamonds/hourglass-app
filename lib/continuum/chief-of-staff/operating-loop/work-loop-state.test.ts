@@ -144,6 +144,17 @@ describe("work-loop state reducer", () => {
     assert.equal(reduced.ballHolder, "vendor_shop");
   });
 
+  it("vendor CAD/STL delivery returns the loop to founder", () => {
+    const reduced = reduceWorkLoop({
+      evidence: [
+        beat("founder", "2026-09-17T15:00:00.000Z", "Please send the updated CAD and STL."),
+        beat("vendor", "2026-09-21T18:13:00.000Z", "Here is the C025610 Mod 4 CAD + STL."),
+      ],
+      communication: "vendor",
+    });
+    assert.equal(reduced.ballHolder, "founder");
+  });
+
   it("fulfilled vendor STL plus open print/check is founder", () => {
     const reduced = reduceWorkLoop({
       evidence: [

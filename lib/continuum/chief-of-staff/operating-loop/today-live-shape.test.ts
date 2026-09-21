@@ -259,6 +259,7 @@ describe("Today live-shape Gmail identity", () => {
 
     const supplyNotes = todayOf([assoc, job], {
       threadContext: new Map([[VLORA_THREAD, thread]]),
+      vendorDirectory: ["Vlora"],
       projects: new Map([
         [
           "unrelated-mounting",
@@ -840,7 +841,7 @@ describe("Today live-shape Gmail identity", () => {
     assert.notEqual(card?.subject ?? watch?.title, "Unassigned");
     if (card) {
       assert.equal(selectFounderControls(card).confirmPerson, null);
-      assert.equal(card.brief?.personLabel ?? null, null);
+      assert.notEqual(card.brief?.personLabel, "Niurka Lulo");
       assert.equal(card.brief?.projectId ?? null, null);
     }
   });

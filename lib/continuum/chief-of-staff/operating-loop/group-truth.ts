@@ -170,7 +170,7 @@ export function resolveTodayGroupTruth(input: {
       isClientPersonLabel(person.displayName),
   );
   if (
-    (identity.kind === "vendor" || identity.organizationLabel) &&
+    identity.kind === "vendor" &&
     !storedClient &&
     sourceClass !== "platform"
   ) {

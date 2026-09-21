@@ -521,7 +521,6 @@ export function gmailThreadIdsForGroup(
   };
   if (key.startsWith("thread:")) {
     add(key.slice("thread:".length));
-    return ids;
   }
   const latestRow = [...rows].sort(
     (a, b) => parseMs(a.sourceTimestamp) - parseMs(b.sourceTimestamp),
