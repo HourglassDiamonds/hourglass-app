@@ -40,10 +40,13 @@ import {
   type TodayBriefingPacket,
 } from "./briefing-packet";
 import {
+  eventsFromInput,
   isInternalQaCopy,
   isShopReviewFallbackText,
   isUnsafeBriefingFragment,
+  remainingOverriddenByLaterLoop,
 } from "./work-loop-state";
+import { isCurrentActionCopyText } from "./current-action-eligibility";
 import {
   isAmbiguousFollowUpFragment,
   isCurrentFounderOwnedObligationText,
@@ -242,7 +245,7 @@ type RemainingFounderCommitmentInput = {
 };
 
 function remainingFromRecommended(
-  item: Pick<CosBriefItem, "recommended" | "explanation" | "noFounderAction" | "waitingState">,
+  item: Pick<CosBriefItem, "recommended" | "explanation" | "noFounderAction" | "waitingState" | "evidence">,
 ): RemainingFounderCommitmentInput | null {
   if (item.noFounderAction || item.waitingState) return null;
   const recommended = item.recommended.trim();
@@ -251,6 +254,11 @@ function remainingFromRecommended(
   if (isGenericFallbackObligationText(recommended)) return null;
   if (/^wait on (?:the )?(?:shop|client|vendor)/i.test(recommended)) return null;
   if (!isCurrentFounderOwnedObligationText(recommended)) return null;
+  const events = eventsFromInput({ evidence: item.evidence ?? [] });
+  if (remainingOverriddenByLaterLoop(recommended, events)) return null;
+  if (isCurrentActionCopyText(recommended) && events.some((event) => event.eventType === "vendor_delivers" || event.opens === "vendor_shop")) {
+    return null;
+  }
   return {
     matchedText: recommended,
     headline: recommended,
@@ -302,10 +310,13 @@ function remainingFromEvidence(
     item.waitingState === "shop" ||
     item.waitingState === "production" ||
     packetHasUnresolvedVendorCommitment(item.briefingPacket);
-  for (const beat of item.evidence) {
+  const events = eventsFromInput({ evidence: item.evidence });
+  for (const beat of [...item.evidence].reverse()) {
     if (beat.generatedSource) continue;
     if (isIdentityCleanupText(beat.summary) || isIdentifierOnlyProse(beat.summary)) continue;
     if (isGenericFallbackObligationText(beat.summary)) continue;
+    if (/\bdurability\b|\bprincess cut\b/i.test(beat.summary)) continue;
+    if (remainingOverriddenByLaterLoop(beat.summary, events)) continue;
     if (beat.speaker === "founder") {
       if (!isImmediateCommitmentText(beat.summary) && !isCurrentInboundAskText(beat.summary)) {
         continue;
@@ -333,6 +344,7 @@ function remainingFromEvidence(
     const recommended = isGenericFallbackObligationText(item.recommended)
       ? beat.summary
       : item.recommended || beat.summary;
+    if (remainingOverriddenByLaterLoop(recommended, events)) continue;
     return {
       matchedText: beat.summary,
       headline: recommended,

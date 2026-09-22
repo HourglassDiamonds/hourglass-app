@@ -5,6 +5,8 @@
  */
 
 import type { ContinuumCandidate } from "@/lib/continuum/candidates/types";
+import { collectExactGmailIds } from "@/lib/continuum/candidates/exact-gmail-ids";
+import { currentCadTokensFromIdentityHay } from "@/lib/continuum/candidates/work-loop-identity";
 import {
   candidateText,
   hasRule,
@@ -36,9 +38,9 @@ const ARTIFACT_REQUEST =
 const ARTIFACT_DELIVERED =
   /\b(?:here is|attached|delivered|sent)\b[^.!?\n]{0,80}\b(?:mod\s*\d+\s+)?(?:stl|cad)\b|\b(?:mod\s*\d+\s+)?(?:stl|cad)\b[^.!?\n]{0,40}\b(?:attached|delivered|sent)\b/i;
 const DESIGN_CHANGE_REQUEST =
-  /\b(?:please (?:change|soften|revise)|can we change|change request|soften the (?:double[- ]?)?prong|(?:change|soften|revise) (?:the )?(?:double[- ]?)?(?:prongs?|shank)|shank width)\b/i;
+  /\b(?:please (?:change|soften|revise)|can we change|change request|soften the (?:double[- ]?)?prong|(?:change|soften|revise) (?:the )?(?:double[- ]?)?(?:prongs?|shank|claws?)|shank width|rounded[- ]claws?)\b/i;
 const LATER_LOOP_ADVANCE =
-  /\b(?:workshop|going to (?:the )?workshop|stone is going|place (?:the |your )?order|order confirmation|final CAD|moving forward|please proceed|RN\d{4,}|size\s+\d)/i;
+  /\b(?:workshop|going to (?:the )?workshop|stone is going|place (?:the |your )?order|order confirmation|final CAD|moving forward|please proceed|RN\d{4,}|size\s+\d|I'll update the CAD|updated CAD)\b/i;
 const CONTEXT_TOPICS = new Set(["design_basis", "gift_context", "historical_quoted_note"]);
 
 function parseMs(iso: string | null | undefined): number {
@@ -61,6 +63,12 @@ export function candidateObligationText(row: ContinuumCandidate): string {
           ? payload.text
           : "";
   return `${row.evidenceBasis.matchedText ?? ""} ${extra} ${candidateText(row)}`;
+}
+
+export function isCurrentActionCopyText(text: string | null | undefined): boolean {
+  const hay = folded(text);
+  if (!hay) return false;
+  return ARTIFACT_REQUEST.test(hay) || DESIGN_CHANGE_REQUEST.test(hay);
 }
 
 function laterPeers(
@@ -104,7 +112,11 @@ function isDuplicateWrapper(
 }
 
 function isContextOnly(row: ContinuumCandidate): boolean {
+  if (hasRule(row, "explicit_durability_discussion")) return true;
   const payload = payloadOf(row);
+  if (payload.kind === "note") {
+    return /\bdurability\b|\bprincess cut\b/i.test(payload.text);
+  }
   if (payload.kind !== "project_context") return false;
   return CONTEXT_TOPICS.has(payload.topic) || payload.topic.startsWith("historical_");
 }
@@ -129,6 +141,73 @@ function isSupersededDesignRequest(
     hasRule(row, "explicit_cad_feedback");
   if (!change) return false;
   return laterPeers(row, peers).some((peer) => LATER_LOOP_ADVANCE.test(candidateObligationText(peer)));
+}
+
+function cadTokensFromHay(texts: readonly (string | null | undefined)[]): string[] {
+  const seen = new Set<string>();
+  const tokens: string[] = [];
+  const push = (value: string) => {
+    const cad = value.trim().toUpperCase();
+    if (!cad || seen.has(cad)) return;
+    seen.add(cad);
+    tokens.push(cad);
+  };
+  for (const cad of currentCadTokensFromIdentityHay(texts)) push(cad);
+  for (const text of texts) {
+    for (const match of text?.match(/\bC\d{5,}\b/gi) ?? []) push(match);
+  }
+  return tokens;
+}
+
+export function chronologyPeers(
+  groupRows: readonly ContinuumCandidate[],
+  allRows: readonly ContinuumCandidate[] | null | undefined,
+  thread?: TodayGmailThreadContext | null,
+  threadContext?: ReadonlyMap<string, TodayGmailThreadContext> | null,
+): ContinuumCandidate[] {
+  const pool = allRows?.length ? allRows : groupRows;
+  const threadIds = new Set<string>();
+  const messageIds = new Set<string>();
+  const cads = new Set<string>();
+  const addIdentity = (texts: readonly (string | null | undefined)[]) => {
+    for (const cad of cadTokensFromHay(texts)) cads.add(cad);
+  };
+  const addRow = (row: ContinuumCandidate) => {
+    const ids = collectExactGmailIds([row]);
+    for (const value of ids.threadIds) threadIds.add(value);
+    for (const value of ids.messageIds) messageIds.add(value);
+    addIdentity([candidateObligationText(row)]);
+  };
+  for (const row of groupRows) addRow(row);
+  addIdentity([thread?.subject, ...(thread?.attachmentFilenames ?? [])]);
+  for (const message of thread?.messages ?? []) {
+    if (message.messageId) messageIds.add(message.messageId);
+  }
+  if (threadContext) {
+    for (const [threadId, ctx] of threadContext) {
+      const ctxCads = cadTokensFromHay([ctx.subject, ...(ctx.attachmentFilenames ?? [])]);
+      const hit =
+        threadIds.has(threadId) ||
+        ctxCads.some((cad) => cads.has(cad)) ||
+        (ctx.messages ?? []).some(
+          (message) => messageIds.has(message.messageId) || threadIds.has(message.messageId),
+        );
+      if (!hit) continue;
+      threadIds.add(threadId);
+      for (const message of ctx.messages ?? []) {
+        if (message.messageId) messageIds.add(message.messageId);
+      }
+      addIdentity([ctx.subject, ...(ctx.attachmentFilenames ?? [])]);
+    }
+  }
+  const groupIds = new Set(groupRows.map((row) => row.candidateId));
+  return pool.filter((row) => {
+    if (groupIds.has(row.candidateId)) return true;
+    const ids = collectExactGmailIds([row]);
+    if (ids.threadIds.some((value) => threadIds.has(value) || messageIds.has(value))) return true;
+    if (ids.messageIds.some((value) => messageIds.has(value) || threadIds.has(value))) return true;
+    return cadTokensFromHay([candidateObligationText(row)]).some((cad) => cads.has(cad));
+  });
 }
 
 export function currentActionEligibility(
@@ -177,21 +256,104 @@ export function isCurrentActionEligible(
 export function eligibleCurrentActionRows(
   rows: readonly ContinuumCandidate[],
   thread?: TodayGmailThreadContext | null,
+  allRows?: readonly ContinuumCandidate[] | null,
+  threadContext?: ReadonlyMap<string, TodayGmailThreadContext> | null,
 ): ContinuumCandidate[] {
-  return rows.filter((row) => isCurrentActionEligible(row, { peers: rows, thread }));
+  const peers = chronologyPeers(rows, allRows ?? rows, thread, threadContext);
+  return rows.filter((row) => isCurrentActionEligible(row, { peers, thread }));
 }
 
 export function remainingIfCurrentlyActionable(
   remaining: RemainingFounderCommitment | null | undefined,
   rows: readonly ContinuumCandidate[],
   thread?: TodayGmailThreadContext | null,
+  allRows?: readonly ContinuumCandidate[] | null,
+  threadContext?: ReadonlyMap<string, TodayGmailThreadContext> | null,
 ): RemainingFounderCommitment | null {
   if (!remaining) return null;
   const needle = folded(remaining.matchedText);
   if (!needle) return remaining;
-  const blocked = rows.some((row) => {
-    if (isCurrentActionEligible(row, { peers: rows, thread })) return false;
-    return folded(row.evidenceBasis.matchedText) === needle;
+  const peers = chronologyPeers(rows, allRows ?? rows, thread, threadContext);
+  const blocked = peers.some((row) => {
+    if (isCurrentActionEligible(row, { peers, thread })) return false;
+    const matched = folded(row.evidenceBasis.matchedText);
+    if (matched.length < 12) return false;
+    return needle === matched || needle.includes(matched) || matched.includes(needle);
   });
   return blocked ? null : remaining;
+}
+
+export function ineligibleCurrentActionTexts(
+  rows: readonly ContinuumCandidate[],
+  thread?: TodayGmailThreadContext | null,
+  allRows?: readonly ContinuumCandidate[] | null,
+  threadContext?: ReadonlyMap<string, TodayGmailThreadContext> | null,
+): string[] {
+  const peers = chronologyPeers(rows, allRows ?? rows, thread, threadContext);
+  return peers
+    .filter((row) => !isCurrentActionEligible(row, { peers, thread }))
+    .map((row) => folded(row.evidenceBasis.matchedText))
+    .filter((text) => text.length >= 12);
+}
+
+export function copyUsesIneligibleCandidateText(
+  hay: string | null | undefined,
+  ineligible: readonly string[],
+): boolean {
+  const text = folded(hay);
+  if (!text) return false;
+  return ineligible.some((needle) => needle.length >= 12 && text.includes(needle));
+}
+
+export type CurrentActionSemanticCopy = {
+  remainingFounderCommitment?: RemainingFounderCommitment | null;
+  headline?: string | null;
+  candidateNextAction?: string | null;
+  explanation?: string | null;
+  recommended?: string | null;
+};
+
+export function currentActionCopyViolatesEligibility(
+  copy: CurrentActionSemanticCopy,
+  ineligible: readonly string[],
+): boolean {
+  if (ineligible.length === 0) return false;
+  const remaining = copy.remainingFounderCommitment;
+  return copyUsesIneligibleCandidateText(
+    [
+      copy.headline,
+      copy.candidateNextAction,
+      copy.explanation,
+      copy.recommended,
+      remaining?.matchedText,
+      remaining?.headline,
+      remaining?.explanation,
+      remaining?.recommended,
+    ].join("\n"),
+    ineligible,
+  );
+}
+
+export function dropIneligibleCurrentActionCopy<T extends CurrentActionSemanticCopy>(
+  copy: T,
+  ineligible: readonly string[],
+): T {
+  if (!currentActionCopyViolatesEligibility(copy, ineligible)) return copy;
+  const remaining = copy.remainingFounderCommitment;
+  const remainingBlocked =
+    remaining != null &&
+    copyUsesIneligibleCandidateText(
+      `${remaining.matchedText} ${remaining.headline} ${remaining.explanation} ${remaining.recommended}`,
+      ineligible,
+    );
+  return {
+    ...copy,
+    remainingFounderCommitment: remainingBlocked ? null : remaining,
+    headline: copyUsesIneligibleCandidateText(copy.headline, ineligible) ? null : copy.headline,
+    candidateNextAction: copyUsesIneligibleCandidateText(copy.candidateNextAction, ineligible)
+      ? null
+      : copy.candidateNextAction,
+    explanation: copyUsesIneligibleCandidateText(copy.explanation, ineligible) ? null : copy.explanation,
+    recommended: copyUsesIneligibleCandidateText(copy.recommended, ineligible) ? null : copy.recommended,
+  };
 }

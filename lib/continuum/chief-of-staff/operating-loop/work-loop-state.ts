@@ -99,6 +99,14 @@ const CLIENT_WAITING_ON_CAD =
   /\b(?:looking forward to (?:the )?cad|cad breakdown|when (?:will|is) (?:the )?(?:latest )?cad)\b/i;
 const FOUNDER_ACK =
   /^(?:perfect|thanks|thank you|got it|sounds good)[:).!\s]*$/i;
+const CLIENT_APPROVES_MOVE =
+  /\b(?:love(?:s|d)? (?:it|the)|looks (?:great|perfect|amazing)|approved|let(?:'s| us) move forward|move(?:ing)? forward)\b/i;
+const FOUNDER_VENDOR_REFERENCE =
+  /\b(?:here(?:['’]s| is)|attached|sending)\b[^.!?\n]{0,80}\b(?:reference|clarification|prong|photo|image)\b|\buse this (?:for|on) (?:the )?(?:cad|update)\b/i;
+const ORDER_CONFIRMATION_REVIEW =
+  /\border confirmation\b/i;
+const DISCREPANCY_REVIEW =
+  /\b(?:discrepanc|asap|please (?:review|check|confirm|report)|report .{0,40}asap)\b/i;
 const SHOP_REVIEW_COPY =
   /\breview the latest shop (?:turn|update)\b/i;
 const INTERNAL_QA_COPY =
@@ -249,15 +257,20 @@ export function reduceWorkLoop(input: ReduceWorkLoopInput): ReducedWorkLoopState
     },
     cadWait,
     cadInFounderHands,
+    events,
   });
 
   const inboundAskOpen =
     !cadWait &&
     !cadInFounderHands &&
     !input.staleInboundSatisfied &&
-    events.some(
-      (row) => isCurrentInboundAskText(row.text) || CLIENT_ASKS_FOUNDER.test(row.text),
-    );
+    latestOpening(events)?.opens !== "vendor_shop" &&
+    events.some((row) => {
+      if (!(isCurrentInboundAskText(row.text) || CLIENT_ASKS_FOUNDER.test(row.text))) {
+        return false;
+      }
+      return !remainingOverriddenByLaterLoop(row.text, events);
+    });
   if (inboundAskOpen) {
     founderOpen = true;
     vendorOpen = false;
@@ -409,6 +422,32 @@ function unresolvedCadWait(
   return cad;
 }
 
+export function remainingOverriddenByLaterLoop(
+  text: string,
+  events: readonly WorkLoopEvent[],
+): boolean {
+  const ask =
+    isCurrentInboundAskText(text) ||
+    /\b(?:rounded[- ]claws?|stl file|send me the stl|double[- ]prong|durability|princess cut)\b/i.test(
+      text,
+    );
+  if (!ask) return false;
+  const folded = text.replace(/\s+/g, " ").trim().toLowerCase();
+  const askEvent = [...events].reverse().find((event) => {
+    const own = event.text.replace(/\s+/g, " ").trim().toLowerCase();
+    if (!own) return false;
+    return own.includes(folded.slice(0, 40)) || folded.includes(own.slice(0, 40));
+  });
+  const askMs = askEvent?.sortMs ?? 0;
+  const later = events.filter((event) => event.sortMs >= askMs);
+  if (later.some((event) => event.opens === "vendor_shop")) return true;
+  return later.some(
+    (event) =>
+      event.eventType === "vendor_delivers" ||
+      event.eventType === "vendor_promises_delivery",
+  );
+}
+
 function applyRemaining(
   input: ReduceWorkLoopInput,
   state: {
@@ -418,11 +457,13 @@ function applyRemaining(
     setClientOpen: (value: boolean) => void;
     cadWait: boolean;
     cadInFounderHands: boolean;
+    events: readonly WorkLoopEvent[];
   },
 ): void {
   const text = remainingTextOf(input);
   if (!remainingIsUsable(text)) return;
   if (state.cadWait || state.cadInFounderHands) return;
+  if (remainingOverriddenByLaterLoop(text, state.events)) return;
   const inbound = isCurrentInboundAskText(text) || CLIENT_ASKS_FOUNDER.test(text);
   const classified = classifyEvent(text, inbound ? "client" : "founder");
   if (classified.eventType === "founder_asks_client" || classified.opens === "client") {
@@ -523,10 +564,13 @@ export function classifyEvent(
 ): { eventType: WorkLoopEventType; opens: WorkLoopDependency | null; satisfies: WorkLoopDependency | null } {
   const own = authorOwnedText(text) || text;
   if (actor === "vendor_shop" || actor === "system") {
+    if (ORDER_CONFIRMATION_REVIEW.test(own) && (DISCREPANCY_REVIEW.test(own) || /\bSP\d{4,}\b/.test(own))) {
+      return { eventType: "vendor_delivers", opens: "founder", satisfies: "vendor_shop" };
+    }
     if (CAD_FORTHCOMING.test(own) && !STL_DELIVERED.test(own) && !CAD_DELIVERED.test(own)) {
       return { eventType: "vendor_promises_delivery", opens: "vendor_shop", satisfies: null };
     }
-    if (VENDOR_PRODUCTION_PROMISE.test(own) && !STL_DELIVERED.test(own) && !CAD_DELIVERED.test(own)) {
+    if (VENDOR_PRODUCTION_PROMISE.test(own) && !STL_DELIVERED.test(own) && !CAD_DELIVERED.test(own) && !ORDER_CONFIRMATION_REVIEW.test(own)) {
       return { eventType: "other", opens: "vendor_shop", satisfies: null };
     }
     if (STL_DELIVERED.test(own) || CAD_DELIVERED.test(own)) {
@@ -540,6 +584,9 @@ export function classifyEvent(
   if (actor === "client") {
     if (SHIPPING_ADDRESS.test(own)) {
       return { eventType: "founder_obligation", opens: "founder", satisfies: "client" };
+    }
+    if (CLIENT_APPROVES_MOVE.test(own)) {
+      return { eventType: "client_turn", opens: "founder", satisfies: "client" };
     }
     if (isCurrentInboundAskText(own) || CLIENT_ASKS_FOUNDER.test(own) || /\?/.test(own)) {
       return { eventType: "client_turn", opens: "founder", satisfies: "client" };
@@ -558,7 +605,11 @@ export function classifyEvent(
   if (FOUNDER_STILL_OWNS.test(own)) {
     return { eventType: "founder_obligation", opens: "founder", satisfies: "client" };
   }
-  if (FOUNDER_INSTRUCTS_VENDOR.test(own) || FOUNDER_ASKS_VENDOR.test(own)) {
+  if (
+    FOUNDER_INSTRUCTS_VENDOR.test(own) ||
+    FOUNDER_ASKS_VENDOR.test(own) ||
+    FOUNDER_VENDOR_REFERENCE.test(own)
+  ) {
     return {
       eventType: FOUNDER_INSTRUCTS_VENDOR.test(own) ? "founder_instructs_vendor" : "founder_asks_vendor",
       opens: "vendor_shop",

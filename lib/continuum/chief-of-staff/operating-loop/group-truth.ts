@@ -21,7 +21,7 @@ import {
   type TodayResolvedIdentity,
 } from "@/lib/continuum/candidates/founder-attention";
 import { collectExactGmailIds } from "@/lib/continuum/candidates/exact-gmail-ids";
-import { isCurrentActionEligible } from "./current-action-eligibility";
+import { chronologyPeers, isCurrentActionEligible } from "./current-action-eligibility";
 import type { ProjectJob } from "@/lib/continuum/client-memory/project-jobs/types";
 import {
   candidateDirection,
@@ -99,11 +99,14 @@ function inboundHaystack(
   rows: readonly ContinuumCandidate[],
   thread: TodayGmailThreadContext | null | undefined,
   latestInboundAt: string | null,
+  chronologyRows?: readonly ContinuumCandidate[] | null,
+  threadContext?: ReadonlyMap<string, TodayGmailThreadContext> | null,
 ): string {
   const inboundMs = parseMs(latestInboundAt);
+  const peers = chronologyPeers(rows, chronologyRows ?? rows, thread, threadContext);
   const latest = rows.filter((row) => {
     if (candidateDirection(row, thread) !== "inbound") return false;
-    if (!isCurrentActionEligible(row, { peers: rows, thread })) return false;
+    if (!isCurrentActionEligible(row, { peers, thread })) return false;
     if (inboundMs <= 0) return true;
     return parseMs(row.sourceTimestamp) >= inboundMs;
   });
@@ -120,6 +123,7 @@ export function collectTodayExternalEmailHashes(input: {
 export function resolveTodayGroupTruth(input: {
   key: string;
   rows: readonly ContinuumCandidate[];
+  chronologyRows?: readonly ContinuumCandidate[] | null;
   threadContext?: ReadonlyMap<string, TodayGmailThreadContext> | null;
   project?: CosProjectContext | null;
   jobs?: readonly ProjectJob[] | null;
@@ -193,8 +197,16 @@ export function resolveTodayGroupTruth(input: {
     founderEmailHashes,
     associatedThreadIds: input.associatedThreadIds,
   });
-  const inboundText = inboundHaystack(input.rows, thread, chronology.latestInboundAt);
-  const forthcoming = VENDOR_FORTHCOMING.test(inboundText);
+  const inboundText = inboundHaystack(
+    input.rows,
+    thread,
+    chronology.latestInboundAt,
+    input.chronologyRows,
+    input.threadContext,
+  );
+  const forthcoming =
+    VENDOR_FORTHCOMING.test(inboundText) &&
+    !/\b(?:here is|attached|delivered)\b[^.!?\n]{0,80}\b(?:updated\s+)?(?:cad|stl)\b/i.test(inboundText);
   const asksFounder = VENDOR_ASKS_FOUNDER.test(inboundText);
   const vendor = sourceClass === "vendor";
   let waitingState = chronology.waiting;

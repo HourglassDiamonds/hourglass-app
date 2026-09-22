@@ -201,7 +201,18 @@ function founderStand(
   if (packet.semanticNextActionClass === "founder_review") {
     const cadBit = cad ? ` ${cad}` : "";
     const external = usableProse(packet.latestMeaningfulExternalEvent?.summary);
-    if (external && /CAD|STL/i.test(external)) return sentence(external);
+    if (
+      external &&
+      /CAD|STL/i.test(external) &&
+      !/\b(?:can you|could you|please)\b[^.!?\n]{0,40}\bsend(?: me)?(?: the)? (?:stl|cad)\b|\bsend me the stl\b/i.test(
+        external,
+      )
+    ) {
+      return sentence(external);
+    }
+    if (/\border confirmation\b/i.test(external ?? "")) {
+      return `Order confirmation arrived. Review it for discrepancies and send ${who} the next step.`;
+    }
     return `The shop delivered the${cadBit} CAD/STL. Review them and send ${who} the next design direction.`.replace(
       /\s{2,}/g,
       " ",

@@ -22,6 +22,7 @@ import {
   isShopReviewFallbackText,
   isUnsafeBriefingFragment,
   reduceWorkLoop,
+  remainingOverriddenByLaterLoop,
   clientIsWaitingOnCad,
   isCurrentShippingObligation,
 } from "./work-loop-state";
@@ -242,8 +243,8 @@ function remainingFromOpeningEvents(
 ): RemainingFounderCommitment | null {
   const opening = [...events].reverse().find(
     (row) =>
-      row.opens === "founder" ||
-      isCurrentInboundAskText(row.text),
+      (row.opens === "founder" || isCurrentInboundAskText(row.text)) &&
+      !remainingOverriddenByLaterLoop(row.text, events),
   );
   if (!opening) return null;
   return remainingFromText(opening.text);

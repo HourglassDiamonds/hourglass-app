@@ -94,6 +94,9 @@ import { specConflictFromCandidates } from "./founder-actions";
 import { authorOwnedText, quotedText } from "@/lib/continuum/gmail/candidates/spec-provenance";
 import { isCandidateQuietForToday } from "./quiet";
 import {
+  chronologyPeers,
+  copyUsesIneligibleCandidateText,
+  ineligibleCurrentActionTexts,
   isCurrentActionEligible,
   remainingIfCurrentlyActionable,
 } from "./current-action-eligibility";
@@ -567,7 +570,15 @@ function speakerOf(
   if (hasRule(row, "explicit_external_commitment")) {
     return "client";
   }
-  if (hasRule(row, "explicit_founder_commitment") || FOUNDER_OUTBOUND.test(own)) {
+  if (
+    hasRule(row, "explicit_vendor_waiting") ||
+    hasRule(row, "explicit_vendor_commitment") ||
+    hasRule(row, "explicit_shop_blocker") ||
+    hasRule(row, "vendor_shop_update")
+  ) {
+    return "vendor";
+  }
+  if (direction !== "inbound" && (hasRule(row, "explicit_founder_commitment") || FOUNDER_OUTBOUND.test(own))) {
     return "founder";
   }
   if (FOUNDER_QUESTION.test(own) && hasRule(row, "explicit_follow_up")) {
@@ -1049,6 +1060,7 @@ function classifySituation(input: {
   evidenceTexts?: readonly string[];
   knownPeople?: readonly TodayKnownPerson[];
   associatedByProject?: ReadonlyMap<string, readonly string[]>;
+  chronologyRows?: readonly ContinuumCandidate[];
 }): RankedSituation | null {
   const groupedThreadId = situationThreadId(input.key, input.rows, input.threadContext);
   const groupedProjectId = input.key.startsWith("project:")
@@ -1119,6 +1131,7 @@ function classifySituation(input: {
   const group = resolveTodayGroupTruth({
     key: input.key,
     rows: input.rows,
+    chronologyRows: input.chronologyRows,
     threadContext: input.threadContext,
     project,
     jobs: input.jobs,
@@ -1168,12 +1181,27 @@ function classifySituation(input: {
         : communication === "founder"
           ? "founder"
           : "client";
-  const usable = input.rows.filter(
-    (row) =>
-      !isCandidateQuietForToday(row, input.ctx.nowIso) &&
-      isCurrentActionEligible(row, { peers: input.rows, thread }),
+  const peers = chronologyPeers(
+    input.rows,
+    input.chronologyRows ?? input.rows,
+    thread,
+    input.threadContext,
   );
-  const sorted = [...usable].sort(
+  const ineligibleTexts = ineligibleCurrentActionTexts(
+    input.rows,
+    thread,
+    input.chronologyRows ?? input.rows,
+    input.threadContext,
+  );
+  const evidenceRows = input.rows.filter(
+    (row) => !isCandidateQuietForToday(row, input.ctx.nowIso),
+  );
+  const actionRows = evidenceRows.filter((row) =>
+    isCurrentActionEligible(row, { peers, thread }),
+  );
+  const usable = evidenceRows;
+  const actionIds = new Set(actionRows.map((row) => row.candidateId));
+  const sorted = [...evidenceRows].sort(
     (a, b) => parseMs(a.sourceTimestamp) - parseMs(b.sourceTimestamp),
   );
   const beats = sorted.flatMap((row) =>
@@ -1192,8 +1220,11 @@ function classifySituation(input: {
     production &&
     vendorSourcedThread(input.association, input.rows);
   const meaningful = latestMeaningful(beats);
+  const copyBeat =
+    latestMeaningful(beats.filter((beat) => !beat.candidateId || actionIds.has(beat.candidateId))) ??
+    meaningful;
   if (!meaningful) {
-    if (!vendorHandled || usable.length === 0) return null;
+    if (!vendorHandled || evidenceRows.length === 0) return null;
     const latestMs = Math.max(0, ...usable.map((row) => parseMs(row.sourceTimestamp)));
     return {
       id: `brief:${input.key}`,
@@ -1305,6 +1336,8 @@ function classifySituation(input: {
     group.remainingFounderCommitment,
     input.rows,
     thread,
+    input.chronologyRows ?? input.rows,
+    input.threadContext,
   );
   const newWork =
     communication !== "vendor" &&
@@ -1423,7 +1456,7 @@ function classifySituation(input: {
 
   let rankClass: CosBriefRankClass = "informational";
   let headline = title;
-  let explanation = clip(meaningful.summary, 220);
+  let explanation = clip(copyBeat?.summary ?? meaningful.summary, 220);
   let recommended = "Review the latest turn and decide the next step.";
   let disposition: RankedSituation["disposition"] = "brief";
   let watchingTitle = title;
@@ -1666,6 +1699,16 @@ function classifySituation(input: {
     urgency = currentOperational ? 0 : 1;
   } else {
     disposition = "suppress";
+  }
+
+  if (copyUsesIneligibleCandidateText(`${headline} ${explanation} ${recommended}`, ineligibleTexts)) {
+    if (copyUsesIneligibleCandidateText(headline, ineligibleTexts)) headline = title;
+    if (copyUsesIneligibleCandidateText(explanation, ineligibleTexts)) {
+      explanation = "Review the current work-loop turn.";
+    }
+    if (copyUsesIneligibleCandidateText(recommended, ineligibleTexts)) {
+      recommended = "Review the current work-loop turn.";
+    }
   }
 
   if (
@@ -2283,6 +2326,7 @@ export function composeConciergeBrief(input: ComposeConciergeBriefInput): {
     const situation = classifySituation({
       key,
       rows,
+      chronologyRows: input.candidates,
       ctx,
       projects: input.projects,
       jobs: input.jobs,

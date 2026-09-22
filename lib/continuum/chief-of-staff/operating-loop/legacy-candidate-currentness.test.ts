@@ -765,3 +765,476 @@ describe("read-time currentActionEligibility for legacy persisted candidates", (
     assert.match(cardHay(docket, /Madi|C026000/i), /client_wait|WAITING ON CLIENT/i);
   });
 });
+
+describe("current-action eligibility is a hard current-copy boundary", () => {
+  const SARAH_DURABILITY =
+    "durability to the corners of the princess cut in general";
+  const GRANT_CONFIRM =
+    "Order Confirmation SP13477. Please report any discrepancies ASAP.";
+  const DUANE_CAD = "Here is the updated CAD C026350 attached.";
+  const NATHAN_APPROVAL =
+    "I love the latest direction and want to move forward.";
+  const SARAH_FOUNDER_REF =
+    "Here's the higher-resolution prong reference — use this for the CAD update.";
+  const CLIENT_HASH = hashEmail("nathan@client.test")!;
+
+  it("A eligibility=false open_job cannot supply Today copy", () => {
+    const stale = gmailRow({
+      candidateId: DYLON_STL_ID,
+      sourceRef: DYLON_STL_REF,
+      sourceTimestamp: "2026-09-16T18:00:00.000Z",
+      candidateType: "open_job",
+      payload: {
+        kind: "open_job",
+        jobKind: "request",
+        subject: "STL file",
+        detail: "can you send me the stl file for that one as well please",
+        waitingOnActor: "founder",
+        dueAt: null,
+        createJob: false,
+      },
+      evidenceBasis: {
+        ruleIds: ["explicit_client_request"],
+        matchedText: "can you send me the stl file for that one as well please",
+      },
+    });
+    const delivered = gmailRow({
+      candidateId: "dylon-delivery-split",
+      sourceRef: `gc1|${DYLON_DELIVERY_MSG}|${DYLON_DELIVERY_MSG}`,
+      sourceTimestamp: "2026-09-21T18:13:04.000Z",
+      candidateType: "open_job",
+      payload: {
+        kind: "open_job",
+        jobKind: "request",
+        subject: "Mod 4 CAD + STL",
+        detail: "Here is the C025610 Mod 4 CAD + STL.",
+        waitingOnActor: "founder",
+        dueAt: null,
+        createJob: false,
+      },
+      evidenceBasis: {
+        ruleIds: ["explicit_vendor_waiting"],
+        matchedText: "Here is the C025610 Mod 4 CAD + STL.",
+      },
+    });
+    const threadId = "19fed961d1371aaf";
+    const { docket } = todayOf(
+      [stale, delivered],
+      new Map([
+        vendorThread(threadId, "RE: HGD x Dylon D.-C025610", [
+          {
+            messageId: "1a0b58c8f6aba78d",
+            sentAt: "2026-09-16T18:00:00.000Z",
+            direction: "inbound",
+            fromEmailHash: NIURKA_HASH,
+          },
+          {
+            messageId: DYLON_DELIVERY_MSG,
+            sentAt: "2026-09-21T18:13:04.000Z",
+            direction: "inbound",
+            fromEmailHash: NIURKA_HASH,
+          },
+        ]),
+      ]),
+    );
+    const hay = cardHay(docket, /Dylon|C025610|stl file/i);
+    assert.doesNotMatch(hay, /send me the stl file/i);
+    assert.match(hay, /founder_review|Mod 4/i);
+  });
+
+  it("B eligibility=false candidate cannot re-enter via founder-attention", () => {
+    const stale = gmailRow({
+      candidateId: DYLON_STL_ID,
+      sourceRef: DYLON_STL_REF,
+      sourceTimestamp: "2026-09-16T18:00:00.000Z",
+      candidateType: "open_job",
+      payload: {
+        kind: "open_job",
+        jobKind: "request",
+        subject: "can you send me the stl file for that one as well please",
+        detail: "can you send me the stl file for that one as well please",
+        waitingOnActor: "founder",
+        dueAt: null,
+        createJob: false,
+      },
+      evidenceBasis: {
+        ruleIds: ["explicit_client_request"],
+        matchedText: "can you send me the stl file for that one as well please",
+      },
+    });
+    const delivered = gmailRow({
+      candidateId: DYLON_DELIVERY_MSG,
+      sourceRef: `gc1|19fed961d1371aaf|${DYLON_DELIVERY_MSG}`,
+      sourceTimestamp: "2026-09-21T18:13:04.000Z",
+      candidateType: "open_job",
+      payload: {
+        kind: "open_job",
+        jobKind: "request",
+        subject: "Mod 4 CAD + STL",
+        detail: "Here is the C025610 Mod 4 CAD + STL.",
+        waitingOnActor: "founder",
+        dueAt: null,
+        createJob: false,
+      },
+      evidenceBasis: {
+        ruleIds: ["explicit_vendor_waiting"],
+        matchedText: "Here is the C025610 Mod 4 CAD + STL.",
+      },
+    });
+    const { loop, docket } = todayOf(
+      [stale, delivered],
+      new Map([
+        vendorThread("19fed961d1371aaf", "RE: HGD x Dylon D.-C025610", [
+          {
+            messageId: "1a0b58c8f6aba78d",
+            sentAt: "2026-09-16T18:00:00.000Z",
+            direction: "inbound",
+            fromEmailHash: NIURKA_HASH,
+          },
+          {
+            messageId: DYLON_DELIVERY_MSG,
+            sentAt: "2026-09-21T18:13:04.000Z",
+            direction: "inbound",
+            fromEmailHash: NIURKA_HASH,
+          },
+        ]),
+      ]),
+    );
+    const attentionHay = [...loop.needsYourDecision, ...loop.worthKnowing]
+      .map((row) => `${row.headline} ${row.detail ?? ""}`)
+      .join("\n");
+    assert.doesNotMatch(attentionHay, /send me the stl file/i);
+    assert.doesNotMatch(cardHay(docket, /Dylon|C025610|stl/i), /send me the stl file/i);
+  });
+
+  it("C eligibility=false candidate cannot re-enter via group truth", () => {
+    const prongText = "Please soften the double-prong / rounded-claw change.";
+    const workshopText =
+      "The stone is going to the workshop via RN08318. Final CAD expected in approximately 10 business days.";
+    const stale = gmailRow({
+      candidateId: TIM_PRONG_ID,
+      sourceRef: `gc1|${TIM_WRAPPER}|${TIM_WRAPPER}`,
+      sourceTimestamp: "2026-09-19T15:00:00.000Z",
+      candidateType: "open_job",
+      payload: {
+        kind: "open_job",
+        jobKind: "request",
+        subject: "prong change",
+        detail: prongText,
+        waitingOnActor: "founder",
+        dueAt: null,
+        createJob: false,
+      },
+      evidenceBasis: { ruleIds: ["explicit_change_request"], matchedText: prongText },
+    });
+    const workshop = gmailRow({
+      candidateId: "tim-workshop-now",
+      sourceRef: `gc1|${TIM_WRAPPER}|${TIM_WRAPPER}`,
+      sourceTimestamp: "2026-09-19T15:00:00.000Z",
+      candidateType: "open_job",
+      payload: {
+        kind: "open_job",
+        jobKind: "commitment",
+        subject: "Workshop / final CAD",
+        detail: workshopText,
+        waitingOnActor: "vendor",
+        dueAt: null,
+        createJob: false,
+      },
+      evidenceBasis: { ruleIds: ["explicit_vendor_commitment"], matchedText: workshopText },
+    });
+    const { loop, docket } = todayOf(
+      [stale, workshop],
+      new Map([
+        vendorThread(TIM_WRAPPER, "RE: HGD x Tim/Jenn-C025964", [
+          {
+            messageId: TIM_WRAPPER,
+            sentAt: "2026-09-19T15:00:00.000Z",
+            direction: "inbound",
+            fromEmailHash: NIURKA_HASH,
+          },
+        ]),
+      ]),
+    );
+    const hay = `${cardHay(docket, /Tim|Jenn|C025964|prong|claw/i)}\n${[...loop.brief, ...loop.watching].map((row) => JSON.stringify(row)).join("\n")}`;
+    assert.doesNotMatch(hay, /rounded-claw|soften the double-prong/i);
+    assert.match(cardHay(docket, /Tim|Jenn|C025964/i), /vendor_shop_wait|WAITING ON SHOP/i);
+  });
+
+  it("D later client approval changes Waiting on Client to founder", () => {
+    const threadId = "1a09120d797337d9";
+    const { docket } = todayOf(
+      [
+        gmailRow({
+          candidateId: NATHAN_CAD_MSG,
+          sourceRef: `gc1|${threadId}|${NATHAN_CAD_MSG}`,
+          sourceTimestamp: "2026-09-22T17:48:05.000Z",
+          candidateType: "project_context",
+          payload: {
+            kind: "project_context",
+            topic: "client_update",
+            value: "Here's the latest CAD for the dagger ring — let me know what you think.",
+          },
+          evidenceBasis: {
+            ruleIds: ["explicit_founder_commitment"],
+            matchedText: "Here's the latest CAD for the dagger ring — let me know what you think.",
+          },
+        }),
+        gmailRow({
+          candidateId: "1a0ca8e67de67c17",
+          sourceRef: `gc1|${threadId}|1a0ca8e67de67c17`,
+          sourceTimestamp: "2026-09-22T19:18:25.000Z",
+          candidateType: "project_context",
+          payload: {
+            kind: "project_context",
+            topic: "client_approval",
+            value: NATHAN_APPROVAL,
+          },
+          evidenceBasis: {
+            ruleIds: ["explicit_client_approval"],
+            matchedText: NATHAN_APPROVAL,
+          },
+        }),
+      ],
+      new Map([
+        [
+          threadId,
+          {
+            subject: "RE: HGD x Nate P. (Dagger Ring)-C026176",
+            fromDisplayName: "Nathan",
+            fromEmail: "nathan@client.test",
+            messages: [
+              {
+                messageId: NATHAN_CAD_MSG,
+                sentAt: "2026-09-22T17:48:05.000Z",
+                direction: "outbound",
+                fromEmailHash: FOUNDER_HASH,
+              },
+              {
+                messageId: "1a0ca8e67de67c17",
+                sentAt: "2026-09-22T19:18:25.000Z",
+                direction: "inbound",
+                fromEmailHash: CLIENT_HASH,
+              },
+            ],
+          },
+        ],
+      ]),
+    );
+    const hay = cardHay(docket, /Nate|Nathan|C026176/i);
+    assert.match(hay, /YOUR MOVE|founder_communication|founder_review/i);
+    assert.doesNotMatch(hay, /WAITING ON CLIENT|Nate has the next turn/i);
+  });
+
+  it("E vendor order confirmation changes vendor wait to founder review", () => {
+    const threadId = "grant-confirm-thread";
+    const { docket } = todayOf(
+      [
+        gmailRow({
+          candidateId: "grant-promise-now",
+          sourceRef: `gc1|${threadId}|grant-promise-now`,
+          sourceTimestamp: "2026-09-20T16:00:00.000Z",
+          candidateType: "open_job",
+          payload: {
+            kind: "open_job",
+            jobKind: "commitment",
+            subject: "order confirmation",
+            detail: "I'll update the size, place the order, and send the order confirmation.",
+            waitingOnActor: "vendor",
+            dueAt: null,
+            createJob: false,
+          },
+          evidenceBasis: {
+            ruleIds: ["explicit_vendor_commitment"],
+            matchedText: "I'll update the size, place the order, and send the order confirmation.",
+          },
+        }),
+        gmailRow({
+          candidateId: "1a0ca7810946b8fe",
+          sourceRef: `gc1|${threadId}|1a0ca7810946b8fe`,
+          sourceTimestamp: "2026-09-22T18:54:15.000Z",
+          candidateType: "open_job",
+          payload: {
+            kind: "open_job",
+            jobKind: "request",
+            subject: "Order Confirmation SP13477",
+            detail: GRANT_CONFIRM,
+            waitingOnActor: "founder",
+            dueAt: null,
+            createJob: false,
+          },
+          evidenceBasis: {
+            ruleIds: ["explicit_vendor_waiting"],
+            matchedText: GRANT_CONFIRM,
+          },
+        }),
+      ],
+      new Map([
+        vendorThread(threadId, "RE: HGD x F. Grant-C025885", [
+          {
+            messageId: "grant-promise-now",
+            sentAt: "2026-09-20T16:00:00.000Z",
+            direction: "inbound",
+            fromEmailHash: NIURKA_HASH,
+          },
+          {
+            messageId: "1a0ca7810946b8fe",
+            sentAt: "2026-09-22T18:54:15.000Z",
+            direction: "inbound",
+            fromEmailHash: NIURKA_HASH,
+          },
+        ]),
+      ]),
+    );
+    const hay = cardHay(docket, /Grant|C025885|SP13477/i);
+    assert.match(hay, /founder_review|YOUR MOVE|Order confirmation/i);
+    assert.doesNotMatch(hay, /WAITING ON CLIENT/i);
+  });
+
+  it("F delivered CAD changes vendor wait to founder review", () => {
+    const threadId = "duane-cad-now";
+    const { docket } = todayOf(
+      [
+        gmailRow({
+          candidateId: "duane-promise",
+          sourceRef: `gc1|${threadId}|duane-promise`,
+          sourceTimestamp: "2026-09-21T15:00:00.000Z",
+          candidateType: "open_job",
+          payload: {
+            kind: "open_job",
+            jobKind: "commitment",
+            subject: "updated CAD",
+            detail: "I'll send you cad C026350 as soon as it's available.",
+            waitingOnActor: "vendor",
+            dueAt: null,
+            createJob: false,
+          },
+          evidenceBasis: {
+            ruleIds: ["explicit_vendor_commitment"],
+            matchedText: "I'll send you cad C026350 as soon as it's available.",
+          },
+        }),
+        gmailRow({
+          candidateId: "1a0ca88c2aa0bd2f",
+          sourceRef: `gc1|${threadId}|1a0ca88c2aa0bd2f`,
+          sourceTimestamp: "2026-09-22T19:11:17.000Z",
+          candidateType: "open_job",
+          payload: {
+            kind: "open_job",
+            jobKind: "request",
+            subject: "CAD delivered",
+            detail: DUANE_CAD,
+            waitingOnActor: "founder",
+            dueAt: null,
+            createJob: false,
+          },
+          evidenceBasis: {
+            ruleIds: ["explicit_vendor_waiting"],
+            matchedText: DUANE_CAD,
+          },
+        }),
+      ],
+      new Map([
+        vendorThread(threadId, "RE: HGD x Duane-C026350", [
+          {
+            messageId: "duane-promise",
+            sentAt: "2026-09-21T15:00:00.000Z",
+            direction: "inbound",
+            fromEmailHash: NIURKA_HASH,
+          },
+          {
+            messageId: "1a0ca88c2aa0bd2f",
+            sentAt: "2026-09-22T19:11:17.000Z",
+            direction: "inbound",
+            fromEmailHash: NIURKA_HASH,
+          },
+        ]),
+      ]),
+    );
+    const hay = cardHay(docket, /Duane|C026350/i);
+    assert.match(hay, /founder_review|YOUR MOVE/i);
+    assert.doesNotMatch(hay, /WAITING ON SHOP|WAITING ON CLIENT/i);
+  });
+
+  it("G later founder vendor instruction changes founder to vendor_shop", () => {
+    const threadId = "1a01c4ee4d198ef0";
+    const { docket } = todayOf(
+      [
+        gmailRow({
+          candidateId: "sarah-durability",
+          sourceRef: `gc1|${threadId}|sarah-durability`,
+          sourceTimestamp: "2026-09-18T12:00:00.000Z",
+          candidateType: "note",
+          payload: {
+            kind: "note",
+            text: SARAH_DURABILITY,
+            contextLayer: null,
+          },
+          evidenceBasis: {
+            ruleIds: ["explicit_durability_discussion"],
+            matchedText: SARAH_DURABILITY,
+          },
+        }),
+        gmailRow({
+          candidateId: "sarah-cad-promise",
+          sourceRef: `gc1|${threadId}|sarah-cad-promise`,
+          sourceTimestamp: "2026-09-22T16:00:00.000Z",
+          candidateType: "open_job",
+          payload: {
+            kind: "open_job",
+            jobKind: "commitment",
+            subject: "I'll update the CAD",
+            detail: "I'll update the CAD once I have the reference.",
+            waitingOnActor: "vendor",
+            dueAt: null,
+            createJob: false,
+          },
+          evidenceBasis: {
+            ruleIds: ["explicit_vendor_commitment"],
+            matchedText: "I'll update the CAD once I have the reference.",
+          },
+        }),
+        gmailRow({
+          candidateId: "1a0ca69a7e378c02",
+          sourceRef: `gc1|${threadId}|1a0ca69a7e378c02`,
+          sourceTimestamp: "2026-09-22T18:38:33.000Z",
+          candidateType: "project_context",
+          payload: {
+            kind: "project_context",
+            topic: "production_instruction",
+            value: SARAH_FOUNDER_REF,
+          },
+          evidenceBasis: {
+            ruleIds: ["explicit_founder_commitment"],
+            matchedText: SARAH_FOUNDER_REF,
+          },
+        }),
+      ],
+      new Map([
+        vendorThread(threadId, "RE: HGD x Sarah-C026143", [
+          {
+            messageId: "sarah-durability",
+            sentAt: "2026-09-18T12:00:00.000Z",
+            direction: "inbound",
+            fromEmailHash: NIURKA_HASH,
+          },
+          {
+            messageId: "sarah-cad-promise",
+            sentAt: "2026-09-22T16:00:00.000Z",
+            direction: "inbound",
+            fromEmailHash: NIURKA_HASH,
+          },
+          {
+            messageId: "1a0ca69a7e378c02",
+            sentAt: "2026-09-22T18:38:33.000Z",
+            direction: "outbound",
+            fromEmailHash: FOUNDER_HASH,
+          },
+        ]),
+      ]),
+    );
+    const hay = cardHay(docket, /Sarah|C026143|durability|princess/i);
+    assert.doesNotMatch(hay, /durability to the corners of the princess cut/i);
+    assert.match(hay, /vendor_shop_wait|WAITING ON SHOP/i);
+  });
+});

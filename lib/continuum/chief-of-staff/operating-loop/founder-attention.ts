@@ -54,6 +54,10 @@ import { specConflictFromCandidates } from "./founder-actions";
 import { isCandidateQuietForToday } from "./quiet";
 import { resolveTodayGroupTruth } from "./group-truth";
 import {
+  chronologyPeers,
+  isCurrentActionEligible,
+} from "./current-action-eligibility";
+import {
   indexedThreadForGroup,
   isStaleInboundReplyCandidate,
   reconcileGroupTruthState,
@@ -603,6 +607,7 @@ export function composeFounderAttentionSurface(input: {
     const group = resolveTodayGroupTruth({
       key,
       rows,
+      chronologyRows: input.candidates,
       threadContext: input.threadContext,
       project: groupedProjectId ? (input.projects.get(groupedProjectId) ?? null) : null,
       jobs: input.jobs,
@@ -692,9 +697,22 @@ export function composeFounderAttentionSurface(input: {
     ) {
       continue;
     }
+    const peers = chronologyPeers(rows, input.candidates, thread, input.threadContext);
+    const eligibleVisible = visibleAfterTruth.filter((row) =>
+      isCurrentActionEligible(row, { peers, thread }),
+    );
+    if (
+      eligibleVisible.length === 0 &&
+      !visibleAfterTruth.some(isPaymentStateChange) &&
+      !visibleAfterTruth.some((row) => isActionableSpecConflict(row, ctx)) &&
+      !visibleAfterTruth.some(isClientDesignAnswer) &&
+      !visibleAfterTruth.some(isExplicitNewProject)
+    ) {
+      continue;
+    }
     const item = toAttentionItem({
       id: `attention:${key}`,
-      visible: visibleAfterTruth.length > 0 ? visibleAfterTruth : visible,
+      visible: eligibleVisible.length > 0 ? eligibleVisible : visibleAfterTruth,
       evidence: rows,
       judgments,
       ctx,
