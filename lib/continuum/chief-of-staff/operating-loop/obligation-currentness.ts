@@ -58,7 +58,7 @@ export function isRelationshipPromiseText(text: string | null | undefined): bool
 
 export function isAmbiguousFollowUpFragment(text: string | null | undefined): boolean {
   const hay = folded(text);
-  if (!/\bfollow up\b/i.test(hay)) return false;
+  if (!/\bfollow[- ]up\b/i.test(hay)) return false;
   if (CURRENT_INBOUND_ASK.test(hay)) return false;
   if (isImmediateCommitmentText(hay)) return false;
   if (DATED_FOLLOW_UP.test(hay)) return false;

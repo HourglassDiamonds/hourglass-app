@@ -153,6 +153,32 @@ describe("work-loop state reducer", () => {
       communication: "vendor",
     });
     assert.equal(reduced.ballHolder, "founder");
+    assert.equal(reduced.semanticClass, "founder_review");
+    assert.equal(reduced.authoritative, true);
+  });
+
+  it("later founder client chat does not turn undelivered-to-client CAD into a client wait", () => {
+    const reduced = reduceWorkLoop({
+      evidence: [
+        beat("client", "2026-09-21T14:00:00.000Z", "Looking forward to the CAD breakdown."),
+        beat("vendor", "2026-09-21T18:35:00.000Z", "Here is the C026176 Mod 1 CAD."),
+        beat("founder", "2026-09-21T18:37:00.000Z", "I'll order the chain separately. Let me know what you think."),
+      ],
+      waitingState: "client",
+    });
+    assert.equal(reduced.ballHolder, "founder");
+    assert.notEqual(reduced.ballHolder, "client");
+  });
+
+  it("vendor communication without jewelry shop evidence is not vendor_shop", () => {
+    const reduced = reduceWorkLoop({
+      evidence: [
+        beat("system", "2026-09-21T16:00:00.000Z", "Your ad account has an update ready to review."),
+      ],
+      communication: "platform",
+      noFounderAction: true,
+    });
+    assert.notEqual(reduced.ballHolder, "vendor_shop");
   });
 
   it("fulfilled vendor STL plus open print/check is founder", () => {

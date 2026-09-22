@@ -595,7 +595,14 @@ function speakerOf(
   const payload = payloadOf(row);
   if (payload.kind === "open_job" && payload.waitingOnActor === "vendor") return "vendor";
   if (payload.kind === "open_job" && payload.waitingOnActor === "founder") {
-    return FOUNDER_OUTBOUND.test(payload.subject) ? "founder" : "client";
+    if (
+      payload.jobKind === "commitment" ||
+      hasRule(row, "explicit_follow_up") ||
+      hasRule(row, "explicit_founder_commitment")
+    ) {
+      return "founder";
+    }
+    return "client";
   }
   if (VENDOR_ACK.test(haystack(row))) return "vendor";
   return fallback;
@@ -1862,7 +1869,9 @@ function withBriefingDisposition(item: RankedSituation): RankedSituation {
   }
   if (
     packet.ballHolder === "founder" &&
+    packet.authoritative &&
     (packet.briefingKind === "founder_print_check" ||
+      packet.semanticNextActionClass === "founder_review" ||
       (isCurrentInboundAskText(packet.unresolvedFounderObligation) && packet.briefingKind !== "vendor_cad_wait")) &&
     item.disposition !== "brief"
   ) {
@@ -1870,7 +1879,9 @@ function withBriefingDisposition(item: RankedSituation): RankedSituation {
       ...item,
       disposition: "brief",
       rankClass:
-        packet.briefingKind === "founder_print_check" ? "founder_commitment" : item.rankClass,
+        packet.briefingKind === "founder_print_check" || packet.semanticNextActionClass === "founder_review"
+          ? "founder_commitment"
+          : item.rankClass,
       briefingPacket: packet,
     };
   }
@@ -2040,6 +2051,7 @@ function strongerSituation(a: RankedSituation, b: RankedSituation): RankedSituat
   const score = (item: RankedSituation): number => {
     const packet = item.briefingPacket;
     if (packet?.briefingKind === "founder_print_check") return 80;
+    if (packet?.semanticNextActionClass === "founder_review") return 80;
     if (remainingIsPrintCheck(item.remainingFounderCommitment)) return 80;
     if (packet?.briefingKind === "vendor_cad_wait") return 60;
     if (packet?.ballHolder === "vendor_shop") return 50;
@@ -2070,12 +2082,23 @@ function mergeSituationPair(a: RankedSituation, b: RankedSituation): RankedSitua
     waitingState === "cad" ||
     waitingState === "shop" ||
     waitingState === "production";
-  const remaining =
+  const remainingRaw =
     vendorCommitted &&
     !remainingIsPrintCheck(primary.remainingFounderCommitment) &&
     !remainingIsPrintCheck(secondary.remainingFounderCommitment)
       ? null
       : primary.remainingFounderCommitment ?? secondary.remainingFounderCommitment;
+  const remainingMatched = remainingRaw?.matchedText ?? "";
+  const remainingRecommended = remainingRaw?.recommended ?? "";
+  const remaining =
+    remainingRaw &&
+    !(
+      isGenericFallbackObligationText(remainingMatched) &&
+      isGenericFallbackObligationText(remainingRecommended)
+    ) &&
+    !isGenericFallbackObligationText(remainingMatched)
+      ? remainingRaw
+      : null;
   return {
     ...primary,
     personName: client && !isVendorOrganizationLabel(client) ? client : primary.personName,

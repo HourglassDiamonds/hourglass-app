@@ -41,15 +41,28 @@ export type WorkLoopEvent = {
   threadId: string | null;
 };
 
+export const WORK_LOOP_SEMANTIC_CLASSES = [
+  "founder_review",
+  "founder_print_check",
+  "founder_communication",
+  "vendor_shop_wait",
+  "client_wait",
+  "unknown",
+] as const;
+
+export type WorkLoopSemanticClass = (typeof WORK_LOOP_SEMANTIC_CLASSES)[number];
+
 export type ReducedWorkLoopState = {
   ballHolder: TodayBallHolder;
   briefingKind: TodayBriefingKind;
+  semanticClass: WorkLoopSemanticClass;
   vendorOpen: boolean;
   founderOpen: boolean;
   clientOpen: boolean;
   latestFounderText: string | null;
   latestExternalText: string | null;
   nextExpectedEvent: string | null;
+  authoritative: boolean;
 };
 
 const STL_DELIVERED =
@@ -68,6 +81,8 @@ const FOUNDER_STILL_OWNS =
   /\bsending the\b(?![^.!?\n]{0,40}\bto the shop\b)|\bI(?:'ll| will) (?:get|show|bring|mail|ship)\b/i;
 const FOUNDER_ASKS_CLIENT =
   /\b(?:let me know(?: what you think)?|when you (?:have a chance|can)|looks? good to you)\b/i;
+const CAD_SENT_TO_CLIENT =
+  /\b(?:sent|forwarded|shared|showed)\b[^.!?\n]{0,80}\b(?:the\s+)?(?:updated\s+)?(?:CAD|STL)\b|\b(?:CAD|STL)\b[^.!?\n]{0,40}\b(?:to\s+(?:the\s+)?client|to\s+him|to\s+her|to\s+them)\b/i;
 const CLIENT_ASKS_FOUNDER =
   /\bwhat do (?:you|we) think we should do\b|\bwhat(?:'s| is) next\b|\bwhat should we do next\b/i;
 const SHOP_REVIEW_COPY =
@@ -104,6 +119,7 @@ export type ReduceWorkLoopInput = {
   waitingState?: ThreadWaitingKind | string | null;
   communication?: string | null;
   noFounderAction?: boolean;
+  staleInboundSatisfied?: boolean;
 };
 
 export function reduceWorkLoop(input: ReduceWorkLoopInput): ReducedWorkLoopState {
@@ -112,9 +128,10 @@ export function reduceWorkLoop(input: ReduceWorkLoopInput): ReducedWorkLoopState
   let founderOpen = false;
   let clientOpen = false;
   let founderPending = false;
+  let cadInFounderHands = false;
   if (input.waitingState === "cad" || input.waitingState === "shop" || input.waitingState === "production") {
     vendorOpen = true;
-  } else if (input.waitingState === "client") {
+  } else if (input.waitingState === "client" && input.communication !== "vendor") {
     clientOpen = true;
   } else if (input.communication === "vendor") {
     vendorOpen = true;
@@ -124,17 +141,24 @@ export function reduceWorkLoop(input: ReduceWorkLoopInput): ReducedWorkLoopState
   let latestExternalText: string | null = null;
 
   for (const event of events) {
+    if (event.eventType === "vendor_delivers") cadInFounderHands = true;
+    if (event.actor === "founder" && CAD_SENT_TO_CLIENT.test(event.text)) cadInFounderHands = false;
     if (event.satisfies === "vendor_shop") {
       vendorOpen = false;
       founderOpen = true;
       clientOpen = false;
     }
-    if (event.satisfies === "founder") founderOpen = false;
+    if (event.satisfies === "founder") {
+      if (!(cadInFounderHands && event.eventType === "founder_asks_client")) {
+        founderOpen = false;
+      }
+    }
     if (event.satisfies === "client") clientOpen = false;
     if (event.opens === "vendor_shop") {
       vendorOpen = true;
       founderOpen = false;
       clientOpen = false;
+      cadInFounderHands = false;
     } else if (event.opens === "founder") {
       if (event.eventType === "founder_print_check" && vendorOpen) {
         founderPending = true;
@@ -144,14 +168,23 @@ export function reduceWorkLoop(input: ReduceWorkLoopInput): ReducedWorkLoopState
         clientOpen = false;
       }
     } else if (event.opens === "client" && !vendorOpen) {
-      clientOpen = true;
-      founderOpen = false;
+      if (cadInFounderHands) {
+        founderOpen = true;
+        clientOpen = false;
+      } else {
+        clientOpen = true;
+        founderOpen = false;
+      }
     }
     if (event.actor === "founder" && event.text) latestFounderText = event.text;
     if (event.actor !== "founder" && event.text) latestExternalText = event.text;
   }
 
   if (founderPending && !vendorOpen) {
+    founderOpen = true;
+    clientOpen = false;
+  }
+  if (cadInFounderHands && !vendorOpen) {
     founderOpen = true;
     clientOpen = false;
   }
@@ -174,7 +207,64 @@ export function reduceWorkLoop(input: ReduceWorkLoopInput): ReducedWorkLoopState
       clientOpen = value;
     },
     cadWait,
+    cadInFounderHands,
   });
+
+  const inboundAskOpen =
+    !cadWait &&
+    !cadInFounderHands &&
+    !input.staleInboundSatisfied &&
+    events.some(
+      (row) => isCurrentInboundAskText(row.text) || CLIENT_ASKS_FOUNDER.test(row.text),
+    );
+  if (inboundAskOpen) {
+    founderOpen = true;
+    vendorOpen = false;
+    clientOpen = false;
+  }
+
+  if (
+    input.staleInboundSatisfied &&
+    !remainingIsUsable(remainingTextOf(input)) &&
+    !cadInFounderHands &&
+    !founderPending &&
+    !inboundAskOpen
+  ) {
+    if (input.waitingState === "cad" || input.waitingState === "shop" || input.waitingState === "production") {
+      vendorOpen = true;
+      founderOpen = false;
+      clientOpen = false;
+    } else if (input.communication === "vendor") {
+      vendorOpen = true;
+      founderOpen = false;
+      clientOpen = false;
+    } else {
+      clientOpen = true;
+      founderOpen = false;
+      vendorOpen = false;
+    }
+  } else if (
+    input.noFounderAction &&
+    !inboundAskOpen &&
+    !remainingIsUsable(remainingTextOf(input)) &&
+    !cadInFounderHands &&
+    !founderPending &&
+    (input.waitingState === "cad" ||
+      input.waitingState === "shop" ||
+      input.waitingState === "production" ||
+      input.waitingState === "client" ||
+      input.communication === "vendor")
+  ) {
+    if (input.waitingState === "client") {
+      clientOpen = true;
+      founderOpen = false;
+      vendorOpen = false;
+    } else {
+      vendorOpen = true;
+      founderOpen = false;
+      clientOpen = false;
+    }
+  }
 
   const ballHolder: TodayBallHolder = vendorOpen
     ? "vendor_shop"
@@ -185,8 +275,12 @@ export function reduceWorkLoop(input: ReduceWorkLoopInput): ReducedWorkLoopState
         : "unknown";
   const printCheck =
     ballHolder === "founder" &&
-    (founderPending ||
-      events.some((row) => row.eventType === "founder_print_check" || row.eventType === "vendor_delivers"));
+    (founderPending || events.some((row) => row.eventType === "founder_print_check"));
+  const deliveredReview =
+    ballHolder === "founder" &&
+    !printCheck &&
+    cadInFounderHands &&
+    events.some((row) => row.eventType === "vendor_delivers");
   const briefingKind: TodayBriefingKind = printCheck
     ? "founder_print_check"
     : ballHolder === "vendor_shop" && (cadWait || input.waitingState === "cad")
@@ -194,6 +288,18 @@ export function reduceWorkLoop(input: ReduceWorkLoopInput): ReducedWorkLoopState
       : ballHolder === "client"
         ? "client_wait"
         : "generic";
+  const semanticClass: WorkLoopSemanticClass =
+    ballHolder === "vendor_shop"
+      ? "vendor_shop_wait"
+      : ballHolder === "client"
+        ? "client_wait"
+        : ballHolder !== "founder"
+          ? "unknown"
+          : printCheck
+            ? "founder_print_check"
+            : deliveredReview
+              ? "founder_review"
+              : "founder_communication";
   const nextExpectedEvent =
     ballHolder === "vendor_shop"
       ? briefingKind === "vendor_cad_wait"
@@ -202,7 +308,9 @@ export function reduceWorkLoop(input: ReduceWorkLoopInput): ReducedWorkLoopState
       : ballHolder === "founder"
         ? printCheck
           ? "Founder print/check, then client update"
-          : "Founder action"
+          : deliveredReview
+            ? "Founder review of delivered CAD/STL"
+            : "Founder action"
         : ballHolder === "client"
           ? "Client reply"
           : null;
@@ -210,12 +318,14 @@ export function reduceWorkLoop(input: ReduceWorkLoopInput): ReducedWorkLoopState
   return {
     ballHolder,
     briefingKind,
+    semanticClass,
     vendorOpen,
     founderOpen,
     clientOpen,
     latestFounderText,
     latestExternalText,
     nextExpectedEvent,
+    authoritative: ballHolder !== "unknown",
   };
 }
 
@@ -254,6 +364,7 @@ function applyRemaining(
     setFounderOpen: (value: boolean) => void;
     setClientOpen: (value: boolean) => void;
     cadWait: boolean;
+    cadInFounderHands: boolean;
   },
 ): void {
   const text = remainingTextOf(input);
@@ -261,7 +372,7 @@ function applyRemaining(
   const inbound = isCurrentInboundAskText(text) || CLIENT_ASKS_FOUNDER.test(text);
   const classified = classifyEvent(text, inbound ? "client" : "founder");
   if (classified.eventType === "founder_asks_client" || classified.opens === "client") {
-    if (!state.vendorOpen() && !state.cadWait) {
+    if (!state.vendorOpen() && !state.cadWait && !state.cadInFounderHands) {
       state.setClientOpen(true);
       state.setFounderOpen(false);
     }
@@ -357,10 +468,13 @@ export function classifyEvent(
     return { eventType: "other", opens: null, satisfies: null };
   }
   if (actor === "client") {
-    if (isCurrentInboundAskText(own) || CLIENT_ASKS_FOUNDER.test(own)) {
+    if (isCurrentInboundAskText(own) || CLIENT_ASKS_FOUNDER.test(own) || /\?/.test(own)) {
       return { eventType: "client_turn", opens: "founder", satisfies: "client" };
     }
-    return { eventType: "client_turn", opens: null, satisfies: "founder" };
+    if (/\b(?:thanks|thank you|looks good|perfect|got it|sounds good)\b/i.test(own)) {
+      return { eventType: "client_turn", opens: null, satisfies: "founder" };
+    }
+    return { eventType: "client_turn", opens: null, satisfies: null };
   }
   if (PRINT_CHECK.test(own)) {
     return { eventType: "founder_print_check", opens: "founder", satisfies: null };

@@ -20,12 +20,12 @@ import {
   type TodayGmailThreadContext,
 } from "@/lib/continuum/candidates/founder-attention";
 import { reconcileGroupTruthState } from "./thread-truth";
+import type { TodayBriefingPacket } from "./briefing-packet";
 import type {
   CosAnomalyItem,
   CosBriefItem,
   CosDocketOrigin,
   CosFounderAttentionItem,
-  CosOperatingLoopView,
   CosSpecConflictView,
   CosTop5Item,
 } from "./types";
@@ -38,6 +38,7 @@ export type TodayInvariantItem = {
   job: CosTop5Item | null;
   decision: CosFounderAttentionItem | null;
   anomaly: CosAnomalyItem | null;
+  briefingPacket?: TodayBriefingPacket | null;
 };
 
 export type TodayFinalInvariantContext = {
@@ -144,6 +145,9 @@ function persistedSpecStillCurrent(
 }
 
 function waitingSuppressesAction(item: TodayInvariantItem, hay: string): boolean {
+  if (item.briefingPacket?.authoritative && item.briefingPacket.ballHolder === "founder") {
+    return false;
+  }
   const waiting = item.brief?.waitingState;
   if (item.brief?.staleInboundSatisfied && isDesignStageActionText(hay)) return true;
   if (item.brief?.noFounderAction && isDesignStageActionText(hay)) return true;
@@ -211,6 +215,24 @@ export function isCurrentTodayDocketItem(
 
   if (life === "queued") return false;
 
+  if (spec && !persistedSpecStillCurrent(spec, stage)) {
+    return false;
+  }
+
+  if (
+    item.briefingPacket?.authoritative &&
+    item.briefingPacket.ballHolder === "founder"
+  ) {
+    if (life === "terminal") {
+      if (spec) return false;
+      if (isDesignStageActionText(hay) && !isPostCompletionObligationText(hay)) {
+        return false;
+      }
+      return isPostCompletionObligationText(hay);
+    }
+    return true;
+  }
+
   if (life === "terminal") {
     if (spec) return false;
     if (isDesignStageActionText(hay) && !isPostCompletionObligationText(hay)) {
@@ -270,22 +292,7 @@ export function isCurrentTodayDocketItem(
 
 export function filterCurrentTodayDocketItems<T extends TodayInvariantItem>(
   items: readonly T[],
-  loop: Pick<
-    CosOperatingLoopView,
-    | "lifecycleByProject"
-    | "lifecycleByGmailThread"
-    | "associatedGmailThreadsByProject"
-    | "threadContext"
-    | "founderEmailHashes"
-  >,
+  ctx: TodayFinalInvariantContext = {},
 ): T[] {
-  return items.filter((item) =>
-    isCurrentTodayDocketItem(item, {
-      lifecycleByProject: loop.lifecycleByProject,
-      lifecycleByGmailThread: loop.lifecycleByGmailThread,
-      associatedGmailThreadsByProject: loop.associatedGmailThreadsByProject,
-      threadContext: loop.threadContext,
-      founderEmailHashes: loop.founderEmailHashes,
-    }),
-  );
+  return items.filter((item) => isCurrentTodayDocketItem(item, ctx));
 }

@@ -152,9 +152,16 @@ export function docketSubject(
 
 export function isExecutiveBriefing(
   briefing: TodayRenderedBriefing | null | undefined,
-  packet?: { briefingKind?: string } | null,
+  packet?: { briefingKind?: string; ballHolder?: string } | null,
 ): briefing is TodayRenderedBriefing {
   if (!briefing) return false;
+  if (
+    packet?.ballHolder === "founder" ||
+    packet?.ballHolder === "vendor_shop" ||
+    packet?.ballHolder === "client"
+  ) {
+    return true;
+  }
   if (packet?.briefingKind === "generic") return false;
   if (
     packet?.briefingKind === "founder_print_check" ||

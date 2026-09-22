@@ -7,6 +7,7 @@
 
 import {
   isClientPersonLabel,
+  isGeneratedFounderOperatingBriefSubject,
   isRecoverableExternalHumanSender,
   isStudioOrVendorLabel,
   isSupplierOrSystemMailbox,
@@ -14,6 +15,7 @@ import {
   isVendorOrganizationLabel,
   looksLikeHumanPersonName,
   isActionableSystemAlert,
+  isCurrentOperationalSystemMail,
 } from "@/lib/continuum/candidates/founder-attention";
 import { authorOwnedText } from "@/lib/continuum/gmail/candidates/spec-provenance";
 import { extractTypedIdentifiers } from "@/lib/continuum/gmail/identifier-role";
@@ -375,6 +377,9 @@ export function equivalentPacketFromBrief(
       isCurrentInboundAskText(remaining.matchedText) &&
       !isImmediateCommitmentText(remaining.matchedText),
   );
+  if (item.briefingPacket?.authoritative) {
+    return overlayRecoverableSender(item.briefingPacket, sender);
+  }
   if (item.briefingPacket) {
     if (
       remaining &&
@@ -541,6 +546,7 @@ export function isStaleLifecycleOnly(
   if (!packet) return true;
   if (packet.unresolvedFounderObligation) return false;
   if (packet.briefingKind === "founder_print_check") return false;
+  if (packet.semanticNextActionClass === "founder_review") return false;
   if (packet.briefingKind === "vendor_cad_wait") return false;
   if (packet.externalCommitment) return false;
   const stage =
@@ -561,7 +567,20 @@ export function isStaleLifecycleOnly(
 export function hasRealFounderOwnedObligation(packet: TodayBriefingPacket | null | undefined): boolean {
   if (!packet) return false;
   if (packet.briefingKind === "founder_print_check") return true;
+  if (packet.semanticNextActionClass === "founder_review") return true;
   if (packet.ballHolder !== "founder") return false;
+  if (packet.authoritative && packet.semanticNextActionClass === "founder_communication") {
+    const locked =
+      packet.unresolvedFounderObligation ??
+      packet.candidateNextAction ??
+      packet.latestMeaningfulExternalEvent?.summary ??
+      "";
+    if (isGenericFallbackObligationText(locked) || isIdentityCleanupText(locked)) return false;
+    if (locked && (isUnsafeBriefingFragment(locked) || isAmbiguousFollowUpFragment(locked))) {
+      return false;
+    }
+    return true;
+  }
   const text = packet.unresolvedFounderObligation ?? packet.candidateNextAction ?? "";
   if (!text || isIdentityCleanupText(text)) return false;
   if (isGenericFallbackObligationText(text)) return false;
@@ -607,13 +626,35 @@ function isIdentityCleanupOnly(seed: TodayDocketSeed, packet: TodayBriefingPacke
   return false;
 }
 
+function isLiveHumanWorkSeed(seed: TodayDocketSeed, loop: CosOperatingLoopView): boolean {
+  if (!seed.brief && !seed.job) return false;
+  if (isIdentityCleanupText(seed.headline)) return false;
+  if (isAmbiguousFollowUpFragment(seed.headline)) return false;
+  if (
+    seed.origin !== "open_job" &&
+    !seed.job &&
+    seed.brief?.rankClass !== "founder_commitment"
+  ) {
+    return false;
+  }
+  const thread = seed.threadId ? loop.threadContext?.get(seed.threadId) ?? null : null;
+  const subject = seed.threadSubject ?? thread?.subject ?? null;
+  if (isGeneratedFounderOperatingBriefSubject(subject)) return false;
+  if (isSupplierOrSystemMailbox(thread?.fromEmail)) return false;
+  if (thread && !isRecoverableExternalHumanSender({ thread })) return false;
+  return Boolean(seed.threadId || seed.origin === "open_job");
+}
+
 export function allowConfirmPerson(
   seed: TodayDocketSeed,
   loop: CosOperatingLoopView,
 ): boolean {
   const packet = seed.packet;
   if (!packet) return false;
-  if (!hasRealFounderOwnedObligation(packet)) return false;
+  if (!hasRealFounderOwnedObligation(packet)) {
+    if (packet.ballHolder !== "unknown") return false;
+    if (!seed.brief && !seed.job) return false;
+  }
   if (!identityIsNecessaryToExecute(seed, packet)) return false;
   if (packet.entityType === "vendor") return false;
   if (packet.personId) return false;
@@ -862,12 +903,14 @@ function keepSeed(seed: TodayDocketSeed, loop: CosOperatingLoopView): boolean {
     if (!seed.candidateIds.length && !seed.projectId && !currentCadOf(seed)) return false;
   }
   const thread = seed.threadId ? loop.threadContext?.get(seed.threadId) ?? null : null;
-  const systemAlert = isActionableSystemAlert({ thread });
+  const systemAlert =
+    isActionableSystemAlert({ thread }) || isCurrentOperationalSystemMail({ thread });
   if (
     packet.ballHolder === "unknown" &&
     !packet.unresolvedFounderObligation &&
     packet.briefingKind === "generic" &&
-    !systemAlert
+    !systemAlert &&
+    !isLiveHumanWorkSeed(seed, loop)
   ) {
     return false;
   }
@@ -916,6 +959,7 @@ function seedScore(seed: TodayDocketSeed): number {
   const packet = seed.packet;
   if (!packet) return 0;
   if (packet.briefingKind === "founder_print_check") return 80;
+  if (packet.semanticNextActionClass === "founder_review") return 80;
   if (
     hasRealFounderOwnedObligation(packet) &&
     remainingIsPrintCheck({
@@ -1046,10 +1090,10 @@ function overlayClientIdentity(
   }
   const match =
     labels.find((row) => cad && row.cadId?.toUpperCase() === cad) ??
-    labels.find((row) => row.name && !isVendorOrganizationLabel(row.name));
+    labels.find((row) => row.name && !isVendorOrganizationLabel(row.name) && !isStudioOrVendorLabel(row.name));
   if (!match) return packet;
   const name = match.name.trim();
-  if (!name || isVendorOrganizationLabel(name)) return packet;
+  if (!name || isVendorOrganizationLabel(name) || isStudioOrVendorLabel(name)) return packet;
   const cadId = match.cadId ?? cad;
   const identifiers = packet.identifiers.some(
     (row) => row.current && cadId && row.value.toUpperCase() === cadId,
@@ -1180,12 +1224,16 @@ function mergeSeeds(left: TodayDocketSeed, right: TodayDocketSeed): TodayDocketS
       : /actually sent|can't tell whether this was/i.test(primary.headline)
         ? primary.headline
         : primary.headline;
+  const lockedHeadline =
+    identified?.authoritative && briefing && !primary.brief?.specConflict
+      ? briefing.headline
+      : recapHeadline;
   return {
     ...primary,
     packet: identified,
     briefing,
-    headline: recapHeadline,
-    context: recapHeadline !== primary.headline ? secondary.context ?? primary.context : primary.context,
+    headline: lockedHeadline,
+    context: lockedHeadline !== primary.headline ? briefing?.stand ?? secondary.context ?? primary.context : primary.context,
     projectId: primary.projectId || secondary.projectId,
     candidateIds: [...new Set([...primary.candidateIds, ...secondary.candidateIds])],
     threadId: primary.threadId || secondary.threadId,
@@ -1266,7 +1314,7 @@ export function dedupeTodaySeeds(seeds: readonly TodayDocketSeed[]): TodayDocket
   return [...grouped.values()];
 }
 
-function laneOf(seed: TodayDocketSeed): "up_next" | "watching" {
+function laneOf(seed: TodayDocketSeed, loop: CosOperatingLoopView): "up_next" | "watching" {
   const packet = seed.packet;
   if (!packet) return "watching";
   if (isIdentityCleanupText(seed.headline) && !hasRealFounderOwnedObligation(packet)) {
@@ -1275,10 +1323,27 @@ function laneOf(seed: TodayDocketSeed): "up_next" | "watching" {
   if (packet.ballHolder === "vendor_shop" || packet.ballHolder === "client" || packet.ballHolder === "scheduled_future") {
     return "watching";
   }
+  if (packet.ballHolder === "founder" && packet.authoritative) return "up_next";
   if (packet.briefingKind === "founder_print_check") return "up_next";
+  if (packet.semanticNextActionClass === "founder_review") return "up_next";
   if (hasRealFounderOwnedObligation(packet)) return "up_next";
   if (seed.brief?.specConflict) return "up_next";
   if (seed.job && (packet.ballHolder === "founder" || packet.ballHolder === "unknown")) return "up_next";
+  const thread = seed.threadId ? loop.threadContext?.get(seed.threadId) ?? null : null;
+  if (
+    packet.ballHolder === "unknown" &&
+    (isActionableSystemAlert({ thread }) || isCurrentOperationalSystemMail({ thread }))
+  ) {
+    return "up_next";
+  }
+  if (
+    packet.ballHolder === "unknown" &&
+    (seed.origin === "open_job" || seed.job || seed.brief?.rankClass === "founder_commitment") &&
+    !isIdentityCleanupText(seed.headline) &&
+    !isAmbiguousFollowUpFragment(seed.headline)
+  ) {
+    return "up_next";
+  }
   return "watching";
 }
 
@@ -1313,7 +1378,8 @@ function toDocketItem(seed: TodayDocketSeed, loop: CosOperatingLoopView): CosDoc
     Boolean(briefing) &&
     !spec &&
     !unassigned &&
-    packet.briefingKind !== "generic";
+    packet.ballHolder !== "unknown" &&
+    seed.origin !== "open_job";
   const presented = presentDocketBriefing({
     subject: unassigned ? UNASSIGNED : seed.subject,
     headline: seed.headline,
@@ -1348,7 +1414,14 @@ function toDocketItem(seed: TodayDocketSeed, loop: CosOperatingLoopView): CosDoc
     origin: seed.origin,
     subject,
     headline,
-    context: spec || unassigned ? presented.context : useCosOverlay ? briefing!.stand : presented.context,
+    context:
+      spec || unassigned
+        ? presented.context
+        : useCosOverlay
+          ? /a founder move is still open/i.test(briefing!.stand) && presented.context
+            ? presented.context
+            : briefing!.stand
+          : presented.context,
     job: seed.job,
     brief: stripConfirmPerson(seed.brief, allowedConfirm),
     decision: seed.decision,
@@ -1400,7 +1473,7 @@ export function finalizeTodayDocket(loop: CosOperatingLoopView): {
   const upNextSeeds: TodayDocketSeed[] = [];
   const watchingSeeds: TodayDocketSeed[] = [];
   for (const seed of kept) {
-    if (laneOf(seed) === "up_next") upNextSeeds.push(seed);
+    if (laneOf(seed, loop) === "up_next") upNextSeeds.push(seed);
     else watchingSeeds.push(seed);
   }
   upNextSeeds.sort((left, right) => seedScore(right) - seedScore(left));
@@ -1429,6 +1502,7 @@ function whySeedSurvived(seed: TodayDocketSeed): string {
   const packet = seed.packet;
   if (!packet) return "no packet";
   if (packet.briefingKind === "founder_print_check") return "founder print/check obligation";
+  if (packet.semanticNextActionClass === "founder_review") return "founder review of delivered CAD/STL";
   if (hasRealFounderOwnedObligation(packet)) return "founder-owned current action";
   if (packetHasUnresolvedVendorCommitment(packet)) return "unresolved vendor commitment";
   if (packet.ballHolder === "client") return "client holds the current turn";
@@ -1453,9 +1527,9 @@ export function inspectFinalizedTodayDocket(
 ): TodayDocketRankRow[] {
   const kept = dedupeTodaySeeds(collectSeeds(loop).filter((seed) => keepSeed(seed, loop)));
   const upNextSeeds = kept
-    .filter((seed) => laneOf(seed) === "up_next")
+    .filter((seed) => laneOf(seed, loop) === "up_next")
     .sort((left, right) => seedScore(right) - seedScore(left));
-  const watchingSeeds = kept.filter((seed) => laneOf(seed) !== "up_next");
+  const watchingSeeds = kept.filter((seed) => laneOf(seed, loop) !== "up_next");
   const rowOf = (seed: TodayDocketSeed, lane: TodayDocketRankRow["lane"], rank: number): TodayDocketRankRow => {
     const packet = seed.packet;
     return {

@@ -16,7 +16,20 @@ import {
 } from "@/lib/continuum/gmail/work-loop-identity";
 import type { RemainingFounderCommitment, ThreadWaitingKind } from "./thread-truth";
 import type { CosEvidenceBeat } from "./types";
-import { isInternalQaCopy, isShopReviewFallbackText, reduceWorkLoop } from "./work-loop-state";
+import {
+  eventsFromInput,
+  isInternalQaCopy,
+  isShopReviewFallbackText,
+  isUnsafeBriefingFragment,
+  reduceWorkLoop,
+} from "./work-loop-state";
+import type { WorkLoopEvent, WorkLoopSemanticClass } from "./work-loop-state";
+import { extractInboundObligation } from "./inbound-obligation";
+import {
+  isAmbiguousFollowUpFragment,
+  isCurrentInboundAskText,
+  isGenericFallbackObligationText,
+} from "./obligation-currentness";
 
 export const TODAY_BRIEFING_KINDS = [
   "founder_print_check",
@@ -81,6 +94,8 @@ export type TodayBriefingPacket = {
   uncertainty: readonly string[];
   mustNotState: readonly string[];
   sourceRefs: readonly string[];
+  authoritative?: boolean;
+  semanticNextActionClass?: WorkLoopSemanticClass;
 };
 
 export type ComposeTodayBriefingPacketInput = {
@@ -171,6 +186,80 @@ export function remainingIsPrintCheck(
   const hay = `${remaining?.matchedText ?? ""} ${remaining?.recommended ?? ""}`;
   return STATED_PRINT_CHECK.test(hay);
 }
+
+function remainingTextUsable(text: string | null | undefined): boolean {
+  const hay = text?.replace(/\s+/g, " ").trim() ?? "";
+  if (!hay) return false;
+  if (isShopReviewFallbackText(hay) || isInternalQaCopy(hay) || isUnsafeBriefingFragment(hay)) {
+    return false;
+  }
+  if (isGenericFallbackObligationText(hay) || isAmbiguousFollowUpFragment(hay)) return false;
+  return true;
+}
+
+function remainingForReducer(
+  remainingRaw: RemainingFounderCommitment | null | undefined,
+): RemainingFounderCommitment | null {
+  if (!remainingRaw) return null;
+  const matched = remainingRaw.matchedText.replace(/\s+/g, " ").trim();
+  const recommended = remainingRaw.recommended.replace(/\s+/g, " ").trim();
+  const matchedOk = remainingTextUsable(matched);
+  const recOk = remainingTextUsable(recommended);
+  if (!matchedOk && !recOk) return null;
+  const keepMatched = matchedOk ? matched : recommended;
+  const obl = extractInboundObligation(keepMatched);
+  const keepRec = recOk ? recommended : obl?.headline ?? keepMatched;
+  return {
+    ...remainingRaw,
+    matchedText: keepMatched,
+    headline: remainingTextUsable(remainingRaw.headline) ? remainingRaw.headline : keepRec,
+    explanation: remainingTextUsable(remainingRaw.explanation)
+      ? remainingRaw.explanation
+      : obl?.explanation ?? keepMatched,
+    recommended: keepRec,
+  };
+}
+
+function remainingFromOpeningEvents(
+  events: readonly WorkLoopEvent[],
+): RemainingFounderCommitment | null {
+  const opening = [...events].reverse().find(
+    (row) =>
+      row.opens === "founder" ||
+      isCurrentInboundAskText(row.text),
+  );
+  if (!opening) return null;
+  const text = opening.text.replace(/\s+/g, " ").trim();
+  if (!remainingTextUsable(text) && !/\?/.test(text)) return null;
+  if (isGenericFallbackObligationText(text)) return null;
+  const obl = extractInboundObligation(text);
+  const recommended = obl?.headline ?? text;
+  if (isGenericFallbackObligationText(recommended)) return null;
+  return {
+    matchedText: text,
+    headline: recommended,
+    explanation: obl?.explanation ?? text,
+    recommended,
+  };
+}
+
+function remainingForCopy(
+  remaining: RemainingFounderCommitment | null,
+  semanticClass: WorkLoopSemanticClass,
+  events: readonly WorkLoopEvent[],
+): RemainingFounderCommitment | null {
+  if (
+    semanticClass === "founder_review" ||
+    semanticClass === "founder_print_check" ||
+    semanticClass === "vendor_shop_wait" ||
+    semanticClass === "client_wait"
+  ) {
+    return remaining;
+  }
+  if (semanticClass !== "founder_communication") return remaining;
+  if (remaining) return remaining;
+  return remainingFromOpeningEvents(events);
+}
 const COMPLETION_CLAIM =
   /\b(?:already printed|printing (?:is|was) done|approved|in production|job is complete|canonical open job)\b/i;
 const VENDOR_ORG_NAME = /\b(?:vlora|workshop|atelier|engrav)/i;
@@ -239,26 +328,33 @@ export function composeTodayBriefingPacket(
     (speaker) => speaker === "founder",
   );
   const remainingRaw = input.remainingFounderCommitment;
-  const remaining =
-    remainingRaw &&
-    !isShopReviewFallbackText(remainingRaw.matchedText) &&
-    !isShopReviewFallbackText(remainingRaw.recommended) &&
-    !isInternalQaCopy(remainingRaw.matchedText) &&
-    !isInternalQaCopy(remainingRaw.recommended)
-      ? remainingRaw
-      : null;
+  const remainingForReduce = remainingForReducer(remainingRaw);
   const currentIds = currentIdentifierValues(identifiers);
   const historicalIds = historicalIdentifierValues(identifiers);
   const cadLabel = currentIds.find((value) => /^C\d{5,}/i.test(value)) ?? fromSubject?.cadId ?? null;
+  const cadDelivered =
+    /\b(?:here is|attached|delivered|sent)\b[^.!?\n]{0,80}\b(?:updated\s+)?cad\b|\b(?:updated\s+)?cad\b[^.!?\n]{0,40}\b(?:attached|delivered|sent)\b/i.test(
+      `${vendorOwn}\n${vendorHay}`,
+    );
   const reduced = reduceWorkLoop({
     evidence: input.evidence,
     founderOwnTexts: input.founderOwnTexts,
     vendorOwnTexts: input.vendorOwnTexts,
-    remaining,
+    remaining: remainingForReduce,
     waitingState: input.waitingState,
     communication: input.communication,
     noFounderAction: input.noFounderAction,
+    staleInboundSatisfied: input.staleInboundSatisfied,
   });
+  const remaining = remainingForCopy(
+    remainingForReduce,
+    reduced.semanticClass,
+    eventsFromInput({
+      evidence: input.evidence,
+      founderOwnTexts: input.founderOwnTexts,
+      vendorOwnTexts: input.vendorOwnTexts,
+    }),
+  );
   const ballHolder =
     reduced.ballHolder !== "unknown"
       ? reduced.ballHolder
@@ -275,7 +371,7 @@ export function composeTodayBriefingPacket(
         });
 
   const unresolvedFounderObligation =
-    ballHolder === "founder"
+    ballHolder === "founder" && reduced.semanticClass !== "founder_review"
       ? remaining
         ? remaining.matchedText
         : printPlan && !completion
@@ -284,11 +380,14 @@ export function composeTodayBriefingPacket(
       : null;
   const candidateNextAction = nextActionOf({
     ballHolder,
-    remaining: ballHolder === "founder" ? remaining : null,
+    remaining:
+      ballHolder === "founder" && reduced.semanticClass !== "founder_review" ? remaining : null,
     printPlan,
     stlDelivered,
+    cadDelivered,
     cadForthcoming,
     displayName,
+    semanticClass: reduced.semanticClass,
   });
   const externalCommitment =
     ballHolder === "vendor_shop"
@@ -368,6 +467,8 @@ export function composeTodayBriefingPacket(
       ...(input.sourceRefs ?? []),
       ...input.evidence.map((beat) => beat.sourceHref).filter((row): row is string => Boolean(row)),
     ]),
+    authoritative: reduced.authoritative,
+    semanticNextActionClass: reduced.semanticClass,
   };
 }
 
@@ -475,15 +576,25 @@ function nextActionOf(input: {
   remaining: RemainingFounderCommitment | null;
   printPlan: boolean;
   stlDelivered: boolean;
+  cadDelivered: boolean;
   cadForthcoming: boolean;
   displayName: string;
+  semanticClass: WorkLoopSemanticClass;
 }): string | null {
   if (input.ballHolder !== "founder") {
     if (input.cadForthcoming) return `Review the new CAD when it arrives.`;
     return null;
   }
-  if (input.remaining) return input.remaining.recommended;
-  if (input.printPlan || input.stlDelivered) {
+  if (input.semanticClass === "founder_review" || input.stlDelivered || input.cadDelivered) {
+    if (input.printPlan) {
+      return `Print/check the model and send ${input.displayName} the size update.`;
+    }
+    return "Review them and send the next design direction / approval.";
+  }
+  if (input.remaining && !isGenericFallbackObligationText(input.remaining.recommended)) {
+    return input.remaining.recommended;
+  }
+  if (input.printPlan) {
     return `Print/check the model and send ${input.displayName} the size update.`;
   }
   return null;
@@ -756,6 +867,15 @@ export function readTodayBriefingPacket(
     sourceRefs: Array.isArray(row.sourceRefs)
       ? row.sourceRefs.filter((line) => typeof line === "string").slice(0, 12)
       : [],
+    authoritative: row.authoritative === true,
+    semanticNextActionClass:
+      row.semanticNextActionClass === "founder_review" ||
+      row.semanticNextActionClass === "founder_print_check" ||
+      row.semanticNextActionClass === "founder_communication" ||
+      row.semanticNextActionClass === "vendor_shop_wait" ||
+      row.semanticNextActionClass === "client_wait"
+        ? row.semanticNextActionClass
+        : undefined,
   };
 }
 

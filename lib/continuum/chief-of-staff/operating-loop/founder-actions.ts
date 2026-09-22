@@ -210,7 +210,9 @@ function needsPersonConfirm(item: CosFounderActionSource): boolean {
   const packet = item.briefingPacket ?? item.brief?.briefingPacket ?? null;
   if (packet?.entityType === "vendor") return false;
   if (packet?.organizationLabel) return false;
-  if (packet?.ballHolder && packet.ballHolder !== "founder") return false;
+  if (packet?.ballHolder && packet.ballHolder !== "founder" && packet.ballHolder !== "unknown") {
+    return false;
+  }
   if (packet?.personId) return false;
   const workingName = packet?.displayName?.trim() || item.brief?.personLabel?.trim() || item.subject.trim();
   if (

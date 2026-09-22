@@ -8,7 +8,6 @@ import {
   isMeaningfulTodayActionText,
   isNoiseOnlyCandidateText,
 } from "@/lib/continuum/candidates/founder-attention";
-import { isCurrentFounderOwnedObligationText } from "./obligation-currentness";
 import { COS_SPRINT_CLEAR_COPY } from "./master-sprint";
 import {
   COS_CAUGHT_UP_DETAIL,
@@ -20,6 +19,7 @@ import {
   presentDocketBriefing,
 } from "./docket-present";
 import { isIdentityCleanupText } from "./briefing-packet";
+import { isAmbiguousFollowUpFragment } from "./obligation-currentness";
 import { finalizeTodayDocket, hasRealFounderOwnedObligation } from "./today-docket-boundary";
 import type {
   CosDocketItemView,
@@ -87,8 +87,20 @@ export function isActionableTodayDocketItem(item: CosDocketItemView): boolean {
     return false;
   }
   if (item.origin === "open_job") {
-    if (item.briefingPacket) return hasRealFounderOwnedObligation(item.briefingPacket);
-    return isCurrentFounderOwnedObligationText(item.headline);
+    if (
+      item.briefingPacket?.ballHolder === "vendor_shop" ||
+      item.briefingPacket?.ballHolder === "client"
+    ) {
+      return false;
+    }
+    if (hasRealFounderOwnedObligation(item.briefingPacket)) return true;
+    if (!item.briefingPacket || item.briefingPacket.ballHolder === "unknown") {
+      return (
+        !isIdentityCleanupText(item.headline) &&
+        !isAmbiguousFollowUpFragment(item.headline)
+      );
+    }
+    return false;
   }
   const evidence = item.brief?.evidence ?? [];
   const evidenceTexts = evidence.map((beat) => beat.summary);
@@ -115,6 +127,17 @@ export function isActionableTodayDocketItem(item: CosDocketItemView): boolean {
   if (item.briefingPacket) {
     if (item.briefingPacket.ballHolder === "founder") {
       return hasRealFounderOwnedObligation(item.briefingPacket);
+    }
+    if (
+      item.briefingPacket.ballHolder === "unknown" &&
+      item.brief &&
+      !isIdentityCleanupText(item.headline) &&
+      !isAmbiguousFollowUpFragment(item.headline) &&
+      (item.brief.rankClass === "founder_commitment" ||
+        (item.brief.rankClass === "follow_up" &&
+          !/recap|next step/i.test(item.headline)))
+    ) {
+      return true;
     }
     return false;
   }

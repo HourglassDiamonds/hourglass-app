@@ -351,6 +351,21 @@ describe("production-shaped work-loop association", () => {
             matchedText: "Here is the C026176 Mod 1 CAD.",
           },
         }),
+        gmailRow({
+          candidateId: "founder-chain",
+          sourceRef: `gc1|${clientThread}|founder-chain`,
+          sourceTimestamp: "2026-09-21T18:37:58.000Z",
+          candidateType: "project_context",
+          payload: {
+            kind: "project_context",
+            topic: "design_refinement",
+            value: "I'll order the chain separately. Let me know what you think.",
+          },
+          evidenceBasis: {
+            ruleIds: ["explicit_founder_commitment"],
+            matchedText: "I'll order the chain separately. Let me know what you think.",
+          },
+        }),
       ],
       new Map([
         [
@@ -365,6 +380,12 @@ describe("production-shaped work-loop association", () => {
                 messageId: "client-wait",
                 sentAt: "2026-09-21T14:00:00.000Z",
                 direction: "inbound",
+              },
+              {
+                messageId: "founder-chain",
+                sentAt: "2026-09-21T18:37:58.000Z",
+                direction: "outbound",
+                fromEmailHash: FOUNDER_HASH,
               },
             ],
           },
@@ -388,9 +409,9 @@ describe("production-shaped work-loop association", () => {
       ]),
     );
     const named = cardsFor(docket, /C026176|Nate|Nathan|Featured Ring/i);
-    assert.equal(named.up.length + named.watching.length, 1, hay(docket));
-    const card = [...named.up, ...named.watching][0]!;
-    const packet = "briefingPacket" in card ? card.briefingPacket : null;
+    assert.equal(named.up.length, 1, hay(docket));
+    assert.equal(named.watching.length, 0, hay(docket));
+    const packet = named.up[0]?.briefingPacket;
     assert.equal(packet?.ballHolder, "founder");
     assert.notEqual(packet?.ballHolder, "client");
   });
@@ -416,6 +437,25 @@ describe("production-shaped work-loop association", () => {
           evidenceBasis: {
             ruleIds: ["explicit_vendor_waiting"],
             matchedText: "Here is the C025610 Mod 4 CAD + STL.",
+          },
+        }),
+        gmailRow({
+          candidateId: "dylon-recap",
+          sourceRef: `gc1|${threadId}|dylon-recap`,
+          sourceTimestamp: "2026-09-21T17:00:00.000Z",
+          candidateType: "open_job",
+          payload: {
+            kind: "open_job",
+            jobKind: "request",
+            subject: "Send the recap and next step",
+            detail: "Send the recap and next step.",
+            waitingOnActor: "founder",
+            dueAt: null,
+            createJob: false,
+          },
+          evidenceBasis: {
+            ruleIds: ["explicit_follow_up"],
+            matchedText: "Send the recap and next step.",
           },
         }),
       ],
@@ -445,6 +485,13 @@ describe("production-shaped work-loop association", () => {
     assert.match(named.up[0]?.subject ?? "", /C025610/i);
     assert.doesNotMatch(named.up[0]?.subject ?? "", /^Vlora$/i);
     assert.equal(named.up[0]?.briefingPacket?.ballHolder, "founder");
+    assert.equal(named.up[0]?.briefingPacket?.authoritative, true);
+    assert.equal(named.up[0]?.briefingPacket?.semanticNextActionClass, "founder_review");
+    assert.doesNotMatch(
+      `${named.up[0]?.headline ?? ""} ${named.up[0]?.briefing?.headline ?? ""} ${named.up[0]?.briefing?.nextBody ?? ""}`,
+      /Send the recap/i,
+    );
+    assert.match(`${named.up[0]?.briefing?.headline ?? named.up[0]?.headline ?? ""}`, /CAD and STL are in/i);
   });
 
   it("keeps unassociated client + vendor packets with the same HGD CAD as one shop wait", () => {
@@ -469,6 +516,25 @@ describe("production-shaped work-loop association", () => {
           evidenceBasis: {
             ruleIds: ["explicit_client_request"],
             matchedText: "I like the updated gallery.",
+          },
+        }),
+        gmailRow({
+          candidateId: "sarah-mod1",
+          sourceRef: `gc1|${vendorThread}|sarah-mod1`,
+          sourceTimestamp: "2026-09-18T16:00:00.000Z",
+          candidateType: "open_job",
+          payload: {
+            kind: "open_job",
+            jobKind: "request",
+            subject: "Mod 1 attached",
+            detail: "Here is the C026143 Mod 1 CAD.",
+            waitingOnActor: "founder",
+            dueAt: null,
+            createJob: false,
+          },
+          evidenceBasis: {
+            ruleIds: ["explicit_vendor_waiting"],
+            matchedText: "Here is the C026143 Mod 1 CAD.",
           },
         }),
         gmailRow({
@@ -511,6 +577,12 @@ describe("production-shaped work-loop association", () => {
             fromEmail: NIURKA_EMAIL,
             messages: [
               {
+                messageId: "sarah-mod1",
+                sentAt: "2026-09-18T16:00:00.000Z",
+                direction: "inbound",
+                fromEmailHash: NIURKA_HASH,
+              },
+              {
                 messageId: "sarah-direction",
                 sentAt: "2026-09-18T18:26:23.000Z",
                 direction: "outbound",
@@ -525,6 +597,7 @@ describe("production-shaped work-loop association", () => {
     assert.equal(named.up.length, 0, hay(docket));
     assert.equal(named.watching.length, 1, hay(docket));
     assert.equal(named.watching[0]?.briefingPacket?.ballHolder, "vendor_shop");
+    assert.equal(named.watching[0]?.briefing?.stateChip, "WAITING ON SHOP");
     assert.match(named.watching[0]?.title ?? "", /Sarah/i);
   });
 

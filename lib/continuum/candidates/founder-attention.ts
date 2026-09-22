@@ -124,7 +124,7 @@ export function isVendorOrganizationLabel(name: string | null | undefined): bool
   if (!name) return false;
   const normalized = normalizedIdentity(name);
   if (!normalized) return false;
-  if (isStudioOrVendorLabel(normalized)) return true;
+  if (isStudioOrVendorLabel(normalized)) return false;
   if (/\b(engraving|jewelers?|workshop|atelier|the shop)\b/.test(normalized)) {
     return true;
   }
@@ -612,6 +612,7 @@ export function isPlatformOrSystemName(name: string | null | undefined): boolean
   if (!name) return false;
   const normalized = normalizedIdentity(name);
   if (!normalized) return false;
+  if (normalized === "meta" || /\bmeta ads?\b/.test(normalized)) return true;
   if (
     /\b(noreply|no-reply|notifications?|mailer|newsletter|digest|mailer-daemon|postmaster|product updates?)\b/.test(
       normalized,

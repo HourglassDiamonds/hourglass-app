@@ -54,7 +54,11 @@ export function renderDeterministicBriefing(
       nextLabel: "Best next step",
       nextBody:
         packet.candidateNextAction ??
-        `Print/check the model and send ${who} the size update.`,
+        (packet.semanticNextActionClass === "founder_review"
+          ? "Review them and send the next design direction / approval."
+          : packet.briefingKind === "founder_print_check"
+            ? `Print/check the model and send ${who} the size update.`
+            : packet.unresolvedFounderObligation ?? `Send ${who} the next step.`),
       source: "deterministic",
     }, packet);
   }
@@ -127,12 +131,33 @@ export function sanitizeRendered(
 }
 
 function founderHeadline(packet: TodayBriefingPacket, cad: string | undefined): string {
+  const external = packet.latestMeaningfulExternalEvent?.summary ?? "";
+  if (packet.semanticNextActionClass === "founder_review" || (/cad/i.test(external) && /stl/i.test(external))) {
+    if (/cad/i.test(external) && /stl/i.test(external)) {
+      const mod = external.match(/\bmod\s*\d+/i)?.[0];
+      return mod ? `${capitalizePhrase(mod)} CAD and STL are in.` : "CAD and STL are in.";
+    }
+    if (/stl/i.test(external)) return "STL is in; you're up to check the size.";
+    if (/cad/i.test(external)) {
+      const mod = external.match(/\bmod\s*\d+/i)?.[0];
+      return mod ? `${capitalizePhrase(mod)} CAD is in.` : "CAD is in.";
+    }
+  }
   if (packet.latestMeaningfulExternalEvent && /stl/i.test(packet.latestMeaningfulExternalEvent.summary)) {
-    return "STL is in; you're up to check the size.";
+    if (packet.briefingKind === "founder_print_check") {
+      return "STL is in; you're up to check the size.";
+    }
   }
-  if (packet.unresolvedFounderObligation) {
-    return "You're up.";
-  }
+  const specific =
+    (packet.candidateNextAction && !/send the recap/i.test(packet.candidateNextAction)
+      ? packet.candidateNextAction
+      : null) ??
+    (packet.unresolvedFounderObligation &&
+    !/send the recap/i.test(packet.unresolvedFounderObligation) &&
+    !isUnsafeBriefingFragment(packet.unresolvedFounderObligation)
+      ? packet.unresolvedFounderObligation
+      : null);
+  if (specific) return specific;
   return cad ? `${cad} is waiting on you.` : "You're up.";
 }
 
@@ -145,6 +170,15 @@ function founderStand(
     const cadBit = cad ? ` ${cad}` : "";
     return `The shop delivered the${cadBit} model. Print/check it, then update ${who}.`.replace(/\s{2,}/g, " ");
   }
+  if (packet.semanticNextActionClass === "founder_review") {
+    const cadBit = cad ? ` ${cad}` : "";
+    const external = usableProse(packet.latestMeaningfulExternalEvent?.summary);
+    if (external && /CAD|STL/i.test(external)) return sentence(external);
+    return `The shop delivered the${cadBit} CAD/STL. Review them and send ${who} the next design direction.`.replace(
+      /\s{2,}/g,
+      " ",
+    );
+  }
   if (packet.unresolvedFounderObligation && !isUnsafeBriefingFragment(packet.unresolvedFounderObligation)) {
     return `A founder move is still open with ${who}.`;
   }
@@ -153,6 +187,10 @@ function founderStand(
     return sentence(external);
   }
   return `A founder move is still open with ${who}.`;
+}
+
+function capitalizePhrase(value: string): string {
+  return value.replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
 function clientStand(_packet: TodayBriefingPacket, who: string): string {
