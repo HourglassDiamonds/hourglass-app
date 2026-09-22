@@ -2018,10 +2018,27 @@ function situationCad(item: RankedSituation): string | null {
   const fromIdentity = currentCadTokensFromIdentityHay([
     item.threadSubject,
     ...(item.attachmentNames ?? []),
+    item.remainingFounderCommitment?.matchedText,
+    item.remainingFounderCommitment?.recommended,
+    ...(item.beats ?? []).map((beat) => beat.summary),
+    ...(item.vendorOwnTexts ?? []),
+    ...(item.founderOwnTexts ?? []),
   ]);
   if (fromIdentity[0]) return fromIdentity[0];
   const fromSubject = clientLabelFromHgdSubject(item.threadSubject)?.cadId;
   if (fromSubject) return fromSubject.toUpperCase();
+  const hay = [
+    item.threadSubject,
+    item.remainingFounderCommitment?.matchedText,
+    item.remainingFounderCommitment?.recommended,
+    ...(item.beats ?? []).map((beat) => beat.summary),
+    ...(item.vendorOwnTexts ?? []),
+    ...(item.founderOwnTexts ?? []),
+  ]
+    .filter(Boolean)
+    .join("\n");
+  const bare = hay.match(/\bC\d{5,}\b/i)?.[0];
+  if (bare) return bare.toUpperCase();
   const fromPacket = item.briefingPacket?.identifiers.find(
     (row) => row.current && /^C\d{5,}/i.test(row.value),
   )?.value;
@@ -2032,6 +2049,8 @@ function situationClientName(item: RankedSituation): string | null {
   const fromIdentity = clientLabelFromIdentityHay([
     item.threadSubject,
     ...(item.attachmentNames ?? []),
+    item.remainingFounderCommitment?.matchedText,
+    ...(item.beats ?? []).map((beat) => beat.summary),
   ]);
   const hint =
     fromIdentity?.name ||
@@ -2059,6 +2078,13 @@ function strongerSituation(a: RankedSituation, b: RankedSituation): RankedSituat
     if (packet?.briefingKind === "founder_print_check") return 80;
     if (packet?.semanticNextActionClass === "founder_review") return 80;
     if (remainingIsPrintCheck(item.remainingFounderCommitment)) return 80;
+    if (
+      item.waitingState === "cad" ||
+      item.waitingState === "shop" ||
+      item.waitingState === "production"
+    ) {
+      return 60;
+    }
     if (packet?.briefingKind === "vendor_cad_wait") return 60;
     if (packet?.ballHolder === "vendor_shop") return 50;
     if (packet?.ballHolder === "founder" && packet.unresolvedFounderObligation) return 45;
@@ -2123,6 +2149,7 @@ function mergeSituationPair(a: RankedSituation, b: RankedSituation): RankedSitua
     quotedTexts: [...(primary.quotedTexts ?? []), ...(secondary.quotedTexts ?? [])],
     sourceRefs: [...(primary.sourceRefs ?? []), ...(secondary.sourceRefs ?? [])],
     attachmentNames: [...new Set([...(primary.attachmentNames ?? []), ...(secondary.attachmentNames ?? [])])],
+    briefingPacket: null,
   };
 }
 
@@ -2260,7 +2287,7 @@ export function composeConciergeBrief(input: ComposeConciergeBriefInput): {
       knownPeople: input.knownPeople,
       associatedByProject,
     });
-    if (situation) situations.push(withBriefingDisposition(situation));
+    if (situation) situations.push(situation);
   }
 
   const merged = mergeRankedSituations(situations).map(withBriefingDisposition);

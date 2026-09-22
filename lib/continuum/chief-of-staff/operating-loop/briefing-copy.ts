@@ -61,7 +61,7 @@ export function renderDeterministicBriefing(
             : "Review them and send approval / next design direction."
           : packet.briefingKind === "founder_print_check"
             ? `Print/check the model and send ${who} the size update.`
-            : /printed and ready|already printed/i.test(packet.latestMeaningfulFounderAction?.summary ?? "")
+            : /printed and ready|already printed|finished printing/i.test(packet.latestMeaningfulFounderAction?.summary ?? "")
               ? "Ship them using the updated address and send confirmation."
               : packet.unresolvedFounderObligation ?? `Send ${who} the next step.`),
       source: "deterministic",
@@ -152,7 +152,7 @@ function founderHeadline(packet: TodayBriefingPacket, cad: string | undefined): 
       return clientWaitingCopy(packet, external, who) ?? (mod ? `${capitalizePhrase(mod)} CAD is in.` : "CAD is in.");
     }
   }
-  if (/already printed|models? (?:are|is|were) printed|printed and ready/i.test(founder) || /shipping address|updated address/i.test(external)) {
+  if (/already printed|models? (?:are|is|were) printed|finished printing|printed and ready/i.test(founder) || /shipping address|updated address/i.test(external)) {
     return `${who}'s models are printed and ready to go.`.replace(/\s{2,}/g, " ");
   }
   if (packet.latestMeaningfulExternalEvent && /stl/i.test(packet.latestMeaningfulExternalEvent.summary)) {

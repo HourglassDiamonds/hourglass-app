@@ -222,6 +222,21 @@ function remainingForReducer(
   };
 }
 
+function remainingFromText(text: string): RemainingFounderCommitment | null {
+  const folded = text.replace(/\s+/g, " ").trim();
+  if (!remainingTextUsable(folded) && !/\?/.test(folded)) return null;
+  if (isGenericFallbackObligationText(folded)) return null;
+  const obl = extractInboundObligation(folded);
+  const recommended = obl?.headline ?? folded;
+  if (isGenericFallbackObligationText(recommended)) return null;
+  return {
+    matchedText: folded,
+    headline: recommended,
+    explanation: obl?.explanation ?? folded,
+    recommended,
+  };
+}
+
 function remainingFromOpeningEvents(
   events: readonly WorkLoopEvent[],
 ): RemainingFounderCommitment | null {
@@ -231,18 +246,25 @@ function remainingFromOpeningEvents(
       isCurrentInboundAskText(row.text),
   );
   if (!opening) return null;
-  const text = opening.text.replace(/\s+/g, " ").trim();
-  if (!remainingTextUsable(text) && !/\?/.test(text)) return null;
-  if (isGenericFallbackObligationText(text)) return null;
-  const obl = extractInboundObligation(text);
-  const recommended = obl?.headline ?? text;
-  if (isGenericFallbackObligationText(recommended)) return null;
-  return {
-    matchedText: text,
-    headline: recommended,
-    explanation: obl?.explanation ?? text,
-    recommended,
-  };
+  return remainingFromText(opening.text);
+}
+
+function latestUnansweredCounterpartyAsk(events: readonly WorkLoopEvent[]): WorkLoopEvent | null {
+  let latestAsk: WorkLoopEvent | null = null;
+  let latestFounderOpenMs = Number.NEGATIVE_INFINITY;
+  for (const event of events) {
+    if (event.opens === "founder" && event.actor === "founder") {
+      latestFounderOpenMs = event.sortMs;
+    }
+    if (
+      event.opens === "founder" &&
+      (event.actor === "client" || event.actor === "vendor_shop")
+    ) {
+      latestAsk = event;
+    }
+  }
+  if (!latestAsk || latestAsk.sortMs <= latestFounderOpenMs) return null;
+  return latestAsk;
 }
 
 function remainingForCopy(
@@ -257,13 +279,15 @@ function remainingForCopy(
   ) {
     return null;
   }
+  const current = remainingFromOpeningEvents(events);
   if (semanticClass === "founder_print_check") {
-    return remainingIsPrintCheck(remaining) ? remaining : remainingFromOpeningEvents(events);
+    return remainingIsPrintCheck(current) ? current : remainingIsPrintCheck(remaining) ? remaining : current;
   }
-  if (semanticClass !== "founder_communication") return remaining;
-  if (remainingIsPrintCheck(remaining)) return remainingFromOpeningEvents(events);
+  if (isCurrentShippingObligation(events)) return current;
+  const laterAsk = latestUnansweredCounterpartyAsk(events);
+  if (laterAsk) return remainingFromText(laterAsk.text);
   if (remaining && remainingTextUsable(remaining.matchedText)) return remaining;
-  return remainingFromOpeningEvents(events);
+  return current;
 }
 const COMPLETION_CLAIM =
   /\b(?:already printed|printing (?:is|was) done|approved|in production|job is complete|canonical open job)\b/i;

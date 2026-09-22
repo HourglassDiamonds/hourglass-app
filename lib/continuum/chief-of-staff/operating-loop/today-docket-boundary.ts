@@ -371,64 +371,6 @@ export function equivalentPacketFromBrief(
     item.projectTitle ||
     sender ||
     UNASSIGNED;
-  const founderOwnedRemaining = Boolean(remaining && /I(?:'ll| will)\b/i.test(remaining.matchedText));
-  const inboundAskRemaining = Boolean(
-    remaining &&
-      isCurrentInboundAskText(remaining.matchedText) &&
-      !isImmediateCommitmentText(remaining.matchedText),
-  );
-  if (item.briefingPacket?.authoritative) {
-    return overlayRecoverableSender(item.briefingPacket, sender);
-  }
-  if (item.briefingPacket) {
-    if (
-      remaining &&
-      inboundAskRemaining &&
-      (item.briefingPacket.briefingKind === "vendor_cad_wait" ||
-        item.waitingState === "cad" ||
-        item.waitingState === "shop" ||
-        item.waitingState === "production")
-    ) {
-      return overlayRecoverableSender(item.briefingPacket, sender);
-    }
-    if (
-      remaining &&
-      (inboundAskRemaining ||
-        (item.briefingPacket.briefingKind !== "vendor_cad_wait" &&
-          ((item.briefingPacket.ballHolder === "unknown" &&
-            !item.noFounderAction &&
-            !item.waitingState) ||
-            founderOwnedRemaining)))
-    ) {
-      return overlayRecoverableSender(
-        composeTodayBriefingPacket({
-        itemId: item.id,
-        displayNameHint: hint,
-        organizationLabel: item.organizationLabel ?? null,
-        communication: item.sourceClass ?? null,
-        projectName: item.projectTitle,
-        projectId: item.projectId,
-        personId: item.briefingPacket.personId,
-        threadSubject,
-        lifecycle: item.lifecycleStage ?? null,
-        remainingFounderCommitment: remaining,
-        waitingState: item.waitingState ?? null,
-        noFounderAction: false,
-        staleInboundSatisfied: item.staleInboundSatisfied ?? false,
-        evidence: item.evidence,
-        founderOwnTexts: item.evidence
-          .filter((beat) => beat.speaker === "founder")
-          .map((beat) => authorOwnedText(beat.summary)),
-        vendorOwnTexts: item.evidence
-          .filter((beat) => beat.speaker === "vendor")
-          .map((beat) => authorOwnedText(beat.summary)),
-        attachmentNames,
-      }) ?? item.briefingPacket,
-        sender,
-      );
-    }
-    return overlayRecoverableSender(item.briefingPacket, sender);
-  }
   return overlayRecoverableSender(
     composeTodayBriefingPacket({
     itemId: item.id,
@@ -437,7 +379,7 @@ export function equivalentPacketFromBrief(
     communication: item.sourceClass ?? null,
     projectName: item.projectTitle,
     projectId: item.projectId,
-    personId: null,
+    personId: item.briefingPacket?.personId ?? null,
     threadSubject,
     lifecycle: item.lifecycleStage ?? null,
     remainingFounderCommitment: remaining,
@@ -452,7 +394,7 @@ export function equivalentPacketFromBrief(
       .filter((beat) => beat.speaker === "vendor")
       .map((beat) => authorOwnedText(beat.summary)),
     attachmentNames,
-  }),
+  }) ?? item.briefingPacket ?? null,
     sender,
   );
 }
@@ -700,7 +642,8 @@ function seedFromBrief(item: CosBriefItem, loop: CosOperatingLoopView): TodayDoc
     id: item.id,
     origin: "brief",
     subject: item.personLabel || item.projectTitle || item.organizationLabel || UNASSIGNED,
-    headline: item.recommended,
+    headline:
+      packet?.authoritative && briefing && !item.specConflict ? briefing.headline : item.recommended,
     context: item.explanation,
     brief: item,
     job: null,
@@ -1379,7 +1322,7 @@ function toDocketItem(seed: TodayDocketSeed, loop: CosOperatingLoopView): CosDoc
     !spec &&
     !unassigned &&
     packet.ballHolder !== "unknown" &&
-    seed.origin !== "open_job";
+    (packet.authoritative === true || seed.origin !== "open_job");
   const presented = presentDocketBriefing({
     subject: unassigned ? UNASSIGNED : seed.subject,
     headline: seed.headline,

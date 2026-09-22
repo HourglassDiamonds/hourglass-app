@@ -76,7 +76,7 @@ const VENDOR_PRODUCTION_PROMISE =
 const PRINT_CHECK =
   /\bI(?:'ll| will| am going to| planned to)?\s*(?:print|check|show|look at)[^.!?\n]{0,180}|\b(?:print(?:ing)?|check(?:ing)?)\s+(?:the\s+)?(?:updated\s+)?(?:model|stl|earring|huggie|size|proportion)/i;
 const PRINT_FULFILLED =
-  /\b(?:already printed|models? (?:are|is|were) (?:already )?printed|printed and (?:ready|done)|printing (?:is|was) done)\b/i;
+  /\b(?:already printed|models? (?:are|is|were) (?:already )?printed|finished printing|printing (?:is|was) (?:done|finished)|printed and (?:ready|done))\b/i;
 const SHIP_COMMIT =
   /\b(?:I(?:'ll| will)|expect(?:s|ing)? to|going to)\s+(?:mail|ship)\b|\bmail them\b|\bship them\b/i;
 const SHIPPING_ADDRESS =
@@ -263,18 +263,23 @@ export function reduceWorkLoop(input: ReduceWorkLoopInput): ReducedWorkLoopState
     clientOpen = false;
   }
 
+  const vendorBlockingAskOpen = latestOpening(events)?.opens === "founder" && latestOpening(events)?.actor === "vendor_shop";
   if (
     input.staleInboundSatisfied &&
     !remainingIsUsable(remainingTextOf(input)) &&
     !cadInFounderHands &&
     !founderPending &&
-    !inboundAskOpen
+    !inboundAskOpen &&
+    !vendorBlockingAskOpen
   ) {
-    if (input.waitingState === "cad" || input.waitingState === "shop" || input.waitingState === "production") {
-      vendorOpen = true;
-      founderOpen = false;
-      clientOpen = false;
-    } else if (input.communication === "vendor") {
+    if (
+      vendorOpen ||
+      cadWait ||
+      input.waitingState === "cad" ||
+      input.waitingState === "shop" ||
+      input.waitingState === "production" ||
+      input.communication === "vendor"
+    ) {
       vendorOpen = true;
       founderOpen = false;
       clientOpen = false;
@@ -289,6 +294,7 @@ export function reduceWorkLoop(input: ReduceWorkLoopInput): ReducedWorkLoopState
     !remainingIsUsable(remainingTextOf(input)) &&
     !cadInFounderHands &&
     !founderPending &&
+    !vendorBlockingAskOpen &&
     (input.waitingState === "cad" ||
       input.waitingState === "shop" ||
       input.waitingState === "production" ||
@@ -369,6 +375,10 @@ export function reduceWorkLoop(input: ReduceWorkLoopInput): ReducedWorkLoopState
   };
 }
 
+function latestOpening(events: readonly WorkLoopEvent[]): WorkLoopEvent | undefined {
+  return [...events].reverse().find((row) => row.opens != null);
+}
+
 function remainingTextOf(input: ReduceWorkLoopInput): string {
   return (input.remaining?.matchedText ?? input.remaining?.recommended ?? "").replace(/\s+/g, " ").trim();
 }
@@ -392,6 +402,7 @@ function unresolvedCadWait(
       cad = true;
     }
     if (event.eventType === "vendor_delivers") cad = false;
+    if (event.opens === "founder" && event.actor === "vendor_shop") cad = false;
   }
   return cad;
 }
