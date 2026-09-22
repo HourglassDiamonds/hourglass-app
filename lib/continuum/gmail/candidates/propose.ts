@@ -40,6 +40,7 @@ import {
   attachStructuredSpecProvenance,
   authorOwnedHaystack,
   quotedText,
+  QUOTED_HISTORICAL_EVIDENCE_RULE,
 } from "./spec-provenance";
 import { attachObservedSupportingGmailProvenance } from "./supporting-source";
 import {
@@ -233,15 +234,13 @@ function draftsFromEvidence(
 
   const specProjects =
     projectHits.length > 0 ? projectHits.map((row) => row.project) : [null];
+  const quotedHay = quotedText(evidence.plaintext ?? null);
   for (const project of specProjects) {
-    for (const spec of [
-      ...extractStructuredSpecs(haystack, project).filter(
-        (hit) => hit.fieldName !== "cad_job_number" && hit.fieldName !== "order_number",
-      ),
-      ...extractStructuredSpecs(ownHaystack, project).filter(
-        (hit) => hit.fieldName === "cad_job_number" || hit.fieldName === "order_number",
-      ),
-    ]) {
+    const ownSpecs = extractStructuredSpecs(ownHaystack, project);
+    const ownSpecKeys = new Set(
+      ownSpecs.map((hit) => `${hit.fieldName}:${hit.proposedValue.trim().toLowerCase()}`),
+    );
+    for (const spec of ownSpecs) {
       drafts.push({
         ...base,
         candidateId: "",
@@ -266,6 +265,27 @@ function draftsFromEvidence(
           matchedText: spec.matchedText,
         },
         candidateState: spec.conflict ? "conflict" : "active",
+      });
+    }
+    for (const spec of extractStructuredSpecs(quotedHay, project)) {
+      const key = `${spec.fieldName}:${spec.proposedValue.trim().toLowerCase()}`;
+      if (ownSpecKeys.has(key)) continue;
+      drafts.push({
+        ...base,
+        candidateId: "",
+        candidateType: "project_context",
+        proposedTarget: { kind: "none" },
+        payload: {
+          kind: "project_context",
+          topic: `historical_quoted_${spec.fieldName}`,
+          value: spec.proposedValue,
+        },
+        confidence: "low",
+        evidenceBasis: {
+          ruleIds: [QUOTED_HISTORICAL_EVIDENCE_RULE, ...spec.ruleIds],
+          matchedText: spec.matchedText,
+        },
+        candidateState: "active",
       });
     }
   }
@@ -300,7 +320,7 @@ function draftsFromEvidence(
         evidenceBasis: { ruleIds: hit.ruleIds, matchedText: hit.matchedText },
         candidateState: "active",
       });
-      for (const ctx of extractNewProjectContexts(haystack)) {
+      for (const ctx of extractNewProjectContexts(ownHaystack)) {
         drafts.push({
           ...base,
           candidateId: "",
@@ -393,7 +413,7 @@ function draftsFromEvidence(
     });
   }
 
-  for (const note of extractNotes(haystack)) {
+  for (const note of extractNotes(ownHaystack)) {
     drafts.push({
       ...base,
       candidateId: "",
@@ -409,6 +429,25 @@ function draftsFromEvidence(
       },
       confidence: "medium",
       evidenceBasis: { ruleIds: note.ruleIds, matchedText: note.matchedText },
+      candidateState: "active",
+    });
+  }
+  for (const note of extractNotes(quotedHay)) {
+    drafts.push({
+      ...base,
+      candidateId: "",
+      candidateType: "project_context",
+      proposedTarget: { kind: "none" },
+      payload: {
+        kind: "project_context",
+        topic: "historical_quoted_note",
+        value: note.text,
+      },
+      confidence: "low",
+      evidenceBasis: {
+        ruleIds: [QUOTED_HISTORICAL_EVIDENCE_RULE, ...note.ruleIds],
+        matchedText: note.matchedText,
+      },
       candidateState: "active",
     });
   }

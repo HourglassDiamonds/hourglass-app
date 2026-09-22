@@ -369,6 +369,7 @@ export function composeTodayBriefingPacket(
     evidence: input.evidence,
     founderOwnTexts: input.founderOwnTexts,
     vendorOwnTexts: input.vendorOwnTexts,
+    quotedTexts: input.quotedTexts,
     remaining: remainingForReduce,
     waitingState: input.waitingState,
     communication: input.communication,
@@ -382,12 +383,14 @@ export function composeTodayBriefingPacket(
       evidence: input.evidence,
       founderOwnTexts: input.founderOwnTexts,
       vendorOwnTexts: input.vendorOwnTexts,
+      quotedTexts: input.quotedTexts,
     }),
   );
   const loopEvents = eventsFromInput({
     evidence: input.evidence,
     founderOwnTexts: input.founderOwnTexts,
     vendorOwnTexts: input.vendorOwnTexts,
+    quotedTexts: input.quotedTexts,
   });
   const printPlan = reduced.semanticClass === "founder_print_check";
   const shipOpen = reduced.semanticClass === "founder_communication" && isCurrentShippingObligation(loopEvents);

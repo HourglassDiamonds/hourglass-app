@@ -1978,6 +1978,7 @@ function specEvidenceCanChallengeCanonical(
 ): boolean {
   const payload = payloadOf(row);
   if (payload.kind !== "structured_spec") return true;
+  if (stampedSpecProvenance(row) === "THREAD_SUPPORT") return false;
   if (fieldName === "cad_job_number" || fieldName === "order_number") {
     if (stampedSpecProvenance(row) !== "EXACT") return false;
     const hay = candidateHaystack(row);

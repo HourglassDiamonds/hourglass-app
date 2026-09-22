@@ -309,7 +309,7 @@ export function reconcileThreadCandidates(input: {
     const intent = [...inbound]
       .reverse()
       .find((row) => {
-        const text = haystackOf(row.indexed.subject, row.plaintext ?? null);
+        const text = authorOwnedHaystack(row.indexed.subject, row.plaintext ?? null);
         return (
           looksConsequentialBuyerIntent(text) ||
           looksProposalCommitmentIntent(text)

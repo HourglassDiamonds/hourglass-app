@@ -146,6 +146,7 @@ export type ReduceWorkLoopInput = {
   evidence: readonly CosEvidenceBeat[];
   founderOwnTexts?: readonly string[];
   vendorOwnTexts?: readonly string[];
+  quotedTexts?: readonly string[];
   remaining?: RemainingFounderCommitment | null;
   waitingState?: ThreadWaitingKind | string | null;
   communication?: string | null;
@@ -446,8 +447,20 @@ function applyRemaining(
 export function eventsFromInput(input: ReduceWorkLoopInput): WorkLoopEvent[] {
   const events: WorkLoopEvent[] = [];
   let index = 0;
+  const ownHay = [...(input.founderOwnTexts ?? []), ...(input.vendorOwnTexts ?? [])]
+    .join("\n")
+    .replace(/\s+/g, " ")
+    .toLowerCase();
+  const quotedHay = (input.quotedTexts ?? []).join("\n").replace(/\s+/g, " ").toLowerCase();
+  const quotedOnly = (text: string): boolean => {
+    const needle = text.replace(/\s+/g, " ").trim().toLowerCase();
+    if (!needle || needle.length < 8) return false;
+    if (!quotedHay.includes(needle)) return false;
+    return !ownHay.includes(needle);
+  };
   const pushBeat = (beat: CosEvidenceBeat) => {
     const text = authorOwnedText(beat.summary) || beat.summary;
+    if (quotedOnly(text)) return;
     const actor = actorOf(beat.speaker);
     const classified = classifyEvent(text, actor);
     events.push({

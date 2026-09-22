@@ -157,12 +157,16 @@ describe("structured_spec Gmail provenance", () => {
       assert.equal(exact.payload.sourceProvenance, "EXACT");
     }
     assert.equal(isExactStructuredSpecGmailSource(exact!), true);
-    if (shipping) {
-      if (shipping.payload.kind === "structured_spec") {
-        assert.notEqual(shipping.payload.sourceProvenance, "EXACT");
-      }
-      assert.equal(isExactStructuredSpecGmailSource(shipping), false);
-    }
+    assert.equal(shipping, undefined);
+    assert.ok(
+      proposed.candidates.some(
+        (row) =>
+          row.sourceRef === `gc1|${SHIP_THREAD}|${SHIP_MSG}` &&
+          row.payload.kind === "project_context" &&
+          row.payload.topic === "historical_quoted_finger_size" &&
+          row.payload.value === "11",
+      ),
+    );
   });
 
   it("marks multi-message reconstruction as DERIVED, not EXACT", () => {
@@ -224,16 +228,11 @@ describe("structured_spec Gmail provenance", () => {
     if (other?.payload.kind === "structured_spec") {
       assert.equal(other.payload.sourceProvenance, "EXACT");
     }
-    assert.ok(shipping);
-    if (shipping?.payload.kind === "structured_spec") {
-      assert.equal(shipping.payload.proposedValue, "11");
-      assert.equal(shipping.payload.sourceProvenance, "THREAD_SUPPORT");
-      assert.notEqual(shipping.sourceRef, `gc1|${OTHER_THREAD}|other-size`);
-    }
-    assert.equal(isExactStructuredSpecGmailSource(shipping!), false);
+    assert.equal(shipping, undefined);
+    assert.equal(isExactStructuredSpecGmailSource(other!), true);
   });
 
-  it("marks quoted-only evidence as non-exact when the establishing message is unavailable", () => {
+  it("does not mint a current structured_spec from quoted-only evidence", () => {
     const proposed = proposeGmailCandidates({
       createdAt: NOW,
       world: world(),
@@ -253,13 +252,15 @@ describe("structured_spec Gmail provenance", () => {
       ],
     });
     const specs = fingerSpecs(proposed.candidates);
-    assert.equal(specs.length, 1);
-    if (specs[0]?.payload.kind === "structured_spec") {
-      assert.equal(specs[0].payload.proposedValue, "11");
-      assert.equal(specs[0].payload.sourceProvenance, "THREAD_SUPPORT");
-    }
-    assert.equal(specs[0]?.sourceRef, `gc1|${SHIP_THREAD}|${SHIP_MSG}`);
-    assert.equal(isExactStructuredSpecGmailSource(specs[0]!), false);
+    assert.equal(specs.length, 0);
+    const historical = proposed.candidates.find(
+      (row) =>
+        row.payload.kind === "project_context" &&
+        row.payload.topic === "historical_quoted_finger_size",
+    );
+    assert.ok(historical);
+    assert.equal(historical?.sourceRef, `gc1|${SHIP_THREAD}|${SHIP_MSG}`);
+    assert.equal(isExactStructuredSpecGmailSource(historical!), false);
   });
 
   it("never treats generated operating mail as EXACT", () => {
@@ -309,5 +310,37 @@ describe("structured_spec Gmail provenance", () => {
       specValueEstablishedInText(split.quoted, "finger_size", "11"),
       true,
     );
+  });
+
+  it("splits Gmail attribution when wrote: wraps onto the next line", () => {
+    const split = splitOwnAndQuotedText(
+      [
+        "I'll look for a higher-resolution prong reference.",
+        "",
+        "On Tue, Sep 1, 2026 at 2:14 PM Sarah Smith <sarah@client.test>",
+        "wrote:",
+        "Finger size is 6.5",
+        "Customer center diamond supply confirmed.",
+        "Let's plan for September 12.",
+      ].join("\n"),
+    );
+    assert.match(split.own, /higher-resolution prong reference/);
+    assert.doesNotMatch(split.own, /Finger size is 6\.5/);
+    assert.doesNotMatch(split.own, /September 12/);
+    assert.match(split.quoted, /Finger size is 6\.5/);
+    assert.match(split.quoted, /September 12/);
+  });
+
+  it("splits forwarded Gmail history from the sender's own text", () => {
+    const split = splitOwnAndQuotedText(
+      [
+        "Forwarding the shop update.",
+        "---------- Forwarded message ---------",
+        "Can we change the shank width to 1",
+      ].join("\n"),
+    );
+    assert.match(split.own, /Forwarding the shop update/);
+    assert.doesNotMatch(split.own, /shank width/);
+    assert.match(split.quoted, /shank width/);
   });
 });

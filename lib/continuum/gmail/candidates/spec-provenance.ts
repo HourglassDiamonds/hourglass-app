@@ -6,6 +6,7 @@
  */
 
 import type {
+  ContinuumCandidate,
   ContinuumCandidateDraft,
   StructuredSpecSourceProvenance,
 } from "@/lib/continuum/candidates/types";
@@ -19,12 +20,49 @@ import { packGmailCandidateSourceRef, parseGmailCandidateSourceRef } from "./sou
 import { cloneEvidenceBasis } from "./supporting-source";
 import type { GmailCandidateEvidence } from "./types";
 
+export const QUOTED_HISTORICAL_EVIDENCE_RULE = "quoted_historical_evidence";
+export const HISTORICAL_QUOTED_IDENTIFIER_RULE = "historical_quoted_identifier";
+
 const QUOTE_LINE = /^(?:>+|│)\s?/;
-const ON_WROTE = /^On .{8,240}wrote:\s*$/i;
+const ON_WROTE = /^On\s.{1,400}wrote:\s*$/i;
+const WROTE_ONLY = /^wrote:\s*$/i;
+const EMAIL_WROTE = /<[^>\s]+@[^>\s]+>\s*wrote:\s*$/i;
 const ORIGINAL_MESSAGE = /^[-_]{2,}\s*Original Message[-_]{2,}\s*$/i;
 const FORWARDED = /^Begin forwarded message:\s*$/i;
+const FORWARDED_GMAIL = /^-{2,}\s*Forwarded message\s*-{2,}\s*$/i;
 const OUTLOOK_FROM = /^From:\s.+/i;
 const OUTLOOK_SENT = /^(?:Sent|Date):\s.+/i;
+
+function nearbyLine(lines: readonly string[], index: number, offset: number): string {
+  return (lines[index + offset] ?? "").trim();
+}
+
+function isQuoteBoundary(lines: readonly string[], index: number): boolean {
+  const line = lines[index]!;
+  const trimmed = line.trim();
+  if (QUOTE_LINE.test(line.trimStart())) return true;
+  if (
+    ON_WROTE.test(trimmed) ||
+    ORIGINAL_MESSAGE.test(trimmed) ||
+    FORWARDED.test(trimmed) ||
+    FORWARDED_GMAIL.test(trimmed)
+  ) {
+    return true;
+  }
+  if (EMAIL_WROTE.test(trimmed) && !/^I\b/i.test(trimmed)) return true;
+  if (WROTE_ONLY.test(trimmed) && /^On\s/i.test(nearbyLine(lines, index, -1))) return true;
+  if (/^On\s/i.test(trimmed) && !/wrote:\s*$/i.test(trimmed)) {
+    const next = nearbyLine(lines, index, 1);
+    const next2 = nearbyLine(lines, index, 2);
+    if (WROTE_ONLY.test(next) || /wrote:\s*$/i.test(next) || WROTE_ONLY.test(next2) || /wrote:\s*$/i.test(next2)) {
+      return true;
+    }
+  }
+  if (OUTLOOK_FROM.test(trimmed) && OUTLOOK_SENT.test(nearbyLine(lines, index, 1))) {
+    return true;
+  }
+  return false;
+}
 
 export function authorOwnedText(plaintext: string | null | undefined): string {
   return splitOwnAndQuotedText(plaintext).own;
@@ -53,21 +91,40 @@ export function splitOwnAndQuotedText(plaintext: string | null | undefined): {
   let inQuote = false;
   for (let index = 0; index < lines.length; index += 1) {
     const line = lines[index]!;
-    if (!inQuote && QUOTE_LINE.test(line.trimStart())) inQuote = true;
-    if (!inQuote && (ON_WROTE.test(line.trim()) || ORIGINAL_MESSAGE.test(line.trim()) || FORWARDED.test(line.trim()))) {
-      inQuote = true;
-    }
-    if (
-      !inQuote &&
-      OUTLOOK_FROM.test(line.trim()) &&
-      OUTLOOK_SENT.test((lines[index + 1] ?? "").trim())
-    ) {
-      inQuote = true;
-    }
+    if (!inQuote && isQuoteBoundary(lines, index)) inQuote = true;
     if (inQuote) quoted.push(line);
     else own.push(line);
   }
   return { own: own.join("\n").trim(), quoted: quoted.join("\n").trim() };
+}
+
+export function isQuotedHistoricalCandidate(
+  row: Pick<ContinuumCandidate, "payload" | "evidenceBasis">,
+): boolean {
+  if (row.evidenceBasis.ruleIds.includes(QUOTED_HISTORICAL_EVIDENCE_RULE)) return true;
+  if (row.evidenceBasis.ruleIds.includes(HISTORICAL_QUOTED_IDENTIFIER_RULE)) return true;
+  if (row.payload.kind === "project_context" && row.payload.topic.startsWith("historical_")) {
+    return true;
+  }
+  if (row.payload.kind === "structured_spec" && row.payload.sourceProvenance === "THREAD_SUPPORT") {
+    return true;
+  }
+  const matched = (row.evidenceBasis.matchedText ?? "").replace(/\s+/g, " ").trim();
+  if (!matched) return false;
+  const split = splitOwnAndQuotedText(
+    `${row.evidenceBasis.matchedText ?? ""}\n${
+      row.payload.kind === "note"
+        ? row.payload.text
+        : row.payload.kind === "open_job"
+          ? row.payload.detail ?? row.payload.subject
+          : row.payload.kind === "project_context"
+            ? row.payload.value
+            : ""
+    }`,
+  );
+  if (!split.quoted) return false;
+  const needle = matched.toLowerCase();
+  return split.quoted.toLowerCase().includes(needle) && !split.own.toLowerCase().includes(needle);
 }
 
 export function specValueEstablishedInText(

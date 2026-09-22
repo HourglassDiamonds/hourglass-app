@@ -10,6 +10,7 @@ import {
   compareDateOnly,
   parseDateOnly,
 } from "@/lib/continuum/date-only";
+import { isQuotedHistoricalCandidate } from "@/lib/continuum/gmail/candidates/spec-provenance";
 
 const DATE_ONLY_MIDNIGHT = /T00:00:00(?:\.000)?Z$/;
 
@@ -32,6 +33,7 @@ export function isCandidateQuietForToday(
   row: ContinuumCandidate,
   nowIso: string,
 ): boolean {
+  if (isQuotedHistoricalCandidate(row)) return true;
   if (row.candidateState === "superseded") return true;
   if (row.reviewStatus === "discarded") return true;
   if (row.reviewStatus !== "deferred") return false;
