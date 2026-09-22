@@ -93,6 +93,10 @@ import {
 import { specConflictFromCandidates } from "./founder-actions";
 import { authorOwnedText, quotedText } from "@/lib/continuum/gmail/candidates/spec-provenance";
 import { isCandidateQuietForToday } from "./quiet";
+import {
+  isCurrentActionEligible,
+  remainingIfCurrentlyActionable,
+} from "./current-action-eligibility";
 import { resolveTodayGroupTruth } from "./group-truth";
 import { extractInboundObligation } from "./inbound-obligation";
 import {
@@ -1165,7 +1169,9 @@ function classifySituation(input: {
           ? "founder"
           : "client";
   const usable = input.rows.filter(
-    (row) => !isCandidateQuietForToday(row, input.ctx.nowIso),
+    (row) =>
+      !isCandidateQuietForToday(row, input.ctx.nowIso) &&
+      isCurrentActionEligible(row, { peers: input.rows, thread }),
   );
   const sorted = [...usable].sort(
     (a, b) => parseMs(a.sourceTimestamp) - parseMs(b.sourceTimestamp),
@@ -1295,7 +1301,11 @@ function classifySituation(input: {
     thread,
     nowIso: input.ctx.nowIso,
   });
-  const remaining = group.remainingFounderCommitment;
+  const remaining = remainingIfCurrentlyActionable(
+    group.remainingFounderCommitment,
+    input.rows,
+    thread,
+  );
   const newWork =
     communication !== "vendor" &&
     communication !== "platform" &&

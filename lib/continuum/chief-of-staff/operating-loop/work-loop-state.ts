@@ -92,7 +92,7 @@ const FOUNDER_STILL_OWNS =
 const FOUNDER_ASKS_CLIENT =
   /\b(?:let me know(?: what you think)?|when you (?:have a chance|can)|looks? good to you)\b/i;
 const CAD_SENT_TO_CLIENT =
-  /\b(?:sent|forwarded|shared|showed)\b[^.!?\n]{0,80}\b(?:the\s+)?(?:updated\s+)?(?:CAD|STL)\b|\b(?:CAD|STL)\b[^.!?\n]{0,40}\b(?:to\s+(?:the\s+)?client|to\s+him|to\s+her|to\s+them)\b/i;
+  /\b(?:sent|forwarded|shared|showed)\b[^.!?\n]{0,80}\b(?:the\s+)?(?:updated\s+)?(?:CAD|STL)\b|\b(?:CAD|STL)\b[^.!?\n]{0,40}\b(?:to\s+(?:the\s+)?client|to\s+him|to\s+her|to\s+them)\b|\bhere(?:['’]s| is) (?:the )?(?:latest |updated )?(?:CAD|STL)\b/i;
 const CLIENT_ASKS_FOUNDER =
   /\bwhat do (?:you|we) think we should do\b|\bwhat(?:'s| is) next\b|\bwhat should we do next\b/i;
 const CLIENT_WAITING_ON_CAD =
@@ -271,7 +271,8 @@ export function reduceWorkLoop(input: ReduceWorkLoopInput): ReducedWorkLoopState
     !cadInFounderHands &&
     !founderPending &&
     !inboundAskOpen &&
-    !vendorBlockingAskOpen
+    !vendorBlockingAskOpen &&
+    !clientOpen
   ) {
     if (
       vendorOpen ||

@@ -21,6 +21,7 @@ import {
   type TodayResolvedIdentity,
 } from "@/lib/continuum/candidates/founder-attention";
 import { collectExactGmailIds } from "@/lib/continuum/candidates/exact-gmail-ids";
+import { isCurrentActionEligible } from "./current-action-eligibility";
 import type { ProjectJob } from "@/lib/continuum/client-memory/project-jobs/types";
 import {
   candidateDirection,
@@ -102,6 +103,7 @@ function inboundHaystack(
   const inboundMs = parseMs(latestInboundAt);
   const latest = rows.filter((row) => {
     if (candidateDirection(row, thread) !== "inbound") return false;
+    if (!isCurrentActionEligible(row, { peers: rows, thread })) return false;
     if (inboundMs <= 0) return true;
     return parseMs(row.sourceTimestamp) >= inboundMs;
   });
