@@ -70,9 +70,19 @@ const STL_DELIVERED =
 const CAD_DELIVERED =
   /\b(?:here is|attached|delivered|sent)\b[^.!?\n]{0,80}\b(?:updated\s+)?cad\b|\b(?:updated\s+)?cad\b[^.!?\n]{0,40}\b(?:attached|delivered|sent)\b/i;
 const CAD_FORTHCOMING =
-  /\b(?:updated CAD|CAD as soon as|CAD when it(?:'s| is) ready|(?:I|we|she|they)(?:'ll| will) send (?:you )?(?:the )?(?:updated )?(?:CAD|STL|file)|send (?:you )?(?:the )?updated CAD)\b/i;
+  /\b(?:updated CAD|CAD as soon as|CAD when it(?:'s| is) ready|(?:I|we|she|they)(?:'ll| will) send (?:you )?(?:the )?(?:updated )?(?:CAD|STL|file)|send (?:you )?(?:the )?updated CAD|CAD ASAP|CAD expected|final CAD|CAD in (?:about |approximately )?\d+)\b/i;
+const VENDOR_PRODUCTION_PROMISE =
+  /\b(?:order confirmation|place (?:the |your )?order|going to (?:the )?workshop|stone is going|will update (?:the )?size)\b/i;
 const PRINT_CHECK =
   /\bI(?:'ll| will| am going to| planned to)?\s*(?:print|check|show|look at)[^.!?\n]{0,180}|\b(?:print(?:ing)?|check(?:ing)?)\s+(?:the\s+)?(?:updated\s+)?(?:model|stl|earring|huggie|size|proportion)/i;
+const PRINT_FULFILLED =
+  /\b(?:already printed|models? (?:are|is|were) (?:already )?printed|printed and (?:ready|done)|printing (?:is|was) done)\b/i;
+const SHIP_COMMIT =
+  /\b(?:I(?:'ll| will)|expect(?:s|ing)? to|going to)\s+(?:mail|ship)\b|\bmail them\b|\bship them\b/i;
+const SHIPPING_ADDRESS =
+  /\b(?:shipping address|new address|updated address|ship (?:it|them|this) to|please (?:use|ship to) (?:this |the )?(?:updated )?address)\b/i;
+const STREET_ADDRESS =
+  /\b\d{1,5}\s+[A-Za-z][A-Za-z.'\-]+(?:\s+[A-Za-z][A-Za-z.'\-]+){0,4}\s+(?:St|Street|Ave|Avenue|Rd|Road|Blvd|Boulevard|Ln|Lane|Dr|Drive|Ct|Court|Way|Pl|Place)\.?\b/i;
 const FOUNDER_ASKS_VENDOR =
   /\b(?:can you|could you|please)\s+(?:send|make|revise|update|price|quote)\b|\b(?:updated CAD|STL file|current changes|platinum-bead pricing)\b/i;
 const FOUNDER_INSTRUCTS_VENDOR =
@@ -85,6 +95,10 @@ const CAD_SENT_TO_CLIENT =
   /\b(?:sent|forwarded|shared|showed)\b[^.!?\n]{0,80}\b(?:the\s+)?(?:updated\s+)?(?:CAD|STL)\b|\b(?:CAD|STL)\b[^.!?\n]{0,40}\b(?:to\s+(?:the\s+)?client|to\s+him|to\s+her|to\s+them)\b/i;
 const CLIENT_ASKS_FOUNDER =
   /\bwhat do (?:you|we) think we should do\b|\bwhat(?:'s| is) next\b|\bwhat should we do next\b/i;
+const CLIENT_WAITING_ON_CAD =
+  /\b(?:looking forward to (?:the )?cad|cad breakdown|when (?:will|is) (?:the )?(?:latest )?cad)\b/i;
+const FOUNDER_ACK =
+  /^(?:perfect|thanks|thank you|got it|sounds good)[:).!\s]*$/i;
 const SHOP_REVIEW_COPY =
   /\breview the latest shop (?:turn|update)\b/i;
 const INTERNAL_QA_COPY =
@@ -108,7 +122,24 @@ export function isUnsafeBriefingFragment(text: string | null | undefined): boole
   if (/\b(?:with|for|to|from|and)\.?$/i.test(trimmed) && trimmed.split(/\s+/).filter((word) => /[a-zA-Z]{3,}/.test(word)).length <= 4) {
     return true;
   }
+  if (isShippingAddressText(trimmed)) return true;
   return false;
+}
+
+export function isShippingAddressText(text: string | null | undefined): boolean {
+  const hay = text?.replace(/\s+/g, " ").trim() ?? "";
+  if (!hay) return false;
+  return STREET_ADDRESS.test(hay);
+}
+
+export function isCurrentShippingObligation(events: readonly WorkLoopEvent[]): boolean {
+  const opening = [...events].reverse().find((row) => row.opens === "founder");
+  if (!opening) return false;
+  return PRINT_FULFILLED.test(opening.text) || SHIP_COMMIT.test(opening.text) || SHIPPING_ADDRESS.test(opening.text);
+}
+
+export function clientIsWaitingOnCad(events: readonly WorkLoopEvent[]): boolean {
+  return events.some((row) => row.actor === "client" && CLIENT_WAITING_ON_CAD.test(row.text));
 }
 
 export type ReduceWorkLoopInput = {
@@ -129,6 +160,7 @@ export function reduceWorkLoop(input: ReduceWorkLoopInput): ReducedWorkLoopState
   let clientOpen = false;
   let founderPending = false;
   let cadInFounderHands = false;
+  let printCheckOpen = false;
   if (input.waitingState === "cad" || input.waitingState === "shop" || input.waitingState === "production") {
     vendorOpen = true;
   } else if (input.waitingState === "client" && input.communication !== "vendor") {
@@ -141,7 +173,15 @@ export function reduceWorkLoop(input: ReduceWorkLoopInput): ReducedWorkLoopState
   let latestExternalText: string | null = null;
 
   for (const event of events) {
-    if (event.eventType === "vendor_delivers") cadInFounderHands = true;
+    if (event.eventType === "vendor_delivers") {
+      cadInFounderHands = true;
+      printCheckOpen = false;
+    }
+    if (event.eventType === "founder_print_check") printCheckOpen = true;
+    if (PRINT_FULFILLED.test(event.text) || SHIP_COMMIT.test(event.text) || SHIPPING_ADDRESS.test(event.text)) {
+      printCheckOpen = false;
+      cadInFounderHands = false;
+    }
     if (event.actor === "founder" && CAD_SENT_TO_CLIENT.test(event.text)) cadInFounderHands = false;
     if (event.satisfies === "vendor_shop") {
       vendorOpen = false;
@@ -275,7 +315,7 @@ export function reduceWorkLoop(input: ReduceWorkLoopInput): ReducedWorkLoopState
         : "unknown";
   const printCheck =
     ballHolder === "founder" &&
-    (founderPending || events.some((row) => row.eventType === "founder_print_check"));
+    (printCheckOpen || (founderPending && events.some((row) => row.eventType === "founder_print_check")));
   const deliveredReview =
     ballHolder === "founder" &&
     !printCheck &&
@@ -369,6 +409,7 @@ function applyRemaining(
 ): void {
   const text = remainingTextOf(input);
   if (!remainingIsUsable(text)) return;
+  if (state.cadWait || state.cadInFounderHands) return;
   const inbound = isCurrentInboundAskText(text) || CLIENT_ASKS_FOUNDER.test(text);
   const classified = classifyEvent(text, inbound ? "client" : "founder");
   if (classified.eventType === "founder_asks_client" || classified.opens === "client") {
@@ -384,6 +425,7 @@ function applyRemaining(
     state.setClientOpen(false);
     return;
   }
+  if (state.vendorOpen() && classified.opens !== "founder") return;
   if (state.cadWait) return;
   state.setFounderOpen(true);
   state.setVendorOpen(false);
@@ -459,6 +501,9 @@ export function classifyEvent(
     if (CAD_FORTHCOMING.test(own) && !STL_DELIVERED.test(own) && !CAD_DELIVERED.test(own)) {
       return { eventType: "vendor_promises_delivery", opens: "vendor_shop", satisfies: null };
     }
+    if (VENDOR_PRODUCTION_PROMISE.test(own) && !STL_DELIVERED.test(own) && !CAD_DELIVERED.test(own)) {
+      return { eventType: "other", opens: "vendor_shop", satisfies: null };
+    }
     if (STL_DELIVERED.test(own) || CAD_DELIVERED.test(own)) {
       return { eventType: "vendor_delivers", opens: null, satisfies: "vendor_shop" };
     }
@@ -468,6 +513,9 @@ export function classifyEvent(
     return { eventType: "other", opens: null, satisfies: null };
   }
   if (actor === "client") {
+    if (SHIPPING_ADDRESS.test(own)) {
+      return { eventType: "founder_obligation", opens: "founder", satisfies: "client" };
+    }
     if (isCurrentInboundAskText(own) || CLIENT_ASKS_FOUNDER.test(own) || /\?/.test(own)) {
       return { eventType: "client_turn", opens: "founder", satisfies: "client" };
     }
@@ -475,6 +523,9 @@ export function classifyEvent(
       return { eventType: "client_turn", opens: null, satisfies: "founder" };
     }
     return { eventType: "client_turn", opens: null, satisfies: null };
+  }
+  if (PRINT_FULFILLED.test(own) || SHIP_COMMIT.test(own)) {
+    return { eventType: "founder_obligation", opens: "founder", satisfies: "founder" };
   }
   if (PRINT_CHECK.test(own)) {
     return { eventType: "founder_print_check", opens: "founder", satisfies: null };
@@ -492,7 +543,7 @@ export function classifyEvent(
   if (FOUNDER_ASKS_CLIENT.test(own)) {
     return { eventType: "founder_asks_client", opens: "client", satisfies: "founder" };
   }
-  if (isShopReviewFallbackText(own) || isInternalQaCopy(own) || isUnsafeBriefingFragment(own)) {
+  if (FOUNDER_ACK.test(own) || isShopReviewFallbackText(own) || isInternalQaCopy(own) || isUnsafeBriefingFragment(own)) {
     return { eventType: "other", opens: null, satisfies: null };
   }
   return { eventType: "other", opens: null, satisfies: null };

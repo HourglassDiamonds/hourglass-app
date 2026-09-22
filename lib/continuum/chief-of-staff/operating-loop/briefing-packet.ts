@@ -22,6 +22,8 @@ import {
   isShopReviewFallbackText,
   isUnsafeBriefingFragment,
   reduceWorkLoop,
+  clientIsWaitingOnCad,
+  isCurrentShippingObligation,
 } from "./work-loop-state";
 import type { WorkLoopEvent, WorkLoopSemanticClass } from "./work-loop-state";
 import { extractInboundObligation } from "./inbound-obligation";
@@ -129,7 +131,7 @@ const STL_DELIVERED =
 const STATED_PRINT_CHECK =
   /\bI(?:'ll| will| am going to| planned to)?\s*(?:print|check|show|look at)[^.!?\n]{0,180}|\b(?:print(?:ing)?|check(?:ing)?)\s+(?:the\s+)?(?:updated\s+)?(?:model|stl|earring|huggie|size|proportion)/i;
 const CAD_FORTHCOMING =
-  /\b(?:updated CAD|CAD as soon as|CAD when it(?:'s| is) ready|(?:I|we|she|they)(?:'ll| will) send (?:you )?(?:the )?(?:updated )?(?:CAD|STL|file)|send (?:you )?(?:the )?updated CAD)\b/i;
+  /\b(?:updated CAD|CAD as soon as|CAD when it(?:'s| is) ready|(?:I|we|she|they)(?:'ll| will) send (?:you )?(?:the )?(?:updated )?(?:CAD|STL|file)|send (?:you )?(?:the )?updated CAD|CAD ASAP|CAD expected|final CAD|CAD in (?:about |approximately )?\d+)\b/i;
 
 export function textHasVendorCadCommitment(text: string | null | undefined): boolean {
   return CAD_FORTHCOMING.test(text ?? "");
@@ -250,14 +252,17 @@ function remainingForCopy(
 ): RemainingFounderCommitment | null {
   if (
     semanticClass === "founder_review" ||
-    semanticClass === "founder_print_check" ||
     semanticClass === "vendor_shop_wait" ||
     semanticClass === "client_wait"
   ) {
-    return remaining;
+    return null;
+  }
+  if (semanticClass === "founder_print_check") {
+    return remainingIsPrintCheck(remaining) ? remaining : remainingFromOpeningEvents(events);
   }
   if (semanticClass !== "founder_communication") return remaining;
-  if (remaining) return remaining;
+  if (remainingIsPrintCheck(remaining)) return remainingFromOpeningEvents(events);
+  if (remaining && remainingTextUsable(remaining.matchedText)) return remaining;
   return remainingFromOpeningEvents(events);
 }
 const COMPLETION_CLAIM =
@@ -314,7 +319,7 @@ export function composeTodayBriefingPacket(
     ...input.evidence.filter((beat) => beat.speaker !== "founder").map((beat) => beat.summary),
   ].join("\n");
   const evidenceHay = input.evidence.map((beat) => beat.summary).join("\n");
-  const printPlan = STATED_PRINT_CHECK.test(founderOwn) || STATED_PRINT_CHECK.test(founderHay);
+  const historicalPrintPlan = STATED_PRINT_CHECK.test(founderOwn) || STATED_PRINT_CHECK.test(founderHay);
   const stlDelivered = STL_DELIVERED.test(vendorOwn) || STL_DELIVERED.test(vendorHay);
   const cadForthcoming =
     CAD_FORTHCOMING.test(vendorOwn) ||
@@ -355,12 +360,20 @@ export function composeTodayBriefingPacket(
       vendorOwnTexts: input.vendorOwnTexts,
     }),
   );
+  const loopEvents = eventsFromInput({
+    evidence: input.evidence,
+    founderOwnTexts: input.founderOwnTexts,
+    vendorOwnTexts: input.vendorOwnTexts,
+  });
+  const printPlan = reduced.semanticClass === "founder_print_check";
+  const shipOpen = reduced.semanticClass === "founder_communication" && isCurrentShippingObligation(loopEvents);
+  const waitingOnCad = reduced.semanticClass === "founder_review" && clientIsWaitingOnCad(loopEvents);
   const ballHolder =
     reduced.ballHolder !== "unknown"
       ? reduced.ballHolder
       : ballHolderOf({
           remaining,
-          printPlan,
+          printPlan: historicalPrintPlan,
           stlDelivered,
           completion,
           cadForthcoming,
@@ -388,6 +401,8 @@ export function composeTodayBriefingPacket(
     cadForthcoming,
     displayName,
     semanticClass: reduced.semanticClass,
+    shipOpen,
+    waitingOnCad,
   });
   const externalCommitment =
     ballHolder === "vendor_shop"
@@ -580,22 +595,30 @@ function nextActionOf(input: {
   cadForthcoming: boolean;
   displayName: string;
   semanticClass: WorkLoopSemanticClass;
+  shipOpen: boolean;
+  waitingOnCad: boolean;
 }): string | null {
   if (input.ballHolder !== "founder") {
     if (input.cadForthcoming) return `Review the new CAD when it arrives.`;
     return null;
   }
-  if (input.semanticClass === "founder_review" || input.stlDelivered || input.cadDelivered) {
-    if (input.printPlan) {
-      return `Print/check the model and send ${input.displayName} the size update.`;
+  if (input.semanticClass === "founder_review") {
+    if (input.waitingOnCad) {
+      return `Review the CAD and send ${input.displayName} the update.`;
     }
-    return "Review them and send the next design direction / approval.";
+    return "Review them and send approval / next design direction.";
+  }
+  if (input.shipOpen) {
+    return "Ship them using the updated address and send confirmation.";
+  }
+  if (input.semanticClass === "founder_print_check" || input.printPlan) {
+    return `Print/check the model and send ${input.displayName} the size update.`;
+  }
+  if (input.stlDelivered || input.cadDelivered) {
+    return "Review them and send approval / next design direction.";
   }
   if (input.remaining && !isGenericFallbackObligationText(input.remaining.recommended)) {
     return input.remaining.recommended;
-  }
-  if (input.printPlan) {
-    return `Print/check the model and send ${input.displayName} the size update.`;
   }
   return null;
 }
@@ -625,7 +648,10 @@ function enrichExternal(
     vendorContactName: string | null;
   },
 ): TodayBriefingEvent | null {
-  if (input.stlDelivered) {
+  if (event && !/stl|cad/i.test(event.summary)) {
+    return event;
+  }
+  if (input.stlDelivered && (!event || /stl/i.test(event.summary))) {
     const cad = input.cadLabel ? ` ${input.cadLabel}` : "";
     const who = input.vendorContactName || "The shop";
     return {
@@ -639,7 +665,7 @@ function enrichExternal(
       sourceRef: event?.sourceRef ?? null,
     };
   }
-  if (input.cadForthcoming) {
+  if (input.cadForthcoming && (!event || /cad|stl/i.test(event.summary))) {
     return {
       summary: clip(
         cadForthcomingLine(input.vendorOwn, input.evidenceHay) ||
@@ -663,7 +689,7 @@ function enrichFounder(
     displayName: string;
   },
 ): TodayBriefingEvent | null {
-  if (input.printPlan) {
+  if (input.printPlan && (!event || /print|check the (?:size|proportion|model)/i.test(event.summary))) {
     return {
       summary: clip(
         statedPlanLine(input.founderOwn, input.evidenceHay) ||

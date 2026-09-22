@@ -138,6 +138,9 @@ function persistedSpecStillCurrent(
     if (spec.sourceProvenance !== "EXACT") return false;
     return true;
   }
+  if (spec.fieldName === "diamond_supply_notes" && spec.sourceProvenance !== "EXACT") {
+    return false;
+  }
   if (isDesignStageSpecField(spec.fieldName) && spec.sourceProvenance === "UNKNOWN") {
     return false;
   }

@@ -244,6 +244,49 @@ describe("work-loop state reducer", () => {
   });
 });
 
+describe("current evidence replaces a previously-valid founder action", () => {
+  it("older founder instruction remaining cannot override later CAD/STL delivery", () => {
+    const reduced = reduceWorkLoop({
+      evidence: [
+        beat("founder", "2026-09-10T15:00:00.000Z", "Please make the shank width 2.0mm."),
+        beat("vendor", "2026-09-21T18:13:00.000Z", "Here is the C025610 Mod 4 CAD + STL."),
+      ],
+      remaining: {
+        matchedText: "Please make the shank width 2.0mm.",
+        headline: "Please make the shank width 2.0mm.",
+        explanation: "Please make the shank width 2.0mm.",
+        recommended: "Please make the shank width 2.0mm.",
+      },
+      communication: "vendor",
+    });
+    assert.equal(reduced.ballHolder, "founder");
+    assert.equal(reduced.semanticClass, "founder_review");
+  });
+
+  it("print/check is satisfied when models are printed and a new shipping address arrives", () => {
+    const reduced = reduceWorkLoop({
+      evidence: [
+        beat("vendor", "2026-09-15T18:00:00.000Z", "Here is the C026137 Mod 1 STL."),
+        beat(
+          "founder",
+          "2026-09-15T18:30:00.000Z",
+          "I'll print the model to check the huggie proportions before moving forward.",
+        ),
+        beat(
+          "founder",
+          "2026-09-21T15:00:00.000Z",
+          "The models are already printed. Dry/cure next. I expect to mail them next day.",
+        ),
+        beat("client", "2026-09-21T18:00:00.000Z", "Please use this new shipping address."),
+      ],
+    });
+    assert.equal(reduced.ballHolder, "founder");
+    assert.notEqual(reduced.briefingKind, "founder_print_check");
+    assert.equal(reduced.semanticClass, "founder_communication");
+  });
+});
+
+
 describe("Today work-loop compose fixtures", () => {
   it("CAD A is Watching / vendor_shop after a newer shop CAD/STL promise", () => {
     const { docket } = todayOf(

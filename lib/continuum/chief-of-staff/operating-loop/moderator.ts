@@ -1856,6 +1856,12 @@ function withBriefingDisposition(item: RankedSituation): RankedSituation {
     return { ...item, briefingPacket: null };
   }
   if (item.specConflict) {
+    if (packet.authoritative && packet.ballHolder !== "founder") {
+      return { ...item, briefingPacket: packet };
+    }
+    if (packet.ballHolder !== "founder") {
+      return { ...item, briefingPacket: packet };
+    }
     return {
       ...item,
       disposition: "brief",

@@ -1327,7 +1327,7 @@ function laneOf(seed: TodayDocketSeed, loop: CosOperatingLoopView): "up_next" | 
   if (packet.briefingKind === "founder_print_check") return "up_next";
   if (packet.semanticNextActionClass === "founder_review") return "up_next";
   if (hasRealFounderOwnedObligation(packet)) return "up_next";
-  if (seed.brief?.specConflict) return "up_next";
+  if (seed.brief?.specConflict && packet.ballHolder === "founder") return "up_next";
   if (seed.job && (packet.ballHolder === "founder" || packet.ballHolder === "unknown")) return "up_next";
   const thread = seed.threadId ? loop.threadContext?.get(seed.threadId) ?? null : null;
   if (

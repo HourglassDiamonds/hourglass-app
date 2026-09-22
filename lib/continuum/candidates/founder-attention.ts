@@ -1990,6 +1990,14 @@ function specEvidenceCanChallengeCanonical(
       stampedSpecProvenance(row) === "EXACT" && isExplicitFingerSizeChallenge(row)
     );
   }
+  if (fieldName === "diamond_supply_notes") {
+    if (stampedSpecProvenance(row) !== "EXACT") return false;
+    const hay = candidateHaystack(row);
+    return (
+      /\?/.test(hay) ||
+      /\b(?:confirm|change(?: the)?|instead of|please (?:use|make|switch|confirm))\b/i.test(hay)
+    );
+  }
   return true;
 }
 

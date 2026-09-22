@@ -55,10 +55,15 @@ export function renderDeterministicBriefing(
       nextBody:
         packet.candidateNextAction ??
         (packet.semanticNextActionClass === "founder_review"
-          ? "Review them and send the next design direction / approval."
+          ? packet.latestMeaningfulExternalEvent?.summary &&
+            /waiting to see the CAD/i.test(packet.latestMeaningfulExternalEvent.summary)
+            ? `Review the CAD and send ${who} the update.`
+            : "Review them and send approval / next design direction."
           : packet.briefingKind === "founder_print_check"
             ? `Print/check the model and send ${who} the size update.`
-            : packet.unresolvedFounderObligation ?? `Send ${who} the next step.`),
+            : /printed and ready|already printed/i.test(packet.latestMeaningfulFounderAction?.summary ?? "")
+              ? "Ship them using the updated address and send confirmation."
+              : packet.unresolvedFounderObligation ?? `Send ${who} the next step.`),
       source: "deterministic",
     }, packet);
   }
@@ -113,6 +118,7 @@ export function sanitizeRendered(
     /shop evidence is already (?:tied to|on) this production Project/gi,
     /canonical Project is already in production/gi,
     /I will not create a reminder Open Job/gi,
+    /\b\d{1,5}\s+[A-Za-z][A-Za-z.'\-]+(?:\s+[A-Za-z][A-Za-z.'\-]+){0,4}\s+(?:St|Street|Ave|Avenue|Rd|Road|Blvd|Boulevard|Ln|Lane|Dr|Drive|Ct|Court|Way|Pl|Place)\.?\b/gi,
     ...historicalIdentifierValues(packet.identifiers).map(
       (value) => new RegExp(`\\b${escapeReg(value)}\\b`, "i"),
     ),
@@ -131,8 +137,11 @@ export function sanitizeRendered(
 }
 
 function founderHeadline(packet: TodayBriefingPacket, cad: string | undefined): string {
+  const who = packet.displayName;
   const external = packet.latestMeaningfulExternalEvent?.summary ?? "";
+  const founder = packet.latestMeaningfulFounderAction?.summary ?? "";
   if (packet.semanticNextActionClass === "founder_review" || (/cad/i.test(external) && /stl/i.test(external))) {
+    if (clientWaitingCopy(packet, external, who)) return clientWaitingCopy(packet, external, who)!;
     if (/cad/i.test(external) && /stl/i.test(external)) {
       const mod = external.match(/\bmod\s*\d+/i)?.[0];
       return mod ? `${capitalizePhrase(mod)} CAD and STL are in.` : "CAD and STL are in.";
@@ -140,8 +149,11 @@ function founderHeadline(packet: TodayBriefingPacket, cad: string | undefined): 
     if (/stl/i.test(external)) return "STL is in; you're up to check the size.";
     if (/cad/i.test(external)) {
       const mod = external.match(/\bmod\s*\d+/i)?.[0];
-      return mod ? `${capitalizePhrase(mod)} CAD is in.` : "CAD is in.";
+      return clientWaitingCopy(packet, external, who) ?? (mod ? `${capitalizePhrase(mod)} CAD is in.` : "CAD is in.");
     }
+  }
+  if (/already printed|models? (?:are|is|were) printed|printed and ready/i.test(founder) || /shipping address|updated address/i.test(external)) {
+    return `${who}'s models are printed and ready to go.`.replace(/\s{2,}/g, " ");
   }
   if (packet.latestMeaningfulExternalEvent && /stl/i.test(packet.latestMeaningfulExternalEvent.summary)) {
     if (packet.briefingKind === "founder_print_check") {
@@ -157,8 +169,24 @@ function founderHeadline(packet: TodayBriefingPacket, cad: string | undefined): 
     !isUnsafeBriefingFragment(packet.unresolvedFounderObligation)
       ? packet.unresolvedFounderObligation
       : null);
-  if (specific) return specific;
+  if (specific && !/ship them using the updated address/i.test(specific)) return specific;
   return cad ? `${cad} is waiting on you.` : "You're up.";
+}
+
+function clientWaitingCopy(
+  packet: TodayBriefingPacket,
+  external: string,
+  who: string,
+): string | null {
+  if (packet.semanticNextActionClass !== "founder_review") return null;
+  if (!/cad/i.test(external) && !/waiting to see the CAD/i.test(external)) return null;
+  if (!/waiting to see the CAD|cad breakdown|looking forward/i.test(`${external} ${packet.candidateNextAction ?? ""}`)) {
+    if (!/Review the CAD and send/i.test(packet.candidateNextAction ?? "")) return null;
+  }
+  const mod = external.match(/\bmod\s*\d+/i)?.[0];
+  return mod
+    ? `${capitalizePhrase(mod)} is in and ${who} is waiting to see the CAD breakdown.`
+    : `CAD is in and ${who} is waiting to see the CAD breakdown.`;
 }
 
 function founderStand(

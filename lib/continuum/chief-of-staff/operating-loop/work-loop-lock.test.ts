@@ -7,6 +7,7 @@ import type { ContinuumCandidate } from "@/lib/continuum/candidates/types";
 import type { TodayGmailThreadContext } from "@/lib/continuum/candidates/founder-attention";
 import { ChiefOfStaffToday } from "../../../../app/executive-dashboard/concierge/components/chief-of-staff-today";
 import { composeTodayBriefingPacket } from "./briefing-packet";
+import { renderDeterministicBriefing } from "./briefing-copy";
 import { composeCosOperatingLoop } from "./compose";
 import { composeTodayDocket, COS_DOCKET_VISIBLE_LIMIT } from "./docket";
 import { fixtureCandidate } from "./fixtures";
@@ -153,6 +154,7 @@ describe("reduced work-loop state is locked through render", () => {
     assert.doesNotMatch(packet.unresolvedFounderObligation ?? "", /recap/i);
     assert.doesNotMatch(packet.candidateNextAction ?? "", /recap/i);
     assert.match(packet.candidateNextAction ?? "", /Review them/i);
+    assert.doesNotMatch(`${packet.candidateNextAction ?? ""} ${packet.unresolvedFounderObligation ?? ""}`, /shank/i);
 
     const brief: CosBriefItem = {
       id: "dylon",
@@ -420,7 +422,7 @@ describe("reduced work-loop state is locked through render", () => {
     assert.doesNotMatch(notOwed?.candidateNextAction ?? "", /recap/i);
   });
 
-  it("Jesse 115 vs lab-grown diamond supply remains a founder Up Next decision", () => {
+  it("stale diamond-supply canonical mismatch is not a morning docket item", () => {
     const projectId = "jesse-r-project";
     const threadId = "jesse-supply-thread";
     const { docket } = todayOf(
@@ -478,13 +480,12 @@ describe("reduced work-loop state is locked through render", () => {
         ],
       ]),
     );
-    const jesse = docket.items.find((item) => /Jesse/i.test(`${item.subject} ${item.headline}`));
-    assert.ok(jesse, hay(docket));
-    assert.ok(jesse.brief?.specConflict);
-    assert.match(
-      `${jesse.headline} ${jesse.brief?.specConflict?.canonicalValue ?? ""} ${jesse.brief?.specConflict?.proposedValue ?? ""}`,
-      /115|lab-grown|diamond supply/i,
+    const jesse = [...docket.items, ...docket.watching].find((row) =>
+      /Jesse|115|lab-grown|diamond supply/i.test(
+        "subject" in row ? `${row.subject} ${row.headline}` : `${row.title} ${row.detail}`,
+      ),
     );
+    assert.equal(jesse, undefined, hay(docket));
   });
 
   it("Abbey print/check is a visible Up Next card, not a hidden queued recap", () => {
@@ -649,5 +650,177 @@ describe("reduced work-loop state is locked through render", () => {
     } else {
       assert.equal(abbey.lane, "queued");
     }
+  });
+});
+
+describe("inbox currentness replaces stale founder actions", () => {
+  it("newer CAD/STL delivery supersedes an older shank-width instruction", () => {
+    const packet = composeTodayBriefingPacket({
+      itemId: "dylon-current",
+      displayNameHint: "Dylon",
+      organizationLabel: "Vlora",
+      communication: "vendor",
+      projectName: "C025610",
+      projectId: null,
+      personId: null,
+      threadSubject: "RE: HGD x Dylon D.-C025610",
+      lifecycle: null,
+      remainingFounderCommitment: {
+        matchedText: "Please make the shank width 2.0mm.",
+        headline: "Please make the shank width 2.0mm.",
+        explanation: "Please make the shank width 2.0mm.",
+        recommended: "Please make the shank width 2.0mm.",
+      },
+      waitingState: null,
+      noFounderAction: false,
+      staleInboundSatisfied: false,
+      evidence: [
+        founderBeat("2026-09-10T15:00:00.000Z", "Please make the shank width 2.0mm."),
+        vendorBeat("2026-09-21T18:13:04.000Z", "Here is the C025610 Mod 4 CAD + STL."),
+      ],
+      founderOwnTexts: ["Please make the shank width 2.0mm."],
+      vendorOwnTexts: ["Here is the C025610 Mod 4 CAD + STL."],
+    });
+    assert.equal(packet?.ballHolder, "founder");
+    assert.equal(packet?.semanticNextActionClass, "founder_review");
+    const briefing = renderDeterministicBriefing(packet!);
+    assert.match(briefing.headline, /Mod 4 CAD and STL are in/i);
+    assert.match(briefing.nextBody, /Review them and send approval/i);
+    assert.doesNotMatch(`${briefing.headline} ${briefing.nextBody} ${packet?.unresolvedFounderObligation ?? ""}`, /shank/i);
+  });
+
+  it("later shop production/CAD promise supersedes an older prong-change founder action", () => {
+    const reduced = reduceWorkLoop({
+      evidence: [
+        founderBeat("2026-09-12T12:00:00.000Z", "Please soften the double-prong change."),
+        founderBeat("2026-09-18T12:00:00.000Z", "Approved — moving forward. Finger size is 9.5. Stone sent."),
+        vendorBeat(
+          "2026-09-19T15:00:00.000Z",
+          "The stone is going to the workshop via RN08318. Final CAD expected in approximately 10 business days.",
+        ),
+      ],
+      remaining: {
+        matchedText: "Please soften the double-prong change.",
+        headline: "Please soften the double-prong change.",
+        explanation: "Please soften the double-prong change.",
+        recommended: "Please soften the double-prong change.",
+      },
+      waitingState: "client",
+    });
+    assert.equal(reduced.ballHolder, "vendor_shop");
+    assert.equal(reduced.semanticClass, "vendor_shop_wait");
+  });
+
+  it("founder acknowledgement after a shop order promise stays vendor_shop, not client", () => {
+    const reduced = reduceWorkLoop({
+      evidence: [
+        founderBeat("2026-09-20T12:00:00.000Z", "Moving forward with all three bands, size 6.25, all platinum, all lab."),
+        vendorBeat("2026-09-20T16:00:00.000Z", "I'll update the size, place the order, and send the order confirmation."),
+        founderBeat("2026-09-20T16:10:00.000Z", "Perfect:) Thank you!"),
+      ],
+      waitingState: "client",
+    });
+    assert.equal(reduced.ballHolder, "vendor_shop");
+    assert.notEqual(reduced.ballHolder, "client");
+  });
+
+  it("undelivered CAD with a client waiting on the breakdown is founder review, not client wait", () => {
+    const packet = composeTodayBriefingPacket({
+      itemId: "nate-current",
+      displayNameHint: "Nate",
+      organizationLabel: "Vlora",
+      communication: "vendor",
+      projectName: "C026176",
+      projectId: null,
+      personId: null,
+      threadSubject: "RE: HGD x Nate P. (Dagger Ring)-C026176",
+      lifecycle: null,
+      remainingFounderCommitment: null,
+      waitingState: "client",
+      noFounderAction: false,
+      staleInboundSatisfied: false,
+      evidence: [
+        clientBeat("2026-09-21T14:00:00.000Z", "Looking forward to the CAD breakdown."),
+        vendorBeat("2026-09-21T18:35:00.000Z", "Here is the C026176 Mod 1 CAD."),
+        founderBeat("2026-09-21T18:37:00.000Z", "I'll order the chain separately. Let me know what you think."),
+      ],
+    });
+    assert.equal(packet?.ballHolder, "founder");
+    assert.equal(packet?.semanticNextActionClass, "founder_review");
+    const briefing = renderDeterministicBriefing(packet!);
+    assert.match(briefing.headline, /Mod 1 is in and Nate is waiting to see the CAD breakdown/i);
+    assert.match(briefing.nextBody, /Review the CAD and send Nate the update/i);
+    assert.doesNotMatch(briefing.nextBody, /Let me know what you think/i);
+  });
+
+  it("print/check is replaced by shipping after models are printed and a new address arrives", () => {
+    const packet = composeTodayBriefingPacket({
+      itemId: "abbey-current",
+      displayNameHint: "Abbey",
+      organizationLabel: null,
+      communication: "client",
+      projectName: "C026137",
+      projectId: null,
+      personId: null,
+      threadSubject: "RE: HGD x Abbey-C026137",
+      lifecycle: null,
+      remainingFounderCommitment: {
+        matchedText: "I'll print the model to check the huggie proportions before moving forward.",
+        headline: "I'll print the model to check the huggie proportions before moving forward.",
+        explanation: "I'll print the model to check the huggie proportions before moving forward.",
+        recommended: "I'll print the model to check the huggie proportions before moving forward.",
+      },
+      waitingState: null,
+      noFounderAction: false,
+      staleInboundSatisfied: false,
+      evidence: [
+        vendorBeat("2026-09-15T18:00:00.000Z", "Here is the C026137 Mod 1 STL."),
+        founderBeat(
+          "2026-09-15T18:30:00.000Z",
+          "I'll print the model to check the huggie proportions before moving forward.",
+        ),
+        founderBeat(
+          "2026-09-21T15:00:00.000Z",
+          "The models are already printed. Dry/cure next. I expect to mail them next day.",
+        ),
+        clientBeat("2026-09-21T18:00:00.000Z", "Please use this new shipping address: 123 Oak Street, Austin."),
+      ],
+    });
+    assert.equal(packet?.ballHolder, "founder");
+    assert.equal(packet?.semanticNextActionClass, "founder_communication");
+    assert.notEqual(packet?.briefingKind, "founder_print_check");
+    const briefing = renderDeterministicBriefing(packet!);
+    assert.match(briefing.headline, /models are printed and ready to go/i);
+    assert.match(briefing.nextBody, /Ship them using the updated address and send confirmation/i);
+    assert.doesNotMatch(`${briefing.headline} ${briefing.nextBody} ${briefing.stand}`, /123 Oak|Austin/i);
+  });
+
+  it("project brief plus forthcoming CAD is watching shop with no recap owed", () => {
+    const packet = composeTodayBriefingPacket({
+      itemId: "duane-current",
+      displayNameHint: "Duane",
+      organizationLabel: "Vlora",
+      communication: "vendor",
+      projectName: "C026350",
+      projectId: null,
+      personId: null,
+      threadSubject: "RE: HGD x Duane-C026350",
+      lifecycle: null,
+      remainingFounderCommitment: {
+        matchedText: "Send the recap and next step.",
+        headline: "Send the recap and next step.",
+        explanation: "Send the recap and next step.",
+        recommended: "Send the recap and next step.",
+      },
+      waitingState: null,
+      noFounderAction: false,
+      staleInboundSatisfied: false,
+      evidence: [
+        founderBeat("2026-09-21T12:00:00.000Z", "Here is the project brief for C026350."),
+        vendorBeat("2026-09-21T15:00:00.000Z", "I'll send you cad C026350 as soon as it's available."),
+      ],
+    });
+    assert.equal(packet?.ballHolder, "vendor_shop");
+    assert.doesNotMatch(packet?.candidateNextAction ?? "", /recap/i);
   });
 });
