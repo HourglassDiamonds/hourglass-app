@@ -18,6 +18,7 @@ import { CosFounderAttentionControls } from "./cos-founder-attention";
 import { CosUnassignedIdentity } from "./cos-unassigned-identity";
 import { CosAskConcierge, type TodayAskAction } from "./cos-ask-concierge";
 import { CosBriefingBlock } from "./cos-briefing-block";
+import { presentCosFeedback } from "@/lib/continuum/cos-feedback/feedback";
 
 type CompleteAction = (formData: FormData) => void | Promise<void>;
 
@@ -171,6 +172,14 @@ export function ChiefOfStaffToday({
   const hasBrief = docket.items.some((item) => item.origin === "brief");
   const loopStatus = loop?.status
     ?? (docket.showDisconnected ? "disconnected" : docket.showCaughtUp ? "caught-up" : "active");
+  const feedback = docket.showDisconnected
+    ? null
+    : presentCosFeedback({
+        docket,
+        sourceWatermark: loop?.todayReadModelWatermark ?? null,
+        nowIso: new Date().toISOString(),
+      });
+  const waiting = feedback?.safeToIgnore.map((item) => item.why).filter((why, index, all) => all.indexOf(why) === index) ?? [];
   return (
     <section
       data-cos-operating-loop={loopStatus}
@@ -178,6 +187,18 @@ export function ChiefOfStaffToday({
       data-cos-brief={hasBrief ? "" : undefined}
       className="min-w-0 overflow-x-hidden"
     >
+      {feedback ? (
+        <div data-cos-feedback className="mb-6 max-w-[46ch]">
+          <p className="break-words text-[14px] leading-relaxed text-[#d8cfc4]">
+            {feedback.founderGuidance}
+          </p>
+          {waiting.length > 0 ? (
+            <p className="mt-2 break-words text-[13px] leading-relaxed text-[#9a8e82]">
+              {waiting.join(" ")}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
       {docket.showDisconnected ? (
         <>
           <h2 className="sr-only">Today</h2>
