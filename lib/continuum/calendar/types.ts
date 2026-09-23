@@ -137,6 +137,8 @@ export type CalendarEventEvidence = {
   conference: CalendarConferenceEvidence | null;
   updated_at: string | null;
   description_present: boolean;
+  meeting_url?: string | null;
+  visibility?: "default" | "public" | "private" | "confidential" | null;
   source_system: typeof CALENDAR_SOURCE_SYSTEM;
   source_ref: string;
   provenance: CalendarEventProvenance;
@@ -204,6 +206,7 @@ export type GoogleCalendarEvent = {
   } | null;
   attendees?: readonly GoogleCalendarAttendee[] | null;
   hangoutLink?: string | null;
+  visibility?: string | null;
   conferenceData?: {
     conferenceId?: string | null;
     conferenceSolution?: {

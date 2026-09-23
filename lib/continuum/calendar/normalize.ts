@@ -83,6 +83,29 @@ function normalizeAttendee(
   };
 }
 
+function meetingUrl(event: GoogleCalendarEvent): string | null {
+  const hangout = event.hangoutLink?.trim();
+  if (hangout) return hangout;
+  const video = event.conferenceData?.entryPoints?.find(
+    (row) => row.entryPointType === "video" && row.uri?.trim(),
+  );
+  return video?.uri?.trim() || null;
+}
+
+function visibilityOf(
+  value: string | null | undefined,
+): CalendarEventEvidence["visibility"] {
+  if (
+    value === "default" ||
+    value === "public" ||
+    value === "private" ||
+    value === "confidential"
+  ) {
+    return value;
+  }
+  return null;
+}
+
 function conferenceOf(event: GoogleCalendarEvent): CalendarEventEvidence["conference"] {
   const solution = event.conferenceData?.conferenceSolution;
   const type = solution?.key?.type?.trim() || null;
@@ -154,6 +177,8 @@ export function normalizeGoogleCalendarEvent(input: {
     attendees,
     location: input.event.location?.trim() || null,
     conference: conferenceOf(input.event),
+    meeting_url: meetingUrl(input.event),
+    visibility: visibilityOf(input.event.visibility),
     updated_at: input.event.updated?.trim() || null,
     description_present: Boolean(input.event.description?.trim()),
     source_system: CALENDAR_SOURCE_SYSTEM,

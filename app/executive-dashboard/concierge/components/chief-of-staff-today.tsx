@@ -19,6 +19,10 @@ import { CosUnassignedIdentity } from "./cos-unassigned-identity";
 import { CosAskConcierge, type TodayAskAction } from "./cos-ask-concierge";
 import { CosBriefingBlock } from "./cos-briefing-block";
 import { presentCosFeedback } from "@/lib/continuum/cos-feedback/feedback";
+import {
+  calendarTimingRecommendation,
+  type TodayUpcomingItem,
+} from "@/lib/continuum/calendar/today-upcoming";
 
 type CompleteAction = (formData: FormData) => void | Promise<void>;
 
@@ -141,6 +145,7 @@ function DocketItem({
 export function ChiefOfStaffToday({
   loop,
   docket: incomingDocket,
+  upcoming = [],
   completeAction,
   reviewAction,
   disposeAction,
@@ -148,6 +153,7 @@ export function ChiefOfStaffToday({
 }: {
   loop?: CosOperatingLoopView;
   docket?: CosTodayDocketView;
+  upcoming?: readonly TodayUpcomingItem[];
   completeAction?: CompleteAction;
   reviewAction?: CompleteAction;
   disposeAction?: CompleteAction;
@@ -180,6 +186,13 @@ export function ChiefOfStaffToday({
         nowIso: new Date().toISOString(),
       });
   const waiting = feedback?.safeToIgnore.map((item) => item.why).filter((why, index, all) => all.indexOf(why) === index) ?? [];
+  const timing = calendarTimingRecommendation({
+    focusNames: (feedback?.focusOrder ?? []).map((row) => {
+      const item = docket.items.find((entry) => entry.id === row.itemId);
+      return item?.briefing?.displayName || item?.subject || "";
+    }),
+    upcoming,
+  });
   return (
     <section
       data-cos-operating-loop={loopStatus}
@@ -187,11 +200,39 @@ export function ChiefOfStaffToday({
       data-cos-brief={hasBrief ? "" : undefined}
       className="min-w-0 overflow-x-hidden"
     >
+      {upcoming.length > 0 ? (
+        <div data-today-upcoming className="mb-6">
+          <h2 className="text-[11px] uppercase tracking-[0.28em] text-[#8d8073]">
+            Upcoming
+          </h2>
+          <ul className="mt-3 space-y-1">
+            {upcoming.map((item) => (
+              <li
+                key={item.sourceRef}
+                data-today-upcoming-item={item.sourceRef}
+                className="flex min-w-0 gap-3 text-[14px] leading-relaxed text-[#d8cfc4]"
+              >
+                <span className="w-14 shrink-0 tabular-nums text-[#ad9164]">{item.timeLabel}</span>
+                <span className="min-w-0 break-words">
+                  {item.meetingLabel ? `${item.meetingLabel} — ` : ""}
+                  {item.title}
+                  {item.location ? ` — ${item.location}` : ""}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
       {feedback ? (
         <div data-cos-feedback className="mb-6 max-w-[46ch]">
           <p className="break-words text-[14px] leading-relaxed text-[#d8cfc4]">
             {feedback.founderGuidance}
           </p>
+          {timing ? (
+            <p className="mt-2 break-words text-[14px] leading-relaxed text-[#d8cfc4]">
+              {timing}
+            </p>
+          ) : null}
           {waiting.length > 0 ? (
             <p className="mt-2 break-words text-[13px] leading-relaxed text-[#9a8e82]">
               {waiting.join(" ")}
