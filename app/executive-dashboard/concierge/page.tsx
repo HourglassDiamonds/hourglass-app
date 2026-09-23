@@ -1,4 +1,5 @@
 import { loadTodaySurface } from "@/lib/continuum/chief-of-staff/operating-loop/load";
+import { loadTodayUpcoming } from "@/lib/continuum/calendar/today-upcoming-load";
 import { loadContinuumHomeModel } from "@/lib/continuum/dashboard/server";
 import { completeTop5OpenJobAction, disposeTodayDocketItemAction } from "./cos-operating-loop-actions";
 import { reviewProposedActionFromForm } from "./intake-review-actions";
@@ -12,7 +13,10 @@ export const fetchCache = "force-no-store";
 
 export default async function ConciergeHomePage() {
   const model = loadContinuumHomeModel();
-  const today = await loadTodaySurface();
+  const [today, upcoming] = await Promise.all([
+    loadTodaySurface(),
+    loadTodayUpcoming(),
+  ]);
   return (
     <ConciergeShell variant="home">
       <GmailOperatingFreshness
@@ -27,6 +31,7 @@ export default async function ConciergeHomePage() {
         reviewAction={reviewProposedActionFromForm}
         disposeAction={disposeTodayDocketItemAction}
         askAction={askConcierge}
+        upcoming={upcoming}
       />
     </ConciergeShell>
   );

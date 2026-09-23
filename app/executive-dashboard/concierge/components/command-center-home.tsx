@@ -4,6 +4,7 @@ import type { CosOperatingLoopView } from "@/lib/continuum/chief-of-staff/operat
 import { composeTodayDocket } from "@/lib/continuum/chief-of-staff/operating-loop/docket";
 import { ChiefOfStaffToday } from "./chief-of-staff-today";
 import type { TodayAskAction } from "./cos-ask-concierge";
+import type { TodayUpcomingItem } from "@/lib/continuum/calendar/today-upcoming";
 
 type CompleteAction = (formData: FormData) => void | Promise<void>;
 
@@ -15,6 +16,7 @@ export function CommandCenterHome({
   reviewAction,
   disposeAction,
   askAction,
+  upcoming = [],
 }: {
   model: ContinuumHomeModel;
   operatingLoop?: CosOperatingLoopView;
@@ -23,6 +25,7 @@ export function CommandCenterHome({
   reviewAction?: CompleteAction;
   disposeAction?: CompleteAction;
   askAction?: TodayAskAction;
+  upcoming?: readonly TodayUpcomingItem[];
 }) {
   const resolved = docket ?? (operatingLoop ? composeTodayDocket(operatingLoop) : null);
   if (!resolved) return null;
@@ -37,6 +40,7 @@ export function CommandCenterHome({
         reviewAction={reviewAction}
         disposeAction={disposeAction}
         askAction={askAction}
+        upcoming={upcoming}
       />
     </div>
   );
