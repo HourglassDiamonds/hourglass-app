@@ -28,7 +28,7 @@ import { executeLiveSourceViewerFetch } from "./source-viewer-run";
 const THREAD_QUERY_CHUNK = 40;
 const MESSAGES_PER_THREAD = 80;
 const INDEX_SELECT =
-  "thread_id, message_id, sent_at, direction, subject, label_ids, from_email_hash";
+  "thread_id, message_id, sent_at, direction, subject, label_ids, from_email_hash, has_attachments";
 
 function indexedDirection(
   value: unknown,
@@ -156,6 +156,8 @@ function ingestIndexedRows(
           direction: indexedDirection(row.direction, fromEmailHash, founderHashes),
           labelIds: asLabelIds(row.label_ids),
           fromEmailHash,
+          subject: row.subject == null ? null : String(row.subject),
+          hasAttachments: Boolean(row.has_attachments),
         });
       }
     }
@@ -238,25 +240,42 @@ async function loadIndexedAttachmentFilenames(
   if (threadIds.length === 0) return;
   for (let index = 0; index < threadIds.length; index += THREAD_QUERY_CHUNK) {
     const chunk = threadIds.slice(index, index + THREAD_QUERY_CHUNK);
-    const { data, error } = await client
-      .from("continuum_gmail_attachments")
-      .select("thread_id, filename")
-      .in("thread_id", chunk);
+      const { data, error } = await client
+        .from("continuum_gmail_attachments")
+        .select("thread_id, message_id, filename")
+        .in("thread_id", chunk);
     if (error || !data) continue;
     const byThread = new Map<string, string[]>();
+    const byMessage = new Map<string, string[]>();
     for (const row of data as Record<string, unknown>[]) {
       const threadId = String(row.thread_id ?? "").trim();
+      const messageId = String(row.message_id ?? "").trim();
       const filename = String(row.filename ?? "").trim();
       if (!threadId || !filename) continue;
       const list = byThread.get(threadId) ?? [];
       if (!list.includes(filename)) list.push(filename);
       byThread.set(threadId, list);
+      if (messageId) {
+        const messageList = byMessage.get(`${threadId}|${messageId}`) ?? [];
+        if (!messageList.includes(filename)) messageList.push(filename);
+        byMessage.set(`${threadId}|${messageId}`, messageList);
+      }
     }
     for (const [threadId, filenames] of byThread) {
       const existing = out.get(threadId);
       if (!existing) continue;
+      const messages = (existing.messages ?? []).map((message) => {
+        const extra = byMessage.get(`${threadId}|${message.messageId}`) ?? [];
+        if (extra.length === 0) return message;
+        return {
+          ...message,
+          hasAttachments: true,
+          attachmentFilenames: [...new Set([...(message.attachmentFilenames ?? []), ...extra])],
+        };
+      });
       out.set(threadId, {
         ...existing,
+        messages,
         attachmentFilenames: [
           ...new Set([...(existing.attachmentFilenames ?? []), ...filenames]),
         ],

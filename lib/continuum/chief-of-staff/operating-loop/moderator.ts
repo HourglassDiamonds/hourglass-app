@@ -16,6 +16,12 @@ import {
   clientLabelFromIdentityHay,
   currentCadTokensFromIdentityHay,
 } from "@/lib/continuum/gmail/work-loop-identity";
+import {
+  isCurrentWorkSourceClass,
+  projectGmailSourceEvents,
+  sourceEventsForWorkLoop,
+  type SourceCommunicationEvent,
+} from "@/lib/continuum/source-events";
 import type { ContinuumCandidate } from "@/lib/continuum/candidates/types";
 import {
   candidateProjectId,
@@ -52,6 +58,7 @@ import {
   sourceMessageId,
   sourceThreadId,
   collectTodayVendorEvidence,
+  collectTodayFounderEmailHashes,
   isActionableSystemAlert,
   isCurrentOperationalSystemMail,
   isExpiredOperationalSystemMail,
@@ -289,6 +296,7 @@ type RankedSituation = {
   quotedTexts?: readonly string[];
   sourceRefs?: readonly string[];
   attachmentNames?: readonly string[];
+  sourceEvents?: readonly SourceCommunicationEvent[];
   briefingPacket?: TodayBriefingPacket | null;
 };
 
@@ -898,6 +906,53 @@ function latestMeaningful(beats: readonly InternalBeat[]): InternalBeat | null {
   return usable[usable.length - 1] ?? null;
 }
 
+function sourceBeatsFor(events: readonly SourceCommunicationEvent[]): InternalBeat[] {
+  return events.map((event) => {
+    const speaker: CosBriefSpeaker =
+      event.actor === "vendor_shop"
+        ? "vendor"
+        : event.actor === "founder"
+          ? "founder"
+          : event.actor === "client"
+            ? "client"
+            : "system";
+    const kind: BeatKind =
+      event.semanticClass === "client_approves"
+        ? "client_approval"
+        : event.semanticClass === "client_requests"
+          ? "client_request"
+          : event.semanticClass === "client_replies_nonblocking"
+            ? "client_reply"
+            : event.semanticClass === "founder_fulfills_commitment" ||
+                event.semanticClass === "founder_requests_vendor"
+              ? "commitment"
+              : event.semanticClass === "vendor_delivers_artifact" ||
+                  event.semanticClass === "vendor_order_confirmation" ||
+                  event.semanticClass === "vendor_promises" ||
+                  event.semanticClass === "workshop_started" ||
+                  event.semanticClass === "vendor_acknowledges"
+                ? "vendor_ack"
+                : event.actor === "founder"
+                  ? "founder_outbound"
+                  : "other";
+    return {
+      at: event.timestamp,
+      label: event.semanticClass,
+      summary:
+        event.authorOwnedText.replace(/\s+/g, " ").trim() ||
+        event.subject ||
+        event.semanticClass,
+      speaker,
+      sourceHref: event.sourceRef,
+      candidateId: event.messageId ?? event.sourceRef,
+      kind,
+      timestamp: event.timestamp,
+      historical: false,
+      superseded: false,
+    };
+  });
+}
+
 function visibleBeats(
   beats: readonly InternalBeat[],
   keepHistorical: boolean,
@@ -1061,6 +1116,7 @@ function classifySituation(input: {
   knownPeople?: readonly TodayKnownPerson[];
   associatedByProject?: ReadonlyMap<string, readonly string[]>;
   chronologyRows?: readonly ContinuumCandidate[];
+  sourceEvents?: readonly SourceCommunicationEvent[];
 }): RankedSituation | null {
   const groupedThreadId = situationThreadId(input.key, input.rows, input.threadContext);
   const groupedProjectId = input.key.startsWith("project:")
@@ -1101,23 +1157,54 @@ function classifySituation(input: {
     associatedSubjects.find((subject) => clientLabelFromHgdSubject(subject)) ??
     thread?.subject ??
     null;
+  const loopSourceEvents = sourceEventsForWorkLoop(input.sourceEvents ?? [], {
+    key: input.key,
+    threadIds: associatedThreadIds,
+    cadIds: [
+      ...(identityLabel?.cadId ? [identityLabel.cadId] : []),
+      ...currentCadTokensFromIdentityHay([
+        thread?.subject,
+        ...associatedSubjects,
+        ...attachmentNames,
+        ...input.rows.map((row) => row.evidenceBasis.matchedText),
+        ...input.rows.map((row) =>
+          row.payload.kind === "structured_spec"
+            ? row.payload.proposedValue
+            : row.payload.kind === "project_context"
+              ? row.payload.value
+              : "",
+        ),
+      ]),
+      ...input.rows.flatMap((row) =>
+        `${row.evidenceBasis.matchedText} ${
+          row.payload.kind === "structured_spec" ? row.payload.proposedValue : ""
+        }`.match(/\bC\d{5,}\b/gi) ?? [],
+      ),
+    ],
+    projectId: attribution.projectId,
+    personLabel: identityLabel?.name ?? project?.personName ?? null,
+  });
+  const sourceCurrent = loopSourceEvents.some((row) =>
+    isCurrentWorkSourceClass(row.semanticClass),
+  );
   const identityPeople = identityPeopleFor(project, input.rows, input.projects, null);
   if (
-    isGeneratedTodayNoise({
+    !sourceCurrent &&
+    (isGeneratedTodayNoise({
       candidates: input.rows,
       thread,
       knownPeople: input.knownPeople,
     }) ||
-    isNonActionableSystemMail({
-      candidates: input.rows,
-      thread,
-      nowIso: input.ctx.nowIso,
-    }) ||
-    isExpiredOperationalSystemMail({
-      candidates: input.rows,
-      thread,
-      nowIso: input.ctx.nowIso,
-    })
+      isNonActionableSystemMail({
+        candidates: input.rows,
+        thread,
+        nowIso: input.ctx.nowIso,
+      }) ||
+      isExpiredOperationalSystemMail({
+        candidates: input.rows,
+        thread,
+        nowIso: input.ctx.nowIso,
+      }))
   ) {
     return null;
   }
@@ -1204,16 +1291,21 @@ function classifySituation(input: {
   const sorted = [...evidenceRows].sort(
     (a, b) => parseMs(a.sourceTimestamp) - parseMs(b.sourceTimestamp),
   );
-  const beats = sorted.flatMap((row) =>
-    beatsFor(
-      row,
-      input.ctx,
-      person,
-      vendorName,
-      fallbackSpeaker,
-      threadContextForRow(row, input.threadContext, thread),
+  const beats = [
+    ...sorted.flatMap((row) =>
+      beatsFor(
+        row,
+        input.ctx,
+        person,
+        vendorName,
+        fallbackSpeaker,
+        threadContextForRow(row, input.threadContext, thread),
+      ),
     ),
-  );
+    ...sourceBeatsFor(
+      loopSourceEvents.filter((row) => isCurrentWorkSourceClass(row.semanticClass)),
+    ),
+  ];
   const production = isProductionStage(project?.lifecycleStage);
   const vendorHandled =
     Boolean(attribution.projectId) &&
@@ -1396,10 +1488,11 @@ function classifySituation(input: {
   const allBoilerplate = beats.every(
     (beat) => beat.kind === "boilerplate" || beat.superseded,
   );
-  if (allBoilerplate) return null;
+  if (allBoilerplate && !sourceCurrent) return null;
   if (
     group.declinedCurrentBeat &&
-    !remaining
+    !remaining &&
+    !sourceCurrent
   ) {
     return null;
   }
@@ -1419,7 +1512,8 @@ function classifySituation(input: {
     currentOperational ||
     isActionableSystemAlert({ candidates: usable, thread }) ||
     usable.some(hasCommercialPayload) ||
-    usable.some((row) => isActionableSpecConflict(row, input.ctx));
+    usable.some((row) => isActionableSpecConflict(row, input.ctx)) ||
+    sourceCurrent;
   if (!commercial) {
     if (!vendorHandled) return null;
     return {
@@ -1751,6 +1845,7 @@ function classifySituation(input: {
     const hasMeaningfulEvidence =
       spec != null ||
       Boolean(remaining) ||
+      sourceCurrent ||
       rankClass === "production_blocker" ||
       rankClass === "deadline_risk" ||
       usable.some(
@@ -1768,6 +1863,7 @@ function classifySituation(input: {
           hasRule(row, "explicit_client_approval"),
       );
     const noiseOnly =
+      !sourceCurrent &&
       !spec &&
       !remaining &&
       usable.every(
@@ -1778,7 +1874,8 @@ function classifySituation(input: {
       );
     const actionable = isActionableToday({
       currentFounderObligation: !noiseOnly && (hasMeaningfulEvidence || rankClass !== "informational"),
-      trustworthySource: hasTrustworthyTodaySource(input.rows, threadByMessageId),
+      trustworthySource:
+        hasTrustworthyTodaySource(input.rows, threadByMessageId) || sourceCurrent,
       actionText,
       hasMeaningfulEvidence,
       noiseOnly,
@@ -1859,6 +1956,7 @@ function classifySituation(input: {
     quotedTexts: briefingTexts.quotedTexts,
     sourceRefs: briefingTexts.sourceRefs,
     attachmentNames,
+    sourceEvents: loopSourceEvents,
   };
 }
 
@@ -1897,6 +1995,7 @@ function briefingInputFromSituation(item: RankedSituation): ComposeTodayBriefing
     quotedTexts: item.quotedTexts ?? [],
     sourceRefs: item.sourceRefs ?? [],
     attachmentNames: item.attachmentNames ?? [],
+    sourceEvents: item.sourceEvents ?? [],
   };
 }
 
@@ -1931,8 +2030,7 @@ function withBriefingDisposition(item: RankedSituation): RankedSituation {
     packet.authoritative &&
     (packet.briefingKind === "founder_print_check" ||
       packet.semanticNextActionClass === "founder_review" ||
-      (isCurrentInboundAskText(packet.unresolvedFounderObligation) && packet.briefingKind !== "vendor_cad_wait")) &&
-    item.disposition !== "brief"
+      (isCurrentInboundAskText(packet.unresolvedFounderObligation) && packet.briefingKind !== "vendor_cad_wait"))
   ) {
     return {
       ...item,
@@ -1941,6 +2039,10 @@ function withBriefingDisposition(item: RankedSituation): RankedSituation {
         packet.briefingKind === "founder_print_check" || packet.semanticNextActionClass === "founder_review"
           ? "founder_commitment"
           : item.rankClass,
+      urgency:
+        packet.briefingKind === "founder_print_check" || packet.semanticNextActionClass === "founder_review"
+          ? Math.max(item.urgency, 1)
+          : item.urgency,
       briefingPacket: packet,
     };
   }
@@ -2064,6 +2166,7 @@ function presentBrief(
     lifecycleStage: projectContext?.lifecycleStage ?? null,
     briefingPacket: packet,
     briefing,
+    sourceEvents: item.sourceEvents,
   };
 }
 
@@ -2202,8 +2305,42 @@ function mergeSituationPair(a: RankedSituation, b: RankedSituation): RankedSitua
     quotedTexts: [...(primary.quotedTexts ?? []), ...(secondary.quotedTexts ?? [])],
     sourceRefs: [...(primary.sourceRefs ?? []), ...(secondary.sourceRefs ?? [])],
     attachmentNames: [...new Set([...(primary.attachmentNames ?? []), ...(secondary.attachmentNames ?? [])])],
+    sourceEvents: mergeSourceEvents(primary.sourceEvents, secondary.sourceEvents),
     briefingPacket: null,
   };
+}
+
+function mergeSourceEvents(
+  left: readonly SourceCommunicationEvent[] | undefined,
+  right: readonly SourceCommunicationEvent[] | undefined,
+): SourceCommunicationEvent[] {
+  const out: SourceCommunicationEvent[] = [];
+  const seen = new Set<string>();
+  for (const row of [...(left ?? []), ...(right ?? [])]) {
+    if (seen.has(row.sourceRef)) continue;
+    seen.add(row.sourceRef);
+    out.push(row);
+  }
+  return out.sort((a, b) => Date.parse(a.timestamp) - Date.parse(b.timestamp));
+}
+
+function seedSourceEventGroups(
+  collapsed: Map<string, ContinuumCandidate[]>,
+  events: readonly SourceCommunicationEvent[],
+): void {
+  const coveredCads = new Set<string>();
+  for (const key of collapsed.keys()) {
+    if (key.startsWith("cad:")) coveredCads.add(key.slice(4).toUpperCase());
+  }
+  for (const event of events) {
+    if (!isCurrentWorkSourceClass(event.semanticClass)) continue;
+    const key = event.workLoopId;
+    if (!key) continue;
+    if (collapsed.has(key)) continue;
+    if (event.cadIds.some((cad) => coveredCads.has(cad))) continue;
+    collapsed.set(key, []);
+    if (key.startsWith("cad:")) coveredCads.add(key.slice(4).toUpperCase());
+  }
 }
 
 function mergeRankedSituations(items: readonly RankedSituation[]): RankedSituation[] {
@@ -2320,6 +2457,14 @@ export function composeConciergeBrief(input: ComposeConciergeBriefInput): {
     threadByMessageId,
     input.threadContext,
   );
+  const sourceEvents = projectGmailSourceEvents({
+    threadContext: input.threadContext,
+    knownPeople: input.knownPeople,
+    founderEmailHashes: new Set(collectTodayFounderEmailHashes(input.knownPeople)),
+    candidates: input.candidates,
+    projectIdByThread: projectByThread,
+  });
+  seedSourceEventGroups(collapsed, sourceEvents);
   const nowMs = parseMs(input.nowIso);
   const situations: RankedSituation[] = [];
   for (const [key, rows] of collapsed) {
@@ -2340,6 +2485,7 @@ export function composeConciergeBrief(input: ComposeConciergeBriefInput): {
       evidenceTexts,
       knownPeople: input.knownPeople,
       associatedByProject,
+      sourceEvents,
     });
     if (situation) situations.push(situation);
   }

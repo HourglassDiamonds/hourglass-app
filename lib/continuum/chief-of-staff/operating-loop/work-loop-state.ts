@@ -5,6 +5,8 @@
  */
 
 import { authorOwnedText } from "@/lib/continuum/gmail/candidates/spec-provenance";
+import { workLoopEventsFromSource } from "@/lib/continuum/source-events/work-loop";
+import type { SourceCommunicationEvent } from "@/lib/continuum/source-events/types";
 import type { CosEvidenceBeat } from "./types";
 import type { TodayBallHolder, TodayBriefingKind } from "./briefing-packet";
 import type { RemainingFounderCommitment, ThreadWaitingKind } from "./thread-truth";
@@ -39,6 +41,7 @@ export type WorkLoopEvent = {
   text: string;
   sourceRef: string | null;
   threadId: string | null;
+  fromSource?: boolean;
 };
 
 export const WORK_LOOP_SEMANTIC_CLASSES = [
@@ -78,7 +81,7 @@ const PRINT_CHECK =
 const PRINT_FULFILLED =
   /\b(?:already printed|models? (?:are|is|were) (?:already )?printed|finished printing|printing (?:is|was) (?:done|finished)|printed and (?:ready|done))\b/i;
 const SHIP_COMMIT =
-  /\b(?:I(?:'ll| will)|expect(?:s|ing)? to|going to)\s+(?:mail|ship)\b|\bmail them\b|\bship them\b/i;
+  /\b(?:I(?:'ll| will)|expect(?:s|ing)? to|going to)\s+(?:mail|ship)\b|\bmail them\b|\bship them\b|\bheaded to you\b/i;
 const SHIPPING_ADDRESS =
   /\b(?:shipping address|new address|updated address|ship (?:it|them|this) to|please (?:use|ship to) (?:this |the )?(?:updated )?address)\b/i;
 const STREET_ADDRESS =
@@ -103,6 +106,11 @@ const CLIENT_APPROVES_MOVE =
   /\b(?:love(?:s|d)? (?:it|the)|looks (?:great|perfect|amazing)|approved|let(?:'s| us) move forward|move(?:ing)? forward)\b/i;
 const FOUNDER_VENDOR_REFERENCE =
   /\b(?:here(?:['’]s| is)|attached|sending)\b[^.!?\n]{0,80}\b(?:reference|clarification|prong|photo|image)\b|\buse this (?:for|on) (?:the )?(?:cad|update)\b/i;
+const CAD_FILE = /NL-H017-.+-C\d{5,}/i;
+const STL_FILE = /\.stl\b/i;
+const RN_JOB = /\bRN\d{4,}\b/i;
+const WORKSHOP =
+  /\b(?:workshop|going to (?:the )?workshop|stone is going|final CAD|final cad)\b/i;
 const ORDER_CONFIRMATION_REVIEW =
   /\border confirmation\b/i;
 const DISCREPANCY_REVIEW =
@@ -140,9 +148,27 @@ export function isShippingAddressText(text: string | null | undefined): boolean 
   return STREET_ADDRESS.test(hay);
 }
 
+function latestSourceFulfill(events: readonly WorkLoopEvent[]): WorkLoopEvent | undefined {
+  return [...events].reverse().find(
+    (row) =>
+      row.fromSource === true &&
+      row.actor === "founder" &&
+      row.satisfies === "founder" &&
+      row.opens == null,
+  );
+}
+
+export function sourceFulfillClosedLoop(events: readonly WorkLoopEvent[]): boolean {
+  const fulfill = latestSourceFulfill(events);
+  if (!fulfill) return false;
+  return !events.some((row) => row.sortMs > fulfill.sortMs && row.opens != null);
+}
+
 export function isCurrentShippingObligation(events: readonly WorkLoopEvent[]): boolean {
   const opening = [...events].reverse().find((row) => row.opens === "founder");
   if (!opening) return false;
+  const fulfill = latestSourceFulfill(events);
+  if (fulfill && fulfill.sortMs >= opening.sortMs) return false;
   return PRINT_FULFILLED.test(opening.text) || SHIP_COMMIT.test(opening.text) || SHIPPING_ADDRESS.test(opening.text);
 }
 
@@ -155,6 +181,7 @@ export type ReduceWorkLoopInput = {
   founderOwnTexts?: readonly string[];
   vendorOwnTexts?: readonly string[];
   quotedTexts?: readonly string[];
+  sourceEvents?: readonly SourceCommunicationEvent[];
   remaining?: RemainingFounderCommitment | null;
   waitingState?: ThreadWaitingKind | string | null;
   communication?: string | null;
@@ -190,6 +217,21 @@ export function reduceWorkLoop(input: ReduceWorkLoopInput): ReducedWorkLoopState
     if (PRINT_FULFILLED.test(event.text) || SHIP_COMMIT.test(event.text) || SHIPPING_ADDRESS.test(event.text)) {
       printCheckOpen = false;
       cadInFounderHands = false;
+    }
+    if (
+      event.fromSource === true &&
+      event.actor === "founder" &&
+      event.satisfies === "founder" &&
+      event.opens == null
+    ) {
+      founderOpen = false;
+      if (SHIP_COMMIT.test(event.text) || !/\bHGD\s*x\s+/i.test(event.text)) {
+        vendorOpen = false;
+      }
+      if (SHIP_COMMIT.test(event.text)) {
+        cadInFounderHands = false;
+        printCheckOpen = false;
+      }
     }
     if (event.actor === "founder" && CAD_SENT_TO_CLIENT.test(event.text)) cadInFounderHands = false;
     if (event.satisfies === "vendor_shop") {
@@ -238,8 +280,9 @@ export function reduceWorkLoop(input: ReduceWorkLoopInput): ReducedWorkLoopState
     clientOpen = false;
   }
 
+  const sourceClosedByFulfill = sourceFulfillClosedLoop(events);
   const cadWait = unresolvedCadWait(events, input.waitingState);
-  if (cadWait) {
+  if (cadWait && !sourceClosedByFulfill) {
     vendorOpen = true;
     founderOpen = false;
     clientOpen = false;
@@ -261,6 +304,7 @@ export function reduceWorkLoop(input: ReduceWorkLoopInput): ReducedWorkLoopState
   });
 
   const inboundAskOpen =
+    !sourceClosedByFulfill &&
     !cadWait &&
     !cadInFounderHands &&
     !input.staleInboundSatisfied &&
@@ -279,6 +323,7 @@ export function reduceWorkLoop(input: ReduceWorkLoopInput): ReducedWorkLoopState
 
   const vendorBlockingAskOpen = latestOpening(events)?.opens === "founder" && latestOpening(events)?.actor === "vendor_shop";
   if (
+    !sourceClosedByFulfill &&
     input.staleInboundSatisfied &&
     !remainingIsUsable(remainingTextOf(input)) &&
     !cadInFounderHands &&
@@ -304,6 +349,7 @@ export function reduceWorkLoop(input: ReduceWorkLoopInput): ReducedWorkLoopState
       vendorOpen = false;
     }
   } else if (
+    !sourceClosedByFulfill &&
     input.noFounderAction &&
     !inboundAskOpen &&
     !remainingIsUsable(remainingTextOf(input)) &&
@@ -418,6 +464,9 @@ function unresolvedCadWait(
     }
     if (event.eventType === "vendor_delivers") cad = false;
     if (event.opens === "founder" && event.actor === "vendor_shop") cad = false;
+    if (event.actor === "founder" && event.satisfies === "founder" && event.opens == null) {
+      cad = false;
+    }
   }
   return cad;
 }
@@ -441,6 +490,17 @@ export function remainingOverriddenByLaterLoop(
   const askMs = askEvent?.sortMs ?? 0;
   const later = events.filter((event) => event.sortMs >= askMs);
   if (later.some((event) => event.opens === "vendor_shop")) return true;
+  if (
+    later.some(
+      (event) =>
+        event.fromSource === true &&
+        event.actor === "founder" &&
+        event.satisfies === "founder" &&
+        event.opens == null,
+    )
+  ) {
+    return true;
+  }
   return later.some(
     (event) =>
       event.eventType === "vendor_delivers" ||
@@ -463,6 +523,7 @@ function applyRemaining(
   const text = remainingTextOf(input);
   if (!remainingIsUsable(text)) return;
   if (state.cadWait || state.cadInFounderHands) return;
+  if (latestSourceFulfill(state.events)) return;
   if (remainingOverriddenByLaterLoop(text, state.events)) return;
   const inbound = isCurrentInboundAskText(text) || CLIENT_ASKS_FOUNDER.test(text);
   const classified = classifyEvent(text, inbound ? "client" : "founder");
@@ -555,7 +616,15 @@ export function eventsFromInput(input: ReduceWorkLoopInput): WorkLoopEvent[] {
       threadId: null,
     });
   }
-  return events.sort((left, right) => left.sortMs - right.sortMs || left.text.localeCompare(right.text));
+  const sourceEvents = workLoopEventsFromSource(input.sourceEvents ?? [], index);
+  events.push(...sourceEvents);
+  return events.sort((left, right) => {
+    if (left.sortMs !== right.sortMs) return left.sortMs - right.sortMs;
+    if (Boolean(left.fromSource) !== Boolean(right.fromSource)) {
+      return left.fromSource ? 1 : -1;
+    }
+    return left.text.localeCompare(right.text);
+  });
 }
 
 export function classifyEvent(
@@ -564,7 +633,13 @@ export function classifyEvent(
 ): { eventType: WorkLoopEventType; opens: WorkLoopDependency | null; satisfies: WorkLoopDependency | null } {
   const own = authorOwnedText(text) || text;
   if (actor === "vendor_shop" || actor === "system") {
-    if (ORDER_CONFIRMATION_REVIEW.test(own) && (DISCREPANCY_REVIEW.test(own) || /\bSP\d{4,}\b/.test(own))) {
+    if (/\bSP\d{4,}\b/.test(own) || (ORDER_CONFIRMATION_REVIEW.test(own) && DISCREPANCY_REVIEW.test(own))) {
+      return { eventType: "vendor_delivers", opens: "founder", satisfies: "vendor_shop" };
+    }
+    if (RN_JOB.test(own) || (WORKSHOP.test(own) && !CAD_FILE.test(own) && !STL_FILE.test(own))) {
+      return { eventType: "vendor_promises_delivery", opens: "vendor_shop", satisfies: "founder" };
+    }
+    if (CAD_FILE.test(own) || STL_FILE.test(own) || STL_DELIVERED.test(own) || CAD_DELIVERED.test(own)) {
       return { eventType: "vendor_delivers", opens: "founder", satisfies: "vendor_shop" };
     }
     if (CAD_FORTHCOMING.test(own) && !STL_DELIVERED.test(own) && !CAD_DELIVERED.test(own)) {
@@ -573,10 +648,7 @@ export function classifyEvent(
     if (VENDOR_PRODUCTION_PROMISE.test(own) && !STL_DELIVERED.test(own) && !CAD_DELIVERED.test(own) && !ORDER_CONFIRMATION_REVIEW.test(own)) {
       return { eventType: "other", opens: "vendor_shop", satisfies: null };
     }
-    if (STL_DELIVERED.test(own) || CAD_DELIVERED.test(own)) {
-      return { eventType: "vendor_delivers", opens: null, satisfies: "vendor_shop" };
-    }
-    if (isCurrentInboundAskText(own) || CLIENT_ASKS_FOUNDER.test(own)) {
+    if (isCurrentInboundAskText(own) || CLIENT_ASKS_FOUNDER.test(own) || SHIPPING_ADDRESS.test(own)) {
       return { eventType: "founder_obligation", opens: "founder", satisfies: null };
     }
     return { eventType: "other", opens: null, satisfies: null };

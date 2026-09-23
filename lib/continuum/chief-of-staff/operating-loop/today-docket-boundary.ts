@@ -406,6 +406,7 @@ export function equivalentPacketFromBrief(
       .filter((beat) => beat.speaker === "vendor")
       .map((beat) => authorOwnedText(beat.summary)),
     attachmentNames,
+    sourceEvents: item.sourceEvents,
   }) ?? item.briefingPacket ?? null,
     sender,
   );
@@ -855,7 +856,18 @@ function keepSeed(seed: TodayDocketSeed, loop: CosOperatingLoopView): boolean {
   if (isClosedBeatPacket(seed.packet, seed.declined)) return false;
   const packet = seed.packet!;
   if (!seed.brief && !seed.job && !seed.decision && !seed.anomaly) {
-    if (!seed.candidateIds.length && !seed.projectId && !currentCadOf(seed)) return false;
+    if (!seed.candidateIds.length && !seed.projectId && !currentCadOf(seed)) {
+      if (
+        !(
+          packet.authoritative &&
+          (packet.semanticNextActionClass === "founder_review" ||
+            packet.semanticNextActionClass === "vendor_shop_wait" ||
+            packet.briefingKind === "founder_print_check")
+        )
+      ) {
+        return false;
+      }
+    }
   }
   const thread = seed.threadId ? loop.threadContext?.get(seed.threadId) ?? null : null;
   const systemAlert =
@@ -932,6 +944,19 @@ function seedScore(seed: TodayDocketSeed): number {
   if (packet.ballHolder === "client") return 30;
   if (seed.origin === "brief") return 20;
   return 10;
+}
+
+function seedActivityMs(seed: TodayDocketSeed): number {
+  const stamps = [
+    seed.packet?.latestMeaningfulExternalEvent?.at,
+    seed.packet?.latestMeaningfulFounderAction?.at,
+  ];
+  let best = 0;
+  for (const stamp of stamps) {
+    const ms = Date.parse(stamp ?? "");
+    if (Number.isFinite(ms) && ms > best) best = ms;
+  }
+  return best;
 }
 
 function strongerSeed(a: TodayDocketSeed, b: TodayDocketSeed): TodayDocketSeed {
@@ -1431,7 +1456,11 @@ export function finalizeTodayDocket(loop: CosOperatingLoopView): {
     if (laneOf(seed, loop) === "up_next") upNextSeeds.push(seed);
     else watchingSeeds.push(seed);
   }
-  upNextSeeds.sort((left, right) => seedScore(right) - seedScore(left));
+  upNextSeeds.sort((left, right) => {
+    const score = seedScore(right) - seedScore(left);
+    if (score !== 0) return score;
+    return seedActivityMs(right) - seedActivityMs(left);
+  });
   const upNext = filterCurrentTodayDocketItems(
     upNextSeeds.map((seed) => toDocketItem(seed, loop)),
     loop,
@@ -1483,7 +1512,11 @@ export function inspectFinalizedTodayDocket(
   const kept = dedupeTodaySeeds(collectSeeds(loop).filter((seed) => keepSeed(seed, loop)));
   const upNextSeeds = kept
     .filter((seed) => laneOf(seed, loop) === "up_next")
-    .sort((left, right) => seedScore(right) - seedScore(left));
+    .sort((left, right) => {
+      const score = seedScore(right) - seedScore(left);
+      if (score !== 0) return score;
+      return seedActivityMs(right) - seedActivityMs(left);
+    });
   const watchingSeeds = kept.filter((seed) => laneOf(seed, loop) !== "up_next");
   const rowOf = (seed: TodayDocketSeed, lane: TodayDocketRankRow["lane"], rank: number): TodayDocketRankRow => {
     const packet = seed.packet;

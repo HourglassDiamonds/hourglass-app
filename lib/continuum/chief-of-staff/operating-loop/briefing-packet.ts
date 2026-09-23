@@ -14,6 +14,7 @@ import {
   currentCadTokensFromIdentityHay,
   clientLabelFromIdentityHay,
 } from "@/lib/continuum/gmail/work-loop-identity";
+import type { SourceCommunicationEvent } from "@/lib/continuum/source-events/types";
 import type { RemainingFounderCommitment, ThreadWaitingKind } from "./thread-truth";
 import type { CosEvidenceBeat } from "./types";
 import {
@@ -25,7 +26,9 @@ import {
   remainingOverriddenByLaterLoop,
   clientIsWaitingOnCad,
   isCurrentShippingObligation,
+  sourceFulfillClosedLoop,
 } from "./work-loop-state";
+import { workLoopEventsFromSource } from "@/lib/continuum/source-events/work-loop";
 import type { WorkLoopEvent, WorkLoopSemanticClass } from "./work-loop-state";
 import { extractInboundObligation } from "./inbound-obligation";
 import {
@@ -125,6 +128,7 @@ export type ComposeTodayBriefingPacketInput = {
   quotedTexts?: readonly string[];
   sourceRefs?: readonly string[];
   attachmentNames?: readonly string[];
+  sourceEvents?: readonly SourceCommunicationEvent[];
 };
 
 const STL_DELIVERED =
@@ -273,6 +277,7 @@ function remainingForCopy(
   semanticClass: WorkLoopSemanticClass,
   events: readonly WorkLoopEvent[],
 ): RemainingFounderCommitment | null {
+  if (sourceFulfillClosedLoop(events)) return null;
   if (
     semanticClass === "founder_review" ||
     semanticClass === "vendor_shop_wait" ||
@@ -287,6 +292,17 @@ function remainingForCopy(
   if (isCurrentShippingObligation(events)) return current;
   const laterAsk = latestUnansweredCounterpartyAsk(events);
   if (laterAsk) return remainingFromText(laterAsk.text);
+  if (
+    events.some(
+      (event) =>
+        event.fromSource === true &&
+        event.actor === "founder" &&
+        event.satisfies === "founder" &&
+        event.opens == null,
+    )
+  ) {
+    return current;
+  }
   if (remaining && remainingTextUsable(remaining.matchedText)) return remaining;
   return current;
 }
@@ -345,16 +361,28 @@ export function composeTodayBriefingPacket(
   ].join("\n");
   const evidenceHay = input.evidence.map((beat) => beat.summary).join("\n");
   const historicalPrintPlan = STATED_PRINT_CHECK.test(founderOwn) || STATED_PRINT_CHECK.test(founderHay);
-  const stlDelivered = STL_DELIVERED.test(vendorOwn) || STL_DELIVERED.test(vendorHay);
+  const sourceBeats = sourceEventBeats(input.sourceEvents);
+  const combinedEvidence = [...input.evidence, ...sourceBeats];
+  const stlDelivered =
+    STL_DELIVERED.test(vendorOwn) ||
+    STL_DELIVERED.test(vendorHay) ||
+    (input.sourceEvents ?? []).some(
+      (row) =>
+        row.semanticClass === "vendor_delivers_artifact" &&
+        /\bstl\b/i.test(`${row.authorOwnedText} ${row.attachmentFilenames.join(" ")}`),
+    );
   const cadForthcoming =
     CAD_FORTHCOMING.test(vendorOwn) ||
     CAD_FORTHCOMING.test(vendorHay) ||
-    CAD_FORTHCOMING.test(nonFounderHay);
+    CAD_FORTHCOMING.test(nonFounderHay) ||
+    (input.sourceEvents ?? []).some(
+      (row) => row.semanticClass === "vendor_promises" || row.semanticClass === "workshop_started",
+    );
   const completion = COMPLETION_CLAIM.test(founderOwn) || COMPLETION_CLAIM.test(vendorOwn);
   const lifecycle = provenLifecycle(input.lifecycle);
-  const external = latestEvent(input.evidence, (speaker) => speaker !== "founder");
+  const external = latestEvent(combinedEvidence, (speaker) => speaker !== "founder");
   const founderAction = latestEvent(
-    input.evidence.filter((beat) => !isIdentifierOnlyProse(beat.summary)),
+    combinedEvidence.filter((beat) => !isIdentifierOnlyProse(beat.summary)),
     (speaker) => speaker === "founder",
   );
   const remainingRaw = input.remainingFounderCommitment;
@@ -365,41 +393,46 @@ export function composeTodayBriefingPacket(
   const cadDelivered =
     /\b(?:here is|attached|delivered|sent)\b[^.!?\n]{0,80}\b(?:updated\s+)?cad\b|\b(?:updated\s+)?cad\b[^.!?\n]{0,40}\b(?:attached|delivered|sent)\b/i.test(
       `${vendorOwn}\n${vendorHay}`,
+    ) ||
+    (input.sourceEvents ?? []).some(
+      (row) =>
+        row.semanticClass === "vendor_delivers_artifact" ||
+        row.semanticClass === "vendor_order_confirmation",
     );
   const reduced = reduceWorkLoop({
     evidence: input.evidence,
     founderOwnTexts: input.founderOwnTexts,
     vendorOwnTexts: input.vendorOwnTexts,
     quotedTexts: input.quotedTexts,
+    sourceEvents: input.sourceEvents,
     remaining: remainingForReduce,
     waitingState: input.waitingState,
     communication: input.communication,
     noFounderAction: input.noFounderAction,
     staleInboundSatisfied: input.staleInboundSatisfied,
   });
-  const remaining = remainingForCopy(
-    remainingForReduce,
-    reduced.semanticClass,
-    eventsFromInput({
-      evidence: input.evidence,
-      founderOwnTexts: input.founderOwnTexts,
-      vendorOwnTexts: input.vendorOwnTexts,
-      quotedTexts: input.quotedTexts,
-    }),
-  );
-  const loopEvents = eventsFromInput({
+  const loopEventInput = {
     evidence: input.evidence,
     founderOwnTexts: input.founderOwnTexts,
     vendorOwnTexts: input.vendorOwnTexts,
     quotedTexts: input.quotedTexts,
-  });
+    sourceEvents: input.sourceEvents,
+  };
+  const remaining = remainingForCopy(
+    remainingForReduce,
+    reduced.semanticClass,
+    eventsFromInput(loopEventInput),
+  );
+  const loopEvents = eventsFromInput(loopEventInput);
   const printPlan = reduced.semanticClass === "founder_print_check";
   const shipOpen = reduced.semanticClass === "founder_communication" && isCurrentShippingObligation(loopEvents);
   const waitingOnCad = reduced.semanticClass === "founder_review" && clientIsWaitingOnCad(loopEvents);
   const ballHolder =
     reduced.ballHolder !== "unknown"
       ? reduced.ballHolder
-      : ballHolderOf({
+      : sourceFulfillClosedLoop(loopEvents)
+        ? "unknown"
+        : ballHolderOf({
           remaining,
           printPlan: historicalPrintPlan,
           stlDelivered,
@@ -509,6 +542,7 @@ export function composeTodayBriefingPacket(
     sourceRefs: uniqueRefs([
       ...(input.sourceRefs ?? []),
       ...input.evidence.map((beat) => beat.sourceHref).filter((row): row is string => Boolean(row)),
+      ...(input.sourceEvents ?? []).map((row) => row.sourceRef),
     ]),
     authoritative: reduced.authoritative,
     semanticNextActionClass: reduced.semanticClass,
@@ -634,6 +668,9 @@ function nextActionOf(input: {
     if (input.waitingOnCad) {
       return `Review the CAD and send ${input.displayName} the update.`;
     }
+    if (input.cadDelivered && /order confirmation/i.test(input.remaining?.matchedText ?? "")) {
+      return "Review the order confirmation for discrepancies.";
+    }
     return "Review them and send approval / next design direction.";
   }
   if (input.shipOpen) {
@@ -649,6 +686,30 @@ function nextActionOf(input: {
     return input.remaining.recommended;
   }
   return null;
+}
+
+function sourceEventBeats(
+  events: readonly SourceCommunicationEvent[] | undefined,
+): CosEvidenceBeat[] {
+  return (events ?? []).map((event) => {
+    const mapped = workLoopEventsFromSource([event])[0];
+    const speaker: CosEvidenceBeat["speaker"] =
+      event.actor === "vendor_shop"
+        ? "vendor"
+        : event.actor === "founder"
+          ? "founder"
+          : event.actor === "client"
+            ? "client"
+            : "system";
+    return {
+      at: event.timestamp,
+      label: event.semanticClass,
+      summary: mapped?.text || event.authorOwnedText || event.subject || event.semanticClass,
+      speaker,
+      sourceHref: event.sourceRef,
+      candidateId: event.messageId ?? event.sourceRef,
+    };
+  });
 }
 
 function latestEvent(

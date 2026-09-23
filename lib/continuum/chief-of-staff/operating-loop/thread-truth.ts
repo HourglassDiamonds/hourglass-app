@@ -522,6 +522,13 @@ export function gmailThreadIdsForGroup(
   if (key.startsWith("thread:")) {
     add(key.slice("thread:".length));
   }
+  if (key.startsWith("cad:") && threadContext) {
+    const cad = key.slice("cad:".length).toUpperCase();
+    for (const [threadId, thread] of threadContext) {
+      const hay = [thread.subject, ...(thread.attachmentFilenames ?? [])].join(" ");
+      if (hay.toUpperCase().includes(cad)) add(threadId);
+    }
+  }
   const latestRow = [...rows].sort(
     (a, b) => parseMs(a.sourceTimestamp) - parseMs(b.sourceTimestamp),
   ).at(-1);

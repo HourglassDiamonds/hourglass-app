@@ -151,6 +151,11 @@ function founderHeadline(packet: TodayBriefingPacket, cad: string | undefined): 
       const mod = external.match(/\bmod\s*\d+/i)?.[0];
       return clientWaitingCopy(packet, external, who) ?? (mod ? `${capitalizePhrase(mod)} CAD is in.` : "CAD is in.");
     }
+    if (/order confirmation/i.test(external)) {
+      return /discrepanc/i.test(external)
+        ? external
+        : `${external.replace(/\.$/, "")} — review for discrepancies.`;
+    }
   }
   if (/already printed|models? (?:are|is|were) printed|finished printing|printed and ready/i.test(founder) || /shipping address|updated address/i.test(external)) {
     return `${who}'s models are printed and ready to go.`.replace(/\s{2,}/g, " ");
@@ -238,6 +243,10 @@ function clientStand(_packet: TodayBriefingPacket, who: string): string {
 
 function shopHeadline(packet: TodayBriefingPacket): string {
   const org = packet.organizationLabel || "the shop";
+  const external = packet.latestMeaningfulExternalEvent?.summary ?? "";
+  if (/workshop|final CAD/i.test(`${external} ${packet.nextExpectedEvent ?? ""}`)) {
+    return "Waiting on final CAD.";
+  }
   if (packet.briefingKind === "vendor_cad_wait" || /CAD|STL/i.test(packet.nextExpectedEvent ?? "")) {
     return `Updated CAD is pending from ${org}.`;
   }

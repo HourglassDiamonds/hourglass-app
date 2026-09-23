@@ -7,6 +7,7 @@
 import type { StructuredSpecSourceProvenance } from "@/lib/continuum/candidates/types";
 import type { TodayGmailThreadContext } from "@/lib/continuum/candidates/founder-attention";
 import type { OpenJobActor, OpenJobKind, ProjectJob } from "@/lib/continuum/client-memory/project-jobs/types";
+import type { SourceCommunicationEvent } from "@/lib/continuum/source-events/types";
 import type { TodayBriefingPacket } from "./briefing-packet";
 import type { TodayRenderedBriefing } from "./briefing-copy";
 
@@ -257,6 +258,7 @@ export type CosBriefItem = {
   lifecycleStage?: string | null;
   briefingPacket?: TodayBriefingPacket | null;
   briefing?: TodayRenderedBriefing | null;
+  sourceEvents?: readonly SourceCommunicationEvent[];
 };
 
 export type CosDocketOrigin =

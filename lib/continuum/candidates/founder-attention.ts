@@ -166,6 +166,10 @@ export type TodayGmailIndexedMessage = {
   direction: "inbound" | "outbound" | "unknown";
   labelIds?: readonly string[];
   fromEmailHash?: string | null;
+  subject?: string | null;
+  hasAttachments?: boolean;
+  attachmentFilenames?: readonly string[];
+  plaintext?: string | null;
 };
 
 export type TodayGmailThreadContext = {
