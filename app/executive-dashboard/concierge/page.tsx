@@ -5,6 +5,7 @@ import { reviewProposedActionFromForm } from "./intake-review-actions";
 import { askConcierge } from "./ask-actions";
 import { CommandCenterHome } from "./components/command-center-home";
 import { ConciergeShell } from "./components/concierge-shell";
+import { CosFeedbackSettle } from "./components/cos-feedback-settle";
 import { GmailOperatingFreshness } from "./components/gmail-operating-freshness";
 
 export const fetchCache = "force-no-store";
@@ -18,6 +19,7 @@ export default async function ConciergeHomePage() {
         refreshing={today.freshness === "refreshing"}
         baselineWatermark={today.readModelWatermark}
       />
+      <CosFeedbackSettle watermark={today.readModelWatermark} />
       <CommandCenterHome
         model={model}
         docket={today.docket}

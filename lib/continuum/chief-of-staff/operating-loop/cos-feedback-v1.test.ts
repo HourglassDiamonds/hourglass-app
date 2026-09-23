@@ -309,6 +309,43 @@ describe("cos feedback v1", () => {
     assert.equal(calls, 2);
   });
 
+  it("shares one in-flight model call for the same digest", async () => {
+    resetCosFeedbackCache();
+    let calls = 0;
+    let release: (() => void) | undefined;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const board = docket([focus({ id: "duane", name: "Duane", state: "Review the CAD." })]);
+    const model = async () => {
+      calls += 1;
+      await gate;
+      return {
+        portfolioSummary: "You have one real founder action.",
+        founderGuidance: "Duane first: Review the CAD.",
+        focusOrder: [{ itemId: "duane", why: "Review the CAD." }],
+        safeToIgnore: [],
+      };
+    };
+    const first = refreshCosFeedback({
+      docket: board,
+      sourceWatermark: "w1",
+      nowIso: NOW,
+      model,
+    });
+    const second = refreshCosFeedback({
+      docket: board,
+      sourceWatermark: "w1",
+      nowIso: NOW,
+      model,
+    });
+    assert.equal(calls, 1);
+    release?.();
+    const [left, right] = await Promise.all([first, second]);
+    assert.equal(left.founderGuidance, right.founderGuidance);
+    assert.equal(calls, 1);
+  });
+
   it("keeps raw Gmail text out of the model packet and performs no canonical write", () => {
     const item = focus({
       id: "duane",

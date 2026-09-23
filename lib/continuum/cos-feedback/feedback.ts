@@ -83,9 +83,11 @@ const PLACE = ["first", "second", "third"] as const;
 const COUNT_WORD = ["none", "one", "two", "three"] as const;
 
 let cached: { key: string; feedback: CosFeedbackV1 } | null = null;
+const inflight = new Map<string, Promise<CosFeedbackV1>>();
 
 export function resetCosFeedbackCache(): void {
   cached = null;
+  inflight.clear();
 }
 
 export function buildCosFeedbackPacket(input: {
@@ -188,6 +190,15 @@ export function presentCosFeedback(input: {
   return deriveDeterministicCosFeedback(packet);
 }
 
+export function cosFeedbackIsCached(input: {
+  docket: CosTodayDocketView;
+  sourceWatermark: string;
+  nowIso: string;
+}): boolean {
+  const packet = buildCosFeedbackPacket(input);
+  return cached?.key === cacheKey(packet);
+}
+
 export async function refreshCosFeedback(input: {
   docket: CosTodayDocketView;
   sourceWatermark: string;
@@ -197,13 +208,29 @@ export async function refreshCosFeedback(input: {
   const packet = buildCosFeedbackPacket(input);
   const key = cacheKey(packet);
   if (cached?.key === key) return cached.feedback;
+  const pending = inflight.get(key);
+  if (pending) return pending;
+  const job = resolveCosFeedback(packet, key, input.model ?? null);
+  inflight.set(key, job);
+  try {
+    return await job;
+  } finally {
+    if (inflight.get(key) === job) inflight.delete(key);
+  }
+}
+
+async function resolveCosFeedback(
+  packet: CosFeedbackPacket,
+  key: string,
+  model: CosFeedbackModel | null,
+): Promise<CosFeedbackV1> {
   const fallback = deriveDeterministicCosFeedback(packet);
-  if (!input.model) {
+  if (!model) {
     cached = { key, feedback: fallback };
     return fallback;
   }
   try {
-    const raw = await input.model(packet);
+    const raw = await model(packet);
     const accepted = acceptModelFeedback(packet, raw);
     const feedback = accepted ?? fallback;
     cached = { key, feedback };
