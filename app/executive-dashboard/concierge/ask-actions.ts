@@ -18,6 +18,11 @@ import { interpretBrainDump } from "@/lib/continuum/concierge-sol/brain-dump";
 import { conciergeForegroundModel } from "@/lib/continuum/concierge-sol/models";
 import { answerTodayCardAsk } from "@/lib/continuum/chief-of-staff/operating-loop/briefing-ask";
 import {
+  deriveCosBriefingV1,
+  readCosBriefingV1,
+  type CosBriefingV1,
+} from "@/lib/continuum/chief-of-staff/operating-loop/cos-briefing-v1";
+import {
   readTodayBriefingPacket,
   type TodayBriefingPacket,
 } from "@/lib/continuum/chief-of-staff/operating-loop/briefing-packet";
@@ -32,6 +37,7 @@ export async function askConcierge(
         todayContext?: {
           itemId: string;
           packet: TodayBriefingPacket;
+          briefing?: CosBriefingV1 | null;
         };
       },
 ): Promise<AskConciergeAnswer | ConciergeSolAnswer> {
@@ -44,7 +50,15 @@ export async function askConcierge(
     if (!packet || packet.itemId !== todayContext.itemId) {
       return { kind: "error" };
     }
-    const asked = answerTodayCardAsk({ query, packet });
+    const supplied = todayContext.briefing ? readCosBriefingV1(todayContext.briefing) : null;
+    if (todayContext.briefing != null && !supplied) {
+      return { kind: "error" };
+    }
+    const briefing = deriveCosBriefingV1({
+      packet,
+      nowIso: new Date().toISOString(),
+    });
+    const asked = answerTodayCardAsk({ query, packet, briefing });
     return {
       kind: "conversation",
       mode: "brain-dump",

@@ -99,7 +99,7 @@ describe("CoS operating loop security", () => {
     assert.doesNotMatch(action, /setProjectLifecycle|gmail\.googleapis/);
     assert.doesNotMatch(action, /reviewIntakeCandidateAction|createProjectJob/);
     assert.doesNotMatch(shared, /completeTop5OpenJobAction|completeFounderActionable/);
-    assert.match(page, /loadCosOperatingLoop/);
+    assert.match(page, /loadTodaySurface/);
     assert.match(page, /completeTop5OpenJobAction/);
     assert.doesNotMatch(page, /composeChiefOfStaffBrief|runChiefOfStaffShadow/);
     const proposedUi = readFileSync(

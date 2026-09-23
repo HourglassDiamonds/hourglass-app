@@ -172,6 +172,7 @@ export function composeCosOperatingLoop(
     associatedGmailThreadsByProject: associatedGmailThreads,
     threadContext: input.threadContext,
     founderEmailHashes,
+    asOfIso: input.nowIso,
   };
 
   if (input.jobs == null) {

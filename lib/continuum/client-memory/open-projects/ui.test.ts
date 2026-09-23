@@ -247,7 +247,7 @@ describe("Current Projects Command Center accordion UI", () => {
     assert.doesNotMatch(command, /from "\.\/projects-home"/);
     assert.doesNotMatch(command, /<ProjectsHome/);
     assert.doesNotMatch(home, /loadCurrentProjectCards/);
-    assert.match(home, /loadCosOperatingLoop/);
+    assert.match(home, /loadTodaySurface/);
     assert.match(projects, /loadCurrentProjectCards/);
     assert.doesNotMatch(home, /loadProjectBookPreview/);
     assert.doesNotMatch(command, /composeChiefOfStaffBrief|activateCoS|agent-os/);

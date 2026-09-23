@@ -197,7 +197,36 @@ function setUnique(
   map.set(threadId, { projectId: projectIds[0]!, via });
 }
 
+const NO_THREAD_CONTEXT = new Map<string, TodayGmailThreadContext>();
+const associationCache = new WeakMap<
+  object,
+  WeakMap<object, WeakMap<object, Map<string, SupportedThreadProject>>>
+>();
+
 export function projectBySupportedAssociation(
+  rows: readonly ContinuumCandidate[],
+  projects: ReadonlyMap<string, CosProjectContext>,
+  threadContext?: ReadonlyMap<string, TodayGmailThreadContext> | null,
+): Map<string, SupportedThreadProject> {
+  const threadKey = threadContext ?? NO_THREAD_CONTEXT;
+  let byProjects = associationCache.get(rows);
+  if (!byProjects) {
+    byProjects = new WeakMap();
+    associationCache.set(rows, byProjects);
+  }
+  let byThreads = byProjects.get(projects);
+  if (!byThreads) {
+    byThreads = new WeakMap();
+    byProjects.set(projects, byThreads);
+  }
+  const cached = byThreads.get(threadKey);
+  if (cached) return cached;
+  const map = computeProjectBySupportedAssociation(rows, projects, threadContext);
+  byThreads.set(threadKey, map);
+  return map;
+}
+
+function computeProjectBySupportedAssociation(
   rows: readonly ContinuumCandidate[],
   projects: ReadonlyMap<string, CosProjectContext>,
   threadContext?: ReadonlyMap<string, TodayGmailThreadContext> | null,
@@ -227,10 +256,15 @@ export function projectBySupportedAssociation(
 
   const uniquePersonProject = uniquePersonProjectIds(projects);
   const threadPersons = new Map<string, Set<string>>();
+  const rowsByThread = new Map<string, ContinuumCandidate[]>();
   for (const row of rows) {
     const threadId = sourceThreadId(row);
+    if (!threadId) continue;
+    const grouped = rowsByThread.get(threadId) ?? [];
+    grouped.push(row);
+    rowsByThread.set(threadId, grouped);
     const personId = confirmedPersonId(row);
-    if (!threadId || !personId) continue;
+    if (!personId) continue;
     const set = threadPersons.get(threadId) ?? new Set();
     set.add(personId);
     threadPersons.set(threadId, set);
@@ -245,9 +279,9 @@ export function projectBySupportedAssociation(
   for (const threadId of threadIds) {
     if (map.has(threadId)) continue;
     const subject = threadContext?.get(threadId)?.subject ?? "";
-    const spans = rows
-      .filter((row) => sourceThreadId(row) === threadId)
-      .map((row) => authorOwnedText(row.evidenceBasis.matchedText ?? ""));
+    const spans = (rowsByThread.get(threadId) ?? []).map((row) =>
+      authorOwnedText(row.evidenceBasis.matchedText ?? ""),
+    );
     const ids = identifierProjectIds(subject, spans, projects);
     setUnique(map, threadId, ids, "identifier");
   }

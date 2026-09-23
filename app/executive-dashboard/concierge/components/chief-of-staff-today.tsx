@@ -17,6 +17,7 @@ import { CosWatchingList } from "./cos-concierge-brief";
 import { CosFounderAttentionControls } from "./cos-founder-attention";
 import { CosUnassignedIdentity } from "./cos-unassigned-identity";
 import { CosAskConcierge, type TodayAskAction } from "./cos-ask-concierge";
+import { CosBriefingBlock } from "./cos-briefing-block";
 
 type CompleteAction = (formData: FormData) => void | Promise<void>;
 
@@ -103,7 +104,9 @@ function DocketItem({
           name={briefing ? [briefing.displayName, briefing.projectName].filter((row, i, all) => row && all.indexOf(row) === i).join(" / ") : item.subject}
           chip={briefing?.stateChip ?? (item.origin === "open_job" ? "YOUR MOVE" : null)}
         />
-        {briefing ? (
+        {item.cosBriefing && briefing ? (
+          <CosBriefingBlock briefing={item.cosBriefing} />
+        ) : briefing ? (
           <BriefingBody briefing={briefing} />
         ) : (
           <>
@@ -118,7 +121,9 @@ function DocketItem({
             ) : null}
           </>
         )}
-        {packet ? <CosAskConcierge packet={packet} askAction={askAction} /> : null}
+        {packet ? (
+          <CosAskConcierge packet={packet} cosBriefing={item.cosBriefing ?? null} askAction={askAction} />
+        ) : null}
         <CosDocketActions item={item} disposeAction={disposeAction} />
         {item.decision ? (
           <CosFounderAttentionControls

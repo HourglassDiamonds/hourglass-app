@@ -292,7 +292,7 @@ describe("CoS operating loop Command Center UI", () => {
     assert.match(command, /completeAction/);
     assert.doesNotMatch(command, /from "\.\/projects-home"/);
     assert.match(home, /completeTop5OpenJobAction/);
-    assert.match(home, /loadCosOperatingLoop/);
+    assert.match(home, /loadTodaySurface/);
     assert.doesNotMatch(home, /loadCurrentProjectCards/);
     assert.match(projects, /loadCurrentProjectCards/);
   });

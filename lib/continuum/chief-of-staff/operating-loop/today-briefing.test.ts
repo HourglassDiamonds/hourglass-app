@@ -409,7 +409,8 @@ describe("Today Chief of Staff briefing layer", () => {
     assert.equal(watching.briefing?.stateChip, "WAITING ON SHOP");
     assert.match(watching.briefing?.nextLabel ?? "", /Nothing from you/i);
     const html = renderToStaticMarkup(createElement(ChiefOfStaffToday, { loop }));
-    assert.match(html, /Watching/);
+    assert.match(html, /Chief of Staff briefing/);
+    assert.match(html, /data-cos-watching/);
     assert.match(html, /WAITING ON SHOP/);
     assert.doesNotMatch(html, /Confirm person/i);
     assert.doesNotMatch(html, /Responded/);

@@ -1,4 +1,4 @@
-import { loadCosOperatingLoop } from "@/lib/continuum/chief-of-staff/operating-loop/load";
+import { loadTodaySurface } from "@/lib/continuum/chief-of-staff/operating-loop/load";
 import { loadContinuumHomeModel } from "@/lib/continuum/dashboard/server";
 import { completeTop5OpenJobAction, disposeTodayDocketItemAction } from "./cos-operating-loop-actions";
 import { reviewProposedActionFromForm } from "./intake-review-actions";
@@ -11,13 +11,16 @@ export const fetchCache = "force-no-store";
 
 export default async function ConciergeHomePage() {
   const model = loadContinuumHomeModel();
-  const operatingLoop = await loadCosOperatingLoop();
+  const today = await loadTodaySurface();
   return (
     <ConciergeShell variant="home">
-      <GmailOperatingFreshness />
+      <GmailOperatingFreshness
+        refreshing={today.freshness === "refreshing"}
+        baselineWatermark={today.readModelWatermark}
+      />
       <CommandCenterHome
         model={model}
-        operatingLoop={operatingLoop}
+        docket={today.docket}
         completeAction={completeTop5OpenJobAction}
         reviewAction={reviewProposedActionFromForm}
         disposeAction={disposeTodayDocketItemAction}

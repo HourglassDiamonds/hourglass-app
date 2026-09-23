@@ -78,7 +78,7 @@ describe("Current Projects operating overflow", () => {
     assert.doesNotMatch(home, /loadProjectBookPreview/);
     assert.doesNotMatch(home, /projects=\{projects\}/);
     assert.doesNotMatch(home, /loadCurrentProjectCards/);
-    assert.match(home, /loadCosOperatingLoop/);
+    assert.match(home, /loadTodaySurface/);
     assert.match(projects, /loadCurrentProjectCards/);
     assert.doesNotMatch(command, /People/);
     assert.doesNotMatch(command, /QuickCapture/);

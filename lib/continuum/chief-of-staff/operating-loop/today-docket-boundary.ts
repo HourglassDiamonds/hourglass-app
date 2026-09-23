@@ -61,6 +61,13 @@ import {
   type TodayRenderedBriefing,
 } from "./briefing-copy";
 import {
+  deriveCosBriefingV1,
+  occupiesCurrentUpNext,
+  type CosBriefingEvidence,
+  type CosBriefingV1,
+} from "./cos-briefing-v1";
+import { compareTodayRank, type CosPriorityInput } from "./cos-priority";
+import {
   filterCurrentTodayDocketItems,
   isCurrentTodayDocketItem,
 } from "./today-final-invariant";
@@ -1408,11 +1415,12 @@ function toDocketItem(seed: TodayDocketSeed, loop: CosOperatingLoopView): CosDoc
     anomaly: seed.anomaly,
     briefing: useCosOverlay ? briefing : null,
     briefingPacket: packet,
+    cosBriefing: deriveSeedBriefing(seed, loop),
     todayDocketVersion: TODAY_DOCKET_VERSION,
   };
 }
 
-function toWatchingItem(seed: TodayDocketSeed): CosWatchingItem {
+function toWatchingItem(seed: TodayDocketSeed, loop: CosOperatingLoopView): CosWatchingItem {
   const packet = seed.packet!;
   const briefing = seed.briefing
     ? sanitizeRendered(
@@ -1433,8 +1441,77 @@ function toWatchingItem(seed: TodayDocketSeed): CosWatchingItem {
     candidateIds: seed.candidateIds,
     briefingPacket: packet,
     briefing,
+    cosBriefing: deriveSeedBriefing(seed, loop),
     todayDocketVersion: TODAY_DOCKET_VERSION,
   };
+}
+
+function priorityInputFromSeed(seed: TodayDocketSeed): CosPriorityInput {
+  return {
+    origin: seed.origin,
+    subject: seed.subject,
+    headline: seed.headline,
+    context: seed.context,
+    projectId: seed.projectId,
+    projectName: seed.packet?.projectName ?? null,
+    entityType: seed.packet?.entityType ?? null,
+    briefingKind: seed.packet?.briefingKind ?? null,
+    ballHolder: seed.packet?.ballHolder ?? null,
+    timingLabel: seed.job?.timing ?? null,
+  };
+}
+
+function evidenceForSeed(seed: TodayDocketSeed): CosBriefingEvidence[] {
+  return (seed.brief?.evidence ?? []).map((beat) => ({
+    summary: beat.summary,
+    at: beat.at,
+    sourceRef: beat.sourceHref,
+  }));
+}
+
+function deriveSeedBriefing(seed: TodayDocketSeed, loop: CosOperatingLoopView): CosBriefingV1 | null {
+  if (!seed.packet) return null;
+  return deriveCosBriefingV1({
+    packet: seed.packet,
+    rendered: seed.briefing,
+    evidence: evidenceForSeed(seed),
+    nowIso: loop.asOfIso ?? null,
+  });
+}
+
+function compareSeeds(left: TodayDocketSeed, right: TodayDocketSeed): number {
+  return compareTodayRank(
+    {
+      priority: priorityInputFromSeed(left),
+      score: seedScore(left),
+      activityMs: seedActivityMs(left),
+    },
+    {
+      priority: priorityInputFromSeed(right),
+      score: seedScore(right),
+      activityMs: seedActivityMs(right),
+    },
+  );
+}
+
+function promoteTriggeredCheckpoints(
+  watchingSeeds: readonly TodayDocketSeed[],
+  loop: CosOperatingLoopView,
+): { promoted: TodayDocketSeed[]; resting: TodayDocketSeed[] } {
+  const promoted: TodayDocketSeed[] = [];
+  const resting: TodayDocketSeed[] = [];
+  for (const seed of watchingSeeds) {
+    const briefing = deriveSeedBriefing(seed, loop);
+    if (
+      briefing?.checkpoint?.status === "triggered" &&
+      occupiesCurrentUpNext(briefing)
+    ) {
+      promoted.push(seed);
+    } else {
+      resting.push(seed);
+    }
+  }
+  return { promoted, resting };
 }
 
 export function finalizeTodayDocket(loop: CosOperatingLoopView): {
@@ -1456,11 +1533,9 @@ export function finalizeTodayDocket(loop: CosOperatingLoopView): {
     if (laneOf(seed, loop) === "up_next") upNextSeeds.push(seed);
     else watchingSeeds.push(seed);
   }
-  upNextSeeds.sort((left, right) => {
-    const score = seedScore(right) - seedScore(left);
-    if (score !== 0) return score;
-    return seedActivityMs(right) - seedActivityMs(left);
-  });
+  const checkpointShift = promoteTriggeredCheckpoints(watchingSeeds, loop);
+  upNextSeeds.push(...checkpointShift.promoted);
+  upNextSeeds.sort(compareSeeds);
   const upNext = filterCurrentTodayDocketItems(
     upNextSeeds.map((seed) => toDocketItem(seed, loop)),
     loop,
@@ -1473,8 +1548,8 @@ export function finalizeTodayDocket(loop: CosOperatingLoopView): {
       founderEmailHashes: loop.founderEmailHashes,
     }),
   );
-  const watching = watchingSeeds
-    .map(toWatchingItem)
+  const watching = checkpointShift.resting
+    .map((seed) => toWatchingItem(seed, loop))
     .filter((item) => item.briefingPacket != null)
     .filter((item) => !DIAGNOSTIC_COPY.test(item.detail))
     .filter((item) => !isInternalQaCopy(`${item.title} ${item.detail}`))
@@ -1512,11 +1587,7 @@ export function inspectFinalizedTodayDocket(
   const kept = dedupeTodaySeeds(collectSeeds(loop).filter((seed) => keepSeed(seed, loop)));
   const upNextSeeds = kept
     .filter((seed) => laneOf(seed, loop) === "up_next")
-    .sort((left, right) => {
-      const score = seedScore(right) - seedScore(left);
-      if (score !== 0) return score;
-      return seedActivityMs(right) - seedActivityMs(left);
-    });
+    .sort(compareSeeds);
   const watchingSeeds = kept.filter((seed) => laneOf(seed, loop) !== "up_next");
   const rowOf = (seed: TodayDocketSeed, lane: TodayDocketRankRow["lane"], rank: number): TodayDocketRankRow => {
     const packet = seed.packet;

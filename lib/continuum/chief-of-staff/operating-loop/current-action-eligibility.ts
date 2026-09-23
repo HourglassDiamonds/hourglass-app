@@ -143,6 +143,92 @@ function isSupersededDesignRequest(
   return laterPeers(row, peers).some((peer) => LATER_LOOP_ADVANCE.test(candidateObligationText(peer)));
 }
 
+type PreparedCandidate = {
+  row: ContinuumCandidate;
+  threadIds: string[];
+  messageIds: string[];
+  cads: string[];
+};
+
+type CandidateChronologyIndex = {
+  byId: Map<string, PreparedCandidate>;
+  rows: PreparedCandidate[];
+};
+
+type PreparedThread = {
+  threadId: string;
+  cads: string[];
+  messageIds: string[];
+};
+
+const candidateIndexCache = new WeakMap<object, CandidateChronologyIndex>();
+const threadIndexCache = new WeakMap<object, PreparedThread[]>();
+
+function gmailIdsForRow(row: ContinuumCandidate): {
+  threadIds: string[];
+  messageIds: string[];
+} {
+  if (row.sourceSystem !== "gmail") return { threadIds: [], messageIds: [] };
+  return collectExactGmailIds([row]);
+}
+
+function prepareCandidate(row: ContinuumCandidate): PreparedCandidate {
+  const ids = gmailIdsForRow(row);
+  return {
+    row,
+    threadIds: ids.threadIds,
+    messageIds: ids.messageIds,
+    cads: cadTokensFromHay([candidateObligationText(row)]),
+  };
+}
+
+function candidateChronologyIndex(
+  rows: readonly ContinuumCandidate[],
+): CandidateChronologyIndex {
+  const cached = candidateIndexCache.get(rows);
+  if (cached) return cached;
+  const byId = new Map<string, PreparedCandidate>();
+  const prepared: PreparedCandidate[] = [];
+  for (const row of rows) {
+    const item = prepareCandidate(row);
+    prepared.push(item);
+    if (!byId.has(row.candidateId)) byId.set(row.candidateId, item);
+  }
+  const index = { byId, rows: prepared };
+  candidateIndexCache.set(rows, index);
+  return index;
+}
+
+function threadChronologyIndex(
+  threadContext: ReadonlyMap<string, TodayGmailThreadContext>,
+): PreparedThread[] {
+  const cached = threadIndexCache.get(threadContext);
+  if (cached) return cached;
+  const prepared: PreparedThread[] = [];
+  for (const [threadId, ctx] of threadContext) {
+    const messageIds: string[] = [];
+    for (const message of ctx.messages ?? []) {
+      if (message.messageId) messageIds.push(message.messageId);
+    }
+    prepared.push({
+      threadId,
+      cads: cadTokensFromHay([ctx.subject, ...(ctx.attachmentFilenames ?? [])]),
+      messageIds,
+    });
+  }
+  threadIndexCache.set(threadContext, prepared);
+  return prepared;
+}
+
+function preparedGroupRow(
+  row: ContinuumCandidate,
+  index: CandidateChronologyIndex,
+): PreparedCandidate {
+  const hit = index.byId.get(row.candidateId);
+  if (hit?.row === row) return hit;
+  return prepareCandidate(row);
+}
+
 function cadTokensFromHay(texts: readonly (string | null | undefined)[]): string[] {
   const seen = new Set<string>();
   const tokens: string[] = [];
@@ -166,48 +252,53 @@ export function chronologyPeers(
   threadContext?: ReadonlyMap<string, TodayGmailThreadContext> | null,
 ): ContinuumCandidate[] {
   const pool = allRows?.length ? allRows : groupRows;
+  const index = candidateChronologyIndex(pool);
   const threadIds = new Set<string>();
   const messageIds = new Set<string>();
   const cads = new Set<string>();
   const addIdentity = (texts: readonly (string | null | undefined)[]) => {
     for (const cad of cadTokensFromHay(texts)) cads.add(cad);
   };
-  const addRow = (row: ContinuumCandidate) => {
-    const ids = collectExactGmailIds([row]);
-    for (const value of ids.threadIds) threadIds.add(value);
-    for (const value of ids.messageIds) messageIds.add(value);
-    addIdentity([candidateObligationText(row)]);
-  };
-  for (const row of groupRows) addRow(row);
+  for (const row of groupRows) {
+    const prepared = preparedGroupRow(row, index);
+    for (const value of prepared.threadIds) threadIds.add(value);
+    for (const value of prepared.messageIds) messageIds.add(value);
+    for (const cad of prepared.cads) cads.add(cad);
+  }
   addIdentity([thread?.subject, ...(thread?.attachmentFilenames ?? [])]);
   for (const message of thread?.messages ?? []) {
     if (message.messageId) messageIds.add(message.messageId);
   }
   if (threadContext) {
-    for (const [threadId, ctx] of threadContext) {
-      const ctxCads = cadTokensFromHay([ctx.subject, ...(ctx.attachmentFilenames ?? [])]);
+    for (const prepared of threadChronologyIndex(threadContext)) {
       const hit =
-        threadIds.has(threadId) ||
-        ctxCads.some((cad) => cads.has(cad)) ||
-        (ctx.messages ?? []).some(
-          (message) => messageIds.has(message.messageId) || threadIds.has(message.messageId),
+        threadIds.has(prepared.threadId) ||
+        prepared.cads.some((cad) => cads.has(cad)) ||
+        prepared.messageIds.some(
+          (messageId) => messageIds.has(messageId) || threadIds.has(messageId),
         );
       if (!hit) continue;
-      threadIds.add(threadId);
-      for (const message of ctx.messages ?? []) {
-        if (message.messageId) messageIds.add(message.messageId);
-      }
-      addIdentity([ctx.subject, ...(ctx.attachmentFilenames ?? [])]);
+      threadIds.add(prepared.threadId);
+      for (const messageId of prepared.messageIds) messageIds.add(messageId);
+      for (const cad of prepared.cads) cads.add(cad);
     }
   }
   const groupIds = new Set(groupRows.map((row) => row.candidateId));
-  return pool.filter((row) => {
-    if (groupIds.has(row.candidateId)) return true;
-    const ids = collectExactGmailIds([row]);
-    if (ids.threadIds.some((value) => threadIds.has(value) || messageIds.has(value))) return true;
-    if (ids.messageIds.some((value) => messageIds.has(value) || threadIds.has(value))) return true;
-    return cadTokensFromHay([candidateObligationText(row)]).some((cad) => cads.has(cad));
-  });
+  const peers: ContinuumCandidate[] = [];
+  for (const prepared of index.rows) {
+    if (groupIds.has(prepared.row.candidateId)) {
+      peers.push(prepared.row);
+      continue;
+    }
+    if (
+      prepared.threadIds.some((value) => threadIds.has(value) || messageIds.has(value)) ||
+      prepared.messageIds.some((value) => messageIds.has(value) || threadIds.has(value)) ||
+      prepared.cads.some((cad) => cads.has(cad))
+    ) {
+      peers.push(prepared.row);
+    }
+  }
+  return peers;
 }
 
 export function currentActionEligibility(
@@ -269,13 +360,15 @@ export function remainingIfCurrentlyActionable(
   thread?: TodayGmailThreadContext | null,
   allRows?: readonly ContinuumCandidate[] | null,
   threadContext?: ReadonlyMap<string, TodayGmailThreadContext> | null,
+  peers?: readonly ContinuumCandidate[],
 ): RemainingFounderCommitment | null {
   if (!remaining) return null;
   const needle = folded(remaining.matchedText);
   if (!needle) return remaining;
-  const peers = chronologyPeers(rows, allRows ?? rows, thread, threadContext);
-  const blocked = peers.some((row) => {
-    if (isCurrentActionEligible(row, { peers, thread })) return false;
+  const resolvedPeers =
+    peers ?? chronologyPeers(rows, allRows ?? rows, thread, threadContext);
+  const blocked = resolvedPeers.some((row) => {
+    if (isCurrentActionEligible(row, { peers: resolvedPeers, thread })) return false;
     const matched = folded(row.evidenceBasis.matchedText);
     if (matched.length < 12) return false;
     return needle === matched || needle.includes(matched) || matched.includes(needle);
@@ -288,10 +381,11 @@ export function ineligibleCurrentActionTexts(
   thread?: TodayGmailThreadContext | null,
   allRows?: readonly ContinuumCandidate[] | null,
   threadContext?: ReadonlyMap<string, TodayGmailThreadContext> | null,
+  peers?: readonly ContinuumCandidate[],
 ): string[] {
-  const peers = chronologyPeers(rows, allRows ?? rows, thread, threadContext);
-  return peers
-    .filter((row) => !isCurrentActionEligible(row, { peers, thread }))
+  const resolvedPeers = peers ?? chronologyPeers(rows, allRows ?? rows, thread, threadContext);
+  return resolvedPeers
+    .filter((row) => !isCurrentActionEligible(row, { peers: resolvedPeers, thread }))
     .map((row) => folded(row.evidenceBasis.matchedText))
     .filter((text) => text.length >= 12);
 }

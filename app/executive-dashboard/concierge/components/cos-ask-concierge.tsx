@@ -2,6 +2,7 @@
 
 import { useId, useState, useTransition, type FormEvent } from "react";
 import type { TodayBriefingPacket } from "@/lib/continuum/chief-of-staff/operating-loop/briefing-packet";
+import type { CosBriefingV1 } from "@/lib/continuum/chief-of-staff/operating-loop/cos-briefing-v1";
 import { TODAY_ASK_PLACEHOLDER } from "@/lib/continuum/chief-of-staff/operating-loop/briefing-ask";
 
 export type TodayAskAction = (input: {
@@ -10,14 +11,17 @@ export type TodayAskAction = (input: {
   todayContext: {
     itemId: string;
     packet: TodayBriefingPacket;
+    briefing?: CosBriefingV1 | null;
   };
 }) => Promise<{ text?: string } | { kind: string }>;
 
 export function CosAskConcierge({
   packet,
+  cosBriefing = null,
   askAction,
 }: {
   packet: TodayBriefingPacket;
+  cosBriefing?: CosBriefingV1 | null;
   askAction?: TodayAskAction;
 }) {
   const inputId = useId();
@@ -44,6 +48,7 @@ export function CosAskConcierge({
         todayContext: {
           itemId: packet.itemId,
           packet,
+          briefing: cosBriefing,
         },
       });
       const text =

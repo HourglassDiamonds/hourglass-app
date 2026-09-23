@@ -1,7 +1,9 @@
 import Link from "next/link";
 import type { CosBriefItem, CosWatchingItem } from "@/lib/continuum/chief-of-staff/operating-loop/types";
 import { founderFacingBriefActionLabel } from "@/lib/continuum/chief-of-staff/operating-loop/docket";
+import { COS_BRIEFING_SECTION_TITLE } from "@/lib/continuum/chief-of-staff/operating-loop/cos-briefing-v1";
 import { CosAskConcierge, type TodayAskAction } from "./cos-ask-concierge";
+import { CosBriefingBlock } from "./cos-briefing-block";
 
 function EvidenceControl({ item }: { item: CosBriefItem }) {
   if (item.evidence.length === 0) return null;
@@ -75,7 +77,7 @@ export function CosWatchingList({
   return (
     <section data-cos-watching className="hg-cos-watching mt-10 min-w-0">
       <h2 className="text-[11px] uppercase tracking-[0.28em] text-[#8d8073]">
-        Watching
+        {COS_BRIEFING_SECTION_TITLE}
       </h2>
       <ul className="hg-cos-docket mt-5">
         {watching.map((item) => {
@@ -101,7 +103,9 @@ export function CosWatchingList({
                     {briefing?.stateChip ?? "WAITING"}
                   </p>
                 </div>
-                {briefing ? (
+                {item.cosBriefing ? (
+                  <CosBriefingBlock briefing={item.cosBriefing} />
+                ) : briefing ? (
                   <>
                     <p className="mt-2 break-words font-serif text-[1.28rem] leading-[1.2] tracking-[-0.03em] text-[#efe8de]">
                       {briefing.headline}
@@ -124,7 +128,11 @@ export function CosWatchingList({
                   </p>
                 )}
                 {item.briefingPacket ? (
-                  <CosAskConcierge packet={item.briefingPacket} askAction={askAction} />
+                  <CosAskConcierge
+                    packet={item.briefingPacket}
+                    cosBriefing={item.cosBriefing ?? null}
+                    askAction={askAction}
+                  />
                 ) : null}
               </div>
             </li>

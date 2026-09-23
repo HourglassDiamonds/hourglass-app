@@ -10,25 +10,29 @@ type CompleteAction = (formData: FormData) => void | Promise<void>;
 export function CommandCenterHome({
   model,
   operatingLoop,
+  docket,
   completeAction,
   reviewAction,
   disposeAction,
   askAction,
 }: {
   model: ContinuumHomeModel;
-  operatingLoop: CosOperatingLoopView;
+  operatingLoop?: CosOperatingLoopView;
+  docket?: ReturnType<typeof composeTodayDocket>;
   completeAction?: CompleteAction;
   reviewAction?: CompleteAction;
   disposeAction?: CompleteAction;
   askAction?: TodayAskAction;
 }) {
+  const resolved = docket ?? (operatingLoop ? composeTodayDocket(operatingLoop) : null);
+  if (!resolved) return null;
   return (
     <div data-command-center data-today-home className="hg-today">
       <h1 className="font-serif text-[2.05rem] font-normal leading-[1.08] tracking-[-0.045em] text-[#efe8de] md:text-[2.45rem]">
         {greetingLine(model)}
       </h1>
       <ChiefOfStaffToday
-        docket={composeTodayDocket(operatingLoop)}
+        docket={resolved}
         completeAction={completeAction}
         reviewAction={reviewAction}
         disposeAction={disposeAction}

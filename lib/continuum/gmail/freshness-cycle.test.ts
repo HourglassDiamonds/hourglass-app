@@ -16,6 +16,7 @@ import { encodeGmailBody } from "./exact-thread-fixtures";
 import { FIXTURE_FOUNDER_EMAIL } from "./fixtures";
 import {
   CONTINUUM_GMAIL_FRESHNESS_CRON_PATH,
+  deriveTodayFreshnessInvalidation,
   GMAIL_FRESHNESS_CYCLE_RESULT_KEYS,
   runGmailFreshnessCycle,
   sanitizeGmailFreshnessCycleResult,
@@ -214,6 +215,8 @@ describe("Gmail operating freshness cycle", () => {
     assert.equal(first.ranIncremental, true);
     assert.equal(first.intakeRan, true);
     assert.equal(first.insertedCount > 0, true);
+    assert.equal(first.candidatesChanged, true);
+    assert.equal(first.sourceEventsChanged, true);
     assert.equal(first.docketMayHaveChanged, true);
     assert.equal((await index.getMessage(MESSAGE))?.threadId, THREAD);
     assert.equal((await index.getCheckpoint(GMAIL_INCREMENTAL_JOB_KEY))?.historyId, HISTORY_NEXT);
@@ -233,6 +236,9 @@ describe("Gmail operating freshness cycle", () => {
     assert.equal(second.skippedAsFresh, true);
     assert.equal(second.ranIncremental, false);
     assert.equal(second.insertedCount, 0);
+    assert.equal(second.candidatesChanged, false);
+    assert.equal(second.sourceEventsChanged, false);
+    assert.equal(second.docketMayHaveChanged, false);
     assert.equal(second.duplicateCount > 0, true);
     assert.equal((await store.list()).length, rows.length);
     assertSafeOutput(second);

@@ -6,6 +6,7 @@
 
 import { brainDumpCopy, interpretBrainDump } from "@/lib/continuum/concierge-sol/brain-dump";
 import type { TodayBriefingPacket } from "./briefing-packet";
+import { deriveCosBriefingV1, type CosBriefingV1 } from "./cos-briefing-v1";
 
 export const TODAY_ASK_PLACEHOLDER = "Ask Concierge…" as const;
 
@@ -33,18 +34,27 @@ export function hasReminderOrCalendarIntent(query: string): boolean {
 export function answerTodayCardAsk(input: {
   query: string;
   packet: TodayBriefingPacket;
+  briefing?: CosBriefingV1 | null;
   solText?: string | null;
+  nowIso?: string | null;
 }): TodayAskAnswer {
   const query = input.query.replace(/\s+/g, " ").trim();
   const reminderIntent = hasReminderOrCalendarIntent(query);
   const plan = PLAN_INTENT.test(query);
   const who = input.packet.displayName;
+  const briefing =
+    input.briefing ??
+    deriveCosBriefingV1({
+      packet: input.packet,
+      nowIso: input.nowIso ?? null,
+    });
   const deterministic = deterministicAskCopy({
     who,
     ballHolder: input.packet.ballHolder,
     plan,
     reminderIntent,
     query,
+    briefing,
   });
   const sol = sanitizeAskSol(input.solText, reminderIntent);
   const text = sol ?? deterministic;
@@ -59,7 +69,11 @@ export function answerTodayCardAsk(input: {
   };
 }
 
-export function todayAskContextPayload(packet: TodayBriefingPacket): {
+export function todayAskContextPayload(
+  packet: TodayBriefingPacket,
+  briefing?: CosBriefingV1 | null,
+  nowIso?: string | null,
+): {
   itemId: string;
   projectId: string | null;
   personId: string | null;
@@ -68,8 +82,18 @@ export function todayAskContextPayload(packet: TodayBriefingPacket): {
   unresolvedFounderObligation: string | null;
   lifecycle: string | null;
   sourceRefs: readonly string[];
+  currentState: string;
+  timingFacts: CosBriefingV1["timingFacts"];
+  checkpoint: CosBriefingV1["checkpoint"];
   packet: TodayBriefingPacket;
+  briefing: CosBriefingV1;
 } {
+  const resolved =
+    briefing ??
+    deriveCosBriefingV1({
+      packet,
+      nowIso: nowIso ?? null,
+    });
   return {
     itemId: packet.itemId,
     projectId: packet.projectId,
@@ -79,7 +103,11 @@ export function todayAskContextPayload(packet: TodayBriefingPacket): {
     unresolvedFounderObligation: packet.unresolvedFounderObligation,
     lifecycle: packet.lifecycle,
     sourceRefs: packet.sourceRefs,
+    currentState: resolved.currentState,
+    timingFacts: resolved.timingFacts,
+    checkpoint: resolved.checkpoint,
     packet,
+    briefing: resolved,
   };
 }
 
@@ -89,12 +117,14 @@ function deterministicAskCopy(input: {
   plan: boolean;
   reminderIntent: boolean;
   query: string;
+  briefing: CosBriefingV1;
 }): string {
   const planLine = input.plan
-    ? `I'll treat that as the current plan and keep ${input.who} off your immediate list.`
+    ? `I'll treat that as a proposed checkpoint for ${input.who} and keep it off your immediate list.`
     : `Noted for ${input.who}.`;
   if (input.reminderIntent) {
-    return `Got it. ${planLine} The timed follow-up is a reminder intent; calendar/reminder execution isn't wired yet, so I won't pretend it's scheduled.`;
+    const state = input.briefing.currentState ? ` Current state: ${input.briefing.currentState}` : "";
+    return `Got it. ${planLine}${state} The timed follow-up stays advisory; calendar/reminder execution isn't wired yet, so I won't pretend it's scheduled.`;
   }
   if (input.ballHolder !== "founder" && input.plan) {
     return `Got it. ${planLine} Nothing from you is required until the next event lands.`;

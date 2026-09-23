@@ -1279,6 +1279,7 @@ function classifySituation(input: {
     thread,
     input.chronologyRows ?? input.rows,
     input.threadContext,
+    peers,
   );
   const evidenceRows = input.rows.filter(
     (row) => !isCandidateQuietForToday(row, input.ctx.nowIso),
@@ -1430,6 +1431,7 @@ function classifySituation(input: {
     thread,
     input.chronologyRows ?? input.rows,
     input.threadContext,
+    peers,
   );
   const newWork =
     communication !== "vendor" &&

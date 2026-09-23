@@ -60,7 +60,7 @@ describe("Open Project work security", () => {
     assert.match(page, /loadCurrentProjectCards/);
     assert.match(home, /fetchCache = "force-no-store"/);
     assert.match(home, /loadContinuumHomeModel/);
-    assert.match(home, /loadCosOperatingLoop/);
+    assert.match(home, /loadTodaySurface/);
     assert.doesNotMatch(home, /loadCurrentProjectCards/);
     assert.doesNotMatch(page, /composeChiefOfStaffBrief/);
   });

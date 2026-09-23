@@ -524,7 +524,7 @@ describe("authenticated Today render path consumes the final docket only", () =>
       "utf8",
     );
     assert.match(command, /composeTodayDocket\(operatingLoop\)/);
-    assert.match(command, /docket=\{composeTodayDocket\(operatingLoop\)\}/);
+    assert.match(command, /docket=\{resolved\}/);
     assert.doesNotMatch(command, /loop=\{operatingLoop\}/);
   });
 

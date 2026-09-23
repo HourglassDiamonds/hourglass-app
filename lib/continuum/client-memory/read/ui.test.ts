@@ -485,7 +485,7 @@ describe("Concierge Client Memory UI", () => {
     assert.match(home, /loadContinuumHomeModel/);
     assert.doesNotMatch(home, /loadProjectBookPreview/);
     assert.doesNotMatch(home, /loadCurrentProjectCards/);
-    assert.match(home, /loadCosOperatingLoop/);
+    assert.match(home, /loadTodaySurface/);
     assert.match(home, /CommandCenterHome/);
     assert.match(command, /greetingLine/);
     assert.match(command, /ChiefOfStaffToday/);

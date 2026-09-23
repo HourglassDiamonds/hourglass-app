@@ -10,6 +10,7 @@ import type { OpenJobActor, OpenJobKind, ProjectJob } from "@/lib/continuum/clie
 import type { SourceCommunicationEvent } from "@/lib/continuum/source-events/types";
 import type { TodayBriefingPacket } from "./briefing-packet";
 import type { TodayRenderedBriefing } from "./briefing-copy";
+import type { CosBriefingV1 } from "./cos-briefing-v1";
 
 export const COS_OPERATING_LOOP_CONTRACT_VERSION = "cos-operating-loop-v1" as const;
 
@@ -287,6 +288,7 @@ export type CosDocketItemView = {
   anomaly: CosAnomalyItem | null;
   briefing?: TodayRenderedBriefing | null;
   briefingPacket?: TodayBriefingPacket | null;
+  cosBriefing?: CosBriefingV1 | null;
   todayDocketVersion?: TodayDocketVersion;
 };
 
@@ -298,6 +300,7 @@ export type CosWatchingItem = {
   candidateIds?: readonly string[];
   briefingPacket?: TodayBriefingPacket | null;
   briefing?: TodayRenderedBriefing | null;
+  cosBriefing?: CosBriefingV1 | null;
   todayDocketVersion?: TodayDocketVersion;
 };
 
@@ -330,6 +333,15 @@ export type CosOperatingLoopView = {
   associatedGmailThreadsByProject?: ReadonlyMap<string, readonly string[]>;
   threadContext?: ReadonlyMap<string, TodayGmailThreadContext>;
   founderEmailHashes?: readonly string[];
+  /** Founder clock used for checkpoint prose. Not a source watermark. */
+  asOfIso?: string;
+  /**
+   * current: this loop matches the source watermark.
+   * refreshing: last successful composition, shown while a rebuild runs.
+   */
+  todayFreshness?: "current" | "refreshing";
+  /** Watermark this loop was composed for. Not mailbox content. */
+  todayReadModelWatermark?: string | null;
 };
 
 export type CosProjectPerson = {

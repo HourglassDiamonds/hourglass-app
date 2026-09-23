@@ -92,7 +92,7 @@ describe("Founder Operating UX V1 shell", () => {
       createElement(CommandCenterHome, { model, operatingLoop: loop }),
     );
     assert.match(home, /loadContinuumHomeModel/);
-    assert.match(home, /loadCosOperatingLoop/);
+    assert.match(home, /loadTodaySurface/);
     assert.doesNotMatch(home, /loadCurrentProjectCards/);
     assert.doesNotMatch(home, /loadProjectBookPreview/);
     assert.match(command, /ChiefOfStaffToday/);
@@ -215,7 +215,7 @@ describe("Founder Operating UX V1 shell", () => {
     assert.doesNotMatch(hubPage, /GmailOperatingFreshness/);
     assert.doesNotMatch(hubPage, /completeTop5OpenJobAction|disposeTodayDocketItemAction/);
     assert.match(today, /CommandCenterHome/);
-    assert.match(today, /loadCosOperatingLoop/);
+    assert.match(today, /loadTodaySurface/);
     assert.match(nav, /CONCIERGE_HUB_PATH/);
     assert.match(nav, /grid grid-cols-5/);
     assert.doesNotMatch(nav, /grid-cols-6/);

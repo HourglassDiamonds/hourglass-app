@@ -10,7 +10,7 @@ import type { GmailCandidateWorld } from "./candidates/types";
 import type { GmailApi } from "./adapter";
 import type { GmailAttachmentStore } from "./attachments";
 import type { GmailConnectionStore } from "./connection";
-import { readGmailCurrentState } from "./current-state";
+import { readGmailCurrentState, type GmailCurrentState } from "./current-state";
 import {
   GMAIL_OPERATING_FRESHNESS_AFTER_MS,
   isGmailIndexStale,
@@ -31,6 +31,7 @@ export const GMAIL_FRESHNESS_MAX_CHUNKS = 3 as const;
 export const GMAIL_INTAKE_RETRY_WINDOW_MS = 5 * 60 * 1000;
 
 export const GMAIL_FRESHNESS_CYCLE_RESULT_KEYS = [
+  "candidatesChanged",
   "chunksRun",
   "completed",
   "docketMayHaveChanged",
@@ -42,6 +43,7 @@ export const GMAIL_FRESHNESS_CYCLE_RESULT_KEYS = [
   "ranIncremental",
   "safeErrorCode",
   "skippedAsFresh",
+  "sourceEventsChanged",
 ] as const;
 
 export type GmailFreshnessCycleResult = {
@@ -53,6 +55,14 @@ export type GmailFreshnessCycleResult = {
   intakeRan: boolean;
   insertedCount: number;
   duplicateCount: number;
+  /**
+   * New indexed Gmail row(s) this cycle. Today projects source events from
+   * that index at read time, so this is enough to invalidate Today.
+   */
+  sourceEventsChanged: boolean;
+  /** Intake inserted at least one new candidate. */
+  candidatesChanged: boolean;
+  /** sourceEventsChanged || candidatesChanged. Never a blind timer. */
   docketMayHaveChanged: boolean;
   completed: boolean;
   safeErrorCode: string | null;
@@ -120,7 +130,10 @@ export function sanitizeGmailFreshnessCycleResult(
     intakeRan: Boolean(raw.intakeRan),
     insertedCount: nonNeg(raw.insertedCount),
     duplicateCount: nonNeg(raw.duplicateCount),
-    docketMayHaveChanged: Boolean(raw.docketMayHaveChanged),
+    sourceEventsChanged: Boolean(raw.sourceEventsChanged),
+    candidatesChanged: Boolean(raw.candidatesChanged),
+    docketMayHaveChanged:
+      Boolean(raw.sourceEventsChanged) || Boolean(raw.candidatesChanged),
     completed: Boolean(raw.completed),
     safeErrorCode,
   };
@@ -139,7 +152,10 @@ export function failedGmailFreshnessCycle(
     intakeRan: extras.intakeRan ?? false,
     insertedCount: extras.insertedCount ?? 0,
     duplicateCount: extras.duplicateCount ?? 0,
-    docketMayHaveChanged: extras.docketMayHaveChanged ?? false,
+    sourceEventsChanged: extras.sourceEventsChanged ?? false,
+    candidatesChanged: extras.candidatesChanged ?? false,
+    docketMayHaveChanged:
+      Boolean(extras.sourceEventsChanged) || Boolean(extras.candidatesChanged),
     completed: false,
     safeErrorCode: code,
   });
@@ -169,6 +185,62 @@ export function shouldRetryGmailIntake(input: {
   if (!input.newestIndexedAt) return false;
   const age = Date.parse(input.nowIso) - Date.parse(input.newestIndexedAt);
   return Number.isFinite(age) && age >= 0 && age < GMAIL_INTAKE_RETRY_WINDOW_MS;
+}
+
+/**
+ * Today invalidation from the Gmail index watermark.
+ * A newly indexed message changes source chronology even when candidate
+ * intake inserts nothing. A quiet tick (same latest message ids, nothing
+ * newly indexed, no new candidates) does not.
+ * lastSuccessfulSyncAt is not a signal: it moves on an empty sync.
+ */
+export function deriveTodayFreshnessInvalidation(input: {
+  indexedThisCycle: number;
+  inboundMessageIdBefore: string | null;
+  outboundMessageIdBefore: string | null;
+  inboundMessageIdAfter: string | null;
+  outboundMessageIdAfter: string | null;
+  insertedCount: number;
+}): {
+  sourceEventsChanged: boolean;
+  candidatesChanged: boolean;
+  docketMayHaveChanged: boolean;
+} {
+  const indexedNewRows =
+    Number.isFinite(input.indexedThisCycle) && input.indexedThisCycle > 0;
+  const latestMessageMoved =
+    input.inboundMessageIdBefore !== input.inboundMessageIdAfter ||
+    input.outboundMessageIdBefore !== input.outboundMessageIdAfter;
+  const sourceEventsChanged = indexedNewRows || latestMessageMoved;
+  const candidatesChanged =
+    Number.isFinite(input.insertedCount) && input.insertedCount > 0;
+  return {
+    sourceEventsChanged,
+    candidatesChanged,
+    docketMayHaveChanged: sourceEventsChanged || candidatesChanged,
+  };
+}
+
+function messageIdOf(
+  pointer: GmailCurrentState["latestInbound"],
+): string | null {
+  return pointer?.messageId ?? null;
+}
+
+function invalidationBetween(input: {
+  indexedThisCycle: number;
+  before: GmailCurrentState;
+  after: GmailCurrentState;
+  insertedCount: number;
+}) {
+  return deriveTodayFreshnessInvalidation({
+    indexedThisCycle: input.indexedThisCycle,
+    inboundMessageIdBefore: messageIdOf(input.before.latestInbound),
+    outboundMessageIdBefore: messageIdOf(input.before.latestOutbound),
+    inboundMessageIdAfter: messageIdOf(input.after.latestInbound),
+    outboundMessageIdAfter: messageIdOf(input.after.latestOutbound),
+    insertedCount: input.insertedCount,
+  });
 }
 
 function laterIso(a: string | null, b: string | null): string | null {
@@ -231,6 +303,12 @@ export async function runGmailFreshnessCycle(
       chunksRun += 1;
       indexedThisCycle += chunk.indexedThisChunk;
       if (chunk.safeErrorCode === "gmail-sync-already-running") {
+        const flagged = invalidationBetween({
+          indexedThisCycle,
+          before: state,
+          after: state,
+          insertedCount: 0,
+        });
         return sanitizeGmailFreshnessCycleResult({
           ranIncremental: true,
           skippedAsFresh: false,
@@ -240,17 +318,24 @@ export async function runGmailFreshnessCycle(
           intakeRan: false,
           insertedCount: 0,
           duplicateCount: 0,
-          docketMayHaveChanged: false,
+          ...flagged,
           completed: false,
           safeErrorCode: "gmail-sync-already-running",
         });
       }
       if (!chunk.chunkSucceeded || chunk.safeErrorCode) {
+        const flagged = invalidationBetween({
+          indexedThisCycle,
+          before: state,
+          after: state,
+          insertedCount: 0,
+        });
         return failedGmailFreshnessCycle(chunk.safeErrorCode ?? "gmail-sync-failed", {
           ranIncremental: true,
           chunksRun,
           indexedThisCycle,
           morePagesRemain: snapshotMorePages(chunk),
+          ...flagged,
         });
       }
       if (chunk.morePagesRemain) continue;
@@ -274,6 +359,12 @@ export async function runGmailFreshnessCycle(
   });
 
   if (!intakeDue) {
+    const flagged = invalidationBetween({
+      indexedThisCycle,
+      before: state,
+      after: afterState,
+      insertedCount: 0,
+    });
     return sanitizeGmailFreshnessCycleResult({
       ranIncremental,
       skippedAsFresh: !due,
@@ -283,7 +374,7 @@ export async function runGmailFreshnessCycle(
       intakeRan: false,
       insertedCount: 0,
       duplicateCount: 0,
-      docketMayHaveChanged: false,
+      ...flagged,
       completed: Boolean(!remaining && (lastChunk?.completed ?? !due)),
       safeErrorCode: null,
     });
@@ -302,6 +393,12 @@ export async function runGmailFreshnessCycle(
     nowIso: input.nowIso,
   });
   if (!intake.ok) {
+    const flagged = invalidationBetween({
+      indexedThisCycle,
+      before: state,
+      after: afterState,
+      insertedCount: 0,
+    });
     return failedGmailFreshnessCycle(intake.safeErrorCode, {
       ranIncremental,
       skippedAsFresh: !due,
@@ -309,9 +406,16 @@ export async function runGmailFreshnessCycle(
       indexedThisCycle,
       morePagesRemain: remaining,
       intakeRan: true,
+      ...flagged,
     });
   }
 
+  const flagged = invalidationBetween({
+    indexedThisCycle,
+    before: state,
+    after: afterState,
+    insertedCount: intake.insertedIds.length,
+  });
   return sanitizeGmailFreshnessCycleResult({
     ranIncremental,
     skippedAsFresh: !due,
@@ -321,7 +425,7 @@ export async function runGmailFreshnessCycle(
     intakeRan: true,
     insertedCount: intake.insertedIds.length,
     duplicateCount: intake.duplicateIds.length,
-    docketMayHaveChanged: intake.insertedIds.length > 0,
+    ...flagged,
     completed: Boolean(!remaining && (lastChunk?.completed ?? true)),
     safeErrorCode: null,
   });
