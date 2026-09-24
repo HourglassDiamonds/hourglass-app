@@ -1,6 +1,7 @@
 /**
  * One bounded Sol completion for Chief of Staff feedback.
- * The packet is the only model input. No tools. No retries.
+ * Structured Outputs enforce the JSON shape. Semantic checks stay downstream.
+ * The packet is the only model input. No tools. No retries. No fence repair.
  */
 
 import {
@@ -9,10 +10,10 @@ import {
 import type { CosFeedbackPacket } from "./feedback";
 
 export const COS_FEEDBACK_SOL_TIMEOUT_MS = 12_000;
+export const COS_FEEDBACK_RESPONSE_FORMAT = "json_schema" as const;
 
 const INSTRUCTIONS = [
   "You are the Hourglass chief of staff.",
-  "Return one JSON object and no other text.",
   "Interpret the packet. Recommend focus, timing, and what can wait.",
   "Facts in the packet stay facts. Recommendations stay recommendations.",
   "Do not invent dates, people, client actions, or vendor actions.",
@@ -21,15 +22,74 @@ const INSTRUCTIONS = [
   "Do not rank internal or SEO work ahead of a client or project founder obligation.",
   "When basis is evidence, copy the packet timing statement exactly.",
   "Use only itemIds from the packet.",
-  "Shape: {\"portfolioSummary\":string,\"founderGuidance\":string,\"focusOrder\":[{\"itemId\":string,\"why\":string}],\"risks\":[{\"itemId\":string,\"statement\":string,\"basis\":\"evidence\"|\"recommendation\"}],\"safeToIgnore\":[{\"itemId\":string,\"why\":string}]}",
 ].join(" ");
 
-type ResponsesJson = {
+const STRING_OBJECT = {
+  type: "object",
+  additionalProperties: false,
+} as const;
+
+export const COS_FEEDBACK_OUTPUT_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    portfolioSummary: { type: "string" },
+    founderGuidance: { type: "string" },
+    focusOrder: {
+      type: "array",
+      items: {
+        ...STRING_OBJECT,
+        properties: {
+          itemId: { type: "string" },
+          why: { type: "string" },
+        },
+        required: ["itemId", "why"],
+      },
+    },
+    risks: {
+      type: "array",
+      items: {
+        ...STRING_OBJECT,
+        properties: {
+          itemId: { type: "string" },
+          statement: { type: "string" },
+          basis: { type: "string", enum: ["evidence", "recommendation"] },
+        },
+        required: ["itemId", "statement", "basis"],
+      },
+    },
+    safeToIgnore: {
+      type: "array",
+      items: {
+        ...STRING_OBJECT,
+        properties: {
+          itemId: { type: "string" },
+          why: { type: "string" },
+        },
+        required: ["itemId", "why"],
+      },
+    },
+  },
+  required: ["portfolioSummary", "founderGuidance", "focusOrder", "risks", "safeToIgnore"],
+} as const;
+
+type ResponseContent = {
+  type?: string;
+  text?: string;
+  refusal?: string;
+};
+
+type ResponseOutputItem = {
+  type?: string;
+  status?: string;
+  content?: ResponseContent[];
+};
+
+export type CosFeedbackResponsesBody = {
+  status?: string;
+  error?: unknown;
   output_text?: string;
-  output?: Array<{
-    type?: string;
-    content?: unknown;
-  }>;
+  output?: ResponseOutputItem[];
 };
 
 export async function requestCosFeedbackCompletion(input: {
@@ -56,34 +116,61 @@ export async function requestCosFeedbackCompletion(input: {
         max_output_tokens: 700,
         instructions: INSTRUCTIONS,
         input: JSON.stringify(input.packet),
+        text: {
+          format: {
+            type: COS_FEEDBACK_RESPONSE_FORMAT,
+            name: "cos_feedback_v1",
+            strict: true,
+            schema: COS_FEEDBACK_OUTPUT_SCHEMA,
+          },
+        },
       }),
     });
     if (!response.ok) throw new Error("cos-feedback-unavailable");
-    const json = (await response.json()) as ResponsesJson;
-    return JSON.parse(extractJson(outputText(json)));
+    let json: CosFeedbackResponsesBody;
+    try {
+      json = (await response.json()) as CosFeedbackResponsesBody;
+    } catch {
+      throw new SyntaxError("cos-feedback-malformed");
+    }
+    return parseStructuredFeedback(json);
   } finally {
     clearTimeout(timer);
   }
 }
 
-function outputText(json: ResponsesJson): string {
-  if (json.output_text?.trim()) return json.output_text.trim();
+export function parseStructuredFeedback(json: CosFeedbackResponsesBody): unknown {
+  if (json.error) throw new Error("cos-feedback-unavailable");
+  if (json.status === "incomplete" || json.status === "failed") {
+    throw new Error("cos-feedback-unavailable");
+  }
+  for (const item of json.output ?? []) {
+    if (item.type !== "message") continue;
+    if (item.status === "incomplete" || item.status === "failed") {
+      throw new Error("cos-feedback-unavailable");
+    }
+    for (const part of item.content ?? []) {
+      if (part?.type === "refusal") throw new Error("cos-feedback-unavailable");
+    }
+  }
+  const text = structuredText(json);
+  if (!text) throw new SyntaxError("cos-feedback-malformed");
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new SyntaxError("cos-feedback-malformed");
+  }
+}
+
+function structuredText(json: CosFeedbackResponsesBody): string {
   const chunks: string[] = [];
   for (const item of json.output ?? []) {
     if (item.type !== "message" || !Array.isArray(item.content)) continue;
     for (const part of item.content) {
-      if (!part || typeof part !== "object") continue;
-      const row = part as { type?: string; text?: string };
-      if ((row.type === "output_text" || row.type === "text") && row.text?.trim()) {
-        chunks.push(row.text.trim());
-      }
+      if (!part || (part.type !== "output_text" && part.type !== "text")) continue;
+      if (part.text?.trim()) chunks.push(part.text.trim());
     }
   }
-  return chunks.join("\n").trim();
-}
-
-function extractJson(text: string): string {
-  const trimmed = text.trim();
-  const fenced = trimmed.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
-  return fenced?.[1]?.trim() || trimmed;
+  if (chunks.length > 0) return chunks.join("\n");
+  return json.output_text?.trim() ?? "";
 }

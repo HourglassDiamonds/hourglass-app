@@ -20,6 +20,7 @@ export const COS_FEEDBACK_SETTLE_FIELDS = [
   "inputBytes",
   "outputBytes",
   "validationResult",
+  "responseFormat",
   "sourceWatermarkDigest",
   "portfolioDigest",
 ] as const;
@@ -59,6 +60,7 @@ export type CosFeedbackSettleEvent = {
   inputBytes: number | null;
   outputBytes: number | null;
   validationResult: CosFeedbackValidationResult | null;
+  responseFormat: "json_schema" | null;
   sourceWatermarkDigest: string;
   portfolioDigest: string;
 };
@@ -70,7 +72,7 @@ export function shortDigest(value: string): string {
 export function emitCosFeedbackSettle(event: CosFeedbackSettleEvent): void {
   const line: Record<string, string | number | boolean | null> = {};
   for (const key of COS_FEEDBACK_SETTLE_FIELDS) {
-    line[key] = key === "toolsSent" ? false : event[key];
+    line[key] = key === "toolsSent" ? false : event[key] ?? null;
   }
   console.info(JSON.stringify(line));
 }

@@ -171,6 +171,7 @@ describe("cos feedback settle telemetry", () => {
     assert.equal(event.modelInvoked, true);
     assert.equal(event.provider, "openai");
     assert.equal(event.model, "gpt-5.6-sol");
+    assert.equal(event.responseFormat, "json_schema");
     assert.equal(typeof event.latencyMs, "number");
     assert.equal((event.inputBytes ?? 0) > 0, true);
     assert.equal((event.outputBytes ?? 0) > 0, true);
@@ -197,6 +198,97 @@ describe("cos feedback settle telemetry", () => {
     assert.equal(events[0]?.validationResult, "invented_date");
     assert.equal(events[0]?.modelInvoked, true);
     assert.doesNotMatch(JSON.stringify(events[0]), /2099-01-01/);
+  });
+
+  it("rejects a schema-valid scheduled claim and hidden due work", async () => {
+    resetCosFeedbackCache();
+    const scheduled = await capture(async () => {
+      await refreshCosFeedback({
+        docket: docket(),
+        sourceWatermark: "watermark-secret",
+        nowIso: NOW,
+        route: ROUTE,
+        model: async () => ({
+          ...acceptedBody(),
+          founderGuidance: "I scheduled the review.",
+        }),
+      });
+    });
+    assert.equal(scheduled[0]?.outcome, "deterministic_fallback");
+    assert.equal(scheduled[0]?.validationResult, "scheduled_claim");
+    assert.equal(scheduled[0]?.responseFormat, "json_schema");
+    assert.doesNotMatch(JSON.stringify(scheduled[0]), /Harborlane|private CAD|gmail:harborlane/);
+
+    resetCosFeedbackCache();
+    const hidden = await capture(async () => {
+      await refreshCosFeedback({
+        docket: docket(),
+        sourceWatermark: "watermark-secret",
+        nowIso: NOW,
+        route: ROUTE,
+        model: async () => ({
+          ...acceptedBody(),
+          focusOrder: [],
+          safeToIgnore: [{ itemId: "harborlane", why: "Leave it." }],
+        }),
+      });
+    });
+    assert.equal(hidden[0]?.outcome, "deterministic_fallback");
+    assert.equal(hidden[0]?.validationResult, "hidden_due_work");
+    assert.equal(hidden[0]?.modelInvoked, true);
+  });
+
+  it("keeps a malformed provider response on the deterministic fallback", async () => {
+    resetCosFeedbackCache();
+    let feedback = "";
+    const events = await capture(async () => {
+      const result = await refreshCosFeedback({
+        docket: docket(),
+        sourceWatermark: "watermark-secret",
+        nowIso: NOW,
+        route: ROUTE,
+        model: async () => {
+          throw new SyntaxError("cos-feedback-malformed");
+        },
+      });
+      feedback = result.founderGuidance;
+    });
+    assert.match(feedback, /real founder/);
+    assert.equal(events[0]?.outcome, "deterministic_fallback");
+    assert.equal(events[0]?.validationResult, "parse_failure");
+    assert.equal(events[0]?.outputBytes, null);
+    assert.doesNotMatch(JSON.stringify(events[0]), /malformed|Harborlane/);
+  });
+
+  it("does not invoke the model again for the same watermark and portfolio", async () => {
+    resetCosFeedbackCache();
+    let calls = 0;
+    const events = await capture(async () => {
+      const model = async () => {
+        calls += 1;
+        return acceptedBody();
+      };
+      await refreshCosFeedback({
+        docket: docket(),
+        sourceWatermark: "watermark-secret",
+        nowIso: NOW,
+        route: ROUTE,
+        model,
+      });
+      await refreshCosFeedback({
+        docket: docket(),
+        sourceWatermark: "watermark-secret",
+        nowIso: "2026-09-23T18:00:00.000Z",
+        route: ROUTE,
+        model,
+      });
+    });
+    assert.equal(calls, 1);
+    assert.equal(events[1]?.outcome, "cache_hit");
+    assert.equal(events[1]?.modelInvoked, false);
+    assert.equal(events[1]?.responseFormat, null);
+    assert.equal(events[0]?.sourceWatermarkDigest, events[1]?.sourceWatermarkDigest);
+    assert.equal(events[0]?.portfolioDigest, events[1]?.portfolioDigest);
   });
 
   it("emits provider_error and keeps the error text out of the log", async () => {
@@ -292,6 +384,7 @@ describe("cos feedback settle telemetry", () => {
       inputBytes: 12,
       outputBytes: 8,
       validationResult: "accepted",
+      responseFormat: "json_schema",
       sourceWatermarkDigest: "abcdef012345",
       portfolioDigest: "012345abcdef",
       founderGuidance: SECRET_NAME,

@@ -222,6 +222,7 @@ export function noteCosFeedbackUnavailable(input: {
     inputBytes: null,
     outputBytes: null,
     validationResult: "missing_key",
+    responseFormat: null,
   });
 }
 
@@ -241,6 +242,7 @@ export function noteCosFeedbackCacheHit(input: {
     inputBytes: null,
     outputBytes: null,
     validationResult: null,
+    responseFormat: null,
   });
 }
 
@@ -287,6 +289,7 @@ async function resolveCosFeedback(
       inputBytes: null,
       outputBytes: null,
       validationResult: "missing_key",
+      responseFormat: null,
     });
     return fallback;
   }
@@ -307,6 +310,7 @@ async function resolveCosFeedback(
       inputBytes,
       outputBytes: encodedBytes(raw),
       validationResult: judged.validationResult,
+      responseFormat: "json_schema",
     });
     return feedback;
   } catch (error) {
@@ -321,6 +325,7 @@ async function resolveCosFeedback(
       inputBytes,
       outputBytes: null,
       validationResult: providerFailure(error),
+      responseFormat: "json_schema",
     });
     return fallback;
   }
