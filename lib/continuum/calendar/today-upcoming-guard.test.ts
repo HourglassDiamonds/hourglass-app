@@ -98,7 +98,6 @@ describe("today calendar read guard", () => {
       async () => {
         throw new SyntaxError("malformed");
       },
-      async () => ({ ok: false }),
     ];
     for (const read of failures) {
       resetTodayUpcomingGuard();
@@ -118,6 +117,30 @@ describe("today calendar read guard", () => {
       });
       assert.deepEqual(again, []);
     }
+  });
+
+  it("does not suppress a later read when no connection row exists", async () => {
+    resetTodayUpcomingGuard();
+    let calls = 0;
+    const first = await resolveTodayUpcomingRead({
+      now: NOW,
+      nowMs: () => 5_000,
+      read: async () => {
+        calls += 1;
+        return { ok: false };
+      },
+    });
+    const second = await resolveTodayUpcomingRead({
+      now: NOW,
+      nowMs: () => 6_000,
+      read: async () => {
+        calls += 1;
+        return appointment();
+      },
+    });
+    assert.deepEqual(first, []);
+    assert.equal(calls, 2);
+    assert.equal(second[0]?.title, "Client appointment");
   });
 
   it("does not call the provider again while the last failure is inside the cache window", async () => {

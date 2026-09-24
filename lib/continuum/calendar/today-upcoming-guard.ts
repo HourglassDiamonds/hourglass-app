@@ -16,7 +16,7 @@ export type TodayUpcomingReadResult =
       events: readonly CalendarEventEvidence[];
       calendars?: readonly Pick<CalendarSourceCalendar, "calendar_id" | "summary">[];
     }
-  | { ok: false };
+  | { ok: false; suppress?: boolean };
 
 type CacheEntry = { at: number; items: TodayUpcomingItem[] };
 
@@ -66,7 +66,7 @@ async function run(
   try {
     const result = await read();
     if (!result.ok) {
-      failedAt = nowMs();
+      if (result.suppress) failedAt = nowMs();
       return null;
     }
     const items = selectTodayUpcoming({

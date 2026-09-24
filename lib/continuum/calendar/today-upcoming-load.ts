@@ -20,6 +20,7 @@ export async function loadTodayUpcoming(now = new Date()): Promise<TodayUpcoming
 
 async function readTodayCalendar(now: Date): Promise<TodayUpcomingReadResult> {
   const surface = await loadCalendarFounderSurface(now);
+  if (surface.status === "read-failed") return { ok: false, suppress: true };
   if (surface.status !== "ready" || !surface.context) return { ok: false };
   return {
     ok: true,
