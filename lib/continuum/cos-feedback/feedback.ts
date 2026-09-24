@@ -15,6 +15,14 @@ import type {
   CosDocketItemView,
   CosWatchingItem,
 } from "@/lib/continuum/chief-of-staff/operating-loop/types";
+import {
+  emitCosFeedbackSettle,
+  shortDigest,
+  type CosFeedbackSettleRoute,
+  type CosFeedbackValidationResult,
+} from "./settle-telemetry";
+
+export type { CosFeedbackSettleRoute, CosFeedbackValidationResult };
 
 export const COS_FEEDBACK_MODEL_ID = "cos-feedback-v1" as const;
 
@@ -199,18 +207,59 @@ export function cosFeedbackIsCached(input: {
   return cached?.key === cacheKey(packet);
 }
 
+export function noteCosFeedbackUnavailable(input: {
+  docket: CosTodayDocketView;
+  sourceWatermark: string;
+  nowIso: string;
+}): void {
+  emitSettle(buildCosFeedbackPacket(input), {
+    provider: null,
+    model: null,
+    outcome: "model_unavailable",
+    cache: "miss",
+    modelInvoked: false,
+    latencyMs: null,
+    inputBytes: null,
+    outputBytes: null,
+    validationResult: "missing_key",
+  });
+}
+
+export function noteCosFeedbackCacheHit(input: {
+  docket: CosTodayDocketView;
+  sourceWatermark: string;
+  nowIso: string;
+  route?: CosFeedbackSettleRoute | null;
+}): void {
+  emitSettle(buildCosFeedbackPacket(input), {
+    provider: input.route?.provider ?? null,
+    model: input.route?.model ?? null,
+    outcome: "cache_hit",
+    cache: "hit",
+    modelInvoked: false,
+    latencyMs: null,
+    inputBytes: null,
+    outputBytes: null,
+    validationResult: null,
+  });
+}
+
 export async function refreshCosFeedback(input: {
   docket: CosTodayDocketView;
   sourceWatermark: string;
   nowIso: string;
   model?: CosFeedbackModel | null;
+  route?: CosFeedbackSettleRoute | null;
 }): Promise<CosFeedbackV1> {
   const packet = buildCosFeedbackPacket(input);
   const key = cacheKey(packet);
-  if (cached?.key === key) return cached.feedback;
+  if (cached?.key === key) {
+    noteCosFeedbackCacheHit(input);
+    return cached.feedback;
+  }
   const pending = inflight.get(key);
   if (pending) return pending;
-  const job = resolveCosFeedback(packet, key, input.model ?? null);
+  const job = resolveCosFeedback(packet, key, input.model ?? null, input.route ?? null);
   inflight.set(key, job);
   try {
     return await job;
@@ -223,20 +272,56 @@ async function resolveCosFeedback(
   packet: CosFeedbackPacket,
   key: string,
   model: CosFeedbackModel | null,
+  route: CosFeedbackSettleRoute | null,
 ): Promise<CosFeedbackV1> {
   const fallback = deriveDeterministicCosFeedback(packet);
   if (!model) {
     cached = { key, feedback: fallback };
+    emitSettle(packet, {
+      provider: null,
+      model: null,
+      outcome: "model_unavailable",
+      cache: "miss",
+      modelInvoked: false,
+      latencyMs: null,
+      inputBytes: null,
+      outputBytes: null,
+      validationResult: "missing_key",
+    });
     return fallback;
   }
+  const started = Date.now();
+  const inputBytes = Buffer.byteLength(JSON.stringify(packet), "utf8");
   try {
     const raw = await model(packet);
-    const accepted = acceptModelFeedback(packet, raw);
-    const feedback = accepted ?? fallback;
+    const judged = judgeModelFeedback(packet, raw);
+    const feedback = judged.feedback ?? fallback;
     cached = { key, feedback };
+    emitSettle(packet, {
+      provider: route?.provider ?? null,
+      model: route?.model ?? null,
+      outcome: judged.feedback ? "model_accepted" : "deterministic_fallback",
+      cache: "miss",
+      modelInvoked: true,
+      latencyMs: Date.now() - started,
+      inputBytes,
+      outputBytes: encodedBytes(raw),
+      validationResult: judged.validationResult,
+    });
     return feedback;
-  } catch {
+  } catch (error) {
     cached = { key, feedback: fallback };
+    emitSettle(packet, {
+      provider: route?.provider ?? null,
+      model: route?.model ?? null,
+      outcome: "deterministic_fallback",
+      cache: "miss",
+      modelInvoked: true,
+      latencyMs: Date.now() - started,
+      inputBytes,
+      outputBytes: null,
+      validationResult: providerFailure(error),
+    });
     return fallback;
   }
 }
@@ -245,7 +330,20 @@ export function acceptModelFeedback(
   packet: CosFeedbackPacket,
   raw: unknown,
 ): CosFeedbackV1 | null {
-  if (!raw || typeof raw !== "object") return null;
+  return judgeModelFeedback(packet, raw).feedback;
+}
+
+function judgeModelFeedback(
+  packet: CosFeedbackPacket,
+  raw: unknown,
+): {
+  feedback: CosFeedbackV1 | null;
+  validationResult: Exclude<CosFeedbackValidationResult, "provider_error" | "timeout" | "missing_key">;
+} {
+  const rejected = (
+    validationResult: Exclude<CosFeedbackValidationResult, "accepted" | "provider_error" | "timeout" | "missing_key">,
+  ) => ({ feedback: null, validationResult });
+  if (!raw || typeof raw !== "object") return rejected("parse_failure");
   const body = raw as {
     portfolioSummary?: unknown;
     founderGuidance?: unknown;
@@ -254,22 +352,25 @@ export function acceptModelFeedback(
     safeToIgnore?: unknown;
   };
   if (typeof body.portfolioSummary !== "string" || typeof body.founderGuidance !== "string") {
-    return null;
+    return rejected("parse_failure");
   }
-  if (!Array.isArray(body.focusOrder) || !Array.isArray(body.safeToIgnore)) return null;
+  if (!Array.isArray(body.focusOrder) || !Array.isArray(body.safeToIgnore)) return rejected("parse_failure");
   const byId = new Map(packet.items.map((item) => [item.itemId, item]));
   const allowedDates = dateTokens(packet);
   const prose = `${body.portfolioSummary}\n${body.founderGuidance}`;
-  if (mentionsSchedule(prose) || hasInventedDate(prose, allowedDates)) return null;
+  const proseFailure = scheduleOrDate(prose, allowedDates);
+  if (proseFailure) return rejected(proseFailure);
 
   const focusOrder: CosFeedbackFocus[] = [];
   for (const row of body.focusOrder) {
-    if (!row || typeof row !== "object") return null;
+    if (!row || typeof row !== "object") return rejected("parse_failure");
     const itemId = (row as { itemId?: unknown }).itemId;
     const why = (row as { why?: unknown }).why;
-    if (typeof itemId !== "string" || typeof why !== "string") return null;
+    if (typeof itemId !== "string" || typeof why !== "string") return rejected("parse_failure");
     const item = byId.get(itemId);
-    if (!item || hasInventedDate(why, allowedDates) || mentionsSchedule(why)) return null;
+    if (!item) return rejected("parse_failure");
+    const whyFailure = dateOrSchedule(why, allowedDates);
+    if (whyFailure) return rejected(whyFailure);
     focusOrder.push({
       itemId,
       rank: focusOrder.length + 1,
@@ -278,17 +379,19 @@ export function acceptModelFeedback(
       basis: "recommendation",
     });
   }
-  if (!clientWorkStaysAhead(focusOrder, packet)) return null;
+  if (!clientWorkStaysAhead(focusOrder, packet)) return rejected("priority_violation");
 
   const safeToIgnore: CosFeedbackIgnore[] = [];
   for (const row of body.safeToIgnore) {
-    if (!row || typeof row !== "object") return null;
+    if (!row || typeof row !== "object") return rejected("parse_failure");
     const itemId = (row as { itemId?: unknown }).itemId;
     const why = (row as { why?: unknown }).why;
-    if (typeof itemId !== "string" || typeof why !== "string") return null;
+    if (typeof itemId !== "string" || typeof why !== "string") return rejected("parse_failure");
     const item = byId.get(itemId);
-    if (!item || item.founderDue || item.currentFounderAction) return null;
-    if (hasInventedDate(why, allowedDates) || mentionsSchedule(why)) return null;
+    if (!item) return rejected("parse_failure");
+    if (item.founderDue || item.currentFounderAction) return rejected("hidden_due_work");
+    const whyFailure = dateOrSchedule(why, allowedDates);
+    if (whyFailure) return rejected(whyFailure);
     safeToIgnore.push({
       itemId,
       why: clip(why),
@@ -299,18 +402,20 @@ export function acceptModelFeedback(
 
   const risks: CosFeedbackRisk[] = [];
   if (body.risks != null) {
-    if (!Array.isArray(body.risks)) return null;
+    if (!Array.isArray(body.risks)) return rejected("parse_failure");
     for (const row of body.risks) {
-      if (!row || typeof row !== "object") return null;
+      if (!row || typeof row !== "object") return rejected("parse_failure");
       const itemId = (row as { itemId?: unknown }).itemId;
       const statement = (row as { statement?: unknown }).statement;
       const basis = (row as { basis?: unknown }).basis;
-      if (typeof itemId !== "string" || typeof statement !== "string") return null;
-      if (basis !== "evidence" && basis !== "recommendation") return null;
+      if (typeof itemId !== "string" || typeof statement !== "string") return rejected("parse_failure");
+      if (basis !== "evidence" && basis !== "recommendation") return rejected("parse_failure");
       const item = byId.get(itemId);
-      if (!item || hasInventedDate(statement, allowedDates) || mentionsSchedule(statement)) return null;
+      if (!item) return rejected("parse_failure");
+      const statementFailure = dateOrSchedule(statement, allowedDates);
+      if (statementFailure) return rejected(statementFailure);
       if (basis === "evidence" && !item.timingFacts.some((fact) => fact.statement === statement)) {
-        return null;
+        return rejected("parse_failure");
       }
       risks.push({
         itemId,
@@ -322,15 +427,69 @@ export function acceptModelFeedback(
   }
 
   return {
-    modelId: COS_FEEDBACK_MODEL_ID,
-    portfolioSummary: clip(body.portfolioSummary),
-    focusOrder,
-    risks,
-    safeToIgnore,
-    founderGuidance: clip(body.founderGuidance),
-    generatedAt: packet.generatedAt,
-    sourceWatermark: packet.sourceWatermark,
+    feedback: {
+      modelId: COS_FEEDBACK_MODEL_ID,
+      portfolioSummary: clip(body.portfolioSummary),
+      focusOrder,
+      risks,
+      safeToIgnore,
+      founderGuidance: clip(body.founderGuidance),
+      generatedAt: packet.generatedAt,
+      sourceWatermark: packet.sourceWatermark,
+    },
+    validationResult: "accepted",
   };
+}
+
+function emitSettle(
+  packet: CosFeedbackPacket,
+  fields: Omit<
+    Parameters<typeof emitCosFeedbackSettle>[0],
+    "event" | "feedbackContract" | "toolsSent" | "sourceWatermarkDigest" | "portfolioDigest"
+  >,
+): void {
+  emitCosFeedbackSettle({
+    event: "continuum.cos_feedback.settle",
+    feedbackContract: "cos-feedback-v1",
+    toolsSent: false,
+    sourceWatermarkDigest: shortDigest(packet.sourceWatermark),
+    portfolioDigest: shortDigest(cosFeedbackDigest(packet)),
+    ...fields,
+  });
+}
+
+function encodedBytes(value: unknown): number | null {
+  if (value == null) return null;
+  const text = typeof value === "string" ? value : JSON.stringify(value);
+  return typeof text === "string" ? Buffer.byteLength(text, "utf8") : null;
+}
+
+function providerFailure(error: unknown): "timeout" | "parse_failure" | "provider_error" {
+  if (error instanceof SyntaxError) return "parse_failure";
+  const name = error && typeof error === "object" && "name" in error ? String(error.name) : "";
+  const message = error instanceof Error ? error.message : "";
+  if (name === "AbortError" || name === "TimeoutError" || /aborted|timeout/i.test(message)) {
+    return "timeout";
+  }
+  return "provider_error";
+}
+
+function scheduleOrDate(
+  text: string,
+  allowed: Set<string>,
+): "scheduled_claim" | "invented_date" | null {
+  if (mentionsSchedule(text)) return "scheduled_claim";
+  if (hasInventedDate(text, allowed)) return "invented_date";
+  return null;
+}
+
+function dateOrSchedule(
+  text: string,
+  allowed: Set<string>,
+): "invented_date" | "scheduled_claim" | null {
+  if (hasInventedDate(text, allowed)) return "invented_date";
+  if (mentionsSchedule(text)) return "scheduled_claim";
+  return null;
 }
 
 function cacheKey(packet: CosFeedbackPacket): string {

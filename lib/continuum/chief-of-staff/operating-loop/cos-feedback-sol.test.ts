@@ -116,7 +116,11 @@ describe("cos feedback sol request", () => {
     assert.doesNotMatch(poll, /settleCosFeedback|sol-adapter|OPENAI_API_KEY/);
     assert.doesNotMatch(probe, /settleCosFeedback|sol-adapter|OPENAI_API_KEY/);
     assert.match(action, /cosFeedbackSolModel/);
+    assert.match(action, /cosFeedbackSolRoute/);
     assert.match(action, /cosFeedbackIsCached/);
+    assert.match(action, /noteCosFeedbackUnavailable/);
+    assert.match(action, /noteCosFeedbackCacheHit/);
+    assert.doesNotMatch(action, /console\.(log|info|debug|warn|error)/);
     assert.doesNotMatch(action, /sourceEvents|authorOwnedText/);
   });
 });

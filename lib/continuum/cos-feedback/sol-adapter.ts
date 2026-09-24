@@ -14,6 +14,14 @@ import { conciergeForegroundModel } from "@/lib/continuum/concierge-sol/models";
 import type { CosFeedbackModel } from "./feedback";
 import { requestCosFeedbackCompletion } from "./sol-request";
 
+export function cosFeedbackSolRoute(): { provider: "openai"; model: string } | null {
+  if (!getConciergeOpenAiApiKey()) return null;
+  return {
+    provider: "openai",
+    model: conciergeForegroundModel(getConciergeForegroundModelOverride()),
+  };
+}
+
 export function cosFeedbackSolModel(): CosFeedbackModel | null {
   const apiKey = getConciergeOpenAiApiKey();
   if (!apiKey) return null;
