@@ -32,6 +32,15 @@ export type TodayUpcomingReadStatus =
   | "paused"
   | "read-failed";
 
+export type CalendarFeedbackCommitment = {
+  sourceRef: string;
+  timeLabel: string;
+  title: string;
+  allDay: boolean;
+  location: string | null;
+  meetingLabel: string | null;
+};
+
 function observedAt(event: CalendarEventEvidence): string | null {
   return event.updated_at || event.provenance.captured_at || null;
 }
@@ -132,6 +141,36 @@ export function upcomingFromCalendarRead(input: {
 }): TodayUpcomingItem[] {
   if (!input.enabled || input.status !== "ready") return [];
   return selectTodayUpcoming(input);
+}
+
+export function calendarFeedbackCommitments(
+  upcoming: readonly TodayUpcomingItem[],
+): CalendarFeedbackCommitment[] {
+  return upcoming.map((item) => ({
+    sourceRef: item.sourceRef,
+    timeLabel: item.timeLabel,
+    title: item.title,
+    allDay: item.allDay,
+    location: item.location,
+    meetingLabel: item.meetingLabel,
+  }));
+}
+
+export function calendarFeedbackMaterialKey(
+  commitments: readonly CalendarFeedbackCommitment[],
+): string {
+  return commitments
+    .map((item) =>
+      [
+        item.sourceRef,
+        item.timeLabel,
+        item.allDay ? "all-day" : "timed",
+        item.title,
+        item.location ?? "",
+        item.meetingLabel ?? "",
+      ].join("|"),
+    )
+    .join("\n");
 }
 
 export function calendarTimingRecommendation(input: {

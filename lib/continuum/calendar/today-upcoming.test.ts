@@ -9,6 +9,8 @@ import { TODAY_DOCKET_VERSION } from "../chief-of-staff/operating-loop/docket";
 import { calendarEventEvidence } from "./association/fixtures";
 import { normalizeGoogleCalendarEvent } from "./normalize";
 import {
+  calendarFeedbackCommitments,
+  calendarFeedbackMaterialKey,
   calendarTimingRecommendation,
   mergeCalendarEvidence,
   selectTodayUpcoming,
@@ -283,5 +285,60 @@ describe("today upcoming calendar context", () => {
       ),
       /data-today-upcoming/,
     );
+  });
+
+  it("changes the feedback material key only when the observed day changes", () => {
+    const first = selectTodayUpcoming({
+      now: NOW,
+      events: [
+        event({
+          calendar_event_id: "client",
+          title: "Client appointment",
+          start_at: "2026-09-23T17:00:00.000Z",
+          end_at: "2026-09-23T18:00:00.000Z",
+          location: "Office",
+        }),
+      ],
+    });
+    const same = selectTodayUpcoming({
+      now: NOW,
+      events: [
+        event({
+          calendar_event_id: "client",
+          title: "Client appointment",
+          start_at: "2026-09-23T17:00:00.000Z",
+          end_at: "2026-09-23T18:00:00.000Z",
+          location: "Office",
+          updated_at: "2026-09-23T13:30:00.000Z",
+        }),
+      ],
+    });
+    const moved = selectTodayUpcoming({
+      now: NOW,
+      events: [
+        event({
+          calendar_event_id: "client",
+          title: "Client appointment",
+          start_at: "2026-09-23T18:00:00.000Z",
+          end_at: "2026-09-23T19:00:00.000Z",
+          location: "Office",
+        }),
+      ],
+    });
+    const stable = calendarFeedbackMaterialKey(calendarFeedbackCommitments(first));
+    assert.equal(calendarFeedbackMaterialKey(calendarFeedbackCommitments(same)), stable);
+    assert.notEqual(calendarFeedbackMaterialKey(calendarFeedbackCommitments(moved)), stable);
+    assert.equal(calendarFeedbackMaterialKey([]), "");
+  });
+
+  it("keeps calendar out of the Today snapshot and source watermark", () => {
+    const root = process.cwd();
+    const snapshot = readFileSync(join(root, "lib/continuum/today-snapshot.ts"), "utf8");
+    const store = readFileSync(join(root, "lib/continuum/today-snapshot-store.ts"), "utf8");
+    const load = readFileSync(
+      join(root, "lib/continuum/chief-of-staff/operating-loop/load.ts"),
+      "utf8",
+    );
+    assert.doesNotMatch(`${snapshot}\n${store}\n${load}`, /calendar|loadTodayUpcoming/);
   });
 });

@@ -4,7 +4,13 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { settleCosFeedback } from "../cos-feedback-actions";
 
-export function CosFeedbackSettle({ watermark }: { watermark: string | null }) {
+export function CosFeedbackSettle({
+  watermark,
+  calendarKey = "",
+}: {
+  watermark: string | null;
+  calendarKey?: string;
+}) {
   const router = useRouter();
   useEffect(() => {
     let active = true;
@@ -18,6 +24,6 @@ export function CosFeedbackSettle({ watermark }: { watermark: string | null }) {
     return () => {
       active = false;
     };
-  }, [watermark, router]);
+  }, [watermark, calendarKey, router]);
   return null;
 }

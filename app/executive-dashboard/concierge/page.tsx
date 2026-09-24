@@ -1,4 +1,5 @@
 import { loadTodaySurface } from "@/lib/continuum/chief-of-staff/operating-loop/load";
+import { calendarFeedbackCommitments, calendarFeedbackMaterialKey } from "@/lib/continuum/calendar/today-upcoming";
 import { loadTodayUpcoming } from "@/lib/continuum/calendar/today-upcoming-load";
 import { loadContinuumHomeModel } from "@/lib/continuum/dashboard/server";
 import { completeTop5OpenJobAction, disposeTodayDocketItemAction } from "./cos-operating-loop-actions";
@@ -23,7 +24,10 @@ export default async function ConciergeHomePage() {
         refreshing={today.freshness === "refreshing"}
         baselineWatermark={today.readModelWatermark}
       />
-      <CosFeedbackSettle watermark={today.readModelWatermark} />
+      <CosFeedbackSettle
+        watermark={today.readModelWatermark}
+        calendarKey={calendarFeedbackMaterialKey(calendarFeedbackCommitments(upcoming))}
+      />
       <CommandCenterHome
         model={model}
         docket={today.docket}

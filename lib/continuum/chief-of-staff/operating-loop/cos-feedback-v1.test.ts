@@ -13,10 +13,12 @@ import type { CosDocketItemView, CosWatchingItem } from "./types";
 import {
   acceptModelFeedback,
   buildCosFeedbackPacket,
+  cosFeedbackDigest,
   presentCosFeedback,
   refreshCosFeedback,
   resetCosFeedbackCache,
 } from "@/lib/continuum/cos-feedback/feedback";
+import type { CalendarFeedbackCommitment } from "@/lib/continuum/calendar/today-upcoming";
 
 const NOW = "2026-09-23T14:00:00.000Z";
 
@@ -369,5 +371,139 @@ describe("cos feedback v1", () => {
     );
     assert.match(today, /data-cos-feedback/);
     assert.match(today, /docket\.title/);
+  });
+});
+
+const APPOINTMENT: CalendarFeedbackCommitment = {
+  sourceRef: "google_calendar:primary:client",
+  timeLabel: "1:00",
+  title: "Client appointment",
+  allDay: false,
+  location: "Office",
+  meetingLabel: null,
+};
+
+describe("calendar context in cos feedback", () => {
+  it("lets a meaningful calendar change invalidate feedback and leaves an unchanged day cached", async () => {
+    resetCosFeedbackCache();
+    let calls = 0;
+    const board = docket([focus({ id: "duane", name: "Duane", state: "Review the CAD." })]);
+    const model = async () => {
+      calls += 1;
+      return {
+        portfolioSummary: "You have one real founder action.",
+        founderGuidance: "Duane first: Review the CAD.",
+        focusOrder: [{ itemId: "duane", why: "Review the CAD." }],
+        safeToIgnore: [],
+      };
+    };
+    await refreshCosFeedback({
+      docket: board,
+      sourceWatermark: "w1",
+      nowIso: NOW,
+      calendarCommitments: [APPOINTMENT],
+      model,
+    });
+    await refreshCosFeedback({
+      docket: board,
+      sourceWatermark: "w1",
+      nowIso: NOW,
+      calendarCommitments: [APPOINTMENT],
+      model,
+    });
+    assert.equal(calls, 1);
+    await refreshCosFeedback({
+      docket: board,
+      sourceWatermark: "w1",
+      nowIso: NOW,
+      calendarCommitments: [{ ...APPOINTMENT, timeLabel: "2:00" }],
+      model,
+    });
+    assert.equal(calls, 2);
+  });
+
+  it("keeps an empty calendar out of the portfolio digest", () => {
+    const board = docket([focus({ id: "duane", name: "Duane", state: "Review the CAD." })]);
+    const plain = buildCosFeedbackPacket({ docket: board, sourceWatermark: "w1", nowIso: NOW });
+    const empty = buildCosFeedbackPacket({
+      docket: board,
+      sourceWatermark: "w1",
+      nowIso: NOW,
+      calendarCommitments: [],
+    });
+    assert.equal(cosFeedbackDigest(empty), cosFeedbackDigest(plain));
+    assert.equal("calendarCommitments" in empty, false);
+  });
+
+  it("does not let a calendar commitment hide due founder work or outrank a client", () => {
+    const due = docket([
+      focus({
+        id: "duane",
+        name: "Duane",
+        state: "Review the CAD.",
+        cos: {
+          currentFounderAction: true,
+          checkpoint: {
+            dueAt: null,
+            dueDate: "2026-09-23",
+            condition: "CAD is waiting",
+            action: "Review it",
+            reason: null,
+            sourceRefs: ["gmail:duane"],
+            status: "advisory",
+            basis: "recommendation",
+          },
+        },
+      }),
+    ]);
+    const duePacket = buildCosFeedbackPacket({
+      docket: due,
+      sourceWatermark: "w1",
+      nowIso: NOW,
+      calendarCommitments: [APPOINTMENT],
+    });
+    assert.equal(
+      acceptModelFeedback(duePacket, {
+        portfolioSummary: "Clear the afternoon.",
+        founderGuidance: "You have Client appointment at 1:00, so I would clear Duane before then.",
+        focusOrder: [],
+        safeToIgnore: [{ itemId: "duane", why: "The appointment comes first." }],
+      }),
+      null,
+    );
+    const ranked = docket([
+      focus({ id: "duane", name: "Duane", state: "Review the CAD." }),
+      focus({
+        id: "seo",
+        name: "SEO",
+        subject: "SEO landing page refresh",
+        state: "Update the landing page.",
+        projectId: null,
+        entityType: "unknown",
+        briefingKind: "generic",
+      }),
+    ]);
+    const rankedPacket = buildCosFeedbackPacket({
+      docket: ranked,
+      sourceWatermark: "w1",
+      nowIso: NOW,
+      calendarCommitments: [APPOINTMENT],
+    });
+    assert.equal(
+      acceptModelFeedback(rankedPacket, {
+        portfolioSummary: "Focus SEO first.",
+        founderGuidance: "Do the landing page before Duane. You have Client appointment at 1:00.",
+        focusOrder: [
+          { itemId: "seo", why: "Update the landing page." },
+          { itemId: "duane", why: "Review the CAD." },
+        ],
+        safeToIgnore: [],
+      }),
+      null,
+    );
+    const serialized = JSON.stringify(duePacket);
+    assert.match(serialized, /Client appointment/);
+    assert.doesNotMatch(serialized, /meet\.google|@|person_id|project_id/);
+    assert.equal(duePacket.items.find((item) => item.itemId === "duane")?.founderDue, true);
   });
 });

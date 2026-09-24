@@ -16,6 +16,10 @@ import type {
   CosWatchingItem,
 } from "@/lib/continuum/chief-of-staff/operating-loop/types";
 import {
+  calendarFeedbackMaterialKey,
+  type CalendarFeedbackCommitment,
+} from "@/lib/continuum/calendar/today-upcoming";
+import {
   emitCosFeedbackSettle,
   shortDigest,
   type CosFeedbackSettleRoute,
@@ -83,6 +87,7 @@ export type CosFeedbackPacket = {
   sourceWatermark: string;
   generatedAt: string;
   items: readonly CosFeedbackPacketItem[];
+  calendarCommitments?: readonly CalendarFeedbackCommitment[];
 };
 
 export type CosFeedbackModel = (packet: CosFeedbackPacket) => Promise<unknown> | unknown;
@@ -102,22 +107,25 @@ export function buildCosFeedbackPacket(input: {
   docket: CosTodayDocketView;
   sourceWatermark: string;
   nowIso: string;
+  calendarCommitments?: readonly CalendarFeedbackCommitment[];
 }): CosFeedbackPacket {
   const today = civilDateInZone(input.nowIso, FOUNDER_BUSINESS_TIME_ZONE);
   const items = [
     ...input.docket.items.map((item) => packetItem(item, "focus", today)),
     ...input.docket.watching.map((item) => watchingItem(item, today)),
   ];
+  const calendarCommitments = input.calendarCommitments ?? [];
   return {
     modelId: COS_FEEDBACK_MODEL_ID,
     sourceWatermark: input.sourceWatermark,
     generatedAt: input.nowIso,
     items,
+    ...(calendarCommitments.length > 0 ? { calendarCommitments } : {}),
   };
 }
 
 export function cosFeedbackDigest(packet: CosFeedbackPacket): string {
-  return packet.items
+  const items = packet.items
     .map((item) =>
       [
         item.itemId,
@@ -133,6 +141,8 @@ export function cosFeedbackDigest(packet: CosFeedbackPacket): string {
       ].join("|"),
     )
     .join("\n");
+  const calendar = calendarFeedbackMaterialKey(packet.calendarCommitments ?? []);
+  return calendar ? `${items}${items ? "\n" : ""}${calendar}` : items;
 }
 
 export function deriveDeterministicCosFeedback(packet: CosFeedbackPacket): CosFeedbackV1 {
@@ -187,11 +197,13 @@ export function presentCosFeedback(input: {
   docket: CosTodayDocketView;
   sourceWatermark: string | null;
   nowIso: string;
+  calendarCommitments?: readonly CalendarFeedbackCommitment[];
 }): CosFeedbackV1 {
   const packet = buildCosFeedbackPacket({
     docket: input.docket,
     sourceWatermark: input.sourceWatermark || "docket",
     nowIso: input.nowIso,
+    calendarCommitments: input.calendarCommitments,
   });
   const key = cacheKey(packet);
   if (cached?.key === key) return cached.feedback;
@@ -202,6 +214,7 @@ export function cosFeedbackIsCached(input: {
   docket: CosTodayDocketView;
   sourceWatermark: string;
   nowIso: string;
+  calendarCommitments?: readonly CalendarFeedbackCommitment[];
 }): boolean {
   const packet = buildCosFeedbackPacket(input);
   return cached?.key === cacheKey(packet);
@@ -211,6 +224,7 @@ export function noteCosFeedbackUnavailable(input: {
   docket: CosTodayDocketView;
   sourceWatermark: string;
   nowIso: string;
+  calendarCommitments?: readonly CalendarFeedbackCommitment[];
 }): void {
   emitSettle(buildCosFeedbackPacket(input), {
     provider: null,
@@ -230,6 +244,7 @@ export function noteCosFeedbackCacheHit(input: {
   docket: CosTodayDocketView;
   sourceWatermark: string;
   nowIso: string;
+  calendarCommitments?: readonly CalendarFeedbackCommitment[];
   route?: CosFeedbackSettleRoute | null;
 }): void {
   emitSettle(buildCosFeedbackPacket(input), {
@@ -250,6 +265,7 @@ export async function refreshCosFeedback(input: {
   docket: CosTodayDocketView;
   sourceWatermark: string;
   nowIso: string;
+  calendarCommitments?: readonly CalendarFeedbackCommitment[];
   model?: CosFeedbackModel | null;
   route?: CosFeedbackSettleRoute | null;
 }): Promise<CosFeedbackV1> {

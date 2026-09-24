@@ -70,15 +70,21 @@ export function CalendarConnectionControls({
     null as CalendarConnectionTestResult | null,
   );
 
+  const detail = statusLine({ connected, status });
   return (
-    <div className="mt-8">
-      <p className="text-[15px] text-[#efe8de]">{statusLine({ connected, status })}</p>
+    <div className="mt-8" data-calendar-connection>
+      <p className="text-[11px] uppercase tracking-[0.28em] text-[#8d8073]">Google Calendar</p>
+      <p className="mt-3 text-[15px] text-[#efe8de]">{connected ? "Connected" : "Not connected"}</p>
+      {connected ? <p className="mt-1 text-[13px] text-[#9a8e82]">Read-only</p> : null}
+      {status !== "ready" && detail !== "Not connected" ? (
+        <p className="mt-1 text-[13px] text-[#9a8e82]">{detail}</p>
+      ) : null}
       {status === "consent-required" && oauthConfigured ? (
         <a
           href="/executive-dashboard/concierge/calendar/oauth/start"
           className="mt-6 inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.24em] text-[#efe8de] outline-none hover:text-[#ad9164] focus-visible:text-[#ad9164] focus-visible:shadow-[0_0_0_3px_rgba(173,145,100,0.22)]"
         >
-          Connect calendar
+          Connect
         </a>
       ) : null}
       <form action={formAction} className="mt-4">

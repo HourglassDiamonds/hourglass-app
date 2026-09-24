@@ -20,6 +20,7 @@ import { CosAskConcierge, type TodayAskAction } from "./cos-ask-concierge";
 import { CosBriefingBlock } from "./cos-briefing-block";
 import { presentCosFeedback } from "@/lib/continuum/cos-feedback/feedback";
 import {
+  calendarFeedbackCommitments,
   calendarTimingRecommendation,
   type TodayUpcomingItem,
 } from "@/lib/continuum/calendar/today-upcoming";
@@ -178,12 +179,14 @@ export function ChiefOfStaffToday({
   const hasBrief = docket.items.some((item) => item.origin === "brief");
   const loopStatus = loop?.status
     ?? (docket.showDisconnected ? "disconnected" : docket.showCaughtUp ? "caught-up" : "active");
+  const calendarCommitments = calendarFeedbackCommitments(upcoming);
   const feedback = docket.showDisconnected
     ? null
     : presentCosFeedback({
         docket,
         sourceWatermark: loop?.todayReadModelWatermark ?? null,
         nowIso: new Date().toISOString(),
+        calendarCommitments,
       });
   const waiting = feedback?.safeToIgnore.map((item) => item.why).filter((why, index, all) => all.indexOf(why) === index) ?? [];
   const timing = calendarTimingRecommendation({
@@ -221,23 +224,6 @@ export function ChiefOfStaffToday({
               </li>
             ))}
           </ul>
-        </div>
-      ) : null}
-      {feedback ? (
-        <div data-cos-feedback className="mb-6 max-w-[46ch]">
-          <p className="break-words text-[14px] leading-relaxed text-[#d8cfc4]">
-            {feedback.founderGuidance}
-          </p>
-          {timing ? (
-            <p className="mt-2 break-words text-[14px] leading-relaxed text-[#d8cfc4]">
-              {timing}
-            </p>
-          ) : null}
-          {waiting.length > 0 ? (
-            <p className="mt-2 break-words text-[13px] leading-relaxed text-[#9a8e82]">
-              {waiting.join(" ")}
-            </p>
-          ) : null}
         </div>
       ) : null}
       {docket.showDisconnected ? (
@@ -292,6 +278,23 @@ export function ChiefOfStaffToday({
           ) : null}
         </>
       )}
+      {feedback ? (
+        <div data-cos-feedback className="mt-6 max-w-[46ch]">
+          <p className="break-words text-[14px] leading-relaxed text-[#d8cfc4]">
+            {feedback.founderGuidance}
+          </p>
+          {timing ? (
+            <p data-calendar-timing className="mt-2 break-words text-[14px] leading-relaxed text-[#d8cfc4]">
+              {timing}
+            </p>
+          ) : null}
+          {waiting.length > 0 ? (
+            <p className="mt-2 break-words text-[13px] leading-relaxed text-[#9a8e82]">
+              {waiting.join(" ")}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
       <CosWatchingList watching={docket.watching} askAction={askAction} />
     </section>
   );

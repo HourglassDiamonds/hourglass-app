@@ -18,6 +18,8 @@ const INSTRUCTIONS = [
   "Facts in the packet stay facts. Recommendations stay recommendations.",
   "Do not invent dates, people, client actions, or vendor actions.",
   "Do not say anything was scheduled.",
+  "Observed calendar commitments are day facts. Use them only to time a recommendation.",
+  "Do not hide founder work because of a commitment, and do not attach a commitment to a project.",
   "Do not mark due or overdue founder work as safe to ignore.",
   "Do not rank internal or SEO work ahead of a client or project founder obligation.",
   "When basis is evidence, copy the packet timing statement exactly.",

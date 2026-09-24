@@ -1,6 +1,8 @@
 "use server";
 
 import { loadTodaySurface } from "@/lib/continuum/chief-of-staff/operating-loop/load";
+import { calendarFeedbackCommitments } from "@/lib/continuum/calendar/today-upcoming";
+import { loadTodayUpcoming } from "@/lib/continuum/calendar/today-upcoming-load";
 import {
   cosFeedbackIsCached,
   noteCosFeedbackCacheHit,
@@ -10,11 +12,16 @@ import {
 import { cosFeedbackSolModel, cosFeedbackSolRoute } from "@/lib/continuum/cos-feedback/sol-adapter";
 
 export async function settleCosFeedback(): Promise<{ refresh: boolean }> {
-  const today = await loadTodaySurface();
+  const [today, upcoming] = await Promise.all([loadTodaySurface(), loadTodayUpcoming()]);
   const sourceWatermark = today.readModelWatermark;
   if (!sourceWatermark || today.docket.showDisconnected) return { refresh: false };
   const nowIso = new Date().toISOString();
-  const input = { docket: today.docket, sourceWatermark, nowIso };
+  const input = {
+    docket: today.docket,
+    sourceWatermark,
+    nowIso,
+    calendarCommitments: calendarFeedbackCommitments(upcoming),
+  };
   const model = cosFeedbackSolModel();
   if (!model) {
     noteCosFeedbackUnavailable(input);
