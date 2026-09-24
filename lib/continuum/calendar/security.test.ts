@@ -35,7 +35,14 @@ describe("Calendar activation security", () => {
       if (file.endsWith(".test.ts")) continue;
       const source = readFileSync(file, "utf8");
       const executable = source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
-      assert.doesNotMatch(executable, /console\.(log|info|debug|warn|error)/);
+      const telemetryOnly = file.endsWith("oauth-callback-telemetry.ts");
+      if (telemetryOnly) {
+        assert.match(executable, /console\.info\(JSON\.stringify\(line\)\)/);
+        assert.doesNotMatch(executable, /console\.(log|debug|warn|error)/);
+        assert.doesNotMatch(executable, /searchParams|error\.message|emailAddress|clientSecret/);
+      } else {
+        assert.doesNotMatch(executable, /console\.(log|info|debug|warn|error)/);
+      }
       assert.doesNotMatch(executable, /createPersonAtomic|insertSourceNote|insertWish/);
       assert.doesNotMatch(executable, /continuum_open_jobs|saveOpenJob/);
       assert.doesNotMatch(executable, /setProjectLifecycle|correctProjectSpec/);

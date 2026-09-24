@@ -257,6 +257,23 @@ export function calendarGrantIsReadOnly(scope: string | null | undefined): boole
   );
 }
 
+/** Raw Google scope only. An omitted scope stays null so telemetry does not invent a grant. */
+export function observeCalendarGrant(scope: string | null | undefined): {
+  calendarReadonlyGranted: boolean | null;
+  writeScopePresent: boolean | null;
+} {
+  if (scope == null || scope.trim() === "") {
+    return { calendarReadonlyGranted: null, writeScopePresent: null };
+  }
+  const granted = grantedCalendarScopes(scope);
+  return {
+    calendarReadonlyGranted: granted.includes(CALENDAR_READONLY_SCOPE),
+    writeScopePresent: granted.some((item) =>
+      (CALENDAR_WRITE_SCOPES as readonly string[]).includes(item),
+    ),
+  };
+}
+
 export function interpretCalendarTokenRefreshResponse(input: {
   accessToken?: string | null;
   returnedRefreshToken?: string | null;
@@ -310,7 +327,7 @@ export const liveCalendarOAuthTokenExchanger: CalendarOAuthTokenExchanger = {
       codeVerifier: input.codeVerifier,
     });
     if (!tokens.refresh_token) {
-      throw new Error("token-exchange-failed");
+      throw new Error("missing-refresh-token");
     }
     return {
       refreshToken: tokens.refresh_token,

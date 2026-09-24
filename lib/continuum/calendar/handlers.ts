@@ -20,6 +20,7 @@ import {
   calendarGrantIsReadOnly,
   createCalendarOAuthPending,
   getCalendarOAuthClientConfig,
+  observeCalendarGrant,
   oauthStatesMatch,
   parseCalendarOAuthIntent,
   parseCalendarOAuthPending,
@@ -31,6 +32,15 @@ import {
   type CalendarTelemetrySink,
   noopCalendarTelemetry,
 } from "./logging";
+import {
+  CALENDAR_OAUTH_CALLBACK_REDIRECT_STATUS,
+  createCalendarOauthCallbackReport,
+  emitCalendarOauthCallback,
+  type CalendarOauthCallbackOutcome,
+  type CalendarOauthCallbackRedirectCode,
+  type CalendarOauthCallbackReport,
+  type CalendarOauthCallbackStage,
+} from "./oauth-callback-telemetry";
 
 export type CalendarOAuthHandlerResult =
   | {
@@ -94,29 +104,66 @@ export async function handleCalendarOAuthCallback(input: {
   const nowMs = input.nowMs ?? Date.now();
   const telemetry = input.telemetry ?? noopCalendarTelemetry;
   const founderRedirect = input.founderRedirect ?? CONCIERGE_CALENDAR_PATH;
-  const denied = input.url.searchParams.get("error");
-  if (denied) {
+  const report = createCalendarOauthCallbackReport({
+    googleErrorPresent: input.url.searchParams.has("error"),
+    codePresent: input.url.searchParams.has("code"),
+  });
+  try {
+    return await runCalendarOAuthCallback(input, {
+      nowMs,
+      telemetry,
+      founderRedirect,
+      report,
+    });
+  } catch (error) {
+    if (report.outcome === "unknown_failure" && report.callbackStatus === 0) {
+      report.callbackStatus = 500;
+    }
+    throw error;
+  } finally {
+    emitCalendarOauthCallback(report);
+  }
+}
+
+async function runCalendarOAuthCallback(
+  input: {
+    url: URL;
+    pendingCookie?: string | null;
+    signingSecret: string;
+    exchanger: CalendarOAuthTokenExchanger;
+    fetchPrimaryEmail: (accessToken: string | null) => Promise<{ emailAddress: string }>;
+    connections: CalendarConnectionStore;
+    tokenKek?: Buffer;
+    founderEmail?: string;
+  },
+  ctx: {
+    nowMs: number;
+    telemetry: CalendarTelemetrySink;
+    founderRedirect: string;
+    report: CalendarOauthCallbackReport;
+  },
+): Promise<CalendarOAuthHandlerResult> {
+  const { report, founderRedirect, telemetry, nowMs } = ctx;
+  if (report.googleErrorPresent) {
     emitCalendarTelemetry(telemetry, {
       event: "calendar-oauth-failed",
       error_code: "oauth-denied",
     });
-    return {
-      status: "redirect",
-      url: withCalendarQuery(founderRedirect, "oauth-denied"),
-      clearCookies: true,
-    };
+    return finishRedirect(report, founderRedirect, "oauth-denied", {
+      stage: "google_error",
+      outcome: "google_denied",
+    });
   }
 
   const pending = input.pendingCookie
     ? parseCalendarOAuthPending(input.pendingCookie, input.signingSecret, nowMs)
     : null;
   if (!pending) {
-    return {
-      status: "error",
-      error: "oauth-state-mismatch",
-      httpStatus: 401,
-      clearCookies: true,
-    };
+    return finishError(report, "oauth-state-mismatch", 401, {
+      stage: "request",
+      outcome: "state_invalid",
+      stateValid: false,
+    });
   }
 
   const state = input.url.searchParams.get("state");
@@ -125,24 +172,25 @@ export async function handleCalendarOAuthCallback(input: {
       event: "calendar-oauth-failed",
       error_code: "oauth-state-mismatch",
     });
-    return {
-      status: "error",
-      error: "oauth-state-mismatch",
-      httpStatus: 401,
-      clearCookies: true,
-    };
+    return finishError(report, "oauth-state-mismatch", 401, {
+      stage: "request",
+      outcome: "state_invalid",
+      stateValid: false,
+    });
   }
+  report.stateValid = true;
+  report.stage = "state_validated";
 
   const code = input.url.searchParams.get("code");
   if (!code) {
-    return {
-      status: "error",
-      error: "oauth-code-missing",
-      httpStatus: 400,
-      clearCookies: true,
-    };
+    return finishError(report, "oauth-code-missing", 400, {
+      stage: "state_validated",
+      outcome: "missing_code",
+    });
   }
 
+  report.tokenExchangeAttempted = true;
+  report.stage = "token_exchange";
   let tokens: Awaited<ReturnType<CalendarOAuthTokenExchanger["exchangeCode"]>>;
   try {
     tokens = await input.exchanger.exchangeCode({
@@ -151,21 +199,42 @@ export async function handleCalendarOAuthCallback(input: {
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "token-exchange-failed";
+    if (message === "missing-refresh-token") {
+      report.tokenExchangeSucceeded = true;
+      report.refreshTokenPresent = false;
+      return finishRedirect(report, founderRedirect, "oauth-refresh-token-missing", {
+        stage: "token_validated",
+        outcome: "missing_refresh_token",
+      });
+    }
+    report.tokenExchangeSucceeded = false;
     if (message === "invalid_grant" || message.includes("invalid_grant")) {
       await applyCalendarInvalidGrant(input.connections, new Date(nowMs).toISOString());
-      return {
-        status: "redirect",
-        url: withCalendarQuery(founderRedirect, "invalid_grant"),
-        clearCookies: true,
-      };
+      return finishRedirect(report, founderRedirect, "invalid_grant", {
+        stage: "token_exchange",
+        outcome: "token_exchange_failed",
+      });
     }
-    return {
-      status: "redirect",
-      url: withCalendarQuery(founderRedirect, "token-exchange-failed"),
-      clearCookies: true,
-    };
+    return finishRedirect(report, founderRedirect, "token-exchange-failed", {
+      stage: "token_exchange",
+      outcome: "token_exchange_failed",
+    });
   }
 
+  report.tokenExchangeSucceeded = true;
+  const refreshPresent = Boolean(tokens.refreshToken);
+  report.refreshTokenPresent = refreshPresent;
+  if (!refreshPresent) {
+    return finishRedirect(report, founderRedirect, "oauth-refresh-token-missing", {
+      stage: "token_validated",
+      outcome: "missing_refresh_token",
+    });
+  }
+  report.stage = "token_validated";
+
+  const observed = observeCalendarGrant(tokens.scope);
+  report.calendarReadonlyGranted = observed.calendarReadonlyGranted;
+  report.writeScopePresent = observed.writeScopePresent;
   if (!calendarGrantIsReadOnly(tokens.scope ?? CALENDAR_READONLY_SCOPE)) {
     try {
       await input.exchanger.revokeToken(tokens.refreshToken);
@@ -176,12 +245,15 @@ export async function handleCalendarOAuthCallback(input: {
       event: "calendar-oauth-failed",
       error_code: "calendar-scope-rejected",
     });
-    return {
-      status: "redirect",
-      url: withCalendarQuery(founderRedirect, "calendar-scope-rejected"),
-      clearCookies: true,
-    };
+    const outcome: CalendarOauthCallbackOutcome = observed.writeScopePresent
+      ? "write_scope_rejected"
+      : "scope_missing";
+    return finishRedirect(report, founderRedirect, "calendar-scope-rejected", {
+      stage: "token_validated",
+      outcome,
+    });
   }
+  report.stage = "scope_validated";
 
   const kek = input.tokenKek
     ? { ok: true as const, key: input.tokenKek }
@@ -192,11 +264,12 @@ export async function handleCalendarOAuthCallback(input: {
     } catch {
       /* best-effort */
     }
-    return {
-      status: "redirect",
-      url: withCalendarQuery(founderRedirect, kek.error),
-      clearCookies: true,
-    };
+    const outcome: CalendarOauthCallbackOutcome =
+      kek.error === "token-kek-missing" ? "kek_missing" : "encryption_failed";
+    return finishRedirect(report, founderRedirect, kek.error, {
+      stage: "scope_validated",
+      outcome,
+    });
   }
 
   let profileEmail: string;
@@ -209,11 +282,11 @@ export async function handleCalendarOAuthCallback(input: {
     } catch {
       /* best-effort */
     }
-    return {
-      status: "redirect",
-      url: withCalendarQuery(founderRedirect, "token-exchange-failed"),
-      clearCookies: true,
-    };
+    report.identityValidated = false;
+    return finishRedirect(report, founderRedirect, "token-exchange-failed", {
+      stage: "scope_validated",
+      outcome: "unknown_failure",
+    });
   }
 
   const bound = bindFounderCalendar(profileEmail, input.founderEmail);
@@ -227,14 +300,34 @@ export async function handleCalendarOAuthCallback(input: {
       event: "calendar-oauth-failed",
       error_code: bound.error,
     });
-    return {
-      status: "redirect",
-      url: withCalendarQuery(founderRedirect, bound.error),
-      clearCookies: true,
-    };
+    report.identityValidated = false;
+    return finishRedirect(report, founderRedirect, bound.error, {
+      stage: "scope_validated",
+      outcome: "identity_mismatch",
+    });
   }
+  report.identityValidated = true;
+  report.stage = "identity_validated";
 
-  const wrapped = encryptCalendarRefreshToken(tokens.refreshToken, kek.key);
+  let wrapped: ReturnType<typeof encryptCalendarRefreshToken>;
+  report.encryptionAttempted = true;
+  try {
+    wrapped = encryptCalendarRefreshToken(tokens.refreshToken, kek.key);
+    report.encryptionSucceeded = true;
+  } catch {
+    report.encryptionSucceeded = false;
+    try {
+      await input.exchanger.revokeToken(tokens.refreshToken);
+    } catch {
+      /* best-effort */
+    }
+    return finishRedirect(report, founderRedirect, "oauth-encryption-failed", {
+      stage: "identity_validated",
+      outcome: "encryption_failed",
+    });
+  }
+  report.stage = "encrypted";
+
   const existing = await input.connections.getFounderConnection();
   const connected = connectFounderCalendar({
     existing,
@@ -244,14 +337,74 @@ export async function handleCalendarOAuthCallback(input: {
     providerTokenType: tokens.tokenType,
     now: new Date(nowMs).toISOString(),
   });
-  await input.connections.putConnection(connected);
+  report.connectionWriteAttempted = true;
+  try {
+    await input.connections.putConnection(connected);
+    report.connectionWriteSucceeded = true;
+  } catch {
+    report.connectionWriteSucceeded = false;
+    try {
+      await input.exchanger.revokeToken(tokens.refreshToken);
+    } catch {
+      /* best-effort */
+    }
+    return finishRedirect(report, founderRedirect, "oauth-write-failed", {
+      stage: "encrypted",
+      outcome: "connection_write_failed",
+    });
+  }
+  report.stage = "connection_written";
   emitCalendarTelemetry(telemetry, {
     event: "calendar-oauth-ok",
     status: "connected",
   });
+  return finishRedirect(report, founderRedirect, "connected", {
+    stage: "redirect",
+    outcome: "success_redirect",
+  });
+}
+
+function finishRedirect(
+  report: CalendarOauthCallbackReport,
+  founderRedirect: string,
+  code: CalendarOauthCallbackRedirectCode,
+  patch: {
+    stage: CalendarOauthCallbackStage;
+    outcome: CalendarOauthCallbackOutcome;
+    stateValid?: boolean;
+  },
+): CalendarOAuthHandlerResult {
+  report.stage = patch.stage;
+  report.outcome = patch.outcome;
+  report.callbackStatus = CALENDAR_OAUTH_CALLBACK_REDIRECT_STATUS;
+  report.redirectCode = code;
+  if (patch.stateValid != null) report.stateValid = patch.stateValid;
   return {
     status: "redirect",
-    url: withCalendarQuery(founderRedirect, "connected"),
+    url: withCalendarQuery(founderRedirect, code),
+    clearCookies: true,
+  };
+}
+
+function finishError(
+  report: CalendarOauthCallbackReport,
+  code: "oauth-state-mismatch" | "oauth-code-missing",
+  httpStatus: number,
+  patch: {
+    stage: CalendarOauthCallbackStage;
+    outcome: CalendarOauthCallbackOutcome;
+    stateValid?: boolean;
+  },
+): CalendarOAuthHandlerResult {
+  report.stage = patch.stage;
+  report.outcome = patch.outcome;
+  report.callbackStatus = httpStatus;
+  report.redirectCode = code;
+  if (patch.stateValid != null) report.stateValid = patch.stateValid;
+  return {
+    status: "error",
+    error: code,
+    httpStatus,
     clearCookies: true,
   };
 }
