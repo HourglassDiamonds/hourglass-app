@@ -19,7 +19,7 @@ const WORKSHOP =
 const ARTIFACT_DELIVERED =
   /\b(?:here is|attached|delivered|sent)\b[^.!?\n]{0,80}\b(?:mod\s*\d+\s+)?(?:stl|cad)\b|\b(?:mod\s*\d+\s+)?(?:stl|cad)\b[^.!?\n]{0,40}\b(?:attached|delivered|sent)\b/i;
 const CAD_FORTHCOMING =
-  /\b(?:updated CAD|CAD as soon as|I(?:'ll| will) send (?:you )?(?:the )?(?:updated )?(?:CAD|STL|file)|final CAD|CAD in (?:about |approximately )?\d+)\b/i;
+  /\b(?:updated CAD|CAD as soon as|I(?:'ll| will) send (?:you )?(?:the )?(?:updated )?(?:CAD|STL|file)|I(?:'ll| will) have (?:the |an )?(?:updated )?(?:CAD|STL)|final CAD|CAD in (?:about |approximately )?\d+)\b/i;
 const VENDOR_ACK =
   /^(?:thank you(?: so much)?!?|thanks!?|got it!?|perfect!?|sounds good!?)[\s.]*$/i;
 const CLIENT_APPROVES =
@@ -35,7 +35,7 @@ const FOUNDER_PRINT_PLAN =
 const FOUNDER_CLIENT_UPDATE =
   /\blet me know what you think\b|\bhere(?:'s| is) the (?:latest |updated )?(?:cad|stl|render|design)\b|\bthoughts\??\b/i;
 const FOUNDER_FULFILL =
-  /\bheaded to you\b|\b(?:i(?:'m| am) )?(?:mail(?:ing)?|ship(?:ping)?)\b|\bi(?:'ll| will) send (?:it|them|this)\b/i;
+  /\bheaded to you\b|\b(?:i(?:'m| am) )?(?:mail(?:ing)?|ship(?:ping)?)\b|\bi(?:'ll| will) send (?:it|them|this)\b|\bi sent (?:it|them|this)(?: over)?\b/i;
 const HGD_VENDOR_THREAD = /\bHGD\s*x\s+.+-C\d{5,}/i;
 const DISCREPANCY = /\b(?:discrepanc|report .{0,40}asap|please (?:review|check|confirm|report))\b/i;
 

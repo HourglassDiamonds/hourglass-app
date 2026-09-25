@@ -74,8 +74,59 @@ export type SourceCommunicationEvent = {
   projectId: string | null;
   workLoopId: string | null;
   semanticClass: SourceCommunicationEventClass;
-  provenance: "indexed_gmail" | "indexed_gmail+interpretation";
+  provenance: SourceCommunicationProvenance;
 };
+
+/**
+ * Gmail provenance stays a string. SMS provenance is explicit and never
+ * reuses a Gmail label.
+ */
+export type SourceCommunicationProvenance =
+  | "indexed_gmail"
+  | "indexed_gmail+interpretation"
+  | SmsObservationProvenance;
+
+export type SmsIngestClass = "historical" | "live";
+
+export type SmsLineClass = "business" | "personal" | "unknown";
+
+export type SmsIdentityRuleId =
+  | "unique_phone_hash"
+  | "ambiguous_shared_number"
+  | "family_or_shared_unresolved"
+  | "vendor_or_business_number"
+  | "unknown_number_evidence_first"
+  | "unhashable_phone_evidence_first"
+  | "internal_number"
+  | "routed_existing_person";
+
+export type SmsTodayAdmission =
+  | "admitted"
+  | "historical_evidence_only"
+  | "personal_unknown_withheld"
+  | "unknown_line_withheld"
+  | "internal_withheld"
+  | "unresolved_identity_withheld"
+  | "not_work_contact_withheld";
+
+export type SmsObservationProvenance = {
+  channel: "sms";
+  provider: string;
+  ingestClass: SmsIngestClass;
+  lineClass: SmsLineClass;
+  capturedAt: string;
+  producer: "sms-source-event-bridge-v1";
+  identityRule: SmsIdentityRuleId;
+  personId: string | null;
+  todayAdmission: SmsTodayAdmission;
+  idempotencyKey: string;
+};
+
+export function isSmsObservationProvenance(
+  value: SourceCommunicationProvenance,
+): value is SmsObservationProvenance {
+  return typeof value !== "string" && value.channel === "sms";
+}
 
 export function isCurrentWorkSourceClass(
   value: SourceCommunicationEventClass,

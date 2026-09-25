@@ -139,6 +139,42 @@ describe("source communication classification", () => {
     );
   });
 
+  it("client thanks is not a request", () => {
+    assert.equal(
+      classifySourceCommunication({
+        actor: "client",
+        direction: "inbound",
+        subject: null,
+        authorOwnedText: "Thanks!",
+      }),
+      "client_replies_nonblocking",
+    );
+  });
+
+  it("founder sent-it-over is an existing fulfillment class", () => {
+    assert.equal(
+      classifySourceCommunication({
+        actor: "founder",
+        direction: "outbound",
+        subject: null,
+        authorOwnedText: "I sent it over.",
+      }),
+      "founder_fulfills_commitment",
+    );
+  });
+
+  it("vendor I'll-have-the-CAD is an existing promise class", () => {
+    assert.equal(
+      classifySourceCommunication({
+        actor: "vendor_shop",
+        direction: "inbound",
+        subject: null,
+        authorOwnedText: "I'll have the CAD Friday.",
+      }),
+      "vendor_promises",
+    );
+  });
+
   it("client shipping address is client_requests", () => {
     assert.equal(
       classifySourceCommunication({
