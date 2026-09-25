@@ -33,7 +33,14 @@ describe("Gmail activation security", () => {
     for (const file of walk(GMAIL_DIR, ".ts")) {
       if (file.endsWith(".test.ts")) continue;
       const source = readFileSync(file, "utf8");
-      assert.doesNotMatch(source, /console\.(log|info|debug|warn|error)/);
+      const freshnessTelemetry = file.endsWith("freshness-telemetry.ts");
+      if (freshnessTelemetry) {
+        assert.match(source, /console\.info\(JSON\.stringify\(line\)\)/);
+        assert.doesNotMatch(source, /console\.(log|debug|warn|error)/);
+        assert.doesNotMatch(source, /subject|snippet|threadId|messageId|mailboxEmail/);
+      } else {
+        assert.doesNotMatch(source, /console\.(log|info|debug|warn|error)/);
+      }
       assert.doesNotMatch(source, /insertEvent|insertEvidence|insertObservation/);
       assert.doesNotMatch(source, /continuum_events|continuum_observations/);
       assert.doesNotMatch(source, /continuum_person_profiles|continuum_person_facts/);

@@ -11,6 +11,10 @@ import { verifyCronRequest } from "@/lib/intelligence/cron-auth";
 import { executeLiveGmailFreshnessCycle } from "@/lib/continuum/gmail/freshness-run";
 import { sanitizeGmailFreshnessCycleResult } from "@/lib/continuum/gmail/freshness-cycle";
 import { continuumEnvLogLabel } from "@/lib/continuum/runtime-env";
+import {
+  classifyGmailFreshnessRun,
+  emitGmailFreshnessRun,
+} from "@/lib/continuum/gmail/freshness-telemetry";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -35,7 +39,14 @@ function json(body: Record<string, unknown>, status: number) {
 }
 
 export async function GET(request: Request) {
+  const started = Date.now();
   if (!verifyCronRequest(request)) {
+    emitGmailFreshnessRun(
+      classifyGmailFreshnessRun({
+        safeErrorCode: "unauthorized",
+        durationMs: Date.now() - started,
+      }),
+    );
     return unauthorized();
   }
 
@@ -46,6 +57,17 @@ export async function GET(request: Request) {
       await executeLiveGmailFreshnessCycle({
         founderSessionOk: false,
         secretProtectedOk: true,
+      }),
+    );
+    emitGmailFreshnessRun(
+      classifyGmailFreshnessRun({
+        safeErrorCode: result.safeErrorCode,
+        durationMs: Date.now() - started,
+        indexedThisCycle: result.indexedThisCycle,
+        sourceEventsChanged: result.sourceEventsChanged,
+        morePagesRemain: result.morePagesRemain,
+        completed: result.completed,
+        skippedAsFresh: result.skippedAsFresh,
       }),
     );
     const retryable =
@@ -70,6 +92,12 @@ export async function GET(request: Request) {
       ok ? 200 : 500,
     );
   } catch {
+    emitGmailFreshnessRun(
+      classifyGmailFreshnessRun({
+        safeErrorCode: "freshness_failed",
+        durationMs: Date.now() - started,
+      }),
+    );
     return json({ ok: false, error: "freshness_failed" }, 500);
   }
 }
