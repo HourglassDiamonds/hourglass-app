@@ -3,6 +3,13 @@
  * Allowlisted fields only. No mailbox content, tokens, or provider bodies.
  */
 
+import {
+  GMAIL_REFRESH_FAILURE_CATEGORIES,
+  type GmailRefreshFailureCategory,
+} from "./oauth";
+
+export type { GmailRefreshFailureCategory };
+
 export const GMAIL_FRESHNESS_RUN_EVENT = "continuum.gmail_freshness.run" as const;
 
 export const GMAIL_FRESHNESS_RUN_FIELDS = [
@@ -16,6 +23,11 @@ export const GMAIL_FRESHNESS_RUN_FIELDS = [
   "watermarkChanged",
   "catchupNeeded",
   "catchupSucceeded",
+  "refreshFailureCategory",
+  "refreshRequestAttempted",
+  "refreshRequestSucceeded",
+  "tokenDecryptSucceeded",
+  "refreshedAccessTokenPresent",
 ] as const;
 
 export type GmailFreshnessRunOutcome = "success" | "failed" | "skipped";
@@ -52,6 +64,11 @@ export type GmailFreshnessRunEvent = {
   watermarkChanged: boolean;
   catchupNeeded: boolean;
   catchupSucceeded: boolean;
+  refreshFailureCategory: GmailRefreshFailureCategory | null;
+  refreshRequestAttempted: boolean;
+  refreshRequestSucceeded: boolean;
+  tokenDecryptSucceeded: boolean | null;
+  refreshedAccessTokenPresent: boolean | null;
 };
 
 const OUTCOMES = new Set<GmailFreshnessRunOutcome>(["success", "failed", "skipped"]);
@@ -64,6 +81,8 @@ const STAGES = new Set<GmailFreshnessRunStage>([
   "watermark",
   "complete",
 ]);
+const REFRESH_FAILURES = new Set<GmailRefreshFailureCategory>(GMAIL_REFRESH_FAILURE_CATEGORIES);
+
 const CATEGORIES = new Set<GmailFreshnessRunErrorCategory>([
   "unauthorized",
   "token_refresh_failed",
@@ -91,6 +110,11 @@ export function classifyGmailFreshnessRun(input: {
   morePagesRemain?: boolean;
   completed?: boolean;
   skippedAsFresh?: boolean;
+  refreshFailureCategory?: string | null;
+  refreshRequestAttempted?: boolean;
+  refreshRequestSucceeded?: boolean;
+  tokenDecryptSucceeded?: boolean | null;
+  refreshedAccessTokenPresent?: boolean | null;
 }): GmailFreshnessRunEvent {
   const code = input.safeErrorCode;
   const indexed = count(input.indexedThisCycle);
@@ -139,6 +163,42 @@ export function classifyGmailFreshnessRun(input: {
     stage = "gmail_fetch";
   }
 
+  const supplied =
+    input.refreshFailureCategory &&
+    REFRESH_FAILURES.has(input.refreshFailureCategory as GmailRefreshFailureCategory)
+      ? (input.refreshFailureCategory as GmailRefreshFailureCategory)
+      : null;
+  let refreshFailureCategory: GmailRefreshFailureCategory | null =
+    outcome === "success" ? null : supplied;
+  if (outcome !== "success" && !refreshFailureCategory) {
+    if (code === "gmail-not-connected" || code === "connection-inactive") {
+      refreshFailureCategory = "connection_missing";
+    } else if (code === "decrypt-failed") {
+      refreshFailureCategory = "token_decrypt_failed";
+    } else if (code === "refresh-token-rotated") {
+      refreshFailureCategory = "refresh_token_rotated";
+    } else if (code === "invalid_grant") {
+      refreshFailureCategory = "provider_invalid_grant";
+    } else if (code === "token-refresh-failed") {
+      refreshFailureCategory = "unknown";
+    }
+  }
+  const refreshRequestAttempted = input.refreshRequestAttempted === true;
+  const refreshRequestSucceeded = input.refreshRequestSucceeded === true;
+  const tokenDecryptSucceeded =
+    input.tokenDecryptSucceeded === true
+      ? true
+      : input.tokenDecryptSucceeded === false || code === "decrypt-failed"
+        ? false
+        : refreshRequestAttempted
+          ? true
+          : null;
+  const refreshedAccessTokenPresent =
+    input.refreshedAccessTokenPresent === true
+      ? true
+      : input.refreshedAccessTokenPresent === false
+        ? false
+        : null;
   const catchupNeeded = morePages || (outcome === "failed" && !completed);
   const catchupSucceeded = outcome === "success" && completed && !morePages;
   return {
@@ -152,6 +212,11 @@ export function classifyGmailFreshnessRun(input: {
     watermarkChanged: changed,
     catchupNeeded,
     catchupSucceeded,
+    refreshFailureCategory,
+    refreshRequestAttempted,
+    refreshRequestSucceeded,
+    tokenDecryptSucceeded,
+    refreshedAccessTokenPresent,
   };
 }
 
@@ -168,6 +233,24 @@ export function emitGmailFreshnessRun(event: GmailFreshnessRunEvent): void {
     watermarkChanged: event.watermarkChanged === true,
     catchupNeeded: event.catchupNeeded === true,
     catchupSucceeded: event.catchupSucceeded === true,
+    refreshFailureCategory:
+      event.refreshFailureCategory && REFRESH_FAILURES.has(event.refreshFailureCategory)
+        ? event.refreshFailureCategory
+        : null,
+    refreshRequestAttempted: event.refreshRequestAttempted === true,
+    refreshRequestSucceeded: event.refreshRequestSucceeded === true,
+    tokenDecryptSucceeded:
+      event.tokenDecryptSucceeded === true
+        ? true
+        : event.tokenDecryptSucceeded === false
+          ? false
+          : null,
+    refreshedAccessTokenPresent:
+      event.refreshedAccessTokenPresent === true
+        ? true
+        : event.refreshedAccessTokenPresent === false
+          ? false
+          : null,
   };
   console.info(JSON.stringify(line));
 }

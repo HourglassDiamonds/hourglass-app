@@ -19,33 +19,66 @@ import {
   sanitizeGmailFreshnessCycleResult,
   type GmailFreshnessCycleResult,
 } from "./freshness-cycle";
-import { liveGmailAccessTokenRefresher } from "./oauth";
+import {
+  liveGmailAccessTokenRefresher,
+  type GmailRefreshFailureCategory,
+} from "./oauth";
 import {
   createSupabaseGmailAttachmentStore,
   createSupabaseGmailConnectionStore,
 } from "./server";
 import { decryptRefreshToken, loadGmailTokenKek } from "./token-crypto";
 
+export type GmailRefreshTrace = {
+  refreshFailureCategory: GmailRefreshFailureCategory | null;
+  refreshRequestAttempted: boolean;
+  refreshRequestSucceeded: boolean;
+  tokenDecryptSucceeded: boolean | null;
+  refreshedAccessTokenPresent: boolean | null;
+};
+
+export type LiveGmailFreshnessExecution = {
+  result: GmailFreshnessCycleResult;
+  refreshTrace: GmailRefreshTrace;
+};
+
+function emptyRefreshTrace(): GmailRefreshTrace {
+  return {
+    refreshFailureCategory: null,
+    refreshRequestAttempted: false,
+    refreshRequestSucceeded: false,
+    tokenDecryptSucceeded: null,
+    refreshedAccessTokenPresent: null,
+  };
+}
+
 export async function executeLiveGmailFreshnessCycle(input: {
   founderSessionOk: boolean;
   secretProtectedOk?: boolean;
   force?: boolean;
-}): Promise<GmailFreshnessCycleResult> {
+}): Promise<LiveGmailFreshnessExecution> {
   if (!input.founderSessionOk && !input.secretProtectedOk) {
-    return failedGmailFreshnessCycle("unauthorized");
+    return { result: failedGmailFreshnessCycle("unauthorized"), refreshTrace: emptyRefreshTrace() };
   }
   if (!isGmailIncrementalSyncEnabled()) {
-    return failedGmailFreshnessCycle("sync-disabled");
+    return { result: failedGmailFreshnessCycle("sync-disabled"), refreshTrace: emptyRefreshTrace() };
   }
   const kek = loadGmailTokenKek();
   if (!kek.ok) {
-    return failedGmailFreshnessCycle("decrypt-failed");
+    return {
+      result: failedGmailFreshnessCycle("decrypt-failed"),
+      refreshTrace: { ...emptyRefreshTrace(), tokenDecryptSucceeded: false },
+    };
   }
   const client = getSupabaseAdmin();
   const activation = await probeCandidateStorage(client);
   if (activation === "not-activated" || activation !== "activated" || !client) {
-    return failedGmailFreshnessCycle("candidate-store-unavailable");
+    return {
+      result: failedGmailFreshnessCycle("candidate-store-unavailable"),
+      refreshTrace: emptyRefreshTrace(),
+    };
   }
+  const refreshTrace = emptyRefreshTrace();
   try {
     const connections = createSupabaseGmailConnectionStore();
     const connection = await connections.getFounderConnection();
@@ -60,16 +93,29 @@ export async function executeLiveGmailFreshnessCycle(input: {
       index: createSupabaseGmailIndexStore(),
       attachments: createSupabaseGmailAttachmentStore(),
       decryptRefreshToken: (wrapped) => decryptRefreshToken(wrapped, kek.key),
-      refreshAccessToken: (refreshToken) =>
-        liveGmailAccessTokenRefresher.refreshAccessToken(refreshToken),
+      refreshAccessToken: async (refreshToken) => {
+        refreshTrace.refreshRequestAttempted = true;
+        refreshTrace.tokenDecryptSucceeded = true;
+        const refreshed = await liveGmailAccessTokenRefresher.refreshAccessToken(refreshToken);
+        if (refreshed.ok) {
+          refreshTrace.refreshRequestSucceeded = true;
+          refreshTrace.refreshedAccessTokenPresent = refreshed.accessToken.length > 0;
+          refreshTrace.refreshFailureCategory = null;
+          return refreshed;
+        }
+        refreshTrace.refreshRequestSucceeded = refreshed.refreshRequestSucceeded === true;
+        refreshTrace.refreshedAccessTokenPresent = false;
+        refreshTrace.refreshFailureCategory = refreshed.refreshFailureCategory ?? "unknown";
+        return refreshed;
+      },
       createApi: (accessToken) => createLiveGmailApi(accessToken),
       world: loaded.world,
       store: createSupabaseCandidateStore(client),
       nowIso: new Date().toISOString(),
       force: input.force,
     });
-    return sanitizeGmailFreshnessCycleResult(result);
+    return { result: sanitizeGmailFreshnessCycleResult(result), refreshTrace };
   } catch {
-    return failedGmailFreshnessCycle("unavailable");
+    return { result: failedGmailFreshnessCycle("unavailable"), refreshTrace };
   }
 }

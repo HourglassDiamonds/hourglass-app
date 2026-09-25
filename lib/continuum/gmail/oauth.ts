@@ -49,6 +49,27 @@ export type GmailOAuthTokenExchanger = {
   revokeToken(token: string): Promise<void>;
 };
 
+export const GMAIL_REFRESH_FAILURE_CATEGORIES = [
+  "connection_missing",
+  "refresh_token_missing",
+  "token_decrypt_failed",
+  "oauth_client_missing",
+  "oauth_client_mismatch",
+  "provider_invalid_grant",
+  "provider_invalid_client",
+  "provider_unauthorized_client",
+  "provider_rate_limited",
+  "provider_5xx",
+  "provider_timeout",
+  "access_token_missing_after_refresh",
+  "refresh_token_rotated",
+  "malformed_token_response",
+  "unknown",
+] as const;
+
+export type GmailRefreshFailureCategory =
+  (typeof GMAIL_REFRESH_FAILURE_CATEGORIES)[number];
+
 export type GmailAccessTokenRefresh =
   | { ok: true; accessToken: string }
   | {
@@ -57,6 +78,10 @@ export type GmailAccessTokenRefresh =
         | "token-refresh-failed"
         | "refresh-token-rotated"
         | "oauth-not-configured";
+      refreshFailureCategory?: GmailRefreshFailureCategory;
+      refreshRequestAttempted?: boolean;
+      refreshRequestSucceeded?: boolean;
+      refreshedAccessTokenPresent?: boolean;
     };
 
 export type GmailAccessTokenRefresher = {
@@ -261,12 +286,77 @@ export function interpretGmailTokenRefreshResponse(input: {
   return { ok: true, accessToken: input.accessToken };
 }
 
+const REFRESH_PROVIDER_CODES: Record<string, GmailRefreshFailureCategory> = {
+  invalid_grant: "provider_invalid_grant",
+  invalid_client: "provider_invalid_client",
+  unauthorized_client: "provider_unauthorized_client",
+  rate_limit_exceeded: "provider_rate_limited",
+};
+
+const REFRESH_TIMEOUT_CODES = new Set([
+  "ETIMEDOUT",
+  "ECONNABORTED",
+  "UND_ERR_CONNECT_TIMEOUT",
+  "UND_ERR_HEADERS_TIMEOUT",
+  "UND_ERR_BODY_TIMEOUT",
+]);
+
+function httpStatusOf(error: unknown): number | null {
+  if (!error || typeof error !== "object" || !("response" in error)) return null;
+  const response = error.response;
+  if (!response || typeof response !== "object" || !("status" in response)) return null;
+  return typeof response.status === "number" ? response.status : null;
+}
+
+function nodeErrorCode(error: unknown): string | null {
+  if (!error || typeof error !== "object" || !("code" in error)) return null;
+  return typeof error.code === "string" ? error.code : null;
+}
+
+function isRefreshTimeout(error: unknown): boolean {
+  const code = nodeErrorCode(error);
+  if (code && REFRESH_TIMEOUT_CODES.has(code)) return true;
+  if (!error || typeof error !== "object" || !("name" in error)) return false;
+  return error.name === "AbortError" || error.name === "TimeoutError";
+}
+
+export function classifyGmailRefreshThrown(error: unknown): GmailRefreshFailureCategory {
+  const oauthCode = googleTokenErrorCode(error);
+  if (oauthCode && REFRESH_PROVIDER_CODES[oauthCode]) return REFRESH_PROVIDER_CODES[oauthCode];
+  const status = httpStatusOf(error);
+  if (status === 429) return "provider_rate_limited";
+  if (status != null && status >= 500) return "provider_5xx";
+  if (status === 408 || isRefreshTimeout(error)) return "provider_timeout";
+  if (status != null && status >= 400 && !oauthCode) return "malformed_token_response";
+  return "unknown";
+}
+
+function failedRefresh(
+  error: "token-refresh-failed" | "refresh-token-rotated" | "oauth-not-configured",
+  refreshFailureCategory: GmailRefreshFailureCategory,
+  refreshRequestAttempted: boolean,
+  refreshRequestSucceeded: boolean,
+): GmailAccessTokenRefresh {
+  return {
+    ok: false,
+    error,
+    refreshFailureCategory,
+    refreshRequestAttempted,
+    refreshRequestSucceeded,
+    refreshedAccessTokenPresent: false,
+  };
+}
+
 export async function refreshGmailAccessToken(
   refreshToken: string,
 ): Promise<GmailAccessTokenRefresh> {
   const config = getGmailOAuthClientConfig();
-  if (!config.ok) return { ok: false, error: "oauth-not-configured" };
-  if (!refreshToken) return { ok: false, error: "token-refresh-failed" };
+  if (!config.ok) {
+    return failedRefresh("oauth-not-configured", "oauth_client_missing", false, false);
+  }
+  if (!refreshToken) {
+    return failedRefresh("token-refresh-failed", "refresh_token_missing", false, false);
+  }
   const client = new OAuth2Client(
     config.clientId,
     config.clientSecret,
@@ -275,13 +365,29 @@ export async function refreshGmailAccessToken(
   client.setCredentials({ refresh_token: refreshToken });
   try {
     const { credentials } = await client.refreshAccessToken();
-    return interpretGmailTokenRefreshResponse({
+    const interpreted = interpretGmailTokenRefreshResponse({
       accessToken: credentials.access_token,
       returnedRefreshToken: credentials.refresh_token,
       originalRefreshToken: refreshToken,
     });
-  } catch {
-    return { ok: false, error: "token-refresh-failed" };
+    if (!interpreted.ok) {
+      return failedRefresh(
+        interpreted.error,
+        interpreted.error === "refresh-token-rotated"
+          ? "refresh_token_rotated"
+          : "access_token_missing_after_refresh",
+        true,
+        true,
+      );
+    }
+    return interpreted;
+  } catch (error) {
+    return failedRefresh(
+      "token-refresh-failed",
+      classifyGmailRefreshThrown(error),
+      true,
+      false,
+    );
   }
 }
 

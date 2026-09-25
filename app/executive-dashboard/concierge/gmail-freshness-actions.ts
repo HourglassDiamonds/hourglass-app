@@ -16,11 +16,11 @@ export async function refreshGmailOperatingFreshness(): Promise<GmailFreshnessCy
       auth.reason === "unauthorized" ? "unauthorized" : "unavailable",
     );
   }
-  const result = await executeLiveGmailFreshnessCycle({
+  const execution = await executeLiveGmailFreshnessCycle({
     founderSessionOk: true,
   });
-  if (result.docketMayHaveChanged) {
+  if (execution.result.docketMayHaveChanged) {
     revalidatePath(CONCIERGE_HOME_PATH);
   }
-  return result;
+  return execution.result;
 }

@@ -4,8 +4,10 @@ import { InMemoryGmailConnectionStore } from "./connection";
 import {
   createGmailOAuthIntent,
   createGmailOAuthPending,
+  classifyGmailRefreshThrown,
   interpretGmailTokenRefreshResponse,
   oauthStatesMatch,
+  refreshGmailAccessToken,
   pkceChallengeS256,
   safeGmailOAuthTokenError,
   type GmailOAuthTokenExchanger,
@@ -311,5 +313,42 @@ describe("Continuum Gmail OAuth", () => {
       originalRefreshToken: "refresh-keep",
     });
     assert.deepEqual(missing, { ok: false, error: "token-refresh-failed" });
+  });
+
+  it("maps refresh provider failures onto the safe category list", async () => {
+    const secret = "do-not-log-provider-body";
+    const cases = [
+      [{ response: { status: 400, data: { error: "invalid_grant", error_description: secret } } }, "provider_invalid_grant"],
+      [{ response: { status: 401, data: { error: "invalid_client", error_description: secret } } }, "provider_invalid_client"],
+      [{ response: { status: 401, data: { error: "unauthorized_client", error_description: secret } } }, "provider_unauthorized_client"],
+      [{ response: { status: 429, data: { error: "rate_limit_exceeded" } } }, "provider_rate_limited"],
+      [{ response: { status: 503, data: { error: "backendError", error_description: secret } } }, "provider_5xx"],
+      [{ code: "ETIMEDOUT", response: { data: { error_description: secret } } }, "provider_timeout"],
+      [{ response: { status: 400, data: { error_description: secret } } }, "malformed_token_response"],
+    ] as const;
+    for (const [error, category] of cases) {
+      assert.equal(classifyGmailRefreshThrown(error), category);
+      assert.equal(JSON.stringify(category).includes(secret), false);
+    }
+
+    oauthEnv();
+    const missingToken = await refreshGmailAccessToken("");
+    assert.equal(missingToken.ok, false);
+    if (!missingToken.ok) {
+      assert.equal(missingToken.error, "token-refresh-failed");
+      assert.equal(missingToken.refreshFailureCategory, "refresh_token_missing");
+      assert.equal(missingToken.refreshRequestAttempted, false);
+    }
+
+    const saved = process.env.CONTINUUM_GMAIL_OAUTH_CLIENT_ID;
+    delete process.env.CONTINUUM_GMAIL_OAUTH_CLIENT_ID;
+    const missingClient = await refreshGmailAccessToken("refresh-keep");
+    process.env.CONTINUUM_GMAIL_OAUTH_CLIENT_ID = saved;
+    assert.equal(missingClient.ok, false);
+    if (!missingClient.ok) {
+      assert.equal(missingClient.error, "oauth-not-configured");
+      assert.equal(missingClient.refreshFailureCategory, "oauth_client_missing");
+      assert.equal(missingClient.refreshRequestAttempted, false);
+    }
   });
 });

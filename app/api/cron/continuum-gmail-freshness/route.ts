@@ -53,12 +53,11 @@ export async function GET(request: Request) {
   try {
     const envLabel = continuumEnvLogLabel();
     console.info("[continuum-gmail-freshness]", envLabel);
-    const result = sanitizeGmailFreshnessCycleResult(
-      await executeLiveGmailFreshnessCycle({
-        founderSessionOk: false,
-        secretProtectedOk: true,
-      }),
-    );
+    const execution = await executeLiveGmailFreshnessCycle({
+      founderSessionOk: false,
+      secretProtectedOk: true,
+    });
+    const result = sanitizeGmailFreshnessCycleResult(execution.result);
     emitGmailFreshnessRun(
       classifyGmailFreshnessRun({
         safeErrorCode: result.safeErrorCode,
@@ -68,6 +67,11 @@ export async function GET(request: Request) {
         morePagesRemain: result.morePagesRemain,
         completed: result.completed,
         skippedAsFresh: result.skippedAsFresh,
+        refreshFailureCategory: execution.refreshTrace.refreshFailureCategory,
+        refreshRequestAttempted: execution.refreshTrace.refreshRequestAttempted,
+        refreshRequestSucceeded: execution.refreshTrace.refreshRequestSucceeded,
+        tokenDecryptSucceeded: execution.refreshTrace.tokenDecryptSucceeded,
+        refreshedAccessTokenPresent: execution.refreshTrace.refreshedAccessTokenPresent,
       }),
     );
     const retryable =

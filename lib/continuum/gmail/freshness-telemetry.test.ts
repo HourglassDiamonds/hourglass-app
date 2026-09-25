@@ -89,6 +89,56 @@ describe("Gmail freshness cron telemetry", () => {
     assert.equal(event.errorCategory, "supabase_read");
   });
 
+  it("names refresh sub-stages without provider text", () => {
+    const cases = [
+      ["gmail-not-connected", "connection", "connection_missing"],
+      ["decrypt-failed", "connection", "token_decrypt_failed"],
+      ["refresh-token-rotated", "token_refresh", "refresh_token_rotated"],
+      ["invalid_grant", "token_refresh", "provider_invalid_grant"],
+    ] as const;
+    for (const [code, stage, category] of cases) {
+      const event = classifyGmailFreshnessRun({ safeErrorCode: code, durationMs: 4 });
+      assert.equal(event.stage, stage);
+      assert.equal(event.refreshFailureCategory, category);
+    }
+    const provider = classifyGmailFreshnessRun({
+      safeErrorCode: "token-refresh-failed",
+      durationMs: 9,
+      refreshFailureCategory: "provider_invalid_client",
+      refreshRequestAttempted: true,
+      refreshRequestSucceeded: false,
+      refreshedAccessTokenPresent: false,
+    });
+    assert.equal(provider.stage, "token_refresh");
+    assert.equal(provider.errorCategory, "token_refresh_failed");
+    assert.equal(provider.refreshFailureCategory, "provider_invalid_client");
+    assert.equal(provider.tokenDecryptSucceeded, true);
+    const logged = capture(() => emitGmailFreshnessRun({
+      ...provider,
+      refreshFailureCategory: "provider_invalid_grant",
+    }));
+    const text = JSON.stringify(logged);
+    assert.equal(text.includes("Token has been expired"), false);
+    assert.equal(text.includes("ya29."), false);
+    assert.equal(logged.refreshFailureCategory, "provider_invalid_grant");
+  });
+
+  it("records a successful refresh without a failure category", () => {
+    const event = classifyGmailFreshnessRun({
+      safeErrorCode: null,
+      durationMs: 20,
+      completed: true,
+      refreshRequestAttempted: true,
+      refreshRequestSucceeded: true,
+      refreshedAccessTokenPresent: true,
+      refreshFailureCategory: "provider_invalid_grant",
+    });
+    assert.equal(event.outcome, "success");
+    assert.equal(event.refreshFailureCategory, null);
+    assert.equal(event.refreshRequestSucceeded, true);
+    assert.equal(event.refreshedAccessTokenPresent, true);
+  });
+
   it("keeps cron status behavior and does not log mailbox fields", () => {
     const route = readFileSync(
       join(ROOT, "app/api/cron/continuum-gmail-freshness/route.ts"),
@@ -99,5 +149,11 @@ describe("Gmail freshness cron telemetry", () => {
     assert.match(route, /error: "freshness_failed"/);
     assert.match(route, /emitGmailFreshnessRun/);
     assert.doesNotMatch(route, /subject|snippet|threadId|messageId|mailboxEmailHash/);
+    const responseBody = route.slice(route.indexOf("return json("), route.indexOf("ok ? 200"));
+    assert.doesNotMatch(responseBody, /refreshFailureCategory|accessToken|refreshToken/);
+    const oauth = readFileSync(join(ROOT, "lib/continuum/gmail/oauth.ts"), "utf8");
+    const run = readFileSync(join(ROOT, "lib/continuum/gmail/freshness-run.ts"), "utf8");
+    assert.doesNotMatch(oauth, /CONTINUUM_CALENDAR/);
+    assert.doesNotMatch(run, /CONTINUUM_CALENDAR/);
   });
 });
