@@ -95,7 +95,16 @@ export function ProjectBookSection({ book }: { book: ProjectBookView }) {
         ) : null}
       </div>
 
-      {book.associationReview ? (
+      {book.historyState === "needs_review" ? (
+        <div className="mt-6 max-w-[46ch]">
+          <p className="text-[11px] uppercase tracking-[0.18em] text-[#ad9164]">
+            Project history needs review
+          </p>
+          <p className="mt-2 text-[15px] leading-relaxed text-[#e7ddd2]">
+            {book.associationReview?.summary}
+          </p>
+        </div>
+      ) : book.associationReview ? (
         <p className="mt-6 max-w-[46ch] text-[13px] leading-relaxed text-[#ad9164]">
           {book.associationReview.summary}. {book.associationReview.count} source{" "}
           {book.associationReview.count === 1 ? "item was" : "items were"} left out.
@@ -103,7 +112,9 @@ export function ProjectBookSection({ book }: { book: ProjectBookView }) {
       ) : null}
 
       <h3 className="mt-8 text-[11px] uppercase tracking-[0.22em] text-[#8d8073]">Open loops</h3>
-      {book.unresolved.length === 0 ? (
+      {book.historyState !== "trusted" ? (
+        <p className="mt-3 text-[15px] leading-relaxed text-[#c4b7aa]">No confirmed open obligation.</p>
+      ) : book.unresolved.length === 0 ? (
         <p className="mt-3 text-[15px] leading-relaxed text-[#c4b7aa]">No open obligation.</p>
       ) : (
         <ul className="mt-3 space-y-2">
@@ -132,7 +143,11 @@ export function ProjectBookSection({ book }: { book: ProjectBookView }) {
       </div>
 
       <h3 className="mt-6 text-[11px] uppercase tracking-[0.22em] text-[#8d8073]">Milestones</h3>
-      {book.empty ? (
+      {book.historyState === "needs_review" ? (
+        <p className="mt-3 max-w-[42ch] text-[15px] leading-relaxed text-[#c4b7aa]">
+          Not shown until the association is confirmed.
+        </p>
+      ) : book.empty ? (
         <p className="mt-3 max-w-[42ch] text-[15px] leading-relaxed text-[#c4b7aa]">
           No source history is associated with this project yet.
         </p>
@@ -157,7 +172,11 @@ export function ProjectBookSection({ book }: { book: ProjectBookView }) {
       )}
 
       <h3 className="mt-8 text-[11px] uppercase tracking-[0.22em] text-[#8d8073]">History</h3>
-      {timeline.length === 0 ? (
+      {book.historyState === "needs_review" ? (
+        <p className="mt-3 max-w-[42ch] text-[15px] leading-relaxed text-[#c4b7aa]">
+          Not shown until the association is confirmed.
+        </p>
+      ) : timeline.length === 0 ? (
         <p className="mt-3 text-[15px] leading-relaxed text-[#c4b7aa]">
           {book.empty ? "No evidence timeline yet." : "No history in this view."}
         </p>

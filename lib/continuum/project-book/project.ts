@@ -6,8 +6,14 @@
 
 import { authorOwnedText } from "@/lib/continuum/gmail/candidates/spec-provenance";
 import { reduceWorkLoop } from "@/lib/continuum/chief-of-staff/operating-loop/work-loop-state";
+import {
+  admitProjectEvidence,
+  attachmentLabels,
+  meaningfulAttachmentNames,
+  PROJECT_HISTORY_NEEDS_REVIEW,
+  safeFounderCopy,
+} from "./admit";
 import type { WorkLoopSemanticClass } from "@/lib/continuum/chief-of-staff/operating-loop/work-loop-state";
-import { workLoopEventsFromSource } from "@/lib/continuum/source-events/work-loop";
 import type {
   SourceCommunicationEvent,
   SourceCommunicationEventClass,
@@ -16,6 +22,7 @@ import type {
   ProjectBookAssociationReview,
   ProjectBookCurrentState,
   ProjectBookEvidence,
+  ProjectBookHistoryState,
   ProjectBookMilestone,
   ProjectBookRead,
   ProjectBookSourceCoverage,
@@ -70,29 +77,6 @@ function safePerson(label: string | null): string | null {
   return trimmed.slice(0, 80);
 }
 
-function safeSubject(subject: string | null): string | null {
-  const trimmed = folded(subject);
-  if (!trimmed) return null;
-  return trimmed.slice(0, 180);
-}
-
-export function attachmentLabels(filenames: readonly string[]): string[] {
-  const labels: string[] = [];
-  const add = (label: string) => {
-    if (!labels.includes(label)) labels.push(label);
-  };
-  for (const name of filenames) {
-    const file = name.trim();
-    if (!file) continue;
-    if (/\.stl\b|\bstl\b/i.test(file)) add("STL");
-    else if (/quote/i.test(file)) add("Quote");
-    else if (/order|confirmation|\bSP\d{4,}\b/i.test(file)) add("Order confirmation");
-    else if (/render/i.test(file)) add("Render");
-    else if (/NL-H017-|\bcad\b/i.test(file)) add("CAD");
-  }
-  return labels;
-}
-
 function substantive(record: ProjectBookSourceRecord, own: string): boolean {
   if (!own) return false;
   const subject = folded(record.subject);
@@ -131,12 +115,6 @@ function isMilestone(record: ProjectBookSourceRecord, own: string): boolean {
   return structuralMilestone(record, own);
 }
 
-function firstSentence(text: string): string {
-  const clean = folded(text);
-  const cut = clean.split(/(?<=[.!])\s/)[0] ?? clean;
-  return cut.slice(0, 180);
-}
-
 function milestoneLabel(semanticClass: SourceCommunicationEventClass): string {
   switch (semanticClass) {
     case "client_requests":
@@ -162,41 +140,10 @@ function milestoneLabel(semanticClass: SourceCommunicationEventClass): string {
   }
 }
 
-function classFallback(semanticClass: SourceCommunicationEventClass): string {
-  switch (semanticClass) {
-    case "client_requests":
-      return "Client asked for a change.";
-    case "client_approves":
-      return "Client approved the current direction.";
-    case "founder_fulfills_commitment":
-      return "Founder fulfilled the current commitment.";
-    case "founder_requests_vendor":
-      return "Founder sent the current request to the shop.";
-    case "founder_updates_client":
-      return "Founder sent an update to the client.";
-    case "vendor_promises":
-      return "Shop promised the next delivery.";
-    case "vendor_delivers_artifact":
-      return "Shop delivered files.";
-    case "vendor_order_confirmation":
-      return "Order confirmation is in.";
-    case "workshop_started":
-      return "Workshop started.";
-    default:
-      return "Source note.";
-  }
-}
-
 function timelineSummary(record: ProjectBookSourceRecord): string {
   if (record.semanticClass === "client_replies_nonblocking") return "Client reply";
   if (record.semanticClass === "vendor_acknowledges") return "Shop acknowledgement";
   return "Source note";
-}
-
-function excerptOf(record: ProjectBookSourceRecord, own: string): string | null {
-  if (!substantive(record, own)) return null;
-  if (/^(?:thanks|thank you|got it|perfect|sounds good)[!.\s]*$/i.test(own)) return null;
-  return firstSentence(own);
 }
 
 function evidenceOf(
@@ -206,8 +153,8 @@ function evidenceOf(
   return {
     channel: projectBookChannelLabel(record.sourceType),
     timestamp: record.timestamp,
-    subject: safeSubject(record.subject),
-    attachmentNames: record.attachmentFilenames.map((name) => name.trim()).filter(Boolean).slice(0, 8),
+    subject: safeFounderCopy(record.subject),
+    attachmentNames: meaningfulAttachmentNames(record.attachmentFilenames).slice(0, 8),
     classification: record.semanticClass ?? "unclassified",
     interpretation,
   };
@@ -236,29 +183,6 @@ function asSourceEvent(record: ProjectBookSourceRecord, own: string): SourceComm
     semanticClass: record.semanticClass ?? "unknown_communication",
     provenance: record.provenance === "indexed_gmail+interpretation" ? "indexed_gmail+interpretation" : "indexed_gmail",
   };
-}
-
-function milestoneSummary(
-  record: ProjectBookSourceRecord,
-  own: string,
-  loopText: string | undefined,
-): string {
-  if (substantive(record, own)) return firstSentence(own);
-  const usefulLoop = loopText && loopText.toLowerCase() !== folded(record.subject).toLowerCase() && !/^re:/i.test(loopText);
-  if (
-    usefulLoop &&
-    (record.semanticClass === "vendor_delivers_artifact" ||
-      record.semanticClass === "vendor_order_confirmation" ||
-      record.semanticClass === "workshop_started")
-  ) {
-    return loopText.slice(0, 180);
-  }
-  const files = attachmentLabels(record.attachmentFilenames);
-  if (record.semanticClass === "vendor_delivers_artifact" && files.length > 0) {
-    return `${files.join(" and ")} received.`;
-  }
-  if (record.semanticClass) return classFallback(record.semanticClass);
-  return "Source note.";
 }
 
 function stateHeadline(
@@ -366,9 +290,18 @@ export function projectBook(input: {
   nowIso?: string;
   timelineLimit?: number;
   milestoneLimit?: number;
+  /** Stored thread exists, but the desk does not trust it. Events stay out of chronology. */
+  associationTrusted?: boolean;
 }): ProjectBookRead {
   const projectId = input.projectId.trim();
   const generatedAt = input.nowIso ?? new Date().toISOString();
+  if (input.associationTrusted === false) {
+    return withheldBook({
+      projectId,
+      projectLabel: input.projectLabel,
+      generatedAt,
+    });
+  }
   const timelineLimit = input.timelineLimit ?? PROJECT_BOOK_TIMELINE_LIMIT;
   const milestoneLimit = input.milestoneLimit ?? PROJECT_BOOK_MILESTONE_LIMIT;
   const sorted = dedupe(sortRecords(input.records));
@@ -387,6 +320,9 @@ export function projectBook(input: {
     const cadElsewhere = sharesCad(record, otherExactCads);
     const ambiguousCad = record.association === "unassigned" && cadHit && cadElsewhere;
     const plausibleCad = record.association === "unassigned" && cadHit && !cadElsewhere;
+    if (record.association === "candidate" && (record.projectId === projectId || named)) {
+      reviewCount += 1;
+    }
     if ((record.association === "ambiguous" && named) || ambiguousCad || plausibleCad) {
       reviewCount += 1;
     }
@@ -402,31 +338,30 @@ export function projectBook(input: {
 
   const prepared = exact.map((record) => ({ record, own: ownText(record) }));
   const sourceEvents = prepared.map((row) => asSourceEvent(row.record, row.own));
-  const loopEvents = workLoopEventsFromSource(sourceEvents);
-  const loopText = new Map<string, string>();
-  sourceEvents.forEach((event, index) => {
-    const text = loopEvents[index]?.text ?? "";
-    if (text) loopText.set(event.sourceRef, text);
-  });
   const reduced = reduceWorkLoop({ evidence: [], sourceEvents });
   const hasHistory = prepared.length > 0;
 
   const milestones: ProjectBookMilestone[] = [];
   const timeline: ProjectBookTimelineEntry[] = [];
+  const seenDisplay = new Set<string>();
   for (const row of prepared) {
-    const milestone = isMilestone(row.record, row.own);
-    const labels = attachmentLabels(row.record.attachmentFilenames);
+    const admitted = admitProjectEvidence(row.record);
+    if (!admitted.render) continue;
+    const displayKey = `${row.record.sourceType}\u0000${row.record.sourceRef}`;
+    if (seenDisplay.has(displayKey)) continue;
+    seenDisplay.add(displayKey);
+    const milestone = isMilestone(row.record, admitted.own);
+    const labels = attachmentLabels(admitted.files);
     const evidence = evidenceOf(row.record, milestone ? "interpreted" : "source_only");
+    const summary = milestone ? admitted.summary : timelineSummary(row.record);
     const entry: ProjectBookTimelineEntry = {
       timestamp: row.record.timestamp,
       sourceType: row.record.sourceType,
       actor: row.record.actor,
       direction: row.record.direction,
       semanticClass: row.record.semanticClass,
-      summary: milestone
-        ? milestoneSummary(row.record, row.own, loopText.get(row.record.sourceRef))
-        : timelineSummary(row.record),
-      excerpt: excerptOf(row.record, row.own),
+      summary,
+      excerpt: milestone ? null : admitted.excerpt,
       sourceRefs: [row.record.sourceRef],
       evidence,
       attachmentLabels: labels,
@@ -439,7 +374,7 @@ export function projectBook(input: {
       timestamp: row.record.timestamp,
       semanticClass: row.record.semanticClass,
       label: milestoneLabel(row.record.semanticClass),
-      summary: entry.summary,
+      summary,
       actor: row.record.actor,
       sourceRefs: [row.record.sourceRef],
       evidence: [evidence],
@@ -456,9 +391,14 @@ export function projectBook(input: {
   const evidenceOmittedCount = timeline.length - timelineWindow.length + omittedMilestones;
 
   const last = milestoneWindow[milestoneWindow.length - 1] ?? null;
+  const historyState: ProjectBookHistoryState =
+    exact.length > 0 ? "trusted" : reviewCount > 0 ? "needs_review" : "none";
   const currentState: ProjectBookCurrentState = {
-    semanticClass: reduced.semanticClass,
-    headline: stateHeadline(reduced.semanticClass, hasHistory),
+    semanticClass: historyState === "needs_review" ? "unknown" : reduced.semanticClass,
+    headline:
+      historyState === "needs_review"
+        ? "Insufficient project history"
+        : stateHeadline(reduced.semanticClass, hasHistory),
     lastMeaningfulChange: last
       ? { label: last.label, summary: last.summary, timestamp: last.timestamp }
       : null,
@@ -474,9 +414,47 @@ export function projectBook(input: {
     milestones: milestoneWindow,
     evidenceTimeline: timelineWindow,
     evidenceOmittedCount,
-    unresolved: unresolvedFromReducer(reduced.semanticClass, reduced),
+    unresolved:
+      historyState === "trusted" ? unresolvedFromReducer(reduced.semanticClass, reduced) : [],
     sourceCoverage: coverage(exact),
-    associationReview,
+    associationReview:
+      historyState === "needs_review"
+        ? {
+            status: "needs_review",
+            summary: PROJECT_HISTORY_NEEDS_REVIEW,
+            count: Math.max(reviewCount, 1),
+          }
+        : associationReview,
+    historyState,
     generatedAt,
+  };
+}
+
+function withheldBook(input: {
+  projectId: string;
+  projectLabel: string;
+  generatedAt: string;
+}): ProjectBookRead {
+  return {
+    projectId: input.projectId,
+    projectLabel: input.projectLabel.trim() || "Project",
+    currentState: {
+      semanticClass: "unknown",
+      headline: "Insufficient project history",
+      lastMeaningfulChange: null,
+      nextCheckpoint: null,
+    },
+    milestones: [],
+    evidenceTimeline: [],
+    evidenceOmittedCount: 0,
+    unresolved: [],
+    sourceCoverage: { represented: [], future: [...PROJECT_BOOK_FUTURE_SOURCE_TYPES] },
+    associationReview: {
+      status: "needs_review",
+      summary: PROJECT_HISTORY_NEEDS_REVIEW,
+      count: 1,
+    },
+    historyState: "needs_review",
+    generatedAt: input.generatedAt,
   };
 }

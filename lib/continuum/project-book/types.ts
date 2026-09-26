@@ -32,7 +32,15 @@ export const PROJECT_BOOK_FUTURE_SOURCE_TYPES = [
   "concierge_form",
 ] as const satisfies readonly ProjectBookSourceType[];
 
-export type ProjectBookAssociation = "exact" | "unassigned" | "ambiguous";
+export type ProjectBookAssociation =
+  | "exact"
+  | "candidate"
+  | "ambiguous"
+  | "rejected"
+  | "unassigned";
+
+/** Trusted chronology, no associated evidence, or evidence that is not confirmed. */
+export type ProjectBookHistoryState = "trusted" | "none" | "needs_review";
 
 export type ProjectBookInterpretation = "interpreted" | "source_only" | "needs_review";
 
@@ -135,6 +143,7 @@ export type ProjectBookRead = {
   unresolved: readonly ProjectBookUnresolved[];
   sourceCoverage: ProjectBookSourceCoverage;
   associationReview: ProjectBookAssociationReview | null;
+  historyState: ProjectBookHistoryState;
   generatedAt: string;
 };
 

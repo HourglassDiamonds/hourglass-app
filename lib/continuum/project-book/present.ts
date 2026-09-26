@@ -4,6 +4,7 @@
  */
 
 import { civilDateInZone, formatDateOnlyShort } from "@/lib/continuum/date-only";
+import { meaningfulAttachmentNames, safeFounderCopy } from "./admit";
 import type {
   ProjectBookEvidence,
   ProjectBookRead,
@@ -60,6 +61,7 @@ export type ProjectBookView = {
   representedLabels: readonly string[];
   futureLabels: readonly string[];
   associationReview: ProjectBookRead["associationReview"];
+  historyState: ProjectBookRead["historyState"];
   empty: boolean;
 };
 
@@ -112,8 +114,8 @@ function viewEvidence(evidence: ProjectBookEvidence): ProjectBookViewEvidence {
   return {
     channel: evidence.channel,
     displayDate: projectBookDisplayDate(evidence.timestamp),
-    subject: evidence.subject,
-    attachmentNames: evidence.attachmentNames,
+    subject: safeFounderCopy(evidence.subject),
+    attachmentNames: meaningfulAttachmentNames(evidence.attachmentNames),
     classification: classificationLabel(evidence.classification),
     interpretation: evidence.interpretation,
   };
@@ -128,7 +130,7 @@ export function presentProjectBook(book: ProjectBookRead): ProjectBookView {
       lastMeaningfulChange: book.currentState.lastMeaningfulChange
         ? {
             label: book.currentState.lastMeaningfulChange.label,
-            summary: book.currentState.lastMeaningfulChange.summary,
+            summary: safeFounderCopy(book.currentState.lastMeaningfulChange.summary) ?? book.currentState.lastMeaningfulChange.label,
             displayDate: projectBookDisplayDate(book.currentState.lastMeaningfulChange.timestamp),
           }
         : null,
@@ -143,15 +145,15 @@ export function presentProjectBook(book: ProjectBookRead): ProjectBookView {
     milestones: book.milestones.map((row) => ({
       displayDate: projectBookDisplayDate(row.timestamp),
       label: row.label,
-      summary: row.summary,
+      summary: safeFounderCopy(row.summary) ?? row.label,
       actor: row.actor,
       attachmentLabels: row.attachmentLabels,
       evidence: row.evidence.map(viewEvidence),
     })),
     evidenceTimeline: book.evidenceTimeline.map((row) => ({
       displayDate: projectBookDisplayDate(row.timestamp),
-      summary: row.summary,
-      excerpt: row.excerpt,
+      summary: safeFounderCopy(row.summary) ?? "Source note",
+      excerpt: safeFounderCopy(row.excerpt),
       actor: row.actor,
       attachmentLabels: row.attachmentLabels,
       milestone: row.milestone,
@@ -161,6 +163,7 @@ export function presentProjectBook(book: ProjectBookRead): ProjectBookView {
     representedLabels: book.sourceCoverage.represented.map((sourceType) => FUTURE_LABEL[sourceType]),
     futureLabels: book.sourceCoverage.future.map((sourceType) => FUTURE_LABEL[sourceType]),
     associationReview: book.associationReview,
-    empty: book.evidenceTimeline.length === 0 && book.milestones.length === 0,
+    historyState: book.historyState,
+    empty: book.historyState === "none",
   };
 }

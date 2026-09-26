@@ -14,6 +14,7 @@ import { loadTodayKnownEmailPeople } from "@/lib/continuum/client-memory/today-k
 import { correlateExactProjectThread } from "@/lib/continuum/gmail/projects";
 import { projectGmailSourceEvents } from "@/lib/continuum/source-events/gmail";
 import { getSupabaseAdmin } from "@/lib/supabase/client";
+import { PROJECT_HISTORY_NEEDS_REVIEW, projectThreadAssociationTrust } from "./admit";
 import { projectBook } from "./project";
 import { projectBookRecordsFromSourceEvents } from "./records";
 import type { ProjectBookRead } from "./types";
@@ -40,6 +41,15 @@ export function emptyProjectBook(input: {
   if (!input.review) return book;
   return {
     ...book,
+    historyState: "needs_review",
+    currentState: {
+      ...book.currentState,
+      semanticClass: "unknown",
+      headline: "Insufficient project history",
+      lastMeaningfulChange: null,
+      nextCheckpoint: null,
+    },
+    unresolved: [],
     associationReview: {
       status: "needs_review",
       summary: input.review,
@@ -67,13 +77,35 @@ export async function loadProjectBook(input: {
     if (!client) return empty();
     const history = await client
       .from("continuum_project_history")
-      .select("project_id, gmail_thread_id")
+      .select("project_id, gmail_thread_id, match_judgment, match_judgment_raw")
       .eq("project_id", projectId)
       .limit(1);
     if (history.error || !history.data?.length) return empty();
     const coerced = coerceGmailThreadId(history.data[0]?.gmail_thread_id ?? null);
     if (coerced.status !== "canonical") return empty();
     const threadId = coerced.value;
+    const notes = await client
+      .from("continuum_source_notes")
+      .select("note_text")
+      .eq("project_id", projectId)
+      .limit(16);
+    const trust = projectThreadAssociationTrust({
+      matchJudgment:
+        history.data[0]?.match_judgment == null ? null : String(history.data[0].match_judgment),
+      matchJudgmentRaw:
+        history.data[0]?.match_judgment_raw == null
+          ? null
+          : String(history.data[0].match_judgment_raw),
+      noteTexts: notes.error || !notes.data ? [] : notes.data.map((row) => String(row.note_text ?? "")),
+    });
+    if (trust === "needs_review") {
+      return emptyProjectBook({
+        projectId,
+        projectLabel,
+        nowIso: input.nowIso,
+        review: PROJECT_HISTORY_NEEDS_REVIEW,
+      });
+    }
     const claimants = await client
       .from("continuum_project_history")
       .select("project_id, gmail_thread_id")
@@ -91,7 +123,7 @@ export async function loadProjectBook(input: {
         projectId,
         projectLabel,
         nowIso: input.nowIso,
-        review: "Identity / project match needs review",
+        review: PROJECT_HISTORY_NEEDS_REVIEW,
       });
     }
 

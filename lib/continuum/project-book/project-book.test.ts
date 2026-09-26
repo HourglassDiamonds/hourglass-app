@@ -7,6 +7,7 @@ import { hashEmail } from "@/lib/continuum/client-memory/hashes";
 import type { TodayGmailThreadContext } from "@/lib/continuum/candidates/founder-attention";
 import { reduceWorkLoop } from "@/lib/continuum/chief-of-staff/operating-loop/work-loop-state";
 import { projectGmailSourceEvents } from "@/lib/continuum/source-events/gmail";
+import { projectThreadAssociationTrust } from "./admit";
 import { projectBook } from "./project";
 import { presentProjectBook } from "./present";
 import { projectBookRecordsFromSourceEvents } from "./records";
@@ -121,7 +122,8 @@ describe("Project Book projection", () => {
       }),
     ]);
     assert.equal(result.milestones[0]?.label, "Client approved");
-    assert.match(result.milestones[0]?.summary ?? "", /move forward/);
+    assert.equal(result.milestones[0]?.summary, "Client approved the design");
+    assert.doesNotMatch(result.milestones[0]?.summary ?? "", /move forward/);
     assert.equal(result.milestones[0]?.evidence[0]?.channel, "Gmail");
     assert.equal(result.milestones[0]?.evidence[0]?.classification, "client_approves");
     assert.doesNotMatch(result.milestones[0]?.summary ?? "", /^Re:/);
@@ -186,9 +188,9 @@ describe("Project Book projection", () => {
     ]);
     const rendered = JSON.stringify(result);
     assert.equal(rendered.includes("earlier version from last year"), false);
-    assert.match(rendered, /2mm band/);
     assert.equal(result.milestones.length, 1);
-    assert.equal(result.evidenceTimeline[1]?.summary, "Source note");
+    assert.equal(result.milestones[0]?.summary, "Client requested an update");
+    assert.equal(result.evidenceTimeline.length, 1);
   });
 
   it("does not promote Thanks into a milestone", () => {
@@ -575,15 +577,174 @@ describe("Project Book representative sequences", () => {
   });
 });
 
+const DEBRIS =
+  "Lab Grown Diamonds with diamond_supply_notes Lab Grown Diamonds with cad_job_number finger_size 19fd370bc47c5e1f gc1|thread|msg";
+const REPEATED = `${DEBRIS} ${DEBRIS}`;
+
+describe("Project Book production rejection fixtures", () => {
+  it("drops quoted debris, field keys, hex ids, and duplicate fulfillment", () => {
+    const result = book([
+      record({
+        sourceRef: "dump-a",
+        timestamp: "2026-08-06T15:00:00.000Z",
+        actor: "founder",
+        direction: "outbound",
+        semanticClass: "founder_fulfills_commitment",
+        authorOwnedText: REPEATED,
+        subject: "Re: HGD- J.Pennock-C025519",
+        attachmentFilenames: ["image001.jpg", "image002.png"],
+      }),
+      record({
+        sourceRef: "dump-b",
+        timestamp: "2026-08-20T15:00:00.000Z",
+        actor: "founder",
+        direction: "outbound",
+        semanticClass: "founder_fulfills_commitment",
+        authorOwnedText: `On Thu, Aug 6, 2026 at 1:00 PM Shop wrote:\n${DEBRIS}`,
+        attachmentFilenames: ["image001.jpg"],
+      }),
+    ]);
+    const rendered = JSON.stringify(presentProjectBook(result));
+    assert.equal(result.milestones.length, 0);
+    assert.equal(result.evidenceTimeline.length, 0);
+    assert.doesNotMatch(rendered, /diamond_supply_notes|cad_job_number|finger_size|19fd370bc47c5e1f|gc1\||image001\.jpg|On Thu/);
+  });
+
+  it("keeps a meaningful CAD name and hides inline image noise", () => {
+    const result = book([
+      record({
+        sourceRef: "cad-file",
+        timestamp: "2026-09-21T18:13:04.000Z",
+        actor: "vendor_shop",
+        semanticClass: "vendor_delivers_artifact",
+        subject: "RE: HGD x Dylon D.-C025610",
+        authorOwnedText: `${DEBRIS}\nRE: HGD x Dylon D.-C025610`,
+        attachmentFilenames: ["image001.jpg", "NL-H017-Dylon D-C025610-Mod4.stl"],
+        cadIds: ["C025610"],
+      }),
+    ]);
+    const rendered = JSON.stringify(result);
+    assert.equal(result.milestones.length, 1);
+    assert.match(result.milestones[0]?.summary ?? "", /CAD and STL received/);
+    assert.equal(rendered.includes("image001.jpg"), false);
+    assert.match(rendered, /NL-H017-Dylon D-C025610-Mod4\.stl/);
+    assert.doesNotMatch(rendered, /diamond_supply_notes|19fd370bc47c5e1f|gc1\|/);
+  });
+
+  it("withholds an ambiguous stored thread from trusted history", () => {
+    const result = projectBook({
+      projectId: PROJECT,
+      projectLabel: "C023939",
+      nowIso: NOW,
+      associationTrusted: false,
+      records: [
+        record({
+          sourceRef: "nick",
+          timestamp: "2026-06-10T15:00:00.000Z",
+          semanticClass: "client_replies_nonblocking",
+          subject: "RE: HGD - Nick-C023939-RN07781",
+          authorOwnedText: "Please review this CAD.",
+        }),
+      ],
+    });
+    const rendered = JSON.stringify(result);
+    assert.equal(result.historyState, "needs_review");
+    assert.equal(result.currentState.headline, "Insufficient project history");
+    assert.equal(result.evidenceTimeline.length, 0);
+    assert.equal(result.milestones.length, 0);
+    assert.match(result.associationReview?.summary ?? "", /not confirmed/i);
+    assert.doesNotMatch(rendered, /Please review this CAD|Nick-C023939/);
+    assert.equal(
+      projectThreadAssociationTrust({
+        matchJudgment: "ambiguous",
+        noteTexts: ["Multiple Nicholas clients exist. Do not guess identity."],
+      }),
+      "needs_review",
+    );
+    assert.equal(projectThreadAssociationTrust({ matchJudgment: "exact" }), "trusted");
+  });
+
+  it("does not promote subject-only or filename-only evidence, and keeps candidate evidence in review", () => {
+    const filename = book([
+      record({
+        sourceRef: "file-only",
+        timestamp: "2026-09-18T15:00:00.000Z",
+        projectId: null,
+        association: "unassigned",
+        plausibleProjectIds: [],
+        subject: null,
+        authorOwnedText: "",
+        attachmentFilenames: ["NL-H017-Dylon D-C025610.jpg"],
+        semanticClass: "vendor_delivers_artifact",
+      }),
+    ]);
+    assert.equal(filename.historyState, "none");
+    assert.equal(filename.evidenceTimeline.length, 0);
+    assert.equal(filename.currentState.headline, "No history yet");
+
+    const subjectOnly = book([
+      record({
+        sourceRef: "subject-only",
+        timestamp: "2026-09-18T15:00:00.000Z",
+        projectId: null,
+        association: "unassigned",
+        plausibleProjectIds: [],
+        subject: "RE: HGD x F.Grant-C025885-SP13477",
+        authorOwnedText: "RE: HGD x F.Grant-C025885-SP13477",
+        semanticClass: "vendor_order_confirmation",
+      }),
+    ]);
+    assert.equal(subjectOnly.historyState, "none");
+    assert.equal(subjectOnly.evidenceTimeline.length, 0);
+
+    const candidate = book([
+      record({
+        sourceRef: "maybe-thread",
+        timestamp: "2026-09-18T15:00:00.000Z",
+        association: "candidate",
+        semanticClass: "vendor_delivers_artifact",
+        authorOwnedText: "CAD attached.",
+        attachmentFilenames: ["NL-H017-Duane-C026350.jpg"],
+      }),
+    ]);
+    assert.equal(candidate.historyState, "needs_review");
+    assert.equal(candidate.evidenceTimeline.length, 0);
+    assert.match(candidate.associationReview?.summary ?? "", /not confirmed/i);
+    assert.doesNotMatch(JSON.stringify(candidate), /CAD attached/);
+  });
+
+  it("still renders an exact trusted thread from the reducer", () => {
+    const rows = [
+      record({
+        sourceRef: "delivery",
+        timestamp: "2026-09-21T18:00:00.000Z",
+        actor: "vendor_shop",
+        semanticClass: "vendor_delivers_artifact",
+        subject: "RE: HGD x Dylon D.-C025610",
+        authorOwnedText: "RE: HGD x Dylon D.-C025610",
+        attachmentFilenames: ["NL-H017-Dylon D-C025610-Mod4.stl"],
+        cadIds: ["C025610"],
+      }),
+    ];
+    const result = book(rows);
+    assert.equal(result.historyState, "trusted");
+    assert.equal(result.currentState.headline, "Founder review");
+    assert.equal(result.currentState.semanticClass, "founder_review");
+    assert.equal(result.unresolved[0]?.holder, "founder");
+    assert.equal(result.milestones[0]?.summary, "CAD and STL received.");
+  });
+});
+
 describe("Project Book boundaries", () => {
   it("does not call a model or write during render", () => {
     const projector = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "project.ts"), "utf8");
+    const admit = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "admit.ts"), "utf8");
     const loader = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "load.ts"), "utf8");
     const page = readFileSync(
       join(ROOT, "app/executive-dashboard/concierge/projects/[projectId]/page.tsx"),
       "utf8",
     );
-    const combined = `${projector}\n${loader}\n${page}`;
+    const combined = `${projector}\n${admit}\n${loader}\n${page}`;
     assert.doesNotMatch(combined, /openai|gpt-|generateText|concierge-sol|responses\.create/i);
     assert.doesNotMatch(loader, /\.insert\(|\.update\(|\.delete\(|gmail\.googleapis|users\.messages/);
     assert.doesNotMatch(projector, /from "@\/lib\/continuum\/calendar|loadTodaySurface|composeTodayDocket/);
