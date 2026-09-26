@@ -1,5 +1,7 @@
 import { getAuthenticatedProjectDeskReader } from "@/lib/continuum/client-memory/project-desk/load";
 import { isProjectIdParam } from "@/lib/continuum/client-memory/read/presentation";
+import { emptyProjectBook, loadProjectBook } from "@/lib/continuum/project-book/load";
+import { presentProjectBook } from "@/lib/continuum/project-book/present";
 import { ConciergeShell } from "../../components/concierge-shell";
 import {
   ConciergeBackLink,
@@ -71,20 +73,33 @@ export default async function ConciergeProjectDeskPage({
     );
   }
 
+  const book = presentProjectBook(
+    await loadProjectBook({
+      projectId: result.desk.projectId,
+      projectLabel: result.desk.title,
+    }).catch(() =>
+      emptyProjectBook({
+        projectId: result.desk.projectId,
+        projectLabel: result.desk.title,
+      }),
+    ),
+  );
+
   return (
     <ConciergeShell>
       <ConciergeBackLink />
       <div className="hg-concierge-fade mt-8">
         <ProjectDeskView
-        desk={result.desk}
-        justSavedSpec={
-          query.saved === "spec" ||
-          query.saved === "kind" ||
-          query.saved === "operating" ||
-          query.saved === "lifecycle" ||
-          query.saved === "job"
-        }
-      />
+          desk={result.desk}
+          book={book}
+          justSavedSpec={
+            query.saved === "spec" ||
+            query.saved === "kind" ||
+            query.saved === "operating" ||
+            query.saved === "lifecycle" ||
+            query.saved === "job"
+          }
+        />
       </div>
     </ConciergeShell>
   );

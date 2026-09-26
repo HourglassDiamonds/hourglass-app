@@ -56,13 +56,17 @@ import {
   projectArtifactKindLabel,
   projectArtifactSourceLabel,
 } from "@/lib/continuum/client-memory/project-artifacts/present";
+import type { ProjectBookView } from "@/lib/continuum/project-book/present";
 import { ClientMemorySection } from "./client-memory-section";
+import { ProjectBookSection } from "./project-book-section";
 
 export function ProjectDeskView({
   desk,
+  book = null,
   justSavedSpec = false,
 }: {
   desk: ProjectDeskRead;
+  book?: ProjectBookView | null;
   justSavedSpec?: boolean;
 }) {
   const coverage = coverageRows(desk.coverage);
@@ -78,6 +82,8 @@ export function ProjectDeskView({
           Correction saved.
         </p>
       ) : null}
+
+      {book ? <ProjectBookSection book={book} /> : null}
 
       <section className="mt-8">
         <p className="text-[11px] uppercase tracking-[0.28em] text-[#ad9164]">
