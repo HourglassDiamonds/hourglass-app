@@ -33,6 +33,7 @@ import {
   presentTop5Item,
 } from "./present";
 import type { ActionableRanker, CosOperatingLoopView, CosProjectContext } from "./types";
+import { selectNewInquirySurface } from "./new-inquiry";
 import { COS_OPERATING_LOOP_CONTRACT_VERSION, COS_TOP_5_LIMIT } from "./types";
 
 function lifecycleByProjectFrom(
@@ -167,6 +168,14 @@ export function composeCosOperatingLoop(
     associatedGmailThreads,
   );
   const founderEmailHashes = collectTodayFounderEmailHashes(input.knownPeople);
+  const newInquiries = selectNewInquirySurface({
+    nowIso: input.nowIso,
+    candidates,
+    threadContext: input.threadContext,
+    knownPeople: input.knownPeople,
+    projects,
+    founderEmailHashes,
+  });
   const liveTruth = {
     lifecycleByGmailThread,
     associatedGmailThreadsByProject: associatedGmailThreads,
@@ -192,6 +201,7 @@ export function composeCosOperatingLoop(
       proposedActions: [],
       masterSprint,
       lifecycleByProject,
+      newInquiries,
       ...liveTruth,
     };
   }
@@ -268,6 +278,7 @@ export function composeCosOperatingLoop(
       proposedActions,
       masterSprint,
       lifecycleByProject,
+      newInquiries,
       ...liveTruth,
     };
   }
@@ -288,6 +299,7 @@ export function composeCosOperatingLoop(
     proposedActions,
     masterSprint,
     lifecycleByProject,
+    newInquiries,
     ...liveTruth,
   };
 }

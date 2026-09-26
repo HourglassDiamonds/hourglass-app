@@ -14,6 +14,7 @@ export const ATTACHMENT_FILENAME_TOPIC = "attachment_filename" as const;
 export const PROPOSED_SPEC_TOPIC = "proposed_spec" as const;
 
 export const EXPLICIT_NEW_PROJECT_RULE = "explicit_new_project_request" as const;
+export const NEW_COMMERCIAL_INQUIRY_RULE = "new_commercial_inquiry" as const;
 export const REACTIVATED_COMMERCIAL_WORK_RULE =
   "reactivated_commercial_work" as const;
 export const TRANSACTIONAL_CUSTOMER_NOTICE_RULE =
@@ -161,6 +162,52 @@ export function extractPaymentReceivedAmount(text: string): string | null {
   return match?.[1] ? `$${match[1]}` : null;
 }
 
+const THANKS_ONLY =
+  /^(?:thank you(?: so much)?!?|thanks!?|got it!?|perfect!?|sounds good!?)[\s.]*$/i;
+
+const NEW_WORK_PHRASE =
+  /\b(?:looking to (?:have|get|commission|make)|i(?:'d| would) like to have|custom engagement ring inquiry|engagement ring inquiry|have a custom engagement ring)\b/i;
+
+/**
+ * Prior relationship language. First-contact commercial requests are not this.
+ */
+export function looksPriorCommercialRelationship(text: string): boolean {
+  const hay = text.trim();
+  if (!hay) return false;
+  return (
+    /\b(?:been|has been|have been)\s+working with\b/i.test(hay) ||
+    /\bworking with\b[\s\S]{0,80}\b(?:on a|about a|on the)\b/i.test(hay) ||
+    /\bwork together again\b/i.test(hay) ||
+    /\breach(?:ing)? back out\b/i.test(hay) ||
+    /\banother piece\b/i.test(hay) ||
+    /\bcreate another\b/i.test(hay)
+  );
+}
+
+export function commercialInquiryRule(
+  text: string,
+): typeof NEW_COMMERCIAL_INQUIRY_RULE | typeof REACTIVATED_COMMERCIAL_WORK_RULE {
+  if (looksPriorCommercialRelationship(text)) return REACTIVATED_COMMERCIAL_WORK_RULE;
+  if (isNewCommercialInquiryText(text)) return NEW_COMMERCIAL_INQUIRY_RULE;
+  return REACTIVATED_COMMERCIAL_WORK_RULE;
+}
+
+/**
+ * Explicit first-contact request for new jewelry work.
+ * Price-and-timeline questions on an existing thread are not enough.
+ * Prior-work language stays reactivated, not a new inquiry.
+ */
+export function isNewCommercialInquiryText(text: string): boolean {
+  const hay = text.replace(/\s+/g, " ").trim();
+  if (!hay || THANKS_ONLY.test(hay)) return false;
+  if (looksPriorCommercialRelationship(hay)) return false;
+  if (rejectedCommercialNoise(hay)) return false;
+  if (/\b(?:unsubscribe|newsletter|webinar|digest)\b/i.test(hay)) return false;
+  if (!hasJewelryWorkContext(hay)) return false;
+  if (NEW_WORK_PHRASE.test(hay)) return true;
+  return looksExplicitNewProjectRequest(hay);
+}
+
 export function looksCommercialWorkProposal(text: string): boolean {
   if (looksExplicitNewProjectRequest(text)) return true;
   if (rejectedCommercialNoise(text)) return false;
@@ -199,6 +246,16 @@ export function extractNewProject(text: string): NewProjectHit[] {
       },
     ];
   }
+  if (isNewCommercialInquiryText(text)) {
+    const matched = text.match(NEW_WORK_PHRASE)?.[0] ?? text.slice(0, 80);
+    return [
+      {
+        title: proposeNewProjectTitle(text),
+        matchedText: clipMatchedText(matched),
+        ruleIds: [NEW_COMMERCIAL_INQUIRY_RULE],
+      },
+    ];
+  }
   if (!looksCommercialWorkProposal(text)) return [];
   const matched = looksConsequentialBuyerIntent(text)
     ? "price, timeline, or next steps"
@@ -207,7 +264,7 @@ export function extractNewProject(text: string): NewProjectHit[] {
     {
       title: proposeNewProjectTitle(text),
       matchedText: clipMatchedText(matched),
-      ruleIds: [REACTIVATED_COMMERCIAL_WORK_RULE],
+      ruleIds: [commercialInquiryRule(text)],
     },
   ];
 }

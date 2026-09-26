@@ -4,6 +4,7 @@
  * Quoted historical text is ignored. Read-model only.
  */
 
+import { isNewCommercialInquiryText } from "@/lib/continuum/gmail/candidates/new-project";
 import { authorOwnedText, quotedText } from "@/lib/continuum/gmail/candidates/spec-provenance";
 import type {
   SourceCommunicationActor,
@@ -118,6 +119,7 @@ export function classifySourceCommunication(
 
   if (actor === "client") {
     if (CLIENT_APPROVES.test(hay)) return "client_approves";
+    if (isNewCommercialInquiryText(hay)) return "new_commercial_inquiry";
     if (SHIPPING.test(hay) || REQUEST.test(hay)) return "client_requests";
     return "client_replies_nonblocking";
   }

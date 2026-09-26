@@ -24,6 +24,7 @@ import {
   calendarTimingRecommendation,
   type TodayUpcomingItem,
 } from "@/lib/continuum/calendar/today-upcoming";
+import type { NewInquirySurface } from "@/lib/continuum/chief-of-staff/operating-loop/new-inquiry";
 
 type CompleteAction = (formData: FormData) => void | Promise<void>;
 
@@ -143,6 +144,46 @@ function DocketItem({
   );
 }
 
+function NewInquiryAlert({ surface }: { surface: NewInquirySurface | null | undefined }) {
+  const card = surface?.featured;
+  if (!surface || !card || surface.count === 0) return null;
+  return (
+    <section data-new-inquiry="" className="mb-8 min-w-0">
+      <h2 className="text-[11px] uppercase tracking-[0.28em] text-[#8d8073]">
+        {surface.heading}
+      </h2>
+      <div className="mt-3 min-w-0" data-new-inquiry-card={card.threadId}>
+        <p className="break-words font-serif text-[1.35rem] leading-[1.15] tracking-[-0.03em] text-[#efe8de]">
+          {card.title}
+        </p>
+        {card.detail ? (
+          <p className="mt-1 break-words text-[14px] leading-relaxed text-[#d8cfc4]" data-new-inquiry-detail="">
+            {card.detail}
+          </p>
+        ) : null}
+        <p className="mt-2 text-[13px] leading-relaxed text-[#9a8e82]">{card.status}</p>
+        <p className="text-[13px] leading-relaxed text-[#9a8e82]">{card.receivedLabel}</p>
+        {card.reviewHref ? (
+          <a
+            href={card.reviewHref}
+            data-new-inquiry-review=""
+            className="mt-3 inline-block text-[13px] text-[#ad9164] underline decoration-[#ad9164]/40 underline-offset-4"
+          >
+            {card.reviewLabel}
+          </a>
+        ) : (
+          <p className="mt-3 text-[13px] text-[#ad9164]">{card.reviewLabel}</p>
+        )}
+        {surface.moreLabel ? (
+          <p data-new-inquiry-more="" className="mt-3 text-[11px] uppercase tracking-[0.22em] text-[#6f675f]">
+            {surface.moreLabel}
+          </p>
+        ) : null}
+      </div>
+    </section>
+  );
+}
+
 export function ChiefOfStaffToday({
   loop,
   docket: incomingDocket,
@@ -226,6 +267,7 @@ export function ChiefOfStaffToday({
           </ul>
         </div>
       ) : null}
+      <NewInquiryAlert surface={docket.newInquiries} />
       {docket.showDisconnected ? (
         <>
           <h2 className="sr-only">Today</h2>

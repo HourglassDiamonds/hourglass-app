@@ -20,6 +20,7 @@ import {
   NEW_PROJECT_CONTEXT_TOPIC,
   PAYMENT_RECEIVED_GENERIC_TITLE,
   PROPOSED_SPEC_TOPIC,
+  NEW_COMMERCIAL_INQUIRY_RULE,
   REACTIVATED_COMMERCIAL_WORK_RULE,
   TRANSACTIONAL_CUSTOMER_NOTICE_RULE,
   WAITING_ON_CLIENT_TOPIC,
@@ -139,6 +140,7 @@ function receivedAmountFromCandidates(
 function workStatusOf(row: ContinuumCandidate): GmailIntakeWorkStatus {
   const rules = row.evidenceBasis.ruleIds;
   if (rules.includes(TRANSACTIONAL_CUSTOMER_NOTICE_RULE)) return "payment_received";
+  if (rules.includes(NEW_COMMERCIAL_INQUIRY_RULE)) return "new_project";
   if (rules.includes(REACTIVATED_COMMERCIAL_WORK_RULE)) return "opportunity_reactivated";
   if (rules.includes(EXPLICIT_NEW_PROJECT_RULE)) return "new_project";
   return "new_project";

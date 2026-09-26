@@ -16,7 +16,7 @@ import {
   NEW_PROJECT_CONTEXT_TOPIC,
   PAYMENT_RECEIVED_GENERIC_TITLE,
   proposeNewProjectTitle,
-  REACTIVATED_COMMERCIAL_WORK_RULE,
+  commercialInquiryRule,
   RELATED_CUSTOMER_JEWELRY_THREAD_RULE,
   supportedCustomerEmailHashes,
   TRANSACTIONAL_CUSTOMER_NOTICE_RULE,
@@ -320,7 +320,7 @@ export function reconcileThreadCandidates(input: {
         evidence: intent,
         createdAt: input.createdAt,
         title: proposeNewProjectTitle(hay),
-        ruleIds: [REACTIVATED_COMMERCIAL_WORK_RULE],
+        ruleIds: [commercialInquiryRule(authorOwnedHaystack(intent.indexed.subject, intent.plaintext ?? null))],
         matchedText: "price, timeline, or next steps",
       });
       if (draft) extra.push(draft);

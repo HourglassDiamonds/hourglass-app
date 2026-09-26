@@ -11,6 +11,7 @@ import type { SourceCommunicationEvent } from "@/lib/continuum/source-events/typ
 import type { TodayBriefingPacket } from "./briefing-packet";
 import type { TodayRenderedBriefing } from "./briefing-copy";
 import type { CosBriefingV1 } from "./cos-briefing-v1";
+import type { NewInquirySurface } from "./new-inquiry";
 
 export const COS_OPERATING_LOOP_CONTRACT_VERSION = "cos-operating-loop-v1" as const;
 
@@ -339,6 +340,7 @@ export type CosOperatingLoopView = {
    * current: this loop matches the source watermark.
    * refreshing: last successful composition, shown while a rebuild runs.
    */
+  newInquiries?: NewInquirySurface;
   todayFreshness?: "current" | "refreshing";
   /** Watermark this loop was composed for. Not mailbox content. */
   todayReadModelWatermark?: string | null;

@@ -34,6 +34,7 @@ export const SOURCE_COMMUNICATION_EVENT_CLASSES = [
   "client_requests",
   "client_approves",
   "client_replies_nonblocking",
+  "new_commercial_inquiry",
   "vendor_promises",
   "vendor_delivers_artifact",
   "vendor_order_confirmation",
@@ -83,6 +84,7 @@ export function isCurrentWorkSourceClass(
   return (
     value !== "unknown_communication" &&
     value !== "client_replies_nonblocking" &&
+    value !== "new_commercial_inquiry" &&
     value !== "vendor_acknowledges"
   );
 }

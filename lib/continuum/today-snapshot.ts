@@ -6,7 +6,7 @@
 
 import type { CosTodayDocketView } from "@/lib/continuum/chief-of-staff/operating-loop/docket";
 
-export const CONTINUUM_TODAY_READ_MODEL_VERSION = "continuum-today-read-model-v1" as const;
+export const CONTINUUM_TODAY_READ_MODEL_VERSION = "continuum-today-read-model-v2" as const;
 export const TODAY_SNAPSHOT_KEY = "founder_today_v1" as const;
 
 const DROP_KEYS = new Set([

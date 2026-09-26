@@ -21,6 +21,11 @@ import {
 import { isIdentityCleanupText } from "./briefing-packet";
 import { isAmbiguousFollowUpFragment } from "./obligation-currentness";
 import { finalizeTodayDocket, hasRealFounderOwnedObligation } from "./today-docket-boundary";
+import {
+  EMPTY_NEW_INQUIRY_SURFACE,
+  isDocketItemNewInquiry,
+  type NewInquirySurface,
+} from "./new-inquiry";
 import type {
   CosDocketItemView,
   CosDocketLane,
@@ -56,6 +61,7 @@ export type CosTodayDocketView = {
   caughtUpDetail: string | null;
   disconnectedHeading: string | null;
   disconnectedDetail: string | null;
+  newInquiries?: NewInquirySurface;
 };
 
 export function cosQueuedLabel(count: number): string {
@@ -209,6 +215,7 @@ export function authoritativeTodayDocket(docket: CosTodayDocketView): CosTodayDo
       caughtUpDetail: COS_CAUGHT_UP_DETAIL,
       disconnectedHeading: docket.disconnectedHeading,
       disconnectedDetail: docket.disconnectedDetail,
+      newInquiries: EMPTY_NEW_INQUIRY_SURFACE,
     };
   }
   const items = docket.items.filter(isAuthoritativeTodayCard);
@@ -224,7 +231,10 @@ export function authoritativeTodayDocket(docket: CosTodayDocketView): CosTodayDo
 
 export function composeTodayDocket(loop: CosOperatingLoopView): CosTodayDocketView {
   const finalized = finalizeTodayDocket(loop);
-  const actionableLive = finalized.upNext.filter(isActionableTodayDocketItem);
+  const newInquiries = loop.newInquiries ?? EMPTY_NEW_INQUIRY_SURFACE;
+  const actionableLive = finalized.upNext
+    .filter(isActionableTodayDocketItem)
+    .filter((item) => !isDocketItemNewInquiry(item, newInquiries));
   const unused = Math.max(0, COS_DOCKET_VISIBLE_LIMIT - actionableLive.length);
   const sprint = masterSprintDocketItems(loop, unused);
   const queue = [...actionableLive, ...sprint];
@@ -246,5 +256,6 @@ export function composeTodayDocket(loop: CosOperatingLoopView): CosTodayDocketVi
     caughtUpDetail: COS_CAUGHT_UP_DETAIL,
     disconnectedHeading: showDisconnected ? loop.heading : null,
     disconnectedDetail: showDisconnected ? loop.quietDetail : null,
+    newInquiries,
   });
 }
