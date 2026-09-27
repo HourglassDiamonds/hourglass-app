@@ -27,6 +27,9 @@ describe("project evidence association schema", () => {
     assert.doesNotMatch(sql, /grant .* to anon/i);
     assert.doesNotMatch(sql, /grant .* to authenticated/i);
     assert.doesNotMatch(sql, /grant .* to public/i);
+    assert.doesNotMatch(sql, /grant delete/i);
+    assert.match(sql, /octet_length\(basis::text\) <= 4096/);
+    assert.doesNotMatch(sql, /create index if not exists continuum_project_evidence_associations_project_idx/);
     assert.doesNotMatch(sql, /continuum_gmail_messages|continuum_gmail_connections|refresh_token/);
     assert.doesNotMatch(sql, /\bbody text\b|\bphone text\b|bytea/i);
     assert.doesNotMatch(sql, /disable row level security/i);

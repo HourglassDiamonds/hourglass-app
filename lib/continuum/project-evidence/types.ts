@@ -6,6 +6,10 @@
 
 export const PROJECT_EVIDENCE_TABLE = "continuum_project_evidence_associations" as const;
 
+/** Exact identifier lookup. Unapplied until the attachment-number migration exists. */
+export const PROJECT_EVIDENCE_THREAD_LOOKUP_RPC =
+  "continuum_gmail_thread_ids_for_project_number" as const;
+
 export const PROJECT_EVIDENCE_SOURCE_TYPES = ["gmail"] as const;
 export type ProjectEvidenceSourceType = (typeof PROJECT_EVIDENCE_SOURCE_TYPES)[number];
 

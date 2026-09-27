@@ -20,7 +20,11 @@ create table if not exists public.continuum_project_evidence_associations (
   status text not null check (
     status in ('candidate', 'trusted', 'rejected', 'ambiguous')
   ),
-  basis jsonb not null check (jsonb_typeof(basis) = 'object'),
+  basis jsonb not null check (
+    jsonb_typeof(basis) = 'object'
+    and octet_length(basis::text) <= 4096
+    and not (basis ?| array['body', 'phone', 'token'])
+  ),
   proposed_at timestamptz not null,
   reviewed_at timestamptz,
   reviewed_by text check (
@@ -53,13 +57,13 @@ comment on column public.continuum_project_evidence_associations.source_identity
   'Strongest practical source unit. For Gmail this is the thread id, not a message id.';
 
 comment on column public.continuum_project_evidence_associations.basis is
-  'Explicit provenance flags and project-number refs. Not a confidence score. No message body.';
+  'Explicit provenance flags and project-number refs. Object, at most 4096 bytes. Not a confidence score. No message body.';
 
+-- Serves founder read and write of one project's membership:
+-- where project_id = $1, and where project_id + source_type + source_identity.
+-- A second (project_id, status) index is unnecessary for those reads.
 create unique index if not exists continuum_project_evidence_associations_identity_uq
   on public.continuum_project_evidence_associations (project_id, source_type, source_identity);
-
-create index if not exists continuum_project_evidence_associations_project_idx
-  on public.continuum_project_evidence_associations (project_id, status);
 
 alter table public.continuum_project_evidence_associations enable row level security;
 
@@ -69,8 +73,8 @@ revoke all on table public.continuum_project_evidence_associations from authenti
 
 grant select, insert, update on table public.continuum_project_evidence_associations to service_role;
 
--- Explicitly: do not add anon/authenticated RLS policies.
--- Do not grant delete.
--- Do not store mailbox bodies or attachment bytes.
--- V1 discovery does not bulk-insert candidate rows.
--- Founder review persists only trusted or rejected membership.
+-- Rollback, in order:
+--   drop table public.continuum_project_evidence_associations;
+-- Rejected status is the durable removal. DELETE is not granted.
+-- Current Production does not read or write this table.
+-- Applying it before the Project Book deploy does not change Gmail, Calendar, SMS, or Today.

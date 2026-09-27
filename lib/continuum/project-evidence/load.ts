@@ -1,6 +1,7 @@
 /**
  * Bounded read of project evidence membership.
- * Uses the project's stored identifiers and a capped filename lookup.
+ * Uses the project's stored identifiers and an exact project-number lookup.
+ * A missing lookup function returns no filename candidates. It does not scan filenames.
  * Does not scan the mailbox, call a model, or write.
  * A missing association table does not blank stored exact history.
  */
@@ -28,6 +29,7 @@ import {
   PROJECT_EVIDENCE_ATTACHMENT_LOOKUP_LIMIT,
   PROJECT_EVIDENCE_MESSAGE_LIMIT,
   PROJECT_EVIDENCE_TABLE,
+  PROJECT_EVIDENCE_THREAD_LOOKUP_RPC,
   PROJECT_EVIDENCE_THREAD_LIMIT,
 } from "./types";
 
@@ -221,22 +223,24 @@ async function loadAttachmentHits(
   client: SupabaseClient,
   needles: readonly string[],
 ): Promise<{ threadId: string }[]> {
-  // Bounded to two exact project numbers and 32 rows each. The filename
-  // column is not indexed, so this stays off the hot path only by that cap.
-  const hits: { threadId: string }[] = [];
-  for (const needle of needles.slice(0, 2)) {
-    const result = await client
-      .from("continuum_gmail_attachments")
-      .select("thread_id, filename")
-      .ilike("filename", `%${needle}%`)
-      .limit(PROJECT_EVIDENCE_ATTACHMENT_LOOKUP_LIMIT);
-    if (result.error || !result.data) continue;
-    for (const row of result.data) {
-      const threadId = text(row.thread_id);
-      if (threadId) hits.push({ threadId });
+  try {
+    const hits: { threadId: string }[] = [];
+    for (const needle of needles.slice(0, 2)) {
+      const result = await client.rpc(PROJECT_EVIDENCE_THREAD_LOOKUP_RPC, {
+        p_identifier: needle,
+      });
+      if (result.error || !result.data) continue;
+      const rows = Array.isArray(result.data) ? result.data : [];
+      for (const row of rows) {
+        const threadId = text((row as { thread_id?: unknown }).thread_id);
+        if (threadId) hits.push({ threadId });
+        if (hits.length >= PROJECT_EVIDENCE_ATTACHMENT_LOOKUP_LIMIT) return hits;
+      }
     }
+    return hits;
+  } catch {
+    return [];
   }
-  return hits;
 }
 
 async function loadThreads(
