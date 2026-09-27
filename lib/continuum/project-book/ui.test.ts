@@ -99,4 +99,50 @@ describe("Project Book UI", () => {
     assert.match(html, /None/);
     assert.doesNotMatch(html, /Shop delivered|Client approved|Waiting on shop/);
   });
+
+  it("shows possible evidence for review and keeps it out of history", () => {
+    const view = presentProjectBook(
+      projectBook({
+        projectId: PROJECT,
+        projectLabel: "Dylon",
+        records: [],
+        nowIso: "2026-09-23T16:00:00.000Z",
+        evidenceReview: {
+          possible: [
+            {
+              reviewKey: "abc",
+              channel: "Gmail",
+              earliest: "2026-09-01T12:00:00.000Z",
+              latest: "2026-09-21T18:00:00.000Z",
+              subject: "RE: HGD x Dylon D.-C025610",
+              attachmentNames: ["NL-H017-Dylon D-C025610-Mod4.stl"],
+              reason: "A shop file on this thread contains C025610.",
+              possibleMatches: [],
+            },
+          ],
+          ambiguous: [
+            {
+              reviewKey: "def",
+              channel: "Gmail",
+              earliest: "2026-06-01T12:00:00.000Z",
+              latest: "2026-06-02T12:00:00.000Z",
+              subject: "RE: mixed numbers",
+              attachmentNames: ["NL-H017-Jesse R. - C025088.jpg"],
+              reason: "This thread contains C025088 and C026350. No project is selected automatically.",
+              possibleMatches: ["Jesse R. · C025088", "Duane · C026350"],
+            },
+          ],
+        },
+      }),
+    );
+    const html = renderToStaticMarkup(createElement(ProjectBookSection, { book: view }));
+    assert.match(html, /No history yet/);
+    assert.match(html, /Possible project evidence/);
+    assert.match(html, /may belong to this project/);
+    assert.match(html, /Project evidence needs review/);
+    assert.match(html, /Jesse R/);
+    assert.match(html, /C026350/);
+    assert.doesNotMatch(html, /Add to project/);
+    assert.doesNotMatch(html, /19fed961d1371aaf/);
+  });
 });

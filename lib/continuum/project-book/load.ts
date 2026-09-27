@@ -1,20 +1,20 @@
 /**
  * Bounded Project Book load for one canonical project.
- * Uses the stored Gmail thread pointer only. Does not match subjects,
- * names, calendar titles, or filenames onto a project.
- * Read-only. No model call. No Gmail API call.
+ * Trusted chronology comes from an exact stored thread or a founder-trusted
+ * association. Candidate discovery is review-only and does not scan the mailbox
+ * without a project number. Read-only. No model call. No Gmail API call.
  */
 
 import "server-only";
 
 import { rowToCandidate } from "@/lib/continuum/candidates/rows";
 import type { TodayGmailThreadContext } from "@/lib/continuum/candidates/founder-attention";
-import { coerceGmailThreadId } from "@/lib/continuum/client-memory/gmail";
 import { loadTodayKnownEmailPeople } from "@/lib/continuum/client-memory/today-known-people";
-import { correlateExactProjectThread } from "@/lib/continuum/gmail/projects";
 import { projectGmailSourceEvents } from "@/lib/continuum/source-events/gmail";
+import { readProjectEvidence } from "@/lib/continuum/project-evidence/load";
+import type { ProjectEvidenceReview } from "@/lib/continuum/project-evidence/types";
 import { getSupabaseAdmin } from "@/lib/supabase/client";
-import { PROJECT_HISTORY_NEEDS_REVIEW, projectThreadAssociationTrust } from "./admit";
+import { PROJECT_HISTORY_NEEDS_REVIEW } from "./admit";
 import { projectBook } from "./project";
 import { projectBookRecordsFromSourceEvents } from "./records";
 import type { ProjectBookRead } from "./types";
@@ -31,12 +31,14 @@ export function emptyProjectBook(input: {
   projectLabel: string;
   nowIso?: string;
   review?: string | null;
+  evidenceReview?: ProjectEvidenceReview | null;
 }): ProjectBookRead {
   const book = projectBook({
     projectId: input.projectId,
     projectLabel: input.projectLabel,
     records: [],
     nowIso: input.nowIso,
+    evidenceReview: input.evidenceReview,
   });
   if (!input.review) return book;
   return {
@@ -70,83 +72,82 @@ export async function loadProjectBook(input: {
 }): Promise<ProjectBookRead> {
   const projectId = input.projectId.trim();
   const projectLabel = input.projectLabel.trim() || "Project";
-  const empty = () =>
-    emptyProjectBook({ projectId, projectLabel, nowIso: input.nowIso });
+  const empty = (review?: string | null, evidenceReview?: ProjectEvidenceReview | null) =>
+    emptyProjectBook({
+      projectId,
+      projectLabel,
+      nowIso: input.nowIso,
+      review,
+      evidenceReview,
+    });
   try {
     const client = getSupabaseAdmin();
     if (!client) return empty();
     const history = await client
       .from("continuum_project_history")
-      .select("project_id, gmail_thread_id, match_judgment, match_judgment_raw")
+      .select("project_id, gmail_thread_id, cad_job_number, order_number, match_judgment, match_judgment_raw")
       .eq("project_id", projectId)
       .limit(1);
-    if (history.error || !history.data?.length) return empty();
-    const coerced = coerceGmailThreadId(history.data[0]?.gmail_thread_id ?? null);
-    if (coerced.status !== "canonical") return empty();
-    const threadId = coerced.value;
+    if (history.error) return empty();
     const notes = await client
       .from("continuum_source_notes")
       .select("note_text")
       .eq("project_id", projectId)
       .limit(16);
-    const trust = projectThreadAssociationTrust({
-      matchJudgment:
-        history.data[0]?.match_judgment == null ? null : String(history.data[0].match_judgment),
-      matchJudgmentRaw:
-        history.data[0]?.match_judgment_raw == null
-          ? null
-          : String(history.data[0].match_judgment_raw),
-      noteTexts: notes.error || !notes.data ? [] : notes.data.map((row) => String(row.note_text ?? "")),
+    const noteTexts = notes.error || !notes.data ? [] : notes.data.map((row) => String(row.note_text ?? ""));
+    const historyRow = history.data?.[0];
+    const evidence = await readProjectEvidence(client, {
+      projectId,
+      projectLabel,
+      history: historyRow
+        ? {
+            cadJobNumber: historyRow.cad_job_number == null ? null : String(historyRow.cad_job_number),
+            orderNumber: historyRow.order_number == null ? null : String(historyRow.order_number),
+            gmailThreadId: historyRow.gmail_thread_id == null ? null : String(historyRow.gmail_thread_id),
+            matchJudgment: historyRow.match_judgment == null ? null : String(historyRow.match_judgment),
+            matchJudgmentRaw:
+              historyRow.match_judgment_raw == null ? null : String(historyRow.match_judgment_raw),
+          }
+        : null,
+      noteTexts,
     });
-    if (trust === "needs_review") {
-      return emptyProjectBook({
-        projectId,
-        projectLabel,
-        nowIso: input.nowIso,
-        review: PROJECT_HISTORY_NEEDS_REVIEW,
-      });
-    }
-    const claimants = await client
-      .from("continuum_project_history")
-      .select("project_id, gmail_thread_id")
-      .eq("gmail_thread_id", threadId);
-    if (claimants.error || !claimants.data) return empty();
-    const match = correlateExactProjectThread(
-      threadId,
-      claimants.data.map((row) => ({
-        projectId: String(row.project_id ?? ""),
-        gmailThreadId: row.gmail_thread_id == null ? null : String(row.gmail_thread_id),
-      })),
-    );
-    if (match.status !== "exact" || match.projectIds.length !== 1 || match.projectIds[0] !== projectId) {
-      return emptyProjectBook({
-        projectId,
-        projectLabel,
-        nowIso: input.nowIso,
-        review: PROJECT_HISTORY_NEEDS_REVIEW,
-      });
+    const trustedIds = evidence.trustedThreadIds.slice(0, 4);
+    if (trustedIds.length === 0) {
+      return empty(
+        evidence.storedWithheld ? PROJECT_HISTORY_NEEDS_REVIEW : null,
+        evidence.evidenceReview,
+      );
     }
 
-    const [messages, attachments, candidateRows, knownPeople] = await Promise.all([
+    const [messages, attachments, knownPeople, candidateGroups] = await Promise.all([
       client
         .from("continuum_gmail_messages")
         .select(MESSAGE_COLUMNS)
-        .eq("thread_id", threadId)
+        .in("thread_id", [...trustedIds])
         .order("sent_at", { ascending: false })
-        .limit(MESSAGE_LIMIT),
+        .limit(MESSAGE_LIMIT * trustedIds.length),
       client
         .from("continuum_gmail_attachments")
         .select("thread_id, message_id, filename")
-        .eq("thread_id", threadId),
-      client
-        .from("continuum_candidates")
-        .select(CANDIDATE_COLUMNS)
-        .eq("source_system", "gmail")
-        .like("source_ref", `gc1|${threadId}|%`)
-        .limit(CANDIDATE_LIMIT),
+        .in("thread_id", [...trustedIds]),
       loadTodayKnownEmailPeople(),
+      Promise.all(
+        trustedIds.map((threadId) =>
+          client
+            .from("continuum_candidates")
+            .select(CANDIDATE_COLUMNS)
+            .eq("source_system", "gmail")
+            .like("source_ref", `gc1|${threadId}|%`)
+            .limit(CANDIDATE_LIMIT),
+        ),
+      ),
     ]);
-    if (messages.error || !messages.data) return empty();
+    if (messages.error || !messages.data) {
+      return empty(
+        evidence.storedWithheld ? PROJECT_HISTORY_NEEDS_REVIEW : null,
+        evidence.evidenceReview,
+      );
+    }
 
     const filesByMessage = new Map<string, string[]>();
     if (!attachments.error && attachments.data) {
@@ -160,16 +161,18 @@ export async function loadProjectBook(input: {
       }
     }
 
-    const thread: TodayGmailThreadContext = { messages: [] };
+    const threadContext = new Map<string, TodayGmailThreadContext>();
     for (const row of messages.data) {
+      const threadId = String(row.thread_id ?? "").trim();
       const messageId = String(row.message_id ?? "").trim();
       const sentAt = String(row.sent_at ?? "").trim();
-      if (!messageId || !sentAt) continue;
+      if (!threadId || !messageId || !sentAt) continue;
+      const thread = threadContext.get(threadId) ?? { messages: [] };
       const files = filesByMessage.get(messageId) ?? [];
       thread.subject = thread.subject ?? (row.subject == null ? null : String(row.subject));
-      thread.messages = [
-        ...(thread.messages ?? []),
-        {
+      const messagesForThread = [...(thread.messages ?? [])];
+      if (messagesForThread.length < MESSAGE_LIMIT) {
+        messagesForThread.push({
           messageId,
           sentAt,
           direction: directionOf(row.direction),
@@ -177,12 +180,15 @@ export async function loadProjectBook(input: {
           subject: row.subject == null ? null : String(row.subject),
           hasAttachments: Boolean(row.has_attachments) || files.length > 0,
           attachmentFilenames: files,
-        },
-      ];
+        });
+      }
+      thread.messages = messagesForThread;
+      threadContext.set(threadId, thread);
     }
 
     const candidates = [];
-    if (!candidateRows.error && candidateRows.data) {
+    for (const candidateRows of candidateGroups) {
+      if (candidateRows.error || !candidateRows.data) continue;
       for (const row of candidateRows.data) {
         try {
           candidates.push(rowToCandidate(row as Record<string, unknown>));
@@ -193,16 +199,17 @@ export async function loadProjectBook(input: {
     }
 
     const events = projectGmailSourceEvents({
-      threadContext: new Map([[threadId, thread]]),
+      threadContext,
       knownPeople,
       candidates,
-      projectIdByThread: new Map([[threadId, projectId]]),
+      projectIdByThread: new Map(trustedIds.map((threadId) => [threadId, projectId])),
     });
     return projectBook({
       projectId,
       projectLabel,
       records: projectBookRecordsFromSourceEvents(events),
       nowIso: input.nowIso,
+      evidenceReview: evidence.evidenceReview,
     });
   } catch {
     return empty();

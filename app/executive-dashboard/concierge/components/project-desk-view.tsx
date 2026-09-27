@@ -64,10 +64,12 @@ export function ProjectDeskView({
   desk,
   book = null,
   justSavedSpec = false,
+  evidenceNotice = null,
 }: {
   desk: ProjectDeskRead;
   book?: ProjectBookView | null;
   justSavedSpec?: boolean;
+  evidenceNotice?: string | null;
 }) {
   const coverage = coverageRows(desk.coverage);
   const notePeople = desk.people;
@@ -80,6 +82,11 @@ export function ProjectDeskView({
       {justSavedSpec ? (
         <p className="mt-4 text-[15px] leading-relaxed text-[#c4b7aa]" role="status">
           Correction saved.
+        </p>
+      ) : null}
+      {evidenceNotice ? (
+        <p className="mt-4 text-[15px] leading-relaxed text-[#c4b7aa]" role="status">
+          {evidenceNotice}
         </p>
       ) : null}
 

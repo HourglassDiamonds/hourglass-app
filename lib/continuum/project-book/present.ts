@@ -5,6 +5,7 @@
 
 import { civilDateInZone, formatDateOnlyShort } from "@/lib/continuum/date-only";
 import { meaningfulAttachmentNames, safeFounderCopy } from "./admit";
+import type { ProjectEvidenceReview } from "@/lib/continuum/project-evidence/types";
 import type {
   ProjectBookEvidence,
   ProjectBookRead,
@@ -39,6 +40,16 @@ export type ProjectBookViewEntry = {
   evidence: ProjectBookViewEvidence;
 };
 
+export type ProjectBookEvidenceReviewItem = {
+  reviewKey: string;
+  channel: "Gmail";
+  dateLabel: string;
+  subject: string | null;
+  attachmentNames: readonly string[];
+  reason: string;
+  possibleMatches: readonly string[];
+};
+
 export type ProjectBookView = {
   projectId: string;
   projectLabel: string;
@@ -61,6 +72,18 @@ export type ProjectBookView = {
   representedLabels: readonly string[];
   futureLabels: readonly string[];
   associationReview: ProjectBookRead["associationReview"];
+  evidenceReview: {
+    possible: {
+      heading: string;
+      summary: string;
+      items: readonly ProjectBookEvidenceReviewItem[];
+    } | null;
+    ambiguous: {
+      heading: string;
+      summary: string;
+      items: readonly ProjectBookEvidenceReviewItem[];
+    } | null;
+  } | null;
   historyState: ProjectBookRead["historyState"];
   empty: boolean;
 };
@@ -121,6 +144,53 @@ function viewEvidence(evidence: ProjectBookEvidence): ProjectBookViewEvidence {
   };
 }
 
+function reviewDateLabel(earliest: string | null, latest: string | null): string {
+  const start = earliest ? projectBookDisplayDate(earliest) : null;
+  const end = latest ? projectBookDisplayDate(latest) : null;
+  if (start && end && start !== end) return `${start} – ${end}`;
+  return start ?? end ?? "Date unknown";
+}
+
+function presentReview(
+  review: ProjectEvidenceReview | null,
+): ProjectBookView["evidenceReview"] {
+  if (!review) return null;
+  const items = (rows: ProjectEvidenceReview["possible"]) =>
+    rows.map((row) => ({
+      reviewKey: row.reviewKey,
+      channel: row.channel,
+      dateLabel: reviewDateLabel(row.earliest, row.latest),
+      subject: safeFounderCopy(row.subject),
+      attachmentNames: meaningfulAttachmentNames(row.attachmentNames).slice(0, 8),
+      reason: safeFounderCopy(row.reason) ?? "Possible project evidence.",
+      possibleMatches: row.possibleMatches
+        .map((match) => safeFounderCopy(match))
+        .filter((match): match is string => Boolean(match))
+        .slice(0, 6),
+    }));
+  const possible = items(review.possible);
+  const ambiguous = items(review.ambiguous);
+  if (possible.length === 0 && ambiguous.length === 0) return null;
+  return {
+    possible:
+      possible.length === 0
+        ? null
+        : {
+            heading: "Possible project evidence",
+            summary: `${possible.length} Gmail ${possible.length === 1 ? "thread" : "threads"} may belong to this project.`,
+            items: possible,
+          },
+    ambiguous:
+      ambiguous.length === 0
+        ? null
+        : {
+            heading: "Project evidence needs review",
+            summary: "Possible matches are listed below. No project is selected automatically.",
+            items: ambiguous,
+          },
+  };
+}
+
 export function presentProjectBook(book: ProjectBookRead): ProjectBookView {
   return {
     projectId: book.projectId,
@@ -163,6 +233,7 @@ export function presentProjectBook(book: ProjectBookRead): ProjectBookView {
     representedLabels: book.sourceCoverage.represented.map((sourceType) => FUTURE_LABEL[sourceType]),
     futureLabels: book.sourceCoverage.future.map((sourceType) => FUTURE_LABEL[sourceType]),
     associationReview: book.associationReview,
+    evidenceReview: presentReview(book.evidenceReview),
     historyState: book.historyState,
     empty: book.historyState === "none",
   };

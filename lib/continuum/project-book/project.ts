@@ -18,6 +18,7 @@ import type {
   SourceCommunicationEvent,
   SourceCommunicationEventClass,
 } from "@/lib/continuum/source-events/types";
+import type { ProjectEvidenceReview } from "@/lib/continuum/project-evidence/types";
 import type {
   ProjectBookAssociationReview,
   ProjectBookCurrentState,
@@ -292,6 +293,7 @@ export function projectBook(input: {
   milestoneLimit?: number;
   /** Stored thread exists, but the desk does not trust it. Events stay out of chronology. */
   associationTrusted?: boolean;
+  evidenceReview?: ProjectEvidenceReview | null;
 }): ProjectBookRead {
   const projectId = input.projectId.trim();
   const generatedAt = input.nowIso ?? new Date().toISOString();
@@ -300,6 +302,7 @@ export function projectBook(input: {
       projectId,
       projectLabel: input.projectLabel,
       generatedAt,
+      evidenceReview: input.evidenceReview ?? null,
     });
   }
   const timelineLimit = input.timelineLimit ?? PROJECT_BOOK_TIMELINE_LIMIT;
@@ -425,6 +428,7 @@ export function projectBook(input: {
             count: Math.max(reviewCount, 1),
           }
         : associationReview,
+    evidenceReview: input.evidenceReview ?? null,
     historyState,
     generatedAt,
   };
@@ -434,6 +438,7 @@ function withheldBook(input: {
   projectId: string;
   projectLabel: string;
   generatedAt: string;
+  evidenceReview: ProjectEvidenceReview | null;
 }): ProjectBookRead {
   return {
     projectId: input.projectId,
@@ -454,6 +459,7 @@ function withheldBook(input: {
       summary: PROJECT_HISTORY_NEEDS_REVIEW,
       count: 1,
     },
+    evidenceReview: input.evidenceReview,
     historyState: "needs_review",
     generatedAt: input.generatedAt,
   };

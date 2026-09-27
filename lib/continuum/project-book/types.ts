@@ -10,6 +10,7 @@ import type {
   SourceCommunicationEventClass,
 } from "@/lib/continuum/source-events/types";
 import type { WorkLoopSemanticClass } from "@/lib/continuum/chief-of-staff/operating-loop/work-loop-state";
+import type { ProjectEvidenceReview } from "@/lib/continuum/project-evidence/types";
 
 export const PROJECT_BOOK_SOURCE_TYPES = [
   "gmail",
@@ -143,6 +144,7 @@ export type ProjectBookRead = {
   unresolved: readonly ProjectBookUnresolved[];
   sourceCoverage: ProjectBookSourceCoverage;
   associationReview: ProjectBookAssociationReview | null;
+  evidenceReview: ProjectEvidenceReview | null;
   historyState: ProjectBookHistoryState;
   generatedAt: string;
 };

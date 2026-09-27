@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { ProjectBookView, ProjectBookViewEvidence } from "@/lib/continuum/project-book/present";
+import { reviewProjectEvidence } from "../project-evidence-actions";
 
 const FILTERS = [
   { id: "all", label: "All" },
@@ -50,6 +51,98 @@ function EvidenceDetails({ evidence }: { evidence: readonly ProjectBookViewEvide
         ))}
       </ul>
     </details>
+  );
+}
+
+function EvidenceReviewGroup({
+  projectId,
+  group,
+}: {
+  projectId: string;
+  group: NonNullable<ProjectBookView["evidenceReview"]>["possible"];
+}) {
+  const [open, setOpen] = useState(false);
+  if (!group) return null;
+  const matches = [...new Set(group.items.flatMap((item) => item.possibleMatches))];
+  return (
+    <div className="mt-6 max-w-[46ch]">
+      <p className="text-[11px] uppercase tracking-[0.18em] text-[#ad9164]">{group.heading}</p>
+      <p className="mt-2 text-[15px] leading-relaxed text-[#e7ddd2]">{group.summary}</p>
+      {matches.length > 0 ? (
+        <div className="mt-3">
+          <p className="text-[12px] uppercase tracking-[0.16em] text-[#8d8073]">Possible matches</p>
+          <ul className="mt-2 space-y-1">
+            {matches.map((match) => (
+              <li key={match} className="text-[15px] leading-relaxed text-[#e7ddd2]">
+                {match}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+      <button
+        type="button"
+        className="mt-3 min-h-11 text-[11px] uppercase tracking-[0.16em] text-[#ad9164]"
+        aria-expanded={open}
+        onClick={() => setOpen((value) => !value)}
+      >
+        {open ? "Hide" : "Review"}
+      </button>
+      {open ? (
+        <ul className="mt-4 space-y-6">
+          {group.items.map((item) => (
+            <li key={item.reviewKey} className="border-t border-[#2a2622] pt-4">
+              <p className="text-[12px] uppercase tracking-[0.16em] text-[#8d8073]">
+                {item.channel} · {item.dateLabel}
+              </p>
+              {item.subject ? (
+                <p className="mt-2 text-[15px] leading-relaxed text-[#efe8de]">{item.subject}</p>
+              ) : null}
+              {item.attachmentNames.length > 0 ? (
+                <p className="mt-2 text-[13px] leading-relaxed text-[#c4b7aa]">
+                  {item.attachmentNames.join(", ")}
+                </p>
+              ) : null}
+              <p className="mt-2 text-[13px] leading-relaxed text-[#c4b7aa]">{item.reason}</p>
+              {item.possibleMatches.length > 0 ? (
+                <ul className="mt-2 space-y-1">
+                  {item.possibleMatches.map((match) => (
+                    <li key={match} className="text-[13px] leading-relaxed text-[#e7ddd2]">
+                      {match}
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+              <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2">
+                <form action={reviewProjectEvidence}>
+                  <input type="hidden" name="projectId" value={projectId} />
+                  <input type="hidden" name="reviewKey" value={item.reviewKey} />
+                  <input type="hidden" name="decision" value="trust" />
+                  <button type="submit" className="min-h-11 text-[11px] uppercase tracking-[0.16em] text-[#efe8de]">
+                    Add to project
+                  </button>
+                </form>
+                <form action={reviewProjectEvidence}>
+                  <input type="hidden" name="projectId" value={projectId} />
+                  <input type="hidden" name="reviewKey" value={item.reviewKey} />
+                  <input type="hidden" name="decision" value="reject" />
+                  <button type="submit" className="min-h-11 text-[11px] uppercase tracking-[0.16em] text-[#8d8073]">
+                    Not this project
+                  </button>
+                </form>
+                <button
+                  type="button"
+                  className="min-h-11 text-[11px] uppercase tracking-[0.16em] text-[#8d8073]"
+                  onClick={() => setOpen(false)}
+                >
+                  Leave unresolved
+                </button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </div>
   );
 }
 
@@ -110,6 +203,9 @@ export function ProjectBookSection({ book }: { book: ProjectBookView }) {
           {book.associationReview.count === 1 ? "item was" : "items were"} left out.
         </p>
       ) : null}
+
+      <EvidenceReviewGroup projectId={book.projectId} group={book.evidenceReview?.ambiguous ?? null} />
+      <EvidenceReviewGroup projectId={book.projectId} group={book.evidenceReview?.possible ?? null} />
 
       <h3 className="mt-8 text-[11px] uppercase tracking-[0.22em] text-[#8d8073]">Open loops</h3>
       {book.historyState !== "trusted" ? (

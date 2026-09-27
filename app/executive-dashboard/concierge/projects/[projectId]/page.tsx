@@ -21,7 +21,7 @@ export default async function ConciergeProjectDeskPage({
   searchParams,
 }: {
   params: Promise<{ projectId: string }>;
-  searchParams?: Promise<{ saved?: string }>;
+  searchParams?: Promise<{ saved?: string; evidence?: string }>;
 }) {
   const { projectId } = await params;
   const query = searchParams ? await searchParams : {};
@@ -98,6 +98,17 @@ export default async function ConciergeProjectDeskPage({
             query.saved === "operating" ||
             query.saved === "lifecycle" ||
             query.saved === "job"
+          }
+          evidenceNotice={
+            query.evidence === "saved"
+              ? "Evidence association saved."
+              : query.evidence === "not-activated"
+                ? "Evidence review cannot be saved until the association table is applied."
+                : query.evidence === "not-found" || query.evidence === "invalid"
+                  ? "That evidence could not be confirmed for this project."
+                  : query.evidence === "unavailable"
+                    ? "Unable to save the association."
+                    : null
           }
         />
       </div>

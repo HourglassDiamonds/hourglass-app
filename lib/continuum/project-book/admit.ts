@@ -25,6 +25,14 @@ const INLINE_IMAGE = /^image\d+\.(?:jpe?g|png|gif|webp)$/i;
 const DISTRUST =
   /do not guess|don't guess|do-not-guess|ambiguous identity|multiple [^.\n]{0,80}clients|conflicting project/i;
 
+export function projectHistoryDistrust(input: {
+  matchJudgmentRaw?: string | null;
+  noteTexts?: readonly string[];
+}): boolean {
+  const hay = [input.matchJudgmentRaw ?? "", ...(input.noteTexts ?? [])].join("\n");
+  return DISTRUST.test(hay);
+}
+
 export function projectThreadAssociationTrust(input: {
   matchJudgment: string | null | undefined;
   matchJudgmentRaw?: string | null;
@@ -38,8 +46,7 @@ export function projectThreadAssociationTrust(input: {
   ) {
     return "needs_review";
   }
-  const hay = [input.matchJudgmentRaw ?? "", ...(input.noteTexts ?? [])].join("\n");
-  if (DISTRUST.test(hay)) return "needs_review";
+  if (projectHistoryDistrust(input)) return "needs_review";
   return "trusted";
 }
 
