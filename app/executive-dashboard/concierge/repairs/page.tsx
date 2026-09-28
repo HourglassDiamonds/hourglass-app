@@ -5,6 +5,7 @@ import type { ProjectDeskRead } from "@/lib/continuum/client-memory/project-desk
 import { getAuthenticatedRepairQuoteReader } from "@/lib/continuum/repair-quoting/load";
 import { ConciergeShell } from "../components/concierge-shell";
 import { ConciergeUnavailable } from "../components/client-profile-view";
+import { RepairEstimator } from "../components/repair-estimator";
 import { RepairsHome, type RepairsHomeQuote } from "../components/repairs-home";
 
 export const dynamic = "force-dynamic";
@@ -94,7 +95,9 @@ export default async function ConciergeRepairsPage() {
         issued={issued}
         other={other}
         quotesConnected={quotesConnected}
-      />
+      >
+        <RepairEstimator />
+      </RepairsHome>
     </ConciergeShell>
   );
 }
