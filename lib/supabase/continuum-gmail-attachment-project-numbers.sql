@@ -1,20 +1,27 @@
--- Exact Gmail attachment project-number lookup.
+-- Exact Gmail attachment project-number lookup functions.
 -- UNAPPLIED. DO NOT RUN AGAINST PRODUCTION from this change.
 --
+-- Run this file alone in the main Supabase SQL Editor, before the index file.
+-- Do not paste it together with the index file. The editor sends one script
+-- as one simple query, and Postgres runs a multi-statement script as one
+-- transaction. CREATE INDEX CONCURRENTLY cannot run in that transaction.
+--
 -- Additive. Does not rewrite filename, message, or attachment bytes.
--- Current Production inserts name their columns and keep working.
--- Postgres maintains the index when filename changes.
--- Current Production does not call the lookup function.
+-- No index in this file, so applying it does not lock attachment writes.
+-- Current Production does not call these functions.
 -- Applying this before the Project Book deploy does not change desk,
 -- Today, Calendar, or SMS behavior.
 --
--- Not full-text search. Not trigram search. Not fuzzy matching.
--- The index stores exact C / SP / RN tokens extracted from filename.
+-- Normalization: uppercase the filename, turn every non-letter/digit run
+-- into a space, then keep whole tokens C + 5 digits, SP + 4 digits, or
+-- RN + 4 digits. A token embedded in a longer alphanumeric word is ignored.
+-- C0255192 is its own token. It is not the token C025519.
 --
--- Rollback, in order:
+-- Rollback, after the index is gone, in order:
 --   drop function public.continuum_gmail_thread_ids_for_project_number(text);
---   drop index public.continuum_gmail_attachments_project_numbers_idx;
 --   drop function public.continuum_gmail_attachment_project_numbers(text);
+-- Drop the index first. Attachment inserts fail if the index remains
+-- and this function is gone.
 
 create or replace function public.continuum_gmail_attachment_project_numbers(p_filename text)
 returns text[]
@@ -25,9 +32,9 @@ set search_path = pg_catalog
 as $$
   select coalesce(
     (
-      select array_agg(distinct upper((m)[1]))
+      select array_agg(distinct (m)[1])
       from regexp_matches(
-        regexp_replace(coalesce(p_filename, ''), '[^A-Za-z0-9]+', ' ', 'g'),
+        regexp_replace(upper(coalesce(p_filename, '')), '[^A-Z0-9]+', ' ', 'g'),
         '\m(C[0-9]{5,}|SP[0-9]{4,}|RN[0-9]{4,})\M',
         'g'
       ) as m
@@ -44,11 +51,9 @@ revoke all on function public.continuum_gmail_attachment_project_numbers(text) f
 revoke all on function public.continuum_gmail_attachment_project_numbers(text) from authenticated;
 grant execute on function public.continuum_gmail_attachment_project_numbers(text) to service_role;
 
--- Expression matches the function above so the planner can use this index.
--- Build scans existing filenames once. Writes on this table wait for that build.
-create index if not exists continuum_gmail_attachments_project_numbers_idx
-  on public.continuum_gmail_attachments
-  using gin (public.continuum_gmail_attachment_project_numbers(filename));
+-- The GIN index is a separate single-statement file:
+-- continuum-gmail-attachment-project-numbers-index.sql
+-- Run that only after this function exists.
 
 create or replace function public.continuum_gmail_thread_ids_for_project_number(p_identifier text)
 returns table (thread_id text)
