@@ -57,19 +57,33 @@ function stoneBandPattern(count: number | null): RegExp | null {
   return null;
 }
 
-function shankPattern(mm: number): { pattern: RegExp; assumption: string | null } | null {
-  if (mm < 3) return { pattern: /Narrow Ring-<3mm/i, assumption: null };
-  if (mm <= 5) {
+type ShankWidthClass =
+  | { kind: "band"; pattern: RegExp }
+  | { kind: "gap"; question: string }
+  | { kind: "outside" };
+
+/**
+ * Sizing widths follow the task text only.
+ * Narrow is "<3mm". Medium is "3.01-5mm". Wide is "5.01-8.0mm".
+ * 3.00 mm is in neither label, and nothing between 5 mm and 5.01 mm is either.
+ */
+function classifyShankWidth(mm: number): ShankWidthClass {
+  if (mm < 3) return { kind: "band", pattern: /Narrow Ring-<3mm/i };
+  if (mm >= 3.01 && mm <= 5) return { kind: "band", pattern: /Medium Width-3\.01-5mm/i };
+  if (mm >= 5.01 && mm <= 8) return { kind: "band", pattern: /Wide Width 5\.01-8\.0mm/i };
+  if (mm >= 3 && mm < 3.01) {
     return {
-      pattern: /Medium Width-3\.01-5mm/i,
-      assumption:
-        mm < 3.01
-          ? `${formatSize(mm)} mm is quoted on the Medium Width 3.01–5 mm band.`
-          : null,
+      kind: "gap",
+      question: `${formatSize(mm)} mm is not a sizing band. The book has Narrow under 3 mm and Medium from 3.01 mm. What is the measured shank width?`,
     };
   }
-  if (mm <= 8) return { pattern: /Wide Width 5\.01-8\.0mm/i, assumption: null };
-  return null;
+  if (mm > 5 && mm < 5.01) {
+    return {
+      kind: "gap",
+      question: `${formatSize(mm)} mm is between Medium, which runs through 5 mm, and Wide, which starts at 5.01 mm. What is the measured shank width?`,
+    };
+  }
+  return { kind: "outside" };
 }
 
 function sizingMetalPattern(request: RepairEstimateRequest): RegExp | null {
@@ -157,15 +171,17 @@ function matchSizing(request: RepairEstimateRequest): {
   if (request.ring.shankWidthMm == null) {
     return { row: null, reason: null, assumptions };
   }
-  const shank = shankPattern(request.ring.shankWidthMm);
-  if (!shank) {
+  const shank = classifyShankWidth(request.ring.shankWidthMm);
+  if (shank.kind !== "band") {
     return {
       row: null,
-      reason: "That shank width is outside the repair book's sizing bands.",
+      reason:
+        shank.kind === "gap"
+          ? shank.question
+          : "That shank width is outside the repair book's sizing bands.",
       assumptions,
     };
   }
-  if (shank.assumption) assumptions.push(shank.assumption);
   const stones = stoneBandPattern(request.stone.quantity);
   if (!stones) {
     return {
@@ -444,6 +460,10 @@ export function estimateRepair(raw: string): RepairEstimateOutcome {
     }
     if (request.ring.shankWidthMm == null) {
       return clarify(request, "What is the shank width in millimeters?", ["ring.shankWidthMm"]);
+    }
+    const widthClass = classifyShankWidth(request.ring.shankWidthMm);
+    if (widthClass.kind === "gap") {
+      return clarify(request, widthClass.question, ["ring.shankWidthMm"]);
     }
   }
 

@@ -110,17 +110,14 @@ describe("deterministic repair pricing", () => {
     assert.equal(result.estimate.retailCaption, "Estimated retail");
   });
 
-  it("prices 14kw 3mm sizing down as one smaller laser job", () => {
+  it("does not price 14kw 3.00 mm as the Medium band", () => {
     const result = estimateRepair(PROMPTS.sizingDown);
-    assert.equal(result.status, "estimate");
-    if (result.status !== "estimate") return;
-    const task = result.estimate.source.matchedTasks[0] ?? "";
-    assert.match(task, /14kt White Gold/);
-    assert.match(task, /Medium Width-3\.01-5mm/);
-    assert.match(task, /Smaller, Laser/);
-    assert.doesNotMatch(task, /Torch/);
-    assert.match(result.estimate.assumptions.join(" "), /3 mm is quoted on the Medium Width/);
-    assert.equal(result.estimate.lineItems.length, 1);
+    assert.equal(result.status, "clarification");
+    if (result.status !== "clarification") return;
+    assert.match(result.question, /3 mm is not a sizing band/);
+    assert.match(result.question, /Narrow under 3 mm/);
+    assert.match(result.question, /Medium from 3\.01 mm/);
+    assertNoPrice(result);
   });
 
   it("prices a three-quarter platinum laser size from the first break only", () => {
@@ -251,6 +248,99 @@ describe("laser-only repair pricing", () => {
     assertNoPrice(result);
     const blob = JSON.stringify(result);
     assert.doesNotMatch(blob, /Hollow Rope/);
+  });
+});
+
+describe("repair book boundary gaps", () => {
+  function sizing(mm: string) {
+    return estimateRepair(`14ky ${mm} size 6 to 7`);
+  }
+
+  function band(result: RepairEstimateOutcome): string | null {
+    if (result.status !== "estimate") return null;
+    const task = result.estimate.source.matchedTasks[0] ?? "";
+    const found = /Narrow Ring-<3mm|Medium Width-3\.01-5mm|Wide Width 5\.01-8\.0mm/.exec(task);
+    return found?.[0] ?? null;
+  }
+
+  it("assigns written shank bands and does not cross the 3.00 mm gap", () => {
+    assert.equal(band(sizing("2.99mm")), "Narrow Ring-<3mm");
+    const exact = sizing("3.00mm");
+    assert.equal(exact.status, "clarification");
+    assertNoPrice(exact);
+    assert.equal(band(sizing("3.01mm")), "Medium Width-3.01-5mm");
+    assert.equal(band(sizing("4.99mm")), "Medium Width-3.01-5mm");
+    assert.equal(band(sizing("5.00mm")), "Medium Width-3.01-5mm");
+    const between = sizing("5.005mm");
+    assert.equal(between.status, "clarification");
+    assertNoPrice(between);
+    assert.equal(band(sizing("5.01mm")), "Wide Width 5.01-8.0mm");
+    assert.equal(band(sizing("8.0mm")), "Wide Width 5.01-8.0mm");
+    const pastWide = sizing("8.1mm");
+    assert.equal(pastWide.status, "no_reliable_estimate");
+    assertNoPrice(pastWide);
+  });
+
+  it("keeps fractional larger-sizing inside the published Max Qty ceilings", () => {
+    const up = estimateRepair(PROMPTS.sizingUp);
+    assert.equal(up.status, "estimate");
+    if (up.status !== "estimate") return;
+    const task = up.estimate.source.matchedTasks[0] ?? "";
+    const row = gellerCatalogRows().find((item) => item.taskDescription === task);
+    assert.equal(row?.maxQty1, 1);
+    assert.equal(additionalBreaks(row?.sku ?? "").length, 1);
+    assert.match(up.estimate.lineItems[0]?.detail ?? "", /First size/);
+    assert.match(up.estimate.lineItems[1]?.detail ?? "", /0\.75 additional size/);
+
+    const platinum = estimateRepair(PROMPTS.platinum);
+    assert.equal(platinum.status, "estimate");
+    if (platinum.status !== "estimate") return;
+    const platinumTask = platinum.estimate.source.matchedTasks[0] ?? "";
+    const platinumRow = gellerCatalogRows().find((item) => item.taskDescription === platinumTask);
+    assert.equal(platinumRow?.maxQty1, 1);
+    assert.match(platinum.estimate.lineItems[0]?.detail ?? "", /0\.75 of the first size/);
+    assert.equal(platinum.estimate.lineItems.length, 1);
+  });
+
+  it("does not place a carat in the next setting band across a gap", () => {
+    const atOne = estimateRepair("set a 1.00 ct round into a 4 prong head");
+    assert.equal(atOne.status, "estimate");
+    if (atOne.status !== "estimate") return;
+    assert.match(atOne.estimate.source.matchedTasks[0] ?? "", /\.76-1\.0ct/);
+    assert.doesNotMatch(atOne.estimate.source.matchedTasks[0] ?? "", /1\.01-1\.50/);
+
+    const gap = estimateRepair("set a 1.005 ct round into a 4 prong head");
+    assert.equal(gap.status, "no_reliable_estimate");
+    assertNoPrice(gap);
+
+    const next = estimateRepair("set a 1.01 ct round into a 4 prong head");
+    assert.equal(next.status, "estimate");
+    if (next.status !== "estimate") return;
+    assert.match(next.estimate.source.matchedTasks[0] ?? "", /1\.01-1\.50ct/);
+  });
+
+  it("does not use the 5-to-20 tighten band below 5 stones", () => {
+    const four = estimateRepair("check and tighten 4 stones");
+    assert.equal(four.status, "no_reliable_estimate");
+    assertNoPrice(four);
+    const five = estimateRepair("check and tighten 5 stones");
+    assert.equal(five.status, "estimate");
+    if (five.status !== "estimate") return;
+    assert.match(five.estimate.source.matchedTasks[0] ?? "", /5 to 20 Stones/);
+    const twenty = estimateRepair("check and tighten 20 stones");
+    assert.equal(twenty.status, "estimate");
+    if (twenty.status !== "estimate") return;
+    assert.match(twenty.estimate.source.matchedTasks[0] ?? "", /5 to 20 Stones/);
+    const twentyOne = estimateRepair("check and tighten 21 stones");
+    assert.equal(twentyOne.status, "estimate");
+    if (twentyOne.status !== "estimate") return;
+    assert.match(twentyOne.estimate.source.matchedTasks[0] ?? "", /21 to 35 Stones/);
+  });
+
+  it("does not price sizing above the 36-50 stone band", () => {
+    const result = estimateRepair("14ky 2mm size 6 to 7 with 51 stones");
+    assert.equal(result.status, "no_reliable_estimate");
+    assertNoPrice(result);
   });
 });
 
