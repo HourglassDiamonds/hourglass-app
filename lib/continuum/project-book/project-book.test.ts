@@ -102,13 +102,16 @@ describe("Project Book projection", () => {
     ]);
     assert.deepEqual(
       result.milestones.map((row) => row.semanticClass),
-      ["client_requests", "founder_fulfills_commitment"],
+      ["founder_fulfills_commitment"],
     );
     assert.deepEqual(
       result.evidenceTimeline.map((row) => row.sourceRefs[0]),
       ["ask", "fulfill"],
     );
-    assert.ok(result.milestones[0]!.timestamp < result.milestones[1]!.timestamp);
+    assert.equal(result.evidenceTimeline[0]?.summary, "Client requested a change or follow-up");
+    assert.equal(result.evidenceTimeline[0]?.excerpt, null);
+    assert.doesNotMatch(JSON.stringify(result.evidenceTimeline), /2mm|Headed to you/);
+    assert.ok(result.evidenceTimeline[0]!.timestamp < result.evidenceTimeline[1]!.timestamp);
   });
 
   it("keeps client approval as a milestone with evidence", () => {
@@ -163,7 +166,7 @@ describe("Project Book projection", () => {
       }),
     ]);
     assert.deepEqual(result.milestones[0]?.attachmentLabels, ["CAD", "STL"]);
-    assert.match(result.milestones[0]?.summary ?? "", /CAD and STL/i);
+    assert.equal(result.milestones[0]?.summary, "Shop delivered project files");
     assert.deepEqual(result.milestones[0]?.evidence[0]?.attachmentNames, [
       "NL-H017-Dylon D-C025610-Mod4.jpg",
       "NL-H017-Dylon D-C025610-Mod4.stl",
@@ -188,9 +191,10 @@ describe("Project Book projection", () => {
     ]);
     const rendered = JSON.stringify(result);
     assert.equal(rendered.includes("earlier version from last year"), false);
-    assert.equal(result.milestones.length, 1);
-    assert.equal(result.milestones[0]?.summary, "Client requested an update");
+    assert.equal(result.milestones.length, 0);
     assert.equal(result.evidenceTimeline.length, 1);
+    assert.equal(result.evidenceTimeline[0]?.summary, "Client requested a change or follow-up");
+    assert.equal(result.evidenceTimeline[0]?.excerpt, null);
   });
 
   it("does not promote Thanks into a milestone", () => {
@@ -204,8 +208,8 @@ describe("Project Book projection", () => {
       }),
     ]);
     assert.equal(result.milestones.length, 0);
-    assert.equal(result.evidenceTimeline[0]?.summary, "Client reply");
-    assert.equal(result.evidenceTimeline[0]?.excerpt, null);
+    assert.equal(result.evidenceTimeline.length, 0);
+    assert.doesNotMatch(JSON.stringify(result), /Thanks|Client reply/);
   });
 
   it("excludes an unrelated Gmail event", () => {
@@ -365,9 +369,9 @@ describe("Project Book projection", () => {
     const result = book(records);
     const elapsed = performance.now() - started;
     assert.ok(elapsed < 500, `projection took ${elapsed.toFixed(1)}ms`);
-    assert.equal(result.evidenceTimeline.length, 200);
-    assert.ok(result.evidenceOmittedCount > 0);
-    assert.ok(result.milestones.length > 0);
+    assert.equal(result.evidenceTimeline.length, 118);
+    assert.equal(result.milestones.length, 0);
+    assert.doesNotMatch(JSON.stringify(result.evidenceTimeline), /Thanks|Please revise/);
   });
 });
 
@@ -482,7 +486,8 @@ describe("Project Book representative sequences", () => {
     });
     assert.equal(result.currentState.headline, "Waiting on shop");
     assert.equal(result.milestones.some((row) => row.semanticClass === "vendor_acknowledges"), false);
-    assert.ok(result.evidenceTimeline.some((row) => row.summary === "Shop acknowledgement"));
+    assert.equal(result.evidenceTimeline.some((row) => row.summary === "Shop acknowledgement"), false);
+    assert.doesNotMatch(JSON.stringify(result), /Thank you so much/);
   });
 
   it("Nathan approval then founder STL request waits on the shop", () => {
@@ -515,8 +520,9 @@ describe("Project Book representative sequences", () => {
     );
     assert.deepEqual(
       result.milestones.map((row) => row.semanticClass),
-      ["client_approves", "founder_requests_vendor"],
+      ["client_approves"],
     );
+    assert.ok(result.evidenceTimeline.some((row) => row.semanticClass === "founder_requests_vendor"));
     assert.equal(result.currentState.headline, "Waiting on shop");
   });
 
@@ -553,7 +559,8 @@ describe("Project Book representative sequences", () => {
         },
       ],
     });
-    assert.equal(result.milestones[0]?.semanticClass, "founder_updates_client");
+    assert.equal(result.evidenceTimeline[0]?.semanticClass, "founder_updates_client");
+    assert.equal(result.milestones.length, 0);
     assert.equal(result.currentState.headline, "Waiting on client");
   });
 
@@ -625,7 +632,7 @@ describe("Project Book production rejection fixtures", () => {
     ]);
     const rendered = JSON.stringify(result);
     assert.equal(result.milestones.length, 1);
-    assert.match(result.milestones[0]?.summary ?? "", /CAD and STL received/);
+    assert.equal(result.milestones[0]?.summary, "Shop delivered project files");
     assert.equal(rendered.includes("image001.jpg"), false);
     assert.match(rendered, /NL-H017-Dylon D-C025610-Mod4\.stl/);
     assert.doesNotMatch(rendered, /diamond_supply_notes|19fd370bc47c5e1f|gc1\|/);
@@ -731,7 +738,94 @@ describe("Project Book production rejection fixtures", () => {
     assert.equal(result.currentState.headline, "Founder review");
     assert.equal(result.currentState.semanticClass, "founder_review");
     assert.equal(result.unresolved[0]?.holder, "founder");
-    assert.equal(result.milestones[0]?.summary, "CAD and STL received.");
+    assert.equal(result.milestones[0]?.summary, "Shop delivered project files");
+  });
+
+  it("renders J.Pennock trusted chronology from a CAD file when the body is unusable", () => {
+    const quote =
+      "On Thu, Sep 10, 2026 at 1:00 PM Shop wrote:\nRE: HGD- J.Pennock-C025519 please see the earlier note.\nOn Mon, Sep 1, 2026 at 1:00 PM Shop wrote:\nEarlier quoted paragraph about the same ring.";
+    const result = book([
+      record({
+        sourceRef: "pennock-thread",
+        timestamp: "2026-09-18T15:00:00.000Z",
+        semanticClass: "client_replies_nonblocking",
+        subject: "RE: RE: HGD- J.Pennock-C025519",
+        authorOwnedText: quote,
+        attachmentFilenames: [
+          "image001.jpg",
+          "NL-H017-J.Pennock-C025519-Mod2.jpg",
+        ],
+        cadIds: ["C025519"],
+      }),
+    ]);
+    const rendered = JSON.stringify(presentProjectBook(result));
+    assert.equal(result.historyState, "trusted");
+    assert.equal(result.milestones.length, 0);
+    assert.equal(result.evidenceTimeline.length, 1);
+    assert.equal(result.evidenceTimeline[0]?.summary, "Project file received");
+    assert.equal(result.evidenceTimeline[0]?.excerpt, null);
+    assert.deepEqual(result.evidenceTimeline[0]?.evidence.attachmentNames, [
+      "NL-H017-J.Pennock-C025519-Mod2.jpg",
+    ]);
+    assert.equal(result.evidenceTimeline[0]?.evidence.subject, "HGD- J.Pennock-C025519");
+    assert.match(rendered, /C025519/);
+    assert.doesNotMatch(rendered, /image001|Earlier quoted paragraph|On Thu|wrote:/);
+  });
+
+  it("omits Chicken ring quoted replies and generic inline images", () => {
+    const quoted = "The repeated quoted paragraph about the chicken ring band width stays in the mail.";
+    const result = book([
+      record({
+        sourceRef: "reply-1",
+        timestamp: "2026-08-07T15:00:00.000Z",
+        semanticClass: "client_replies_nonblocking",
+        subject: "RE: HGD - Chicken ring (his)-C010657",
+        authorOwnedText: `On Thu, Aug 6, 2026 at 1:00 PM Shop wrote:\n${quoted}\n${quoted}`,
+        attachmentFilenames: ["image001.jpg", "image002.png"],
+      }),
+      record({
+        sourceRef: "reply-2",
+        timestamp: "2026-08-11T15:00:00.000Z",
+        semanticClass: "client_replies_nonblocking",
+        subject: "RE: RE: HGD - Chicken ring (his)-C010657",
+        authorOwnedText: `On Mon, Aug 10, 2026 at 1:00 PM Shop wrote:\n${quoted}`,
+        attachmentFilenames: ["image001.jpg", "image003.gif"],
+      }),
+      record({
+        sourceRef: "reply-3",
+        timestamp: "2026-08-12T15:00:00.000Z",
+        semanticClass: "client_replies_nonblocking",
+        subject: "Fwd: FW: RE: HGD - Chicken ring (his)-C010657",
+        authorOwnedText: quoted,
+        attachmentFilenames: ["image002.png"],
+      }),
+      record({
+        sourceRef: "cad",
+        timestamp: "2026-08-13T15:00:00.000Z",
+        semanticClass: "client_replies_nonblocking",
+        subject: "RE: HGD - Chicken ring (his)-C010657",
+        authorOwnedText: `On Thu, Aug 6, 2026 at 1:00 PM Shop wrote:\n${quoted}`,
+        attachmentFilenames: [
+          "image001.jpg",
+          "BB-H017-Chicken ring (Travis) C010657-MOD6-RN04163-BAND-MOD5.jpg",
+        ],
+      }),
+    ]);
+    const rendered = JSON.stringify(presentProjectBook(result));
+    assert.equal(result.historyState, "trusted");
+    assert.equal(result.milestones.length, 0);
+    assert.equal(result.evidenceTimeline.length, 1);
+    assert.equal(result.evidenceTimeline[0]?.summary, "Project file received");
+    assert.equal(result.evidenceTimeline[0]?.excerpt, null);
+    assert.equal(
+      result.evidenceTimeline.some((row) => row.summary === "Client reply"),
+      false,
+    );
+    assert.match(rendered, /C010657-MOD6/);
+    assert.doesNotMatch(
+      rendered,
+      /image001|image002|image003|repeated quoted paragraph|On Thu|On Mon|wrote:|Client reply/,
+    );
   });
 });
 

@@ -285,9 +285,6 @@ export function ProjectBookSection({ book }: { book: ProjectBookView }) {
                 {row.attachmentLabels.length > 0 ? ` · ${row.attachmentLabels.join(" · ")}` : ""}
               </p>
               <p className="mt-1 max-w-[52ch] text-[14px] leading-relaxed text-[#e7ddd2]">{row.summary}</p>
-              {row.excerpt ? (
-                <p className="mt-1 max-w-[52ch] text-[13px] leading-relaxed text-[#c4b7aa]">{row.excerpt}</p>
-              ) : null}
               <EvidenceDetails evidence={[row.evidence]} />
             </li>
           ))}

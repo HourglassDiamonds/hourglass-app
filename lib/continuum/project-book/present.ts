@@ -4,7 +4,12 @@
  */
 
 import { civilDateInZone, formatDateOnlyShort } from "@/lib/continuum/date-only";
-import { meaningfulAttachmentNames, safeFounderCopy } from "./admit";
+import {
+  meaningfulAttachmentNames,
+  normalizedSubject,
+  PROJECT_FILE_RECEIVED,
+  safeFounderCopy,
+} from "./admit";
 import type { ProjectEvidenceReview } from "@/lib/continuum/project-evidence/types";
 import type {
   ProjectBookEvidence,
@@ -98,7 +103,8 @@ const FUTURE_LABEL: Record<ProjectBookSourceType, string> = {
   concierge_form: "Concierge forms",
 };
 
-function classificationLabel(value: string): string {
+function classificationLabel(value: string, summary: string): string {
+  if (summary === PROJECT_FILE_RECEIVED) return "Project file";
   switch (value) {
     case "client_requests":
       return "Client request";
@@ -118,12 +124,8 @@ function classificationLabel(value: string): string {
       return "Order confirmation";
     case "workshop_started":
       return "Workshop started";
-    case "client_replies_nonblocking":
-      return "Client reply";
-    case "vendor_acknowledges":
-      return "Shop acknowledgement";
     default:
-      return "Source note";
+      return "Project file";
   }
 }
 
@@ -133,13 +135,16 @@ export function projectBookDisplayDate(timestamp: string): string {
   return formatDateOnlyShort(day);
 }
 
-function viewEvidence(evidence: ProjectBookEvidence): ProjectBookViewEvidence {
+function viewEvidence(
+  evidence: ProjectBookEvidence,
+  summary: string,
+): ProjectBookViewEvidence {
   return {
     channel: evidence.channel,
     displayDate: projectBookDisplayDate(evidence.timestamp),
-    subject: safeFounderCopy(evidence.subject),
+    subject: normalizedSubject(evidence.subject),
     attachmentNames: meaningfulAttachmentNames(evidence.attachmentNames),
-    classification: classificationLabel(evidence.classification),
+    classification: classificationLabel(evidence.classification, summary),
     interpretation: evidence.interpretation,
   };
 }
@@ -160,7 +165,7 @@ function presentReview(
       reviewKey: row.reviewKey,
       channel: row.channel,
       dateLabel: reviewDateLabel(row.earliest, row.latest),
-      subject: safeFounderCopy(row.subject),
+      subject: normalizedSubject(row.subject),
       attachmentNames: meaningfulAttachmentNames(row.attachmentNames).slice(0, 8),
       reason: safeFounderCopy(row.reason) ?? "Possible project evidence.",
       possibleMatches: row.possibleMatches
@@ -218,16 +223,16 @@ export function presentProjectBook(book: ProjectBookRead): ProjectBookView {
       summary: safeFounderCopy(row.summary) ?? row.label,
       actor: row.actor,
       attachmentLabels: row.attachmentLabels,
-      evidence: row.evidence.map(viewEvidence),
+      evidence: row.evidence.map((item) => viewEvidence(item, row.summary)),
     })),
     evidenceTimeline: book.evidenceTimeline.map((row) => ({
       displayDate: projectBookDisplayDate(row.timestamp),
-      summary: safeFounderCopy(row.summary) ?? "Source note",
-      excerpt: safeFounderCopy(row.excerpt),
+      summary: safeFounderCopy(row.summary) ?? row.summary,
+      excerpt: null,
       actor: row.actor,
       attachmentLabels: row.attachmentLabels,
       milestone: row.milestone,
-      evidence: viewEvidence(row.evidence),
+      evidence: viewEvidence(row.evidence, row.summary),
     })),
     evidenceOmittedCount: book.evidenceOmittedCount,
     representedLabels: book.sourceCoverage.represented.map((sourceType) => FUTURE_LABEL[sourceType]),

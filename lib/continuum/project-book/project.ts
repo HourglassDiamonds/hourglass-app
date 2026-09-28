@@ -10,8 +10,9 @@ import {
   admitProjectEvidence,
   attachmentLabels,
   meaningfulAttachmentNames,
+  normalizedSubject,
+  PROJECT_FILE_RECEIVED,
   PROJECT_HISTORY_NEEDS_REVIEW,
-  safeFounderCopy,
 } from "./admit";
 import type { WorkLoopSemanticClass } from "@/lib/continuum/chief-of-staff/operating-loop/work-loop-state";
 import type {
@@ -39,11 +40,8 @@ import {
 } from "./types";
 
 const MILESTONE_CLASSES = new Set<SourceCommunicationEventClass>([
-  "client_requests",
   "client_approves",
   "founder_fulfills_commitment",
-  "founder_requests_vendor",
-  "founder_updates_client",
   "vendor_promises",
   "vendor_delivers_artifact",
   "vendor_order_confirmation",
@@ -78,42 +76,9 @@ function safePerson(label: string | null): string | null {
   return trimmed.slice(0, 80);
 }
 
-function substantive(record: ProjectBookSourceRecord, own: string): boolean {
-  if (!own) return false;
-  const subject = folded(record.subject);
-  if (subject && own.toLowerCase() === subject.toLowerCase()) return false;
-  if (/^(?:re|fw|fwd)\s*:/i.test(own)) return false;
-  if (/sent from my iphone|this (?:email|message) and any attachments|confidential/i.test(own)) {
-    return false;
-  }
-  return own.length >= 12;
-}
-
-function structuralMilestone(record: ProjectBookSourceRecord, own: string): boolean {
-  const hay = `${folded(record.subject)}\n${own}\n${record.attachmentFilenames.join("\n")}`;
-  switch (record.semanticClass) {
-    case "vendor_delivers_artifact":
-      return attachmentLabels(record.attachmentFilenames).length > 0 || /\b(?:cad|stl)\b/i.test(hay);
-    case "vendor_order_confirmation":
-      return /\bSP\d{4,}\b|\border confirmation\b/i.test(hay);
-    case "workshop_started":
-      return /\bRN\d{4,}\b|\bworkshop\b/i.test(hay);
-    case "founder_requests_vendor":
-      return /\bHGD\s*x\s+.+-C\d{5,}/i.test(hay) || substantive(record, own);
-    case "vendor_promises":
-    case "client_requests":
-    case "client_approves":
-    case "founder_fulfills_commitment":
-    case "founder_updates_client":
-      return substantive(record, own);
-    default:
-      return false;
-  }
-}
-
-function isMilestone(record: ProjectBookSourceRecord, own: string): boolean {
+function isMilestone(record: ProjectBookSourceRecord, summary: string): boolean {
   if (!record.semanticClass || !MILESTONE_CLASSES.has(record.semanticClass)) return false;
-  return structuralMilestone(record, own);
+  return summary !== PROJECT_FILE_RECEIVED;
 }
 
 function milestoneLabel(semanticClass: SourceCommunicationEventClass): string {
@@ -141,12 +106,6 @@ function milestoneLabel(semanticClass: SourceCommunicationEventClass): string {
   }
 }
 
-function timelineSummary(record: ProjectBookSourceRecord): string {
-  if (record.semanticClass === "client_replies_nonblocking") return "Client reply";
-  if (record.semanticClass === "vendor_acknowledges") return "Shop acknowledgement";
-  return "Source note";
-}
-
 function evidenceOf(
   record: ProjectBookSourceRecord,
   interpretation: ProjectBookEvidence["interpretation"],
@@ -154,7 +113,7 @@ function evidenceOf(
   return {
     channel: projectBookChannelLabel(record.sourceType),
     timestamp: record.timestamp,
-    subject: safeFounderCopy(record.subject),
+    subject: normalizedSubject(record.subject),
     attachmentNames: meaningfulAttachmentNames(record.attachmentFilenames).slice(0, 8),
     classification: record.semanticClass ?? "unclassified",
     interpretation,
@@ -353,10 +312,10 @@ export function projectBook(input: {
     const displayKey = `${row.record.sourceType}\u0000${row.record.sourceRef}`;
     if (seenDisplay.has(displayKey)) continue;
     seenDisplay.add(displayKey);
-    const milestone = isMilestone(row.record, admitted.own);
+    const milestone = isMilestone(row.record, admitted.summary);
     const labels = attachmentLabels(admitted.files);
     const evidence = evidenceOf(row.record, milestone ? "interpreted" : "source_only");
-    const summary = milestone ? admitted.summary : timelineSummary(row.record);
+    const summary = admitted.summary;
     const entry: ProjectBookTimelineEntry = {
       timestamp: row.record.timestamp,
       sourceType: row.record.sourceType,
@@ -364,7 +323,7 @@ export function projectBook(input: {
       direction: row.record.direction,
       semanticClass: row.record.semanticClass,
       summary,
-      excerpt: milestone ? null : admitted.excerpt,
+      excerpt: null,
       sourceRefs: [row.record.sourceRef],
       evidence,
       attachmentLabels: labels,

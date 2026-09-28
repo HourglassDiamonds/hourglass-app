@@ -1,8 +1,8 @@
 /**
  * Project Book evidence admission.
- * Trusted chronology requires a trusted association and display text that
- * does not leak quoted mail, parser fields, or internal ids.
- * Semantic summaries do not require an excerpt.
+ * Trusted chronology requires a trusted association.
+ * Founder-facing rows use the semantic class and meaningful filenames.
+ * Message bodies stay internal and are never returned for display.
  */
 
 import { authorOwnedText } from "@/lib/continuum/gmail/candidates/spec-provenance";
@@ -19,8 +19,8 @@ const SOURCE_REF = /gc1\|/i;
 const QUOTE_MARKER =
   /\bOn\s.{0,180}wrote:|Begin forwarded message:|Forwarded message|Original Message|^>+\s/im;
 const NOISE_FILE =
-  /^(?:image\d+|logo\d*|spacer\d*|pixel\d*|tracking\d*|signature\d*|banner\d*|icon\d*|untitled|unnamed|noname)(?:[-_.]\d+)?\.(?:jpe?g|png|gif|webp)$/i;
-const INLINE_IMAGE = /^image\d+\.(?:jpe?g|png|gif|webp)$/i;
+  /^(?:image\d+|logo\d*|spacer\d*|pixel\d*|tracking\d*|signature\d*|banner\d*|icon\d*|untitled|unnamed|noname|unnamed inline image)(?:[-_.\s]\d+)?(?:\.[a-z0-9]+)?$/i;
+const INLINE_IMAGE = /^image\d+\.(?:jpe?g|png|gif|webp|svg)$/i;
 
 const DISTRUST =
   /do not guess|don't guess|do-not-guess|ambiguous identity|multiple [^.\n]{0,80}clients|conflicting project/i;
@@ -127,16 +127,40 @@ function hasRepeatedPassage(text: string): boolean {
   return left.length >= 24 && (left === right || right.startsWith(left.slice(0, 40)));
 }
 
-export function semanticSummary(
+const FILE_SUPPORTED_CLASS = new Set<SourceCommunicationEventClass>([
+  "vendor_delivers_artifact",
+  "vendor_order_confirmation",
+  "workshop_started",
+]);
+
+export const PROJECT_FILE_RECEIVED = "Project file received";
+
+export function isLowSignalClass(
   semanticClass: SourceCommunicationEventClass | null,
-  filenames: readonly string[],
-  cadIds: readonly string[],
-): string {
-  const labels = attachmentLabels(filenames);
-  const cad = cadIds.map((id) => id.trim().toUpperCase()).find((id) => /^C\d{5,}$/.test(id));
+): boolean {
+  return (
+    semanticClass == null ||
+    semanticClass === "client_replies_nonblocking" ||
+    semanticClass === "vendor_acknowledges" ||
+    semanticClass === "unknown_communication"
+  );
+}
+
+export function normalizedSubject(value: string | null | undefined): string | null {
+  let text = folded(value ?? "");
+  if (!text) return null;
+  for (let guard = 0; guard < 6 && /^(?:re|fw|fwd)\s*:\s*/i.test(text); guard += 1) {
+    text = text.replace(/^(?:re|fw|fwd)\s*:\s*/i, "").trim();
+  }
+  if (!text || founderCopyUnsafe(text) || isNoiseAttachment(text)) return null;
+  if (/^(?:thanks|thank you|thank you so much)[!.]*$/i.test(text)) return null;
+  return text.slice(0, 180);
+}
+
+export function semanticSummary(semanticClass: SourceCommunicationEventClass | null): string {
   switch (semanticClass) {
     case "client_requests":
-      return "Client requested an update";
+      return "Client requested a change or follow-up";
     case "client_approves":
       return "Client approved the design";
     case "founder_fulfills_commitment":
@@ -148,33 +172,14 @@ export function semanticSummary(
     case "vendor_promises":
       return "Shop provided a timing commitment";
     case "vendor_delivers_artifact":
-      if (labels.includes("CAD") && labels.includes("STL")) return "CAD and STL received.";
-      if (labels.includes("CAD") && cad) return `CAD ${cad} received.`;
-      if (labels.includes("STL")) return "STL received.";
-      if (labels.includes("CAD")) return "Shop delivered CAD.";
-      return "Shop delivered an artifact";
+      return "Shop delivered project files";
     case "vendor_order_confirmation":
       return "Shop confirmed the order";
     case "workshop_started":
       return "Workshop production started";
-    case "client_replies_nonblocking":
-      return "Client reply";
-    case "vendor_acknowledges":
-      return "Shop acknowledgement";
     default:
-      return "Source note";
+      return PROJECT_FILE_RECEIVED;
   }
-}
-
-function structuralWithoutBody(record: ProjectBookSourceRecord, files: readonly string[]): boolean {
-  const labels = attachmentLabels(files);
-  const hay = `${record.subject ?? ""}\n${files.join("\n")}`;
-  if (record.semanticClass === "vendor_delivers_artifact") return labels.length > 0;
-  if (record.semanticClass === "vendor_order_confirmation") {
-    return /\bSP\d{4,}\b|order confirmation/i.test(hay);
-  }
-  if (record.semanticClass === "workshop_started") return /\bRN\d{4,}\b|\bworkshop\b/i.test(hay);
-  return false;
 }
 
 export type AdmittedProjectEvidence = {
@@ -182,37 +187,42 @@ export type AdmittedProjectEvidence = {
   own: string;
   files: readonly string[];
   summary: string;
-  excerpt: string | null;
+  excerpt: null;
   subject: string | null;
 };
 
 /**
  * Trusted display admission for one already-associated record.
- * Contaminated fulfillment text is omitted. A shop delivery can still
- * render from filename metadata alone.
+ * A contaminated body never becomes copy. A meaningful filename can still
+ * produce one restrained timeline row.
  */
 export function admitProjectEvidence(record: ProjectBookSourceRecord): AdmittedProjectEvidence {
   const files = meaningfulAttachmentNames(record.attachmentFilenames);
+  const raw = folded(record.authorOwnedText);
   const own = folded(authorOwnedText(record.authorOwnedText));
-  const summary = semanticSummary(record.semanticClass, files, record.cadIds);
-  const ownUnsafe = !own || founderCopyUnsafe(own);
-  const structural = structuralWithoutBody(record, files);
-  const render =
-    record.semanticClass === "founder_fulfills_commitment"
-      ? Boolean(own) && !founderCopyUnsafe(own)
-      : !ownUnsafe || structural;
-  const excerpt =
-    render && !ownUnsafe && own.length >= 12 && !/^(?:thanks|thank you|got it|perfect|sounds good)[!.\s]*$/i.test(own)
-      ? safeFounderCopy(own)
-      : null;
+  const strippedQuote = Boolean(raw) && !own;
+  const contaminated = Boolean(own) && founderCopyUnsafe(own);
+  const low = isLowSignalClass(record.semanticClass);
+  const fileSupported =
+    record.semanticClass != null && FILE_SUPPORTED_CLASS.has(record.semanticClass);
+  const unsafeStatement = strippedQuote || contaminated;
+  const summary =
+    low || (unsafeStatement && !fileSupported)
+      ? PROJECT_FILE_RECEIVED
+      : semanticSummary(record.semanticClass);
+  const render = low
+    ? files.length > 0
+    : fileSupported
+      ? true
+      : unsafeStatement
+        ? files.length > 0
+        : true;
   return {
     render,
     own,
     files,
     summary,
-    excerpt: record.semanticClass && summary !== "Source note" && summary !== "Client reply" && summary !== "Shop acknowledgement"
-      ? null
-      : excerpt,
-    subject: safeFounderCopy(record.subject),
+    excerpt: null,
+    subject: normalizedSubject(record.subject),
   };
 }
