@@ -58,20 +58,33 @@ function stoneBandPattern(count: number | null): RegExp | null {
 }
 
 type ShankWidthClass =
-  | { kind: "band"; pattern: RegExp }
+  | { kind: "band"; pattern: RegExp; assumption: string | null }
   | { kind: "gap"; question: string }
   | { kind: "outside" };
 
+const HOURGLASS_EXACT_3MM_RULE =
+  "Hourglass pricing rule: exact 3.00 mm defaults to the Medium sizing tier.";
+
 /**
- * Sizing widths follow the task text only.
+ * Sizing widths follow the task text, plus one founder rule.
  * Narrow is "<3mm". Medium is "3.01-5mm". Wide is "5.01-8.0mm".
- * 3.00 mm is in neither label, and nothing between 5 mm and 5.01 mm is either.
+ * Exact 3.00 mm is not a Geller band. Hourglass prices it on the Medium tier.
+ * Widths between 3.00 and 3.01, and between 5 and 5.01, stay uncovered.
  */
 function classifyShankWidth(mm: number): ShankWidthClass {
-  if (mm < 3) return { kind: "band", pattern: /Narrow Ring-<3mm/i };
-  if (mm >= 3.01 && mm <= 5) return { kind: "band", pattern: /Medium Width-3\.01-5mm/i };
-  if (mm >= 5.01 && mm <= 8) return { kind: "band", pattern: /Wide Width 5\.01-8\.0mm/i };
-  if (mm >= 3 && mm < 3.01) {
+  if (mm < 3) return { kind: "band", pattern: /Narrow Ring-<3mm/i, assumption: null };
+  if (mm === 3) {
+    return {
+      kind: "band",
+      pattern: /Medium Width-3\.01-5mm/i,
+      assumption: HOURGLASS_EXACT_3MM_RULE,
+    };
+  }
+  if (mm >= 3.01 && mm <= 5) {
+    return { kind: "band", pattern: /Medium Width-3\.01-5mm/i, assumption: null };
+  }
+  if (mm >= 5.01 && mm <= 8) return { kind: "band", pattern: /Wide Width 5\.01-8\.0mm/i, assumption: null };
+  if (mm > 3 && mm < 3.01) {
     return {
       kind: "gap",
       question: `${formatSize(mm)} mm is not a sizing band. The book has Narrow under 3 mm and Medium from 3.01 mm. What is the measured shank width?`,
@@ -182,6 +195,7 @@ function matchSizing(request: RepairEstimateRequest): {
       assumptions,
     };
   }
+  if (shank.assumption) assumptions.push(shank.assumption);
   const stones = stoneBandPattern(request.stone.quantity);
   if (!stones) {
     return {

@@ -61,6 +61,11 @@ function EstimateBody({ estimate }: { estimate: RepairEstimate }) {
           Price basis
         </summary>
         <div className="mt-3 space-y-3 text-[13px] leading-relaxed text-[#c4b7aa]">
+          {estimate.assumptions
+            .filter((item) => item.startsWith("Hourglass pricing rule:"))
+            .map((item) => (
+              <p key={item}>{item}</p>
+            ))}
           <p>
             {estimate.source.editionLabel}. {estimate.source.exportFile}.
           </p>

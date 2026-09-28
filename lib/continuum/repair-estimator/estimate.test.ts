@@ -110,14 +110,19 @@ describe("deterministic repair pricing", () => {
     assert.equal(result.estimate.retailCaption, "Estimated retail");
   });
 
-  it("does not price 14kw 3.00 mm as the Medium band", () => {
+  it("prices 14kw 3.00 mm on the Medium tier by the Hourglass rule", () => {
     const result = estimateRepair(PROMPTS.sizingDown);
-    assert.equal(result.status, "clarification");
-    if (result.status !== "clarification") return;
-    assert.match(result.question, /3 mm is not a sizing band/);
-    assert.match(result.question, /Narrow under 3 mm/);
-    assert.match(result.question, /Medium from 3\.01 mm/);
-    assertNoPrice(result);
+    assert.equal(result.status, "estimate");
+    if (result.status !== "estimate") return;
+    const task = result.estimate.source.matchedTasks[0] ?? "";
+    assert.equal(task, "Sizing, 14kt White Gold, Medium Width-3.01-5mm, 0-4 stones, Smaller, Laser");
+    assert.doesNotMatch(task, /Torch|Solder/);
+    assert.equal(result.estimate.totalLabel, "$165");
+    assert.match(
+      result.estimate.assumptions.join(" "),
+      /Hourglass pricing rule: exact 3\.00 mm defaults to the Medium sizing tier\./,
+    );
+    assert.doesNotMatch(result.estimate.assumptions.join(" "), /Geller defines 3\.00/);
   });
 
   it("prices a three-quarter platinum laser size from the first break only", () => {
@@ -263,12 +268,29 @@ describe("repair book boundary gaps", () => {
     return found?.[0] ?? null;
   }
 
-  it("assigns written shank bands and does not cross the 3.00 mm gap", () => {
-    assert.equal(band(sizing("2.99mm")), "Narrow Ring-<3mm");
+  it("assigns written shank bands and the exact 3.00 mm Hourglass rule", () => {
+    const narrow = sizing("2.99mm");
+    assert.equal(band(narrow), "Narrow Ring-<3mm");
+    if (narrow.status === "estimate") {
+      assert.doesNotMatch(narrow.estimate.assumptions.join(" "), /Hourglass pricing rule/);
+    }
     const exact = sizing("3.00mm");
-    assert.equal(exact.status, "clarification");
-    assertNoPrice(exact);
-    assert.equal(band(sizing("3.01mm")), "Medium Width-3.01-5mm");
+    assert.equal(exact.status, "estimate");
+    assert.equal(band(exact), "Medium Width-3.01-5mm");
+    if (exact.status === "estimate") {
+      assert.match(
+        exact.estimate.assumptions.join(" "),
+        /Hourglass pricing rule: exact 3\.00 mm defaults to the Medium sizing tier\./,
+      );
+    }
+    const justOver = sizing("3.005mm");
+    assert.equal(justOver.status, "clarification");
+    assertNoPrice(justOver);
+    const medium = sizing("3.01mm");
+    assert.equal(band(medium), "Medium Width-3.01-5mm");
+    if (medium.status === "estimate") {
+      assert.doesNotMatch(medium.estimate.assumptions.join(" "), /Hourglass pricing rule/);
+    }
     assert.equal(band(sizing("4.99mm")), "Medium Width-3.01-5mm");
     assert.equal(band(sizing("5.00mm")), "Medium Width-3.01-5mm");
     const between = sizing("5.005mm");
