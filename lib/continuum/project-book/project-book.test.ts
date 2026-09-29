@@ -73,6 +73,8 @@ function holders(records: ProjectBookSourceRecord[], projectId = PROJECT) {
         projectId: row.projectId,
         workLoopId: `project:${projectId}`,
         semanticClass: row.semanticClass ?? "unknown_communication",
+        evidenceExcerpt: row.authorOwnedText,
+        workIdentityBasis: "project" as const,
         provenance: "indexed_gmail" as const,
       })),
   });
@@ -437,6 +439,7 @@ describe("Project Book representative sequences", () => {
           fromEmailHash: VENDOR_HASH,
           subject: "RE: HGD x F.Grant-C025885-SP13477",
           hasAttachments: true,
+          operationalText: "Order confirmation # SP13477 is attached.",
         },
       ],
     });
@@ -537,7 +540,8 @@ describe("Project Book representative sequences", () => {
           fromEmailHash: VENDOR_HASH,
           subject: "RE: HGD x Tim/Jenn-C025964-RN08318",
           hasAttachments: true,
-          attachmentFilenames: ["NL-H017-Tim-C025964.jpg"],
+          operationalText:
+            "Stone sent to workshop RN08318. Final CAD in approximately 10 +/- business days.",
         },
       ],
     });

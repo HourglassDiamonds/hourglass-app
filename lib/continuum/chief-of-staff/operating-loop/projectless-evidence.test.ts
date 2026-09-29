@@ -21,7 +21,7 @@ for (const subject of ["Review support proposal", "Send CAD email"]) {
   });
 }
 
-it("preserves same-Project and unscoped matches but excludes different Projects", () => {
+it("preserves same-Project matches but rejects unscoped subject-token matches", () => {
   const job = fixtureJob({ jobId: randomUUID(), subject: "Review support proposal" });
   const candidate = fixtureCandidate({ candidateId: randomUUID(),
     payload: { kind: "project_context", topic: "client_approval", value: "Support proposal approved" } });
@@ -29,8 +29,8 @@ it("preserves same-Project and unscoped matches but excludes different Projects"
   assert.equal(relatedToJob({ ...job, projectId: COS_LOOP_PROJECT_B }, candidate), false);
   assert.equal(relatedToJob({ ...job, projectId: null }, candidate), false);
   const unscoped = { ...candidate, proposedTarget: { kind: "none" as const } };
-  assert.equal(relatedToJob({ ...job, projectId: null }, unscoped), true);
-  assert.equal(proposeRecapItems({ jobs: [{ ...job, projectId: null }], candidates: [unscoped], projects: fixtureProjects(), newMutationId: randomUUID }).length, 1);
+  assert.equal(relatedToJob({ ...job, projectId: null }, unscoped), false);
+  assert.equal(proposeRecapItems({ jobs: [{ ...job, projectId: null }], candidates: [unscoped], projects: fixtureProjects(), newMutationId: randomUUID }).length, 0);
   assert.equal(relatedToJob({ ...job, projectId: null }, { ...unscoped, founderEditedTarget: { kind: "project", projectId: COS_LOOP_PROJECT_A } }), false);
 });
 

@@ -13,19 +13,18 @@ import type {
 const CAD_FILE = /NL-H017-.+-C\d{5,}/i;
 const STL_FILE = /\.stl\b|\bstl\b/i;
 const MOD_TOKEN = /\bmod\s*\d+\b|-Mod\s*\d+/i;
-const RN_JOB = /\bRN\d{4,}\b/i;
-const WORKSHOP =
-  /\b(?:workshop|going to (?:the )?workshop|stone is going|final CAD|final cad)\b/i;
+const WORKSHOP_STARTED =
+  /\b(?:stone|piece|job|order)\b[^.!?\n]{0,80}\b(?:sent|received|going|headed)\b[^.!?\n]{0,50}\b(?:to|at|by)?\s*(?:the )?workshop\b|\b(?:workshop (?:received|started)|production (?:has )?started|started production|on the bench)\b/i;
 const ARTIFACT_DELIVERED =
   /\b(?:here is|attached|delivered|sent)\b[^.!?\n]{0,80}\b(?:mod\s*\d+\s+)?(?:stl|cad)\b|\b(?:mod\s*\d+\s+)?(?:stl|cad)\b[^.!?\n]{0,40}\b(?:attached|delivered|sent)\b/i;
 const CAD_FORTHCOMING =
-  /\b(?:updated CAD|CAD as soon as|I(?:'ll| will) send (?:you )?(?:the )?(?:updated )?(?:CAD|STL|file)|final CAD|CAD in (?:about |approximately )?\d+)\b/i;
+  /\b(?:updated CAD|CAD as soon as|I(?:'ll| will) send (?:you )?(?:the )?(?:updated |final )?(?:CAD|STL|file)|final CAD(?:\s+(?:in|is expected|expected|within))?|CAD in (?:about |approximately )?\d+|I should have (?:it|them)|deliver(?:y)? by \d{1,2}[/-]\d{1,2}|waiting on .{0,50}(?:delivery|stone|pearl)|\d+\s*(?:\+\/-|±)\s*business days?)\b/i;
 const VENDOR_ACK =
   /^(?:thank you(?: so much)?!?|thanks!?|got it!?|perfect!?|sounds good!?)[\s.]*$/i;
 const CLIENT_APPROVES =
   /\b(?:love(?:s|d)? (?:it|the|option)|looks (?:great|perfect|amazing)|approved|let(?:'s| us) move forward|move(?:ing)? forward)\b/i;
 const REQUEST =
-  /\b(?:can you|could you|please)\s+(?:send|make|revise|update|price|quote|confirm|change)\b|\bneed you to\b|\?/;
+  /\b(?:can you|could you|please)\s+(?:send|make|revise|update|price|quote|confirm|change)\b|\bneed you to\b|\?/i;
 const SHIPPING =
   /\b(?:shipping address|new address|updated address|please (?:use|ship to) (?:this |the )?(?:updated )?address)\b/i;
 const FOUNDER_VENDOR_INSTRUCTION =
@@ -62,7 +61,7 @@ function ownHay(input: ClassifySourceCommunicationInput): string {
   const quoted = quotedText(input.quotedText || input.authorOwnedText);
   const ownFolded = folded(own);
   if (quoted && ownFolded && folded(quoted) === ownFolded) return "";
-  return [ownFolded, folded(input.subject), fileHay(input.attachmentFilenames)]
+  return [ownFolded, fileHay(input.attachmentFilenames)]
     .filter(Boolean)
     .join("\n");
 }
@@ -86,6 +85,12 @@ export function classifySourceCommunication(
   const outbound = input.direction === "outbound" || actor === "founder";
 
   if (actor === "vendor_shop" || (actor === "unknown" && vendorShopThread(input.subject) && !outbound)) {
+    const ownOnly = folded(authorOwnedText(input.authorOwnedText) || input.authorOwnedText);
+    if (ownOnly && VENDOR_ACK.test(ownOnly) && !REQUEST.test(ownOnly)) {
+      return "vendor_acknowledges";
+    }
+    if (!ownOnly && !files && !input.hasAttachments) return "vendor_acknowledges";
+    if (hasCadArtifact(input, hay)) return "vendor_delivers_artifact";
     if (
       /\bi(?:'ll| will)\b.{0,80}\border confirmation\b/i.test(hay) &&
       !/\bSP\d{4,}\b/i.test(hay) &&
@@ -93,23 +98,14 @@ export function classifySourceCommunication(
     ) {
       return "vendor_promises";
     }
-    if (/\bSP\d{4,}\b/i.test(`${hay}\n${input.subject ?? ""}`)) {
+    if (/\border confirmation\b/i.test(hay) && (/\bSP\d{4,}\b/i.test(hay) || DISCREPANCY.test(hay))) {
       return "vendor_order_confirmation";
     }
-    if (/\border confirmation\b/i.test(hay) && DISCREPANCY.test(hay)) {
-      return "vendor_order_confirmation";
-    }
-    if (RN_JOB.test(input.subject ?? "") || RN_JOB.test(hay) || WORKSHOP.test(hay)) {
+    if (WORKSHOP_STARTED.test(hay)) {
       return "workshop_started";
     }
-    if (hasCadArtifact(input, hay)) return "vendor_delivers_artifact";
     if (CAD_FORTHCOMING.test(hay) && !ARTIFACT_DELIVERED.test(hay)) return "vendor_promises";
-    const ownOnly = folded(authorOwnedText(input.authorOwnedText) || input.authorOwnedText);
     if (SHIPPING.test(hay)) return "unknown_communication";
-    if (ownOnly && VENDOR_ACK.test(ownOnly) && !REQUEST.test(ownOnly)) {
-      return "vendor_acknowledges";
-    }
-    if (!ownOnly && !files && !input.hasAttachments) return "vendor_acknowledges";
     if (!hasCadArtifact(input, hay) && !REQUEST.test(hay) && !DISCREPANCY.test(hay) && !SHIPPING.test(hay)) {
       return "vendor_acknowledges";
     }

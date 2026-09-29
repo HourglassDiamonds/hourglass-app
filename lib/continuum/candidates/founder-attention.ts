@@ -169,6 +169,8 @@ export type TodayGmailIndexedMessage = {
   subject?: string | null;
   hasAttachments?: boolean;
   attachmentFilenames?: readonly string[];
+  /** Quote-stripped, live-read operational excerpts only; never a persisted body. */
+  operationalText?: string | null;
   plaintext?: string | null;
 };
 

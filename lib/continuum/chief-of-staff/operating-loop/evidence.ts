@@ -16,6 +16,7 @@ import {
   isClientDesignAnswer,
   isApproval,
   isPlatformOrSystemName,
+  confirmedPersonId,
   payloadOf,
 } from "@/lib/continuum/candidates/founder-attention";
 
@@ -105,12 +106,20 @@ export function relatedToJob(
   // Text similarity cannot establish identity across a Project boundary.
   if (projectId !== null && projectId !== job.projectId) return false;
   const sameProject = Boolean(projectId && projectId === job.projectId);
-  const tokens = sharesSubjectToken(job, candidateHaystack(row));
-  if (row.payload.kind === "project_context") {
-    return sameProject || tokens;
-  }
-  if (sameProject && tokens) return true;
-  return tokens;
+  if (sameProject) return true;
+
+  const jobSource = job.sourceRef?.trim() ?? "";
+  const rowSource = row.sourceRef.trim();
+  if (jobSource && jobSource === rowSource) return true;
+  const jobGmail = jobSource ? parseGmailCandidateSourceRef(jobSource) : null;
+  const rowGmail = parseGmailCandidateSourceRef(rowSource);
+  if (jobGmail && rowGmail && jobGmail.threadId === rowGmail.threadId) return true;
+
+  const personId = confirmedPersonId(row);
+  if (job.associatedPersonId && personId === job.associatedPersonId) return true;
+
+  // An unscoped shared word cannot establish work identity.
+  return false;
 }
 
 const COMPLETE_SIGNAL =

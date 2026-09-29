@@ -11,6 +11,7 @@ export {
   SOURCE_COMMUNICATION_EVENT_CLASSES,
   SOURCE_COMMUNICATION_SOURCE_TYPES,
   isCurrentWorkSourceClass,
+  isOperationalSourceEvent,
 } from "./types";
 export { classifySourceCommunication } from "./classify";
 export { projectGmailSourceEvents, sourceEventsForWorkLoop } from "./gmail";

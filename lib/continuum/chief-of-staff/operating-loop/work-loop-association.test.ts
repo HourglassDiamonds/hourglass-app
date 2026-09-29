@@ -587,6 +587,7 @@ describe("production-shaped work-loop association", () => {
                 sentAt: "2026-09-18T18:26:23.000Z",
                 direction: "outbound",
                 fromEmailHash: FOUNDER_HASH,
+                operationalText: "Please send the updated CAD after this new direction.",
               },
             ],
           },

@@ -74,7 +74,21 @@ export type SourceCommunicationEvent = {
   projectId: string | null;
   workLoopId: string | null;
   semanticClass: SourceCommunicationEventClass;
-  provenance: "indexed_gmail" | "indexed_gmail+interpretation";
+  /** Current-message wording that supports semanticClass. */
+  evidenceExcerpt: string;
+  /** Exact identity evidence that permits this event to enter operational work. */
+  workIdentityBasis:
+    | "project"
+    | "cad"
+    | "order"
+    | "production_job"
+    | "candidate_message"
+    | null;
+  provenance:
+    | "indexed_gmail"
+    | "indexed_gmail+interpretation"
+    | "indexed_gmail+live_operational_fact"
+    | "indexed_gmail+interpretation+live_operational_fact";
 };
 
 export function isCurrentWorkSourceClass(
@@ -85,4 +99,8 @@ export function isCurrentWorkSourceClass(
     value !== "client_replies_nonblocking" &&
     value !== "vendor_acknowledges"
   );
+}
+
+export function isOperationalSourceEvent(event: SourceCommunicationEvent): boolean {
+  return event.workIdentityBasis !== null && isCurrentWorkSourceClass(event.semanticClass);
 }

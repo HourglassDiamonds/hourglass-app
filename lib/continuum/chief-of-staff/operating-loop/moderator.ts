@@ -17,7 +17,7 @@ import {
   currentCadTokensFromIdentityHay,
 } from "@/lib/continuum/gmail/work-loop-identity";
 import {
-  isCurrentWorkSourceClass,
+  isOperationalSourceEvent,
   projectGmailSourceEvents,
   sourceEventsForWorkLoop,
   type SourceCommunicationEvent,
@@ -939,6 +939,7 @@ function sourceBeatsFor(events: readonly SourceCommunicationEvent[]): InternalBe
       at: event.timestamp,
       label: event.semanticClass,
       summary:
+        event.evidenceExcerpt.replace(/\s+/g, " ").trim() ||
         event.authorOwnedText.replace(/\s+/g, " ").trim() ||
         event.subject ||
         event.semanticClass,
@@ -1184,9 +1185,7 @@ function classifySituation(input: {
     projectId: attribution.projectId,
     personLabel: identityLabel?.name ?? project?.personName ?? null,
   });
-  const sourceCurrent = loopSourceEvents.some((row) =>
-    isCurrentWorkSourceClass(row.semanticClass),
-  );
+  const sourceCurrent = loopSourceEvents.some(isOperationalSourceEvent);
   const identityPeople = identityPeopleFor(project, input.rows, input.projects, null);
   if (
     !sourceCurrent &&
@@ -1304,7 +1303,7 @@ function classifySituation(input: {
       ),
     ),
     ...sourceBeatsFor(
-      loopSourceEvents.filter((row) => isCurrentWorkSourceClass(row.semanticClass)),
+      loopSourceEvents.filter(isOperationalSourceEvent),
     ),
   ];
   const production = isProductionStage(project?.lifecycleStage);
@@ -2335,7 +2334,7 @@ function seedSourceEventGroups(
     if (key.startsWith("cad:")) coveredCads.add(key.slice(4).toUpperCase());
   }
   for (const event of events) {
-    if (!isCurrentWorkSourceClass(event.semanticClass)) continue;
+    if (!isOperationalSourceEvent(event)) continue;
     const key = event.workLoopId;
     if (!key) continue;
     if (collapsed.has(key)) continue;
@@ -2446,6 +2445,13 @@ export function composeConciergeBrief(input: ComposeConciergeBriefInput): {
   const evidenceTexts = [
     ...new Set([...(input.evidenceTexts ?? []), ...projectVendor.evidenceTexts]),
   ];
+  const sourceEvents = projectGmailSourceEvents({
+    threadContext: input.threadContext,
+    knownPeople: input.knownPeople,
+    founderEmailHashes: new Set(collectTodayFounderEmailHashes(input.knownPeople)),
+    candidates: input.candidates,
+    projectIdByThread: projectByThread,
+  });
   const groups = new Map<string, ContinuumCandidate[]>();
   for (const row of input.candidates) {
     if (isCandidateQuietForToday(row, input.nowIso)) continue;
@@ -2459,13 +2465,6 @@ export function composeConciergeBrief(input: ComposeConciergeBriefInput): {
     threadByMessageId,
     input.threadContext,
   );
-  const sourceEvents = projectGmailSourceEvents({
-    threadContext: input.threadContext,
-    knownPeople: input.knownPeople,
-    founderEmailHashes: new Set(collectTodayFounderEmailHashes(input.knownPeople)),
-    candidates: input.candidates,
-    projectIdByThread: projectByThread,
-  });
   seedSourceEventGroups(collapsed, sourceEvents);
   const nowMs = parseMs(input.nowIso);
   const situations: RankedSituation[] = [];

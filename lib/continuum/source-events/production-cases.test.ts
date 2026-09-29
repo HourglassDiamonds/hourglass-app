@@ -175,6 +175,8 @@ describe("source-event production-shaped compose", () => {
                 fromEmailHash: NIURKA_HASH,
                 subject: "RE: HGD x Tim/Jenn-C025964-RN08318",
                 hasAttachments: true,
+                operationalText:
+                  "Stone was sent to workshop RN08318. Final CAD in approximately 10 +/- business days.",
               },
             ],
           },
@@ -509,6 +511,7 @@ describe("source-event production-shaped compose", () => {
                 direction: "inbound",
                 fromEmailHash: NIURKA_HASH,
                 hasAttachments: true,
+                operationalText: "Order confirmation # SP13477 is attached.",
               },
             ],
           },

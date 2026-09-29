@@ -24,9 +24,11 @@ import {
 } from "./env";
 import { parseGmailFromHeader } from "./payload";
 import { executeLiveSourceViewerFetch } from "./source-viewer-run";
+import { extractCurrentMessageOperationalFacts } from "@/lib/continuum/source-events/operational-facts";
 
 const THREAD_QUERY_CHUNK = 40;
 const MESSAGES_PER_THREAD = 80;
+const LIVE_FACT_CONCURRENCY = 4;
 const INDEX_SELECT =
   "thread_id, message_id, sent_at, direction, subject, label_ids, from_email_hash, has_attachments";
 
@@ -312,4 +314,67 @@ export async function loadLiveExternalThreadIdentity(
     fromEmail,
     liveIdentityLoaded: true,
   };
+}
+
+/**
+ * Reads exact already-indexed threads and retains only quote-stripped operational
+ * excerpts on the ephemeral Today model. Full Gmail bodies are never persisted
+ * or copied into the thread context.
+ */
+export async function loadLiveTodayOperationalFacts(
+  base: ReadonlyMap<string, TodayGmailThreadContext>,
+): Promise<Map<string, TodayGmailThreadContext>> {
+  const out = new Map(base);
+  const threadIds = [...base.keys()];
+  let cursor = 0;
+  const worker = async () => {
+    while (cursor < threadIds.length) {
+      const threadId = threadIds[cursor++]!;
+      const current = out.get(threadId);
+      if (!current?.messages?.length) continue;
+      const fetched = await executeLiveSourceViewerFetch({
+        founderSessionOk: true,
+        threadId,
+      });
+      if (!fetched.ok) continue;
+      const liveById = new Map(fetched.messages.map((message) => [message.messageId, message]));
+      const messages = current.messages.map((message) => {
+        const live = liveById.get(message.messageId);
+        if (!live) return message;
+        const operationalText = extractCurrentMessageOperationalFacts(
+          live.plainText ?? live.snippet,
+        );
+        const liveAttachmentFilenames = live.attachments
+          .map((attachment) => attachment.filename)
+          .filter((filename): filename is string => Boolean(filename));
+        const attachmentFilenames: string[] = [
+          ...new Set([
+            ...(message.attachmentFilenames ?? []),
+            ...liveAttachmentFilenames,
+          ]),
+        ];
+        return {
+          ...message,
+          operationalText,
+          hasAttachments: message.hasAttachments === true || attachmentFilenames.length > 0,
+          attachmentFilenames,
+        };
+      });
+      out.set(threadId, {
+        ...current,
+        subject: fetched.indexedSubject ?? current.subject ?? null,
+        messages,
+        attachmentFilenames: [
+          ...new Set([
+            ...(current.attachmentFilenames ?? []),
+            ...messages.flatMap((message) => message.attachmentFilenames ?? []),
+          ]),
+        ],
+      });
+    }
+  };
+  await Promise.all(
+    Array.from({ length: Math.min(LIVE_FACT_CONCURRENCY, threadIds.length) }, () => worker()),
+  );
+  return out;
 }

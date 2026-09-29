@@ -71,18 +71,19 @@ function summaryOf(event: SourceCommunicationEvent): string {
       : "Order confirmation is in.";
   }
   if (event.semanticClass === "workshop_started") {
+    if (event.evidenceExcerpt.trim()) return event.evidenceExcerpt.trim().slice(0, 220);
     const rn = event.productionJobIds[0];
     return rn
       ? `${rn} is at workshop. Waiting on final CAD.`
       : "Stone is at workshop. Waiting on final CAD.";
   }
   if (event.semanticClass === "vendor_promises") {
-    return "Updated CAD is pending from the shop.";
+    return event.evidenceExcerpt.trim().slice(0, 220) || "Shop commitment recorded.";
   }
   if (event.semanticClass === "vendor_acknowledges") {
     return "Shop acknowledged and is working the current instruction.";
   }
-  const own = event.authorOwnedText.replace(/\s+/g, " ").trim();
+  const own = (event.evidenceExcerpt || event.authorOwnedText).replace(/\s+/g, " ").trim();
   if (own && own !== (event.subject ?? "").trim()) return own.slice(0, 180);
   return (event.subject ?? "").replace(/\s+/g, " ").trim().slice(0, 180);
 }

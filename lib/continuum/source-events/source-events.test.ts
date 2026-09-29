@@ -37,28 +37,26 @@ describe("source communication classification", () => {
     );
   });
 
-  it("order confirmation subject is vendor_order_confirmation", () => {
+  it("current-message order confirmation is vendor_order_confirmation", () => {
     assert.equal(
       classifySourceCommunication({
         actor: "vendor_shop",
         direction: "inbound",
         subject: "RE: HGD x F.Grant-C025885-SP13477",
-        authorOwnedText: "RE: HGD x F.Grant-C025885-SP13477",
+        authorOwnedText: "Order confirmation # SP13477 is attached.",
         hasAttachments: true,
       }),
       "vendor_order_confirmation",
     );
   });
 
-  it("RN workshop subject is workshop_started even with files", () => {
+  it("explicit current-message workshop receipt is workshop_started", () => {
     assert.equal(
       classifySourceCommunication({
         actor: "vendor_shop",
         direction: "inbound",
         subject: "RE: HGD x Tim/Jenn-C025964-RN08318",
-        authorOwnedText: "RE: HGD x Tim/Jenn-C025964-RN08318",
-        attachmentFilenames: ["NL-H017-Tim-C025964.jpg"],
-        hasAttachments: true,
+        authorOwnedText: "Stone was sent to the workshop under RN08318.",
       }),
       "workshop_started",
     );
@@ -192,7 +190,7 @@ describe("gmail source projection", () => {
     assert.deepEqual(events[0]?.cadIds, ["C025610"]);
   });
 
-  it("inbound client hash on an HGD thread is not vendor_shop", () => {
+  it("an unrecognized inbound hash on an HGD thread is not guessed from a first name", () => {
     const clientHash = hashEmail("nathan@client.test")!;
     const events = projectGmailSourceEvents({
       threadContext: new Map([
@@ -225,8 +223,8 @@ describe("gmail source projection", () => {
         },
       ],
     });
-    assert.equal(events[0]?.actor, "client");
-    assert.equal(events[0]?.semanticClass, "client_replies_nonblocking");
+    assert.equal(events[0]?.actor, "unknown");
+    assert.equal(events[0]?.semanticClass, "vendor_acknowledges");
   });
 });
 

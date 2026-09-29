@@ -141,7 +141,14 @@ function asSourceEvent(record: ProjectBookSourceRecord, own: string): SourceComm
     projectId: record.projectId,
     workLoopId: record.projectId ? `project:${record.projectId}` : null,
     semanticClass: record.semanticClass ?? "unknown_communication",
-    provenance: record.provenance === "indexed_gmail+interpretation" ? "indexed_gmail+interpretation" : "indexed_gmail",
+    evidenceExcerpt: own,
+    workIdentityBasis: record.projectId ? "project" : null,
+    provenance:
+      record.provenance === "indexed_gmail+interpretation" ||
+      record.provenance === "indexed_gmail+live_operational_fact" ||
+      record.provenance === "indexed_gmail+interpretation+live_operational_fact"
+        ? record.provenance
+        : "indexed_gmail",
   };
 }
 

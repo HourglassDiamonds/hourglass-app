@@ -34,6 +34,8 @@ const EMAIL_HASH_RE = /^[a-f0-9]{64}$/;
 const ORDER_ID = /\bSP\d{4,}\b/gi;
 const RN_ID = /\bRN\d{4,}\b/gi;
 const HGD_VENDOR_THREAD = /\bHGD\s*x\s+.+-C\d{5,}/i;
+const CLIENT_APPROVAL_SPEECH =
+  /\b(?:love(?:s|d)? (?:it|the|option)|looks (?:great|perfect|amazing)|approved|let(?:'s| us) move forward|move(?:ing)? forward)\b/i;
 
 function unique(values: readonly string[]): string[] {
   const seen = new Set<string>();
@@ -100,10 +102,6 @@ function candidateOverlayByMessage(
   return map;
 }
 
-function firstNameToken(value: string): string {
-  return (value.split(/[\s/.]+/)[0] ?? "").replace(/[^a-z]/g, "");
-}
-
 function displayMatchesHgdClient(
   displayName: string | null | undefined,
   subject: string | null,
@@ -112,18 +110,7 @@ function displayMatchesHgdClient(
   const display = (displayName ?? "").replace(/\s+/g, " ").trim().toLowerCase();
   const client = (parsed?.name ?? "").replace(/\s+/g, " ").trim().toLowerCase();
   if (!display || !client || client === parsed?.cadId.toLowerCase()) return false;
-  if (display === client || display.startsWith(client) || client.startsWith(display.split(" ")[0] ?? "")) {
-    return true;
-  }
-  const displayFirst = firstNameToken(display);
-  const clientFirst = firstNameToken(client);
-  if (displayFirst.length < 3 || clientFirst.length < 3) return false;
-  return (
-    displayFirst.startsWith(clientFirst.slice(0, 3)) ||
-    clientFirst.startsWith(displayFirst.slice(0, 3)) ||
-    displayFirst.includes(clientFirst) ||
-    clientFirst.includes(displayFirst)
-  );
+  return display === client;
 }
 
 function actorOf(input: {
@@ -135,19 +122,22 @@ function actorOf(input: {
   vendorHashes: ReadonlySet<string>;
   clientHashes: ReadonlySet<string>;
   subject: string | null;
+  currentText: string;
 }): SourceCommunicationActor {
   const hash = input.fromEmailHash?.trim().toLowerCase() ?? "";
   if (input.direction === "outbound") return "founder";
   if (hash && input.founderHashes.has(hash)) return "founder";
   if (hash && input.vendorHashes.has(hash)) return "vendor_shop";
+  if (hash && input.clientHashes.has(hash)) return "client";
   if (
     input.direction === "inbound" &&
     HGD_VENDOR_THREAD.test(input.subject ?? "")
   ) {
     if (displayMatchesHgdClient(input.fromDisplayName, input.subject)) return "client";
-    return "vendor_shop";
+    if (CLIENT_APPROVAL_SPEECH.test(input.currentText)) return "client";
+    if (!hash && isSupplierOrSystemMailbox(input.fromEmail)) return "system";
+    return "unknown";
   }
-  if (hash && input.clientHashes.has(hash)) return "client";
   if (
     input.direction === "inbound" &&
     !hash &&
@@ -217,9 +207,8 @@ export function projectGmailSourceEvents(input: {
       const fromEmailHash = message.fromEmailHash?.trim() || null;
       const ownParts = unique([
         ...(overlayRow?.own ?? []),
+        message.operationalText ?? "",
         message.plaintext ? authorOwnedText(message.plaintext) : "",
-        subject ?? "",
-        ...files,
       ]);
       const quotedParts = unique([
         ...(overlayRow?.quoted ?? []),
@@ -236,6 +225,7 @@ export function projectGmailSourceEvents(input: {
         vendorHashes,
         clientHashes,
         subject,
+        currentText: authorOwned,
       });
       const cadIds = unique([
         ...currentCadTokensFromIdentityHay([subject, authorOwned, ...files]),
@@ -253,6 +243,19 @@ export function projectGmailSourceEvents(input: {
         hasAttachments: message.hasAttachments === true || files.length > 0,
       });
       const projectId = input.projectIdByThread?.get(threadId) ?? null;
+      const orderIds = matches(identityHay, ORDER_ID);
+      const productionJobIds = matches(identityHay, RN_ID);
+      const workIdentityBasis = projectId
+        ? "project"
+        : cadIds.length === 1
+          ? "cad"
+          : orderIds.length === 1
+            ? "order"
+            : productionJobIds.length === 1
+              ? "production_job"
+              : overlayRow
+                ? "candidate_message"
+                : null;
       const packed = packGmailCandidateSourceRef({
         threadId,
         messageId: message.messageId,
@@ -271,13 +274,21 @@ export function projectGmailSourceEvents(input: {
         attachmentFilenames: files,
         hasAttachments: message.hasAttachments === true || files.length > 0,
         cadIds,
-        orderIds: matches(identityHay, ORDER_ID),
-        productionJobIds: matches(identityHay, RN_ID),
+        orderIds,
+        productionJobIds,
         personLabel: personLabelOf(subject, files),
         projectId,
         workLoopId: workLoopIdOf({ projectId, cadIds, threadId }),
         semanticClass,
-        provenance: overlayRow ? "indexed_gmail+interpretation" : "indexed_gmail",
+        evidenceExcerpt: authorOwned || files.join(", "),
+        workIdentityBasis,
+        provenance: message.operationalText
+          ? overlayRow
+            ? "indexed_gmail+interpretation+live_operational_fact"
+            : "indexed_gmail+live_operational_fact"
+          : overlayRow
+            ? "indexed_gmail+interpretation"
+            : "indexed_gmail",
       });
     }
   }
@@ -353,22 +364,23 @@ export function sourceEventsForWorkLoop(
   const keyCad = input.key.startsWith("cad:") ? input.key.slice(4).toUpperCase() : "";
   const keyThread = input.key.startsWith("thread:") ? input.key.slice(7) : "";
   const keyProject = input.key.startsWith("project:") ? input.key.slice(8) : "";
-  const person = (input.personLabel ?? "").trim().split(/[\s/]/)[0]?.toLowerCase() ?? "";
   if (keyCad) cads.add(keyCad);
   if (keyThread) threads.add(keyThread);
   if (keyProject && !projectId) {
     /* project key without id on events still matches projectId field */
   }
   return events.filter((event) => {
-    if (projectId && event.projectId === projectId) return true;
-    if (keyProject && event.projectId === keyProject) return true;
+    const targetProject = projectId || keyProject || null;
+    if (targetProject) {
+      if (event.projectId === targetProject) return true;
+      if (event.projectId) return false;
+      // Project-scoped work may consume an unscoped event only through an
+      // exact associated thread, never through a shared CAD/name token.
+      return Boolean(event.threadId && threads.has(event.threadId));
+    }
     if (event.threadId && threads.has(event.threadId)) return true;
     if (event.cadIds.some((cad) => cads.has(cad))) return true;
     if (event.workLoopId && event.workLoopId === input.key) return true;
-    if (person.length >= 3 && event.personLabel) {
-      const label = event.personLabel.trim().split(/[\s/]/)[0]?.toLowerCase() ?? "";
-      if (label === person || label.startsWith(person) || person.startsWith(label)) return true;
-    }
     return false;
   });
 }

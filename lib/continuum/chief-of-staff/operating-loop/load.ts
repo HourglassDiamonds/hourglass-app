@@ -23,6 +23,7 @@ import { tagStoredGeneratedOperatingMailCandidates } from "@/lib/continuum/gmail
 import {
   loadIndexedTodayThreadContext,
   loadLiveExternalThreadIdentity,
+  loadLiveTodayOperationalFacts,
   mergeTodayThreadContext,
 } from "@/lib/continuum/gmail/today-thread-context";
 import type { TodayGmailThreadContext } from "@/lib/continuum/candidates/founder-attention";
@@ -171,7 +172,9 @@ async function rebuildTodayLoop(
     client,
     listed,
   );
-  const indexedContext = await loadIndexedTodayThreadContext(candidates);
+  const indexedContext = await loadLiveTodayOperationalFacts(
+    await loadIndexedTodayThreadContext(candidates),
+  );
   const composeInput = {
     jobs,
     summaries,

@@ -704,7 +704,12 @@ function sourceEventBeats(
     return {
       at: event.timestamp,
       label: event.semanticClass,
-      summary: mapped?.text || event.authorOwnedText || event.subject || event.semanticClass,
+      summary:
+        event.evidenceExcerpt ||
+        mapped?.text ||
+        event.authorOwnedText ||
+        event.subject ||
+        event.semanticClass,
       speaker,
       sourceHref: event.sourceRef,
       candidateId: event.messageId ?? event.sourceRef,
