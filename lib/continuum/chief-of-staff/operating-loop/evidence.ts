@@ -102,6 +102,8 @@ export function relatedToJob(
 ): boolean {
   if (!isUsableEvidence(row)) return false;
   const projectId = candidateProjectId(row);
+  // Text similarity cannot establish identity across a Project boundary.
+  if (projectId !== null && projectId !== job.projectId) return false;
   const sameProject = Boolean(projectId && projectId === job.projectId);
   const tokens = sharesSubjectToken(job, candidateHaystack(row));
   if (row.payload.kind === "project_context") {

@@ -1,3 +1,4 @@
+import type { AppliedOperation, OperationRequest } from "./operation";
 /**
  * Supabase Open Jobs founder writer.
  * Service-role only. Import from `./server`.
@@ -17,7 +18,6 @@ import type {
   MutateOpenJobInput,
   MutateOpenJobResult,
 } from "./mutate";
-import { encodeDateOnlyForTimestamptz, parseDateOnly } from "@/lib/continuum/date-only";
 import { PROJECT_JOB_COLUMNS, rowToProjectJob } from "./rows";
 import { projectJobToRow } from "./write-row";
 import type { ProjectJob } from "./types";
@@ -37,12 +37,6 @@ function writeReason(message: string): Error {
     return new Error("entity-kind-mismatch");
   }
   return new Error(message || "mutate-project-job-failed");
-}
-
-function persistDue(value: string | null): string | null {
-  if (!value) return null;
-  const date = parseDateOnly(value);
-  return date ? encodeDateOnlyForTimestamptz(date) : value;
 }
 
 export class SupabaseProjectJobWriter implements ProjectJobWriter {
@@ -152,12 +146,11 @@ export class SupabaseProjectJobWriter implements ProjectJobWriter {
     return rowToProjectJob((data ?? null) as Record<string, unknown> | null);
   }
 
-  private async listUnresolvedJobs(projectId: string): Promise<ProjectJob[]> {
-    const { data, error } = await this.client
-      .from("continuum_project_jobs")
-      .select(PROJECT_JOB_COLUMNS)
-      .eq("project_id", projectId)
-      .in("state", ["open", "snoozed"]);
+  private async listUnresolvedJobs(projectId: string | null): Promise<ProjectJob[]> {
+    let query = this.client.from("continuum_project_jobs")
+      .select(PROJECT_JOB_COLUMNS).in("state", ["open", "snoozed"]);
+    query = projectId === null ? query.is("project_id", null) : query.eq("project_id", projectId);
+    const { data, error } = await query;
     if (error) throw writeReason(error.message);
     return (data ?? []).flatMap((row) => {
       const mapped = rowToProjectJob(row as Record<string, unknown>);
@@ -165,131 +158,65 @@ export class SupabaseProjectJobWriter implements ProjectJobWriter {
     });
   }
 
-  private async findJobByMutationId(mutationId: string): Promise<ProjectJob | null> {
+  private async findAppliedOperation(mutationId: string): Promise<AppliedOperation | null> {
     const existingMutation = await this.client
       .from("continuum_project_job_mutations")
-      .select("job_id")
+      .select("job_id, operation")
       .eq("mutation_id", mutationId)
       .maybeSingle();
     if (existingMutation.error) throw writeReason(existingMutation.error.message);
     if (!existingMutation.data?.job_id) return null;
-    return this.loadJob(String(existingMutation.data.job_id));
+    const job = await this.loadJob(String(existingMutation.data.job_id));
+    if (!job) throw new Error("unavailable");
+    return { job, request: existingMutation.data.operation?.request ?? null };
   }
 
-  async getJob(projectId: string, jobId: string): Promise<ProjectJob | null> {
+  async getJob(projectId: string | null, jobId: string): Promise<ProjectJob | null> {
     const job = await this.loadJob(jobId);
     if (!job || job.projectId !== projectId) return null;
     return job;
   }
 
-  private async applyCreate(job: ProjectJob) {
-    const existingMutation = await this.client
-      .from("continuum_project_job_mutations")
-      .select("job_id")
-      .eq("mutation_id", job.createdMutationId)
-      .maybeSingle();
-    if (existingMutation.error) throw writeReason(existingMutation.error.message);
-    if (existingMutation.data?.job_id) {
-      const existing = await this.loadJob(String(existingMutation.data.job_id));
-      if (existing) return { status: "already-present" as const, job: existing };
+  private async atomicWrite(args: {
+    p_job: Record<string, unknown>;
+    p_mutation_id: string;
+    p_action: string;
+    p_changed_by: string;
+    p_prior: Record<string, unknown> | null;
+    p_request: OperationRequest | null;
+  }): Promise<{ status: "created" | "updated" | "already-present"; job: ProjectJob }> {
+    const { data, error } = await this.client.rpc("continuum_write_project_job", args);
+    if (error) throw writeReason(error.message);
+    const job = rowToProjectJob(data?.job);
+    if (!job || !["created", "updated", "already-present"].includes(data?.status)) {
+      throw new Error("unavailable");
     }
-    const inserted = await this.client
-      .from("continuum_project_jobs")
-      .insert(projectJobToRow(job))
-      .select(PROJECT_JOB_COLUMNS)
-      .maybeSingle();
-    if (inserted.error) {
-      if (/duplicate|unique/i.test(inserted.error.message)) {
-        const existing = await this.client
-          .from("continuum_project_jobs")
-          .select(PROJECT_JOB_COLUMNS)
-          .eq("created_mutation_id", job.createdMutationId)
-          .maybeSingle();
-        const mapped = rowToProjectJob(
-          (existing.data ?? null) as Record<string, unknown> | null,
-        );
-        if (mapped) return { status: "already-present" as const, job: mapped };
-      }
-      throw writeReason(inserted.error.message);
-    }
-    const mapped = rowToProjectJob(
-      (inserted.data ?? null) as Record<string, unknown> | null,
-    );
-    if (!mapped) throw new Error("unavailable");
-    const mutation = await this.client.from("continuum_project_job_mutations").insert({
-      mutation_id: job.createdMutationId,
-      job_id: mapped.jobId,
-      project_id: mapped.projectId,
-      action: "create",
-      prior_state: null,
-      new_state: mapped.state,
-      changed_at: mapped.createdAt,
-      changed_by: mapped.createdBy,
-      source_system: "concierge-manual",
-    });
-    if (mutation.error && !/duplicate|unique/i.test(mutation.error.message)) {
-      throw writeReason(mutation.error.message);
-    }
-    return { status: "created" as const, job: mapped };
+    return { status: data.status, job };
   }
 
-  private async applyMutation(
-    input: ApplyOpenJobMutationInput,
-  ): Promise<ApplyOpenJobMutationResult> {
-    const existingMutation = await this.client
-      .from("continuum_project_job_mutations")
-      .select("job_id")
-      .eq("mutation_id", input.mutationId)
-      .maybeSingle();
-    if (existingMutation.error) throw writeReason(existingMutation.error.message);
-    if (existingMutation.data?.job_id) {
-      const existing = await this.loadJob(String(existingMutation.data.job_id));
-      if (existing) return { status: "already-present", job: existing };
-    }
-    const updated = await this.client
-      .from("continuum_project_jobs")
-      .update({
-        kind: input.next.kind,
-        subject: input.next.subject,
-        detail: input.next.detail,
-        waiting_on_actor: input.next.waitingOnActor,
-        associated_person_id: input.next.associatedPersonId,
-        state: input.next.state,
-        due_at: persistDue(input.next.dueAt),
-        deferred_until: input.next.deferredUntil,
-        resolved_at: input.next.resolvedAt,
-        cancelled_at: input.next.cancelledAt,
-        updated_at: input.next.updatedAt,
-      })
-      .eq("job_id", input.next.jobId)
-      .eq("project_id", input.next.projectId)
-      .select(PROJECT_JOB_COLUMNS)
-      .maybeSingle();
-    if (updated.error) throw writeReason(updated.error.message);
-    const mapped = rowToProjectJob(
-      (updated.data ?? null) as Record<string, unknown> | null,
-    );
-    if (!mapped) throw new Error("job-not-found");
-    const mutation = await this.client.from("continuum_project_job_mutations").insert({
-      mutation_id: input.mutationId,
-      job_id: mapped.jobId,
-      project_id: mapped.projectId,
-      action: input.action,
-      prior_state: input.prior.state,
-      new_state: mapped.state,
-      changed_at: input.changedAt,
-      changed_by: input.changedBy,
-      source_system: "concierge-manual",
+  private async applyCreate(job: ProjectJob, request?: OperationRequest) {
+    const result = await this.atomicWrite({
+      p_job: projectJobToRow(job), p_mutation_id: job.createdMutationId,
+      p_action: "create", p_changed_by: job.createdBy, p_prior: null, p_request: request ?? null,
     });
-    if (mutation.error && !/duplicate|unique/i.test(mutation.error.message)) {
-      throw writeReason(mutation.error.message);
-    }
-    return { status: "updated", job: mapped };
+    if (result.status === "updated") throw new Error("unavailable");
+    return { ...result, status: result.status };
+  }
+
+  private async applyMutation(input: ApplyOpenJobMutationInput): Promise<ApplyOpenJobMutationResult> {
+    const result = await this.atomicWrite({
+      p_job: projectJobToRow(input.next), p_mutation_id: input.mutationId,
+      p_action: input.action, p_changed_by: input.changedBy,
+      p_prior: projectJobToRow(input.prior), p_request: input.request ?? null,
+    });
+    if (result.status === "created") throw new Error("unavailable");
+    return { ...result, status: result.status };
   }
 
   createJob(input: CreateProjectJobInput): Promise<CreateProjectJobResult> {
     return createProjectJob(
       {
+        findAppliedOperation: (id) => this.findAppliedOperation(id),
         nowIso: () => new Date().toISOString(),
         newJobId: () => randomUUID(),
         getEntity: (id) => this.getEntityKind(id),
@@ -298,7 +225,7 @@ export class SupabaseProjectJobWriter implements ProjectJobWriter {
         hasActiveClientProjectRelationship: (projectId, personId) =>
           this.hasActiveClientProjectRelationship(projectId, personId),
         listUnresolvedJobs: (projectId) => this.listUnresolvedJobs(projectId),
-        applyCreate: (job) => this.applyCreate(job),
+        applyCreate: (job, request) => this.applyCreate(job, request),
       },
       input,
     );
@@ -314,7 +241,7 @@ export class SupabaseProjectJobWriter implements ProjectJobWriter {
         hasActiveClientProjectRelationship: (projectId, personId) =>
           this.hasActiveClientProjectRelationship(projectId, personId),
         getJob: (jobId) => this.loadJob(jobId),
-        findAppliedMutation: (mutationId) => this.findJobByMutationId(mutationId),
+        findAppliedOperation: (mutationId) => this.findAppliedOperation(mutationId),
         applyMutation: (row) => this.applyMutation(row),
       },
       input,

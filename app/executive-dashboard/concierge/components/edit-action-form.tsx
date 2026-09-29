@@ -39,7 +39,7 @@ export function EditActionForm({
   return (
     <form action={formAction} className="flex min-h-[70vh] flex-col" noValidate>
       <input type="hidden" name="mutationId" value={mutationId} />
-      <input type="hidden" name="projectId" value={job.projectId} />
+      <input type="hidden" name="projectId" value={job.projectId ?? ""} />
       <input type="hidden" name="jobId" value={job.jobId} />
 
       <label className="mt-8 block">

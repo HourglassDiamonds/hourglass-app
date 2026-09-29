@@ -91,7 +91,7 @@ export async function saveOpenJob(
     actor: auth.username,
   });
   if (result.ok) {
-    redirect(`${conciergeProjectPath(projectId)}?saved=job`);
+    redirect(projectId ? `${conciergeProjectPath(projectId)}?saved=job` : CONCIERGE_HOME_PATH);
   }
   return { ok: false, message: humanCreateMessage(result) };
 }
@@ -156,7 +156,7 @@ export async function mutateOpenJobAction(
   const dueRaw = String(formData.get("dueAt") ?? "");
   const result = await auth.writer.mutateJob({
     mutationId: String(formData.get("mutationId") ?? "").trim(),
-    projectId,
+    projectId: projectId || null,
     jobId: String(formData.get("jobId") ?? "").trim(),
     action: String(formData.get("action") ?? "").trim(),
     actor: auth.username,
@@ -170,7 +170,7 @@ export async function mutateOpenJobAction(
     clearDueAt: dueRaw.trim() === "",
   });
   if (result.ok) {
-    redirect(`${conciergeProjectPath(projectId)}?saved=job`);
+    redirect(projectId ? `${conciergeProjectPath(projectId)}?saved=job` : CONCIERGE_HOME_PATH);
   }
   return { ok: false, message: humanMutateMessage(result) };
 }
@@ -194,7 +194,7 @@ export async function saveFounderEditAction(
   const dueRaw = String(formData.get("dueAt") ?? "");
   const result = await auth.writer.mutateJob({
     mutationId: String(formData.get("mutationId") ?? "").trim(),
-    projectId,
+    projectId: projectId || null,
     jobId: String(formData.get("jobId") ?? "").trim(),
     action: "update",
     actor: auth.username,

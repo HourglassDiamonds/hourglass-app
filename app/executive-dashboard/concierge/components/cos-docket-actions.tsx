@@ -244,7 +244,7 @@ export function CosDocketActions({
             {RELATED_EMAIL_LABEL}
           </a>
         ))}
-        {item.job ? (
+        {item.job?.editHref ? (
           <Link
             href={item.job.editHref}
             className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.2em] text-[#ad9164] outline-none hover:text-[#efe8de] focus-visible:text-[#efe8de]"

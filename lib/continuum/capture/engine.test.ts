@@ -187,15 +187,12 @@ describe("Quick Capture application integration", () => {
     authority.notes.addManualNote = async () => { throw new Error("Unexpected write"); };
     const linked = { status: "resolved" as const, personId: PERSON, projectId: PROJECT, evidence: "Existing records" };
     const items = [
-      { ...item("unassigned"), entityResolution: { ...linked, projectId: undefined } },
       { ...item("reminder"), kind: "reminder" as const, entityResolution: linked },
       { ...item("watching"), kind: "watching" as const, entityResolution: linked },
-      { ...item("project-note", "note"), entityResolution: { status: "resolved" as const, projectId: PROJECT, evidence: "Existing project" } },
       { ...item("ambiguous"), entityResolution: { status: "ambiguous" as const, candidates: [{ kind: "person" as const, id: PERSON, evidence: "Ambiguous" }] } },
       { ...item("clarify", "note"), entityResolution: linked, clarification: { question: "Interpretation failed" }, confidence: 0 },
       { ...item("exact"), entityResolution: linked, timing: { kind: "exact-instant" as const, originalWording: "at 3", instantAt: "2026-09-29T15:00:00-04:00", timezone: "America/New_York" } },
     ];
-    delete items[0].entityResolution.projectId;
     const result = await commitCapture({ async loadAuthority() { return { ok: true, authority }; } }, {
       version: 1, captureId: request.captureId,
       items: items.map(confirmedItem => ({ itemId: confirmedItem.itemId, selected: true, mutationId: randomUUID(), confirmedItem })),
@@ -236,3 +233,23 @@ it("uses the production Responses path with no tools, no Calendar writes, and ex
     globalThis.fetch = original;
   }
 });
+
+ it("persists confirmed unassigned Actions and project-only Notes through canonical writers", async () => {
+   const authority = fakeAuthority();
+   const writes: unknown[] = [];
+   const create = authority.jobs.createJob.bind(authority.jobs);
+   authority.jobs.createJob = async input => { writes.push(input); return create(input); };
+   const note = authority.notes.addManualNote.bind(authority.notes);
+   authority.notes.addManualNote = async input => { writes.push(input); return note(input); };
+   const items = [item("founder"),
+     { ...item("person-action"), entityResolution: { status: "resolved" as const, personId: PERSON, evidence: "Confirmed" } },
+     { ...item("project-note", "note"), entityResolution: { status: "resolved" as const, projectId: PROJECT, evidence: "Confirmed" } }];
+   const result = await commitCapture({ async loadAuthority() { return { ok: true, authority }; } }, {
+     version: 1, captureId: request.captureId,
+     items: items.map(confirmedItem => ({ itemId: confirmedItem.itemId, selected: true, mutationId: randomUUID(), confirmedItem })),
+   });
+   assert.deepEqual(result.items.map(row => row.status), ["saved", "saved", "saved"]);
+   assert.equal((writes[0] as { projectId: null }).projectId, null);
+   assert.equal((writes[1] as { associatedPersonId: string }).associatedPersonId, PERSON);
+   assert.equal((writes[2] as { personId: null }).personId, null);
+ });

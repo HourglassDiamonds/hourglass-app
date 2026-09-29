@@ -23,10 +23,14 @@ function isMissingJobsRelation(error: {
 
 export async function loadProjectJobs(
   client: SupabaseClient,
+  projectId?: string | null,
 ): Promise<ProjectJob[] | null> {
-  const { data, error } = await client
+  let query = client
     .from("continuum_project_jobs")
     .select(PROJECT_JOB_COLUMNS);
+  if (projectId === null) query = query.is("project_id", null);
+  else if (projectId !== undefined) query = query.eq("project_id", projectId);
+  const { data, error } = await query;
   if (error) {
     if (isMissingJobsRelation(error)) return null;
     throw new Error(error.message ?? "read-project-jobs-failed");

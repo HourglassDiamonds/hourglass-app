@@ -211,3 +211,21 @@ describe("Client Memory manual note writer", () => {
     }
   });
 });
+
+it("accepts project-only notes with kept lifecycle; rejects contextless and invalid project context", async () => {
+  const store = new InMemoryClientMemoryStore();
+  const writer = createInMemoryClientMemoryNoteWriter(store);
+  const { projectId } = await personAndProject(store);
+  const input = { submissionId: randomUUID(), personId: null, projectId, contextLayer: "client" as const, noteText: "Project evidence", actor: "founder" };
+  const result = await writer.addManualNote(input);
+  assert.equal(result.ok, true);
+  if (!result.ok) return;
+  const note = await writer.getSourceNote(result.noteId);
+  assert.equal(note?.personId, null);
+  assert.equal(note?.projectId, projectId);
+  assert.equal(note?.lifecycleStatus, "kept");
+  assert.equal((await writer.addManualNote(input)).ok, true);
+  for (const patch of [{ projectId: null }, { projectId: randomUUID() }, { contextLayer: "personal" as const }]) {
+    assert.equal((await writer.addManualNote({ ...input, submissionId: randomUUID(), ...patch })).ok, false);
+  }
+});

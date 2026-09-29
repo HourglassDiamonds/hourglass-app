@@ -31,7 +31,7 @@ export function CosCompleteControl({
   return (
     <form action={action} className="flex shrink-0">
       <input type="hidden" name="sourceType" value={item.sourceType} />
-      <input type="hidden" name="projectId" value={item.projectId} />
+      <input type="hidden" name="projectId" value={item.projectId ?? ""} />
       <input type="hidden" name="jobId" value={item.id} />
       <input type="hidden" name="mutationId" value={item.mutationId} />
       <button
@@ -50,7 +50,7 @@ export function CosRecapConfirm({
   item: CosRecapItem;
   action?: CompleteAction;
 }) {
-  if (!item.completable || !item.jobId || !item.projectId || !item.mutationId) {
+  if (!item.completable || !item.jobId || !item.mutationId) {
     return null;
   }
   return (

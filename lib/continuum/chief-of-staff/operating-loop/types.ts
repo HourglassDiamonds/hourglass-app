@@ -28,7 +28,7 @@ export type ActionableWork = {
   id: string;
   sourceType: ActionableSourceType;
   job: ProjectJob;
-  projectId: string;
+  projectId: string | null;
   projectTitle: string;
   personName: string | null;
   isCurrentProject: boolean;
@@ -82,16 +82,16 @@ export type CosTop5Item = {
   action: string;
   clientLabel: string | null;
   projectTitle: string;
-  projectId: string;
+  projectId: string | null;
   ownership: string;
   timing: string;
   why: string;
-  accordionHref: string;
-  jobHref: string;
+  accordionHref: string | null;
+  jobHref: string | null;
   completable: boolean;
   writer: CosCompletionWriter | null;
   mutationId: string;
-  editHref: string;
+  editHref: string | null;
 };
 
 export type CosProposedAction = {

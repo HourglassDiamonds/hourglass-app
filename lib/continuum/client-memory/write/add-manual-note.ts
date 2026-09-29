@@ -66,8 +66,8 @@ export async function addManualNote(
   input: AddManualNoteInput,
 ): Promise<AddManualNoteResult> {
   const submissionId = input.submissionId.trim();
-  const personId = input.personId.trim();
-  if (!isUuid(submissionId) || !isUuid(personId)) {
+  const personId = input.personId === null ? null : input.personId.trim();
+  if (!isUuid(submissionId) || (personId !== null && !isUuid(personId))) {
     return { ok: false, reason: "invalid-input", code: "invalid-id" };
   }
   if (!isRelationshipContextLayer(input.contextLayer)) {
@@ -83,6 +83,9 @@ export async function addManualNote(
   }
 
   const requestedProjectId = normalizeOptionalId(input.projectId);
+  if (personId === null && !requestedProjectId) {
+    return { ok: false, reason: "invalid-input", code: "invalid-id" };
+  }
   if (requestedProjectId && !isUuid(requestedProjectId)) {
     return { ok: false, reason: "invalid-input", code: "invalid-id" };
   }
@@ -91,9 +94,11 @@ export async function addManualNote(
   }
 
   try {
-    const person = await deps.getEntity(personId);
-    if (!person || person.kind !== "person") {
-      return { ok: false, reason: "person-not-found" };
+    if (personId !== null) {
+      const person = await deps.getEntity(personId);
+      if (!person || person.kind !== "person") {
+        return { ok: false, reason: "person-not-found" };
+      }
     }
 
     let projectId: string | null = null;
@@ -102,7 +107,7 @@ export async function addManualNote(
       if (!project || project.kind !== "project") {
         return { ok: false, reason: "project-not-linked" };
       }
-      const linked = await deps.hasActiveClientProjectLink(
+      const linked = personId === null || await deps.hasActiveClientProjectLink(
         personId,
         requestedProjectId,
       );

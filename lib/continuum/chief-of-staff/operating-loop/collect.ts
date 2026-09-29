@@ -32,7 +32,7 @@ export function collectCanonicalActionables(input: {
     if (isDeferredQuiet(job, clock)) continue;
     if (seen.has(job.jobId)) continue;
     seen.add(job.jobId);
-    const project = input.projects.get(job.projectId);
+    const project = (job.projectId ? input.projects.get(job.projectId) : undefined);
     if (isTerminalTodayLifecycle(project?.lifecycleStage)) {
       const hay = `${job.subject} ${job.detail ?? ""}`;
       if (!/\b(repair|resize|service|follow[- ]up|payment|invoice)\b/i.test(hay)) {
@@ -48,7 +48,7 @@ export function collectCanonicalActionables(input: {
       sourceType: "open_job",
       job,
       projectId: job.projectId,
-      projectTitle: project?.title ?? "Project",
+      projectTitle: project?.title ?? (job.projectId ? "Project" : "Founder work"),
       personName: associatedName ?? project?.personName ?? null,
       isCurrentProject: project?.isCurrent ?? false,
       kind: job.kind,

@@ -133,7 +133,7 @@ async function resolveJob(
   writer: ProjectJobWriter,
   input: DisposeDocketItemInput,
 ): Promise<DisposeDocketItemResult> {
-  if (!input.jobId || !input.projectId) {
+  if (!input.jobId) {
     return { ok: false, reason: "unsupported-mutation" };
   }
   const completed = await completeFounderActionable(writer, {
@@ -166,7 +166,7 @@ async function snoozeJob(
   input: DisposeDocketItemInput,
   until: string,
 ): Promise<DisposeDocketItemResult> {
-  if (!input.jobId || !input.projectId) {
+  if (!input.jobId) {
     return { ok: false, reason: "unsupported-mutation" };
   }
   const result = await writer.mutateJob({
@@ -197,7 +197,7 @@ async function cancelJob(
   writer: ProjectJobWriter,
   input: DisposeDocketItemInput,
 ): Promise<DisposeDocketItemResult> {
-  if (!input.jobId || !input.projectId) {
+  if (!input.jobId) {
     return { ok: false, reason: "unsupported-mutation" };
   }
   const result = await writer.mutateJob({
@@ -366,7 +366,7 @@ export async function disposeDocketItem(
 
     if (input.verb === "request_changes" || input.verb === "follow_up" || input.verb === "snooze") {
       if (!until) return { ok: false, reason: "invalid-input" };
-      if (input.jobId && input.projectId && deps.jobs) {
+      if (input.jobId && deps.jobs) {
         return snoozeJob(deps.jobs, input, until);
       }
       if (!deps.candidates || candidateIds.length === 0) {
@@ -390,7 +390,7 @@ export async function disposeDocketItem(
     }
 
     if (input.verb === "complete" || input.verb === "approve" || input.verb === "responded" || input.verb === "resolved") {
-      if (input.jobId && input.projectId && deps.jobs) {
+      if (input.jobId && deps.jobs) {
         return resolveJob(deps.jobs, input);
       }
       if (!deps.candidates || candidateIds.length === 0) {
@@ -414,7 +414,7 @@ export async function disposeDocketItem(
     }
 
     if (input.verb === "disregard" || input.verb === "dismiss") {
-      if (input.origin === "open_job" && input.jobId && input.projectId && deps.jobs) {
+      if (input.origin === "open_job" && input.jobId && deps.jobs) {
         return cancelJob(deps.jobs, input);
       }
       if (!deps.candidates || candidateIds.length === 0) {

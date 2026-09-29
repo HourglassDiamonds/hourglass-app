@@ -1,3 +1,4 @@
+import { assertSameRequest, type AppliedOperation, type OperationRequest } from "./operation";
 /**
  * Founder Open Job state changes.
  * Resolve and cancel are distinct terminal states. Snooze is not resolution.
@@ -28,6 +29,7 @@ export const OPEN_JOB_MUTATE_ACTIONS = [
 export type OpenJobMutateAction = (typeof OPEN_JOB_MUTATE_ACTIONS)[number];
 
 export type MutateOpenJobInvalidCode =
+  | "idempotency-conflict"
   | "invalid-id"
   | "invalid-action"
   | "invalid-state"
@@ -58,7 +60,7 @@ export type MutateOpenJobResult =
 
 export type MutateOpenJobInput = {
   mutationId: string;
-  projectId: string;
+  projectId?: string | null;
   jobId: string;
   action: string;
   actor: string;
@@ -75,7 +77,7 @@ export type MutateOpenJobInput = {
 export type OpenJobMutationRecord = {
   mutationId: string;
   jobId: string;
-  projectId: string;
+  projectId: string | null;
   action: OpenJobMutateAction | "create";
   priorState: OpenJobState | null;
   newState: OpenJobState;
@@ -84,6 +86,7 @@ export type OpenJobMutationRecord = {
 };
 
 export type ApplyOpenJobMutationInput = {
+  request?: OperationRequest;
   mutationId: string;
   action: OpenJobMutateAction;
   prior: ProjectJob;
@@ -107,7 +110,7 @@ export type MutateOpenJobDeps = {
     personId: string,
   ) => Promise<boolean>;
   getJob: (jobId: string) => Promise<ProjectJob | null>;
-  findAppliedMutation: (mutationId: string) => Promise<ProjectJob | null>;
+  findAppliedOperation: (mutationId: string) => Promise<AppliedOperation | null>;
   applyMutation: (
     input: ApplyOpenJobMutationInput,
   ) => Promise<ApplyOpenJobMutationResult>;
@@ -199,9 +202,9 @@ export async function mutateOpenJob(
   input: MutateOpenJobInput,
 ): Promise<MutateOpenJobResult> {
   const mutationId = input.mutationId.trim();
-  const projectId = input.projectId.trim();
+  const requestedProjectId = input.projectId === undefined ? undefined : input.projectId === null ? null : input.projectId.trim();
   const jobId = input.jobId.trim();
-  if (!isOpenJobUuid(mutationId) || !isOpenJobUuid(projectId) || !isOpenJobUuid(jobId)) {
+  if (!isOpenJobUuid(mutationId) || (requestedProjectId != null && !isOpenJobUuid(requestedProjectId)) || !isOpenJobUuid(jobId)) {
     return invalid("invalid-id");
   }
   if (!isMutateAction(input.action)) return invalid("invalid-action");
@@ -209,25 +212,34 @@ export async function mutateOpenJob(
   if (!changedBy.ok) return invalid("invalid-id");
 
   try {
-    const entity = await deps.getEntity(projectId);
-    if (!entity) return { ok: false, reason: "project-not-found" };
-    if (entity.kind !== "project") {
-      return { ok: false, reason: "entity-kind-mismatch" };
-    }
-    const profile = await deps.getProjectProfile(projectId);
-    if (!profile || profile.projectId !== projectId) {
-      return { ok: false, reason: "project-not-found" };
+    const request = { ...input, operation: "mutate" };
+    const existing = await deps.findAppliedOperation(mutationId);
+    if (existing) {
+      assertSameRequest(existing, request);
+      return { ok: true, status: "already-present", job: existing.job };
     }
     const prior = await deps.getJob(jobId);
+    // A retry can read the winning canonical row after its first history read.
+    // Recheck history after the row read so it cannot derive a new operation
+    // from the winner's post-state (notably unsnooze/terminal mutations).
+    const applied = await deps.findAppliedOperation(mutationId);
+    if (applied) {
+      assertSameRequest(applied, request);
+      return { ok: true, status: "already-present", job: applied.job };
+    }
     if (!prior) return { ok: false, reason: "job-not-found" };
-    if (prior.projectId !== projectId) return invalid("wrong-project");
-
-    const existing = await deps.findAppliedMutation(mutationId);
-    if (existing) {
-      if (existing.projectId !== projectId || existing.jobId !== jobId) {
-        return invalid("invalid-id");
+    if (requestedProjectId !== undefined && prior.projectId !== requestedProjectId) return invalid("wrong-project");
+    const projectId = prior.projectId;
+    if (projectId !== null) {
+      const entity = await deps.getEntity(projectId);
+      if (!entity) return { ok: false, reason: "project-not-found" };
+      if (entity.kind !== "project") {
+        return { ok: false, reason: "entity-kind-mismatch" };
       }
-      return { ok: true, status: "already-present", job: existing };
+      const profile = await deps.getProjectProfile(projectId);
+      if (!profile || profile.projectId !== projectId) {
+        return { ok: false, reason: "project-not-found" };
+      }
     }
 
     let deferredUntil: string | null | undefined;
@@ -263,8 +275,8 @@ export async function mutateOpenJob(
         const personId = input.associatedPersonId.trim();
         if (!isOpenJobUuid(personId)) return invalid("invalid-id");
         const person = await deps.getPersonProfile(personId);
-        if (!person) return invalid("person-not-on-project");
-        const linked = await deps.hasActiveClientProjectRelationship(
+        if (!person || person.personId !== personId) return invalid("person-not-on-project");
+        const linked = projectId === null || await deps.hasActiveClientProjectRelationship(
           projectId,
           personId,
         );
@@ -292,6 +304,7 @@ export async function mutateOpenJob(
     });
     if (!changed.ok) return invalid(changed.code);
     const result = await deps.applyMutation({
+      request,
       mutationId,
       action: input.action,
       prior,
@@ -302,6 +315,7 @@ export async function mutateOpenJob(
     return { ok: true, status: result.status, job: result.job };
   } catch (error) {
     const message = error instanceof Error ? error.message : "";
+    if (message.includes("idempotency-conflict")) return invalid("idempotency-conflict");
     if (message.includes("project-not-found")) {
       return { ok: false, reason: "project-not-found" };
     }

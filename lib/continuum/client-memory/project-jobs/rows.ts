@@ -29,7 +29,7 @@ export const PROJECT_JOB_COLUMNS =
 export function rowToProjectJob(
   row: Record<string, unknown> | null | undefined,
 ): ProjectJob | null {
-  if (!row || row.job_id == null || row.project_id == null) return null;
+  if (!row || row.job_id == null || row.project_id === undefined) return null;
   if (!isOpenJobKind(row.kind)) return null;
   if (!isOpenJobActor(row.waiting_on_actor)) return null;
   if (!isOpenJobState(row.state)) return null;
@@ -76,7 +76,7 @@ export function rowToProjectJob(
     row.associated_person_id == null ? null : String(row.associated_person_id);
   return {
     jobId: String(row.job_id),
-    projectId: String(row.project_id),
+    projectId: row.project_id === null ? null : String(row.project_id),
     kind: row.kind,
     subject: subject.subject,
     detail: detail.detail,

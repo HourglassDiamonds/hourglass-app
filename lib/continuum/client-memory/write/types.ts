@@ -16,7 +16,7 @@ export const MANUAL_NOTE_MAX_LENGTH = 10_000;
 
 export type AddManualNoteInput = {
   submissionId: string;
-  personId: string;
+  personId: string | null;
   projectId?: string | null;
   contextLayer: RelationshipContextLayer;
   noteText: string;

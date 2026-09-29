@@ -1,3 +1,4 @@
+import { canonicalOperationKey, type AppliedOperation, type OperationRequest } from "./operation";
 /**
  * In-memory Open Jobs store. Isolated from ClientMemoryStore writes
  * so Lifecycle / operating / Gmail adapters cannot create jobs by accident.
@@ -18,17 +19,19 @@ function clone<T>(value: T): T {
 export class InMemoryProjectJobStore {
   private jobs = new Map<string, ProjectJob>();
   private mutationIds = new Map<string, string>();
+  private operations = new Map<string, { key: string; request: OperationRequest | null }>();
   private mutations = new Map<string, OpenJobMutationRecord>();
 
   reset(): void {
+    this.operations.clear();
     this.jobs.clear();
     this.mutationIds.clear();
     this.mutations.clear();
   }
 
-  listJobs(projectId?: string): ProjectJob[] {
+  listJobs(projectId?: string | null): ProjectJob[] {
     return [...this.jobs.values()]
-      .filter((row) => (projectId ? row.projectId === projectId : true))
+      .filter((row) => (projectId === undefined || row.projectId === projectId))
       .sort((a, b) => {
         if (a.createdAt === b.createdAt) return b.jobId.localeCompare(a.jobId);
         return a.createdAt < b.createdAt ? 1 : -1;
@@ -47,20 +50,26 @@ export class InMemoryProjectJobStore {
     return this.getJob(mutation.jobId);
   }
 
-  listUnresolvedJobs(projectId: string): ProjectJob[] {
+  findAppliedOperation(mutationId: string): AppliedOperation | null {
+    const operation = this.operations.get(mutationId);
+    const job = this.findJobByMutationId(mutationId);
+    return job ? { request: clone(operation?.request ?? null), job } : null;
+  }
+
+  listUnresolvedJobs(projectId: string | null): ProjectJob[] {
     return this.listJobs(projectId).filter(
       (row) => row.state === "open" || row.state === "snoozed",
     );
   }
 
-  insertJob(job: ProjectJob): CreateProjectJobApplyResult {
-    const existingMutation = this.mutationIds.get(job.createdMutationId);
-    if (existingMutation) {
-      const existing = this.jobs.get(existingMutation);
-      if (existing) {
-        return { status: "already-present", job: clone(existing) };
-      }
+  insertJob(job: ProjectJob, request: OperationRequest | null = null): CreateProjectJobApplyResult {
+    const key = canonicalOperationKey(job, null, "create", job.createdBy, request);
+    const existing = this.findJobByMutationId(job.createdMutationId);
+    if (existing) {
+      if (this.operations.get(job.createdMutationId)?.key !== key) throw new Error("idempotency-conflict");
+      return { status: "already-present", job: existing };
     }
+    this.operations.set(job.createdMutationId, { key, request: clone(request) });
     this.jobs.set(job.jobId, clone(job));
     this.mutationIds.set(job.createdMutationId, job.jobId);
     this.mutations.set(job.createdMutationId, {
@@ -83,11 +92,14 @@ export class InMemoryProjectJobStore {
   }
 
   applyMutation(input: ApplyOpenJobMutationInput): ApplyOpenJobMutationResult {
-    const existing = this.mutations.get(input.mutationId);
+    const request = input.request ?? null;
+    const key = canonicalOperationKey(input.next, input.prior, input.action, input.changedBy, request);
+    const existing = this.findJobByMutationId(input.mutationId);
     if (existing) {
-      const job = this.jobs.get(existing.jobId);
-      if (job) return { status: "already-present", job: clone(job) };
+      if (this.operations.get(input.mutationId)?.key !== key) throw new Error("idempotency-conflict");
+      return { status: "already-present", job: existing };
     }
+    this.operations.set(input.mutationId, { key, request: clone(request) });
     this.jobs.set(input.next.jobId, clone(input.next));
     this.mutations.set(input.mutationId, {
       mutationId: input.mutationId,

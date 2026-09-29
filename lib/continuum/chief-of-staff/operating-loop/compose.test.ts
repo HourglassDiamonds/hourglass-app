@@ -287,7 +287,7 @@ describe("CoS operating loop Top 5", () => {
     assert.equal(after.top5[0]?.id, "bb000000-cccc-4ccc-8ccc-cccccccccccc");
     assert.equal(after.top5.length, 2);
     assert.equal(new Set(after.top5.map((row) => row.id)).size, 2);
-    assert.equal(after.top5[0]?.editHref.includes("bb000000-cccc-4ccc-8ccc-cccccccccccc"), true);
+    assert.equal(after.top5[0]?.editHref?.includes("bb000000-cccc-4ccc-8ccc-cccccccccccc"), true);
   });
 
   it("selectTopRanked never exceeds the limit and skips excluded ids", () => {

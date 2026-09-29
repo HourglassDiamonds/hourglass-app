@@ -1240,9 +1240,9 @@ describe("Today actionability gate and ball-holder precedence", () => {
     ];
     const projects = new Map(
       jobs.map((job, index) => [
-        job.projectId,
+        job.projectId!,
         {
-          projectId: job.projectId,
+          projectId: job.projectId!,
           title: `Work ${index + 1}`,
           personName: `Client ${index + 1}`,
           people: [{ personId: `person-${index + 1}`, displayName: `Client ${index + 1}`, role: "client" as const }],

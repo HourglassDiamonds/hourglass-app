@@ -59,7 +59,7 @@ export async function completeTop5OpenJobAction(formData: FormData) {
   }
   const result = await completeFounderActionable(auth.writer, {
     sourceType: String(formData.get("sourceType") ?? "").trim(),
-    projectId: String(formData.get("projectId") ?? "").trim(),
+    projectId: String(formData.get("projectId") ?? "").trim() || null,
     jobId: String(formData.get("jobId") ?? "").trim(),
     mutationId: String(formData.get("mutationId") ?? "").trim(),
     actor: auth.username,

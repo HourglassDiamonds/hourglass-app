@@ -420,7 +420,7 @@ export function equivalentPacketFromBrief(
 }
 
 export function equivalentPacketFromJob(item: CosTop5Item, loop: CosOperatingLoopView): TodayBriefingPacket | null {
-  const lifecycle = loop.lifecycleByProject?.get(item.projectId) ?? null;
+  const lifecycle = (item.projectId ? loop.lifecycleByProject?.get(item.projectId) : null) ?? null;
   const waitingState =
     /SHOP/i.test(item.ownership) ? "shop" : /CLIENT/i.test(item.ownership) ? "client" : null;
   return composeTodayBriefingPacket({

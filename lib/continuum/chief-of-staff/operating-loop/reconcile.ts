@@ -33,10 +33,10 @@ function personOrProject(
   job: ProjectJob,
   projects: ReadonlyMap<string, CosProjectContext>,
 ): { name: string; projectTitle: string } {
-  const project = projects.get(job.projectId);
+  const project = job.projectId ? projects.get(job.projectId) : undefined;
   return {
-    name: project?.personName?.trim() || project?.title || "this client",
-    projectTitle: project?.title ?? "this project",
+    name: project?.personName?.trim() || project?.title || (job.projectId ? "this client" : "you"),
+    projectTitle: project?.title ?? (job.projectId ? "this project" : "Founder work"),
   };
 }
 
@@ -77,7 +77,7 @@ export function proposeRecapItems(input: {
         matchedText: matched,
         jobId: job.jobId,
         projectId: job.projectId,
-        projectTitle: input.projects.get(job.projectId)?.title ?? null,
+        projectTitle: (job.projectId ? input.projects.get(job.projectId) : undefined)?.title ?? null,
         completable: true,
         writer: "open_job.resolve",
         mutationId: input.newMutationId(),
@@ -96,7 +96,7 @@ export function proposeRecapItems(input: {
         matchedText: ambiguous.evidenceBasis.matchedText,
         jobId: job.jobId,
         projectId: job.projectId,
-        projectTitle: input.projects.get(job.projectId)?.title ?? null,
+        projectTitle: (job.projectId ? input.projects.get(job.projectId) : undefined)?.title ?? null,
         completable: false,
         writer: null,
         mutationId: null,

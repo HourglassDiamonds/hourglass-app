@@ -327,7 +327,7 @@ describe("Open Job founder controls", () => {
     assert.equal(jobs.getJob(created.job.jobId)?.kind, "blocked_issue");
   });
 
-  it("is idempotent on mutation id and keeps create history", async () => {
+  it("rejects mutation ID reuse for another action and keeps create history", async () => {
     const memory = new InMemoryClientMemoryStore();
     const jobs = new InMemoryProjectJobStore();
     const writer = createInMemoryProjectJobWriter(memory, jobs, () => NOW);
@@ -358,9 +358,8 @@ describe("Open Job founder controls", () => {
       actor: ACTOR,
     });
     assert.equal(first.ok && first.status, "updated");
-    assert.equal(second.ok && second.status, "already-present");
-    if (!second.ok) return;
-    assert.equal(second.job.state, "resolved");
+    assert.deepEqual(second, { ok: false, reason: "invalid-input", code: "idempotency-conflict" });
+    assert.equal(jobs.getJob(created.job.jobId)?.state, "resolved");
     assert.equal(jobs.listMutations(created.job.jobId).map((row) => row.action).join(","), "create,resolve");
   });
 
@@ -401,15 +400,15 @@ describe("Open Job founder controls", () => {
       dueAt: "2026-09-01",
     });
     assert.equal(first.ok && first.status, "updated");
-    assert.equal(replay.ok && replay.status, "already-present");
-    if (!first.ok || !replay.ok) return;
+    assert.deepEqual(replay, { ok: false, reason: "invalid-input", code: "idempotency-conflict" });
+    if (!first.ok) return;
     assert.equal(first.job.jobId, jobId);
     assert.equal(first.job.subject, "Send revised CAD");
     assert.equal(first.job.dueAt, "2026-09-12");
     assert.equal(first.job.state, "open");
     assert.equal(first.job.resolvedAt, null);
-    assert.equal(replay.job.subject, "Send revised CAD");
-    assert.equal(replay.job.dueAt, "2026-09-12");
+    assert.equal(jobs.getJob(jobId)?.subject, "Send revised CAD");
+    assert.equal(jobs.getJob(jobId)?.dueAt, "2026-09-12");
     assert.equal(jobs.listJobs().length, 1);
     assert.equal(jobs.getJob(jobId)?.jobId, jobId);
     assert.equal(

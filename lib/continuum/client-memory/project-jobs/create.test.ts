@@ -83,6 +83,7 @@ function deps(
   jobs: InMemoryProjectJobStore,
 ): CreateProjectJobDeps {
   return {
+    findAppliedOperation: async (id) => jobs.findAppliedOperation(id),
     nowIso: () => NOW,
     newJobId: () => randomUUID(),
     getEntity: (id) => store.getEntity(id),
@@ -91,7 +92,7 @@ function deps(
     hasActiveClientProjectRelationship: (projectId, personId) =>
       store.hasActiveClientProjectLink(personId, projectId),
     listUnresolvedJobs: async (projectId) => jobs.listUnresolvedJobs(projectId),
-    applyCreate: (input) => Promise.resolve(jobs.insertJob(input)),
+    applyCreate: (input, request) => Promise.resolve(jobs.insertJob(input, request)),
   };
 }
 
@@ -268,6 +269,7 @@ describe("Open Job create primitive", () => {
       subject: "Send quote",
       waitingOnActor: "hourglass",
       actor: ACTOR,
+      dueAt: "2026-09-12T16:00:00.000Z",
     });
     assert.equal(first.ok && first.status, "created");
     assert.equal(second.ok && second.status, "already-present");
@@ -354,4 +356,19 @@ describe("Open Job create primitive", () => {
     assert.equal(again.ok && again.status, "created");
     assert.equal(jobs.listJobs().length, 3);
   });
+});
+
+it("validates associated Person independently for projectless creation", async () => {
+  const store = new InMemoryClientMemoryStore();
+  const jobs = new InMemoryProjectJobStore();
+  const seeded = await seedProject(store, { linkPerson: false });
+  const result = await createProjectJob(deps(store, jobs), {
+    mutationId: randomUUID(), projectId: null, kind: "required_action", subject: "Call Ada", waitingOnActor: "founder", actor: ACTOR, associatedPersonId: seeded.personId,
+  });
+  assert.ok(result.ok);
+  assert.equal(result.job.associatedPersonId, seeded.personId);
+  const linked = await createProjectJob(deps(store, jobs), {
+    mutationId: randomUUID(), projectId: seeded.projectId, kind: "required_action", subject: "Call Ada", waitingOnActor: "founder", actor: ACTOR, associatedPersonId: seeded.personId,
+  });
+  assert.equal(linked.ok, false);
 });

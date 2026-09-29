@@ -1,3 +1,4 @@
+import { assertSameRequest, type AppliedOperation, type OperationRequest } from "./operation";
 /**
  * Internal Open Job create primitive for tests and founder controls.
  * Does not infer jobs from notes, Lifecycle, Gmail, or operating details.
@@ -21,6 +22,7 @@ import {
 const MANUAL_SOURCE: OpenJobSourceSystem = "concierge-manual";
 
 export type CreateProjectJobInvalidCode =
+  | "idempotency-conflict"
   | "invalid-id"
   | "invalid-kind"
   | "invalid-actor"
@@ -48,7 +50,7 @@ export type CreateProjectJobResult =
 
 export type CreateProjectJobInput = {
   mutationId: string;
-  projectId: string;
+  projectId: string | null;
   kind: string;
   subject: string;
   detail?: string | null;
@@ -68,6 +70,7 @@ export type CreateProjectJobApplyResult = {
 };
 
 export type CreateProjectJobDeps = {
+  findAppliedOperation: (mutationId: string) => Promise<AppliedOperation | null>;
   nowIso: () => string;
   newJobId: () => string;
   getEntity: (id: string) => Promise<Pick<ClientMemoryEntity, "kind"> | null>;
@@ -77,9 +80,10 @@ export type CreateProjectJobDeps = {
     projectId: string,
     personId: string,
   ) => Promise<boolean>;
-  listUnresolvedJobs: (projectId: string) => Promise<ProjectJob[]>;
+  listUnresolvedJobs: (projectId: string | null) => Promise<ProjectJob[]>;
   applyCreate: (
     input: CreateProjectJobApplyInput,
+    request?: OperationRequest,
   ) => Promise<CreateProjectJobApplyResult>;
 };
 
@@ -94,8 +98,8 @@ export async function createProjectJob(
   input: CreateProjectJobInput,
 ): Promise<CreateProjectJobResult> {
   const mutationId = input.mutationId.trim();
-  const projectId = input.projectId.trim();
-  if (!isOpenJobUuid(mutationId) || !isOpenJobUuid(projectId)) {
+  const projectId = input.projectId === null ? null : input.projectId.trim();
+  if (!isOpenJobUuid(mutationId) || (projectId !== null && !isOpenJobUuid(projectId))) {
     return invalid("invalid-id");
   }
   if (!isOpenJobKind(input.kind)) return invalid("invalid-kind");
@@ -120,21 +124,29 @@ export async function createProjectJob(
   }
 
   try {
-    const entity = await deps.getEntity(projectId);
-    if (!entity) return { ok: false, reason: "project-not-found" };
-    if (entity.kind !== "project") {
-      return { ok: false, reason: "entity-kind-mismatch" };
+    const request = { ...input, operation: "create" };
+    const existing = await deps.findAppliedOperation(mutationId);
+    if (existing) {
+      assertSameRequest(existing, request);
+      return { ok: true, status: "already-present", job: existing.job };
     }
-    const profile = await deps.getProjectProfile(projectId);
-    if (!profile || profile.projectId !== projectId) {
-      return { ok: false, reason: "project-not-found" };
+    if (projectId !== null) {
+      const entity = await deps.getEntity(projectId);
+      if (!entity) return { ok: false, reason: "project-not-found" };
+      if (entity.kind !== "project") {
+        return { ok: false, reason: "entity-kind-mismatch" };
+      }
+      const profile = await deps.getProjectProfile(projectId);
+      if (!profile || profile.projectId !== projectId) {
+        return { ok: false, reason: "project-not-found" };
+      }
     }
     if (associatedPersonId) {
       const person = await deps.getPersonProfile(associatedPersonId);
       if (!person || person.personId !== associatedPersonId) {
         return invalid("person-not-on-project");
       }
-      const linked = await deps.hasActiveClientProjectRelationship(
+      const linked = projectId === null || await deps.hasActiveClientProjectRelationship(
         projectId,
         associatedPersonId,
       );
@@ -148,6 +160,12 @@ export async function createProjectJob(
       subject.subject,
     );
     if (existingAction) {
+      // A concurrent create may have committed after our first history read.
+      const applied = await deps.findAppliedOperation(mutationId);
+      if (applied) {
+        assertSameRequest(applied, request);
+        return { ok: true, status: "already-present", job: applied.job };
+      }
       return { ok: true, status: "already-present", job: existingAction };
     }
 
@@ -172,10 +190,11 @@ export async function createProjectJob(
       sourceRef: sourceRef.sourceRef,
       createdMutationId: mutationId,
     };
-    const result = await deps.applyCreate(job);
+    const result = await deps.applyCreate(job, request);
     return { ok: true, status: result.status, job: result.job };
   } catch (error) {
     const message = error instanceof Error ? error.message : "";
+    if (message.includes("idempotency-conflict")) return invalid("idempotency-conflict");
     if (message.includes("project-not-found")) {
       return { ok: false, reason: "project-not-found" };
     }

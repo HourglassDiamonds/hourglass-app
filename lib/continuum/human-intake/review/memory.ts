@@ -35,6 +35,7 @@ export function createMemoryHumanIntakeReviewDeps(input: {
     createProjectJob: (payload) =>
       createProjectJob(
         {
+          findAppliedOperation: async (id) => input.jobs.findAppliedOperation(id),
           nowIso,
           newJobId: () => randomUUID(),
           getEntity: (id) => input.memory.getEntity(id),
@@ -44,7 +45,7 @@ export function createMemoryHumanIntakeReviewDeps(input: {
           hasActiveClientProjectRelationship: (projectId, personId) =>
             input.memory.hasActiveClientProjectLink(personId, projectId),
           listUnresolvedJobs: async (projectId) => input.jobs.listUnresolvedJobs(projectId),
-          applyCreate: async (job) => input.jobs.insertJob(job),
+          applyCreate: async (job, request) => input.jobs.insertJob(job, request),
         },
         payload,
       ),

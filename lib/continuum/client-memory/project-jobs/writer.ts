@@ -15,7 +15,7 @@ import type { ProjectJob } from "./types";
 export type ProjectJobWriter = {
   createJob(input: CreateProjectJobInput): Promise<CreateProjectJobResult>;
   mutateJob(input: MutateOpenJobInput): Promise<MutateOpenJobResult>;
-  getJob(projectId: string, jobId: string): Promise<ProjectJob | null>;
+  getJob(projectId: string | null, jobId: string): Promise<ProjectJob | null>;
 };
 
 export function createInMemoryProjectJobWriter(
@@ -27,6 +27,7 @@ export function createInMemoryProjectJobWriter(
     createJob(input) {
       return createProjectJob(
         {
+          findAppliedOperation: async (id) => jobs.findAppliedOperation(id),
           nowIso,
           newJobId: () => randomUUID(),
           getEntity: (id) => memory.getEntity(id),
@@ -35,7 +36,7 @@ export function createInMemoryProjectJobWriter(
           hasActiveClientProjectRelationship: (projectId, personId) =>
             memory.hasActiveClientProjectLink(personId, projectId),
           listUnresolvedJobs: async (projectId) => jobs.listUnresolvedJobs(projectId),
-          applyCreate: (row) => Promise.resolve(jobs.insertJob(row)),
+          applyCreate: (row, request) => Promise.resolve(jobs.insertJob(row, request)),
         },
         input,
       );
@@ -50,7 +51,7 @@ export function createInMemoryProjectJobWriter(
           hasActiveClientProjectRelationship: (projectId, personId) =>
             memory.hasActiveClientProjectLink(personId, projectId),
           getJob: async (jobId) => jobs.getJob(jobId),
-          findAppliedMutation: async (mutationId) => jobs.findJobByMutationId(mutationId),
+          findAppliedOperation: async (mutationId) => jobs.findAppliedOperation(mutationId),
           applyMutation: (row) => Promise.resolve(jobs.applyMutation(row)),
         },
         input,

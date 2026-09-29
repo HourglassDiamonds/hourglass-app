@@ -1,0 +1,25 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": { "incremental": false },
+  "include": [
+    "next-env.d.ts",
+    "lib/continuum/client-memory/project-jobs/**/*.ts",
+    "lib/continuum/human-intake/review/memory.ts",
+    "lib/continuum/client-memory/write/add-manual-note*.ts",
+    "lib/continuum/capture/**/*.ts",
+    "lib/continuum/capture/**/*.tsx",
+    "lib/continuum/chief-of-staff/operating-loop/collect.ts",
+    "lib/continuum/chief-of-staff/operating-loop/complete.ts",
+    "lib/continuum/chief-of-staff/operating-loop/disposition.ts",
+    "lib/continuum/chief-of-staff/operating-loop/present.ts",
+    "lib/continuum/chief-of-staff/operating-loop/reconcile.ts",
+    "lib/continuum/chief-of-staff/operating-loop/projectless-evidence.test.ts",
+    "lib/continuum/chief-of-staff/operating-loop/today-docket-boundary.ts",
+    "app/executive-dashboard/concierge/project-jobs-actions.ts",
+    "app/executive-dashboard/concierge/cos-operating-loop-actions.ts",
+    "app/executive-dashboard/concierge/components/cos-complete-control.tsx",
+    "app/executive-dashboard/concierge/components/cos-docket-actions.tsx",
+    "app/executive-dashboard/concierge/components/edit-action-form.tsx"
+  ],
+  "exclude": ["node_modules"]
+}

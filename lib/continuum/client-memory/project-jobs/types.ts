@@ -1,6 +1,6 @@
 /**
- * Durable Project-local Open Jobs contracts.
- * Unresolved work inside one Project. Not CoS, todos, Lifecycle, or commitments.
+ * Durable Open Jobs with optional Project context.
+ * A null projectId is founder work without Project context, never an authorization bypass.
  */
 
 export const OPEN_JOB_KINDS = [
@@ -57,7 +57,7 @@ export const OPEN_JOB_CREATED_BY_MAX = 80;
 
 export type ProjectJob = {
   jobId: string;
-  projectId: string;
+  projectId: string | null;
   kind: OpenJobKind;
   subject: string;
   detail: string | null;

@@ -12,7 +12,7 @@ import type { ActionableSourceType, CosCompletionWriter } from "./types";
 
 export type CompleteActionableInput = {
   sourceType: string;
-  projectId: string;
+  projectId?: string | null;
   jobId: string;
   mutationId: string;
   actor: string;

@@ -23,7 +23,7 @@ export function jobsShareActionIdentity(
 
 export function findUnresolvedJobByActionIdentity(
   jobs: readonly ProjectJob[],
-  projectId: string,
+  projectId: string | null,
   subject: string,
 ): ProjectJob | null {
   const key = openJobActionIdentityKey(subject);
