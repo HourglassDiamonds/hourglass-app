@@ -61,6 +61,9 @@ export function startReview(proposal: CaptureProposal, captureId: string): Captu
   if (!isCaptureProposal(proposal) || proposal.captureId !== captureId) {
     throw new Error("Invalid capture proposal");
   }
+  if (!proposal.items.length || proposal.items.some(item => item.confidence === 0 && item.clarification)) {
+    throw new Error("Capture interpretation needs review; retry the original input");
+  }
   return proposal.items.map((item) => {
     const row = { item, selected: false };
     return { ...row, selected: !reviewIssue(row) };

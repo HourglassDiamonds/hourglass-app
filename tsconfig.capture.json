@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": { "incremental": false },
+  "include": [
+    "next-env.d.ts",
+    "lib/continuum/capture/**/*.ts",
+    "lib/continuum/capture/**/*.tsx",
+    "app/executive-dashboard/concierge/capture-actions.ts",
+    "app/executive-dashboard/concierge/components/quick-capture*.ts*",
+    "app/executive-dashboard/concierge/components/concierge-ask-home.tsx",
+    "lib/continuum/model-eval/**/*.ts",
+    "scripts/continuum-model-eval.ts"
+  ],
+  "exclude": ["node_modules"]
+}

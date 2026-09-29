@@ -75,7 +75,7 @@ export class OpenAiSolBrain implements ReasoningBrain {
       model: this.model,
       instructions: input.system,
       input: this.sessionInput,
-      tools: openaiResponsesToolPayloads(),
+      tools: openaiResponsesToolPayloads().filter(tool => input.tools.some(allowed => allowed.name === tool.name)),
       tool_choice: "auto",
       store: false,
       parallel_tool_calls: true,

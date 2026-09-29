@@ -62,6 +62,7 @@ export function QuickCapture({ proposeAction, saveAction, entityLabels }: QuickC
   const [rows, setRows] = useState<CaptureReviewItem[]>([]);
   const [error, setError] = useState<string>();
   const [pending, startTransition] = useTransition();
+  const [operation, setOperation] = useState<"propose" | "save">();
   const connected = Boolean(proposeAction && saveAction);
   const selected = rows.filter((row) => row.selected && !isSaved(row));
   const selectedBlocked = selected.some(reviewIssue);
@@ -71,6 +72,9 @@ export function QuickCapture({ proposeAction, saveAction, entityLabels }: QuickC
     if (!value || !proposeAction) return;
     const nextCaptureId = crypto.randomUUID();
     setError(undefined);
+    setRows([]);
+    setCaptureId(undefined);
+    setOperation("propose");
     startTransition(async () => {
       try {
         const proposal = await proposeAction({
@@ -91,6 +95,7 @@ export function QuickCapture({ proposeAction, saveAction, entityLabels }: QuickC
   function saveSelected() {
     if (!captureId || !saveAction) return;
     setError(undefined);
+    setOperation("save");
     startTransition(async () => {
       try {
         const prepared = prepareConfirmation(captureId, rows, () => crypto.randomUUID());
@@ -123,7 +128,7 @@ export function QuickCapture({ proposeAction, saveAction, entityLabels }: QuickC
             {connected ? "Nothing is saved until you review and confirm." : "Capture engine connection pending. Manual actions remain available below."}
           </p>
           <button type="button" onClick={propose} disabled={!connected || !text.trim() || pending} className="inline-flex min-h-11 items-center justify-center rounded-full bg-[#b09265] px-5 text-[10px] uppercase tracking-[0.22em] text-[#191612] outline-none transition hover:bg-[#c0a276] focus-visible:shadow-[0_0_0_3px_rgba(173,145,100,0.25)] disabled:cursor-not-allowed disabled:opacity-35">
-            {pending && !rows.length ? "Reviewing…" : "Review capture"}
+            {pending && operation === "propose" ? "Reviewing…" : "Review capture"}
           </button>
         </div>
         <p className="mt-2 px-1 text-[11px] leading-relaxed text-[#74695f]">Unrecognized people and projects stay unlinked. Continuum will not create them here.</p>
@@ -170,7 +175,7 @@ export function QuickCapture({ proposeAction, saveAction, entityLabels }: QuickC
 
           <div className="sticky bottom-3 mt-4 rounded-full border border-[#54493e] bg-[#191612]/95 p-2 shadow-[0_12px_35px_rgba(0,0,0,0.35)] backdrop-blur">
             <button type="button" onClick={saveSelected} disabled={!selected.length || selectedBlocked || pending} className="flex min-h-12 w-full items-center justify-center rounded-full bg-[#b09265] px-5 text-[10px] uppercase tracking-[0.22em] text-[#191612] outline-none transition hover:bg-[#c0a276] focus-visible:shadow-[0_0_0_3px_rgba(239,232,222,0.2)] disabled:cursor-not-allowed disabled:opacity-35">
-              {pending ? "Saving…" : `Save selected${selected.length ? ` (${selected.length})` : ""}`}
+              {pending && operation === "save" ? "Saving…" : `Save selected${selected.length ? ` (${selected.length})` : ""}`}
             </button>
           </div>
         </div>

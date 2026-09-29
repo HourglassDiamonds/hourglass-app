@@ -2,6 +2,7 @@ import { ASK_UNSUPPORTED_DETAIL } from "@/lib/continuum/client-memory/ask/types"
 import type { ConciergeAskMode } from "@/lib/continuum/client-memory/read/presentation";
 import { AskConciergeShell } from "./ask-concierge-shell";
 import { QuickCapture } from "./quick-capture";
+import { proposeCaptureAction, saveCaptureAction } from "../capture-actions";
 
 const MODE_COPY: Record<
   ConciergeAskMode,
@@ -48,7 +49,7 @@ export function ConciergeAskHome({
         ) : null}
         {captureFirst ? (
           <div className="mt-8">
-            <QuickCapture />
+            <QuickCapture proposeAction={proposeCaptureAction} saveAction={saveCaptureAction} />
           </div>
         ) : (
           <div className="mt-8">
@@ -67,7 +68,7 @@ export function ConciergeAskHome({
           mode={mode}
         />
       ) : (
-        <QuickCapture />
+        <QuickCapture proposeAction={proposeCaptureAction} saveAction={saveCaptureAction} />
       )}
     </div>
   );

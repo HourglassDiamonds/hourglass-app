@@ -36,6 +36,7 @@ export async function commitCapture(deps: CaptureCommitDeps, input: CaptureCommi
 }
 
 async function saveOne(authority: CaptureCommitAuthority, mutationId: string, item: CaptureProposedItem, captureId: string): Promise<CaptureCommitItemResult> {
+  if (item.clarification) return review(item.itemId, item.clarification.question);
   if (item.entityResolution?.status !== "resolved") return review(item.itemId, "Resolve the linked person or project before saving.");
   const { personId, projectId } = item.entityResolution;
   if (item.timing?.kind === "exact-instant") return review(item.itemId, "Exact-time reminder persistence requires the later schema extension.");

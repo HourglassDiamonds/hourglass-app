@@ -37,7 +37,7 @@ export async function interpretCapture(
       ? resolved
       : fallbackProposal(request, "Resolved entities need review.");
   } catch {
-    return fallbackProposal(request, "Interpretation is temporarily unavailable; review this note.");
+    return fallbackProposal(request, "Interpretation is temporarily unavailable. Retry your original capture.");
   }
 }
 
@@ -45,6 +45,9 @@ function interpretationPrompt(request: CaptureRequest): string {
   return [
     "Convert the founder input into one or more independent capture proposals.",
     "Return JSON only, matching the CaptureProposal contract.",
+    'Shape: {version:1,captureId:string,canonical:false,items:[{itemId:string,kind:"action"|"reminder"|"watching"|"note",sourceExcerpt:string,title:string,content:string,confidence:number,entityResolution?:{status:"unresolved",mention:string},timing?:Timing,clarification?:{question:string}}]}.',
+    'Timing is {kind:"date-only",originalWording:string,date:"YYYY-MM-DD"} or {kind:"exact-instant",originalWording:string,instantAt:ISO timestamp with offset,timezone:IANA timezone} or {kind:"checkpoint",originalWording:string,condition:string,checkAt?:date-only or exact-instant timing} or {kind:"unspecified",originalWording:string}.',
+    "Use unique itemIds containing only letters, digits, underscores or hyphens (maximum 128 characters), titles at most 160 characters, nonempty sourceExcerpt/content, confidence from 0 to 1. Omit absent optional fields; do not use null or extra keys. At most 100 items.",
     `Set version=${CAPTURE_CONTRACT_VERSION}, captureId=${request.captureId}, canonical=false.`,
     "Kinds: action, reminder, watching, note. Split distinct asks into distinct items.",
     "Never claim an identity match. Put named entities in entityResolution as unresolved.",
